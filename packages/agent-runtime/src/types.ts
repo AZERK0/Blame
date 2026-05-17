@@ -102,6 +102,35 @@ export type SendSessionInput = {
   prompt: string
 }
 
+export type ProjectCodePracticeKey =
+  | "coding_style"
+  | "unit_tests"
+  | "layered_architecture"
+  | "commit_message_convention"
+
+export type ProjectCodePracticeResult = {
+  practice: ProjectCodePracticeKey
+  detected: boolean
+  comment: string
+}
+
+export type InitializeProjectInput = {
+  apiConnection: ApiConnection
+  providerId: string
+  modelId: string
+  reasoningEffort?: ReasoningEffort
+  cwd: string
+  workspaceRoot: string
+  credentialLabel?: string
+}
+
+export type InitializeProjectResult = {
+  sessionId: string
+  setupScript: string
+  dockerCompose: string
+  practices: ProjectCodePracticeResult[]
+}
+
 export type AgentSessionRecord = {
   sessionId: string
   title?: string

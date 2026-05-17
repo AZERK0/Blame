@@ -27,6 +27,7 @@ export function registerAgentIpcHandlers() {
   ipcMain.handle("agent:sessions:messages", (_event, sessionId) => runtime.sessions.messages(sessionId))
   ipcMain.handle("agent:sessions:unsubscribe", (_event, sessionId) => runtime.sessions.unsubscribe(sessionId))
   ipcMain.handle("agent:approvals:resolve", (_event, input) => runtime.approvals.resolve(input))
+  ipcMain.handle("agent:initializations:run", (_event, input) => runtime.initializations.run(input))
 }
 
 function emitAgentEvent(event: AgentEvent) {

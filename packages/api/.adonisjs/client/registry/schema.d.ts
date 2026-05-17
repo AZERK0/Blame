@@ -79,6 +79,54 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/projects_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
+  'projects.project_initializations.show': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/projects/:projectId/initialization'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { projectId: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_initializations_controller').default['show']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_initializations_controller').default['show']>>>
+    }
+  }
+  'projects.project_initializations.start': {
+    methods: ["POST"]
+    pattern: '/api/v1/projects/:projectId/initialization/start'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/project_initialization').startProjectInitializationValidator)>>
+      paramsTuple: [ParamValue]
+      params: { projectId: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/project_initialization').startProjectInitializationValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_initializations_controller').default['start']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_initializations_controller').default['start']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'projects.project_initializations.complete': {
+    methods: ["POST"]
+    pattern: '/api/v1/projects/:projectId/initialization/complete'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/project_initialization').completeProjectInitializationValidator)>>
+      paramsTuple: [ParamValue]
+      params: { projectId: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/project_initialization').completeProjectInitializationValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_initializations_controller').default['complete']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_initializations_controller').default['complete']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'projects.project_initializations.fail': {
+    methods: ["POST"]
+    pattern: '/api/v1/projects/:projectId/initialization/fail'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/project_initialization').failProjectInitializationValidator)>>
+      paramsTuple: [ParamValue]
+      params: { projectId: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/project_initialization').failProjectInitializationValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_initializations_controller').default['fail']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_initializations_controller').default['fail']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
   'providers.provider_credentials.catalog': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/providers/catalog'

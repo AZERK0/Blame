@@ -55,6 +55,9 @@ const api: BlameDesktopApi = {
         return () => ipcRenderer.removeListener("agent:approvals:event", handler)
       },
     },
+    initializations: {
+      run: (input) => ipcRenderer.invoke("agent:initializations:run", input),
+    },
   },
 }
 

@@ -42,6 +42,30 @@ const routes = {
     tokens: [{"old":"/api/v1/projects","type":0,"val":"api","end":""},{"old":"/api/v1/projects","type":0,"val":"v1","end":""},{"old":"/api/v1/projects","type":0,"val":"projects","end":""}],
     types: placeholder as Registry['projects.projects.store']['types'],
   },
+  'projects.project_initializations.show': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/projects/:projectId/initialization',
+    tokens: [{"old":"/api/v1/projects/:projectId/initialization","type":0,"val":"api","end":""},{"old":"/api/v1/projects/:projectId/initialization","type":0,"val":"v1","end":""},{"old":"/api/v1/projects/:projectId/initialization","type":0,"val":"projects","end":""},{"old":"/api/v1/projects/:projectId/initialization","type":1,"val":"projectId","end":""},{"old":"/api/v1/projects/:projectId/initialization","type":0,"val":"initialization","end":""}],
+    types: placeholder as Registry['projects.project_initializations.show']['types'],
+  },
+  'projects.project_initializations.start': {
+    methods: ["POST"],
+    pattern: '/api/v1/projects/:projectId/initialization/start',
+    tokens: [{"old":"/api/v1/projects/:projectId/initialization/start","type":0,"val":"api","end":""},{"old":"/api/v1/projects/:projectId/initialization/start","type":0,"val":"v1","end":""},{"old":"/api/v1/projects/:projectId/initialization/start","type":0,"val":"projects","end":""},{"old":"/api/v1/projects/:projectId/initialization/start","type":1,"val":"projectId","end":""},{"old":"/api/v1/projects/:projectId/initialization/start","type":0,"val":"initialization","end":""},{"old":"/api/v1/projects/:projectId/initialization/start","type":0,"val":"start","end":""}],
+    types: placeholder as Registry['projects.project_initializations.start']['types'],
+  },
+  'projects.project_initializations.complete': {
+    methods: ["POST"],
+    pattern: '/api/v1/projects/:projectId/initialization/complete',
+    tokens: [{"old":"/api/v1/projects/:projectId/initialization/complete","type":0,"val":"api","end":""},{"old":"/api/v1/projects/:projectId/initialization/complete","type":0,"val":"v1","end":""},{"old":"/api/v1/projects/:projectId/initialization/complete","type":0,"val":"projects","end":""},{"old":"/api/v1/projects/:projectId/initialization/complete","type":1,"val":"projectId","end":""},{"old":"/api/v1/projects/:projectId/initialization/complete","type":0,"val":"initialization","end":""},{"old":"/api/v1/projects/:projectId/initialization/complete","type":0,"val":"complete","end":""}],
+    types: placeholder as Registry['projects.project_initializations.complete']['types'],
+  },
+  'projects.project_initializations.fail': {
+    methods: ["POST"],
+    pattern: '/api/v1/projects/:projectId/initialization/fail',
+    tokens: [{"old":"/api/v1/projects/:projectId/initialization/fail","type":0,"val":"api","end":""},{"old":"/api/v1/projects/:projectId/initialization/fail","type":0,"val":"v1","end":""},{"old":"/api/v1/projects/:projectId/initialization/fail","type":0,"val":"projects","end":""},{"old":"/api/v1/projects/:projectId/initialization/fail","type":1,"val":"projectId","end":""},{"old":"/api/v1/projects/:projectId/initialization/fail","type":0,"val":"initialization","end":""},{"old":"/api/v1/projects/:projectId/initialization/fail","type":0,"val":"fail","end":""}],
+    types: placeholder as Registry['projects.project_initializations.fail']['types'],
+  },
   'providers.provider_credentials.catalog': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/providers/catalog',

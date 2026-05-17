@@ -5,6 +5,8 @@ import { QuickChatPage } from "@/components/chat/quick-chat-page"
 import { ConnectScreen } from "@/components/onboarding/connect-screen"
 import { LoadingScreen } from "@/components/onboarding/loading-screen"
 import { WelcomeScreen } from "@/components/onboarding/welcome-screen"
+import { ProjectInitializationRunner } from "@/components/project-initialization/project-initialization-runner"
+import { Toaster } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { useProjects } from "@/context/projects"
@@ -87,9 +89,11 @@ export function App() {
 
   return (
     <TooltipProvider>
+      <ProjectInitializationRunner />
       <AppLayout pathname={route.path} title={route.title}>
         {route.element}
       </AppLayout>
+      <Toaster />
     </TooltipProvider>
   )
 }

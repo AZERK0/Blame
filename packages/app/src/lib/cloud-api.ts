@@ -1,5 +1,6 @@
 import type {
   CloudProject,
+  CloudProjectInitializationSnapshot,
   CloudSession,
   CloudUser,
   LoginInput,
@@ -31,9 +32,14 @@ export function createCloudApi(connection: ApiConnection) {
       return request<CloudUser>(connection, baseUrl, "/account/profile")
     },
     async logout() {
-      await request<{ message: string }>(connection, baseUrl, "/account/logout", {
-        method: "POST",
-      })
+      await request<{ message: string }>(
+        connection,
+        baseUrl,
+        "/account/logout",
+        {
+          method: "POST",
+        }
+      )
     },
     ensureProject(input: {
       name: string
@@ -44,6 +50,59 @@ export function createCloudApi(connection: ApiConnection) {
         method: "POST",
       }).then(cloudProject)
     },
+    projectInitialization(projectId: string) {
+      return request<unknown>(
+        connection,
+        baseUrl,
+        `/projects/${encodeURIComponent(projectId)}/initialization`
+      ).then(cloudProjectInitializationSnapshot)
+    },
+    startProjectInitialization(
+      projectId: string,
+      input: {
+        providerId: string
+        modelId: string
+        clineSessionId?: string | null
+      }
+    ) {
+      return request<unknown>(
+        connection,
+        baseUrl,
+        `/projects/${encodeURIComponent(projectId)}/initialization/start`,
+        { body: JSON.stringify(input), method: "POST" }
+      ).then(cloudProjectInitializationSnapshot)
+    },
+    completeProjectInitialization(
+      projectId: string,
+      input: {
+        clineSessionId?: string | null
+        setupScript: string
+        dockerCompose: string
+        practices: Array<{
+          practice: string
+          detected: boolean
+          comment: string
+        }>
+      }
+    ) {
+      return request<unknown>(
+        connection,
+        baseUrl,
+        `/projects/${encodeURIComponent(projectId)}/initialization/complete`,
+        { body: JSON.stringify(input), method: "POST" }
+      ).then(cloudProjectInitializationSnapshot)
+    },
+    failProjectInitialization(
+      projectId: string,
+      input: { clineSessionId?: string | null; error: string }
+    ) {
+      return request<unknown>(
+        connection,
+        baseUrl,
+        `/projects/${encodeURIComponent(projectId)}/initialization/fail`,
+        { body: JSON.stringify(input), method: "POST" }
+      ).then(cloudProjectInitializationSnapshot)
+    },
   }
 }
 
@@ -51,8 +110,26 @@ function cloudProject(value: unknown) {
   const project = transformerValue(value)
   if (!isRecord(project)) throw new Error("Unable to read project.")
   if (typeof project.id !== "string") throw new Error("Unable to read project.")
-  if (typeof project.name !== "string") throw new Error("Unable to read project.")
+  if (typeof project.name !== "string")
+    throw new Error("Unable to read project.")
   return project as CloudProject
+}
+
+function cloudProjectInitializationSnapshot(value: unknown) {
+  const snapshot = transformerValue(value)
+  if (!isRecord(snapshot))
+    throw new Error("Unable to read project initialization.")
+  if (!("practices" in snapshot) || !Array.isArray(snapshot.practices)) {
+    throw new Error("Unable to read project initialization.")
+  }
+  if (
+    "initialization" in snapshot &&
+    snapshot.initialization !== null &&
+    !isRecord(snapshot.initialization)
+  ) {
+    throw new Error("Unable to read project initialization.")
+  }
+  return snapshot as CloudProjectInitializationSnapshot
 }
 
 function transformerValue(value: unknown): unknown {
@@ -71,7 +148,8 @@ async function request<T>(
   const headers = new Headers(init?.headers)
   headers.set("Accept", "application/json")
   headers.set("Content-Type", "application/json")
-  if (connection.token) headers.set("Authorization", `Bearer ${connection.token}`)
+  if (connection.token)
+    headers.set("Authorization", `Bearer ${connection.token}`)
 
   const response = await fetch(`${baseUrl}${path}`, {
     ...init,
@@ -80,7 +158,7 @@ async function request<T>(
 
   if (!response.ok) throw new Error(await responseMessage(response))
   if (response.status === 204) return undefined as T
-  return (await response.json() as ApiResponse<T>).data
+  return ((await response.json()) as ApiResponse<T>).data
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

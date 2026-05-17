@@ -17,11 +17,18 @@ import {
   saveOAuthCredential,
   saveProviderCredential,
 } from "./cloud-api.js"
+import {
+  parseProjectInitializationResult,
+  projectInitializationPrompt,
+  scanProjectForInitialization,
+} from "./project-initialization.js"
 import type {
   AgentApprovalRequest,
   AgentEvent,
   AgentRuntimeEvents,
   ApiConnection,
+  InitializeProjectInput,
+  InitializeProjectResult,
   LoginOAuthProviderInput,
   OAuthCredentials,
   ResolveApprovalInput,
@@ -88,6 +95,10 @@ export class BlameAgentRuntime {
 
   approvals = {
     resolve: (input: ResolveApprovalInput) => this.resolveApproval(input),
+  }
+
+  initializations = {
+    run: (input: InitializeProjectInput) => this.initializeProject(input),
   }
 
   private async core() {
@@ -161,6 +172,33 @@ export class BlameAgentRuntime {
   private async readUsage(sessionId: string): Promise<SessionUsageSummary | undefined> {
     const cline = await this.core()
     return cline.getAccumulatedUsage(sessionId)
+  }
+
+  private async initializeProject(input: InitializeProjectInput): Promise<InitializeProjectResult> {
+    const resolvedCredential = await this.initializationCredential(input)
+    const scan = await scanProjectForInitialization(input.workspaceRoot)
+    const cline = await this.core()
+    const session = await cline.start({
+      prompt: projectInitializationPrompt(scan),
+      config: initializationConfig(input, resolvedCredential),
+      interactive: false,
+      source: "blame-project-initialization",
+      toolPolicies: initializationToolPolicies(),
+    })
+    const text = session.result?.text
+    if (!text) throw new Error("Project initialization agent did not return a result")
+    return {
+      sessionId: session.sessionId,
+      ...parseProjectInitializationResult(text),
+    }
+  }
+
+  private async initializationCredential(input: InitializeProjectInput) {
+    const credential = await resolveProviderCredential(input.apiConnection, {
+      providerId: input.providerId,
+      label: input.credentialLabel,
+    })
+    return this.refreshOAuthCredential(input.apiConnection, credential)
   }
 
   private async subscribeSession(sessionId: string) {
@@ -296,6 +334,35 @@ function toolPolicies() {
   return Object.fromEntries([
     ...readTools.map((name) => [name, { autoApprove: true }]),
     ...writeTools.map((name) => [name, { autoApprove: false }]),
+  ])
+}
+
+function initializationConfig(
+  input: InitializeProjectInput,
+  credential: { apiKey: string; baseUrl: string | null }
+) {
+  return {
+    providerId: input.providerId,
+    modelId: input.modelId,
+    apiKey: credential.apiKey,
+    baseUrl: credential.baseUrl ?? undefined,
+    thinking: !!input.reasoningEffort,
+    reasoningEffort: input.reasoningEffort,
+    systemPrompt:
+      "You are Blame project initialization analyst. Return strict JSON only.",
+    cwd: input.cwd,
+    workspaceRoot: input.workspaceRoot,
+    enableTools: true,
+    enableSpawnAgent: false,
+    enableAgentTeams: false,
+    maxIterations: 8,
+  }
+}
+
+function initializationToolPolicies() {
+  return Object.fromEntries([
+    ...readTools.map((name) => [name, { autoApprove: true }]),
+    ...writeTools.map((name) => [name, { enabled: false, autoApprove: false }]),
   ])
 }
 

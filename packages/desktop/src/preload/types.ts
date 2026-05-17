@@ -1,6 +1,8 @@
 import type {
   AgentEvent,
   ApiConnection,
+  InitializeProjectInput,
+  InitializeProjectResult,
   LoginOAuthProviderInput,
   ProviderListResponse,
   ResolveApprovalInput,
@@ -59,6 +61,9 @@ export type BlameDesktopApi = {
     approvals: {
       resolve(input: ResolveApprovalInput): Promise<boolean>
       onRequest(callback: (event: AgentEvent) => void): () => void
+    }
+    initializations: {
+      run(input: InitializeProjectInput): Promise<InitializeProjectResult>
     }
   }
 }

@@ -2,6 +2,8 @@ import * as React from "react"
 import type {
   AgentEvent,
   ApiConnection as AgentApiConnection,
+  InitializeProjectInput,
+  InitializeProjectResult,
   LoginOAuthProviderInput,
   ProviderListResponse,
   ResolveApprovalInput,
@@ -33,7 +35,10 @@ export type Platform = {
 export type AgentClient = {
   providers: {
     list(connection: ApiConnection): Promise<ProviderListResponse>
-    saveCredential(connection: ApiConnection, input: SaveProviderCredentialInput): Promise<unknown>
+    saveCredential(
+      connection: ApiConnection,
+      input: SaveProviderCredentialInput
+    ): Promise<unknown>
     deleteCredential(connection: ApiConnection, id: number): Promise<void>
     loginOAuth(input: LoginOAuthProviderInput): Promise<unknown>
   }
@@ -43,11 +48,17 @@ export type AgentClient = {
     abort(sessionId: string): Promise<void>
     list(): Promise<unknown>
     messages(sessionId: string): Promise<unknown>
-    onEvent(sessionId: string, callback: (event: AgentEvent) => void): () => void
+    onEvent(
+      sessionId: string,
+      callback: (event: AgentEvent) => void
+    ): () => void
   }
   approvals: {
     resolve(input: ResolveApprovalInput): Promise<boolean>
     onRequest(callback: (event: AgentEvent) => void): () => void
+  }
+  initializations: {
+    run(input: InitializeProjectInput): Promise<InitializeProjectResult>
   }
 }
 
@@ -58,9 +69,16 @@ export type WorkspaceEntry = {
 }
 
 export type WorkspaceClient = {
-  listDirectory(input: { root: string; path?: string }): Promise<WorkspaceEntry[]>
+  listDirectory(input: {
+    root: string
+    path?: string
+  }): Promise<WorkspaceEntry[]>
   readFile(input: { root: string; path: string }): Promise<string>
-  searchFiles(input: { root: string; query: string; limit?: number }): Promise<WorkspaceEntry[]>
+  searchFiles(input: {
+    root: string
+    query: string
+    limit?: number
+  }): Promise<WorkspaceEntry[]>
   gitDiff(input: { root: string }): Promise<string>
 }
 

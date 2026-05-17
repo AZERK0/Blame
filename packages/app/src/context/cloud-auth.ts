@@ -25,6 +25,47 @@ export type CloudProject = {
   updatedAt: string | null
 }
 
+export type CloudProjectInitializationStatus =
+  | "pending"
+  | "running"
+  | "done"
+  | "error"
+
+export type CloudProjectCodePracticeKey =
+  | "coding_style"
+  | "unit_tests"
+  | "layered_architecture"
+  | "commit_message_convention"
+
+export type CloudProjectInitialization = {
+  projectId: string
+  status: CloudProjectInitializationStatus
+  step: string
+  clineSessionId: string | null
+  agentProviderId: string | null
+  agentModelId: string | null
+  setupScript: string | null
+  dockerCompose: string | null
+  error: string | null
+  createdAt: string
+  updatedAt: string | null
+}
+
+export type CloudProjectCodePractice = {
+  id: number
+  projectId: string
+  practice: CloudProjectCodePracticeKey
+  detected: boolean
+  comment: string
+  createdAt: string
+  updatedAt: string | null
+}
+
+export type CloudProjectInitializationSnapshot = {
+  initialization: CloudProjectInitialization | null
+  practices: CloudProjectCodePractice[]
+}
+
 export type LoginInput = {
   email: string
   password: string
@@ -45,8 +86,9 @@ export type CloudAuthContextValue = {
   logout(): Promise<void>
 }
 
-export const CloudAuthContext =
-  React.createContext<CloudAuthContextValue | undefined>(undefined)
+export const CloudAuthContext = React.createContext<
+  CloudAuthContextValue | undefined
+>(undefined)
 
 export function useCloudAuth() {
   const context = React.useContext(CloudAuthContext)

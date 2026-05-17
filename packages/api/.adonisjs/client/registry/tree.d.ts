@@ -23,6 +23,12 @@ export interface ApiDefinition {
       index: typeof routes['projects.projects.index']
       store: typeof routes['projects.projects.store']
     }
+    projectInitializations: {
+      show: typeof routes['projects.project_initializations.show']
+      start: typeof routes['projects.project_initializations.start']
+      complete: typeof routes['projects.project_initializations.complete']
+      fail: typeof routes['projects.project_initializations.fail']
+    }
     userStories: {
       userStories: {
         index: typeof routes['projects.user_stories.user_stories.index']

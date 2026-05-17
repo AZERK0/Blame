@@ -4,39 +4,27 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="98ea9b59-4f4a-4e05-8e92-ccffc0a05220" name="Changes" comment="feat(desktop): implement agent runtime and workspace IPC handlers">
+    <list default="true" id="98ea9b59-4f4a-4e05-8e92-ccffc0a05220" name="Changes" comment="feat(agent): implement oauth, terminal, and user story session support">
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources/c212e022-1984-433c-b03e-1fbbcb759528.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/c212e022-1984-433c-b03e-1fbbcb759528.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/packages/agent-runtime/src/cline-runtime.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/agent-runtime/src/cline-runtime.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/packages/agent-runtime/src/cloud-api.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/agent-runtime/src/cloud-api.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/packages/agent-runtime/src/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/agent-runtime/src/index.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/packages/agent-runtime/src/provider-catalog.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/agent-runtime/src/provider-catalog.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/packages/agent-runtime/src/types.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/agent-runtime/src/types.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/api/.adonisjs/client/data.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/api/.adonisjs/client/data.d.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/packages/api/.adonisjs/client/registry/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/api/.adonisjs/client/registry/index.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/packages/api/.adonisjs/client/registry/schema.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/api/.adonisjs/client/registry/schema.d.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/packages/api/.adonisjs/client/registry/tree.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/api/.adonisjs/client/registry/tree.d.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/api/.adonisjs/server/controllers.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/api/.adonisjs/server/controllers.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/packages/api/.adonisjs/server/routes.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/api/.adonisjs/server/routes.d.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/packages/api/app/controllers/provider_credentials_controller.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/api/app/controllers/provider_credentials_controller.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/packages/api/app/models/provider_credential.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/api/app/models/provider_credential.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/packages/api/app/models/user_story.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/api/app/models/user_story.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/packages/api/app/services/provider_credentials_service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/api/app/services/provider_credentials_service.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/packages/api/app/services/user_stories_service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/api/app/services/user_stories_service.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/packages/api/app/transformers/provider_credential_transformer.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/api/app/transformers/provider_credential_transformer.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/packages/api/app/transformers/user_story_transformer.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/api/app/transformers/user_story_transformer.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/packages/api/app/validators/user_story.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/api/app/validators/user_story.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/packages/api/database/schema.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/api/database/schema.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/packages/api/start/routes.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/api/start/routes.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/packages/app/src/components/backlog/data/backlog-data.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/data/backlog-data.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/packages/app/src/components/backlog/development/development-terminal.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/development/development-terminal.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/packages/app/src/components/backlog/drawer/user-story-drawer-panel.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/drawer/user-story-drawer-panel.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/packages/app/src/components/chat/quick-chat-page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/chat/quick-chat-page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/packages/app/src/components/model/connect-provider-dialog.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/model/connect-provider-dialog.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/packages/app/src/components/model/model-selector.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/model/model-selector.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/App.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/context/cloud-auth.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/context/cloud-auth.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/packages/app/src/context/platform.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/context/platform.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/lib/cloud-api.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/lib/cloud-api.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/packages/desktop/src/main/agent-ipc.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/desktop/src/main/agent-ipc.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/packages/desktop/src/main/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/desktop/src/main/index.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/packages/desktop/src/preload/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/desktop/src/preload/index.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/packages/desktop/src/preload/types.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/desktop/src/preload/types.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/packages/desktop/src/renderer/index.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/desktop/src/renderer/index.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -112,7 +100,7 @@
       <workItem from="1779019998386" duration="1271000" />
       <workItem from="1779021363114" duration="3227000" />
       <workItem from="1779024619207" duration="667000" />
-      <workItem from="1779032175359" duration="10925000" />
+      <workItem from="1779032175359" duration="13615000" />
     </task>
     <task id="LOCAL-00001" summary="feat: initial commit">
       <option name="closed" value="true" />
@@ -138,7 +126,15 @@
       <option name="project" value="LOCAL" />
       <updated>1779035307962</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="feat(agent): implement oauth, terminal, and user story session support">
+      <option name="closed" value="true" />
+      <created>1779057944481</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1779057944482</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -172,6 +168,8 @@
     <MESSAGE value="feat: turbo repo monorepo initialization and copy app and api packages from the old project" />
     <MESSAGE value="{&#10;  &quot;error&quot;: {&#10;    &quot;code&quot;: 400,&#10;    &quot;message&quot;: &quot;The input token count exceeds the maximum number of tokens allowed 1048576.&quot;,&#10;    &quot;status&quot;: &quot;INVALID_ARGUMENT&quot;&#10;  }&#10;}" />
     <MESSAGE value="feat(desktop): implement agent runtime and workspace IPC handlers" />
-    <option name="LAST_COMMIT_MESSAGE" value="feat(desktop): implement agent runtime and workspace IPC handlers" />
+    <MESSAGE value="feat(" />
+    <MESSAGE value="feat(agent): implement oauth, terminal, and user story session support" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat(agent): implement oauth, terminal, and user story session support" />
   </component>
 </project>

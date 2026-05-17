@@ -52,18 +52,24 @@ export class ProjectCodePracticeSchema extends BaseModel {
 }
 
 export class ProjectInitializationSchema extends BaseModel {
-  static $columns = ['createdAt', 'error', 'opencodeSessionId', 'projectId', 'startupScript', 'status', 'step', 'updatedAt'] as const
+  static $columns = ['agentModelId', 'agentProviderId', 'clineSessionId', 'createdAt', 'dockerCompose', 'error', 'projectId', 'setupScript', 'status', 'step', 'updatedAt'] as const
   $columns = ProjectInitializationSchema.$columns
+  @column()
+  declare agentModelId: string | null
+  @column()
+  declare agentProviderId: string | null
+  @column()
+  declare clineSessionId: string | null
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
   @column()
-  declare error: string | null
+  declare dockerCompose: string | null
   @column()
-  declare opencodeSessionId: string | null
+  declare error: string | null
   @column({ isPrimary: true })
   declare projectId: string
   @column()
-  declare startupScript: string | null
+  declare setupScript: string | null
   @column()
   declare status: string
   @column()

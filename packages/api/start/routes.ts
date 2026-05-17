@@ -12,6 +12,8 @@ import router from '@adonisjs/core/services/router'
 import { controllers } from '#generated/controllers'
 
 const ProviderCredentialsController = () => import('#controllers/provider_credentials_controller')
+const ProjectInitializationsController = () =>
+  import('#controllers/project_initializations_controller')
 
 router.get('/', () => {
   return { hello: 'world' }
@@ -40,6 +42,13 @@ router
       .group(() => {
         router.get('/', [controllers.Projects, 'index'])
         router.post('/', [controllers.Projects, 'store'])
+        router.get('/:projectId/initialization', [ProjectInitializationsController, 'show'])
+        router.post('/:projectId/initialization/start', [ProjectInitializationsController, 'start'])
+        router.post('/:projectId/initialization/complete', [
+          ProjectInitializationsController,
+          'complete',
+        ])
+        router.post('/:projectId/initialization/fail', [ProjectInitializationsController, 'fail'])
       })
       .prefix('projects')
       .as('projects')
