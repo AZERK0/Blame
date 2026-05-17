@@ -1,0 +1,27 @@
+import type { UserStory } from "@/components/backlog/data/backlog-data"
+
+export type UserStoryDrawerTab = "user-story" | "preview" | "development"
+export type UserStoryDevelopmentTab = "files" | "diff" | "terminal"
+export type UserStoryDrawerMode = "create" | "edit" | "view"
+export type DrawerAction =
+  | "Cancel"
+  | "Save as Draft"
+  | "Send to Dev Agent"
+  | "Save Changes"
+  | "Dequeue"
+  | "Stop Agent"
+  | "Request Changes"
+  | "Reject"
+  | "Approve & Merge"
+  | "Close"
+  | "Rework as Draft"
+
+export type DrawerTarget = {
+  userStory?: UserStory
+  mode: UserStoryDrawerMode
+  initialTab?: UserStoryDrawerTab
+  initialDevelopmentTab?: UserStoryDevelopmentTab
+  focusComment?: boolean
+}
+
+export type OpenDrawer = (target: DrawerTarget) => void

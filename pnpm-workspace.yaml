@@ -1,0 +1,5 @@
+packages:
+  - "packages/*"
+
+catalog:
+  shiki: 3.20.0
