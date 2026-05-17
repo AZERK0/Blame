@@ -1,8 +1,11 @@
 import type {
   ApiConnection,
   BlameProvider,
+  DeleteProviderCredentialInput,
+  OAuthCredentials,
   ProviderCredentialSummary,
   ProviderListResponse,
+  SaveOAuthCredentialInput,
   SaveProviderCredentialInput,
 } from "./types.js"
 import { listClineProviders } from "./provider-catalog.js"
@@ -15,18 +18,20 @@ type ResolvedCredential = {
   id: number
   providerId: string
   label: string
+  authMethod?: "api-key" | "oauth"
   apiKey: string
   baseUrl: string | null
+  oauthCredentials?: OAuthCredentials | null
 }
 
 export async function listProviders(connection: ApiConnection) {
   const [clineProviders, credentials] = await Promise.all([
     listClineProviders(),
-    request<ProviderCredentialSummary[]>(connection, "/providers/credentials"),
+    request<unknown>(connection, "/providers/credentials"),
   ])
-  const credentialList = Array.isArray(credentials) ? credentials : []
+  const credentialList = normalizeCredentials(credentials)
   const connected: string[] = Array.from(
-    new Set(credentialList.map((credential: ProviderCredentialSummary) => credential.providerId))
+    new Set(credentialList.map((credential) => credential.providerId))
   )
   return {
     all: clineProviders,
@@ -45,6 +50,19 @@ export function saveProviderCredential(connection: ApiConnection, input: SavePro
   return request<ProviderCredentialSummary>(connection, "/providers/credentials", {
     body: JSON.stringify(input),
     method: "POST",
+  })
+}
+
+export function saveOAuthCredential(connection: ApiConnection, input: SaveOAuthCredentialInput) {
+  return request<ProviderCredentialSummary>(connection, "/providers/credentials/oauth", {
+    body: JSON.stringify(input),
+    method: "POST",
+  })
+}
+
+export function deleteProviderCredential(connection: ApiConnection, input: DeleteProviderCredentialInput) {
+  return request<void>(connection, `/providers/credentials/${input.id}`, {
+    method: "DELETE",
   })
 }
 
@@ -72,7 +90,8 @@ async function request<T>(connection: ApiConnection, path: string, init?: Reques
 
   if (!response.ok) throw new Error(await responseMessage(response))
   if (response.status === 204) return undefined as T
-  return transformerValue((await response.json() as ApiResponse<T>).data) as T
+  const json = await response.json() as ApiResponse<T> | T
+  return transformerValue(responseData(json)) as T
 }
 
 function authorizationHeader(connection: ApiConnection) {
@@ -91,11 +110,71 @@ async function responseMessage(response: Response) {
   return `Request failed with status ${response.status}`
 }
 
+function responseData<T>(value: ApiResponse<T> | T) {
+  if (isRecord(value) && "data" in value) return value.data
+  return value
+}
+
 function transformerValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(transformerValue)
   if (!isRecord(value)) return value
   if ("data" in value) return transformerValue(value.data)
   if (!Array.isArray(value.transformerData)) return value
   return transformerValue(value.transformerData[0])
+}
+
+function normalizeCredentials(value: unknown) {
+  if (!Array.isArray(value)) return []
+  const credentials: ProviderCredentialSummary[] = []
+  for (const item of value) {
+    const credential = normalizeCredential(item)
+    if (credential) credentials.push(credential)
+  }
+  return credentials
+}
+
+function normalizeCredential(value: unknown): ProviderCredentialSummary | undefined {
+  const credential = transformerValue(value)
+  if (!isRecord(credential)) return undefined
+
+  const normalized = {
+    id: typeof credential.id === "number" ? credential.id : Number(credential.id),
+    userId: numberField(credential, "userId", "user_id"),
+    providerId: stringField(credential, "providerId", "provider_id"),
+    label: stringField(credential, "label"),
+    authMethod: authMethodField(credential),
+    baseUrl: nullableStringField(credential, "baseUrl", "base_url"),
+    accountId: nullableStringField(credential, "accountId", "account_id"),
+    expiresAt: nullableStringField(credential, "expiresAt", "expires_at"),
+    createdAt: stringField(credential, "createdAt", "created_at"),
+    updatedAt: nullableStringField(credential, "updatedAt", "updated_at"),
+  }
+  if (!Number.isFinite(normalized.id) || !normalized.providerId) return undefined
+  return normalized
+}
+
+function stringField(value: Record<string, unknown>, ...keys: string[]) {
+  const field = firstField(value, keys)
+  return typeof field === "string" ? field : ""
+}
+
+function nullableStringField(value: Record<string, unknown>, ...keys: string[]) {
+  const field = firstField(value, keys)
+  return typeof field === "string" ? field : null
+}
+
+function numberField(value: Record<string, unknown>, ...keys: string[]) {
+  const field = firstField(value, keys)
+  return typeof field === "number" ? field : Number(field)
+}
+
+function authMethodField(value: Record<string, unknown>): "api-key" | "oauth" {
+  const field = stringField(value, "authMethod", "auth_method")
+  return field === "oauth" ? "oauth" : "api-key"
+}
+
+function firstField(value: Record<string, unknown>, keys: string[]) {
+  return keys.map((key) => value[key]).find((field) => field !== undefined)
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

@@ -1,10 +1,20 @@
 import { randomUUID } from "node:crypto"
 
-import type { ClineCore, CoreSessionEvent, SessionUsageSummary } from "@cline/sdk"
+import type {
+  ClineCore,
+  CoreSessionEvent,
+  OAuthCredentials as ClineOAuthCredentials,
+  OAuthPrompt,
+  OAuthProviderInterface,
+  OAuthServerListeningInfo,
+  SessionUsageSummary,
+} from "@cline/sdk"
 
 import {
+  deleteProviderCredential,
   listProviders,
   resolveProviderCredential,
+  saveOAuthCredential,
   saveProviderCredential,
 } from "./cloud-api.js"
 import type {
@@ -12,6 +22,8 @@ import type {
   AgentEvent,
   AgentRuntimeEvents,
   ApiConnection,
+  LoginOAuthProviderInput,
+  OAuthCredentials,
   ResolveApprovalInput,
   SaveProviderCredentialInput,
   SendSessionInput,
@@ -38,21 +50,30 @@ type PendingApproval = {
   resolve(result: ToolApprovalResult): void
 }
 
+type RuntimeOptions = {
+  openExternalUrl?(url: string): void
+}
+
 export class BlameAgentRuntime {
   private cline?: Promise<ClineCore>
   private unsubscribers = new Map<string, () => void>()
   private pendingApprovals = new Map<string, PendingApproval>()
   private alwaysAllowedTools = new Set<string>()
   private readonly events?: AgentRuntimeEvents
+  private readonly options: RuntimeOptions
 
-  constructor(events?: AgentRuntimeEvents) {
+  constructor(events?: AgentRuntimeEvents, options: RuntimeOptions = {}) {
     this.events = events
+    this.options = options
   }
 
   providers = {
     list: (connection: ApiConnection) => listProviders(connection),
     saveCredential: (connection: ApiConnection, input: SaveProviderCredentialInput) =>
       saveProviderCredential(connection, input),
+    deleteCredential: (connection: ApiConnection, id: number) =>
+      deleteProviderCredential(connection, { id }),
+    loginOAuth: (input: LoginOAuthProviderInput) => this.loginOAuth(input),
   }
 
   sessions = {
@@ -91,14 +112,17 @@ export class BlameAgentRuntime {
       providerId: input.providerId,
       label: input.credentialLabel,
     })
+    const resolvedCredential = await this.refreshOAuthCredential(input.apiConnection, credential)
     const cline = await this.core()
     const session = await cline.start({
       prompt: input.prompt,
       config: {
         providerId: input.providerId,
         modelId: input.modelId,
-        apiKey: credential.apiKey,
-        baseUrl: credential.baseUrl ?? undefined,
+        apiKey: resolvedCredential.apiKey,
+        baseUrl: resolvedCredential.baseUrl ?? undefined,
+        thinking: !!input.reasoningEffort,
+        reasoningEffort: input.reasoningEffort,
         systemPrompt: input.systemPrompt ?? "You are Blame, an agentic IDE coding assistant.",
         cwd: input.cwd,
         workspaceRoot: input.workspaceRoot,
@@ -176,6 +200,80 @@ export class BlameAgentRuntime {
     if (input.decision === "always") this.alwaysAllowedTools.add(pending.request.toolName)
     pending.resolve({ approved: input.decision !== "deny" })
     return true
+  }
+
+  private async loginOAuth(input: LoginOAuthProviderInput) {
+    const provider = await this.oauthProvider(input.providerId)
+    const credentials = await provider.login({
+      onAuth: (info: { url: string; instructions?: string }) => {
+        this.options.openExternalUrl?.(info.url)
+        this.events?.emit({
+          type: "notice",
+          payload: { providerId: input.providerId, message: info.instructions ?? "OAuth login opened." },
+        })
+      },
+      onPrompt: async (prompt: OAuthPrompt) => prompt.defaultValue ?? "",
+      onProgress: (message: string) => {
+        this.events?.emit({ type: "notice", payload: { providerId: input.providerId, message } })
+      },
+      onServerListening: (info: OAuthServerListeningInfo) => {
+        this.events?.emit({
+          type: "notice",
+          payload: { providerId: input.providerId, message: `Waiting for OAuth callback on ${info.callbackUrl}` },
+        })
+      },
+      onServerClose: () => {
+        this.events?.emit({
+          type: "notice",
+          payload: { providerId: input.providerId, message: "OAuth callback server closed." },
+        })
+      },
+    })
+
+    return saveOAuthCredential(input.apiConnection, {
+      providerId: input.providerId,
+      label: input.label,
+      apiKey: provider.getApiKey(credentials),
+      oauthCredentials: toBlameOAuthCredentials(credentials),
+      baseUrl: input.baseUrl ?? null,
+    })
+  }
+
+  private async refreshOAuthCredential(
+    connection: ApiConnection,
+    credential: Awaited<ReturnType<typeof resolveProviderCredential>>
+  ) {
+    if (credential.authMethod !== "oauth" || !credential.oauthCredentials) return credential
+    if (credential.oauthCredentials.expires > Date.now() + 60_000) return credential
+
+    const provider = await this.oauthProvider(credential.providerId)
+    const refreshed = await provider.refreshToken(credential.oauthCredentials)
+    const saved = await saveOAuthCredential(connection, {
+      providerId: credential.providerId,
+      label: credential.label,
+      apiKey: provider.getApiKey(refreshed),
+      oauthCredentials: toBlameOAuthCredentials(refreshed),
+      baseUrl: credential.baseUrl,
+    })
+
+    return {
+      ...credential,
+      apiKey: provider.getApiKey(refreshed),
+      oauthCredentials: toBlameOAuthCredentials(refreshed),
+      authMethod: saved.authMethod,
+    }
+  }
+
+  private async oauthProvider(providerId: string): Promise<OAuthProviderInterface> {
+    const sdk = await import("@cline/sdk")
+    if (providerId === "openai-codex") return sdk.openaiCodexOAuthProvider
+    if (providerId === "cline") {
+      return sdk.createClineOAuthProvider({
+        apiBaseUrl: "https://api.cline.bot",
+      })
+    }
+    if (providerId === "opencode" || providerId === "oca") return sdk.createOcaOAuthProvider()
+    throw new Error(`OAuth is not supported for provider ${providerId}`)
   }
 }
 
@@ -256,4 +354,15 @@ function asRecord(value: unknown) {
 
 function stringValue(value: unknown) {
   return typeof value === "string" ? value : undefined
+}
+
+function toBlameOAuthCredentials(credentials: ClineOAuthCredentials): OAuthCredentials {
+  return {
+    access: credentials.access,
+    refresh: credentials.refresh,
+    expires: credentials.expires,
+    accountId: credentials.accountId,
+    email: credentials.email,
+    metadata: credentials.metadata,
+  }
 }

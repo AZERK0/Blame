@@ -35,6 +35,11 @@ export type UserStory = {
   previewUrl?: string | null
   worktree?: string | null
   agentStatus?: UserStoryAgentStatus | null
+  clineSessionId?: string | null
+  agentProviderId?: string | null
+  agentModelId?: string | null
+  agentLastEvent?: string | null
+  agentLastError?: string | null
   mergedAt?: string | null
   mergeCommit?: string | null
   discardedReason?: string | null
@@ -64,6 +69,11 @@ export type UserStoryUpdate = Partial<
     | "previewUrl"
     | "worktree"
     | "agentStatus"
+    | "clineSessionId"
+    | "agentProviderId"
+    | "agentModelId"
+    | "agentLastEvent"
+    | "agentLastError"
     | "mergedAt"
     | "mergeCommit"
     | "discardedReason"

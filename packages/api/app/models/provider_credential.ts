@@ -1,6 +1,8 @@
 import { BaseModel, column } from '@adonisjs/lucid/orm'
 import { DateTime } from 'luxon'
 
+export type ProviderCredentialAuthMethod = 'api-key' | 'oauth'
+
 export default class ProviderCredential extends BaseModel {
   @column({ isPrimary: true })
   declare id: number
@@ -18,7 +20,19 @@ export default class ProviderCredential extends BaseModel {
   declare encryptedApiKey: string
 
   @column()
+  declare authMethod: ProviderCredentialAuthMethod
+
+  @column({ serializeAs: null })
+  declare encryptedOauthCredentials: string | null
+
+  @column()
+  declare accountId: string | null
+
+  @column()
   declare baseUrl: string | null
+
+  @column.dateTime()
+  declare expiresAt: DateTime | null
 
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime

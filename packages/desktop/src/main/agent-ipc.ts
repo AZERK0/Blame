@@ -1,9 +1,13 @@
 import { BlameAgentRuntime, type AgentEvent } from "@blame/agent-runtime"
-import { BrowserWindow, ipcMain } from "electron"
+import { BrowserWindow, ipcMain, shell } from "electron"
 
 const runtime = new BlameAgentRuntime({
   emit(event) {
     emitAgentEvent(event)
+  },
+}, {
+  openExternalUrl(url) {
+    void shell.openExternal(url)
   },
 })
 
@@ -12,6 +16,10 @@ export function registerAgentIpcHandlers() {
   ipcMain.handle("agent:providers:save-credential", (_event, connection, input) =>
     runtime.providers.saveCredential(connection, input)
   )
+  ipcMain.handle("agent:providers:delete-credential", (_event, connection, id) =>
+    runtime.providers.deleteCredential(connection, id)
+  )
+  ipcMain.handle("agent:providers:login-oauth", (_event, input) => runtime.providers.loginOAuth(input))
   ipcMain.handle("agent:sessions:start", (_event, input) => runtime.sessions.start(input))
   ipcMain.handle("agent:sessions:send", (_event, input) => runtime.sessions.send(input))
   ipcMain.handle("agent:sessions:abort", (_event, sessionId) => runtime.sessions.abort(sessionId))

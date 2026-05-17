@@ -46,6 +46,21 @@ export default class UserStory extends BaseModel {
   @column()
   declare agentStatus: UserStoryAgentStatus | null
 
+  @column()
+  declare clineSessionId: string | null
+
+  @column()
+  declare agentProviderId: string | null
+
+  @column()
+  declare agentModelId: string | null
+
+  @column()
+  declare agentLastEvent: string | null
+
+  @column()
+  declare agentLastError: string | null
+
   @column.dateTime()
   declare mergedAt: DateTime | null
 

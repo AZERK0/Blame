@@ -38,6 +38,7 @@ export interface ApiDefinition {
       catalog: typeof routes['providers.provider_credentials.catalog']
       index: typeof routes['providers.provider_credentials.index']
       store: typeof routes['providers.provider_credentials.store']
+      storeOAuth: typeof routes['providers.provider_credentials.store_o_auth']
       resolve: typeof routes['providers.provider_credentials.resolve']
       destroy: typeof routes['providers.provider_credentials.destroy']
     }

@@ -1,6 +1,9 @@
-import { ArrowLeftIcon, LoaderCircleIcon } from "lucide-react"
+import { ArrowLeftIcon, LoaderCircleIcon, Trash2Icon } from "lucide-react"
 import * as React from "react"
-import type { BlameProvider as Provider } from "@blame/agent-runtime"
+import type {
+  BlameProvider as Provider,
+  ProviderCredentialSummary,
+} from "@blame/agent-runtime"
 
 import {
   ProviderMark,
@@ -89,38 +92,46 @@ export function ConnectProviderDialog({
   selection: ModelSelection
 }) {
   const provider = selection.allProviders.find((item) => item.id === providerID)
+  const credential = selection.credentials.find((item) => item.providerId === providerID)
+
+  if (!provider) return null
 
   return (
     <Dialog open={!!providerID} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
-        {provider ? (
-          <ConnectProviderContent
-            provider={provider}
-            selection={selection}
-            onBack={onBack}
-            onDone={() => onOpenChange(false)}
-          />
-        ) : null}
+        <ConnectProviderContent
+          provider={provider}
+          credential={credential}
+          selection={selection}
+          onBack={onBack}
+          onDone={() => onOpenChange(false)}
+        />
       </DialogContent>
     </Dialog>
   )
 }
 
 function ConnectProviderContent({
+  credential,
   onBack,
   onDone,
   provider,
   selection,
 }: {
+  credential?: ProviderCredentialSummary
   onBack: () => void
   onDone: () => void
   provider: Provider
   selection: ModelSelection
 }) {
   const [apiKey, setApiKey] = React.useState("")
-  const [baseUrl, setBaseUrl] = React.useState("")
+  const [baseUrl, setBaseUrl] = React.useState(credential?.baseUrl ?? "")
   const [error, setError] = React.useState<string>()
+  const [deleting, setDeleting] = React.useState(false)
   const [saving, setSaving] = React.useState(false)
+  const [oauthLoading, setOauthLoading] = React.useState(false)
+  const oauth = provider.capabilities?.includes("oauth")
+  const showBaseUrl = provider.id === "openai-compatible" || oauth
 
   return (
     <>
@@ -132,9 +143,9 @@ function ConnectProviderContent({
           </Button>
           <ProviderMark provider={provider} />
           <div className="grid gap-1">
-            <DialogTitle>Connect {provider.name}</DialogTitle>
+            <DialogTitle>{credential ? "Edit" : "Connect"} {provider.name}</DialogTitle>
             <DialogDescription>
-              Add an API key for this provider.
+              {credential ? "Update or remove this provider connection." : "Add an API key for this provider."}
             </DialogDescription>
           </div>
         </div>
@@ -143,6 +154,9 @@ function ConnectProviderContent({
         className="grid gap-4"
         onSubmit={(event) => {
           event.preventDefault()
+          if (oauth) {
+            return
+          }
           if (!apiKey.trim()) {
             setError("API key is required")
             return
@@ -152,6 +166,7 @@ function ConnectProviderContent({
           void selection.agent?.providers
             .saveCredential(selection.apiConnection, {
               providerId: provider.id,
+              label: credential?.label,
               apiKey,
               baseUrl: baseUrl.trim() || null,
             })
@@ -164,18 +179,45 @@ function ConnectProviderContent({
         }}
       >
         {error ? <p className="text-sm text-destructive">{error}</p> : null}
-        <div className="grid gap-2">
-          <label className="text-sm font-medium" htmlFor="provider-api-key">
-            {provider.name} API key
-          </label>
-          <Input
-            id="provider-api-key"
-            value={apiKey}
-            placeholder="Enter API key"
-            onChange={(event) => setApiKey(event.currentTarget.value)}
-          />
-        </div>
-        {provider.id === "openai-compatible" ? (
+        {oauth ? (
+          <Button
+            type="button"
+            disabled={oauthLoading || !selection.agent}
+            onClick={() => {
+              setError(undefined)
+              setOauthLoading(true)
+              void selection.agent?.providers
+                .loginOAuth({
+                  apiConnection: selection.apiConnection,
+                  providerId: provider.id,
+                  label: credential?.label,
+                  baseUrl: baseUrl.trim() || null,
+                })
+                .then(() => selection.refreshProviders())
+                .then(onDone)
+                .catch((error) =>
+                  setError(error instanceof Error ? error.message : "Unable to connect OAuth provider")
+                )
+                .finally(() => setOauthLoading(false))
+            }}
+          >
+            {oauthLoading ? <LoaderCircleIcon className="animate-spin" /> : null}
+            Continue with OAuth
+          </Button>
+        ) : (
+          <div className="grid gap-2">
+            <label className="text-sm font-medium" htmlFor="provider-api-key">
+              {provider.name} API key
+            </label>
+            <Input
+              id="provider-api-key"
+              value={apiKey}
+              placeholder="Enter API key"
+              onChange={(event) => setApiKey(event.currentTarget.value)}
+            />
+          </div>
+        )}
+        {showBaseUrl ? (
           <div className="grid gap-2">
             <label className="text-sm font-medium" htmlFor="provider-base-url">
               Base URL
@@ -188,10 +230,34 @@ function ConnectProviderContent({
             />
           </div>
         ) : null}
-        <Button type="submit" disabled={saving || !selection.agent}>
-          {saving ? <LoaderCircleIcon className="animate-spin" /> : null}
-          Continue
-        </Button>
+        <div className="flex items-center justify-between gap-2">
+          {credential ? (
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={deleting || saving || !selection.agent}
+              onClick={() => {
+                setDeleting(true)
+                setError(undefined)
+                void selection.agent?.providers
+                  .deleteCredential(selection.apiConnection, credential.id)
+                  .then(() => selection.refreshProviders())
+                  .then(onDone)
+                  .catch((error) =>
+                    setError(error instanceof Error ? error.message : "Unable to delete API key")
+                  )
+                  .finally(() => setDeleting(false))
+              }}
+            >
+              {deleting ? <LoaderCircleIcon className="animate-spin" /> : <Trash2Icon />}
+              Delete
+            </Button>
+          ) : <span />}
+          <Button type="submit" disabled={oauth || saving || !selection.agent || !apiKey.trim()}>
+            {saving ? <LoaderCircleIcon className="animate-spin" /> : null}
+            {credential ? "Save" : "Continue"}
+          </Button>
+        </div>
       </form>
     </>
   )

@@ -2,6 +2,7 @@ import * as React from "react"
 import type {
   AgentEvent,
   ApiConnection as AgentApiConnection,
+  LoginOAuthProviderInput,
   ProviderListResponse,
   ResolveApprovalInput,
   SaveProviderCredentialInput,
@@ -21,6 +22,7 @@ export type OpenDirectoryPickerOptions = {
 export type Platform = {
   agent?: AgentClient
   api?: ApiConnection
+  terminal?: TerminalClient
   workspace?: WorkspaceClient
   openDirectoryPickerDialog?(
     options?: OpenDirectoryPickerOptions
@@ -32,6 +34,8 @@ export type AgentClient = {
   providers: {
     list(connection: ApiConnection): Promise<ProviderListResponse>
     saveCredential(connection: ApiConnection, input: SaveProviderCredentialInput): Promise<unknown>
+    deleteCredential(connection: ApiConnection, id: number): Promise<void>
+    loginOAuth(input: LoginOAuthProviderInput): Promise<unknown>
   }
   sessions: {
     start(input: StartSessionInput): Promise<{ sessionId: string }>
@@ -58,6 +62,19 @@ export type WorkspaceClient = {
   readFile(input: { root: string; path: string }): Promise<string>
   searchFiles(input: { root: string; query: string; limit?: number }): Promise<WorkspaceEntry[]>
   gitDiff(input: { root: string }): Promise<string>
+}
+
+export type TerminalEvent = {
+  id: string
+  type: "stdout" | "stderr" | "exit"
+  data: string
+}
+
+export type TerminalClient = {
+  start(input: { cwd: string }): Promise<{ id: string; cwd: string }>
+  write(input: { id: string; data: string }): Promise<boolean>
+  stop(id: string): Promise<boolean>
+  onEvent(id: string, callback: (event: TerminalEvent) => void): () => void
 }
 
 export const PlatformContext = React.createContext<Platform>({})

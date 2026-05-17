@@ -60,6 +60,12 @@ const routes = {
     tokens: [{"old":"/api/v1/providers/credentials","type":0,"val":"api","end":""},{"old":"/api/v1/providers/credentials","type":0,"val":"v1","end":""},{"old":"/api/v1/providers/credentials","type":0,"val":"providers","end":""},{"old":"/api/v1/providers/credentials","type":0,"val":"credentials","end":""}],
     types: placeholder as Registry['providers.provider_credentials.store']['types'],
   },
+  'providers.provider_credentials.store_o_auth': {
+    methods: ["POST"],
+    pattern: '/api/v1/providers/credentials/oauth',
+    tokens: [{"old":"/api/v1/providers/credentials/oauth","type":0,"val":"api","end":""},{"old":"/api/v1/providers/credentials/oauth","type":0,"val":"v1","end":""},{"old":"/api/v1/providers/credentials/oauth","type":0,"val":"providers","end":""},{"old":"/api/v1/providers/credentials/oauth","type":0,"val":"credentials","end":""},{"old":"/api/v1/providers/credentials/oauth","type":0,"val":"oauth","end":""}],
+    types: placeholder as Registry['providers.provider_credentials.store_o_auth']['types'],
+  },
   'providers.provider_credentials.resolve': {
     methods: ["POST"],
     pattern: '/api/v1/providers/credentials/resolve',

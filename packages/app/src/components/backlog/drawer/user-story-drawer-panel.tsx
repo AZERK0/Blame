@@ -28,6 +28,7 @@ import {
   type CodeSelectionAttachment,
   type PendingCodeSelectionAttachment,
 } from "@/components/backlog/shared/comment-attachment-events"
+import { useModelSelection } from "@/components/model/model-selector"
 import { Button } from "@/components/ui/button"
 import {
   DrawerClose,
@@ -40,6 +41,9 @@ import {
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useCloudAuth } from "@/context/cloud-auth"
+import { usePlatform } from "@/context/platform"
+import { useProjects } from "@/context/projects"
 
 export function UserStoryDrawerPanel({
   focusComment,
@@ -67,6 +71,10 @@ export function UserStoryDrawerPanel({
   status: BacklogColumnId
   userStory?: UserStory
 }) {
+  const auth = useCloudAuth()
+  const platform = usePlatform()
+  const projects = useProjects()
+  const modelSelection = useModelSelection()
   const hasDevelopment = hasDevelopmentTab(status)
   const hasPreview = status === "in-progress" || status === "in-review"
   const [tab, setTab] = React.useState<UserStoryDrawerTab>(
@@ -225,14 +233,42 @@ export function UserStoryDrawerPanel({
     setSaving(true)
     try {
       if (mode === "create") {
-        await onCreateUserStory(createInput(action, title, summary))
+        const created = await onCreateUserStory(createInput(action, title, summary))
+        if (action === "Send to Dev Agent") await startStorySession(created)
       }
-      if (mode !== "create" && userStory)
-        await onUpdateUserStory(userStory, actionInput(action, title, summary))
+      if (mode !== "create" && userStory) {
+        const updated = await onUpdateUserStory(userStory, actionInput(action, title, summary))
+        if (action === "Send to Dev Agent") await startStorySession(updated)
+      }
       if (action !== "Save Changes" && action !== "Save as Draft") onCancel()
     } finally {
       setSaving(false)
     }
+  }
+
+  async function startStorySession(story: UserStory) {
+    if (!platform.agent || auth.status !== "authenticated") return
+    if (!modelSelection.currentModel || !projects.activeProject) return
+
+    const cwd = story.worktree ?? projects.activeProject.path
+    const session = await platform.agent.sessions.start({
+      apiConnection: auth.apiConnection,
+      providerId: modelSelection.currentModel.provider.id,
+      modelId: modelSelection.currentModel.id,
+      reasoningEffort: modelSelection.currentVariant,
+      prompt: storyPrompt(story),
+      cwd,
+      workspaceRoot: cwd,
+    })
+
+    await onUpdateUserStory(story, {
+      agentModelId: modelSelection.currentModel.id,
+      agentProviderId: modelSelection.currentModel.provider.id,
+      agentStatus: "Running",
+      clineSessionId: session.sessionId,
+      status: "in-progress",
+      worktree: cwd,
+    })
   }
 }
 
@@ -330,6 +366,14 @@ function actionInput(
   if (action === "Rework as Draft")
     return { discardedReason: null, status: "backlog" }
   return base
+}
+
+function storyPrompt(story: UserStory) {
+  return [
+    `Implement this user story: ${story.title}`,
+    "",
+    story.summary,
+  ].join("\n")
 }
 
 function createdAtLabel(userStory?: UserStory) {

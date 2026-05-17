@@ -18,6 +18,8 @@ export type BlameModel = {
   variants?: Record<string, unknown>
 }
 
+export type ReasoningEffort = "low" | "medium" | "high" | "xhigh"
+
 export type BlameProvider = {
   id: string
   name: string
@@ -33,7 +35,10 @@ export type ProviderCredentialSummary = {
   userId: number
   providerId: string
   label: string
+  authMethod?: "api-key" | "oauth"
   baseUrl: string | null
+  accountId?: string | null
+  expiresAt?: string | null
   createdAt: string
   updatedAt: string | null
 }
@@ -52,10 +57,39 @@ export type SaveProviderCredentialInput = {
   baseUrl?: string | null
 }
 
+export type DeleteProviderCredentialInput = {
+  id: number
+}
+
+export type OAuthCredentials = {
+  access: string
+  refresh: string
+  expires: number
+  accountId?: string
+  email?: string
+  metadata?: Record<string, unknown>
+}
+
+export type SaveOAuthCredentialInput = {
+  providerId: string
+  label?: string
+  apiKey: string
+  oauthCredentials: OAuthCredentials
+  baseUrl?: string | null
+}
+
+export type LoginOAuthProviderInput = {
+  apiConnection: ApiConnection
+  providerId: string
+  label?: string
+  baseUrl?: string | null
+}
+
 export type StartSessionInput = {
   apiConnection: ApiConnection
   providerId: string
   modelId: string
+  reasoningEffort?: ReasoningEffort
   prompt: string
   cwd: string
   workspaceRoot: string

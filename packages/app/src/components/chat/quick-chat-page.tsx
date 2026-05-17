@@ -71,6 +71,7 @@ export function QuickChatPage() {
       apiConnection: auth.apiConnection,
       providerId: selection.currentModel.provider.id,
       modelId: selection.currentModel.id,
+      reasoningEffort: selection.currentVariant,
       prompt: inputPrompt,
       cwd: projects.activeProject.path,
       workspaceRoot: projects.activeProject.path,

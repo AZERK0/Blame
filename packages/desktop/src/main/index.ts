@@ -5,6 +5,7 @@ import contextMenu from "electron-context-menu"
 import windowState from "electron-window-state"
 import { app, BrowserWindow, dialog, ipcMain, shell } from "electron"
 import { registerAgentIpcHandlers } from "./agent-ipc"
+import { registerTerminalIpcHandlers } from "./terminal-ipc"
 import { registerWorkspaceIpcHandlers } from "./workspace-ipc"
 
 contextMenu({ showLookUpSelection: false, showSaveImageAs: true, showSearchWithGoogle: false })
@@ -24,6 +25,7 @@ let mainWindow: BrowserWindow | undefined
 void app.whenReady().then(() => {
   registerIpcHandlers()
   registerAgentIpcHandlers()
+  registerTerminalIpcHandlers()
   registerWorkspaceIpcHandlers()
   mainWindow = createMainWindow()
 })

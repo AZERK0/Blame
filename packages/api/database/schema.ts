@@ -90,14 +90,22 @@ export class ProjectSchema extends BaseModel {
 }
 
 export class ProviderCredentialSchema extends BaseModel {
-  static $columns = ['baseUrl', 'createdAt', 'encryptedApiKey', 'id', 'label', 'providerId', 'updatedAt', 'userId'] as const
+  static $columns = ['accountId', 'authMethod', 'baseUrl', 'createdAt', 'encryptedApiKey', 'encryptedOauthCredentials', 'expiresAt', 'id', 'label', 'providerId', 'updatedAt', 'userId'] as const
   $columns = ProviderCredentialSchema.$columns
+  @column()
+  declare accountId: string | null
+  @column()
+  declare authMethod: string
   @column()
   declare baseUrl: string | null
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
   @column()
   declare encryptedApiKey: string
+  @column()
+  declare encryptedOauthCredentials: string | null
+  @column.dateTime()
+  declare expiresAt: DateTime | null
   @column({ isPrimary: true })
   declare id: number
   @column()
@@ -111,12 +119,22 @@ export class ProviderCredentialSchema extends BaseModel {
 }
 
 export class UserStorySchema extends BaseModel {
-  static $columns = ['agentStatus', 'branch', 'createdAt', 'discardedReason', 'id', 'mergeCommit', 'mergedAt', 'owner', 'previewUrl', 'priority', 'projectId', 'status', 'summary', 'title', 'updatedAt', 'worktree'] as const
+  static $columns = ['agentLastError', 'agentLastEvent', 'agentModelId', 'agentProviderId', 'agentStatus', 'branch', 'clineSessionId', 'createdAt', 'discardedReason', 'id', 'mergeCommit', 'mergedAt', 'owner', 'previewUrl', 'priority', 'projectId', 'status', 'summary', 'title', 'updatedAt', 'worktree'] as const
   $columns = UserStorySchema.$columns
+  @column()
+  declare agentLastError: string | null
+  @column()
+  declare agentLastEvent: string | null
+  @column()
+  declare agentModelId: string | null
+  @column()
+  declare agentProviderId: string | null
   @column()
   declare agentStatus: string | null
   @column()
   declare branch: string | null
+  @column()
+  declare clineSessionId: string | null
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
   @column()

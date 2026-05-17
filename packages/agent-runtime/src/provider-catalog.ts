@@ -28,6 +28,15 @@ async function toBlameProvider(provider: ProviderInfo): Promise<BlameProvider> {
 }
 
 function toBlameModel(modelId: string, model: ModelInfo): BlameModel {
+  const variants = model.capabilities?.includes("reasoning")
+    ? {
+        low: { reasoningEffort: "low" },
+        medium: { reasoningEffort: "medium" },
+        high: { reasoningEffort: "high" },
+        xhigh: { reasoningEffort: "xhigh" },
+      }
+    : undefined
+
   return {
     id: model.id ?? modelId,
     name: model.name ?? modelId,
@@ -40,12 +49,6 @@ function toBlameModel(modelId: string, model: ModelInfo): BlameModel {
       input: model.pricing?.input ?? 0,
       output: model.pricing?.output ?? 0,
     },
-    variants: {
-      releaseDate: model.releaseDate,
-      deprecationDate: model.deprecationDate,
-      deprecationNotice: model.deprecationNotice,
-      replacedBy: model.replacedBy,
-      family: model.family,
-    },
+    variants,
   }
 }

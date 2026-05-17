@@ -115,6 +115,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/provider_credentials_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
+  'providers.provider_credentials.store_o_auth': {
+    methods: ["POST"]
+    pattern: '/api/v1/providers/credentials/oauth'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/provider_credentials_controller').default['storeOAuth']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/provider_credentials_controller').default['storeOAuth']>>>
+    }
+  }
   'providers.provider_credentials.resolve': {
     methods: ["POST"]
     pattern: '/api/v1/providers/credentials/resolve'

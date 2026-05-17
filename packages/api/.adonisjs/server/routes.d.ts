@@ -13,6 +13,7 @@ export type ScannedRoutes = {
     'providers.provider_credentials.catalog': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.index': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.store': { paramsTuple?: []; params?: {} }
+    'providers.provider_credentials.store_o_auth': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.resolve': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.user_stories.user_stories.index': { paramsTuple?: []; params?: {} }
@@ -43,6 +44,7 @@ export type ScannedRoutes = {
     'profile.access_tokens.destroy': { paramsTuple?: []; params?: {} }
     'projects.projects.store': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.store': { paramsTuple?: []; params?: {} }
+    'providers.provider_credentials.store_o_auth': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.resolve': { paramsTuple?: []; params?: {} }
     'projects.user_stories.user_stories.store': { paramsTuple?: []; params?: {} }
   }

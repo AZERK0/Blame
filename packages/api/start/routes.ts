@@ -50,6 +50,7 @@ router
         router.get('catalog', [ProviderCredentialsController, 'catalog'])
         router.get('credentials', [ProviderCredentialsController, 'index'])
         router.post('credentials', [ProviderCredentialsController, 'store'])
+        router.post('credentials/oauth', [ProviderCredentialsController, 'storeOAuth'])
         router.post('credentials/resolve', [ProviderCredentialsController, 'resolve'])
         router.delete('credentials/:id', [ProviderCredentialsController, 'destroy'])
       })

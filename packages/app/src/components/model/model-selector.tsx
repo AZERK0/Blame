@@ -8,6 +8,7 @@ import type {
   BlameModel as Model,
   BlameProvider as Provider,
   ProviderListResponse,
+  ReasoningEffort,
 } from "@blame/agent-runtime"
 
 import {
@@ -50,7 +51,9 @@ const storageKey = "blame.app.drawer-model-selection.v1"
 const recentLimit = 5
 const defaultVariant = "default"
 export const popularProviders = [
+  "openai-codex",
   "openai",
+  "openai-native",
   "anthropic",
   "google",
   "github-copilot",
@@ -236,7 +239,7 @@ function ModelVariantSelector({
             <SelectValue />
           </SelectTrigger>
         </TooltipTrigger>
-        <TooltipContent side="left">Choose model variant</TooltipContent>
+        <TooltipContent side="left">Choose thinking mode</TooltipContent>
       </Tooltip>
       <SelectContent>
         {selection.variantOptions.map((variant) => (
@@ -346,7 +349,8 @@ export function useModelSelection() {
     loading: providerState.loading,
     allProviderGroups: groupModels(models),
     allProviders: providerState.providers?.all ?? [],
-    connectedProviderIDs: new Set(providerState.providers?.connected ?? []),
+    credentials: providerState.providers?.credentials ?? [],
+    connectedProviderIDs: getConnectedProviderIDs(providerState.providers),
     currentModel,
     currentVariant,
     directory: providerState.directory,
@@ -411,7 +415,8 @@ function useProviderState() {
       .then((response) => {
         setProviders(normalizeProviderList(response))
       })
-      .catch(() => {
+      .catch((error) => {
+        console.error("[renderer] providers:list failed", error)
         setFailed(true)
       })
       .finally(() => {
@@ -451,7 +456,7 @@ function normalizeProviderList(input: ProviderListResponse | undefined) {
 }
 
 function getModels(providers: ProviderListResponse | undefined) {
-  const connected = new Set(providers?.connected ?? [])
+  const connected = getConnectedProviderIDs(providers)
   return (
     providers?.all
       .filter((provider) => connected.has(provider.id))
@@ -464,6 +469,14 @@ function getModels(providers: ProviderListResponse | undefined) {
         }))
       ) ?? []
   )
+}
+
+function getConnectedProviderIDs(providers: ProviderListResponse | undefined) {
+  const connected = new Set(providers?.connected ?? [])
+  for (const credential of providers?.credentials ?? []) {
+    connected.add(credential.providerId)
+  }
+  return connected
 }
 
 function groupModels(models: SelectableModel[]) {
@@ -561,6 +574,7 @@ function getCurrentVariant(
   variant: string | null | undefined
 ) {
   if (!variant) return undefined
+  if (!isReasoningEffort(variant)) return undefined
   if (!model?.variants || !(variant in model.variants)) return undefined
   return variant
 }
@@ -571,7 +585,12 @@ function getVariantOptions(model: SelectableModel | undefined) {
 
 function getVariantLabel(variant: string) {
   if (variant === defaultVariant) return "Default"
+  if (variant === "xhigh") return "X High"
   return variant
+}
+
+function isReasoningEffort(value: string): value is ReasoningEffort {
+  return value === "low" || value === "medium" || value === "high" || value === "xhigh"
 }
 
 function getEmptyMessage(input: {

@@ -1,6 +1,7 @@
 import type {
   AgentEvent,
   ApiConnection,
+  LoginOAuthProviderInput,
   ProviderListResponse,
   ResolveApprovalInput,
   SaveProviderCredentialInput,
@@ -19,6 +20,12 @@ export type WorkspaceEntry = {
   type: "directory" | "file"
 }
 
+export type TerminalEvent = {
+  id: string
+  type: "stdout" | "stderr" | "exit"
+  data: string
+}
+
 export type BlameDesktopApi = {
   openDirectoryPicker(options?: OpenDirectoryPickerOptions): Promise<string | string[] | null>
   openExternalLink(url: string): void
@@ -28,10 +35,18 @@ export type BlameDesktopApi = {
     searchFiles(input: { root: string; query: string; limit?: number }): Promise<WorkspaceEntry[]>
     gitDiff(input: { root: string }): Promise<string>
   }
+  terminal: {
+    start(input: { cwd: string }): Promise<{ id: string; cwd: string }>
+    write(input: { id: string; data: string }): Promise<boolean>
+    stop(id: string): Promise<boolean>
+    onEvent(id: string, callback: (event: TerminalEvent) => void): () => void
+  }
   agent: {
     providers: {
       list(connection: ApiConnection): Promise<ProviderListResponse>
       saveCredential(connection: ApiConnection, input: SaveProviderCredentialInput): Promise<unknown>
+      deleteCredential(connection: ApiConnection, id: number): Promise<void>
+      loginOAuth(input: LoginOAuthProviderInput): Promise<unknown>
     }
     sessions: {
       start(input: StartSessionInput): Promise<{ sessionId: string }>
