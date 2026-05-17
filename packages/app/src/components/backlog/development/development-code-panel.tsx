@@ -1,5 +1,5 @@
 import * as React from "react"
-import type { VcsFileDiff } from "@opencode-ai/sdk/v2"
+import type { VcsFileDiff } from "@/components/backlog/development/development-workspace"
 import { FileDiffIcon, FolderIcon, ServerOffIcon } from "lucide-react"
 
 import type { UserStory } from "@/components/backlog/data/backlog-data"
@@ -93,7 +93,7 @@ export function DevelopmentCodePanel({
   if (!workspace.hasServer) {
     return (
       <DevelopmentEmptyState
-        description="Connect to an OpenCode server to inspect worktree files."
+        description="File inspection will be restored through the Cline runtime."
         icon={ServerOffIcon}
         title="Backend unavailable"
       />

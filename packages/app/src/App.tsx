@@ -1,6 +1,7 @@
 import * as React from "react"
 
 import { BacklogPage } from "@/components/backlog/page/backlog-page"
+import { QuickChatPage } from "@/components/chat/quick-chat-page"
 import { ConnectScreen } from "@/components/onboarding/connect-screen"
 import { LoadingScreen } from "@/components/onboarding/loading-screen"
 import { WelcomeScreen } from "@/components/onboarding/welcome-screen"
@@ -11,7 +12,7 @@ import { AppLayout } from "@/layouts/app-layout"
 
 const routes = [
   { path: "/backlog", title: "Backlog", element: <BacklogPage /> },
-  { path: "/chats", title: "Chats", element: <RoutePage title="Chats" /> },
+  { path: "/chats", title: "Chats", element: <QuickChatPage /> },
   { path: "/git", title: "Git", element: <RoutePage title="Git" /> },
   {
     path: "/practices",

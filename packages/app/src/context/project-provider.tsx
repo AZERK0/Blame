@@ -3,12 +3,10 @@ import * as React from "react"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { usePlatform } from "@/context/platform"
 import { ProjectContext } from "@/context/projects"
-import { useServer } from "@/context/server"
 import { createCloudApi } from "@/lib/cloud-api"
-import { createSdkForServer } from "@/lib/opencode-client"
 import { createProject, type Project } from "@/lib/projects"
 
-const storageKey = "opencode.app.projects.v1"
+const storageKey = "blame.app.projects.v1"
 const recentLimit = 10
 
 type ProjectState = {
@@ -19,8 +17,7 @@ type ProjectState = {
 export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const auth = useCloudAuth()
   const platform = usePlatform()
-  const server = useServer()
-  const value = useProjectState(auth, platform, server.server)
+  const value = useProjectState(auth, platform)
 
   return (
     <ProjectContext.Provider value={value}>{children}</ProjectContext.Provider>
@@ -29,8 +26,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
 function useProjectState(
   auth: ReturnType<typeof useCloudAuth>,
-  platform: ReturnType<typeof usePlatform>,
-  server: ReturnType<typeof useServer>["server"]
+  platform: ReturnType<typeof usePlatform>
 ) {
   const [state, setState] = React.useState(readProjectState)
   const [opening, setOpening] = React.useState(false)
@@ -46,13 +42,13 @@ function useProjectState(
     async (path: string) => {
       setOpening(true)
       try {
-        const project = await resolveProject(path, auth, server)
+        const project = await resolveProject(path, auth)
         setState((current) => openProjectState(current, project))
       } finally {
         setOpening(false)
       }
     },
-    [auth, server]
+    [auth]
   )
 
   const chooseProject = React.useCallback(async () => {
@@ -79,32 +75,15 @@ function useProjectState(
 
 async function resolveProject(
   path: string,
-  auth: ReturnType<typeof useCloudAuth>,
-  server: ReturnType<typeof useServer>["server"]
+  auth: ReturnType<typeof useCloudAuth>
 ) {
-  const backend = await resolveBackendProject(path, server)
-  const localProject = createProject(path, backend)
+  const localProject = createProject(path)
   const cloudProject = await createCloudApi(auth.apiConnection).ensureProject({
     name: localProject.name,
-    repositoryFingerprint: backend?.id === "global" ? null : backend?.id ?? null,
+    repositoryFingerprint: null,
   })
 
-  return createProject(path, backend, cloudProject)
-}
-
-async function resolveBackendProject(
-  path: string,
-  server: ReturnType<typeof useServer>["server"]
-) {
-  if (!server) return undefined
-  try {
-    const result = await createSdkForServer(server).project.current({
-      directory: path,
-    })
-    return result.data
-  } catch {
-    return undefined
-  }
+  return createProject(path, undefined, cloudProject)
 }
 
 function openProjectState(

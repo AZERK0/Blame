@@ -8,7 +8,7 @@ type FileIconNode = {
 }
 
 const sprite = new URL(
-  "../../../../../ui/src/components/file-icons/sprite.svg",
+  "../../file-icons/sprite.svg",
   import.meta.url
 ).href
 

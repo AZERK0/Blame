@@ -42,6 +42,36 @@ const routes = {
     tokens: [{"old":"/api/v1/projects","type":0,"val":"api","end":""},{"old":"/api/v1/projects","type":0,"val":"v1","end":""},{"old":"/api/v1/projects","type":0,"val":"projects","end":""}],
     types: placeholder as Registry['projects.projects.store']['types'],
   },
+  'providers.provider_credentials.catalog': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/providers/catalog',
+    tokens: [{"old":"/api/v1/providers/catalog","type":0,"val":"api","end":""},{"old":"/api/v1/providers/catalog","type":0,"val":"v1","end":""},{"old":"/api/v1/providers/catalog","type":0,"val":"providers","end":""},{"old":"/api/v1/providers/catalog","type":0,"val":"catalog","end":""}],
+    types: placeholder as Registry['providers.provider_credentials.catalog']['types'],
+  },
+  'providers.provider_credentials.index': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/providers/credentials',
+    tokens: [{"old":"/api/v1/providers/credentials","type":0,"val":"api","end":""},{"old":"/api/v1/providers/credentials","type":0,"val":"v1","end":""},{"old":"/api/v1/providers/credentials","type":0,"val":"providers","end":""},{"old":"/api/v1/providers/credentials","type":0,"val":"credentials","end":""}],
+    types: placeholder as Registry['providers.provider_credentials.index']['types'],
+  },
+  'providers.provider_credentials.store': {
+    methods: ["POST"],
+    pattern: '/api/v1/providers/credentials',
+    tokens: [{"old":"/api/v1/providers/credentials","type":0,"val":"api","end":""},{"old":"/api/v1/providers/credentials","type":0,"val":"v1","end":""},{"old":"/api/v1/providers/credentials","type":0,"val":"providers","end":""},{"old":"/api/v1/providers/credentials","type":0,"val":"credentials","end":""}],
+    types: placeholder as Registry['providers.provider_credentials.store']['types'],
+  },
+  'providers.provider_credentials.resolve': {
+    methods: ["POST"],
+    pattern: '/api/v1/providers/credentials/resolve',
+    tokens: [{"old":"/api/v1/providers/credentials/resolve","type":0,"val":"api","end":""},{"old":"/api/v1/providers/credentials/resolve","type":0,"val":"v1","end":""},{"old":"/api/v1/providers/credentials/resolve","type":0,"val":"providers","end":""},{"old":"/api/v1/providers/credentials/resolve","type":0,"val":"credentials","end":""},{"old":"/api/v1/providers/credentials/resolve","type":0,"val":"resolve","end":""}],
+    types: placeholder as Registry['providers.provider_credentials.resolve']['types'],
+  },
+  'providers.provider_credentials.destroy': {
+    methods: ["DELETE"],
+    pattern: '/api/v1/providers/credentials/:id',
+    tokens: [{"old":"/api/v1/providers/credentials/:id","type":0,"val":"api","end":""},{"old":"/api/v1/providers/credentials/:id","type":0,"val":"v1","end":""},{"old":"/api/v1/providers/credentials/:id","type":0,"val":"providers","end":""},{"old":"/api/v1/providers/credentials/:id","type":0,"val":"credentials","end":""},{"old":"/api/v1/providers/credentials/:id","type":1,"val":"id","end":""}],
+    types: placeholder as Registry['providers.provider_credentials.destroy']['types'],
+  },
   'projects.user_stories.user_stories.index': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/projects/user-stories',

@@ -5,7 +5,7 @@ export function LoadingScreen() {
     <main className="flex min-h-screen items-center justify-center bg-background text-foreground">
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <LoaderCircleIcon className="size-4 animate-spin" />
-        <span>Loading OpenCode</span>
+        <span>Loading Blame</span>
       </div>
     </main>
   )

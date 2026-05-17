@@ -1,5 +1,13 @@
-import type { Project as BackendProject } from "@opencode-ai/sdk/v2/client"
 import type { CloudProject } from "@/context/cloud-auth"
+
+type BackendProject = {
+  id: string
+  name?: string
+  worktree?: string
+  icon?: {
+    color?: string
+  }
+}
 
 export type Project = {
   id: string

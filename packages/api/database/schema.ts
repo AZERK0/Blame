@@ -32,6 +32,46 @@ export class AuthAccessTokenSchema extends BaseModel {
   declare updatedAt: DateTime | null
 }
 
+export class ProjectCodePracticeSchema extends BaseModel {
+  static $columns = ['comment', 'createdAt', 'detected', 'id', 'practice', 'projectId', 'updatedAt'] as const
+  $columns = ProjectCodePracticeSchema.$columns
+  @column()
+  declare comment: string
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare detected: boolean
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare practice: string
+  @column()
+  declare projectId: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+}
+
+export class ProjectInitializationSchema extends BaseModel {
+  static $columns = ['createdAt', 'error', 'opencodeSessionId', 'projectId', 'startupScript', 'status', 'step', 'updatedAt'] as const
+  $columns = ProjectInitializationSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare error: string | null
+  @column()
+  declare opencodeSessionId: string | null
+  @column({ isPrimary: true })
+  declare projectId: string
+  @column()
+  declare startupScript: string | null
+  @column()
+  declare status: string
+  @column()
+  declare step: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+}
+
 export class ProjectSchema extends BaseModel {
   static $columns = ['createdAt', 'id', 'name', 'repositoryFingerprint', 'updatedAt', 'userId'] as const
   $columns = ProjectSchema.$columns
@@ -43,6 +83,27 @@ export class ProjectSchema extends BaseModel {
   declare name: string
   @column()
   declare repositoryFingerprint: string | null
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+  @column()
+  declare userId: number
+}
+
+export class ProviderCredentialSchema extends BaseModel {
+  static $columns = ['baseUrl', 'createdAt', 'encryptedApiKey', 'id', 'label', 'providerId', 'updatedAt', 'userId'] as const
+  $columns = ProviderCredentialSchema.$columns
+  @column()
+  declare baseUrl: string | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare encryptedApiKey: string
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare label: string
+  @column()
+  declare providerId: string
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
   @column()

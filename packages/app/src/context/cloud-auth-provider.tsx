@@ -9,7 +9,7 @@ import {
 import { usePlatform } from "@/context/platform"
 import { createCloudApi } from "@/lib/cloud-api"
 
-const storageKey = "opencode.app.cloud-session.v1"
+const storageKey = "blame.app.cloud-session.v1"
 const defaultApiUrl = "http://localhost:3333/api/v1"
 
 type CloudAuthState =

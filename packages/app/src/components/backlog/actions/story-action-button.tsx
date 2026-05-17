@@ -9,7 +9,8 @@ import {
   ListRestartIcon,
   MessageSquareReplyIcon,
   RotateCcwIcon,
-  SendIcon, TerminalIcon,
+  SendIcon,
+  TerminalIcon,
   XIcon,
 } from "lucide-react"
 
@@ -30,7 +31,7 @@ type ActionConfig = {
   compact?: boolean
 }
 
-const actionConfig = {
+const actionConfig: Record<BacklogAction, ActionConfig> = {
   "Send to Dev Agent": {
     icon: SendIcon,
     variant: "default",
@@ -86,7 +87,7 @@ const actionConfig = {
     tone: "primary",
     compact: true,
   },
-} satisfies Record<BacklogAction, ActionConfig>
+}
 
 export function StoryAction({
   action,

@@ -79,6 +79,66 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/projects_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
+  'providers.provider_credentials.catalog': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/providers/catalog'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/provider_credentials_controller').default['catalog']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/provider_credentials_controller').default['catalog']>>>
+    }
+  }
+  'providers.provider_credentials.index': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/providers/credentials'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/provider_credentials_controller').default['index']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/provider_credentials_controller').default['index']>>>
+    }
+  }
+  'providers.provider_credentials.store': {
+    methods: ["POST"]
+    pattern: '/api/v1/providers/credentials'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/provider_credential').saveProviderCredentialValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/provider_credential').saveProviderCredentialValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/provider_credentials_controller').default['store']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/provider_credentials_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'providers.provider_credentials.resolve': {
+    methods: ["POST"]
+    pattern: '/api/v1/providers/credentials/resolve'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/provider_credential').resolveProviderCredentialValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/provider_credential').resolveProviderCredentialValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/provider_credentials_controller').default['resolve']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/provider_credentials_controller').default['resolve']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'providers.provider_credentials.destroy': {
+    methods: ["DELETE"]
+    pattern: '/api/v1/providers/credentials/:id'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/provider_credentials_controller').default['destroy']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/provider_credentials_controller').default['destroy']>>>
+    }
+  }
   'projects.user_stories.user_stories.index': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/projects/user-stories'

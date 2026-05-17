@@ -171,5 +171,5 @@ function fileMentionDirectory(
 ) {
   if (status === "backlog" || status === "ready") return projectPath
   if (status === "in-progress" || status === "in-review")
-    return userStory?.worktree
+    return userStory?.worktree ?? undefined
 }

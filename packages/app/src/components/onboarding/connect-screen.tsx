@@ -17,7 +17,7 @@ export function ConnectScreen() {
     <main className="flex min-h-screen items-center justify-center bg-background px-6 text-foreground">
       <section className="grid w-full max-w-sm gap-6">
         <div className="grid gap-2 text-center">
-          <h1 className="font-heading text-3xl font-semibold">OpenCode</h1>
+          <h1 className="font-heading text-3xl font-semibold">Blame</h1>
           <p className="text-sm text-muted-foreground">
             Connect your cloud account to continue.
           </p>

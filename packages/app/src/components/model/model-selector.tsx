@@ -5,10 +5,10 @@ import {
 } from "lucide-react"
 import * as React from "react"
 import type {
-  Model,
-  Provider,
+  BlameModel as Model,
+  BlameProvider as Provider,
   ProviderListResponse,
-} from "@opencode-ai/sdk/v2/client"
+} from "@blame/agent-runtime"
 
 import {
   ConnectProviderDialog,
@@ -41,17 +41,12 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { useCloudAuth } from "@/context/cloud-auth"
 import { useProjects } from "@/context/projects"
-import { useServer } from "@/context/server"
-import { createSdkForServer } from "@/lib/opencode-client"
-import sprite from "../../../../ui/src/components/provider-icons/sprite.svg"
-import {
-  iconNames,
-  type IconName,
-} from "../../../../ui/src/components/provider-icons/types"
+import { usePlatform } from "@/context/platform"
 import { ButtonGroup } from "@/components/ui/button-group.tsx"
 
-const storageKey = "opencode.app.drawer-model-selection.v1"
+const storageKey = "blame.app.drawer-model-selection.v1"
 const recentLimit = 5
 const defaultVariant = "default"
 export const popularProviders = [
@@ -296,7 +291,7 @@ function ModelSummary({ model }: { model: SelectableModel | undefined }) {
 export function ModelTags({ model }: { model: SelectableModel }) {
   return (
     <span className="flex shrink-0 items-center gap-1">
-      {model.provider.id === "opencode" && model.cost.input === 0 ? (
+      {model.cost.input === 0 && model.cost.output === 0 ? (
         <span className="rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300">
           Free
         </span>
@@ -311,26 +306,18 @@ export function ModelTags({ model }: { model: SelectableModel }) {
 }
 
 export function ProviderMark({ provider }: { provider: Provider }) {
-  const icon = iconNames.includes(provider.id as IconName)
-    ? provider.id
-    : "synthetic"
-
   return (
-    <span className="flex size-5 shrink-0 items-center justify-center rounded-md bg-muted/60">
-      <svg
-        aria-label={provider.name}
-        className="size-4"
-        role="img"
-        data-component="provider-icon"
-      >
-        <use href={`${sprite}#${icon}`} />
-      </svg>
+    <span
+      aria-label={provider.name}
+      className="flex size-5 shrink-0 items-center justify-center rounded-md bg-muted/60 text-[10px] font-semibold uppercase"
+    >
+      {provider.name.slice(0, 2)}
     </span>
   )
 }
 
 
-function useModelSelection() {
+export function useModelSelection() {
   const providerState = useProviderState()
   const [state, setState] = React.useState(() =>
     readModelState(providerState.directory)
@@ -354,6 +341,8 @@ function useModelSelection() {
   const currentVariant = getCurrentVariant(currentModel, state.variant)
 
   return {
+    agent: providerState.agent,
+    apiConnection: providerState.apiConnection,
     loading: providerState.loading,
     allProviderGroups: groupModels(models),
     allProviders: providerState.providers?.all ?? [],
@@ -364,7 +353,6 @@ function useModelSelection() {
     emptyMessage: getEmptyMessage(providerState),
     providerGroups: groupModels(visibleModels),
     refreshProviders: providerState.refresh,
-    sdk: providerState.sdk,
     serverReady: providerState.serverReady,
     variantOptions: getVariantOptions(currentModel),
     setModel: (model: SelectableModel) =>
@@ -401,29 +389,27 @@ function useModelSelection() {
 }
 
 function useProviderState() {
+  const auth = useCloudAuth()
+  const platform = usePlatform()
   const projects = useProjects()
-  const server = useServer()
   const directory = projects.activeProject?.path
   const [providers, setProviders] = React.useState<ProviderListResponse>()
   const [loading, setLoading] = React.useState(false)
   const [failed, setFailed] = React.useState(false)
-  const sdk = React.useMemo(
-    () => (server.server ? createSdkForServer(server.server) : undefined),
-    [server.server]
-  )
+  const agent = platform.agent
 
   const refresh = React.useCallback(() => {
-    if (!sdk || !directory) {
+    if (!agent || !directory || auth.status !== "authenticated") {
       setProviders(undefined)
       return Promise.resolve()
     }
 
     setLoading(true)
     setFailed(false)
-    return sdk
-      .provider.list({ directory })
+    return agent.providers
+      .list(auth.apiConnection)
       .then((response) => {
-        setProviders(normalizeProviderList(response.data))
+        setProviders(normalizeProviderList(response))
       })
       .catch(() => {
         setFailed(true)
@@ -431,20 +417,21 @@ function useProviderState() {
       .finally(() => {
         setLoading(false)
       })
-  }, [directory, sdk])
+  }, [agent, auth.apiConnection, auth.status, directory])
 
   React.useEffect(() => {
     void refresh().then(() => undefined)
   }, [refresh])
 
   return {
+    apiConnection: auth.apiConnection,
     directory,
     failed,
     loading,
     providers,
     refresh,
-    sdk,
-    serverReady: !!sdk,
+    agent,
+    serverReady: !!agent,
   }
 }
 

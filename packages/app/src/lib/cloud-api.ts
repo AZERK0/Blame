@@ -5,7 +5,7 @@ import type {
   LoginInput,
   SignupInput,
 } from "@/context/cloud-auth"
-import type { ApiConnection } from "@/context/platform"
+import type { ApiConnection } from "@blame/agent-runtime"
 
 type ApiResponse<T> = {
   data: T
@@ -68,24 +68,19 @@ async function request<T>(
   path: string,
   init?: RequestInit
 ) {
+  const headers = new Headers(init?.headers)
+  headers.set("Accept", "application/json")
+  headers.set("Content-Type", "application/json")
+  if (connection.token) headers.set("Authorization", `Bearer ${connection.token}`)
+
   const response = await fetch(`${baseUrl}${path}`, {
     ...init,
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      ...authorizationHeader(connection),
-      ...init?.headers,
-    },
+    headers,
   })
 
   if (!response.ok) throw new Error(await responseMessage(response))
   if (response.status === 204) return undefined as T
   return (await response.json() as ApiResponse<T>).data
-}
-
-function authorizationHeader(connection: ApiConnection) {
-  if (!connection.token) return {}
-  return { Authorization: `Bearer ${connection.token}` }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

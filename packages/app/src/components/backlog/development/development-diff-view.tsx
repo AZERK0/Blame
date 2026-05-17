@@ -1,5 +1,5 @@
 import * as React from "react"
-import type { VcsFileDiff } from "@opencode-ai/sdk/v2"
+import type { VcsFileDiff } from "@/components/backlog/development/development-workspace"
 import { MessageSquareIcon } from "lucide-react"
 
 import { DevelopmentScrollArea } from "@/components/backlog/development/development-scroll-area"
@@ -14,6 +14,12 @@ import { cn } from "@/lib/utils"
 type LineSelection = {
   anchor: number
   focus: number
+}
+
+type DiffCodeLine = {
+  content: string
+  newLineNumber?: number
+  oldLineNumber?: number
 }
 
 export function DevelopmentDiffView({
@@ -56,10 +62,10 @@ export function DiffStats({ diff }: { diff: VcsFileDiff }) {
   return (
     <span className="ml-auto flex shrink-0 items-center gap-1">
       <Badge className="h-5 border-emerald-500/30 bg-emerald-500/10 px-1.5 text-emerald-600 dark:text-emerald-400" variant="outline">
-        +{diff.additions}
+        +{diff.additions ?? 0}
       </Badge>
       <Badge className="h-5 border-destructive/30 bg-destructive/10 px-1.5 text-destructive" variant="outline">
-        -{diff.deletions}
+        -{diff.deletions ?? 0}
       </Badge>
     </span>
   )
@@ -268,7 +274,7 @@ function diffLineContent(line: string) {
   return line
 }
 
-function diffLines(patch: string) {
+function diffLines(patch: string): DiffCodeLine[] {
   let oldLineNumber = 0
   let newLineNumber = 0
 

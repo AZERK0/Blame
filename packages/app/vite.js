@@ -18,7 +18,7 @@ const reactRuntime = {
 
 export default [
   {
-    name: "opencode-app:config",
+    name: "blame-app:config",
     config() {
       return {
         resolve: {
@@ -50,7 +50,7 @@ export default [
     },
   },
   {
-    name: "opencode-app:theme-preload",
+    name: "blame-app:theme-preload",
     transformIndexHtml(html) {
       return html
         .replace(

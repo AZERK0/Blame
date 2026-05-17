@@ -11,6 +11,8 @@ import { middleware } from '#start/kernel'
 import router from '@adonisjs/core/services/router'
 import { controllers } from '#generated/controllers'
 
+const ProviderCredentialsController = () => import('#controllers/provider_credentials_controller')
+
 router.get('/', () => {
   return { hello: 'world' }
 })
@@ -41,6 +43,18 @@ router
       })
       .prefix('projects')
       .as('projects')
+      .use(middleware.auth())
+
+    router
+      .group(() => {
+        router.get('catalog', [ProviderCredentialsController, 'catalog'])
+        router.get('credentials', [ProviderCredentialsController, 'index'])
+        router.post('credentials', [ProviderCredentialsController, 'store'])
+        router.post('credentials/resolve', [ProviderCredentialsController, 'resolve'])
+        router.delete('credentials/:id', [ProviderCredentialsController, 'destroy'])
+      })
+      .prefix('providers')
+      .as('providers')
       .use(middleware.auth())
 
     router

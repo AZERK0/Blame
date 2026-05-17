@@ -2,7 +2,6 @@ import * as React from "react"
 import {
   CheckIcon,
   CircleStopIcon,
-  FileDiffIcon,
   MessageSquareIcon,
   RotateCcwIcon,
   SendIcon,
@@ -18,7 +17,13 @@ import { drawerActions } from "@/components/backlog/drawer/user-story-drawer-hel
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
-const drawerActionConfig = {
+type DrawerActionConfig = {
+  icon: React.ComponentType<{ className?: string }>
+  variant: React.ComponentProps<typeof Button>["variant"]
+  tone?: "primary" | "info"
+}
+
+const drawerActionConfig: Record<DrawerAction, DrawerActionConfig> = {
   Cancel: {
     icon: XIcon,
     variant: "destructive",
@@ -66,14 +71,7 @@ const drawerActionConfig = {
     variant: "default",
     tone: "primary",
   },
-} satisfies Record<
-  DrawerAction,
-  {
-    icon: React.ComponentType<{ className?: string }>
-    variant: React.ComponentProps<typeof Button>["variant"]
-    tone?: "primary" | "info"
-  }
->
+}
 
 export function DrawerActions({
   mode,

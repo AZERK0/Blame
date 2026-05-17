@@ -1,5 +1,5 @@
 {
-  "name": "@opencode-ai/app",
+  "name": "@blame/app",
   "private": true,
   "version": "0.0.1",
   "type": "module",
@@ -30,7 +30,7 @@
     "@fontsource-variable/nunito-sans": "5.2.7",
     "@fontsource-variable/source-sans-3": "5.2.9",
     "@mdxeditor/editor": "3.55.0",
-    "@opencode-ai/sdk": "workspace:*",
+    "@blame/agent-runtime": "workspace:*",
     "@tailwindcss/vite": "^4.2.1",
     "@tanstack/react-table": "8.21.3",
     "class-variance-authority": "0.7.1",

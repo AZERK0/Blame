@@ -8,5 +8,6 @@ export const controllers = {
   NewAccount: () => import('#controllers/new_account_controller'),
   Profile: () => import('#controllers/profile_controller'),
   Projects: () => import('#controllers/projects_controller'),
+  ProviderCredentials: () => import('#controllers/provider_credentials_controller'),
   UserStories: () => import('#controllers/user_stories_controller'),
 }

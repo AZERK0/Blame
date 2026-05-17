@@ -1,5 +1,5 @@
 import * as React from "react"
-import type { FileContent, VcsFileDiff } from "@opencode-ai/sdk/v2"
+import type { FileContent, VcsFileDiff } from "@/components/backlog/development/development-workspace"
 import { FileIcon } from "lucide-react"
 
 import { DevelopmentDiffView } from "@/components/backlog/development/development-diff-view"

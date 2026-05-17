@@ -1,5 +1,5 @@
 {
-  "name": "@opencode-ai/api",
+  "name": "@blame/api",
   "version": "0.0.0",
   "private": true,
   "type": "module",

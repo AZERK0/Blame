@@ -115,12 +115,12 @@ export function useHighlightedCodeLines({
 }
 
 export function languageFromPath(path?: string): BundledLanguage {
-  if (!path) return "text"
+  if (!path) return "plaintext" as BundledLanguage
   const name = path.split("/").pop()?.toLowerCase() ?? ""
   const direct = languageByName[name]
   if (direct) return direct
   const extension = name.split(".").pop() ?? ""
-  return languageByExtension[extension] ?? "text"
+  return languageByExtension[extension] ?? ("plaintext" as BundledLanguage)
 }
 
 async function highlightCode(code: string, language: BundledLanguage) {

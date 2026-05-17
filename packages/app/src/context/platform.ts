@@ -1,4 +1,15 @@
 import * as React from "react"
+import type {
+  AgentEvent,
+  ApiConnection as AgentApiConnection,
+  ProviderListResponse,
+  ResolveApprovalInput,
+  SaveProviderCredentialInput,
+  SendSessionInput,
+  StartSessionInput,
+} from "@blame/agent-runtime"
+
+export type ApiConnection = AgentApiConnection
 
 type PickerPaths = string | string[] | null
 
@@ -8,23 +19,45 @@ export type OpenDirectoryPickerOptions = {
 }
 
 export type Platform = {
+  agent?: AgentClient
   api?: ApiConnection
+  workspace?: WorkspaceClient
   openDirectoryPickerDialog?(
     options?: OpenDirectoryPickerOptions
   ): Promise<PickerPaths>
   openExternalLink?(url: string): void
-  getServer?(): Promise<ServerConnection | undefined>
 }
 
-export type ServerConnection = {
-  url: string
-  username?: string | null
-  password?: string | null
+export type AgentClient = {
+  providers: {
+    list(connection: ApiConnection): Promise<ProviderListResponse>
+    saveCredential(connection: ApiConnection, input: SaveProviderCredentialInput): Promise<unknown>
+  }
+  sessions: {
+    start(input: StartSessionInput): Promise<{ sessionId: string }>
+    send(input: SendSessionInput): Promise<unknown>
+    abort(sessionId: string): Promise<void>
+    list(): Promise<unknown>
+    messages(sessionId: string): Promise<unknown>
+    onEvent(sessionId: string, callback: (event: AgentEvent) => void): () => void
+  }
+  approvals: {
+    resolve(input: ResolveApprovalInput): Promise<boolean>
+    onRequest(callback: (event: AgentEvent) => void): () => void
+  }
 }
 
-export type ApiConnection = {
-  url: string
-  token?: string | null
+export type WorkspaceEntry = {
+  name: string
+  path: string
+  type: "directory" | "file"
+}
+
+export type WorkspaceClient = {
+  listDirectory(input: { root: string; path?: string }): Promise<WorkspaceEntry[]>
+  readFile(input: { root: string; path: string }): Promise<string>
+  searchFiles(input: { root: string; query: string; limit?: number }): Promise<WorkspaceEntry[]>
+  gitDiff(input: { root: string }): Promise<string>
 }
 
 export const PlatformContext = React.createContext<Platform>({})
@@ -38,9 +71,6 @@ export function createWebPlatform(): Platform {
     async openDirectoryPickerDialog(options) {
       const value = window.prompt(options?.title ?? "Open Project")
       return value?.trim() || null
-    },
-    async getServer() {
-      return { url: "http://localhost:4096" }
     },
     openExternalLink(url) {
       window.open(url, "_blank", "noopener,noreferrer")

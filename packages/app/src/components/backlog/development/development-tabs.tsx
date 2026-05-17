@@ -1,4 +1,4 @@
-import type { FileContent, VcsFileDiff } from "@opencode-ai/sdk/v2"
+import type { FileContent, VcsFileDiff } from "@/components/backlog/development/development-workspace"
 import { FileIcon, GitPullRequestIcon, XIcon } from "lucide-react"
 
 import { DevelopmentFileView } from "@/components/backlog/development/development-file-view"

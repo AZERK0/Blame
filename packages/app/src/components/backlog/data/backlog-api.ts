@@ -72,14 +72,14 @@ async function request<T>(
   path: string,
   init?: RequestInit
 ) {
+  const headers = new Headers(init?.headers)
+  headers.set("Accept", "application/json")
+  headers.set("Content-Type", "application/json")
+  if (connection.token) headers.set("Authorization", `Bearer ${connection.token}`)
+
   const response = await fetch(`${baseUrl}${path}`, {
     ...init,
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      ...authorizationHeader(connection),
-      ...init?.headers,
-    },
+    headers,
   })
 
   if (!response.ok) throw new Error(await responseMessage(response))
@@ -94,11 +94,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function unwrapResponse<T>(value: unknown) {
   if (isRecord(value) && "data" in value) return value.data as T
   return value as T
-}
-
-function authorizationHeader(connection: ApiConnection) {
-  if (!connection.token) return {}
-  return { Authorization: `Bearer ${connection.token}` }
 }
 
 async function responseMessage(response: Response) {

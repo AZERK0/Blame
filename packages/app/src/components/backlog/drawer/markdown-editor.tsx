@@ -27,8 +27,6 @@ import {
   type PendingCodeSelectionAttachment,
 } from "@/components/backlog/shared/comment-attachment-events"
 import { DevelopmentFileIcon } from "@/components/backlog/development/development-file-icon"
-import { useServer } from "@/context/server"
-import { createSdkForServer } from "@/lib/opencode-client"
 import {
   Command,
   CommandEmpty,
@@ -37,6 +35,7 @@ import {
   CommandList,
 } from "@/components/ui/command"
 import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover"
+import { usePlatform } from "@/context/platform"
 
 type PastedAttachment = {
   id: string
@@ -199,7 +198,7 @@ function rangePosition(
     return {
       node: node.parentNode ?? node,
       offset:
-        Array.from(node.parentNode?.childNodes ?? []).indexOf(node) +
+        Array.from(node.parentNode?.childNodes ?? []).indexOf(node as ChildNode) +
         (offset > 0 ? 1 : 0),
     }
   }
@@ -272,7 +271,7 @@ function AttachmentPreview({
 }) {
   if (attachment.previewUrl) {
     return (
-      <ImageAttachmentPreview attachment={attachment} onRemove={onRemove} />
+      <ImageAttachmentPreview attachment={{ ...attachment, previewUrl: attachment.previewUrl }} onRemove={onRemove} />
     )
   }
 
@@ -398,7 +397,7 @@ export const MarkdownEditor = React.forwardRef<
   },
   ref
 ) {
-  const server = useServer()
+  const platform = usePlatform()
   const [attachments, setAttachments] = React.useState<PastedAttachment[]>([])
   const [mention, setMention] = React.useState<FileMentionState>({
     active: false,
@@ -418,12 +417,7 @@ export const MarkdownEditor = React.forwardRef<
   const insertingMentionRef = React.useRef(false)
   const mentionSearchRef = React.useRef(0)
   const rootRef = React.useRef<HTMLDivElement>(null)
-  const client = React.useMemo(
-    () => (server.server ? createSdkForServer(server.server) : undefined),
-    [server.server]
-  )
-  const mentionOpen =
-    mention.active && !readOnly && Boolean(client) && Boolean(mentionDirectory)
+  const mentionOpen = mention.active && Boolean(mentionDirectory && platform.workspace)
 
   React.useEffect(() => {
     attachmentsRef.current = attachments
@@ -435,19 +429,15 @@ export const MarkdownEditor = React.forwardRef<
     const search = ++mentionSearchRef.current
     const timer = setTimeout(async () => {
       try {
-        const result = await client?.find.files({
-          directory: mentionDirectory,
+        if (search !== mentionSearchRef.current) return
+        if (!mentionDirectory || !platform.workspace) return
+        const results = await platform.workspace.searchFiles({
+          root: mentionDirectory,
           query: mention.query,
-          dirs: "true",
-          limit: 10,
+          limit: 20,
         })
         if (search !== mentionSearchRef.current) return
-        setMentionResults(
-          (result?.data ?? []).map((path) => ({
-            path,
-            type: path.endsWith("/") ? "directory" : "file",
-          }))
-        )
+        setMentionResults(results)
         setActiveMentionIndex(0)
       } catch {
         if (search !== mentionSearchRef.current) return
@@ -457,7 +447,7 @@ export const MarkdownEditor = React.forwardRef<
     }, 80)
 
     return () => clearTimeout(timer)
-  }, [client, mention.query, mentionDirectory, mentionOpen])
+  }, [mention.query, mentionDirectory, mentionOpen, platform.workspace])
 
   React.useEffect(() => {
     if (mentionOpen) return
@@ -486,7 +476,7 @@ export const MarkdownEditor = React.forwardRef<
   function updateMention() {
     if (insertingMentionRef.current) return
     const editor = contentEditableRef.current
-    if (!editor || readOnly || !client || !mentionDirectory) {
+    if (!editor || readOnly || !mentionDirectory) {
       setMention((current) =>
         current.active
           ? { active: false, query: "", start: 0, end: 0 }

@@ -17,7 +17,7 @@ export function WelcomeScreen() {
       <section className="grid w-full max-w-3xl gap-12 text-center">
         <div className="grid gap-3">
           <h1 className="font-heading text-3xl font-semibold">
-            Welcome to OpenCode
+            Welcome to Blame
           </h1>
           <div className="grid gap-1 text-sm text-muted-foreground">
             <p>Create a new project to start from scratch.</p>

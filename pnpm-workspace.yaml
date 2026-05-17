@@ -1,5 +1,12 @@
 packages:
   - "packages/*"
+allowBuilds:
+  '@swc/core': true
+  electron: true
+  es5-ext: true
+  esbuild: true
+  msw: true
+  protobufjs: true
 
 catalog:
   shiki: 3.20.0

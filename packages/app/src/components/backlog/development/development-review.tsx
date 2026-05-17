@@ -1,5 +1,5 @@
 import * as React from "react"
-import type { VcsFileDiff } from "@opencode-ai/sdk/v2"
+import type { VcsFileDiff } from "@/components/backlog/development/development-workspace"
 import { ChevronDownIcon, ChevronRightIcon, FileDiffIcon, FileIcon } from "lucide-react"
 import { Collapsible } from "radix-ui"
 

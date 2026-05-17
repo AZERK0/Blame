@@ -1,146 +1,87 @@
 import * as React from "react"
-import type { FileContent, FileNode, VcsFileDiff } from "@opencode-ai/sdk/v2"
 
 import type { UserStory } from "@/components/backlog/data/backlog-data"
+import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
-import { useServer } from "@/context/server"
-import { createSdkForServer } from "@/lib/opencode-client"
 
 export type DevelopmentDiffKind = "add" | "del" | "mix"
 export type DevelopmentFileTab = {
   path: string
+}
+export type FileNode = {
+  absolute?: string
+  ignored?: boolean
+  name: string
+  path: string
+  type: "directory" | "file"
+}
+export type FileContent = {
+  content: string
+  diff?: string
+  encoding?: string
+  mimeType?: string
+  type?: string
+}
+export type VcsFileDiff = {
+  file: string
+  status: "added" | "deleted" | "modified" | string
+  additions?: number
+  deletions?: number
+  patch?: string
+  hunks?: unknown[]
 }
 
 export function useDevelopmentWorkspace(
   userStory?: UserStory,
   fallbackToProjectRoot?: boolean
 ) {
-  const server = useServer()
+  const platform = usePlatform()
   const projects = useProjects()
   const [reloadKey, setReloadKey] = React.useState(0)
   const directory =
     userStory?.worktree ??
     (fallbackToProjectRoot ? projects.activeProject?.path : undefined)
-  const client = React.useMemo(
-    () => (server.server ? createSdkForServer(server.server) : undefined),
-    [server.server]
-  )
 
   const listDirectory = React.useCallback(
     async (path: string) => {
-      if (!client || !directory) return []
-      const result = await client.file.list({
-        directory,
-        path,
-      })
-      return normalizeNodes(result.data ?? [])
+      if (!directory || !platform.workspace) return []
+      const nodes = await platform.workspace.listDirectory({ root: directory, path })
+      return normalizeNodes(nodes)
     },
-    [client, directory]
+    [directory, platform.workspace]
   )
 
   const readFile = React.useCallback(
     async (path: string) => {
-      if (!client || !directory) return undefined
-      const result = await client.file.read({
-        directory,
-        path,
-      })
-      return result.data
+      if (!directory || !platform.workspace) return undefined
+      return { content: await platform.workspace.readFile({ root: directory, path }) }
     },
-    [client, directory]
+    [directory, platform.workspace]
   )
 
   const loadDiffs = React.useCallback(async () => {
-    if (!client || !directory) return []
-    const result = await client.vcs.diff({
-      directory,
-      mode: "git",
-    })
-    return normalizeDiffs(result.data ?? [])
-  }, [client, directory])
+    if (!directory || !platform.workspace) return []
+    return normalizeDiffs(parseGitDiff(await platform.workspace.gitDiff({ root: directory })))
+  }, [directory, platform.workspace])
 
   React.useEffect(() => {
-    if (!client || !directory) return
-    const abort = new AbortController()
-    let timer: ReturnType<typeof setTimeout> | undefined
-    const scheduleReload = () => {
-      if (timer) clearTimeout(timer)
-      timer = setTimeout(() => {
-        timer = undefined
-        setReloadKey((current) => current + 1)
-      }, 80)
-    }
-    const watch = async () => {
-      while (!abort.signal.aborted) {
-        try {
-          const events = await client.event.subscribe(
-            { directory },
-            { signal: abort.signal }
-          )
-          for await (const event of events.stream) {
-            if (!isFileUpdateEvent(event)) continue
-            if (normalizePath(event.properties.file).startsWith(".git/")) continue
-            scheduleReload()
-          }
-        } catch (error) {
-          if (abort.signal.aborted) return
-          console.error("[development-workspace] file watcher failed", error)
-        }
-        await waitForReconnect(abort.signal)
-      }
-    }
-    void watch()
-    return () => {
-      abort.abort()
-      if (timer) clearTimeout(timer)
-    }
-  }, [client, directory])
-
-  React.useEffect(() => {
-    if (!client || !directory) return
+    if (!directory) return
     const timer = setInterval(() => {
       if (document.visibilityState !== "visible") return
       setReloadKey((current) => current + 1)
     }, 1_500)
     return () => clearInterval(timer)
-  }, [client, directory])
+  }, [directory])
 
   return {
-    available: Boolean(client && directory),
-    hasServer: Boolean(client),
+    available: Boolean(directory && platform.workspace),
+    hasServer: Boolean(platform.workspace),
     worktree: directory,
     listDirectory,
     readFile,
     loadDiffs,
     reloadKey,
   }
-}
-
-function waitForReconnect(signal: AbortSignal) {
-  return new Promise<void>((resolve) => {
-    const timer = setTimeout(resolve, 250)
-    signal.addEventListener(
-      "abort",
-      () => {
-        clearTimeout(timer)
-        resolve()
-      },
-      { once: true }
-    )
-  })
-}
-
-function isFileUpdateEvent(event: unknown): event is {
-  properties: { file: string }
-  type: "file.edited" | "file.watcher.updated"
-} {
-  if (!event || typeof event !== "object") return false
-  if (!("type" in event) || !("properties" in event)) return false
-  const type = event.type
-  if (type !== "file.watcher.updated" && type !== "file.edited") return false
-  const properties = event.properties
-  if (!properties || typeof properties !== "object") return false
-  return "file" in properties && typeof properties.file === "string"
 }
 
 export function normalizePath(path: string) {
@@ -184,13 +125,13 @@ export function diffKindClassName(kind: DevelopmentDiffKind) {
   return "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400"
 }
 
-function normalizeNodes(nodes: FileNode[]) {
+export function normalizeNodes(nodes: FileNode[]) {
   return nodes
     .map((node) => ({ ...node, path: normalizePath(node.path) }))
     .sort(sortNodes)
 }
 
-function normalizeDiffs(diffs: VcsFileDiff[]) {
+export function normalizeDiffs(diffs: VcsFileDiff[]) {
   return diffs
     .map((diff) => ({ ...diff, file: normalizePath(diff.file) }))
     .sort((a, b) => a.file.localeCompare(b.file))
@@ -207,6 +148,37 @@ function parents(path: string) {
     .slice(0, -1)
     .map((_, index, parts) => parts.slice(0, index + 1).join("/"))
     .filter(Boolean)
+}
+
+function parseGitDiff(diff: string): VcsFileDiff[] {
+  return diff
+    .split(/\ndiff --git /)
+    .map((part, index) => (index === 0 ? part : `diff --git ${part}`))
+    .filter((part) => part.startsWith("diff --git "))
+    .map(parseGitDiffFile)
+    .filter((file): file is VcsFileDiff => Boolean(file))
+}
+
+function parseGitDiffFile(patch: string): VcsFileDiff | undefined {
+  const file = patch.match(/^diff --git a\/(.+?) b\/(.+)$/m)
+  if (!file) return undefined
+  const deleted = /^deleted file mode /m.test(patch)
+  const added = /^new file mode /m.test(patch)
+  return {
+    file: deleted ? file[1] : file[2],
+    status: added ? "added" : deleted ? "deleted" : "modified",
+    additions: countDiffLines(patch, "+"),
+    deletions: countDiffLines(patch, "-"),
+    patch,
+  }
+}
+
+function countDiffLines(patch: string, marker: "+" | "-") {
+  const forbidden = marker === "+" ? "+++" : "---"
+  return patch
+    .split("\n")
+    .filter((line) => line.startsWith(marker) && !line.startsWith(forbidden))
+    .length
 }
 
 export type DevelopmentFileContent = FileContent | undefined

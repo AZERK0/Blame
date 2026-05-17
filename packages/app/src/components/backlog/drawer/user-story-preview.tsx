@@ -172,7 +172,7 @@ export function UserStoryPreview({ userStory }: { userStory?: UserStory }) {
               key={previewKey}
               className="h-full w-full bg-background"
               src={source}
-              title={`${userStory.id} preview`}
+              title={`${userStory?.id ?? "user-story"} preview`}
               onError={showPreviewError}
               onLoad={showPreview}
             />

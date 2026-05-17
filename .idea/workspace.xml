@@ -4,221 +4,258 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="98ea9b59-4f4a-4e05-8e92-ccffc0a05220" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.npmrc" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/.adonisjs/client/data.d.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/.adonisjs/client/manifest.d.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/.adonisjs/client/registry/index.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/.adonisjs/client/registry/schema.d.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/.adonisjs/client/registry/tree.d.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/.adonisjs/server/controllers.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/.adonisjs/server/events.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/.adonisjs/server/listeners.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/.adonisjs/server/routes.d.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/.editorconfig" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/.env.example" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/.env.test" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/.gitignore" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/.prettierignore" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/README.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/ace.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/adonisrc.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/app/controllers/access_tokens_controller.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/app/controllers/new_account_controller.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/app/controllers/profile_controller.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/app/controllers/projects_controller.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/app/controllers/user_stories_controller.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/app/exceptions/handler.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/app/middleware/auth_middleware.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/app/middleware/container_bindings_middleware.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/app/middleware/force_json_response_middleware.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/app/middleware/silent_auth_middleware.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/app/models/project.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/app/models/user.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/app/models/user_story.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/app/services/projects_service.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/app/services/user_stories_service.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/app/transformers/project_transformer.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/app/transformers/user_story_transformer.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/app/transformers/user_transformer.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/app/validators/project.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/app/validators/user.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/app/validators/user_story.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/bin/console.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/bin/server.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/bin/test.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/config/app.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/config/auth.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/config/bodyparser.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/config/cors.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/config/database.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/config/encryption.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/config/hash.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/config/logger.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/config/session.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/config/shield.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/database/migrations/1761885935168_create_users_table.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/database/migrations/1768620764696_create_access_tokens_table.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/database/migrations/1778560000000_create_user_stories_table.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/database/schema.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/database/schema_rules.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/eslint.config.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/package.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/providers/api_provider.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/start/env.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/start/kernel.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/start/routes.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/start/validator.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/tests/bootstrap.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/tests/functional/user_stories.spec.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/tmp/.gitkeep" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/api/tsconfig.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/.agents/skills/shadcn/SKILL.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/.agents/skills/shadcn/agents/openai.yml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/.agents/skills/shadcn/assets/shadcn-small.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/.agents/skills/shadcn/assets/shadcn.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/.agents/skills/shadcn/cli.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/.agents/skills/shadcn/customization.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/.agents/skills/shadcn/evals/evals.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/.agents/skills/shadcn/mcp.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/.agents/skills/shadcn/rules/base-vs-radix.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/.agents/skills/shadcn/rules/composition.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/.agents/skills/shadcn/rules/forms.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/.agents/skills/shadcn/rules/icons.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/.agents/skills/shadcn/rules/styling.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/.gitignore" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/.prettierignore" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/.prettierrc" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/README.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/components.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/eslint.config.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/index.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/package.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/public/_headers" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/public/apple-touch-icon-v3.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/public/apple-touch-icon.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/public/assets/JetBrainsMonoNerdFontMono-Regular.woff2" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/public/favicon-96x96-v3.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/public/favicon-96x96.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/public/favicon-v3.ico" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/public/favicon-v3.svg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/public/favicon.ico" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/public/favicon.svg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/public/oc-theme-preload.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/public/site.webmanifest" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/public/social-share-zen.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/public/social-share.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/public/vite.svg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/public/web-app-manifest-192x192.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/public/web-app-manifest-512x512.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/skills-lock.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/App.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/assets/react.svg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/actions/story-action-button.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/actions/story-action-dialogs.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/actions/story-actions.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/board/backlog-column.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/board/backlog-toolbar.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/board/user-story-card.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/data/backlog-api.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/data/backlog-data.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/data/backlog-store.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/development/development-code-panel.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/development/development-diff-view.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/development/development-file-icon.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/development/development-file-tree.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/development/development-file-view.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/development/development-highlighted-code.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/development/development-review.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/development/development-scroll-area.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/development/development-selectable-code.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/development/development-tabs.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/development/development-terminal.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/development/development-workspace.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/drawer/markdown-editor.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/drawer/user-story-development.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/drawer/user-story-drawer-actions.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/drawer/user-story-drawer-helpers.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/drawer/user-story-drawer-panel.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/drawer/user-story-drawer-sections.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/drawer/user-story-drawer-sidebar.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/drawer/user-story-drawer.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/drawer/user-story-preview.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/page/backlog-page.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/shared/backlog-helpers.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/shared/backlog-status-badge.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/shared/backlog-types.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/shared/comment-attachment-events.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/layout/site-header.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/model/connect-provider-dialog.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/model/manage-models-dialog.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/model/model-selector.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/navigation/app-link.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/onboarding/connect-screen.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/onboarding/loading-screen.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/onboarding/welcome-screen.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/providers/theme-provider.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/sidebar/app-sidebar.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/sidebar/nav-main.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/sidebar/nav-project.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/sidebar/nav-secondary.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/sidebar/nav-user.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/sidebar/project-selector.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/ui/avatar.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/ui/badge.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/ui/breadcrumb.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/ui/button-group.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/ui/button.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/ui/card.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/ui/command.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/ui/dialog.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/ui/drawer.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/ui/dropdown-menu.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/ui/input-group.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/ui/input.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/ui/label.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/ui/popover.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/ui/scroll-area.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/ui/select.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/ui/separator.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/ui/sheet.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/ui/sidebar.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/ui/skeleton.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/ui/sonner.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/ui/tabs.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/ui/textarea.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/ui/toggle.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/components/ui/tooltip.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/context/cloud-auth-provider.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/context/cloud-auth.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/context/platform-provider.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/context/platform.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/context/project-provider.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/context/projects.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/context/server-provider.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/context/server.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/hooks/use-mobile.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/index.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/index.d.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/index.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/layouts/app-layout.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/lib/cloud-api.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/lib/opencode-client.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/lib/projects.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/lib/utils.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/src/main.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/tsconfig.app.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/tsconfig.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/tsconfig.node.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/vite.config.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/vite.d.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/packages/app/vite.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/pnpm-workspace.yaml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/turbo.json" afterDir="false" />
+    <list default="true" id="98ea9b59-4f4a-4e05-8e92-ccffc0a05220" name="Changes" comment="feat: turbo repo monorepo initialization and copy app and api packages from the old project">
+      <change afterPath="$PROJECT_DIR$/.idea/AICommit.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/agent-runtime/package.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/agent-runtime/src/cline-runtime.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/agent-runtime/src/cloud-api.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/agent-runtime/src/index.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/agent-runtime/src/types.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/agent-runtime/tsconfig.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/api/app/controllers/provider_credentials_controller.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/api/app/models/provider_credential.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/api/app/services/provider_credentials_service.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/api/app/transformers/provider_credential_transformer.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/api/app/validators/provider_credential.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/api/database/migrations/1779000000000_create_provider_credentials_table.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/api/tests/functional/provider_credentials.spec.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/app/src/components/chat/quick-chat-page.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/app/src/components/file-icons/sprite.svg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/AGENTS.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/README.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/electron.vite.config.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/README.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/128x128.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/128x128@2x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/32x32.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/64x64.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/Square107x107Logo.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/Square142x142Logo.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/Square150x150Logo.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/Square284x284Logo.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/Square30x30Logo.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/Square310x310Logo.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/Square44x44Logo.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/Square71x71Logo.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/Square89x89Logo.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/StoreLogo.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/android/mipmap-anydpi-v26/ic_launcher.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/android/mipmap-hdpi/ic_launcher.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/android/mipmap-hdpi/ic_launcher_foreground.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/android/mipmap-hdpi/ic_launcher_round.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/android/mipmap-mdpi/ic_launcher.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/android/mipmap-mdpi/ic_launcher_foreground.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/android/mipmap-mdpi/ic_launcher_round.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/android/mipmap-xhdpi/ic_launcher.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/android/mipmap-xhdpi/ic_launcher_foreground.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/android/mipmap-xhdpi/ic_launcher_round.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/android/mipmap-xxhdpi/ic_launcher.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/android/mipmap-xxhdpi/ic_launcher_foreground.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/android/mipmap-xxhdpi/ic_launcher_round.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/android/mipmap-xxxhdpi/ic_launcher.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/android/mipmap-xxxhdpi/ic_launcher_foreground.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/android/mipmap-xxxhdpi/ic_launcher_round.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/android/values/ic_launcher_background.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/dock.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/icon.icns" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/icon.ico" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/icon.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/ios/AppIcon-20x20@1x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/ios/AppIcon-20x20@2x-1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/ios/AppIcon-20x20@2x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/ios/AppIcon-20x20@3x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/ios/AppIcon-29x29@1x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/ios/AppIcon-29x29@2x-1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/ios/AppIcon-29x29@2x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/ios/AppIcon-29x29@3x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/ios/AppIcon-40x40@1x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/ios/AppIcon-40x40@2x-1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/ios/AppIcon-40x40@2x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/ios/AppIcon-40x40@3x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/ios/AppIcon-512@2x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/ios/AppIcon-60x60@2x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/ios/AppIcon-60x60@3x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/ios/AppIcon-76x76@1x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/ios/AppIcon-76x76@2x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/beta/ios/AppIcon-83.5x83.5@2x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/128x128.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/128x128@2x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/32x32.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/64x64.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/Square107x107Logo.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/Square142x142Logo.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/Square150x150Logo.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/Square284x284Logo.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/Square30x30Logo.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/Square310x310Logo.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/Square44x44Logo.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/Square71x71Logo.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/Square89x89Logo.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/StoreLogo.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/android/mipmap-anydpi-v26/ic_launcher.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/android/mipmap-hdpi/ic_launcher.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/android/mipmap-hdpi/ic_launcher_foreground.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/android/mipmap-hdpi/ic_launcher_round.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/android/mipmap-mdpi/ic_launcher.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/android/mipmap-mdpi/ic_launcher_foreground.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/android/mipmap-mdpi/ic_launcher_round.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/android/mipmap-xhdpi/ic_launcher.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/android/mipmap-xhdpi/ic_launcher_foreground.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/android/mipmap-xhdpi/ic_launcher_round.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/android/mipmap-xxhdpi/ic_launcher.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/android/mipmap-xxhdpi/ic_launcher_foreground.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/android/mipmap-xxhdpi/ic_launcher_round.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/android/mipmap-xxxhdpi/ic_launcher.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/android/mipmap-xxxhdpi/ic_launcher_foreground.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/android/mipmap-xxxhdpi/ic_launcher_round.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/android/values/ic_launcher_background.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/dock.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/icon.icns" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/icon.ico" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/icon.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/ios/AppIcon-20x20@1x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/ios/AppIcon-20x20@2x-1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/ios/AppIcon-20x20@2x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/ios/AppIcon-20x20@3x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/ios/AppIcon-29x29@1x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/ios/AppIcon-29x29@2x-1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/ios/AppIcon-29x29@2x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/ios/AppIcon-29x29@3x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/ios/AppIcon-40x40@1x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/ios/AppIcon-40x40@2x-1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/ios/AppIcon-40x40@2x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/ios/AppIcon-40x40@3x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/ios/AppIcon-512@2x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/ios/AppIcon-60x60@2x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/ios/AppIcon-60x60@3x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/ios/AppIcon-76x76@1x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/ios/AppIcon-76x76@2x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/dev/ios/AppIcon-83.5x83.5@2x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/128x128.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/128x128@2x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/32x32.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/64x64.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/Square107x107Logo.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/Square142x142Logo.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/Square150x150Logo.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/Square284x284Logo.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/Square30x30Logo.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/Square310x310Logo.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/Square44x44Logo.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/Square71x71Logo.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/Square89x89Logo.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/StoreLogo.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/android/mipmap-anydpi-v26/ic_launcher.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/android/mipmap-hdpi/ic_launcher.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/android/mipmap-hdpi/ic_launcher_foreground.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/android/mipmap-hdpi/ic_launcher_round.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/android/mipmap-mdpi/ic_launcher.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/android/mipmap-mdpi/ic_launcher_foreground.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/android/mipmap-mdpi/ic_launcher_round.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/android/mipmap-xhdpi/ic_launcher.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/android/mipmap-xhdpi/ic_launcher_foreground.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/android/mipmap-xhdpi/ic_launcher_round.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/android/mipmap-xxhdpi/ic_launcher.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/android/mipmap-xxhdpi/ic_launcher_foreground.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/android/mipmap-xxhdpi/ic_launcher_round.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/android/mipmap-xxxhdpi/ic_launcher.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/android/mipmap-xxxhdpi/ic_launcher_foreground.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/android/mipmap-xxxhdpi/ic_launcher_round.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/android/values/ic_launcher_background.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/dock.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/icon.icns" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/icon.ico" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/icon.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/ios/AppIcon-20x20@1x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/ios/AppIcon-20x20@2x-1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/ios/AppIcon-20x20@2x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/ios/AppIcon-20x20@3x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/ios/AppIcon-29x29@1x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/ios/AppIcon-29x29@2x-1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/ios/AppIcon-29x29@2x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/ios/AppIcon-29x29@3x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/ios/AppIcon-40x40@1x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/ios/AppIcon-40x40@2x-1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/ios/AppIcon-40x40@2x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/ios/AppIcon-40x40@3x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/ios/AppIcon-512@2x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/ios/AppIcon-60x60@2x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/ios/AppIcon-60x60@3x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/ios/AppIcon-76x76@1x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/ios/AppIcon-76x76@2x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/icons/prod/ios/AppIcon-83.5x83.5@2x.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/package.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/src/main/agent-ipc.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/src/main/index.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/src/preload/index.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/src/preload/types.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/src/renderer/env.d.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/src/renderer/index.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/src/renderer/index.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/src/renderer/styles.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/packages/desktop/tsconfig.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pnpm-lock.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/api/.adonisjs/client/data.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/api/.adonisjs/client/data.d.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/api/.adonisjs/client/registry/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/api/.adonisjs/client/registry/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/api/.adonisjs/client/registry/schema.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/api/.adonisjs/client/registry/schema.d.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/api/.adonisjs/client/registry/tree.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/api/.adonisjs/client/registry/tree.d.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/api/.adonisjs/server/controllers.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/api/.adonisjs/server/controllers.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/api/.adonisjs/server/routes.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/api/.adonisjs/server/routes.d.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/api/database/schema.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/api/database/schema.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/api/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/packages/api/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/api/start/routes.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/api/start/routes.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/public/apple-touch-icon-v3.png" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/public/apple-touch-icon-v3.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/public/apple-touch-icon.png" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/public/apple-touch-icon.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/public/favicon-96x96-v3.png" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/public/favicon-96x96-v3.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/public/favicon-96x96.png" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/public/favicon-96x96.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/public/favicon-v3.ico" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/public/favicon-v3.ico" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/public/favicon-v3.svg" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/public/favicon-v3.svg" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/public/favicon.ico" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/public/favicon.ico" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/public/favicon.svg" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/public/favicon.svg" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/public/oc-theme-preload.js" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/public/oc-theme-preload.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/public/site.webmanifest" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/public/site.webmanifest" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/public/social-share-zen.png" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/public/social-share-zen.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/public/social-share.png" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/public/social-share.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/public/web-app-manifest-192x192.png" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/public/web-app-manifest-192x192.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/public/web-app-manifest-512x512.png" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/public/web-app-manifest-512x512.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/App.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/components/backlog/actions/story-action-button.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/actions/story-action-button.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/components/backlog/data/backlog-api.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/data/backlog-api.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/components/backlog/development/development-code-panel.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/development/development-code-panel.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/components/backlog/development/development-diff-view.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/development/development-diff-view.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/components/backlog/development/development-file-icon.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/development/development-file-icon.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/components/backlog/development/development-file-tree.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/development/development-file-tree.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/components/backlog/development/development-file-view.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/development/development-file-view.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/components/backlog/development/development-highlighted-code.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/development/development-highlighted-code.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/components/backlog/development/development-review.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/development/development-review.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/components/backlog/development/development-tabs.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/development/development-tabs.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/components/backlog/development/development-terminal.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/development/development-terminal.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/components/backlog/development/development-workspace.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/development/development-workspace.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/components/backlog/drawer/markdown-editor.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/drawer/markdown-editor.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/components/backlog/drawer/user-story-drawer-actions.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/drawer/user-story-drawer-actions.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/components/backlog/drawer/user-story-drawer-sections.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/drawer/user-story-drawer-sections.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/components/backlog/drawer/user-story-preview.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/drawer/user-story-preview.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/components/model/connect-provider-dialog.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/model/connect-provider-dialog.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/components/model/model-selector.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/model/model-selector.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/components/onboarding/connect-screen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/onboarding/connect-screen.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/components/onboarding/loading-screen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/onboarding/loading-screen.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/components/onboarding/welcome-screen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/onboarding/welcome-screen.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/context/cloud-auth-provider.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/context/cloud-auth-provider.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/context/cloud-auth.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/context/cloud-auth.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/context/platform.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/context/platform.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/context/project-provider.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/context/project-provider.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/context/server-provider.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/context/server-provider.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/context/server.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/context/server.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/lib/cloud-api.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/lib/cloud-api.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/lib/opencode-client.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/lib/projects.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/lib/projects.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/vite.js" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/vite.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pnpm-workspace.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/pnpm-workspace.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/turbo.json" beforeDir="false" afterPath="$PROJECT_DIR$/turbo.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -226,7 +263,7 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="2" />
+    <option name="cachedIndexableFilesCount" value="13" />
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -235,35 +272,54 @@
     <commands />
     <urls />
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 7,
-  "fromUser": false
-}]]></component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 7,
+  &quot;fromUser&quot;: false
+}</component>
   <component name="ProjectId" id="3DqqYnINDC1P3zCuQ6RQ0lbyr3D" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.MCP Project settings loaded": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "codeWithMe.voiceChat.enabledByDefault": "false",
-    "git-widget-placeholder": "main",
-    "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "/mnt/dev/web/Blame",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/mnt/dev/web/Blame&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;npm.dev.executor&quot;: &quot;Run&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;/home/azerko/.local/share/JetBrains/Toolbox/apps/intellij-idea/plugins/javascript-plugin/jsLanguageServicesImpl/external&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
+  <component name="RunManager">
+    <configuration name="dev" type="js.build_tools.npm" temporary="true" nameIsGenerated="true">
+      <package-json value="$PROJECT_DIR$/package.json" />
+      <command value="run" />
+      <scripts>
+        <script value="dev" />
+      </scripts>
+      <node-interpreter value="project" />
+      <envs />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="npm.dev" />
+      </list>
+    </recent_temporary>
+  </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
       <changelist id="98ea9b59-4f4a-4e05-8e92-ccffc0a05220" name="Changes" comment="" />
@@ -272,6 +328,9 @@
       <option name="presentableId" value="Default" />
       <updated>1779019997361</updated>
       <workItem from="1779019998386" duration="1271000" />
+      <workItem from="1779021363114" duration="3227000" />
+      <workItem from="1779024619207" duration="667000" />
+      <workItem from="1779032175359" duration="1741000" />
     </task>
     <task id="LOCAL-00001" summary="feat: initial commit">
       <option name="closed" value="true" />
@@ -281,7 +340,15 @@
       <option name="project" value="LOCAL" />
       <updated>1779020297525</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="feat: turbo repo monorepo initialization and copy app and api packages from the old project">
+      <option name="closed" value="true" />
+      <created>1779021678701</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1779021678701</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -292,7 +359,19 @@
       <map>
         <entry key="MAIN">
           <value>
-            <State />
+            <State>
+              <option name="FILTERS">
+                <map>
+                  <entry key="branch">
+                    <value>
+                      <list>
+                        <option value="main" />
+                      </list>
+                    </value>
+                  </entry>
+                </map>
+              </option>
+            </State>
           </value>
         </entry>
       </map>
@@ -300,6 +379,7 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="feat: initial commit" />
-    <option name="LAST_COMMIT_MESSAGE" value="feat: initial commit" />
+    <MESSAGE value="feat: turbo repo monorepo initialization and copy app and api packages from the old project" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat: turbo repo monorepo initialization and copy app and api packages from the old project" />
   </component>
 </project>

@@ -1,6 +1,6 @@
 import * as React from "react"
 
-import type { ApiConnection } from "@/context/platform"
+import type { ApiConnection } from "@blame/agent-runtime"
 
 export type CloudUser = {
   id: number

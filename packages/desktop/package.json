@@ -1,0 +1,30 @@
+{
+  "name": "@blame/desktop",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "main": "./out/main/index.js",
+  "scripts": {
+    "predev": "pnpm --filter @blame/agent-runtime build",
+    "dev": "electron-vite dev",
+    "prebuild": "pnpm --filter @blame/agent-runtime build",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@blame/agent-runtime": "workspace:*",
+    "@blame/app": "workspace:*",
+    "electron-context-menu": "4.1.2",
+    "electron-log": "^5",
+    "electron-store": "^10",
+    "electron-window-state": "^5.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.12.0",
+    "electron": "41.2.1",
+    "electron-vite": "^5",
+    "typescript": "~5.9.3",
+    "vite": "^7.3.1"
+  }
+}

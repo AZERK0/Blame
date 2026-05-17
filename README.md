@@ -4,8 +4,10 @@ Blame is an agentic IDE built as a pnpm and Turborepo monorepo.
 
 ## Workspace
 
-- `packages/api`: AdonisJS cloud backend imported from the previous OpenCode-based project.
-- `packages/app`: React and Vite web app imported from the previous OpenCode-based project.
+- `packages/api`: AdonisJS cloud backend with encrypted provider credentials.
+- `packages/app`: React and Vite web app.
+- `packages/desktop`: Electron shell with IPC bridge.
+- `packages/agent-runtime`: Cline SDK runtime wrapper.
 
 ## Commands
 
@@ -16,8 +18,6 @@ pnpm typecheck
 pnpm build
 ```
 
-## Agent Runtime Direction
+## Agent Runtime
 
-The imported app still contains temporary OpenCode SDK references. The next migration step is to replace those references with a dedicated Cline integration package, such as `packages/agent-runtime` or `packages/cline-adapter`.
-
-That package should own the `@cline/sdk` integration through `ClineCore` and expose stable application-level interfaces for sessions, messages, approvals, workspace actions, tools, and runtime events.
+The Cline SDK integration lives in `packages/agent-runtime`. The desktop package exposes it to the renderer through Electron IPC, while the web app consumes a stable Blame platform interface.

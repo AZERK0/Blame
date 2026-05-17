@@ -33,4 +33,13 @@ export interface ApiDefinition {
       }
     }
   }
+  providers: {
+    providerCredentials: {
+      catalog: typeof routes['providers.provider_credentials.catalog']
+      index: typeof routes['providers.provider_credentials.index']
+      store: typeof routes['providers.provider_credentials.store']
+      resolve: typeof routes['providers.provider_credentials.resolve']
+      destroy: typeof routes['providers.provider_credentials.destroy']
+    }
+  }
 }

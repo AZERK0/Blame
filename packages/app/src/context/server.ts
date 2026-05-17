@@ -1,12 +1,12 @@
 import * as React from "react"
 
-import type { ServerConnection } from "@/context/platform"
-
 export type ServerContextValue = {
-  server?: ServerConnection
+  available: boolean
 }
 
-export const ServerContext = React.createContext<ServerContextValue>({})
+export const ServerContext = React.createContext<ServerContextValue>({
+  available: false,
+})
 
 export function useServer() {
   return React.useContext(ServerContext)
