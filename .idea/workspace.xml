@@ -4,15 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="98ea9b59-4f4a-4e05-8e92-ccffc0a05220" name="Changes" comment="feat(agent): improve project initialization prompt and validation logic">
-      <change afterPath="$PROJECT_DIR$/packages/api/tests/functional/projects.spec.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/packages/api/app/services/projects_service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/api/app/services/projects_service.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/packages/app/src/context/platform.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/context/platform.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/packages/app/src/context/project-provider.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/context/project-provider.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/packages/desktop/src/main/workspace-ipc.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/desktop/src/main/workspace-ipc.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/packages/desktop/src/preload/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/desktop/src/preload/index.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/packages/desktop/src/preload/types.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/desktop/src/preload/types.ts" afterDir="false" />
+    <list default="true" id="98ea9b59-4f4a-4e05-8e92-ccffc0a05220" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/packages/agent-runtime/src/cline-runtime.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/agent-runtime/src/cline-runtime.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/agent-runtime/src/project-initialization.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/agent-runtime/src/project-initialization.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/agent-runtime/src/types.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/agent-runtime/src/types.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/components/project-initialization/project-initialization-runner.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/project-initialization/project-initialization-runner.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/lib/cloud-api.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/lib/cloud-api.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -159,7 +156,7 @@
       <workItem from="1779096664911" duration="670000" />
       <workItem from="1779122410431" duration="1381000" />
       <workItem from="1779124310825" duration="4942000" />
-      <workItem from="1779145552359" duration="1227000" />
+      <workItem from="1779145552359" duration="1778000" />
     </task>
     <task id="LOCAL-00001" summary="feat: initial commit">
       <option name="closed" value="true" />
@@ -209,7 +206,15 @@
       <option name="project" value="LOCAL" />
       <updated>1779146061237</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="feat(api): implement git repository fingerprinting and legacy migration">
+      <option name="closed" value="true" />
+      <created>1779146794641</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1779146794641</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -247,8 +252,9 @@
     <MESSAGE value="feat(agent): implement oauth, terminal, and user story session support" />
     <MESSAGE value="feat(agent): implement project initialization workflow" />
     <MESSAGE value="feat(agent): refine project initialization prompt and validation logic" />
-    <MESSAGE value="feat(" />
     <MESSAGE value="feat(agent): improve project initialization prompt and validation logic" />
-    <option name="LAST_COMMIT_MESSAGE" value="feat(agent): improve project initialization prompt and validation logic" />
+    <MESSAGE value="feat(" />
+    <MESSAGE value="feat(api): implement git repository fingerprinting and legacy migration" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat(api): implement git repository fingerprinting and legacy migration" />
   </component>
 </project>

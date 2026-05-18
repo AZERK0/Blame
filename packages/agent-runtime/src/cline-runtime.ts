@@ -18,10 +18,12 @@ import {
   saveProviderCredential,
 } from "./cloud-api.js"
 import {
+  projectInitializationCorrectionPrompt,
   parseProjectInitializationResult,
   projectInitializationPrompt,
   scanProjectForInitialization,
 } from "./project-initialization.js"
+import type { ProjectInitializationScan } from "./project-initialization.js"
 import type {
   AgentApprovalRequest,
   AgentEvent,
@@ -39,6 +41,7 @@ import type {
 
 const readTools = ["read_files", "search_codebase", "fetch_web_content"]
 const writeTools = ["run_commands", "editor", "apply_patch"]
+const maxInitializationAttempts = 3
 
 type ToolApprovalRequest = {
   toolName?: string
@@ -55,6 +58,11 @@ type ToolApprovalResult = {
 type PendingApproval = {
   request: AgentApprovalRequest
   resolve(result: ToolApprovalResult): void
+}
+
+type InitializationCorrection = {
+  previousResult: string
+  validationError: string
 }
 
 type RuntimeOptions = {
@@ -178,19 +186,31 @@ export class BlameAgentRuntime {
     const resolvedCredential = await this.initializationCredential(input)
     const scan = await scanProjectForInitialization(input.workspaceRoot)
     const cline = await this.core()
-    const session = await cline.start({
-      prompt: projectInitializationPrompt(scan),
-      config: initializationConfig(input, resolvedCredential),
-      interactive: false,
-      source: "blame-project-initialization",
-      toolPolicies: initializationToolPolicies(),
-    })
-    const text = session.result?.text
-    if (!text) throw new Error("Project initialization agent did not return a result")
-    return {
-      sessionId: session.sessionId,
-      ...parseProjectInitializationResult(text),
+    let correction = input.validationFeedback
+    for (let attempt = 1; attempt <= maxInitializationAttempts; attempt += 1) {
+      const session = await cline.start({
+        prompt: initializationPrompt(scan, correction),
+        config: initializationConfig(input, resolvedCredential),
+        interactive: false,
+        source: "blame-project-initialization",
+        toolPolicies: initializationToolPolicies(),
+      })
+      const text = session.result?.text
+      if (!text) throw new Error("Project initialization agent did not return a result")
+      try {
+        return {
+          sessionId: session.sessionId,
+          ...parseProjectInitializationResult(text),
+        }
+      } catch (error) {
+        if (attempt === maxInitializationAttempts) throw error
+        correction = {
+          previousResult: text,
+          validationError: errorMessage(error),
+        }
+      }
     }
+    throw new Error("Project initialization agent did not return a valid result")
   }
 
   private async initializationCredential(input: InitializeProjectInput) {
@@ -357,6 +377,15 @@ function initializationConfig(
     enableAgentTeams: false,
     maxIterations: 8,
   }
+}
+
+function initializationPrompt(scan: ProjectInitializationScan, correction?: InitializationCorrection) {
+  if (!correction) return projectInitializationPrompt(scan)
+  return projectInitializationCorrectionPrompt(scan, correction)
+}
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error)
 }
 
 function initializationToolPolicies() {

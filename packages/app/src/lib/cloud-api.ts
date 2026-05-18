@@ -12,6 +12,13 @@ type ApiResponse<T> = {
   data: T
 }
 
+export class CloudApiError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message)
+    this.name = "CloudApiError"
+  }
+}
+
 export function createCloudApi(connection: ApiConnection) {
   const baseUrl = connection.url.replace(/\/$/, "")
 
@@ -156,7 +163,9 @@ async function request<T>(
     headers,
   })
 
-  if (!response.ok) throw new Error(await responseMessage(response))
+  if (!response.ok) {
+    throw new CloudApiError(await responseMessage(response), response.status)
+  }
   if (response.status === 204) return undefined as T
   return ((await response.json()) as ApiResponse<T>).data
 }

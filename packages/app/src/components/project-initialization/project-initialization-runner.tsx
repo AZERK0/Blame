@@ -18,9 +18,10 @@ import {
 import { useCloudAuth } from "@/context/cloud-auth"
 import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
-import { createCloudApi } from "@/lib/cloud-api"
+import { CloudApiError, createCloudApi } from "@/lib/cloud-api"
 
 const toastId = "project-initialization"
+const maxBackendCompletionAttempts = 3
 
 type InitializationAuth = Pick<
   ReturnType<typeof useCloudAuth>,
@@ -34,6 +35,15 @@ type InitializationRunInput = {
   providerId: string
   modelId: string
 }
+
+type InitializationValidationFeedback = {
+  validationError: string
+  previousResult: string
+}
+
+type InitializationAgentResult = Awaited<
+  ReturnType<InitializationRunInput["agent"]["initializations"]["run"]>
+>
 
 export function ProjectInitializationRunner() {
   const controller = useProjectInitializationController()
@@ -290,20 +300,67 @@ async function persistInitializationResult(
     providerId: input.providerId,
     modelId: input.modelId,
   })
-  const result = await input.agent.initializations.run({
+  let feedback: InitializationValidationFeedback | undefined
+  for (let attempt = 1; attempt <= maxBackendCompletionAttempts; attempt += 1) {
+    const result = await runProjectInitializationAgent(input, feedback)
+    try {
+      await completeProjectInitialization(input, cloud, result)
+      showSuccess()
+      return
+    } catch (error) {
+      if (!shouldRetryBackendValidation(error, attempt)) throw error
+      feedback = validationFeedback(error, result)
+    }
+  }
+}
+
+function runProjectInitializationAgent(
+  input: InitializationRunInput,
+  validationFeedback?: InitializationValidationFeedback
+) {
+  return input.agent.initializations.run({
     apiConnection: input.auth.apiConnection,
     providerId: input.providerId,
     modelId: input.modelId,
     cwd: input.project.path,
     workspaceRoot: input.project.path,
+    validationFeedback,
   })
+}
+
+async function completeProjectInitialization(
+  input: InitializationRunInput,
+  cloud: ReturnType<typeof createCloudApi>,
+  result: InitializationAgentResult
+) {
   await cloud.completeProjectInitialization(input.project.id, {
     clineSessionId: result.sessionId,
     setupScript: result.setupScript,
     dockerCompose: result.dockerCompose,
     practices: result.practices,
   })
-  showSuccess()
+}
+
+function shouldRetryBackendValidation(error: unknown, attempt: number) {
+  return attempt < maxBackendCompletionAttempts && isBackendValidationError(error)
+}
+
+function isBackendValidationError(error: unknown) {
+  return error instanceof CloudApiError && [400, 422].includes(error.status)
+}
+
+function validationFeedback(
+  error: unknown,
+  result: InitializationAgentResult
+): InitializationValidationFeedback {
+  return {
+    validationError: errorMessage(error),
+    previousResult: JSON.stringify({
+      setupScript: result.setupScript,
+      dockerCompose: result.dockerCompose,
+      practices: result.practices,
+    }),
+  }
 }
 
 async function persistInitializationError(

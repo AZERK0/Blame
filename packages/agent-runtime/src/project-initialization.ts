@@ -7,6 +7,7 @@ import type { ProjectCodePracticeKey, ProjectCodePracticeResult } from "./types.
 
 const execFileAsync = promisify(execFile)
 const maxFileBytes = 16_000
+const maxCorrectionPayloadLength = 24_000
 const requiredPractices: ProjectCodePracticeKey[] = [
   "coding_style",
   "unit_tests",
@@ -60,6 +61,11 @@ type ParsedProjectInitialization = {
   setupScript: string
   dockerCompose: string
   practices: ProjectCodePracticeResult[]
+}
+
+type ProjectInitializationCorrection = {
+  validationError: string
+  previousResult: string
 }
 
 export async function scanProjectForInitialization(root: string): Promise<ProjectInitializationScan> {
@@ -125,6 +131,21 @@ export function projectInitializationPrompt(scan: ProjectInitializationScan) {
     `Root entries: ${JSON.stringify(scan.topLevelEntries)}`,
     `Recent git log: ${JSON.stringify(scan.gitLog)}`,
     `Strategic files: ${JSON.stringify(scan.files)}`,
+  ].join("\n")
+}
+
+export function projectInitializationCorrectionPrompt(
+  scan: ProjectInitializationScan,
+  correction: ProjectInitializationCorrection
+) {
+  return [
+    projectInitializationPrompt(scan),
+    "Your previous response was rejected by validation.",
+    "Fix only the generated JSON output according to the validation error.",
+    "Do not broaden the analysis and do not read more files.",
+    "Return a complete corrected JSON object only.",
+    `Validation error: ${correction.validationError}`,
+    `Previous rejected response: ${truncateCorrectionPayload(correction.previousResult)}`,
   ].join("\n")
 }
 
@@ -270,6 +291,11 @@ function composeLifecyclePresent(value: string) {
 
 function includesOneOf(value: string, candidates: string[]) {
   return candidates.some((candidate) => value.includes(candidate))
+}
+
+function truncateCorrectionPayload(value: string) {
+  if (value.length <= maxCorrectionPayloadLength) return value
+  return value.slice(0, maxCorrectionPayloadLength)
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

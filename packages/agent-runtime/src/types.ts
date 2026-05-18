@@ -122,6 +122,10 @@ export type InitializeProjectInput = {
   cwd: string
   workspaceRoot: string
   credentialLabel?: string
+  validationFeedback?: {
+    validationError: string
+    previousResult: string
+  }
 }
 
 export type InitializeProjectResult = {
