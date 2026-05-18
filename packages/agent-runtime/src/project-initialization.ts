@@ -36,7 +36,10 @@ const strategicFiles = [
   "compose.yml",
   "compose.yaml",
   ".env.example",
+  ".env.sample",
+  ".env.template",
   ".env.local.example",
+  ".env.development",
   "README.md",
   "AGENTS.md",
   "tsconfig.json",
@@ -70,19 +73,58 @@ export async function scanProjectForInitialization(root: string): Promise<Projec
 
 export function projectInitializationPrompt(scan: ProjectInitializationScan) {
   return [
-    "Analyse ce projet vite et uniquement aux endroits strategiques fournis.",
-    "Retourne un objet JSON valide sans markdown, sans texte autour.",
-    "Le JSON doit respecter exactement cette forme:",
+    "Analyze this project quickly and only through the strategic inputs provided.",
+    "Return a valid JSON object only. No markdown, explanations, comments, or surrounding text.",
+    "The JSON must match this exact shape:",
     '{"setupScript":"...","dockerCompose":"...","practices":[{"practice":"coding_style","detected":true,"comment":"..."},{"practice":"unit_tests","detected":false,"comment":"..."},{"practice":"layered_architecture","detected":true,"comment":"..."},{"practice":"commit_message_convention","detected":false,"comment":"..."}]}',
-    "Le setupScript doit initialiser des git worktrees adaptes au projet, installer les dependances, preparer les fichiers env, choisir des ports hotes disponibles et lancer la preview via Docker Compose.",
-    "Le dockerCompose doit garder les ports internes du projet et utiliser des ports hotes dynamiques comme ${WEB_PORT}:3000.",
-    "Si un compose existe deja, inspire-toi de sa structure en ne changeant que project name unique, ports hotes dynamiques, env Blame, volumes isoles et labels metadata.",
-    "Les practices sont binaires et accompagnees d'un commentaire court sur l'etat actuel.",
-    "N'utilise pas d'outils d'ecriture et ne lis pas largement la codebase.",
-    `Projet: ${scan.rootName}`,
-    `Entrees racine: ${JSON.stringify(scan.topLevelEntries)}`,
-    `Git log recent: ${JSON.stringify(scan.gitLog)}`,
-    `Fichiers strategiques: ${JSON.stringify(scan.files)}`,
+
+    "setupScript requirements:",
+    "It must be a complete end-to-end executable bash script using set -euo pipefail.",
+    "It must initialize the current already-created git worktree for preview execution.",
+    "It must install dependencies, prepare required env files, select free host ports, run Docker Compose, and print final preview URLs.",
+    "It must not leave startup steps to the reader and must not use placeholders, TODOs, or non-executable comments.",
+    "If .env example files exist, copy or generate the required .env files from them.",
+    "If the Compose file does not start dev/preview servers by itself, start them inside the containers.",
+
+    "Worktree model:",
+    "The setupScript is run from inside an already-created git worktree and must initialize only the current directory.",
+    "It must not manage worktrees: no git worktree add/remove/prune/list, no tmp/worktrees, no cd to another worktree.",
+    "It must never create, modify, or assume .git is a directory; .git may be a file in worktrees.",
+    "Do not create anything under .git, including .git/worktrees.",
+
+    "Environment requirements:",
+    "Generated env values must be exported consistently: either source the generated .env safely or export the same values written to it.",
+    "COMPOSE_PROJECT_NAME must be unique per worktree.",
+    "If multiple services require env files, create each one in the correct directory.",
+
+    "Docker Compose requirements:",
+    "dockerCompose must be a directly runnable Docker Compose config.",
+    "Preserve internal app ports and expose only dynamic host ports, for example ${WEB_PORT}:3000.",
+    "Include all services required for a working preview.",
+    "Reuse an existing Compose structure when present, changing only what is needed for isolation, dynamic ports, env, volumes, and Blame metadata.",
+    "The setupScript must write dockerCompose to a compose file in the current worktree when needed, then run docker compose from there.",
+    "Containers, networks, and volumes must be isolated through COMPOSE_PROJECT_NAME.",
+
+    "Port requirements:",
+    "Choose free host ports dynamically, avoid duplicates in one run, and map them to fixed internal container ports.",
+    "Do not change app internal ports just to avoid host conflicts.",
+
+    "Quality checks:",
+    "Fail early with clear errors for missing required tools.",
+    "Before returning, ensure setupScript does not contain forbidden patterns: git worktree, mkdir -p .git, .git/worktrees, tmp/worktrees, cd to another worktree, writing under .git.",
+
+    "practices requirements:",
+    "The practices array must contain binary detections only.",
+    "Each practice must include a short comment describing the observed state.",
+
+    "Do not use write tools.",
+    "Do not read the codebase broadly.",
+    "Base your answer only on the provided strategic project scan.",
+
+    `Project: ${scan.rootName}`,
+    `Root entries: ${JSON.stringify(scan.topLevelEntries)}`,
+    `Recent git log: ${JSON.stringify(scan.gitLog)}`,
+    `Strategic files: ${JSON.stringify(scan.files)}`,
   ].join("\n")
 }
 
@@ -93,6 +135,7 @@ export function parseProjectInitializationResult(text: string): ParsedProjectIni
   const dockerCompose = stringValue(parsed.dockerCompose)
   if (!setupScript) throw new Error("Initialization result is missing setupScript")
   if (!dockerCompose) throw new Error("Initialization result is missing dockerCompose")
+  validateGeneratedArtifacts(setupScript, dockerCompose)
   return {
     setupScript,
     dockerCompose,
@@ -167,6 +210,66 @@ function parsePractice(values: unknown[], practice: ProjectCodePracticeKey) {
   const comment = stringValue(value.comment)
   if (!comment) throw new Error(`${practice} comment is required`)
   return { practice, detected: value.detected, comment }
+}
+
+function validateGeneratedArtifacts(script: string, compose: string) {
+  const normalizedScript = script.toLowerCase()
+  const normalizedCompose = compose.toLowerCase()
+  if (!handlesEnvFiles(normalizedScript)) {
+    throw new Error("Initialization result setupScript must prepare env files")
+  }
+  if (!launchesDockerCompose(normalizedScript)) {
+    throw new Error("Initialization result setupScript must launch docker compose")
+  }
+  validateDockerCompose(normalizedCompose)
+}
+
+function validateDockerCompose(compose: string) {
+  if (!compose.includes("services:")) {
+    throw new Error("Initialization result dockerCompose must define services")
+  }
+  if (!hasPortMapping(compose)) {
+    throw new Error("Initialization result dockerCompose must expose dynamic host ports")
+  }
+}
+
+function handlesEnvFiles(script: string) {
+  return includesOneOf(script, [
+    ".env.example",
+    ".env.sample",
+    ".env.template",
+    "cp .env",
+    "copy .env",
+    "install -m",
+    "cat > .env",
+    "touch .env",
+  ])
+}
+
+function launchesDockerCompose(script: string) {
+  return composeCommandPresent(script) && composeLifecyclePresent(script)
+}
+
+function hasPortMapping(compose: string) {
+  return includesOneOf(compose, [
+    "${web_port}:",
+    "${api_port}:",
+    "${frontend_port}:",
+    "${port}:",
+    'ports:',
+  ])
+}
+
+function composeCommandPresent(value: string) {
+  return /docker\s+compose|docker-compose|compose_cmd|docker_compose|compose command|compose binary/.test(value)
+}
+
+function composeLifecyclePresent(value: string) {
+  return /\bup\b|\brun\b|\bstart\b/.test(value)
+}
+
+function includesOneOf(value: string, candidates: string[]) {
+  return candidates.some((candidate) => value.includes(candidate))
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
