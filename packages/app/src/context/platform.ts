@@ -80,6 +80,7 @@ export type WorkspaceClient = {
     limit?: number
   }): Promise<WorkspaceEntry[]>
   gitDiff(input: { root: string }): Promise<string>
+  gitRepositoryFingerprint(input: { root: string }): Promise<string | null>
 }
 
 export type TerminalEvent = {

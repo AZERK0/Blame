@@ -42,13 +42,13 @@ function useProjectState(
     async (path: string) => {
       setOpening(true)
       try {
-        const project = await resolveProject(path, auth)
+        const project = await resolveProject(path, auth, platform)
         setState((current) => openProjectState(current, project))
       } finally {
         setOpening(false)
       }
     },
-    [auth]
+    [auth, platform]
   )
 
   const chooseProject = React.useCallback(async () => {
@@ -75,12 +75,15 @@ function useProjectState(
 
 async function resolveProject(
   path: string,
-  auth: ReturnType<typeof useCloudAuth>
+  auth: ReturnType<typeof useCloudAuth>,
+  platform: ReturnType<typeof usePlatform>
 ) {
   const localProject = createProject(path)
+  const repositoryFingerprint =
+    (await platform.workspace?.gitRepositoryFingerprint({ root: path })) ?? null
   const cloudProject = await createCloudApi(auth.apiConnection).ensureProject({
     name: localProject.name,
-    repositoryFingerprint: null,
+    repositoryFingerprint,
   })
 
   return createProject(path, undefined, cloudProject)

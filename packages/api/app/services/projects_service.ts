@@ -10,12 +10,7 @@ export default class ProjectsService {
   }
 
   async ensure(userId: number, input: EnsureProjectInput) {
-    const existing = input.repositoryFingerprint
-      ? await Project.query()
-          .where('userId', userId)
-          .where('repositoryFingerprint', input.repositoryFingerprint)
-          .first()
-      : undefined
+    const existing = await this.findExistingProject(userId, input)
 
     if (!existing) {
       return Project.create({
@@ -29,6 +24,35 @@ export default class ProjectsService {
     existing.merge({ name: input.name })
     await existing.save()
     return existing
+  }
+
+  private async findExistingProject(userId: number, input: EnsureProjectInput) {
+    if (!input.repositoryFingerprint) {
+      return undefined
+    }
+
+    const fingerprintMatch = await Project.query()
+      .where('userId', userId)
+      .where('repositoryFingerprint', input.repositoryFingerprint)
+      .first()
+
+    if (fingerprintMatch) {
+      return fingerprintMatch
+    }
+
+    const legacyMatch = await Project.query()
+      .where('userId', userId)
+      .where('name', input.name)
+      .whereNull('repositoryFingerprint')
+      .first()
+
+    if (!legacyMatch) {
+      return undefined
+    }
+
+    legacyMatch.repositoryFingerprint = input.repositoryFingerprint
+    await legacyMatch.save()
+    return legacyMatch
   }
 
   async findForUser(userId: number, id: string) {
