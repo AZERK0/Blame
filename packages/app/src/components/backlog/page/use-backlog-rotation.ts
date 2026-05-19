@@ -1,0 +1,259 @@
+import * as React from "react"
+import { toast } from "sonner"
+import type { AgentEvent } from "@blame/agent-runtime"
+
+import type { UserStory } from "@/components/backlog/data/backlog-data"
+import type { useBacklogStore } from "@/components/backlog/data/backlog-store"
+import { useModelSelection } from "@/components/model/model-selector"
+import { useCloudAuth } from "@/context/cloud-auth"
+import type { ProjectSetupEvent } from "@/context/platform"
+import { usePlatform } from "@/context/platform"
+import { useProjects } from "@/context/projects"
+import { createCloudApi } from "@/lib/cloud-api"
+
+const maxConcurrentDevelopmentStories = 3
+const blockerRetryDelay = 30_000
+const setupToastId = "backlog-rotation-setup"
+const urlPattern = /\bhttps?:\/\/[^\s"'<>]+|\blocalhost:\d+[^\s"'<>]*/i
+
+export function useBacklogRotation(backlog: ReturnType<typeof useBacklogStore>) {
+  const auth = useCloudAuth()
+  const platform = usePlatform()
+  const projects = useProjects()
+  const selection = useModelSelection()
+  const startingStoryIds = React.useRef(new Set<number>())
+  const blockedStories = React.useRef(new Map<number, number>())
+  const reportedBlockers = React.useRef(new Set<string>())
+  const [, refreshStartingStories] = React.useState(0)
+
+  React.useEffect(() => {
+    blockedStories.current.clear()
+    reportedBlockers.current.clear()
+  }, [projects.activeProject?.id, selection.currentModel?.id])
+
+  React.useEffect(() => {
+    if (!projects.activeProject || auth.status !== "authenticated") return
+    if (backlog.loading || !backlog.projectId) return
+
+    const readyStories = queuedStories(
+      backlog.stories,
+      startingStoryIds.current,
+      blockedStories.current
+    )
+    if (readyStories.length === 0) return
+
+    const availableSlots =
+      maxConcurrentDevelopmentStories -
+      runningStories(backlog.stories) -
+      startingStoryIds.current.size
+    if (availableSlots <= 0) return
+
+    const storiesToStart = readyStories.slice(0, availableSlots)
+    storiesToStart.forEach((story) => {
+      startingStoryIds.current.add(story.id)
+      void startStory(story)
+        .catch((error) => reportBlocker(story, errorMessage(error)))
+        .finally(() => {
+          startingStoryIds.current.delete(story.id)
+          refreshStartingStories((value) => value + 1)
+        })
+    })
+    refreshStartingStories((value) => value + 1)
+  }, [
+    auth,
+    backlog,
+    platform,
+    projects.activeProject,
+    selection.currentModel,
+    selection.currentVariant,
+  ])
+
+  async function startStory(story: UserStory) {
+    if (!projects.activeProject) return
+    const blocker = rotationBlocker(auth.status, platform, selection.currentModel)
+    if (blocker) return reportBlocker(story, blocker)
+
+    const initialization = await createCloudApi(auth.apiConnection)
+      .projectInitialization(projects.activeProject.id)
+      .then((snapshot) => snapshot.initialization)
+
+    if (
+      initialization?.status !== "done" ||
+      !initialization.setupScript ||
+      !initialization.dockerCompose
+    ) {
+      reportBlocker(
+        story,
+        "Project initialization is required before starting queued user stories."
+      )
+      return
+    }
+
+    const worktree = await platform.workspace.createWorktree({
+      repositoryRoot: projects.activeProject.path,
+      storyId: story.id,
+      title: story.title,
+    })
+    const setup = await platform.workspace.runProjectSetup({
+      worktree: worktree.worktree,
+      setupScript: initialization.setupScript,
+      dockerCompose: initialization.dockerCompose,
+    })
+    const unsubscribeSetup = platform.workspace.onSetupEvent(setup.runId, (event) => {
+      void persistSetupEvent(story, event)
+      if (event.type === "exit") unsubscribeSetup()
+    })
+    const session = await platform.agent.sessions.start({
+      apiConnection: auth.apiConnection,
+      providerId: selection.currentModel.provider.id,
+      modelId: selection.currentModel.id,
+      reasoningEffort: selection.currentVariant,
+      prompt: storyPrompt(story),
+      cwd: worktree.worktree,
+      workspaceRoot: worktree.worktree,
+    })
+    const unsubscribeSession = platform.agent.sessions.onEvent(
+      session.sessionId,
+      (event) => {
+        void persistAgentEvent(story, event)
+        if (event.type === "done" || event.type === "error") unsubscribeSession()
+      }
+    )
+
+    await backlog.update(story, {
+      agentModelId: selection.currentModel.id,
+      agentProviderId: selection.currentModel.provider.id,
+      agentStatus: "Running",
+      branch: worktree.branch,
+      clineSessionId: session.sessionId,
+      status: "in-progress",
+      worktree: worktree.worktree,
+    })
+  }
+
+  function reportBlocker(story: UserStory, message: string) {
+    const key = `${story.id}:${message}`
+    blockedStories.current.set(story.id, Date.now() + blockerRetryDelay)
+    window.setTimeout(() => {
+      blockedStories.current.delete(story.id)
+      refreshStartingStories((value) => value + 1)
+    }, blockerRetryDelay)
+    if (reportedBlockers.current.has(key)) return
+    reportedBlockers.current.add(key)
+    toast.error("User story stayed in Agent Queue", {
+      description: message,
+      id: `${setupToastId}-${story.id}`,
+      position: "bottom-right",
+    })
+  }
+
+  async function persistSetupEvent(story: UserStory, event: ProjectSetupEvent) {
+    const text = eventText(event)
+    const previewUrl = firstPreviewUrl(text)
+    await backlog.update(story, {
+      agentLastError: setupError(event) ? text : undefined,
+      agentLastEvent: text,
+      previewUrl,
+    })
+  }
+
+  async function persistAgentEvent(story: UserStory, event: AgentEvent) {
+    const text = agentEventText(event)
+    await backlog.update(story, {
+      agentLastError: event.type === "error" ? text || "Agent session failed" : undefined,
+      agentLastEvent: text || event.type,
+    })
+  }
+}
+
+function runningStories(stories: UserStory[]) {
+  return stories.filter(
+    (story) => story.status === "in-progress" && story.agentStatus === "Running"
+  ).length
+}
+
+function queuedStories(
+  stories: UserStory[],
+  startingStoryIds: Set<number>,
+  blockedStories: Map<number, number>
+) {
+  const now = Date.now()
+  return stories
+    .filter(
+      (story) =>
+        story.status === "ready" &&
+        !startingStoryIds.has(story.id) &&
+        !blocked(story.id, blockedStories, now)
+    )
+    .sort(
+      (left, right) =>
+        new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime()
+    )
+}
+
+function blocked(storyId: number, blockedStories: Map<number, number>, now: number) {
+  const retryAt = blockedStories.get(storyId)
+  if (!retryAt) return false
+  if (retryAt > now) return true
+  blockedStories.delete(storyId)
+  return false
+}
+
+function rotationBlocker(
+  authStatus: ReturnType<typeof useCloudAuth>["status"],
+  platform: ReturnType<typeof usePlatform>,
+  model: ReturnType<typeof useModelSelection>["currentModel"]
+) {
+  if (authStatus !== "authenticated") return "Authentication is required."
+  if (!platform.agent) return "Desktop agent runtime is not available."
+  if (!platform.workspace?.createWorktree) return "Desktop worktree runtime is not available."
+  if (!platform.workspace.runProjectSetup) return "Desktop setup runtime is not available."
+  if (!platform.workspace.onSetupEvent) return "Desktop setup events are not available."
+  if (!model) return "Choose a model before starting queued user stories."
+  return undefined
+}
+
+function storyPrompt(story: UserStory) {
+  return [
+    `Implement this user story: ${story.title}`,
+    "",
+    story.summary,
+  ].join("\n")
+}
+
+function eventText(event: ProjectSetupEvent) {
+  if (event.type === "exit") return `Setup exited with code ${event.data}`
+  return event.data.trim()
+}
+
+function setupError(event: ProjectSetupEvent) {
+  return (
+    event.type === "stderr" ||
+    (event.type === "exit" && event.data !== "0")
+  )
+}
+
+function firstPreviewUrl(text: string) {
+  const match = text.match(urlPattern)?.[0]
+  if (!match) return undefined
+  if (match.startsWith("http")) return match
+  return `http://${match}`
+}
+
+function agentEventText(event: AgentEvent) {
+  if (!event.payload || typeof event.payload !== "object") return ""
+  if ("text" in event.payload && typeof event.payload.text === "string") {
+    return event.payload.text
+  }
+  if ("message" in event.payload && typeof event.payload.message === "string") {
+    return event.payload.message
+  }
+  if ("error" in event.payload && typeof event.payload.error === "string") {
+    return event.payload.error
+  }
+  return ""
+}
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Unable to start queued user story."
+}

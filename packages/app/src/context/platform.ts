@@ -68,6 +68,17 @@ export type WorkspaceEntry = {
   type: "directory" | "file"
 }
 
+export type WorktreeResult = {
+  worktree: string
+  branch: string
+}
+
+export type ProjectSetupEvent = {
+  runId: string
+  type: "stdout" | "stderr" | "exit"
+  data: string
+}
+
 export type WorkspaceClient = {
   listDirectory(input: {
     root: string
@@ -81,6 +92,20 @@ export type WorkspaceClient = {
   }): Promise<WorkspaceEntry[]>
   gitDiff(input: { root: string }): Promise<string>
   gitRepositoryFingerprint(input: { root: string }): Promise<string | null>
+  createWorktree(input: {
+    repositoryRoot: string
+    storyId: number
+    title: string
+  }): Promise<WorktreeResult>
+  runProjectSetup(input: {
+    worktree: string
+    setupScript: string
+    dockerCompose: string
+  }): Promise<{ runId: string }>
+  onSetupEvent(
+    runId: string,
+    callback: (event: ProjectSetupEvent) => void
+  ): () => void
 }
 
 export type TerminalEvent = {

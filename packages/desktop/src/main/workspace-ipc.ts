@@ -1,9 +1,10 @@
-import { execFile } from "node:child_process";
-import { createHash } from "node:crypto";
-import { readdir, readFile, stat } from "node:fs/promises";
-import { relative, resolve, sep } from "node:path";
+import { execFile, spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
+import { createHash, randomUUID } from "node:crypto";
+import { existsSync } from "node:fs";
+import { chmod, mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
+import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { promisify } from "node:util";
-import { ipcMain } from "electron";
+import { BrowserWindow, ipcMain } from "electron";
 
 const execFileAsync = promisify(execFile);
 
@@ -16,6 +17,25 @@ type WorkspaceSearchInput = WorkspacePathInput & {
   query: string;
   limit?: number;
 };
+
+type CreateWorktreeInput = {
+  repositoryRoot: string;
+  storyId: number;
+  title: string;
+};
+
+type RunProjectSetupInput = {
+  worktree: string;
+  setupScript: string;
+  dockerCompose: string;
+};
+
+type SetupRun = {
+  id: string;
+  process: ChildProcessWithoutNullStreams;
+};
+
+const setupRuns = new Map<string, SetupRun>();
 
 export function registerWorkspaceIpcHandlers() {
   ipcMain.handle(
@@ -35,6 +55,12 @@ export function registerWorkspaceIpcHandlers() {
   ipcMain.handle(
     "workspace:git-repository-fingerprint",
     (_event, input: { root: string }) => gitRepositoryFingerprint(input.root),
+  );
+  ipcMain.handle("workspace:create-worktree", (_event, input: CreateWorktreeInput) =>
+    createWorktree(input),
+  );
+  ipcMain.handle("workspace:run-project-setup", (_event, input: RunProjectSetupInput) =>
+    runProjectSetup(input),
   );
 }
 
@@ -93,6 +119,79 @@ async function gitRepositoryFingerprint(root: string) {
   }
 
   return null;
+}
+
+async function createWorktree(input: CreateWorktreeInput) {
+  const repositoryRoot = resolve(input.repositoryRoot);
+  const repositoryName = basename(repositoryRoot);
+  const slug = storySlug(input.storyId, input.title);
+  const branch = `blame/story-${input.storyId}-${slug}`;
+  const worktree = resolve(
+    dirname(repositoryRoot),
+    ".blame-worktrees",
+    repositoryName,
+    `story-${input.storyId}-${slug}`,
+  );
+
+  await assertGitRepository(repositoryRoot);
+  await mkdir(dirname(worktree), { recursive: true });
+
+  if (await worktreeRegistered(repositoryRoot, worktree)) {
+    return { worktree, branch };
+  }
+
+  if (existsSync(worktree)) {
+    throw new Error("Worktree directory already exists but is not registered");
+  }
+
+  if (await branchExists(repositoryRoot, branch)) {
+    await execFileAsync("git", ["worktree", "add", worktree, branch], {
+      cwd: repositoryRoot,
+    });
+    return { worktree, branch };
+  }
+
+  await execFileAsync("git", ["worktree", "add", "-b", branch, worktree, "HEAD"], {
+    cwd: repositoryRoot,
+  });
+  return { worktree, branch };
+}
+
+async function runProjectSetup(input: RunProjectSetupInput) {
+  const worktree = resolve(input.worktree);
+  await assertGitRepository(worktree);
+  const directory = join(worktree, ".blame", "initialization");
+  const scriptPath = join(directory, "setup.sh");
+  const composePath = join(directory, "docker-compose.yml");
+
+  await mkdir(directory, { recursive: true });
+  await writeFile(scriptPath, input.setupScript, "utf8");
+  await writeFile(composePath, input.dockerCompose, "utf8");
+  await chmod(scriptPath, 0o755);
+
+  const runId = randomUUID();
+  const child = spawn("bash", [scriptPath], {
+    cwd: worktree,
+    env: {
+      ...process.env,
+      BLAME_DOCKER_COMPOSE_FILE: composePath,
+      BLAME_INITIALIZATION_DIR: directory,
+    },
+  });
+  setupRuns.set(runId, { id: runId, process: child });
+
+  child.stdout.on("data", (data: Buffer) =>
+    emitSetupEvent(runId, "stdout", data.toString()),
+  );
+  child.stderr.on("data", (data: Buffer) =>
+    emitSetupEvent(runId, "stderr", data.toString()),
+  );
+  child.on("exit", (code) => {
+    setupRuns.delete(runId);
+    emitSetupEvent(runId, "exit", String(code ?? ""));
+  });
+
+  return { runId };
 }
 
 async function walk(
@@ -157,6 +256,57 @@ async function gitRemoteUrls(cwd: string) {
   } catch {
     return [];
   }
+}
+
+async function assertGitRepository(cwd: string) {
+  await execFileAsync("git", ["rev-parse", "--show-toplevel"], { cwd });
+}
+
+async function branchExists(cwd: string, branch: string) {
+  try {
+    await execFileAsync(
+      "git",
+      ["show-ref", "--verify", "--quiet", `refs/heads/${branch}`],
+      { cwd },
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function worktreeRegistered(cwd: string, worktree: string) {
+  const { stdout } = await execFileAsync(
+    "git",
+    ["worktree", "list", "--porcelain"],
+    { cwd },
+  );
+  return stdout
+    .split("\n")
+    .some((line) => line.trim() === `worktree ${worktree}`);
+}
+
+function storySlug(storyId: number, title: string) {
+  const slug = title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48);
+  return slug || `story-${storyId}`;
+}
+
+function emitSetupEvent(
+  runId: string,
+  type: "stdout" | "stderr" | "exit",
+  data: string,
+) {
+  BrowserWindow.getAllWindows().forEach((window) => {
+    window.webContents.send(`workspace:setup:event:${runId}`, {
+      runId,
+      type,
+      data,
+    });
+  });
 }
 
 async function gitRootCommits(cwd: string) {

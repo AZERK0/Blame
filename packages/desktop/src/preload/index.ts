@@ -14,6 +14,19 @@ const api: BlameDesktopApi = {
     gitDiff: (input) => ipcRenderer.invoke("workspace:git-diff", input),
     gitRepositoryFingerprint: (input) =>
       ipcRenderer.invoke("workspace:git-repository-fingerprint", input),
+    createWorktree: (input) =>
+      ipcRenderer.invoke("workspace:create-worktree", input),
+    runProjectSetup: (input) =>
+      ipcRenderer.invoke("workspace:run-project-setup", input),
+    onSetupEvent: (runId, callback) => {
+      const channel = `workspace:setup:event:${runId}`;
+      const handler = (
+        _event: unknown,
+        event: Parameters<typeof callback>[0],
+      ) => callback(event);
+      ipcRenderer.on(channel, handler);
+      return () => ipcRenderer.removeListener(channel, handler);
+    },
   },
   terminal: {
     start: (input) => ipcRenderer.invoke("terminal:start", input),

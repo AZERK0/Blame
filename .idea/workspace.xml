@@ -5,8 +5,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="98ea9b59-4f4a-4e05-8e92-ccffc0a05220" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/components/backlog/drawer/user-story-drawer-panel.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/drawer/user-story-drawer-panel.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/components/backlog/page/backlog-page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/page/backlog-page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/context/platform.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/context/platform.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/desktop/src/main/workspace-ipc.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/desktop/src/main/workspace-ipc.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/desktop/src/preload/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/desktop/src/preload/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/desktop/src/preload/types.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/desktop/src/preload/types.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -91,29 +97,29 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.MCP Project settings loaded": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "codeWithMe.voiceChat.enabledByDefault": "false",
-    "git-widget-placeholder": "main",
-    "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "/mnt/dev/web/opencode",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "npm.dev.executor": "Run",
-    "settings.editor.selected.configurable": "project.propVCSSupport.CommitDialog",
-    "ts.external.directory.path": "/home/azerko/.local/share/JetBrains/Toolbox/apps/intellij-idea/plugins/javascript-plugin/jsLanguageServicesImpl/external",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/mnt/dev/web/opencode&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;npm.dev.executor&quot;: &quot;Run&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;project.propVCSSupport.CommitDialog&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;/home/azerko/.local/share/JetBrains/Toolbox/apps/intellij-idea/plugins/javascript-plugin/jsLanguageServicesImpl/external&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RunManager">
     <configuration name="dev" type="js.build_tools.npm" temporary="true" nameIsGenerated="true">
       <package-json value="$PROJECT_DIR$/package.json" />
@@ -153,7 +159,12 @@
       <workItem from="1779096664911" duration="670000" />
       <workItem from="1779122410431" duration="1381000" />
       <workItem from="1779124310825" duration="4942000" />
-      <workItem from="1779145552359" duration="2472000" />
+      <workItem from="1779145552359" duration="3653000" />
+      <workItem from="1779188219908" duration="3000" />
+      <workItem from="1779191311532" duration="696000" />
+      <workItem from="1779192212351" duration="2641000" />
+      <workItem from="1779211643881" duration="1431000" />
+      <workItem from="1779225092816" duration="1236000" />
     </task>
     <task id="LOCAL-00001" summary="feat: initial commit">
       <option name="closed" value="true" />
@@ -219,7 +230,15 @@
       <option name="project" value="LOCAL" />
       <updated>1779147396892</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="docs(readme): rewrite project documentation and vision">
+      <option name="closed" value="true" />
+      <created>1779148030246</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1779148030246</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -261,6 +280,8 @@
     <MESSAGE value="feat(api): implement git repository fingerprinting and legacy migration" />
     <MESSAGE value="feat(" />
     <MESSAGE value="feat(agent): implement iterative validation for project initialization" />
-    <option name="LAST_COMMIT_MESSAGE" value="feat(agent): implement iterative validation for project initialization" />
+    <MESSAGE value="docs(" />
+    <MESSAGE value="docs(readme): rewrite project documentation and vision" />
+    <option name="LAST_COMMIT_MESSAGE" value="docs(readme): rewrite project documentation and vision" />
   </component>
 </project>

@@ -6,10 +6,12 @@ import type { DrawerTarget } from "@/components/backlog/shared/backlog-types"
 import { BacklogColumn } from "@/components/backlog/board/backlog-column"
 import { BacklogToolbar } from "@/components/backlog/board/backlog-toolbar"
 import { UserStoryDrawer } from "@/components/backlog/drawer/user-story-drawer"
+import { useBacklogRotation } from "@/components/backlog/page/use-backlog-rotation"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 
 export function BacklogPage() {
   const backlog = useBacklogStore()
+  useBacklogRotation(backlog)
   const [drawerTarget, setDrawerTarget] = React.useState<DrawerTarget>()
   const openDrawer = React.useCallback((target: DrawerTarget) => {
     setDrawerTarget(target)
