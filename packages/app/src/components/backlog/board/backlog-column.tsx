@@ -7,6 +7,7 @@ import {
 } from "@/components/backlog/data/backlog-data"
 import type { OpenDrawer } from "@/components/backlog/shared/backlog-types"
 import { UserStoryCard } from "@/components/backlog/board/user-story-card"
+import type { StopAgentChoice } from "@/components/backlog/actions/story-action-dialogs"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -24,11 +25,13 @@ export function BacklogColumn({
   column,
   onCreateUserStory,
   onOpenDrawer,
+  onStopAgent,
   stories,
 }: {
   column: (typeof backlogColumns)[number]
   onCreateUserStory: () => void
   onOpenDrawer: OpenDrawer
+  onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
   stories: UserStory[]
 }) {
   return (
@@ -39,6 +42,7 @@ export function BacklogColumn({
           <UserStoryCard
             key={story.id}
             onOpenDrawer={onOpenDrawer}
+            onStopAgent={onStopAgent}
             story={story}
           />
         ))}

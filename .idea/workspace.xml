@@ -5,9 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="98ea9b59-4f4a-4e05-8e92-ccffc0a05220" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/packages/app/src/components/backlog/drawer/user-story-drawer-panel.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/drawer/user-story-drawer-panel.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/components/backlog/actions/story-action-button.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/actions/story-action-button.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/components/backlog/actions/story-action-dialogs.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/actions/story-action-dialogs.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/components/backlog/actions/story-actions.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/actions/story-actions.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/components/backlog/board/backlog-column.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/board/backlog-column.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/app/src/components/backlog/board/user-story-card.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/board/user-story-card.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/packages/app/src/components/backlog/page/backlog-page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/page/backlog-page.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/packages/app/src/context/platform.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/context/platform.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/packages/desktop/src/main/workspace-ipc.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/desktop/src/main/workspace-ipc.ts" afterDir="false" />
@@ -164,7 +166,7 @@
       <workItem from="1779191311532" duration="696000" />
       <workItem from="1779192212351" duration="2641000" />
       <workItem from="1779211643881" duration="1431000" />
-      <workItem from="1779225092816" duration="1236000" />
+      <workItem from="1779225092816" duration="1720000" />
     </task>
     <task id="LOCAL-00001" summary="feat: initial commit">
       <option name="closed" value="true" />
@@ -238,7 +240,15 @@
       <option name="project" value="LOCAL" />
       <updated>1779148030246</updated>
     </task>
-    <option name="localTasksCounter" value="10" />
+    <task id="LOCAL-00010" summary="feat(backlog): implement automated worktree creation and project setup">
+      <option name="closed" value="true" />
+      <created>1779227850675</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1779227850675</updated>
+    </task>
+    <option name="localTasksCounter" value="11" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -278,10 +288,11 @@
     <MESSAGE value="feat(agent): refine project initialization prompt and validation logic" />
     <MESSAGE value="feat(agent): improve project initialization prompt and validation logic" />
     <MESSAGE value="feat(api): implement git repository fingerprinting and legacy migration" />
-    <MESSAGE value="feat(" />
     <MESSAGE value="feat(agent): implement iterative validation for project initialization" />
     <MESSAGE value="docs(" />
     <MESSAGE value="docs(readme): rewrite project documentation and vision" />
-    <option name="LAST_COMMIT_MESSAGE" value="docs(readme): rewrite project documentation and vision" />
+    <MESSAGE value="feat(" />
+    <MESSAGE value="feat(backlog): implement automated worktree creation and project setup" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat(backlog): implement automated worktree creation and project setup" />
   </component>
 </project>

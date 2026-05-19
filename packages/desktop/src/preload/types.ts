@@ -67,6 +67,11 @@ export type BlameDesktopApi = {
       setupScript: string;
       dockerCompose: string;
     }): Promise<{ runId: string }>;
+    stopProjectSetup(input: { worktree: string }): Promise<boolean>;
+    removeWorktree(input: {
+      repositoryRoot: string;
+      worktree: string;
+    }): Promise<boolean>;
     onSetupEvent(
       runId: string,
       callback: (event: ProjectSetupEvent) => void,

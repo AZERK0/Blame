@@ -1,6 +1,7 @@
 import {
   type UserStory,
 } from "@/components/backlog/data/backlog-data"
+import type { StopAgentChoice } from "@/components/backlog/actions/story-action-dialogs"
 import { storyDetail, storyStatus } from "@/components/backlog/shared/backlog-helpers"
 import { StoryStatusBadge } from "@/components/backlog/shared/backlog-status-badge"
 import type { OpenDrawer } from "@/components/backlog/shared/backlog-types"
@@ -17,9 +18,11 @@ import {
 
 export function UserStoryCard({
   onOpenDrawer,
+  onStopAgent,
   story,
 }: {
   onOpenDrawer: OpenDrawer
+  onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
   story: UserStory
 }) {
   return (
@@ -61,7 +64,11 @@ export function UserStoryCard({
         </CardContent>
       )}
       <CardFooter>
-        <StoryActions onOpenDrawer={onOpenDrawer} story={story} />
+        <StoryActions
+          onOpenDrawer={onOpenDrawer}
+          onStopAgent={onStopAgent}
+          story={story}
+        />
       </CardFooter>
     </Card>
   )

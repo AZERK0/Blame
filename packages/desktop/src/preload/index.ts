@@ -18,6 +18,10 @@ const api: BlameDesktopApi = {
       ipcRenderer.invoke("workspace:create-worktree", input),
     runProjectSetup: (input) =>
       ipcRenderer.invoke("workspace:run-project-setup", input),
+    stopProjectSetup: (input) =>
+      ipcRenderer.invoke("workspace:stop-project-setup", input),
+    removeWorktree: (input) =>
+      ipcRenderer.invoke("workspace:remove-worktree", input),
     onSetupEvent: (runId, callback) => {
       const channel = `workspace:setup:event:${runId}`;
       const handler = (

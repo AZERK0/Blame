@@ -21,6 +21,7 @@ import {
 import { drawerTargetForAction } from "@/components/backlog/shared/backlog-helpers"
 import type { OpenDrawer } from "@/components/backlog/shared/backlog-types"
 import { StopAgentDialog } from "@/components/backlog/actions/story-action-dialogs"
+import type { StopAgentChoice } from "@/components/backlog/actions/story-action-dialogs"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -94,16 +95,25 @@ export function StoryAction({
   className,
   label,
   onOpenDrawer,
+  onStopAgent,
   story,
 }: {
   action: BacklogAction
   className?: string
   label?: string
   onOpenDrawer: OpenDrawer
+  onStopAgent?: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
   story: UserStory
 }) {
   if (action === "Stop Agent") {
-    return <StopAgentDialog onOpenDrawer={onOpenDrawer} story={story} />
+    if (!onStopAgent) return null
+    return (
+      <StopAgentDialog
+        onOpenDrawer={onOpenDrawer}
+        onStopAgent={onStopAgent}
+        story={story}
+      />
+    )
   }
 
   const actionStyle = actionConfig[action]

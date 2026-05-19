@@ -22,13 +22,19 @@ import {
 } from "@/components/ui/dialog"
 import { Separator } from "@/components/ui/separator"
 
+export type StopAgentChoice = "pause-feedback" | "backlog" | "discard-worktree"
+
 export function StopAgentDialog({
   onOpenDrawer,
+  onStopAgent,
   story,
 }: {
   onOpenDrawer: OpenDrawer
+  onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
   story: UserStory
 }) {
+  const [stopping, setStopping] = React.useState<StopAgentChoice>()
+
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -53,25 +59,51 @@ export function StopAgentDialog({
           <StopChoice
             icon={PauseIcon}
             label="Pause & Give Feedback"
-            onClick={() =>
-              onOpenDrawer({
-                userStory: story,
-                mode: "view",
-                initialTab: "user-story",
-                focusComment: true,
+            loading={stopping === "pause-feedback"}
+            onClick={() => {
+              void stop("pause-feedback").then((nextStory) => {
+                if (!nextStory) return
+                onOpenDrawer({
+                  userStory: nextStory,
+                  mode: "view",
+                  initialTab: "user-story",
+                  focusComment: true,
+                })
               })
-            }
+            }}
           />
           <StopChoice
             icon={RotateCcwIcon}
             label="Stop & Send Back to Backlog"
+            loading={stopping === "backlog"}
+            onClick={() => {
+              void stop("backlog")
+            }}
           />
           <Separator />
-          <StopChoice icon={Trash2Icon} label="Discard Worktree" destructive />
+          <StopChoice
+            icon={Trash2Icon}
+            label="Discard Worktree"
+            destructive
+            loading={stopping === "discard-worktree"}
+            onClick={() => {
+              void stop("discard-worktree")
+            }}
+          />
         </div>
       </DialogContent>
     </Dialog>
   )
+
+  async function stop(choice: StopAgentChoice) {
+    if (stopping) return
+    setStopping(choice)
+    try {
+      return await onStopAgent(story, choice)
+    } finally {
+      setStopping(undefined)
+    }
+  }
 }
 
 export function RejectDialog({
@@ -129,11 +161,13 @@ export function RejectDialog({
 function StopChoice({
   icon: Icon,
   label,
+  loading,
   onClick,
   destructive,
 }: {
   icon: React.ComponentType<{ className?: string }>
   label: string
+  loading?: boolean
   onClick?: () => void
   destructive?: boolean
 }) {
@@ -141,6 +175,7 @@ function StopChoice({
     <DialogClose asChild>
       <Button
         type="button"
+        disabled={loading}
         variant={destructive ? "destructive" : "outline"}
         className="justify-start"
         onClick={onClick}

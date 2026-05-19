@@ -30,6 +30,15 @@ type RunProjectSetupInput = {
   dockerCompose: string;
 };
 
+type StopProjectSetupInput = {
+  worktree: string;
+};
+
+type RemoveWorktreeInput = {
+  repositoryRoot: string;
+  worktree: string;
+};
+
 type SetupRun = {
   id: string;
   process: ChildProcessWithoutNullStreams;
@@ -61,6 +70,12 @@ export function registerWorkspaceIpcHandlers() {
   );
   ipcMain.handle("workspace:run-project-setup", (_event, input: RunProjectSetupInput) =>
     runProjectSetup(input),
+  );
+  ipcMain.handle("workspace:stop-project-setup", (_event, input: StopProjectSetupInput) =>
+    stopProjectSetup(input),
+  );
+  ipcMain.handle("workspace:remove-worktree", (_event, input: RemoveWorktreeInput) =>
+    removeWorktree(input),
   );
 }
 
@@ -172,11 +187,7 @@ async function runProjectSetup(input: RunProjectSetupInput) {
   const runId = randomUUID();
   const child = spawn("bash", [scriptPath], {
     cwd: worktree,
-    env: {
-      ...process.env,
-      BLAME_DOCKER_COMPOSE_FILE: composePath,
-      BLAME_INITIALIZATION_DIR: directory,
-    },
+    env: setupEnvironment(worktree),
   });
   setupRuns.set(runId, { id: runId, process: child });
 
@@ -192,6 +203,29 @@ async function runProjectSetup(input: RunProjectSetupInput) {
   });
 
   return { runId };
+}
+
+async function stopProjectSetup(input: StopProjectSetupInput) {
+  const worktree = resolve(input.worktree);
+  const composePath = join(worktree, ".blame", "initialization", "docker-compose.yml");
+  if (!existsSync(composePath)) return false;
+  await execFileAsync(
+    "docker",
+    ["compose", "-f", composePath, "down", "--remove-orphans"],
+    { cwd: worktree, env: setupEnvironment(worktree) },
+  );
+  return true;
+}
+
+async function removeWorktree(input: RemoveWorktreeInput) {
+  const repositoryRoot = resolve(input.repositoryRoot);
+  const worktree = resolve(input.worktree);
+  await assertGitRepository(repositoryRoot);
+  if (!(await worktreeRegistered(repositoryRoot, worktree))) return false;
+  await execFileAsync("git", ["worktree", "remove", "--force", worktree], {
+    cwd: repositoryRoot,
+  });
+  return true;
 }
 
 async function walk(
@@ -293,6 +327,23 @@ function storySlug(storyId: number, title: string) {
     .replace(/^-+|-+$/g, "")
     .slice(0, 48);
   return slug || `story-${storyId}`;
+}
+
+function setupEnvironment(worktree: string) {
+  return {
+    ...process.env,
+    BLAME_DOCKER_COMPOSE_FILE: join(
+      worktree,
+      ".blame",
+      "initialization",
+      "docker-compose.yml",
+    ),
+    BLAME_INITIALIZATION_DIR: join(worktree, ".blame", "initialization"),
+    COMPOSE_PROJECT_NAME: `blame_${createHash("sha1")
+      .update(worktree)
+      .digest("hex")
+      .slice(0, 12)}`,
+  };
 }
 
 function emitSetupEvent(

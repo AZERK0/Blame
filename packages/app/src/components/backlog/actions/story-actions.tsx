@@ -5,6 +5,7 @@ import {
 import type { OpenDrawer } from "@/components/backlog/shared/backlog-types"
 import { StoryAction } from "@/components/backlog/actions/story-action-button"
 import {
+  type StopAgentChoice,
   RejectDialog,
   StopAgentDialog,
 } from "@/components/backlog/actions/story-action-dialogs"
@@ -12,17 +13,31 @@ import { Separator } from "@/components/ui/separator"
 
 export function StoryActions({
   onOpenDrawer,
+  onStopAgent,
   story,
 }: {
   onOpenDrawer: OpenDrawer
+  onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
   story: UserStory
 }) {
   if (story.status === "in-review") {
-    return <ReviewActions onOpenDrawer={onOpenDrawer} story={story} />
+    return (
+      <ReviewActions
+        onOpenDrawer={onOpenDrawer}
+        onStopAgent={onStopAgent}
+        story={story}
+      />
+    )
   }
 
   if (story.status === "in-progress") {
-    return <ProgressActions onOpenDrawer={onOpenDrawer} story={story} />
+    return (
+      <ProgressActions
+        onOpenDrawer={onOpenDrawer}
+        onStopAgent={onStopAgent}
+        story={story}
+      />
+    )
   }
 
   return (
@@ -32,6 +47,7 @@ export function StoryActions({
           key={action}
           action={action}
           onOpenDrawer={onOpenDrawer}
+          onStopAgent={onStopAgent}
           story={story}
         />
       ))}
@@ -41,9 +57,11 @@ export function StoryActions({
 
 function ProgressActions({
   onOpenDrawer,
+  onStopAgent,
   story,
 }: {
   onOpenDrawer: OpenDrawer
+  onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
   story: UserStory
 }) {
   return (
@@ -63,7 +81,11 @@ function ProgressActions({
         />
       </div>
       <div className="flex justify-end">
-        <StopAgentDialog onOpenDrawer={onOpenDrawer} story={story} />
+        <StopAgentDialog
+          onOpenDrawer={onOpenDrawer}
+          onStopAgent={onStopAgent}
+          story={story}
+        />
       </div>
     </div>
   )
@@ -71,9 +93,11 @@ function ProgressActions({
 
 function ReviewActions({
   onOpenDrawer,
+  onStopAgent,
   story,
 }: {
   onOpenDrawer: OpenDrawer
+  onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
   story: UserStory
 }) {
   return (

@@ -2,15 +2,21 @@ import * as React from "react"
 
 import { backlogColumns } from "@/components/backlog/data/backlog-data"
 import { useBacklogStore } from "@/components/backlog/data/backlog-store"
+import type { UserStory, UserStoryUpdate } from "@/components/backlog/data/backlog-data"
+import type { StopAgentChoice } from "@/components/backlog/actions/story-action-dialogs"
 import type { DrawerTarget } from "@/components/backlog/shared/backlog-types"
 import { BacklogColumn } from "@/components/backlog/board/backlog-column"
 import { BacklogToolbar } from "@/components/backlog/board/backlog-toolbar"
 import { UserStoryDrawer } from "@/components/backlog/drawer/user-story-drawer"
 import { useBacklogRotation } from "@/components/backlog/page/use-backlog-rotation"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
+import { usePlatform } from "@/context/platform"
+import { useProjects } from "@/context/projects"
 
 export function BacklogPage() {
   const backlog = useBacklogStore()
+  const platform = usePlatform()
+  const projects = useProjects()
   useBacklogRotation(backlog)
   const [drawerTarget, setDrawerTarget] = React.useState<DrawerTarget>()
   const openDrawer = React.useCallback((target: DrawerTarget) => {
@@ -23,6 +29,46 @@ export function BacklogPage() {
       initialTab: "user-story",
     })
   }, [backlog.projectPath])
+  const updateStory = React.useCallback(
+    async (story: UserStory, input: UserStoryUpdate) => {
+      const cleanup = await inactiveStoryCleanup(story, input, platform)
+      const nextStory = await backlog.update(story, { ...input, ...cleanup })
+      setDrawerTarget((current) =>
+        current?.userStory?.id === story.id
+          ? { ...current, userStory: nextStory }
+          : current
+      )
+      return nextStory
+    },
+    [backlog, platform]
+  )
+  const stopAgent = React.useCallback(
+    async (story: UserStory, choice: StopAgentChoice) => {
+      if (choice === "pause-feedback") {
+        await stopStoryRuntime(story, platform)
+        return updateStory(story, {
+          agentLastError: null,
+          agentLastEvent: "Agent paused by user.",
+          agentStatus: "Paused",
+          previewUrl: null,
+          status: "in-review",
+        })
+      }
+      if (choice === "discard-worktree") {
+        await stopStoryRuntime(story, platform)
+        await removeStoryWorktree(story, platform, projects.activeProject?.path)
+        return updateStory(story, {
+          discardedReason: "Worktree discarded by user",
+          status: "discarded",
+        })
+      }
+      return updateStory(story, {
+        discardedReason: null,
+        status: "backlog",
+      })
+    },
+    [platform, projects.activeProject?.path, updateStory]
+  )
 
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-hidden p-4 lg:p-6">
@@ -54,6 +100,7 @@ export function BacklogPage() {
               column={column}
               onCreateUserStory={openCreateDrawer}
               onOpenDrawer={openDrawer}
+              onStopAgent={stopAgent}
               stories={backlog.storiesForColumn(column.id)}
             />
           ))}
@@ -76,15 +123,58 @@ export function BacklogPage() {
           return story
         }}
         onUpdateUserStory={async (story, input) => {
-          const nextStory = await backlog.update(story, input)
-          setDrawerTarget((current) =>
-            current?.userStory?.id === story.id
-              ? { ...current, userStory: nextStory }
-              : current
-          )
-          return nextStory
+          return updateStory(story, input)
         }}
       />
     </div>
   )
+}
+
+async function inactiveStoryCleanup(
+  story: UserStory,
+  input: UserStoryUpdate,
+  platform: ReturnType<typeof usePlatform>
+): Promise<UserStoryUpdate> {
+  const nextStatus = input.status ?? story.status
+  if (nextStatus === "in-progress" || nextStatus === "in-review") return {}
+  await stopStoryRuntime(story, platform)
+  return inactiveStoryFields()
+}
+
+async function stopStoryRuntime(
+  story: UserStory,
+  platform: ReturnType<typeof usePlatform>
+) {
+  await Promise.all([
+    story.clineSessionId
+      ? platform.agent?.sessions.abort(story.clineSessionId).catch(() => undefined)
+      : Promise.resolve(),
+    story.worktree
+      ? platform.workspace?.stopProjectSetup({ worktree: story.worktree }).catch(() => false)
+      : Promise.resolve(),
+  ])
+}
+
+async function removeStoryWorktree(
+  story: UserStory,
+  platform: ReturnType<typeof usePlatform>,
+  repositoryRoot: string | undefined
+) {
+  if (!story.worktree || !repositoryRoot) return
+  await platform.workspace?.removeWorktree({
+    repositoryRoot,
+    worktree: story.worktree,
+  }).catch(() => false)
+}
+
+function inactiveStoryFields(): UserStoryUpdate {
+  return {
+    agentModelId: null,
+    agentProviderId: null,
+    agentStatus: null,
+    branch: null,
+    clineSessionId: null,
+    previewUrl: null,
+    worktree: null,
+  }
 }
