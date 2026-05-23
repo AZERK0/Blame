@@ -1,22 +1,28 @@
 import * as React from "react"
+import type { AgentEvent } from "@blame/agent-runtime"
+import { toast } from "sonner"
 
 import { backlogColumns } from "@/components/backlog/data/backlog-data"
 import { useBacklogStore } from "@/components/backlog/data/backlog-store"
 import type { UserStory, UserStoryUpdate } from "@/components/backlog/data/backlog-data"
 import type { StopAgentChoice } from "@/components/backlog/actions/story-action-dialogs"
+import { useModelSelection } from "@/components/model/model-selector"
 import type { DrawerTarget } from "@/components/backlog/shared/backlog-types"
 import { BacklogColumn } from "@/components/backlog/board/backlog-column"
 import { BacklogToolbar } from "@/components/backlog/board/backlog-toolbar"
 import { UserStoryDrawer } from "@/components/backlog/drawer/user-story-drawer"
 import { useBacklogRotation } from "@/components/backlog/page/use-backlog-rotation"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
+import { useCloudAuth } from "@/context/cloud-auth"
 import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 
 export function BacklogPage() {
   const backlog = useBacklogStore()
+  const auth = useCloudAuth()
   const platform = usePlatform()
   const projects = useProjects()
+  const selection = useModelSelection()
   useBacklogRotation(backlog)
   const [drawerTarget, setDrawerTarget] = React.useState<DrawerTarget>()
   const openDrawer = React.useCallback((target: DrawerTarget) => {
@@ -69,6 +75,65 @@ export function BacklogPage() {
     },
     [platform, projects.activeProject?.path, updateStory]
   )
+  const unpauseAgent = React.useCallback(
+    async (story: UserStory) => {
+      if (!story.worktree) {
+        toast.error("Unable to resume agent", {
+          description: "This user story has no active worktree.",
+          position: "bottom-right",
+        })
+        return story
+      }
+      if (auth.status !== "authenticated" || !selection.currentModel) {
+        toast.error("Unable to resume agent", {
+          description: "Reconnect the provider and select a model.",
+          position: "bottom-right",
+        })
+        return story
+      }
+      const prompt = storyPrompt(story)
+      const session = await platform.agent?.sessions.start({
+        apiConnection: auth.apiConnection,
+        providerId: selection.currentModel.provider.id,
+        modelId: selection.currentModel.id,
+        reasoningEffort: selection.currentVariant,
+        autoApproveWriteTools: true,
+        autoSendPrompt: false,
+        mode: "act",
+        maxIterations: 32,
+        prompt,
+        cwd: story.worktree,
+        workspaceRoot: story.worktree,
+        systemPrompt: developmentSystemPrompt(),
+      })
+      if (!session) {
+        toast.error("Unable to resume agent", {
+          description: "Desktop agent runtime is not available.",
+          position: "bottom-right",
+        })
+        return story
+      }
+      const updatedStory = await updateStory(story, {
+        agentLastError: null,
+        agentLastEvent: `Cline debug log: ${clineLogPath(story.worktree, session.sessionId)}`,
+        agentModelId: selection.currentModel.id,
+        agentProviderId: selection.currentModel.provider.id,
+        agentStatus: "Running",
+        clineSessionId: session.sessionId,
+        status: "in-progress",
+      })
+      let authenticationFailed = false
+      const unsubscribe = platform.agent.sessions.onEvent(session.sessionId, (event) => {
+        if (authenticationFailed) return
+        authenticationFailed = expiredAuthenticationToken(agentEventText(event))
+        void updateStory(updatedStory, agentEventUpdate(event))
+        if (authenticationFailed || event.type === "done" || event.type === "error") unsubscribe()
+      })
+      void platform.agent.sessions.send({ sessionId: session.sessionId, prompt })
+      return updatedStory
+    },
+    [auth, platform.agent, selection.currentModel, selection.currentVariant, updateStory]
+  )
 
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-hidden p-4 lg:p-6">
@@ -101,6 +166,7 @@ export function BacklogPage() {
               onCreateUserStory={openCreateDrawer}
               onOpenDrawer={openDrawer}
               onStopAgent={stopAgent}
+              onUnpauseAgent={unpauseAgent}
               stories={backlog.storiesForColumn(column.id)}
             />
           ))}
@@ -177,4 +243,68 @@ function inactiveStoryFields(): UserStoryUpdate {
     previewUrl: null,
     worktree: null,
   }
+}
+
+function storyPrompt(story: UserStory) {
+  return [
+    `Implement this user story: ${story.title}`,
+    "",
+    story.summary,
+    "",
+    "Work directly in the current worktree.",
+    "Make the required code changes, then stop when the implementation is complete.",
+  ].join("\n")
+}
+
+function developmentSystemPrompt() {
+  return [
+    "You are Blame, an autonomous coding agent running inside a dedicated git worktree.",
+    "You must inspect the repository, edit files as needed, and implement the user story.",
+    "Do not wait for extra confirmation before using available write tools.",
+  ].join(" ")
+}
+
+function clineLogPath(worktree: string, sessionId: string) {
+  return `${worktree}/.blame/logs/cline-${sessionId}.log`
+}
+
+function agentEventUpdate(event: AgentEvent): UserStoryUpdate {
+  const text = agentEventText(event)
+  if (expiredAuthenticationToken(text)) {
+    toast.error("Agent authentication expired", {
+      description: `${text} Reconnect the selected provider, then restart the story.`,
+      position: "bottom-right",
+    })
+    return {
+      agentLastError: text,
+      agentLastEvent: text,
+      agentStatus: "Paused",
+    }
+  }
+  return {
+    agentLastError: event.type === "error" ? text || "Agent session failed" : undefined,
+    agentLastEvent: text || event.type,
+  }
+}
+
+function agentEventText(event: AgentEvent) {
+  if (!event.payload || typeof event.payload !== "object") return ""
+  if ("text" in event.payload && typeof event.payload.text === "string") {
+    return event.payload.text
+  }
+  if ("message" in event.payload && typeof event.payload.message === "string") {
+    return event.payload.message
+  }
+  if ("error" in event.payload && typeof event.payload.error === "string") {
+    return event.payload.error
+  }
+  return ""
+}
+
+function expiredAuthenticationToken(message: string) {
+  const normalized = message.toLowerCase()
+  return (
+    normalized.includes("authentication token") &&
+    normalized.includes("invalidated")
+  )
 }

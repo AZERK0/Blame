@@ -14,6 +14,7 @@ import { createCloudApi } from "@/lib/cloud-api"
 const maxConcurrentDevelopmentStories = 3
 const blockerRetryDelay = 30_000
 const setupToastId = "backlog-rotation-setup"
+const authToastId = "backlog-agent-auth"
 const urlPattern = /\bhttps?:\/\/[^\s"'<>]+|\blocalhost:\d+[^\s"'<>]*/i
 
 export function useBacklogRotation(backlog: ReturnType<typeof useBacklogStore>) {
@@ -24,16 +25,21 @@ export function useBacklogRotation(backlog: ReturnType<typeof useBacklogStore>) 
   const startingStoryIds = React.useRef(new Set<number>())
   const blockedStories = React.useRef(new Map<number, number>())
   const reportedBlockers = React.useRef(new Set<string>())
+  const reportedAgentErrors = React.useRef(new Set<string>())
+  const agentAuthenticationBlockedUntil = React.useRef(0)
   const [, refreshStartingStories] = React.useState(0)
 
   React.useEffect(() => {
     blockedStories.current.clear()
     reportedBlockers.current.clear()
+    reportedAgentErrors.current.clear()
+    agentAuthenticationBlockedUntil.current = 0
   }, [projects.activeProject?.id, selection.currentModel?.id])
 
   React.useEffect(() => {
     if (!projects.activeProject || auth.status !== "authenticated") return
     if (backlog.loading || !backlog.projectId) return
+    if (agentAuthenticationBlockedUntil.current > Date.now()) return
 
     const readyStories = queuedStories(
       backlog.stories,
@@ -108,9 +114,14 @@ export function useBacklogRotation(backlog: ReturnType<typeof useBacklogStore>) 
       providerId: selection.currentModel.provider.id,
       modelId: selection.currentModel.id,
       reasoningEffort: selection.currentVariant,
+      autoApproveWriteTools: true,
+      autoSendPrompt: false,
+      mode: "act",
+      maxIterations: 32,
       prompt: storyPrompt(story),
       cwd: worktree.worktree,
       workspaceRoot: worktree.worktree,
+      systemPrompt: developmentSystemPrompt(),
     })
     const unsubscribeSession = platform.agent.sessions.onEvent(
       session.sessionId,
@@ -124,10 +135,15 @@ export function useBacklogRotation(backlog: ReturnType<typeof useBacklogStore>) 
       agentModelId: selection.currentModel.id,
       agentProviderId: selection.currentModel.provider.id,
       agentStatus: "Running",
+      agentLastEvent: `Cline debug log: ${clineLogPath(worktree.worktree, session.sessionId)}`,
       branch: worktree.branch,
       clineSessionId: session.sessionId,
       status: "in-progress",
       worktree: worktree.worktree,
+    })
+    void platform.agent.sessions.send({
+      sessionId: session.sessionId,
+      prompt: storyPrompt(story),
     })
   }
 
@@ -159,16 +175,39 @@ export function useBacklogRotation(backlog: ReturnType<typeof useBacklogStore>) 
 
   async function persistAgentEvent(story: UserStory, event: AgentEvent) {
     const text = agentEventText(event)
+    if (reportedAgentErrors.current.has(agentAuthenticationErrorKey(story))) return
+    if (expiredAuthenticationToken(text)) {
+      reportExpiredAuthenticationToken(story, text)
+      await backlog.update(story, {
+        agentLastError: text,
+        agentLastEvent: text,
+        agentStatus: "Paused",
+      })
+      return
+    }
     await backlog.update(story, {
       agentLastError: event.type === "error" ? text || "Agent session failed" : undefined,
       agentLastEvent: text || event.type,
+    })
+  }
+
+  function reportExpiredAuthenticationToken(story: UserStory, message: string) {
+    const key = agentAuthenticationErrorKey(story)
+    if (reportedAgentErrors.current.has(key)) return
+    agentAuthenticationBlockedUntil.current = Date.now() + blockerRetryDelay
+    window.setTimeout(() => refreshStartingStories((value) => value + 1), blockerRetryDelay)
+    reportedAgentErrors.current.add(key)
+    toast.error("Agent authentication expired", {
+      description: `${message} Reconnect the selected provider, then restart the story.`,
+      id: `${authToastId}-${story.id}`,
+      position: "bottom-right",
     })
   }
 }
 
 function runningStories(stories: UserStory[]) {
   return stories.filter(
-    (story) => story.status === "in-progress" && story.agentStatus === "Running"
+    (story) => story.status === "in-progress" && story.agentStatus !== "Paused"
   ).length
 }
 
@@ -218,7 +257,22 @@ function storyPrompt(story: UserStory) {
     `Implement this user story: ${story.title}`,
     "",
     story.summary,
+    "",
+    "Work directly in the current worktree.",
+    "Make the required code changes, then stop when the implementation is complete.",
   ].join("\n")
+}
+
+function developmentSystemPrompt() {
+  return [
+    "You are Blame, an autonomous coding agent running inside a dedicated git worktree.",
+    "You must inspect the repository, edit files as needed, and implement the user story.",
+    "Do not wait for extra confirmation before using available write tools.",
+  ].join(" ")
+}
+
+function clineLogPath(worktree: string, sessionId: string) {
+  return `${worktree}/.blame/logs/cline-${sessionId}.log`
 }
 
 function eventText(event: ProjectSetupEvent) {
@@ -242,6 +296,8 @@ function firstPreviewUrl(text: string) {
 
 function agentEventText(event: AgentEvent) {
   if (!event.payload || typeof event.payload !== "object") return ""
+  if (event.type === "tool") return toolEventText(event.payload)
+  if (event.type === "approval") return approvalEventText(event.payload)
   if ("text" in event.payload && typeof event.payload.text === "string") {
     return event.payload.text
   }
@@ -254,6 +310,41 @@ function agentEventText(event: AgentEvent) {
   return ""
 }
 
+function toolEventText(payload: object) {
+  if ("toolName" in payload && typeof payload.toolName === "string") {
+    return `Tool used: ${payload.toolName}`
+  }
+  if ("name" in payload && typeof payload.name === "string") {
+    return `Tool used: ${payload.name}`
+  }
+  if (
+    "hookEventName" in payload &&
+    typeof payload.hookEventName === "string"
+  ) {
+    return `Tool event: ${payload.hookEventName}`
+  }
+  return "Tool event"
+}
+
+function approvalEventText(payload: object) {
+  if ("toolName" in payload && typeof payload.toolName === "string") {
+    return `Tool approval requested: ${payload.toolName}`
+  }
+  return "Tool approval requested"
+}
+
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Unable to start queued user story."
+}
+
+function expiredAuthenticationToken(message: string) {
+  const normalized = message.toLowerCase()
+  return (
+    normalized.includes("authentication token") &&
+    normalized.includes("invalidated")
+  )
+}
+
+function agentAuthenticationErrorKey(story: UserStory) {
+  return `${story.id}:expired-authentication-token`
 }

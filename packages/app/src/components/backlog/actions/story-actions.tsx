@@ -14,10 +14,12 @@ import { Separator } from "@/components/ui/separator"
 export function StoryActions({
   onOpenDrawer,
   onStopAgent,
+  onUnpauseAgent,
   story,
 }: {
   onOpenDrawer: OpenDrawer
   onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
+  onUnpauseAgent: (story: UserStory) => Promise<UserStory>
   story: UserStory
 }) {
   if (story.status === "in-review") {
@@ -35,6 +37,7 @@ export function StoryActions({
       <ProgressActions
         onOpenDrawer={onOpenDrawer}
         onStopAgent={onStopAgent}
+        onUnpauseAgent={onUnpauseAgent}
         story={story}
       />
     )
@@ -48,6 +51,7 @@ export function StoryActions({
           action={action}
           onOpenDrawer={onOpenDrawer}
           onStopAgent={onStopAgent}
+          onUnpauseAgent={onUnpauseAgent}
           story={story}
         />
       ))}
@@ -58,10 +62,12 @@ export function StoryActions({
 function ProgressActions({
   onOpenDrawer,
   onStopAgent,
+  onUnpauseAgent,
   story,
 }: {
   onOpenDrawer: OpenDrawer
   onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
+  onUnpauseAgent: (story: UserStory) => Promise<UserStory>
   story: UserStory
 }) {
   return (
@@ -80,7 +86,15 @@ function ProgressActions({
           onOpenDrawer={onOpenDrawer}
         />
       </div>
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        {story.agentStatus === "Paused" && (
+          <StoryAction
+            action="Unpause Agent"
+            onOpenDrawer={onOpenDrawer}
+            onUnpauseAgent={onUnpauseAgent}
+            story={story}
+          />
+        )}
         <StopAgentDialog
           onOpenDrawer={onOpenDrawer}
           onStopAgent={onStopAgent}

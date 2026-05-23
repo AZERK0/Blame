@@ -19,10 +19,12 @@ import {
 export function UserStoryCard({
   onOpenDrawer,
   onStopAgent,
+  onUnpauseAgent,
   story,
 }: {
   onOpenDrawer: OpenDrawer
   onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
+  onUnpauseAgent: (story: UserStory) => Promise<UserStory>
   story: UserStory
 }) {
   return (
@@ -67,6 +69,7 @@ export function UserStoryCard({
         <StoryActions
           onOpenDrawer={onOpenDrawer}
           onStopAgent={onStopAgent}
+          onUnpauseAgent={onUnpauseAgent}
           story={story}
         />
       </CardFooter>

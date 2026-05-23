@@ -8,6 +8,7 @@ import {
   GitMergeIcon,
   ListRestartIcon,
   MessageSquareReplyIcon,
+  PlayIcon,
   RotateCcwIcon,
   SendIcon,
   TerminalIcon,
@@ -57,6 +58,11 @@ const actionConfig: Record<BacklogAction, ActionConfig> = {
     icon: CircleStopIcon,
     variant: "destructive",
   },
+  "Unpause Agent": {
+    icon: PlayIcon,
+    variant: "default",
+    tone: "primary",
+  },
   "View Diff": {
     icon: GitMergeIcon,
     variant: "outline",
@@ -96,6 +102,7 @@ export function StoryAction({
   label,
   onOpenDrawer,
   onStopAgent,
+  onUnpauseAgent,
   story,
 }: {
   action: BacklogAction
@@ -103,6 +110,7 @@ export function StoryAction({
   label?: string
   onOpenDrawer: OpenDrawer
   onStopAgent?: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
+  onUnpauseAgent?: (story: UserStory) => Promise<UserStory>
   story: UserStory
 }) {
   if (action === "Stop Agent") {
@@ -113,6 +121,27 @@ export function StoryAction({
         onStopAgent={onStopAgent}
         story={story}
       />
+    )
+  }
+  if (action === "Unpause Agent") {
+    if (!onUnpauseAgent) return null
+    const actionStyle = actionConfig[action]
+    const Icon = actionStyle.icon
+    return (
+      <Button
+        type="button"
+        size="sm"
+        variant={actionStyle.variant}
+        className={cn(
+          "justify-start",
+          "bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500",
+          className
+        )}
+        onClick={() => void onUnpauseAgent(story)}
+      >
+        <Icon />
+        {label ?? action}
+      </Button>
     )
   }
 

@@ -12,6 +12,7 @@ export type BacklogAction =
   | "Open Worktree"
   | "Open Preview"
   | "Stop Agent"
+  | "Unpause Agent"
   | "View Diff"
   | "View Files"
   | "View Terminal"
@@ -117,7 +118,9 @@ export function userStoryActions(story: UserStory): BacklogAction[] {
   if (story.status === "backlog") return ["Send to Dev Agent"]
   if (story.status === "ready") return ["Dequeue"]
   if (story.status === "in-progress")
-    return ["Open Worktree", "Open Preview", "Stop Agent"]
+    return story.agentStatus === "Paused"
+      ? ["Open Worktree", "Open Preview", "Unpause Agent", "Stop Agent"]
+      : ["Open Worktree", "Open Preview", "Stop Agent"]
   if (story.status === "in-review")
     return [
       "Open Worktree",

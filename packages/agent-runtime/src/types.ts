@@ -19,6 +19,7 @@ export type BlameModel = {
 }
 
 export type ReasoningEffort = "low" | "medium" | "high" | "xhigh"
+export type AgentMode = "act" | "plan" | "yolo"
 
 export type BlameProvider = {
   id: string
@@ -90,6 +91,10 @@ export type StartSessionInput = {
   providerId: string
   modelId: string
   reasoningEffort?: ReasoningEffort
+  autoApproveWriteTools?: boolean
+  autoSendPrompt?: boolean
+  mode?: AgentMode
+  maxIterations?: number
   prompt: string
   cwd: string
   workspaceRoot: string

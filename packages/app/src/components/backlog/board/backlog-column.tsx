@@ -26,12 +26,14 @@ export function BacklogColumn({
   onCreateUserStory,
   onOpenDrawer,
   onStopAgent,
+  onUnpauseAgent,
   stories,
 }: {
   column: (typeof backlogColumns)[number]
   onCreateUserStory: () => void
   onOpenDrawer: OpenDrawer
   onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
+  onUnpauseAgent: (story: UserStory) => Promise<UserStory>
   stories: UserStory[]
 }) {
   return (
@@ -43,6 +45,7 @@ export function BacklogColumn({
             key={story.id}
             onOpenDrawer={onOpenDrawer}
             onStopAgent={onStopAgent}
+            onUnpauseAgent={onUnpauseAgent}
             story={story}
           />
         ))}
