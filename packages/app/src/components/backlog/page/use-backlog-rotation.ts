@@ -135,7 +135,7 @@ export function useBacklogRotation(backlog: ReturnType<typeof useBacklogStore>) 
       agentModelId: selection.currentModel.id,
       agentProviderId: selection.currentModel.provider.id,
       agentStatus: "Running",
-      agentLastEvent: `Cline debug log: ${clineLogPath(worktree.worktree, session.sessionId)}`,
+      agentLastEvent: "Agent session started.",
       branch: worktree.branch,
       clineSessionId: session.sessionId,
       status: "in-progress",
@@ -278,10 +278,6 @@ function developmentSystemPrompt() {
     "You must inspect the repository, edit files as needed, and implement the user story.",
     "Do not wait for extra confirmation before using available write tools.",
   ].join(" ")
-}
-
-function clineLogPath(worktree: string, sessionId: string) {
-  return `${worktree}/.blame/logs/cline-${sessionId}.log`
 }
 
 function eventText(event: ProjectSetupEvent) {

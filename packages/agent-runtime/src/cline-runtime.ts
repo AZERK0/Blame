@@ -1,6 +1,4 @@
 import { randomUUID } from "node:crypto"
-import { appendFile, mkdir } from "node:fs/promises"
-import { dirname, join } from "node:path"
 
 import type {
   ClineCore,
@@ -77,7 +75,6 @@ export class BlameAgentRuntime {
   private pendingApprovals = new Map<string, PendingApproval>()
   private alwaysAllowedTools = new Set<string>()
   private autoApprovedWriteToolSessions = new Set<string>()
-  private sessionLogFiles = new Map<string, string>()
   private readonly events?: AgentRuntimeEvents
   private readonly options: RuntimeOptions
 
@@ -131,87 +128,42 @@ export class BlameAgentRuntime {
   }
 
   private async startSession(input: StartSessionInput) {
-    const startLogFile = startLogPath(input.cwd)
-    await appendLog(startLogFile, "start requested", startContext(input))
-    try {
-      const credential = await resolveProviderCredential(input.apiConnection, {
+    const credential = await resolveProviderCredential(input.apiConnection, {
+      providerId: input.providerId,
+      label: input.credentialLabel,
+    })
+    const resolvedCredential = await this.refreshOAuthCredential(input.apiConnection, credential, {
+      force: forceOAuthRefresh(credential.providerId),
+    })
+    await this.syncClineOAuthProviderSettings(resolvedCredential)
+    const cline = await this.core()
+    const session = await cline.start({
+      config: {
         providerId: input.providerId,
-        label: input.credentialLabel,
-      })
-      await appendLog(startLogFile, "credential resolved", {
-        providerId: credential.providerId,
-        authMethod: credential.authMethod,
-        hasBaseUrl: !!credential.baseUrl,
-      })
-      const resolvedCredential = await this.refreshOAuthCredential(input.apiConnection, credential, {
-        force: forceOAuthRefresh(credential.providerId),
-      })
-      await appendLog(startLogFile, "credential refreshed", {
-        providerId: resolvedCredential.providerId,
-        authMethod: resolvedCredential.authMethod,
-        hasBaseUrl: !!resolvedCredential.baseUrl,
-        expires: resolvedCredential.oauthCredentials?.expires,
-      })
-      await this.syncClineOAuthProviderSettings(resolvedCredential)
-      if (resolvedCredential.authMethod === "oauth") {
-        await appendLog(startLogFile, "cline oauth settings synced", {
-          providerId: resolvedCredential.providerId,
-          accountId: resolvedCredential.oauthCredentials?.accountId,
-          email: resolvedCredential.oauthCredentials?.email,
-          expires: resolvedCredential.oauthCredentials?.expires,
-        })
-      }
-      const cline = await this.core()
-      await appendLog(startLogFile, "cline core ready")
-      const session = await cline.start({
-        config: {
-          providerId: input.providerId,
-          modelId: input.modelId,
-          apiKey: resolvedCredential.apiKey,
-          baseUrl: resolvedCredential.baseUrl ?? undefined,
-          thinking: !!input.reasoningEffort,
-          reasoningEffort: input.reasoningEffort,
-          systemPrompt: input.systemPrompt ?? "You are Blame, an agentic IDE coding assistant.",
-          cwd: input.cwd,
-          workspaceRoot: input.workspaceRoot,
-          mode: input.mode ?? "act",
-          maxIterations: input.maxIterations ?? 32,
-          enableTools: true,
-          enableSpawnAgent: false,
-          enableAgentTeams: false,
-        },
-        interactive: true,
-        source: "blame-desktop",
-        toolPolicies: toolPolicies(!!input.autoApproveWriteTools),
-      })
-      const sessionLogFile = sessionLogPath(input.cwd, session.sessionId)
-      this.sessionLogFiles.set(session.sessionId, sessionLogFile)
-      await appendLog(startLogFile, "session created", {
-        sessionId: session.sessionId,
-        logFile: sessionLogFile,
-      })
-      await this.logSession(session.sessionId, "session created", {
-        ...startContext(input),
-        logFile: sessionLogFile,
-      })
-      if (input.autoApproveWriteTools) {
-        this.autoApprovedWriteToolSessions.add(session.sessionId)
-        this.emitSessionNotice(session.sessionId, "Development session write tools auto-approved.")
-      }
-      await this.subscribeSession(session.sessionId)
-      await this.logSession(session.sessionId, "session subscribed")
-      this.emitSessionNotice(session.sessionId, `Cline debug log: ${sessionLogFile}`)
-      if (input.autoSendPrompt !== false) this.sendPrompt(cline, session.sessionId, input.prompt)
-      if (input.autoSendPrompt === false) {
-        await this.logSession(session.sessionId, "prompt deferred", {
-          promptLength: input.prompt.length,
-        })
-      }
-      return session
-    } catch (error) {
-      await appendLog(startLogFile, "start failed", { message: errorMessage(error) })
-      throw error
+        modelId: input.modelId,
+        apiKey: resolvedCredential.apiKey,
+        baseUrl: resolvedCredential.baseUrl ?? undefined,
+        thinking: !!input.reasoningEffort,
+        reasoningEffort: input.reasoningEffort,
+        systemPrompt: input.systemPrompt ?? "You are Blame, an agentic IDE coding assistant.",
+        cwd: input.cwd,
+        workspaceRoot: input.workspaceRoot,
+        mode: input.mode ?? "act",
+        maxIterations: input.maxIterations ?? 32,
+        enableTools: true,
+        enableSpawnAgent: false,
+        enableAgentTeams: false,
+      },
+      interactive: true,
+      source: "blame-desktop",
+      toolPolicies: toolPolicies(!!input.autoApproveWriteTools),
+    })
+    if (input.autoApproveWriteTools) {
+      this.autoApprovedWriteToolSessions.add(session.sessionId)
     }
+    await this.subscribeSession(session.sessionId)
+    if (input.autoSendPrompt !== false) this.sendPrompt(cline, session.sessionId, input.prompt)
+    return session
   }
 
   private async sendSession(input: SendSessionInput) {
@@ -283,7 +235,6 @@ export class BlameAgentRuntime {
     const cline = await this.core()
     const unsubscribe = await cline.subscribe((payload: CoreSessionEvent) => {
       const event = normalizeEvent(sessionId, payload)
-      void this.logSession(sessionId, `event:${event.type}`, payload)
       this.events?.emit(event)
     }, { sessionId })
     this.unsubscribers.set(sessionId, unsubscribe)
@@ -293,7 +244,6 @@ export class BlameAgentRuntime {
     this.unsubscribers.get(sessionId)?.()
     this.unsubscribers.delete(sessionId)
     this.autoApprovedWriteToolSessions.delete(sessionId)
-    void this.logSession(sessionId, "session unsubscribed")
   }
 
   private requestApproval(request: ToolApprovalRequest): Promise<ToolApprovalResult> | ToolApprovalResult {
@@ -308,14 +258,12 @@ export class BlameAgentRuntime {
         sessionId: request.sessionId,
         payload: { message: `Auto-approved tool: ${toolName}` },
       })
-      if (request.sessionId) void this.logSession(request.sessionId, "tool auto-approved", request)
       return { approved: true }
     }
 
     return new Promise((resolve) => {
       const approval = toApprovalRequest(request, toolName)
       this.pendingApprovals.set(approval.id, { request: approval, resolve })
-      if (approval.sessionId) void this.logSession(approval.sessionId, "tool approval requested", approval)
       this.events?.emit({
         type: "approval",
         sessionId: approval.sessionId,
@@ -330,12 +278,6 @@ export class BlameAgentRuntime {
 
     this.pendingApprovals.delete(input.requestId)
     if (input.decision === "always") this.alwaysAllowedTools.add(pending.request.toolName)
-    if (pending.request.sessionId) {
-      void this.logSession(pending.request.sessionId, "tool approval resolved", {
-        toolName: pending.request.toolName,
-        decision: input.decision,
-      })
-    }
     pending.resolve({ approved: input.decision !== "deny" })
     return true
   }
@@ -432,34 +374,20 @@ export class BlameAgentRuntime {
   }
 
   private emitSessionNotice(sessionId: string, message: string) {
-    void this.logSession(sessionId, "notice", { message })
     this.events?.emit({ type: "notice", sessionId, payload: { message } })
   }
 
   private emitSessionError(sessionId: string, message: string) {
-    void this.logSession(sessionId, "error", { message })
     this.events?.emit({ type: "error", sessionId, payload: { message } })
-  }
-
-  private async logSession(sessionId: string, message: string, payload?: unknown) {
-    const file = this.sessionLogFiles.get(sessionId)
-    if (!file) return
-    await appendLog(file, message, payload)
   }
 
   private sendPrompt(cline: ClineCore, sessionId: string, prompt: string) {
     void cline.send({ sessionId, prompt }).then((result: unknown) => {
-      void this.logSession(sessionId, "send resolved", result)
       const failure = resultFailureMessage(result)
       if (failure) this.emitSessionError(sessionId, failure)
     }).catch((error: unknown) => {
       const message = errorMessage(error)
-      void this.logSession(sessionId, "send failed", { message })
       this.emitSessionError(sessionId, message)
-    })
-    void this.logSession(sessionId, "prompt sent", {
-      promptLength: prompt.length,
-      promptPreview: prompt.slice(0, 500),
     })
   }
 }
@@ -523,46 +451,6 @@ function forceOAuthRefresh(providerId: string) {
 
 function supportedClineOAuthProvider(providerId: string) {
   return providerId === "openai-codex" || providerId === "cline" || providerId === "opencode" || providerId === "oca"
-}
-
-function startContext(input: StartSessionInput) {
-  return {
-    providerId: input.providerId,
-    modelId: input.modelId,
-    reasoningEffort: input.reasoningEffort,
-    cwd: input.cwd,
-    workspaceRoot: input.workspaceRoot,
-    mode: input.mode ?? "act",
-    maxIterations: input.maxIterations ?? 32,
-    autoApproveWriteTools: !!input.autoApproveWriteTools,
-    autoSendPrompt: input.autoSendPrompt !== false,
-    promptLength: input.prompt.length,
-  }
-}
-
-function startLogPath(cwd: string) {
-  return join(cwd, ".blame", "logs", "cline-start.log")
-}
-
-function sessionLogPath(cwd: string, sessionId: string) {
-  return join(cwd, ".blame", "logs", `cline-${sessionId}.log`)
-}
-
-async function appendLog(file: string, message: string, payload?: unknown) {
-  try {
-    await mkdir(dirname(file), { recursive: true })
-    await appendFile(file, `${JSON.stringify(logLine(message, payload))}\n`, "utf8")
-  } catch (error) {
-    console.warn("[blame-agent] failed to write log", file, error)
-  }
-}
-
-function logLine(message: string, payload?: unknown) {
-  return {
-    ts: new Date().toISOString(),
-    message,
-    payload,
-  }
 }
 
 function resultFailureMessage(result: unknown) {
