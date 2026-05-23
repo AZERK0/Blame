@@ -50,7 +50,8 @@ function createMainWindow() {
     height: state.height,
     show: false,
     title: "Blame",
-    backgroundColor: "#101010",
+    transparent: true,
+    backgroundColor: "#00000000",
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
