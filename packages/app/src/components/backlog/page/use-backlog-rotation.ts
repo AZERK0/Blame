@@ -185,6 +185,15 @@ export function useBacklogRotation(backlog: ReturnType<typeof useBacklogStore>) 
       })
       return
     }
+    if (completedAgentRun(event)) {
+      await backlog.update(story, {
+        agentLastError: null,
+        agentLastEvent: text || "Agent completed. Ready for review.",
+        agentStatus: null,
+        status: "in-review",
+      })
+      return
+    }
     await backlog.update(story, {
       agentLastError: event.type === "error" ? text || "Agent session failed" : undefined,
       agentLastEvent: text || event.type,
@@ -343,6 +352,19 @@ function expiredAuthenticationToken(message: string) {
     normalized.includes("authentication token") &&
     normalized.includes("invalidated")
   )
+}
+
+function completedAgentRun(event: AgentEvent) {
+  if (event.type !== "done") return false
+  if (!event.payload || typeof event.payload !== "object") return true
+  if ("reason" in event.payload && typeof event.payload.reason === "string") {
+    return !failedDoneReason(event.payload.reason)
+  }
+  return true
+}
+
+function failedDoneReason(reason: string) {
+  return ["error", "aborted", "cancelled", "stopped"].includes(reason)
 }
 
 function agentAuthenticationErrorKey(story: UserStory) {

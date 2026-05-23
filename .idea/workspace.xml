@@ -5,14 +5,6 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="98ea9b59-4f4a-4e05-8e92-ccffc0a05220" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/packages/agent-runtime/src/cline-runtime.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/agent-runtime/src/cline-runtime.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/packages/agent-runtime/src/types.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/agent-runtime/src/types.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/packages/app/src/components/backlog/actions/story-action-button.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/actions/story-action-button.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/packages/app/src/components/backlog/actions/story-actions.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/actions/story-actions.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/packages/app/src/components/backlog/board/backlog-column.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/board/backlog-column.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/packages/app/src/components/backlog/board/user-story-card.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/board/user-story-card.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/packages/app/src/components/backlog/data/backlog-data.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/data/backlog-data.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/packages/app/src/components/backlog/page/backlog-page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/page/backlog-page.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/packages/app/src/components/backlog/page/use-backlog-rotation.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/app/src/components/backlog/page/use-backlog-rotation.ts" afterDir="false" />
     </list>
@@ -169,7 +161,7 @@
       <workItem from="1779225092816" duration="2509000" />
       <workItem from="1779283117053" duration="137000" />
       <workItem from="1779467422137" duration="4030000" />
-      <workItem from="1779496676570" duration="1070000" />
+      <workItem from="1779496676570" duration="1441000" />
     </task>
     <task id="LOCAL-00001" summary="feat: initial commit">
       <option name="closed" value="true" />
@@ -259,7 +251,15 @@
       <option name="project" value="LOCAL" />
       <updated>1779228976385</updated>
     </task>
-    <option name="localTasksCounter" value="12" />
+    <task id="LOCAL-00012" summary="feat(backlog): implement agent unpause functionality">
+      <option name="closed" value="true" />
+      <created>1779497895350</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1779497895350</updated>
+    </task>
+    <option name="localTasksCounter" value="13" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -303,8 +303,9 @@
     <MESSAGE value="docs(" />
     <MESSAGE value="docs(readme): rewrite project documentation and vision" />
     <MESSAGE value="feat(backlog): implement automated worktree creation and project setup" />
-    <MESSAGE value="feat(" />
     <MESSAGE value="feat(backlog): implement agent termination and worktree cleanup logic" />
-    <option name="LAST_COMMIT_MESSAGE" value="feat(backlog): implement agent termination and worktree cleanup logic" />
+    <MESSAGE value="feat(" />
+    <MESSAGE value="feat(backlog): implement agent unpause functionality" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat(backlog): implement agent unpause functionality" />
   </component>
 </project>
