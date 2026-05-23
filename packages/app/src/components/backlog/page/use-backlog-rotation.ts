@@ -27,6 +27,7 @@ export function useBacklogRotation(backlog: ReturnType<typeof useBacklogStore>) 
   const reportedBlockers = React.useRef(new Set<string>())
   const reportedAgentErrors = React.useRef(new Set<string>())
   const agentAuthenticationBlockedUntil = React.useRef(0)
+  const previewRecoveryKeys = React.useRef(new Set<string>())
   const [, refreshStartingStories] = React.useState(0)
 
   React.useEffect(() => {
@@ -34,6 +35,7 @@ export function useBacklogRotation(backlog: ReturnType<typeof useBacklogStore>) 
     reportedBlockers.current.clear()
     reportedAgentErrors.current.clear()
     agentAuthenticationBlockedUntil.current = 0
+    previewRecoveryKeys.current.clear()
   }, [projects.activeProject?.id, selection.currentModel?.id])
 
   React.useEffect(() => {
@@ -106,7 +108,7 @@ export function useBacklogRotation(backlog: ReturnType<typeof useBacklogStore>) 
       dockerCompose: initialization.dockerCompose,
     })
     const unsubscribeSetup = platform.workspace.onSetupEvent(setup.runId, (event) => {
-      void persistSetupEvent(story, event)
+      void persistSetupEvent(story, event, worktree.worktree)
       if (event.type === "exit") unsubscribeSetup()
     })
     const session = await platform.agent.sessions.start({
@@ -163,15 +165,44 @@ export function useBacklogRotation(backlog: ReturnType<typeof useBacklogStore>) 
     })
   }
 
-  async function persistSetupEvent(story: UserStory, event: ProjectSetupEvent) {
+  async function persistSetupEvent(
+    story: UserStory,
+    event: ProjectSetupEvent,
+    worktree: string
+  ) {
     const text = eventText(event)
-    const previewUrl = firstPreviewUrl(text)
+    const previewUrl = setupCompleted(event)
+      ? (await projectPreviewUrl(worktree)) ?? undefined
+      : firstPreviewUrl(text)
     await backlog.update(story, {
       agentLastError: setupError(event) ? text : undefined,
       agentLastEvent: text,
       previewUrl,
     })
   }
+
+  async function projectPreviewUrl(worktree: string) {
+    return platform.workspace?.resolveProjectPreviewUrl?.({ worktree })
+  }
+
+  React.useEffect(() => {
+    if (!platform.workspace?.resolveProjectPreviewUrl || backlog.loading) return
+    backlog.stories
+      .filter((story) => missingPreview(story))
+      .forEach((story) => {
+        if (!story.worktree) return
+        const key = `${story.id}:${story.worktree}`
+        if (previewRecoveryKeys.current.has(key)) return
+        previewRecoveryKeys.current.add(key)
+        void platform.workspace
+          .resolveProjectPreviewUrl({ worktree: story.worktree })
+          .then((previewUrl) => {
+            if (previewUrl) return backlog.update(story, { previewUrl })
+            return undefined
+          })
+          .catch(() => undefined)
+      })
+  }, [backlog, backlog.loading, backlog.stories, platform.workspace])
 
   async function persistAgentEvent(story: UserStory, event: AgentEvent) {
     const text = agentEventText(event)
@@ -289,6 +320,18 @@ function setupError(event: ProjectSetupEvent) {
   return (
     event.type === "stderr" ||
     (event.type === "exit" && event.data !== "0")
+  )
+}
+
+function setupCompleted(event: ProjectSetupEvent) {
+  return event.type === "exit" && event.data === "0"
+}
+
+function missingPreview(story: UserStory) {
+  return (
+    (story.status === "in-progress" || story.status === "in-review") &&
+    Boolean(story.worktree) &&
+    !story.previewUrl
   )
 }
 

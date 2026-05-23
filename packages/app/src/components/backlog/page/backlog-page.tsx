@@ -25,6 +25,13 @@ export function BacklogPage() {
   const selection = useModelSelection()
   useBacklogRotation(backlog)
   const [drawerTarget, setDrawerTarget] = React.useState<DrawerTarget>()
+  const drawerUserStory = React.useMemo(() => {
+    if (!drawerTarget?.userStory) return undefined
+    return (
+      backlog.stories.find((story) => story.id === drawerTarget.userStory?.id) ??
+      drawerTarget.userStory
+    )
+  }, [backlog.stories, drawerTarget])
   const openDrawer = React.useCallback((target: DrawerTarget) => {
     setDrawerTarget(target)
   }, [])
@@ -178,7 +185,7 @@ export function BacklogPage() {
         onOpenChange={(open) => {
           if (!open) setDrawerTarget(undefined)
         }}
-        userStory={drawerTarget?.userStory}
+        userStory={drawerUserStory}
         mode={drawerTarget?.mode ?? "view"}
         initialTab={drawerTarget?.initialTab}
         initialDevelopmentTab={drawerTarget?.initialDevelopmentTab}

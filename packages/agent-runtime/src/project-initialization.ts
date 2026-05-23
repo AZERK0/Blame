@@ -1,19 +1,22 @@
-import { execFile } from "node:child_process"
-import { readdir, readFile, stat } from "node:fs/promises"
-import { basename, join } from "node:path"
-import { promisify } from "node:util"
+import { execFile } from "node:child_process";
+import { readdir, readFile, stat } from "node:fs/promises";
+import { basename, join } from "node:path";
+import { promisify } from "node:util";
 
-import type { ProjectCodePracticeKey, ProjectCodePracticeResult } from "./types.js"
+import type {
+  ProjectCodePracticeKey,
+  ProjectCodePracticeResult,
+} from "./types.js";
 
-const execFileAsync = promisify(execFile)
-const maxFileBytes = 16_000
-const maxCorrectionPayloadLength = 24_000
+const execFileAsync = promisify(execFile);
+const maxFileBytes = 16_000;
+const maxCorrectionPayloadLength = 24_000;
 const requiredPractices: ProjectCodePracticeKey[] = [
   "coding_style",
   "unit_tests",
   "layered_architecture",
   "commit_message_convention",
-]
+];
 const ignoredDirectories = new Set([
   ".git",
   "node_modules",
@@ -23,7 +26,7 @@ const ignoredDirectories = new Set([
   ".next",
   ".turbo",
   "coverage",
-])
+]);
 const strategicFiles = [
   "package.json",
   "pnpm-workspace.yaml",
@@ -48,33 +51,35 @@ const strategicFiles = [
   "eslint.config.mjs",
   "prettier.config.js",
   ".prettierrc",
-]
+];
 
 export type ProjectInitializationScan = {
-  rootName: string
-  topLevelEntries: string[]
-  files: Record<string, string>
-  gitLog: string[]
-}
+  rootName: string;
+  topLevelEntries: string[];
+  files: Record<string, string>;
+  gitLog: string[];
+};
 
 type ParsedProjectInitialization = {
-  setupScript: string
-  dockerCompose: string
-  practices: ProjectCodePracticeResult[]
-}
+  setupScript: string;
+  dockerCompose: string;
+  practices: ProjectCodePracticeResult[];
+};
 
 type ProjectInitializationCorrection = {
-  validationError: string
-  previousResult: string
-}
+  validationError: string;
+  previousResult: string;
+};
 
-export async function scanProjectForInitialization(root: string): Promise<ProjectInitializationScan> {
+export async function scanProjectForInitialization(
+  root: string,
+): Promise<ProjectInitializationScan> {
   return {
     rootName: basename(root),
     topLevelEntries: await topLevelEntries(root),
     files: await strategicFileContents(root),
     gitLog: await gitLog(root),
-  }
+  };
 }
 
 export function projectInitializationPrompt(scan: ProjectInitializationScan) {
@@ -106,6 +111,7 @@ export function projectInitializationPrompt(scan: ProjectInitializationScan) {
     "Docker Compose requirements:",
     "dockerCompose must be a directly runnable Docker Compose config.",
     "Preserve internal app ports and expose only dynamic host ports, for example ${WEB_PORT}:3000.",
+    "Mark exactly one browser preview service with labels: blame.preview=true, blame.preview.port=<internal port>, blame.preview.protocol=http, and blame.preview.path=/.",
     "Include all services required for a working preview.",
     "Reuse an existing Compose structure when present, changing only what is needed for isolation, dynamic ports, env, volumes, and Blame metadata.",
     "The setupScript must write dockerCompose to a compose file in the current worktree when needed, then run docker compose from there.",
@@ -131,12 +137,12 @@ export function projectInitializationPrompt(scan: ProjectInitializationScan) {
     `Root entries: ${JSON.stringify(scan.topLevelEntries)}`,
     `Recent git log: ${JSON.stringify(scan.gitLog)}`,
     `Strategic files: ${JSON.stringify(scan.files)}`,
-  ].join("\n")
+  ].join("\n");
 }
 
 export function projectInitializationCorrectionPrompt(
   scan: ProjectInitializationScan,
-  correction: ProjectInitializationCorrection
+  correction: ProjectInitializationCorrection,
 ) {
   return [
     projectInitializationPrompt(scan),
@@ -146,111 +152,132 @@ export function projectInitializationCorrectionPrompt(
     "Return a complete corrected JSON object only.",
     `Validation error: ${correction.validationError}`,
     `Previous rejected response: ${truncateCorrectionPayload(correction.previousResult)}`,
-  ].join("\n")
+  ].join("\n");
 }
 
-export function parseProjectInitializationResult(text: string): ParsedProjectInitialization {
-  const parsed = JSON.parse(jsonPayload(text)) as unknown
-  if (!isRecord(parsed)) throw new Error("Initialization result must be an object")
-  const setupScript = stringValue(parsed.setupScript)
-  const dockerCompose = stringValue(parsed.dockerCompose)
-  if (!setupScript) throw new Error("Initialization result is missing setupScript")
-  if (!dockerCompose) throw new Error("Initialization result is missing dockerCompose")
-  validateGeneratedArtifacts(setupScript, dockerCompose)
+export function parseProjectInitializationResult(
+  text: string,
+): ParsedProjectInitialization {
+  const parsed = JSON.parse(jsonPayload(text)) as unknown;
+  if (!isRecord(parsed))
+    throw new Error("Initialization result must be an object");
+  const setupScript = stringValue(parsed.setupScript);
+  const dockerCompose = stringValue(parsed.dockerCompose);
+  if (!setupScript)
+    throw new Error("Initialization result is missing setupScript");
+  if (!dockerCompose)
+    throw new Error("Initialization result is missing dockerCompose");
+  validateGeneratedArtifacts(setupScript, dockerCompose);
   return {
     setupScript,
     dockerCompose,
     practices: parsePractices(parsed.practices),
-  }
+  };
 }
 
 async function topLevelEntries(root: string) {
   try {
-    const entries = await readdir(root, { withFileTypes: true })
+    const entries = await readdir(root, { withFileTypes: true });
     return entries
       .filter((entry) => !ignoredDirectories.has(entry.name))
       .slice(0, 80)
-      .map((entry) => `${entry.name}${entry.isDirectory() ? "/" : ""}`)
+      .map((entry) => `${entry.name}${entry.isDirectory() ? "/" : ""}`);
   } catch {
-    return []
+    return [];
   }
 }
 
 async function strategicFileContents(root: string) {
-  const files: Record<string, string> = {}
+  const files: Record<string, string> = {};
   for (const path of strategicFiles) {
-    const content = await readStrategicFile(root, path)
-    if (content) files[path] = content
+    const content = await readStrategicFile(root, path);
+    if (content) files[path] = content;
   }
-  return files
+  return files;
 }
 
 async function readStrategicFile(root: string, path: string) {
-  const target = join(root, path)
+  const target = join(root, path);
   try {
-    const info = await stat(target)
-    if (!info.isFile() || info.size > maxFileBytes) return
-    return readFile(target, "utf8")
+    const info = await stat(target);
+    if (!info.isFile() || info.size > maxFileBytes) return;
+    return readFile(target, "utf8");
   } catch {
-    return undefined
+    return undefined;
   }
 }
 
 async function gitLog(root: string) {
   try {
-    const { stdout } = await execFileAsync("git", ["log", "-12", "--pretty=%s"], {
-      cwd: root,
-      timeout: 3000,
-    })
-    return stdout.split("\n").map((line) => line.trim()).filter(Boolean)
+    const { stdout } = await execFileAsync(
+      "git",
+      ["log", "-12", "--pretty=%s"],
+      {
+        cwd: root,
+        timeout: 3000,
+      },
+    );
+    return stdout
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
   } catch {
-    return []
+    return [];
   }
 }
 
 function jsonPayload(text: string) {
-  const trimmed = text.trim()
-  if (trimmed.startsWith("{")) return trimmed
-  const match = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/)
-  if (match?.[1]) return match[1].trim()
-  const start = trimmed.indexOf("{")
-  const end = trimmed.lastIndexOf("}")
-  if (start >= 0 && end > start) return trimmed.slice(start, end + 1)
-  return trimmed
+  const trimmed = text.trim();
+  if (trimmed.startsWith("{")) return trimmed;
+  const match = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (match?.[1]) return match[1].trim();
+  const start = trimmed.indexOf("{");
+  const end = trimmed.lastIndexOf("}");
+  if (start >= 0 && end > start) return trimmed.slice(start, end + 1);
+  return trimmed;
 }
 
 function parsePractices(value: unknown) {
-  if (!Array.isArray(value)) throw new Error("Initialization result is missing practices")
-  return requiredPractices.map((practice) => parsePractice(value, practice))
+  if (!Array.isArray(value))
+    throw new Error("Initialization result is missing practices");
+  return requiredPractices.map((practice) => parsePractice(value, practice));
 }
 
 function parsePractice(values: unknown[], practice: ProjectCodePracticeKey) {
-  const value = values.find((item) => isRecord(item) && item.practice === practice)
-  if (!isRecord(value)) throw new Error(`Initialization result is missing ${practice}`)
-  if (typeof value.detected !== "boolean") throw new Error(`${practice} detected must be boolean`)
-  const comment = stringValue(value.comment)
-  if (!comment) throw new Error(`${practice} comment is required`)
-  return { practice, detected: value.detected, comment }
+  const value = values.find(
+    (item) => isRecord(item) && item.practice === practice,
+  );
+  if (!isRecord(value))
+    throw new Error(`Initialization result is missing ${practice}`);
+  if (typeof value.detected !== "boolean")
+    throw new Error(`${practice} detected must be boolean`);
+  const comment = stringValue(value.comment);
+  if (!comment) throw new Error(`${practice} comment is required`);
+  return { practice, detected: value.detected, comment };
 }
 
 function validateGeneratedArtifacts(script: string, compose: string) {
-  const normalizedScript = script.toLowerCase()
-  const normalizedCompose = compose.toLowerCase()
+  const normalizedScript = script.toLowerCase();
+  const normalizedCompose = compose.toLowerCase();
   if (!handlesEnvFiles(normalizedScript)) {
-    throw new Error("Initialization result setupScript must prepare env files")
+    throw new Error("Initialization result setupScript must prepare env files");
   }
   if (!launchesDockerCompose(normalizedScript)) {
-    throw new Error("Initialization result setupScript must launch docker compose")
+    throw new Error(
+      "Initialization result setupScript must launch docker compose",
+    );
   }
-  validateDockerCompose(normalizedCompose)
+  validateDockerCompose(normalizedCompose);
 }
 
 function validateDockerCompose(compose: string) {
   if (!compose.includes("services:")) {
-    throw new Error("Initialization result dockerCompose must define services")
+    throw new Error("Initialization result dockerCompose must define services");
   }
   if (!hasPortMapping(compose)) {
-    throw new Error("Initialization result dockerCompose must expose dynamic host ports")
+    throw new Error(
+      "Initialization result dockerCompose must expose dynamic host ports",
+    );
   }
 }
 
@@ -264,11 +291,11 @@ function handlesEnvFiles(script: string) {
     "install -m",
     "cat > .env",
     "touch .env",
-  ])
+  ]);
 }
 
 function launchesDockerCompose(script: string) {
-  return composeCommandPresent(script) && composeLifecyclePresent(script)
+  return composeCommandPresent(script) && composeLifecyclePresent(script);
 }
 
 function hasPortMapping(compose: string) {
@@ -277,31 +304,33 @@ function hasPortMapping(compose: string) {
     "${api_port}:",
     "${frontend_port}:",
     "${port}:",
-    'ports:',
-  ])
+    "ports:",
+  ]);
 }
 
 function composeCommandPresent(value: string) {
-  return /docker\s+compose|docker-compose|compose_cmd|docker_compose|compose command|compose binary/.test(value)
+  return /docker\s+compose|docker-compose|compose_cmd|docker_compose|compose command|compose binary/.test(
+    value,
+  );
 }
 
 function composeLifecyclePresent(value: string) {
-  return /\bup\b|\brun\b|\bstart\b/.test(value)
+  return /\bup\b|\brun\b|\bstart\b/.test(value);
 }
 
 function includesOneOf(value: string, candidates: string[]) {
-  return candidates.some((candidate) => value.includes(candidate))
+  return candidates.some((candidate) => value.includes(candidate));
 }
 
 function truncateCorrectionPayload(value: string) {
-  if (value.length <= maxCorrectionPayloadLength) return value
-  return value.slice(0, maxCorrectionPayloadLength)
+  if (value.length <= maxCorrectionPayloadLength) return value;
+  return value.slice(0, maxCorrectionPayloadLength);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === "object"
+  return !!value && typeof value === "object";
 }
 
 function stringValue(value: unknown) {
-  return typeof value === "string" && value.trim() ? value : undefined
+  return typeof value === "string" && value.trim() ? value : undefined;
 }

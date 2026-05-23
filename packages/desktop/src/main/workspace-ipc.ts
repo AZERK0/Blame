@@ -39,6 +39,24 @@ type RemoveWorktreeInput = {
   worktree: string;
 };
 
+type ResolveProjectPreviewUrlInput = {
+  worktree: string;
+};
+
+type ComposeService = {
+  labels?: Record<string, string> | string[];
+  ports?: Array<{
+    mode?: string;
+    protocol?: string;
+    published?: string | number;
+    target?: string | number;
+  }>;
+};
+
+type ComposeConfig = {
+  services?: Record<string, ComposeService>;
+};
+
 type SetupRun = {
   id: string;
   process: ChildProcessWithoutNullStreams;
@@ -76,6 +94,10 @@ export function registerWorkspaceIpcHandlers() {
   );
   ipcMain.handle("workspace:remove-worktree", (_event, input: RemoveWorktreeInput) =>
     removeWorktree(input),
+  );
+  ipcMain.handle(
+    "workspace:resolve-project-preview-url",
+    (_event, input: ResolveProjectPreviewUrlInput) => resolveProjectPreviewUrl(input),
   );
 }
 
@@ -228,6 +250,23 @@ async function removeWorktree(input: RemoveWorktreeInput) {
   return true;
 }
 
+async function resolveProjectPreviewUrl(input: ResolveProjectPreviewUrlInput) {
+  const worktree = resolve(input.worktree);
+  await assertGitRepository(worktree);
+  const composePath = projectComposePath(worktree);
+  if (!existsSync(composePath)) return null;
+  const previewTarget = await composePreviewTarget(worktree, composePath);
+  if (!previewTarget) return null;
+  const address = await composePublishedAddress(
+    worktree,
+    composePath,
+    previewTarget.service,
+    previewTarget.port,
+  );
+  if (!address) return null;
+  return previewUrl(address, previewTarget.protocol, previewTarget.path);
+}
+
 async function walk(
   root: string,
   directory: string,
@@ -332,18 +371,112 @@ function storySlug(storyId: number, title: string) {
 function setupEnvironment(worktree: string) {
   return {
     ...process.env,
-    BLAME_DOCKER_COMPOSE_FILE: join(
-      worktree,
-      ".blame",
-      "initialization",
-      "docker-compose.yml",
-    ),
+    BLAME_DOCKER_COMPOSE_FILE: projectComposePath(worktree),
     BLAME_INITIALIZATION_DIR: join(worktree, ".blame", "initialization"),
     COMPOSE_PROJECT_NAME: `blame_${createHash("sha1")
       .update(worktree)
       .digest("hex")
       .slice(0, 12)}`,
   };
+}
+
+function projectComposePath(worktree: string) {
+  return join(worktree, ".blame", "initialization", "docker-compose.yml");
+}
+
+async function composePreviewTarget(worktree: string, composePath: string) {
+  const config = await composeConfig(worktree, composePath);
+  const services = Object.entries(config.services ?? {});
+  const labeledTarget = services
+    .map(([service, config]) => labeledPreviewTarget(service, config))
+    .find(Boolean);
+  if (labeledTarget) return labeledTarget;
+  return services
+    .map(([service, config]) => exposedPreviewTarget(service, config))
+    .find(Boolean);
+}
+
+async function composeConfig(
+  worktree: string,
+  composePath: string,
+): Promise<ComposeConfig> {
+  const { stdout } = await execFileAsync(
+    "docker",
+    ["compose", "-f", composePath, "config", "--format", "json"],
+    { cwd: worktree, env: setupEnvironment(worktree) },
+  );
+  const parsed = JSON.parse(stdout) as unknown;
+  if (!parsed || typeof parsed !== "object") return {};
+  return parsed as ComposeConfig;
+}
+
+function labeledPreviewTarget(service: string, config: ComposeService) {
+  const labels = serviceLabels(config);
+  if (labels["blame.preview"] !== "true") return undefined;
+  const port = numberValue(labels["blame.preview.port"]);
+  if (!port) return undefined;
+  return {
+    service,
+    port,
+    protocol: labels["blame.preview.protocol"] || "http",
+    path: labels["blame.preview.path"] || "/",
+  };
+}
+
+function exposedPreviewTarget(service: string, config: ComposeService) {
+  const port = config.ports?.find((port) => numberValue(port.target));
+  const target = numberValue(port?.target);
+  if (!target) return undefined;
+  return {
+    service,
+    port: target,
+    protocol: "http",
+    path: "/",
+  };
+}
+
+function serviceLabels(config: ComposeService) {
+  if (!config.labels) return {};
+  if (!Array.isArray(config.labels)) return config.labels;
+  return Object.fromEntries(
+    config.labels
+      .map((label) => label.split("=", 2))
+      .filter(([key]) => Boolean(key))
+      .map(([key, value]) => [key, value ?? "true"]),
+  );
+}
+
+async function composePublishedAddress(
+  worktree: string,
+  composePath: string,
+  service: string,
+  port: number,
+) {
+  try {
+    const { stdout } = await execFileAsync(
+      "docker",
+      ["compose", "-f", composePath, "port", service, String(port)],
+      { cwd: worktree, env: setupEnvironment(worktree) },
+    );
+    return stdout.trim().split("\n").find(Boolean);
+  } catch {
+    return undefined;
+  }
+}
+
+function previewUrl(address: string, protocol: string, path: string) {
+  const normalizedAddress = address
+    .replace(/^0\.0\.0\.0:/, "127.0.0.1:")
+    .replace(/^\[::\]:/, "127.0.0.1:");
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return `${protocol}://${normalizedAddress}${normalizedPath}`;
+}
+
+function numberValue(value: unknown) {
+  if (typeof value === "number") return value;
+  if (typeof value !== "string") return undefined;
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) ? parsed : undefined;
 }
 
 function emitSetupEvent(
