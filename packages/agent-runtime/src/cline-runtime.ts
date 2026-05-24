@@ -201,7 +201,9 @@ export class BlameAgentRuntime {
       await this.subscribeSession(session.sessionId)
       await this.logSession(session.sessionId, "session subscribed")
       this.emitSessionNotice(session.sessionId, `Cline debug log: ${sessionLogFile}`)
-      if (input.autoSendPrompt !== false) this.sendPrompt(cline, session.sessionId, input.prompt)
+      if (input.autoSendPrompt !== false) {
+        void this.sendPrompt(cline, session.sessionId, input.prompt).catch(() => undefined)
+      }
       if (input.autoSendPrompt === false) {
         await this.logSession(session.sessionId, "prompt deferred", {
           promptLength: input.prompt.length,
@@ -216,7 +218,7 @@ export class BlameAgentRuntime {
 
   private async sendSession(input: SendSessionInput) {
     const cline = await this.core()
-    return cline.send(input)
+    return this.sendPrompt(cline, input.sessionId, input.prompt)
   }
 
   private async abortSession(sessionId: string) {
@@ -448,19 +450,26 @@ export class BlameAgentRuntime {
   }
 
   private sendPrompt(cline: ClineCore, sessionId: string, prompt: string) {
-    void cline.send({ sessionId, prompt }).then((result: unknown) => {
+    const result = cline.send({ sessionId, prompt }).then((result: unknown) => {
       void this.logSession(sessionId, "send resolved", result)
       const failure = resultFailureMessage(result)
-      if (failure) this.emitSessionError(sessionId, failure)
+      if (failure) {
+        this.emitSessionError(sessionId, failure)
+        return result
+      }
+      this.events?.emit({ type: "done", sessionId, payload: result })
+      return result
     }).catch((error: unknown) => {
       const message = errorMessage(error)
       void this.logSession(sessionId, "send failed", { message })
       this.emitSessionError(sessionId, message)
+      throw error
     })
     void this.logSession(sessionId, "prompt sent", {
       promptLength: prompt.length,
       promptPreview: prompt.slice(0, 500),
     })
+    return result
   }
 }
 
