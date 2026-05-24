@@ -1,7 +1,7 @@
 import { execFile, spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
-import { chmod, mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
+import { appendFile, chmod, mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { promisify } from "node:util";
 import { BrowserWindow, ipcMain } from "electron";
@@ -214,9 +214,12 @@ async function runProjectSetup(input: RunProjectSetupInput) {
   const directory = join(worktree, ".blame", "initialization");
   const scriptPath = join(directory, "setup.sh");
   const composePath = join(directory, "docker-compose.yml");
+  const logPath = setupLogPath(worktree);
 
   await mkdir(directory, { recursive: true });
+  await mkdir(dirname(logPath), { recursive: true });
   await writeFile(scriptPath, input.setupScript, "utf8");
+  await writeFile(logPath, "", "utf8");
   await writeFile(
     composePath,
     dockerComposeForPreview(input.dockerCompose, worktree),
@@ -232,10 +235,10 @@ async function runProjectSetup(input: RunProjectSetupInput) {
   setupRuns.set(runId, { id: runId, process: child });
 
   child.stdout.on("data", (data: Buffer) =>
-    emitSetupEvent(runId, "stdout", data.toString()),
+    emitSetupOutput(runId, worktree, "stdout", data.toString()),
   );
   child.stderr.on("data", (data: Buffer) =>
-    emitSetupEvent(runId, "stderr", data.toString()),
+    emitSetupOutput(runId, worktree, "stderr", data.toString()),
   );
   child.on("exit", (code) => {
     void completeProjectSetup(runId, worktree, code);
@@ -251,7 +254,7 @@ async function completeProjectSetup(
 ) {
   if (code !== 0) {
     setupRuns.delete(runId);
-    emitSetupEvent(runId, "exit", String(code ?? ""));
+    emitSetupOutput(runId, worktree, "exit", String(code ?? ""));
     return;
   }
 
@@ -259,12 +262,12 @@ async function completeProjectSetup(
     const existingPreviewUrl = await labeledContainerPreviewUrl(worktree);
     if (!existingPreviewUrl) await startProjectCompose(worktree);
     setupRuns.delete(runId);
-    emitSetupEvent(runId, "stdout", "Project preview containers are running.\n");
-    emitSetupEvent(runId, "exit", "0");
+    emitSetupOutput(runId, worktree, "stdout", "Project preview containers are running.\n");
+    emitSetupOutput(runId, worktree, "exit", "0");
   } catch (error) {
     setupRuns.delete(runId);
-    emitSetupEvent(runId, "stderr", errorMessage(error));
-    emitSetupEvent(runId, "exit", "1");
+    emitSetupOutput(runId, worktree, "stderr", errorMessage(error));
+    emitSetupOutput(runId, worktree, "exit", "1");
   }
 }
 
@@ -582,6 +585,10 @@ function projectComposePath(worktree: string) {
   return join(worktree, ".blame", "initialization", "docker-compose.yml");
 }
 
+function setupLogPath(worktree: string) {
+  return join(worktree, ".blame", "logs", "setup.log");
+}
+
 async function composePreviewTarget(worktree: string, composePath: string) {
   const config = await composeConfig(worktree, composePath);
   const services = Object.entries(config.services ?? {});
@@ -791,6 +798,21 @@ function emitSetupEvent(
       data,
     });
   });
+}
+
+function emitSetupOutput(
+  runId: string,
+  worktree: string,
+  type: "stdout" | "stderr" | "exit",
+  data: string,
+) {
+  void appendFile(setupLogPath(worktree), setupLogText(type, data), "utf8");
+  emitSetupEvent(runId, type, data);
+}
+
+function setupLogText(type: "stdout" | "stderr" | "exit", data: string) {
+  if (type !== "exit") return data;
+  return `\n[setup exited with code ${data}]\n`;
 }
 
 async function gitRootCommits(cwd: string) {
