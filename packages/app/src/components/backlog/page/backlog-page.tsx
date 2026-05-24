@@ -122,7 +122,7 @@ export function BacklogPage() {
       }
       const updatedStory = await updateStory(story, {
         agentLastError: null,
-        agentLastEvent: "Agent session resumed.",
+        agentLastEvent: `Cline debug log: ${clineLogPath(story.worktree, session.sessionId)}`,
         agentModelId: selection.currentModel.id,
         agentProviderId: selection.currentModel.provider.id,
         agentStatus: "Running",
@@ -269,6 +269,10 @@ function developmentSystemPrompt() {
     "You must inspect the repository, edit files as needed, and implement the user story.",
     "Do not wait for extra confirmation before using available write tools.",
   ].join(" ")
+}
+
+function clineLogPath(worktree: string, sessionId: string) {
+  return `${worktree}/.blame/logs/cline-${sessionId}.log`
 }
 
 function agentEventUpdate(event: AgentEvent): UserStoryUpdate {
