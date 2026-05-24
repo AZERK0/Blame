@@ -187,6 +187,9 @@ export function useBacklogRotation(backlog: ReturnType<typeof useBacklogStore>) 
 
   React.useEffect(() => {
     if (!platform.workspace?.resolveProjectPreviewUrl || backlog.loading) return
+    const previewUrlForWorktree =
+      platform.workspace.ensureProjectPreviewUrl ??
+      platform.workspace.resolveProjectPreviewUrl
     backlog.stories
       .filter((story) => missingPreview(story))
       .forEach((story) => {
@@ -194,8 +197,7 @@ export function useBacklogRotation(backlog: ReturnType<typeof useBacklogStore>) 
         const key = `${story.id}:${story.worktree}`
         if (previewRecoveryKeys.current.has(key)) return
         previewRecoveryKeys.current.add(key)
-        void platform.workspace
-          .resolveProjectPreviewUrl({ worktree: story.worktree })
+        void previewUrlForWorktree({ worktree: story.worktree })
           .then((previewUrl) => {
             if (previewUrl) return backlog.update(story, { previewUrl })
             return undefined
@@ -403,7 +405,7 @@ function completedAgentRun(event: AgentEvent) {
 }
 
 function failedDoneReason(reason: string) {
-  return ["error", "aborted", "cancelled", "stopped"].includes(reason)
+  return ["error", "aborted", "cancelled"].includes(reason)
 }
 
 function agentAuthenticationErrorKey(story: UserStory) {

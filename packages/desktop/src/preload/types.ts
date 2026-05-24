@@ -73,6 +73,7 @@ export type BlameDesktopApi = {
       worktree: string;
     }): Promise<boolean>;
     resolveProjectPreviewUrl(input: { worktree: string }): Promise<string | null>;
+    ensureProjectPreviewUrl(input: { worktree: string }): Promise<string | null>;
     onSetupEvent(
       runId: string,
       callback: (event: ProjectSetupEvent) => void,

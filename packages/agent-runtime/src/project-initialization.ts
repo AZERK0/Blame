@@ -92,10 +92,11 @@ export function projectInitializationPrompt(scan: ProjectInitializationScan) {
     "setupScript requirements:",
     "It must be a complete end-to-end executable bash script using set -euo pipefail.",
     "It must initialize the current already-created git worktree for preview execution.",
-    "It must install dependencies, prepare required env files, select free host ports, run Docker Compose, and print final preview URLs.",
+    "It must install dependencies and prepare required env files only.",
+    "It must not launch Docker Compose, start containers, or print preview URLs.",
     "It must not leave startup steps to the reader and must not use placeholders, TODOs, or non-executable comments.",
     "If .env example files exist, copy or generate the required .env files from them.",
-    "If the Compose file does not start dev/preview servers by itself, start them inside the containers.",
+    "If the Compose file does not start dev/preview servers by itself, define commands in dockerCompose so Docker Compose starts them.",
 
     "Worktree model:",
     "The setupScript is run from inside an already-created git worktree and must initialize only the current directory.",
@@ -110,15 +111,21 @@ export function projectInitializationPrompt(scan: ProjectInitializationScan) {
 
     "Docker Compose requirements:",
     "dockerCompose must be a directly runnable Docker Compose config.",
-    "Preserve internal app ports and expose only dynamic host ports, for example ${WEB_PORT}:3000.",
+    "Preserve internal app ports and let Docker allocate localhost host ports, for example 127.0.0.1::3000.",
     "Mark exactly one browser preview service with labels: blame.preview=true, blame.preview.port=<internal port>, blame.preview.protocol=http, and blame.preview.path=/.",
     "Include all services required for a working preview.",
+    "Container commands must bootstrap required package managers and tools inside the container before running project commands.",
+    "For pnpm in Node containers running as a non-root user, use corepack prepare pnpm@<version> --activate and corepack pnpm <command>; do not use corepack enable or bare pnpm.",
     "Reuse an existing Compose structure when present, changing only what is needed for isolation, dynamic ports, env, volumes, and Blame metadata.",
-    "The setupScript must write dockerCompose to a compose file in the current worktree when needed, then run docker compose from there.",
+    "Blame writes dockerCompose to $BLAME_DOCKER_COMPOSE_FILE and launches Docker Compose after setupScript exits successfully.",
+    "The setupScript must not create alternate compose files.",
     "Containers, networks, and volumes must be isolated through COMPOSE_PROJECT_NAME.",
+    "Every service that can write to the worktree must run as user ${BLAME_HOST_UID}:${BLAME_HOST_GID}.",
+    "Do not let containers write bind-mounted worktree files as root.",
 
     "Port requirements:",
-    "Choose free host ports dynamically, avoid duplicates in one run, and map them to fixed internal container ports.",
+    "Do not choose, scan, reserve, or export host ports in setupScript.",
+    "Let Docker allocate host ports atomically. Blame resolves preview URLs after Docker Compose starts.",
     "Do not change app internal ports just to avoid host conflicts.",
 
     "Quality checks:",
@@ -262,9 +269,9 @@ function validateGeneratedArtifacts(script: string, compose: string) {
   if (!handlesEnvFiles(normalizedScript)) {
     throw new Error("Initialization result setupScript must prepare env files");
   }
-  if (!launchesDockerCompose(normalizedScript)) {
+  if (launchesDockerCompose(normalizedScript)) {
     throw new Error(
-      "Initialization result setupScript must launch docker compose",
+      "Initialization result setupScript must not launch docker compose",
     );
   }
   validateDockerCompose(normalizedCompose);
@@ -274,9 +281,29 @@ function validateDockerCompose(compose: string) {
   if (!compose.includes("services:")) {
     throw new Error("Initialization result dockerCompose must define services");
   }
-  if (!hasPortMapping(compose)) {
+  if (usesManualHostPort(compose)) {
     throw new Error(
-      "Initialization result dockerCompose must expose dynamic host ports",
+      "Initialization result dockerCompose must let Docker allocate host ports",
+    );
+  }
+  if (!hasDockerAllocatedPortMapping(compose)) {
+    throw new Error(
+      "Initialization result dockerCompose must expose Docker-allocated host ports",
+    );
+  }
+  if (!runsContainersAsHostUser(compose)) {
+    throw new Error(
+      "Initialization result dockerCompose must run worktree services as the host user",
+    );
+  }
+  if (compose.includes("corepack enable")) {
+    throw new Error(
+      "Initialization result dockerCompose must not run corepack enable",
+    );
+  }
+  if (usesBarePnpm(compose)) {
+    throw new Error(
+      "Initialization result dockerCompose must run pnpm through corepack",
     );
   }
 }
@@ -298,14 +325,25 @@ function launchesDockerCompose(script: string) {
   return composeCommandPresent(script) && composeLifecyclePresent(script);
 }
 
-function hasPortMapping(compose: string) {
+function usesManualHostPort(compose: string) {
+  return /\$\{[a-z0-9_]*port\}:/.test(compose);
+}
+
+function hasDockerAllocatedPortMapping(compose: string) {
   return includesOneOf(compose, [
-    "${web_port}:",
-    "${api_port}:",
-    "${frontend_port}:",
-    "${port}:",
-    "ports:",
+    "127.0.0.1::",
+    "host_ip: 127.0.0.1",
+    'host_ip: "127.0.0.1"',
+    "host_ip: '127.0.0.1'",
   ]);
+}
+
+function runsContainersAsHostUser(compose: string) {
+  return compose.includes("user:") && compose.includes("blame_host_uid");
+}
+
+function usesBarePnpm(compose: string) {
+  return /(^|[^a-z0-9_-])pnpm\s/.test(compose.replace(/corepack\s+pnpm/g, ""));
 }
 
 function composeCommandPresent(value: string) {

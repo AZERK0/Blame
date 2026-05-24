@@ -24,6 +24,8 @@ const api: BlameDesktopApi = {
       ipcRenderer.invoke("workspace:remove-worktree", input),
     resolveProjectPreviewUrl: (input) =>
       ipcRenderer.invoke("workspace:resolve-project-preview-url", input),
+    ensureProjectPreviewUrl: (input) =>
+      ipcRenderer.invoke("workspace:ensure-project-preview-url", input),
     onSetupEvent: (runId, callback) => {
       const channel = `workspace:setup:event:${runId}`;
       const handler = (

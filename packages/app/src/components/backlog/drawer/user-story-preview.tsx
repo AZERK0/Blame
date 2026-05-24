@@ -57,7 +57,7 @@ export function UserStoryPreview({ userStory }: { userStory?: UserStory }) {
 
   const syncFrameLocation = React.useCallback(() => {
     const location = frameRef.current
-      ? previewFrameLocation(frameRef.current)
+      ? previewFrameLocation(frameRef.current, source)
       : undefined
     if (!location) {
       setPreviewLoad((current) =>
@@ -79,7 +79,7 @@ export function UserStoryPreview({ userStory }: { userStory?: UserStory }) {
         ? current
         : { key: previewKey, location, state: "loaded" }
     )
-  }, [previewKey])
+  }, [previewKey, source])
 
   React.useEffect(() => {
     if (!source) return
@@ -126,7 +126,7 @@ export function UserStoryPreview({ userStory }: { userStory?: UserStory }) {
   }
 
   const openPreview = () => {
-    const target = previewLocation ?? source
+    const target = source
     if (!target) return
     if (platform.openExternalLink) return platform.openExternalLink(target)
     window.open(target, "_blank", "noopener,noreferrer")
@@ -248,9 +248,13 @@ function previewSource(previewUrl: string) {
   return `http://${previewUrl}`
 }
 
-function previewFrameLocation(frame: HTMLIFrameElement) {
+function previewFrameLocation(frame: HTMLIFrameElement, source?: string) {
   try {
-    return frame.contentWindow?.location.href
+    const location = frame.contentWindow?.location.href
+    if (!location || !source) return location
+    return new URL(location).origin === new URL(source).origin
+      ? location
+      : undefined
   } catch {
     return undefined
   }

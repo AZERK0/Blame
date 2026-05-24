@@ -330,5 +330,5 @@ function completedAgentRun(event: AgentEvent) {
 }
 
 function failedDoneReason(reason: string) {
-  return ["error", "aborted", "cancelled", "stopped"].includes(reason)
+  return ["error", "aborted", "cancelled"].includes(reason)
 }

@@ -7,6 +7,8 @@ import { promisify } from "node:util";
 import { BrowserWindow, ipcMain } from "electron";
 
 const execFileAsync = promisify(execFile);
+const previewStartupTimeoutMs = 60_000;
+const previewStartupIntervalMs = 1_000;
 
 type WorkspacePathInput = {
   root: string;
@@ -57,6 +59,15 @@ type ComposeConfig = {
   services?: Record<string, ComposeService>;
 };
 
+type DockerContainer = {
+  Config?: {
+    Labels?: Record<string, string>;
+  };
+  NetworkSettings?: {
+    Ports?: Record<string, Array<{ HostIp?: string; HostPort?: string }> | null>;
+  };
+};
+
 type SetupRun = {
   id: string;
   process: ChildProcessWithoutNullStreams;
@@ -98,6 +109,9 @@ export function registerWorkspaceIpcHandlers() {
   ipcMain.handle(
     "workspace:resolve-project-preview-url",
     (_event, input: ResolveProjectPreviewUrlInput) => resolveProjectPreviewUrl(input),
+  );
+  ipcMain.handle("workspace:ensure-project-preview-url", (_event, input: ResolveProjectPreviewUrlInput) =>
+    ensureProjectPreviewUrl(input),
   );
 }
 
@@ -203,7 +217,11 @@ async function runProjectSetup(input: RunProjectSetupInput) {
 
   await mkdir(directory, { recursive: true });
   await writeFile(scriptPath, input.setupScript, "utf8");
-  await writeFile(composePath, input.dockerCompose, "utf8");
+  await writeFile(
+    composePath,
+    dockerComposeForPreview(input.dockerCompose, worktree),
+    "utf8",
+  );
   await chmod(scriptPath, 0o755);
 
   const runId = randomUUID();
@@ -220,11 +238,55 @@ async function runProjectSetup(input: RunProjectSetupInput) {
     emitSetupEvent(runId, "stderr", data.toString()),
   );
   child.on("exit", (code) => {
-    setupRuns.delete(runId);
-    emitSetupEvent(runId, "exit", String(code ?? ""));
+    void completeProjectSetup(runId, worktree, code);
   });
 
   return { runId };
+}
+
+async function completeProjectSetup(
+  runId: string,
+  worktree: string,
+  code: number | null,
+) {
+  if (code !== 0) {
+    setupRuns.delete(runId);
+    emitSetupEvent(runId, "exit", String(code ?? ""));
+    return;
+  }
+
+  try {
+    const existingPreviewUrl = await labeledContainerPreviewUrl(worktree);
+    if (!existingPreviewUrl) await startProjectCompose(worktree);
+    setupRuns.delete(runId);
+    emitSetupEvent(runId, "stdout", "Project preview containers are running.\n");
+    emitSetupEvent(runId, "exit", "0");
+  } catch (error) {
+    setupRuns.delete(runId);
+    emitSetupEvent(runId, "stderr", errorMessage(error));
+    emitSetupEvent(runId, "exit", "1");
+  }
+}
+
+async function startProjectCompose(worktree: string) {
+  await execFileAsync(
+    "docker",
+    [
+      "compose",
+      "-f",
+      projectComposePath(worktree),
+      "--project-directory",
+      worktree,
+      "up",
+      "-d",
+      "--remove-orphans",
+    ],
+    { cwd: worktree, env: setupEnvironment(worktree) },
+  );
+  const previewUrl = await resolveProjectPreviewUrl({ worktree });
+  if (!previewUrl) throw new Error("Unable to resolve project preview URL");
+  await waitForPreview(previewUrl);
+  return previewUrl;
 }
 
 async function stopProjectSetup(input: StopProjectSetupInput) {
@@ -233,7 +295,15 @@ async function stopProjectSetup(input: StopProjectSetupInput) {
   if (!existsSync(composePath)) return false;
   await execFileAsync(
     "docker",
-    ["compose", "-f", composePath, "down", "--remove-orphans"],
+    [
+      "compose",
+      "-f",
+      composePath,
+      "--project-directory",
+      worktree,
+      "down",
+      "--remove-orphans",
+    ],
     { cwd: worktree, env: setupEnvironment(worktree) },
   );
   return true;
@@ -254,17 +324,25 @@ async function resolveProjectPreviewUrl(input: ResolveProjectPreviewUrlInput) {
   const worktree = resolve(input.worktree);
   await assertGitRepository(worktree);
   const composePath = projectComposePath(worktree);
-  if (!existsSync(composePath)) return null;
+  if (!existsSync(composePath)) return labeledContainerPreviewUrl(worktree);
   const previewTarget = await composePreviewTarget(worktree, composePath);
-  if (!previewTarget) return null;
+  if (!previewTarget) return labeledContainerPreviewUrl(worktree);
   const address = await composePublishedAddress(
     worktree,
     composePath,
     previewTarget.service,
     previewTarget.port,
   );
-  if (!address) return null;
+  if (!address) return labeledContainerPreviewUrl(worktree);
   return previewUrl(address, previewTarget.protocol, previewTarget.path);
+}
+
+async function ensureProjectPreviewUrl(input: ResolveProjectPreviewUrlInput) {
+  const worktree = resolve(input.worktree);
+  await assertGitRepository(worktree);
+  const currentUrl = await resolveProjectPreviewUrl({ worktree });
+  if (currentUrl && (await previewResponds(currentUrl))) return currentUrl;
+  return startProjectCompose(worktree);
 }
 
 async function walk(
@@ -371,6 +449,8 @@ function storySlug(storyId: number, title: string) {
 function setupEnvironment(worktree: string) {
   return {
     ...process.env,
+    BLAME_HOST_GID: hostGroupId(),
+    BLAME_HOST_UID: hostUserId(),
     BLAME_DOCKER_COMPOSE_FILE: projectComposePath(worktree),
     BLAME_INITIALIZATION_DIR: join(worktree, ".blame", "initialization"),
     COMPOSE_PROJECT_NAME: `blame_${createHash("sha1")
@@ -378,6 +458,124 @@ function setupEnvironment(worktree: string) {
       .digest("hex")
       .slice(0, 12)}`,
   };
+}
+
+function hostUserId() {
+  return typeof process.getuid === "function"
+    ? String(process.getuid())
+    : "1000";
+}
+
+function hostGroupId() {
+  return typeof process.getgid === "function"
+    ? String(process.getgid())
+    : "1000";
+}
+
+function dockerComposeForPreview(compose: string, worktree: string) {
+  return dockerComposeWithCorepackPnpm(
+    dockerComposeWithHostUser(compose, worktree),
+  );
+}
+
+function dockerComposeWithHostUser(compose: string, worktree: string) {
+  const lines = compose.split("\n");
+  const servicesLine = serviceSectionLine(lines);
+  if (servicesLine === -1) return compose;
+  return addHostUserToServices(lines, servicesLine, worktree).join("\n");
+}
+
+function dockerComposeWithCorepackPnpm(compose: string) {
+  return compose
+    .replace(/\bcorepack\s+enable\s*&&\s*/g, "")
+    .replace(/(?<!\bcorepack\s)\bpnpm(?=\s)/g, "corepack pnpm");
+}
+
+function serviceSectionLine(lines: string[]) {
+  return lines.findIndex((line) => /^services:\s*(?:#.*)?$/.test(line));
+}
+
+function addHostUserToServices(
+  lines: string[],
+  servicesLine: number,
+  worktree: string,
+) {
+  const result: string[] = [];
+  const serviceIndent = /^\s*/.exec(lines[servicesLine])?.[0].length ?? 0;
+  const childIndent = serviceIndent + 2;
+
+  for (let index = 0; index < lines.length; index += 1) {
+    if (
+      index > servicesLine &&
+      startsNextTopLevelSection(lines[index], serviceIndent)
+    ) {
+      result.push(...lines.slice(index));
+      break;
+    }
+    const serviceBlock = readServiceBlock(lines, index, childIndent);
+    if (!serviceBlock || index <= servicesLine) {
+      result.push(lines[index]);
+      continue;
+    }
+    result.push(...hostUserServiceBlock(serviceBlock, worktree));
+    index = serviceBlock.end;
+  }
+
+  return result;
+}
+
+function readServiceBlock(lines: string[], start: number, indent: number) {
+  if (!isServiceLine(lines[start], indent)) return null;
+  let end = start;
+  while (
+    end + 1 < lines.length &&
+    !startsNextTopLevelSection(lines[end + 1], indent - 2) &&
+    !isServiceLine(lines[end + 1], indent)
+  ) {
+    end += 1;
+  }
+  return { lines: lines.slice(start, end + 1), end };
+}
+
+function startsNextTopLevelSection(line: string, indent: number) {
+  if (!line.trim() || line.trim().startsWith("#")) return false;
+  return new RegExp(`^\\s{0,${indent}}\\S`).test(line);
+}
+
+function isServiceLine(line: string, indent: number) {
+  return new RegExp(`^\\s{${indent}}[a-zA-Z0-9_.-]+:\\s*(?:#.*)?$`).test(line);
+}
+
+function hostUserServiceBlock(
+  block: { lines: string[]; end: number },
+  worktree: string,
+) {
+  if (block.lines.some((line) => /^\s{4}user:\s*/.test(line)))
+    return block.lines;
+  if (!mountsWorktree(block.lines, worktree)) return block.lines;
+  const [serviceLine, ...serviceBody] = block.lines;
+  return [
+    serviceLine,
+    '    user: "${BLAME_HOST_UID}:${BLAME_HOST_GID}"',
+    ...serviceBody,
+  ];
+}
+
+function mountsWorktree(lines: string[], worktree: string) {
+  const service = lines.join("\n");
+  const escapedWorktree = escapeRegExp(worktree);
+  return (
+    /(^|\n)\s*-\s*(?:\.|\$PWD|\$\{PWD\})(?:\/[^:]*)?:/.test(service) ||
+    /source:\s*(?:\.|\$PWD|\$\{PWD\})/.test(service) ||
+    new RegExp(`(^|\\n)\\s*-\\s*${escapedWorktree}(?:\\/[^:]*)?:`).test(
+      service,
+    ) ||
+    new RegExp(`source:\\s*${escapedWorktree}`).test(service)
+  );
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function projectComposePath(worktree: string) {
@@ -402,7 +600,16 @@ async function composeConfig(
 ): Promise<ComposeConfig> {
   const { stdout } = await execFileAsync(
     "docker",
-    ["compose", "-f", composePath, "config", "--format", "json"],
+    [
+      "compose",
+      "-f",
+      composePath,
+      "--project-directory",
+      worktree,
+      "config",
+      "--format",
+      "json",
+    ],
     { cwd: worktree, env: setupEnvironment(worktree) },
   );
   const parsed = JSON.parse(stdout) as unknown;
@@ -455,13 +662,102 @@ async function composePublishedAddress(
   try {
     const { stdout } = await execFileAsync(
       "docker",
-      ["compose", "-f", composePath, "port", service, String(port)],
+      [
+        "compose",
+        "-f",
+        composePath,
+        "--project-directory",
+        worktree,
+        "port",
+        service,
+        String(port),
+      ],
       { cwd: worktree, env: setupEnvironment(worktree) },
     );
     return stdout.trim().split("\n").find(Boolean);
   } catch {
     return undefined;
   }
+}
+
+async function labeledContainerPreviewUrl(worktree: string) {
+  const containers = await previewContainers();
+  const container = containers.find((container) =>
+    containerMatchesWorktree(container, worktree),
+  );
+  if (!container) return null;
+  const labels = container.Config?.Labels ?? {};
+  const port = labels["blame.preview.port"];
+  if (!port) return null;
+  const binding = container.NetworkSettings?.Ports?.[`${port}/tcp`]?.[0];
+  if (!binding?.HostPort) return null;
+  const host = binding.HostIp || "127.0.0.1";
+  return previewUrl(
+    `${host}:${binding.HostPort}`,
+    labels["blame.preview.protocol"] || "http",
+    labels["blame.preview.path"] || "/",
+  );
+}
+
+async function previewContainers() {
+  try {
+    const { stdout } = await execFileAsync("docker", [
+      "ps",
+      "--filter",
+      "label=blame.preview=true",
+      "--format",
+      "{{.ID}}",
+    ]);
+    const ids = stdout
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+    if (ids.length === 0) return [];
+    const { stdout: inspectOutput } = await execFileAsync("docker", [
+      "inspect",
+      ...ids,
+    ]);
+    const parsed = JSON.parse(inspectOutput) as unknown;
+    return Array.isArray(parsed) ? (parsed as DockerContainer[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function containerMatchesWorktree(container: DockerContainer, worktree: string) {
+  const labels = container.Config?.Labels ?? {};
+  const workingDir = labels["com.docker.compose.project.working_dir"];
+  const configFiles = labels["com.docker.compose.project.config_files"];
+  return (
+    workingDir === worktree ||
+    Boolean(
+      configFiles
+        ?.split(",")
+        .some((file) => resolve(file).startsWith(`${worktree}${sep}`)),
+    )
+  );
+}
+
+async function waitForPreview(url: string) {
+  const deadline = Date.now() + previewStartupTimeoutMs;
+  while (Date.now() < deadline) {
+    if (await previewResponds(url)) return;
+    await delay(previewStartupIntervalMs);
+  }
+  throw new Error(`Preview did not respond at ${url}`);
+}
+
+async function previewResponds(url: string) {
+  try {
+    const response = await fetch(url, { method: "GET" });
+    return response.status < 500;
+  } catch {
+    return false;
+  }
+}
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function previewUrl(address: string, protocol: string, path: string) {
@@ -477,6 +773,10 @@ function numberValue(value: unknown) {
   if (typeof value !== "string") return undefined;
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? `${error.message}\n` : "Project setup failed.\n";
 }
 
 function emitSetupEvent(

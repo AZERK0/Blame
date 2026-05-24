@@ -105,6 +105,7 @@ export type WorkspaceClient = {
   stopProjectSetup(input: { worktree: string }): Promise<boolean>
   removeWorktree(input: { repositoryRoot: string; worktree: string }): Promise<boolean>
   resolveProjectPreviewUrl(input: { worktree: string }): Promise<string | null>
+  ensureProjectPreviewUrl(input: { worktree: string }): Promise<string | null>
   onSetupEvent(
     runId: string,
     callback: (event: ProjectSetupEvent) => void
