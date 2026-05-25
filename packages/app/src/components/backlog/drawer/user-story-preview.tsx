@@ -642,6 +642,7 @@ function PreviewIsland({
       {source && (
         <PreviewAddress
           locationBlocked={locationBlocked}
+          onOpen={onOpen}
           previewLocation={previewLocation}
           source={source}
         />
@@ -650,7 +651,6 @@ function PreviewIsland({
         <PreviewActions
           captureDisabled={captureDisabled}
           onCapture={onCapture}
-          onOpen={onOpen}
           onReload={onReload}
         />
       )}
@@ -663,12 +663,10 @@ function PreviewIsland({
 function PreviewActions({
   captureDisabled,
   onCapture,
-  onOpen,
   onReload,
 }: {
   captureDisabled?: boolean
   onCapture?: () => void
-  onOpen: () => void
   onReload: () => void
 }) {
   return (
@@ -696,36 +694,38 @@ function PreviewActions({
       >
         <FocusIcon />
       </Button>
-      <Button
-        className="pointer-events-auto h-10 rounded-full border bg-background/95 px-4 shadow-sm backdrop-blur"
-        size="sm"
-        type="button"
-        variant="outline"
-        onClick={onOpen}
-      >
-        <ExternalLinkIcon />
-        Open in browser
-      </Button>
     </>
   )
 }
 
 function PreviewAddress({
   locationBlocked,
+  onOpen,
   previewLocation,
   source,
 }: {
   locationBlocked: boolean
+  onOpen: () => void
   previewLocation?: string
   source: string
 }) {
   return (
-    <div className="pointer-events-auto flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full border bg-background/95 px-4 shadow-sm backdrop-blur">
-      <MonitorIcon className="size-4 shrink-0 text-muted-foreground" />
+    <div className="pointer-events-auto flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full border bg-background/95 py-1 pr-1 pl-4 shadow-sm backdrop-blur">
       <span className="truncate text-sm text-muted-foreground">
         {previewLocation ?? source}
       </span>
       {locationBlocked && <BlockedLocationBadge />}
+      <Button
+        aria-label="Open preview in browser"
+        className="ml-auto size-8 rounded-full"
+        size="icon"
+        title="Open preview in browser"
+        type="button"
+        variant="ghost"
+        onClick={onOpen}
+      >
+        <ExternalLinkIcon />
+      </Button>
     </div>
   )
 }
