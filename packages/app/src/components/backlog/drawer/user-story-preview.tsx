@@ -673,7 +673,7 @@ function PreviewActions({
     <>
       <Button
         aria-label="Refresh preview"
-        className="pointer-events-auto size-10 rounded-full border bg-background/95 shadow-sm backdrop-blur"
+        className="pointer-events-auto size-9 rounded-full border bg-background/95 shadow-sm backdrop-blur"
         size="icon"
         title="Refresh preview"
         type="button"
@@ -684,7 +684,7 @@ function PreviewActions({
       </Button>
       <Button
         aria-label="Capture preview"
-        className="pointer-events-auto size-10 rounded-full border bg-background/95 shadow-sm backdrop-blur"
+        className="pointer-events-auto size-9 rounded-full border bg-background/95 shadow-sm backdrop-blur"
         disabled={captureDisabled}
         size="icon"
         title="Capture preview"
