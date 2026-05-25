@@ -45,6 +45,11 @@ type PastedAttachment = {
   title?: string
 }
 
+export type PendingFileAttachment = {
+  file: File
+  id: string
+}
+
 type FileMentionState = {
   active: boolean
   query: string
@@ -198,8 +203,9 @@ function rangePosition(
     return {
       node: node.parentNode ?? node,
       offset:
-        Array.from(node.parentNode?.childNodes ?? []).indexOf(node as ChildNode) +
-        (offset > 0 ? 1 : 0),
+        Array.from(node.parentNode?.childNodes ?? []).indexOf(
+          node as ChildNode
+        ) + (offset > 0 ? 1 : 0),
     }
   }
 
@@ -271,7 +277,10 @@ function AttachmentPreview({
 }) {
   if (attachment.previewUrl) {
     return (
-      <ImageAttachmentPreview attachment={{ ...attachment, previewUrl: attachment.previewUrl }} onRemove={onRemove} />
+      <ImageAttachmentPreview
+        attachment={{ ...attachment, previewUrl: attachment.previewUrl }}
+        onRemove={onRemove}
+      />
     )
   }
 
@@ -381,6 +390,7 @@ export const MarkdownEditor = React.forwardRef<
     minHeight: string
     placeholder: string
     codeSelectionAttachments?: PendingCodeSelectionAttachment[]
+    fileAttachments?: PendingFileAttachment[]
     mentionDirectory?: string
     onMarkdownChange?: (markdown: string) => void
     readOnly?: boolean
@@ -388,6 +398,7 @@ export const MarkdownEditor = React.forwardRef<
 >(function MarkdownEditor(
   {
     codeSelectionAttachments,
+    fileAttachments,
     markdown,
     mentionDirectory,
     minHeight,
@@ -414,10 +425,12 @@ export const MarkdownEditor = React.forwardRef<
   const contentEditableRef = React.useRef<HTMLElement>(null)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
   const handledCodeSelectionIdsRef = React.useRef(new Set<string>())
+  const handledFileAttachmentIdsRef = React.useRef(new Set<string>())
   const insertingMentionRef = React.useRef(false)
   const mentionSearchRef = React.useRef(0)
   const rootRef = React.useRef<HTMLDivElement>(null)
-  const mentionOpen = mention.active && Boolean(mentionDirectory && platform.workspace)
+  const mentionOpen =
+    mention.active && Boolean(mentionDirectory && platform.workspace)
 
   React.useEffect(() => {
     attachmentsRef.current = attachments
@@ -501,6 +514,21 @@ export const MarkdownEditor = React.forwardRef<
     addAttachments(nextAttachments)
     rootRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
   }, [codeSelectionAttachments, readOnly])
+
+  React.useEffect(() => {
+    if (readOnly) return
+    const nextAttachments = (fileAttachments ?? [])
+      .filter(
+        (attachment) => !handledFileAttachmentIdsRef.current.has(attachment.id)
+      )
+      .map(fileAttachment)
+    if (nextAttachments.length === 0) return
+    fileAttachments?.forEach((attachment) => {
+      handledFileAttachmentIdsRef.current.add(attachment.id)
+    })
+    addAttachments(nextAttachments)
+    rootRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
+  }, [fileAttachments, readOnly])
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
     if (!mentionOpen) return
@@ -723,5 +751,15 @@ function codeSelectionAttachment(
     }),
     subtitle: codeSelectionLineLabel(attachment),
     title: attachment.path,
+  }
+}
+
+function fileAttachment(attachment: PendingFileAttachment): PastedAttachment {
+  return {
+    id: attachment.id,
+    file: attachment.file,
+    previewUrl: attachment.file.type.startsWith("image/")
+      ? URL.createObjectURL(attachment.file)
+      : undefined,
   }
 }

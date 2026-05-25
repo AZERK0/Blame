@@ -96,7 +96,10 @@ export type PreviewBrowserState = {
 }
 
 export type PreviewBrowserClient = {
-  capture(input: { id: string }): Promise<string | null>
+  capture(input: {
+    id: string
+    size?: "full" | "thumbnail"
+  }): Promise<string | null>
   create(): Promise<{ id: string }>
   destroy(input: { id: string }): Promise<boolean>
   load(input: { id: string; url: string }): Promise<boolean>

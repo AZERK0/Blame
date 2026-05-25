@@ -26,6 +26,7 @@ import {
   normalizeDevelopmentTab,
 } from "@/components/backlog/drawer/user-story-drawer-helpers"
 import { DrawerSidebar } from "@/components/backlog/drawer/user-story-drawer-sidebar"
+import type { PendingFileAttachment } from "@/components/backlog/drawer/markdown-editor"
 import { UserStoryContent } from "@/components/backlog/drawer/user-story-drawer-sections"
 import { UserStoryPreview } from "@/components/backlog/drawer/user-story-preview"
 import {
@@ -91,6 +92,9 @@ export function UserStoryDrawerPanel({
     React.useState<PendingCodeSelectionAttachment[]>([])
   const [commentCodeSelectionAttachments, setCommentCodeSelectionAttachments] =
     React.useState<PendingCodeSelectionAttachment[]>([])
+  const [commentFileAttachments, setCommentFileAttachments] = React.useState<
+    PendingFileAttachment[]
+  >([])
   const [saving, setSaving] = React.useState(false)
   const [title, setTitle] = React.useState(
     mode === "create" ? "" : (userStory?.title ?? "")
@@ -200,6 +204,7 @@ export function UserStoryDrawerPanel({
           <DrawerBody status={status}>
             <UserStoryContent
               commentCodeSelectionAttachments={commentCodeSelectionAttachments}
+              commentFileAttachments={commentFileAttachments}
               commentRef={commentRef}
               mode={mode}
               onSummaryChange={setSummary}
@@ -211,7 +216,21 @@ export function UserStoryDrawerPanel({
         </TabsContent>
         {hasPreview && (
           <TabsContent value="preview" className="min-h-0">
-            <UserStoryPreview userStory={userStory} />
+            <UserStoryPreview
+              userStory={userStory}
+              onCapture={(file) => {
+                setTab("user-story")
+                setCommentFileAttachments((current) => [
+                  ...current,
+                  { file, id: crypto.randomUUID() },
+                ])
+                requestAnimationFrame(() => {
+                  commentRef.current
+                    ?.querySelector<HTMLElement>("[contenteditable='true']")
+                    ?.focus()
+                })
+              }}
+            />
           </TabsContent>
         )}
         {hasDevelopment && (

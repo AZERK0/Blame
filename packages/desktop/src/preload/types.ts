@@ -60,7 +60,10 @@ export type BlameDesktopApi = {
   openExternalLink(url: string): void;
   openPath(path: string): Promise<string>;
   previewBrowser: {
-    capture(input: { id: string }): Promise<string | null>;
+    capture(input: {
+      id: string;
+      size?: "full" | "thumbnail";
+    }): Promise<string | null>;
     create(): Promise<{ id: string }>;
     destroy(input: { id: string }): Promise<boolean>;
     load(input: { id: string; url: string }): Promise<boolean>;
@@ -103,8 +106,12 @@ export type BlameDesktopApi = {
       repositoryRoot: string;
       worktree: string;
     }): Promise<boolean>;
-    resolveProjectPreviewUrl(input: { worktree: string }): Promise<string | null>;
-    ensureProjectPreviewUrl(input: { worktree: string }): Promise<string | null>;
+    resolveProjectPreviewUrl(input: {
+      worktree: string;
+    }): Promise<string | null>;
+    ensureProjectPreviewUrl(input: {
+      worktree: string;
+    }): Promise<string | null>;
     onSetupEvent(
       runId: string,
       callback: (event: ProjectSetupEvent) => void,

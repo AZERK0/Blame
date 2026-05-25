@@ -1,6 +1,7 @@
 import * as React from "react"
 import {
   AlertTriangleIcon,
+  FocusIcon,
   ExternalLinkIcon,
   LockIcon,
   LoaderCircleIcon,
@@ -49,6 +50,7 @@ type PreviewPanelProps = {
 }
 type NativePreviewPanelProps = {
   client: PreviewBrowserClient
+  onCaptureReady: (capture?: PreviewCaptureHandler) => void
   onState: (state: NativePreviewStateInput) => void
   previewKey: string
   previewState: PreviewState
@@ -57,14 +59,17 @@ type NativePreviewPanelProps = {
   visible: boolean
 }
 type PreviewIslandProps = {
+  captureDisabled?: boolean
   hasPreview: boolean
   hasSetupLog: boolean
   locationBlocked: boolean
+  onCapture?: () => void
   onOpen: () => void
   onReload: () => void
   previewLocation?: string
   source?: string
 }
+type PreviewCaptureHandler = () => Promise<File | undefined>
 type NativePreviewFrameProps = {
   ambilightColor?: PreviewAmbilightColor
   browserId?: string
@@ -73,7 +78,13 @@ type NativePreviewFrameProps = {
   surfaceRef: React.RefObject<HTMLDivElement | null>
 }
 
-export function UserStoryPreview({ userStory }: { userStory?: UserStory }) {
+export function UserStoryPreview({
+  onCapture,
+  userStory,
+}: {
+  onCapture?: (file: File) => void
+  userStory?: UserStory
+}) {
   const platform = usePlatform()
   const previewBrowser = platform.previewBrowser
   const [recoveredPreviewUrl, setRecoveredPreviewUrl] = React.useState<
@@ -103,6 +114,8 @@ export function UserStoryPreview({ userStory }: { userStory?: UserStory }) {
   const activeTab = activePreviewTab(tab, Boolean(source), hasSetupLog)
   const [nativePreviewState, setNativePreviewState] =
     React.useState<NativePreviewState>()
+  const [previewCapture, setPreviewCapture] =
+    React.useState<PreviewCaptureHandler>()
   const activeNativePreviewState =
     nativePreviewState?.key === nativePreviewKey
       ? nativePreviewState
@@ -233,6 +246,16 @@ export function UserStoryPreview({ userStory }: { userStory?: UserStory }) {
       setNativePreviewState({ ...state, key: nativePreviewKey }),
     [nativePreviewKey]
   )
+  const capturePreview = React.useCallback(() => {
+    if (!previewCapture) return
+    void previewCapture().then((file) => {
+      if (file) onCapture?.(file)
+    })
+  }, [onCapture, previewCapture])
+  const setPreviewCaptureHandler = React.useCallback(
+    (capture?: PreviewCaptureHandler) => setPreviewCapture(() => capture),
+    []
+  )
 
   if (source || hasSetupLog) {
     return (
@@ -243,9 +266,11 @@ export function UserStoryPreview({ userStory }: { userStory?: UserStory }) {
           className="relative h-full min-h-0 gap-0 bg-muted/20"
         >
           <PreviewIsland
+            captureDisabled={!previewCapture}
             hasPreview={Boolean(source)}
             hasSetupLog={hasSetupLog}
             locationBlocked={displayedLocationBlocked}
+            onCapture={capturePreview}
             onOpen={openPreview}
             onReload={reloadPreview}
             previewLocation={displayedPreviewLocation}
@@ -259,6 +284,7 @@ export function UserStoryPreview({ userStory }: { userStory?: UserStory }) {
               {previewBrowser ? (
                 <NativePreviewPanel
                   client={previewBrowser}
+                  onCaptureReady={setPreviewCaptureHandler}
                   onState={handleNativePreviewState}
                   previewKey={nativePreviewKey}
                   previewState={displayedPreviewState}
@@ -342,6 +368,7 @@ function PreviewPanel({
 
 function NativePreviewPanel({
   client,
+  onCaptureReady,
   onState,
   previewKey,
   previewState,
@@ -365,6 +392,7 @@ function NativePreviewPanel({
 
   useNativePreviewLoad(client, browserId, source, onState)
   useNativePreviewReload(client, browserId, reloadKey, source, onState)
+  useNativePreviewCapture(client, browserId, source, onCaptureReady)
   useNativePreviewBounds(
     client,
     browserId,
@@ -381,6 +409,22 @@ function NativePreviewPanel({
       surfaceRef={surfaceRef}
     />
   )
+}
+
+function useNativePreviewCapture(
+  client: PreviewBrowserClient,
+  browserId: string | undefined,
+  source: string,
+  onCaptureReady: (capture?: PreviewCaptureHandler) => void
+) {
+  React.useEffect(() => {
+    if (!browserId) {
+      onCaptureReady(undefined)
+      return
+    }
+    onCaptureReady(() => captureNativePreview(client, browserId, source))
+    return () => onCaptureReady(undefined)
+  }, [browserId, client, onCaptureReady, source])
 }
 
 function NativePreviewFrame({
@@ -565,17 +609,29 @@ async function captureNativePreviewAmbilight(
   browserId: string
 ) {
   try {
-    const image = await client.capture({ id: browserId })
+    const image = await client.capture({ id: browserId, size: "thumbnail" })
     return image ? await readImageAmbilightColor(image) : undefined
   } catch {
     return undefined
   }
 }
 
+async function captureNativePreview(
+  client: PreviewBrowserClient,
+  browserId: string,
+  source: string
+) {
+  const image = await client.capture({ id: browserId, size: "full" })
+  if (!image) return undefined
+  return dataUrlFile(image, previewCaptureFilename(source))
+}
+
 function PreviewIsland({
+  captureDisabled,
   hasPreview,
   hasSetupLog,
   locationBlocked,
+  onCapture,
   onOpen,
   onReload,
   previewLocation,
@@ -590,7 +646,14 @@ function PreviewIsland({
           source={source}
         />
       )}
-      {source && <PreviewActions onOpen={onOpen} onReload={onReload} />}
+      {source && (
+        <PreviewActions
+          captureDisabled={captureDisabled}
+          onCapture={onCapture}
+          onOpen={onOpen}
+          onReload={onReload}
+        />
+      )}
       <div className="min-w-2 flex-1" />
       <PreviewTabSelector hasPreview={hasPreview} hasSetupLog={hasSetupLog} />
     </div>
@@ -598,9 +661,13 @@ function PreviewIsland({
 }
 
 function PreviewActions({
+  captureDisabled,
+  onCapture,
   onOpen,
   onReload,
 }: {
+  captureDisabled?: boolean
+  onCapture?: () => void
   onOpen: () => void
   onReload: () => void
 }) {
@@ -616,6 +683,18 @@ function PreviewActions({
         onClick={onReload}
       >
         <RefreshCwIcon />
+      </Button>
+      <Button
+        aria-label="Capture preview"
+        className="pointer-events-auto size-10 rounded-full border bg-background/95 shadow-sm backdrop-blur"
+        disabled={captureDisabled}
+        size="icon"
+        title="Capture preview"
+        type="button"
+        variant="outline"
+        onClick={onCapture}
+      >
+        <FocusIcon />
       </Button>
       <Button
         className="pointer-events-auto h-10 rounded-full border bg-background/95 px-4 shadow-sm backdrop-blur"
@@ -925,6 +1004,31 @@ function readImageAmbilightPixels(data: Uint8ClampedArray) {
     if (isUsefulAmbilightColor(color)) colors.push(color)
   }
   return colors
+}
+
+function dataUrlFile(dataUrl: string, filename: string) {
+  const [header, data] = dataUrl.split(",")
+  const type = header?.match(/^data:([^;]+)/)?.[1] ?? "image/png"
+  const bytes = Uint8Array.from(atob(data ?? ""), (character) =>
+    character.charCodeAt(0)
+  )
+  return new File([bytes], filename, { type })
+}
+
+function previewCaptureFilename(source: string) {
+  return `preview-${previewCaptureHost(source)}-${previewCaptureTimestamp()}.png`
+}
+
+function previewCaptureHost(source: string) {
+  try {
+    return new URL(source).host.replaceAll(/[^a-z0-9.-]/gi, "-")
+  } catch {
+    return "capture"
+  }
+}
+
+function previewCaptureTimestamp() {
+  return new Date().toISOString().replaceAll(/[:.]/g, "-")
 }
 
 function previewBrowserBounds(rect: DOMRect) {

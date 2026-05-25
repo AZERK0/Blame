@@ -16,7 +16,10 @@ import type {
 } from "@/components/backlog/data/backlog-data"
 import type { PendingCodeSelectionAttachment } from "@/components/backlog/shared/comment-attachment-events"
 import type { UserStoryDrawerMode } from "@/components/backlog/shared/backlog-types"
-import { MarkdownEditor } from "@/components/backlog/drawer/markdown-editor"
+import {
+  MarkdownEditor,
+  type PendingFileAttachment,
+} from "@/components/backlog/drawer/markdown-editor"
 import {
   activityItems,
   commentButtonLabel,
@@ -27,6 +30,7 @@ import { Button } from "@/components/ui/button"
 
 export function UserStoryContent({
   commentCodeSelectionAttachments,
+  commentFileAttachments,
   commentRef,
   mode,
   onSummaryChange,
@@ -35,6 +39,7 @@ export function UserStoryContent({
   userStory,
 }: {
   commentCodeSelectionAttachments: PendingCodeSelectionAttachment[]
+  commentFileAttachments?: PendingFileAttachment[]
   commentRef: React.RefObject<HTMLDivElement | null>
   mode: UserStoryDrawerMode
   onSummaryChange?: (summary: string) => void
@@ -63,6 +68,7 @@ export function UserStoryContent({
       <ActivitySection status={status} userStory={userStory} />
       <CommentsSection
         codeSelectionAttachments={commentCodeSelectionAttachments}
+        fileAttachments={commentFileAttachments}
         commentRef={commentRef}
         mentionDirectory={mentionDirectory}
         status={status}
@@ -109,7 +115,8 @@ function activityIcon(item: string) {
   if (item.includes("worktree")) return GitBranchIcon
   if (item.includes("submitted")) return BotIcon
   if (item.includes("Approved")) return CheckCircle2Icon
-  if (item.includes("rejected") || item.includes("cancelled")) return XCircleIcon
+  if (item.includes("rejected") || item.includes("cancelled"))
+    return XCircleIcon
   if (item.includes("updated")) return PencilIcon
   if (item.includes("Moved")) return ListChecksIcon
   return FileTextIcon
@@ -117,12 +124,14 @@ function activityIcon(item: string) {
 
 function CommentsSection({
   codeSelectionAttachments,
+  fileAttachments,
   commentRef,
   mentionDirectory,
   status,
   userStory,
 }: {
   codeSelectionAttachments: PendingCodeSelectionAttachment[]
+  fileAttachments?: PendingFileAttachment[]
   commentRef: React.RefObject<HTMLDivElement | null>
   mentionDirectory?: string
   status: BacklogColumnId
@@ -133,7 +142,7 @@ function CommentsSection({
 
   return (
     <section className="grid gap-3">
-      <div className="flex items-center gap-4 font-medium text-xl">
+      <div className="flex items-center gap-4 text-xl font-medium">
         <span className="flex size-11 items-center justify-center rounded-full border bg-muted text-muted-foreground shadow-sm">
           <MessageSquareIcon className="size-5" />
         </span>
@@ -141,6 +150,7 @@ function CommentsSection({
       </div>
       <MarkdownEditor
         codeSelectionAttachments={codeSelectionAttachments}
+        fileAttachments={fileAttachments}
         mentionDirectory={mentionDirectory}
         ref={commentRef}
         markdown=""

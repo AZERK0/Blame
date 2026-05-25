@@ -27,6 +27,8 @@ type PreviewBrowserState = {
   url?: string;
 };
 
+type PreviewBrowserCaptureSize = "full" | "thumbnail";
+
 const previews = new Map<string, PreviewBrowserRecord>();
 
 export function registerPreviewBrowserIpcHandlers() {
@@ -50,8 +52,10 @@ export function registerPreviewBrowserIpcHandlers() {
   ipcMain.handle("preview-browser:destroy", (_event, input: { id: string }) =>
     destroyPreviewBrowser(input.id),
   );
-  ipcMain.handle("preview-browser:capture", (_event, input: { id: string }) =>
-    capturePreviewBrowser(input.id),
+  ipcMain.handle(
+    "preview-browser:capture",
+    (_event, input: { id: string; size?: PreviewBrowserCaptureSize }) =>
+      capturePreviewBrowser(input.id, input.size ?? "full"),
   );
 }
 
@@ -121,12 +125,17 @@ function destroyPreviewBrowser(id: string) {
   return true;
 }
 
-async function capturePreviewBrowser(id: string) {
+async function capturePreviewBrowser(
+  id: string,
+  size: PreviewBrowserCaptureSize,
+) {
   const record = previews.get(id);
   if (!record || !record.view.getVisible()) return null;
   const image = await record.view.webContents.capturePage();
   if (image.isEmpty()) return null;
-  return image.resize({ height: 24, quality: "good", width: 24 }).toDataURL();
+  if (size === "thumbnail")
+    return image.resize({ height: 24, quality: "good", width: 24 }).toDataURL();
+  return image.toDataURL();
 }
 
 function attachPreviewBrowserEvents(record: PreviewBrowserRecord) {
