@@ -39,12 +39,42 @@ export type TerminalEvent = {
   data: string;
 };
 
+export type PreviewBrowserBounds = {
+  height: number;
+  width: number;
+  x: number;
+  y: number;
+};
+
+export type PreviewBrowserState = {
+  error?: string;
+  id: string;
+  loading: boolean;
+  url?: string;
+};
+
 export type BlameDesktopApi = {
   openDirectoryPicker(
     options?: OpenDirectoryPickerOptions,
   ): Promise<string | string[] | null>;
   openExternalLink(url: string): void;
   openPath(path: string): Promise<string>;
+  previewBrowser: {
+    capture(input: { id: string }): Promise<string | null>;
+    create(): Promise<{ id: string }>;
+    destroy(input: { id: string }): Promise<boolean>;
+    load(input: { id: string; url: string }): Promise<boolean>;
+    onState(
+      input: { id: string },
+      callback: (state: PreviewBrowserState) => void,
+    ): () => void;
+    reload(input: { id: string }): Promise<boolean>;
+    setBounds(input: {
+      bounds: PreviewBrowserBounds;
+      id: string;
+      visible: boolean;
+    }): Promise<boolean>;
+  };
   workspace: {
     listDirectory(input: {
       root: string;

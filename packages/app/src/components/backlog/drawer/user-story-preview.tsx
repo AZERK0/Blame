@@ -12,7 +12,7 @@ import {
 import type { UserStory } from "@/components/backlog/data/backlog-data"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { usePlatform } from "@/context/platform"
+import { type PreviewBrowserClient, usePlatform } from "@/context/platform"
 
 type PreviewState = "loading" | "loaded" | "error"
 type PreviewLoad = {
@@ -21,9 +21,61 @@ type PreviewLoad = {
   locationBlocked?: boolean
   state: PreviewState
 }
+type PreviewAmbilightColor = {
+  blue: number
+  green: number
+  red: number
+}
+type NativePreviewState = {
+  error?: string
+  key: string
+  loading: boolean
+  url?: string
+}
+type NativePreviewStateInput = {
+  error?: string
+  loading: boolean
+  url?: string
+}
+type PreviewPanelProps = {
+  frameRef: React.RefObject<HTMLIFrameElement | null>
+  onError: () => void
+  onLoad: () => void
+  onReload: () => void
+  previewKey: string
+  previewState: PreviewState
+  source: string
+  title: string
+}
+type NativePreviewPanelProps = {
+  client: PreviewBrowserClient
+  onState: (state: NativePreviewStateInput) => void
+  previewKey: string
+  previewState: PreviewState
+  reloadKey: number
+  source: string
+  visible: boolean
+}
+type PreviewIslandProps = {
+  hasPreview: boolean
+  hasSetupLog: boolean
+  locationBlocked: boolean
+  onOpen: () => void
+  onReload: () => void
+  previewLocation?: string
+  source?: string
+}
+type NativePreviewFrameProps = {
+  ambilightColor?: PreviewAmbilightColor
+  browserId?: string
+  client: PreviewBrowserClient
+  previewState: PreviewState
+  surfaceRef: React.RefObject<HTMLDivElement | null>
+}
 
 export function UserStoryPreview({ userStory }: { userStory?: UserStory }) {
   const platform = usePlatform()
+  const previewBrowser = platform.previewBrowser
   const [recoveredPreviewUrl, setRecoveredPreviewUrl] = React.useState<
     string | undefined
   >()
@@ -39,6 +91,7 @@ export function UserStoryPreview({ userStory }: { userStory?: UserStory }) {
   const previewUrl = recoveredPreviewUrl ?? userStory?.previewUrl
   const source = previewUrl ? previewSource(previewUrl) : undefined
   const previewKey = source ? `${source}-${reloadKey}` : ""
+  const nativePreviewKey = source ?? ""
   const previewState =
     previewLoad.key === previewKey ? previewLoad.state : "loading"
   const previewLocation =
@@ -48,6 +101,22 @@ export function UserStoryPreview({ userStory }: { userStory?: UserStory }) {
   const hasSetupLog = Boolean(userStory?.worktree)
   const [tab, setTab] = React.useState(source ? "preview" : "setup-log")
   const activeTab = activePreviewTab(tab, Boolean(source), hasSetupLog)
+  const [nativePreviewState, setNativePreviewState] =
+    React.useState<NativePreviewState>()
+  const activeNativePreviewState =
+    nativePreviewState?.key === nativePreviewKey
+      ? nativePreviewState
+      : undefined
+  const hasNativePreview = Boolean(previewBrowser && source)
+  const displayedPreviewState = hasNativePreview
+    ? nativePreviewStatus(activeNativePreviewState)
+    : previewState
+  const displayedPreviewLocation = hasNativePreview
+    ? activeNativePreviewState?.url
+    : previewLocation
+  const displayedLocationBlocked = hasNativePreview
+    ? false
+    : Boolean(locationBlocked)
 
   const clearPreviewRequest = React.useCallback(() => {
     requestRef.current?.abort()
@@ -90,7 +159,7 @@ export function UserStoryPreview({ userStory }: { userStory?: UserStory }) {
   }, [previewKey, source])
 
   React.useEffect(() => {
-    if (!source) return
+    if (!source || previewBrowser) return
     clearPreviewRequest()
     clearLocationInterval()
     const controller = new AbortController()
@@ -111,7 +180,13 @@ export function UserStoryPreview({ userStory }: { userStory?: UserStory }) {
       clearLocationInterval()
       clearPreviewRequest()
     }
-  }, [clearLocationInterval, clearPreviewRequest, previewKey, source])
+  }, [
+    clearLocationInterval,
+    clearPreviewRequest,
+    previewBrowser,
+    previewKey,
+    source,
+  ])
 
   const reloadPreview = () => {
     setReloadKey((current) => current + 1)
@@ -148,11 +223,16 @@ export function UserStoryPreview({ userStory }: { userStory?: UserStory }) {
   }
 
   const openPreview = () => {
-    const target = source
+    const target = displayedPreviewLocation ?? source
     if (!target) return
     if (platform.openExternalLink) return platform.openExternalLink(target)
     window.open(target, "_blank", "noopener,noreferrer")
   }
+  const handleNativePreviewState = React.useCallback(
+    (state: { error?: string; loading: boolean; url?: string }) =>
+      setNativePreviewState({ ...state, key: nativePreviewKey }),
+    [nativePreviewKey]
+  )
 
   if (source || hasSetupLog) {
     return (
@@ -165,10 +245,10 @@ export function UserStoryPreview({ userStory }: { userStory?: UserStory }) {
           <PreviewIsland
             hasPreview={Boolean(source)}
             hasSetupLog={hasSetupLog}
-            locationBlocked={Boolean(locationBlocked)}
+            locationBlocked={displayedLocationBlocked}
             onOpen={openPreview}
             onReload={reloadPreview}
-            previewLocation={previewLocation}
+            previewLocation={displayedPreviewLocation}
             source={source}
           />
           {source && (
@@ -176,16 +256,28 @@ export function UserStoryPreview({ userStory }: { userStory?: UserStory }) {
               value="preview"
               className="h-full min-h-0 overflow-hidden"
             >
-              <PreviewPanel
-                frameRef={frameRef}
-                onError={showPreviewError}
-                onLoad={showPreview}
-                onReload={reloadPreview}
-                previewKey={previewKey}
-                previewState={previewState}
-                source={source}
-                title={`${userStory?.id ?? "user-story"} preview`}
-              />
+              {previewBrowser ? (
+                <NativePreviewPanel
+                  client={previewBrowser}
+                  onState={handleNativePreviewState}
+                  previewKey={nativePreviewKey}
+                  previewState={displayedPreviewState}
+                  reloadKey={reloadKey}
+                  source={source}
+                  visible={activeTab === "preview"}
+                />
+              ) : (
+                <PreviewPanel
+                  frameRef={frameRef}
+                  onError={showPreviewError}
+                  onLoad={showPreview}
+                  onReload={reloadPreview}
+                  previewKey={previewKey}
+                  previewState={previewState}
+                  source={source}
+                  title={`${userStory?.id ?? "user-story"} preview`}
+                />
+              )}
             </TabsContent>
           )}
           {hasSetupLog && (
@@ -225,19 +317,13 @@ function PreviewPanel({
   previewState,
   source,
   title,
-}: {
-  frameRef: React.RefObject<HTMLIFrameElement | null>
-  onError: () => void
-  onLoad: () => void
-  onReload: () => void
-  previewKey: string
-  previewState: PreviewState
-  source: string
-  title: string
-}) {
+}: PreviewPanelProps) {
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-muted/20 pt-[72px]">
-      <div className="relative min-h-0 flex-1 bg-background">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-muted/20 px-4 pt-[72px] pb-4">
+      <div
+        className="relative min-h-0 flex-1 overflow-hidden rounded-lg border bg-background transition-shadow duration-700"
+        style={{ boxShadow: previewAmbilightShadow(undefined) }}
+      >
         <iframe
           ref={frameRef}
           key={previewKey}
@@ -254,6 +340,238 @@ function PreviewPanel({
   )
 }
 
+function NativePreviewPanel({
+  client,
+  onState,
+  previewKey,
+  previewState,
+  reloadKey,
+  source,
+  visible,
+}: NativePreviewPanelProps) {
+  const surfaceRef = React.useRef<HTMLDivElement>(null)
+  const browserId = useNativePreviewId(client)
+  const ambilightColor = useNativePreviewAmbilightColor(
+    client,
+    browserId,
+    previewKey,
+    visible && previewState === "loaded"
+  )
+
+  React.useEffect(() => {
+    if (!browserId) return
+    return client.onState({ id: browserId }, onState)
+  }, [browserId, client, onState])
+
+  useNativePreviewLoad(client, browserId, source, onState)
+  useNativePreviewReload(client, browserId, reloadKey, source, onState)
+  useNativePreviewBounds(
+    client,
+    browserId,
+    surfaceRef,
+    visible && previewState === "loaded"
+  )
+
+  return (
+    <NativePreviewFrame
+      ambilightColor={ambilightColor}
+      browserId={browserId}
+      client={client}
+      previewState={previewState}
+      surfaceRef={surfaceRef}
+    />
+  )
+}
+
+function NativePreviewFrame({
+  ambilightColor,
+  browserId,
+  client,
+  previewState,
+  surfaceRef,
+}: NativePreviewFrameProps) {
+  return (
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-muted/20 px-4 pt-[72px] pb-4">
+      <div
+        className="relative min-h-0 flex-1 overflow-hidden rounded-lg border bg-background transition-shadow duration-700"
+        style={{ boxShadow: previewAmbilightShadow(ambilightColor) }}
+      >
+        <div ref={surfaceRef} className="h-full w-full" />
+        {previewState === "loading" && <PreviewLoadingState />}
+        {previewState === "error" && (
+          <PreviewErrorState
+            onReload={() => reloadNativePreview(client, browserId)}
+          />
+        )}
+      </div>
+    </div>
+  )
+}
+
+function useNativePreviewId(client: PreviewBrowserClient) {
+  const [browserId, setBrowserId] = React.useState<string>()
+
+  React.useEffect(() => {
+    let cancelled = false
+    let createdId: string | undefined
+    void client.create().then(({ id }) => {
+      createdId = id
+      if (cancelled) {
+        void client.destroy({ id })
+        return
+      }
+      setBrowserId(id)
+    })
+    return () => {
+      cancelled = true
+      if (createdId) void client.destroy({ id: createdId })
+    }
+  }, [client])
+
+  return browserId
+}
+
+function reloadNativePreview(
+  client: PreviewBrowserClient,
+  browserId: string | undefined
+) {
+  if (browserId) void client.reload({ id: browserId })
+}
+
+function useNativePreviewLoad(
+  client: PreviewBrowserClient,
+  browserId: string | undefined,
+  source: string,
+  onState: (state: NativePreviewStateInput) => void
+) {
+  React.useEffect(() => {
+    if (!browserId) return
+    onState({ loading: true, url: source })
+    void client.load({ id: browserId, url: source }).catch((error) => {
+      onState(nativePreviewErrorState(error, "Unable to load preview", source))
+    })
+  }, [browserId, client, onState, source])
+}
+
+function useNativePreviewReload(
+  client: PreviewBrowserClient,
+  browserId: string | undefined,
+  reloadKey: number,
+  source: string,
+  onState: (state: NativePreviewStateInput) => void
+) {
+  const reloadKeyRef = React.useRef(reloadKey)
+
+  React.useEffect(() => {
+    if (!browserId || reloadKeyRef.current === reloadKey) return
+    reloadKeyRef.current = reloadKey
+    onState({ loading: true, url: source })
+    void client.reload({ id: browserId }).catch((error) => {
+      onState(
+        nativePreviewErrorState(error, "Unable to reload preview", source)
+      )
+    })
+  }, [browserId, client, onState, reloadKey, source])
+}
+
+function useNativePreviewBounds(
+  client: PreviewBrowserClient,
+  browserId: string | undefined,
+  surfaceRef: React.RefObject<HTMLDivElement | null>,
+  visible: boolean
+) {
+  const lastBoundsRef = React.useRef<string>("")
+
+  React.useEffect(() => {
+    if (!browserId) return
+    const updateBounds = () =>
+      syncNativePreviewBounds(
+        client,
+        browserId,
+        surfaceRef,
+        visible,
+        lastBoundsRef
+      )
+    updateBounds()
+    const observer = new ResizeObserver(updateBounds)
+    if (surfaceRef.current) observer.observe(surfaceRef.current)
+    window.addEventListener("resize", updateBounds)
+    window.addEventListener("scroll", updateBounds, true)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener("resize", updateBounds)
+      window.removeEventListener("scroll", updateBounds, true)
+      void client.setBounds({
+        bounds: { height: 0, width: 0, x: 0, y: 0 },
+        id: browserId,
+        visible: false,
+      })
+    }
+  }, [browserId, client, surfaceRef, visible])
+}
+
+function syncNativePreviewBounds(
+  client: PreviewBrowserClient,
+  browserId: string,
+  surfaceRef: React.RefObject<HTMLDivElement | null>,
+  visible: boolean,
+  lastBoundsRef: React.MutableRefObject<string>
+) {
+  const bounds = nativePreviewSurfaceBounds(surfaceRef.current)
+  const shouldShow = visible && bounds.height > 0 && bounds.width > 0
+  const key = `${bounds.x}:${bounds.y}:${bounds.width}:${bounds.height}:${shouldShow}`
+  if (lastBoundsRef.current === key) return
+  lastBoundsRef.current = key
+  void client.setBounds({ bounds, id: browserId, visible: shouldShow })
+}
+
+function useNativePreviewAmbilightColor(
+  client: PreviewBrowserClient,
+  browserId: string | undefined,
+  previewKey: string,
+  visible: boolean
+) {
+  const [sample, setSample] = React.useState<{
+    color?: PreviewAmbilightColor
+    key: string
+  }>()
+
+  React.useEffect(() => {
+    if (!browserId || !visible) return
+    let cancelled = false
+    const sampleFrame = async () => {
+      const color = await captureNativePreviewAmbilight(client, browserId)
+      if (cancelled) return
+      setSample((current) =>
+        current?.key === previewKey && sameAmbilightColor(current.color, color)
+          ? current
+          : { color, key: previewKey }
+      )
+    }
+    const timeout = window.setTimeout(sampleFrame, 300)
+    const interval = window.setInterval(sampleFrame, 1800)
+    return () => {
+      cancelled = true
+      window.clearTimeout(timeout)
+      window.clearInterval(interval)
+    }
+  }, [browserId, client, previewKey, visible])
+
+  return sample?.key === previewKey ? sample.color : undefined
+}
+
+async function captureNativePreviewAmbilight(
+  client: PreviewBrowserClient,
+  browserId: string
+) {
+  try {
+    const image = await client.capture({ id: browserId })
+    return image ? await readImageAmbilightColor(image) : undefined
+  } catch {
+    return undefined
+  }
+}
+
 function PreviewIsland({
   hasPreview,
   hasSetupLog,
@@ -262,15 +580,7 @@ function PreviewIsland({
   onReload,
   previewLocation,
   source,
-}: {
-  hasPreview: boolean
-  hasSetupLog: boolean
-  locationBlocked: boolean
-  onOpen: () => void
-  onReload: () => void
-  previewLocation?: string
-  source?: string
-}) {
+}: PreviewIslandProps) {
   return (
     <div className="pointer-events-none absolute inset-x-4 top-4 z-20 flex items-center gap-2">
       {source && (
@@ -280,34 +590,44 @@ function PreviewIsland({
           source={source}
         />
       )}
-      {source && (
-        <Button
-          aria-label="Refresh preview"
-          className="pointer-events-auto size-10 rounded-full border bg-background/95 shadow-sm backdrop-blur"
-          size="icon"
-          title="Refresh preview"
-          type="button"
-          variant="outline"
-          onClick={onReload}
-        >
-          <RefreshCwIcon />
-        </Button>
-      )}
-      {source && (
-        <Button
-          className="pointer-events-auto h-10 rounded-full border bg-background/95 px-4 shadow-sm backdrop-blur"
-          size="sm"
-          type="button"
-          variant="outline"
-          onClick={onOpen}
-        >
-          <ExternalLinkIcon />
-          Open in browser
-        </Button>
-      )}
+      {source && <PreviewActions onOpen={onOpen} onReload={onReload} />}
       <div className="min-w-2 flex-1" />
       <PreviewTabSelector hasPreview={hasPreview} hasSetupLog={hasSetupLog} />
     </div>
+  )
+}
+
+function PreviewActions({
+  onOpen,
+  onReload,
+}: {
+  onOpen: () => void
+  onReload: () => void
+}) {
+  return (
+    <>
+      <Button
+        aria-label="Refresh preview"
+        className="pointer-events-auto size-10 rounded-full border bg-background/95 shadow-sm backdrop-blur"
+        size="icon"
+        title="Refresh preview"
+        type="button"
+        variant="outline"
+        onClick={onReload}
+      >
+        <RefreshCwIcon />
+      </Button>
+      <Button
+        className="pointer-events-auto h-10 rounded-full border bg-background/95 px-4 shadow-sm backdrop-blur"
+        size="sm"
+        type="button"
+        variant="outline"
+        onClick={onOpen}
+      >
+        <ExternalLinkIcon />
+        Open in browser
+      </Button>
+    </>
   )
 }
 
@@ -463,6 +783,24 @@ function activePreviewTab(
   return "setup-log"
 }
 
+function nativePreviewStatus(state: NativePreviewState | undefined) {
+  if (!state || state.loading) return "loading"
+  if (state.error) return "error"
+  return "loaded"
+}
+
+function nativePreviewErrorState(
+  error: unknown,
+  fallback: string,
+  url: string
+): NativePreviewStateInput {
+  return {
+    error: error instanceof Error ? error.message : fallback,
+    loading: false,
+    url,
+  }
+}
+
 function PreviewLoadingState() {
   return (
     <div className="absolute inset-0 flex items-center justify-center bg-background/95">
@@ -503,6 +841,127 @@ function PreviewErrorState({ onReload }: { onReload: () => void }) {
       </div>
     </div>
   )
+}
+
+function averageAmbilightColor(colors: PreviewAmbilightColor[]) {
+  if (!colors.length) return undefined
+  const total = colors.reduce(
+    (result, color) => {
+      const weight = ambilightColorWeight(color)
+      return {
+        blue: result.blue + color.blue * weight,
+        green: result.green + color.green * weight,
+        red: result.red + color.red * weight,
+        weight: result.weight + weight,
+      }
+    },
+    { blue: 0, green: 0, red: 0, weight: 0 }
+  )
+  if (!total.weight) return undefined
+  return {
+    blue: Math.round(total.blue / total.weight),
+    green: Math.round(total.green / total.weight),
+    red: Math.round(total.red / total.weight),
+  }
+}
+
+function isUsefulAmbilightColor(color: PreviewAmbilightColor) {
+  const luminance =
+    (0.2126 * color.red + 0.7152 * color.green + 0.0722 * color.blue) / 255
+  return (
+    luminance > 0.05 && luminance < 0.96 && ambilightSaturation(color) > 0.04
+  )
+}
+
+function ambilightColorWeight(color: PreviewAmbilightColor) {
+  return 0.4 + ambilightSaturation(color) * 2
+}
+
+function ambilightSaturation(color: PreviewAmbilightColor) {
+  const red = color.red / 255
+  const green = color.green / 255
+  const blue = color.blue / 255
+  const max = Math.max(red, green, blue)
+  const min = Math.min(red, green, blue)
+  if (!max) return 0
+  return (max - min) / max
+}
+
+function clampColorValue(value: number) {
+  if (Number.isNaN(value)) return 0
+  return Math.max(0, Math.min(255, Math.round(value)))
+}
+
+function readImageAmbilightColor(dataUrl: string) {
+  return new Promise<PreviewAmbilightColor | undefined>((resolve) => {
+    const image = new Image()
+    image.onload = () => {
+      const canvas = document.createElement("canvas")
+      canvas.width = image.naturalWidth
+      canvas.height = image.naturalHeight
+      const context = canvas.getContext("2d")
+      if (!context) {
+        resolve(undefined)
+        return
+      }
+      context.drawImage(image, 0, 0)
+      const data = context.getImageData(0, 0, canvas.width, canvas.height).data
+      resolve(averageAmbilightColor(readImageAmbilightPixels(data)))
+    }
+    image.onerror = () => resolve(undefined)
+    image.src = dataUrl
+  })
+}
+
+function readImageAmbilightPixels(data: Uint8ClampedArray) {
+  const colors: PreviewAmbilightColor[] = []
+  for (let index = 0; index < data.length; index += 4) {
+    if (data[index + 3] < 60) continue
+    const color = {
+      blue: clampColorValue(data[index + 2]),
+      green: clampColorValue(data[index + 1]),
+      red: clampColorValue(data[index]),
+    }
+    if (isUsefulAmbilightColor(color)) colors.push(color)
+  }
+  return colors
+}
+
+function previewBrowserBounds(rect: DOMRect) {
+  return {
+    height: rect.height,
+    width: rect.width,
+    x: rect.x,
+    y: rect.y,
+  }
+}
+
+function nativePreviewSurfaceBounds(element: HTMLDivElement | null) {
+  return element
+    ? previewBrowserBounds(element.getBoundingClientRect())
+    : { height: 0, width: 0, x: 0, y: 0 }
+}
+
+function sameAmbilightColor(
+  current: PreviewAmbilightColor | undefined,
+  next: PreviewAmbilightColor | undefined
+) {
+  if (!current || !next) return current === next
+  return (
+    current.red === next.red &&
+    current.green === next.green &&
+    current.blue === next.blue
+  )
+}
+
+function previewAmbilightShadow(color: PreviewAmbilightColor | undefined) {
+  if (!color) return "0 24px 80px rgb(0 0 0 / 0.34)"
+  return [
+    `0 32px 120px rgb(${color.red} ${color.green} ${color.blue} / 0.58)`,
+    `0 0 70px rgb(${color.red} ${color.green} ${color.blue} / 0.42)`,
+    `0 0 28px rgb(${color.red} ${color.green} ${color.blue} / 0.5)`,
+    "0 16px 44px rgb(0 0 0 / 0.28)",
+  ].join(", ")
 }
 
 function previewSource(previewUrl: string) {

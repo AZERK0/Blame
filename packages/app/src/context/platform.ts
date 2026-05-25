@@ -24,6 +24,7 @@ export type OpenDirectoryPickerOptions = {
 export type Platform = {
   agent?: AgentClient
   api?: ApiConnection
+  previewBrowser?: PreviewBrowserClient
   terminal?: TerminalClient
   workspace?: WorkspaceClient
   openDirectoryPickerDialog?(
@@ -78,6 +79,37 @@ export type ProjectSetupEvent = {
   runId: string
   type: "stdout" | "stderr" | "exit"
   data: string
+}
+
+export type PreviewBrowserBounds = {
+  height: number
+  width: number
+  x: number
+  y: number
+}
+
+export type PreviewBrowserState = {
+  error?: string
+  id: string
+  loading: boolean
+  url?: string
+}
+
+export type PreviewBrowserClient = {
+  capture(input: { id: string }): Promise<string | null>
+  create(): Promise<{ id: string }>
+  destroy(input: { id: string }): Promise<boolean>
+  load(input: { id: string; url: string }): Promise<boolean>
+  onState(
+    input: { id: string },
+    callback: (state: PreviewBrowserState) => void
+  ): () => void
+  reload(input: { id: string }): Promise<boolean>
+  setBounds(input: {
+    bounds: PreviewBrowserBounds
+    id: string
+    visible: boolean
+  }): Promise<boolean>
 }
 
 export type WorkspaceClient = {

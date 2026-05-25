@@ -5,6 +5,7 @@ import contextMenu from "electron-context-menu"
 import windowState from "electron-window-state"
 import { app, BrowserWindow, dialog, ipcMain, shell } from "electron"
 import { registerAgentIpcHandlers } from "./agent-ipc"
+import { registerPreviewBrowserIpcHandlers } from "./preview-browser-ipc"
 import { registerTerminalIpcHandlers } from "./terminal-ipc"
 import { registerWorkspaceIpcHandlers } from "./workspace-ipc"
 
@@ -25,6 +26,7 @@ let mainWindow: BrowserWindow | undefined
 void app.whenReady().then(() => {
   registerIpcHandlers()
   registerAgentIpcHandlers()
+  registerPreviewBrowserIpcHandlers()
   registerTerminalIpcHandlers()
   registerWorkspaceIpcHandlers()
   mainWindow = createMainWindow()

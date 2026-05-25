@@ -7,6 +7,24 @@ const api: BlameDesktopApi = {
     ipcRenderer.invoke("dialog:open-directory", options),
   openExternalLink: (url) => ipcRenderer.send("shell:open-external", url),
   openPath: (path) => ipcRenderer.invoke("shell:open-path", path),
+  previewBrowser: {
+    capture: (input) => ipcRenderer.invoke("preview-browser:capture", input),
+    create: () => ipcRenderer.invoke("preview-browser:create"),
+    destroy: (input) => ipcRenderer.invoke("preview-browser:destroy", input),
+    load: (input) => ipcRenderer.invoke("preview-browser:load", input),
+    onState: (input, callback) => {
+      const channel = `preview-browser:state:${input.id}`;
+      const handler = (
+        _event: unknown,
+        state: Parameters<typeof callback>[0],
+      ) => callback(state);
+      ipcRenderer.on(channel, handler);
+      return () => ipcRenderer.removeListener(channel, handler);
+    },
+    reload: (input) => ipcRenderer.invoke("preview-browser:reload", input),
+    setBounds: (input) =>
+      ipcRenderer.invoke("preview-browser:set-bounds", input),
+  },
   workspace: {
     listDirectory: (input) =>
       ipcRenderer.invoke("workspace:list-directory", input),
