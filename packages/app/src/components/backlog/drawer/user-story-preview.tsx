@@ -24,6 +24,9 @@ type PreviewLoad = {
 
 export function UserStoryPreview({ userStory }: { userStory?: UserStory }) {
   const platform = usePlatform()
+  const [recoveredPreviewUrl, setRecoveredPreviewUrl] = React.useState<
+    string | undefined
+  >()
   const [previewLoad, setPreviewLoad] = React.useState<PreviewLoad>({
     key: "",
     state: "loading",
@@ -33,8 +36,9 @@ export function UserStoryPreview({ userStory }: { userStory?: UserStory }) {
   const locationIntervalRef = React.useRef<number | undefined>(undefined)
   const requestRef = React.useRef<AbortController | undefined>(undefined)
   const timeoutRef = React.useRef<number | undefined>(undefined)
-  const source = userStory?.previewUrl
-    ? previewSource(userStory.previewUrl)
+  const previewUrl = recoveredPreviewUrl ?? userStory?.previewUrl
+  const source = previewUrl
+    ? previewSource(previewUrl)
     : undefined
   const previewKey = source ? `${source}-${reloadKey}` : ""
   const previewState =
@@ -110,6 +114,17 @@ export function UserStoryPreview({ userStory }: { userStory?: UserStory }) {
 
   const reloadPreview = () => {
     setReloadKey((current) => current + 1)
+    recoverPreview()
+  }
+
+  const recoverPreview = () => {
+    if (!userStory?.worktree || !platform.workspace?.ensureProjectPreviewUrl) return
+    void platform.workspace
+      .ensureProjectPreviewUrl({ worktree: userStory.worktree })
+      .then((previewUrl) => {
+        if (previewUrl) setRecoveredPreviewUrl(previewUrl)
+      })
+      .catch(() => undefined)
   }
 
   const showPreview = () => {

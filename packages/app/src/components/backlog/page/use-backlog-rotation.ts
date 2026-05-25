@@ -13,6 +13,7 @@ import { createCloudApi } from "@/lib/cloud-api"
 
 const maxConcurrentDevelopmentStories = 3
 const blockerRetryDelay = 30_000
+const previewRecoveryIntervalMs = 30_000
 const setupToastId = "backlog-rotation-setup"
 const authToastId = "backlog-agent-auth"
 const urlPattern = /\bhttps?:\/\/[^\s"'<>]+|\blocalhost:\d+[^\s"'<>]*/i
@@ -22,12 +23,13 @@ export function useBacklogRotation(backlog: ReturnType<typeof useBacklogStore>) 
   const platform = usePlatform()
   const projects = useProjects()
   const selection = useModelSelection()
+  const ensureProjectPreviewUrl = platform.workspace?.ensureProjectPreviewUrl
   const startingStoryIds = React.useRef(new Set<number>())
   const blockedStories = React.useRef(new Map<number, number>())
   const reportedBlockers = React.useRef(new Set<string>())
   const reportedAgentErrors = React.useRef(new Set<string>())
   const agentAuthenticationBlockedUntil = React.useRef(0)
-  const previewRecoveryKeys = React.useRef(new Set<string>())
+  const previewRecoveryStoryIds = React.useRef(new Set<number>())
   const [, refreshStartingStories] = React.useState(0)
 
   React.useEffect(() => {
@@ -35,7 +37,7 @@ export function useBacklogRotation(backlog: ReturnType<typeof useBacklogStore>) 
     reportedBlockers.current.clear()
     reportedAgentErrors.current.clear()
     agentAuthenticationBlockedUntil.current = 0
-    previewRecoveryKeys.current.clear()
+    previewRecoveryStoryIds.current.clear()
   }, [projects.activeProject?.id, selection.currentModel?.id])
 
   React.useEffect(() => {
@@ -185,26 +187,38 @@ export function useBacklogRotation(backlog: ReturnType<typeof useBacklogStore>) 
     return platform.workspace?.resolveProjectPreviewUrl?.({ worktree })
   }
 
-  React.useEffect(() => {
-    if (!platform.workspace?.resolveProjectPreviewUrl || backlog.loading) return
-    const previewUrlForWorktree =
-      platform.workspace.ensureProjectPreviewUrl ??
-      platform.workspace.resolveProjectPreviewUrl
-    backlog.stories
-      .filter((story) => missingPreview(story))
-      .forEach((story) => {
-        if (!story.worktree) return
-        const key = `${story.id}:${story.worktree}`
-        if (previewRecoveryKeys.current.has(key)) return
-        previewRecoveryKeys.current.add(key)
-        void previewUrlForWorktree({ worktree: story.worktree })
-          .then((previewUrl) => {
-            if (previewUrl) return backlog.update(story, { previewUrl })
-            return undefined
-          })
+  const persistRecoveredPreviewUrl = React.useCallback(
+    async (story: UserStory, previewUrl: string | null) => {
+      if (!previewUrl || previewUrl === story.previewUrl) return
+      await backlog.update(story, { previewUrl })
+    },
+    [backlog]
+  )
+
+  const recoverActivePreviews = React.useCallback(
+    (stories: UserStory[]) => {
+      if (!ensureProjectPreviewUrl) return
+      stories.filter(activePreviewStory).forEach((story) => {
+        if (!story.worktree || previewRecoveryStoryIds.current.has(story.id)) return
+        previewRecoveryStoryIds.current.add(story.id)
+        void ensureProjectPreviewUrl({ worktree: story.worktree })
+          .then((previewUrl) => persistRecoveredPreviewUrl(story, previewUrl))
           .catch(() => undefined)
+          .finally(() => previewRecoveryStoryIds.current.delete(story.id))
       })
-  }, [backlog, backlog.loading, backlog.stories, platform.workspace])
+    },
+    [ensureProjectPreviewUrl, persistRecoveredPreviewUrl]
+  )
+
+  React.useEffect(() => {
+    if (!ensureProjectPreviewUrl || backlog.loading) return
+    recoverActivePreviews(backlog.stories)
+    const timer = window.setInterval(
+      () => recoverActivePreviews(backlog.stories),
+      previewRecoveryIntervalMs
+    )
+    return () => window.clearInterval(timer)
+  }, [backlog.loading, backlog.stories, ensureProjectPreviewUrl, recoverActivePreviews])
 
   async function persistAgentEvent(story: UserStory, event: AgentEvent) {
     const text = agentEventText(event)
@@ -333,11 +347,10 @@ function setupCompleted(event: ProjectSetupEvent) {
   return event.type === "exit" && event.data === "0"
 }
 
-function missingPreview(story: UserStory) {
+function activePreviewStory(story: UserStory) {
   return (
     (story.status === "in-progress" || story.status === "in-review") &&
-    Boolean(story.worktree) &&
-    !story.previewUrl
+    Boolean(story.worktree)
   )
 }
 

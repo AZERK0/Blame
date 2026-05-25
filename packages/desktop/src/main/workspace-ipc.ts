@@ -1,8 +1,8 @@
 import { execFile, spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { appendFile, chmod, mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
-import { basename, dirname, join, relative, resolve, sep } from "node:path";
+import { basename, delimiter, dirname, join, relative, resolve, sep } from "node:path";
 import { promisify } from "node:util";
 import { BrowserWindow, ipcMain } from "electron";
 
@@ -74,6 +74,7 @@ type SetupRun = {
 };
 
 const setupRuns = new Map<string, SetupRun>();
+const previewRecoveries = new Map<string, Promise<string | null>>();
 
 export function registerWorkspaceIpcHandlers() {
   ipcMain.handle(
@@ -345,7 +346,59 @@ async function ensureProjectPreviewUrl(input: ResolveProjectPreviewUrlInput) {
   await assertGitRepository(worktree);
   const currentUrl = await resolveProjectPreviewUrl({ worktree });
   if (currentUrl && (await previewResponds(currentUrl))) return currentUrl;
-  return startProjectCompose(worktree);
+  const recovery = previewRecoveries.get(worktree);
+  if (recovery) return recovery;
+  const nextRecovery = recoverProjectPreview(worktree).finally(() => {
+    previewRecoveries.delete(worktree);
+  });
+  previewRecoveries.set(worktree, nextRecovery);
+  return nextRecovery;
+}
+
+async function recoverProjectPreview(worktree: string) {
+  await runExistingProjectSetup(worktree);
+  await appendRecoveryLog(worktree, "compose starting");
+  try {
+    const previewUrl = await startProjectCompose(worktree);
+    await appendRecoveryLog(worktree, `preview ready at ${previewUrl}`);
+    return previewUrl;
+  } catch (error) {
+    await appendRecoveryLog(worktree, errorMessage(error).trim());
+    throw error;
+  }
+}
+
+async function runExistingProjectSetup(worktree: string) {
+  const scriptPath = join(worktree, ".blame", "initialization", "setup.sh");
+  if (!existsSync(scriptPath)) return;
+  await appendRecoveryLog(worktree, "setup starting");
+  await new Promise<void>((resolve, reject) => {
+    const child = spawn("bash", [scriptPath], {
+      cwd: worktree,
+      env: setupEnvironment(worktree),
+    });
+    child.stdout.on("data", (data: Buffer) =>
+      appendRecoveryOutput(worktree, data),
+    );
+    child.stderr.on("data", (data: Buffer) =>
+      appendRecoveryOutput(worktree, data),
+    );
+    child.on("error", reject);
+    child.on("exit", (code) => {
+      void appendRecoveryLog(worktree, `setup exited with code ${code ?? ""}`);
+      if (code === 0) resolve();
+      else reject(new Error(`Project setup exited with code ${code ?? ""}`));
+    });
+  });
+}
+
+function appendRecoveryOutput(worktree: string, data: Buffer) {
+  void appendFile(setupLogPath(worktree), data, "utf8");
+}
+
+async function appendRecoveryLog(worktree: string, message: string) {
+  await mkdir(dirname(setupLogPath(worktree)), { recursive: true });
+  await appendFile(setupLogPath(worktree), `\n[recovery ${message}]\n`, "utf8");
 }
 
 async function walk(
@@ -454,13 +507,53 @@ function setupEnvironment(worktree: string) {
     ...process.env,
     BLAME_HOST_GID: hostGroupId(),
     BLAME_HOST_UID: hostUserId(),
+    CI: "true",
     BLAME_DOCKER_COMPOSE_FILE: projectComposePath(worktree),
     BLAME_INITIALIZATION_DIR: join(worktree, ".blame", "initialization"),
     COMPOSE_PROJECT_NAME: `blame_${createHash("sha1")
       .update(worktree)
       .digest("hex")
       .slice(0, 12)}`,
+    npm_config_yes: "true",
+    PATH: setupPath(),
   };
+}
+
+function setupPath() {
+  return uniquePaths([
+    dirname(process.execPath),
+    ...nodeVersionManagerPaths(),
+    process.env.PATH,
+  ]).join(delimiter);
+}
+
+function nodeVersionManagerPaths() {
+  return [
+    ...nodeVersionBins(join(homePath(), ".nvm", "versions", "node")),
+    ...nodeVersionBins(join(homePath(), ".local", "share", "fnm", "node-versions")),
+    join(homePath(), ".local", "bin"),
+    join(homePath(), ".bun", "bin"),
+  ];
+}
+
+function nodeVersionBins(root: string) {
+  try {
+    return readdirSync(root)
+      .map((entry) => join(root, entry, "bin"))
+      .filter((path) => existsSync(path));
+  } catch {
+    return [];
+  }
+}
+
+function homePath() {
+  return process.env.HOME || "";
+}
+
+function uniquePaths(paths: Array<string | undefined>) {
+  return Array.from(
+    new Set(paths.flatMap((path) => (path ? path.split(delimiter) : []))),
+  ).filter(Boolean);
 }
 
 function hostUserId() {
