@@ -23,6 +23,7 @@ export function useBacklogStore() {
     loading: false,
     stories: [],
   })
+  const updateQueues = React.useRef(new Map<number, Promise<unknown>>())
   const projectId = projects.activeProject?.id
   const projectPath = projects.activeProject?.path
 
@@ -67,14 +68,29 @@ export function useBacklogStore() {
 
   const update = React.useCallback(
     async (story: UserStory, input: UserStoryUpdate) => {
-      const nextStory = await api.update(story.id, input)
-      setState((current) => ({
-        ...current,
-        stories: current.stories.map((currentStory) =>
-          currentStory.id === story.id ? nextStory : currentStory
-        ),
-      }))
-      return nextStory
+      const previousUpdate = updateQueues.current.get(story.id) ?? Promise.resolve()
+      const nextUpdate = previousUpdate
+        .catch(() => undefined)
+        .then(async () => {
+          const nextStory = await api.update(story.id, input)
+          setState((current) => ({
+            ...current,
+            stories: current.stories.map((currentStory) =>
+              currentStory.id === story.id
+                ? newestUserStory(currentStory, nextStory)
+                : currentStory
+            ),
+          }))
+          return nextStory
+        })
+      updateQueues.current.set(story.id, nextUpdate)
+      try {
+        return await nextUpdate
+      } finally {
+        if (updateQueues.current.get(story.id) === nextUpdate) {
+          updateQueues.current.delete(story.id)
+        }
+      }
     },
     [api]
   )
@@ -106,4 +122,17 @@ export function useBacklogStore() {
     storiesForColumn,
     update,
   }
+}
+
+function newestUserStory(currentStory: UserStory, nextStory: UserStory) {
+  const currentUpdatedAt = timestamp(currentStory.updatedAt)
+  const nextUpdatedAt = timestamp(nextStory.updatedAt)
+  if (currentUpdatedAt === undefined || nextUpdatedAt === undefined) return nextStory
+  return nextUpdatedAt >= currentUpdatedAt ? nextStory : currentStory
+}
+
+function timestamp(value: string | null | undefined) {
+  if (!value) return undefined
+  const date = Date.parse(value)
+  return Number.isNaN(date) ? undefined : date
 }
