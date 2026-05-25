@@ -7,9 +7,14 @@ import type {
   UserStoryDraft,
   UserStoryUpdate,
 } from "@/components/backlog/data/backlog-data"
+import type {
+  RejectChoice,
+  StopAgentChoice,
+} from "@/components/backlog/actions/story-action-dialogs"
 import { ColumnStatusBadge } from "@/components/backlog/shared/backlog-status-badge"
 import type {
   DrawerAction,
+  OpenDrawer,
   UserStoryDevelopmentTab,
   UserStoryDrawerMode,
   UserStoryDrawerTab,
@@ -48,6 +53,9 @@ export function UserStoryDrawerPanel({
   mode,
   onCancel,
   onCreateUserStory,
+  onOpenDrawer,
+  onReject,
+  onStopAgent,
   onUpdateUserStory,
   status,
   userStory,
@@ -60,6 +68,9 @@ export function UserStoryDrawerPanel({
   onCreateUserStory: (
     input: Omit<UserStoryDraft, "projectId">
   ) => Promise<UserStory>
+  onOpenDrawer: OpenDrawer
+  onReject: (story: UserStory, choice: RejectChoice) => Promise<UserStory>
+  onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
   onUpdateUserStory: (
     story: UserStory,
     input: UserStoryUpdate
@@ -82,10 +93,10 @@ export function UserStoryDrawerPanel({
     React.useState<PendingCodeSelectionAttachment[]>([])
   const [saving, setSaving] = React.useState(false)
   const [title, setTitle] = React.useState(
-    mode === "create" ? "" : userStory?.title ?? ""
+    mode === "create" ? "" : (userStory?.title ?? "")
   )
   const [summary, setSummary] = React.useState(
-    mode === "create" ? "" : userStory?.summary ?? ""
+    mode === "create" ? "" : (userStory?.summary ?? "")
   )
   const commentRef = React.useRef<HTMLDivElement>(null)
 
@@ -119,9 +130,15 @@ export function UserStoryDrawerPanel({
           ?.focus()
       })
     }
-    window.addEventListener(codeSelectionAttachmentEvent, addCodeSelectionAttachment)
+    window.addEventListener(
+      codeSelectionAttachmentEvent,
+      addCodeSelectionAttachment
+    )
     return () => {
-      window.removeEventListener(codeSelectionAttachmentEvent, addCodeSelectionAttachment)
+      window.removeEventListener(
+        codeSelectionAttachmentEvent,
+        addCodeSelectionAttachment
+      )
     }
   }, [status])
 
@@ -166,10 +183,12 @@ export function UserStoryDrawerPanel({
                 <BookOpenIcon />
                 User Story
               </TabsTrigger>
-              {hasPreview && <TabsTrigger value="preview">
-                <AppWindowIcon />
-                Preview
-              </TabsTrigger>}
+              {hasPreview && (
+                <TabsTrigger value="preview">
+                  <AppWindowIcon />
+                  Preview
+                </TabsTrigger>
+              )}
               <TabsTrigger value="development">
                 <CodeIcon />
                 Code
@@ -214,6 +233,10 @@ export function UserStoryDrawerPanel({
             void handleAction(action)
           }}
           onCancel={onCancel}
+          onOpenDrawer={onOpenDrawer}
+          onReject={onReject}
+          onStopAgent={onStopAgent}
+          story={userStory}
         />
       </DrawerFooter>
     </DrawerContent>
@@ -235,7 +258,6 @@ export function UserStoryDrawerPanel({
       setSaving(false)
     }
   }
-
 }
 
 function initialDrawerTab(
@@ -285,9 +307,7 @@ function DrawerBody({
   return (
     <div className="grid h-full min-h-0 grid-cols-[minmax(0,1fr)_18rem]">
       <ScrollArea className="min-h-0">
-        <div className="flex w-full flex-col gap-6 px-6 py-6">
-          {children}
-        </div>
+        <div className="flex w-full flex-col gap-6 px-6 py-6">{children}</div>
       </ScrollArea>
       <DrawerSidebar status={status} />
     </div>

@@ -44,6 +44,7 @@ export type BlameDesktopApi = {
     options?: OpenDirectoryPickerOptions,
   ): Promise<string | string[] | null>;
   openExternalLink(url: string): void;
+  openPath(path: string): Promise<string>;
   workspace: {
     listDirectory(input: {
       root: string;

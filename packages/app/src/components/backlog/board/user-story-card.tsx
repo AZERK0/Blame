@@ -1,8 +1,15 @@
 import {
+  type BacklogAction,
   type UserStory,
 } from "@/components/backlog/data/backlog-data"
-import type { StopAgentChoice } from "@/components/backlog/actions/story-action-dialogs"
-import { storyDetail, storyStatus } from "@/components/backlog/shared/backlog-helpers"
+import type {
+  RejectChoice,
+  StopAgentChoice,
+} from "@/components/backlog/actions/story-action-dialogs"
+import {
+  storyDetail,
+  storyStatus,
+} from "@/components/backlog/shared/backlog-helpers"
 import { StoryStatusBadge } from "@/components/backlog/shared/backlog-status-badge"
 import type { OpenDrawer } from "@/components/backlog/shared/backlog-types"
 import { StoryActions } from "@/components/backlog/actions/story-actions"
@@ -17,12 +24,21 @@ import {
 } from "@/components/ui/card"
 
 export function UserStoryCard({
+  onAction,
   onOpenDrawer,
+  onOpenWorktree,
+  onReject,
   onStopAgent,
   onUnpauseAgent,
   story,
 }: {
+  onAction: (
+    story: UserStory,
+    action: BacklogAction
+  ) => Promise<UserStory | void>
   onOpenDrawer: OpenDrawer
+  onOpenWorktree: (story: UserStory) => Promise<void>
+  onReject: (story: UserStory, choice: RejectChoice) => Promise<UserStory>
   onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
   onUnpauseAgent: (story: UserStory) => Promise<UserStory>
   story: UserStory
@@ -37,7 +53,7 @@ export function UserStoryCard({
           <Button
             type="button"
             variant="link"
-            className="h-auto min-w-0 max-w-full shrink justify-start whitespace-normal break-words p-0 text-left text-base leading-snug font-medium text-card-foreground transition-colors group-hover/user-story:text-blue-600 hover:cursor-pointer dark:group-hover/user-story:text-blue-300"
+            className="h-auto max-w-full min-w-0 shrink justify-start p-0 text-left text-base leading-snug font-medium break-words whitespace-normal text-card-foreground transition-colors group-hover/user-story:text-blue-600 hover:cursor-pointer dark:group-hover/user-story:text-blue-300"
             onClick={() =>
               onOpenDrawer({
                 userStory: story,
@@ -67,7 +83,10 @@ export function UserStoryCard({
       )}
       <CardFooter>
         <StoryActions
+          onAction={onAction}
           onOpenDrawer={onOpenDrawer}
+          onOpenWorktree={onOpenWorktree}
+          onReject={onReject}
           onStopAgent={onStopAgent}
           onUnpauseAgent={onUnpauseAgent}
           story={story}

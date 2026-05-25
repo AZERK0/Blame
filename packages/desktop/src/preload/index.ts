@@ -6,6 +6,7 @@ const api: BlameDesktopApi = {
   openDirectoryPicker: (options) =>
     ipcRenderer.invoke("dialog:open-directory", options),
   openExternalLink: (url) => ipcRenderer.send("shell:open-external", url),
+  openPath: (path) => ipcRenderer.invoke("shell:open-path", path),
   workspace: {
     listDirectory: (input) =>
       ipcRenderer.invoke("workspace:list-directory", input),

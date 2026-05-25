@@ -1,13 +1,17 @@
 import { PlusIcon } from "lucide-react"
 
 import {
+  type BacklogAction,
   backlogColumns,
   type BacklogColumnId,
   type UserStory,
 } from "@/components/backlog/data/backlog-data"
 import type { OpenDrawer } from "@/components/backlog/shared/backlog-types"
 import { UserStoryCard } from "@/components/backlog/board/user-story-card"
-import type { StopAgentChoice } from "@/components/backlog/actions/story-action-dialogs"
+import type {
+  RejectChoice,
+  StopAgentChoice,
+} from "@/components/backlog/actions/story-action-dialogs"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -23,15 +27,24 @@ const columnColors = {
 
 export function BacklogColumn({
   column,
+  onAction,
   onCreateUserStory,
   onOpenDrawer,
+  onOpenWorktree,
+  onReject,
   onStopAgent,
   onUnpauseAgent,
   stories,
 }: {
   column: (typeof backlogColumns)[number]
+  onAction: (
+    story: UserStory,
+    action: BacklogAction
+  ) => Promise<UserStory | void>
   onCreateUserStory: () => void
   onOpenDrawer: OpenDrawer
+  onOpenWorktree: (story: UserStory) => Promise<void>
+  onReject: (story: UserStory, choice: RejectChoice) => Promise<UserStory>
   onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
   onUnpauseAgent: (story: UserStory) => Promise<UserStory>
   stories: UserStory[]
@@ -43,7 +56,10 @@ export function BacklogColumn({
         {stories.map((story) => (
           <UserStoryCard
             key={story.id}
+            onAction={onAction}
             onOpenDrawer={onOpenDrawer}
+            onOpenWorktree={onOpenWorktree}
+            onReject={onReject}
             onStopAgent={onStopAgent}
             onUnpauseAgent={onUnpauseAgent}
             story={story}

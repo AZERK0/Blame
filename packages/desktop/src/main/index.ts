@@ -87,4 +87,8 @@ function registerIpcHandlers() {
   ipcMain.on("shell:open-external", (_event, url: string) => {
     void shell.openExternal(url)
   })
+
+  ipcMain.handle("shell:open-path", (_event, path: string) => {
+    return shell.openPath(path)
+  })
 }

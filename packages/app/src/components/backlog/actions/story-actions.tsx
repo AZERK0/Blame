@@ -3,8 +3,12 @@ import {
   userStoryActions,
 } from "@/components/backlog/data/backlog-data"
 import type { OpenDrawer } from "@/components/backlog/shared/backlog-types"
-import { StoryAction } from "@/components/backlog/actions/story-action-button"
 import {
+  type StoryActionHandler,
+  StoryAction,
+} from "@/components/backlog/actions/story-action-button"
+import {
+  type RejectChoice,
   type StopAgentChoice,
   RejectDialog,
   StopAgentDialog,
@@ -12,12 +16,18 @@ import {
 import { Separator } from "@/components/ui/separator"
 
 export function StoryActions({
+  onAction,
   onOpenDrawer,
+  onOpenWorktree,
+  onReject,
   onStopAgent,
   onUnpauseAgent,
   story,
 }: {
+  onAction: StoryActionHandler
   onOpenDrawer: OpenDrawer
+  onOpenWorktree: (story: UserStory) => Promise<void>
+  onReject: (story: UserStory, choice: RejectChoice) => Promise<UserStory>
   onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
   onUnpauseAgent: (story: UserStory) => Promise<UserStory>
   story: UserStory
@@ -25,8 +35,10 @@ export function StoryActions({
   if (story.status === "in-review") {
     return (
       <ReviewActions
+        onAction={onAction}
         onOpenDrawer={onOpenDrawer}
-        onStopAgent={onStopAgent}
+        onOpenWorktree={onOpenWorktree}
+        onReject={onReject}
         story={story}
       />
     )
@@ -35,7 +47,9 @@ export function StoryActions({
   if (story.status === "in-progress") {
     return (
       <ProgressActions
+        onAction={onAction}
         onOpenDrawer={onOpenDrawer}
+        onOpenWorktree={onOpenWorktree}
         onStopAgent={onStopAgent}
         onUnpauseAgent={onUnpauseAgent}
         story={story}
@@ -49,7 +63,9 @@ export function StoryActions({
         <StoryAction
           key={action}
           action={action}
+          onAction={onAction}
           onOpenDrawer={onOpenDrawer}
+          onOpenWorktree={onOpenWorktree}
           onStopAgent={onStopAgent}
           onUnpauseAgent={onUnpauseAgent}
           story={story}
@@ -60,12 +76,16 @@ export function StoryActions({
 }
 
 function ProgressActions({
+  onAction,
   onOpenDrawer,
+  onOpenWorktree,
   onStopAgent,
   onUnpauseAgent,
   story,
 }: {
+  onAction: StoryActionHandler
   onOpenDrawer: OpenDrawer
+  onOpenWorktree: (story: UserStory) => Promise<void>
   onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
   onUnpauseAgent: (story: UserStory) => Promise<UserStory>
   story: UserStory
@@ -77,20 +97,26 @@ function ProgressActions({
       <div className="grid grid-cols-2 gap-2">
         <StoryAction
           action="Open Worktree"
+          onAction={onAction}
           story={story}
           onOpenDrawer={onOpenDrawer}
+          onOpenWorktree={onOpenWorktree}
         />
         <StoryAction
           action="Open Preview"
+          onAction={onAction}
           story={story}
           onOpenDrawer={onOpenDrawer}
+          onOpenWorktree={onOpenWorktree}
         />
       </div>
       <div className="flex justify-end gap-2">
         {story.agentStatus === "Paused" && (
           <StoryAction
             action="Unpause Agent"
+            onAction={onAction}
             onOpenDrawer={onOpenDrawer}
+            onOpenWorktree={onOpenWorktree}
             onUnpauseAgent={onUnpauseAgent}
             story={story}
           />
@@ -106,12 +132,16 @@ function ProgressActions({
 }
 
 function ReviewActions({
+  onAction,
   onOpenDrawer,
-  onStopAgent,
+  onOpenWorktree,
+  onReject,
   story,
 }: {
+  onAction: StoryActionHandler
   onOpenDrawer: OpenDrawer
-  onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
+  onOpenWorktree: (story: UserStory) => Promise<void>
+  onReject: (story: UserStory, choice: RejectChoice) => Promise<UserStory>
   story: UserStory
 }) {
   return (
@@ -121,20 +151,30 @@ function ReviewActions({
       <div className="grid grid-cols-2 gap-2">
         <StoryAction
           action="Open Worktree"
+          onAction={onAction}
           onOpenDrawer={onOpenDrawer}
+          onOpenWorktree={onOpenWorktree}
           story={story}
         />
         <StoryAction
           action="Open Preview"
+          onAction={onAction}
           onOpenDrawer={onOpenDrawer}
+          onOpenWorktree={onOpenWorktree}
           story={story}
         />
       </div>
       <div className="grid grid-cols-2 gap-2">
-        <RejectDialog onOpenDrawer={onOpenDrawer} story={story} />
+        <RejectDialog
+          onOpenDrawer={onOpenDrawer}
+          onReject={onReject}
+          story={story}
+        />
         <StoryAction
           action="Approve & Merge"
+          onAction={onAction}
           onOpenDrawer={onOpenDrawer}
+          onOpenWorktree={onOpenWorktree}
           story={story}
         />
       </div>

@@ -4,6 +4,11 @@ import type {
   UserStoryUpdate,
 } from "@/components/backlog/data/backlog-data"
 import type {
+  RejectChoice,
+  StopAgentChoice,
+} from "@/components/backlog/actions/story-action-dialogs"
+import type {
+  OpenDrawer,
   UserStoryDevelopmentTab,
   UserStoryDrawerMode,
   UserStoryDrawerTab,
@@ -28,6 +33,9 @@ export type UserStoryDrawerProps = {
   onCreateUserStory: (
     input: Omit<UserStoryDraft, "projectId">
   ) => Promise<UserStory>
+  onOpenDrawer: OpenDrawer
+  onReject: (story: UserStory, choice: RejectChoice) => Promise<UserStory>
+  onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
   onUpdateUserStory: (
     story: UserStory,
     input: UserStoryUpdate
@@ -43,6 +51,9 @@ export function UserStoryDrawer({
   initialDevelopmentTab = "files",
   focusComment,
   onCreateUserStory,
+  onOpenDrawer,
+  onReject,
+  onStopAgent,
   onUpdateUserStory,
 }: UserStoryDrawerProps) {
   const status = userStory?.status ?? "backlog"
@@ -56,7 +67,12 @@ export function UserStoryDrawer({
   ].join(":")
 
   return (
-    <Drawer direction="right" open={open} onOpenChange={onOpenChange} handleOnly={true}>
+    <Drawer
+      direction="right"
+      open={open}
+      onOpenChange={onOpenChange}
+      handleOnly={true}
+    >
       <UserStoryDrawerPanel
         key={drawerKey}
         focusComment={focusComment}
@@ -65,6 +81,9 @@ export function UserStoryDrawer({
         mode={mode}
         onCancel={() => onOpenChange(false)}
         onCreateUserStory={onCreateUserStory}
+        onOpenDrawer={onOpenDrawer}
+        onReject={onReject}
+        onStopAgent={onStopAgent}
         onUpdateUserStory={onUpdateUserStory}
         status={status}
         userStory={userStory}

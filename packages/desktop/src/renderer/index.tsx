@@ -11,5 +11,6 @@ mountApp(root, {
     workspace: window.blame.workspace,
     openDirectoryPickerDialog: (options) => window.blame.openDirectoryPicker(options),
     openExternalLink: (url) => window.blame.openExternalLink(url),
+    openPath: (path) => window.blame.openPath(path),
   },
 })

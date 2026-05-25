@@ -26,6 +26,11 @@ import type { StopAgentChoice } from "@/components/backlog/actions/story-action-
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
+export type StoryActionHandler = (
+  story: UserStory,
+  action: BacklogAction
+) => Promise<UserStory | void>
+
 type ActionConfig = {
   icon: React.ComponentType<{ className?: string }>
   variant: React.ComponentProps<typeof Button>["variant"]
@@ -100,7 +105,9 @@ export function StoryAction({
   action,
   className,
   label,
+  onAction,
   onOpenDrawer,
+  onOpenWorktree,
   onStopAgent,
   onUnpauseAgent,
   story,
@@ -108,8 +115,13 @@ export function StoryAction({
   action: BacklogAction
   className?: string
   label?: string
+  onAction?: StoryActionHandler
   onOpenDrawer: OpenDrawer
-  onStopAgent?: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
+  onOpenWorktree?: (story: UserStory) => Promise<void>
+  onStopAgent?: (
+    story: UserStory,
+    choice: StopAgentChoice
+  ) => Promise<UserStory>
   onUnpauseAgent?: (story: UserStory) => Promise<UserStory>
   story: UserStory
 }) {
@@ -144,9 +156,26 @@ export function StoryAction({
       </Button>
     )
   }
+  if (action === "Open Worktree") {
+    const actionStyle = actionConfig[action]
+    const Icon = actionStyle.icon
+    return (
+      <Button
+        type="button"
+        size="sm"
+        variant={actionStyle.variant}
+        className={cn("justify-start", "w-full", className)}
+        onClick={() => void onOpenWorktree?.(story)}
+      >
+        <Icon />
+        {label ?? action}
+      </Button>
+    )
+  }
 
   const actionStyle = actionConfig[action]
   const Icon = actionStyle.icon
+  const runAction = directAction(action) && onAction
 
   return (
     <Button
@@ -162,10 +191,24 @@ export function StoryAction({
           "border-blue-500/40 bg-blue-500/10 text-blue-700 hover:bg-blue-500/20 dark:text-blue-300",
         className
       )}
-      onClick={() => onOpenDrawer(drawerTargetForAction(story, action))}
+      onClick={() => {
+        if (runAction) {
+          void runAction(story, action)
+          return
+        }
+        onOpenDrawer(drawerTargetForAction(story, action))
+      }}
     >
       <Icon />
       {label ?? action}
     </Button>
+  )
+}
+
+function directAction(action: BacklogAction) {
+  return (
+    action === "Send to Dev Agent" ||
+    action === "Dequeue" ||
+    action === "Rework"
   )
 }

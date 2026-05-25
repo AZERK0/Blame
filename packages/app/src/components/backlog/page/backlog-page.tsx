@@ -4,8 +4,15 @@ import { toast } from "sonner"
 
 import { backlogColumns } from "@/components/backlog/data/backlog-data"
 import { useBacklogStore } from "@/components/backlog/data/backlog-store"
-import type { UserStory, UserStoryUpdate } from "@/components/backlog/data/backlog-data"
-import type { StopAgentChoice } from "@/components/backlog/actions/story-action-dialogs"
+import type {
+  BacklogAction,
+  UserStory,
+  UserStoryUpdate,
+} from "@/components/backlog/data/backlog-data"
+import type {
+  RejectChoice,
+  StopAgentChoice,
+} from "@/components/backlog/actions/story-action-dialogs"
 import { useModelSelection } from "@/components/model/model-selector"
 import type { DrawerTarget } from "@/components/backlog/shared/backlog-types"
 import { BacklogColumn } from "@/components/backlog/board/backlog-column"
@@ -28,8 +35,9 @@ export function BacklogPage() {
   const drawerUserStory = React.useMemo(() => {
     if (!drawerTarget?.userStory) return undefined
     return (
-      backlog.stories.find((story) => story.id === drawerTarget.userStory?.id) ??
-      drawerTarget.userStory
+      backlog.stories.find(
+        (story) => story.id === drawerTarget.userStory?.id
+      ) ?? drawerTarget.userStory
     )
   }, [backlog.stories, drawerTarget])
   const openDrawer = React.useCallback((target: DrawerTarget) => {
@@ -54,6 +62,62 @@ export function BacklogPage() {
       return nextStory
     },
     [backlog, platform]
+  )
+  const runStoryAction = React.useCallback(
+    async (story: UserStory, action: BacklogAction) => {
+      if (action === "Send to Dev Agent") {
+        return updateStory(story, { status: "ready" })
+      }
+      if (action === "Dequeue") return updateStory(story, { status: "backlog" })
+      if (action === "Rework") {
+        return updateStory(story, {
+          discardedReason: null,
+          status: "backlog",
+        })
+      }
+    },
+    [updateStory]
+  )
+  const rejectStory = React.useCallback(
+    async (story: UserStory, choice: RejectChoice) => {
+      if (choice === "request-changes") {
+        return updateStory(story, {
+          agentStatus: "Running",
+          status: "in-progress",
+        })
+      }
+      return updateStory(story, {
+        discardedReason: "Rejected during review",
+        status: "discarded",
+      })
+    },
+    [updateStory]
+  )
+  const openWorktree = React.useCallback(
+    async (story: UserStory) => {
+      if (!story.worktree) {
+        toast.error("Unable to open worktree", {
+          description: "This user story has no worktree.",
+          position: "bottom-right",
+        })
+        return
+      }
+      if (!platform.openPath) {
+        toast.error("Unable to open worktree", {
+          description: "Desktop shell integration is not available.",
+          position: "bottom-right",
+        })
+        return
+      }
+      const error = await platform.openPath(story.worktree)
+      if (error) {
+        toast.error("Unable to open worktree", {
+          description: error,
+          position: "bottom-right",
+        })
+      }
+    },
+    [platform]
   )
   const stopAgent = React.useCallback(
     async (story: UserStory, choice: StopAgentChoice) => {
@@ -130,16 +194,35 @@ export function BacklogPage() {
         status: "in-progress",
       })
       let authenticationFailed = false
-      const unsubscribe = platform.agent.sessions.onEvent(session.sessionId, (event) => {
-        if (authenticationFailed) return
-        authenticationFailed = expiredAuthenticationToken(agentEventText(event))
-        void updateStory(updatedStory, agentEventUpdate(event))
-        if (authenticationFailed || event.type === "done" || event.type === "error") unsubscribe()
+      const unsubscribe = platform.agent.sessions.onEvent(
+        session.sessionId,
+        (event) => {
+          if (authenticationFailed) return
+          authenticationFailed = expiredAuthenticationToken(
+            agentEventText(event)
+          )
+          void updateStory(updatedStory, agentEventUpdate(event))
+          if (
+            authenticationFailed ||
+            event.type === "done" ||
+            event.type === "error"
+          )
+            unsubscribe()
+        }
+      )
+      void platform.agent.sessions.send({
+        sessionId: session.sessionId,
+        prompt,
       })
-      void platform.agent.sessions.send({ sessionId: session.sessionId, prompt })
       return updatedStory
     },
-    [auth, platform.agent, selection.currentModel, selection.currentVariant, updateStory]
+    [
+      auth,
+      platform.agent,
+      selection.currentModel,
+      selection.currentVariant,
+      updateStory,
+    ]
   )
 
   return (
@@ -170,8 +253,11 @@ export function BacklogPage() {
             <BacklogColumn
               key={column.id}
               column={column}
+              onAction={runStoryAction}
               onCreateUserStory={openCreateDrawer}
               onOpenDrawer={openDrawer}
+              onOpenWorktree={openWorktree}
+              onReject={rejectStory}
               onStopAgent={stopAgent}
               onUnpauseAgent={unpauseAgent}
               stories={backlog.storiesForColumn(column.id)}
@@ -198,6 +284,9 @@ export function BacklogPage() {
         onUpdateUserStory={async (story, input) => {
           return updateStory(story, input)
         }}
+        onOpenDrawer={openDrawer}
+        onReject={rejectStory}
+        onStopAgent={stopAgent}
       />
     </div>
   )
@@ -220,10 +309,14 @@ async function stopStoryRuntime(
 ) {
   await Promise.all([
     story.clineSessionId
-      ? platform.agent?.sessions.abort(story.clineSessionId).catch(() => undefined)
+      ? platform.agent?.sessions
+          .abort(story.clineSessionId)
+          .catch(() => undefined)
       : Promise.resolve(),
     story.worktree
-      ? platform.workspace?.stopProjectSetup({ worktree: story.worktree }).catch(() => false)
+      ? platform.workspace
+          ?.stopProjectSetup({ worktree: story.worktree })
+          .catch(() => false)
       : Promise.resolve(),
   ])
 }
@@ -234,10 +327,12 @@ async function removeStoryWorktree(
   repositoryRoot: string | undefined
 ) {
   if (!story.worktree || !repositoryRoot) return
-  await platform.workspace?.removeWorktree({
-    repositoryRoot,
-    worktree: story.worktree,
-  }).catch(() => false)
+  await platform.workspace
+    ?.removeWorktree({
+      repositoryRoot,
+      worktree: story.worktree,
+    })
+    .catch(() => false)
 }
 
 function inactiveStoryFields(): UserStoryUpdate {
@@ -297,7 +392,8 @@ function agentEventUpdate(event: AgentEvent): UserStoryUpdate {
     }
   }
   return {
-    agentLastError: event.type === "error" ? text || "Agent session failed" : undefined,
+    agentLastError:
+      event.type === "error" ? text || "Agent session failed" : undefined,
     agentLastEvent: text || event.type,
   }
 }

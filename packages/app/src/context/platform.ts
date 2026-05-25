@@ -30,6 +30,7 @@ export type Platform = {
     options?: OpenDirectoryPickerOptions
   ): Promise<PickerPaths>
   openExternalLink?(url: string): void
+  openPath?(path: string): Promise<string>
 }
 
 export type AgentClient = {
@@ -103,7 +104,10 @@ export type WorkspaceClient = {
     dockerCompose: string
   }): Promise<{ runId: string }>
   stopProjectSetup(input: { worktree: string }): Promise<boolean>
-  removeWorktree(input: { repositoryRoot: string; worktree: string }): Promise<boolean>
+  removeWorktree(input: {
+    repositoryRoot: string
+    worktree: string
+  }): Promise<boolean>
   resolveProjectPreviewUrl(input: { worktree: string }): Promise<string | null>
   ensureProjectPreviewUrl(input: { worktree: string }): Promise<string | null>
   onSetupEvent(

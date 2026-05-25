@@ -21,17 +21,21 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Separator } from "@/components/ui/separator"
+import { cn } from "@/lib/utils"
 
 export type StopAgentChoice = "pause-feedback" | "backlog" | "discard-worktree"
+export type RejectChoice = "request-changes" | "discard"
 
 export function StopAgentDialog({
   onOpenDrawer,
   onStopAgent,
   story,
+  triggerSize = "sm",
 }: {
   onOpenDrawer: OpenDrawer
   onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
   story: UserStory
+  triggerSize?: React.ComponentProps<typeof Button>["size"]
 }) {
   const [stopping, setStopping] = React.useState<StopAgentChoice>()
 
@@ -40,7 +44,7 @@ export function StopAgentDialog({
       <DialogTrigger asChild>
         <Button
           type="button"
-          size="sm"
+          size={triggerSize}
           variant="destructive"
           className="justify-start"
         >
@@ -108,19 +112,27 @@ export function StopAgentDialog({
 
 export function RejectDialog({
   onOpenDrawer,
+  onReject,
   story,
+  triggerClassName,
+  triggerSize = "sm",
 }: {
   onOpenDrawer: OpenDrawer
+  onReject: (story: UserStory, choice: RejectChoice) => Promise<UserStory>
   story: UserStory
+  triggerClassName?: string
+  triggerSize?: React.ComponentProps<typeof Button>["size"]
 }) {
+  const [rejecting, setRejecting] = React.useState<RejectChoice>()
+
   return (
     <Dialog>
       <DialogTrigger asChild>
         <Button
           type="button"
-          size="sm"
+          size={triggerSize}
           variant="destructive"
-          className="w-full justify-start"
+          className={cn("w-full justify-start", triggerClassName)}
         >
           <XIcon />
           Reject
@@ -138,24 +150,42 @@ export function RejectDialog({
           <StopChoice
             icon={MessageSquareReplyIcon}
             label="Request Changes"
-            onClick={() =>
-              onOpenDrawer({
-                userStory: story,
-                mode: "view",
-                initialTab: "user-story",
-                focusComment: true,
+            loading={rejecting === "request-changes"}
+            onClick={() => {
+              void reject("request-changes").then((nextStory) => {
+                if (!nextStory) return
+                onOpenDrawer({
+                  userStory: nextStory,
+                  mode: "view",
+                  initialTab: "user-story",
+                  focusComment: true,
+                })
               })
-            }
+            }}
           />
           <StopChoice
             icon={Trash2Icon}
             label="Discard User Story"
             destructive
+            loading={rejecting === "discard"}
+            onClick={() => {
+              void reject("discard")
+            }}
           />
         </div>
       </DialogContent>
     </Dialog>
   )
+
+  async function reject(choice: RejectChoice) {
+    if (rejecting) return
+    setRejecting(choice)
+    try {
+      return await onReject(story, choice)
+    } finally {
+      setRejecting(undefined)
+    }
+  }
 }
 
 function StopChoice({

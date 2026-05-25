@@ -8,9 +8,19 @@ import {
   XIcon,
 } from "lucide-react"
 
-import type { BacklogColumnId } from "@/components/backlog/data/backlog-data"
+import type {
+  BacklogColumnId,
+  UserStory,
+} from "@/components/backlog/data/backlog-data"
+import {
+  type RejectChoice,
+  RejectDialog,
+  type StopAgentChoice,
+  StopAgentDialog,
+} from "@/components/backlog/actions/story-action-dialogs"
 import type {
   DrawerAction,
+  OpenDrawer,
   UserStoryDrawerMode,
 } from "@/components/backlog/shared/backlog-types"
 import { drawerActions } from "@/components/backlog/drawer/user-story-drawer-helpers"
@@ -77,21 +87,47 @@ export function DrawerActions({
   mode,
   onAction,
   onCancel,
+  onOpenDrawer,
+  onReject,
+  onStopAgent,
   status,
+  story,
 }: {
   mode: UserStoryDrawerMode
   onAction: (action: DrawerAction) => void
   onCancel: () => void
+  onOpenDrawer: OpenDrawer
+  onReject: (story: UserStory, choice: RejectChoice) => Promise<UserStory>
+  onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
   status: BacklogColumnId
+  story?: UserStory
 }) {
   return (
     <div className="flex flex-wrap justify-end gap-2">
       {drawerActions(mode, status).map((action) => (
-        <DrawerActionButton
-          key={action}
-          action={action}
-          onClick={action === "Cancel" ? onCancel : () => onAction(action)}
-        />
+        <React.Fragment key={action}>
+          {action === "Stop Agent" && story ? (
+            <StopAgentDialog
+              onOpenDrawer={onOpenDrawer}
+              onStopAgent={onStopAgent}
+              story={story}
+              triggerSize="default"
+            />
+          ) : action === "Reject" && story ? (
+            <RejectDialog
+              onOpenDrawer={onOpenDrawer}
+              onReject={onReject}
+              story={story}
+              triggerClassName="w-auto"
+              triggerSize="default"
+            />
+          ) : (
+            <DrawerActionButton
+              action={action}
+              onClick={action === "Cancel" ? onCancel : () => onAction(action)}
+            />
+          )}
+        </React.Fragment>
       ))}
     </div>
   )
