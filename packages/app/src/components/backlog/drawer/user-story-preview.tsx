@@ -64,6 +64,7 @@ type PreviewIslandProps = {
   hasSetupLog: boolean
   locationBlocked: boolean
   onCapture?: () => void
+  onNavigatePath: (path: string) => void
   onOpen: () => void
   onReload: () => void
   previewLocation?: string
@@ -100,7 +101,13 @@ export function UserStoryPreview({
   const requestRef = React.useRef<AbortController | undefined>(undefined)
   const timeoutRef = React.useRef<number | undefined>(undefined)
   const previewUrl = recoveredPreviewUrl ?? userStory?.previewUrl
-  const source = previewUrl ? previewSource(previewUrl) : undefined
+  const baseSource = previewUrl ? previewSource(previewUrl) : undefined
+  const [editedPreview, setEditedPreview] = React.useState<{
+    baseSource?: string
+    url: string
+  }>()
+  const source =
+    editedPreview?.baseSource === baseSource ? editedPreview.url : baseSource
   const previewKey = source ? `${source}-${reloadKey}` : ""
   const nativePreviewKey = source ?? ""
   const previewState =
@@ -241,6 +248,16 @@ export function UserStoryPreview({
     if (platform.openExternalLink) return platform.openExternalLink(target)
     window.open(target, "_blank", "noopener,noreferrer")
   }
+  const navigatePreviewPath = React.useCallback(
+    (path: string) => {
+      if (!source) return
+      setEditedPreview({
+        baseSource,
+        url: previewPathUrl(source, path),
+      })
+    },
+    [baseSource, source]
+  )
   const handleNativePreviewState = React.useCallback(
     (state: { error?: string; loading: boolean; url?: string }) =>
       setNativePreviewState({ ...state, key: nativePreviewKey }),
@@ -271,6 +288,7 @@ export function UserStoryPreview({
             hasSetupLog={hasSetupLog}
             locationBlocked={displayedLocationBlocked}
             onCapture={capturePreview}
+            onNavigatePath={navigatePreviewPath}
             onOpen={openPreview}
             onReload={reloadPreview}
             previewLocation={displayedPreviewLocation}
@@ -632,16 +650,18 @@ function PreviewIsland({
   hasSetupLog,
   locationBlocked,
   onCapture,
+  onNavigatePath,
   onOpen,
   onReload,
   previewLocation,
   source,
 }: PreviewIslandProps) {
   return (
-    <div className="pointer-events-none absolute inset-x-4 top-4 z-20 flex items-center gap-2">
+    <div className="pointer-events-none absolute inset-x-4 top-4 z-20 flex items-center gap-1.5">
       {source && (
         <PreviewAddress
           locationBlocked={locationBlocked}
+          onNavigatePath={onNavigatePath}
           onOpen={onOpen}
           previewLocation={previewLocation}
           source={source}
@@ -700,24 +720,55 @@ function PreviewActions({
 
 function PreviewAddress({
   locationBlocked,
+  onNavigatePath,
   onOpen,
   previewLocation,
   source,
 }: {
   locationBlocked: boolean
+  onNavigatePath: (path: string) => void
   onOpen: () => void
   previewLocation?: string
   source: string
 }) {
+  const address = previewLocation ?? source
+  const origin = previewAddressOrigin(source)
+  const path = previewAddressPath(address)
+  const [draft, setDraft] = React.useState({ path, value: path })
+  const draftPath = draft.path === path ? draft.value : path
+
+  const commitPath = () => {
+    const nextPath = normalizePreviewPath(draftPath)
+    setDraft({ path, value: nextPath })
+    if (nextPath !== path) onNavigatePath(nextPath)
+  }
+
   return (
-    <div className="pointer-events-auto flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full border bg-background/95 py-1 pr-1 pl-4 shadow-sm backdrop-blur">
-      <span className="truncate text-sm text-muted-foreground">
-        {previewLocation ?? source}
+    <div className="pointer-events-auto flex h-10 min-w-0 flex-1 items-center rounded-full border bg-background/95 py-1 pr-1.5 pl-4 shadow-sm backdrop-blur">
+      <span className="shrink-0 text-sm text-muted-foreground/70">
+        {origin}
       </span>
+      <input
+        aria-label="Preview path"
+        className="min-w-0 flex-1 bg-transparent text-sm text-muted-foreground outline-none"
+        spellCheck={false}
+        value={draftPath}
+        onBlur={commitPath}
+        onChange={(event) =>
+          setDraft({ path, value: event.currentTarget.value })
+        }
+        onKeyDown={(event) => {
+          if (event.key === "Enter") event.currentTarget.blur()
+          if (event.key === "Escape") {
+            setDraft({ path, value: path })
+            event.currentTarget.blur()
+          }
+        }}
+      />
       {locationBlocked && <BlockedLocationBadge />}
       <Button
         aria-label="Open preview in browser"
-        className="ml-auto size-8 rounded-full"
+        className="ml-2 size-7 rounded-full"
         size="icon"
         title="Open preview in browser"
         type="button"
@@ -1071,6 +1122,35 @@ function previewAmbilightShadow(color: PreviewAmbilightColor | undefined) {
 function previewSource(previewUrl: string) {
   if (/^https?:\/\//.test(previewUrl)) return previewUrl
   return `http://${previewUrl}`
+}
+
+function previewPathUrl(source: string, path: string) {
+  const url = new URL(source)
+  const next = new URL(normalizePreviewPath(path), url.origin)
+  return next.toString()
+}
+
+function previewAddressOrigin(source: string) {
+  try {
+    return new URL(source).origin
+  } catch {
+    return source
+  }
+}
+
+function previewAddressPath(source: string) {
+  try {
+    const url = new URL(source)
+    return `${url.pathname}${url.search}${url.hash}`
+  } catch {
+    return "/"
+  }
+}
+
+function normalizePreviewPath(path: string) {
+  const trimmed = path.trim()
+  if (!trimmed) return "/"
+  return trimmed.startsWith("/") ? trimmed : `/${trimmed}`
 }
 
 function previewFrameLocation(frame: HTMLIFrameElement, source?: string) {
