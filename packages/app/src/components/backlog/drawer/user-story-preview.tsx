@@ -37,9 +37,7 @@ export function UserStoryPreview({ userStory }: { userStory?: UserStory }) {
   const requestRef = React.useRef<AbortController | undefined>(undefined)
   const timeoutRef = React.useRef<number | undefined>(undefined)
   const previewUrl = recoveredPreviewUrl ?? userStory?.previewUrl
-  const source = previewUrl
-    ? previewSource(previewUrl)
-    : undefined
+  const source = previewUrl ? previewSource(previewUrl) : undefined
   const previewKey = source ? `${source}-${reloadKey}` : ""
   const previewState =
     previewLoad.key === previewKey ? previewLoad.state : "loading"
@@ -74,7 +72,8 @@ export function UserStoryPreview({ userStory }: { userStory?: UserStory }) {
           ? current
           : {
               key: previewKey,
-              location: current.key === previewKey ? current.location : undefined,
+              location:
+                current.key === previewKey ? current.location : undefined,
               locationBlocked: true,
               state: "loaded",
             }
@@ -97,12 +96,14 @@ export function UserStoryPreview({ userStory }: { userStory?: UserStory }) {
     const controller = new AbortController()
     requestRef.current = controller
     timeoutRef.current = window.setTimeout(
-      () => setPreviewLoad({ key: previewKey, location: source, state: "error" }),
+      () =>
+        setPreviewLoad({ key: previewKey, location: source, state: "error" }),
       12000
     )
     void fetch(source, { mode: "no-cors", signal: controller.signal }).catch(
       () => {
-        if (requestRef.current !== controller || controller.signal.aborted) return
+        if (requestRef.current !== controller || controller.signal.aborted)
+          return
         setPreviewLoad({ key: previewKey, location: source, state: "error" })
       }
     )
@@ -118,7 +119,8 @@ export function UserStoryPreview({ userStory }: { userStory?: UserStory }) {
   }
 
   const recoverPreview = () => {
-    if (!userStory?.worktree || !platform.workspace?.ensureProjectPreviewUrl) return
+    if (!userStory?.worktree || !platform.workspace?.ensureProjectPreviewUrl)
+      return
     void platform.workspace
       .ensureProjectPreviewUrl({ worktree: userStory.worktree })
       .then((previewUrl) => {
@@ -154,37 +156,32 @@ export function UserStoryPreview({ userStory }: { userStory?: UserStory }) {
 
   if (source || hasSetupLog) {
     return (
-      <div className="flex h-full min-h-0 flex-col p-6">
+      <div className="h-full min-h-0 overflow-hidden">
         <Tabs
           value={activeTab}
           onValueChange={setTab}
-          className="min-h-0 flex-1 gap-3"
+          className="relative h-full min-h-0 gap-0 bg-muted/20"
         >
-          <TabsList>
-            {source && (
-              <TabsTrigger value="preview">
-                <MonitorIcon />
-                Preview
-              </TabsTrigger>
-            )}
-            {hasSetupLog && (
-              <TabsTrigger value="setup-log">
-                <PlayIcon />
-                Run logs
-              </TabsTrigger>
-            )}
-          </TabsList>
+          <PreviewIsland
+            hasPreview={Boolean(source)}
+            hasSetupLog={hasSetupLog}
+            locationBlocked={Boolean(locationBlocked)}
+            onOpen={openPreview}
+            onReload={reloadPreview}
+            previewLocation={previewLocation}
+            source={source}
+          />
           {source && (
-            <TabsContent value="preview" className="min-h-0 flex-1 overflow-hidden">
+            <TabsContent
+              value="preview"
+              className="h-full min-h-0 overflow-hidden"
+            >
               <PreviewPanel
                 frameRef={frameRef}
-                locationBlocked={Boolean(locationBlocked)}
                 onError={showPreviewError}
                 onLoad={showPreview}
-                onOpen={openPreview}
                 onReload={reloadPreview}
                 previewKey={previewKey}
-                previewLocation={previewLocation}
                 previewState={previewState}
                 source={source}
                 title={`${userStory?.id ?? "user-story"} preview`}
@@ -192,7 +189,10 @@ export function UserStoryPreview({ userStory }: { userStory?: UserStory }) {
             </TabsContent>
           )}
           {hasSetupLog && (
-            <TabsContent value="setup-log" className="min-h-0 flex-1 overflow-hidden">
+            <TabsContent
+              value="setup-log"
+              className="h-full min-h-0 overflow-hidden"
+            >
               <SetupLogPanel worktree={userStory?.worktree} />
             </TabsContent>
           )}
@@ -218,43 +218,30 @@ export function UserStoryPreview({ userStory }: { userStory?: UserStory }) {
 
 function PreviewPanel({
   frameRef,
-  locationBlocked,
   onError,
   onLoad,
-  onOpen,
   onReload,
   previewKey,
-  previewLocation,
   previewState,
   source,
   title,
 }: {
   frameRef: React.RefObject<HTMLIFrameElement | null>
-  locationBlocked: boolean
   onError: () => void
   onLoad: () => void
-  onOpen: () => void
   onReload: () => void
   previewKey: string
-  previewLocation?: string
   previewState: PreviewState
   source: string
   title: string
 }) {
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-lg border bg-background">
-      <PreviewToolbar
-        locationBlocked={locationBlocked}
-        onOpen={onOpen}
-        onReload={onReload}
-        previewLocation={previewLocation}
-        source={source}
-      />
-      <div className="relative min-h-96 flex-1 bg-muted/20">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-muted/20 pt-[72px]">
+      <div className="relative min-h-0 flex-1 bg-background">
         <iframe
           ref={frameRef}
           key={previewKey}
-          className="h-full w-full bg-background"
+          className="h-full w-full border-0 bg-background"
           src={source}
           title={title}
           onError={onError}
@@ -267,44 +254,112 @@ function PreviewPanel({
   )
 }
 
-function PreviewToolbar({
+function PreviewIsland({
+  hasPreview,
+  hasSetupLog,
   locationBlocked,
   onOpen,
   onReload,
   previewLocation,
   source,
 }: {
+  hasPreview: boolean
+  hasSetupLog: boolean
   locationBlocked: boolean
   onOpen: () => void
   onReload: () => void
   previewLocation?: string
+  source?: string
+}) {
+  return (
+    <div className="pointer-events-none absolute inset-x-4 top-4 z-20 flex items-center gap-2">
+      {source && (
+        <PreviewAddress
+          locationBlocked={locationBlocked}
+          previewLocation={previewLocation}
+          source={source}
+        />
+      )}
+      {source && (
+        <Button
+          aria-label="Refresh preview"
+          className="pointer-events-auto size-10 rounded-full border bg-background/95 shadow-sm backdrop-blur"
+          size="icon"
+          title="Refresh preview"
+          type="button"
+          variant="outline"
+          onClick={onReload}
+        >
+          <RefreshCwIcon />
+        </Button>
+      )}
+      {source && (
+        <Button
+          className="pointer-events-auto h-10 rounded-full border bg-background/95 px-4 shadow-sm backdrop-blur"
+          size="sm"
+          type="button"
+          variant="outline"
+          onClick={onOpen}
+        >
+          <ExternalLinkIcon />
+          Open in browser
+        </Button>
+      )}
+      <div className="min-w-2 flex-1" />
+      <PreviewTabSelector hasPreview={hasPreview} hasSetupLog={hasSetupLog} />
+    </div>
+  )
+}
+
+function PreviewAddress({
+  locationBlocked,
+  previewLocation,
+  source,
+}: {
+  locationBlocked: boolean
+  previewLocation?: string
   source: string
 }) {
   return (
-    <div className="flex min-h-12 items-center gap-2 border-b bg-muted/30 px-3">
-      <div className="flex min-w-0 flex-1 items-center gap-2">
-        <MonitorIcon className="size-4 text-muted-foreground" />
-        <span className="truncate text-sm text-muted-foreground">
-          {previewLocation ?? source}
-        </span>
-        {locationBlocked && <BlockedLocationBadge />}
-      </div>
-      <Button size="sm" type="button" variant="ghost" onClick={onReload}>
-        <RefreshCwIcon />
-        Reload
-      </Button>
-      <Button size="sm" type="button" onClick={onOpen}>
-        <ExternalLinkIcon />
-        Open in browser
-      </Button>
+    <div className="pointer-events-auto flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full border bg-background/95 px-4 shadow-sm backdrop-blur">
+      <MonitorIcon className="size-4 shrink-0 text-muted-foreground" />
+      <span className="truncate text-sm text-muted-foreground">
+        {previewLocation ?? source}
+      </span>
+      {locationBlocked && <BlockedLocationBadge />}
     </div>
+  )
+}
+
+function PreviewTabSelector({
+  hasPreview,
+  hasSetupLog,
+}: {
+  hasPreview: boolean
+  hasSetupLog: boolean
+}) {
+  return (
+    <TabsList className="pointer-events-auto h-10 shrink-0 rounded-full border bg-background/95 p-1 shadow-sm backdrop-blur">
+      {hasPreview && (
+        <TabsTrigger className="rounded-full px-3" value="preview">
+          <MonitorIcon />
+          Preview
+        </TabsTrigger>
+      )}
+      {hasSetupLog && (
+        <TabsTrigger className="rounded-full px-3" value="setup-log">
+          <PlayIcon />
+          Run logs
+        </TabsTrigger>
+      )}
+    </TabsList>
   )
 }
 
 function BlockedLocationBadge() {
   return (
     <span
-      className="inline-flex shrink-0 items-center gap-1 rounded-md border bg-background px-1.5 py-0.5 text-xs text-muted-foreground"
+      className="inline-flex shrink-0 items-center gap-1 rounded-full border bg-background px-2 py-0.5 text-xs text-muted-foreground"
       title="Le navigateur bloque l'URL interne de cette preview."
     >
       <LockIcon className="size-3" />
@@ -323,10 +378,10 @@ function SetupLogPanel({ worktree }: { worktree?: string | null }) {
   }, [content])
 
   return (
-    <div className="grid h-full min-h-0 overflow-hidden rounded-lg border bg-background">
+    <div className="grid h-full min-h-0 overflow-hidden bg-zinc-950 pt-[72px]">
       <pre
         ref={logRef}
-        className="min-h-0 overflow-auto bg-zinc-950 p-4 font-mono text-xs whitespace-pre-wrap text-zinc-100"
+        className="min-h-0 overflow-auto p-4 font-mono text-xs whitespace-pre-wrap text-zinc-100"
       >
         {setupLogContent(content, error, loading)}
       </pre>
@@ -350,7 +405,8 @@ function useSetupLog(worktree?: string | null) {
       platform.workspace
         ?.readFile({ root: worktree, path: ".blame/logs/setup.log" })
         .then((content) => {
-          if (!cancelled) setState({ content, error: "", loading: false, worktree })
+          if (!cancelled)
+            setState({ content, error: "", loading: false, worktree })
         })
         .catch((error) => {
           if (!cancelled) setState(logErrorState(error, worktree))
@@ -396,7 +452,11 @@ function setupLogContent(content: string, error: string, loading: boolean) {
   return "No setup logs yet."
 }
 
-function activePreviewTab(tab: string, hasPreview: boolean, hasSetupLog: boolean) {
+function activePreviewTab(
+  tab: string,
+  hasPreview: boolean,
+  hasSetupLog: boolean
+) {
   if (tab === "preview" && hasPreview) return tab
   if (tab === "setup-log" && hasSetupLog) return tab
   if (hasPreview) return "preview"
