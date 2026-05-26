@@ -73,6 +73,19 @@ type FileMentionResult = {
   type: "directory" | "file"
 }
 
+type MarkdownPreviewBlock =
+  | {
+      code: string
+      key: string
+      type: "code"
+    }
+  | {
+      key: string
+      line: string
+      lineIndex: number
+      type: "line"
+    }
+
 function fileAttachments(files: File[]) {
   return files.map((file) => ({
     id: crypto.randomUUID(),
@@ -138,6 +151,17 @@ function markdownWithWrappedSelection(
       end,
       `${before}${selected}${after}`
     ),
+  }
+}
+
+function markdownWithCodeSelection(value: string, start: number, end: number) {
+  const selected = value.slice(start, end)
+  if (!selected.includes("\n"))
+    return markdownWithWrappedSelection(value, start, end, "`")
+  const replacement = `\`\`\`\n${selected}\n\`\`\``
+  return {
+    cursor: start + replacement.length,
+    value: markdownWithReplacement(value, start, end, replacement),
   }
 }
 
@@ -220,8 +244,7 @@ function markdownActionResult(
     return markdownWithWrappedSelection(value, start, end, "*")
   if (action === "strike")
     return markdownWithWrappedSelection(value, start, end, "~~")
-  if (action === "code")
-    return markdownWithWrappedSelection(value, start, end, "`")
+  if (action === "code") return markdownWithCodeSelection(value, start, end)
   return markdownWithWrappedSelection(
     value,
     start,
@@ -451,7 +474,7 @@ function MarkdownPreview({
   onTaskToggle?: (lineIndex: number, checked: boolean) => void
   placeholder: string
 }) {
-  const lines = markdown.split("\n")
+  const blocks = markdownPreviewBlocks(markdown)
   if (!markdown.trim()) {
     return (
       <div className={cn("text-sm text-muted-foreground", className)}>
@@ -461,15 +484,74 @@ function MarkdownPreview({
   }
   return (
     <div className={cn("space-y-2 text-sm leading-6", className)}>
-      {lines.map((line, index) => (
-        <MarkdownPreviewLine
-          key={`${index}-${line}`}
-          line={line}
-          lineIndex={index}
-          onTaskToggle={onTaskToggle}
-        />
-      ))}
+      {blocks.map((block) =>
+        block.type === "code" ? (
+          <MarkdownPreviewCode key={block.key} code={block.code} />
+        ) : (
+          <MarkdownPreviewLine
+            key={block.key}
+            line={block.line}
+            lineIndex={block.lineIndex}
+            onTaskToggle={onTaskToggle}
+          />
+        )
+      )}
     </div>
+  )
+}
+
+function markdownPreviewBlocks(markdown: string) {
+  const blocks: MarkdownPreviewBlock[] = []
+  const lines = markdown.split("\n")
+  let codeStart: number | undefined
+  let codeLines: string[] = []
+
+  lines.forEach((line, index) => {
+    if (line.startsWith("```")) {
+      if (codeStart === undefined) {
+        codeStart = index
+        codeLines = []
+        return
+      }
+      blocks.push({
+        code: codeLines.join("\n"),
+        key: `code-${codeStart}`,
+        type: "code",
+      })
+      codeStart = undefined
+      codeLines = []
+      return
+    }
+
+    if (codeStart !== undefined) {
+      codeLines.push(line)
+      return
+    }
+
+    blocks.push({
+      key: `line-${index}-${line}`,
+      line,
+      lineIndex: index,
+      type: "line",
+    })
+  })
+
+  if (codeStart !== undefined) {
+    blocks.push({
+      code: codeLines.join("\n"),
+      key: `code-${codeStart}`,
+      type: "code",
+    })
+  }
+
+  return blocks
+}
+
+function MarkdownPreviewCode({ code }: { code: string }) {
+  return (
+    <pre className="overflow-x-auto rounded-lg border bg-muted/50 px-3 py-2 font-mono text-xs leading-relaxed text-foreground">
+      <code>{code}</code>
+    </pre>
   )
 }
 
