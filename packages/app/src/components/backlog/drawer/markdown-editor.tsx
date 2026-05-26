@@ -172,6 +172,37 @@ function markdownWithTaskPrefix(value: string, cursor: number) {
   }
 }
 
+function markdownListEnterResult(value: string, cursor: number) {
+  const bounds = lineBounds(value, cursor)
+  const line = value.slice(bounds.start, bounds.end)
+  const task = line.match(/^(\s*)- \[[ xX]\]\s(.*)$/)
+  const ordered = line.match(/^(\s*)(\d+)\.\s(.*)$/)
+  const unordered = line.match(/^(\s*)-\s(.*)$/)
+  const prefix = listContinuationPrefix(task, ordered, unordered)
+  if (!prefix) return
+  const content = (task?.[2] ?? ordered?.[3] ?? unordered?.[2] ?? "").trim()
+  if (!content) {
+    return {
+      cursor: bounds.start,
+      value: markdownWithReplacement(value, bounds.start, bounds.end, ""),
+    }
+  }
+  return {
+    cursor: cursor + prefix.length + 1,
+    value: markdownWithReplacement(value, cursor, cursor, `\n${prefix}`),
+  }
+}
+
+function listContinuationPrefix(
+  task: RegExpMatchArray | null,
+  ordered: RegExpMatchArray | null,
+  unordered: RegExpMatchArray | null
+) {
+  if (task) return `${task[1]}- [ ] `
+  if (ordered) return `${ordered[1]}${Number(ordered[2]) + 1}. `
+  if (unordered) return `${unordered[1]}- `
+}
+
 function markdownActionResult(
   value: string,
   start: number,
@@ -766,6 +797,25 @@ export const MarkdownEditor = React.forwardRef<
     emitMarkdown(event.currentTarget.value)
   }
 
+  function handleTextareaKeyDown(
+    event: React.KeyboardEvent<HTMLTextAreaElement>
+  ) {
+    if (
+      event.key !== "Enter" ||
+      event.shiftKey ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.altKey
+    )
+      return
+    const textarea = event.currentTarget
+    if (textarea.selectionStart !== textarea.selectionEnd) return
+    const result = markdownListEnterResult(value, textarea.selectionStart)
+    if (!result) return
+    event.preventDefault()
+    emitMarkdown(result.value, result.cursor)
+  }
+
   function applyMarkdownAction(action: MarkdownAction) {
     const textarea = textareaRef.current
     if (!textarea || readOnly) return
@@ -849,6 +899,7 @@ export const MarkdownEditor = React.forwardRef<
                   value={value}
                   onChange={handleMarkdownChange}
                   onClick={() => updateMention()}
+                  onKeyDown={handleTextareaKeyDown}
                   onKeyUp={() => updateMention()}
                   onSelect={() => updateMention()}
                 />
