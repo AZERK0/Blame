@@ -108,7 +108,7 @@ export function UserStoryDrawerPanel({
     if (!focusComment) return
     const frame = requestAnimationFrame(() => {
       commentRef.current
-        ?.querySelector<HTMLElement>("[contenteditable='true']")
+        ?.querySelector<HTMLElement>("[data-markdown-editor-input='true']")
         ?.focus()
     })
     return () => cancelAnimationFrame(frame)
@@ -130,7 +130,7 @@ export function UserStoryDrawerPanel({
       ])
       requestAnimationFrame(() => {
         commentRef.current
-          ?.querySelector<HTMLElement>("[contenteditable='true']")
+          ?.querySelector<HTMLElement>("[data-markdown-editor-input='true']")
           ?.focus()
       })
     }
@@ -209,6 +209,7 @@ export function UserStoryDrawerPanel({
               mode={mode}
               onSummaryChange={setSummary}
               status={status}
+              summary={summary}
               summaryCodeSelectionAttachments={summaryCodeSelectionAttachments}
               userStory={userStory}
             />
@@ -226,7 +227,9 @@ export function UserStoryDrawerPanel({
                 ])
                 requestAnimationFrame(() => {
                   commentRef.current
-                    ?.querySelector<HTMLElement>("[contenteditable='true']")
+                    ?.querySelector<HTMLElement>(
+                      "[data-markdown-editor-input='true']"
+                    )
                     ?.focus()
                 })
               }}

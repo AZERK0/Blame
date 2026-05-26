@@ -49,6 +49,7 @@ export function UserStoryContent({
   mode,
   onSummaryChange,
   status,
+  summary,
   summaryCodeSelectionAttachments,
   userStory,
 }: {
@@ -58,6 +59,7 @@ export function UserStoryContent({
   mode: UserStoryDrawerMode
   onSummaryChange?: (summary: string) => void
   status: BacklogColumnId
+  summary: string
   summaryCodeSelectionAttachments: PendingCodeSelectionAttachment[]
   userStory?: UserStory
 }) {
@@ -73,7 +75,7 @@ export function UserStoryContent({
       <MarkdownEditor
         codeSelectionAttachments={summaryCodeSelectionAttachments}
         mentionDirectory={mentionDirectory}
-        markdown={userStory?.summary ?? ""}
+        markdown={summary}
         onMarkdownChange={onSummaryChange}
         readOnly={!isEditable(mode, status)}
         placeholder="Describe the user story, expected behavior, and acceptance criteria."

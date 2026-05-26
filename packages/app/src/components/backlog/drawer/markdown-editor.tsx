@@ -1,19 +1,20 @@
 import * as React from "react"
 import {
-  BlockTypeSelect,
-  BoldItalicUnderlineToggles,
-  headingsPlugin,
-  listsPlugin,
-  ListsToggle,
-  markdownShortcutPlugin,
-  MDXEditor,
-  type MDXEditorMethods,
-  quotePlugin,
-  thematicBreakPlugin,
-  toolbarPlugin,
-  UndoRedo,
-} from "@mdxeditor/editor"
-import { PaperclipIcon, SparklesIcon, Trash2Icon } from "lucide-react"
+  BoldIcon,
+  CodeIcon,
+  Heading2Icon,
+  ItalicIcon,
+  LinkIcon,
+  ListChecksIcon,
+  ListIcon,
+  ListOrderedIcon,
+  PaperclipIcon,
+  QuoteIcon,
+  Redo2Icon,
+  StrikethroughIcon,
+  Trash2Icon,
+  Undo2Icon,
+} from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -22,6 +23,15 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { Separator } from "@/components/ui/separator"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Textarea } from "@/components/ui/textarea"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import {
   codeSelectionLineLabel,
   type PendingCodeSelectionAttachment,
@@ -36,6 +46,7 @@ import {
 } from "@/components/ui/command"
 import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover"
 import { usePlatform } from "@/context/platform"
+import { cn } from "@/lib/utils"
 
 type PastedAttachment = {
   id: string
@@ -89,143 +100,8 @@ function selectedAttachments(event: React.ChangeEvent<HTMLInputElement>) {
   )
 }
 
-function textLength(node: Node): number {
-  if (node.nodeType === Node.TEXT_NODE) {
-    return (node.textContent ?? "").replace(/\u200B/g, "").length
-  }
-  if (
-    node.nodeType === Node.ELEMENT_NODE &&
-    (node as HTMLElement).tagName === "BR"
-  )
-    return 1
-  return Array.from(node.childNodes).reduce(
-    (total, child) => total + textLength(child),
-    0
-  )
-}
-
-function cursorPosition(parent: HTMLElement) {
-  const selection = window.getSelection()
-  if (!selection || selection.rangeCount === 0) return 0
-  const range = selection.getRangeAt(0)
-  if (!parent.contains(range.startContainer)) return 0
-  const beforeCursor = range.cloneRange()
-  beforeCursor.selectNodeContents(parent)
-  beforeCursor.setEnd(range.startContainer, range.startOffset)
-  return textLength(beforeCursor.cloneContents())
-}
-
-function editorText(parent: HTMLElement) {
-  return Array.from(parent.childNodes)
-    .map((node) => nodeText(node))
-    .join("")
-}
-
-function nodeText(node: Node): string {
-  if (node.nodeType === Node.TEXT_NODE)
-    return (node.textContent ?? "").replace(/\u200B/g, "")
-  if (
-    node.nodeType === Node.ELEMENT_NODE &&
-    (node as HTMLElement).tagName === "BR"
-  )
-    return "\n"
-  return Array.from(node.childNodes)
-    .map((child) => nodeText(child))
-    .join("")
-}
-
-function setRangeEdge(
-  parent: HTMLElement,
-  range: Range,
-  edge: "start" | "end",
-  offset: number
-) {
-  const position = rangePosition(parent, offset)
-  if (!position) return
-  if (edge === "start") range.setStart(position.node, position.offset)
-  if (edge === "end") range.setEnd(position.node, position.offset)
-}
-
-function setCursorPosition(parent: HTMLElement, offset: number) {
-  const position = rangePosition(parent, offset)
-  if (!position) return
-  const range = document.createRange()
-  const selection = window.getSelection()
-  parent.focus()
-  range.setStart(position.node, position.offset)
-  range.collapse(true)
-  selection?.removeAllRanges()
-  selection?.addRange(range)
-}
-
-function insertTextAtRange(editor: HTMLElement, range: Range, value: string) {
-  const selection = window.getSelection()
-  if (!selection) return false
-  const before = editorText(editor)
-  editor.focus()
-  selection.removeAllRanges()
-  selection.addRange(range)
-  if (
-    typeof document.execCommand === "function" &&
-    document.execCommand("insertText", false, value) &&
-    editorText(editor) !== before
-  )
-    return true
-  range.deleteContents()
-  const text = document.createTextNode(value)
-  range.insertNode(text)
-  range.setStartAfter(text)
-  range.collapse(true)
-  selection.removeAllRanges()
-  selection.addRange(range)
-  editor.dispatchEvent(
-    new InputEvent("input", {
-      bubbles: true,
-      data: value,
-      inputType: "insertText",
-    })
-  )
-  return true
-}
-
-function rangePosition(
-  node: Node,
-  offset: number
-): { node: Node; offset: number } | undefined {
-  if (node.nodeType === Node.TEXT_NODE) {
-    return { node, offset: Math.min(offset, node.textContent?.length ?? 0) }
-  }
-
-  if (
-    node.nodeType === Node.ELEMENT_NODE &&
-    (node as HTMLElement).tagName === "BR"
-  ) {
-    return {
-      node: node.parentNode ?? node,
-      offset:
-        Array.from(node.parentNode?.childNodes ?? []).indexOf(
-          node as ChildNode
-        ) + (offset > 0 ? 1 : 0),
-    }
-  }
-
-  let remaining = offset
-  for (const child of Array.from(node.childNodes)) {
-    const length = textLength(child)
-    if (remaining <= length) return rangePosition(child, remaining)
-    remaining -= length
-  }
-
-  if (node.lastChild)
-    return rangePosition(node.lastChild, textLength(node.lastChild))
-  return { node, offset: 0 }
-}
-
-function fileMentionState(editor: HTMLElement): FileMentionState {
-  const cursor = cursorPosition(editor)
-  const match = editorText(editor)
-    .substring(0, cursor)
-    .match(/@(\S*)$/)
+function fileMentionState(value: string, cursor: number): FileMentionState {
+  const match = value.substring(0, cursor).match(/@(\S*)$/)
   return match
     ? {
         active: true,
@@ -234,6 +110,95 @@ function fileMentionState(editor: HTMLElement): FileMentionState {
         end: cursor,
       }
     : { active: false, query: "", start: 0, end: cursor }
+}
+
+function markdownWithReplacement(
+  value: string,
+  start: number,
+  end: number,
+  replacement: string
+) {
+  return `${value.slice(0, start)}${replacement}${value.slice(end)}`
+}
+
+function markdownWithWrappedSelection(
+  value: string,
+  start: number,
+  end: number,
+  before: string,
+  after = before,
+  fallback = "text"
+) {
+  const selected = value.slice(start, end) || fallback
+  return {
+    cursor: start + before.length + selected.length,
+    value: markdownWithReplacement(
+      value,
+      start,
+      end,
+      `${before}${selected}${after}`
+    ),
+  }
+}
+
+function lineBounds(value: string, cursor: number) {
+  const start = value.lastIndexOf("\n", Math.max(0, cursor - 1)) + 1
+  const nextLine = value.indexOf("\n", cursor)
+  return { start, end: nextLine === -1 ? value.length : nextLine }
+}
+
+function markdownWithLinePrefix(value: string, cursor: number, prefix: string) {
+  const bounds = lineBounds(value, cursor)
+  const line = value.slice(bounds.start, bounds.end)
+  const nextLine = line.startsWith(prefix)
+    ? line.slice(prefix.length)
+    : `${prefix}${line}`
+  return {
+    cursor: cursor + nextLine.length - line.length,
+    value: markdownWithReplacement(value, bounds.start, bounds.end, nextLine),
+  }
+}
+
+function markdownWithTaskPrefix(value: string, cursor: number) {
+  const bounds = lineBounds(value, cursor)
+  const line = value.slice(bounds.start, bounds.end)
+  const task = line.match(/^- \[([ xX])\] (.*)$/)
+  const nextLine = task
+    ? `- [${task[1] === " " ? "x" : " "}] ${task[2]}`
+    : `- [ ] ${line}`
+  return {
+    cursor: cursor + nextLine.length - line.length,
+    value: markdownWithReplacement(value, bounds.start, bounds.end, nextLine),
+  }
+}
+
+function markdownActionResult(
+  value: string,
+  start: number,
+  end: number,
+  action: MarkdownAction
+) {
+  if (action === "heading") return markdownWithLinePrefix(value, start, "## ")
+  if (action === "quote") return markdownWithLinePrefix(value, start, "> ")
+  if (action === "unordered") return markdownWithLinePrefix(value, start, "- ")
+  if (action === "ordered") return markdownWithLinePrefix(value, start, "1. ")
+  if (action === "task") return markdownWithTaskPrefix(value, start)
+  if (action === "bold")
+    return markdownWithWrappedSelection(value, start, end, "**")
+  if (action === "italic")
+    return markdownWithWrappedSelection(value, start, end, "*")
+  if (action === "strike")
+    return markdownWithWrappedSelection(value, start, end, "~~")
+  if (action === "code")
+    return markdownWithWrappedSelection(value, start, end, "`")
+  return markdownWithWrappedSelection(
+    value,
+    start,
+    end,
+    "[",
+    "](https://)",
+    "link"
+  )
 }
 
 function filename(path: string) {
@@ -347,41 +312,220 @@ function FileAttachmentPreview({
   )
 }
 
-const markdownPlugins = [
-  headingsPlugin(),
-  listsPlugin(),
-  quotePlugin(),
-  thematicBreakPlugin(),
-  markdownShortcutPlugin(),
-  toolbarPlugin({
-    toolbarContents: () => (
-      <>
-        <UndoRedo />
-        <BlockTypeSelect />
-        <BoldItalicUnderlineToggles />
-        <ListsToggle />
-        <span className="flex-1" />
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className="h-7 border-blue-500/40! bg-blue-500/10! px-2 text-xs text-blue-700 hover:bg-blue-500/20 dark:text-blue-300"
-        >
-          <SparklesIcon className="size-3.5 text-blue-700! dark:text-blue-300!" />
-          Optimize with AI
-        </Button>
-      </>
-    ),
-  }),
+type MarkdownAction =
+  | "bold"
+  | "code"
+  | "heading"
+  | "italic"
+  | "link"
+  | "ordered"
+  | "quote"
+  | "strike"
+  | "task"
+  | "unordered"
+
+type MarkdownMode = "preview" | "write"
+
+const markdownActions: {
+  action: MarkdownAction
+  icon: React.ComponentType<{ className?: string }>
+  label: string
+}[] = [
+  { action: "heading", icon: Heading2Icon, label: "Heading" },
+  { action: "bold", icon: BoldIcon, label: "Bold" },
+  { action: "italic", icon: ItalicIcon, label: "Italic" },
+  { action: "strike", icon: StrikethroughIcon, label: "Strikethrough" },
+  { action: "code", icon: CodeIcon, label: "Inline code" },
+  { action: "link", icon: LinkIcon, label: "Link" },
+  { action: "quote", icon: QuoteIcon, label: "Quote" },
+  { action: "unordered", icon: ListIcon, label: "Bullet list" },
+  { action: "ordered", icon: ListOrderedIcon, label: "Numbered list" },
+  { action: "task", icon: ListChecksIcon, label: "Task list" },
 ]
 
-const readOnlyMarkdownPlugins = [
-  headingsPlugin(),
-  listsPlugin(),
-  quotePlugin(),
-  thematicBreakPlugin(),
-  markdownShortcutPlugin(),
-]
+function MarkdownToolbar({
+  disabled,
+  onAction,
+  onRedo,
+  onUndo,
+}: {
+  disabled?: boolean
+  onAction: (action: MarkdownAction) => void
+  onRedo: () => void
+  onUndo: () => void
+}) {
+  return (
+    <TooltipProvider>
+      <div className="flex flex-wrap items-center gap-1 rounded-xl border bg-popover/80 p-1 shadow-sm backdrop-blur-xl">
+        <ToolbarIconButton disabled={disabled} label="Undo" onClick={onUndo}>
+          <Undo2Icon className="size-4" />
+        </ToolbarIconButton>
+        <ToolbarIconButton disabled={disabled} label="Redo" onClick={onRedo}>
+          <Redo2Icon className="size-4" />
+        </ToolbarIconButton>
+        <Separator className="mx-1 h-5" orientation="vertical" />
+        {markdownActions.map(({ action, icon: Icon, label }) => (
+          <ToolbarIconButton
+            key={action}
+            disabled={disabled}
+            label={label}
+            onClick={() => onAction(action)}
+          >
+            <Icon className="size-4" />
+          </ToolbarIconButton>
+        ))}
+      </div>
+    </TooltipProvider>
+  )
+}
+
+function ToolbarIconButton({
+  children,
+  disabled,
+  label,
+  onClick,
+}: {
+  children: React.ReactNode
+  disabled?: boolean
+  label: string
+  onClick?: () => void
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          type="button"
+          aria-label={label}
+          disabled={disabled || !onClick}
+          size="icon-sm"
+          variant="ghost"
+          onClick={onClick}
+        >
+          {children}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent sideOffset={6}>{label}</TooltipContent>
+    </Tooltip>
+  )
+}
+
+function MarkdownPreview({
+  className,
+  markdown,
+  onTaskToggle,
+  placeholder,
+}: {
+  className?: string
+  markdown: string
+  onTaskToggle?: (lineIndex: number, checked: boolean) => void
+  placeholder: string
+}) {
+  const lines = markdown.split("\n")
+  if (!markdown.trim()) {
+    return (
+      <div className={cn("text-sm text-muted-foreground", className)}>
+        {placeholder}
+      </div>
+    )
+  }
+  return (
+    <div className={cn("space-y-2 text-sm leading-6", className)}>
+      {lines.map((line, index) => (
+        <MarkdownPreviewLine
+          key={`${index}-${line}`}
+          line={line}
+          lineIndex={index}
+          onTaskToggle={onTaskToggle}
+        />
+      ))}
+    </div>
+  )
+}
+
+function MarkdownPreviewLine({
+  line,
+  lineIndex,
+  onTaskToggle,
+}: {
+  line: string
+  lineIndex: number
+  onTaskToggle?: (lineIndex: number, checked: boolean) => void
+}) {
+  if (!line.trim()) return <div className="h-3" />
+  const task = line.match(/^- \[([ xX])\] (.*)$/)
+  if (task) {
+    const checked = task[1].toLowerCase() === "x"
+    return (
+      <label className="flex items-start gap-2 pl-1">
+        <input
+          checked={checked}
+          className="mt-1 size-4 rounded border-border accent-primary disabled:opacity-70"
+          disabled={!onTaskToggle}
+          type="checkbox"
+          onChange={(event) =>
+            onTaskToggle?.(lineIndex, event.currentTarget.checked)
+          }
+        />
+        <span className={cn(checked && "text-muted-foreground line-through")}>
+          {inlineMarkdown(task[2])}
+        </span>
+      </label>
+    )
+  }
+  if (line.startsWith("### "))
+    return <h3 className="text-base font-semibold">{line.slice(4)}</h3>
+  if (line.startsWith("## "))
+    return <h2 className="text-lg font-semibold">{line.slice(3)}</h2>
+  if (line.startsWith("# "))
+    return <h1 className="text-xl font-semibold">{line.slice(2)}</h1>
+  if (line.startsWith("> ")) {
+    return (
+      <blockquote className="border-l-2 pl-3 text-muted-foreground">
+        {inlineMarkdown(line.slice(2))}
+      </blockquote>
+    )
+  }
+  if (/^\d+\.\s/.test(line))
+    return <p className="pl-4">{inlineMarkdown(line)}</p>
+  if (line.startsWith("- "))
+    return <p className="pl-4">{inlineMarkdown(`• ${line.slice(2)}`)}</p>
+  return <p>{inlineMarkdown(line)}</p>
+}
+
+function inlineMarkdown(value: string) {
+  const tokens = value.split(
+    /(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*|~~[^~]+~~|\[[^\]]+\]\([^)]+\))/g
+  )
+  return tokens.map((token, index) => inlineMarkdownToken(token, index))
+}
+
+function inlineMarkdownToken(token: string, index: number) {
+  if (token.startsWith("**") && token.endsWith("**"))
+    return <strong key={index}>{token.slice(2, -2)}</strong>
+  if (token.startsWith("*") && token.endsWith("*"))
+    return <em key={index}>{token.slice(1, -1)}</em>
+  if (token.startsWith("~~") && token.endsWith("~~"))
+    return <s key={index}>{token.slice(2, -2)}</s>
+  if (token.startsWith("`") && token.endsWith("`")) {
+    return (
+      <code key={index} className="rounded bg-muted px-1 py-0.5 text-xs">
+        {token.slice(1, -1)}
+      </code>
+    )
+  }
+  const link = token.match(/^\[([^\]]+)\]\(([^)]+)\)$/)
+  if (link)
+    return (
+      <a
+        key={index}
+        className="text-primary underline underline-offset-2"
+        href={link[2]}
+      >
+        {link[1]}
+      </a>
+    )
+  return <React.Fragment key={index}>{token}</React.Fragment>
+}
 
 export const MarkdownEditor = React.forwardRef<
   HTMLDivElement,
@@ -421,14 +565,16 @@ export const MarkdownEditor = React.forwardRef<
   >([])
   const [activeMentionIndex, setActiveMentionIndex] = React.useState(0)
   const attachmentsRef = React.useRef<PastedAttachment[]>([])
-  const editorRef = React.useRef<MDXEditorMethods>(null)
-  const contentEditableRef = React.useRef<HTMLElement>(null)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
   const handledCodeSelectionIdsRef = React.useRef(new Set<string>())
   const handledFileAttachmentIdsRef = React.useRef(new Set<string>())
-  const insertingMentionRef = React.useRef(false)
   const mentionSearchRef = React.useRef(0)
+  const pendingSelectionRef = React.useRef<number | null>(null)
   const rootRef = React.useRef<HTMLDivElement>(null)
+  const textareaRef = React.useRef<HTMLTextAreaElement>(null)
+  const [draftMarkdown, setDraftMarkdown] = React.useState(markdown)
+  const [mode, setMode] = React.useState<MarkdownMode>("write")
+  const value = readOnly || onMarkdownChange ? markdown : draftMarkdown
   const mentionOpen =
     mention.active && Boolean(mentionDirectory && platform.workspace)
 
@@ -467,16 +613,6 @@ export const MarkdownEditor = React.forwardRef<
     mentionSearchRef.current += 1
   }, [mentionOpen])
 
-  React.useEffect(() => {
-    const frame = requestAnimationFrame(() => {
-      contentEditableRef.current =
-        rootRef.current?.querySelector<HTMLElement>(
-          "[contenteditable='true']"
-        ) ?? null
-    })
-    return () => cancelAnimationFrame(frame)
-  })
-
   React.useEffect(
     () => () => {
       attachmentsRef.current.forEach((attachment) => {
@@ -486,10 +622,17 @@ export const MarkdownEditor = React.forwardRef<
     []
   )
 
-  function updateMention() {
-    if (insertingMentionRef.current) return
-    const editor = contentEditableRef.current
-    if (!editor || readOnly || !mentionDirectory) {
+  React.useLayoutEffect(() => {
+    const cursor = pendingSelectionRef.current
+    if (cursor === null) return
+    pendingSelectionRef.current = null
+    textareaRef.current?.setSelectionRange(cursor, cursor)
+    textareaRef.current?.focus()
+  }, [value])
+
+  function updateMention(nextValue = value) {
+    const textarea = textareaRef.current
+    if (!textarea || readOnly || !mentionDirectory) {
       setMention((current) =>
         current.active
           ? { active: false, query: "", start: 0, end: 0 }
@@ -497,7 +640,7 @@ export const MarkdownEditor = React.forwardRef<
       )
       return
     }
-    setMention(fileMentionState(editor))
+    setMention(fileMentionState(nextValue, textarea.selectionStart))
   }
 
   React.useEffect(() => {
@@ -570,42 +713,16 @@ export const MarkdownEditor = React.forwardRef<
   }
 
   function selectMention(result?: FileMentionResult) {
-    const editor = contentEditableRef.current
-    if (!editor || !result) return
+    if (!result) return
     const insertedPath = `${result.path} `
-    insertingMentionRef.current = true
-
-    if (mention.start === 0) {
-      const suffix = editorText(editor).slice(mention.end)
-      editorRef.current?.setMarkdown(
-        suffix ? `${insertedPath}${suffix}` : `${insertedPath}\u200B`
-      )
-      closeMention()
-      requestAnimationFrame(() => {
-        editorRef.current?.focus()
-        requestAnimationFrame(() => {
-          if (contentEditableRef.current) {
-            setCursorPosition(contentEditableRef.current, insertedPath.length)
-          }
-          insertingMentionRef.current = false
-          updateMention()
-        })
-      })
-      return
-    }
-
-    const selection = window.getSelection()
-    const range = document.createRange()
-    if (!selection) return
-    setRangeEdge(editor, range, "start", mention.start)
-    setRangeEdge(editor, range, "end", mention.end)
-    insertTextAtRange(editor, range, insertedPath)
+    const nextMarkdown = markdownWithReplacement(
+      value,
+      mention.start,
+      mention.end,
+      insertedPath
+    )
     closeMention()
-    requestAnimationFrame(() => {
-      editorRef.current?.focus()
-      insertingMentionRef.current = false
-      updateMention()
-    })
+    emitMarkdown(nextMarkdown, mention.start + insertedPath.length)
   }
 
   function handlePaste(event: React.ClipboardEvent<HTMLDivElement>) {
@@ -638,6 +755,45 @@ export const MarkdownEditor = React.forwardRef<
     )
   }
 
+  function emitMarkdown(nextMarkdown: string, cursor?: number) {
+    if (!onMarkdownChange) setDraftMarkdown(nextMarkdown)
+    onMarkdownChange?.(nextMarkdown)
+    if (cursor !== undefined) pendingSelectionRef.current = cursor
+    requestAnimationFrame(() => updateMention(nextMarkdown))
+  }
+
+  function handleMarkdownChange(event: React.ChangeEvent<HTMLTextAreaElement>) {
+    emitMarkdown(event.currentTarget.value)
+  }
+
+  function applyMarkdownAction(action: MarkdownAction) {
+    const textarea = textareaRef.current
+    if (!textarea || readOnly) return
+    const result = markdownActionResult(
+      value,
+      textarea.selectionStart,
+      textarea.selectionEnd,
+      action
+    )
+    emitMarkdown(result.value, result.cursor)
+  }
+
+  function toggleTaskLine(lineIndex: number, checked: boolean) {
+    const lines = value.split("\n")
+    const line = lines[lineIndex]
+    if (line === undefined) return
+    lines[lineIndex] = line.replace(
+      /^- \[[ xX]\]/,
+      `- [${checked ? "x" : " "}]`
+    )
+    emitMarkdown(lines.join("\n"))
+  }
+
+  function runHistoryCommand(command: "redo" | "undo") {
+    textareaRef.current?.focus()
+    document.execCommand(command)
+  }
+
   return (
     <Popover open={mentionOpen}>
       <PopoverAnchor asChild>
@@ -647,28 +803,71 @@ export const MarkdownEditor = React.forwardRef<
             if (typeof ref === "function") ref(element)
             else if (ref) ref.current = element
           }}
-          className="overflow-hidden rounded-lg border border-input bg-transparent transition-colors focus-within:border-ring dark:bg-input/30"
-          onBlur={() => requestAnimationFrame(updateMention)}
-          onInput={updateMention}
+          className="rounded-2xl border border-border/80 bg-background/70 p-2 shadow-lg shadow-foreground/5 backdrop-blur-xl transition-colors focus-within:border-ring dark:bg-input/20"
+          onBlur={() => requestAnimationFrame(() => updateMention())}
           onKeyDownCapture={handleKeyDown}
-          onKeyUp={updateMention}
           onPaste={handlePaste}
         >
-          <MDXEditor
-            ref={editorRef}
-            className="user-story-mdx-editor"
-            contentEditableClassName={`${minHeight} px-3 py-3 text-sm`}
-            markdown={markdown}
-            placeholder={placeholder}
-            plugins={readOnly ? readOnlyMarkdownPlugins : markdownPlugins}
-            readOnly={readOnly}
-            onChange={(nextMarkdown) => {
-              updateMention()
-              onMarkdownChange?.(nextMarkdown)
-            }}
-          />
+          {readOnly ? (
+            <MarkdownPreview
+              className={cn(minHeight, "rounded-xl px-3 py-3")}
+              markdown={value}
+              onTaskToggle={readOnly ? undefined : toggleTaskLine}
+              placeholder={placeholder}
+            />
+          ) : (
+            <Tabs
+              className="gap-2"
+              value={mode}
+              onValueChange={(nextMode) => setMode(nextMode as MarkdownMode)}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <TabsList className="rounded-xl bg-muted/60 p-1">
+                  <TabsTrigger className="px-4" value="write">
+                    Write
+                  </TabsTrigger>
+                  <TabsTrigger className="px-4" value="preview">
+                    Preview
+                  </TabsTrigger>
+                </TabsList>
+                <MarkdownToolbar
+                  disabled={readOnly || mode === "preview"}
+                  onAction={applyMarkdownAction}
+                  onRedo={() => runHistoryCommand("redo")}
+                  onUndo={() => runHistoryCommand("undo")}
+                />
+              </div>
+              <TabsContent className="mt-0" value="write">
+                <Textarea
+                  ref={textareaRef}
+                  data-markdown-editor-input="true"
+                  className={cn(
+                    minHeight,
+                    "resize-y rounded-xl border-border/80 bg-background/70 px-3 py-3 text-sm shadow-inner shadow-foreground/3 focus-visible:border-border/80 focus-visible:ring-0 dark:bg-background/20"
+                  )}
+                  placeholder={placeholder}
+                  value={value}
+                  onChange={handleMarkdownChange}
+                  onClick={() => updateMention()}
+                  onKeyUp={() => updateMention()}
+                  onSelect={() => updateMention()}
+                />
+              </TabsContent>
+              <TabsContent className="mt-0" value="preview">
+                <MarkdownPreview
+                  className={cn(
+                    minHeight,
+                    "rounded-xl border border-border/80 bg-background/70 px-3 py-3 shadow-inner shadow-foreground/3 dark:bg-background/20"
+                  )}
+                  markdown={value}
+                  onTaskToggle={toggleTaskLine}
+                  placeholder={placeholder}
+                />
+              </TabsContent>
+            </Tabs>
+          )}
 
-          <div className="flex items-center gap-3 p-4">
+          <div className="flex flex-wrap items-center gap-3 px-2 pt-3 pb-1">
             {!readOnly && (
               <>
                 <input
@@ -688,7 +887,7 @@ export const MarkdownEditor = React.forwardRef<
                 <Button
                   type="button"
                   variant="outline"
-                  className="flex h-16 w-16 flex-col gap-2 p-5"
+                  className="flex h-16 w-16 flex-col gap-2 rounded-xl border-dashed bg-background/70 p-5 shadow-sm"
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <PaperclipIcon className="size-5" />
