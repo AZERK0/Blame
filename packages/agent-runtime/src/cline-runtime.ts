@@ -411,9 +411,10 @@ export class BlameAgentRuntime {
     if (credential.authMethod !== "oauth" || !credential.oauthCredentials) return
     if (!supportedClineOAuthProvider(credential.providerId)) return
     const sdk = await import("@cline/sdk")
+    const providerId = sdk.normalizeOAuthProvider(credential.providerId)
     const manager = new sdk.ProviderSettingsManager()
-    const existing = manager.getProviderSettings(credential.providerId)
-    sdk.saveLocalProviderOAuthCredentials(manager, credential.providerId, existing, {
+    const existing = manager.getProviderSettings(providerId)
+    sdk.saveLocalProviderOAuthCredentials(manager, providerId, existing, {
       access: credential.oauthCredentials.access,
       refresh: credential.oauthCredentials.refresh,
       expires: credential.oauthCredentials.expires,
@@ -475,6 +476,10 @@ export class BlameAgentRuntime {
 
 function normalizeEvent(sessionId: string, event: CoreSessionEvent): AgentEvent {
   if (event.type === "chunk") {
+    const parsed = parseChunkEvent(event.payload.chunk)
+    if (event.payload.stream === "agent" && parsed) {
+      return normalizeClineAgentPayload(parsed, event.payload.sessionId, parsed)
+    }
     return {
       type: event.payload.stream === "agent" ? "text" : "notice",
       sessionId: event.payload.sessionId,
@@ -599,21 +604,213 @@ function normalizeHookEvent(event: Extract<CoreSessionEvent, { type: "hook" }>, 
 
 function normalizeAgentEvent(event: Extract<CoreSessionEvent, { type: "agent_event" }>, fallbackSessionId: string): AgentEvent {
   const payload = asRecord(event.payload.event)
+  return normalizeClineAgentPayload(payload, event.payload.sessionId ?? fallbackSessionId, event.payload.event)
+}
+
+function normalizeClineAgentPayload(payload: Record<string, unknown>, sessionId: string, raw: unknown): AgentEvent {
+  const type = stringValue(payload.type)
+
+  if (type === "content_start" || type === "content_update") {
+    return normalizeContentEvent(payload, sessionId, raw)
+  }
+
+  if (type === "content_end") {
+    return normalizeContentEndEvent(payload, sessionId, raw)
+  }
+
+  if (type === "done") {
+    return {
+      type: "done",
+      sessionId,
+      payload: {
+        reason: stringValue(payload.reason),
+        text: stringValue(payload.text),
+        usage: payload.usage,
+        raw,
+      },
+    }
+  }
+
+  if (type === "usage") {
+    return {
+      type: "usage",
+      sessionId,
+      payload: { usage: payload, raw },
+    }
+  }
+
+  if (type === "iteration_start" || type === "iteration_end") {
+    return {
+      type: "notice",
+      sessionId,
+      payload: {
+        message: type === "iteration_start" ? "Agent iteration started." : "Agent iteration completed.",
+        iteration: numberValue(payload.iteration),
+        raw,
+      },
+    }
+  }
+
+  if (type === "assistant-reasoning-delta") {
+    return {
+      type: "reasoning",
+      sessionId,
+      payload: {
+        text: stringValue(payload.text) ?? "",
+        accumulatedText: stringValue(payload.accumulatedText),
+        iteration: numberValue(payload.iteration),
+        raw,
+      },
+    }
+  }
+
+  if (type === "assistant-text-delta") {
+    return {
+      type: "text",
+      sessionId,
+      payload: {
+        text: stringValue(payload.text) ?? "",
+        accumulatedText: stringValue(payload.accumulatedText),
+        iteration: numberValue(payload.iteration),
+        raw,
+      },
+    }
+  }
+
+  if (type === "tool-started" || type === "tool-updated" || type === "tool-finished") {
+    return {
+      type: "tool",
+      sessionId,
+      payload: {
+        phase: type.replace("tool-", ""),
+        iteration: numberValue(payload.iteration),
+        toolCall: payload.toolCall,
+        update: payload.update,
+        raw,
+      },
+    }
+  }
+
+  if (type === "usage-updated") {
+    return {
+      type: "usage",
+      sessionId,
+      payload: { usage: payload.usage, raw },
+    }
+  }
+
+  if (type === "status-notice") {
+    return {
+      type: "notice",
+      sessionId,
+      payload: {
+        message: stringValue(payload.message) ?? "Agent status updated.",
+        metadata: payload.metadata,
+        raw,
+      },
+    }
+  }
+
+  if (type === "run-finished") {
+    const result = asRecord(payload.result)
+    return {
+      type: "done",
+      sessionId,
+      payload: {
+        text: stringValue(result.outputText),
+        status: stringValue(result.status),
+        raw,
+      },
+    }
+  }
+
+  if (type === "run-failed") {
+    const error = asRecord(payload.error)
+    return {
+      type: "error",
+      sessionId,
+      payload: {
+        message: stringValue(error.message) ?? "Agent session failed",
+        raw,
+      },
+    }
+  }
+
   const text = stringValue(payload.text) ?? stringValue(payload.content) ?? stringValue(payload.delta)
 
   if (text) {
     return {
       type: "text",
-      sessionId: event.payload.sessionId ?? fallbackSessionId,
-      payload: { text, raw: event.payload.event },
+      sessionId,
+      payload: { text, raw },
     }
   }
 
   return {
     type: "raw",
-    sessionId: event.payload.sessionId ?? fallbackSessionId,
-    payload: event.payload,
+    sessionId,
+    payload,
   }
+}
+
+function normalizeContentEvent(payload: Record<string, unknown>, sessionId: string, raw: unknown): AgentEvent {
+  const contentType = stringValue(payload.contentType)
+  if (contentType === "tool") {
+    return {
+      type: "tool",
+      sessionId,
+      payload: {
+        phase: "started",
+        toolCall: {
+          id: stringValue(payload.toolCallId),
+          name: stringValue(payload.toolName),
+          input: payload.input,
+        },
+        raw,
+      },
+    }
+  }
+  if (contentType === "reasoning" || contentType === "thinking") {
+    return {
+      type: "reasoning",
+      sessionId,
+      payload: {
+        text: stringValue(payload.text) ?? "",
+        accumulatedText: stringValue(payload.accumulated),
+        raw,
+      },
+    }
+  }
+  return {
+    type: "text",
+    sessionId,
+    payload: {
+      text: stringValue(payload.text) ?? "",
+      accumulatedText: stringValue(payload.accumulated),
+      raw,
+    },
+  }
+}
+
+function normalizeContentEndEvent(payload: Record<string, unknown>, sessionId: string, raw: unknown): AgentEvent {
+  if (stringValue(payload.contentType) === "tool") {
+    return {
+      type: "tool",
+      sessionId,
+      payload: {
+        durationMs: numberValue(payload.durationMs),
+        output: payload.output,
+        phase: "finished",
+        toolCall: {
+          id: stringValue(payload.toolCallId),
+          name: stringValue(payload.toolName),
+          input: payload.input,
+        },
+        raw,
+      },
+    }
+  }
+  return normalizeContentEvent(payload, sessionId, raw)
 }
 
 function toApprovalRequest(request: ToolApprovalRequest, toolName: string): AgentApprovalRequest {
@@ -643,6 +840,19 @@ function asRecord(value: unknown) {
 
 function stringValue(value: unknown) {
   return typeof value === "string" ? value : undefined
+}
+
+function numberValue(value: unknown) {
+  return typeof value === "number" ? value : undefined
+}
+
+function parseChunkEvent(value: string) {
+  try {
+    const parsed = JSON.parse(value)
+    return asRecord(parsed)
+  } catch {
+    return undefined
+  }
 }
 
 function toBlameOAuthCredentials(credentials: ClineOAuthCredentials): OAuthCredentials {

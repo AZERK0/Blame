@@ -3,6 +3,12 @@ import type { AgentEvent } from "@blame/agent-runtime"
 import { toast } from "sonner"
 
 import { backlogColumns } from "@/components/backlog/data/backlog-data"
+import {
+  agentEventText,
+  agentFlowUpdate,
+  completedAgentRun,
+  shouldPersistAgentEvent,
+} from "@/components/backlog/data/agent-flow"
 import { useBacklogStore } from "@/components/backlog/data/backlog-store"
 import type {
   BacklogAction,
@@ -32,6 +38,12 @@ export function BacklogPage() {
   const selection = useModelSelection()
   useBacklogRotation(backlog)
   const [drawerTarget, setDrawerTarget] = React.useState<DrawerTarget>()
+  const storiesRef = React.useRef(backlog.stories)
+
+  React.useEffect(() => {
+    storiesRef.current = backlog.stories
+  }, [backlog.stories])
+
   const drawerUserStory = React.useMemo(() => {
     if (!drawerTarget?.userStory) return undefined
     return (
@@ -187,6 +199,8 @@ export function BacklogPage() {
       const updatedStory = await updateStory(story, {
         agentLastError: null,
         agentLastEvent: `Cline debug log: ${clineLogPath(story.worktree, session.sessionId)}`,
+        agentActivities: [],
+        agentFinalResponse: null,
         agentModelId: selection.currentModel.id,
         agentProviderId: selection.currentModel.provider.id,
         agentStatus: "Running",
@@ -201,7 +215,11 @@ export function BacklogPage() {
           authenticationFailed = expiredAuthenticationToken(
             agentEventText(event)
           )
-          void updateStory(updatedStory, agentEventUpdate(event))
+          const currentStory = activeStory(updatedStory, storiesRef.current)
+          const update = agentEventUpdate(currentStory, event)
+          if (shouldPersistAgentEvent(event, update)) {
+            void updateStory(currentStory, update)
+          }
           if (
             authenticationFailed ||
             event.type === "done" ||
@@ -347,22 +365,30 @@ function inactiveStoryFields(): UserStoryUpdate {
   }
 }
 
+function activeStory(story: UserStory, stories: UserStory[]) {
+  return stories.find((currentStory) => currentStory.id === story.id) ?? story
+}
+
 function storyPrompt(story: UserStory) {
   return [
-    `Implement this user story: ${story.title}`,
+    `Backlog item: ${story.title}`,
     "",
     story.summary,
     "",
-    "Work directly in the current worktree.",
-    "Make the required code changes, then stop when the implementation is complete.",
+    "Work in the current worktree when code changes are clearly required.",
+    "If the request is a question, analysis, opinion, explanation, or review request, inspect the project if useful and answer in Markdown without editing files.",
+    "Only modify files when the request explicitly asks for implementation or when a concrete code change is necessary to satisfy it.",
   ].join("\n")
 }
 
 function developmentSystemPrompt() {
   return [
     "You are Blame, an autonomous coding agent running inside a dedicated git worktree.",
-    "You must inspect the repository, edit files as needed, and implement the user story.",
-    "Do not wait for extra confirmation before using available write tools.",
+    "You must satisfy the backlog item, but not every backlog item requires code changes.",
+    "For questions, analysis, opinions, explanations, audits, or reviews, inspect the repository if useful and answer directly without editing files.",
+    "Only use write tools when the user explicitly asks for implementation or when a concrete code change is necessary.",
+    "Do not wait for extra confirmation before using available write tools when code changes are clearly required.",
+    "Your final response must be concise Markdown for the user, with what changed, how to verify it, and any important caveat.",
   ].join(" ")
 }
 
@@ -370,14 +396,16 @@ function clineLogPath(worktree: string, sessionId: string) {
   return `${worktree}/.blame/logs/cline-${sessionId}.log`
 }
 
-function agentEventUpdate(event: AgentEvent): UserStoryUpdate {
+function agentEventUpdate(story: UserStory, event: AgentEvent): UserStoryUpdate {
   const text = agentEventText(event)
+  const flowUpdate = agentFlowUpdate(story, event)
   if (expiredAuthenticationToken(text)) {
     toast.error("Agent authentication expired", {
       description: `${text} Reconnect the selected provider, then restart the story.`,
       position: "bottom-right",
     })
     return {
+      ...flowUpdate,
       agentLastError: text,
       agentLastEvent: text,
       agentStatus: "Paused",
@@ -385,6 +413,7 @@ function agentEventUpdate(event: AgentEvent): UserStoryUpdate {
   }
   if (completedAgentRun(event)) {
     return {
+      ...flowUpdate,
       agentLastError: null,
       agentLastEvent: text || "Agent completed. Ready for review.",
       agentStatus: null,
@@ -392,24 +421,11 @@ function agentEventUpdate(event: AgentEvent): UserStoryUpdate {
     }
   }
   return {
+    ...flowUpdate,
     agentLastError:
       event.type === "error" ? text || "Agent session failed" : undefined,
     agentLastEvent: text || event.type,
   }
-}
-
-function agentEventText(event: AgentEvent) {
-  if (!event.payload || typeof event.payload !== "object") return ""
-  if ("text" in event.payload && typeof event.payload.text === "string") {
-    return event.payload.text
-  }
-  if ("message" in event.payload && typeof event.payload.message === "string") {
-    return event.payload.message
-  }
-  if ("error" in event.payload && typeof event.payload.error === "string") {
-    return event.payload.error
-  }
-  return ""
 }
 
 function expiredAuthenticationToken(message: string) {
@@ -418,17 +434,4 @@ function expiredAuthenticationToken(message: string) {
     normalized.includes("authentication token") &&
     normalized.includes("invalidated")
   )
-}
-
-function completedAgentRun(event: AgentEvent) {
-  if (event.type !== "done") return false
-  if (!event.payload || typeof event.payload !== "object") return true
-  if ("reason" in event.payload && typeof event.payload.reason === "string") {
-    return !failedDoneReason(event.payload.reason)
-  }
-  return true
-}
-
-function failedDoneReason(reason: string) {
-  return ["error", "aborted", "cancelled"].includes(reason)
 }

@@ -23,6 +23,17 @@ export type BacklogAction =
 
 export type UserStoryPriority = "Low" | "Medium" | "High"
 export type UserStoryAgentStatus = "Running" | "Paused"
+export type UserStoryAgentActivity = {
+  id: string
+  kind: "reasoning" | "tool" | "approval" | "notice"
+  title: string
+  detail: string
+  status?: "running" | "completed" | "failed"
+  iteration?: number
+  toolCallId?: string
+  createdAt: string
+  updatedAt?: string
+}
 
 export type UserStory = {
   id: number
@@ -41,6 +52,8 @@ export type UserStory = {
   agentModelId?: string | null
   agentLastEvent?: string | null
   agentLastError?: string | null
+  agentActivities?: UserStoryAgentActivity[] | null
+  agentFinalResponse?: string | null
   mergedAt?: string | null
   mergeCommit?: string | null
   discardedReason?: string | null
@@ -75,6 +88,8 @@ export type UserStoryUpdate = Partial<
     | "agentModelId"
     | "agentLastEvent"
     | "agentLastError"
+    | "agentActivities"
+    | "agentFinalResponse"
     | "mergedAt"
     | "mergeCommit"
     | "discardedReason"

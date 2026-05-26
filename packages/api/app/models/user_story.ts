@@ -11,6 +11,32 @@ export type UserStoryStatus =
 
 export type UserStoryPriority = 'Low' | 'Medium' | 'High'
 export type UserStoryAgentStatus = 'Running' | 'Paused'
+export type UserStoryAgentActivity = {
+  id: string
+  kind: 'reasoning' | 'tool' | 'approval' | 'notice'
+  title: string
+  detail: string
+  status?: 'running' | 'completed' | 'failed'
+  iteration?: number
+  toolCallId?: string
+  createdAt: string
+  updatedAt?: string
+}
+
+function prepareAgentActivities(value: UserStoryAgentActivity[] | null) {
+  return value ? JSON.stringify(value) : null
+}
+
+function consumeAgentActivities(value: unknown) {
+  if (Array.isArray(value)) return value as UserStoryAgentActivity[]
+  if (typeof value !== 'string') return null
+  try {
+    const parsed = JSON.parse(value)
+    return Array.isArray(parsed) ? (parsed as UserStoryAgentActivity[]) : null
+  } catch {
+    return null
+  }
+}
 
 export default class UserStory extends BaseModel {
   @column({ isPrimary: true })
@@ -60,6 +86,15 @@ export default class UserStory extends BaseModel {
 
   @column()
   declare agentLastError: string | null
+
+  @column({
+    consume: consumeAgentActivities,
+    prepare: prepareAgentActivities,
+  })
+  declare agentActivities: UserStoryAgentActivity[] | null
+
+  @column()
+  declare agentFinalResponse: string | null
 
   @column.dateTime()
   declare mergedAt: DateTime | null

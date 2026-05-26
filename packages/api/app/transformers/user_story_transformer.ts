@@ -20,6 +20,8 @@ export default class UserStoryTransformer extends BaseTransformer<UserStory> {
       'agentModelId',
       'agentLastEvent',
       'agentLastError',
+      'agentActivities',
+      'agentFinalResponse',
       'mergedAt',
       'mergeCommit',
       'discardedReason',

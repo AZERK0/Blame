@@ -3,6 +3,12 @@ import { toast } from "sonner"
 import type { AgentEvent } from "@blame/agent-runtime"
 
 import type { UserStory } from "@/components/backlog/data/backlog-data"
+import {
+  agentEventText,
+  agentFlowUpdate,
+  completedAgentRun,
+  shouldPersistAgentEvent,
+} from "@/components/backlog/data/agent-flow"
 import type { useBacklogStore } from "@/components/backlog/data/backlog-store"
 import { useModelSelection } from "@/components/model/model-selector"
 import { useCloudAuth } from "@/context/cloud-auth"
@@ -30,7 +36,12 @@ export function useBacklogRotation(backlog: ReturnType<typeof useBacklogStore>) 
   const reportedAgentErrors = React.useRef(new Set<string>())
   const agentAuthenticationBlockedUntil = React.useRef(0)
   const previewRecoveryStoryIds = React.useRef(new Set<number>())
+  const storiesRef = React.useRef(backlog.stories)
   const [, refreshStartingStories] = React.useState(0)
+
+  React.useEffect(() => {
+    storiesRef.current = backlog.stories
+  }, [backlog.stories])
 
   React.useEffect(() => {
     blockedStories.current.clear()
@@ -138,6 +149,8 @@ export function useBacklogRotation(backlog: ReturnType<typeof useBacklogStore>) 
     await backlog.update(story, {
       agentModelId: selection.currentModel.id,
       agentProviderId: selection.currentModel.provider.id,
+      agentActivities: [],
+      agentFinalResponse: null,
       agentStatus: "Running",
       agentLastEvent: `Cline debug log: ${clineLogPath(worktree.worktree, session.sessionId)}`,
       branch: worktree.branch,
@@ -221,11 +234,15 @@ export function useBacklogRotation(backlog: ReturnType<typeof useBacklogStore>) 
   }, [backlog.loading, backlog.stories, ensureProjectPreviewUrl, recoverActivePreviews])
 
   async function persistAgentEvent(story: UserStory, event: AgentEvent) {
+    const currentStory = activeStory(story, storiesRef.current)
+    const flowUpdate = agentFlowUpdate(currentStory, event)
     const text = agentEventText(event)
+    if (!shouldPersistAgentEvent(event, flowUpdate)) return
     if (reportedAgentErrors.current.has(agentAuthenticationErrorKey(story))) return
     if (expiredAuthenticationToken(text)) {
       reportExpiredAuthenticationToken(story, text)
-      await backlog.update(story, {
+      await backlog.update(currentStory, {
+        ...flowUpdate,
         agentLastError: text,
         agentLastEvent: text,
         agentStatus: "Paused",
@@ -233,7 +250,8 @@ export function useBacklogRotation(backlog: ReturnType<typeof useBacklogStore>) 
       return
     }
     if (completedAgentRun(event)) {
-      await backlog.update(story, {
+      await backlog.update(currentStory, {
+        ...flowUpdate,
         agentLastError: null,
         agentLastEvent: text || "Agent completed. Ready for review.",
         agentStatus: null,
@@ -241,7 +259,8 @@ export function useBacklogRotation(backlog: ReturnType<typeof useBacklogStore>) 
       })
       return
     }
-    await backlog.update(story, {
+    await backlog.update(currentStory, {
+      ...flowUpdate,
       agentLastError: event.type === "error" ? text || "Agent session failed" : undefined,
       agentLastEvent: text || event.type,
     })
@@ -259,6 +278,10 @@ export function useBacklogRotation(backlog: ReturnType<typeof useBacklogStore>) 
       position: "bottom-right",
     })
   }
+}
+
+function activeStory(story: UserStory, stories: UserStory[]) {
+  return stories.find((currentStory) => currentStory.id === story.id) ?? story
 }
 
 function runningStories(stories: UserStory[]) {
@@ -310,20 +333,24 @@ function rotationBlocker(
 
 function storyPrompt(story: UserStory) {
   return [
-    `Implement this user story: ${story.title}`,
+    `Backlog item: ${story.title}`,
     "",
     story.summary,
     "",
-    "Work directly in the current worktree.",
-    "Make the required code changes, then stop when the implementation is complete.",
+    "Work in the current worktree when code changes are clearly required.",
+    "If the request is a question, analysis, opinion, explanation, or review request, inspect the project if useful and answer in Markdown without editing files.",
+    "Only modify files when the request explicitly asks for implementation or when a concrete code change is necessary to satisfy it.",
   ].join("\n")
 }
 
 function developmentSystemPrompt() {
   return [
     "You are Blame, an autonomous coding agent running inside a dedicated git worktree.",
-    "You must inspect the repository, edit files as needed, and implement the user story.",
-    "Do not wait for extra confirmation before using available write tools.",
+    "You must satisfy the backlog item, but not every backlog item requires code changes.",
+    "For questions, analysis, opinions, explanations, audits, or reviews, inspect the repository if useful and answer directly without editing files.",
+    "Only use write tools when the user explicitly asks for implementation or when a concrete code change is necessary.",
+    "Do not wait for extra confirmation before using available write tools when code changes are clearly required.",
+    "Your final response must be concise Markdown for the user, with what changed, how to verify it, and any important caveat.",
   ].join(" ")
 }
 
@@ -361,45 +388,6 @@ function firstPreviewUrl(text: string) {
   return `http://${match}`
 }
 
-function agentEventText(event: AgentEvent) {
-  if (!event.payload || typeof event.payload !== "object") return ""
-  if (event.type === "tool") return toolEventText(event.payload)
-  if (event.type === "approval") return approvalEventText(event.payload)
-  if ("text" in event.payload && typeof event.payload.text === "string") {
-    return event.payload.text
-  }
-  if ("message" in event.payload && typeof event.payload.message === "string") {
-    return event.payload.message
-  }
-  if ("error" in event.payload && typeof event.payload.error === "string") {
-    return event.payload.error
-  }
-  return ""
-}
-
-function toolEventText(payload: object) {
-  if ("toolName" in payload && typeof payload.toolName === "string") {
-    return `Tool used: ${payload.toolName}`
-  }
-  if ("name" in payload && typeof payload.name === "string") {
-    return `Tool used: ${payload.name}`
-  }
-  if (
-    "hookEventName" in payload &&
-    typeof payload.hookEventName === "string"
-  ) {
-    return `Tool event: ${payload.hookEventName}`
-  }
-  return "Tool event"
-}
-
-function approvalEventText(payload: object) {
-  if ("toolName" in payload && typeof payload.toolName === "string") {
-    return `Tool approval requested: ${payload.toolName}`
-  }
-  return "Tool approval requested"
-}
-
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Unable to start queued user story."
 }
@@ -410,19 +398,6 @@ function expiredAuthenticationToken(message: string) {
     normalized.includes("authentication token") &&
     normalized.includes("invalidated")
   )
-}
-
-function completedAgentRun(event: AgentEvent) {
-  if (event.type !== "done") return false
-  if (!event.payload || typeof event.payload !== "object") return true
-  if ("reason" in event.payload && typeof event.payload.reason === "string") {
-    return !failedDoneReason(event.payload.reason)
-  }
-  return true
-}
-
-function failedDoneReason(reason: string) {
-  return ["error", "aborted", "cancelled"].includes(reason)
 }
 
 function agentAuthenticationErrorKey(story: UserStory) {

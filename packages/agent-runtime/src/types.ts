@@ -148,7 +148,7 @@ export type AgentSessionRecord = {
 }
 
 export type AgentEvent = {
-  type: "text" | "tool" | "approval" | "usage" | "notice" | "done" | "error" | "raw"
+  type: "text" | "reasoning" | "tool" | "approval" | "usage" | "notice" | "done" | "error" | "raw"
   sessionId?: string
   payload: unknown
 }

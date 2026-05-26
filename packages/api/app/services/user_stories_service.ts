@@ -43,6 +43,8 @@ export default class UserStoriesService {
       agentModelId: input.agentModelId ?? null,
       agentLastEvent: input.agentLastEvent ?? null,
       agentLastError: input.agentLastError ?? null,
+      agentActivities: input.agentActivities ?? null,
+      agentFinalResponse: input.agentFinalResponse ?? null,
       mergedAt: input.mergedAt ?? null,
       mergeCommit: input.mergeCommit ?? null,
       discardedReason: input.discardedReason ?? null,
