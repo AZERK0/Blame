@@ -67,7 +67,10 @@ function reasoningActivities(
 ) {
   const payload = eventPayload(event)
   const iteration = numberValue(payload.iteration)
-  const text = stringValue(payload.accumulatedText) ?? stringValue(payload.text)
+  const text =
+    stringValue(payload.accumulatedText) ??
+    stringValue(payload.reasoning) ??
+    stringValue(payload.text)
   if (!text) return activities
   const id = `reasoning-${iteration ?? "session"}`
   return upsertActivity(activities, {

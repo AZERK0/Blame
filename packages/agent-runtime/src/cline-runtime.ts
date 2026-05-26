@@ -775,8 +775,9 @@ function normalizeContentEvent(payload: Record<string, unknown>, sessionId: stri
       type: "reasoning",
       sessionId,
       payload: {
-        text: stringValue(payload.text) ?? "",
-        accumulatedText: stringValue(payload.accumulated),
+        text: stringValue(payload.reasoning) ?? stringValue(payload.text) ?? "",
+        accumulatedText: stringValue(payload.accumulated) ?? stringValue(payload.reasoning),
+        redacted: booleanValue(payload.redacted),
         raw,
       },
     }
@@ -844,6 +845,10 @@ function stringValue(value: unknown) {
 
 function numberValue(value: unknown) {
   return typeof value === "number" ? value : undefined
+}
+
+function booleanValue(value: unknown) {
+  return typeof value === "boolean" ? value : undefined
 }
 
 function parseChunkEvent(value: string) {
