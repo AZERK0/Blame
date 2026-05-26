@@ -146,10 +146,11 @@ function upsertActivity(
 }
 
 function toolTitle(toolName: string, phase: string | undefined) {
-  if (phase === "started" || phase === "tool_call") return `Tool started: ${toolName}`
-  if (phase === "finished" || phase === "tool_result") return `Tool finished: ${toolName}`
-  if (phase === "updated") return `Tool updated: ${toolName}`
-  return `Tool used: ${toolName}`
+  const label = toolLabel(toolName)
+  if (phase === "started" || phase === "tool_call") return `${label} started`
+  if (phase === "finished" || phase === "tool_result") return label
+  if (phase === "updated") return `${label} updated`
+  return label
 }
 
 function toolStatus(phase: string | undefined) {
@@ -173,10 +174,10 @@ function toolDetail(payload: Record<string, unknown>) {
 
 function toolEventText(payload: object) {
   if ("toolName" in payload && typeof payload.toolName === "string") {
-    return `Tool used: ${payload.toolName}`
+    return toolLabel(payload.toolName)
   }
   if ("name" in payload && typeof payload.name === "string") {
-    return `Tool used: ${payload.name}`
+    return toolLabel(payload.name)
   }
   if (
     "hookEventName" in payload &&
@@ -185,6 +186,24 @@ function toolEventText(payload: object) {
     return `Tool event: ${payload.hookEventName}`
   }
   return "Tool event"
+}
+
+function toolLabel(toolName: string) {
+  if (toolName === "run_commands") return "Ran terminal command"
+  if (toolName === "read_files") return "Read files"
+  if (toolName === "search_codebase") return "Searched codebase"
+  if (toolName === "apply_patch") return "Edited files"
+  if (toolName === "write_file") return "Wrote file"
+  if (toolName === "list_files") return "Listed files"
+  return humanizeToolName(toolName)
+}
+
+function humanizeToolName(toolName: string) {
+  return toolName
+    .split(/[_-]+/)
+    .filter(Boolean)
+    .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
+    .join(" ")
 }
 
 function approvalEventText(payload: object) {

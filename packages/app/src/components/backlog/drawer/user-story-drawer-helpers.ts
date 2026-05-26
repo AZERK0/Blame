@@ -9,11 +9,7 @@ import type {
 } from "@/components/backlog/shared/backlog-types"
 
 export function activityItems(status: BacklogColumnId, userStory?: UserStory) {
-  const items = [
-    `${userStory?.owner ?? "Product"} created ${userStory?.id ?? "this draft"}.`,
-    "User story details were updated.",
-  ]
-  if (status !== "backlog") items.push("Moved from Backlog to Agent Queue.")
+  const items: string[] = []
   if (status === "in-progress" || status === "in-review" || status === "done") {
     items.push("Agent created a dedicated worktree.")
   }
