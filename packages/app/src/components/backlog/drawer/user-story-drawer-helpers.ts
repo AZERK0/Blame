@@ -58,7 +58,7 @@ export function hasDevelopmentTab(status: BacklogColumnId) {
 }
 
 export function isEditable(mode: UserStoryDrawerMode, status: BacklogColumnId) {
-  return mode === "create" || status === "backlog" || status === "discarded"
+  return mode === "create" || status === "backlog"
 }
 
 export function normalizeDevelopmentTab(
