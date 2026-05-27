@@ -2,6 +2,7 @@ import { AppLink } from "@/components/navigation/app-link"
 import {
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -9,6 +10,7 @@ import {
 
 export function NavMain({
   items,
+  label,
   pathname,
 }: {
   items: {
@@ -16,10 +18,12 @@ export function NavMain({
     url: string
     icon?: React.ReactNode
   }[]
+  label?: string
   pathname: string
 }) {
   return (
     <SidebarGroup>
+      {label ? <SidebarGroupLabel>{label}</SidebarGroupLabel> : null}
       <SidebarGroupContent className="flex flex-col gap-2">
         <SidebarMenu>
           {items.map((item) => (

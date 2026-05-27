@@ -1,6 +1,5 @@
 import * as React from "react"
 
-import { NavProject } from "./nav-project"
 import { NavMain } from "@/components/sidebar/nav-main"
 import { NavSecondary } from "@/components/sidebar/nav-secondary"
 import { NavUser } from "@/components/sidebar/nav-user"
@@ -62,12 +61,12 @@ const data = {
   ],
   project: [
     {
-      name: "Code Practices",
+      title: "Code Practices",
       url: "/practices",
       icon: <ClipboardCheckIcon />,
     },
     {
-      name: "Team",
+      title: "Team",
       url: "/team",
       icon: <UsersIcon />,
     },
@@ -91,7 +90,7 @@ export function AppSidebar({
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} pathname={pathname} />
-        <NavProject items={data.project} pathname={pathname} />
+        <NavMain items={data.project} label="Project" pathname={pathname} />
         <NavSecondary
           items={data.navSecondary}
           pathname={pathname}
