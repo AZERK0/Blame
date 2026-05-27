@@ -17,6 +17,7 @@ import {
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -579,16 +580,19 @@ function MarkdownPreviewLine({
     const checked = task[1].toLowerCase() === "x"
     return (
       <label className="flex items-start gap-2 pl-1">
-        <input
+        <Checkbox
           checked={checked}
-          className="mt-1 size-4 rounded border-border accent-primary disabled:opacity-70"
+          className="mt-1"
           disabled={!onTaskToggle}
-          type="checkbox"
-          onChange={(event) =>
-            onTaskToggle?.(lineIndex, event.currentTarget.checked)
+          onCheckedChange={(nextChecked) =>
+            onTaskToggle?.(lineIndex, nextChecked === true)
           }
         />
-        <span className={cn(checked && "text-muted-foreground line-through")}>
+        <span
+          className={cn(
+            checked && "line-through"
+          )}
+        >
           {inlineMarkdown(task[2], onFileLinkClick)}
         </span>
       </label>
@@ -663,7 +667,7 @@ function markdownLinkToken(
   return (
     <a
       key={index}
-      className="inline-flex items-center gap-1 text-primary underline underline-offset-2"
+      className="inline-flex items-center gap-1 text-blue-600 underline underline-offset-2 dark:text-blue-400"
       href={href}
       onClick={(event) => {
         if (!fileLink) return
@@ -673,7 +677,8 @@ function markdownLinkToken(
     >
       {fileLink && (
         <DevelopmentFileIcon
-          className="size-3.5 shrink-0"
+          className="size-3.5 shrink-0 text-blue-600 dark:text-blue-400"
+          mono
           node={{ name: filename(href), path: href, type: "file" }}
         />
       )}
