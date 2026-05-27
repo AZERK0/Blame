@@ -125,6 +125,10 @@ function destroyPreviewBrowser(id: string) {
   return true;
 }
 
+export function destroyAllPreviewBrowsers() {
+  Array.from(previews.keys()).forEach((id) => destroyPreviewBrowser(id));
+}
+
 async function capturePreviewBrowser(
   id: string,
   size: PreviewBrowserCaptureSize,

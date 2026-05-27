@@ -62,6 +62,10 @@ type PendingApproval = {
   resolve(result: ToolApprovalResult): void
 }
 
+type RuntimeSessionSummary = {
+  sessionId?: string
+}
+
 type InitializationCorrection = {
   previousResult: string
   validationError: string
@@ -111,6 +115,14 @@ export class BlameAgentRuntime {
 
   initializations = {
     run: (input: InitializeProjectInput) => this.initializeProject(input),
+  }
+
+  async shutdown() {
+    const sessionIds = await this.activeSessionIds()
+    await Promise.allSettled(sessionIds.map((sessionId) => this.abortSession(sessionId)))
+    sessionIds.forEach((sessionId) => this.unsubscribeSession(sessionId))
+    this.resolvePendingApprovals()
+    this.sessionLogFiles.clear()
   }
 
   private async core() {
@@ -296,6 +308,28 @@ export class BlameAgentRuntime {
     this.unsubscribers.delete(sessionId)
     this.autoApprovedWriteToolSessions.delete(sessionId)
     void this.logSession(sessionId, "session unsubscribed")
+  }
+
+  private async activeSessionIds() {
+    const sessionIds = new Set(this.unsubscribers.keys())
+    if (!this.cline) return Array.from(sessionIds)
+
+    try {
+      const cline = await this.cline
+      const sessions = (await cline.list(50)) as RuntimeSessionSummary[]
+      sessions.forEach((session) => {
+        if (session.sessionId) sessionIds.add(session.sessionId)
+      })
+    } catch {}
+
+    return Array.from(sessionIds)
+  }
+
+  private resolvePendingApprovals() {
+    this.pendingApprovals.forEach((approval) => approval.resolve({ approved: false }))
+    this.pendingApprovals.clear()
+    this.alwaysAllowedTools.clear()
+    this.autoApprovedWriteToolSessions.clear()
   }
 
   private requestApproval(request: ToolApprovalRequest): Promise<ToolApprovalResult> | ToolApprovalResult {

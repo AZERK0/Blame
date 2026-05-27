@@ -11,6 +11,7 @@ type TerminalSession = {
 }
 
 const sessions = new Map<string, TerminalSession>()
+const forceKillDelayMs = 1_500
 
 export function registerTerminalIpcHandlers() {
   ipcMain.handle("terminal:start", (_event, input: { cwd: string }) => startTerminal(input.cwd))
@@ -25,6 +26,7 @@ function startTerminal(cwd: string) {
   const id = randomUUID()
   const child = spawn(process.env.SHELL ?? "/bin/bash", ["-l"], {
     cwd: directory,
+    detached: process.platform !== "win32",
     env: process.env,
   })
   const session = { id, cwd: directory, process: child }
@@ -49,9 +51,47 @@ function writeTerminal(id: string, data: string) {
 function stopTerminal(id: string) {
   const session = sessions.get(id)
   if (!session) return false
-  session.process.kill()
+  killChildProcess(session.process, "SIGTERM")
   sessions.delete(id)
   return true
+}
+
+export async function shutdownTerminalSessions() {
+  const activeSessions = Array.from(sessions.values())
+  sessions.clear()
+  await Promise.all(activeSessions.map((session) => stopChildProcess(session.process)))
+}
+
+async function stopChildProcess(child: ChildProcessWithoutNullStreams) {
+  killChildProcess(child, "SIGTERM")
+  await waitForExit(child)
+}
+
+function waitForExit(child: ChildProcessWithoutNullStreams) {
+  if (child.exitCode !== null || child.signalCode !== null) return Promise.resolve()
+
+  return new Promise<void>((resolve) => {
+    const timer = setTimeout(() => {
+      killChildProcess(child, "SIGKILL")
+      resolve()
+    }, forceKillDelayMs)
+
+    child.once("exit", () => {
+      clearTimeout(timer)
+      resolve()
+    })
+  })
+}
+
+function killChildProcess(child: ChildProcessWithoutNullStreams, signal: NodeJS.Signals) {
+  if (child.exitCode !== null || child.signalCode !== null) return
+  if (process.platform !== "win32" && child.pid) {
+    try {
+      process.kill(-child.pid, signal)
+      return
+    } catch {}
+  }
+  child.kill(signal)
 }
 
 function emitTerminalEvent(id: string, type: "stdout" | "stderr" | "exit", data: string) {

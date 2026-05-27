@@ -6,7 +6,7 @@
   "main": "./out/main/index.js",
   "scripts": {
     "predev": "pnpm --filter @blame/agent-runtime build",
-    "dev": "electron-vite dev",
+    "dev": "node scripts/dev.mjs",
     "prebuild": "pnpm --filter @blame/agent-runtime build",
     "build": "electron-vite build",
     "preview": "electron-vite preview",

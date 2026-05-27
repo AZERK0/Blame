@@ -9,6 +9,7 @@ import { BrowserWindow, ipcMain } from "electron";
 const execFileAsync = promisify(execFile);
 const previewStartupTimeoutMs = 60_000;
 const previewStartupIntervalMs = 1_000;
+const forceKillDelayMs = 1_500;
 
 type WorkspacePathInput = {
   root: string;
@@ -75,6 +76,7 @@ type SetupRun = {
 
 const setupRuns = new Map<string, SetupRun>();
 const previewRecoveries = new Map<string, Promise<string | null>>();
+const workspaceProcesses = new Set<ChildProcessWithoutNullStreams>();
 
 export function registerWorkspaceIpcHandlers() {
   ipcMain.handle(
@@ -231,8 +233,10 @@ async function runProjectSetup(input: RunProjectSetupInput) {
   const runId = randomUUID();
   const child = spawn("bash", [scriptPath], {
     cwd: worktree,
+    detached: process.platform !== "win32",
     env: setupEnvironment(worktree),
   });
+  trackWorkspaceProcess(child);
   setupRuns.set(runId, { id: runId, process: child });
 
   child.stdout.on("data", (data: Buffer) =>
@@ -375,8 +379,10 @@ async function runExistingProjectSetup(worktree: string) {
   await new Promise<void>((resolve, reject) => {
     const child = spawn("bash", [scriptPath], {
       cwd: worktree,
+      detached: process.platform !== "win32",
       env: setupEnvironment(worktree),
     });
+    trackWorkspaceProcess(child);
     child.stdout.on("data", (data: Buffer) =>
       appendRecoveryOutput(worktree, data),
     );
@@ -390,6 +396,50 @@ async function runExistingProjectSetup(worktree: string) {
       else reject(new Error(`Project setup exited with code ${code ?? ""}`));
     });
   });
+}
+
+export async function shutdownWorkspaceProcesses() {
+  const activeProcesses = Array.from(workspaceProcesses);
+  setupRuns.clear();
+  workspaceProcesses.clear();
+  await Promise.all(activeProcesses.map(stopChildProcess));
+}
+
+function trackWorkspaceProcess(child: ChildProcessWithoutNullStreams) {
+  workspaceProcesses.add(child);
+  child.once("exit", () => workspaceProcesses.delete(child));
+}
+
+async function stopChildProcess(child: ChildProcessWithoutNullStreams) {
+  killChildProcess(child, "SIGTERM");
+  await waitForExit(child);
+}
+
+function waitForExit(child: ChildProcessWithoutNullStreams) {
+  if (child.exitCode !== null || child.signalCode !== null) return Promise.resolve();
+
+  return new Promise<void>((resolve) => {
+    const timer = setTimeout(() => {
+      killChildProcess(child, "SIGKILL");
+      resolve();
+    }, forceKillDelayMs);
+
+    child.once("exit", () => {
+      clearTimeout(timer);
+      resolve();
+    });
+  });
+}
+
+function killChildProcess(child: ChildProcessWithoutNullStreams, signal: NodeJS.Signals) {
+  if (child.exitCode !== null || child.signalCode !== null) return;
+  if (process.platform !== "win32" && child.pid) {
+    try {
+      process.kill(-child.pid, signal);
+      return;
+    } catch {}
+  }
+  child.kill(signal);
 }
 
 function appendRecoveryOutput(worktree: string, data: Buffer) {

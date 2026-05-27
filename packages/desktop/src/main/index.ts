@@ -4,14 +4,15 @@ import { fileURLToPath } from "node:url"
 import contextMenu from "electron-context-menu"
 import windowState from "electron-window-state"
 import { app, BrowserWindow, dialog, ipcMain, shell } from "electron"
-import { registerAgentIpcHandlers } from "./agent-ipc"
-import { registerPreviewBrowserIpcHandlers } from "./preview-browser-ipc"
-import { registerTerminalIpcHandlers } from "./terminal-ipc"
-import { registerWorkspaceIpcHandlers } from "./workspace-ipc"
+import { registerAgentIpcHandlers, shutdownAgentRuntime } from "./agent-ipc"
+import { destroyAllPreviewBrowsers, registerPreviewBrowserIpcHandlers } from "./preview-browser-ipc"
+import { registerTerminalIpcHandlers, shutdownTerminalSessions } from "./terminal-ipc"
+import { registerWorkspaceIpcHandlers, shutdownWorkspaceProcesses } from "./workspace-ipc"
 
 contextMenu({ showLookUpSelection: false, showSaveImageAs: true, showSearchWithGoogle: false })
 
 const currentDirectory = dirname(fileURLToPath(import.meta.url))
+const shutdownTimeoutMs = 4_000
 
 try {
   process.chdir(homedir())
@@ -22,6 +23,8 @@ app.setAppUserModelId("dev.blame.desktop")
 app.setPath("userData", join(app.getPath("appData"), "dev.blame.desktop"))
 
 let mainWindow: BrowserWindow | undefined
+let shutdownPromise: Promise<void> | undefined
+let quitAfterShutdown = false
 
 void app.whenReady().then(() => {
   registerIpcHandlers()
@@ -38,6 +41,20 @@ app.on("activate", () => {
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit()
+})
+
+app.on("before-quit", (event) => {
+  if (quitAfterShutdown) return
+  event.preventDefault()
+  void quitGracefully()
+})
+
+process.once("SIGINT", () => {
+  void exitFromSignal()
+})
+
+process.once("SIGTERM", () => {
+  void exitFromSignal()
 })
 
 function createMainWindow() {
@@ -92,5 +109,40 @@ function registerIpcHandlers() {
 
   ipcMain.handle("shell:open-path", (_event, path: string) => {
     return shell.openPath(path)
+  })
+}
+
+async function quitGracefully() {
+  await shutdownApplication()
+  quitAfterShutdown = true
+  app.quit()
+}
+
+async function exitFromSignal() {
+  await shutdownApplication()
+  app.exit(0)
+}
+
+function shutdownApplication() {
+  if (!shutdownPromise) shutdownPromise = withTimeout(cleanupApplication(), shutdownTimeoutMs)
+  return shutdownPromise
+}
+
+async function cleanupApplication() {
+  destroyAllPreviewBrowsers()
+  await Promise.allSettled([
+    shutdownTerminalSessions(),
+    shutdownWorkspaceProcesses(),
+    shutdownAgentRuntime(),
+  ])
+}
+
+function withTimeout(task: Promise<void>, timeout: number) {
+  return new Promise<void>((resolve) => {
+    const timer = setTimeout(resolve, timeout)
+    task.finally(() => {
+      clearTimeout(timer)
+      resolve()
+    })
   })
 }

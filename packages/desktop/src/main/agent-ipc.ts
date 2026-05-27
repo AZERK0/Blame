@@ -30,6 +30,10 @@ export function registerAgentIpcHandlers() {
   ipcMain.handle("agent:initializations:run", (_event, input) => runtime.initializations.run(input))
 }
 
+export function shutdownAgentRuntime() {
+  return runtime.shutdown()
+}
+
 function emitAgentEvent(event: AgentEvent) {
   BrowserWindow.getAllWindows().forEach((window) => {
     if (event.sessionId) window.webContents.send(`agent:sessions:event:${event.sessionId}`, event)
