@@ -102,6 +102,7 @@ export function UserStoryDrawerPanel({
   const [summary, setSummary] = React.useState(
     mode === "create" ? "" : (userStory?.summary ?? "")
   )
+  const summaryRef = React.useRef<HTMLDivElement>(null)
   const commentRef = React.useRef<HTMLDivElement>(null)
 
   React.useEffect(() => {
@@ -120,6 +121,7 @@ export function UserStoryDrawerPanel({
       const updateAttachments = targetSummary
         ? setSummaryCodeSelectionAttachments
         : setCommentCodeSelectionAttachments
+      const targetRef = targetSummary ? summaryRef : commentRef
       setTab("user-story")
       updateAttachments((current) => [
         ...current,
@@ -129,7 +131,7 @@ export function UserStoryDrawerPanel({
         },
       ])
       requestAnimationFrame(() => {
-        commentRef.current
+        targetRef.current
           ?.querySelector<HTMLElement>("[data-markdown-editor-input='true']")
           ?.focus()
       })
@@ -211,6 +213,7 @@ export function UserStoryDrawerPanel({
               status={status}
               summary={summary}
               summaryCodeSelectionAttachments={summaryCodeSelectionAttachments}
+              summaryRef={summaryRef}
               userStory={userStory}
             />
           </DrawerBody>

@@ -51,6 +51,7 @@ export function UserStoryContent({
   status,
   summary,
   summaryCodeSelectionAttachments,
+  summaryRef,
   userStory,
 }: {
   commentCodeSelectionAttachments: PendingCodeSelectionAttachment[]
@@ -61,6 +62,7 @@ export function UserStoryContent({
   status: BacklogColumnId
   summary: string
   summaryCodeSelectionAttachments: PendingCodeSelectionAttachment[]
+  summaryRef: React.RefObject<HTMLDivElement | null>
   userStory?: UserStory
 }) {
   const projects = useProjects()
@@ -75,6 +77,7 @@ export function UserStoryContent({
       <MarkdownEditor
         codeSelectionAttachments={summaryCodeSelectionAttachments}
         mentionDirectory={mentionDirectory}
+        ref={summaryRef}
         markdown={summary}
         onMarkdownChange={onSummaryChange}
         readOnly={!isEditable(mode, status)}
