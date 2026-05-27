@@ -12,6 +12,7 @@ import {
 import { useBacklogStore } from "@/components/backlog/data/backlog-store"
 import type {
   BacklogAction,
+  BacklogColumnId,
   UserStory,
   UserStoryUpdate,
 } from "@/components/backlog/data/backlog-data"
@@ -64,7 +65,12 @@ export function BacklogPage() {
   }, [backlog.projectPath])
   const updateStory = React.useCallback(
     async (story: UserStory, input: UserStoryUpdate) => {
-      const cleanup = await inactiveStoryCleanup(story, input, platform)
+      const cleanup = await inactiveStoryCleanup(
+        story,
+        input,
+        platform,
+        projects.activeProject?.path
+      )
       const nextStory = await backlog.update(story, { ...input, ...cleanup })
       setDrawerTarget((current) =>
         current?.userStory?.id === story.id
@@ -73,7 +79,7 @@ export function BacklogPage() {
       )
       return nextStory
     },
-    [backlog, platform]
+    [backlog, platform, projects.activeProject?.path]
   )
   const runStoryAction = React.useCallback(
     async (story: UserStory, action: BacklogAction) => {
@@ -144,8 +150,6 @@ export function BacklogPage() {
         })
       }
       if (choice === "discard-worktree") {
-        await stopStoryRuntime(story, platform)
-        await removeStoryWorktree(story, platform, projects.activeProject?.path)
         return updateStory(story, {
           discardedReason: "Worktree discarded by user",
           status: "discarded",
@@ -156,7 +160,7 @@ export function BacklogPage() {
         status: "backlog",
       })
     },
-    [platform, projects.activeProject?.path, updateStory]
+    [platform, updateStory]
   )
   const unpauseAgent = React.useCallback(
     async (story: UserStory) => {
@@ -313,12 +317,23 @@ export function BacklogPage() {
 async function inactiveStoryCleanup(
   story: UserStory,
   input: UserStoryUpdate,
-  platform: ReturnType<typeof usePlatform>
+  platform: ReturnType<typeof usePlatform>,
+  repositoryRoot: string | undefined
 ): Promise<UserStoryUpdate> {
   const nextStatus = input.status ?? story.status
-  if (nextStatus === "in-progress" || nextStatus === "in-review") return {}
+  if (!leavesRuntimeStatus(story.status, nextStatus)) return {}
   await stopStoryRuntime(story, platform)
+  await removeStoryWorktree(story, platform, repositoryRoot)
   return inactiveStoryFields()
+}
+
+const runtimeStatuses = new Set<BacklogColumnId>(["in-progress", "in-review"])
+
+function leavesRuntimeStatus(
+  currentStatus: BacklogColumnId,
+  nextStatus: BacklogColumnId
+) {
+  return runtimeStatuses.has(currentStatus) && !runtimeStatuses.has(nextStatus)
 }
 
 async function stopStoryRuntime(
@@ -344,13 +359,13 @@ async function removeStoryWorktree(
   platform: ReturnType<typeof usePlatform>,
   repositoryRoot: string | undefined
 ) {
-  if (!story.worktree || !repositoryRoot) return
-  await platform.workspace
-    ?.removeWorktree({
-      repositoryRoot,
-      worktree: story.worktree,
-    })
-    .catch(() => false)
+  if (!story.worktree) return
+  if (!repositoryRoot) throw new Error("Unable to resolve repository root.")
+  const removed = await platform.workspace?.removeWorktree({
+    repositoryRoot,
+    worktree: story.worktree,
+  })
+  if (!removed) throw new Error("Unable to remove worktree.")
 }
 
 function inactiveStoryFields(): UserStoryUpdate {
