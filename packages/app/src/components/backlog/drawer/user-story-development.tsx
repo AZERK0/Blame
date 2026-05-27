@@ -34,22 +34,23 @@ const developmentTabs = [
 const rootDevelopmentStatuses = new Set<BacklogColumnId>(["backlog", "ready"])
 
 export function DevelopmentContent({
+  initialFilePath,
   onTabChange,
   status,
   tab,
   userStory,
 }: {
+  initialFilePath?: string
   onTabChange: (tab: UserStoryDevelopmentTab) => void
   status: BacklogColumnId
   tab: UserStoryDevelopmentTab
   userStory?: UserStory
 }) {
-  const tabs =
-    rootDevelopmentStatuses.has(status)
-      ? developmentTabs.filter((item) => item.id === "files")
-      : status === "done"
-        ? developmentTabs.filter((item) => item.id === "diff")
-        : developmentTabs
+  const tabs = rootDevelopmentStatuses.has(status)
+    ? developmentTabs.filter((item) => item.id === "files")
+    : status === "done"
+      ? developmentTabs.filter((item) => item.id === "diff")
+      : developmentTabs
 
   const activeTab = tabs.some((item) => item.id === tab) ? tab : tabs[0].id
 
@@ -93,6 +94,7 @@ export function DevelopmentContent({
         {activeTab === "files" && (
           <DevelopmentCodePanel
             fallbackToProjectRoot={rootDevelopmentStatuses.has(status)}
+            initialFilePath={initialFilePath}
             mode="files"
             userStory={userStory}
           />
@@ -100,7 +102,9 @@ export function DevelopmentContent({
         {activeTab === "diff" && (
           <DevelopmentCodePanel mode="diff" userStory={userStory} />
         )}
-        {activeTab === "terminal" && <DevelopmentTerminal userStory={userStory} />}
+        {activeTab === "terminal" && (
+          <DevelopmentTerminal userStory={userStory} />
+        )}
       </SidebarInset>
     </SidebarProvider>
   )

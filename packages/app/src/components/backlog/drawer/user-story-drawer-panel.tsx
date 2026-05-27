@@ -95,6 +95,10 @@ export function UserStoryDrawerPanel({
   const [commentFileAttachments, setCommentFileAttachments] = React.useState<
     PendingFileAttachment[]
   >([])
+  const [developmentFileTarget, setDevelopmentFileTarget] = React.useState<{
+    id: string
+    path: string
+  }>()
   const [saving, setSaving] = React.useState(false)
   const [title, setTitle] = React.useState(
     mode === "create" ? "" : (userStory?.title ?? "")
@@ -210,6 +214,7 @@ export function UserStoryDrawerPanel({
               commentRef={commentRef}
               mode={mode}
               onSummaryChange={setSummary}
+              onFileLinkClick={openDevelopmentFile}
               status={status}
               summary={summary}
               summaryCodeSelectionAttachments={summaryCodeSelectionAttachments}
@@ -242,6 +247,8 @@ export function UserStoryDrawerPanel({
         {hasDevelopment && (
           <TabsContent value="development" className="min-h-0">
             <DevelopmentContent
+              key={developmentFileTarget?.id ?? "development"}
+              initialFilePath={developmentFileTarget?.path}
               status={status}
               tab={developmentTab}
               userStory={userStory}
@@ -282,6 +289,12 @@ export function UserStoryDrawerPanel({
     } finally {
       setSaving(false)
     }
+  }
+
+  function openDevelopmentFile(path: string) {
+    setDevelopmentFileTarget({ id: crypto.randomUUID(), path })
+    setDevelopmentTab("files")
+    setTab("development")
   }
 }
 

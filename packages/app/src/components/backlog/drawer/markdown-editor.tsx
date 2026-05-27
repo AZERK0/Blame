@@ -260,6 +260,10 @@ function filename(path: string) {
   return normalized.split("/").at(-1) || normalized
 }
 
+function markdownFileLink(path: string) {
+  return `[${filename(path)}](${path})`
+}
+
 function directoryName(path: string) {
   const normalized = path.replaceAll("\\", "/").replace(/\/+$/, "")
   const index = normalized.lastIndexOf("/")
@@ -466,11 +470,13 @@ function ToolbarIconButton({
 function MarkdownPreview({
   className,
   markdown,
+  onFileLinkClick,
   onTaskToggle,
   placeholder,
 }: {
   className?: string
   markdown: string
+  onFileLinkClick?: (path: string) => void
   onTaskToggle?: (lineIndex: number, checked: boolean) => void
   placeholder: string
 }) {
@@ -492,6 +498,7 @@ function MarkdownPreview({
             key={block.key}
             line={block.line}
             lineIndex={block.lineIndex}
+            onFileLinkClick={onFileLinkClick}
             onTaskToggle={onTaskToggle}
           />
         )
@@ -558,10 +565,12 @@ function MarkdownPreviewCode({ code }: { code: string }) {
 function MarkdownPreviewLine({
   line,
   lineIndex,
+  onFileLinkClick,
   onTaskToggle,
 }: {
   line: string
   lineIndex: number
+  onFileLinkClick?: (path: string) => void
   onTaskToggle?: (lineIndex: number, checked: boolean) => void
 }) {
   if (!line.trim()) return <div className="h-3" />
@@ -580,7 +589,7 @@ function MarkdownPreviewLine({
           }
         />
         <span className={cn(checked && "text-muted-foreground line-through")}>
-          {inlineMarkdown(task[2])}
+          {inlineMarkdown(task[2], onFileLinkClick)}
         </span>
       </label>
     )
@@ -594,25 +603,38 @@ function MarkdownPreviewLine({
   if (line.startsWith("> ")) {
     return (
       <blockquote className="border-l-2 pl-3 text-muted-foreground">
-        {inlineMarkdown(line.slice(2))}
+        {inlineMarkdown(line.slice(2), onFileLinkClick)}
       </blockquote>
     )
   }
   if (/^\d+\.\s/.test(line))
-    return <p className="pl-4">{inlineMarkdown(line)}</p>
+    return <p className="pl-4">{inlineMarkdown(line, onFileLinkClick)}</p>
   if (line.startsWith("- "))
-    return <p className="pl-4">{inlineMarkdown(`• ${line.slice(2)}`)}</p>
-  return <p>{inlineMarkdown(line)}</p>
+    return (
+      <p className="pl-4">
+        {inlineMarkdown(`• ${line.slice(2)}`, onFileLinkClick)}
+      </p>
+    )
+  return <p>{inlineMarkdown(line, onFileLinkClick)}</p>
 }
 
-function inlineMarkdown(value: string) {
+function inlineMarkdown(
+  value: string,
+  onFileLinkClick?: (path: string) => void
+) {
   const tokens = value.split(
     /(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*|~~[^~]+~~|\[[^\]]+\]\([^)]+\))/g
   )
-  return tokens.map((token, index) => inlineMarkdownToken(token, index))
+  return tokens.map((token, index) =>
+    inlineMarkdownToken(token, index, onFileLinkClick)
+  )
 }
 
-function inlineMarkdownToken(token: string, index: number) {
+function inlineMarkdownToken(
+  token: string,
+  index: number,
+  onFileLinkClick?: (path: string) => void
+) {
   if (token.startsWith("**") && token.endsWith("**"))
     return <strong key={index}>{token.slice(2, -2)}</strong>
   if (token.startsWith("*") && token.endsWith("*"))
@@ -627,17 +649,43 @@ function inlineMarkdownToken(token: string, index: number) {
     )
   }
   const link = token.match(/^\[([^\]]+)\]\(([^)]+)\)$/)
-  if (link)
-    return (
-      <a
-        key={index}
-        className="text-primary underline underline-offset-2"
-        href={link[2]}
-      >
-        {link[1]}
-      </a>
-    )
+  if (link) return markdownLinkToken(link[1], link[2], index, onFileLinkClick)
   return <React.Fragment key={index}>{token}</React.Fragment>
+}
+
+function markdownLinkToken(
+  label: string,
+  href: string,
+  index: number,
+  onFileLinkClick?: (path: string) => void
+) {
+  const fileLink = isFileLink(href)
+  return (
+    <a
+      key={index}
+      className="inline-flex items-center gap-1 text-primary underline underline-offset-2"
+      href={href}
+      onClick={(event) => {
+        if (!fileLink) return
+        event.preventDefault()
+        onFileLinkClick?.(href)
+      }}
+    >
+      {fileLink && (
+        <DevelopmentFileIcon
+          className="size-3.5 shrink-0"
+          node={{ name: filename(href), path: href, type: "file" }}
+        />
+      )}
+      {label}
+    </a>
+  )
+}
+
+function isFileLink(href: string) {
+  if (/^[a-z][a-z\d+.-]*:/i.test(href)) return false
+  if (href.startsWith("#") || href.startsWith("/")) return false
+  return href.includes("/") || /\.[^./\s]+$/.test(href)
 }
 
 export const MarkdownEditor = React.forwardRef<
@@ -649,6 +697,7 @@ export const MarkdownEditor = React.forwardRef<
     codeSelectionAttachments?: PendingCodeSelectionAttachment[]
     fileAttachments?: PendingFileAttachment[]
     mentionDirectory?: string
+    onFileLinkClick?: (path: string) => void
     onMarkdownChange?: (markdown: string) => void
     readOnly?: boolean
   }
@@ -659,6 +708,7 @@ export const MarkdownEditor = React.forwardRef<
     markdown,
     mentionDirectory,
     minHeight,
+    onFileLinkClick,
     onMarkdownChange,
     placeholder,
     readOnly,
@@ -827,7 +877,10 @@ export const MarkdownEditor = React.forwardRef<
 
   function selectMention(result?: FileMentionResult) {
     if (!result) return
-    const insertedPath = `${result.path} `
+    const insertedPath =
+      result.type === "file"
+        ? `${markdownFileLink(result.path)} `
+        : `${result.path} `
     const nextMarkdown = markdownWithReplacement(
       value,
       mention.start,
@@ -944,6 +997,7 @@ export const MarkdownEditor = React.forwardRef<
             <MarkdownPreview
               className={cn(minHeight, "rounded-xl px-3 py-3")}
               markdown={value}
+              onFileLinkClick={onFileLinkClick}
               onTaskToggle={readOnly ? undefined : toggleTaskLine}
               placeholder={placeholder}
             />
@@ -993,6 +1047,7 @@ export const MarkdownEditor = React.forwardRef<
                     "rounded-xl border border-border/80 bg-background/70 px-3 py-3 shadow-inner shadow-foreground/3 dark:bg-background/20"
                   )}
                   markdown={value}
+                  onFileLinkClick={onFileLinkClick}
                   onTaskToggle={toggleTaskLine}
                   placeholder={placeholder}
                 />

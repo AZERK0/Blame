@@ -8,7 +8,6 @@ import {
   FileSearchIcon,
   FileTextIcon,
   GitBranchIcon,
-  ListCollapseIcon,
   ListChecksIcon,
   MessageSquareIcon,
   PencilIcon,
@@ -48,6 +47,7 @@ export function UserStoryContent({
   commentRef,
   mode,
   onSummaryChange,
+  onFileLinkClick,
   status,
   summary,
   summaryCodeSelectionAttachments,
@@ -59,6 +59,7 @@ export function UserStoryContent({
   commentRef: React.RefObject<HTMLDivElement | null>
   mode: UserStoryDrawerMode
   onSummaryChange?: (summary: string) => void
+  onFileLinkClick?: (path: string) => void
   status: BacklogColumnId
   summary: string
   summaryCodeSelectionAttachments: PendingCodeSelectionAttachment[]
@@ -79,18 +80,23 @@ export function UserStoryContent({
         mentionDirectory={mentionDirectory}
         ref={summaryRef}
         markdown={summary}
+        onFileLinkClick={onFileLinkClick}
         onMarkdownChange={onSummaryChange}
         readOnly={!isEditable(mode, status)}
         placeholder="Describe the user story, expected behavior, and acceptance criteria."
         minHeight="min-h-70"
       />
       <ActivitySection status={status} userStory={userStory} />
-      <AgentFinalResponseSection userStory={userStory} />
+      <AgentFinalResponseSection
+        userStory={userStory}
+        onFileLinkClick={onFileLinkClick}
+      />
       <CommentsSection
         codeSelectionAttachments={commentCodeSelectionAttachments}
         fileAttachments={commentFileAttachments}
         commentRef={commentRef}
         mentionDirectory={mentionDirectory}
+        onFileLinkClick={onFileLinkClick}
         status={status}
         userStory={userStory}
       />
@@ -137,19 +143,14 @@ function ActivitySection({
   )
 }
 
-function AgentActivityItem({
-  activity,
-}: {
-  activity: UserStoryAgentActivity
-}) {
+function AgentActivityItem({ activity }: { activity: UserStoryAgentActivity }) {
   const details = activityDetails(activity)
-  const Icon = activityToolIcon(details.toolName, activity)
 
   return (
     <AccordionItem value={activity.id} className="border-b-0!">
       <div className="relative grid grid-cols-[2.5rem_minmax(0,1fr)] items-start gap-1 text-sm">
         <span className="relative z-10 flex size-8 items-center justify-center rounded-full border bg-background text-muted-foreground shadow-sm">
-          <Icon className="size-4" />
+          <ActivityToolIcon activity={activity} toolName={details.toolName} />
         </span>
         <div className="min-w-0">
           <AccordionTrigger className="min-h-8 items-center py-0 text-muted-foreground hover:no-underline">
@@ -178,12 +179,15 @@ function ActivityDetails({ details }: { details: ActivityDetail }) {
   return (
     <div className="grid gap-2 rounded-md border bg-muted/20 p-2">
       {sections.map((section) => (
-        <div key={section.label} className="grid gap-1 rounded bg-background/60 p-3">
+        <div
+          key={section.label}
+          className="grid gap-1 rounded bg-background/60 p-3"
+        >
           <div className="flex items-center justify-between gap-3 text-xs font-medium text-muted-foreground">
             <span>{section.label}</span>
             {section.meta ? <span>{section.meta}</span> : null}
           </div>
-          <div className="break-words font-mono text-xs leading-relaxed text-foreground/80">
+          <div className="font-mono text-xs leading-relaxed break-words text-foreground/80">
             {section.value}
           </div>
         </div>
@@ -192,7 +196,13 @@ function ActivityDetails({ details }: { details: ActivityDetail }) {
   )
 }
 
-function AgentFinalResponseSection({ userStory }: { userStory?: UserStory }) {
+function AgentFinalResponseSection({
+  onFileLinkClick,
+  userStory,
+}: {
+  onFileLinkClick?: (path: string) => void
+  userStory?: UserStory
+}) {
   const response = userStory?.agentFinalResponse?.trim()
   if (!response) return null
 
@@ -207,6 +217,7 @@ function AgentFinalResponseSection({ userStory }: { userStory?: UserStory }) {
       <MarkdownEditor
         markdown={response}
         readOnly
+        onFileLinkClick={onFileLinkClick}
         placeholder=""
         minHeight="min-h-24"
       />
@@ -225,25 +236,25 @@ function lifeActivityIcon(item: string) {
   return FileTextIcon
 }
 
-function agentActivityIcon(activity: UserStoryAgentActivity) {
-  if (activity.kind === "reasoning") return BrainCircuitIcon
-  if (activity.kind === "approval") return CheckCircle2Icon
-  if (activity.kind === "tool") return ListCollapseIcon
-  return BotIcon
-}
-
-function activityToolIcon(
-  toolName: string | undefined,
+function ActivityToolIcon({
+  activity,
+  toolName,
+}: {
   activity: UserStoryAgentActivity
-) {
-  if (activity.kind !== "tool") return agentActivityIcon(activity)
-  if (toolName === "run_commands") return TerminalIcon
-  if (toolName === "search_codebase") return SearchIcon
-  if (toolName === "read_files") return FileSearchIcon
-  if (toolName === "apply_patch") return Code2Icon
-  if (toolName === "write_file") return PencilIcon
-  if (toolName === "list_files") return ListChecksIcon
-  return ClipboardCheckIcon
+  toolName: string | undefined
+}) {
+  if (activity.kind === "reasoning")
+    return <BrainCircuitIcon className="size-4" />
+  if (activity.kind === "approval")
+    return <CheckCircle2Icon className="size-4" />
+  if (activity.kind !== "tool") return <BotIcon className="size-4" />
+  if (toolName === "run_commands") return <TerminalIcon className="size-4" />
+  if (toolName === "search_codebase") return <SearchIcon className="size-4" />
+  if (toolName === "read_files") return <FileSearchIcon className="size-4" />
+  if (toolName === "apply_patch") return <Code2Icon className="size-4" />
+  if (toolName === "write_file") return <PencilIcon className="size-4" />
+  if (toolName === "list_files") return <ListChecksIcon className="size-4" />
+  return <ClipboardCheckIcon className="size-4" />
 }
 
 type ActivityDetail = {
@@ -289,7 +300,9 @@ function activityTitle(
   return toolLabel(details.toolName ?? activity.title)
 }
 
-function activityDetailSections(details: ActivityDetail): ActivityDetailSection[] {
+function activityDetailSections(
+  details: ActivityDetail
+): ActivityDetailSection[] {
   const sections: ActivityDetailSection[] = []
   const input = summarizeValue(details.input)
   const output = summarizeOutput(details.output)
@@ -348,7 +361,9 @@ function toolLabel(toolName: string) {
 }
 
 function toolNameFromTitle(value: string) {
-  return value.match(/(?:Tool (?:finished|started|updated|used): )?([\w-]+)$/)?.[1]
+  return value.match(
+    /(?:Tool (?:finished|started|updated|used): )?([\w-]+)$/
+  )?.[1]
 }
 
 function humanizeToolName(value: string) {
@@ -367,7 +382,8 @@ function truncateMiddle(value: string | undefined, maxLength: number) {
 }
 
 function recordValue(value: unknown) {
-  if (value && typeof value === "object") return value as Record<string, unknown>
+  if (value && typeof value === "object")
+    return value as Record<string, unknown>
   return {}
 }
 
@@ -384,6 +400,7 @@ function CommentsSection({
   fileAttachments,
   commentRef,
   mentionDirectory,
+  onFileLinkClick,
   status,
   userStory,
 }: {
@@ -391,6 +408,7 @@ function CommentsSection({
   fileAttachments?: PendingFileAttachment[]
   commentRef: React.RefObject<HTMLDivElement | null>
   mentionDirectory?: string
+  onFileLinkClick?: (path: string) => void
   status: BacklogColumnId
   userStory?: UserStory
 }) {
@@ -411,6 +429,7 @@ function CommentsSection({
         mentionDirectory={mentionDirectory}
         ref={commentRef}
         markdown=""
+        onFileLinkClick={onFileLinkClick}
         readOnly={disabled}
         placeholder={
           disabled ? "Comments are read-only after merge." : "Add a comment"

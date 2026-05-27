@@ -16,10 +16,12 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 export function DevelopmentCodePanel({
   fallbackToProjectRoot,
+  initialFilePath,
   mode,
   userStory,
 }: {
   fallbackToProjectRoot?: boolean
+  initialFilePath?: string
   mode: "files" | "diff"
   userStory?: UserStory
 }) {
@@ -31,8 +33,12 @@ export function DevelopmentCodePanel({
   const [diffs, setDiffs] = React.useState<VcsFileDiff[]>([])
   const [diffLoading, setDiffLoading] = React.useState(mode === "diff")
   const [diffError, setDiffError] = React.useState<string>()
-  const [tabs, setTabs] = React.useState<DevelopmentFileTab[]>([])
-  const [activeTab, setActiveTab] = React.useState(mode === "diff" ? "review" : "empty")
+  const [tabs, setTabs] = React.useState<DevelopmentFileTab[]>(
+    initialFilePath ? [{ path: initialFilePath }] : []
+  )
+  const [activeTab, setActiveTab] = React.useState(
+    initialFilePath ?? (mode === "diff" ? "review" : "empty")
+  )
   const initialDiffLoad = React.useRef(true)
 
   React.useEffect(() => {
@@ -54,7 +60,9 @@ export function DevelopmentCodePanel({
       })
       .catch((error) => {
         if (!cancelled) {
-          setDiffError(error instanceof Error ? error.message : "Unable to load changes")
+          setDiffError(
+            error instanceof Error ? error.message : "Unable to load changes"
+          )
         }
       })
       .finally(() => {
@@ -78,17 +86,23 @@ export function DevelopmentCodePanel({
   const kinds = React.useMemo(() => buildDiffKinds(diffs), [diffs])
   const openFile = React.useCallback((path: string) => {
     setTabs((current) =>
-      current.some((tab) => tab.path === path) ? current : [...current, { path }]
+      current.some((tab) => tab.path === path)
+        ? current
+        : [...current, { path }]
     )
     setActiveTab(path)
   }, [])
-  const closeTab = React.useCallback((path: string) => {
-    setTabs((current) => {
-      const next = current.filter((tab) => tab.path !== path)
-      setActiveTab((active) => nextActiveTab(active, path, next, mode))
-      return next
-    })
-  }, [mode])
+
+  const closeTab = React.useCallback(
+    (path: string) => {
+      setTabs((current) => {
+        const next = current.filter((tab) => tab.path !== path)
+        setActiveTab((active) => nextActiveTab(active, path, next, mode))
+        return next
+      })
+    },
+    [mode]
+  )
 
   if (!workspace.hasServer) {
     return (
@@ -123,7 +137,9 @@ export function DevelopmentCodePanel({
           ) : (
             <FileDiffIcon className="size-4" />
           )}
-          <span>{mode === "files" ? "All files" : `${diffs.length} Changes`}</span>
+          <span>
+            {mode === "files" ? "All files" : `${diffs.length} Changes`}
+          </span>
         </div>
         <ScrollArea className="min-h-0 flex-1">
           {diffError ? (
@@ -133,7 +149,9 @@ export function DevelopmentCodePanel({
           ) : (
             <DevelopmentFileTree
               active={activeTab}
-              allowed={mode === "diff" ? diffs.map((diff) => diff.file) : undefined}
+              allowed={
+                mode === "diff" ? diffs.map((diff) => diff.file) : undefined
+              }
               kinds={kinds}
               listDirectory={workspace.listDirectory}
               modified={diffs.map((diff) => diff.file)}
