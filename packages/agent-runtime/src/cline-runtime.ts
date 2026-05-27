@@ -25,6 +25,7 @@ import {
   projectInitializationPrompt,
   scanProjectForInitialization,
 } from "./project-initialization.js"
+import { loadPrompt } from "./prompt-loader.js"
 import type { ProjectInitializationScan } from "./project-initialization.js"
 import type {
   AgentApprovalRequest,
@@ -187,7 +188,7 @@ export class BlameAgentRuntime {
           baseUrl: resolvedCredential.baseUrl ?? undefined,
           thinking: !!input.reasoningEffort,
           reasoningEffort: input.reasoningEffort,
-          systemPrompt: input.systemPrompt ?? "You are Blame, an agentic IDE coding assistant.",
+          systemPrompt: input.systemPrompt ?? loadPrompt("default-agent-system"),
           cwd: input.cwd,
           workspaceRoot: input.workspaceRoot,
           mode: input.mode ?? "act",
@@ -573,8 +574,7 @@ function initializationConfig(
     baseUrl: credential.baseUrl ?? undefined,
     thinking: !!input.reasoningEffort,
     reasoningEffort: input.reasoningEffort,
-    systemPrompt:
-      "You are Blame project initialization analyst. Return strict JSON only.",
+    systemPrompt: loadPrompt("project-initialization-system"),
     cwd: input.cwd,
     workspaceRoot: input.workspaceRoot,
     enableTools: true,
@@ -602,14 +602,7 @@ function developmentStoryPrompt(input: Pick<StartDevelopmentSessionInput, "title
 }
 
 function developmentSystemPrompt() {
-  return [
-    "You are Blame, an autonomous coding agent running inside a dedicated git worktree.",
-    "You must satisfy the backlog item, but not every backlog item requires code changes.",
-    "For questions, analysis, opinions, explanations, audits, or reviews, inspect the repository if useful and answer directly without editing files.",
-    "Only use write tools when the user explicitly asks for implementation or when a concrete code change is necessary.",
-    "Do not wait for extra confirmation before using available write tools when code changes are clearly required.",
-    "Your final response must be concise Markdown for the user, with what changed, how to verify it, and any important caveat.",
-  ].join(" ")
+  return loadPrompt("code-agent-system")
 }
 
 function errorMessage(error: unknown) {
