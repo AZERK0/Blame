@@ -575,6 +575,7 @@ function MarkdownPreviewLine({
   onTaskToggle?: (lineIndex: number, checked: boolean) => void
 }) {
   if (!line.trim()) return <div className="h-3" />
+  if (/^\s*---+\s*$/.test(line)) return <hr className="border-border" />
   const task = line.match(/^- \[([ xX])\] (.*)$/)
   if (task) {
     const checked = task[1].toLowerCase() === "x"
@@ -588,22 +589,21 @@ function MarkdownPreviewLine({
             onTaskToggle?.(lineIndex, nextChecked === true)
           }
         />
-        <span
-          className={cn(
-            checked && "line-through"
-          )}
-        >
+        <span className={cn(checked && "line-through")}>
           {inlineMarkdown(task[2], onFileLinkClick)}
         </span>
       </label>
     )
   }
-  if (line.startsWith("### "))
-    return <h3 className="text-base font-semibold">{line.slice(4)}</h3>
-  if (line.startsWith("## "))
-    return <h2 className="text-lg font-semibold">{line.slice(3)}</h2>
-  if (line.startsWith("# "))
-    return <h1 className="text-xl font-semibold">{line.slice(2)}</h1>
+  const heading = line.match(/^(#{1,6})\s(.+)$/)
+  if (heading)
+    return (
+      <MarkdownPreviewHeading
+        level={heading[1].length}
+        text={heading[2]}
+        onFileLinkClick={onFileLinkClick}
+      />
+    )
   if (line.startsWith("> ")) {
     return (
       <blockquote className="border-l-2 pl-3 text-muted-foreground">
@@ -620,6 +620,22 @@ function MarkdownPreviewLine({
       </p>
     )
   return <p>{inlineMarkdown(line, onFileLinkClick)}</p>
+}
+
+function MarkdownPreviewHeading({
+  level,
+  onFileLinkClick,
+  text,
+}: {
+  level: number
+  onFileLinkClick?: (path: string) => void
+  text: string
+}) {
+  const content = inlineMarkdown(text, onFileLinkClick)
+  if (level === 1) return <h1 className="text-xl font-semibold">{content}</h1>
+  if (level === 2) return <h2 className="text-lg font-semibold">{content}</h2>
+  if (level === 3) return <h3 className="text-base font-semibold">{content}</h3>
+  return <h4 className="font-semibold">{content}</h4>
 }
 
 function inlineMarkdown(
@@ -654,7 +670,11 @@ function inlineMarkdownToken(
   }
   const link = token.match(/^\[([^\]]+)\]\(([^)]+)\)$/)
   if (link) return markdownLinkToken(link[1], link[2], index, onFileLinkClick)
-  return <React.Fragment key={index}>{token}</React.Fragment>
+  return <React.Fragment key={index}>{markdownArrowText(token)}</React.Fragment>
+}
+
+function markdownArrowText(value: string) {
+  return value.replace(/=>|->/g, "➔")
 }
 
 function markdownLinkToken(
