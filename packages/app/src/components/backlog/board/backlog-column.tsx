@@ -40,6 +40,7 @@ export function BacklogColumn({
   onStopAgent,
   onUnpauseAgent,
   queueInitializing,
+  storySetupInitializing,
   stories,
 }: {
   column: (typeof backlogColumns)[number]
@@ -54,6 +55,7 @@ export function BacklogColumn({
   onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
   onUnpauseAgent: (story: UserStory) => Promise<UserStory>
   queueInitializing?: boolean
+  storySetupInitializing?: (story: UserStory) => boolean
   stories: UserStory[]
 }) {
   return (
@@ -73,6 +75,7 @@ export function BacklogColumn({
             onReject={onReject}
             onStopAgent={onStopAgent}
             onUnpauseAgent={onUnpauseAgent}
+            setupInitializing={storySetupInitializing?.(story)}
             story={story}
           />
         ))}

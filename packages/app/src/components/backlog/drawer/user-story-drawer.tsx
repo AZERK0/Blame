@@ -40,6 +40,7 @@ export type UserStoryDrawerProps = {
     story: UserStory,
     input: UserStoryUpdate
   ) => Promise<UserStory>
+  setupInitializing?: boolean
 }
 
 export function UserStoryDrawer({
@@ -55,6 +56,7 @@ export function UserStoryDrawer({
   onReject,
   onStopAgent,
   onUpdateUserStory,
+  setupInitializing,
 }: UserStoryDrawerProps) {
   const status = userStory?.status ?? "backlog"
   const drawerKey = [
@@ -85,6 +87,7 @@ export function UserStoryDrawer({
         onReject={onReject}
         onStopAgent={onStopAgent}
         onUpdateUserStory={onUpdateUserStory}
+        setupInitializing={setupInitializing}
         status={status}
         userStory={userStory}
       />

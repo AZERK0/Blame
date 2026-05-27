@@ -90,6 +90,7 @@ export function useBacklogRotation(
       setupScript: initialization.setupScript,
       dockerCompose: initialization.dockerCompose,
     })
+    backlog.setStorySetupInitializing(story, true)
     const unsubscribeSetup = platform.workspace.onSetupEvent(
       setup.runId,
       (event) => {
@@ -167,6 +168,7 @@ export function useBacklogRotation(
     const previewUrl = setupCompleted(event)
       ? ((await projectPreviewUrl(worktree)) ?? undefined)
       : firstPreviewUrl(text)
+    if (event.type === "exit") backlog.setStorySetupInitializing(story, false)
     await backlog.update(story, {
       agentLastError: setupError(event) ? text : undefined,
       agentLastEvent: text,

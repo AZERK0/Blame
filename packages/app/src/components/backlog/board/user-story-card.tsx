@@ -1,3 +1,5 @@
+import { LoaderCircleIcon } from "lucide-react"
+
 import {
   type BacklogAction,
   type UserStory,
@@ -30,6 +32,7 @@ export function UserStoryCard({
   onReject,
   onStopAgent,
   onUnpauseAgent,
+  setupInitializing,
   story,
 }: {
   onAction: (
@@ -41,6 +44,7 @@ export function UserStoryCard({
   onReject: (story: UserStory, choice: RejectChoice) => Promise<UserStory>
   onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
   onUnpauseAgent: (story: UserStory) => Promise<UserStory>
+  setupInitializing?: boolean
   story: UserStory
 }) {
   return (
@@ -49,6 +53,12 @@ export function UserStoryCard({
         <p className="text-xs font-medium text-muted-foreground">
           {userStoryLabel(story)}
         </p>
+        {setupInitializing && (
+          <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+            <LoaderCircleIcon className="size-3 animate-spin" />
+            Initializing story setup
+          </div>
+        )}
         <CardTitle className="min-w-0 text-base leading-snug">
           <Button
             type="button"

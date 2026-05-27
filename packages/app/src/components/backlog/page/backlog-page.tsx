@@ -287,6 +287,7 @@ export function BacklogPage() {
               onStopAgent={stopAgent}
               onUnpauseAgent={unpauseAgent}
               queueInitializing={column.id === "ready" && queueInitializing}
+              storySetupInitializing={backlog.storySetupInitializing}
               stories={backlog.storiesForColumn(column.id)}
             />
           ))}
@@ -314,6 +315,7 @@ export function BacklogPage() {
         onOpenDrawer={openDrawer}
         onReject={rejectStory}
         onStopAgent={stopAgent}
+        setupInitializing={backlog.storySetupInitializing(drawerUserStory)}
       />
     </div>
   )

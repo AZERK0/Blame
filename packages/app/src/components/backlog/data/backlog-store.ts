@@ -13,6 +13,7 @@ import { useProjects } from "@/context/projects"
 type BacklogState = {
   error?: string
   loading: boolean
+  setupInitializingStoryIds: Set<number>
   stories: UserStory[]
 }
 
@@ -21,6 +22,7 @@ export function useBacklogStore() {
   const projects = useProjects()
   const [state, setState] = React.useState<BacklogState>({
     loading: false,
+    setupInitializingStoryIds: new Set(),
     stories: [],
   })
   const updateQueues = React.useRef(new Map<number, Promise<unknown>>())
@@ -34,28 +36,42 @@ export function useBacklogStore() {
 
   const load = React.useCallback(async () => {
     if (!projectId) {
-      setState({ loading: false, stories: [] })
+      setState({
+        loading: false,
+        setupInitializingStoryIds: new Set(),
+        stories: [],
+      })
       return
     }
     setState((current) => ({ ...current, error: undefined, loading: true }))
     try {
-      setState({ loading: false, stories: await api.list(projectId) })
+      setState({
+        loading: false,
+        setupInitializingStoryIds: new Set(),
+        stories: await api.list(projectId),
+      })
     } catch (error) {
       setState({
-        error: error instanceof Error ? error.message : "Unable to load user stories.",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Unable to load user stories.",
         loading: false,
+        setupInitializingStoryIds: new Set(),
         stories: [],
       })
     }
   }, [api, projectId])
 
   React.useEffect(() => {
-    void load()
+    const timer = window.setTimeout(() => void load(), 0)
+    return () => window.clearTimeout(timer)
   }, [load])
 
   const create = React.useCallback(
     async (input: Omit<UserStoryDraft, "projectId">) => {
-      if (!projectId) throw new Error("Open a project before creating a user story.")
+      if (!projectId)
+        throw new Error("Open a project before creating a user story.")
       const story = await api.create({ ...input, projectId })
       setState((current) => ({
         ...current,
@@ -68,7 +84,8 @@ export function useBacklogStore() {
 
   const update = React.useCallback(
     async (story: UserStory, input: UserStoryUpdate) => {
-      const previousUpdate = updateQueues.current.get(story.id) ?? Promise.resolve()
+      const previousUpdate =
+        updateQueues.current.get(story.id) ?? Promise.resolve()
       const nextUpdate = previousUpdate
         .catch(() => undefined)
         .then(async () => {
@@ -100,7 +117,9 @@ export function useBacklogStore() {
       await api.delete(story.id)
       setState((current) => ({
         ...current,
-        stories: current.stories.filter((currentStory) => currentStory.id !== story.id),
+        stories: current.stories.filter(
+          (currentStory) => currentStory.id !== story.id
+        ),
       }))
     },
     [api]
@@ -111,6 +130,24 @@ export function useBacklogStore() {
       state.stories.filter((story) => story.status === column),
     [state.stories]
   )
+  const setStorySetupInitializing = React.useCallback(
+    (story: UserStory, initializing: boolean) => {
+      setState((current) => ({
+        ...current,
+        setupInitializingStoryIds: setupInitializingStoryIds(
+          current.setupInitializingStoryIds,
+          story.id,
+          initializing
+        ),
+      }))
+    },
+    []
+  )
+  const storySetupInitializing = React.useCallback(
+    (story?: UserStory) =>
+      Boolean(story && state.setupInitializingStoryIds.has(story.id)),
+    [state.setupInitializingStoryIds]
+  )
 
   return {
     ...state,
@@ -119,15 +156,29 @@ export function useBacklogStore() {
     projectId,
     projectPath,
     remove,
+    setStorySetupInitializing,
+    storySetupInitializing,
     storiesForColumn,
     update,
   }
 }
 
+function setupInitializingStoryIds(
+  current: Set<number>,
+  storyId: number,
+  initializing: boolean
+) {
+  const next = new Set(current)
+  if (initializing) next.add(storyId)
+  else next.delete(storyId)
+  return next
+}
+
 function newestUserStory(currentStory: UserStory, nextStory: UserStory) {
   const currentUpdatedAt = timestamp(currentStory.updatedAt)
   const nextUpdatedAt = timestamp(nextStory.updatedAt)
-  if (currentUpdatedAt === undefined || nextUpdatedAt === undefined) return nextStory
+  if (currentUpdatedAt === undefined || nextUpdatedAt === undefined)
+    return nextStory
   return nextUpdatedAt >= currentUpdatedAt ? nextStory : currentStory
 }
 

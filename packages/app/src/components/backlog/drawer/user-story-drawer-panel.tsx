@@ -58,6 +58,7 @@ export function UserStoryDrawerPanel({
   onReject,
   onStopAgent,
   onUpdateUserStory,
+  setupInitializing,
   status,
   userStory,
 }: {
@@ -76,6 +77,7 @@ export function UserStoryDrawerPanel({
     story: UserStory,
     input: UserStoryUpdate
   ) => Promise<UserStory>
+  setupInitializing?: boolean
   status: BacklogColumnId
   userStory?: UserStory
 }) {
@@ -226,6 +228,7 @@ export function UserStoryDrawerPanel({
         {hasPreview && (
           <TabsContent value="preview" className="min-h-0">
             <UserStoryPreview
+              setupInitializing={setupInitializing}
               userStory={userStory}
               onCapture={(file) => {
                 setTab("user-story")
