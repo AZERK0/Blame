@@ -1,4 +1,4 @@
-import { PlusIcon } from "lucide-react"
+import { InfoIcon, LoaderCircleIcon, PlusIcon } from "lucide-react"
 
 import {
   type BacklogAction,
@@ -14,6 +14,11 @@ import type {
 } from "@/components/backlog/actions/story-action-dialogs"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
 const columnColors = {
@@ -34,6 +39,7 @@ export function BacklogColumn({
   onReject,
   onStopAgent,
   onUnpauseAgent,
+  queueInitializing,
   stories,
 }: {
   column: (typeof backlogColumns)[number]
@@ -47,11 +53,16 @@ export function BacklogColumn({
   onReject: (story: UserStory, choice: RejectChoice) => Promise<UserStory>
   onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
   onUnpauseAgent: (story: UserStory) => Promise<UserStory>
+  queueInitializing?: boolean
   stories: UserStory[]
 }) {
   return (
     <section className="flex min-h-136 flex-col overflow-hidden rounded-lg border bg-muted/30">
-      <ColumnHeader column={column} count={stories.length} />
+      <ColumnHeader
+        column={column}
+        count={stories.length}
+        queueInitializing={queueInitializing}
+      />
       <div className="flex flex-1 flex-col gap-3 bg-foreground/5 p-3 dark:bg-background">
         {stories.map((story) => (
           <UserStoryCard
@@ -84,9 +95,11 @@ export function BacklogColumn({
 function ColumnHeader({
   column,
   count,
+  queueInitializing,
 }: {
   column: (typeof backlogColumns)[number]
   count: number
+  queueInitializing?: boolean
 }) {
   return (
     <div className="flex items-start justify-between gap-3 border-b p-4">
@@ -102,6 +115,28 @@ function ColumnHeader({
           <p className="truncate text-xs text-muted-foreground">
             {column.description}
           </p>
+          {queueInitializing && (
+            <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+              <LoaderCircleIcon className="size-3 animate-spin" />
+              Project initialization in progress
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="inline-flex size-4 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
+                    aria-label="Project initialization details"
+                  >
+                    <InfoIcon className="size-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="max-w-64 text-pretty">
+                  Blame is analyzing the project setup and code practices. This
+                  only happens the first time the project is opened; afterwards,
+                  the result is saved.
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          )}
         </div>
       </div>
       <Badge variant="secondary">{count}</Badge>

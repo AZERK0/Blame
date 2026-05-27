@@ -28,8 +28,10 @@ import { UserStoryDrawer } from "@/components/backlog/drawer/user-story-drawer"
 import { useBacklogRotation } from "@/components/backlog/page/use-backlog-rotation"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { useCloudAuth } from "@/context/cloud-auth"
+import type { CloudProjectInitializationStatus } from "@/context/cloud-auth"
 import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
+import { createCloudApi } from "@/lib/cloud-api"
 
 export function BacklogPage() {
   const backlog = useBacklogStore()
@@ -39,6 +41,8 @@ export function BacklogPage() {
   const selection = useModelSelection()
   useBacklogRotation(backlog)
   const [drawerTarget, setDrawerTarget] = React.useState<DrawerTarget>()
+  const initializationStatus = useProjectInitializationStatus()
+  const queueInitializing = projectInitializing(initializationStatus)
   const storiesRef = React.useRef(backlog.stories)
 
   React.useEffect(() => {
@@ -282,6 +286,7 @@ export function BacklogPage() {
               onReject={rejectStory}
               onStopAgent={stopAgent}
               onUnpauseAgent={unpauseAgent}
+              queueInitializing={column.id === "ready" && queueInitializing}
               stories={backlog.storiesForColumn(column.id)}
             />
           ))}
@@ -312,6 +317,57 @@ export function BacklogPage() {
       />
     </div>
   )
+}
+
+function useProjectInitializationStatus() {
+  const auth = useCloudAuth()
+  const projects = useProjects()
+  const [snapshot, setSnapshot] =
+    React.useState<ProjectInitializationStatusSnapshot>()
+  const activeProjectId = projects.activeProject?.id
+  const status =
+    auth.status === "authenticated" && snapshot?.projectId === activeProjectId
+      ? snapshot.status
+      : null
+
+  React.useEffect(() => {
+    if (!projects.activeProject || auth.status !== "authenticated") {
+      return
+    }
+    let cancelled = false
+    const cloud = createCloudApi(auth.apiConnection)
+    const refresh = async () => {
+      const snapshot = await cloud.projectInitialization(
+        projects.activeProject.id
+      )
+      if (cancelled) return
+      setSnapshot({
+        projectId: projects.activeProject.id,
+        status: snapshot.initialization?.status ?? "pending",
+      })
+    }
+    void refresh().catch(() => {
+      if (!cancelled) setSnapshot(undefined)
+    })
+    const timer = window.setInterval(() => {
+      void refresh().catch(() => undefined)
+    }, 5_000)
+    return () => {
+      cancelled = true
+      window.clearInterval(timer)
+    }
+  }, [auth, projects.activeProject])
+
+  return status
+}
+
+type ProjectInitializationStatusSnapshot = {
+  projectId: string
+  status: CloudProjectInitializationStatus
+}
+
+function projectInitializing(status: CloudProjectInitializationStatus | null) {
+  return status === "pending" || status === "running"
 }
 
 async function inactiveStoryCleanup(
@@ -411,7 +467,10 @@ function clineLogPath(worktree: string, sessionId: string) {
   return `${worktree}/.blame/logs/cline-${sessionId}.log`
 }
 
-function agentEventUpdate(story: UserStory, event: AgentEvent): UserStoryUpdate {
+function agentEventUpdate(
+  story: UserStory,
+  event: AgentEvent
+): UserStoryUpdate {
   const text = agentEventText(event)
   const flowUpdate = agentFlowUpdate(story, event)
   if (expiredAuthenticationToken(text)) {

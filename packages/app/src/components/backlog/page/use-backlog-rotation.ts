@@ -23,8 +23,11 @@ const previewRecoveryIntervalMs = 30_000
 const setupToastId = "backlog-rotation-setup"
 const authToastId = "backlog-agent-auth"
 const urlPattern = /\bhttps?:\/\/[^\s"'<>]+|\blocalhost:\d+[^\s"'<>]*/i
+const initializationRetryDelay = 5_000
 
-export function useBacklogRotation(backlog: ReturnType<typeof useBacklogStore>) {
+export function useBacklogRotation(
+  backlog: ReturnType<typeof useBacklogStore>
+) {
   const auth = useCloudAuth()
   const platform = usePlatform()
   const projects = useProjects()
@@ -50,6 +53,220 @@ export function useBacklogRotation(backlog: ReturnType<typeof useBacklogStore>) 
     agentAuthenticationBlockedUntil.current = 0
     previewRecoveryStoryIds.current.clear()
   }, [projects.activeProject?.id, selection.currentModel?.id])
+
+  async function startStory(story: UserStory) {
+    if (!projects.activeProject) return
+    const blocker = rotationBlocker(
+      auth.status,
+      platform,
+      selection.currentModel
+    )
+    if (blocker) return reportBlocker(story, blocker)
+
+    const initialization = await createCloudApi(auth.apiConnection)
+      .projectInitialization(projects.activeProject.id)
+      .then((snapshot) => snapshot.initialization)
+
+    if (
+      initialization?.status !== "done" ||
+      !initialization.setupScript ||
+      !initialization.dockerCompose
+    ) {
+      if (projectInitializing(initialization?.status)) return retryStory(story)
+      reportBlocker(
+        story,
+        "Project initialization is required before starting queued user stories."
+      )
+      return
+    }
+
+    const worktree = await platform.workspace.createWorktree({
+      repositoryRoot: projects.activeProject.path,
+      storyId: story.id,
+      title: story.title,
+    })
+    const setup = await platform.workspace.runProjectSetup({
+      worktree: worktree.worktree,
+      setupScript: initialization.setupScript,
+      dockerCompose: initialization.dockerCompose,
+    })
+    const unsubscribeSetup = platform.workspace.onSetupEvent(
+      setup.runId,
+      (event) => {
+        void persistSetupEvent(story, event, worktree.worktree)
+        if (event.type === "exit") unsubscribeSetup()
+      }
+    )
+    const session = await platform.agent.sessions.start({
+      apiConnection: auth.apiConnection,
+      providerId: selection.currentModel.provider.id,
+      modelId: selection.currentModel.id,
+      reasoningEffort: selection.currentVariant,
+      autoApproveWriteTools: true,
+      autoSendPrompt: false,
+      mode: "act",
+      maxIterations: 32,
+      prompt: storyPrompt(story),
+      cwd: worktree.worktree,
+      workspaceRoot: worktree.worktree,
+      systemPrompt: developmentSystemPrompt(),
+    })
+    const unsubscribeSession = platform.agent.sessions.onEvent(
+      session.sessionId,
+      (event) => {
+        void persistAgentEvent(story, event)
+        if (event.type === "done" || event.type === "error")
+          unsubscribeSession()
+      }
+    )
+
+    await backlog.update(story, {
+      agentModelId: selection.currentModel.id,
+      agentProviderId: selection.currentModel.provider.id,
+      agentActivities: [],
+      agentFinalResponse: null,
+      agentStatus: "Running",
+      agentLastEvent: `Cline debug log: ${clineLogPath(worktree.worktree, session.sessionId)}`,
+      branch: worktree.branch,
+      clineSessionId: session.sessionId,
+      status: "in-progress",
+      worktree: worktree.worktree,
+    })
+    void platform.agent.sessions.send({
+      sessionId: session.sessionId,
+      prompt: storyPrompt(story),
+    })
+  }
+
+  function reportBlocker(story: UserStory, message: string) {
+    const key = `${story.id}:${message}`
+    retryStory(story, blockerRetryDelay)
+    if (reportedBlockers.current.has(key)) return
+    reportedBlockers.current.add(key)
+    toast.error("User story stayed in Agent Queue", {
+      description: message,
+      id: `${setupToastId}-${story.id}`,
+      position: "bottom-right",
+    })
+  }
+
+  function retryStory(story: UserStory, delay = initializationRetryDelay) {
+    blockedStories.current.set(story.id, Date.now() + delay)
+    window.setTimeout(() => {
+      blockedStories.current.delete(story.id)
+      refreshStartingStories((value) => value + 1)
+    }, delay)
+  }
+
+  async function persistSetupEvent(
+    story: UserStory,
+    event: ProjectSetupEvent,
+    worktree: string
+  ) {
+    const text = eventText(event)
+    const previewUrl = setupCompleted(event)
+      ? ((await projectPreviewUrl(worktree)) ?? undefined)
+      : firstPreviewUrl(text)
+    await backlog.update(story, {
+      agentLastError: setupError(event) ? text : undefined,
+      agentLastEvent: text,
+      previewUrl,
+    })
+  }
+
+  async function projectPreviewUrl(worktree: string) {
+    return platform.workspace?.resolveProjectPreviewUrl?.({ worktree })
+  }
+
+  const persistRecoveredPreviewUrl = React.useCallback(
+    async (story: UserStory, previewUrl: string | null) => {
+      if (!previewUrl || previewUrl === story.previewUrl) return
+      await backlog.update(story, { previewUrl })
+    },
+    [backlog]
+  )
+
+  const recoverActivePreviews = React.useCallback(
+    (stories: UserStory[]) => {
+      if (!ensureProjectPreviewUrl) return
+      stories.filter(activePreviewStory).forEach((story) => {
+        if (!story.worktree || previewRecoveryStoryIds.current.has(story.id))
+          return
+        previewRecoveryStoryIds.current.add(story.id)
+        void ensureProjectPreviewUrl({ worktree: story.worktree })
+          .then((previewUrl) => persistRecoveredPreviewUrl(story, previewUrl))
+          .catch(() => undefined)
+          .finally(() => previewRecoveryStoryIds.current.delete(story.id))
+      })
+    },
+    [ensureProjectPreviewUrl, persistRecoveredPreviewUrl]
+  )
+
+  React.useEffect(() => {
+    if (!ensureProjectPreviewUrl || backlog.loading) return
+    recoverActivePreviews(backlog.stories)
+    const timer = window.setInterval(
+      () => recoverActivePreviews(backlog.stories),
+      previewRecoveryIntervalMs
+    )
+    return () => window.clearInterval(timer)
+  }, [
+    backlog.loading,
+    backlog.stories,
+    ensureProjectPreviewUrl,
+    recoverActivePreviews,
+  ])
+
+  async function persistAgentEvent(story: UserStory, event: AgentEvent) {
+    const currentStory = activeStory(story, storiesRef.current)
+    const flowUpdate = agentFlowUpdate(currentStory, event)
+    const text = agentEventText(event)
+    if (!shouldPersistAgentEvent(event, flowUpdate)) return
+    if (reportedAgentErrors.current.has(agentAuthenticationErrorKey(story)))
+      return
+    if (expiredAuthenticationToken(text)) {
+      reportExpiredAuthenticationToken(story, text)
+      await backlog.update(currentStory, {
+        ...flowUpdate,
+        agentLastError: text,
+        agentLastEvent: text,
+        agentStatus: "Paused",
+      })
+      return
+    }
+    if (completedAgentRun(event)) {
+      await backlog.update(currentStory, {
+        ...flowUpdate,
+        agentLastError: null,
+        agentLastEvent: text || "Agent completed. Ready for review.",
+        agentStatus: null,
+        status: "in-review",
+      })
+      return
+    }
+    await backlog.update(currentStory, {
+      ...flowUpdate,
+      agentLastError:
+        event.type === "error" ? text || "Agent session failed" : undefined,
+      agentLastEvent: text || event.type,
+    })
+  }
+
+  function reportExpiredAuthenticationToken(story: UserStory, message: string) {
+    const key = agentAuthenticationErrorKey(story)
+    if (reportedAgentErrors.current.has(key)) return
+    agentAuthenticationBlockedUntil.current = Date.now() + blockerRetryDelay
+    window.setTimeout(
+      () => refreshStartingStories((value) => value + 1),
+      blockerRetryDelay
+    )
+    reportedAgentErrors.current.add(key)
+    toast.error("Agent authentication expired", {
+      description: `${message} Reconnect the selected provider, then restart the story.`,
+      id: `${authToastId}-${story.id}`,
+      position: "bottom-right",
+    })
+  }
 
   React.useEffect(() => {
     if (!projects.activeProject || auth.status !== "authenticated") return
@@ -81,203 +298,14 @@ export function useBacklogRotation(backlog: ReturnType<typeof useBacklogStore>) 
     })
     refreshStartingStories((value) => value + 1)
   }, [
-    auth,
-    backlog,
-    platform,
+    auth.status,
+    backlog.loading,
+    backlog.projectId,
+    backlog.stories,
     projects.activeProject,
-    selection.currentModel,
-    selection.currentVariant,
+    reportBlocker,
+    startStory,
   ])
-
-  async function startStory(story: UserStory) {
-    if (!projects.activeProject) return
-    const blocker = rotationBlocker(auth.status, platform, selection.currentModel)
-    if (blocker) return reportBlocker(story, blocker)
-
-    const initialization = await createCloudApi(auth.apiConnection)
-      .projectInitialization(projects.activeProject.id)
-      .then((snapshot) => snapshot.initialization)
-
-    if (
-      initialization?.status !== "done" ||
-      !initialization.setupScript ||
-      !initialization.dockerCompose
-    ) {
-      reportBlocker(
-        story,
-        "Project initialization is required before starting queued user stories."
-      )
-      return
-    }
-
-    const worktree = await platform.workspace.createWorktree({
-      repositoryRoot: projects.activeProject.path,
-      storyId: story.id,
-      title: story.title,
-    })
-    const setup = await platform.workspace.runProjectSetup({
-      worktree: worktree.worktree,
-      setupScript: initialization.setupScript,
-      dockerCompose: initialization.dockerCompose,
-    })
-    const unsubscribeSetup = platform.workspace.onSetupEvent(setup.runId, (event) => {
-      void persistSetupEvent(story, event, worktree.worktree)
-      if (event.type === "exit") unsubscribeSetup()
-    })
-    const session = await platform.agent.sessions.start({
-      apiConnection: auth.apiConnection,
-      providerId: selection.currentModel.provider.id,
-      modelId: selection.currentModel.id,
-      reasoningEffort: selection.currentVariant,
-      autoApproveWriteTools: true,
-      autoSendPrompt: false,
-      mode: "act",
-      maxIterations: 32,
-      prompt: storyPrompt(story),
-      cwd: worktree.worktree,
-      workspaceRoot: worktree.worktree,
-      systemPrompt: developmentSystemPrompt(),
-    })
-    const unsubscribeSession = platform.agent.sessions.onEvent(
-      session.sessionId,
-      (event) => {
-        void persistAgentEvent(story, event)
-        if (event.type === "done" || event.type === "error") unsubscribeSession()
-      }
-    )
-
-    await backlog.update(story, {
-      agentModelId: selection.currentModel.id,
-      agentProviderId: selection.currentModel.provider.id,
-      agentActivities: [],
-      agentFinalResponse: null,
-      agentStatus: "Running",
-      agentLastEvent: `Cline debug log: ${clineLogPath(worktree.worktree, session.sessionId)}`,
-      branch: worktree.branch,
-      clineSessionId: session.sessionId,
-      status: "in-progress",
-      worktree: worktree.worktree,
-    })
-    void platform.agent.sessions.send({
-      sessionId: session.sessionId,
-      prompt: storyPrompt(story),
-    })
-  }
-
-  function reportBlocker(story: UserStory, message: string) {
-    const key = `${story.id}:${message}`
-    blockedStories.current.set(story.id, Date.now() + blockerRetryDelay)
-    window.setTimeout(() => {
-      blockedStories.current.delete(story.id)
-      refreshStartingStories((value) => value + 1)
-    }, blockerRetryDelay)
-    if (reportedBlockers.current.has(key)) return
-    reportedBlockers.current.add(key)
-    toast.error("User story stayed in Agent Queue", {
-      description: message,
-      id: `${setupToastId}-${story.id}`,
-      position: "bottom-right",
-    })
-  }
-
-  async function persistSetupEvent(
-    story: UserStory,
-    event: ProjectSetupEvent,
-    worktree: string
-  ) {
-    const text = eventText(event)
-    const previewUrl = setupCompleted(event)
-      ? (await projectPreviewUrl(worktree)) ?? undefined
-      : firstPreviewUrl(text)
-    await backlog.update(story, {
-      agentLastError: setupError(event) ? text : undefined,
-      agentLastEvent: text,
-      previewUrl,
-    })
-  }
-
-  async function projectPreviewUrl(worktree: string) {
-    return platform.workspace?.resolveProjectPreviewUrl?.({ worktree })
-  }
-
-  const persistRecoveredPreviewUrl = React.useCallback(
-    async (story: UserStory, previewUrl: string | null) => {
-      if (!previewUrl || previewUrl === story.previewUrl) return
-      await backlog.update(story, { previewUrl })
-    },
-    [backlog]
-  )
-
-  const recoverActivePreviews = React.useCallback(
-    (stories: UserStory[]) => {
-      if (!ensureProjectPreviewUrl) return
-      stories.filter(activePreviewStory).forEach((story) => {
-        if (!story.worktree || previewRecoveryStoryIds.current.has(story.id)) return
-        previewRecoveryStoryIds.current.add(story.id)
-        void ensureProjectPreviewUrl({ worktree: story.worktree })
-          .then((previewUrl) => persistRecoveredPreviewUrl(story, previewUrl))
-          .catch(() => undefined)
-          .finally(() => previewRecoveryStoryIds.current.delete(story.id))
-      })
-    },
-    [ensureProjectPreviewUrl, persistRecoveredPreviewUrl]
-  )
-
-  React.useEffect(() => {
-    if (!ensureProjectPreviewUrl || backlog.loading) return
-    recoverActivePreviews(backlog.stories)
-    const timer = window.setInterval(
-      () => recoverActivePreviews(backlog.stories),
-      previewRecoveryIntervalMs
-    )
-    return () => window.clearInterval(timer)
-  }, [backlog.loading, backlog.stories, ensureProjectPreviewUrl, recoverActivePreviews])
-
-  async function persistAgentEvent(story: UserStory, event: AgentEvent) {
-    const currentStory = activeStory(story, storiesRef.current)
-    const flowUpdate = agentFlowUpdate(currentStory, event)
-    const text = agentEventText(event)
-    if (!shouldPersistAgentEvent(event, flowUpdate)) return
-    if (reportedAgentErrors.current.has(agentAuthenticationErrorKey(story))) return
-    if (expiredAuthenticationToken(text)) {
-      reportExpiredAuthenticationToken(story, text)
-      await backlog.update(currentStory, {
-        ...flowUpdate,
-        agentLastError: text,
-        agentLastEvent: text,
-        agentStatus: "Paused",
-      })
-      return
-    }
-    if (completedAgentRun(event)) {
-      await backlog.update(currentStory, {
-        ...flowUpdate,
-        agentLastError: null,
-        agentLastEvent: text || "Agent completed. Ready for review.",
-        agentStatus: null,
-        status: "in-review",
-      })
-      return
-    }
-    await backlog.update(currentStory, {
-      ...flowUpdate,
-      agentLastError: event.type === "error" ? text || "Agent session failed" : undefined,
-      agentLastEvent: text || event.type,
-    })
-  }
-
-  function reportExpiredAuthenticationToken(story: UserStory, message: string) {
-    const key = agentAuthenticationErrorKey(story)
-    if (reportedAgentErrors.current.has(key)) return
-    agentAuthenticationBlockedUntil.current = Date.now() + blockerRetryDelay
-    window.setTimeout(() => refreshStartingStories((value) => value + 1), blockerRetryDelay)
-    reportedAgentErrors.current.add(key)
-    toast.error("Agent authentication expired", {
-      description: `${message} Reconnect the selected provider, then restart the story.`,
-      id: `${authToastId}-${story.id}`,
-      position: "bottom-right",
-    })
-  }
 }
 
 function activeStory(story: UserStory, stories: UserStory[]) {
@@ -309,12 +337,20 @@ function queuedStories(
     )
 }
 
-function blocked(storyId: number, blockedStories: Map<number, number>, now: number) {
+function blocked(
+  storyId: number,
+  blockedStories: Map<number, number>,
+  now: number
+) {
   const retryAt = blockedStories.get(storyId)
   if (!retryAt) return false
   if (retryAt > now) return true
   blockedStories.delete(storyId)
   return false
+}
+
+function projectInitializing(status: string | undefined) {
+  return !status || status === "pending" || status === "running"
 }
 
 function rotationBlocker(
@@ -324,9 +360,12 @@ function rotationBlocker(
 ) {
   if (authStatus !== "authenticated") return "Authentication is required."
   if (!platform.agent) return "Desktop agent runtime is not available."
-  if (!platform.workspace?.createWorktree) return "Desktop worktree runtime is not available."
-  if (!platform.workspace.runProjectSetup) return "Desktop setup runtime is not available."
-  if (!platform.workspace.onSetupEvent) return "Desktop setup events are not available."
+  if (!platform.workspace?.createWorktree)
+    return "Desktop worktree runtime is not available."
+  if (!platform.workspace.runProjectSetup)
+    return "Desktop setup runtime is not available."
+  if (!platform.workspace.onSetupEvent)
+    return "Desktop setup events are not available."
   if (!model) return "Choose a model before starting queued user stories."
   return undefined
 }
@@ -365,8 +404,7 @@ function eventText(event: ProjectSetupEvent) {
 
 function setupError(event: ProjectSetupEvent) {
   return (
-    event.type === "stderr" ||
-    (event.type === "exit" && event.data !== "0")
+    event.type === "stderr" || (event.type === "exit" && event.data !== "0")
   )
 }
 
@@ -389,7 +427,9 @@ function firstPreviewUrl(text: string) {
 }
 
 function errorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "Unable to start queued user story."
+  return error instanceof Error
+    ? error.message
+    : "Unable to start queued user story."
 }
 
 function expiredAuthenticationToken(message: string) {
