@@ -21,6 +21,8 @@ export type {
   ResolveApprovalInput,
   SaveOAuthCredentialInput,
   SaveProviderCredentialInput,
+  SendDevelopmentSessionInput,
   SendSessionInput,
+  StartDevelopmentSessionInput,
   StartSessionInput,
 } from "./types.js"

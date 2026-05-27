@@ -37,7 +37,9 @@ import type {
   OAuthCredentials,
   ResolveApprovalInput,
   SaveProviderCredentialInput,
+  SendDevelopmentSessionInput,
   SendSessionInput,
+  StartDevelopmentSessionInput,
   StartSessionInput,
 } from "./types.js"
 
@@ -101,7 +103,9 @@ export class BlameAgentRuntime {
 
   sessions = {
     start: (input: StartSessionInput) => this.startSession(input),
+    startDevelopment: (input: StartDevelopmentSessionInput) => this.startDevelopmentSession(input),
     send: (input: SendSessionInput) => this.sendSession(input),
+    sendDevelopment: (input: SendDevelopmentSessionInput) => this.sendDevelopmentSession(input),
     abort: (sessionId: string) => this.abortSession(sessionId),
     list: () => this.listSessions(),
     messages: (sessionId: string) => this.readMessages(sessionId),
@@ -231,6 +235,13 @@ export class BlameAgentRuntime {
   private async sendSession(input: SendSessionInput) {
     const cline = await this.core()
     return this.sendPrompt(cline, input.sessionId, input.prompt)
+  }
+
+  private sendDevelopmentSession(input: SendDevelopmentSessionInput) {
+    return this.sendSession({
+      sessionId: input.sessionId,
+      prompt: developmentStoryPrompt(input),
+    })
   }
 
   private async abortSession(sessionId: string) {
@@ -484,6 +495,23 @@ export class BlameAgentRuntime {
     await appendLog(file, message, payload)
   }
 
+  private startDevelopmentSession(input: StartDevelopmentSessionInput) {
+    return this.startSession({
+      apiConnection: input.apiConnection,
+      providerId: input.providerId,
+      modelId: input.modelId,
+      reasoningEffort: input.reasoningEffort,
+      autoApproveWriteTools: true,
+      autoSendPrompt: false,
+      mode: "act",
+      maxIterations: 32,
+      prompt: developmentStoryPrompt(input),
+      cwd: input.cwd,
+      workspaceRoot: input.workspaceRoot,
+      systemPrompt: developmentSystemPrompt(),
+    })
+  }
+
   private sendPrompt(cline: ClineCore, sessionId: string, prompt: string) {
     const result = cline.send({ sessionId, prompt }).then((result: unknown) => {
       void this.logSession(sessionId, "send resolved", result)
@@ -559,6 +587,29 @@ function initializationConfig(
 function initializationPrompt(scan: ProjectInitializationScan, correction?: InitializationCorrection) {
   if (!correction) return projectInitializationPrompt(scan)
   return projectInitializationCorrectionPrompt(scan, correction)
+}
+
+function developmentStoryPrompt(input: Pick<StartDevelopmentSessionInput, "title" | "summary">) {
+  return [
+    `Backlog item: ${input.title}`,
+    "",
+    input.summary,
+    "",
+    "Work in the current worktree when code changes are clearly required.",
+    "If the request is a question, analysis, opinion, explanation, or review request, inspect the project if useful and answer in Markdown without editing files.",
+    "Only modify files when the request explicitly asks for implementation or when a concrete code change is necessary to satisfy it.",
+  ].join("\n")
+}
+
+function developmentSystemPrompt() {
+  return [
+    "You are Blame, an autonomous coding agent running inside a dedicated git worktree.",
+    "You must satisfy the backlog item, but not every backlog item requires code changes.",
+    "For questions, analysis, opinions, explanations, audits, or reviews, inspect the repository if useful and answer directly without editing files.",
+    "Only use write tools when the user explicitly asks for implementation or when a concrete code change is necessary.",
+    "Do not wait for extra confirmation before using available write tools when code changes are clearly required.",
+    "Your final response must be concise Markdown for the user, with what changed, how to verify it, and any important caveat.",
+  ].join(" ")
 }
 
 function errorMessage(error: unknown) {

@@ -86,7 +86,9 @@ const api: BlameDesktopApi = {
     },
     sessions: {
       start: (input) => ipcRenderer.invoke("agent:sessions:start", input),
+      startDevelopment: (input) => ipcRenderer.invoke("agent:sessions:start-development", input),
       send: (input) => ipcRenderer.invoke("agent:sessions:send", input),
+      sendDevelopment: (input) => ipcRenderer.invoke("agent:sessions:send-development", input),
       abort: (sessionId) =>
         ipcRenderer.invoke("agent:sessions:abort", sessionId),
       list: () => ipcRenderer.invoke("agent:sessions:list"),

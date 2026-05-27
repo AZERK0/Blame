@@ -102,9 +102,26 @@ export type StartSessionInput = {
   credentialLabel?: string
 }
 
+export type StartDevelopmentSessionInput = {
+  apiConnection: ApiConnection
+  providerId: string
+  modelId: string
+  reasoningEffort?: ReasoningEffort
+  title: string
+  summary: string
+  cwd: string
+  workspaceRoot: string
+}
+
 export type SendSessionInput = {
   sessionId: string
   prompt: string
+}
+
+export type SendDevelopmentSessionInput = {
+  sessionId: string
+  title: string
+  summary: string
 }
 
 export type ProjectCodePracticeKey =

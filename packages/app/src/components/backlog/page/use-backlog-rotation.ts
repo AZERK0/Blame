@@ -98,19 +98,15 @@ export function useBacklogRotation(
         if (event.type === "exit") unsubscribeSetup()
       }
     )
-    const session = await platform.agent.sessions.start({
+    const session = await platform.agent.sessions.startDevelopment({
       apiConnection: auth.apiConnection,
       providerId: selection.currentModel.provider.id,
       modelId: selection.currentModel.id,
       reasoningEffort: selection.currentVariant,
-      autoApproveWriteTools: true,
-      autoSendPrompt: false,
-      mode: "act",
-      maxIterations: 32,
-      prompt: storyPrompt(story),
+      title: story.title,
+      summary: story.summary,
       cwd: worktree.worktree,
       workspaceRoot: worktree.worktree,
-      systemPrompt: developmentSystemPrompt(),
     })
     const unsubscribeSession = platform.agent.sessions.onEvent(
       session.sessionId,
@@ -133,9 +129,10 @@ export function useBacklogRotation(
       status: "in-progress",
       worktree: worktree.worktree,
     })
-    void platform.agent.sessions.send({
+    void platform.agent.sessions.sendDevelopment({
       sessionId: session.sessionId,
-      prompt: storyPrompt(story),
+      title: story.title,
+      summary: story.summary,
     })
   }
 
@@ -378,29 +375,6 @@ function rotationBlocker(
     return "Desktop setup events are not available."
   if (!model) return "Choose a model before starting queued user stories."
   return undefined
-}
-
-function storyPrompt(story: UserStory) {
-  return [
-    `Backlog item: ${story.title}`,
-    "",
-    story.summary,
-    "",
-    "Work in the current worktree when code changes are clearly required.",
-    "If the request is a question, analysis, opinion, explanation, or review request, inspect the project if useful and answer in Markdown without editing files.",
-    "Only modify files when the request explicitly asks for implementation or when a concrete code change is necessary to satisfy it.",
-  ].join("\n")
-}
-
-function developmentSystemPrompt() {
-  return [
-    "You are Blame, an autonomous coding agent running inside a dedicated git worktree.",
-    "You must satisfy the backlog item, but not every backlog item requires code changes.",
-    "For questions, analysis, opinions, explanations, audits, or reviews, inspect the repository if useful and answer directly without editing files.",
-    "Only use write tools when the user explicitly asks for implementation or when a concrete code change is necessary.",
-    "Do not wait for extra confirmation before using available write tools when code changes are clearly required.",
-    "Your final response must be concise Markdown for the user, with what changed, how to verify it, and any important caveat.",
-  ].join(" ")
 }
 
 function clineLogPath(worktree: string, sessionId: string) {

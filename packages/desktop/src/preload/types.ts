@@ -7,7 +7,9 @@ import type {
   ProviderListResponse,
   ResolveApprovalInput,
   SaveProviderCredentialInput,
+  SendDevelopmentSessionInput,
   SendSessionInput,
+  StartDevelopmentSessionInput,
   StartSessionInput,
 } from "@blame/agent-runtime";
 
@@ -135,7 +137,9 @@ export type BlameDesktopApi = {
     };
     sessions: {
       start(input: StartSessionInput): Promise<{ sessionId: string }>;
+      startDevelopment(input: StartDevelopmentSessionInput): Promise<{ sessionId: string }>;
       send(input: SendSessionInput): Promise<unknown>;
+      sendDevelopment(input: SendDevelopmentSessionInput): Promise<unknown>;
       abort(sessionId: string): Promise<void>;
       list(): Promise<unknown>;
       messages(sessionId: string): Promise<unknown>;
