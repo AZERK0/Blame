@@ -191,17 +191,25 @@ export function useBacklogRotation(
   const recoverActivePreviews = React.useCallback(
     (stories: UserStory[]) => {
       if (!ensureProjectPreviewUrl) return
-      stories.filter(activePreviewStory).forEach((story) => {
-        if (!story.worktree || previewRecoveryStoryIds.current.has(story.id))
-          return
-        previewRecoveryStoryIds.current.add(story.id)
-        void ensureProjectPreviewUrl({ worktree: story.worktree })
-          .then((previewUrl) => persistRecoveredPreviewUrl(story, previewUrl))
-          .catch(() => undefined)
-          .finally(() => previewRecoveryStoryIds.current.delete(story.id))
-      })
+      stories
+        .filter((story) =>
+          activePreviewStory(story, backlog.setupInitializingStoryIds)
+        )
+        .forEach((story) => {
+          if (!story.worktree || previewRecoveryStoryIds.current.has(story.id))
+            return
+          previewRecoveryStoryIds.current.add(story.id)
+          void ensureProjectPreviewUrl({ worktree: story.worktree })
+            .then((previewUrl) => persistRecoveredPreviewUrl(story, previewUrl))
+            .catch(() => undefined)
+            .finally(() => previewRecoveryStoryIds.current.delete(story.id))
+        })
     },
-    [ensureProjectPreviewUrl, persistRecoveredPreviewUrl]
+    [
+      backlog.setupInitializingStoryIds,
+      ensureProjectPreviewUrl,
+      persistRecoveredPreviewUrl,
+    ]
   )
 
   React.useEffect(() => {
@@ -414,10 +422,14 @@ function setupCompleted(event: ProjectSetupEvent) {
   return event.type === "exit" && event.data === "0"
 }
 
-function activePreviewStory(story: UserStory) {
+function activePreviewStory(
+  story: UserStory,
+  setupInitializingStoryIds: Set<number>
+) {
   return (
     (story.status === "in-progress" || story.status === "in-review") &&
-    Boolean(story.worktree)
+    Boolean(story.worktree) &&
+    !setupInitializingStoryIds.has(story.id)
   )
 }
 

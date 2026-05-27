@@ -72,6 +72,7 @@ type DockerContainer = {
 type SetupRun = {
   id: string;
   process: ChildProcessWithoutNullStreams;
+  worktree: string;
 };
 
 const setupRuns = new Map<string, SetupRun>();
@@ -237,7 +238,7 @@ async function runProjectSetup(input: RunProjectSetupInput) {
     env: setupEnvironment(worktree),
   });
   trackWorkspaceProcess(child);
-  setupRuns.set(runId, { id: runId, process: child });
+  setupRuns.set(runId, { id: runId, process: child, worktree });
 
   child.stdout.on("data", (data: Buffer) =>
     emitSetupOutput(runId, worktree, "stdout", data.toString()),
@@ -348,6 +349,7 @@ async function resolveProjectPreviewUrl(input: ResolveProjectPreviewUrlInput) {
 async function ensureProjectPreviewUrl(input: ResolveProjectPreviewUrlInput) {
   const worktree = resolve(input.worktree);
   await assertGitRepository(worktree);
+  if (setupRunningForWorktree(worktree)) return null;
   const currentUrl = await resolveProjectPreviewUrl({ worktree });
   if (currentUrl && (await previewResponds(currentUrl))) return currentUrl;
   const recovery = previewRecoveries.get(worktree);
@@ -357,6 +359,10 @@ async function ensureProjectPreviewUrl(input: ResolveProjectPreviewUrlInput) {
   });
   previewRecoveries.set(worktree, nextRecovery);
   return nextRecovery;
+}
+
+function setupRunningForWorktree(worktree: string) {
+  return Array.from(setupRuns.values()).some((run) => run.worktree === worktree);
 }
 
 async function recoverProjectPreview(worktree: string) {
