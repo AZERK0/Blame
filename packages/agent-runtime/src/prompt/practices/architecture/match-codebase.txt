@@ -23,7 +23,7 @@ Add code where a maintainer would expect it:
 
 Keep architectural diffs minimal:
 - implement the requested behavior without moving modules, renaming folders, or reshaping the package map;
-- avoid broad import churn, barrel rewrites, dependency inversion, or feature-wide refactors unless directly required;
+- avoid broad import churn, barrel rewrites, new dependency inversion patterns, or feature-wide refactors unless directly required;
 - improve locally only where the task touches the code and the benefit is immediate.
 
 Do not introduce a superior architecture unless the user explicitly asks for it. Avoid adding Clean Architecture, domain/application/infrastructure layers, repositories, use cases, ports, factories, mappers, wrappers, or interfaces when the project does not already use that pattern or the change does not need it.
