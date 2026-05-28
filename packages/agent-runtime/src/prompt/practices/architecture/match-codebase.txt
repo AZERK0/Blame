@@ -1,0 +1,33 @@
+## Architecture: Match Codebase
+
+Preserve the project architecture that already exists. Before changing code, infer the dominant organization from nearby files, similar features, imports, naming, folder boundaries, and dependency direction. Make the new work look like it belongs there.
+
+Resolve architectural choices in this order:
+- the current file and neighboring files;
+- the current feature, module, or package;
+- similar features elsewhere in the repository;
+- general architectural practice.
+
+Follow existing boundaries even when they are imperfect:
+- UI, components, hooks, stores, and state management;
+- routes, controllers, handlers, services, and actions;
+- repositories, data access, DTOs, clients, mappers, and helpers;
+- domain, application, infrastructure, and shared modules;
+- public exports, barrels, private folders, monorepo package boundaries, and import aliases.
+
+Add code where a maintainer would expect it:
+- prefer the folder that already contains a similar feature;
+- reuse local helpers, types, services, clients, and return shapes when they fit;
+- match existing file names, module shape, dependency style, and abstraction level;
+- keep new feature code structurally similar to an existing feature.
+
+Keep architectural diffs minimal:
+- implement the requested behavior without moving modules, renaming folders, or reshaping the package map;
+- avoid broad import churn, barrel rewrites, dependency inversion, or feature-wide refactors unless directly required;
+- improve locally only where the task touches the code and the benefit is immediate.
+
+Do not introduce a superior architecture unless the user explicitly asks for it. Avoid adding Clean Architecture, domain/application/infrastructure layers, repositories, use cases, ports, factories, mappers, wrappers, or interfaces when the project does not already use that pattern or the change does not need it.
+
+Avoid isolated abstractions. A new abstraction should have a clear local precedent, multiple real uses, or remove concrete duplication or complexity in the requested change. Do not create one-use interfaces, one-use factories, artificial repositories, or wrappers around already clear APIs.
+
+Respect project maturity. Small scripts, simple CRUD apps, prototypes, and lightweight frontends should stay simple. Enterprise structure is not an improvement when it makes the changed code less native to the repository.

@@ -1,0 +1,31 @@
+## Architecture: Standard Professional
+
+Design for maintainability, clear boundaries, and controlled dependencies. Apply Clean, Onion, and Hexagonal Architecture principles proportionally to the size and risk of the change. Do not over-architect small behavior.
+
+Use dependency direction as the main rule:
+- outer layers such as UI, HTTP, CLI, database, filesystem, SDKs, and external APIs may depend on inner layers;
+- application use cases may depend on the domain and on stable ports they define or own;
+- domain code must not depend on frameworks, transport objects, ORM models, SDK clients, UI objects, filesystem details, or infrastructure adapters.
+
+Separate responsibilities by role:
+- controller, route, handler, or presenter: translate external input and output, perform superficial validation, call application code;
+- use case or application service: express one business intention, orchestrate dependencies, enforce application rules, return a clear result;
+- domain model: hold business concepts, invariants, state transitions, and domain validations;
+- repository or adapter: perform persistence or integration details behind a stable contract;
+- DTO, mapper, or serializer: translate between transport, database, external payload, view model, and domain formats.
+
+Prefer ports and adapters for volatile boundaries. When business logic needs Git, Docker, filesystem, database, AI providers, command runners, preview servers, clocks, mail, payments, or third-party APIs, depend on an explicit port such as `UserRepositoryPort`, `ClockPort`, `FileStoragePort`, or `ProviderClientPort`. Implement the technical detail in an adapter such as `PrismaUserRepository`, `SystemClock`, `S3FileStorageAdapter`, or `OpenAIProviderAdapter`.
+
+Use cases should be explicit for meaningful workflows. Name them by intent, such as `CreateUserStory`, `StartDevelopmentWorktree`, `ArchiveUserStory`, `MergeCompletedStory`, `SyncEnvironmentFiles`, or `AssignPreviewPort`. A use case should not receive framework request objects, render UI, know database schemas, or expose SDK errors directly.
+
+Model the domain when rules exist. Use entities for concepts with identity and lifecycle, such as `UserStory`, `Project`, `Worktree`, or `DevelopmentSession`. Use value objects for values with real validation or meaning, such as `StoryId`, `ProjectPath`, `BranchName`, `PortNumber`, or `EnvironmentVariableName`. Do not wrap every primitive by default.
+
+Keep external shapes out of the core. Do not leak ORM records into domain rules, external API responses into UI state, React objects into use cases, database schemas into business decisions, or transport DTOs into domain entities. Map at the boundary where formats cross.
+
+Return explicit outcomes. Prefer `Result<T, Error>`, success/failure objects, typed domain errors, or application errors over ambiguous `null`, bare booleans, partial objects, or unclassified exceptions. Distinguish business errors such as `UserStoryNotFound`, `WorktreeAlreadyExists`, `InvalidStoryStatusTransition`, `PortUnavailable`, `MissingEnvironmentFile`, and `MergeConflictDetected` from technical failures so adapters can translate them to HTTP, UI messages, logs, or retries.
+
+Assemble dependencies in a clear composition root. Create repositories, adapters, clients, and use cases in one predictable wiring location instead of instantiating technical dependencies throughout business logic.
+
+Organize modules around the domain when it helps the code communicate its purpose. Prefer cohesive feature or domain modules such as `stories`, `worktrees`, `projects`, `providers`, `code-practices`, or `preview` over purely technical folders when the project can support it. Keep each module cohesive, expose a limited API, avoid circular dependencies, and group code that changes together.
+
+Use architecture only where it pays for itself. A small helper may stay a helper. A simple pass-through does not need six files, a port, and a mapper. A real workflow with business rules, side effects, and volatile infrastructure deserves a use case, isolated domain rules, explicit errors, and inverted technical dependencies.
