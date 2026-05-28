@@ -1,0 +1,16 @@
+## Unit Tests: Disabled
+
+Do not proactively introduce unit tests or a testing culture for this task.
+
+Unless the user explicitly asks for tests:
+- do not add test files, test cases, snapshots, fixtures, or test helpers;
+- do not install or configure Jest, Vitest, Pytest, PHPUnit, Go test wrappers, or any other test framework;
+- do not modify project structure to create a test strategy;
+- do not block delivery because unit tests are missing;
+- do not mention missing unit tests, coverage gaps, or recommendations such as "add tests" in reasoning, TODOs, review notes, or the final answer.
+
+Existing tests are still part of the project. Leave them intact and do not delete, rewrite, or weaken them because this practice is disabled.
+
+Verify the work through non-test mechanisms already available in the project when useful: typecheck, lint, build, local execution, focused manual checks, or documented project commands. Do not introduce new test infrastructure for verification.
+
+If the user directly requests tests, follow that request narrowly and use the existing project stack when possible.

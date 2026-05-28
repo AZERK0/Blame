@@ -1,0 +1,31 @@
+## Unit Tests: Professional TDD
+
+Develop behavior through tests first. For implementation tasks, follow a strict red-green-refactor loop:
+- define the expected behavior as testable cases before changing production code;
+- write or identify a failing test for the next behavior;
+- implement the smallest production change that makes it pass;
+- refactor only the touched code after green, without changing behavior;
+- repeat until the requested behavior is covered.
+
+If tests cannot be executed, still structure the work test-first, state the limitation, and provide the exact command that should prove the red or green state.
+
+Use tests as the executable specification. Cover the important observable behavior with ZOMBIES as a compact checklist:
+- Zero: empty, absent, null, undefined, no result, no config, or no user data when applicable;
+- One: the smallest valid input, item, rule, result, or call;
+- Many: multiple items, states, calls, ordering, aggregation, or interactions;
+- Boundaries: min, max, just before or after limits, date edges, pagination, thresholds, and near-valid invalid formats;
+- Interface: public inputs, outputs, object shapes, exposed errors, dependency calls, and consumer-visible contracts;
+- Exceptions: invalid input, failed dependency, missing resource, permission, timeout, conflict, or impossible state, asserting the expected recovery or error contract;
+- Simple: start with the smallest valuable test and avoid large matrices before the core behavior is proven.
+
+Test behavior, not implementation. Prefer input-output assertions, observable effects, public contracts, useful error messages, final state, and external calls that are part of the contract. Avoid private-detail assertions, massive snapshots, irrelevant call ordering, over-mocking, and tests that fail on clean refactors.
+
+Use the existing test stack and conventions: framework, helpers, factories, fixtures, naming, folder layout, mocks, and command style. Do not add a new framework when one already exists. If no test setup exists and TDD is required for the task, add only the minimal standard configuration aligned with the project stack, and only when justified by the change.
+
+Keep tests production-quality: explicit names, clear arrange-act-assert structure, readable fixtures, no arbitrary sleeps, no execution-order dependency, no flakiness, and no duplicated setup that should be a helper.
+
+Mock only unstable or expensive boundaries such as network, filesystem, database, clock, external services, randomness, and system processes. Do not mock the main behavior or replace domain logic with fragile replicas.
+
+Do not chase artificial coverage. Skip trivial getters, types without logic, pass-through wrappers, framework guarantees, config files without behavior, and code that has no meaningful rule to protect.
+
+Each test should fail for one clear reason. When it fails, the broken rule, input, and expected behavior should be obvious.
