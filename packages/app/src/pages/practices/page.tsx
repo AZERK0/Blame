@@ -47,9 +47,15 @@ export function PracticesPage() {
   return (
     <div className="flex flex-1 flex-col items-center p-4 lg:p-6">
       <div className="flex w-full max-w-3xl flex-col gap-4">
-        <h2 className="font-heading text-2xl font-semibold tracking-normal">
-          Code practices
-        </h2>
+        <div>
+          <h2 className="font-heading text-2xl font-semibold tracking-normal">
+            Code practices
+          </h2>
+          <p className="max-w-2xl text-sm text-muted-foreground">
+            Choose whether the agent should follow this project&apos;s current
+            habits or apply a stricter professional standard.
+          </p>
+        </div>
         {store.loading ? <PracticesLoading /> : null}
         {!store.loading && store.error ? (
           <Alert variant="destructive">
