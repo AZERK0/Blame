@@ -5,6 +5,7 @@
 
 /// <reference path="./manifest.d.ts" />
 import type { InferData, InferVariants } from '@adonisjs/core/types/transformers'
+import type ProjectCodePracticeTransformer from '#transformers/project_code_practice_transformer'
 import type ProjectInitializationTransformer from '#transformers/project_initialization_transformer'
 import type ProjectTransformer from '#transformers/project_transformer'
 import type ProviderCredentialTransformer from '#transformers/provider_credential_transformer'
@@ -12,6 +13,10 @@ import type UserStoryTransformer from '#transformers/user_story_transformer'
 import type UserTransformer from '#transformers/user_transformer'
 
 export namespace Data {
+  export type ProjectCodePractice = InferData<ProjectCodePracticeTransformer>
+  export namespace ProjectCodePractice {
+    export type Variants = InferVariants<ProjectCodePracticeTransformer>
+  }
   export type ProjectInitialization = InferData<ProjectInitializationTransformer>
   export namespace ProjectInitialization {
     export type Variants = InferVariants<ProjectInitializationTransformer>

@@ -79,6 +79,30 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/projects_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
+  'projects.project_code_practices.index': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/projects/:projectId/code-practices'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { projectId: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_code_practices_controller').default['index']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_code_practices_controller').default['index']>>>
+    }
+  }
+  'projects.project_code_practices.update': {
+    methods: ["PATCH"]
+    pattern: '/api/v1/projects/:projectId/code-practices/:practice'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/project_code_practice').updateProjectCodePracticeValidator)>>
+      paramsTuple: [ParamValue, ParamValue]
+      params: { projectId: ParamValue; practice: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/project_code_practice').updateProjectCodePracticeValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_code_practices_controller').default['update']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_code_practices_controller').default['update']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
   'projects.project_initializations.show': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/projects/:projectId/initialization'

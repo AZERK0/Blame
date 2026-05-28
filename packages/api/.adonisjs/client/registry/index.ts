@@ -42,6 +42,18 @@ const routes = {
     tokens: [{"old":"/api/v1/projects","type":0,"val":"api","end":""},{"old":"/api/v1/projects","type":0,"val":"v1","end":""},{"old":"/api/v1/projects","type":0,"val":"projects","end":""}],
     types: placeholder as Registry['projects.projects.store']['types'],
   },
+  'projects.project_code_practices.index': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/projects/:projectId/code-practices',
+    tokens: [{"old":"/api/v1/projects/:projectId/code-practices","type":0,"val":"api","end":""},{"old":"/api/v1/projects/:projectId/code-practices","type":0,"val":"v1","end":""},{"old":"/api/v1/projects/:projectId/code-practices","type":0,"val":"projects","end":""},{"old":"/api/v1/projects/:projectId/code-practices","type":1,"val":"projectId","end":""},{"old":"/api/v1/projects/:projectId/code-practices","type":0,"val":"code-practices","end":""}],
+    types: placeholder as Registry['projects.project_code_practices.index']['types'],
+  },
+  'projects.project_code_practices.update': {
+    methods: ["PATCH"],
+    pattern: '/api/v1/projects/:projectId/code-practices/:practice',
+    tokens: [{"old":"/api/v1/projects/:projectId/code-practices/:practice","type":0,"val":"api","end":""},{"old":"/api/v1/projects/:projectId/code-practices/:practice","type":0,"val":"v1","end":""},{"old":"/api/v1/projects/:projectId/code-practices/:practice","type":0,"val":"projects","end":""},{"old":"/api/v1/projects/:projectId/code-practices/:practice","type":1,"val":"projectId","end":""},{"old":"/api/v1/projects/:projectId/code-practices/:practice","type":0,"val":"code-practices","end":""},{"old":"/api/v1/projects/:projectId/code-practices/:practice","type":1,"val":"practice","end":""}],
+    types: placeholder as Registry['projects.project_code_practices.update']['types'],
+  },
   'projects.project_initializations.show': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/projects/:projectId/initialization',

@@ -15,6 +15,7 @@ type InitializationBody = {
     practices: Array<{
       practice: string
       detected: boolean
+      enabled: boolean
       comment: string
     }>
   }
@@ -61,6 +62,9 @@ test.group('project initializations', (group) => {
     assert.equal(completed.data.initialization?.clineSessionId, 'session-1')
     assert.lengthOf(completed.data.practices, 4)
     assert.isTrue(completed.data.practices.some((practice) => practice.detected))
+    assert.isTrue(
+      completed.data.practices.every((practice) => practice.enabled === practice.detected)
+    )
   })
 
   test('stores initialization failures', async ({ client, assert }) => {

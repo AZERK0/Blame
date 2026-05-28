@@ -7,6 +7,7 @@ export const controllers = {
   AccessTokens: () => import('#controllers/access_tokens_controller'),
   NewAccount: () => import('#controllers/new_account_controller'),
   Profile: () => import('#controllers/profile_controller'),
+  ProjectCodePractices: () => import('#controllers/project_code_practices_controller'),
   ProjectInitializations: () => import('#controllers/project_initializations_controller'),
   Projects: () => import('#controllers/projects_controller'),
   ProviderCredentials: () => import('#controllers/provider_credentials_controller'),

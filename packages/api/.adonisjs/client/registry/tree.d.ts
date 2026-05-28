@@ -23,6 +23,10 @@ export interface ApiDefinition {
       index: typeof routes['projects.projects.index']
       store: typeof routes['projects.projects.store']
     }
+    projectCodePractices: {
+      index: typeof routes['projects.project_code_practices.index']
+      update: typeof routes['projects.project_code_practices.update']
+    }
     projectInitializations: {
       show: typeof routes['projects.project_initializations.show']
       start: typeof routes['projects.project_initializations.start']

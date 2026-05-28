@@ -56,6 +56,7 @@ export type CloudProjectCodePractice = {
   projectId: string
   practice: CloudProjectCodePracticeKey
   detected: boolean
+  enabled: boolean
   comment: string
   createdAt: string
   updatedAt: string | null

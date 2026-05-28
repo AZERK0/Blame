@@ -80,15 +80,22 @@ export default class ProjectInitializationsService {
 
   private async savePractices(projectId: string, practices: CompleteInput['practices']) {
     for (const practice of practices) {
-      await ProjectCodePractice.updateOrCreate(
+      const projectCodePractice = await ProjectCodePractice.firstOrCreate(
         { projectId, practice: practice.practice },
         {
           projectId,
           practice: practice.practice,
           detected: practice.detected,
+          enabled: practice.detected,
           comment: practice.comment,
         }
       )
+
+      projectCodePractice.merge({
+        detected: practice.detected,
+        comment: practice.comment,
+      })
+      await projectCodePractice.save()
     }
   }
 }

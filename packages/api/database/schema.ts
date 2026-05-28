@@ -33,7 +33,7 @@ export class AuthAccessTokenSchema extends BaseModel {
 }
 
 export class ProjectCodePracticeSchema extends BaseModel {
-  static $columns = ['comment', 'createdAt', 'detected', 'id', 'practice', 'projectId', 'updatedAt'] as const
+  static $columns = ['comment', 'createdAt', 'detected', 'enabled', 'id', 'practice', 'projectId', 'updatedAt'] as const
   $columns = ProjectCodePracticeSchema.$columns
   @column()
   declare comment: string
@@ -41,6 +41,8 @@ export class ProjectCodePracticeSchema extends BaseModel {
   declare createdAt: DateTime
   @column()
   declare detected: boolean
+  @column()
+  declare enabled: boolean
   @column({ isPrimary: true })
   declare id: number
   @column()

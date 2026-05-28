@@ -21,6 +21,9 @@ export default class ProjectCodePractice extends BaseModel {
   declare detected: boolean
 
   @column()
+  declare enabled: boolean
+
+  @column()
   declare comment: string
 
   @column.dateTime({ autoCreate: true })
