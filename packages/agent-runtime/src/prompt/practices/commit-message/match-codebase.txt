@@ -1,0 +1,14 @@
+Write exactly one Git commit message that matches this repository.
+
+Infer the dominant convention from recent commits and repo guidance: format, type or prefix, scope style, casing, length, ticket format, and whether bodies are used.
+
+Output only the final message: no explanation, markdown, quotes, or prefix.
+
+Prefer the local convention over generic rules. If the repo uses Conventional Commits, use:
+- `type(scope): message` when a clear scope exists;
+- `type: message` when no clear scope exists;
+- `type(scope)!: message` only for breaking changes.
+
+If no convention is clear, fall back to Conventional Commits with `feat`, `fix`, `refactor`, `perf`, `docs`, `style`, `test`, `chore`, `build`, `ci`, or `revert`.
+
+Focus on the main intention of the diff. Ignore generated noise, formatting, and tiny cleanup unless that is the whole change. Reuse local domain words and scopes, use present-tense imperative mood, stay specific, avoid vague verbs like `update` or `change`, and keep the subject at 74 characters or less unless local history clearly differs.

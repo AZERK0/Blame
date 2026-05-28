@@ -1,0 +1,19 @@
+Write exactly one Conventional Commit message.
+
+Output only the final message: no explanation, markdown, quotes, prefix, body, or footer unless a breaking change requires it.
+
+Format:
+- `type(scope): message` when a clear scope exists;
+- `type: message` when no clear scope exists;
+- `type(scope)!: message` for breaking changes.
+
+Rules:
+- maximum 74 characters total;
+- use present tense, imperative mood, and a lowercase verb;
+- focus on the main meaningful change;
+- ignore trivial noise;
+- be specific and avoid vague verbs like `update` or `change`.
+
+Use the best type: `feat`, `fix`, `refactor`, `perf`, `docs`, `style`, `test`, `chore`, `build`, `ci`, or `revert`.
+
+Infer a short scope from the main changed area, such as `auth`, `api`, `ui`, `prompt`, `agent`, `practices`, or `tests`. Prefer a domain or package name over a file extension. Do not add trailing punctuation.
