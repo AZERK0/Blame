@@ -1,6 +1,15 @@
 ## Coding Style: Match Codebase
 
-Minimize friction. Before writing code, observe the nearby project conventions and make your changes feel native to the existing codebase, even when those conventions are imperfect.
+Minimize friction. Before writing code, observe nearby conventions first and make your changes feel native to the existing codebase, even when those conventions are imperfect.
+
+Resolve style conflicts in this order:
+- current file;
+- current folder or module;
+- current package;
+- rest of the codebase;
+- general language conventions.
+
+Follow existing conventions unless they are clearly unsafe, broken, or directly conflict with the user request.
 
 Follow the dominant local style for:
 - naming, file structure, imports, formatting, and TypeScript usage;

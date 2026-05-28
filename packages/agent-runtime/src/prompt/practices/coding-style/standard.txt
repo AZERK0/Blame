@@ -7,8 +7,8 @@ Write explicit, readable, maintainable code:
 - keep functions short and focused on one responsibility;
 - make conditions and control flow easy to follow;
 - avoid hidden logic, ambiguous abbreviations, clever tricks, and surprising side effects;
-- write self-explanatory code instead of comments;
-- remove dead code, unused variables, duplicated logic, debug leftovers, TODOs, hacks, and temporary placeholders.
+- prefer self-explanatory code; use comments only to explain non-obvious intent, constraints, or trade-offs;
+- remove dead code, unused variables, duplicated logic introduced by the change, debug leftovers, TODOs, hacks, and temporary placeholders.
 
 Use strong typing when the language supports it:
 - avoid `any`, unsafe casts, and catch-all object shapes;
@@ -37,4 +37,4 @@ Avoid waste without premature optimization:
 
 Keep formatting strict:
 - use the project formatter when available;
-- otherwise keep imports, indentation, naming style, and file organization consistent and modern.
+- otherwise keep imports, indentation, naming style, and file organization consistent, readable, and aligned with the language ecosystem.
