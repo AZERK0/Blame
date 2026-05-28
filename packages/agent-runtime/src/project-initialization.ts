@@ -84,62 +84,7 @@ export async function scanProjectForInitialization(
 
 export function projectInitializationPrompt(scan: ProjectInitializationScan) {
   return [
-    "Analyze this project quickly and only through the strategic inputs provided.",
-    "Return a valid JSON object only. No markdown, explanations, comments, or surrounding text.",
-    "The JSON must match this exact shape:",
-    '{"setupScript":"...","dockerCompose":"...","practices":[{"practice":"coding_style","detected":true,"comment":"..."},{"practice":"unit_tests","detected":false,"comment":"..."},{"practice":"layered_architecture","detected":true,"comment":"..."},{"practice":"commit_message_convention","detected":false,"comment":"..."}]}',
-
-    "setupScript requirements:",
-    "It must be a complete end-to-end executable bash script using set -euo pipefail.",
-    "It must initialize the current already-created git worktree for preview execution.",
-    "It must install dependencies and prepare required env files only.",
-    "It must not launch Docker Compose, start containers, or print preview URLs.",
-    "It must not leave startup steps to the reader and must not use placeholders, TODOs, or non-executable comments.",
-    "If .env example files exist, copy or generate the required .env files from them.",
-    "If the Compose file does not start dev/preview servers by itself, define commands in dockerCompose so Docker Compose starts them.",
-
-    "Worktree model:",
-    "The setupScript is run from inside an already-created git worktree and must initialize only the current directory.",
-    "It must not manage worktrees: no git worktree add/remove/prune/list, no tmp/worktrees, no cd to another worktree.",
-    "It must never create, modify, or assume .git is a directory; .git may be a file in worktrees.",
-    "Do not create anything under .git, including .git/worktrees.",
-
-    "Environment requirements:",
-    "Generated env values must be exported consistently: either source the generated .env safely or export the same values written to it.",
-    "COMPOSE_PROJECT_NAME must be unique per worktree.",
-    "If multiple services require env files, create each one in the correct directory.",
-
-    "Docker Compose requirements:",
-    "dockerCompose must be a directly runnable Docker Compose config.",
-    "Preserve internal app ports and let Docker allocate localhost host ports, for example 127.0.0.1::3000.",
-    "Mark exactly one browser preview service with labels: blame.preview=true, blame.preview.port=<internal port>, blame.preview.protocol=http, and blame.preview.path=/.",
-    "Include all services required for a working preview.",
-    "Container commands must bootstrap required package managers and tools inside the container before running project commands.",
-    "For pnpm in Node containers running as a non-root user, use corepack prepare pnpm@<version> --activate and corepack pnpm <command>; do not use corepack enable or bare pnpm.",
-    "Reuse an existing Compose structure when present, changing only what is needed for isolation, dynamic ports, env, volumes, and Blame metadata.",
-    "Blame writes dockerCompose to $BLAME_DOCKER_COMPOSE_FILE and launches Docker Compose after setupScript exits successfully.",
-    "The setupScript must not create alternate compose files.",
-    "Containers, networks, and volumes must be isolated through COMPOSE_PROJECT_NAME.",
-    "Every service that can write to the worktree must run as user ${BLAME_HOST_UID}:${BLAME_HOST_GID}.",
-    "Do not let containers write bind-mounted worktree files as root.",
-
-    "Port requirements:",
-    "Do not choose, scan, reserve, or export host ports in setupScript.",
-    "Let Docker allocate host ports atomically. Blame resolves preview URLs after Docker Compose starts.",
-    "Do not change app internal ports just to avoid host conflicts.",
-
-    "Quality checks:",
-    "Fail early with clear errors for missing required tools.",
-    "Before returning, ensure setupScript does not contain forbidden patterns: git worktree, mkdir -p .git, .git/worktrees, tmp/worktrees, cd to another worktree, writing under .git.",
-
-    "practices requirements:",
-    "The practices array must contain binary detections only.",
-    "Each practice must include a short comment describing the observed state.",
-
-    "Do not use write tools.",
-    "Do not read the codebase broadly.",
-    "Base your answer only on the provided strategic project scan.",
-
+    "Analyze this project scan according to your system instructions and return strict JSON only.",
     `Project: ${scan.rootName}`,
     `Root entries: ${JSON.stringify(scan.topLevelEntries)}`,
     `Recent git log: ${JSON.stringify(scan.gitLog)}`,
