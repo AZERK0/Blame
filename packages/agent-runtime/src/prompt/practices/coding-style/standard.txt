@@ -1,0 +1,40 @@
+## Coding Style: Standard Industrial Professional
+
+Apply this standard to all code you create or touch, even when the existing project is less strict. Keep the scope narrow: improve the changed code without launching unrelated refactors.
+
+Write explicit, readable, maintainable code:
+- choose precise intention-revealing names;
+- keep functions short and focused on one responsibility;
+- make conditions and control flow easy to follow;
+- avoid hidden logic, ambiguous abbreviations, clever tricks, and surprising side effects;
+- write self-explanatory code instead of comments;
+- remove dead code, unused variables, duplicated logic, debug leftovers, TODOs, hacks, and temporary placeholders.
+
+Use strong typing when the language supports it:
+- avoid `any`, unsafe casts, and catch-all object shapes;
+- type public inputs, outputs, and module boundaries as stable internal APIs;
+- model business states with clear dedicated types when that reduces ambiguity.
+
+Handle errors deliberately:
+- catch errors at the level that can act on them;
+- provide understandable messages or explicit fallbacks;
+- never use empty `catch` blocks, silent masking, or `console.log` as error handling.
+
+Keep responsibilities separated inside each file:
+- separate parsing, validation, business logic, side effects, and presentation when they are distinct concerns;
+- place private helpers where their role is clear;
+- introduce abstractions only when they remove real complexity or duplication.
+
+Favor deterministic and secure defaults:
+- avoid implicit execution-order dependencies, magic fallbacks, dangerous defaults, and unexpected mutation;
+- validate external input before using it;
+- never log or expose secrets;
+- avoid naive shell command construction and obvious injection paths.
+
+Avoid waste without premature optimization:
+- do not repeat expensive parsing, I/O, network calls, or large-array work unnecessarily;
+- avoid easily preventable React re-renders in touched components.
+
+Keep formatting strict:
+- use the project formatter when available;
+- otherwise keep imports, indentation, naming style, and file organization consistent and modern.
