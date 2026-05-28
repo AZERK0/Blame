@@ -1,6 +1,6 @@
 import * as React from "react"
 
-import { BacklogPage } from "@/components/backlog/page/backlog-page"
+import { BacklogPage } from "@/pages/backlog/page"
 import { QuickChatPage } from "@/components/chat/quick-chat-page"
 import { ConnectScreen } from "@/components/onboarding/connect-screen"
 import { LoadingScreen } from "@/components/onboarding/loading-screen"
