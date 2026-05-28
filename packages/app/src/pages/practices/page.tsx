@@ -15,7 +15,7 @@ import {
   FieldTitle,
 } from "@/components/ui/field"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Switch } from "@/components/ui/switch"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useCodePracticesStore } from "@/components/practices/data/code-practices-store"
 import { cn } from "@/lib/utils"
 import type {
@@ -91,7 +91,7 @@ function PracticeCard({
   practice: CodePractice
   updating: boolean
 }) {
-  const switchId = `practice-${practice.practice}`
+  const practiceId = `practice-${practice.practice}`
   const nextEnabled = !practice.enabled
 
   const togglePractice = () => {
@@ -109,15 +109,12 @@ function PracticeCard({
   return (
     <Card
       size="sm"
-      role="switch"
+      role="button"
       tabIndex={0}
-      aria-checked={practice.enabled}
-      aria-labelledby={`${switchId}-title`}
+      aria-labelledby={`${practiceId}-title`}
       className={cn(
         "cursor-pointer rounded-lg transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
-        practice.enabled
-          ? "border-border bg-muted/35"
-          : "border-foreground/10 bg-background/95"
+        "border-foreground/10 bg-background/95"
       )}
       onClick={togglePractice}
       onKeyDown={togglePracticeFromKeyboard}
@@ -127,7 +124,7 @@ function PracticeCard({
           <FieldContent>
             <div className="flex flex-wrap items-center gap-2">
               <FieldTitle
-                id={`${switchId}-title`}
+                id={`${practiceId}-title`}
                 className="text-lg font-semibold"
               >
                 {practiceLabels[practice.practice]}
@@ -147,15 +144,29 @@ function PracticeCard({
               {practiceDescriptions[practice.practice]}
             </FieldDescription>
           </FieldContent>
-          <Switch
-            id={switchId}
-            aria-labelledby={`${switchId}-title`}
-            checked={practice.enabled}
-            disabled={updating}
-            size="lg"
+          <Tabs
+            value={practice.enabled ? "pro" : "codebase"}
+            onValueChange={(value) => onEnabledChange(value === "pro")}
             onClick={(event) => event.stopPropagation()}
-            onCheckedChange={onEnabledChange}
-          />
+            onKeyDown={(event) => event.stopPropagation()}
+          >
+            <TabsList className="h-8 w-60 shrink-0 rounded-lg border border-border bg-muted p-0.5 dark:border-foreground/10 dark:bg-black/55">
+              <TabsTrigger
+                value="codebase"
+                disabled={updating}
+                className="rounded-[calc(var(--radius-lg)-2px)] px-2 text-xs text-muted-foreground data-active:bg-background data-active:text-foreground dark:data-active:bg-foreground/10"
+              >
+                Match codebase
+              </TabsTrigger>
+              <TabsTrigger
+                value="pro"
+                disabled={updating}
+                className="rounded-[calc(var(--radius-lg)-2px)] px-2 text-xs text-blue-600 dark:text-blue-300/80 data-active:bg-blue-600 data-active:text-white dark:data-active:bg-blue-500"
+              >
+                Pro standard
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </Field>
         <Accordion
           type="single"
