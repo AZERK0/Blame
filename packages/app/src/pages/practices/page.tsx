@@ -32,13 +32,13 @@ const practiceLabels: Record<CodePracticeKey, string> = {
 
 const practiceDescriptions: Record<CodePracticeKey, string> = {
   coding_style:
-    "Apply the project's formatting, linting, typing, and naming conventions.",
+    "Write explicit, typed, focused code with deliberate error handling and no temporary, duplicated, or unsafe patterns.",
   unit_tests:
-    "Ask the agent to preserve and extend fast automated tests around changes.",
+    "Use a TDD loop and ZOMBIES cases for behavior, state, validation, data flows, boundaries, and failures.",
   layered_architecture:
-    "Keep responsibilities separated across UI, business logic, and data access.",
+    "Apply Clean, Onion, and Hexagonal Architecture with use cases, domain core, ports, adapters, and inward dependencies.",
   commit_message_convention:
-    "Guide the agent to follow the repository's commit message convention.",
+    "Produce exact Conventional Commits such as feat:, fix:, refactor:, docs:, test:, chore:, build:, or ci:.",
 }
 
 const codebaseModeLabels: Record<CodePracticeKey, string> = {
