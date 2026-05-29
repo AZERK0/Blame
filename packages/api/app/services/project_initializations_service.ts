@@ -86,7 +86,7 @@ export default class ProjectInitializationsService {
           projectId,
           practice: practice.practice,
           detected: practice.detected,
-          enabled: practice.detected,
+          enabled: defaultEnabledPractice(practice),
           comment: practice.comment,
         }
       )
@@ -98,4 +98,8 @@ export default class ProjectInitializationsService {
       await projectCodePractice.save()
     }
   }
+}
+
+function defaultEnabledPractice(practice: CompleteInput['practices'][number]) {
+  return practice.practice === 'coding_style' || practice.detected
 }

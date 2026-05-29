@@ -49,7 +49,7 @@ test.group('project initializations', (group) => {
         setupScript: '#!/usr/bin/env bash\npnpm install',
         dockerCompose: 'services:\n  web:\n    image: node',
         practices: [
-          { practice: 'coding_style', detected: true, comment: 'Functions are concise.' },
+          { practice: 'coding_style', detected: false, comment: 'No style config found.' },
           { practice: 'unit_tests', detected: false, comment: 'No test runner found.' },
           { practice: 'layered_architecture', detected: true, comment: 'Modules are separated.' },
           { practice: 'commit_message_convention', detected: false, comment: 'Messages vary.' },
@@ -63,7 +63,14 @@ test.group('project initializations', (group) => {
     assert.lengthOf(completed.data.practices, 4)
     assert.isTrue(completed.data.practices.some((practice) => practice.detected))
     assert.isTrue(
-      completed.data.practices.every((practice) => practice.enabled === practice.detected)
+      completed.data.practices.some(
+        (practice) => practice.practice === 'coding_style' && !practice.detected && practice.enabled
+      )
+    )
+    assert.isTrue(
+      completed.data.practices
+        .filter((practice) => practice.practice !== 'coding_style')
+        .every((practice) => practice.enabled === practice.detected)
     )
   })
 
