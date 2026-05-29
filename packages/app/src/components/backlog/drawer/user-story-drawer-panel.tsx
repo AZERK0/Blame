@@ -53,6 +53,7 @@ export function UserStoryDrawerPanel({
   initialTab,
   mode,
   onCancel,
+  onApproveAndMerge,
   onCreateUserStory,
   onOpenDrawer,
   onReject,
@@ -67,6 +68,7 @@ export function UserStoryDrawerPanel({
   initialTab: UserStoryDrawerTab
   mode: UserStoryDrawerMode
   onCancel: () => void
+  onApproveAndMerge: (story: UserStory) => Promise<UserStory>
   onCreateUserStory: (
     input: Omit<UserStoryDraft, "projectId">
   ) => Promise<UserStory>
@@ -286,7 +288,11 @@ export function UserStoryDrawerPanel({
         await onCreateUserStory(createInput(action, title, summary))
       }
       if (mode !== "create" && userStory) {
-        await onUpdateUserStory(userStory, actionInput(action, title, summary))
+        if (action === "Approve & Merge") {
+          await onApproveAndMerge(userStory)
+        } else {
+          await onUpdateUserStory(userStory, actionInput(action, title, summary))
+        }
       }
       if (action !== "Save Changes" && action !== "Save as Draft") onCancel()
     } finally {
@@ -388,8 +394,6 @@ function actionInput(
     return { agentStatus: "Running", status: "in-progress" }
   if (action === "Reject")
     return { discardedReason: "Rejected during review", status: "discarded" }
-  if (action === "Approve & Merge")
-    return { mergedAt: new Date().toISOString(), status: "done" }
   if (action === "Rework as Draft")
     return { discardedReason: null, status: "backlog" }
   return base

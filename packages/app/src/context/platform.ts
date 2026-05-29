@@ -2,6 +2,8 @@ import * as React from "react"
 import type {
   AgentEvent,
   ApiConnection as AgentApiConnection,
+  ApproveAndMergeInput,
+  ApproveAndMergeResult,
   InitializeProjectInput,
   InitializeProjectResult,
   LoginOAuthProviderInput,
@@ -68,6 +70,7 @@ export type AgentClient = {
   initializations: {
     run(input: InitializeProjectInput): Promise<InitializeProjectResult>
   }
+  approveAndMerge(input: ApproveAndMergeInput): Promise<ApproveAndMergeResult>
 }
 
 export type WorkspaceEntry = {

@@ -114,6 +114,24 @@ export type StartDevelopmentSessionInput = {
   codePractices?: ProjectCodePracticePreference[]
 }
 
+export type ApproveAndMergeInput = {
+  apiConnection: ApiConnection
+  providerId: string
+  modelId: string
+  reasoningEffort?: ReasoningEffort
+  repositoryRoot: string
+  worktree: string
+  storyBranch: string
+  title: string
+  summary: string
+  codePractices?: ProjectCodePracticePreference[]
+}
+
+export type ApproveAndMergeResult = {
+  mergeCommit: string
+  targetBranch: string
+}
+
 export type SendSessionInput = {
   sessionId: string
   prompt: string

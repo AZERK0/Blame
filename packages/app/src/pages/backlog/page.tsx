@@ -85,21 +85,6 @@ export function BacklogPage() {
     },
     [backlog, platform, projects.activeProject?.path]
   )
-  const runStoryAction = React.useCallback(
-    async (story: UserStory, action: BacklogAction) => {
-      if (action === "Send to Dev Agent") {
-        return updateStory(story, { status: "ready" })
-      }
-      if (action === "Dequeue") return updateStory(story, { status: "backlog" })
-      if (action === "Rework") {
-        return updateStory(story, {
-          discardedReason: null,
-          status: "backlog",
-        })
-      }
-    },
-    [updateStory]
-  )
   const rejectStory = React.useCallback(
     async (story: UserStory, choice: RejectChoice) => {
       if (choice === "request-changes") {
@@ -182,12 +167,16 @@ export function BacklogPage() {
         })
         return story
       }
-      const codePractices = projects.activeProject
-        ? await createCloudApi(auth.apiConnection)
-            .projectInitialization(projects.activeProject.id)
-            .then((snapshot) => snapshot.practices)
-        : []
-      const session = await platform.agent?.sessions.startDevelopment({
+      const agent = platform.agent
+      if (!agent) {
+        toast.error("Unable to resume agent", {
+          description: "Desktop agent runtime is not available.",
+          position: "bottom-right",
+        })
+        return story
+      }
+      const codePractices = await projectCodePractices(auth, projects)
+      const session = await agent.sessions.startDevelopment({
         apiConnection: auth.apiConnection,
         providerId: selection.currentModel.provider.id,
         modelId: selection.currentModel.id,
@@ -217,7 +206,7 @@ export function BacklogPage() {
         status: "in-progress",
       })
       let authenticationFailed = false
-      const unsubscribe = platform.agent.sessions.onEvent(
+      const unsubscribe = agent.sessions.onEvent(
         session.sessionId,
         (event) => {
           if (authenticationFailed) return
@@ -237,7 +226,7 @@ export function BacklogPage() {
             unsubscribe()
         }
       )
-      void platform.agent.sessions.sendDevelopment({
+      void agent.sessions.sendDevelopment({
         sessionId: session.sessionId,
         title: story.title,
         summary: story.summary,
@@ -252,6 +241,92 @@ export function BacklogPage() {
       selection.currentVariant,
       updateStory,
     ]
+  )
+
+  const approveAndMergeStory = React.useCallback(
+    async (story: UserStory) => {
+      const validationError = approveAndMergeValidationError(
+        story,
+        auth,
+        platform,
+        projects.activeProject?.path,
+        selection.currentModel
+      )
+      if (validationError) {
+        toast.error("Unable to approve and merge", {
+          description: validationError,
+          position: "bottom-right",
+        })
+        return story
+      }
+      const runningStory = await updateStory(story, {
+        agentLastError: null,
+        agentLastEvent: "Approve & Merge started.",
+        agentStatus: "Running",
+      })
+      try {
+        const codePractices = await projectCodePractices(auth, projects)
+        const result = await platform.agent!.approveAndMerge({
+          apiConnection: auth.apiConnection,
+          providerId: selection.currentModel!.provider.id,
+          modelId: selection.currentModel!.id,
+          reasoningEffort: selection.currentVariant,
+          repositoryRoot: projects.activeProject!.path,
+          worktree: story.worktree!,
+          storyBranch: story.branch!,
+          title: story.title,
+          summary: story.summary,
+          codePractices,
+        })
+        toast.success("Story approved and merged", {
+          description: `Merged into ${result.targetBranch}.`,
+          position: "bottom-right",
+        })
+        return updateStory(runningStory, {
+          agentLastError: null,
+          agentLastEvent: `Merged into ${result.targetBranch}.`,
+          agentStatus: null,
+          mergeCommit: result.mergeCommit,
+          mergedAt: new Date().toISOString(),
+          status: "done",
+        })
+      } catch (error) {
+        const message = errorMessage(error)
+        toast.error("Approve & Merge failed", {
+          description: message,
+          position: "bottom-right",
+        })
+        return updateStory(runningStory, {
+          agentLastError: message,
+          agentLastEvent: message,
+          agentStatus: null,
+        })
+      }
+    },
+    [
+      auth,
+      platform,
+      projects,
+      selection.currentModel,
+      selection.currentVariant,
+      updateStory,
+    ]
+  )
+  const runStoryAction = React.useCallback(
+    async (story: UserStory, action: BacklogAction) => {
+      if (action === "Send to Dev Agent") {
+        return updateStory(story, { status: "ready" })
+      }
+      if (action === "Dequeue") return updateStory(story, { status: "backlog" })
+      if (action === "Rework") {
+        return updateStory(story, {
+          discardedReason: null,
+          status: "backlog",
+        })
+      }
+      if (action === "Approve & Merge") return approveAndMergeStory(story)
+    },
+    [approveAndMergeStory, updateStory]
   )
 
   return (
@@ -316,6 +391,7 @@ export function BacklogPage() {
           return updateStory(story, input)
         }}
         onOpenDrawer={openDrawer}
+        onApproveAndMerge={approveAndMergeStory}
         onReject={rejectStory}
         onStopAgent={stopAgent}
         setupInitializing={backlog.storySetupInitializing(drawerUserStory)}
@@ -332,22 +408,23 @@ function useProjectInitializationStatus() {
   const activeProjectId = projects.activeProject?.id
   const status =
     auth.status === "authenticated" && snapshot?.projectId === activeProjectId
-      ? snapshot.status
+      ? (snapshot?.status ?? null)
       : null
 
   React.useEffect(() => {
-    if (!projects.activeProject || auth.status !== "authenticated") {
+    const activeProject = projects.activeProject
+    if (!activeProject || auth.status !== "authenticated") {
       return
     }
     let cancelled = false
     const cloud = createCloudApi(auth.apiConnection)
     const refresh = async () => {
       const snapshot = await cloud.projectInitialization(
-        projects.activeProject.id
+        activeProject.id
       )
       if (cancelled) return
       setSnapshot({
-        projectId: projects.activeProject.id,
+        projectId: activeProject.id,
         status: snapshot.initialization?.status ?? "pending",
       })
     }
@@ -373,6 +450,33 @@ type ProjectInitializationStatusSnapshot = {
 
 function projectInitializing(status: CloudProjectInitializationStatus | null) {
   return status === "pending" || status === "running"
+}
+
+function approveAndMergeValidationError(
+  story: UserStory,
+  auth: ReturnType<typeof useCloudAuth>,
+  platform: ReturnType<typeof usePlatform>,
+  repositoryRoot: string | undefined,
+  model: unknown
+) {
+  if (!story.worktree) return "This user story has no active worktree."
+  if (!story.branch) return "This user story has no feature branch."
+  if (!repositoryRoot) return "Unable to resolve the active project."
+  if (auth.status !== "authenticated")
+    return "Reconnect the provider before approving the merge."
+  if (!model) return "Select a model before approving the merge."
+  if (!platform.agent?.approveAndMerge)
+    return "Desktop agent runtime is not available."
+}
+
+function projectCodePractices(
+  auth: ReturnType<typeof useCloudAuth>,
+  projects: ReturnType<typeof useProjects>
+) {
+  if (!projects.activeProject) return Promise.resolve([])
+  return createCloudApi(auth.apiConnection)
+    .projectInitialization(projects.activeProject.id)
+    .then((snapshot) => snapshot.practices)
 }
 
 async function inactiveStoryCleanup(
@@ -447,6 +551,10 @@ function activeStory(story: UserStory, stories: UserStory[]) {
 
 function clineLogPath(worktree: string, sessionId: string) {
   return `${worktree}/.blame/logs/cline-${sessionId}.log`
+}
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error)
 }
 
 function agentEventUpdate(

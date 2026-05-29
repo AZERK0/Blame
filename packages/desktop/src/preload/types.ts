@@ -1,6 +1,8 @@
 import type {
   AgentEvent,
   ApiConnection,
+  ApproveAndMergeInput,
+  ApproveAndMergeResult,
   InitializeProjectInput,
   InitializeProjectResult,
   LoginOAuthProviderInput,
@@ -155,5 +157,8 @@ export type BlameDesktopApi = {
     initializations: {
       run(input: InitializeProjectInput): Promise<InitializeProjectResult>;
     };
+    approveAndMerge(
+      input: ApproveAndMergeInput,
+    ): Promise<ApproveAndMergeResult>;
   };
 };

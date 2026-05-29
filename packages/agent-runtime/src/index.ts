@@ -4,6 +4,8 @@ export type {
   AgentApprovalRequest,
   AgentRuntimeEvents,
   AgentSessionRecord,
+  ApproveAndMergeInput,
+  ApproveAndMergeResult,
   ApprovalDecision,
   ApiConnection,
   BlameModel,

@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto"
-import { appendFile, mkdir } from "node:fs/promises"
-import { dirname, join } from "node:path"
+import { execFile } from "node:child_process"
+import { appendFile, mkdir, rm } from "node:fs/promises"
+import { basename, dirname, join } from "node:path"
+import { promisify } from "node:util"
 
 import type {
   ClineCore,
@@ -32,6 +34,8 @@ import type {
   AgentEvent,
   AgentRuntimeEvents,
   ApiConnection,
+  ApproveAndMergeInput,
+  ApproveAndMergeResult,
   InitializeProjectInput,
   InitializeProjectResult,
   LoginOAuthProviderInput,
@@ -46,6 +50,7 @@ import type {
   StartSessionInput,
 } from "./types.js"
 
+const execFileAsync = promisify(execFile)
 const readTools = ["read_files", "search_codebase", "fetch_web_content"]
 const writeTools = ["run_commands", "editor", "apply_patch"]
 const maxInitializationAttempts = 3
@@ -123,6 +128,8 @@ export class BlameAgentRuntime {
   initializations = {
     run: (input: InitializeProjectInput) => this.initializeProject(input),
   }
+
+  approveAndMerge = (input: ApproveAndMergeInput) => this.approveAndMergeStory(input)
 
   async shutdown() {
     const sessionIds = await this.activeSessionIds()
@@ -299,11 +306,98 @@ export class BlameAgentRuntime {
   }
 
   private async initializationCredential(input: InitializeProjectInput) {
+    return this.runtimeCredential(input)
+  }
+
+  private async runtimeCredential(input: Pick<StartSessionInput, "apiConnection" | "providerId" | "credentialLabel">) {
     const credential = await resolveProviderCredential(input.apiConnection, {
       providerId: input.providerId,
       label: input.credentialLabel,
     })
     return this.refreshOAuthCredential(input.apiConnection, credential)
+  }
+
+  private async approveAndMergeStory(input: ApproveAndMergeInput): Promise<ApproveAndMergeResult> {
+    const logFile = approveMergeLogPath(input.worktree)
+    await appendLog(logFile, "approve merge requested", approveMergeContext(input))
+    await assertGitRepository(input.repositoryRoot)
+    await assertGitRepository(input.worktree)
+    const targetBranch = await currentGitBranch(input.repositoryRoot)
+    await validateMergeBranches(input, targetBranch)
+    const upstream = await gitUpstream(input.repositoryRoot)
+    const targetClean = await cleanGitStatus(input.repositoryRoot)
+    const integration = targetClean
+      ? input.repositoryRoot
+      : await integrationWorktree(input.repositoryRoot, targetBranch)
+    await pullIntegrationWorktree(integration, upstream)
+    await this.commitStoryWork(input)
+    await this.mergeTargetIntoStory(input, targetBranch, upstream)
+    try {
+      await git(integration, ["merge", "--ff-only", input.storyBranch])
+      const mergeCommit = await git(integration, ["rev-parse", "HEAD"])
+      await git(integration, ["push", upstream.remote, `HEAD:${upstream.branch}`])
+      await appendLog(logFile, "approve merge completed", { mergeCommit, targetBranch })
+      return { mergeCommit, targetBranch }
+    } finally {
+      if (!targetClean) {
+        await removeIntegrationWorktree(input.repositoryRoot, integration)
+      }
+    }
+  }
+
+  private async commitStoryWork(input: ApproveAndMergeInput) {
+    const status = await git(input.worktree, ["status", "--porcelain"])
+    if (!status.trim()) return
+    const message = await this.generateCommitMessage(input)
+    await git(input.worktree, ["add", "-A"])
+    await git(input.worktree, ["commit", "-m", message])
+    const nextStatus = await git(input.worktree, ["status", "--porcelain"])
+    if (nextStatus.trim()) throw new Error("Story worktree still has uncommitted changes after commit.")
+  }
+
+  private async generateCommitMessage(input: ApproveAndMergeInput) {
+    const credential = await this.runtimeCredential(input)
+    const cline = await this.core()
+    const session = await cline.start({
+      prompt: await commitMessagePrompt(input),
+      config: commitMessageConfig(input, credential),
+      interactive: false,
+      source: "blame-approve-merge",
+      toolPolicies: initializationToolPolicies(),
+    })
+    const message = firstTextLine(session.result?.text)
+    if (!message) throw new Error("Commit message agent did not return a message.")
+    return message
+  }
+
+  private async mergeTargetIntoStory(input: ApproveAndMergeInput, targetBranch: string, upstream: GitUpstream) {
+    await git(input.worktree, ["fetch", upstream.remote, upstream.branch])
+    try {
+      await git(input.worktree, ["merge", `${upstream.remote}/${upstream.branch}`])
+      return
+    } catch (error) {
+      if (!(await hasMergeConflicts(input.worktree))) throw error
+    }
+    await this.resolveMergeConflicts(input, targetBranch)
+    if (await hasMergeConflicts(input.worktree)) {
+      throw new Error("Merge conflict agent finished with unresolved conflicts.")
+    }
+    await git(input.worktree, ["add", "-A"])
+    await git(input.worktree, ["commit", "--no-edit"])
+  }
+
+  private async resolveMergeConflicts(input: ApproveAndMergeInput, targetBranch: string) {
+    const credential = await this.runtimeCredential(input)
+    const cline = await this.core()
+    const session = await cline.start({
+      prompt: await mergeConflictPrompt(input, targetBranch),
+      config: mergeConflictConfig(input, credential),
+      interactive: false,
+      source: "blame-merge-conflict-resolution",
+      toolPolicies: toolPolicies(true),
+    })
+    const failure = resultFailureMessage(session.result)
+    if (failure) throw new Error(failure)
   }
 
   private async subscribeSession(sessionId: string) {
@@ -586,6 +680,48 @@ function initializationConfig(
   }
 }
 
+function commitMessageConfig(
+  input: ApproveAndMergeInput,
+  credential: { apiKey: string; baseUrl: string | null }
+) {
+  return {
+    providerId: input.providerId,
+    modelId: input.modelId,
+    apiKey: credential.apiKey,
+    baseUrl: credential.baseUrl ?? undefined,
+    thinking: !!input.reasoningEffort,
+    reasoningEffort: input.reasoningEffort,
+    systemPrompt: developmentPracticePrompt(input.codePractices ?? [], "commit_message_convention"),
+    cwd: input.worktree,
+    workspaceRoot: input.worktree,
+    enableTools: false,
+    enableSpawnAgent: false,
+    enableAgentTeams: false,
+    maxIterations: 4,
+  }
+}
+
+function mergeConflictConfig(
+  input: ApproveAndMergeInput,
+  credential: { apiKey: string; baseUrl: string | null }
+) {
+  return {
+    providerId: input.providerId,
+    modelId: input.modelId,
+    apiKey: credential.apiKey,
+    baseUrl: credential.baseUrl ?? undefined,
+    thinking: !!input.reasoningEffort,
+    reasoningEffort: input.reasoningEffort,
+    systemPrompt: loadPrompt("merge-conflict-resolution"),
+    cwd: input.worktree,
+    workspaceRoot: input.worktree,
+    enableTools: true,
+    enableSpawnAgent: false,
+    enableAgentTeams: false,
+    maxIterations: 24,
+  }
+}
+
 function initializationPrompt(scan: ProjectInitializationScan, correction?: InitializationCorrection) {
   if (!correction) return projectInitializationPrompt(scan)
   return projectInitializationCorrectionPrompt(scan, correction)
@@ -623,7 +759,184 @@ function developmentPracticePrompt(
   if (practice === "layered_architecture") {
     return loadPrompt(`practices/architecture/${enabled ? "standard" : "match-codebase"}`)
   }
+  if (practice === "commit_message_convention") {
+    return loadPrompt(`practices/commit-message/${enabled ? "standard" : "match-codebase"}`)
+  }
   return loadPrompt(`practices/unit-tests/${enabled ? "standard" : "disabled"}`)
+}
+
+async function assertGitRepository(cwd: string) {
+  await git(cwd, ["rev-parse", "--show-toplevel"])
+}
+
+async function currentGitBranch(cwd: string) {
+  return git(cwd, ["branch", "--show-current"])
+}
+
+async function validateMergeBranches(input: ApproveAndMergeInput, targetBranch: string) {
+  if (!targetBranch) throw new Error("Unable to detect the active project branch.")
+  const storyBranch = await currentGitBranch(input.worktree)
+  if (storyBranch !== input.storyBranch) {
+    throw new Error(`Story worktree is on ${storyBranch}, expected ${input.storyBranch}.`)
+  }
+  if (targetBranch === input.storyBranch) {
+    throw new Error("Story branch and target branch must be different.")
+  }
+}
+
+async function gitUpstream(cwd: string) {
+  try {
+    const upstream = await git(cwd, ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"])
+    return parseUpstream(upstream)
+  } catch {
+    throw new Error("Active project branch has no upstream configured.")
+  }
+}
+
+async function cleanGitStatus(cwd: string) {
+  const status = await git(cwd, ["status", "--porcelain"])
+  return !status.trim()
+}
+
+async function integrationWorktree(cwd: string, targetBranch: string) {
+  const directory = integrationWorktreePath(cwd, targetBranch)
+  await rm(directory, { force: true, recursive: true })
+  await git(cwd, ["worktree", "add", "--detach", directory, targetBranch])
+  return directory
+}
+
+async function pullIntegrationWorktree(cwd: string, upstream: GitUpstream) {
+  await git(cwd, ["fetch", upstream.remote, upstream.branch])
+  await git(cwd, ["merge", "--ff-only", `${upstream.remote}/${upstream.branch}`])
+}
+
+async function removeIntegrationWorktree(repositoryRoot: string, worktree: string) {
+  try {
+    await git(repositoryRoot, ["worktree", "remove", "--force", worktree])
+  } catch {
+    await rm(worktree, { force: true, recursive: true })
+    await git(repositoryRoot, ["worktree", "prune"]).catch(() => undefined)
+  }
+}
+
+type GitUpstream = {
+  branch: string
+  remote: string
+}
+
+function parseUpstream(value: string): GitUpstream {
+  const [remote, ...branchParts] = value.split("/")
+  const branch = branchParts.join("/")
+  if (!remote || !branch) throw new Error("Active project branch upstream is invalid.")
+  return { branch, remote }
+}
+
+function integrationWorktreePath(repositoryRoot: string, targetBranch: string) {
+  return join(
+    dirname(repositoryRoot),
+    ".blame-worktrees",
+    basename(repositoryRoot),
+    ".merge",
+    branchPathSlug(targetBranch)
+  )
+}
+
+function branchPathSlug(branch: string) {
+  return branch
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 64) || "target"
+}
+
+async function hasMergeConflicts(cwd: string) {
+  const files = await git(cwd, ["diff", "--name-only", "--diff-filter=U"])
+  return Boolean(files.trim())
+}
+
+async function commitMessagePrompt(input: ApproveAndMergeInput) {
+  const [status, diff, log] = await Promise.all([
+    git(input.worktree, ["status", "--porcelain"]),
+    git(input.worktree, ["diff", "--no-ext-diff", "HEAD", "--"]),
+    git(input.worktree, ["log", "-12", "--pretty=%s"]),
+  ])
+  return [
+    `Backlog item: ${input.title}`,
+    "",
+    input.summary,
+    "",
+    `Git status:\n${truncateText(status, 8_000)}`,
+    "",
+    `Recent commits:\n${truncateText(log, 8_000)}`,
+    "",
+    `Diff:\n${truncateText(diff, 60_000)}`,
+  ].join("\n")
+}
+
+async function mergeConflictPrompt(input: ApproveAndMergeInput, targetBranch: string) {
+  const [status, files] = await Promise.all([
+    git(input.worktree, ["status", "--short"]),
+    git(input.worktree, ["diff", "--name-only", "--diff-filter=U"]),
+  ])
+  return [
+    `Backlog item: ${input.title}`,
+    "",
+    input.summary,
+    "",
+    `Story branch: ${input.storyBranch}`,
+    `Target branch: ${targetBranch}`,
+    "",
+    `Conflicted files:\n${files}`,
+    "",
+    `Git status:\n${truncateText(status, 8_000)}`,
+  ].join("\n")
+}
+
+async function git(cwd: string, args: string[]) {
+  try {
+    const { stdout } = await execFileAsync("git", args, { cwd, maxBuffer: 20 * 1024 * 1024 })
+    return stdout.trim()
+  } catch (error) {
+    throw new Error(gitErrorMessage(args, error))
+  }
+}
+
+function gitErrorMessage(args: string[], error: unknown) {
+  const record = asRecord(error)
+  const output = stringValue(record.stderr) || stringValue(record.stdout)
+  const message = output?.trim() || errorMessage(error)
+  return `git ${args.join(" ")} failed: ${message}`
+}
+
+function firstTextLine(value: unknown) {
+  const line = stringValue(value)
+    ?.trim()
+    .replace(/^```(?:text)?\s*/, "")
+    .replace(/\s*```$/, "")
+    .split("\n")
+    .find(Boolean)
+    ?.trim()
+  return line?.replace(/^["'`]|["'`]$/g, "")
+}
+
+function truncateText(value: string, limit: number) {
+  if (value.length <= limit) return value
+  return `${value.slice(0, limit)}\n[truncated]`
+}
+
+function approveMergeLogPath(worktree: string) {
+  return join(worktree, ".blame", "logs", "approve-merge.log")
+}
+
+function approveMergeContext(input: ApproveAndMergeInput) {
+  return {
+    providerId: input.providerId,
+    modelId: input.modelId,
+    reasoningEffort: input.reasoningEffort,
+    repositoryRoot: input.repositoryRoot,
+    worktree: input.worktree,
+    storyBranch: input.storyBranch,
+  }
 }
 
 function errorMessage(error: unknown) {

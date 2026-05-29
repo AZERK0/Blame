@@ -116,6 +116,8 @@ const api: BlameDesktopApi = {
     initializations: {
       run: (input) => ipcRenderer.invoke("agent:initializations:run", input),
     },
+    approveAndMerge: (input) =>
+      ipcRenderer.invoke("agent:approve-and-merge", input),
   },
 };
 

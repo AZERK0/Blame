@@ -209,6 +209,7 @@ function directAction(action: BacklogAction) {
   return (
     action === "Send to Dev Agent" ||
     action === "Dequeue" ||
+    action === "Approve & Merge" ||
     action === "Rework"
   )
 }

@@ -33,6 +33,7 @@ export type UserStoryDrawerProps = {
   onCreateUserStory: (
     input: Omit<UserStoryDraft, "projectId">
   ) => Promise<UserStory>
+  onApproveAndMerge: (story: UserStory) => Promise<UserStory>
   onOpenDrawer: OpenDrawer
   onReject: (story: UserStory, choice: RejectChoice) => Promise<UserStory>
   onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
@@ -52,6 +53,7 @@ export function UserStoryDrawer({
   initialDevelopmentTab = "files",
   focusComment,
   onCreateUserStory,
+  onApproveAndMerge,
   onOpenDrawer,
   onReject,
   onStopAgent,
@@ -82,6 +84,7 @@ export function UserStoryDrawer({
         initialTab={initialTab}
         mode={mode}
         onCancel={() => onOpenChange(false)}
+        onApproveAndMerge={onApproveAndMerge}
         onCreateUserStory={onCreateUserStory}
         onOpenDrawer={onOpenDrawer}
         onReject={onReject}
