@@ -54,7 +54,17 @@ It must never:
 
 Return exactly four binary detections: `coding_style`, `unit_tests`, `layered_architecture`, `commit_message_convention`.
 
-Base each `detected` value only on explicit scan evidence. Keep each `comment` short and evidence-based; use `false` when evidence is weak or absent.
+Calibrate every detection against Blame's standard professional practices, not against approximate project-local habits. A `true` value means the scan shows the project already follows the same kind of practice Blame would produce with the corresponding standard practice prompt. Use `false` for partial, loose, alternative, or merely conventional-looking evidence.
+
+Be strict for `coding_style`, `layered_architecture`, and `commit_message_convention`:
+
+- `coding_style`: detect `true` only when there is explicit evidence of an industrial professional style: strict formatting or linting, strong typing where available, deliberate error handling, clear module organization, short focused code, and no obvious dead, duplicated, temporary, or unsafe patterns. Do not return `true` for naming consistency, a formatter alone, or a generally tidy codebase.
+- `layered_architecture`: detect `true` only when the structure matches Clean, Onion, or Hexagonal Architecture principles: inward dependency direction, separated domain/application/infrastructure or equivalent layers, explicit use cases or application services for workflows, ports or contracts for volatile infrastructure, adapters at boundaries, mapping between external shapes and core models, and a clear composition root. Do not return `true` for generic MVC, feature folders, service folders, modular code, or a clean architecture that does not enforce these dependency boundaries.
+- `commit_message_convention`: detect `true` only for exact Conventional Commits in the standard form `type: message`, `type(scope): message`, or `type(scope)!: message`, using lowercase types such as `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `build`, `ci`, `style`, `perf`, or `revert`. Do not return `true` for `[FEAT]`, `[FIX]`, uppercase tags, ticket prefixes, emoji prefixes, free-form categories, or approximate commit conventions.
+
+Be moderately trigger-happy only for `unit_tests`: return `true` when the scan shows a real test setup or meaningful test files are present, even if the evidence does not prove full TDD discipline. Use `false` only when tests are absent, disabled, purely placeholder, or the scan cannot identify a runnable test convention.
+
+Base each `detected` value only on explicit scan evidence. Keep each `comment` short and evidence-based; explain the decisive evidence or the missing standard requirement.
 
 ## Final Check
 
