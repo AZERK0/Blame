@@ -41,6 +41,13 @@ const practiceDescriptions: Record<CodePracticeKey, string> = {
     "Guide the agent to follow the repository's commit message convention.",
 }
 
+const codebaseModeLabels: Record<CodePracticeKey, string> = {
+  coding_style: "Match codebase",
+  unit_tests: "Disabled",
+  layered_architecture: "Match codebase",
+  commit_message_convention: "Match codebase",
+}
+
 export function PracticesPage() {
   const store = useCodePracticesStore()
 
@@ -162,7 +169,7 @@ function PracticeCard({
                 disabled={updating}
                 className="rounded-[calc(var(--radius-lg)-2px)] px-2 text-xs text-muted-foreground data-active:bg-background data-active:text-foreground dark:data-active:bg-foreground/10"
               >
-                Match codebase
+                {codebaseModeLabels[practice.practice]}
               </TabsTrigger>
               <TabsTrigger
                 value="pro"
