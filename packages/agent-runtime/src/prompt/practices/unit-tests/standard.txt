@@ -1,11 +1,15 @@
 ## Unit Tests: Professional TDD
 
-Develop behavior through tests first. For implementation tasks, follow a strict red-green-refactor loop:
+Develop behavior through tests first for behavioral implementation changes, especially backend logic, domain and application code, services, use cases, repositories, adapters, frontend stores, reducers, selectors, state machines, validation, parsing, data transformations, API interaction logic, and frontend business behavior. Follow a strict red-green-refactor loop:
 - define the expected behavior as testable cases before changing production code;
 - write or identify a failing test for the next behavior;
 - implement the smallest production change that makes it pass;
 - refactor only the touched code after green, without changing behavior;
 - repeat until the requested behavior is covered.
+
+Do not force TDD for purely cosmetic, textual, layout-only, styling-only, animation-only, icon-only, simple markup, visual configuration, presentational component changes, or wiring with no meaningful state, validation, data transformation, or business behavior.
+
+For frontend work, prefer unit tests around stores, state transitions, selectors, validation, data orchestration, API synchronization, and business decisions rather than brittle tests of visual markup.
 
 If tests cannot be executed, still structure the work test-first, state the limitation, and provide the exact command that should prove the red or green state.
 

@@ -1,6 +1,6 @@
 ## Architecture: Standard Professional
 
-Design for maintainability, clear boundaries, and controlled dependencies. Apply Clean, Onion, and Hexagonal Architecture principles proportionally to the size and risk of the change. Do not over-architect small behavior.
+Design for maintainability, clear boundaries, and controlled dependencies. Apply Clean, Onion, and Hexagonal Architecture principles proportionally to the size and risk of the change. Do not over-architect small behavior. When the existing project has a clear architecture, improve within it instead of replacing it wholesale.
 
 Use dependency direction as the main rule:
 - outer layers such as UI, HTTP, CLI, database, filesystem, SDKs, and external APIs may depend on inner layers;
@@ -21,6 +21,10 @@ Use cases should be explicit for meaningful workflows. Name them by intent, such
 Model the domain when rules exist. Use entities for concepts with identity and lifecycle, such as `UserStory`, `Project`, `Worktree`, or `DevelopmentSession`. Use value objects for values with real validation or meaning, such as `StoryId`, `ProjectPath`, `BranchName`, `PortNumber`, or `EnvironmentVariableName`. Do not wrap every primitive by default.
 
 Keep external shapes out of the core. Do not leak ORM records into domain rules, external API responses into UI state, React objects into use cases, database schemas into business decisions, or transport DTOs into domain entities. Map at the boundary where formats cross.
+
+For frontend architecture, separate presentational UI from application state and data orchestration. Keep purely local UI state inside components, such as temporary inputs, open modals, hover state, and local toggles. Use existing stores, query caches, reducers, or state containers for shared business state, server-backed cached data, multi-component workflows, and persistent user-facing state, such as the current user, selected project, backlog, user stories, active worktree, preview status, agent execution state, provider configuration, code practices, diffs, and review state. Components should render state and dispatch intentions; stores or application services should own data loading, mutation flows, derived state, and business decisions when those concerns outgrow a single component.
+
+Do not create a store for trivial component-local state. Prefer the project's existing frontend state pattern before introducing a new one. State containers should support the frontend architecture, not turn React components into mini backends or move every UI detail into global state.
 
 Return explicit outcomes. Prefer `Result<T, Error>`, success/failure objects, typed domain errors, or application errors over ambiguous `null`, bare booleans, partial objects, or unclassified exceptions. Distinguish business errors such as `UserStoryNotFound`, `WorktreeAlreadyExists`, `InvalidStoryStatusTransition`, `PortUnavailable`, `MissingEnvironmentFile`, and `MergeConflictDetected` from technical failures so adapters can translate them to HTTP, UI messages, logs, or retries.
 
