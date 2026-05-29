@@ -14,6 +14,7 @@ export type {
   LoginOAuthProviderInput,
   OAuthCredentials,
   ProjectCodePracticeKey,
+  ProjectCodePracticePreference,
   ProjectCodePracticeResult,
   ProviderCredentialSummary,
   ProviderListResponse,

@@ -182,6 +182,11 @@ export function BacklogPage() {
         })
         return story
       }
+      const codePractices = projects.activeProject
+        ? await createCloudApi(auth.apiConnection)
+            .projectInitialization(projects.activeProject.id)
+            .then((snapshot) => snapshot.practices)
+        : []
       const session = await platform.agent?.sessions.startDevelopment({
         apiConnection: auth.apiConnection,
         providerId: selection.currentModel.provider.id,
@@ -191,6 +196,7 @@ export function BacklogPage() {
         summary: story.summary,
         cwd: story.worktree,
         workspaceRoot: story.worktree,
+        codePractices,
       })
       if (!session) {
         toast.error("Unable to resume agent", {
@@ -241,6 +247,7 @@ export function BacklogPage() {
     [
       auth,
       platform.agent,
+      projects.activeProject,
       selection.currentModel,
       selection.currentVariant,
       updateStory,

@@ -36,6 +36,8 @@ import type {
   InitializeProjectResult,
   LoginOAuthProviderInput,
   OAuthCredentials,
+  ProjectCodePracticeKey,
+  ProjectCodePracticePreference,
   ResolveApprovalInput,
   SaveProviderCredentialInput,
   SendDevelopmentSessionInput,
@@ -509,7 +511,7 @@ export class BlameAgentRuntime {
       prompt: developmentStoryPrompt(input),
       cwd: input.cwd,
       workspaceRoot: input.workspaceRoot,
-      systemPrompt: developmentSystemPrompt(),
+      systemPrompt: developmentSystemPrompt(input.codePractices),
     })
   }
 
@@ -601,8 +603,27 @@ function developmentStoryPrompt(input: Pick<StartDevelopmentSessionInput, "title
   ].join("\n")
 }
 
-function developmentSystemPrompt() {
-  return loadPrompt("code-agent-system")
+function developmentSystemPrompt(practices: ProjectCodePracticePreference[] = []) {
+  return [
+    loadPrompt("code-agent-system"),
+    developmentPracticePrompt(practices, "coding_style"),
+    developmentPracticePrompt(practices, "layered_architecture"),
+    developmentPracticePrompt(practices, "unit_tests"),
+  ].join("\n\n")
+}
+
+function developmentPracticePrompt(
+  practices: ProjectCodePracticePreference[],
+  practice: ProjectCodePracticeKey
+) {
+  const enabled = practices.find((item) => item.practice === practice)?.enabled
+  if (practice === "coding_style") {
+    return loadPrompt(`practices/coding-style/${enabled ? "standard" : "match-codebase"}`)
+  }
+  if (practice === "layered_architecture") {
+    return loadPrompt(`practices/architecture/${enabled ? "standard" : "match-codebase"}`)
+  }
+  return loadPrompt(`practices/unit-tests/${enabled ? "standard" : "disabled"}`)
 }
 
 function errorMessage(error: unknown) {

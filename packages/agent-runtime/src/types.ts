@@ -111,6 +111,7 @@ export type StartDevelopmentSessionInput = {
   summary: string
   cwd: string
   workspaceRoot: string
+  codePractices?: ProjectCodePracticePreference[]
 }
 
 export type SendSessionInput = {
@@ -134,6 +135,11 @@ export type ProjectCodePracticeResult = {
   practice: ProjectCodePracticeKey
   detected: boolean
   comment: string
+}
+
+export type ProjectCodePracticePreference = {
+  practice: ProjectCodePracticeKey
+  enabled: boolean
 }
 
 export type InitializeProjectInput = {

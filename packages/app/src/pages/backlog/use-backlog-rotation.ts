@@ -63,9 +63,10 @@ export function useBacklogRotation(
     )
     if (blocker) return reportBlocker(story, blocker)
 
-    const initialization = await createCloudApi(auth.apiConnection)
-      .projectInitialization(projects.activeProject.id)
-      .then((snapshot) => snapshot.initialization)
+    const projectInitialization = await createCloudApi(
+      auth.apiConnection
+    ).projectInitialization(projects.activeProject.id)
+    const initialization = projectInitialization.initialization
 
     if (
       initialization?.status !== "done" ||
@@ -107,6 +108,7 @@ export function useBacklogRotation(
       summary: story.summary,
       cwd: worktree.worktree,
       workspaceRoot: worktree.worktree,
+      codePractices: projectInitialization.practices,
     })
     const unsubscribeSession = platform.agent.sessions.onEvent(
       session.sessionId,
