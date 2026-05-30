@@ -29,6 +29,7 @@ export function registerAgentIpcHandlers() {
   ipcMain.handle("agent:sessions:abort", (_event, sessionId) => runtime.sessions.abort(sessionId))
   ipcMain.handle("agent:sessions:list", () => runtime.sessions.list())
   ipcMain.handle("agent:sessions:messages", (_event, sessionId) => runtime.sessions.messages(sessionId))
+  ipcMain.handle("agent:sessions:usage", (_event, sessionId) => runtime.sessions.usage(sessionId))
   ipcMain.handle("agent:sessions:event-stream-url", (_event, sessionId) => agentEventStreamUrl(sessionId))
   ipcMain.handle("agent:sessions:unsubscribe", (_event, sessionId) => runtime.sessions.unsubscribe(sessionId))
   ipcMain.handle("agent:approvals:resolve", (_event, input) => runtime.approvals.resolve(input))

@@ -11,7 +11,6 @@ import type {
   OAuthPrompt,
   OAuthProviderInterface,
   OAuthServerListeningInfo,
-  SessionUsageSummary,
 } from "@cline/sdk"
 
 import {
@@ -29,11 +28,27 @@ import {
 } from "./project-initialization.js"
 import { optimizeUserStoryPrompt } from "./prompt-optimization.js"
 import { loadPrompt } from "./prompt-loader.js"
+import {
+  appendProductionConfig,
+  assertRepositoryPath,
+  assertWorkspacePath,
+  createProductionLogger,
+  createProductionTelemetry,
+  loadProductionConfig,
+  promptMetadata,
+  recordUsageTelemetry,
+  safeLogPayload,
+  shouldAbortForUsage,
+  summarizeUsage,
+  usageLimitMessage,
+} from "./production.js"
 import type { ProjectInitializationScan } from "./project-initialization.js"
+import type { ProductionSessionContext } from "./production.js"
 import type {
   AgentApprovalRequest,
   AgentEvent,
   AgentRuntimeEvents,
+  AgentUsageSummary,
   ApiConnection,
   ApproveAndMergeInput,
   ApproveAndMergeResult,
@@ -56,7 +71,9 @@ import type {
 const execFileAsync = promisify(execFile)
 const readTools = ["read_files", "search_codebase", "fetch_web_content"]
 const writeTools = ["run_commands", "editor", "apply_patch"]
+const blockedCommandParts = ["rm -rf", "sudo", "curl | sh", "wget | sh", "> /dev/"]
 const maxInitializationAttempts = 3
+const productionLogger = createProductionLogger()
 
 type ToolApprovalRequest = {
   toolName?: string
@@ -90,11 +107,14 @@ type RuntimeOptions = {
 
 export class BlameAgentRuntime {
   private cline?: Promise<ClineCore>
+  private telemetryHandle?: Promise<Awaited<ReturnType<typeof createProductionTelemetry>>>
   private unsubscribers = new Map<string, () => void>()
   private pendingApprovals = new Map<string, PendingApproval>()
   private alwaysAllowedTools = new Set<string>()
   private autoApprovedWriteToolSessions = new Set<string>()
   private sessionLogFiles = new Map<string, string>()
+  private sessionContexts = new Map<string, ProductionSessionContext>()
+  private readonly productionConfig = loadProductionConfig()
   private readonly events?: AgentRuntimeEvents
   private readonly options: RuntimeOptions
 
@@ -144,11 +164,14 @@ export class BlameAgentRuntime {
     sessionIds.forEach((sessionId) => this.unsubscribeSession(sessionId))
     this.resolvePendingApprovals()
     this.sessionLogFiles.clear()
+    this.sessionContexts.clear()
+    await this.disposeCore()
+    await this.disposeTelemetry()
   }
 
   private async core() {
     if (!this.cline) {
-      this.cline = import("@cline/sdk").then((module) =>
+      this.cline = Promise.all([import("@cline/sdk"), this.telemetry()]).then(([module, telemetry]) =>
         module.ClineCore.create({
           clientName: "blame",
           backendMode: "auto",
@@ -156,16 +179,26 @@ export class BlameAgentRuntime {
           capabilities: {
             requestToolApproval: (request: ToolApprovalRequest) => this.requestApproval(request),
           },
-          logger: runtimeLogger(),
+          logger: productionLogger,
+          telemetry: telemetry?.telemetry,
         })
       )
     }
     return this.cline
   }
 
+  private telemetry() {
+    if (!this.telemetryHandle) {
+      this.telemetryHandle = createProductionTelemetry(productionLogger)
+    }
+    return this.telemetryHandle
+  }
+
   private async startSession(input: StartSessionInput) {
+    assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd")
     const startLogFile = startLogPath(input.cwd)
     await appendLog(startLogFile, "start requested", startContext(input))
+    const startedAt = Date.now()
     try {
       const credential = await resolveProviderCredential(input.apiConnection, {
         providerId: input.providerId,
@@ -198,20 +231,22 @@ export class BlameAgentRuntime {
       await appendLog(startLogFile, "cline core ready")
       const session = await cline.start({
         config: {
-          providerId: input.providerId,
-          modelId: input.modelId,
-          apiKey: resolvedCredential.apiKey,
-          baseUrl: resolvedCredential.baseUrl ?? undefined,
-          thinking: !!input.reasoningEffort,
-          reasoningEffort: input.reasoningEffort,
-          systemPrompt: input.systemPrompt ?? loadPrompt("default-agent-system"),
-          cwd: input.cwd,
-          workspaceRoot: input.workspaceRoot,
-          mode: input.mode ?? "act",
-          maxIterations: input.maxIterations ?? 32,
-          enableTools: true,
-          enableSpawnAgent: false,
-          enableAgentTeams: false,
+          ...appendProductionConfig({
+            providerId: input.providerId,
+            modelId: input.modelId,
+            apiKey: resolvedCredential.apiKey,
+            baseUrl: resolvedCredential.baseUrl ?? undefined,
+            thinking: !!input.reasoningEffort,
+            reasoningEffort: input.reasoningEffort,
+            systemPrompt: input.systemPrompt ?? loadPrompt("default-agent-system"),
+            cwd: input.cwd,
+            workspaceRoot: input.workspaceRoot,
+            mode: input.mode ?? "act",
+            maxIterations: input.maxIterations ?? 32,
+            enableTools: true,
+            enableSpawnAgent: false,
+            enableAgentTeams: false,
+          }),
         },
         interactive: true,
         source: "blame-desktop",
@@ -219,7 +254,9 @@ export class BlameAgentRuntime {
       })
       const sessionLogFile = sessionLogPath(input.cwd, session.sessionId)
       this.sessionLogFiles.set(session.sessionId, sessionLogFile)
+      this.sessionContexts.set(session.sessionId, sessionContext(input, session.sessionId))
       await appendLog(startLogFile, "session created", {
+        durationMs: Date.now() - startedAt,
         sessionId: session.sessionId,
         logFile: sessionLogFile,
       })
@@ -239,12 +276,17 @@ export class BlameAgentRuntime {
       }
       if (input.autoSendPrompt === false) {
         await this.logSession(session.sessionId, "prompt deferred", {
-          promptLength: input.prompt.length,
+          ...promptMetadata(input.prompt),
         })
       }
       return session
     } catch (error) {
-      await appendLog(startLogFile, "start failed", { message: errorMessage(error) })
+      await appendLog(startLogFile, "start failed", {
+        durationMs: Date.now() - startedAt,
+        errorType: errorType(error),
+        message: errorMessage(error),
+        status: "failed",
+      })
       throw error
     }
   }
@@ -276,12 +318,13 @@ export class BlameAgentRuntime {
     return cline.readMessages(sessionId)
   }
 
-  private async readUsage(sessionId: string): Promise<SessionUsageSummary | undefined> {
+  private async readUsage(sessionId: string): Promise<AgentUsageSummary | undefined> {
     const cline = await this.core()
     return cline.getAccumulatedUsage(sessionId)
   }
 
   private async initializeProject(input: InitializeProjectInput): Promise<InitializeProjectResult> {
+    assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd")
     const resolvedCredential = await this.initializationCredential(input)
     const scan = await scanProjectForInitialization(input.workspaceRoot)
     const cline = await this.core()
@@ -315,6 +358,7 @@ export class BlameAgentRuntime {
   private async optimizeUserStoryPrompt(
     input: OptimizeUserStoryPromptInput
   ): Promise<OptimizeUserStoryPromptResult> {
+    assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd")
     const prompt = input.prompt.trim()
     if (!prompt) throw new Error("Prompt optimizer requires a user story prompt.")
     const credential = await this.runtimeCredential(input)
@@ -335,6 +379,8 @@ export class BlameAgentRuntime {
   }
 
   private async approveAndMergeStory(input: ApproveAndMergeInput): Promise<ApproveAndMergeResult> {
+    assertRepositoryPath(input.repositoryRoot, "repositoryRoot")
+    assertRepositoryPath(input.worktree, "worktree")
     const logFile = approveMergeLogPath(input.worktree)
     await appendLog(logFile, "approve merge requested", approveMergeContext(input))
     await assertGitRepository(input.repositoryRoot)
@@ -422,16 +468,30 @@ export class BlameAgentRuntime {
     const cline = await this.core()
     const unsubscribe = await cline.subscribe((payload: CoreSessionEvent) => {
       const event = normalizeEvent(sessionId, payload)
-      void this.logSession(sessionId, `event:${event.type}`, payload)
+      void this.handleSessionEvent(sessionId, event)
       this.events?.emit(event)
     }, { sessionId })
     this.unsubscribers.set(sessionId, unsubscribe)
+  }
+
+  private async handleSessionEvent(sessionId: string, event: AgentEvent) {
+    await this.logSession(sessionId, `event:${event.type}`, eventLogPayload(event))
+    if (event.type !== "usage") return
+    const usage = await this.readUsage(sessionId)
+    const context = this.sessionContexts.get(sessionId) ?? { sessionId }
+    await this.logSession(sessionId, "usage updated", { ...context, ...summarizeUsage(usage) })
+    recordUsageTelemetry((await this.telemetry())?.telemetry, usage, context)
+    if (!shouldAbortForUsage(usage, this.productionConfig)) return
+    const message = usageLimitMessage(usage, this.productionConfig)
+    this.emitSessionError(sessionId, message)
+    await this.abortSession(sessionId)
   }
 
   private unsubscribeSession(sessionId: string) {
     this.unsubscribers.get(sessionId)?.()
     this.unsubscribers.delete(sessionId)
     this.autoApprovedWriteToolSessions.delete(sessionId)
+    this.sessionContexts.delete(sessionId)
     void this.logSession(sessionId, "session unsubscribed")
   }
 
@@ -459,6 +519,11 @@ export class BlameAgentRuntime {
 
   private requestApproval(request: ToolApprovalRequest): Promise<ToolApprovalResult> | ToolApprovalResult {
     const toolName = request.toolName ?? request.name ?? "unknown"
+    const blockedReason = blockedToolReason(toolName, request.input)
+    if (blockedReason) {
+      if (request.sessionId) this.emitSessionError(request.sessionId, blockedReason)
+      return { approved: false }
+    }
     if (
       !writeTools.includes(toolName) ||
       this.alwaysAllowedTools.has(toolName) ||
@@ -609,6 +674,20 @@ export class BlameAgentRuntime {
     await appendLog(file, message, payload)
   }
 
+  private async disposeCore() {
+    if (!this.cline) return
+    const cline = await this.cline
+    await cline.dispose("Shutting down")
+    this.cline = undefined
+  }
+
+  private async disposeTelemetry() {
+    const telemetry = await this.telemetryHandle
+    await telemetry?.flush()
+    await telemetry?.dispose()
+    this.telemetryHandle = undefined
+  }
+
   private startDevelopmentSession(input: StartDevelopmentSessionInput) {
     return this.startSession({
       apiConnection: input.apiConnection,
@@ -627,8 +706,9 @@ export class BlameAgentRuntime {
   }
 
   private sendPrompt(cline: ClineCore, sessionId: string, prompt: string) {
+    const startedAt = Date.now()
     const result = cline.send({ sessionId, prompt }).then((result: unknown) => {
-      void this.logSession(sessionId, "send resolved", result)
+      void this.logSession(sessionId, "send resolved", sendResultLogPayload(result, Date.now() - startedAt))
       const failure = resultFailureMessage(result)
       if (failure) {
         this.emitSessionError(sessionId, failure)
@@ -638,13 +718,17 @@ export class BlameAgentRuntime {
       return result
     }).catch((error: unknown) => {
       const message = errorMessage(error)
-      void this.logSession(sessionId, "send failed", { message })
+      void this.logSession(sessionId, "send failed", {
+        durationMs: Date.now() - startedAt,
+        errorType: errorType(error),
+        message,
+        status: "failed",
+      })
       this.emitSessionError(sessionId, message)
       throw error
     })
     void this.logSession(sessionId, "prompt sent", {
-      promptLength: prompt.length,
-      promptPreview: prompt.slice(0, 500),
+      ...promptMetadata(prompt),
     })
     return result
   }
@@ -680,7 +764,7 @@ function initializationConfig(
   input: InitializeProjectInput,
   credential: { apiKey: string; baseUrl: string | null }
 ) {
-  return {
+  return appendProductionConfig({
     providerId: input.providerId,
     modelId: input.modelId,
     apiKey: credential.apiKey,
@@ -694,14 +778,14 @@ function initializationConfig(
     enableSpawnAgent: false,
     enableAgentTeams: false,
     maxIterations: 8,
-  }
+  })
 }
 
 function commitMessageConfig(
   input: ApproveAndMergeInput,
   credential: { apiKey: string; baseUrl: string | null }
 ) {
-  return {
+  return appendProductionConfig({
     providerId: input.providerId,
     modelId: input.modelId,
     apiKey: credential.apiKey,
@@ -715,14 +799,14 @@ function commitMessageConfig(
     enableSpawnAgent: false,
     enableAgentTeams: false,
     maxIterations: 4,
-  }
+  })
 }
 
 function mergeConflictConfig(
   input: ApproveAndMergeInput,
   credential: { apiKey: string; baseUrl: string | null }
 ) {
-  return {
+  return appendProductionConfig({
     providerId: input.providerId,
     modelId: input.modelId,
     apiKey: credential.apiKey,
@@ -736,7 +820,7 @@ function mergeConflictConfig(
     enableSpawnAgent: false,
     enableAgentTeams: false,
     maxIterations: 24,
-  }
+  })
 }
 
 function initializationPrompt(scan: ProjectInitializationScan, correction?: InitializationCorrection) {
@@ -972,14 +1056,19 @@ function startContext(input: StartSessionInput) {
   return {
     providerId: input.providerId,
     modelId: input.modelId,
-    reasoningEffort: input.reasoningEffort,
-    cwd: input.cwd,
-    workspaceRoot: input.workspaceRoot,
     mode: input.mode ?? "act",
     maxIterations: input.maxIterations ?? 32,
-    autoApproveWriteTools: !!input.autoApproveWriteTools,
-    autoSendPrompt: input.autoSendPrompt !== false,
-    promptLength: input.prompt.length,
+    ...promptMetadata(input.prompt),
+  }
+}
+
+function sessionContext(input: StartSessionInput, sessionId: string): ProductionSessionContext {
+  return {
+    maxIterations: input.maxIterations ?? 32,
+    mode: input.mode ?? "act",
+    modelId: input.modelId,
+    providerId: input.providerId,
+    sessionId,
   }
 }
 
@@ -994,9 +1083,9 @@ function sessionLogPath(cwd: string, sessionId: string) {
 async function appendLog(file: string, message: string, payload?: unknown) {
   try {
     await mkdir(dirname(file), { recursive: true })
-    await appendFile(file, `${JSON.stringify(logLine(message, payload))}\n`, "utf8")
-  } catch (error) {
-    console.warn("[blame-agent] failed to write log", file, error)
+    await appendFile(file, `${JSON.stringify(logLine(message, safeLogPayload(payload)))}\n`, "utf8")
+  } catch {
+    console.warn("[blame-agent]", "log write failed")
   }
 }
 
@@ -1010,9 +1099,18 @@ function logLine(message: string, payload?: unknown) {
 
 function resultFailureMessage(result: unknown) {
   const payload = asRecord(result)
-  const status = stringValue(payload.status) ?? stringValue(payload.state)
-  if (!status || !["failed", "error", "cancelled"].includes(status)) return undefined
+  const status = resultStatus(payload)
+  if (!status || !["failed", "error", "cancelled", "aborted", "mistake_limit"].includes(status)) return undefined
   return stringValue(payload.error) ?? stringValue(payload.message) ?? `Cline send ended with status ${status}.`
+}
+
+function resultStatus(payload: Record<string, unknown>) {
+  return (
+    stringValue(payload.status) ??
+    stringValue(payload.state) ??
+    stringValue(payload.finishReason) ??
+    stringValue(payload.reason)
+  )
 }
 
 function initializationToolPolicies() {
@@ -1182,6 +1280,56 @@ function normalizeClineAgentPayload(payload: Record<string, unknown>, sessionId:
   }
 }
 
+function eventLogPayload(event: AgentEvent) {
+  const payload = asRecord(event.payload)
+  if (event.type === "usage") return summarizeUsage({ aggregateUsage: asRecord(payload.usage) as never })
+  if (event.type === "tool") return toolLogPayload(payload)
+  if (event.type === "done") return doneLogPayload(payload)
+  if (event.type === "error") return errorLogPayload(payload)
+  return {
+    sessionId: event.sessionId,
+    status: event.type,
+  }
+}
+
+function toolLogPayload(payload: Record<string, unknown>) {
+  const toolCall = asRecord(payload.toolCall)
+  const toolName = stringValue(toolCall.name) ?? stringValue(toolCall.toolName) ?? stringValue(payload.toolName)
+  return {
+    durationMs: numberValue(payload.durationMs),
+    status: stringValue(payload.phase),
+    success: stringValue(payload.phase) !== "failed",
+    toolName,
+  }
+}
+
+function doneLogPayload(payload: Record<string, unknown>) {
+  return {
+    finishReason: stringValue(payload.reason) ?? stringValue(payload.finishReason),
+    status: stringValue(payload.status) ?? "done",
+    ...summarizeUsage({ aggregateUsage: asRecord(payload.usage) as never }),
+  }
+}
+
+function errorLogPayload(payload: Record<string, unknown>) {
+  const error = asRecord(payload.error)
+  return {
+    errorType: stringValue(error.name) ?? "Error",
+    message: stringValue(payload.message) ?? stringValue(error.message),
+    status: "failed",
+  }
+}
+
+function sendResultLogPayload(result: unknown, durationMs: number) {
+  const payload = asRecord(result)
+  return {
+    durationMs,
+    finishReason: stringValue(payload.finishReason) ?? stringValue(payload.reason),
+    status: resultStatus(payload) ?? "completed",
+    ...summarizeUsage({ aggregateUsage: asRecord(payload.usage) as never }),
+  }
+}
+
 function normalizeContentEvent(payload: Record<string, unknown>, sessionId: string, raw: unknown): AgentEvent {
   const contentType = stringValue(payload.contentType)
   if (contentType === "tool") {
@@ -1253,14 +1401,13 @@ function toApprovalRequest(request: ToolApprovalRequest, toolName: string): Agen
   }
 }
 
-function runtimeLogger() {
-  return {
-    log: (...input: unknown[]) => console.log("[blame-agent]", ...input),
-    debug: (...input: unknown[]) => console.debug("[blame-agent]", ...input),
-    info: (...input: unknown[]) => console.info("[blame-agent]", ...input),
-    warn: (...input: unknown[]) => console.warn("[blame-agent]", ...input),
-    error: (...input: unknown[]) => console.error("[blame-agent]", ...input),
-  }
+function blockedToolReason(toolName: string, input: unknown) {
+  if (toolName !== "run_commands") return undefined
+  const command = stringValue(asRecord(input).command)
+  if (!command) return undefined
+  return blockedCommandParts.some((part) => command.includes(part))
+    ? "Command blocked by security policy"
+    : undefined
 }
 
 function asRecord(value: unknown) {
@@ -1298,4 +1445,8 @@ function toBlameOAuthCredentials(credentials: ClineOAuthCredentials): OAuthCrede
     email: credentials.email,
     metadata: credentials.metadata,
   }
+}
+
+function errorType(error: unknown) {
+  return error instanceof Error ? error.constructor.name : "Error"
 }

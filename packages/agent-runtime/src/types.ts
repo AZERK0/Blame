@@ -205,6 +205,19 @@ export type AgentSessionRecord = {
   updatedAt?: string
 }
 
+export type AgentUsageTotals = {
+  cacheReadTokens: number
+  cacheWriteTokens: number
+  inputTokens: number
+  outputTokens: number
+  totalCost: number
+}
+
+export type AgentUsageSummary = {
+  aggregateUsage?: AgentUsageTotals
+  usage?: AgentUsageTotals
+}
+
 export type AgentEvent = {
   type: "text" | "reasoning" | "tool" | "approval" | "usage" | "notice" | "done" | "error" | "raw"
   sessionId?: string

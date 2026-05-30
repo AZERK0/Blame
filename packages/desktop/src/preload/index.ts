@@ -94,6 +94,8 @@ const api: BlameDesktopApi = {
       list: () => ipcRenderer.invoke("agent:sessions:list"),
       messages: (sessionId) =>
         ipcRenderer.invoke("agent:sessions:messages", sessionId),
+      usage: (sessionId) =>
+        ipcRenderer.invoke("agent:sessions:usage", sessionId),
       eventStreamUrl: (sessionId) =>
         ipcRenderer.invoke("agent:sessions:event-stream-url", sessionId),
       onEvent: (sessionId, callback) => {

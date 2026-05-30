@@ -1,6 +1,7 @@
 import * as React from "react"
 import type {
   AgentEvent,
+  AgentUsageSummary,
   ApiConnection as AgentApiConnection,
   ApproveAndMergeInput,
   ApproveAndMergeResult,
@@ -60,6 +61,7 @@ export type AgentClient = {
     abort(sessionId: string): Promise<void>
     list(): Promise<unknown>
     messages(sessionId: string): Promise<unknown>
+    usage(sessionId: string): Promise<AgentUsageSummary | undefined>
     eventStreamUrl?(sessionId: string): Promise<string | null>
     onEvent(
       sessionId: string,

@@ -1,6 +1,7 @@
 import type { ClineCore } from "@cline/sdk"
 
 import { loadPrompt } from "./prompt-loader.js"
+import { appendProductionConfig } from "./production.js"
 import type {
   OptimizeUserStoryPromptInput,
   OptimizeUserStoryPromptResult,
@@ -32,7 +33,7 @@ function promptOptimizationConfig(
   input: OptimizeUserStoryPromptInput,
   credential: PromptOptimizationCredential
 ) {
-  return {
+  return appendProductionConfig({
     providerId: input.providerId,
     modelId: input.modelId,
     apiKey: credential.apiKey,
@@ -46,7 +47,7 @@ function promptOptimizationConfig(
     enableSpawnAgent: false,
     enableAgentTeams: false,
     maxIterations: 4,
-  }
+  })
 }
 
 function promptOptimizationUserPrompt(input: OptimizeUserStoryPromptInput) {
