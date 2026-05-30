@@ -22,7 +22,8 @@
     "electron-context-menu": "4.1.2",
     "electron-log": "^5",
     "electron-store": "^10",
-    "electron-window-state": "^5.0.3"
+    "electron-window-state": "^5.0.3",
+    "get-east-asian-width": "1.6.0"
   },
   "devDependencies": {
     "@types/node": "^24.12.0",
