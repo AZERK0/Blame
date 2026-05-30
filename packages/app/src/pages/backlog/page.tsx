@@ -506,26 +506,30 @@ function useProjectInitializationStatus() {
       return
     }
     let cancelled = false
+    let timer: number | undefined
     const cloud = createCloudApi(auth.apiConnection)
     const refresh = async () => {
       const snapshot = await cloud.projectInitialization(
         activeProject.id
       )
       if (cancelled) return
+      const status = snapshot.initialization?.status ?? "pending"
       setSnapshot({
         projectId: activeProject.id,
-        status: snapshot.initialization?.status ?? "pending",
+        status,
       })
+      if (projectInitializing(status)) {
+        timer = window.setTimeout(() => {
+          void refresh().catch(() => undefined)
+        }, 5_000)
+      }
     }
     void refresh().catch(() => {
       if (!cancelled) setSnapshot(undefined)
     })
-    const timer = window.setInterval(() => {
-      void refresh().catch(() => undefined)
-    }, 5_000)
     return () => {
       cancelled = true
-      window.clearInterval(timer)
+      if (timer) window.clearTimeout(timer)
     }
   }, [auth, projects.activeProject])
 
