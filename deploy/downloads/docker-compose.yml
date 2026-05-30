@@ -1,0 +1,9 @@
+services:
+  downloads:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    volumes:
+      - ${BLAME_DOWNLOADS_PATH:-/var/www/blame-downloads}:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    expose:
+      - "80"
