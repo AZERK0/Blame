@@ -68,13 +68,20 @@ export function BacklogPage() {
     })
   }, [backlog.projectPath])
   const updateStory = React.useCallback(
-    async (story: UserStory, input: UserStoryUpdate) => {
-      const cleanup = await inactiveStoryCleanup(
-        story,
-        input,
-        platform,
-        projects.activeProject?.path
-      )
+    async (
+      story: UserStory,
+      input: UserStoryUpdate,
+      options: { cleanup?: boolean } = {}
+    ) => {
+      const cleanup =
+        options.cleanup === false
+          ? {}
+          : await inactiveStoryCleanup(
+              story,
+              input,
+              platform,
+              projects.activeProject?.path
+            )
       const nextStory = await backlog.update(story, { ...input, ...cleanup })
       setDrawerTarget((current) =>
         current?.userStory?.id === story.id
@@ -282,14 +289,24 @@ export function BacklogPage() {
           description: `Merged into ${result.targetBranch}.`,
           position: "bottom-right",
         })
-        return updateStory(runningStory, {
-          agentLastError: null,
-          agentLastEvent: `Merged into ${result.targetBranch}.`,
-          agentStatus: null,
-          mergeCommit: result.mergeCommit,
-          mergedAt: new Date().toISOString(),
-          status: "done",
-        })
+        const mergedStory = await updateStory(
+          runningStory,
+          {
+            ...inactiveStoryFields(),
+            agentLastError: null,
+            agentLastEvent: `Merged into ${result.targetBranch}.`,
+            mergeCommit: result.mergeCommit,
+            mergedAt: new Date().toISOString(),
+            status: "done",
+          },
+          { cleanup: false }
+        )
+        void cleanupMergedStory(
+          runningStory,
+          platform,
+          projects.activeProject?.path
+        )
+        return mergedStory
       } catch (error) {
         const message = errorMessage(error)
         toast.error("Approve & Merge failed", {
@@ -531,6 +548,22 @@ async function removeStoryWorktree(
     worktree: story.worktree,
   })
   if (!removed) throw new Error("Unable to remove worktree.")
+}
+
+async function cleanupMergedStory(
+  story: UserStory,
+  platform: ReturnType<typeof usePlatform>,
+  repositoryRoot: string | undefined
+) {
+  try {
+    await stopStoryRuntime(story, platform)
+    await removeStoryWorktree(story, platform, repositoryRoot)
+  } catch (error) {
+    toast.error("Merged story cleanup failed", {
+      description: errorMessage(error),
+      position: "bottom-right",
+    })
+  }
 }
 
 function inactiveStoryFields(): UserStoryUpdate {

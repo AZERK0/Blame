@@ -1,4 +1,5 @@
 import vine from '@vinejs/vine'
+import { DateTime } from 'luxon'
 
 const status = vine.enum(['backlog', 'ready', 'in-progress', 'in-review', 'done', 'discarded'])
 const priority = vine.enum(['Low', 'Medium', 'High'])
@@ -16,6 +17,20 @@ const agentActivity = vine.object({
   createdAt: vine.string().trim().minLength(1).maxLength(255),
   updatedAt: vine.string().trim().maxLength(255).optional(),
 })
+const nullableDateTime = vine
+  .string()
+  .trim()
+  .nullable()
+  .optional()
+  .transform((value, field): DateTime | null | undefined => {
+    if (value === null || value === undefined) return value
+    const date = DateTime.fromISO(value)
+    if (date.isValid) return date
+    const sqlDate = DateTime.fromSQL(value)
+    if (sqlDate.isValid) return sqlDate
+    field.report('The {{ field }} field must be a datetime value', 'date', field)
+    return DateTime.invalid('Invalid datetime')
+  })
 
 export const listUserStoriesValidator = vine.create({
   projectId: vine.string().trim().minLength(1),
@@ -39,7 +54,7 @@ export const createUserStoryValidator = vine.create({
   agentLastError: vine.string().trim().maxLength(4096).nullable().optional(),
   agentActivities: vine.array(agentActivity).nullable().optional(),
   agentFinalResponse: vine.string().nullable().optional(),
-  mergedAt: vine.date().nullable().optional(),
+  mergedAt: nullableDateTime,
   mergeCommit: vine.string().trim().maxLength(255).nullable().optional(),
   discardedReason: vine.string().trim().maxLength(2048).nullable().optional(),
 })
@@ -62,7 +77,7 @@ export const updateUserStoryValidator = vine.create({
   agentLastError: vine.string().trim().maxLength(4096).nullable().optional(),
   agentActivities: vine.array(agentActivity).nullable().optional(),
   agentFinalResponse: vine.string().nullable().optional(),
-  mergedAt: vine.date().nullable().optional(),
+  mergedAt: nullableDateTime,
   mergeCommit: vine.string().trim().maxLength(255).nullable().optional(),
   discardedReason: vine.string().trim().maxLength(2048).nullable().optional(),
 })
