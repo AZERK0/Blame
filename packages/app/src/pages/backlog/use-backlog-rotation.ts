@@ -2,13 +2,17 @@ import * as React from "react"
 import { toast } from "sonner"
 import type { AgentEvent } from "@blame/agent-runtime"
 
-import type { UserStory } from "@/components/backlog/data/backlog-data"
+import type {
+  UserStory,
+  UserStoryUpdate,
+} from "@/components/backlog/data/backlog-data"
 import {
   agentEventText,
   agentFlowUpdate,
   completedAgentRun,
   shouldPersistAgentEvent,
 } from "@/components/backlog/data/agent-flow"
+import { subscribeAgentEvents } from "@/components/backlog/data/agent-event-stream"
 import type { useBacklogStore } from "@/components/backlog/data/backlog-store"
 import { useModelSelection } from "@/components/model/model-selector"
 import { useCloudAuth } from "@/context/cloud-auth"
@@ -20,6 +24,7 @@ import { createCloudApi } from "@/lib/cloud-api"
 const maxConcurrentDevelopmentStories = 3
 const blockerRetryDelay = 30_000
 const previewRecoveryIntervalMs = 30_000
+const agentEventPersistDelayMs = 1_500
 const setupToastId = "backlog-rotation-setup"
 const authToastId = "backlog-agent-auth"
 const urlPattern = /\bhttps?:\/\/[^\s"'<>]+|\blocalhost:\d+[^\s"'<>]*/i
@@ -37,6 +42,7 @@ export function useBacklogRotation(
   const blockedStories = React.useRef(new Map<number, number>())
   const reportedBlockers = React.useRef(new Set<string>())
   const reportedAgentErrors = React.useRef(new Set<string>())
+  const pendingAgentUpdates = React.useRef(new Map<number, PendingAgentUpdate>())
   const agentAuthenticationBlockedUntil = React.useRef(0)
   const previewRecoveryStoryIds = React.useRef(new Set<number>())
   const storiesRef = React.useRef(backlog.stories)
@@ -50,9 +56,15 @@ export function useBacklogRotation(
     blockedStories.current.clear()
     reportedBlockers.current.clear()
     reportedAgentErrors.current.clear()
+    clearPendingAgentUpdates(pendingAgentUpdates.current)
     agentAuthenticationBlockedUntil.current = 0
     previewRecoveryStoryIds.current.clear()
   }, [projects.activeProject?.id, selection.currentModel?.id])
+
+  React.useEffect(
+    () => () => clearPendingAgentUpdates(pendingAgentUpdates.current),
+    []
+  )
 
   async function startStory(story: UserStory) {
     if (!projects.activeProject) return
@@ -81,25 +93,29 @@ export function useBacklogRotation(
       return
     }
 
-    const worktree = await platform.workspace.createWorktree({
+    const workspace = platform.workspace
+    const agent = platform.agent
+    if (!workspace || !agent) return
+
+    const worktree = await workspace.createWorktree({
       repositoryRoot: projects.activeProject.path,
       storyId: story.id,
       title: story.title,
     })
-    const setup = await platform.workspace.runProjectSetup({
+    const setup = await workspace.runProjectSetup({
       worktree: worktree.worktree,
       setupScript: initialization.setupScript,
       dockerCompose: initialization.dockerCompose,
     })
     backlog.setStorySetupInitializing(story, true)
-    const unsubscribeSetup = platform.workspace.onSetupEvent(
+    const unsubscribeSetup = workspace.onSetupEvent(
       setup.runId,
       (event) => {
         void persistSetupEvent(story, event, worktree.worktree)
         if (event.type === "exit") unsubscribeSetup()
       }
     )
-    const session = await platform.agent.sessions.startDevelopment({
+    const session = await agent.sessions.startDevelopment({
       apiConnection: auth.apiConnection,
       providerId: selection.currentModel.provider.id,
       modelId: selection.currentModel.id,
@@ -110,10 +126,11 @@ export function useBacklogRotation(
       workspaceRoot: worktree.worktree,
       codePractices: projectInitialization.practices,
     })
-    const unsubscribeSession = platform.agent.sessions.onEvent(
+    const unsubscribeSession = subscribeAgentEvents(
+      platform,
       session.sessionId,
       (event) => {
-        void persistAgentEvent(story, event)
+        persistAgentEvent(story, event)
         if (event.type === "done" || event.type === "error")
           unsubscribeSession()
       }
@@ -131,7 +148,7 @@ export function useBacklogRotation(
       status: "in-progress",
       worktree: worktree.worktree,
     })
-    void platform.agent.sessions.sendDevelopment({
+    void agent.sessions.sendDevelopment({
       sessionId: session.sessionId,
       title: story.title,
       summary: story.summary,
@@ -226,7 +243,7 @@ export function useBacklogRotation(
     recoverActivePreviews,
   ])
 
-  async function persistAgentEvent(story: UserStory, event: AgentEvent) {
+  function persistAgentEvent(story: UserStory, event: AgentEvent) {
     const currentStory = activeStory(story, storiesRef.current)
     const flowUpdate = agentFlowUpdate(currentStory, event)
     const text = agentEventText(event)
@@ -235,29 +252,87 @@ export function useBacklogRotation(
       return
     if (expiredAuthenticationToken(text)) {
       reportExpiredAuthenticationToken(story, text)
-      await backlog.update(currentStory, {
-        ...flowUpdate,
-        agentLastError: text,
-        agentLastEvent: text,
-        agentStatus: "Paused",
-      })
+      persistAgentUpdate(
+        currentStory,
+        {
+          ...flowUpdate,
+          agentLastError: text,
+          agentLastEvent: text,
+          agentStatus: "Paused",
+        },
+        true
+      )
       return
     }
     if (completedAgentRun(event)) {
-      await backlog.update(currentStory, {
-        ...flowUpdate,
-        agentLastError: null,
-        agentLastEvent: text || "Agent completed. Ready for review.",
-        agentStatus: null,
-        status: "in-review",
-      })
+      persistAgentUpdate(
+        currentStory,
+        {
+          ...flowUpdate,
+          agentLastError: null,
+          agentLastEvent: text || "Agent completed. Ready for review.",
+          agentStatus: null,
+          status: "in-review",
+        },
+        true
+      )
       return
     }
-    await backlog.update(currentStory, {
-      ...flowUpdate,
-      agentLastError:
-        event.type === "error" ? text || "Agent session failed" : undefined,
-      agentLastEvent: text || event.type,
+    persistAgentUpdate(
+      currentStory,
+      {
+        ...flowUpdate,
+        agentLastError:
+          event.type === "error" ? text || "Agent session failed" : undefined,
+        agentLastEvent: text || event.type,
+      },
+      event.type === "done" || event.type === "error"
+    )
+  }
+
+  function persistAgentUpdate(
+    story: UserStory,
+    input: UserStoryUpdate,
+    immediate: boolean
+  ) {
+    const nextStory = updateLocalStory(story, input)
+    if (immediate) {
+      void flushAgentUpdate(nextStory, input).catch(() => undefined)
+      return
+    }
+    queueAgentUpdate(nextStory, input)
+  }
+
+  function updateLocalStory(story: UserStory, input: UserStoryUpdate) {
+    const currentStory = activeStory(story, storiesRef.current)
+    const nextStory = { ...currentStory, ...definedUpdate(input) }
+    storiesRef.current = storiesRef.current.map((current) =>
+      current.id === story.id ? nextStory : current
+    )
+    backlog.updateLocal(currentStory, input)
+    return nextStory
+  }
+
+  function queueAgentUpdate(story: UserStory, input: UserStoryUpdate) {
+    const pending = pendingAgentUpdates.current.get(story.id)
+    if (pending) window.clearTimeout(pending.timer)
+    const update = { ...pending?.input, ...input }
+    const timer = window.setTimeout(() => {
+      pendingAgentUpdates.current.delete(story.id)
+      void backlog
+        .update(activeStory(story, storiesRef.current), update)
+        .catch(() => undefined)
+    }, agentEventPersistDelayMs)
+    pendingAgentUpdates.current.set(story.id, { input: update, timer })
+  }
+
+  function flushAgentUpdate(story: UserStory, input: UserStoryUpdate) {
+    const pending = pendingAgentUpdates.current.get(story.id)
+    if (pending) window.clearTimeout(pending.timer)
+    pendingAgentUpdates.current.delete(story.id)
+    return backlog.update(activeStory(story, storiesRef.current), {
+      ...pending?.input,
+      ...input,
     })
   }
 
@@ -319,6 +394,22 @@ export function useBacklogRotation(
 
 function activeStory(story: UserStory, stories: UserStory[]) {
   return stories.find((currentStory) => currentStory.id === story.id) ?? story
+}
+
+type PendingAgentUpdate = {
+  input: UserStoryUpdate
+  timer: number
+}
+
+function clearPendingAgentUpdates(updates: Map<number, PendingAgentUpdate>) {
+  updates.forEach((update) => window.clearTimeout(update.timer))
+  updates.clear()
+}
+
+function definedUpdate(input: UserStoryUpdate) {
+  return Object.fromEntries(
+    Object.entries(input).filter(([, value]) => value !== undefined)
+  )
 }
 
 function runningStories(stories: UserStory[]) {

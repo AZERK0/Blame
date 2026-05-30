@@ -111,6 +111,19 @@ export function useBacklogStore() {
     },
     [api]
   )
+  const updateLocal = React.useCallback(
+    (story: UserStory, input: UserStoryUpdate) => {
+      setState((current) => ({
+        ...current,
+        stories: current.stories.map((currentStory) =>
+          currentStory.id === story.id
+            ? { ...currentStory, ...definedUpdate(input) }
+            : currentStory
+        ),
+      }))
+    },
+    []
+  )
 
   const remove = React.useCallback(
     async (story: UserStory) => {
@@ -160,7 +173,14 @@ export function useBacklogStore() {
     storySetupInitializing,
     storiesForColumn,
     update,
+    updateLocal,
   }
+}
+
+function definedUpdate(input: UserStoryUpdate) {
+  return Object.fromEntries(
+    Object.entries(input).filter(([, value]) => value !== undefined)
+  )
 }
 
 function setupInitializingStoryIds(

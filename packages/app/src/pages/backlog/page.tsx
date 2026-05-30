@@ -9,6 +9,7 @@ import {
   completedAgentRun,
   shouldPersistAgentEvent,
 } from "@/components/backlog/data/agent-flow"
+import { subscribeAgentEvents } from "@/components/backlog/data/agent-event-stream"
 import { useBacklogStore } from "@/components/backlog/data/backlog-store"
 import type {
   BacklogAction,
@@ -33,6 +34,8 @@ import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import { createCloudApi } from "@/lib/cloud-api"
 
+const agentEventPersistDelayMs = 1_500
+
 export function BacklogPage() {
   const backlog = useBacklogStore()
   const auth = useCloudAuth()
@@ -44,10 +47,16 @@ export function BacklogPage() {
   const initializationStatus = useProjectInitializationStatus()
   const queueInitializing = projectInitializing(initializationStatus)
   const storiesRef = React.useRef(backlog.stories)
+  const pendingAgentUpdates = React.useRef(new Map<number, PendingAgentUpdate>())
 
   React.useEffect(() => {
     storiesRef.current = backlog.stories
   }, [backlog.stories])
+
+  React.useEffect(
+    () => () => clearPendingAgentUpdates(pendingAgentUpdates.current),
+    []
+  )
 
   const drawerUserStory = React.useMemo(() => {
     if (!drawerTarget?.userStory) return undefined
@@ -91,6 +100,71 @@ export function BacklogPage() {
       return nextStory
     },
     [backlog, platform, projects.activeProject?.path]
+  )
+  const updateStoryLocal = React.useCallback(
+    (story: UserStory, input: UserStoryUpdate) => {
+      const currentStory = activeStory(story, storiesRef.current)
+      const nextStory = { ...currentStory, ...definedUpdate(input) }
+      storiesRef.current = storiesRef.current.map((current) =>
+        current.id === story.id ? nextStory : current
+      )
+      backlog.updateLocal(currentStory, input)
+      setDrawerTarget((current) =>
+        current?.userStory?.id === story.id
+          ? { ...current, userStory: nextStory }
+          : current
+      )
+      return nextStory
+    },
+    [backlog]
+  )
+  const queueAgentUpdate = React.useCallback(
+    (story: UserStory, input: UserStoryUpdate) => {
+      const pending = pendingAgentUpdates.current.get(story.id)
+      if (pending) window.clearTimeout(pending.timer)
+      const update = { ...pending?.input, ...input }
+      const timer = window.setTimeout(() => {
+        pendingAgentUpdates.current.delete(story.id)
+        void updateStory(activeStory(story, storiesRef.current), update, {
+          cleanup: false,
+        }).catch(() => undefined)
+      }, agentEventPersistDelayMs)
+      pendingAgentUpdates.current.set(story.id, { input: update, timer })
+    },
+    [updateStory]
+  )
+  const flushAgentUpdate = React.useCallback(
+    (story: UserStory, input: UserStoryUpdate) => {
+      const pending = pendingAgentUpdates.current.get(story.id)
+      if (pending) window.clearTimeout(pending.timer)
+      pendingAgentUpdates.current.delete(story.id)
+      return updateStory(
+        activeStory(story, storiesRef.current),
+        { ...pending?.input, ...input },
+        { cleanup: false }
+      )
+    },
+    [updateStory]
+  )
+  const persistAgentUpdate = React.useCallback(
+    (story: UserStory, input: UserStoryUpdate, immediate: boolean) => {
+      const nextStory = updateStoryLocal(story, input)
+      if (immediate) {
+        void flushAgentUpdate(nextStory, input).catch(() => undefined)
+        return
+      }
+      queueAgentUpdate(nextStory, input)
+    },
+    [flushAgentUpdate, queueAgentUpdate, updateStoryLocal]
+  )
+  const persistAgentEvent = React.useCallback(
+    (story: UserStory, event: AgentEvent) => {
+      const currentStory = activeStory(story, storiesRef.current)
+      const update = agentEventUpdate(currentStory, event)
+      if (!shouldPersistAgentEvent(event, update)) return
+      persistAgentUpdate(currentStory, update, immediateAgentEvent(event))
+    },
+    [persistAgentUpdate]
   )
   const rejectStory = React.useCallback(
     async (story: UserStory, choice: RejectChoice) => {
@@ -213,18 +287,15 @@ export function BacklogPage() {
         status: "in-progress",
       })
       let authenticationFailed = false
-      const unsubscribe = agent.sessions.onEvent(
+      const unsubscribe = subscribeAgentEvents(
+        platform,
         session.sessionId,
         (event) => {
           if (authenticationFailed) return
           authenticationFailed = expiredAuthenticationToken(
             agentEventText(event)
           )
-          const currentStory = activeStory(updatedStory, storiesRef.current)
-          const update = agentEventUpdate(currentStory, event)
-          if (shouldPersistAgentEvent(event, update)) {
-            void updateStory(currentStory, update)
-          }
+          persistAgentEvent(updatedStory, event)
           if (
             authenticationFailed ||
             event.type === "done" ||
@@ -242,11 +313,12 @@ export function BacklogPage() {
     },
     [
       auth,
-      platform.agent,
-      projects.activeProject,
+      platform,
+      projects,
       selection.currentModel,
       selection.currentVariant,
       updateStory,
+      persistAgentEvent,
     ]
   )
 
@@ -580,6 +652,30 @@ function inactiveStoryFields(): UserStoryUpdate {
 
 function activeStory(story: UserStory, stories: UserStory[]) {
   return stories.find((currentStory) => currentStory.id === story.id) ?? story
+}
+
+type PendingAgentUpdate = {
+  input: UserStoryUpdate
+  timer: number
+}
+
+function clearPendingAgentUpdates(updates: Map<number, PendingAgentUpdate>) {
+  updates.forEach((update) => window.clearTimeout(update.timer))
+  updates.clear()
+}
+
+function definedUpdate(input: UserStoryUpdate) {
+  return Object.fromEntries(
+    Object.entries(input).filter(([, value]) => value !== undefined)
+  )
+}
+
+function immediateAgentEvent(event: AgentEvent) {
+  return (
+    completedAgentRun(event) ||
+    event.type === "error" ||
+    expiredAuthenticationToken(agentEventText(event))
+  )
 }
 
 function clineLogPath(worktree: string, sessionId: string) {

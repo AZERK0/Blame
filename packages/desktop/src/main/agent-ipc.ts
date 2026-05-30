@@ -1,5 +1,7 @@
 import { BlameAgentRuntime, type AgentEvent } from "@blame/agent-runtime"
 import { BrowserWindow, ipcMain, shell } from "electron"
+import { createServer, type ServerResponse } from "node:http"
+import type { AddressInfo } from "node:net"
 
 const runtime = new BlameAgentRuntime({
   emit(event) {
@@ -27,6 +29,7 @@ export function registerAgentIpcHandlers() {
   ipcMain.handle("agent:sessions:abort", (_event, sessionId) => runtime.sessions.abort(sessionId))
   ipcMain.handle("agent:sessions:list", () => runtime.sessions.list())
   ipcMain.handle("agent:sessions:messages", (_event, sessionId) => runtime.sessions.messages(sessionId))
+  ipcMain.handle("agent:sessions:event-stream-url", (_event, sessionId) => agentEventStreamUrl(sessionId))
   ipcMain.handle("agent:sessions:unsubscribe", (_event, sessionId) => runtime.sessions.unsubscribe(sessionId))
   ipcMain.handle("agent:approvals:resolve", (_event, input) => runtime.approvals.resolve(input))
   ipcMain.handle("agent:initializations:run", (_event, input) => runtime.initializations.run(input))
@@ -34,12 +37,91 @@ export function registerAgentIpcHandlers() {
 }
 
 export function shutdownAgentRuntime() {
+  shutdownAgentEventServer()
   return runtime.shutdown()
 }
 
 function emitAgentEvent(event: AgentEvent) {
+  writeAgentEvent(event)
   BrowserWindow.getAllWindows().forEach((window) => {
     if (event.sessionId) window.webContents.send(`agent:sessions:event:${event.sessionId}`, event)
     if (event.type === "approval") window.webContents.send("agent:approvals:event", event)
   })
+}
+
+const streamClients = new Map<string, Set<ServerResponse>>()
+let streamServer: ReturnType<typeof createServer> | undefined
+let streamServerUrl: string | undefined
+
+async function agentEventStreamUrl(sessionId: string) {
+  const url = await ensureAgentEventServer()
+  return `${url}/agent/sessions/${encodeURIComponent(sessionId)}/events`
+}
+
+function ensureAgentEventServer() {
+  if (streamServerUrl) return Promise.resolve(streamServerUrl)
+  if (streamServer) return waitForAgentEventServer()
+  streamServer = createServer((request, response) => {
+    const sessionId = eventStreamSessionId(request.url)
+    if (!sessionId) return notFound(response)
+    registerStreamClient(sessionId, response)
+  })
+  streamServer.listen(0, "127.0.0.1")
+  return waitForAgentEventServer()
+}
+
+function waitForAgentEventServer() {
+  return new Promise<string>((resolve, reject) => {
+    if (!streamServer) return reject(new Error("Agent event stream is unavailable."))
+    streamServer.once("error", reject)
+    streamServer.once("listening", () => {
+      const address = streamServer?.address() as AddressInfo | null
+      if (!address) return reject(new Error("Agent event stream is unavailable."))
+      streamServerUrl = `http://127.0.0.1:${address.port}`
+      resolve(streamServerUrl)
+    })
+  })
+}
+
+function eventStreamSessionId(url: string | undefined) {
+  const match = url?.match(/^\/agent\/sessions\/([^/]+)\/events(?:\?.*)?$/)
+  return match ? decodeURIComponent(match[1]) : undefined
+}
+
+function registerStreamClient(sessionId: string, response: ServerResponse) {
+  response.writeHead(200, {
+    "Access-Control-Allow-Origin": "*",
+    "Cache-Control": "no-cache",
+    Connection: "keep-alive",
+    "Content-Type": "text/event-stream",
+  })
+  response.write("\n")
+  const clients = streamClients.get(sessionId) ?? new Set<ServerResponse>()
+  clients.add(response)
+  streamClients.set(sessionId, clients)
+  response.on("close", () => {
+    clients.delete(response)
+    if (clients.size === 0) streamClients.delete(sessionId)
+  })
+}
+
+function writeAgentEvent(event: AgentEvent) {
+  if (!event.sessionId) return
+  const clients = streamClients.get(event.sessionId)
+  if (!clients) return
+  const data = `data: ${JSON.stringify(event)}\n\n`
+  clients.forEach((client) => client.write(data))
+}
+
+function notFound(response: ServerResponse) {
+  response.writeHead(404)
+  response.end()
+}
+
+function shutdownAgentEventServer() {
+  streamClients.forEach((clients) => clients.forEach((client) => client.end()))
+  streamClients.clear()
+  streamServer?.close()
+  streamServer = undefined
+  streamServerUrl = undefined
 }

@@ -58,6 +58,7 @@ export type AgentClient = {
     abort(sessionId: string): Promise<void>
     list(): Promise<unknown>
     messages(sessionId: string): Promise<unknown>
+    eventStreamUrl?(sessionId: string): Promise<string | null>
     onEvent(
       sessionId: string,
       callback: (event: AgentEvent) => void
