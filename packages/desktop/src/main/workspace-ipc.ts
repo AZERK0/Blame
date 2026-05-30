@@ -1,8 +1,29 @@
-import { execFile, spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
+import {
+  execFile,
+  spawn,
+  type ChildProcessWithoutNullStreams,
+} from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import { existsSync, readdirSync } from "node:fs";
-import { appendFile, chmod, mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
-import { basename, delimiter, dirname, join, relative, resolve, sep } from "node:path";
+import {
+  appendFile,
+  chmod,
+  mkdir,
+  readdir,
+  readFile,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
+import {
+  basename,
+  delimiter,
+  dirname,
+  join,
+  relative,
+  resolve,
+  sep,
+} from "node:path";
 import { promisify } from "node:util";
 import { BrowserWindow, ipcMain } from "electron";
 
@@ -65,7 +86,10 @@ type DockerContainer = {
     Labels?: Record<string, string>;
   };
   NetworkSettings?: {
-    Ports?: Record<string, Array<{ HostIp?: string; HostPort?: string }> | null>;
+    Ports?: Record<
+      string,
+      Array<{ HostIp?: string; HostPort?: string }> | null
+    >;
   };
 };
 
@@ -77,6 +101,8 @@ type SetupRun = {
 
 const setupRuns = new Map<string, SetupRun>();
 const previewRecoveries = new Map<string, Promise<string | null>>();
+const removingWorktrees = new Set<string>();
+const removedWorktrees = new Set<string>();
 const workspaceProcesses = new Set<ChildProcessWithoutNullStreams>();
 
 export function registerWorkspaceIpcHandlers() {
@@ -98,24 +124,31 @@ export function registerWorkspaceIpcHandlers() {
     "workspace:git-repository-fingerprint",
     (_event, input: { root: string }) => gitRepositoryFingerprint(input.root),
   );
-  ipcMain.handle("workspace:create-worktree", (_event, input: CreateWorktreeInput) =>
-    createWorktree(input),
+  ipcMain.handle(
+    "workspace:create-worktree",
+    (_event, input: CreateWorktreeInput) => createWorktree(input),
   );
-  ipcMain.handle("workspace:run-project-setup", (_event, input: RunProjectSetupInput) =>
-    runProjectSetup(input),
+  ipcMain.handle(
+    "workspace:run-project-setup",
+    (_event, input: RunProjectSetupInput) => runProjectSetup(input),
   );
-  ipcMain.handle("workspace:stop-project-setup", (_event, input: StopProjectSetupInput) =>
-    stopProjectSetup(input),
+  ipcMain.handle(
+    "workspace:stop-project-setup",
+    (_event, input: StopProjectSetupInput) => stopProjectSetup(input),
   );
-  ipcMain.handle("workspace:remove-worktree", (_event, input: RemoveWorktreeInput) =>
-    removeWorktree(input),
+  ipcMain.handle(
+    "workspace:remove-worktree",
+    (_event, input: RemoveWorktreeInput) => removeWorktree(input),
   );
   ipcMain.handle(
     "workspace:resolve-project-preview-url",
-    (_event, input: ResolveProjectPreviewUrlInput) => resolveProjectPreviewUrl(input),
+    (_event, input: ResolveProjectPreviewUrlInput) =>
+      resolveProjectPreviewUrl(input),
   );
-  ipcMain.handle("workspace:ensure-project-preview-url", (_event, input: ResolveProjectPreviewUrlInput) =>
-    ensureProjectPreviewUrl(input),
+  ipcMain.handle(
+    "workspace:ensure-project-preview-url",
+    (_event, input: ResolveProjectPreviewUrlInput) =>
+      ensureProjectPreviewUrl(input),
   );
 }
 
@@ -192,6 +225,7 @@ async function createWorktree(input: CreateWorktreeInput) {
   await mkdir(dirname(worktree), { recursive: true });
 
   if (await worktreeRegistered(repositoryRoot, worktree)) {
+    removedWorktrees.delete(worktree);
     return { worktree, branch };
   }
 
@@ -203,12 +237,18 @@ async function createWorktree(input: CreateWorktreeInput) {
     await execFileAsync("git", ["worktree", "add", worktree, branch], {
       cwd: repositoryRoot,
     });
+    removedWorktrees.delete(worktree);
     return { worktree, branch };
   }
 
-  await execFileAsync("git", ["worktree", "add", "-b", branch, worktree, "HEAD"], {
-    cwd: repositoryRoot,
-  });
+  await execFileAsync(
+    "git",
+    ["worktree", "add", "-b", branch, worktree, "HEAD"],
+    {
+      cwd: repositoryRoot,
+    },
+  );
+  removedWorktrees.delete(worktree);
   return { worktree, branch };
 }
 
@@ -268,7 +308,12 @@ async function completeProjectSetup(
     const existingPreviewUrl = await labeledContainerPreviewUrl(worktree);
     if (!existingPreviewUrl) await startProjectCompose(worktree);
     setupRuns.delete(runId);
-    emitSetupOutput(runId, worktree, "stdout", "Project preview containers are running.\n");
+    emitSetupOutput(
+      runId,
+      worktree,
+      "stdout",
+      "Project preview containers are running.\n",
+    );
     emitSetupOutput(runId, worktree, "exit", "0");
   } catch (error) {
     setupRuns.delete(runId);
@@ -300,7 +345,12 @@ async function startProjectCompose(worktree: string) {
 
 async function stopProjectSetup(input: StopProjectSetupInput) {
   const worktree = resolve(input.worktree);
-  const composePath = join(worktree, ".blame", "initialization", "docker-compose.yml");
+  const composePath = join(
+    worktree,
+    ".blame",
+    "initialization",
+    "docker-compose.yml",
+  );
   if (!existsSync(composePath)) return false;
   await execFileAsync(
     "docker",
@@ -323,15 +373,22 @@ async function removeWorktree(input: RemoveWorktreeInput) {
   const worktree = resolve(input.worktree);
   await assertGitRepository(repositoryRoot);
   if (!(await worktreeRegistered(repositoryRoot, worktree))) return false;
-  await execFileAsync("git", ["worktree", "remove", "--force", worktree], {
-    cwd: repositoryRoot,
-  });
-  return true;
+  removingWorktrees.add(worktree);
+  try {
+    await stopSetupRunsForWorktree(worktree);
+    previewRecoveries.delete(worktree);
+    await removeGitWorktree(repositoryRoot, worktree);
+    removedWorktrees.add(worktree);
+    return true;
+  } finally {
+    removingWorktrees.delete(worktree);
+  }
 }
 
 async function resolveProjectPreviewUrl(input: ResolveProjectPreviewUrlInput) {
   const worktree = resolve(input.worktree);
-  await assertGitRepository(worktree);
+  if (removedWorktrees.has(worktree)) return null;
+  if (!(await isGitRepository(worktree))) return null;
   const composePath = projectComposePath(worktree);
   if (!existsSync(composePath)) return labeledContainerPreviewUrl(worktree);
   const previewTarget = await composePreviewTarget(worktree, composePath);
@@ -348,7 +405,9 @@ async function resolveProjectPreviewUrl(input: ResolveProjectPreviewUrlInput) {
 
 async function ensureProjectPreviewUrl(input: ResolveProjectPreviewUrlInput) {
   const worktree = resolve(input.worktree);
-  await assertGitRepository(worktree);
+  if (removedWorktrees.has(worktree)) return null;
+  if (removingWorktrees.has(worktree)) return null;
+  if (!(await isGitRepository(worktree))) return null;
   if (setupRunningForWorktree(worktree)) return null;
   const currentUrl = await resolveProjectPreviewUrl({ worktree });
   if (currentUrl && (await previewResponds(currentUrl))) return currentUrl;
@@ -362,11 +421,15 @@ async function ensureProjectPreviewUrl(input: ResolveProjectPreviewUrlInput) {
 }
 
 function setupRunningForWorktree(worktree: string) {
-  return Array.from(setupRuns.values()).some((run) => run.worktree === worktree);
+  return Array.from(setupRuns.values()).some(
+    (run) => run.worktree === worktree,
+  );
 }
 
 async function recoverProjectPreview(worktree: string) {
   await runExistingProjectSetup(worktree);
+  if (removedWorktrees.has(worktree)) return null;
+  if (removingWorktrees.has(worktree)) return null;
   await appendRecoveryLog(worktree, "compose starting");
   try {
     const previewUrl = await startProjectCompose(worktree);
@@ -421,8 +484,21 @@ async function stopChildProcess(child: ChildProcessWithoutNullStreams) {
   await waitForExit(child);
 }
 
+async function stopSetupRunsForWorktree(worktree: string) {
+  const runs = Array.from(setupRuns.values()).filter(
+    (run) => run.worktree === worktree,
+  );
+  await Promise.all(
+    runs.map(async (run) => {
+      setupRuns.delete(run.id);
+      await stopChildProcess(run.process);
+    }),
+  );
+}
+
 function waitForExit(child: ChildProcessWithoutNullStreams) {
-  if (child.exitCode !== null || child.signalCode !== null) return Promise.resolve();
+  if (child.exitCode !== null || child.signalCode !== null)
+    return Promise.resolve();
 
   return new Promise<void>((resolve) => {
     const timer = setTimeout(() => {
@@ -437,7 +513,10 @@ function waitForExit(child: ChildProcessWithoutNullStreams) {
   });
 }
 
-function killChildProcess(child: ChildProcessWithoutNullStreams, signal: NodeJS.Signals) {
+function killChildProcess(
+  child: ChildProcessWithoutNullStreams,
+  signal: NodeJS.Signals,
+) {
   if (child.exitCode !== null || child.signalCode !== null) return;
   if (process.platform !== "win32" && child.pid) {
     try {
@@ -525,6 +604,38 @@ async function assertGitRepository(cwd: string) {
   await execFileAsync("git", ["rev-parse", "--show-toplevel"], { cwd });
 }
 
+async function isGitRepository(cwd: string) {
+  try {
+    await assertGitRepository(cwd);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function removeGitWorktree(repositoryRoot: string, worktree: string) {
+  try {
+    await execFileAsync("git", ["worktree", "remove", "--force", worktree], {
+      cwd: repositoryRoot,
+    });
+  } catch (error) {
+    if (!isDirectoryNotEmptyError(error)) throw error;
+    if (await worktreeRegistered(repositoryRoot, worktree)) throw error;
+  }
+
+  await rm(worktree, { recursive: true, force: true });
+}
+
+function isDirectoryNotEmptyError(error: unknown) {
+  return commandText(error, "stderr").includes("Directory not empty");
+}
+
+function commandText(error: unknown, key: "stdout" | "stderr") {
+  if (!error || typeof error !== "object") return "";
+  const value = (error as Record<string, unknown>)[key];
+  return typeof value === "string" ? value : "";
+}
+
 async function branchExists(cwd: string, branch: string) {
   try {
     await execFileAsync(
@@ -586,7 +697,9 @@ function setupPath() {
 function nodeVersionManagerPaths() {
   return [
     ...nodeVersionBins(join(homePath(), ".nvm", "versions", "node")),
-    ...nodeVersionBins(join(homePath(), ".local", "share", "fnm", "node-versions")),
+    ...nodeVersionBins(
+      join(homePath(), ".local", "share", "fnm", "node-versions"),
+    ),
     join(homePath(), ".local", "bin"),
     join(homePath(), ".bun", "bin"),
   ];
@@ -880,7 +993,10 @@ async function previewContainers() {
   }
 }
 
-function containerMatchesWorktree(container: DockerContainer, worktree: string) {
+function containerMatchesWorktree(
+  container: DockerContainer,
+  worktree: string,
+) {
   const labels = container.Config?.Labels ?? {};
   const workingDir = labels["com.docker.compose.project.working_dir"];
   const configFiles = labels["com.docker.compose.project.config_files"];
@@ -932,7 +1048,9 @@ function numberValue(value: unknown) {
 }
 
 function errorMessage(error: unknown) {
-  return error instanceof Error ? `${error.message}\n` : "Project setup failed.\n";
+  return error instanceof Error
+    ? `${error.message}\n`
+    : "Project setup failed.\n";
 }
 
 function emitSetupEvent(
