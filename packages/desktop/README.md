@@ -64,4 +64,6 @@ A typical Dokploy or static server path can look like this:
 
 Use `BLAME_DOWNLOAD_BASE_URL` for the public URL serving the `latest` folder, for example `https://download.example.com/latest`.
 
-The repository includes a Dokploy-ready compose file at `deploy/downloads/docker-compose.yml`. It serves `/var/www/blame-downloads` by default. Override the host path with `BLAME_DOWNLOADS_PATH` if needed.
+The repository includes a Dokploy-ready Dockerfile at `deploy/downloads/Dockerfile`. Use `deploy/downloads` as the Docker context path. Mount `/var/www/blame-downloads` to `/usr/share/nginx/html` in Dokploy so uploaded release files are served by the container.
+
+If you prefer Docker Compose, `deploy/downloads/docker-compose.yml` uses the same image and serves `/var/www/blame-downloads` by default. Override the host path with `BLAME_DOWNLOADS_PATH` if needed.
