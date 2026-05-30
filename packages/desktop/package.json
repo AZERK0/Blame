@@ -9,10 +9,10 @@
     "dev": "node scripts/dev.mjs",
     "prebuild": "pnpm --filter @blame/agent-runtime build",
     "build": "electron-vite build",
-    "package": "electron-builder --config electron-builder.config.ts",
-    "package:linux": "electron-builder --linux --config electron-builder.config.ts",
-    "package:mac": "electron-builder --mac --config electron-builder.config.ts",
-    "package:win": "electron-builder --win --config electron-builder.config.ts",
+    "package": "node scripts/package.mjs",
+    "package:linux": "node scripts/package.mjs --linux",
+    "package:mac": "node scripts/package.mjs --mac",
+    "package:win": "node scripts/package.mjs --win",
     "preview": "electron-vite preview",
     "typecheck": "tsc --noEmit"
   },
@@ -22,8 +22,7 @@
     "electron-context-menu": "4.1.2",
     "electron-log": "^5",
     "electron-store": "^10",
-    "electron-window-state": "^5.0.3",
-    "get-east-asian-width": "1.6.0"
+    "electron-window-state": "^5.0.3"
   },
   "devDependencies": {
     "@types/node": "^24.12.0",

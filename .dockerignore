@@ -1,0 +1,10 @@
+.code-review-graph
+.env
+.git
+.idea
+.turbo
+**/dist
+**/node_modules
+**/out
+*.log
+node_modules

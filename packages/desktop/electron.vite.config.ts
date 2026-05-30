@@ -4,6 +4,9 @@ import appPlugin from "@blame/app/vite"
 export default defineConfig({
   main: {
     build: {
+      externalizeDeps: {
+        exclude: ["electron-context-menu", "electron-window-state"],
+      },
       rollupOptions: {
         input: { index: "src/main/index.ts" },
       },

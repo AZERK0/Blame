@@ -68,7 +68,7 @@ jobs:
       - run: pnpm --filter @blame/desktop build
 
       - name: Package installers
-        run: pnpm --filter @blame/desktop exec electron-builder ${{ matrix.args }} --publish never --config electron-builder.config.ts
+        run: pnpm --filter @blame/desktop package -- ${{ matrix.args }} --publish never
         env:
           BLAME_DOWNLOAD_BASE_URL: ${{ secrets.BLAME_DOWNLOAD_BASE_URL }}
           BLAME_HOMEPAGE: ${{ vars.BLAME_HOMEPAGE }}

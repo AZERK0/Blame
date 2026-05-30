@@ -275,9 +275,6 @@ importers:
       electron-window-state:
         specifier: ^5.0.3
         version: 5.0.3
-      get-east-asian-width:
-        specifier: 1.6.0
-        version: 1.6.0
     devDependencies:
       '@types/node':
         specifier: ^24.12.0
