@@ -27,6 +27,7 @@ import {
   projectInitializationPrompt,
   scanProjectForInitialization,
 } from "./project-initialization.js"
+import { optimizeUserStoryPrompt } from "./prompt-optimization.js"
 import { loadPrompt } from "./prompt-loader.js"
 import type { ProjectInitializationScan } from "./project-initialization.js"
 import type {
@@ -40,6 +41,8 @@ import type {
   InitializeProjectResult,
   LoginOAuthProviderInput,
   OAuthCredentials,
+  OptimizeUserStoryPromptInput,
+  OptimizeUserStoryPromptResult,
   ProjectCodePracticeKey,
   ProjectCodePracticePreference,
   ResolveApprovalInput,
@@ -127,6 +130,10 @@ export class BlameAgentRuntime {
 
   initializations = {
     run: (input: InitializeProjectInput) => this.initializeProject(input),
+  }
+
+  promptOptimizer = {
+    optimizeUserStory: (input: OptimizeUserStoryPromptInput) => this.optimizeUserStoryPrompt(input),
   }
 
   approveAndMerge = (input: ApproveAndMergeInput) => this.approveAndMergeStory(input)
@@ -303,6 +310,16 @@ export class BlameAgentRuntime {
       }
     }
     throw new Error("Project initialization agent did not return a valid result")
+  }
+
+  private async optimizeUserStoryPrompt(
+    input: OptimizeUserStoryPromptInput
+  ): Promise<OptimizeUserStoryPromptResult> {
+    const prompt = input.prompt.trim()
+    if (!prompt) throw new Error("Prompt optimizer requires a user story prompt.")
+    const credential = await this.runtimeCredential(input)
+    const cline = await this.core()
+    return optimizeUserStoryPrompt({ ...input, prompt }, cline, credential)
   }
 
   private async initializationCredential(input: InitializeProjectInput) {

@@ -118,6 +118,10 @@ const api: BlameDesktopApi = {
     initializations: {
       run: (input) => ipcRenderer.invoke("agent:initializations:run", input),
     },
+    promptOptimizer: {
+      optimizeUserStory: (input) =>
+        ipcRenderer.invoke("agent:prompt-optimizer:optimize-user-story", input),
+    },
     approveAndMerge: (input) =>
       ipcRenderer.invoke("agent:approve-and-merge", input),
   },

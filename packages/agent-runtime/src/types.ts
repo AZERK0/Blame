@@ -181,6 +181,23 @@ export type InitializeProjectResult = {
   practices: ProjectCodePracticeResult[]
 }
 
+export type OptimizeUserStoryPromptInput = {
+  apiConnection: ApiConnection
+  providerId: string
+  modelId: string
+  prompt: string
+  cwd: string
+  workspaceRoot: string
+  reasoningEffort?: ReasoningEffort
+  credentialLabel?: string
+  title?: string
+}
+
+export type OptimizeUserStoryPromptResult = {
+  sessionId: string
+  markdown: string
+}
+
 export type AgentSessionRecord = {
   sessionId: string
   title?: string

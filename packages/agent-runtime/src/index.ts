@@ -15,6 +15,8 @@ export type {
   InitializeProjectResult,
   LoginOAuthProviderInput,
   OAuthCredentials,
+  OptimizeUserStoryPromptInput,
+  OptimizeUserStoryPromptResult,
   ProjectCodePracticeKey,
   ProjectCodePracticePreference,
   ProjectCodePracticeResult,

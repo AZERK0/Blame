@@ -56,6 +56,7 @@ export function UserStoryDrawerPanel({
   onApproveAndMerge,
   onCreateUserStory,
   onOpenDrawer,
+  onOptimizeUserStory,
   onReject,
   onStopAgent,
   onUpdateUserStory,
@@ -73,6 +74,10 @@ export function UserStoryDrawerPanel({
     input: Omit<UserStoryDraft, "projectId">
   ) => Promise<UserStory>
   onOpenDrawer: OpenDrawer
+  onOptimizeUserStory?: (input: {
+    summary: string
+    title: string
+  }) => Promise<string>
   onReject: (story: UserStory, choice: RejectChoice) => Promise<UserStory>
   onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
   onUpdateUserStory: (
@@ -218,6 +223,12 @@ export function UserStoryDrawerPanel({
               commentRef={commentRef}
               mode={mode}
               onSummaryChange={setSummary}
+              onSummaryOptimize={
+                onOptimizeUserStory
+                  ? (nextSummary) =>
+                      onOptimizeUserStory({ summary: nextSummary, title })
+                  : undefined
+              }
               onFileLinkClick={openDevelopmentFile}
               status={status}
               summary={summary}

@@ -7,6 +7,8 @@ import type {
   InitializeProjectInput,
   InitializeProjectResult,
   LoginOAuthProviderInput,
+  OptimizeUserStoryPromptInput,
+  OptimizeUserStoryPromptResult,
   ProviderListResponse,
   ResolveApprovalInput,
   SaveProviderCredentialInput,
@@ -70,6 +72,11 @@ export type AgentClient = {
   }
   initializations: {
     run(input: InitializeProjectInput): Promise<InitializeProjectResult>
+  }
+  promptOptimizer: {
+    optimizeUserStory(
+      input: OptimizeUserStoryPromptInput
+    ): Promise<OptimizeUserStoryPromptResult>
   }
   approveAndMerge(input: ApproveAndMergeInput): Promise<ApproveAndMergeResult>
 }

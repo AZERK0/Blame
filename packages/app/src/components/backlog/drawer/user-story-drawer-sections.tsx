@@ -47,6 +47,7 @@ export function UserStoryContent({
   commentRef,
   mode,
   onSummaryChange,
+  onSummaryOptimize,
   onFileLinkClick,
   status,
   summary,
@@ -59,6 +60,7 @@ export function UserStoryContent({
   commentRef: React.RefObject<HTMLDivElement | null>
   mode: UserStoryDrawerMode
   onSummaryChange?: (summary: string) => void
+  onSummaryOptimize?: (summary: string) => Promise<string>
   onFileLinkClick?: (path: string) => void
   status: BacklogColumnId
   summary: string
@@ -82,6 +84,7 @@ export function UserStoryContent({
         markdown={summary}
         onFileLinkClick={onFileLinkClick}
         onMarkdownChange={onSummaryChange}
+        onOptimize={onSummaryOptimize}
         readOnly={!isEditable(mode, status)}
         placeholder="Describe the user story, expected behavior, and acceptance criteria."
         minHeight="min-h-70"

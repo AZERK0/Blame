@@ -401,6 +401,24 @@ export function BacklogPage() {
       updateStory,
     ]
   )
+  const optimizeUserStory = React.useCallback(
+    (input: { summary: string; title: string }) =>
+      optimizeUserStoryPrompt({
+        input,
+        auth,
+        platform,
+        projectPath: projects.activeProject?.path,
+        model: selection.currentModel,
+        reasoningEffort: selection.currentVariant,
+      }),
+    [
+      auth,
+      platform,
+      projects.activeProject?.path,
+      selection.currentModel,
+      selection.currentVariant,
+    ]
+  )
   const runStoryAction = React.useCallback(
     async (story: UserStory, action: BacklogAction) => {
       if (action === "Send to Dev Agent") {
@@ -480,6 +498,7 @@ export function BacklogPage() {
           return updateStory(story, input)
         }}
         onOpenDrawer={openDrawer}
+        onOptimizeUserStory={optimizeUserStory}
         onApproveAndMerge={approveAndMergeStory}
         onReject={rejectStory}
         onStopAgent={stopAgent}
@@ -560,6 +579,87 @@ function approveAndMergeValidationError(
   if (!model) return "Select a model before approving the merge."
   if (!platform.agent?.approveAndMerge)
     return "Desktop agent runtime is not available."
+}
+
+function optimizeUserStoryValidationError(
+  summary: string,
+  auth: ReturnType<typeof useCloudAuth>,
+  platform: ReturnType<typeof usePlatform>,
+  repositoryRoot: string | undefined,
+  model: unknown
+) {
+  if (!summary.trim()) return "Write a user story before optimizing it."
+  if (!repositoryRoot) return "Unable to resolve the active project."
+  if (auth.status !== "authenticated")
+    return "Reconnect the provider before optimizing the user story."
+  if (!model) return "Select a model before optimizing the user story."
+  if (!platform.agent?.promptOptimizer)
+    return "Desktop agent runtime is not available."
+}
+
+type OptimizeUserStoryPromptRequest = {
+  input: {
+    summary: string
+    title: string
+  }
+  auth: ReturnType<typeof useCloudAuth>
+  platform: ReturnType<typeof usePlatform>
+  projectPath?: string
+  model: ReturnType<typeof useModelSelection>["currentModel"]
+  reasoningEffort: ReturnType<typeof useModelSelection>["currentVariant"]
+}
+
+async function optimizeUserStoryPrompt(request: OptimizeUserStoryPromptRequest) {
+  const validationError = optimizeUserStoryValidationError(
+    request.input.summary,
+    request.auth,
+    request.platform,
+    request.projectPath,
+    request.model
+  )
+  if (validationError) throw optimizationValidationError(validationError)
+  const toastId = "user-story-prompt-optimizer"
+  toast.loading("Optimizing user story", {
+    id: toastId,
+    position: "bottom-right",
+  })
+  try {
+    const result = await runPromptOptimizer(request)
+    toast.success("User story optimized", {
+      id: toastId,
+      position: "bottom-right",
+    })
+    return result
+  } catch (error) {
+    toast.error("User story optimization failed", {
+      description: errorMessage(error),
+      id: toastId,
+      position: "bottom-right",
+    })
+    throw error
+  }
+}
+
+function optimizationValidationError(message: string) {
+  toast.error("Unable to optimize user story", {
+    description: message,
+    position: "bottom-right",
+  })
+  return new Error(message)
+}
+
+async function runPromptOptimizer(request: OptimizeUserStoryPromptRequest) {
+  const result = await request.platform.agent!.promptOptimizer.optimizeUserStory({
+    apiConnection: request.auth.apiConnection,
+    providerId: request.model!.provider.id,
+    modelId: request.model!.id,
+    reasoningEffort: request.reasoningEffort,
+    prompt: request.input.summary,
+    title: request.input.title,
+    cwd: request.projectPath!,
+    workspaceRoot: request.projectPath!,
+  })
+  return result.markdown
 }
 
 function projectCodePractices(

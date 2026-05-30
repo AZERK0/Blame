@@ -8,9 +8,11 @@ import {
   ListChecksIcon,
   ListIcon,
   ListOrderedIcon,
+  LoaderCircleIcon,
   PaperclipIcon,
   QuoteIcon,
   Redo2Icon,
+  SparklesIcon,
   StrikethroughIcon,
   Trash2Icon,
   Undo2Icon,
@@ -405,11 +407,15 @@ const markdownActions: {
 function MarkdownToolbar({
   disabled,
   onAction,
+  onOptimize,
+  optimizing,
   onRedo,
   onUndo,
 }: {
   disabled?: boolean
   onAction: (action: MarkdownAction) => void
+  onOptimize?: () => void
+  optimizing?: boolean
   onRedo: () => void
   onUndo: () => void
 }) {
@@ -422,20 +428,52 @@ function MarkdownToolbar({
         <ToolbarIconButton disabled={disabled} label="Redo" onClick={onRedo}>
           <Redo2Icon className="size-4" />
         </ToolbarIconButton>
-        <Separator className="mx-1 h-5" orientation="vertical" />
+        <ToolbarSeparator />
         {markdownActions.map(({ action, icon: Icon, label }) => (
-          <ToolbarIconButton
-            key={action}
-            disabled={disabled}
-            label={label}
-            onClick={() => onAction(action)}
-          >
-            <Icon className="size-4" />
-          </ToolbarIconButton>
+          <React.Fragment key={action}>
+            {action === "unordered" && <ToolbarSeparator />}
+            <ToolbarIconButton
+              disabled={disabled}
+              label={label}
+              onClick={() => onAction(action)}
+            >
+              <Icon className="size-4" />
+            </ToolbarIconButton>
+          </React.Fragment>
         ))}
+        {onOptimize && (
+          <>
+            <ToolbarSeparator />
+            <Tooltip delayDuration={1000}>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  aria-label="Optimize with AI"
+                  className="h-7 gap-1.5 rounded-lg border-primary/20 bg-gradient-to-r from-primary to-sky-500 px-2.5 text-xs text-primary-foreground shadow-sm shadow-primary/20 hover:from-primary/90 hover:to-sky-500/90"
+                  disabled={disabled}
+                  onClick={onOptimize}
+                >
+                  {optimizing ? (
+                    <LoaderCircleIcon className="size-3.5 animate-spin" />
+                  ) : (
+                    <SparklesIcon className="size-3.5" />
+                  )}
+                  Optimize with AI
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent sideOffset={6}>
+                Rewrite this user story into a clearer, structured prompt.
+              </TooltipContent>
+            </Tooltip>
+          </>
+        )}
       </div>
     </TooltipProvider>
   )
+}
+
+function ToolbarSeparator() {
+  return <Separator className="mx-1 h-5 !self-center" orientation="vertical" />
 }
 
 function ToolbarIconButton({
@@ -724,6 +762,7 @@ export const MarkdownEditor = React.forwardRef<
     mentionDirectory?: string
     onFileLinkClick?: (path: string) => void
     onMarkdownChange?: (markdown: string) => void
+    onOptimize?: (markdown: string) => Promise<string>
     readOnly?: boolean
   }
 >(function MarkdownEditor(
@@ -735,6 +774,7 @@ export const MarkdownEditor = React.forwardRef<
     minHeight,
     onFileLinkClick,
     onMarkdownChange,
+    onOptimize,
     placeholder,
     readOnly,
   },
@@ -761,6 +801,7 @@ export const MarkdownEditor = React.forwardRef<
   const rootRef = React.useRef<HTMLDivElement>(null)
   const textareaRef = React.useRef<HTMLTextAreaElement>(null)
   const [draftMarkdown, setDraftMarkdown] = React.useState(markdown)
+  const [optimizing, setOptimizing] = React.useState(false)
   const [mode, setMode] = React.useState<MarkdownMode>("write")
   const value = readOnly || onMarkdownChange ? markdown : draftMarkdown
   const mentionOpen =
@@ -1004,6 +1045,16 @@ export const MarkdownEditor = React.forwardRef<
     document.execCommand(command)
   }
 
+  async function handleOptimize() {
+    if (!onOptimize || readOnly || optimizing) return
+    setOptimizing(true)
+    try {
+      emitMarkdown(await onOptimize(value))
+    } finally {
+      setOptimizing(false)
+    }
+  }
+
   return (
     <Popover open={mentionOpen}>
       <PopoverAnchor asChild>
@@ -1042,8 +1093,10 @@ export const MarkdownEditor = React.forwardRef<
                   </TabsTrigger>
                 </TabsList>
                 <MarkdownToolbar
-                  disabled={readOnly || mode === "preview"}
+                  disabled={readOnly || mode === "preview" || optimizing}
                   onAction={applyMarkdownAction}
+                  onOptimize={onOptimize ? handleOptimize : undefined}
+                  optimizing={optimizing}
                   onRedo={() => runHistoryCommand("redo")}
                   onUndo={() => runHistoryCommand("undo")}
                 />

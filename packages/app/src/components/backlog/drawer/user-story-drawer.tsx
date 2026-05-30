@@ -35,6 +35,10 @@ export type UserStoryDrawerProps = {
   ) => Promise<UserStory>
   onApproveAndMerge: (story: UserStory) => Promise<UserStory>
   onOpenDrawer: OpenDrawer
+  onOptimizeUserStory?: (input: {
+    summary: string
+    title: string
+  }) => Promise<string>
   onReject: (story: UserStory, choice: RejectChoice) => Promise<UserStory>
   onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
   onUpdateUserStory: (
@@ -55,6 +59,7 @@ export function UserStoryDrawer({
   onCreateUserStory,
   onApproveAndMerge,
   onOpenDrawer,
+  onOptimizeUserStory,
   onReject,
   onStopAgent,
   onUpdateUserStory,
@@ -87,6 +92,7 @@ export function UserStoryDrawer({
         onApproveAndMerge={onApproveAndMerge}
         onCreateUserStory={onCreateUserStory}
         onOpenDrawer={onOpenDrawer}
+        onOptimizeUserStory={onOptimizeUserStory}
         onReject={onReject}
         onStopAgent={onStopAgent}
         onUpdateUserStory={onUpdateUserStory}
