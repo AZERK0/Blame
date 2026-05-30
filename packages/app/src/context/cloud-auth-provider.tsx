@@ -10,7 +10,7 @@ import { usePlatform } from "@/context/platform"
 import { createCloudApi } from "@/lib/cloud-api"
 
 const storageKey = "blame.app.cloud-session.v1"
-const defaultApiUrl = "http://localhost:3333/api/v1"
+const defaultApiUrl = "https://api.blame.raphael-charpentier.fr/api/v1"
 
 type CloudAuthState =
   | { status: "loading" }
