@@ -15,8 +15,8 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@cline/llms": "^0.0.41",
-    "@cline/sdk": "^0.0.41"
+    "@cline/llms": "^0.0.42",
+    "@cline/sdk": "^0.0.42"
   },
   "devDependencies": {
     "@types/node": "^24.12.0",

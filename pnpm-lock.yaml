@@ -27,11 +27,11 @@ importers:
   packages/agent-runtime:
     dependencies:
       '@cline/llms':
-        specifier: ^0.0.41
-        version: 0.0.41(@opentelemetry/core@2.7.1(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.214.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.7.1(@opentelemetry/api@1.9.1))
+        specifier: ^0.0.42
+        version: 0.0.42(@opentelemetry/core@2.7.1(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.214.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.7.1(@opentelemetry/api@1.9.1))
       '@cline/sdk':
-        specifier: ^0.0.41
-        version: 0.0.41(@opentelemetry/core@2.7.1(@opentelemetry/api@1.9.1))
+        specifier: ^0.0.42
+        version: 0.0.42(@opentelemetry/core@2.7.1(@opentelemetry/api@1.9.1))
     devDependencies:
       '@types/node':
         specifier: ^24.12.0
@@ -781,6 +781,7 @@ packages:
   '@aws-sdk/core@3.974.11':
     resolution: {integrity: sha512-QpnINq5FZH6EOaDEkmHdT7eUunbvD27pDNQypaWjFyYz7Zl1q3UCMQErBZxpmfGfI7MvI2TlK8KTkgNpv8b1ug==}
     engines: {node: '>=20.0.0'}
+    deprecated: Deprecated due to an error deserialization bug in JSON 1.0 protocol services, see https://github.com/aws/aws-sdk-js-v3/pull/8031. Newer version available.
 
   '@aws-sdk/credential-provider-cognito-identity@3.972.34':
     resolution: {integrity: sha512-hbOTV+vNi3kKo3J6qxylHSfcnSbnnVoMe1KA1VMjYazAEPmk+HSgLUksOemptoNldvSLTSj82ndB1mcZDMP3iQ==}
@@ -1023,16 +1024,16 @@ packages:
   '@chevrotain/utils@11.2.0':
     resolution: {integrity: sha512-+7whECg4yNWHottjvr2To2BRxL4XJVjIyyv5J4+bJ0iMOVU8j/8n1qPDLZS/90W/BObDR8VNL46lFbzY/Hosmw==}
 
-  '@cline/agents@0.0.41':
-    resolution: {integrity: sha512-Q6hBB5J8aqU5BwbGBpiMqhxMZgY9n9AZc13cHQRlr1KmltTI6dKoFm7cRmRutT7YBTghAZJdbLKeO4djO+zC8w==}
+  '@cline/agents@0.0.42':
+    resolution: {integrity: sha512-TDQldgchqzPGNbaVfOyQPs42KkbfOqDS8PhqDaY2geXJUu29Bs8IDVLDPwMrZqNvFigjyNnIkB9jCDtZYnVycQ==}
     engines: {node: '>=22'}
 
-  '@cline/core@0.0.41':
-    resolution: {integrity: sha512-YGxSgBL1+qdN2Kyg+u2Xizb7M0xTmVXUrnx8fMHDSimDwcnyDBpmbaRADy/2Gvp/xkwDscdIp2cYr5MGaEzGIQ==}
+  '@cline/core@0.0.42':
+    resolution: {integrity: sha512-PM2WjcCL10msR6fOZMBvBdHyILx/aMY+/SOonjY5FVLukjArJtWL/3TpBhYgPOLhN3fLO836w/iwdttmUxM27w==}
     engines: {node: '>=22'}
 
-  '@cline/llms@0.0.41':
-    resolution: {integrity: sha512-mEZnvNE01CqEkrCq1HGnJWn5fYFK0UCQlUfaM/PAJU4PnZG6FE0pFJT1bIWX6siLnXo4WjbfsjPP+P+91qlS8A==}
+  '@cline/llms@0.0.42':
+    resolution: {integrity: sha512-j/jcQ0v9ig+ULntmT2XZiLDTdeNc2h82pWbuh2gyE5CnsP3YNUydyQqwqPb3KhBCsyTLHf+9mZqMfOgvB9J/OA==}
     engines: {node: '>=22'}
     peerDependencies:
       '@aws-sdk/client-bedrock-runtime': ^3.0.0
@@ -1040,12 +1041,12 @@ packages:
       '@aws-sdk/client-bedrock-runtime':
         optional: true
 
-  '@cline/sdk@0.0.41':
-    resolution: {integrity: sha512-ggJfb1C/TeSWmlqI4tV3EpMtlPBtJvypMG2H3RxHgmvgaChbvQ2HaLtM/SPgn7Qldaso1iby/sxmaYF8WX4HoA==}
+  '@cline/sdk@0.0.42':
+    resolution: {integrity: sha512-KF1iZZY2gbgVMvuOpQJUCXH/fiFdgG145jdeo7lLeFNKFh3D9ElgAb/DkxcR1ocIXBjBOPeGCuINpYHVmlY7BA==}
     engines: {node: '>=22'}
 
-  '@cline/shared@0.0.41':
-    resolution: {integrity: sha512-f0w4+lGVkMQdHSDoLMGZIGRbGFfufWZ1r5sAov36JuZQoLgXXNeQKNsnXQE8FsP3mRqq6MFStf/35P3sg1T7EQ==}
+  '@cline/shared@0.0.42':
+    resolution: {integrity: sha512-F3l1BO/v3fnnFn8t4CQCT1wz+Kgs/KCokyXIwum/IZtq1LjsPUfceRUb9djOaOm6A1Uo/7YfnmHoS5YW2Kr/aw==}
     engines: {node: '>=22'}
 
   '@colors/colors@1.5.0':
@@ -4842,10 +4843,6 @@ packages:
     resolution: {integrity: sha512-CRpFK0RtLriVDGcPPAnR6HMVI8bSR2jnUIgralhauzYQZIb4RH9AtEInTuQr65LmmGggGcRT6HIASxwqsVsmlA==}
     engines: {node: ^18.14.0 || ^20.0.0 || ^22.0.0 || >=24.0.0}
 
-  jiti@1.21.7:
-    resolution: {integrity: sha512-/imKNG4EbWNrVjoNC/1H5/9GFy+tqjGBHCaSsN+P2RnPqjsLmv6UD3Ej+Kj8nBWaRAwyk7kK5ZUc+OEatnTR3A==}
-    hasBin: true
-
   jiti@2.7.0:
     resolution: {integrity: sha512-AC/7JofJvZGrrneWNaEnJeOLUx+JlGt7tNa0wZiRPT4MY1wmfKjt2+6O2p2uz2+skll8OZZmJMNqeke7kKbNgQ==}
     hasBin: true
@@ -7485,10 +7482,10 @@ snapshots:
 
   '@chevrotain/utils@11.2.0': {}
 
-  '@cline/agents@0.0.41(@opentelemetry/core@2.7.1(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.214.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.7.1(@opentelemetry/api@1.9.1))':
+  '@cline/agents@0.0.42(@opentelemetry/core@2.7.1(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.214.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.7.1(@opentelemetry/api@1.9.1))':
     dependencies:
-      '@cline/llms': 0.0.41(@opentelemetry/core@2.7.1(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.214.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.7.1(@opentelemetry/api@1.9.1))
-      '@cline/shared': 0.0.41
+      '@cline/llms': 0.0.42(@opentelemetry/core@2.7.1(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.214.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.7.1(@opentelemetry/api@1.9.1))
+      '@cline/shared': 0.0.42
       nanoid: 5.1.11
     transitivePeerDependencies:
       - '@aws-sdk/client-bedrock-runtime'
@@ -7498,11 +7495,11 @@ snapshots:
       - '@opentelemetry/sdk-trace-base'
       - supports-color
 
-  '@cline/core@0.0.41(@opentelemetry/core@2.7.1(@opentelemetry/api@1.9.1))':
+  '@cline/core@0.0.42(@opentelemetry/core@2.7.1(@opentelemetry/api@1.9.1))':
     dependencies:
-      '@cline/agents': 0.0.41(@opentelemetry/core@2.7.1(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.214.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.7.1(@opentelemetry/api@1.9.1))
-      '@cline/llms': 0.0.41(@opentelemetry/core@2.7.1(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.214.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.7.1(@opentelemetry/api@1.9.1))
-      '@cline/shared': 0.0.41
+      '@cline/agents': 0.0.42(@opentelemetry/core@2.7.1(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.214.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.7.1(@opentelemetry/api@1.9.1))
+      '@cline/llms': 0.0.42(@opentelemetry/core@2.7.1(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.214.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.7.1(@opentelemetry/api@1.9.1))
+      '@cline/shared': 0.0.42
       '@modelcontextprotocol/sdk': 1.29.0(zod@4.4.3)
       '@opentelemetry/api': 1.9.1
       '@opentelemetry/api-logs': 0.214.0
@@ -7515,7 +7512,7 @@ snapshots:
       '@opentelemetry/sdk-trace-base': 2.7.1(@opentelemetry/api@1.9.1)
       '@opentelemetry/sdk-trace-node': 2.7.1(@opentelemetry/api@1.9.1)
       '@opentelemetry/semantic-conventions': 1.41.1
-      jiti: 1.21.7
+      jiti: 2.7.0
       nanoid: 5.1.11
       node-machine-id: 1.1.12
       simple-git: 3.36.0
@@ -7530,7 +7527,7 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@cline/llms@0.0.41(@opentelemetry/core@2.7.1(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.214.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.7.1(@opentelemetry/api@1.9.1))':
+  '@cline/llms@0.0.42(@opentelemetry/core@2.7.1(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.214.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.7.1(@opentelemetry/api@1.9.1))':
     dependencies:
       '@ai-sdk/amazon-bedrock': 4.0.107(zod@4.4.3)
       '@ai-sdk/anthropic': 3.0.78(zod@4.4.3)
@@ -7541,7 +7538,7 @@ snapshots:
       '@ai-sdk/openai-compatible': 2.0.47(zod@4.4.3)
       '@ai-sdk/provider': 3.0.10
       '@aws-sdk/credential-providers': 3.1048.0
-      '@cline/shared': 0.0.41
+      '@cline/shared': 0.0.42
       '@langfuse/otel': 4.6.1(@opentelemetry/api@1.9.1)(@opentelemetry/core@2.7.1(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.214.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.7.1(@opentelemetry/api@1.9.1))
       '@opentelemetry/api': 1.9.1
       '@opentelemetry/sdk-trace-node': 2.7.1(@opentelemetry/api@1.9.1)
@@ -7560,9 +7557,9 @@ snapshots:
       - '@opentelemetry/sdk-trace-base'
       - supports-color
 
-  '@cline/sdk@0.0.41(@opentelemetry/core@2.7.1(@opentelemetry/api@1.9.1))':
+  '@cline/sdk@0.0.42(@opentelemetry/core@2.7.1(@opentelemetry/api@1.9.1))':
     dependencies:
-      '@cline/core': 0.0.41(@opentelemetry/core@2.7.1(@opentelemetry/api@1.9.1))
+      '@cline/core': 0.0.42(@opentelemetry/core@2.7.1(@opentelemetry/api@1.9.1))
     transitivePeerDependencies:
       - '@aws-sdk/client-bedrock-runtime'
       - '@cfworker/json-schema'
@@ -7571,7 +7568,7 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@cline/shared@0.0.41':
+  '@cline/shared@0.0.42':
     dependencies:
       aws4fetch: 1.0.20
       jsonrepair: 3.14.0
@@ -11402,8 +11399,6 @@ snapshots:
       chalk: 4.1.2
       pretty-format: 30.4.1
 
-  jiti@1.21.7: {}
-
   jiti@2.7.0: {}
 
   jose@6.2.3: {}
@@ -12068,7 +12063,7 @@ snapshots:
       '@protobufjs/path': 1.1.2
       '@protobufjs/pool': 1.1.0
       '@protobufjs/utf8': 1.1.1
-      '@types/node': 24.12.4
+      '@types/node': 25.6.2
       long: 5.3.2
 
   proxy-addr@2.0.7:
