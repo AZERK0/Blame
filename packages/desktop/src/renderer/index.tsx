@@ -1,6 +1,8 @@
 import { mountApp } from "@blame/app"
 import "./styles.css"
 
+document.documentElement.dataset.blameDesktop = "true"
+
 const root = document.getElementById("root")
 if (!(root instanceof HTMLElement)) throw new Error("Root element not found")
 
@@ -10,6 +12,7 @@ mountApp(root, {
     previewBrowser: window.blame.previewBrowser,
     terminal: window.blame.terminal,
     workspace: window.blame.workspace,
+    windowControls: window.blame.windowControls,
     openDirectoryPickerDialog: (options) => window.blame.openDirectoryPicker(options),
     openExternalLink: (url) => window.blame.openExternalLink(url),
     openPath: (path) => window.blame.openPath(path),

@@ -60,12 +60,22 @@ export type PreviewBrowserState = {
   url?: string;
 };
 
+export type WindowControls = {
+  close(): void;
+  isMaximized(): Promise<boolean>;
+  minimize(): Promise<void>;
+  onMaximized(callback: (maximized: boolean) => void): () => void;
+  toggleMaximize(): Promise<void>;
+};
+
 export type BlameDesktopApi = {
   openDirectoryPicker(
     options?: OpenDirectoryPickerOptions,
   ): Promise<string | string[] | null>;
   openExternalLink(url: string): void;
   openPath(path: string): Promise<string>;
+  platform: NodeJS.Platform;
+  windowControls: WindowControls;
   previewBrowser: {
     capture(input: {
       id: string;

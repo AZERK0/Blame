@@ -34,11 +34,20 @@ export type Platform = {
   previewBrowser?: PreviewBrowserClient
   terminal?: TerminalClient
   workspace?: WorkspaceClient
+  windowControls?: WindowControlsClient
   openDirectoryPickerDialog?(
     options?: OpenDirectoryPickerOptions
   ): Promise<PickerPaths>
   openExternalLink?(url: string): void
   openPath?(path: string): Promise<string>
+}
+
+export type WindowControlsClient = {
+  close(): void
+  isMaximized(): Promise<boolean>
+  minimize(): Promise<void>
+  onMaximized(callback: (maximized: boolean) => void): () => void
+  toggleMaximize(): Promise<void>
 }
 
 export type AgentClient = {

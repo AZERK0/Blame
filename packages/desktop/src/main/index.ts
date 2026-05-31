@@ -3,7 +3,16 @@ import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import contextMenu from "electron-context-menu"
 import windowState from "electron-window-state"
-import { app, BrowserWindow, dialog, ipcMain, shell } from "electron"
+import {
+  app,
+  BrowserWindow,
+  dialog,
+  ipcMain,
+  shell,
+  type BrowserWindowConstructorOptions,
+  type IpcMainEvent,
+  type IpcMainInvokeEvent,
+} from "electron"
 import { registerAgentIpcHandlers, shutdownAgentRuntime } from "./agent-ipc"
 import { destroyAllPreviewBrowsers, registerPreviewBrowserIpcHandlers } from "./preview-browser-ipc"
 import { registerTerminalIpcHandlers, shutdownTerminalSessions } from "./terminal-ipc"
@@ -62,27 +71,47 @@ function createMainWindow() {
     defaultHeight: 900,
     defaultWidth: 1440,
   })
-  const window = new BrowserWindow({
+  const options: BrowserWindowConstructorOptions = {
     x: state.x,
     y: state.y,
     width: state.width,
     height: state.height,
     show: false,
     title: "Blame",
-    transparent: true,
+    autoHideMenuBar: true,
     backgroundColor: "#00000000",
+    frame: false,
+    titleBarStyle: "hidden",
+    transparent: process.platform !== "win32",
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
       preload: join(currentDirectory, "../preload/index.js"),
       sandbox: true,
     },
-  })
+    ...(process.platform === "win32" ? windowsWindowOptions() : {}),
+    ...(process.platform === "darwin" ? macosWindowOptions() : {}),
+  }
+  const window = new BrowserWindow(options)
 
   state.manage(window)
+  registerWindowStateEvents(window)
   loadRenderer(window)
   window.once("ready-to-show", () => window.show())
   return window
+}
+
+function windowsWindowOptions(): BrowserWindowConstructorOptions {
+  return {
+    backgroundMaterial: "acrylic",
+  }
+}
+
+function macosWindowOptions(): BrowserWindowConstructorOptions {
+  return {
+    vibrancy: "under-window",
+    visualEffectState: "active",
+  }
 }
 
 function loadRenderer(window: BrowserWindow) {
@@ -94,6 +123,25 @@ function loadRenderer(window: BrowserWindow) {
 }
 
 function registerIpcHandlers() {
+  ipcMain.handle("window:is-maximized", (event) => {
+    return getEventWindow(event)?.isMaximized() ?? false
+  })
+
+  ipcMain.handle("window:minimize", (event) => {
+    getEventWindow(event)?.minimize()
+  })
+
+  ipcMain.handle("window:toggle-maximize", (event) => {
+    const window = getEventWindow(event)
+    if (!window) return
+    if (window.isMaximized()) window.unmaximize()
+    else window.maximize()
+  })
+
+  ipcMain.on("window:close", (event) => {
+    getEventWindow(event)?.close()
+  })
+
   ipcMain.handle("dialog:open-directory", async (_event, options?: { title?: string; multiple?: boolean }) => {
     const result = await dialog.showOpenDialog({
       properties: ["openDirectory", ...(options?.multiple ? ["multiSelections" as const] : [])],
@@ -110,6 +158,15 @@ function registerIpcHandlers() {
   ipcMain.handle("shell:open-path", (_event, path: string) => {
     return shell.openPath(path)
   })
+}
+
+function registerWindowStateEvents(window: BrowserWindow) {
+  window.on("maximize", () => window.webContents.send("window:maximized", true))
+  window.on("unmaximize", () => window.webContents.send("window:maximized", false))
+}
+
+function getEventWindow(event: IpcMainInvokeEvent | IpcMainEvent) {
+  return BrowserWindow.fromWebContents(event.sender)
 }
 
 async function quitGracefully() {

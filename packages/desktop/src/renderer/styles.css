@@ -1,6 +1,15 @@
 html,
 body,
 #root {
-  min-height: 100vh;
+  height: 100%;
   margin: 0;
+  overflow: hidden;
+}
+
+[data-window-drag] {
+  -webkit-app-region: drag;
+}
+
+[data-window-drag] :is(a, button, input, select, textarea, [role="button"]) {
+  -webkit-app-region: no-drag;
 }

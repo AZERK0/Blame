@@ -7,6 +7,19 @@ const api: BlameDesktopApi = {
     ipcRenderer.invoke("dialog:open-directory", options),
   openExternalLink: (url) => ipcRenderer.send("shell:open-external", url),
   openPath: (path) => ipcRenderer.invoke("shell:open-path", path),
+  platform: process.platform,
+  windowControls: {
+    close: () => ipcRenderer.send("window:close"),
+    isMaximized: () => ipcRenderer.invoke("window:is-maximized"),
+    minimize: () => ipcRenderer.invoke("window:minimize"),
+    onMaximized: (callback) => {
+      const handler = (_event: unknown, maximized: boolean) =>
+        callback(maximized);
+      ipcRenderer.on("window:maximized", handler);
+      return () => ipcRenderer.removeListener("window:maximized", handler);
+    },
+    toggleMaximize: () => ipcRenderer.invoke("window:toggle-maximize"),
+  },
   previewBrowser: {
     capture: (input) => ipcRenderer.invoke("preview-browser:capture", input),
     create: () => ipcRenderer.invoke("preview-browser:create"),
