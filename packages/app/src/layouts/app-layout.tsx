@@ -1,8 +1,13 @@
-import { SiteHeader } from "@/components/layout/site-header"
+import * as React from "react"
+
+import { SiteHeader, WindowControls } from "@/components/layout/site-header"
 import { AppSidebar } from "@/components/sidebar/app-sidebar"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { useProjects } from "@/context/projects"
 import { projectColorValue } from "@/lib/projects"
+
+const windowShellGraceMs = 1000
+const windowShellHeightPx = 48
 
 export function AppLayout({
   children,
@@ -15,6 +20,41 @@ export function AppLayout({
 }) {
   const projects = useProjects()
   const haloColor = projectColorValue(projects.activeProject?.color)
+  const [windowShellOpen, setWindowShellOpen] = React.useState(false)
+  const closeTimerRef = React.useRef<number | undefined>(undefined)
+  const openedAtRef = React.useRef(0)
+  const pointerYRef = React.useRef(0)
+
+  const closeWindowShellIfPointerOutside = React.useCallback(() => {
+    const elapsedTime = window.performance.now() - openedAtRef.current
+    if (elapsedTime < windowShellGraceMs) return
+    if (pointerYRef.current <= windowShellHeightPx) return
+    setWindowShellOpen(false)
+  }, [])
+
+  const openWindowShell = React.useCallback((event: React.MouseEvent) => {
+    window.clearTimeout(closeTimerRef.current)
+    pointerYRef.current = event.clientY
+    openedAtRef.current = window.performance.now()
+    setWindowShellOpen(true)
+    closeTimerRef.current = window.setTimeout(() => {
+      closeWindowShellIfPointerOutside()
+    }, windowShellGraceMs)
+  }, [closeWindowShellIfPointerOutside])
+
+  React.useEffect(() => {
+    return () => window.clearTimeout(closeTimerRef.current)
+  }, [])
+
+  React.useEffect(() => {
+    if (!windowShellOpen) return
+    const handleMouseMove = (event: MouseEvent) => {
+      pointerYRef.current = event.clientY
+      closeWindowShellIfPointerOutside()
+    }
+    window.addEventListener("mousemove", handleMouseMove)
+    return () => window.removeEventListener("mousemove", handleMouseMove)
+  }, [closeWindowShellIfPointerOutside, windowShellOpen])
 
   return (
     <SidebarProvider
@@ -35,7 +75,22 @@ export function AppLayout({
         }}
       />
       <AppSidebar pathname={pathname} variant="inset" />
-      <SidebarInset className="z-[1] min-w-0 overflow-hidden">
+      <div
+        data-window-shell-bar
+        data-open={windowShellOpen}
+        className="absolute top-0 right-0 left-0 z-2"
+        onMouseEnter={openWindowShell}
+      >
+        {windowShellOpen ? <div data-window-shell-drag /> : null}
+        <WindowControls
+          className="absolute top-2 right-3 z-1 transition-[opacity,transform] duration-200 ease-in-out"
+          data-window-shell-controls
+        />
+      </div>
+      <SidebarInset
+        data-window-shell-inset
+        className="z-[1] min-w-0 overflow-hidden"
+      >
         <SiteHeader title={title} />
         {children}
       </SidebarInset>

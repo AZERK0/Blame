@@ -5,15 +5,11 @@ import { usePlatform, type WindowControlsClient } from "@/context/platform"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
+import { cn } from "@/lib/utils"
 
 export function SiteHeader({ title }: { title: string }) {
-  const platform = usePlatform()
-
   return (
-    <header
-      data-window-drag
-      className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)"
-    >
+    <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
       <div className="flex min-w-0 flex-1 items-center gap-1 px-4 lg:gap-2 lg:px-6">
         <SidebarTrigger className="-ml-1" />
         <Separator
@@ -22,14 +18,35 @@ export function SiteHeader({ title }: { title: string }) {
         />
         <h1 className="truncate text-base font-medium">{title}</h1>
       </div>
-      {platform.windowControls ? (
-        <WindowControls controls={platform.windowControls} />
-      ) : null}
     </header>
   )
 }
 
-function WindowControls({ controls }: { controls: WindowControlsClient }) {
+export function WindowControls({
+  className,
+  ...props
+}: React.ComponentProps<"div">) {
+  const platform = usePlatform()
+
+  if (!platform.windowControls) return null
+
+  return (
+    <WindowControlsButtons
+      className={className}
+      controls={platform.windowControls}
+      {...props}
+    />
+  )
+}
+
+function WindowControlsButtons({
+  className,
+  controls,
+  ...props
+}: {
+  className?: string
+  controls: WindowControlsClient
+} & React.ComponentProps<"div">) {
   const [maximized, setMaximized] = React.useState(false)
 
   React.useEffect(() => {
@@ -45,7 +62,7 @@ function WindowControls({ controls }: { controls: WindowControlsClient }) {
   }, [controls])
 
   return (
-    <div className="mr-2 flex items-center gap-1">
+    <div className={cn("flex items-center gap-1", className)} {...props}>
       <Button
         type="button"
         variant="ghost"

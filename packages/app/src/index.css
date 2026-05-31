@@ -138,6 +138,47 @@
 }
 
 @layer components {
+  [data-window-shell-bar] {
+    height: 0.875rem;
+    transition: height 180ms ease;
+  }
+
+  [data-window-shell-bar][data-open="true"] {
+    height: calc(var(--spacing) * 12);
+  }
+
+  [data-window-shell-drag] {
+    -webkit-app-region: drag;
+    position: absolute;
+    inset: 0;
+  }
+
+  [data-window-shell-bar][data-open="true"] [data-window-shell-controls] {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  [data-window-shell-controls] {
+    -webkit-app-region: no-drag;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(calc(var(--spacing) * -2));
+  }
+
+  [data-window-shell-bar][data-open="true"] [data-window-shell-controls] {
+    pointer-events: auto;
+  }
+
+  [data-window-shell-inset] {
+    transition-property: margin-top, margin-left, width, height;
+    transition-duration: 180ms;
+    transition-timing-function: ease;
+  }
+
+  [data-window-shell-bar][data-open="true"] + [data-window-shell-inset] {
+    margin-top: calc(var(--spacing) * 12) !important;
+  }
+
   .development-code-highlight .shiki {
     min-width: 100%;
     width: max-content;
