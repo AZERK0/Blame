@@ -739,9 +739,19 @@ function setupEnvironment(worktree: string) {
 function setupPath() {
   return uniquePaths([
     dirname(process.execPath),
+    ...dockerDesktopPaths(),
     ...nodeVersionManagerPaths(),
     process.env.PATH,
   ]).join(delimiter);
+}
+
+function dockerDesktopPaths() {
+  if (process.platform !== "darwin") return [];
+  return [
+    "/Applications/Docker.app/Contents/Resources/bin",
+    "/usr/local/bin",
+    "/opt/homebrew/bin",
+  ];
 }
 
 function nodeVersionManagerPaths() {
