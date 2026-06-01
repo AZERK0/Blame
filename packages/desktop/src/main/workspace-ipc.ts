@@ -26,6 +26,10 @@ import {
 } from "node:path";
 import { promisify } from "node:util";
 import { BrowserWindow, ipcMain } from "electron";
+import {
+  assertHostDependencies,
+  checkHostDependencies,
+} from "./host-dependencies";
 
 const execFileAsync = promisify(execFile);
 const previewStartupTimeoutMs = 60_000;
@@ -52,6 +56,11 @@ type RunProjectSetupInput = {
   worktree: string;
   setupScript: string;
   dockerCompose: string;
+};
+
+type CheckHostDependenciesInput = {
+  setupScript: string;
+  worktree?: string;
 };
 
 type StopProjectSetupInput = {
@@ -135,6 +144,14 @@ export function registerWorkspaceIpcHandlers() {
   ipcMain.handle(
     "workspace:run-project-setup",
     (_event, input: RunProjectSetupInput) => runProjectSetup(input),
+  );
+  ipcMain.handle(
+    "workspace:check-host-dependencies",
+    (_event, input: CheckHostDependenciesInput) =>
+      checkHostDependencies({
+        env: setupEnvironment(input.worktree ? resolve(input.worktree) : ""),
+        setupScript: input.setupScript,
+      }),
   );
   ipcMain.handle(
     "workspace:stop-project-setup",
@@ -275,6 +292,8 @@ async function createWorktree(input: CreateWorktreeInput) {
 
 async function runProjectSetup(input: RunProjectSetupInput) {
   const worktree = resolve(input.worktree);
+  const env = setupEnvironment(worktree);
+  await assertHostDependencies({ env, setupScript: input.setupScript });
   await assertGitRepository(worktree);
   const directory = join(worktree, ".blame", "initialization");
   const scriptPath = join(directory, "setup.sh");
@@ -296,7 +315,7 @@ async function runProjectSetup(input: RunProjectSetupInput) {
   const child = spawn("bash", [scriptPath], {
     cwd: worktree,
     detached: process.platform !== "win32",
-    env: setupEnvironment(worktree),
+    env,
   });
   trackWorkspaceProcess(child);
   setupRuns.set(runId, { id: runId, process: child, worktree });

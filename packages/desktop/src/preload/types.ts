@@ -17,6 +17,7 @@ import type {
   StartDevelopmentSessionInput,
   StartSessionInput,
 } from "@blame/agent-runtime";
+import type { HostDependencyReport } from "../main/host-dependencies";
 
 export type OpenDirectoryPickerOptions = {
   title?: string;
@@ -144,6 +145,10 @@ export type BlameDesktopApi = {
       storyId: number;
       title: string;
     }): Promise<WorktreeResult>;
+    checkHostDependencies(input: {
+      setupScript: string;
+      worktree?: string;
+    }): Promise<HostDependencyReport>;
     runProjectSetup(input: {
       worktree: string;
       setupScript: string;
@@ -183,7 +188,9 @@ export type BlameDesktopApi = {
     };
     sessions: {
       start(input: StartSessionInput): Promise<{ sessionId: string }>;
-      startDevelopment(input: StartDevelopmentSessionInput): Promise<{ sessionId: string }>;
+      startDevelopment(
+        input: StartDevelopmentSessionInput,
+      ): Promise<{ sessionId: string }>;
       send(input: SendSessionInput): Promise<unknown>;
       sendDevelopment(input: SendDevelopmentSessionInput): Promise<unknown>;
       abort(sessionId: string): Promise<void>;

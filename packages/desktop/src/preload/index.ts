@@ -14,8 +14,10 @@ const api: BlameDesktopApi = {
     getStatus: () => ipcRenderer.invoke("updates:get-status"),
     install: () => ipcRenderer.invoke("updates:install"),
     onStatus: (callback) => {
-      const handler = (_event: unknown, status: Parameters<typeof callback>[0]) =>
-        callback(status);
+      const handler = (
+        _event: unknown,
+        status: Parameters<typeof callback>[0],
+      ) => callback(status);
       ipcRenderer.on("updates:status", handler);
       return () => ipcRenderer.removeListener("updates:status", handler);
     },
@@ -62,6 +64,8 @@ const api: BlameDesktopApi = {
       ipcRenderer.invoke("workspace:ensure-git-repository", input),
     createWorktree: (input) =>
       ipcRenderer.invoke("workspace:create-worktree", input),
+    checkHostDependencies: (input) =>
+      ipcRenderer.invoke("workspace:check-host-dependencies", input),
     runProjectSetup: (input) =>
       ipcRenderer.invoke("workspace:run-project-setup", input),
     stopProjectSetup: (input) =>
@@ -113,9 +117,11 @@ const api: BlameDesktopApi = {
     },
     sessions: {
       start: (input) => ipcRenderer.invoke("agent:sessions:start", input),
-      startDevelopment: (input) => ipcRenderer.invoke("agent:sessions:start-development", input),
+      startDevelopment: (input) =>
+        ipcRenderer.invoke("agent:sessions:start-development", input),
       send: (input) => ipcRenderer.invoke("agent:sessions:send", input),
-      sendDevelopment: (input) => ipcRenderer.invoke("agent:sessions:send-development", input),
+      sendDevelopment: (input) =>
+        ipcRenderer.invoke("agent:sessions:send-development", input),
       abort: (sessionId) =>
         ipcRenderer.invoke("agent:sessions:abort", sessionId),
       list: () => ipcRenderer.invoke("agent:sessions:list"),

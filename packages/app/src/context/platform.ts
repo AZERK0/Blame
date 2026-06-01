@@ -139,6 +139,24 @@ export type ProjectSetupEvent = {
   data: string
 }
 
+export type HostDependencyIssue = {
+  action: string
+  message: string
+  name:
+    | "git"
+    | "docker"
+    | "docker-compose"
+    | "docker-daemon"
+    | "node"
+    | "corepack"
+  status: "missing" | "unavailable" | "unsupported"
+}
+
+export type HostDependencyReport = {
+  issues: HostDependencyIssue[]
+  ok: boolean
+}
+
 export type PreviewBrowserBounds = {
   height: number
   width: number
@@ -192,6 +210,10 @@ export type WorkspaceClient = {
     storyId: number
     title: string
   }): Promise<WorktreeResult>
+  checkHostDependencies(input: {
+    setupScript: string
+    worktree?: string
+  }): Promise<HostDependencyReport>
   runProjectSetup(input: {
     worktree: string
     setupScript: string
