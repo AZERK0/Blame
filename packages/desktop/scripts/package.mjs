@@ -34,6 +34,6 @@ function run(command, args, cwd) {
 }
 
 function stagingParentDir() {
-  if (process.platform === "win32") return desktopDir
+  if (process.platform === "win32") return rootDir
   return tmpdir()
 }
