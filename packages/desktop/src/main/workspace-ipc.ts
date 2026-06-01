@@ -644,38 +644,23 @@ async function hasGitHead(cwd: string) {
 }
 
 async function createInitialGitCommit(cwd: string) {
-  const indexPath = await gitPath(cwd, "blame-initial-index");
-  try {
-    await execFileAsync(
-      "git",
-      [
-        "-c",
-        "user.name=Blame",
-        "-c",
-        "user.email=blame@local",
-        "commit",
-        "--allow-empty",
-        "--no-gpg-sign",
-        "--no-verify",
-        "-m",
-        "chore: initialize repository",
-      ],
-      { cwd, env: { ...process.env, GIT_INDEX_FILE: indexPath } },
-    );
-  } finally {
-    await rm(indexPath, { force: true });
-  }
-}
-
-async function gitPath(cwd: string, path: string) {
-  const { stdout } = await execFileAsync(
+  await execFileAsync("git", ["add", "-A", "--", "."], { cwd });
+  await execFileAsync(
     "git",
-    ["rev-parse", "--git-path", path],
-    {
-      cwd,
-    },
+    [
+      "-c",
+      "user.name=Blame",
+      "-c",
+      "user.email=blame@local",
+      "commit",
+      "--allow-empty",
+      "--no-gpg-sign",
+      "--no-verify",
+      "-m",
+      "chore: initialize repository",
+    ],
+    { cwd },
   );
-  return resolve(cwd, stdout.trim());
 }
 
 async function removeGitWorktree(repositoryRoot: string, worktree: string) {
