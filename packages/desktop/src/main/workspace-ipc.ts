@@ -215,9 +215,19 @@ async function gitRepositoryFingerprint(root: string) {
 
 async function ensureGitRepository(root: string) {
   const cwd = resolve(root);
-  if (await isGitRepository(cwd)) return false;
-  await execFileAsync("git", ["init"], { cwd });
-  return true;
+  let changed = false;
+
+  if (!(await isGitRepository(cwd))) {
+    await execFileAsync("git", ["init"], { cwd });
+    changed = true;
+  }
+
+  if (!(await hasGitHead(cwd))) {
+    await createInitialGitCommit(cwd);
+    changed = true;
+  }
+
+  return changed;
 }
 
 async function createWorktree(input: CreateWorktreeInput) {
@@ -232,7 +242,7 @@ async function createWorktree(input: CreateWorktreeInput) {
     `story-${input.storyId}-${slug}`,
   );
 
-  await assertGitRepository(repositoryRoot);
+  await ensureGitRepository(repositoryRoot);
   await mkdir(dirname(worktree), { recursive: true });
 
   if (await worktreeRegistered(repositoryRoot, worktree)) {
@@ -622,6 +632,50 @@ async function isGitRepository(cwd: string) {
   } catch {
     return false;
   }
+}
+
+async function hasGitHead(cwd: string) {
+  try {
+    await execFileAsync("git", ["rev-parse", "--verify", "HEAD"], { cwd });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function createInitialGitCommit(cwd: string) {
+  const indexPath = await gitPath(cwd, "blame-initial-index");
+  try {
+    await execFileAsync(
+      "git",
+      [
+        "-c",
+        "user.name=Blame",
+        "-c",
+        "user.email=blame@local",
+        "commit",
+        "--allow-empty",
+        "--no-gpg-sign",
+        "--no-verify",
+        "-m",
+        "chore: initialize repository",
+      ],
+      { cwd, env: { ...process.env, GIT_INDEX_FILE: indexPath } },
+    );
+  } finally {
+    await rm(indexPath, { force: true });
+  }
+}
+
+async function gitPath(cwd: string, path: string) {
+  const { stdout } = await execFileAsync(
+    "git",
+    ["rev-parse", "--git-path", path],
+    {
+      cwd,
+    },
+  );
+  return resolve(cwd, stdout.trim());
 }
 
 async function removeGitWorktree(repositoryRoot: string, worktree: string) {
