@@ -16,7 +16,10 @@ import { subscribeAgentEvents } from "@/components/backlog/data/agent-event-stre
 import type { useBacklogStore } from "@/components/backlog/data/backlog-store"
 import { useModelSelection } from "@/components/model/model-selector"
 import { useCloudAuth } from "@/context/cloud-auth"
-import type { ProjectSetupEvent } from "@/context/platform"
+import type {
+  HostDependencyReport,
+  ProjectSetupEvent,
+} from "@/context/platform"
 import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import { createCloudApi } from "@/lib/cloud-api"
@@ -42,7 +45,9 @@ export function useBacklogRotation(
   const blockedStories = React.useRef(new Map<number, number>())
   const reportedBlockers = React.useRef(new Set<string>())
   const reportedAgentErrors = React.useRef(new Set<string>())
-  const pendingAgentUpdates = React.useRef(new Map<number, PendingAgentUpdate>())
+  const pendingAgentUpdates = React.useRef(
+    new Map<number, PendingAgentUpdate>()
+  )
   const agentAuthenticationBlockedUntil = React.useRef(0)
   const previewRecoveryStoryIds = React.useRef(new Set<number>())
   const storiesRef = React.useRef(backlog.stories)
@@ -97,6 +102,14 @@ export function useBacklogRotation(
     const agent = platform.agent
     if (!workspace || !agent) return
 
+    const dependencies = await workspace.checkHostDependencies({
+      setupScript: initialization.setupScript,
+    })
+    if (!dependencies.ok) {
+      reportBlocker(story, hostDependencyReportText(dependencies))
+      return
+    }
+
     const worktree = await workspace.createWorktree({
       repositoryRoot: projects.activeProject.path,
       storyId: story.id,
@@ -108,13 +121,10 @@ export function useBacklogRotation(
       dockerCompose: initialization.dockerCompose,
     })
     backlog.setStorySetupInitializing(story, true)
-    const unsubscribeSetup = workspace.onSetupEvent(
-      setup.runId,
-      (event) => {
-        void persistSetupEvent(story, event, worktree.worktree)
-        if (event.type === "exit") unsubscribeSetup()
-      }
-    )
+    const unsubscribeSetup = workspace.onSetupEvent(setup.runId, (event) => {
+      void persistSetupEvent(story, event, worktree.worktree)
+      if (event.type === "exit") unsubscribeSetup()
+    })
     const session = await agent.sessions.startDevelopment({
       apiConnection: auth.apiConnection,
       providerId: selection.currentModel.provider.id,
@@ -462,6 +472,8 @@ function rotationBlocker(
   if (!platform.agent) return "Desktop agent runtime is not available."
   if (!platform.workspace?.createWorktree)
     return "Desktop worktree runtime is not available."
+  if (!platform.workspace.checkHostDependencies)
+    return "Desktop host dependency checks are not available."
   if (!platform.workspace.runProjectSetup)
     return "Desktop setup runtime is not available."
   if (!platform.workspace.onSetupEvent)
@@ -511,6 +523,13 @@ function errorMessage(error: unknown) {
   return error instanceof Error
     ? error.message
     : "Unable to start queued user story."
+}
+
+function hostDependencyReportText(report: HostDependencyReport) {
+  return [
+    "Blame cannot start development because host dependencies are missing or unavailable.",
+    ...report.issues.map((issue) => `${issue.message} ${issue.action}`),
+  ].join("\n")
 }
 
 function expiredAuthenticationToken(message: string) {
