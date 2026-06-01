@@ -138,6 +138,7 @@ export type BlameDesktopApi = {
     }): Promise<WorkspaceEntry[]>;
     gitDiff(input: { root: string }): Promise<string>;
     gitRepositoryFingerprint(input: { root: string }): Promise<string | null>;
+    ensureGitRepository(input: { root: string }): Promise<boolean>;
     createWorktree(input: {
       repositoryRoot: string;
       storyId: number;

@@ -79,6 +79,7 @@ async function resolveProject(
   platform: ReturnType<typeof usePlatform>
 ) {
   const localProject = createProject(path)
+  await platform.workspace?.ensureGitRepository({ root: path })
   const repositoryFingerprint =
     (await platform.workspace?.gitRepositoryFingerprint({ root: path })) ?? null
   const cloudProject = await createCloudApi(auth.apiConnection).ensureProject({

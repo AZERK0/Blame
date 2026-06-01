@@ -125,6 +125,10 @@ export function registerWorkspaceIpcHandlers() {
     (_event, input: { root: string }) => gitRepositoryFingerprint(input.root),
   );
   ipcMain.handle(
+    "workspace:ensure-git-repository",
+    (_event, input: { root: string }) => ensureGitRepository(input.root),
+  );
+  ipcMain.handle(
     "workspace:create-worktree",
     (_event, input: CreateWorktreeInput) => createWorktree(input),
   );
@@ -207,6 +211,13 @@ async function gitRepositoryFingerprint(root: string) {
   }
 
   return null;
+}
+
+async function ensureGitRepository(root: string) {
+  const cwd = resolve(root);
+  if (await isGitRepository(cwd)) return false;
+  await execFileAsync("git", ["init"], { cwd });
+  return true;
 }
 
 async function createWorktree(input: CreateWorktreeInput) {

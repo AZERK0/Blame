@@ -58,6 +58,8 @@ const api: BlameDesktopApi = {
     gitDiff: (input) => ipcRenderer.invoke("workspace:git-diff", input),
     gitRepositoryFingerprint: (input) =>
       ipcRenderer.invoke("workspace:git-repository-fingerprint", input),
+    ensureGitRepository: (input) =>
+      ipcRenderer.invoke("workspace:ensure-git-repository", input),
     createWorktree: (input) =>
       ipcRenderer.invoke("workspace:create-worktree", input),
     runProjectSetup: (input) =>
