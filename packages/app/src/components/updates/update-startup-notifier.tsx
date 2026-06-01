@@ -1,6 +1,7 @@
 import * as React from "react"
 import { toast } from "sonner"
 
+import { navigate } from "@/components/navigation/navigation"
 import { usePlatform } from "@/context/platform"
 
 export function UpdateStartupNotifier() {
@@ -31,6 +32,5 @@ export function UpdateStartupNotifier() {
 }
 
 function openSettings() {
-  window.history.pushState(null, "", "/settings")
-  window.dispatchEvent(new PopStateEvent("popstate"))
+  navigate("/settings")
 }

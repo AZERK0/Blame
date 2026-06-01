@@ -4,6 +4,10 @@ import { BacklogPage } from "@/pages/backlog/page"
 import { PracticesPage } from "@/pages/practices/page"
 import { QuickChatPage } from "@/components/chat/quick-chat-page"
 import { ConnectScreen } from "@/components/onboarding/connect-screen"
+import {
+  navigationPathname,
+  subscribeToNavigation,
+} from "@/components/navigation/navigation"
 import { LoadingScreen } from "@/components/onboarding/loading-screen"
 import { WelcomeScreen } from "@/components/onboarding/welcome-screen"
 import { ProjectInitializationRunner } from "@/components/project-initialization/project-initialization-runner"
@@ -45,16 +49,6 @@ const routes = [
   { path: "/search", title: "Search", element: <RoutePage title="Search" /> },
 ]
 
-function subscribeToLocation(callback: () => void) {
-  window.addEventListener("popstate", callback)
-  return () => window.removeEventListener("popstate", callback)
-}
-
-function getCurrentPathname() {
-  if (window.location.pathname === "/") return "/backlog"
-  return window.location.pathname
-}
-
 function resolveRoute(pathname: string) {
   return routes.find((route) => route.path === pathname) ?? routes[0]
 }
@@ -76,8 +70,8 @@ export function App() {
   const auth = useCloudAuth()
   const projects = useProjects()
   const pathname = React.useSyncExternalStore(
-    subscribeToLocation,
-    getCurrentPathname,
+    subscribeToNavigation,
+    navigationPathname,
     () => "/backlog"
   )
   const route = resolveRoute(pathname)
