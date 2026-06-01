@@ -8,6 +8,18 @@ const api: BlameDesktopApi = {
   openExternalLink: (url) => ipcRenderer.send("shell:open-external", url),
   openPath: (path) => ipcRenderer.invoke("shell:open-path", path),
   platform: process.platform,
+  updates: {
+    check: () => ipcRenderer.invoke("updates:check"),
+    download: () => ipcRenderer.invoke("updates:download"),
+    getStatus: () => ipcRenderer.invoke("updates:get-status"),
+    install: () => ipcRenderer.invoke("updates:install"),
+    onStatus: (callback) => {
+      const handler = (_event: unknown, status: Parameters<typeof callback>[0]) =>
+        callback(status);
+      ipcRenderer.on("updates:status", handler);
+      return () => ipcRenderer.removeListener("updates:status", handler);
+    },
+  },
   windowControls: {
     close: () => ipcRenderer.send("window:close"),
     isMaximized: () => ipcRenderer.invoke("window:is-maximized"),

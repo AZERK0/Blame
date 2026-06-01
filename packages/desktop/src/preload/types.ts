@@ -68,6 +68,35 @@ export type WindowControls = {
   toggleMaximize(): Promise<void>;
 };
 
+export type DesktopUpdatePhase =
+  | "idle"
+  | "checking"
+  | "available"
+  | "not-available"
+  | "downloading"
+  | "downloaded"
+  | "error"
+  | "unsupported";
+
+export type DesktopUpdateStatus = {
+  currentVersion: string;
+  error?: string;
+  latestVersion?: string;
+  phase: DesktopUpdatePhase;
+  progress?: number;
+  reason?: string;
+  releaseDate?: string;
+  releaseNotes?: string;
+};
+
+export type DesktopUpdates = {
+  check(): Promise<DesktopUpdateStatus>;
+  download(): Promise<DesktopUpdateStatus>;
+  getStatus(): Promise<DesktopUpdateStatus>;
+  install(): Promise<DesktopUpdateStatus>;
+  onStatus(callback: (status: DesktopUpdateStatus) => void): () => void;
+};
+
 export type BlameDesktopApi = {
   openDirectoryPicker(
     options?: OpenDirectoryPickerOptions,
@@ -75,6 +104,7 @@ export type BlameDesktopApi = {
   openExternalLink(url: string): void;
   openPath(path: string): Promise<string>;
   platform: NodeJS.Platform;
+  updates: DesktopUpdates;
   windowControls: WindowControls;
   previewBrowser: {
     capture(input: {

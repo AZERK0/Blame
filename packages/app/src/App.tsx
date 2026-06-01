@@ -7,11 +7,13 @@ import { ConnectScreen } from "@/components/onboarding/connect-screen"
 import { LoadingScreen } from "@/components/onboarding/loading-screen"
 import { WelcomeScreen } from "@/components/onboarding/welcome-screen"
 import { ProjectInitializationRunner } from "@/components/project-initialization/project-initialization-runner"
+import { UpdateStartupNotifier } from "@/components/updates/update-startup-notifier"
 import { Toaster } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { useProjects } from "@/context/projects"
 import { AppLayout } from "@/layouts/app-layout"
+import { SettingsPage } from "@/pages/settings/page"
 
 const routes = [
   { path: "/backlog", title: "Backlog", element: <BacklogPage /> },
@@ -37,7 +39,7 @@ const routes = [
   {
     path: "/settings",
     title: "Settings",
-    element: <RoutePage title="Settings" />,
+    element: <SettingsPage />,
   },
   { path: "/help", title: "Get Help", element: <RoutePage title="Get Help" /> },
   { path: "/search", title: "Search", element: <RoutePage title="Search" /> },
@@ -87,6 +89,7 @@ export function App() {
   return (
     <TooltipProvider>
       <ProjectInitializationRunner />
+      <UpdateStartupNotifier />
       <AppLayout pathname={route.path} title={route.title}>
         {route.element}
       </AppLayout>

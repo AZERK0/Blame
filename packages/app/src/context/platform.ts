@@ -33,6 +33,7 @@ export type Platform = {
   api?: ApiConnection
   previewBrowser?: PreviewBrowserClient
   terminal?: TerminalClient
+  updates?: DesktopUpdatesClient
   workspace?: WorkspaceClient
   windowControls?: WindowControlsClient
   openDirectoryPickerDialog?(
@@ -48,6 +49,35 @@ export type WindowControlsClient = {
   minimize(): Promise<void>
   onMaximized(callback: (maximized: boolean) => void): () => void
   toggleMaximize(): Promise<void>
+}
+
+export type DesktopUpdatePhase =
+  | "idle"
+  | "checking"
+  | "available"
+  | "not-available"
+  | "downloading"
+  | "downloaded"
+  | "error"
+  | "unsupported"
+
+export type DesktopUpdateStatus = {
+  currentVersion: string
+  error?: string
+  latestVersion?: string
+  phase: DesktopUpdatePhase
+  progress?: number
+  reason?: string
+  releaseDate?: string
+  releaseNotes?: string
+}
+
+export type DesktopUpdatesClient = {
+  check(): Promise<DesktopUpdateStatus>
+  download(): Promise<DesktopUpdateStatus>
+  getStatus(): Promise<DesktopUpdateStatus>
+  install(): Promise<DesktopUpdateStatus>
+  onStatus(callback: (status: DesktopUpdateStatus) => void): () => void
 }
 
 export type AgentClient = {

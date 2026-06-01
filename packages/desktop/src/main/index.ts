@@ -14,6 +14,7 @@ import {
   type IpcMainInvokeEvent,
 } from "electron"
 import { registerAgentIpcHandlers, shutdownAgentRuntime } from "./agent-ipc"
+import { checkForUpdatesOnStartup, registerDesktopUpdateIpcHandlers } from "./desktop-update-ipc"
 import { destroyAllPreviewBrowsers, registerPreviewBrowserIpcHandlers } from "./preview-browser-ipc"
 import { registerTerminalIpcHandlers, shutdownTerminalSessions } from "./terminal-ipc"
 import { registerWorkspaceIpcHandlers, shutdownWorkspaceProcesses } from "./workspace-ipc"
@@ -40,8 +41,14 @@ void app.whenReady().then(() => {
   registerAgentIpcHandlers()
   registerPreviewBrowserIpcHandlers()
   registerTerminalIpcHandlers()
+  registerDesktopUpdateIpcHandlers({
+    beforeInstall() {
+      quitAfterShutdown = true
+    },
+  })
   registerWorkspaceIpcHandlers()
   mainWindow = createMainWindow()
+  checkForUpdatesOnStartup()
 })
 
 app.on("activate", () => {

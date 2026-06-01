@@ -11,6 +11,7 @@ mountApp(root, {
     agent: window.blame.agent,
     previewBrowser: window.blame.previewBrowser,
     terminal: window.blame.terminal,
+    updates: window.blame.updates,
     workspace: window.blame.workspace,
     windowControls: window.blame.windowControls,
     openDirectoryPickerDialog: (options) => window.blame.openDirectoryPicker(options),
