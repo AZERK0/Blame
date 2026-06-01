@@ -26,6 +26,7 @@ coverage
 out/
 build
 dist
+packages/desktop/blame-desktop-package-*
 
 
 # Debug
