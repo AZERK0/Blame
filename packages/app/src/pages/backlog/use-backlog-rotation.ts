@@ -51,6 +51,8 @@ export function useBacklogRotation(
   const agentAuthenticationBlockedUntil = React.useRef(0)
   const previewRecoveryStoryIds = React.useRef(new Set<number>())
   const storiesRef = React.useRef(backlog.stories)
+  const [hostDependenciesDialog, setHostDependenciesDialog] =
+    React.useState<HostDependenciesDialogState>()
   const [, refreshStartingStories] = React.useState(0)
 
   React.useEffect(() => {
@@ -106,7 +108,11 @@ export function useBacklogRotation(
       setupScript: initialization.setupScript,
     })
     if (!dependencies.ok) {
-      reportBlocker(story, hostDependencyReportText(dependencies))
+      reportHostDependencyBlocker(
+        story,
+        dependencies,
+        initialization.setupScript
+      )
       return
     }
 
@@ -175,6 +181,45 @@ export function useBacklogRotation(
       id: `${setupToastId}-${story.id}`,
       position: "bottom-right",
     })
+  }
+
+  function reportHostDependencyBlocker(
+    story: UserStory,
+    report: HostDependencyReport,
+    setupScript: string
+  ) {
+    retryStory(story, blockerRetryDelay)
+    setHostDependenciesDialog({
+      checking: false,
+      report,
+      setupScript,
+      storyId: story.id,
+      storyTitle: story.title,
+    })
+  }
+
+  async function recheckHostDependencies() {
+    const current = hostDependenciesDialog
+    if (!current || !platform.workspace?.checkHostDependencies) return
+    setHostDependenciesDialog({ ...current, checking: true })
+    try {
+      const report = await platform.workspace.checkHostDependencies({
+        setupScript: current.setupScript,
+      })
+      if (report.ok) {
+        blockedStories.current.delete(current.storyId)
+        setHostDependenciesDialog(undefined)
+        refreshStartingStories((value) => value + 1)
+        return
+      }
+      setHostDependenciesDialog({ ...current, checking: false, report })
+    } catch (error) {
+      setHostDependenciesDialog({ ...current, checking: false })
+      toast.error("Unable to recheck development requirements", {
+        description: errorMessage(error),
+        position: "bottom-right",
+      })
+    }
   }
 
   function retryStory(story: UserStory, delay = initializationRetryDelay) {
@@ -400,6 +445,19 @@ export function useBacklogRotation(
     reportBlocker,
     startStory,
   ])
+
+  return {
+    hostDependenciesDialog: {
+      checking: Boolean(hostDependenciesDialog?.checking),
+      onOpenChange(open: boolean) {
+        if (!open) setHostDependenciesDialog(undefined)
+      },
+      onRecheck: recheckHostDependencies,
+      open: Boolean(hostDependenciesDialog),
+      report: hostDependenciesDialog?.report,
+      storyTitle: hostDependenciesDialog?.storyTitle,
+    },
+  }
 }
 
 function activeStory(story: UserStory, stories: UserStory[]) {
@@ -409,6 +467,14 @@ function activeStory(story: UserStory, stories: UserStory[]) {
 type PendingAgentUpdate = {
   input: UserStoryUpdate
   timer: number
+}
+
+type HostDependenciesDialogState = {
+  checking: boolean
+  report: HostDependencyReport
+  setupScript: string
+  storyId: number
+  storyTitle: string
 }
 
 function clearPendingAgentUpdates(updates: Map<number, PendingAgentUpdate>) {
@@ -523,13 +589,6 @@ function errorMessage(error: unknown) {
   return error instanceof Error
     ? error.message
     : "Unable to start queued user story."
-}
-
-function hostDependencyReportText(report: HostDependencyReport) {
-  return [
-    "Blame cannot start development because host dependencies are missing or unavailable.",
-    ...report.issues.map((issue) => `${issue.message} ${issue.action}`),
-  ].join("\n")
 }
 
 function expiredAuthenticationToken(message: string) {

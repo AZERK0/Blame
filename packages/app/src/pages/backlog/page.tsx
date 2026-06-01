@@ -26,6 +26,7 @@ import type { DrawerTarget } from "@/components/backlog/shared/backlog-types"
 import { BacklogColumn } from "@/components/backlog/board/backlog-column"
 import { BacklogToolbar } from "@/components/backlog/board/backlog-toolbar"
 import { UserStoryDrawer } from "@/components/backlog/drawer/user-story-drawer"
+import { HostDependenciesDialog } from "@/pages/backlog/host-dependencies-dialog"
 import { useBacklogRotation } from "@/pages/backlog/use-backlog-rotation"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { useCloudAuth } from "@/context/cloud-auth"
@@ -42,12 +43,14 @@ export function BacklogPage() {
   const platform = usePlatform()
   const projects = useProjects()
   const selection = useModelSelection()
-  useBacklogRotation(backlog)
+  const rotation = useBacklogRotation(backlog)
   const [drawerTarget, setDrawerTarget] = React.useState<DrawerTarget>()
   const initializationStatus = useProjectInitializationStatus()
   const queueInitializing = projectInitializing(initializationStatus)
   const storiesRef = React.useRef(backlog.stories)
-  const pendingAgentUpdates = React.useRef(new Map<number, PendingAgentUpdate>())
+  const pendingAgentUpdates = React.useRef(
+    new Map<number, PendingAgentUpdate>()
+  )
 
   React.useEffect(() => {
     storiesRef.current = backlog.stories
@@ -504,6 +507,7 @@ export function BacklogPage() {
         onStopAgent={stopAgent}
         setupInitializing={backlog.storySetupInitializing(drawerUserStory)}
       />
+      <HostDependenciesDialog {...rotation.hostDependenciesDialog} />
     </div>
   )
 }
@@ -528,9 +532,7 @@ function useProjectInitializationStatus() {
     let timer: number | undefined
     const cloud = createCloudApi(auth.apiConnection)
     const refresh = async () => {
-      const snapshot = await cloud.projectInitialization(
-        activeProject.id
-      )
+      const snapshot = await cloud.projectInitialization(activeProject.id)
       if (cancelled) return
       const status = snapshot.initialization?.status ?? "pending"
       setSnapshot({
@@ -609,7 +611,9 @@ type OptimizeUserStoryPromptRequest = {
   reasoningEffort: ReturnType<typeof useModelSelection>["currentVariant"]
 }
 
-async function optimizeUserStoryPrompt(request: OptimizeUserStoryPromptRequest) {
+async function optimizeUserStoryPrompt(
+  request: OptimizeUserStoryPromptRequest
+) {
   const validationError = optimizeUserStoryValidationError(
     request.input.summary,
     request.auth,
@@ -649,16 +653,17 @@ function optimizationValidationError(message: string) {
 }
 
 async function runPromptOptimizer(request: OptimizeUserStoryPromptRequest) {
-  const result = await request.platform.agent!.promptOptimizer.optimizeUserStory({
-    apiConnection: request.auth.apiConnection,
-    providerId: request.model!.provider.id,
-    modelId: request.model!.id,
-    reasoningEffort: request.reasoningEffort,
-    prompt: request.input.summary,
-    title: request.input.title,
-    cwd: request.projectPath!,
-    workspaceRoot: request.projectPath!,
-  })
+  const result =
+    await request.platform.agent!.promptOptimizer.optimizeUserStory({
+      apiConnection: request.auth.apiConnection,
+      providerId: request.model!.provider.id,
+      modelId: request.model!.id,
+      reasoningEffort: request.reasoningEffort,
+      prompt: request.input.summary,
+      title: request.input.title,
+      cwd: request.projectPath!,
+      workspaceRoot: request.projectPath!,
+    })
   return result.markdown
 }
 
