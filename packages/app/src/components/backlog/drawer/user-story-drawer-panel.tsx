@@ -220,7 +220,7 @@ export function UserStoryDrawerPanel({
           </div>
         )}
         <TabsContent value="user-story" className="min-h-0">
-          <DrawerBody status={status}>
+          <DrawerBody status={status} userStory={userStory}>
             <UserStoryContent
               commentCodeSelectionAttachments={commentCodeSelectionAttachments}
               comment={comment}
@@ -385,16 +385,18 @@ function DrawerHeaderTitle({
 function DrawerBody({
   children,
   status,
+  userStory,
 }: {
   children: React.ReactNode
   status: BacklogColumnId
+  userStory?: UserStory
 }) {
   return (
     <div className="grid h-full min-h-0 grid-cols-[minmax(0,1fr)_18rem]">
       <ScrollArea className="min-h-0">
         <div className="flex w-full flex-col gap-6 px-6 py-6">{children}</div>
       </ScrollArea>
-      <DrawerSidebar status={status} />
+      <DrawerSidebar status={status} userStory={userStory} />
     </div>
   )
 }
