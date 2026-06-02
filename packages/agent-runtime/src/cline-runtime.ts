@@ -453,13 +453,14 @@ export class BlameAgentRuntime {
         toolPolicies: initializationToolPolicies(),
       })
       const message = commitMessageFromAgentResult(session.result)
+      const validMessage = standardCommitMessageAllowed(input, message) ? message : undefined
       await appendLog(logFile, "commit message agent finished", {
         durationMs: Date.now() - startedAt,
         sessionId: session.sessionId,
         status: resultStatus(asRecord(session.result)),
-        success: Boolean(message),
+        success: Boolean(validMessage),
       })
-      if (message) return message
+      if (validMessage) return validMessage
     } catch (error) {
       await appendLog(logFile, "commit message agent failed", {
         errorType: errorType(error),
@@ -1077,9 +1078,10 @@ async function fallbackCommitMessage(input: ApproveAndMergeInput) {
     git(input.worktree, ["log", "-12", "--pretty=%s"]),
   ])
   const files = statusFileNames(status)
-  const subject = fallbackCommitSubject(input.title)
+  const standardConvention = commitMessageConventionEnabled(input)
+  const subject = standardConvention ? fallbackEnglishCommitSubject(files) : fallbackCommitSubject(input.title)
   const bracketPrefix = dominantBracketPrefix(log)
-  if (!commitMessageConventionEnabled(input) && bracketPrefix) {
+  if (!standardConvention && bracketPrefix) {
     return limitCommitMessage(`${bracketPrefix} ${subject}`)
   }
   const scope = commitScope(files)
@@ -1092,10 +1094,21 @@ function commitMessageFromAgentResult(result: unknown) {
   return firstTextLine(payload.text) ?? firstTextLine(payload.outputText) ?? firstTextLine(payload.message)
 }
 
+function standardCommitMessageAllowed(input: ApproveAndMergeInput, message: string | undefined) {
+  if (!message) return false
+  return !commitMessageConventionEnabled(input) || !looksFrench(message)
+}
+
 function fallbackCommitSubject(title: string) {
   const subject = title.trim().replace(/\s+/g, " ").replace(/[.!?]+$/g, "")
   if (!subject) return "complete backlog item"
   return subject.charAt(0).toLowerCase() + subject.slice(1)
+}
+
+function fallbackEnglishCommitSubject(files: string[]) {
+  if (files.length && files.every((file) => /\.(test|spec)\.[jt]sx?$/.test(file))) return "cover story changes"
+  if (files.length && files.every((file) => /\.(md|mdx|txt)$/.test(file))) return "document story changes"
+  return "apply story changes"
 }
 
 function commitMessageConventionEnabled(input: ApproveAndMergeInput) {
@@ -1136,6 +1149,11 @@ function commitType(files: string[]) {
 
 function limitCommitMessage(message: string) {
   return message.length <= 74 ? message : message.slice(0, 74).replace(/\s+\S*$/, "")
+}
+
+function looksFrench(message: string) {
+  const normalized = message.toLowerCase()
+  return /[àâçéèêëîïôùûüÿœ]/.test(normalized) || /\b(avec|ajoute|ajouter|corrige|corriger|complète|completer|compléter|des|données|pour|sur|une)\b/.test(normalized)
 }
 
 function isString(value: unknown): value is string {

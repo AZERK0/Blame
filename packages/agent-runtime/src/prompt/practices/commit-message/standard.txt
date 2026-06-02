@@ -10,6 +10,7 @@ Format:
 Rules:
 - maximum 74 characters total;
 - write the message in English;
+- translate non-English backlog titles, summaries, and code-change descriptions to English instead of copying their language;
 - use present tense, imperative mood, and a lowercase verb;
 - focus on the main meaningful change;
 - ignore trivial noise;
