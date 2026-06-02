@@ -73,6 +73,8 @@ const readTools = ["read_files", "search_codebase", "fetch_web_content"]
 const writeTools = ["run_commands", "editor", "apply_patch"]
 const blockedCommandParts = ["rm -rf", "sudo", "curl | sh", "wget | sh", "> /dev/"]
 const maxInitializationAttempts = 3
+const maxMergeConflictResolutionAttempts = 3
+const runtimeArtifactPathspecs = [":!.blame", ":!.blame-preview", ":!.pnpm-store"]
 const productionLogger = createProductionLogger()
 const openAICompatibleProviderID = "openai-compatible"
 
@@ -417,28 +419,43 @@ export class BlameAgentRuntime {
   }
 
   private async commitStoryWork(input: ApproveAndMergeInput) {
-    const status = await git(input.worktree, ["status", "--porcelain"])
+    const status = await storyStatus(input.worktree, "--porcelain")
     if (!status.trim()) return
-    const message = await this.generateCommitMessage(input)
-    await git(input.worktree, ["add", "-A"])
+    const message = await this.generateCommitMessage(input, approveMergeLogPath(input.worktree))
+    await addStoryChanges(input.worktree)
     await git(input.worktree, ["commit", "-m", message])
-    const nextStatus = await git(input.worktree, ["status", "--porcelain"])
+    const nextStatus = await storyStatus(input.worktree, "--porcelain")
     if (nextStatus.trim()) throw new Error("Story worktree still has uncommitted changes after commit.")
   }
 
-  private async generateCommitMessage(input: ApproveAndMergeInput) {
-    const credential = await this.runtimeCredential(input)
-    const cline = await this.core()
-    const session = await cline.start({
-      prompt: await commitMessagePrompt(input),
-      config: commitMessageConfig(input, credential),
-      interactive: false,
-      source: "blame-approve-merge",
-      toolPolicies: initializationToolPolicies(),
-    })
-    const message = firstTextLine(session.result?.text)
-    if (!message) throw new Error("Commit message agent did not return a message.")
-    return message
+  private async generateCommitMessage(input: ApproveAndMergeInput, logFile: string) {
+    try {
+      const startedAt = Date.now()
+      const credential = await this.runtimeCredential(input)
+      const cline = await this.core()
+      const session = await cline.start({
+        prompt: await commitMessagePrompt(input),
+        config: commitMessageConfig(input, credential),
+        interactive: false,
+        source: "blame-approve-merge",
+        toolPolicies: initializationToolPolicies(),
+      })
+      const message = commitMessageFromAgentResult(session.result)
+      await appendLog(logFile, "commit message agent finished", {
+        durationMs: Date.now() - startedAt,
+        sessionId: session.sessionId,
+        status: resultStatus(asRecord(session.result)),
+        success: Boolean(message),
+      })
+      if (message) return message
+    } catch (error) {
+      await appendLog(logFile, "commit message agent failed", {
+        errorType: errorType(error),
+        status: "failed",
+      })
+    }
+    await appendLog(logFile, "commit message fallback selected", { status: "fallback", success: true })
+    return fallbackCommitMessage(input)
   }
 
   private async mergeTargetIntoStory(input: ApproveAndMergeInput, targetBranch: string, upstream: GitUpstream) {
@@ -449,26 +466,49 @@ export class BlameAgentRuntime {
     } catch (error) {
       if (!(await hasMergeConflicts(input.worktree))) throw error
     }
-    await this.resolveMergeConflicts(input, targetBranch)
-    if (await hasMergeConflicts(input.worktree)) {
-      throw new Error("Merge conflict agent finished with unresolved conflicts.")
-    }
-    await git(input.worktree, ["add", "-A"])
+    await this.resolveMergeConflicts(input, targetBranch, approveMergeLogPath(input.worktree))
+    const conflicts = await mergeConflictFiles(input.worktree)
+    if (conflicts.length) throw new Error(unresolvedMergeConflictMessage(conflicts))
+    await addStoryChanges(input.worktree)
     await git(input.worktree, ["commit", "--no-edit"])
   }
 
-  private async resolveMergeConflicts(input: ApproveAndMergeInput, targetBranch: string) {
+  private async resolveMergeConflicts(input: ApproveAndMergeInput, targetBranch: string, logFile: string) {
+    let conflicts = await mergeConflictFiles(input.worktree)
+    for (let attempt = 1; attempt <= maxMergeConflictResolutionAttempts && conflicts.length; attempt += 1) {
+      const failure = await this.runMergeConflictAgent(input, targetBranch, attempt, logFile)
+      conflicts = await mergeConflictFiles(input.worktree)
+      await appendLog(logFile, "merge conflict agent finished", {
+        status: conflicts.length ? "conflicts_remaining" : "resolved",
+        success: !conflicts.length,
+      })
+      if (failure && conflicts.length) throw new Error(failure)
+    }
+    if (conflicts.length) throw new Error(unresolvedMergeConflictMessage(conflicts))
+  }
+
+  private async runMergeConflictAgent(
+    input: ApproveAndMergeInput,
+    targetBranch: string,
+    attempt: number,
+    logFile: string
+  ) {
+    const startedAt = Date.now()
     const credential = await this.runtimeCredential(input)
     const cline = await this.core()
     const session = await cline.start({
-      prompt: await mergeConflictPrompt(input, targetBranch),
+      prompt: await mergeConflictPrompt(input, targetBranch, attempt),
       config: mergeConflictConfig(input, credential),
       interactive: false,
       source: "blame-merge-conflict-resolution",
       toolPolicies: toolPolicies(true),
     })
-    const failure = resultFailureMessage(session.result)
-    if (failure) throw new Error(failure)
+    await appendLog(logFile, "merge conflict agent run completed", {
+      durationMs: Date.now() - startedAt,
+      sessionId: session.sessionId,
+      status: resultStatus(asRecord(session.result)),
+    })
+    return resultFailureMessage(session.result)
   }
 
   private async subscribeSession(sessionId: string) {
@@ -965,13 +1005,17 @@ function branchPathSlug(branch: string) {
 }
 
 async function hasMergeConflicts(cwd: string) {
+  return Boolean((await mergeConflictFiles(cwd)).length)
+}
+
+async function mergeConflictFiles(cwd: string) {
   const files = await git(cwd, ["diff", "--name-only", "--diff-filter=U"])
-  return Boolean(files.trim())
+  return files.split("\n").filter(Boolean)
 }
 
 async function commitMessagePrompt(input: ApproveAndMergeInput) {
   const [status, diff, log] = await Promise.all([
-    git(input.worktree, ["status", "--porcelain"]),
+    storyStatus(input.worktree, "--porcelain"),
     git(input.worktree, ["diff", "--no-ext-diff", "HEAD", "--"]),
     git(input.worktree, ["log", "-12", "--pretty=%s"]),
   ])
@@ -988,9 +1032,80 @@ async function commitMessagePrompt(input: ApproveAndMergeInput) {
   ].join("\n")
 }
 
-async function mergeConflictPrompt(input: ApproveAndMergeInput, targetBranch: string) {
+async function fallbackCommitMessage(input: ApproveAndMergeInput) {
+  const [status, log] = await Promise.all([
+    storyStatus(input.worktree, "--porcelain"),
+    git(input.worktree, ["log", "-12", "--pretty=%s"]),
+  ])
+  const files = statusFileNames(status)
+  const subject = fallbackCommitSubject(input.title)
+  const bracketPrefix = dominantBracketPrefix(log)
+  if (!commitMessageConventionEnabled(input) && bracketPrefix) {
+    return limitCommitMessage(`${bracketPrefix} ${subject}`)
+  }
+  const scope = commitScope(files)
+  const type = commitType(files)
+  return limitCommitMessage(`${type}${scope ? `(${scope})` : ""}: ${subject}`)
+}
+
+function commitMessageFromAgentResult(result: unknown) {
+  const payload = asRecord(result)
+  return firstTextLine(payload.text) ?? firstTextLine(payload.outputText) ?? firstTextLine(payload.message)
+}
+
+function fallbackCommitSubject(title: string) {
+  const subject = title.trim().replace(/\s+/g, " ").replace(/[.!?]+$/g, "")
+  if (!subject) return "complete backlog item"
+  return subject.charAt(0).toLowerCase() + subject.slice(1)
+}
+
+function commitMessageConventionEnabled(input: ApproveAndMergeInput) {
+  return input.codePractices?.find((item) => item.practice === "commit_message_convention")?.enabled ?? false
+}
+
+function dominantBracketPrefix(log: string) {
+  const prefixes = log.split("\n").map((line) => line.match(/^(\[[^\]]+\])/)?.[1]).filter(isString)
+  const counts = new Map<string, number>()
+  prefixes.forEach((prefix) => counts.set(prefix, (counts.get(prefix) ?? 0) + 1))
+  return [...counts.entries()].find(([, count]) => count >= 2)?.[0]
+}
+
+function statusFileNames(status: string) {
+  return status.split("\n").map(statusFileName).filter(isString)
+}
+
+function statusFileName(line: string) {
+  const file = line.slice(3).trim()
+  return file.includes(" -> ") ? file.split(" -> ").at(-1) : file
+}
+
+function commitScope(files: string[]) {
+  const firstFile = files.find(Boolean)
+  if (!firstFile) return undefined
+  const parts = firstFile.split("/")
+  if (parts[0] === "packages" && parts[1]) return parts[1]
+  if (parts[0] === "src" && parts[1]) return parts[1]
+  return parts[0]?.replace(/\.[^.]+$/g, "")
+}
+
+function commitType(files: string[]) {
+  if (files.length && files.every((file) => /\.(test|spec)\.[jt]sx?$/.test(file))) return "test"
+  if (files.length && files.every((file) => /\.(md|mdx|txt)$/.test(file))) return "docs"
+  if (files.some((file) => /(^|\/)(package\.json|pnpm-lock\.yaml)$/.test(file))) return "build"
+  return "fix"
+}
+
+function limitCommitMessage(message: string) {
+  return message.length <= 74 ? message : message.slice(0, 74).replace(/\s+\S*$/, "")
+}
+
+function isString(value: unknown): value is string {
+  return typeof value === "string"
+}
+
+async function mergeConflictPrompt(input: ApproveAndMergeInput, targetBranch: string, attempt: number) {
   const [status, files] = await Promise.all([
-    git(input.worktree, ["status", "--short"]),
+    storyStatus(input.worktree, "--short"),
     git(input.worktree, ["diff", "--name-only", "--diff-filter=U"]),
   ])
   return [
@@ -1000,11 +1115,24 @@ async function mergeConflictPrompt(input: ApproveAndMergeInput, targetBranch: st
     "",
     `Story branch: ${input.storyBranch}`,
     `Target branch: ${targetBranch}`,
+    `Resolution attempt: ${attempt} of ${maxMergeConflictResolutionAttempts}`,
     "",
     `Conflicted files:\n${files}`,
     "",
     `Git status:\n${truncateText(status, 8_000)}`,
   ].join("\n")
+}
+
+async function storyStatus(cwd: string, format: "--porcelain" | "--short") {
+  return git(cwd, ["status", format, "--", ".", ...runtimeArtifactPathspecs])
+}
+
+async function addStoryChanges(cwd: string) {
+  await git(cwd, ["add", "-A", "--", ".", ...runtimeArtifactPathspecs])
+}
+
+function unresolvedMergeConflictMessage(conflicts: string[]) {
+  return `Merge conflict agent finished with unresolved conflicts: ${conflicts.join(", ")}`
 }
 
 async function git(cwd: string, args: string[]) {

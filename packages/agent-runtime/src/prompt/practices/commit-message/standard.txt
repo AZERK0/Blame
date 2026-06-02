@@ -9,6 +9,7 @@ Format:
 
 Rules:
 - maximum 74 characters total;
+- write the message in English;
 - use present tense, imperative mood, and a lowercase verb;
 - focus on the main meaningful change;
 - ignore trivial noise;

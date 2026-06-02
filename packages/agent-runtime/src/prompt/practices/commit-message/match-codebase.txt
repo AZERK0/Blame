@@ -4,6 +4,8 @@ Infer the dominant convention from recent commits and repo guidance: format, typ
 
 Output only the final message: no explanation, markdown, quotes, or prefix.
 
+Write the message in English unless recent commits show that the repository habitually uses another language.
+
 Prefer the local convention over generic rules. If the repo uses Conventional Commits, use:
 - `type(scope): message` when a clear scope exists;
 - `type: message` when no clear scope exists;
