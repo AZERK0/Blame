@@ -41,6 +41,7 @@ It must:
 - mark exactly one preview service with `blame.preview=true`, `blame.preview.port=<internal port>`, `blame.preview.protocol=http`, `blame.preview.path=/`
 - isolate containers, networks, and volumes through `COMPOSE_PROJECT_NAME`
 - run worktree-writing services as `${BLAME_HOST_UID}:${BLAME_HOST_GID}`
+- ensure package manager cache volumes mounted into non-root services are writable by `${BLAME_HOST_UID}:${BLAME_HOST_GID}` before use, either through a root init service with `chown` and `depends_on` or by using writable bind/cache paths
 - bootstrap package managers inside containers before project commands
 - for pnpm in Node containers, use `corepack prepare pnpm@<version> --activate` and `corepack pnpm <command>`
 
@@ -49,6 +50,7 @@ It must never:
 - use fixed host ports, scan ports, reserve ports, or change internal ports only to avoid conflicts
 - use `corepack enable` or bare `pnpm`
 - let containers write bind-mounted worktree files as root
+- mount root-owned named volumes at paths like `/tmp/corepack-cache`, `/tmp/package-store`, or package manager cache directories in services running as `${BLAME_HOST_UID}:${BLAME_HOST_GID}` without first making them writable
 
 ## Practices
 
