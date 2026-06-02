@@ -28,7 +28,6 @@ import { BacklogToolbar } from "@/components/backlog/board/backlog-toolbar"
 import { UserStoryDrawer } from "@/components/backlog/drawer/user-story-drawer"
 import { HostDependenciesDialog } from "@/pages/backlog/host-dependencies-dialog"
 import { useBacklogRotation } from "@/pages/backlog/use-backlog-rotation"
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { useCloudAuth } from "@/context/cloud-auth"
 import type { CloudProjectInitializationStatus } from "@/context/cloud-auth"
 import { usePlatform } from "@/context/platform"
@@ -440,7 +439,7 @@ export function BacklogPage() {
   )
 
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-hidden p-4 lg:p-6">
+    <div className="flex h-[calc(100svh_-_var(--header-height))] min-h-0 min-w-0 flex-col gap-4 overflow-hidden p-4 md:h-[calc(100svh_-_var(--header-height)_-_1rem)] lg:p-6">
       <BacklogToolbar
         disabled={!backlog.projectPath}
         onCreateUserStory={openCreateDrawer}
@@ -461,8 +460,8 @@ export function BacklogPage() {
           Loading user stories.
         </div>
       )}
-      <ScrollArea className="min-h-0 min-w-0 flex-1">
-        <div className="grid min-w-500 grid-cols-6 gap-3 pb-3">
+      <div className="min-h-0 min-w-0 flex-1 overflow-x-auto overflow-y-hidden [scrollbar-color:color-mix(in_oklab,var(--muted-foreground)_35%,transparent)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-2.5 [&::-webkit-scrollbar-corner]:bg-background [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb:hover]:bg-muted-foreground/45 [&::-webkit-scrollbar-track]:bg-transparent">
+        <div className="grid h-full min-w-500 auto-rows-[minmax(0,1fr)] grid-cols-6 gap-3 pb-3">
           {backlogColumns.map((column) => (
             <BacklogColumn
               key={column.id}
@@ -480,8 +479,7 @@ export function BacklogPage() {
             />
           ))}
         </div>
-        <ScrollBar orientation="horizontal" />
-      </ScrollArea>
+      </div>
       <UserStoryDrawer
         open={Boolean(drawerTarget)}
         onOpenChange={(open) => {

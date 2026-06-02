@@ -14,6 +14,7 @@ import type {
 } from "@/components/backlog/actions/story-action-dialogs"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   Tooltip,
   TooltipContent,
@@ -59,38 +60,40 @@ export function BacklogColumn({
   stories: UserStory[]
 }) {
   return (
-    <section className="flex min-h-136 flex-col overflow-hidden rounded-lg border bg-muted/30">
+    <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-lg border bg-muted/30">
       <ColumnHeader
         column={column}
         count={stories.length}
         queueInitializing={queueInitializing}
       />
-      <div className="flex flex-1 flex-col gap-3 bg-foreground/5 p-3 dark:bg-background">
-        {stories.map((story) => (
-          <UserStoryCard
-            key={story.id}
-            onAction={onAction}
-            onOpenDrawer={onOpenDrawer}
-            onOpenWorktree={onOpenWorktree}
-            onReject={onReject}
-            onStopAgent={onStopAgent}
-            onUnpauseAgent={onUnpauseAgent}
-            setupInitializing={storySetupInitializing?.(story)}
-            story={story}
-          />
-        ))}
-        {column.id === "backlog" && (
-          <Button
-            type="button"
-            variant="ghost"
-            className="flex h-8 items-center justify-center gap-2 rounded-md text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            onClick={onCreateUserStory}
-          >
-            <PlusIcon className="size-4" />
-            New User Story
-          </Button>
-        )}
-      </div>
+      <ScrollArea className="min-h-0 flex-1 bg-foreground/5 dark:bg-background">
+        <div className="flex flex-col gap-3 p-3">
+          {stories.map((story) => (
+            <UserStoryCard
+              key={story.id}
+              onAction={onAction}
+              onOpenDrawer={onOpenDrawer}
+              onOpenWorktree={onOpenWorktree}
+              onReject={onReject}
+              onStopAgent={onStopAgent}
+              onUnpauseAgent={onUnpauseAgent}
+              setupInitializing={storySetupInitializing?.(story)}
+              story={story}
+            />
+          ))}
+          {column.id === "backlog" && (
+            <Button
+              type="button"
+              variant="ghost"
+              className="flex h-8 items-center justify-center gap-2 rounded-md text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              onClick={onCreateUserStory}
+            >
+              <PlusIcon className="size-4" />
+              New User Story
+            </Button>
+          )}
+        </div>
+      </ScrollArea>
     </section>
   )
 }
