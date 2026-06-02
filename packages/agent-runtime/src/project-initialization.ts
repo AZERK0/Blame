@@ -297,7 +297,7 @@ function runsContainersAsHostUser(compose: string) {
 }
 
 function usesBarePnpm(compose: string) {
-  return /(^|[^a-z0-9_-])pnpm\s/.test(compose.replace(/corepack\s+pnpm/g, ""));
+  return /(^|[\s;&|])pnpm\s/.test(compose.replace(/corepack\s+pnpm/g, ""));
 }
 
 function composeCommandPresent(value: string) {
