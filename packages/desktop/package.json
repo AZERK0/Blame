@@ -14,7 +14,7 @@
     "package:mac": "node scripts/package.mjs --mac",
     "package:win": "node scripts/package.mjs --win",
     "preview": "electron-vite preview",
-    "test": "node --test --experimental-strip-types src/main/host-dependencies.test.ts src/main/workspace-compose.test.ts",
+    "test": "node --test --experimental-strip-types src/main/host-dependencies.test.ts src/main/workspace-compose.test.ts src/main/workspace-env.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

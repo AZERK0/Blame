@@ -31,6 +31,7 @@ import {
   checkHostDependencies,
 } from "./host-dependencies";
 import { dockerComposeForPreview } from "./workspace-compose";
+import { copyProjectEnvFiles } from "./workspace-env";
 
 const execFileAsync = promisify(execFile);
 const previewStartupTimeoutMs = 60_000;
@@ -264,6 +265,7 @@ async function createWorktree(input: CreateWorktreeInput) {
   await mkdir(dirname(worktree), { recursive: true });
 
   if (await worktreeRegistered(repositoryRoot, worktree)) {
+    await copyProjectEnvFiles(repositoryRoot, worktree);
     removedWorktrees.delete(worktree);
     return { worktree, branch };
   }
@@ -276,6 +278,7 @@ async function createWorktree(input: CreateWorktreeInput) {
     await execFileAsync("git", ["worktree", "add", worktree, branch], {
       cwd: repositoryRoot,
     });
+    await copyProjectEnvFiles(repositoryRoot, worktree);
     removedWorktrees.delete(worktree);
     return { worktree, branch };
   }
@@ -287,6 +290,7 @@ async function createWorktree(input: CreateWorktreeInput) {
       cwd: repositoryRoot,
     },
   );
+  await copyProjectEnvFiles(repositoryRoot, worktree);
   removedWorktrees.delete(worktree);
   return { worktree, branch };
 }
