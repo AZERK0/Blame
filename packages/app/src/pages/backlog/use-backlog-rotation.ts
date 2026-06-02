@@ -30,7 +30,6 @@ const previewRecoveryIntervalMs = 30_000
 const agentEventPersistDelayMs = 1_500
 const setupToastId = "backlog-rotation-setup"
 const authToastId = "backlog-agent-auth"
-const urlPattern = /\bhttps?:\/\/[^\s"'<>]+|\blocalhost:\d+[^\s"'<>]*/i
 const initializationRetryDelay = 5_000
 
 export function useBacklogRotation(
@@ -238,7 +237,7 @@ export function useBacklogRotation(
     const text = eventText(event)
     const previewUrl = setupCompleted(event)
       ? ((await projectPreviewUrl(worktree)) ?? undefined)
-      : firstPreviewUrl(text)
+      : undefined
     if (event.type === "exit") backlog.setStorySetupInitializing(story, false)
     await backlog.update(story, {
       agentLastError: setupError(event) ? text : undefined,
@@ -576,13 +575,6 @@ function activePreviewStory(
     Boolean(story.worktree) &&
     !setupInitializingStoryIds.has(story.id)
   )
-}
-
-function firstPreviewUrl(text: string) {
-  const match = text.match(urlPattern)?.[0]
-  if (!match) return undefined
-  if (match.startsWith("http")) return match
-  return `http://${match}`
 }
 
 function errorMessage(error: unknown) {
