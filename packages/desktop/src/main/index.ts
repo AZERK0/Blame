@@ -32,6 +32,10 @@ app.setName("Blame")
 app.setAppUserModelId("dev.blame.desktop")
 app.setPath("userData", join(app.getPath("appData"), "dev.blame.desktop"))
 
+const singleInstanceLock = app.requestSingleInstanceLock()
+
+if (!singleInstanceLock) app.exit(0)
+
 let mainWindow: BrowserWindow | undefined
 let shutdownPromise: Promise<void> | undefined
 let quitAfterShutdown = false
@@ -53,6 +57,10 @@ void app.whenReady().then(() => {
 
 app.on("activate", () => {
   if (BrowserWindow.getAllWindows().length === 0) mainWindow = createMainWindow()
+})
+
+app.on("second-instance", () => {
+  showMainWindow()
 })
 
 app.on("window-all-closed", () => {
@@ -106,6 +114,17 @@ function createMainWindow() {
   loadRenderer(window)
   window.once("ready-to-show", () => window.show())
   return window
+}
+
+function showMainWindow() {
+  const window = mainWindow ?? BrowserWindow.getAllWindows()[0]
+  if (!window) {
+    mainWindow = createMainWindow()
+    return
+  }
+  if (window.isMinimized()) window.restore()
+  window.show()
+  window.focus()
 }
 
 function windowsWindowOptions(): BrowserWindowConstructorOptions {
