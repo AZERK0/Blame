@@ -12,6 +12,11 @@ import type {
   OAuthProviderInterface,
   OAuthServerListeningInfo,
 } from "@cline/sdk"
+import {
+  buildWorkspaceMetadata,
+  getClineDefaultSystemPrompt,
+  mergeRulesForSystemPrompt,
+} from "@cline/sdk"
 
 import {
   deleteProviderCredential,
@@ -32,6 +37,7 @@ import {
   appendProductionConfig,
   assertRepositoryPath,
   assertWorkspacePath,
+  blameCompactionConfig,
   createProductionLogger,
   createProductionTelemetry,
   loadProductionConfig,
@@ -43,7 +49,7 @@ import {
   usageLimitMessage,
 } from "./production.js"
 import type { ProjectInitializationScan } from "./project-initialization.js"
-import type { ProductionConfig, ProductionSessionContext } from "./production.js"
+import type { ProductionSessionContext } from "./production.js"
 import type {
   AgentApprovalRequest,
   AgentEvent,
@@ -126,6 +132,7 @@ export class BlameAgentRuntime {
   private autoApprovedWriteToolSessions = new Set<string>()
   private sessionLogFiles = new Map<string, string>()
   private sessionContexts = new Map<string, ProductionSessionContext>()
+  private sessionUsageSignatures = new Map<string, string>()
   private readonly productionConfig = loadProductionConfig()
   private readonly events?: AgentRuntimeEvents
   private readonly options: RuntimeOptions
@@ -241,9 +248,20 @@ export class BlameAgentRuntime {
       }
       const cline = await this.core()
       await appendLog(startLogFile, "cline core ready")
-      const session = await cline.start({
+      const sessionId = createBlameSessionId()
+      const sessionLogFile = sessionLogPath(input.cwd, sessionId)
+      await this.subscribeSession(sessionId)
+      this.sessionLogFiles.set(sessionId, sessionLogFile)
+      this.sessionContexts.set(sessionId, sessionContext(input, sessionId))
+      if (input.autoApproveWriteTools) {
+        this.autoApprovedWriteToolSessions.add(sessionId)
+      }
+      const autoSendPrompt = input.autoSendPrompt !== false
+      const startInput = {
+        ...(autoSendPrompt ? { prompt: input.prompt } : {}),
         config: {
           ...appendProductionConfig({
+            sessionId,
             providerId: input.providerId,
             modelId: input.modelId,
             apiKey: resolvedCredential.apiKey,
@@ -255,19 +273,28 @@ export class BlameAgentRuntime {
             workspaceRoot: input.workspaceRoot,
             mode: input.mode ?? "act",
             maxIterations: input.maxIterations ?? defaultSessionMaxIterations,
-            compaction: sessionCompactionConfig(this.productionConfig),
+            compaction: blameCompactionConfig(this.productionConfig),
             enableTools: true,
             enableSpawnAgent: false,
             enableAgentTeams: false,
+            extensionContext: extensionContext(input),
           }),
         },
-        interactive: true,
+        interactive: !autoSendPrompt,
         source: "blame-desktop",
         toolPolicies: toolPolicies(!!input.autoApproveWriteTools),
-      })
-      const sessionLogFile = sessionLogPath(input.cwd, session.sessionId)
-      this.sessionLogFiles.set(session.sessionId, sessionLogFile)
-      this.sessionContexts.set(session.sessionId, sessionContext(input, session.sessionId))
+      } as const
+      if (autoSendPrompt) {
+        void cline.start(startInput).then((session: { sessionId: string }) =>
+          this.completeSessionStart(startLogFile, startedAt, input, session.sessionId, sessionLogFile)
+        ).catch((error: unknown) =>
+          this.failSessionStart(startLogFile, startedAt, sessionId, error)
+        )
+        await this.logSession(sessionId, "session subscribed")
+        this.emitSessionNotice(sessionId, `Cline debug log: ${sessionLogFile}`)
+        return { sessionId }
+      }
+      const session = await cline.start(startInput)
       await appendLog(startLogFile, "session created", {
         durationMs: Date.now() - startedAt,
         sessionId: session.sessionId,
@@ -278,15 +305,10 @@ export class BlameAgentRuntime {
         logFile: sessionLogFile,
       })
       if (input.autoApproveWriteTools) {
-        this.autoApprovedWriteToolSessions.add(session.sessionId)
         this.emitSessionNotice(session.sessionId, "Development session write tools auto-approved.")
       }
-      await this.subscribeSession(session.sessionId)
       await this.logSession(session.sessionId, "session subscribed")
       this.emitSessionNotice(session.sessionId, `Cline debug log: ${sessionLogFile}`)
-      if (input.autoSendPrompt !== false) {
-        void this.sendPrompt(cline, session.sessionId, input.prompt).catch(() => undefined)
-      }
       if (input.autoSendPrompt === false) {
         await this.logSession(session.sessionId, "prompt deferred", {
           ...promptMetadata(input.prompt),
@@ -302,6 +324,43 @@ export class BlameAgentRuntime {
       })
       throw error
     }
+  }
+
+  private async completeSessionStart(
+    startLogFile: string,
+    startedAt: number,
+    input: StartSessionInput,
+    sessionId: string,
+    sessionLogFile: string
+  ) {
+    await appendLog(startLogFile, "session created", {
+      durationMs: Date.now() - startedAt,
+      sessionId,
+      logFile: sessionLogFile,
+    })
+    await this.logSession(sessionId, "session created", {
+      ...startContext(input),
+      logFile: sessionLogFile,
+    })
+    if (input.autoApproveWriteTools) {
+      this.emitSessionNotice(sessionId, "Development session write tools auto-approved.")
+    }
+  }
+
+  private async failSessionStart(
+    startLogFile: string,
+    startedAt: number,
+    sessionId: string,
+    error: unknown
+  ) {
+    const message = errorMessage(error)
+    await appendLog(startLogFile, "start failed", {
+      durationMs: Date.now() - startedAt,
+      errorType: errorType(error),
+      message,
+      status: "failed",
+    })
+    this.emitSessionError(sessionId, message)
   }
 
   private async sendSession(input: SendSessionInput) {
@@ -537,8 +596,12 @@ export class BlameAgentRuntime {
 
   private async handleSessionEvent(sessionId: string, event: AgentEvent) {
     await this.logSession(sessionId, `event:${event.type}`, eventLogPayload(event))
-    if (event.type !== "usage") return
-    const usage = await this.readUsage(sessionId)
+    const eventUsage = eventUsageSummary(event)
+    if (!eventUsage) return
+    const usage = eventUsage ?? await this.readUsage(sessionId)
+    const usageSignature = JSON.stringify(summarizeUsage(usage))
+    if (this.sessionUsageSignatures.get(sessionId) === usageSignature) return
+    this.sessionUsageSignatures.set(sessionId, usageSignature)
     const context = this.sessionContexts.get(sessionId) ?? { sessionId }
     await this.logSession(sessionId, "usage updated", { ...context, ...summarizeUsage(usage) })
     recordUsageTelemetry((await this.telemetry())?.telemetry, usage, context)
@@ -553,6 +616,7 @@ export class BlameAgentRuntime {
     this.unsubscribers.delete(sessionId)
     this.autoApprovedWriteToolSessions.delete(sessionId)
     this.sessionContexts.delete(sessionId)
+    this.sessionUsageSignatures.delete(sessionId)
     void this.logSession(sessionId, "session unsubscribed")
   }
 
@@ -749,20 +813,20 @@ export class BlameAgentRuntime {
     this.telemetryHandle = undefined
   }
 
-  private startDevelopmentSession(input: StartDevelopmentSessionInput) {
+  private async startDevelopmentSession(input: StartDevelopmentSessionInput) {
     return this.startSession({
       apiConnection: input.apiConnection,
       providerId: input.providerId,
       modelId: input.modelId,
       reasoningEffort: input.reasoningEffort,
       autoApproveWriteTools: true,
-      autoSendPrompt: false,
+      autoSendPrompt: true,
       mode: "act",
       maxIterations: input.maxIterations ?? developmentMaxIterations(),
       prompt: developmentStoryPrompt(input),
       cwd: input.cwd,
       workspaceRoot: input.workspaceRoot,
-      systemPrompt: developmentSystemPrompt(input.codePractices),
+      systemPrompt: await developmentSystemPrompt(input),
     })
   }
 
@@ -907,13 +971,44 @@ function developmentStoryPrompt(input: Pick<StartDevelopmentSessionInput, "feedb
   return prompt.join("\n")
 }
 
-function developmentSystemPrompt(practices: ProjectCodePracticePreference[] = []) {
-  return [
+async function developmentSystemPrompt(input: StartDevelopmentSessionInput) {
+  const metadata = await buildWorkspaceMetadata(input.cwd)
+  const practices = input.codePractices ?? []
+  const rules = [
     loadPrompt("code-agent-system"),
     developmentPracticePrompt(practices, "coding_style"),
     developmentPracticePrompt(practices, "layered_architecture"),
     developmentPracticePrompt(practices, "unit_tests"),
   ].join("\n\n")
+  return getClineDefaultSystemPrompt({
+    ide: "Blame",
+    metadata,
+    mode: "act",
+    platform: process.platform,
+    providerId: input.providerId,
+    rules: mergeRulesForSystemPrompt(undefined, rules),
+    workspaceName: basename(input.workspaceRoot),
+    workspaceRoot: input.workspaceRoot,
+  })
+}
+
+function createBlameSessionId() {
+  return `${Date.now()}_${randomUUID().replaceAll("-", "").slice(0, 5)}`
+}
+
+function extensionContext(input: StartSessionInput) {
+  return {
+    client: { name: "blame" },
+    logger: productionLogger,
+    workspace: {
+      cwd: input.cwd,
+      ide: "Blame",
+      mode: input.mode ?? "act",
+      platform: process.platform,
+      rootPath: input.workspaceRoot,
+      workspaceName: basename(input.workspaceRoot),
+    },
+  }
 }
 
 function developmentPracticePrompt(
@@ -1282,16 +1377,6 @@ function developmentMaxIterations() {
   return Number.isFinite(value) && value > 0 ? value : defaultDevelopmentMaxIterations
 }
 
-function sessionCompactionConfig(config: ProductionConfig) {
-  return {
-    enabled: config.compactionEnabled ?? true,
-    preserveRecentTokens: config.compactionPreserveRecentTokens ?? 8000,
-    reserveTokens: config.compactionReserveTokens ?? 32000,
-    strategy: config.compactionStrategy ?? "basic",
-    thresholdRatio: config.compactionThresholdRatio ?? 0.75,
-  }
-}
-
 function startLogPath(cwd: string) {
   return join(cwd, ".blame", "logs", "cline-start.log")
 }
@@ -1510,6 +1595,14 @@ function eventLogPayload(event: AgentEvent) {
     sessionId: event.sessionId,
     status: event.type,
   }
+}
+
+function eventUsageSummary(event: AgentEvent): AgentUsageSummary | undefined {
+  if (event.type !== "usage" && event.type !== "done") return undefined
+  const payload = asRecord(event.payload)
+  const usage = asRecord(payload.usage)
+  if (!Object.keys(usage).length) return undefined
+  return { aggregateUsage: usage as never }
 }
 
 function toolLogPayload(payload: Record<string, unknown>) {

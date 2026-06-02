@@ -312,12 +312,6 @@ export function BacklogPage() {
             unsubscribe()
         }
       )
-      void agent.sessions.sendDevelopment({
-        sessionId: session.sessionId,
-        title: story.title,
-        summary: story.summary,
-        feedback,
-      })
       return updatedStory
     },
     [
@@ -409,12 +403,6 @@ export function BacklogPage() {
             unsubscribe()
         }
       )
-      void agent.sessions.sendDevelopment({
-        sessionId: session.sessionId,
-        title: story.title,
-        summary: story.summary,
-        feedback: enrichedFeedback,
-      })
       return updatedStory
     },
     [

@@ -160,12 +160,7 @@ function modelContextLimit(
 }
 
 function usageTotalTokens(totals: AgentUsageTotals) {
-  return (
-    totals.inputTokens +
-    totals.outputTokens +
-    totals.cacheReadTokens +
-    totals.cacheWriteTokens
-  )
+  return totals.inputTokens + totals.outputTokens
 }
 
 function formatUsage(totalTokens: number, contextLimit: number | undefined) {

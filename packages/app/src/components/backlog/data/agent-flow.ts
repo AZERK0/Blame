@@ -304,7 +304,10 @@ function compactValue(value: unknown): unknown {
 
 function eventUsage(story: UserStory, event: AgentEvent) {
   const current = usageWithDefaults(story.agentUsage)
-  if (event.type === "usage") return usageFromUsageEvent(current, event)
+  if (event.type === "usage" || event.type === "done") {
+    const next = usageFromUsageEvent(current, event)
+    return usageChanged(current, next) ? next : undefined
+  }
   if (event.type === "tool") return usageFromToolEvent(current, event)
   if (event.type === "notice") return usageFromNoticeEvent(current, event)
 }
@@ -319,7 +322,7 @@ function usageFromUsageEvent(current: UserStoryAgentUsage, event: AgentEvent) {
   const cacheWriteTokens = numberValue(usage.cacheWriteTokens) ?? current.cacheWriteTokens
   const maxContextTokens = Math.max(
     current.maxContextTokens,
-    inputTokens + cacheReadTokens + cacheWriteTokens
+    inputTokens
   )
   return {
     ...current,
@@ -330,6 +333,17 @@ function usageFromUsageEvent(current: UserStoryAgentUsage, event: AgentEvent) {
     outputTokens,
     totalCost: numberValue(usage.totalCost) ?? current.totalCost,
   }
+}
+
+function usageChanged(current: UserStoryAgentUsage, next: UserStoryAgentUsage) {
+  return (
+    current.cacheReadTokens !== next.cacheReadTokens ||
+    current.cacheWriteTokens !== next.cacheWriteTokens ||
+    current.inputTokens !== next.inputTokens ||
+    current.maxContextTokens !== next.maxContextTokens ||
+    current.outputTokens !== next.outputTokens ||
+    current.totalCost !== next.totalCost
+  )
 }
 
 function usageFromToolEvent(current: UserStoryAgentUsage, event: AgentEvent) {

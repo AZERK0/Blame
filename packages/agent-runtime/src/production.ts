@@ -5,13 +5,15 @@ import { platform, release } from "node:os"
 import type {
   BasicLogger,
   ConfiguredTelemetryHandle,
-  CoreSessionConfig,
+  CoreCompactionConfig,
   ITelemetryService,
+  CoreSessionConfig,
   SessionUsageSummary,
 } from "@cline/sdk"
 
 export type ProductionConfig = {
   compactionEnabled?: boolean
+  compactionMaxInputTokens?: number
   compactionPreserveRecentTokens?: number
   compactionReserveTokens?: number
   compactionStrategy?: "agentic" | "basic"
@@ -19,6 +21,7 @@ export type ProductionConfig = {
   maxInputTokens?: number
   maxOutputTokens?: number
   maxSessionCostUsd?: number
+  maxTotalTokens?: number
 }
 
 export type ProductionSessionContext = {
@@ -66,20 +69,21 @@ const allowedLogKeys = new Set([
   "success",
   "toolName",
   "totalCost",
+  "totalTokens",
 ])
 
 export function loadProductionConfig(env: NodeJS.ProcessEnv = process.env): ProductionConfig {
   return {
     compactionEnabled: booleanValue(env.BLAME_AGENT_COMPACTION_ENABLED, true),
-    compactionPreserveRecentTokens: positiveNumber(
-      env.BLAME_AGENT_COMPACTION_PRESERVE_RECENT_TOKENS
-    ),
+    compactionMaxInputTokens: positiveNumber(env.BLAME_AGENT_COMPACTION_MAX_INPUT_TOKENS),
+    compactionPreserveRecentTokens: positiveNumber(env.BLAME_AGENT_COMPACTION_PRESERVE_RECENT_TOKENS),
     compactionReserveTokens: positiveNumber(env.BLAME_AGENT_COMPACTION_RESERVE_TOKENS),
     compactionStrategy: compactionStrategy(env.BLAME_AGENT_COMPACTION_STRATEGY),
     compactionThresholdRatio: ratioNumber(env.BLAME_AGENT_COMPACTION_THRESHOLD_RATIO),
     maxInputTokens: positiveNumber(env.BLAME_AGENT_MAX_INPUT_TOKENS),
     maxOutputTokens: positiveNumber(env.BLAME_AGENT_MAX_OUTPUT_TOKENS),
     maxSessionCostUsd: positiveNumber(env.BLAME_AGENT_MAX_SESSION_COST_USD),
+    maxTotalTokens: positiveNumber(env.BLAME_AGENT_MAX_TOTAL_TOKENS),
   }
 }
 
@@ -123,9 +127,22 @@ export function appendProductionConfig<T extends CoreSessionConfig>(config: T): 
     execution: {
       ...config.execution,
       loopDetection: config.execution?.loopDetection ?? { hardThreshold: 5, softThreshold: 3 },
-      maxConsecutiveMistakes: config.execution?.maxConsecutiveMistakes ?? 6,
+      maxConsecutiveMistakes: config.execution?.maxConsecutiveMistakes ?? 3,
     },
-    maxConsecutiveMistakes: configWithLimits.maxConsecutiveMistakes ?? 6,
+    maxConsecutiveMistakes: configWithLimits.maxConsecutiveMistakes ?? 3,
+  }
+}
+
+export function blameCompactionConfig(config: ProductionConfig): CoreCompactionConfig {
+  return {
+    enabled: config.compactionEnabled ?? true,
+    ...(config.compactionMaxInputTokens ? { maxInputTokens: config.compactionMaxInputTokens } : {}),
+    ...(config.compactionPreserveRecentTokens
+      ? { preserveRecentTokens: config.compactionPreserveRecentTokens }
+      : {}),
+    ...(config.compactionReserveTokens ? { reserveTokens: config.compactionReserveTokens } : {}),
+    strategy: config.compactionStrategy ?? "basic",
+    ...(config.compactionThresholdRatio ? { thresholdRatio: config.compactionThresholdRatio } : {}),
   }
 }
 
@@ -153,12 +170,14 @@ export function summarizeUsage(summary: SessionUsageSummary | undefined) {
     inputTokens: usage.inputTokens,
     outputTokens: usage.outputTokens,
     totalCost: usage.totalCost,
+    totalTokens: totalTokens(usage),
   }
 }
 
 export function shouldAbortForUsage(summary: SessionUsageSummary | undefined, config: ProductionConfig) {
   const usage = summary?.aggregateUsage ?? summary?.usage
   if (!usage) return false
+  if (config.maxTotalTokens !== undefined && totalTokens(usage) > config.maxTotalTokens) return true
   if (config.maxSessionCostUsd !== undefined && usage.totalCost > config.maxSessionCostUsd) return true
   if (config.maxInputTokens !== undefined && usage.inputTokens > config.maxInputTokens) return true
   if (config.maxOutputTokens !== undefined && usage.outputTokens > config.maxOutputTokens) return true
@@ -168,6 +187,9 @@ export function shouldAbortForUsage(summary: SessionUsageSummary | undefined, co
 export function usageLimitMessage(summary: SessionUsageSummary | undefined, config: ProductionConfig) {
   const usage = summary?.aggregateUsage ?? summary?.usage
   if (!usage) return "Usage limit exceeded."
+  if (config.maxTotalTokens !== undefined && totalTokens(usage) > config.maxTotalTokens) {
+    return `Total token limit exceeded (${config.maxTotalTokens})`
+  }
   if (config.maxSessionCostUsd !== undefined && usage.totalCost > config.maxSessionCostUsd) {
     return `Cost limit exceeded ($${config.maxSessionCostUsd.toFixed(2)})`
   }
@@ -228,16 +250,16 @@ function safeLogValue(value: unknown): unknown {
   return undefined
 }
 
-function positiveNumber(value: string | undefined) {
-  if (!value) return undefined
+function positiveNumber(value: string | undefined, fallback?: number) {
+  if (!value) return fallback
   const parsed = Number(value)
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback
 }
 
-function ratioNumber(value: string | undefined) {
+function ratioNumber(value: string | undefined, fallback?: number) {
   const parsed = positiveNumber(value)
-  if (parsed === undefined) return undefined
-  return parsed > 0 && parsed < 1 ? parsed : undefined
+  if (parsed === undefined) return fallback
+  return parsed > 0 && parsed < 1 ? parsed : fallback
 }
 
 function booleanValue(value: string | undefined, fallback: boolean) {
@@ -251,6 +273,15 @@ function compactionStrategy(value: string | undefined) {
 
 function numberValue(value: unknown) {
   return typeof value === "number" ? value : 0
+}
+
+function totalTokens(usage: {
+  cacheReadTokens: number
+  cacheWriteTokens: number
+  inputTokens: number
+  outputTokens: number
+}) {
+  return usage.inputTokens + usage.outputTokens
 }
 
 function isPathInside(path: string, parent: string) {

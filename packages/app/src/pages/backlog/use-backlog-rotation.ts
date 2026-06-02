@@ -164,11 +164,6 @@ export function useBacklogRotation(
       status: "in-progress",
       worktree: worktree.worktree,
     })
-    void agent.sessions.sendDevelopment({
-      sessionId: session.sessionId,
-      title: story.title,
-      summary: story.summary,
-    })
   }
 
   function reportBlocker(story: UserStory, message: string) {
