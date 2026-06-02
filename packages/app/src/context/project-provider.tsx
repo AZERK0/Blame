@@ -59,6 +59,10 @@ function useProjectState(
     if (path) await openProject(path)
   }, [openProject, platform])
 
+  const removeRecentProject = React.useCallback((path: string) => {
+    setState((current) => removeRecentProjectState(current, path))
+  }, [])
+
   return React.useMemo(
     () => ({
       activeProject,
@@ -68,8 +72,16 @@ function useProjectState(
       opening,
       openProject,
       chooseProject,
+      removeRecentProject,
     }),
-    [activeProject, chooseProject, openProject, opening, state.recent]
+    [
+      activeProject,
+      chooseProject,
+      openProject,
+      opening,
+      removeRecentProject,
+      state.recent,
+    ]
   )
 }
 
@@ -98,8 +110,22 @@ function openProjectState(
     active: project.id,
     recent: [
       project,
-      ...current.recent.filter((item) => item.id !== project.id),
+      ...current.recent.filter((item) => item.path !== project.path),
     ].slice(0, recentLimit),
+  }
+}
+
+function removeRecentProjectState(
+  current: ProjectState,
+  path: string
+): ProjectState {
+  const removedActiveProject = current.recent.some(
+    (project) => project.id === current.active && project.path === path
+  )
+
+  return {
+    active: removedActiveProject ? undefined : current.active,
+    recent: current.recent.filter((project) => project.path !== path),
   }
 }
 
@@ -109,10 +135,36 @@ function readProjectState(): ProjectState {
   try {
     const parsed = JSON.parse(localStorage.getItem(storageKey) ?? "")
     if (!isProjectState(parsed)) return fallback
-    return parsed
+    return normalizeProjectState(parsed)
   } catch {
     return fallback
   }
+}
+
+function normalizeProjectState(state: ProjectState): ProjectState {
+  const activeProject = state.recent.find(
+    (project) => project.id === state.active
+  )
+  const recent = activeProject
+    ? uniqueProjectsByPath([
+        activeProject,
+        ...state.recent.filter((project) => project.id !== activeProject.id),
+      ])
+    : uniqueProjectsByPath(state.recent)
+
+  return {
+    active: recent.some((project) => project.id === state.active)
+      ? state.active
+      : undefined,
+    recent,
+  }
+}
+
+function uniqueProjectsByPath(projects: Project[]) {
+  return projects.filter(
+    (project, index) =>
+      projects.findIndex((item) => item.path === project.path) === index
+  )
 }
 
 function writeProjectState(state: ProjectState) {

@@ -7,7 +7,9 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
+  CommandShortcut,
 } from "@/components/ui/command"
+import { Button } from "@/components/ui/button"
 import {
   Popover,
   PopoverContent,
@@ -22,6 +24,7 @@ import {
   GitBranchIcon,
   GitBranchPlusIcon,
   PlusIcon,
+  XIcon,
 } from "lucide-react"
 
 export function ProjectSelector() {
@@ -36,6 +39,10 @@ export function ProjectSelector() {
   function selectProject(path: string) {
     void projects.openProject(path)
     setOpen(false)
+  }
+
+  function removeRecentProject(path: string) {
+    projects.removeRecentProject(path)
   }
 
   return (
@@ -55,6 +62,7 @@ export function ProjectSelector() {
         opening={projects.opening}
         onOpenProject={openProject}
         onSelectProject={selectProject}
+        onRemoveRecentProject={removeRecentProject}
       />
     </Popover>
   )
@@ -84,12 +92,14 @@ function ProjectSelectorContent({
   opening,
   onOpenProject,
   onSelectProject,
+  onRemoveRecentProject,
 }: {
   activeProject?: Project
   recentProjects: Project[]
   opening: boolean
   onOpenProject: () => Promise<void>
   onSelectProject: (path: string) => void
+  onRemoveRecentProject: (path: string) => void
 }) {
   return (
     <PopoverContent align="start" className="w-80 p-1">
@@ -111,6 +121,7 @@ function ProjectSelectorContent({
             activeProject={activeProject}
             recentProjects={recentProjects}
             onSelect={onSelectProject}
+            onRemove={onRemoveRecentProject}
           />
         </CommandList>
       </Command>
@@ -147,12 +158,18 @@ function RecentProjects({
   activeProject,
   recentProjects,
   onSelect,
+  onRemove,
 }: {
   activeProject?: Project
   recentProjects: Project[]
   onSelect: (path: string) => void
+  onRemove: (path: string) => void
 }) {
-  if (recentProjects.length === 0) {
+  const visibleRecentProjects = activeProject
+    ? recentProjects.filter((project) => project.path !== activeProject.path)
+    : recentProjects
+
+  if (visibleRecentProjects.length === 0) {
     if (activeProject) return null
     return <CommandEmpty>No project opened yet</CommandEmpty>
   }
@@ -162,9 +179,10 @@ function RecentProjects({
       <CommandSeparator />
       <ProjectGroup
         heading="Recent Projects"
-        projects={recentProjects}
+        projects={visibleRecentProjects}
         selectedPath={activeProject?.path}
         onSelect={onSelect}
+        onRemove={onRemove}
       />
     </>
   )
@@ -175,11 +193,13 @@ function ProjectGroup({
   projects,
   selectedPath,
   onSelect,
+  onRemove,
 }: {
   heading: string
   projects: Project[]
   selectedPath?: string
   onSelect: (path: string) => void
+  onRemove?: (path: string) => void
 }) {
   return (
     <CommandGroup heading={heading}>
@@ -189,6 +209,7 @@ function ProjectGroup({
           project={project}
           selected={selectedPath === project.path}
           onSelect={onSelect}
+          onRemove={onRemove}
         />
       ))}
     </CommandGroup>
@@ -199,10 +220,12 @@ function ProjectItem({
   project,
   selected,
   onSelect,
+  onRemove,
 }: {
   project: Project
   selected: boolean
   onSelect: (path: string) => void
+  onRemove?: (path: string) => void
 }) {
   return (
     <CommandItem
@@ -219,7 +242,38 @@ function ProjectItem({
         </span>
         <ProjectBranch branch={project.branch} />
       </span>
+      {onRemove && (
+        <RemoveRecentProjectButton project={project} onRemove={onRemove} />
+      )}
     </CommandItem>
+  )
+}
+
+function RemoveRecentProjectButton({
+  project,
+  onRemove,
+}: {
+  project: Project
+  onRemove: (path: string) => void
+}) {
+  function removeProject(event: React.MouseEvent<HTMLButtonElement>) {
+    event.preventDefault()
+    event.stopPropagation()
+    onRemove(project.path)
+  }
+
+  return (
+    <CommandShortcut className="tracking-normal opacity-0 group-hover/command-item:opacity-100">
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-xs"
+        aria-label={`Remove ${project.name} from recent projects`}
+        onClick={removeProject}
+      >
+        <XIcon />
+      </Button>
+    </CommandShortcut>
   )
 }
 

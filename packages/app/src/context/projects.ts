@@ -8,6 +8,7 @@ export type ProjectContextValue = {
   opening: boolean
   openProject(path: string): Promise<void>
   chooseProject(): Promise<void>
+  removeRecentProject(path: string): void
 }
 
 export const ProjectContext = React.createContext<
