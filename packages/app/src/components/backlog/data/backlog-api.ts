@@ -1,5 +1,6 @@
 import type {
   UserStory,
+  UserStoryActivityDetail,
   UserStoryComment,
   UserStoryDraft,
   UserStoryUpdate,
@@ -34,9 +35,18 @@ export function createBacklogApi(connection: ApiConnection) {
           baseUrl,
           `/projects/user-stories/${id}`,
           {
-            body: JSON.stringify(input),
+            body: JSON.stringify(apiUpdate(input)),
             method: "PATCH",
           }
+        )
+      )
+    },
+    async activityDetail(id: number, activityId: string) {
+      return activityDetail(
+        await request<unknown>(
+          connection,
+          baseUrl,
+          `/projects/user-stories/${id}/agent-activities/${encodeURIComponent(activityId)}`
         )
       )
     },
@@ -59,6 +69,20 @@ export function createBacklogApi(connection: ApiConnection) {
       })
     },
   }
+}
+
+function apiUpdate(input: UserStoryUpdate) {
+  if (!input.agentActivity) return input
+  const { agentActivities, ...update } = input
+  void agentActivities
+  return update
+}
+
+function activityDetail(value: unknown) {
+  if (!isRecord(value)) throw new Error("Unable to read agent activity detail.")
+  if (typeof value.detail !== "string")
+    throw new Error("Unable to read agent activity detail.")
+  return value as UserStoryActivityDetail
 }
 
 function userStoryComment(value: unknown) {

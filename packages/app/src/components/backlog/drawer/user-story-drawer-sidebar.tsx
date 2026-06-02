@@ -43,6 +43,7 @@ function TokenUsage({ userStory }: { userStory?: UserStory }) {
         <TokenStat label="Model" value={userStory.agentModelId} />
         <TokenStat label="Context limit" value={formatInteger(contextLimit)} />
         {usageContent(sessionUsage, contextLimit)}
+        <TokenDiagnostics userStory={userStory} />
       </div>
     </section>
   )
@@ -81,6 +82,25 @@ function TokenUsageTotals({
         value={`${formatInteger(totals.cacheReadTokens)} / ${formatInteger(totals.cacheWriteTokens)}`}
       />
       <TokenStat label="Total cost" value={formatCurrency(totals.totalCost)} />
+    </>
+  )
+}
+
+function TokenDiagnostics({ userStory }: { userStory: UserStory }) {
+  const usage = userStory.agentUsage
+  if (!usage) return null
+  const topTools = usage.topTools
+    .map((tool) => `${tool.name}: ${formatInteger(tool.totalBytes)} bytes`)
+    .join("\n")
+  return (
+    <>
+      <TokenStat label="Max context observed" value={formatInteger(usage.maxContextTokens)} />
+      <TokenStat label="Compactions" value={formatInteger(usage.compactionCount)} />
+      <TokenStat label="Unbounded file reads" value={formatInteger(usage.unboundedFileReads)} />
+      <TokenStat label="Large file reads" value={formatInteger(usage.largeFileReads)} />
+      <TokenStat label="Truncated outputs" value={formatInteger(usage.truncatedOutputs)} />
+      <TokenStat label="Estimated saved tokens" value={formatInteger(usage.tokensSavedEstimate)} />
+      <TokenStat label="Largest tools" value={topTools || "-"} />
     </>
   )
 }

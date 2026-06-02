@@ -11,6 +11,11 @@ import type {
 } from "@cline/sdk"
 
 export type ProductionConfig = {
+  compactionEnabled?: boolean
+  compactionPreserveRecentTokens?: number
+  compactionReserveTokens?: number
+  compactionStrategy?: "agentic" | "basic"
+  compactionThresholdRatio?: number
   maxInputTokens?: number
   maxOutputTokens?: number
   maxSessionCostUsd?: number
@@ -65,6 +70,13 @@ const allowedLogKeys = new Set([
 
 export function loadProductionConfig(env: NodeJS.ProcessEnv = process.env): ProductionConfig {
   return {
+    compactionEnabled: booleanValue(env.BLAME_AGENT_COMPACTION_ENABLED, true),
+    compactionPreserveRecentTokens: positiveNumber(
+      env.BLAME_AGENT_COMPACTION_PRESERVE_RECENT_TOKENS
+    ),
+    compactionReserveTokens: positiveNumber(env.BLAME_AGENT_COMPACTION_RESERVE_TOKENS),
+    compactionStrategy: compactionStrategy(env.BLAME_AGENT_COMPACTION_STRATEGY),
+    compactionThresholdRatio: ratioNumber(env.BLAME_AGENT_COMPACTION_THRESHOLD_RATIO),
     maxInputTokens: positiveNumber(env.BLAME_AGENT_MAX_INPUT_TOKENS),
     maxOutputTokens: positiveNumber(env.BLAME_AGENT_MAX_OUTPUT_TOKENS),
     maxSessionCostUsd: positiveNumber(env.BLAME_AGENT_MAX_SESSION_COST_USD),
@@ -220,6 +232,21 @@ function positiveNumber(value: string | undefined) {
   if (!value) return undefined
   const parsed = Number(value)
   return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined
+}
+
+function ratioNumber(value: string | undefined) {
+  const parsed = positiveNumber(value)
+  if (parsed === undefined) return undefined
+  return parsed > 0 && parsed < 1 ? parsed : undefined
+}
+
+function booleanValue(value: string | undefined, fallback: boolean) {
+  if (value === undefined) return fallback
+  return value !== "false"
+}
+
+function compactionStrategy(value: string | undefined) {
+  return value === "agentic" ? "agentic" : "basic"
 }
 
 function numberValue(value: unknown) {

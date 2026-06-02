@@ -3,8 +3,19 @@ import type { AgentEvent } from "@blame/agent-runtime"
 import type {
   UserStory,
   UserStoryAgentActivity,
+  UserStoryAgentToolUsage,
+  UserStoryAgentUsage,
   UserStoryUpdate,
 } from "@/components/backlog/data/backlog-data"
+
+const maxActivities = 80
+const maxActivityDetailLength = 4096
+const maxActivityValueLength = 1400
+const maxServerActivityDetailLength = 262144
+const largeFileReadBytes = 24000
+type ActivityInput = Omit<UserStoryAgentActivity, "createdAt" | "updatedAt"> & {
+  serverDetail?: string
+}
 
 export function agentFlowUpdate(
   story: UserStory,
@@ -12,15 +23,28 @@ export function agentFlowUpdate(
 ): UserStoryUpdate {
   const activity = eventActivity(story.agentActivities ?? [], event)
   const finalResponse = eventFinalResponse(event)
+  const usage = eventUsage(story, event)
+  const sessionSummary = eventSessionSummary(story, event)
   const update: UserStoryUpdate = {}
-  if (activity) update.agentActivities = activity
+  if (activity) {
+    update.agentActivities = activity.activities
+    update.agentActivity = activity.activity
+  }
   if (finalResponse !== undefined) update.agentFinalResponse = finalResponse
+  if (usage) update.agentUsage = usage
+  if (sessionSummary !== undefined) update.agentSessionSummary = sessionSummary
   return update
 }
 
 export function shouldPersistAgentEvent(event: AgentEvent, update: UserStoryUpdate) {
   if (event.type === "done" || event.type === "error") return true
-  if (update.agentActivities || update.agentFinalResponse !== undefined) return true
+  if (
+    update.agentActivities ||
+    update.agentFinalResponse !== undefined ||
+    update.agentUsage ||
+    update.agentSessionSummary !== undefined
+  )
+    return true
   return event.type === "approval" || event.type === "tool" || event.type === "reasoning"
 }
 
@@ -71,7 +95,7 @@ function reasoningActivities(
     stringValue(payload.accumulatedText) ??
     stringValue(payload.reasoning) ??
     stringValue(payload.text)
-  if (!text) return activities
+  if (!text) return undefined
   const id = `reasoning-${iteration ?? "session"}`
   return upsertActivity(activities, {
     id,
@@ -105,7 +129,8 @@ function toolActivities(
     id,
     kind: "tool",
     title: toolTitle(toolName, phase),
-    detail: toolDetail(payload),
+    detail: toolDetail(payload, true),
+    serverDetail: toolDetail(payload, false),
     status: toolStatus(phase),
     iteration: numberValue(payload.iteration),
     toolCallId,
@@ -137,15 +162,19 @@ function eventFinalResponse(event: AgentEvent) {
 
 function upsertActivity(
   activities: UserStoryAgentActivity[],
-  input: Omit<UserStoryAgentActivity, "createdAt" | "updatedAt">
+  input: ActivityInput
 ) {
   const now = new Date().toISOString()
+  const { serverDetail, ...activityInput } = input
   const existing = activities.find((activity) => activity.id === input.id)
   const next = existing
-    ? { ...existing, ...normalizedActivity(input), updatedAt: now }
-    : { ...normalizedActivity(input), createdAt: now }
-  if (!existing) return [...activities, next]
-  return activities.map((activity) => (activity.id === input.id ? next : activity))
+    ? { ...existing, ...normalizedActivity(activityInput), updatedAt: now }
+    : { ...normalizedActivity(activityInput), createdAt: now }
+  const serverActivity = serverDetail ? { ...next, detail: serverDetail } : next
+  const nextActivities = existing
+    ? activities.map((activity) => (activity.id === input.id ? next : activity))
+    : [...activities, next]
+  return { activities: limitActivities(nextActivities), activity: serverActivity }
 }
 
 function toolTitle(toolName: string, phase: string | undefined) {
@@ -162,17 +191,20 @@ function toolStatus(phase: string | undefined) {
   return "running"
 }
 
-function toolDetail(payload: Record<string, unknown>) {
+function toolDetail(payload: Record<string, unknown>, compact: boolean) {
   const toolCall = recordValue(payload.toolCall)
   const detail = {
     durationMs: payload.durationMs,
-    input: toolCall.input,
-    output: payload.output,
-    update: payload.update,
+    toolName: stringValue(toolCall.name) ?? stringValue(toolCall.toolName),
+    input: compact ? compactValue(toolCall.input) : toolCall.input,
+    output: compact ? compactValue(payload.output) : payload.output,
+    update: compact ? compactValue(payload.update) : payload.update,
     hookEventName: payload.hookEventName,
-    raw: payload.raw,
   }
-  return stringifyDetail(detail)
+  return stringifyDetail(
+    detail,
+    compact ? maxActivityDetailLength : maxServerActivityDetailLength
+  )
 }
 
 function toolEventText(payload: object) {
@@ -240,8 +272,8 @@ function numberValue(value: unknown) {
   return typeof value === "number" ? value : undefined
 }
 
-function stringifyDetail(value: unknown) {
-  return truncate(JSON.stringify(value, undefined, 2), 32768)
+function stringifyDetail(value: unknown, length = maxActivityDetailLength) {
+  return truncateMiddle(JSON.stringify(value, undefined, 2), length)
 }
 
 function normalizedActivity(
@@ -250,10 +282,249 @@ function normalizedActivity(
   return {
     ...activity,
     title: truncate(activity.title, 255),
-    detail: truncate(activity.detail, 32768),
+    detail: truncateMiddle(activity.detail, maxActivityDetailLength),
   }
 }
 
 function truncate(value: string, length: number) {
   return value.length > length ? value.slice(0, length) : value
+}
+
+function limitActivities(activities: UserStoryAgentActivity[]) {
+  return activities.slice(Math.max(0, activities.length - maxActivities))
+}
+
+function compactValue(value: unknown): unknown {
+  if (value === undefined || value === null) return value
+  if (typeof value === "string") return compactString(value)
+  if (Array.isArray(value)) return compactArray(value)
+  if (typeof value === "object") return compactRecord(value)
+  return value
+}
+
+function eventUsage(story: UserStory, event: AgentEvent) {
+  const current = usageWithDefaults(story.agentUsage)
+  if (event.type === "usage") return usageFromUsageEvent(current, event)
+  if (event.type === "tool") return usageFromToolEvent(current, event)
+  if (event.type === "notice") return usageFromNoticeEvent(current, event)
+}
+
+function usageFromUsageEvent(current: UserStoryAgentUsage, event: AgentEvent) {
+  const payload = eventPayload(event)
+  const payloadUsage = recordValue(payload.usage)
+  const usage = Object.keys(payloadUsage).length ? payloadUsage : payload
+  const inputTokens = numberValue(usage.inputTokens) ?? current.inputTokens
+  const outputTokens = numberValue(usage.outputTokens) ?? current.outputTokens
+  const cacheReadTokens = numberValue(usage.cacheReadTokens) ?? current.cacheReadTokens
+  const cacheWriteTokens = numberValue(usage.cacheWriteTokens) ?? current.cacheWriteTokens
+  const maxContextTokens = Math.max(
+    current.maxContextTokens,
+    inputTokens + cacheReadTokens + cacheWriteTokens
+  )
+  return {
+    ...current,
+    cacheReadTokens,
+    cacheWriteTokens,
+    inputTokens,
+    maxContextTokens,
+    outputTokens,
+    totalCost: numberValue(usage.totalCost) ?? current.totalCost,
+  }
+}
+
+function usageFromToolEvent(current: UserStoryAgentUsage, event: AgentEvent) {
+  const payload = eventPayload(event)
+  const phase = stringValue(payload.phase) ?? stringValue(payload.hookEventName)
+  if (phase !== "finished" && phase !== "tool_result") return
+  const toolCall = recordValue(payload.toolCall)
+  const toolName =
+    stringValue(toolCall.name) ??
+    stringValue(toolCall.toolName) ??
+    stringValue(payload.toolName) ??
+    "tool"
+  const bytes = valueLength(payload.output ?? payload.update)
+  const saved = Math.max(0, bytes - maxActivityValueLength)
+  const readFiles = readFilesUsage(toolName, toolCall.input, bytes)
+  return {
+    ...current,
+    largeFileReads: current.largeFileReads + readFiles.largeFileReads,
+    tokensSavedEstimate: current.tokensSavedEstimate + Math.ceil(saved / 3),
+    topTools: topTools(current.topTools, toolName, bytes, saved > 0),
+    truncatedOutputs: current.truncatedOutputs + (saved > 0 ? 1 : 0),
+    unboundedFileReads: current.unboundedFileReads + readFiles.unboundedFileReads,
+  }
+}
+
+function readFilesUsage(toolName: string, input: unknown, bytes: number) {
+  if (toolName !== "read_files") return { largeFileReads: 0, unboundedFileReads: 0 }
+  const unboundedFileReads = readFileRequests(input).filter(unboundedRead).length
+  return {
+    largeFileReads: bytes > largeFileReadBytes ? 1 : 0,
+    unboundedFileReads,
+  }
+}
+
+type ReadFileRequest = {
+  endLine?: number
+  startLine?: number
+}
+
+function readFileRequests(value: unknown): ReadFileRequest[] {
+  if (Array.isArray(value)) return value.flatMap(readFileRequests)
+  if (typeof value === "string") return [{}]
+  const record = recordValue(value)
+  if (!Object.keys(record).length) return []
+  const nested = readFileNestedRequests(record)
+  if (nested.length) return nested
+  if (!("path" in record) && !("relativePath" in record)) return []
+  return [
+    {
+      endLine: numberValue(record.end_line) ?? numberValue(record.endLine),
+      startLine: numberValue(record.start_line) ?? numberValue(record.startLine),
+    },
+  ]
+}
+
+function readFileNestedRequests(record: Record<string, unknown>) {
+  return ["files", "file_paths", "paths"].flatMap((key) =>
+    key in record ? readFileRequests(record[key]) : []
+  )
+}
+
+function unboundedRead(request: ReadFileRequest) {
+  return request.startLine === undefined && request.endLine === undefined
+}
+
+function usageFromNoticeEvent(current: UserStoryAgentUsage, event: AgentEvent) {
+  const payload = eventPayload(event)
+  const message = stringValue(payload.message)?.toLowerCase() ?? ""
+  if (!message.includes("compact")) return
+  return { ...current, compactionCount: current.compactionCount + 1 }
+}
+
+function eventSessionSummary(story: UserStory, event: AgentEvent) {
+  if (event.type !== "done" && event.type !== "error") return undefined
+  const activities = story.agentActivities ?? []
+  const files = fileMentions(activities)
+  const tools = toolNames(activities)
+  const status = completedAgentRun(event) ? "completed" : "failed"
+  return [
+    `Session ${status}.`,
+    files.length ? `Files touched or inspected: ${files.join(", ")}.` : "",
+    tools.length ? `Tools used: ${tools.join(", ")}.` : "",
+    story.agentLastError ? `Last error: ${story.agentLastError}` : "",
+    "Resume by inspecting the current git diff before making changes.",
+  ]
+    .filter(Boolean)
+    .join("\n")
+}
+
+function emptyUsage(): UserStoryAgentUsage {
+  return {
+    cacheReadTokens: 0,
+    cacheWriteTokens: 0,
+    compactionCount: 0,
+    inputTokens: 0,
+    largeFileReads: 0,
+    maxContextTokens: 0,
+    outputTokens: 0,
+    unboundedFileReads: 0,
+    tokensSavedEstimate: 0,
+    topTools: [],
+    totalCost: 0,
+    truncatedOutputs: 0,
+  }
+}
+
+function usageWithDefaults(usage: UserStoryAgentUsage | null | undefined) {
+  return { ...emptyUsage(), ...usage }
+}
+
+function topTools(
+  current: UserStoryAgentToolUsage[],
+  name: string,
+  bytes: number,
+  truncated: boolean
+) {
+  const existing = current.find((tool) => tool.name === name)
+  const next = existing
+    ? current.map((tool) =>
+        tool.name === name
+          ? {
+              ...tool,
+              count: tool.count + 1,
+              maxBytes: Math.max(tool.maxBytes, bytes),
+              totalBytes: tool.totalBytes + bytes,
+              truncatedCount: tool.truncatedCount + (truncated ? 1 : 0),
+            }
+          : tool
+      )
+    : [
+        ...current,
+        {
+          count: 1,
+          maxBytes: bytes,
+          name,
+          totalBytes: bytes,
+          truncatedCount: truncated ? 1 : 0,
+        },
+      ]
+  return next.sort((a, b) => b.totalBytes - a.totalBytes).slice(0, 5)
+}
+
+function valueLength(value: unknown): number {
+  if (typeof value === "string") return value.length
+  if (value === undefined || value === null) return 0
+  return JSON.stringify(value).length
+}
+
+function fileMentions(activities: UserStoryAgentActivity[]) {
+  return uniqueMatches(activities, /(?:^|["\s])([\w./-]+\.\w{1,8})(?:["\s]|$)/g)
+}
+
+function toolNames(activities: UserStoryAgentActivity[]) {
+  return Array.from(
+    new Set(
+      activities
+        .filter((activity) => activity.kind === "tool")
+        .map((activity) => activity.title)
+    )
+  ).slice(0, 8)
+}
+
+function uniqueMatches(activities: UserStoryAgentActivity[], pattern: RegExp) {
+  const values = new Set<string>()
+  activities.forEach((activity) => {
+    for (const match of activity.detail.matchAll(pattern)) {
+      if (match[1]) values.add(match[1])
+    }
+  })
+  return Array.from(values).slice(0, 12)
+}
+
+function compactArray(value: unknown[]) {
+  const items = value.slice(0, 12).map(compactValue)
+  if (value.length <= items.length) return items
+  return [...items, compactString(`${value.length - items.length} more entries`)]
+}
+
+function compactRecord(value: object) {
+  return Object.fromEntries(
+    Object.entries(value).map(([key, entry]) => [key, compactValue(entry)])
+  )
+}
+
+function compactString(value: string) {
+  if (value.length <= maxActivityValueLength) return value
+  return {
+    excerpt: truncateMiddle(value, maxActivityValueLength),
+    originalLength: value.length,
+    truncated: true,
+  }
+}
+
+function truncateMiddle(value: string, length: number) {
+  if (value.length <= length) return value
+  const edgeLength = Math.floor((length - 20) / 2)
+  return `${value.slice(0, edgeLength)}\n...\n${value.slice(-edgeLength)}`
 }

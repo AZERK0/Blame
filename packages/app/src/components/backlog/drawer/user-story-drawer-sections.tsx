@@ -22,6 +22,7 @@ import type {
   UserStoryAgentActivity,
   UserStoryComment,
 } from "@/components/backlog/data/backlog-data"
+import { createBacklogApi } from "@/components/backlog/data/backlog-api"
 import type { PendingCodeSelectionAttachment } from "@/components/backlog/shared/comment-attachment-events"
 import type { UserStoryDrawerMode } from "@/components/backlog/shared/backlog-types"
 import { MarkdownEditor } from "@/components/backlog/drawer/markdown-editor"
@@ -31,6 +32,7 @@ import {
   isEditable,
 } from "@/components/backlog/drawer/user-story-drawer-helpers"
 import { useProjects } from "@/context/projects"
+import { useCloudAuth } from "@/context/cloud-auth"
 import {
   Accordion,
   AccordionContent,
@@ -117,9 +119,21 @@ function ActivitySection({
   status: BacklogColumnId
   userStory?: UserStory
 }) {
+  const auth = useCloudAuth()
+  const api = React.useMemo(
+    () => createBacklogApi(auth.apiConnection),
+    [auth.apiConnection]
+  )
   const items = activityItems(status)
   const agentActivities = userStory?.agentActivities ?? []
   const comments = userStory?.comments ?? []
+  const loadActivityDetail = React.useCallback(
+    async (activity: UserStoryAgentActivity) => {
+      if (!userStory) return activity.detail
+      return (await api.activityDetail(userStory.id, activity.id)).detail
+    },
+    [api, userStory]
+  )
 
   return (
     <div className="-mt-6 grid gap-0">
@@ -145,7 +159,11 @@ function ActivitySection({
             <UserCommentItem key={comment.id} comment={comment} />
           ))}
           {agentActivities.map((activity) => (
-            <AgentActivityItem key={activity.id} activity={activity} />
+            <AgentActivityItem
+              key={activity.id}
+              activity={activity}
+              onLoadDetail={loadActivityDetail}
+            />
           ))}
         </Accordion>
       </div>
@@ -175,8 +193,26 @@ function UserCommentItem({ comment }: { comment: UserStoryComment }) {
   )
 }
 
-function AgentActivityItem({ activity }: { activity: UserStoryAgentActivity }) {
-  const details = activityDetails(activity)
+function AgentActivityItem({
+  activity,
+  onLoadDetail,
+}: {
+  activity: UserStoryAgentActivity
+  onLoadDetail: (activity: UserStoryAgentActivity) => Promise<string>
+}) {
+  const [fullDetail, setFullDetail] = React.useState<string>()
+  const [loading, setLoading] = React.useState(false)
+  const details = activityDetails(
+    fullDetail ? { ...activity, detail: fullDetail } : activity
+  )
+  const loadDetail = React.useCallback(async () => {
+    setLoading(true)
+    try {
+      setFullDetail(await onLoadDetail(activity))
+    } finally {
+      setLoading(false)
+    }
+  }, [activity, onLoadDetail])
 
   return (
     <AccordionItem value={activity.id} className="border-b-0!">
@@ -189,7 +225,12 @@ function AgentActivityItem({ activity }: { activity: UserStoryAgentActivity }) {
             <span className="truncate">{activityTitle(activity, details)}</span>
           </AccordionTrigger>
           <AccordionContent className="pt-2 pb-0">
-            <ActivityDetails details={details} />
+            <ActivityDetails
+              activity={activity}
+              details={details}
+              loading={loading}
+              onLoadDetail={loadDetail}
+            />
           </AccordionContent>
         </div>
       </div>
@@ -197,33 +238,61 @@ function AgentActivityItem({ activity }: { activity: UserStoryAgentActivity }) {
   )
 }
 
-function ActivityDetails({ details }: { details: ActivityDetail }) {
+function ActivityDetails({
+  activity,
+  details,
+  loading,
+  onLoadDetail,
+}: {
+  activity: UserStoryAgentActivity
+  details: ActivityDetail
+  loading: boolean
+  onLoadDetail: () => void
+}) {
   const sections = activityDetailSections(details)
+  const loadButton = activity.detailArtifact ? (
+    <Button
+      className="justify-self-start"
+      disabled={loading}
+      onClick={onLoadDetail}
+      size="sm"
+      type="button"
+      variant="outline"
+    >
+      {loading ? "Loading detail" : "Load full detail"}
+    </Button>
+  ) : null
 
   if (sections.length === 0) {
     return (
-      <p className="rounded-md border bg-muted/25 px-3 py-2 text-sm text-muted-foreground">
-        {details.fallback}
-      </p>
+      <div className="grid gap-2">
+        <p className="rounded-md border bg-muted/25 px-3 py-2 text-sm text-muted-foreground">
+          {details.fallback}
+        </p>
+        {loadButton}
+      </div>
     )
   }
 
   return (
-    <div className="grid gap-2 rounded-md border bg-muted/20 p-2">
-      {sections.map((section) => (
-        <div
-          key={section.label}
-          className="grid gap-1 rounded bg-background/60 p-3"
-        >
-          <div className="flex items-center justify-between gap-3 text-xs font-medium text-muted-foreground">
-            <span>{section.label}</span>
-            {section.meta ? <span>{section.meta}</span> : null}
+    <div className="grid gap-2">
+      <div className="grid gap-2 rounded-md border bg-muted/20 p-2">
+        {sections.map((section) => (
+          <div
+            key={section.label}
+            className="grid gap-1 rounded bg-background/60 p-3"
+          >
+            <div className="flex items-center justify-between gap-3 text-xs font-medium text-muted-foreground">
+              <span>{section.label}</span>
+              {section.meta ? <span>{section.meta}</span> : null}
+            </div>
+            <div className="font-mono text-xs leading-relaxed break-words text-foreground/80">
+              {section.value}
+            </div>
           </div>
-          <div className="font-mono text-xs leading-relaxed break-words text-foreground/80">
-            {section.value}
-          </div>
-        </div>
-      ))}
+        ))}
+      </div>
+      {loadButton}
     </div>
   )
 }
@@ -307,9 +376,11 @@ type ActivityDetailSection = {
 function activityDetails(activity: UserStoryAgentActivity): ActivityDetail {
   const parsed = parseDetail(activity.detail)
   const raw = recordValue(parsed?.raw)
+  const parsedToolName = stringValue(parsed?.toolName)
   const rawToolName = stringValue(raw.toolName)
   const rawToolCall = recordValue(raw.toolCall)
   const toolName =
+    parsedToolName ??
     rawToolName ??
     stringValue(rawToolCall.name) ??
     toolNameFromTitle(activity.title)

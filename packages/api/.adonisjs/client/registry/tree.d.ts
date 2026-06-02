@@ -40,6 +40,7 @@ export interface ApiDefinition {
         show: typeof routes['projects.user_stories.user_stories.show']
         update: typeof routes['projects.user_stories.user_stories.update']
         destroy: typeof routes['projects.user_stories.user_stories.destroy']
+        activityDetail: typeof routes['projects.user_stories.user_stories.activity_detail']
       }
       userStoryComments: {
         store: typeof routes['projects.user_stories.user_story_comments.store']

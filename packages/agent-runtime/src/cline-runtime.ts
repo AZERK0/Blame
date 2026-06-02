@@ -43,7 +43,7 @@ import {
   usageLimitMessage,
 } from "./production.js"
 import type { ProjectInitializationScan } from "./project-initialization.js"
-import type { ProductionSessionContext } from "./production.js"
+import type { ProductionConfig, ProductionSessionContext } from "./production.js"
 import type {
   AgentApprovalRequest,
   AgentEvent,
@@ -255,6 +255,7 @@ export class BlameAgentRuntime {
             workspaceRoot: input.workspaceRoot,
             mode: input.mode ?? "act",
             maxIterations: input.maxIterations ?? defaultSessionMaxIterations,
+            compaction: sessionCompactionConfig(this.productionConfig),
             enableTools: true,
             enableSpawnAgent: false,
             enableAgentTeams: false,
@@ -431,6 +432,15 @@ export class BlameAgentRuntime {
   }
 
   private async generateCommitMessage(input: ApproveAndMergeInput, logFile: string) {
+    if (!commitMessageConventionEnabled(input)) {
+      const message = await fallbackCommitMessage(input)
+      await appendLog(logFile, "commit message fallback selected", {
+        reason: "commit_message_convention_disabled",
+        status: "fallback",
+        success: true,
+      })
+      return message
+    }
     try {
       const startedAt = Date.now()
       const credential = await this.runtimeCredential(input)
@@ -869,7 +879,7 @@ function mergeConflictConfig(
     enableTools: true,
     enableSpawnAgent: false,
     enableAgentTeams: false,
-    maxIterations: 24,
+    maxIterations: 16,
   })
 }
 
@@ -1016,9 +1026,10 @@ async function mergeConflictFiles(cwd: string) {
 }
 
 async function commitMessagePrompt(input: ApproveAndMergeInput) {
-  const [status, diff, log] = await Promise.all([
+  const [status, changedFiles, diffStat, log] = await Promise.all([
     storyStatus(input.worktree, "--porcelain"),
-    git(input.worktree, ["diff", "--no-ext-diff", "HEAD", "--"]),
+    storyChangedFiles(input.worktree),
+    storyDiffStat(input.worktree),
     git(input.worktree, ["log", "-12", "--pretty=%s"]),
   ])
   return [
@@ -1028,10 +1039,36 @@ async function commitMessagePrompt(input: ApproveAndMergeInput) {
     "",
     `Git status:\n${truncateText(status, 8_000)}`,
     "",
-    `Recent commits:\n${truncateText(log, 8_000)}`,
+    `Changed files:\n${truncateText(changedFiles, 12_000)}`,
     "",
-    `Diff:\n${truncateText(diff, 60_000)}`,
+    `Diff stat:\n${truncateText(diffStat, 12_000)}`,
+    "",
+    `Recent commits:\n${truncateText(log, 8_000)}`,
   ].join("\n")
+}
+
+async function storyChangedFiles(cwd: string) {
+  return git(cwd, [
+    "diff",
+    "--no-ext-diff",
+    "--name-status",
+    "HEAD",
+    "--",
+    ".",
+    ...runtimeArtifactPathspecs,
+  ])
+}
+
+async function storyDiffStat(cwd: string) {
+  return git(cwd, [
+    "diff",
+    "--no-ext-diff",
+    "--stat",
+    "HEAD",
+    "--",
+    ".",
+    ...runtimeArtifactPathspecs,
+  ])
 }
 
 async function fallbackCommitMessage(input: ApproveAndMergeInput) {
@@ -1225,6 +1262,16 @@ function sessionContext(input: StartSessionInput, sessionId: string): Production
 function developmentMaxIterations() {
   const value = Number(process.env.BLAME_AGENT_DEVELOPMENT_MAX_ITERATIONS)
   return Number.isFinite(value) && value > 0 ? value : defaultDevelopmentMaxIterations
+}
+
+function sessionCompactionConfig(config: ProductionConfig) {
+  return {
+    enabled: config.compactionEnabled ?? true,
+    preserveRecentTokens: config.compactionPreserveRecentTokens ?? 8000,
+    reserveTokens: config.compactionReserveTokens ?? 32000,
+    strategy: config.compactionStrategy ?? "basic",
+    thresholdRatio: config.compactionThresholdRatio ?? 0.75,
+  }
 }
 
 function startLogPath(cwd: string) {

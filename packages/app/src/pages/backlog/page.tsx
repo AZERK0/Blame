@@ -30,7 +30,7 @@ import { HostDependenciesDialog } from "@/pages/backlog/host-dependencies-dialog
 import { useBacklogRotation } from "@/pages/backlog/use-backlog-rotation"
 import { useCloudAuth } from "@/context/cloud-auth"
 import type { CloudProjectInitializationStatus } from "@/context/cloud-auth"
-import { usePlatform } from "@/context/platform"
+import { usePlatform, type Platform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import { createCloudApi } from "@/lib/cloud-api"
 
@@ -259,7 +259,10 @@ export function BacklogPage() {
         return story
       }
       const codePractices = await projectCodePractices(auth, projects)
-      const feedback = resumeAgentFeedback(story)
+      const feedback = resumeAgentFeedback(
+        story,
+        await currentDiffSummary(story, platform)
+      )
       const session = await agent.sessions.startDevelopment({
         apiConnection: auth.apiConnection,
         providerId: selection.currentModel.provider.id,
@@ -284,6 +287,7 @@ export function BacklogPage() {
         agentLastEvent: `Cline debug log: ${clineLogPath(story.worktree, session.sessionId)}`,
         agentActivities: [],
         agentFinalResponse: null,
+        agentUsage: null,
         agentModelId: selection.currentModel.id,
         agentProviderId: selection.currentModel.provider.id,
         agentStatus: "Running",
@@ -351,6 +355,11 @@ export function BacklogPage() {
         return story
       }
       const codePractices = await projectCodePractices(auth, projects)
+      const enrichedFeedback = changeRequestFeedback(
+        story,
+        feedback,
+        await currentDiffSummary(story, platform)
+      )
       const session = await agent.sessions.startDevelopment({
         apiConnection: auth.apiConnection,
         providerId: selection.currentModel.provider.id,
@@ -358,7 +367,7 @@ export function BacklogPage() {
         reasoningEffort: selection.currentVariant,
         title: story.title,
         summary: story.summary,
-        feedback,
+        feedback: enrichedFeedback,
         cwd: story.worktree,
         workspaceRoot: story.worktree,
         codePractices,
@@ -375,6 +384,7 @@ export function BacklogPage() {
         agentLastEvent: `Cline debug log: ${clineLogPath(story.worktree, session.sessionId)}`,
         agentActivities: [],
         agentFinalResponse: null,
+        agentUsage: null,
         agentModelId: selection.currentModel.id,
         agentProviderId: selection.currentModel.provider.id,
         agentStatus: "Running",
@@ -403,7 +413,7 @@ export function BacklogPage() {
         sessionId: session.sessionId,
         title: story.title,
         summary: story.summary,
-        feedback,
+        feedback: enrichedFeedback,
       })
       return updatedStory
     },
@@ -949,14 +959,49 @@ function failedAgentRun(event: AgentEvent) {
   )
 }
 
-function resumeAgentFeedback(story: UserStory) {
+function resumeAgentFeedback(story: UserStory, diffSummary: string) {
   const details = [
+    story.agentSessionSummary ? `Previous session summary:\n${story.agentSessionSummary}` : "",
     story.agentLastError ? `Previous agent error: ${story.agentLastError}` : "",
     story.agentLastEvent ? `Last recorded event: ${story.agentLastEvent}` : "",
+    diffSummary,
   ].filter(Boolean)
   return [
     "Resume the implementation from the existing worktree.",
     "Inspect the current git diff first, keep the useful existing changes, and continue until the story is ready for review.",
     ...details,
   ].join("\n")
+}
+
+function changeRequestFeedback(
+  story: UserStory,
+  feedback: string,
+  diffSummary: string
+) {
+  return [
+    feedback,
+    story.agentSessionSummary ? `Previous session summary:\n${story.agentSessionSummary}` : "",
+    diffSummary,
+  ]
+    .filter(Boolean)
+    .join("\n\n")
+}
+
+async function currentDiffSummary(story: UserStory, platform: Platform) {
+  if (!story.worktree || !platform.workspace) return ""
+  try {
+    const diff = await platform.workspace.gitDiff({ root: story.worktree })
+    return diffSummary(diff)
+  } catch {
+    return ""
+  }
+}
+
+function diffSummary(diff: string) {
+  const files = Array.from(diff.matchAll(/^diff --git a\/(.+?) b\/(.+)$/gm))
+    .map((match) => match[2])
+    .filter(Boolean)
+    .slice(0, 20)
+  if (files.length === 0) return "Current git diff: no local changes."
+  return `Current git diff files: ${files.join(", ")}.`
 }

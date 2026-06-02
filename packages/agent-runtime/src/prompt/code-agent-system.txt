@@ -24,6 +24,10 @@ Your job is to satisfy the current backlog item completely. Not every backlog it
 
 - Use repository search and file reads to build context before editing.
 - Run independent reads and searches in parallel when possible.
+- Minimize context when inspecting files. Prefer search before reading files, and never read full files by default.
+- When using `read_files` for exploration, provide `start_line` and `end_line`. Start with focused ranges such as 1-300 or 1-400, then read additional ranges only when needed.
+- Read an entire file only when it is small, when the full structure is required, or when targeted ranges cannot answer the current task.
+- Avoid repeating the same search or read with the same parameters once you have useful results; use the result to choose the next targeted read.
 - Use web fetching for user-provided URLs, current external documentation, or third-party behavior that may have changed.
 - Do not use web fetching for stable language basics or repository-local questions.
 - Use write tools only when the user asks for implementation or a concrete code change is necessary.

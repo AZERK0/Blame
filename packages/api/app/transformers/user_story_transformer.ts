@@ -24,6 +24,8 @@ export default class UserStoryTransformer extends BaseTransformer<UserStory> {
         'agentLastError',
         'agentActivities',
         'agentFinalResponse',
+        'agentUsage',
+        'agentSessionSummary',
         'mergedAt',
         'mergeCommit',
         'discardedReason',

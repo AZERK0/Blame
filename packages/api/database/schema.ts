@@ -127,7 +127,7 @@ export class ProviderCredentialSchema extends BaseModel {
 }
 
 export class UserStorySchema extends BaseModel {
-  static $columns = ['agentActivities', 'agentFinalResponse', 'agentLastError', 'agentLastEvent', 'agentModelId', 'agentProviderId', 'agentStatus', 'branch', 'clineSessionId', 'createdAt', 'discardedReason', 'id', 'mergeCommit', 'mergedAt', 'owner', 'previewUrl', 'priority', 'projectId', 'status', 'summary', 'title', 'updatedAt', 'worktree'] as const
+  static $columns = ['agentActivities', 'agentFinalResponse', 'agentLastError', 'agentLastEvent', 'agentModelId', 'agentProviderId', 'agentSessionSummary', 'agentStatus', 'agentUsage', 'branch', 'clineSessionId', 'createdAt', 'discardedReason', 'id', 'mergeCommit', 'mergedAt', 'owner', 'previewUrl', 'priority', 'projectId', 'status', 'summary', 'title', 'updatedAt', 'worktree'] as const
   $columns = UserStorySchema.$columns
   @column()
   declare agentActivities: any | null
@@ -142,7 +142,11 @@ export class UserStorySchema extends BaseModel {
   @column()
   declare agentProviderId: string | null
   @column()
+  declare agentSessionSummary: string | null
+  @column()
   declare agentStatus: string | null
+  @column()
+  declare agentUsage: any | null
   @column()
   declare branch: string | null
   @column()

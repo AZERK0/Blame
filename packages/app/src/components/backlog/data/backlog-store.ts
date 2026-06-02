@@ -127,6 +127,11 @@ export function useBacklogStore() {
     },
     [api]
   )
+  const activityDetail = React.useCallback(
+    (story: UserStory, activityId: string) =>
+      api.activityDetail(story.id, activityId),
+    [api]
+  )
   const updateLocal = React.useCallback(
     (story: UserStory, input: UserStoryUpdate) => {
       setState((current) => ({
@@ -182,6 +187,7 @@ export function useBacklogStore() {
     ...state,
     create,
     createComment,
+    activityDetail,
     load,
     projectId,
     projectPath,
@@ -202,8 +208,10 @@ function storyWithComment(story: UserStory, comment: UserStoryComment) {
 }
 
 function definedUpdate(input: UserStoryUpdate) {
+  const { agentActivity, ...update } = input
+  void agentActivity
   return Object.fromEntries(
-    Object.entries(input).filter(([, value]) => value !== undefined)
+    Object.entries(update).filter(([, value]) => value !== undefined)
   )
 }
 

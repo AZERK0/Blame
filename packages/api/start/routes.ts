@@ -82,6 +82,7 @@ router
         router.get('/:id', [controllers.UserStories, 'show'])
         router.patch('/:id', [controllers.UserStories, 'update'])
         router.delete('/:id', [controllers.UserStories, 'destroy'])
+        router.get('/:id/agent-activities/:activityId', [controllers.UserStories, 'activityDetail'])
         router.post('/:id/comments', [UserStoryCommentsController, 'store'])
       })
       .prefix('projects/user-stories')

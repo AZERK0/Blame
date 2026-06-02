@@ -21,8 +21,34 @@ export type UserStoryAgentActivity = {
   status?: 'running' | 'completed' | 'failed'
   iteration?: number
   toolCallId?: string
+  detailArtifact?: string
+  detailTruncated?: boolean
+  originalDetailLength?: number
   createdAt: string
   updatedAt?: string
+}
+
+export type UserStoryAgentToolUsage = {
+  count: number
+  maxBytes: number
+  name: string
+  totalBytes: number
+  truncatedCount: number
+}
+
+export type UserStoryAgentUsage = {
+  cacheReadTokens: number
+  cacheWriteTokens: number
+  compactionCount: number
+  inputTokens: number
+  largeFileReads: number
+  maxContextTokens: number
+  outputTokens: number
+  unboundedFileReads: number
+  tokensSavedEstimate: number
+  topTools: UserStoryAgentToolUsage[]
+  totalCost: number
+  truncatedOutputs: number
 }
 
 function prepareAgentActivities(value: UserStoryAgentActivity[] | null) {
@@ -35,6 +61,22 @@ function consumeAgentActivities(value: unknown) {
   try {
     const parsed = JSON.parse(value)
     return Array.isArray(parsed) ? (parsed as UserStoryAgentActivity[]) : null
+  } catch {
+    return null
+  }
+}
+
+function prepareAgentUsage(value: UserStoryAgentUsage | null) {
+  return value ? JSON.stringify(value) : null
+}
+
+function consumeAgentUsage(value: unknown) {
+  if (!value) return null
+  if (typeof value === 'object') return value as UserStoryAgentUsage
+  if (typeof value !== 'string') return null
+  try {
+    const parsed = JSON.parse(value)
+    return parsed && typeof parsed === 'object' ? (parsed as UserStoryAgentUsage) : null
   } catch {
     return null
   }
@@ -97,6 +139,15 @@ export default class UserStory extends BaseModel {
 
   @column()
   declare agentFinalResponse: string | null
+
+  @column({
+    consume: consumeAgentUsage,
+    prepare: prepareAgentUsage,
+  })
+  declare agentUsage: UserStoryAgentUsage | null
+
+  @column()
+  declare agentSessionSummary: string | null
 
   @column.dateTime()
   declare mergedAt: DateTime | null

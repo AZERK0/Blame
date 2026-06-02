@@ -1,12 +1,25 @@
 import Project from '#models/project'
 import User from '#models/user'
 import testUtils from '@adonisjs/core/services/test_utils'
+import { mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import type { ApiClient } from '@japa/api-client'
 import { test } from '@japa/runner'
 
 type UserStoryBody = {
   data: {
     comments?: UserStoryCommentBody['data'][]
+    agentActivities?: {
+      detail: string
+      detailArtifact?: string
+      id: string
+      originalDetailLength?: number
+    }[]
+    agentUsage?: {
+      inputTokens: number
+      tokensSavedEstimate: number
+    }
     id: number
     priority: string
     status: string
@@ -25,6 +38,10 @@ type UserStoryCommentBody = {
     id: number
     userStoryId: number
   }
+}
+
+type AgentActivityDetailBody = {
+  detail: string
 }
 
 test.group('user stories', (group) => {
@@ -183,6 +200,69 @@ test.group('user stories', (group) => {
       .json({ body: 'Unauthorized feedback' })
 
     response.assertStatus(404)
+  })
+
+  test('merges agent activity deltas and serves large details lazily', async ({
+    assert,
+    client,
+  }) => {
+    const user = await createUser()
+    const project = await createProject(user.id, 'Alpha')
+    const story = await createStory(client, user, project.id)
+    const worktree = await mkdtemp(join(tmpdir(), 'blame-story-'))
+    const detail = `Read files\n${'x'.repeat(7000)}`
+
+    try {
+      await client
+        .patch(`/api/v1/projects/user-stories/${story.data.id}`)
+        .loginAs(user)
+        .json({ clineSessionId: 'session-1', worktree })
+
+      const updateResponse = await client
+        .patch(`/api/v1/projects/user-stories/${story.data.id}`)
+        .loginAs(user)
+        .json({
+          agentActivity: {
+            createdAt: new Date().toISOString(),
+            detail,
+            id: 'tool-large-read',
+            kind: 'tool',
+            status: 'completed',
+            title: 'Read files',
+          },
+          agentUsage: {
+            cacheReadTokens: 0,
+            cacheWriteTokens: 0,
+            compactionCount: 1,
+            inputTokens: 1000,
+            largeFileReads: 1,
+            maxContextTokens: 1000,
+            outputTokens: 100,
+            unboundedFileReads: 1,
+            tokensSavedEstimate: 2000,
+            topTools: [],
+            totalCost: 0.01,
+            truncatedOutputs: 1,
+          },
+        })
+
+      updateResponse.assertStatus(200)
+      const updated = updateResponse.body() as UserStoryBody
+      assert.lengthOf(updated.data.agentActivities ?? [], 1)
+      assert.isBelow(updated.data.agentActivities?.[0]?.detail.length ?? 0, detail.length)
+      assert.equal(updated.data.agentActivities?.[0]?.originalDetailLength, detail.length)
+      assert.include(updated.data.agentActivities?.[0]?.detailArtifact ?? '', 'session-1')
+      assert.equal(updated.data.agentUsage?.inputTokens, 1000)
+
+      const detailResponse = await client
+        .get(`/api/v1/projects/user-stories/${story.data.id}/agent-activities/tool-large-read`)
+        .loginAs(user)
+
+      detailResponse.assertStatus(200)
+      assert.equal((detailResponse.body() as AgentActivityDetailBody).detail, detail)
+    } finally {
+      await rm(worktree, { force: true, recursive: true })
+    }
   })
 })
 

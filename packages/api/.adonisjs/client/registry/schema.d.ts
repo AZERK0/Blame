@@ -283,6 +283,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/user_stories_controller').default['destroy']>>>
     }
   }
+  'projects.user_stories.user_stories.activity_detail': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/projects/user-stories/:id/agent-activities/:activityId'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue, ParamValue]
+      params: { id: ParamValue; activityId: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/user_stories_controller').default['activityDetail']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/user_stories_controller').default['activityDetail']>>>
+    }
+  }
   'projects.user_stories.user_story_comments.store': {
     methods: ["POST"]
     pattern: '/api/v1/projects/user-stories/:id/comments'

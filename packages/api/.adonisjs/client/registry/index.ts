@@ -144,6 +144,12 @@ const routes = {
     tokens: [{"old":"/api/v1/projects/user-stories/:id","type":0,"val":"api","end":""},{"old":"/api/v1/projects/user-stories/:id","type":0,"val":"v1","end":""},{"old":"/api/v1/projects/user-stories/:id","type":0,"val":"projects","end":""},{"old":"/api/v1/projects/user-stories/:id","type":0,"val":"user-stories","end":""},{"old":"/api/v1/projects/user-stories/:id","type":1,"val":"id","end":""}],
     types: placeholder as Registry['projects.user_stories.user_stories.destroy']['types'],
   },
+  'projects.user_stories.user_stories.activity_detail': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/projects/user-stories/:id/agent-activities/:activityId',
+    tokens: [{"old":"/api/v1/projects/user-stories/:id/agent-activities/:activityId","type":0,"val":"api","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-activities/:activityId","type":0,"val":"v1","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-activities/:activityId","type":0,"val":"projects","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-activities/:activityId","type":0,"val":"user-stories","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-activities/:activityId","type":1,"val":"id","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-activities/:activityId","type":0,"val":"agent-activities","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-activities/:activityId","type":1,"val":"activityId","end":""}],
+    types: placeholder as Registry['projects.user_stories.user_stories.activity_detail']['types'],
+  },
   'projects.user_stories.user_story_comments.store': {
     methods: ["POST"],
     pattern: '/api/v1/projects/user-stories/:id/comments',

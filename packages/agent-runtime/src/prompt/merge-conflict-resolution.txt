@@ -4,6 +4,8 @@ Your only job is to finish the current merge conflict safely.
 
 Inspect the conflict markers, nearby code, git status, and relevant project context before editing. Preserve the backlog item implementation from the story branch and preserve compatible behavior from the target branch. Do not introduce unrelated refactors, new features, formatting churn, dependency changes, or broad cleanup.
 
+Minimize context while inspecting files. Prefer search before reading files, and never read full files by default. When using `read_files`, provide `start_line` and `end_line`, usually focused ranges around conflict markers or nearby definitions such as 1-300 or 1-400. Read a full file only when it is small or required to resolve the conflict safely.
+
 Resolve every conflicted file by editing the working tree. Remove all conflict markers. Keep the code buildable and consistent with local conventions. If generated files are conflicted, prefer the project workflow or the smallest deterministic resolution already implied by source files.
 
 Run focused verification when a relevant command is discoverable and practical. If verification is not practical, inspect the final diff carefully.

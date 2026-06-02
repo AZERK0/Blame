@@ -23,6 +23,27 @@ export type BacklogAction =
 
 export type UserStoryPriority = "Low" | "Medium" | "High"
 export type UserStoryAgentStatus = "Running" | "Paused"
+export type UserStoryAgentToolUsage = {
+  count: number
+  maxBytes: number
+  name: string
+  totalBytes: number
+  truncatedCount: number
+}
+export type UserStoryAgentUsage = {
+  cacheReadTokens: number
+  cacheWriteTokens: number
+  compactionCount: number
+  inputTokens: number
+  largeFileReads: number
+  maxContextTokens: number
+  outputTokens: number
+  unboundedFileReads: number
+  tokensSavedEstimate: number
+  topTools: UserStoryAgentToolUsage[]
+  totalCost: number
+  truncatedOutputs: number
+}
 export type UserStoryAgentActivity = {
   id: string
   kind: "reasoning" | "tool" | "approval" | "notice"
@@ -31,6 +52,9 @@ export type UserStoryAgentActivity = {
   status?: "running" | "completed" | "failed"
   iteration?: number
   toolCallId?: string
+  detailArtifact?: string
+  detailTruncated?: boolean
+  originalDetailLength?: number
   createdAt: string
   updatedAt?: string
 }
@@ -63,6 +87,8 @@ export type UserStory = {
   agentLastError?: string | null
   agentActivities?: UserStoryAgentActivity[] | null
   agentFinalResponse?: string | null
+  agentUsage?: UserStoryAgentUsage | null
+  agentSessionSummary?: string | null
   mergedAt?: string | null
   mergeCommit?: string | null
   discardedReason?: string | null
@@ -100,11 +126,19 @@ export type UserStoryUpdate = Partial<
     | "agentLastError"
     | "agentActivities"
     | "agentFinalResponse"
+    | "agentUsage"
+    | "agentSessionSummary"
     | "mergedAt"
     | "mergeCommit"
     | "discardedReason"
   >
->
+> & {
+  agentActivity?: UserStoryAgentActivity | null
+}
+
+export type UserStoryActivityDetail = {
+  detail: string
+}
 
 export const backlogColumns = [
   {

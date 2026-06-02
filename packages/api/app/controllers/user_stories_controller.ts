@@ -12,12 +12,9 @@ export default class UserStoriesController {
     const query = await request.validateUsing(listUserStoriesValidator, {
       data: request.qs(),
     })
+    const stories = await new UserStoriesService().list(auth.getUserOrFail().id, query)
 
-    return serialize(
-      (await new UserStoriesService().list(auth.getUserOrFail().id, query)).map((story) =>
-        UserStoryTransformer.transform(story)
-      )
-    )
+    return serialize(stories.map((story) => UserStoryTransformer.transform(story)))
   }
 
   async store({ auth, request, serialize }: HttpContext) {
@@ -49,6 +46,18 @@ export default class UserStoriesController {
         )
       )
     )
+  }
+
+  async activityDetail({ auth, params, response }: HttpContext) {
+    try {
+      return await new UserStoriesService().activityDetail(
+        auth.getUserOrFail().id,
+        params.id,
+        params.activityId
+      )
+    } catch {
+      return response.notFound({ message: 'Agent activity not found.' })
+    }
   }
 
   async destroy({ auth, params, response }: HttpContext) {

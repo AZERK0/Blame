@@ -156,6 +156,7 @@ export function useBacklogRotation(
       agentProviderId: selection.currentModel.provider.id,
       agentActivities: [],
       agentFinalResponse: null,
+      agentUsage: null,
       agentStatus: "Running",
       agentLastEvent: `Cline debug log: ${clineLogPath(worktree.worktree, session.sessionId)}`,
       branch: worktree.branch,
