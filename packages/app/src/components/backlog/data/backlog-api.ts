@@ -1,5 +1,6 @@
 import type {
   UserStory,
+  UserStoryComment,
   UserStoryDraft,
   UserStoryUpdate,
 } from "@/components/backlog/data/backlog-data"
@@ -28,10 +29,28 @@ export function createBacklogApi(connection: ApiConnection) {
     },
     async update(id: number, input: UserStoryUpdate) {
       return userStory(
-        await request<unknown>(connection, baseUrl, `/projects/user-stories/${id}`, {
-          body: JSON.stringify(input),
-          method: "PATCH",
-        })
+        await request<unknown>(
+          connection,
+          baseUrl,
+          `/projects/user-stories/${id}`,
+          {
+            body: JSON.stringify(input),
+            method: "PATCH",
+          }
+        )
+      )
+    },
+    async createComment(id: number, input: { body: string }) {
+      return userStoryComment(
+        await request<unknown>(
+          connection,
+          baseUrl,
+          `/projects/user-stories/${id}/comments`,
+          {
+            body: JSON.stringify(input),
+            method: "POST",
+          }
+        )
       )
     },
     async delete(id: number) {
@@ -40,6 +59,16 @@ export function createBacklogApi(connection: ApiConnection) {
       })
     },
   }
+}
+
+function userStoryComment(value: unknown) {
+  const comment = transformerValue(value)
+  if (!isRecord(comment)) throw new Error("Unable to read user story comment.")
+  if (typeof comment.id !== "number")
+    throw new Error("Unable to read user story comment.")
+  if (typeof comment.body !== "string")
+    throw new Error("Unable to read user story comment.")
+  return comment as UserStoryComment
 }
 
 function userStoryList(value: unknown) {
@@ -52,10 +81,12 @@ function userStoryList(value: unknown) {
 function userStory(value: unknown) {
   const story = transformerValue(value)
   if (!isRecord(story)) throw new Error("Unable to read user story.")
-  if (typeof story.id !== "number") throw new Error("Unable to read user story.")
+  if (typeof story.id !== "number")
+    throw new Error("Unable to read user story.")
   if (typeof story.projectId !== "string")
     throw new Error("Unable to read user story.")
-  if (typeof story.title !== "string") throw new Error("Unable to read user story.")
+  if (typeof story.title !== "string")
+    throw new Error("Unable to read user story.")
   return story as UserStory
 }
 
@@ -75,7 +106,8 @@ async function request<T>(
   const headers = new Headers(init?.headers)
   headers.set("Accept", "application/json")
   headers.set("Content-Type", "application/json")
-  if (connection.token) headers.set("Authorization", `Bearer ${connection.token}`)
+  if (connection.token)
+    headers.set("Authorization", `Bearer ${connection.token}`)
 
   const response = await fetch(`${baseUrl}${path}`, {
     ...init,

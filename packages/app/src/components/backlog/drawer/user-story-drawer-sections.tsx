@@ -20,13 +20,11 @@ import type {
   BacklogColumnId,
   UserStory,
   UserStoryAgentActivity,
+  UserStoryComment,
 } from "@/components/backlog/data/backlog-data"
 import type { PendingCodeSelectionAttachment } from "@/components/backlog/shared/comment-attachment-events"
 import type { UserStoryDrawerMode } from "@/components/backlog/shared/backlog-types"
-import {
-  MarkdownEditor,
-  type PendingFileAttachment,
-} from "@/components/backlog/drawer/markdown-editor"
+import { MarkdownEditor } from "@/components/backlog/drawer/markdown-editor"
 import {
   activityItems,
   commentButtonLabel,
@@ -43,9 +41,11 @@ import { Button } from "@/components/ui/button"
 
 export function UserStoryContent({
   commentCodeSelectionAttachments,
-  commentFileAttachments,
+  comment,
   commentRef,
   mode,
+  onCommentChange,
+  onCommentSubmit,
   onSummaryChange,
   onSummaryOptimize,
   onFileLinkClick,
@@ -56,9 +56,11 @@ export function UserStoryContent({
   userStory,
 }: {
   commentCodeSelectionAttachments: PendingCodeSelectionAttachment[]
-  commentFileAttachments?: PendingFileAttachment[]
+  comment: string
   commentRef: React.RefObject<HTMLDivElement | null>
   mode: UserStoryDrawerMode
+  onCommentChange: (comment: string) => void
+  onCommentSubmit: () => void
   onSummaryChange?: (summary: string) => void
   onSummaryOptimize?: (summary: string) => Promise<string>
   onFileLinkClick?: (path: string) => void
@@ -96,12 +98,13 @@ export function UserStoryContent({
       />
       <CommentsSection
         codeSelectionAttachments={commentCodeSelectionAttachments}
-        fileAttachments={commentFileAttachments}
+        comment={comment}
         commentRef={commentRef}
         mentionDirectory={mentionDirectory}
+        onCommentChange={onCommentChange}
+        onCommentSubmit={onCommentSubmit}
         onFileLinkClick={onFileLinkClick}
         status={status}
-        userStory={userStory}
       />
     </>
   )
@@ -114,8 +117,9 @@ function ActivitySection({
   status: BacklogColumnId
   userStory?: UserStory
 }) {
-  const items = activityItems(status, userStory)
+  const items = activityItems(status)
   const agentActivities = userStory?.agentActivities ?? []
+  const comments = userStory?.comments ?? []
 
   return (
     <div className="-mt-6 grid gap-0">
@@ -137,10 +141,35 @@ function ActivitySection({
           )
         })}
         <Accordion type="multiple" className="contents">
+          {comments.map((comment) => (
+            <UserCommentItem key={comment.id} comment={comment} />
+          ))}
           {agentActivities.map((activity) => (
             <AgentActivityItem key={activity.id} activity={activity} />
           ))}
         </Accordion>
+      </div>
+    </div>
+  )
+}
+
+function UserCommentItem({ comment }: { comment: UserStoryComment }) {
+  return (
+    <div className="relative grid grid-cols-[2.5rem_minmax(0,1fr)] items-start gap-1 text-sm">
+      <span className="relative z-10 flex size-8 items-center justify-center rounded-full border bg-background text-muted-foreground shadow-sm">
+        <MessageSquareIcon className="size-4" />
+      </span>
+      <div className="grid gap-2 rounded-md border bg-muted/20 p-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-medium text-muted-foreground">
+          <span>{comment.author}</span>
+          <span>{commentDateLabel(comment.createdAt)}</span>
+        </div>
+        <MarkdownEditor
+          markdown={comment.body}
+          readOnly
+          placeholder=""
+          minHeight="min-h-12"
+        />
       </div>
     </div>
   )
@@ -400,23 +429,25 @@ function numberValue(value: unknown) {
 
 function CommentsSection({
   codeSelectionAttachments,
-  fileAttachments,
+  comment,
   commentRef,
   mentionDirectory,
+  onCommentChange,
+  onCommentSubmit,
   onFileLinkClick,
   status,
-  userStory,
 }: {
   codeSelectionAttachments: PendingCodeSelectionAttachment[]
-  fileAttachments?: PendingFileAttachment[]
+  comment: string
   commentRef: React.RefObject<HTMLDivElement | null>
   mentionDirectory?: string
+  onCommentChange: (comment: string) => void
+  onCommentSubmit: () => void
   onFileLinkClick?: (path: string) => void
   status: BacklogColumnId
-  userStory?: UserStory
 }) {
   const disabled = status === "done"
-  const commentLabel = commentButtonLabel(status, userStory)
+  const commentLabel = commentButtonLabel(status)
 
   return (
     <section className="grid gap-3">
@@ -428,10 +459,11 @@ function CommentsSection({
       </div>
       <MarkdownEditor
         codeSelectionAttachments={codeSelectionAttachments}
-        fileAttachments={fileAttachments}
+        attachmentsEnabled={false}
         mentionDirectory={mentionDirectory}
         ref={commentRef}
-        markdown=""
+        markdown={comment}
+        onMarkdownChange={onCommentChange}
         onFileLinkClick={onFileLinkClick}
         readOnly={disabled}
         placeholder={
@@ -442,8 +474,9 @@ function CommentsSection({
       <div className="flex justify-end">
         <Button
           className="border-blue-500/40 bg-blue-500/10 text-blue-700 hover:bg-blue-500/20 dark:text-blue-300"
-          disabled={disabled}
+          disabled={disabled || !comment.trim()}
           variant="outline"
+          onClick={onCommentSubmit}
         >
           <MessageSquareIcon />
           {commentLabel}
@@ -451,6 +484,13 @@ function CommentsSection({
       </div>
     </section>
   )
+}
+
+function commentDateLabel(value: string) {
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value))
 }
 
 function fileMentionDirectory(

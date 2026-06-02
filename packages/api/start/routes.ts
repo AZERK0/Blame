@@ -12,9 +12,11 @@ import router from '@adonisjs/core/services/router'
 import { controllers } from '#generated/controllers'
 
 const ProviderCredentialsController = () => import('#controllers/provider_credentials_controller')
-const ProjectCodePracticesController = () => import('#controllers/project_code_practices_controller')
+const ProjectCodePracticesController = () =>
+  import('#controllers/project_code_practices_controller')
 const ProjectInitializationsController = () =>
   import('#controllers/project_initializations_controller')
+const UserStoryCommentsController = () => import('#controllers/user_story_comments_controller')
 
 router.get('/', () => {
   return { hello: 'world' }
@@ -80,6 +82,7 @@ router
         router.get('/:id', [controllers.UserStories, 'show'])
         router.patch('/:id', [controllers.UserStories, 'update'])
         router.delete('/:id', [controllers.UserStories, 'destroy'])
+        router.post('/:id/comments', [UserStoryCommentsController, 'store'])
       })
       .prefix('projects/user-stories')
       .as('projects.user_stories')

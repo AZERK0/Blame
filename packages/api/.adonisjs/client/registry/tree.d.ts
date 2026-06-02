@@ -41,6 +41,9 @@ export interface ApiDefinition {
         update: typeof routes['projects.user_stories.user_stories.update']
         destroy: typeof routes['projects.user_stories.user_stories.destroy']
       }
+      userStoryComments: {
+        store: typeof routes['projects.user_stories.user_story_comments.store']
+      }
     }
   }
   providers: {

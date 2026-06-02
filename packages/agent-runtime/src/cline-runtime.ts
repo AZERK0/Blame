@@ -836,16 +836,22 @@ function initializationPrompt(scan: ProjectInitializationScan, correction?: Init
   return projectInitializationCorrectionPrompt(scan, correction)
 }
 
-function developmentStoryPrompt(input: Pick<StartDevelopmentSessionInput, "title" | "summary">) {
-  return [
+function developmentStoryPrompt(input: Pick<StartDevelopmentSessionInput, "feedback" | "summary" | "title">) {
+  const prompt = [
     `Backlog item: ${input.title}`,
     "",
     input.summary,
+  ]
+  if (input.feedback?.trim()) {
+    prompt.push("", "Review feedback:", "", input.feedback.trim())
+  }
+  prompt.push(
     "",
     "Work in the current worktree when code changes are clearly required.",
     "If the request is a question, analysis, opinion, explanation, or review request, inspect the project if useful and answer in Markdown without editing files.",
-    "Only modify files when the request explicitly asks for implementation or when a concrete code change is necessary to satisfy it.",
-  ].join("\n")
+    "Only modify files when the request explicitly asks for implementation or when a concrete code change is necessary to satisfy it."
+  )
+  return prompt.join("\n")
 }
 
 function developmentSystemPrompt(practices: ProjectCodePracticePreference[] = []) {

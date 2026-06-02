@@ -33,6 +33,10 @@ export type UserStoryDrawerProps = {
   onCreateUserStory: (
     input: Omit<UserStoryDraft, "projectId">
   ) => Promise<UserStory>
+  onCreateUserStoryComment: (
+    story: UserStory,
+    input: { body: string }
+  ) => Promise<unknown>
   onApproveAndMerge: (story: UserStory) => Promise<UserStory>
   onOpenDrawer: OpenDrawer
   onOptimizeUserStory?: (input: {
@@ -40,6 +44,7 @@ export type UserStoryDrawerProps = {
     title: string
   }) => Promise<string>
   onReject: (story: UserStory, choice: RejectChoice) => Promise<UserStory>
+  onRequestChanges: (story: UserStory, feedback: string) => Promise<UserStory>
   onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
   onUpdateUserStory: (
     story: UserStory,
@@ -57,10 +62,12 @@ export function UserStoryDrawer({
   initialDevelopmentTab = "files",
   focusComment,
   onCreateUserStory,
+  onCreateUserStoryComment,
   onApproveAndMerge,
   onOpenDrawer,
   onOptimizeUserStory,
   onReject,
+  onRequestChanges,
   onStopAgent,
   onUpdateUserStory,
   setupInitializing,
@@ -91,8 +98,10 @@ export function UserStoryDrawer({
         onCancel={() => onOpenChange(false)}
         onApproveAndMerge={onApproveAndMerge}
         onCreateUserStory={onCreateUserStory}
+        onCreateUserStoryComment={onCreateUserStoryComment}
         onOpenDrawer={onOpenDrawer}
         onOptimizeUserStory={onOptimizeUserStory}
+        onRequestChanges={onRequestChanges}
         onReject={onReject}
         onStopAgent={onStopAgent}
         onUpdateUserStory={onUpdateUserStory}

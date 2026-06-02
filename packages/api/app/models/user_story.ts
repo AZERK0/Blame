@@ -1,5 +1,7 @@
-import { BaseModel, column } from '@adonisjs/lucid/orm'
+import { BaseModel, column, hasMany } from '@adonisjs/lucid/orm'
 import { DateTime } from 'luxon'
+import UserStoryComment from '#models/user_story_comment'
+import type { HasMany } from '@adonisjs/lucid/types/relations'
 
 export type UserStoryStatus =
   | 'backlog'
@@ -104,6 +106,9 @@ export default class UserStory extends BaseModel {
 
   @column()
   declare discardedReason: string | null
+
+  @hasMany(() => UserStoryComment)
+  declare comments: HasMany<typeof UserStoryComment>
 
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime

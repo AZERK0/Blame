@@ -177,6 +177,23 @@ export class UserStorySchema extends BaseModel {
   declare worktree: string | null
 }
 
+export class UserStoryCommentSchema extends BaseModel {
+  static $columns = ['author', 'body', 'createdAt', 'id', 'updatedAt', 'userStoryId'] as const
+  $columns = UserStoryCommentSchema.$columns
+  @column()
+  declare author: string
+  @column()
+  declare body: string
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: number
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+  @column()
+  declare userStoryId: number
+}
+
 export class UserSchema extends BaseModel {
   static $columns = ['createdAt', 'email', 'fullName', 'id', 'password', 'updatedAt'] as const
   $columns = UserSchema.$columns

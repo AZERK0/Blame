@@ -4,6 +4,7 @@ import { createBacklogApi } from "@/components/backlog/data/backlog-api"
 import type {
   BacklogColumnId,
   UserStory,
+  UserStoryComment,
   UserStoryDraft,
   UserStoryUpdate,
 } from "@/components/backlog/data/backlog-data"
@@ -111,6 +112,21 @@ export function useBacklogStore() {
     },
     [api]
   )
+  const createComment = React.useCallback(
+    async (story: UserStory, input: { body: string }) => {
+      const comment = await api.createComment(story.id, input)
+      setState((current) => ({
+        ...current,
+        stories: current.stories.map((currentStory) =>
+          currentStory.id === story.id
+            ? storyWithComment(currentStory, comment)
+            : currentStory
+        ),
+      }))
+      return comment
+    },
+    [api]
+  )
   const updateLocal = React.useCallback(
     (story: UserStory, input: UserStoryUpdate) => {
       setState((current) => ({
@@ -165,6 +181,7 @@ export function useBacklogStore() {
   return {
     ...state,
     create,
+    createComment,
     load,
     projectId,
     projectPath,
@@ -174,6 +191,13 @@ export function useBacklogStore() {
     storiesForColumn,
     update,
     updateLocal,
+  }
+}
+
+function storyWithComment(story: UserStory, comment: UserStoryComment) {
+  return {
+    ...story,
+    comments: [...(story.comments ?? []), comment],
   }
 }
 

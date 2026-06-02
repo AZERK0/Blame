@@ -323,6 +323,97 @@ export function BacklogPage() {
       persistAgentEvent,
     ]
   )
+  const requestChanges = React.useCallback(
+    async (story: UserStory, feedback: string) => {
+      if (!story.worktree) {
+        toast.error("Unable to request changes", {
+          description: "This user story has no active worktree.",
+          position: "bottom-right",
+        })
+        return story
+      }
+      if (auth.status !== "authenticated" || !selection.currentModel) {
+        toast.error("Unable to request changes", {
+          description: "Reconnect the provider and select a model.",
+          position: "bottom-right",
+        })
+        return story
+      }
+      const agent = platform.agent
+      if (!agent) {
+        toast.error("Unable to request changes", {
+          description: "Desktop agent runtime is not available.",
+          position: "bottom-right",
+        })
+        return story
+      }
+      const codePractices = await projectCodePractices(auth, projects)
+      const session = await agent.sessions.startDevelopment({
+        apiConnection: auth.apiConnection,
+        providerId: selection.currentModel.provider.id,
+        modelId: selection.currentModel.id,
+        reasoningEffort: selection.currentVariant,
+        title: story.title,
+        summary: story.summary,
+        feedback,
+        cwd: story.worktree,
+        workspaceRoot: story.worktree,
+        codePractices,
+      })
+      if (!session) {
+        toast.error("Unable to request changes", {
+          description: "Desktop agent runtime is not available.",
+          position: "bottom-right",
+        })
+        return story
+      }
+      const updatedStory = await updateStory(story, {
+        agentLastError: null,
+        agentLastEvent: `Cline debug log: ${clineLogPath(story.worktree, session.sessionId)}`,
+        agentActivities: [],
+        agentFinalResponse: null,
+        agentModelId: selection.currentModel.id,
+        agentProviderId: selection.currentModel.provider.id,
+        agentStatus: "Running",
+        clineSessionId: session.sessionId,
+        status: "in-progress",
+      })
+      let authenticationFailed = false
+      const unsubscribe = subscribeAgentEvents(
+        platform,
+        session.sessionId,
+        (event) => {
+          if (authenticationFailed) return
+          authenticationFailed = expiredAuthenticationToken(
+            agentEventText(event)
+          )
+          persistAgentEvent(updatedStory, event)
+          if (
+            authenticationFailed ||
+            event.type === "done" ||
+            event.type === "error"
+          )
+            unsubscribe()
+        }
+      )
+      void agent.sessions.sendDevelopment({
+        sessionId: session.sessionId,
+        title: story.title,
+        summary: story.summary,
+        feedback,
+      })
+      return updatedStory
+    },
+    [
+      auth,
+      platform,
+      projects,
+      selection.currentModel,
+      selection.currentVariant,
+      updateStory,
+      persistAgentEvent,
+    ]
+  )
 
   const approveAndMergeStory = React.useCallback(
     async (story: UserStory) => {
@@ -460,7 +551,7 @@ export function BacklogPage() {
           Loading user stories.
         </div>
       )}
-      <div className="min-h-0 min-w-0 flex-1 overflow-x-auto overflow-y-hidden [scrollbar-color:color-mix(in_oklab,var(--muted-foreground)_35%,transparent)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-2.5 [&::-webkit-scrollbar-corner]:bg-background [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb:hover]:bg-muted-foreground/45 [&::-webkit-scrollbar-track]:bg-transparent">
+      <div className="min-h-0 min-w-0 flex-1 [scrollbar-width:thin] [scrollbar-color:color-mix(in_oklab,var(--muted-foreground)_35%,transparent)_transparent] overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:h-2.5 [&::-webkit-scrollbar-corner]:bg-background [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb:hover]:bg-muted-foreground/45 [&::-webkit-scrollbar-track]:bg-transparent">
         <div className="grid h-full min-w-500 auto-rows-[minmax(0,1fr)] grid-cols-6 gap-3 pb-3">
           {backlogColumns.map((column) => (
             <BacklogColumn
@@ -495,12 +586,16 @@ export function BacklogPage() {
           setDrawerTarget({ userStory: story, mode: "edit" })
           return story
         }}
+        onCreateUserStoryComment={(story, input) =>
+          backlog.createComment(story, input)
+        }
         onUpdateUserStory={async (story, input) => {
           return updateStory(story, input)
         }}
         onOpenDrawer={openDrawer}
         onOptimizeUserStory={optimizeUserStory}
         onApproveAndMerge={approveAndMergeStory}
+        onRequestChanges={requestChanges}
         onReject={rejectStory}
         onStopAgent={stopAgent}
         setupInitializing={backlog.storySetupInitializing(drawerUserStory)}

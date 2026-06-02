@@ -758,6 +758,7 @@ export const MarkdownEditor = React.forwardRef<
     minHeight: string
     placeholder: string
     codeSelectionAttachments?: PendingCodeSelectionAttachment[]
+    attachmentsEnabled?: boolean
     fileAttachments?: PendingFileAttachment[]
     mentionDirectory?: string
     onFileLinkClick?: (path: string) => void
@@ -767,6 +768,7 @@ export const MarkdownEditor = React.forwardRef<
   }
 >(function MarkdownEditor(
   {
+    attachmentsEnabled = true,
     codeSelectionAttachments,
     fileAttachments,
     markdown,
@@ -859,36 +861,60 @@ export const MarkdownEditor = React.forwardRef<
     textareaRef.current?.focus()
   }, [value])
 
-  function updateMention(nextValue = value) {
-    const textarea = textareaRef.current
-    if (!textarea || readOnly || !mentionDirectory) {
-      setMention((current) =>
-        current.active
-          ? { active: false, query: "", start: 0, end: 0 }
-          : current
-      )
-      return
-    }
-    setMention(fileMentionState(nextValue, textarea.selectionStart))
-  }
+  const updateMention = React.useCallback(
+    (nextValue = value) => {
+      const textarea = textareaRef.current
+      if (!textarea || readOnly || !mentionDirectory) {
+        setMention((current) =>
+          current.active
+            ? { active: false, query: "", start: 0, end: 0 }
+            : current
+        )
+        return
+      }
+      setMention(fileMentionState(nextValue, textarea.selectionStart))
+    },
+    [mentionDirectory, readOnly, value]
+  )
+
+  const emitMarkdown = React.useCallback(
+    (nextMarkdown: string, cursor?: number) => {
+      if (!onMarkdownChange) setDraftMarkdown(nextMarkdown)
+      onMarkdownChange?.(nextMarkdown)
+      if (cursor !== undefined) pendingSelectionRef.current = cursor
+      requestAnimationFrame(() => updateMention(nextMarkdown))
+    },
+    [onMarkdownChange, updateMention]
+  )
 
   React.useEffect(() => {
     if (readOnly) return
-    const nextAttachments = (codeSelectionAttachments ?? [])
-      .filter(
-        (attachment) => !handledCodeSelectionIdsRef.current.has(attachment.id)
-      )
-      .map(codeSelectionAttachment)
+    const nextAttachments = (codeSelectionAttachments ?? []).filter(
+      (attachment) => !handledCodeSelectionIdsRef.current.has(attachment.id)
+    )
     if (nextAttachments.length === 0) return
     codeSelectionAttachments?.forEach((attachment) => {
       handledCodeSelectionIdsRef.current.add(attachment.id)
     })
-    addAttachments(nextAttachments)
+    if (attachmentsEnabled) {
+      addAttachments(nextAttachments.map(codeSelectionAttachment))
+    } else {
+      const markdown = nextAttachments.map(codeSelectionMarkdown).join("\n\n")
+      const separator = value.trim() ? "\n\n" : ""
+      const nextMarkdown = `${value}${separator}${markdown}`
+      emitMarkdown(nextMarkdown, nextMarkdown.length)
+    }
     rootRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
-  }, [codeSelectionAttachments, readOnly])
+  }, [
+    attachmentsEnabled,
+    codeSelectionAttachments,
+    emitMarkdown,
+    readOnly,
+    value,
+  ])
 
   React.useEffect(() => {
-    if (readOnly) return
+    if (readOnly || !attachmentsEnabled) return
     const nextAttachments = (fileAttachments ?? [])
       .filter(
         (attachment) => !handledFileAttachmentIdsRef.current.has(attachment.id)
@@ -900,7 +926,7 @@ export const MarkdownEditor = React.forwardRef<
     })
     addAttachments(nextAttachments)
     rootRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
-  }, [fileAttachments, readOnly])
+  }, [attachmentsEnabled, fileAttachments, readOnly])
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
     if (!mentionOpen) return
@@ -958,7 +984,7 @@ export const MarkdownEditor = React.forwardRef<
   }
 
   function handlePaste(event: React.ClipboardEvent<HTMLDivElement>) {
-    if (readOnly) return
+    if (readOnly || !attachmentsEnabled) return
     const nextAttachments = pastedAttachments(event)
     if (nextAttachments.length === 0) return
     addAttachments(nextAttachments)
@@ -985,13 +1011,6 @@ export const MarkdownEditor = React.forwardRef<
         (currentAttachment) => currentAttachment.id !== attachment.id
       )
     )
-  }
-
-  function emitMarkdown(nextMarkdown: string, cursor?: number) {
-    if (!onMarkdownChange) setDraftMarkdown(nextMarkdown)
-    onMarkdownChange?.(nextMarkdown)
-    if (cursor !== undefined) pendingSelectionRef.current = cursor
-    requestAnimationFrame(() => updateMention(nextMarkdown))
   }
 
   function handleMarkdownChange(event: React.ChangeEvent<HTMLTextAreaElement>) {
@@ -1134,7 +1153,7 @@ export const MarkdownEditor = React.forwardRef<
           )}
 
           <div className="flex flex-wrap items-center gap-3 px-2 pt-3 pb-1">
-            {!readOnly && (
+            {!readOnly && attachmentsEnabled && (
               <>
                 <input
                   ref={fileInputRef}
@@ -1217,6 +1236,16 @@ function codeSelectionAttachment(
     subtitle: codeSelectionLineLabel(attachment),
     title: attachment.path,
   }
+}
+
+function codeSelectionMarkdown(attachment: PendingCodeSelectionAttachment) {
+  return [
+    `[${attachment.path}:${codeSelectionLineLabel(attachment)}]`,
+    "",
+    "```",
+    attachment.content,
+    "```",
+  ].join("\n")
 }
 
 function fileAttachment(attachment: PendingFileAttachment): PastedAttachment {

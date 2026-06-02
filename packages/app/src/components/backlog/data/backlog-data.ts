@@ -35,6 +35,15 @@ export type UserStoryAgentActivity = {
   updatedAt?: string
 }
 
+export type UserStoryComment = {
+  id: number
+  userStoryId: number
+  body: string
+  author: string
+  createdAt: string
+  updatedAt?: string | null
+}
+
 export type UserStory = {
   id: number
   projectId: string
@@ -57,6 +66,7 @@ export type UserStory = {
   mergedAt?: string | null
   mergeCommit?: string | null
   discardedReason?: string | null
+  comments?: UserStoryComment[]
   createdAt: string
   updatedAt?: string | null
 }

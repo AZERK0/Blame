@@ -26,7 +26,6 @@ import {
   normalizeDevelopmentTab,
 } from "@/components/backlog/drawer/user-story-drawer-helpers"
 import { DrawerSidebar } from "@/components/backlog/drawer/user-story-drawer-sidebar"
-import type { PendingFileAttachment } from "@/components/backlog/drawer/markdown-editor"
 import { UserStoryContent } from "@/components/backlog/drawer/user-story-drawer-sections"
 import { UserStoryPreview } from "@/components/backlog/drawer/user-story-preview"
 import {
@@ -55,8 +54,10 @@ export function UserStoryDrawerPanel({
   onCancel,
   onApproveAndMerge,
   onCreateUserStory,
+  onCreateUserStoryComment,
   onOpenDrawer,
   onOptimizeUserStory,
+  onRequestChanges,
   onReject,
   onStopAgent,
   onUpdateUserStory,
@@ -73,11 +74,16 @@ export function UserStoryDrawerPanel({
   onCreateUserStory: (
     input: Omit<UserStoryDraft, "projectId">
   ) => Promise<UserStory>
+  onCreateUserStoryComment: (
+    story: UserStory,
+    input: { body: string }
+  ) => Promise<unknown>
   onOpenDrawer: OpenDrawer
   onOptimizeUserStory?: (input: {
     summary: string
     title: string
   }) => Promise<string>
+  onRequestChanges: (story: UserStory, feedback: string) => Promise<UserStory>
   onReject: (story: UserStory, choice: RejectChoice) => Promise<UserStory>
   onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
   onUpdateUserStory: (
@@ -101,9 +107,6 @@ export function UserStoryDrawerPanel({
     React.useState<PendingCodeSelectionAttachment[]>([])
   const [commentCodeSelectionAttachments, setCommentCodeSelectionAttachments] =
     React.useState<PendingCodeSelectionAttachment[]>([])
-  const [commentFileAttachments, setCommentFileAttachments] = React.useState<
-    PendingFileAttachment[]
-  >([])
   const [developmentFileTarget, setDevelopmentFileTarget] = React.useState<{
     id: string
     path: string
@@ -115,6 +118,7 @@ export function UserStoryDrawerPanel({
   const [summary, setSummary] = React.useState(
     mode === "create" ? "" : (userStory?.summary ?? "")
   )
+  const [comment, setComment] = React.useState("")
   const summaryRef = React.useRef<HTMLDivElement>(null)
   const commentRef = React.useRef<HTMLDivElement>(null)
 
@@ -219,9 +223,13 @@ export function UserStoryDrawerPanel({
           <DrawerBody status={status}>
             <UserStoryContent
               commentCodeSelectionAttachments={commentCodeSelectionAttachments}
-              commentFileAttachments={commentFileAttachments}
+              comment={comment}
               commentRef={commentRef}
               mode={mode}
+              onCommentChange={setComment}
+              onCommentSubmit={() => {
+                void submitComment()
+              }}
               onSummaryChange={setSummary}
               onSummaryOptimize={
                 onOptimizeUserStory
@@ -243,12 +251,8 @@ export function UserStoryDrawerPanel({
             <UserStoryPreview
               setupInitializing={setupInitializing}
               userStory={userStory}
-              onCapture={(file) => {
+              onCapture={() => {
                 setTab("user-story")
-                setCommentFileAttachments((current) => [
-                  ...current,
-                  { file, id: crypto.randomUUID() },
-                ])
                 requestAnimationFrame(() => {
                   commentRef.current
                     ?.querySelector<HTMLElement>(
@@ -301,8 +305,14 @@ export function UserStoryDrawerPanel({
       if (mode !== "create" && userStory) {
         if (action === "Approve & Merge") {
           await onApproveAndMerge(userStory)
+        } else if (action === "Request Changes") {
+          await submitComment()
+          return
         } else {
-          await onUpdateUserStory(userStory, actionInput(action, title, summary))
+          await onUpdateUserStory(
+            userStory,
+            actionInput(action, title, summary)
+          )
         }
       }
       if (action !== "Save Changes" && action !== "Save as Draft") onCancel()
@@ -315,6 +325,23 @@ export function UserStoryDrawerPanel({
     setDevelopmentFileTarget({ id: crypto.randomUUID(), path })
     setDevelopmentTab("files")
     setTab("development")
+  }
+
+  async function submitComment() {
+    if (!userStory) return
+    const body = comment.trim()
+    if (!body) return
+    setSaving(true)
+    try {
+      await onCreateUserStoryComment(userStory, { body })
+      setComment("")
+      if (status === "in-review") {
+        const nextStory = await onRequestChanges(userStory, body)
+        if (nextStory.status === "in-progress") onCancel()
+      }
+    } finally {
+      setSaving(false)
+    }
   }
 }
 

@@ -1,14 +1,11 @@
-import type {
-  BacklogColumnId,
-  UserStory,
-} from "@/components/backlog/data/backlog-data"
+import type { BacklogColumnId } from "@/components/backlog/data/backlog-data"
 import type {
   DrawerAction,
   UserStoryDevelopmentTab,
   UserStoryDrawerMode,
 } from "@/components/backlog/shared/backlog-types"
 
-export function activityItems(status: BacklogColumnId, userStory?: UserStory) {
+export function activityItems(status: BacklogColumnId) {
   const items: string[] = []
   if (status === "in-progress" || status === "in-review" || status === "done") {
     items.push("Agent created a dedicated worktree.")
@@ -21,14 +18,10 @@ export function activityItems(status: BacklogColumnId, userStory?: UserStory) {
   return items
 }
 
-export function commentButtonLabel(
-  status: BacklogColumnId,
-  userStory?: UserStory
-) {
+export function commentButtonLabel(status: BacklogColumnId) {
   if (status === "in-progress") return "Pause & Give Feedback"
   if (status === "in-review") return "Request Changes"
   if (status === "done") return "Comment"
-  if (userStory?.status === "backlog") return "Comment"
   return "Comment"
 }
 

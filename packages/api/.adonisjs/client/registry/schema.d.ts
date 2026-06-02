@@ -283,4 +283,16 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/user_stories_controller').default['destroy']>>>
     }
   }
+  'projects.user_stories.user_story_comments.store': {
+    methods: ["POST"]
+    pattern: '/api/v1/projects/user-stories/:id/comments'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/user_story_comment').createUserStoryCommentValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/user_story_comment').createUserStoryCommentValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/user_story_comments_controller').default['store']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/user_story_comments_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
 }

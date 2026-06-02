@@ -1,32 +1,38 @@
 import type UserStory from '#models/user_story'
+import UserStoryCommentTransformer from '#transformers/user_story_comment_transformer'
 import { BaseTransformer } from '@adonisjs/core/transformers'
 
 export default class UserStoryTransformer extends BaseTransformer<UserStory> {
   toObject() {
-    return this.pick(this.resource, [
-      'id',
-      'projectId',
-      'title',
-      'summary',
-      'status',
-      'priority',
-      'owner',
-      'branch',
-      'previewUrl',
-      'worktree',
-      'agentStatus',
-      'clineSessionId',
-      'agentProviderId',
-      'agentModelId',
-      'agentLastEvent',
-      'agentLastError',
-      'agentActivities',
-      'agentFinalResponse',
-      'mergedAt',
-      'mergeCommit',
-      'discardedReason',
-      'createdAt',
-      'updatedAt',
-    ])
+    return {
+      ...this.pick(this.resource, [
+        'id',
+        'projectId',
+        'title',
+        'summary',
+        'status',
+        'priority',
+        'owner',
+        'branch',
+        'previewUrl',
+        'worktree',
+        'agentStatus',
+        'clineSessionId',
+        'agentProviderId',
+        'agentModelId',
+        'agentLastEvent',
+        'agentLastError',
+        'agentActivities',
+        'agentFinalResponse',
+        'mergedAt',
+        'mergeCommit',
+        'discardedReason',
+        'createdAt',
+        'updatedAt',
+      ]),
+      comments: (this.resource.comments ?? []).map((comment) =>
+        UserStoryCommentTransformer.transform(comment)
+      ),
+    }
   }
 }

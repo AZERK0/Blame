@@ -109,6 +109,7 @@ export type StartDevelopmentSessionInput = {
   reasoningEffort?: ReasoningEffort
   title: string
   summary: string
+  feedback?: string
   cwd: string
   workspaceRoot: string
   codePractices?: ProjectCodePracticePreference[]
@@ -141,6 +142,7 @@ export type SendDevelopmentSessionInput = {
   sessionId: string
   title: string
   summary: string
+  feedback?: string
 }
 
 export type ProjectCodePracticeKey =

@@ -12,4 +12,5 @@ export const controllers = {
   Projects: () => import('#controllers/projects_controller'),
   ProviderCredentials: () => import('#controllers/provider_credentials_controller'),
   UserStories: () => import('#controllers/user_stories_controller'),
+  UserStoryComments: () => import('#controllers/user_story_comments_controller'),
 }
