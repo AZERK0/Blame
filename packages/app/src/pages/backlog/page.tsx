@@ -259,6 +259,7 @@ export function BacklogPage() {
         return story
       }
       const codePractices = await projectCodePractices(auth, projects)
+      const feedback = resumeAgentFeedback(story)
       const session = await agent.sessions.startDevelopment({
         apiConnection: auth.apiConnection,
         providerId: selection.currentModel.provider.id,
@@ -266,6 +267,7 @@ export function BacklogPage() {
         reasoningEffort: selection.currentVariant,
         title: story.title,
         summary: story.summary,
+        feedback,
         cwd: story.worktree,
         workspaceRoot: story.worktree,
         codePractices,
@@ -310,6 +312,7 @@ export function BacklogPage() {
         sessionId: session.sessionId,
         title: story.title,
         summary: story.summary,
+        feedback,
       })
       return updatedStory
     },
@@ -915,6 +918,14 @@ function agentEventUpdate(
       status: "in-review",
     }
   }
+  if (failedAgentRun(event)) {
+    return {
+      ...flowUpdate,
+      agentLastError: text || "Agent session failed",
+      agentLastEvent: text || "Agent session failed",
+      agentStatus: "Paused",
+    }
+  }
   return {
     ...flowUpdate,
     agentLastError:
@@ -929,4 +940,23 @@ function expiredAuthenticationToken(message: string) {
     normalized.includes("authentication token") &&
     normalized.includes("invalidated")
   )
+}
+
+function failedAgentRun(event: AgentEvent) {
+  return (
+    event.type === "error" ||
+    (event.type === "done" && !completedAgentRun(event))
+  )
+}
+
+function resumeAgentFeedback(story: UserStory) {
+  const details = [
+    story.agentLastError ? `Previous agent error: ${story.agentLastError}` : "",
+    story.agentLastEvent ? `Last recorded event: ${story.agentLastEvent}` : "",
+  ].filter(Boolean)
+  return [
+    "Resume the implementation from the existing worktree.",
+    "Inspect the current git diff first, keep the useful existing changes, and continue until the story is ready for review.",
+    ...details,
+  ].join("\n")
 }

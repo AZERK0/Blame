@@ -72,6 +72,8 @@ const execFileAsync = promisify(execFile)
 const readTools = ["read_files", "search_codebase", "fetch_web_content"]
 const writeTools = ["run_commands", "editor", "apply_patch"]
 const blockedCommandParts = ["rm -rf", "sudo", "curl | sh", "wget | sh", "> /dev/"]
+const defaultSessionMaxIterations = 32
+const defaultDevelopmentMaxIterations = 96
 const maxInitializationAttempts = 3
 const maxMergeConflictResolutionAttempts = 3
 const runtimeArtifactPathspecs = [":!.blame", ":!.blame-preview", ":!.pnpm-store"]
@@ -252,7 +254,7 @@ export class BlameAgentRuntime {
             cwd: input.cwd,
             workspaceRoot: input.workspaceRoot,
             mode: input.mode ?? "act",
-            maxIterations: input.maxIterations ?? 32,
+            maxIterations: input.maxIterations ?? defaultSessionMaxIterations,
             enableTools: true,
             enableSpawnAgent: false,
             enableAgentTeams: false,
@@ -745,7 +747,7 @@ export class BlameAgentRuntime {
       autoApproveWriteTools: true,
       autoSendPrompt: false,
       mode: "act",
-      maxIterations: 32,
+      maxIterations: input.maxIterations ?? developmentMaxIterations(),
       prompt: developmentStoryPrompt(input),
       cwd: input.cwd,
       workspaceRoot: input.workspaceRoot,
@@ -1205,19 +1207,24 @@ function startContext(input: StartSessionInput) {
     providerId: input.providerId,
     modelId: input.modelId,
     mode: input.mode ?? "act",
-    maxIterations: input.maxIterations ?? 32,
+    maxIterations: input.maxIterations ?? defaultSessionMaxIterations,
     ...promptMetadata(input.prompt),
   }
 }
 
 function sessionContext(input: StartSessionInput, sessionId: string): ProductionSessionContext {
   return {
-    maxIterations: input.maxIterations ?? 32,
+    maxIterations: input.maxIterations ?? defaultSessionMaxIterations,
     mode: input.mode ?? "act",
     modelId: input.modelId,
     providerId: input.providerId,
     sessionId,
   }
+}
+
+function developmentMaxIterations() {
+  const value = Number(process.env.BLAME_AGENT_DEVELOPMENT_MAX_ITERATIONS)
+  return Number.isFinite(value) && value > 0 ? value : defaultDevelopmentMaxIterations
 }
 
 function startLogPath(cwd: string) {

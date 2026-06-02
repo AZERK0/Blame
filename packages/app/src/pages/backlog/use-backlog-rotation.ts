@@ -332,6 +332,19 @@ export function useBacklogRotation(
       )
       return
     }
+    if (failedAgentRun(event)) {
+      persistAgentUpdate(
+        currentStory,
+        {
+          ...flowUpdate,
+          agentLastError: text || "Agent session failed",
+          agentLastEvent: text || "Agent session failed",
+          agentStatus: "Paused",
+        },
+        true
+      )
+      return
+    }
     persistAgentUpdate(
       currentStory,
       {
@@ -593,4 +606,11 @@ function expiredAuthenticationToken(message: string) {
 
 function agentAuthenticationErrorKey(story: UserStory) {
   return `${story.id}:expired-authentication-token`
+}
+
+function failedAgentRun(event: AgentEvent) {
+  return (
+    event.type === "error" ||
+    (event.type === "done" && !completedAgentRun(event))
+  )
 }

@@ -107,6 +107,7 @@ export type StartDevelopmentSessionInput = {
   providerId: string
   modelId: string
   reasoningEffort?: ReasoningEffort
+  maxIterations?: number
   title: string
   summary: string
   feedback?: string
