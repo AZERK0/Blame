@@ -316,21 +316,28 @@ function usageFromUsageEvent(current: UserStoryAgentUsage, event: AgentEvent) {
   const payload = eventPayload(event)
   const payloadUsage = recordValue(payload.usage)
   const usage = Object.keys(payloadUsage).length ? payloadUsage : payload
-  const inputTokens = numberValue(usage.inputTokens) ?? current.inputTokens
-  const outputTokens = numberValue(usage.outputTokens) ?? current.outputTokens
+  const currentInputTokens = numberValue(usage.inputTokens) ?? current.currentInputTokens ?? 0
+  const currentOutputTokens = numberValue(usage.outputTokens) ?? current.currentOutputTokens ?? 0
+  const inputTokens = numberValue(usage.totalInputTokens) ?? numberValue(usage.inputTokens) ?? current.inputTokens
+  const outputTokens = numberValue(usage.totalOutputTokens) ?? numberValue(usage.outputTokens) ?? current.outputTokens
   const cacheReadTokens = numberValue(usage.cacheReadTokens) ?? current.cacheReadTokens
   const cacheWriteTokens = numberValue(usage.cacheWriteTokens) ?? current.cacheWriteTokens
-  const maxContextTokens = Math.max(
-    current.maxContextTokens,
-    inputTokens
-  )
+  const currentTotalTokens = numberValue(usage.totalTokens) ?? currentInputTokens + currentOutputTokens
+  const sessionTotalTokens = inputTokens + outputTokens
+  const rawTotalTokens = sessionTotalTokens + cacheReadTokens + cacheWriteTokens
+  const maxContextTokens = Math.max(current.maxContextTokens, currentInputTokens)
   return {
     ...current,
     cacheReadTokens,
     cacheWriteTokens,
+    currentInputTokens,
+    currentOutputTokens,
+    currentTotalTokens,
     inputTokens,
     maxContextTokens,
     outputTokens,
+    rawTotalTokens,
+    sessionTotalTokens,
     totalCost: numberValue(usage.totalCost) ?? current.totalCost,
   }
 }
@@ -339,9 +346,14 @@ function usageChanged(current: UserStoryAgentUsage, next: UserStoryAgentUsage) {
   return (
     current.cacheReadTokens !== next.cacheReadTokens ||
     current.cacheWriteTokens !== next.cacheWriteTokens ||
+    current.currentInputTokens !== next.currentInputTokens ||
+    current.currentOutputTokens !== next.currentOutputTokens ||
+    current.currentTotalTokens !== next.currentTotalTokens ||
     current.inputTokens !== next.inputTokens ||
     current.maxContextTokens !== next.maxContextTokens ||
     current.outputTokens !== next.outputTokens ||
+    current.rawTotalTokens !== next.rawTotalTokens ||
+    current.sessionTotalTokens !== next.sessionTotalTokens ||
     current.totalCost !== next.totalCost
   )
 }
@@ -438,10 +450,15 @@ function emptyUsage(): UserStoryAgentUsage {
     cacheReadTokens: 0,
     cacheWriteTokens: 0,
     compactionCount: 0,
+    currentInputTokens: 0,
+    currentOutputTokens: 0,
+    currentTotalTokens: 0,
     inputTokens: 0,
     largeFileReads: 0,
     maxContextTokens: 0,
     outputTokens: 0,
+    rawTotalTokens: 0,
+    sessionTotalTokens: 0,
     unboundedFileReads: 0,
     tokensSavedEstimate: 0,
     topTools: [],

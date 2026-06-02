@@ -33,7 +33,7 @@ function TokenUsage({ userStory }: { userStory?: UserStory }) {
   const sessionUsage = useSessionUsage(userStory?.clineSessionId)
   const selection = useModelSelection()
   const contextLimit = modelContextLimit(userStory, selection.allProviders)
-  if (!userStory?.clineSessionId) return null
+  if (!userStory?.clineSessionId && !userStory?.agentUsage) return null
 
   return (
     <section className="grid gap-4 border-t pt-5">
@@ -42,7 +42,7 @@ function TokenUsage({ userStory }: { userStory?: UserStory }) {
         <TokenStat label="Provider" value={userStory.agentProviderId} />
         <TokenStat label="Model" value={userStory.agentModelId} />
         <TokenStat label="Context limit" value={formatInteger(contextLimit)} />
-        {usageContent(sessionUsage, contextLimit)}
+        {usageContent(sessionUsage, contextLimit, userStory.agentUsage)}
         <TokenDiagnostics userStory={userStory} />
       </div>
     </section>
@@ -51,30 +51,44 @@ function TokenUsage({ userStory }: { userStory?: UserStory }) {
 
 function usageContent(
   sessionUsage: SessionUsageState,
-  contextLimit: number | undefined
+  contextLimit: number | undefined,
+  agentUsage: UserStory["agentUsage"]
 ) {
   if (sessionUsage.loading) return <TokenStat label="Usage" value="Loading" />
-  if (!sessionUsage.totals) return <TokenStat label="Usage" value="-" />
+  const totals = sessionUsage.totals ?? usageTotalsFromAgentUsage(agentUsage)
+  if (!totals) return <TokenStat label="Usage" value="-" />
   return (
     <TokenUsageTotals
-      totals={sessionUsage.totals}
+      agentUsage={agentUsage}
+      totals={totals}
       contextLimit={contextLimit}
     />
   )
 }
 
 function TokenUsageTotals({
+  agentUsage,
   contextLimit,
   totals,
 }: {
+  agentUsage: UserStory["agentUsage"]
   contextLimit: number | undefined
   totals: AgentUsageTotals
 }) {
-  const totalTokens = usageTotalTokens(totals)
+  const fallbackTotalTokens = usageTotalTokens(totals)
+  const currentTotalTokens = positiveUsageValue(
+    agentUsage?.currentTotalTokens,
+    fallbackTotalTokens
+  )
+  const sessionTotalTokens = positiveUsageValue(
+    agentUsage?.sessionTotalTokens,
+    fallbackTotalTokens
+  )
   return (
     <>
-      <TokenStat label="Usage" value={formatUsage(totalTokens, contextLimit)} />
-      <TokenStat label="Total tokens" value={formatInteger(totalTokens)} />
+      <TokenStat label="Usage" value={formatUsage(currentTotalTokens, contextLimit)} />
+      <TokenStat label="Current total tokens" value={formatInteger(currentTotalTokens)} />
+      <TokenStat label="Session tokens" value={formatInteger(sessionTotalTokens)} />
       <TokenStat label="Input tokens" value={formatInteger(totals.inputTokens)} />
       <TokenStat label="Output tokens" value={formatInteger(totals.outputTokens)} />
       <TokenStat
@@ -95,6 +109,7 @@ function TokenDiagnostics({ userStory }: { userStory: UserStory }) {
   return (
     <>
       <TokenStat label="Max context observed" value={formatInteger(usage.maxContextTokens)} />
+      <TokenStat label="Raw tokens with cache" value={formatInteger(usage.rawTotalTokens)} />
       <TokenStat label="Compactions" value={formatInteger(usage.compactionCount)} />
       <TokenStat label="Unbounded file reads" value={formatInteger(usage.unboundedFileReads)} />
       <TokenStat label="Large file reads" value={formatInteger(usage.largeFileReads)} />
@@ -161,6 +176,21 @@ function modelContextLimit(
 
 function usageTotalTokens(totals: AgentUsageTotals) {
   return totals.inputTokens + totals.outputTokens
+}
+
+function usageTotalsFromAgentUsage(usage: UserStory["agentUsage"]) {
+  if (!usage) return undefined
+  return {
+    cacheReadTokens: usage.cacheReadTokens,
+    cacheWriteTokens: usage.cacheWriteTokens,
+    inputTokens: usage.inputTokens,
+    outputTokens: usage.outputTokens,
+    totalCost: usage.totalCost,
+  }
+}
+
+function positiveUsageValue(value: number | undefined, fallback: number) {
+  return value && value > 0 ? value : fallback
 }
 
 function formatUsage(totalTokens: number, contextLimit: number | undefined) {

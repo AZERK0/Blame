@@ -34,10 +34,15 @@ export type UserStoryAgentUsage = {
   cacheReadTokens: number
   cacheWriteTokens: number
   compactionCount: number
+  currentInputTokens?: number
+  currentOutputTokens?: number
+  currentTotalTokens?: number
   inputTokens: number
   largeFileReads: number
   maxContextTokens: number
   outputTokens: number
+  rawTotalTokens?: number
+  sessionTotalTokens?: number
   unboundedFileReads: number
   tokensSavedEstimate: number
   topTools: UserStoryAgentToolUsage[]

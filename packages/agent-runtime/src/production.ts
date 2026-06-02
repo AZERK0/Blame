@@ -63,7 +63,9 @@ const allowedLogKeys = new Set([
   "promptHash",
   "promptLength",
   "providerId",
+  "rawTotalTokens",
   "sessionId",
+  "sessionTotalTokens",
   "status",
   "storyId",
   "success",
@@ -163,14 +165,17 @@ export function assertRepositoryPath(path: string, label: string) {
 export function summarizeUsage(summary: SessionUsageSummary | undefined) {
   const usage = summary?.aggregateUsage ?? summary?.usage
   if (!usage) return {}
+  const sessionTotalTokens = totalTokens(usage)
   return {
     cacheReadTokens: usage.cacheReadTokens,
     cacheWriteTokens: usage.cacheWriteTokens,
     costUsd: usage.totalCost,
     inputTokens: usage.inputTokens,
     outputTokens: usage.outputTokens,
+    rawTotalTokens: rawTotalTokens(usage),
+    sessionTotalTokens,
     totalCost: usage.totalCost,
-    totalTokens: totalTokens(usage),
+    totalTokens: sessionTotalTokens,
   }
 }
 
@@ -282,6 +287,15 @@ function totalTokens(usage: {
   outputTokens: number
 }) {
   return usage.inputTokens + usage.outputTokens
+}
+
+function rawTotalTokens(usage: {
+  cacheReadTokens: number
+  cacheWriteTokens: number
+  inputTokens: number
+  outputTokens: number
+}) {
+  return totalTokens(usage) + usage.cacheReadTokens + usage.cacheWriteTokens
 }
 
 function isPathInside(path: string, parent: string) {
