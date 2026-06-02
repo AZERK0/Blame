@@ -166,7 +166,7 @@ export function UserStoryDrawerPanel({
   }, [status])
 
   return (
-    <DrawerContent className="inset-y-2 right-2 h-[calc(100svh-1rem)] rounded-xl border data-[vaul-drawer-direction=right]:w-[72vw] data-[vaul-drawer-direction=right]:sm:max-w-none">
+    <DrawerContent className="inset-y-2 right-2 h-[calc(100svh-1rem)] overflow-hidden rounded-xl border data-[vaul-drawer-direction=right]:w-[min(90rem,calc(100vw-1rem))] data-[vaul-drawer-direction=right]:sm:max-w-none">
       <DrawerClose asChild>
         <Button
           className="absolute top-4 right-4 z-10"
@@ -197,7 +197,7 @@ export function UserStoryDrawerPanel({
       <Tabs
         value={tab}
         onValueChange={(value) => setTab(value as UserStoryDrawerTab)}
-        className="min-h-0 flex-1 gap-0"
+        className="min-h-0 flex-1 gap-0 overflow-hidden"
       >
         {hasDevelopment && (
           <div className="border-b px-6 py-3">
@@ -219,7 +219,7 @@ export function UserStoryDrawerPanel({
             </TabsList>
           </div>
         )}
-        <TabsContent value="user-story" className="min-h-0">
+        <TabsContent value="user-story" className="min-h-0 overflow-hidden">
           <DrawerBody status={status} userStory={userStory}>
             <UserStoryContent
               commentCodeSelectionAttachments={commentCodeSelectionAttachments}
@@ -247,7 +247,7 @@ export function UserStoryDrawerPanel({
           </DrawerBody>
         </TabsContent>
         {hasPreview && (
-          <TabsContent value="preview" className="min-h-0">
+          <TabsContent value="preview" className="min-h-0 overflow-hidden">
             <UserStoryPreview
               setupInitializing={setupInitializing}
               userStory={userStory}
@@ -265,7 +265,7 @@ export function UserStoryDrawerPanel({
           </TabsContent>
         )}
         {hasDevelopment && (
-          <TabsContent value="development" className="min-h-0">
+          <TabsContent value="development" className="min-h-0 overflow-hidden">
             <DevelopmentContent
               key={developmentFileTarget?.id ?? "development"}
               initialFilePath={developmentFileTarget?.path}
@@ -277,7 +277,7 @@ export function UserStoryDrawerPanel({
           </TabsContent>
         )}
       </Tabs>
-      <DrawerFooter className="border-t px-6 py-4">
+      <DrawerFooter className="border-t bg-popover/95 px-6 py-4">
         <DrawerActions
           mode={mode}
           status={status}
@@ -392,11 +392,15 @@ function DrawerBody({
   userStory?: UserStory
 }) {
   return (
-    <div className="grid h-full min-h-0 grid-cols-[minmax(0,1fr)_18rem]">
-      <ScrollArea className="min-h-0">
-        <div className="flex w-full flex-col gap-6 px-6 py-6">{children}</div>
+    <div className="grid h-full min-h-0 grid-cols-[minmax(0,1fr)_minmax(20rem,24rem)] overflow-hidden">
+      <ScrollArea className="h-full min-h-0">
+        <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-6 py-6">
+          {children}
+        </div>
       </ScrollArea>
-      <DrawerSidebar status={status} userStory={userStory} />
+      <ScrollArea className="h-full min-h-0 [&_[data-slot=scroll-area-viewport]]:h-full [&_[data-slot=scroll-area-viewport]>aside]:min-h-full">
+        <DrawerSidebar status={status} userStory={userStory} />
+      </ScrollArea>
     </div>
   )
 }
