@@ -37,6 +37,8 @@ It must:
 
 - include all services required for a working preview
 - reuse existing Compose structure when present, changing only isolation, dynamic ports, env, volumes, commands, and Blame metadata
+- create a self-contained development Compose file using base images and bind-mounted source instead of building from project Dockerfiles
+- use project Dockerfiles only as read-only inspiration for ports, working directories, package manager versions, environment variables, and commands
 - preserve internal app ports and let Docker allocate localhost host ports, e.g. `127.0.0.1::3000`
 - mark exactly one preview service with `blame.preview=true`, `blame.preview.port=<internal port>`, `blame.preview.protocol=http`, `blame.preview.path=/`
 - isolate containers, networks, and volumes through `COMPOSE_PROJECT_NAME`
@@ -48,6 +50,7 @@ It must:
 It must never:
 
 - use fixed host ports, scan ports, reserve ports, or change internal ports only to avoid conflicts
+- use `build`, `dockerfile`, or any project Dockerfile as the runtime path
 - use `corepack enable` or bare `pnpm`
 - let containers write bind-mounted worktree files as root
 - mount root-owned named volumes at paths like `/tmp/corepack-cache`, `/tmp/package-store`, or package manager cache directories in services running as `${BLAME_HOST_UID}:${BLAME_HOST_GID}` without first making them writable

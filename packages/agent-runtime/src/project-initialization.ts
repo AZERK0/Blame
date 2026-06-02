@@ -236,6 +236,11 @@ function validateDockerCompose(compose: string) {
       "Initialization result dockerCompose must expose Docker-allocated host ports",
     );
   }
+  if (usesProjectDockerfileBuild(compose)) {
+    throw new Error(
+      "Initialization result dockerCompose must not build from project Dockerfiles",
+    );
+  }
   if (!runsContainersAsHostUser(compose)) {
     throw new Error(
       "Initialization result dockerCompose must run worktree services as the host user",
@@ -281,6 +286,10 @@ function hasDockerAllocatedPortMapping(compose: string) {
     'host_ip: "127.0.0.1"',
     "host_ip: '127.0.0.1'",
   ]);
+}
+
+function usesProjectDockerfileBuild(compose: string) {
+  return /\bbuild\s*:/.test(compose) || /\bdockerfile\s*:/.test(compose);
 }
 
 function runsContainersAsHostUser(compose: string) {
