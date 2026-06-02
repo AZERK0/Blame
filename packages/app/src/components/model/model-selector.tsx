@@ -7,6 +7,7 @@ import * as React from "react"
 import type {
   BlameModel as Model,
   BlameProvider as Provider,
+  ProviderCredentialSummary,
   ProviderListResponse,
   ReasoningEffort,
 } from "@blame/agent-runtime"
@@ -50,6 +51,8 @@ import { ButtonGroup } from "@/components/ui/button-group.tsx"
 const storageKey = "blame.app.drawer-model-selection.v1"
 const recentLimit = 5
 const defaultVariant = "default"
+const defaultCredentialLabel = "default"
+const openAICompatibleProviderID = "openai-compatible"
 export const popularProviders = [
   "openai-codex",
   "openai",
@@ -461,7 +464,7 @@ function getModels(providers: ProviderListResponse | undefined) {
     providers?.all
       .filter((provider) => connected.has(provider.id))
       .flatMap((provider) =>
-        Object.values(provider.models).map((model) => ({
+        getProviderModels(provider, providers.credentials).map((model) => ({
           ...model,
           name: model.name.replace("(latest)", "").trim(),
           provider,
@@ -469,6 +472,28 @@ function getModels(providers: ProviderListResponse | undefined) {
         }))
       ) ?? []
   )
+}
+
+function getProviderModels(provider: Provider, credentials: ProviderCredentialSummary[]) {
+  if (provider.id !== openAICompatibleProviderID) return Object.values(provider.models)
+
+  const compatibleCredentials = credentials.filter(
+    (credential) => credential.providerId === openAICompatibleProviderID
+  )
+  if (!compatibleCredentials.length) return Object.values(provider.models)
+
+  return compatibleCredentials.map((credential) =>
+    openAICompatibleModel(provider, credential)
+  )
+}
+
+function openAICompatibleModel(provider: Provider, credential: ProviderCredentialSummary) {
+  const modelId = credential.label === defaultCredentialLabel ? "custom" : credential.label
+  return {
+    ...(provider.models.custom ?? Object.values(provider.models)[0]),
+    id: modelId,
+    name: modelId,
+  }
 }
 
 function getConnectedProviderIDs(providers: ProviderListResponse | undefined) {

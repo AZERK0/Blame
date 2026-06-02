@@ -74,6 +74,7 @@ const writeTools = ["run_commands", "editor", "apply_patch"]
 const blockedCommandParts = ["rm -rf", "sudo", "curl | sh", "wget | sh", "> /dev/"]
 const maxInitializationAttempts = 3
 const productionLogger = createProductionLogger()
+const openAICompatibleProviderID = "openai-compatible"
 
 type ToolApprovalRequest = {
   toolName?: string
@@ -85,6 +86,13 @@ type ToolApprovalRequest = {
 
 type ToolApprovalResult = {
   approved: boolean
+}
+
+type RuntimeCredentialInput = {
+  apiConnection: ApiConnection
+  providerId: string
+  modelId?: string
+  credentialLabel?: string
 }
 
 type PendingApproval = {
@@ -202,7 +210,7 @@ export class BlameAgentRuntime {
     try {
       const credential = await resolveProviderCredential(input.apiConnection, {
         providerId: input.providerId,
-        label: input.credentialLabel,
+        label: credentialLabel(input),
       })
       await appendLog(startLogFile, "credential resolved", {
         providerId: credential.providerId,
@@ -370,10 +378,10 @@ export class BlameAgentRuntime {
     return this.runtimeCredential(input)
   }
 
-  private async runtimeCredential(input: Pick<StartSessionInput, "apiConnection" | "providerId" | "credentialLabel">) {
+  private async runtimeCredential(input: RuntimeCredentialInput) {
     const credential = await resolveProviderCredential(input.apiConnection, {
       providerId: input.providerId,
-      label: input.credentialLabel,
+      label: credentialLabel(input),
     })
     return this.refreshOAuthCredential(input.apiConnection, credential)
   }
@@ -1050,6 +1058,12 @@ function forceOAuthRefresh(providerId: string) {
 
 function supportedClineOAuthProvider(providerId: string) {
   return providerId === "openai-codex" || providerId === "cline" || providerId === "opencode" || providerId === "oca"
+}
+
+function credentialLabel(input: RuntimeCredentialInput) {
+  if (input.credentialLabel) return input.credentialLabel
+  if (input.providerId === openAICompatibleProviderID) return input.modelId
+  return undefined
 }
 
 function startContext(input: StartSessionInput) {

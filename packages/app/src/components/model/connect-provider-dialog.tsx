@@ -126,12 +126,14 @@ function ConnectProviderContent({
 }) {
   const [apiKey, setApiKey] = React.useState("")
   const [baseUrl, setBaseUrl] = React.useState(credential?.baseUrl ?? "")
+  const [modelId, setModelId] = React.useState(openAICompatibleModelId(credential))
   const [error, setError] = React.useState<string>()
   const [deleting, setDeleting] = React.useState(false)
   const [saving, setSaving] = React.useState(false)
   const [oauthLoading, setOauthLoading] = React.useState(false)
   const oauth = provider.capabilities?.includes("oauth")
-  const showBaseUrl = provider.id === "openai-compatible" || oauth
+  const openAICompatible = provider.id === "openai-compatible"
+  const showBaseUrl = openAICompatible
 
   return (
     <>
@@ -161,14 +163,18 @@ function ConnectProviderContent({
             setError("API key is required")
             return
           }
+          if (openAICompatible && !modelId.trim()) {
+            setError("Model ID is required")
+            return
+          }
           setError(undefined)
           setSaving(true)
           void selection.agent?.providers
             .saveCredential(selection.apiConnection, {
               providerId: provider.id,
-              label: credential?.label,
+              label: openAICompatible ? modelId.trim() : credential?.label,
               apiKey,
-              baseUrl: baseUrl.trim() || null,
+              baseUrl: showBaseUrl ? baseUrl.trim() || null : null,
             })
             .then(() => selection.refreshProviders())
             .then(onDone)
@@ -191,7 +197,7 @@ function ConnectProviderContent({
                   apiConnection: selection.apiConnection,
                   providerId: provider.id,
                   label: credential?.label,
-                  baseUrl: baseUrl.trim() || null,
+                  baseUrl: showBaseUrl ? baseUrl.trim() || null : null,
                 })
                 .then(() => selection.refreshProviders())
                 .then(onDone)
@@ -230,6 +236,19 @@ function ConnectProviderContent({
             />
           </div>
         ) : null}
+        {openAICompatible ? (
+          <div className="grid gap-2">
+            <label className="text-sm font-medium" htmlFor="provider-model-id">
+              Model ID
+            </label>
+            <Input
+              id="provider-model-id"
+              value={modelId}
+              placeholder="your-model-name"
+              onChange={(event) => setModelId(event.currentTarget.value)}
+            />
+          </div>
+        ) : null}
         <div className="flex items-center justify-between gap-2">
           {credential ? (
             <Button
@@ -253,7 +272,7 @@ function ConnectProviderContent({
               Delete
             </Button>
           ) : <span />}
-          <Button type="submit" disabled={oauth || saving || !selection.agent || !apiKey.trim()}>
+          <Button type="submit" disabled={oauth || saving || !selection.agent || !apiKey.trim() || (openAICompatible && !modelId.trim())}>
             {saving ? <LoaderCircleIcon className="animate-spin" /> : null}
             {credential ? "Save" : "Continue"}
           </Button>
@@ -261,6 +280,11 @@ function ConnectProviderContent({
       </form>
     </>
   )
+}
+
+function openAICompatibleModelId(credential: ProviderCredentialSummary | undefined) {
+  if (credential?.providerId !== "openai-compatible") return ""
+  return credential.label === "default" ? "" : credential.label
 }
 
 function groupProviders(providers: Provider[]) {
