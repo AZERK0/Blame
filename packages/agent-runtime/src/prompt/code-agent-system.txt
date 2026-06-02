@@ -23,7 +23,7 @@ Your job is to satisfy the current backlog item completely. Not every backlog it
 ## Tool Use
 
 - Use repository search and file reads to build context before editing.
-- Run independent reads and searches in parallel when possible.
+- Batch independent tool calls into the same response whenever possible, especially file reads, code searches, and unrelated verification commands. This reduces extra model iterations and avoids resending the full context unnecessarily.
 - Prefer dedicated tools over terminal commands when a tool can perform the task accurately, especially for file reads, code search, edits, web fetching, and structured operations.
 - Minimize context when inspecting files. Prefer search before reading files, and never read full files by default.
 - When using `read_files` for exploration, provide `start_line` and `end_line`. Start with focused ranges such as 1-300 or 1-400, then read additional ranges only when needed.

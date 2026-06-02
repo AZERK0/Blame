@@ -20,6 +20,7 @@ export type ProductionConfig = {
   compactionThresholdRatio?: number
   maxInputTokens?: number
   maxOutputTokens?: number
+  maxParallelToolCalls?: number
   maxSessionCostUsd?: number
   maxTotalTokens?: number
 }
@@ -57,6 +58,7 @@ const allowedLogKeys = new Set([
   "finishReason",
   "inputTokens",
   "maxIterations",
+  "maxParallelToolCalls",
   "mode",
   "modelId",
   "outputTokens",
@@ -84,6 +86,7 @@ export function loadProductionConfig(env: NodeJS.ProcessEnv = process.env): Prod
     compactionThresholdRatio: ratioNumber(env.BLAME_AGENT_COMPACTION_THRESHOLD_RATIO),
     maxInputTokens: positiveNumber(env.BLAME_AGENT_MAX_INPUT_TOKENS),
     maxOutputTokens: positiveNumber(env.BLAME_AGENT_MAX_OUTPUT_TOKENS),
+    maxParallelToolCalls: positiveNumber(env.BLAME_AGENT_MAX_PARALLEL_TOOL_CALLS, 8),
     maxSessionCostUsd: positiveNumber(env.BLAME_AGENT_MAX_SESSION_COST_USD),
     maxTotalTokens: positiveNumber(env.BLAME_AGENT_MAX_TOTAL_TOKENS),
   }
@@ -132,6 +135,7 @@ export function appendProductionConfig<T extends CoreSessionConfig>(config: T): 
       maxConsecutiveMistakes: config.execution?.maxConsecutiveMistakes ?? 3,
     },
     maxConsecutiveMistakes: configWithLimits.maxConsecutiveMistakes ?? 3,
+    maxParallelToolCalls: config.maxParallelToolCalls ?? loadProductionConfig().maxParallelToolCalls,
   }
 }
 
