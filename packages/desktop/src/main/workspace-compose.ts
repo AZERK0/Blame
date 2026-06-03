@@ -1,6 +1,6 @@
 export function dockerComposeForPreview(compose: string, worktree: string) {
-  return dockerComposeWithCorepackPnpm(
-    dockerComposeWithHostUser(compose, worktree),
+  return dockerComposeWithCiForPackageInstalls(
+    dockerComposeWithCorepackPnpm(dockerComposeWithHostUser(compose, worktree)),
   );
 }
 
@@ -14,7 +14,14 @@ export function dockerComposeWithHostUser(compose: string, worktree: string) {
 export function dockerComposeWithCorepackPnpm(compose: string) {
   return compose
     .replace(/\bcorepack\s+enable\s*&&\s*/g, "")
-    .replace(/(^|[\s;&|])pnpm(?=\s)/g, "$1corepack pnpm");
+    .replace(/(?<!corepack)(^|[\s;&|])pnpm(?=\s)/g, "$1corepack pnpm");
+}
+
+export function dockerComposeWithCiForPackageInstalls(compose: string) {
+  const lines = compose.split("\n");
+  const servicesLine = serviceSectionLine(lines);
+  if (servicesLine === -1) return compose;
+  return addCiToPackageInstallServices(lines, servicesLine).join("\n");
 }
 
 function serviceSectionLine(lines: string[]) {
@@ -44,6 +51,31 @@ function addHostUserToServices(
       continue;
     }
     result.push(...hostUserServiceBlock(serviceBlock, worktree));
+    index = serviceBlock.end;
+  }
+
+  return result;
+}
+
+function addCiToPackageInstallServices(lines: string[], servicesLine: number) {
+  const result: string[] = [];
+  const serviceIndent = /^\s*/.exec(lines[servicesLine])?.[0].length ?? 0;
+  const childIndent = serviceIndent + 2;
+
+  for (let index = 0; index < lines.length; index += 1) {
+    if (
+      index > servicesLine &&
+      startsNextTopLevelSection(lines[index], serviceIndent)
+    ) {
+      result.push(...lines.slice(index));
+      break;
+    }
+    const serviceBlock = readServiceBlock(lines, index, childIndent);
+    if (!serviceBlock || index <= servicesLine) {
+      result.push(lines[index]);
+      continue;
+    }
+    result.push(...ciServiceBlock(serviceBlock));
     index = serviceBlock.end;
   }
 
@@ -85,6 +117,40 @@ function hostUserServiceBlock(
     '    user: "${BLAME_HOST_UID}:${BLAME_HOST_GID}"',
     ...serviceBody,
   ];
+}
+
+function ciServiceBlock(block: { lines: string[]; end: number }) {
+  if (!runsPackageInstall(block.lines)) return block.lines;
+  if (hasCiEnvironment(block.lines)) return block.lines;
+  const environmentIndex = block.lines.findIndex((line) =>
+    /^\s{4}environment:\s*(?:#.*)?$/.test(line),
+  );
+  if (environmentIndex === -1) {
+    const [serviceLine, ...serviceBody] = block.lines;
+    return [serviceLine, "    environment:", '      CI: "true"', ...serviceBody];
+  }
+  return [
+    ...block.lines.slice(0, environmentIndex + 1),
+    ciEnvironmentLine(block.lines, environmentIndex),
+    ...block.lines.slice(environmentIndex + 1),
+  ];
+}
+
+function runsPackageInstall(lines: string[]) {
+  return /\b(?:pnpm|npm|yarn|bun)\s+(?:install|ci)\b/.test(lines.join("\n"));
+}
+
+function hasCiEnvironment(lines: string[]) {
+  return lines.some((line) => /^\s{6}(?:CI:|-\s*CI=)/.test(line));
+}
+
+function ciEnvironmentLine(lines: string[], environmentIndex: number) {
+  const nextEnvironmentValue = lines
+    .slice(environmentIndex + 1)
+    .find((line) => line.trim() && !line.trim().startsWith("#"));
+  if (nextEnvironmentValue && /^\s{6}-/.test(nextEnvironmentValue))
+    return "      - CI=true";
+  return '      CI: "true"';
 }
 
 function mountsWorktree(lines: string[], worktree: string) {

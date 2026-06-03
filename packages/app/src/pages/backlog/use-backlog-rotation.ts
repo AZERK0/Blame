@@ -4,6 +4,7 @@ import type { AgentEvent } from "@blame/agent-runtime"
 
 import type {
   UserStory,
+  UserStoryAgentActivity,
   UserStoryUpdate,
 } from "@/components/backlog/data/backlog-data"
 import {
@@ -379,24 +380,36 @@ export function useBacklogRotation(
   function queueAgentUpdate(story: UserStory, input: UserStoryUpdate) {
     const pending = pendingAgentUpdates.current.get(story.id)
     if (pending) window.clearTimeout(pending.timer)
-    const update = { ...pending?.input, ...input }
+    const update = pendingAgentUpdate(pending, input)
     const timer = window.setTimeout(() => {
       pendingAgentUpdates.current.delete(story.id)
-      void backlog
-        .update(activeStory(story, storiesRef.current), update)
-        .catch(() => undefined)
+      void persistQueuedAgentUpdate(story, update).catch(() => undefined)
     }, agentEventPersistDelayMs)
-    pendingAgentUpdates.current.set(story.id, { input: update, timer })
+    pendingAgentUpdates.current.set(story.id, { ...update, timer })
   }
 
   function flushAgentUpdate(story: UserStory, input: UserStoryUpdate) {
     const pending = pendingAgentUpdates.current.get(story.id)
     if (pending) window.clearTimeout(pending.timer)
     pendingAgentUpdates.current.delete(story.id)
-    return backlog.update(activeStory(story, storiesRef.current), {
-      ...pending?.input,
-      ...input,
-    })
+    const update = pendingAgentUpdate(pending, input)
+    return persistQueuedAgentUpdate(story, update)
+  }
+
+  async function persistQueuedAgentUpdate(
+    story: UserStory,
+    update: QueuedAgentUpdate
+  ) {
+    let nextStory = activeStory(story, storiesRef.current)
+    for (const activity of update.activities) {
+      nextStory = await backlog.update(activeStory(nextStory, storiesRef.current), {
+        agentActivity: activity,
+      })
+    }
+    const metadata = agentMetadataUpdate(update.input)
+    if (!Object.keys(definedUpdate(metadata)).length) return nextStory
+    nextStory = await backlog.update(activeStory(nextStory, storiesRef.current), metadata)
+    return nextStory
   }
 
   function reportExpiredAuthenticationToken(story: UserStory, message: string) {
@@ -472,8 +485,12 @@ function activeStory(story: UserStory, stories: UserStory[]) {
   return stories.find((currentStory) => currentStory.id === story.id) ?? story
 }
 
-type PendingAgentUpdate = {
+type QueuedAgentUpdate = {
+  activities: UserStoryAgentActivity[]
   input: UserStoryUpdate
+}
+
+type PendingAgentUpdate = QueuedAgentUpdate & {
   timer: number
 }
 
@@ -494,6 +511,33 @@ function definedUpdate(input: UserStoryUpdate) {
   return Object.fromEntries(
     Object.entries(input).filter(([, value]) => value !== undefined)
   )
+}
+
+function pendingAgentUpdate(
+  pending: QueuedAgentUpdate | undefined,
+  input: UserStoryUpdate
+): QueuedAgentUpdate {
+  return {
+    activities: nextAgentActivities(pending?.activities ?? [], input.agentActivity),
+    input: { ...pending?.input, ...input },
+  }
+}
+
+function nextAgentActivities(
+  activities: UserStoryAgentActivity[],
+  activity: UserStoryAgentActivity | null | undefined
+) {
+  if (!activity) return activities
+  const exists = activities.some((item) => item.id === activity.id)
+  if (!exists) return [...activities, activity]
+  return activities.map((item) => (item.id === activity.id ? activity : item))
+}
+
+function agentMetadataUpdate(input: UserStoryUpdate): UserStoryUpdate {
+  const { agentActivities, agentActivity, ...metadata } = input
+  void agentActivities
+  void agentActivity
+  return metadata
 }
 
 function runningStories(stories: UserStory[]) {

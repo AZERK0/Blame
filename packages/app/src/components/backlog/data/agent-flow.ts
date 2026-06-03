@@ -316,13 +316,20 @@ function usageFromUsageEvent(current: UserStoryAgentUsage, event: AgentEvent) {
   const payload = eventPayload(event)
   const payloadUsage = recordValue(payload.usage)
   const usage = Object.keys(payloadUsage).length ? payloadUsage : payload
-  const currentInputTokens = numberValue(usage.inputTokens) ?? current.currentInputTokens ?? 0
-  const currentOutputTokens = numberValue(usage.outputTokens) ?? current.currentOutputTokens ?? 0
+  const aggregateUsage = aggregateUsageEvent(event, payload)
+  const currentInputTokens = aggregateUsage
+    ? current.currentInputTokens ?? 0
+    : numberValue(usage.inputTokens) ?? current.currentInputTokens ?? 0
+  const currentOutputTokens = aggregateUsage
+    ? current.currentOutputTokens ?? 0
+    : numberValue(usage.outputTokens) ?? current.currentOutputTokens ?? 0
   const inputTokens = numberValue(usage.totalInputTokens) ?? numberValue(usage.inputTokens) ?? current.inputTokens
   const outputTokens = numberValue(usage.totalOutputTokens) ?? numberValue(usage.outputTokens) ?? current.outputTokens
   const cacheReadTokens = numberValue(usage.cacheReadTokens) ?? current.cacheReadTokens
   const cacheWriteTokens = numberValue(usage.cacheWriteTokens) ?? current.cacheWriteTokens
-  const currentTotalTokens = numberValue(usage.totalTokens) ?? currentInputTokens + currentOutputTokens
+  const currentTotalTokens = aggregateUsage
+    ? current.currentTotalTokens ?? currentInputTokens + currentOutputTokens
+    : numberValue(usage.totalTokens) ?? currentInputTokens + currentOutputTokens
   const sessionTotalTokens = inputTokens + outputTokens
   const rawTotalTokens = sessionTotalTokens + cacheReadTokens + cacheWriteTokens
   const maxContextTokens = Math.max(current.maxContextTokens, currentInputTokens)
@@ -340,6 +347,12 @@ function usageFromUsageEvent(current: UserStoryAgentUsage, event: AgentEvent) {
     sessionTotalTokens,
     totalCost: numberValue(usage.totalCost) ?? current.totalCost,
   }
+}
+
+function aggregateUsageEvent(event: AgentEvent, payload: Record<string, unknown>) {
+  if (event.type === "done") return true
+  const raw = recordValue(payload.raw)
+  return stringValue(raw.type) === "usage-updated"
 }
 
 function usageChanged(current: UserStoryAgentUsage, next: UserStoryAgentUsage) {

@@ -4,7 +4,7 @@ import {
   type ChildProcessWithoutNullStreams,
 } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import {
   appendFile,
   chmod,
@@ -745,6 +745,7 @@ function storySlug(storyId: number, title: string) {
 
 function setupEnvironment(worktree: string) {
   return {
+    ...worktreeRuntimeEnvironment(worktree),
     ...process.env,
     BLAME_HOST_GID: hostGroupId(),
     BLAME_HOST_UID: hostUserId(),
@@ -758,6 +759,68 @@ function setupEnvironment(worktree: string) {
     npm_config_yes: "true",
     PATH: setupPath(),
   };
+}
+
+function worktreeRuntimeEnvironment(worktree: string) {
+  if (!worktree) return {};
+  const environment: Record<string, string> = {};
+  for (const path of worktreeRuntimeEnvFiles(worktree)) {
+    Object.assign(environment, runtimeEnvValues(path));
+  }
+  return environment;
+}
+
+function worktreeRuntimeEnvFiles(root: string) {
+  const files: string[] = [];
+  collectRuntimeEnvFiles(root, files);
+  return files;
+}
+
+function collectRuntimeEnvFiles(directory: string, files: string[]) {
+  let entries;
+  try {
+    entries = readdirSync(directory, { withFileTypes: true });
+  } catch {
+    return;
+  }
+  for (const entry of entries) {
+    const path = join(directory, entry.name);
+    if (entry.isDirectory()) {
+      if (!ignoredRuntimeEnvDirectory(entry.name))
+        collectRuntimeEnvFiles(path, files);
+      continue;
+    }
+    if (entry.isFile() && runtimeEnvFile(entry.name)) files.push(path);
+  }
+}
+
+function runtimeEnvValues(path: string) {
+  const values: Record<string, string> = {};
+  for (const line of readFileSync(path, "utf8").split("\n")) {
+    const match = /^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/.exec(line);
+    if (match && match[2].trim()) values[match[1]] = match[2];
+  }
+  return values;
+}
+
+function ignoredRuntimeEnvDirectory(name: string) {
+  return [
+    ".git",
+    ".blame",
+    ".blame-worktrees",
+    "build",
+    "coverage",
+    "dist",
+    "node_modules",
+    "out",
+  ].includes(name);
+}
+
+function runtimeEnvFile(name: string) {
+  if (name !== ".env" && !name.startsWith(".env.")) return false;
+  return ![".example", ".sample", ".template"].some((suffix) =>
+    name.endsWith(suffix),
+  );
 }
 
 function setupPath() {

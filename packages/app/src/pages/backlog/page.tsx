@@ -15,6 +15,7 @@ import type {
   BacklogAction,
   BacklogColumnId,
   UserStory,
+  UserStoryAgentActivity,
   UserStoryUpdate,
 } from "@/components/backlog/data/backlog-data"
 import type {
@@ -120,33 +121,45 @@ export function BacklogPage() {
     },
     [backlog]
   )
+  const persistQueuedAgentUpdate = React.useCallback(
+    async (story: UserStory, update: QueuedAgentUpdate) => {
+      let nextStory = activeStory(story, storiesRef.current)
+      for (const activity of update.activities) {
+        nextStory = await updateStory(
+          activeStory(nextStory, storiesRef.current),
+          { agentActivity: activity },
+          { cleanup: false }
+        )
+      }
+      const metadata = agentMetadataUpdate(update.input)
+      if (!Object.keys(definedUpdate(metadata)).length) return nextStory
+      return updateStory(activeStory(nextStory, storiesRef.current), metadata, {
+        cleanup: false,
+      })
+    },
+    [updateStory]
+  )
   const queueAgentUpdate = React.useCallback(
     (story: UserStory, input: UserStoryUpdate) => {
       const pending = pendingAgentUpdates.current.get(story.id)
       if (pending) window.clearTimeout(pending.timer)
-      const update = { ...pending?.input, ...input }
+      const update = pendingAgentUpdate(pending, input)
       const timer = window.setTimeout(() => {
         pendingAgentUpdates.current.delete(story.id)
-        void updateStory(activeStory(story, storiesRef.current), update, {
-          cleanup: false,
-        }).catch(() => undefined)
+        void persistQueuedAgentUpdate(story, update).catch(() => undefined)
       }, agentEventPersistDelayMs)
-      pendingAgentUpdates.current.set(story.id, { input: update, timer })
+      pendingAgentUpdates.current.set(story.id, { ...update, timer })
     },
-    [updateStory]
+    [persistQueuedAgentUpdate]
   )
   const flushAgentUpdate = React.useCallback(
     (story: UserStory, input: UserStoryUpdate) => {
       const pending = pendingAgentUpdates.current.get(story.id)
       if (pending) window.clearTimeout(pending.timer)
       pendingAgentUpdates.current.delete(story.id)
-      return updateStory(
-        activeStory(story, storiesRef.current),
-        { ...pending?.input, ...input },
-        { cleanup: false }
-      )
+      return persistQueuedAgentUpdate(story, pendingAgentUpdate(pending, input))
     },
-    [updateStory]
+    [persistQueuedAgentUpdate]
   )
   const persistAgentUpdate = React.useCallback(
     (story: UserStory, input: UserStoryUpdate, immediate: boolean) => {
@@ -857,8 +870,12 @@ function activeStory(story: UserStory, stories: UserStory[]) {
   return stories.find((currentStory) => currentStory.id === story.id) ?? story
 }
 
-type PendingAgentUpdate = {
+type QueuedAgentUpdate = {
+  activities: UserStoryAgentActivity[]
   input: UserStoryUpdate
+}
+
+type PendingAgentUpdate = QueuedAgentUpdate & {
   timer: number
 }
 
@@ -871,6 +888,33 @@ function definedUpdate(input: UserStoryUpdate) {
   return Object.fromEntries(
     Object.entries(input).filter(([, value]) => value !== undefined)
   )
+}
+
+function pendingAgentUpdate(
+  pending: QueuedAgentUpdate | undefined,
+  input: UserStoryUpdate
+): QueuedAgentUpdate {
+  return {
+    activities: nextAgentActivities(pending?.activities ?? [], input.agentActivity),
+    input: { ...pending?.input, ...input },
+  }
+}
+
+function nextAgentActivities(
+  activities: UserStoryAgentActivity[],
+  activity: UserStoryAgentActivity | null | undefined
+) {
+  if (!activity) return activities
+  const exists = activities.some((item) => item.id === activity.id)
+  if (!exists) return [...activities, activity]
+  return activities.map((item) => (item.id === activity.id ? activity : item))
+}
+
+function agentMetadataUpdate(input: UserStoryUpdate): UserStoryUpdate {
+  const { agentActivities, agentActivity, ...metadata } = input
+  void agentActivities
+  void agentActivity
+  return metadata
 }
 
 function immediateAgentEvent(event: AgentEvent) {

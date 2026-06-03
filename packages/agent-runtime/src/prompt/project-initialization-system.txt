@@ -50,6 +50,7 @@ It must:
 - set `CI=true` for non-interactive containers that run package manager installs
 - avoid concurrent package manager installs that write to the same bind-mounted workspace, `node_modules`, or package manager store
 - prefer existing package scripts and environment variables over adding framework CLI flags unless the scan proves those flags are supported
+- when existing scripts already read `HOST`, `PORT`, `APP_URL`, or equivalent environment variables, set those variables and run the script unchanged instead of appending host or port flags
 - for pnpm in Node containers, use `corepack prepare pnpm@<version> --activate` and `corepack pnpm <command>`
 
 It must never:
