@@ -124,13 +124,13 @@ export type CreateProjectInput = {
   runId: string;
 };
 
-type CommandRecipe = {
+export type CommandRecipe = {
   command: string;
   args: string[];
   cwd: string;
 };
 
-type ProjectCreationRecipe = {
+export type ProjectCreationRecipe = {
   scaffold: CommandRecipe;
   scaffoldTarget: string;
   installs: CommandRecipe[];

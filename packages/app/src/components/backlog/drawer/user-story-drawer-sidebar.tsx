@@ -20,7 +20,7 @@ export function DrawerSidebar({
   userStory?: UserStory
 }) {
   return (
-    <aside className="h-full min-h-full border-l bg-muted/20 p-5">
+    <aside className="p-5">
       <div className="grid gap-5">
         <div className="flex items-start justify-between gap-4">
           <SidebarField label="Model assigned">
@@ -45,10 +45,7 @@ function TokenUsage({ userStory }: { userStory?: UserStory }) {
       <TokenGroup title="Model configuration">
         <TokenStat label="Provider" value={userStory.agentProviderId} />
         <TokenStat label="Model" value={userStory.agentModelId} />
-        <TokenStat
-          label="Context limit"
-          value={formatInteger(contextLimit)}
-        />
+        <TokenStat label="Context limit" value={formatInteger(contextLimit)} />
       </TokenGroup>
       {usageContent(sessionUsage, contextLimit, userStory.agentUsage)}
       <TokenDiagnostics userStory={userStory} />

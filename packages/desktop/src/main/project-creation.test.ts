@@ -7,6 +7,7 @@ import test from "node:test";
 import {
   projectCreationRecipe,
   validateProjectTarget,
+  type ProjectCreationRecipe,
   type NewProjectConfiguration,
 } from "./project-creation.ts";
 import {
@@ -195,3 +196,189 @@ test("builds package-manager specific setup commands", () => {
     /poetry install/
   );
 });
+
+const matrixCases: Array<{
+  name: string;
+  configuration: NewProjectConfiguration;
+  expected: {
+    compose: RegExp[];
+    devDependencies?: string[];
+    dependencies?: string[];
+    overlays?: string[];
+    scaffold: string[];
+    scaffoldIncludes?: string[];
+    setup: RegExp[];
+    target?: string;
+  };
+}> = [
+  {
+    name: "Next.js + Tailwind + shadcn + Next API + PostgreSQL + Prisma + pnpm",
+    configuration: baseConfiguration,
+    expected: {
+      compose: [/3000:3000/, /postgres:17-alpine/, /DATABASE_URL: "postgresql:\/\/blame:blame@database:5432\/blame"/],
+      dependencies: ["@prisma/client", "pg"],
+      devDependencies: ["prisma", "shadcn"],
+      overlays: [".env.example", "README.md", ".blame/preview.json"],
+      scaffold: ["pnpm", "create", "next-app", "matrix-next"],
+      scaffoldIncludes: ["--tailwind", "--eslint", "--use-pnpm"],
+      setup: [/pnpm install/, /npx prisma generate/],
+      target: "/tmp/matrix-next",
+    },
+  },
+  {
+    name: "React Vite + DaisyUI + Hono + SQLite + Drizzle + Biome",
+    configuration: {
+      ...baseConfiguration,
+      backend: "hono",
+      codeQuality: "biome",
+      database: "sqlite",
+      frontend: "react-vite",
+      orm: "drizzle",
+      styling: "tailwind",
+      uiLibrary: "daisyui",
+    },
+    expected: {
+      compose: [/5173:5173/, /api:/, /4000:4000/, /DATABASE_URL: "file:.\/dev.db"/],
+      dependencies: ["better-sqlite3", "daisyui", "drizzle-orm", "hono"],
+      devDependencies: ["@biomejs/biome", "drizzle-kit"],
+      overlays: [".env.example", "README.md", ".blame/preview.json"],
+      scaffold: ["pnpm", "create", "vite", "matrix-react", "--template", "react-ts"],
+      setup: [/pnpm install/, /npx drizzle-kit generate/],
+      target: "/tmp/matrix-react",
+    },
+  },
+  {
+    name: "Nuxt + Nuxt UI + Nitro + PostgreSQL",
+    configuration: {
+      ...baseConfiguration,
+      backend: "nitro",
+      database: "postgresql",
+      frontend: "nuxt",
+      orm: "none",
+      uiLibrary: "nuxt-ui",
+    },
+    expected: {
+      compose: [/3000:3000/, /postgres:17-alpine/],
+      dependencies: ["@nuxt/ui", "pg"],
+      overlays: [".env.example", "README.md", ".blame/preview.json"],
+      scaffold: ["pnpm", "create", "nuxt", "matrix-nuxt"],
+      setup: [/pnpm install/],
+      target: "/tmp/matrix-nuxt",
+    },
+  },
+  {
+    name: "Vue Vite + PrimeVue + FastAPI + PostgreSQL + SQLAlchemy + uv",
+    configuration: {
+      ...baseConfiguration,
+      backend: "fastapi",
+      database: "postgresql",
+      frontend: "vue-vite",
+      orm: "sqlalchemy",
+      packageManager: "uv",
+      uiLibrary: "primevue",
+    },
+    expected: {
+      compose: [/5173:5173/, /api:/, /8000:8000/, /postgres:17-alpine/, /uvicorn api\.main:app/],
+      dependencies: ["pg", "primevue"],
+      overlays: [".env.example", "README.md", ".blame/preview.json", "api/main.py", "pyproject.toml"],
+      scaffold: ["npm", "create", "vite@latest", "matrix-vue", "--template", "vue-ts"],
+      setup: [/npm install/, /pip install uv && uv sync/, /uv run alembic upgrade head/],
+      target: "/tmp/matrix-vue",
+    },
+  },
+  {
+    name: "SvelteKit + shadcn-svelte + SQLite + Drizzle",
+    configuration: {
+      ...baseConfiguration,
+      backend: "none",
+      database: "sqlite",
+      frontend: "sveltekit",
+      orm: "drizzle",
+      uiLibrary: "shadcn-svelte",
+    },
+    expected: {
+      compose: [/5173:5173/, /DATABASE_URL: "file:.\/dev.db"/],
+      dependencies: ["better-sqlite3", "drizzle-orm"],
+      devDependencies: ["drizzle-kit", "shadcn-svelte"],
+      overlays: [".env.example", "README.md", ".blame/preview.json"],
+      scaffold: ["pnpm", "dlx", "sv", "create", "matrix-svelte"],
+      setup: [/pnpm install/, /npx drizzle-kit generate/],
+      target: "/tmp/matrix-svelte",
+    },
+  },
+  {
+    name: "React Vite + no backend + no DB + no ORM",
+    configuration: {
+      ...baseConfiguration,
+      backend: "none",
+      database: "none",
+      frontend: "react-vite",
+      orm: "none",
+      uiLibrary: "none",
+    },
+    expected: {
+      compose: [/5173:5173/],
+      overlays: [".env.example", "README.md", ".blame/preview.json"],
+      scaffold: ["pnpm", "create", "vite", "matrix-empty", "--template", "react-ts"],
+      setup: [/pnpm install/],
+      target: "/tmp/matrix-empty",
+    },
+  },
+];
+
+for (const item of matrixCases) {
+  test(`matrix recipe: ${item.name}`, () => {
+    const recipe = projectCreationRecipe(
+      item.configuration,
+      item.expected.target ?? "/tmp/matrix-project"
+    );
+    const setup = projectSetupRecipe(item.configuration);
+
+    assertScaffold(recipe, item.expected.scaffold);
+    assertScaffoldContains(recipe, item.expected.scaffoldIncludes ?? []);
+    assertPackages(recipe, item.expected.dependencies ?? [], false);
+    assertPackages(recipe, item.expected.devDependencies ?? [], true);
+    assertOverlays(recipe, item.expected.overlays ?? []);
+    for (const pattern of item.expected.setup) assert.match(setup.setupScript, pattern);
+    for (const pattern of item.expected.compose) assert.match(setup.dockerCompose, pattern);
+  });
+}
+
+test("matrix recipe: npm-safe scaffold target keeps final path for uppercase names", () => {
+  const recipe = projectCreationRecipe(baseConfiguration, "/tmp/BlameMatrix");
+
+  assert.equal(recipe.scaffoldTarget, "/tmp/blame-matrix");
+  assertScaffold(recipe, ["pnpm", "create", "next-app", "blame-matrix"]);
+});
+
+function assertScaffold(recipe: ProjectCreationRecipe, expected: string[]) {
+  assert.deepEqual([recipe.scaffold.command, ...recipe.scaffold.args].slice(0, expected.length), expected);
+}
+
+function assertScaffoldContains(
+  recipe: ProjectCreationRecipe,
+  expectedItems: string[]
+) {
+  const command = [recipe.scaffold.command, ...recipe.scaffold.args];
+  for (const item of expectedItems) {
+    assert.equal(command.includes(item), true, `${item} should be in scaffold command`);
+  }
+}
+
+function assertPackages(
+  recipe: ProjectCreationRecipe,
+  expectedPackages: string[],
+  dev: boolean
+) {
+  const args = recipe.installs.flatMap((install) => install.args);
+  for (const packageName of expectedPackages) {
+    assert.equal(args.includes(packageName), true, `${packageName} should be installed${dev ? " as dev dependency" : ""}`);
+  }
+}
+
+function assertOverlays(recipe: ProjectCreationRecipe, expectedPaths: string[]) {
+  const paths = recipe.overlays.map((overlay) => overlay.path);
+  for (const path of expectedPaths) {
+    assert.equal(paths.some((overlayPath) => overlayPath.endsWith(path)), true, `${path} overlay should exist`);
+  }
+}

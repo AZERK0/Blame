@@ -398,9 +398,11 @@ function DrawerBody({
           {children}
         </div>
       </ScrollArea>
-      <ScrollArea className="h-full min-h-0 [&_[data-slot=scroll-area-viewport]]:h-full [&_[data-slot=scroll-area-viewport]>aside]:min-h-full">
-        <DrawerSidebar status={status} userStory={userStory} />
-      </ScrollArea>
+      <div className="h-full min-h-0 overflow-hidden border-l bg-muted/20">
+        <ScrollArea className="h-full min-h-0">
+          <DrawerSidebar status={status} userStory={userStory} />
+        </ScrollArea>
+      </div>
     </div>
   )
 }
