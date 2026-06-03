@@ -177,7 +177,10 @@ export function useNewProjectWizard(input: {
         projectName,
         runId,
       })
-      await projects.openProject(result.path)
+      await projects.openGeneratedProject(result.path, {
+        dockerCompose: result.dockerCompose,
+        setupScript: result.setupScript,
+      })
       setOpen(false)
       toast.success("Project created", {
         description: `${projectName.trim()} is ready in Blame.`,

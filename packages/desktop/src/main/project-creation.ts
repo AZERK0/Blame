@@ -170,7 +170,11 @@ export async function createProject(input: CreateProjectInput) {
   }
 
   emit({ type: "exit", data: "0" });
-  return { path: target };
+  return {
+    dockerCompose: initializationDockerCompose(input.configuration),
+    path: target,
+    setupScript: initializationSetupScript(input.configuration),
+  };
 }
 
 export async function validateProjectTarget(
@@ -597,6 +601,42 @@ function dockerCompose(configuration: NewProjectConfiguration) {
 
   if (database) services.push(...database);
   return `${services.join("\n")}\n`;
+}
+
+export function initializationSetupScript(configuration: NewProjectConfiguration) {
+  const packageManager = nodePackageManager(configuration.packageManager);
+  return [
+    "#!/usr/bin/env bash",
+    "set -euo pipefail",
+    "corepack enable || true",
+    `${packageManager} install`,
+    "",
+  ].join("\n");
+}
+
+export function initializationDockerCompose(configuration: NewProjectConfiguration) {
+  const packageManager = nodePackageManager(configuration.packageManager);
+  const port = configuration.frontend === "next" || configuration.frontend === "nuxt" ? 3000 : 5173;
+  const command = `${packageManager} install && ${packageManager} run dev -- ${devHostArgs(configuration.frontend)}`;
+  return [
+    "services:",
+    "  app:",
+    "    image: node:22-alpine",
+    "    working_dir: /workspace",
+    `    command: sh -lc "corepack enable && ${command}"`,
+    "    volumes:",
+    "      - .:/workspace",
+    "    ports:",
+    `      - \"${port}:${port}\"`,
+    "    labels:",
+    "      blame.preview: \"true\"",
+    "",
+  ].join("\n");
+}
+
+function devHostArgs(frontend: FrontendFramework) {
+  if (frontend === "next") return "-H 0.0.0.0"
+  return "--host 0.0.0.0"
 }
 
 function databaseService(database: DatabaseOption) {

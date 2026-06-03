@@ -5,6 +5,8 @@ import { join } from "node:path";
 import test from "node:test";
 
 import {
+  initializationDockerCompose,
+  initializationSetupScript,
   projectCreationRecipe,
   validateProjectTarget,
   type NewProjectConfiguration,
@@ -114,4 +116,23 @@ test("maps advanced options to generated files", () => {
       "/tmp/full-app/docker-compose.yml",
     ]
   );
+});
+
+test("builds Blame initialization defaults without AI analysis", () => {
+  assert.match(initializationSetupScript(baseConfiguration), /pnpm install/);
+  assert.match(
+    initializationDockerCompose(baseConfiguration),
+    /blame\.preview: "true"/
+  );
+  assert.match(initializationDockerCompose(baseConfiguration), /-H 0\.0\.0\.0/);
+});
+
+test("builds Vite preview host arguments for Blame initialization", () => {
+  const compose = initializationDockerCompose({
+    ...baseConfiguration,
+    frontend: "react-vite",
+  });
+
+  assert.match(compose, /--host 0\.0\.0\.0/);
+  assert.match(compose, /5173:5173/);
 });

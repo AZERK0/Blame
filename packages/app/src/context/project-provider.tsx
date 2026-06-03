@@ -2,7 +2,10 @@ import * as React from "react"
 
 import { useCloudAuth } from "@/context/cloud-auth"
 import { usePlatform } from "@/context/platform"
-import { ProjectContext } from "@/context/projects"
+import {
+  ProjectContext,
+  type GeneratedProjectInitialization,
+} from "@/context/projects"
 import { createCloudApi } from "@/lib/cloud-api"
 import { createProject, type Project } from "@/lib/projects"
 
@@ -51,6 +54,24 @@ function useProjectState(
     [auth, platform]
   )
 
+  const openGeneratedProject = React.useCallback(
+    async (path: string, initialization: GeneratedProjectInitialization) => {
+      setOpening(true)
+      try {
+        const project = await resolveProject(path, auth, platform)
+        await completeGeneratedProjectInitialization(
+          auth,
+          project.id,
+          initialization
+        )
+        setState((current) => openProjectState(current, project))
+      } finally {
+        setOpening(false)
+      }
+    },
+    [auth, platform]
+  )
+
   const chooseProject = React.useCallback(async () => {
     const result = await platform.openDirectoryPickerDialog?.({
       title: "Open Project",
@@ -71,18 +92,49 @@ function useProjectState(
       ),
       opening,
       openProject,
+      openGeneratedProject,
       chooseProject,
       removeRecentProject,
     }),
     [
       activeProject,
       chooseProject,
+      openGeneratedProject,
       openProject,
       opening,
       removeRecentProject,
       state.recent,
     ]
   )
+}
+
+async function completeGeneratedProjectInitialization(
+  auth: ReturnType<typeof useCloudAuth>,
+  projectId: string,
+  initialization: GeneratedProjectInitialization
+) {
+  if (auth.status !== "authenticated") return
+  await createCloudApi(auth.apiConnection).completeProjectInitialization(
+    projectId,
+    {
+      setupScript: initialization.setupScript,
+      dockerCompose: initialization.dockerCompose,
+      practices: generatedProjectPractices(),
+    }
+  )
+}
+
+function generatedProjectPractices() {
+  return [
+    practice("coding_style", "Blame generated this project with the standard coding style baseline."),
+    practice("unit_tests", "Blame generated this project with the standard testing baseline."),
+    practice("layered_architecture", "Blame generated this project with the standard project architecture baseline."),
+    practice("commit_message_convention", "Blame generated this project with the standard commit convention baseline."),
+  ]
+}
+
+function practice(practice: string, comment: string) {
+  return { practice, detected: true, comment }
 }
 
 async function resolveProject(

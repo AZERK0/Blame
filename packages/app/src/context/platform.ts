@@ -216,7 +216,11 @@ export type WorkspaceClient = {
     parentPath: string
     projectName: string
     runId: string
-  }): Promise<{ path: string }>
+  }): Promise<{
+    dockerCompose: string
+    path: string
+    setupScript: string
+  }>
   createWorktree(input: {
     repositoryRoot: string
     storyId: number

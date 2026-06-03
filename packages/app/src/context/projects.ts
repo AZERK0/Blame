@@ -2,11 +2,20 @@ import * as React from "react"
 
 import type { Project } from "@/lib/projects"
 
+export type GeneratedProjectInitialization = {
+  setupScript: string
+  dockerCompose: string
+}
+
 export type ProjectContextValue = {
   activeProject?: Project
   recentProjects: Project[]
   opening: boolean
   openProject(path: string): Promise<void>
+  openGeneratedProject(
+    path: string,
+    initialization: GeneratedProjectInitialization
+  ): Promise<void>
   chooseProject(): Promise<void>
   removeRecentProject(path: string): void
 }

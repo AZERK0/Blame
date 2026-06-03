@@ -146,7 +146,11 @@ export type BlameDesktopApi = {
     gitDiff(input: { root: string }): Promise<string>;
     gitRepositoryFingerprint(input: { root: string }): Promise<string | null>;
     ensureGitRepository(input: { root: string }): Promise<boolean>;
-    createProject(input: CreateProjectInput): Promise<{ path: string }>;
+    createProject(input: CreateProjectInput): Promise<{
+      dockerCompose: string;
+      path: string;
+      setupScript: string;
+    }>;
     createWorktree(input: {
       repositoryRoot: string;
       storyId: number;
