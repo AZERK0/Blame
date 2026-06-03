@@ -18,6 +18,7 @@ import type {
   StartDevelopmentSessionInput,
   StartSessionInput,
 } from "@blame/agent-runtime"
+import type { NewProjectConfiguration } from "../components/new-project/new-project-options"
 
 export type ApiConnection = AgentApiConnection
 
@@ -139,6 +140,11 @@ export type ProjectSetupEvent = {
   data: string
 }
 
+export type ProjectCreationEvent = {
+  type: "stdout" | "stderr" | "exit"
+  data: string
+}
+
 export type HostDependencyIssue = {
   action: string
   message: string
@@ -205,6 +211,12 @@ export type WorkspaceClient = {
   gitDiff(input: { root: string }): Promise<string>
   gitRepositoryFingerprint(input: { root: string }): Promise<string | null>
   ensureGitRepository(input: { root: string }): Promise<boolean>
+  createProject(input: {
+    configuration: NewProjectConfiguration
+    parentPath: string
+    projectName: string
+    runId: string
+  }): Promise<{ path: string }>
   createWorktree(input: {
     repositoryRoot: string
     storyId: number
@@ -229,6 +241,10 @@ export type WorkspaceClient = {
   onSetupEvent(
     runId: string,
     callback: (event: ProjectSetupEvent) => void
+  ): () => void
+  onProjectCreationEvent?(
+    runId: string,
+    callback: (event: ProjectCreationEvent) => void
   ): () => void
 }
 

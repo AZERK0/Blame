@@ -126,7 +126,10 @@ export function promptMetadata(prompt: string) {
 }
 
 export function appendProductionConfig<T extends CoreSessionConfig>(config: T): T {
-  const configWithLimits = config as T & { maxConsecutiveMistakes?: number }
+  const configWithLimits = config as T & {
+    maxConsecutiveMistakes?: number
+    maxParallelToolCalls?: number
+  }
   return {
     ...config,
     execution: {
@@ -135,7 +138,7 @@ export function appendProductionConfig<T extends CoreSessionConfig>(config: T): 
       maxConsecutiveMistakes: config.execution?.maxConsecutiveMistakes ?? 3,
     },
     maxConsecutiveMistakes: configWithLimits.maxConsecutiveMistakes ?? 3,
-    maxParallelToolCalls: config.maxParallelToolCalls ?? loadProductionConfig().maxParallelToolCalls,
+    maxParallelToolCalls: configWithLimits.maxParallelToolCalls ?? loadProductionConfig().maxParallelToolCalls,
   }
 }
 

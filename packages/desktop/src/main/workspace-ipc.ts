@@ -30,6 +30,11 @@ import {
   assertHostDependencies,
   checkHostDependencies,
 } from "./host-dependencies";
+import {
+  createProject,
+  setProjectCreationWindowsProvider,
+  type CreateProjectInput,
+} from "./project-creation";
 import { dockerComposeForPreview } from "./workspace-compose";
 import { copyProjectEnvFiles } from "./workspace-env";
 
@@ -117,6 +122,7 @@ const removedWorktrees = new Set<string>();
 const workspaceProcesses = new Set<ChildProcessWithoutNullStreams>();
 
 export function registerWorkspaceIpcHandlers() {
+  setProjectCreationWindowsProvider(() => BrowserWindow.getAllWindows());
   ipcMain.handle(
     "workspace:list-directory",
     (_event, input: WorkspacePathInput) => listDirectory(input),
@@ -138,6 +144,10 @@ export function registerWorkspaceIpcHandlers() {
   ipcMain.handle(
     "workspace:ensure-git-repository",
     (_event, input: { root: string }) => ensureGitRepository(input.root),
+  );
+  ipcMain.handle(
+    "workspace:create-project",
+    (_event, input: CreateProjectInput) => createProject(input),
   );
   ipcMain.handle(
     "workspace:create-worktree",

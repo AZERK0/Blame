@@ -18,6 +18,7 @@ import type {
   StartSessionInput,
 } from "@blame/agent-runtime";
 import type { HostDependencyReport } from "../main/host-dependencies";
+import type { CreateProjectInput } from "../main/project-creation";
 
 export type OpenDirectoryPickerOptions = {
   title?: string;
@@ -37,6 +38,11 @@ export type WorktreeResult = {
 
 export type ProjectSetupEvent = {
   runId: string;
+  type: "stdout" | "stderr" | "exit";
+  data: string;
+};
+
+export type ProjectCreationEvent = {
   type: "stdout" | "stderr" | "exit";
   data: string;
 };
@@ -140,6 +146,7 @@ export type BlameDesktopApi = {
     gitDiff(input: { root: string }): Promise<string>;
     gitRepositoryFingerprint(input: { root: string }): Promise<string | null>;
     ensureGitRepository(input: { root: string }): Promise<boolean>;
+    createProject(input: CreateProjectInput): Promise<{ path: string }>;
     createWorktree(input: {
       repositoryRoot: string;
       storyId: number;
@@ -168,6 +175,10 @@ export type BlameDesktopApi = {
     onSetupEvent(
       runId: string,
       callback: (event: ProjectSetupEvent) => void,
+    ): () => void;
+    onProjectCreationEvent(
+      runId: string,
+      callback: (event: ProjectCreationEvent) => void,
     ): () => void;
   };
   terminal: {

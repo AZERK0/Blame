@@ -62,6 +62,8 @@ const api: BlameDesktopApi = {
       ipcRenderer.invoke("workspace:git-repository-fingerprint", input),
     ensureGitRepository: (input) =>
       ipcRenderer.invoke("workspace:ensure-git-repository", input),
+    createProject: (input) =>
+      ipcRenderer.invoke("workspace:create-project", input),
     createWorktree: (input) =>
       ipcRenderer.invoke("workspace:create-worktree", input),
     checkHostDependencies: (input) =>
@@ -78,6 +80,15 @@ const api: BlameDesktopApi = {
       ipcRenderer.invoke("workspace:ensure-project-preview-url", input),
     onSetupEvent: (runId, callback) => {
       const channel = `workspace:setup:event:${runId}`;
+      const handler = (
+        _event: unknown,
+        event: Parameters<typeof callback>[0],
+      ) => callback(event);
+      ipcRenderer.on(channel, handler);
+      return () => ipcRenderer.removeListener(channel, handler);
+    },
+    onProjectCreationEvent: (runId, callback) => {
+      const channel = `workspace:project-creation:event:${runId}`;
       const handler = (
         _event: unknown,
         event: Parameters<typeof callback>[0],

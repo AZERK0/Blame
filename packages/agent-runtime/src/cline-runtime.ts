@@ -409,8 +409,12 @@ export class BlameAgentRuntime {
         source: "blame-project-initialization",
         toolPolicies: initializationToolPolicies(),
       })
-      const text = session.result?.text
-      if (!text) throw new Error("Project initialization agent did not return a result")
+      const text = agentResultText(session.result)
+      if (!text) {
+        throw new Error(
+          resultFailureMessage(session.result) ?? "Project initialization agent did not return a result"
+        )
+      }
       try {
         return {
           sessionId: session.sessionId,
@@ -1187,6 +1191,11 @@ async function fallbackCommitMessage(input: ApproveAndMergeInput) {
 function commitMessageFromAgentResult(result: unknown) {
   const payload = asRecord(result)
   return firstTextLine(payload.text) ?? firstTextLine(payload.outputText) ?? firstTextLine(payload.message)
+}
+
+function agentResultText(result: unknown) {
+  const payload = asRecord(result)
+  return stringValue(payload.text) ?? stringValue(payload.outputText) ?? stringValue(payload.message)
 }
 
 function standardCommitMessageAllowed(input: ApproveAndMergeInput, message: string | undefined) {

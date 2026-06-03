@@ -10,6 +10,7 @@ import {
   CommandShortcut,
 } from "@/components/ui/command"
 import { Button } from "@/components/ui/button"
+import { NewProjectDialog } from "@/components/new-project/new-project-dialog"
 import {
   Popover,
   PopoverContent,
@@ -30,9 +31,15 @@ import {
 export function ProjectSelector() {
   const projects = useProjects()
   const [open, setOpen] = React.useState(false)
+  const [newProjectOpen, setNewProjectOpen] = React.useState(false)
 
   async function openProject() {
     await projects.chooseProject()
+    setOpen(false)
+  }
+
+  function openNewProject() {
+    setNewProjectOpen(true)
     setOpen(false)
   }
 
@@ -46,25 +53,32 @@ export function ProjectSelector() {
   }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <SidebarMenuButton
-          className="h-9 justify-between px-1.5 data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-          tooltip={projects.activeProject?.name ?? "Open Project"}
-        >
-          <ProjectTrigger project={projects.activeProject} />
-          <ChevronDownIcon className="ml-auto size-4 text-muted-foreground" />
-        </SidebarMenuButton>
-      </PopoverTrigger>
-      <ProjectSelectorContent
-        activeProject={projects.activeProject}
-        recentProjects={projects.recentProjects}
-        opening={projects.opening}
-        onOpenProject={openProject}
-        onSelectProject={selectProject}
-        onRemoveRecentProject={removeRecentProject}
+    <>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <SidebarMenuButton
+            className="h-9 justify-between px-1.5 data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+            tooltip={projects.activeProject?.name ?? "Open Project"}
+          >
+            <ProjectTrigger project={projects.activeProject} />
+            <ChevronDownIcon className="ml-auto size-4 text-muted-foreground" />
+          </SidebarMenuButton>
+        </PopoverTrigger>
+        <ProjectSelectorContent
+          activeProject={projects.activeProject}
+          recentProjects={projects.recentProjects}
+          opening={projects.opening}
+          onNewProject={openNewProject}
+          onOpenProject={openProject}
+          onSelectProject={selectProject}
+          onRemoveRecentProject={removeRecentProject}
+        />
+      </Popover>
+      <NewProjectDialog
+        open={newProjectOpen}
+        onOpenChange={setNewProjectOpen}
       />
-    </Popover>
+    </>
   )
 }
 
@@ -90,6 +104,7 @@ function ProjectSelectorContent({
   activeProject,
   recentProjects,
   opening,
+  onNewProject,
   onOpenProject,
   onSelectProject,
   onRemoveRecentProject,
@@ -97,6 +112,7 @@ function ProjectSelectorContent({
   activeProject?: Project
   recentProjects: Project[]
   opening: boolean
+  onNewProject: () => void
   onOpenProject: () => Promise<void>
   onSelectProject: (path: string) => void
   onRemoveRecentProject: (path: string) => void
@@ -105,7 +121,11 @@ function ProjectSelectorContent({
     <PopoverContent align="start" className="w-80 p-1">
       <Command>
         <CommandList>
-          <ProjectActions opening={opening} onOpenProject={onOpenProject} />
+          <ProjectActions
+            opening={opening}
+            onNewProject={onNewProject}
+            onOpenProject={onOpenProject}
+          />
           {activeProject && (
             <>
               <CommandSeparator />
@@ -131,14 +151,16 @@ function ProjectSelectorContent({
 
 function ProjectActions({
   opening,
+  onNewProject,
   onOpenProject,
 }: {
   opening: boolean
+  onNewProject: () => void
   onOpenProject: () => Promise<void>
 }) {
   return (
     <CommandGroup>
-      <CommandItem>
+      <CommandItem onSelect={onNewProject}>
         <PlusIcon />
         <span>New Project...</span>
       </CommandItem>
