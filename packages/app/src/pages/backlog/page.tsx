@@ -85,18 +85,22 @@ export function BacklogPage() {
       input: UserStoryUpdate,
       options: { cleanup?: boolean } = {}
     ) => {
+      const currentStory = activeStory(story, storiesRef.current)
       const cleanup =
         options.cleanup === false
           ? {}
           : await inactiveStoryCleanup(
-              story,
+              currentStory,
               input,
               platform,
               projects.activeProject?.path
             )
-      const nextStory = await backlog.update(story, { ...input, ...cleanup })
+      const nextStory = await backlog.update(currentStory, {
+        ...input,
+        ...cleanup,
+      })
       setDrawerTarget((current) =>
-        current?.userStory?.id === story.id
+        current?.userStory?.id === currentStory.id
           ? { ...current, userStory: nextStory }
           : current
       )
