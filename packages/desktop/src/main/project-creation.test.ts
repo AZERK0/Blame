@@ -5,12 +5,15 @@ import { join } from "node:path";
 import test from "node:test";
 
 import {
-  initializationDockerCompose,
-  initializationSetupScript,
   projectCreationRecipe,
   validateProjectTarget,
   type NewProjectConfiguration,
 } from "./project-creation.ts";
+import {
+  dockerCompose,
+  projectSetupRecipe,
+  setupScript,
+} from "./project-setup-recipes.ts";
 
 const baseConfiguration: NewProjectConfiguration = {
   platform: "web",
@@ -119,20 +122,76 @@ test("maps advanced options to generated files", () => {
 });
 
 test("builds Blame initialization defaults without AI analysis", () => {
-  assert.match(initializationSetupScript(baseConfiguration), /pnpm install/);
-  assert.match(
-    initializationDockerCompose(baseConfiguration),
-    /blame\.preview: "true"/
-  );
-  assert.match(initializationDockerCompose(baseConfiguration), /-H 0\.0\.0\.0/);
+  assert.match(setupScript(baseConfiguration), /pnpm install/);
+  assert.match(dockerCompose(baseConfiguration), /blame\.preview: "true"/);
+  assert.match(dockerCompose(baseConfiguration), /-H 0\.0\.0\.0/);
 });
 
 test("builds Vite preview host arguments for Blame initialization", () => {
-  const compose = initializationDockerCompose({
+  const compose = dockerCompose({
     ...baseConfiguration,
     frontend: "react-vite",
   });
 
   assert.match(compose, /--host 0\.0\.0\.0/);
   assert.match(compose, /5173:5173/);
+});
+
+test("builds database services for SQL and document databases", () => {
+  assert.match(dockerCompose(baseConfiguration), /image: postgres:17-alpine/);
+  assert.match(
+    dockerCompose({ ...baseConfiguration, database: "mysql" }),
+    /image: mysql:9/
+  );
+  assert.match(
+    dockerCompose({ ...baseConfiguration, database: "mongodb", orm: "none" }),
+    /image: mongo:8/
+  );
+});
+
+test("builds FastAPI service with Python package manager setup", () => {
+  const configuration: NewProjectConfiguration = {
+    ...baseConfiguration,
+    backend: "fastapi",
+    frontend: "vue-vite",
+    orm: "sqlalchemy",
+    packageManager: "uv",
+  };
+  const recipe = projectSetupRecipe(configuration);
+
+  assert.match(recipe.setupScript, /pip install uv && uv sync/);
+  assert.match(recipe.setupScript, /uv run alembic upgrade head/);
+  assert.match(recipe.dockerCompose, /api:/);
+  assert.match(recipe.dockerCompose, /uvicorn api\.main:app/);
+  assert.match(recipe.dockerCompose, /NEXT_PUBLIC_API_URL|VITE_API_URL/);
+});
+
+test("builds Node API services for Hono Fastify and NestJS", () => {
+  for (const backend of ["hono", "fastify", "nest"] as const) {
+    const compose = dockerCompose({
+      ...baseConfiguration,
+      backend,
+      frontend: "react-vite",
+    });
+
+    assert.match(compose, /api:/);
+    assert.match(compose, /4000:4000/);
+    assert.match(compose, /dev:api/);
+    assert.match(compose, /VITE_API_URL: "http:\/\/localhost:4000"/);
+  }
+});
+
+test("builds package-manager specific setup commands", () => {
+  assert.match(
+    setupScript({ ...baseConfiguration, packageManager: "npm" }),
+    /npm install/
+  );
+  assert.match(
+    setupScript({ ...baseConfiguration, packageManager: "bun" }),
+    /bun install/
+  );
+  assert.match(
+    setupScript({ ...baseConfiguration, backend: "fastapi", packageManager: "poetry" }),
+    /poetry install/
+  );
 });
