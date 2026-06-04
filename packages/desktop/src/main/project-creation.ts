@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
 import {
   mkdir,
@@ -8,7 +9,10 @@ import {
   writeFile,
 } from "node:fs/promises";
 import { basename, join, relative, resolve } from "node:path";
+import { promisify } from "node:util";
 import { projectSetupRecipe } from "./project-setup-recipes.ts";
+
+const execFileAsync = promisify(execFile);
 
 export type ProjectPlatform =
   | "web"
@@ -164,12 +168,13 @@ export async function createProject(input: CreateProjectInput) {
   emit({ type: "stdout", data: `Creating ${basename(target)}...\n` });
   await runCommand(recipe.scaffold, emit);
   await renameScaffoldTarget(recipe.scaffoldTarget, target);
-  await applyProjectOverlays(target, recipe.overlays);
+  await applyProjectOverlays(target, recipe.overlays, input.configuration);
 
   for (const install of recipe.installs) {
     await runCommand(install, emit);
   }
 
+  await initializeGeneratedRepository(target, emit);
   const setupRecipe = projectSetupRecipe(input.configuration);
   emit({ type: "exit", data: "0" });
   return {
@@ -177,6 +182,39 @@ export async function createProject(input: CreateProjectInput) {
     path: target,
     setupScript: setupRecipe.setupScript,
   };
+}
+
+export async function initializeGeneratedRepository(
+  target: string,
+  emit: (event: ProjectCreationEvent) => void = () => undefined
+) {
+  emit({ type: "stdout", data: "$ git init\n" });
+  await execFileAsync("git", ["init"], { cwd: target });
+  await execFileAsync("git", ["add", "--all"], { cwd: target });
+  const changed = await hasStagedChanges(target);
+  if (!changed) return;
+  await execFileAsync(
+    "git",
+    [
+      "-c",
+      "user.name=Blame",
+      "-c",
+      "user.email=blame@example.local",
+      "commit",
+      "-m",
+      "chore: initialize project",
+    ],
+    { cwd: target },
+  );
+}
+
+async function hasStagedChanges(target: string) {
+  try {
+    await execFileAsync("git", ["diff", "--cached", "--quiet"], { cwd: target });
+    return false;
+  } catch {
+    return true;
+  }
 }
 
 export async function validateProjectTarget(
@@ -456,11 +494,12 @@ function projectOverlays(
   return overlays;
 }
 
-async function applyProjectOverlays(
+export async function applyProjectOverlays(
   target: string,
-  overlays: Array<{ path: string; content: string }>
+  overlays: Array<{ path: string; content: string }>,
+  configuration: NewProjectConfiguration
 ) {
-  await updatePackageJson(target);
+  await updatePackageJson(target, configuration);
 
   for (const overlay of overlays) {
     await mkdir(resolve(overlay.path, ".."), { recursive: true });
@@ -479,7 +518,10 @@ async function renameScaffoldTarget(scaffoldTarget: string, target: string) {
   await rename(scaffoldTarget, target);
 }
 
-async function updatePackageJson(target: string) {
+async function updatePackageJson(
+  target: string,
+  configuration: NewProjectConfiguration
+) {
   const path = join(target, "package.json");
   if (!existsSync(path)) return;
   const parsed = JSON.parse(await readFile(path, "utf8"));
@@ -490,6 +532,7 @@ async function updatePackageJson(target: string) {
     test: parsed.scripts?.test ?? "vitest run",
     ...parsed.scripts,
   };
+  parsed.packageManager = packageManagerVersion(configuration.packageManager);
   await writeFile(path, `${JSON.stringify(parsed, null, 2)}\n`, "utf8");
 }
 
@@ -544,6 +587,14 @@ function nodePackageManager(packageManager: PackageManager) {
   return "npm";
 }
 
+function packageManagerVersion(packageManager: PackageManager) {
+  if (packageManager === "pnpm") return "pnpm@10.33.2";
+  if (packageManager === "npm") return "npm@11.6.4";
+  if (packageManager === "yarn") return "yarn@1.22.22";
+  if (packageManager === "bun") return "bun@1.3.4";
+  return "npm@11.6.4";
+}
+
 function scaffoldProjectName(target: string) {
   const name = basename(target);
   return name
@@ -579,7 +630,7 @@ function readme(configuration: NewProjectConfiguration, target: string) {
 function dockerfile(configuration: NewProjectConfiguration) {
   const packageManager = nodePackageManager(configuration.packageManager);
   return [
-    "FROM node:22-alpine",
+    "FROM node:22-bookworm-slim",
     "WORKDIR /app",
     "COPY package.json ./",
     `RUN corepack enable && ${packageManager} install`,
@@ -596,9 +647,10 @@ function dockerCompose(configuration: NewProjectConfiguration) {
     "  app:",
     "    build: .",
     "    ports:",
-    "      - \"3000:3000\"",
+    "      - \"3000\"",
     "    labels:",
     "      blame.preview: \"true\"",
+    "      blame.preview.port: \"3000\"",
   ];
 
   if (database) services.push(...database);

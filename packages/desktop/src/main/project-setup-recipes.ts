@@ -13,6 +13,12 @@ export type ProjectSetupRecipe = {
 };
 
 type RuntimePlan = {
+  containerCorepackCommand: string;
+  containerDevCommand: string;
+  containerInstallCommand: string;
+  containerInstallIfNeededCommand: string;
+  hostBootstrapCommands: string[];
+  nodeImage: string;
   packageManager: string;
   installCommand: string;
   devCommand: string;
@@ -27,6 +33,7 @@ type ServiceSpec = {
   environment?: Record<string, string>;
   labels?: Record<string, string>;
   ports?: string[];
+  user?: string;
   volumes?: string[];
   workingDir?: string;
 };
@@ -54,7 +61,11 @@ export function setupScript(
   return [
     "#!/usr/bin/env bash",
     "set -euo pipefail",
-    "corepack enable || true",
+    ...hostToolChecks(configuration),
+    `export COMPOSE_PROJECT_NAME="\${COMPOSE_PROJECT_NAME:-blame_$(pwd | cksum | awk '{print $1}')}"`,
+    ...setupEnvironmentExports(configuration),
+    ...envFileSetupCommands(),
+    ...runtime.hostBootstrapCommands,
     runtime.installCommand,
     ...backendSetupCommands(configuration),
     ...ormSetupCommands(configuration),
@@ -76,8 +87,14 @@ export function dockerCompose(
 export function runtimePlan(configuration: NewProjectConfiguration): RuntimePlan {
   const packageManager = nodePackageManager(configuration.packageManager);
   return {
+    containerCorepackCommand: containerCorepackCommand(configuration.packageManager),
+    containerDevCommand: containerDevCommand(configuration.frontend),
+    containerInstallCommand: `${containerPackageCommand(configuration.packageManager)} install`,
+    containerInstallIfNeededCommand: containerInstallIfNeededCommand(configuration.packageManager),
+    hostBootstrapCommands: hostBootstrapCommands(configuration.packageManager),
+    nodeImage: nodeImage(configuration.packageManager),
     packageManager,
-    installCommand: `${packageManager} install`,
+    installCommand: hostInstallCommand(configuration.packageManager, packageManager),
     devCommand: `${packageManager} run dev -- ${devHostArgs(configuration.frontend)}`,
     previewPort: previewPort(configuration.frontend),
   };
@@ -89,16 +106,19 @@ function nodeAppService(
 ): ServiceSpec {
   return {
     name: "app",
-    image: "node:22-alpine",
+    image: runtime.nodeImage,
+    user: "${BLAME_HOST_UID}:${BLAME_HOST_GID}",
     workingDir: "/workspace",
-    command: `sh -lc "corepack enable && ${runtime.installCommand} && ${runtime.devCommand}"`,
-    volumes: [".:/workspace"],
-    ports: [`${runtime.previewPort}:${runtime.previewPort}`],
+    command: `sh -lc "${runtime.containerCorepackCommand} && ${runtime.containerInstallIfNeededCommand} && ${runtime.containerDevCommand}"`,
+    volumes: ["${BLAME_PROJECT_ROOT}:/workspace"],
+    ports: [`127.0.0.1::${runtime.previewPort}`],
     environment: nodeEnvironment(configuration),
     dependsOn: serviceDependencies(configuration),
     labels: {
       "blame.preview": "true",
       "blame.preview.port": String(runtime.previewPort),
+      "blame.preview.protocol": "http",
+      "blame.preview.path": "/",
     },
   };
 }
@@ -108,11 +128,11 @@ function backendServices(configuration: NewProjectConfiguration): ServiceSpec[] 
     return [
       {
         name: "api",
-        image: "node:22-alpine",
+        image: runtimePlan(configuration).nodeImage,
+        user: "${BLAME_HOST_UID}:${BLAME_HOST_GID}",
         workingDir: "/workspace",
-        command: `sh -lc "corepack enable && ${nodePackageManager(configuration.packageManager)} install && ${nodeApiCommand(configuration.backend)}"`,
-        volumes: [".:/workspace"],
-        ports: ["4000:4000"],
+        command: `sh -lc "${containerCorepackCommand(configuration.packageManager)} && ${containerWaitForNodeModulesCommand()} && ${nodeApiCommand(configuration.backend, configuration.packageManager)}"`,
+        volumes: ["${BLAME_PROJECT_ROOT}:/workspace"],
         environment: nodeApiEnvironment(configuration),
         dependsOn: databaseDependency(configuration.database),
       },
@@ -124,11 +144,11 @@ function backendServices(configuration: NewProjectConfiguration): ServiceSpec[] 
   return [
     {
       name: "api",
-      image: "python:3.13-alpine",
+      image: "python:3.13-slim",
+      user: "${BLAME_HOST_UID}:${BLAME_HOST_GID}",
       workingDir: "/workspace",
       command: `sh -lc "${pythonInstallCommand(configuration.packageManager)} && uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload"`,
-      volumes: [".:/workspace"],
-      ports: ["8000:8000"],
+      volumes: ["${BLAME_PROJECT_ROOT}:/workspace"],
       environment: pythonEnvironment(configuration),
       dependsOn: databaseDependency(configuration.database),
     },
@@ -141,7 +161,6 @@ function databaseServices(database: DatabaseOption): ServiceSpec[] {
       {
         name: "database",
         image: "postgres:17-alpine",
-        ports: ["5432:5432"],
         environment: {
           POSTGRES_DB: "blame",
           POSTGRES_PASSWORD: "blame",
@@ -156,7 +175,6 @@ function databaseServices(database: DatabaseOption): ServiceSpec[] {
       {
         name: "database",
         image: "mysql:9",
-        ports: ["3306:3306"],
         environment: {
           MYSQL_DATABASE: "blame",
           MYSQL_PASSWORD: "blame",
@@ -172,7 +190,6 @@ function databaseServices(database: DatabaseOption): ServiceSpec[] {
       {
         name: "database",
         image: "mongo:8",
-        ports: ["27017:27017"],
       },
     ];
   }
@@ -185,11 +202,72 @@ function backendSetupCommands(configuration: NewProjectConfiguration) {
   return [pythonInstallCommand(configuration.packageManager)];
 }
 
+function hostToolChecks(configuration: NewProjectConfiguration) {
+  return [
+    ...toolChecks(["git", "docker"]),
+    ...nodeToolChecks(configuration.packageManager),
+    ...pythonToolChecks(configuration),
+  ];
+}
+
+function toolChecks(commands: string[]) {
+  return commands.map(
+    (command) =>
+      `command -v ${command} >/dev/null || { echo "Missing required tool: ${command}" >&2; exit 1; }`,
+  );
+}
+
+function nodeToolChecks(packageManager: PackageManager) {
+  if (packageManager === "bun") return toolChecks(["bun"]);
+  if (packageManager === "npm") return toolChecks(["node", "npm"]);
+  if (packageManager === "pnpm" || packageManager === "yarn")
+    return toolChecks(["node", "corepack"]);
+  return toolChecks(["node", "npm"]);
+}
+
+function pythonToolChecks(configuration: NewProjectConfiguration) {
+  if (configuration.backend !== "fastapi") return [];
+  if (configuration.packageManager === "poetry") return toolChecks(["pip"]);
+  if (configuration.packageManager === "pip") return toolChecks(["pip"]);
+  return toolChecks(["pip"]);
+}
+
+function setupEnvironmentExports(configuration: NewProjectConfiguration) {
+  return Object.entries({
+    ...nodeEnvironment(configuration),
+    ...pythonEnvironment(configuration),
+  }).map(
+    ([key, value]) => `export ${key}="\${${key}:-${shellDoubleQuotedValue(value)}}"`,
+  );
+}
+
+function envFileSetupCommands() {
+  return [
+    "if [ ! -f .env ]; then",
+    "  if [ -f .env.example ]; then cp .env.example .env;",
+    "  elif [ -f .env.sample ]; then cp .env.sample .env;",
+    "  elif [ -f .env.template ]; then cp .env.template .env;",
+    "  fi",
+    "fi",
+  ];
+}
+
 function ormSetupCommands(configuration: NewProjectConfiguration) {
-  if (configuration.orm === "prisma") return ["npx prisma generate || true"];
-  if (configuration.orm === "drizzle") return ["npx drizzle-kit generate || true"];
-  if (configuration.orm === "sqlalchemy") return ["uv run alembic upgrade head || true"];
-  if (configuration.orm === "sqlmodel") return ["uv run alembic upgrade head || true"];
+  if (configuration.orm === "prisma") {
+    return [
+      `if [ -f prisma/schema.prisma ] || [ -f schema.prisma ] || [ -f prisma.config.ts ]; then ${packageRunner(configuration.packageManager, "prisma generate")}; fi`,
+    ];
+  }
+  if (configuration.orm === "drizzle") {
+    return [
+      `if [ -f drizzle.config.ts ] || [ -f drizzle.config.js ]; then ${packageRunner(configuration.packageManager, "drizzle-kit generate")}; fi`,
+    ];
+  }
+  if (configuration.orm === "sqlalchemy" || configuration.orm === "sqlmodel") {
+    return [
+      `if [ -f alembic.ini ]; then ${pythonRunner(configuration.packageManager, "alembic upgrade head")}; fi`,
+    ];
+  }
   return [];
 }
 
@@ -235,9 +313,10 @@ function externalApiUrl(backend: BackendFramework) {
   return undefined;
 }
 
-function nodeApiCommand(backend: BackendFramework) {
+function nodeApiCommand(backend: BackendFramework, packageManager: PackageManager) {
   const label = backendLabel(backend);
-  return `if npm run | grep -q "dev:api"; then npm run dev:api -- --host 0.0.0.0; else echo "Add a dev:api script for ${label} on port 4000."; tail -f /dev/null; fi`;
+  const runner = containerPackageCommand(packageManager);
+  return `if npm run | grep -q "dev:api"; then ${runner} run dev:api -- --host 0.0.0.0; else echo "Add a dev:api script for ${label} on port 4000."; tail -f /dev/null; fi`;
 }
 
 function backendLabel(backend: BackendFramework) {
@@ -267,15 +346,76 @@ function pythonInstallCommand(packageManager: PackageManager) {
   return "pip install uv && uv sync";
 }
 
+function pythonRunner(packageManager: PackageManager, command: string) {
+  if (packageManager === "poetry") return `poetry run ${command}`;
+  if (packageManager === "pip") return command;
+  return `uv run ${command}`;
+}
+
+function packageRunner(packageManager: PackageManager, command: string) {
+  if (packageManager === "npm") return `npm exec ${command}`;
+  if (packageManager === "yarn") return `yarn exec ${command}`;
+  if (packageManager === "bun") return `bunx ${command}`;
+  return `corepack pnpm exec ${command}`;
+}
+
 function nodePackageManager(packageManager: PackageManager) {
   if (["npm", "yarn", "bun"].includes(packageManager)) return packageManager;
   if (packageManager === "pnpm") return "pnpm";
   return "npm";
 }
 
+function hostBootstrapCommands(packageManager: PackageManager) {
+  if (packageManager === "pnpm") return ["corepack prepare pnpm@10.33.2 --activate"];
+  if (packageManager === "yarn") return ["corepack prepare yarn@stable --activate"];
+  return [];
+}
+
+function hostInstallCommand(
+  packageManager: PackageManager,
+  resolvedPackageManager: string
+) {
+  if (packageManager === "pnpm") return "corepack pnpm install";
+  if (packageManager === "yarn") return "corepack yarn install";
+  return `${resolvedPackageManager} install`;
+}
+
+function containerPackageCommand(packageManager: PackageManager) {
+  if (packageManager === "pnpm") return "corepack pnpm";
+  if (packageManager === "yarn") return "corepack yarn";
+  if (packageManager === "bun") return "bun";
+  return "npm";
+}
+
+function containerCorepackCommand(packageManager: PackageManager) {
+  if (packageManager === "pnpm") return "corepack prepare pnpm@10.33.2 --activate";
+  if (packageManager === "yarn") return "corepack prepare yarn@stable --activate";
+  return "true";
+}
+
+function containerInstallIfNeededCommand(packageManager: PackageManager) {
+  const installCommand = `${containerPackageCommand(packageManager)} install`;
+  return `( [ -d node_modules/.pnpm ] || [ -d node_modules/.bin ] || ${installCommand} )`;
+}
+
+function containerWaitForNodeModulesCommand() {
+  return `while [ ! -d node_modules/.pnpm ] && [ ! -d node_modules/.bin ]; do sleep 1; done`;
+}
+
+function nodeImage(packageManager: PackageManager) {
+  if (packageManager === "bun") return "oven/bun:1";
+  return "node:22-bookworm-slim";
+}
+
 function previewPort(frontend: FrontendFramework) {
   if (frontend === "next" || frontend === "nuxt") return 3000;
   return 5173;
+}
+
+function containerDevCommand(frontend: FrontendFramework) {
+  if (frontend === "next") return "./node_modules/.bin/next dev -H 0.0.0.0";
+  if (frontend === "nuxt") return "./node_modules/.bin/nuxt dev --host 0.0.0.0";
+  return "./node_modules/.bin/vite --host 0.0.0.0";
 }
 
 function devHostArgs(frontend: FrontendFramework) {
@@ -291,6 +431,7 @@ function serviceYaml(service: ServiceSpec) {
   return [
     `  ${service.name}:`,
     `    image: ${service.image}`,
+    ...stringField("user", service.user),
     ...stringField("working_dir", service.workingDir),
     ...stringField("command", service.command),
     ...listField("volumes", service.volumes),
@@ -330,4 +471,8 @@ function compactRecord(values: Record<string, string | undefined>) {
 
 function quote(value: string) {
   return JSON.stringify(value);
+}
+
+function shellDoubleQuotedValue(value: string) {
+  return value.replace(/["\\$`]/g, "\\$&");
 }

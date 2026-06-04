@@ -96,3 +96,20 @@ test("normalizes preview compose before writing it", () => {
   assert.match(result, /CI: "true"/);
   assert.doesNotMatch(result, /corepack corepack pnpm/);
 });
+
+test("adds host user for project root placeholder mounts", () => {
+  const compose = [
+    "services:",
+    "  app:",
+    "    volumes:",
+    "      - ${BLAME_PROJECT_ROOT}:/workspace",
+    "    command:",
+    "      - bash",
+    "      - -lc",
+    "      - corepack pnpm install && corepack pnpm dev",
+  ].join("\n");
+
+  const result = dockerComposeForPreview(compose, "/tmp/project");
+
+  assert.match(result, /user: "\$\{BLAME_HOST_UID\}:\$\{BLAME_HOST_GID\}"/);
+});

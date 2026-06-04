@@ -1,10 +1,14 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { promisify } from "node:util";
 
 import {
+  applyProjectOverlays,
+  initializeGeneratedRepository,
   projectCreationRecipe,
   validateProjectTarget,
   type ProjectCreationRecipe,
@@ -15,6 +19,8 @@ import {
   projectSetupRecipe,
   setupScript,
 } from "./project-setup-recipes.ts";
+
+const execFileAsync = promisify(execFile);
 
 const baseConfiguration: NewProjectConfiguration = {
   platform: "web",
@@ -55,6 +61,35 @@ test("accepts valid parent and project name", async () => {
   const target = await validateProjectTarget(parent, "valid-app");
 
   assert.equal(target, join(parent, "valid-app"));
+});
+
+test("initializes generated projects as independent git repositories", async () => {
+  const parent = await mkdtemp(join(tmpdir(), "blame-new-project-"));
+  const target = join(parent, "nested-app");
+  await mkdir(target);
+  await writeFile(join(target, "package.json"), '{"name":"nested-app"}', "utf8");
+  await runGit(parent, ["init"]);
+  await runGit(parent, ["add", "--all"]);
+  await runGit(parent, ["commit", "-m", "parent"]);
+
+  await initializeGeneratedRepository(target);
+
+  const { stdout } = await runGit(target, ["rev-parse", "--show-toplevel"]);
+  assert.equal(stdout.trim(), target);
+});
+
+test("pins package manager in generated package manifest", async () => {
+  const parent = await mkdtemp(join(tmpdir(), "blame-new-project-"));
+  const target = join(parent, "manifest-app");
+  await mkdir(target);
+  await writeFile(join(target, "package.json"), '{"name":"manifest-app"}', "utf8");
+
+  await initializeGeneratedRepository(target);
+  const recipe = projectCreationRecipe(baseConfiguration, target);
+  await applyProjectOverlays(target, recipe.overlays, baseConfiguration);
+
+  const parsed = JSON.parse(await readFile(join(target, "package.json"), "utf8"));
+  assert.equal(parsed.packageManager, "pnpm@10.33.2");
 });
 
 test("builds Next.js recipe with selected package manager and overlays", () => {
@@ -123,9 +158,27 @@ test("maps advanced options to generated files", () => {
 });
 
 test("builds Blame initialization defaults without AI analysis", () => {
-  assert.match(setupScript(baseConfiguration), /pnpm install/);
+  assert.match(setupScript(baseConfiguration), /corepack pnpm install/);
+  assert.match(setupScript(baseConfiguration), /set -euo pipefail/);
+  assert.match(setupScript(baseConfiguration), /command -v docker/);
+  assert.match(setupScript(baseConfiguration), /COMPOSE_PROJECT_NAME/);
+  assert.match(setupScript(baseConfiguration), /cp \.env\.example \.env/);
   assert.match(dockerCompose(baseConfiguration), /blame\.preview: "true"/);
+  assert.match(dockerCompose(baseConfiguration), /blame\.preview\.protocol: "http"/);
+  assert.match(dockerCompose(baseConfiguration), /blame\.preview\.path: "\/"/);
   assert.match(dockerCompose(baseConfiguration), /-H 0\.0\.0\.0/);
+  assert.match(dockerCompose(baseConfiguration), /node:22-bookworm-slim/);
+  assert.doesNotMatch(dockerCompose(baseConfiguration), /node:22-alpine/);
+  assert.match(dockerCompose(baseConfiguration), /\[ -d node_modules\/\.pnpm \]/);
+  assert.match(dockerCompose(baseConfiguration), /\( \[ -d node_modules\/\.pnpm \]/);
+  assert.match(dockerCompose(baseConfiguration), /corepack pnpm install/);
+  assert.doesNotMatch(dockerCompose(baseConfiguration), /"pnpm install/);
+  assert.match(dockerCompose(baseConfiguration), /\.\/node_modules\/\.bin\/next dev -H 0\.0\.0\.0/);
+  assert.doesNotMatch(dockerCompose(baseConfiguration), /pnpm run dev -- -H/);
+  assert.match(dockerCompose(baseConfiguration), /user: "\$\{BLAME_HOST_UID\}:\$\{BLAME_HOST_GID\}"/);
+  assert.match(dockerCompose(baseConfiguration), /- "127\.0\.0\.1::3000"/);
+  assert.doesNotMatch(dockerCompose(baseConfiguration), /3000:3000/);
+  assert.match(dockerCompose(baseConfiguration), /\$\{BLAME_PROJECT_ROOT\}:\/workspace/);
 });
 
 test("builds Vite preview host arguments for Blame initialization", () => {
@@ -135,18 +188,29 @@ test("builds Vite preview host arguments for Blame initialization", () => {
   });
 
   assert.match(compose, /--host 0\.0\.0\.0/);
-  assert.match(compose, /5173:5173/);
+  assert.match(compose, /\.\/node_modules\/\.bin\/vite --host 0\.0\.0\.0/);
+  assert.match(compose, /- "127\.0\.0\.1::5173"/);
+  assert.doesNotMatch(compose, /5173:5173/);
 });
 
 test("builds database services for SQL and document databases", () => {
   assert.match(dockerCompose(baseConfiguration), /image: postgres:17-alpine/);
+  assert.doesNotMatch(dockerCompose(baseConfiguration), /5432:5432/);
   assert.match(
     dockerCompose({ ...baseConfiguration, database: "mysql" }),
     /image: mysql:9/
   );
+  assert.doesNotMatch(
+    dockerCompose({ ...baseConfiguration, database: "mysql" }),
+    /3306:3306/
+  );
   assert.match(
     dockerCompose({ ...baseConfiguration, database: "mongodb", orm: "none" }),
     /image: mongo:8/
+  );
+  assert.doesNotMatch(
+    dockerCompose({ ...baseConfiguration, database: "mongodb", orm: "none" }),
+    /27017:27017/
   );
 });
 
@@ -161,10 +225,12 @@ test("builds FastAPI service with Python package manager setup", () => {
   const recipe = projectSetupRecipe(configuration);
 
   assert.match(recipe.setupScript, /pip install uv && uv sync/);
-  assert.match(recipe.setupScript, /uv run alembic upgrade head/);
+  assert.match(recipe.setupScript, /if \[ -f alembic\.ini \]; then uv run alembic upgrade head; fi/);
   assert.match(recipe.dockerCompose, /api:/);
+  assert.match(recipe.dockerCompose, /python:3\.13-slim/);
   assert.match(recipe.dockerCompose, /uvicorn api\.main:app/);
   assert.match(recipe.dockerCompose, /NEXT_PUBLIC_API_URL|VITE_API_URL/);
+  assert.doesNotMatch(recipe.dockerCompose, /8000:8000/);
 });
 
 test("builds Node API services for Hono Fastify and NestJS", () => {
@@ -176,8 +242,9 @@ test("builds Node API services for Hono Fastify and NestJS", () => {
     });
 
     assert.match(compose, /api:/);
-    assert.match(compose, /4000:4000/);
+    assert.doesNotMatch(compose, /4000:4000/);
     assert.match(compose, /dev:api/);
+    assert.match(compose, /while \[ ! -d node_modules\/\.pnpm \]/);
     assert.match(compose, /VITE_API_URL: "http:\/\/localhost:4000"/);
   }
 });
@@ -194,6 +261,36 @@ test("builds package-manager specific setup commands", () => {
   assert.match(
     setupScript({ ...baseConfiguration, backend: "fastapi", packageManager: "poetry" }),
     /poetry install/
+  );
+});
+
+test("builds container-safe package manager commands", () => {
+  assert.match(dockerCompose(baseConfiguration), /corepack prepare pnpm@10\.33\.2 --activate/);
+  assert.match(dockerCompose(baseConfiguration), /corepack pnpm install/);
+  assert.match(dockerCompose(baseConfiguration), /\[ -d node_modules\/\.pnpm \]/);
+  assert.match(
+    dockerCompose({ ...baseConfiguration, packageManager: "yarn" }),
+    /corepack yarn install/
+  );
+  assert.match(
+    dockerCompose({ ...baseConfiguration, packageManager: "npm" }),
+    /npm install/
+  );
+  assert.match(
+    dockerCompose({ ...baseConfiguration, packageManager: "bun" }),
+    /oven\/bun:1/
+  );
+});
+
+test("guards ORM setup commands until config files exist", () => {
+  assert.match(
+    setupScript(baseConfiguration),
+    /if \[ -f prisma\/schema\.prisma \].+corepack pnpm exec prisma generate; fi/
+  );
+  assert.doesNotMatch(setupScript(baseConfiguration), /npx prisma generate/);
+  assert.match(
+    setupScript({ ...baseConfiguration, orm: "drizzle" }),
+    /if \[ -f drizzle\.config\.ts \].+corepack pnpm exec drizzle-kit generate; fi/
   );
 });
 
@@ -215,13 +312,13 @@ const matrixCases: Array<{
     name: "Next.js + Tailwind + shadcn + Next API + PostgreSQL + Prisma + pnpm",
     configuration: baseConfiguration,
     expected: {
-      compose: [/3000:3000/, /postgres:17-alpine/, /DATABASE_URL: "postgresql:\/\/blame:blame@database:5432\/blame"/],
+      compose: [/- "127\.0\.0\.1::3000"/, /postgres:17-alpine/, /DATABASE_URL: "postgresql:\/\/blame:blame@database:5432\/blame"/],
       dependencies: ["@prisma/client", "pg"],
       devDependencies: ["prisma", "shadcn"],
       overlays: [".env.example", "README.md", ".blame/preview.json"],
       scaffold: ["pnpm", "create", "next-app", "matrix-next"],
       scaffoldIncludes: ["--tailwind", "--eslint", "--use-pnpm"],
-      setup: [/pnpm install/, /npx prisma generate/],
+      setup: [/corepack pnpm install/, /corepack pnpm exec prisma generate/],
       target: "/tmp/matrix-next",
     },
   },
@@ -238,12 +335,12 @@ const matrixCases: Array<{
       uiLibrary: "daisyui",
     },
     expected: {
-      compose: [/5173:5173/, /api:/, /4000:4000/, /DATABASE_URL: "file:.\/dev.db"/],
+      compose: [/- "127\.0\.0\.1::5173"/, /api:/, /DATABASE_URL: "file:.\/dev.db"/],
       dependencies: ["better-sqlite3", "daisyui", "drizzle-orm", "hono"],
       devDependencies: ["@biomejs/biome", "drizzle-kit"],
       overlays: [".env.example", "README.md", ".blame/preview.json"],
       scaffold: ["pnpm", "create", "vite", "matrix-react", "--template", "react-ts"],
-      setup: [/pnpm install/, /npx drizzle-kit generate/],
+      setup: [/corepack pnpm install/, /corepack pnpm exec drizzle-kit generate/],
       target: "/tmp/matrix-react",
     },
   },
@@ -258,11 +355,11 @@ const matrixCases: Array<{
       uiLibrary: "nuxt-ui",
     },
     expected: {
-      compose: [/3000:3000/, /postgres:17-alpine/],
+      compose: [/- "127\.0\.0\.1::3000"/, /postgres:17-alpine/],
       dependencies: ["@nuxt/ui", "pg"],
       overlays: [".env.example", "README.md", ".blame/preview.json"],
       scaffold: ["pnpm", "create", "nuxt", "matrix-nuxt"],
-      setup: [/pnpm install/],
+      setup: [/corepack pnpm install/],
       target: "/tmp/matrix-nuxt",
     },
   },
@@ -278,7 +375,7 @@ const matrixCases: Array<{
       uiLibrary: "primevue",
     },
     expected: {
-      compose: [/5173:5173/, /api:/, /8000:8000/, /postgres:17-alpine/, /uvicorn api\.main:app/],
+      compose: [/- "127\.0\.0\.1::5173"/, /api:/, /postgres:17-alpine/, /uvicorn api\.main:app/],
       dependencies: ["pg", "primevue"],
       overlays: [".env.example", "README.md", ".blame/preview.json", "api/main.py", "pyproject.toml"],
       scaffold: ["npm", "create", "vite@latest", "matrix-vue", "--template", "vue-ts"],
@@ -297,12 +394,12 @@ const matrixCases: Array<{
       uiLibrary: "shadcn-svelte",
     },
     expected: {
-      compose: [/5173:5173/, /DATABASE_URL: "file:.\/dev.db"/],
+      compose: [/- "127\.0\.0\.1::5173"/, /DATABASE_URL: "file:.\/dev.db"/],
       dependencies: ["better-sqlite3", "drizzle-orm"],
       devDependencies: ["drizzle-kit", "shadcn-svelte"],
       overlays: [".env.example", "README.md", ".blame/preview.json"],
       scaffold: ["pnpm", "dlx", "sv", "create", "matrix-svelte"],
-      setup: [/pnpm install/, /npx drizzle-kit generate/],
+      setup: [/corepack pnpm install/, /corepack pnpm exec drizzle-kit generate/],
       target: "/tmp/matrix-svelte",
     },
   },
@@ -317,10 +414,10 @@ const matrixCases: Array<{
       uiLibrary: "none",
     },
     expected: {
-      compose: [/5173:5173/],
+      compose: [/- "127\.0\.0\.1::5173"/],
       overlays: [".env.example", "README.md", ".blame/preview.json"],
       scaffold: ["pnpm", "create", "vite", "matrix-empty", "--template", "react-ts"],
-      setup: [/pnpm install/],
+      setup: [/corepack pnpm install/],
       target: "/tmp/matrix-empty",
     },
   },
@@ -381,4 +478,18 @@ function assertOverlays(recipe: ProjectCreationRecipe, expectedPaths: string[]) 
   for (const path of expectedPaths) {
     assert.equal(paths.some((overlayPath) => overlayPath.endsWith(path)), true, `${path} overlay should exist`);
   }
+}
+
+function runGit(cwd: string, args: string[]) {
+  return execFileAsync(
+    "git",
+    [
+      "-c",
+      "user.name=Blame",
+      "-c",
+      "user.email=blame@example.local",
+      ...args,
+    ],
+    { cwd },
+  );
 }

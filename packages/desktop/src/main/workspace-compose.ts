@@ -158,7 +158,9 @@ function mountsWorktree(lines: string[], worktree: string) {
   const escapedWorktree = escapeRegExp(worktree);
   return (
     /(^|\n)\s*-\s*(?:\.|\$PWD|\$\{PWD\})(?:\/[^:]*)?:/.test(service) ||
+    /(^|\n)\s*-\s*\$\{BLAME_PROJECT_ROOT\}(?:\/[^:]*)?:/.test(service) ||
     /source:\s*(?:\.|\$PWD|\$\{PWD\})/.test(service) ||
+    /source:\s*\$\{BLAME_PROJECT_ROOT\}/.test(service) ||
     new RegExp(`(^|\\n)\\s*-\\s*${escapedWorktree}(?:\\/[^:]*)?:`).test(
       service,
     ) ||
