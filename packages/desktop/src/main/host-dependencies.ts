@@ -355,6 +355,7 @@ async function runCommand(
 ) {
   const { stdout } = await execFileAsync(command, args, {
     env,
+    shell: process.platform === "win32",
     timeout: commandTimeoutMs,
   });
   return stdout;

@@ -17,7 +17,6 @@ import {
 } from "node:fs/promises";
 import {
   basename,
-  delimiter,
   dirname,
   join,
   relative,
@@ -30,6 +29,7 @@ import {
   assertHostDependencies,
   checkHostDependencies,
 } from "./host-dependencies";
+import { setupPath } from "./host-tool-path";
 import {
   createProject,
   setProjectCreationWindowsProvider,
@@ -929,55 +929,6 @@ function runtimeEnvFile(name: string) {
   return ![".example", ".sample", ".template"].some((suffix) =>
     name.endsWith(suffix),
   );
-}
-
-function setupPath() {
-  return uniquePaths([
-    dirname(process.execPath),
-    ...dockerDesktopPaths(),
-    ...nodeVersionManagerPaths(),
-    process.env.PATH,
-  ]).join(delimiter);
-}
-
-function dockerDesktopPaths() {
-  if (process.platform !== "darwin") return [];
-  return [
-    "/Applications/Docker.app/Contents/Resources/bin",
-    "/usr/local/bin",
-    "/opt/homebrew/bin",
-  ];
-}
-
-function nodeVersionManagerPaths() {
-  return [
-    ...nodeVersionBins(join(homePath(), ".nvm", "versions", "node")),
-    ...nodeVersionBins(
-      join(homePath(), ".local", "share", "fnm", "node-versions"),
-    ),
-    join(homePath(), ".local", "bin"),
-    join(homePath(), ".bun", "bin"),
-  ];
-}
-
-function nodeVersionBins(root: string) {
-  try {
-    return readdirSync(root)
-      .map((entry) => join(root, entry, "bin"))
-      .filter((path) => existsSync(path));
-  } catch {
-    return [];
-  }
-}
-
-function homePath() {
-  return process.env.HOME || "";
-}
-
-function uniquePaths(paths: Array<string | undefined>) {
-  return Array.from(
-    new Set(paths.flatMap((path) => (path ? path.split(delimiter) : []))),
-  ).filter(Boolean);
 }
 
 function hostUserId() {

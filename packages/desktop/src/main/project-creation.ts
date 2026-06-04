@@ -10,6 +10,7 @@ import {
 } from "node:fs/promises";
 import { basename, join, relative, resolve } from "node:path";
 import { promisify } from "node:util";
+import { setupPath } from "./host-tool-path.ts";
 import { projectSetupRecipe } from "./project-setup-recipes.ts";
 
 const execFileAsync = promisify(execFile);
@@ -743,7 +744,7 @@ function runCommand(
   return new Promise<void>((resolveCommand, reject) => {
     const child = spawn(recipe.command, recipe.args, {
       cwd: recipe.cwd,
-      env: process.env,
+      env: { ...process.env, PATH: setupPath() },
       shell: process.platform === "win32",
     });
 
