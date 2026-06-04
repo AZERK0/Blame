@@ -336,7 +336,8 @@ export function useBacklogRotation(
           ...flowUpdate,
           agentLastError: text || "Agent session failed",
           agentLastEvent: text || "Agent session failed",
-          agentStatus: "Paused",
+          agentStatus: null,
+          status: "in-review",
         },
         true
       )

@@ -969,7 +969,8 @@ function agentEventUpdate(
       ...flowUpdate,
       agentLastError: text || "Agent session failed",
       agentLastEvent: text || "Agent session failed",
-      agentStatus: "Paused",
+      agentStatus: null,
+      status: "in-review",
     }
   }
   return {
