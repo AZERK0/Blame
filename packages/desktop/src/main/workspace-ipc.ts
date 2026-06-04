@@ -46,7 +46,18 @@ const execFileAsync = promisify(execFile);
 const previewStartupTimeoutMs = 60_000;
 const previewStartupIntervalMs = 1_000;
 const forceKillDelayMs = 1_500;
-const composeUpRetryDelaysMs = [2_000, 5_000, 10_000];
+const previewResolveTimeoutMs = 45_000;
+const composePullRetryDelaysMs = [
+  2_000,
+  5_000,
+  10_000,
+  15_000,
+  20_000,
+  30_000,
+  45_000,
+  60_000,
+];
+const composeUpRetryDelaysMs = [2_000, 5_000, 10_000, 15_000];
 
 type WorkspacePathInput = {
   root: string;
@@ -386,24 +397,43 @@ async function completeProjectSetup(
 async function startProjectCompose(worktree: string) {
   await repairProjectCompose(worktree);
   await runDockerComposeUp(worktree);
-  const previewUrl = await resolveProjectPreviewUrl({ worktree });
-  if (!previewUrl) throw new Error("Unable to resolve project preview URL");
+  const previewUrl = await waitForPreviewUrl(worktree);
   await waitForPreview(previewUrl);
   return previewUrl;
 }
 
 async function runDockerComposeUp(worktree: string) {
-  const args = [
+  const composeArgs = dockerComposeArgs(worktree);
+  await runDockerComposeWithRetry(
+    worktree,
+    [...composeArgs, "pull"],
+    composePullRetryDelaysMs,
+    "compose image pull",
+  );
+  await runDockerComposeWithRetry(
+    worktree,
+    [...composeArgs, "up", "-d", "--remove-orphans"],
+    composeUpRetryDelaysMs,
+    "compose start",
+  );
+}
+
+function dockerComposeArgs(worktree: string) {
+  return [
     "compose",
     "-f",
     projectComposePath(worktree),
     "--project-directory",
     worktree,
-    "up",
-    "-d",
-    "--remove-orphans",
   ];
+}
 
+async function runDockerComposeWithRetry(
+  worktree: string,
+  args: string[],
+  retryDelays: number[],
+  label: string,
+) {
   for (let attempt = 0; ; attempt += 1) {
     try {
       await execFileAsync("docker", args, {
@@ -412,15 +442,26 @@ async function runDockerComposeUp(worktree: string) {
       });
       return;
     } catch (error) {
-      const retryDelay = composeUpRetryDelaysMs[attempt];
+      const retryDelay = retryDelays[attempt];
       if (!retryDelay || !transientDockerPullError(error)) throw error;
       await appendRecoveryLog(
         worktree,
-        `compose pull interrupted, retrying in ${Math.round(retryDelay / 1_000)}s`,
+        `${label} interrupted, retrying in ${Math.round(retryDelay / 1_000)}s`,
       );
       await delay(retryDelay);
     }
   }
+}
+
+async function waitForPreviewUrl(worktree: string) {
+  const deadline = Date.now() + previewResolveTimeoutMs;
+  while (Date.now() < deadline) {
+    const previewUrl = await resolveProjectPreviewUrl({ worktree });
+    if (previewUrl) return previewUrl;
+    await delay(previewStartupIntervalMs);
+  }
+  await appendComposeDiagnostics(worktree);
+  throw new Error("Unable to resolve project preview URL");
 }
 
 async function stopProjectSetup(input: StopProjectSetupInput) {
@@ -1068,6 +1109,26 @@ async function repairComposeFile(composePath: string) {
   const compose = await readFile(composePath, "utf8");
   const repairedCompose = dockerComposeWithPortableWindowsPaths(compose);
   if (repairedCompose !== compose) await writeFile(composePath, repairedCompose, "utf8");
+}
+
+async function appendComposeDiagnostics(worktree: string) {
+  await appendRecoveryLog(worktree, "compose diagnostics");
+  await appendDockerComposeOutput(worktree, ["ps", "-a"]);
+  await appendDockerComposeOutput(worktree, ["logs", "--tail", "120", "app"]);
+}
+
+async function appendDockerComposeOutput(worktree: string, args: string[]) {
+  try {
+    const { stdout, stderr } = await execFileAsync(
+      "docker",
+      [...dockerComposeArgs(worktree), ...args],
+      { cwd: worktree, env: setupEnvironment(worktree) },
+    );
+    if (stdout) await appendRecoveryLog(worktree, stdout.trimEnd());
+    if (stderr) await appendRecoveryLog(worktree, stderr.trimEnd());
+  } catch (error) {
+    await appendRecoveryLog(worktree, commandErrorText(error).trim());
+  }
 }
 
 async function labeledContainerPreviewUrl(worktree: string) {
