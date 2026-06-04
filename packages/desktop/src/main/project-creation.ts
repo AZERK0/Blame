@@ -10,7 +10,6 @@ import {
 } from "node:fs/promises";
 import { basename, join, relative, resolve } from "node:path";
 import { promisify } from "node:util";
-import { assertHostDependencies } from "./host-dependencies.ts";
 import { projectSetupRecipe } from "./project-setup-recipes.ts";
 
 const execFileAsync = promisify(execFile);
@@ -166,12 +165,6 @@ export async function createProject(input: CreateProjectInput) {
   const recipe = projectCreationRecipe(input.configuration, target);
   const emit = projectCreationEmitter(input.runId);
 
-  emit({ type: "stdout", data: "Checking host dependencies...\n" });
-  await assertHostDependencies({
-    env: process.env,
-    setupScript: projectCreationDependencyScript(input.configuration, recipe),
-  });
-
   emit({ type: "stdout", data: `Creating ${basename(target)}...\n` });
   await runCommand(recipe.scaffold, emit);
   await renameScaffoldTarget(recipe.scaffoldTarget, target);
@@ -265,25 +258,6 @@ export function projectCreationRecipe(
   const installs = installCommands(configuration, target);
   const overlays = projectOverlays(configuration, target);
   return { scaffold, scaffoldTarget, installs, overlays };
-}
-
-export function projectCreationDependencyScript(
-  configuration: NewProjectConfiguration,
-  recipe: ProjectCreationRecipe
-) {
-  return [
-    "#!/usr/bin/env bash",
-    "set -euo pipefail",
-    "git --version",
-    "docker --version",
-    commandRecipeLine(recipe.scaffold),
-    ...recipe.installs.map(commandRecipeLine),
-    projectSetupRecipe(configuration).setupScript,
-  ].join("\n");
-}
-
-function commandRecipeLine(recipe: CommandRecipe) {
-  return [recipe.command, ...recipe.args].join(" ");
 }
 
 function scaffoldCommand(

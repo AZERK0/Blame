@@ -1,8 +1,7 @@
 import * as React from "react"
 import { toast } from "sonner"
 
-import { usePlatform } from "@/context/platform"
-import { useProjects } from "@/context/projects"
+import { newProjectHostDependencyScript } from "@/components/new-project/new-project-host-dependencies"
 import {
   defaultNewProjectConfiguration,
   normalizeNewProjectConfiguration,
@@ -18,6 +17,9 @@ import {
   type StylingOption,
   type UiLibrary,
 } from "@/components/new-project/new-project-options"
+import { usePlatform } from "@/context/platform"
+import type { HostDependencyReport } from "@/context/platform"
+import { useProjects } from "@/context/projects"
 
 export type NewProjectStep =
   | "location"
@@ -62,6 +64,8 @@ export function useNewProjectWizard(input: {
   const [creating, setCreating] = React.useState(false)
   const [error, setError] = React.useState<string>()
   const [logs, setLogs] = React.useState<ProjectCreationLog[]>([])
+  const [hostDependenciesDialog, setHostDependenciesDialog] =
+    React.useState<HostDependenciesDialogState>()
   const [configuration, setConfiguration] =
     React.useState(defaultNewProjectConfiguration)
   const normalizedConfiguration = React.useMemo(
@@ -159,9 +163,40 @@ export function useNewProjectWizard(input: {
       setError("Project creation is available only in the desktop app.")
       return
     }
+    if (!workspace.checkHostDependencies) {
+      setError("Desktop host dependency checks are not available.")
+      return
+    }
 
     setCreating(true)
     setError(undefined)
+
+    try {
+      const setupScript = newProjectHostDependencyScript(normalizedConfiguration)
+      const dependencies = await workspace.checkHostDependencies({ setupScript })
+      if (!dependencies.ok) {
+        setHostDependenciesDialog({
+          checking: false,
+          report: dependencies,
+          setupScript,
+        })
+        setCreating(false)
+        return
+      }
+      await runProjectCreation()
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Unable to check project requirements."
+      )
+      setCreating(false)
+    }
+  }
+
+  async function runProjectCreation() {
+    const workspace = platform.workspace
+    if (!workspace?.createProject) return
     setLogs([])
     setStep("progress")
 
@@ -193,6 +228,32 @@ export function useNewProjectWizard(input: {
     }
   }
 
+  async function recheckHostDependencies() {
+    const current = hostDependenciesDialog
+    const workspace = platform.workspace
+    if (!current || !workspace?.checkHostDependencies) return
+    setHostDependenciesDialog({ ...current, checking: true })
+    try {
+      const report = await workspace.checkHostDependencies({
+        setupScript: current.setupScript,
+      })
+      if (report.ok) {
+        setHostDependenciesDialog(undefined)
+        setCreating(true)
+        await runProjectCreation()
+        return
+      }
+      setHostDependenciesDialog({ ...current, checking: false, report })
+    } catch (error) {
+      setHostDependenciesDialog({ ...current, checking: false })
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Unable to recheck project requirements."
+      )
+    }
+  }
+
   function setOpen(open: boolean) {
     if (!open) reset()
     input.onOpenChange(open)
@@ -210,6 +271,15 @@ export function useNewProjectWizard(input: {
     error,
     goBack,
     goNext,
+    hostDependenciesDialog: {
+      checking: Boolean(hostDependenciesDialog?.checking),
+      onOpenChange(open: boolean) {
+        if (!open) setHostDependenciesDialog(undefined)
+      },
+      onRecheck: recheckHostDependencies,
+      open: Boolean(hostDependenciesDialog),
+      report: hostDependenciesDialog?.report,
+    },
     logs,
     parentPath,
     projectName,
@@ -230,6 +300,12 @@ export function useNewProjectWizard(input: {
     steps,
     toggleAdvancedOption,
   }
+}
+
+type HostDependenciesDialogState = {
+  checking: boolean
+  report: HostDependencyReport
+  setupScript: string
 }
 
 function nextStepAllowed(

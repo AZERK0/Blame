@@ -19,7 +19,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
-    "test": "node --test --experimental-strip-types src/components/new-project/new-project-options.test.ts",
+    "test": "node --test --experimental-strip-types src/components/new-project/new-project-options.test.ts src/components/new-project/new-project-host-dependencies.test.ts",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview"
   },

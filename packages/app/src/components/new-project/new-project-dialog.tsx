@@ -27,6 +27,7 @@ import {
   type NewProjectStep,
   type NewProjectWizard,
 } from "@/components/new-project/use-new-project-wizard"
+import { HostDependenciesDialog } from "@/pages/backlog/host-dependencies-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -59,21 +60,24 @@ export function NewProjectDialog({
   const wizard = useNewProjectWizard({ onOpenChange, open })
 
   return (
-    <Dialog open={open} onOpenChange={wizard.setOpen}>
-      <DialogContent className="max-h-[88vh] overflow-hidden p-0 sm:max-w-3xl">
-        <DialogHeader className="px-4 pt-4">
-          <DialogTitle>New Project</DialogTitle>
-          <DialogDescription>
-            Generate a codebase ready for Blame workflows.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="grid min-h-0 gap-4 overflow-y-auto px-4 pb-4">
-          <StepProgress wizard={wizard} />
-          <StepContent wizard={wizard} />
-        </div>
-        <WizardFooter wizard={wizard} />
-      </DialogContent>
-    </Dialog>
+    <>
+      <Dialog open={open} onOpenChange={wizard.setOpen}>
+        <DialogContent className="max-h-[88vh] overflow-hidden p-0 sm:max-w-3xl">
+          <DialogHeader className="px-4 pt-4">
+            <DialogTitle>New Project</DialogTitle>
+            <DialogDescription>
+              Generate a codebase ready for Blame workflows.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid min-h-0 gap-4 overflow-y-auto px-4 pb-4">
+            <StepProgress wizard={wizard} />
+            <StepContent wizard={wizard} />
+          </div>
+          <WizardFooter wizard={wizard} />
+        </DialogContent>
+      </Dialog>
+      <HostDependenciesDialog {...wizard.hostDependenciesDialog} />
+    </>
   )
 }
 
