@@ -14,12 +14,18 @@ import {
   type IpcMainInvokeEvent,
 } from "electron"
 import { registerAgentIpcHandlers, shutdownAgentRuntime } from "./agent-ipc"
+import { attachLiveLogWindow, openPackagedLiveLogTerminal, registerLiveLogCapture } from "./desktop-live-log"
 import { checkForUpdatesOnStartup, registerDesktopUpdateIpcHandlers } from "./desktop-update-ipc"
 import { destroyAllPreviewBrowsers, registerPreviewBrowserIpcHandlers } from "./preview-browser-ipc"
 import { registerTerminalIpcHandlers, shutdownTerminalSessions } from "./terminal-ipc"
 import { registerWorkspaceIpcHandlers, shutdownWorkspaceProcesses } from "./workspace-ipc"
 
-contextMenu({ showLookUpSelection: false, showSaveImageAs: true, showSearchWithGoogle: false })
+contextMenu({
+  showInspectElement: true,
+  showLookUpSelection: false,
+  showSaveImageAs: true,
+  showSearchWithGoogle: false,
+})
 
 const currentDirectory = dirname(fileURLToPath(import.meta.url))
 const shutdownTimeoutMs = 4_000
@@ -31,6 +37,7 @@ try {
 app.setName("Blame")
 app.setAppUserModelId("dev.blame.desktop")
 app.setPath("userData", join(app.getPath("appData"), "dev.blame.desktop"))
+registerLiveLogCapture()
 
 const singleInstanceLock = app.requestSingleInstanceLock()
 
@@ -52,6 +59,7 @@ void app.whenReady().then(() => {
   })
   registerWorkspaceIpcHandlers()
   mainWindow = createMainWindow()
+  openPackagedLiveLogTerminal()
   checkForUpdatesOnStartup()
 })
 
@@ -110,6 +118,7 @@ function createMainWindow() {
   const window = new BrowserWindow(options)
 
   state.manage(window)
+  attachLiveLogWindow(window)
   registerWindowStateEvents(window)
   loadRenderer(window)
   window.once("ready-to-show", () => window.show())
