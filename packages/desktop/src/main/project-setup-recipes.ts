@@ -90,7 +90,10 @@ export function runtimePlan(configuration: NewProjectConfiguration): RuntimePlan
     containerCorepackCommand: containerCorepackCommand(configuration.packageManager),
     containerDevCommand: containerDevCommand(configuration.frontend),
     containerInstallCommand: `${containerPackageCommand(configuration.packageManager)} install`,
-    containerInstallIfNeededCommand: containerInstallIfNeededCommand(configuration.packageManager),
+    containerInstallIfNeededCommand: containerInstallIfNeededCommand(
+      configuration.packageManager,
+      configuration.frontend,
+    ),
     hostBootstrapCommands: hostBootstrapCommands(configuration.packageManager),
     nodeImage: nodeImage(configuration.packageManager),
     packageManager,
@@ -110,7 +113,7 @@ function nodeAppService(
     user: "${BLAME_HOST_UID}:${BLAME_HOST_GID}",
     workingDir: "/workspace",
     command: `sh -lc "${runtime.containerCorepackCommand} && ${runtime.containerInstallIfNeededCommand} && ${runtime.containerDevCommand}"`,
-    volumes: ["${BLAME_PROJECT_ROOT}:/workspace"],
+    volumes: ["${BLAME_PROJECT_ROOT}:/workspace", "blame_node_modules:/workspace/node_modules"],
     ports: [`127.0.0.1::${runtime.previewPort}`],
     environment: nodeEnvironment(configuration),
     dependsOn: serviceDependencies(configuration),
@@ -131,8 +134,8 @@ function backendServices(configuration: NewProjectConfiguration): ServiceSpec[] 
         image: runtimePlan(configuration).nodeImage,
         user: "${BLAME_HOST_UID}:${BLAME_HOST_GID}",
         workingDir: "/workspace",
-        command: `sh -lc "${containerCorepackCommand(configuration.packageManager)} && ${containerWaitForNodeModulesCommand()} && ${nodeApiCommand(configuration.backend, configuration.packageManager)}"`,
-        volumes: ["${BLAME_PROJECT_ROOT}:/workspace"],
+        command: `sh -lc "${containerCorepackCommand(configuration.packageManager)} && ${containerInstallIfNeededCommand(configuration.packageManager, configuration.frontend)} && ${nodeApiCommand(configuration.backend, configuration.packageManager)}"`,
+        volumes: ["${BLAME_PROJECT_ROOT}:/workspace", "blame_node_modules:/workspace/node_modules"],
         environment: nodeApiEnvironment(configuration),
         dependsOn: databaseDependency(configuration.database),
       },
@@ -393,13 +396,12 @@ function containerCorepackCommand(packageManager: PackageManager) {
   return "true";
 }
 
-function containerInstallIfNeededCommand(packageManager: PackageManager) {
+function containerInstallIfNeededCommand(
+  packageManager: PackageManager,
+  frontend: FrontendFramework,
+) {
   const installCommand = `${containerPackageCommand(packageManager)} install`;
-  return `( [ -d node_modules/.pnpm ] || [ -d node_modules/.bin ] || ${installCommand} )`;
-}
-
-function containerWaitForNodeModulesCommand() {
-  return `while [ ! -d node_modules/.pnpm ] && [ ! -d node_modules/.bin ]; do sleep 1; done`;
+  return `if [ ! -e ${containerExecutablePath(frontend)} ]; then ${installCommand}; fi`;
 }
 
 function nodeImage(packageManager: PackageManager) {
@@ -413,9 +415,15 @@ function previewPort(frontend: FrontendFramework) {
 }
 
 function containerDevCommand(frontend: FrontendFramework) {
-  if (frontend === "next") return "./node_modules/.bin/next dev -H 0.0.0.0";
-  if (frontend === "nuxt") return "./node_modules/.bin/nuxt dev --host 0.0.0.0";
-  return "./node_modules/.bin/vite --host 0.0.0.0";
+  if (frontend === "next") return `${containerExecutablePath(frontend)} dev -H 0.0.0.0`;
+  if (frontend === "nuxt") return `${containerExecutablePath(frontend)} dev --host 0.0.0.0`;
+  return `${containerExecutablePath(frontend)} --host 0.0.0.0`;
+}
+
+function containerExecutablePath(frontend: FrontendFramework) {
+  if (frontend === "next") return "./node_modules/.bin/next";
+  if (frontend === "nuxt") return "./node_modules/.bin/nuxt";
+  return "./node_modules/.bin/vite";
 }
 
 function devHostArgs(frontend: FrontendFramework) {
@@ -424,7 +432,11 @@ function devHostArgs(frontend: FrontendFramework) {
 }
 
 function composeYaml(services: ServiceSpec[]) {
-  return `${["services:", ...services.flatMap(serviceYaml)].join("\n")}\n`;
+  return `${[
+    "services:",
+    ...services.flatMap(serviceYaml),
+    ...volumesYaml(services),
+  ].join("\n")}\n`;
 }
 
 function serviceYaml(service: ServiceSpec) {
@@ -459,6 +471,16 @@ function mapField(name: string, values: Record<string, string> | undefined) {
       ([key, value]) => `      ${key}: ${quote(value)}`,
     ),
   ];
+}
+
+function volumesYaml(services: ServiceSpec[]) {
+  if (!services.some((service) => service.volumes?.some(isNodeModulesVolume)))
+    return [];
+  return ["volumes:", "  blame_node_modules:"];
+}
+
+function isNodeModulesVolume(volume: string) {
+  return volume.startsWith("blame_node_modules:");
 }
 
 function compactRecord(values: Record<string, string | undefined>) {

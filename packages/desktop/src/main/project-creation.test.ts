@@ -169,8 +169,8 @@ test("builds Blame initialization defaults without AI analysis", () => {
   assert.match(dockerCompose(baseConfiguration), /-H 0\.0\.0\.0/);
   assert.match(dockerCompose(baseConfiguration), /node:22-bookworm-slim/);
   assert.doesNotMatch(dockerCompose(baseConfiguration), /node:22-alpine/);
-  assert.match(dockerCompose(baseConfiguration), /\[ -d node_modules\/\.pnpm \]/);
-  assert.match(dockerCompose(baseConfiguration), /\( \[ -d node_modules\/\.pnpm \]/);
+  assert.match(dockerCompose(baseConfiguration), /\[ ! -e \.\/node_modules\/\.bin\/next \]/);
+  assert.match(dockerCompose(baseConfiguration), /blame_node_modules:\/workspace\/node_modules/);
   assert.match(dockerCompose(baseConfiguration), /corepack pnpm install/);
   assert.doesNotMatch(dockerCompose(baseConfiguration), /"pnpm install/);
   assert.match(dockerCompose(baseConfiguration), /\.\/node_modules\/\.bin\/next dev -H 0\.0\.0\.0/);
@@ -244,7 +244,7 @@ test("builds Node API services for Hono Fastify and NestJS", () => {
     assert.match(compose, /api:/);
     assert.doesNotMatch(compose, /4000:4000/);
     assert.match(compose, /dev:api/);
-    assert.match(compose, /while \[ ! -d node_modules\/\.pnpm \]/);
+    assert.match(compose, /\[ ! -e \.\/node_modules\/\.bin\/vite \]/);
     assert.match(compose, /VITE_API_URL: "http:\/\/localhost:4000"/);
   }
 });
@@ -267,7 +267,7 @@ test("builds package-manager specific setup commands", () => {
 test("builds container-safe package manager commands", () => {
   assert.match(dockerCompose(baseConfiguration), /corepack prepare pnpm@10\.33\.2 --activate/);
   assert.match(dockerCompose(baseConfiguration), /corepack pnpm install/);
-  assert.match(dockerCompose(baseConfiguration), /\[ -d node_modules\/\.pnpm \]/);
+  assert.match(dockerCompose(baseConfiguration), /\[ ! -e \.\/node_modules\/\.bin\/next \]/);
   assert.match(
     dockerCompose({ ...baseConfiguration, packageManager: "yarn" }),
     /corepack yarn install/
