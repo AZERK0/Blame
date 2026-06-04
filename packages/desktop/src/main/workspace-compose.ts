@@ -27,6 +27,12 @@ export function dockerComposeWithCiForPackageInstalls(compose: string) {
   return addCiToPackageInstallServices(lines, servicesLine).join("\n");
 }
 
+export function dockerComposeWithPortableWindowsPaths(compose: string) {
+  return compose.replace(/([a-zA-Z]):\\([^\r\n"']*)/g, (_match, drive, path) => {
+    return `${drive}:/${path.replace(/\\/g, "/")}`;
+  });
+}
+
 function serviceSectionLine(lines: string[]) {
   return lines.findIndex((line) => /^services:\s*(?:#.*)?$/.test(line));
 }
@@ -181,7 +187,9 @@ function escapeRegExp(value: string) {
 }
 
 function projectRootCompose(compose: string, worktree: string) {
-  return compose.replace(/\$\{BLAME_PROJECT_ROOT\}/g, yamlPathValue(worktree));
+  return dockerComposeWithPortableWindowsPaths(
+    compose.replace(/\$\{BLAME_PROJECT_ROOT\}/g, worktree),
+  );
 }
 
 function yamlPathValue(path: string) {

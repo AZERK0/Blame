@@ -35,7 +35,11 @@ import {
   setProjectCreationWindowsProvider,
   type CreateProjectInput,
 } from "./project-creation";
-import { dockerComposeForPreview } from "./workspace-compose";
+import { setupShellCommand } from "./setup-shell";
+import {
+  dockerComposeForPreview,
+  dockerComposeWithPortableWindowsPaths,
+} from "./workspace-compose";
 import { copyProjectEnvFiles } from "./workspace-env";
 
 const execFileAsync = promisify(execFile);
@@ -327,7 +331,8 @@ async function runProjectSetup(input: RunProjectSetupInput) {
   await chmod(scriptPath, 0o755);
 
   const runId = randomUUID();
-  const child = spawn("bash", [scriptPath], {
+  const shell = setupShellCommand(scriptPath, { env });
+  const child = spawn(shell.command, shell.args, {
     cwd: worktree,
     detached: process.platform !== "win32",
     env,
@@ -378,6 +383,7 @@ async function completeProjectSetup(
 }
 
 async function startProjectCompose(worktree: string) {
+  await repairProjectCompose(worktree);
   await execFileAsync(
     "docker",
     [
@@ -407,6 +413,7 @@ async function stopProjectSetup(input: StopProjectSetupInput) {
     "docker-compose.yml",
   );
   if (!existsSync(composePath)) return false;
+  await repairComposeFile(composePath);
   await execFileAsync(
     "docker",
     [
@@ -501,10 +508,12 @@ async function runExistingProjectSetup(worktree: string) {
   if (!existsSync(scriptPath)) return;
   await appendRecoveryLog(worktree, "setup starting");
   await new Promise<void>((resolve, reject) => {
-    const child = spawn("bash", [scriptPath], {
+    const env = setupEnvironment(worktree);
+    const shell = setupShellCommand(scriptPath, { env });
+    const child = spawn(shell.command, shell.args, {
       cwd: worktree,
       detached: process.platform !== "win32",
-      env: setupEnvironment(worktree),
+      env,
     });
     trackWorkspaceProcess(child);
     child.stdout.on("data", (data: Buffer) =>
@@ -918,6 +927,7 @@ async function composeConfig(
   worktree: string,
   composePath: string,
 ): Promise<ComposeConfig> {
+  await repairComposeFile(composePath);
   const { stdout } = await execFileAsync(
     "docker",
     [
@@ -980,6 +990,7 @@ async function composePublishedAddress(
   port: number,
 ) {
   try {
+    await repairComposeFile(composePath);
     const { stdout } = await execFileAsync(
       "docker",
       [
@@ -998,6 +1009,17 @@ async function composePublishedAddress(
   } catch {
     return undefined;
   }
+}
+
+async function repairProjectCompose(worktree: string) {
+  await repairComposeFile(projectComposePath(worktree));
+}
+
+async function repairComposeFile(composePath: string) {
+  if (!existsSync(composePath)) return;
+  const compose = await readFile(composePath, "utf8");
+  const repairedCompose = dockerComposeWithPortableWindowsPaths(compose);
+  if (repairedCompose !== compose) await writeFile(composePath, repairedCompose, "utf8");
 }
 
 async function labeledContainerPreviewUrl(worktree: string) {
