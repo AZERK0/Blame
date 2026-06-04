@@ -9,6 +9,7 @@ import { promisify } from "node:util";
 import {
   applyProjectOverlays,
   initializeGeneratedRepository,
+  projectCreationDependencyScript,
   projectCreationRecipe,
   validateProjectTarget,
   type ProjectCreationRecipe,
@@ -109,6 +110,18 @@ test("builds Next.js recipe with selected package manager and overlays", () => {
     recipe.overlays.some((overlay) => overlay.path.endsWith(".blame/preview.json")),
     true
   );
+});
+
+test("builds project creation dependency checks from scaffold and setup recipes", () => {
+  const recipe = projectCreationRecipe(baseConfiguration, "/tmp/dependency-app");
+  const script = projectCreationDependencyScript(baseConfiguration, recipe);
+
+  assert.match(script, /git --version/);
+  assert.match(script, /docker --version/);
+  assert.match(script, /pnpm create next-app dependency-app/);
+  assert.match(script, /pnpm install/);
+  assert.match(script, /corepack prepare pnpm@10\.33\.2 --activate/);
+  assert.match(script, /corepack pnpm install/);
 });
 
 test("scaffolds uppercase project names with npm-safe directory names", () => {

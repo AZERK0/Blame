@@ -11,7 +11,12 @@ export type HostDependencyName =
   | "docker-compose"
   | "docker-daemon"
   | "node"
-  | "corepack";
+  | "corepack"
+  | "npm"
+  | "pnpm"
+  | "yarn"
+  | "bun"
+  | "pip";
 
 export type HostDependencyStatus = "missing" | "unavailable" | "unsupported";
 
@@ -105,12 +110,41 @@ async function hostDependencyIssues(
   if (requiresNodeTooling(setupScript)) {
     checks.push(checkNode(context), checkCorepack(context));
   }
+  checks.push(...barePackageManagerChecks(setupScript, context));
   issues.push(
     ...(await Promise.all(checks)).filter(
       (issue): issue is HostDependencyIssue => Boolean(issue),
     ),
   );
   return issues;
+}
+
+function barePackageManagerChecks(
+  setupScript: string,
+  context: CheckContext,
+) {
+  return [
+    ...bareCommandCheck(setupScript, context, "npm"),
+    ...bareCommandCheck(setupScript, context, "pnpm"),
+    ...bareCommandCheck(setupScript, context, "yarn"),
+    ...bareCommandCheck(setupScript, context, "bun"),
+    ...bareCommandCheck(setupScript, context, "pip"),
+  ];
+}
+
+function bareCommandCheck(
+  setupScript: string,
+  context: CheckContext,
+  command: Extract<HostDependencyName, "npm" | "pnpm" | "yarn" | "bun" | "pip">,
+) {
+  if (!requiresBareCommand(setupScript, command)) return [];
+  return [missingToolIssue(context, command, ["--version"], command)];
+}
+
+export function requiresBareCommand(setupScript: string, command: string) {
+  return new RegExp(`(?<!corepack\\s)\\b${escapeRegExp(command)}\\b`).test(
+    scriptWithoutShellComments(setupScript),
+  );
 }
 
 async function dockerRuntimeIssues(context: CheckContext) {
@@ -224,6 +258,15 @@ function macHostDependencyAction(
     return "Install and start Docker Desktop for Mac.";
   if (name === "corepack")
     return "Install Node.js 22 or newer, then run corepack --version.";
+  if (name === "npm")
+    return "Install Node.js 22 or newer with npm before creating the project.";
+  if (name === "pnpm")
+    return "Install pnpm or enable it through Corepack before creating the project.";
+  if (name === "yarn")
+    return "Install Yarn or enable it through Corepack before creating the project.";
+  if (name === "bun")
+    return "Install Bun from https://bun.sh before creating the project.";
+  if (name === "pip") return "Install Python with pip before creating the project.";
   return status === "unsupported"
     ? "Upgrade Node.js with nvm, fnm, or the official installer."
     : "Install Node.js 22 or newer with nvm, fnm, or the official installer.";
@@ -239,6 +282,15 @@ function windowsHostDependencyAction(
     return "Install and start Docker Desktop with WSL2 enabled.";
   if (name === "corepack")
     return "Install Node.js 22 or newer, then run corepack --version.";
+  if (name === "npm")
+    return "Install Node.js 22 or newer with npm before creating the project.";
+  if (name === "pnpm")
+    return "Install pnpm or run corepack enable before creating the project.";
+  if (name === "yarn")
+    return "Install Yarn or run corepack enable before creating the project.";
+  if (name === "bun")
+    return "Install Bun from https://bun.sh before creating the project.";
+  if (name === "pip") return "Install Python with pip before creating the project.";
   return status === "unsupported"
     ? "Upgrade Node.js with winget install OpenJS.NodeJS.LTS."
     : "Install Node.js with winget install OpenJS.NodeJS.LTS.";
@@ -253,6 +305,16 @@ function linuxHostDependencyAction(
     return "Install Docker Engine, the Compose plugin, and ensure the daemon is reachable.";
   if (name === "corepack")
     return "Install Node.js 22 or newer, then run corepack --version.";
+  if (name === "npm")
+    return "Install Node.js 22 or newer with npm before creating the project.";
+  if (name === "pnpm")
+    return "Install pnpm or run corepack enable before creating the project.";
+  if (name === "yarn")
+    return "Install Yarn or run corepack enable before creating the project.";
+  if (name === "bun")
+    return "Install Bun from https://bun.sh before creating the project.";
+  if (name === "pip")
+    return "Install python3-pip with your system package manager.";
   return status === "unsupported"
     ? "Upgrade Node.js with your system package manager, nvm, or fnm."
     : "Install Node.js 22 or newer with your system package manager, nvm, or fnm.";
@@ -266,6 +328,11 @@ function hostDependencyLabel(name: HostDependencyName) {
     "docker-daemon": "Docker daemon",
     git: "Git",
     node: "Node.js",
+    npm: "npm",
+    pnpm: "pnpm",
+    yarn: "Yarn",
+    bun: "Bun",
+    pip: "pip",
   };
   return labels[name];
 }
@@ -275,6 +342,10 @@ function scriptWithoutShellComments(setupScript: string) {
     .split("\n")
     .filter((line) => !line.trimStart().startsWith("#"))
     .join("\n");
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 async function runCommand(

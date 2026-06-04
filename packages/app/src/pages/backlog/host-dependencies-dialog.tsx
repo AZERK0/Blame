@@ -99,6 +99,11 @@ function dependencyLabel(issue: HostDependencyIssue) {
     "docker-daemon": "Docker daemon",
     git: "Git",
     node: "Node.js 22+",
+    npm: "npm",
+    pnpm: "pnpm",
+    yarn: "Yarn",
+    bun: "Bun",
+    pip: "pip",
   }
   return labels[issue.name]
 }
@@ -117,6 +122,11 @@ function dependencyUrl(issue: HostDependencyIssue) {
     "docker-daemon": "https://www.docker.com/products/docker-desktop/",
     git: "https://git-scm.com/downloads",
     node: "https://nodejs.org/en/download",
+    npm: "https://nodejs.org/en/download",
+    pnpm: "https://pnpm.io/installation",
+    yarn: "https://yarnpkg.com/getting-started/install",
+    bun: "https://bun.sh/docs/installation",
+    pip: "https://packaging.python.org/en/latest/tutorials/installing-packages/",
   }
   return urls[issue.name]
 }

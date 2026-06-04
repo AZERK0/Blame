@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   checkHostDependencies,
   parseNodeMajorVersion,
+  requiresBareCommand,
   requiresNodeTooling,
 } from "./host-dependencies.ts";
 
@@ -17,6 +18,13 @@ test("detects node tooling only when setup script needs it", () => {
   assert.equal(requiresNodeTooling("# pnpm install\necho ready"), false);
   assert.equal(requiresNodeTooling("corepack pnpm install"), true);
   assert.equal(requiresNodeTooling("npm install"), true);
+});
+
+test("detects bare package managers without matching corepack shims", () => {
+  assert.equal(requiresBareCommand("corepack pnpm install", "pnpm"), false);
+  assert.equal(requiresBareCommand("pnpm create vite", "pnpm"), true);
+  assert.equal(requiresBareCommand("corepack yarn install", "yarn"), false);
+  assert.equal(requiresBareCommand("yarn create vite", "yarn"), true);
 });
 
 test("passes when required host dependencies are available", async () => {
@@ -110,6 +118,22 @@ test("checks node and corepack when setup script needs package tooling", async (
 
   assert.equal(report.ok, true);
   assert.equal(calls.includes("node --version"), true);
+  assert.equal(calls.includes("corepack --version"), true);
+});
+
+test("checks bare project creation package managers", async () => {
+  const calls: string[] = [];
+  const report = await checkHostDependencies(
+    { platform: "linux", setupScript: "pnpm create vite\ncorepack pnpm install" },
+    async (command, args) => {
+      calls.push([command, ...args].join(" "));
+      if (command === "node") return "v22.12.0";
+      return "ok";
+    },
+  );
+
+  assert.equal(report.ok, true);
+  assert.equal(calls.includes("pnpm --version"), true);
   assert.equal(calls.includes("corepack --version"), true);
 });
 

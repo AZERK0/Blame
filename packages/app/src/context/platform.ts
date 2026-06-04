@@ -155,6 +155,11 @@ export type HostDependencyIssue = {
     | "docker-daemon"
     | "node"
     | "corepack"
+    | "npm"
+    | "pnpm"
+    | "yarn"
+    | "bun"
+    | "pip"
   status: "missing" | "unavailable" | "unsupported"
 }
 
