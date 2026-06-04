@@ -15,13 +15,8 @@ export type ProjectSetupRecipe = {
 type RuntimePlan = {
   containerCorepackCommand: string;
   containerDevCommand: string;
-  containerInstallCommand: string;
   containerInstallIfNeededCommand: string;
-  hostBootstrapCommands: string[];
   nodeImage: string;
-  packageManager: string;
-  installCommand: string;
-  devCommand: string;
   previewPort: number;
 };
 
@@ -43,6 +38,7 @@ export function projectSetupRecipe(
 ): ProjectSetupRecipe {
   const runtime = runtimePlan(configuration);
   const services = [
+    ...nodeModulesServices(runtime),
     nodeAppService(configuration, runtime),
     ...backendServices(configuration),
     ...databaseServices(configuration.database),
@@ -65,10 +61,8 @@ export function setupScript(
     `export COMPOSE_PROJECT_NAME="\${COMPOSE_PROJECT_NAME:-blame_$(pwd | cksum | awk '{print $1}')}"`,
     ...setupEnvironmentExports(configuration),
     ...envFileSetupCommands(),
-    ...runtime.hostBootstrapCommands,
-    runtime.installCommand,
     ...backendSetupCommands(configuration),
-    ...ormSetupCommands(configuration),
+    ...hostOrmSetupCommands(configuration),
     "",
   ].join("\n");
 }
@@ -78,6 +72,7 @@ export function dockerCompose(
   runtime = runtimePlan(configuration)
 ) {
   return composeYaml([
+    ...nodeModulesServices(runtime),
     nodeAppService(configuration, runtime),
     ...backendServices(configuration),
     ...databaseServices(configuration.database),
@@ -85,22 +80,29 @@ export function dockerCompose(
 }
 
 export function runtimePlan(configuration: NewProjectConfiguration): RuntimePlan {
-  const packageManager = nodePackageManager(configuration.packageManager);
   return {
     containerCorepackCommand: containerCorepackCommand(configuration.packageManager),
     containerDevCommand: containerDevCommand(configuration.frontend),
-    containerInstallCommand: `${containerPackageCommand(configuration.packageManager)} install`,
     containerInstallIfNeededCommand: containerInstallIfNeededCommand(
       configuration.packageManager,
       configuration.frontend,
     ),
-    hostBootstrapCommands: hostBootstrapCommands(configuration.packageManager),
     nodeImage: nodeImage(configuration.packageManager),
-    packageManager,
-    installCommand: hostInstallCommand(configuration.packageManager, packageManager),
-    devCommand: `${packageManager} run dev -- ${devHostArgs(configuration.frontend)}`,
     previewPort: previewPort(configuration.frontend),
   };
+}
+
+function nodeModulesServices(
+  runtime: RuntimePlan,
+): ServiceSpec[] {
+  return [
+    {
+      name: "node-modules-init",
+      image: runtime.nodeImage,
+      command: 'sh -lc "mkdir -p /workspace/node_modules && chown -R ${BLAME_HOST_UID}:${BLAME_HOST_GID} /workspace/node_modules"',
+      volumes: ["blame_node_modules:/workspace/node_modules"],
+    },
+  ];
 }
 
 function nodeAppService(
@@ -112,11 +114,11 @@ function nodeAppService(
     image: runtime.nodeImage,
     user: "${BLAME_HOST_UID}:${BLAME_HOST_GID}",
     workingDir: "/workspace",
-    command: `sh -lc "${runtime.containerCorepackCommand} && ${runtime.containerInstallIfNeededCommand} && ${runtime.containerDevCommand}"`,
+    command: `sh -lc "${runtime.containerCorepackCommand} && ${runtime.containerInstallIfNeededCommand} && ${containerOrmSetupCommand(configuration)} && ${runtime.containerDevCommand}"`,
     volumes: ["${BLAME_PROJECT_ROOT}:/workspace", "blame_node_modules:/workspace/node_modules"],
     ports: [`127.0.0.1::${runtime.previewPort}`],
     environment: nodeEnvironment(configuration),
-    dependsOn: serviceDependencies(configuration),
+    dependsOn: ["node-modules-init", ...serviceDependencies(configuration)],
     labels: {
       "blame.preview": "true",
       "blame.preview.port": String(runtime.previewPort),
@@ -134,10 +136,10 @@ function backendServices(configuration: NewProjectConfiguration): ServiceSpec[] 
         image: runtimePlan(configuration).nodeImage,
         user: "${BLAME_HOST_UID}:${BLAME_HOST_GID}",
         workingDir: "/workspace",
-        command: `sh -lc "${containerCorepackCommand(configuration.packageManager)} && ${containerInstallIfNeededCommand(configuration.packageManager, configuration.frontend)} && ${nodeApiCommand(configuration.backend, configuration.packageManager)}"`,
+        command: `sh -lc "${containerCorepackCommand(configuration.packageManager)} && ${containerWaitForFrontendDependenciesCommand(configuration.frontend)} && ${nodeApiCommand(configuration.backend, configuration.packageManager)}"`,
         volumes: ["${BLAME_PROJECT_ROOT}:/workspace", "blame_node_modules:/workspace/node_modules"],
         environment: nodeApiEnvironment(configuration),
-        dependsOn: databaseDependency(configuration.database),
+        dependsOn: ["node-modules-init", ...databaseDependency(configuration.database)],
       },
     ];
   }
@@ -208,7 +210,6 @@ function backendSetupCommands(configuration: NewProjectConfiguration) {
 function hostToolChecks(configuration: NewProjectConfiguration) {
   return [
     ...toolChecks(["git", "docker"]),
-    ...nodeToolChecks(configuration.packageManager),
     ...pythonToolChecks(configuration),
   ];
 }
@@ -218,14 +219,6 @@ function toolChecks(commands: string[]) {
     (command) =>
       `command -v ${command} >/dev/null || { echo "Missing required tool: ${command}" >&2; exit 1; }`,
   );
-}
-
-function nodeToolChecks(packageManager: PackageManager) {
-  if (packageManager === "bun") return toolChecks(["bun"]);
-  if (packageManager === "npm") return toolChecks(["node", "npm"]);
-  if (packageManager === "pnpm" || packageManager === "yarn")
-    return toolChecks(["node", "corepack"]);
-  return toolChecks(["node", "npm"]);
 }
 
 function pythonToolChecks(configuration: NewProjectConfiguration) {
@@ -255,17 +248,7 @@ function envFileSetupCommands() {
   ];
 }
 
-function ormSetupCommands(configuration: NewProjectConfiguration) {
-  if (configuration.orm === "prisma") {
-    return [
-      `if [ -f prisma/schema.prisma ] || [ -f schema.prisma ] || [ -f prisma.config.ts ]; then ${packageRunner(configuration.packageManager, "prisma generate")}; fi`,
-    ];
-  }
-  if (configuration.orm === "drizzle") {
-    return [
-      `if [ -f drizzle.config.ts ] || [ -f drizzle.config.js ]; then ${packageRunner(configuration.packageManager, "drizzle-kit generate")}; fi`,
-    ];
-  }
+function hostOrmSetupCommands(configuration: NewProjectConfiguration) {
   if (configuration.orm === "sqlalchemy" || configuration.orm === "sqlmodel") {
     return [
       `if [ -f alembic.ini ]; then ${pythonRunner(configuration.packageManager, "alembic upgrade head")}; fi`,
@@ -362,27 +345,6 @@ function packageRunner(packageManager: PackageManager, command: string) {
   return `corepack pnpm exec ${command}`;
 }
 
-function nodePackageManager(packageManager: PackageManager) {
-  if (["npm", "yarn", "bun"].includes(packageManager)) return packageManager;
-  if (packageManager === "pnpm") return "pnpm";
-  return "npm";
-}
-
-function hostBootstrapCommands(packageManager: PackageManager) {
-  if (packageManager === "pnpm") return ["corepack prepare pnpm@10.33.2 --activate"];
-  if (packageManager === "yarn") return ["corepack prepare yarn@stable --activate"];
-  return [];
-}
-
-function hostInstallCommand(
-  packageManager: PackageManager,
-  resolvedPackageManager: string
-) {
-  if (packageManager === "pnpm") return "corepack pnpm install";
-  if (packageManager === "yarn") return "corepack yarn install";
-  return `${resolvedPackageManager} install`;
-}
-
 function containerPackageCommand(packageManager: PackageManager) {
   if (packageManager === "pnpm") return "corepack pnpm";
   if (packageManager === "yarn") return "corepack yarn";
@@ -402,6 +364,18 @@ function containerInstallIfNeededCommand(
 ) {
   const installCommand = `${containerPackageCommand(packageManager)} install`;
   return `if [ ! -e ${containerExecutablePath(frontend)} ]; then ${installCommand}; fi`;
+}
+
+function containerWaitForFrontendDependenciesCommand(frontend: FrontendFramework) {
+  return `while [ ! -e ${containerExecutablePath(frontend)} ]; do sleep 1; done`;
+}
+
+function containerOrmSetupCommand(configuration: NewProjectConfiguration) {
+  if (configuration.orm === "prisma")
+    return `if [ -f prisma/schema.prisma ] || [ -f schema.prisma ] || [ -f prisma.config.ts ]; then ${packageRunner(configuration.packageManager, "prisma generate")}; fi`;
+  if (configuration.orm === "drizzle")
+    return `if [ -f drizzle.config.ts ] || [ -f drizzle.config.js ]; then ${packageRunner(configuration.packageManager, "drizzle-kit generate")}; fi`;
+  return "true";
 }
 
 function nodeImage(packageManager: PackageManager) {
@@ -424,11 +398,6 @@ function containerExecutablePath(frontend: FrontendFramework) {
   if (frontend === "next") return "./node_modules/.bin/next";
   if (frontend === "nuxt") return "./node_modules/.bin/nuxt";
   return "./node_modules/.bin/vite";
-}
-
-function devHostArgs(frontend: FrontendFramework) {
-  if (frontend === "next") return "-H 0.0.0.0";
-  return "--host 0.0.0.0";
 }
 
 function composeYaml(services: ServiceSpec[]) {

@@ -158,7 +158,7 @@ test("maps advanced options to generated files", () => {
 });
 
 test("builds Blame initialization defaults without AI analysis", () => {
-  assert.match(setupScript(baseConfiguration), /corepack pnpm install/);
+  assert.doesNotMatch(setupScript(baseConfiguration), /\b(?:npm|pnpm|yarn|bun|corepack)\b/);
   assert.match(setupScript(baseConfiguration), /set -euo pipefail/);
   assert.match(setupScript(baseConfiguration), /command -v docker/);
   assert.match(setupScript(baseConfiguration), /COMPOSE_PROJECT_NAME/);
@@ -169,9 +169,12 @@ test("builds Blame initialization defaults without AI analysis", () => {
   assert.match(dockerCompose(baseConfiguration), /-H 0\.0\.0\.0/);
   assert.match(dockerCompose(baseConfiguration), /node:22-bookworm-slim/);
   assert.doesNotMatch(dockerCompose(baseConfiguration), /node:22-alpine/);
+  assert.match(dockerCompose(baseConfiguration), /node-modules-init:/);
+  assert.match(dockerCompose(baseConfiguration), /chown -R \$\{BLAME_HOST_UID\}:\$\{BLAME_HOST_GID\}/);
   assert.match(dockerCompose(baseConfiguration), /\[ ! -e \.\/node_modules\/\.bin\/next \]/);
   assert.match(dockerCompose(baseConfiguration), /blame_node_modules:\/workspace\/node_modules/);
   assert.match(dockerCompose(baseConfiguration), /corepack pnpm install/);
+  assert.match(dockerCompose(baseConfiguration), /corepack pnpm exec prisma generate/);
   assert.doesNotMatch(dockerCompose(baseConfiguration), /"pnpm install/);
   assert.match(dockerCompose(baseConfiguration), /\.\/node_modules\/\.bin\/next dev -H 0\.0\.0\.0/);
   assert.doesNotMatch(dockerCompose(baseConfiguration), /pnpm run dev -- -H/);
@@ -244,17 +247,17 @@ test("builds Node API services for Hono Fastify and NestJS", () => {
     assert.match(compose, /api:/);
     assert.doesNotMatch(compose, /4000:4000/);
     assert.match(compose, /dev:api/);
-    assert.match(compose, /\[ ! -e \.\/node_modules\/\.bin\/vite \]/);
+    assert.match(compose, /while \[ ! -e \.\/node_modules\/\.bin\/vite \]/);
     assert.match(compose, /VITE_API_URL: "http:\/\/localhost:4000"/);
   }
 });
 
 test("builds package-manager specific setup commands", () => {
-  assert.match(
+  assert.doesNotMatch(
     setupScript({ ...baseConfiguration, packageManager: "npm" }),
     /npm install/
   );
-  assert.match(
+  assert.doesNotMatch(
     setupScript({ ...baseConfiguration, packageManager: "bun" }),
     /bun install/
   );
@@ -283,13 +286,14 @@ test("builds container-safe package manager commands", () => {
 });
 
 test("guards ORM setup commands until config files exist", () => {
+  assert.doesNotMatch(setupScript(baseConfiguration), /prisma generate/);
   assert.match(
-    setupScript(baseConfiguration),
+    dockerCompose(baseConfiguration),
     /if \[ -f prisma\/schema\.prisma \].+corepack pnpm exec prisma generate; fi/
   );
-  assert.doesNotMatch(setupScript(baseConfiguration), /npx prisma generate/);
+  assert.doesNotMatch(dockerCompose(baseConfiguration), /npx prisma generate/);
   assert.match(
-    setupScript({ ...baseConfiguration, orm: "drizzle" }),
+    dockerCompose({ ...baseConfiguration, orm: "drizzle" }),
     /if \[ -f drizzle\.config\.ts \].+corepack pnpm exec drizzle-kit generate; fi/
   );
 });
@@ -318,7 +322,7 @@ const matrixCases: Array<{
       overlays: [".env.example", "README.md", ".blame/preview.json"],
       scaffold: ["pnpm", "create", "next-app", "matrix-next"],
       scaffoldIncludes: ["--tailwind", "--eslint", "--use-pnpm"],
-      setup: [/corepack pnpm install/, /corepack pnpm exec prisma generate/],
+      setup: [/COMPOSE_PROJECT_NAME/, /cp \.env\.example \.env/],
       target: "/tmp/matrix-next",
     },
   },
@@ -340,7 +344,7 @@ const matrixCases: Array<{
       devDependencies: ["@biomejs/biome", "drizzle-kit"],
       overlays: [".env.example", "README.md", ".blame/preview.json"],
       scaffold: ["pnpm", "create", "vite", "matrix-react", "--template", "react-ts"],
-      setup: [/corepack pnpm install/, /corepack pnpm exec drizzle-kit generate/],
+      setup: [/COMPOSE_PROJECT_NAME/, /cp \.env\.example \.env/],
       target: "/tmp/matrix-react",
     },
   },
@@ -359,7 +363,7 @@ const matrixCases: Array<{
       dependencies: ["@nuxt/ui", "pg"],
       overlays: [".env.example", "README.md", ".blame/preview.json"],
       scaffold: ["pnpm", "create", "nuxt", "matrix-nuxt"],
-      setup: [/corepack pnpm install/],
+      setup: [/COMPOSE_PROJECT_NAME/, /cp \.env\.example \.env/],
       target: "/tmp/matrix-nuxt",
     },
   },
@@ -379,7 +383,7 @@ const matrixCases: Array<{
       dependencies: ["pg", "primevue"],
       overlays: [".env.example", "README.md", ".blame/preview.json", "api/main.py", "pyproject.toml"],
       scaffold: ["npm", "create", "vite@latest", "matrix-vue", "--template", "vue-ts"],
-      setup: [/npm install/, /pip install uv && uv sync/, /uv run alembic upgrade head/],
+      setup: [/pip install uv && uv sync/, /uv run alembic upgrade head/],
       target: "/tmp/matrix-vue",
     },
   },
@@ -399,7 +403,7 @@ const matrixCases: Array<{
       devDependencies: ["drizzle-kit", "shadcn-svelte"],
       overlays: [".env.example", "README.md", ".blame/preview.json"],
       scaffold: ["pnpm", "dlx", "sv", "create", "matrix-svelte"],
-      setup: [/corepack pnpm install/, /corepack pnpm exec drizzle-kit generate/],
+      setup: [/COMPOSE_PROJECT_NAME/, /cp \.env\.example \.env/],
       target: "/tmp/matrix-svelte",
     },
   },
@@ -417,7 +421,7 @@ const matrixCases: Array<{
       compose: [/- "127\.0\.0\.1::5173"/],
       overlays: [".env.example", "README.md", ".blame/preview.json"],
       scaffold: ["pnpm", "create", "vite", "matrix-empty", "--template", "react-ts"],
-      setup: [/corepack pnpm install/],
+      setup: [/COMPOSE_PROJECT_NAME/, /cp \.env\.example \.env/],
       target: "/tmp/matrix-empty",
     },
   },

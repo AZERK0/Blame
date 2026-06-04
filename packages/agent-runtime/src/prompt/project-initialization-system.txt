@@ -16,16 +16,19 @@ Return exactly:
 
 It must:
 
-- install dependencies and prepare required env files only
+- prepare required env files and host-only non-Node setup only
 - copy or generate env files from `.env.example`, `.env.sample`, `.env.template`, or equivalent files when present
 - export the same env values it writes when Compose needs them
 - give Compose variable references safe defaults when Blame must start Compose in a separate process after the setup script exits
 - provide harmless development placeholders for required env variables that are blank in examples when startup validation requires non-empty values
 - set a unique `COMPOSE_PROJECT_NAME`
 - fail early with clear errors for missing host tools
+- leave Node dependency installation, Node package manager bootstrapping, and Node framework preparation to Docker Compose services
 
 It must never:
 
+- install Node dependencies with npm, pnpm, yarn, bun, npx, corepack, or equivalent commands
+- run Node package manager scripts or Node ORM generators
 - launch Docker Compose, containers, dev servers, or preview URLs
 - manage worktrees or write inside `.git`
 - create alternate compose files outside Blame's managed compose path
@@ -45,8 +48,10 @@ It must:
 - mark exactly one preview service with `blame.preview=true`, `blame.preview.port=<internal port>`, `blame.preview.protocol=http`, `blame.preview.path=/`
 - isolate containers, networks, and volumes through `COMPOSE_PROJECT_NAME`
 - run worktree-writing services as `${BLAME_HOST_UID}:${BLAME_HOST_GID}`
+- use a writable container-owned `node_modules` volume for Node services instead of host-installed or bind-mounted `node_modules`
 - ensure package manager cache volumes mounted into non-root services are writable by `${BLAME_HOST_UID}:${BLAME_HOST_GID}` before use, either through a root init service with `chown` and `depends_on` or by using writable bind/cache paths
 - bootstrap package managers inside containers before project commands
+- install Node dependencies inside exactly one container service before starting services that need them
 - set `CI=true` for non-interactive containers that run package manager installs
 - avoid concurrent package manager installs that write to the same bind-mounted workspace, `node_modules`, or package manager store
 - prefer existing package scripts and environment variables over adding framework CLI flags unless the scan proves those flags are supported

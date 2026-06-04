@@ -43,7 +43,6 @@ import {
 import { copyProjectEnvFiles } from "./workspace-env";
 
 const execFileAsync = promisify(execFile);
-const previewStartupTimeoutMs = 60_000;
 const previewStartupIntervalMs = 1_000;
 const forceKillDelayMs = 1_500;
 const previewResolveTimeoutMs = 45_000;
@@ -122,6 +121,12 @@ type DockerContainer = {
       string,
       Array<{ HostIp?: string; HostPort?: string }> | null
     >;
+  };
+  State?: {
+    Health?: {
+      Status?: string;
+    };
+    Status?: string;
   };
 };
 
@@ -398,7 +403,7 @@ async function startProjectCompose(worktree: string) {
   await repairProjectCompose(worktree);
   await runDockerComposeUp(worktree);
   const previewUrl = await waitForPreviewUrl(worktree);
-  await waitForPreview(previewUrl);
+  await waitForPreview(worktree, previewUrl);
   return previewUrl;
 }
 
@@ -1083,7 +1088,7 @@ async function appendDockerComposeOutput(worktree: string, args: string[]) {
 }
 
 async function labeledContainerPreviewUrl(worktree: string) {
-  const containers = await previewContainers();
+  const containers = await previewContainers(false);
   const container = containers.find((container) =>
     containerMatchesWorktree(container, worktree),
   );
@@ -1101,15 +1106,19 @@ async function labeledContainerPreviewUrl(worktree: string) {
   );
 }
 
-async function previewContainers() {
+async function previewContainers(includeStopped: boolean) {
   try {
-    const { stdout } = await execFileAsync("docker", [
-      "ps",
-      "--filter",
-      "label=blame.preview=true",
-      "--format",
-      "{{.ID}}",
-    ]);
+    const { stdout } = await execFileAsync(
+      "docker",
+      [
+        "ps",
+        ...(includeStopped ? ["-a"] : []),
+        "--filter",
+        "label=blame.preview=true",
+        "--format",
+        "{{.ID}}",
+      ],
+    );
     const ids = stdout
       .split("\n")
       .map((line) => line.trim())
@@ -1143,13 +1152,35 @@ function containerMatchesWorktree(
   );
 }
 
-async function waitForPreview(url: string) {
-  const deadline = Date.now() + previewStartupTimeoutMs;
-  while (Date.now() < deadline) {
+async function waitForPreview(worktree: string, url: string) {
+  for (;;) {
     if (await previewResponds(url)) return;
+    await assertPreviewContainerCanStillStart(worktree);
     await delay(previewStartupIntervalMs);
   }
-  throw new Error(`Preview did not respond at ${url}`);
+}
+
+async function assertPreviewContainerCanStillStart(worktree: string) {
+  const container = await previewContainerForWorktree(worktree);
+  if (!container) {
+    await appendComposeDiagnostics(worktree);
+    throw new Error("Preview container is not running");
+  }
+  const status = container.State?.Status;
+  const health = container.State?.Health?.Status;
+  if (health === "unhealthy" || failedContainerStatus(status)) {
+    await appendComposeDiagnostics(worktree);
+    throw new Error(`Preview container stopped before responding (${health || status})`);
+  }
+}
+
+async function previewContainerForWorktree(worktree: string) {
+  const containers = await previewContainers(true);
+  return containers.find((container) => containerMatchesWorktree(container, worktree));
+}
+
+function failedContainerStatus(status: string | undefined) {
+  return status === "dead" || status === "exited" || status === "removing";
 }
 
 async function previewResponds(url: string) {
