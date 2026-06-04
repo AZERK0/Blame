@@ -46,6 +46,7 @@ const execFileAsync = promisify(execFile);
 const previewStartupTimeoutMs = 60_000;
 const previewStartupIntervalMs = 1_000;
 const forceKillDelayMs = 1_500;
+const composeUpRetryDelaysMs = [2_000, 5_000, 10_000];
 
 type WorkspacePathInput = {
   root: string;
@@ -384,24 +385,42 @@ async function completeProjectSetup(
 
 async function startProjectCompose(worktree: string) {
   await repairProjectCompose(worktree);
-  await execFileAsync(
-    "docker",
-    [
-      "compose",
-      "-f",
-      projectComposePath(worktree),
-      "--project-directory",
-      worktree,
-      "up",
-      "-d",
-      "--remove-orphans",
-    ],
-    { cwd: worktree, env: setupEnvironment(worktree) },
-  );
+  await runDockerComposeUp(worktree);
   const previewUrl = await resolveProjectPreviewUrl({ worktree });
   if (!previewUrl) throw new Error("Unable to resolve project preview URL");
   await waitForPreview(previewUrl);
   return previewUrl;
+}
+
+async function runDockerComposeUp(worktree: string) {
+  const args = [
+    "compose",
+    "-f",
+    projectComposePath(worktree),
+    "--project-directory",
+    worktree,
+    "up",
+    "-d",
+    "--remove-orphans",
+  ];
+
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      await execFileAsync("docker", args, {
+        cwd: worktree,
+        env: setupEnvironment(worktree),
+      });
+      return;
+    } catch (error) {
+      const retryDelay = composeUpRetryDelaysMs[attempt];
+      if (!retryDelay || !transientDockerPullError(error)) throw error;
+      await appendRecoveryLog(
+        worktree,
+        `compose pull interrupted, retrying in ${Math.round(retryDelay / 1_000)}s`,
+      );
+      await delay(retryDelay);
+    }
+  }
 }
 
 async function stopProjectSetup(input: StopProjectSetupInput) {
@@ -727,6 +746,20 @@ async function removeGitWorktree(repositoryRoot: string, worktree: string) {
 
 function isDirectoryNotEmptyError(error: unknown) {
   return commandText(error, "stderr").includes("Directory not empty");
+}
+
+function transientDockerPullError(error: unknown) {
+  return /failed to copy|httpReadSeeker|unexpected EOF|\bEOF\b|TLS handshake timeout|connection reset|i\/o timeout|context deadline exceeded|cloudfront\.docker\.com/i.test(
+    commandErrorText(error),
+  );
+}
+
+function commandErrorText(error: unknown) {
+  return [errorMessageText(error), commandText(error, "stdout"), commandText(error, "stderr")].join("\n");
+}
+
+function errorMessageText(error: unknown) {
+  return error instanceof Error ? error.message : "";
 }
 
 function commandText(error: unknown, key: "stdout" | "stderr") {
