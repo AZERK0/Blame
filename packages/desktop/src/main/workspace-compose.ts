@@ -1,6 +1,9 @@
 export function dockerComposeForPreview(compose: string, worktree: string) {
+  const previewCompose = projectRootCompose(compose, worktree);
   return dockerComposeWithCiForPackageInstalls(
-    dockerComposeWithCorepackPnpm(dockerComposeWithHostUser(compose, worktree)),
+    dockerComposeWithCorepackPnpm(
+      dockerComposeWithHostUser(previewCompose, worktree),
+    ),
   );
 }
 
@@ -156,6 +159,7 @@ function ciEnvironmentLine(lines: string[], environmentIndex: number) {
 function mountsWorktree(lines: string[], worktree: string) {
   const service = lines.join("\n");
   const escapedWorktree = escapeRegExp(worktree);
+  const escapedYamlWorktree = escapeRegExp(yamlPathValue(worktree));
   return (
     /(^|\n)\s*-\s*(?:\.|\$PWD|\$\{PWD\})(?:\/[^:]*)?:/.test(service) ||
     /(^|\n)\s*-\s*\$\{BLAME_PROJECT_ROOT\}(?:\/[^:]*)?:/.test(service) ||
@@ -164,10 +168,22 @@ function mountsWorktree(lines: string[], worktree: string) {
     new RegExp(`(^|\\n)\\s*-\\s*${escapedWorktree}(?:\\/[^:]*)?:`).test(
       service,
     ) ||
-    new RegExp(`source:\\s*${escapedWorktree}`).test(service)
+    new RegExp(`source:\\s*${escapedWorktree}`).test(service) ||
+    new RegExp(`(^|\\n)\\s*-\\s*${escapedYamlWorktree}(?:\\/[^:]*)?:`).test(
+      service,
+    ) ||
+    new RegExp(`source:\\s*${escapedYamlWorktree}`).test(service)
   );
 }
 
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function projectRootCompose(compose: string, worktree: string) {
+  return compose.replace(/\$\{BLAME_PROJECT_ROOT\}/g, yamlPathValue(worktree));
+}
+
+function yamlPathValue(path: string) {
+  return path.replace(/\\/g, "/");
 }

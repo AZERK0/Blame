@@ -321,10 +321,7 @@ async function runProjectSetup(input: RunProjectSetupInput) {
   await writeFile(logPath, "", "utf8");
   await writeFile(
     composePath,
-    dockerComposeForPreview(
-      projectRootCompose(input.dockerCompose, worktree),
-      worktree,
-    ),
+    dockerComposeForPreview(input.dockerCompose, worktree),
     "utf8",
   );
   await chmod(scriptPath, 0o755);
@@ -349,10 +346,6 @@ async function runProjectSetup(input: RunProjectSetupInput) {
   });
 
   return { runId };
-}
-
-function projectRootCompose(compose: string, worktree: string) {
-  return compose.replace(/\$\{BLAME_PROJECT_ROOT\}/g, worktree);
 }
 
 async function completeProjectSetup(

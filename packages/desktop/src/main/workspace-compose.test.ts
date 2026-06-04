@@ -113,3 +113,24 @@ test("adds host user for project root placeholder mounts", () => {
 
   assert.match(result, /user: "\$\{BLAME_HOST_UID\}:\$\{BLAME_HOST_GID\}"/);
 });
+
+test("normalizes Windows project root placeholders for YAML", () => {
+  const compose = [
+    "services:",
+    "  app:",
+    "    volumes:",
+    "      - ${BLAME_PROJECT_ROOT}:/workspace",
+    "    command:",
+    "      - bash",
+    "      - -lc",
+    "      - npm install && npm run dev",
+  ].join("\n");
+
+  const result = dockerComposeForPreview(
+    compose,
+    String.raw`C:\Users\vanwa\Downloads\projet_test`,
+  );
+
+  assert.match(result, /C:\/Users\/vanwa\/Downloads\/projet_test:\/workspace/);
+  assert.doesNotMatch(result, /C:\\Users/);
+});
