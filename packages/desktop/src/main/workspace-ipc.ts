@@ -414,32 +414,38 @@ async function stopProjectSetup(input: StopProjectSetupInput) {
   );
   if (!existsSync(composePath)) return false;
   await repairComposeFile(composePath);
-  await execFileAsync(
-    "docker",
-    [
-      "compose",
-      "-f",
-      composePath,
-      "--project-directory",
-      worktree,
-      "down",
-      "--remove-orphans",
-    ],
-    { cwd: worktree, env: setupEnvironment(worktree) },
-  );
-  return true;
+  try {
+    await execFileAsync(
+      "docker",
+      [
+        "compose",
+        "-f",
+        composePath,
+        "--project-directory",
+        worktree,
+        "down",
+        "--remove-orphans",
+      ],
+      { cwd: worktree, env: setupEnvironment(worktree) },
+    );
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 async function removeWorktree(input: RemoveWorktreeInput) {
   const repositoryRoot = resolve(input.repositoryRoot);
   const worktree = resolve(input.worktree);
   await assertGitRepository(repositoryRoot);
-  if (!(await worktreeRegistered(repositoryRoot, worktree))) return false;
+  const registered = await worktreeRegistered(repositoryRoot, worktree);
+  if (!registered && !existsSync(worktree)) return false;
   removingWorktrees.add(worktree);
   try {
     await stopSetupRunsForWorktree(worktree);
     previewRecoveries.delete(worktree);
-    await removeGitWorktree(repositoryRoot, worktree);
+    if (registered) await removeGitWorktree(repositoryRoot, worktree);
+    else await rm(worktree, { recursive: true, force: true });
     removedWorktrees.add(worktree);
     return true;
   } finally {
@@ -750,7 +756,16 @@ async function worktreeRegistered(cwd: string, worktree: string) {
   );
   return stdout
     .split("\n")
-    .some((line) => line.trim() === `worktree ${worktree}`);
+    .some((line) => worktreeLineMatches(line, worktree));
+}
+
+function worktreeLineMatches(line: string, worktree: string) {
+  if (!line.startsWith("worktree ")) return false;
+  return normalizedPath(line.slice("worktree ".length).trim()) === normalizedPath(worktree);
+}
+
+function normalizedPath(path: string) {
+  return resolve(path.replace(/\\/g, "/")).replace(/\\/g, "/").toLowerCase();
 }
 
 function storySlug(storyId: number, title: string) {
