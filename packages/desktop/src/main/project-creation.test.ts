@@ -206,6 +206,33 @@ test("advanced scripts and TypeScript alias options update project files", async
   assert.deepEqual(tsconfig.compilerOptions.paths["@/*"], ["./src/*"]);
 });
 
+test("TypeScript alias option accepts JSONC tsconfig files", async () => {
+  const parent = await mkdtemp(join(tmpdir(), "blame-new-project-"));
+  const target = join(parent, "jsonc-app");
+  await mkdir(target);
+  await writeFile(join(target, "package.json"), '{"name":"jsonc-app"}', "utf8");
+  await writeFile(
+    join(target, "tsconfig.json"),
+    [
+      "{",
+      "  // generated framework tsconfig",
+      '  "files": [],',
+      '  "references": [{"path": "./.nuxt/tsconfig.app.json"}],',
+      "}",
+      "",
+    ].join("\n"),
+    "utf8"
+  );
+
+  await applyProjectOverlays(target, [], {
+    ...baseConfiguration,
+    advancedOptions: ["typescriptAlias"],
+  });
+
+  const tsconfig = JSON.parse(await readFile(join(target, "tsconfig.json"), "utf8"));
+  assert.deepEqual(tsconfig.compilerOptions.paths["@/*"], ["./src/*"]);
+});
+
 test("monorepo option updates workspace metadata", async () => {
   const parent = await mkdtemp(join(tmpdir(), "blame-new-project-"));
   const target = join(parent, "monorepo-app");
@@ -451,7 +478,7 @@ const matrixCases: Array<{
       compose: [/- "127\.0\.0\.1::3000"/, /postgres:17-alpine/],
       dependencies: ["@nuxt/ui", "pg"],
       overlays: [".env.example", "README.md", ".blame/preview.json"],
-      scaffold: ["pnpm", "create", "nuxt", "matrix-nuxt"],
+      scaffold: ["pnpm", "create", "nuxt", "matrix-nuxt", "--template", "minimal", "--no-install", "--packageManager=pnpm", "--gitInit=false", "--modules="],
       setup: [/COMPOSE_PROJECT_NAME/, /cp \.env\.example \.env/],
       target: "/tmp/matrix-nuxt",
     },
@@ -491,7 +518,7 @@ const matrixCases: Array<{
       dependencies: ["better-sqlite3", "drizzle-orm"],
       devDependencies: ["drizzle-kit", "shadcn-svelte"],
       overlays: [".env.example", "README.md", ".blame/preview.json"],
-      scaffold: ["pnpm", "dlx", "sv", "create", "matrix-svelte"],
+      scaffold: ["pnpm", "dlx", "sv", "create", "matrix-svelte", "--template", "minimal", "--types", "ts", "--no-add-ons", "--no-install", "--no-dir-check", "--no-download-check"],
       setup: [/COMPOSE_PROJECT_NAME/, /cp \.env\.example \.env/],
       target: "/tmp/matrix-svelte",
     },

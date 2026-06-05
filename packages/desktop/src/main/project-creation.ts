@@ -302,7 +302,16 @@ function scaffoldCommand(
   if (configuration.frontend === "nuxt") {
     return {
       command: pm,
-      args: [...createArgs(pm, "nuxt"), scaffoldName],
+      args: [
+        ...createArgs(pm, "nuxt"),
+        scaffoldName,
+        "--template",
+        "minimal",
+        "--no-install",
+        `--packageManager=${pm}`,
+        "--gitInit=false",
+        "--modules=",
+      ],
       cwd: parent,
     };
   }
@@ -311,8 +320,8 @@ function scaffoldCommand(
     command: pm === "npm" ? "npx" : pm,
     args:
       pm === "npm"
-        ? ["sv", "create", scaffoldName, "--template", "minimal", "--types", "ts", "--no-add-ons", "--no-install"]
-        : ["dlx", "sv", "create", scaffoldName, "--template", "minimal", "--types", "ts", "--no-add-ons", "--no-install"],
+        ? ["sv", "create", scaffoldName, "--template", "minimal", "--types", "ts", "--no-add-ons", "--no-install", "--no-dir-check", "--no-download-check"]
+        : ["dlx", "sv", "create", scaffoldName, "--template", "minimal", "--types", "ts", "--no-add-ons", "--no-install", "--no-dir-check", "--no-download-check"],
     cwd: parent,
   };
 }
@@ -571,7 +580,7 @@ async function updateTypeScriptAliases(
   for (const file of ["tsconfig.json", "tsconfig.app.json"]) {
     const path = join(target, file);
     if (!existsSync(path)) continue;
-    const parsed = JSON.parse(await readFile(path, "utf8"));
+    const parsed = parseJsonc(await readFile(path, "utf8"));
     parsed.compilerOptions = {
       ...parsed.compilerOptions,
       baseUrl: parsed.compilerOptions?.baseUrl ?? ".",
@@ -582,6 +591,51 @@ async function updateTypeScriptAliases(
     };
     await writeFile(path, `${JSON.stringify(parsed, null, 2)}\n`, "utf8");
   }
+}
+
+function parseJsonc(content: string) {
+  return JSON.parse(stripTrailingCommas(stripJsonComments(content)));
+}
+
+function stripJsonComments(content: string) {
+  let output = "";
+  let inString = false;
+  let quote = "";
+  let escaped = false;
+  for (let index = 0; index < content.length; index += 1) {
+    const current = content[index];
+    const next = content[index + 1];
+    if (inString) {
+      output += current;
+      escaped = current === "\\" && !escaped;
+      if (current === quote && !escaped) inString = false;
+      if (current !== "\\") escaped = false;
+      continue;
+    }
+    if (current === '"' || current === "'") {
+      inString = true;
+      quote = current;
+      output += current;
+      continue;
+    }
+    if (current === "/" && next === "/") {
+      while (index < content.length && content[index] !== "\n") index += 1;
+      output += "\n";
+      continue;
+    }
+    if (current === "/" && next === "*") {
+      index += 2;
+      while (index < content.length && !(content[index] === "*" && content[index + 1] === "/")) index += 1;
+      index += 1;
+      continue;
+    }
+    output += current;
+  }
+  return output;
+}
+
+function stripTrailingCommas(content: string) {
+  return content.replace(/,\s*([}\]])/g, "$1");
 }
 
 function packageScripts(
@@ -875,9 +929,15 @@ function runCommand(
   return new Promise<void>((resolveCommand, reject) => {
     const child = spawn(recipe.command, recipe.args, {
       cwd: recipe.cwd,
-      env: { ...process.env, PATH: setupPath() },
+      env: {
+        ...process.env,
+        CI: "true",
+        PATH: setupPath(),
+        npm_config_yes: "true",
+      },
       shell: process.platform === "win32",
     });
+    child.stdin.end();
 
     child.stdout.on("data", (data: Buffer) =>
       emit({ type: "stdout", data: data.toString() })
