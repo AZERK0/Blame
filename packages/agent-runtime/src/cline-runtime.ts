@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto"
 import { execFile } from "node:child_process"
-import { appendFile, mkdir, rm } from "node:fs/promises"
+import { access, appendFile, mkdir, rm } from "node:fs/promises"
 import { basename, dirname, join } from "node:path"
 import { promisify } from "node:util"
 
@@ -463,7 +463,10 @@ export class BlameAgentRuntime {
         toolPolicies: toolPolicies(true),
       })
       const failure = resultFailureMessage(session.result)
-      if (failure) throw new Error(failure)
+      if (failure) {
+        if (!await generatedProjectLooksReady(input.cwd)) throw new Error(failure)
+        this.emitSessionNotice(sessionId, `New project generation agent ended after scaffold: ${failure}`)
+      }
       this.emitSessionNotice(sessionId, "New project generation agent finished.")
       return {
         path: input.cwd,
@@ -1117,6 +1120,10 @@ function newProjectGenerationPrompt(input: StartNewProjectGenerationInput) {
       ? "- Auth is requested: add only the smallest working auth scaffold appropriate for the selected stack."
       : "- Auth is not requested: do not add auth-related dependencies, screens, routes, schemas, or services.",
     "- Add only files required by selected advanced options.",
+    "- Do not downgrade or upgrade framework versions after the CLI creates the starter.",
+    "- Keep framework config file extensions compatible with the installed framework version.",
+    "- Do not chase build, lint, peer dependency, or framework warnings during project creation.",
+    "- Do not read files at the end to verify coherence. Stop after dependency installation and final required file writes.",
     "",
     "Wizard brief (normalized JSON):",
     JSON.stringify(
@@ -1146,18 +1153,30 @@ function newProjectGenerationPrompt(input: StartNewProjectGenerationInput) {
     "- Do not use sudo and do not require global installs.",
     "",
     "Verification before completion:",
-    "- Install dependencies using the selected package manager/runtime.",
-    "- Run the most relevant build command. Run lint and test only when those scripts exist or were requested.",
-    "- Verify the local dev command only when feasible without leaving a long-running process active.",
-    "- Fix blocking generation, install, build, lint, or test errors you encounter.",
-    "- Do not chase non-blocking warnings, polish, or cosmetic starter content.",
-    "- Finish with a concise summary of created files, verification results, and any caveats.",
+    "- Install dependencies once using the selected package manager/runtime.",
+    "- Do not run build, lint, test, dev servers, preview commands, or long-running processes.",
+    "- Do not inspect generated source files after installation unless dependency installation failed and the exact file must be fixed.",
+    "- Fix only errors that prevent the framework starter from being created or dependencies from being installed.",
+    "- Finish with a concise summary of scaffolded files, dependency installation result, and any caveats.",
   ].join("\n")
 }
 
 function newProjectGenerationMaxIterations() {
   const value = Number(process.env.BLAME_AGENT_NEW_PROJECT_MAX_ITERATIONS)
-  return Number.isFinite(value) && value > 0 ? value : 48
+  return Number.isFinite(value) && value > 0 ? value : 16
+}
+
+async function generatedProjectLooksReady(cwd: string) {
+  return await fileExists(join(cwd, "package.json")) || await fileExists(join(cwd, "apps", "web", "package.json"))
+}
+
+async function fileExists(path: string) {
+  try {
+    await access(path)
+    return true
+  } catch {
+    return false
+  }
 }
 
 function createBlameSessionId() {
@@ -1574,7 +1593,8 @@ function resultFailureMessage(result: unknown) {
   const payload = asRecord(result)
   const status = resultStatus(payload)
   if (!status || !["failed", "error", "cancelled", "aborted", "mistake_limit"].includes(status)) return undefined
-  return stringValue(payload.error) ?? stringValue(payload.message) ?? `Cline send ended with status ${status}.`
+  const message = stringValue(payload.error) ?? stringValue(payload.message) ?? firstTextLine(payload.text)
+  return message ? `Cline send ended with status ${status}: ${message}` : `Cline send ended with status ${status}.`
 }
 
 function resultStatus(payload: Record<string, unknown>) {

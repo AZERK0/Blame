@@ -256,6 +256,11 @@ function validateDockerCompose(compose: string) {
       "Initialization result dockerCompose must run pnpm through corepack",
     );
   }
+  if (usesNodeModulesVolumes(compose) && !initializesNodeModulesVolumes(compose)) {
+    throw new Error(
+      "Initialization result dockerCompose must make node_modules volumes writable by the host user before package installs",
+    );
+  }
 }
 
 function handlesEnvFiles(script: string) {
@@ -298,6 +303,16 @@ function runsContainersAsHostUser(compose: string) {
 
 function usesBarePnpm(compose: string) {
   return /(^|[\s;&|])pnpm\s/.test(compose.replace(/corepack\s+pnpm/g, ""));
+}
+
+function usesNodeModulesVolumes(compose: string) {
+  return /:\s*\/[^\n]*node_modules\b|target:\s*\/[^\n]*node_modules\b/.test(
+    compose,
+  );
+}
+
+function initializesNodeModulesVolumes(compose: string) {
+  return /\bchown\b[\s\S]*node_modules\b/.test(compose);
 }
 
 function composeCommandPresent(value: string) {

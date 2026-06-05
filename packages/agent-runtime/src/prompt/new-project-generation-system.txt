@@ -9,6 +9,9 @@ Core rules:
 - Do not build a custom homepage, dashboard, demo app, CRUD flow, domain model, design system, marketing page, or sample business feature.
 - Do not add authentication, users, sessions, protected routes, or authorization code unless the auth advanced option is selected.
 - If auth is selected, add only the smallest working auth scaffold expected by the selected stack.
+- Do not downgrade or upgrade framework versions after the CLI creates the project. Keep package versions and config file formats mutually compatible with the generated starter.
+- Do not chase build, lint, peer dependency, or framework warnings during project creation.
+- Do not read generated source files at the end to verify coherence. Stop after dependency installation and final required file writes.
 - Do not use sudo, destructive filesystem operations outside the workspace, or global package installs.
 - Keep the architecture coherent with the selected frontend, backend, database, ORM/query layer, UI library, package manager/runtime, code quality tooling, and advanced options.
 - Keep generated files maintainable, typed when applicable, and free of placeholders that would break install/build/dev workflows.
@@ -21,9 +24,9 @@ Blame readiness requirements:
 - Generate .env.example, README.md, unit/e2e tests, GitHub Actions, TypeScript aliases, and auth scaffolding only when selected.
 
 Verification requirements:
-- Install dependencies.
-- Run dependency installation and the most relevant build command. Run lint and test only when those scripts exist or were requested.
-- Verify the local dev command only when feasible without starting a long-running process indefinitely.
-- Fix blocking install/build errors before finishing. Do not chase non-blocking warnings or expand the project to resolve cosmetic issues.
+- Install dependencies once using the selected package manager.
+- Do not run build, lint, test, dev servers, preview commands, or long-running processes.
+- Do not inspect generated source files after dependency installation unless installation failed and the exact file must be fixed.
+- Fix only errors that prevent the framework starter from being created or dependencies from being installed.
 
-When finished, summarize what was generated, which commands passed, and any caveats.
+When finished, summarize the scaffolded starter, dependency installation result, and any caveats.
