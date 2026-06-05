@@ -53,6 +53,7 @@ const recentLimit = 5
 const defaultVariant = "default"
 const defaultCredentialLabel = "default"
 const openAICompatibleProviderID = "openai-compatible"
+const modelStateListeners = new Set<() => void>()
 export const popularProviders = [
   "openai-codex",
   "openai",
@@ -330,7 +331,21 @@ export function useModelSelection() {
   )
 
   React.useEffect(() => {
-    setState(readModelState(providerState.directory))
+    const refreshState = () => setState(readModelState(providerState.directory))
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.storageArea === localStorage && event.key === storageKey) {
+        refreshState()
+      }
+    }
+
+    refreshState()
+    modelStateListeners.add(refreshState)
+    window.addEventListener("storage", handleStorageChange)
+
+    return () => {
+      modelStateListeners.delete(refreshState)
+      window.removeEventListener("storage", handleStorageChange)
+    }
   }, [providerState.directory])
 
   const models = React.useMemo(
@@ -679,6 +694,11 @@ function setModelState(
 ) {
   writeState(directory, state)
   setState(readModelState(directory))
+  notifyModelStateListeners()
+}
+
+function notifyModelStateListeners() {
+  for (const listener of modelStateListeners) listener()
 }
 
 function readStoredStates(): Record<string, unknown> {
