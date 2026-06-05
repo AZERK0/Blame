@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto"
 import { execFile } from "node:child_process"
-import { appendFile, mkdir, rm } from "node:fs/promises"
+import { appendFile, mkdir, readFile, rm } from "node:fs/promises"
 import { basename, dirname, join } from "node:path"
 import { promisify } from "node:util"
 
@@ -61,6 +61,7 @@ import type {
   InitializeProjectInput,
   InitializeProjectResult,
   LoginOAuthProviderInput,
+  NewProjectGenerationResult,
   OAuthCredentials,
   OptimizeUserStoryPromptInput,
   OptimizeUserStoryPromptResult,
@@ -71,6 +72,7 @@ import type {
   SendDevelopmentSessionInput,
   SendSessionInput,
   StartDevelopmentSessionInput,
+  StartNewProjectGenerationInput,
   StartSessionInput,
 } from "./types.js"
 
@@ -169,6 +171,10 @@ export class BlameAgentRuntime {
 
   initializations = {
     run: (input: InitializeProjectInput) => this.initializeProject(input),
+  }
+
+  newProjects = {
+    generate: (input: StartNewProjectGenerationInput) => this.generateNewProject(input),
   }
 
   promptOptimizer = {
@@ -425,6 +431,47 @@ export class BlameAgentRuntime {
       }
     }
     throw new Error("Project initialization agent did not return a valid result")
+  }
+
+  private async generateNewProject(input: StartNewProjectGenerationInput): Promise<NewProjectGenerationResult> {
+    assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd")
+    const credential = await this.runtimeCredential(input)
+    const cline = await this.core()
+    const sessionId = input.sessionId ?? createBlameSessionId()
+    const sessionLogFile = sessionLogPath(input.cwd, sessionId)
+    await this.subscribeSession(sessionId)
+    this.sessionLogFiles.set(sessionId, sessionLogFile)
+    this.sessionContexts.set(sessionId, {
+      maxIterations: newProjectGenerationMaxIterations(),
+      mode: "yolo",
+      modelId: input.modelId,
+      providerId: input.providerId,
+      sessionId,
+    })
+    this.autoApprovedWriteToolSessions.add(sessionId)
+    this.emitSessionNotice(sessionId, "New project generation agent started.")
+    this.emitSessionNotice(sessionId, `Cline debug log: ${sessionLogFile}`)
+
+    try {
+      const session = await cline.start({
+        prompt: newProjectGenerationPrompt(input),
+        config: await newProjectGenerationConfig(input, credential, sessionId, this.productionConfig),
+        interactive: false,
+        source: "blame-new-project-generation",
+        toolPolicies: toolPolicies(true),
+      })
+      const failure = resultFailureMessage(session.result)
+      if (failure) throw new Error(failure)
+      this.emitSessionNotice(sessionId, "New project generation agent finished.")
+      return {
+        dockerCompose: await generatedDockerCompose(input.cwd),
+        path: input.cwd,
+        sessionId,
+        setupScript: await generatedSetupScript(input.cwd),
+      }
+    } finally {
+      this.unsubscribeSession(sessionId)
+    }
   }
 
   private async optimizeUserStoryPrompt(
@@ -990,6 +1037,127 @@ async function developmentSystemPrompt(input: StartDevelopmentSessionInput) {
     workspaceName: basename(input.workspaceRoot),
     workspaceRoot: input.workspaceRoot,
   })
+}
+
+async function newProjectGenerationConfig(
+  input: StartNewProjectGenerationInput,
+  credential: { apiKey: string; baseUrl: string | null },
+  sessionId: string,
+  productionConfig: ReturnType<typeof loadProductionConfig>
+) {
+  const metadata = await buildWorkspaceMetadata(input.cwd)
+  return appendProductionConfig({
+    sessionId,
+    providerId: input.providerId,
+    modelId: input.modelId,
+    apiKey: credential.apiKey,
+    baseUrl: credential.baseUrl ?? undefined,
+    thinking: !!input.reasoningEffort,
+    reasoningEffort: input.reasoningEffort,
+    systemPrompt: getClineDefaultSystemPrompt({
+      ide: "Blame",
+      metadata,
+      mode: "yolo",
+      platform: process.platform,
+      providerId: input.providerId,
+      rules: mergeRulesForSystemPrompt(undefined, loadPrompt("new-project-generation-system")),
+      workspaceName: input.projectName,
+      workspaceRoot: input.workspaceRoot,
+    }),
+    cwd: input.cwd,
+    workspaceRoot: input.workspaceRoot,
+    mode: "yolo",
+    maxIterations: newProjectGenerationMaxIterations(),
+    compaction: blameCompactionConfig(productionConfig),
+    enableTools: true,
+    enableSpawnAgent: false,
+    enableAgentTeams: false,
+    extensionContext: {
+      client: { name: "blame" },
+      logger: productionLogger,
+      workspace: {
+        cwd: input.cwd,
+        ide: "Blame",
+        mode: "yolo",
+        platform: process.platform,
+        rootPath: input.workspaceRoot,
+        workspaceName: input.projectName,
+      },
+    },
+  })
+}
+
+function newProjectGenerationPrompt(input: StartNewProjectGenerationInput) {
+  return [
+    `Generate a new Blame project named ${input.projectName}.`,
+    "",
+    "The current working directory is already the empty target project directory. Initialize the complete codebase in this directory; do not create a nested project folder unless the selected architecture explicitly needs sub-app folders such as apps/web.",
+    "",
+    "Wizard brief (normalized JSON):",
+    JSON.stringify(
+      {
+        projectName: input.projectName,
+        targetPath: input.cwd,
+        configuration: input.configuration,
+      },
+      null,
+      2
+    ),
+    "",
+    "Compatibility and recommendation rules:",
+    "- Treat this normalized wizard configuration as the user's source of intent.",
+    "- Respect frontend/backend/database/ORM/UI compatibility implied by the selected values.",
+    "- If an exact combination has no mature canonical integration, choose the smallest coherent architecture and document the trade-off in README.md.",
+    "- Advanced options are explicit requirements when present: docker, dockerCompose, monorepo, auth, unitTests, e2eTests, githubActions, envExample, readme, typescriptAlias, standardScripts, blamePreview.",
+    "",
+    "Blame readiness requirements:",
+    "- Initialize git and create an initial commit before finishing.",
+    "- Make dependency installation non-interactive and reproducible.",
+    "- Provide scripts named dev and build; also lint/test when requested or when quality/test options require them.",
+    "- Provide .env.example, README.md, Dockerfile/Docker Compose, tests, GitHub Actions, aliases, auth, and Blame preview metadata when requested.",
+    "- Write a Blame setup script at .blame/setup.sh that prepares env files and lightweight local prerequisites without launching Docker Compose.",
+    "- If Docker Compose is requested or useful for preview, write docker-compose.yml at the project root with Blame preview labels.",
+    "- Preview must bind to 0.0.0.0 inside dev containers and must not depend on fixed host ports.",
+    "- Avoid blocking prompts; pass non-interactive flags or create files manually when CLIs are interactive.",
+    "- Do not use sudo and do not require global installs.",
+    "",
+    "Verification before completion:",
+    "- Install dependencies using the selected package manager/runtime.",
+    "- Run the most relevant build/lint/test commands that exist.",
+    "- Verify the local preview/dev command or explain the exact blocker if the environment prevents it.",
+    "- Fix any generation, install, build, lint, test, or preview errors you encounter.",
+    "- Finish with a concise summary of created files, verification results, preview instructions, and any caveats.",
+  ].join("\n")
+}
+
+function newProjectGenerationMaxIterations() {
+  const value = Number(process.env.BLAME_AGENT_NEW_PROJECT_MAX_ITERATIONS)
+  return Number.isFinite(value) && value > 0 ? value : 160
+}
+
+async function generatedSetupScript(cwd: string) {
+  return readFirstExistingFile([
+    join(cwd, ".blame", "setup.sh"),
+    join(cwd, "setup.sh"),
+  ]) ?? "#!/usr/bin/env bash\nset -euo pipefail\nif [ -f .env.example ] && [ ! -f .env ]; then cp .env.example .env; fi\n"
+}
+
+async function generatedDockerCompose(cwd: string) {
+  return readFirstExistingFile([
+    join(cwd, "docker-compose.yml"),
+    join(cwd, "docker-compose.yaml"),
+    join(cwd, "compose.yml"),
+    join(cwd, "compose.yaml"),
+  ]) ?? "services: {}\n"
+}
+
+async function readFirstExistingFile(paths: string[]) {
+  for (const path of paths) {
+    try {
+      return await readFile(path, "utf8")
+    } catch {}
+  }
+  return undefined
 }
 
 function createBlameSessionId() {

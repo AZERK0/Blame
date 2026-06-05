@@ -25,6 +25,7 @@ import {
 } from "node:path";
 import { promisify } from "node:util";
 import { BrowserWindow, ipcMain } from "electron";
+import { generateNewProjectWithAgent } from "./agent-ipc";
 import {
   assertHostDependencies,
   checkHostDependencies,
@@ -32,6 +33,7 @@ import {
 import { setupPath } from "./host-tool-path";
 import {
   createProject,
+  setNewProjectAgentRuntime,
   setProjectCreationWindowsProvider,
   type CreateProjectInput,
 } from "./project-creation";
@@ -144,6 +146,7 @@ const workspaceProcesses = new Set<ChildProcessWithoutNullStreams>();
 
 export function registerWorkspaceIpcHandlers() {
   setProjectCreationWindowsProvider(() => BrowserWindow.getAllWindows());
+  setNewProjectAgentRuntime({ generate: generateNewProjectWithAgent });
   ipcMain.handle(
     "workspace:list-directory",
     (_event, input: WorkspacePathInput) => listDirectory(input),

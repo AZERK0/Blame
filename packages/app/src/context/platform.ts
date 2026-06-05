@@ -2,12 +2,13 @@ import * as React from "react"
 import type {
   AgentEvent,
   AgentUsageSummary,
-  ApiConnection as AgentApiConnection,
+  ApiConnection,
   ApproveAndMergeInput,
   ApproveAndMergeResult,
   InitializeProjectInput,
   InitializeProjectResult,
   LoginOAuthProviderInput,
+  NewProjectGenerationResult,
   OptimizeUserStoryPromptInput,
   OptimizeUserStoryPromptResult,
   ProviderListResponse,
@@ -16,11 +17,11 @@ import type {
   SendDevelopmentSessionInput,
   SendSessionInput,
   StartDevelopmentSessionInput,
+  StartNewProjectGenerationInput,
   StartSessionInput,
+  ReasoningEffort,
 } from "@blame/agent-runtime"
 import type { NewProjectConfiguration } from "../components/new-project/new-project-options"
-
-export type ApiConnection = AgentApiConnection
 
 type PickerPaths = string | string[] | null
 
@@ -114,6 +115,9 @@ export type AgentClient = {
   }
   initializations: {
     run(input: InitializeProjectInput): Promise<InitializeProjectResult>
+  }
+  newProjects: {
+    generate(input: StartNewProjectGenerationInput): Promise<NewProjectGenerationResult>
   }
   promptOptimizer: {
     optimizeUserStory(
@@ -217,9 +221,13 @@ export type WorkspaceClient = {
   gitRepositoryFingerprint(input: { root: string }): Promise<string | null>
   ensureGitRepository(input: { root: string }): Promise<boolean>
   createProject(input: {
+    apiConnection: ApiConnection
     configuration: NewProjectConfiguration
+    modelId: string
     parentPath: string
     projectName: string
+    providerId: string
+    reasoningEffort?: ReasoningEffort
     runId: string
   }): Promise<{
     dockerCompose: string

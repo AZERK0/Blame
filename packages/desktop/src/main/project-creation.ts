@@ -1,4 +1,3 @@
-import { spawn } from "node:child_process";
 import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
 import {
@@ -10,8 +9,7 @@ import {
 } from "node:fs/promises";
 import { basename, join, relative, resolve } from "node:path";
 import { promisify } from "node:util";
-import { setupPath } from "./host-tool-path.ts";
-import { projectSetupRecipe } from "./project-setup-recipes.ts";
+import type { ApiConnection, ReasoningEffort } from "@blame/agent-runtime";
 
 const execFileAsync = promisify(execFile);
 
@@ -123,10 +121,33 @@ export type NewProjectConfiguration = {
 };
 
 export type CreateProjectInput = {
+  apiConnection: ApiConnection;
   configuration: NewProjectConfiguration;
+  modelId: string;
   parentPath: string;
   projectName: string;
+  providerId: string;
+  reasoningEffort?: ReasoningEffort;
   runId: string;
+};
+
+export type NewProjectAgentRuntime = {
+  generate(input: {
+    apiConnection: ApiConnection;
+    configuration: NewProjectConfiguration;
+    cwd: string;
+    modelId: string;
+    projectName: string;
+    providerId: string;
+    reasoningEffort?: ReasoningEffort;
+    sessionId?: string;
+    workspaceRoot: string;
+  }): Promise<{
+    dockerCompose: string;
+    path: string;
+    sessionId: string;
+    setupScript: string;
+  }>;
 };
 
 export type CommandRecipe = {
@@ -154,6 +175,7 @@ type ProjectCreationWindow = {
 };
 
 let projectCreationWindowsProvider = () => [] as ProjectCreationWindow[];
+let newProjectAgentRuntime: NewProjectAgentRuntime | undefined;
 
 export function setProjectCreationWindowsProvider(
   provider: () => ProjectCreationWindow[]
@@ -161,27 +183,41 @@ export function setProjectCreationWindowsProvider(
   projectCreationWindowsProvider = provider;
 }
 
+export function setNewProjectAgentRuntime(runtime: NewProjectAgentRuntime | undefined) {
+  newProjectAgentRuntime = runtime;
+}
+
 export async function createProject(input: CreateProjectInput) {
   const target = await validateProjectTarget(input.parentPath, input.projectName);
-  const recipe = projectCreationRecipe(input.configuration, target);
   const emit = projectCreationEmitter(input.runId);
 
-  emit({ type: "stdout", data: `Creating ${basename(target)}...\n` });
-  await runCommand(recipe.scaffold, emit);
-  await renameScaffoldTarget(recipe.scaffoldTarget, target);
-  await applyProjectOverlays(target, recipe.overlays, input.configuration);
-
-  for (const install of recipe.installs) {
-    await runCommand(install, emit);
+  if (!newProjectAgentRuntime) {
+    throw new Error("New project agent runtime is not available.");
   }
 
+  await mkdir(target, { recursive: true });
+  emit({ type: "stdout", data: `Preparing empty project folder: ${target}\n` });
+  emit({ type: "stdout", data: "Starting AI project generation agent...\n" });
+
+  const result = await newProjectAgentRuntime.generate({
+    apiConnection: input.apiConnection,
+    configuration: input.configuration,
+    cwd: target,
+    modelId: input.modelId,
+    projectName: basename(target),
+    providerId: input.providerId,
+    reasoningEffort: input.reasoningEffort,
+    sessionId: input.runId,
+    workspaceRoot: target,
+  });
+
   await initializeGeneratedRepository(target, emit);
-  const setupRecipe = projectSetupRecipe(input.configuration);
+
   emit({ type: "exit", data: "0" });
   return {
-    dockerCompose: setupRecipe.dockerCompose,
+    dockerCompose: result.dockerCompose || "services: {}\n",
     path: target,
-    setupScript: setupRecipe.setupScript,
+    setupScript: result.setupScript || "#!/usr/bin/env bash\nset -euo pipefail\n",
   };
 }
 

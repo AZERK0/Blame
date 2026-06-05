@@ -184,6 +184,39 @@ export type InitializeProjectResult = {
   practices: ProjectCodePracticeResult[]
 }
 
+export type NewProjectGenerationConfiguration = {
+  platform: string
+  frontend: string
+  styling: string
+  uiLibrary: string
+  backend: string
+  database: string
+  orm: string
+  packageManager: string
+  codeQuality: string
+  advancedOptions: string[]
+}
+
+export type StartNewProjectGenerationInput = {
+  apiConnection: ApiConnection
+  providerId: string
+  modelId: string
+  reasoningEffort?: ReasoningEffort
+  credentialLabel?: string
+  configuration: NewProjectGenerationConfiguration
+  cwd: string
+  workspaceRoot: string
+  projectName: string
+  sessionId?: string
+}
+
+export type NewProjectGenerationResult = {
+  dockerCompose: string
+  path: string
+  sessionId: string
+  setupScript: string
+}
+
 export type OptimizeUserStoryPromptInput = {
   apiConnection: ApiConnection
   providerId: string

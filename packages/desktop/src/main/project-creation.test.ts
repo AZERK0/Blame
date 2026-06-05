@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -8,8 +8,10 @@ import { promisify } from "node:util";
 
 import {
   applyProjectOverlays,
+  createProject,
   initializeGeneratedRepository,
   projectCreationRecipe,
+  setNewProjectAgentRuntime,
   validateProjectTarget,
   type ProjectCreationRecipe,
   type NewProjectConfiguration,
@@ -61,6 +63,47 @@ test("accepts valid parent and project name", async () => {
   const target = await validateProjectTarget(parent, "valid-app");
 
   assert.equal(target, join(parent, "valid-app"));
+});
+
+test("creates an empty target directory and delegates generation to the AI agent", async () => {
+  const parent = await mkdtemp(join(tmpdir(), "blame-new-project-"));
+  let receivedCwd = "";
+  let receivedConfiguration: NewProjectConfiguration | undefined;
+  setNewProjectAgentRuntime({
+    async generate(input) {
+      receivedCwd = input.cwd;
+      receivedConfiguration = input.configuration;
+      const info = await stat(input.cwd);
+      assert.equal(info.isDirectory(), true);
+      await writeFile(join(input.cwd, "package.json"), '{"name":"agent-app"}', "utf8");
+      return {
+        dockerCompose: "services: {}\n",
+        path: input.cwd,
+        sessionId: input.sessionId ?? "session",
+        setupScript: "#!/usr/bin/env bash\nset -euo pipefail\n",
+      };
+    },
+  });
+
+  try {
+    const result = await createProject({
+      apiConnection: { url: "http://localhost" },
+      configuration: baseConfiguration,
+      modelId: "model",
+      parentPath: parent,
+      projectName: "agent-app",
+      providerId: "provider",
+      runId: "agent-run",
+    });
+
+    assert.equal(receivedCwd, join(parent, "agent-app"));
+    assert.equal(receivedConfiguration, baseConfiguration);
+    assert.equal(result.path, join(parent, "agent-app"));
+    const gitRoot = await runGit(result.path, ["rev-parse", "--show-toplevel"]);
+    assert.equal(gitRoot.stdout.trim(), result.path);
+  } finally {
+    setNewProjectAgentRuntime(undefined);
+  }
 });
 
 test("initializes generated projects as independent git repositories", async () => {

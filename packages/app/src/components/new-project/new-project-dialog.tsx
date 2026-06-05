@@ -153,7 +153,7 @@ function LocationStep({ wizard }: { wizard: NewProjectWizard }) {
       </Field>
       {!wizard.createProjectAvailable ? (
         <p className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
-          Project generation is available only in the desktop app.
+          Project generation requires the desktop app and a connected AI model.
         </p>
       ) : null}
     </StepFrame>
@@ -335,10 +335,11 @@ function SummaryStep({ wizard }: { wizard: NewProjectWizard }) {
 }
 
 function ProgressStep({ wizard }: { wizard: NewProjectWizard }) {
+  const status = progressStatus(wizard.status)
   return (
     <StepFrame
       title="Generating project"
-      description="Blame is running the scaffold and setup commands."
+      description="Blame is running a dedicated AI agent to generate and verify the codebase."
     >
       <div className="flex items-center gap-3 rounded-lg border bg-muted/30 p-3">
         {wizard.creating ? (
@@ -346,9 +347,7 @@ function ProgressStep({ wizard }: { wizard: NewProjectWizard }) {
         ) : (
           <CheckCircle2Icon className="size-5 text-primary" />
         )}
-        <span className="text-sm font-medium">
-          {wizard.creating ? "Creating codebase" : "Generation finished"}
-        </span>
+        <span className="text-sm font-medium">{status}</span>
       </div>
       {wizard.error ? (
         <p className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
@@ -358,10 +357,20 @@ function ProgressStep({ wizard }: { wizard: NewProjectWizard }) {
       <pre className="max-h-80 overflow-auto rounded-lg border bg-background p-3 text-xs">
         {wizard.logs.length
           ? wizard.logs.map((event) => event.data).join("")
-          : "Waiting for scaffold output..."}
+          : "Waiting for agent output..."}
       </pre>
     </StepFrame>
   )
+}
+
+function progressStatus(status: NewProjectWizard["status"]) {
+  if (status === "preparing") return "Preparation"
+  if (status === "generating") return "AI generation"
+  if (status === "installing") return "Installing dependencies"
+  if (status === "verifying") return "Verification"
+  if (status === "error") return "Generation failed"
+  if (status === "done") return "Generation finished"
+  return "Waiting to start"
 }
 
 function WizardFooter({ wizard }: { wizard: NewProjectWizard }) {

@@ -49,6 +49,7 @@ import { usePlatform } from "@/context/platform"
 import { ButtonGroup } from "@/components/ui/button-group.tsx"
 
 const storageKey = "blame.app.drawer-model-selection.v1"
+const globalModelSelectionKey = "__global__"
 const recentLimit = 5
 const defaultVariant = "default"
 const defaultCredentialLabel = "default"
@@ -414,14 +415,14 @@ function useProviderState() {
   const auth = useCloudAuth()
   const platform = usePlatform()
   const projects = useProjects()
-  const directory = projects.activeProject?.path
+  const directory = projects.activeProject?.path ?? globalModelSelectionKey
   const [providers, setProviders] = React.useState<ProviderListResponse>()
   const [loading, setLoading] = React.useState(false)
   const [failed, setFailed] = React.useState(false)
   const agent = platform.agent
 
   const refresh = React.useCallback(() => {
-    if (!agent || !directory || auth.status !== "authenticated") {
+    if (!agent || auth.status !== "authenticated") {
       setProviders(undefined)
       return Promise.resolve()
     }
@@ -640,7 +641,6 @@ function getEmptyMessage(input: {
   serverReady: boolean
 }) {
   if (!input.serverReady) return "Sidecar unavailable"
-  if (!input.directory) return "Open a project first"
   if (input.loading) return "Loading models"
   if (input.failed) return "Unable to load models"
   return "No models found"

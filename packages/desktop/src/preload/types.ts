@@ -7,6 +7,7 @@ import type {
   InitializeProjectInput,
   InitializeProjectResult,
   LoginOAuthProviderInput,
+  NewProjectGenerationResult,
   OptimizeUserStoryPromptInput,
   OptimizeUserStoryPromptResult,
   ProviderListResponse,
@@ -15,6 +16,7 @@ import type {
   SendDevelopmentSessionInput,
   SendSessionInput,
   StartDevelopmentSessionInput,
+  StartNewProjectGenerationInput,
   StartSessionInput,
 } from "@blame/agent-runtime";
 import type { HostDependencyReport } from "../main/host-dependencies";
@@ -224,6 +226,11 @@ export type BlameDesktopApi = {
     };
     initializations: {
       run(input: InitializeProjectInput): Promise<InitializeProjectResult>;
+    };
+    newProjects: {
+      generate(
+        input: StartNewProjectGenerationInput,
+      ): Promise<NewProjectGenerationResult>;
     };
     promptOptimizer: {
       optimizeUserStory(

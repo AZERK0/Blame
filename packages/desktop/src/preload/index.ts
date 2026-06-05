@@ -164,6 +164,9 @@ const api: BlameDesktopApi = {
     initializations: {
       run: (input) => ipcRenderer.invoke("agent:initializations:run", input),
     },
+    newProjects: {
+      generate: (input) => ipcRenderer.invoke("agent:new-projects:generate", input),
+    },
     promptOptimizer: {
       optimizeUserStory: (input) =>
         ipcRenderer.invoke("agent:prompt-optimizer:optimize-user-story", input),

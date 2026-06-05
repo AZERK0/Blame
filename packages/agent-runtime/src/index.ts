@@ -16,6 +16,8 @@ export type {
   InitializeProjectInput,
   InitializeProjectResult,
   LoginOAuthProviderInput,
+  NewProjectGenerationConfiguration,
+  NewProjectGenerationResult,
   OAuthCredentials,
   OptimizeUserStoryPromptInput,
   OptimizeUserStoryPromptResult,
@@ -30,6 +32,7 @@ export type {
   SaveProviderCredentialInput,
   SendDevelopmentSessionInput,
   SendSessionInput,
+  StartNewProjectGenerationInput,
   StartDevelopmentSessionInput,
   StartSessionInput,
 } from "./types.js"

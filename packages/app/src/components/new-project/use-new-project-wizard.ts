@@ -1,6 +1,8 @@
 import * as React from "react"
+import type { AgentEvent } from "@blame/agent-runtime"
 import { toast } from "sonner"
 
+import { useModelSelection } from "@/components/model/model-selector"
 import { newProjectHostDependencyScript } from "@/components/new-project/new-project-host-dependencies"
 import {
   defaultNewProjectConfiguration,
@@ -20,6 +22,7 @@ import {
 import { usePlatform } from "@/context/platform"
 import type { HostDependencyReport } from "@/context/platform"
 import { useProjects } from "@/context/projects"
+import { useCloudAuth } from "@/context/cloud-auth"
 
 export type NewProjectStep =
   | "location"
@@ -34,9 +37,18 @@ export type NewProjectStep =
   | "progress"
 
 export type ProjectCreationLog = {
-  type: "stdout" | "stderr" | "exit"
+  type: "stdout" | "stderr" | "exit" | "agent"
   data: string
 }
+
+export type ProjectCreationStatus =
+  | "idle"
+  | "preparing"
+  | "generating"
+  | "installing"
+  | "verifying"
+  | "done"
+  | "error"
 
 const steps: NewProjectStep[] = [
   "location",
@@ -58,12 +70,15 @@ export function useNewProjectWizard(input: {
 }) {
   const platform = usePlatform()
   const projects = useProjects()
+  const auth = useCloudAuth()
+  const modelSelection = useModelSelection()
   const [step, setStep] = React.useState<NewProjectStep>("location")
   const [parentPath, setParentPath] = React.useState("")
   const [projectName, setProjectName] = React.useState("")
   const [creating, setCreating] = React.useState(false)
   const [error, setError] = React.useState<string>()
   const [logs, setLogs] = React.useState<ProjectCreationLog[]>([])
+  const [status, setStatus] = React.useState<ProjectCreationStatus>("idle")
   const [hostDependenciesDialog, setHostDependenciesDialog] =
     React.useState<HostDependenciesDialogState>()
   const [configuration, setConfiguration] =
@@ -75,7 +90,9 @@ export function useNewProjectWizard(input: {
   const currentStepIndex = Math.max(steps.indexOf(step), 0)
   const canGoBack = !creating && currentStepIndex > 0
   const canGoNext = !creating && nextStepAllowed(step, parentPath, projectName)
-  const createProjectAvailable = Boolean(platform.workspace?.createProject)
+  const createProjectAvailable = Boolean(
+    platform.workspace?.createProject && platform.agent && modelSelection.currentModel
+  )
 
   const reset = React.useCallback(() => {
     setStep("location")
@@ -84,6 +101,7 @@ export function useNewProjectWizard(input: {
     setCreating(false)
     setError(undefined)
     setLogs([])
+    setStatus("idle")
     setConfiguration(defaultNewProjectConfiguration)
   }, [])
 
@@ -173,8 +191,15 @@ export function useNewProjectWizard(input: {
 
     setCreating(true)
     setError(undefined)
+    setStatus("preparing")
 
     try {
+      if (auth.status !== "authenticated") {
+        throw new Error("Sign in to Blame before generating a project with the AI agent.")
+      }
+      if (!platform.agent || !modelSelection.currentModel) {
+        throw new Error("Connect and select an AI model before generating a project.")
+      }
       const setupScript = newProjectHostDependencyScript(normalizedConfiguration)
       const dependencies = await workspace.checkHostDependencies({ setupScript })
       if (!dependencies.ok) {
@@ -193,6 +218,7 @@ export function useNewProjectWizard(input: {
           ? error.message
           : "Unable to check project requirements."
       )
+      setStatus("error")
       setCreating(false)
     }
   }
@@ -202,17 +228,35 @@ export function useNewProjectWizard(input: {
     if (!workspace?.createProject) return
     setLogs([])
     setStep("progress")
+    setStatus("preparing")
 
     const runId = crypto.randomUUID()
     const unsubscribe = workspace.onProjectCreationEvent?.(runId, (event) => {
       setLogs((current) => [...current, event])
+      setStatus(statusFromProjectCreationEvent(event))
+    })
+    const unsubscribeAgent = platform.agent?.sessions.onEvent(runId, (event) => {
+      const log = projectCreationLogFromAgentEvent(event)
+      if (log) setLogs((current) => [...current, log])
+      setStatus(statusFromAgentEvent(event))
+      if (event.type === "error") {
+        setError(eventText(event.payload) || "Project generation agent failed.")
+      }
     })
 
     try {
+      const currentModel = modelSelection.currentModel
+      if (auth.status !== "authenticated" || !currentModel) {
+        throw new Error("AI model selection is required to create a project.")
+      }
       const result = await workspace.createProject({
+        apiConnection: auth.apiConnection,
         configuration: normalizedConfiguration,
+        modelId: currentModel.id,
         parentPath,
         projectName,
+        providerId: currentModel.provider.id,
+        reasoningEffort: modelSelection.currentVariant,
         runId,
       })
       await projects.openGeneratedProject(result.path, {
@@ -223,10 +267,13 @@ export function useNewProjectWizard(input: {
       toast.success("Project created", {
         description: `${projectName.trim()} is ready in Blame.`,
       })
+      setStatus("done")
     } catch (error) {
       setError(error instanceof Error ? error.message : "Unable to create project.")
+      setStatus("error")
     } finally {
       unsubscribe?.()
+      unsubscribeAgent?.()
       setCreating(false)
     }
   }
@@ -254,6 +301,7 @@ export function useNewProjectWizard(input: {
           ? error.message
           : "Unable to recheck project requirements."
       )
+      setStatus("error")
     }
   }
 
@@ -301,6 +349,7 @@ export function useNewProjectWizard(input: {
     setUiLibrary,
     step,
     steps,
+    status,
     toggleAdvancedOption,
   }
 }
@@ -326,4 +375,41 @@ function defaultUi(frontend: FrontendFramework): UiLibrary {
   if (frontend === "sveltekit") return "shadcn-svelte"
   if (frontend === "next" || frontend === "react-vite") return "shadcn"
   return "none"
+}
+
+function statusFromProjectCreationEvent(event: ProjectCreationLog): ProjectCreationStatus {
+  if (event.type === "exit") return "done"
+  if (/preparing/i.test(event.data)) return "preparing"
+  if (/install|dependencies/i.test(event.data)) return "installing"
+  if (/verify|build|lint|test|preview/i.test(event.data)) return "verifying"
+  return "generating"
+}
+
+function statusFromAgentEvent(event: AgentEvent): ProjectCreationStatus {
+  if (event.type === "done") return "done"
+  if (event.type === "error") return "error"
+  const text = eventText(event.payload)
+  if (/install|dependencies/i.test(text)) return "installing"
+  if (/verify|build|lint|test|preview/i.test(text)) return "verifying"
+  return "generating"
+}
+
+function projectCreationLogFromAgentEvent(event: AgentEvent): ProjectCreationLog | undefined {
+  const text = eventText(event.payload)
+  if (!text) return undefined
+  const prefix = event.type === "tool" ? "[tool] " : event.type === "reasoning" ? "[reasoning] " : ""
+  return { type: event.type === "error" ? "stderr" : "agent", data: `${prefix}${text}\n` }
+}
+
+function eventText(payload: unknown): string {
+  if (typeof payload === "string") return payload
+  if (!payload || typeof payload !== "object") return ""
+  const record = payload as Record<string, unknown>
+  for (const key of ["message", "text", "accumulatedText", "reason", "error"]) {
+    const value = record[key]
+    if (typeof value === "string" && value.trim()) return value.trim()
+  }
+  const tool = record.toolName ?? record.name
+  if (typeof tool === "string") return `Running ${tool}`
+  return ""
 }
