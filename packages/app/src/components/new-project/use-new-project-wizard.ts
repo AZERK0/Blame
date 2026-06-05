@@ -140,11 +140,14 @@ export function useNewProjectWizard(input: {
   }
 
   function toggleAdvancedOption(value: AdvancedProjectOption) {
-    updateConfiguration({
-      advancedOptions: configuration.advancedOptions.includes(value)
-        ? configuration.advancedOptions.filter((item) => item !== value)
-        : [...configuration.advancedOptions, value],
-    })
+    setConfiguration((current) =>
+      normalizeNewProjectConfiguration({
+        ...current,
+        advancedOptions: current.advancedOptions.includes(value)
+          ? current.advancedOptions.filter((item) => item !== value)
+          : [...current.advancedOptions, value],
+      })
+    )
   }
 
   function goBack() {

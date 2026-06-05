@@ -281,8 +281,7 @@ function scaffoldCommand(
         "--src-dir",
         configuration.styling === "tailwind" ? "--tailwind" : "--no-tailwind",
         ...nextQualityArgs(configuration.codeQuality),
-        "--import-alias",
-        "@/*",
+        ...nextImportAliasArgs(configuration.advancedOptions),
         ...nextPackageManagerArgs(pm),
         "--skip-install",
         "--disable-git",
@@ -492,6 +491,18 @@ function projectOverlays(
     overlays.push({ path: join(target, "pyproject.toml"), content: pyproject(configuration) });
   }
 
+  if (advanced.includes("unitTests")) {
+    overlays.push({ path: join(target, "src", "blame.generated.test.ts"), content: unitTest(configuration) });
+  }
+
+  if (advanced.includes("e2eTests")) {
+    overlays.push({ path: join(target, "tests", "preview.spec.ts"), content: e2eTest() });
+  }
+
+  if (advanced.includes("monorepo") && configuration.packageManager === "pnpm") {
+    overlays.push({ path: join(target, "pnpm-workspace.yaml"), content: pnpmWorkspace() });
+  }
+
   return overlays;
 }
 
@@ -501,6 +512,7 @@ export async function applyProjectOverlays(
   configuration: NewProjectConfiguration
 ) {
   await updatePackageJson(target, configuration);
+  await updateTypeScriptAliases(target, configuration);
 
   for (const overlay of overlays) {
     await mkdir(resolve(overlay.path, ".."), { recursive: true });
@@ -526,15 +538,71 @@ async function updatePackageJson(
   const path = join(target, "package.json");
   if (!existsSync(path)) return;
   const parsed = JSON.parse(await readFile(path, "utf8"));
-  parsed.scripts = {
-    dev: parsed.scripts?.dev ?? "vite --host 0.0.0.0",
-    build: parsed.scripts?.build ?? "vite build",
-    lint: parsed.scripts?.lint ?? "eslint .",
-    test: parsed.scripts?.test ?? "vitest run",
-    ...parsed.scripts,
-  };
+  parsed.scripts = packageScripts(parsed.scripts, configuration);
+  const onlyBuiltDependencies = pnpmOnlyBuiltDependencies(configuration);
+  if (onlyBuiltDependencies.length > 0) {
+    parsed.pnpm = {
+      ...parsed.pnpm,
+      onlyBuiltDependencies,
+    };
+  }
+  if (configuration.advancedOptions.includes("monorepo")) {
+    parsed.workspaces = parsed.workspaces ?? ["apps/*", "packages/*"];
+  }
   parsed.packageManager = packageManagerVersion(configuration.packageManager);
   await writeFile(path, `${JSON.stringify(parsed, null, 2)}\n`, "utf8");
+}
+
+function pnpmOnlyBuiltDependencies(configuration: NewProjectConfiguration) {
+  if (configuration.packageManager !== "pnpm") return [];
+  return [
+    ...(configuration.frontend === "next" ? ["sharp"] : []),
+    ...(configuration.orm === "prisma" ? ["@prisma/engines", "prisma"] : []),
+    ...(configuration.database === "sqlite" ? ["better-sqlite3"] : []),
+    ...(configuration.advancedOptions.includes("auth") ? ["msw"] : []),
+  ].sort();
+}
+
+async function updateTypeScriptAliases(
+  target: string,
+  configuration: NewProjectConfiguration
+) {
+  if (!configuration.advancedOptions.includes("typescriptAlias")) return;
+  for (const file of ["tsconfig.json", "tsconfig.app.json"]) {
+    const path = join(target, file);
+    if (!existsSync(path)) continue;
+    const parsed = JSON.parse(await readFile(path, "utf8"));
+    parsed.compilerOptions = {
+      ...parsed.compilerOptions,
+      baseUrl: parsed.compilerOptions?.baseUrl ?? ".",
+      paths: {
+        ...parsed.compilerOptions?.paths,
+        "@/*": ["./src/*"],
+      },
+    };
+    await writeFile(path, `${JSON.stringify(parsed, null, 2)}\n`, "utf8");
+  }
+}
+
+function packageScripts(
+  scripts: Record<string, string> | undefined,
+  configuration: NewProjectConfiguration
+) {
+  const nextScripts = { ...scripts };
+  if (configuration.advancedOptions.includes("standardScripts")) {
+    nextScripts.dev = nextScripts.dev ?? defaultDevScript(configuration.frontend);
+    nextScripts.build = nextScripts.build ?? defaultBuildScript(configuration.frontend);
+    nextScripts.lint = nextScripts.lint ?? "eslint .";
+  }
+  if (configuration.advancedOptions.includes("unitTests")) {
+    nextScripts.test = nextScripts.test ?? "vitest run";
+  } else if (configuration.advancedOptions.includes("standardScripts")) {
+    nextScripts.test = nextScripts.test ?? "echo \"No tests configured\"";
+  }
+  if (configuration.advancedOptions.includes("e2eTests")) {
+    nextScripts.e2e = nextScripts.e2e ?? "playwright test";
+  }
+  return nextScripts;
 }
 
 function installCommand(packageManager: string, target: string): CommandRecipe {
@@ -580,6 +648,23 @@ function nextPackageManagerArgs(packageManager: string) {
   if (packageManager === "yarn") return ["--use-yarn"];
   if (packageManager === "bun") return ["--use-bun"];
   return ["--use-pnpm"];
+}
+
+function nextImportAliasArgs(advancedOptions: AdvancedProjectOption[]) {
+  if (!advancedOptions.includes("typescriptAlias")) return [];
+  return ["--import-alias", "@/*"];
+}
+
+function defaultDevScript(frontend: FrontendFramework) {
+  if (frontend === "next") return "next dev";
+  if (frontend === "nuxt") return "nuxt dev";
+  return "vite --host 0.0.0.0";
+}
+
+function defaultBuildScript(frontend: FrontendFramework) {
+  if (frontend === "next") return "next build";
+  if (frontend === "nuxt") return "nuxt build";
+  return "vite build";
 }
 
 function nodePackageManager(packageManager: PackageManager) {
@@ -705,6 +790,52 @@ function githubActions(configuration: NewProjectConfiguration) {
 function blamePreview(configuration: NewProjectConfiguration) {
   const port = configuration.frontend === "next" || configuration.frontend === "nuxt" ? 3000 : 5173;
   return `${JSON.stringify({ command: "dev", port }, null, 2)}\n`;
+}
+
+function unitTest(configuration: NewProjectConfiguration) {
+  if (configuration.frontend === "next") {
+    return [
+      "import { describe, expect, it } from 'vitest'",
+      "",
+      "describe('generated app', () => {",
+      "  it('is ready for unit tests', () => {",
+      "    expect(true).toBe(true)",
+      "  })",
+      "})",
+      "",
+    ].join("\n");
+  }
+  return [
+    "import { describe, expect, it } from 'vitest'",
+    "",
+    "describe('generated app', () => {",
+    "  it('is ready for unit tests', () => {",
+    "    expect(true).toBe(true)",
+    "  })",
+    "})",
+    "",
+  ].join("\n");
+}
+
+function e2eTest() {
+  return [
+    "import { expect, test } from '@playwright/test'",
+    "",
+    "test('preview responds', async ({ page }) => {",
+    "  await page.goto('/')",
+    "  await expect(page.locator('body')).toBeVisible()",
+    "})",
+    "",
+  ].join("\n");
+}
+
+function pnpmWorkspace() {
+  return [
+    "packages:",
+    "  - apps/*",
+    "  - packages/*",
+    "",
+  ].join("\n");
 }
 
 function fastApiMain() {

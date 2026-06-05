@@ -90,6 +90,11 @@ test("pins package manager in generated package manifest", async () => {
 
   const parsed = JSON.parse(await readFile(join(target, "package.json"), "utf8"));
   assert.equal(parsed.packageManager, "pnpm@10.33.2");
+  assert.deepEqual(parsed.pnpm.onlyBuiltDependencies, [
+    "@prisma/engines",
+    "prisma",
+    "sharp",
+  ]);
 });
 
 test("builds Next.js recipe with selected package manager and overlays", () => {
@@ -142,7 +147,14 @@ test("maps advanced options to generated files", () => {
   const recipe = projectCreationRecipe(
     {
       ...baseConfiguration,
-      advancedOptions: ["docker", "dockerCompose", "githubActions"],
+      advancedOptions: [
+        "docker",
+        "dockerCompose",
+        "e2eTests",
+        "githubActions",
+        "monorepo",
+        "unitTests",
+      ],
     },
     "/tmp/full-app"
   );
@@ -153,8 +165,85 @@ test("maps advanced options to generated files", () => {
       "/tmp/full-app/.github/workflows/ci.yml",
       "/tmp/full-app/Dockerfile",
       "/tmp/full-app/docker-compose.yml",
+      "/tmp/full-app/pnpm-workspace.yaml",
+      "/tmp/full-app/src/blame.generated.test.ts",
+      "/tmp/full-app/tests/preview.spec.ts",
     ]
   );
+});
+
+test("advanced scripts and TypeScript alias options update project files", async () => {
+  const parent = await mkdtemp(join(tmpdir(), "blame-new-project-"));
+  const target = join(parent, "advanced-app");
+  await mkdir(target);
+  await writeFile(
+    join(target, "package.json"),
+    JSON.stringify({ name: "advanced-app" }),
+    "utf8"
+  );
+  await writeFile(join(target, "tsconfig.json"), "{}", "utf8");
+
+  await applyProjectOverlays(
+    target,
+    projectCreationRecipe(
+      {
+        ...baseConfiguration,
+        advancedOptions: ["standardScripts", "typescriptAlias", "unitTests", "e2eTests"],
+      },
+      target
+    ).overlays,
+    {
+      ...baseConfiguration,
+      advancedOptions: ["standardScripts", "typescriptAlias", "unitTests", "e2eTests"],
+    }
+  );
+
+  const packageJson = JSON.parse(await readFile(join(target, "package.json"), "utf8"));
+  const tsconfig = JSON.parse(await readFile(join(target, "tsconfig.json"), "utf8"));
+  assert.equal(packageJson.scripts.dev, "next dev");
+  assert.equal(packageJson.scripts.test, "vitest run");
+  assert.equal(packageJson.scripts.e2e, "playwright test");
+  assert.deepEqual(tsconfig.compilerOptions.paths["@/*"], ["./src/*"]);
+});
+
+test("monorepo option updates workspace metadata", async () => {
+  const parent = await mkdtemp(join(tmpdir(), "blame-new-project-"));
+  const target = join(parent, "monorepo-app");
+  await mkdir(target);
+  await writeFile(join(target, "package.json"), '{"name":"monorepo-app"}', "utf8");
+
+  const configuration: NewProjectConfiguration = {
+    ...baseConfiguration,
+    advancedOptions: ["monorepo"],
+  };
+
+  await applyProjectOverlays(
+    target,
+    projectCreationRecipe(configuration, target).overlays,
+    configuration
+  );
+
+  const packageJson = JSON.parse(await readFile(join(target, "package.json"), "utf8"));
+  assert.deepEqual(packageJson.workspaces, ["apps/*", "packages/*"]);
+  assert.equal(
+    await readFile(join(target, "pnpm-workspace.yaml"), "utf8"),
+    "packages:\n  - apps/*\n  - packages/*\n"
+  );
+});
+
+test("disabled advanced scripts option does not synthesize standard scripts", async () => {
+  const parent = await mkdtemp(join(tmpdir(), "blame-new-project-"));
+  const target = join(parent, "plain-app");
+  await mkdir(target);
+  await writeFile(join(target, "package.json"), '{"name":"plain-app"}', "utf8");
+
+  await applyProjectOverlays(target, [], {
+    ...baseConfiguration,
+    advancedOptions: [],
+  });
+
+  const packageJson = JSON.parse(await readFile(join(target, "package.json"), "utf8"));
+  assert.deepEqual(packageJson.scripts, {});
 });
 
 test("builds Blame initialization defaults without AI analysis", () => {
