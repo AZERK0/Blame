@@ -230,9 +230,7 @@ export type WorkspaceClient = {
     reasoningEffort?: ReasoningEffort
     runId: string
   }): Promise<{
-    dockerCompose: string
     path: string
-    setupScript: string
   }>
   createWorktree(input: {
     repositoryRoot: string

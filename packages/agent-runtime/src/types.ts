@@ -211,10 +211,8 @@ export type StartNewProjectGenerationInput = {
 }
 
 export type NewProjectGenerationResult = {
-  dockerCompose: string
   path: string
   sessionId: string
-  setupScript: string
 }
 
 export type OptimizeUserStoryPromptInput = {

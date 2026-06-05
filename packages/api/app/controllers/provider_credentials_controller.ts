@@ -59,7 +59,7 @@ export default class ProviderCredentialsController {
           },
         },
         {
-          id: 'openai-compatible',
+          id: 'openaiCompatible',
           name: 'OpenAI Compatible',
           models: {
             custom: {

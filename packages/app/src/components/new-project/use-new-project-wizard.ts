@@ -1,5 +1,5 @@
 import * as React from "react"
-import type { AgentEvent } from "@blame/agent-runtime"
+import type { AgentEvent, ProjectCodePracticeResult } from "@blame/agent-runtime"
 import { toast } from "sonner"
 
 import { useModelSelection } from "@/components/model/model-selector"
@@ -23,6 +23,7 @@ import { usePlatform } from "@/context/platform"
 import type { HostDependencyReport } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import { useCloudAuth } from "@/context/cloud-auth"
+import { CloudApiError } from "@/lib/cloud-api"
 
 export type NewProjectStep =
   | "location"
@@ -39,6 +40,7 @@ export type NewProjectStep =
 export type ProjectCreationLog = {
   type: "stdout" | "stderr" | "exit" | "agent"
   data: string
+  channel?: "reasoning" | "text" | "tool" | "notice"
 }
 
 export type ProjectCreationStatus =
@@ -61,6 +63,19 @@ const steps: NewProjectStep[] = [
   "advanced",
   "summary",
 ]
+const maxInitializationCompletionAttempts = 3
+
+type InitializationFeedback = {
+  validationError: string
+  previousResult: string
+}
+
+type GeneratedProjectInitializationResult = {
+  sessionId: string
+  setupScript: string
+  dockerCompose: string
+  practices: ProjectCodePracticeResult[]
+}
 
 export type NewProjectWizard = ReturnType<typeof useNewProjectWizard>
 
@@ -232,12 +247,12 @@ export function useNewProjectWizard(input: {
 
     const runId = crypto.randomUUID()
     const unsubscribe = workspace.onProjectCreationEvent?.(runId, (event) => {
-      setLogs((current) => [...current, event])
+      setLogs((current) => appendProjectCreationLog(current, event))
       setStatus(statusFromProjectCreationEvent(event))
     })
     const unsubscribeAgent = platform.agent?.sessions.onEvent(runId, (event) => {
       const log = projectCreationLogFromAgentEvent(event)
-      if (log) setLogs((current) => [...current, log])
+      if (log) setLogs((current) => appendProjectCreationLog(current, log))
       setStatus(statusFromAgentEvent(event))
       if (event.type === "error") {
         setError(eventText(event.payload) || "Project generation agent failed.")
@@ -246,10 +261,11 @@ export function useNewProjectWizard(input: {
 
     try {
       const currentModel = modelSelection.currentModel
-      if (auth.status !== "authenticated" || !currentModel) {
+      const agent = platform.agent
+      if (auth.status !== "authenticated" || !currentModel || !agent) {
         throw new Error("AI model selection is required to create a project.")
       }
-      const result = await workspace.createProject({
+      const createdProject = await workspace.createProject({
         apiConnection: auth.apiConnection,
         configuration: normalizedConfiguration,
         modelId: currentModel.id,
@@ -259,9 +275,24 @@ export function useNewProjectWizard(input: {
         reasoningEffort: modelSelection.currentVariant,
         runId,
       })
-      await projects.openGeneratedProject(result.path, {
-        dockerCompose: result.dockerCompose,
-        setupScript: result.setupScript,
+      setStatus("verifying")
+      setLogs((current) =>
+        appendProjectCreationLog(current, {
+          type: "agent",
+          channel: "notice",
+          data: "Initializing generated project for Blame...\n",
+        })
+      )
+      await initializeGeneratedProjectForBlame({
+        agent,
+        apiConnection: auth.apiConnection,
+        model: currentModel,
+        openGeneratedProject: projects.openGeneratedProject,
+        path: createdProject.path,
+        reasoningEffort: modelSelection.currentVariant,
+        appendLog(log) {
+          setLogs((current) => appendProjectCreationLog(current, log))
+        },
       })
       setOpen(false)
       toast.success("Project created", {
@@ -395,21 +426,147 @@ function statusFromAgentEvent(event: AgentEvent): ProjectCreationStatus {
 }
 
 function projectCreationLogFromAgentEvent(event: AgentEvent): ProjectCreationLog | undefined {
-  const text = eventText(event.payload)
+  const text = projectCreationEventText(event)
   if (!text) return undefined
-  const prefix = event.type === "tool" ? "[tool] " : event.type === "reasoning" ? "[reasoning] " : ""
-  return { type: event.type === "error" ? "stderr" : "agent", data: `${prefix}${text}\n` }
+  if (event.type === "tool") return { type: "agent", channel: "tool", data: `[tool] ${text}\n` }
+  if (event.type === "notice") {
+    if (isNoisyAgentNotice(text)) return undefined
+    return { type: "agent", channel: "notice", data: `${text}\n` }
+  }
+  if (event.type === "reasoning") return { type: "agent", channel: "reasoning", data: `Planning: ${text}\n` }
+  if (event.type === "text") return { type: "agent", channel: "text", data: `${text}\n` }
+  return { type: event.type === "error" ? "stderr" : "agent", data: `${text}\n` }
+}
+
+function appendProjectCreationLog(
+  current: ProjectCreationLog[],
+  next: ProjectCreationLog
+) {
+  if (!next.channel) return [...current, next]
+  const last = current.at(-1)
+  if (last?.channel === next.channel) return [...current.slice(0, -1), next]
+  if (last?.data === next.data) return current
+  return [...current, next]
+}
+
+function projectCreationEventText(event: AgentEvent) {
+  if (event.type === "reasoning" || event.type === "text") {
+    return eventAccumulatedText(event.payload) || eventText(event.payload)
+  }
+  return eventText(event.payload)
+}
+
+function eventAccumulatedText(payload: unknown) {
+  if (!payload || typeof payload !== "object") return ""
+  const value = (payload as Record<string, unknown>).accumulatedText
+  return typeof value === "string" ? cleanEventText(value) : ""
 }
 
 function eventText(payload: unknown): string {
-  if (typeof payload === "string") return payload
+  if (typeof payload === "string") return cleanEventText(payload)
   if (!payload || typeof payload !== "object") return ""
   const record = payload as Record<string, unknown>
   for (const key of ["message", "text", "accumulatedText", "reason", "error"]) {
     const value = record[key]
-    if (typeof value === "string" && value.trim()) return value.trim()
+    if (typeof value === "string" && value.trim()) return cleanEventText(value)
   }
   const tool = record.toolName ?? record.name
   if (typeof tool === "string") return `Running ${tool}`
   return ""
+}
+
+function cleanEventText(value: string) {
+  return value.trim().replace(/\n{3,}/g, "\n\n")
+}
+
+async function initializeGeneratedProjectForBlame(input: {
+  agent: NonNullable<ReturnType<typeof usePlatform>["agent"]>
+  apiConnection: ReturnType<typeof useCloudAuth>["apiConnection"]
+  model: NonNullable<ReturnType<typeof useModelSelection>["currentModel"]>
+  openGeneratedProject: ReturnType<typeof useProjects>["openGeneratedProject"]
+  path: string
+  reasoningEffort: ReturnType<typeof useModelSelection>["currentVariant"]
+  appendLog(log: ProjectCreationLog): void
+}) {
+  let validationFeedback: InitializationFeedback | undefined
+  for (let attempt = 1; attempt <= maxInitializationCompletionAttempts; attempt += 1) {
+    const initialization = await runGeneratedProjectInitialization(input, validationFeedback)
+    try {
+      await openGeneratedProjectWithInitialization(input, initialization)
+      return
+    } catch (error) {
+      if (!shouldRetryInitializationCompletion(error, attempt)) throw error
+      validationFeedback = initializationValidationFeedback(error, initialization)
+      input.appendLog(refiningInitializationLog())
+    }
+  }
+}
+
+function runGeneratedProjectInitialization(
+  input: Parameters<typeof initializeGeneratedProjectForBlame>[0],
+  validationFeedback: InitializationFeedback | undefined
+) {
+  return input.agent.initializations.run({
+    apiConnection: input.apiConnection,
+    providerId: input.model.provider.id,
+    modelId: input.model.id,
+    reasoningEffort: input.reasoningEffort,
+    cwd: input.path,
+    workspaceRoot: input.path,
+    validationFeedback,
+  })
+}
+
+function openGeneratedProjectWithInitialization(
+  input: Parameters<typeof initializeGeneratedProjectForBlame>[0],
+  initialization: GeneratedProjectInitializationResult
+) {
+  return input.openGeneratedProject(input.path, {
+    clineSessionId: initialization.sessionId,
+    dockerCompose: initialization.dockerCompose,
+    practices: initialization.practices,
+    setupScript: initialization.setupScript,
+  })
+}
+
+function refiningInitializationLog(): ProjectCreationLog {
+  return {
+    type: "agent",
+    channel: "notice",
+    data: "Refining Blame initialization artifacts...\n",
+  }
+}
+
+function isNoisyAgentNotice(text: string) {
+  return /^Agent iteration (?:started|completed)\.$/.test(text)
+}
+
+function shouldRetryInitializationCompletion(error: unknown, attempt: number) {
+  return (
+    attempt < maxInitializationCompletionAttempts &&
+    error instanceof CloudApiError &&
+    [400, 422].includes(error.status)
+  )
+}
+
+function initializationValidationFeedback(
+  error: unknown,
+  result: {
+    setupScript: string
+    dockerCompose: string
+    practices: ProjectCodePracticeResult[]
+  }
+) {
+  return {
+    validationError: errorMessage(error),
+    previousResult: JSON.stringify({
+      setupScript: result.setupScript,
+      dockerCompose: result.dockerCompose,
+      practices: result.practices,
+    }),
+  }
+}
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error)
 }

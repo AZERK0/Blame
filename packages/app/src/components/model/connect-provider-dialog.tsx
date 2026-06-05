@@ -132,7 +132,7 @@ function ConnectProviderContent({
   const [saving, setSaving] = React.useState(false)
   const [oauthLoading, setOauthLoading] = React.useState(false)
   const oauth = provider.capabilities?.includes("oauth")
-  const openAICompatible = provider.id === "openai-compatible"
+  const openAICompatible = provider.id === "openaiCompatible"
   const showBaseUrl = openAICompatible
 
   return (
@@ -283,7 +283,7 @@ function ConnectProviderContent({
 }
 
 function openAICompatibleModelId(credential: ProviderCredentialSummary | undefined) {
-  if (credential?.providerId !== "openai-compatible") return ""
+  if (credential?.providerId !== "openaiCompatible") return ""
   return credential.label === "default" ? "" : credential.label
 }
 

@@ -53,7 +53,7 @@ const globalModelSelectionKey = "__global__"
 const recentLimit = 5
 const defaultVariant = "default"
 const defaultCredentialLabel = "default"
-const openAICompatibleProviderID = "openai-compatible"
+const openAICompatibleProviderID = "openaiCompatible"
 const modelStateListeners = new Set<() => void>()
 export const popularProviders = [
   "openai-codex",

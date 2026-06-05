@@ -117,9 +117,10 @@ async function completeGeneratedProjectInitialization(
   await createCloudApi(auth.apiConnection).completeProjectInitialization(
     projectId,
     {
+      clineSessionId: initialization.clineSessionId,
       setupScript: initialization.setupScript,
       dockerCompose: initialization.dockerCompose,
-      practices: generatedProjectPractices(),
+      practices: initialization.practices ?? generatedProjectPractices(),
     }
   )
 }

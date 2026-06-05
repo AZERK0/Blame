@@ -143,10 +143,8 @@ export type NewProjectAgentRuntime = {
     sessionId?: string;
     workspaceRoot: string;
   }): Promise<{
-    dockerCompose: string;
     path: string;
     sessionId: string;
-    setupScript: string;
   }>;
 };
 
@@ -199,7 +197,7 @@ export async function createProject(input: CreateProjectInput) {
   emit({ type: "stdout", data: `Preparing empty project folder: ${target}\n` });
   emit({ type: "stdout", data: "Starting AI project generation agent...\n" });
 
-  const result = await newProjectAgentRuntime.generate({
+  await newProjectAgentRuntime.generate({
     apiConnection: input.apiConnection,
     configuration: input.configuration,
     cwd: target,
@@ -215,9 +213,7 @@ export async function createProject(input: CreateProjectInput) {
 
   emit({ type: "exit", data: "0" });
   return {
-    dockerCompose: result.dockerCompose || "services: {}\n",
     path: target,
-    setupScript: result.setupScript || "#!/usr/bin/env bash\nset -euo pipefail\n",
   };
 }
 

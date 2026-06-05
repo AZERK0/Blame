@@ -77,10 +77,8 @@ test("creates an empty target directory and delegates generation to the AI agent
       assert.equal(info.isDirectory(), true);
       await writeFile(join(input.cwd, "package.json"), '{"name":"agent-app"}', "utf8");
       return {
-        dockerCompose: "services: {}\n",
         path: input.cwd,
         sessionId: input.sessionId ?? "session",
-        setupScript: "#!/usr/bin/env bash\nset -euo pipefail\n",
       };
     },
   });

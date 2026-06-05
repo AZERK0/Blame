@@ -149,9 +149,7 @@ export type BlameDesktopApi = {
     gitRepositoryFingerprint(input: { root: string }): Promise<string | null>;
     ensureGitRepository(input: { root: string }): Promise<boolean>;
     createProject(input: CreateProjectInput): Promise<{
-      dockerCompose: string;
       path: string;
-      setupScript: string;
     }>;
     createWorktree(input: {
       repositoryRoot: string;

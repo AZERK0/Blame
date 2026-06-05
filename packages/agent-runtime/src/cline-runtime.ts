@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto"
 import { execFile } from "node:child_process"
-import { appendFile, mkdir, readFile, rm } from "node:fs/promises"
+import { appendFile, mkdir, rm } from "node:fs/promises"
 import { basename, dirname, join } from "node:path"
 import { promisify } from "node:util"
 
@@ -86,7 +86,7 @@ const maxInitializationAttempts = 3
 const maxMergeConflictResolutionAttempts = 3
 const runtimeArtifactPathspecs = [":!.blame", ":!.blame-preview", ":!.pnpm-store"]
 const productionLogger = createProductionLogger()
-const openAICompatibleProviderID = "openai-compatible"
+const openAICompatibleProviderID = "openaiCompatible"
 
 type ToolApprovalRequest = {
   toolName?: string
@@ -134,6 +134,7 @@ export class BlameAgentRuntime {
   private autoApprovedWriteToolSessions = new Set<string>()
   private sessionLogFiles = new Map<string, string>()
   private sessionContexts = new Map<string, ProductionSessionContext>()
+  private sessionEventSignatures = new Map<string, Map<string, number>>()
   private sessionUsageSignatures = new Map<string, string>()
   private readonly productionConfig = loadProductionConfig()
   private readonly events?: AgentRuntimeEvents
@@ -190,6 +191,7 @@ export class BlameAgentRuntime {
     this.resolvePendingApprovals()
     this.sessionLogFiles.clear()
     this.sessionContexts.clear()
+    this.sessionEventSignatures.clear()
     await this.disposeCore()
     await this.disposeTelemetry()
   }
@@ -464,10 +466,8 @@ export class BlameAgentRuntime {
       if (failure) throw new Error(failure)
       this.emitSessionNotice(sessionId, "New project generation agent finished.")
       return {
-        dockerCompose: await generatedDockerCompose(input.cwd),
         path: input.cwd,
         sessionId,
-        setupScript: await generatedSetupScript(input.cwd),
       }
     } finally {
       this.unsubscribeSession(sessionId)
@@ -635,10 +635,23 @@ export class BlameAgentRuntime {
     const cline = await this.core()
     const unsubscribe = await cline.subscribe((payload: CoreSessionEvent) => {
       const event = normalizeEvent(sessionId, payload)
+      if (this.shouldSkipDuplicateSessionEvent(sessionId, event)) return
       void this.handleSessionEvent(sessionId, event)
       this.events?.emit(event)
     }, { sessionId })
     this.unsubscribers.set(sessionId, unsubscribe)
+  }
+
+  private shouldSkipDuplicateSessionEvent(sessionId: string, event: AgentEvent) {
+    const signature = duplicateEventSignature(event)
+    if (!signature) return false
+    const now = Date.now()
+    const signatures = this.sessionEventSignatures.get(sessionId) ?? new Map<string, number>()
+    const previous = signatures.get(signature)
+    signatures.set(signature, now)
+    this.sessionEventSignatures.set(sessionId, signatures)
+    removeOldEventSignatures(signatures, now)
+    return previous !== undefined && now - previous < 100
   }
 
   private async handleSessionEvent(sessionId: string, event: AgentEvent) {
@@ -663,6 +676,7 @@ export class BlameAgentRuntime {
     this.unsubscribers.delete(sessionId)
     this.autoApprovedWriteToolSessions.delete(sessionId)
     this.sessionContexts.delete(sessionId)
+    this.sessionEventSignatures.delete(sessionId)
     this.sessionUsageSignatures.delete(sessionId)
     void this.logSession(sessionId, "session unsubscribed")
   }
@@ -1088,10 +1102,21 @@ async function newProjectGenerationConfig(
 }
 
 function newProjectGenerationPrompt(input: StartNewProjectGenerationInput) {
+  const authRequested = input.configuration.advancedOptions.includes("auth")
   return [
     `Generate a new Blame project named ${input.projectName}.`,
     "",
-    "The current working directory is already the empty target project directory. Initialize the complete codebase in this directory; do not create a nested project folder unless the selected architecture explicitly needs sub-app folders such as apps/web.",
+    "The current working directory is already the empty target project directory. Initialize the codebase in this directory; do not create a nested project folder unless the selected architecture explicitly needs sub-app folders such as apps/web.",
+    "",
+    "Scope constraints:",
+    "- Initialize the selected framework starter with canonical CLI commands whenever possible.",
+    "- Keep the generated app close to the default framework starter.",
+    "- Do not create a custom homepage, dashboard, demo feature, CRUD flow, domain model, mock data, or marketing content.",
+    "- Do not add authentication, users, sessions, protected routes, or authorization unless auth is requested.",
+    authRequested
+      ? "- Auth is requested: add only the smallest working auth scaffold appropriate for the selected stack."
+      : "- Auth is not requested: do not add auth-related dependencies, screens, routes, schemas, or services.",
+    "- Add only files required by selected advanced options.",
     "",
     "Wizard brief (normalized JSON):",
     JSON.stringify(
@@ -1107,57 +1132,32 @@ function newProjectGenerationPrompt(input: StartNewProjectGenerationInput) {
     "Compatibility and recommendation rules:",
     "- Treat this normalized wizard configuration as the user's source of intent.",
     "- Respect frontend/backend/database/ORM/UI compatibility implied by the selected values.",
-    "- If an exact combination has no mature canonical integration, choose the smallest coherent architecture and document the trade-off in README.md.",
-    "- Advanced options are explicit requirements when present: docker, dockerCompose, monorepo, auth, unitTests, e2eTests, githubActions, envExample, readme, typescriptAlias, standardScripts, blamePreview.",
+    "- If an exact combination has no mature canonical integration, choose the smallest coherent starter and document the trade-off in README.md.",
+    "- Advanced options are explicit requirements when present: monorepo, auth, unitTests, e2eTests, githubActions, envExample, readme, typescriptAlias, standardScripts.",
+    "- Ignore docker, dockerCompose, and blamePreview during project creation because Blame handles them during initialization.",
+    "- Blame will generate setup and Docker Compose preview artifacts after creation through a separate initialization agent.",
+    "- Do not create .blame/setup.sh, setup.sh, docker-compose.yml, compose.yml, or Blame preview metadata.",
     "",
     "Blame readiness requirements:",
-    "- Initialize git and create an initial commit before finishing.",
     "- Make dependency installation non-interactive and reproducible.",
     "- Provide scripts named dev and build; also lint/test when requested or when quality/test options require them.",
-    "- Provide .env.example, README.md, Dockerfile/Docker Compose, tests, GitHub Actions, aliases, auth, and Blame preview metadata when requested.",
-    "- Write a Blame setup script at .blame/setup.sh that prepares env files and lightweight local prerequisites without launching Docker Compose.",
-    "- If Docker Compose is requested or useful for preview, write docker-compose.yml at the project root with Blame preview labels.",
-    "- Preview must bind to 0.0.0.0 inside dev containers and must not depend on fixed host ports.",
+    "- Provide .env.example, README.md, tests, GitHub Actions, aliases, and auth only when requested.",
     "- Avoid blocking prompts; pass non-interactive flags or create files manually when CLIs are interactive.",
     "- Do not use sudo and do not require global installs.",
     "",
     "Verification before completion:",
     "- Install dependencies using the selected package manager/runtime.",
-    "- Run the most relevant build/lint/test commands that exist.",
-    "- Verify the local preview/dev command or explain the exact blocker if the environment prevents it.",
-    "- Fix any generation, install, build, lint, test, or preview errors you encounter.",
-    "- Finish with a concise summary of created files, verification results, preview instructions, and any caveats.",
+    "- Run the most relevant build command. Run lint and test only when those scripts exist or were requested.",
+    "- Verify the local dev command only when feasible without leaving a long-running process active.",
+    "- Fix blocking generation, install, build, lint, or test errors you encounter.",
+    "- Do not chase non-blocking warnings, polish, or cosmetic starter content.",
+    "- Finish with a concise summary of created files, verification results, and any caveats.",
   ].join("\n")
 }
 
 function newProjectGenerationMaxIterations() {
   const value = Number(process.env.BLAME_AGENT_NEW_PROJECT_MAX_ITERATIONS)
-  return Number.isFinite(value) && value > 0 ? value : 160
-}
-
-async function generatedSetupScript(cwd: string) {
-  return readFirstExistingFile([
-    join(cwd, ".blame", "setup.sh"),
-    join(cwd, "setup.sh"),
-  ]) ?? "#!/usr/bin/env bash\nset -euo pipefail\nif [ -f .env.example ] && [ ! -f .env ]; then cp .env.example .env; fi\n"
-}
-
-async function generatedDockerCompose(cwd: string) {
-  return readFirstExistingFile([
-    join(cwd, "docker-compose.yml"),
-    join(cwd, "docker-compose.yaml"),
-    join(cwd, "compose.yml"),
-    join(cwd, "compose.yaml"),
-  ]) ?? "services: {}\n"
-}
-
-async function readFirstExistingFile(paths: string[]) {
-  for (const path of paths) {
-    try {
-      return await readFile(path, "utf8")
-    } catch {}
-  }
-  return undefined
+  return Number.isFinite(value) && value > 0 ? value : 48
 }
 
 function createBlameSessionId() {
@@ -1765,6 +1765,31 @@ function eventLogPayload(event: AgentEvent) {
   }
 }
 
+function duplicateEventSignature(event: AgentEvent) {
+  if (event.type === "raw") return undefined
+  const payload = asRecord(event.payload)
+  const text = eventText(payload)
+  const tool = toolNameFromPayload(payload)
+  const value = text || tool || stringValue(payload.reason) || stringValue(payload.status)
+  if (!value) return undefined
+  return [event.type, event.sessionId, value].join(":")
+}
+
+function removeOldEventSignatures(signatures: Map<string, number>, now: number) {
+  for (const [signature, timestamp] of signatures.entries()) {
+    if (now - timestamp > 1_000) signatures.delete(signature)
+  }
+}
+
+function eventText(payload: Record<string, unknown>) {
+  return stringValue(payload.text) ?? stringValue(payload.message) ?? stringValue(payload.accumulatedText)
+}
+
+function toolNameFromPayload(payload: Record<string, unknown>) {
+  const toolCall = asRecord(payload.toolCall)
+  return stringValue(toolCall.name) ?? stringValue(toolCall.toolName) ?? stringValue(payload.toolName)
+}
+
 function eventUsageSummary(event: AgentEvent): AgentUsageSummary | undefined {
   if (event.type !== "usage" && event.type !== "done") return undefined
   const payload = asRecord(event.payload)
@@ -1774,13 +1799,11 @@ function eventUsageSummary(event: AgentEvent): AgentUsageSummary | undefined {
 }
 
 function toolLogPayload(payload: Record<string, unknown>) {
-  const toolCall = asRecord(payload.toolCall)
-  const toolName = stringValue(toolCall.name) ?? stringValue(toolCall.toolName) ?? stringValue(payload.toolName)
   return {
     durationMs: numberValue(payload.durationMs),
     status: stringValue(payload.phase),
     success: stringValue(payload.phase) !== "failed",
-    toolName,
+    toolName: toolNameFromPayload(payload),
   }
 }
 
