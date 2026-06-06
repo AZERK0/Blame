@@ -119,6 +119,21 @@ test("initializes generated projects as independent git repositories", async () 
   assert.equal(stdout.trim(), target);
 });
 
+test("initial repository commit excludes generated runtime artifacts", async () => {
+  const parent = await mkdtemp(join(tmpdir(), "blame-new-project-"));
+  const target = join(parent, "runtime-artifacts-app");
+  await mkdir(join(target, "node_modules", "package"), { recursive: true });
+  await mkdir(join(target, ".blame", "logs"), { recursive: true });
+  await writeFile(join(target, "package.json"), '{"name":"runtime-artifacts-app"}', "utf8");
+  await writeFile(join(target, "node_modules", "package", "index.js"), "module.exports = {}\n", "utf8");
+  await writeFile(join(target, ".blame", "logs", "cline.log"), "debug\n", "utf8");
+
+  await initializeGeneratedRepository(target);
+
+  const { stdout } = await runGit(target, ["ls-files"]);
+  assert.deepEqual(stdout.trim().split("\n"), ["package.json"]);
+});
+
 test("pins package manager in generated package manifest", async () => {
   const parent = await mkdtemp(join(tmpdir(), "blame-new-project-"));
   const target = join(parent, "manifest-app");

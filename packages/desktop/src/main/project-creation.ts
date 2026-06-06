@@ -1,6 +1,7 @@
-import { execFile } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import {
+  appendFile,
   mkdir,
   readFile,
   readdir,
@@ -10,8 +11,10 @@ import {
 import { basename, join, relative, resolve } from "node:path";
 import { promisify } from "node:util";
 import type { ApiConnection, ReasoningEffort } from "@blame/agent-runtime";
+import { setupPath } from "./host-tool-path.ts";
 
 const execFileAsync = promisify(execFile);
+const gitMaxBuffer = 20 * 1024 * 1024;
 
 export type ProjectPlatform =
   | "web"
@@ -222,12 +225,13 @@ export async function initializeGeneratedRepository(
   emit: (event: ProjectCreationEvent) => void = () => undefined
 ) {
   emit({ type: "stdout", data: "$ git init\n" });
-  await execFileAsync("git", ["init"], { cwd: target });
-  await execFileAsync("git", ["add", "--all"], { cwd: target });
+  await git(target, ["init"]);
+  await ensureGeneratedRepositoryExcludes(target);
+  await git(target, ["add", "--all", "--", "."]);
   const changed = await hasStagedChanges(target);
   if (!changed) return;
-  await execFileAsync(
-    "git",
+  await git(
+    target,
     [
       "-c",
       "user.name=Blame",
@@ -236,18 +240,37 @@ export async function initializeGeneratedRepository(
       "commit",
       "-m",
       "chore: initialize project",
-    ],
-    { cwd: target },
+    ]
   );
 }
 
 async function hasStagedChanges(target: string) {
   try {
-    await execFileAsync("git", ["diff", "--cached", "--quiet"], { cwd: target });
+    await git(target, ["diff", "--cached", "--quiet"]);
     return false;
   } catch {
     return true;
   }
+}
+
+async function ensureGeneratedRepositoryExcludes(target: string) {
+  await appendFile(
+    join(target, ".git", "info", "exclude"),
+    [
+      "",
+      ".blame/",
+      "node_modules/",
+      "**/node_modules/",
+      "**/.nuxt/",
+      "**/.next/",
+      "",
+    ].join("\n"),
+    "utf8"
+  );
+}
+
+async function git(cwd: string, args: string[]) {
+  await execFileAsync("git", args, { cwd, maxBuffer: gitMaxBuffer });
 }
 
 export async function validateProjectTarget(
