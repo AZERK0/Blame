@@ -45,6 +45,22 @@ function useProjectState(
   }, [state])
 
   React.useEffect(() => {
+    if (authStatus !== "unauthenticated") return
+    let cancelled = false
+    queueMicrotask(() => {
+      if (cancelled) return
+      setState((current) =>
+        sameProjectState(current, emptyProjectState())
+          ? current
+          : emptyProjectState()
+      )
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [authStatus])
+
+  React.useEffect(() => {
     let cancelled = false
     void removeUnavailableProjects(
       state,
@@ -213,6 +229,10 @@ function readProjectState(): ProjectState {
   }
 }
 
+function emptyProjectState(): ProjectState {
+  return { recent: [] }
+}
+
 function normalizeProjectState(state: ProjectState): ProjectState {
   const activeProject = state.recent.find(
     (project) => project.id === state.active
@@ -311,6 +331,10 @@ function uniqueProjectsByPath(projects: Project[]) {
 }
 
 function writeProjectState(state: ProjectState) {
+  if (sameProjectState(state, emptyProjectState())) {
+    localStorage.removeItem(storageKey)
+    return
+  }
   localStorage.setItem(storageKey, JSON.stringify(state))
 }
 
