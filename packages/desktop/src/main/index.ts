@@ -104,7 +104,6 @@ function createMainWindow() {
     autoHideMenuBar: true,
     backgroundColor: "#00000000",
     frame: false,
-    titleBarStyle: "hidden",
     transparent: process.platform !== "win32",
     webPreferences: {
       contextIsolation: true,
@@ -117,6 +116,7 @@ function createMainWindow() {
   }
   const window = new BrowserWindow(options)
 
+  hidePlatformWindowButtons(window)
   state.manage(window)
   attachLiveLogWindow(window)
   registerWindowStateEvents(window)
@@ -147,6 +147,11 @@ function macosWindowOptions(): BrowserWindowConstructorOptions {
     vibrancy: "under-window",
     visualEffectState: "active",
   }
+}
+
+function hidePlatformWindowButtons(window: BrowserWindow) {
+  if (process.platform !== "darwin") return
+  window.setWindowButtonVisibility(false)
 }
 
 function loadRenderer(window: BrowserWindow) {
