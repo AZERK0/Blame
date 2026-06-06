@@ -135,6 +135,7 @@ export type BlameDesktopApi = {
     }): Promise<boolean>;
   };
   workspace: {
+    pathExists(input: { path: string }): Promise<boolean>;
     listDirectory(input: {
       root: string;
       path?: string;

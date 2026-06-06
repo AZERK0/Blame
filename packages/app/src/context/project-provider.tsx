@@ -1,6 +1,6 @@
 import * as React from "react"
 
-import { useCloudAuth } from "@/context/cloud-auth"
+import { useCloudAuth, type CloudProject } from "@/context/cloud-auth"
 import { usePlatform } from "@/context/platform"
 import {
   ProjectContext,
@@ -36,10 +36,29 @@ function useProjectState(
   const activeProject = state.recent.find(
     (project) => project.id === state.active
   )
+  const authStatus = auth.status
+  const apiConnection = auth.apiConnection
+  const workspace = platform.workspace
 
   React.useEffect(() => {
     writeProjectState(state)
   }, [state])
+
+  React.useEffect(() => {
+    let cancelled = false
+    void removeUnavailableProjects(
+      state,
+      authStatus,
+      apiConnection,
+      workspace
+    ).then((next) => {
+      if (cancelled || sameProjectState(state, next)) return
+      setState((current) => (sameProjectState(current, state) ? next : current))
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [apiConnection, authStatus, state, workspace])
 
   const openProject = React.useCallback(
     async (path: string) => {
@@ -211,6 +230,77 @@ function normalizeProjectState(state: ProjectState): ProjectState {
       : undefined,
     recent,
   }
+}
+
+async function removeUnavailableProjects(
+  state: ProjectState,
+  authStatus: ReturnType<typeof useCloudAuth>["status"],
+  apiConnection: ReturnType<typeof useCloudAuth>["apiConnection"],
+  workspace: ReturnType<typeof usePlatform>["workspace"]
+) {
+  const cloudProjects = await availableCloudProjects(
+    authStatus,
+    apiConnection
+  )
+  const recent = await availableLocalProjects(state.recent, workspace)
+  const available = cloudProjects
+    ? recent.filter((project) => projectExistsInCloud(project, cloudProjects))
+    : recent
+
+  return normalizeProjectState({ active: state.active, recent: available })
+}
+
+async function availableCloudProjects(
+  authStatus: ReturnType<typeof useCloudAuth>["status"],
+  apiConnection: ReturnType<typeof useCloudAuth>["apiConnection"]
+) {
+  if (authStatus !== "authenticated") return
+  try {
+    return await createCloudApi(apiConnection).projects()
+  } catch {
+    return
+  }
+}
+
+function projectExistsInCloud(project: Project, cloudProjects: CloudProject[]) {
+  return cloudProjects.some((cloudProject) => {
+    if (cloudProject.id === project.id) return true
+    if (
+      project.repositoryFingerprint &&
+      cloudProject.repositoryFingerprint === project.repositoryFingerprint
+    ) {
+      return true
+    }
+    return cloudProject.name === project.name
+  })
+}
+
+async function availableLocalProjects(
+  projects: Project[],
+  workspace: ReturnType<typeof usePlatform>["workspace"]
+) {
+  const availability = await Promise.all(
+    projects.map(async (project) => ({
+      project,
+      available: await projectPathExists(project, workspace),
+    }))
+  )
+  return availability
+    .filter((item) => item.available)
+    .map((item) => item.project)
+}
+
+async function projectPathExists(
+  project: Project,
+  workspace: ReturnType<typeof usePlatform>["workspace"]
+) {
+  return (await workspace?.pathExists({ path: project.path })) ?? true
+}
+
+function sameProjectState(left: ProjectState, right: ProjectState) {
+  if (left.active !== right.active) return false
+  if (left.recent.length !== right.recent.length) return false
+  return left.recent.every((project, index) => project === right.recent[index])
 }
 
 function uniqueProjectsByPath(projects: Project[]) {

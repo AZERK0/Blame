@@ -207,6 +207,7 @@ export type PreviewBrowserClient = {
 }
 
 export type WorkspaceClient = {
+  pathExists(input: { path: string }): Promise<boolean>
   listDirectory(input: {
     root: string
     path?: string

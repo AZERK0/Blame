@@ -8,10 +8,6 @@ import type {
 } from "@/context/cloud-auth"
 import type { ApiConnection } from "@blame/agent-runtime"
 
-type ApiResponse<T> = {
-  data: T
-}
-
 export class CloudApiError extends Error {
   constructor(message: string, readonly status: number) {
     super(message)
@@ -37,6 +33,11 @@ export function createCloudApi(connection: ApiConnection) {
     },
     profile() {
       return request<CloudUser>(connection, baseUrl, "/account/profile")
+    },
+    projects() {
+      return request<unknown>(connection, baseUrl, "/projects").then(
+        cloudProjects
+      )
     },
     async logout() {
       await request<{ message: string }>(
@@ -113,6 +114,12 @@ export function createCloudApi(connection: ApiConnection) {
   }
 }
 
+function cloudProjects(value: unknown) {
+  const projects = transformerValue(value)
+  if (!Array.isArray(projects)) throw new Error("Unable to read projects.")
+  return projects.map(cloudProject)
+}
+
 function cloudProject(value: unknown) {
   const project = transformerValue(value)
   if (!isRecord(project)) throw new Error("Unable to read project.")
@@ -167,11 +174,16 @@ async function request<T>(
     throw new CloudApiError(await responseMessage(response), response.status)
   }
   if (response.status === 204) return undefined as T
-  return ((await response.json()) as ApiResponse<T>).data
+  return responseData(await response.json()) as T
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object"
+}
+
+function responseData(value: unknown) {
+  if (!isRecord(value) || !("data" in value)) return value
+  return value.data
 }
 
 async function responseMessage(response: Response) {

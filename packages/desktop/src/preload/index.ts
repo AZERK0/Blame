@@ -53,6 +53,7 @@ const api: BlameDesktopApi = {
       ipcRenderer.invoke("preview-browser:set-bounds", input),
   },
   workspace: {
+    pathExists: (input) => ipcRenderer.invoke("workspace:path-exists", input),
     listDirectory: (input) =>
       ipcRenderer.invoke("workspace:list-directory", input),
     readFile: (input) => ipcRenderer.invoke("workspace:read-file", input),

@@ -147,6 +147,9 @@ const workspaceProcesses = new Set<ChildProcessWithoutNullStreams>();
 export function registerWorkspaceIpcHandlers() {
   setProjectCreationWindowsProvider(() => BrowserWindow.getAllWindows());
   setNewProjectAgentRuntime({ generate: generateNewProjectWithAgent });
+  ipcMain.handle("workspace:path-exists", (_event, input: { path: string }) =>
+    pathExists(input.path),
+  );
   ipcMain.handle(
     "workspace:list-directory",
     (_event, input: WorkspacePathInput) => listDirectory(input),
@@ -222,6 +225,15 @@ async function listDirectory(input: WorkspacePathInput) {
     .sort((left, right) =>
       `${left.type}:${left.name}`.localeCompare(`${right.type}:${right.name}`),
     );
+}
+
+async function pathExists(path: string) {
+  try {
+    await stat(resolve(path));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 async function readWorkspaceFile(input: WorkspacePathInput) {
