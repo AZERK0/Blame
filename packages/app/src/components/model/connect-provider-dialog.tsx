@@ -29,6 +29,8 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 
+const openAICompatibleProviderID = "openai-compatible"
+
 export function ProviderSelectDialog({
   onConnect,
   onOpenChange,
@@ -132,7 +134,7 @@ function ConnectProviderContent({
   const [saving, setSaving] = React.useState(false)
   const [oauthLoading, setOauthLoading] = React.useState(false)
   const oauth = provider.capabilities?.includes("oauth")
-  const openAICompatible = provider.id === "openaiCompatible"
+  const openAICompatible = provider.id === openAICompatibleProviderID
   const showBaseUrl = openAICompatible
 
   return (
@@ -283,7 +285,7 @@ function ConnectProviderContent({
 }
 
 function openAICompatibleModelId(credential: ProviderCredentialSummary | undefined) {
-  if (credential?.providerId !== "openaiCompatible") return ""
+  if (credential?.providerId !== openAICompatibleProviderID) return ""
   return credential.label === "default" ? "" : credential.label
 }
 
