@@ -351,13 +351,84 @@ function setupInitializingStoryIds(
 function newestUserStory(currentStory: UserStory, nextStory: UserStory) {
   const currentUpdatedAt = timestamp(currentStory.updatedAt)
   const nextUpdatedAt = timestamp(nextStory.updatedAt)
-  if (currentUpdatedAt === undefined || nextUpdatedAt === undefined)
-    return nextStory
-  return nextUpdatedAt >= currentUpdatedAt ? nextStory : currentStory
+  if (currentUpdatedAt === undefined || nextUpdatedAt === undefined) {
+    return storyWithConversationHistory(nextStory, currentStory)
+  }
+  if (nextUpdatedAt >= currentUpdatedAt) {
+    return storyWithConversationHistory(nextStory, currentStory)
+  }
+  return storyWithConversationHistory(currentStory, nextStory)
 }
 
 function timestamp(value: string | null | undefined) {
   if (!value) return undefined
   const date = Date.parse(value)
   return Number.isNaN(date) ? undefined : date
+}
+
+function storyWithConversationHistory(story: UserStory, previous: UserStory) {
+  return {
+    ...story,
+    agentRuns: mergedAgentRuns(previous.agentRuns ?? [], story.agentRuns ?? []),
+    comments: mergedComments(previous.comments ?? [], story.comments ?? []),
+  }
+}
+
+function mergedComments(
+  previousComments: UserStoryComment[],
+  nextComments: UserStoryComment[]
+) {
+  return sortedByCreatedAt(mergedById(previousComments, nextComments))
+}
+
+function mergedAgentRuns(
+  previousRuns: UserStoryAgentRun[],
+  nextRuns: UserStoryAgentRun[]
+) {
+  const runs = new Map<number, UserStoryAgentRun>()
+  previousRuns.forEach((run) => runs.set(run.id, run))
+  nextRuns.forEach((run) => {
+    const previous = runs.get(run.id)
+    runs.set(run.id, previous ? mergedAgentRun(previous, run) : run)
+  })
+  return sortedByCreatedAt([...runs.values()])
+}
+
+function mergedAgentRun(
+  previousRun: UserStoryAgentRun,
+  nextRun: UserStoryAgentRun
+): UserStoryAgentRun {
+  const base =
+    timestamp(nextRun.updatedAt) >= timestamp(previousRun.updatedAt)
+      ? nextRun
+      : previousRun
+  return {
+    ...base,
+    activities: mergedById(
+      previousRun.activities ?? [],
+      nextRun.activities ?? []
+    ),
+    finalResponse:
+      nextRun.finalResponse ?? previousRun.finalResponse ?? base.finalResponse,
+    sessionSummary:
+      nextRun.sessionSummary ?? previousRun.sessionSummary ?? base.sessionSummary,
+    usage: nextRun.usage ?? previousRun.usage ?? base.usage,
+  }
+}
+
+function mergedById<T extends { id: number | string }>(
+  previousItems: T[],
+  nextItems: T[]
+) {
+  const items = new Map<number | string, T>()
+  previousItems.forEach((item) => items.set(item.id, item))
+  nextItems.forEach((item) => items.set(item.id, item))
+  return [...items.values()]
+}
+
+function sortedByCreatedAt<T extends { createdAt: string }>(items: T[]) {
+  return [...items].sort(
+    (left, right) =>
+      (timestamp(left.createdAt) ?? 0) - (timestamp(right.createdAt) ?? 0)
+  )
 }

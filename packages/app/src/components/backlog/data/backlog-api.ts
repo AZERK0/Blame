@@ -154,9 +154,10 @@ function userStoryAgentRun(value: unknown) {
 
 function userStoryComment(value: unknown) {
   const comment = transformerValue(value)
+  const id = numericId(recordValue(comment).id)
+  const userStoryId = numericId(recordValue(comment).userStoryId)
   if (!isRecord(comment)) throw new Error("Unable to read user story comment.")
-  if (typeof comment.id !== "number")
-    throw new Error("Unable to read user story comment.")
+  if (id === undefined) throw new Error("Unable to read user story comment.")
   if (typeof comment.body !== "string")
     throw new Error("Unable to read user story comment.")
   return {
@@ -166,9 +167,9 @@ function userStoryComment(value: unknown) {
       typeof comment.createdAt === "string"
         ? comment.createdAt
         : new Date().toISOString(),
-    id: comment.id,
+    id,
     updatedAt: typeof comment.updatedAt === "string" ? comment.updatedAt : null,
-    userStoryId: numericId(comment.userStoryId) ?? 0,
+    userStoryId: userStoryId ?? 0,
   } satisfies UserStoryComment
 }
 
@@ -181,14 +182,23 @@ function userStoryList(value: unknown) {
 
 function userStory(value: unknown) {
   const story = transformerValue(value)
+  const id = numericId(recordValue(story).id)
   if (!isRecord(story)) throw new Error("Unable to read user story.")
-  if (typeof story.id !== "number")
-    throw new Error("Unable to read user story.")
+  if (id === undefined) throw new Error("Unable to read user story.")
   if (typeof story.projectId !== "string")
     throw new Error("Unable to read user story.")
   if (typeof story.title !== "string")
     throw new Error("Unable to read user story.")
-  return story as UserStory
+  return {
+    ...story,
+    id,
+    agentRuns: Array.isArray(story.agentRuns)
+      ? story.agentRuns.map(userStoryAgentRun)
+      : [],
+    comments: Array.isArray(story.comments)
+      ? story.comments.map(userStoryComment)
+      : [],
+  } as UserStory
 }
 
 function transformerValue(value: unknown): unknown {
