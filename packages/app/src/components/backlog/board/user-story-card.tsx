@@ -32,6 +32,7 @@ export function UserStoryCard({
   onReject,
   onStopAgent,
   onUnpauseAgent,
+  cleanup,
   setupInitializing,
   story,
 }: {
@@ -44,6 +45,7 @@ export function UserStoryCard({
   onReject: (story: UserStory, choice: RejectChoice) => Promise<UserStory>
   onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
   onUnpauseAgent: (story: UserStory) => Promise<UserStory>
+  cleanup?: boolean
   setupInitializing?: boolean
   story: UserStory
 }) {
@@ -57,6 +59,12 @@ export function UserStoryCard({
           <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
             <LoaderCircleIcon className="size-3 animate-spin" />
             Initializing story setup
+          </div>
+        )}
+        {cleanup && (
+          <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+            <LoaderCircleIcon className="size-3 animate-spin" />
+            Removing story worktree
           </div>
         )}
         <CardTitle className="min-w-0 text-base leading-snug">

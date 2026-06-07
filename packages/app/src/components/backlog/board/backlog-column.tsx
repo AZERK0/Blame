@@ -41,6 +41,7 @@ export function BacklogColumn({
   onStopAgent,
   onUnpauseAgent,
   queueInitializing,
+  storyCleanup,
   storySetupInitializing,
   stories,
 }: {
@@ -56,6 +57,7 @@ export function BacklogColumn({
   onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
   onUnpauseAgent: (story: UserStory) => Promise<UserStory>
   queueInitializing?: boolean
+  storyCleanup?: (story: UserStory) => boolean
   storySetupInitializing?: (story: UserStory) => boolean
   stories: UserStory[]
 }) {
@@ -71,6 +73,7 @@ export function BacklogColumn({
           {stories.map((story) => (
             <UserStoryCard
               key={story.id}
+              cleanup={storyCleanup?.(story)}
               onAction={onAction}
               onOpenDrawer={onOpenDrawer}
               onOpenWorktree={onOpenWorktree}

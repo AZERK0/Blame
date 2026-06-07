@@ -81,35 +81,6 @@ export function BacklogPage() {
       initialTab: "user-story",
     })
   }, [backlog.projectPath])
-  const updateStory = React.useCallback(
-    async (
-      story: UserStory,
-      input: UserStoryUpdate,
-      options: { cleanup?: boolean } = {}
-    ) => {
-      const currentStory = activeStory(story, storiesRef.current)
-      const cleanup =
-        options.cleanup === false
-          ? {}
-          : await inactiveStoryCleanup(
-              currentStory,
-              input,
-              platform,
-              projects.activeProject?.path
-            )
-      const nextStory = await backlog.update(currentStory, {
-        ...input,
-        ...cleanup,
-      })
-      setDrawerTarget((current) =>
-        current?.userStory?.id === currentStory.id
-          ? { ...current, userStory: nextStory }
-          : current
-      )
-      return nextStory
-    },
-    [backlog, platform, projects.activeProject?.path]
-  )
   const updateStoryLocal = React.useCallback(
     (story: UserStory, input: UserStoryUpdate) => {
       const currentStory = activeStory(story, storiesRef.current)
@@ -126,6 +97,51 @@ export function BacklogPage() {
       return nextStory
     },
     [backlog]
+  )
+  const updateStory = React.useCallback(
+    async (
+      story: UserStory,
+      input: UserStoryUpdate,
+      options: { cleanup?: boolean } = {}
+    ) => {
+      const currentStory = activeStory(story, storiesRef.current)
+      const persistStoryUpdate = async (input: UserStoryUpdate) => {
+        const nextStory = await backlog.update(currentStory, input)
+        setDrawerTarget((current) =>
+          current?.userStory?.id === currentStory.id
+            ? { ...current, userStory: nextStory }
+            : current
+        )
+        return nextStory
+      }
+      if (
+        options.cleanup !== false &&
+        asyncInactiveStoryCleanup(currentStory, input)
+      ) {
+        const nextStory = await persistStoryUpdate(input)
+        void cleanupInactiveStory(
+          currentStory,
+          platform,
+          projects.activeProject?.path,
+          backlog
+        )
+        return nextStory
+      }
+      const cleanup =
+        options.cleanup === false
+          ? {}
+          : await inactiveStoryCleanup(
+              currentStory,
+              input,
+              platform,
+              projects.activeProject?.path
+            )
+      return persistStoryUpdate({
+        ...input,
+        ...cleanup,
+      })
+    },
+    [backlog, platform, projects.activeProject?.path]
   )
   const persistQueuedAgentUpdate = React.useCallback(
     async (story: UserStory, update: QueuedAgentUpdate) => {
@@ -659,6 +675,7 @@ export function BacklogPage() {
               onStopAgent={stopAgent}
               onUnpauseAgent={unpauseAgent}
               queueInitializing={column.id === "ready" && queueInitializing}
+              storyCleanup={backlog.storyCleanup}
               storySetupInitializing={backlog.storySetupInitializing}
               stories={backlog.storiesForColumn(column.id)}
             />
@@ -875,6 +892,35 @@ async function inactiveStoryCleanup(
   await stopStoryRuntime(story, platform)
   await removeStoryWorktree(story, platform, repositoryRoot)
   return inactiveStoryFields()
+}
+
+function asyncInactiveStoryCleanup(story: UserStory, input: UserStoryUpdate) {
+  const nextStatus = input.status ?? story.status
+  return (
+    nextStatus === "discarded" &&
+    leavesRuntimeStatus(story.status, nextStatus)
+  )
+}
+
+async function cleanupInactiveStory(
+  story: UserStory,
+  platform: ReturnType<typeof usePlatform>,
+  repositoryRoot: string | undefined,
+  backlog: ReturnType<typeof useBacklogStore>
+) {
+  backlog.setStoryCleanup(story, true)
+  try {
+    await stopStoryRuntime(story, platform)
+    await removeStoryWorktree(story, platform, repositoryRoot)
+    await backlog.update(story, inactiveStoryFields())
+  } catch (error) {
+    toast.error("Discarded story cleanup failed", {
+      description: errorMessage(error),
+      position: "bottom-right",
+    })
+  } finally {
+    backlog.setStoryCleanup(story, false)
+  }
 }
 
 const runtimeStatuses = new Set<BacklogColumnId>(["in-progress", "in-review"])

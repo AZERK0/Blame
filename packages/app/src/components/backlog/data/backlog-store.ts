@@ -15,6 +15,7 @@ import { useCloudAuth } from "@/context/cloud-auth"
 import { useProjects } from "@/context/projects"
 
 type BacklogState = {
+  cleanupStoryIds: Set<number>
   error?: string
   loading: boolean
   setupInitializingStoryIds: Set<number>
@@ -25,6 +26,7 @@ export function useBacklogStore() {
   const auth = useCloudAuth()
   const projects = useProjects()
   const [state, setState] = React.useState<BacklogState>({
+    cleanupStoryIds: new Set(),
     loading: false,
     setupInitializingStoryIds: new Set(),
     stories: [],
@@ -41,6 +43,7 @@ export function useBacklogStore() {
   const load = React.useCallback(async () => {
     if (!projectId) {
       setState({
+        cleanupStoryIds: new Set(),
         loading: false,
         setupInitializingStoryIds: new Set(),
         stories: [],
@@ -50,12 +53,14 @@ export function useBacklogStore() {
     setState((current) => ({ ...current, error: undefined, loading: true }))
     try {
       setState({
+        cleanupStoryIds: new Set(),
         loading: false,
         setupInitializingStoryIds: new Set(),
         stories: await api.list(projectId),
       })
     } catch (error) {
       setState({
+        cleanupStoryIds: new Set(),
         error:
           error instanceof Error
             ? error.message
@@ -240,6 +245,24 @@ export function useBacklogStore() {
       Boolean(story && state.setupInitializingStoryIds.has(story.id)),
     [state.setupInitializingStoryIds]
   )
+  const setStoryCleanup = React.useCallback(
+    (story: UserStory, cleanup: boolean) => {
+      setState((current) => ({
+        ...current,
+        cleanupStoryIds: storyStateIds(
+          current.cleanupStoryIds,
+          story.id,
+          cleanup
+        ),
+      }))
+    },
+    []
+  )
+  const storyCleanup = React.useCallback(
+    (story?: UserStory) =>
+      Boolean(story && state.cleanupStoryIds.has(story.id)),
+    [state.cleanupStoryIds]
+  )
 
   return {
     ...state,
@@ -251,7 +274,9 @@ export function useBacklogStore() {
     projectId,
     projectPath,
     remove,
+    setStoryCleanup,
     setStorySetupInitializing,
+    storyCleanup,
     storySetupInitializing,
     storiesForColumn,
     update,
@@ -342,8 +367,16 @@ function setupInitializingStoryIds(
   storyId: number,
   initializing: boolean
 ) {
+  return storyStateIds(current, storyId, initializing)
+}
+
+function storyStateIds(
+  current: Set<number>,
+  storyId: number,
+  active: boolean
+) {
   const next = new Set(current)
-  if (initializing) next.add(storyId)
+  if (active) next.add(storyId)
   else next.delete(storyId)
   return next
 }
