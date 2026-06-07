@@ -1,5 +1,6 @@
 import type {
   UserStory,
+  UserStoryComment,
   UserStoryDraft,
   UserStoryUpdate,
 } from "@/components/backlog/data/backlog-data"
@@ -36,7 +37,7 @@ export type UserStoryDrawerProps = {
   onCreateUserStoryComment: (
     story: UserStory,
     input: { body: string }
-  ) => Promise<unknown>
+  ) => Promise<UserStoryComment>
   onApproveAndMerge: (story: UserStory) => Promise<UserStory>
   onOpenDrawer: OpenDrawer
   onOptimizeUserStory?: (input: {
@@ -44,7 +45,11 @@ export type UserStoryDrawerProps = {
     title: string
   }) => Promise<string>
   onReject: (story: UserStory, choice: RejectChoice) => Promise<UserStory>
-  onRequestChanges: (story: UserStory, feedback: string) => Promise<UserStory>
+  onRequestChanges: (
+    story: UserStory,
+    feedback: string,
+    commentId: number
+  ) => Promise<UserStory>
   onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
   onUpdateUserStory: (
     story: UserStory,

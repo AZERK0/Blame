@@ -64,6 +64,24 @@ export type UserStoryAgentActivity = {
   updatedAt?: string
 }
 
+export type UserStoryAgentRunKind = "initial" | "change-request" | "resume"
+export type UserStoryAgentRunStatus = "running" | "completed" | "failed"
+export type UserStoryAgentRun = {
+  id: number
+  userStoryId: number
+  commentId?: number | null
+  kind: UserStoryAgentRunKind
+  clineSessionId?: string | null
+  status: UserStoryAgentRunStatus
+  activities?: UserStoryAgentActivity[] | null
+  finalResponse?: string | null
+  usage?: UserStoryAgentUsage | null
+  sessionSummary?: string | null
+  completedAt?: string | null
+  createdAt: string
+  updatedAt?: string | null
+}
+
 export type UserStoryComment = {
   id: number
   userStoryId: number
@@ -94,6 +112,7 @@ export type UserStory = {
   agentFinalResponse?: string | null
   agentUsage?: UserStoryAgentUsage | null
   agentSessionSummary?: string | null
+  agentRuns?: UserStoryAgentRun[]
   mergedAt?: string | null
   mergeCommit?: string | null
   discardedReason?: string | null
@@ -143,6 +162,28 @@ export type UserStoryUpdate = Partial<
 
 export type UserStoryActivityDetail = {
   detail: string
+}
+
+export type UserStoryAgentRunDraft = {
+  commentId?: number | null
+  kind: UserStoryAgentRunKind
+  clineSessionId?: string | null
+  status?: UserStoryAgentRunStatus
+}
+
+export type UserStoryAgentRunUpdate = Partial<
+  Pick<
+    UserStoryAgentRun,
+    | "activities"
+    | "clineSessionId"
+    | "completedAt"
+    | "finalResponse"
+    | "sessionSummary"
+    | "status"
+    | "usage"
+  >
+> & {
+  agentActivity?: UserStoryAgentActivity | null
 }
 
 export const backlogColumns = [

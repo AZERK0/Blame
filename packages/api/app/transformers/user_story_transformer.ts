@@ -1,4 +1,5 @@
 import type UserStory from '#models/user_story'
+import UserStoryAgentRunTransformer from '#transformers/user_story_agent_run_transformer'
 import UserStoryCommentTransformer from '#transformers/user_story_comment_transformer'
 import { BaseTransformer } from '@adonisjs/core/transformers'
 
@@ -34,6 +35,9 @@ export default class UserStoryTransformer extends BaseTransformer<UserStory> {
       ]),
       comments: (this.resource.comments ?? []).map((comment) =>
         UserStoryCommentTransformer.transform(comment)
+      ),
+      agentRuns: (this.resource.agentRuns ?? []).map((run) =>
+        UserStoryAgentRunTransformer.transform(run)
       ),
     }
   }

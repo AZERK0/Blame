@@ -4,6 +4,7 @@ import { AppWindowIcon, BookOpenIcon, CodeIcon, XIcon } from "lucide-react"
 import type {
   BacklogColumnId,
   UserStory,
+  UserStoryComment,
   UserStoryDraft,
   UserStoryUpdate,
 } from "@/components/backlog/data/backlog-data"
@@ -77,13 +78,17 @@ export function UserStoryDrawerPanel({
   onCreateUserStoryComment: (
     story: UserStory,
     input: { body: string }
-  ) => Promise<unknown>
+  ) => Promise<UserStoryComment>
   onOpenDrawer: OpenDrawer
   onOptimizeUserStory?: (input: {
     summary: string
     title: string
   }) => Promise<string>
-  onRequestChanges: (story: UserStory, feedback: string) => Promise<UserStory>
+  onRequestChanges: (
+    story: UserStory,
+    feedback: string,
+    commentId: number
+  ) => Promise<UserStory>
   onReject: (story: UserStory, choice: RejectChoice) => Promise<UserStory>
   onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
   onUpdateUserStory: (
@@ -333,10 +338,14 @@ export function UserStoryDrawerPanel({
     if (!body) return
     setSaving(true)
     try {
-      await onCreateUserStoryComment(userStory, { body })
+      const createdComment = await onCreateUserStoryComment(userStory, { body })
       setComment("")
       if (status === "in-review") {
-        const nextStory = await onRequestChanges(userStory, body)
+        const nextStory = await onRequestChanges(
+          userStory,
+          body,
+          createdComment.id
+        )
         if (nextStory.status === "in-progress") onCancel()
       }
     } finally {

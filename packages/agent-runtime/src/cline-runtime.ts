@@ -884,7 +884,7 @@ export class BlameAgentRuntime {
       modelId: input.modelId,
       reasoningEffort: input.reasoningEffort,
       autoApproveWriteTools: true,
-      autoSendPrompt: true,
+      autoSendPrompt: input.autoSendPrompt !== false,
       mode: "act",
       maxIterations: input.maxIterations ?? developmentMaxIterations(),
       prompt: developmentStoryPrompt(input),

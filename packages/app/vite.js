@@ -21,6 +21,7 @@ export default [
     name: "blame-app:config",
     config() {
       return {
+        envDir: root,
         resolve: {
           alias: [
             { find: /^react-dom\/client$/, replacement: reactRuntime["react-dom/client"] },

@@ -6,20 +6,18 @@ import {
   ClipboardCheckIcon,
   Code2Icon,
   FileSearchIcon,
-  FileTextIcon,
-  GitBranchIcon,
   ListChecksIcon,
   MessageSquareIcon,
   PencilIcon,
   SearchIcon,
   TerminalIcon,
-  XCircleIcon,
 } from "lucide-react"
 
 import type {
   BacklogColumnId,
   UserStory,
   UserStoryAgentActivity,
+  UserStoryAgentRun,
   UserStoryComment,
 } from "@/components/backlog/data/backlog-data"
 import { createBacklogApi } from "@/components/backlog/data/backlog-api"
@@ -27,7 +25,6 @@ import type { PendingCodeSelectionAttachment } from "@/components/backlog/shared
 import type { UserStoryDrawerMode } from "@/components/backlog/shared/backlog-types"
 import { MarkdownEditor } from "@/components/backlog/drawer/markdown-editor"
 import {
-  activityItems,
   commentButtonLabel,
   isEditable,
 } from "@/components/backlog/drawer/user-story-drawer-helpers"
@@ -93,8 +90,7 @@ export function UserStoryContent({
         placeholder="Describe the user story, expected behavior, and acceptance criteria."
         minHeight="min-h-70"
       />
-      <ActivitySection status={status} userStory={userStory} />
-      <AgentFinalResponseSection
+      <AgentRunTimeline
         userStory={userStory}
         onFileLinkClick={onFileLinkClick}
       />
@@ -112,11 +108,11 @@ export function UserStoryContent({
   )
 }
 
-function ActivitySection({
-  status,
+function AgentRunTimeline({
+  onFileLinkClick,
   userStory,
 }: {
-  status: BacklogColumnId
+  onFileLinkClick?: (path: string) => void
   userStory?: UserStory
 }) {
   const auth = useCloudAuth()
@@ -124,46 +120,51 @@ function ActivitySection({
     () => createBacklogApi(auth.apiConnection),
     [auth.apiConnection]
   )
-  const items = activityItems(status)
-  const agentActivities = userStory?.agentActivities ?? []
-  const comments = userStory?.comments ?? []
+  const runs = userStory?.agentRuns ?? []
+  const commentsById = React.useMemo(
+    () =>
+      new Map(
+        (userStory?.comments ?? []).map((comment) => [comment.id, comment])
+      ),
+    [userStory?.comments]
+  )
   const loadActivityDetail = React.useCallback(
-    async (activity: UserStoryAgentActivity) => {
+    async (run: UserStoryAgentRun, activity: UserStoryAgentActivity) => {
       if (!userStory) return activity.detail
-      return (await api.activityDetail(userStory.id, activity.id)).detail
+      return (
+        await api.agentRunActivityDetail(userStory.id, run.id, activity.id)
+      ).detail
     },
     [api, userStory]
   )
+
+  if (runs.length === 0) return null
 
   return (
     <div className="-mt-6 grid gap-0">
       <div className="relative grid gap-4 pt-6">
         <span className="absolute top-0 bottom-0 left-4 w-px bg-muted-foreground/35" />
-        {items.map((item) => {
-          const Icon = lifeActivityIcon(item)
-
-          return (
-            <div
-              key={`life-${item}`}
-              className="relative grid grid-cols-[2.5rem_minmax(0,1fr)] items-center gap-1 text-sm"
-            >
-              <span className="relative z-10 flex size-8 items-center justify-center rounded-full border bg-background text-muted-foreground shadow-sm">
-                <Icon className="size-4" />
-              </span>
-              <p className="text-muted-foreground">{item}</p>
-            </div>
-          )
-        })}
         <Accordion type="multiple" className="contents">
-          {comments.map((comment) => (
-            <UserCommentItem key={comment.id} comment={comment} />
-          ))}
-          {agentActivities.map((activity) => (
-            <AgentActivityItem
-              key={activity.id}
-              activity={activity}
-              onLoadDetail={loadActivityDetail}
-            />
+          {runs.map((run) => (
+            <React.Fragment key={run.id}>
+              <RunCommentItem
+                comment={runComment(run, commentsById)}
+                run={run}
+                onFileLinkClick={onFileLinkClick}
+              />
+              {(run.activities ?? []).map((activity) => (
+                <AgentActivityItem
+                  key={`${run.id}-${activity.id}`}
+                  activity={activity}
+                  onLoadDetail={(item) => loadActivityDetail(run, item)}
+                  value={`${run.id}-${activity.id}`}
+                />
+              ))}
+              <AgentResponseItem
+                response={run.finalResponse}
+                onFileLinkClick={onFileLinkClick}
+              />
+            </React.Fragment>
           ))}
         </Accordion>
       </div>
@@ -171,22 +172,36 @@ function ActivitySection({
   )
 }
 
-function UserCommentItem({ comment }: { comment: UserStoryComment }) {
+function RunCommentItem({
+  comment,
+  onFileLinkClick,
+  run,
+}: {
+  comment?: UserStoryComment
+  onFileLinkClick?: (path: string) => void
+  run: UserStoryAgentRun
+}) {
+  if (run.kind === "initial") return null
+  if (!comment) return null
+
   return (
-    <div className="relative grid grid-cols-[2.5rem_minmax(0,1fr)] items-start gap-1 text-sm">
+    <div className="relative grid grid-cols-[2.5rem_minmax(0,1fr)] items-start gap-1">
       <span className="relative z-10 flex size-8 items-center justify-center rounded-full border bg-background text-muted-foreground shadow-sm">
         <MessageSquareIcon className="size-4" />
       </span>
-      <div className="grid gap-2 rounded-md border bg-muted/20 p-3">
-        <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-medium text-muted-foreground">
-          <span>{comment.author}</span>
-          <span>{commentDateLabel(comment.createdAt)}</span>
+      <div className="grid min-w-0 gap-3">
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <h3 className="text-xl font-medium">User comment</h3>
+          <p className="text-xs font-medium text-muted-foreground">
+            {comment.author} · {commentDateLabel(comment.createdAt)}
+          </p>
         </div>
         <MarkdownEditor
           markdown={comment.body}
           readOnly
+          onFileLinkClick={onFileLinkClick}
           placeholder=""
-          minHeight="min-h-12"
+          minHeight="min-h-24"
         />
       </div>
     </div>
@@ -196,9 +211,11 @@ function UserCommentItem({ comment }: { comment: UserStoryComment }) {
 function AgentActivityItem({
   activity,
   onLoadDetail,
+  value,
 }: {
   activity: UserStoryAgentActivity
   onLoadDetail: (activity: UserStoryAgentActivity) => Promise<string>
+  value: string
 }) {
   const [fullDetail, setFullDetail] = React.useState<string>()
   const [loading, setLoading] = React.useState(false)
@@ -215,7 +232,7 @@ function AgentActivityItem({
   }, [activity, onLoadDetail])
 
   return (
-    <AccordionItem value={activity.id} className="border-b-0!">
+    <AccordionItem value={value} className="border-b-0!">
       <div className="relative grid grid-cols-[2.5rem_minmax(0,1fr)] items-start gap-1 text-sm">
         <span className="relative z-10 flex size-8 items-center justify-center rounded-full border bg-background text-muted-foreground shadow-sm">
           <ActivityToolIcon activity={activity} toolName={details.toolName} />
@@ -297,44 +314,33 @@ function ActivityDetails({
   )
 }
 
-function AgentFinalResponseSection({
+function AgentResponseItem({
   onFileLinkClick,
-  userStory,
+  response,
 }: {
   onFileLinkClick?: (path: string) => void
-  userStory?: UserStory
+  response?: string | null
 }) {
-  const response = userStory?.agentFinalResponse?.trim()
-  if (!response) return null
+  const markdown = response?.trim()
+  if (!markdown) return null
 
   return (
-    <section className="grid gap-3">
-      <div className="flex items-center gap-4 text-xl font-medium">
-        <span className="flex size-11 items-center justify-center rounded-full border bg-muted text-muted-foreground shadow-sm">
-          <BotIcon className="size-5" />
-        </span>
-        Agent response
+    <div className="relative grid grid-cols-[2.5rem_minmax(0,1fr)] items-start gap-1">
+      <span className="relative z-10 flex size-8 items-center justify-center rounded-full border bg-background text-muted-foreground shadow-sm">
+        <BotIcon className="size-4" />
+      </span>
+      <div className="grid min-w-0 gap-3">
+        <h3 className="text-xl font-medium">Agent response</h3>
+        <MarkdownEditor
+          markdown={markdown}
+          readOnly
+          onFileLinkClick={onFileLinkClick}
+          placeholder=""
+          minHeight="min-h-24"
+        />
       </div>
-      <MarkdownEditor
-        markdown={response}
-        readOnly
-        onFileLinkClick={onFileLinkClick}
-        placeholder=""
-        minHeight="min-h-24"
-      />
-    </section>
+    </div>
   )
-}
-
-function lifeActivityIcon(item: string) {
-  if (item.includes("worktree")) return GitBranchIcon
-  if (item.includes("submitted")) return BotIcon
-  if (item.includes("Approved")) return CheckCircle2Icon
-  if (item.includes("rejected") || item.includes("cancelled"))
-    return XCircleIcon
-  if (item.includes("updated")) return PencilIcon
-  if (item.includes("Moved")) return ListChecksIcon
-  return FileTextIcon
 }
 
 function ActivityToolIcon({
@@ -558,10 +564,19 @@ function CommentsSection({
 }
 
 function commentDateLabel(value: string) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return "Just now"
   return new Intl.DateTimeFormat(undefined, {
     dateStyle: "medium",
     timeStyle: "short",
-  }).format(new Date(value))
+  }).format(date)
+}
+
+function runComment(
+  run: UserStoryAgentRun,
+  commentsById: Map<number, UserStoryComment>
+) {
+  return run.commentId ? commentsById.get(run.commentId) : undefined
 }
 
 function fileMentionDirectory(

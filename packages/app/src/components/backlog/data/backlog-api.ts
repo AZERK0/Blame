@@ -1,6 +1,9 @@
 import type {
   UserStory,
   UserStoryActivityDetail,
+  UserStoryAgentRun,
+  UserStoryAgentRunDraft,
+  UserStoryAgentRunUpdate,
   UserStoryComment,
   UserStoryDraft,
   UserStoryUpdate,
@@ -50,6 +53,49 @@ export function createBacklogApi(connection: ApiConnection) {
         )
       )
     },
+    async createAgentRun(id: number, input: UserStoryAgentRunDraft) {
+      return userStoryAgentRun(
+        await request<unknown>(
+          connection,
+          baseUrl,
+          `/projects/user-stories/${id}/agent-runs`,
+          {
+            body: JSON.stringify(input),
+            method: "POST",
+          }
+        )
+      )
+    },
+    async updateAgentRun(
+      id: number,
+      runId: number,
+      input: UserStoryAgentRunUpdate
+    ) {
+      return userStoryAgentRun(
+        await request<unknown>(
+          connection,
+          baseUrl,
+          `/projects/user-stories/${id}/agent-runs/${runId}`,
+          {
+            body: JSON.stringify(apiAgentRunUpdate(input)),
+            method: "PATCH",
+          }
+        )
+      )
+    },
+    async agentRunActivityDetail(
+      id: number,
+      runId: number,
+      activityId: string
+    ) {
+      return activityDetail(
+        await request<unknown>(
+          connection,
+          baseUrl,
+          `/projects/user-stories/${id}/agent-runs/${runId}/activities/${encodeURIComponent(activityId)}`
+        )
+      )
+    },
     async createComment(id: number, input: { body: string }) {
       return userStoryComment(
         await request<unknown>(
@@ -78,11 +124,32 @@ function apiUpdate(input: UserStoryUpdate) {
   return update
 }
 
+function apiAgentRunUpdate(input: UserStoryAgentRunUpdate) {
+  if (!input.agentActivity) return input
+  const { activities, ...update } = input
+  void activities
+  return update
+}
+
 function activityDetail(value: unknown) {
   if (!isRecord(value)) throw new Error("Unable to read agent activity detail.")
   if (typeof value.detail !== "string")
     throw new Error("Unable to read agent activity detail.")
   return value as UserStoryActivityDetail
+}
+
+function userStoryAgentRun(value: unknown) {
+  const run = transformerValue(value)
+  const id = numericId(recordValue(run).id)
+  const userStoryId = numericId(recordValue(run).userStoryId)
+  if (!isRecord(run)) throw new Error("Unable to read user story agent run.")
+  if (id === undefined || userStoryId === undefined)
+    throw new Error("Unable to read user story agent run.")
+  if (typeof run.kind !== "string")
+    throw new Error("Unable to read user story agent run.")
+  if (typeof run.status !== "string")
+    throw new Error("Unable to read user story agent run.")
+  return { ...run, id, userStoryId } as UserStoryAgentRun
 }
 
 function userStoryComment(value: unknown) {
@@ -92,7 +159,17 @@ function userStoryComment(value: unknown) {
     throw new Error("Unable to read user story comment.")
   if (typeof comment.body !== "string")
     throw new Error("Unable to read user story comment.")
-  return comment as UserStoryComment
+  return {
+    author: typeof comment.author === "string" ? comment.author : "Product",
+    body: comment.body,
+    createdAt:
+      typeof comment.createdAt === "string"
+        ? comment.createdAt
+        : new Date().toISOString(),
+    id: comment.id,
+    updatedAt: typeof comment.updatedAt === "string" ? comment.updatedAt : null,
+    userStoryId: numericId(comment.userStoryId) ?? 0,
+  } satisfies UserStoryComment
 }
 
 function userStoryList(value: unknown) {
@@ -145,6 +222,17 @@ async function request<T>(
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object"
+}
+
+function recordValue(value: unknown) {
+  return isRecord(value) ? value : {}
+}
+
+function numericId(value: unknown) {
+  if (typeof value === "number") return value
+  if (typeof value !== "string") return undefined
+  const parsed = Number(value)
+  return Number.isInteger(parsed) ? parsed : undefined
 }
 
 function unwrapResponse<T>(value: unknown) {

@@ -16,6 +16,7 @@ const ProjectCodePracticesController = () =>
   import('#controllers/project_code_practices_controller')
 const ProjectInitializationsController = () =>
   import('#controllers/project_initializations_controller')
+const UserStoryAgentRunsController = () => import('#controllers/user_story_agent_runs_controller')
 const UserStoryCommentsController = () => import('#controllers/user_story_comments_controller')
 
 router.get('/', () => {
@@ -83,6 +84,12 @@ router
         router.patch('/:id', [controllers.UserStories, 'update'])
         router.delete('/:id', [controllers.UserStories, 'destroy'])
         router.get('/:id/agent-activities/:activityId', [controllers.UserStories, 'activityDetail'])
+        router.post('/:id/agent-runs', [UserStoryAgentRunsController, 'store'])
+        router.patch('/:id/agent-runs/:runId', [UserStoryAgentRunsController, 'update'])
+        router.get('/:id/agent-runs/:runId/activities/:activityId', [
+          UserStoryAgentRunsController,
+          'activityDetail',
+        ])
         router.post('/:id/comments', [UserStoryCommentsController, 'store'])
       })
       .prefix('projects/user-stories')

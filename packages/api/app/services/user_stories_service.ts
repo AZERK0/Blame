@@ -1,10 +1,16 @@
 import Project from '#models/project'
 import UserStory, { type UserStoryAgentActivity } from '#models/user_story'
+import UserStoryAgentRun from '#models/user_story_agent_run'
 import UserStoryComment from '#models/user_story_comment'
 import ProjectsService from '#services/projects_service'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { isAbsolute, join, resolve } from 'node:path'
+import { DateTime } from 'luxon'
 import type { Infer } from '@vinejs/vine/types'
+import type {
+  createUserStoryAgentRunValidator,
+  updateUserStoryAgentRunValidator,
+} from '#validators/user_story_agent_run'
 import type {
   createUserStoryValidator,
   listUserStoriesValidator,
@@ -16,6 +22,8 @@ type ListUserStoriesInput = Infer<typeof listUserStoriesValidator>
 type CreateUserStoryInput = Infer<typeof createUserStoryValidator>
 type UpdateUserStoryInput = Infer<typeof updateUserStoryValidator>
 type CreateUserStoryCommentInput = Infer<typeof createUserStoryCommentValidator>
+type CreateUserStoryAgentRunInput = Infer<typeof createUserStoryAgentRunValidator>
+type UpdateUserStoryAgentRunInput = Infer<typeof updateUserStoryAgentRunValidator>
 
 const maxAgentActivities = 80
 const maxPersistedDetailLength = 4096
@@ -26,6 +34,7 @@ export default class UserStoriesService {
     return UserStory.query()
       .where('projectId', input.projectId)
       .preload('comments', (comments) => comments.orderBy('createdAt', 'asc').orderBy('id', 'asc'))
+      .preload('agentRuns', orderAgentRuns)
       .orderBy('createdAt', 'asc')
   }
 
@@ -33,6 +42,7 @@ export default class UserStoriesService {
     return this.userStoryQuery(userId)
       .where('id', id)
       .preload('comments', (comments) => comments.orderBy('createdAt', 'asc').orderBy('id', 'asc'))
+      .preload('agentRuns', orderAgentRuns)
       .firstOrFail()
   }
 
@@ -66,6 +76,7 @@ export default class UserStoriesService {
       discardedReason: input.discardedReason ?? null,
     })
     await userStory.load('comments')
+    await userStory.load('agentRuns')
     return userStory
   }
 
@@ -84,6 +95,7 @@ export default class UserStoriesService {
     await userStory.load('comments', (comments) =>
       comments.orderBy('createdAt', 'asc').orderBy('id', 'asc')
     )
+    await userStory.load('agentRuns', orderAgentRuns)
     return userStory
   }
 
@@ -104,6 +116,47 @@ export default class UserStoriesService {
     return { detail: await artifactDetail(story, activity) }
   }
 
+  async createAgentRun(userId: number, id: number, input: CreateUserStoryAgentRunInput) {
+    const story = await this.find(userId, id)
+    if (input.commentId && !story.comments.some((comment) => comment.id === input.commentId)) {
+      throw new Error('User story comment not found.')
+    }
+    return UserStoryAgentRun.create({
+      activities: [],
+      clineSessionId: input.clineSessionId ?? null,
+      commentId: input.commentId ?? null,
+      finalResponse: null,
+      kind: input.kind,
+      sessionSummary: null,
+      status: input.status ?? 'running',
+      usage: null,
+      userStoryId: story.id,
+    })
+  }
+
+  async updateAgentRun(
+    userId: number,
+    id: number,
+    runId: number,
+    input: UpdateUserStoryAgentRunInput
+  ) {
+    const story = await this.find(userId, id)
+    const run = await this.agentRunQuery(story, runId)
+    const update = await this.agentRunUpdateInput(story, run, input)
+    run.merge(update)
+    await run.save()
+    return run
+  }
+
+  async agentRunActivityDetail(userId: number, id: number, runId: number, activityId: string) {
+    const story = await this.find(userId, id)
+    const run = await this.agentRunQuery(story, runId)
+    const activity = run.activities?.find((item) => item.id === activityId)
+    if (!activity) throw new Error('Agent activity not found.')
+    if (!activity.detailArtifact) return { detail: activity.detail }
+    return { detail: await artifactDetail(story, activity) }
+  }
+
   async delete(userId: number, id: number) {
     const userStory = await this.find(userId, id)
     await userStory.delete()
@@ -119,20 +172,43 @@ export default class UserStoriesService {
   private async updateInput(userStory: UserStory, input: UpdateUserStoryInput) {
     const { agentActivity, ...update } = input
     if (!agentActivity) return update
-    const activity = await activityWithArtifact(userStory, agentActivity)
+    const activity = await activityWithArtifact(userStory, userStory.clineSessionId, agentActivity)
     return {
       ...update,
       agentActivities: upsertActivity(userStory.agentActivities ?? [], activity),
+    }
+  }
+
+  private agentRunQuery(story: UserStory, runId: number) {
+    return UserStoryAgentRun.query().where('userStoryId', story.id).where('id', runId).firstOrFail()
+  }
+
+  private async agentRunUpdateInput(
+    story: UserStory,
+    run: UserStoryAgentRun,
+    input: UpdateUserStoryAgentRunInput
+  ) {
+    const { agentActivity, ...update } = input
+    const nextUpdate = {
+      ...update,
+      ...agentRunCompletedAtUpdate(update),
+    }
+    if (!agentActivity) return nextUpdate
+    const activity = await activityWithArtifact(story, run.clineSessionId, agentActivity)
+    return {
+      ...nextUpdate,
+      activities: upsertActivity(run.activities ?? [], activity),
     }
   }
 }
 
 async function activityWithArtifact(
   story: UserStory,
+  sessionId: string | null | undefined,
   activity: UserStoryAgentActivity
 ): Promise<UserStoryAgentActivity> {
   if (!story.worktree || activity.detail.length <= maxPersistedDetailLength) return activity
-  const artifact = await writeActivityArtifact(story, activity)
+  const artifact = await writeActivityArtifact(story, sessionId, activity)
   return {
     ...activity,
     detail: middleExcerpt(activity.detail, maxPersistedDetailLength),
@@ -142,8 +218,12 @@ async function activityWithArtifact(
   }
 }
 
-async function writeActivityArtifact(story: UserStory, activity: UserStoryAgentActivity) {
-  const session = safeFilename(story.clineSessionId ?? 'unknown-session')
+async function writeActivityArtifact(
+  story: UserStory,
+  sessionId: string | null | undefined,
+  activity: UserStoryAgentActivity
+) {
+  const session = safeFilename(sessionId ?? 'unknown-session')
   const directory = join(story.worktree!, '.blame', 'artifacts', 'agent-activities', session)
   await mkdir(directory, { recursive: true })
   const filename = `${safeFilename(activity.id)}.json`
@@ -184,4 +264,18 @@ async function artifactDetail(story: UserStory, activity: UserStoryAgentActivity
 
 function isPathInside(path: string, root: string) {
   return path === root || path.startsWith(`${root}/`)
+}
+
+function terminalStatus(status: string | undefined) {
+  return status === 'completed' || status === 'failed'
+}
+
+function agentRunCompletedAtUpdate(input: { completedAt?: DateTime | null; status?: string }) {
+  if (input.completedAt !== undefined) return { completedAt: input.completedAt }
+  if (terminalStatus(input.status)) return { completedAt: DateTime.now() }
+  return {}
+}
+
+function orderAgentRuns(query: ReturnType<typeof UserStoryAgentRun.query>) {
+  query.orderBy('createdAt', 'asc').orderBy('id', 'asc')
 }

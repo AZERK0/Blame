@@ -295,6 +295,42 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/user_stories_controller').default['activityDetail']>>>
     }
   }
+  'projects.user_stories.user_story_agent_runs.store': {
+    methods: ["POST"]
+    pattern: '/api/v1/projects/user-stories/:id/agent-runs'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/user_story_agent_run').createUserStoryAgentRunValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/user_story_agent_run').createUserStoryAgentRunValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/user_story_agent_runs_controller').default['store']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/user_story_agent_runs_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'projects.user_stories.user_story_agent_runs.update': {
+    methods: ["PATCH"]
+    pattern: '/api/v1/projects/user-stories/:id/agent-runs/:runId'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/user_story_agent_run').updateUserStoryAgentRunValidator)>>
+      paramsTuple: [ParamValue, ParamValue]
+      params: { id: ParamValue; runId: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/user_story_agent_run').updateUserStoryAgentRunValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/user_story_agent_runs_controller').default['update']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/user_story_agent_runs_controller').default['update']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'projects.user_stories.user_story_agent_runs.activity_detail': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/projects/user-stories/:id/agent-runs/:runId/activities/:activityId'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue, ParamValue, ParamValue]
+      params: { id: ParamValue; runId: ParamValue; activityId: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/user_story_agent_runs_controller').default['activityDetail']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/user_story_agent_runs_controller').default['activityDetail']>>>
+    }
+  }
   'projects.user_stories.user_story_comments.store': {
     methods: ["POST"]
     pattern: '/api/v1/projects/user-stories/:id/comments'

@@ -9,6 +9,7 @@ import type ProjectCodePracticeTransformer from '#transformers/project_code_prac
 import type ProjectInitializationTransformer from '#transformers/project_initialization_transformer'
 import type ProjectTransformer from '#transformers/project_transformer'
 import type ProviderCredentialTransformer from '#transformers/provider_credential_transformer'
+import type UserStoryAgentRunTransformer from '#transformers/user_story_agent_run_transformer'
 import type UserStoryCommentTransformer from '#transformers/user_story_comment_transformer'
 import type UserStoryTransformer from '#transformers/user_story_transformer'
 import type UserTransformer from '#transformers/user_transformer'
@@ -29,6 +30,10 @@ export namespace Data {
   export type ProviderCredential = InferData<ProviderCredentialTransformer>
   export namespace ProviderCredential {
     export type Variants = InferVariants<ProviderCredentialTransformer>
+  }
+  export type UserStoryAgentRun = InferData<UserStoryAgentRunTransformer>
+  export namespace UserStoryAgentRun {
+    export type Variants = InferVariants<UserStoryAgentRunTransformer>
   }
   export type UserStoryComment = InferData<UserStoryCommentTransformer>
   export namespace UserStoryComment {

@@ -10,6 +10,7 @@ import { test } from '@japa/runner'
 type UserStoryBody = {
   data: {
     comments?: UserStoryCommentBody['data'][]
+    agentRuns?: UserStoryAgentRunBody['data'][]
     agentActivities?: {
       detail: string
       detailArtifact?: string
@@ -37,6 +38,27 @@ type UserStoryCommentBody = {
     body: string
     id: number
     userStoryId: number
+  }
+}
+
+type UserStoryAgentRunBody = {
+  data: {
+    activities?: {
+      detail: string
+      detailArtifact?: string
+      id: string
+      originalDetailLength?: number
+    }[]
+    commentId?: number | null
+    finalResponse?: string | null
+    id: number
+    kind: string
+    status: string
+    userStoryId: number
+    usage?: {
+      inputTokens: number
+      tokensSavedEstimate: number
+    } | null
   }
 }
 
@@ -200,6 +222,153 @@ test.group('user stories', (group) => {
       .json({ body: 'Unauthorized feedback' })
 
     response.assertStatus(404)
+  })
+
+  test('creates updates and lists story agent runs in order', async ({ client, assert }) => {
+    const user = await createUser()
+    const project = await createProject(user.id, 'Alpha')
+    const story = await createStory(client, user, project.id)
+    const commentResponse = await client
+      .post(`/api/v1/projects/user-stories/${story.data.id}/comments`)
+      .loginAs(user)
+      .json({ body: 'Please adjust the layout' })
+    const comment = commentResponse.body() as UserStoryCommentBody
+    const worktree = await mkdtemp(join(tmpdir(), 'blame-story-run-'))
+    const detail = `Run command\n${'y'.repeat(7000)}`
+
+    try {
+      await client
+        .patch(`/api/v1/projects/user-stories/${story.data.id}`)
+        .loginAs(user)
+        .json({ worktree })
+
+      const initialResponse = await client
+        .post(`/api/v1/projects/user-stories/${story.data.id}/agent-runs`)
+        .loginAs(user)
+        .json({
+          clineSessionId: 'initial-session',
+          kind: 'initial',
+        })
+
+      initialResponse.assertStatus(200)
+      const initialRun = initialResponse.body() as UserStoryAgentRunBody
+      assert.equal(initialRun.data.kind, 'initial')
+      assert.equal(initialRun.data.status, 'running')
+
+      const changeResponse = await client
+        .post(`/api/v1/projects/user-stories/${story.data.id}/agent-runs`)
+        .loginAs(user)
+        .json({
+          clineSessionId: 'change-session',
+          commentId: comment.data.id,
+          kind: 'change-request',
+        })
+
+      changeResponse.assertStatus(200)
+      const changeRun = changeResponse.body() as UserStoryAgentRunBody
+      assert.equal(changeRun.data.commentId, comment.data.id)
+
+      const updateResponse = await client
+        .patch(`/api/v1/projects/user-stories/${story.data.id}/agent-runs/${changeRun.data.id}`)
+        .loginAs(user)
+        .json({
+          agentActivity: {
+            createdAt: new Date().toISOString(),
+            detail,
+            id: 'tool-run-command',
+            kind: 'tool',
+            status: 'completed',
+            title: 'Ran command',
+          },
+          finalResponse: 'Updated implementation.',
+          status: 'completed',
+          usage: {
+            cacheReadTokens: 0,
+            cacheWriteTokens: 0,
+            compactionCount: 1,
+            inputTokens: 1000,
+            largeFileReads: 1,
+            maxContextTokens: 1000,
+            outputTokens: 100,
+            unboundedFileReads: 1,
+            tokensSavedEstimate: 2000,
+            topTools: [],
+            totalCost: 0.01,
+            truncatedOutputs: 1,
+          },
+        })
+
+      updateResponse.assertStatus(200)
+      const updated = updateResponse.body() as UserStoryAgentRunBody
+      assert.equal(updated.data.status, 'completed')
+      assert.equal(updated.data.finalResponse, 'Updated implementation.')
+      assert.lengthOf(updated.data.activities ?? [], 1)
+      assert.isBelow(updated.data.activities?.[0]?.detail.length ?? 0, detail.length)
+      assert.equal(updated.data.activities?.[0]?.originalDetailLength, detail.length)
+      assert.include(updated.data.activities?.[0]?.detailArtifact ?? '', 'change-session')
+      assert.equal(updated.data.usage?.inputTokens, 1000)
+
+      const detailResponse = await client
+        .get(
+          `/api/v1/projects/user-stories/${story.data.id}/agent-runs/${changeRun.data.id}/activities/tool-run-command`
+        )
+        .loginAs(user)
+
+      detailResponse.assertStatus(200)
+      assert.equal((detailResponse.body() as AgentActivityDetailBody).detail, detail)
+
+      const showResponse = await client
+        .get(`/api/v1/projects/user-stories/${story.data.id}`)
+        .loginAs(user)
+
+      showResponse.assertStatus(200)
+      const shown = showResponse.body() as UserStoryBody
+      assert.deepEqual(
+        shown.data.agentRuns?.map((run) => run.kind),
+        ['initial', 'change-request']
+      )
+
+      const listResponse = await client
+        .get('/api/v1/projects/user-stories')
+        .qs({ projectId: project.id })
+        .loginAs(user)
+
+      listResponse.assertStatus(200)
+      const list = listResponse.body() as unknown as UserStoryListBody
+      assert.deepEqual(
+        list.data[0].agentRuns?.map((run) => run.kind),
+        ['initial', 'change-request']
+      )
+    } finally {
+      await rm(worktree, { force: true, recursive: true })
+    }
+  })
+
+  test('prevents accessing another users story agent runs', async ({ client }) => {
+    const owner = await createUser()
+    const stranger = await createUser()
+    const project = await createProject(owner.id, 'Alpha')
+    const story = await createStory(client, owner, project.id)
+    const runResponse = await client
+      .post(`/api/v1/projects/user-stories/${story.data.id}/agent-runs`)
+      .loginAs(owner)
+      .json({ kind: 'initial' })
+    const run = runResponse.body() as UserStoryAgentRunBody
+
+    const updateResponse = await client
+      .patch(`/api/v1/projects/user-stories/${story.data.id}/agent-runs/${run.data.id}`)
+      .loginAs(stranger)
+      .json({ status: 'completed' })
+
+    updateResponse.assertStatus(404)
+
+    const detailResponse = await client
+      .get(
+        `/api/v1/projects/user-stories/${story.data.id}/agent-runs/${run.data.id}/activities/missing`
+      )
+      .loginAs(stranger)
+
+    detailResponse.assertStatus(404)
   })
 
   test('merges agent activity deltas and serves large details lazily', async ({

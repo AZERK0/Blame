@@ -150,6 +150,24 @@ const routes = {
     tokens: [{"old":"/api/v1/projects/user-stories/:id/agent-activities/:activityId","type":0,"val":"api","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-activities/:activityId","type":0,"val":"v1","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-activities/:activityId","type":0,"val":"projects","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-activities/:activityId","type":0,"val":"user-stories","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-activities/:activityId","type":1,"val":"id","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-activities/:activityId","type":0,"val":"agent-activities","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-activities/:activityId","type":1,"val":"activityId","end":""}],
     types: placeholder as Registry['projects.user_stories.user_stories.activity_detail']['types'],
   },
+  'projects.user_stories.user_story_agent_runs.store': {
+    methods: ["POST"],
+    pattern: '/api/v1/projects/user-stories/:id/agent-runs',
+    tokens: [{"old":"/api/v1/projects/user-stories/:id/agent-runs","type":0,"val":"api","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-runs","type":0,"val":"v1","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-runs","type":0,"val":"projects","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-runs","type":0,"val":"user-stories","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-runs","type":1,"val":"id","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-runs","type":0,"val":"agent-runs","end":""}],
+    types: placeholder as Registry['projects.user_stories.user_story_agent_runs.store']['types'],
+  },
+  'projects.user_stories.user_story_agent_runs.update': {
+    methods: ["PATCH"],
+    pattern: '/api/v1/projects/user-stories/:id/agent-runs/:runId',
+    tokens: [{"old":"/api/v1/projects/user-stories/:id/agent-runs/:runId","type":0,"val":"api","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-runs/:runId","type":0,"val":"v1","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-runs/:runId","type":0,"val":"projects","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-runs/:runId","type":0,"val":"user-stories","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-runs/:runId","type":1,"val":"id","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-runs/:runId","type":0,"val":"agent-runs","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-runs/:runId","type":1,"val":"runId","end":""}],
+    types: placeholder as Registry['projects.user_stories.user_story_agent_runs.update']['types'],
+  },
+  'projects.user_stories.user_story_agent_runs.activity_detail': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/projects/user-stories/:id/agent-runs/:runId/activities/:activityId',
+    tokens: [{"old":"/api/v1/projects/user-stories/:id/agent-runs/:runId/activities/:activityId","type":0,"val":"api","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-runs/:runId/activities/:activityId","type":0,"val":"v1","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-runs/:runId/activities/:activityId","type":0,"val":"projects","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-runs/:runId/activities/:activityId","type":0,"val":"user-stories","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-runs/:runId/activities/:activityId","type":1,"val":"id","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-runs/:runId/activities/:activityId","type":0,"val":"agent-runs","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-runs/:runId/activities/:activityId","type":1,"val":"runId","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-runs/:runId/activities/:activityId","type":0,"val":"activities","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-runs/:runId/activities/:activityId","type":1,"val":"activityId","end":""}],
+    types: placeholder as Registry['projects.user_stories.user_story_agent_runs.activity_detail']['types'],
+  },
   'projects.user_stories.user_story_comments.store': {
     methods: ["POST"],
     pattern: '/api/v1/projects/user-stories/:id/comments',

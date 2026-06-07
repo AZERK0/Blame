@@ -42,6 +42,11 @@ export interface ApiDefinition {
         destroy: typeof routes['projects.user_stories.user_stories.destroy']
         activityDetail: typeof routes['projects.user_stories.user_stories.activity_detail']
       }
+      userStoryAgentRuns: {
+        store: typeof routes['projects.user_stories.user_story_agent_runs.store']
+        update: typeof routes['projects.user_stories.user_story_agent_runs.update']
+        activityDetail: typeof routes['projects.user_stories.user_story_agent_runs.activity_detail']
+      }
       userStoryComments: {
         store: typeof routes['projects.user_stories.user_story_comments.store']
       }

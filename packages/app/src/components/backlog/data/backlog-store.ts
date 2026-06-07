@@ -4,6 +4,9 @@ import { createBacklogApi } from "@/components/backlog/data/backlog-api"
 import type {
   BacklogColumnId,
   UserStory,
+  UserStoryAgentRun,
+  UserStoryAgentRunDraft,
+  UserStoryAgentRunUpdate,
   UserStoryComment,
   UserStoryDraft,
   UserStoryUpdate,
@@ -127,6 +130,61 @@ export function useBacklogStore() {
     },
     [api]
   )
+  const createAgentRun = React.useCallback(
+    async (story: UserStory, input: UserStoryAgentRunDraft) => {
+      const run = await api.createAgentRun(story.id, input)
+      setState((current) => ({
+        ...current,
+        stories: current.stories.map((currentStory) =>
+          currentStory.id === story.id
+            ? storyWithAgentRun(currentStory, run)
+            : currentStory
+        ),
+      }))
+      return run
+    },
+    [api]
+  )
+  const updateAgentRun = React.useCallback(
+    async (
+      story: UserStory,
+      run: UserStoryAgentRun,
+      input: UserStoryAgentRunUpdate
+    ) => {
+      const nextRun = await api.updateAgentRun(story.id, run.id, input)
+      setState((current) => ({
+        ...current,
+        stories: current.stories.map((currentStory) =>
+          currentStory.id === story.id
+            ? storyWithUpdatedAgentRun(currentStory, nextRun)
+            : currentStory
+        ),
+      }))
+      return nextRun
+    },
+    [api]
+  )
+  const updateAgentRunLocal = React.useCallback(
+    (
+      story: UserStory,
+      run: UserStoryAgentRun,
+      input: UserStoryAgentRunUpdate
+    ) => {
+      let nextRun = agentRunWithUpdate(run, input)
+      setState((current) => ({
+        ...current,
+        stories: current.stories.map((currentStory) =>
+          storyWithLocallyUpdatedAgentRun(currentStory, story, run, input, {
+            onNextRun(run) {
+              nextRun = run
+            },
+          })
+        ),
+      }))
+      return nextRun
+    },
+    []
+  )
   const activityDetail = React.useCallback(
     (story: UserStory, activityId: string) =>
       api.activityDetail(story.id, activityId),
@@ -186,6 +244,7 @@ export function useBacklogStore() {
   return {
     ...state,
     create,
+    createAgentRun,
     createComment,
     activityDetail,
     load,
@@ -196,8 +255,35 @@ export function useBacklogStore() {
     storySetupInitializing,
     storiesForColumn,
     update,
+    updateAgentRun,
+    updateAgentRunLocal,
     updateLocal,
   }
+}
+
+function agentRunWithUpdate(
+  run: UserStoryAgentRun,
+  input: UserStoryAgentRunUpdate
+) {
+  const { agentActivity, ...metadata } = input
+  const nextRun = { ...run, ...definedUpdate(metadata) }
+  if (!agentActivity) return nextRun
+  return {
+    ...nextRun,
+    activities: nextAgentActivities(nextRun.activities ?? [], agentActivity),
+  }
+}
+
+function nextAgentActivities(
+  activities: UserStoryAgentRun["activities"],
+  activity: NonNullable<UserStoryAgentRunUpdate["agentActivity"]>
+) {
+  const currentActivities = activities ?? []
+  const exists = currentActivities.some((item) => item.id === activity.id)
+  if (!exists) return [...currentActivities, activity]
+  return currentActivities.map((item) =>
+    item.id === activity.id ? activity : item
+  )
 }
 
 function storyWithComment(story: UserStory, comment: UserStoryComment) {
@@ -207,7 +293,43 @@ function storyWithComment(story: UserStory, comment: UserStoryComment) {
   }
 }
 
-function definedUpdate(input: UserStoryUpdate) {
+function storyWithAgentRun(story: UserStory, run: UserStoryAgentRun) {
+  return {
+    ...story,
+    agentRuns: [...(story.agentRuns ?? []), run],
+  }
+}
+
+function storyWithUpdatedAgentRun(story: UserStory, run: UserStoryAgentRun) {
+  const currentRuns = story.agentRuns ?? []
+  const hasRun = currentRuns.some((currentRun) => currentRun.id === run.id)
+  return {
+    ...story,
+    agentRuns: hasRun
+      ? currentRuns.map((currentRun) =>
+          currentRun.id === run.id ? run : currentRun
+        )
+      : [...currentRuns, run],
+  }
+}
+
+function storyWithLocallyUpdatedAgentRun(
+  currentStory: UserStory,
+  targetStory: UserStory,
+  run: UserStoryAgentRun,
+  input: UserStoryAgentRunUpdate,
+  result: { onNextRun(run: UserStoryAgentRun): void }
+) {
+  if (currentStory.id !== targetStory.id) return currentStory
+  const currentRun =
+    currentStory.agentRuns?.find((currentRun) => currentRun.id === run.id) ??
+    run
+  const nextRun = agentRunWithUpdate(currentRun, input)
+  result.onNextRun(nextRun)
+  return storyWithUpdatedAgentRun(currentStory, nextRun)
+}
+
+function definedUpdate(input: UserStoryUpdate | UserStoryAgentRunUpdate) {
   const { agentActivity, ...update } = input
   void agentActivity
   return Object.fromEntries(

@@ -1,5 +1,6 @@
 import { BaseModel, column, hasMany } from '@adonisjs/lucid/orm'
 import { DateTime } from 'luxon'
+import UserStoryAgentRun from '#models/user_story_agent_run'
 import UserStoryComment from '#models/user_story_comment'
 import type { HasMany } from '@adonisjs/lucid/types/relations'
 
@@ -165,6 +166,9 @@ export default class UserStory extends BaseModel {
 
   @hasMany(() => UserStoryComment)
   declare comments: HasMany<typeof UserStoryComment>
+
+  @hasMany(() => UserStoryAgentRun)
+  declare agentRuns: HasMany<typeof UserStoryAgentRun>
 
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime

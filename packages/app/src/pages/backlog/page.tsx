@@ -16,6 +16,8 @@ import type {
   BacklogColumnId,
   UserStory,
   UserStoryAgentActivity,
+  UserStoryAgentRun,
+  UserStoryAgentRunUpdate,
   UserStoryUpdate,
 } from "@/components/backlog/data/backlog-data"
 import type {
@@ -134,20 +136,40 @@ export function BacklogPage() {
           { agentActivity: activity },
           { cleanup: false }
         )
+        if (update.run) {
+          await backlog.updateAgentRun(nextStory, update.run, {
+            agentActivity: activity,
+          })
+        }
       }
       const metadata = agentMetadataUpdate(update.input)
-      if (!Object.keys(definedUpdate(metadata)).length) return nextStory
-      return updateStory(activeStory(nextStory, storiesRef.current), metadata, {
-        cleanup: false,
-      })
+      if (Object.keys(definedUpdate(metadata)).length) {
+        nextStory = await updateStory(
+          activeStory(nextStory, storiesRef.current),
+          metadata,
+          { cleanup: false }
+        )
+      }
+      if (update.run) {
+        const runMetadata = agentRunMetadataUpdate(update.runInput)
+        if (Object.keys(definedUpdate(runMetadata)).length) {
+          await backlog.updateAgentRun(nextStory, update.run, runMetadata)
+        }
+      }
+      return nextStory
     },
-    [updateStory]
+    [backlog, updateStory]
   )
   const queueAgentUpdate = React.useCallback(
-    (story: UserStory, input: UserStoryUpdate) => {
+    (
+      story: UserStory,
+      run: UserStoryAgentRun | undefined,
+      input: UserStoryUpdate,
+      runInput: UserStoryAgentRunUpdate
+    ) => {
       const pending = pendingAgentUpdates.current.get(story.id)
       if (pending) window.clearTimeout(pending.timer)
-      const update = pendingAgentUpdate(pending, input)
+      const update = pendingAgentUpdate(pending, input, run, runInput)
       const timer = window.setTimeout(() => {
         pendingAgentUpdates.current.delete(story.id)
         void persistQueuedAgentUpdate(story, update).catch(() => undefined)
@@ -157,31 +179,60 @@ export function BacklogPage() {
     [persistQueuedAgentUpdate]
   )
   const flushAgentUpdate = React.useCallback(
-    (story: UserStory, input: UserStoryUpdate) => {
+    (
+      story: UserStory,
+      run: UserStoryAgentRun | undefined,
+      input: UserStoryUpdate,
+      runInput: UserStoryAgentRunUpdate
+    ) => {
       const pending = pendingAgentUpdates.current.get(story.id)
       if (pending) window.clearTimeout(pending.timer)
       pendingAgentUpdates.current.delete(story.id)
-      return persistQueuedAgentUpdate(story, pendingAgentUpdate(pending, input))
+      return persistQueuedAgentUpdate(
+        story,
+        pendingAgentUpdate(pending, input, run, runInput)
+      )
     },
     [persistQueuedAgentUpdate]
   )
   const persistAgentUpdate = React.useCallback(
-    (story: UserStory, input: UserStoryUpdate, immediate: boolean) => {
+    (
+      story: UserStory,
+      run: UserStoryAgentRun | undefined,
+      input: UserStoryUpdate,
+      runInput: UserStoryAgentRunUpdate,
+      immediate: boolean
+    ) => {
       const nextStory = updateStoryLocal(story, input)
+      if (run) backlog.updateAgentRunLocal(nextStory, run, runInput)
       if (immediate) {
-        void flushAgentUpdate(nextStory, input).catch(() => undefined)
+        void flushAgentUpdate(nextStory, run, input, runInput).catch(
+          () => undefined
+        )
         return
       }
-      queueAgentUpdate(nextStory, input)
+      queueAgentUpdate(nextStory, run, input, runInput)
     },
-    [flushAgentUpdate, queueAgentUpdate, updateStoryLocal]
+    [backlog, flushAgentUpdate, queueAgentUpdate, updateStoryLocal]
   )
   const persistAgentEvent = React.useCallback(
-    (story: UserStory, event: AgentEvent) => {
+    (
+      story: UserStory,
+      run: UserStoryAgentRun | undefined,
+      event: AgentEvent
+    ) => {
       const currentStory = activeStory(story, storiesRef.current)
       const update = agentEventUpdate(currentStory, event)
       if (!shouldPersistAgentEvent(event, update)) return
-      persistAgentUpdate(currentStory, update, immediateAgentEvent(event))
+      const text = agentEventText(event)
+      const runInput = agentRunEventUpdate(update, event, text)
+      persistAgentUpdate(
+        currentStory,
+        run,
+        update,
+        runInput,
+        immediateAgentEvent(event)
+      )
     },
     [persistAgentUpdate]
   )
@@ -285,6 +336,7 @@ export function BacklogPage() {
         providerId: selection.currentModel.provider.id,
         modelId: selection.currentModel.id,
         reasoningEffort: selection.currentVariant,
+        autoSendPrompt: false,
         title: story.title,
         summary: story.summary,
         feedback,
@@ -299,6 +351,10 @@ export function BacklogPage() {
         })
         return story
       }
+      const run = await backlog.createAgentRun(story, {
+        clineSessionId: session.sessionId,
+        kind: "resume",
+      })
       const updatedStory = await updateStory(story, {
         agentLastError: null,
         agentLastEvent: `Cline debug log: ${clineLogPath(story.worktree, session.sessionId)}`,
@@ -320,7 +376,7 @@ export function BacklogPage() {
           authenticationFailed = expiredAuthenticationToken(
             agentEventText(event)
           )
-          persistAgentEvent(updatedStory, event)
+          persistAgentEvent(updatedStory, run, event)
           if (
             authenticationFailed ||
             event.type === "done" ||
@@ -329,10 +385,17 @@ export function BacklogPage() {
             unsubscribe()
         }
       )
+      void agent.sessions.sendDevelopment({
+        sessionId: session.sessionId,
+        title: story.title,
+        summary: story.summary,
+        feedback,
+      })
       return updatedStory
     },
     [
       auth,
+      backlog,
       platform,
       projects,
       selection.currentModel,
@@ -342,7 +405,7 @@ export function BacklogPage() {
     ]
   )
   const requestChanges = React.useCallback(
-    async (story: UserStory, feedback: string) => {
+    async (story: UserStory, feedback: string, commentId: number) => {
       if (!story.worktree) {
         toast.error("Unable to request changes", {
           description: "This user story has no active worktree.",
@@ -376,6 +439,7 @@ export function BacklogPage() {
         providerId: selection.currentModel.provider.id,
         modelId: selection.currentModel.id,
         reasoningEffort: selection.currentVariant,
+        autoSendPrompt: false,
         title: story.title,
         summary: story.summary,
         feedback: enrichedFeedback,
@@ -390,6 +454,11 @@ export function BacklogPage() {
         })
         return story
       }
+      const run = await backlog.createAgentRun(story, {
+        commentId,
+        clineSessionId: session.sessionId,
+        kind: "change-request",
+      })
       const updatedStory = await updateStory(story, {
         agentLastError: null,
         agentLastEvent: `Cline debug log: ${clineLogPath(story.worktree, session.sessionId)}`,
@@ -411,7 +480,7 @@ export function BacklogPage() {
           authenticationFailed = expiredAuthenticationToken(
             agentEventText(event)
           )
-          persistAgentEvent(updatedStory, event)
+          persistAgentEvent(updatedStory, run, event)
           if (
             authenticationFailed ||
             event.type === "done" ||
@@ -420,10 +489,17 @@ export function BacklogPage() {
             unsubscribe()
         }
       )
+      void agent.sessions.sendDevelopment({
+        sessionId: session.sessionId,
+        title: story.title,
+        summary: story.summary,
+        feedback: enrichedFeedback,
+      })
       return updatedStory
     },
     [
       auth,
+      backlog,
       platform,
       projects,
       selection.currentModel,
@@ -877,6 +953,8 @@ function activeStory(story: UserStory, stories: UserStory[]) {
 type QueuedAgentUpdate = {
   activities: UserStoryAgentActivity[]
   input: UserStoryUpdate
+  run?: UserStoryAgentRun
+  runInput: UserStoryAgentRunUpdate
 }
 
 type PendingAgentUpdate = QueuedAgentUpdate & {
@@ -888,7 +966,7 @@ function clearPendingAgentUpdates(updates: Map<number, PendingAgentUpdate>) {
   updates.clear()
 }
 
-function definedUpdate(input: UserStoryUpdate) {
+function definedUpdate(input: object) {
   return Object.fromEntries(
     Object.entries(input).filter(([, value]) => value !== undefined)
   )
@@ -896,11 +974,18 @@ function definedUpdate(input: UserStoryUpdate) {
 
 function pendingAgentUpdate(
   pending: QueuedAgentUpdate | undefined,
-  input: UserStoryUpdate
+  input: UserStoryUpdate,
+  run: UserStoryAgentRun | undefined,
+  runInput: UserStoryAgentRunUpdate
 ): QueuedAgentUpdate {
   return {
-    activities: nextAgentActivities(pending?.activities ?? [], input.agentActivity),
+    activities: nextAgentActivities(
+      pending?.activities ?? [],
+      input.agentActivity
+    ),
     input: { ...pending?.input, ...input },
+    run: pending?.run ?? run,
+    runInput: { ...pending?.runInput, ...runInput },
   }
 }
 
@@ -919,6 +1004,38 @@ function agentMetadataUpdate(input: UserStoryUpdate): UserStoryUpdate {
   void agentActivities
   void agentActivity
   return metadata
+}
+
+function agentRunMetadataUpdate(
+  input: UserStoryAgentRunUpdate
+): UserStoryAgentRunUpdate {
+  const { activities, agentActivity, ...metadata } = input
+  void activities
+  void agentActivity
+  return metadata
+}
+
+function agentRunEventUpdate(
+  input: UserStoryUpdate,
+  event: AgentEvent,
+  text: string
+): UserStoryAgentRunUpdate {
+  const update: UserStoryAgentRunUpdate = {}
+  if (input.agentActivity) update.agentActivity = input.agentActivity
+  if (input.agentFinalResponse !== undefined)
+    update.finalResponse = input.agentFinalResponse
+  if (input.agentUsage !== undefined) update.usage = input.agentUsage
+  if (input.agentSessionSummary !== undefined)
+    update.sessionSummary = input.agentSessionSummary
+  if (completedAgentRun(event)) {
+    update.status = "completed"
+    update.completedAt = new Date().toISOString()
+  } else if (failedAgentRun(event)) {
+    update.status = "failed"
+    update.completedAt = new Date().toISOString()
+    if (!update.finalResponse && text) update.finalResponse = text
+  }
+  return update
 }
 
 function immediateAgentEvent(event: AgentEvent) {
@@ -998,7 +1115,9 @@ function failedAgentRun(event: AgentEvent) {
 
 function resumeAgentFeedback(story: UserStory, diffSummary: string) {
   const details = [
-    story.agentSessionSummary ? `Previous session summary:\n${story.agentSessionSummary}` : "",
+    story.agentSessionSummary
+      ? `Previous session summary:\n${story.agentSessionSummary}`
+      : "",
     story.agentLastError ? `Previous agent error: ${story.agentLastError}` : "",
     story.agentLastEvent ? `Last recorded event: ${story.agentLastEvent}` : "",
     diffSummary,
@@ -1017,7 +1136,9 @@ function changeRequestFeedback(
 ) {
   return [
     feedback,
-    story.agentSessionSummary ? `Previous session summary:\n${story.agentSessionSummary}` : "",
+    story.agentSessionSummary
+      ? `Previous session summary:\n${story.agentSessionSummary}`
+      : "",
     diffSummary,
   ]
     .filter(Boolean)

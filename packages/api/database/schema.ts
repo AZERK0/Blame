@@ -181,6 +181,37 @@ export class UserStorySchema extends BaseModel {
   declare worktree: string | null
 }
 
+export class UserStoryAgentRunSchema extends BaseModel {
+  static $columns = ['activities', 'clineSessionId', 'commentId', 'completedAt', 'createdAt', 'finalResponse', 'id', 'kind', 'sessionSummary', 'status', 'updatedAt', 'usage', 'userStoryId'] as const
+  $columns = UserStoryAgentRunSchema.$columns
+  @column()
+  declare activities: any | null
+  @column()
+  declare clineSessionId: string | null
+  @column()
+  declare commentId: number | null
+  @column.dateTime()
+  declare completedAt: DateTime | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare finalResponse: string | null
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare kind: string
+  @column()
+  declare sessionSummary: string | null
+  @column()
+  declare status: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+  @column()
+  declare usage: any | null
+  @column()
+  declare userStoryId: number
+}
+
 export class UserStoryCommentSchema extends BaseModel {
   static $columns = ['author', 'body', 'createdAt', 'id', 'updatedAt', 'userStoryId'] as const
   $columns = UserStoryCommentSchema.$columns
