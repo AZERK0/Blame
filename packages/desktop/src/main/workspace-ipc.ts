@@ -42,6 +42,10 @@ import {
   dockerComposeForPreview,
   dockerComposeWithPortableWindowsPaths,
 } from "./workspace-compose";
+import {
+  cleanupAbandonedBlamePreviews,
+  dockerAddressPoolExhausted,
+} from "./workspace-docker-cleanup";
 import { copyProjectEnvFiles } from "./workspace-env";
 
 const execFileAsync = promisify(execFile);
@@ -454,6 +458,7 @@ async function runDockerComposeWithRetry(
   retryDelays: number[],
   label: string,
 ) {
+  let cleanupAttempted = false;
   for (let attempt = 0; ; attempt += 1) {
     try {
       await execFileAsync("docker", args, {
@@ -462,6 +467,21 @@ async function runDockerComposeWithRetry(
       });
       return;
     } catch (error) {
+      if (!cleanupAttempted && dockerAddressPoolExhausted(error)) {
+        cleanupAttempted = true;
+        await appendRecoveryLog(
+          worktree,
+          "Docker address pools exhausted, cleaning abandoned Blame previews",
+        );
+        const projects = await cleanupAbandonedBlamePreviews();
+        await appendRecoveryLog(
+          worktree,
+          projects.length
+            ? `cleaned abandoned previews: ${projects.join(", ")}`
+            : "no abandoned previews found",
+        );
+        continue;
+      }
       const retryDelay = retryDelays[attempt];
       if (!retryDelay || !transientDockerPullError(error)) throw error;
       await appendRecoveryLog(
@@ -622,6 +642,7 @@ export async function shutdownWorkspaceProcesses() {
   setupRuns.clear();
   workspaceProcesses.clear();
   await Promise.all(activeProcesses.map(stopChildProcess));
+  await cleanupAbandonedBlamePreviews();
 }
 
 function trackWorkspaceProcess(child: ChildProcessWithoutNullStreams) {
