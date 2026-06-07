@@ -4,6 +4,7 @@ import {
   dockerComposeForPreview,
   dockerComposeWithCiForPackageInstalls,
   dockerComposeWithCorepackPnpm,
+  dockerComposeWithDependencyVolumes,
 } from "./workspace-compose.ts";
 
 test("prefixes pnpm commands without rewriting pnpm paths", () => {
@@ -133,4 +134,67 @@ test("normalizes Windows project root placeholders for YAML", () => {
 
   assert.match(result, /C:\/Users\/vanwa\/Downloads\/projet_test:\/workspace/);
   assert.doesNotMatch(result, /C:\\Users/);
+});
+
+test("adds Docker dependency volumes for pnpm worktree installs", () => {
+  const compose = [
+    "services:",
+    "  frontend:",
+    "    volumes:",
+    "      - .:/workspace",
+    "    command:",
+    "      - bash",
+    "      - -lc",
+    "      - corepack pnpm install --frozen-lockfile && corepack pnpm dev",
+  ].join("\n");
+
+  const result = dockerComposeWithDependencyVolumes(compose, "/tmp/project");
+
+  assert.match(result, /blame-dependencies-init:/);
+  assert.match(result, /"blame_node_modules:\/workspace\/node_modules"/);
+  assert.match(result, /"blame_pnpm_store:\/pnpm\/store"/);
+  assert.match(result, /npm_config_store_dir: "\/pnpm\/store"/);
+  assert.match(result, /depends_on:\n      - blame-dependencies-init/);
+  assert.match(result, /blame_pnpm_store:\n    name: blame_pnpm_store/);
+});
+
+test("preserves list environment while adding npm cache volume", () => {
+  const compose = [
+    "services:",
+    "  frontend:",
+    "    environment:",
+    "      - NODE_ENV=development",
+    "    volumes:",
+    "      - .:/app",
+    "    command:",
+    "      - npm install && npm run dev",
+  ].join("\n");
+
+  const result = dockerComposeWithDependencyVolumes(compose, "/tmp/project");
+
+  assert.match(
+    result,
+    /environment:\n      - NPM_CONFIG_CACHE=\/npm\/cache\n      - NODE_ENV=development/,
+  );
+  assert.match(result, /"blame_node_modules:\/app\/node_modules"/);
+  assert.match(result, /"blame_npm_cache:\/npm\/cache"/);
+});
+
+test("detects portable Windows project root mounts for dependency volumes", () => {
+  const compose = [
+    "services:",
+    "  frontend:",
+    "    volumes:",
+    "      - C:/Users/dev/project:/workspace",
+    "    command:",
+    "      - corepack pnpm install && corepack pnpm dev",
+  ].join("\n");
+
+  const result = dockerComposeWithDependencyVolumes(
+    compose,
+    String.raw`C:\Users\dev\project`,
+  );
+
+  assert.match(result, /"blame_node_modules:\/workspace\/node_modules"/);
+  assert.match(result, /"blame_pnpm_store:\/pnpm\/store"/);
 });
