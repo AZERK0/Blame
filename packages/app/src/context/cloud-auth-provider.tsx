@@ -10,7 +10,9 @@ import { usePlatform } from "@/context/platform"
 import { createCloudApi } from "@/lib/cloud-api"
 
 const storageKey = "blame.app.cloud-session.v1"
-const defaultApiUrl = "https://api.blame.raphael-charpentier.fr/api/v1"
+const configuredApiUrl = import.meta.env.VITE_CLOUD_API_URL?.trim()
+const defaultApiUrl =
+  configuredApiUrl || "https://api.blame.raphael-charpentier.fr/api/v1"
 
 type CloudAuthState =
   | { status: "loading" }
