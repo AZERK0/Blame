@@ -44,6 +44,32 @@ const strategicFiles = [
   ".env.template",
   ".env.local.example",
   ".env.development",
+  "apps/api/.env.example",
+  "apps/api/.env.sample",
+  "apps/api/.env.template",
+  "apps/api/package.json",
+  "apps/api/src/env.ts",
+  "apps/api/start/env.ts",
+  "apps/backend/.env.example",
+  "apps/backend/.env.sample",
+  "apps/backend/.env.template",
+  "apps/backend/package.json",
+  "apps/backend/src/env.ts",
+  "apps/backend/start/env.ts",
+  "apps/frontend/.env.example",
+  "apps/frontend/.env.sample",
+  "apps/frontend/.env.template",
+  "apps/frontend/nuxt.config.js",
+  "apps/frontend/nuxt.config.ts",
+  "apps/frontend/package.json",
+  "apps/web/.env.example",
+  "apps/web/.env.sample",
+  "apps/web/.env.template",
+  "apps/web/next.config.js",
+  "apps/web/next.config.ts",
+  "apps/web/nuxt.config.js",
+  "apps/web/nuxt.config.ts",
+  "apps/web/package.json",
   "README.md",
   "AGENTS.md",
   "tsconfig.json",
@@ -248,6 +274,11 @@ function validateDockerCompose(compose: string) {
       "Initialization result dockerCompose must not run corepack enable",
     );
   }
+  if (overridesEnvironmentDrivenServeCommand(compose)) {
+    throw new Error(
+      "Initialization result dockerCompose must not append host or port flags to serve commands when HOST and PORT environment variables are already configured",
+    );
+  }
   if (usesBarePnpm(compose)) {
     throw new Error(
       "Initialization result dockerCompose must run pnpm through corepack",
@@ -290,6 +321,12 @@ function runsContainersAsHostUser(compose: string) {
 
 function usesBarePnpm(compose: string) {
   return /(^|[\s;&|])pnpm\s/.test(compose.replace(/corepack\s+pnpm/g, ""));
+}
+
+function overridesEnvironmentDrivenServeCommand(compose: string) {
+  if (!/\bhost:\s*0\.0\.0\.0\b/.test(compose)) return false;
+  if (!/\bport:\s*[0-9]+\b/.test(compose)) return false;
+  return /\b(?:node\s+ace|ace)\s+serve\b[^\n]*(?:--host|--port)\b/.test(compose);
 }
 
 function usesNodeModulesVolumes(compose: string) {
