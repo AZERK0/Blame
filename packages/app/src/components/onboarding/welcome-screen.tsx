@@ -124,9 +124,7 @@ function WelcomeAction({
     <button
       type="button"
       disabled={disabled}
-      className={`group flex items-center gap-3 rounded-lg border bg-background/45 p-3 text-left transition hover:bg-background/70 disabled:pointer-events-none disabled:opacity-50 ${
-        active ? "border-primary/40" : "border-border/70"
-      }`}
+      className={`group flex items-center gap-3 rounded-lg border bg-background/45 p-3 text-left transition hover:bg-background/70 disabled:pointer-events-none disabled:opacity-50`}
       onClick={onClick}
     >
       <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-foreground transition group-hover:bg-primary group-hover:text-primary-foreground [&_svg]:size-4">
