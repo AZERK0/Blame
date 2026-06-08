@@ -47,14 +47,17 @@ export function dockerComposeWithDependencyVolumes(
   const servicesLine = serviceSectionLine(lines);
   if (servicesLine === -1) return compose;
   const plan = dependencyVolumePlan(lines, servicesLine, worktree);
-  if (plan.mounts.length === 0) return compose;
-  return addTopLevelVolumes(
-    addDependencyInitService(
-      addServiceMounts(lines, servicesLine, plan),
-      servicesLine,
+  if (plan.mounts.length === 0)
+    return normalizeTopLevelCacheVolumes(lines).join("\n");
+  return normalizeTopLevelCacheVolumes(
+    addTopLevelVolumes(
+      addDependencyInitService(
+        addServiceMounts(lines, servicesLine, plan),
+        servicesLine,
+        plan,
+      ),
       plan,
     ),
-    plan,
   ).join("\n");
 }
 
@@ -229,6 +232,11 @@ function missingPackageCacheMounts(lines: string[]) {
   return [
     ...missingCacheMount(
       service,
+      /\bcorepack\s+prepare\b/,
+      "blame_corepack_cache:/tmp/corepack-cache",
+    ),
+    ...missingCacheMount(
+      service,
       /\bcorepack pnpm\s+(?:install|ci)\b/,
       "blame_pnpm_store:/pnpm/store",
     ),
@@ -311,6 +319,9 @@ function cacheEnvironment(mounts: string[]) {
   return {
     ...(mounts.includes("blame_pnpm_store:/pnpm/store")
       ? { npm_config_store_dir: "/pnpm/store" }
+      : {}),
+    ...(mounts.includes("blame_corepack_cache:/tmp/corepack-cache")
+      ? { COREPACK_HOME: "/tmp/corepack-cache" }
       : {}),
     ...(mounts.includes("blame_npm_cache:/npm/cache")
       ? { NPM_CONFIG_CACHE: "/npm/cache" }
@@ -424,6 +435,45 @@ function addTopLevelVolumes(lines: string[], plan: DependencyVolumePlan) {
     ...volumeLines.slice(1).filter((line) => !lines.includes(line)),
     ...lines.slice(volumesLine + 1),
   ];
+}
+
+function normalizeTopLevelCacheVolumes(lines: string[]) {
+  const volumesLine = lines.findIndex((line) => /^volumes:\s*$/.test(line));
+  if (volumesLine === -1) return lines;
+  const result = [...lines];
+  for (let index = volumesLine + 1; index < result.length; index += 1) {
+    if (/^\S/.test(result[index])) break;
+    const match = /^\s{2}([a-zA-Z0-9_.-]+):\s*$/.exec(result[index]);
+    if (!match) continue;
+    const name = globalCacheVolumeName(match[1]);
+    if (!name || volumeBlockHasName(result, index)) continue;
+    result.splice(index + 1, 0, `    name: ${name}`);
+    index += 1;
+  }
+  return result;
+}
+
+function volumeBlockHasName(lines: string[], volumeLine: number) {
+  for (let index = volumeLine + 1; index < lines.length; index += 1) {
+    if (
+      /^\s{2}[a-zA-Z0-9_.-]+:\s*$/.test(lines[index]) ||
+      /^\S/.test(lines[index])
+    )
+      return false;
+    if (/^\s{4}name:\s*/.test(lines[index])) return true;
+  }
+  return false;
+}
+
+function globalCacheVolumeName(name: string) {
+  const normalized = name.replace(/-/g, "_");
+  if (normalized.includes("corepack_cache")) return "blame_corepack_cache";
+  if (normalized.includes("pnpm_store")) return "blame_pnpm_store";
+  if (normalized.includes("pnpm_cache")) return "blame_pnpm_cache";
+  if (normalized.includes("npm_cache")) return "blame_npm_cache";
+  if (normalized.includes("yarn_cache")) return "blame_yarn_cache";
+  if (normalized.includes("package_store")) return "blame_package_store";
+  return "";
 }
 
 function topLevelVolumeLines(mounts: string[]) {

@@ -16,7 +16,10 @@ test("detects Docker address pool exhaustion", () => {
     }),
     true,
   );
-  assert.equal(dockerAddressPoolExhausted(new Error("connection reset")), false);
+  assert.equal(
+    dockerAddressPoolExhausted(new Error("connection reset")),
+    false,
+  );
 });
 
 test("removes stopped Blame preview containers and their unused networks", async () => {
@@ -72,6 +75,11 @@ test("uses compose down when the original compose file still exists", async () =
           container("stopped", "blame_abandoned", false, true, composeFile),
         ]),
       };
+    if (args[0] === "volume" && args[1] === "ls")
+      return {
+        stdout:
+          "blame_abandoned_node_modules\nblame_abandoned_pnpm_store\nblame_pnpm_store\nother_volume\n",
+      };
     if (args[0] === "network" && args[1] === "ls") return { stdout: "" };
     return { stdout: "" };
   };
@@ -91,6 +99,16 @@ test("uses compose down when the original compose file still exists", async () =
       "down",
       "--remove-orphans",
     ]),
+  );
+  assert.ok(
+    callIncludes(calls, ["volume", "rm", "blame_abandoned_node_modules"]),
+  );
+  assert.ok(
+    callIncludes(calls, ["volume", "rm", "blame_abandoned_pnpm_store"]),
+  );
+  assert.equal(
+    callIncludes(calls, ["volume", "rm", "blame_pnpm_store"]),
+    false,
   );
   assert.equal(callIncludes(calls, ["rm", "stopped"]), false);
 });
@@ -119,5 +137,7 @@ function container(
 }
 
 function callIncludes(calls: Array<{ args: string[] }>, expected: string[]) {
-  return calls.some((call) => expected.every((part) => call.args.includes(part)));
+  return calls.some((call) =>
+    expected.every((part) => call.args.includes(part)),
+  );
 }

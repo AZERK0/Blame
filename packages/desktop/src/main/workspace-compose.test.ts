@@ -54,7 +54,7 @@ test("adds CI to services running package installs", () => {
     "    command:",
     "      - bash",
     "      - -lc",
-    "      - corepack pnpm install --frozen-lockfile && corepack pnpm dev",
+    "      - corepack prepare pnpm@9.12.2 --activate && corepack pnpm install --frozen-lockfile && corepack pnpm dev",
   ].join("\n");
 
   const result = dockerComposeWithCiForPackageInstalls(compose);
@@ -145,16 +145,19 @@ test("adds Docker dependency volumes for pnpm worktree installs", () => {
     "    command:",
     "      - bash",
     "      - -lc",
-    "      - corepack pnpm install --frozen-lockfile && corepack pnpm dev",
+    "      - corepack prepare pnpm@9.12.2 --activate && corepack pnpm install --frozen-lockfile && corepack pnpm dev",
   ].join("\n");
 
   const result = dockerComposeWithDependencyVolumes(compose, "/tmp/project");
 
   assert.match(result, /blame-dependencies-init:/);
   assert.match(result, /"blame_node_modules:\/workspace\/node_modules"/);
+  assert.match(result, /"blame_corepack_cache:\/tmp\/corepack-cache"/);
   assert.match(result, /"blame_pnpm_store:\/pnpm\/store"/);
+  assert.match(result, /COREPACK_HOME: "\/tmp\/corepack-cache"/);
   assert.match(result, /npm_config_store_dir: "\/pnpm\/store"/);
   assert.match(result, /depends_on:\n      - blame-dependencies-init/);
+  assert.match(result, /blame_corepack_cache:\n    name: blame_corepack_cache/);
   assert.match(result, /blame_pnpm_store:\n    name: blame_pnpm_store/);
 });
 
@@ -197,4 +200,27 @@ test("detects portable Windows project root mounts for dependency volumes", () =
 
   assert.match(result, /"blame_node_modules:\/workspace\/node_modules"/);
   assert.match(result, /"blame_pnpm_store:\/pnpm\/store"/);
+});
+
+test("promotes existing package cache volumes to global Docker volumes", () => {
+  const compose = [
+    "services:",
+    "  deps:",
+    "    volumes:",
+    "      - .:/workspace",
+    "      - corepack_cache:/tmp/corepack-cache",
+    "      - pnpm_store:/pnpm/store",
+    "    command:",
+    "      - corepack prepare pnpm@9.12.2 --activate && corepack pnpm install",
+    "volumes:",
+    "  corepack_cache:",
+    "  pnpm_store:",
+    "  node_modules:",
+  ].join("\n");
+
+  const result = dockerComposeWithDependencyVolumes(compose, "/tmp/project");
+
+  assert.match(result, /corepack_cache:\n    name: blame_corepack_cache/);
+  assert.match(result, /pnpm_store:\n    name: blame_pnpm_store/);
+  assert.doesNotMatch(result, /node_modules:\n    name:/);
 });

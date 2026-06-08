@@ -121,6 +121,7 @@ async function cleanupProjectWithCompose(
         env: { ...process.env, COMPOSE_PROJECT_NAME: project.name },
       },
     );
+    await removeProjectVolumes(exec, project.name);
     return true;
   } catch {
     return false;
@@ -172,6 +173,20 @@ async function removeProjectNetworks(exec: ExecFileRunner, project: string) {
   ]);
   if (ids.length === 0) return;
   await removeNetworks(exec, await dockerInspect<DockerNetwork>(exec, ids));
+}
+
+async function removeProjectVolumes(exec: ExecFileRunner, project: string) {
+  const volumes = await dockerIds(exec, [
+    "volume",
+    "ls",
+    "--format",
+    "{{.Name}}",
+  ]);
+  const ids = volumes.filter((volume) => volume.startsWith(`${project}_`));
+  if (ids.length === 0) return;
+  try {
+    await exec("docker", ["volume", "rm", ...ids]);
+  } catch {}
 }
 
 async function removeDanglingBlameNetworks(exec: ExecFileRunner) {
