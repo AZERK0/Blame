@@ -211,9 +211,6 @@ function parsePractice(values: unknown[], practice: ProjectCodePracticeKey) {
 function validateGeneratedArtifacts(script: string, compose: string) {
   const normalizedScript = script.toLowerCase();
   const normalizedCompose = compose.toLowerCase();
-  if (!handlesEnvFiles(normalizedScript)) {
-    throw new Error("Initialization result setupScript must prepare env files");
-  }
   if (launchesDockerCompose(normalizedScript)) {
     throw new Error(
       "Initialization result setupScript must not launch docker compose",
@@ -256,24 +253,14 @@ function validateDockerCompose(compose: string) {
       "Initialization result dockerCompose must run pnpm through corepack",
     );
   }
-  if (usesNodeModulesVolumes(compose) && !initializesNodeModulesVolumes(compose)) {
+  if (
+    usesNodeModulesVolumes(compose) &&
+    !initializesNodeModulesVolumes(compose)
+  ) {
     throw new Error(
       "Initialization result dockerCompose must make node_modules volumes writable by the host user before package installs",
     );
   }
-}
-
-function handlesEnvFiles(script: string) {
-  return includesOneOf(script, [
-    ".env.example",
-    ".env.sample",
-    ".env.template",
-    "cp .env",
-    "copy .env",
-    "install -m",
-    "cat > .env",
-    "touch .env",
-  ]);
 }
 
 function launchesDockerCompose(script: string) {

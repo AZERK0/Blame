@@ -16,9 +16,9 @@ Return exactly:
 
 It must:
 
-- prepare required env files and host-only non-Node setup only
-- copy or generate env files from `.env.example`, `.env.sample`, `.env.template`, or equivalent files when present
-- export the same env values it writes when Compose needs them
+- prepare host-only non-Node setup only
+- rely on Blame to synchronize runtime `.env` files from the main repository into the worktree before this script runs
+- export only non-secret safe defaults needed by Compose when Blame must start Compose in a separate process after the setup script exits
 - give Compose variable references safe defaults when Blame must start Compose in a separate process after the setup script exits
 - provide harmless development placeholders for required env variables that are blank in examples when startup validation requires non-empty values
 - set a unique `COMPOSE_PROJECT_NAME`
@@ -29,6 +29,7 @@ It must never:
 
 - install Node dependencies with npm, pnpm, yarn, bun, npx, corepack, or equivalent commands
 - run Node package manager scripts or Node ORM generators
+- copy, generate, overwrite, or delete `.env`, `.env.*`, `.env.example`, `.env.sample`, or `.env.template` files
 - launch Docker Compose, containers, dev servers, or preview URLs
 - manage worktrees or write inside `.git`
 - create alternate compose files outside Blame's managed compose path
@@ -85,4 +86,4 @@ Base each `detected` value only on explicit scan evidence. Keep each `comment` s
 
 ## Final Check
 
-Before returning, ensure the JSON parses, both artifact strings are non-empty, setup prepares env files without starting Compose, Compose has services plus dynamic localhost ports and one preview service, and no manual user step is required.
+Before returning, ensure the JSON parses, both artifact strings are non-empty, setup performs only host-side preparation without starting Compose, Compose has services plus dynamic localhost ports and one preview service, and no manual user step is required.

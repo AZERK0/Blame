@@ -46,7 +46,7 @@ import {
   cleanupAbandonedBlamePreviews,
   dockerAddressPoolExhausted,
 } from "./workspace-docker-cleanup";
-import { copyProjectEnvFiles } from "./workspace-env";
+import { syncProjectEnvFiles } from "./workspace-env";
 
 const execFileAsync = promisify(execFile);
 const previewStartupIntervalMs = 1_000;
@@ -322,7 +322,7 @@ async function createWorktree(input: CreateWorktreeInput) {
   await mkdir(dirname(worktree), { recursive: true });
 
   if (await worktreeRegistered(repositoryRoot, worktree)) {
-    await copyProjectEnvFiles(repositoryRoot, worktree);
+    await syncProjectEnvFiles(repositoryRoot, worktree);
     removedWorktrees.delete(worktree);
     return { worktree, branch };
   }
@@ -335,7 +335,7 @@ async function createWorktree(input: CreateWorktreeInput) {
     await execFileAsync("git", ["worktree", "add", worktree, branch], {
       cwd: repositoryRoot,
     });
-    await copyProjectEnvFiles(repositoryRoot, worktree);
+    await syncProjectEnvFiles(repositoryRoot, worktree);
     removedWorktrees.delete(worktree);
     return { worktree, branch };
   }
@@ -347,7 +347,7 @@ async function createWorktree(input: CreateWorktreeInput) {
       cwd: repositoryRoot,
     },
   );
-  await copyProjectEnvFiles(repositoryRoot, worktree);
+  await syncProjectEnvFiles(repositoryRoot, worktree);
   removedWorktrees.delete(worktree);
   return { worktree, branch };
 }

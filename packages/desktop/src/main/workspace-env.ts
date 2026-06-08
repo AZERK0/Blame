@@ -1,12 +1,15 @@
 import {
   copyFile,
+  link,
+  lstat,
   mkdir,
   readFile,
   readdir,
+  rm,
   stat,
   writeFile,
 } from "node:fs/promises";
-import { dirname, join, relative } from "node:path";
+import { basename, dirname, join, relative } from "node:path";
 
 const ignoredEnvDirectories = new Set([
   ".git",
@@ -21,28 +24,68 @@ const ignoredEnvDirectories = new Set([
 
 const envTemplateSuffixes = [".example", ".sample", ".template"];
 
-export async function copyProjectEnvFiles(
+export async function syncProjectEnvFiles(
   repositoryRoot: string,
   worktree: string,
 ) {
-  const files = await projectEnvFiles(repositoryRoot);
+  const files = await prepareProjectEnvFiles(repositoryRoot);
   await Promise.all(
-    files.map((path) => copyMissingEnvFile(repositoryRoot, worktree, path)),
+    files.map((path) => linkWorktreeEnvFile(repositoryRoot, worktree, path)),
   );
 }
 
-async function copyMissingEnvFile(
+async function linkWorktreeEnvFile(
   repositoryRoot: string,
   worktree: string,
   sourcePath: string,
 ) {
   const destinationPath = join(worktree, relative(repositoryRoot, sourcePath));
-  if (await fileExists(destinationPath)) {
-    await mergeEnvFileValues(sourcePath, destinationPath);
-    return;
+  if (await sameFile(sourcePath, destinationPath)) return;
+  if (await pathExists(destinationPath)) {
+    await mergeEnvFileValues(destinationPath, sourcePath);
+    await rm(destinationPath, { force: true });
   }
   await mkdir(dirname(destinationPath), { recursive: true });
-  await copyFile(sourcePath, destinationPath);
+  await link(sourcePath, destinationPath);
+}
+
+async function prepareProjectEnvFiles(root: string) {
+  const files = await projectEnvFiles(root);
+  await Promise.all(
+    files.templates.map(async (templatePath) => {
+      const runtimePath = runtimeEnvPath(templatePath);
+      if (!runtimePath || (await pathExists(runtimePath))) return;
+      await copyFile(templatePath, runtimePath);
+      files.runtime.push(runtimePath);
+    }),
+  );
+  return uniqueStrings(files.runtime);
+}
+
+function runtimeEnvPath(path: string) {
+  const suffix = envTemplateSuffixes.find((suffix) => path.endsWith(suffix));
+  if (!suffix) return undefined;
+  const runtimePath = path.slice(0, -suffix.length);
+  if (!runtimeEnvFile(basename(runtimePath))) return undefined;
+  return runtimePath;
+}
+
+async function sameFile(left: string, right: string) {
+  try {
+    const [leftStat, rightStat] = await Promise.all([stat(left), stat(right)]);
+    return leftStat.dev === rightStat.dev && leftStat.ino === rightStat.ino;
+  } catch {
+    return false;
+  }
+}
+
+async function pathExists(path: string) {
+  try {
+    await lstat(path);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 async function mergeEnvFileValues(sourcePath: string, destinationPath: string) {
@@ -94,12 +137,15 @@ function normalizeEnvText(text: string) {
 }
 
 async function projectEnvFiles(root: string) {
-  const files: string[] = [];
+  const files = { runtime: [] as string[], templates: [] as string[] };
   await collectProjectEnvFiles(root, files);
   return files;
 }
 
-async function collectProjectEnvFiles(directory: string, files: string[]) {
+async function collectProjectEnvFiles(
+  directory: string,
+  files: { runtime: string[]; templates: string[] },
+) {
   const entries = await readdir(directory, { withFileTypes: true });
   await Promise.all(
     entries.map(async (entry) => {
@@ -109,7 +155,9 @@ async function collectProjectEnvFiles(directory: string, files: string[]) {
           await collectProjectEnvFiles(path, files);
         return;
       }
-      if (entry.isFile() && runtimeEnvFile(entry.name)) files.push(path);
+      if (!entry.isFile()) return;
+      if (runtimeEnvFile(entry.name)) files.runtime.push(path);
+      if (templateEnvFile(entry.name)) files.templates.push(path);
     }),
   );
 }
@@ -119,10 +167,11 @@ function runtimeEnvFile(name: string) {
   return !envTemplateSuffixes.some((suffix) => name.endsWith(suffix));
 }
 
-async function fileExists(path: string) {
-  try {
-    return (await stat(path)).isFile();
-  } catch {
-    return false;
-  }
+function templateEnvFile(name: string) {
+  if (!name.startsWith(".env")) return false;
+  return envTemplateSuffixes.some((suffix) => name.endsWith(suffix));
+}
+
+function uniqueStrings(values: string[]) {
+  return Array.from(new Set(values));
 }
