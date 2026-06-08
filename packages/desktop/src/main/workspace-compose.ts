@@ -235,11 +235,7 @@ function missingPackageCacheMounts(lines: string[]) {
       /\bcorepack\s+prepare\b/,
       "blame_corepack_cache:/tmp/corepack-cache",
     ),
-    ...missingCacheMount(
-      service,
-      /\bcorepack pnpm\s+(?:install|ci)\b/,
-      "blame_pnpm_store:/pnpm/store",
-    ),
+    ...missingPnpmStoreMount(service),
     ...missingCacheMount(
       service,
       /\bnpm\s+(?:install|ci)\b/,
@@ -258,6 +254,13 @@ function missingCacheMount(service: string, command: RegExp, mount: string) {
   return command.test(service) && !service.includes(`:${target}`)
     ? [mount]
     : [];
+}
+
+function missingPnpmStoreMount(service: string) {
+  if (!/\bcorepack pnpm\s+(?:install|ci)\b/.test(service)) return [];
+  if (/\bpnpm[-_]store:\/|:\/(?:tmp\/)?pnpm[-_]store\b/.test(service))
+    return [];
+  return ["blame_pnpm_store:/pnpm/store"];
 }
 
 function mountTargetExists(lines: string[], target: string) {
@@ -419,11 +422,26 @@ function serviceBlockWithDependency(lines: string[]) {
       ...serviceBody,
     ];
   }
+  if (dependsOnUsesMapping(lines, dependsOnIndex)) {
+    return [
+      ...lines.slice(0, dependsOnIndex + 1),
+      "      blame-dependencies-init:",
+      "        condition: service_completed_successfully",
+      ...lines.slice(dependsOnIndex + 1),
+    ];
+  }
   return [
     ...lines.slice(0, dependsOnIndex + 1),
     "      - blame-dependencies-init",
     ...lines.slice(dependsOnIndex + 1),
   ];
+}
+
+function dependsOnUsesMapping(lines: string[], dependsOnIndex: number) {
+  const next = lines
+    .slice(dependsOnIndex + 1)
+    .find((line) => line.trim() && !line.trim().startsWith("#"));
+  return Boolean(next && /^\s{6}[a-zA-Z0-9_.-]+:\s*$/.test(next));
 }
 
 function addTopLevelVolumes(lines: string[], plan: DependencyVolumePlan) {

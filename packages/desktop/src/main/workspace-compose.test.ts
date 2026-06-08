@@ -253,3 +253,50 @@ test("replaces project-scoped package cache volume names", () => {
   assert.match(result, /pnpm_store:\n    name: blame_pnpm_store/);
   assert.match(result, /corepack_cache:\n    name: blame_corepack_cache/);
 });
+
+test("preserves mapping depends_on when adding dependency init service", () => {
+  const compose = [
+    "services:",
+    "  setup:",
+    "    image: node:20",
+    "  deps:",
+    "    depends_on:",
+    "      setup:",
+    "        condition: service_completed_successfully",
+    "    volumes:",
+    "      - .:/workspace",
+    "    command:",
+    "      - npm install",
+  ].join("\n");
+
+  const result = dockerComposeWithDependencyVolumes(compose, "/tmp/project");
+
+  assert.match(
+    result,
+    /depends_on:\n      blame-dependencies-init:\n        condition: service_completed_successfully\n      setup:\n        condition: service_completed_successfully/,
+  );
+  assert.doesNotMatch(
+    result,
+    /depends_on:\n      - blame-dependencies-init\n      setup:/,
+  );
+});
+
+test("uses existing pnpm store mount instead of adding a second store", () => {
+  const compose = [
+    "services:",
+    "  deps:",
+    "    volumes:",
+    "      - .:/workspace",
+    "      - pnpm_store:/tmp/pnpm-store",
+    "    command:",
+    "      - corepack pnpm install --store-dir /tmp/pnpm-store",
+    "volumes:",
+    "  pnpm_store:",
+    "    name: ${COMPOSE_PROJECT_NAME:-demo}_pnpm_store",
+  ].join("\n");
+
+  const result = dockerComposeWithDependencyVolumes(compose, "/tmp/project");
+
+  assert.doesNotMatch(result, /blame_pnpm_store:\/pnpm\/store/);
+  assert.match(result, /pnpm_store:\n    name: blame_pnpm_store/);
+});
