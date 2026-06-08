@@ -157,8 +157,14 @@ test("adds Docker dependency volumes for pnpm worktree installs", () => {
   assert.match(result, /COREPACK_HOME: "\/tmp\/corepack-cache"/);
   assert.match(result, /npm_config_store_dir: "\/pnpm\/store"/);
   assert.match(result, /depends_on:\n      - blame-dependencies-init/);
-  assert.match(result, /blame_corepack_cache:\n    name: blame_corepack_cache/);
-  assert.match(result, /blame_pnpm_store:\n    name: blame_pnpm_store/);
+  assert.match(
+    result,
+    /blame_corepack_cache:\n    name: blame_corepack_cache\n    external: true/,
+  );
+  assert.match(
+    result,
+    /blame_pnpm_store:\n    name: blame_pnpm_store\n    external: true/,
+  );
 });
 
 test("preserves list environment while adding npm cache volume", () => {
@@ -220,8 +226,14 @@ test("promotes existing package cache volumes to global Docker volumes", () => {
 
   const result = dockerComposeWithDependencyVolumes(compose, "/tmp/project");
 
-  assert.match(result, /corepack_cache:\n    name: blame_corepack_cache/);
-  assert.match(result, /pnpm_store:\n    name: blame_pnpm_store/);
+  assert.match(
+    result,
+    /corepack_cache:\n    name: blame_corepack_cache\n    external: true/,
+  );
+  assert.match(
+    result,
+    /pnpm_store:\n    name: blame_pnpm_store\n    external: true/,
+  );
   assert.doesNotMatch(result, /node_modules:\n    name:/);
 });
 
@@ -250,8 +262,14 @@ test("replaces project-scoped package cache volume names", () => {
     result,
     /node_modules:\n    name: \$\{COMPOSE_PROJECT_NAME:-demo\}_node_modules/,
   );
-  assert.match(result, /pnpm_store:\n    name: blame_pnpm_store/);
-  assert.match(result, /corepack_cache:\n    name: blame_corepack_cache/);
+  assert.match(
+    result,
+    /pnpm_store:\n    name: blame_pnpm_store\n    external: true/,
+  );
+  assert.match(
+    result,
+    /corepack_cache:\n    name: blame_corepack_cache\n    external: true/,
+  );
 });
 
 test("preserves mapping depends_on when adding dependency init service", () => {
@@ -298,5 +316,8 @@ test("uses existing pnpm store mount instead of adding a second store", () => {
   const result = dockerComposeWithDependencyVolumes(compose, "/tmp/project");
 
   assert.doesNotMatch(result, /blame_pnpm_store:\/pnpm\/store/);
-  assert.match(result, /pnpm_store:\n    name: blame_pnpm_store/);
+  assert.match(
+    result,
+    /pnpm_store:\n    name: blame_pnpm_store\n    external: true/,
+  );
 });

@@ -467,11 +467,15 @@ function normalizeTopLevelCacheVolumes(lines: string[]) {
     if (!name) continue;
     const nameLine = volumeBlockNameLine(result, index);
     if (nameLine === -1) {
-      result.splice(index + 1, 0, `    name: ${name}`);
-      index += 1;
+      result.splice(index + 1, 0, `    name: ${name}`, "    external: true");
+      index += 2;
       continue;
     }
     result[nameLine] = `    name: ${name}`;
+    if (!volumeBlockExternal(result, index)) {
+      result.splice(nameLine + 1, 0, "    external: true");
+      index += 1;
+    }
   }
   return result;
 }
@@ -486,6 +490,18 @@ function volumeBlockNameLine(lines: string[], volumeLine: number) {
     if (/^\s{4}name:\s*/.test(lines[index])) return index;
   }
   return -1;
+}
+
+function volumeBlockExternal(lines: string[], volumeLine: number) {
+  for (let index = volumeLine + 1; index < lines.length; index += 1) {
+    if (
+      /^\s{2}[a-zA-Z0-9_.-]+:\s*$/.test(lines[index]) ||
+      /^\S/.test(lines[index])
+    )
+      return false;
+    if (/^\s{4}external:\s*true\s*$/.test(lines[index])) return true;
+  }
+  return false;
 }
 
 function globalCacheVolumeName(name: string) {
@@ -508,7 +524,7 @@ function topLevelVolumeLines(mounts: string[]) {
 
 function volumeYaml(name: string) {
   if (name === "blame_node_modules") return [`  ${name}:`];
-  return [`  ${name}:`, `    name: ${name}`];
+  return [`  ${name}:`, `    name: ${name}`, "    external: true"];
 }
 
 function serviceName(line: string) {

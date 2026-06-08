@@ -63,6 +63,14 @@ const composePullRetryDelaysMs = [
   60_000,
 ];
 const composeUpRetryDelaysMs = [2_000, 5_000, 10_000, 15_000];
+const globalPreviewVolumes = [
+  "blame_corepack_cache",
+  "blame_npm_cache",
+  "blame_package_store",
+  "blame_pnpm_cache",
+  "blame_pnpm_store",
+  "blame_yarn_cache",
+];
 
 type WorkspacePathInput = {
   root: string;
@@ -437,6 +445,7 @@ async function startProjectCompose(worktree: string) {
 
 async function runDockerComposeUp(worktree: string) {
   const composeArgs = dockerComposeArgs(worktree);
+  await ensureGlobalPreviewVolumes(worktree);
   await runDockerComposeWithRetry(
     worktree,
     [...composeArgs, "pull"],
@@ -449,6 +458,17 @@ async function runDockerComposeUp(worktree: string) {
     [...composeArgs, "up", "-d", "--remove-orphans"],
     composeUpRetryDelaysMs,
     "compose start",
+  );
+}
+
+async function ensureGlobalPreviewVolumes(worktree: string) {
+  await Promise.all(
+    globalPreviewVolumes.map((volume) =>
+      execFileAsync("docker", ["volume", "create", volume], {
+        cwd: worktree,
+        env: setupEnvironment(worktree),
+      }),
+    ),
   );
 }
 
