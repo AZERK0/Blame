@@ -610,6 +610,7 @@ async function ensureProjectPreviewUrl(input: ResolveProjectPreviewUrlInput) {
   if (setupRunningForWorktree(worktree)) return null;
   const currentUrl = await resolveProjectPreviewUrl({ worktree });
   if (currentUrl && (await previewResponds(currentUrl))) return currentUrl;
+  if (!(await projectSetupCompleted(worktree))) return null;
   const recovery = previewRecoveries.get(worktree);
   if (recovery) return recovery;
   const nextRecovery = recoverProjectPreview(worktree).finally(() => {
@@ -623,6 +624,18 @@ function setupRunningForWorktree(worktree: string) {
   return Array.from(setupRuns.values()).some(
     (run) => run.worktree === worktree,
   );
+}
+
+async function projectSetupCompleted(worktree: string) {
+  try {
+    const log = await readFile(setupLogPath(worktree), "utf8");
+    return (
+      log.includes("Project preview containers are running.") ||
+      log.includes("[setup exited with code 0]")
+    );
+  } catch {
+    return false;
+  }
 }
 
 async function recoverProjectPreview(worktree: string) {
