@@ -130,6 +130,9 @@ export function UserStoryPreview({
     previewLoad.key === previewKey && previewLoad.locationBlocked
   const hasSetupLog = Boolean(userStory?.worktree)
   const [tab, setTab] = React.useState(source ? "preview" : "setup-log")
+  const autoSelectedPreviewSourceRef = React.useRef<string | undefined>(
+    undefined
+  )
   const activeTab = activePreviewTab(tab, Boolean(source), hasSetupLog)
   const [nativePreviewState, setNativePreviewState] =
     React.useState<NativePreviewState>()
@@ -289,6 +292,13 @@ export function UserStoryPreview({
     (capture?: PreviewCaptureHandler) => setPreviewCapture(() => capture),
     []
   )
+
+  React.useEffect(() => {
+    if (!source || setupPreviewWaiting) return
+    if (autoSelectedPreviewSourceRef.current === source) return
+    autoSelectedPreviewSourceRef.current = source
+    setTab("preview")
+  }, [setupPreviewWaiting, source])
 
   if (source || hasSetupLog) {
     return (
