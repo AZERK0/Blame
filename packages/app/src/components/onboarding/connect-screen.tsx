@@ -8,7 +8,6 @@ import {
   FieldError,
   FieldGroup,
   FieldLabel,
-  FieldSeparator,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { useCloudAuth } from "@/context/cloud-auth"
@@ -26,13 +25,20 @@ type AuthFieldProps = {
 
 export function ConnectScreen() {
   const [mode, setMode] = React.useState<AuthMode>("login")
+  const introReady = useIntroReady()
 
   return (
     <main className="light grid min-h-screen bg-background/10 text-foreground backdrop-blur-md lg:grid-cols-2">
       <section className="flex flex-col gap-4 bg-background/50 p-6 md:p-10">
-        <Brand />
         <div className="flex flex-1 items-center justify-center">
-          <div className="w-full max-w-xs">
+          <div
+            key={mode}
+            className={`w-full max-w-xs transform-gpu transition-all delay-150 duration-700 ease-out motion-reduce:transform-none motion-reduce:transition-none ${
+              introReady
+                ? "blur-0 translate-y-0 scale-100 opacity-100"
+                : "translate-y-5 scale-[0.98] opacity-0 blur-md"
+            }`}
+          >
             {mode === "login" ? (
               <LoginForm onModeChange={setMode} />
             ) : (
@@ -41,41 +47,45 @@ export function ConnectScreen() {
           </div>
         </div>
       </section>
-      <CoverImage />
+      <CoverImage introReady={introReady} />
     </main>
   )
 }
 
-function Brand() {
-  return (
-    <div className="flex items-center gap-2 font-medium">
-      <img
-        alt=""
-        className="size-6 rounded-md"
-        src="/web-app-manifest-192x192.png"
-      />
-      Blame
-    </div>
-  )
-}
-
-function CoverImage() {
+function CoverImage({ introReady }: { introReady: boolean }) {
   return (
     <div className="relative hidden overflow-hidden bg-background/50 p-6 lg:flex">
       <img
         alt=""
-        className="h-[calc(100vh-3rem)] w-full rounded-2xl object-cover opacity-80 brightness-150 invert"
+        className={`h-[calc(100vh-3rem)] w-full transform-gpu rounded-2xl object-cover opacity-80 brightness-150 invert transition-transform delay-200 duration-1000 ease-out motion-reduce:transform-none motion-reduce:transition-none ${
+          introReady ? "scale-100" : "scale-[1.04]"
+        }`}
         src="/welcome-screen.webp"
       />
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-6">
         <img
           alt=""
-          className="size-40 rounded-3xl shadow-2xl"
+          className={`size-40 transform-gpu rounded-3xl transition-all delay-500 duration-700 ease-out motion-reduce:transform-none motion-reduce:transition-none ${
+            introReady
+              ? "translate-y-0 scale-100 opacity-100"
+              : "translate-y-4 scale-[0.82] opacity-0"
+          }`}
           src="/web-app-manifest-512x512.png"
         />
       </div>
     </div>
   )
+}
+
+function useIntroReady() {
+  const [ready, setReady] = React.useState(false)
+
+  React.useEffect(() => {
+    const frame = requestAnimationFrame(() => setReady(true))
+    return () => cancelAnimationFrame(frame)
+  }, [])
+
+  return ready
 }
 
 function LoginForm({ onModeChange }: { onModeChange(mode: AuthMode): void }) {
@@ -90,10 +100,7 @@ function LoginForm({ onModeChange }: { onModeChange(mode: AuthMode): void }) {
       onSubmit={form.submit(() => auth.login({ email, password }))}
     >
       <FieldGroup>
-        <FormTitle
-          title="Login to your account"
-          description="Enter your email below to login to your account"
-        />
+        <FormTitle title="Login to your account" description="" />
         <LoginFields
           email={email}
           password={password}
@@ -135,10 +142,7 @@ function SignupForm({ onModeChange }: { onModeChange(mode: AuthMode): void }) {
       )}
     >
       <FieldGroup>
-        <FormTitle
-          title="Create your account"
-          description="Fill in the form below to start using Blame."
-        />
+        <FormTitle title="Create your account" description="" />
         <SignupFields
           email={email}
           fullName={fullName}
@@ -308,10 +312,8 @@ function FormTitle({
 }) {
   return (
     <div className="flex flex-col items-center gap-1 text-center">
-      <h2 className="text-2xl font-bold">{title}</h2>
-      <p className="text-sm text-balance text-muted-foreground">
-        {description}
-      </p>
+      <h2 className="text-3xl font-bold">{title}</h2>
+      <p className="text-sm text-balance text-foreground/70">{description}</p>
     </div>
   )
 }
@@ -336,7 +338,11 @@ function AuthField({
         value={value}
         onChange={(event) => onChange(event.currentTarget.value)}
       />
-      {description ? <FieldDescription>{description}</FieldDescription> : null}
+      {description ? (
+        <FieldDescription className="text-foreground/70">
+          {description}
+        </FieldDescription>
+      ) : null}
     </Field>
   )
 }
@@ -372,7 +378,7 @@ function SocialAuthButton({
 }) {
   return (
     <>
-      <FieldSeparator>Or continue with</FieldSeparator>
+      <AuthSeparator>Or continue with</AuthSeparator>
       <Field>
         <Button variant="outline" type="button" onClick={onClick}>
           <GitHubIcon />
@@ -380,6 +386,16 @@ function SocialAuthButton({
         </Button>
       </Field>
     </>
+  )
+}
+
+function AuthSeparator({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-3 text-sm text-foreground/70">
+      <span className="h-px flex-1 bg-foreground/20" />
+      <span className="shrink-0">{children}</span>
+      <span className="h-px flex-1 bg-foreground/20" />
+    </div>
   )
 }
 
@@ -394,7 +410,7 @@ function ModePrompt({
 }) {
   return (
     <Field>
-      <FieldDescription className="px-6 text-center">
+      <FieldDescription className="px-6 text-center text-foreground/70">
         {children}{" "}
         <Button
           className="h-auto p-0"
