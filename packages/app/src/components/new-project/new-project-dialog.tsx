@@ -63,13 +63,13 @@ export function NewProjectDialog({
     <>
       <Dialog open={open} onOpenChange={wizard.setOpen}>
         <DialogContent className="max-h-[88vh] overflow-hidden p-0 sm:max-w-3xl">
-          <DialogHeader className="px-4 pt-4">
+          <DialogHeader className="border-b px-5 py-4">
             <DialogTitle>New Project</DialogTitle>
             <DialogDescription>
               Generate a codebase ready for Blame workflows.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid min-h-0 gap-4 overflow-y-auto px-4 pb-4">
+          <div className="grid min-h-0 gap-5 overflow-y-auto px-5 py-4">
             <StepProgress wizard={wizard} />
             <StepContent wizard={wizard} />
           </div>
@@ -123,40 +123,72 @@ function LocationStep({ wizard }: { wizard: NewProjectWizard }) {
       title="Location"
       description="Choose where Blame should create the project."
     >
-      <Field>
-        <FieldLabel htmlFor="new-project-parent">Parent folder</FieldLabel>
-        <div className="flex gap-2">
+      <div className="grid gap-4 rounded-xl border bg-background/45 p-4">
+        <Field>
+          <FieldLabel htmlFor="new-project-parent">Parent folder</FieldLabel>
+          <FieldDescription>
+            Pick the folder that will contain the generated project.
+          </FieldDescription>
+          <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+            <Input
+              id="new-project-parent"
+              className="h-9 bg-background/70"
+              value={wizard.parentPath}
+              placeholder="/path/to/projects"
+              onChange={(event) =>
+                wizard.setParentPath(event.currentTarget.value)
+              }
+            />
+            <Button
+              type="button"
+              variant="outline"
+              className="h-9"
+              onClick={() => void wizard.chooseParentPath()}
+            >
+              <FolderIcon />
+              Browse
+            </Button>
+          </div>
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="new-project-name">Project name</FieldLabel>
+          <FieldDescription>
+            Use a short, readable folder name for the new codebase.
+          </FieldDescription>
           <Input
-            id="new-project-parent"
-            value={wizard.parentPath}
-            placeholder="/path/to/projects"
-            onChange={(event) => wizard.setParentPath(event.currentTarget.value)}
+            id="new-project-name"
+            className="h-9 bg-background/70"
+            value={wizard.projectName}
+            placeholder="my-blame-project"
+            onChange={(event) =>
+              wizard.setProjectName(event.currentTarget.value)
+            }
           />
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => void wizard.chooseParentPath()}
-          >
-            <FolderIcon />
-            Browse
-          </Button>
-        </div>
-      </Field>
-      <Field>
-        <FieldLabel htmlFor="new-project-name">Project name</FieldLabel>
-        <Input
-          id="new-project-name"
-          value={wizard.projectName}
-          placeholder="my-blame-project"
-          onChange={(event) => wizard.setProjectName(event.currentTarget.value)}
-        />
-      </Field>
+        </Field>
+        <ProjectPathPreview wizard={wizard} />
+      </div>
       {!wizard.createProjectAvailable ? (
         <p className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
           Project generation requires the desktop app and a connected AI model.
         </p>
       ) : null}
     </StepFrame>
+  )
+}
+
+function ProjectPathPreview({ wizard }: { wizard: NewProjectWizard }) {
+  const parentPath = wizard.parentPath.trim() || "/path/to/projects"
+  const projectName = wizard.projectName.trim() || "my-blame-project"
+
+  return (
+    <div className="grid gap-1 rounded-lg bg-muted/35 p-3">
+      <span className="text-xs font-medium text-foreground/70">
+        Project path
+      </span>
+      <span className="truncate font-mono text-xs text-foreground/60">
+        {parentPath}/{projectName}
+      </span>
+    </div>
   )
 }
 
@@ -376,7 +408,7 @@ function progressStatus(status: NewProjectWizard["status"]) {
 function WizardFooter({ wizard }: { wizard: NewProjectWizard }) {
   if (wizard.step === "progress") {
     return (
-      <DialogFooter>
+      <DialogFooter className="mx-0 mb-0 gap-2 rounded-b-xl bg-muted/30 px-5 py-4">
         <Button
           type="button"
           variant="outline"
@@ -390,7 +422,7 @@ function WizardFooter({ wizard }: { wizard: NewProjectWizard }) {
   }
 
   return (
-    <DialogFooter>
+    <DialogFooter className="mx-0 mb-0 gap-2 rounded-b-xl bg-muted/30 px-5 py-4">
       <Button
         type="button"
         variant="outline"
@@ -409,7 +441,11 @@ function WizardFooter({ wizard }: { wizard: NewProjectWizard }) {
           Create project
         </Button>
       ) : (
-        <Button type="button" disabled={!wizard.canGoNext} onClick={wizard.goNext}>
+        <Button
+          type="button"
+          disabled={!wizard.canGoNext}
+          onClick={wizard.goNext}
+        >
           Continue
         </Button>
       )}
@@ -434,12 +470,14 @@ function OptionGrid<T extends string>({
           type="button"
           disabled={option.disabled}
           data-selected={value === option.value}
-          className="grid gap-1 rounded-lg border p-3 text-left transition-colors data-[selected=true]:border-primary data-[selected=true]:bg-primary/5 disabled:opacity-50"
+          className="grid gap-1 rounded-lg border p-3 text-left transition-colors disabled:opacity-50 data-[selected=true]:border-primary data-[selected=true]:bg-primary/5"
           onClick={() => onChange(option.value)}
         >
           <span className="flex items-center gap-2 text-sm font-medium">
             {option.label}
-            {option.recommended ? <Badge variant="secondary">Recommended</Badge> : null}
+            {option.recommended ? (
+              <Badge variant="secondary">Recommended</Badge>
+            ) : null}
           </span>
           <span className="text-xs text-muted-foreground">
             {option.description}
@@ -464,7 +502,10 @@ function SelectField<T extends string>({
   return (
     <Field>
       <FieldLabel>{label}</FieldLabel>
-      <Select value={value} onValueChange={(nextValue) => onChange(nextValue as T)}>
+      <Select
+        value={value}
+        onValueChange={(nextValue) => onChange(nextValue as T)}
+      >
         <SelectTrigger className="w-full">
           <SelectValue />
         </SelectTrigger>
@@ -521,11 +562,17 @@ function summaryItems(wizard: NewProjectWizard) {
     },
     {
       label: "UI library",
-      value: optionLabel(uiLibraryOptions(configuration.frontend), configuration.uiLibrary),
+      value: optionLabel(
+        uiLibraryOptions(configuration.frontend),
+        configuration.uiLibrary
+      ),
     },
     {
       label: "Backend",
-      value: optionLabel(backendOptions(configuration.frontend), configuration.backend),
+      value: optionLabel(
+        backendOptions(configuration.frontend),
+        configuration.backend
+      ),
     },
     {
       label: "Database",
