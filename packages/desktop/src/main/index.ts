@@ -8,6 +8,7 @@ import {
   BrowserWindow,
   dialog,
   ipcMain,
+  screen,
   shell,
   type BrowserWindowConstructorOptions,
   type IpcMainEvent,
@@ -29,6 +30,8 @@ contextMenu({
 
 const currentDirectory = dirname(fileURLToPath(import.meta.url))
 const shutdownTimeoutMs = 4_000
+const defaultWindowWidth = 1440
+const defaultWindowHeight = 900
 
 try {
   process.chdir(homedir())
@@ -90,15 +93,22 @@ process.once("SIGTERM", () => {
 })
 
 function createMainWindow() {
+  const defaultSize = getDefaultWindowSize()
   const state = windowState({
-    defaultHeight: 900,
-    defaultWidth: 1440,
+    defaultHeight: defaultSize.height,
+    defaultWidth: defaultSize.width,
   })
-  const options: BrowserWindowConstructorOptions = {
+  const bounds = fitWindowBounds({
+    height: state.height,
+    width: state.width,
     x: state.x,
     y: state.y,
-    width: state.width,
-    height: state.height,
+  })
+  const options: BrowserWindowConstructorOptions = {
+    x: bounds.x,
+    y: bounds.y,
+    width: bounds.width,
+    height: bounds.height,
     show: false,
     title: "Blame",
     autoHideMenuBar: true,
@@ -123,6 +133,33 @@ function createMainWindow() {
   loadRenderer(window)
   window.once("ready-to-show", () => window.show())
   return window
+}
+
+function getDefaultWindowSize() {
+  const { workAreaSize } = screen.getPrimaryDisplay()
+  return {
+    height: Math.min(defaultWindowHeight, Math.floor(workAreaSize.height * 0.9)),
+    width: Math.min(defaultWindowWidth, Math.floor(workAreaSize.width * 0.9)),
+  }
+}
+
+function fitWindowBounds(bounds: { height: number; width: number; x?: number; y?: number }) {
+  const display = screen.getDisplayMatching({
+    height: bounds.height,
+    width: bounds.width,
+    x: bounds.x ?? 0,
+    y: bounds.y ?? 0,
+  })
+  const area = display.workArea
+  const width = Math.min(bounds.width, area.width)
+  const height = Math.min(bounds.height, area.height)
+  const x = clamp(bounds.x ?? area.x + Math.round((area.width - width) / 2), area.x, area.x + area.width - width)
+  const y = clamp(bounds.y ?? area.y + Math.round((area.height - height) / 2), area.y, area.y + area.height - height)
+  return { height, width, x, y }
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max)
 }
 
 function showMainWindow() {
