@@ -422,10 +422,7 @@ function PreviewWaitingPanel() {
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-muted/20 px-4 pt-[72px] pb-4">
       <div className="relative min-h-0 flex-1 overflow-hidden rounded-lg border bg-background">
-        <PreviewLoadingState
-          title="Initialisation de la preview"
-          description="Le setup script est en cours. La preview s'ouvrira automatiquement quand le serveur répondra."
-        />
+        <PreviewLoadingState />
       </div>
     </div>
   )
@@ -1077,22 +1074,10 @@ function nativePreviewErrorState(
   }
 }
 
-function PreviewLoadingState({
-  description = "Connexion au serveur de preview en cours.",
-  title = "Chargement de la preview",
-}: {
-  description?: string
-  title?: string
-}) {
+function PreviewLoadingState() {
   return (
-    <div className="absolute inset-0 flex items-center justify-center bg-background/95">
-      <div className="flex flex-col items-center gap-4 rounded-lg border bg-background px-8 py-7 text-center shadow-sm">
-        <LoaderCircleIcon className="size-8 animate-spin text-primary" />
-        <div className="space-y-1">
-          <h3 className="font-heading text-lg font-semibold">{title}</h3>
-          <p className="text-sm text-muted-foreground">{description}</p>
-        </div>
-      </div>
+    <div className="absolute inset-0 flex items-center justify-center bg-background">
+      <LoaderCircleIcon className="size-10 animate-spin text-muted-foreground" />
     </div>
   )
 }
