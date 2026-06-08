@@ -142,7 +142,14 @@ type SetupRun = {
   worktree: string;
 };
 
+type ProjectLogStream = {
+  process?: ChildProcessWithoutNullStreams;
+  retry?: NodeJS.Timeout;
+  stopped: boolean;
+};
+
 const setupRuns = new Map<string, SetupRun>();
+const projectLogStreams = new Map<string, ProjectLogStream>();
 const previewRecoveries = new Map<string, Promise<string | null>>();
 const removingWorktrees = new Set<string>();
 const removedWorktrees = new Set<string>();
@@ -403,6 +410,7 @@ async function completeProjectSetup(
   try {
     const existingPreviewUrl = await labeledContainerPreviewUrl(worktree);
     if (!existingPreviewUrl) await startProjectCompose(worktree);
+    else await startProjectLogStream(worktree);
     setupRuns.delete(runId);
     emitSetupOutput(
       runId,
@@ -412,6 +420,7 @@ async function completeProjectSetup(
     );
     emitSetupOutput(runId, worktree, "exit", "0");
   } catch (error) {
+    await stopProjectLogStream(worktree);
     setupRuns.delete(runId);
     emitSetupOutput(runId, worktree, "stderr", errorMessage(error));
     emitSetupOutput(runId, worktree, "exit", "1");
@@ -434,6 +443,7 @@ async function runDockerComposeUp(worktree: string) {
     composePullRetryDelaysMs,
     "compose image pull",
   );
+  await startProjectLogStream(worktree);
   await runDockerComposeWithRetry(
     worktree,
     [...composeArgs, "up", "-d", "--remove-orphans"],
@@ -543,6 +553,7 @@ async function removeWorktree(input: RemoveWorktreeInput) {
   removingWorktrees.add(worktree);
   try {
     await stopSetupRunsForWorktree(worktree);
+    await stopProjectLogStream(worktree);
     previewRecoveries.delete(worktree);
     if (registered) await removeGitWorktree(repositoryRoot, worktree);
     else await rm(worktree, { recursive: true, force: true });
@@ -604,6 +615,7 @@ async function recoverProjectPreview(worktree: string) {
     await appendRecoveryLog(worktree, `preview ready at ${previewUrl}`);
     return previewUrl;
   } catch (error) {
+    await stopProjectLogStream(worktree);
     await appendRecoveryLog(worktree, errorMessage(error).trim());
     throw error;
   }
@@ -640,6 +652,7 @@ async function runExistingProjectSetup(worktree: string) {
 export async function shutdownWorkspaceProcesses() {
   const activeProcesses = Array.from(workspaceProcesses);
   setupRuns.clear();
+  projectLogStreams.clear();
   workspaceProcesses.clear();
   await Promise.all(activeProcesses.map(stopChildProcess));
   await cleanupAbandonedBlamePreviews();
@@ -665,6 +678,65 @@ async function stopSetupRunsForWorktree(worktree: string) {
       await stopChildProcess(run.process);
     }),
   );
+}
+
+async function startProjectLogStream(worktree: string) {
+  await stopProjectLogStream(worktree);
+  await appendRunLogSection(worktree, "container logs");
+  const stream = { stopped: false };
+  projectLogStreams.set(worktree, stream);
+  startProjectLogProcess(worktree, stream);
+}
+
+function startProjectLogProcess(worktree: string, stream: ProjectLogStream) {
+  if (stream.stopped) return;
+  const process = spawn(
+    "docker",
+    [
+      ...dockerComposeArgs(worktree),
+      "logs",
+      "--tail",
+      "120",
+      "--follow",
+    ],
+    {
+      cwd: worktree,
+      env: setupEnvironment(worktree),
+    },
+  );
+  stream.process = process;
+  trackWorkspaceProcess(process);
+  process.stdout.on("data", (data: Buffer) =>
+    appendRecoveryOutput(worktree, data),
+  );
+  process.stderr.on("data", (data: Buffer) =>
+    appendRecoveryOutput(worktree, data),
+  );
+  process.once("error", (error) => {
+    void appendRunLogSection(worktree, errorMessage(error).trim());
+  });
+  process.once("exit", () => {
+    if (projectLogStreams.get(worktree) !== stream) return;
+    stream.process = undefined;
+    if (stream.stopped) projectLogStreams.delete(worktree);
+    else stream.retry = setTimeout(() => {
+      startProjectLogProcess(worktree, stream);
+    }, 1_000);
+  });
+}
+
+async function stopProjectLogStream(worktree: string) {
+  const stream = projectLogStreams.get(worktree);
+  if (!stream) return;
+  stream.stopped = true;
+  if (stream.retry) clearTimeout(stream.retry);
+  projectLogStreams.delete(worktree);
+  if (stream.process) await stopChildProcess(stream.process);
+}
+
+async function appendRunLogSection(worktree: string, message: string) {
+  await mkdir(dirname(setupLogPath(worktree)), { recursive: true });
+  await appendFile(setupLogPath(worktree), `\n[${message}]\n`, "utf8");
 }
 
 function waitForExit(child: ChildProcessWithoutNullStreams) {
