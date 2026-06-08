@@ -78,6 +78,12 @@ type NativePreviewFrameProps = {
   previewState: PreviewState
   surfaceRef: React.RefObject<HTMLDivElement | null>
 }
+type NativePreviewBoundsStability = {
+  boundsKey: string
+  stableFrames: number
+}
+
+const nativePreviewStableFrames = 3
 
 export function UserStoryPreview({
   onCapture,
@@ -640,6 +646,10 @@ function useNativePreviewBounds(
   visible: boolean
 ) {
   const lastBoundsRef = React.useRef<string>("")
+  const stabilityRef = React.useRef<NativePreviewBoundsStability>({
+    boundsKey: "",
+    stableFrames: 0,
+  })
 
   React.useEffect(() => {
     if (!browserId) return
@@ -649,7 +659,8 @@ function useNativePreviewBounds(
         browserId,
         surfaceRef,
         visible,
-        lastBoundsRef
+        lastBoundsRef,
+        stabilityRef
       )
     updateBounds()
     const stopFrameSync = syncNativePreviewBoundsOnFrames(updateBounds, visible)
@@ -667,6 +678,7 @@ function useNativePreviewBounds(
         id: browserId,
         visible: false,
       })
+      stabilityRef.current = { boundsKey: "", stableFrames: 0 }
     }
   }, [browserId, client, surfaceRef, visible])
 }
@@ -690,14 +702,35 @@ function syncNativePreviewBounds(
   browserId: string,
   surfaceRef: React.RefObject<HTMLDivElement | null>,
   visible: boolean,
-  lastBoundsRef: React.MutableRefObject<string>
+  lastBoundsRef: React.MutableRefObject<string>,
+  stabilityRef: React.MutableRefObject<NativePreviewBoundsStability>
 ) {
   const bounds = nativePreviewSurfaceBounds(surfaceRef.current)
-  const shouldShow = visible && bounds.height > 0 && bounds.width > 0
+  const boundsKey = `${bounds.x}:${bounds.y}:${bounds.width}:${bounds.height}`
+  if (!visible) stabilityRef.current = { boundsKey: "", stableFrames: 0 }
+  const shouldShow =
+    visible &&
+    bounds.height > 0 &&
+    bounds.width > 0 &&
+    stableNativePreviewBounds(boundsKey, stabilityRef)
   const key = `${bounds.x}:${bounds.y}:${bounds.width}:${bounds.height}:${shouldShow}`
   if (lastBoundsRef.current === key) return
   lastBoundsRef.current = key
   void client.setBounds({ bounds, id: browserId, visible: shouldShow })
+}
+
+function stableNativePreviewBounds(
+  boundsKey: string,
+  stabilityRef: React.MutableRefObject<NativePreviewBoundsStability>
+) {
+  const current = stabilityRef.current
+  if (current.boundsKey !== boundsKey) {
+    stabilityRef.current = { boundsKey, stableFrames: 0 }
+    return false
+  }
+  const stableFrames = current.stableFrames + 1
+  stabilityRef.current = { boundsKey, stableFrames }
+  return stableFrames >= nativePreviewStableFrames
 }
 
 function useNativePreviewAmbilightColor(
