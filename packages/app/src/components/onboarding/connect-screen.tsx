@@ -62,7 +62,7 @@ function CoverImage() {
     <div className="hidden overflow-hidden bg-background/60 p-6 lg:flex">
       <img
         alt=""
-        className="h-[calc(100vh-3rem)] w-full rounded-2xl object-cover brightness-200 invert opacity-80"
+        className="h-[calc(100vh-3rem)] w-full rounded-2xl object-cover brightness-150 invert opacity-80"
         src="/welcome-screen.webp"
       />
     </div>
