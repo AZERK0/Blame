@@ -279,6 +279,16 @@ function validateDockerCompose(compose: string) {
       "Initialization result dockerCompose must not append host or port flags to serve commands when HOST and PORT environment variables are already configured",
     );
   }
+  if (usesInterpolatedContainerHost(compose)) {
+    throw new Error(
+      "Initialization result dockerCompose must bind preview services to a literal 0.0.0.0 instead of preserving an existing HOST value",
+    );
+  }
+  if (usesInterpolatedServiceUrl(compose)) {
+    throw new Error(
+      "Initialization result dockerCompose must use literal service URLs for inter-container runtime configuration instead of preserving existing localhost values",
+    );
+  }
   if (usesBarePnpm(compose)) {
     throw new Error(
       "Initialization result dockerCompose must run pnpm through corepack",
@@ -327,6 +337,16 @@ function overridesEnvironmentDrivenServeCommand(compose: string) {
   if (!/\bhost:\s*0\.0\.0\.0\b/.test(compose)) return false;
   if (!/\bport:\s*[0-9]+\b/.test(compose)) return false;
   return /\b(?:node\s+ace|ace)\s+serve\b[^\n]*(?:--host|--port)\b/.test(compose);
+}
+
+function usesInterpolatedContainerHost(compose: string) {
+  return /\bhost:\s*\$\{host:-0\.0\.0\.0\}/.test(compose);
+}
+
+function usesInterpolatedServiceUrl(compose: string) {
+  return /\b[a-z0-9_]*(?:api|backend)[a-z0-9_]*url:\s*\$\{[a-z0-9_]+:-http:\/\/[a-z0-9_-]+:[0-9]+[^}]*\}/.test(
+    compose,
+  );
 }
 
 function usesNodeModulesVolumes(compose: string) {

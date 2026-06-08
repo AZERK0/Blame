@@ -56,6 +56,8 @@ It must:
 - set `CI=true` for non-interactive containers that run package manager installs
 - avoid concurrent package manager installs that write to the same bind-mounted workspace, `node_modules`, or package manager store
 - use the exact environment variable names found in package scripts, runtime config, framework config, env validators, and example env files; do not substitute public/client-side variants for server-side runtime variables
+- bind preview servers to a literal `0.0.0.0` inside Compose; do not preserve existing `HOST`, `APP_HOST`, or equivalent values that may be `localhost`
+- for URLs used by one container to call another container, use literal Compose service DNS URLs such as `http://backend:3333`; do not preserve existing `localhost` env values through `${VAR:-...}` interpolation
 - prefer existing package scripts and environment variables over adding framework CLI flags unless the scan proves those flags are supported
 - when an existing package script shells out to `pnpm`, prefer running the equivalent `corepack pnpm ...` command directly in Compose instead of invoking that script
 - when existing scripts already read `HOST`, `PORT`, `APP_URL`, or equivalent environment variables, set those variables and run the script unchanged instead of appending host or port flags
