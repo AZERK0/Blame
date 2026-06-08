@@ -652,11 +652,13 @@ function useNativePreviewBounds(
         lastBoundsRef
       )
     updateBounds()
+    const stopFrameSync = syncNativePreviewBoundsOnFrames(updateBounds, visible)
     const observer = new ResizeObserver(updateBounds)
     if (surfaceRef.current) observer.observe(surfaceRef.current)
     window.addEventListener("resize", updateBounds)
     window.addEventListener("scroll", updateBounds, true)
     return () => {
+      stopFrameSync()
       observer.disconnect()
       window.removeEventListener("resize", updateBounds)
       window.removeEventListener("scroll", updateBounds, true)
@@ -667,6 +669,20 @@ function useNativePreviewBounds(
       })
     }
   }, [browserId, client, surfaceRef, visible])
+}
+
+function syncNativePreviewBoundsOnFrames(
+  updateBounds: () => void,
+  enabled: boolean
+) {
+  if (!enabled) return () => undefined
+  let frame = 0
+  const updateFrame = () => {
+    updateBounds()
+    frame = window.requestAnimationFrame(updateFrame)
+  }
+  frame = window.requestAnimationFrame(updateFrame)
+  return () => window.cancelAnimationFrame(frame)
 }
 
 function syncNativePreviewBounds(
