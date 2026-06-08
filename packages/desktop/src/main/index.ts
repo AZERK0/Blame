@@ -15,7 +15,7 @@ import {
   type IpcMainInvokeEvent,
 } from "electron"
 import { registerAgentIpcHandlers, shutdownAgentRuntime } from "./agent-ipc"
-import { attachLiveLogWindow, openPackagedLiveLogTerminal, registerLiveLogCapture } from "./desktop-live-log"
+import { attachLiveLogWindow, registerLiveLogCapture } from "./desktop-live-log"
 import { checkForUpdatesOnStartup, registerDesktopUpdateIpcHandlers } from "./desktop-update-ipc"
 import { destroyAllPreviewBrowsers, registerPreviewBrowserIpcHandlers } from "./preview-browser-ipc"
 import { registerTerminalIpcHandlers, shutdownTerminalSessions } from "./terminal-ipc"
@@ -62,7 +62,6 @@ void app.whenReady().then(() => {
   })
   registerWorkspaceIpcHandlers()
   mainWindow = createMainWindow()
-  openPackagedLiveLogTerminal()
   checkForUpdatesOnStartup()
 })
 

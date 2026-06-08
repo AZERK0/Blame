@@ -1,5 +1,4 @@
 import { appendFileSync, mkdirSync } from "node:fs";
-import { spawn, spawnSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { app, type BrowserWindow } from "electron";
 
@@ -49,25 +48,6 @@ export function attachLiveLogWindow(window: BrowserWindow) {
   });
 }
 
-export function openPackagedLiveLogTerminal() {
-  if (!app.isPackaged || process.env.BLAME_LOG_TERMINAL === "0") return;
-
-  const path = liveLogPath();
-  appendLiveLog("main", [`Live log: ${path}`]);
-
-  if (process.platform === "darwin") {
-    openMacosTerminal(path);
-    return;
-  }
-
-  if (process.platform === "win32") {
-    openWindowsTerminal(path);
-    return;
-  }
-
-  openLinuxTerminal(path);
-}
-
 function appendLiveLog(scope: string, data: unknown[]) {
   try {
     const line = `[${new Date().toISOString()}] [${scope}] ${data.map(formatLogValue).join(" ")}\n`;
@@ -89,70 +69,4 @@ function formatLogValue(value: unknown) {
   } catch {
     return String(value);
   }
-}
-
-function openMacosTerminal(path: string) {
-  spawnDetached("osascript", [
-    "-e",
-    `tell application "Terminal" to do script "tail -n 200 -f ${shellQuote(path)}"`,
-    "-e",
-    `tell application "Terminal" to activate`,
-  ]);
-}
-
-function openWindowsTerminal(path: string) {
-  const escapedPath = path.replace(/'/g, "''");
-  spawnDetached("powershell.exe", [
-    "-NoProfile",
-    "-ExecutionPolicy",
-    "Bypass",
-    "-Command",
-    `Start-Process powershell.exe -ArgumentList @('-NoExit','-Command','Get-Content -LiteralPath ''${escapedPath}'' -Wait -Tail 200')`,
-  ]);
-}
-
-function openLinuxTerminal(path: string) {
-  const command = `tail -n 200 -f ${shellQuote(path)}`;
-  const terminals: Array<[string, string[]]> = [
-    ["x-terminal-emulator", ["-e", "sh", "-lc", command]],
-    ["gnome-terminal", ["--", "sh", "-lc", command]],
-    ["konsole", ["--hold", "-e", "sh", "-lc", command]],
-    ["kitty", ["sh", "-lc", command]],
-    ["alacritty", ["-e", "sh", "-lc", command]],
-    ["xterm", ["-e", "sh", "-lc", command]],
-  ];
-
-  for (const [terminal, args] of terminals) {
-    if (!commandExists(terminal)) continue;
-    if (spawnDetached(terminal, args)) return;
-  }
-
-  appendLiveLog("main", ["No supported terminal emulator found"]);
-}
-
-function spawnDetached(command: string, args: string[]) {
-  try {
-    const child = spawn(command, args, {
-      detached: true,
-      stdio: "ignore",
-    });
-    child.once("error", () => undefined);
-    child.unref();
-    return true;
-  } catch (error) {
-    appendLiveLog("main", [error]);
-    return false;
-  }
-}
-
-function commandExists(command: string) {
-  return (
-    spawnSync("sh", ["-lc", `command -v ${shellQuote(command)}`], {
-      stdio: "ignore",
-    }).status === 0
-  );
-}
-
-function shellQuote(value: string) {
-  return `'${value.replace(/'/g, `'\\''`)}'`;
 }
