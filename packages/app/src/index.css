@@ -6,9 +6,10 @@
 
 @source "./";
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:is(.dark *):not(:is(.light, .light *)));
 
-:root {
+:root,
+.light {
   --background: oklch(1 0 0 / 93%);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0 / 88%);
