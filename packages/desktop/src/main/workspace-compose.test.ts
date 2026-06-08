@@ -224,3 +224,32 @@ test("promotes existing package cache volumes to global Docker volumes", () => {
   assert.match(result, /pnpm_store:\n    name: blame_pnpm_store/);
   assert.doesNotMatch(result, /node_modules:\n    name:/);
 });
+
+test("replaces project-scoped package cache volume names", () => {
+  const compose = [
+    "services:",
+    "  deps:",
+    "    volumes:",
+    "      - .:/workspace",
+    "      - pnpm_store:/pnpm/store",
+    "      - corepack_cache:/tmp/corepack-cache",
+    "    command:",
+    "      - corepack prepare pnpm@9.12.2 --activate && corepack pnpm install",
+    "volumes:",
+    "  node_modules:",
+    "    name: ${COMPOSE_PROJECT_NAME:-demo}_node_modules",
+    "  pnpm_store:",
+    "    name: ${COMPOSE_PROJECT_NAME:-demo}_pnpm_store",
+    "  corepack_cache:",
+    "    name: ${COMPOSE_PROJECT_NAME:-demo}_corepack_cache",
+  ].join("\n");
+
+  const result = dockerComposeWithDependencyVolumes(compose, "/tmp/project");
+
+  assert.match(
+    result,
+    /node_modules:\n    name: \$\{COMPOSE_PROJECT_NAME:-demo\}_node_modules/,
+  );
+  assert.match(result, /pnpm_store:\n    name: blame_pnpm_store/);
+  assert.match(result, /corepack_cache:\n    name: blame_corepack_cache/);
+});

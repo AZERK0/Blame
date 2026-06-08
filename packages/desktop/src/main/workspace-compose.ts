@@ -446,23 +446,28 @@ function normalizeTopLevelCacheVolumes(lines: string[]) {
     const match = /^\s{2}([a-zA-Z0-9_.-]+):\s*$/.exec(result[index]);
     if (!match) continue;
     const name = globalCacheVolumeName(match[1]);
-    if (!name || volumeBlockHasName(result, index)) continue;
-    result.splice(index + 1, 0, `    name: ${name}`);
-    index += 1;
+    if (!name) continue;
+    const nameLine = volumeBlockNameLine(result, index);
+    if (nameLine === -1) {
+      result.splice(index + 1, 0, `    name: ${name}`);
+      index += 1;
+      continue;
+    }
+    result[nameLine] = `    name: ${name}`;
   }
   return result;
 }
 
-function volumeBlockHasName(lines: string[], volumeLine: number) {
+function volumeBlockNameLine(lines: string[], volumeLine: number) {
   for (let index = volumeLine + 1; index < lines.length; index += 1) {
     if (
       /^\s{2}[a-zA-Z0-9_.-]+:\s*$/.test(lines[index]) ||
       /^\S/.test(lines[index])
     )
-      return false;
-    if (/^\s{4}name:\s*/.test(lines[index])) return true;
+      return -1;
+    if (/^\s{4}name:\s*/.test(lines[index])) return index;
   }
-  return false;
+  return -1;
 }
 
 function globalCacheVolumeName(name: string) {
