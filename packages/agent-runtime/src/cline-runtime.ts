@@ -422,7 +422,7 @@ export class BlameAgentRuntime {
       try {
         return {
           sessionId: session.sessionId,
-          ...parseProjectInitializationResult(text),
+          ...parseProjectInitializationResult(text, scan),
         }
       } catch (error) {
         if (attempt === maxInitializationAttempts) throw error

@@ -78,6 +78,20 @@ const strategicFiles = [
   "prettier.config.js",
   ".prettierrc",
 ];
+const strategicDirectories = [
+  "database/migrations",
+  "apps/api/database/migrations",
+  "apps/backend/database/migrations",
+  "apps/server/database/migrations",
+  "prisma",
+  "apps/api/prisma",
+  "apps/backend/prisma",
+  "apps/server/prisma",
+  "drizzle",
+  "apps/api/drizzle",
+  "apps/backend/drizzle",
+  "apps/server/drizzle",
+];
 
 export type ProjectInitializationScan = {
   rootName: string;
@@ -135,6 +149,7 @@ export function projectInitializationCorrectionPrompt(
 
 export function parseProjectInitializationResult(
   text: string,
+  scan?: ProjectInitializationScan,
 ): ParsedProjectInitialization {
   const parsed = JSON.parse(jsonPayload(text)) as unknown;
   if (!isRecord(parsed))
@@ -145,7 +160,7 @@ export function parseProjectInitializationResult(
     throw new Error("Initialization result is missing setupScript");
   if (!dockerCompose)
     throw new Error("Initialization result is missing dockerCompose");
-  validateGeneratedArtifacts(setupScript, dockerCompose);
+  validateGeneratedArtifacts(setupScript, dockerCompose, scan);
   return {
     setupScript,
     dockerCompose,
@@ -171,6 +186,10 @@ async function strategicFileContents(root: string) {
     const content = await readStrategicFile(root, path);
     if (content) files[path] = content;
   }
+  for (const path of strategicDirectories) {
+    const content = await readStrategicDirectory(root, path);
+    if (content) files[`${path}/`] = content;
+  }
   return files;
 }
 
@@ -180,6 +199,22 @@ async function readStrategicFile(root: string, path: string) {
     const info = await stat(target);
     if (!info.isFile() || info.size > maxFileBytes) return;
     return readFile(target, "utf8");
+  } catch {
+    return undefined;
+  }
+}
+
+async function readStrategicDirectory(root: string, path: string) {
+  const target = join(root, path);
+  try {
+    const entries = await readdir(target, { withFileTypes: true });
+    const names = entries
+      .filter((entry) => entry.isFile())
+      .map((entry) => entry.name)
+      .sort()
+      .slice(0, 120);
+    if (names.length === 0) return;
+    return names.join("\n");
   } catch {
     return undefined;
   }
@@ -234,7 +269,11 @@ function parsePractice(values: unknown[], practice: ProjectCodePracticeKey) {
   return { practice, detected: value.detected, comment };
 }
 
-function validateGeneratedArtifacts(script: string, compose: string) {
+function validateGeneratedArtifacts(
+  script: string,
+  compose: string,
+  scan?: ProjectInitializationScan,
+) {
   const normalizedScript = script.toLowerCase();
   const normalizedCompose = compose.toLowerCase();
   if (launchesDockerCompose(normalizedScript)) {
@@ -242,10 +281,13 @@ function validateGeneratedArtifacts(script: string, compose: string) {
       "Initialization result setupScript must not launch docker compose",
     );
   }
-  validateDockerCompose(normalizedCompose);
+  validateDockerCompose(normalizedCompose, scan);
 }
 
-function validateDockerCompose(compose: string) {
+function validateDockerCompose(
+  compose: string,
+  scan?: ProjectInitializationScan,
+) {
   if (!compose.includes("services:")) {
     throw new Error("Initialization result dockerCompose must define services");
   }
@@ -287,6 +329,11 @@ function validateDockerCompose(compose: string) {
   if (usesInterpolatedServiceUrl(compose)) {
     throw new Error(
       "Initialization result dockerCompose must use literal service URLs for inter-container runtime configuration instead of preserving existing localhost values",
+    );
+  }
+  if (requiresDatabaseMigration(compose, scan) && !runsDatabaseMigration(compose)) {
+    throw new Error(
+      "Initialization result dockerCompose must run detected database migrations before starting backend services",
     );
   }
   if (usesBarePnpm(compose)) {
@@ -345,6 +392,26 @@ function usesInterpolatedContainerHost(compose: string) {
 
 function usesInterpolatedServiceUrl(compose: string) {
   return /\b[a-z0-9_]*(?:api|backend)[a-z0-9_]*url:\s*\$\{[a-z0-9_]+:-http:\/\/[a-z0-9_-]+:[0-9]+[^}]*\}/.test(
+    compose,
+  );
+}
+
+function requiresDatabaseMigration(
+  compose: string,
+  scan: ProjectInitializationScan | undefined,
+) {
+  if (!scan || !usesRelationalDatabase(compose)) return false;
+  return Object.entries(scan.files).some(([path, content]) => {
+    return path.endsWith("/migrations/") && content.trim().length > 0;
+  });
+}
+
+function usesRelationalDatabase(compose: string) {
+  return /\b(?:mysql|mariadb|postgres|postgresql):/.test(compose);
+}
+
+function runsDatabaseMigration(compose: string) {
+  return /\b(?:migration:run|migrate\s+(?:deploy|dev|up|latest|run)|db:migrate|drizzle-kit\s+migrate|knex\s+migrate:latest)\b/.test(
     compose,
   );
 }
