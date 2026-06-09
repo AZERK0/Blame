@@ -20,6 +20,20 @@ const agentActivity = vine.object({
   createdAt: vine.string().trim().minLength(1).maxLength(255),
   updatedAt: vine.string().trim().maxLength(255).optional(),
 })
+const codeSelectionAttachment = vine.object({
+  id: vine.string().trim().minLength(1).maxLength(255),
+  content: vine.string().maxLength(262144),
+  endLine: vine.number(),
+  path: vine.string().trim().minLength(1).maxLength(2048),
+  startLine: vine.number(),
+})
+const fileAttachment = vine.object({
+  id: vine.string().trim().minLength(1).maxLength(255),
+  content: vine.string().maxLength(10485760),
+  name: vine.string().trim().minLength(1).maxLength(255),
+  size: vine.number(),
+  type: vine.string().trim().maxLength(255),
+})
 const agentUsageTool = vine.object({
   count: vine.number(),
   maxBytes: vine.number(),
@@ -69,6 +83,8 @@ export const createUserStoryValidator = vine.create({
   projectId: vine.string().trim().minLength(1),
   title: vine.string().trim().minLength(1).maxLength(255),
   summary: vine.string(),
+  codeSelectionAttachments: vine.array(codeSelectionAttachment).nullable().optional(),
+  fileAttachments: vine.array(fileAttachment).nullable().optional(),
   status: status.optional(),
   priority: priority.optional(),
   owner: vine.string().trim().minLength(1).maxLength(255).optional(),
@@ -95,6 +111,8 @@ export const updateUserStoryValidator = vine.create({
   projectId: vine.string().trim().minLength(1).optional(),
   title: vine.string().trim().minLength(1).maxLength(255).optional(),
   summary: vine.string().optional(),
+  codeSelectionAttachments: vine.array(codeSelectionAttachment).nullable().optional(),
+  fileAttachments: vine.array(fileAttachment).nullable().optional(),
   status: status.optional(),
   priority: priority.optional(),
   owner: vine.string().trim().minLength(1).maxLength(255).optional(),

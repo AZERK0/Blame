@@ -55,6 +55,8 @@ export default class UserStoriesService {
       projectId: input.projectId,
       title: input.title,
       summary: input.summary,
+      codeSelectionAttachments: input.codeSelectionAttachments ?? null,
+      fileAttachments: input.fileAttachments ?? null,
       status: input.status ?? 'backlog',
       priority: input.priority ?? 'Medium',
       owner: input.owner ?? 'Product',
@@ -104,6 +106,8 @@ export default class UserStoriesService {
     return UserStoryComment.create({
       author: 'Product',
       body: input.body,
+      codeSelectionAttachments: input.codeSelectionAttachments ?? null,
+      fileAttachments: input.fileAttachments ?? null,
       userStoryId: id,
     })
   }

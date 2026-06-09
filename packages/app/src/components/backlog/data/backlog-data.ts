@@ -66,6 +66,22 @@ export type UserStoryAgentActivity = {
   updatedAt?: string
 }
 
+export type UserStoryCodeSelectionAttachment = {
+  id: string
+  content: string
+  endLine: number
+  path: string
+  startLine: number
+}
+
+export type UserStoryFileAttachment = {
+  id: string
+  content: string
+  name: string
+  size: number
+  type: string
+}
+
 export type UserStoryAgentRunKind = "initial" | "change-request" | "resume"
 export type UserStoryAgentRunStatus = "running" | "completed" | "failed"
 export type UserStoryAgentRun = {
@@ -88,6 +104,8 @@ export type UserStoryComment = {
   id: number
   userStoryId: number
   body: string
+  codeSelectionAttachments?: UserStoryCodeSelectionAttachment[] | null
+  fileAttachments?: UserStoryFileAttachment[] | null
   author: string
   createdAt: string
   updatedAt?: string | null
@@ -98,6 +116,8 @@ export type UserStory = {
   projectId: string
   title: string
   summary: string
+  codeSelectionAttachments?: UserStoryCodeSelectionAttachment[] | null
+  fileAttachments?: UserStoryFileAttachment[] | null
   status: BacklogColumnId
   priority: UserStoryPriority
   owner: string
@@ -127,6 +147,8 @@ export type UserStoryDraft = {
   projectId: string
   title: string
   summary: string
+  codeSelectionAttachments?: UserStoryCodeSelectionAttachment[] | null
+  fileAttachments?: UserStoryFileAttachment[] | null
   status?: BacklogColumnId
   priority?: UserStoryPriority
   owner?: string
@@ -138,6 +160,8 @@ export type UserStoryUpdate = Partial<
     | "projectId"
     | "title"
     | "summary"
+    | "codeSelectionAttachments"
+    | "fileAttachments"
     | "status"
     | "priority"
     | "owner"

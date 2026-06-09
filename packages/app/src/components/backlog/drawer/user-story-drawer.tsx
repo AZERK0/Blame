@@ -36,7 +36,10 @@ export type UserStoryDrawerProps = {
   ) => Promise<UserStory>
   onCreateUserStoryComment: (
     story: UserStory,
-    input: { body: string }
+    input: Pick<
+      UserStoryComment,
+      "body" | "codeSelectionAttachments" | "fileAttachments"
+    >
   ) => Promise<UserStoryComment>
   onDeleteUserStory: (story: UserStory) => Promise<void>
   onApproveAndMerge: (story: UserStory) => Promise<UserStory>
@@ -49,7 +52,9 @@ export type UserStoryDrawerProps = {
   onRequestChanges: (
     story: UserStory,
     feedback: string,
-    commentId: number
+    commentId: number,
+    codeSelectionAttachments: UserStoryComment["codeSelectionAttachments"],
+    fileAttachments: UserStoryComment["fileAttachments"]
   ) => Promise<UserStory>
   onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
   onUpdateUserStory: (

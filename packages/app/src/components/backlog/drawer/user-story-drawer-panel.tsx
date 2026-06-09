@@ -6,6 +6,7 @@ import type {
   UserStory,
   UserStoryComment,
   UserStoryDraft,
+  UserStoryFileAttachment,
   UserStoryUpdate,
 } from "@/components/backlog/data/backlog-data"
 import type {
@@ -29,6 +30,7 @@ import {
 import { DrawerSidebar } from "@/components/backlog/drawer/user-story-drawer-sidebar"
 import { UserStoryContent } from "@/components/backlog/drawer/user-story-drawer-sections"
 import { UserStoryPreview } from "@/components/backlog/drawer/user-story-preview"
+import { pendingFileAttachments } from "@/components/backlog/drawer/user-story-attachment-files"
 import {
   codeSelectionAttachmentEvent,
   type CodeSelectionAttachment,
@@ -78,7 +80,10 @@ export function UserStoryDrawerPanel({
   ) => Promise<UserStory>
   onCreateUserStoryComment: (
     story: UserStory,
-    input: { body: string }
+    input: Pick<
+      UserStoryComment,
+      "body" | "codeSelectionAttachments" | "fileAttachments"
+    >
   ) => Promise<UserStoryComment>
   onDeleteUserStory: (story: UserStory) => Promise<void>
   onOpenDrawer: OpenDrawer
@@ -89,7 +94,9 @@ export function UserStoryDrawerPanel({
   onRequestChanges: (
     story: UserStory,
     feedback: string,
-    commentId: number
+    commentId: number,
+    codeSelectionAttachments: UserStoryComment["codeSelectionAttachments"],
+    fileAttachments: UserStoryComment["fileAttachments"]
   ) => Promise<UserStory>
   onReject: (story: UserStory, choice: RejectChoice) => Promise<UserStory>
   onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
@@ -111,9 +118,17 @@ export function UserStoryDrawerPanel({
       normalizeDevelopmentTab(status, initialDevelopmentTab)
     )
   const [summaryCodeSelectionAttachments, setSummaryCodeSelectionAttachments] =
-    React.useState<PendingCodeSelectionAttachment[]>([])
+    React.useState<PendingCodeSelectionAttachment[]>(
+      userStory?.codeSelectionAttachments ?? []
+    )
+  const [summaryFileAttachments, setSummaryFileAttachments] = React.useState<
+    UserStoryFileAttachment[]
+  >(userStory?.fileAttachments ?? [])
   const [commentCodeSelectionAttachments, setCommentCodeSelectionAttachments] =
     React.useState<PendingCodeSelectionAttachment[]>([])
+  const [commentFileAttachments, setCommentFileAttachments] = React.useState<
+    UserStoryFileAttachment[]
+  >([])
   const [commentEditorKey, setCommentEditorKey] = React.useState(0)
   const [developmentFileTarget, setDevelopmentFileTarget] = React.useState<{
     id: string
@@ -231,6 +246,9 @@ export function UserStoryDrawerPanel({
           <DrawerBody status={status} userStory={userStory}>
             <UserStoryContent
               commentCodeSelectionAttachments={commentCodeSelectionAttachments}
+              commentFileAttachments={pendingFileAttachments(
+                commentFileAttachments
+              )}
               comment={comment}
               commentEditorKey={commentEditorKey}
               commentRef={commentRef}
@@ -241,6 +259,17 @@ export function UserStoryDrawerPanel({
                   current.filter((attachment) => attachment.id !== id)
                 )
               }
+              onCommentFileAttachmentRemove={(id) =>
+                setCommentFileAttachments((current) =>
+                  current.filter((attachment) => attachment.id !== id)
+                )
+              }
+              onCommentFileAttachmentsAdd={(attachments) =>
+                setCommentFileAttachments((current) => [
+                  ...current,
+                  ...attachments,
+                ])
+              }
               onCommentSubmit={() => {
                 void submitComment()
               }}
@@ -248,6 +277,17 @@ export function UserStoryDrawerPanel({
                 setSummaryCodeSelectionAttachments((current) =>
                   current.filter((attachment) => attachment.id !== id)
                 )
+              }
+              onSummaryFileAttachmentRemove={(id) =>
+                setSummaryFileAttachments((current) =>
+                  current.filter((attachment) => attachment.id !== id)
+                )
+              }
+              onSummaryFileAttachmentsAdd={(attachments) =>
+                setSummaryFileAttachments((current) => [
+                  ...current,
+                  ...attachments,
+                ])
               }
               onSummaryChange={setSummary}
               onSummaryOptimize={
@@ -260,6 +300,9 @@ export function UserStoryDrawerPanel({
               status={status}
               summary={summary}
               summaryCodeSelectionAttachments={summaryCodeSelectionAttachments}
+              summaryFileAttachments={pendingFileAttachments(
+                summaryFileAttachments
+              )}
               summaryRef={summaryRef}
               userStory={userStory}
             />
@@ -320,7 +363,15 @@ export function UserStoryDrawerPanel({
     setSaving(true)
     try {
       if (mode === "create") {
-        await onCreateUserStory(createInput(action, title, summary))
+        await onCreateUserStory(
+          createInput(
+            action,
+            title,
+            summary,
+            summaryCodeSelectionAttachments,
+            summaryFileAttachments
+          )
+        )
       }
       if (mode !== "create" && userStory) {
         if (action === "Approve & Merge") {
@@ -331,7 +382,13 @@ export function UserStoryDrawerPanel({
         } else {
           await onUpdateUserStory(
             userStory,
-            actionInput(action, title, summary)
+            actionInput(
+              action,
+              title,
+              summary,
+              summaryCodeSelectionAttachments,
+              summaryFileAttachments
+            )
           )
         }
       }
@@ -360,19 +417,30 @@ export function UserStoryDrawerPanel({
 
   async function submitComment() {
     if (!userStory) return
-    const body = comment.trim()
-    if (!body) return
+    const hasCommentAttachments =
+      commentCodeSelectionAttachments.length > 0 ||
+      commentFileAttachments.length > 0
+    const body =
+      comment.trim() || (hasCommentAttachments ? "Attached files." : "")
+    if (!body && !hasCommentAttachments) return
     setSaving(true)
     try {
-      const createdComment = await onCreateUserStoryComment(userStory, { body })
+      const createdComment = await onCreateUserStoryComment(userStory, {
+        body,
+        codeSelectionAttachments: commentCodeSelectionAttachments,
+        fileAttachments: commentFileAttachments,
+      })
       setComment("")
       setCommentCodeSelectionAttachments([])
+      setCommentFileAttachments([])
       setCommentEditorKey((key) => key + 1)
       if (status === "in-review") {
         const nextStory = await onRequestChanges(
           userStory,
           body,
-          createdComment.id
+          createdComment.id,
+          createdComment.codeSelectionAttachments,
+          createdComment.fileAttachments
         )
         if (nextStory.status === "in-progress") onCancel()
       }
@@ -447,9 +515,13 @@ function DrawerBody({
 function createInput(
   action: DrawerAction,
   title: string,
-  summary: string
+  summary: string,
+  codeSelectionAttachments: PendingCodeSelectionAttachment[],
+  fileAttachments: UserStoryFileAttachment[] = []
 ): Omit<UserStoryDraft, "projectId"> {
   return {
+    codeSelectionAttachments,
+    fileAttachments,
     status: action === "Send to Dev Agent" ? "ready" : "backlog",
     summary,
     title: title.trim() || "Untitled user story",
@@ -459,9 +531,13 @@ function createInput(
 function actionInput(
   action: DrawerAction,
   title: string,
-  summary: string
+  summary: string,
+  codeSelectionAttachments: PendingCodeSelectionAttachment[],
+  fileAttachments: UserStoryFileAttachment[]
 ): UserStoryUpdate {
   const base = {
+    codeSelectionAttachments,
+    fileAttachments,
     summary,
     title: title.trim() || "Untitled user story",
   }

@@ -141,6 +141,8 @@ export function useBacklogRotation(
       autoSendPrompt: false,
       title: story.title,
       summary: story.summary,
+      codeSelectionAttachments: story.codeSelectionAttachments ?? [],
+      fileAttachments: story.fileAttachments ?? [],
       cwd: worktree.worktree,
       workspaceRoot: worktree.worktree,
       codePractices: projectInitialization.practices,
@@ -176,6 +178,8 @@ export function useBacklogRotation(
       sessionId: session.sessionId,
       title: story.title,
       summary: story.summary,
+      codeSelectionAttachments: story.codeSelectionAttachments ?? [],
+      fileAttachments: story.fileAttachments ?? [],
     })
   }
 

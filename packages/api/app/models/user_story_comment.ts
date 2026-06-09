@@ -1,6 +1,14 @@
 import { BaseModel, belongsTo, column } from '@adonisjs/lucid/orm'
 import { DateTime } from 'luxon'
 import UserStory from '#models/user_story'
+import {
+  consumeCodeSelectionAttachments,
+  consumeFileAttachments,
+  prepareCodeSelectionAttachments,
+  prepareFileAttachments,
+  type UserStoryCodeSelectionAttachment,
+  type UserStoryFileAttachment,
+} from '#models/user_story'
 import type { BelongsTo } from '@adonisjs/lucid/types/relations'
 
 export default class UserStoryComment extends BaseModel {
@@ -12,6 +20,18 @@ export default class UserStoryComment extends BaseModel {
 
   @column()
   declare body: string
+
+  @column({
+    consume: consumeCodeSelectionAttachments,
+    prepare: prepareCodeSelectionAttachments,
+  })
+  declare codeSelectionAttachments: UserStoryCodeSelectionAttachment[] | null
+
+  @column({
+    consume: consumeFileAttachments,
+    prepare: prepareFileAttachments,
+  })
+  declare fileAttachments: UserStoryFileAttachment[] | null
 
   @column()
   declare author: string

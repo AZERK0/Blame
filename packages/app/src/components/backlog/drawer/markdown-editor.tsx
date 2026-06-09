@@ -39,6 +39,7 @@ import {
   codeSelectionLineLabel,
   type PendingCodeSelectionAttachment,
 } from "@/components/backlog/shared/comment-attachment-events"
+import type { UserStoryFileAttachment } from "@/components/backlog/data/backlog-data"
 import { DevelopmentFileIcon } from "@/components/backlog/development/development-file-icon"
 import {
   Command,
@@ -55,6 +56,7 @@ type PastedAttachment = {
   id: string
   file: File
   previewUrl?: string
+  source: "code" | "file"
   subtitle?: string
   title?: string
 }
@@ -96,6 +98,7 @@ function fileAttachments(files: File[]) {
     previewUrl: file.type.startsWith("image/")
       ? URL.createObjectURL(file)
       : undefined,
+    source: "file" as const,
   }))
 }
 
@@ -299,7 +302,7 @@ function AttachmentPreview({
   onRemove,
 }: {
   attachment: PastedAttachment
-  onRemove: (attachment: PastedAttachment) => void
+  onRemove?: (attachment: PastedAttachment) => void
 }) {
   if (attachment.previewUrl) {
     return (
@@ -318,7 +321,7 @@ function ImageAttachmentPreview({
   onRemove,
 }: {
   attachment: PastedAttachment & { previewUrl: string }
-  onRemove: (attachment: PastedAttachment) => void
+  onRemove?: (attachment: PastedAttachment) => void
 }) {
   return (
     <div className="group relative">
@@ -344,7 +347,9 @@ function ImageAttachmentPreview({
           />
         </DialogContent>
       </Dialog>
-      <AttachmentDeleteButton attachment={attachment} onRemove={onRemove} />
+      {onRemove && (
+        <AttachmentDeleteButton attachment={attachment} onRemove={onRemove} />
+      )}
     </div>
   )
 }
@@ -354,7 +359,7 @@ function FileAttachmentPreview({
   onRemove,
 }: {
   attachment: PastedAttachment
-  onRemove: (attachment: PastedAttachment) => void
+  onRemove?: (attachment: PastedAttachment) => void
 }) {
   return (
     <div className="group relative">
@@ -368,7 +373,9 @@ function FileAttachmentPreview({
           )}
         </span>
       </div>
-      <AttachmentDeleteButton attachment={attachment} onRemove={onRemove} />
+      {onRemove && (
+        <AttachmentDeleteButton attachment={attachment} onRemove={onRemove} />
+      )}
     </div>
   )
 }
@@ -761,6 +768,8 @@ export const MarkdownEditor = React.forwardRef<
     fileAttachments?: PendingFileAttachment[]
     mentionDirectory?: string
     onCodeSelectionAttachmentRemove?: (id: string) => void
+    onFileAttachmentRemove?: (id: string) => void
+    onFileAttachmentsAdd?: (attachments: UserStoryFileAttachment[]) => void
     onFileLinkClick?: (path: string) => void
     onMarkdownChange?: (markdown: string) => void
     onOptimize?: (markdown: string) => Promise<string>
@@ -774,6 +783,8 @@ export const MarkdownEditor = React.forwardRef<
     mentionDirectory,
     minHeight,
     onCodeSelectionAttachmentRemove,
+    onFileAttachmentRemove,
+    onFileAttachmentsAdd,
     onFileLinkClick,
     onMarkdownChange,
     onOptimize,
@@ -888,7 +899,6 @@ export const MarkdownEditor = React.forwardRef<
   )
 
   React.useEffect(() => {
-    if (readOnly) return
     const nextAttachments = (codeSelectionAttachments ?? []).filter(
       (attachment) => !handledCodeSelectionIdsRef.current.has(attachment.id)
     )
@@ -898,25 +908,21 @@ export const MarkdownEditor = React.forwardRef<
     })
     addAttachments(nextAttachments.map(codeSelectionAttachment))
     rootRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
-  }, [
-    codeSelectionAttachments,
-    readOnly,
-  ])
+  }, [codeSelectionAttachments])
 
   React.useEffect(() => {
-    if (readOnly) return
     const nextAttachments = (fileAttachments ?? [])
       .filter(
         (attachment) => !handledFileAttachmentIdsRef.current.has(attachment.id)
       )
-      .map(fileAttachment)
+      .map(pendingFileAttachment)
     if (nextAttachments.length === 0) return
     fileAttachments?.forEach((attachment) => {
       handledFileAttachmentIdsRef.current.add(attachment.id)
     })
     addAttachments(nextAttachments)
     rootRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
-  }, [fileAttachments, readOnly])
+  }, [fileAttachments])
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
     if (!mentionOpen) return
@@ -977,14 +983,27 @@ export const MarkdownEditor = React.forwardRef<
     if (readOnly) return
     const nextAttachments = pastedAttachments(event)
     if (nextAttachments.length === 0) return
-    addAttachments(nextAttachments)
+    void addFileAttachments(nextAttachments)
   }
 
   function handleFileSelection(event: React.ChangeEvent<HTMLInputElement>) {
     const nextAttachments = selectedAttachments(event)
     event.currentTarget.value = ""
     if (nextAttachments.length === 0) return
+    void addFileAttachments(nextAttachments)
+  }
+
+  async function addFileAttachments(nextAttachments: PastedAttachment[]) {
     addAttachments(nextAttachments)
+    if (!onFileAttachmentsAdd) {
+      return
+    }
+    nextAttachments.forEach((attachment) => {
+      handledFileAttachmentIdsRef.current.add(attachment.id)
+    })
+    onFileAttachmentsAdd(
+      await Promise.all(nextAttachments.map(persistentFileAttachment))
+    )
   }
 
   function addAttachments(nextAttachments: PastedAttachment[]) {
@@ -996,7 +1015,9 @@ export const MarkdownEditor = React.forwardRef<
 
   function removeAttachment(attachment: PastedAttachment) {
     if (attachment.previewUrl) URL.revokeObjectURL(attachment.previewUrl)
-    onCodeSelectionAttachmentRemove?.(attachment.id)
+    if (attachment.source === "code")
+      onCodeSelectionAttachmentRemove?.(attachment.id)
+    if (attachment.source === "file") onFileAttachmentRemove?.(attachment.id)
     setAttachments((currentAttachments) =>
       currentAttachments.filter(
         (currentAttachment) => currentAttachment.id !== attachment.id
@@ -1144,6 +1165,13 @@ export const MarkdownEditor = React.forwardRef<
           )}
 
           <div className="flex flex-wrap items-center gap-3 px-2 pt-3 pb-1">
+            {attachments.map((attachment) => (
+              <AttachmentPreview
+                key={attachment.id}
+                attachment={attachment}
+                onRemove={readOnly ? undefined : removeAttachment}
+              />
+            ))}
             {!readOnly && (
               <>
                 <input
@@ -1153,13 +1181,6 @@ export const MarkdownEditor = React.forwardRef<
                   type="file"
                   onChange={handleFileSelection}
                 />
-                {attachments.map((attachment) => (
-                  <AttachmentPreview
-                    key={attachment.id}
-                    attachment={attachment}
-                    onRemove={removeAttachment}
-                  />
-                ))}
                 <Button
                   type="button"
                   variant="outline"
@@ -1224,17 +1245,45 @@ function codeSelectionAttachment(
     file: new File([attachment.content], attachment.path, {
       type: "text/plain",
     }),
+    source: "code",
     subtitle: codeSelectionLineLabel(attachment),
     title: attachment.path,
   }
 }
 
-function fileAttachment(attachment: PendingFileAttachment): PastedAttachment {
+function pendingFileAttachment(
+  attachment: PendingFileAttachment
+): PastedAttachment {
   return {
     id: attachment.id,
     file: attachment.file,
     previewUrl: attachment.file.type.startsWith("image/")
       ? URL.createObjectURL(attachment.file)
       : undefined,
+    source: "file",
   }
+}
+
+async function persistentFileAttachment(
+  attachment: PastedAttachment
+): Promise<UserStoryFileAttachment> {
+  return {
+    id: attachment.id,
+    content: await fileContent(attachment.file),
+    name: attachment.file.name,
+    size: attachment.file.size,
+    type: attachment.file.type,
+  }
+}
+
+function fileContent(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.addEventListener("load", () => {
+      const value = typeof reader.result === "string" ? reader.result : ""
+      resolve(value.split(",", 2)[1] ?? "")
+    })
+    reader.addEventListener("error", () => reject(reader.error))
+    reader.readAsDataURL(file)
+  })
 }

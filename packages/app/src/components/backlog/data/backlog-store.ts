@@ -121,7 +121,10 @@ export function useBacklogStore() {
     [api]
   )
   const createComment = React.useCallback(
-    async (story: UserStory, input: { body: string }) => {
+    async (
+      story: UserStory,
+      input: Pick<UserStoryComment, "body" | "codeSelectionAttachments">
+    ) => {
       const comment = await api.createComment(story.id, input)
       setState((current) => ({
         ...current,
@@ -370,11 +373,7 @@ function setupInitializingStoryIds(
   return storyStateIds(current, storyId, initializing)
 }
 
-function storyStateIds(
-  current: Set<number>,
-  storyId: number,
-  active: boolean
-) {
+function storyStateIds(current: Set<number>, storyId: number, active: boolean) {
   const next = new Set(current)
   if (active) next.add(storyId)
   else next.delete(storyId)
@@ -444,7 +443,9 @@ function mergedAgentRun(
     finalResponse:
       nextRun.finalResponse ?? previousRun.finalResponse ?? base.finalResponse,
     sessionSummary:
-      nextRun.sessionSummary ?? previousRun.sessionSummary ?? base.sessionSummary,
+      nextRun.sessionSummary ??
+      previousRun.sessionSummary ??
+      base.sessionSummary,
     usage: nextRun.usage ?? previousRun.usage ?? base.usage,
   }
 }

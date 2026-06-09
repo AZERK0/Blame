@@ -96,7 +96,10 @@ export function createBacklogApi(connection: ApiConnection) {
         )
       )
     },
-    async createComment(id: number, input: { body: string }) {
+    async createComment(
+      id: number,
+      input: Pick<UserStoryComment, "body" | "codeSelectionAttachments">
+    ) {
       return userStoryComment(
         await request<unknown>(
           connection,
@@ -163,6 +166,10 @@ function userStoryComment(value: unknown) {
   return {
     author: typeof comment.author === "string" ? comment.author : "Product",
     body: comment.body,
+    codeSelectionAttachments: codeSelectionAttachments(
+      recordValue(comment).codeSelectionAttachments
+    ),
+    fileAttachments: fileAttachments(recordValue(comment).fileAttachments),
     createdAt:
       typeof comment.createdAt === "string"
         ? comment.createdAt
@@ -191,6 +198,10 @@ function userStory(value: unknown) {
     throw new Error("Unable to read user story.")
   return {
     ...story,
+    codeSelectionAttachments: codeSelectionAttachments(
+      recordValue(story).codeSelectionAttachments
+    ),
+    fileAttachments: fileAttachments(recordValue(story).fileAttachments),
     id,
     agentRuns: Array.isArray(story.agentRuns)
       ? story.agentRuns.map(userStoryAgentRun)
@@ -199,6 +210,38 @@ function userStory(value: unknown) {
       ? story.comments.map(userStoryComment)
       : [],
   } as UserStory
+}
+
+function codeSelectionAttachments(value: unknown) {
+  if (!Array.isArray(value)) return []
+  return value.filter(codeSelectionAttachment)
+}
+
+function codeSelectionAttachment(value: unknown) {
+  if (!isRecord(value)) return false
+  return (
+    typeof value.id === "string" &&
+    typeof value.content === "string" &&
+    typeof value.endLine === "number" &&
+    typeof value.path === "string" &&
+    typeof value.startLine === "number"
+  )
+}
+
+function fileAttachments(value: unknown) {
+  if (!Array.isArray(value)) return []
+  return value.filter(fileAttachment)
+}
+
+function fileAttachment(value: unknown) {
+  if (!isRecord(value)) return false
+  return (
+    typeof value.id === "string" &&
+    typeof value.content === "string" &&
+    typeof value.name === "string" &&
+    typeof value.size === "number" &&
+    typeof value.type === "string"
+  )
 }
 
 function transformerValue(value: unknown): unknown {

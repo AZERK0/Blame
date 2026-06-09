@@ -11,6 +11,8 @@ export default class UserStoryTransformer extends BaseTransformer<UserStory> {
         'projectId',
         'title',
         'summary',
+        'codeSelectionAttachments',
+        'fileAttachments',
         'status',
         'priority',
         'owner',

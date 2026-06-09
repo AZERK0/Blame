@@ -18,6 +18,8 @@ import type {
   UserStoryAgentActivity,
   UserStoryAgentRun,
   UserStoryAgentRunUpdate,
+  UserStoryCodeSelectionAttachment,
+  UserStoryFileAttachment,
   UserStoryUpdate,
 } from "@/components/backlog/data/backlog-data"
 import type {
@@ -355,6 +357,8 @@ export function BacklogPage() {
         autoSendPrompt: false,
         title: story.title,
         summary: story.summary,
+        codeSelectionAttachments: story.codeSelectionAttachments ?? [],
+        fileAttachments: story.fileAttachments ?? [],
         feedback,
         cwd: story.worktree,
         workspaceRoot: story.worktree,
@@ -405,6 +409,8 @@ export function BacklogPage() {
         sessionId: session.sessionId,
         title: story.title,
         summary: story.summary,
+        codeSelectionAttachments: story.codeSelectionAttachments ?? [],
+        fileAttachments: story.fileAttachments ?? [],
         feedback,
       })
       return updatedStory
@@ -421,7 +427,16 @@ export function BacklogPage() {
     ]
   )
   const requestChanges = React.useCallback(
-    async (story: UserStory, feedback: string, commentId: number) => {
+    async (
+      story: UserStory,
+      feedback: string,
+      commentId: number,
+      codeSelectionAttachments:
+        | UserStoryCodeSelectionAttachment[]
+        | null
+        | undefined,
+      fileAttachments: UserStoryFileAttachment[] | null | undefined
+    ) => {
       if (!story.worktree) {
         toast.error("Unable to request changes", {
           description: "This user story has no active worktree.",
@@ -458,7 +473,11 @@ export function BacklogPage() {
         autoSendPrompt: false,
         title: story.title,
         summary: story.summary,
+        codeSelectionAttachments: story.codeSelectionAttachments ?? [],
+        fileAttachments: story.fileAttachments ?? [],
         feedback: enrichedFeedback,
+        feedbackCodeSelectionAttachments: codeSelectionAttachments ?? [],
+        feedbackFileAttachments: fileAttachments ?? [],
         cwd: story.worktree,
         workspaceRoot: story.worktree,
         codePractices,
@@ -509,7 +528,11 @@ export function BacklogPage() {
         sessionId: session.sessionId,
         title: story.title,
         summary: story.summary,
+        codeSelectionAttachments: story.codeSelectionAttachments ?? [],
+        fileAttachments: story.fileAttachments ?? [],
         feedback: enrichedFeedback,
+        feedbackCodeSelectionAttachments: codeSelectionAttachments ?? [],
+        feedbackFileAttachments: fileAttachments ?? [],
       })
       return updatedStory
     },
@@ -905,8 +928,7 @@ async function inactiveStoryCleanup(
 function asyncInactiveStoryCleanup(story: UserStory, input: UserStoryUpdate) {
   const nextStatus = input.status ?? story.status
   return (
-    nextStatus === "discarded" &&
-    leavesRuntimeStatus(story.status, nextStatus)
+    nextStatus === "discarded" && leavesRuntimeStatus(story.status, nextStatus)
   )
 }
 

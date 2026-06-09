@@ -29,6 +29,22 @@ export type UserStoryAgentActivity = {
   updatedAt?: string
 }
 
+export type UserStoryCodeSelectionAttachment = {
+  id: string
+  content: string
+  endLine: number
+  path: string
+  startLine: number
+}
+
+export type UserStoryFileAttachment = {
+  id: string
+  content: string
+  name: string
+  size: number
+  type: string
+}
+
 export type UserStoryAgentToolUsage = {
   count: number
   maxBytes: number
@@ -88,6 +104,36 @@ function consumeAgentUsage(value: unknown) {
   }
 }
 
+export function prepareCodeSelectionAttachments(value: UserStoryCodeSelectionAttachment[] | null) {
+  return value ? JSON.stringify(value) : null
+}
+
+export function consumeCodeSelectionAttachments(value: unknown) {
+  if (Array.isArray(value)) return value as UserStoryCodeSelectionAttachment[]
+  if (typeof value !== 'string') return null
+  try {
+    const parsed = JSON.parse(value)
+    return Array.isArray(parsed) ? (parsed as UserStoryCodeSelectionAttachment[]) : null
+  } catch {
+    return null
+  }
+}
+
+export function prepareFileAttachments(value: UserStoryFileAttachment[] | null) {
+  return value ? JSON.stringify(value) : null
+}
+
+export function consumeFileAttachments(value: unknown) {
+  if (Array.isArray(value)) return value as UserStoryFileAttachment[]
+  if (typeof value !== 'string') return null
+  try {
+    const parsed = JSON.parse(value)
+    return Array.isArray(parsed) ? (parsed as UserStoryFileAttachment[]) : null
+  } catch {
+    return null
+  }
+}
+
 export default class UserStory extends BaseModel {
   @column({ isPrimary: true })
   declare id: number
@@ -100,6 +146,18 @@ export default class UserStory extends BaseModel {
 
   @column()
   declare summary: string
+
+  @column({
+    consume: consumeCodeSelectionAttachments,
+    prepare: prepareCodeSelectionAttachments,
+  })
+  declare codeSelectionAttachments: UserStoryCodeSelectionAttachment[] | null
+
+  @column({
+    consume: consumeFileAttachments,
+    prepare: prepareFileAttachments,
+  })
+  declare fileAttachments: UserStoryFileAttachment[] | null
 
   @column()
   declare status: UserStoryStatus

@@ -24,6 +24,8 @@ type UserStoryBody = {
     id: number
     priority: string
     status: string
+    codeSelectionAttachments?: CodeSelectionAttachment[]
+    fileAttachments?: FileAttachment[]
     title: string
   }
 }
@@ -36,9 +38,27 @@ type UserStoryCommentBody = {
   data: {
     author: string
     body: string
+    codeSelectionAttachments?: CodeSelectionAttachment[]
+    fileAttachments?: FileAttachment[]
     id: number
     userStoryId: number
   }
+}
+
+type CodeSelectionAttachment = {
+  id: string
+  content: string
+  endLine: number
+  path: string
+  startLine: number
+}
+
+type FileAttachment = {
+  id: string
+  content: string
+  name: string
+  size: number
+  type: string
 }
 
 type UserStoryAgentRunBody = {
@@ -102,16 +122,55 @@ test.group('user stories', (group) => {
     const user = await createUser()
     const project = await createProject(user.id, 'Alpha')
 
-    const createResponse = await client.post('/api/v1/projects/user-stories').loginAs(user).json({
-      projectId: project.id,
-      title: 'Persist draft',
-      summary: 'Initial summary',
-    })
+    const createResponse = await client
+      .post('/api/v1/projects/user-stories')
+      .loginAs(user)
+      .json({
+        projectId: project.id,
+        title: 'Persist draft',
+        summary: 'Initial summary',
+        codeSelectionAttachments: [
+          {
+            id: 'selection-1',
+            content: 'const value = true',
+            endLine: 12,
+            path: 'src/example.ts',
+            startLine: 10,
+          },
+        ],
+        fileAttachments: [
+          {
+            id: 'file-1',
+            content: 'SGVsbG8=',
+            name: 'hello.txt',
+            size: 5,
+            type: 'text/plain',
+          },
+        ],
+      })
 
     createResponse.assertStatus(200)
     const created = createResponse.body() as unknown as UserStoryBody
     assert.equal(created.data.status, 'backlog')
     assert.equal(created.data.priority, 'Medium')
+    assert.deepEqual(created.data.codeSelectionAttachments, [
+      {
+        id: 'selection-1',
+        content: 'const value = true',
+        endLine: 12,
+        path: 'src/example.ts',
+        startLine: 10,
+      },
+    ])
+    assert.deepEqual(created.data.fileAttachments, [
+      {
+        id: 'file-1',
+        content: 'SGVsbG8=',
+        name: 'hello.txt',
+        size: 5,
+        type: 'text/plain',
+      },
+    ])
 
     const updateResponse = await client
       .patch(`/api/v1/projects/user-stories/${created.data.id}`)
@@ -120,6 +179,24 @@ test.group('user stories', (group) => {
         title: 'Persisted draft',
         status: 'ready',
         priority: 'High',
+        codeSelectionAttachments: [
+          {
+            id: 'selection-2',
+            content: 'return value',
+            endLine: 22,
+            path: 'src/updated.ts',
+            startLine: 20,
+          },
+        ],
+        fileAttachments: [
+          {
+            id: 'file-2',
+            content: 'VXBkYXRlZA==',
+            name: 'updated.txt',
+            size: 7,
+            type: 'text/plain',
+          },
+        ],
       })
 
     updateResponse.assertStatus(200)
@@ -127,6 +204,24 @@ test.group('user stories', (group) => {
     assert.equal(updated.data.title, 'Persisted draft')
     assert.equal(updated.data.status, 'ready')
     assert.equal(updated.data.priority, 'High')
+    assert.deepEqual(updated.data.codeSelectionAttachments, [
+      {
+        id: 'selection-2',
+        content: 'return value',
+        endLine: 22,
+        path: 'src/updated.ts',
+        startLine: 20,
+      },
+    ])
+    assert.deepEqual(updated.data.fileAttachments, [
+      {
+        id: 'file-2',
+        content: 'VXBkYXRlZA==',
+        name: 'updated.txt',
+        size: 7,
+        type: 'text/plain',
+      },
+    ])
 
     const showResponse = await client
       .get(`/api/v1/projects/user-stories/${created.data.id}`)
@@ -160,13 +255,51 @@ test.group('user stories', (group) => {
     const firstResponse = await client
       .post(`/api/v1/projects/user-stories/${story.data.id}/comments`)
       .loginAs(user)
-      .json({ body: 'First feedback' })
+      .json({
+        body: 'First feedback',
+        codeSelectionAttachments: [
+          {
+            id: 'comment-selection-1',
+            content: 'displayComment()',
+            endLine: 4,
+            path: 'src/comment.ts',
+            startLine: 4,
+          },
+        ],
+        fileAttachments: [
+          {
+            id: 'comment-file-1',
+            content: 'Y29tbWVudA==',
+            name: 'comment.txt',
+            size: 7,
+            type: 'text/plain',
+          },
+        ],
+      })
 
     firstResponse.assertStatus(200)
     const first = firstResponse.body() as UserStoryCommentBody
     assert.equal(first.data.body, 'First feedback')
     assert.equal(first.data.author, 'Product')
     assert.equal(first.data.userStoryId, story.data.id)
+    assert.deepEqual(first.data.codeSelectionAttachments, [
+      {
+        id: 'comment-selection-1',
+        content: 'displayComment()',
+        endLine: 4,
+        path: 'src/comment.ts',
+        startLine: 4,
+      },
+    ])
+    assert.deepEqual(first.data.fileAttachments, [
+      {
+        id: 'comment-file-1',
+        content: 'Y29tbWVudA==',
+        name: 'comment.txt',
+        size: 7,
+        type: 'text/plain',
+      },
+    ])
 
     await client
       .post(`/api/v1/projects/user-stories/${story.data.id}/comments`)

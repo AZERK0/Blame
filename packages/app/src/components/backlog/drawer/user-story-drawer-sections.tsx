@@ -23,7 +23,12 @@ import type {
 import { createBacklogApi } from "@/components/backlog/data/backlog-api"
 import type { PendingCodeSelectionAttachment } from "@/components/backlog/shared/comment-attachment-events"
 import type { UserStoryDrawerMode } from "@/components/backlog/shared/backlog-types"
-import { MarkdownEditor } from "@/components/backlog/drawer/markdown-editor"
+import {
+  MarkdownEditor,
+  type PendingFileAttachment,
+} from "@/components/backlog/drawer/markdown-editor"
+import { pendingFileAttachments } from "@/components/backlog/drawer/user-story-attachment-files"
+import type { UserStoryFileAttachment } from "@/components/backlog/data/backlog-data"
 import {
   commentButtonLabel,
   isEditable,
@@ -40,38 +45,50 @@ import { Button } from "@/components/ui/button"
 
 export function UserStoryContent({
   commentCodeSelectionAttachments,
+  commentFileAttachments,
   comment,
   commentEditorKey,
   commentRef,
   mode,
   onCommentChange,
   onCommentCodeSelectionAttachmentRemove,
+  onCommentFileAttachmentRemove,
+  onCommentFileAttachmentsAdd,
   onCommentSubmit,
   onSummaryChange,
   onSummaryCodeSelectionAttachmentRemove,
+  onSummaryFileAttachmentRemove,
+  onSummaryFileAttachmentsAdd,
   onSummaryOptimize,
   onFileLinkClick,
   status,
   summary,
   summaryCodeSelectionAttachments,
+  summaryFileAttachments,
   summaryRef,
   userStory,
 }: {
   commentCodeSelectionAttachments: PendingCodeSelectionAttachment[]
+  commentFileAttachments: PendingFileAttachment[]
   comment: string
   commentEditorKey: number
   commentRef: React.RefObject<HTMLDivElement | null>
   mode: UserStoryDrawerMode
   onCommentChange: (comment: string) => void
   onCommentCodeSelectionAttachmentRemove: (id: string) => void
+  onCommentFileAttachmentRemove: (id: string) => void
+  onCommentFileAttachmentsAdd: (attachments: UserStoryFileAttachment[]) => void
   onCommentSubmit: () => void
   onSummaryChange?: (summary: string) => void
   onSummaryCodeSelectionAttachmentRemove: (id: string) => void
+  onSummaryFileAttachmentRemove: (id: string) => void
+  onSummaryFileAttachmentsAdd: (attachments: UserStoryFileAttachment[]) => void
   onSummaryOptimize?: (summary: string) => Promise<string>
   onFileLinkClick?: (path: string) => void
   status: BacklogColumnId
   summary: string
   summaryCodeSelectionAttachments: PendingCodeSelectionAttachment[]
+  summaryFileAttachments: PendingFileAttachment[]
   summaryRef: React.RefObject<HTMLDivElement | null>
   userStory?: UserStory
 }) {
@@ -86,10 +103,13 @@ export function UserStoryContent({
     <>
       <MarkdownEditor
         codeSelectionAttachments={summaryCodeSelectionAttachments}
+        fileAttachments={summaryFileAttachments}
         mentionDirectory={mentionDirectory}
         ref={summaryRef}
         markdown={summary}
         onCodeSelectionAttachmentRemove={onSummaryCodeSelectionAttachmentRemove}
+        onFileAttachmentRemove={onSummaryFileAttachmentRemove}
+        onFileAttachmentsAdd={onSummaryFileAttachmentsAdd}
         onFileLinkClick={onFileLinkClick}
         onMarkdownChange={onSummaryChange}
         onOptimize={onSummaryOptimize}
@@ -103,12 +123,15 @@ export function UserStoryContent({
       />
       <CommentsSection
         codeSelectionAttachments={commentCodeSelectionAttachments}
+        fileAttachments={commentFileAttachments}
         comment={comment}
         editorKey={commentEditorKey}
         commentRef={commentRef}
         mentionDirectory={mentionDirectory}
         onCommentChange={onCommentChange}
         onCodeSelectionAttachmentRemove={onCommentCodeSelectionAttachmentRemove}
+        onFileAttachmentRemove={onCommentFileAttachmentRemove}
+        onFileAttachmentsAdd={onCommentFileAttachmentsAdd}
         onCommentSubmit={onCommentSubmit}
         onFileLinkClick={onFileLinkClick}
         status={status}
@@ -206,6 +229,10 @@ function RunCommentItem({
           </p>
         </div>
         <MarkdownEditor
+          codeSelectionAttachments={comment.codeSelectionAttachments ?? []}
+          fileAttachments={pendingFileAttachments(
+            comment.fileAttachments ?? []
+          )}
           markdown={comment.body}
           readOnly
           onFileLinkClick={onFileLinkClick}
@@ -515,22 +542,28 @@ function numberValue(value: unknown) {
 
 function CommentsSection({
   codeSelectionAttachments,
+  fileAttachments,
   comment,
   editorKey,
   commentRef,
   mentionDirectory,
   onCodeSelectionAttachmentRemove,
+  onFileAttachmentRemove,
+  onFileAttachmentsAdd,
   onCommentChange,
   onCommentSubmit,
   onFileLinkClick,
   status,
 }: {
   codeSelectionAttachments: PendingCodeSelectionAttachment[]
+  fileAttachments: PendingFileAttachment[]
   comment: string
   editorKey: number
   commentRef: React.RefObject<HTMLDivElement | null>
   mentionDirectory?: string
   onCodeSelectionAttachmentRemove: (id: string) => void
+  onFileAttachmentRemove: (id: string) => void
+  onFileAttachmentsAdd: (attachments: UserStoryFileAttachment[]) => void
   onCommentChange: (comment: string) => void
   onCommentSubmit: () => void
   onFileLinkClick?: (path: string) => void
@@ -538,6 +571,9 @@ function CommentsSection({
 }) {
   const disabled = status === "done"
   const commentLabel = commentButtonLabel(status)
+  const hasCommentBody = Boolean(
+    comment.trim() || codeSelectionAttachments.length || fileAttachments.length
+  )
 
   return (
     <section className="grid gap-3">
@@ -550,10 +586,13 @@ function CommentsSection({
       <MarkdownEditor
         key={editorKey}
         codeSelectionAttachments={codeSelectionAttachments}
+        fileAttachments={fileAttachments}
         mentionDirectory={mentionDirectory}
         ref={commentRef}
         markdown={comment}
         onCodeSelectionAttachmentRemove={onCodeSelectionAttachmentRemove}
+        onFileAttachmentRemove={onFileAttachmentRemove}
+        onFileAttachmentsAdd={onFileAttachmentsAdd}
         onMarkdownChange={onCommentChange}
         onFileLinkClick={onFileLinkClick}
         readOnly={disabled}
@@ -565,7 +604,7 @@ function CommentsSection({
       <div className="flex justify-end">
         <Button
           className="border-blue-500/40 bg-blue-500/10 text-blue-700 hover:bg-blue-500/20 dark:text-blue-300"
-          disabled={disabled || !comment.trim()}
+          disabled={disabled || !hasCommentBody}
           variant="outline"
           onClick={onCommentSubmit}
         >

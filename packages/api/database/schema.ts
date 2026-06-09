@@ -127,7 +127,7 @@ export class ProviderCredentialSchema extends BaseModel {
 }
 
 export class UserStorySchema extends BaseModel {
-  static $columns = ['agentActivities', 'agentFinalResponse', 'agentLastError', 'agentLastEvent', 'agentModelId', 'agentProviderId', 'agentSessionSummary', 'agentStatus', 'agentUsage', 'branch', 'clineSessionId', 'createdAt', 'discardedReason', 'id', 'mergeCommit', 'mergedAt', 'owner', 'previewUrl', 'priority', 'projectId', 'status', 'summary', 'title', 'updatedAt', 'worktree'] as const
+  static $columns = ['agentActivities', 'agentFinalResponse', 'agentLastError', 'agentLastEvent', 'agentModelId', 'agentProviderId', 'agentSessionSummary', 'agentStatus', 'agentUsage', 'branch', 'clineSessionId', 'codeSelectionAttachments', 'createdAt', 'discardedReason', 'fileAttachments', 'id', 'mergeCommit', 'mergedAt', 'owner', 'previewUrl', 'priority', 'projectId', 'status', 'summary', 'title', 'updatedAt', 'worktree'] as const
   $columns = UserStorySchema.$columns
   @column()
   declare agentActivities: any | null
@@ -151,10 +151,14 @@ export class UserStorySchema extends BaseModel {
   declare branch: string | null
   @column()
   declare clineSessionId: string | null
+  @column()
+  declare codeSelectionAttachments: any | null
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
   @column()
   declare discardedReason: string | null
+  @column()
+  declare fileAttachments: any | null
   @column({ isPrimary: true })
   declare id: number
   @column()
@@ -213,14 +217,18 @@ export class UserStoryAgentRunSchema extends BaseModel {
 }
 
 export class UserStoryCommentSchema extends BaseModel {
-  static $columns = ['author', 'body', 'createdAt', 'id', 'updatedAt', 'userStoryId'] as const
+  static $columns = ['author', 'body', 'codeSelectionAttachments', 'createdAt', 'fileAttachments', 'id', 'updatedAt', 'userStoryId'] as const
   $columns = UserStoryCommentSchema.$columns
   @column()
   declare author: string
   @column()
   declare body: string
+  @column()
+  declare codeSelectionAttachments: any | null
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
+  @column()
+  declare fileAttachments: any | null
   @column({ isPrimary: true })
   declare id: number
   @column.dateTime({ autoCreate: true, autoUpdate: true })

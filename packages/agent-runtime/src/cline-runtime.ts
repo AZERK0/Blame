@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto"
 import { execFile } from "node:child_process"
-import { access, appendFile, mkdir, rm } from "node:fs/promises"
+import { access, appendFile, mkdir, rm, writeFile } from "node:fs/promises"
 import { basename, dirname, join } from "node:path"
 import { promisify } from "node:util"
 
@@ -87,6 +87,7 @@ const maxMergeConflictResolutionAttempts = 3
 const runtimeArtifactPathspecs = [":!.blame", ":!.blame-preview", ":!.pnpm-store"]
 const productionLogger = createProductionLogger()
 const openAICompatibleProviderID = "openaiCompatible"
+const attachmentDirectoryName = ".blame/attachments"
 
 type ToolApprovalRequest = {
   toolName?: string
@@ -120,6 +121,24 @@ type InitializationCorrection = {
   previousResult: string
   validationError: string
 }
+
+type DevelopmentUserInput = {
+  prompt: string
+  userFiles: string[]
+  userImages: string[]
+}
+
+type DevelopmentAttachmentInput = Pick<DevelopmentUserInput, "userFiles" | "userImages">
+type DevelopmentPromptInput = Pick<
+  StartDevelopmentSessionInput,
+  | "codeSelectionAttachments"
+  | "feedback"
+  | "feedbackCodeSelectionAttachments"
+  | "feedbackFileAttachments"
+  | "fileAttachments"
+  | "summary"
+  | "title"
+>
 
 type RuntimeOptions = {
   openExternalUrl?(url: string): void
@@ -267,6 +286,8 @@ export class BlameAgentRuntime {
       const autoSendPrompt = input.autoSendPrompt !== false
       const startInput = {
         ...(autoSendPrompt ? { prompt: input.prompt } : {}),
+        ...(autoSendPrompt && input.userImages?.length ? { userImages: input.userImages } : {}),
+        ...(autoSendPrompt && input.userFiles?.length ? { userFiles: input.userFiles } : {}),
         config: {
           ...appendProductionConfig({
             sessionId,
@@ -373,13 +394,17 @@ export class BlameAgentRuntime {
 
   private async sendSession(input: SendSessionInput) {
     const cline = await this.core()
-    return this.sendPrompt(cline, input.sessionId, input.prompt)
+    return this.sendPrompt(cline, input.sessionId, input.prompt, {
+      userFiles: input.userFiles,
+      userImages: input.userImages,
+    })
   }
 
-  private sendDevelopmentSession(input: SendDevelopmentSessionInput) {
+  private async sendDevelopmentSession(input: SendDevelopmentSessionInput) {
+    const developmentInput = await developmentUserInput(input, this.attachmentDirectory(input.sessionId))
     return this.sendSession({
       sessionId: input.sessionId,
-      prompt: developmentStoryPrompt(input),
+      ...developmentInput,
     })
   }
 
@@ -879,6 +904,7 @@ export class BlameAgentRuntime {
   }
 
   private async startDevelopmentSession(input: StartDevelopmentSessionInput) {
+    const developmentInput = await developmentUserInput(input, newAttachmentDirectory(input.cwd))
     return this.startSession({
       apiConnection: input.apiConnection,
       providerId: input.providerId,
@@ -888,16 +914,34 @@ export class BlameAgentRuntime {
       autoSendPrompt: input.autoSendPrompt !== false,
       mode: "act",
       maxIterations: input.maxIterations ?? developmentMaxIterations(),
-      prompt: developmentStoryPrompt(input),
+      prompt: developmentInput.prompt,
+      userFiles: developmentInput.userFiles,
+      userImages: developmentInput.userImages,
       cwd: input.cwd,
       workspaceRoot: input.workspaceRoot,
       systemPrompt: await developmentSystemPrompt(input),
     })
   }
 
-  private sendPrompt(cline: ClineCore, sessionId: string, prompt: string) {
+  private attachmentDirectory(sessionId: string) {
+    const logFile = this.sessionLogFiles.get(sessionId)
+    if (!logFile) return newAttachmentDirectory(process.cwd())
+    return join(dirname(dirname(logFile)), "attachments", sessionId, randomUUID())
+  }
+
+  private sendPrompt(
+    cline: ClineCore,
+    sessionId: string,
+    prompt: string,
+    attachments: Pick<SendSessionInput, "userFiles" | "userImages"> = {}
+  ) {
     const startedAt = Date.now()
-    const result = cline.send({ sessionId, prompt }).then((result: unknown) => {
+    const result = cline.send({
+      sessionId,
+      prompt,
+      ...(attachments.userImages?.length ? { userImages: attachments.userImages } : {}),
+      ...(attachments.userFiles?.length ? { userFiles: attachments.userFiles } : {}),
+    }).then((result: unknown) => {
       void this.logSession(sessionId, "send resolved", sendResultLogPayload(result, Date.now() - startedAt))
       const failure = resultFailureMessage(result)
       if (failure) {
@@ -1018,14 +1062,54 @@ function initializationPrompt(scan: ProjectInitializationScan, correction?: Init
   return projectInitializationCorrectionPrompt(scan, correction)
 }
 
-function developmentStoryPrompt(input: Pick<StartDevelopmentSessionInput, "feedback" | "summary" | "title">) {
+async function developmentUserInput(
+  input: DevelopmentPromptInput,
+  attachmentDirectory: string
+) {
+  const attachments = await fileAttachmentInputs([
+    ...(input.fileAttachments ?? []),
+    ...(input.feedbackFileAttachments ?? []),
+  ], attachmentDirectory)
+  return {
+    prompt: developmentStoryPrompt(input, attachments),
+    userFiles: attachments.userFiles,
+    userImages: attachments.userImages,
+  }
+}
+
+function developmentStoryPrompt(
+  input: DevelopmentPromptInput,
+  attachments: DevelopmentAttachmentInput = { userFiles: [], userImages: [] }
+) {
   const prompt = [
     `Backlog item: ${input.title}`,
     "",
     input.summary,
   ]
+  const storyAttachments = codeSelectionAttachmentsMarkdown(input.codeSelectionAttachments)
+  if (storyAttachments) {
+    prompt.push("", "Attached code selections:", "", storyAttachments)
+  }
+  const storyFiles = fileAttachmentReferences(input.fileAttachments)
+  if (storyFiles) {
+    prompt.push("", "Attached files:", "", storyFiles)
+  }
   if (input.feedback?.trim()) {
     prompt.push("", "Review feedback:", "", input.feedback.trim())
+  }
+  const feedbackAttachments = codeSelectionAttachmentsMarkdown(input.feedbackCodeSelectionAttachments)
+  if (feedbackAttachments) {
+    prompt.push("", "Review feedback code selections:", "", feedbackAttachments)
+  }
+  const feedbackFiles = fileAttachmentReferences(input.feedbackFileAttachments)
+  if (feedbackFiles) {
+    prompt.push("", "Review feedback files:", "", feedbackFiles)
+  }
+  if (attachments.userImages.length) {
+    prompt.push("", `Images attached for model vision: ${attachments.userImages.length}`)
+  }
+  if (attachments.userFiles.length) {
+    prompt.push("", "Files attached for Cline context:", "", attachments.userFiles.join("\n"))
   }
   prompt.push(
     "",
@@ -1034,6 +1118,91 @@ function developmentStoryPrompt(input: Pick<StartDevelopmentSessionInput, "feedb
     "Only modify files when the request explicitly asks for implementation or when a concrete code change is necessary to satisfy it."
   )
   return prompt.join("\n")
+}
+
+function codeSelectionAttachmentsMarkdown(
+  attachments: StartDevelopmentSessionInput["codeSelectionAttachments"]
+) {
+  if (!attachments?.length) return ""
+  return attachments.map(codeSelectionAttachmentMarkdown).join("\n\n")
+}
+
+function codeSelectionAttachmentMarkdown(
+  attachment: NonNullable<StartDevelopmentSessionInput["codeSelectionAttachments"]>[number]
+) {
+  const fence = markdownFence(attachment.content)
+  return [
+    `### ${attachment.path} (${codeSelectionLineLabel(attachment)})`,
+    "",
+    fence,
+    attachment.content,
+    fence,
+  ].join("\n")
+}
+
+function codeSelectionLineLabel(
+  attachment: Pick<
+    NonNullable<StartDevelopmentSessionInput["codeSelectionAttachments"]>[number],
+    "endLine" | "startLine"
+  >
+) {
+  if (attachment.startLine === attachment.endLine) return `Line ${attachment.startLine}`
+  return `Lines ${attachment.startLine}-${attachment.endLine}`
+}
+
+function markdownFence(content: string) {
+  const longestFence = content
+    .match(/`{3,}/g)
+    ?.reduce((longest, fence) => Math.max(longest, fence.length), 2)
+  return "`".repeat((longestFence ?? 2) + 1)
+}
+
+function fileAttachmentReferences(
+  attachments: StartDevelopmentSessionInput["fileAttachments"]
+) {
+  if (!attachments?.length) return ""
+  return attachments.map(fileAttachmentReference).join("\n")
+}
+
+function fileAttachmentReference(
+  attachment: NonNullable<StartDevelopmentSessionInput["fileAttachments"]>[number]
+) {
+  return `- ${attachment.name} (${attachment.type || "application/octet-stream"}, ${attachment.size} bytes)`
+}
+
+async function fileAttachmentInputs(
+  attachments: NonNullable<StartDevelopmentSessionInput["fileAttachments"]>,
+  attachmentDirectory: string
+) {
+  const userImages: string[] = []
+  const userFiles: string[] = []
+  await Promise.all(attachments.map(async (attachment) => {
+    if (attachment.type.startsWith("image/")) {
+      userImages.push(`data:${attachment.type};base64,${attachment.content}`)
+      return
+    }
+    userFiles.push(await writeFileAttachment(attachment, attachmentDirectory))
+  }))
+  return { userFiles, userImages }
+}
+
+async function writeFileAttachment(
+  attachment: NonNullable<StartDevelopmentSessionInput["fileAttachments"]>[number],
+  attachmentDirectory: string
+) {
+  await mkdir(attachmentDirectory, { recursive: true })
+  const path = join(attachmentDirectory, attachmentFileName(attachment.name))
+  await writeFile(path, Buffer.from(attachment.content, "base64"))
+  return path
+}
+
+function attachmentFileName(name: string) {
+  const normalizedName = name.replace(/[^a-zA-Z0-9._-]/g, "_")
+  return `${randomUUID()}-${normalizedName || "attachment"}`
+}
+
+function newAttachmentDirectory(cwd: string) {
+  return join(cwd, attachmentDirectoryName, randomUUID())
 }
 
 async function developmentSystemPrompt(input: StartDevelopmentSessionInput) {

@@ -7,6 +7,8 @@ export default class UserStoryCommentTransformer extends BaseTransformer<UserSto
       'id',
       'userStoryId',
       'body',
+      'codeSelectionAttachments',
+      'fileAttachments',
       'author',
       'createdAt',
       'updatedAt',

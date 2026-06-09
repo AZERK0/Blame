@@ -96,10 +96,28 @@ export type StartSessionInput = {
   mode?: AgentMode
   maxIterations?: number
   prompt: string
+  userImages?: string[]
+  userFiles?: string[]
   cwd: string
   workspaceRoot: string
   systemPrompt?: string
   credentialLabel?: string
+}
+
+export type CodeSelectionAttachment = {
+  id?: string
+  content: string
+  endLine: number
+  path: string
+  startLine: number
+}
+
+export type FileAttachment = {
+  id?: string
+  content: string
+  name: string
+  size: number
+  type: string
 }
 
 export type StartDevelopmentSessionInput = {
@@ -111,7 +129,11 @@ export type StartDevelopmentSessionInput = {
   maxIterations?: number
   title: string
   summary: string
+  codeSelectionAttachments?: CodeSelectionAttachment[]
+  fileAttachments?: FileAttachment[]
   feedback?: string
+  feedbackCodeSelectionAttachments?: CodeSelectionAttachment[]
+  feedbackFileAttachments?: FileAttachment[]
   cwd: string
   workspaceRoot: string
   codePractices?: ProjectCodePracticePreference[]
@@ -138,13 +160,19 @@ export type ApproveAndMergeResult = {
 export type SendSessionInput = {
   sessionId: string
   prompt: string
+  userImages?: string[]
+  userFiles?: string[]
 }
 
 export type SendDevelopmentSessionInput = {
   sessionId: string
   title: string
   summary: string
+  codeSelectionAttachments?: CodeSelectionAttachment[]
+  fileAttachments?: FileAttachment[]
   feedback?: string
+  feedbackCodeSelectionAttachments?: CodeSelectionAttachment[]
+  feedbackFileAttachments?: FileAttachment[]
 }
 
 export type ProjectCodePracticeKey =
