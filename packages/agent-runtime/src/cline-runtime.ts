@@ -509,7 +509,7 @@ export class BlameAgentRuntime {
     await assertGitRepository(input.worktree)
     const targetBranch = await currentGitBranch(input.repositoryRoot)
     await validateMergeBranches(input, targetBranch)
-    const upstream = await gitUpstream(input.repositoryRoot)
+    const upstream = await optionalGitUpstream(input.repositoryRoot)
     const targetClean = await cleanGitStatus(input.repositoryRoot)
     const integration = targetClean
       ? input.repositoryRoot
@@ -520,7 +520,7 @@ export class BlameAgentRuntime {
     try {
       await git(integration, ["merge", "--ff-only", input.storyBranch])
       const mergeCommit = await git(integration, ["rev-parse", "HEAD"])
-      await git(integration, ["push", upstream.remote, `HEAD:${upstream.branch}`])
+      await pushIntegrationWorktree(integration, upstream, logFile)
       await appendLog(logFile, "approve merge completed", { mergeCommit, targetBranch })
       return { mergeCommit, targetBranch }
     } finally {
@@ -580,10 +580,11 @@ export class BlameAgentRuntime {
     return fallbackCommitMessage(input)
   }
 
-  private async mergeTargetIntoStory(input: ApproveAndMergeInput, targetBranch: string, upstream: GitUpstream) {
-    await git(input.worktree, ["fetch", upstream.remote, upstream.branch])
+  private async mergeTargetIntoStory(input: ApproveAndMergeInput, targetBranch: string, upstream?: GitUpstream) {
+    const mergeTarget = upstream ? `${upstream.remote}/${upstream.branch}` : targetBranch
+    if (upstream) await git(input.worktree, ["fetch", upstream.remote, upstream.branch])
     try {
-      await git(input.worktree, ["merge", `${upstream.remote}/${upstream.branch}`])
+      await git(input.worktree, ["merge", mergeTarget])
       return
     } catch (error) {
       if (!(await hasMergeConflicts(input.worktree))) throw error
@@ -1234,12 +1235,12 @@ async function validateMergeBranches(input: ApproveAndMergeInput, targetBranch: 
   }
 }
 
-async function gitUpstream(cwd: string) {
+async function optionalGitUpstream(cwd: string) {
   try {
     const upstream = await git(cwd, ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"])
     return parseUpstream(upstream)
   } catch {
-    throw new Error("Active project branch has no upstream configured.")
+    return undefined
   }
 }
 
@@ -1255,9 +1256,18 @@ async function integrationWorktree(cwd: string, targetBranch: string) {
   return directory
 }
 
-async function pullIntegrationWorktree(cwd: string, upstream: GitUpstream) {
+async function pullIntegrationWorktree(cwd: string, upstream?: GitUpstream) {
+  if (!upstream) return
   await git(cwd, ["fetch", upstream.remote, upstream.branch])
   await git(cwd, ["merge", "--ff-only", `${upstream.remote}/${upstream.branch}`])
+}
+
+async function pushIntegrationWorktree(cwd: string, upstream: GitUpstream | undefined, logFile: string) {
+  if (!upstream) {
+    await appendLog(logFile, "approve merge push skipped", { reason: "missing_upstream" })
+    return
+  }
+  await git(cwd, ["push", upstream.remote, `HEAD:${upstream.branch}`])
 }
 
 async function removeIntegrationWorktree(repositoryRoot: string, worktree: string) {
