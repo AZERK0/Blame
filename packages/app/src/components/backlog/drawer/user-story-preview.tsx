@@ -859,10 +859,10 @@ function ServiceLogTabs({
 }) {
   return (
     <div
-      className="flex h-10 w-full flex-none items-end overflow-hidden pr-4 pt-1"
+      className="flex h-10 w-full flex-none items-end overflow-hidden pr-52 pt-1"
       role="tablist"
     >
-      <div className="flex w-fit max-w-full [scrollbar-width:none] items-end gap-1 overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:hidden">
+      <div className="flex w-full [scrollbar-width:none] items-end gap-1 overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:hidden">
         {services.map((service, index) => {
           const isSelected = selectedService === service
           const isFirst = index === 0
@@ -892,8 +892,7 @@ function ServiceLogTabs({
                   "z-10 -mb-px bg-[var(--tab-bg)] text-foreground",
                   "[--corner-bg:var(--tab-bg)]",
                 ],
-                isSelected && isFirst && "before:hidden",
-                isSelected && isLast && "after:hidden"
+                isSelected && isFirst && "before:hidden"
               )}
               type="button"
               onClick={() => onSelectService(service)}
