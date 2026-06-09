@@ -41,11 +41,14 @@ import { Button } from "@/components/ui/button"
 export function UserStoryContent({
   commentCodeSelectionAttachments,
   comment,
+  commentEditorKey,
   commentRef,
   mode,
   onCommentChange,
+  onCommentCodeSelectionAttachmentRemove,
   onCommentSubmit,
   onSummaryChange,
+  onSummaryCodeSelectionAttachmentRemove,
   onSummaryOptimize,
   onFileLinkClick,
   status,
@@ -56,11 +59,14 @@ export function UserStoryContent({
 }: {
   commentCodeSelectionAttachments: PendingCodeSelectionAttachment[]
   comment: string
+  commentEditorKey: number
   commentRef: React.RefObject<HTMLDivElement | null>
   mode: UserStoryDrawerMode
   onCommentChange: (comment: string) => void
+  onCommentCodeSelectionAttachmentRemove: (id: string) => void
   onCommentSubmit: () => void
   onSummaryChange?: (summary: string) => void
+  onSummaryCodeSelectionAttachmentRemove: (id: string) => void
   onSummaryOptimize?: (summary: string) => Promise<string>
   onFileLinkClick?: (path: string) => void
   status: BacklogColumnId
@@ -83,6 +89,7 @@ export function UserStoryContent({
         mentionDirectory={mentionDirectory}
         ref={summaryRef}
         markdown={summary}
+        onCodeSelectionAttachmentRemove={onSummaryCodeSelectionAttachmentRemove}
         onFileLinkClick={onFileLinkClick}
         onMarkdownChange={onSummaryChange}
         onOptimize={onSummaryOptimize}
@@ -97,9 +104,11 @@ export function UserStoryContent({
       <CommentsSection
         codeSelectionAttachments={commentCodeSelectionAttachments}
         comment={comment}
+        editorKey={commentEditorKey}
         commentRef={commentRef}
         mentionDirectory={mentionDirectory}
         onCommentChange={onCommentChange}
+        onCodeSelectionAttachmentRemove={onCommentCodeSelectionAttachmentRemove}
         onCommentSubmit={onCommentSubmit}
         onFileLinkClick={onFileLinkClick}
         status={status}
@@ -507,8 +516,10 @@ function numberValue(value: unknown) {
 function CommentsSection({
   codeSelectionAttachments,
   comment,
+  editorKey,
   commentRef,
   mentionDirectory,
+  onCodeSelectionAttachmentRemove,
   onCommentChange,
   onCommentSubmit,
   onFileLinkClick,
@@ -516,8 +527,10 @@ function CommentsSection({
 }: {
   codeSelectionAttachments: PendingCodeSelectionAttachment[]
   comment: string
+  editorKey: number
   commentRef: React.RefObject<HTMLDivElement | null>
   mentionDirectory?: string
+  onCodeSelectionAttachmentRemove: (id: string) => void
   onCommentChange: (comment: string) => void
   onCommentSubmit: () => void
   onFileLinkClick?: (path: string) => void
@@ -535,11 +548,12 @@ function CommentsSection({
         Add a comment
       </div>
       <MarkdownEditor
+        key={editorKey}
         codeSelectionAttachments={codeSelectionAttachments}
-        attachmentsEnabled={false}
         mentionDirectory={mentionDirectory}
         ref={commentRef}
         markdown={comment}
+        onCodeSelectionAttachmentRemove={onCodeSelectionAttachmentRemove}
         onMarkdownChange={onCommentChange}
         onFileLinkClick={onFileLinkClick}
         readOnly={disabled}

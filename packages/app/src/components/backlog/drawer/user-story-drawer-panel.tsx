@@ -114,6 +114,7 @@ export function UserStoryDrawerPanel({
     React.useState<PendingCodeSelectionAttachment[]>([])
   const [commentCodeSelectionAttachments, setCommentCodeSelectionAttachments] =
     React.useState<PendingCodeSelectionAttachment[]>([])
+  const [commentEditorKey, setCommentEditorKey] = React.useState(0)
   const [developmentFileTarget, setDevelopmentFileTarget] = React.useState<{
     id: string
     path: string
@@ -231,12 +232,23 @@ export function UserStoryDrawerPanel({
             <UserStoryContent
               commentCodeSelectionAttachments={commentCodeSelectionAttachments}
               comment={comment}
+              commentEditorKey={commentEditorKey}
               commentRef={commentRef}
               mode={mode}
               onCommentChange={setComment}
+              onCommentCodeSelectionAttachmentRemove={(id) =>
+                setCommentCodeSelectionAttachments((current) =>
+                  current.filter((attachment) => attachment.id !== id)
+                )
+              }
               onCommentSubmit={() => {
                 void submitComment()
               }}
+              onSummaryCodeSelectionAttachmentRemove={(id) =>
+                setSummaryCodeSelectionAttachments((current) =>
+                  current.filter((attachment) => attachment.id !== id)
+                )
+              }
               onSummaryChange={setSummary}
               onSummaryOptimize={
                 onOptimizeUserStory
@@ -354,6 +366,8 @@ export function UserStoryDrawerPanel({
     try {
       const createdComment = await onCreateUserStoryComment(userStory, { body })
       setComment("")
+      setCommentCodeSelectionAttachments([])
+      setCommentEditorKey((key) => key + 1)
       if (status === "in-review") {
         const nextStory = await onRequestChanges(
           userStory,
