@@ -291,6 +291,7 @@ export function UserStoryDrawerPanel({
           onAction={(action) => {
             void handleAction(action)
           }}
+          onDeleteUserStory={onDeleteUserStory}
           onOpenDrawer={onOpenDrawer}
           onReject={onReject}
           onStopAgent={onStopAgent}

@@ -15,6 +15,7 @@ export type DrawerAction =
   | "Approve & Merge"
   | "Close"
   | "Rework as Draft"
+  | "Delete Permanently"
 
 export type DrawerTarget = {
   userStory?: UserStory

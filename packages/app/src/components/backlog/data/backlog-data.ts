@@ -21,6 +21,7 @@ export type BacklogAction =
   | "Reject"
   | "Approve & Merge"
   | "Rework"
+  | "Delete Permanently"
 
 export type UserStoryPriority = "Low" | "Medium" | "High"
 export type UserStoryAgentStatus = "Running" | "Paused"
@@ -239,5 +240,5 @@ export function userStoryActions(story: UserStory): BacklogAction[] {
       "Approve & Merge",
     ]
   if (story.status === "done") return ["View Diff"]
-  return ["Rework"]
+  return ["Delete Permanently", "Rework"]
 }

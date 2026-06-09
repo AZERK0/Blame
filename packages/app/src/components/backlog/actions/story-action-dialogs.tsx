@@ -7,9 +7,22 @@ import {
   Trash2Icon,
   XIcon,
 } from "lucide-react"
+import { toast } from "sonner"
 
 import type { UserStory } from "@/components/backlog/data/backlog-data"
 import type { OpenDrawer } from "@/components/backlog/shared/backlog-types"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -25,6 +38,85 @@ import { cn } from "@/lib/utils"
 
 export type StopAgentChoice = "pause-feedback" | "backlog" | "discard-worktree"
 export type RejectChoice = "request-changes" | "discard"
+
+export function DeleteUserStoryDialog({
+  onDeleteUserStory,
+  story,
+  triggerClassName,
+  triggerIconOnly,
+  triggerSize = "sm",
+}: {
+  onDeleteUserStory: (story: UserStory) => Promise<void>
+  story: UserStory
+  triggerClassName?: string
+  triggerIconOnly?: boolean
+  triggerSize?: React.ComponentProps<typeof Button>["size"]
+}) {
+  const [open, setOpen] = React.useState(false)
+  const [deleting, setDeleting] = React.useState(false)
+
+  return (
+    <AlertDialog open={open} onOpenChange={setOpen}>
+      <AlertDialogTrigger asChild>
+        <Button
+          type="button"
+          size={triggerSize}
+          variant="destructive"
+          className={cn(
+            triggerIconOnly ? "justify-center" : "justify-start",
+            triggerClassName
+          )}
+          aria-label={triggerIconOnly ? "Delete Permanently" : undefined}
+        >
+          <Trash2Icon />
+          {!triggerIconOnly && "Delete Permanently"}
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogMedia>
+            <Trash2Icon />
+          </AlertDialogMedia>
+          <AlertDialogTitle>Delete User Story</AlertDialogTitle>
+          <AlertDialogDescription>
+            This will permanently delete this user story from the database.
+            This action cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            disabled={deleting}
+            variant="destructive"
+            onClick={(event) => {
+              event.preventDefault()
+              void deleteStory()
+            }}
+          >
+            Delete Permanently
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  )
+
+  async function deleteStory() {
+    if (deleting) return
+    setDeleting(true)
+    try {
+      await onDeleteUserStory(story)
+      setOpen(false)
+    } catch (error) {
+      toast.error("Unable to delete user story", {
+        description:
+          error instanceof Error ? error.message : "An unexpected error occurred.",
+        position: "bottom-right",
+      })
+    } finally {
+      setDeleting(false)
+    }
+  }
+}
 
 export function StopAgentDialog({
   onOpenDrawer,

@@ -27,6 +27,7 @@ import {
 
 export function UserStoryCard({
   onAction,
+  onDeleteUserStory,
   onOpenDrawer,
   onOpenWorktree,
   onReject,
@@ -40,6 +41,7 @@ export function UserStoryCard({
     story: UserStory,
     action: BacklogAction
   ) => Promise<UserStory | void>
+  onDeleteUserStory: (story: UserStory) => Promise<void>
   onOpenDrawer: OpenDrawer
   onOpenWorktree: (story: UserStory) => Promise<void>
   onReject: (story: UserStory, choice: RejectChoice) => Promise<UserStory>
@@ -102,6 +104,7 @@ export function UserStoryCard({
       <CardFooter>
         <StoryActions
           onAction={onAction}
+          onDeleteUserStory={onDeleteUserStory}
           onOpenDrawer={onOpenDrawer}
           onOpenWorktree={onOpenWorktree}
           onReject={onReject}

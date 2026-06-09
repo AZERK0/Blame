@@ -675,6 +675,7 @@ export function BacklogPage() {
               column={column}
               onAction={runStoryAction}
               onCreateUserStory={openCreateDrawer}
+              onDeleteUserStory={backlog.remove}
               onOpenDrawer={openDrawer}
               onOpenWorktree={openWorktree}
               onReject={rejectStory}

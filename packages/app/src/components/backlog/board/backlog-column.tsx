@@ -35,6 +35,7 @@ export function BacklogColumn({
   column,
   onAction,
   onCreateUserStory,
+  onDeleteUserStory,
   onOpenDrawer,
   onOpenWorktree,
   onReject,
@@ -51,6 +52,7 @@ export function BacklogColumn({
     action: BacklogAction
   ) => Promise<UserStory | void>
   onCreateUserStory: () => void
+  onDeleteUserStory: (story: UserStory) => Promise<void>
   onOpenDrawer: OpenDrawer
   onOpenWorktree: (story: UserStory) => Promise<void>
   onReject: (story: UserStory, choice: RejectChoice) => Promise<UserStory>
@@ -75,6 +77,7 @@ export function BacklogColumn({
               key={story.id}
               cleanup={storyCleanup?.(story)}
               onAction={onAction}
+              onDeleteUserStory={onDeleteUserStory}
               onOpenDrawer={onOpenDrawer}
               onOpenWorktree={onOpenWorktree}
               onReject={onReject}

@@ -6,6 +6,7 @@ import {
   RotateCcwIcon,
   SendIcon,
   Trash2Icon,
+  XIcon,
 } from "lucide-react"
 
 import type {
@@ -16,6 +17,7 @@ import {
   type RejectChoice,
   RejectDialog,
   type StopAgentChoice,
+  DeleteUserStoryDialog,
   StopAgentDialog,
 } from "@/components/backlog/actions/story-action-dialogs"
 import type {
@@ -36,7 +38,7 @@ type DrawerActionConfig = {
 
 const drawerActionConfig: Record<DrawerAction, DrawerActionConfig> = {
   Discard: {
-    icon: Trash2Icon,
+    icon: XIcon,
     variant: "destructive",
     iconOnly: true,
   },
@@ -83,11 +85,16 @@ const drawerActionConfig: Record<DrawerAction, DrawerActionConfig> = {
     variant: "default",
     tone: "primary",
   },
+  "Delete Permanently": {
+    icon: Trash2Icon,
+    variant: "destructive",
+  },
 }
 
 export function DrawerActions({
   mode,
   onAction,
+  onDeleteUserStory,
   onOpenDrawer,
   onReject,
   onStopAgent,
@@ -96,6 +103,7 @@ export function DrawerActions({
 }: {
   mode: UserStoryDrawerMode
   onAction: (action: DrawerAction) => void
+  onDeleteUserStory: (story: UserStory) => Promise<void>
   onOpenDrawer: OpenDrawer
   onReject: (story: UserStory, choice: RejectChoice) => Promise<UserStory>
   onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
@@ -120,6 +128,13 @@ export function DrawerActions({
               story={story}
               triggerClassName="w-auto"
               triggerSize="default"
+            />
+          ) : action === "Delete Permanently" && story ? (
+            <DeleteUserStoryDialog
+              onDeleteUserStory={onDeleteUserStory}
+              story={story}
+              triggerIconOnly
+              triggerSize="icon"
             />
           ) : (
             <DrawerActionButton

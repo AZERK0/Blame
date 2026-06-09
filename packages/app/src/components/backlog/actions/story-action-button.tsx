@@ -6,7 +6,6 @@ import {
   FileTextIcon,
   FolderOpenIcon,
   GitMergeIcon,
-  ListRestartIcon,
   MessageSquareReplyIcon,
   PlayIcon,
   RotateCcwIcon,
@@ -48,7 +47,7 @@ const actionConfig: Record<BacklogAction, ActionConfig> = {
     compact: true,
   },
   Discard: {
-    icon: Trash2Icon,
+    icon: XIcon,
     variant: "destructive",
     compact: true,
     iconOnly: true,
@@ -102,9 +101,14 @@ const actionConfig: Record<BacklogAction, ActionConfig> = {
     tone: "primary",
   },
   Rework: {
-    icon: ListRestartIcon,
+    icon: RotateCcwIcon,
     variant: "default",
     tone: "primary",
+    compact: true,
+  },
+  "Delete Permanently": {
+    icon: Trash2Icon,
+    variant: "destructive",
     compact: true,
   },
 }

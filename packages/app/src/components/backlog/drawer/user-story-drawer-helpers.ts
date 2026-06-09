@@ -37,7 +37,7 @@ export function drawerActions(
   if (status === "in-review")
     return ["Request Changes", "Reject", "Approve & Merge"]
   if (status === "done") return ["Close"]
-  return ["Rework as Draft"]
+  return ["Delete Permanently", "Rework as Draft"]
 }
 
 export function hasDevelopmentTab(status: BacklogColumnId) {

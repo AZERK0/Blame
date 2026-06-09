@@ -10,6 +10,7 @@ import {
 import {
   type RejectChoice,
   type StopAgentChoice,
+  DeleteUserStoryDialog,
   RejectDialog,
   StopAgentDialog,
 } from "@/components/backlog/actions/story-action-dialogs"
@@ -19,6 +20,7 @@ export function StoryActions({
   onAction,
   onOpenDrawer,
   onOpenWorktree,
+  onDeleteUserStory,
   onReject,
   onStopAgent,
   onUnpauseAgent,
@@ -27,6 +29,7 @@ export function StoryActions({
   onAction: StoryActionHandler
   onOpenDrawer: OpenDrawer
   onOpenWorktree: (story: UserStory) => Promise<void>
+  onDeleteUserStory: (story: UserStory) => Promise<void>
   onReject: (story: UserStory, choice: RejectChoice) => Promise<UserStory>
   onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
   onUnpauseAgent: (story: UserStory) => Promise<UserStory>
@@ -60,10 +63,11 @@ export function StoryActions({
   return (
     <div className="flex w-full justify-end gap-2">
       {userStoryActions(story).map((action) => (
-        <StoryAction
+        <UserStoryAction
           key={action}
           action={action}
           onAction={onAction}
+          onDeleteUserStory={onDeleteUserStory}
           onOpenDrawer={onOpenDrawer}
           onOpenWorktree={onOpenWorktree}
           onStopAgent={onStopAgent}
@@ -72,6 +76,49 @@ export function StoryActions({
         />
       ))}
     </div>
+  )
+}
+
+function UserStoryAction({
+  action,
+  onAction,
+  onDeleteUserStory,
+  onOpenDrawer,
+  onOpenWorktree,
+  onStopAgent,
+  onUnpauseAgent,
+  story,
+}: {
+  action: ReturnType<typeof userStoryActions>[number]
+  onAction: StoryActionHandler
+  onDeleteUserStory: (story: UserStory) => Promise<void>
+  onOpenDrawer: OpenDrawer
+  onOpenWorktree: (story: UserStory) => Promise<void>
+  onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
+  onUnpauseAgent: (story: UserStory) => Promise<UserStory>
+  story: UserStory
+}) {
+  if (action === "Delete Permanently") {
+    return (
+      <DeleteUserStoryDialog
+        onDeleteUserStory={onDeleteUserStory}
+        story={story}
+        triggerIconOnly
+        triggerSize="icon-sm"
+      />
+    )
+  }
+
+  return (
+    <StoryAction
+      action={action}
+      onAction={onAction}
+      onOpenDrawer={onOpenDrawer}
+      onOpenWorktree={onOpenWorktree}
+      onStopAgent={onStopAgent}
+      onUnpauseAgent={onUnpauseAgent}
+      story={story}
+    />
   )
 }
 
