@@ -14,6 +14,7 @@ import type { UserStory } from "@/components/backlog/data/backlog-data"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { type PreviewBrowserClient, usePlatform } from "@/context/platform"
+import { cn } from "@/lib/utils"
 
 type PreviewState = "loading" | "loaded" | "error"
 type PreviewLoad = {
@@ -59,6 +60,7 @@ type NativePreviewPanelProps = {
   visible: boolean
 }
 type PreviewIslandProps = {
+  activeTab: string
   captureDisabled?: boolean
   hasPreview: boolean
   hasSetupLog: boolean
@@ -135,6 +137,8 @@ export function UserStoryPreview({
   const locationBlocked =
     previewLoad.key === previewKey && previewLoad.locationBlocked
   const hasSetupLog = Boolean(userStory?.worktree)
+  const services = useProjectServices(userStory?.worktree)
+  const [selectedLogService, setSelectedLogService] = React.useState("")
   const [tab, setTab] = React.useState(source ? "preview" : "setup-log")
   const autoSelectedPreviewSourceRef = React.useRef<string | undefined>(
     undefined
@@ -148,6 +152,16 @@ export function UserStoryPreview({
     nativePreviewState?.key === nativePreviewKey
       ? nativePreviewState
       : undefined
+
+  React.useEffect(() => {
+    if (services.length === 0) {
+      setSelectedLogService("")
+      return
+    }
+    setSelectedLogService((current) =>
+      services.includes(current) ? current : services[0]
+    )
+  }, [services])
   const hasNativePreview = Boolean(
     previewBrowser && source && !setupPreviewWaiting
   )
@@ -315,6 +329,7 @@ export function UserStoryPreview({
           className="relative h-full min-h-0 gap-0 bg-muted/20"
         >
           <PreviewIsland
+            activeTab={activeTab}
             captureDisabled={setupPreviewWaiting || !previewCapture}
             hasPreview={Boolean(source)}
             hasSetupLog={hasSetupLog}
@@ -363,7 +378,12 @@ export function UserStoryPreview({
               value="setup-log"
               className="h-full min-h-0 overflow-hidden"
             >
-              <SetupLogPanel worktree={userStory?.worktree} />
+              <SetupLogPanel
+                onSelectService={setSelectedLogService}
+                service={selectedLogService}
+                services={services}
+                worktree={userStory?.worktree}
+              />
             </TabsContent>
           )}
         </Tabs>
@@ -788,6 +808,7 @@ async function captureNativePreview(
 }
 
 function PreviewIsland({
+  activeTab,
   captureDisabled,
   hasPreview,
   hasSetupLog,
@@ -799,9 +820,11 @@ function PreviewIsland({
   previewLocation,
   source,
 }: PreviewIslandProps) {
+  const showingLogs = activeTab === "setup-log"
+
   return (
     <div className="pointer-events-none absolute inset-x-4 top-4 z-20 flex items-center gap-1.5">
-      {source && (
+      {!showingLogs && source ? (
         <PreviewAddress
           locationBlocked={locationBlocked}
           onNavigatePath={onNavigatePath}
@@ -809,8 +832,10 @@ function PreviewIsland({
           previewLocation={previewLocation}
           source={source}
         />
+      ) : (
+        <div className="min-w-2 flex-1" />
       )}
-      {source && (
+      {!showingLogs && source && (
         <PreviewActions
           captureDisabled={captureDisabled}
           onCapture={onCapture}
@@ -819,6 +844,50 @@ function PreviewIsland({
       )}
       <div className="min-w-2 flex-1" />
       <PreviewTabSelector hasPreview={hasPreview} hasSetupLog={hasSetupLog} />
+    </div>
+  )
+}
+
+function ServiceLogTabs({
+  selectedService,
+  services,
+  onSelectService,
+}: {
+  selectedService?: string
+  services: string[]
+  onSelectService: (service: string) => void
+}) {
+  return (
+    <div
+      className="flex h-10 w-full flex-none items-end overflow-hidden pt-1 px-4"
+      role="tablist"
+    >
+      <div className="flex w-fit max-w-full items-end gap-1 overflow-x-auto overflow-y-hidden">
+        {services.map((service) => (
+          <button
+            key={service}
+            aria-selected={selectedService === service}
+            role="tab"
+            className={cn(
+              "h-9 shrink-0 rounded-t-xl bg-transparent px-7 text-sm whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground",
+              selectedService === service &&
+                "-mb-px border border-b-zinc-950 bg-zinc-950 text-foreground"
+            )}
+            type="button"
+            border-b
+            border-border
+            bg-muted
+            onClick={() => onSelectService(service)}
+          >
+            {service}
+          </button>
+        ))}
+        {services.length === 0 && (
+          <span className="px-4 pb-2 text-sm text-muted-foreground">
+            Loading services
+          </span>
+        )}
+      </div>
     </div>
   )
 }
@@ -961,8 +1030,18 @@ function BlockedLocationBadge() {
   )
 }
 
-function SetupLogPanel({ worktree }: { worktree?: string | null }) {
-  const { content, error, loading } = useSetupLog(worktree)
+function SetupLogPanel({
+  onSelectService,
+  service,
+  services,
+  worktree,
+}: {
+  onSelectService: (service: string) => void
+  service: string
+  services: string[]
+  worktree?: string | null
+}) {
+  const { content, error, loading } = useProjectServiceLog(worktree, service)
   const logRef = React.useRef<HTMLPreElement>(null)
 
   React.useEffect(() => {
@@ -971,78 +1050,152 @@ function SetupLogPanel({ worktree }: { worktree?: string | null }) {
   }, [content])
 
   return (
-    <div className="grid h-full min-h-0 overflow-hidden bg-zinc-950 pt-[72px]">
-      <pre
-        ref={logRef}
-        className="min-h-0 overflow-auto p-4 font-mono text-xs whitespace-pre-wrap text-zinc-100"
-      >
-        {setupLogContent(content, error, loading)}
-      </pre>
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-muted/20 px-4 pt-4 pb-4">
+      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+        <ServiceLogTabs
+          selectedService={service}
+          services={services}
+          onSelectService={onSelectService}
+        />
+        <pre
+          ref={logRef}
+          className="min-h-0 flex-1 overflow-auto p-4 font-mono text-xs whitespace-pre-wrap bg-zinc-950 text-zinc-100 rounded-lg"
+        >
+          {serviceLogContent(content, error, loading, services.length)}
+        </pre>
+      </div>
     </div>
   )
 }
 
-function useSetupLog(worktree?: string | null) {
+function useProjectServices(worktree?: string | null) {
   const platform = usePlatform()
-  const [state, setState] = React.useState({
-    content: "",
-    loading: Boolean(worktree),
-    error: "",
-    worktree,
-  })
+  const [services, setServices] = React.useState<string[]>([])
 
   React.useEffect(() => {
-    if (!worktree || !platform.workspace) return
+    if (!worktree || !platform.workspace?.listProjectServices) {
+      setServices([])
+      return
+    }
     let cancelled = false
-    const readLog = () => {
+    const loadServices = () => {
       platform.workspace
-        ?.readFile({ root: worktree, path: ".blame/logs/setup.log" })
-        .then((content) => {
-          if (!cancelled)
-            setState({ content, error: "", loading: false, worktree })
+        ?.listProjectServices?.({ worktree })
+        .then((nextServices) => {
+          if (!cancelled) setServices(nextServices)
         })
-        .catch((error) => {
-          if (!cancelled) setState(logErrorState(error, worktree))
+        .catch(() => {
+          if (!cancelled) setServices([])
         })
     }
-    readLog()
-    const interval = window.setInterval(readLog, 1000)
+    loadServices()
+    const interval = window.setInterval(loadServices, 2000)
     return () => {
       cancelled = true
       window.clearInterval(interval)
     }
   }, [platform.workspace, worktree])
 
-  if (!worktree) return { content: "", error: "", loading: false, worktree }
-  if (!platform.workspace) {
-    return {
-      content: "",
-      error: "Desktop workspace bridge is unavailable.",
-      loading: false,
-      worktree,
-    }
-  }
-  if (state.worktree !== worktree) {
-    return { content: "", error: "", loading: true, worktree }
-  }
+  return services
+}
 
+function useProjectServiceLog(worktree?: string | null, service?: string) {
+  const platform = usePlatform()
+  const [state, setState] = React.useState({
+    content: "",
+    error: "",
+    loading: Boolean(worktree && service),
+    service,
+    worktree,
+  })
+
+  React.useEffect(() => {
+    if (!worktree || !service || !platform.workspace) return
+    if (
+      !platform.workspace.startProjectServiceLogs ||
+      !platform.workspace.stopProjectServiceLogs ||
+      !platform.workspace.onProjectServiceLog
+    ) {
+      setState({
+        content: "",
+        error: "Desktop workspace bridge is unavailable.",
+        loading: false,
+        service,
+        worktree,
+      })
+      return
+    }
+    let cancelled = false
+    let cleanup = () => {}
+    let activeStreamId = ""
+    setState({ content: "", error: "", loading: true, service, worktree })
+    void platform.workspace
+      .startProjectServiceLogs({ service, worktree })
+      .then(({ streamId }) => {
+        activeStreamId = streamId
+        if (cancelled) {
+          void platform.workspace?.stopProjectServiceLogs?.({ streamId })
+          return
+        }
+        setState((current) => ({ ...current, loading: false }))
+        cleanup = platform.workspace?.onProjectServiceLog?.(
+          streamId,
+          (event) => {
+            if (event.type === "exit") return
+            setState((current) => ({
+              ...current,
+              content: `${current.content}${event.data}`,
+              error: "",
+              loading: false,
+            }))
+          }
+        ) ?? (() => {})
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setState({
+            content: "",
+            error:
+              error instanceof Error
+                ? error.message
+                : "Unable to read service logs",
+            loading: false,
+            service,
+            worktree,
+          })
+        }
+      })
+    return () => {
+      cancelled = true
+      cleanup()
+      if (activeStreamId) {
+        void platform.workspace?.stopProjectServiceLogs?.({
+          streamId: activeStreamId,
+        })
+      }
+    }
+  }, [platform.workspace, service, worktree])
+
+  if (!worktree || !service) {
+    return { content: "", error: "", loading: false, service, worktree }
+  }
+  if (state.worktree !== worktree || state.service !== service) {
+    return { content: "", error: "", loading: true, service, worktree }
+  }
   return state
 }
 
-function logErrorState(error: unknown, worktree?: string | null) {
-  return {
-    content: "",
-    error: error instanceof Error ? error.message : "Unable to read setup logs",
-    loading: false,
-    worktree,
-  }
-}
-
-function setupLogContent(content: string, error: string, loading: boolean) {
+function serviceLogContent(
+  content: string,
+  error: string,
+  loading: boolean,
+  serviceCount: number
+) {
   if (content) return content
-  if (loading) return "Loading setup logs..."
+  if (loading) return "Loading service logs..."
   if (error) return error
-  return "No setup logs yet."
+  if (serviceCount === 0) return "No services found yet."
+  return "No service logs yet."
 }
 
 function activePreviewTab(

@@ -79,6 +79,21 @@ const api: BlameDesktopApi = {
       ipcRenderer.invoke("workspace:resolve-project-preview-url", input),
     ensureProjectPreviewUrl: (input) =>
       ipcRenderer.invoke("workspace:ensure-project-preview-url", input),
+    listProjectServices: (input) =>
+      ipcRenderer.invoke("workspace:list-project-services", input),
+    startProjectServiceLogs: (input) =>
+      ipcRenderer.invoke("workspace:start-project-service-logs", input),
+    stopProjectServiceLogs: (input) =>
+      ipcRenderer.invoke("workspace:stop-project-service-logs", input),
+    onProjectServiceLog: (streamId, callback) => {
+      const channel = `workspace:project-service-log:${streamId}`;
+      const handler = (
+        _event: unknown,
+        event: Parameters<typeof callback>[0],
+      ) => callback(event);
+      ipcRenderer.on(channel, handler);
+      return () => ipcRenderer.removeListener(channel, handler);
+    },
     onSetupEvent: (runId, callback) => {
       const channel = `workspace:setup:event:${runId}`;
       const handler = (

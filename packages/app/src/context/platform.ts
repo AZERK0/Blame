@@ -149,6 +149,12 @@ export type ProjectCreationEvent = {
   data: string
 }
 
+export type ProjectServiceLogEvent = {
+  streamId: string
+  type: "stdout" | "stderr" | "exit"
+  data: string
+}
+
 export type HostDependencyIssue = {
   action: string
   message: string
@@ -254,6 +260,16 @@ export type WorkspaceClient = {
   }): Promise<boolean>
   resolveProjectPreviewUrl(input: { worktree: string }): Promise<string | null>
   ensureProjectPreviewUrl(input: { worktree: string }): Promise<string | null>
+  listProjectServices?(input: { worktree: string }): Promise<string[]>
+  startProjectServiceLogs?(input: {
+    service: string
+    worktree: string
+  }): Promise<{ streamId: string }>
+  stopProjectServiceLogs?(input: { streamId: string }): Promise<boolean>
+  onProjectServiceLog?(
+    streamId: string,
+    callback: (event: ProjectServiceLogEvent) => void
+  ): () => void
   onSetupEvent(
     runId: string,
     callback: (event: ProjectSetupEvent) => void

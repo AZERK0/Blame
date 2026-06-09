@@ -103,6 +103,11 @@ type StopProjectSetupInput = {
   worktree: string;
 };
 
+type ProjectServiceLogsInput = {
+  service: string;
+  worktree: string;
+};
+
 type RemoveWorktreeInput = {
   repositoryRoot: string;
   worktree: string;
@@ -156,8 +161,18 @@ type ProjectLogStream = {
   stopped: boolean;
 };
 
+type ProjectServiceLogStream = {
+  hasOutput: boolean;
+  process?: ChildProcessWithoutNullStreams;
+  retry?: NodeJS.Timeout;
+  service: string;
+  stopped: boolean;
+  worktree: string;
+};
+
 const setupRuns = new Map<string, SetupRun>();
 const projectLogStreams = new Map<string, ProjectLogStream>();
+const projectServiceLogStreams = new Map<string, ProjectServiceLogStream>();
 const previewRecoveries = new Map<string, Promise<string | null>>();
 const removingWorktrees = new Set<string>();
 const removedWorktrees = new Set<string>();
@@ -228,6 +243,19 @@ export function registerWorkspaceIpcHandlers() {
     "workspace:ensure-project-preview-url",
     (_event, input: ResolveProjectPreviewUrlInput) =>
       ensureProjectPreviewUrl(input),
+  );
+  ipcMain.handle(
+    "workspace:list-project-services",
+    (_event, input: { worktree: string }) => listProjectServices(input.worktree),
+  );
+  ipcMain.handle(
+    "workspace:start-project-service-logs",
+    (_event, input: ProjectServiceLogsInput) => startProjectServiceLogs(input),
+  );
+  ipcMain.handle(
+    "workspace:stop-project-service-logs",
+    (_event, input: { streamId: string }) =>
+      stopProjectServiceLogs(input.streamId),
   );
 }
 
@@ -686,6 +714,7 @@ export async function shutdownWorkspaceProcesses() {
   const activeProcesses = Array.from(workspaceProcesses);
   setupRuns.clear();
   projectLogStreams.clear();
+  projectServiceLogStreams.clear();
   workspaceProcesses.clear();
   await Promise.all(activeProcesses.map(stopChildProcess));
   await cleanupAbandonedBlamePreviews();
@@ -711,6 +740,107 @@ async function stopSetupRunsForWorktree(worktree: string) {
       await stopChildProcess(run.process);
     }),
   );
+}
+
+async function listProjectServices(worktreeInput: string) {
+  const worktree = resolve(worktreeInput);
+  const { stdout } = await execFileAsync(
+    "docker",
+    [...dockerComposeArgs(worktree), "config", "--services"],
+    { cwd: worktree, env: setupEnvironment(worktree) },
+  );
+  return stdout
+    .split("\n")
+    .map((service) => service.trim())
+    .filter(Boolean)
+    .sort(serviceSort);
+}
+
+async function startProjectServiceLogs(input: ProjectServiceLogsInput) {
+  const worktree = resolve(input.worktree);
+  const streamId = randomUUID();
+  const stream = {
+    hasOutput: false,
+    service: input.service,
+    stopped: false,
+    worktree,
+  };
+  projectServiceLogStreams.set(streamId, stream);
+  setTimeout(() => {
+    startProjectServiceLogProcess(streamId, stream);
+  }, 0);
+  return { streamId };
+}
+
+function startProjectServiceLogProcess(
+  streamId: string,
+  stream: ProjectServiceLogStream,
+) {
+  if (stream.stopped || projectServiceLogStreams.get(streamId) !== stream)
+    return;
+  const child = spawn(
+    "docker",
+    [
+      ...dockerComposeArgs(stream.worktree),
+      "logs",
+      "--tail",
+      "120",
+      "--follow",
+      stream.service,
+    ],
+    {
+      cwd: stream.worktree,
+      env: setupEnvironment(stream.worktree),
+    },
+  );
+  stream.process = child;
+  trackWorkspaceProcess(child);
+  child.stdout.on("data", (data: Buffer) => {
+    stream.hasOutput = true;
+    emitProjectServiceLog(streamId, "stdout", data.toString());
+  });
+  child.stderr.on("data", (data: Buffer) => {
+    stream.hasOutput = true;
+    emitProjectServiceLog(streamId, "stderr", data.toString());
+  });
+  child.once("error", (error) => {
+    emitProjectServiceLog(streamId, "stderr", errorMessage(error));
+  });
+  child.once("exit", (code) => {
+    if (projectServiceLogStreams.get(streamId) !== stream) return;
+    stream.process = undefined;
+    if (stream.stopped || stream.hasOutput) {
+      projectServiceLogStreams.delete(streamId);
+      emitProjectServiceLog(streamId, "exit", String(code ?? ""));
+      return;
+    }
+    stream.retry = setTimeout(() => {
+      startProjectServiceLogProcess(streamId, stream);
+    }, 1_000);
+  });
+}
+
+async function stopProjectServiceLogs(streamId: string) {
+  const stream = projectServiceLogStreams.get(streamId);
+  if (!stream) return false;
+  stream.stopped = true;
+  if (stream.retry) clearTimeout(stream.retry);
+  projectServiceLogStreams.delete(streamId);
+  if (stream.process) await stopChildProcess(stream.process);
+  return true;
+}
+
+function serviceSort(left: string, right: string) {
+  return servicePriority(left) - servicePriority(right) || left.localeCompare(right);
+}
+
+function servicePriority(service: string) {
+  if (/front|web|app/i.test(service)) return 0;
+  if (/back|api|server/i.test(service)) return 1;
+  if (/migrat/i.test(service)) return 2;
+  if (/db|postgres|mysql|mongo|redis/i.test(service)) return 3;
+  if (/install|deps|depend|init|volume/i.test(service)) return 4;
+  return 5;
 }
 
 async function startProjectLogStream(worktree: string) {
@@ -1380,6 +1510,20 @@ function emitSetupOutput(
 ) {
   void appendFile(setupLogPath(worktree), setupLogText(type, data), "utf8");
   emitSetupEvent(runId, type, data);
+}
+
+function emitProjectServiceLog(
+  streamId: string,
+  type: "stdout" | "stderr" | "exit",
+  data: string,
+) {
+  BrowserWindow.getAllWindows().forEach((window) => {
+    window.webContents.send(`workspace:project-service-log:${streamId}`, {
+      streamId,
+      type,
+      data,
+    });
+  });
 }
 
 function setupLogText(type: "stdout" | "stderr" | "exit", data: string) {
