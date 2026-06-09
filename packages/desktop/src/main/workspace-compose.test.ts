@@ -189,6 +189,48 @@ test("preserves list environment while adding npm cache volume", () => {
   assert.match(result, /"blame_npm_cache:\/npm\/cache"/);
 });
 
+test("adds shared Yarn cache for plain yarn install", () => {
+  const compose = [
+    "services:",
+    "  frontend:",
+    "    volumes:",
+    "      - .:/app",
+    "    command:",
+    "      - yarn install && yarn dev",
+  ].join("\n");
+
+  const result = dockerComposeWithDependencyVolumes(compose, "/tmp/project");
+
+  assert.match(result, /"blame_node_modules:\/app\/node_modules"/);
+  assert.match(result, /"blame_yarn_cache:\/yarn\/cache"/);
+  assert.match(result, /YARN_CACHE_FOLDER: "\/yarn\/cache"/);
+  assert.match(
+    result,
+    /blame_yarn_cache:\n    name: blame_yarn_cache\n    external: true/,
+  );
+});
+
+test("adds shared Bun cache for bun install", () => {
+  const compose = [
+    "services:",
+    "  frontend:",
+    "    volumes:",
+    "      - .:/app",
+    "    command:",
+    "      - bun install && bun run dev",
+  ].join("\n");
+
+  const result = dockerComposeWithDependencyVolumes(compose, "/tmp/project");
+
+  assert.match(result, /"blame_node_modules:\/app\/node_modules"/);
+  assert.match(result, /"blame_bun_cache:\/bun\/cache"/);
+  assert.match(result, /BUN_INSTALL_CACHE_DIR: "\/bun\/cache"/);
+  assert.match(
+    result,
+    /blame_bun_cache:\n    name: blame_bun_cache\n    external: true/,
+  );
+});
+
 test("detects portable Windows project root mounts for dependency volumes", () => {
   const compose = [
     "services:",

@@ -243,8 +243,13 @@ function missingPackageCacheMounts(lines: string[]) {
     ),
     ...missingCacheMount(
       service,
-      /\bcorepack yarn\s+install\b/,
+      /\b(?:corepack\s+)?yarn\s+install\b/,
       "blame_yarn_cache:/yarn/cache",
+    ),
+    ...missingCacheMount(
+      service,
+      /\bbun\s+install\b/,
+      "blame_bun_cache:/bun/cache",
     ),
   ];
 }
@@ -270,7 +275,7 @@ function mountTargetExists(lines: string[], target: string) {
 }
 
 function runsNodePackageManager(lines: string[]) {
-  return /\b(?:corepack pnpm|npm|corepack yarn|bun)\s+(?:install|ci)\b/.test(
+  return /\b(?:(?:corepack\s+)?(?:pnpm|yarn)|npm|bun)\s+(?:install|ci)\b/.test(
     lines.join("\n"),
   );
 }
@@ -331,6 +336,9 @@ function cacheEnvironment(mounts: string[]) {
       : {}),
     ...(mounts.includes("blame_yarn_cache:/yarn/cache")
       ? { YARN_CACHE_FOLDER: "/yarn/cache" }
+      : {}),
+    ...(mounts.includes("blame_bun_cache:/bun/cache")
+      ? { BUN_INSTALL_CACHE_DIR: "/bun/cache" }
       : {}),
   };
 }
@@ -511,6 +519,7 @@ function globalCacheVolumeName(name: string) {
   if (normalized.includes("pnpm_cache")) return "blame_pnpm_cache";
   if (normalized.includes("npm_cache")) return "blame_npm_cache";
   if (normalized.includes("yarn_cache")) return "blame_yarn_cache";
+  if (normalized.includes("bun_cache")) return "blame_bun_cache";
   if (normalized.includes("package_store")) return "blame_package_store";
   return "";
 }

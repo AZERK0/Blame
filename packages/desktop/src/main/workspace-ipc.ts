@@ -65,6 +65,7 @@ const composePullRetryDelaysMs = [
 ];
 const composeUpRetryDelaysMs = [2_000, 5_000, 10_000, 15_000];
 const globalPreviewVolumes = [
+  "blame_bun_cache",
   "blame_corepack_cache",
   "blame_npm_cache",
   "blame_package_store",
