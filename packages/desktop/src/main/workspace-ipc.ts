@@ -45,6 +45,7 @@ import {
 import {
   cleanupAbandonedBlamePreviews,
   dockerAddressPoolExhausted,
+  removeBlamePreviewProjectResources,
 } from "./workspace-docker-cleanup";
 import { syncProjectEnvFiles } from "./workspace-env";
 
@@ -603,6 +604,10 @@ async function removeWorktree(input: RemoveWorktreeInput) {
     await stopSetupRunsForWorktree(worktree);
     await stopProjectLogStream(worktree);
     previewRecoveries.delete(worktree);
+    await stopProjectSetup({ worktree });
+    await removeBlamePreviewProjectResources(
+      setupEnvironment(worktree).COMPOSE_PROJECT_NAME,
+    );
     if (registered) await removeGitWorktree(repositoryRoot, worktree);
     else await rm(worktree, { recursive: true, force: true });
     removedWorktrees.add(worktree);

@@ -6,6 +6,7 @@ import test from "node:test";
 import {
   cleanupAbandonedBlamePreviews,
   dockerAddressPoolExhausted,
+  removeBlamePreviewProjectResources,
 } from "./workspace-docker-cleanup.ts";
 
 test("detects Docker address pool exhaustion", () => {
@@ -48,6 +49,11 @@ test("removes stopped Blame preview containers and their unused networks", async
       return { stdout: "network-abandoned\n" };
     if (args[0] === "inspect" && args.includes("network-abandoned"))
       return { stdout: JSON.stringify(networks) };
+    if (args[0] === "volume" && args[1] === "ls")
+      return {
+        stdout:
+          "blame_abandoned_node_modules\nblame_abandoned_db_data\nblame_pnpm_store\n",
+      };
     return { stdout: "" };
   };
 
@@ -57,6 +63,15 @@ test("removes stopped Blame preview containers and their unused networks", async
   assert.ok(callIncludes(calls, ["rm", "stopped"]));
   assert.ok(callIncludes(calls, ["rm", "stopped-deps"]));
   assert.ok(callIncludes(calls, ["network", "rm", "network-abandoned"]));
+  assert.ok(
+    callIncludes(calls, [
+      "volume",
+      "rm",
+      "blame_abandoned_node_modules",
+      "blame_abandoned_db_data",
+    ]),
+  );
+  assert.equal(callIncludes(calls, ["volume", "rm", "blame_pnpm_store"]), false);
   assert.equal(callIncludes(calls, ["rm", "running"]), false);
   assert.equal(callIncludes(calls, ["rm", "external"]), false);
 });
@@ -111,6 +126,27 @@ test("uses compose down when the original compose file still exists", async () =
     false,
   );
   assert.equal(callIncludes(calls, ["rm", "stopped"]), false);
+});
+
+test("removes resources for an explicitly deleted worktree project", async () => {
+  const project = "blame_123456abcdef";
+  const calls: Array<{ file: string; args: string[] }> = [];
+  const exec = async (file: string, args: string[]) => {
+    calls.push({ file, args });
+    if (args[0] === "ps") return { stdout: "running\n" };
+    if (args[0] === "inspect" && args.includes("running"))
+      return { stdout: JSON.stringify([container("running", project, true, true)]) };
+    if (args[0] === "volume" && args[1] === "ls")
+      return { stdout: `${project}_node_modules\nblame_pnpm_store\n` };
+    return { stdout: "" };
+  };
+
+  const removed = await removeBlamePreviewProjectResources(project, { exec });
+
+  assert.equal(removed, true);
+  assert.ok(callIncludes(calls, ["rm", "--force", "running"]));
+  assert.ok(callIncludes(calls, ["volume", "rm", `${project}_node_modules`]));
+  assert.equal(callIncludes(calls, ["volume", "rm", "blame_pnpm_store"]), false);
 });
 
 function container(

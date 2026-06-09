@@ -56,6 +56,21 @@ export async function cleanupAbandonedBlamePreviews(input: CleanupInput = {}) {
   return projects.map((project) => project.name);
 }
 
+export async function removeBlamePreviewProjectResources(
+  projectName: string,
+  input: CleanupInput = {},
+) {
+  if (!generatedBlameProjectName(projectName)) return false;
+  const exec = input.exec ?? defaultExecFile;
+  const containers = (await dockerComposeContainers(exec)).filter(
+    (container) => composeProjectName(container) === projectName,
+  );
+  await removeProjectContainers(exec, containers);
+  await removeProjectNetworks(exec, projectName);
+  await removeProjectVolumes(exec, projectName);
+  return true;
+}
+
 async function abandonedBlameProjects(exec: ExecFileRunner) {
   const projects = new Map<string, ComposeProject>();
   const containers = await dockerComposeContainers(exec);
@@ -93,6 +108,7 @@ async function cleanupProject(exec: ExecFileRunner, project: ComposeProject) {
   if (await cleanupProjectWithCompose(exec, project)) return;
   await removeStoppedContainers(exec, project);
   await removeProjectNetworks(exec, project.name);
+  await removeProjectVolumes(exec, project.name);
 }
 
 async function cleanupProjectWithCompose(
@@ -159,6 +175,19 @@ async function removeStoppedContainers(
   if (ids.length === 0) return;
   try {
     await exec("docker", ["rm", ...ids]);
+  } catch {}
+}
+
+async function removeProjectContainers(
+  exec: ExecFileRunner,
+  containers: DockerContainer[],
+) {
+  const ids = containers
+    .map((container) => container.Id)
+    .filter((id): id is string => Boolean(id));
+  if (ids.length === 0) return;
+  try {
+    await exec("docker", ["rm", "--force", ...ids]);
   } catch {}
 }
 
