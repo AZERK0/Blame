@@ -1142,6 +1142,8 @@ function setupEnvironment(worktree: string) {
     CI: "true",
     BLAME_DOCKER_COMPOSE_FILE: projectComposePath(worktree),
     BLAME_INITIALIZATION_DIR: join(worktree, ".blame", "initialization"),
+    BLAME_PROJECT_ROOT: worktree,
+    BLAME_WORKTREE_ROOT: worktree,
     COMPOSE_PROJECT_NAME: `blame_${createHash("sha1")
       .update(worktree)
       .digest("hex")
