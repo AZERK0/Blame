@@ -889,7 +889,7 @@ function ServiceLogTabs({
                   "after:transition-shadow after:duration-150",
                 ],
                 isSelected && [
-                  "z-10 -mb-px border-zinc-800 border-b-[var(--tab-bg)] bg-[var(--tab-bg)] text-foreground",
+                  "z-10 -mb-px bg-[var(--tab-bg)] text-foreground",
                   "[--corner-bg:var(--tab-bg)]",
                 ],
                 isSelected && isFirst && "before:hidden",
@@ -1064,6 +1064,7 @@ function SetupLogPanel({
 }) {
   const { content, error, loading } = useProjectServiceLog(worktree, service)
   const logRef = React.useRef<HTMLPreElement>(null)
+  const firstServiceSelected = services[0] === service
 
   React.useEffect(() => {
     const element = logRef.current
@@ -1080,7 +1081,16 @@ function SetupLogPanel({
         />
         <pre
           ref={logRef}
-          className="min-h-0 flex-1 overflow-auto p-4 font-mono text-xs whitespace-pre-wrap bg-zinc-950 text-zinc-100 rounded-lg"
+          className={cn(
+            "min-h-0 flex-1 overflow-auto rounded-lg bg-zinc-950 p-4 font-mono text-xs whitespace-pre-wrap text-zinc-100",
+            "[scrollbar-color:color-mix(in_oklab,var(--muted-foreground)_35%,transparent)_transparent] [scrollbar-width:thin]",
+            "[&::-webkit-scrollbar]:h-2.5 [&::-webkit-scrollbar]:w-2.5",
+            "[&::-webkit-scrollbar-corner]:bg-background",
+            "[&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border",
+            "[&::-webkit-scrollbar-thumb:hover]:bg-muted-foreground/45",
+            "[&::-webkit-scrollbar-track]:bg-transparent",
+            firstServiceSelected && "rounded-tl-none"
+          )}
         >
           {serviceLogContent(content, error, loading, services.length)}
         </pre>
