@@ -859,29 +859,50 @@ function ServiceLogTabs({
 }) {
   return (
     <div
-      className="flex h-10 w-full flex-none items-end overflow-hidden pt-1 px-4"
+      className="flex h-10 w-full flex-none items-end overflow-hidden pr-4 pt-1"
       role="tablist"
     >
-      <div className="flex w-fit max-w-full items-end gap-1 overflow-x-auto overflow-y-hidden">
-        {services.map((service) => (
-          <button
-            key={service}
-            aria-selected={selectedService === service}
-            role="tab"
-            className={cn(
-              "h-9 shrink-0 rounded-t-xl bg-transparent px-7 text-sm whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground",
-              selectedService === service &&
-                "-mb-px border border-b-zinc-950 bg-zinc-950 text-foreground"
-            )}
-            type="button"
-            border-b
-            border-border
-            bg-muted
-            onClick={() => onSelectService(service)}
-          >
-            {service}
-          </button>
-        ))}
+      <div className="flex w-fit max-w-full [scrollbar-width:none] items-end gap-1 overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:hidden">
+        {services.map((service, index) => {
+          const isSelected = selectedService === service
+          const isFirst = index === 0
+          const isLast = index === services.length - 1
+
+          return (
+            <button
+              key={service}
+              aria-selected={isSelected}
+              role="tab"
+              className={cn(
+                [
+                  "relative h-9 shrink-0 rounded-t-xl border border-transparent bg-transparent px-7 text-sm whitespace-nowrap text-muted-foreground capitalize",
+                  "transition-[color,background-color,border-color] duration-150 hover:text-foreground",
+
+                  "[--corner-bg:transparent] [--tab-bg:#09090b]",
+
+                  "before:pointer-events-none before:absolute before:bottom-0 before:-left-4 before:h-4 before:w-4 before:content-['']",
+                  "before:rounded-br-xl before:shadow-[4px_4px_0_4px_var(--corner-bg)]",
+                  "before:transition-shadow before:duration-150",
+
+                  "after:pointer-events-none after:absolute after:-right-4 after:bottom-0 after:h-4 after:w-4 after:content-['']",
+                  "after:rounded-bl-xl after:shadow-[-4px_4px_0_4px_var(--corner-bg)]",
+                  "after:transition-shadow after:duration-150",
+                ],
+                isSelected && [
+                  "z-10 -mb-px border-zinc-800 border-b-[var(--tab-bg)] bg-[var(--tab-bg)] text-foreground",
+                  "[--corner-bg:var(--tab-bg)]",
+                ],
+                isSelected && isFirst && "before:hidden",
+                isSelected && isLast && "after:hidden"
+              )}
+              type="button"
+              onClick={() => onSelectService(service)}
+            >
+              {service}
+            </button>
+          )
+        })}
+
         {services.length === 0 && (
           <span className="px-4 pb-2 text-sm text-muted-foreground">
             Loading services
