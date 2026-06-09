@@ -8,6 +8,7 @@ export type BacklogColumnId =
 
 export type BacklogAction =
   | "Send to Dev Agent"
+  | "Discard"
   | "Dequeue"
   | "Open Worktree"
   | "Open Preview"
@@ -220,7 +221,7 @@ export const backlogColumns = [
 ] satisfies { id: BacklogColumnId; title: string; description: string }[]
 
 export function userStoryActions(story: UserStory): BacklogAction[] {
-  if (story.status === "backlog") return ["Send to Dev Agent"]
+  if (story.status === "backlog") return ["Discard", "Send to Dev Agent"]
   if (story.status === "ready") return ["Dequeue"]
   if (story.status === "in-progress")
     return story.agentStatus === "Paused"

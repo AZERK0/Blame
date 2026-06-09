@@ -56,6 +56,7 @@ export function UserStoryDrawerPanel({
   onApproveAndMerge,
   onCreateUserStory,
   onCreateUserStoryComment,
+  onDeleteUserStory,
   onOpenDrawer,
   onOptimizeUserStory,
   onRequestChanges,
@@ -79,6 +80,7 @@ export function UserStoryDrawerPanel({
     story: UserStory,
     input: { body: string }
   ) => Promise<UserStoryComment>
+  onDeleteUserStory: (story: UserStory) => Promise<void>
   onOpenDrawer: OpenDrawer
   onOptimizeUserStory?: (input: {
     summary: string
@@ -289,7 +291,6 @@ export function UserStoryDrawerPanel({
           onAction={(action) => {
             void handleAction(action)
           }}
-          onCancel={onCancel}
           onOpenDrawer={onOpenDrawer}
           onReject={onReject}
           onStopAgent={onStopAgent}
@@ -302,6 +303,7 @@ export function UserStoryDrawerPanel({
   async function handleAction(action: DrawerAction) {
     if (saving) return
     if (action === "Close") return onCancel()
+    if (action === "Discard") return discardUserStory()
     setSaving(true)
     try {
       if (mode === "create") {
@@ -321,6 +323,17 @@ export function UserStoryDrawerPanel({
         }
       }
       if (action !== "Save Changes" && action !== "Save as Draft") onCancel()
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function discardUserStory() {
+    if (!userStory) return onCancel()
+    setSaving(true)
+    try {
+      await onDeleteUserStory(userStory)
+      onCancel()
     } finally {
       setSaving(false)
     }

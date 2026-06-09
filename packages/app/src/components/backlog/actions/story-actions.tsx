@@ -58,7 +58,7 @@ export function StoryActions({
   }
 
   return (
-    <div className="flex w-full justify-end">
+    <div className="flex w-full justify-end gap-2">
       {userStoryActions(story).map((action) => (
         <StoryAction
           key={action}

@@ -4,7 +4,7 @@ export type UserStoryDrawerTab = "user-story" | "preview" | "development"
 export type UserStoryDevelopmentTab = "files" | "diff" | "terminal"
 export type UserStoryDrawerMode = "create" | "edit" | "view"
 export type DrawerAction =
-  | "Cancel"
+  | "Discard"
   | "Save as Draft"
   | "Send to Dev Agent"
   | "Save Changes"

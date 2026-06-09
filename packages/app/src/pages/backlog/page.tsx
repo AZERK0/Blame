@@ -627,6 +627,12 @@ export function BacklogPage() {
       if (action === "Send to Dev Agent") {
         return updateStory(story, { status: "ready" })
       }
+      if (action === "Discard") {
+        return updateStory(story, {
+          discardedReason: "Discarded from backlog",
+          status: "discarded",
+        })
+      }
       if (action === "Dequeue") return updateStory(story, { status: "backlog" })
       if (action === "Rework") {
         return updateStory(story, {
@@ -700,6 +706,7 @@ export function BacklogPage() {
         onCreateUserStoryComment={(story, input) =>
           backlog.createComment(story, input)
         }
+        onDeleteUserStory={(story) => backlog.remove(story)}
         onUpdateUserStory={async (story, input) => {
           return updateStory(story, input)
         }}

@@ -5,7 +5,7 @@ import {
   MessageSquareIcon,
   RotateCcwIcon,
   SendIcon,
-  XIcon,
+  Trash2Icon,
 } from "lucide-react"
 
 import type {
@@ -31,12 +31,14 @@ type DrawerActionConfig = {
   icon: React.ComponentType<{ className?: string }>
   variant: React.ComponentProps<typeof Button>["variant"]
   tone?: "primary" | "info"
+  iconOnly?: boolean
 }
 
 const drawerActionConfig: Record<DrawerAction, DrawerActionConfig> = {
-  Cancel: {
-    icon: XIcon,
+  Discard: {
+    icon: Trash2Icon,
     variant: "destructive",
+    iconOnly: true,
   },
   "Save as Draft": {
     icon: CheckIcon,
@@ -86,7 +88,6 @@ const drawerActionConfig: Record<DrawerAction, DrawerActionConfig> = {
 export function DrawerActions({
   mode,
   onAction,
-  onCancel,
   onOpenDrawer,
   onReject,
   onStopAgent,
@@ -95,7 +96,6 @@ export function DrawerActions({
 }: {
   mode: UserStoryDrawerMode
   onAction: (action: DrawerAction) => void
-  onCancel: () => void
   onOpenDrawer: OpenDrawer
   onReject: (story: UserStory, choice: RejectChoice) => Promise<UserStory>
   onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
@@ -124,7 +124,7 @@ export function DrawerActions({
           ) : (
             <DrawerActionButton
               action={action}
-              onClick={action === "Cancel" ? onCancel : () => onAction(action)}
+              onClick={() => onAction(action)}
             />
           )}
         </React.Fragment>
@@ -147,6 +147,7 @@ function DrawerActionButton({
     <Button
       type="button"
       variant={actionStyle.variant}
+      size={actionStyle.iconOnly ? "icon" : "default"}
       className={cn(
         actionStyle.tone === "primary" &&
           "bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500",
@@ -154,9 +155,10 @@ function DrawerActionButton({
           "border-blue-500/40 bg-blue-500/10 text-blue-700 hover:bg-blue-500/20 dark:text-blue-300"
       )}
       onClick={onClick}
+      aria-label={actionStyle.iconOnly ? action : undefined}
     >
       <Icon />
-      {action}
+      {!actionStyle.iconOnly && action}
     </Button>
   )
 }

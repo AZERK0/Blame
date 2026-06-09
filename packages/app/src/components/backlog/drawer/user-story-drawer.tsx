@@ -38,6 +38,7 @@ export type UserStoryDrawerProps = {
     story: UserStory,
     input: { body: string }
   ) => Promise<UserStoryComment>
+  onDeleteUserStory: (story: UserStory) => Promise<void>
   onApproveAndMerge: (story: UserStory) => Promise<UserStory>
   onOpenDrawer: OpenDrawer
   onOptimizeUserStory?: (input: {
@@ -68,6 +69,7 @@ export function UserStoryDrawer({
   focusComment,
   onCreateUserStory,
   onCreateUserStoryComment,
+  onDeleteUserStory,
   onApproveAndMerge,
   onOpenDrawer,
   onOptimizeUserStory,
@@ -104,6 +106,7 @@ export function UserStoryDrawer({
         onApproveAndMerge={onApproveAndMerge}
         onCreateUserStory={onCreateUserStory}
         onCreateUserStoryComment={onCreateUserStoryComment}
+        onDeleteUserStory={onDeleteUserStory}
         onOpenDrawer={onOpenDrawer}
         onOptimizeUserStory={onOptimizeUserStory}
         onRequestChanges={onRequestChanges}

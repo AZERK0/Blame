@@ -29,9 +29,9 @@ export function drawerActions(
   mode: UserStoryDrawerMode,
   status: BacklogColumnId
 ): DrawerAction[] {
-  if (mode === "create") return ["Cancel", "Save as Draft", "Send to Dev Agent"]
+  if (mode === "create") return ["Discard", "Save as Draft", "Send to Dev Agent"]
   if (status === "backlog")
-    return ["Cancel", "Save Changes", "Send to Dev Agent"]
+    return ["Discard", "Save Changes", "Send to Dev Agent"]
   if (status === "ready") return ["Dequeue"]
   if (status === "in-progress") return ["Stop Agent"]
   if (status === "in-review")

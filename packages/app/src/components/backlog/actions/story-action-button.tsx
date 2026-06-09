@@ -12,6 +12,7 @@ import {
   RotateCcwIcon,
   SendIcon,
   TerminalIcon,
+  Trash2Icon,
   XIcon,
 } from "lucide-react"
 
@@ -36,6 +37,7 @@ type ActionConfig = {
   variant: React.ComponentProps<typeof Button>["variant"]
   tone?: "primary" | "preview"
   compact?: boolean
+  iconOnly?: boolean
 }
 
 const actionConfig: Record<BacklogAction, ActionConfig> = {
@@ -44,6 +46,12 @@ const actionConfig: Record<BacklogAction, ActionConfig> = {
     variant: "default",
     tone: "primary",
     compact: true,
+  },
+  Discard: {
+    icon: Trash2Icon,
+    variant: "destructive",
+    compact: true,
+    iconOnly: true,
   },
   Dequeue: {
     icon: RotateCcwIcon,
@@ -180,10 +188,11 @@ export function StoryAction({
   return (
     <Button
       type="button"
-      size="sm"
+      size={actionStyle.iconOnly ? "icon-sm" : "sm"}
       variant={actionStyle.variant}
       className={cn(
         "justify-start",
+        actionStyle.iconOnly && "justify-center",
         !actionStyle.compact && "w-full",
         actionStyle.tone === "primary" &&
           "bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500",
@@ -198,9 +207,10 @@ export function StoryAction({
         }
         onOpenDrawer(drawerTargetForAction(story, action))
       }}
+      aria-label={actionStyle.iconOnly ? action : undefined}
     >
       <Icon />
-      {label ?? action}
+      {!actionStyle.iconOnly && (label ?? action)}
     </Button>
   )
 }
@@ -208,6 +218,7 @@ export function StoryAction({
 function directAction(action: BacklogAction) {
   return (
     action === "Send to Dev Agent" ||
+    action === "Discard" ||
     action === "Dequeue" ||
     action === "Approve & Merge" ||
     action === "Rework"
