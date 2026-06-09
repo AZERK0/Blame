@@ -32,6 +32,8 @@ const bodyParserConfig = defineConfig({
      */
     convertEmptyStringsToNull: true,
 
+    limit: '20mb',
+
     /**
      * Content types handled by the JSON parser.
      */
