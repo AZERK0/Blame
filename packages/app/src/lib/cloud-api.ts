@@ -111,6 +111,22 @@ export function createCloudApi(connection: ApiConnection) {
         { body: JSON.stringify(input), method: "POST" }
       ).then(cloudProjectInitializationSnapshot)
     },
+    repairProjectInitialization(
+      projectId: string,
+      input: {
+        clineSessionId?: string | null
+        setupScript: string
+        dockerCompose: string
+        reason: string
+      }
+    ) {
+      return request<unknown>(
+        connection,
+        baseUrl,
+        `/projects/${encodeURIComponent(projectId)}/initialization/repair`,
+        { body: JSON.stringify(input), method: "POST" }
+      ).then(cloudProjectInitializationSnapshot)
+    },
   }
 }
 

@@ -78,6 +78,12 @@ const routes = {
     tokens: [{"old":"/api/v1/projects/:projectId/initialization/fail","type":0,"val":"api","end":""},{"old":"/api/v1/projects/:projectId/initialization/fail","type":0,"val":"v1","end":""},{"old":"/api/v1/projects/:projectId/initialization/fail","type":0,"val":"projects","end":""},{"old":"/api/v1/projects/:projectId/initialization/fail","type":1,"val":"projectId","end":""},{"old":"/api/v1/projects/:projectId/initialization/fail","type":0,"val":"initialization","end":""},{"old":"/api/v1/projects/:projectId/initialization/fail","type":0,"val":"fail","end":""}],
     types: placeholder as Registry['projects.project_initializations.fail']['types'],
   },
+  'projects.project_initializations.repair': {
+    methods: ["POST"],
+    pattern: '/api/v1/projects/:projectId/initialization/repair',
+    tokens: [{"old":"/api/v1/projects/:projectId/initialization/repair","type":0,"val":"api","end":""},{"old":"/api/v1/projects/:projectId/initialization/repair","type":0,"val":"v1","end":""},{"old":"/api/v1/projects/:projectId/initialization/repair","type":0,"val":"projects","end":""},{"old":"/api/v1/projects/:projectId/initialization/repair","type":1,"val":"projectId","end":""},{"old":"/api/v1/projects/:projectId/initialization/repair","type":0,"val":"initialization","end":""},{"old":"/api/v1/projects/:projectId/initialization/repair","type":0,"val":"repair","end":""}],
+    types: placeholder as Registry['projects.project_initializations.repair']['types'],
+  },
   'providers.provider_credentials.catalog': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/providers/catalog',

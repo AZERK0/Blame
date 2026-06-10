@@ -160,7 +160,7 @@ export function parseProjectInitializationResult(
     throw new Error("Initialization result is missing setupScript");
   if (!dockerCompose)
     throw new Error("Initialization result is missing dockerCompose");
-  validateGeneratedArtifacts(setupScript, dockerCompose, scan);
+  validateProjectInitializationArtifacts(setupScript, dockerCompose, scan);
   return {
     setupScript,
     dockerCompose,
@@ -269,7 +269,7 @@ function parsePractice(values: unknown[], practice: ProjectCodePracticeKey) {
   return { practice, detected: value.detected, comment };
 }
 
-function validateGeneratedArtifacts(
+export function validateProjectInitializationArtifacts(
   script: string,
   compose: string,
   scan?: ProjectInitializationScan,

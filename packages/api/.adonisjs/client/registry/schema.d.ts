@@ -151,6 +151,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_initializations_controller').default['fail']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
+  'projects.project_initializations.repair': {
+    methods: ["POST"]
+    pattern: '/api/v1/projects/:projectId/initialization/repair'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/project_initialization').repairProjectInitializationValidator)>>
+      paramsTuple: [ParamValue]
+      params: { projectId: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/project_initialization').repairProjectInitializationValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_initializations_controller').default['repair']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_initializations_controller').default['repair']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
   'providers.provider_credentials.catalog': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/providers/catalog'

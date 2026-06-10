@@ -39,6 +39,10 @@ import {
 } from "./project-creation";
 import { setupShellCommand } from "./setup-shell";
 import {
+  collectProjectInitializationDiagnostics,
+  type CollectProjectInitializationDiagnosticsInput,
+} from "./project-initialization-diagnostics";
+import {
   dockerComposeForPreview,
   dockerComposeWithPortableWindowsPaths,
 } from "./workspace-compose";
@@ -237,6 +241,14 @@ export function registerWorkspaceIpcHandlers() {
   ipcMain.handle(
     "workspace:run-project-setup",
     (_event, input: RunProjectSetupInput) => runProjectSetup(input),
+  );
+  ipcMain.handle(
+    "workspace:collect-project-initialization-diagnostics",
+    (_event, input: CollectProjectInitializationDiagnosticsInput) =>
+      collectProjectInitializationDiagnostics(
+        input,
+        setupEnvironment(resolve(input.worktree)),
+      ),
   );
   ipcMain.handle(
     "workspace:check-host-dependencies",

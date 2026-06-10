@@ -16,6 +16,7 @@ export type ScannedRoutes = {
     'projects.project_initializations.start': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.complete': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.fail': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'projects.project_initializations.repair': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'providers.provider_credentials.catalog': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.index': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.store': { paramsTuple?: []; params?: {} }
@@ -65,6 +66,7 @@ export type ScannedRoutes = {
     'projects.project_initializations.start': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.complete': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.fail': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'projects.project_initializations.repair': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'providers.provider_credentials.store': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.store_o_auth': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.resolve': { paramsTuple?: []; params?: {} }

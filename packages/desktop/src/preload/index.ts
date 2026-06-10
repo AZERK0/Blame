@@ -76,6 +76,8 @@ const api: BlameDesktopApi = {
       ipcRenderer.invoke("workspace:check-host-dependencies", input),
     runProjectSetup: (input) =>
       ipcRenderer.invoke("workspace:run-project-setup", input),
+    collectProjectInitializationDiagnostics: (input) =>
+      ipcRenderer.invoke("workspace:collect-project-initialization-diagnostics", input),
     stopProjectSetup: (input) =>
       ipcRenderer.invoke("workspace:stop-project-setup", input),
     removeWorktree: (input) =>
@@ -184,6 +186,7 @@ const api: BlameDesktopApi = {
     },
     initializations: {
       run: (input) => ipcRenderer.invoke("agent:initializations:run", input),
+      repair: (input) => ipcRenderer.invoke("agent:initializations:repair", input),
     },
     newProjects: {
       generate: (input) => ipcRenderer.invoke("agent:new-projects:generate", input),

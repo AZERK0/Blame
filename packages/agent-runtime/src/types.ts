@@ -214,6 +214,41 @@ export type InitializeProjectResult = {
   practices: ProjectCodePracticeResult[]
 }
 
+export type ProjectInitializationRepairClassification =
+  | "repairable_initialization"
+  | "project_code_failure"
+  | "external_failure"
+  | "unknown"
+
+export type ProjectInitializationDiagnostics = {
+  setupLog: string
+  launchError: string
+  composeConfig: string
+  composePs: string
+  serviceLogs: Record<string, string>
+}
+
+export type RepairProjectInitializationInput = {
+  apiConnection: ApiConnection
+  providerId: string
+  modelId: string
+  reasoningEffort?: ReasoningEffort
+  cwd: string
+  workspaceRoot: string
+  credentialLabel?: string
+  setupScript: string
+  dockerCompose: string
+  diagnostics: ProjectInitializationDiagnostics
+}
+
+export type RepairProjectInitializationResult = {
+  sessionId: string
+  classification: ProjectInitializationRepairClassification
+  reason: string
+  setupScript?: string
+  dockerCompose?: string
+}
+
 export type NewProjectGenerationConfiguration = {
   platform: string
   frontend: string

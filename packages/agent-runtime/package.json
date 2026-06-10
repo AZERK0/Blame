@@ -12,7 +12,8 @@
   "scripts": {
     "build": "tsc && node scripts/copy-prompt.mjs",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "pnpm build && node --test dist/project-initialization-repair.test.js"
   },
   "dependencies": {
     "@cline/llms": "^0.0.42",

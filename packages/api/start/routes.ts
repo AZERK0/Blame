@@ -58,6 +58,10 @@ router
           'complete',
         ])
         router.post('/:projectId/initialization/fail', [ProjectInitializationsController, 'fail'])
+        router.post('/:projectId/initialization/repair', [
+          ProjectInitializationsController,
+          'repair',
+        ])
       })
       .prefix('projects')
       .as('projects')

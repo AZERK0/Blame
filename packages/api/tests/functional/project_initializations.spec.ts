@@ -11,6 +11,7 @@ type InitializationBody = {
       setupScript: string | null
       dockerCompose: string | null
       error: string | null
+      repairReason: string | null
     } | null
     practices: Array<{
       practice: string
@@ -89,6 +90,71 @@ test.group('project initializations', (group) => {
     const body = response.body() as InitializationBody
     assert.equal(body.data.initialization?.status, 'error')
     assert.equal(body.data.initialization?.error, 'Agent failed')
+  })
+
+  test('repairs initialization artifacts without changing practices', async ({
+    client,
+    assert,
+  }) => {
+    const user = await createUser()
+    const project = await createProject(user.id, 'Alpha')
+    await client
+      .post(`/api/v1/projects/${project.id}/initialization/complete`)
+      .loginAs(user)
+      .json({
+        setupScript: '#!/usr/bin/env bash\npnpm install',
+        dockerCompose: 'services:\n  web:\n    image: node',
+        practices: [
+          { practice: 'coding_style', detected: false, comment: 'No style config found.' },
+          { practice: 'unit_tests', detected: false, comment: 'No test runner found.' },
+          { practice: 'layered_architecture', detected: true, comment: 'Modules are separated.' },
+          { practice: 'commit_message_convention', detected: false, comment: 'Messages vary.' },
+        ],
+      })
+
+    const response = await client
+      .post(`/api/v1/projects/${project.id}/initialization/repair`)
+      .loginAs(user)
+      .json({
+        clineSessionId: 'repair-session',
+        setupScript: '#!/usr/bin/env bash\ncorepack pnpm install',
+        dockerCompose: 'services:\n  web:\n    image: node:22',
+        reason: 'The previous command forwarded invalid arguments.',
+      })
+
+    response.assertStatus(200)
+    const body = response.body() as InitializationBody
+    assert.equal(body.data.initialization?.status, 'done')
+    assert.equal(body.data.initialization?.clineSessionId, 'repair-session')
+    assert.equal(
+      body.data.initialization?.repairReason,
+      'The previous command forwarded invalid arguments.'
+    )
+    assert.equal(
+      body.data.initialization?.setupScript,
+      '#!/usr/bin/env bash\ncorepack pnpm install'
+    )
+    assert.lengthOf(body.data.practices, 4)
+    assert.isTrue(
+      body.data.practices.some((practice) => practice.practice === 'layered_architecture')
+    )
+  })
+
+  test('rejects initialization repair for another user project', async ({ client }) => {
+    const owner = await createUser()
+    const user = await createUser()
+    const project = await createProject(owner.id, 'Alpha')
+
+    const response = await client
+      .post(`/api/v1/projects/${project.id}/initialization/repair`)
+      .loginAs(user)
+      .json({
+        setupScript: 'pnpm install',
+        dockerCompose: 'services:\n  web:\n    image: node',
+        reason: 'Repair',
+      })
+
+    response.assertStatus(404)
   })
 })
 

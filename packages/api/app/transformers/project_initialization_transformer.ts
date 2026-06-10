@@ -21,6 +21,7 @@ export default class ProjectInitializationTransformer extends BaseTransformer<Pr
             setupScript: this.resource.initialization.setupScript,
             dockerCompose: this.resource.initialization.dockerCompose,
             error: this.resource.initialization.error,
+            repairReason: this.resource.initialization.repairReason,
             createdAt: this.resource.initialization.createdAt,
             updatedAt: this.resource.initialization.updatedAt,
           }

@@ -31,6 +31,9 @@ export default class ProjectInitialization extends BaseModel {
   @column()
   declare error: string | null
 
+  @column()
+  declare repairReason: string | null
+
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
 

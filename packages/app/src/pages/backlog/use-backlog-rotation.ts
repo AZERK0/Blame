@@ -1,6 +1,9 @@
 import * as React from "react"
 import { toast } from "sonner"
-import type { AgentEvent } from "@blame/agent-runtime"
+import type {
+  AgentEvent,
+  RepairProjectInitializationResult,
+} from "@blame/agent-runtime"
 
 import type {
   UserStory,
@@ -19,6 +22,7 @@ import { subscribeAgentEvents } from "@/components/backlog/data/agent-event-stre
 import type { useBacklogStore } from "@/components/backlog/data/backlog-store"
 import { useModelSelection } from "@/components/model/model-selector"
 import { useCloudAuth } from "@/context/cloud-auth"
+import type { CloudProjectInitialization } from "@/context/cloud-auth"
 import type {
   HostDependencyReport,
   ProjectSetupEvent,
@@ -26,6 +30,7 @@ import type {
 import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import { createCloudApi } from "@/lib/cloud-api"
+import { diagnoseAndRepairProjectInitialization } from "./project-initialization-repair"
 
 const maxConcurrentDevelopmentStories = 3
 const blockerRetryDelay = 30_000
@@ -33,6 +38,8 @@ const previewRecoveryIntervalMs = 30_000
 const agentEventPersistDelayMs = 1_500
 const setupToastId = "backlog-rotation-setup"
 const authToastId = "backlog-agent-auth"
+const initializationRepairToastId = "backlog-initialization-repair"
+const initializationRepairFinalToastDuration = 15_000
 const initializationRetryDelay = 5_000
 
 export function useBacklogRotation(
@@ -52,6 +59,7 @@ export function useBacklogRotation(
   )
   const agentAuthenticationBlockedUntil = React.useRef(0)
   const previewRecoveryStoryIds = React.useRef(new Set<number>())
+  const initializationRepairRunIds = React.useRef(new Set<string>())
   const storiesRef = React.useRef(backlog.stories)
   const [hostDependenciesDialog, setHostDependenciesDialog] =
     React.useState<HostDependenciesDialogState>()
@@ -68,6 +76,7 @@ export function useBacklogRotation(
     clearPendingAgentUpdates(pendingAgentUpdates.current)
     agentAuthenticationBlockedUntil.current = 0
     previewRecoveryStoryIds.current.clear()
+    initializationRepairRunIds.current.clear()
   }, [projects.activeProject?.id, selection.currentModel?.id])
 
   React.useEffect(
@@ -131,6 +140,15 @@ export function useBacklogRotation(
     backlog.setStorySetupInitializing(story, true)
     const unsubscribeSetup = workspace.onSetupEvent(setup.runId, (event) => {
       void persistSetupEvent(story, event, worktree.worktree)
+      if (setupError(event) && event.type === "exit") {
+        void repairFailedSetup(
+          story,
+          setup.runId,
+          event,
+          worktree.worktree,
+          initialization
+        )
+      }
       if (event.type === "exit") unsubscribeSetup()
     })
     const session = await agent.sessions.startDevelopment({
@@ -256,6 +274,125 @@ export function useBacklogRotation(
       agentLastError: setupError(event) ? text : undefined,
       agentLastEvent: text,
       previewUrl,
+    })
+  }
+
+  async function repairFailedSetup(
+    story: UserStory,
+    runId: string,
+    event: ProjectSetupEvent,
+    worktree: string,
+    initialization: CloudProjectInitialization
+  ) {
+    if (initializationRepairRunIds.current.has(runId)) return
+    initializationRepairRunIds.current.add(runId)
+    try {
+      toast.loading("Diagnosing failed project initialization", {
+        description: story.title,
+        id: initializationRepairToast(story),
+        position: "bottom-right",
+      })
+      await backlog.update(story, {
+        agentLastEvent: "Diagnosing failed project initialization.",
+      })
+      await diagnoseAndRetryFailedSetup(story, event, worktree, initialization)
+    } catch (error) {
+      const message = `Initialization diagnosis failed: ${errorMessage(error)}`
+      toast.error("Initialization diagnosis failed", {
+        description: errorMessage(error),
+        duration: initializationRepairFinalToastDuration,
+        id: initializationRepairToast(story),
+        position: "bottom-right",
+      })
+      await backlog.update(story, {
+        agentLastError: message,
+        agentLastEvent: message,
+      })
+    }
+  }
+
+  async function diagnoseAndRetryFailedSetup(
+    story: UserStory,
+    event: ProjectSetupEvent,
+    worktree: string,
+    initialization: CloudProjectInitialization
+  ) {
+    const result = await diagnoseAndRepairProjectInitialization({
+      apiConnection: auth.apiConnection,
+      platform,
+      projectId: initialization.projectId,
+      providerId: selection.currentModel!.provider.id,
+      modelId: selection.currentModel!.id,
+      reasoningEffort: selection.currentVariant,
+      worktree,
+      setupScript: initialization.setupScript!,
+      dockerCompose: initialization.dockerCompose!,
+      launchError: eventText(event),
+    })
+    await persistInitializationDiagnosis(story, result)
+    if (!repairArtifacts(result)) {
+      toast.error("Initialization could not be repaired automatically", {
+        description: result.reason,
+        duration: initializationRepairFinalToastDuration,
+        id: initializationRepairToast(story),
+        position: "bottom-right",
+      })
+      return
+    }
+    toast.success("Initialization repaired, retrying preview", {
+      description: result.reason,
+      id: initializationRepairToast(story),
+      position: "bottom-right",
+    })
+    await runRepairedSetup(
+      story,
+      worktree,
+      result.setupScript,
+      result.dockerCompose
+    )
+  }
+
+  function persistInitializationDiagnosis(
+    story: UserStory,
+    result: RepairProjectInitializationResult
+  ) {
+    return backlog.update(story, {
+      agentLastError:
+        result.classification === "repairable_initialization"
+          ? null
+          : result.reason,
+      agentLastEvent: `Initialization diagnosis: ${result.reason}`,
+    })
+  }
+
+  async function runRepairedSetup(
+    story: UserStory,
+    worktree: string,
+    setupScript: string,
+    dockerCompose: string
+  ) {
+    const workspace = platform.workspace
+    if (!workspace) return
+    backlog.setStorySetupInitializing(story, true)
+    const setup = await workspace.runProjectSetup({
+      worktree,
+      setupScript,
+      dockerCompose,
+    })
+    const unsubscribe = workspace.onSetupEvent(setup.runId, (event) => {
+      void persistSetupEvent(story, event, worktree)
+      if (event.type !== "exit") return
+      toast[setupCompleted(event) ? "success" : "error"](
+        setupCompleted(event)
+          ? "Preview recovered after initialization repair"
+          : "Preview still fails after initialization repair",
+        {
+          duration: initializationRepairFinalToastDuration,
+          id: initializationRepairToast(story),
+          position: "bottom-right",
+        }
+      )
+      unsubscribe()
     })
   }
 
@@ -722,6 +859,19 @@ function setupCompleted(event: ProjectSetupEvent) {
   return event.type === "exit" && event.data === "0"
 }
 
+function repairArtifacts(
+  result: RepairProjectInitializationResult
+): result is RepairProjectInitializationResult & {
+  setupScript: string
+  dockerCompose: string
+} {
+  return (
+    result.classification === "repairable_initialization" &&
+    Boolean(result.setupScript) &&
+    Boolean(result.dockerCompose)
+  )
+}
+
 function activePreviewStory(
   story: UserStory,
   setupInitializingStoryIds: Set<number>
@@ -749,6 +899,10 @@ function expiredAuthenticationToken(message: string) {
 
 function agentAuthenticationErrorKey(story: UserStory) {
   return `${story.id}:expired-authentication-token`
+}
+
+function initializationRepairToast(story: UserStory) {
+  return `${initializationRepairToastId}-${story.id}`
 }
 
 function failedAgentRun(event: AgentEvent) {

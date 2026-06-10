@@ -32,6 +32,7 @@ export interface ApiDefinition {
       start: typeof routes['projects.project_initializations.start']
       complete: typeof routes['projects.project_initializations.complete']
       fail: typeof routes['projects.project_initializations.fail']
+      repair: typeof routes['projects.project_initializations.repair']
     }
     userStories: {
       userStories: {

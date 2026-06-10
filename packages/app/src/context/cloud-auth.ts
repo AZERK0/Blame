@@ -47,6 +47,7 @@ export type CloudProjectInitialization = {
   setupScript: string | null
   dockerCompose: string | null
   error: string | null
+  repairReason: string | null
   createdAt: string
   updatedAt: string | null
 }

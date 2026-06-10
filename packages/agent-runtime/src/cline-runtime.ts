@@ -31,6 +31,10 @@ import {
   projectInitializationPrompt,
   scanProjectForInitialization,
 } from "./project-initialization.js"
+import {
+  parseProjectInitializationRepairResult,
+  projectInitializationRepairPrompt,
+} from "./project-initialization-repair.js"
 import { optimizeUserStoryPrompt } from "./prompt-optimization.js"
 import { loadPrompt } from "./prompt-loader.js"
 import {
@@ -67,6 +71,8 @@ import type {
   OptimizeUserStoryPromptResult,
   ProjectCodePracticeKey,
   ProjectCodePracticePreference,
+  RepairProjectInitializationInput,
+  RepairProjectInitializationResult,
   ResolveApprovalInput,
   SaveProviderCredentialInput,
   SendDevelopmentSessionInput,
@@ -191,6 +197,7 @@ export class BlameAgentRuntime {
 
   initializations = {
     run: (input: InitializeProjectInput) => this.initializeProject(input),
+    repair: (input: RepairProjectInitializationInput) => this.repairProjectInitialization(input),
   }
 
   newProjects = {
@@ -458,6 +465,28 @@ export class BlameAgentRuntime {
       }
     }
     throw new Error("Project initialization agent did not return a valid result")
+  }
+
+  private async repairProjectInitialization(
+    input: RepairProjectInitializationInput
+  ): Promise<RepairProjectInitializationResult> {
+    assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd")
+    const credential = await this.runtimeCredential(input)
+    const scan = await scanProjectForInitialization(input.workspaceRoot)
+    const cline = await this.core()
+    const session = await cline.start({
+      prompt: projectInitializationRepairPrompt(input, scan),
+      config: initializationRepairConfig(input, credential),
+      interactive: false,
+      source: "blame-project-initialization-repair",
+      toolPolicies: initializationToolPolicies(),
+    })
+    const text = session.result?.text
+    if (!text) throw new Error("Project initialization repair agent did not return a result")
+    return {
+      sessionId: session.sessionId,
+      ...parseProjectInitializationRepairResult(text, scan),
+    }
   }
 
   private async generateNewProject(input: StartNewProjectGenerationInput): Promise<NewProjectGenerationResult> {
@@ -1013,6 +1042,27 @@ function initializationConfig(
     enableSpawnAgent: false,
     enableAgentTeams: false,
     maxIterations: 8,
+  })
+}
+
+function initializationRepairConfig(
+  input: RepairProjectInitializationInput,
+  credential: { apiKey: string; baseUrl: string | null }
+) {
+  return appendProductionConfig({
+    providerId: input.providerId,
+    modelId: input.modelId,
+    apiKey: credential.apiKey,
+    baseUrl: credential.baseUrl ?? undefined,
+    thinking: !!input.reasoningEffort,
+    reasoningEffort: input.reasoningEffort,
+    systemPrompt: loadPrompt("project-initialization-repair-system"),
+    cwd: input.cwd,
+    workspaceRoot: input.workspaceRoot,
+    enableTools: false,
+    enableSpawnAgent: false,
+    enableAgentTeams: false,
+    maxIterations: 4,
   })
 }
 

@@ -3,6 +3,7 @@ import ProjectInitializationTransformer from '#transformers/project_initializati
 import {
   completeProjectInitializationValidator,
   failProjectInitializationValidator,
+  repairProjectInitializationValidator,
   startProjectInitializationValidator,
 } from '#validators/project_initialization'
 import type { HttpContext } from '@adonisjs/core/http'
@@ -47,6 +48,18 @@ export default class ProjectInitializationsController {
           auth.getUserOrFail().id,
           params.projectId,
           await request.validateUsing(failProjectInitializationValidator)
+        )
+      )
+    )
+  }
+
+  async repair({ auth, params, request, serialize }: HttpContext) {
+    return serialize(
+      ProjectInitializationTransformer.transform(
+        await new ProjectInitializationsService().repair(
+          auth.getUserOrFail().id,
+          params.projectId,
+          await request.validateUsing(repairProjectInitializationValidator)
         )
       )
     )

@@ -1,0 +1,126 @@
+import { execFile } from "node:child_process";
+import { readFile } from "node:fs/promises";
+import { join, resolve } from "node:path";
+import { promisify } from "node:util";
+
+import type { ProjectInitializationDiagnostics } from "@blame/agent-runtime";
+
+const execFileAsync = promisify(execFile);
+const maxDiagnosticLength = 32_000;
+
+export type CollectProjectInitializationDiagnosticsInput = {
+  worktree: string;
+  launchError: string;
+};
+
+export async function collectProjectInitializationDiagnostics(
+  input: CollectProjectInitializationDiagnosticsInput,
+  env: NodeJS.ProcessEnv,
+): Promise<ProjectInitializationDiagnostics> {
+  const worktree = resolve(input.worktree);
+  const composeArgs = [
+    "compose",
+    "-f",
+    join(worktree, ".blame", "initialization", "docker-compose.yml"),
+    "--project-directory",
+    worktree,
+  ];
+  const services = await commandOutput(worktree, env, [
+    ...composeArgs,
+    "config",
+    "--services",
+  ]);
+  return {
+    setupLog: await setupLog(worktree),
+    launchError: input.launchError,
+    composeConfig: await commandOutput(worktree, env, [
+      ...composeArgs,
+      "config",
+    ]),
+    composePs: await commandOutput(worktree, env, [...composeArgs, "ps", "-a"]),
+    serviceLogs: await serviceLogOutputs(
+      worktree,
+      env,
+      composeArgs,
+      serviceNames(services),
+    ),
+  };
+}
+
+async function serviceLogOutputs(
+  worktree: string,
+  env: NodeJS.ProcessEnv,
+  composeArgs: string[],
+  services: string[],
+) {
+  const entries = await Promise.all(
+    services.map(
+      async (service) =>
+        [
+          service,
+          await commandOutput(worktree, env, [
+            ...composeArgs,
+            "logs",
+            "--tail",
+            "200",
+            service,
+          ]),
+        ] as const,
+    ),
+  );
+  return Object.fromEntries(entries);
+}
+
+async function setupLog(worktree: string) {
+  try {
+    return truncate(
+      await readFile(join(worktree, ".blame", "logs", "setup.log"), "utf8"),
+    );
+  } catch (error) {
+    return errorText(error);
+  }
+}
+
+async function commandOutput(
+  worktree: string,
+  env: NodeJS.ProcessEnv,
+  args: string[],
+) {
+  try {
+    const result = await execFileAsync("docker", args, { cwd: worktree, env });
+    return truncate([result.stdout, result.stderr].filter(Boolean).join("\n"));
+  } catch (error) {
+    return truncate(commandErrorText(error));
+  }
+}
+
+function serviceNames(output: string) {
+  return output
+    .split("\n")
+    .map((service) => service.trim())
+    .filter((service) => /^[a-zA-Z0-9_.-]+$/.test(service));
+}
+
+function commandErrorText(error: unknown) {
+  if (!error || typeof error !== "object") return errorText(error);
+  const value = error as {
+    message?: unknown;
+    stderr?: unknown;
+    stdout?: unknown;
+  };
+  return [value.message, value.stdout, value.stderr]
+    .filter(
+      (part): part is string =>
+        typeof part === "string" && Boolean(part.trim()),
+    )
+    .join("\n");
+}
+
+function errorText(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function truncate(value: string) {
+  if (value.length <= maxDiagnosticLength) return value;
+  return value.slice(value.length - maxDiagnosticLength);
+}

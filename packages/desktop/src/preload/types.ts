@@ -6,11 +6,14 @@ import type {
   ApproveAndMergeResult,
   InitializeProjectInput,
   InitializeProjectResult,
+  ProjectInitializationDiagnostics,
   LoginOAuthProviderInput,
   NewProjectGenerationResult,
   OptimizeUserStoryPromptInput,
   OptimizeUserStoryPromptResult,
   ProviderListResponse,
+  RepairProjectInitializationInput,
+  RepairProjectInitializationResult,
   ResolveApprovalInput,
   SaveProviderCredentialInput,
   SendDevelopmentSessionInput,
@@ -187,6 +190,10 @@ export type BlameDesktopApi = {
       setupScript: string;
       dockerCompose: string;
     }): Promise<{ runId: string }>;
+    collectProjectInitializationDiagnostics(input: {
+      worktree: string;
+      launchError: string;
+    }): Promise<ProjectInitializationDiagnostics>;
     stopProjectSetup(input: { worktree: string }): Promise<boolean>;
     removeWorktree(input: {
       repositoryRoot: string;
@@ -256,6 +263,9 @@ export type BlameDesktopApi = {
     };
     initializations: {
       run(input: InitializeProjectInput): Promise<InitializeProjectResult>;
+      repair(
+        input: RepairProjectInitializationInput,
+      ): Promise<RepairProjectInitializationResult>;
     };
     newProjects: {
       generate(

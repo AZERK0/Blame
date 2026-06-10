@@ -5,12 +5,14 @@ import type { Infer } from '@vinejs/vine/types'
 import type {
   completeProjectInitializationValidator,
   failProjectInitializationValidator,
+  repairProjectInitializationValidator,
   startProjectInitializationValidator,
 } from '#validators/project_initialization'
 
 type StartInput = Infer<typeof startProjectInitializationValidator>
 type CompleteInput = Infer<typeof completeProjectInitializationValidator>
 type FailInput = Infer<typeof failProjectInitializationValidator>
+type RepairInput = Infer<typeof repairProjectInitializationValidator>
 
 export default class ProjectInitializationsService {
   async show(userId: number, projectId: string) {
@@ -43,6 +45,7 @@ export default class ProjectInitializationsService {
       setupScript: input.setupScript,
       dockerCompose: input.dockerCompose,
       error: null,
+      repairReason: null,
     })
     await initialization.save()
     await this.savePractices(projectId, input.practices)
@@ -57,6 +60,22 @@ export default class ProjectInitializationsService {
       step: 'failed',
       clineSessionId: input.clineSessionId ?? initialization.clineSessionId,
       error: input.error,
+    })
+    await initialization.save()
+    return this.snapshot(projectId)
+  }
+
+  async repair(userId: number, projectId: string, input: RepairInput) {
+    await new ProjectsService().findForUser(userId, projectId)
+    const initialization = await this.initialization(projectId)
+    initialization.merge({
+      status: 'done',
+      step: 'completed',
+      clineSessionId: input.clineSessionId ?? initialization.clineSessionId,
+      setupScript: input.setupScript,
+      dockerCompose: input.dockerCompose,
+      error: null,
+      repairReason: input.reason,
     })
     await initialization.save()
     return this.snapshot(projectId)
