@@ -52,68 +52,73 @@ export function UserStoryCard({
   story: UserStory
 }) {
   return (
-    <Card size="sm" className="group/user-story rounded-lg">
-      <CardHeader className="gap-0 has-data-[slot=card-action]:grid-cols-[minmax(0,1fr)_auto]">
-        <p className="text-xs font-medium text-muted-foreground">
-          {userStoryLabel(story)}
-        </p>
-        {setupInitializing && (
-          <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-            <LoaderCircleIcon className="size-3 animate-spin" />
-            Initializing story setup
-          </div>
-        )}
-        {cleanup && (
-          <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-            <LoaderCircleIcon className="size-3 animate-spin" />
-            Removing story worktree
-          </div>
-        )}
-        <CardTitle className="min-w-0 text-base leading-snug">
-          <Button
-            type="button"
-            variant="link"
-            className="h-auto max-w-full min-w-0 shrink justify-start p-0 text-left text-base leading-snug font-medium break-words whitespace-normal text-card-foreground transition-colors group-hover/user-story:text-blue-600 hover:cursor-pointer dark:group-hover/user-story:text-blue-300"
-            onClick={() =>
-              onOpenDrawer({
-                userStory: story,
-                mode:
-                  story.status === "backlog" || story.status === "discarded"
-                    ? "edit"
-                    : "view",
-                initialTab: "user-story",
-              })
-            }
-          >
-            {story.title}
-          </Button>
-        </CardTitle>
-        {storyStatus(story) && (
-          <CardAction>
-            <StoryStatusBadge status={storyStatus(story)} />
-          </CardAction>
-        )}
-      </CardHeader>
-      {storyDetail(story) && (
-        <CardContent>
+    <div className="user-story-state-effect" data-story-state={story.status}>
+      <Card
+        size="sm"
+        className="group/user-story relative z-1 rounded-lg bg-white! dark:bg-neutral-900!"
+      >
+        <CardHeader className="gap-0 has-data-[slot=card-action]:grid-cols-[minmax(0,1fr)_auto]">
           <p className="text-xs font-medium text-muted-foreground">
-            {storyDetail(story)}
+            {userStoryLabel(story)}
           </p>
-        </CardContent>
-      )}
-      <CardFooter>
-        <StoryActions
-          onAction={onAction}
-          onDeleteUserStory={onDeleteUserStory}
-          onOpenDrawer={onOpenDrawer}
-          onOpenWorktree={onOpenWorktree}
-          onReject={onReject}
-          onStopAgent={onStopAgent}
-          onUnpauseAgent={onUnpauseAgent}
-          story={story}
-        />
-      </CardFooter>
-    </Card>
+          {setupInitializing && (
+            <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+              <LoaderCircleIcon className="size-3 animate-spin" />
+              Initializing story setup
+            </div>
+          )}
+          {cleanup && (
+            <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+              <LoaderCircleIcon className="size-3 animate-spin" />
+              Removing story worktree
+            </div>
+          )}
+          <CardTitle className="min-w-0 text-base leading-snug">
+            <Button
+              type="button"
+              variant="link"
+              className="h-auto max-w-full min-w-0 shrink justify-start p-0 text-left text-base leading-snug font-medium break-words whitespace-normal text-card-foreground transition-colors group-hover/user-story:text-blue-600 hover:cursor-pointer dark:group-hover/user-story:text-blue-300"
+              onClick={() =>
+                onOpenDrawer({
+                  userStory: story,
+                  mode:
+                    story.status === "backlog" || story.status === "discarded"
+                      ? "edit"
+                      : "view",
+                  initialTab: "user-story",
+                })
+              }
+            >
+              {story.title}
+            </Button>
+          </CardTitle>
+          {storyStatus(story) && (
+            <CardAction>
+              <StoryStatusBadge status={storyStatus(story)} />
+            </CardAction>
+          )}
+        </CardHeader>
+        {storyDetail(story) && (
+          <CardContent>
+            <p className="text-xs font-medium text-muted-foreground">
+              {storyDetail(story)}
+            </p>
+          </CardContent>
+        )}
+        <CardFooter>
+          <StoryActions
+            onAction={onAction}
+            onDeleteUserStory={onDeleteUserStory}
+            onOpenDrawer={onOpenDrawer}
+            onOpenWorktree={onOpenWorktree}
+            onReject={onReject}
+            onStopAgent={onStopAgent}
+            onUnpauseAgent={onUnpauseAgent}
+            story={story}
+          />
+        </CardFooter>
+      </Card>
+    </div>
   )
 }
 
