@@ -130,7 +130,9 @@ export function UserStoryContent({
           commentRef={commentRef}
           mentionDirectory={mentionDirectory}
           onCommentChange={onCommentChange}
-          onCodeSelectionAttachmentRemove={onCommentCodeSelectionAttachmentRemove}
+          onCodeSelectionAttachmentRemove={
+            onCommentCodeSelectionAttachmentRemove
+          }
           onFileAttachmentRemove={onCommentFileAttachmentRemove}
           onFileAttachmentsAdd={onCommentFileAttachmentsAdd}
           onCommentSubmit={onCommentSubmit}
@@ -369,13 +371,15 @@ function AgentResponseItem({
       </span>
       <div className="grid min-w-0 gap-3">
         <h3 className="text-xl font-medium">Agent response</h3>
-        <MarkdownEditor
-          markdown={markdown}
-          readOnly
-          onFileLinkClick={onFileLinkClick}
-          placeholder=""
-          minHeight="min-h-24"
-        />
+        <div className="agent-response-effect">
+          <MarkdownEditor
+            markdown={markdown}
+            readOnly
+            onFileLinkClick={onFileLinkClick}
+            placeholder=""
+            minHeight="min-h-24"
+          />
+        </div>
       </div>
     </div>
   )

@@ -139,6 +139,42 @@
 }
 
 @layer components {
+  .agent-response-effect {
+    position: relative;
+    overflow: hidden;
+    padding: 1px;
+    border-radius: var(--radius-3xl);
+    box-shadow:
+      0 0 0 1px oklch(0.7 0.17 250 / 20%),
+      0 0 12px oklch(0.65 0.2 250 / 22%);
+  }
+
+  .agent-response-effect::before {
+    position: absolute;
+    inset: -150%;
+    pointer-events: none;
+    background: conic-gradient(
+      from 0deg,
+      transparent 0deg 190deg,
+      oklch(0.72 0.2 285 / 55%) 235deg,
+      oklch(0.78 0.16 230 / 90%) 285deg,
+      oklch(0.62 0.22 255) 325deg,
+      transparent 360deg
+    );
+    content: "";
+    animation: agent-response-border-rotation 5s linear infinite;
+  }
+
+  .agent-response-effect > * {
+    position: relative;
+    z-index: 1;
+    background: oklch(1 0 0) !important;
+  }
+
+  .dark .agent-response-effect > * {
+    background: oklch(0.269 0 0) !important;
+  }
+
   .user-story-state-effect {
     position: relative;
     border-radius: var(--radius-lg);
@@ -273,6 +309,12 @@
   }
 }
 
+@keyframes agent-response-border-rotation {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @keyframes user-story-review-breathing {
   0%,
   100% {
@@ -290,6 +332,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .agent-response-effect::before,
   .user-story-state-effect[data-story-state="in-progress"]::before,
   .user-story-state-effect[data-story-state="in-review"] {
     animation: none;
