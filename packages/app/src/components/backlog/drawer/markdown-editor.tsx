@@ -598,7 +598,7 @@ function MarkdownPreview({
   return (
     <div
       className={cn(
-        "space-y-2 text-[0.9375rem] leading-6 select-text",
+        "min-w-0 max-w-full space-y-2 overflow-x-hidden text-[0.9375rem] leading-6 select-text",
         className
       )}
     >
@@ -668,7 +668,7 @@ function markdownPreviewBlocks(markdown: string) {
 
 function MarkdownPreviewCode({ code }: { code: string }) {
   return (
-    <pre className="overflow-x-auto rounded-lg border bg-muted/50 px-3 py-2 font-mono text-xs leading-relaxed text-foreground">
+    <pre className="max-w-full overflow-x-auto rounded-lg border bg-muted/50 px-3 py-2 font-mono text-xs leading-relaxed text-foreground [scrollbar-color:color-mix(in_oklab,var(--muted-foreground)_35%,transparent)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-2.5 [&::-webkit-scrollbar-corner]:bg-background [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb:hover]:bg-muted-foreground/45 [&::-webkit-scrollbar-track]:bg-transparent">
       <code>{code}</code>
     </pre>
   )
@@ -774,7 +774,10 @@ function inlineMarkdownToken(
     return <s key={index}>{token.slice(2, -2)}</s>
   if (token.startsWith("`") && token.endsWith("`")) {
     return (
-      <code key={index} className="rounded bg-muted px-1 py-0.5 text-xs">
+      <code
+        key={index}
+        className="break-all rounded bg-muted px-1 py-0.5 text-xs"
+      >
         {token.slice(1, -1)}
       </code>
     )
@@ -1161,7 +1164,7 @@ export const MarkdownEditor = React.forwardRef<
             if (typeof ref === "function") ref(element)
             else if (ref) ref.current = element
           }}
-          className="rounded-3xl bg-muted/50 p-1 transition-colors dark:bg-muted/50"
+          className="min-w-0 max-w-full overflow-hidden rounded-3xl bg-muted/50 p-1 transition-colors dark:bg-muted/50"
           onBlur={() => requestAnimationFrame(() => updateMention())}
           onKeyDownCapture={handleKeyDown}
           onPaste={handlePaste}
