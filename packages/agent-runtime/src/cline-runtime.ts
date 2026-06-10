@@ -1350,6 +1350,7 @@ function newProjectGenerationPrompt(input: StartNewProjectGenerationInput) {
     "- Keep framework config file extensions compatible with the installed framework version.",
     "- Do not chase build, lint, peer dependency, or framework warnings during project creation.",
     "- Do not read files at the end to verify coherence. Stop after dependency installation and final required file writes.",
+    "- After all scaffold and installation commands, create or update the root .gitignore without replacing existing entries. It must exclude dependencies, framework build output, Blame runtime artifacts, and runtime .env files while keeping .env templates trackable.",
     "",
     "Wizard brief (normalized JSON):",
     JSON.stringify(
@@ -1382,6 +1383,7 @@ function newProjectGenerationPrompt(input: StartNewProjectGenerationInput) {
     "- Install dependencies once using the selected package manager/runtime.",
     "- Do not run build, lint, test, dev servers, preview commands, or long-running processes.",
     "- Do not inspect generated source files after installation unless dependency installation failed and the exact file must be fixed.",
+    "- Read and finalize the root .gitignore after commands have completed.",
     "- Fix only errors that prevent the framework starter from being created or dependencies from being installed.",
     "- Finish with a concise summary of scaffolded files, dependency installation result, and any caveats.",
   ].join("\n")

@@ -131,7 +131,31 @@ test("initial repository commit excludes generated runtime artifacts", async () 
   await initializeGeneratedRepository(target);
 
   const { stdout } = await runGit(target, ["ls-files"]);
-  assert.deepEqual(stdout.trim().split("\n"), ["package.json"]);
+  assert.deepEqual(stdout.trim().split("\n"), [".gitignore", "package.json"]);
+});
+
+test("creates and extends the root gitignore before the initial commit", async () => {
+  const parent = await mkdtemp(join(tmpdir(), "blame-new-project-"));
+  const target = join(parent, "gitignore-app");
+  await mkdir(target);
+  await writeFile(join(target, ".gitignore"), "dist/\n", "utf8");
+  await writeFile(join(target, ".env"), "SECRET=value\n", "utf8");
+  await writeFile(join(target, ".env.example"), "SECRET=\n", "utf8");
+  await writeFile(join(target, "package.json"), '{"name":"gitignore-app"}', "utf8");
+
+  await initializeGeneratedRepository(target);
+
+  const gitignore = await readFile(join(target, ".gitignore"), "utf8");
+  const { stdout } = await runGit(target, ["ls-files"]);
+  assert.match(gitignore, /^dist\/$/m);
+  assert.match(gitignore, /^\.blame\/$/m);
+  assert.match(gitignore, /^\.env$/m);
+  assert.match(gitignore, /^!\.env\.example$/m);
+  assert.deepEqual(stdout.trim().split("\n"), [
+    ".env.example",
+    ".gitignore",
+    "package.json",
+  ]);
 });
 
 test("pins package manager in generated package manifest", async () => {

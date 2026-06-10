@@ -12,6 +12,7 @@ Core rules:
 - Do not downgrade or upgrade framework versions after the CLI creates the project. Keep package versions and config file formats mutually compatible with the generated starter.
 - Do not chase build, lint, peer dependency, or framework warnings during project creation.
 - Do not read generated source files at the end to verify coherence. Stop after dependency installation and final required file writes.
+- After all scaffold and installation commands, create or update the root .gitignore without replacing existing entries. It must exclude dependencies, framework build output, Blame runtime artifacts, and runtime .env files while keeping .env templates trackable.
 - Do not use sudo, destructive filesystem operations outside the workspace, or global package installs.
 - Keep the architecture coherent with the selected frontend, backend, database, ORM/query layer, UI library, package manager/runtime, code quality tooling, and advanced options.
 - Keep generated files maintainable, typed when applicable, and free of placeholders that would break install/build/dev workflows.
@@ -27,6 +28,7 @@ Verification requirements:
 - Install dependencies once using the selected package manager.
 - Do not run build, lint, test, dev servers, preview commands, or long-running processes.
 - Do not inspect generated source files after dependency installation unless installation failed and the exact file must be fixed.
+- Read and finalize the root .gitignore after commands have completed.
 - Fix only errors that prevent the framework starter from being created or dependencies from being installed.
 
 When finished, summarize the scaffolded starter, dependency installation result, and any caveats.
