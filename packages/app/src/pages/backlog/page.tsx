@@ -33,6 +33,7 @@ import { BacklogToolbar } from "@/components/backlog/board/backlog-toolbar"
 import { UserStoryDrawer } from "@/components/backlog/drawer/user-story-drawer"
 import { HostDependenciesDialog } from "@/pages/backlog/host-dependencies-dialog"
 import { useBacklogRotation } from "@/pages/backlog/use-backlog-rotation"
+import { assessAndRepairProjectInitializationImpact } from "@/pages/backlog/project-initialization-impact"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { usePlatform, type Platform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
@@ -604,6 +605,17 @@ export function BacklogPage() {
           },
           { cleanup: false }
         )
+        void checkProjectInitializationImpact({
+          auth,
+          baseCommit: result.baseCommit,
+          mergeCommit: result.mergeCommit,
+          modelId: selection.currentModel!.id,
+          platform,
+          projectId: projects.activeProject!.id,
+          providerId: selection.currentModel!.provider.id,
+          reasoningEffort: selection.currentVariant,
+          repositoryRoot: projects.activeProject!.path,
+        })
         void cleanupMergedStory(
           runningStory,
           platform,
@@ -861,6 +873,77 @@ function projectCodePractices(
   return createCloudApi(auth.apiConnection)
     .projectInitialization(projects.activeProject.id)
     .then((snapshot) => snapshot.practices)
+}
+
+type CheckInitializationImpactInput = {
+  auth: ReturnType<typeof useCloudAuth>
+  platform: ReturnType<typeof usePlatform>
+  projectId: string
+  providerId: string
+  modelId: string
+  reasoningEffort?: "low" | "medium" | "high" | "xhigh"
+  repositoryRoot: string
+  baseCommit: string
+  mergeCommit: string
+}
+
+async function checkProjectInitializationImpact(
+  input: CheckInitializationImpactInput
+) {
+  const toastId = `project-initialization-impact-${input.mergeCommit}`
+  toast.loading("Checking initialization impact", {
+    id: toastId,
+    position: "bottom-right",
+  })
+  try {
+    const result = await assessAndRepairProjectInitializationImpact({
+      apiConnection: input.auth.apiConnection,
+      platform: input.platform,
+      projectId: input.projectId,
+      providerId: input.providerId,
+      modelId: input.modelId,
+      reasoningEffort: input.reasoningEffort,
+      repositoryRoot: input.repositoryRoot,
+      baseCommit: input.baseCommit,
+      mergeCommit: input.mergeCommit,
+    })
+    showInitializationImpactResult(toastId, result)
+  } catch (error) {
+    toast.error("Story merged, initialization check failed", {
+      description: errorMessage(error),
+      id: toastId,
+      position: "bottom-right",
+    })
+  }
+}
+
+function showInitializationImpactResult(
+  toastId: string,
+  result:
+    | Awaited<ReturnType<typeof assessAndRepairProjectInitializationImpact>>
+    | undefined
+) {
+  if (!result) {
+    toast.dismiss(toastId)
+    return
+  }
+  if (result.repair?.classification === "repairable_initialization") {
+    toast.success("Initialization artifacts updated", {
+      description: result.repair.reason,
+      id: toastId,
+      position: "bottom-right",
+    })
+    return
+  }
+  if (result.assessment.classification === "initialization_update_required") {
+    toast.error("Story merged, initialization update failed", {
+      description: result.repair?.reason ?? result.assessment.reason,
+      id: toastId,
+      position: "bottom-right",
+    })
+    return
+  }
+  toast.dismiss(toastId)
 }
 
 async function inactiveStoryCleanup(

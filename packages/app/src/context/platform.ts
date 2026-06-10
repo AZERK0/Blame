@@ -5,6 +5,8 @@ import type {
   ApiConnection,
   ApproveAndMergeInput,
   ApproveAndMergeResult,
+  AssessProjectInitializationImpactInput,
+  AssessProjectInitializationImpactResult,
   InitializeProjectInput,
   InitializeProjectResult,
   ProjectInitializationDiagnostics,
@@ -121,6 +123,9 @@ export type AgentClient = {
     repair(
       input: RepairProjectInitializationInput
     ): Promise<RepairProjectInitializationResult>
+    assessImpact(
+      input: AssessProjectInitializationImpactInput
+    ): Promise<AssessProjectInitializationImpactResult>
   }
   newProjects: {
     generate(input: StartNewProjectGenerationInput): Promise<NewProjectGenerationResult>

@@ -237,6 +237,46 @@ export type ProjectInitializationDiagnostics = {
   serviceLogs: Record<string, string>
 }
 
+export type ProjectInitializationImpactClassification =
+  | "initialization_update_required"
+  | "initialization_still_valid"
+  | "project_code_failure"
+  | "unknown"
+
+export type ProjectInitializationImpactDiagnostics = {
+  baseCommit: string
+  mergeCommit: string
+  changedFiles: string[]
+  diffSummary: string
+  relevantDiffs: Record<string, string>
+  currentSetupScript: string
+  currentDockerCompose: string
+  strategicFilesBefore: Record<string, string>
+  strategicFilesAfter: Record<string, string>
+}
+
+export type AssessProjectInitializationImpactInput = {
+  apiConnection: ApiConnection
+  providerId: string
+  modelId: string
+  reasoningEffort?: ReasoningEffort
+  cwd: string
+  workspaceRoot: string
+  credentialLabel?: string
+  baseCommit: string
+  mergeCommit: string
+  setupScript: string
+  dockerCompose: string
+}
+
+export type AssessProjectInitializationImpactResult = {
+  sessionId?: string
+  classification: ProjectInitializationImpactClassification
+  reason: string
+  repairInstruction?: string
+  diagnostics?: ProjectInitializationImpactDiagnostics
+}
+
 export type RepairProjectInitializationInput = {
   apiConnection: ApiConnection
   providerId: string
@@ -247,7 +287,9 @@ export type RepairProjectInitializationInput = {
   credentialLabel?: string
   setupScript: string
   dockerCompose: string
-  diagnostics: ProjectInitializationDiagnostics
+  diagnostics:
+    | ProjectInitializationDiagnostics
+    | ProjectInitializationImpactDiagnostics
 }
 
 export type RepairProjectInitializationResult = {

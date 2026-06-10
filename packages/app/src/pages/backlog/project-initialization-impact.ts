@@ -1,0 +1,126 @@
+import type {
+  AssessProjectInitializationImpactResult,
+  RepairProjectInitializationResult,
+} from "@blame/agent-runtime"
+
+import type { useCloudAuth } from "@/context/cloud-auth"
+import type { usePlatform } from "@/context/platform"
+import { createCloudApi } from "@/lib/cloud-api"
+
+type ImpactInput = {
+  apiConnection: ReturnType<typeof useCloudAuth>["apiConnection"]
+  platform: ReturnType<typeof usePlatform>
+  projectId: string
+  providerId: string
+  modelId: string
+  reasoningEffort?: "low" | "medium" | "high" | "xhigh"
+  repositoryRoot: string
+  baseCommit: string
+  mergeCommit: string
+}
+
+export type ProjectInitializationImpactRepairResult = {
+  assessment: AssessProjectInitializationImpactResult
+  repair?: RepairProjectInitializationResult
+}
+
+export async function assessAndRepairProjectInitializationImpact(
+  input: ImpactInput
+): Promise<ProjectInitializationImpactRepairResult | undefined> {
+  const initialization = await currentInitialization(input)
+  if (!initialization) return undefined
+  const assessment = await assessProjectInitializationImpact(
+    input,
+    initialization
+  )
+  if (assessment.classification !== "initialization_update_required") {
+    return { assessment }
+  }
+  const repair = await repairProjectInitializationImpact(
+    input,
+    initialization,
+    assessment
+  )
+  await persistProjectInitializationRepair(input, repair)
+  return { assessment, repair }
+}
+
+async function currentInitialization(input: ImpactInput) {
+  const snapshot = await createCloudApi(
+    input.apiConnection
+  ).projectInitialization(input.projectId)
+  const initialization = snapshot.initialization
+  if (!initialization?.setupScript || !initialization.dockerCompose) {
+    return undefined
+  }
+  return {
+    setupScript: initialization.setupScript,
+    dockerCompose: initialization.dockerCompose,
+  }
+}
+
+async function assessProjectInitializationImpact(
+  input: ImpactInput,
+  initialization: { setupScript: string; dockerCompose: string }
+) {
+  const agent = input.platform.agent
+  if (!agent) throw new Error("Initialization impact runtime is unavailable.")
+  return agent.initializations.assessImpact({
+    apiConnection: input.apiConnection,
+    providerId: input.providerId,
+    modelId: input.modelId,
+    reasoningEffort: input.reasoningEffort,
+    cwd: input.repositoryRoot,
+    workspaceRoot: input.repositoryRoot,
+    baseCommit: input.baseCommit,
+    mergeCommit: input.mergeCommit,
+    setupScript: initialization.setupScript,
+    dockerCompose: initialization.dockerCompose,
+  })
+}
+
+async function repairProjectInitializationImpact(
+  input: ImpactInput,
+  initialization: { setupScript: string; dockerCompose: string },
+  assessment: AssessProjectInitializationImpactResult
+) {
+  const agent = input.platform.agent
+  if (!agent) throw new Error("Initialization repair runtime is unavailable.")
+  if (!assessment.diagnostics) {
+    throw new Error(
+      "Initialization impact assessment did not include diagnostics."
+    )
+  }
+  return agent.initializations.repair({
+    apiConnection: input.apiConnection,
+    providerId: input.providerId,
+    modelId: input.modelId,
+    reasoningEffort: input.reasoningEffort,
+    cwd: input.repositoryRoot,
+    workspaceRoot: input.repositoryRoot,
+    setupScript: initialization.setupScript,
+    dockerCompose: initialization.dockerCompose,
+    diagnostics: assessment.diagnostics,
+  })
+}
+
+async function persistProjectInitializationRepair(
+  input: ImpactInput,
+  result: RepairProjectInitializationResult
+) {
+  if (result.classification !== "repairable_initialization") return
+  if (!result.setupScript || !result.dockerCompose) {
+    throw new Error(
+      "Initialization repair agent returned incomplete artifacts."
+    )
+  }
+  await createCloudApi(input.apiConnection).repairProjectInitialization(
+    input.projectId,
+    {
+      clineSessionId: result.sessionId,
+      setupScript: result.setupScript,
+      dockerCompose: result.dockerCompose,
+      reason: result.reason,
+    }
+  )
+}

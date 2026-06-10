@@ -4,6 +4,8 @@ import type {
   ApiConnection,
   ApproveAndMergeInput,
   ApproveAndMergeResult,
+  AssessProjectInitializationImpactInput,
+  AssessProjectInitializationImpactResult,
   InitializeProjectInput,
   InitializeProjectResult,
   ProjectInitializationDiagnostics,
@@ -266,6 +268,9 @@ export type BlameDesktopApi = {
       repair(
         input: RepairProjectInitializationInput,
       ): Promise<RepairProjectInitializationResult>;
+      assessImpact(
+        input: AssessProjectInitializationImpactInput,
+      ): Promise<AssessProjectInitializationImpactResult>;
     };
     newProjects: {
       generate(

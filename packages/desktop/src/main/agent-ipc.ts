@@ -35,6 +35,7 @@ export function registerAgentIpcHandlers() {
   ipcMain.handle("agent:approvals:resolve", (_event, input) => runtime.approvals.resolve(input))
   ipcMain.handle("agent:initializations:run", (_event, input) => runtime.initializations.run(input))
   ipcMain.handle("agent:initializations:repair", (_event, input) => runtime.initializations.repair(input))
+  ipcMain.handle("agent:initializations:assess-impact", (_event, input) => runtime.initializations.assessImpact(input))
   ipcMain.handle("agent:new-projects:generate", (_event, input) => runtime.newProjects.generate(input))
   ipcMain.handle("agent:prompt-optimizer:optimize-user-story", (_event, input) =>
     runtime.promptOptimizer.optimizeUserStory(input)

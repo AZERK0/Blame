@@ -35,6 +35,12 @@ import {
   parseProjectInitializationRepairResult,
   projectInitializationRepairPrompt,
 } from "./project-initialization-repair.js"
+import {
+  collectProjectInitializationImpactDiagnostics,
+  deterministicInitializationImpact,
+  parseProjectInitializationImpactResult,
+  projectInitializationImpactPrompt,
+} from "./project-initialization-impact.js"
 import { optimizeUserStoryPrompt } from "./prompt-optimization.js"
 import { loadPrompt } from "./prompt-loader.js"
 import {
@@ -62,6 +68,8 @@ import type {
   ApiConnection,
   ApproveAndMergeInput,
   ApproveAndMergeResult,
+  AssessProjectInitializationImpactInput,
+  AssessProjectInitializationImpactResult,
   InitializeProjectInput,
   InitializeProjectResult,
   LoginOAuthProviderInput,
@@ -199,6 +207,7 @@ export class BlameAgentRuntime {
   initializations = {
     run: (input: InitializeProjectInput) => this.initializeProject(input),
     repair: (input: RepairProjectInitializationInput) => this.repairProjectInitialization(input),
+    assessImpact: (input: AssessProjectInitializationImpactInput) => this.assessProjectInitializationImpact(input),
   }
 
   newProjects = {
@@ -487,6 +496,31 @@ export class BlameAgentRuntime {
     return {
       sessionId: session.sessionId,
       ...parseProjectInitializationRepairResult(text, scan),
+    }
+  }
+
+  private async assessProjectInitializationImpact(
+    input: AssessProjectInitializationImpactInput
+  ): Promise<AssessProjectInitializationImpactResult> {
+    assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd")
+    const diagnostics = await collectProjectInitializationImpactDiagnostics(input)
+    const deterministic = deterministicInitializationImpact(diagnostics)
+    if (deterministic) return { ...deterministic, diagnostics }
+    const credential = await this.runtimeCredential(input)
+    const cline = await this.core()
+    const session = await cline.start({
+      prompt: projectInitializationImpactPrompt(diagnostics),
+      config: initializationImpactConfig(input, credential),
+      interactive: false,
+      source: "blame-project-initialization-impact",
+      toolPolicies: initializationToolPolicies(),
+    })
+    const text = session.result?.text
+    if (!text) throw new Error("Project initialization impact agent did not return a result")
+    return {
+      sessionId: session.sessionId,
+      ...parseProjectInitializationImpactResult(text),
+      diagnostics,
     }
   }
 
@@ -1062,6 +1096,27 @@ function initializationRepairConfig(
     thinking: !!input.reasoningEffort,
     reasoningEffort: input.reasoningEffort,
     systemPrompt: loadPrompt("project-initialization-repair-system"),
+    cwd: input.cwd,
+    workspaceRoot: input.workspaceRoot,
+    enableTools: false,
+    enableSpawnAgent: false,
+    enableAgentTeams: false,
+    maxIterations: 4,
+  })
+}
+
+function initializationImpactConfig(
+  input: AssessProjectInitializationImpactInput,
+  credential: { apiKey: string; baseUrl: string | null }
+) {
+  return appendProductionConfig({
+    providerId: input.providerId,
+    modelId: input.modelId,
+    apiKey: credential.apiKey,
+    baseUrl: credential.baseUrl ?? undefined,
+    thinking: !!input.reasoningEffort,
+    reasoningEffort: input.reasoningEffort,
+    systemPrompt: loadPrompt("project-initialization-impact-system"),
     cwd: input.cwd,
     workspaceRoot: input.workspaceRoot,
     enableTools: false,

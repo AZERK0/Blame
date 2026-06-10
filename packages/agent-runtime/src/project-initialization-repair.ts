@@ -40,10 +40,10 @@ export function parseProjectInitializationRepairResult(
 
 function repairPrompt(input: RepairProjectInitializationInput, scan: ProjectInitializationScan) {
   return [
-    "Diagnose this failed project preview according to your system instructions and return strict JSON only.",
+    "Diagnose these project initialization diagnostics according to your system instructions and return strict JSON only.",
     `Current setupScript: ${JSON.stringify(input.setupScript)}`,
     `Current dockerCompose: ${JSON.stringify(input.dockerCompose)}`,
-    `Failure diagnostics: ${JSON.stringify(input.diagnostics)}`,
+    `Initialization diagnostics: ${JSON.stringify(input.diagnostics)}`,
     `Project root entries: ${JSON.stringify(scan.topLevelEntries)}`,
     `Strategic project files: ${JSON.stringify(scan.files)}`,
   ].join("\n")
