@@ -1,7 +1,10 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
-import { parseProjectInitializationRepairResult } from "./project-initialization-repair.js"
+import {
+  parseProjectInitializationRepairResult,
+  projectInitializationRepairPrompt,
+} from "./project-initialization-repair.js"
 
 const validCompose = `services:
   web:
@@ -67,4 +70,35 @@ test("rejects invalid repaired artifacts", () => {
       ),
     /Docker-allocated host ports/,
   )
+})
+
+test("includes validation feedback in repair correction prompts", () => {
+  const input = {
+    apiConnection: { url: "https://example.com", token: "token" },
+    providerId: "provider",
+    modelId: "model",
+    cwd: "/project",
+    workspaceRoot: "/project",
+    setupScript: "npm install",
+    dockerCompose: validCompose,
+    diagnostics: {
+      setupLog: "",
+      launchError: "Preview failed",
+      composeConfig: "",
+      composePs: "",
+      serviceLogs: {},
+    },
+  }
+  const prompt = projectInitializationRepairPrompt(
+    input,
+    { rootName: "project", topLevelEntries: [], files: {}, gitLog: [] },
+    {
+      validationError: "Compose is invalid.",
+      previousResult: '{"classification":"repairable_initialization"}',
+    },
+  )
+
+  assert.match(prompt, /Your previous response was rejected by validation/)
+  assert.match(prompt, /Validation error: Compose is invalid\./)
+  assert.match(prompt, /Previous rejected response: \{"classification":"repairable_initialization"\}/)
 })

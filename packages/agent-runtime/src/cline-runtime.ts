@@ -484,19 +484,41 @@ export class BlameAgentRuntime {
     const credential = await this.runtimeCredential(input)
     const scan = await scanProjectForInitialization(input.workspaceRoot)
     const cline = await this.core()
-    const session = await cline.start({
-      prompt: projectInitializationRepairPrompt(input, scan),
+    let correction: InitializationCorrection | undefined
+    for (let attempt = 1; attempt <= maxInitializationAttempts; attempt += 1) {
+      const session = await this.startProjectInitializationRepairAttempt(cline, input, scan, credential, correction)
+      const text = session.result?.text
+      if (!text) throw new Error("Project initialization repair agent did not return a result")
+      try {
+        return {
+          sessionId: session.sessionId,
+          ...parseProjectInitializationRepairResult(text, scan),
+        }
+      } catch (error) {
+        if (attempt === maxInitializationAttempts) throw error
+        correction = {
+          previousResult: text,
+          validationError: errorMessage(error),
+        }
+      }
+    }
+    throw new Error("Project initialization repair agent did not return a valid result")
+  }
+
+  private startProjectInitializationRepairAttempt(
+    cline: ClineCore,
+    input: RepairProjectInitializationInput,
+    scan: ProjectInitializationScan,
+    credential: { apiKey: string; baseUrl: string | null },
+    correction?: InitializationCorrection
+  ) {
+    return cline.start({
+      prompt: projectInitializationRepairPrompt(input, scan, correction),
       config: initializationRepairConfig(input, credential),
       interactive: false,
       source: "blame-project-initialization-repair",
       toolPolicies: initializationToolPolicies(),
     })
-    const text = session.result?.text
-    if (!text) throw new Error("Project initialization repair agent did not return a result")
-    return {
-      sessionId: session.sessionId,
-      ...parseProjectInitializationRepairResult(text, scan),
-    }
   }
 
   private async assessProjectInitializationImpact(

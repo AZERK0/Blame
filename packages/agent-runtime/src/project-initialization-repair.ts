@@ -11,12 +11,29 @@ const classifications = new Set<ProjectInitializationRepairClassification>([
   "external_failure",
   "unknown",
 ])
+const maxCorrectionPayloadLength = 24_000
+
+type ProjectInitializationRepairCorrection = {
+  validationError: string
+  previousResult: string
+}
 
 export function projectInitializationRepairPrompt(
   input: RepairProjectInitializationInput,
   scan: ProjectInitializationScan,
+  correction?: ProjectInitializationRepairCorrection,
 ) {
-  return repairPrompt(input, scan)
+  const prompt = repairPrompt(input, scan)
+  if (!correction) return prompt
+  return [
+    prompt,
+    "Your previous response was rejected by validation.",
+    "Fix only the generated JSON output according to the validation error.",
+    "Do not broaden the diagnosis and do not read more files.",
+    "Return a complete corrected JSON object only.",
+    `Validation error: ${correction.validationError}`,
+    `Previous rejected response: ${correction.previousResult.slice(0, maxCorrectionPayloadLength)}`,
+  ].join("\n")
 }
 
 export function parseProjectInitializationRepairResult(
