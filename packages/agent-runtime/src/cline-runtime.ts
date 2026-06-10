@@ -90,7 +90,8 @@ const defaultSessionMaxIterations = 32
 const defaultDevelopmentMaxIterations = 96
 const maxInitializationAttempts = 3
 const maxMergeConflictResolutionAttempts = 3
-const runtimeArtifactPathspecs = [":!.blame", ":!.blame-preview", ":!.pnpm-store"]
+const runtimeArtifactPaths = [".blame", ".blame-preview", ".pnpm-store"]
+const runtimeArtifactPathspecs = runtimeArtifactPaths.map((path) => `:!${path}`)
 const productionLogger = createProductionLogger()
 const openAICompatibleProviderID = "openaiCompatible"
 const attachmentDirectoryName = ".blame/attachments"
@@ -572,9 +573,13 @@ export class BlameAgentRuntime {
     const baseCommit = await git(integration, ["rev-parse", "HEAD"])
     await this.commitStoryWork(input)
     await this.mergeTargetIntoStory(input, targetBranch, upstream)
+    await removeRuntimeEnvChanges(input.worktree, baseCommit)
     try {
       await git(integration, ["merge", "--ff-only", input.storyBranch])
       const mergeCommit = await git(integration, ["rev-parse", "HEAD"])
+      if (!targetClean) {
+        await advanceTargetBranch(input.repositoryRoot, targetBranch, input.storyBranch)
+      }
       await pushIntegrationWorktree(integration, upstream, logFile)
       await appendLog(logFile, "approve merge completed", { baseCommit, mergeCommit, targetBranch })
       return { baseCommit, mergeCommit, targetBranch }
@@ -1472,8 +1477,17 @@ async function cleanGitStatus(cwd: string) {
 async function integrationWorktree(cwd: string, targetBranch: string) {
   const directory = integrationWorktreePath(cwd, targetBranch)
   await rm(directory, { force: true, recursive: true })
+  await git(cwd, ["worktree", "prune"])
   await git(cwd, ["worktree", "add", "--detach", directory, targetBranch])
   return directory
+}
+
+async function advanceTargetBranch(cwd: string, targetBranch: string, storyBranch: string) {
+  const activeBranch = await currentGitBranch(cwd)
+  if (activeBranch !== targetBranch) {
+    throw new Error(`Active project branch changed to ${activeBranch}, expected ${targetBranch}.`)
+  }
+  await git(cwd, ["merge", "--ff-only", storyBranch])
 }
 
 async function pullIntegrationWorktree(cwd: string, upstream?: GitUpstream) {
@@ -1693,11 +1707,52 @@ async function mergeConflictPrompt(input: ApproveAndMergeInput, targetBranch: st
 }
 
 async function storyStatus(cwd: string, format: "--porcelain" | "--short") {
-  return git(cwd, ["status", format, "--", ".", ...runtimeArtifactPathspecs])
+  const envPathspecs = (await changedRuntimeEnvPaths(cwd)).map((path) => `:!${path}`)
+  return git(cwd, ["status", format, "--", ".", ...runtimeArtifactPathspecs, ...envPathspecs])
 }
 
 async function addStoryChanges(cwd: string) {
-  await git(cwd, ["add", "-A", "--", ".", ...runtimeArtifactPathspecs])
+  const envPaths = await changedRuntimeEnvPaths(cwd)
+  await git(cwd, ["add", "-A", "--", "."])
+  await git(cwd, ["reset", "--quiet", "--", ...runtimeArtifactPaths, ...envPaths])
+}
+
+async function removeRuntimeEnvChanges(cwd: string, baseCommit: string) {
+  const changedFiles = await git(cwd, ["diff", "--name-only", `${baseCommit}...HEAD`])
+  const envPaths = splitLines(changedFiles).filter(runtimeEnvPath)
+  if (!envPaths.length) return
+  for (const path of envPaths) {
+    if (await gitPathExists(cwd, baseCommit, path)) {
+      await git(cwd, ["restore", "--source", baseCommit, "--staged", "--worktree", "--", path])
+    } else {
+      await git(cwd, ["rm", "--cached", "--ignore-unmatch", "--", path])
+    }
+  }
+  await git(cwd, ["commit", "-m", "chore: exclude runtime environment files"])
+}
+
+async function changedRuntimeEnvPaths(cwd: string) {
+  const paths = await git(cwd, ["ls-files", "--modified", "--deleted", "--others", "--exclude-standard"])
+  return splitLines(paths).filter(runtimeEnvPath)
+}
+
+async function gitPathExists(cwd: string, revision: string, path: string) {
+  try {
+    await git(cwd, ["cat-file", "-e", `${revision}:${path}`])
+    return true
+  } catch {
+    return false
+  }
+}
+
+function runtimeEnvPath(path: string) {
+  const name = basename(path)
+  if (name !== ".env" && !name.startsWith(".env.")) return false
+  return ![".example", ".sample", ".template"].some((suffix) => name.endsWith(suffix))
+}
+
+function splitLines(value: string) {
+  return value.split("\n").filter(Boolean)
 }
 
 function unresolvedMergeConflictMessage(conflicts: string[]) {
