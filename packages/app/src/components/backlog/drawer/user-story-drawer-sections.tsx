@@ -115,27 +115,29 @@ export function UserStoryContent({
         onOptimize={onSummaryOptimize}
         readOnly={!isEditable(mode, status)}
         placeholder="Describe the user story, expected behavior, and acceptance criteria."
-        minHeight="min-h-70"
+        minHeight="min-h-80"
       />
       <AgentRunTimeline
         userStory={userStory}
         onFileLinkClick={onFileLinkClick}
       />
-      <CommentsSection
-        codeSelectionAttachments={commentCodeSelectionAttachments}
-        fileAttachments={commentFileAttachments}
-        comment={comment}
-        editorKey={commentEditorKey}
-        commentRef={commentRef}
-        mentionDirectory={mentionDirectory}
-        onCommentChange={onCommentChange}
-        onCodeSelectionAttachmentRemove={onCommentCodeSelectionAttachmentRemove}
-        onFileAttachmentRemove={onCommentFileAttachmentRemove}
-        onFileAttachmentsAdd={onCommentFileAttachmentsAdd}
-        onCommentSubmit={onCommentSubmit}
-        onFileLinkClick={onFileLinkClick}
-        status={status}
-      />
+      {mode !== "create" && (
+        <CommentsSection
+          codeSelectionAttachments={commentCodeSelectionAttachments}
+          fileAttachments={commentFileAttachments}
+          comment={comment}
+          editorKey={commentEditorKey}
+          commentRef={commentRef}
+          mentionDirectory={mentionDirectory}
+          onCommentChange={onCommentChange}
+          onCodeSelectionAttachmentRemove={onCommentCodeSelectionAttachmentRemove}
+          onFileAttachmentRemove={onCommentFileAttachmentRemove}
+          onFileAttachmentsAdd={onCommentFileAttachmentsAdd}
+          onCommentSubmit={onCommentSubmit}
+          onFileLinkClick={onFileLinkClick}
+          status={status}
+        />
+      )}
     </>
   )
 }
