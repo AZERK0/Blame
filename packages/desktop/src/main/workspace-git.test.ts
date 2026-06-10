@@ -6,7 +6,9 @@ import { tmpdir } from "node:os";
 import test from "node:test";
 import { promisify } from "node:util";
 import {
+  ensureGitRepository,
   gitDiffBetween,
+  isGitRepository,
   listGitDirectory,
   readGitFile,
 } from "./workspace-git.ts";
@@ -72,6 +74,39 @@ test("rejects unsafe Git history inputs", async () => {
       readGitFile({ path: "removed.txt", refs: ["--help"], root: repository }),
       /Invalid Git revision/,
     );
+  } finally {
+    await rm(repository, { force: true, recursive: true });
+  }
+});
+
+test("initializes an opened folder that only belongs to a parent repository", async () => {
+  const parentRepository = await createRepository();
+  const openedFolder = join(parentRepository, "opened-project");
+  try {
+    await mkdir(openedFolder);
+    await writeFile(
+      join(openedFolder, "package.json"),
+      '{"name":"opened-project"}\n',
+    );
+
+    assert.equal(await isGitRepository(openedFolder), false);
+    assert.equal(await ensureGitRepository(openedFolder), true);
+
+    const { stdout } = await git(openedFolder, [
+      "rev-parse",
+      "--show-toplevel",
+    ]);
+    assert.equal(stdout.trim(), openedFolder);
+    assert.equal(await isGitRepository(openedFolder), true);
+  } finally {
+    await rm(parentRepository, { force: true, recursive: true });
+  }
+});
+
+test("keeps an existing repository unchanged", async () => {
+  const repository = await createRepository();
+  try {
+    assert.equal(await ensureGitRepository(repository), false);
   } finally {
     await rm(repository, { force: true, recursive: true });
   }

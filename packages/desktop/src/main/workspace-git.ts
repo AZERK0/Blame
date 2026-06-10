@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { basename, posix } from "node:path";
+import { basename, posix, resolve } from "node:path";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
@@ -61,6 +61,33 @@ export async function readGitFile(input: GitFileInput) {
   throw lastError;
 }
 
+export async function ensureGitRepository(root: string) {
+  const cwd = resolve(root);
+  let changed = false;
+
+  if (!(await isGitRepository(cwd))) {
+    await runGit(cwd, ["init"]);
+    changed = true;
+  }
+
+  if (!(await hasGitHead(cwd))) {
+    await createInitialGitCommit(cwd);
+    changed = true;
+  }
+
+  return changed;
+}
+
+export async function isGitRepository(root: string) {
+  const cwd = resolve(root);
+  try {
+    const { stdout } = await runGit(cwd, ["rev-parse", "--show-toplevel"]);
+    return resolve(stdout.trim()) === cwd;
+  } catch {
+    return false;
+  }
+}
+
 type GitTreeEntry = {
   name: string;
   path: string;
@@ -106,6 +133,31 @@ function gitPath(value?: string) {
 
 function runGit(root: string, args: string[]) {
   return execFileAsync("git", args, { cwd: root, maxBuffer });
+}
+
+async function hasGitHead(cwd: string) {
+  try {
+    await runGit(cwd, ["rev-parse", "--verify", "HEAD"]);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function createInitialGitCommit(cwd: string) {
+  await runGit(cwd, ["add", "-A", "--", "."]);
+  await runGit(cwd, [
+    "-c",
+    "user.name=Blame",
+    "-c",
+    "user.email=blame@local",
+    "commit",
+    "--allow-empty",
+    "--no-gpg-sign",
+    "--no-verify",
+    "-m",
+    "chore: initialize repository",
+  ]);
 }
 
 async function readGitTree(root: string, ref: string, path: string) {

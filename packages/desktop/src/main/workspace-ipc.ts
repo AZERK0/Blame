@@ -53,7 +53,9 @@ import {
 } from "./workspace-docker-cleanup";
 import { syncProjectEnvFiles } from "./workspace-env";
 import {
+  ensureGitRepository,
   gitDiffBetween,
+  isGitRepository,
   listGitDirectory,
   readGitFile,
   type GitDiffInput,
@@ -355,23 +357,6 @@ async function gitRepositoryFingerprint(root: string) {
   }
 
   return null;
-}
-
-async function ensureGitRepository(root: string) {
-  const cwd = resolve(root);
-  let changed = false;
-
-  if (!(await isGitRepository(cwd))) {
-    await execFileAsync("git", ["init"], { cwd });
-    changed = true;
-  }
-
-  if (!(await hasGitHead(cwd))) {
-    await createInitialGitCommit(cwd);
-    changed = true;
-  }
-
-  return changed;
 }
 
 async function createWorktree(input: CreateWorktreeInput) {
@@ -1044,44 +1029,6 @@ async function gitRemoteUrls(cwd: string) {
 
 async function assertGitRepository(cwd: string) {
   await execFileAsync("git", ["rev-parse", "--show-toplevel"], { cwd });
-}
-
-async function isGitRepository(cwd: string) {
-  try {
-    await assertGitRepository(cwd);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function hasGitHead(cwd: string) {
-  try {
-    await execFileAsync("git", ["rev-parse", "--verify", "HEAD"], { cwd });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function createInitialGitCommit(cwd: string) {
-  await execFileAsync("git", ["add", "-A", "--", "."], { cwd });
-  await execFileAsync(
-    "git",
-    [
-      "-c",
-      "user.name=Blame",
-      "-c",
-      "user.email=blame@local",
-      "commit",
-      "--allow-empty",
-      "--no-gpg-sign",
-      "--no-verify",
-      "-m",
-      "chore: initialize repository",
-    ],
-    { cwd },
-  );
 }
 
 async function removeGitWorktree(repositoryRoot: string, worktree: string) {
