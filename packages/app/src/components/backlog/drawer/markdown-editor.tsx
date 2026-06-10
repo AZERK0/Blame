@@ -47,6 +47,7 @@ import {
   type PendingCodeSelectionAttachment,
 } from "@/components/backlog/shared/comment-attachment-events"
 import type { UserStoryFileAttachment } from "@/components/backlog/data/backlog-data"
+import { fileAttachment } from "@/components/backlog/drawer/user-story-attachment-files"
 import { DevelopmentFileIcon } from "@/components/backlog/development/development-file-icon"
 import {
   Command,
@@ -1355,22 +1356,7 @@ async function persistentFileAttachment(
   attachment: PastedAttachment
 ): Promise<UserStoryFileAttachment> {
   return {
+    ...(await fileAttachment(attachment.file)),
     id: attachment.id,
-    content: await fileContent(attachment.file),
-    name: attachment.file.name,
-    size: attachment.file.size,
-    type: attachment.file.type,
   }
-}
-
-function fileContent(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader()
-    reader.addEventListener("load", () => {
-      const value = typeof reader.result === "string" ? reader.result : ""
-      resolve(value.split(",", 2)[1] ?? "")
-    })
-    reader.addEventListener("error", () => reject(reader.error))
-    reader.readAsDataURL(file)
-  })
 }

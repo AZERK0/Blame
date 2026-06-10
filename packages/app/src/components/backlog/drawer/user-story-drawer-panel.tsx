@@ -30,7 +30,10 @@ import {
 import { DrawerSidebar } from "@/components/backlog/drawer/user-story-drawer-sidebar"
 import { UserStoryContent } from "@/components/backlog/drawer/user-story-drawer-sections"
 import { UserStoryPreview } from "@/components/backlog/drawer/user-story-preview"
-import { pendingFileAttachments } from "@/components/backlog/drawer/user-story-attachment-files"
+import {
+  fileAttachment,
+  pendingFileAttachments,
+} from "@/components/backlog/drawer/user-story-attachment-files"
 import {
   codeSelectionAttachmentEvent,
   type CodeSelectionAttachment,
@@ -313,7 +316,8 @@ export function UserStoryDrawerPanel({
             <UserStoryPreview
               setupInitializing={setupInitializing}
               userStory={userStory}
-              onCapture={() => {
+              onCapture={(file) => {
+                void addPreviewCaptureAttachment(file)
                 setTab("user-story")
                 requestAnimationFrame(() => {
                   commentRef.current
@@ -413,6 +417,11 @@ export function UserStoryDrawerPanel({
     setDevelopmentFileTarget({ id: crypto.randomUUID(), path })
     setDevelopmentTab("files")
     setTab("development")
+  }
+
+  async function addPreviewCaptureAttachment(file: File) {
+    const attachment = await fileAttachment(file)
+    setCommentFileAttachments((current) => [...current, attachment])
   }
 
   async function submitComment() {
