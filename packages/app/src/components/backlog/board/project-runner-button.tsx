@@ -2,13 +2,14 @@ import type { ProjectRunConfiguration } from "@blame/agent-runtime"
 import {
   ChevronDownIcon,
   PlayIcon,
+  RotateCwIcon,
   SquareIcon,
   TerminalIcon,
 } from "lucide-react"
 import * as React from "react"
-import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
+import { ButtonGroup } from "@/components/ui/button-group"
 import {
   Drawer,
   DrawerContent,
@@ -20,9 +21,21 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { usePlatform, type TerminalClient } from "@/context/platform"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import {
+  type ProjectRunSession,
+  useProjectRunner,
+} from "@/components/backlog/board/use-project-runner"
 
 type Runner = ReturnType<typeof useProjectRunner>
 
@@ -36,87 +49,18 @@ export function ProjectRunnerButton({
   const runner = useProjectRunner(configurations, projectPath)
   if (!runner.selected) return null
   return (
-    <>
-      <div className="flex items-center">
-        <RunnerActionButton projectPath={projectPath} runner={runner} />
-        <RunnerLogsButton runner={runner} />
+    <TooltipProvider>
+      <ButtonGroup className="rounded-lg bg-muted/40 p-0.5">
         <RunnerConfigurationMenu
           configurations={configurations}
           runner={runner}
         />
-      </div>
+        <RunnerStartButton projectPath={projectPath} runner={runner} />
+        <RunnerStopButton runner={runner} />
+        <RunnerLogsButton runner={runner} />
+      </ButtonGroup>
       <RunnerLogsDrawer runner={runner} />
-    </>
-  )
-}
-
-function RunnerActionButton({
-  projectPath,
-  runner,
-}: {
-  projectPath?: string
-  runner: Runner
-}) {
-  const running = Boolean(runner.sessionId)
-  return (
-    <Button
-      className="rounded-r-none"
-      disabled={!projectPath || !runner.terminal}
-      type="button"
-      variant={running ? "destructive" : "outline"}
-      onClick={running ? runner.stop : runner.start}
-    >
-      {running ? <SquareIcon /> : <PlayIcon />}
-      {running ? "Stop" : runner.selected?.name}
-    </Button>
-  )
-}
-
-function RunnerLogsButton({ runner }: { runner: Runner }) {
-  return (
-    <Button
-      aria-label="Open run logs"
-      className="rounded-none border-l-0"
-      disabled={!runner.logs}
-      size="icon"
-      type="button"
-      variant="outline"
-      onClick={() => runner.setLogsOpen(true)}
-    >
-      <TerminalIcon />
-    </Button>
-  )
-}
-
-function RunnerLogsDrawer({ runner }: { runner: Runner }) {
-  const outputRef = React.useRef<HTMLPreElement>(null)
-  React.useEffect(() => {
-    const output = outputRef.current
-    if (output) output.scrollTop = output.scrollHeight
-  }, [runner.logs])
-  return (
-    <Drawer
-      direction="bottom"
-      open={runner.logsOpen}
-      onOpenChange={runner.setLogsOpen}
-    >
-      <DrawerContent className="h-[45vh]">
-        <DrawerHeader className="border-b px-5 py-3 text-left">
-          <DrawerTitle>
-            {runner.logsName ?? runner.selected?.name} logs
-          </DrawerTitle>
-          <DrawerDescription>
-            {runner.sessionId ? "Project is running" : "Project is stopped"}
-          </DrawerDescription>
-        </DrawerHeader>
-        <pre
-          ref={outputRef}
-          className="min-h-0 flex-1 overflow-auto bg-zinc-950 p-4 font-mono text-xs whitespace-pre-wrap text-zinc-100 select-text"
-        >
-          {runner.logs || "No output yet."}
-        </pre>
-      </DrawerContent>
-    </Drawer>
+    </TooltipProvider>
   )
 }
 
@@ -129,262 +73,276 @@ function RunnerConfigurationMenu({
 }) {
   return (
     <DropdownMenu>
-      <RunnerConfigurationTrigger disabled={Boolean(runner.sessionId)} />
-      <DropdownMenuContent align="end" className="min-w-56">
-        <RunnerConfigurationItems
-          configurations={configurations}
-          onSelect={runner.setSelectedId}
-        />
-      </DropdownMenuContent>
+      <RunnerConfigurationTrigger runner={runner} />
+      <RunnerConfigurationContent configurations={configurations} runner={runner} />
     </DropdownMenu>
   )
 }
 
-function RunnerConfigurationTrigger({ disabled }: { disabled: boolean }) {
+function RunnerConfigurationTrigger({ runner }: { runner: Runner }) {
   return (
     <DropdownMenuTrigger asChild>
-      <Button
-        aria-label="Select run configuration"
-        className="rounded-l-none border-l-0"
-        disabled={disabled}
-        size="icon"
-        type="button"
-        variant="outline"
-      >
+      <Button className="min-w-36 justify-between" type="button" variant="ghost">
+        <span className="flex min-w-0 items-center gap-2">
+          <RunStatusDot session={runner.selectedSession} />
+          <span className="truncate">{runner.selected?.name}</span>
+        </span>
         <ChevronDownIcon />
       </Button>
     </DropdownMenuTrigger>
   )
 }
 
-function RunnerConfigurationItems({
+function RunnerConfigurationContent({
   configurations,
-  onSelect,
+  runner,
 }: {
   configurations: ProjectRunConfiguration[]
-  onSelect(id: string): void
+  runner: Runner
 }) {
-  return configurations.map((configuration) => (
+  return (
+    <DropdownMenuContent align="end" className="min-w-64">
+      <DropdownMenuLabel>Run configurations</DropdownMenuLabel>
+      <DropdownMenuSeparator />
+      {configurations.map((configuration) => (
+        <ConfigurationMenuItem
+          key={configuration.id}
+          configuration={configuration}
+          runner={runner}
+        />
+      ))}
+    </DropdownMenuContent>
+  )
+}
+
+function ConfigurationMenuItem({
+  configuration,
+  runner,
+}: {
+  configuration: ProjectRunConfiguration
+  runner: Runner
+}) {
+  const session = runner.sessionFor(configuration.id)
+  return (
     <DropdownMenuItem
-      key={configuration.id}
-      onSelect={() => onSelect(configuration.id)}
+      className="py-1.5"
+      onSelect={() => runner.select(configuration.id)}
     >
-      <PlayIcon />
-      {configuration.name}
+      <RunStatusDot session={session} />
+      <span className="flex-1 truncate">{configuration.name}</span>
+      <ConfigurationMenuAction
+        configurationId={configuration.id}
+        running={session?.status === "running"}
+        runner={runner}
+      />
     </DropdownMenuItem>
-  ))
-}
-
-function useProjectRunner(
-  configurations: ProjectRunConfiguration[],
-  projectPath?: string
-) {
-  const terminal = usePlatform().terminal
-  const state = useRunnerState(configurations)
-  const activeSessionRef = React.useRef<string>()
-  const unsubscribeRef = React.useRef<() => void>()
-  const selected = selectedConfiguration(configurations, state.selectedId)
-  useRunnerCleanup(terminal, activeSessionRef, unsubscribeRef)
-  const start = () =>
-    void startProject(
-      startProjectInput(
-        state,
-        selected,
-        projectPath,
-        terminal,
-        activeSessionRef,
-        unsubscribeRef
-      )
-    )
-  const stop = () =>
-    void stopProject(
-      stopProjectInput(state, selected, terminal, activeSessionRef, unsubscribeRef)
-    )
-  return {
-    selected,
-    terminal,
-    start,
-    stop,
-    ...state,
-  }
-}
-
-function useRunnerState(configurations: ProjectRunConfiguration[]) {
-  const [selectedId, setSelectedId] = React.useState(
-    () => defaultConfiguration(configurations)?.id
-  )
-  const [sessionId, setSessionId] = React.useState<string>()
-  const [logs, setLogs] = React.useState("")
-  const [logsName, setLogsName] = React.useState<string>()
-  const [logsOpen, setLogsOpen] = React.useState(false)
-  return {
-    logs,
-    logsName,
-    logsOpen,
-    selectedId,
-    sessionId,
-    setLogs,
-    setLogsName,
-    setLogsOpen,
-    setSelectedId,
-    setSessionId,
-  }
-}
-
-function useRunnerCleanup(
-  terminal: TerminalClient | undefined,
-  activeSessionRef: React.RefObject<string | undefined>,
-  unsubscribeRef: React.RefObject<(() => void) | undefined>
-) {
-  React.useEffect(
-    () => () => {
-      unsubscribeRef.current?.()
-      if (activeSessionRef.current) void terminal?.stop(activeSessionRef.current)
-    },
-    [activeSessionRef, terminal, unsubscribeRef]
   )
 }
 
-type StartProjectInput = {
-  configuration?: ProjectRunConfiguration
-  projectPath?: string
-  setLogs: React.Dispatch<React.SetStateAction<string>>
-  setLogsName: React.Dispatch<React.SetStateAction<string | undefined>>
-  setLogsOpen: React.Dispatch<React.SetStateAction<boolean>>
-  setSessionId: React.Dispatch<React.SetStateAction<string | undefined>>
-  terminal?: TerminalClient
-  activeSessionRef: React.RefObject<string | undefined>
-  unsubscribeRef: React.RefObject<(() => void) | undefined>
-}
-
-type RunnerState = ReturnType<typeof useRunnerState>
-
-function startProjectInput(
-  state: RunnerState,
-  configuration: ProjectRunConfiguration | undefined,
-  projectPath: string | undefined,
-  terminal: TerminalClient | undefined,
-  activeSessionRef: React.RefObject<string | undefined>,
-  unsubscribeRef: React.RefObject<(() => void) | undefined>
-): StartProjectInput {
-  return {
-    ...state,
-    activeSessionRef,
-    configuration,
-    projectPath,
-    terminal,
-    unsubscribeRef,
+function ConfigurationMenuAction({
+  configurationId,
+  running,
+  runner,
+}: {
+  configurationId: string
+  running: boolean
+  runner: Runner
+}) {
+  const run = (event: React.PointerEvent<HTMLButtonElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    if (running) runner.stop(configurationId)
+    else runner.start(configurationId)
   }
-}
-
-async function startProject(input: StartProjectInput) {
-  const { configuration, projectPath, terminal } = input
-  if (!terminal || !projectPath || !configuration) return
-  let startedSessionId: string | undefined
-  input.setLogs(`$ cd ${configurationPath(projectPath, configuration.cwd)}\n$ ${configuration.command}\n`)
-  input.setLogsName(configuration.name)
-  input.setLogsOpen(true)
-  try {
-    const session = await terminal.start({
-      cwd: configurationPath(projectPath, configuration.cwd),
-    })
-    startedSessionId = session.id
-    input.activeSessionRef.current = session.id
-    input.unsubscribeRef.current = subscribeToOutput(terminal, session.id, input)
-    input.setSessionId(session.id)
-    const written = await terminal.write({
-      id: session.id,
-      data: `${configuration.command}\n`,
-    })
-    if (!written) throw new Error("Unable to write the launch command")
-    toast.success(`Started ${configuration.name}`, { position: "bottom-right" })
-  } catch (error) {
-    if (startedSessionId) await terminal.stop(startedSessionId)
-    input.activeSessionRef.current = undefined
-    input.setLogs((current) => `${current}\n${errorText(error)}\n`)
-    showStartError(configuration.name, error)
-  }
-}
-
-type StopProjectInput = {
-  configuration?: ProjectRunConfiguration
-  sessionId?: string
-  setLogs: React.Dispatch<React.SetStateAction<string>>
-  setSessionId: React.Dispatch<React.SetStateAction<string | undefined>>
-  terminal?: TerminalClient
-  activeSessionRef: React.RefObject<string | undefined>
-  unsubscribeRef: React.RefObject<(() => void) | undefined>
-}
-
-function stopProjectInput(
-  state: RunnerState,
-  configuration: ProjectRunConfiguration | undefined,
-  terminal: TerminalClient | undefined,
-  activeSessionRef: React.RefObject<string | undefined>,
-  unsubscribeRef: React.RefObject<(() => void) | undefined>
-): StopProjectInput {
-  return { ...state, activeSessionRef, configuration, terminal, unsubscribeRef }
-}
-
-async function stopProject(input: StopProjectInput) {
-  const { configuration, sessionId, terminal } = input
-  if (!terminal || !sessionId || !configuration) return
-  await terminal.stop(sessionId)
-  input.unsubscribeRef.current?.()
-  input.unsubscribeRef.current = undefined
-  input.activeSessionRef.current = undefined
-  input.setLogs((current) => `${current}\n[stopped by user]\n`)
-  input.setSessionId(undefined)
-  toast.success(`Stopped ${configuration.name}`, { position: "bottom-right" })
-}
-
-function subscribeToOutput(
-  terminal: TerminalClient,
-  sessionId: string,
-  input: StartProjectInput
-) {
-  return terminal.onEvent(sessionId, (event) => {
-    if (event.type !== "exit") {
-      input.setLogs((current) => `${current}${event.data}`)
-      return
-    }
-    input.setLogs((current) => `${current}\n[process exited ${event.data}]\n`)
-    input.setSessionId(undefined)
-    input.activeSessionRef.current = undefined
-    input.unsubscribeRef.current?.()
-    input.unsubscribeRef.current = undefined
-  })
-}
-
-function showStartError(name: string, error: unknown) {
-  toast.error(`Unable to start ${name}`, {
-    description: errorText(error),
-    position: "bottom-right",
-  })
-}
-
-function errorText(error: unknown) {
-  return error instanceof Error ? error.message : String(error)
-}
-
-function selectedConfiguration(
-  configurations: ProjectRunConfiguration[],
-  selectedId: string | undefined
-) {
   return (
-    configurations.find((configuration) => configuration.id === selectedId) ??
-    defaultConfiguration(configurations)
+    <button
+      aria-label={running ? "Stop configuration" : "Run configuration"}
+      className="rounded-md p-1 hover:bg-foreground/10"
+      type="button"
+      onPointerDown={run}
+    >
+      {running ? (
+        <SquareIcon className="text-destructive" />
+      ) : (
+        <PlayIcon className="text-emerald-500" />
+      )}
+    </button>
   )
 }
 
-function defaultConfiguration(configurations: ProjectRunConfiguration[]) {
+function RunnerStartButton({
+  projectPath,
+  runner,
+}: {
+  projectPath?: string
+  runner: Runner
+}) {
+  const running = runner.selectedSession?.status === "running"
   return (
-    configurations.find((configuration) => configuration.default) ??
-    configurations[0]
+    <IconTooltip label={running ? "Rerun configuration" : "Run configuration"}>
+      <Button
+        className={
+          running
+            ? "bg-emerald-600 text-white hover:bg-emerald-500"
+            : "bg-muted text-emerald-500 hover:bg-muted/80 hover:text-emerald-400"
+        }
+        disabled={!projectPath || !runner.terminal}
+        size="icon"
+        type="button"
+        onClick={runner.startSelected}
+      >
+        {running ? <RotateCwIcon /> : <PlayIcon />}
+      </Button>
+    </IconTooltip>
   )
 }
 
-function configurationPath(projectPath: string, cwd: string) {
-  if (cwd === ".") return projectPath
-  return `${projectPath.replace(/[\\/]+$/, "")}/${cwd}`
+function RunnerStopButton({ runner }: { runner: Runner }) {
+  return (
+    <IconTooltip label="Stop selected configuration">
+      <Button
+        disabled={runner.selectedSession?.status !== "running"}
+        size="icon"
+        type="button"
+        variant="destructive"
+        onClick={runner.stopSelected}
+      >
+        <SquareIcon />
+      </Button>
+    </IconTooltip>
+  )
+}
+
+function RunnerLogsButton({ runner }: { runner: Runner }) {
+  return (
+    <IconTooltip label="Open run logs">
+      <Button
+        disabled={runner.sessions.length === 0}
+        size="icon"
+        type="button"
+        variant="ghost"
+        onClick={() => runner.setLogsOpen(true)}
+      >
+        <TerminalIcon />
+      </Button>
+    </IconTooltip>
+  )
+}
+
+function IconTooltip({
+  children,
+  label,
+}: {
+  children: React.ReactElement
+  label: string
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  )
+}
+
+function RunnerLogsDrawer({ runner }: { runner: Runner }) {
+  const activeSession = runner.activeSession
+  return (
+    <Drawer
+      direction="bottom"
+      open={runner.logsOpen}
+      onOpenChange={runner.setLogsOpen}
+    >
+      <DrawerContent className="h-[50vh]">
+        <RunnerLogsHeader runner={runner} session={activeSession} />
+        {activeSession ? (
+          <RunnerLogOutput key={activeSession.configurationId} session={activeSession} />
+        ) : null}
+      </DrawerContent>
+    </Drawer>
+  )
+}
+
+function RunnerLogsHeader({
+  runner,
+  session,
+}: {
+  runner: Runner
+  session?: ProjectRunSession
+}) {
+  return (
+    <DrawerHeader className="gap-3 border-b px-5 py-3 text-left">
+      <RunnerLogsSummary runningCount={runner.runningCount} />
+      <div className="flex items-center gap-2 overflow-x-auto">
+        <RunnerSessionTabs runner={runner} session={session} />
+        <Button
+          disabled={session?.status !== "running"}
+          size="icon-sm"
+          type="button"
+          variant="destructive"
+          onClick={() => session && runner.stop(session.configurationId)}
+        >
+          <SquareIcon />
+          <span className="sr-only">Stop selected run</span>
+        </Button>
+      </div>
+    </DrawerHeader>
+  )
+}
+
+function RunnerLogsSummary({ runningCount }: { runningCount: number }) {
+  return (
+    <div>
+      <DrawerTitle>Run</DrawerTitle>
+      <DrawerDescription>
+        {runningCount} running configuration{runningCount === 1 ? "" : "s"}
+      </DrawerDescription>
+    </div>
+  )
+}
+
+function RunnerSessionTabs({
+  runner,
+  session,
+}: {
+  runner: Runner
+  session?: ProjectRunSession
+}) {
+  return (
+    <Tabs value={session?.configurationId} onValueChange={runner.selectSession}>
+      <TabsList className="h-8" variant="line">
+        {runner.sessions.map((item) => (
+          <TabsTrigger key={item.configurationId} value={item.configurationId}>
+            <RunStatusDot session={item} />
+            {item.name}
+          </TabsTrigger>
+        ))}
+      </TabsList>
+    </Tabs>
+  )
+}
+
+function RunnerLogOutput({ session }: { session: ProjectRunSession }) {
+  const outputRef = React.useRef<HTMLPreElement>(null)
+  React.useEffect(() => {
+    const output = outputRef.current
+    if (output) output.scrollTop = output.scrollHeight
+  }, [session.logs])
+  return (
+    <pre
+      ref={outputRef}
+      className="min-h-0 flex-1 overflow-auto bg-zinc-950 p-4 font-mono text-xs whitespace-pre-wrap text-zinc-100 select-text"
+    >
+      {session.logs || "No output yet."}
+    </pre>
+  )
+}
+
+function RunStatusDot({ session }: { session?: ProjectRunSession }) {
+  const tone =
+    session?.status === "running"
+      ? "bg-emerald-500"
+      : session?.status === "error"
+        ? "bg-destructive"
+        : "bg-muted-foreground/45"
+  return <span className={`size-2 shrink-0 rounded-full ${tone}`} />
 }
