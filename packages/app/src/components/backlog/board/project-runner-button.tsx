@@ -48,7 +48,7 @@ export function ProjectRunnerButton({
   if (!runner.selected) return null
   return (
     <TooltipProvider>
-      <ButtonGroup className="rounded-lg bg-muted/40 p-0.5">
+      <ButtonGroup className="rounded-lg bg-foreground/5 p-0.5 dark:bg-foreground/10">
         <RunnerConfigurationMenu
           configurations={configurations}
           runner={runner}
