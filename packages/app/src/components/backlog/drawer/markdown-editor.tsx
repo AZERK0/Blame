@@ -2,6 +2,7 @@ import * as React from "react"
 import {
   BoldIcon,
   CodeIcon,
+  EllipsisIcon,
   Heading2Icon,
   ItalicIcon,
   LinkIcon,
@@ -26,6 +27,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
@@ -411,76 +418,124 @@ const markdownActions: {
   { action: "task", icon: ListChecksIcon, label: "Task list" },
 ]
 
+const visibleMarkdownActions = markdownActions.filter(({ action }) =>
+  ["bold", "italic", "code", "link"].includes(action)
+)
+
+const additionalMarkdownActions = markdownActions.filter(
+  ({ action }) => !visibleMarkdownActions.some((item) => item.action === action)
+)
+
 function MarkdownToolbar({
   disabled,
   onAction,
-  onOptimize,
-  optimizing,
   onRedo,
   onUndo,
 }: {
   disabled?: boolean
   onAction: (action: MarkdownAction) => void
-  onOptimize?: () => void
-  optimizing?: boolean
   onRedo: () => void
   onUndo: () => void
 }) {
   return (
     <TooltipProvider>
-      <div className="flex flex-wrap items-center gap-1 rounded-xl border bg-popover/80 p-1 shadow-sm backdrop-blur-xl">
+      <div className="flex flex-wrap items-center gap-0.5">
         <ToolbarIconButton disabled={disabled} label="Undo" onClick={onUndo}>
-          <Undo2Icon className="size-4" />
+          <Undo2Icon className="size-3.5" />
         </ToolbarIconButton>
         <ToolbarIconButton disabled={disabled} label="Redo" onClick={onRedo}>
-          <Redo2Icon className="size-4" />
+          <Redo2Icon className="size-3.5" />
         </ToolbarIconButton>
         <ToolbarSeparator />
-        {markdownActions.map(({ action, icon: Icon, label }) => (
-          <React.Fragment key={action}>
-            {action === "unordered" && <ToolbarSeparator />}
-            <ToolbarIconButton
-              disabled={disabled}
-              label={label}
-              onClick={() => onAction(action)}
-            >
-              <Icon className="size-4" />
-            </ToolbarIconButton>
-          </React.Fragment>
+        {visibleMarkdownActions.map(({ action, icon: Icon, label }) => (
+          <ToolbarIconButton
+            key={action}
+            disabled={disabled}
+            label={label}
+            onClick={() => onAction(action)}
+          >
+            <Icon className="size-3.5" />
+          </ToolbarIconButton>
         ))}
-        {onOptimize && (
-          <>
-            <ToolbarSeparator />
-            <Tooltip delayDuration={1000}>
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  aria-label="Optimize with AI"
-                  className="h-7 gap-1.5 rounded-lg border-primary/20 bg-gradient-to-r from-primary to-sky-500 px-2.5 text-xs text-primary-foreground shadow-sm shadow-primary/20 hover:from-primary/90 hover:to-sky-500/90"
-                  disabled={disabled}
-                  onClick={onOptimize}
-                >
-                  {optimizing ? (
-                    <LoaderCircleIcon className="size-3.5 animate-spin" />
-                  ) : (
-                    <SparklesIcon className="size-3.5" />
-                  )}
-                  Optimize with AI
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent sideOffset={6}>
-                Rewrite this user story into a clearer, structured prompt.
-              </TooltipContent>
-            </Tooltip>
-          </>
-        )}
+        <AdditionalMarkdownActions disabled={disabled} onAction={onAction} />
       </div>
     </TooltipProvider>
   )
 }
 
+function MarkdownOptimizeButton({
+  disabled,
+  onOptimize,
+  optimizing,
+}: {
+  disabled?: boolean
+  onOptimize: () => void
+  optimizing?: boolean
+}) {
+  return (
+    <TooltipProvider>
+      <Tooltip delayDuration={1000}>
+        <TooltipTrigger asChild>
+          <Button
+            type="button"
+            aria-label="Optimize with AI"
+            className="absolute top-3 right-3 z-10 h-7 gap-1.5 rounded-lg border-primary/20 bg-gradient-to-r from-primary/90 to-sky-600 px-2.5 text-xs text-primary-foreground shadow-sm shadow-primary/15 hover:from-primary hover:to-sky-600/90"
+            disabled={disabled}
+            onClick={onOptimize}
+          >
+            {optimizing ? (
+              <LoaderCircleIcon className="size-3.5 animate-spin" />
+            ) : (
+              <SparklesIcon className="size-3.5" />
+            )}
+            Optimize with AI
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent sideOffset={6}>
+          Rewrite this user story into a clearer, structured prompt.
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  )
+}
+
+function AdditionalMarkdownActions({
+  disabled,
+  onAction,
+}: {
+  disabled?: boolean
+  onAction: (action: MarkdownAction) => void
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          aria-label="More formatting"
+          className="text-muted-foreground hover:text-foreground"
+          disabled={disabled}
+          size="icon-sm"
+          variant="ghost"
+        >
+          <EllipsisIcon className="size-3.5" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-44">
+        {additionalMarkdownActions.map(({ action, icon: Icon, label }) => (
+          <DropdownMenuItem key={action} onSelect={() => onAction(action)}>
+            <Icon className="size-3.5 text-muted-foreground" />
+            {label}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
 function ToolbarSeparator() {
-  return <Separator className="mx-1 h-5 !self-center" orientation="vertical" />
+  return (
+    <Separator className="mx-1.5 h-4 !self-center" orientation="vertical" />
+  )
 }
 
 function ToolbarIconButton({
@@ -500,6 +555,7 @@ function ToolbarIconButton({
         <Button
           type="button"
           aria-label={label}
+          className="text-muted-foreground hover:text-foreground"
           disabled={disabled || !onClick}
           size="icon-sm"
           variant="ghost"
@@ -529,13 +585,23 @@ function MarkdownPreview({
   const blocks = markdownPreviewBlocks(markdown)
   if (!markdown.trim()) {
     return (
-      <div className={cn("select-text text-sm text-muted-foreground", className)}>
+      <div
+        className={cn(
+          "text-[0.9375rem] text-muted-foreground/55 select-text dark:text-muted-foreground/50",
+          className
+        )}
+      >
         {placeholder}
       </div>
     )
   }
   return (
-    <div className={cn("select-text space-y-2 text-sm leading-6", className)}>
+    <div
+      className={cn(
+        "space-y-2 text-[0.9375rem] leading-6 select-text",
+        className
+      )}
+    >
       {blocks.map((block) =>
         block.type === "code" ? (
           <MarkdownPreviewCode key={block.key} code={block.code} />
@@ -1095,14 +1161,14 @@ export const MarkdownEditor = React.forwardRef<
             if (typeof ref === "function") ref(element)
             else if (ref) ref.current = element
           }}
-          className="rounded-2xl border border-border/80 bg-background/70 p-2 shadow-lg shadow-foreground/5 backdrop-blur-xl transition-colors focus-within:border-ring dark:bg-input/20"
+          className="rounded-3xl bg-muted/50 p-1 transition-colors dark:bg-muted/50"
           onBlur={() => requestAnimationFrame(() => updateMention())}
           onKeyDownCapture={handleKeyDown}
           onPaste={handlePaste}
         >
           {readOnly ? (
             <MarkdownPreview
-              className={cn(minHeight, "rounded-xl px-3 py-3")}
+              className={cn(minHeight, "px-4 py-3.5")}
               markdown={value}
               onFileLinkClick={onFileLinkClick}
               onTaskToggle={readOnly ? undefined : toggleTaskLine}
@@ -1110,35 +1176,24 @@ export const MarkdownEditor = React.forwardRef<
             />
           ) : (
             <Tabs
-              className="gap-2"
+              className="gap-0"
               value={mode}
               onValueChange={(nextMode) => setMode(nextMode as MarkdownMode)}
             >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <TabsList className="rounded-xl bg-muted/60 p-1">
-                  <TabsTrigger className="px-4" value="write">
-                    Write
-                  </TabsTrigger>
-                  <TabsTrigger className="px-4" value="preview">
-                    Preview
-                  </TabsTrigger>
-                </TabsList>
-                <MarkdownToolbar
-                  disabled={readOnly || mode === "preview" || optimizing}
-                  onAction={applyMarkdownAction}
-                  onOptimize={onOptimize ? handleOptimize : undefined}
-                  optimizing={optimizing}
-                  onRedo={() => runHistoryCommand("redo")}
-                  onUndo={() => runHistoryCommand("undo")}
-                />
-              </div>
-              <TabsContent className="mt-0" value="write">
+              <TabsContent className="relative" value="write">
+                {onOptimize && (
+                  <MarkdownOptimizeButton
+                    disabled={optimizing}
+                    onOptimize={handleOptimize}
+                    optimizing={optimizing}
+                  />
+                )}
                 <Textarea
                   ref={textareaRef}
                   data-markdown-editor-input="true"
                   className={cn(
                     minHeight,
-                    "resize-y rounded-xl border-border/80 bg-background/70 px-3 py-3 text-sm shadow-inner shadow-foreground/3 focus-visible:border-border/80 focus-visible:ring-0 dark:bg-background/20"
+                    "resize-y rounded-3xl border-0 bg-input/40 px-4 py-3.5 pr-40 text-[0.9375rem] shadow-none placeholder:text-muted-foreground/55 focus-visible:border-0 focus-visible:ring-0 md:text-[0.9375rem] dark:bg-muted dark:placeholder:text-muted-foreground/50"
                   )}
                   placeholder={placeholder}
                   value={value}
@@ -1153,7 +1208,7 @@ export const MarkdownEditor = React.forwardRef<
                 <MarkdownPreview
                   className={cn(
                     minHeight,
-                    "rounded-xl border border-border/80 bg-background/70 px-3 py-3 shadow-inner shadow-foreground/3 dark:bg-background/20"
+                    "rounded-3xl bg-input/60 px-4 py-3.5 dark:bg-muted"
                   )}
                   markdown={value}
                   onFileLinkClick={onFileLinkClick}
@@ -1161,37 +1216,66 @@ export const MarkdownEditor = React.forwardRef<
                   placeholder={placeholder}
                 />
               </TabsContent>
+              {attachments.length > 0 && (
+                <div className="mx-1 flex flex-wrap items-center gap-3 px-3 py-3">
+                  {attachments.map((attachment) => (
+                    <AttachmentPreview
+                      key={attachment.id}
+                      attachment={attachment}
+                      onRemove={removeAttachment}
+                    />
+                  ))}
+                </div>
+              )}
+              <div className="flex flex-wrap items-center justify-between gap-2 px-1 py-1.5">
+                <div className="flex min-w-0 flex-wrap items-center gap-0.5">
+                  <input
+                    ref={fileInputRef}
+                    className="hidden"
+                    multiple
+                    type="file"
+                    onChange={handleFileSelection}
+                  />
+                  <Button
+                    type="button"
+                    aria-label="Attach files"
+                    className="text-muted-foreground hover:text-foreground"
+                    size="icon-sm"
+                    variant="ghost"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <PaperclipIcon className="size-3.5" />
+                  </Button>
+                  <ToolbarSeparator />
+                  <MarkdownToolbar
+                    disabled={mode === "preview" || optimizing}
+                    onAction={applyMarkdownAction}
+                    onRedo={() => runHistoryCommand("redo")}
+                    onUndo={() => runHistoryCommand("undo")}
+                  />
+                </div>
+                <TabsList className="h-7 rounded-lg bg-muted/70 p-0.5">
+                  <TabsTrigger className="h-6 px-2.5 text-xs" value="write">
+                    Write
+                  </TabsTrigger>
+                  <TabsTrigger className="h-6 px-2.5 text-xs" value="preview">
+                    Preview
+                  </TabsTrigger>
+                </TabsList>
+              </div>
             </Tabs>
           )}
 
-          <div className="flex flex-wrap items-center gap-3 px-2 pt-3 pb-1">
-            {attachments.map((attachment) => (
-              <AttachmentPreview
-                key={attachment.id}
-                attachment={attachment}
-                onRemove={readOnly ? undefined : removeAttachment}
-              />
-            ))}
-            {!readOnly && (
-              <>
-                <input
-                  ref={fileInputRef}
-                  className="hidden"
-                  multiple
-                  type="file"
-                  onChange={handleFileSelection}
+          {readOnly && attachments.length > 0 && (
+            <div className="flex flex-wrap items-center gap-3 border-t border-border/70 px-3 py-3">
+              {attachments.map((attachment) => (
+                <AttachmentPreview
+                  key={attachment.id}
+                  attachment={attachment}
                 />
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="flex h-16 w-16 flex-col gap-2 rounded-xl border-dashed bg-background/70 p-5 shadow-sm"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <PaperclipIcon className="size-5" />
-                </Button>
-              </>
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </PopoverAnchor>
       <PopoverContent
