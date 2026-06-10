@@ -271,7 +271,6 @@ function RunnerLogsHeader({
 }) {
   return (
     <DrawerHeader className="gap-3 border-b px-5 py-3 text-left">
-      <RunnerLogsSummary runningCount={runner.runningCount} />
       <div className="flex items-center gap-2 overflow-x-auto">
         <RunnerSessionTabs runner={runner} session={session} />
         <Button
@@ -289,17 +288,6 @@ function RunnerLogsHeader({
   )
 }
 
-function RunnerLogsSummary({ runningCount }: { runningCount: number }) {
-  return (
-    <div>
-      <DrawerTitle>Run</DrawerTitle>
-      <DrawerDescription>
-        {runningCount} running configuration{runningCount === 1 ? "" : "s"}
-      </DrawerDescription>
-    </div>
-  )
-}
-
 function RunnerSessionTabs({
   runner,
   session,
@@ -308,8 +296,8 @@ function RunnerSessionTabs({
   session?: ProjectRunSession
 }) {
   return (
-    <Tabs value={session?.configurationId} onValueChange={runner.selectSession}>
-      <TabsList className="h-8" variant="line">
+    <Tabs value={session?.configurationId} onValueChange={runner.selectSession} className="overflow-y-hidden">
+      <TabsList>
         {runner.sessions.map((item) => (
           <TabsTrigger key={item.configurationId} value={item.configurationId}>
             <RunStatusDot session={item} />
