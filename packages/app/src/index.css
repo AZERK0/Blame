@@ -151,7 +151,10 @@
 
   .agent-response-effect::before {
     position: absolute;
-    inset: -150%;
+    top: 50%;
+    left: 50%;
+    width: 200%;
+    aspect-ratio: 1;
     pointer-events: none;
     background: conic-gradient(
       from 0deg,
@@ -310,8 +313,12 @@
 }
 
 @keyframes agent-response-border-rotation {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+
   to {
-    transform: rotate(360deg);
+    transform: translate(-50%, -50%) rotate(360deg);
   }
 }
 
@@ -325,9 +332,9 @@
 
   50% {
     box-shadow:
-      0 0 0 2px oklch(0.8 0.16 240 / 75%),
-      0 0 10px oklch(0.7 0.21 245 / 75%),
-      0 0 20px oklch(0.62 0.22 255 / 55%);
+      0 0 0 2px oklch(0.8 0.16 240 / 70%),
+      0 0 8px oklch(0.7 0.21 245 / 70%),
+      0 0 13px oklch(0.62 0.22 255 / 55%);
   }
 }
 
