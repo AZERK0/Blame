@@ -529,13 +529,13 @@ function MarkdownPreview({
   const blocks = markdownPreviewBlocks(markdown)
   if (!markdown.trim()) {
     return (
-      <div className={cn("text-sm text-muted-foreground", className)}>
+      <div className={cn("select-text text-sm text-muted-foreground", className)}>
         {placeholder}
       </div>
     )
   }
   return (
-    <div className={cn("space-y-2 text-sm leading-6", className)}>
+    <div className={cn("select-text space-y-2 text-sm leading-6", className)}>
       {blocks.map((block) =>
         block.type === "code" ? (
           <MarkdownPreviewCode key={block.key} code={block.code} />

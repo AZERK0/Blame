@@ -1081,7 +1081,7 @@ function SetupLogPanel({
         <pre
           ref={logRef}
           className={cn(
-            "min-h-0 flex-1 overflow-auto rounded-lg bg-zinc-950 p-4 font-mono text-xs whitespace-pre-wrap text-zinc-100",
+            "min-h-0 flex-1 select-text overflow-auto rounded-lg bg-zinc-950 p-4 font-mono text-xs whitespace-pre-wrap text-zinc-100",
             "[scrollbar-color:color-mix(in_oklab,var(--muted-foreground)_35%,transparent)_transparent] [scrollbar-width:thin]",
             "[&::-webkit-scrollbar]:h-2.5 [&::-webkit-scrollbar]:w-2.5",
             "[&::-webkit-scrollbar-corner]:bg-background",

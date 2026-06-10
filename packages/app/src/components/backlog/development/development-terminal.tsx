@@ -72,7 +72,7 @@ export function DevelopmentTerminal({ userStory }: { userStory?: UserStory }) {
 
   return (
     <div className="grid h-full min-h-96 grid-rows-[minmax(0,1fr)_auto] bg-background">
-      <pre className="min-h-0 overflow-auto bg-zinc-950 p-4 font-mono text-xs whitespace-pre-wrap text-zinc-100">
+      <pre className="min-h-0 overflow-auto bg-zinc-950 p-4 font-mono text-xs whitespace-pre-wrap text-zinc-100 select-text">
         {error ? error : output || "Starting terminal..."}
       </pre>
       <form
