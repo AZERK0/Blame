@@ -1,5 +1,9 @@
 import * as React from "react"
-import type { AgentEvent, ProjectCodePracticeResult } from "@blame/agent-runtime"
+import type {
+  AgentEvent,
+  ProjectCodePracticeResult,
+  ProjectRunConfiguration,
+} from "@blame/agent-runtime"
 import { toast } from "sonner"
 
 import { useModelSelection } from "@/components/model/model-selector"
@@ -74,6 +78,7 @@ type GeneratedProjectInitializationResult = {
   sessionId: string
   setupScript: string
   dockerCompose: string
+  runConfigurations: ProjectRunConfiguration[]
   practices: ProjectCodePracticeResult[]
 }
 
@@ -524,6 +529,7 @@ function openGeneratedProjectWithInitialization(
   return input.openGeneratedProject(input.path, {
     clineSessionId: initialization.sessionId,
     dockerCompose: initialization.dockerCompose,
+    runConfigurations: initialization.runConfigurations,
     practices: initialization.practices,
     setupScript: initialization.setupScript,
   })
@@ -554,6 +560,7 @@ function initializationValidationFeedback(
   result: {
     setupScript: string
     dockerCompose: string
+    runConfigurations: ProjectRunConfiguration[]
     practices: ProjectCodePracticeResult[]
   }
 ) {
@@ -562,6 +569,7 @@ function initializationValidationFeedback(
     previousResult: JSON.stringify({
       setupScript: result.setupScript,
       dockerCompose: result.dockerCompose,
+      runConfigurations: result.runConfigurations,
       practices: result.practices,
     }),
   }

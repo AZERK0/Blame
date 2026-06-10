@@ -54,7 +54,7 @@ export class ProjectCodePracticeSchema extends BaseModel {
 }
 
 export class ProjectInitializationSchema extends BaseModel {
-  static $columns = ['agentModelId', 'agentProviderId', 'clineSessionId', 'createdAt', 'dockerCompose', 'error', 'projectId', 'repairReason', 'setupScript', 'status', 'step', 'updatedAt'] as const
+  static $columns = ['agentModelId', 'agentProviderId', 'clineSessionId', 'createdAt', 'dockerCompose', 'error', 'projectId', 'repairReason', 'runConfigurations', 'setupScript', 'status', 'step', 'updatedAt'] as const
   $columns = ProjectInitializationSchema.$columns
   @column()
   declare agentModelId: string | null
@@ -72,6 +72,8 @@ export class ProjectInitializationSchema extends BaseModel {
   declare projectId: string
   @column()
   declare repairReason: string | null
+  @column()
+  declare runConfigurations: any | null
   @column()
   declare setupScript: string | null
   @column()

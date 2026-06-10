@@ -24,6 +24,7 @@ export type {
   ProjectCodePracticeKey,
   ProjectCodePracticePreference,
   ProjectCodePracticeResult,
+  ProjectRunConfiguration,
   ProjectInitializationDiagnostics,
   ProjectInitializationRepairClassification,
   ProviderCredentialSummary,

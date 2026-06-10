@@ -193,6 +193,14 @@ export type ProjectCodePracticePreference = {
   enabled: boolean
 }
 
+export type ProjectRunConfiguration = {
+  id: string
+  name: string
+  command: string
+  cwd: string
+  default: boolean
+}
+
 export type InitializeProjectInput = {
   apiConnection: ApiConnection
   providerId: string
@@ -211,6 +219,7 @@ export type InitializeProjectResult = {
   sessionId: string
   setupScript: string
   dockerCompose: string
+  runConfigurations: ProjectRunConfiguration[]
   practices: ProjectCodePracticeResult[]
 }
 

@@ -6,7 +6,7 @@ import type {
   LoginInput,
   SignupInput,
 } from "@/context/cloud-auth"
-import type { ApiConnection } from "@blame/agent-runtime"
+import type { ApiConnection, ProjectRunConfiguration } from "@blame/agent-runtime"
 
 export class CloudApiError extends Error {
   constructor(message: string, readonly status: number) {
@@ -86,6 +86,7 @@ export function createCloudApi(connection: ApiConnection) {
         clineSessionId?: string | null
         setupScript: string
         dockerCompose: string
+        runConfigurations: ProjectRunConfiguration[]
         practices: Array<{
           practice: string
           detected: boolean

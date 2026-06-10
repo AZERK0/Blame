@@ -6,6 +6,7 @@ import { promisify } from "node:util";
 import type {
   ProjectCodePracticeKey,
   ProjectCodePracticeResult,
+  ProjectRunConfiguration,
 } from "./types.js";
 
 const execFileAsync = promisify(execFile);
@@ -77,6 +78,7 @@ const strategicFiles = [
   "eslint.config.mjs",
   "prettier.config.js",
   ".prettierrc",
+  ".vscode/tasks.json",
 ];
 const strategicDirectories = [
   "database/migrations",
@@ -103,6 +105,7 @@ export type ProjectInitializationScan = {
 type ParsedProjectInitialization = {
   setupScript: string;
   dockerCompose: string;
+  runConfigurations: ProjectRunConfiguration[];
   practices: ProjectCodePracticeResult[];
 };
 
@@ -164,6 +167,7 @@ export function parseProjectInitializationResult(
   return {
     setupScript,
     dockerCompose,
+    runConfigurations: parseRunConfigurations(parsed.runConfigurations),
     practices: parsePractices(parsed.practices),
   };
 }
@@ -254,6 +258,45 @@ function parsePractices(value: unknown) {
   if (!Array.isArray(value))
     throw new Error("Initialization result is missing practices");
   return requiredPractices.map((practice) => parsePractice(value, practice));
+}
+
+function parseRunConfigurations(value: unknown) {
+  if (!Array.isArray(value))
+    throw new Error("Initialization result is missing runConfigurations");
+  if (value.length > 20)
+    throw new Error("Initialization result has too many runConfigurations");
+  const configurations = value.map(parseRunConfiguration);
+  const ids = new Set(configurations.map((configuration) => configuration.id));
+  if (ids.size !== configurations.length)
+    throw new Error("Initialization result run configuration ids must be unique");
+  if (configurations.filter((configuration) => configuration.default).length > 1)
+    throw new Error("Initialization result must have at most one default run configuration");
+  return configurations;
+}
+
+function parseRunConfiguration(value: unknown): ProjectRunConfiguration {
+  if (!isRecord(value))
+    throw new Error("Initialization run configuration must be an object");
+  const id = stringValue(value.id);
+  const name = stringValue(value.name);
+  const command = stringValue(value.command);
+  const cwd = stringValue(value.cwd);
+  if (!id || !/^[a-zA-Z0-9_-]{1,80}$/.test(id))
+    throw new Error("Initialization run configuration id is invalid");
+  if (!name || name.length > 120)
+    throw new Error("Initialization run configuration name is invalid");
+  if (!command || command.length > 2_000 || /[\r\n]/.test(command))
+    throw new Error("Initialization run configuration command is invalid");
+  if (!cwd || cwd.length > 500 || unsafeRunConfigurationCwd(cwd))
+    throw new Error("Initialization run configuration cwd must stay inside the project");
+  if (typeof value.default !== "boolean")
+    throw new Error("Initialization run configuration default must be boolean");
+  return { id, name, command, cwd, default: value.default };
+}
+
+function unsafeRunConfigurationCwd(cwd: string) {
+  return cwd.startsWith("/") || cwd.startsWith("\\") || /^[a-zA-Z]:/.test(cwd) ||
+    cwd.split(/[\\/]/).includes("..");
 }
 
 function parsePractice(values: unknown[], practice: ProjectCodePracticeKey) {

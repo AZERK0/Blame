@@ -8,7 +8,21 @@ Analyze the strategic project scan and generate artifacts that let Blame prepare
 
 Return exactly:
 
-{"setupScript":"...","dockerCompose":"...","practices":[{"practice":"coding_style","detected":true,"comment":"..."},{"practice":"unit_tests","detected":false,"comment":"..."},{"practice":"layered_architecture","detected":true,"comment":"..."},{"practice":"commit_message_convention","detected":false,"comment":"..."}]}
+{"setupScript":"...","dockerCompose":"...","runConfigurations":[{"id":"web","name":"Web application","command":"pnpm dev","cwd":".","default":true}],"practices":[{"practice":"coding_style","detected":true,"comment":"..."},{"practice":"unit_tests","detected":false,"comment":"..."},{"practice":"layered_architecture","detected":true,"comment":"..."},{"practice":"commit_message_convention","detected":false,"comment":"..."}]}
+
+## Run Configurations
+
+`runConfigurations` contains commands users can launch directly from Blame on the host.
+
+- Prefer explicit existing package scripts and tasks from the project scan.
+- Include useful long-running development applications and services, not setup, build, lint, test, migration, or destructive commands.
+- Use a stable unique alphanumeric, dash, or underscore `id`.
+- Use a concise human-readable `name`.
+- Keep `command` on one line.
+- Set `cwd` to `.` or a relative directory inside the project.
+- Mark at most one configuration as `default`, preferring the main application.
+- Return an empty array when no reliable development launch command is present.
+- Never invent unsupported CLI flags or commands.
 
 ## Setup Script
 
@@ -92,4 +106,4 @@ Base each `detected` value only on explicit scan evidence. Keep each `comment` s
 
 ## Final Check
 
-Before returning, ensure the JSON parses, both artifact strings are non-empty, setup performs only host-side preparation without starting Compose, Compose has services plus dynamic localhost ports and one preview service, and no manual user step is required.
+Before returning, ensure the JSON parses, both artifact strings are non-empty, runConfigurations is valid, setup performs only host-side preparation without starting Compose, Compose has services plus dynamic localhost ports and one preview service, and no manual user step is required.

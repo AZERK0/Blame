@@ -1,14 +1,20 @@
-import { Code2Icon, PlusIcon } from "lucide-react"
+import { PlusIcon } from "lucide-react"
+import type { ProjectRunConfiguration } from "@blame/agent-runtime"
 
+import { ProjectRunnerButton } from "@/components/backlog/board/project-runner-button"
 import { Button } from "@/components/ui/button"
 
 export function BacklogToolbar({
   disabled,
   onCreateUserStory,
+  projectPath,
+  runConfigurations,
   storyCount,
 }: {
   disabled?: boolean
   onCreateUserStory: () => void
+  projectPath?: string
+  runConfigurations: ProjectRunConfiguration[]
   storyCount: number
 }) {
   return (
@@ -22,10 +28,10 @@ export function BacklogToolbar({
         </p>
       </div>
       <div className="flex flex-wrap items-center justify-end gap-2">
-        <div className="flex items-center gap-2 rounded-lg border bg-card px-3 py-2">
-          <Code2Icon className="size-4 text-muted-foreground" />
-          <span className="text-sm font-medium">3 agents max</span>
-        </div>
+        <ProjectRunnerButton
+          configurations={runConfigurations}
+          projectPath={projectPath}
+        />
         <Button type="button" disabled={disabled} onClick={onCreateUserStory}>
           <PlusIcon />
           New User Story

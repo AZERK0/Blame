@@ -7,6 +7,18 @@ const practice = vine.enum([
   'commit_message_convention',
 ])
 
+const runConfiguration = vine.object({
+  id: vine
+    .string()
+    .trim()
+    .regex(/^[a-zA-Z0-9_-]+$/)
+    .maxLength(80),
+  name: vine.string().trim().minLength(1).maxLength(120),
+  command: vine.string().trim().minLength(1).maxLength(2000),
+  cwd: vine.string().trim().minLength(1).maxLength(500),
+  default: vine.boolean(),
+})
+
 export const startProjectInitializationValidator = vine.create({
   providerId: vine.string().trim().minLength(1).maxLength(80),
   modelId: vine.string().trim().minLength(1).maxLength(255),
@@ -17,6 +29,7 @@ export const completeProjectInitializationValidator = vine.create({
   clineSessionId: vine.string().trim().maxLength(255).nullable().optional(),
   setupScript: vine.string().minLength(1),
   dockerCompose: vine.string().minLength(1),
+  runConfigurations: vine.array(runConfiguration).maxLength(20).optional(),
   practices: vine.array(
     vine.object({
       practice,

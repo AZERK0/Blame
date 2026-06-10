@@ -337,6 +337,7 @@ async function completeProjectInitialization(
     clineSessionId: result.sessionId,
     setupScript: result.setupScript,
     dockerCompose: result.dockerCompose,
+    runConfigurations: result.runConfigurations,
     practices: result.practices,
   })
 }
@@ -358,6 +359,7 @@ function validationFeedback(
     previousResult: JSON.stringify({
       setupScript: result.setupScript,
       dockerCompose: result.dockerCompose,
+      runConfigurations: result.runConfigurations,
       practices: result.practices,
     }),
   }

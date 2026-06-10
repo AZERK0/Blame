@@ -155,6 +155,7 @@ async function completeGeneratedProjectInitialization(
       clineSessionId: initialization.clineSessionId,
       setupScript: initialization.setupScript,
       dockerCompose: initialization.dockerCompose,
+      runConfigurations: initialization.runConfigurations,
       practices: initialization.practices ?? generatedProjectPractices(),
     }
   )

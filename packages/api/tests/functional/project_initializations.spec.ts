@@ -10,6 +10,13 @@ type InitializationBody = {
       clineSessionId: string | null
       setupScript: string | null
       dockerCompose: string | null
+      runConfigurations: Array<{
+        id: string
+        name: string
+        command: string
+        cwd: string
+        default: boolean
+      }>
       error: string | null
       repairReason: string | null
     } | null
@@ -49,6 +56,9 @@ test.group('project initializations', (group) => {
         clineSessionId: 'session-1',
         setupScript: '#!/usr/bin/env bash\npnpm install',
         dockerCompose: 'services:\n  web:\n    image: node',
+        runConfigurations: [
+          { id: 'web', name: 'Web application', command: 'pnpm dev', cwd: '.', default: true },
+        ],
         practices: [
           { practice: 'coding_style', detected: false, comment: 'No style config found.' },
           { practice: 'unit_tests', detected: false, comment: 'No test runner found.' },
@@ -61,6 +71,7 @@ test.group('project initializations', (group) => {
     const completed = completeResponse.body() as InitializationBody
     assert.equal(completed.data.initialization?.status, 'done')
     assert.equal(completed.data.initialization?.clineSessionId, 'session-1')
+    assert.equal(completed.data.initialization?.runConfigurations[0]?.command, 'pnpm dev')
     assert.lengthOf(completed.data.practices, 4)
     assert.isTrue(completed.data.practices.some((practice) => practice.detected))
     assert.isTrue(
@@ -104,6 +115,7 @@ test.group('project initializations', (group) => {
       .json({
         setupScript: '#!/usr/bin/env bash\npnpm install',
         dockerCompose: 'services:\n  web:\n    image: node',
+        runConfigurations: [],
         practices: [
           { practice: 'coding_style', detected: false, comment: 'No style config found.' },
           { practice: 'unit_tests', detected: false, comment: 'No test runner found.' },
@@ -134,6 +146,7 @@ test.group('project initializations', (group) => {
       body.data.initialization?.setupScript,
       '#!/usr/bin/env bash\ncorepack pnpm install'
     )
+    assert.deepEqual(body.data.initialization?.runConfigurations, [])
     assert.lengthOf(body.data.practices, 4)
     assert.isTrue(
       body.data.practices.some((practice) => practice.practice === 'layered_architecture')

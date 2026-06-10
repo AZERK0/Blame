@@ -1,11 +1,15 @@
 import * as React from "react"
-import type { ProjectCodePracticeResult } from "@blame/agent-runtime"
+import type {
+  ProjectCodePracticeResult,
+  ProjectRunConfiguration,
+} from "@blame/agent-runtime"
 
 import type { Project } from "@/lib/projects"
 
 export type GeneratedProjectInitialization = {
   setupScript: string
   dockerCompose: string
+  runConfigurations: ProjectRunConfiguration[]
   clineSessionId?: string
   practices?: ProjectCodePracticeResult[]
 }

@@ -37,6 +37,8 @@ export default class ProjectInitializationsService {
 
   async complete(userId: number, projectId: string, input: CompleteInput) {
     await new ProjectsService().findForUser(userId, projectId)
+    const runConfigurations = input.runConfigurations ?? []
+    validateRunConfigurations(runConfigurations)
     const initialization = await this.initialization(projectId)
     initialization.merge({
       status: 'done',
@@ -44,6 +46,7 @@ export default class ProjectInitializationsService {
       clineSessionId: input.clineSessionId ?? initialization.clineSessionId,
       setupScript: input.setupScript,
       dockerCompose: input.dockerCompose,
+      runConfigurations,
       error: null,
       repairReason: null,
     })
@@ -121,4 +124,30 @@ export default class ProjectInitializationsService {
 
 function defaultEnabledPractice(practice: CompleteInput['practices'][number]) {
   return practice.practice === 'coding_style' || practice.detected
+}
+
+function validateRunConfigurations(
+  configurations: NonNullable<CompleteInput['runConfigurations']>
+) {
+  const ids = new Set(configurations.map((configuration) => configuration.id))
+  if (ids.size !== configurations.length) {
+    throw new Error('Run configuration ids must be unique')
+  }
+  if (configurations.filter((configuration) => configuration.default).length > 1) {
+    throw new Error('Only one run configuration can be the default')
+  }
+  for (const configuration of configurations) {
+    if (/[\r\n]/.test(configuration.command) || unsafeCwd(configuration.cwd)) {
+      throw new Error('Run configuration is invalid')
+    }
+  }
+}
+
+function unsafeCwd(cwd: string) {
+  return (
+    cwd.startsWith('/') ||
+    cwd.startsWith('\\') ||
+    /^[a-zA-Z]:/.test(cwd) ||
+    cwd.split(/[\\/]/).includes('..')
+  )
 }

@@ -34,7 +34,10 @@ import { UserStoryDrawer } from "@/components/backlog/drawer/user-story-drawer"
 import { HostDependenciesDialog } from "@/pages/backlog/host-dependencies-dialog"
 import { useBacklogRotation } from "@/pages/backlog/use-backlog-rotation"
 import { useCloudAuth } from "@/context/cloud-auth"
-import type { CloudProjectInitializationStatus } from "@/context/cloud-auth"
+import type {
+  CloudProjectInitialization,
+  CloudProjectInitializationStatus,
+} from "@/context/cloud-auth"
 import { usePlatform, type Platform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import { createCloudApi } from "@/lib/cloud-api"
@@ -49,7 +52,8 @@ export function BacklogPage() {
   const selection = useModelSelection()
   const rotation = useBacklogRotation(backlog)
   const [drawerTarget, setDrawerTarget] = React.useState<DrawerTarget>()
-  const initializationStatus = useProjectInitializationStatus()
+  const projectInitialization = useProjectInitialization()
+  const initializationStatus = projectInitialization?.status ?? null
   const queueInitializing = projectInitializing(initializationStatus)
   const storiesRef = React.useRef(backlog.stories)
   const pendingAgentUpdates = React.useRef(
@@ -674,6 +678,10 @@ export function BacklogPage() {
       <BacklogToolbar
         disabled={!backlog.projectPath}
         onCreateUserStory={openCreateDrawer}
+        projectPath={projects.activeProject?.path}
+        runConfigurations={
+          projectInitialization?.initialization?.runConfigurations ?? []
+        }
         storyCount={backlog.stories.length}
       />
       {backlog.error && (
@@ -748,16 +756,16 @@ export function BacklogPage() {
   )
 }
 
-function useProjectInitializationStatus() {
+function useProjectInitialization() {
   const auth = useCloudAuth()
   const projects = useProjects()
   const [snapshot, setSnapshot] =
     React.useState<ProjectInitializationStatusSnapshot>()
   const activeProjectId = projects.activeProject?.id
-  const status =
+  const currentSnapshot =
     auth.status === "authenticated" && snapshot?.projectId === activeProjectId
-      ? (snapshot?.status ?? null)
-      : null
+      ? snapshot
+      : undefined
 
   React.useEffect(() => {
     const activeProject = projects.activeProject
@@ -773,6 +781,7 @@ function useProjectInitializationStatus() {
       const status = snapshot.initialization?.status ?? "pending"
       setSnapshot({
         projectId: activeProject.id,
+        initialization: snapshot.initialization ?? undefined,
         status,
       })
       if (projectInitializing(status)) {
@@ -790,11 +799,12 @@ function useProjectInitializationStatus() {
     }
   }, [auth, projects.activeProject])
 
-  return status
+  return currentSnapshot
 }
 
 type ProjectInitializationStatusSnapshot = {
   projectId: string
+  initialization?: CloudProjectInitialization
   status: CloudProjectInitializationStatus
 }
 

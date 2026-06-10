@@ -1,6 +1,6 @@
 import * as React from "react"
 
-import type { ApiConnection } from "@blame/agent-runtime"
+import type { ApiConnection, ProjectRunConfiguration } from "@blame/agent-runtime"
 
 export type CloudUser = {
   id: number
@@ -46,6 +46,7 @@ export type CloudProjectInitialization = {
   agentModelId: string | null
   setupScript: string | null
   dockerCompose: string | null
+  runConfigurations: ProjectRunConfiguration[]
   error: string | null
   repairReason: string | null
   createdAt: string
