@@ -137,7 +137,7 @@ export function UserStoryDrawerPanel({
     id: string
     path: string
   }>()
-  const [saving, setSaving] = React.useState(false)
+  const [pendingAction, setPendingAction] = React.useState<DrawerAction>()
   const [title, setTitle] = React.useState(
     mode === "create" ? "" : (userStory?.title ?? "")
   )
@@ -345,6 +345,9 @@ export function UserStoryDrawerPanel({
       </Tabs>
       <DrawerFooter className="border-t bg-popover/95 px-6 py-4">
         <DrawerActions
+          loadingAction={
+            pendingAction === "Approve & Merge" ? pendingAction : undefined
+          }
           mode={mode}
           status={status}
           onAction={(action) => {
@@ -361,10 +364,10 @@ export function UserStoryDrawerPanel({
   )
 
   async function handleAction(action: DrawerAction) {
-    if (saving) return
+    if (pendingAction) return
     if (action === "Close") return onCancel()
     if (action === "Discard") return discardUserStory()
-    setSaving(true)
+    setPendingAction(action)
     try {
       if (mode === "create") {
         await onCreateUserStory(
@@ -398,18 +401,18 @@ export function UserStoryDrawerPanel({
       }
       if (action !== "Save Changes" && action !== "Save as Draft") onCancel()
     } finally {
-      setSaving(false)
+      setPendingAction(undefined)
     }
   }
 
   async function discardUserStory() {
     if (!userStory) return onCancel()
-    setSaving(true)
+    setPendingAction("Discard")
     try {
       await onDeleteUserStory(userStory)
       onCancel()
     } finally {
-      setSaving(false)
+      setPendingAction(undefined)
     }
   }
 
@@ -432,7 +435,7 @@ export function UserStoryDrawerPanel({
     const body =
       comment.trim() || (hasCommentAttachments ? "Attached files." : "")
     if (!body && !hasCommentAttachments) return
-    setSaving(true)
+    setPendingAction("Request Changes")
     try {
       const createdComment = await onCreateUserStoryComment(userStory, {
         body,
@@ -454,7 +457,7 @@ export function UserStoryDrawerPanel({
         if (nextStory.status === "in-progress") onCancel()
       }
     } finally {
-      setSaving(false)
+      setPendingAction(undefined)
     }
   }
 }

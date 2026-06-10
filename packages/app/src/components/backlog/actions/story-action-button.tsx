@@ -6,6 +6,7 @@ import {
   FileTextIcon,
   FolderOpenIcon,
   GitMergeIcon,
+  LoaderCircleIcon,
   MessageSquareReplyIcon,
   PlayIcon,
   RotateCcwIcon,
@@ -137,6 +138,8 @@ export function StoryAction({
   onUnpauseAgent?: (story: UserStory) => Promise<UserStory>
   story: UserStory
 }) {
+  const [loading, setLoading] = React.useState(false)
+
   if (action === "Stop Agent") {
     if (!onStopAgent) return null
     return (
@@ -186,12 +189,29 @@ export function StoryAction({
   }
 
   const actionStyle = actionConfig[action]
-  const Icon = actionStyle.icon
+  const Icon = loading ? LoaderCircleIcon : actionStyle.icon
   const runAction = directAction(action) && onAction
+  const handleClick = async () => {
+    if (!runAction) {
+      onOpenDrawer(drawerTargetForAction(story, action))
+      return
+    }
+    if (action !== "Approve & Merge") {
+      await runAction(story, action)
+      return
+    }
+    setLoading(true)
+    try {
+      await runAction(story, action)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <Button
       type="button"
+      disabled={loading}
       size={actionStyle.iconOnly ? "icon-sm" : "sm"}
       variant={actionStyle.variant}
       className={cn(
@@ -204,16 +224,10 @@ export function StoryAction({
           "border-blue-500/40 bg-blue-500/10 text-blue-700 hover:bg-blue-500/20 dark:text-blue-300",
         className
       )}
-      onClick={() => {
-        if (runAction) {
-          void runAction(story, action)
-          return
-        }
-        onOpenDrawer(drawerTargetForAction(story, action))
-      }}
+      onClick={() => void handleClick()}
       aria-label={actionStyle.iconOnly ? action : undefined}
     >
-      <Icon />
+      <Icon className={cn(loading && "animate-spin")} />
       {!actionStyle.iconOnly && (label ?? action)}
     </Button>
   )

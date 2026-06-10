@@ -2,6 +2,7 @@ import * as React from "react"
 import {
   CheckIcon,
   CircleStopIcon,
+  LoaderCircleIcon,
   MessageSquareIcon,
   RotateCcwIcon,
   SendIcon,
@@ -92,6 +93,7 @@ const drawerActionConfig: Record<DrawerAction, DrawerActionConfig> = {
 }
 
 export function DrawerActions({
+  loadingAction,
   mode,
   onAction,
   onDeleteUserStory,
@@ -101,6 +103,7 @@ export function DrawerActions({
   status,
   story,
 }: {
+  loadingAction?: DrawerAction
   mode: UserStoryDrawerMode
   onAction: (action: DrawerAction) => void
   onDeleteUserStory: (story: UserStory) => Promise<void>
@@ -139,6 +142,7 @@ export function DrawerActions({
           ) : (
             <DrawerActionButton
               action={action}
+              loading={loadingAction === action}
               onClick={() => onAction(action)}
             />
           )}
@@ -150,17 +154,20 @@ export function DrawerActions({
 
 function DrawerActionButton({
   action,
+  loading,
   onClick,
 }: {
   action: DrawerAction
+  loading: boolean
   onClick?: () => void
 }) {
   const actionStyle = drawerActionConfig[action]
-  const Icon = actionStyle.icon
+  const Icon = loading ? LoaderCircleIcon : actionStyle.icon
 
   return (
     <Button
       type="button"
+      disabled={loading}
       variant={actionStyle.variant}
       size={actionStyle.iconOnly ? "icon" : "default"}
       className={cn(
@@ -172,7 +179,7 @@ function DrawerActionButton({
       onClick={onClick}
       aria-label={actionStyle.iconOnly ? action : undefined}
     >
-      <Icon />
+      <Icon className={cn(loading && "animate-spin")} />
       {!actionStyle.iconOnly && action}
     </Button>
   )
