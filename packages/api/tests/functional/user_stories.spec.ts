@@ -26,6 +26,8 @@ type UserStoryBody = {
     status: string
     codeSelectionAttachments?: CodeSelectionAttachment[]
     fileAttachments?: FileAttachment[]
+    baseCommit?: string | null
+    mergeCommit?: string | null
     title: string
   }
 }
@@ -179,6 +181,8 @@ test.group('user stories', (group) => {
         title: 'Persisted draft',
         status: 'ready',
         priority: 'High',
+        baseCommit: '1111111111111111111111111111111111111111',
+        mergeCommit: '2222222222222222222222222222222222222222',
         codeSelectionAttachments: [
           {
             id: 'selection-2',
@@ -204,6 +208,8 @@ test.group('user stories', (group) => {
     assert.equal(updated.data.title, 'Persisted draft')
     assert.equal(updated.data.status, 'ready')
     assert.equal(updated.data.priority, 'High')
+    assert.equal(updated.data.baseCommit, '1111111111111111111111111111111111111111')
+    assert.equal(updated.data.mergeCommit, '2222222222222222222222222222222222222222')
     assert.deepEqual(updated.data.codeSelectionAttachments, [
       {
         id: 'selection-2',

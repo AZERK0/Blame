@@ -153,6 +153,7 @@ export type ApproveAndMergeInput = {
 }
 
 export type ApproveAndMergeResult = {
+  baseCommit: string
   mergeCommit: string
   targetBranch: string
 }

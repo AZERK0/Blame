@@ -31,6 +31,7 @@ export default class UserStoryTransformer extends BaseTransformer<UserStory> {
         'agentSessionSummary',
         'mergedAt',
         'mergeCommit',
+        'baseCommit',
         'discardedReason',
         'createdAt',
         'updatedAt',

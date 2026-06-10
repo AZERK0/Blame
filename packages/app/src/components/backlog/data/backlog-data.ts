@@ -137,6 +137,7 @@ export type UserStory = {
   agentRuns?: UserStoryAgentRun[]
   mergedAt?: string | null
   mergeCommit?: string | null
+  baseCommit?: string | null
   discardedReason?: string | null
   comments?: UserStoryComment[]
   createdAt: string
@@ -180,6 +181,7 @@ export type UserStoryUpdate = Partial<
     | "agentSessionSummary"
     | "mergedAt"
     | "mergeCommit"
+    | "baseCommit"
     | "discardedReason"
   >
 > & {

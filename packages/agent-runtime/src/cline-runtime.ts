@@ -540,14 +540,15 @@ export class BlameAgentRuntime {
       ? input.repositoryRoot
       : await integrationWorktree(input.repositoryRoot, targetBranch)
     await pullIntegrationWorktree(integration, upstream)
+    const baseCommit = await git(integration, ["rev-parse", "HEAD"])
     await this.commitStoryWork(input)
     await this.mergeTargetIntoStory(input, targetBranch, upstream)
     try {
       await git(integration, ["merge", "--ff-only", input.storyBranch])
       const mergeCommit = await git(integration, ["rev-parse", "HEAD"])
       await pushIntegrationWorktree(integration, upstream, logFile)
-      await appendLog(logFile, "approve merge completed", { mergeCommit, targetBranch })
-      return { mergeCommit, targetBranch }
+      await appendLog(logFile, "approve merge completed", { baseCommit, mergeCommit, targetBranch })
+      return { baseCommit, mergeCommit, targetBranch }
     } finally {
       if (!targetClean) {
         await removeIntegrationWorktree(input.repositoryRoot, integration)

@@ -75,6 +75,7 @@ export default class UserStoriesService {
       agentSessionSummary: input.agentSessionSummary ?? null,
       mergedAt: input.mergedAt ?? null,
       mergeCommit: input.mergeCommit ?? null,
+      baseCommit: input.baseCommit ?? null,
       discardedReason: input.discardedReason ?? null,
     })
     await userStory.load('comments')

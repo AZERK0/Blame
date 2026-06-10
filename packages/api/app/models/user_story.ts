@@ -220,6 +220,9 @@ export default class UserStory extends BaseModel {
   declare mergeCommit: string | null
 
   @column()
+  declare baseCommit: string | null
+
+  @column()
   declare discardedReason: string | null
 
   @hasMany(() => UserStoryComment)

@@ -48,6 +48,14 @@ import {
   removeBlamePreviewProjectResources,
 } from "./workspace-docker-cleanup";
 import { syncProjectEnvFiles } from "./workspace-env";
+import {
+  gitDiffBetween,
+  listGitDirectory,
+  readGitFile,
+  type GitDiffInput,
+  type GitDirectoryInput,
+  type GitFileInput,
+} from "./workspace-git";
 
 const execFileAsync = promisify(execFile);
 const previewStartupIntervalMs = 1_000;
@@ -199,6 +207,16 @@ export function registerWorkspaceIpcHandlers() {
   );
   ipcMain.handle("workspace:git-diff", (_event, input: { root: string }) =>
     gitDiff(input.root),
+  );
+  ipcMain.handle("workspace:git-diff-between", (_event, input: GitDiffInput) =>
+    gitDiffBetween(input),
+  );
+  ipcMain.handle(
+    "workspace:list-git-directory",
+    (_event, input: GitDirectoryInput) => listGitDirectory(input),
+  );
+  ipcMain.handle("workspace:read-git-file", (_event, input: GitFileInput) =>
+    readGitFile(input),
   );
   ipcMain.handle(
     "workspace:git-repository-fingerprint",

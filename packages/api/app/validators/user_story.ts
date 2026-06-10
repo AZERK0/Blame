@@ -104,6 +104,7 @@ export const createUserStoryValidator = vine.create({
   agentSessionSummary: vine.string().nullable().optional(),
   mergedAt: nullableDateTime,
   mergeCommit: vine.string().trim().maxLength(255).nullable().optional(),
+  baseCommit: vine.string().trim().maxLength(255).nullable().optional(),
   discardedReason: vine.string().trim().maxLength(2048).nullable().optional(),
 })
 
@@ -132,5 +133,6 @@ export const updateUserStoryValidator = vine.create({
   agentSessionSummary: vine.string().nullable().optional(),
   mergedAt: nullableDateTime,
   mergeCommit: vine.string().trim().maxLength(255).nullable().optional(),
+  baseCommit: vine.string().trim().maxLength(255).nullable().optional(),
   discardedReason: vine.string().trim().maxLength(2048).nullable().optional(),
 })

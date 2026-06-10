@@ -29,7 +29,7 @@ export function DevelopmentCodePanel({
   const workspaceAvailable = workspace.available
   const workspaceLoadDiffs = workspace.loadDiffs
   const workspaceReloadKey = workspace.reloadKey
-  const workspaceWorktree = workspace.worktree
+  const workspaceRoot = workspace.root
   const [diffs, setDiffs] = React.useState<VcsFileDiff[]>([])
   const [diffLoading, setDiffLoading] = React.useState(mode === "diff")
   const [diffError, setDiffError] = React.useState<string>()
@@ -43,7 +43,7 @@ export function DevelopmentCodePanel({
 
   React.useEffect(() => {
     initialDiffLoad.current = true
-  }, [workspaceWorktree])
+  }, [workspaceRoot])
 
   React.useEffect(() => {
     if (!workspaceAvailable || fallbackToProjectRoot) return
@@ -114,7 +114,7 @@ export function DevelopmentCodePanel({
     )
   }
 
-  if (!workspaceWorktree) {
+  if (!workspaceRoot) {
     return (
       <DevelopmentEmptyState
         description={

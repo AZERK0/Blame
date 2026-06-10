@@ -593,6 +593,7 @@ export function BacklogPage() {
             ...inactiveStoryFields(),
             agentLastError: null,
             agentLastEvent: `Merged into ${result.targetBranch}.`,
+            baseCommit: result.baseCommit,
             mergeCommit: result.mergeCommit,
             mergedAt: new Date().toISOString(),
             status: "done",

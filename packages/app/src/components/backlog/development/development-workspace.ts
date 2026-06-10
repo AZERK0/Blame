@@ -38,50 +38,88 @@ export function useDevelopmentWorkspace(
   const platform = usePlatform()
   const projects = useProjects()
   const [reloadKey, setReloadKey] = React.useState(0)
+  const historicalRefs = React.useMemo(
+    () => storyHistoricalRefs(userStory),
+    [userStory?.baseCommit, userStory?.mergeCommit, userStory?.status]
+  )
+  const historical = !userStory?.worktree && Boolean(historicalRefs)
   const directory =
     userStory?.worktree ??
-    (fallbackToProjectRoot ? projects.activeProject?.path : undefined)
+    (historical || fallbackToProjectRoot ? projects.activeProject?.path : undefined)
 
   const listDirectory = React.useCallback(
     async (path: string) => {
       if (!directory || !platform.workspace) return []
+      if (historicalRefs) {
+        return normalizeNodes(
+          await platform.workspace.listGitDirectory({
+            path,
+            refs: historicalRefs,
+            root: directory,
+          })
+        )
+      }
       const nodes = await platform.workspace.listDirectory({ root: directory, path })
       return normalizeNodes(nodes)
     },
-    [directory, platform.workspace]
+    [directory, historical, historicalRefs, platform.workspace]
   )
 
   const readFile = React.useCallback(
     async (path: string) => {
       if (!directory || !platform.workspace) return undefined
+      if (historicalRefs) {
+        return {
+          content: await platform.workspace.readGitFile({
+            path,
+            refs: historicalRefs,
+            root: directory,
+          }),
+        }
+      }
       return { content: await platform.workspace.readFile({ root: directory, path }) }
     },
-    [directory, platform.workspace]
+    [directory, historical, historicalRefs, platform.workspace]
   )
 
   const loadDiffs = React.useCallback(async () => {
     if (!directory || !platform.workspace) return []
-    return normalizeDiffs(parseGitDiff(await platform.workspace.gitDiff({ root: directory })))
-  }, [directory, platform.workspace])
+    const diff = historicalRefs
+      ? await platform.workspace.gitDiffBetween({
+          from: historicalRefs[1],
+          root: directory,
+          to: historicalRefs[0],
+        })
+      : await platform.workspace.gitDiff({ root: directory })
+    return normalizeDiffs(parseGitDiff(diff))
+  }, [directory, historical, historicalRefs, platform.workspace])
 
   React.useEffect(() => {
-    if (!directory) return
+    if (!directory || historical) return
     const timer = setInterval(() => {
       if (document.visibilityState !== "visible") return
       setReloadKey((current) => current + 1)
     }, 1_500)
     return () => clearInterval(timer)
-  }, [directory])
+  }, [directory, historical])
 
   return {
     available: Boolean(directory && platform.workspace),
     hasServer: Boolean(platform.workspace),
-    worktree: directory,
+    root: directory,
     listDirectory,
     readFile,
     loadDiffs,
     reloadKey,
   }
+}
+
+function storyHistoricalRefs(userStory?: UserStory): [string, string] | undefined {
+  if (userStory?.status !== "done" || !userStory.mergeCommit) return undefined
+  return [
+    userStory.mergeCommit,
+    userStory.baseCommit ?? `${userStory.mergeCommit}^`,
+  ]
 }
 
 export function normalizePath(path: string) {
