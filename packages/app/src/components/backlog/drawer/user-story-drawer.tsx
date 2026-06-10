@@ -107,6 +107,7 @@ export function UserStoryDrawer({
         initialDevelopmentTab={initialDevelopmentTab}
         initialTab={initialTab}
         mode={mode}
+        open={open}
         onCancel={() => onOpenChange(false)}
         onApproveAndMerge={onApproveAndMerge}
         onCreateUserStory={onCreateUserStory}

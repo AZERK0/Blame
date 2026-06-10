@@ -57,6 +57,7 @@ export function UserStoryDrawerPanel({
   initialDevelopmentTab,
   initialTab,
   mode,
+  open,
   onCancel,
   onApproveAndMerge,
   onCreateUserStory,
@@ -76,6 +77,7 @@ export function UserStoryDrawerPanel({
   initialDevelopmentTab: UserStoryDevelopmentTab
   initialTab: UserStoryDrawerTab
   mode: UserStoryDrawerMode
+  open: boolean
   onCancel: () => void
   onApproveAndMerge: (story: UserStory) => Promise<UserStory>
   onCreateUserStory: (
@@ -147,6 +149,7 @@ export function UserStoryDrawerPanel({
   const [comment, setComment] = React.useState("")
   const summaryRef = React.useRef<HTMLDivElement>(null)
   const commentRef = React.useRef<HTMLDivElement>(null)
+  const drawerContentRef = React.useRef<HTMLDivElement>(null)
 
   React.useEffect(() => {
     if (!focusComment) return
@@ -157,6 +160,20 @@ export function UserStoryDrawerPanel({
     })
     return () => cancelAnimationFrame(frame)
   }, [focusComment])
+
+  React.useEffect(() => {
+    if (!open || focusComment || tab !== "user-story") return
+    const frame = requestAnimationFrame(() => {
+      const responses = drawerContentRef.current?.querySelectorAll<HTMLElement>(
+        "[data-agent-response]"
+      )
+      responses?.item(responses.length - 1)?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      })
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [focusComment, open, tab])
 
   React.useEffect(() => {
     const addCodeSelectionAttachment = (event: Event) => {
@@ -192,7 +209,10 @@ export function UserStoryDrawerPanel({
   }, [status])
 
   return (
-    <DrawerContent className="inset-y-2 right-2 h-[calc(100svh-1rem)] overflow-hidden rounded-xl border data-[vaul-drawer-direction=right]:w-[min(90rem,calc(100vw-1rem))] data-[vaul-drawer-direction=right]:sm:max-w-none">
+    <DrawerContent
+      ref={drawerContentRef}
+      className="inset-y-2 right-2 h-[calc(100svh-1rem)] overflow-hidden rounded-xl border data-[vaul-drawer-direction=right]:w-[min(90rem,calc(100vw-1rem))] data-[vaul-drawer-direction=right]:sm:max-w-none"
+    >
       <DrawerClose asChild>
         <Button
           className="absolute top-4 right-4 z-10"

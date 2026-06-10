@@ -371,7 +371,7 @@ function AgentResponseItem({
       </span>
       <div className="grid min-w-0 gap-3">
         <h3 className="text-xl font-medium">Agent response</h3>
-        <div className="agent-response-effect">
+        <div className="agent-response-effect" data-agent-response>
           <MarkdownEditor
             markdown={markdown}
             readOnly
