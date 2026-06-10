@@ -34,13 +34,13 @@ import { UserStoryDrawer } from "@/components/backlog/drawer/user-story-drawer"
 import { HostDependenciesDialog } from "@/pages/backlog/host-dependencies-dialog"
 import { useBacklogRotation } from "@/pages/backlog/use-backlog-rotation"
 import { useCloudAuth } from "@/context/cloud-auth"
-import type {
-  CloudProjectInitialization,
-  CloudProjectInitializationStatus,
-} from "@/context/cloud-auth"
 import { usePlatform, type Platform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import { createCloudApi } from "@/lib/cloud-api"
+import {
+  projectInitializing,
+  useProjectInitialization,
+} from "@/components/project-initialization/use-project-initialization"
 
 const agentEventPersistDelayMs = 1_500
 
@@ -678,10 +678,6 @@ export function BacklogPage() {
       <BacklogToolbar
         disabled={!backlog.projectPath}
         onCreateUserStory={openCreateDrawer}
-        projectPath={projects.activeProject?.path}
-        runConfigurations={
-          projectInitialization?.initialization?.runConfigurations ?? []
-        }
         storyCount={backlog.stories.length}
       />
       {backlog.error && (
@@ -754,62 +750,6 @@ export function BacklogPage() {
       <HostDependenciesDialog {...rotation.hostDependenciesDialog} />
     </div>
   )
-}
-
-function useProjectInitialization() {
-  const auth = useCloudAuth()
-  const projects = useProjects()
-  const [snapshot, setSnapshot] =
-    React.useState<ProjectInitializationStatusSnapshot>()
-  const activeProjectId = projects.activeProject?.id
-  const currentSnapshot =
-    auth.status === "authenticated" && snapshot?.projectId === activeProjectId
-      ? snapshot
-      : undefined
-
-  React.useEffect(() => {
-    const activeProject = projects.activeProject
-    if (!activeProject || auth.status !== "authenticated") {
-      return
-    }
-    let cancelled = false
-    let timer: number | undefined
-    const cloud = createCloudApi(auth.apiConnection)
-    const refresh = async () => {
-      const snapshot = await cloud.projectInitialization(activeProject.id)
-      if (cancelled) return
-      const status = snapshot.initialization?.status ?? "pending"
-      setSnapshot({
-        projectId: activeProject.id,
-        initialization: snapshot.initialization ?? undefined,
-        status,
-      })
-      if (projectInitializing(status)) {
-        timer = window.setTimeout(() => {
-          void refresh().catch(() => undefined)
-        }, 5_000)
-      }
-    }
-    void refresh().catch(() => {
-      if (!cancelled) setSnapshot(undefined)
-    })
-    return () => {
-      cancelled = true
-      if (timer) window.clearTimeout(timer)
-    }
-  }, [auth, projects.activeProject])
-
-  return currentSnapshot
-}
-
-type ProjectInitializationStatusSnapshot = {
-  projectId: string
-  initialization?: CloudProjectInitialization
-  status: CloudProjectInitializationStatus
-}
-
-function projectInitializing(status: CloudProjectInitializationStatus | null) {
-  return status === "pending" || status === "running"
 }
 
 function approveAndMergeValidationError(
