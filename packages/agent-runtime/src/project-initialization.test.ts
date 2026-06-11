@@ -47,3 +47,26 @@ test("rejects run configuration cwd outside the project", () => {
     /cwd must stay inside the project/,
   );
 });
+
+test("rejects duplicate docker compose mapping keys", () => {
+  const result = {
+    ...baseResult,
+    dockerCompose: [
+      "services:",
+      "  web:",
+      "    image: node:22",
+      "    environment:",
+      '      CI: "true"',
+      '    user: "${BLAME_HOST_UID}:${BLAME_HOST_GID}"',
+      "    environment:",
+      '      HOST: "0.0.0.0"',
+      "    ports:",
+      '      - "127.0.0.1::3000"',
+    ].join("\n"),
+  };
+
+  assert.throws(
+    () => parseProjectInitializationResult(JSON.stringify(result)),
+    /duplicate YAML key "environment"/,
+  );
+});

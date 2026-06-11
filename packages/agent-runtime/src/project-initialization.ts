@@ -331,6 +331,12 @@ function validateDockerCompose(
   compose: string,
   scan?: ProjectInitializationScan,
 ) {
+  const duplicateKey = duplicateYamlMappingKey(compose);
+  if (duplicateKey) {
+    throw new Error(
+      `Initialization result dockerCompose must not define duplicate YAML key "${duplicateKey}" in the same mapping`,
+    );
+  }
   if (!compose.includes("services:")) {
     throw new Error("Initialization result dockerCompose must define services");
   }
@@ -538,6 +544,30 @@ function composeLifecyclePresent(value: string) {
 
 function includesOneOf(value: string, candidates: string[]) {
   return candidates.some((candidate) => value.includes(candidate));
+}
+
+function duplicateYamlMappingKey(compose: string) {
+  const stack: Array<{ indent: number; keys: Set<string> }> = [
+    { indent: -1, keys: new Set() },
+  ];
+  for (const line of compose.split("\n")) {
+    const key = yamlMappingKey(line);
+    if (!key) continue;
+    while (stack.length > 1 && stack[stack.length - 1].indent >= key.indent) {
+      stack.pop();
+    }
+    const parent = stack[stack.length - 1];
+    if (parent.keys.has(key.name)) return key.name;
+    parent.keys.add(key.name);
+    stack.push({ indent: key.indent, keys: new Set() });
+  }
+  return undefined;
+}
+
+function yamlMappingKey(line: string) {
+  const match = /^(\s*)([a-z0-9_.-]+):(?:\s|$)/.exec(line);
+  if (!match?.[2] || line.trimStart().startsWith("-")) return undefined;
+  return { indent: match[1].length, name: match[2] };
 }
 
 function truncateCorrectionPayload(value: string) {
