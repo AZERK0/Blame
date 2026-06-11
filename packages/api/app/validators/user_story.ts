@@ -34,31 +34,17 @@ const fileAttachment = vine.object({
   size: vine.number(),
   type: vine.string().trim().maxLength(255),
 })
-const agentUsageTool = vine.object({
-  count: vine.number(),
-  maxBytes: vine.number(),
-  name: vine.string().trim().minLength(1).maxLength(255),
-  totalBytes: vine.number(),
-  truncatedCount: vine.number(),
-})
 const agentUsage = vine.object({
-  cacheReadTokens: vine.number(),
-  cacheWriteTokens: vine.number(),
-  compactionCount: vine.number(),
-  currentInputTokens: vine.number().optional(),
-  currentOutputTokens: vine.number().optional(),
-  currentTotalTokens: vine.number().optional(),
+  cacheReadTokens: vine.number().optional(),
+  cacheWriteTokens: vine.number().optional(),
+  cost: vine.number().optional(),
   inputTokens: vine.number(),
-  largeFileReads: vine.number(),
-  maxContextTokens: vine.number(),
   outputTokens: vine.number(),
-  rawTotalTokens: vine.number().optional(),
-  sessionTotalTokens: vine.number().optional(),
-  unboundedFileReads: vine.number(),
-  tokensSavedEstimate: vine.number(),
-  topTools: vine.array(agentUsageTool),
-  totalCost: vine.number(),
-  truncatedOutputs: vine.number(),
+  totalCacheReadTokens: vine.number().optional(),
+  totalCacheWriteTokens: vine.number().optional(),
+  totalCost: vine.number().optional(),
+  totalInputTokens: vine.number(),
+  totalOutputTokens: vine.number(),
 })
 const nullableDateTime = vine
   .string()

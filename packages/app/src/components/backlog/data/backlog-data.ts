@@ -25,31 +25,17 @@ export type BacklogAction =
 
 export type UserStoryPriority = "Low" | "Medium" | "High"
 export type UserStoryAgentStatus = "Running" | "Paused"
-export type UserStoryAgentToolUsage = {
-  count: number
-  maxBytes: number
-  name: string
-  totalBytes: number
-  truncatedCount: number
-}
 export type UserStoryAgentUsage = {
-  cacheReadTokens: number
-  cacheWriteTokens: number
-  compactionCount: number
-  currentInputTokens?: number
-  currentOutputTokens?: number
-  currentTotalTokens?: number
+  cacheReadTokens?: number
+  cacheWriteTokens?: number
+  cost?: number
   inputTokens: number
-  largeFileReads: number
-  maxContextTokens: number
   outputTokens: number
-  rawTotalTokens?: number
-  sessionTotalTokens?: number
-  unboundedFileReads: number
-  tokensSavedEstimate: number
-  topTools: UserStoryAgentToolUsage[]
-  totalCost: number
-  truncatedOutputs: number
+  totalCacheReadTokens?: number
+  totalCacheWriteTokens?: number
+  totalCost?: number
+  totalInputTokens: number
+  totalOutputTokens: number
 }
 export type UserStoryAgentActivity = {
   id: string

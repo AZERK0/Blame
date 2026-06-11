@@ -52,7 +52,7 @@ const secretKeys = [
 const allowedLogKeys = new Set([
   "cacheReadTokens",
   "cacheWriteTokens",
-  "costUsd",
+  "cost",
   "durationMs",
   "errorType",
   "finishReason",
@@ -65,15 +65,16 @@ const allowedLogKeys = new Set([
   "promptHash",
   "promptLength",
   "providerId",
-  "rawTotalTokens",
   "sessionId",
-  "sessionTotalTokens",
   "status",
   "storyId",
   "success",
   "toolName",
+  "totalCacheReadTokens",
+  "totalCacheWriteTokens",
   "totalCost",
-  "totalTokens",
+  "totalInputTokens",
+  "totalOutputTokens",
 ])
 
 export function loadProductionConfig(env: NodeJS.ProcessEnv = process.env): ProductionConfig {
@@ -172,17 +173,17 @@ export function assertRepositoryPath(path: string, label: string) {
 export function summarizeUsage(summary: SessionUsageSummary | undefined) {
   const usage = summary?.aggregateUsage ?? summary?.usage
   if (!usage) return {}
-  const sessionTotalTokens = totalTokens(usage)
   return {
     cacheReadTokens: usage.cacheReadTokens,
     cacheWriteTokens: usage.cacheWriteTokens,
-    costUsd: usage.totalCost,
+    cost: usage.cost,
     inputTokens: usage.inputTokens,
     outputTokens: usage.outputTokens,
-    rawTotalTokens: rawTotalTokens(usage),
-    sessionTotalTokens,
+    totalCacheReadTokens: usage.totalCacheReadTokens,
+    totalCacheWriteTokens: usage.totalCacheWriteTokens,
     totalCost: usage.totalCost,
-    totalTokens: sessionTotalTokens,
+    totalInputTokens: usage.totalInputTokens,
+    totalOutputTokens: usage.totalOutputTokens,
   }
 }
 
@@ -190,9 +191,9 @@ export function shouldAbortForUsage(summary: SessionUsageSummary | undefined, co
   const usage = summary?.aggregateUsage ?? summary?.usage
   if (!usage) return false
   if (config.maxTotalTokens !== undefined && totalTokens(usage) > config.maxTotalTokens) return true
-  if (config.maxSessionCostUsd !== undefined && usage.totalCost > config.maxSessionCostUsd) return true
-  if (config.maxInputTokens !== undefined && usage.inputTokens > config.maxInputTokens) return true
-  if (config.maxOutputTokens !== undefined && usage.outputTokens > config.maxOutputTokens) return true
+  if (config.maxSessionCostUsd !== undefined && totalCost(usage) > config.maxSessionCostUsd) return true
+  if (config.maxInputTokens !== undefined && usage.totalInputTokens > config.maxInputTokens) return true
+  if (config.maxOutputTokens !== undefined && usage.totalOutputTokens > config.maxOutputTokens) return true
   return false
 }
 
@@ -202,13 +203,13 @@ export function usageLimitMessage(summary: SessionUsageSummary | undefined, conf
   if (config.maxTotalTokens !== undefined && totalTokens(usage) > config.maxTotalTokens) {
     return `Total token limit exceeded (${config.maxTotalTokens})`
   }
-  if (config.maxSessionCostUsd !== undefined && usage.totalCost > config.maxSessionCostUsd) {
+  if (config.maxSessionCostUsd !== undefined && totalCost(usage) > config.maxSessionCostUsd) {
     return `Cost limit exceeded ($${config.maxSessionCostUsd.toFixed(2)})`
   }
-  if (config.maxInputTokens !== undefined && usage.inputTokens > config.maxInputTokens) {
+  if (config.maxInputTokens !== undefined && usage.totalInputTokens > config.maxInputTokens) {
     return `Input token limit exceeded (${config.maxInputTokens})`
   }
-  if (config.maxOutputTokens !== undefined && usage.outputTokens > config.maxOutputTokens) {
+  if (config.maxOutputTokens !== undefined && usage.totalOutputTokens > config.maxOutputTokens) {
     return `Output token limit exceeded (${config.maxOutputTokens})`
   }
   return "Usage limit exceeded."
@@ -223,7 +224,7 @@ export function recordUsageTelemetry(
   if (!Object.keys(usage).length) return
   telemetry?.recordCounter("blame.agent.tokens.input", numberValue(usage.inputTokens), context)
   telemetry?.recordCounter("blame.agent.tokens.output", numberValue(usage.outputTokens), context)
-  telemetry?.recordGauge("blame.agent.cost.usd", numberValue(usage.costUsd), context)
+  telemetry?.recordGauge("blame.agent.cost.usd", numberValue(usage.cost ?? usage.totalCost), context)
 }
 
 export function safeLogPayload(value: unknown): Record<string, unknown> {
@@ -288,21 +289,16 @@ function numberValue(value: unknown) {
 }
 
 function totalTokens(usage: {
-  cacheReadTokens: number
-  cacheWriteTokens: number
   inputTokens: number
   outputTokens: number
+  totalInputTokens?: number
+  totalOutputTokens?: number
 }) {
-  return usage.inputTokens + usage.outputTokens
+  return numberValue(usage.totalInputTokens) + numberValue(usage.totalOutputTokens)
 }
 
-function rawTotalTokens(usage: {
-  cacheReadTokens: number
-  cacheWriteTokens: number
-  inputTokens: number
-  outputTokens: number
-}) {
-  return totalTokens(usage) + usage.cacheReadTokens + usage.cacheWriteTokens
+function totalCost(usage: { cost?: number; totalCost?: number }) {
+  return numberValue(usage.totalCost ?? usage.cost)
 }
 
 function isPathInside(path: string, parent: string) {

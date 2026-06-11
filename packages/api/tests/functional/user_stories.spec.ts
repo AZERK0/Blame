@@ -19,7 +19,7 @@ type UserStoryBody = {
     }[]
     agentUsage?: {
       inputTokens: number
-      tokensSavedEstimate: number
+      totalInputTokens: number
     }
     id: number
     priority: string
@@ -79,7 +79,7 @@ type UserStoryAgentRunBody = {
     userStoryId: number
     usage?: {
       inputTokens: number
-      tokensSavedEstimate: number
+      totalInputTokens: number
     } | null
   }
 }
@@ -424,16 +424,14 @@ test.group('user stories', (group) => {
           usage: {
             cacheReadTokens: 0,
             cacheWriteTokens: 0,
-            compactionCount: 1,
+            cost: 0.01,
             inputTokens: 1000,
-            largeFileReads: 1,
-            maxContextTokens: 1000,
             outputTokens: 100,
-            unboundedFileReads: 1,
-            tokensSavedEstimate: 2000,
-            topTools: [],
+            totalCacheReadTokens: 0,
+            totalCacheWriteTokens: 0,
             totalCost: 0.01,
-            truncatedOutputs: 1,
+            totalInputTokens: 1000,
+            totalOutputTokens: 100,
           },
         })
 
@@ -541,16 +539,14 @@ test.group('user stories', (group) => {
           agentUsage: {
             cacheReadTokens: 0,
             cacheWriteTokens: 0,
-            compactionCount: 1,
+            cost: 0.01,
             inputTokens: 1000,
-            largeFileReads: 1,
-            maxContextTokens: 1000,
             outputTokens: 100,
-            unboundedFileReads: 1,
-            tokensSavedEstimate: 2000,
-            topTools: [],
+            totalCacheReadTokens: 0,
+            totalCacheWriteTokens: 0,
             totalCost: 0.01,
-            truncatedOutputs: 1,
+            totalInputTokens: 1000,
+            totalOutputTokens: 100,
           },
         })
 

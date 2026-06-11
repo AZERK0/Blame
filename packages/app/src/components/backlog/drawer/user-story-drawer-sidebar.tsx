@@ -47,15 +47,13 @@ function TokenUsage({ userStory }: { userStory?: UserStory }) {
         <TokenStat label="Model" value={userStory.agentModelId} />
         <TokenStat label="Context limit" value={formatInteger(contextLimit)} />
       </TokenGroup>
-      {usageContent(sessionUsage, contextLimit, userStory.agentUsage)}
-      <TokenDiagnostics userStory={userStory} />
+      {usageContent(sessionUsage, userStory.agentUsage)}
     </section>
   )
 }
 
 function usageContent(
   sessionUsage: SessionUsageState,
-  contextLimit: number | undefined,
   agentUsage: UserStory["agentUsage"]
 ) {
   if (sessionUsage.loading) {
@@ -75,88 +73,24 @@ function usageContent(
     )
   }
 
-  return (
-    <TokenUsageTotals
-      agentUsage={agentUsage}
-      totals={totals}
-      contextLimit={contextLimit}
-    />
-  )
+  return <TokenUsageTotals totals={totals} />
 }
 
-function TokenUsageTotals({
-  agentUsage,
-  contextLimit,
-  totals,
-}: {
-  agentUsage: UserStory["agentUsage"]
-  contextLimit: number | undefined
-  totals: AgentUsageTotals
-}) {
-  const fallbackTotalTokens = usageTotalTokens(totals)
-  const currentTotalTokens = positiveUsageValue(
-    agentUsage?.currentTotalTokens,
-    fallbackTotalTokens
-  )
-  const sessionTotalTokens = positiveUsageValue(
-    agentUsage?.sessionTotalTokens,
-    fallbackTotalTokens
-  )
-
+function TokenUsageTotals({ totals }: { totals: AgentUsageTotals }) {
   return (
     <>
-      <UsageOverview
-        contextLimit={contextLimit}
-        currentTotalTokens={currentTotalTokens}
-        totalCost={totals.totalCost}
-      />
-      <TotalTokens
-        currentTotalTokens={currentTotalTokens}
-        sessionTotalTokens={sessionTotalTokens}
-      />
+      <CostTokens totals={totals} />
       <InputOutputTokens totals={totals} />
       <CacheTokens totals={totals} />
     </>
   )
 }
 
-function UsageOverview({
-  contextLimit,
-  currentTotalTokens,
-  totalCost,
-}: {
-  contextLimit: number | undefined
-  currentTotalTokens: number
-  totalCost: number | null | undefined
-}) {
+function CostTokens({ totals }: { totals: AgentUsageTotals }) {
   return (
-    <TokenGroup title="Usage overview">
-      <TokenStat
-        label="Usage"
-        value={formatUsage(currentTotalTokens, contextLimit)}
-      />
-      <TokenStat label="Total cost" value={formatCurrency(totalCost)} />
-    </TokenGroup>
-  )
-}
-
-function TotalTokens({
-  currentTotalTokens,
-  sessionTotalTokens,
-}: {
-  currentTotalTokens: number
-  sessionTotalTokens: number
-}) {
-  return (
-    <TokenGroup title="Token totals">
-      <TokenStat
-        label="Current total"
-        value={formatInteger(currentTotalTokens)}
-      />
-      <TokenStat
-        label="Session total"
-        value={formatInteger(sessionTotalTokens)}
-      />
+    <TokenGroup title="Cost">
+      <TokenStat label="Cost" value={formatCurrency(totals.cost)} />
+      <TokenStat label="Total cost" value={formatCurrency(totals.totalCost)} />
     </TokenGroup>
   )
 }
@@ -171,6 +105,14 @@ function InputOutputTokens({ totals }: { totals: AgentUsageTotals }) {
       <TokenStat
         label="Output tokens"
         value={formatInteger(totals.outputTokens)}
+      />
+      <TokenStat
+        label="Total input tokens"
+        value={formatInteger(totals.totalInputTokens)}
+      />
+      <TokenStat
+        label="Total output tokens"
+        value={formatInteger(totals.totalOutputTokens)}
       />
     </TokenGroup>
   )
@@ -187,61 +129,16 @@ function CacheTokens({ totals }: { totals: AgentUsageTotals }) {
         label="Cache write"
         value={formatInteger(totals.cacheWriteTokens)}
       />
-    </TokenGroup>
-  )
-}
-
-function TokenDiagnostics({ userStory }: { userStory: UserStory }) {
-  const usage = userStory.agentUsage
-  if (!usage) return null
-  const topTools = usage.topTools
-    .map((tool) => `${tool.name}: ${formatInteger(tool.totalBytes)} bytes`)
-    .join("\n")
-
-  return <TokenDiagnosticGroup usage={usage} topTools={topTools} />
-}
-
-function TokenDiagnosticGroup({
-  topTools,
-  usage,
-}: {
-  topTools: string
-  usage: NonNullable<UserStory["agentUsage"]>
-}) {
-  return (
-    <TokenGroup title="Diagnostics">
       <TokenStat
-        label="Max context"
-        value={formatInteger(usage.maxContextTokens)}
+        label="Total cache read"
+        value={formatInteger(totals.totalCacheReadTokens)}
       />
       <TokenStat
-        label="Raw with cache"
-        value={formatInteger(usage.rawTotalTokens)}
-      />
-      <TokenStat
-        label="Compactions"
-        value={formatInteger(usage.compactionCount)}
-      />
-      <TokenStat
-        label="Truncated"
-        value={formatInteger(usage.truncatedOutputs)}
-      />
-      <TokenStat label="File reads" value={fileReadValue(usage)} />
-      <TokenStat
-        label="Saved tokens"
-        value={formatInteger(usage.tokensSavedEstimate)}
-      />
-      <TokenStat
-        className="col-span-full"
-        label="Largest tools"
-        value={topTools || "-"}
+        label="Total cache write"
+        value={formatInteger(totals.totalCacheWriteTokens)}
       />
     </TokenGroup>
   )
-}
-
-function fileReadValue(usage: NonNullable<UserStory["agentUsage"]>) {
-  return `${formatInteger(usage.unboundedFileReads)} / ${formatInteger(usage.largeFileReads)}`
 }
 
 function TokenGroup({
@@ -342,28 +239,20 @@ function modelContextLimit(
   return model?.contextWindow ?? provider?.models.custom?.contextWindow
 }
 
-function usageTotalTokens(totals: AgentUsageTotals) {
-  return totals.inputTokens + totals.outputTokens
-}
-
 function usageTotalsFromAgentUsage(usage: UserStory["agentUsage"]) {
   if (!usage) return undefined
   return {
     cacheReadTokens: usage.cacheReadTokens,
     cacheWriteTokens: usage.cacheWriteTokens,
+    cost: usage.cost,
     inputTokens: usage.inputTokens,
     outputTokens: usage.outputTokens,
+    totalCacheReadTokens: usage.totalCacheReadTokens,
+    totalCacheWriteTokens: usage.totalCacheWriteTokens,
     totalCost: usage.totalCost,
+    totalInputTokens: usage.totalInputTokens,
+    totalOutputTokens: usage.totalOutputTokens,
   }
-}
-
-function positiveUsageValue(value: number | undefined, fallback: number) {
-  return value && value > 0 ? value : fallback
-}
-
-function formatUsage(totalTokens: number, contextLimit: number | undefined) {
-  if (!contextLimit) return "-"
-  return `${Math.round((totalTokens / contextLimit) * 100)}%`
 }
 
 function formatInteger(value: number | null | undefined) {

@@ -45,32 +45,17 @@ export type UserStoryFileAttachment = {
   type: string
 }
 
-export type UserStoryAgentToolUsage = {
-  count: number
-  maxBytes: number
-  name: string
-  totalBytes: number
-  truncatedCount: number
-}
-
 export type UserStoryAgentUsage = {
-  cacheReadTokens: number
-  cacheWriteTokens: number
-  compactionCount: number
-  currentInputTokens?: number
-  currentOutputTokens?: number
-  currentTotalTokens?: number
+  cacheReadTokens?: number
+  cacheWriteTokens?: number
+  cost?: number
   inputTokens: number
-  largeFileReads: number
-  maxContextTokens: number
   outputTokens: number
-  rawTotalTokens?: number
-  sessionTotalTokens?: number
-  unboundedFileReads: number
-  tokensSavedEstimate: number
-  topTools: UserStoryAgentToolUsage[]
-  totalCost: number
-  truncatedOutputs: number
+  totalCacheReadTokens?: number
+  totalCacheWriteTokens?: number
+  totalCost?: number
+  totalInputTokens: number
+  totalOutputTokens: number
 }
 
 function prepareAgentActivities(value: UserStoryAgentActivity[] | null) {

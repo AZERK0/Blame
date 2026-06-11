@@ -3,7 +3,6 @@ import type { AgentEvent } from "@blame/agent-runtime"
 import type {
   UserStory,
   UserStoryAgentActivity,
-  UserStoryAgentToolUsage,
   UserStoryAgentUsage,
   UserStoryUpdate,
 } from "@/components/backlog/data/backlog-data"
@@ -12,7 +11,6 @@ const maxActivities = 80
 const maxActivityDetailLength = 4096
 const maxActivityValueLength = 1400
 const maxServerActivityDetailLength = 262144
-const largeFileReadBytes = 24000
 type ActivityInput = Omit<UserStoryAgentActivity, "createdAt" | "updatedAt"> & {
   serverDetail?: string
 }
@@ -462,156 +460,46 @@ function eventUsage(story: UserStory, event: AgentEvent) {
     const next = usageFromUsageEvent(current, event)
     return usageChanged(current, next) ? next : undefined
   }
-  if (event.type === "tool") return usageFromToolEvent(current, event)
-  if (event.type === "notice") return usageFromNoticeEvent(current, event)
 }
 
 function usageFromUsageEvent(current: UserStoryAgentUsage, event: AgentEvent) {
   const payload = eventPayload(event)
   const payloadUsage = recordValue(payload.usage)
   const usage = Object.keys(payloadUsage).length ? payloadUsage : payload
-  const aggregateUsage = aggregateUsageEvent(event, payload)
-  const currentInputTokens = aggregateUsage
-    ? (current.currentInputTokens ?? 0)
-    : (numberValue(usage.inputTokens) ?? current.currentInputTokens ?? 0)
-  const currentOutputTokens = aggregateUsage
-    ? (current.currentOutputTokens ?? 0)
-    : (numberValue(usage.outputTokens) ?? current.currentOutputTokens ?? 0)
-  const inputTokens =
-    numberValue(usage.totalInputTokens) ??
-    numberValue(usage.inputTokens) ??
-    current.inputTokens
-  const outputTokens =
-    numberValue(usage.totalOutputTokens) ??
-    numberValue(usage.outputTokens) ??
-    current.outputTokens
-  const cacheReadTokens =
-    numberValue(usage.cacheReadTokens) ?? current.cacheReadTokens
-  const cacheWriteTokens =
-    numberValue(usage.cacheWriteTokens) ?? current.cacheWriteTokens
-  const currentTotalTokens = aggregateUsage
-    ? (current.currentTotalTokens ?? currentInputTokens + currentOutputTokens)
-    : (numberValue(usage.totalTokens) ??
-      currentInputTokens + currentOutputTokens)
-  const sessionTotalTokens = inputTokens + outputTokens
-  const rawTotalTokens = sessionTotalTokens + cacheReadTokens + cacheWriteTokens
-  const maxContextTokens = Math.max(
-    current.maxContextTokens,
-    currentInputTokens
-  )
   return {
     ...current,
-    cacheReadTokens,
-    cacheWriteTokens,
-    currentInputTokens,
-    currentOutputTokens,
-    currentTotalTokens,
-    inputTokens,
-    maxContextTokens,
-    outputTokens,
-    rawTotalTokens,
-    sessionTotalTokens,
+    cacheReadTokens:
+      numberValue(usage.cacheReadTokens) ?? current.cacheReadTokens,
+    cacheWriteTokens:
+      numberValue(usage.cacheWriteTokens) ?? current.cacheWriteTokens,
+    cost: numberValue(usage.cost) ?? current.cost,
+    inputTokens: numberValue(usage.inputTokens) ?? current.inputTokens,
+    outputTokens: numberValue(usage.outputTokens) ?? current.outputTokens,
+    totalCacheReadTokens:
+      numberValue(usage.totalCacheReadTokens) ?? current.totalCacheReadTokens,
+    totalCacheWriteTokens:
+      numberValue(usage.totalCacheWriteTokens) ?? current.totalCacheWriteTokens,
     totalCost: numberValue(usage.totalCost) ?? current.totalCost,
+    totalInputTokens:
+      numberValue(usage.totalInputTokens) ?? current.totalInputTokens,
+    totalOutputTokens:
+      numberValue(usage.totalOutputTokens) ?? current.totalOutputTokens,
   }
-}
-
-function aggregateUsageEvent(
-  event: AgentEvent,
-  payload: Record<string, unknown>
-) {
-  if (event.type === "done") return true
-  const raw = recordValue(payload.raw)
-  return stringValue(raw.type) === "usage-updated"
 }
 
 function usageChanged(current: UserStoryAgentUsage, next: UserStoryAgentUsage) {
   return (
     current.cacheReadTokens !== next.cacheReadTokens ||
     current.cacheWriteTokens !== next.cacheWriteTokens ||
-    current.currentInputTokens !== next.currentInputTokens ||
-    current.currentOutputTokens !== next.currentOutputTokens ||
-    current.currentTotalTokens !== next.currentTotalTokens ||
+    current.cost !== next.cost ||
     current.inputTokens !== next.inputTokens ||
-    current.maxContextTokens !== next.maxContextTokens ||
     current.outputTokens !== next.outputTokens ||
-    current.rawTotalTokens !== next.rawTotalTokens ||
-    current.sessionTotalTokens !== next.sessionTotalTokens ||
-    current.totalCost !== next.totalCost
+    current.totalCacheReadTokens !== next.totalCacheReadTokens ||
+    current.totalCacheWriteTokens !== next.totalCacheWriteTokens ||
+    current.totalCost !== next.totalCost ||
+    current.totalInputTokens !== next.totalInputTokens ||
+    current.totalOutputTokens !== next.totalOutputTokens
   )
-}
-
-function usageFromToolEvent(current: UserStoryAgentUsage, event: AgentEvent) {
-  const payload = eventPayload(event)
-  const phase = stringValue(payload.phase) ?? stringValue(payload.hookEventName)
-  if (phase !== "finished" && phase !== "tool_result") return
-  const toolCall = recordValue(payload.toolCall)
-  const toolName =
-    stringValue(toolCall.name) ??
-    stringValue(toolCall.toolName) ??
-    stringValue(payload.toolName) ??
-    "tool"
-  const bytes = valueLength(payload.output ?? payload.update)
-  const saved = Math.max(0, bytes - maxActivityValueLength)
-  const readFiles = readFilesUsage(toolName, toolCall.input, bytes)
-  return {
-    ...current,
-    largeFileReads: current.largeFileReads + readFiles.largeFileReads,
-    tokensSavedEstimate: current.tokensSavedEstimate + Math.ceil(saved / 3),
-    topTools: topTools(current.topTools, toolName, bytes, saved > 0),
-    truncatedOutputs: current.truncatedOutputs + (saved > 0 ? 1 : 0),
-    unboundedFileReads:
-      current.unboundedFileReads + readFiles.unboundedFileReads,
-  }
-}
-
-function readFilesUsage(toolName: string, input: unknown, bytes: number) {
-  if (toolName !== "read_files")
-    return { largeFileReads: 0, unboundedFileReads: 0 }
-  const unboundedFileReads =
-    readFileRequests(input).filter(unboundedRead).length
-  return {
-    largeFileReads: bytes > largeFileReadBytes ? 1 : 0,
-    unboundedFileReads,
-  }
-}
-
-type ReadFileRequest = {
-  endLine?: number
-  startLine?: number
-}
-
-function readFileRequests(value: unknown): ReadFileRequest[] {
-  if (Array.isArray(value)) return value.flatMap(readFileRequests)
-  if (typeof value === "string") return [{}]
-  const record = recordValue(value)
-  if (!Object.keys(record).length) return []
-  const nested = readFileNestedRequests(record)
-  if (nested.length) return nested
-  if (!("path" in record) && !("relativePath" in record)) return []
-  return [
-    {
-      endLine: numberValue(record.end_line) ?? numberValue(record.endLine),
-      startLine:
-        numberValue(record.start_line) ?? numberValue(record.startLine),
-    },
-  ]
-}
-
-function readFileNestedRequests(record: Record<string, unknown>) {
-  return ["files", "file_paths", "paths"].flatMap((key) =>
-    key in record ? readFileRequests(record[key]) : []
-  )
-}
-
-function unboundedRead(request: ReadFileRequest) {
-  return request.startLine === undefined && request.endLine === undefined
-}
-
-function usageFromNoticeEvent(current: UserStoryAgentUsage, event: AgentEvent) {
-  const payload = eventPayload(event)
-  const message = stringValue(payload.message)?.toLowerCase() ?? ""
-  if (!message.includes("compact")) return
-  return { ...current, compactionCount: current.compactionCount + 1 }
 }
 
 function eventSessionSummary(story: UserStory, event: AgentEvent) {
@@ -633,66 +521,15 @@ function eventSessionSummary(story: UserStory, event: AgentEvent) {
 
 function emptyUsage(): UserStoryAgentUsage {
   return {
-    cacheReadTokens: 0,
-    cacheWriteTokens: 0,
-    compactionCount: 0,
-    currentInputTokens: 0,
-    currentOutputTokens: 0,
-    currentTotalTokens: 0,
     inputTokens: 0,
-    largeFileReads: 0,
-    maxContextTokens: 0,
     outputTokens: 0,
-    rawTotalTokens: 0,
-    sessionTotalTokens: 0,
-    unboundedFileReads: 0,
-    tokensSavedEstimate: 0,
-    topTools: [],
-    totalCost: 0,
-    truncatedOutputs: 0,
+    totalInputTokens: 0,
+    totalOutputTokens: 0,
   }
 }
 
 function usageWithDefaults(usage: UserStoryAgentUsage | null | undefined) {
   return { ...emptyUsage(), ...usage }
-}
-
-function topTools(
-  current: UserStoryAgentToolUsage[],
-  name: string,
-  bytes: number,
-  truncated: boolean
-) {
-  const existing = current.find((tool) => tool.name === name)
-  const next = existing
-    ? current.map((tool) =>
-        tool.name === name
-          ? {
-              ...tool,
-              count: tool.count + 1,
-              maxBytes: Math.max(tool.maxBytes, bytes),
-              totalBytes: tool.totalBytes + bytes,
-              truncatedCount: tool.truncatedCount + (truncated ? 1 : 0),
-            }
-          : tool
-      )
-    : [
-        ...current,
-        {
-          count: 1,
-          maxBytes: bytes,
-          name,
-          totalBytes: bytes,
-          truncatedCount: truncated ? 1 : 0,
-        },
-      ]
-  return next.sort((a, b) => b.totalBytes - a.totalBytes).slice(0, 5)
-}
-
-function valueLength(value: unknown): number {
-  if (typeof value === "string") return value.length
-  if (value === undefined || value === null) return 0
-  return JSON.stringify(value).length
 }
 
 function fileMentions(activities: UserStoryAgentActivity[]) {

@@ -360,11 +360,16 @@ export type AgentSessionRecord = {
 }
 
 export type AgentUsageTotals = {
-  cacheReadTokens: number
-  cacheWriteTokens: number
+  cacheReadTokens?: number
+  cacheWriteTokens?: number
+  cost?: number
   inputTokens: number
   outputTokens: number
-  totalCost: number
+  totalCacheReadTokens?: number
+  totalCacheWriteTokens?: number
+  totalCost?: number
+  totalInputTokens: number
+  totalOutputTokens: number
 }
 
 export type AgentUsageSummary = {
