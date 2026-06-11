@@ -1,0 +1,93 @@
+import assert from "node:assert/strict"
+import test from "node:test"
+
+import type {
+  UserStory,
+  UserStoryAgentActivity,
+  UserStoryAgentRun,
+} from "./backlog-data.ts"
+import {
+  mergeLoadedStories,
+  mergeStoryAgentRun,
+  mergeUserStory,
+} from "./backlog-store-merge.ts"
+
+test("keeps local activities when a server run is incomplete", () => {
+  const localStory = story([run([activity("first"), activity("second")])])
+  const serverRun = run([activity("first")])
+
+  const merged = mergeStoryAgentRun(localStory, serverRun)
+
+  assert.deepEqual(
+    merged.agentRuns?.[0].activities?.map((item) => item.id),
+    ["first", "second"]
+  )
+})
+
+test("keeps local activities while refreshing stories", () => {
+  const localStory = story([run([activity("first"), activity("second")])])
+  const serverStory = story([run([activity("first")])])
+
+  const merged = mergeLoadedStories([localStory], [serverStory])
+
+  assert.deepEqual(
+    merged[0].agentRuns?.[0].activities?.map((item) => item.id),
+    ["first", "second"]
+  )
+})
+
+test("keeps the newest activity state", () => {
+  const current = story([
+    run([activity("tool", "2026-06-11T10:00:02.000Z", "completed")]),
+  ])
+  const server = story([
+    run([activity("tool", "2026-06-11T10:00:01.000Z", "running")]),
+  ])
+
+  const merged = mergeUserStory(current, server)
+
+  assert.equal(merged.agentRuns?.[0].activities?.[0].status, "completed")
+})
+
+function story(agentRuns: UserStoryAgentRun[]): UserStory {
+  return {
+    agentRuns,
+    createdAt: "2026-06-11T10:00:00.000Z",
+    id: 1,
+    owner: "Product",
+    priority: "Medium",
+    projectId: "project",
+    status: "in-progress",
+    summary: "",
+    title: "Story",
+    updatedAt: "2026-06-11T10:00:03.000Z",
+  }
+}
+
+function run(activities: UserStoryAgentActivity[]): UserStoryAgentRun {
+  return {
+    activities,
+    createdAt: "2026-06-11T10:00:00.000Z",
+    id: 1,
+    kind: "initial",
+    status: "running",
+    updatedAt: "2026-06-11T10:00:03.000Z",
+    userStoryId: 1,
+  }
+}
+
+function activity(
+  id: string,
+  updatedAt = "2026-06-11T10:00:03.000Z",
+  status: UserStoryAgentActivity["status"] = "completed"
+): UserStoryAgentActivity {
+  return {
+    createdAt: "2026-06-11T10:00:00.000Z",
+    detail: "",
+    id,
+    kind: "tool",
+    status,
+    title: id,
+    updatedAt,
+  }
+}

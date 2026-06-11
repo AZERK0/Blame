@@ -1,6 +1,11 @@
 import * as React from "react"
 
 import { createBacklogApi } from "@/components/backlog/data/backlog-api"
+import {
+  mergeLoadedStories,
+  mergeStoryAgentRun,
+  mergeUserStory,
+} from "@/components/backlog/data/backlog-store-merge"
 import type {
   BacklogColumnId,
   UserStory,
@@ -18,6 +23,7 @@ type BacklogState = {
   cleanupStoryIds: Set<number>
   error?: string
   loading: boolean
+  projectId?: string
   setupInitializingStoryIds: Set<number>
   stories: UserStory[]
 }
@@ -31,6 +37,7 @@ export function useBacklogStore() {
     setupInitializingStoryIds: new Set(),
     stories: [],
   })
+  const loadRequestId = React.useRef(0)
   const updateQueues = React.useRef(new Map<number, Promise<unknown>>())
   const projectId = projects.activeProject?.id
   const projectPath = projects.activeProject?.path
@@ -41,24 +48,30 @@ export function useBacklogStore() {
   )
 
   const load = React.useCallback(async () => {
+    const requestId = ++loadRequestId.current
     if (!projectId) {
       setState({
         cleanupStoryIds: new Set(),
         loading: false,
+        projectId: undefined,
         setupInitializingStoryIds: new Set(),
         stories: [],
       })
       return
     }
-    setState((current) => ({ ...current, error: undefined, loading: true }))
+    setState((current) => loadingState(current, projectId))
     try {
-      setState({
-        cleanupStoryIds: new Set(),
+      const loadedStories = await api.list(projectId)
+      if (loadRequestId.current !== requestId) return
+      setState((current) => ({
+        ...current,
+        error: undefined,
         loading: false,
-        setupInitializingStoryIds: new Set(),
-        stories: await api.list(projectId),
-      })
+        projectId,
+        stories: mergeLoadedStories(current.stories, loadedStories),
+      }))
     } catch (error) {
+      if (loadRequestId.current !== requestId) return
       setState({
         cleanupStoryIds: new Set(),
         error:
@@ -66,6 +79,7 @@ export function useBacklogStore() {
             ? error.message
             : "Unable to load user stories.",
         loading: false,
+        projectId,
         setupInitializingStoryIds: new Set(),
         stories: [],
       })
@@ -74,7 +88,10 @@ export function useBacklogStore() {
 
   React.useEffect(() => {
     const timer = window.setTimeout(() => void load(), 0)
-    return () => window.clearTimeout(timer)
+    return () => {
+      window.clearTimeout(timer)
+      loadRequestId.current += 1
+    }
   }, [load])
 
   const create = React.useCallback(
@@ -103,7 +120,7 @@ export function useBacklogStore() {
             ...current,
             stories: current.stories.map((currentStory) =>
               currentStory.id === story.id
-                ? newestUserStory(currentStory, nextStory)
+                ? mergeUserStory(currentStory, nextStory)
                 : currentStory
             ),
           }))
@@ -145,7 +162,7 @@ export function useBacklogStore() {
         ...current,
         stories: current.stories.map((currentStory) =>
           currentStory.id === story.id
-            ? storyWithAgentRun(currentStory, run)
+            ? mergeStoryAgentRun(currentStory, run)
             : currentStory
         ),
       }))
@@ -164,7 +181,7 @@ export function useBacklogStore() {
         ...current,
         stories: current.stories.map((currentStory) =>
           currentStory.id === story.id
-            ? storyWithUpdatedAgentRun(currentStory, nextRun)
+            ? mergeStoryAgentRun(currentStory, nextRun)
             : currentStory
         ),
       }))
@@ -321,26 +338,6 @@ function storyWithComment(story: UserStory, comment: UserStoryComment) {
   }
 }
 
-function storyWithAgentRun(story: UserStory, run: UserStoryAgentRun) {
-  return {
-    ...story,
-    agentRuns: [...(story.agentRuns ?? []), run],
-  }
-}
-
-function storyWithUpdatedAgentRun(story: UserStory, run: UserStoryAgentRun) {
-  const currentRuns = story.agentRuns ?? []
-  const hasRun = currentRuns.some((currentRun) => currentRun.id === run.id)
-  return {
-    ...story,
-    agentRuns: hasRun
-      ? currentRuns.map((currentRun) =>
-          currentRun.id === run.id ? run : currentRun
-        )
-      : [...currentRuns, run],
-  }
-}
-
 function storyWithLocallyUpdatedAgentRun(
   currentStory: UserStory,
   targetStory: UserStory,
@@ -354,7 +351,7 @@ function storyWithLocallyUpdatedAgentRun(
     run
   const nextRun = agentRunWithUpdate(currentRun, input)
   result.onNextRun(nextRun)
-  return storyWithUpdatedAgentRun(currentStory, nextRun)
+  return mergeStoryAgentRun(currentStory, nextRun)
 }
 
 function definedUpdate(input: UserStoryUpdate | UserStoryAgentRunUpdate) {
@@ -380,89 +377,15 @@ function storyStateIds(current: Set<number>, storyId: number, active: boolean) {
   return next
 }
 
-function newestUserStory(currentStory: UserStory, nextStory: UserStory) {
-  const currentUpdatedAt = timestamp(currentStory.updatedAt)
-  const nextUpdatedAt = timestamp(nextStory.updatedAt)
-  if (currentUpdatedAt === undefined || nextUpdatedAt === undefined) {
-    return storyWithConversationHistory(nextStory, currentStory)
+function loadingState(current: BacklogState, projectId: string): BacklogState {
+  if (current.projectId === projectId) {
+    return { ...current, error: undefined, loading: true }
   }
-  if (nextUpdatedAt >= currentUpdatedAt) {
-    return storyWithConversationHistory(nextStory, currentStory)
-  }
-  return storyWithConversationHistory(currentStory, nextStory)
-}
-
-function timestamp(value: string | null | undefined) {
-  if (!value) return undefined
-  const date = Date.parse(value)
-  return Number.isNaN(date) ? undefined : date
-}
-
-function storyWithConversationHistory(story: UserStory, previous: UserStory) {
   return {
-    ...story,
-    agentRuns: mergedAgentRuns(previous.agentRuns ?? [], story.agentRuns ?? []),
-    comments: mergedComments(previous.comments ?? [], story.comments ?? []),
+    cleanupStoryIds: new Set(),
+    loading: true,
+    projectId,
+    setupInitializingStoryIds: new Set(),
+    stories: [],
   }
-}
-
-function mergedComments(
-  previousComments: UserStoryComment[],
-  nextComments: UserStoryComment[]
-) {
-  return sortedByCreatedAt(mergedById(previousComments, nextComments))
-}
-
-function mergedAgentRuns(
-  previousRuns: UserStoryAgentRun[],
-  nextRuns: UserStoryAgentRun[]
-) {
-  const runs = new Map<number, UserStoryAgentRun>()
-  previousRuns.forEach((run) => runs.set(run.id, run))
-  nextRuns.forEach((run) => {
-    const previous = runs.get(run.id)
-    runs.set(run.id, previous ? mergedAgentRun(previous, run) : run)
-  })
-  return sortedByCreatedAt([...runs.values()])
-}
-
-function mergedAgentRun(
-  previousRun: UserStoryAgentRun,
-  nextRun: UserStoryAgentRun
-): UserStoryAgentRun {
-  const base =
-    timestamp(nextRun.updatedAt) >= timestamp(previousRun.updatedAt)
-      ? nextRun
-      : previousRun
-  return {
-    ...base,
-    activities: mergedById(
-      previousRun.activities ?? [],
-      nextRun.activities ?? []
-    ),
-    finalResponse:
-      nextRun.finalResponse ?? previousRun.finalResponse ?? base.finalResponse,
-    sessionSummary:
-      nextRun.sessionSummary ??
-      previousRun.sessionSummary ??
-      base.sessionSummary,
-    usage: nextRun.usage ?? previousRun.usage ?? base.usage,
-  }
-}
-
-function mergedById<T extends { id: number | string }>(
-  previousItems: T[],
-  nextItems: T[]
-) {
-  const items = new Map<number | string, T>()
-  previousItems.forEach((item) => items.set(item.id, item))
-  nextItems.forEach((item) => items.set(item.id, item))
-  return [...items.values()]
-}
-
-function sortedByCreatedAt<T extends { createdAt: string }>(items: T[]) {
-  return [...items].sort(
-    (left, right) =>
-      (timestamp(left.createdAt) ?? 0) - (timestamp(right.createdAt) ?? 0)
-  )
 }
