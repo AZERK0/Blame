@@ -169,7 +169,7 @@ export function UserStoryDrawerPanel({
       )
       responses?.item(responses.length - 1)?.scrollIntoView({
         behavior: "smooth",
-        block: "center",
+        block: "start",
       })
     })
     return () => cancelAnimationFrame(frame)

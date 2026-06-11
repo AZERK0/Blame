@@ -365,13 +365,16 @@ function AgentResponseItem({
   if (!markdown) return null
 
   return (
-    <div className="relative grid grid-cols-[2.5rem_minmax(0,1fr)] items-start gap-1">
+    <div
+      className="relative grid grid-cols-[2.5rem_minmax(0,1fr)] items-start gap-1"
+      data-agent-response
+    >
       <span className="relative z-10 flex size-8 items-center justify-center rounded-full border bg-background text-muted-foreground shadow-sm">
         <BotIcon className="size-4" />
       </span>
       <div className="grid min-w-0 gap-3">
         <h3 className="text-xl font-medium">Agent response</h3>
-        <div className="agent-response-effect" data-agent-response>
+        <div className="agent-response-effect">
           <MarkdownEditor
             markdown={markdown}
             readOnly
