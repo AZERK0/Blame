@@ -101,8 +101,9 @@ export function useNewProjectWizard(input: {
   const [status, setStatus] = React.useState<ProjectCreationStatus>("idle")
   const [hostDependenciesDialog, setHostDependenciesDialog] =
     React.useState<HostDependenciesDialogState>()
-  const [configuration, setConfiguration] =
-    React.useState(defaultNewProjectConfiguration)
+  const [configuration, setConfiguration] = React.useState(
+    defaultNewProjectConfiguration
+  )
   const normalizedConfiguration = React.useMemo(
     () => normalizeNewProjectConfiguration(configuration),
     [configuration]
@@ -111,7 +112,9 @@ export function useNewProjectWizard(input: {
   const canGoBack = !creating && currentStepIndex > 0
   const canGoNext = !creating && nextStepAllowed(step, parentPath, projectName)
   const createProjectAvailable = Boolean(
-    platform.workspace?.createProject && platform.agent && modelSelection.currentModel
+    platform.workspace?.createProject &&
+    platform.agent &&
+    modelSelection.currentModel
   )
 
   const reset = React.useCallback(() => {
@@ -215,13 +218,21 @@ export function useNewProjectWizard(input: {
 
     try {
       if (auth.status !== "authenticated") {
-        throw new Error("Sign in to Blame before generating a project with the AI agent.")
+        throw new Error(
+          "Sign in to Blame before generating a project with the AI agent."
+        )
       }
       if (!platform.agent || !modelSelection.currentModel) {
-        throw new Error("Connect and select an AI model before generating a project.")
+        throw new Error(
+          "Connect and select an AI model before generating a project."
+        )
       }
-      const setupScript = newProjectHostDependencyScript(normalizedConfiguration)
-      const dependencies = await workspace.checkHostDependencies({ setupScript })
+      const setupScript = newProjectHostDependencyScript(
+        normalizedConfiguration
+      )
+      const dependencies = await workspace.checkHostDependencies({
+        setupScript,
+      })
       if (!dependencies.ok) {
         setHostDependenciesDialog({
           checking: false,
@@ -255,14 +266,19 @@ export function useNewProjectWizard(input: {
       setLogs((current) => appendProjectCreationLog(current, event))
       setStatus(statusFromProjectCreationEvent(event))
     })
-    const unsubscribeAgent = platform.agent?.sessions.onEvent(runId, (event) => {
-      const log = projectCreationLogFromAgentEvent(event)
-      if (log) setLogs((current) => appendProjectCreationLog(current, log))
-      setStatus(statusFromAgentEvent(event))
-      if (event.type === "error") {
-        setError(eventText(event.payload) || "Project generation agent failed.")
+    const unsubscribeAgent = platform.agent?.sessions.onEvent(
+      runId,
+      (event) => {
+        const log = projectCreationLogFromAgentEvent(event)
+        if (log) setLogs((current) => appendProjectCreationLog(current, log))
+        setStatus(statusFromAgentEvent(event))
+        if (event.type === "error") {
+          setError(
+            eventText(event.payload) || "Project generation agent failed."
+          )
+        }
       }
-    })
+    )
 
     try {
       const currentModel = modelSelection.currentModel
@@ -273,6 +289,7 @@ export function useNewProjectWizard(input: {
       const createdProject = await workspace.createProject({
         apiConnection: auth.apiConnection,
         configuration: normalizedConfiguration,
+        credentialLabel: currentModel.credentialLabel,
         modelId: currentModel.id,
         parentPath,
         projectName,
@@ -305,7 +322,9 @@ export function useNewProjectWizard(input: {
       })
       setStatus("done")
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Unable to create project.")
+      setError(
+        error instanceof Error ? error.message : "Unable to create project."
+      )
       setStatus("error")
     } finally {
       unsubscribe?.()
@@ -413,7 +432,9 @@ function defaultUi(frontend: FrontendFramework): UiLibrary {
   return "none"
 }
 
-function statusFromProjectCreationEvent(event: ProjectCreationLog): ProjectCreationStatus {
+function statusFromProjectCreationEvent(
+  event: ProjectCreationLog
+): ProjectCreationStatus {
   if (event.type === "exit") return "done"
   if (/preparing/i.test(event.data)) return "preparing"
   if (/install|dependencies/i.test(event.data)) return "installing"
@@ -430,17 +451,25 @@ function statusFromAgentEvent(event: AgentEvent): ProjectCreationStatus {
   return "generating"
 }
 
-function projectCreationLogFromAgentEvent(event: AgentEvent): ProjectCreationLog | undefined {
+function projectCreationLogFromAgentEvent(
+  event: AgentEvent
+): ProjectCreationLog | undefined {
   const text = projectCreationEventText(event)
   if (!text) return undefined
-  if (event.type === "tool") return { type: "agent", channel: "tool", data: `[tool] ${text}\n` }
+  if (event.type === "tool")
+    return { type: "agent", channel: "tool", data: `[tool] ${text}\n` }
   if (event.type === "notice") {
     if (isNoisyAgentNotice(text)) return undefined
     return { type: "agent", channel: "notice", data: `${text}\n` }
   }
-  if (event.type === "reasoning") return { type: "agent", channel: "reasoning", data: `Planning: ${text}\n` }
-  if (event.type === "text") return { type: "agent", channel: "text", data: `${text}\n` }
-  return { type: event.type === "error" ? "stderr" : "agent", data: `${text}\n` }
+  if (event.type === "reasoning")
+    return { type: "agent", channel: "reasoning", data: `Planning: ${text}\n` }
+  if (event.type === "text")
+    return { type: "agent", channel: "text", data: `${text}\n` }
+  return {
+    type: event.type === "error" ? "stderr" : "agent",
+    data: `${text}\n`,
+  }
 }
 
 function appendProjectCreationLog(
@@ -494,14 +523,24 @@ async function initializeGeneratedProjectForBlame(input: {
   appendLog(log: ProjectCreationLog): void
 }) {
   let validationFeedback: InitializationFeedback | undefined
-  for (let attempt = 1; attempt <= maxInitializationCompletionAttempts; attempt += 1) {
-    const initialization = await runGeneratedProjectInitialization(input, validationFeedback)
+  for (
+    let attempt = 1;
+    attempt <= maxInitializationCompletionAttempts;
+    attempt += 1
+  ) {
+    const initialization = await runGeneratedProjectInitialization(
+      input,
+      validationFeedback
+    )
     try {
       await openGeneratedProjectWithInitialization(input, initialization)
       return
     } catch (error) {
       if (!shouldRetryInitializationCompletion(error, attempt)) throw error
-      validationFeedback = initializationValidationFeedback(error, initialization)
+      validationFeedback = initializationValidationFeedback(
+        error,
+        initialization
+      )
       input.appendLog(refiningInitializationLog())
     }
   }
@@ -515,6 +554,7 @@ function runGeneratedProjectInitialization(
     apiConnection: input.apiConnection,
     providerId: input.model.provider.id,
     modelId: input.model.id,
+    credentialLabel: input.model.credentialLabel,
     reasoningEffort: input.reasoningEffort,
     cwd: input.path,
     workspaceRoot: input.path,

@@ -12,6 +12,7 @@ import type {
   OAuthPrompt,
   OAuthProviderInterface,
   OAuthServerListeningInfo,
+  SessionUsageSummary,
 } from "@cline/sdk";
 import {
   buildWorkspaceMetadata,
@@ -504,7 +505,7 @@ export class BlameAgentRuntime {
     sessionId: string,
   ): Promise<AgentUsageSummary | undefined> {
     const cline = await this.core();
-    return cline.getAccumulatedUsage(sessionId);
+    return normalizeAgentUsageSummary(await cline.getAccumulatedUsage(sessionId));
   }
 
   private async initializeProject(
@@ -1224,6 +1225,7 @@ export class BlameAgentRuntime {
       apiConnection: input.apiConnection,
       providerId: input.providerId,
       modelId: input.modelId,
+      credentialLabel: input.credentialLabel,
       reasoningEffort: input.reasoningEffort,
       autoApproveWriteTools: true,
       autoSendPrompt: input.autoSendPrompt !== false,
@@ -2720,6 +2722,33 @@ function eventUsageSummary(event: AgentEvent): AgentUsageSummary | undefined {
   const usage = asRecord(payload.usage);
   if (!Object.keys(usage).length) return undefined;
   return { aggregateUsage: usage as never };
+}
+
+function normalizeAgentUsageSummary(
+  summary: SessionUsageSummary | undefined,
+): AgentUsageSummary | undefined {
+  if (!summary) return undefined;
+  return {
+    usage: normalizeAgentUsageTotals(summary.usage),
+    aggregateUsage: normalizeAgentUsageTotals(summary.aggregateUsage),
+  };
+}
+
+function normalizeAgentUsageTotals(
+  usage: SessionUsageSummary["usage"] | undefined,
+) {
+  if (!usage) return undefined;
+  return {
+    cacheReadTokens: usage.cacheReadTokens,
+    cacheWriteTokens: usage.cacheWriteTokens,
+    inputTokens: usage.inputTokens,
+    outputTokens: usage.outputTokens,
+    totalCacheReadTokens: usage.cacheReadTokens,
+    totalCacheWriteTokens: usage.cacheWriteTokens,
+    totalCost: usage.totalCost,
+    totalInputTokens: usage.inputTokens,
+    totalOutputTokens: usage.outputTokens,
+  };
 }
 
 function toolLogPayload(payload: Record<string, unknown>) {

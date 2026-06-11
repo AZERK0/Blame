@@ -69,10 +69,14 @@ export const popularProviders = [
 export type ModelKey = {
   providerID: string
   modelID: string
+  credentialLabel?: string
 }
 
 export type SelectableModel = Omit<Model, "providerID"> & {
   provider: Provider
+  credentialLabel?: string
+  credentialDisplayName?: string
+  showCredentialLabel?: boolean
   latest: boolean
 }
 
@@ -179,7 +183,7 @@ function ModelPicker({
               >
                 {group.models.map((model) => (
                   <ModelCommandItem
-                    key={`${model.provider.id}:${model.id}`}
+                    key={modelReactKey(model)}
                     model={model}
                     selected={isModelSelected(selection.currentModel, model)}
                     onSelect={() => {
@@ -271,12 +275,12 @@ function ModelCommandItem({
 }) {
   return (
     <CommandItem
-      value={`${model.provider.name} ${model.name} ${model.id}`}
+      value={`${model.provider.name} ${model.name} ${model.id} ${model.credentialDisplayName ?? ""}`}
       data-checked={selected}
       onSelect={onSelect}
     >
       <ProviderMark provider={model.provider} />
-      <span className="min-w-0 flex-1 truncate">{model.name}</span>
+      <span className="min-w-0 flex-1 truncate">{modelDisplayName(model)}</span>
       <ModelTags model={model} />
     </CommandItem>
   )
@@ -294,9 +298,19 @@ function ModelSummary({ model }: { model: SelectableModel | undefined }) {
   return (
     <span className="flex min-w-0 items-center gap-2">
       <ProviderMark provider={model.provider} />
-      <span className="truncate">{model.name}</span>
+      <span className="truncate">{modelDisplayName(model)}</span>
     </span>
   )
+}
+
+export function modelDisplayName(model: SelectableModel) {
+  if (!model.showCredentialLabel || !model.credentialDisplayName)
+    return model.name
+  return `${model.name} · ${model.credentialDisplayName}`
+}
+
+export function modelReactKey(model: SelectableModel) {
+  return `${model.provider.id}:${model.id}:${model.credentialLabel ?? defaultCredentialLabel}`
 }
 
 export function ModelTags({ model }: { model: SelectableModel }) {
@@ -388,11 +402,10 @@ export function useModelSelection() {
     setModel: (model: SelectableModel) =>
       setModelState(providerState.directory, setState, {
         ...state,
-        model: { providerID: model.provider.id, modelID: model.id },
+        model: modelKey(model),
         recent: pushRecent(state.recent, model),
         hidden: state.hidden.filter(
-          (item) =>
-            item.providerID !== model.provider.id || item.modelID !== model.id
+          (item) => !sameModelKey(item, modelKey(model))
         ),
       }),
     modelVisible: (model: SelectableModel) => modelVisible(state, model),
@@ -502,29 +515,98 @@ function getProviderModels(
   credentials: ProviderCredentialSummary[]
 ) {
   if (provider.id !== openAICompatibleProviderID)
-    return Object.values(provider.models)
+    return providerCredentialModels(provider, credentials)
 
   const compatibleCredentials = credentials.filter(
     (credential) => credential.providerId === openAICompatibleProviderID
   )
   if (!compatibleCredentials.length) return Object.values(provider.models)
 
-  return compatibleCredentials.map((credential) =>
-    openAICompatibleModel(provider, credential)
+  return compatibleCredentials
+    .map((credential) =>
+      openAICompatibleModels(provider, credential, compatibleCredentials)
+    )
+    .flat()
+}
+
+function providerCredentialModels(
+  provider: Provider,
+  credentials: ProviderCredentialSummary[]
+) {
+  const providerCredentials = credentials.filter(
+    (credential) => credential.providerId === provider.id
+  )
+  const models = Object.values(provider.models)
+  if (!providerCredentials.length) return models
+
+  return providerCredentials.flatMap((credential) =>
+    models.map((model) =>
+      credentialModel(model, credential, providerCredentials)
+    )
   )
 }
 
-function openAICompatibleModel(
-  provider: Provider,
-  credential: ProviderCredentialSummary
+function credentialModel(
+  model: Model,
+  credential: ProviderCredentialSummary,
+  credentials: ProviderCredentialSummary[]
 ) {
-  const modelId =
-    credential.label === defaultCredentialLabel ? "custom" : credential.label
   return {
-    ...(provider.models.custom ?? Object.values(provider.models)[0]),
+    ...model,
+    credentialLabel: credential.label,
+    credentialDisplayName: credentialLabel(credential),
+    showCredentialLabel: credentials.length > 1,
+  }
+}
+
+function openAICompatibleModels(
+  provider: Provider,
+  credential: ProviderCredentialSummary,
+  credentials: ProviderCredentialSummary[]
+) {
+  const fallback = provider.models.custom ?? Object.values(provider.models)[0]
+  const modelIds = credential.modelIds?.length
+    ? credential.modelIds
+    : [
+        credential.label === defaultCredentialLabel
+          ? "custom"
+          : credential.label,
+      ]
+  return modelIds.map((modelId) => ({
+    ...fallback,
     id: modelId,
     name: modelId,
+    credentialLabel: credential.label,
+    credentialDisplayName: credentialLabel(credential),
+    showCredentialLabel: duplicateModelId(credentials, modelId),
+  }))
+}
+
+function duplicateModelId(
+  credentials: ProviderCredentialSummary[],
+  modelId: string
+) {
+  return (
+    credentials.filter((credential) =>
+      credentialModelIds(credential).includes(modelId)
+    ).length > 1
+  )
+}
+
+function credentialLabel(credential: ProviderCredentialSummary) {
+  if (credential.label !== defaultCredentialLabel) return credential.label
+  return credential.accountId ?? defaultCredentialLabel
+}
+
+function credentialModelIds(credential: ProviderCredentialSummary) {
+  if (credential.modelIds?.length) return credential.modelIds
+  if (
+    credential.providerId === openAICompatibleProviderID &&
+    credential.label !== defaultCredentialLabel
+  ) {
+    return [credential.label]
   }
+  return []
 }
 
 function getConnectedProviderIDs(providers: ProviderListResponse | undefined) {
@@ -545,9 +627,7 @@ function groupModels(models: SelectableModel[]) {
 }
 
 function modelVisible(state: ModelSelectionState, model: SelectableModel) {
-  return !state.hidden.some(
-    (item) => item.providerID === model.provider.id && item.modelID === model.id
-  )
+  return !state.hidden.some((item) => sameModelKey(item, modelKey(model)))
 }
 
 function setHiddenModel(
@@ -556,14 +636,9 @@ function setHiddenModel(
   visible: boolean
 ) {
   if (!visible) {
-    return [
-      ...hidden,
-      { providerID: model.provider.id, modelID: model.id },
-    ].filter(uniqueModelKey)
+    return [...hidden, modelKey(model)].filter(uniqueModelKey)
   }
-  return hidden.filter(
-    (item) => item.providerID !== model.provider.id || item.modelID !== model.id
-  )
+  return hidden.filter((item) => !sameModelKey(item, modelKey(model)))
 }
 
 function setHiddenProvider(
@@ -575,19 +650,12 @@ function setHiddenProvider(
   if (visible) return hidden.filter((item) => item.providerID !== providerID)
   return [
     ...hidden,
-    ...models
-      .filter((model) => model.provider.id === providerID)
-      .map((model) => ({ providerID, modelID: model.id })),
+    ...models.filter((model) => model.provider.id === providerID).map(modelKey),
   ].filter(uniqueModelKey)
 }
 
 function uniqueModelKey(value: ModelKey, index: number, list: ModelKey[]) {
-  return (
-    list.findIndex(
-      (item) =>
-        item.providerID === value.providerID && item.modelID === value.modelID
-    ) === index
-  )
+  return list.findIndex((item) => sameModelKey(item, value)) === index
 }
 
 function groupModelsByProvider(models: SelectableModel[]) {
@@ -674,26 +742,39 @@ function getEmptyMessage(input: {
 }
 
 function findModel(models: SelectableModel[], key: ModelKey | undefined) {
-  return models.find(
-    (model) => model.provider.id === key?.providerID && model.id === key.modelID
-  )
+  return models.find((model) => key && sameModelKey(modelKey(model), key))
 }
 
 function isModelSelected(
   current: SelectableModel | undefined,
   model: SelectableModel
 ) {
-  return current?.provider.id === model.provider.id && current.id === model.id
+  return Boolean(current && sameModelKey(modelKey(current), modelKey(model)))
 }
 
 function pushRecent(recent: ModelKey[], model: SelectableModel) {
-  return [
-    { providerID: model.provider.id, modelID: model.id },
-    ...recent.filter(
-      (item) =>
-        item.providerID !== model.provider.id || item.modelID !== model.id
-    ),
-  ].slice(0, recentLimit)
+  const key = modelKey(model)
+  return [key, ...recent.filter((item) => !sameModelKey(item, key))].slice(
+    0,
+    recentLimit
+  )
+}
+
+function modelKey(model: SelectableModel): ModelKey {
+  return {
+    providerID: model.provider.id,
+    modelID: model.id,
+    credentialLabel: model.credentialLabel,
+  }
+}
+
+function sameModelKey(left: ModelKey, right: ModelKey) {
+  return (
+    left.providerID === right.providerID &&
+    left.modelID === right.modelID &&
+    (left.credentialLabel ?? defaultCredentialLabel) ===
+      (right.credentialLabel ?? defaultCredentialLabel)
+  )
 }
 
 function readModelState(directory: string | undefined): ModelSelectionState {
@@ -752,7 +833,12 @@ function isModelKey(value: unknown): value is ModelKey {
   if (!value || typeof value !== "object") return false
   if (!("providerID" in value) || typeof value.providerID !== "string")
     return false
-  return "modelID" in value && typeof value.modelID === "string"
+  if (!("modelID" in value) || typeof value.modelID !== "string") return false
+  return (
+    !("credentialLabel" in value) ||
+    value.credentialLabel === undefined ||
+    typeof value.credentialLabel === "string"
+  )
 }
 
 function getProviderRank(providerID: string) {

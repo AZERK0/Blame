@@ -15,6 +15,7 @@ type ImpactInput = {
   projectId: string
   providerId: string
   modelId: string
+  credentialLabel?: string
   reasoningEffort?: "low" | "medium" | "high" | "xhigh"
   repositoryRoot: string
   baseCommit: string
@@ -72,6 +73,7 @@ async function assessProjectInitializationImpact(
     apiConnection: input.apiConnection,
     providerId: input.providerId,
     modelId: input.modelId,
+    credentialLabel: input.credentialLabel,
     reasoningEffort: input.reasoningEffort,
     cwd: input.repositoryRoot,
     workspaceRoot: input.repositoryRoot,
@@ -99,6 +101,7 @@ async function repairProjectInitializationImpact(
     apiConnection: input.apiConnection,
     providerId: input.providerId,
     modelId: input.modelId,
+    credentialLabel: input.credentialLabel,
     reasoningEffort: input.reasoningEffort,
     cwd: input.repositoryRoot,
     workspaceRoot: input.repositoryRoot,
@@ -114,7 +117,11 @@ async function persistProjectInitializationRepair(
   result: RepairProjectInitializationResult
 ) {
   if (result.classification !== "repairable_initialization") return
-  if (!result.setupScript || !result.dockerCompose || !result.runConfigurations) {
+  if (
+    !result.setupScript ||
+    !result.dockerCompose ||
+    !result.runConfigurations
+  ) {
     throw new Error(
       "Initialization repair agent returned incomplete artifacts."
     )

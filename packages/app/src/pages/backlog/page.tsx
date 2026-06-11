@@ -358,6 +358,7 @@ export function BacklogPage() {
         apiConnection: auth.apiConnection,
         providerId: selection.currentModel.provider.id,
         modelId: selection.currentModel.id,
+        credentialLabel: selection.currentModel.credentialLabel,
         reasoningEffort: selection.currentVariant,
         autoSendPrompt: false,
         title: story.title,
@@ -474,6 +475,7 @@ export function BacklogPage() {
         apiConnection: auth.apiConnection,
         providerId: selection.currentModel.provider.id,
         modelId: selection.currentModel.id,
+        credentialLabel: selection.currentModel.credentialLabel,
         reasoningEffort: selection.currentVariant,
         autoSendPrompt: false,
         title: story.title,
@@ -580,6 +582,7 @@ export function BacklogPage() {
           apiConnection: auth.apiConnection,
           providerId: selection.currentModel!.provider.id,
           modelId: selection.currentModel!.id,
+          credentialLabel: selection.currentModel!.credentialLabel,
           reasoningEffort: selection.currentVariant,
           repositoryRoot: projects.activeProject!.path,
           worktree: story.worktree!,
@@ -610,6 +613,7 @@ export function BacklogPage() {
           baseCommit: result.baseCommit,
           mergeCommit: result.mergeCommit,
           modelId: selection.currentModel!.id,
+          credentialLabel: selection.currentModel!.credentialLabel,
           platform,
           projectId: projects.activeProject!.id,
           providerId: selection.currentModel!.provider.id,
@@ -856,6 +860,7 @@ async function runPromptOptimizer(request: OptimizeUserStoryPromptRequest) {
       apiConnection: request.auth.apiConnection,
       providerId: request.model!.provider.id,
       modelId: request.model!.id,
+      credentialLabel: request.model!.credentialLabel,
       reasoningEffort: request.reasoningEffort,
       prompt: request.input.summary,
       title: request.input.title,
@@ -881,6 +886,7 @@ type CheckInitializationImpactInput = {
   projectId: string
   providerId: string
   modelId: string
+  credentialLabel?: string
   reasoningEffort?: "low" | "medium" | "high" | "xhigh"
   repositoryRoot: string
   baseCommit: string
@@ -902,6 +908,7 @@ async function checkProjectInitializationImpact(
       projectId: input.projectId,
       providerId: input.providerId,
       modelId: input.modelId,
+      credentialLabel: input.credentialLabel,
       reasoningEffort: input.reasoningEffort,
       repositoryRoot: input.repositoryRoot,
       baseCommit: input.baseCommit,

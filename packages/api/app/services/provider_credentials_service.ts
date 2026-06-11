@@ -32,6 +32,7 @@ type UpsertProviderCredentialInput = {
   encryptedOauthCredentials: string | null
   accountId: string | null
   baseUrl?: string | null
+  modelIds?: string[]
   expiresAt: DateTime | null
 }
 
@@ -51,6 +52,7 @@ export default class ProviderCredentialsService {
       encryptedOauthCredentials: null,
       accountId: null,
       baseUrl: input.baseUrl,
+      modelIds: input.modelIds,
       expiresAt: null,
     })
   }
@@ -64,6 +66,7 @@ export default class ProviderCredentialsService {
       encryptedOauthCredentials: await encryption.encrypt(JSON.stringify(input.oauthCredentials)),
       accountId: input.oauthCredentials.accountId ?? input.oauthCredentials.email ?? null,
       baseUrl: input.baseUrl,
+      modelIds: undefined,
       expiresAt: DateTime.fromMillis(input.oauthCredentials.expires),
     })
   }
@@ -82,11 +85,15 @@ export default class ProviderCredentialsService {
       apiKey: await encryption.decrypt(credential.encryptedApiKey),
       oauthCredentials: await this.decryptOAuthCredentials(credential),
       baseUrl: credential.baseUrl,
+      modelIds: credentialModelIds(credential),
     }
   }
 
   async delete(userId: number, id: number) {
-    const credential = await ProviderCredential.query().where('userId', userId).where('id', id).firstOrFail()
+    const credential = await ProviderCredential.query()
+      .where('userId', userId)
+      .where('id', id)
+      .firstOrFail()
     await credential.delete()
   }
 
@@ -108,6 +115,7 @@ export default class ProviderCredentialsService {
         encryptedOauthCredentials: input.encryptedOauthCredentials,
         accountId: input.accountId,
         baseUrl: input.baseUrl ?? null,
+        modelIds: serializeModelIds(input.modelIds),
         expiresAt: input.expiresAt,
       })
     }
@@ -118,6 +126,7 @@ export default class ProviderCredentialsService {
       encryptedOauthCredentials: input.encryptedOauthCredentials,
       accountId: input.accountId,
       baseUrl: input.baseUrl ?? null,
+      modelIds: serializeModelIds(input.modelIds),
       expiresAt: input.expiresAt,
     })
     await existing.save()
@@ -136,4 +145,39 @@ export default class ProviderCredentialsService {
 
     return JSON.parse(decryptedCredentials) as OAuthCredentialsInput
   }
+}
+
+function serializeModelIds(modelIds: string[] | undefined) {
+  const normalized = uniqueModelIds(modelIds)
+  return normalized.length ? JSON.stringify(normalized) : null
+}
+
+function credentialModelIds(credential: ProviderCredential) {
+  const parsed = parseModelIds(credential.modelIds)
+  if (parsed.length) return parsed
+  if (credential.providerId === 'openai-compatible' && credential.label !== defaultLabel) {
+    return [credential.label]
+  }
+  return []
+}
+
+function parseModelIds(value: string | null) {
+  if (!value) return []
+  try {
+    const parsed = JSON.parse(value)
+    return Array.isArray(parsed) ? uniqueModelIds(parsed) : []
+  } catch {
+    return []
+  }
+}
+
+function uniqueModelIds(values: unknown[] | undefined) {
+  return Array.from(
+    new Set(
+      (values ?? [])
+        .filter((value): value is string => typeof value === 'string')
+        .map((value) => value.trim())
+        .filter(Boolean)
+    )
+  )
 }

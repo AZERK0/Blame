@@ -31,6 +31,9 @@ export default class ProviderCredential extends BaseModel {
   @column()
   declare baseUrl: string | null
 
+  @column()
+  declare modelIds: string | null
+
   @column.dateTime()
   declare expiresAt: DateTime | null
 

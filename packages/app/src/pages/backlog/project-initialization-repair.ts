@@ -14,6 +14,7 @@ type RepairInput = {
   projectId: string
   providerId: string
   modelId: string
+  credentialLabel?: string
   reasoningEffort?: "low" | "medium" | "high" | "xhigh"
   worktree: string
   setupScript: string
@@ -44,6 +45,7 @@ async function diagnoseProjectInitialization(input: RepairInput) {
     apiConnection: input.apiConnection,
     providerId: input.providerId,
     modelId: input.modelId,
+    credentialLabel: input.credentialLabel,
     reasoningEffort: input.reasoningEffort,
     cwd: input.worktree,
     workspaceRoot: input.worktree,
@@ -59,7 +61,11 @@ async function persistProjectInitializationRepair(
   input: RepairInput,
   result: RepairProjectInitializationResult
 ) {
-  if (!result.setupScript || !result.dockerCompose || !result.runConfigurations) {
+  if (
+    !result.setupScript ||
+    !result.dockerCompose ||
+    !result.runConfigurations
+  ) {
     throw new Error(
       "Initialization repair agent returned incomplete artifacts."
     )

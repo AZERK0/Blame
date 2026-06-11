@@ -5,6 +5,7 @@ export const saveProviderCredentialValidator = vine.create({
   label: vine.string().trim().minLength(1).maxLength(80).optional(),
   apiKey: vine.string().trim().minLength(1),
   baseUrl: vine.string().trim().url().nullable().optional(),
+  modelIds: vine.array(vine.string().trim().minLength(1).maxLength(160)).optional(),
 })
 
 export const resolveProviderCredentialValidator = vine.create({

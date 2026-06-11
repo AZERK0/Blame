@@ -35,6 +35,7 @@ type InitializationRunInput = {
   agent: NonNullable<ReturnType<typeof usePlatform>["agent"]>
   providerId: string
   modelId: string
+  credentialLabel?: string
 }
 
 type InitializationValidationFeedback = {
@@ -277,6 +278,7 @@ function runInput(
     agent,
     providerId: model.provider.id,
     modelId: model.id,
+    credentialLabel: model.credentialLabel,
   }
 }
 
@@ -323,6 +325,7 @@ function runProjectInitializationAgent(
     apiConnection: input.auth.apiConnection,
     providerId: input.providerId,
     modelId: input.modelId,
+    credentialLabel: input.credentialLabel,
     cwd: input.project.path,
     workspaceRoot: input.project.path,
     validationFeedback,
@@ -345,7 +348,9 @@ async function completeProjectInitialization(
 }
 
 function shouldRetryBackendValidation(error: unknown, attempt: number) {
-  return attempt < maxBackendCompletionAttempts && isBackendValidationError(error)
+  return (
+    attempt < maxBackendCompletionAttempts && isBackendValidationError(error)
+  )
 }
 
 function isBackendValidationError(error: unknown) {

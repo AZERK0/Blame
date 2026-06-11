@@ -128,7 +128,9 @@ export type AgentClient = {
     ): Promise<AssessProjectInitializationImpactResult>
   }
   newProjects: {
-    generate(input: StartNewProjectGenerationInput): Promise<NewProjectGenerationResult>
+    generate(
+      input: StartNewProjectGenerationInput
+    ): Promise<NewProjectGenerationResult>
   }
   promptOptimizer: {
     optimizeUserStory(
@@ -236,18 +238,27 @@ export type WorkspaceClient = {
     limit?: number
   }): Promise<WorkspaceEntry[]>
   gitDiff(input: { root: string }): Promise<string>
-  gitDiffBetween(input: { from: string; root: string; to: string }): Promise<string>
+  gitDiffBetween(input: {
+    from: string
+    root: string
+    to: string
+  }): Promise<string>
   listGitDirectory(input: {
     path?: string
     refs: string[]
     root: string
   }): Promise<WorkspaceEntry[]>
-  readGitFile(input: { path: string; refs: string[]; root: string }): Promise<string>
+  readGitFile(input: {
+    path: string
+    refs: string[]
+    root: string
+  }): Promise<string>
   gitRepositoryFingerprint(input: { root: string }): Promise<string | null>
   ensureGitRepository(input: { root: string }): Promise<boolean>
   createProject(input: {
     apiConnection: ApiConnection
     configuration: NewProjectConfiguration
+    credentialLabel?: string
     modelId: string
     parentPath: string
     projectName: string

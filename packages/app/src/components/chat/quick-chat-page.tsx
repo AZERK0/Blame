@@ -1,8 +1,20 @@
 import * as React from "react"
-import type { AgentApprovalRequest, AgentEvent, ApprovalDecision } from "@blame/agent-runtime"
-import { LoaderCircleIcon, RotateCcwIcon, SendIcon, SquareIcon } from "lucide-react"
+import type {
+  AgentApprovalRequest,
+  AgentEvent,
+  ApprovalDecision,
+} from "@blame/agent-runtime"
+import {
+  LoaderCircleIcon,
+  RotateCcwIcon,
+  SendIcon,
+  SquareIcon,
+} from "lucide-react"
 
-import { ModelSelector, useModelSelection } from "@/components/model/model-selector"
+import {
+  ModelSelector,
+  useModelSelection,
+} from "@/components/model/model-selector"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -27,12 +39,19 @@ export function QuickChatPage() {
     return platform.agent.sessions.onEvent(sessionId, (event) => {
       setEvents((current) => [...current, event])
       if (event.type === "done" || event.type === "error") setRunning(false)
-      if (event.type === "error") setError(eventText(event.payload) || "Agent session failed")
+      if (event.type === "error")
+        setError(eventText(event.payload) || "Agent session failed")
     })
   }, [platform.agent, sessionId])
 
   const submit = async (inputPrompt = prompt) => {
-    if (!platform.agent || !selection.currentModel || !projects.activeProject || auth.status !== "authenticated") return
+    if (
+      !platform.agent ||
+      !selection.currentModel ||
+      !projects.activeProject ||
+      auth.status !== "authenticated"
+    )
+      return
     setRunning(true)
     setError(undefined)
     setLastPrompt(inputPrompt)
@@ -47,7 +66,9 @@ export function QuickChatPage() {
       setSessionId(session.sessionId)
     } catch (error) {
       setRunning(false)
-      setError(error instanceof Error ? error.message : "Unable to start agent session")
+      setError(
+        error instanceof Error ? error.message : "Unable to start agent session"
+      )
       setPrompt(inputPrompt)
     }
   }
@@ -58,19 +79,28 @@ export function QuickChatPage() {
     setRunning(false)
   }
 
-  const resolveApproval = async (request: AgentApprovalRequest, decision: ApprovalDecision) => {
+  const resolveApproval = async (
+    request: AgentApprovalRequest,
+    decision: ApprovalDecision
+  ) => {
     if (!platform.agent) return
     await platform.agent.approvals.resolve({ requestId: request.id, decision })
   }
 
   const startSession = (inputPrompt: string) => {
-    if (!platform.agent || !selection.currentModel || !projects.activeProject || auth.status !== "authenticated") {
+    if (
+      !platform.agent ||
+      !selection.currentModel ||
+      !projects.activeProject ||
+      auth.status !== "authenticated"
+    ) {
       throw new Error("Agent runtime is not ready")
     }
     return platform.agent.sessions.start({
       apiConnection: auth.apiConnection,
       providerId: selection.currentModel.provider.id,
       modelId: selection.currentModel.id,
+      credentialLabel: selection.currentModel.credentialLabel,
       reasoningEffort: selection.currentVariant,
       prompt: inputPrompt,
       cwd: projects.activeProject.path,
@@ -83,7 +113,9 @@ export function QuickChatPage() {
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="font-heading text-lg font-semibold">Quick Chat</h2>
-          <p className="text-sm text-muted-foreground">Start a Cline SDK session in the active project.</p>
+          <p className="text-sm text-muted-foreground">
+            Start a Cline SDK session in the active project.
+          </p>
         </div>
         <ModelSelector />
       </div>
@@ -117,19 +149,34 @@ export function QuickChatPage() {
         />
         <div className="flex justify-end gap-2">
           {!running && lastPrompt ? (
-            <Button type="button" variant="outline" onClick={() => void submit(lastPrompt)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => void submit(lastPrompt)}
+            >
               <RotateCcwIcon />
               Retry
             </Button>
           ) : null}
           {running ? (
-            <Button type="button" variant="outline" onClick={() => void abort()}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => void abort()}
+            >
               <SquareIcon />
               Stop
             </Button>
           ) : null}
-          <Button type="submit" disabled={running || !prompt.trim() || !selection.currentModel}>
-            {running ? <LoaderCircleIcon className="animate-spin" /> : <SendIcon />}
+          <Button
+            type="submit"
+            disabled={running || !prompt.trim() || !selection.currentModel}
+          >
+            {running ? (
+              <LoaderCircleIcon className="animate-spin" />
+            ) : (
+              <SendIcon />
+            )}
             Send
           </Button>
         </div>
@@ -143,9 +190,13 @@ function QuickChatEvent({
   onResolveApproval,
 }: {
   event: AgentEvent
-  onResolveApproval(request: AgentApprovalRequest, decision: ApprovalDecision): Promise<void>
+  onResolveApproval(
+    request: AgentApprovalRequest,
+    decision: ApprovalDecision
+  ): Promise<void>
 }) {
-  if (event.type === "text") return <p className="whitespace-pre-wrap">{eventText(event.payload)}</p>
+  if (event.type === "text")
+    return <p className="whitespace-pre-wrap">{eventText(event.payload)}</p>
   if (event.type === "approval") {
     const request = event.payload as AgentApprovalRequest
     return (
@@ -154,15 +205,28 @@ function QuickChatEvent({
           <Badge variant="secondary">Approval</Badge>
           <span className="font-medium">{request.toolName}</span>
         </div>
-        {request.reason ? <p className="text-muted-foreground">{request.reason}</p> : null}
+        {request.reason ? (
+          <p className="text-muted-foreground">{request.reason}</p>
+        ) : null}
         <div className="flex flex-wrap gap-2">
-          <Button size="sm" onClick={() => void onResolveApproval(request, "approve")}>
+          <Button
+            size="sm"
+            onClick={() => void onResolveApproval(request, "approve")}
+          >
             Approve
           </Button>
-          <Button size="sm" variant="outline" onClick={() => void onResolveApproval(request, "always")}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => void onResolveApproval(request, "always")}
+          >
             Always allow
           </Button>
-          <Button size="sm" variant="destructive" onClick={() => void onResolveApproval(request, "deny")}>
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={() => void onResolveApproval(request, "deny")}
+          >
             Deny
           </Button>
         </div>
@@ -170,7 +234,10 @@ function QuickChatEvent({
     )
   }
   if (event.type === "tool") {
-    const payload = event.payload as { hookEventName?: string; toolName?: string }
+    const payload = event.payload as {
+      hookEventName?: string
+      toolName?: string
+    }
     return (
       <div className="flex items-center gap-2 text-muted-foreground">
         <Badge variant="outline">{payload.hookEventName ?? "tool"}</Badge>
@@ -178,13 +245,19 @@ function QuickChatEvent({
       </div>
     )
   }
-  return <p className="text-muted-foreground">{eventText(event.payload) || event.type}</p>
+  return (
+    <p className="text-muted-foreground">
+      {eventText(event.payload) || event.type}
+    </p>
+  )
 }
 
 function eventText(payload: unknown) {
   if (!payload || typeof payload !== "object") return ""
   if ("text" in payload && typeof payload.text === "string") return payload.text
-  if ("delta" in payload && typeof payload.delta === "string") return payload.delta
-  if ("content" in payload && typeof payload.content === "string") return payload.content
+  if ("delta" in payload && typeof payload.delta === "string")
+    return payload.delta
+  if ("content" in payload && typeof payload.content === "string")
+    return payload.content
   return ""
 }

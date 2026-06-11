@@ -38,6 +38,7 @@ export type ProviderCredentialSummary = {
   label: string
   authMethod?: "api-key" | "oauth"
   baseUrl: string | null
+  modelIds?: string[]
   accountId?: string | null
   expiresAt?: string | null
   createdAt: string
@@ -56,6 +57,7 @@ export type SaveProviderCredentialInput = {
   label?: string
   apiKey: string
   baseUrl?: string | null
+  modelIds?: string[]
 }
 
 export type DeleteProviderCredentialInput = {
@@ -124,6 +126,7 @@ export type StartDevelopmentSessionInput = {
   apiConnection: ApiConnection
   providerId: string
   modelId: string
+  credentialLabel?: string
   reasoningEffort?: ReasoningEffort
   autoSendPrompt?: boolean
   maxIterations?: number
@@ -143,6 +146,7 @@ export type ApproveAndMergeInput = {
   apiConnection: ApiConnection
   providerId: string
   modelId: string
+  credentialLabel?: string
   reasoningEffort?: ReasoningEffort
   repositoryRoot: string
   worktree: string

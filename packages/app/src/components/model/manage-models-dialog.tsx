@@ -3,6 +3,8 @@ import { CheckIcon, PlusIcon } from "lucide-react"
 import {
   ModelTags,
   ProviderMark,
+  modelDisplayName,
+  modelReactKey,
   type ModelGroup,
   type ModelSelection,
   type SelectableModel,
@@ -66,7 +68,7 @@ export function ManageModelsDialog({
                 <ProviderVisibilityItem group={group} selection={selection} />
                 {group.models.map((model) => (
                   <ModelVisibilityItem
-                    key={`${model.provider.id}:${model.id}`}
+                    key={modelReactKey(model)}
                     model={model}
                     selection={selection}
                   />
@@ -116,11 +118,11 @@ function ModelVisibilityItem({
 
   return (
     <CommandItem
-      value={`${model.provider.name} ${model.name} ${model.id}`}
+      value={`${model.provider.name} ${model.name} ${model.id} ${model.credentialDisplayName ?? ""}`}
       onSelect={() => selection.setModelVisible(model, !visible)}
     >
       <span className="size-5 shrink-0" />
-      <span className="min-w-0 flex-1 truncate">{model.name}</span>
+      <span className="min-w-0 flex-1 truncate">{modelDisplayName(model)}</span>
       <ModelTags model={model} />
       <VisibilityCheck visible={visible} />
     </CommandItem>

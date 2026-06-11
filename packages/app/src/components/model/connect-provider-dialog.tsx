@@ -1,4 +1,9 @@
-import { ArrowLeftIcon, LoaderCircleIcon, Trash2Icon } from "lucide-react"
+import {
+  ArrowLeftIcon,
+  LoaderCircleIcon,
+  PlusIcon,
+  Trash2Icon,
+} from "lucide-react"
 import * as React from "react"
 import type {
   BlameProvider as Provider,
@@ -64,7 +69,9 @@ export function ProviderSelectDialog({
                     onSelect={() => onConnect(provider.id)}
                   >
                     <ProviderMark provider={provider} />
-                    <span className="min-w-0 flex-1 truncate">{provider.name}</span>
+                    <span className="min-w-0 flex-1 truncate">
+                      {provider.name}
+                    </span>
                     {selection.connectedProviderIDs.has(provider.id) ? (
                       <Badge variant="secondary">Connected</Badge>
                     ) : null}
@@ -94,22 +101,104 @@ export function ConnectProviderDialog({
   selection: ModelSelection
 }) {
   const provider = selection.allProviders.find((item) => item.id === providerID)
-  const credential = selection.credentials.find((item) => item.providerId === providerID)
+  const credentials = selection.credentials.filter(
+    (item) => item.providerId === providerID
+  )
 
   if (!provider) return null
 
   return (
     <Dialog open={!!providerID} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
-        <ConnectProviderContent
+        <ProviderConnectionsContent
           provider={provider}
-          credential={credential}
+          credentials={credentials}
           selection={selection}
           onBack={onBack}
           onDone={() => onOpenChange(false)}
         />
       </DialogContent>
     </Dialog>
+  )
+}
+
+function ProviderConnectionsContent({
+  credentials,
+  onBack,
+  onDone,
+  provider,
+  selection,
+}: {
+  credentials: ProviderCredentialSummary[]
+  onBack: () => void
+  onDone: () => void
+  provider: Provider
+  selection: ModelSelection
+}) {
+  const [editingCredential, setEditingCredential] = React.useState<
+    ProviderCredentialSummary | undefined
+  >()
+  const [adding, setAdding] = React.useState(credentials.length === 0)
+
+  if (adding || editingCredential) {
+    return (
+      <ConnectProviderContent
+        provider={provider}
+        credential={editingCredential}
+        selection={selection}
+        onBack={() => {
+          setAdding(false)
+          setEditingCredential(undefined)
+        }}
+        onDone={onDone}
+      />
+    )
+  }
+
+  return (
+    <>
+      <DialogHeader>
+        <div className="flex items-center gap-3 pr-8">
+          <Button size="icon-sm" variant="ghost" onClick={onBack}>
+            <ArrowLeftIcon />
+            <span className="sr-only">Back</span>
+          </Button>
+          <ProviderMark provider={provider} />
+          <div className="grid gap-1">
+            <DialogTitle>{provider.name} connections</DialogTitle>
+            <DialogDescription>
+              Manage the accounts and API keys connected to this provider.
+            </DialogDescription>
+          </div>
+        </div>
+      </DialogHeader>
+      <div className="grid gap-3">
+        {credentials.map((credential) => (
+          <button
+            key={credential.id}
+            type="button"
+            className="flex items-center gap-3 rounded-md border p-3 text-left hover:bg-accent"
+            onClick={() => setEditingCredential(credential)}
+          >
+            <ProviderMark provider={provider} />
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-medium">
+                {connectionLabel(credential)}
+              </span>
+              <span className="block truncate text-xs text-muted-foreground">
+                {connectionDescription(credential)}
+              </span>
+            </span>
+          </button>
+        ))}
+      </div>
+      <div className="flex justify-end">
+        <Button type="button" onClick={() => setAdding(true)}>
+          <PlusIcon />
+          Add connection
+        </Button>
+      </div>
+    </>
   )
 }
 
@@ -127,8 +216,12 @@ function ConnectProviderContent({
   selection: ModelSelection
 }) {
   const [apiKey, setApiKey] = React.useState("")
+  const [label, setLabel] = React.useState(connectionInitialLabel(credential))
   const [baseUrl, setBaseUrl] = React.useState(credential?.baseUrl ?? "")
-  const [modelId, setModelId] = React.useState(openAICompatibleModelId(credential))
+  const [modelInput, setModelInput] = React.useState("")
+  const [modelIds, setModelIds] = React.useState(
+    openAICompatibleModelIds(credential)
+  )
   const [error, setError] = React.useState<string>()
   const [deleting, setDeleting] = React.useState(false)
   const [saving, setSaving] = React.useState(false)
@@ -147,9 +240,13 @@ function ConnectProviderContent({
           </Button>
           <ProviderMark provider={provider} />
           <div className="grid gap-1">
-            <DialogTitle>{credential ? "Edit" : "Connect"} {provider.name}</DialogTitle>
+            <DialogTitle>
+              {credential ? "Edit" : "Connect"} {provider.name}
+            </DialogTitle>
             <DialogDescription>
-              {credential ? "Update or remove this provider connection." : "Add an API key for this provider."}
+              {credential
+                ? "Update or remove this provider connection."
+                : "Add an API key for this provider."}
             </DialogDescription>
           </div>
         </div>
@@ -161,12 +258,16 @@ function ConnectProviderContent({
           if (oauth) {
             return
           }
+          if (!label.trim()) {
+            setError("Connection name is required")
+            return
+          }
           if (!apiKey.trim()) {
             setError("API key is required")
             return
           }
-          if (openAICompatible && !modelId.trim()) {
-            setError("Model ID is required")
+          if (openAICompatible && !modelIds.length) {
+            setError("At least one model ID is required")
             return
           }
           setError(undefined)
@@ -174,23 +275,40 @@ function ConnectProviderContent({
           void selection.agent?.providers
             .saveCredential(selection.apiConnection, {
               providerId: provider.id,
-              label: openAICompatible ? modelId.trim() : credential?.label,
+              label: label.trim(),
               apiKey,
               baseUrl: showBaseUrl ? baseUrl.trim() || null : null,
+              modelIds: openAICompatible ? modelIds : undefined,
             })
             .then(() => selection.refreshProviders())
             .then(onDone)
             .catch((error) =>
-              setError(error instanceof Error ? error.message : "Unable to save API key")
+              setError(
+                error instanceof Error
+                  ? error.message
+                  : "Unable to save API key"
+              )
             )
             .finally(() => setSaving(false))
         }}
       >
         {error ? <p className="text-sm text-destructive">{error}</p> : null}
+        <div className="grid gap-2">
+          <label className="text-sm font-medium" htmlFor="provider-label">
+            Connection name
+          </label>
+          <Input
+            id="provider-label"
+            value={label}
+            disabled={!!credential}
+            placeholder="Work"
+            onChange={(event) => setLabel(event.currentTarget.value)}
+          />
+        </div>
         {oauth ? (
           <Button
             type="button"
-            disabled={oauthLoading || !selection.agent}
+            disabled={oauthLoading || !selection.agent || !label.trim()}
             onClick={() => {
               setError(undefined)
               setOauthLoading(true)
@@ -198,18 +316,24 @@ function ConnectProviderContent({
                 .loginOAuth({
                   apiConnection: selection.apiConnection,
                   providerId: provider.id,
-                  label: credential?.label,
+                  label: label.trim(),
                   baseUrl: showBaseUrl ? baseUrl.trim() || null : null,
                 })
                 .then(() => selection.refreshProviders())
                 .then(onDone)
                 .catch((error) =>
-                  setError(error instanceof Error ? error.message : "Unable to connect OAuth provider")
+                  setError(
+                    error instanceof Error
+                      ? error.message
+                      : "Unable to connect OAuth provider"
+                  )
                 )
                 .finally(() => setOauthLoading(false))
             }}
           >
-            {oauthLoading ? <LoaderCircleIcon className="animate-spin" /> : null}
+            {oauthLoading ? (
+              <LoaderCircleIcon className="animate-spin" />
+            ) : null}
             Continue with OAuth
           </Button>
         ) : (
@@ -241,14 +365,55 @@ function ConnectProviderContent({
         {openAICompatible ? (
           <div className="grid gap-2">
             <label className="text-sm font-medium" htmlFor="provider-model-id">
-              Model ID
+              Model IDs
             </label>
-            <Input
-              id="provider-model-id"
-              value={modelId}
-              placeholder="your-model-name"
-              onChange={(event) => setModelId(event.currentTarget.value)}
-            />
+            <div className="flex flex-wrap gap-1 rounded-md border p-2">
+              {modelIds.map((modelId) => (
+                <button
+                  key={modelId}
+                  type="button"
+                  className="rounded-md bg-muted px-2 py-1 text-xs"
+                  onClick={() =>
+                    setModelIds((current) =>
+                      current.filter((item) => item !== modelId)
+                    )
+                  }
+                >
+                  {modelId} x
+                </button>
+              ))}
+              <Input
+                id="provider-model-id"
+                value={modelInput}
+                className="h-7 min-w-32 flex-1 border-0 px-1 shadow-none focus-visible:ring-0"
+                placeholder="model-id"
+                onChange={(event) => setModelInput(event.currentTarget.value)}
+                onBlur={() => {
+                  setModelIds((current) => addModelId(current, modelInput))
+                  setModelInput("")
+                }}
+                onKeyDown={(event) => {
+                  if (event.key !== "Enter") return
+                  event.preventDefault()
+                  setModelIds((current) => addModelId(current, modelInput))
+                  setModelInput("")
+                }}
+              />
+              <Button
+                type="button"
+                size="icon-sm"
+                variant="ghost"
+                disabled={!modelInput.trim()}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => {
+                  setModelIds((current) => addModelId(current, modelInput))
+                  setModelInput("")
+                }}
+              >
+                <PlusIcon />
+                <span className="sr-only">Add model ID</span>
+              </Button>
+            </div>
           </div>
         ) : null}
         <div className="flex items-center justify-between gap-2">
@@ -265,16 +430,36 @@ function ConnectProviderContent({
                   .then(() => selection.refreshProviders())
                   .then(onDone)
                   .catch((error) =>
-                    setError(error instanceof Error ? error.message : "Unable to delete API key")
+                    setError(
+                      error instanceof Error
+                        ? error.message
+                        : "Unable to delete API key"
+                    )
                   )
                   .finally(() => setDeleting(false))
               }}
             >
-              {deleting ? <LoaderCircleIcon className="animate-spin" /> : <Trash2Icon />}
+              {deleting ? (
+                <LoaderCircleIcon className="animate-spin" />
+              ) : (
+                <Trash2Icon />
+              )}
               Delete
             </Button>
-          ) : <span />}
-          <Button type="submit" disabled={oauth || saving || !selection.agent || !apiKey.trim() || (openAICompatible && !modelId.trim())}>
+          ) : (
+            <span />
+          )}
+          <Button
+            type="submit"
+            disabled={
+              oauth ||
+              saving ||
+              !selection.agent ||
+              !label.trim() ||
+              !apiKey.trim() ||
+              (openAICompatible && !modelIds.length)
+            }
+          >
             {saving ? <LoaderCircleIcon className="animate-spin" /> : null}
             {credential ? "Save" : "Continue"}
           </Button>
@@ -284,9 +469,40 @@ function ConnectProviderContent({
   )
 }
 
-function openAICompatibleModelId(credential: ProviderCredentialSummary | undefined) {
-  if (credential?.providerId !== openAICompatibleProviderID) return ""
-  return credential.label === "default" ? "" : credential.label
+function connectionInitialLabel(
+  credential: ProviderCredentialSummary | undefined
+) {
+  return credential?.label ?? ""
+}
+
+function openAICompatibleModelIds(
+  credential: ProviderCredentialSummary | undefined
+) {
+  if (credential?.providerId !== openAICompatibleProviderID) return []
+  if (credential.modelIds?.length) return credential.modelIds
+  return credential.label === "default" ? [] : [credential.label]
+}
+
+function addModelId(modelIds: string[], input: string) {
+  const modelId = input.trim()
+  if (!modelId || modelIds.includes(modelId)) return modelIds
+  return [...modelIds, modelId]
+}
+
+function connectionLabel(credential: ProviderCredentialSummary) {
+  if (credential.label !== "default") return credential.label
+  return credential.accountId ?? "Default"
+}
+
+function connectionDescription(credential: ProviderCredentialSummary) {
+  if (
+    credential.providerId === openAICompatibleProviderID &&
+    credential.modelIds?.length
+  ) {
+    return credential.modelIds.join(", ")
+  }
+  if (credential.baseUrl) return credential.baseUrl
+  return credential.authMethod === "oauth" ? "OAuth account" : "API key"
 }
 
 function groupProviders(providers: Provider[]) {
@@ -299,9 +515,19 @@ function groupProviders(providers: Provider[]) {
   return Array.from(groups.entries())
     .map(([name, items]) => ({
       name,
-      providers: items.sort((a, b) => getProviderRank(a.id) - getProviderRank(b.id) || a.name.localeCompare(b.name)),
+      providers: items.sort(
+        (a, b) =>
+          getProviderRank(a.id) - getProviderRank(b.id) ||
+          a.name.localeCompare(b.name)
+      ),
     }))
-    .sort((a, b) => (a.name === "Popular" ? -1 : b.name === "Popular" ? 1 : a.name.localeCompare(b.name)))
+    .sort((a, b) =>
+      a.name === "Popular"
+        ? -1
+        : b.name === "Popular"
+          ? 1
+          : a.name.localeCompare(b.name)
+    )
 }
 
 function getProviderRank(providerID: string) {

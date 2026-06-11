@@ -123,10 +123,25 @@ function providerCredentialData(credential: ProviderCredential) {
     authMethod: credential.authMethod,
     accountId: credential.accountId,
     baseUrl: credential.baseUrl,
+    modelIds: credentialModelIds(credential),
     expiresAt: credential.expiresAt?.toISO() ?? null,
     createdAt: credential.createdAt.toISO(),
     updatedAt: credential.updatedAt?.toISO() ?? null,
   }
+}
+
+function credentialModelIds(credential: ProviderCredential) {
+  if (credential.modelIds) {
+    try {
+      const parsed = JSON.parse(credential.modelIds)
+      return Array.isArray(parsed) ? parsed.filter((item) => typeof item === 'string') : []
+    } catch {
+      return []
+    }
+  }
+  if (credential.providerId === 'openai-compatible' && credential.label !== 'default')
+    return [credential.label]
+  return []
 }
 
 function oauthCredentialInput(value: unknown) {

@@ -140,6 +140,7 @@ export type NewProjectConfiguration = {
 export type CreateProjectInput = {
   apiConnection: ApiConnection;
   configuration: NewProjectConfiguration;
+  credentialLabel?: string;
   modelId: string;
   parentPath: string;
   projectName: string;
@@ -152,6 +153,7 @@ export type NewProjectAgentRuntime = {
   generate(input: {
     apiConnection: ApiConnection;
     configuration: NewProjectConfiguration;
+    credentialLabel?: string;
     cwd: string;
     modelId: string;
     projectName: string;
@@ -217,6 +219,7 @@ export async function createProject(input: CreateProjectInput) {
   await newProjectAgentRuntime.generate({
     apiConnection: input.apiConnection,
     configuration: input.configuration,
+    credentialLabel: input.credentialLabel,
     cwd: target,
     modelId: input.modelId,
     projectName: basename(target),

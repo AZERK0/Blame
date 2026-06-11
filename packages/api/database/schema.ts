@@ -102,7 +102,7 @@ export class ProjectSchema extends BaseModel {
 }
 
 export class ProviderCredentialSchema extends BaseModel {
-  static $columns = ['accountId', 'authMethod', 'baseUrl', 'createdAt', 'encryptedApiKey', 'encryptedOauthCredentials', 'expiresAt', 'id', 'label', 'providerId', 'updatedAt', 'userId'] as const
+  static $columns = ['accountId', 'authMethod', 'baseUrl', 'createdAt', 'encryptedApiKey', 'encryptedOauthCredentials', 'expiresAt', 'id', 'label', 'modelIds', 'providerId', 'updatedAt', 'userId'] as const
   $columns = ProviderCredentialSchema.$columns
   @column()
   declare accountId: string | null
@@ -122,6 +122,8 @@ export class ProviderCredentialSchema extends BaseModel {
   declare id: number
   @column()
   declare label: string
+  @column()
+  declare modelIds: string | null
   @column()
   declare providerId: string
   @column.dateTime({ autoCreate: true, autoUpdate: true })

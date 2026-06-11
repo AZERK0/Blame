@@ -10,6 +10,7 @@ import type {
   CoreSessionConfig,
   SessionUsageSummary,
 } from "@cline/sdk"
+import type { AgentUsageSummary, AgentUsageTotals } from "./types.js"
 
 export type ProductionConfig = {
   compactionEnabled?: boolean
@@ -38,6 +39,8 @@ export type ProductionSessionContext = {
 }
 
 type TelemetryHandle = Pick<ConfiguredTelemetryHandle, "dispose" | "flush" | "telemetry">
+type UsageSummary = AgentUsageSummary | SessionUsageSummary
+type UsageTotals = AgentUsageTotals | NonNullable<SessionUsageSummary["usage"]>
 
 const secretKeys = [
   "access",
@@ -170,34 +173,34 @@ export function assertRepositoryPath(path: string, label: string) {
   if (!isAbsolute(path)) throw new Error(`${label} must be an absolute path.`)
 }
 
-export function summarizeUsage(summary: SessionUsageSummary | undefined) {
+export function summarizeUsage(summary: UsageSummary | undefined) {
   const usage = summary?.aggregateUsage ?? summary?.usage
   if (!usage) return {}
   return {
     cacheReadTokens: usage.cacheReadTokens,
     cacheWriteTokens: usage.cacheWriteTokens,
-    cost: usage.cost,
+    cost: usageCost(usage),
     inputTokens: usage.inputTokens,
     outputTokens: usage.outputTokens,
-    totalCacheReadTokens: usage.totalCacheReadTokens,
-    totalCacheWriteTokens: usage.totalCacheWriteTokens,
-    totalCost: usage.totalCost,
-    totalInputTokens: usage.totalInputTokens,
-    totalOutputTokens: usage.totalOutputTokens,
+    totalCacheReadTokens: usageTotalCacheReadTokens(usage),
+    totalCacheWriteTokens: usageTotalCacheWriteTokens(usage),
+    totalCost: usageTotalCost(usage),
+    totalInputTokens: usageTotalInputTokens(usage),
+    totalOutputTokens: usageTotalOutputTokens(usage),
   }
 }
 
-export function shouldAbortForUsage(summary: SessionUsageSummary | undefined, config: ProductionConfig) {
+export function shouldAbortForUsage(summary: UsageSummary | undefined, config: ProductionConfig) {
   const usage = summary?.aggregateUsage ?? summary?.usage
   if (!usage) return false
   if (config.maxTotalTokens !== undefined && totalTokens(usage) > config.maxTotalTokens) return true
   if (config.maxSessionCostUsd !== undefined && totalCost(usage) > config.maxSessionCostUsd) return true
-  if (config.maxInputTokens !== undefined && usage.totalInputTokens > config.maxInputTokens) return true
-  if (config.maxOutputTokens !== undefined && usage.totalOutputTokens > config.maxOutputTokens) return true
+  if (config.maxInputTokens !== undefined && usageTotalInputTokens(usage) > config.maxInputTokens) return true
+  if (config.maxOutputTokens !== undefined && usageTotalOutputTokens(usage) > config.maxOutputTokens) return true
   return false
 }
 
-export function usageLimitMessage(summary: SessionUsageSummary | undefined, config: ProductionConfig) {
+export function usageLimitMessage(summary: UsageSummary | undefined, config: ProductionConfig) {
   const usage = summary?.aggregateUsage ?? summary?.usage
   if (!usage) return "Usage limit exceeded."
   if (config.maxTotalTokens !== undefined && totalTokens(usage) > config.maxTotalTokens) {
@@ -206,10 +209,10 @@ export function usageLimitMessage(summary: SessionUsageSummary | undefined, conf
   if (config.maxSessionCostUsd !== undefined && totalCost(usage) > config.maxSessionCostUsd) {
     return `Cost limit exceeded ($${config.maxSessionCostUsd.toFixed(2)})`
   }
-  if (config.maxInputTokens !== undefined && usage.totalInputTokens > config.maxInputTokens) {
+  if (config.maxInputTokens !== undefined && usageTotalInputTokens(usage) > config.maxInputTokens) {
     return `Input token limit exceeded (${config.maxInputTokens})`
   }
-  if (config.maxOutputTokens !== undefined && usage.totalOutputTokens > config.maxOutputTokens) {
+  if (config.maxOutputTokens !== undefined && usageTotalOutputTokens(usage) > config.maxOutputTokens) {
     return `Output token limit exceeded (${config.maxOutputTokens})`
   }
   return "Usage limit exceeded."
@@ -217,7 +220,7 @@ export function usageLimitMessage(summary: SessionUsageSummary | undefined, conf
 
 export function recordUsageTelemetry(
   telemetry: ITelemetryService | undefined,
-  summary: SessionUsageSummary | undefined,
+  summary: UsageSummary | undefined,
   context: ProductionSessionContext
 ) {
   const usage = summarizeUsage(summary)
@@ -288,17 +291,36 @@ function numberValue(value: unknown) {
   return typeof value === "number" ? value : 0
 }
 
-function totalTokens(usage: {
-  inputTokens: number
-  outputTokens: number
-  totalInputTokens?: number
-  totalOutputTokens?: number
-}) {
-  return numberValue(usage.totalInputTokens) + numberValue(usage.totalOutputTokens)
+function totalTokens(usage: UsageTotals) {
+  return usageTotalInputTokens(usage) + usageTotalOutputTokens(usage)
 }
 
-function totalCost(usage: { cost?: number; totalCost?: number }) {
-  return numberValue(usage.totalCost ?? usage.cost)
+function totalCost(usage: UsageTotals) {
+  return usageTotalCost(usage)
+}
+
+function usageCost(usage: UsageTotals) {
+  return "cost" in usage ? usage.cost : undefined
+}
+
+function usageTotalCost(usage: UsageTotals) {
+  return numberValue(usage.totalCost ?? usageCost(usage))
+}
+
+function usageTotalInputTokens(usage: UsageTotals) {
+  return numberValue("totalInputTokens" in usage ? usage.totalInputTokens : usage.inputTokens)
+}
+
+function usageTotalOutputTokens(usage: UsageTotals) {
+  return numberValue("totalOutputTokens" in usage ? usage.totalOutputTokens : usage.outputTokens)
+}
+
+function usageTotalCacheReadTokens(usage: UsageTotals) {
+  return numberValue("totalCacheReadTokens" in usage ? usage.totalCacheReadTokens : usage.cacheReadTokens)
+}
+
+function usageTotalCacheWriteTokens(usage: UsageTotals) {
+  return numberValue("totalCacheWriteTokens" in usage ? usage.totalCacheWriteTokens : usage.cacheWriteTokens)
 }
 
 function isPathInside(path: string, parent: string) {

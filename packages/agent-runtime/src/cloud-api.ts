@@ -21,6 +21,7 @@ type ResolvedCredential = {
   authMethod?: "api-key" | "oauth"
   apiKey: string
   baseUrl: string | null
+  modelIds?: string[]
   oauthCredentials?: OAuthCredentials | null
 }
 
@@ -144,6 +145,7 @@ function normalizeCredential(value: unknown): ProviderCredentialSummary | undefi
     label: stringField(credential, "label"),
     authMethod: authMethodField(credential),
     baseUrl: nullableStringField(credential, "baseUrl", "base_url"),
+    modelIds: stringArrayField(credential, "modelIds", "model_ids"),
     accountId: nullableStringField(credential, "accountId", "account_id"),
     expiresAt: nullableStringField(credential, "expiresAt", "expires_at"),
     createdAt: stringField(credential, "createdAt", "created_at"),
@@ -156,6 +158,13 @@ function normalizeCredential(value: unknown): ProviderCredentialSummary | undefi
 function stringField(value: Record<string, unknown>, ...keys: string[]) {
   const field = firstField(value, keys)
   return typeof field === "string" ? field : ""
+}
+
+function stringArrayField(value: Record<string, unknown>, ...keys: string[]) {
+  const field = firstField(value, keys)
+  return Array.isArray(field)
+    ? field.filter((item): item is string => typeof item === "string")
+    : []
 }
 
 function nullableStringField(value: Record<string, unknown>, ...keys: string[]) {
