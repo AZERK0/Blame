@@ -59,6 +59,7 @@ export type UserStoryAgentActivity = {
   status?: "running" | "completed" | "failed"
   iteration?: number
   toolCallId?: string
+  toolName?: string
   detailArtifact?: string
   detailTruncated?: boolean
   originalDetailLength?: number

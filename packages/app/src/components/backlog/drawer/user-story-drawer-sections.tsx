@@ -197,6 +197,7 @@ function AgentRunTimeline({
                   key={`${run.id}-${node.id}`}
                   node={node}
                   onLoadDetail={(item) => loadActivityDetail(run, item)}
+                  runActive={run.status === "running"}
                   value={`${run.id}-${node.id}`}
                 />
               ))}
@@ -255,10 +256,12 @@ function RunCommentItem({
 function AgentActivityItem({
   node,
   onLoadDetail,
+  runActive,
   value,
 }: {
   node: UserStoryActivityNode
   onLoadDetail: (activity: UserStoryAgentActivity) => Promise<string>
+  runActive: boolean
   value: string
 }) {
   if (node.type === "group") {
@@ -266,6 +269,7 @@ function AgentActivityItem({
       <AgentActivityGroupItem
         node={node}
         onLoadDetail={onLoadDetail}
+        runActive={runActive}
         value={value}
       />
     )
@@ -274,6 +278,7 @@ function AgentActivityItem({
     <AgentActivityLeafItem
       activity={node.activity}
       onLoadDetail={onLoadDetail}
+      runActive={runActive}
       value={value}
     />
   )
@@ -282,10 +287,12 @@ function AgentActivityItem({
 function AgentActivityGroupItem({
   node,
   onLoadDetail,
+  runActive,
   value,
 }: {
   node: Extract<UserStoryActivityNode, { type: "group" }>
   onLoadDetail: (activity: UserStoryAgentActivity) => Promise<string>
+  runActive: boolean
   value: string
 }) {
   return (
@@ -296,7 +303,13 @@ function AgentActivityGroupItem({
         </span>
         <div className="min-w-0">
           <AccordionTrigger className="min-h-8 items-center py-0 text-muted-foreground hover:no-underline">
-            <span className="truncate">
+            <span
+              className={
+                runActive && groupIsRunning(node.activities)
+                  ? "agent-activity-running truncate"
+                  : "truncate"
+              }
+            >
               {node.activities.length} parallel tools
             </span>
           </AccordionTrigger>
@@ -305,6 +318,7 @@ function AgentActivityGroupItem({
               nodes={node.children}
               onLoadDetail={onLoadDetail}
               parentValue={value}
+              runActive={runActive}
             />
           </AccordionContent>
         </div>
@@ -317,10 +331,12 @@ function AgentActivityChildren({
   nodes,
   onLoadDetail,
   parentValue,
+  runActive,
 }: {
   nodes: UserStoryActivityNode[]
   onLoadDetail: (activity: UserStoryAgentActivity) => Promise<string>
   parentValue: string
+  runActive: boolean
 }) {
   return (
     <div className="relative grid gap-2">
@@ -331,6 +347,7 @@ function AgentActivityChildren({
             key={node.id}
             node={node}
             onLoadDetail={onLoadDetail}
+            runActive={runActive}
             value={`${parentValue}-${node.id}`}
           />
         ))}
@@ -342,10 +359,12 @@ function AgentActivityChildren({
 function AgentActivityLeafItem({
   activity,
   onLoadDetail,
+  runActive,
   value,
 }: {
   activity: UserStoryAgentActivity
   onLoadDetail: (activity: UserStoryAgentActivity) => Promise<string>
+  runActive: boolean
   value: string
 }) {
   const [fullDetail, setFullDetail] = React.useState<string>()
@@ -370,7 +389,15 @@ function AgentActivityLeafItem({
         </span>
         <div className="min-w-0">
           <AccordionTrigger className="min-h-8 items-center py-0 text-muted-foreground hover:no-underline">
-            <span className="truncate">{activityTitle(activity, details)}</span>
+            <span
+              className={
+                runActive && activity.status === "running"
+                  ? "agent-activity-running truncate"
+                  : "truncate"
+              }
+            >
+              {activityTitle(activity, details)}
+            </span>
           </AccordionTrigger>
           <AccordionContent className="pt-2 pb-0">
             <ActivityDetails
@@ -384,6 +411,10 @@ function AgentActivityLeafItem({
       </div>
     </AccordionItem>
   )
+}
+
+function groupIsRunning(activities: UserStoryAgentActivity[]) {
+  return activities.some((activity) => activity.status === "running")
 }
 
 function ActivityDetails({

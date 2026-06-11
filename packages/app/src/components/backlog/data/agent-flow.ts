@@ -36,7 +36,10 @@ export function agentFlowUpdate(
   return update
 }
 
-export function shouldPersistAgentEvent(event: AgentEvent, update: UserStoryUpdate) {
+export function shouldPersistAgentEvent(
+  event: AgentEvent,
+  update: UserStoryUpdate
+) {
   if (event.type === "done" || event.type === "error") return true
   if (
     update.agentActivities ||
@@ -45,7 +48,11 @@ export function shouldPersistAgentEvent(event: AgentEvent, update: UserStoryUpda
     update.agentSessionSummary !== undefined
   )
     return true
-  return event.type === "approval" || event.type === "tool" || event.type === "reasoning"
+  return (
+    event.type === "approval" ||
+    event.type === "tool" ||
+    event.type === "reasoning"
+  )
 }
 
 export function agentEventText(event: AgentEvent) {
@@ -124,7 +131,11 @@ function toolActivities(
     stringValue(payload.toolName) ??
     stringValue(payload.name) ??
     "tool"
-  const id = toolCallId ? `tool-${toolCallId}` : `tool-${toolName}-${activities.length}`
+  const iteration = numberValue(payload.iteration)
+  const id = toolCallId
+    ? `tool-${toolCallId}`
+    : (matchingToolId(activities, toolName, iteration, phase) ??
+      `tool-${toolName}-${activities.length}`)
   return upsertActivity(activities, {
     id,
     kind: "tool",
@@ -132,9 +143,25 @@ function toolActivities(
     detail: toolDetail(payload, true),
     serverDetail: toolDetail(payload, false),
     status: toolStatus(phase),
-    iteration: numberValue(payload.iteration),
+    iteration,
     toolCallId,
+    toolName,
   })
+}
+
+function matchingToolId(
+  activities: UserStoryAgentActivity[],
+  toolName: string,
+  iteration: number | undefined,
+  phase: string | undefined
+) {
+  return activities.findLast(
+    (activity) =>
+      activity.kind === "tool" &&
+      activity.toolName === toolName &&
+      activity.iteration === iteration &&
+      (toolStatus(phase) === "completed" || activity.status === "running")
+  )?.id
 }
 
 function approvalActivities(
@@ -174,7 +201,10 @@ function upsertActivity(
   const nextActivities = existing
     ? activities.map((activity) => (activity.id === input.id ? next : activity))
     : [...activities, next]
-  return { activities: limitActivities(nextActivities), activity: serverActivity }
+  return {
+    activities: limitActivities(nextActivities),
+    activity: serverActivity,
+  }
 }
 
 function toolTitle(toolName: string, phase: string | undefined) {
@@ -214,10 +244,7 @@ function toolEventText(payload: object) {
   if ("name" in payload && typeof payload.name === "string") {
     return toolLabel(payload.name)
   }
-  if (
-    "hookEventName" in payload &&
-    typeof payload.hookEventName === "string"
-  ) {
+  if ("hookEventName" in payload && typeof payload.hookEventName === "string") {
     return `Tool event: ${payload.hookEventName}`
   }
   return "Tool event"
@@ -260,7 +287,8 @@ function eventPayload(event: AgentEvent) {
 }
 
 function recordValue(value: unknown) {
-  if (value && typeof value === "object") return value as Record<string, unknown>
+  if (value && typeof value === "object")
+    return value as Record<string, unknown>
   return {}
 }
 
@@ -318,21 +346,33 @@ function usageFromUsageEvent(current: UserStoryAgentUsage, event: AgentEvent) {
   const usage = Object.keys(payloadUsage).length ? payloadUsage : payload
   const aggregateUsage = aggregateUsageEvent(event, payload)
   const currentInputTokens = aggregateUsage
-    ? current.currentInputTokens ?? 0
-    : numberValue(usage.inputTokens) ?? current.currentInputTokens ?? 0
+    ? (current.currentInputTokens ?? 0)
+    : (numberValue(usage.inputTokens) ?? current.currentInputTokens ?? 0)
   const currentOutputTokens = aggregateUsage
-    ? current.currentOutputTokens ?? 0
-    : numberValue(usage.outputTokens) ?? current.currentOutputTokens ?? 0
-  const inputTokens = numberValue(usage.totalInputTokens) ?? numberValue(usage.inputTokens) ?? current.inputTokens
-  const outputTokens = numberValue(usage.totalOutputTokens) ?? numberValue(usage.outputTokens) ?? current.outputTokens
-  const cacheReadTokens = numberValue(usage.cacheReadTokens) ?? current.cacheReadTokens
-  const cacheWriteTokens = numberValue(usage.cacheWriteTokens) ?? current.cacheWriteTokens
+    ? (current.currentOutputTokens ?? 0)
+    : (numberValue(usage.outputTokens) ?? current.currentOutputTokens ?? 0)
+  const inputTokens =
+    numberValue(usage.totalInputTokens) ??
+    numberValue(usage.inputTokens) ??
+    current.inputTokens
+  const outputTokens =
+    numberValue(usage.totalOutputTokens) ??
+    numberValue(usage.outputTokens) ??
+    current.outputTokens
+  const cacheReadTokens =
+    numberValue(usage.cacheReadTokens) ?? current.cacheReadTokens
+  const cacheWriteTokens =
+    numberValue(usage.cacheWriteTokens) ?? current.cacheWriteTokens
   const currentTotalTokens = aggregateUsage
-    ? current.currentTotalTokens ?? currentInputTokens + currentOutputTokens
-    : numberValue(usage.totalTokens) ?? currentInputTokens + currentOutputTokens
+    ? (current.currentTotalTokens ?? currentInputTokens + currentOutputTokens)
+    : (numberValue(usage.totalTokens) ??
+      currentInputTokens + currentOutputTokens)
   const sessionTotalTokens = inputTokens + outputTokens
   const rawTotalTokens = sessionTotalTokens + cacheReadTokens + cacheWriteTokens
-  const maxContextTokens = Math.max(current.maxContextTokens, currentInputTokens)
+  const maxContextTokens = Math.max(
+    current.maxContextTokens,
+    currentInputTokens
+  )
   return {
     ...current,
     cacheReadTokens,
@@ -349,7 +389,10 @@ function usageFromUsageEvent(current: UserStoryAgentUsage, event: AgentEvent) {
   }
 }
 
-function aggregateUsageEvent(event: AgentEvent, payload: Record<string, unknown>) {
+function aggregateUsageEvent(
+  event: AgentEvent,
+  payload: Record<string, unknown>
+) {
   if (event.type === "done") return true
   const raw = recordValue(payload.raw)
   return stringValue(raw.type) === "usage-updated"
@@ -390,13 +433,16 @@ function usageFromToolEvent(current: UserStoryAgentUsage, event: AgentEvent) {
     tokensSavedEstimate: current.tokensSavedEstimate + Math.ceil(saved / 3),
     topTools: topTools(current.topTools, toolName, bytes, saved > 0),
     truncatedOutputs: current.truncatedOutputs + (saved > 0 ? 1 : 0),
-    unboundedFileReads: current.unboundedFileReads + readFiles.unboundedFileReads,
+    unboundedFileReads:
+      current.unboundedFileReads + readFiles.unboundedFileReads,
   }
 }
 
 function readFilesUsage(toolName: string, input: unknown, bytes: number) {
-  if (toolName !== "read_files") return { largeFileReads: 0, unboundedFileReads: 0 }
-  const unboundedFileReads = readFileRequests(input).filter(unboundedRead).length
+  if (toolName !== "read_files")
+    return { largeFileReads: 0, unboundedFileReads: 0 }
+  const unboundedFileReads =
+    readFileRequests(input).filter(unboundedRead).length
   return {
     largeFileReads: bytes > largeFileReadBytes ? 1 : 0,
     unboundedFileReads,
@@ -419,7 +465,8 @@ function readFileRequests(value: unknown): ReadFileRequest[] {
   return [
     {
       endLine: numberValue(record.end_line) ?? numberValue(record.endLine),
-      startLine: numberValue(record.start_line) ?? numberValue(record.startLine),
+      startLine:
+        numberValue(record.start_line) ?? numberValue(record.startLine),
     },
   ]
 }
@@ -549,7 +596,10 @@ function uniqueMatches(activities: UserStoryAgentActivity[], pattern: RegExp) {
 function compactArray(value: unknown[]) {
   const items = value.slice(0, 12).map(compactValue)
   if (value.length <= items.length) return items
-  return [...items, compactString(`${value.length - items.length} more entries`)]
+  return [
+    ...items,
+    compactString(`${value.length - items.length} more entries`),
+  ]
 }
 
 function compactRecord(value: object) {

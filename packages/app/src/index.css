@@ -139,6 +139,22 @@
 }
 
 @layer components {
+  .agent-activity-running {
+    color: transparent;
+    background: repeating-linear-gradient(
+      100deg,
+      var(--muted-foreground) 0%,
+      var(--muted-foreground) 35%,
+      var(--foreground) 50%,
+      var(--muted-foreground) 65%,
+      var(--muted-foreground) 100%
+    );
+    background-size: 200% 100%;
+    background-clip: text;
+    animation: agent-activity-running-wave 1.8s linear infinite;
+    -webkit-background-clip: text;
+  }
+
   .agent-response-effect {
     position: relative;
     overflow: hidden;
@@ -322,6 +338,16 @@
   }
 }
 
+@keyframes agent-activity-running-wave {
+  from {
+    background-position: 200% 50%;
+  }
+
+  to {
+    background-position: 0% 50%;
+  }
+}
+
 @keyframes user-story-review-breathing {
   0%,
   100% {
@@ -340,6 +366,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .agent-response-effect::before,
+  .agent-activity-running,
   .user-story-state-effect[data-story-state="in-progress"]::before,
   .user-story-state-effect[data-story-state="in-review"] {
     animation: none;
