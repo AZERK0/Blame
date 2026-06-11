@@ -24,7 +24,8 @@ function startTerminal(cwd: string) {
   if (!existsSync(directory)) throw new Error("Terminal directory does not exist")
 
   const id = randomUUID()
-  const child = spawn(process.env.SHELL ?? "/bin/bash", ["-l"], {
+  const shell = terminalShell()
+  const child = spawn(shell.command, shell.args, {
     cwd: directory,
     detached: process.platform !== "win32",
     env: process.env,
@@ -42,10 +43,42 @@ function startTerminal(cwd: string) {
   return { id, cwd: directory }
 }
 
+function terminalShell() {
+  if (process.platform === "win32") {
+    return { command: process.env.COMSPEC ?? "cmd.exe", args: ["/d", "/q"] }
+  }
+  return { command: process.env.SHELL ?? "/bin/bash", args: ["-l"] }
+}
+
 function writeTerminal(id: string, data: string) {
   const session = sessions.get(id)
   if (!session) return false
-  return session.process.stdin.write(data)
+  return writeProcessInput(session.process, terminalInput(data))
+}
+
+function terminalInput(data: string) {
+  return process.platform === "win32" ? data.replace(/\r?\n/g, "\r\n") : data
+}
+
+function writeProcessInput(child: ChildProcessWithoutNullStreams, data: string) {
+  if (child.stdin.destroyed || child.exitCode !== null || child.signalCode !== null) {
+    return Promise.resolve(false)
+  }
+  return new Promise<boolean>((resolve) => {
+    let settled = false
+    const settle = (value: boolean) => {
+      if (settled) return
+      settled = true
+      child.stdin.off("error", handleError)
+      child.stdin.off("close", handleClose)
+      resolve(value)
+    }
+    const handleError = () => settle(false)
+    const handleClose = () => settle(false)
+    child.stdin.once("error", handleError)
+    child.stdin.once("close", handleClose)
+    child.stdin.write(data, (error?: Error | null) => settle(!error))
+  })
 }
 
 function stopTerminal(id: string) {
