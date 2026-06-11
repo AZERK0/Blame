@@ -53,7 +53,7 @@ const globalModelSelectionKey = "__global__"
 const recentLimit = 5
 const defaultVariant = "default"
 const defaultCredentialLabel = "default"
-const openAICompatibleProviderID = "openaiCompatible"
+const openAICompatibleProviderID = "openai-compatible"
 const modelStateListeners = new Set<() => void>()
 export const popularProviders = [
   "openai-codex",
@@ -110,7 +110,9 @@ export function ModelSelector() {
         open={dialog?.type === "providers"}
         selection={selection}
         onConnect={(providerID) => setDialog({ type: "connect", providerID })}
-        onOpenChange={(open) => setDialog(open ? { type: "providers" } : undefined)}
+        onOpenChange={(open) =>
+          setDialog(open ? { type: "providers" } : undefined)
+        }
       />
       <ConnectProviderDialog
         providerID={dialog?.type === "connect" ? dialog.providerID : undefined}
@@ -124,7 +126,9 @@ export function ModelSelector() {
         open={dialog?.type === "manage"}
         selection={selection}
         onConnectProvider={() => setDialog({ type: "providers" })}
-        onOpenChange={(open) => setDialog(open ? { type: "manage" } : undefined)}
+        onOpenChange={(open) =>
+          setDialog(open ? { type: "manage" } : undefined)
+        }
       />
     </>
   )
@@ -169,7 +173,10 @@ function ModelPicker({
           >
             <CommandEmpty>{selection.emptyMessage}</CommandEmpty>
             {selection.providerGroups.map((group) => (
-              <CommandGroup key={group.provider.id} heading={group.provider.name}>
+              <CommandGroup
+                key={group.provider.id}
+                heading={group.provider.name}
+              >
                 {group.models.map((model) => (
                   <ModelCommandItem
                     key={`${model.provider.id}:${model.id}`}
@@ -224,11 +231,7 @@ function ModelPicker({
   )
 }
 
-function ModelVariantSelector({
-  selection,
-}: {
-  selection: ModelSelection
-}) {
+function ModelVariantSelector({ selection }: { selection: ModelSelection }) {
   if (selection.variantOptions.length <= 2) return null
 
   return (
@@ -323,7 +326,6 @@ export function ProviderMark({ provider }: { provider: Provider }) {
     </span>
   )
 }
-
 
 export function useModelSelection() {
   const providerState = useProviderState()
@@ -490,8 +492,12 @@ function getModels(providers: ProviderListResponse | undefined) {
   )
 }
 
-function getProviderModels(provider: Provider, credentials: ProviderCredentialSummary[]) {
-  if (provider.id !== openAICompatibleProviderID) return Object.values(provider.models)
+function getProviderModels(
+  provider: Provider,
+  credentials: ProviderCredentialSummary[]
+) {
+  if (provider.id !== openAICompatibleProviderID)
+    return Object.values(provider.models)
 
   const compatibleCredentials = credentials.filter(
     (credential) => credential.providerId === openAICompatibleProviderID
@@ -503,8 +509,12 @@ function getProviderModels(provider: Provider, credentials: ProviderCredentialSu
   )
 }
 
-function openAICompatibleModel(provider: Provider, credential: ProviderCredentialSummary) {
-  const modelId = credential.label === defaultCredentialLabel ? "custom" : credential.label
+function openAICompatibleModel(
+  provider: Provider,
+  credential: ProviderCredentialSummary
+) {
+  const modelId =
+    credential.label === defaultCredentialLabel ? "custom" : credential.label
   return {
     ...(provider.models.custom ?? Object.values(provider.models)[0]),
     id: modelId,
@@ -524,7 +534,8 @@ function groupModels(models: SelectableModel[]) {
   return Array.from(groupModelsByProvider(models).entries())
     .map(([providerID, items]) => getProviderGroup(providerID, items))
     .sort(
-      (a, b) => a.rank - b.rank || a.provider.name.localeCompare(b.provider.name)
+      (a, b) =>
+        a.rank - b.rank || a.provider.name.localeCompare(b.provider.name)
     )
 }
 
@@ -576,7 +587,10 @@ function uniqueModelKey(value: ModelKey, index: number, list: ModelKey[]) {
 
 function groupModelsByProvider(models: SelectableModel[]) {
   return models.reduce((groups, model) => {
-    groups.set(model.provider.id, [...(groups.get(model.provider.id) ?? []), model])
+    groups.set(model.provider.id, [
+      ...(groups.get(model.provider.id) ?? []),
+      model,
+    ])
     return groups
   }, new Map<string, SelectableModel[]>())
 }
@@ -603,7 +617,10 @@ function getDefaultModel(
   return configured ?? models[0]
 }
 
-function getDefaultModelKey(providers: ProviderListResponse, providerID: string) {
+function getDefaultModelKey(
+  providers: ProviderListResponse,
+  providerID: string
+) {
   return {
     providerID,
     modelID: providers.default[providerID],
@@ -631,7 +648,12 @@ function getVariantLabel(variant: string) {
 }
 
 function isReasoningEffort(value: string): value is ReasoningEffort {
-  return value === "low" || value === "medium" || value === "high" || value === "xhigh"
+  return (
+    value === "low" ||
+    value === "medium" ||
+    value === "high" ||
+    value === "xhigh"
+  )
 }
 
 function getEmptyMessage(input: {
@@ -663,7 +685,8 @@ function pushRecent(recent: ModelKey[], model: SelectableModel) {
   return [
     { providerID: model.provider.id, modelID: model.id },
     ...recent.filter(
-      (item) => item.providerID !== model.provider.id || item.modelID !== model.id
+      (item) =>
+        item.providerID !== model.provider.id || item.modelID !== model.id
     ),
   ].slice(0, recentLimit)
 }
@@ -715,12 +738,15 @@ function isModelState(value: unknown): value is ModelSelectionState {
   if (!("recent" in value) || !Array.isArray(value.recent)) return false
   if ("hidden" in value && !Array.isArray(value.hidden)) return false
   const state = value as { recent: unknown[]; hidden?: unknown[] }
-  return state.recent.every(isModelKey) && (state.hidden ?? []).every(isModelKey)
+  return (
+    state.recent.every(isModelKey) && (state.hidden ?? []).every(isModelKey)
+  )
 }
 
 function isModelKey(value: unknown): value is ModelKey {
   if (!value || typeof value !== "object") return false
-  if (!("providerID" in value) || typeof value.providerID !== "string") return false
+  if (!("providerID" in value) || typeof value.providerID !== "string")
+    return false
   return "modelID" in value && typeof value.modelID === "string"
 }
 

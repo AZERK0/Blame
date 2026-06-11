@@ -59,7 +59,7 @@ export default class ProviderCredentialsController {
           },
         },
         {
-          id: 'openaiCompatible',
+          id: 'openai-compatible',
           name: 'OpenAI Compatible',
           models: {
             custom: {
@@ -76,9 +76,7 @@ export default class ProviderCredentialsController {
   async index({ auth, serialize }: HttpContext) {
     const credentials = await new ProviderCredentialsService().list(auth.getUserOrFail().id)
 
-    return serialize(
-      credentials.map(providerCredentialData)
-    )
+    return serialize(credentials.map(providerCredentialData))
   }
 
   async store({ auth, request, serialize }: HttpContext) {
@@ -98,9 +96,7 @@ export default class ProviderCredentialsController {
       oauthCredentialInput(request.body())
     )
 
-    return serialize(
-      providerCredentialData(credential)
-    )
+    return serialize(providerCredentialData(credential))
   }
 
   async resolve({ auth, request, serialize }: HttpContext) {
