@@ -313,7 +313,10 @@ function AgentActivityGroupItem({
               {node.activities.length} parallel tools
             </span>
           </AccordionTrigger>
-          <AccordionContent className="pt-2 pb-0">
+          <AccordionContent
+            className="pt-2 pb-0"
+            contentClassName="data-open:h-auto! data-open:overflow-visible"
+          >
             <AgentActivityChildren
               nodes={node.children}
               onLoadDetail={onLoadDetail}
