@@ -169,7 +169,7 @@
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 200%;
+    width: max(220%, 260vmax);
     aspect-ratio: 1;
     pointer-events: none;
     background: conic-gradient(
