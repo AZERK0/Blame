@@ -70,3 +70,15 @@ test("rejects duplicate docker compose mapping keys", () => {
     /duplicate YAML key "environment"/,
   );
 });
+
+test("rejects fixed localhost public origins with dynamic preview ports", () => {
+  const result = {
+    ...baseResult,
+    setupScript: "export BETTER_AUTH_URL=\"http://localhost:3000\"",
+  };
+
+  assert.throws(
+    () => parseProjectInitializationResult(JSON.stringify(result)),
+    /must not set browser-facing origin URLs/,
+  );
+});

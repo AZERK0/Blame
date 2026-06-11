@@ -324,6 +324,11 @@ export function validateProjectInitializationArtifacts(
       "Initialization result setupScript must not launch docker compose",
     );
   }
+  if (usesFixedLocalPublicOrigin(normalizedScript, normalizedCompose)) {
+    throw new Error(
+      "Initialization result must not set browser-facing origin URLs to localhost internal ports when Docker allocates preview host ports",
+    );
+  }
   validateDockerCompose(normalizedCompose, scan);
 }
 
@@ -439,6 +444,30 @@ function hasDockerAllocatedPortMapping(compose: string) {
     'host_ip: "127.0.0.1"',
     "host_ip: '127.0.0.1'",
   ]);
+}
+
+function usesFixedLocalPublicOrigin(script: string, compose: string) {
+  if (!hasDockerAllocatedPortMapping(compose)) return false;
+  const values = `${script}\n${compose}`;
+  return publicOriginVariablePattern().test(values);
+}
+
+function publicOriginVariablePattern() {
+  const names = [
+    "app_url",
+    "application_url",
+    "better_auth_url",
+    "canonical_url",
+    "next_public_app_url",
+    "next_public_base_url",
+    "nextauth_url",
+    "public_url",
+    "site_url",
+  ].join("|");
+  return new RegExp(
+    `(?:^|[\\s\\-])(?:export\\s+)?(?:${names})(?:\\s*[:=]\\s*|=)["']?https?:\\/\\/(?:localhost|127\\.0\\.0\\.1):[0-9]+(?:[\\/"'\\s}]|$)`,
+    "m",
+  );
 }
 
 function usesProjectDockerfileBuild(compose: string) {

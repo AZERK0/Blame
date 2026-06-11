@@ -83,6 +83,24 @@ test("rejects invalid repaired artifacts", () => {
   )
 })
 
+test("rejects fixed localhost public origins in repaired artifacts", () => {
+  assert.throws(
+    () =>
+      parseProjectInitializationRepairResult(
+        JSON.stringify({
+          classification: "repairable_initialization",
+          reason: "The auth origin is invalid for dynamic preview ports.",
+          setupScript: "npm install",
+          dockerCompose: `${validCompose}
+    environment:
+      APP_URL: "http://127.0.0.1:3000"`,
+          runConfigurations: [],
+        }),
+      ),
+    /must not set browser-facing origin URLs/,
+  )
+})
+
 test("requires complete run configurations for repairable initialization", () => {
   assert.throws(
     () =>

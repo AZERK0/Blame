@@ -62,6 +62,7 @@ It must:
 - preserve internal app ports and let Docker allocate localhost host ports, e.g. `127.0.0.1::3000`
 - mark exactly one preview service with `blame.preview=true`, `blame.preview.port=<internal port>`, `blame.preview.protocol=http`, `blame.preview.path=/`
 - isolate containers, networks, and volumes through `COMPOSE_PROJECT_NAME`
+- do not set browser-facing origin variables such as `APP_URL`, `BETTER_AUTH_URL`, `NEXTAUTH_URL`, `NEXT_PUBLIC_APP_URL`, or equivalent values to `localhost:<internal port>` or `127.0.0.1:<internal port>` when using Docker-allocated host ports; omit those variables so auth/framework code can infer the public origin from the incoming request host
 - run worktree-writing services as `${BLAME_HOST_UID}:${BLAME_HOST_GID}`
 - use a writable container-owned `node_modules` volume for Node services instead of host-installed or bind-mounted `node_modules`
 - ensure package manager cache volumes and every named volume mounted at a `node_modules` path in non-root services are writable by `${BLAME_HOST_UID}:${BLAME_HOST_GID}` before use, either through a root init service with `chown` and `depends_on` or by using writable bind/cache paths
@@ -74,9 +75,10 @@ It must:
 - use the exact environment variable names found in package scripts, runtime config, framework config, env validators, and example env files; do not substitute public/client-side variants for server-side runtime variables
 - bind preview servers to a literal `0.0.0.0` inside Compose; do not preserve existing `HOST`, `APP_HOST`, or equivalent values that may be `localhost`
 - for URLs used by one container to call another container, use literal Compose service DNS URLs such as `http://backend:3333`; do not preserve existing `localhost` env values through `${VAR:-...}` interpolation
+- for auth libraries that support request-host inference, prefer trust-host style configuration over fixed public URL variables; configure only internal bind values such as `HOST=0.0.0.0` and `PORT=<internal port>`
 - prefer existing package scripts and environment variables over adding framework CLI flags unless the scan proves those flags are supported
 - when an existing package script shells out to `pnpm`, prefer running the equivalent `corepack pnpm ...` command directly in Compose instead of invoking that script
-- when existing scripts already read `HOST`, `PORT`, `APP_URL`, or equivalent environment variables, set those variables and run the script unchanged instead of appending host or port flags
+- when existing scripts already read `HOST`, `PORT`, or equivalent internal bind variables, set those variables and run the script unchanged instead of appending host or port flags
 - for framework serve/dev commands, do not append host or port flags when the Compose service already configures equivalent environment variables, unless the scan proves those flags are supported
 - for pnpm in Node containers, use `corepack prepare pnpm@<version> --activate` and `corepack pnpm <command>`
 - escape container shell variables in Compose commands with `$$` so Compose does not replace them from the host, for example `$$HOME` or `$${HOME}`
