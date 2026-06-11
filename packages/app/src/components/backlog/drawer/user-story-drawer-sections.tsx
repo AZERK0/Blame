@@ -33,6 +33,10 @@ import {
   commentButtonLabel,
   isEditable,
 } from "@/components/backlog/drawer/user-story-drawer-helpers"
+import {
+  userStoryActivityTree,
+  type UserStoryActivityNode,
+} from "@/components/backlog/drawer/user-story-activity-tree"
 import { useProjects } from "@/context/projects"
 import { useCloudAuth } from "@/context/cloud-auth"
 import {
@@ -188,12 +192,12 @@ function AgentRunTimeline({
                 run={run}
                 onFileLinkClick={onFileLinkClick}
               />
-              {(run.activities ?? []).map((activity) => (
+              {userStoryActivityTree(run.activities ?? []).map((node) => (
                 <AgentActivityItem
-                  key={`${run.id}-${activity.id}`}
-                  activity={activity}
+                  key={`${run.id}-${node.id}`}
+                  node={node}
                   onLoadDetail={(item) => loadActivityDetail(run, item)}
-                  value={`${run.id}-${activity.id}`}
+                  value={`${run.id}-${node.id}`}
                 />
               ))}
               <AgentResponseItem
@@ -249,6 +253,93 @@ function RunCommentItem({
 }
 
 function AgentActivityItem({
+  node,
+  onLoadDetail,
+  value,
+}: {
+  node: UserStoryActivityNode
+  onLoadDetail: (activity: UserStoryAgentActivity) => Promise<string>
+  value: string
+}) {
+  if (node.type === "group") {
+    return (
+      <AgentActivityGroupItem
+        node={node}
+        onLoadDetail={onLoadDetail}
+        value={value}
+      />
+    )
+  }
+  return (
+    <AgentActivityLeafItem
+      activity={node.activity}
+      onLoadDetail={onLoadDetail}
+      value={value}
+    />
+  )
+}
+
+function AgentActivityGroupItem({
+  node,
+  onLoadDetail,
+  value,
+}: {
+  node: Extract<UserStoryActivityNode, { type: "group" }>
+  onLoadDetail: (activity: UserStoryAgentActivity) => Promise<string>
+  value: string
+}) {
+  return (
+    <AccordionItem value={value} className="border-b-0!">
+      <div className="relative grid grid-cols-[2.5rem_minmax(0,1fr)] items-start gap-1 text-sm">
+        <span className="relative z-10 flex size-8 items-center justify-center rounded-full border bg-background text-muted-foreground shadow-sm">
+          <ListChecksIcon className="size-4" />
+        </span>
+        <div className="min-w-0">
+          <AccordionTrigger className="min-h-8 items-center py-0 text-muted-foreground hover:no-underline">
+            <span className="truncate">
+              {node.activities.length} parallel tools
+            </span>
+          </AccordionTrigger>
+          <AccordionContent className="pt-2 pb-0">
+            <AgentActivityChildren
+              nodes={node.children}
+              onLoadDetail={onLoadDetail}
+              parentValue={value}
+            />
+          </AccordionContent>
+        </div>
+      </div>
+    </AccordionItem>
+  )
+}
+
+function AgentActivityChildren({
+  nodes,
+  onLoadDetail,
+  parentValue,
+}: {
+  nodes: UserStoryActivityNode[]
+  onLoadDetail: (activity: UserStoryAgentActivity) => Promise<string>
+  parentValue: string
+}) {
+  return (
+    <div className="relative grid gap-2">
+      <span className="absolute top-0 bottom-0 left-4 w-px bg-muted-foreground/35" />
+      <Accordion type="multiple" className="contents">
+        {nodes.map((node) => (
+          <AgentActivityItem
+            key={node.id}
+            node={node}
+            onLoadDetail={onLoadDetail}
+            value={`${parentValue}-${node.id}`}
+          />
+        ))}
+      </Accordion>
+    </div>
+  )
+}
+
+function AgentActivityLeafItem({
   activity,
   onLoadDetail,
   value,
