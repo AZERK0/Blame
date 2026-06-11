@@ -71,12 +71,15 @@ export default class ProjectInitializationsService {
   async repair(userId: number, projectId: string, input: RepairInput) {
     await new ProjectsService().findForUser(userId, projectId)
     const initialization = await this.initialization(projectId)
+    const runConfigurations = input.runConfigurations ?? initialization.runConfigurations ?? []
+    validateRunConfigurations(runConfigurations)
     initialization.merge({
       status: 'done',
       step: 'completed',
       clineSessionId: input.clineSessionId ?? initialization.clineSessionId,
       setupScript: input.setupScript,
       dockerCompose: input.dockerCompose,
+      runConfigurations,
       error: null,
       repairReason: input.reason,
     })

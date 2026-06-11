@@ -1,4 +1,7 @@
-import type { RepairProjectInitializationResult } from "@blame/agent-runtime"
+import type {
+  ProjectRunConfiguration,
+  RepairProjectInitializationResult,
+} from "@blame/agent-runtime"
 
 import type { useCloudAuth } from "@/context/cloud-auth"
 import type { usePlatform } from "@/context/platform"
@@ -15,6 +18,7 @@ type RepairInput = {
   worktree: string
   setupScript: string
   dockerCompose: string
+  runConfigurations: ProjectRunConfiguration[]
   launchError: string
 }
 
@@ -45,6 +49,7 @@ async function diagnoseProjectInitialization(input: RepairInput) {
     workspaceRoot: input.worktree,
     setupScript: input.setupScript,
     dockerCompose: input.dockerCompose,
+    runConfigurations: input.runConfigurations,
     diagnostics,
   })
   return result
@@ -54,7 +59,7 @@ async function persistProjectInitializationRepair(
   input: RepairInput,
   result: RepairProjectInitializationResult
 ) {
-  if (!result.setupScript || !result.dockerCompose) {
+  if (!result.setupScript || !result.dockerCompose || !result.runConfigurations) {
     throw new Error(
       "Initialization repair agent returned incomplete artifacts."
     )
@@ -65,6 +70,7 @@ async function persistProjectInitializationRepair(
       clineSessionId: result.sessionId,
       setupScript: result.setupScript,
       dockerCompose: result.dockerCompose,
+      runConfigurations: result.runConfigurations,
       reason: result.reason,
     }
   )

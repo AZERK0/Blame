@@ -1,5 +1,6 @@
 import type {
   AssessProjectInitializationImpactResult,
+  ProjectRunConfiguration,
   RepairProjectInitializationResult,
 } from "@blame/agent-runtime"
 
@@ -57,12 +58,13 @@ async function currentInitialization(input: ImpactInput) {
   return {
     setupScript: initialization.setupScript,
     dockerCompose: initialization.dockerCompose,
+    runConfigurations: initialization.runConfigurations,
   }
 }
 
 async function assessProjectInitializationImpact(
   input: ImpactInput,
-  initialization: { setupScript: string; dockerCompose: string }
+  initialization: CurrentInitialization
 ) {
   const agent = input.platform.agent
   if (!agent) throw new Error("Initialization impact runtime is unavailable.")
@@ -77,12 +79,13 @@ async function assessProjectInitializationImpact(
     mergeCommit: input.mergeCommit,
     setupScript: initialization.setupScript,
     dockerCompose: initialization.dockerCompose,
+    runConfigurations: initialization.runConfigurations,
   })
 }
 
 async function repairProjectInitializationImpact(
   input: ImpactInput,
-  initialization: { setupScript: string; dockerCompose: string },
+  initialization: CurrentInitialization,
   assessment: AssessProjectInitializationImpactResult
 ) {
   const agent = input.platform.agent
@@ -101,6 +104,7 @@ async function repairProjectInitializationImpact(
     workspaceRoot: input.repositoryRoot,
     setupScript: initialization.setupScript,
     dockerCompose: initialization.dockerCompose,
+    runConfigurations: initialization.runConfigurations,
     diagnostics: assessment.diagnostics,
   })
 }
@@ -110,7 +114,7 @@ async function persistProjectInitializationRepair(
   result: RepairProjectInitializationResult
 ) {
   if (result.classification !== "repairable_initialization") return
-  if (!result.setupScript || !result.dockerCompose) {
+  if (!result.setupScript || !result.dockerCompose || !result.runConfigurations) {
     throw new Error(
       "Initialization repair agent returned incomplete artifacts."
     )
@@ -121,8 +125,15 @@ async function persistProjectInitializationRepair(
       clineSessionId: result.sessionId,
       setupScript: result.setupScript,
       dockerCompose: result.dockerCompose,
+      runConfigurations: result.runConfigurations,
       reason: result.reason,
     }
   )
   notifyProjectInitializationUpdated(input.projectId)
+}
+
+type CurrentInitialization = {
+  setupScript: string
+  dockerCompose: string
+  runConfigurations: ProjectRunConfiguration[]
 }

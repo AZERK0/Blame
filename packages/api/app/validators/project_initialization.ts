@@ -48,5 +48,6 @@ export const repairProjectInitializationValidator = vine.create({
   clineSessionId: vine.string().trim().maxLength(255).nullable().optional(),
   setupScript: vine.string().minLength(1),
   dockerCompose: vine.string().minLength(1),
+  runConfigurations: vine.array(runConfiguration).maxLength(20).optional(),
   reason: vine.string().trim().minLength(1).maxLength(4096),
 })

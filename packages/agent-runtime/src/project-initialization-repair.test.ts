@@ -20,11 +20,21 @@ test("parses and validates repairable initialization artifacts", () => {
       reason: "The preview command is invalid.",
       setupScript: "#!/usr/bin/env bash\nnpm install",
       dockerCompose: validCompose,
+      runConfigurations: [
+        {
+          id: "web",
+          name: "Web application",
+          command: "npm run dev",
+          cwd: ".",
+          default: true,
+        },
+      ],
     }),
   )
 
   assert.equal(result.classification, "repairable_initialization")
   assert.equal(result.dockerCompose, validCompose)
+  assert.equal(result.runConfigurations?.[0]?.command, "npm run dev")
 })
 
 test("omits artifacts for project code failures", () => {
@@ -66,9 +76,25 @@ test("rejects invalid repaired artifacts", () => {
           reason: "Compose is invalid.",
           setupScript: "npm install",
           dockerCompose: "services:\n  web:\n    image: node",
+          runConfigurations: [],
         }),
       ),
     /Docker-allocated host ports/,
+  )
+})
+
+test("requires complete run configurations for repairable initialization", () => {
+  assert.throws(
+    () =>
+      parseProjectInitializationRepairResult(
+        JSON.stringify({
+          classification: "repairable_initialization",
+          reason: "The preview command is invalid.",
+          setupScript: "npm install",
+          dockerCompose: validCompose,
+        }),
+      ),
+    /missing runConfigurations/,
   )
 })
 
@@ -81,6 +107,7 @@ test("includes validation feedback in repair correction prompts", () => {
     workspaceRoot: "/project",
     setupScript: "npm install",
     dockerCompose: validCompose,
+    runConfigurations: [],
     diagnostics: {
       setupLog: "",
       launchError: "Preview failed",

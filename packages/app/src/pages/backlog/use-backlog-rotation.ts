@@ -327,6 +327,7 @@ export function useBacklogRotation(
       worktree,
       setupScript: initialization.setupScript!,
       dockerCompose: initialization.dockerCompose!,
+      runConfigurations: initialization.runConfigurations,
       launchError: eventText(event),
     })
     await persistInitializationDiagnosis(story, result)

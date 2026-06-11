@@ -251,6 +251,7 @@ export type ProjectInitializationImpactDiagnostics = {
   relevantDiffs: Record<string, string>
   currentSetupScript: string
   currentDockerCompose: string
+  currentRunConfigurations: ProjectRunConfiguration[]
   strategicFilesBefore: Record<string, string>
   strategicFilesAfter: Record<string, string>
 }
@@ -267,6 +268,7 @@ export type AssessProjectInitializationImpactInput = {
   mergeCommit: string
   setupScript: string
   dockerCompose: string
+  runConfigurations: ProjectRunConfiguration[]
 }
 
 export type AssessProjectInitializationImpactResult = {
@@ -287,6 +289,7 @@ export type RepairProjectInitializationInput = {
   credentialLabel?: string
   setupScript: string
   dockerCompose: string
+  runConfigurations: ProjectRunConfiguration[]
   diagnostics:
     | ProjectInitializationDiagnostics
     | ProjectInitializationImpactDiagnostics
@@ -298,6 +301,7 @@ export type RepairProjectInitializationResult = {
   reason: string
   setupScript?: string
   dockerCompose?: string
+  runConfigurations?: ProjectRunConfiguration[]
 }
 
 export type NewProjectGenerationConfiguration = {

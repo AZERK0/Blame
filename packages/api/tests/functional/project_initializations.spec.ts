@@ -131,6 +131,15 @@ test.group('project initializations', (group) => {
         clineSessionId: 'repair-session',
         setupScript: '#!/usr/bin/env bash\ncorepack pnpm install',
         dockerCompose: 'services:\n  web:\n    image: node:22',
+        runConfigurations: [
+          {
+            id: 'web',
+            name: 'Web application',
+            command: 'corepack pnpm dev',
+            cwd: 'apps/web',
+            default: true,
+          },
+        ],
         reason: 'The previous command forwarded invalid arguments.',
       })
 
@@ -146,7 +155,7 @@ test.group('project initializations', (group) => {
       body.data.initialization?.setupScript,
       '#!/usr/bin/env bash\ncorepack pnpm install'
     )
-    assert.deepEqual(body.data.initialization?.runConfigurations, [])
+    assert.equal(body.data.initialization?.runConfigurations[0]?.command, 'corepack pnpm dev')
     assert.lengthOf(body.data.practices, 4)
     assert.isTrue(
       body.data.practices.some((practice) => practice.practice === 'layered_architecture')

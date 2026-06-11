@@ -197,6 +197,7 @@ function input(
     setupScript: "#!/usr/bin/env bash\npnpm install",
     dockerCompose:
       'services:\n  web:\n    image: node:22\n    ports:\n      - "127.0.0.1::3000"',
+    runConfigurations: [],
   };
 }
 

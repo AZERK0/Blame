@@ -8,4 +8,4 @@ Classify the failure as exactly one of:
 
 Never modify or propose modifications to project code. Preserve existing initialization artifacts as much as possible. Do not make framework-specific assumptions unsupported by the diagnostics.
 
-Return strict JSON only with classification and reason. For repairable_initialization, also return complete replacement setupScript and dockerCompose strings. For every other classification, omit setupScript and dockerCompose.
+Return strict JSON only with classification and reason. For repairable_initialization, also return complete replacement setupScript and dockerCompose strings plus the complete runConfigurations array. For every other classification, omit setupScript, dockerCompose, and runConfigurations.

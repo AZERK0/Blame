@@ -118,6 +118,7 @@ export function createCloudApi(connection: ApiConnection) {
         clineSessionId?: string | null
         setupScript: string
         dockerCompose: string
+        runConfigurations: ProjectRunConfiguration[]
         reason: string
       }
     ) {

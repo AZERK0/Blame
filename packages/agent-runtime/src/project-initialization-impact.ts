@@ -54,6 +54,7 @@ export async function collectProjectInitializationImpactDiagnostics(
     relevantDiffs: await relevantDiffs(input, relevantFiles),
     currentSetupScript: input.setupScript,
     currentDockerCompose: input.dockerCompose,
+    currentRunConfigurations: input.runConfigurations,
     strategicFilesBefore: await strategicFiles(
       input,
       input.baseCommit,
@@ -80,6 +81,7 @@ export function projectInitializationImpactPrompt(
     `Relevant diffs: ${JSON.stringify(diagnostics.relevantDiffs)}`,
     `Current setupScript: ${JSON.stringify(diagnostics.currentSetupScript)}`,
     `Current dockerCompose: ${JSON.stringify(diagnostics.currentDockerCompose)}`,
+    `Current runConfigurations: ${JSON.stringify(diagnostics.currentRunConfigurations)}`,
     `Strategic files before: ${JSON.stringify(diagnostics.strategicFilesBefore)}`,
     `Strategic files after: ${JSON.stringify(diagnostics.strategicFilesAfter)}`,
   ].join("\n");

@@ -260,7 +260,7 @@ function parsePractices(value: unknown) {
   return requiredPractices.map((practice) => parsePractice(value, practice));
 }
 
-function parseRunConfigurations(value: unknown) {
+export function parseRunConfigurations(value: unknown) {
   if (!Array.isArray(value))
     throw new Error("Initialization result is missing runConfigurations");
   if (value.length > 20)
