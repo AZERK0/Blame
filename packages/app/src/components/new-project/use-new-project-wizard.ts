@@ -91,7 +91,7 @@ export function useNewProjectWizard(input: {
   const platform = usePlatform()
   const projects = useProjects()
   const auth = useCloudAuth()
-  const modelSelection = useModelSelection()
+  const modelSelection = useModelSelection({ role: "alternative" })
   const [step, setStep] = React.useState<NewProjectStep>("location")
   const [parentPath, setParentPath] = React.useState("")
   const [projectName, setProjectName] = React.useState("")

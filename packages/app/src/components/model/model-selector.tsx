@@ -44,9 +44,12 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { useCloudAuth } from "@/context/cloud-auth"
-import { useProjects } from "@/context/projects"
 import { usePlatform } from "@/context/platform"
 import { ButtonGroup } from "@/components/ui/button-group.tsx"
+import type {
+  CloudAiModelPreference,
+  SaveAiPreferencesInput,
+} from "@/context/cloud-auth"
 
 const storageKey = "blame.app.drawer-model-selection.v1"
 const globalModelSelectionKey = "__global__"
@@ -87,21 +90,23 @@ export type ModelGroup = {
 }
 
 type ModelSelectionState = {
-  model?: ModelKey
-  variant?: string | null
   recent: ModelKey[]
   hidden: ModelKey[]
 }
 
 export type ModelSelection = ReturnType<typeof useModelSelection>
+export type ModelPreferenceRole = "alternative" | "agent"
+type ModelSelectionOptions = {
+  role?: ModelPreferenceRole
+}
 type ModelDialog =
   | { type: "providers" }
   | { type: "connect"; providerID: string }
   | { type: "manage" }
   | undefined
 
-export function ModelSelector() {
-  const selection = useModelSelection()
+export function ModelSelector({ role }: { role?: ModelPreferenceRole }) {
+  const selection = useModelSelection({ role })
   const [dialog, setDialog] = React.useState<ModelDialog>()
 
   return (
@@ -187,7 +192,7 @@ function ModelPicker({
                     model={model}
                     selected={isModelSelected(selection.currentModel, model)}
                     onSelect={() => {
-                      selection.setModel(model)
+                      void selection.setModel(model)
                       setOpen(false)
                     }}
                   />
@@ -242,7 +247,7 @@ function ModelVariantSelector({ selection }: { selection: ModelSelection }) {
     <Select
       value={selection.currentVariant ?? defaultVariant}
       onValueChange={(value) => {
-        selection.setVariant(value === defaultVariant ? undefined : value)
+        void selection.setVariant(value === defaultVariant ? undefined : value)
       }}
     >
       <Tooltip>
@@ -346,8 +351,9 @@ export function ProviderMark({ provider }: { provider: Provider }) {
   )
 }
 
-export function useModelSelection() {
+export function useModelSelection(options: ModelSelectionOptions = {}) {
   const providerState = useProviderState()
+  const role = options.role ?? "agent"
   const [state, setState] = React.useState(() =>
     readModelState(providerState.directory)
   )
@@ -378,13 +384,18 @@ export function useModelSelection() {
     () => models.filter((model) => modelVisible(state, model)),
     [models, state]
   )
+  const preference = modelPreference(providerState.aiPreferences, role)
   const currentModel =
-    findModel(visibleModels, state.model) ??
+    findModel(visibleModels, preferenceModelKey(preference)) ??
     getDefaultModel(visibleModels, providerState.providers)
-  const currentVariant = getCurrentVariant(currentModel, state.variant)
+  const currentVariant = getCurrentVariant(
+    currentModel,
+    preference?.reasoningEffort
+  )
 
   return {
     agent: providerState.agent,
+    aiPreferences: providerState.aiPreferences,
     apiConnection: providerState.apiConnection,
     loading: providerState.loading,
     allProviderGroups: groupModels(models),
@@ -399,15 +410,18 @@ export function useModelSelection() {
     refreshProviders: providerState.refresh,
     serverReady: providerState.serverReady,
     variantOptions: getVariantOptions(currentModel),
-    setModel: (model: SelectableModel) =>
+    role,
+    saveAiPreferences: providerState.saveAiPreferences,
+    setModel: async (model: SelectableModel) => {
       setModelState(providerState.directory, setState, {
         ...state,
-        model: modelKey(model),
         recent: pushRecent(state.recent, model),
         hidden: state.hidden.filter(
           (item) => !sameModelKey(item, modelKey(model))
         ),
-      }),
+      })
+      await saveRolePreference(providerState, role, modelPreferenceInput(model))
+    },
     modelVisible: (model: SelectableModel) => modelVisible(state, model),
     providerVisible: (providerID: string) =>
       models
@@ -424,9 +438,11 @@ export function useModelSelection() {
         hidden: setHiddenProvider(state.hidden, models, providerID, visible),
       }),
     setVariant: (variant: string | undefined) =>
-      setModelState(providerState.directory, setState, {
-        ...state,
-        variant: variant ?? null,
+      saveRolePreference(providerState, role, {
+        providerId: currentModel?.provider.id ?? "",
+        modelId: currentModel?.id ?? "",
+        credentialLabel: currentModel?.credentialLabel ?? null,
+        reasoningEffort: isReasoningEffort(variant ?? "") ? variant : null,
       }),
   }
 }
@@ -434,8 +450,7 @@ export function useModelSelection() {
 function useProviderState() {
   const auth = useCloudAuth()
   const platform = usePlatform()
-  const projects = useProjects()
-  const directory = projects.activeProject?.path ?? globalModelSelectionKey
+  const directory = globalModelSelectionKey
   const [providers, setProviders] = React.useState<ProviderListResponse>()
   const [loading, setLoading] = React.useState(false)
   const [failed, setFailed] = React.useState(false)
@@ -461,10 +476,13 @@ function useProviderState() {
       .finally(() => {
         setLoading(false)
       })
-  }, [agent, auth.apiConnection, auth.status, directory])
+  }, [agent, auth.apiConnection, auth.status])
 
   React.useEffect(() => {
-    void refresh().then(() => undefined)
+    const timeout = window.setTimeout(() => {
+      void refresh().then(() => undefined)
+    })
+    return () => window.clearTimeout(timeout)
   }, [refresh])
 
   return {
@@ -474,6 +492,10 @@ function useProviderState() {
     loading,
     providers,
     refresh,
+    aiPreferences:
+      auth.status === "authenticated" ? auth.aiPreferences : undefined,
+    saveAiPreferences:
+      auth.status === "authenticated" ? auth.saveAiPreferences : undefined,
     agent,
     serverReady: !!agent,
   }
@@ -492,6 +514,60 @@ function normalizeProviderList(input: ProviderListResponse | undefined) {
       ),
     })),
   }
+}
+
+function modelPreference(
+  preferences:
+    | {
+        alternativeModel: CloudAiModelPreference
+        agentModel: CloudAiModelPreference
+      }
+    | null
+    | undefined,
+  role: ModelPreferenceRole
+) {
+  if (!preferences) return undefined
+  return role === "alternative"
+    ? preferences.alternativeModel
+    : preferences.agentModel
+}
+
+function preferenceModelKey(
+  preference: CloudAiModelPreference | undefined
+): ModelKey | undefined {
+  if (!preference) return undefined
+  return {
+    providerID: preference.providerId,
+    modelID: preference.modelId,
+    credentialLabel: preference.credentialLabel ?? undefined,
+  }
+}
+
+function modelPreferenceInput(model: SelectableModel): CloudAiModelPreference {
+  return {
+    providerId: model.provider.id,
+    modelId: model.id,
+    credentialLabel: model.credentialLabel ?? null,
+    reasoningEffort: null,
+  }
+}
+
+async function saveRolePreference(
+  providerState: {
+    aiPreferences?: SaveAiPreferencesInput | null
+    saveAiPreferences?: (input: SaveAiPreferencesInput) => Promise<void>
+  },
+  role: ModelPreferenceRole,
+  preference: CloudAiModelPreference
+) {
+  if (!providerState.saveAiPreferences || !preference.providerId) return
+  const current = providerState.aiPreferences
+  if (!current) return
+  await providerState.saveAiPreferences({
+    alternativeModel:
+      role === "alternative" ? preference : current.alternativeModel,
+    agentModel: role === "agent" ? preference : current.agentModel,
+  })
 }
 
 function getModels(providers: ProviderListResponse | undefined) {

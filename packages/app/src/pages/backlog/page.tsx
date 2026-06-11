@@ -50,7 +50,8 @@ export function BacklogPage() {
   const auth = useCloudAuth()
   const platform = usePlatform()
   const projects = useProjects()
-  const selection = useModelSelection()
+  const agentSelection = useModelSelection({ role: "agent" })
+  const alternativeSelection = useModelSelection({ role: "alternative" })
   const rotation = useBacklogRotation(backlog)
   const [drawerTarget, setDrawerTarget] = React.useState<DrawerTarget>()
   const projectInitialization = useProjectInitialization()
@@ -334,7 +335,7 @@ export function BacklogPage() {
         })
         return story
       }
-      if (auth.status !== "authenticated" || !selection.currentModel) {
+      if (auth.status !== "authenticated" || !agentSelection.currentModel) {
         toast.error("Unable to resume agent", {
           description: "Reconnect the provider and select a model.",
           position: "bottom-right",
@@ -356,10 +357,10 @@ export function BacklogPage() {
       )
       const session = await agent.sessions.startDevelopment({
         apiConnection: auth.apiConnection,
-        providerId: selection.currentModel.provider.id,
-        modelId: selection.currentModel.id,
-        credentialLabel: selection.currentModel.credentialLabel,
-        reasoningEffort: selection.currentVariant,
+        providerId: agentSelection.currentModel.provider.id,
+        modelId: agentSelection.currentModel.id,
+        credentialLabel: agentSelection.currentModel.credentialLabel,
+        reasoningEffort: agentSelection.currentVariant,
         autoSendPrompt: false,
         title: story.title,
         summary: story.summary,
@@ -387,8 +388,8 @@ export function BacklogPage() {
         agentActivities: [],
         agentFinalResponse: null,
         agentUsage: null,
-        agentModelId: selection.currentModel.id,
-        agentProviderId: selection.currentModel.provider.id,
+        agentModelId: agentSelection.currentModel.id,
+        agentProviderId: agentSelection.currentModel.provider.id,
         agentStatus: "Running",
         clineSessionId: session.sessionId,
         status: "in-progress",
@@ -426,8 +427,8 @@ export function BacklogPage() {
       backlog,
       platform,
       projects,
-      selection.currentModel,
-      selection.currentVariant,
+      agentSelection.currentModel,
+      agentSelection.currentVariant,
       updateStory,
       persistAgentEvent,
     ]
@@ -450,7 +451,7 @@ export function BacklogPage() {
         })
         return story
       }
-      if (auth.status !== "authenticated" || !selection.currentModel) {
+      if (auth.status !== "authenticated" || !agentSelection.currentModel) {
         toast.error("Unable to request changes", {
           description: "Reconnect the provider and select a model.",
           position: "bottom-right",
@@ -473,10 +474,10 @@ export function BacklogPage() {
       )
       const session = await agent.sessions.startDevelopment({
         apiConnection: auth.apiConnection,
-        providerId: selection.currentModel.provider.id,
-        modelId: selection.currentModel.id,
-        credentialLabel: selection.currentModel.credentialLabel,
-        reasoningEffort: selection.currentVariant,
+        providerId: agentSelection.currentModel.provider.id,
+        modelId: agentSelection.currentModel.id,
+        credentialLabel: agentSelection.currentModel.credentialLabel,
+        reasoningEffort: agentSelection.currentVariant,
         autoSendPrompt: false,
         title: story.title,
         summary: story.summary,
@@ -507,8 +508,8 @@ export function BacklogPage() {
         agentActivities: [],
         agentFinalResponse: null,
         agentUsage: null,
-        agentModelId: selection.currentModel.id,
-        agentProviderId: selection.currentModel.provider.id,
+        agentModelId: agentSelection.currentModel.id,
+        agentProviderId: agentSelection.currentModel.provider.id,
         agentStatus: "Running",
         clineSessionId: session.sessionId,
         status: "in-progress",
@@ -548,8 +549,8 @@ export function BacklogPage() {
       backlog,
       platform,
       projects,
-      selection.currentModel,
-      selection.currentVariant,
+      agentSelection.currentModel,
+      agentSelection.currentVariant,
       updateStory,
       persistAgentEvent,
     ]
@@ -562,7 +563,7 @@ export function BacklogPage() {
         auth,
         platform,
         projects.activeProject?.path,
-        selection.currentModel
+        alternativeSelection.currentModel
       )
       if (validationError) {
         toast.error("Unable to approve and merge", {
@@ -580,10 +581,10 @@ export function BacklogPage() {
         const codePractices = await projectCodePractices(auth, projects)
         const result = await platform.agent!.approveAndMerge({
           apiConnection: auth.apiConnection,
-          providerId: selection.currentModel!.provider.id,
-          modelId: selection.currentModel!.id,
-          credentialLabel: selection.currentModel!.credentialLabel,
-          reasoningEffort: selection.currentVariant,
+          providerId: alternativeSelection.currentModel!.provider.id,
+          modelId: alternativeSelection.currentModel!.id,
+          credentialLabel: alternativeSelection.currentModel!.credentialLabel,
+          reasoningEffort: alternativeSelection.currentVariant,
           repositoryRoot: projects.activeProject!.path,
           worktree: story.worktree!,
           storyBranch: story.branch!,
@@ -612,12 +613,12 @@ export function BacklogPage() {
           auth,
           baseCommit: result.baseCommit,
           mergeCommit: result.mergeCommit,
-          modelId: selection.currentModel!.id,
-          credentialLabel: selection.currentModel!.credentialLabel,
+          modelId: alternativeSelection.currentModel!.id,
+          credentialLabel: alternativeSelection.currentModel!.credentialLabel,
           platform,
           projectId: projects.activeProject!.id,
-          providerId: selection.currentModel!.provider.id,
-          reasoningEffort: selection.currentVariant,
+          providerId: alternativeSelection.currentModel!.provider.id,
+          reasoningEffort: alternativeSelection.currentVariant,
           repositoryRoot: projects.activeProject!.path,
         })
         void cleanupMergedStory(
@@ -643,8 +644,8 @@ export function BacklogPage() {
       auth,
       platform,
       projects,
-      selection.currentModel,
-      selection.currentVariant,
+      alternativeSelection.currentModel,
+      alternativeSelection.currentVariant,
       updateStory,
     ]
   )
@@ -655,15 +656,15 @@ export function BacklogPage() {
         auth,
         platform,
         projectPath: projects.activeProject?.path,
-        model: selection.currentModel,
-        reasoningEffort: selection.currentVariant,
+        model: alternativeSelection.currentModel,
+        reasoningEffort: alternativeSelection.currentVariant,
       }),
     [
       auth,
       platform,
       projects.activeProject?.path,
-      selection.currentModel,
-      selection.currentVariant,
+      alternativeSelection.currentModel,
+      alternativeSelection.currentVariant,
     ]
   )
   const runStoryAction = React.useCallback(

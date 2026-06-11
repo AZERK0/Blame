@@ -43,6 +43,30 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/profile_controller').default['show']>>>
     }
   }
+  'profile.user_ai_preferences.show': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/account/ai-preferences'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/user_ai_preferences_controller').default['show']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/user_ai_preferences_controller').default['show']>>>
+    }
+  }
+  'profile.user_ai_preferences.update': {
+    methods: ["PUT"]
+    pattern: '/api/v1/account/ai-preferences'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/user_ai_preference').saveUserAiPreferenceValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/user_ai_preference').saveUserAiPreferenceValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/user_ai_preferences_controller').default['update']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/user_ai_preferences_controller').default['update']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
   'profile.access_tokens.destroy': {
     methods: ["POST"]
     pattern: '/api/v1/account/logout'

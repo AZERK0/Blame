@@ -36,6 +36,7 @@ type InitializationRunInput = {
   providerId: string
   modelId: string
   credentialLabel?: string
+  reasoningEffort?: ModelSelection["currentVariant"]
 }
 
 type InitializationValidationFeedback = {
@@ -56,7 +57,7 @@ function useProjectInitializationController() {
   const auth = useCloudAuth()
   const platform = usePlatform()
   const projects = useProjects()
-  const selection = useModelSelection()
+  const selection = useModelSelection({ role: "alternative" })
   const activeProject = projects.activeProject
   const currentModel = selection.currentModel
   const initializationAuth = React.useMemo(
@@ -70,6 +71,7 @@ function useProjectInitializationController() {
     platform.agent,
     initializationAuth,
     currentModel,
+    selection.currentVariant,
     dialog.openModelDialog
   )
 
@@ -78,6 +80,7 @@ function useProjectInitializationController() {
     agent: platform.agent,
     auth: initializationAuth,
     currentModel,
+    currentVariant: selection.currentVariant,
     dialog,
     refreshProviders: selection.refreshProviders,
   })
@@ -88,6 +91,7 @@ function initializationController(input: {
   agent: InitializationRunInput["agent"] | undefined
   auth: InitializationAuth
   currentModel: ModelSelection["currentModel"]
+  currentVariant: ModelSelection["currentVariant"]
   dialog: ReturnType<typeof useModelDialogState>
   refreshProviders: () => Promise<void>
 }) {
@@ -105,6 +109,7 @@ function initializationController(input: {
         input.auth,
         input.agent,
         input.currentModel,
+        input.currentVariant,
         input.dialog.closeModelDialog
       ),
   }
@@ -136,9 +141,10 @@ function startSelectedModel(
   auth: InitializationAuth,
   agent: InitializationRunInput["agent"] | undefined,
   model: ModelSelection["currentModel"],
+  variant: ModelSelection["currentVariant"],
   closeModelDialog: () => void
 ) {
-  const input = runInput(project, auth, agent, model)
+  const input = runInput(project, auth, agent, model, variant)
   if (!input) return
   closeModelDialog()
   void runInitialization(input)
@@ -184,7 +190,7 @@ function InitializationModelPicker({ modelName }: { modelName?: string }) {
       <span className="min-w-0 text-sm text-muted-foreground">
         {modelName ?? "No model selected"}
       </span>
-      <ModelSelector />
+      <ModelSelector role="alternative" />
     </div>
   )
 }
@@ -219,6 +225,7 @@ function useInitializationEffect(
   agent: NonNullable<ReturnType<typeof usePlatform>["agent"]> | undefined,
   auth: InitializationAuth,
   currentModel: ModelSelection["currentModel"],
+  currentVariant: ModelSelection["currentVariant"],
   openModelDialog: () => void
 ) {
   React.useEffect(
@@ -228,9 +235,10 @@ function useInitializationEffect(
         agent,
         auth,
         currentModel,
+        currentVariant,
         openModelDialog,
       }),
-    [activeProject, agent, auth, currentModel, openModelDialog]
+    [activeProject, agent, auth, currentModel, currentVariant, openModelDialog]
   )
 }
 
@@ -239,6 +247,7 @@ function initializationEffect(input: {
   agent?: NonNullable<ReturnType<typeof usePlatform>["agent"]>
   auth: InitializationAuth
   currentModel: ModelSelection["currentModel"]
+  currentVariant: ModelSelection["currentVariant"]
   openModelDialog: () => void
 }) {
   if (!input.activeProject || input.auth.status !== "authenticated") return
@@ -259,7 +268,8 @@ async function maybeInitializeProject(
     input.activeProject,
     input.auth,
     input.agent,
-    input.currentModel
+    input.currentModel,
+    input.currentVariant
   )
   if (!run) return input.openModelDialog()
   await runInitialization(run)
@@ -269,7 +279,8 @@ function runInput(
   project: InitializationRunInput["project"] | undefined,
   auth: InitializationAuth,
   agent: InitializationRunInput["agent"] | undefined,
-  model: ModelSelection["currentModel"]
+  model: ModelSelection["currentModel"],
+  variant: ModelSelection["currentVariant"]
 ): InitializationRunInput | undefined {
   if (!project || !model || auth.status !== "authenticated" || !agent) return
   return {
@@ -279,6 +290,7 @@ function runInput(
     providerId: model.provider.id,
     modelId: model.id,
     credentialLabel: model.credentialLabel,
+    reasoningEffort: variant,
   }
 }
 
@@ -326,6 +338,7 @@ function runProjectInitializationAgent(
     providerId: input.providerId,
     modelId: input.modelId,
     credentialLabel: input.credentialLabel,
+    reasoningEffort: input.reasoningEffort,
     cwd: input.project.path,
     workspaceRoot: input.project.path,
     validationFeedback,

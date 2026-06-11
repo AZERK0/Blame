@@ -14,6 +14,10 @@ export interface ApiDefinition {
     profile: {
       show: typeof routes['profile.profile.show']
     }
+    userAiPreferences: {
+      show: typeof routes['profile.user_ai_preferences.show']
+      update: typeof routes['profile.user_ai_preferences.update']
+    }
     accessTokens: {
       destroy: typeof routes['profile.access_tokens.destroy']
     }

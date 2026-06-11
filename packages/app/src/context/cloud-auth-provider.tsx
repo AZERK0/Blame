@@ -2,8 +2,10 @@ import * as React from "react"
 
 import {
   CloudAuthContext,
+  type CloudAiPreferences,
   type CloudSession,
   type LoginInput,
+  type SaveAiPreferencesInput,
   type SignupInput,
 } from "@/context/cloud-auth"
 import { usePlatform } from "@/context/platform"
@@ -17,7 +19,11 @@ const defaultApiUrl =
 type CloudAuthState =
   | { status: "loading" }
   | { status: "unauthenticated" }
-  | { status: "authenticated"; session: CloudSession }
+  | {
+      status: "authenticated"
+      session: CloudSession
+      aiPreferences: CloudAiPreferences | null
+    }
 
 export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
   const platform = usePlatform()
@@ -25,7 +31,8 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
     status: "loading",
   })
   const apiUrl = platform.api?.url ?? defaultApiUrl
-  const token = state.status === "authenticated" ? state.session.token : undefined
+  const token =
+    state.status === "authenticated" ? state.session.token : undefined
   const apiConnection = React.useMemo(
     () => ({ url: apiUrl, token }),
     [apiUrl, token]
@@ -35,7 +42,9 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
     let alive = true
     const session = readCloudSession()
     if (!session) {
-      setState({ status: "unauthenticated" })
+      queueMicrotask(() => {
+        if (alive) setState({ status: "unauthenticated" })
+      })
       return () => {
         alive = false
       }
@@ -43,10 +52,18 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
 
     void createCloudApi({ url: apiUrl, token: session.token })
       .profile()
-      .then((user) => {
+      .then(async (user) => {
         if (!alive) return
+        const aiPreferences = await createCloudApi({
+          url: apiUrl,
+          token: session.token,
+        }).aiPreferences()
         setCloudSession({ ...session, user })
-        setState({ status: "authenticated", session: { ...session, user } })
+        setState({
+          status: "authenticated",
+          session: { ...session, user },
+          aiPreferences,
+        })
       })
       .catch(() => {
         if (!alive) return
@@ -62,8 +79,12 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
   const login = React.useCallback(
     async (input: LoginInput) => {
       const session = await createCloudApi({ url: apiUrl }).login(input)
+      const aiPreferences = await createCloudApi({
+        url: apiUrl,
+        token: session.token,
+      }).aiPreferences()
       setCloudSession(session)
-      setState({ status: "authenticated", session })
+      setState({ status: "authenticated", session, aiPreferences })
     },
     [apiUrl]
   )
@@ -71,15 +92,45 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
   const signup = React.useCallback(
     async (input: SignupInput) => {
       const session = await createCloudApi({ url: apiUrl }).signup(input)
+      const aiPreferences = await createCloudApi({
+        url: apiUrl,
+        token: session.token,
+      }).aiPreferences()
       setCloudSession(session)
-      setState({ status: "authenticated", session })
+      setState({ status: "authenticated", session, aiPreferences })
     },
     [apiUrl]
   )
 
+  const refreshAiPreferences = React.useCallback(async () => {
+    if (!token) return
+    const aiPreferences = await createCloudApi(apiConnection).aiPreferences()
+    setState((current) =>
+      current.status === "authenticated"
+        ? { ...current, aiPreferences }
+        : current
+    )
+  }, [apiConnection, token])
+
+  const saveAiPreferences = React.useCallback(
+    async (input: SaveAiPreferencesInput) => {
+      if (!token) return
+      const aiPreferences =
+        await createCloudApi(apiConnection).saveAiPreferences(input)
+      setState((current) =>
+        current.status === "authenticated"
+          ? { ...current, aiPreferences }
+          : current
+      )
+    },
+    [apiConnection, token]
+  )
+
   const logout = React.useCallback(async () => {
     if (token) {
-      await createCloudApi(apiConnection).logout().catch(() => undefined)
+      await createCloudApi(apiConnection)
+        .logout()
+        .catch(() => undefined)
     }
     removeCloudSession()
     setState({ status: "unauthenticated" })
@@ -89,8 +140,12 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
     <CloudAuthContext.Provider
       value={{
         apiConnection,
+        aiPreferences:
+          state.status === "authenticated" ? state.aiPreferences : undefined,
         login,
         logout,
+        refreshAiPreferences,
+        saveAiPreferences,
         signup,
         status: state.status,
         token,

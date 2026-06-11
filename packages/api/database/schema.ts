@@ -132,6 +132,33 @@ export class ProviderCredentialSchema extends BaseModel {
   declare userId: number
 }
 
+export class UserAiPreferenceSchema extends BaseModel {
+  static $columns = ['agentCredentialLabel', 'agentModelId', 'agentProviderId', 'agentReasoningEffort', 'alternativeCredentialLabel', 'alternativeModelId', 'alternativeProviderId', 'alternativeReasoningEffort', 'createdAt', 'updatedAt', 'userId'] as const
+  $columns = UserAiPreferenceSchema.$columns
+  @column()
+  declare agentCredentialLabel: string | null
+  @column()
+  declare agentModelId: string
+  @column()
+  declare agentProviderId: string
+  @column()
+  declare agentReasoningEffort: string | null
+  @column()
+  declare alternativeCredentialLabel: string | null
+  @column()
+  declare alternativeModelId: string
+  @column()
+  declare alternativeProviderId: string
+  @column()
+  declare alternativeReasoningEffort: string | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+  @column({ isPrimary: true })
+  declare userId: number
+}
+
 export class UserStorySchema extends BaseModel {
   static $columns = ['agentActivities', 'agentFinalResponse', 'agentLastError', 'agentLastEvent', 'agentModelId', 'agentProviderId', 'agentSessionSummary', 'agentStatus', 'agentUsage', 'baseCommit', 'branch', 'clineSessionId', 'codeSelectionAttachments', 'createdAt', 'discardedReason', 'fileAttachments', 'id', 'mergeCommit', 'mergedAt', 'owner', 'previewUrl', 'priority', 'projectId', 'status', 'summary', 'title', 'updatedAt', 'worktree'] as const
   $columns = UserStorySchema.$columns

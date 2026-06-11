@@ -48,7 +48,8 @@ export function useBacklogRotation(
   const auth = useCloudAuth()
   const platform = usePlatform()
   const projects = useProjects()
-  const selection = useModelSelection()
+  const selection = useModelSelection({ role: "agent" })
+  const alternativeSelection = useModelSelection({ role: "alternative" })
   const ensureProjectPreviewUrl = platform.workspace?.ensureProjectPreviewUrl
   const startingStoryIds = React.useRef(new Set<number>())
   const blockedStories = React.useRef(new Map<number, number>())
@@ -322,10 +323,10 @@ export function useBacklogRotation(
       apiConnection: auth.apiConnection,
       platform,
       projectId: initialization.projectId,
-      providerId: selection.currentModel!.provider.id,
-      modelId: selection.currentModel!.id,
-      credentialLabel: selection.currentModel!.credentialLabel,
-      reasoningEffort: selection.currentVariant,
+      providerId: alternativeSelection.currentModel!.provider.id,
+      modelId: alternativeSelection.currentModel!.id,
+      credentialLabel: alternativeSelection.currentModel!.credentialLabel,
+      reasoningEffort: alternativeSelection.currentVariant,
       worktree,
       setupScript: initialization.setupScript!,
       dockerCompose: initialization.dockerCompose!,

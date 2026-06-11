@@ -11,6 +11,7 @@ export const controllers = {
   ProjectInitializations: () => import('#controllers/project_initializations_controller'),
   Projects: () => import('#controllers/projects_controller'),
   ProviderCredentials: () => import('#controllers/provider_credentials_controller'),
+  UserAiPreferences: () => import('#controllers/user_ai_preferences_controller'),
   UserStories: () => import('#controllers/user_stories_controller'),
   UserStoryAgentRuns: () => import('#controllers/user_story_agent_runs_controller'),
   UserStoryComments: () => import('#controllers/user_story_comments_controller'),

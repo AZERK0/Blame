@@ -4,6 +4,7 @@ import { BacklogPage } from "@/pages/backlog/page"
 import { PracticesPage } from "@/pages/practices/page"
 import { QuickChatPage } from "@/components/chat/quick-chat-page"
 import { ConnectScreen } from "@/components/onboarding/connect-screen"
+import { AiPreferencesSetupScreen } from "@/components/onboarding/ai-preferences-setup-screen"
 import {
   navigationPathname,
   subscribeToNavigation,
@@ -78,6 +79,14 @@ export function App() {
 
   if (auth.status === "loading") return <LoadingScreen />
   if (auth.status === "unauthenticated") return <ConnectScreen />
+  if (auth.aiPreferences === null) {
+    return (
+      <TooltipProvider>
+        <AiPreferencesSetupScreen />
+        <Toaster />
+      </TooltipProvider>
+    )
+  }
   if (!projects.activeProject) return <WelcomeScreen />
 
   return (

@@ -1,6 +1,10 @@
 import * as React from "react"
 
-import type { ApiConnection, ProjectRunConfiguration } from "@blame/agent-runtime"
+import type {
+  ApiConnection,
+  ProjectRunConfiguration,
+} from "@blame/agent-runtime"
+import type { ReasoningEffort } from "@blame/agent-runtime"
 
 export type CloudUser = {
   id: number
@@ -14,6 +18,20 @@ export type CloudUser = {
 export type CloudSession = {
   user: CloudUser
   token: string
+}
+
+export type CloudAiModelPreference = {
+  providerId: string
+  modelId: string
+  credentialLabel: string | null
+  reasoningEffort: ReasoningEffort | null
+}
+
+export type CloudAiPreferences = {
+  alternativeModel: CloudAiModelPreference
+  agentModel: CloudAiModelPreference
+  createdAt: string
+  updatedAt: string | null
 }
 
 export type CloudProject = {
@@ -82,11 +100,19 @@ export type SignupInput = LoginInput & {
 export type CloudAuthContextValue = {
   status: "loading" | "authenticated" | "unauthenticated"
   apiConnection: ApiConnection
+  aiPreferences?: CloudAiPreferences | null
   user?: CloudUser
   token?: string
   login(input: LoginInput): Promise<void>
   signup(input: SignupInput): Promise<void>
+  saveAiPreferences(input: SaveAiPreferencesInput): Promise<void>
+  refreshAiPreferences(): Promise<void>
   logout(): Promise<void>
+}
+
+export type SaveAiPreferencesInput = {
+  alternativeModel: CloudAiModelPreference
+  agentModel: CloudAiModelPreference
 }
 
 export const CloudAuthContext = React.createContext<

@@ -16,6 +16,7 @@ const ProjectCodePracticesController = () =>
   import('#controllers/project_code_practices_controller')
 const ProjectInitializationsController = () =>
   import('#controllers/project_initializations_controller')
+const UserAiPreferencesController = () => import('#controllers/user_ai_preferences_controller')
 const UserStoryAgentRunsController = () => import('#controllers/user_story_agent_runs_controller')
 const UserStoryCommentsController = () => import('#controllers/user_story_comments_controller')
 
@@ -36,6 +37,8 @@ router
     router
       .group(() => {
         router.get('profile', [controllers.Profile, 'show'])
+        router.get('ai-preferences', [UserAiPreferencesController, 'show'])
+        router.put('ai-preferences', [UserAiPreferencesController, 'update'])
         router.post('logout', [controllers.AccessTokens, 'destroy'])
       })
       .prefix('account')

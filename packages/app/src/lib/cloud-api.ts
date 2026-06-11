@@ -3,13 +3,21 @@ import type {
   CloudProjectInitializationSnapshot,
   CloudSession,
   CloudUser,
+  type CloudAiPreferences,
+  SaveAiPreferencesInput,
   LoginInput,
   SignupInput,
 } from "@/context/cloud-auth"
-import type { ApiConnection, ProjectRunConfiguration } from "@blame/agent-runtime"
+import type {
+  ApiConnection,
+  ProjectRunConfiguration,
+} from "@blame/agent-runtime"
 
 export class CloudApiError extends Error {
-  constructor(message: string, readonly status: number) {
+  constructor(
+    message: string,
+    readonly status: number
+  ) {
     super(message)
     this.name = "CloudApiError"
   }
@@ -33,6 +41,19 @@ export function createCloudApi(connection: ApiConnection) {
     },
     profile() {
       return request<CloudUser>(connection, baseUrl, "/account/profile")
+    },
+    aiPreferences() {
+      return request<unknown>(
+        connection,
+        baseUrl,
+        "/account/ai-preferences"
+      ).then(cloudAiPreferences)
+    },
+    saveAiPreferences(input: SaveAiPreferencesInput) {
+      return request<unknown>(connection, baseUrl, "/account/ai-preferences", {
+        body: JSON.stringify(input),
+        method: "PUT",
+      }).then(cloudAiPreferencesRequired)
     },
     projects() {
       return request<unknown>(connection, baseUrl, "/projects").then(
@@ -162,6 +183,24 @@ function cloudProjectInitializationSnapshot(value: unknown) {
     throw new Error("Unable to read project initialization.")
   }
   return snapshot as CloudProjectInitializationSnapshot
+}
+
+function cloudAiPreferences(value: unknown) {
+  const preferences = transformerValue(value)
+  if (preferences === null) return null
+  return cloudAiPreferencesRequired(value)
+}
+
+function cloudAiPreferencesRequired(value: unknown) {
+  const preferences = transformerValue(value)
+  if (!isRecord(preferences)) throw new Error("Unable to read AI preferences.")
+  if (
+    !isRecord(preferences.alternativeModel) ||
+    !isRecord(preferences.agentModel)
+  ) {
+    throw new Error("Unable to read AI preferences.")
+  }
+  return preferences as CloudAiPreferences
 }
 
 function transformerValue(value: unknown): unknown {
