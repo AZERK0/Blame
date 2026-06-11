@@ -58,6 +58,7 @@ export type UserStoryAgentActivity = {
   detail: string
   status?: "running" | "completed" | "failed"
   iteration?: number
+  parallelGroupId?: string
   toolCallId?: string
   toolName?: string
   detailArtifact?: string
@@ -187,6 +188,7 @@ export type UserStoryUpdate = Partial<
   >
 > & {
   agentActivity?: UserStoryAgentActivity | null
+  agentActivityUpdates?: UserStoryAgentActivity[]
 }
 
 export type UserStoryActivityDetail = {
@@ -213,6 +215,7 @@ export type UserStoryAgentRunUpdate = Partial<
   >
 > & {
   agentActivity?: UserStoryAgentActivity | null
+  agentActivityUpdates?: UserStoryAgentActivity[]
 }
 
 export const backlogColumns = [

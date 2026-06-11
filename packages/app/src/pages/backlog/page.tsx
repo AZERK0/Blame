@@ -707,7 +707,7 @@ export function BacklogPage() {
           Loading user stories.
         </div>
       )}
-      <div className="min-h-0 min-w-0 flex-1 [scrollbar-width:thin] [scrollbar-color:color-mix(in_oklab,var(--muted-foreground)_35%,transparent)_transparent] overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:h-2.5 [&::-webkit-scrollbar-corner]:bg-background [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb:hover]:bg-muted-foreground/45 [&::-webkit-scrollbar-track]:bg-transparent -mx-6 px-6">
+      <div className="-mx-6 min-h-0 min-w-0 flex-1 [scrollbar-width:thin] [scrollbar-color:color-mix(in_oklab,var(--muted-foreground)_35%,transparent)_transparent] overflow-x-auto overflow-y-hidden px-6 [&::-webkit-scrollbar]:h-2.5 [&::-webkit-scrollbar-corner]:bg-background [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb:hover]:bg-muted-foreground/45 [&::-webkit-scrollbar-track]:bg-transparent">
         <div className="grid h-full min-w-500 auto-rows-[minmax(0,1fr)] grid-cols-6 gap-3 pb-3">
           {backlogColumns.map((column) => (
             <BacklogColumn
@@ -1091,7 +1091,7 @@ function pendingAgentUpdate(
   return {
     activities: nextAgentActivities(
       pending?.activities ?? [],
-      input.agentActivity
+      activityUpdates(input)
     ),
     input: { ...pending?.input, ...input },
     run: pending?.run ?? run,
@@ -1101,27 +1101,46 @@ function pendingAgentUpdate(
 
 function nextAgentActivities(
   activities: UserStoryAgentActivity[],
+  updates: UserStoryAgentActivity[]
+) {
+  return updates.reduce(upsertAgentActivity, activities)
+}
+
+function activityUpdates(input: UserStoryUpdate) {
+  return input.agentActivityUpdates ?? activityUpdateList(input.agentActivity)
+}
+
+function activityUpdateList(
   activity: UserStoryAgentActivity | null | undefined
 ) {
-  if (!activity) return activities
+  return activity ? [activity] : []
+}
+
+function upsertAgentActivity(
+  activities: UserStoryAgentActivity[],
+  activity: UserStoryAgentActivity
+) {
   const exists = activities.some((item) => item.id === activity.id)
   if (!exists) return [...activities, activity]
   return activities.map((item) => (item.id === activity.id ? activity : item))
 }
 
 function agentMetadataUpdate(input: UserStoryUpdate): UserStoryUpdate {
-  const { agentActivities, agentActivity, ...metadata } = input
+  const { agentActivities, agentActivity, agentActivityUpdates, ...metadata } =
+    input
   void agentActivities
   void agentActivity
+  void agentActivityUpdates
   return metadata
 }
 
 function agentRunMetadataUpdate(
   input: UserStoryAgentRunUpdate
 ): UserStoryAgentRunUpdate {
-  const { activities, agentActivity, ...metadata } = input
+  const { activities, agentActivity, agentActivityUpdates, ...metadata } = input
   void activities
   void agentActivity
+  void agentActivityUpdates
   return metadata
 }
 
@@ -1132,6 +1151,8 @@ function agentRunEventUpdate(
 ): UserStoryAgentRunUpdate {
   const update: UserStoryAgentRunUpdate = {}
   if (input.agentActivity) update.agentActivity = input.agentActivity
+  if (input.agentActivityUpdates)
+    update.agentActivityUpdates = input.agentActivityUpdates
   if (input.agentFinalResponse !== undefined)
     update.finalResponse = input.agentFinalResponse
   if (input.agentUsage !== undefined) update.usage = input.agentUsage

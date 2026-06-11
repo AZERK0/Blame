@@ -9,6 +9,7 @@ import {
 import type {
   BacklogColumnId,
   UserStory,
+  UserStoryAgentActivity,
   UserStoryAgentRun,
   UserStoryAgentRunDraft,
   UserStoryAgentRunUpdate,
@@ -310,25 +311,37 @@ function agentRunWithUpdate(
   run: UserStoryAgentRun,
   input: UserStoryAgentRunUpdate
 ) {
-  const { agentActivity, ...metadata } = input
+  const { agentActivity, agentActivityUpdates, ...metadata } = input
   const nextRun = { ...run, ...definedUpdate(metadata) }
-  if (!agentActivity) return nextRun
+  const activities = agentActivityUpdates ?? activityUpdateList(agentActivity)
+  if (!activities.length) return nextRun
   return {
     ...nextRun,
-    activities: nextAgentActivities(nextRun.activities ?? [], agentActivity),
+    activities: nextAgentActivities(nextRun.activities ?? [], activities),
   }
 }
 
 function nextAgentActivities(
   activities: UserStoryAgentRun["activities"],
-  activity: NonNullable<UserStoryAgentRunUpdate["agentActivity"]>
+  updates: UserStoryAgentActivity[]
 ) {
   const currentActivities = activities ?? []
-  const exists = currentActivities.some((item) => item.id === activity.id)
-  if (!exists) return [...currentActivities, activity]
-  return currentActivities.map((item) =>
-    item.id === activity.id ? activity : item
-  )
+  return updates.reduce(upsertAgentActivity, currentActivities)
+}
+
+function activityUpdateList(
+  activity: UserStoryAgentRunUpdate["agentActivity"]
+) {
+  return activity ? [activity] : []
+}
+
+function upsertAgentActivity(
+  activities: UserStoryAgentActivity[],
+  activity: UserStoryAgentActivity
+) {
+  const exists = activities.some((item) => item.id === activity.id)
+  if (!exists) return [...activities, activity]
+  return activities.map((item) => (item.id === activity.id ? activity : item))
 }
 
 function storyWithComment(story: UserStory, comment: UserStoryComment) {

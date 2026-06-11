@@ -723,7 +723,7 @@ function pendingAgentUpdate(
   return {
     activities: nextAgentActivities(
       pending?.activities ?? [],
-      input.agentActivity
+      activityUpdates(input)
     ),
     input: { ...pending?.input, ...input },
     run: pending?.run ?? run,
@@ -733,27 +733,46 @@ function pendingAgentUpdate(
 
 function nextAgentActivities(
   activities: UserStoryAgentActivity[],
+  updates: UserStoryAgentActivity[]
+) {
+  return updates.reduce(upsertAgentActivity, activities)
+}
+
+function activityUpdates(input: UserStoryUpdate) {
+  return input.agentActivityUpdates ?? activityUpdateList(input.agentActivity)
+}
+
+function activityUpdateList(
   activity: UserStoryAgentActivity | null | undefined
 ) {
-  if (!activity) return activities
+  return activity ? [activity] : []
+}
+
+function upsertAgentActivity(
+  activities: UserStoryAgentActivity[],
+  activity: UserStoryAgentActivity
+) {
   const exists = activities.some((item) => item.id === activity.id)
   if (!exists) return [...activities, activity]
   return activities.map((item) => (item.id === activity.id ? activity : item))
 }
 
 function agentMetadataUpdate(input: UserStoryUpdate): UserStoryUpdate {
-  const { agentActivities, agentActivity, ...metadata } = input
+  const { agentActivities, agentActivity, agentActivityUpdates, ...metadata } =
+    input
   void agentActivities
   void agentActivity
+  void agentActivityUpdates
   return metadata
 }
 
 function agentRunMetadataUpdate(
   input: UserStoryAgentRunUpdate
 ): UserStoryAgentRunUpdate {
-  const { activities, agentActivity, ...metadata } = input
+  const { activities, agentActivity, agentActivityUpdates, ...metadata } = input
   void activities
   void agentActivity
+  void agentActivityUpdates
   return metadata
 }
 
@@ -764,6 +783,8 @@ function agentRunEventUpdate(
 ): UserStoryAgentRunUpdate {
   const input: UserStoryAgentRunUpdate = {}
   if (update.agentActivity) input.agentActivity = update.agentActivity
+  if (update.agentActivityUpdates)
+    input.agentActivityUpdates = update.agentActivityUpdates
   if (update.agentUsage) input.usage = update.agentUsage
   if (update.agentFinalResponse !== undefined)
     input.finalResponse = update.agentFinalResponse

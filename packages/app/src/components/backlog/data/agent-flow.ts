@@ -16,6 +16,11 @@ const largeFileReadBytes = 24000
 type ActivityInput = Omit<UserStoryAgentActivity, "createdAt" | "updatedAt"> & {
   serverDetail?: string
 }
+type ActivityUpdate = {
+  activities: UserStoryAgentActivity[]
+  activity: UserStoryAgentActivity
+  activityUpdates: UserStoryAgentActivity[]
+}
 
 export function agentFlowUpdate(
   story: UserStory,
@@ -29,6 +34,7 @@ export function agentFlowUpdate(
   if (activity) {
     update.agentActivities = activity.activities
     update.agentActivity = activity.activity
+    update.agentActivityUpdates = activity.activityUpdates
   }
   if (finalResponse !== undefined) update.agentFinalResponse = finalResponse
   if (usage) update.agentUsage = usage
@@ -120,23 +126,25 @@ function toolActivities(
 ) {
   const payload = eventPayload(event)
   const phase = stringValue(payload.phase) ?? stringValue(payload.hookEventName)
+  const input = toolActivityInput(activities, payload, phase)
+  return upsertActivities(
+    activities,
+    toolActivityInputs(activities, phase, input)
+  )
+}
+
+function toolActivityInput(
+  activities: UserStoryAgentActivity[],
+  payload: Record<string, unknown>,
+  phase: string | undefined
+): ActivityInput {
   const toolCall = recordValue(payload.toolCall)
-  const toolCallId =
-    stringValue(toolCall.toolCallId) ??
-    stringValue(toolCall.id) ??
-    stringValue(payload.toolCallId)
-  const toolName =
-    stringValue(toolCall.toolName) ??
-    stringValue(toolCall.name) ??
-    stringValue(payload.toolName) ??
-    stringValue(payload.name) ??
-    "tool"
+  const toolCallId = eventToolCallId(payload, toolCall)
+  const toolName = eventToolName(payload, toolCall)
   const iteration = numberValue(payload.iteration)
-  const id = toolCallId
-    ? `tool-${toolCallId}`
-    : (matchingToolId(activities, toolName, iteration, phase) ??
-      `tool-${toolName}-${activities.length}`)
-  return upsertActivity(activities, {
+  const id = toolActivityId(activities, toolName, iteration, phase, toolCallId)
+  const existing = activities.find((activity) => activity.id === id)
+  return {
     id,
     kind: "tool",
     title: toolTitle(toolName, phase),
@@ -144,9 +152,47 @@ function toolActivities(
     serverDetail: toolDetail(payload, false),
     status: toolStatus(phase),
     iteration,
+    parallelGroupId: existing?.parallelGroupId,
     toolCallId,
     toolName,
-  })
+  }
+}
+
+function eventToolCallId(
+  payload: Record<string, unknown>,
+  toolCall: Record<string, unknown>
+) {
+  return (
+    stringValue(toolCall.toolCallId) ??
+    stringValue(toolCall.id) ??
+    stringValue(payload.toolCallId)
+  )
+}
+
+function eventToolName(
+  payload: Record<string, unknown>,
+  toolCall: Record<string, unknown>
+) {
+  return (
+    stringValue(toolCall.toolName) ??
+    stringValue(toolCall.name) ??
+    stringValue(payload.toolName) ??
+    stringValue(payload.name) ??
+    "tool"
+  )
+}
+
+function toolActivityId(
+  activities: UserStoryAgentActivity[],
+  toolName: string,
+  iteration: number | undefined,
+  phase: string | undefined,
+  toolCallId: string | undefined
+) {
+  return toolCallId
+    ? `tool-${toolCallId}`
+    : (matchingToolId(activities, toolName, iteration, phase) ??
+        `tool-${toolName}-${activities.length}`)
 }
 
 function matchingToolId(
@@ -191,6 +237,30 @@ function upsertActivity(
   activities: UserStoryAgentActivity[],
   input: ActivityInput
 ) {
+  return upsertActivities(activities, [input])
+}
+
+function upsertActivities(
+  activities: UserStoryAgentActivity[],
+  inputs: ActivityInput[]
+): ActivityUpdate {
+  const updates: UserStoryAgentActivity[] = []
+  const nextActivities = inputs.reduce((currentActivities, input) => {
+    const next = upsertActivityValue(currentActivities, input)
+    updates.push(next.activity)
+    return next.activities
+  }, activities)
+  return {
+    activities: limitActivities(nextActivities),
+    activity: updates[updates.length - 1],
+    activityUpdates: updates,
+  }
+}
+
+function upsertActivityValue(
+  activities: UserStoryAgentActivity[],
+  input: ActivityInput
+) {
   const now = new Date().toISOString()
   const { serverDetail, ...activityInput } = input
   const existing = activities.find((activity) => activity.id === input.id)
@@ -201,10 +271,66 @@ function upsertActivity(
   const nextActivities = existing
     ? activities.map((activity) => (activity.id === input.id ? next : activity))
     : [...activities, next]
-  return {
-    activities: limitActivities(nextActivities),
-    activity: serverActivity,
-  }
+  return { activities: nextActivities, activity: serverActivity }
+}
+
+function toolActivityInputs(
+  activities: UserStoryAgentActivity[],
+  phase: string | undefined,
+  input: ActivityInput
+) {
+  const groupId = parallelGroupId(activities, phase, input)
+  const toolInput = groupId ? { ...input, parallelGroupId: groupId } : input
+  if (!groupId || toolStatus(phase) !== "running") return [toolInput]
+  return [
+    ...parallelRunningTools(activities, input).map((activity) =>
+      groupedActivityInput(activity, groupId)
+    ),
+    toolInput,
+  ]
+}
+
+function parallelGroupId(
+  activities: UserStoryAgentActivity[],
+  phase: string | undefined,
+  input: ActivityInput
+) {
+  if (toolStatus(phase) !== "running") return input.parallelGroupId
+  const tools = parallelRunningTools(activities, input)
+  if (!tools.length) return input.parallelGroupId
+  return (
+    input.parallelGroupId ??
+    tools.find((activity) => activity.parallelGroupId)?.parallelGroupId ??
+    `parallel-tools-${input.iteration ?? "session"}-${tools[0].id}`
+  )
+}
+
+function parallelRunningTools(
+  activities: UserStoryAgentActivity[],
+  input: ActivityInput
+) {
+  return activities.filter(
+    (activity) =>
+      activity.id !== input.id &&
+      activity.kind === "tool" &&
+      activity.status === "running" &&
+      sameIteration(activity.iteration, input.iteration)
+  )
+}
+
+function sameIteration(left: number | undefined, right: number | undefined) {
+  if (left !== undefined || right !== undefined) return left === right
+  return true
+}
+
+function groupedActivityInput(
+  activity: UserStoryAgentActivity,
+  parallelGroupId: string
+): ActivityInput {
+  const { createdAt, updatedAt, ...input } = activity
+  void createdAt
+  void updatedAt
+  return { ...input, parallelGroupId }
 }
 
 function toolTitle(toolName: string, phase: string | undefined) {

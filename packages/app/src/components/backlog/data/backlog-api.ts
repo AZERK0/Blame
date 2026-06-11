@@ -121,16 +121,18 @@ export function createBacklogApi(connection: ApiConnection) {
 }
 
 function apiUpdate(input: UserStoryUpdate) {
-  if (!input.agentActivity) return input
-  const { agentActivities, ...update } = input
+  if (!input.agentActivity && !input.agentActivityUpdates) return input
+  const { agentActivities, agentActivityUpdates, ...update } = input
   void agentActivities
+  void agentActivityUpdates
   return update
 }
 
 function apiAgentRunUpdate(input: UserStoryAgentRunUpdate) {
-  if (!input.agentActivity) return input
-  const { activities, ...update } = input
+  if (!input.agentActivity && !input.agentActivityUpdates) return input
+  const { activities, agentActivityUpdates, ...update } = input
   void activities
+  void agentActivityUpdates
   return update
 }
 

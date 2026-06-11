@@ -43,28 +43,53 @@ function parallelToolBatch(
 ) {
   const first = activities[start]
   if (first?.kind !== "tool") return []
+  if (first.parallelGroupId) return explicitParallelBatch(activities, start)
+  return legacyParallelBatch(activities, start)
+}
+
+function explicitParallelBatch(
+  activities: UserStoryAgentActivity[],
+  start: number
+) {
+  const first = activities[start]
+  if (!first?.parallelGroupId) return []
   const batch: UserStoryAgentActivity[] = []
   for (let index = start; index < activities.length; index += 1) {
     const activity = activities[index]
-    if (!belongsToParallelBatch(first, activity)) {
-      break
-    }
+    if (activity?.parallelGroupId !== first.parallelGroupId) break
     batch.push(activity)
   }
   return batch
 }
 
-function belongsToParallelBatch(
+function legacyParallelBatch(
+  activities: UserStoryAgentActivity[],
+  start: number
+) {
+  const first = activities[start]
+  if (!first) return []
+  const batch: UserStoryAgentActivity[] = []
+  for (let index = start; index < activities.length; index += 1) {
+    const activity = activities[index]
+    if (!belongsToLegacyBatch(first, activity)) break
+    batch.push(activity)
+  }
+  return batch
+}
+
+function belongsToLegacyBatch(
   first: UserStoryAgentActivity,
   activity: UserStoryAgentActivity | undefined
 ): activity is UserStoryAgentActivity {
   if (activity?.kind !== "tool") return false
-  if (first.iteration !== undefined || activity.iteration !== undefined) {
-    return (
-      first.iteration !== undefined && activity.iteration === first.iteration
-    )
-  }
+  if (activity.parallelGroupId) return false
+  if (!sameIteration(first.iteration, activity.iteration)) return false
   return startedTogether(first, activity)
+}
+
+function sameIteration(left: number | undefined, right: number | undefined) {
+  if (left !== undefined || right !== undefined) return left === right
+  return true
 }
 
 function startedTogether(
@@ -86,7 +111,9 @@ function activityGroup(
   return {
     activities,
     children: activities.map(activityNode),
-    id: `parallel-tools-${first?.iteration}-${first?.id}`,
+    id:
+      first?.parallelGroupId ??
+      `parallel-tools-${first?.iteration ?? "legacy"}-${first?.id}`,
     type: "group",
   }
 }
