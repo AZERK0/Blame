@@ -302,7 +302,7 @@ function ModelSummary({ model }: { model: SelectableModel | undefined }) {
 export function ModelTags({ model }: { model: SelectableModel }) {
   return (
     <span className="flex shrink-0 items-center gap-1">
-      {model.cost.input === 0 && model.cost.output === 0 ? (
+      {modelFree(model) ? (
         <span className="rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300">
           Free
         </span>
@@ -314,6 +314,11 @@ export function ModelTags({ model }: { model: SelectableModel }) {
       ) : null}
     </span>
   )
+}
+
+function modelFree(model: SelectableModel) {
+  if (model.provider.id === openAICompatibleProviderID) return false
+  return model.cost.input === 0 && model.cost.output === 0
 }
 
 export function ProviderMark({ provider }: { provider: Provider }) {
