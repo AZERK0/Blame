@@ -24,14 +24,24 @@ test("groups consecutive tools from the same iteration", () => {
 
 test("keeps tools without an iteration flat", () => {
   const nodes = userStoryActivityTree([
-    activity("read", "tool"),
-    activity("search", "tool"),
+    activity("read", "tool", undefined, "2026-06-11T10:00:00.000Z"),
+    activity("search", "tool", undefined, "2026-06-11T10:00:01.000Z"),
   ])
 
   assert.deepEqual(
     nodes.map((node) => node.type),
     ["activity", "activity"]
   )
+})
+
+test("groups legacy tools started in the same burst", () => {
+  const nodes = userStoryActivityTree([
+    activity("read", "tool", undefined, "2026-06-11T10:00:00.000Z"),
+    activity("search", "tool", undefined, "2026-06-11T10:00:00.041Z"),
+  ])
+
+  assert.equal(nodes.length, 1)
+  assert.equal(nodes[0]?.type, "group")
 })
 
 test("does not group tools separated by another activity", () => {
@@ -50,10 +60,11 @@ test("does not group tools separated by another activity", () => {
 function activity(
   id: string,
   kind: UserStoryAgentActivity["kind"],
-  iteration?: number
+  iteration?: number,
+  createdAt = "2026-06-11T10:00:00.000Z"
 ): UserStoryAgentActivity {
   return {
-    createdAt: "2026-06-11T10:00:00.000Z",
+    createdAt,
     detail: "",
     id,
     iteration,

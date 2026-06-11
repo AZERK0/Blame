@@ -169,6 +169,7 @@ export class BlameAgentRuntime {
   private sessionLogFiles = new Map<string, string>()
   private sessionContexts = new Map<string, ProductionSessionContext>()
   private sessionEventSignatures = new Map<string, Map<string, number>>()
+  private sessionIterations = new Map<string, number>()
   private sessionUsageSignatures = new Map<string, string>()
   private readonly productionConfig = loadProductionConfig()
   private readonly events?: AgentRuntimeEvents
@@ -754,12 +755,22 @@ export class BlameAgentRuntime {
     this.unsubscribeSession(sessionId)
     const cline = await this.core()
     const unsubscribe = await cline.subscribe((payload: CoreSessionEvent) => {
-      const event = normalizeEvent(sessionId, payload)
+      const event = this.withSessionIteration(sessionId, normalizeEvent(sessionId, payload))
       if (this.shouldSkipDuplicateSessionEvent(sessionId, event)) return
       void this.handleSessionEvent(sessionId, event)
       this.events?.emit(event)
     }, { sessionId })
     this.unsubscribers.set(sessionId, unsubscribe)
+  }
+
+  private withSessionIteration(sessionId: string, event: AgentEvent) {
+    const payload = asRecord(event.payload)
+    const eventIteration = numberValue(payload.iteration)
+    if (eventIteration !== undefined) this.sessionIterations.set(sessionId, eventIteration)
+    if (event.type !== "tool" || eventIteration !== undefined) return event
+    const iteration = this.sessionIterations.get(sessionId)
+    if (iteration === undefined) return event
+    return { ...event, payload: { ...payload, iteration } }
   }
 
   private shouldSkipDuplicateSessionEvent(sessionId: string, event: AgentEvent) {
@@ -797,6 +808,7 @@ export class BlameAgentRuntime {
     this.autoApprovedWriteToolSessions.delete(sessionId)
     this.sessionContexts.delete(sessionId)
     this.sessionEventSignatures.delete(sessionId)
+    this.sessionIterations.delete(sessionId)
     this.sessionUsageSignatures.delete(sessionId)
     void this.logSession(sessionId, "session unsubscribed")
   }

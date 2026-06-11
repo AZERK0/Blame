@@ -1,5 +1,7 @@
 import type { UserStoryAgentActivity } from "../data/backlog-data.ts"
 
+const parallelToolStartWindowMs = 500
+
 export type UserStoryActivityNode =
   | {
       activity: UserStoryAgentActivity
@@ -40,11 +42,11 @@ function parallelToolBatch(
   start: number
 ) {
   const first = activities[start]
-  if (!isGroupedTool(first)) return []
+  if (first?.kind !== "tool") return []
   const batch: UserStoryAgentActivity[] = []
   for (let index = start; index < activities.length; index += 1) {
     const activity = activities[index]
-    if (!isGroupedTool(activity) || activity.iteration !== first.iteration) {
+    if (!belongsToParallelBatch(first, activity)) {
       break
     }
     batch.push(activity)
@@ -52,10 +54,29 @@ function parallelToolBatch(
   return batch
 }
 
-function isGroupedTool(
+function belongsToParallelBatch(
+  first: UserStoryAgentActivity,
   activity: UserStoryAgentActivity | undefined
 ): activity is UserStoryAgentActivity {
-  return activity?.kind === "tool" && activity.iteration !== undefined
+  if (activity?.kind !== "tool") return false
+  if (first.iteration !== undefined || activity.iteration !== undefined) {
+    return (
+      first.iteration !== undefined && activity.iteration === first.iteration
+    )
+  }
+  return startedTogether(first, activity)
+}
+
+function startedTogether(
+  first: UserStoryAgentActivity,
+  activity: UserStoryAgentActivity
+) {
+  const firstStartedAt = timestamp(first.createdAt)
+  const activityStartedAt = timestamp(activity.createdAt)
+  if (firstStartedAt === undefined || activityStartedAt === undefined) {
+    return false
+  }
+  return activityStartedAt - firstStartedAt <= parallelToolStartWindowMs
 }
 
 function activityGroup(
@@ -76,4 +97,9 @@ function activityNode(activity: UserStoryAgentActivity): UserStoryActivityNode {
     id: activity.id,
     type: "activity",
   }
+}
+
+function timestamp(value: string) {
+  const timestamp = Date.parse(value)
+  return Number.isNaN(timestamp) ? undefined : timestamp
 }
