@@ -6,6 +6,7 @@ import type {
 import type { useCloudAuth } from "@/context/cloud-auth"
 import type { usePlatform } from "@/context/platform"
 import { createCloudApi } from "@/lib/cloud-api"
+import { notifyProjectInitializationUpdated } from "@/components/project-initialization/project-initialization-events"
 
 type ImpactInput = {
   apiConnection: ReturnType<typeof useCloudAuth>["apiConnection"]
@@ -123,4 +124,5 @@ async function persistProjectInitializationRepair(
       reason: result.reason,
     }
   )
+  notifyProjectInitializationUpdated(input.projectId)
 }

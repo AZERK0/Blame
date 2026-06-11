@@ -19,6 +19,7 @@ import { useCloudAuth } from "@/context/cloud-auth"
 import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import { CloudApiError, createCloudApi } from "@/lib/cloud-api"
+import { notifyProjectInitializationUpdated } from "@/components/project-initialization/project-initialization-events"
 
 const toastId = "project-initialization"
 const maxBackendCompletionAttempts = 3
@@ -340,6 +341,7 @@ async function completeProjectInitialization(
     runConfigurations: result.runConfigurations,
     practices: result.practices,
   })
+  notifyProjectInitializationUpdated(input.project.id)
 }
 
 function shouldRetryBackendValidation(error: unknown, attempt: number) {
@@ -373,6 +375,7 @@ async function persistInitializationError(
   await cloud
     .failProjectInitialization(input.project.id, { error: errorMessage(error) })
     .catch(() => undefined)
+  notifyProjectInitializationUpdated(input.project.id)
   showError(error)
 }
 

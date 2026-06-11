@@ -7,6 +7,7 @@ import {
   type GeneratedProjectInitialization,
 } from "@/context/projects"
 import { createCloudApi } from "@/lib/cloud-api"
+import { notifyProjectInitializationUpdated } from "@/components/project-initialization/project-initialization-events"
 import { createProject, type Project } from "@/lib/projects"
 
 const storageKey = "blame.app.projects.v1"
@@ -159,6 +160,7 @@ async function completeGeneratedProjectInitialization(
       practices: initialization.practices ?? generatedProjectPractices(),
     }
   )
+  notifyProjectInitializationUpdated(projectId)
 }
 
 function generatedProjectPractices() {

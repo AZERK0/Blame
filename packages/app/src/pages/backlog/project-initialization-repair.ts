@@ -3,6 +3,7 @@ import type { RepairProjectInitializationResult } from "@blame/agent-runtime"
 import type { useCloudAuth } from "@/context/cloud-auth"
 import type { usePlatform } from "@/context/platform"
 import { createCloudApi } from "@/lib/cloud-api"
+import { notifyProjectInitializationUpdated } from "@/components/project-initialization/project-initialization-events"
 
 type RepairInput = {
   apiConnection: ReturnType<typeof useCloudAuth>["apiConnection"]
@@ -67,4 +68,5 @@ async function persistProjectInitializationRepair(
       reason: result.reason,
     }
   )
+  notifyProjectInitializationUpdated(input.projectId)
 }

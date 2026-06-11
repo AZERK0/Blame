@@ -7,6 +7,7 @@ import type {
 import { useCloudAuth } from "@/context/cloud-auth"
 import { useProjects } from "@/context/projects"
 import { createCloudApi } from "@/lib/cloud-api"
+import { subscribeProjectInitializationUpdated } from "@/components/project-initialization/project-initialization-events"
 
 export function useProjectInitialization() {
   const auth = useCloudAuth()
@@ -23,7 +24,6 @@ export function useProjectInitialization() {
     const activeProject = projects.activeProject
     if (!activeProject || auth.status !== "authenticated") return
     let cancelled = false
-    let timer: number | undefined
     const cloud = createCloudApi(auth.apiConnection)
     const refresh = async () => {
       const snapshot = await cloud.projectInitialization(activeProject.id)
@@ -34,16 +34,17 @@ export function useProjectInitialization() {
         projectId: activeProject.id,
         status,
       })
-      if (projectInitializing(status)) {
-        timer = window.setTimeout(() => void refresh().catch(() => undefined), 5_000)
-      }
     }
     void refresh().catch(() => {
       if (!cancelled) setSnapshot(undefined)
     })
+    const unsubscribe = subscribeProjectInitializationUpdated(
+      activeProject.id,
+      () => void refresh().catch(() => undefined)
+    )
     return () => {
       cancelled = true
-      if (timer) window.clearTimeout(timer)
+      unsubscribe()
     }
   }, [auth, projects.activeProject])
 
