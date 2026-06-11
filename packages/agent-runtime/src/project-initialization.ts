@@ -354,9 +354,29 @@ function validateDockerCompose(
       "Initialization result dockerCompose must run worktree services as the host user",
     );
   }
+  if (!previewWorkspaceMountsProject(compose)) {
+    throw new Error(
+      "Initialization result dockerCompose preview service must mount the project source at /workspace",
+    );
+  }
+  if (missingNodeDependencyInstall(compose, scan)) {
+    throw new Error(
+      "Initialization result dockerCompose must install detected Node dependencies before starting services",
+    );
+  }
+  if (usesNuxtPreviewWithoutBuild(compose, scan)) {
+    throw new Error(
+      "Initialization result dockerCompose must build Nuxt before running its preview script or use the development script",
+    );
+  }
   if (compose.includes("corepack enable")) {
     throw new Error(
       "Initialization result dockerCompose must not run corepack enable",
+    );
+  }
+  if (usesUnescapedContainerHome(compose)) {
+    throw new Error(
+      "Initialization result dockerCompose must escape container HOME references as $$HOME or $${HOME}",
     );
   }
   if (overridesEnvironmentDrivenServeCommand(compose)) {
@@ -398,6 +418,10 @@ function launchesDockerCompose(script: string) {
   return composeCommandPresent(script) && composeLifecyclePresent(script);
 }
 
+function usesUnescapedContainerHome(compose: string) {
+  return /(?<!\$)\$(?:home\b|\{home\})/.test(compose);
+}
+
 function usesManualHostPort(compose: string) {
   return /\$\{[a-z0-9_]*port\}:/.test(compose);
 }
@@ -417,6 +441,39 @@ function usesProjectDockerfileBuild(compose: string) {
 
 function runsContainersAsHostUser(compose: string) {
   return compose.includes("user:") && compose.includes("blame_host_uid");
+}
+
+function previewWorkspaceMountsProject(compose: string) {
+  if (!compose.includes("blame.preview") || !compose.includes("working_dir: /workspace")) {
+    return true;
+  }
+  return /(?:-\s*[^:\n]+:\s*\/workspace|target:\s*\/workspace)\s*(?:#.*)?$/m.test(
+    compose,
+  );
+}
+
+function missingNodeDependencyInstall(
+  compose: string,
+  scan: ProjectInitializationScan | undefined,
+) {
+  if (!scan || !compose.includes("image: node:")) return false;
+  if (!Object.keys(scan.files).some((path) => path.endsWith("package.json"))) {
+    return false;
+  }
+  return !/\b(?:npm\s+(?:ci|install)|corepack\s+pnpm\s+install|yarn\s+install|bun\s+install)\b/.test(
+    compose,
+  );
+}
+
+function usesNuxtPreviewWithoutBuild(
+  compose: string,
+  scan: ProjectInitializationScan | undefined,
+) {
+  if (!scan || !/\bnpm\s+run\s+preview\b/.test(compose)) return false;
+  const usesNuxt = Object.entries(scan.files).some(
+    ([path, content]) => path.endsWith("package.json") && /"nuxt"\s*:/.test(content.toLowerCase()),
+  );
+  return usesNuxt && !/\b(?:npm\s+run\s+build|nuxt\s+build)\b/.test(compose);
 }
 
 function usesBarePnpm(compose: string) {

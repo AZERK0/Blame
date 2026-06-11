@@ -67,6 +67,7 @@ It must:
 - ensure package manager cache volumes and every named volume mounted at a `node_modules` path in non-root services are writable by `${BLAME_HOST_UID}:${BLAME_HOST_GID}` before use, either through a root init service with `chown` and `depends_on` or by using writable bind/cache paths
 - bootstrap package managers inside containers before project commands
 - install Node dependencies inside exactly one container service before starting services that need them
+- for Nuxt, do not run the preview script unless the Compose lifecycle builds the application first; prefer the development script for source-mounted previews
 - when the scan shows migrations for the configured database or ORM, run them in an idempotent Compose service after dependencies and database readiness, give that service the same database environment as the backend service, and make backend services depend on that migration service completing successfully
 - set `CI=true` for non-interactive containers that run package manager installs
 - avoid concurrent package manager installs that write to the same bind-mounted workspace, `node_modules`, or package manager store
@@ -78,12 +79,14 @@ It must:
 - when existing scripts already read `HOST`, `PORT`, `APP_URL`, or equivalent environment variables, set those variables and run the script unchanged instead of appending host or port flags
 - for framework serve/dev commands, do not append host or port flags when the Compose service already configures equivalent environment variables, unless the scan proves those flags are supported
 - for pnpm in Node containers, use `corepack prepare pnpm@<version> --activate` and `corepack pnpm <command>`
+- escape container shell variables in Compose commands with `$$` so Compose does not replace them from the host, for example `$$HOME` or `$${HOME}`
 
 It must never:
 
 - use fixed host ports, scan ports, reserve ports, or change internal ports only to avoid conflicts
 - use `build`, `dockerfile`, or any project Dockerfile as the runtime path
 - use `corepack enable` or bare `pnpm`
+- use unescaped container shell variables such as `$HOME` or `${HOME}` in Compose commands
 - let containers write bind-mounted worktree files as root
 - start a backend that depends on a relational database before required migrations have completed
 - mount root-owned named volumes at paths like `/workspace/node_modules`, `/workspace/apps/web/node_modules`, `/tmp/corepack-cache`, `/tmp/package-store`, or package manager cache directories in services running as `${BLAME_HOST_UID}:${BLAME_HOST_GID}` without first making them writable

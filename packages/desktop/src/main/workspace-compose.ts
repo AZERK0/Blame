@@ -1,5 +1,7 @@
 export function dockerComposeForPreview(compose: string, worktree: string) {
-  const previewCompose = projectRootCompose(compose, worktree);
+  const previewCompose = dockerComposeWithEscapedCommandVariables(
+    projectRootCompose(compose, worktree),
+  );
   return dockerComposeWithDependencyVolumes(
     dockerComposeWithCiForPackageInstalls(
       dockerComposeWithCorepackPnpm(
@@ -10,11 +12,36 @@ export function dockerComposeForPreview(compose: string, worktree: string) {
   );
 }
 
+export function dockerComposeWithEscapedCommandVariables(compose: string) {
+  const lines = compose.split("\n");
+  let commandIndent: number | undefined;
+  return lines
+    .map((line) => {
+      const indent = /^\s*/.exec(line)?.[0].length ?? 0;
+      if (commandIndent !== undefined && line.trim() && indent <= commandIndent) {
+        commandIndent = undefined;
+      }
+      if (/^\s*command:\s*/.test(line)) commandIndent = indent;
+      return commandIndent === undefined ? line : escapeCommandVariables(line);
+    })
+    .join("\n");
+}
+
 export function dockerComposeWithHostUser(compose: string, worktree: string) {
   const lines = compose.split("\n");
   const servicesLine = serviceSectionLine(lines);
   if (servicesLine === -1) return compose;
   return addHostUserToServices(lines, servicesLine, worktree).join("\n");
+}
+
+function escapeCommandVariables(line: string) {
+  return line.replace(
+    /(?<!\$)\$(?:\{([a-zA-Z_][a-zA-Z0-9_]*)\}|([a-zA-Z_][a-zA-Z0-9_]*))/g,
+    (value, bracedName, plainName) => {
+      const name = bracedName ?? plainName;
+      return name.startsWith("BLAME_") ? value : `$${value}`;
+    },
+  );
 }
 
 export function dockerComposeWithCorepackPnpm(compose: string) {

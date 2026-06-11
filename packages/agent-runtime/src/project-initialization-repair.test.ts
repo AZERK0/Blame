@@ -98,6 +98,87 @@ test("requires complete run configurations for repairable initialization", () =>
   )
 })
 
+test("rejects preview services without a project source mount", () => {
+  assert.throws(
+    () =>
+      parseProjectInitializationRepairResult(
+        JSON.stringify({
+          classification: "repairable_initialization",
+          reason: "The preview service is obsolete.",
+          setupScript: "npm install",
+          dockerCompose: `${validCompose}
+    working_dir: /workspace
+    labels:
+      blame.preview: "true"`,
+          runConfigurations: [],
+        }),
+      ),
+    /must mount the project source at \/workspace/,
+  )
+})
+
+test("rejects unescaped container home references", () => {
+  assert.throws(
+    () =>
+      parseProjectInitializationRepairResult(
+        JSON.stringify({
+          classification: "repairable_initialization",
+          reason: "The preview command is obsolete.",
+          setupScript: "npm install",
+          dockerCompose: `${validCompose}
+    command: sh -lc 'mkdir -p "$HOME"'`,
+          runConfigurations: [],
+        }),
+      ),
+    /escape container HOME references/,
+  )
+})
+
+test("rejects Node preview services without a dependency install", () => {
+  assert.throws(
+    () =>
+      parseProjectInitializationRepairResult(
+        JSON.stringify({
+          classification: "repairable_initialization",
+          reason: "The preview command is obsolete.",
+          setupScript: "echo ready",
+          dockerCompose: validCompose,
+          runConfigurations: [],
+        }),
+        {
+          rootName: "project",
+          topLevelEntries: [],
+          files: { "package.json": '{"dependencies":{"nuxt":"^3.16.2"}}' },
+          gitLog: [],
+        },
+      ),
+    /must install detected Node dependencies/,
+  )
+})
+
+test("rejects Nuxt preview commands without a build step", () => {
+  assert.throws(
+    () =>
+      parseProjectInitializationRepairResult(
+        JSON.stringify({
+          classification: "repairable_initialization",
+          reason: "The preview command is obsolete.",
+          setupScript: "echo ready",
+          dockerCompose: `${validCompose}
+    command: sh -lc 'npm install && npm run preview'`,
+          runConfigurations: [],
+        }),
+        {
+          rootName: "project",
+          topLevelEntries: [],
+          files: { "package.json": '{"dependencies":{"nuxt":"^3.16.2"}}' },
+          gitLog: [],
+        },
+      ),
+    /must build Nuxt before running its preview script/,
+  )
+})
+
 test("includes validation feedback in repair correction prompts", () => {
   const input = {
     apiConnection: { url: "https://example.com", token: "token" },

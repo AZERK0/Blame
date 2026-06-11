@@ -98,6 +98,28 @@ test("normalizes preview compose before writing it", () => {
   assert.doesNotMatch(result, /corepack corepack pnpm/);
 });
 
+test("escapes container shell variables in preview commands", () => {
+  const compose = [
+    "services:",
+    "  preview:",
+    "    command:",
+    "      - bash",
+    "      - -lc",
+    "      - |",
+    "        export HOME=/tmp/blame-home",
+    '        mkdir -p "$HOME" "${NPM_CONFIG_CACHE}"',
+    '        echo "${BLAME_HOST_UID}:${BLAME_HOST_GID}"',
+    "    environment:",
+    "      NODE_ENV: development",
+  ].join("\n");
+
+  const result = dockerComposeForPreview(compose, "/tmp/project");
+
+  assert.match(result, /mkdir -p "\$\$HOME" "\$\$\{NPM_CONFIG_CACHE\}"/);
+  assert.match(result, /echo "\$\{BLAME_HOST_UID\}:\$\{BLAME_HOST_GID\}"/);
+  assert.match(result, /NODE_ENV: development/);
+});
+
 test("adds host user for project root placeholder mounts", () => {
   const compose = [
     "services:",
