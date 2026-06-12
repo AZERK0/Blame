@@ -62,15 +62,35 @@ export function createContainerRuntime(
       runRuntimeCommand(platform, "container", args, options),
     info: (options) => runRuntimeCommand(platform, "info", [], options),
     inspect: async <T>(ids: string[], options?: ContainerRuntimeExecOptions) => {
-      const { stdout } = await runRuntimeCommand(platform, "inspect", ids, options);
-      const parsed = JSON.parse(stdout) as unknown;
-      return Array.isArray(parsed) ? (parsed as T[]) : [];
+      const inspected = await Promise.all(
+        ids.map((id) => inspectRuntimeId<T>(platform, id, options)),
+      );
+      return inspected.flat();
     },
     network: (args, options) => runRuntimeCommand(platform, "network", args, options),
     spawnCompose: (args, options) =>
       spawnRuntimeCommand(platform, "compose", args, options),
     volume: (args, options) => runRuntimeCommand(platform, "volume", args, options),
   };
+}
+
+async function inspectRuntimeId<T>(
+  platform: NodeJS.Platform,
+  id: string,
+  options?: ContainerRuntimeExecOptions,
+) {
+  try {
+    const { stdout } = await runRuntimeCommand(platform, "inspect", [id], options);
+    return parseInspectOutput<T>(stdout);
+  } catch {
+    return [];
+  }
+}
+
+export function parseInspectOutput<T>(stdout: string) {
+  const parsed = JSON.parse(stdout) as unknown;
+  if (Array.isArray(parsed)) return parsed as T[];
+  return parsed && typeof parsed === "object" ? [parsed as T] : [];
 }
 
 export function containerRuntimeEnvironment(

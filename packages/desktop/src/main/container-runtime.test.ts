@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { containerRuntimeEnvironment, runtimeCommand } from "./container-runtime.ts";
+import {
+  containerRuntimeEnvironment,
+  parseInspectOutput,
+  runtimeCommand,
+} from "./container-runtime.ts";
 
 test("routes Linux runtime commands to native nerdctl", () => {
   assert.deepEqual(runtimeCommand("linux", "compose", ["ps"]), {
@@ -30,4 +34,13 @@ test("preserves runtime environment values", () => {
 
   assert.equal(environment.CONTAINERD_NAMESPACE, "blame");
   assert.equal(environment.BLAME_CONTAINER_RUNTIME, "blame-native");
+});
+
+test("parses inspect arrays and single objects", () => {
+  assert.deepEqual(parseInspectOutput<{ Id: string }>('[{"Id":"one"}]'), [
+    { Id: "one" },
+  ]);
+  assert.deepEqual(parseInspectOutput<{ Id: string }>('{"Id":"one"}'), [
+    { Id: "one" },
+  ]);
 });

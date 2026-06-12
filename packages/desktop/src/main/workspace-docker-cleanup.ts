@@ -3,6 +3,7 @@ import { existsSync } from "node:fs";
 import { dirname } from "node:path";
 import { promisify } from "node:util";
 import {
+  parseInspectOutput,
   runtimeCommand,
   type ContainerRuntimeCommand,
 } from "./container-runtime.ts";
@@ -266,10 +267,16 @@ async function runtimeIds(
 }
 
 async function runtimeInspect<T>(exec: ExecFileRunner, ids: string[]) {
+  const inspected = await Promise.all(
+    ids.map((id) => runtimeInspectId<T>(exec, id)),
+  );
+  return inspected.flat();
+}
+
+async function runtimeInspectId<T>(exec: ExecFileRunner, id: string) {
   try {
-    const { stdout } = await runtimeExec(exec, "inspect", ids);
-    const parsed = JSON.parse(stdout) as unknown;
-    return Array.isArray(parsed) ? (parsed as T[]) : [];
+    const { stdout } = await runtimeExec(exec, "inspect", [id]);
+    return parseInspectOutput<T>(stdout);
   } catch {
     return [];
   }
