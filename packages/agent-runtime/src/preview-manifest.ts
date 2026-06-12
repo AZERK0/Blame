@@ -98,7 +98,10 @@ export function normalizePreviewManifest(
       ...task,
       workingDir: task.workingDir || "/workspace",
       runAs: task.runAs ?? defaultSetupRunAs(task.command),
-      environment: normalizedEnvironment(task.environment ?? {}, caches),
+      environment: normalizedEnvironment(
+        normalizedAppEnvironment(task.environment ?? {}),
+        caches,
+      ),
       dependsOn: uniqueStrings(task.dependsOn ?? []),
     })),
     services: manifest.services.map((service) =>
@@ -137,9 +140,9 @@ function normalizeService(
 function normalizedServiceEnvironment(service: PreviewManifestService) {
   const environment = service.environment ?? {};
   if (service.kind !== "dependency" || !mysqlImage(service.image)) {
-    return environment;
+    return normalizedAppEnvironment(environment);
   }
-  return normalizedMysqlEnvironment(environment);
+  return normalizedMysqlEnvironment(normalizedAppEnvironment(environment));
 }
 
 function normalizedMysqlEnvironment(environment: PreviewManifestEnvironment) {
@@ -148,6 +151,15 @@ function normalizedMysqlEnvironment(environment: PreviewManifestEnvironment) {
   return {
     ...rest,
     MYSQL_ROOT_PASSWORD: rest.MYSQL_ROOT_PASSWORD ?? password ?? "root",
+  };
+}
+
+function normalizedAppEnvironment(environment: PreviewManifestEnvironment) {
+  if (!("APP_KEY" in environment)) return environment;
+  if ((environment.APP_KEY ?? "").length >= 16) return environment;
+  return {
+    ...environment,
+    APP_KEY: "blame-preview-app-key",
   };
 }
 

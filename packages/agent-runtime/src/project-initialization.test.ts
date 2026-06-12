@@ -183,6 +183,35 @@ test("normalizes mysql root image environment", () => {
   assert.doesNotMatch(result.dockerCompose, /MYSQL_PASSWORD: "root"/);
 });
 
+test("normalizes short app keys in setup and runtime services", () => {
+  const result = parseProjectInitializationPayload({
+    ...manifestResult,
+    previewManifest: {
+      ...manifestResult.previewManifest,
+      setup: [
+        {
+          ...manifestResult.previewManifest.setup[0],
+          environment: {
+            APP_KEY: "short",
+          },
+        },
+      ],
+      services: [
+        {
+          ...manifestResult.previewManifest.services[0],
+          environment: {
+            APP_KEY: "preview-app-key",
+          },
+        },
+      ],
+    },
+  });
+
+  assert.match(result.dockerCompose, /APP_KEY: "blame-preview-app-key"/);
+  assert.doesNotMatch(result.dockerCompose, /APP_KEY: "short"/);
+  assert.doesNotMatch(result.dockerCompose, /APP_KEY: "preview-app-key"/);
+});
+
 test("does not generate runtime depends_on entries for setup tasks", () => {
   const result = parseProjectInitializationPayload({
     ...manifestResult,
