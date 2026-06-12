@@ -119,6 +119,50 @@ test("rejects unsafe preview manifest commands", () => {
   );
 });
 
+test("runs targeted workspace permission setup tasks as root", () => {
+  const result = parseProjectInitializationResult(
+    JSON.stringify({
+      ...manifestResult,
+      previewManifest: {
+        ...manifestResult.previewManifest,
+        setup: [
+          {
+            id: "workspace-permissions",
+            image: "node:22-bookworm",
+            workingDir: "/workspace",
+            command:
+              "rm -rf /workspace/.nuxt && mkdir -p /workspace/.nuxt && chmod -R u+rwX /workspace/.nuxt",
+          },
+          {
+            id: "deps",
+            image: "node:22-bookworm",
+            workingDir: "/workspace",
+            command: "npm install --no-package-lock",
+            dependsOn: ["workspace-permissions"],
+          },
+        ],
+      },
+    }),
+  );
+
+  assert.match(
+    result.dockerCompose,
+    /workspace-permissions:\n\s+image: "node:22-bookworm"\n\s+working_dir:/,
+  );
+  assert.doesNotMatch(
+    result.dockerCompose,
+    /workspace-permissions:\n(?:.*\n){1,4}\s+user:/,
+  );
+  assert.match(
+    result.dockerCompose,
+    /find \/workspace -maxdepth 1 .*chown -R \$\{BLAME_HOST_UID\}:\$\{BLAME_HOST_GID\}/,
+  );
+  assert.match(
+    result.dockerCompose,
+    /deps:[\s\S]*workspace-permissions:\n\s+condition: service_completed_successfully/,
+  );
+});
+
 test("rejects run configuration cwd outside the project", () => {
   const result = {
     ...baseResult,

@@ -45,6 +45,8 @@ Every setup task must have:
 - `workingDir`
 - `command`
 
+Setup tasks may include `runAs: "root"` only for targeted cleanup or ownership repair of generated workspace artifacts such as `/workspace/.nuxt`, `/workspace/.next`, `/workspace/.vite`, or `/workspace/node_modules`. Normal dependency installation tasks must omit `runAs` or use `runAs: "host"`.
+
 Every service must have:
 
 - `id`
@@ -76,6 +78,7 @@ The manifest must:
 - use internal service DNS URLs such as `http://backend:3333` for inter-container calls
 - omit browser-facing public origin variables when the framework can infer request host
 - include database migration setup tasks when migrations are detected and required
+- repair stale root-owned generated framework artifacts with a targeted setup task when diagnostics prove they block startup
 
 The manifest must never:
 

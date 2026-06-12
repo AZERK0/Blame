@@ -220,6 +220,7 @@ export type PreviewManifestSetupTask = {
   image: string
   workingDir?: string
   command: string
+  runAs?: "host" | "root"
   environment?: PreviewManifestEnvironment
   dependsOn?: string[]
 }

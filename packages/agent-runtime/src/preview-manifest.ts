@@ -97,6 +97,7 @@ export function normalizePreviewManifest(
     setup: manifest.setup.map((task) => ({
       ...task,
       workingDir: task.workingDir || "/workspace",
+      runAs: task.runAs ?? defaultSetupRunAs(task.command),
       environment: normalizedEnvironment(task.environment ?? {}, caches),
       dependsOn: uniqueStrings(task.dependsOn ?? []),
     })),
@@ -238,9 +239,11 @@ function setupTaskYaml(
   return [
     `  ${task.id}:`,
     `    image: ${yamlString(task.image)}`,
-    `    user: "\${BLAME_HOST_UID}:\${BLAME_HOST_GID}"`,
+    ...(setupTaskRunsAsRoot(task)
+      ? []
+      : [`    user: "\${BLAME_HOST_UID}:\${BLAME_HOST_GID}"`]),
     `    working_dir: ${yamlString(task.workingDir ?? "/workspace")}`,
-    `    command: ${yamlString(`sh -lc ${shellQuote(task.command)}`)}`,
+    `    command: ${yamlString(`sh -lc ${shellQuote(setupTaskCommand(task))}`)}`,
     "    labels:",
     `      blame.setup: "true"`,
     ...environmentYaml(task.environment ?? {}),
@@ -248,7 +251,9 @@ function setupTaskYaml(
       ...(caches.length > 0
         ? [dependsOnEntry("blame-volumes-init", "service_completed_successfully")]
         : []),
-      ...(task.dependsOn ?? []).map((id) => dependsOnEntry(id)),
+      ...(task.dependsOn ?? []).map((id) =>
+        dependsOnEntry(id, "service_completed_successfully"),
+      ),
     ]),
     ...volumeYaml(caches, true),
   ];
@@ -411,6 +416,7 @@ function parseSetupTask(value: unknown): PreviewManifestSetupTask {
     image: requiredString(value.image, "setup.image"),
     workingDir: optionalString(value.workingDir, "setup.workingDir"),
     command: requiredString(value.command, "setup.command"),
+    runAs: parseSetupRunAs(value.runAs),
     environment: parseEnvironment(value.environment, "setup.environment"),
     dependsOn: optionalStringArray(value.dependsOn, "setup.dependsOn"),
   };
@@ -497,6 +503,7 @@ function validateSetupTask(
   serviceIds: Set<string>,
 ) {
   validateCommand(task.command, `setup task ${task.id}`);
+  validateSetupRunAs(task);
   validateImage(task.image, `setup task ${task.id}`);
   validateWorkingDir(task.workingDir);
   validateDependsOn(task.dependsOn ?? [], serviceIds, `setup task ${task.id}`);
@@ -537,6 +544,15 @@ function validateCommand(command: string, context: string) {
   }
   if (unsafeCommandPatterns.some((pattern) => pattern.test(command))) {
     throw new Error(`previewManifest ${context} command is unsafe`);
+  }
+}
+
+function validateSetupRunAs(task: PreviewManifestSetupTask) {
+  if (task.runAs !== "root") return;
+  if (!workspacePermissionRepairCommand(task.command)) {
+    throw new Error(
+      `previewManifest setup task ${task.id} cannot run as root`,
+    );
   }
 }
 
@@ -628,6 +644,14 @@ function parseEnvironment(value: unknown, field: string) {
   );
 }
 
+function parseSetupRunAs(value: unknown) {
+  if (value === undefined) return undefined;
+  if (value !== "host" && value !== "root") {
+    throw new Error("previewManifest setup.runAs is invalid");
+  }
+  return value;
+}
+
 function optionalStringArray(value: unknown, field: string) {
   if (value === undefined) return undefined;
   if (!Array.isArray(value) || !value.every((item) => typeof item === "string")) {
@@ -677,6 +701,32 @@ function rejectSensitiveMount(path: string, field: string) {
 function runsNodePackageManager(commands: string) {
   return /\b(?:(?:corepack\s+)?(?:pnpm|yarn)|npm|bun)\s+(?:install|ci|exec|run)\b/.test(
     commands,
+  );
+}
+
+function defaultSetupRunAs(command: string) {
+  return workspacePermissionRepairCommand(command) ? "root" : "host";
+}
+
+function setupTaskRunsAsRoot(task: PreviewManifestSetupTask) {
+  return task.runAs === "root";
+}
+
+function setupTaskCommand(task: PreviewManifestSetupTask) {
+  if (!setupTaskRunsAsRoot(task)) return task.command;
+  return [
+    task.command,
+    "find /workspace -maxdepth 1 \\( -name .nuxt -o -name .next -o -name .vite -o -name node_modules \\) -exec chown -R ${BLAME_HOST_UID}:${BLAME_HOST_GID} {} +",
+  ].join(" && ");
+}
+
+function workspacePermissionRepairCommand(command: string) {
+  return (
+    command.includes("/workspace") &&
+    /\b(?:chown|chmod|rm\s+-rf)\b/.test(command) &&
+    /\/workspace\/\.(?:nuxt|next|vite)\b|\/workspace\/node_modules\b/.test(
+      command,
+    )
   );
 }
 

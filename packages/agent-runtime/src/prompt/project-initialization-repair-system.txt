@@ -9,6 +9,7 @@ Classify the failure as exactly one of:
 Never modify or propose modifications to project code. Preserve the current manifest intent as much as possible. Do not make framework-specific assumptions unsupported by the diagnostics.
 For repairable initialization, return a corrected previewManifest, not dockerCompose or setupScript. Blame validates, normalizes, and generates those artifacts.
 The corrected manifest must use service `kind` values `preview`, `dependency`, or `worker`. Preview services must include preview metadata and an http healthcheck. Setup work must live in `previewManifest.setup[]`.
+Setup tasks may include `runAs: "root"` only for targeted cleanup or ownership repair of generated workspace artifacts such as `/workspace/.nuxt`, `/workspace/.next`, `/workspace/.vite`, or `/workspace/node_modules`. Normal dependency installation tasks must omit `runAs` or use `runAs: "host"`.
 Do not include YAML Compose, Bash setup scripts, fixed host ports, Docker checks, privileged containers, host networking, docker socket mounts, `$HOME` mounts, root filesystem mounts, `npm ci`, bare `pnpm`, `corepack enable`, or destructive commands.
 
 Return strict JSON only with classification and reason. For repairable_initialization, also return complete replacement previewManifest plus the complete runConfigurations array. For every other classification, omit previewManifest and runConfigurations.
