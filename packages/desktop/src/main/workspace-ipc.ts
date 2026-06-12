@@ -741,6 +741,9 @@ async function ensureProjectPreviewUrl(input: ResolveProjectPreviewUrlInput) {
   if (setupRunningForWorktree(worktree)) return null;
   const currentUrl = await resolveProjectPreviewUrl({ worktree });
   if (currentUrl && (await previewResponds(currentUrl))) return currentUrl;
+  if (currentUrl && (await previewContainerCanStillRun(worktree))) {
+    return currentUrl;
+  }
   if (!(await projectSetupCompleted(worktree))) return null;
   const recovery = previewRecoveries.get(worktree);
   if (recovery) return recovery;
@@ -1404,7 +1407,13 @@ async function repairComposeFile(composePath: string) {
 async function appendComposeDiagnostics(worktree: string) {
   await appendRecoveryLog(worktree, "compose diagnostics");
   await appendComposeOutput(worktree, ["ps", "-a"]);
-  await appendComposeOutput(worktree, ["logs", "--tail", "120", "app"]);
+  const target = await composePreviewTarget(worktree, projectComposePath(worktree));
+  await appendComposeOutput(
+    worktree,
+    target
+      ? ["logs", "--tail", "120", target.service]
+      : ["logs", "--tail", "120"],
+  );
 }
 
 async function appendComposeOutput(worktree: string, args: string[]) {
@@ -1500,6 +1509,14 @@ async function assertPreviewContainerCanStillStart(worktree: string) {
     await appendComposeDiagnostics(worktree);
     throw new Error(`Preview container stopped before responding (${health || status})`);
   }
+}
+
+async function previewContainerCanStillRun(worktree: string) {
+  const container = await previewContainerForWorktree(worktree);
+  if (!container) return false;
+  const status = container.State?.Status;
+  const health = container.State?.Health?.Status;
+  return health !== "unhealthy" && !failedContainerStatus(status);
 }
 
 async function previewContainerForWorktree(worktree: string) {
