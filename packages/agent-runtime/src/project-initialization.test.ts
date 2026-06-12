@@ -250,6 +250,32 @@ test("runs targeted workspace permission setup tasks as root", () => {
   );
 });
 
+test("rejects broad workspace ownership repair commands", () => {
+  assert.throws(
+    () =>
+      parseProjectInitializationResult(
+        JSON.stringify({
+          ...manifestResult,
+          previewManifest: {
+            ...manifestResult.previewManifest,
+            setup: [
+              {
+                id: "workspace-permissions",
+                image: "node:22-bookworm",
+                workingDir: "/workspace",
+                command:
+                  "chown -R 1000:1000 /workspace/apps/frontend /workspace/node_modules || true",
+                runAs: "root",
+              },
+              manifestResult.previewManifest.setup[0],
+            ],
+          },
+        }),
+      ),
+    /command is unsafe/,
+  );
+});
+
 test("rejects run configuration cwd outside the project", () => {
   const result = {
     ...baseResult,

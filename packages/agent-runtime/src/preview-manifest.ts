@@ -625,6 +625,9 @@ function validateCommand(command: string, context: string) {
   if (unsafeCommandPatterns.some((pattern) => pattern.test(command))) {
     throw new Error(`previewManifest ${context} command is unsafe`);
   }
+  if (unsafeWorkspaceOwnershipCommand(command)) {
+    throw new Error(`previewManifest ${context} command is unsafe`);
+  }
 }
 
 function validateSetupRunAs(task: PreviewManifestSetupTask) {
@@ -803,8 +806,18 @@ function setupTaskCommand(task: PreviewManifestSetupTask) {
 function workspacePermissionRepairCommand(command: string) {
   return (
     command.includes("/workspace") &&
+    !unsafeWorkspaceOwnershipCommand(command) &&
     /\b(?:chown|chmod|rm\s+-rf)\b/.test(command) &&
     /\/workspace\/\.(?:nuxt|next|vite)\b|\/workspace\/node_modules\b/.test(
+      command,
+    )
+  );
+}
+
+function unsafeWorkspaceOwnershipCommand(command: string) {
+  return (
+    /\b(?:chown|chmod)\b/.test(command) &&
+    /\/workspace(?:\s|$)|\/workspace\/(?:apps|packages)(?:\s|\/|$)/.test(
       command,
     )
   );
