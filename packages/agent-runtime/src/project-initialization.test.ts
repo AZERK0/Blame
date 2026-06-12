@@ -81,6 +81,40 @@ test("parses project run configurations", () => {
   assert.deepEqual(result.runConfigurations, baseResult.runConfigurations);
 });
 
+test("normalizes run configuration default values", () => {
+  const result = parseProjectInitializationResult(
+    JSON.stringify({
+      ...baseResult,
+      runConfigurations: [
+        {
+          id: "web",
+          name: "Web application",
+          command: "pnpm dev",
+          cwd: ".",
+          default: "true",
+        },
+        {
+          id: "worker",
+          name: "Worker",
+          command: "pnpm worker",
+          cwd: ".",
+          default: 0,
+        },
+        {
+          id: "docs",
+          name: "Docs",
+          command: "pnpm docs",
+          cwd: ".",
+        },
+      ],
+    }),
+  );
+
+  assert.equal(result.runConfigurations[0]?.default, true);
+  assert.equal(result.runConfigurations[1]?.default, false);
+  assert.equal(result.runConfigurations[2]?.default, false);
+});
+
 test("generates initialization artifacts from preview manifest", () => {
   const result = parseProjectInitializationResult(JSON.stringify(manifestResult));
 
@@ -97,6 +131,29 @@ test("generates initialization artifacts from preview manifest", () => {
   );
   assert.doesNotMatch(result.dockerCompose, /3000:3000/);
   assert.doesNotMatch(result.dockerCompose, /blame-volumes-init:\n\s+volumes:/);
+});
+
+test("normalizes preview manifest risk level aliases", () => {
+  const result = parseProjectInitializationResult(
+    JSON.stringify({
+      ...manifestResult,
+      previewManifest: {
+        ...manifestResult.previewManifest,
+        risks: [
+          { level: "warning", description: "Requires database seed data." },
+          { level: "info", reason: "Uses local cache volumes." },
+          { level: "notice" },
+        ],
+      },
+    }),
+  );
+
+  assert.equal(result.previewManifest?.risks[0]?.level, "medium");
+  assert.equal(result.previewManifest?.risks[0]?.message, "Requires database seed data.");
+  assert.equal(result.previewManifest?.risks[1]?.level, "low");
+  assert.equal(result.previewManifest?.risks[1]?.message, "Uses local cache volumes.");
+  assert.equal(result.previewManifest?.risks[2]?.level, "low");
+  assert.equal(result.previewManifest?.risks[2]?.message, "Unspecified initialization risk.");
 });
 
 test("rejects unsafe preview manifest commands", () => {

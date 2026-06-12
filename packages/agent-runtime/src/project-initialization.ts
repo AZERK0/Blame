@@ -302,9 +302,10 @@ function parseRunConfiguration(value: unknown): ProjectRunConfiguration {
     throw new Error("Initialization run configuration command is invalid");
   if (!cwd || cwd.length > 500 || unsafeRunConfigurationCwd(cwd))
     throw new Error("Initialization run configuration cwd must stay inside the project");
-  if (typeof value.default !== "boolean")
+  const defaultConfiguration = booleanValue(value.default);
+  if (defaultConfiguration === undefined)
     throw new Error("Initialization run configuration default must be boolean");
-  return { id, name, command, cwd, default: value.default };
+  return { id, name, command, cwd, default: defaultConfiguration };
 }
 
 function unsafeRunConfigurationCwd(cwd: string) {
@@ -623,4 +624,16 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function stringValue(value: unknown) {
   return typeof value === "string" && value.trim() ? value : undefined;
+}
+
+function booleanValue(value: unknown) {
+  if (value === undefined) return false;
+  if (typeof value === "boolean") return value;
+  if (value === 1) return true;
+  if (value === 0) return false;
+  if (typeof value !== "string") return undefined;
+  const normalized = value.trim().toLowerCase();
+  if (["true", "yes", "default", "1"].includes(normalized)) return true;
+  if (["false", "no", "0", ""].includes(normalized)) return false;
+  return undefined;
 }
