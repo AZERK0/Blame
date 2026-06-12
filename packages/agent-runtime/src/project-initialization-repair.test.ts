@@ -37,6 +37,48 @@ test("parses and validates repairable initialization artifacts", () => {
   assert.equal(result.runConfigurations?.[0]?.command, "npm run dev")
 })
 
+test("parses repairable preview manifests and generates artifacts", () => {
+  const result = parseProjectInitializationRepairResult(
+    JSON.stringify({
+      classification: "repairable_initialization",
+      reason: "The preview command is invalid.",
+      previewManifest: {
+        version: 1,
+        confidence: "high",
+        project: { root: ".", detectedStack: ["node"], confidence: "high" },
+        setup: [
+          {
+            id: "deps",
+            image: "node:22-bookworm",
+            workingDir: "/workspace",
+            command:
+              "corepack prepare pnpm@10.33.2 --activate && corepack pnpm install",
+          },
+        ],
+        services: [
+          {
+            id: "web",
+            kind: "preview",
+            image: "node:22-bookworm",
+            workingDir: "/workspace",
+            command:
+              "corepack prepare pnpm@10.33.2 --activate && corepack pnpm dev",
+            preview: { internalPort: 3000, protocol: "http", path: "/" },
+            healthcheck: { type: "http", path: "/", timeoutMs: 30_000 },
+          },
+        ],
+        caches: [],
+        risks: [],
+      },
+      runConfigurations: [],
+    }),
+  )
+
+  assert.equal(result.classification, "repairable_initialization")
+  assert.equal(result.previewManifest?.services[0]?.kind, "preview")
+  assert.match(result.dockerCompose ?? "", /blame\.setup: "true"/)
+})
+
 test("omits artifacts for project code failures", () => {
   const result = parseProjectInitializationRepairResult(
     JSON.stringify({

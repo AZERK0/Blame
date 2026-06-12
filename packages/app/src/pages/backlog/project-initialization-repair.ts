@@ -1,4 +1,5 @@
 import type {
+  PreviewManifest,
   ProjectRunConfiguration,
   RepairProjectInitializationResult,
 } from "@blame/agent-runtime"
@@ -17,6 +18,7 @@ type RepairInput = {
   credentialLabel?: string
   reasoningEffort?: "low" | "medium" | "high" | "xhigh"
   worktree: string
+  previewManifest?: PreviewManifest | null
   setupScript: string
   dockerCompose: string
   runConfigurations: ProjectRunConfiguration[]
@@ -49,6 +51,7 @@ async function diagnoseProjectInitialization(input: RepairInput) {
     reasoningEffort: input.reasoningEffort,
     cwd: input.worktree,
     workspaceRoot: input.worktree,
+    previewManifest: input.previewManifest ?? undefined,
     setupScript: input.setupScript,
     dockerCompose: input.dockerCompose,
     runConfigurations: input.runConfigurations,
@@ -74,6 +77,7 @@ async function persistProjectInitializationRepair(
     input.projectId,
     {
       clineSessionId: result.sessionId,
+      previewManifest: result.previewManifest,
       setupScript: result.setupScript,
       dockerCompose: result.dockerCompose,
       runConfigurations: result.runConfigurations,

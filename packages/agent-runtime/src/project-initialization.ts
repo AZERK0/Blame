@@ -4,10 +4,15 @@ import { basename, join } from "node:path";
 import { promisify } from "node:util";
 
 import type {
+  PreviewManifest,
   ProjectCodePracticeKey,
   ProjectCodePracticeResult,
   ProjectRunConfiguration,
 } from "./types.js";
+import {
+  generatePreviewArtifacts,
+  parsePreviewManifest,
+} from "./preview-manifest.js";
 
 const execFileAsync = promisify(execFile);
 const maxFileBytes = 16_000;
@@ -103,6 +108,7 @@ export type ProjectInitializationScan = {
 };
 
 type ParsedProjectInitialization = {
+  previewManifest?: PreviewManifest;
   setupScript: string;
   dockerCompose: string;
   runConfigurations: ProjectRunConfiguration[];
@@ -157,14 +163,21 @@ export function parseProjectInitializationResult(
   const parsed = JSON.parse(jsonPayload(text)) as unknown;
   if (!isRecord(parsed))
     throw new Error("Initialization result must be an object");
-  const setupScript = stringValue(parsed.setupScript);
-  const dockerCompose = stringValue(parsed.dockerCompose);
-  if (!setupScript)
-    throw new Error("Initialization result is missing setupScript");
-  if (!dockerCompose)
-    throw new Error("Initialization result is missing dockerCompose");
+  const manifest = parsed.previewManifest
+    ? parsePreviewManifest(parsed.previewManifest)
+    : undefined;
+  const generated = manifest ? generatePreviewArtifacts(manifest) : undefined;
+  const setupScript = generated?.setupScript ?? stringValue(parsed.setupScript);
+  const dockerCompose = generated?.dockerCompose ?? stringValue(parsed.dockerCompose);
+  if (!setupScript) {
+    throw new Error("Initialization result is missing previewManifest");
+  }
+  if (!dockerCompose) {
+    throw new Error("Initialization result is missing generated dockerCompose");
+  }
   validateProjectInitializationArtifacts(setupScript, dockerCompose, scan);
   return {
+    previewManifest: manifest,
     setupScript,
     dockerCompose,
     runConfigurations: parseRunConfigurations(parsed.runConfigurations),

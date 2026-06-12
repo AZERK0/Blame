@@ -205,6 +205,71 @@ export type ProjectRunConfiguration = {
   default: boolean
 }
 
+export type PreviewManifestConfidence = "low" | "medium" | "high"
+
+export type PreviewManifestEnvironment = Record<string, string>
+
+export type PreviewManifestProject = {
+  root?: string
+  detectedStack?: string[]
+  confidence?: PreviewManifestConfidence
+}
+
+export type PreviewManifestSetupTask = {
+  id: string
+  image: string
+  workingDir?: string
+  command: string
+  environment?: PreviewManifestEnvironment
+  dependsOn?: string[]
+}
+
+export type PreviewManifestServiceKind = "preview" | "dependency" | "worker"
+
+export type PreviewManifestPreview = {
+  internalPort: number
+  protocol: "http"
+  path: string
+}
+
+export type PreviewManifestHealthcheck = {
+  type: "http"
+  path: string
+  timeoutMs: number
+}
+
+export type PreviewManifestService = {
+  id: string
+  kind: PreviewManifestServiceKind
+  image: string
+  workingDir?: string
+  command?: string
+  environment?: PreviewManifestEnvironment
+  dependsOn?: string[]
+  preview?: PreviewManifestPreview
+  healthcheck?: PreviewManifestHealthcheck
+}
+
+export type PreviewManifestCache = {
+  name: string
+  target: string
+}
+
+export type PreviewManifestRisk = {
+  level: "low" | "medium" | "high"
+  message: string
+}
+
+export type PreviewManifest = {
+  version: 1
+  confidence: PreviewManifestConfidence
+  project: PreviewManifestProject
+  setup: PreviewManifestSetupTask[]
+  services: PreviewManifestService[]
+  caches: PreviewManifestCache[]
+  risks: PreviewManifestRisk[]
+}
+
 export type InitializeProjectInput = {
   apiConnection: ApiConnection
   providerId: string
@@ -221,6 +286,7 @@ export type InitializeProjectInput = {
 
 export type InitializeProjectResult = {
   sessionId: string
+  previewManifest?: PreviewManifest
   setupScript: string
   dockerCompose: string
   runConfigurations: ProjectRunConfiguration[]
@@ -253,6 +319,7 @@ export type ProjectInitializationImpactDiagnostics = {
   changedFiles: string[]
   diffSummary: string
   relevantDiffs: Record<string, string>
+  currentPreviewManifest?: PreviewManifest
   currentSetupScript: string
   currentDockerCompose: string
   currentRunConfigurations: ProjectRunConfiguration[]
@@ -270,6 +337,7 @@ export type AssessProjectInitializationImpactInput = {
   credentialLabel?: string
   baseCommit: string
   mergeCommit: string
+  previewManifest?: PreviewManifest
   setupScript: string
   dockerCompose: string
   runConfigurations: ProjectRunConfiguration[]
@@ -291,6 +359,7 @@ export type RepairProjectInitializationInput = {
   cwd: string
   workspaceRoot: string
   credentialLabel?: string
+  previewManifest?: PreviewManifest
   setupScript: string
   dockerCompose: string
   runConfigurations: ProjectRunConfiguration[]
@@ -303,6 +372,7 @@ export type RepairProjectInitializationResult = {
   sessionId: string
   classification: ProjectInitializationRepairClassification
   reason: string
+  previewManifest?: PreviewManifest
   setupScript?: string
   dockerCompose?: string
   runConfigurations?: ProjectRunConfiguration[]

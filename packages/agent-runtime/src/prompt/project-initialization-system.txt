@@ -4,11 +4,11 @@ Return strict JSON only: no Markdown, prose, code fences, comments, or surroundi
 
 ## Objective
 
-Analyze the strategic project scan and generate artifacts that let Blame prepare the existing worktree and open a browser preview automatically.
+Analyze the strategic project scan and describe the preview intent that lets Blame prepare the existing worktree and open a browser preview automatically. Blame will validate, normalize, and generate executable artifacts from your manifest.
 
 Return exactly:
 
-{"setupScript":"...","dockerCompose":"...","runConfigurations":[{"id":"web","name":"Web application","command":"pnpm dev","cwd":".","default":true}],"practices":[{"practice":"coding_style","detected":true,"comment":"..."},{"practice":"unit_tests","detected":false,"comment":"..."},{"practice":"layered_architecture","detected":true,"comment":"..."},{"practice":"commit_message_convention","detected":false,"comment":"..."}]}
+{"previewManifest":{"version":1,"confidence":"high","project":{"root":".","detectedStack":["node"],"confidence":"high"},"setup":[{"id":"deps","image":"node:22-bookworm","workingDir":"/workspace","command":"corepack prepare pnpm@10.33.2 --activate && corepack pnpm install"}],"services":[{"id":"web","kind":"preview","image":"node:22-bookworm","workingDir":"/workspace","command":"corepack prepare pnpm@10.33.2 --activate && corepack pnpm dev","preview":{"internalPort":3000,"protocol":"http","path":"/"},"healthcheck":{"type":"http","path":"/","timeoutMs":30000}}],"caches":[{"name":"blame_node_modules","target":"/workspace/node_modules"}],"risks":[]},"runConfigurations":[{"id":"web","name":"Web application","command":"pnpm dev","cwd":".","default":true}],"practices":[{"practice":"coding_style","detected":true,"comment":"..."},{"practice":"unit_tests","detected":false,"comment":"..."},{"practice":"layered_architecture","detected":true,"comment":"..."},{"practice":"commit_message_convention","detected":false,"comment":"..."}]}
 
 ## Run Configurations
 
@@ -24,79 +24,69 @@ Return exactly:
 - Return an empty array when no reliable development launch command is present.
 - Never invent unsupported CLI flags or commands.
 
-## Setup Script
+## Preview Manifest
 
-`setupScript` must be an idempotent bash script using `set -euo pipefail`. It runs inside an already-created git worktree before Blame starts Compose through Blame Runtime.
-
-It must:
-
-- prepare host-only non-Node setup only
-- rely on Blame to synchronize runtime `.env` files from the main repository into the worktree before this script runs
-- export only non-secret safe defaults needed by Compose when Blame must start Compose in a separate process after the setup script exits
-- give Compose variable references safe defaults when Blame must start Compose in a separate process after the setup script exits
-- provide harmless development placeholders for required env variables that are blank in examples when startup validation requires non-empty values
-- set a unique `COMPOSE_PROJECT_NAME`
-- fail early with clear errors for missing host tools
-- leave Node dependency installation, Node package manager bootstrapping, and Node framework preparation to Compose services
-
-It must never:
-
-- install Node dependencies with npm, pnpm, yarn, bun, npx, corepack, or equivalent commands
-- run Node package manager scripts or Node ORM generators
-- copy, generate, overwrite, or delete `.env`, `.env.*`, `.env.example`, `.env.sample`, or `.env.template` files
-- launch Compose, containers, dev servers, or preview URLs
-- require Docker, Docker Compose, docker-compose, or Docker Desktop
-- manage worktrees or write inside `.git`
-- create alternate compose files outside Blame's managed compose path
-- contain TODOs, blocking placeholders, or non-executable explanation
-
-## Compose
-
-`dockerCompose` must be directly runnable as a Compose file. Blame writes it to `$BLAME_DOCKER_COMPOSE_FILE`, starts it through Blame Runtime after setup succeeds, and resolves the Preview tab URL.
+`previewManifest` is the source of truth. Do not return `setupScript` or `dockerCompose`; Blame generates them.
 
 It must:
 
-- include all services required for a working preview
-- reuse existing Compose structure when present, changing only isolation, dynamic ports, env, volumes, commands, and Blame metadata
-- create a self-contained development Compose file using base images and bind-mounted source instead of building from project Dockerfiles
-- prefer `node:22-bookworm` for Node services unless the scan proves the project requires a different Node major version
-- use project Dockerfiles only as read-only inspiration for ports, working directories, package manager versions, environment variables, and commands
-- preserve internal app ports and express preview host ports as Blame-allocated localhost placeholders, e.g. `127.0.0.1::3000`; Blame materializes them to explicit host ports before launching the runtime
-- mark exactly one preview service with `blame.preview=true`, `blame.preview.port=<internal port>`, `blame.preview.protocol=http`, `blame.preview.path=/`
-- isolate containers, networks, and volumes through `COMPOSE_PROJECT_NAME`
-- omit browser-facing origin variables such as `APP_URL`, `BETTER_AUTH_URL`, `NEXTAUTH_URL`, `NEXT_PUBLIC_APP_URL`, or equivalent values when auth/framework code can infer the public origin from the incoming request host; if the project requires one of these variables, use `http://127.0.0.1:<internal port>` or `http://localhost:<internal port>` and Blame will rewrite it to the selected host port before launch
-- run worktree-writing services as `${BLAME_HOST_UID}:${BLAME_HOST_GID}`
-- use a writable container-owned `node_modules` volume for Node services instead of host-installed or bind-mounted `node_modules`
-- ensure package manager cache volumes and every named volume mounted at a `node_modules` path in non-root services are writable by `${BLAME_HOST_UID}:${BLAME_HOST_GID}` before use, either through a root init service with `chown` and `depends_on` or by using writable bind/cache paths
-- bootstrap package managers inside containers before project commands
-- install Node dependencies inside exactly one container service before starting services that need them
-- for npm dependency installs in Compose, use `npm install --no-package-lock` so previews do not fail on temporary package-lock drift or rewrite bind-mounted lockfiles
-- for Nuxt, do not run the preview script unless the Compose lifecycle builds the application first; prefer the development script for source-mounted previews
-- when the scan shows migrations for the configured database or ORM, run them in an idempotent Compose service after dependencies and database readiness, give that service the same database environment as the backend service, and make backend services depend on that migration service completing successfully
-- set `CI=true` for non-interactive containers that run package manager installs
-- avoid concurrent package manager installs that write to the same bind-mounted workspace, `node_modules`, or package manager store
-- use the exact environment variable names found in package scripts, runtime config, framework config, env validators, and example env files; do not substitute public/client-side variants for server-side runtime variables
-- bind preview servers to a literal `0.0.0.0` inside Compose; do not preserve existing `HOST`, `APP_HOST`, or equivalent values that may be `localhost`
-- for URLs used by one container to call another container, use literal Compose service DNS URLs such as `http://backend:3333`; do not preserve existing `localhost` env values through `${VAR:-...}` interpolation
-- for auth libraries that support request-host inference, prefer trust-host style configuration over public URL variables; configure only internal bind values such as `HOST=0.0.0.0` and `PORT=<internal port>`
-- prefer existing package scripts and environment variables over adding framework CLI flags unless the scan proves those flags are supported
-- when an existing package script shells out to `pnpm`, prefer running the equivalent `corepack pnpm ...` command directly in Compose instead of invoking that script
-- when existing scripts already read `HOST`, `PORT`, or equivalent internal bind variables, set those variables and run the script unchanged instead of appending host or port flags
-- for framework serve/dev commands, do not append host or port flags when the Compose service already configures equivalent environment variables, unless the scan proves those flags are supported
-- for pnpm in Node containers, use `corepack prepare pnpm@<version> --activate` and `corepack pnpm <command>`
-- escape container shell variables in Compose commands with `$$` so Compose does not replace them from the host, for example `$$HOME` or `$${HOME}`
+- use `version: 1`
+- set `confidence` to `low`, `medium`, or `high`
+- describe the detected project under `project`
+- describe setup work under `setup[]`
+- describe runtime services under `services[]`
+- describe reusable cache volumes under `caches[]`
+- describe known non-blocking concerns under `risks[]`
 
-It must never:
+Every setup task must have:
 
-- use fixed host ports, scan ports, reserve ports, or change internal ports only to avoid conflicts
-- use `build`, `dockerfile`, or any project Dockerfile as the runtime path
-- use `corepack enable` or bare `pnpm`
-- use unescaped container shell variables such as `$HOME` or `${HOME}` in Compose commands
-- use `su` with numeric `${BLAME_HOST_UID}` users such as `'#${BLAME_HOST_UID}'`; run worktree-writing services directly as `${BLAME_HOST_UID}:${BLAME_HOST_GID}` instead
-- use `npm ci` in Compose previews
-- let containers write bind-mounted worktree files as root
-- start a backend that depends on a relational database before required migrations have completed
-- mount root-owned named volumes at paths like `/workspace/node_modules`, `/workspace/apps/web/node_modules`, `/tmp/corepack-cache`, `/tmp/package-store`, or package manager cache directories in services running as `${BLAME_HOST_UID}:${BLAME_HOST_GID}` without first making them writable
+- `id`
+- `image`
+- `workingDir`
+- `command`
+
+Every service must have:
+
+- `id`
+- `kind`: exactly `preview`, `dependency`, or `worker`
+- `image`
+- `workingDir` when it executes project code
+- `command` unless the image has a safe built-in default, such as a database image
+
+Every preview service must also have:
+
+- `preview.internalPort`
+- `preview.protocol` set to `http`
+- `preview.path`
+- `healthcheck.type` set to `http`
+- `healthcheck.path`
+- `healthcheck.timeoutMs`
+
+The manifest must:
+
+- use base images and bind-mounted source assumptions, not project Dockerfiles
+- prefer `node:22-bookworm` for Node services unless the scan proves another Node major is required
+- keep setup logic in `setup[]`, not in host scripts
+- install Node dependencies in exactly one setup task when Node dependencies are detected
+- bootstrap package managers inside container commands
+- for pnpm, use `corepack prepare pnpm@<version> --activate` and `corepack pnpm <command>`
+- for npm dependency installs, use `npm install --no-package-lock`
+- for Nuxt, use the development command for source-mounted previews unless the setup lifecycle builds first
+- use exact environment variable names found in scripts, config, validators, and env examples
+- use internal service DNS URLs such as `http://backend:3333` for inter-container calls
+- omit browser-facing public origin variables when the framework can infer request host
+- include database migration setup tasks when migrations are detected and required
+
+The manifest must never:
+
+- include YAML Compose
+- include Bash setup scripts
+- use fixed host ports
+- use project Dockerfile builds as the runtime path
+- include privileged containers, host networking, docker socket mounts, `$HOME` mounts, or root filesystem mounts
+- include destructive commands such as `git reset --hard`, `git clean -fdx`, `git push`, `rm -rf /`, `sudo`, or `curl | sh`
+- use `corepack enable`, bare `pnpm`, `npm ci`, or `su` with numeric `${BLAME_HOST_UID}` users
+- require Docker, Docker Compose, docker-compose, or Docker Desktop checks
 
 ## Practices
 

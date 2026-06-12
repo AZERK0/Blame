@@ -3,6 +3,10 @@ import {
   validateProjectInitializationArtifacts,
   type ProjectInitializationScan,
 } from "./project-initialization.js"
+import {
+  generatePreviewArtifacts,
+  parsePreviewManifest,
+} from "./preview-manifest.js"
 import type {
   ProjectInitializationRepairClassification,
   RepairProjectInitializationInput,
@@ -50,19 +54,24 @@ export function parseProjectInitializationRepairResult(
   const reason = stringValue(parsed.reason)
   if (!reason) throw new Error("Initialization repair result is missing reason")
   if (classification !== "repairable_initialization") return { classification, reason }
-  const setupScript = stringValue(parsed.setupScript)
-  const dockerCompose = stringValue(parsed.dockerCompose)
+  const previewManifest = parsed.previewManifest
+    ? parsePreviewManifest(parsed.previewManifest)
+    : undefined
+  const generated = previewManifest ? generatePreviewArtifacts(previewManifest) : undefined
+  const setupScript = generated?.setupScript ?? stringValue(parsed.setupScript)
+  const dockerCompose = generated?.dockerCompose ?? stringValue(parsed.dockerCompose)
   if (!setupScript || !dockerCompose) {
     throw new Error("Repairable initialization result must include complete artifacts")
   }
   const runConfigurations = parseRunConfigurations(parsed.runConfigurations)
   validateProjectInitializationArtifacts(setupScript, dockerCompose, scan)
-  return { classification, reason, setupScript, dockerCompose, runConfigurations }
+  return { classification, reason, previewManifest, setupScript, dockerCompose, runConfigurations }
 }
 
 function repairPrompt(input: RepairProjectInitializationInput, scan: ProjectInitializationScan) {
   return [
     "Diagnose these project initialization diagnostics according to your system instructions and return strict JSON only.",
+    `Current previewManifest: ${JSON.stringify(input.previewManifest ?? null)}`,
     `Current setupScript: ${JSON.stringify(input.setupScript)}`,
     `Current dockerCompose: ${JSON.stringify(input.dockerCompose)}`,
     `Current runConfigurations: ${JSON.stringify(input.runConfigurations)}`,

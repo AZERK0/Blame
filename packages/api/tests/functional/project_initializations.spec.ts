@@ -8,6 +8,7 @@ type InitializationBody = {
     initialization: {
       status: string
       clineSessionId: string | null
+      previewManifest: Record<string, unknown> | null
       setupScript: string | null
       dockerCompose: string | null
       runConfigurations: Array<{
@@ -54,6 +55,15 @@ test.group('project initializations', (group) => {
       .loginAs(user)
       .json({
         clineSessionId: 'session-1',
+        previewManifest: {
+          version: 1,
+          confidence: 'high',
+          project: { root: '.' },
+          setup: [],
+          services: [],
+          caches: [],
+          risks: [],
+        },
         setupScript: '#!/usr/bin/env bash\npnpm install',
         dockerCompose: 'services:\n  web:\n    image: node',
         runConfigurations: [
@@ -71,6 +81,7 @@ test.group('project initializations', (group) => {
     const completed = completeResponse.body() as InitializationBody
     assert.equal(completed.data.initialization?.status, 'done')
     assert.equal(completed.data.initialization?.clineSessionId, 'session-1')
+    assert.equal(completed.data.initialization?.previewManifest?.version, 1)
     assert.equal(completed.data.initialization?.runConfigurations[0]?.command, 'pnpm dev')
     assert.lengthOf(completed.data.practices, 4)
     assert.isTrue(completed.data.practices.some((practice) => practice.detected))
@@ -114,6 +125,7 @@ test.group('project initializations', (group) => {
       .loginAs(user)
       .json({
         setupScript: '#!/usr/bin/env bash\npnpm install',
+        previewManifest: { version: 1, confidence: 'medium' },
         dockerCompose: 'services:\n  web:\n    image: node',
         runConfigurations: [],
         practices: [
@@ -129,6 +141,7 @@ test.group('project initializations', (group) => {
       .loginAs(user)
       .json({
         clineSessionId: 'repair-session',
+        previewManifest: { version: 1, confidence: 'high' },
         setupScript: '#!/usr/bin/env bash\ncorepack pnpm install',
         dockerCompose: 'services:\n  web:\n    image: node:22',
         runConfigurations: [
@@ -151,6 +164,7 @@ test.group('project initializations', (group) => {
       body.data.initialization?.repairReason,
       'The previous command forwarded invalid arguments.'
     )
+    assert.equal(body.data.initialization?.previewManifest?.confidence, 'high')
     assert.equal(
       body.data.initialization?.setupScript,
       '#!/usr/bin/env bash\ncorepack pnpm install'

@@ -2,6 +2,7 @@ import * as React from "react"
 import { toast } from "sonner"
 import type {
   AgentEvent,
+  PreviewManifest,
   RepairProjectInitializationResult,
 } from "@blame/agent-runtime"
 
@@ -328,6 +329,7 @@ export function useBacklogRotation(
       credentialLabel: alternativeSelection.currentModel!.credentialLabel,
       reasoningEffort: alternativeSelection.currentVariant,
       worktree,
+      previewManifest: initialization.previewManifest as PreviewManifest | null,
       setupScript: initialization.setupScript!,
       dockerCompose: initialization.dockerCompose!,
       runConfigurations: initialization.runConfigurations,

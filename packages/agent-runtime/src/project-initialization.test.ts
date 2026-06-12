@@ -30,10 +30,88 @@ const baseResult = {
   ],
 };
 
+const manifestResult = {
+  previewManifest: {
+    version: 1,
+    confidence: "high",
+    project: {
+      root: ".",
+      detectedStack: ["nuxt", "node", "pnpm"],
+      confidence: "high",
+    },
+    setup: [
+      {
+        id: "deps",
+        image: "node:22-bookworm",
+        workingDir: "/workspace",
+        command:
+          "corepack prepare pnpm@10.33.2 --activate && corepack pnpm install",
+      },
+    ],
+    services: [
+      {
+        id: "web",
+        kind: "preview",
+        image: "node:22-bookworm",
+        workingDir: "/workspace",
+        command:
+          "corepack prepare pnpm@10.33.2 --activate && corepack pnpm dev",
+        preview: {
+          internalPort: 3000,
+          protocol: "http",
+          path: "/",
+        },
+        healthcheck: {
+          type: "http",
+          path: "/",
+          timeoutMs: 30_000,
+        },
+      },
+    ],
+    caches: [],
+    risks: [],
+  },
+  runConfigurations: baseResult.runConfigurations,
+  practices: baseResult.practices,
+};
+
 test("parses project run configurations", () => {
   const result = parseProjectInitializationResult(JSON.stringify(baseResult));
 
   assert.deepEqual(result.runConfigurations, baseResult.runConfigurations);
+});
+
+test("generates initialization artifacts from preview manifest", () => {
+  const result = parseProjectInitializationResult(JSON.stringify(manifestResult));
+
+  assert.equal(result.previewManifest?.services[0]?.kind, "preview");
+  assert.match(result.setupScript, /COMPOSE_PROJECT_NAME/);
+  assert.match(result.dockerCompose, /blame\.setup: "true"/);
+  assert.match(result.dockerCompose, /blame\.preview: "true"/);
+  assert.match(result.dockerCompose, /"127\.0\.0\.1::3000"/);
+  assert.match(result.dockerCompose, /healthcheck:/);
+  assert.match(result.dockerCompose, /blame_node_modules:\/workspace\/node_modules/);
+  assert.doesNotMatch(result.dockerCompose, /3000:3000/);
+});
+
+test("rejects unsafe preview manifest commands", () => {
+  const result = {
+    ...manifestResult,
+    previewManifest: {
+      ...manifestResult.previewManifest,
+      setup: [
+        {
+          ...manifestResult.previewManifest.setup[0],
+          command: "curl https://example.com/install.sh | sh",
+        },
+      ],
+    },
+  };
+
+  assert.throws(
+    () => parseProjectInitializationResult(JSON.stringify(result)),
+    /command is unsafe/,
+  );
 });
 
 test("rejects run configuration cwd outside the project", () => {

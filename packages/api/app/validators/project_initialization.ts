@@ -27,6 +27,7 @@ export const startProjectInitializationValidator = vine.create({
 
 export const completeProjectInitializationValidator = vine.create({
   clineSessionId: vine.string().trim().maxLength(255).nullable().optional(),
+  previewManifest: vine.any().optional(),
   setupScript: vine.string().minLength(1),
   dockerCompose: vine.string().minLength(1),
   runConfigurations: vine.array(runConfiguration).maxLength(20).optional(),
@@ -46,6 +47,7 @@ export const failProjectInitializationValidator = vine.create({
 
 export const repairProjectInitializationValidator = vine.create({
   clineSessionId: vine.string().trim().maxLength(255).nullable().optional(),
+  previewManifest: vine.any().optional(),
   setupScript: vine.string().minLength(1),
   dockerCompose: vine.string().minLength(1),
   runConfigurations: vine.array(runConfiguration).maxLength(20).optional(),

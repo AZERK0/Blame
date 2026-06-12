@@ -62,6 +62,7 @@ export type CloudProjectInitialization = {
   clineSessionId: string | null
   agentProviderId: string | null
   agentModelId: string | null
+  previewManifest: Record<string, unknown> | null
   setupScript: string | null
   dockerCompose: string | null
   runConfigurations: ProjectRunConfiguration[]

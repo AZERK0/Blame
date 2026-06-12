@@ -1,5 +1,6 @@
 import type {
   AssessProjectInitializationImpactResult,
+  PreviewManifest,
   ProjectRunConfiguration,
   RepairProjectInitializationResult,
 } from "@blame/agent-runtime"
@@ -57,6 +58,7 @@ async function currentInitialization(input: ImpactInput) {
     return undefined
   }
   return {
+    previewManifest: initialization.previewManifest as PreviewManifest | null,
     setupScript: initialization.setupScript,
     dockerCompose: initialization.dockerCompose,
     runConfigurations: initialization.runConfigurations,
@@ -79,6 +81,7 @@ async function assessProjectInitializationImpact(
     workspaceRoot: input.repositoryRoot,
     baseCommit: input.baseCommit,
     mergeCommit: input.mergeCommit,
+    previewManifest: initialization.previewManifest ?? undefined,
     setupScript: initialization.setupScript,
     dockerCompose: initialization.dockerCompose,
     runConfigurations: initialization.runConfigurations,
@@ -105,6 +108,7 @@ async function repairProjectInitializationImpact(
     reasoningEffort: input.reasoningEffort,
     cwd: input.repositoryRoot,
     workspaceRoot: input.repositoryRoot,
+    previewManifest: initialization.previewManifest ?? undefined,
     setupScript: initialization.setupScript,
     dockerCompose: initialization.dockerCompose,
     runConfigurations: initialization.runConfigurations,
@@ -130,6 +134,7 @@ async function persistProjectInitializationRepair(
     input.projectId,
     {
       clineSessionId: result.sessionId,
+      previewManifest: result.previewManifest,
       setupScript: result.setupScript,
       dockerCompose: result.dockerCompose,
       runConfigurations: result.runConfigurations,
@@ -140,6 +145,7 @@ async function persistProjectInitializationRepair(
 }
 
 type CurrentInitialization = {
+  previewManifest?: PreviewManifest | null
   setupScript: string
   dockerCompose: string
   runConfigurations: ProjectRunConfiguration[]

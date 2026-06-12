@@ -11,6 +11,8 @@ type ProjectRunConfiguration = {
   default: boolean
 }
 
+type PreviewManifest = Record<string, unknown>
+
 export function prepareRunConfigurations(value: ProjectRunConfiguration[] | null) {
   return value ? JSON.stringify(value) : null
 }
@@ -21,6 +23,22 @@ export function consumeRunConfigurations(value: unknown) {
   try {
     const parsed = JSON.parse(value)
     return Array.isArray(parsed) ? (parsed as ProjectRunConfiguration[]) : null
+  } catch {
+    return null
+  }
+}
+
+export function preparePreviewManifest(value: PreviewManifest | null) {
+  return value ? JSON.stringify(value) : null
+}
+
+export function consumePreviewManifest(value: unknown) {
+  if (!value) return null
+  if (typeof value === 'object') return value as PreviewManifest
+  if (typeof value !== 'string') return null
+  try {
+    const parsed = JSON.parse(value)
+    return parsed && typeof parsed === 'object' ? (parsed as PreviewManifest) : null
   } catch {
     return null
   }
@@ -50,6 +68,12 @@ export default class ProjectInitialization extends BaseModel {
 
   @column()
   declare dockerCompose: string | null
+
+  @column({
+    consume: consumePreviewManifest,
+    prepare: preparePreviewManifest,
+  })
+  declare previewManifest: PreviewManifest | null
 
   @column({
     consume: consumeRunConfigurations,

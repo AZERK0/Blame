@@ -352,6 +352,7 @@ async function completeProjectInitialization(
 ) {
   await cloud.completeProjectInitialization(input.project.id, {
     clineSessionId: result.sessionId,
+    previewManifest: result.previewManifest,
     setupScript: result.setupScript,
     dockerCompose: result.dockerCompose,
     runConfigurations: result.runConfigurations,
@@ -377,6 +378,7 @@ function validationFeedback(
   return {
     validationError: errorMessage(error),
     previousResult: JSON.stringify({
+      previewManifest: result.previewManifest,
       setupScript: result.setupScript,
       dockerCompose: result.dockerCompose,
       runConfigurations: result.runConfigurations,

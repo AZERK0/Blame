@@ -529,7 +529,9 @@ async function runProjectComposeUp(worktree: string) {
     composePullRetryDelaysMs,
     "compose image pull",
   );
-  await runCompletedDependencyServices(worktree);
+  const config = await composeConfig(worktree, projectComposePath(worktree));
+  const setupServices = await runSetupTaskServices(worktree, config);
+  await runCompletedDependencyServices(worktree, config, setupServices);
   await startProjectLogStream(worktree);
   await runComposeWithRetry(
     worktree,
@@ -539,18 +541,38 @@ async function runProjectComposeUp(worktree: string) {
   );
 }
 
-async function runCompletedDependencyServices(worktree: string) {
-  const services = completedDependencyServices(
-    await composeConfig(worktree, projectComposePath(worktree)),
+async function runSetupTaskServices(worktree: string, config: ComposeConfig) {
+  const services = setupTaskServices(config);
+  for (const service of services) await runProjectComposeService(worktree, service);
+  return new Set(services);
+}
+
+async function runCompletedDependencyServices(
+  worktree: string,
+  config: ComposeConfig,
+  skippedServices = new Set<string>(),
+) {
+  const services = completedDependencyServices(config).filter(
+    (service) => !skippedServices.has(service),
   );
   for (const service of services) {
-    const result = await containerRuntime.compose(
-      [...composeArgs(worktree), "up", service],
-      { cwd: worktree, env: setupEnvironment(worktree) },
-    );
-    if (result.stdout) await appendRecoveryLog(worktree, result.stdout.trimEnd());
-    if (result.stderr) await appendRecoveryLog(worktree, result.stderr.trimEnd());
+    await runProjectComposeService(worktree, service);
   }
+}
+
+async function runProjectComposeService(worktree: string, service: string) {
+  const result = await containerRuntime.compose(
+    [...composeArgs(worktree), "up", service],
+    { cwd: worktree, env: setupEnvironment(worktree) },
+  );
+  if (result.stdout) await appendRecoveryLog(worktree, result.stdout.trimEnd());
+  if (result.stderr) await appendRecoveryLog(worktree, result.stderr.trimEnd());
+}
+
+function setupTaskServices(config: ComposeConfig) {
+  return Object.entries(config.services ?? {})
+    .filter(([, service]) => serviceLabels(service)["blame.setup"] === "true")
+    .map(([service]) => service);
 }
 
 function completedDependencyServices(config: ComposeConfig) {
