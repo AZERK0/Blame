@@ -3,6 +3,7 @@ import type {
   PreviewManifestCache,
   PreviewManifestEnvironment,
   PreviewManifestHealthcheck,
+  ProjectInitializationPreferences,
   PreviewManifestProject,
   PreviewManifestRisk,
   PreviewManifestService,
@@ -55,8 +56,12 @@ export function parsePreviewManifest(value: unknown): PreviewManifest {
 
 export function generatePreviewArtifacts(
   manifest: PreviewManifest,
+  preferences?: ProjectInitializationPreferences,
 ): GeneratedInitializationArtifacts {
-  const normalized = normalizePreviewManifest(manifest);
+  const normalized = normalizePreviewManifestWithPreferences(
+    manifest,
+    preferences,
+  );
   validatePreviewManifest(normalized);
   return {
     setupScript: setupScript(),
@@ -86,8 +91,15 @@ export function validatePreviewManifest(manifest: PreviewManifest) {
 export function normalizePreviewManifest(
   manifest: PreviewManifest,
 ): PreviewManifest {
+  return normalizePreviewManifestWithPreferences(manifest);
+}
+
+export function normalizePreviewManifestWithPreferences(
+  manifest: PreviewManifest,
+  preferences?: ProjectInitializationPreferences,
+): PreviewManifest {
   const caches = normalizedCaches(manifest);
-  return {
+  const normalized = {
     ...manifest,
     project: {
       root: manifest.project.root || ".",
@@ -110,6 +122,98 @@ export function normalizePreviewManifest(
     caches,
     risks: manifest.risks,
   };
+  return applyPreviewManifestPreferences(normalized, preferences);
+}
+
+function applyPreviewManifestPreferences(
+  manifest: PreviewManifest,
+  preferences: ProjectInitializationPreferences | undefined,
+) {
+  if (preferences?.database?.mode !== "existing") return manifest;
+  return manifestWithoutComposeDatabase(manifest);
+}
+
+function manifestWithoutComposeDatabase(manifest: PreviewManifest) {
+  const databaseServiceIds = new Set(
+    manifest.services.filter(databaseService).map((service) => service.id),
+  );
+  const setup = manifest.setup
+    .filter((task) => !setupTaskTouchesDatabase(task))
+    .map((task) => ({
+      ...task,
+      environment: withoutDatabaseEnvironment(task.environment),
+      dependsOn: withoutIds(task.dependsOn, databaseServiceIds),
+    }));
+  const removedSetupIds = new Set(
+    manifest.setup
+      .filter((task) => !setup.some((candidate) => candidate.id === task.id))
+      .map((task) => task.id),
+  );
+  return {
+    ...manifest,
+    setup,
+    services: manifest.services
+      .filter((service) => !databaseServiceIds.has(service.id))
+      .map((service) => ({
+        ...service,
+        environment: withoutDatabaseEnvironment(service.environment),
+        dependsOn: withoutIds(
+          service.dependsOn,
+          new Set([...databaseServiceIds, ...removedSetupIds]),
+        ),
+      })),
+  };
+}
+
+function databaseService(service: PreviewManifestService) {
+  return service.kind === "dependency" && databaseImage(service.image);
+}
+
+function databaseImage(image: string) {
+  return [
+    /^mysql(?::|$)/,
+    /\/mysql(?::|$)/,
+    /^mariadb(?::|$)/,
+    /\/mariadb(?::|$)/,
+    /^postgres(?::|$)/,
+    /\/postgres(?::|$)/,
+    /^mongo(?::|$)/,
+    /\/mongo(?::|$)/,
+  ].some((pattern) => pattern.test(image));
+}
+
+function setupTaskTouchesDatabase(task: PreviewManifestSetupTask) {
+  return /\bmigrat(?:e|ion|ions)\b/i.test(task.command);
+}
+
+function withoutDatabaseEnvironment(
+  environment: PreviewManifestEnvironment | undefined,
+) {
+  if (!environment) return undefined;
+  const next: PreviewManifestEnvironment = {};
+  for (const [key, value] of Object.entries(environment)) {
+    if (!databaseEnvironmentKey(key)) next[key] = value;
+  }
+  return next;
+}
+
+function databaseEnvironmentKey(key: string) {
+  return (
+    key === "DATABASE_URL" ||
+    key === "MONGO_URL" ||
+    key === "MONGODB_URI" ||
+    key.startsWith("DB_") ||
+    key.startsWith("MYSQL_") ||
+    key.startsWith("POSTGRES_") ||
+    key.startsWith("PG")
+  );
+}
+
+function withoutIds(
+  ids: string[] | undefined,
+  blockedIds: Set<string>,
+) {
+  return uniqueStrings((ids ?? []).filter((id) => !blockedIds.has(id)));
 }
 
 function normalizeService(

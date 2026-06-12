@@ -548,8 +548,16 @@ export class BlameAgentRuntime {
         return {
           sessionId: session.sessionId,
           ...(submittedInput
-            ? parseProjectInitializationPayload(submittedInput, scan)
-            : parseProjectInitializationResult(String(result), scan)),
+            ? parseProjectInitializationPayload(
+                submittedInput,
+                scan,
+                input.preferences,
+              )
+            : parseProjectInitializationResult(
+                String(result),
+                scan,
+                input.preferences,
+              )),
         };
       } catch (error) {
         if (attempt === maxInitializationAttempts) throw error;

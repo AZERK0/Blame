@@ -5,6 +5,7 @@ import { promisify } from "node:util";
 
 import type {
   PreviewManifest,
+  ProjectInitializationPreferences,
   ProjectCodePracticeKey,
   ProjectCodePracticeResult,
   ProjectRunConfiguration,
@@ -12,6 +13,7 @@ import type {
 import {
   generatePreviewArtifacts,
   parsePreviewManifest,
+  normalizePreviewManifestWithPreferences,
 } from "./preview-manifest.js";
 
 const execFileAsync = promisify(execFile);
@@ -300,19 +302,24 @@ export function projectInitializationCorrectionPrompt(
 export function parseProjectInitializationResult(
   text: string,
   scan?: ProjectInitializationScan,
+  preferences?: ProjectInitializationPreferences,
 ): ParsedProjectInitialization {
   const parsed = JSON.parse(jsonPayload(text)) as unknown;
-  return parseProjectInitializationPayload(parsed, scan);
+  return parseProjectInitializationPayload(parsed, scan, preferences);
 }
 
 export function parseProjectInitializationPayload(
   parsed: unknown,
   scan?: ProjectInitializationScan,
+  preferences?: ProjectInitializationPreferences,
 ): ParsedProjectInitialization {
   if (!isRecord(parsed))
     throw new Error("Initialization result must be an object");
-  const manifest = parsed.previewManifest
+  const parsedManifest = parsed.previewManifest
     ? parsePreviewManifest(parsed.previewManifest)
+    : undefined;
+  const manifest = parsedManifest
+    ? normalizePreviewManifestWithPreferences(parsedManifest, preferences)
     : undefined;
   const generated = manifest ? generatePreviewArtifacts(manifest) : undefined;
   const setupScript = generated?.setupScript ?? stringValue(parsed.setupScript);

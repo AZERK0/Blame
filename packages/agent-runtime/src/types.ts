@@ -271,6 +271,14 @@ export type PreviewManifest = {
   risks: PreviewManifestRisk[]
 }
 
+export type ProjectInitializationDatabaseMode = "existing" | "compose"
+
+export type ProjectInitializationPreferences = {
+  database?: {
+    mode: ProjectInitializationDatabaseMode
+  }
+}
+
 export type InitializeProjectInput = {
   apiConnection: ApiConnection
   providerId: string
@@ -279,6 +287,7 @@ export type InitializeProjectInput = {
   cwd: string
   workspaceRoot: string
   credentialLabel?: string
+  preferences?: ProjectInitializationPreferences
   validationFeedback?: {
     validationError: string
     previousResult: string

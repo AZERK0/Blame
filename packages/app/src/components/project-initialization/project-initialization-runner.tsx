@@ -1,4 +1,5 @@
 import * as React from "react"
+import { ChevronRightIcon, DatabaseIcon, ServerIcon } from "lucide-react"
 import { toast } from "sonner"
 
 import {
@@ -6,6 +7,7 @@ import {
   type ModelSelection,
   useModelSelection,
 } from "@/components/model/model-selector"
+import type { ProjectInitializationDatabaseMode } from "@blame/agent-runtime"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -16,7 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { useCloudAuth } from "@/context/cloud-auth"
-import { usePlatform } from "@/context/platform"
+import { usePlatform, type WorkspaceClient } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import { CloudApiError, createCloudApi } from "@/lib/cloud-api"
 import { notifyProjectInitializationUpdated } from "@/components/project-initialization/project-initialization-events"
@@ -37,6 +39,11 @@ type InitializationRunInput = {
   modelId: string
   credentialLabel?: string
   reasoningEffort?: ModelSelection["currentVariant"]
+  preferences?: {
+    database?: {
+      mode: ProjectInitializationDatabaseMode
+    }
+  }
 }
 
 type InitializationValidationFeedback = {
@@ -50,7 +57,12 @@ type InitializationAgentResult = Awaited<
 
 export function ProjectInitializationRunner() {
   const controller = useProjectInitializationController()
-  return <InitializationModelDialog controller={controller} />
+  return (
+    <>
+      <InitializationModelDialog controller={controller} />
+      <InitializationDatabaseDialog controller={controller} />
+    </>
+  )
 }
 
 function useProjectInitializationController() {
@@ -65,14 +77,17 @@ function useProjectInitializationController() {
     [auth.apiConnection, auth.status]
   )
   const dialog = useModelDialogState(activeProject?.id)
+  const databaseDialog = useDatabaseDialogState()
 
   useInitializationEffect(
     activeProject,
     platform.agent,
+    platform.workspace,
     initializationAuth,
     currentModel,
     selection.currentVariant,
-    dialog.openModelDialog
+    dialog.openModelDialog,
+    databaseDialog.openDatabaseDialog
   )
 
   return initializationController({
@@ -81,7 +96,10 @@ function useProjectInitializationController() {
     auth: initializationAuth,
     currentModel,
     currentVariant: selection.currentVariant,
+    databaseDialog,
     dialog,
+    removeRecentProject: projects.removeRecentProject,
+    workspace: platform.workspace,
     refreshProviders: selection.refreshProviders,
   })
 }
@@ -92,17 +110,32 @@ function initializationController(input: {
   auth: InitializationAuth
   currentModel: ModelSelection["currentModel"]
   currentVariant: ModelSelection["currentVariant"]
+  databaseDialog: ReturnType<typeof useDatabaseDialogState>
   dialog: ReturnType<typeof useModelDialogState>
+  removeRecentProject: (path: string) => void
+  workspace: WorkspaceClient | undefined
   refreshProviders: () => Promise<void>
 }) {
+  const cancelDatabaseChoice = () => {
+    const project = input.databaseDialog.pendingRun?.project
+    input.databaseDialog.setOpen(false)
+    if (project) input.removeRecentProject(project.path)
+  }
+
   return {
     activeProjectId: input.activeProject?.id,
     currentModelName: input.currentModel?.name,
     hasModel: Boolean(input.currentModel),
     modelDialogOpen: input.dialog.modelDialogOpen,
     pendingProjectId: input.dialog.pendingProjectId,
+    databaseDialogOpen: input.databaseDialog.open,
+    cancelDatabaseChoice,
     refreshProviders: input.refreshProviders,
+    selectDatabaseMode: input.databaseDialog.selectDatabaseMode,
     setModelDialogOpen: input.dialog.setModelDialogOpen,
+    setDatabaseDialogOpen: (open: boolean) => {
+      if (!open) cancelDatabaseChoice()
+    },
     startWithSelectedModel: () =>
       startSelectedModel(
         input.activeProject,
@@ -110,7 +143,9 @@ function initializationController(input: {
         input.agent,
         input.currentModel,
         input.currentVariant,
-        input.dialog.closeModelDialog
+        input.dialog.closeModelDialog,
+        input.workspace,
+        input.databaseDialog.openDatabaseDialog
       ),
   }
 }
@@ -136,18 +171,53 @@ function useModelDialogState(activeProjectId: string | undefined) {
   }
 }
 
+function useDatabaseDialogState() {
+  const [pendingRun, setPendingRun] = React.useState<InitializationRunInput>()
+  const openDatabaseDialog = React.useCallback((run: InitializationRunInput) => {
+    setPendingRun(run)
+  }, [])
+  const setOpen = React.useCallback((open: boolean) => {
+    if (!open) setPendingRun(undefined)
+  }, [])
+  const selectDatabaseMode = React.useCallback(
+    (mode: ProjectInitializationDatabaseMode) => {
+      const run = pendingRun
+      if (!run) return
+      setPendingRun(undefined)
+      void runInitialization({
+        ...run,
+        preferences: {
+          ...run.preferences,
+          database: { mode },
+        },
+      })
+    },
+    [pendingRun]
+  )
+
+  return {
+    open: Boolean(pendingRun),
+    openDatabaseDialog,
+    pendingRun,
+    selectDatabaseMode,
+    setOpen,
+  }
+}
+
 function startSelectedModel(
   project: InitializationRunInput["project"] | undefined,
   auth: InitializationAuth,
   agent: InitializationRunInput["agent"] | undefined,
   model: ModelSelection["currentModel"],
   variant: ModelSelection["currentVariant"],
-  closeModelDialog: () => void
+  closeModelDialog: () => void,
+  workspace: WorkspaceClient | undefined,
+  openDatabaseDialog: (run: InitializationRunInput) => void
 ) {
   const input = runInput(project, auth, agent, model, variant)
   if (!input) return
   closeModelDialog()
-  void runInitialization(input)
+  void startInitialization(input, workspace, openDatabaseDialog)
 }
 
 function InitializationModelDialog({
@@ -167,6 +237,59 @@ function InitializationModelDialog({
         <InitializationModelDialogHeader />
         <InitializationModelPicker modelName={controller.currentModelName} />
         <InitializationModelDialogFooter controller={controller} />
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function InitializationDatabaseDialog({
+  controller,
+}: {
+  controller: ReturnType<typeof useProjectInitializationController>
+}) {
+  return (
+    <Dialog
+      open={controller.databaseDialogOpen}
+      onOpenChange={controller.setDatabaseDialogOpen}
+    >
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Database for this preview</DialogTitle>
+          <DialogDescription>
+            This project already has database configuration in its environment.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            className="h-auto justify-start gap-3 px-3 py-3 text-left"
+            onClick={() => controller.selectDatabaseMode("existing")}
+          >
+            <ServerIcon className="size-4 text-muted-foreground" />
+            <span className="min-w-0 flex-1">Use configured database</span>
+            <ChevronRightIcon className="size-4 text-muted-foreground" />
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="h-auto justify-start gap-3 px-3 py-3 text-left"
+            onClick={() => controller.selectDatabaseMode("compose")}
+          >
+            <DatabaseIcon className="size-4 text-muted-foreground" />
+            <span className="min-w-0 flex-1">Create isolated database</span>
+            <ChevronRightIcon className="size-4 text-muted-foreground" />
+          </Button>
+        </div>
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={controller.cancelDatabaseChoice}
+          >
+            Cancel
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )
@@ -223,32 +346,47 @@ function InitializationModelDialogFooter({
 function useInitializationEffect(
   activeProject: { id: string; name: string; path: string } | undefined,
   agent: NonNullable<ReturnType<typeof usePlatform>["agent"]> | undefined,
+  workspace: WorkspaceClient | undefined,
   auth: InitializationAuth,
   currentModel: ModelSelection["currentModel"],
   currentVariant: ModelSelection["currentVariant"],
-  openModelDialog: () => void
+  openModelDialog: () => void,
+  openDatabaseDialog: (run: InitializationRunInput) => void
 ) {
   React.useEffect(
     () =>
       initializationEffect({
         activeProject,
         agent,
+        workspace,
         auth,
         currentModel,
         currentVariant,
         openModelDialog,
+        openDatabaseDialog,
       }),
-    [activeProject, agent, auth, currentModel, currentVariant, openModelDialog]
+    [
+      activeProject,
+      agent,
+      workspace,
+      auth,
+      currentModel,
+      currentVariant,
+      openModelDialog,
+      openDatabaseDialog,
+    ]
   )
 }
 
 function initializationEffect(input: {
   activeProject?: { id: string; name: string; path: string }
   agent?: NonNullable<ReturnType<typeof usePlatform>["agent"]>
+  workspace?: WorkspaceClient
   auth: InitializationAuth
   currentModel: ModelSelection["currentModel"]
   currentVariant: ModelSelection["currentVariant"]
   openModelDialog: () => void
+  openDatabaseDialog: (run: InitializationRunInput) => void
 }) {
   if (!input.activeProject || input.auth.status !== "authenticated") return
   if (!input.agent) return
@@ -272,7 +410,7 @@ async function maybeInitializeProject(
     input.currentVariant
   )
   if (!run) return input.openModelDialog()
-  await runInitialization(run)
+  await startInitialization(run, input.workspace, input.openDatabaseDialog)
 }
 
 function runInput(
@@ -305,6 +443,18 @@ async function runInitialization(input: InitializationRunInput) {
   await persistInitializationResult(input, cloud).catch((error) =>
     persistInitializationError(input, cloud, error)
   )
+}
+
+async function startInitialization(
+  input: InitializationRunInput,
+  workspace: WorkspaceClient | undefined,
+  openDatabaseDialog: (run: InitializationRunInput) => void
+) {
+  if (await projectNeedsDatabaseChoice(input.project, workspace)) {
+    openDatabaseDialog(input)
+    return
+  }
+  await runInitialization(input)
 }
 
 async function persistInitializationResult(
@@ -341,6 +491,7 @@ function runProjectInitializationAgent(
     reasoningEffort: input.reasoningEffort,
     cwd: input.project.path,
     workspaceRoot: input.project.path,
+    preferences: input.preferences,
     validationFeedback,
   })
 }
@@ -386,6 +537,54 @@ function validationFeedback(
     }),
   }
 }
+
+async function projectNeedsDatabaseChoice(
+  project: InitializationRunInput["project"],
+  workspace: WorkspaceClient | undefined
+) {
+  if (!workspace) return false
+  const files = await Promise.all(
+    databaseDetectionFiles.map((path) =>
+      readWorkspaceFile(workspace, project.path, path)
+    )
+  )
+  return files.some((content) => databaseContentPattern.test(content))
+}
+
+async function readWorkspaceFile(
+  workspace: WorkspaceClient,
+  root: string,
+  path: string
+) {
+  try {
+    return await workspace.readFile({ root, path })
+  } catch {
+    return ""
+  }
+}
+
+const databaseDetectionFiles = [
+  ".env",
+  ".env.example",
+  ".env.local",
+  "package.json",
+  "prisma/schema.prisma",
+  "drizzle.config.ts",
+  "drizzle.config.js",
+  "apps/api/.env",
+  "apps/api/.env.example",
+  "apps/api/package.json",
+  "apps/api/config/database.ts",
+  "apps/api/start/env.ts",
+  "apps/backend/.env",
+  "apps/backend/.env.example",
+  "apps/backend/package.json",
+  "apps/backend/config/database.ts",
+  "apps/backend/start/env.ts",
+]
+
+const databaseContentPattern =
+  /\b(?:DATABASE_URL|DB_HOST|DB_DATABASE|MYSQL_|POSTGRES_|MONGODB_URI|@adonisjs\/lucid|prisma|drizzle-orm|typeorm|sequelize|mongoose|knex|mysql2|pg)\b/i
 
 async function persistInitializationError(
   input: InitializationRunInput,

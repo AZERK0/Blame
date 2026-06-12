@@ -183,6 +183,32 @@ test("normalizes mysql root image environment", () => {
   assert.doesNotMatch(result.dockerCompose, /MYSQL_PASSWORD: "root"/);
 });
 
+test("keeps compose database services by default", () => {
+  const result = parseProjectInitializationPayload(databaseManifestResult());
+
+  assert.match(result.dockerCompose, /  db:/);
+  assert.match(result.dockerCompose, /MYSQL_DATABASE: "app"/);
+  assert.match(result.dockerCompose, /backend-migrate:/);
+  assert.match(result.dockerCompose, /DB_HOST: "db"/);
+});
+
+test("uses existing database configuration when requested", () => {
+  const result = parseProjectInitializationPayload(
+    databaseManifestResult(),
+    undefined,
+    { database: { mode: "existing" } },
+  );
+
+  assert.doesNotMatch(result.dockerCompose, /  db:/);
+  assert.doesNotMatch(result.dockerCompose, /backend-migrate:/);
+  assert.doesNotMatch(result.dockerCompose, /DB_HOST:/);
+  assert.doesNotMatch(result.dockerCompose, /MYSQL_DATABASE:/);
+  assert.equal(
+    result.previewManifest?.services.some((service) => service.id === "db"),
+    false,
+  );
+});
+
 test("removes placeholder app environment values", () => {
   const result = parseProjectInitializationPayload({
     ...manifestResult,
@@ -220,6 +246,59 @@ test("removes placeholder app environment values", () => {
   assert.doesNotMatch(result.dockerCompose, /GOOGLE_CLIENT_ID: "preview"/);
   assert.doesNotMatch(result.dockerCompose, /KEEPA_ACCESS_KEY: "placeholder"/);
 });
+
+function databaseManifestResult() {
+  return {
+    ...manifestResult,
+    previewManifest: {
+      ...manifestResult.previewManifest,
+      setup: [
+        ...manifestResult.previewManifest.setup,
+        {
+          id: "backend-migrate",
+          image: "node:22-bookworm",
+          workingDir: "/workspace/apps/backend",
+          command: "node ace migration:run",
+          environment: {
+            DB_HOST: "db",
+            DB_USER: "user",
+            DB_PASSWORD: "password",
+            DB_DATABASE: "app",
+          },
+          dependsOn: ["deps", "db"],
+        },
+      ],
+      services: [
+        {
+          id: "db",
+          kind: "dependency",
+          image: "mysql:8.0",
+          environment: {
+            MYSQL_DATABASE: "app",
+            MYSQL_USER: "user",
+            MYSQL_PASSWORD: "password",
+            MYSQL_ROOT_PASSWORD: "root",
+          },
+        },
+        {
+          id: "backend",
+          kind: "worker",
+          image: "node:22-bookworm",
+          workingDir: "/workspace/apps/backend",
+          command: "node ace serve --hmr",
+          environment: {
+            DB_HOST: "db",
+            DB_USER: "user",
+            DB_PASSWORD: "password",
+            DB_DATABASE: "app",
+          },
+          dependsOn: ["db", "backend-migrate"],
+        },
+        manifestResult.previewManifest.services[0],
+      ],
+    },
+  };
+}
 
 test("does not generate runtime depends_on entries for setup tasks", () => {
   const result = parseProjectInitializationPayload({
