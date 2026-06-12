@@ -26,7 +26,7 @@ Return exactly:
 
 ## Setup Script
 
-`setupScript` must be an idempotent bash script using `set -euo pipefail`. It runs inside an already-created git worktree before Blame starts Docker Compose.
+`setupScript` must be an idempotent bash script using `set -euo pipefail`. It runs inside an already-created git worktree before Blame starts Compose through Blame Runtime.
 
 It must:
 
@@ -37,21 +37,21 @@ It must:
 - provide harmless development placeholders for required env variables that are blank in examples when startup validation requires non-empty values
 - set a unique `COMPOSE_PROJECT_NAME`
 - fail early with clear errors for missing host tools
-- leave Node dependency installation, Node package manager bootstrapping, and Node framework preparation to Docker Compose services
+- leave Node dependency installation, Node package manager bootstrapping, and Node framework preparation to Compose services
 
 It must never:
 
 - install Node dependencies with npm, pnpm, yarn, bun, npx, corepack, or equivalent commands
 - run Node package manager scripts or Node ORM generators
 - copy, generate, overwrite, or delete `.env`, `.env.*`, `.env.example`, `.env.sample`, or `.env.template` files
-- launch Docker Compose, containers, dev servers, or preview URLs
+- launch Compose, containers, dev servers, or preview URLs
 - manage worktrees or write inside `.git`
 - create alternate compose files outside Blame's managed compose path
 - contain TODOs, blocking placeholders, or non-executable explanation
 
-## Docker Compose
+## Compose
 
-`dockerCompose` must be directly runnable. Blame writes it to `$BLAME_DOCKER_COMPOSE_FILE`, starts it after setup succeeds, and resolves the Preview tab URL.
+`dockerCompose` must be directly runnable as a Compose file. Blame writes it to `$BLAME_DOCKER_COMPOSE_FILE`, starts it through Blame Runtime after setup succeeds, and resolves the Preview tab URL.
 
 It must:
 
@@ -59,10 +59,10 @@ It must:
 - reuse existing Compose structure when present, changing only isolation, dynamic ports, env, volumes, commands, and Blame metadata
 - create a self-contained development Compose file using base images and bind-mounted source instead of building from project Dockerfiles
 - use project Dockerfiles only as read-only inspiration for ports, working directories, package manager versions, environment variables, and commands
-- preserve internal app ports and let Docker allocate localhost host ports, e.g. `127.0.0.1::3000`
+- preserve internal app ports and let the runtime allocate localhost host ports, e.g. `127.0.0.1::3000`
 - mark exactly one preview service with `blame.preview=true`, `blame.preview.port=<internal port>`, `blame.preview.protocol=http`, `blame.preview.path=/`
 - isolate containers, networks, and volumes through `COMPOSE_PROJECT_NAME`
-- do not set browser-facing origin variables such as `APP_URL`, `BETTER_AUTH_URL`, `NEXTAUTH_URL`, `NEXT_PUBLIC_APP_URL`, or equivalent values to `localhost:<internal port>` or `127.0.0.1:<internal port>` when using Docker-allocated host ports; omit those variables so auth/framework code can infer the public origin from the incoming request host
+- do not set browser-facing origin variables such as `APP_URL`, `BETTER_AUTH_URL`, `NEXTAUTH_URL`, `NEXT_PUBLIC_APP_URL`, or equivalent values to `localhost:<internal port>` or `127.0.0.1:<internal port>` when using runtime-allocated host ports; omit those variables so auth/framework code can infer the public origin from the incoming request host
 - run worktree-writing services as `${BLAME_HOST_UID}:${BLAME_HOST_GID}`
 - use a writable container-owned `node_modules` volume for Node services instead of host-installed or bind-mounted `node_modules`
 - ensure package manager cache volumes and every named volume mounted at a `node_modules` path in non-root services are writable by `${BLAME_HOST_UID}:${BLAME_HOST_GID}` before use, either through a root init service with `chown` and `depends_on` or by using writable bind/cache paths

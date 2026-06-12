@@ -93,11 +93,12 @@ export function HostDependenciesDialog({
 
 function dependencyLabel(issue: HostDependencyIssue) {
   const labels: Record<HostDependencyIssue["name"], string> = {
+    "blame-runtime": "Blame Runtime",
+    containerd: "containerd",
     corepack: "Corepack",
-    docker: "Docker",
-    "docker-compose": "Docker Compose",
-    "docker-daemon": "Docker daemon",
     git: "Git",
+    nerdctl: "nerdctl",
+    "nerdctl-compose": "nerdctl compose",
     node: "Node.js 22+",
     npm: "npm",
     pnpm: "pnpm",
@@ -109,18 +110,19 @@ function dependencyLabel(issue: HostDependencyIssue) {
 }
 
 function dependencyButtonLabel(issue: HostDependencyIssue) {
-  if (issue.name === "docker-daemon") return "Open Docker"
+  if (issue.name === "blame-runtime") return "Open Runtime"
   if (issue.status === "unsupported") return "Upgrade"
   return "Download"
 }
 
 function dependencyUrl(issue: HostDependencyIssue) {
   const urls: Record<HostDependencyIssue["name"], string> = {
+    "blame-runtime": "https://github.com/containerd/nerdctl",
+    containerd: "https://containerd.io/",
     corepack: "https://nodejs.org/en/download",
-    docker: "https://www.docker.com/products/docker-desktop/",
-    "docker-compose": "https://docs.docker.com/compose/install/",
-    "docker-daemon": "https://www.docker.com/products/docker-desktop/",
     git: "https://git-scm.com/downloads",
+    nerdctl: "https://github.com/containerd/nerdctl",
+    "nerdctl-compose": "https://github.com/containerd/nerdctl/blob/main/docs/compose.md",
     node: "https://nodejs.org/en/download",
     npm: "https://nodejs.org/en/download",
     pnpm: "https://pnpm.io/installation",

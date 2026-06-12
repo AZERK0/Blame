@@ -158,7 +158,7 @@ test("normalizes Windows project root placeholders for YAML", () => {
   assert.doesNotMatch(result, /C:\\Users/);
 });
 
-test("adds Docker dependency volumes for pnpm worktree installs", () => {
+test("adds runtime dependency volumes for pnpm worktree installs", () => {
   const compose = [
     "services:",
     "  frontend:",
@@ -272,7 +272,7 @@ test("detects portable Windows project root mounts for dependency volumes", () =
   assert.match(result, /"blame_pnpm_store:\/pnpm\/store"/);
 });
 
-test("promotes existing package cache volumes to global Docker volumes", () => {
+test("promotes existing package cache volumes to global runtime volumes", () => {
   const compose = [
     "services:",
     "  deps:",

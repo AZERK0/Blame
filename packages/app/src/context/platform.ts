@@ -173,9 +173,10 @@ export type HostDependencyIssue = {
   message: string
   name:
     | "git"
-    | "docker"
-    | "docker-compose"
-    | "docker-daemon"
+    | "blame-runtime"
+    | "containerd"
+    | "nerdctl"
+    | "nerdctl-compose"
     | "node"
     | "corepack"
     | "npm"

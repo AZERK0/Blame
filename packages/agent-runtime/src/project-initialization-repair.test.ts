@@ -79,7 +79,7 @@ test("rejects invalid repaired artifacts", () => {
           runConfigurations: [],
         }),
       ),
-    /Docker-allocated host ports/,
+    /runtime-allocated host ports/,
   )
 })
 

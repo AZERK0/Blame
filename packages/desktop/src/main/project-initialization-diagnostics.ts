@@ -1,12 +1,11 @@
-import { execFile } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { promisify } from "node:util";
 
 import type { ProjectInitializationDiagnostics } from "@blame/agent-runtime";
+import { createContainerRuntime } from "./container-runtime.ts";
 
-const execFileAsync = promisify(execFile);
 const maxDiagnosticLength = 32_000;
+const containerRuntime = createContainerRuntime();
 
 export type CollectProjectInitializationDiagnosticsInput = {
   worktree: string;
@@ -19,7 +18,6 @@ export async function collectProjectInitializationDiagnostics(
 ): Promise<ProjectInitializationDiagnostics> {
   const worktree = resolve(input.worktree);
   const composeArgs = [
-    "compose",
     "-f",
     join(worktree, ".blame", "initialization", "docker-compose.yml"),
     "--project-directory",
@@ -87,7 +85,7 @@ async function commandOutput(
   args: string[],
 ) {
   try {
-    const result = await execFileAsync("docker", args, { cwd: worktree, env });
+    const result = await containerRuntime.compose(args, { cwd: worktree, env });
     return truncate([result.stdout, result.stderr].filter(Boolean).join("\n"));
   } catch (error) {
     return truncate(commandErrorText(error));

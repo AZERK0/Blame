@@ -15,7 +15,7 @@ test("collects compose configuration, status, and every service log", async () =
   await mkdir(bin);
   await writeFile(join(worktree, ".blame", "logs", "setup.log"), "setup failed");
   await writeFile(
-    join(bin, "docker"),
+    join(bin, "nerdctl"),
     `#!/usr/bin/env bash
 if [[ "$*" == *"config --services"* ]]; then printf "web\\nworker\\n"; exit 0; fi
 if [[ "$*" == *"config"* ]]; then printf "services config"; exit 0; fi
@@ -25,7 +25,7 @@ printf "worker unavailable" >&2
 exit 1
 `,
   );
-  await chmod(join(bin, "docker"), 0o755);
+  await chmod(join(bin, "nerdctl"), 0o755);
 
   const result = await collectProjectInitializationDiagnostics(
     { worktree, launchError: "preview failed" },

@@ -16,7 +16,7 @@ Core rules:
 - Do not use sudo, destructive filesystem operations outside the workspace, or global package installs.
 - Keep the architecture coherent with the selected frontend, backend, database, ORM/query layer, UI library, package manager/runtime, code quality tooling, and advanced options.
 - Keep generated files maintainable, typed when applicable, and free of placeholders that would break install/build/dev workflows.
-- Do not create Blame setup scripts, Docker Compose preview files, Dockerfiles, or .blame preview metadata. Blame runs a separate initialization agent after creation to generate those artifacts.
+- Do not create Blame setup scripts, Compose preview files, Dockerfiles, or .blame preview metadata. Blame runs a separate initialization agent after creation to generate those artifacts.
 
 Blame readiness requirements:
 - Blame initializes git after generation. Do not run git init or create commits.

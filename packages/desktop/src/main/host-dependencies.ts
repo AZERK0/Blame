@@ -1,5 +1,9 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import {
+  runtimeCommand,
+  type ContainerRuntimeCommand,
+} from "./container-runtime.ts";
 
 const execFileAsync = promisify(execFile);
 const commandTimeoutMs = 15_000;
@@ -7,9 +11,10 @@ const minimumNodeMajorVersion = 22;
 
 export type HostDependencyName =
   | "git"
-  | "docker"
-  | "docker-compose"
-  | "docker-daemon"
+  | "blame-runtime"
+  | "containerd"
+  | "nerdctl"
+  | "nerdctl-compose"
   | "node"
   | "corepack"
   | "npm"
@@ -103,9 +108,7 @@ async function hostDependencyIssues(
   context: CheckContext,
 ) {
   const issues: HostDependencyIssue[] = [];
-  const dockerIssue = await checkDocker(context);
-  if (dockerIssue) issues.push(dockerIssue);
-  else issues.push(...(await dockerRuntimeIssues(context)));
+  issues.push(...(await containerRuntimeIssues(context)));
   const checks = [checkGit(context)];
   if (requiresNodeTooling(setupScript)) {
     checks.push(checkNode(context), checkCorepack(context));
@@ -147,9 +150,28 @@ export function requiresBareCommand(setupScript: string, command: string) {
   );
 }
 
-async function dockerRuntimeIssues(context: CheckContext) {
+async function containerRuntimeIssues(context: CheckContext) {
+  const runtimeIssue = await checkBlameRuntime(context);
+  if (runtimeIssue) return [runtimeIssue];
+  const nerdctlIssue = await checkRuntimeTool(
+    context,
+    "info",
+    [],
+    "nerdctl",
+    "missing",
+  );
+  if (nerdctlIssue) return [nerdctlIssue];
   return (
-    await Promise.all([checkDockerCompose(context), checkDockerDaemon(context)])
+    await Promise.all([
+      checkContainerd(context),
+      checkRuntimeTool(
+        context,
+        "compose",
+        ["version"],
+        "nerdctl-compose",
+        "missing",
+      ),
+    ])
   ).filter((issue): issue is HostDependencyIssue => Boolean(issue));
 }
 
@@ -157,29 +179,41 @@ async function checkGit(context: CheckContext) {
   return missingToolIssue(context, "git", ["--version"], "git");
 }
 
-async function checkDocker(context: CheckContext) {
-  return missingToolIssue(context, "docker", ["--version"], "docker");
-}
-
-async function checkDockerCompose(context: CheckContext) {
-  return missingToolIssue(
-    context,
-    "docker",
-    ["compose", "version"],
-    "docker-compose",
-  );
-}
-
-async function checkDockerDaemon(context: CheckContext) {
+async function checkBlameRuntime(context: CheckContext) {
+  if (context.platform !== "darwin" && context.platform !== "win32")
+    return null;
   try {
-    await context.run("docker", ["info"], context.env);
+    await runRuntimeBinary(context, ["true"]);
     return null;
   } catch {
-    return hostDependencyIssue(
-      context.platform,
-      "docker-daemon",
-      "unavailable",
-    );
+    return hostDependencyIssue(context.platform, "blame-runtime", "unavailable");
+  }
+}
+
+async function checkContainerd(context: CheckContext) {
+  try {
+    await runRuntimeBinary(context, ["ctr", "version"]);
+    return null;
+  } catch {
+    return hostDependencyIssue(context.platform, "containerd", "unavailable");
+  }
+}
+
+async function checkRuntimeTool(
+  context: CheckContext,
+  command: ContainerRuntimeCommand,
+  args: string[],
+  name: Extract<
+    HostDependencyName,
+    "nerdctl" | "nerdctl-compose"
+  >,
+  status: HostDependencyStatus,
+) {
+  try {
+    await runRuntimeCommand(context, command, args);
+    return null;
+  } catch {
+    return hostDependencyIssue(context.platform, name, status);
   }
 }
 
@@ -231,8 +265,9 @@ function hostDependencyMessage(
   name: HostDependencyName,
   status: HostDependencyStatus,
 ) {
-  if (name === "docker-daemon") return "Docker is installed but not running.";
-  if (name === "docker-compose") return "Docker Compose is not available.";
+  if (name === "blame-runtime") return "Blame Runtime is not available.";
+  if (name === "containerd") return "containerd is not available.";
+  if (name === "nerdctl-compose") return "nerdctl compose is not available.";
   if (name === "node" && status === "unsupported")
     return "Node.js 22 or newer is required for this setup script.";
   return `${hostDependencyLabel(name)} is not available.`;
@@ -254,8 +289,8 @@ function macHostDependencyAction(
 ) {
   if (name === "git")
     return "Install Xcode Command Line Tools or run brew install git.";
-  if (name.startsWith("docker"))
-    return "Install and start Docker Desktop for Mac.";
+  if (containerRuntimeDependency(name))
+    return "Start Blame Lima Runtime and ensure containerd, nerdctl, and nerdctl compose are available.";
   if (name === "corepack")
     return "Install Node.js 22 or newer, then run corepack --version.";
   if (name === "npm")
@@ -278,8 +313,8 @@ function windowsHostDependencyAction(
 ) {
   if (name === "git")
     return "Install Git for Windows or run winget install Git.Git.";
-  if (name.startsWith("docker"))
-    return "Install and start Docker Desktop with WSL2 enabled.";
+  if (containerRuntimeDependency(name))
+    return "Start Blame WSL2 Runtime and ensure containerd, nerdctl, and nerdctl compose are available.";
   if (name === "corepack")
     return "Install Node.js 22 or newer, then run corepack --version.";
   if (name === "npm")
@@ -301,8 +336,8 @@ function linuxHostDependencyAction(
   status: HostDependencyStatus,
 ) {
   if (name === "git") return "Install git with your system package manager.";
-  if (name.startsWith("docker"))
-    return "Install Docker Engine, the Compose plugin, and ensure the daemon is reachable.";
+  if (containerRuntimeDependency(name))
+    return "Start Blame Native Runtime and ensure containerd, nerdctl, and nerdctl compose are available.";
   if (name === "corepack")
     return "Install Node.js 22 or newer, then run corepack --version.";
   if (name === "npm")
@@ -322,11 +357,12 @@ function linuxHostDependencyAction(
 
 function hostDependencyLabel(name: HostDependencyName) {
   const labels: Record<HostDependencyName, string> = {
+    "blame-runtime": "Blame Runtime",
+    containerd: "containerd",
     corepack: "Corepack",
-    docker: "Docker",
-    "docker-compose": "Docker Compose",
-    "docker-daemon": "Docker daemon",
     git: "Git",
+    nerdctl: "nerdctl",
+    "nerdctl-compose": "nerdctl compose",
     node: "Node.js",
     npm: "npm",
     pnpm: "pnpm",
@@ -335,6 +371,12 @@ function hostDependencyLabel(name: HostDependencyName) {
     pip: "pip",
   };
   return labels[name];
+}
+
+function containerRuntimeDependency(name: HostDependencyName) {
+  return ["blame-runtime", "containerd", "nerdctl", "nerdctl-compose"].includes(
+    name,
+  );
 }
 
 function scriptWithoutShellComments(setupScript: string) {
@@ -359,4 +401,21 @@ async function runCommand(
     timeout: commandTimeoutMs,
   });
   return stdout;
+}
+
+function runRuntimeCommand(
+  context: CheckContext,
+  command: ContainerRuntimeCommand,
+  args: string[],
+) {
+  const spec = runtimeCommand(context.platform, command, args);
+  return context.run(spec.command, spec.args, context.env);
+}
+
+function runRuntimeBinary(context: CheckContext, args: string[]) {
+  if (context.platform === "darwin")
+    return context.run("blame-lima-runtime", args, context.env);
+  if (context.platform === "win32")
+    return context.run("blame-wsl2-runtime", args, context.env);
+  return context.run(args[0] ?? "", args.slice(1), context.env);
 }

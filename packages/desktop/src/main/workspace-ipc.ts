@@ -27,6 +27,10 @@ import { promisify } from "node:util";
 import { BrowserWindow, ipcMain } from "electron";
 import { generateNewProjectWithAgent } from "./agent-ipc";
 import {
+  containerRuntimeEnvironment,
+  createContainerRuntime,
+} from "./container-runtime";
+import {
   assertHostDependencies,
   checkHostDependencies,
 } from "./host-dependencies";
@@ -48,8 +52,8 @@ import {
 } from "./workspace-compose";
 import {
   cleanupAbandonedBlamePreviews,
-  dockerAddressPoolExhausted,
   removeBlamePreviewProjectResources,
+  runtimeAddressPoolExhausted,
 } from "./workspace-docker-cleanup";
 import { syncProjectEnvFiles } from "./workspace-env";
 import {
@@ -147,7 +151,7 @@ type ComposeConfig = {
   services?: Record<string, ComposeService>;
 };
 
-type DockerContainer = {
+type RuntimeContainer = {
   Config?: {
     Labels?: Record<string, string>;
   };
@@ -193,6 +197,7 @@ const previewRecoveries = new Map<string, Promise<string | null>>();
 const removingWorktrees = new Set<string>();
 const removedWorktrees = new Set<string>();
 const workspaceProcesses = new Set<ChildProcessWithoutNullStreams>();
+const containerRuntime = createContainerRuntime();
 
 export function registerWorkspaceIpcHandlers() {
   setProjectCreationWindowsProvider(() => BrowserWindow.getAllWindows());
@@ -482,25 +487,25 @@ async function completeProjectSetup(
 
 async function startProjectCompose(worktree: string) {
   await repairProjectCompose(worktree);
-  await runDockerComposeUp(worktree);
+  await runProjectComposeUp(worktree);
   const previewUrl = await waitForPreviewUrl(worktree);
   await waitForPreview(worktree, previewUrl);
   return previewUrl;
 }
 
-async function runDockerComposeUp(worktree: string) {
-  const composeArgs = dockerComposeArgs(worktree);
+async function runProjectComposeUp(worktree: string) {
+  const args = composeArgs(worktree);
   await ensureGlobalPreviewVolumes(worktree);
-  await runDockerComposeWithRetry(
+  await runComposeWithRetry(
     worktree,
-    [...composeArgs, "pull"],
+    [...args, "pull"],
     composePullRetryDelaysMs,
     "compose image pull",
   );
   await startProjectLogStream(worktree);
-  await runDockerComposeWithRetry(
+  await runComposeWithRetry(
     worktree,
-    [...composeArgs, "up", "-d", "--remove-orphans"],
+    [...args, "up", "-d", "--remove-orphans"],
     composeUpRetryDelaysMs,
     "compose start",
   );
@@ -509,7 +514,7 @@ async function runDockerComposeUp(worktree: string) {
 async function ensureGlobalPreviewVolumes(worktree: string) {
   await Promise.all(
     globalPreviewVolumes.map((volume) =>
-      execFileAsync("docker", ["volume", "create", volume], {
+      containerRuntime.volume(["create", volume], {
         cwd: worktree,
         env: setupEnvironment(worktree),
       }),
@@ -517,9 +522,8 @@ async function ensureGlobalPreviewVolumes(worktree: string) {
   );
 }
 
-function dockerComposeArgs(worktree: string) {
+function composeArgs(worktree: string) {
   return [
-    "compose",
     "-f",
     projectComposePath(worktree),
     "--project-directory",
@@ -527,7 +531,7 @@ function dockerComposeArgs(worktree: string) {
   ];
 }
 
-async function runDockerComposeWithRetry(
+async function runComposeWithRetry(
   worktree: string,
   args: string[],
   retryDelays: number[],
@@ -536,17 +540,17 @@ async function runDockerComposeWithRetry(
   let cleanupAttempted = false;
   for (let attempt = 0; ; attempt += 1) {
     try {
-      await execFileAsync("docker", args, {
+      await containerRuntime.compose(args, {
         cwd: worktree,
         env: setupEnvironment(worktree),
       });
       return;
     } catch (error) {
-      if (!cleanupAttempted && dockerAddressPoolExhausted(error)) {
+      if (!cleanupAttempted && runtimeAddressPoolExhausted(error)) {
         cleanupAttempted = true;
         await appendRecoveryLog(
           worktree,
-          "Docker address pools exhausted, cleaning abandoned Blame previews",
+          "container runtime address pools exhausted, cleaning abandoned Blame previews",
         );
         const projects = await cleanupAbandonedBlamePreviews();
         await appendRecoveryLog(
@@ -558,7 +562,7 @@ async function runDockerComposeWithRetry(
         continue;
       }
       const retryDelay = retryDelays[attempt];
-      if (!retryDelay || !transientDockerPullError(error)) throw error;
+      if (!retryDelay || !transientRuntimePullError(error)) throw error;
       await appendRecoveryLog(
         worktree,
         `${label} interrupted, retrying in ${Math.round(retryDelay / 1_000)}s`,
@@ -590,17 +594,8 @@ async function stopProjectSetup(input: StopProjectSetupInput) {
   if (!existsSync(composePath)) return false;
   await repairComposeFile(composePath);
   try {
-    await execFileAsync(
-      "docker",
-      [
-        "compose",
-        "-f",
-        composePath,
-        "--project-directory",
-        worktree,
-        "down",
-        "--remove-orphans",
-      ],
+    await containerRuntime.compose(
+      ["-f", composePath, "--project-directory", worktree, "down", "--remove-orphans"],
       { cwd: worktree, env: setupEnvironment(worktree) },
     );
     return true;
@@ -765,9 +760,8 @@ async function stopSetupRunsForWorktree(worktree: string) {
 
 async function listProjectServices(worktreeInput: string) {
   const worktree = resolve(worktreeInput);
-  const { stdout } = await execFileAsync(
-    "docker",
-    [...dockerComposeArgs(worktree), "config", "--services"],
+  const { stdout } = await containerRuntime.compose(
+    [...composeArgs(worktree), "config", "--services"],
     { cwd: worktree, env: setupEnvironment(worktree) },
   );
   return stdout
@@ -799,10 +793,9 @@ function startProjectServiceLogProcess(
 ) {
   if (stream.stopped || projectServiceLogStreams.get(streamId) !== stream)
     return;
-  const child = spawn(
-    "docker",
+  const child = containerRuntime.spawnCompose(
     [
-      ...dockerComposeArgs(stream.worktree),
+      ...composeArgs(stream.worktree),
       "logs",
       "--tail",
       "120",
@@ -874,10 +867,9 @@ async function startProjectLogStream(worktree: string) {
 
 function startProjectLogProcess(worktree: string, stream: ProjectLogStream) {
   if (stream.stopped) return;
-  const process = spawn(
-    "docker",
+  const process = containerRuntime.spawnCompose(
     [
-      ...dockerComposeArgs(worktree),
+      ...composeArgs(worktree),
       "logs",
       "--tail",
       "120",
@@ -1048,7 +1040,7 @@ function isDirectoryNotEmptyError(error: unknown) {
   return commandText(error, "stderr").includes("Directory not empty");
 }
 
-function transientDockerPullError(error: unknown) {
+function transientRuntimePullError(error: unknown) {
   return /failed to copy|httpReadSeeker|unexpected EOF|\bEOF\b|TLS handshake timeout|connection reset|i\/o timeout|context deadline exceeded|cloudfront\.docker\.com/i.test(
     commandErrorText(error),
   );
@@ -1112,6 +1104,7 @@ function storySlug(storyId: number, title: string) {
 
 function setupEnvironment(worktree: string) {
   return {
+    ...containerRuntimeEnvironment(process.env),
     ...worktreeRuntimeEnvironment(worktree),
     ...process.env,
     BLAME_HOST_GID: hostGroupId(),
@@ -1229,10 +1222,8 @@ async function composeConfig(
   composePath: string,
 ): Promise<ComposeConfig> {
   await repairComposeFile(composePath);
-  const { stdout } = await execFileAsync(
-    "docker",
+  const { stdout } = await containerRuntime.compose(
     [
-      "compose",
       "-f",
       composePath,
       "--project-directory",
@@ -1292,10 +1283,8 @@ async function composePublishedAddress(
 ) {
   try {
     await repairComposeFile(composePath);
-    const { stdout } = await execFileAsync(
-      "docker",
+    const { stdout } = await containerRuntime.compose(
       [
-        "compose",
         "-f",
         composePath,
         "--project-directory",
@@ -1325,15 +1314,14 @@ async function repairComposeFile(composePath: string) {
 
 async function appendComposeDiagnostics(worktree: string) {
   await appendRecoveryLog(worktree, "compose diagnostics");
-  await appendDockerComposeOutput(worktree, ["ps", "-a"]);
-  await appendDockerComposeOutput(worktree, ["logs", "--tail", "120", "app"]);
+  await appendComposeOutput(worktree, ["ps", "-a"]);
+  await appendComposeOutput(worktree, ["logs", "--tail", "120", "app"]);
 }
 
-async function appendDockerComposeOutput(worktree: string, args: string[]) {
+async function appendComposeOutput(worktree: string, args: string[]) {
   try {
-    const { stdout, stderr } = await execFileAsync(
-      "docker",
-      [...dockerComposeArgs(worktree), ...args],
+    const { stdout, stderr } = await containerRuntime.compose(
+      [...composeArgs(worktree), ...args],
       { cwd: worktree, env: setupEnvironment(worktree) },
     );
     if (stdout) await appendRecoveryLog(worktree, stdout.trimEnd());
@@ -1344,7 +1332,7 @@ async function appendDockerComposeOutput(worktree: string, args: string[]) {
 }
 
 async function labeledContainerPreviewUrl(worktree: string) {
-  const containers = await previewContainers(false);
+  const containers = await previewContainers(false, worktree);
   const container = containers.find((container) =>
     containerMatchesWorktree(container, worktree),
   );
@@ -1362,10 +1350,9 @@ async function labeledContainerPreviewUrl(worktree: string) {
   );
 }
 
-async function previewContainers(includeStopped: boolean) {
+async function previewContainers(includeStopped: boolean, worktree: string) {
   try {
-    const { stdout } = await execFileAsync(
-      "docker",
+    const { stdout } = await containerRuntime.container(
       [
         "ps",
         ...(includeStopped ? ["-a"] : []),
@@ -1374,25 +1361,21 @@ async function previewContainers(includeStopped: boolean) {
         "--format",
         "{{.ID}}",
       ],
+      { cwd: worktree, env: setupEnvironment(worktree) },
     );
     const ids = stdout
       .split("\n")
       .map((line) => line.trim())
       .filter(Boolean);
     if (ids.length === 0) return [];
-    const { stdout: inspectOutput } = await execFileAsync("docker", [
-      "inspect",
-      ...ids,
-    ]);
-    const parsed = JSON.parse(inspectOutput) as unknown;
-    return Array.isArray(parsed) ? (parsed as DockerContainer[]) : [];
+    return containerRuntime.inspect<RuntimeContainer>(ids);
   } catch {
     return [];
   }
 }
 
 function containerMatchesWorktree(
-  container: DockerContainer,
+  container: RuntimeContainer,
   worktree: string,
 ) {
   const labels = container.Config?.Labels ?? {};
@@ -1431,7 +1414,7 @@ async function assertPreviewContainerCanStillStart(worktree: string) {
 }
 
 async function previewContainerForWorktree(worktree: string) {
-  const containers = await previewContainers(true);
+  const containers = await previewContainers(true, worktree);
   return containers.find((container) => containerMatchesWorktree(container, worktree));
 }
 

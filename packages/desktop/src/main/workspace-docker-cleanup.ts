@@ -2,6 +2,10 @@ import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
 import { dirname } from "node:path";
 import { promisify } from "node:util";
+import {
+  runtimeCommand,
+  type ContainerRuntimeCommand,
+} from "./container-runtime.ts";
 
 const execFileAsync = promisify(execFile);
 
@@ -16,7 +20,7 @@ type ExecFileRunner = (
   options?: Record<string, unknown>,
 ) => Promise<ExecFileResult>;
 
-type DockerContainer = {
+type RuntimeContainer = {
   Id?: string;
   Config?: {
     Labels?: Record<string, string>;
@@ -26,7 +30,7 @@ type DockerContainer = {
   };
 };
 
-type DockerNetwork = {
+type RuntimeNetwork = {
   Id?: string;
   Name?: string;
   Labels?: Record<string, string>;
@@ -39,12 +43,12 @@ type CleanupInput = {
 
 type ComposeProject = {
   name: string;
-  containers: DockerContainer[];
+  containers: RuntimeContainer[];
 };
 
-export function dockerAddressPoolExhausted(error: unknown) {
+export function runtimeAddressPoolExhausted(error: unknown) {
   return /all predefined address pools have been fully subnetted/i.test(
-    dockerErrorText(error),
+    runtimeErrorText(error),
   );
 }
 
@@ -62,7 +66,7 @@ export async function removeBlamePreviewProjectResources(
 ) {
   if (!generatedBlameProjectName(projectName)) return false;
   const exec = input.exec ?? defaultExecFile;
-  const containers = (await dockerComposeContainers(exec)).filter(
+  const containers = (await composeContainers(exec)).filter(
     (container) => composeProjectName(container) === projectName,
   );
   await removeProjectContainers(exec, containers);
@@ -73,7 +77,7 @@ export async function removeBlamePreviewProjectResources(
 
 async function abandonedBlameProjects(exec: ExecFileRunner) {
   const projects = new Map<string, ComposeProject>();
-  const containers = await dockerComposeContainers(exec);
+  const containers = await composeContainers(exec);
   for (const container of containers) {
     const projectName = composeProjectName(container);
     if (!projectName) continue;
@@ -91,8 +95,8 @@ async function abandonedBlameProjects(exec: ExecFileRunner) {
   );
 }
 
-async function dockerComposeContainers(exec: ExecFileRunner) {
-  const ids = await dockerIds(exec, [
+async function composeContainers(exec: ExecFileRunner) {
+  const ids = await runtimeIds(exec, "container", [
     "ps",
     "-a",
     "--filter",
@@ -101,7 +105,7 @@ async function dockerComposeContainers(exec: ExecFileRunner) {
     "{{.ID}}",
   ]);
   if (ids.length === 0) return [];
-  return dockerInspect<DockerContainer>(exec, ids);
+  return runtimeInspect<RuntimeContainer>(exec, ids);
 }
 
 async function cleanupProject(exec: ExecFileRunner, project: ComposeProject) {
@@ -120,10 +124,10 @@ async function cleanupProjectWithCompose(
   );
   if (!composeFile) return false;
   try {
-    await exec(
-      "docker",
+    await runtimeExec(
+      exec,
+      "compose",
       [
-        "compose",
         "-f",
         composeFile,
         "--project-directory",
@@ -174,26 +178,25 @@ async function removeStoppedContainers(
     .filter((id): id is string => Boolean(id));
   if (ids.length === 0) return;
   try {
-    await exec("docker", ["rm", ...ids]);
+    await runtimeExec(exec, "container", ["rm", ...ids]);
   } catch {}
 }
 
 async function removeProjectContainers(
   exec: ExecFileRunner,
-  containers: DockerContainer[],
+  containers: RuntimeContainer[],
 ) {
   const ids = containers
     .map((container) => container.Id)
     .filter((id): id is string => Boolean(id));
   if (ids.length === 0) return;
   try {
-    await exec("docker", ["rm", "--force", ...ids]);
+    await runtimeExec(exec, "container", ["rm", "--force", ...ids]);
   } catch {}
 }
 
 async function removeProjectNetworks(exec: ExecFileRunner, project: string) {
-  const ids = await dockerIds(exec, [
-    "network",
+  const ids = await runtimeIds(exec, "network", [
     "ls",
     "--filter",
     `label=com.docker.compose.project=${project}`,
@@ -201,12 +204,11 @@ async function removeProjectNetworks(exec: ExecFileRunner, project: string) {
     "{{.ID}}",
   ]);
   if (ids.length === 0) return;
-  await removeNetworks(exec, await dockerInspect<DockerNetwork>(exec, ids));
+  await removeNetworks(exec, await runtimeInspect<RuntimeNetwork>(exec, ids));
 }
 
 async function removeProjectVolumes(exec: ExecFileRunner, project: string) {
-  const volumes = await dockerIds(exec, [
-    "volume",
+  const volumes = await runtimeIds(exec, "volume", [
     "ls",
     "--format",
     "{{.Name}}",
@@ -214,13 +216,12 @@ async function removeProjectVolumes(exec: ExecFileRunner, project: string) {
   const ids = volumes.filter((volume) => volume.startsWith(`${project}_`));
   if (ids.length === 0) return;
   try {
-    await exec("docker", ["volume", "rm", ...ids]);
+    await runtimeExec(exec, "volume", ["rm", ...ids]);
   } catch {}
 }
 
 async function removeDanglingBlameNetworks(exec: ExecFileRunner) {
-  const ids = await dockerIds(exec, [
-    "network",
+  const ids = await runtimeIds(exec, "network", [
     "ls",
     "--filter",
     "label=com.docker.compose.project",
@@ -228,29 +229,33 @@ async function removeDanglingBlameNetworks(exec: ExecFileRunner) {
     "{{.ID}}",
   ]);
   if (ids.length === 0) return;
-  const networks = await dockerInspect<DockerNetwork>(exec, ids);
+  const networks = await runtimeInspect<RuntimeNetwork>(exec, ids);
   await removeNetworks(exec, networks.filter(danglingBlameNetwork));
 }
 
-async function removeNetworks(exec: ExecFileRunner, networks: DockerNetwork[]) {
+async function removeNetworks(exec: ExecFileRunner, networks: RuntimeNetwork[]) {
   const ids = networks
     .filter((network) => Object.keys(network.Containers ?? {}).length === 0)
     .map((network) => network.Id)
     .filter((id): id is string => Boolean(id));
   if (ids.length === 0) return;
   try {
-    await exec("docker", ["network", "rm", ...ids]);
+    await runtimeExec(exec, "network", ["rm", ...ids]);
   } catch {}
 }
 
-function danglingBlameNetwork(network: DockerNetwork) {
+function danglingBlameNetwork(network: RuntimeNetwork) {
   const project = network.Labels?.["com.docker.compose.project"] ?? "";
   return blameProjectName(project) || blameProjectName(network.Name ?? "");
 }
 
-async function dockerIds(exec: ExecFileRunner, args: string[]) {
+async function runtimeIds(
+  exec: ExecFileRunner,
+  command: ContainerRuntimeCommand,
+  args: string[],
+) {
   try {
-    const { stdout } = await exec("docker", args);
+    const { stdout } = await runtimeExec(exec, command, args);
     return stdout
       .split("\n")
       .map((line) => line.trim())
@@ -260,9 +265,9 @@ async function dockerIds(exec: ExecFileRunner, args: string[]) {
   }
 }
 
-async function dockerInspect<T>(exec: ExecFileRunner, ids: string[]) {
+async function runtimeInspect<T>(exec: ExecFileRunner, ids: string[]) {
   try {
-    const { stdout } = await exec("docker", ["inspect", ...ids]);
+    const { stdout } = await runtimeExec(exec, "inspect", ids);
     const parsed = JSON.parse(stdout) as unknown;
     return Array.isArray(parsed) ? (parsed as T[]) : [];
   } catch {
@@ -279,7 +284,7 @@ function blamePreviewProject(project: ComposeProject) {
   );
 }
 
-function composeProjectName(container: DockerContainer) {
+function composeProjectName(container: RuntimeContainer) {
   return labelValue(container, "com.docker.compose.project") || undefined;
 }
 
@@ -291,7 +296,7 @@ function generatedBlameProjectName(project: string) {
   return /^blame_[0-9a-f]{12}$/.test(project);
 }
 
-function labelValue(container: DockerContainer, key: string) {
+function labelValue(container: RuntimeContainer, key: string) {
   return container.Config?.Labels?.[key] ?? "";
 }
 
@@ -299,12 +304,22 @@ function uniqueStrings(values: string[]) {
   return Array.from(new Set(values));
 }
 
-function dockerErrorText(error: unknown) {
+function runtimeErrorText(error: unknown) {
   if (!error || typeof error !== "object") return "";
   const record = error as Record<string, unknown>;
   return [record.message, record.stdout, record.stderr]
     .filter((value): value is string => typeof value === "string")
     .join("\n");
+}
+
+function runtimeExec(
+  exec: ExecFileRunner,
+  command: ContainerRuntimeCommand,
+  args: string[],
+  options?: Record<string, unknown>,
+) {
+  const spec = runtimeCommand(process.platform, command, args);
+  return exec(spec.command, spec.args, options);
 }
 
 async function defaultExecFile(

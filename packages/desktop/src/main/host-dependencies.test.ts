@@ -56,28 +56,26 @@ test("reports missing git before setup execution", async () => {
   assert.match(report.issues[0]?.action ?? "", /Xcode|brew/);
 });
 
-test("reports unavailable docker daemon separately from docker cli", async () => {
+test("reports unavailable Blame runtime on Windows", async () => {
   const report = await checkHostDependencies(
     { platform: "win32", setupScript: "echo ready" },
-    async (command, args) => {
-      if (command === "docker" && args[0] === "info") {
-        throw new Error("daemon unavailable");
-      }
+    async (command) => {
+      if (command === "blame-wsl2-runtime") throw new Error("unavailable");
       return "ok";
     },
   );
 
   assert.equal(report.ok, false);
-  assert.equal(report.issues[0]?.name, "docker-daemon");
+  assert.equal(report.issues[0]?.name, "blame-runtime");
   assert.equal(report.issues[0]?.status, "unavailable");
-  assert.match(report.issues[0]?.action ?? "", /Docker Desktop/);
+  assert.match(report.issues[0]?.action ?? "", /Blame WSL2 Runtime/);
 });
 
-test("does not cascade docker checks when docker cli is missing", async () => {
+test("does not cascade runtime checks when nerdctl is missing", async () => {
   const report = await checkHostDependencies(
     { platform: "linux", setupScript: "echo ready" },
     async (command) => {
-      if (command === "docker") throw new Error("docker missing");
+      if (command === "nerdctl") throw new Error("nerdctl missing");
       return "ok";
     },
   );
@@ -85,15 +83,15 @@ test("does not cascade docker checks when docker cli is missing", async () => {
   assert.equal(report.ok, false);
   assert.deepEqual(
     report.issues.map((issue) => issue.name),
-    ["docker"],
+    ["nerdctl"],
   );
 });
 
-test("reports missing docker compose plugin", async () => {
+test("reports missing nerdctl compose support", async () => {
   const report = await checkHostDependencies(
     { platform: "linux", setupScript: "echo ready" },
     async (command, args) => {
-      if (command === "docker" && args.join(" ") === "compose version") {
+      if (command === "nerdctl" && args.join(" ") === "compose version") {
         throw new Error("compose missing");
       }
       return "ok";
@@ -101,8 +99,22 @@ test("reports missing docker compose plugin", async () => {
   );
 
   assert.equal(report.ok, false);
-  assert.equal(report.issues[0]?.name, "docker-compose");
-  assert.match(report.issues[0]?.action ?? "", /Compose plugin/);
+  assert.equal(report.issues[0]?.name, "nerdctl-compose");
+  assert.match(report.issues[0]?.action ?? "", /Blame Native Runtime/);
+});
+
+test("reports unavailable containerd separately from nerdctl", async () => {
+  const report = await checkHostDependencies(
+    { platform: "linux", setupScript: "echo ready" },
+    async (command) => {
+      if (command === "ctr") throw new Error("containerd unavailable");
+      return "ok";
+    },
+  );
+
+  assert.equal(report.ok, false);
+  assert.equal(report.issues[0]?.name, "containerd");
+  assert.equal(report.issues[0]?.status, "unavailable");
 });
 
 test("checks node and corepack when setup script needs package tooling", async () => {

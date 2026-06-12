@@ -124,7 +124,7 @@ export function deterministicInitializationImpact(
     return {
       classification: "initialization_still_valid",
       reason:
-        "The diff does not touch runtime, package, workspace, service, port, Docker, or environment files.",
+        "The diff does not touch runtime, package, workspace, service, port, Compose, or environment files.",
     };
   }
   return undefined;

@@ -319,14 +319,14 @@ export function validateProjectInitializationArtifacts(
 ) {
   const normalizedScript = script.toLowerCase();
   const normalizedCompose = compose.toLowerCase();
-  if (launchesDockerCompose(normalizedScript)) {
+  if (launchesCompose(normalizedScript)) {
     throw new Error(
-      "Initialization result setupScript must not launch docker compose",
+      "Initialization result setupScript must not launch compose",
     );
   }
   if (usesFixedLocalPublicOrigin(normalizedScript, normalizedCompose)) {
     throw new Error(
-      "Initialization result must not set browser-facing origin URLs to localhost internal ports when Docker allocates preview host ports",
+      "Initialization result must not set browser-facing origin URLs to localhost internal ports when the runtime allocates preview host ports",
     );
   }
   validateDockerCompose(normalizedCompose, scan);
@@ -347,12 +347,12 @@ function validateDockerCompose(
   }
   if (usesManualHostPort(compose)) {
     throw new Error(
-      "Initialization result dockerCompose must let Docker allocate host ports",
+      "Initialization result dockerCompose must let the runtime allocate host ports",
     );
   }
-  if (!hasDockerAllocatedPortMapping(compose)) {
+  if (!hasRuntimeAllocatedPortMapping(compose)) {
     throw new Error(
-      "Initialization result dockerCompose must expose Docker-allocated host ports",
+      "Initialization result dockerCompose must expose runtime-allocated host ports",
     );
   }
   if (usesProjectDockerfileBuild(compose)) {
@@ -425,7 +425,7 @@ function validateDockerCompose(
   }
 }
 
-function launchesDockerCompose(script: string) {
+function launchesCompose(script: string) {
   return composeCommandPresent(script) && composeLifecyclePresent(script);
 }
 
@@ -437,7 +437,7 @@ function usesManualHostPort(compose: string) {
   return /\$\{[a-z0-9_]*port\}:/.test(compose);
 }
 
-function hasDockerAllocatedPortMapping(compose: string) {
+function hasRuntimeAllocatedPortMapping(compose: string) {
   return includesOneOf(compose, [
     "127.0.0.1::",
     "host_ip: 127.0.0.1",
@@ -447,7 +447,7 @@ function hasDockerAllocatedPortMapping(compose: string) {
 }
 
 function usesFixedLocalPublicOrigin(script: string, compose: string) {
-  if (!hasDockerAllocatedPortMapping(compose)) return false;
+  if (!hasRuntimeAllocatedPortMapping(compose)) return false;
   const values = `${script}\n${compose}`;
   return publicOriginVariablePattern().test(values);
 }

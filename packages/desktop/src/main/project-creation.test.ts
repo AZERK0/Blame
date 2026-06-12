@@ -356,7 +356,7 @@ test("disabled advanced scripts option does not synthesize standard scripts", as
 test("builds Blame initialization defaults without AI analysis", () => {
   assert.doesNotMatch(setupScript(baseConfiguration), /\b(?:npm|pnpm|yarn|bun|corepack)\b/);
   assert.match(setupScript(baseConfiguration), /set -euo pipefail/);
-  assert.match(setupScript(baseConfiguration), /command -v docker/);
+  assert.doesNotMatch(setupScript(baseConfiguration), /command -v docker/);
   assert.match(setupScript(baseConfiguration), /COMPOSE_PROJECT_NAME/);
   assert.match(setupScript(baseConfiguration), /cp \.env\.example \.env/);
   assert.match(dockerCompose(baseConfiguration), /blame\.preview: "true"/);

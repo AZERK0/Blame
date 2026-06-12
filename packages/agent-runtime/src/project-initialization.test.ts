@@ -48,7 +48,7 @@ test("rejects run configuration cwd outside the project", () => {
   );
 });
 
-test("rejects duplicate docker compose mapping keys", () => {
+test("rejects duplicate compose mapping keys", () => {
   const result = {
     ...baseResult,
     dockerCompose: [

@@ -209,7 +209,7 @@ function backendSetupCommands(configuration: NewProjectConfiguration) {
 
 function hostToolChecks(configuration: NewProjectConfiguration) {
   return [
-    ...toolChecks(["git", "docker"]),
+    ...toolChecks(["git"]),
     ...pythonToolChecks(configuration),
   ];
 }

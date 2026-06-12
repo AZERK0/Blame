@@ -5,20 +5,20 @@ import { join } from "node:path";
 import test from "node:test";
 import {
   cleanupAbandonedBlamePreviews,
-  dockerAddressPoolExhausted,
   removeBlamePreviewProjectResources,
+  runtimeAddressPoolExhausted,
 } from "./workspace-docker-cleanup.ts";
 
-test("detects Docker address pool exhaustion", () => {
+test("detects runtime address pool exhaustion", () => {
   assert.equal(
-    dockerAddressPoolExhausted({
+    runtimeAddressPoolExhausted({
       stderr:
         "failed to create network preview_default: Error response from daemon: all predefined address pools have been fully subnetted",
     }),
     true,
   );
   assert.equal(
-    dockerAddressPoolExhausted(new Error("connection reset")),
+    runtimeAddressPoolExhausted(new Error("connection reset")),
     false,
   );
 });

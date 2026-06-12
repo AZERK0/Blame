@@ -12,20 +12,16 @@ export function setupPath(input: SetupPathInput = {}) {
   const platform = input.platform ?? process.platform;
   return uniquePaths([
     dirname(input.execPath ?? process.execPath),
-    ...dockerDesktopPaths(platform),
+    ...runtimeToolPaths(platform),
     ...windowsPackageManagerPaths(env, platform),
     ...nodeVersionManagerPaths(env),
     env.PATH,
   ], platform).join(pathDelimiter(platform));
 }
 
-function dockerDesktopPaths(platform: NodeJS.Platform) {
+function runtimeToolPaths(platform: NodeJS.Platform) {
   if (platform !== "darwin") return [];
-  return [
-    "/Applications/Docker.app/Contents/Resources/bin",
-    "/usr/local/bin",
-    "/opt/homebrew/bin",
-  ];
+  return ["/usr/local/bin", "/opt/homebrew/bin"];
 }
 
 function windowsPackageManagerPaths(
