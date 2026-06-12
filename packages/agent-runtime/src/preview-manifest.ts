@@ -155,12 +155,26 @@ function normalizedMysqlEnvironment(environment: PreviewManifestEnvironment) {
 }
 
 function normalizedAppEnvironment(environment: PreviewManifestEnvironment) {
-  if (!("APP_KEY" in environment)) return environment;
-  if ((environment.APP_KEY ?? "").length >= 16) return environment;
-  return {
-    ...environment,
-    APP_KEY: "blame-preview-app-key",
-  };
+  const normalized: PreviewManifestEnvironment = {};
+  for (const [key, value] of Object.entries(environment)) {
+    if (key === "APP_KEY" && value.length < 16) continue;
+    if (placeholderEnvironmentValue(value)) continue;
+    normalized[key] = value;
+  }
+  return normalized;
+}
+
+function placeholderEnvironmentValue(value: string) {
+  const normalized = value.trim().toLowerCase();
+  return [
+    "preview",
+    "placeholder",
+    "preview-app-key",
+    "blame-dev-app-key",
+    "changeme",
+    "change-me",
+    "replace-me",
+  ].includes(normalized) || normalized.startsWith("your_");
 }
 
 function normalizedCaches(manifest: PreviewManifest) {

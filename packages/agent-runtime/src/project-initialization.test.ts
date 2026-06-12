@@ -183,7 +183,7 @@ test("normalizes mysql root image environment", () => {
   assert.doesNotMatch(result.dockerCompose, /MYSQL_PASSWORD: "root"/);
 });
 
-test("normalizes short app keys in setup and runtime services", () => {
+test("removes placeholder app environment values", () => {
   const result = parseProjectInitializationPayload({
     ...manifestResult,
     previewManifest: {
@@ -193,6 +193,9 @@ test("normalizes short app keys in setup and runtime services", () => {
           ...manifestResult.previewManifest.setup[0],
           environment: {
             APP_KEY: "short",
+            GOOGLE_CLIENT_ID: "preview",
+            DB_HOST: "db",
+            DB_PASSWORD: "password",
           },
         },
       ],
@@ -201,15 +204,21 @@ test("normalizes short app keys in setup and runtime services", () => {
           ...manifestResult.previewManifest.services[0],
           environment: {
             APP_KEY: "preview-app-key",
+            KEEPA_ACCESS_KEY: "placeholder",
+            DB_HOST: "db",
+            DB_PASSWORD: "password",
           },
         },
       ],
     },
   });
 
-  assert.match(result.dockerCompose, /APP_KEY: "blame-preview-app-key"/);
+  assert.match(result.dockerCompose, /DB_HOST: "db"/);
+  assert.match(result.dockerCompose, /DB_PASSWORD: "password"/);
   assert.doesNotMatch(result.dockerCompose, /APP_KEY: "short"/);
   assert.doesNotMatch(result.dockerCompose, /APP_KEY: "preview-app-key"/);
+  assert.doesNotMatch(result.dockerCompose, /GOOGLE_CLIENT_ID: "preview"/);
+  assert.doesNotMatch(result.dockerCompose, /KEEPA_ACCESS_KEY: "placeholder"/);
 });
 
 test("does not generate runtime depends_on entries for setup tasks", () => {
