@@ -71,15 +71,42 @@ test("rejects duplicate compose mapping keys", () => {
   );
 });
 
-test("rejects fixed localhost public origins with dynamic preview ports", () => {
+test("accepts local public origin placeholders with runtime preview ports", () => {
   const result = {
     ...baseResult,
-    setupScript: "export BETTER_AUTH_URL=\"http://localhost:3000\"",
+    dockerCompose: [
+      "services:",
+      "  web:",
+      "    image: node:22",
+      '    user: "${BLAME_HOST_UID}:${BLAME_HOST_GID}"',
+      "    environment:",
+      '      BETTER_AUTH_URL: "http://localhost:3000"',
+      "    ports:",
+      '      - "127.0.0.1::3000"',
+    ].join("\n"),
+  };
+
+  const parsed = parseProjectInitializationResult(JSON.stringify(result));
+
+  assert.equal(parsed.dockerCompose, result.dockerCompose);
+});
+
+test("rejects fixed preview host ports in initialization artifacts", () => {
+  const result = {
+    ...baseResult,
+    dockerCompose: [
+      "services:",
+      "  web:",
+      "    image: node:22",
+      '    user: "${BLAME_HOST_UID}:${BLAME_HOST_GID}"',
+      "    ports:",
+      '      - "127.0.0.1:4173:3000"',
+    ].join("\n"),
   };
 
   assert.throws(
     () => parseProjectInitializationResult(JSON.stringify(result)),
-    /must not set browser-facing origin URLs/,
+    /must let the runtime allocate host ports/,
   );
 });
 

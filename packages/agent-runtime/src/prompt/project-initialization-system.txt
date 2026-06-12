@@ -61,10 +61,10 @@ It must:
 - create a self-contained development Compose file using base images and bind-mounted source instead of building from project Dockerfiles
 - prefer `node:22-bookworm` for Node services unless the scan proves the project requires a different Node major version
 - use project Dockerfiles only as read-only inspiration for ports, working directories, package manager versions, environment variables, and commands
-- preserve internal app ports and let the runtime allocate localhost host ports, e.g. `127.0.0.1::3000`
+- preserve internal app ports and express preview host ports as Blame-allocated localhost placeholders, e.g. `127.0.0.1::3000`; Blame materializes them to explicit host ports before launching the runtime
 - mark exactly one preview service with `blame.preview=true`, `blame.preview.port=<internal port>`, `blame.preview.protocol=http`, `blame.preview.path=/`
 - isolate containers, networks, and volumes through `COMPOSE_PROJECT_NAME`
-- do not set browser-facing origin variables such as `APP_URL`, `BETTER_AUTH_URL`, `NEXTAUTH_URL`, `NEXT_PUBLIC_APP_URL`, or equivalent values to `localhost:<internal port>` or `127.0.0.1:<internal port>` when using runtime-allocated host ports; omit those variables so auth/framework code can infer the public origin from the incoming request host
+- omit browser-facing origin variables such as `APP_URL`, `BETTER_AUTH_URL`, `NEXTAUTH_URL`, `NEXT_PUBLIC_APP_URL`, or equivalent values when auth/framework code can infer the public origin from the incoming request host; if the project requires one of these variables, use `http://127.0.0.1:<internal port>` or `http://localhost:<internal port>` and Blame will rewrite it to the selected host port before launch
 - run worktree-writing services as `${BLAME_HOST_UID}:${BLAME_HOST_GID}`
 - use a writable container-owned `node_modules` volume for Node services instead of host-installed or bind-mounted `node_modules`
 - ensure package manager cache volumes and every named volume mounted at a `node_modules` path in non-root services are writable by `${BLAME_HOST_UID}:${BLAME_HOST_GID}` before use, either through a root init service with `chown` and `depends_on` or by using writable bind/cache paths
@@ -78,7 +78,7 @@ It must:
 - use the exact environment variable names found in package scripts, runtime config, framework config, env validators, and example env files; do not substitute public/client-side variants for server-side runtime variables
 - bind preview servers to a literal `0.0.0.0` inside Compose; do not preserve existing `HOST`, `APP_HOST`, or equivalent values that may be `localhost`
 - for URLs used by one container to call another container, use literal Compose service DNS URLs such as `http://backend:3333`; do not preserve existing `localhost` env values through `${VAR:-...}` interpolation
-- for auth libraries that support request-host inference, prefer trust-host style configuration over fixed public URL variables; configure only internal bind values such as `HOST=0.0.0.0` and `PORT=<internal port>`
+- for auth libraries that support request-host inference, prefer trust-host style configuration over public URL variables; configure only internal bind values such as `HOST=0.0.0.0` and `PORT=<internal port>`
 - prefer existing package scripts and environment variables over adding framework CLI flags unless the scan proves those flags are supported
 - when an existing package script shells out to `pnpm`, prefer running the equivalent `corepack pnpm ...` command directly in Compose instead of invoking that script
 - when existing scripts already read `HOST`, `PORT`, or equivalent internal bind variables, set those variables and run the script unchanged instead of appending host or port flags
@@ -116,4 +116,4 @@ Base each `detected` value only on explicit scan evidence. Keep each `comment` s
 
 ## Final Check
 
-Before returning, ensure the JSON parses, both artifact strings are non-empty, runConfigurations is valid, setup performs only host-side preparation without starting Compose, Compose has services plus dynamic localhost ports and one preview service, and no manual user step is required.
+Before returning, ensure the JSON parses, both artifact strings are non-empty, runConfigurations is valid, setup performs only host-side preparation without starting Compose, Compose has services plus Blame-allocated localhost port placeholders and one preview service, and no manual user step is required.

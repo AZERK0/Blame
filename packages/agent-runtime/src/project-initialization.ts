@@ -329,11 +329,6 @@ export function validateProjectInitializationArtifacts(
       "Initialization result setupScript must not require Docker or Docker Compose",
     );
   }
-  if (usesFixedLocalPublicOrigin(normalizedScript, normalizedCompose)) {
-    throw new Error(
-      "Initialization result must not set browser-facing origin URLs to localhost internal ports when the runtime allocates preview host ports",
-    );
-  }
   validateDockerCompose(normalizedCompose, scan);
 }
 
@@ -459,40 +454,14 @@ function usesNpmCi(compose: string) {
 }
 
 function usesManualHostPort(compose: string) {
-  return /\$\{[a-z0-9_]*port\}:/.test(compose);
+  return (
+    /\$\{[a-z0-9_]*port\}:/.test(compose) ||
+    /(?:127\.0\.0\.1|localhost):[0-9]+:[0-9]+/.test(compose)
+  );
 }
 
 function hasRuntimeAllocatedPortMapping(compose: string) {
-  return includesOneOf(compose, [
-    "127.0.0.1::",
-    "host_ip: 127.0.0.1",
-    'host_ip: "127.0.0.1"',
-    "host_ip: '127.0.0.1'",
-  ]);
-}
-
-function usesFixedLocalPublicOrigin(script: string, compose: string) {
-  if (!hasRuntimeAllocatedPortMapping(compose)) return false;
-  const values = `${script}\n${compose}`;
-  return publicOriginVariablePattern().test(values);
-}
-
-function publicOriginVariablePattern() {
-  const names = [
-    "app_url",
-    "application_url",
-    "better_auth_url",
-    "canonical_url",
-    "next_public_app_url",
-    "next_public_base_url",
-    "nextauth_url",
-    "public_url",
-    "site_url",
-  ].join("|");
-  return new RegExp(
-    `(?:^|[\\s\\-])(?:export\\s+)?(?:${names})(?:\\s*[:=]\\s*|=)["']?https?:\\/\\/(?:localhost|127\\.0\\.0\\.1):[0-9]+(?:[\\/"'\\s}]|$)`,
-    "m",
-  );
+  return includesOneOf(compose, ["127.0.0.1::", "localhost::"]);
 }
 
 function usesProjectDockerfileBuild(compose: string) {

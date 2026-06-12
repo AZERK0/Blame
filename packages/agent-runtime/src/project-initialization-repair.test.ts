@@ -83,22 +83,20 @@ test("rejects invalid repaired artifacts", () => {
   )
 })
 
-test("rejects fixed localhost public origins in repaired artifacts", () => {
-  assert.throws(
-    () =>
-      parseProjectInitializationRepairResult(
-        JSON.stringify({
-          classification: "repairable_initialization",
-          reason: "The auth origin is invalid for dynamic preview ports.",
-          setupScript: "npm install",
-          dockerCompose: `${validCompose}
+test("accepts local public origin placeholders in repaired artifacts", () => {
+  const result = parseProjectInitializationRepairResult(
+    JSON.stringify({
+      classification: "repairable_initialization",
+      reason: "The auth origin is materialized by Blame before runtime launch.",
+      setupScript: "npm install",
+      dockerCompose: `${validCompose}
     environment:
       APP_URL: "http://127.0.0.1:3000"`,
-          runConfigurations: [],
-        }),
-      ),
-    /must not set browser-facing origin URLs/,
+      runConfigurations: [],
+    }),
   )
+
+  assert.equal(result.classification, "repairable_initialization")
 })
 
 test("requires complete run configurations for repairable initialization", () => {

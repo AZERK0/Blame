@@ -24,6 +24,25 @@ test("allocates explicit localhost ports for runtime previews", async () => {
   assert.doesNotMatch(result, /127\.0\.0\.1::3000/);
 });
 
+test("materializes preview public origins from allocated ports", async () => {
+  const compose = [
+    "services:",
+    "  web:",
+    "    environment:",
+    '      BETTER_AUTH_URL: "http://localhost:3000"',
+    '      NEXTAUTH_URL: "http://127.0.0.1:3000/api/auth"',
+    "    ports:",
+    '      - "127.0.0.1::3000"',
+  ].join("\n");
+
+  const result = await composeWithAllocatedHostPorts(compose);
+  const hostPort = /127\.0\.0\.1:(\d+):3000/.exec(result)?.[1];
+
+  assert.ok(hostPort);
+  assert.match(result, new RegExp(`BETTER_AUTH_URL: "http://127\\.0\\.0\\.1:${hostPort}"`));
+  assert.match(result, new RegExp(`NEXTAUTH_URL: "http://127\\.0\\.0\\.1:${hostPort}/api/auth"`));
+});
+
 test("keeps explicit localhost ports unchanged", async () => {
   const compose = [
     "services:",
@@ -35,6 +54,21 @@ test("keeps explicit localhost ports unchanged", async () => {
   const result = await composeWithAllocatedHostPorts(compose);
 
   assert.equal(result, compose);
+});
+
+test("uses explicit localhost ports for public origin materialization", async () => {
+  const compose = [
+    "services:",
+    "  web:",
+    "    environment:",
+    "      - APP_URL=http://localhost:3000",
+    "    ports:",
+    '      - "127.0.0.1:4173:3000"',
+  ].join("\n");
+
+  const result = await composeWithAllocatedHostPorts(compose);
+
+  assert.match(result, /APP_URL=http:\/\/127\.0\.0\.1:4173/);
 });
 
 test("removes invalid numeric su user commands", () => {

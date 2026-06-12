@@ -62,21 +62,82 @@ function npmOptionTakesValue(option: string) {
 
 export async function composeWithAllocatedHostPorts(compose: string) {
   const result: string[] = [];
+  const portMappings = new Map<number, number>();
   for (const line of compose.split("\n")) {
-    const match =
-      /^(\s*-\s*)(["']?)(127\.0\.0\.1|localhost)::(\d+)(\/[a-z]+)?\2(\s*(?:#.*)?)$/.exec(
-        line,
+    const allocated = allocatedPortLine(line);
+    if (allocated) {
+      const port = await freeLocalPort();
+      portMappings.set(allocated.targetPort, port);
+      result.push(
+        `${allocated.prefix}${allocated.quote}${allocated.host}:${port}:${allocated.targetPort}${allocated.protocol}${allocated.quote}${allocated.suffix}`,
       );
-    if (!match) {
-      result.push(line);
       continue;
     }
-    const port = await freeLocalPort();
-    result.push(
-      `${match[1]}${match[2]}${match[3]}:${port}:${match[4]}${match[5] ?? ""}${match[2]}${match[6]}`,
-    );
+    const explicit = explicitPortLine(line);
+    if (explicit) portMappings.set(explicit.targetPort, explicit.hostPort);
+    result.push(line);
   }
-  return result.join("\n");
+  return composeWithPreviewPublicOrigins(result.join("\n"), portMappings);
+}
+
+function allocatedPortLine(line: string) {
+  const match =
+    /^(\s*-\s*)(["']?)(127\.0\.0\.1|localhost)::(\d+)(\/[a-z]+)?\2(\s*(?:#.*)?)$/.exec(
+      line,
+    );
+  if (!match) return undefined;
+  return {
+    prefix: match[1],
+    quote: match[2],
+    host: match[3],
+    targetPort: Number.parseInt(match[4], 10),
+    protocol: match[5] ?? "",
+    suffix: match[6],
+  };
+}
+
+function explicitPortLine(line: string) {
+  const match =
+    /^\s*-\s*["']?(?:127\.0\.0\.1|localhost):(\d+):(\d+)(?:\/[a-z]+)?["']?\s*(?:#.*)?$/.exec(
+      line,
+    );
+  if (!match) return undefined;
+  return {
+    hostPort: Number.parseInt(match[1], 10),
+    targetPort: Number.parseInt(match[2], 10),
+  };
+}
+
+function composeWithPreviewPublicOrigins(
+  compose: string,
+  portMappings: Map<number, number>,
+) {
+  if (portMappings.size === 0) return compose;
+  return compose.replace(
+    publicOriginAssignmentPattern(),
+    (match, prefix: string, port: string) => {
+      const hostPort = portMappings.get(Number.parseInt(port, 10));
+      return hostPort ? `${prefix}http://127.0.0.1:${hostPort}` : match;
+    },
+  );
+}
+
+function publicOriginAssignmentPattern() {
+  const names = [
+    "APP_URL",
+    "APPLICATION_URL",
+    "BETTER_AUTH_URL",
+    "CANONICAL_URL",
+    "NEXT_PUBLIC_APP_URL",
+    "NEXT_PUBLIC_BASE_URL",
+    "NEXTAUTH_URL",
+    "PUBLIC_URL",
+    "SITE_URL",
+  ].join("|");
+  return new RegExp(
+    `((?:^|[\\s-])(?:${names})(?:\\s*[:=]\\s*|=)["']?)https?:\\/\\/(?:localhost|127\\.0\\.0\\.1):(\\d+)\\b`,
+    "gm",
+  );
 }
 
 export function dockerComposeWithEscapedCommandVariables(compose: string) {
