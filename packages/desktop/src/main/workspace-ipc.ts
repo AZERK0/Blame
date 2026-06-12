@@ -531,11 +531,19 @@ async function runProjectComposeUp(worktree: string) {
   );
   const config = await composeConfig(worktree, projectComposePath(worktree));
   const setupServices = await runSetupTaskServices(worktree, config);
-  await runCompletedDependencyServices(worktree, config, setupServices);
+  const completedServices = await runCompletedDependencyServices(
+    worktree,
+    config,
+    setupServices,
+  );
   await startProjectLogStream(worktree);
+  const services = runtimeServices(
+    config,
+    new Set([...setupServices, ...completedServices]),
+  );
   await runComposeWithRetry(
     worktree,
-    [...args, "up", "-d", "--remove-orphans"],
+    [...args, "up", "-d", "--remove-orphans", ...services],
     composeUpRetryDelaysMs,
     "compose start",
   );
@@ -558,6 +566,7 @@ async function runCompletedDependencyServices(
   for (const service of services) {
     await runProjectComposeService(worktree, service);
   }
+  return new Set(services);
 }
 
 async function runProjectComposeService(worktree: string, service: string) {
@@ -573,6 +582,12 @@ function setupTaskServices(config: ComposeConfig) {
   return Object.entries(config.services ?? {})
     .filter(([, service]) => serviceLabels(service)["blame.setup"] === "true")
     .map(([service]) => service);
+}
+
+function runtimeServices(config: ComposeConfig, setupServices: Set<string>) {
+  return Object.keys(config.services ?? {}).filter(
+    (service) => !setupServices.has(service),
+  );
 }
 
 function completedDependencyServices(config: ComposeConfig) {

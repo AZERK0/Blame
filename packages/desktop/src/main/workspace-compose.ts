@@ -611,13 +611,26 @@ function dependsOnUsesMapping(lines: string[], dependsOnIndex: number) {
 
 function addTopLevelVolumes(lines: string[], plan: DependencyVolumePlan) {
   const volumesLine = lines.findIndex((line) => /^volumes:\s*$/.test(line));
-  const volumeLines = topLevelVolumeLines(plan.mounts);
-  if (volumesLine === -1) return [...lines, ...volumeLines];
+  const declaredVolumes = topLevelVolumeNames(lines, volumesLine);
+  const volumeLines = missingTopLevelVolumeLines(plan.mounts, declaredVolumes);
+  if (volumesLine === -1)
+    return volumeLines.length > 0 ? [...lines, "volumes:", ...volumeLines] : lines;
   return [
     ...lines.slice(0, volumesLine + 1),
-    ...volumeLines.slice(1).filter((line) => !lines.includes(line)),
+    ...volumeLines,
     ...lines.slice(volumesLine + 1),
   ];
+}
+
+function topLevelVolumeNames(lines: string[], volumesLine: number) {
+  if (volumesLine === -1) return new Set<string>();
+  const names = new Set<string>();
+  for (let index = volumesLine + 1; index < lines.length; index += 1) {
+    if (/^\S/.test(lines[index])) break;
+    const match = /^\s{2}([a-zA-Z0-9_.-]+):\s*$/.exec(lines[index]);
+    if (match?.[1]) names.add(match[1]);
+  }
+  return names;
 }
 
 function normalizeTopLevelCacheVolumes(lines: string[]) {
@@ -682,10 +695,13 @@ function globalCacheVolumeName(name: string) {
 }
 
 function topLevelVolumeLines(mounts: string[]) {
-  return [
-    "volumes:",
-    ...uniqueStrings(mounts.map(volumeName)).flatMap(volumeYaml),
-  ];
+  return ["volumes:", ...missingTopLevelVolumeLines(mounts, new Set())];
+}
+
+function missingTopLevelVolumeLines(mounts: string[], declaredVolumes: Set<string>) {
+  return uniqueStrings(mounts.map(volumeName))
+    .filter((name) => !declaredVolumes.has(name))
+    .flatMap(volumeYaml);
 }
 
 function volumeYaml(name: string) {

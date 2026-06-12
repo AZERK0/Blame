@@ -210,7 +210,7 @@ function composeYaml(manifest: PreviewManifest) {
     ...volumeInitService(manifest.caches),
     ...manifest.setup.flatMap((task) => setupTaskYaml(task, manifest.caches)),
     ...manifest.services.flatMap((service) =>
-      serviceYaml(service, manifest.setup, manifest.caches),
+      serviceYaml(service, manifest.services, manifest.caches),
     ),
     "volumes:",
     ...manifest.caches.flatMap((cache) => [`  ${cache.name}:`]),
@@ -261,7 +261,7 @@ function setupTaskYaml(
 
 function serviceYaml(
   service: PreviewManifestService,
-  setup: PreviewManifestSetupTask[],
+  services: PreviewManifestService[],
   caches: PreviewManifestCache[],
 ) {
   return [
@@ -274,20 +274,20 @@ function serviceYaml(
       ? []
       : [`    working_dir: ${yamlString(service.workingDir ?? "/workspace")}`]),
     ...(service.command
-      ? [`    command: ${yamlString(`sh -lc ${shellQuote(service.command)}`)}`]
+      ? [
+          `    command: ${yamlString(
+            `sh -lc ${shellQuote(serviceCommand(service, services))}`,
+          )}`,
+        ]
       : []),
     ...environmentYaml(service.environment ?? {}),
     ...labelsYaml(service),
     ...portsYaml(service),
-    ...healthcheckYaml(service.healthcheck, service.preview),
+    ...serviceHealthcheckYaml(service),
     ...dependsOnYaml([
-      ...(caches.length > 0
-        ? [dependsOnEntry("blame-volumes-init", "service_completed_successfully")]
-        : []),
-      ...setup.map((task) =>
-        dependsOnEntry(task.id, "service_completed_successfully"),
+      ...(service.dependsOn ?? []).map((id) =>
+        dependsOnEntry(id, serviceDependencyCondition(id, services)),
       ),
-      ...(service.dependsOn ?? []).map((id) => dependsOnEntry(id)),
     ]),
     ...volumeYaml(caches, service.kind !== "dependency"),
   ];
@@ -304,6 +304,44 @@ function labelsYaml(service: PreviewManifestService) {
   ];
 }
 
+function serviceCommand(
+  service: PreviewManifestService,
+  services: PreviewManifestService[],
+) {
+  const waitCommands = dependencyWaitCommands(service, services);
+  return [...waitCommands, service.command].filter(Boolean).join(" && ");
+}
+
+function dependencyWaitCommands(
+  service: PreviewManifestService,
+  services: PreviewManifestService[],
+) {
+  if (!nodeImage(service.image)) return [];
+  return (service.dependsOn ?? [])
+    .map((id) => services.find((candidate) => candidate.id === id))
+    .filter(isMysqlDependency)
+    .map((dependency) => waitForTcpCommand(dependency.id, 3306));
+}
+
+function isMysqlDependency(
+  service: PreviewManifestService | undefined,
+): service is PreviewManifestService {
+  return !!service && mysqlImage(service.image);
+}
+
+function waitForTcpCommand(host: string, port: number) {
+  const script = [
+    `const net=require("net")`,
+    `const host=${JSON.stringify(host)}`,
+    `const port=${port}`,
+    `const deadline=Date.now()+60000`,
+    `function retry(){const socket=net.connect(port,host,()=>process.exit(0));socket.setTimeout(1000,()=>socket.destroy());socket.once("error",next);socket.once("timeout",next)}`,
+    `function next(){if(Date.now()>deadline)process.exit(1);setTimeout(retry,1000)}`,
+    `retry()`,
+  ].join(";");
+  return `node -e ${shellQuote(script)}`;
+}
+
 function portsYaml(service: PreviewManifestService) {
   if (service.kind !== "preview" || !service.preview) return [];
   return [
@@ -312,7 +350,14 @@ function portsYaml(service: PreviewManifestService) {
   ];
 }
 
-function healthcheckYaml(
+function serviceHealthcheckYaml(service: PreviewManifestService) {
+  return (
+    knownDependencyHealthcheckYaml(service) ??
+    httpHealthcheckYaml(service.healthcheck, service.preview)
+  );
+}
+
+function httpHealthcheckYaml(
   healthcheck: PreviewManifestHealthcheck | undefined,
   preview: PreviewManifestService["preview"],
 ) {
@@ -329,6 +374,41 @@ function healthcheckYaml(
     "      timeout: 5s",
     `      retries: ${retries}`,
   ];
+}
+
+function knownDependencyHealthcheckYaml(service: PreviewManifestService) {
+  if (service.kind !== "dependency") return undefined;
+  if (!mysqlImage(service.image)) return undefined;
+  return [
+    "    healthcheck:",
+    "      test:",
+    "        - CMD-SHELL",
+    `        - ${yamlString(`mysqladmin ping -h 127.0.0.1 -uroot -p"$$MYSQL_ROOT_PASSWORD" --silent`)}`,
+    "      interval: 5s",
+    "      timeout: 5s",
+    "      retries: 12",
+  ];
+}
+
+function serviceDependencyCondition(
+  id: string,
+  services: PreviewManifestService[],
+) {
+  const dependency = services.find((service) => service.id === id);
+  if (!dependency) return undefined;
+  return serviceHasHealthcheck(dependency) ? "service_healthy" : undefined;
+}
+
+function serviceHasHealthcheck(service: PreviewManifestService) {
+  return !!serviceHealthcheckYaml(service).length;
+}
+
+function mysqlImage(image: string) {
+  return /^mysql(?::|$)/.test(image) || /\/mysql(?::|$)/.test(image);
+}
+
+function nodeImage(image: string) {
+  return /^node(?::|$)/.test(image) || /\/node(?::|$)/.test(image);
 }
 
 function environmentYaml(environment: PreviewManifestEnvironment) {

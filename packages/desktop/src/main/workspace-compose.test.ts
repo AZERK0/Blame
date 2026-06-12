@@ -407,6 +407,26 @@ test("promotes existing package cache volumes to global runtime volumes", () => 
   assert.doesNotMatch(result, /node_modules:\n    name:/);
 });
 
+test("does not orphan global volume metadata when cache volume already exists", () => {
+  const compose = [
+    "services:",
+    "  deps:",
+    "    volumes:",
+    "      - blame_pnpm_store:/pnpm/store",
+    "    command: corepack pnpm install",
+    "volumes:",
+    "  blame_pnpm_store:",
+  ].join("\n");
+
+  const result = dockerComposeWithDependencyVolumes(compose, "/tmp/project");
+
+  assert.match(
+    result,
+    /volumes:\n  blame_pnpm_store:\n    name: blame_pnpm_store\n    external: true/,
+  );
+  assert.doesNotMatch(result, /volumes:\n    name:/);
+});
+
 test("replaces project-scoped package cache volume names", () => {
   const compose = [
     "services:",

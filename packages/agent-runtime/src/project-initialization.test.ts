@@ -102,6 +102,56 @@ test("generates initialization artifacts from preview manifest", () => {
   assert.doesNotMatch(result.dockerCompose, /blame-volumes-init:\n\s+volumes:/);
 });
 
+test("waits for known database dependencies to become healthy", () => {
+  const result = parseProjectInitializationPayload({
+    ...manifestResult,
+    previewManifest: {
+      ...manifestResult.previewManifest,
+      services: [
+        {
+          id: "db",
+          kind: "dependency",
+          image: "mysql:8.0",
+          environment: {
+            MYSQL_ROOT_PASSWORD: "root",
+            MYSQL_DATABASE: "app",
+          },
+        },
+        {
+          id: "backend",
+          kind: "worker",
+          image: "node:22-bookworm",
+          workingDir: "/workspace",
+          command: "node ace migration:run && node ace serve --hmr",
+          dependsOn: ["db"],
+        },
+        manifestResult.previewManifest.services[0],
+      ],
+    },
+  });
+
+  assert.match(
+    result.dockerCompose,
+    /db:[\s\S]*mysqladmin ping -h 127\.0\.0\.1/,
+  );
+  assert.match(
+    result.dockerCompose,
+    /backend:[\s\S]*db:\n\s+condition: service_healthy/,
+  );
+  assert.doesNotMatch(
+    result.dockerCompose,
+    /backend:[\s\S]*deps:\n\s+condition: service_completed_successfully/,
+  );
+  assert.match(
+    result.dockerCompose,
+    /backend:[\s\S]*node -e[\s\S]*const host=\\?"db\\?"/,
+  );
+  assert.match(
+    result.dockerCompose,
+    /backend:[\s\S]*node ace migration:run/,
+  );
+});
+
 test("parses initialization tool payloads", () => {
   const result = parseProjectInitializationPayload(manifestResult);
 
