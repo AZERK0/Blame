@@ -25,6 +25,7 @@ import {
 } from "node:path";
 import { promisify } from "node:util";
 import { BrowserWindow, ipcMain } from "electron";
+import { parse as parseYaml } from "yaml";
 import { generateNewProjectWithAgent } from "./agent-ipc";
 import {
   containerRuntimeEnvironment,
@@ -47,6 +48,9 @@ import {
   type CollectProjectInitializationDiagnosticsInput,
 } from "./project-initialization-diagnostics";
 import {
+  composeWithNonMutatingNpmInstalls,
+  composeWithoutNumericSuUser,
+  composeWithAllocatedHostPorts,
   dockerComposeForPreview,
   dockerComposeWithPortableWindowsPaths,
 } from "./workspace-compose";
@@ -138,6 +142,7 @@ type ResolveProjectPreviewUrlInput = {
 };
 
 type ComposeService = {
+  depends_on?: Record<string, { condition?: string } | string> | string[];
   labels?: Record<string, string> | string[];
   ports?: Array<{
     mode?: string;
@@ -413,7 +418,8 @@ async function createWorktree(input: CreateWorktreeInput) {
 async function runProjectSetup(input: RunProjectSetupInput) {
   const worktree = resolve(input.worktree);
   const env = setupEnvironment(worktree);
-  await assertHostDependencies({ env, setupScript: input.setupScript });
+  const setupScript = setupScriptWithoutDockerRuntimeChecks(input.setupScript);
+  await assertHostDependencies({ env, setupScript });
   await assertGitRepository(worktree);
   const directory = join(worktree, ".blame", "initialization");
   const scriptPath = join(directory, "setup.sh");
@@ -422,11 +428,17 @@ async function runProjectSetup(input: RunProjectSetupInput) {
 
   await mkdir(directory, { recursive: true });
   await mkdir(dirname(logPath), { recursive: true });
-  await writeFile(scriptPath, input.setupScript, "utf8");
+  await writeFile(scriptPath, setupScript, "utf8");
   await writeFile(logPath, "", "utf8");
   await writeFile(
     composePath,
-    dockerComposeForPreview(input.dockerCompose, worktree),
+    await composeWithAllocatedHostPorts(
+      composeWithNonMutatingNpmInstalls(
+        composeWithoutNumericSuUser(
+          dockerComposeForPreview(input.dockerCompose, worktree),
+        ),
+      ),
+    ),
     "utf8",
   );
   await chmod(scriptPath, 0o755);
@@ -452,6 +464,21 @@ async function runProjectSetup(input: RunProjectSetupInput) {
   });
 
   return { runId };
+}
+
+function setupScriptWithoutDockerRuntimeChecks(script: string) {
+  return script
+    .replace(
+      /\n?if\s+!\s+command\s+-v\s+docker\b[\s\S]*?\nfi\s*/g,
+      "\n",
+    )
+    .replace(
+      /\n?if\s+!\s+docker\s+compose\s+version\b[\s\S]*?\nfi\s*/g,
+      "\n",
+    )
+    .replace(/^\s*command\s+-v\s+docker\b.*$/gm, "")
+    .replace(/^\s*docker\s+compose\s+version\b.*$/gm, "")
+    .replace(/\n{3,}/g, "\n\n");
 }
 
 async function completeProjectSetup(
@@ -502,6 +529,7 @@ async function runProjectComposeUp(worktree: string) {
     composePullRetryDelaysMs,
     "compose image pull",
   );
+  await runCompletedDependencyServices(worktree);
   await startProjectLogStream(worktree);
   await runComposeWithRetry(
     worktree,
@@ -509,6 +537,43 @@ async function runProjectComposeUp(worktree: string) {
     composeUpRetryDelaysMs,
     "compose start",
   );
+}
+
+async function runCompletedDependencyServices(worktree: string) {
+  const services = completedDependencyServices(
+    await composeConfig(worktree, projectComposePath(worktree)),
+  );
+  for (const service of services) {
+    const result = await containerRuntime.compose(
+      [...composeArgs(worktree), "up", service],
+      { cwd: worktree, env: setupEnvironment(worktree) },
+    );
+    if (result.stdout) await appendRecoveryLog(worktree, result.stdout.trimEnd());
+    if (result.stderr) await appendRecoveryLog(worktree, result.stderr.trimEnd());
+  }
+}
+
+function completedDependencyServices(config: ComposeConfig) {
+  return uniqueStrings(
+    Object.values(config.services ?? {}).flatMap((service) =>
+      serviceDependsOnCompletedServices(service),
+    ),
+  );
+}
+
+function serviceDependsOnCompletedServices(service: ComposeService) {
+  const dependsOn = service.depends_on;
+  if (!dependsOn || Array.isArray(dependsOn)) return [];
+  return Object.entries(dependsOn)
+    .filter(([, value]) =>
+      typeof value === "object" &&
+      value?.condition === "service_completed_successfully",
+    )
+    .map(([service]) => service);
+}
+
+function uniqueStrings(values: string[]) {
+  return Array.from(new Set(values));
 }
 
 async function ensureGlobalPreviewVolumes(worktree: string) {
@@ -1229,12 +1294,10 @@ async function composeConfig(
       "--project-directory",
       worktree,
       "config",
-      "--format",
-      "json",
     ],
     { cwd: worktree, env: setupEnvironment(worktree) },
   );
-  const parsed = JSON.parse(stdout) as unknown;
+  const parsed = parseYaml(stdout) as unknown;
   if (!parsed || typeof parsed !== "object") return {};
   return parsed as ComposeConfig;
 }
@@ -1308,7 +1371,11 @@ async function repairProjectCompose(worktree: string) {
 async function repairComposeFile(composePath: string) {
   if (!existsSync(composePath)) return;
   const compose = await readFile(composePath, "utf8");
-  const repairedCompose = dockerComposeWithPortableWindowsPaths(compose);
+  const repairedCompose = await composeWithAllocatedHostPorts(
+    composeWithNonMutatingNpmInstalls(
+      composeWithoutNumericSuUser(dockerComposeWithPortableWindowsPaths(compose)),
+    ),
+  );
   if (repairedCompose !== compose) await writeFile(composePath, repairedCompose, "utf8");
 }
 

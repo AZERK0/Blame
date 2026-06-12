@@ -1,11 +1,71 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  composeWithNonMutatingNpmInstalls,
+  composeWithoutNumericSuUser,
+  composeWithAllocatedHostPorts,
   dockerComposeForPreview,
   dockerComposeWithCiForPackageInstalls,
   dockerComposeWithCorepackPnpm,
   dockerComposeWithDependencyVolumes,
 } from "./workspace-compose.ts";
+
+test("allocates explicit localhost ports for runtime previews", async () => {
+  const compose = [
+    "services:",
+    "  web:",
+    "    ports:",
+    '      - "127.0.0.1::3000"',
+  ].join("\n");
+
+  const result = await composeWithAllocatedHostPorts(compose);
+
+  assert.match(result, /"127\.0\.0\.1:[0-9]+:3000"/);
+  assert.doesNotMatch(result, /127\.0\.0\.1::3000/);
+});
+
+test("keeps explicit localhost ports unchanged", async () => {
+  const compose = [
+    "services:",
+    "  web:",
+    "    ports:",
+    '      - "127.0.0.1:4173:3000"',
+  ].join("\n");
+
+  const result = await composeWithAllocatedHostPorts(compose);
+
+  assert.equal(result, compose);
+});
+
+test("removes invalid numeric su user commands", () => {
+  const compose = [
+    "services:",
+    "  deps:",
+    "    command: >-",
+    "      bash -lc \"chown -R ${BLAME_HOST_UID}:${BLAME_HOST_GID} /workspace/node_modules && su -s /bin/bash -c 'corepack pnpm install' '#${BLAME_HOST_UID}'\"",
+  ].join("\n");
+
+  const result = composeWithoutNumericSuUser(compose);
+
+  assert.match(result, /bash -lc 'corepack pnpm install'/);
+  assert.doesNotMatch(result, /'#\$\{BLAME_HOST_UID\}'/);
+});
+
+test("uses non-mutating npm installs for runtime previews", () => {
+  const compose = [
+    "services:",
+    "  app:",
+    '    command: ["sh", "-c", "npm install --cache /npm-cache && npx nuxt dev"]',
+  ].join("\n");
+
+  const result = composeWithNonMutatingNpmInstalls(compose);
+
+  assert.match(
+    result,
+    /npm install --no-package-lock --cache \/npm-cache && npx nuxt dev/,
+  );
+  assert.doesNotMatch(result, /npm ci/);
+});
 
 test("prefixes pnpm commands without rewriting pnpm paths", () => {
   const compose = [

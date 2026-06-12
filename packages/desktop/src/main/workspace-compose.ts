@@ -1,3 +1,5 @@
+import { createServer } from "node:net";
+
 export function dockerComposeForPreview(compose: string, worktree: string) {
   const previewCompose = dockerComposeWithEscapedCommandVariables(
     projectRootCompose(compose, worktree),
@@ -10,6 +12,71 @@ export function dockerComposeForPreview(compose: string, worktree: string) {
     ),
     worktree,
   );
+}
+
+export function composeWithoutNumericSuUser(compose: string) {
+  return compose.replace(
+    /\bsu\s+-s\s+\/bin\/bash\s+-c\s+((['"])(?:(?!\2).)+\2)\s+(['"])#\$\{BLAME_HOST_UID\}\3/g,
+    "bash -lc $1",
+  );
+}
+
+export function composeWithNonMutatingNpmInstalls(compose: string) {
+  return compose.replace(
+    /(^|[\s;&|"'`(])npm\s+install\b([^\n;&|"'`]*)/g,
+    (match, prefix: string, args: string) => {
+      const options = args.trim();
+      if (hasNpmInstallPackageArguments(options)) return match;
+      const suffix = options ? ` ${options}` : "";
+      const separator = /\s$/.test(args) ? " " : "";
+      return `${prefix}npm install --no-package-lock${suffix}${separator}`;
+    },
+  );
+}
+
+function hasNpmInstallPackageArguments(options: string) {
+  return npmInstallTokens(options).some((token, index, tokens) => {
+    if (token.startsWith("-")) return false;
+    return !npmOptionTakesValue(tokens[index - 1] ?? "");
+  });
+}
+
+function npmInstallTokens(options: string) {
+  const matches = options.match(/(?:[^\s"'`]+|"[^"]*"|'[^']*')+/g);
+  return matches ?? [];
+}
+
+function npmOptionTakesValue(option: string) {
+  const name = option.split("=")[0];
+  return [
+    "--cache",
+    "--prefix",
+    "--registry",
+    "--userconfig",
+    "--workspace",
+    "--workspace-root",
+    "-w",
+    "-C",
+  ].includes(name);
+}
+
+export async function composeWithAllocatedHostPorts(compose: string) {
+  const result: string[] = [];
+  for (const line of compose.split("\n")) {
+    const match =
+      /^(\s*-\s*)(["']?)(127\.0\.0\.1|localhost)::(\d+)(\/[a-z]+)?\2(\s*(?:#.*)?)$/.exec(
+        line,
+      );
+    if (!match) {
+      result.push(line);
+      continue;
+    }
+    const port = await freeLocalPort();
+    result.push(
+      `${match[1]}${match[2]}${match[3]}:${port}:${match[4]}${match[5] ?? ""}${match[2]}${match[6]}`,
+    );
+  }
+  return result.join("\n");
 }
 
 export function dockerComposeWithEscapedCommandVariables(compose: string) {
@@ -670,4 +737,20 @@ function projectRootCompose(compose: string, worktree: string) {
 
 function yamlPathValue(path: string) {
   return path.replace(/\\/g, "/");
+}
+
+function freeLocalPort() {
+  return new Promise<number>((resolve, reject) => {
+    const server = createServer();
+    server.unref();
+    server.on("error", reject);
+    server.listen(0, "127.0.0.1", () => {
+      const address = server.address();
+      if (!address || typeof address === "string") {
+        server.close(() => reject(new Error("Unable to allocate local port")));
+        return;
+      }
+      server.close(() => resolve(address.port));
+    });
+  });
 }

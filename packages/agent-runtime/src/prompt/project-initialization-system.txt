@@ -45,6 +45,7 @@ It must never:
 - run Node package manager scripts or Node ORM generators
 - copy, generate, overwrite, or delete `.env`, `.env.*`, `.env.example`, `.env.sample`, or `.env.template` files
 - launch Compose, containers, dev servers, or preview URLs
+- require Docker, Docker Compose, docker-compose, or Docker Desktop
 - manage worktrees or write inside `.git`
 - create alternate compose files outside Blame's managed compose path
 - contain TODOs, blocking placeholders, or non-executable explanation
@@ -58,6 +59,7 @@ It must:
 - include all services required for a working preview
 - reuse existing Compose structure when present, changing only isolation, dynamic ports, env, volumes, commands, and Blame metadata
 - create a self-contained development Compose file using base images and bind-mounted source instead of building from project Dockerfiles
+- prefer `node:22-bookworm` for Node services unless the scan proves the project requires a different Node major version
 - use project Dockerfiles only as read-only inspiration for ports, working directories, package manager versions, environment variables, and commands
 - preserve internal app ports and let the runtime allocate localhost host ports, e.g. `127.0.0.1::3000`
 - mark exactly one preview service with `blame.preview=true`, `blame.preview.port=<internal port>`, `blame.preview.protocol=http`, `blame.preview.path=/`
@@ -68,6 +70,7 @@ It must:
 - ensure package manager cache volumes and every named volume mounted at a `node_modules` path in non-root services are writable by `${BLAME_HOST_UID}:${BLAME_HOST_GID}` before use, either through a root init service with `chown` and `depends_on` or by using writable bind/cache paths
 - bootstrap package managers inside containers before project commands
 - install Node dependencies inside exactly one container service before starting services that need them
+- for npm dependency installs in Compose, use `npm install --no-package-lock` so previews do not fail on temporary package-lock drift or rewrite bind-mounted lockfiles
 - for Nuxt, do not run the preview script unless the Compose lifecycle builds the application first; prefer the development script for source-mounted previews
 - when the scan shows migrations for the configured database or ORM, run them in an idempotent Compose service after dependencies and database readiness, give that service the same database environment as the backend service, and make backend services depend on that migration service completing successfully
 - set `CI=true` for non-interactive containers that run package manager installs
@@ -89,6 +92,8 @@ It must never:
 - use `build`, `dockerfile`, or any project Dockerfile as the runtime path
 - use `corepack enable` or bare `pnpm`
 - use unescaped container shell variables such as `$HOME` or `${HOME}` in Compose commands
+- use `su` with numeric `${BLAME_HOST_UID}` users such as `'#${BLAME_HOST_UID}'`; run worktree-writing services directly as `${BLAME_HOST_UID}:${BLAME_HOST_GID}` instead
+- use `npm ci` in Compose previews
 - let containers write bind-mounted worktree files as root
 - start a backend that depends on a relational database before required migrations have completed
 - mount root-owned named volumes at paths like `/workspace/node_modules`, `/workspace/apps/web/node_modules`, `/tmp/corepack-cache`, `/tmp/package-store`, or package manager cache directories in services running as `${BLAME_HOST_UID}:${BLAME_HOST_GID}` without first making them writable

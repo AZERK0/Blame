@@ -82,3 +82,55 @@ test("rejects fixed localhost public origins with dynamic preview ports", () => 
     /must not set browser-facing origin URLs/,
   );
 });
+
+test("rejects setup scripts requiring Docker", () => {
+  const result = {
+    ...baseResult,
+    setupScript: "command -v docker >/dev/null || exit 1",
+  };
+
+  assert.throws(
+    () => parseProjectInitializationResult(JSON.stringify(result)),
+    /must not require Docker/,
+  );
+});
+
+test("rejects numeric su users in compose commands", () => {
+  const result = {
+    ...baseResult,
+    dockerCompose: [
+      "services:",
+      "  deps:",
+      "    image: node:22",
+      '    user: "${BLAME_HOST_UID}:${BLAME_HOST_GID}"',
+      "    ports:",
+      '      - "127.0.0.1::3000"',
+      "    command: bash -lc \"su -s /bin/bash -c 'corepack pnpm install' '#${BLAME_HOST_UID}'\"",
+    ].join("\n"),
+  };
+
+  assert.throws(
+    () => parseProjectInitializationResult(JSON.stringify(result)),
+    /must not run commands through su/,
+  );
+});
+
+test("rejects npm ci in compose previews", () => {
+  const result = {
+    ...baseResult,
+    dockerCompose: [
+      "services:",
+      "  deps:",
+      "    image: node:22",
+      '    user: "${BLAME_HOST_UID}:${BLAME_HOST_GID}"',
+      "    ports:",
+      '      - "127.0.0.1::3000"',
+      "    command: npm ci",
+    ].join("\n"),
+  };
+
+  assert.throws(
+    () => parseProjectInitializationResult(JSON.stringify(result)),
+    /must use npm install --no-package-lock/,
+  );
+});

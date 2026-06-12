@@ -324,6 +324,11 @@ export function validateProjectInitializationArtifacts(
       "Initialization result setupScript must not launch compose",
     );
   }
+  if (requiresDockerRuntime(normalizedScript)) {
+    throw new Error(
+      "Initialization result setupScript must not require Docker or Docker Compose",
+    );
+  }
   if (usesFixedLocalPublicOrigin(normalizedScript, normalizedCompose)) {
     throw new Error(
       "Initialization result must not set browser-facing origin URLs to localhost internal ports when the runtime allocates preview host ports",
@@ -415,6 +420,16 @@ function validateDockerCompose(
       "Initialization result dockerCompose must run pnpm through corepack",
     );
   }
+  if (usesNpmCi(compose)) {
+    throw new Error(
+      "Initialization result dockerCompose must use npm install --no-package-lock instead of npm ci",
+    );
+  }
+  if (usesNumericSuUser(compose)) {
+    throw new Error(
+      "Initialization result dockerCompose must not run commands through su with numeric BLAME_HOST_UID users",
+    );
+  }
   if (
     usesNodeModulesVolumes(compose) &&
     !initializesNodeModulesVolumes(compose)
@@ -429,8 +444,18 @@ function launchesCompose(script: string) {
   return composeCommandPresent(script) && composeLifecyclePresent(script);
 }
 
+function requiresDockerRuntime(script: string) {
+  return /\b(?:command\s+-v\s+docker|docker\s+--version|docker\s+compose\s+version|docker-compose\s+--version)\b/.test(
+    script,
+  );
+}
+
 function usesUnescapedContainerHome(compose: string) {
   return /(?<!\$)\$(?:home\b|\{home\})/.test(compose);
+}
+
+function usesNpmCi(compose: string) {
+  return /\bnpm\s+ci\b/.test(compose);
 }
 
 function usesManualHostPort(compose: string) {
@@ -513,6 +538,12 @@ function usesNuxtPreviewWithoutBuild(
 
 function usesBarePnpm(compose: string) {
   return /(^|[\s;&|])pnpm\s/.test(compose.replace(/corepack\s+pnpm/g, ""));
+}
+
+function usesNumericSuUser(compose: string) {
+  return /\bsu\s+-s\s+\/bin\/bash\s+-c\b[\s\S]*['"]#\$\{blame_host_uid\}['"]/.test(
+    compose,
+  );
 }
 
 function overridesEnvironmentDrivenServeCommand(compose: string) {
