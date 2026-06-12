@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { parseProjectInitializationResult } from "./project-initialization.js";
+import {
+  parseProjectInitializationPayload,
+  parseProjectInitializationResult,
+} from "./project-initialization.js";
 
 const baseResult = {
   setupScript: "set -euo pipefail",
@@ -81,40 +84,6 @@ test("parses project run configurations", () => {
   assert.deepEqual(result.runConfigurations, baseResult.runConfigurations);
 });
 
-test("normalizes run configuration default values", () => {
-  const result = parseProjectInitializationResult(
-    JSON.stringify({
-      ...baseResult,
-      runConfigurations: [
-        {
-          id: "web",
-          name: "Web application",
-          command: "pnpm dev",
-          cwd: ".",
-          default: "true",
-        },
-        {
-          id: "worker",
-          name: "Worker",
-          command: "pnpm worker",
-          cwd: ".",
-          default: 0,
-        },
-        {
-          id: "docs",
-          name: "Docs",
-          command: "pnpm docs",
-          cwd: ".",
-        },
-      ],
-    }),
-  );
-
-  assert.equal(result.runConfigurations[0]?.default, true);
-  assert.equal(result.runConfigurations[1]?.default, false);
-  assert.equal(result.runConfigurations[2]?.default, false);
-});
-
 test("generates initialization artifacts from preview manifest", () => {
   const result = parseProjectInitializationResult(JSON.stringify(manifestResult));
 
@@ -133,27 +102,38 @@ test("generates initialization artifacts from preview manifest", () => {
   assert.doesNotMatch(result.dockerCompose, /blame-volumes-init:\n\s+volumes:/);
 });
 
-test("normalizes preview manifest risk level aliases", () => {
-  const result = parseProjectInitializationResult(
-    JSON.stringify({
-      ...manifestResult,
-      previewManifest: {
-        ...manifestResult.previewManifest,
-        risks: [
-          { level: "warning", description: "Requires database seed data." },
-          { level: "info", reason: "Uses local cache volumes." },
-          { level: "notice" },
-        ],
-      },
-    }),
-  );
+test("parses initialization tool payloads", () => {
+  const result = parseProjectInitializationPayload(manifestResult);
 
-  assert.equal(result.previewManifest?.risks[0]?.level, "medium");
-  assert.equal(result.previewManifest?.risks[0]?.message, "Requires database seed data.");
-  assert.equal(result.previewManifest?.risks[1]?.level, "low");
-  assert.equal(result.previewManifest?.risks[1]?.message, "Uses local cache volumes.");
-  assert.equal(result.previewManifest?.risks[2]?.level, "low");
-  assert.equal(result.previewManifest?.risks[2]?.message, "Unspecified initialization risk.");
+  assert.equal(result.previewManifest?.confidence, "high");
+  assert.match(result.dockerCompose, /blame\.preview: "true"/);
+});
+
+test("rejects non canonical initialization fields", () => {
+  assert.throws(
+    () =>
+      parseProjectInitializationPayload({
+        ...manifestResult,
+        runConfigurations: [
+          {
+            ...manifestResult.runConfigurations[0],
+            default: "true",
+          },
+        ],
+      }),
+    /default must be boolean/,
+  );
+  assert.throws(
+    () =>
+      parseProjectInitializationPayload({
+        ...manifestResult,
+        previewManifest: {
+          ...manifestResult.previewManifest,
+          risks: [{ level: "warning", description: "Requires seed data." }],
+        },
+      }),
+    /risk level is invalid/,
+  );
 });
 
 test("rejects unsafe preview manifest commands", () => {

@@ -120,6 +120,146 @@ type ProjectInitializationCorrection = {
   previousResult: string;
 };
 
+export const projectInitializationResultSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["previewManifest", "runConfigurations", "practices"],
+  properties: {
+    previewManifest: {
+      type: "object",
+      additionalProperties: false,
+      required: ["version", "confidence", "project", "setup", "services", "caches", "risks"],
+      properties: {
+        version: { const: 1 },
+        confidence: { enum: ["low", "medium", "high"] },
+        project: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            root: { type: "string" },
+            detectedStack: { type: "array", items: { type: "string" } },
+            confidence: { enum: ["low", "medium", "high"] },
+          },
+        },
+        setup: {
+          type: "array",
+          items: {
+            type: "object",
+            additionalProperties: false,
+            required: ["id", "image", "workingDir", "command"],
+            properties: {
+              id: { type: "string" },
+              image: { type: "string" },
+              workingDir: { type: "string" },
+              command: { type: "string" },
+              runAs: { enum: ["host", "root"] },
+              environment: { type: "object", additionalProperties: { type: "string" } },
+              dependsOn: { type: "array", items: { type: "string" } },
+            },
+          },
+        },
+        services: {
+          type: "array",
+          items: {
+            type: "object",
+            additionalProperties: false,
+            required: ["id", "kind", "image"],
+            properties: {
+              id: { type: "string" },
+              kind: { enum: ["preview", "dependency", "worker"] },
+              image: { type: "string" },
+              workingDir: { type: "string" },
+              command: { type: "string" },
+              environment: { type: "object", additionalProperties: { type: "string" } },
+              dependsOn: { type: "array", items: { type: "string" } },
+              preview: {
+                type: "object",
+                additionalProperties: false,
+                required: ["internalPort", "protocol", "path"],
+                properties: {
+                  internalPort: { type: "integer", minimum: 1, maximum: 65535 },
+                  protocol: { const: "http" },
+                  path: { type: "string" },
+                },
+              },
+              healthcheck: {
+                type: "object",
+                additionalProperties: false,
+                required: ["type", "path", "timeoutMs"],
+                properties: {
+                  type: { const: "http" },
+                  path: { type: "string" },
+                  timeoutMs: { type: "integer", minimum: 1000, maximum: 300000 },
+                },
+              },
+            },
+          },
+        },
+        caches: {
+          type: "array",
+          items: {
+            type: "object",
+            additionalProperties: false,
+            required: ["name", "target"],
+            properties: {
+              name: { type: "string" },
+              target: { type: "string" },
+            },
+          },
+        },
+        risks: {
+          type: "array",
+          items: {
+            type: "object",
+            additionalProperties: false,
+            required: ["level", "message"],
+            properties: {
+              level: { enum: ["low", "medium", "high"] },
+              message: { type: "string" },
+            },
+          },
+        },
+      },
+    },
+    runConfigurations: {
+      type: "array",
+      maxItems: 20,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["id", "name", "command", "cwd", "default"],
+        properties: {
+          id: { type: "string" },
+          name: { type: "string" },
+          command: { type: "string" },
+          cwd: { type: "string" },
+          default: { type: "boolean" },
+        },
+      },
+    },
+    practices: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["practice", "detected", "comment"],
+        properties: {
+          practice: {
+            enum: [
+              "coding_style",
+              "unit_tests",
+              "layered_architecture",
+              "commit_message_convention",
+            ],
+          },
+          detected: { type: "boolean" },
+          comment: { type: "string" },
+        },
+      },
+    },
+  },
+} as const;
+
 export async function scanProjectForInitialization(
   root: string,
 ): Promise<ProjectInitializationScan> {
@@ -133,7 +273,9 @@ export async function scanProjectForInitialization(
 
 export function projectInitializationPrompt(scan: ProjectInitializationScan) {
   return [
-    "Analyze this project scan according to your system instructions and return strict JSON only.",
+    "Analyze this project scan according to your system instructions.",
+    "Call submit_project_initialization exactly once with the complete result.",
+    "Do not answer with JSON text.",
     `Project: ${scan.rootName}`,
     `Root entries: ${JSON.stringify(scan.topLevelEntries)}`,
     `Recent git log: ${JSON.stringify(scan.gitLog)}`,
@@ -147,12 +289,11 @@ export function projectInitializationCorrectionPrompt(
 ) {
   return [
     projectInitializationPrompt(scan),
-    "Your previous response was rejected by validation.",
-    "Fix only the generated JSON output according to the validation error.",
+    "Your previous tool input was rejected by validation.",
+    "Call submit_project_initialization again with a complete corrected input.",
     "Do not broaden the analysis and do not read more files.",
-    "Return a complete corrected JSON object only.",
     `Validation error: ${correction.validationError}`,
-    `Previous rejected response: ${truncateCorrectionPayload(correction.previousResult)}`,
+    `Previous rejected input: ${truncateCorrectionPayload(correction.previousResult)}`,
   ].join("\n");
 }
 
@@ -161,6 +302,13 @@ export function parseProjectInitializationResult(
   scan?: ProjectInitializationScan,
 ): ParsedProjectInitialization {
   const parsed = JSON.parse(jsonPayload(text)) as unknown;
+  return parseProjectInitializationPayload(parsed, scan);
+}
+
+export function parseProjectInitializationPayload(
+  parsed: unknown,
+  scan?: ProjectInitializationScan,
+): ParsedProjectInitialization {
   if (!isRecord(parsed))
     throw new Error("Initialization result must be an object");
   const manifest = parsed.previewManifest
@@ -302,10 +450,9 @@ function parseRunConfiguration(value: unknown): ProjectRunConfiguration {
     throw new Error("Initialization run configuration command is invalid");
   if (!cwd || cwd.length > 500 || unsafeRunConfigurationCwd(cwd))
     throw new Error("Initialization run configuration cwd must stay inside the project");
-  const defaultConfiguration = booleanValue(value.default);
-  if (defaultConfiguration === undefined)
+  if (typeof value.default !== "boolean")
     throw new Error("Initialization run configuration default must be boolean");
-  return { id, name, command, cwd, default: defaultConfiguration };
+  return { id, name, command, cwd, default: value.default };
 }
 
 function unsafeRunConfigurationCwd(cwd: string) {
@@ -624,16 +771,4 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function stringValue(value: unknown) {
   return typeof value === "string" && value.trim() ? value : undefined;
-}
-
-function booleanValue(value: unknown) {
-  if (value === undefined) return false;
-  if (typeof value === "boolean") return value;
-  if (value === 1) return true;
-  if (value === 0) return false;
-  if (typeof value !== "string") return undefined;
-  const normalized = value.trim().toLowerCase();
-  if (["true", "yes", "default", "1"].includes(normalized)) return true;
-  if (["false", "no", "0", ""].includes(normalized)) return false;
-  return undefined;
 }

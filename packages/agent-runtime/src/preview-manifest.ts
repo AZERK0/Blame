@@ -22,15 +22,6 @@ const serviceKinds = new Set<PreviewManifestServiceKind>([
 ]);
 const confidenceValues = new Set(["low", "medium", "high"]);
 const riskLevels = new Set(["low", "medium", "high"]);
-const riskLevelAliases: Record<string, PreviewManifestRisk["level"]> = {
-  critical: "high",
-  error: "high",
-  info: "low",
-  informational: "low",
-  notice: "low",
-  warn: "medium",
-  warning: "medium",
-};
 const unsafeCommandPatterns = [
   /\brm\s+-rf\s+\/(?:\s|$)/,
   /\bsudo\b/,
@@ -498,13 +489,12 @@ function parseRisks(value: unknown) {
 
 function parseRisk(value: unknown): PreviewManifestRisk {
   if (!isRecord(value)) throw new Error("previewManifest risk must be an object");
-  const level = riskLevel(value.level);
-  if (!level) {
+  if (typeof value.level !== "string" || !riskLevels.has(value.level)) {
     throw new Error("previewManifest risk level is invalid");
   }
   return {
-    level,
-    message: riskMessage(value),
+    level: value.level as PreviewManifestRisk["level"],
+    message: requiredString(value.message, "risk.message"),
   };
 }
 
@@ -599,25 +589,6 @@ function serviceKind(value: unknown): PreviewManifestServiceKind {
     throw new Error("previewManifest service kind is invalid");
   }
   return value as PreviewManifestServiceKind;
-}
-
-function riskLevel(value: unknown) {
-  if (typeof value !== "string") return undefined;
-  const normalized = value.trim().toLowerCase();
-  if (riskLevels.has(normalized)) {
-    return normalized as PreviewManifestRisk["level"];
-  }
-  return riskLevelAliases[normalized];
-}
-
-function riskMessage(value: Record<string, unknown>) {
-  return (
-    optionalString(value.message, "risk.message") ??
-    optionalString(value.description, "risk.description") ??
-    optionalString(value.reason, "risk.reason") ??
-    optionalString(value.summary, "risk.summary") ??
-    "Unspecified initialization risk."
-  );
 }
 
 function internalPort(value: unknown, field: string) {

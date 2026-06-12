@@ -6,6 +6,7 @@ import { promisify } from "node:util";
 
 import type {
   ClineCore,
+  CoreSessionConfig,
   CoreSessionEvent,
   OAuthCredentials as ClineOAuthCredentials,
   OAuthLoginCallbacks,
@@ -29,7 +30,9 @@ import {
 } from "./cloud-api.js";
 import {
   projectInitializationCorrectionPrompt,
+  parseProjectInitializationPayload,
   parseProjectInitializationResult,
+  projectInitializationResultSchema,
   projectInitializationPrompt,
   scanProjectForInitialization,
 } from "./project-initialization.js";
@@ -134,6 +137,7 @@ type RuntimeCredentialInput = {
 };
 
 type ClineSdk = typeof import("@cline/sdk");
+type AgentTool = NonNullable<CoreSessionConfig["extraTools"]>[number];
 
 type PendingApproval = {
   request: AgentApprovalRequest;
@@ -147,6 +151,11 @@ type RuntimeSessionSummary = {
 type InitializationCorrection = {
   previousResult: string;
   validationError: string;
+};
+
+type ProjectInitializationSubmitTool = {
+  tool: AgentTool;
+  input?: unknown;
 };
 
 type DevelopmentUserInput = {
@@ -517,25 +526,36 @@ export class BlameAgentRuntime {
     const cline = await this.core();
     let correction = input.validationFeedback;
     for (let attempt = 1; attempt <= maxInitializationAttempts; attempt += 1) {
+      const submitTool = projectInitializationSubmitTool();
       const session = await cline.start({
         prompt: initializationPrompt(scan, correction),
-        config: initializationConfig(input, resolvedCredential),
+        config: initializationConfig(input, resolvedCredential, submitTool.tool),
         interactive: false,
         source: "blame-project-initialization",
         toolPolicies: initializationToolPolicies(),
       });
-      const text = session.result?.text;
-      if (!text)
+      const submittedInput =
+        submitTool.input ??
+        projectInitializationInputFromResult(session.result) ??
+        (await projectInitializationInputFromMessages(
+          cline,
+          session.sessionId,
+        ));
+      const result = submittedInput ?? session.result?.text;
+      if (!result)
         throw new Error("Project initialization agent did not return a result");
       try {
         return {
           sessionId: session.sessionId,
-          ...parseProjectInitializationResult(text, scan),
+          ...(submittedInput
+            ? parseProjectInitializationPayload(submittedInput, scan)
+            : parseProjectInitializationResult(String(result), scan)),
         };
       } catch (error) {
         if (attempt === maxInitializationAttempts) throw error;
         correction = {
-          previousResult: text,
+          previousResult:
+            typeof result === "string" ? result : JSON.stringify(result),
           validationError: errorMessage(error),
         };
       }
@@ -1352,6 +1372,7 @@ function toolPolicies(autoApproveWriteTools: boolean) {
 function initializationConfig(
   input: InitializeProjectInput,
   credential: { apiKey: string; baseUrl: string | null },
+  submitTool?: AgentTool,
 ) {
   return appendProductionConfig({
     providerId: input.providerId,
@@ -1366,8 +1387,77 @@ function initializationConfig(
     enableTools: true,
     enableSpawnAgent: false,
     enableAgentTeams: false,
+    extraTools: submitTool ? [submitTool] : undefined,
     maxIterations: 8,
   });
+}
+
+function projectInitializationSubmitTool(): ProjectInitializationSubmitTool {
+  const submit: ProjectInitializationSubmitTool = {
+    input: undefined,
+    tool: {
+      name: "submit_project_initialization",
+      description:
+        "Submit the complete Blame project initialization result for validation.",
+      inputSchema: projectInitializationResultSchema,
+      lifecycle: { completesRun: true },
+      execute(input: unknown) {
+        submit.input = input;
+        return { accepted: true };
+      },
+    },
+  };
+  return submit;
+}
+
+async function projectInitializationInputFromMessages(
+  cline: ClineCore,
+  sessionId: string,
+) {
+  try {
+    return projectInitializationInputFromMessageList(
+      await cline.readMessages(sessionId),
+    );
+  } catch {
+    return undefined;
+  }
+}
+
+function projectInitializationInputFromResult(result: unknown) {
+  const payload = asRecord(result);
+  const toolCalls = Array.isArray(payload.toolCalls) ? payload.toolCalls : [];
+  for (const call of toolCalls) {
+    const record = asRecord(call);
+    if (record.name === "submit_project_initialization") {
+      return record.input;
+    }
+  }
+  return projectInitializationInputFromMessageList(payload.messages);
+}
+
+function projectInitializationInputFromMessageList(value: unknown) {
+  const messages = Array.isArray(value) ? value : asRecord(value).messages;
+  if (!Array.isArray(messages)) return undefined;
+  for (const message of messages) {
+    const content = asRecord(message).content;
+    if (!Array.isArray(content)) continue;
+    for (const part of content) {
+      const input = projectInitializationInputFromMessagePart(part);
+      if (input) return input;
+    }
+  }
+  return undefined;
+}
+
+function projectInitializationInputFromMessagePart(value: unknown) {
+  const part = asRecord(value);
+  const name =
+    stringValue(part.name) ??
+    stringValue(part.toolName) ??
+    stringValue(asRecord(part.toolCall).name) ??
+    stringValue(asRecord(part.toolCall).toolName);
+  if (name !== "submit_project_initialization") return undefined;
+  return part.input ?? asRecord(part.toolCall).input;
 }
 
 function initializationRepairConfig(
@@ -2477,6 +2567,7 @@ function resultStatus(payload: Record<string, unknown>) {
 
 function initializationToolPolicies() {
   return Object.fromEntries([
+    ["submit_project_initialization", { autoApprove: true }],
     ...readTools.map((name) => [name, { autoApprove: true }]),
     ...writeTools.map((name) => [name, { enabled: false, autoApprove: false }]),
   ]);
