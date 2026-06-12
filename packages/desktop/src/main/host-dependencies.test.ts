@@ -103,11 +103,13 @@ test("reports missing nerdctl compose support", async () => {
   assert.match(report.issues[0]?.action ?? "", /Blame Native Runtime/);
 });
 
-test("reports unavailable containerd separately from nerdctl", async () => {
+test("reports containerd when nerdctl is installed but cannot connect", async () => {
   const report = await checkHostDependencies(
     { platform: "linux", setupScript: "echo ready" },
-    async (command) => {
-      if (command === "ctr") throw new Error("containerd unavailable");
+    async (command, args) => {
+      if (command === "nerdctl" && args[0] === "info") {
+        throw new Error("containerd socket unavailable");
+      }
       return "ok";
     },
   );
@@ -115,6 +117,59 @@ test("reports unavailable containerd separately from nerdctl", async () => {
   assert.equal(report.ok, false);
   assert.equal(report.issues[0]?.name, "containerd");
   assert.equal(report.issues[0]?.status, "unavailable");
+});
+
+test("does not require ctr access when nerdctl can connect", async () => {
+  const report = await checkHostDependencies(
+    { platform: "linux", setupScript: "echo ready" },
+    async (command) => {
+      if (command === "ctr") throw new Error("system containerd unavailable");
+      return "ok";
+    },
+  );
+
+  assert.equal(report.ok, true);
+  assert.deepEqual(report.issues, []);
+});
+
+test("reports inaccessible containerd socket from nerdctl", async () => {
+  const report = await checkHostDependencies(
+    { platform: "linux", setupScript: "echo ready" },
+    async (command, args) => {
+      if (command === "nerdctl" && args[0] === "info") {
+        throw {
+          stderr:
+            "transport: Error while dialing: dial unix /run/containerd/containerd.sock: connect: permission denied",
+        };
+      }
+      return "ok";
+    },
+  );
+
+  assert.equal(report.ok, false);
+  assert.equal(report.issues[0]?.name, "containerd");
+  assert.match(report.issues[0]?.message ?? "", /cannot access its socket/);
+  assert.match(report.issues[0]?.action ?? "", /containerd-rootless/);
+});
+
+test("reports rootless containerd not running", async () => {
+  const report = await checkHostDependencies(
+    { platform: "linux", setupScript: "echo ready" },
+    async (command, args) => {
+      if (command === "nerdctl" && args[0] === "info") {
+        throw {
+          stderr:
+            "rootless containerd not running? stat /run/user/1000/containerd-rootless: no such file or directory",
+        };
+      }
+      return "ok";
+    },
+  );
+
+  assert.equal(report.ok, false);
+  assert.equal(report.issues[0]?.name, "containerd");
+  assert.match(report.issues[0]?.message ?? "", /Rootless containerd/);
+  assert.match(report.issues[0]?.action ?? "", /containerd-rootless/);
 });
 
 test("checks node and corepack when setup script needs package tooling", async () => {

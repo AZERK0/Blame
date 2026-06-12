@@ -153,26 +153,18 @@ export function requiresBareCommand(setupScript: string, command: string) {
 async function containerRuntimeIssues(context: CheckContext) {
   const runtimeIssue = await checkBlameRuntime(context);
   if (runtimeIssue) return [runtimeIssue];
-  const nerdctlIssue = await checkRuntimeTool(
+  const nerdctlIssue = await checkNerdctl(context);
+  if (nerdctlIssue) return [nerdctlIssue];
+  const runtimeConnectionIssue = await checkRuntimeConnection(context);
+  if (runtimeConnectionIssue) return [runtimeConnectionIssue];
+  const composeIssue = await checkRuntimeTool(
     context,
-    "info",
-    [],
-    "nerdctl",
+    "compose",
+    ["version"],
+    "nerdctl-compose",
     "missing",
   );
-  if (nerdctlIssue) return [nerdctlIssue];
-  return (
-    await Promise.all([
-      checkContainerd(context),
-      checkRuntimeTool(
-        context,
-        "compose",
-        ["version"],
-        "nerdctl-compose",
-        "missing",
-      ),
-    ])
-  ).filter((issue): issue is HostDependencyIssue => Boolean(issue));
+  return composeIssue ? [composeIssue] : [];
 }
 
 async function checkGit(context: CheckContext) {
@@ -190,12 +182,21 @@ async function checkBlameRuntime(context: CheckContext) {
   }
 }
 
-async function checkContainerd(context: CheckContext) {
+async function checkNerdctl(context: CheckContext) {
   try {
-    await runRuntimeBinary(context, ["ctr", "version"]);
+    await runRuntimeBinary(context, ["nerdctl", "--version"]);
     return null;
   } catch {
-    return hostDependencyIssue(context.platform, "containerd", "unavailable");
+    return hostDependencyIssue(context.platform, "nerdctl", "missing");
+  }
+}
+
+async function checkRuntimeConnection(context: CheckContext) {
+  try {
+    await runRuntimeCommand(context, "info", []);
+    return null;
+  } catch (error) {
+    return containerdUnavailableIssue(context.platform, error);
   }
 }
 
@@ -259,6 +260,36 @@ function hostDependencyIssue(
     name,
     status,
   };
+}
+
+function containerdUnavailableIssue(
+  platform: NodeJS.Platform,
+  error: unknown,
+): HostDependencyIssue {
+  const text = commandErrorText(error);
+  if (/rootless containerd not running/i.test(text)) {
+    return {
+      action: rootlessContainerdAction(platform),
+      message: "Rootless containerd is not running.",
+      name: "containerd",
+      status: "unavailable",
+    };
+  }
+  if (/permission denied/i.test(text) && /containerd\.sock/i.test(text)) {
+    return {
+      action: rootlessContainerdAction(platform),
+      message: "containerd is running, but Blame cannot access its socket.",
+      name: "containerd",
+      status: "unavailable",
+    };
+  }
+  return hostDependencyIssue(platform, "containerd", "unavailable");
+}
+
+function rootlessContainerdAction(platform: NodeJS.Platform) {
+  if (platform === "linux")
+    return "Start a user-accessible runtime with containerd-rootless-setuptool.sh install, then recheck.";
+  return hostDependencyAction(platform, "containerd", "unavailable");
 }
 
 function hostDependencyMessage(
@@ -418,4 +449,13 @@ function runRuntimeBinary(context: CheckContext, args: string[]) {
   if (context.platform === "win32")
     return context.run("blame-wsl2-runtime", args, context.env);
   return context.run(args[0] ?? "", args.slice(1), context.env);
+}
+
+function commandErrorText(error: unknown) {
+  if (!error || typeof error !== "object")
+    return error instanceof Error ? error.message : String(error);
+  const record = error as Record<string, unknown>;
+  return [record.message, record.stdout, record.stderr]
+    .filter((value): value is string => typeof value === "string")
+    .join("\n");
 }
