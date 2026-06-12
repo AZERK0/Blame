@@ -91,7 +91,12 @@ test("generates initialization artifacts from preview manifest", () => {
   assert.match(result.dockerCompose, /"127\.0\.0\.1::3000"/);
   assert.match(result.dockerCompose, /healthcheck:/);
   assert.match(result.dockerCompose, /blame_node_modules:\/workspace\/node_modules/);
+  assert.match(
+    result.dockerCompose,
+    /blame-volumes-init:\n\s+condition: service_completed_successfully/,
+  );
   assert.doesNotMatch(result.dockerCompose, /3000:3000/);
+  assert.doesNotMatch(result.dockerCompose, /blame-volumes-init:\n\s+volumes:/);
 });
 
 test("rejects unsafe preview manifest commands", () => {

@@ -26,6 +26,8 @@ export function composeWithNonMutatingNpmInstalls(compose: string) {
     /(^|[\s;&|"'`(])npm\s+install\b([^\n;&|"'`]*)/g,
     (match, prefix: string, args: string) => {
       const options = args.trim();
+      if (npmInstallTokens(options).some((token) => token === "--no-package-lock"))
+        return match;
       if (hasNpmInstallPackageArguments(options)) return match;
       const suffix = options ? ` ${options}` : "";
       const separator = /\s$/.test(args) ? " " : "";

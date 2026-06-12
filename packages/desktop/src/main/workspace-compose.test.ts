@@ -101,6 +101,18 @@ test("uses non-mutating npm installs for runtime previews", () => {
   assert.doesNotMatch(result, /npm ci/);
 });
 
+test("keeps already non-mutating npm installs unchanged", () => {
+  const compose = [
+    "services:",
+    "  app:",
+    '    command: "npm install --no-package-lock && npm run dev"',
+  ].join("\n");
+
+  const result = composeWithNonMutatingNpmInstalls(compose);
+
+  assert.equal(result, compose);
+});
+
 test("prefixes pnpm commands without rewriting pnpm paths", () => {
   const compose = [
     "services:",

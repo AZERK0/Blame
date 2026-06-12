@@ -245,7 +245,9 @@ function setupTaskYaml(
     `      blame.setup: "true"`,
     ...environmentYaml(task.environment ?? {}),
     ...dependsOnYaml([
-      ...(caches.length > 0 ? [dependsOnEntry("blame-volumes-init")] : []),
+      ...(caches.length > 0
+        ? [dependsOnEntry("blame-volumes-init", "service_completed_successfully")]
+        : []),
       ...(task.dependsOn ?? []).map((id) => dependsOnEntry(id)),
     ]),
     ...volumeYaml(caches, true),
@@ -274,7 +276,9 @@ function serviceYaml(
     ...portsYaml(service),
     ...healthcheckYaml(service.healthcheck, service.preview),
     ...dependsOnYaml([
-      ...(caches.length > 0 ? [dependsOnEntry("blame-volumes-init")] : []),
+      ...(caches.length > 0
+        ? [dependsOnEntry("blame-volumes-init", "service_completed_successfully")]
+        : []),
       ...setup.map((task) =>
         dependsOnEntry(task.id, "service_completed_successfully"),
       ),
@@ -340,11 +344,10 @@ function dependsOnYaml(
   if (uniqueServices.length === 0) return [];
   return [
     "    depends_on:",
-    ...uniqueServices.flatMap((service) =>
-      service.condition
-        ? [`      ${service.id}:`, `        condition: ${service.condition}`]
-        : [`      ${service.id}:`],
-    ),
+    ...uniqueServices.flatMap((service) => [
+      `      ${service.id}:`,
+      `        condition: ${service.condition ?? "service_started"}`,
+    ]),
   ];
 }
 
