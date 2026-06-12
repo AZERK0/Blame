@@ -124,10 +124,30 @@ function normalizeService(
     ...service,
     workingDir: service.workingDir || "/workspace",
     environment: normalizedEnvironment(
-      { ...service.environment, ...previewEnvironment },
+      {
+        ...normalizedServiceEnvironment(service),
+        ...previewEnvironment,
+      },
       caches,
     ),
     dependsOn: uniqueStrings(service.dependsOn ?? []),
+  };
+}
+
+function normalizedServiceEnvironment(service: PreviewManifestService) {
+  const environment = service.environment ?? {};
+  if (service.kind !== "dependency" || !mysqlImage(service.image)) {
+    return environment;
+  }
+  return normalizedMysqlEnvironment(environment);
+}
+
+function normalizedMysqlEnvironment(environment: PreviewManifestEnvironment) {
+  if (environment.MYSQL_USER !== "root") return environment;
+  const { MYSQL_USER: _user, MYSQL_PASSWORD: password, ...rest } = environment;
+  return {
+    ...rest,
+    MYSQL_ROOT_PASSWORD: rest.MYSQL_ROOT_PASSWORD ?? password ?? "root",
   };
 }
 
@@ -205,12 +225,13 @@ function setupScript() {
 }
 
 function composeYaml(manifest: PreviewManifest) {
+  const runtimeServiceIds = new Set(manifest.services.map((service) => service.id));
   const lines = [
     "services:",
     ...volumeInitService(manifest.caches),
     ...manifest.setup.flatMap((task) => setupTaskYaml(task, manifest.caches)),
     ...manifest.services.flatMap((service) =>
-      serviceYaml(service, manifest.services, manifest.caches),
+      serviceYaml(service, manifest.services, manifest.caches, runtimeServiceIds),
     ),
     "volumes:",
     ...manifest.caches.flatMap((cache) => [`  ${cache.name}:`]),
@@ -260,6 +281,7 @@ function serviceYaml(
   service: PreviewManifestService,
   services: PreviewManifestService[],
   caches: PreviewManifestCache[],
+  runtimeServiceIds: Set<string>,
 ) {
   return [
     `  ${service.id}:`,
@@ -279,7 +301,7 @@ function serviceYaml(
     ...portsYaml(service),
     ...serviceHealthcheckYaml(service),
     ...dependsOnYaml([
-      ...(service.dependsOn ?? []).map((id) =>
+      ...(service.dependsOn ?? []).filter((id) => runtimeServiceIds.has(id)).map((id) =>
         dependsOnEntry(id, serviceDependencyCondition(id, services)),
       ),
     ]),

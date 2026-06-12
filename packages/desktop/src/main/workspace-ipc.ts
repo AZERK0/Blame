@@ -551,7 +551,7 @@ async function runProjectComposeUp(worktree: string) {
 
 async function runSetupTaskServices(worktree: string, config: ComposeConfig) {
   const services = setupTaskServices(config);
-  for (const service of services) await runProjectComposeService(worktree, service);
+  for (const service of services) await runProjectComposeSetupService(worktree, service);
   return new Set(services);
 }
 
@@ -578,10 +578,78 @@ async function runProjectComposeService(worktree: string, service: string) {
   if (result.stderr) await appendRecoveryLog(worktree, result.stderr.trimEnd());
 }
 
+async function runProjectComposeSetupService(worktree: string, service: string) {
+  const result = await containerRuntime.compose(
+    [
+      ...composeArgs(worktree),
+      "run",
+      "--rm",
+      "--no-deps",
+      "--interactive=false",
+      service,
+    ],
+    { cwd: worktree, env: setupEnvironment(worktree) },
+  );
+  if (result.stdout) await appendRecoveryLog(worktree, result.stdout.trimEnd());
+  if (result.stderr) await appendRecoveryLog(worktree, result.stderr.trimEnd());
+}
+
 function setupTaskServices(config: ComposeConfig) {
-  return Object.entries(config.services ?? {})
+  const services = Object.entries(config.services ?? {})
     .filter(([, service]) => serviceLabels(service)["blame.setup"] === "true")
     .map(([service]) => service);
+  return sortServicesByCompletedDependencies(services, config);
+}
+
+function sortServicesByCompletedDependencies(
+  services: string[],
+  config: ComposeConfig,
+) {
+  const serviceSet = new Set(services);
+  const sorted: string[] = [];
+  const visiting = new Set<string>();
+  const visited = new Set<string>();
+  for (const service of services) {
+    visitCompletedDependencyService(
+      service,
+      config,
+      serviceSet,
+      sorted,
+      visiting,
+      visited,
+    );
+  }
+  return sorted;
+}
+
+function visitCompletedDependencyService(
+  service: string,
+  config: ComposeConfig,
+  serviceSet: Set<string>,
+  sorted: string[],
+  visiting: Set<string>,
+  visited: Set<string>,
+) {
+  if (visited.has(service) || visiting.has(service)) return;
+  visiting.add(service);
+  const dependencies = serviceDependsOnCompletedServices(
+    config.services?.[service] ?? {},
+  );
+  for (const dependency of dependencies) {
+    if (serviceSet.has(dependency)) {
+      visitCompletedDependencyService(
+        dependency,
+        config,
+        serviceSet,
+        sorted,
+        visiting,
+        visited,
+      );
+    }
+  }
+  visiting.delete(service);
+  visited.add(service);
+  sorted.push(service);
 }
 
 function runtimeServices(config: ComposeConfig, setupServices: Set<string>) {

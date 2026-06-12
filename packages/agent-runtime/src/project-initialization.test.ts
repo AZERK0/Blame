@@ -156,6 +156,72 @@ test("waits for known database dependencies to become healthy", () => {
   );
 });
 
+test("normalizes mysql root image environment", () => {
+  const result = parseProjectInitializationPayload({
+    ...manifestResult,
+    previewManifest: {
+      ...manifestResult.previewManifest,
+      services: [
+        {
+          id: "db",
+          kind: "dependency",
+          image: "mysql:8.0",
+          environment: {
+            MYSQL_ROOT_PASSWORD: "root",
+            MYSQL_DATABASE: "app",
+            MYSQL_USER: "root",
+            MYSQL_PASSWORD: "root",
+          },
+        },
+        manifestResult.previewManifest.services[0],
+      ],
+    },
+  });
+
+  assert.match(result.dockerCompose, /MYSQL_ROOT_PASSWORD: "root"/);
+  assert.doesNotMatch(result.dockerCompose, /MYSQL_USER: "root"/);
+  assert.doesNotMatch(result.dockerCompose, /MYSQL_PASSWORD: "root"/);
+});
+
+test("does not generate runtime depends_on entries for setup tasks", () => {
+  const result = parseProjectInitializationPayload({
+    ...manifestResult,
+    previewManifest: {
+      ...manifestResult.previewManifest,
+      setup: [
+        ...manifestResult.previewManifest.setup,
+        {
+          id: "backend-migrate",
+          image: "node:22-bookworm",
+          workingDir: "/workspace/apps/backend",
+          command: "node ace migration:run",
+          dependsOn: ["deps"],
+        },
+      ],
+      services: [
+        {
+          id: "backend",
+          kind: "worker",
+          image: "node:22-bookworm",
+          workingDir: "/workspace/apps/backend",
+          command: "node ace serve --hmr",
+          dependsOn: ["backend-migrate"],
+        },
+        manifestResult.previewManifest.services[0],
+      ],
+    },
+  });
+
+  assert.match(
+    result.dockerCompose,
+    /  backend-migrate:\n[\s\S]*deps:\n\s+condition: service_completed_successfully/,
+  );
+  assert.doesNotMatch(
+    result.dockerCompose,
+    /  backend:\n[\s\S]*backend-migrate:\n\s+condition: service_started/,
+  );
+});
+
 test("parses initialization tool payloads", () => {
   const result = parseProjectInitializationPayload(manifestResult);
 
