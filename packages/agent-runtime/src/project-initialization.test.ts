@@ -12,7 +12,6 @@ const baseResult = {
     "services:",
     "  web:",
     "    image: node:22",
-    '    user: "${BLAME_HOST_UID}:${BLAME_HOST_GID}"',
     "    ports:",
     '      - "127.0.0.1::3000"',
   ].join("\n"),
@@ -94,6 +93,7 @@ test("generates initialization artifacts from preview manifest", () => {
   assert.match(result.dockerCompose, /"127\.0\.0\.1::3000"/);
   assert.match(result.dockerCompose, /healthcheck:/);
   assert.match(result.dockerCompose, /blame_node_modules:\/workspace\/node_modules/);
+  assert.doesNotMatch(result.dockerCompose, /user: "\$\{BLAME_HOST_UID\}/);
   assert.match(
     result.dockerCompose,
     /blame-volumes-init:\n\s+condition: service_completed_successfully/,
@@ -149,6 +149,10 @@ test("waits for known database dependencies to become healthy", () => {
   assert.match(
     result.dockerCompose,
     /backend:[\s\S]*node ace migration:run/,
+  );
+  assert.match(
+    result.dockerCompose,
+    /backend:[\s\S]*\$\{BLAME_PROJECT_ROOT\}:\/workspace/,
   );
 });
 
@@ -242,7 +246,7 @@ test("runs targeted workspace permission setup tasks as root", () => {
   );
   assert.match(
     result.dockerCompose,
-    /find \/workspace -maxdepth 1 .*chown -R \$\{BLAME_HOST_UID\}:\$\{BLAME_HOST_GID\}/,
+    /find \/workspace -maxdepth 1 .*chown -R 0:0/,
   );
   assert.match(
     result.dockerCompose,
@@ -297,7 +301,6 @@ test("rejects duplicate compose mapping keys", () => {
       "    image: node:22",
       "    environment:",
       '      CI: "true"',
-      '    user: "${BLAME_HOST_UID}:${BLAME_HOST_GID}"',
       "    environment:",
       '      HOST: "0.0.0.0"',
       "    ports:",
@@ -318,7 +321,6 @@ test("accepts local public origin placeholders with runtime preview ports", () =
       "services:",
       "  web:",
       "    image: node:22",
-      '    user: "${BLAME_HOST_UID}:${BLAME_HOST_GID}"',
       "    environment:",
       '      BETTER_AUTH_URL: "http://localhost:3000"',
       "    ports:",
@@ -338,7 +340,6 @@ test("rejects fixed preview host ports in initialization artifacts", () => {
       "services:",
       "  web:",
       "    image: node:22",
-      '    user: "${BLAME_HOST_UID}:${BLAME_HOST_GID}"',
       "    ports:",
       '      - "127.0.0.1:4173:3000"',
     ].join("\n"),
@@ -369,7 +370,6 @@ test("rejects numeric su users in compose commands", () => {
       "services:",
       "  deps:",
       "    image: node:22",
-      '    user: "${BLAME_HOST_UID}:${BLAME_HOST_GID}"',
       "    ports:",
       '      - "127.0.0.1::3000"',
       "    command: bash -lc \"su -s /bin/bash -c 'corepack pnpm install' '#${BLAME_HOST_UID}'\"",
@@ -389,7 +389,6 @@ test("rejects npm ci in compose previews", () => {
       "services:",
       "  deps:",
       "    image: node:22",
-      '    user: "${BLAME_HOST_UID}:${BLAME_HOST_GID}"',
       "    ports:",
       '      - "127.0.0.1::3000"',
       "    command: npm ci",

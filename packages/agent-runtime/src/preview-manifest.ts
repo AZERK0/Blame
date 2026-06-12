@@ -224,7 +224,7 @@ function volumeInitService(caches: PreviewManifestCache[]) {
   return [
     "  blame-volumes-init:",
     "    image: node:22-bookworm-slim",
-    `    command: ${yamlString(`sh -lc "mkdir -p ${targets} && chown -R \${BLAME_HOST_UID}:\${BLAME_HOST_GID} ${targets}"`)}`,
+    `    command: ${yamlString(`sh -lc "mkdir -p ${targets} && chown -R 0:0 ${targets}"`)}`,
     "    volumes:",
     ...caches.map((cache) =>
       `      - ${yamlString(`${cache.name}:${cache.target}`)}`,
@@ -239,9 +239,6 @@ function setupTaskYaml(
   return [
     `  ${task.id}:`,
     `    image: ${yamlString(task.image)}`,
-    ...(setupTaskRunsAsRoot(task)
-      ? []
-      : [`    user: "\${BLAME_HOST_UID}:\${BLAME_HOST_GID}"`]),
     `    working_dir: ${yamlString(task.workingDir ?? "/workspace")}`,
     `    command: ${yamlString(`sh -lc ${shellQuote(setupTaskCommand(task))}`)}`,
     "    labels:",
@@ -267,9 +264,6 @@ function serviceYaml(
   return [
     `  ${service.id}:`,
     `    image: ${yamlString(service.image)}`,
-    ...(service.kind === "dependency"
-      ? []
-      : [`    user: "\${BLAME_HOST_UID}:\${BLAME_HOST_GID}"`]),
     ...(service.kind === "dependency" && !service.command
       ? []
       : [`    working_dir: ${yamlString(service.workingDir ?? "/workspace")}`]),
@@ -289,7 +283,7 @@ function serviceYaml(
         dependsOnEntry(id, serviceDependencyCondition(id, services)),
       ),
     ]),
-    ...volumeYaml(caches, service.kind !== "dependency"),
+    ...volumeYaml(caches, serviceNeedsWorkspace(service)),
   ];
 }
 
@@ -310,6 +304,13 @@ function serviceCommand(
 ) {
   const waitCommands = dependencyWaitCommands(service, services);
   return [...waitCommands, service.command].filter(Boolean).join(" && ");
+}
+
+function serviceNeedsWorkspace(service: PreviewManifestService) {
+  return (
+    service.kind !== "dependency" ||
+    (!!service.command && (service.workingDir ?? "/workspace").startsWith("/workspace"))
+  );
 }
 
 function dependencyWaitCommands(
@@ -799,7 +800,7 @@ function setupTaskCommand(task: PreviewManifestSetupTask) {
   if (!setupTaskRunsAsRoot(task)) return task.command;
   return [
     task.command,
-    "find /workspace -maxdepth 1 \\( -name .nuxt -o -name .next -o -name .vite -o -name node_modules \\) -exec chown -R ${BLAME_HOST_UID}:${BLAME_HOST_GID} {} +",
+    "find /workspace -maxdepth 1 \\( -name .nuxt -o -name .next -o -name .vite -o -name node_modules \\) -exec chown -R 0:0 {} +",
   ].join(" && ");
 }
 

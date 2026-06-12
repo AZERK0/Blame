@@ -99,7 +99,7 @@ function nodeModulesServices(
     {
       name: "node-modules-init",
       image: runtime.nodeImage,
-      command: 'sh -lc "mkdir -p /workspace/node_modules && chown -R ${BLAME_HOST_UID}:${BLAME_HOST_GID} /workspace/node_modules"',
+      command: 'sh -lc "mkdir -p /workspace/node_modules && chown -R 0:0 /workspace/node_modules"',
       volumes: ["blame_node_modules:/workspace/node_modules"],
     },
   ];
@@ -112,7 +112,6 @@ function nodeAppService(
   return {
     name: "app",
     image: runtime.nodeImage,
-    user: "${BLAME_HOST_UID}:${BLAME_HOST_GID}",
     workingDir: "/workspace",
     command: `sh -lc "${runtime.containerCorepackCommand} && ${runtime.containerInstallIfNeededCommand} && ${containerOrmSetupCommand(configuration)} && ${runtime.containerDevCommand}"`,
     volumes: ["${BLAME_PROJECT_ROOT}:/workspace", "blame_node_modules:/workspace/node_modules"],
@@ -134,7 +133,6 @@ function backendServices(configuration: NewProjectConfiguration): ServiceSpec[] 
       {
         name: "api",
         image: runtimePlan(configuration).nodeImage,
-        user: "${BLAME_HOST_UID}:${BLAME_HOST_GID}",
         workingDir: "/workspace",
         command: `sh -lc "${containerCorepackCommand(configuration.packageManager)} && ${containerWaitForFrontendDependenciesCommand(configuration.frontend)} && ${nodeApiCommand(configuration.backend, configuration.packageManager)}"`,
         volumes: ["${BLAME_PROJECT_ROOT}:/workspace", "blame_node_modules:/workspace/node_modules"],
@@ -150,7 +148,6 @@ function backendServices(configuration: NewProjectConfiguration): ServiceSpec[] 
     {
       name: "api",
       image: "python:3.13-slim",
-      user: "${BLAME_HOST_UID}:${BLAME_HOST_GID}",
       workingDir: "/workspace",
       command: `sh -lc "${pythonInstallCommand(configuration.packageManager)} && uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload"`,
       volumes: ["${BLAME_PROJECT_ROOT}:/workspace"],

@@ -9,7 +9,6 @@ import {
 const validCompose = `services:
   web:
     image: node:22
-    user: "\${BLAME_HOST_UID}:\${BLAME_HOST_GID}"
     ports:
       - "127.0.0.1::3000"`
 

@@ -366,7 +366,7 @@ test("builds Blame initialization defaults without AI analysis", () => {
   assert.match(dockerCompose(baseConfiguration), /node:22-bookworm-slim/);
   assert.doesNotMatch(dockerCompose(baseConfiguration), /node:22-alpine/);
   assert.match(dockerCompose(baseConfiguration), /node-modules-init:/);
-  assert.match(dockerCompose(baseConfiguration), /chown -R \$\{BLAME_HOST_UID\}:\$\{BLAME_HOST_GID\}/);
+  assert.match(dockerCompose(baseConfiguration), /chown -R 0:0/);
   assert.match(dockerCompose(baseConfiguration), /\[ ! -e \.\/node_modules\/\.bin\/next \]/);
   assert.match(dockerCompose(baseConfiguration), /blame_node_modules:\/workspace\/node_modules/);
   assert.match(dockerCompose(baseConfiguration), /corepack pnpm install/);
@@ -374,7 +374,7 @@ test("builds Blame initialization defaults without AI analysis", () => {
   assert.doesNotMatch(dockerCompose(baseConfiguration), /"pnpm install/);
   assert.match(dockerCompose(baseConfiguration), /\.\/node_modules\/\.bin\/next dev -H 0\.0\.0\.0/);
   assert.doesNotMatch(dockerCompose(baseConfiguration), /pnpm run dev -- -H/);
-  assert.match(dockerCompose(baseConfiguration), /user: "\$\{BLAME_HOST_UID\}:\$\{BLAME_HOST_GID\}"/);
+  assert.doesNotMatch(dockerCompose(baseConfiguration), /user: "\$\{BLAME_HOST_UID\}:\$\{BLAME_HOST_GID\}"/);
   assert.match(dockerCompose(baseConfiguration), /- "127\.0\.0\.1::3000"/);
   assert.doesNotMatch(dockerCompose(baseConfiguration), /3000:3000/);
   assert.match(dockerCompose(baseConfiguration), /\$\{BLAME_PROJECT_ROOT\}:\/workspace/);

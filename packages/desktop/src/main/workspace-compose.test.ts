@@ -199,7 +199,7 @@ test("normalizes preview compose before writing it", () => {
 
   const result = dockerComposeForPreview(compose, "/tmp/project");
 
-  assert.match(result, /user: "\$\{BLAME_HOST_UID\}:\$\{BLAME_HOST_GID\}"/);
+  assert.doesNotMatch(result, /user: "\$\{BLAME_HOST_UID\}:\$\{BLAME_HOST_GID\}"/);
   assert.match(result, /CI: "true"/);
   assert.doesNotMatch(result, /corepack corepack pnpm/);
 });
@@ -226,7 +226,7 @@ test("escapes container shell variables in preview commands", () => {
   assert.match(result, /NODE_ENV: development/);
 });
 
-test("adds host user for project root placeholder mounts", () => {
+test("does not force host uid user for rootless runtime mounts", () => {
   const compose = [
     "services:",
     "  app:",
@@ -240,7 +240,7 @@ test("adds host user for project root placeholder mounts", () => {
 
   const result = dockerComposeForPreview(compose, "/tmp/project");
 
-  assert.match(result, /user: "\$\{BLAME_HOST_UID\}:\$\{BLAME_HOST_GID\}"/);
+  assert.doesNotMatch(result, /user: "\$\{BLAME_HOST_UID\}:\$\{BLAME_HOST_GID\}"/);
 });
 
 test("normalizes Windows project root placeholders for YAML", () => {

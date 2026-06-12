@@ -521,9 +521,9 @@ function validateDockerCompose(
       "Initialization result dockerCompose must not build from project Dockerfiles",
     );
   }
-  if (!runsContainersAsHostUser(compose)) {
+  if (forcesHostUidUser(compose)) {
     throw new Error(
-      "Initialization result dockerCompose must run worktree services as the host user",
+      "Initialization result dockerCompose must not force BLAME_HOST_UID as the container user",
     );
   }
   if (!previewWorkspaceMountsProject(compose)) {
@@ -629,8 +629,8 @@ function usesProjectDockerfileBuild(compose: string) {
   return /\bbuild\s*:/.test(compose) || /\bdockerfile\s*:/.test(compose);
 }
 
-function runsContainersAsHostUser(compose: string) {
-  return compose.includes("user:") && compose.includes("blame_host_uid");
+function forcesHostUidUser(compose: string) {
+  return /user\s*:\s*["']?\$\{?blame_host_uid\}?/i.test(compose);
 }
 
 function previewWorkspaceMountsProject(compose: string) {

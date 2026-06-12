@@ -550,7 +550,7 @@ function dependencyInitService(mounts: string[]) {
   return [
     "  blame-dependencies-init:",
     "    image: node:22-bookworm-slim",
-    `    command: ${JSON.stringify(`sh -lc "mkdir -p ${paths.join(" ")} && chown -R \${BLAME_HOST_UID}:\${BLAME_HOST_GID} ${paths.join(" ")}"`)}`,
+    `    command: ${JSON.stringify(`sh -lc "mkdir -p ${paths.join(" ")} && chown -R 0:0 ${paths.join(" ")}"`)}`,
     "    volumes:",
     ...mounts.map((mount) => `      - ${JSON.stringify(mount)}`),
   ];
@@ -734,15 +734,8 @@ function hostUserServiceBlock(
   block: { lines: string[]; end: number },
   worktree: string,
 ) {
-  if (block.lines.some((line) => /^\s{4}user:\s*/.test(line)))
-    return block.lines;
-  if (!mountsWorktree(block.lines, worktree)) return block.lines;
-  const [serviceLine, ...serviceBody] = block.lines;
-  return [
-    serviceLine,
-    '    user: "${BLAME_HOST_UID}:${BLAME_HOST_GID}"',
-    ...serviceBody,
-  ];
+  void worktree;
+  return block.lines;
 }
 
 function ciServiceBlock(block: { lines: string[]; end: number }) {
@@ -782,30 +775,6 @@ function ciEnvironmentLine(lines: string[], environmentIndex: number) {
   if (nextEnvironmentValue && /^\s{6}-/.test(nextEnvironmentValue))
     return "      - CI=true";
   return '      CI: "true"';
-}
-
-function mountsWorktree(lines: string[], worktree: string) {
-  const service = lines.join("\n");
-  const escapedWorktree = escapeRegExp(worktree);
-  const escapedYamlWorktree = escapeRegExp(yamlPathValue(worktree));
-  return (
-    /(^|\n)\s*-\s*(?:\.|\$PWD|\$\{PWD\})(?:\/[^:]*)?:/.test(service) ||
-    /(^|\n)\s*-\s*\$\{BLAME_PROJECT_ROOT\}(?:\/[^:]*)?:/.test(service) ||
-    /source:\s*(?:\.|\$PWD|\$\{PWD\})/.test(service) ||
-    /source:\s*\$\{BLAME_PROJECT_ROOT\}/.test(service) ||
-    new RegExp(`(^|\\n)\\s*-\\s*${escapedWorktree}(?:\\/[^:]*)?:`).test(
-      service,
-    ) ||
-    new RegExp(`source:\\s*${escapedWorktree}`).test(service) ||
-    new RegExp(`(^|\\n)\\s*-\\s*${escapedYamlWorktree}(?:\\/[^:]*)?:`).test(
-      service,
-    ) ||
-    new RegExp(`source:\\s*${escapedYamlWorktree}`).test(service)
-  );
-}
-
-function escapeRegExp(value: string) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function projectRootCompose(compose: string, worktree: string) {
