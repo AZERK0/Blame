@@ -570,7 +570,7 @@ async function startProjectCompose(
   await runProjectComposeUp(worktree);
   const previewUrl = await waitForPreviewUrl(worktree);
   if (await syncPreviewRuntimeEnvironment(worktree, previewUrl)) {
-    await restartPreviewService(worktree);
+    await restartPreviewService(worktree, true);
   }
   await waitForPreview(worktree, previewUrl);
   return previewUrl;
@@ -581,7 +581,6 @@ async function syncPreviewRuntimeEnvironment(worktree: string, previewUrl: strin
   if (!origin) return false;
   if (await materializedPreviewEnvFilesMatch(worktree, origin)) return false;
   await materializedPreviewEnvHostFileMounts(worktree, origin);
-  await clearPreviewBuildCache(worktree);
   return true;
 }
 
@@ -589,10 +588,15 @@ async function clearPreviewBuildCache(worktree: string) {
   await rmRuntime(joinWorkspacePath(worktree, ".next"));
 }
 
-async function restartPreviewService(worktree: string) {
+async function restartPreviewService(worktree: string, clearBuildCache = false) {
   const container = await previewContainerForWorktree(worktree);
   if (!container?.Id) return;
-  await containerRuntime.container(["restart", container.Id], {
+  await containerRuntime.container(["stop", container.Id], {
+    cwd: worktree,
+    env: setupEnvironment(worktree),
+  });
+  if (clearBuildCache) await clearPreviewBuildCache(worktree);
+  await containerRuntime.container(["start", container.Id], {
     cwd: worktree,
     env: setupEnvironment(worktree),
   });
@@ -1543,7 +1547,6 @@ async function composeConfig(
   worktree: string,
   composePath: string,
 ): Promise<ComposeConfig> {
-  await repairComposeFile(worktree, composePath);
   const { stdout } = await containerRuntime.compose(
     [
       "-f",
@@ -1602,7 +1605,6 @@ async function composePublishedAddress(
   port: number,
 ) {
   try {
-    await repairComposeFile(worktree, composePath);
     const { stdout } = await containerRuntime.compose(
       [
         "-f",
