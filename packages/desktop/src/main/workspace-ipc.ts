@@ -25,6 +25,13 @@ import {
   assertHostDependencies,
   checkHostDependencies,
 } from "./host-dependencies";
+import {
+  ensureRuntimeReady,
+  getRuntimeStatus,
+  repairRuntime,
+  resetRuntime,
+  uninstallRuntime,
+} from "./runtime-manager";
 import { setupPath } from "./host-tool-path";
 import {
   createProject,
@@ -279,6 +286,11 @@ export function registerWorkspaceIpcHandlers() {
         setupScript: input.setupScript,
       }),
   );
+  ipcMain.handle("workspace:get-runtime-status", () => getRuntimeStatus());
+  ipcMain.handle("workspace:ensure-runtime-ready", () => ensureRuntimeReady());
+  ipcMain.handle("workspace:repair-runtime", () => repairRuntime());
+  ipcMain.handle("workspace:reset-runtime", () => resetRuntime());
+  ipcMain.handle("workspace:uninstall-runtime", () => uninstallRuntime());
   ipcMain.handle(
     "workspace:stop-project-setup",
     (_event, input: StopProjectSetupInput) => stopProjectSetup(input),

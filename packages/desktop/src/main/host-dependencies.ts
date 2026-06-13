@@ -1,9 +1,9 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import {
-  runtimeCommand,
-  type ContainerRuntimeCommand,
-} from "./container-runtime.ts";
+  createRuntimeManager,
+  type RuntimeDependencyIssue,
+} from "./runtime-manager.ts";
 
 const execFileAsync = promisify(execFile);
 const commandTimeoutMs = 15_000;
@@ -151,71 +151,29 @@ export function requiresBareCommand(setupScript: string, command: string) {
 }
 
 async function containerRuntimeIssues(context: CheckContext) {
-  const runtimeIssue = await checkBlameRuntime(context);
-  if (runtimeIssue) return [runtimeIssue];
-  const nerdctlIssue = await checkNerdctl(context);
-  if (nerdctlIssue) return [nerdctlIssue];
-  const runtimeConnectionIssue = await checkRuntimeConnection(context);
-  if (runtimeConnectionIssue) return [runtimeConnectionIssue];
-  const composeIssue = await checkRuntimeTool(
-    context,
-    "compose",
-    ["version"],
-    "nerdctl-compose",
-    "missing",
+  const runtime = createRuntimeManager(
+    { env: context.env, platform: context.platform },
+    context.run,
   );
-  return composeIssue ? [composeIssue] : [];
+  const report = await runtime.checkRuntimeDependencies();
+  return report.issues.map((issue) => runtimeDependencyIssue(context, issue));
 }
 
 async function checkGit(context: CheckContext) {
   return missingToolIssue(context, "git", ["--version"], "git");
 }
 
-async function checkBlameRuntime(context: CheckContext) {
-  if (context.platform !== "darwin" && context.platform !== "win32")
-    return null;
-  try {
-    await runRuntimeBinary(context, ["true"]);
-    return null;
-  } catch {
-    return hostDependencyIssue(context.platform, "blame-runtime", "unavailable");
-  }
-}
-
-async function checkNerdctl(context: CheckContext) {
-  try {
-    await runRuntimeBinary(context, ["nerdctl", "--version"]);
-    return null;
-  } catch {
-    return hostDependencyIssue(context.platform, "nerdctl", "missing");
-  }
-}
-
-async function checkRuntimeConnection(context: CheckContext) {
-  try {
-    await runRuntimeCommand(context, "info", []);
-    return null;
-  } catch (error) {
-    return containerdUnavailableIssue(context.platform, error);
-  }
-}
-
-async function checkRuntimeTool(
+function runtimeDependencyIssue(
   context: CheckContext,
-  command: ContainerRuntimeCommand,
-  args: string[],
-  name: Extract<
-    HostDependencyName,
-    "nerdctl" | "nerdctl-compose"
-  >,
-  status: HostDependencyStatus,
+  issue: RuntimeDependencyIssue,
 ) {
-  try {
-    await runRuntimeCommand(context, command, args);
-    return null;
-  } catch {
-    return hostDependencyIssue(context.platform, name, status);
+  if (issue.name === "containerd") {
+    return containerdUnavailableIssue(context.platform, issue.error);
   }
+  if (issue.name === "blame-runtime" && issue.status === "missing") {
+    return hostDependencyIssue(context.platform, issue.name, "unavailable");
+  }
+  return hostDependencyIssue(context.platform, issue.name, issue.status);
 }
 
 async function checkNode(context: CheckContext) {
@@ -432,23 +390,6 @@ async function runCommand(
     timeout: commandTimeoutMs,
   });
   return stdout;
-}
-
-function runRuntimeCommand(
-  context: CheckContext,
-  command: ContainerRuntimeCommand,
-  args: string[],
-) {
-  const spec = runtimeCommand(context.platform, command, args);
-  return context.run(spec.command, spec.args, context.env);
-}
-
-function runRuntimeBinary(context: CheckContext, args: string[]) {
-  if (context.platform === "darwin")
-    return context.run("blame-lima-runtime", args, context.env);
-  if (context.platform === "win32")
-    return context.run("blame-wsl2-runtime", args, context.env);
-  return context.run(args[0] ?? "", args.slice(1), context.env);
 }
 
 function commandErrorText(error: unknown) {
