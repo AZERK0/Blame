@@ -15,6 +15,7 @@ import {
 import { homedir } from "node:os";
 import { basename, dirname, join, posix, resolve, win32 } from "node:path";
 import { promisify } from "node:util";
+import { setupPath } from "./host-tool-path.ts";
 
 const execFileAsync = promisify(execFile);
 const vmRuntimeWorktreeRoot = "/home/blame/.local/share/blame/runtime/worktrees";
@@ -116,9 +117,11 @@ export async function run(
   input: RuntimeOptions = {},
 ) {
   const spec = runtimeCommand(command, args, input);
-  const result = await execFileAsync(spec.command, spec.args, {
+  const platform = input.platform ?? process.platform;
+  const commandSpec = executableRuntimeCommand(spec, platform);
+  const result = await execFileAsync(commandSpec.command, commandSpec.args, {
     cwd: spec.cwd,
-    env: input.env,
+    env: runtimeEnvironment(input, platform),
     shell: false,
   });
   return {
@@ -133,10 +136,13 @@ export function spawnRuntime(
   input: RuntimeOptions = {},
 ): ChildProcessWithoutNullStreams {
   const spec = runtimeCommand(command, args, input);
-  return spawn(spec.command, spec.args, {
+  const platform = input.platform ?? process.platform;
+  const commandSpec = executableRuntimeCommand(spec, platform);
+  return spawn(commandSpec.command, commandSpec.args, {
     cwd: spec.cwd,
-    detached: process.platform !== "win32",
-    env: input.env,
+    detached: platform !== "win32",
+    env: runtimeEnvironment(input, platform),
+    shell: false,
   });
 }
 
@@ -253,6 +259,35 @@ function runtimeWrappedCommand(
     ],
     command: wrapper,
   };
+}
+
+function runtimeEnvironment(
+  input: RuntimeOptions,
+  platform: NodeJS.Platform,
+) {
+  return input.env ?? {
+    ...process.env,
+    PATH: setupPath({ platform }),
+  };
+}
+
+function executableRuntimeCommand(
+  spec: RuntimeCommandSpec,
+  platform: NodeJS.Platform,
+) {
+  if (platform !== "win32") return spec;
+  return {
+    args: ["/d", "/s", "/c", commandPromptLine(spec.command, spec.args)],
+    command: "cmd.exe",
+  };
+}
+
+function commandPromptLine(command: string, args: string[]) {
+  return [command, ...args].map(commandPromptQuote).join(" ");
+}
+
+function commandPromptQuote(value: string) {
+  return `"${value.replace(/(["^&|<>])/g, "^$1")}"`;
 }
 
 function repositoryBasename(path: string, platform: NodeJS.Platform) {

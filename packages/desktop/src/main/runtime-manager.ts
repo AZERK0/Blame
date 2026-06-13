@@ -419,10 +419,27 @@ async function runCommand(
   env?: NodeJS.ProcessEnv,
   timeoutMs = commandTimeoutMs,
 ) {
-  const { stdout } = await execFileAsync(command, args, {
+  const commandSpec = executableRuntimeCommand(command, args);
+  const { stdout } = await execFileAsync(commandSpec.command, commandSpec.args, {
     env,
-    shell: process.platform === "win32",
+    shell: false,
     timeout: timeoutMs,
   });
   return stdout;
+}
+
+function executableRuntimeCommand(command: string, args: string[]) {
+  if (process.platform !== "win32") return { args, command };
+  return {
+    args: ["/d", "/s", "/c", commandPromptLine(command, args)],
+    command: "cmd.exe",
+  };
+}
+
+function commandPromptLine(command: string, args: string[]) {
+  return [command, ...args].map(commandPromptQuote).join(" ");
+}
+
+function commandPromptQuote(value: string) {
+  return `"${value.replace(/(["^&|<>])/g, "^$1")}"`;
 }
