@@ -1336,7 +1336,7 @@ async function worktreeRegistered(cwd: string, worktree: string) {
 }
 
 async function ensureRuntimeGitSafeDirectory(cwd: string) {
-  if (process.platform !== "win32" || runtimeManagedPath(cwd)) return;
+  if (process.platform !== "win32") return;
   const safeDirectory = runtimeAccessiblePath(cwd, "win32");
   const stdout = await configuredSafeDirectories();
   if (safeDirectoryConfigured(stdout, safeDirectory)) return;
