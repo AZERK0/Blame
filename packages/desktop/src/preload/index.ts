@@ -86,6 +86,8 @@ const api: BlameDesktopApi = {
       ipcRenderer.invoke("workspace:resolve-project-preview-url", input),
     ensureProjectPreviewUrl: (input) =>
       ipcRenderer.invoke("workspace:ensure-project-preview-url", input),
+    projectRuntimeHealthy: (input) =>
+      ipcRenderer.invoke("workspace:project-runtime-healthy", input),
     listProjectServices: (input) =>
       ipcRenderer.invoke("workspace:list-project-services", input),
     startProjectServiceLogs: (input) =>

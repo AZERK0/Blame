@@ -173,7 +173,9 @@ type RuntimeContainer = {
       Array<{ HostIp?: string; HostPort?: string }> | null
     >;
   };
+  Name?: string;
   State?: {
+    ExitCode?: number;
     Health?: {
       Status?: string;
     };
@@ -294,6 +296,11 @@ export function registerWorkspaceIpcHandlers() {
     "workspace:ensure-project-preview-url",
     (_event, input: ResolveProjectPreviewUrlInput) =>
       ensureProjectPreviewUrl(input),
+  );
+  ipcMain.handle(
+    "workspace:project-runtime-healthy",
+    (_event, input: ResolveProjectPreviewUrlInput) =>
+      projectRuntimeHealthy(input.worktree),
   );
   ipcMain.handle(
     "workspace:list-project-services",
@@ -953,7 +960,7 @@ async function stopSetupRunsForWorktree(worktree: string) {
 }
 
 async function listProjectServices(worktreeInput: string) {
-  const worktree = resolve(worktreeInput);
+  const worktree = resolveRuntimePath(worktreeInput);
   const { stdout } = await containerRuntime.compose(
     [...composeArgs(worktree), "config", "--services"],
     { cwd: worktree, env: setupEnvironment(worktree) },
@@ -1627,6 +1634,82 @@ async function assertPreviewContainerCanStillStart(worktree: string) {
 async function previewContainerCanStillRun(worktree: string) {
   const container = await previewContainerForWorktree(worktree);
   if (!container) return false;
+  const status = container.State?.Status;
+  const health = container.State?.Health?.Status;
+  return health !== "unhealthy" && !failedContainerStatus(status);
+}
+
+async function projectRuntimeHealthy(worktreeInput: string) {
+  const worktree = resolveRuntimePath(worktreeInput);
+  const composePath = projectComposePath(worktree);
+  if (!(await runtimePathExists(composePath))) return false;
+  const containers = await composeProjectContainers(worktree);
+  const runtimeContainers = containers.filter(
+    (container) => !completedSetupContainer(container),
+  );
+  if (runtimeContainers.length === 0) return false;
+  return runtimeContainers.every(containerCanStillRun);
+}
+
+async function composeProjectContainers(worktree: string) {
+  try {
+    const { stdout } = await containerRuntime.compose(
+      [...composeArgs(worktree), "ps", "-a", "--format", "json"],
+      { cwd: worktree, env: setupEnvironment(worktree) },
+    );
+    const ids = composePsContainerIds(stdout);
+    if (ids.length === 0) return [];
+    return containerRuntime.inspect<RuntimeContainer>(ids);
+  } catch {
+    return [];
+  }
+}
+
+function composePsContainerIds(stdout: string) {
+  const trimmed = stdout.trim();
+  if (trimmed.startsWith("[")) return composePsEntriesContainerIds(trimmed);
+  return stdout
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .flatMap(composePsEntryContainerId);
+}
+
+function composePsEntriesContainerIds(stdout: string) {
+  try {
+    const parsed = JSON.parse(stdout) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.flatMap((entry) =>
+      composePsContainerId(entry as Record<string, unknown>),
+    );
+  } catch {
+    return [];
+  }
+}
+
+function composePsEntryContainerId(line: string) {
+  try {
+    return composePsContainerId(JSON.parse(line) as Record<string, unknown>);
+  } catch {
+    return [];
+  }
+}
+
+function composePsContainerId(parsed: Record<string, unknown>) {
+  const id = parsed.ID ?? parsed.Id ?? parsed.ContainerID;
+  return typeof id === "string" && id ? [id] : [];
+}
+
+function completedSetupContainer(container: RuntimeContainer) {
+  const labels = container.Config?.Labels ?? {};
+  return (
+    container.State?.Status === "exited" &&
+    container.State.ExitCode === 0 &&
+    labels["blame.preview"] !== "true"
+  );
+}
+
+function containerCanStillRun(container: RuntimeContainer) {
   const status = container.State?.Status;
   const health = container.State?.Health?.Status;
   return health !== "unhealthy" && !failedContainerStatus(status);

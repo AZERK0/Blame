@@ -141,16 +141,7 @@ export function useBacklogRotation(
     })
     backlog.setStorySetupInitializing(story, true)
     const unsubscribeSetup = workspace.onSetupEvent(setup.runId, (event) => {
-      void persistSetupEvent(story, event, worktree.worktree)
-      if (setupError(event) && event.type === "exit") {
-        void repairFailedSetup(
-          story,
-          setup.runId,
-          event,
-          worktree.worktree,
-          initialization
-        )
-      }
+      void handleSetupEvent(story, setup.runId, event, worktree.worktree, initialization)
       if (event.type === "exit") unsubscribeSetup()
     })
     const session = await agent.sessions.startDevelopment({
@@ -269,15 +260,34 @@ export function useBacklogRotation(
     worktree: string
   ) {
     const text = eventText(event)
-    const previewUrl = setupCompleted(event)
+    const previewUrl = setupFinished(event)
       ? ((await projectPreviewUrl(worktree)) ?? undefined)
       : undefined
+    const recovered = Boolean(
+      previewUrl &&
+        setupError(event) &&
+        (await projectRuntimeHealthy(worktree))
+    )
     if (event.type === "exit") backlog.setStorySetupInitializing(story, false)
     await backlog.update(story, {
-      agentLastError: setupError(event) ? text : undefined,
-      agentLastEvent: text,
+      agentLastError: setupError(event) && !recovered ? text : undefined,
+      agentLastEvent: recovered ? "Project preview containers are running." : text,
       previewUrl,
     })
+    return { recovered }
+  }
+
+  async function handleSetupEvent(
+    story: UserStory,
+    runId: string,
+    event: ProjectSetupEvent,
+    worktree: string,
+    initialization: CloudProjectInitialization
+  ) {
+    const result = await persistSetupEvent(story, event, worktree)
+    if (setupError(event) && event.type === "exit" && !result.recovered) {
+      await repairFailedSetup(story, runId, event, worktree, initialization)
+    }
   }
 
   async function repairFailedSetup(
@@ -386,24 +396,38 @@ export function useBacklogRotation(
       dockerCompose,
     })
     const unsubscribe = workspace.onSetupEvent(setup.runId, (event) => {
-      void persistSetupEvent(story, event, worktree)
-      if (event.type !== "exit") return
-      toast[setupCompleted(event) ? "success" : "error"](
-        setupCompleted(event)
-          ? "Preview recovered after initialization repair"
-          : "Preview still fails after initialization repair",
-        {
-          duration: initializationRepairFinalToastDuration,
-          id: initializationRepairToast(story),
-          position: "bottom-right",
-        }
-      )
-      unsubscribe()
+      void handleRepairedSetupEvent(story, event, worktree, unsubscribe)
     })
+  }
+
+  async function handleRepairedSetupEvent(
+    story: UserStory,
+    event: ProjectSetupEvent,
+    worktree: string,
+    unsubscribe: () => void
+  ) {
+    const result = await persistSetupEvent(story, event, worktree)
+    if (event.type !== "exit") return
+    const completed = setupCompleted(event) || result.recovered
+    toast[completed ? "success" : "error"](
+      completed
+        ? "Preview recovered after initialization repair"
+        : "Preview still fails after initialization repair",
+      {
+        duration: initializationRepairFinalToastDuration,
+        id: initializationRepairToast(story),
+        position: "bottom-right",
+      }
+    )
+    unsubscribe()
   }
 
   async function projectPreviewUrl(worktree: string) {
     return platform.workspace?.resolveProjectPreviewUrl?.({ worktree })
+  }
+
+  async function projectRuntimeHealthy(worktree: string) {
+    return platform.workspace?.projectRuntimeHealthy?.({ worktree }) ?? false
   }
 
   const persistRecoveredPreviewUrl = React.useCallback(
@@ -884,6 +908,10 @@ function setupError(event: ProjectSetupEvent) {
 
 function setupCompleted(event: ProjectSetupEvent) {
   return event.type === "exit" && event.data === "0"
+}
+
+function setupFinished(event: ProjectSetupEvent) {
+  return event.type === "exit"
 }
 
 function repairArtifacts(
