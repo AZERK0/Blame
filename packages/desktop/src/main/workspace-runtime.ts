@@ -105,9 +105,21 @@ export function runtimeCommand(
 ): RuntimeCommandSpec {
   const platform = input.platform ?? process.platform;
   if (platform === "darwin")
-    return runtimeWrappedCommand("blame-lima-runtime", command, args, input.cwd);
+    return runtimeWrappedCommand(
+      "blame-lima-runtime",
+      command,
+      args,
+      input.cwd,
+      platform,
+    );
   if (platform === "win32")
-    return runtimeWrappedCommand("blame-wsl2-runtime", command, args, input.cwd);
+    return runtimeWrappedCommand(
+      "blame-wsl2-runtime",
+      command,
+      args,
+      input.cwd,
+      platform,
+    );
   return { args, command, cwd: input.cwd };
 }
 
@@ -251,16 +263,36 @@ function runtimeWrappedCommand(
   command: string,
   args: string[],
   cwd?: string,
+  platform: NodeJS.Platform = process.platform,
 ): RuntimeCommandSpec {
   if (!cwd) return { args: [command, ...args], command: wrapper };
+  const runtimeCwd = runtimeCwdPath(cwd, platform);
   return {
     args: [
       "sh",
       "-lc",
-      `cd ${shellQuote(cwd)} && exec ${shellQuote(command)} ${args.map(shellQuote).join(" ")}`,
+      `cd ${shellQuote(runtimeCwd)} && exec ${shellQuote(command)} ${args.map(shellQuote).join(" ")}`,
     ],
     command: wrapper,
   };
+}
+
+function runtimeCwdPath(path: string, platform: NodeJS.Platform) {
+  if (platform !== "win32" || runtimePathLike(path)) return path;
+  return windowsPathToWslPath(path) ?? path;
+}
+
+function windowsPathToWslPath(path: string) {
+  const normalized = path.replace(/\//g, "\\");
+  const match = normalized.match(/^([a-zA-Z]):\\?(.*)$/);
+  if (!match) return undefined;
+  const drive = match[1].toLowerCase();
+  const rest = match[2].split("\\").filter(Boolean).map(encodeWslSegment);
+  return posix.join("/mnt", drive, ...rest);
+}
+
+function encodeWslSegment(value: string) {
+  return value;
 }
 
 function runtimeEnvironment(

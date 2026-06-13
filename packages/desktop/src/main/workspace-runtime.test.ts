@@ -84,6 +84,20 @@ test("runs runtime cwd commands inside WSL2 or Lima", () => {
       command: "blame-wsl2-runtime",
     },
   );
+  assert.deepEqual(
+    runtimeCommand("git", ["status"], {
+      cwd: String.raw`C:\Users\vanwa\Downloads\projet_test\raphtest`,
+      platform: "win32",
+    }),
+    {
+      args: [
+        "sh",
+        "-lc",
+        "cd '/mnt/c/Users/vanwa/Downloads/projet_test/raphtest' && exec 'git' 'status'",
+      ],
+      command: "blame-wsl2-runtime",
+    },
+  );
 });
 
 test("detects runtime-managed paths only on Windows and macOS", () => {
