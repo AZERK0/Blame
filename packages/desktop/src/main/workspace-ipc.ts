@@ -894,7 +894,7 @@ async function resolveProjectPreviewUrl(input: ResolveProjectPreviewUrlInput) {
   const composePath = projectComposePath(worktree);
   if (!(await runtimePathExists(composePath)))
     return labeledContainerPreviewUrl(worktree);
-  const previewTarget = await composePreviewTarget(worktree, composePath);
+  const previewTarget = await safeComposePreviewTarget(worktree, composePath);
   if (!previewTarget) return labeledContainerPreviewUrl(worktree);
   const address = await composePublishedAddress(
     worktree,
@@ -904,6 +904,14 @@ async function resolveProjectPreviewUrl(input: ResolveProjectPreviewUrlInput) {
   );
   if (!address) return labeledContainerPreviewUrl(worktree);
   return previewUrl(address, previewTarget.protocol, previewTarget.path);
+}
+
+async function safeComposePreviewTarget(worktree: string, composePath: string) {
+  try {
+    return await composePreviewTarget(worktree, composePath);
+  } catch {
+    return undefined;
+  }
 }
 
 async function ensureProjectPreviewUrl(input: ResolveProjectPreviewUrlInput) {

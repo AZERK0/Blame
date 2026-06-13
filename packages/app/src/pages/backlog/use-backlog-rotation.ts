@@ -260,9 +260,7 @@ export function useBacklogRotation(
     worktree: string
   ) {
     const text = eventText(event)
-    const previewUrl = setupFinished(event)
-      ? ((await projectPreviewUrl(worktree)) ?? undefined)
-      : undefined
+    const previewUrl = await setupPreviewUrl(event, worktree)
     const recovered = Boolean(
       previewUrl &&
         setupError(event) &&
@@ -275,6 +273,15 @@ export function useBacklogRotation(
       previewUrl,
     })
     return { recovered }
+  }
+
+  async function setupPreviewUrl(event: ProjectSetupEvent, worktree: string) {
+    if (!setupFinished(event)) return undefined
+    try {
+      return (await projectPreviewUrl(worktree)) ?? undefined
+    } catch {
+      return undefined
+    }
   }
 
   async function handleSetupEvent(
