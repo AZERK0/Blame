@@ -11,12 +11,13 @@ import {
   symlink,
   writeFile,
 } from "node:fs/promises";
-import { basename, dirname, join, relative, resolve } from "node:path";
+import { basename, dirname, join, posix, relative, resolve } from "node:path";
 import {
   dirnameWorkspacePath,
   joinWorkspacePath,
   mkdir as mkdirRuntime,
   pathExists as runtimePathExists,
+  readDirectory as readRuntimeDirectory,
   readFile as readRuntimeFile,
   runtimeManagedPath,
   writeFile as writeRuntimeFile,
@@ -150,13 +151,17 @@ async function materializedPreviewEnvHostFileMount(
   path: string,
   previewOrigin: string,
 ) {
-  const content = await readFile(path, "utf8");
+  const content = await readWorkspaceEnvFile(path);
   const materialized = materializePreviewEnvValues(content, previewOrigin);
   if (materialized === content) return null;
-  const relativePath = relative(worktree, path).replace(/\\/g, "/");
-  const hostPath = join(worktree, ".blame", "env-overrides", relativePath);
-  await mkdir(dirname(hostPath), { recursive: true });
-  await writeFile(hostPath, materialized, "utf8");
+  const relativePath = relativeWorkspacePath(worktree, path);
+  const hostPath = joinWorkspacePath(
+    worktree,
+    ".blame",
+    "env-overrides",
+    relativePath,
+  );
+  await writeWorkspaceEnvFile(hostPath, materialized);
   return {
     containerPath: relativePath,
     hostPath,
@@ -168,13 +173,18 @@ async function materializedPreviewEnvFileMatches(
   path: string,
   previewOrigin: string,
 ) {
-  const content = await readFile(path, "utf8");
+  const content = await readWorkspaceEnvFile(path);
   const materialized = materializePreviewEnvValues(content, previewOrigin);
   if (materialized === content) return true;
-  const relativePath = relative(worktree, path).replace(/\\/g, "/");
-  const hostPath = join(worktree, ".blame", "env-overrides", relativePath);
+  const relativePath = relativeWorkspacePath(worktree, path);
+  const hostPath = joinWorkspacePath(
+    worktree,
+    ".blame",
+    "env-overrides",
+    relativePath,
+  );
   try {
-    return (await readFile(hostPath, "utf8")) === materialized;
+    return (await readWorkspaceEnvFile(hostPath)) === materialized;
   } catch {
     return false;
   }
@@ -358,10 +368,12 @@ async function collectProjectEnvFiles(
   directory: string,
   files: { runtime: string[]; templates: string[] },
 ) {
-  const entries = await readdir(directory, { withFileTypes: true });
+  const entries = runtimeManagedPath(directory)
+    ? await readRuntimeDirectory(directory)
+    : await readdir(directory, { withFileTypes: true });
   await Promise.all(
     entries.map(async (entry) => {
-      const path = join(directory, entry.name);
+      const path = joinWorkspacePath(directory, entry.name);
       if (entry.isDirectory()) {
         if (!ignoredEnvDirectories.has(entry.name))
           await collectProjectEnvFiles(path, files);
@@ -372,6 +384,26 @@ async function collectProjectEnvFiles(
       if (templateEnvFile(entry.name)) files.templates.push(path);
     }),
   );
+}
+
+function relativeWorkspacePath(root: string, path: string) {
+  if (runtimeManagedPath(root)) return posix.relative(root, path);
+  return relative(root, path).replace(/\\/g, "/");
+}
+
+async function readWorkspaceEnvFile(path: string) {
+  if (runtimeManagedPath(path)) return readRuntimeFile(path);
+  return readFile(path, "utf8");
+}
+
+async function writeWorkspaceEnvFile(path: string, content: string) {
+  if (!runtimeManagedPath(path)) {
+    await mkdir(dirname(path), { recursive: true });
+    await writeFile(path, content, "utf8");
+    return;
+  }
+  await mkdirRuntime(dirnameWorkspacePath(path));
+  await writeRuntimeFile(path, content);
 }
 
 function runtimeEnvFile(name: string) {

@@ -213,6 +213,7 @@ export async function readDirectory(path: string, input: RuntimeOptions = {}) {
       return {
         isDirectory: () => type === "d",
         isFile: () => type === "f",
+        isSymbolicLink: () => type === "l",
         name,
       };
     });
