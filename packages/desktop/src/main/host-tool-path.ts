@@ -37,6 +37,19 @@ export function runtimeToolCommand(command: string, input: SetupPathInput = {}) 
   return command;
 }
 
+export function runtimeToolScript(command: string, input: SetupPathInput = {}) {
+  const env = input.env ?? process.env;
+  const platform = input.platform ?? process.platform;
+  if (platform !== "win32") return undefined;
+  const execPath = input.execPath ?? process.execPath;
+  const execDir = dirnameForPlatform(execPath, platform);
+  const file = `${command.replace(/\.cmd$/i, "")}.ps1`;
+  return windowsRuntimeScriptPaths(env, execDir, platform)
+    .filter((path): path is string => Boolean(path))
+    .map((path) => win32.join(path, file))
+    .find((path) => existsSync(path));
+}
+
 function runtimeToolPaths(execDir: string, platform: NodeJS.Platform) {
   if (platform !== "darwin") return [];
   return [
@@ -45,6 +58,19 @@ function runtimeToolPaths(execDir: string, platform: NodeJS.Platform) {
     join(execDir, "runtime", "macos", "bin"),
     "/usr/local/bin",
     "/opt/homebrew/bin",
+  ];
+}
+
+function windowsRuntimeScriptPaths(
+  env: NodeJS.ProcessEnv,
+  execDir: string,
+  platform: NodeJS.Platform,
+) {
+  if (platform !== "win32") return [];
+  return [
+    env.BLAME_RUNTIME_SCRIPT_DIR,
+    win32.join(execDir, "resources", "runtime", "windows", "scripts"),
+    win32.join(execDir, "runtime", "windows", "scripts"),
   ];
 }
 
