@@ -3,7 +3,9 @@ import {
   spawn,
   type ChildProcessWithoutNullStreams,
 } from "node:child_process";
+import { posix } from "node:path";
 import { promisify } from "node:util";
+import { runtimeToolScript, setupPath } from "./host-tool-path.ts";
 
 const execFileAsync = promisify(execFile);
 
@@ -142,9 +144,11 @@ async function runRuntimeCommand(
 ) {
   const spec = runtimeCommand(platform, command, args);
   const commandSpec = commandWithRuntimeCwd(platform, spec, options.cwd);
-  const result = await execFileAsync(commandSpec.command, commandSpec.args, {
+  const env = runtimeEnvironment(options.env, platform);
+  const executableSpec = executableRuntimeCommand(platform, commandSpec, env);
+  const result = await execFileAsync(executableSpec.command, executableSpec.args, {
     cwd: commandSpec.cwd,
-    env: options.env,
+    env,
   });
   return {
     stdout: String(result.stdout),
@@ -160,9 +164,11 @@ function spawnRuntimeCommand(
 ) {
   const spec = runtimeCommand(platform, command, args);
   const commandSpec = commandWithRuntimeCwd(platform, spec, options.cwd);
-  return spawn(commandSpec.command, commandSpec.args, {
+  const env = runtimeEnvironment(options.env, platform);
+  const executableSpec = executableRuntimeCommand(platform, commandSpec, env);
+  return spawn(executableSpec.command, executableSpec.args, {
     cwd: commandSpec.cwd,
-    env: options.env,
+    env,
   });
 }
 
@@ -173,14 +179,53 @@ function commandWithRuntimeCwd(
 ): RuntimeCommandSpec {
   if (!cwd || (platform !== "darwin" && platform !== "win32"))
     return { ...spec, cwd };
+  const runtimeCwd = runtimeCwdPath(cwd, platform);
   return {
     args: [
       "sh",
       "-lc",
-      `cd ${shellQuote(cwd)} && exec nerdctl ${spec.args.map(shellQuote).join(" ")}`,
+      `cd ${shellQuote(runtimeCwd)} && exec nerdctl ${spec.args.map(shellQuote).join(" ")}`,
     ],
     command: spec.command,
   };
+}
+
+function executableRuntimeCommand(
+  platform: NodeJS.Platform,
+  spec: RuntimeCommandSpec,
+  env: NodeJS.ProcessEnv,
+): RuntimeCommandSpec {
+  if (platform !== "win32") return spec;
+  const script = runtimeToolScript(spec.command, { env, platform });
+  if (!script) return spec;
+  return {
+    args: ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script, ...spec.args],
+    command: "powershell.exe",
+  };
+}
+
+function runtimeEnvironment(
+  env: NodeJS.ProcessEnv | undefined,
+  platform: NodeJS.Platform,
+) {
+  return env ?? {
+    ...process.env,
+    PATH: setupPath({ platform }),
+  };
+}
+
+function runtimeCwdPath(path: string, platform: NodeJS.Platform) {
+  if (platform !== "win32" || path.startsWith("/")) return path;
+  return windowsPathToWslPath(path) ?? path;
+}
+
+function windowsPathToWslPath(path: string) {
+  const normalized = path.replace(/\//g, "\\");
+  const match = normalized.match(/^([a-zA-Z]):\\?(.*)$/);
+  if (!match) return undefined;
+  const drive = match[1].toLowerCase();
+  const rest = match[2].split("\\").filter(Boolean);
+  return posix.join("/mnt", drive, ...rest);
 }
 
 function shellQuote(value: string) {

@@ -27,6 +27,13 @@ test("routes Windows runtime commands through Blame WSL2 Runtime", () => {
   });
 });
 
+test("routes Windows compose commands through Blame WSL2 Runtime", () => {
+  assert.deepEqual(runtimeCommand("win32", "compose", ["ps"]), {
+    command: "blame-wsl2-runtime",
+    args: ["compose", "ps"],
+  });
+});
+
 test("preserves runtime environment values", () => {
   const environment = containerRuntimeEnvironment({
     CONTAINERD_NAMESPACE: "blame",
