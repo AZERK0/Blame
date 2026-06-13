@@ -45,6 +45,7 @@ import {
 } from "./project-initialization-diagnostics";
 import {
   composeWithNonMutatingNpmInstalls,
+  composeWithRuntimePortPlaceholders,
   composeWithoutNumericSuUser,
   composeWithAllocatedHostPorts,
   dockerComposeWithHostFileMounts,
@@ -56,7 +57,12 @@ import {
   removeBlamePreviewProjectResources,
   runtimeAddressPoolExhausted,
 } from "./workspace-docker-cleanup";
-import { envHostFileMounts, syncProjectEnvFiles } from "./workspace-env";
+import {
+  envHostFileMounts,
+  materializedPreviewEnvFilesMatch,
+  materializedPreviewEnvHostFileMounts,
+  syncProjectEnvFiles,
+} from "./workspace-env";
 import {
   ensureGitRepository,
   gitDiffBetween,
@@ -176,6 +182,7 @@ type RuntimeContainer = {
     Env?: string[];
     Labels?: Record<string, string>;
   };
+  Id?: string;
   NetworkSettings?: {
     Ports?: Record<
       string,
@@ -472,7 +479,7 @@ async function runProjectSetup(input: RunProjectSetupInput) {
   const scriptPath = joinWorkspacePath(directory, "setup.sh");
   const composePath = joinWorkspacePath(directory, "docker-compose.yml");
   const logPath = setupLogPath(worktree);
-  const envMounts = await envHostFileMounts(worktree);
+  const symlinkEnvMounts = await envHostFileMounts(worktree);
 
   await mkdirRuntime(directory);
   await mkdirRuntime(dirnameWorkspacePath(logPath));
@@ -480,16 +487,10 @@ async function runProjectSetup(input: RunProjectSetupInput) {
   await writeRuntimeFile(logPath, "");
   await writeRuntimeFile(
     composePath,
-    await composeWithAllocatedHostPorts(
-      composeWithNonMutatingNpmInstalls(
-        composeWithoutNumericSuUser(
-          dockerComposeWithHostFileMounts(
-            dockerComposeForPreview(input.dockerCompose, worktree),
-            worktree,
-            envMounts,
-          ),
-        ),
-      ),
+    await prepareProjectCompose(
+      worktree,
+      input.dockerCompose,
+      symlinkEnvMounts,
     ),
   );
   await chmodRuntime(scriptPath, 0o755);
@@ -561,12 +562,40 @@ async function completeProjectSetup(
   }
 }
 
-async function startProjectCompose(worktree: string) {
-  await repairProjectCompose(worktree);
+async function startProjectCompose(
+  worktree: string,
+  options: { reallocatePorts?: boolean } = {},
+) {
+  await repairProjectCompose(worktree, options);
   await runProjectComposeUp(worktree);
   const previewUrl = await waitForPreviewUrl(worktree);
+  if (await syncPreviewRuntimeEnvironment(worktree, previewUrl)) {
+    await restartPreviewService(worktree);
+  }
   await waitForPreview(worktree, previewUrl);
   return previewUrl;
+}
+
+async function syncPreviewRuntimeEnvironment(worktree: string, previewUrl: string) {
+  const origin = previewOrigin(previewUrl);
+  if (!origin) return false;
+  if (await materializedPreviewEnvFilesMatch(worktree, origin)) return false;
+  await materializedPreviewEnvHostFileMounts(worktree, origin);
+  await clearPreviewBuildCache(worktree);
+  return true;
+}
+
+async function clearPreviewBuildCache(worktree: string) {
+  await rmRuntime(joinWorkspacePath(worktree, ".next"));
+}
+
+async function restartPreviewService(worktree: string) {
+  const container = await previewContainerForWorktree(worktree);
+  if (!container?.Id) return;
+  await containerRuntime.container(["restart", container.Id], {
+    cwd: worktree,
+    env: setupEnvironment(worktree),
+  });
 }
 
 async function runProjectComposeUp(worktree: string) {
@@ -811,7 +840,7 @@ async function stopProjectSetup(input: StopProjectSetupInput) {
     "docker-compose.yml",
   );
   if (!(await runtimePathExists(composePath))) return false;
-  await repairComposeFile(composePath);
+  await repairComposeFile(worktree, composePath);
   try {
     await containerRuntime.compose(
       [
@@ -880,14 +909,20 @@ async function ensureProjectPreviewUrl(input: ResolveProjectPreviewUrlInput) {
   if (!(await isWorkspaceGitRepository(worktree))) return null;
   if (setupRunningForWorktree(worktree)) return null;
   const currentUrl = await resolveProjectPreviewUrl({ worktree });
-  if (currentUrl && (await previewResponds(currentUrl))) return currentUrl;
-  if (currentUrl && (await previewContainerCanStillRun(worktree))) {
-    return currentUrl;
+  if (currentUrl && (await previewResponds(currentUrl))) {
+    const currentOrigin = previewOrigin(currentUrl);
+    const envMatches = await materializedPreviewEnvFilesMatch(
+      worktree,
+      currentOrigin,
+    );
+    if (envMatches) return currentUrl;
   }
   if (!(await projectSetupCompleted(worktree))) return null;
   const recovery = previewRecoveries.get(worktree);
   if (recovery) return recovery;
-  const nextRecovery = recoverProjectPreview(worktree).finally(() => {
+  const nextRecovery = recoverProjectPreview(worktree, {
+    reallocatePorts: Boolean(currentUrl),
+  }).finally(() => {
     previewRecoveries.delete(worktree);
   });
   previewRecoveries.set(worktree, nextRecovery);
@@ -912,13 +947,16 @@ async function projectSetupCompleted(worktree: string) {
   }
 }
 
-async function recoverProjectPreview(worktree: string) {
+async function recoverProjectPreview(
+  worktree: string,
+  options: { reallocatePorts?: boolean } = {},
+) {
   await runExistingProjectSetup(worktree);
   if (removedWorktrees.has(worktree)) return null;
   if (removingWorktrees.has(worktree)) return null;
   await appendRecoveryLog(worktree, "compose starting");
   try {
-    const previewUrl = await startProjectCompose(worktree);
+    const previewUrl = await startProjectCompose(worktree, options);
     await appendRecoveryLog(worktree, `preview ready at ${previewUrl}`);
     return previewUrl;
   } catch (error) {
@@ -1505,7 +1543,7 @@ async function composeConfig(
   worktree: string,
   composePath: string,
 ): Promise<ComposeConfig> {
-  await repairComposeFile(composePath);
+  await repairComposeFile(worktree, composePath);
   const { stdout } = await containerRuntime.compose(
     [
       "-f",
@@ -1564,7 +1602,7 @@ async function composePublishedAddress(
   port: number,
 ) {
   try {
-    await repairComposeFile(composePath);
+    await repairComposeFile(worktree, composePath);
     const { stdout } = await containerRuntime.compose(
       [
         "-f",
@@ -1583,19 +1621,68 @@ async function composePublishedAddress(
   }
 }
 
-async function repairProjectCompose(worktree: string) {
-  await repairComposeFile(projectComposePath(worktree));
+async function repairProjectCompose(
+  worktree: string,
+  options: { reallocatePorts?: boolean } = {},
+) {
+  await repairComposeFile(worktree, projectComposePath(worktree), options);
 }
 
-async function repairComposeFile(composePath: string) {
+async function repairComposeFile(
+  worktree: string,
+  composePath: string,
+  options: { reallocatePorts?: boolean } = {},
+) {
   if (!(await runtimePathExists(composePath))) return;
   const compose = await readRuntimeFile(composePath);
-  const repairedCompose = await composeWithAllocatedHostPorts(
+  const allocatedCompose = await composeWithAllocatedHostPorts(
     composeWithNonMutatingNpmInstalls(
-      composeWithoutNumericSuUser(dockerComposeWithPortableWindowsPaths(compose)),
+      composeWithoutNumericSuUser(
+        composeWithRuntimePortPlaceholders(
+          dockerComposeWithPortableWindowsPaths(compose),
+          options.reallocatePorts,
+        ),
+      ),
     ),
   );
+  const envMounts = await materializedPreviewEnvHostFileMounts(
+    worktree,
+    composePreviewOrigin(allocatedCompose),
+  );
+  const repairedCompose = dockerComposeWithHostFileMounts(
+    allocatedCompose,
+    worktree,
+    envMounts,
+  );
   if (repairedCompose !== compose) await writeRuntimeFile(composePath, repairedCompose);
+}
+
+async function prepareProjectCompose(
+  worktree: string,
+  compose: string,
+  symlinkEnvMounts: Awaited<ReturnType<typeof envHostFileMounts>>,
+) {
+  const allocatedCompose = await composeWithAllocatedHostPorts(
+    composeWithNonMutatingNpmInstalls(
+      composeWithoutNumericSuUser(
+        dockerComposeForPreview(compose, worktree),
+      ),
+    ),
+  );
+  const envMounts = await materializedPreviewEnvHostFileMounts(
+    worktree,
+    composePreviewOrigin(allocatedCompose),
+  );
+  return dockerComposeWithHostFileMounts(
+    allocatedCompose,
+    worktree,
+    [...symlinkEnvMounts, ...envMounts],
+  );
+}
+
+function composePreviewOrigin(compose: string) {
+  const match = /(?:127\.0\.0\.1|localhost):(\d+):\d+/.exec(compose);
+  return match ? `http://localhost:${match[1]}` : undefined;
 }
 
 async function appendComposeDiagnostics(worktree: string) {
@@ -1735,14 +1822,6 @@ async function assertPreviewContainerCanStillStart(worktree: string) {
   }
 }
 
-async function previewContainerCanStillRun(worktree: string) {
-  const container = await previewContainerForWorktree(worktree);
-  if (!container) return false;
-  const status = container.State?.Status;
-  const health = container.State?.Health?.Status;
-  return health !== "unhealthy" && !failedContainerStatus(status);
-}
-
 async function projectRuntimeHealthy(worktreeInput: string) {
   const worktree = resolveRuntimePath(worktreeInput);
   const composePath = projectComposePath(worktree);
@@ -1843,8 +1922,9 @@ function delay(ms: number) {
 
 function previewUrl(address: string, protocol: string, path: string) {
   const normalizedAddress = address
-    .replace(/^0\.0\.0\.0:/, "127.0.0.1:")
-    .replace(/^\[::\]:/, "127.0.0.1:");
+    .replace(/^(?:0\.0\.0\.0|127\.0\.0\.1):/, "localhost:")
+    .replace(/^\[::\]:/, "localhost:")
+    .replace(/^\[::1\]:/, "localhost:");
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   return `${protocol}://${normalizedAddress}${normalizedPath}`;
 }

@@ -14,6 +14,8 @@ import test from "node:test";
 import {
   crossDeviceLinkError,
   envHostFileMounts,
+  materializedPreviewEnvFilesMatch,
+  materializePreviewEnvValues,
   linkEnvFile,
   mergeEnvValues,
   syncProjectEnvFiles,
@@ -124,6 +126,45 @@ test("merges env values without replacing existing non-empty values", () => {
     mergeEnvValues(source, destination),
     "A=worktree\nB=source\nD=worktree\nC=source\n",
   );
+});
+
+test("materializes preview public env values", () => {
+  assert.equal(
+    materializePreviewEnvValues(
+      [
+        "APP_URL=http://localhost:3000",
+        'BETTER_AUTH_URL="http://127.0.0.1:3000"',
+        "DATABASE_URL=mysql://database:3306/app",
+      ].join("\n"),
+      "http://localhost:42251",
+    ),
+    [
+      "APP_URL=http://localhost:42251",
+      'BETTER_AUTH_URL="http://localhost:42251"',
+      "DATABASE_URL=mysql://database:3306/app",
+      "NEXT_PUBLIC_APP_URL=http://localhost:42251",
+      "",
+    ].join("\n"),
+  );
+});
+
+test("detects stale materialized preview env files", async () => {
+  const root = await mkdtemp(join(tmpdir(), "blame-env-preview-"));
+  try {
+    await writeFile(join(root, ".env"), "APP_URL=http://localhost:3000\n");
+    await mkdir(join(root, ".blame", "env-overrides"), { recursive: true });
+    await writeFile(
+      join(root, ".blame", "env-overrides", ".env"),
+      "APP_URL=http://localhost:11111\nNEXT_PUBLIC_APP_URL=http://localhost:11111\n",
+    );
+
+    assert.equal(
+      await materializedPreviewEnvFilesMatch(root, "http://localhost:22222"),
+      false,
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });
 
 test("detects cross-device hardlink failures", () => {

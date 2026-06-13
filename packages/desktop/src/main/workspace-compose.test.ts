@@ -40,8 +40,8 @@ test("materializes preview public origins from allocated ports", async () => {
   const hostPort = /127\.0\.0\.1:(\d+):3000/.exec(result)?.[1];
 
   assert.ok(hostPort);
-  assert.match(result, new RegExp(`BETTER_AUTH_URL: "http://127\\.0\\.0\\.1:${hostPort}"`));
-  assert.match(result, new RegExp(`NEXTAUTH_URL: "http://127\\.0\\.0\\.1:${hostPort}/api/auth"`));
+  assert.match(result, new RegExp(`BETTER_AUTH_URL: "http://localhost:${hostPort}"`));
+  assert.match(result, new RegExp(`NEXTAUTH_URL: "http://localhost:${hostPort}/api/auth"`));
 });
 
 test("keeps explicit localhost ports unchanged", async () => {
@@ -69,7 +69,7 @@ test("uses explicit localhost ports for public origin materialization", async ()
 
   const result = await composeWithAllocatedHostPorts(compose);
 
-  assert.match(result, /APP_URL=http:\/\/127\.0\.0\.1:4173/);
+  assert.match(result, /APP_URL=http:\/\/localhost:4173/);
 });
 
 test("removes invalid numeric su user commands", () => {
@@ -267,6 +267,28 @@ test("mounts host env files over worktree symlinks inside services", () => {
     /"\/mnt\/dev\/project\/apps\/backend\/\.env:\/workspace\/apps\/backend\/\.env"/,
   );
   assert.doesNotMatch(result, /postgres:17\n    volumes:/);
+});
+
+test("replaces existing host env file mounts for the same container path", () => {
+  const compose = [
+    "services:",
+    "  web:",
+    "    volumes:",
+    "      - /tmp/worktree:/workspace",
+    "      - /tmp/old/.env:/workspace/.env",
+    "      - /tmp/old/.env:/workspace/.env",
+  ].join("\n");
+
+  const result = dockerComposeWithHostFileMounts(compose, "/tmp/worktree", [
+    {
+      containerPath: ".env",
+      hostPath: "/tmp/new/.env",
+    },
+  ]);
+
+  assert.doesNotMatch(result, /\/tmp\/old\/\.env/);
+  assert.equal([...result.matchAll(/\/workspace\/\.env/g)].length, 1);
+  assert.match(result, /"\/tmp\/new\/\.env:\/workspace\/\.env"/);
 });
 
 test("normalizes Windows project root placeholders for YAML", () => {

@@ -108,6 +108,18 @@ export async function composeWithAllocatedHostPorts(compose: string) {
   return composeWithPreviewPublicOrigins(result.join("\n"), portMappings);
 }
 
+export function composeWithRuntimePortPlaceholders(
+  compose: string,
+  enabled = true,
+) {
+  if (!enabled) return compose;
+  return compose.replace(
+    /(\s*-\s*["']?)(127\.0\.0\.1|localhost):\d+:(\d+)(\/[a-z]+)?(["']?\s*(?:#.*)?)$/gm,
+    (_match, prefix: string, host: string, targetPort: string, protocol = "", suffix: string) =>
+      `${prefix}${host}::${targetPort}${protocol}${suffix}`,
+  );
+}
+
 function allocatedPortLine(line: string) {
   const match =
     /^(\s*-\s*)(["']?)(127\.0\.0\.1|localhost)::(\d+)(\/[a-z]+)?\2(\s*(?:#.*)?)$/.exec(
@@ -145,7 +157,7 @@ function composeWithPreviewPublicOrigins(
     publicOriginAssignmentPattern(),
     (match, prefix: string, port: string) => {
       const hostPort = portMappings.get(Number.parseInt(port, 10));
-      return hostPort ? `${prefix}http://127.0.0.1:${hostPort}` : match;
+      return hostPort ? `${prefix}http://localhost:${hostPort}` : match;
     },
   );
 }
@@ -480,7 +492,10 @@ function serviceBlockWithMounts(lines: string[], mounts: string[]) {
     environmentLines.length > 0
       ? serviceBlockWithEnvironment(lines, environmentLines)
       : lines;
-  const targetLines = serviceLines;
+  const targetLines = serviceBlockWithoutMountTargets(
+    serviceLines,
+    mounts.map(mountTarget),
+  );
   const targetVolumesIndex = targetLines.findIndex((line) =>
     /^\s{4}volumes:\s*$/.test(line),
   );
@@ -488,11 +503,48 @@ function serviceBlockWithMounts(lines: string[], mounts: string[]) {
     const [serviceLine, ...serviceBody] = targetLines;
     return [serviceLine, "    volumes:", ...mountLines(mounts), ...serviceBody];
   }
+  const targetVolumesEnd = serviceBlockSectionEnd(
+    targetLines,
+    targetVolumesIndex,
+  );
   return [
-    ...targetLines.slice(0, targetVolumesIndex + 1),
+    ...targetLines.slice(0, targetVolumesEnd),
     ...mountLines(mounts),
-    ...targetLines.slice(targetVolumesIndex + 1),
+    ...targetLines.slice(targetVolumesEnd),
   ];
+}
+
+function serviceBlockWithoutMountTargets(lines: string[], targets: string[]) {
+  const volumesIndex = lines.findIndex((line) => /^\s{4}volumes:\s*$/.test(line));
+  if (volumesIndex === -1) return lines;
+  const volumesEnd = serviceBlockSectionEnd(lines, volumesIndex);
+  return [
+    ...lines.slice(0, volumesIndex + 1),
+    ...lines.slice(volumesIndex + 1, volumesEnd).filter((line) =>
+      !targets.some((target) => mountLineTargets(line, target)),
+    ),
+    ...lines.slice(volumesEnd),
+  ];
+}
+
+function mountTarget(mount: string) {
+  return mount.split(":").at(-1) ?? "";
+}
+
+function mountLineTargets(line: string, target: string) {
+  return line.includes(`:${target}`) || line.includes(`target: ${target}`);
+}
+
+function serviceBlockSectionEnd(lines: string[], start: number) {
+  const startIndent = /^\s*/.exec(lines[start])?.[0].length ?? 0;
+  let end = start + 1;
+  while (end < lines.length) {
+    const line = lines[end];
+    const indent = /^\s*/.exec(line)?.[0].length ?? 0;
+    if (line.trim() && indent <= startIndent) break;
+    end += 1;
+  }
+  return end;
 }
 
 function cacheEnvironmentLines(lines: string[], mounts: string[]) {

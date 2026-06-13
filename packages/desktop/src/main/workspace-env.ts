@@ -47,6 +47,18 @@ export type EnvHostFileMount = {
   hostPath: string;
 };
 
+const publicOriginEnvironmentKeys = new Set([
+  "APP_URL",
+  "APPLICATION_URL",
+  "BETTER_AUTH_URL",
+  "CANONICAL_URL",
+  "NEXT_PUBLIC_APP_URL",
+  "NEXT_PUBLIC_BASE_URL",
+  "NEXTAUTH_URL",
+  "PUBLIC_URL",
+  "SITE_URL",
+]);
+
 export async function syncProjectEnvFiles(
   repositoryRoot: string,
   worktree: string,
@@ -103,6 +115,122 @@ export async function envHostFileMounts(worktree: string) {
     files.runtime.map((path) => envHostFileMount(worktree, path)),
   );
   return mounts.filter((mount): mount is EnvHostFileMount => Boolean(mount));
+}
+
+export async function materializedPreviewEnvHostFileMounts(
+  worktree: string,
+  previewOrigin: string | undefined,
+) {
+  if (!previewOrigin) return [];
+  const files = await projectEnvFiles(worktree);
+  const mounts = await Promise.all(
+    files.runtime.map((path) =>
+      materializedPreviewEnvHostFileMount(worktree, path, previewOrigin),
+    ),
+  );
+  return mounts.filter((mount): mount is EnvHostFileMount => Boolean(mount));
+}
+
+export async function materializedPreviewEnvFilesMatch(
+  worktree: string,
+  previewOrigin: string | undefined,
+) {
+  if (!previewOrigin) return true;
+  const files = await projectEnvFiles(worktree);
+  const matches = await Promise.all(
+    files.runtime.map((path) =>
+      materializedPreviewEnvFileMatches(worktree, path, previewOrigin),
+    ),
+  );
+  return matches.every(Boolean);
+}
+
+async function materializedPreviewEnvHostFileMount(
+  worktree: string,
+  path: string,
+  previewOrigin: string,
+) {
+  const content = await readFile(path, "utf8");
+  const materialized = materializePreviewEnvValues(content, previewOrigin);
+  if (materialized === content) return null;
+  const relativePath = relative(worktree, path).replace(/\\/g, "/");
+  const hostPath = join(worktree, ".blame", "env-overrides", relativePath);
+  await mkdir(dirname(hostPath), { recursive: true });
+  await writeFile(hostPath, materialized, "utf8");
+  return {
+    containerPath: relativePath,
+    hostPath,
+  };
+}
+
+async function materializedPreviewEnvFileMatches(
+  worktree: string,
+  path: string,
+  previewOrigin: string,
+) {
+  const content = await readFile(path, "utf8");
+  const materialized = materializePreviewEnvValues(content, previewOrigin);
+  if (materialized === content) return true;
+  const relativePath = relative(worktree, path).replace(/\\/g, "/");
+  const hostPath = join(worktree, ".blame", "env-overrides", relativePath);
+  try {
+    return (await readFile(hostPath, "utf8")) === materialized;
+  } catch {
+    return false;
+  }
+}
+
+export function materializePreviewEnvValues(
+  content: string,
+  previewOrigin: string,
+) {
+  let hasPublicOrigin = false;
+  let hasNextPublicAppUrl = false;
+  const lines = content.split("\n").map((line) => {
+    const parsed = envLine(line);
+    if (!parsed) return line;
+    if (parsed.key === "NEXT_PUBLIC_APP_URL") hasNextPublicAppUrl = true;
+    if (!publicOriginEnvironmentKeys.has(parsed.key)) return line;
+    hasPublicOrigin = true;
+    const nextValue = materializedPreviewEnvValue(parsed.value, previewOrigin);
+    return `${parsed.key}=${nextValue}`;
+  });
+  while (lines.length > 0 && lines[lines.length - 1] === "") lines.pop();
+  if (hasPublicOrigin && !hasNextPublicAppUrl) {
+    lines.push(`NEXT_PUBLIC_APP_URL=${previewOrigin}`);
+  }
+  return normalizeEnvText(lines.join("\n"));
+}
+
+function materializedPreviewEnvValue(value: string, previewOrigin: string) {
+  const quote = envValueQuote(value);
+  const unquoted = unquoteEnvValue(value.trim());
+  let nextValue = unquoted;
+  try {
+    const url = new URL(unquoted);
+    if (localPreviewHost(url.hostname)) {
+      nextValue = `${previewOrigin}${url.pathname === "/" ? "" : url.pathname}${url.search}${url.hash}`;
+    }
+  } catch {
+    nextValue = previewOrigin;
+  }
+  return quote ? `${quote}${nextValue}${quote}` : nextValue;
+}
+
+function envValueQuote(value: string) {
+  const trimmed = value.trim();
+  if (trimmed.startsWith('"') && trimmed.endsWith('"')) return '"';
+  if (trimmed.startsWith("'") && trimmed.endsWith("'")) return "'";
+  return "";
+}
+
+function unquoteEnvValue(value: string) {
+  const quote = envValueQuote(value);
+  return quote ? value.slice(1, -1) : value;
+}
+
+function localPreviewHost(host: string) {
+  return host === "localhost" || host === "127.0.0.1";
 }
 
 async function envHostFileMount(worktree: string, path: string) {
