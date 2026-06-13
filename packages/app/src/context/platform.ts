@@ -38,6 +38,7 @@ export type OpenDirectoryPickerOptions = {
 export type Platform = {
   agent?: AgentClient
   api?: ApiConnection
+  platform?: string
   previewBrowser?: PreviewBrowserClient
   terminal?: TerminalClient
   updates?: DesktopUpdatesClient
@@ -295,6 +296,8 @@ export type WorkspaceClient = {
   resolveProjectPreviewUrl(input: { worktree: string }): Promise<string | null>
   ensureProjectPreviewUrl(input: { worktree: string }): Promise<string | null>
   projectRuntimeHealthy?(input: { worktree: string }): Promise<boolean>
+  ensureRuntimeReady?(): Promise<unknown>
+  repairRuntime?(): Promise<unknown>
   listProjectServices?(input: { worktree: string }): Promise<string[]>
   startProjectServiceLogs?(input: {
     service: string

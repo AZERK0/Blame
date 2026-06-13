@@ -1,4 +1,5 @@
-import { DownloadIcon, RefreshCwIcon } from "lucide-react"
+import * as React from "react"
+import { DownloadIcon, LoaderCircleIcon, RefreshCwIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -35,8 +36,20 @@ export function HostDependenciesDialog({
 }: HostDependenciesDialogProps) {
   const platform = usePlatform()
   const issues = report?.issues ?? []
+  const [runningAction, setRunningAction] = React.useState<string | null>(null)
 
-  function openDownload(issue: HostDependencyIssue) {
+  async function runDependencyAction(issue: HostDependencyIssue) {
+    const runtimeAction = dependencyRuntimeAction(issue, platform)
+    if (runtimeAction) {
+      setRunningAction(`${issue.name}-${issue.status}`)
+      try {
+        await runtimeAction()
+        await onRecheck()
+      } finally {
+        setRunningAction(null)
+      }
+      return
+    }
     const url = dependencyUrl(issue)
     if (platform.openExternalLink) platform.openExternalLink(url)
     else window.open(url, "_blank", "noopener,noreferrer")
@@ -54,32 +67,20 @@ export function HostDependenciesDialog({
         </DialogHeader>
         <div className="grid gap-2">
           {issues.map((issue) => (
-            <div
+            <DependencyIssueRow
               key={`${issue.name}-${issue.status}`}
-              className="grid gap-3 rounded-lg border bg-muted/20 p-3 sm:grid-cols-[1fr_auto] sm:items-center"
-            >
-              <div className="min-w-0">
-                <div className="font-medium">{dependencyLabel(issue)}</div>
-                <div className="mt-1 text-sm text-muted-foreground">
-                  {issue.message} {issue.action}
-                </div>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => openDownload(issue)}
-              >
-                <DownloadIcon />
-                {dependencyButtonLabel(issue)}
-              </Button>
-            </div>
+              issue={issue}
+              loading={runningAction === `${issue.name}-${issue.status}`}
+              platform={platform}
+              onAction={runDependencyAction}
+            />
           ))}
         </div>
         <DialogFooter>
           <Button
             type="button"
             variant="outline"
-            disabled={checking}
+            disabled={checking || Boolean(runningAction)}
             onClick={() => void onRecheck()}
           >
             <RefreshCwIcon className={cn(checking && "animate-spin")} />
@@ -89,6 +90,76 @@ export function HostDependenciesDialog({
       </DialogContent>
     </Dialog>
   )
+}
+
+function DependencyIssueRow({
+  issue,
+  loading,
+  onAction,
+  platform,
+}: {
+  issue: HostDependencyIssue
+  loading: boolean
+  onAction(issue: HostDependencyIssue): Promise<void>
+  platform: ReturnType<typeof usePlatform>
+}) {
+  const Icon = loading ? LoaderCircleIcon : dependencyButtonIcon(issue, platform)
+  return (
+    <div className="grid gap-3 rounded-lg border bg-muted/20 p-3 sm:grid-cols-[1fr_auto] sm:items-center">
+      <div className="min-w-0">
+        <div className="font-medium">{dependencyLabel(issue)}</div>
+        <div className="mt-1 text-sm text-muted-foreground">
+          {issue.message} {issue.action}
+        </div>
+      </div>
+      <Button
+        type="button"
+        variant="outline"
+        disabled={loading}
+        onClick={() => void onAction(issue)}
+      >
+        <Icon className={cn(loading && "animate-spin")} />
+        {loading ? "Preparing" : dependencyButtonLabel(issue, platform)}
+      </Button>
+    </div>
+  )
+}
+
+function dependencyButtonIcon(
+  issue: HostDependencyIssue,
+  platform: ReturnType<typeof usePlatform>
+) {
+  if (dependencyRuntimeAction(issue, platform)) return RefreshCwIcon
+  return DownloadIcon
+}
+
+function dependencyRuntimeAction(
+  issue: HostDependencyIssue,
+  platform: ReturnType<typeof usePlatform>
+) {
+  if (!managedRuntimePlatform(platform.platform)) return null
+  if (issue.name === "blame-runtime") return platform.workspace?.ensureRuntimeReady
+  if (containerRuntimeDependency(issue.name)) return platform.workspace?.repairRuntime
+  return null
+}
+
+function managedRuntimePlatform(platform?: string) {
+  return platform === "darwin" || platform === "win32"
+}
+
+function containerRuntimeDependency(name: HostDependencyIssue["name"]) {
+  return ["containerd", "nerdctl", "nerdctl-compose"].includes(name)
+}
+
+function dependencyButtonLabel(
+  issue: HostDependencyIssue,
+  platform: ReturnType<typeof usePlatform>
+) {
+  if (dependencyRuntimeAction(issue, platform)) {
+    return issue.name === "blame-runtime" ? "Setup Runtime" : "Repair Runtime"
+  }
+  if (issue.status === "unsupported") return "Upgrade"
+  return "Download"
 }
 
 function dependencyLabel(issue: HostDependencyIssue) {
@@ -109,15 +180,9 @@ function dependencyLabel(issue: HostDependencyIssue) {
   return labels[issue.name]
 }
 
-function dependencyButtonLabel(issue: HostDependencyIssue) {
-  if (issue.name === "blame-runtime") return "Open Runtime"
-  if (issue.status === "unsupported") return "Upgrade"
-  return "Download"
-}
-
 function dependencyUrl(issue: HostDependencyIssue) {
   const urls: Record<HostDependencyIssue["name"], string> = {
-    "blame-runtime": "https://github.com/containerd/nerdctl",
+    "blame-runtime": "https://blame.dev",
     containerd: "https://containerd.io/",
     corepack: "https://nodejs.org/en/download",
     git: "https://git-scm.com/downloads",

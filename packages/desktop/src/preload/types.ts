@@ -207,6 +207,8 @@ export type BlameDesktopApi = {
     ensureProjectPreviewUrl(input: {
       worktree: string;
     }): Promise<string | null>;
+    ensureRuntimeReady(): Promise<HostDependencyReport>;
+    repairRuntime(): Promise<HostDependencyReport>;
     projectRuntimeHealthy(input: { worktree: string }): Promise<boolean>;
     listProjectServices(input: { worktree: string }): Promise<string[]>;
     startProjectServiceLogs(input: {
