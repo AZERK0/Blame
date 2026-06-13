@@ -1,0 +1,10 @@
+{
+  "vm": "BlameRuntime",
+  "runtimeVersion": "1",
+  "runtimeMarker": "/etc/blame-runtime-version",
+  "runtimeRoot": "/home/blame/.local/share/blame/runtime",
+  "nerdctlVersion": "2.1.6",
+  "lima": {
+    "bin": "lima/bin"
+  }
+}

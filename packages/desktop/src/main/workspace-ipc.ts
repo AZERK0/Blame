@@ -286,11 +286,21 @@ export function registerWorkspaceIpcHandlers() {
         setupScript: input.setupScript,
       }),
   );
-  ipcMain.handle("workspace:get-runtime-status", () => getRuntimeStatus());
-  ipcMain.handle("workspace:ensure-runtime-ready", () => ensureRuntimeReady());
-  ipcMain.handle("workspace:repair-runtime", () => repairRuntime());
-  ipcMain.handle("workspace:reset-runtime", () => resetRuntime());
-  ipcMain.handle("workspace:uninstall-runtime", () => uninstallRuntime());
+  ipcMain.handle("workspace:get-runtime-status", () =>
+    getRuntimeStatus({ env: runtimeManagerEnvironment() }),
+  );
+  ipcMain.handle("workspace:ensure-runtime-ready", () =>
+    ensureRuntimeReady({ env: runtimeManagerEnvironment() }),
+  );
+  ipcMain.handle("workspace:repair-runtime", () =>
+    repairRuntime({ env: runtimeManagerEnvironment() }),
+  );
+  ipcMain.handle("workspace:reset-runtime", () =>
+    resetRuntime({ env: runtimeManagerEnvironment() }),
+  );
+  ipcMain.handle("workspace:uninstall-runtime", () =>
+    uninstallRuntime({ env: runtimeManagerEnvironment() }),
+  );
   ipcMain.handle(
     "workspace:stop-project-setup",
     (_event, input: StopProjectSetupInput) => stopProjectSetup(input),
@@ -1342,6 +1352,13 @@ function setupEnvironment(worktree: string) {
       .digest("hex")
       .slice(0, 12)}`,
     npm_config_yes: "true",
+    PATH: setupPath(),
+  };
+}
+
+function runtimeManagerEnvironment() {
+  return {
+    ...process.env,
     PATH: setupPath(),
   };
 }

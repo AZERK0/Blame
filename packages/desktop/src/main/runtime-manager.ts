@@ -37,6 +37,8 @@ export type RuntimeDependencyIssue = {
 };
 
 type ManagedRuntimeCheckName =
+  | "lima"
+  | "vm"
   | "wsl"
   | "wsl2"
   | "distro"
@@ -332,7 +334,14 @@ function managedRuntimeCheckIssue(
 }
 
 function runtimeDependencyName(name: ManagedRuntimeCheckName): RuntimeDependencyName {
-  if (name === "wsl" || name === "wsl2" || name === "distro" || name === "agent")
+  if (
+    name === "lima"
+    || name === "vm"
+    || name === "wsl"
+    || name === "wsl2"
+    || name === "distro"
+    || name === "agent"
+  )
     return "blame-runtime";
   return name;
 }
@@ -347,9 +356,14 @@ function runtimeStatusForCheck(
   check: ManagedRuntimeStatusCheck,
   fallback: RuntimeState,
 ) {
+  if (check.name === "lima")
+    return check.status === "missing" ? "missing" : "broken";
   if (check.name === "wsl" || check.name === "wsl2")
     return check.status === "unsupported" ? "unsupported" : "broken";
-  if (check.name === "distro" || check.name === "agent") return "missing";
+  if (check.name === "vm")
+    return check.status === "missing" ? "missing" : fallback;
+  if (check.name === "distro" || check.name === "agent")
+    return "missing";
   if (check.status === "missing") return "repairable";
   return fallback;
 }

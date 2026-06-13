@@ -104,6 +104,77 @@ test("reports missing managed runtime Git as repairable", async () => {
   assert.equal(status.issues[0]?.status, "missing");
 });
 
+test("reports missing bundled Lima as managed runtime missing", async () => {
+  const manager = createRuntimeManager({ platform: "darwin" }, async (_command, args) => {
+    if (args[0] !== "status") return "ok";
+    return JSON.stringify({
+      status: "missing",
+      checks: [
+        {
+          action: "Package bundled Lima resources with Blame, then run Blame runtime setup again.",
+          name: "lima",
+          status: "missing",
+        },
+      ],
+    });
+  });
+
+  const status = await manager.checkRuntimeDependencies();
+
+  assert.equal(status.status, "missing");
+  assert.equal(status.issues[0]?.name, "blame-runtime");
+  assert.equal(status.issues[0]?.status, "missing");
+  assert.match(status.issues[0]?.action ?? "", /bundled Lima/);
+});
+
+test("reports missing Blame Lima VM as managed runtime missing", async () => {
+  const manager = createRuntimeManager({ platform: "darwin" }, async (_command, args) => {
+    if (args[0] !== "status") return "ok";
+    return JSON.stringify({
+      status: "missing",
+      checks: [
+        { name: "lima", status: "available" },
+        {
+          action: "Create or repair the BlameRuntime Lima VM from Blame runtime setup.",
+          name: "vm",
+          status: "missing",
+        },
+      ],
+    });
+  });
+
+  const status = await manager.checkRuntimeDependencies();
+
+  assert.equal(status.status, "missing");
+  assert.equal(status.issues[0]?.name, "blame-runtime");
+  assert.equal(status.issues[0]?.status, "missing");
+  assert.match(status.issues[0]?.action ?? "", /BlameRuntime Lima VM/);
+});
+
+test("reports stopped Blame Lima VM as repairable", async () => {
+  const manager = createRuntimeManager({ platform: "darwin" }, async (_command, args) => {
+    if (args[0] !== "status") return "ok";
+    return JSON.stringify({
+      status: "repairable",
+      checks: [
+        { name: "lima", status: "available" },
+        {
+          action: "Create or repair the BlameRuntime Lima VM from Blame runtime setup.",
+          name: "vm",
+          status: "unavailable",
+        },
+      ],
+    });
+  });
+
+  const status = await manager.checkRuntimeDependencies();
+
+  assert.equal(status.status, "repairable");
+  assert.equal(status.issues[0]?.name, "blame-runtime");
+  assert.equal(status.issues[0]?.status, "unavailable");
+});
+
+
 test("runs managed runtime lifecycle commands explicitly", async () => {
   const calls: string[] = [];
   const manager = createRuntimeManager({ platform: "win32" }, async (command, args) => {

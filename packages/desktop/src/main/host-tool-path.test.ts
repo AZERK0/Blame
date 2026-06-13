@@ -25,3 +25,22 @@ test("adds Windows package manager shim paths", () => {
   assert.equal(entries.includes(String.raw`C:\Users\dev\AppData\Local\pnpm`), true);
   assert.equal(entries.includes(String.raw`C:\Program Files\nodejs`), true);
 });
+
+test("adds macOS packaged runtime shim path", () => {
+  const path = setupPath({
+    env: {
+      HOME: "/Users/dev",
+      PATH: "/usr/bin",
+    },
+    execPath: "/Applications/Blame.app/Contents/MacOS/Blame",
+    platform: "darwin",
+  });
+  const entries = path.split(":");
+
+  assert.equal(
+    entries.includes(
+      "/Applications/Blame.app/Contents/Resources/runtime/macos/bin",
+    ),
+    true,
+  );
+});

@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+script_dir="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+runtime_home="$(CDPATH= cd -- "$script_dir/.." && pwd)"
+exec "$runtime_home/scripts/blame-lima-runtime.sh" "$@"
