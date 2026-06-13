@@ -437,7 +437,17 @@ function executableRuntimeCommand(command: string, args: string[]) {
 }
 
 function commandPromptLine(command: string, args: string[]) {
-  return [command, ...args].map(commandPromptQuote).join(" ");
+  return [
+    "call",
+    commandPromptQuote(windowsBatchCommand(command)),
+    ...args.map(commandPromptQuote),
+  ].join(" ");
+}
+
+function windowsBatchCommand(command: string) {
+  if (command === "blame-wsl2-runtime") return "blame-wsl2-runtime.cmd";
+  if (command === "blame-lima-runtime") return "blame-lima-runtime.cmd";
+  return command;
 }
 
 function commandPromptQuote(value: string) {
