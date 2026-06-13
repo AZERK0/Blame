@@ -3,5 +3,13 @@
   "runtimeVersion": "1",
   "runtimeMarker": "/etc/blame-runtime-version",
   "runtimeRoot": "/home/blame/.local/share/blame/runtime",
-  "nerdctlVersion": "2.1.6"
+  "nerdctlVersion": "2.1.6",
+  "rootfs": {
+    "amd64": {
+      "url": "https://cloud-images.ubuntu.com/wsl/releases/24.04/current/ubuntu-noble-wsl-amd64-wsl.rootfs.tar.gz"
+    },
+    "arm64": {
+      "url": "https://cloud-images.ubuntu.com/wsl/releases/24.04/current/ubuntu-noble-wsl-arm64-wsl.rootfs.tar.gz"
+    }
+  }
 }

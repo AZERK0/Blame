@@ -6,7 +6,9 @@ $ManifestPath = Join-Path $RuntimeHome "manifest.json"
 $Manifest = Get-Content $ManifestPath -Raw | ConvertFrom-Json
 $RuntimeVersion = [string]$Manifest.runtimeVersion
 $WslRequiredAction = "Enable WSL2 in Windows, restart if prompted, then run Blame runtime setup again."
-$RootfsAction = "Install or provide the BlameRuntime WSL2 rootfs package, then run Blame runtime setup again."
+$RootfsAction = "Blame could not download the BlameRuntime WSL2 rootfs. Check the internet connection, then run Blame runtime setup again."
+
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 function Invoke-WslHost {
   param([string[]]$WslArgs)
@@ -144,7 +146,61 @@ function Get-RootfsPath {
   if (Test-Path $packagedRootfs) {
     return $packagedRootfs
   }
-  ""
+  $packagedCompressedRootfs = Join-Path $RuntimeHome "rootfs\BlameRuntime-rootfs.tar.gz"
+  if (Test-Path $packagedCompressedRootfs) {
+    return $packagedCompressedRootfs
+  }
+  Get-CachedRootfsPath
+}
+
+function Get-CachedRootfsPath {
+  $spec = Get-RootfsSpec
+  $cacheRoot = Get-CacheRoot
+  $fileName = Split-Path $spec.url -Leaf
+  $rootfs = Join-Path $cacheRoot $fileName
+  if (Test-Path $rootfs) {
+    return $rootfs
+  }
+  New-Item -ItemType Directory -Force -Path $cacheRoot | Out-Null
+  $download = "$rootfs.download"
+  if (Test-Path $download) {
+    Remove-Item -Force $download
+  }
+  try {
+    Invoke-WebRequest -UseBasicParsing -Uri $spec.url -OutFile $download
+    Move-Item -Force $download $rootfs
+    return $rootfs
+  } catch {
+    if (Test-Path $download) {
+      Remove-Item -Force $download
+    }
+    throw $RootfsAction
+  }
+}
+
+function Get-RootfsSpec {
+  $architecture = Get-RuntimeArchitecture
+  $spec = $Manifest.rootfs.$architecture
+  if ($null -eq $spec -or -not $spec.url) {
+    throw "BlameRuntime does not provide a WSL2 rootfs for $architecture."
+  }
+  $spec
+}
+
+function Get-RuntimeArchitecture {
+  $architecture = $env:PROCESSOR_ARCHITECTURE
+  if ($architecture -eq "ARM64") {
+    return "arm64"
+  }
+  "amd64"
+}
+
+function Get-CacheRoot {
+  $localAppData = $env:LOCALAPPDATA
+  if (-not $localAppData) {
+    $localAppData = [System.IO.Path]::GetTempPath()
+  }
+  Join-Path $localAppData "Blame\runtime\cache"
 }
 
 function Ensure-Distro {
