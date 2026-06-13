@@ -14,7 +14,7 @@
     "package:mac": "node scripts/package.mjs --mac",
     "package:win": "node scripts/package.mjs --win",
     "preview": "electron-vite preview",
-    "test": "node --test --experimental-strip-types src/main/container-runtime.test.ts src/main/host-dependencies.test.ts src/main/host-tool-path.test.ts src/main/project-creation.test.ts src/main/project-initialization-diagnostics.test.ts src/main/setup-shell.test.ts src/main/workspace-compose.test.ts src/main/workspace-docker-cleanup.test.ts src/main/workspace-env.test.ts src/main/workspace-git.test.ts",
+    "test": "node --test --experimental-strip-types src/main/container-runtime.test.ts src/main/host-dependencies.test.ts src/main/host-tool-path.test.ts src/main/project-creation.test.ts src/main/project-initialization-diagnostics.test.ts src/main/setup-shell.test.ts src/main/terminal-ipc.test.ts src/main/workspace-compose.test.ts src/main/workspace-docker-cleanup.test.ts src/main/workspace-env.test.ts src/main/workspace-git.test.ts src/main/workspace-runtime.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

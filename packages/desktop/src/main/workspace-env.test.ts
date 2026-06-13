@@ -10,7 +10,12 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { mergeEnvValues, syncProjectEnvFiles } from "./workspace-env.ts";
+import {
+  crossDeviceLinkError,
+  linkEnvFile,
+  mergeEnvValues,
+  syncProjectEnvFiles,
+} from "./workspace-env.ts";
 
 test("links runtime env files from repository root and fills blank main values", async () => {
   const root = await mkdtemp(join(tmpdir(), "blame-env-source-"));
@@ -117,6 +122,32 @@ test("merges env values without replacing existing non-empty values", () => {
     mergeEnvValues(source, destination),
     "A=worktree\nB=source\nD=worktree\nC=source\n",
   );
+});
+
+test("detects cross-device hardlink failures", () => {
+  assert.equal(crossDeviceLinkError({ code: "EXDEV" }), true);
+  assert.equal(crossDeviceLinkError({ code: "EACCES" }), false);
+  assert.equal(crossDeviceLinkError(new Error("EXDEV")), false);
+});
+
+test("falls back to symlinked env files across devices", async () => {
+  const root = await mkdtemp(join(tmpdir(), "blame-env-link-source-"));
+  const worktree = await mkdtemp(join(tmpdir(), "blame-env-link-worktree-"));
+  const source = join(root, ".env");
+  const destination = join(worktree, ".env");
+
+  try {
+    await writeFile(source, "SECRET=source\n");
+    await linkEnvFile(source, destination, async () => {
+      throw { code: "EXDEV" };
+    });
+    await writeFile(destination, "SECRET=worktree\n");
+
+    assert.equal(await readFile(source, "utf8"), "SECRET=worktree\n");
+  } finally {
+    await rm(root, { force: true, recursive: true });
+    await rm(worktree, { force: true, recursive: true });
+  }
 });
 
 async function assertSameFile(left: string, right: string) {

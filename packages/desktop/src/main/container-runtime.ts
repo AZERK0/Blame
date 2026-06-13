@@ -25,6 +25,12 @@ export type ContainerRuntimeResult = {
   stderr: string;
 };
 
+type RuntimeCommandSpec = {
+  args: string[];
+  command: string;
+  cwd?: string;
+};
+
 export type ContainerRuntime = {
   compose(
     args: string[],
@@ -135,8 +141,9 @@ async function runRuntimeCommand(
   options: ContainerRuntimeExecOptions = {},
 ) {
   const spec = runtimeCommand(platform, command, args);
-  const result = await execFileAsync(spec.command, spec.args, {
-    cwd: options.cwd,
+  const commandSpec = commandWithRuntimeCwd(platform, spec, options.cwd);
+  const result = await execFileAsync(commandSpec.command, commandSpec.args, {
+    cwd: commandSpec.cwd,
     env: options.env,
   });
   return {
@@ -152,8 +159,30 @@ function spawnRuntimeCommand(
   options: ContainerRuntimeExecOptions = {},
 ) {
   const spec = runtimeCommand(platform, command, args);
-  return spawn(spec.command, spec.args, {
-    cwd: options.cwd,
+  const commandSpec = commandWithRuntimeCwd(platform, spec, options.cwd);
+  return spawn(commandSpec.command, commandSpec.args, {
+    cwd: commandSpec.cwd,
     env: options.env,
   });
+}
+
+function commandWithRuntimeCwd(
+  platform: NodeJS.Platform,
+  spec: RuntimeCommandSpec,
+  cwd?: string,
+): RuntimeCommandSpec {
+  if (!cwd || (platform !== "darwin" && platform !== "win32"))
+    return { ...spec, cwd };
+  return {
+    args: [
+      "sh",
+      "-lc",
+      `cd ${shellQuote(cwd)} && exec nerdctl ${spec.args.map(shellQuote).join(" ")}`,
+    ],
+    command: spec.command,
+  };
+}
+
+function shellQuote(value: string) {
+  return `'${value.replace(/'/g, "'\\''")}'`;
 }

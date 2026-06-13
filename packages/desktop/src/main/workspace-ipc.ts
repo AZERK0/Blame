@@ -1,29 +1,19 @@
-import {
-  execFile,
-  spawn,
-  type ChildProcessWithoutNullStreams,
-} from "node:child_process";
+import { type ChildProcessWithoutNullStreams } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import {
-  appendFile,
-  chmod,
-  mkdir,
   readdir,
   readFile,
-  rm,
   stat,
-  writeFile,
 } from "node:fs/promises";
 import {
-  basename,
   dirname,
   join,
+  posix,
   relative,
   resolve,
   sep,
 } from "node:path";
-import { promisify } from "node:util";
 import { BrowserWindow, ipcMain } from "electron";
 import { parse as parseYaml } from "yaml";
 import { generateNewProjectWithAgent } from "./agent-ipc";
@@ -42,7 +32,6 @@ import {
   setProjectCreationWindowsProvider,
   type CreateProjectInput,
 } from "./project-creation";
-import { setupShellCommand } from "./setup-shell";
 import {
   collectProjectInitializationDiagnostics,
   type CollectProjectInitializationDiagnosticsInput,
@@ -70,8 +59,25 @@ import {
   type GitDirectoryInput,
   type GitFileInput,
 } from "./workspace-git";
+import {
+  appendFile as appendRuntimeFile,
+  chmod as chmodRuntime,
+  dirnameWorkspacePath,
+  joinWorkspacePath,
+  mkdir as mkdirRuntime,
+  pathExists as runtimePathExists,
+  readDirectory as readRuntimeDirectory,
+  readFile as readRuntimeFile,
+  runtimeManagedPath,
+  resolveWorkspacePath as resolveRuntimePath,
+  rm as rmRuntime,
+  run as runRuntime,
+  spawnRuntime,
+  storyBranch,
+  worktreePath,
+  writeFile as writeRuntimeFile,
+} from "./workspace-runtime";
 
-const execFileAsync = promisify(execFile);
 const previewStartupIntervalMs = 1_000;
 const forceKillDelayMs = 1_500;
 const previewResolveTimeoutMs = 45_000;
@@ -240,7 +246,7 @@ export function registerWorkspaceIpcHandlers() {
   );
   ipcMain.handle(
     "workspace:ensure-git-repository",
-    (_event, input: { root: string }) => ensureGitRepository(input.root),
+    (_event, input: { root: string }) => ensureWorkspaceGitRepository(input.root),
   );
   ipcMain.handle(
     "workspace:create-project",
@@ -259,14 +265,14 @@ export function registerWorkspaceIpcHandlers() {
     (_event, input: CollectProjectInitializationDiagnosticsInput) =>
       collectProjectInitializationDiagnostics(
         input,
-        setupEnvironment(resolve(input.worktree)),
+        setupEnvironment(resolveRuntimePath(input.worktree)),
       ),
   );
   ipcMain.handle(
     "workspace:check-host-dependencies",
     (_event, input: CheckHostDependenciesInput) =>
       checkHostDependencies({
-        env: setupEnvironment(input.worktree ? resolve(input.worktree) : ""),
+        env: setupEnvironment(input.worktree ? resolveRuntimePath(input.worktree) : ""),
         setupScript: input.setupScript,
       }),
   );
@@ -305,12 +311,14 @@ export function registerWorkspaceIpcHandlers() {
 
 async function listDirectory(input: WorkspacePathInput) {
   const directory = resolveWorkspacePath(input);
-  const entries = await readdir(directory, { withFileTypes: true });
+  const entries = runtimeManagedPath(directory)
+    ? await readRuntimeDirectory(directory)
+    : await readdir(directory, { withFileTypes: true });
   return entries
     .filter((entry) => !entry.name.startsWith(".git"))
     .map((entry) => ({
       name: entry.name,
-      path: toWorkspacePath(input.root, resolve(directory, entry.name)),
+      path: toWorkspacePath(input.root, joinWorkspacePath(directory, entry.name)),
       type: entry.isDirectory() ? "directory" : "file",
     }))
     .sort((left, right) =>
@@ -329,33 +337,48 @@ async function pathExists(path: string) {
 
 async function readWorkspaceFile(input: WorkspacePathInput) {
   const filePath = resolveWorkspacePath(input);
+  if (runtimeManagedPath(filePath)) return readRuntimeFile(filePath);
   const fileStat = await stat(filePath);
   if (!fileStat.isFile()) throw new Error("Path is not a file");
   return readFile(filePath, "utf8");
 }
 
 async function searchFiles(input: WorkspaceSearchInput) {
-  const root = resolve(input.root);
+  const root = resolveRuntimePath(input.root);
   const query = input.query.trim().toLowerCase();
   if (!query) return [];
   const limit = Math.min(input.limit ?? 30, 100);
+  if (runtimeManagedPath(root)) return searchRuntimeFiles(root, query, limit);
   const matches: Array<{ name: string; path: string; type: "file" }> = [];
   await walk(root, root, query, limit, matches);
   return matches;
 }
 
+async function searchRuntimeFiles(root: string, query: string, limit: number) {
+  const { stdout } = await runRuntime("find", [root, "-type", "f"]);
+  return stdout
+    .split("\n")
+    .filter(Boolean)
+    .map((path) => ({ name: posix.basename(path), path }))
+    .filter((entry) => entry.name.toLowerCase().includes(query))
+    .slice(0, limit)
+    .map((entry) => ({
+      name: entry.name,
+      path: toWorkspacePath(root, entry.path),
+      type: "file" as const,
+    }));
+}
+
 async function gitDiff(root: string) {
-  const cwd = resolve(root);
-  const { stdout } = await execFileAsync(
-    "git",
-    ["diff", "--no-ext-diff", "--"],
-    { cwd },
-  );
+  const cwd = resolveRuntimePath(root);
+  const { stdout } = await runRuntime("git", ["diff", "--no-ext-diff", "--"], {
+    cwd,
+  });
   return stdout;
 }
 
 async function gitRepositoryFingerprint(root: string) {
-  const cwd = resolve(root);
+  const cwd = resolveRuntimePath(root);
   const remoteUrls = await gitRemoteUrls(cwd);
   if (remoteUrls.length > 0) {
     return fingerprintValue(["remotes", ...remoteUrls]);
@@ -370,19 +393,12 @@ async function gitRepositoryFingerprint(root: string) {
 }
 
 async function createWorktree(input: CreateWorktreeInput) {
-  const repositoryRoot = resolve(input.repositoryRoot);
-  const repositoryName = basename(repositoryRoot);
-  const slug = storySlug(input.storyId, input.title);
-  const branch = `blame/story-${input.storyId}-${slug}`;
-  const worktree = resolve(
-    dirname(repositoryRoot),
-    ".blame-worktrees",
-    repositoryName,
-    `story-${input.storyId}-${slug}`,
-  );
+  const repositoryRoot = resolveRuntimePath(input.repositoryRoot);
+  const branch = storyBranch(input.storyId, input.title);
+  const worktree = worktreePath(input);
 
-  await ensureGitRepository(repositoryRoot);
-  await mkdir(dirname(worktree), { recursive: true });
+  await ensureWorkspaceGitRepository(repositoryRoot);
+  await mkdirRuntime(dirnameWorkspacePath(worktree));
 
   if (await worktreeRegistered(repositoryRoot, worktree)) {
     await syncProjectEnvFiles(repositoryRoot, worktree);
@@ -390,12 +406,12 @@ async function createWorktree(input: CreateWorktreeInput) {
     return { worktree, branch };
   }
 
-  if (existsSync(worktree)) {
+  if (await runtimePathExists(worktree)) {
     throw new Error("Worktree directory already exists but is not registered");
   }
 
   if (await branchExists(repositoryRoot, branch)) {
-    await execFileAsync("git", ["worktree", "add", worktree, branch], {
+    await runRuntime("git", ["worktree", "add", worktree, branch], {
       cwd: repositoryRoot,
     });
     await syncProjectEnvFiles(repositoryRoot, worktree);
@@ -403,34 +419,30 @@ async function createWorktree(input: CreateWorktreeInput) {
     return { worktree, branch };
   }
 
-  await execFileAsync(
-    "git",
-    ["worktree", "add", "-b", branch, worktree, "HEAD"],
-    {
-      cwd: repositoryRoot,
-    },
-  );
+  await runRuntime("git", ["worktree", "add", "-b", branch, worktree, "HEAD"], {
+    cwd: repositoryRoot,
+  });
   await syncProjectEnvFiles(repositoryRoot, worktree);
   removedWorktrees.delete(worktree);
   return { worktree, branch };
 }
 
 async function runProjectSetup(input: RunProjectSetupInput) {
-  const worktree = resolve(input.worktree);
+  const worktree = resolveRuntimePath(input.worktree);
   const env = setupEnvironment(worktree);
   const setupScript = setupScriptWithoutDockerRuntimeChecks(input.setupScript);
   await assertHostDependencies({ env, setupScript });
   await assertGitRepository(worktree);
-  const directory = join(worktree, ".blame", "initialization");
-  const scriptPath = join(directory, "setup.sh");
-  const composePath = join(directory, "docker-compose.yml");
+  const directory = joinWorkspacePath(worktree, ".blame", "initialization");
+  const scriptPath = joinWorkspacePath(directory, "setup.sh");
+  const composePath = joinWorkspacePath(directory, "docker-compose.yml");
   const logPath = setupLogPath(worktree);
 
-  await mkdir(directory, { recursive: true });
-  await mkdir(dirname(logPath), { recursive: true });
-  await writeFile(scriptPath, setupScript, "utf8");
-  await writeFile(logPath, "", "utf8");
-  await writeFile(
+  await mkdirRuntime(directory);
+  await mkdirRuntime(dirnameWorkspacePath(logPath));
+  await writeRuntimeFile(scriptPath, setupScript);
+  await writeRuntimeFile(logPath, "");
+  await writeRuntimeFile(
     composePath,
     await composeWithAllocatedHostPorts(
       composeWithNonMutatingNpmInstalls(
@@ -439,15 +451,12 @@ async function runProjectSetup(input: RunProjectSetupInput) {
         ),
       ),
     ),
-    "utf8",
   );
-  await chmod(scriptPath, 0o755);
+  await chmodRuntime(scriptPath, 0o755);
 
   const runId = randomUUID();
-  const shell = setupShellCommand(scriptPath, { env });
-  const child = spawn(shell.command, shell.args, {
+  const child = spawnRuntime("bash", [scriptPath], {
     cwd: worktree,
-    detached: process.platform !== "win32",
     env,
   });
   trackWorkspaceProcess(child);
@@ -754,18 +763,25 @@ async function waitForPreviewUrl(worktree: string) {
 }
 
 async function stopProjectSetup(input: StopProjectSetupInput) {
-  const worktree = resolve(input.worktree);
-  const composePath = join(
+  const worktree = resolveRuntimePath(input.worktree);
+  const composePath = joinWorkspacePath(
     worktree,
     ".blame",
     "initialization",
     "docker-compose.yml",
   );
-  if (!existsSync(composePath)) return false;
+  if (!(await runtimePathExists(composePath))) return false;
   await repairComposeFile(composePath);
   try {
     await containerRuntime.compose(
-      ["-f", composePath, "--project-directory", worktree, "down", "--remove-orphans"],
+      [
+        "-f",
+        composePath,
+        "--project-directory",
+        worktree,
+        "down",
+        "--remove-orphans",
+      ],
       { cwd: worktree, env: setupEnvironment(worktree) },
     );
     return true;
@@ -775,11 +791,11 @@ async function stopProjectSetup(input: StopProjectSetupInput) {
 }
 
 async function removeWorktree(input: RemoveWorktreeInput) {
-  const repositoryRoot = resolve(input.repositoryRoot);
-  const worktree = resolve(input.worktree);
+  const repositoryRoot = resolveRuntimePath(input.repositoryRoot);
+  const worktree = resolveRuntimePath(input.worktree);
   await assertGitRepository(repositoryRoot);
   const registered = await worktreeRegistered(repositoryRoot, worktree);
-  if (!registered && !existsSync(worktree)) return false;
+  if (!registered && !(await runtimePathExists(worktree))) return false;
   removingWorktrees.add(worktree);
   try {
     await stopSetupRunsForWorktree(worktree);
@@ -790,7 +806,7 @@ async function removeWorktree(input: RemoveWorktreeInput) {
       setupEnvironment(worktree).COMPOSE_PROJECT_NAME,
     );
     if (registered) await removeGitWorktree(repositoryRoot, worktree);
-    else await rm(worktree, { recursive: true, force: true });
+    else await rmRuntime(worktree);
     removedWorktrees.add(worktree);
     return true;
   } finally {
@@ -799,11 +815,12 @@ async function removeWorktree(input: RemoveWorktreeInput) {
 }
 
 async function resolveProjectPreviewUrl(input: ResolveProjectPreviewUrlInput) {
-  const worktree = resolve(input.worktree);
+  const worktree = resolveRuntimePath(input.worktree);
   if (removedWorktrees.has(worktree)) return null;
-  if (!(await isGitRepository(worktree))) return null;
+  if (!(await isWorkspaceGitRepository(worktree))) return null;
   const composePath = projectComposePath(worktree);
-  if (!existsSync(composePath)) return labeledContainerPreviewUrl(worktree);
+  if (!(await runtimePathExists(composePath)))
+    return labeledContainerPreviewUrl(worktree);
   const previewTarget = await composePreviewTarget(worktree, composePath);
   if (!previewTarget) return labeledContainerPreviewUrl(worktree);
   const address = await composePublishedAddress(
@@ -817,10 +834,10 @@ async function resolveProjectPreviewUrl(input: ResolveProjectPreviewUrlInput) {
 }
 
 async function ensureProjectPreviewUrl(input: ResolveProjectPreviewUrlInput) {
-  const worktree = resolve(input.worktree);
+  const worktree = resolveRuntimePath(input.worktree);
   if (removedWorktrees.has(worktree)) return null;
   if (removingWorktrees.has(worktree)) return null;
-  if (!(await isGitRepository(worktree))) return null;
+  if (!(await isWorkspaceGitRepository(worktree))) return null;
   if (setupRunningForWorktree(worktree)) return null;
   const currentUrl = await resolveProjectPreviewUrl({ worktree });
   if (currentUrl && (await previewResponds(currentUrl))) return currentUrl;
@@ -845,7 +862,7 @@ function setupRunningForWorktree(worktree: string) {
 
 async function projectSetupCompleted(worktree: string) {
   try {
-    const log = await readFile(setupLogPath(worktree), "utf8");
+    const log = await readRuntimeFile(setupLogPath(worktree));
     return (
       log.includes("Project preview containers are running.") ||
       log.includes("[setup exited with code 0]")
@@ -872,15 +889,13 @@ async function recoverProjectPreview(worktree: string) {
 }
 
 async function runExistingProjectSetup(worktree: string) {
-  const scriptPath = join(worktree, ".blame", "initialization", "setup.sh");
-  if (!existsSync(scriptPath)) return;
+  const scriptPath = joinWorkspacePath(worktree, ".blame", "initialization", "setup.sh");
+  if (!(await runtimePathExists(scriptPath))) return;
   await appendRecoveryLog(worktree, "setup starting");
   await new Promise<void>((resolve, reject) => {
     const env = setupEnvironment(worktree);
-    const shell = setupShellCommand(scriptPath, { env });
-    const child = spawn(shell.command, shell.args, {
+    const child = spawnRuntime("bash", [scriptPath], {
       cwd: worktree,
-      detached: process.platform !== "win32",
       env,
     });
     trackWorkspaceProcess(child);
@@ -945,7 +960,7 @@ async function listProjectServices(worktreeInput: string) {
 }
 
 async function startProjectServiceLogs(input: ProjectServiceLogsInput) {
-  const worktree = resolve(input.worktree);
+  const worktree = resolveRuntimePath(input.worktree);
   const streamId = randomUUID();
   const stream = {
     hasOutput: false,
@@ -1084,8 +1099,8 @@ async function stopProjectLogStream(worktree: string) {
 }
 
 async function appendRunLogSection(worktree: string, message: string) {
-  await mkdir(dirname(setupLogPath(worktree)), { recursive: true });
-  await appendFile(setupLogPath(worktree), `\n[${message}]\n`, "utf8");
+  await mkdirRuntime(dirnameWorkspacePath(setupLogPath(worktree)));
+  await appendRuntimeFile(setupLogPath(worktree), `\n[${message}]\n`);
 }
 
 function waitForExit(child: ChildProcessWithoutNullStreams) {
@@ -1120,12 +1135,12 @@ function killChildProcess(
 }
 
 function appendRecoveryOutput(worktree: string, data: Buffer) {
-  void appendFile(setupLogPath(worktree), data, "utf8");
+  void appendRuntimeFile(setupLogPath(worktree), data.toString());
 }
 
 async function appendRecoveryLog(worktree: string, message: string) {
-  await mkdir(dirname(setupLogPath(worktree)), { recursive: true });
-  await appendFile(setupLogPath(worktree), `\n[recovery ${message}]\n`, "utf8");
+  await mkdirRuntime(dirnameWorkspacePath(setupLogPath(worktree)));
+  await appendRuntimeFile(setupLogPath(worktree), `\n[recovery ${message}]\n`);
 }
 
 async function walk(
@@ -1156,15 +1171,19 @@ async function walk(
 }
 
 function resolveWorkspacePath(input: WorkspacePathInput) {
-  const root = resolve(input.root);
-  const target = resolve(root, input.path ?? ".");
-  if (target !== root && !target.startsWith(`${root}${sep}`))
+  const root = resolveRuntimePath(input.root);
+  const target = joinWorkspacePath(root, input.path ?? ".");
+  const separator = root.includes("/") ? "/" : sep;
+  if (target !== root && !target.startsWith(`${root}${separator}`))
     throw new Error("Path escapes workspace");
   return target;
 }
 
 function toWorkspacePath(root: string, target: string) {
-  const path = relative(resolve(root), target);
+  const resolvedRoot = resolveRuntimePath(root);
+  const path = resolvedRoot.includes("/")
+    ? posix.relative(resolvedRoot, target.replace(/\\/g, "/"))
+    : relative(resolve(root), target);
   return path || ".";
 }
 
@@ -1174,7 +1193,7 @@ function shouldSkip(name: string) {
 
 async function gitRemoteUrls(cwd: string) {
   try {
-    const { stdout } = await execFileAsync(
+    const { stdout } = await runRuntime(
       "git",
       ["config", "--get-regexp", "^remote\\..*\\.url$"],
       { cwd },
@@ -1193,12 +1212,29 @@ async function gitRemoteUrls(cwd: string) {
 }
 
 async function assertGitRepository(cwd: string) {
-  await execFileAsync("git", ["rev-parse", "--show-toplevel"], { cwd });
+  await runRuntime("git", ["rev-parse", "--show-toplevel"], { cwd });
+}
+
+async function ensureWorkspaceGitRepository(root: string) {
+  if (!runtimeManagedPath(root)) return ensureGitRepository(root);
+  if (await isWorkspaceGitRepository(root)) return false;
+  await runRuntime("git", ["init"], { cwd: root });
+  return true;
+}
+
+async function isWorkspaceGitRepository(root: string) {
+  if (!runtimeManagedPath(root)) return isGitRepository(root);
+  try {
+    await assertGitRepository(root);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 async function removeGitWorktree(repositoryRoot: string, worktree: string) {
   try {
-    await execFileAsync("git", ["worktree", "remove", "--force", worktree], {
+    await runRuntime("git", ["worktree", "remove", "--force", worktree], {
       cwd: repositoryRoot,
     });
   } catch (error) {
@@ -1206,7 +1242,7 @@ async function removeGitWorktree(repositoryRoot: string, worktree: string) {
     if (await worktreeRegistered(repositoryRoot, worktree)) throw error;
   }
 
-  await rm(worktree, { recursive: true, force: true });
+  await rmRuntime(worktree);
 }
 
 function isDirectoryNotEmptyError(error: unknown) {
@@ -1235,7 +1271,7 @@ function commandText(error: unknown, key: "stdout" | "stderr") {
 
 async function branchExists(cwd: string, branch: string) {
   try {
-    await execFileAsync(
+    await runRuntime(
       "git",
       ["show-ref", "--verify", "--quiet", `refs/heads/${branch}`],
       { cwd },
@@ -1247,11 +1283,9 @@ async function branchExists(cwd: string, branch: string) {
 }
 
 async function worktreeRegistered(cwd: string, worktree: string) {
-  const { stdout } = await execFileAsync(
-    "git",
-    ["worktree", "list", "--porcelain"],
-    { cwd },
-  );
+  const { stdout } = await runRuntime("git", ["worktree", "list", "--porcelain"], {
+    cwd,
+  });
   return stdout
     .split("\n")
     .some((line) => worktreeLineMatches(line, worktree));
@@ -1263,16 +1297,7 @@ function worktreeLineMatches(line: string, worktree: string) {
 }
 
 function normalizedPath(path: string) {
-  return resolve(path.replace(/\\/g, "/")).replace(/\\/g, "/").toLowerCase();
-}
-
-function storySlug(storyId: number, title: string) {
-  const slug = title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 48);
-  return slug || `story-${storyId}`;
+  return path.replace(/\\/g, "/").replace(/\/+$/g, "").toLowerCase();
 }
 
 function setupEnvironment(worktree: string) {
@@ -1284,7 +1309,7 @@ function setupEnvironment(worktree: string) {
     BLAME_HOST_UID: hostUserId(),
     CI: "true",
     BLAME_DOCKER_COMPOSE_FILE: projectComposePath(worktree),
-    BLAME_INITIALIZATION_DIR: join(worktree, ".blame", "initialization"),
+    BLAME_INITIALIZATION_DIR: joinWorkspacePath(worktree, ".blame", "initialization"),
     BLAME_PROJECT_ROOT: worktree,
     BLAME_WORKTREE_ROOT: worktree,
     COMPOSE_PROJECT_NAME: `blame_${createHash("sha1")
@@ -1342,7 +1367,6 @@ function ignoredRuntimeEnvDirectory(name: string) {
   return [
     ".git",
     ".blame",
-    ".blame-worktrees",
     "build",
     "coverage",
     "dist",
@@ -1371,11 +1395,11 @@ function hostGroupId() {
 }
 
 function projectComposePath(worktree: string) {
-  return join(worktree, ".blame", "initialization", "docker-compose.yml");
+  return joinWorkspacePath(worktree, ".blame", "initialization", "docker-compose.yml");
 }
 
 function setupLogPath(worktree: string) {
-  return join(worktree, ".blame", "logs", "setup.log");
+  return joinWorkspacePath(worktree, ".blame", "logs", "setup.log");
 }
 
 async function composePreviewTarget(worktree: string, composePath: string) {
@@ -1477,14 +1501,14 @@ async function repairProjectCompose(worktree: string) {
 }
 
 async function repairComposeFile(composePath: string) {
-  if (!existsSync(composePath)) return;
-  const compose = await readFile(composePath, "utf8");
+  if (!(await runtimePathExists(composePath))) return;
+  const compose = await readRuntimeFile(composePath);
   const repairedCompose = await composeWithAllocatedHostPorts(
     composeWithNonMutatingNpmInstalls(
       composeWithoutNumericSuUser(dockerComposeWithPortableWindowsPaths(compose)),
     ),
   );
-  if (repairedCompose !== compose) await writeFile(composePath, repairedCompose, "utf8");
+  if (repairedCompose !== compose) await writeRuntimeFile(composePath, repairedCompose);
 }
 
 async function appendComposeDiagnostics(worktree: string) {
@@ -1665,7 +1689,7 @@ function emitSetupOutput(
   type: "stdout" | "stderr" | "exit",
   data: string,
 ) {
-  void appendFile(setupLogPath(worktree), setupLogText(type, data), "utf8");
+  void appendRuntimeFile(setupLogPath(worktree), setupLogText(type, data));
   emitSetupEvent(runId, type, data);
 }
 
@@ -1690,11 +1714,9 @@ function setupLogText(type: "stdout" | "stderr" | "exit", data: string) {
 
 async function gitRootCommits(cwd: string) {
   try {
-    const { stdout } = await execFileAsync(
-      "git",
-      ["rev-list", "--max-parents=0", "HEAD"],
-      { cwd },
-    );
+    const { stdout } = await runRuntime("git", ["rev-list", "--max-parents=0", "HEAD"], {
+      cwd,
+    });
     return stdout
       .split("\n")
       .map((line) => line.trim())

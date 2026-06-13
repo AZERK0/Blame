@@ -1,8 +1,11 @@
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process"
-import { existsSync } from "node:fs"
-import { resolve } from "node:path"
 import { randomUUID } from "node:crypto"
 import { BrowserWindow, ipcMain } from "electron"
+import {
+  pathExists,
+  spawnRuntime,
+} from "./workspace-runtime.ts"
+import { terminalDirectory, terminalShell } from "./terminal-shell.ts"
 
 type TerminalSession = {
   id: string
@@ -19,17 +22,19 @@ export function registerTerminalIpcHandlers() {
   ipcMain.handle("terminal:stop", (_event, id: string) => stopTerminal(id))
 }
 
-function startTerminal(cwd: string) {
-  const directory = resolve(cwd)
-  if (!existsSync(directory)) throw new Error("Terminal directory does not exist")
+async function startTerminal(cwd: string) {
+  const directory = terminalDirectory(cwd)
+  if (!(await pathExists(directory))) throw new Error("Terminal directory does not exist")
 
   const id = randomUUID()
-  const shell = terminalShell()
-  const child = spawn(shell.command, shell.args, {
-    cwd: directory,
-    detached: process.platform !== "win32",
-    env: process.env,
-  })
+  const shell = terminalShell(directory)
+  const child = shell.runtime
+    ? spawnRuntime(shell.command, shell.args, { cwd: directory, env: process.env })
+    : spawn(shell.command, shell.args, {
+        cwd: directory,
+        detached: process.platform !== "win32",
+        env: process.env,
+      })
   const session = { id, cwd: directory, process: child }
   sessions.set(id, session)
 
@@ -41,13 +46,6 @@ function startTerminal(cwd: string) {
   })
 
   return { id, cwd: directory }
-}
-
-function terminalShell() {
-  if (process.platform === "win32") {
-    return { command: process.env.COMSPEC ?? "cmd.exe", args: ["/d", "/q"] }
-  }
-  return { command: process.env.SHELL ?? "/bin/bash", args: ["-l"] }
 }
 
 function writeTerminal(id: string, data: string) {

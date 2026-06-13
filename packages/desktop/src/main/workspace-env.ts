@@ -7,14 +7,23 @@ import {
   readdir,
   rm,
   stat,
+  symlink,
   writeFile,
 } from "node:fs/promises";
 import { basename, dirname, join, relative } from "node:path";
+import {
+  dirnameWorkspacePath,
+  joinWorkspacePath,
+  mkdir as mkdirRuntime,
+  pathExists as runtimePathExists,
+  readFile as readRuntimeFile,
+  runtimeManagedPath,
+  writeFile as writeRuntimeFile,
+} from "./workspace-runtime.ts";
 
 const ignoredEnvDirectories = new Set([
   ".git",
   ".blame",
-  ".blame-worktrees",
   "build",
   "coverage",
   "dist",
@@ -23,6 +32,8 @@ const ignoredEnvDirectories = new Set([
 ]);
 
 const envTemplateSuffixes = [".example", ".sample", ".template"];
+
+type Linker = (sourcePath: string, destinationPath: string) => Promise<void>;
 
 export async function syncProjectEnvFiles(
   repositoryRoot: string,
@@ -39,14 +50,44 @@ async function linkWorktreeEnvFile(
   worktree: string,
   sourcePath: string,
 ) {
-  const destinationPath = join(worktree, relative(repositoryRoot, sourcePath));
+  const destinationPath = joinWorkspacePath(
+    worktree,
+    relative(repositoryRoot, sourcePath),
+  );
+  if (runtimeManagedPath(worktree)) {
+    await writeRuntimeEnvFile(destinationPath, sourcePath);
+    return;
+  }
   if (await sameFile(sourcePath, destinationPath)) return;
   if (await pathExists(destinationPath)) {
     await mergeEnvFileValues(destinationPath, sourcePath);
     await rm(destinationPath, { force: true });
   }
   await mkdir(dirname(destinationPath), { recursive: true });
-  await link(sourcePath, destinationPath);
+  await linkEnvFile(sourcePath, destinationPath);
+}
+
+export async function linkEnvFile(
+  sourcePath: string,
+  destinationPath: string,
+  createLink: Linker = link,
+) {
+  try {
+    await createLink(sourcePath, destinationPath);
+  } catch (error) {
+    if (!crossDeviceLinkError(error)) throw error;
+    await symlink(sourcePath, destinationPath);
+  }
+}
+
+async function writeRuntimeEnvFile(destinationPath: string, sourcePath: string) {
+  const source = await readFile(sourcePath, "utf8");
+  const destination = (await runtimePathExists(destinationPath))
+    ? await readRuntimeFile(destinationPath)
+    : "";
+  const content = destination ? mergeEnvValues(destination, source) : source;
+  await mkdirRuntime(dirnameWorkspacePath(destinationPath));
+  await writeRuntimeFile(destinationPath, content);
 }
 
 async function prepareProjectEnvFiles(root: string) {
@@ -134,6 +175,14 @@ function blankEnvValue(value: string) {
 
 function normalizeEnvText(text: string) {
   return `${text.replace(/\n+$/g, "")}\n`;
+}
+
+export function crossDeviceLinkError(error: unknown) {
+  return (
+    Boolean(error) &&
+    typeof error === "object" &&
+    (error as { code?: string }).code === "EXDEV"
+  );
 }
 
 async function projectEnvFiles(root: string) {
