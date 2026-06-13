@@ -8,6 +8,7 @@ import {
   dockerComposeWithCiForPackageInstalls,
   dockerComposeWithCorepackPnpm,
   dockerComposeWithDependencyVolumes,
+  dockerComposeWithHostFileMounts,
 } from "./workspace-compose.ts";
 
 test("allocates explicit localhost ports for runtime previews", async () => {
@@ -241,6 +242,31 @@ test("does not force host uid user for rootless runtime mounts", () => {
   const result = dockerComposeForPreview(compose, "/tmp/project");
 
   assert.doesNotMatch(result, /user: "\$\{BLAME_HOST_UID\}:\$\{BLAME_HOST_GID\}"/);
+});
+
+test("mounts host env files over worktree symlinks inside services", () => {
+  const compose = [
+    "services:",
+    "  backend:",
+    "    volumes:",
+    "      - ${BLAME_PROJECT_ROOT}:/workspace",
+    "    command: pnpm dev",
+    "  db:",
+    "    image: postgres:17",
+  ].join("\n");
+
+  const result = dockerComposeWithHostFileMounts(compose, "/tmp/worktree", [
+    {
+      containerPath: "apps/backend/.env",
+      hostPath: "/mnt/dev/project/apps/backend/.env",
+    },
+  ]);
+
+  assert.match(
+    result,
+    /"\/mnt\/dev\/project\/apps\/backend\/\.env:\/workspace\/apps\/backend\/\.env"/,
+  );
+  assert.doesNotMatch(result, /postgres:17\n    volumes:/);
 });
 
 test("normalizes Windows project root placeholders for YAML", () => {

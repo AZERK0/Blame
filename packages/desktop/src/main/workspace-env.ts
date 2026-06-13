@@ -5,12 +5,13 @@ import {
   mkdir,
   readFile,
   readdir,
+  readlink,
   rm,
   stat,
   symlink,
   writeFile,
 } from "node:fs/promises";
-import { basename, dirname, join, relative } from "node:path";
+import { basename, dirname, join, relative, resolve } from "node:path";
 import {
   dirnameWorkspacePath,
   joinWorkspacePath,
@@ -35,12 +36,23 @@ const envTemplateSuffixes = [".example", ".sample", ".template"];
 
 type Linker = (sourcePath: string, destinationPath: string) => Promise<void>;
 
+export type SyncedEnvFile = {
+  destinationPath: string;
+  linkedAs: "hardlink" | "symlink" | "runtime-copy";
+  sourcePath: string;
+};
+
+export type EnvHostFileMount = {
+  containerPath: string;
+  hostPath: string;
+};
+
 export async function syncProjectEnvFiles(
   repositoryRoot: string,
   worktree: string,
 ) {
   const files = await prepareProjectEnvFiles(repositoryRoot);
-  await Promise.all(
+  return Promise.all(
     files.map((path) => linkWorktreeEnvFile(repositoryRoot, worktree, path)),
   );
 }
@@ -49,22 +61,24 @@ async function linkWorktreeEnvFile(
   repositoryRoot: string,
   worktree: string,
   sourcePath: string,
-) {
+): Promise<SyncedEnvFile> {
   const destinationPath = joinWorkspacePath(
     worktree,
     relative(repositoryRoot, sourcePath),
   );
   if (runtimeManagedPath(worktree)) {
     await writeRuntimeEnvFile(destinationPath, sourcePath);
-    return;
+    return { destinationPath, linkedAs: "runtime-copy", sourcePath };
   }
-  if (await sameFile(sourcePath, destinationPath)) return;
+  if (await sameFile(sourcePath, destinationPath))
+    return { destinationPath, linkedAs: "hardlink", sourcePath };
   if (await pathExists(destinationPath)) {
     await mergeEnvFileValues(destinationPath, sourcePath);
     await rm(destinationPath, { force: true });
   }
   await mkdir(dirname(destinationPath), { recursive: true });
-  await linkEnvFile(sourcePath, destinationPath);
+  const linkedAs = await linkEnvFile(sourcePath, destinationPath);
+  return { destinationPath, linkedAs, sourcePath };
 }
 
 export async function linkEnvFile(
@@ -74,10 +88,31 @@ export async function linkEnvFile(
 ) {
   try {
     await createLink(sourcePath, destinationPath);
+    return "hardlink";
   } catch (error) {
     if (!crossDeviceLinkError(error)) throw error;
     await symlink(sourcePath, destinationPath);
+    return "symlink";
   }
+}
+
+export async function envHostFileMounts(worktree: string) {
+  if (runtimeManagedPath(worktree)) return [];
+  const files = await projectEnvFiles(worktree);
+  const mounts = await Promise.all(
+    files.runtime.map((path) => envHostFileMount(worktree, path)),
+  );
+  return mounts.filter((mount): mount is EnvHostFileMount => Boolean(mount));
+}
+
+async function envHostFileMount(worktree: string, path: string) {
+  const info = await lstat(path);
+  if (!info.isSymbolicLink()) return null;
+  const target = await readlink(path);
+  return {
+    containerPath: relative(worktree, path).replace(/\\/g, "/"),
+    hostPath: resolve(dirname(path), target),
+  };
 }
 
 async function writeRuntimeEnvFile(destinationPath: string, sourcePath: string) {
@@ -204,7 +239,7 @@ async function collectProjectEnvFiles(
           await collectProjectEnvFiles(path, files);
         return;
       }
-      if (!entry.isFile()) return;
+      if (!entry.isFile() && !entry.isSymbolicLink()) return;
       if (runtimeEnvFile(entry.name)) files.runtime.push(path);
       if (templateEnvFile(entry.name)) files.templates.push(path);
     }),

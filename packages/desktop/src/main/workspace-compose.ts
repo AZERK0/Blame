@@ -14,6 +14,32 @@ export function dockerComposeForPreview(compose: string, worktree: string) {
   );
 }
 
+export type HostFileMount = {
+  containerPath: string;
+  hostPath: string;
+};
+
+export function dockerComposeWithHostFileMounts(
+  compose: string,
+  worktree: string,
+  mounts: HostFileMount[],
+) {
+  if (mounts.length === 0) return compose;
+  const lines = compose.split("\n");
+  const servicesLine = serviceSectionLine(lines);
+  if (servicesLine === -1) return compose;
+  return mapServiceBlocks(lines, servicesLine, (block) => {
+    const root = mountedWorkspacePath(block.lines, worktree);
+    if (!root) return block.lines;
+    return serviceBlockWithMounts(
+      block.lines,
+      mounts.map((mount) =>
+        `${mount.hostPath}:${root.replace(/\/$/, "")}/${mount.containerPath}`,
+      ),
+    );
+  }).join("\n");
+}
+
 export function composeWithoutNumericSuUser(compose: string) {
   return compose.replace(
     /\bsu\s+-s\s+\/bin\/bash\s+-c\s+((['"])(?:(?!\2).)+\2)\s+(['"])#\$\{BLAME_HOST_UID\}\3/g,

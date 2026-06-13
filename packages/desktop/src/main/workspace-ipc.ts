@@ -40,6 +40,7 @@ import {
   composeWithNonMutatingNpmInstalls,
   composeWithoutNumericSuUser,
   composeWithAllocatedHostPorts,
+  dockerComposeWithHostFileMounts,
   dockerComposeForPreview,
   dockerComposeWithPortableWindowsPaths,
 } from "./workspace-compose";
@@ -48,7 +49,7 @@ import {
   removeBlamePreviewProjectResources,
   runtimeAddressPoolExhausted,
 } from "./workspace-docker-cleanup";
-import { syncProjectEnvFiles } from "./workspace-env";
+import { envHostFileMounts, syncProjectEnvFiles } from "./workspace-env";
 import {
   ensureGitRepository,
   gitDiffBetween,
@@ -437,6 +438,7 @@ async function runProjectSetup(input: RunProjectSetupInput) {
   const scriptPath = joinWorkspacePath(directory, "setup.sh");
   const composePath = joinWorkspacePath(directory, "docker-compose.yml");
   const logPath = setupLogPath(worktree);
+  const envMounts = await envHostFileMounts(worktree);
 
   await mkdirRuntime(directory);
   await mkdirRuntime(dirnameWorkspacePath(logPath));
@@ -447,7 +449,11 @@ async function runProjectSetup(input: RunProjectSetupInput) {
     await composeWithAllocatedHostPorts(
       composeWithNonMutatingNpmInstalls(
         composeWithoutNumericSuUser(
-          dockerComposeForPreview(input.dockerCompose, worktree),
+          dockerComposeWithHostFileMounts(
+            dockerComposeForPreview(input.dockerCompose, worktree),
+            worktree,
+            envMounts,
+          ),
         ),
       ),
     ),

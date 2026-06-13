@@ -5,6 +5,7 @@ import {
   readFile,
   rm,
   stat,
+  symlink,
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -12,6 +13,7 @@ import { join } from "node:path";
 import test from "node:test";
 import {
   crossDeviceLinkError,
+  envHostFileMounts,
   linkEnvFile,
   mergeEnvValues,
   syncProjectEnvFiles,
@@ -144,6 +146,30 @@ test("falls back to symlinked env files across devices", async () => {
     await writeFile(destination, "SECRET=worktree\n");
 
     assert.equal(await readFile(source, "utf8"), "SECRET=worktree\n");
+  } finally {
+    await rm(root, { force: true, recursive: true });
+    await rm(worktree, { force: true, recursive: true });
+  }
+});
+
+test("detects symlinked env files as host file mounts", async () => {
+  const root = await mkdtemp(join(tmpdir(), "blame-env-mount-source-"));
+  const worktree = await mkdtemp(join(tmpdir(), "blame-env-mount-worktree-"));
+
+  try {
+    await mkdir(join(root, "apps", "backend"), { recursive: true });
+    await mkdir(join(worktree, "apps", "backend"), { recursive: true });
+    const source = join(root, "apps", "backend", ".env");
+    const destination = join(worktree, "apps", "backend", ".env");
+    await writeFile(source, "DB_HOST=postgres\n");
+    await symlink(source, destination);
+
+    assert.deepEqual(await envHostFileMounts(worktree), [
+      {
+        containerPath: "apps/backend/.env",
+        hostPath: source,
+      },
+    ]);
   } finally {
     await rm(root, { force: true, recursive: true });
     await rm(worktree, { force: true, recursive: true });
