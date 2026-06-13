@@ -5,6 +5,7 @@ import {
   runtimeName,
   type ContainerRuntimeCommand,
 } from "./container-runtime.ts";
+import { runtimeToolCommand } from "./host-tool-path.ts";
 
 const execFileAsync = promisify(execFile);
 const commandTimeoutMs = 15_000;
@@ -419,7 +420,7 @@ async function runCommand(
   env?: NodeJS.ProcessEnv,
   timeoutMs = commandTimeoutMs,
 ) {
-  const commandSpec = executableRuntimeCommand(command, args);
+  const commandSpec = executableRuntimeCommand(command, args, env ?? process.env);
   const { stdout } = await execFileAsync(commandSpec.command, commandSpec.args, {
     env,
     shell: false,
@@ -428,25 +429,35 @@ async function runCommand(
   return stdout;
 }
 
-function executableRuntimeCommand(command: string, args: string[]) {
+function executableRuntimeCommand(
+  command: string,
+  args: string[],
+  env: NodeJS.ProcessEnv,
+) {
   if (process.platform !== "win32") return { args, command };
   return {
-    args: ["/d", "/s", "/c", commandPromptLine(command, args)],
+    args: ["/d", "/s", "/c", commandPromptLine(command, args, env)],
     command: "cmd.exe",
   };
 }
 
-function commandPromptLine(command: string, args: string[]) {
+function commandPromptLine(
+  command: string,
+  args: string[],
+  env: NodeJS.ProcessEnv,
+) {
   return [
     "call",
-    commandPromptQuote(windowsBatchCommand(command)),
+    commandPromptQuote(windowsBatchCommand(command, env)),
     ...args.map(commandPromptQuote),
   ].join(" ");
 }
 
-function windowsBatchCommand(command: string) {
-  if (command === "blame-wsl2-runtime") return "blame-wsl2-runtime.cmd";
-  if (command === "blame-lima-runtime") return "blame-lima-runtime.cmd";
+function windowsBatchCommand(command: string, env: NodeJS.ProcessEnv) {
+  if (command === "blame-wsl2-runtime")
+    return runtimeToolCommand(command, { env, platform: "win32" });
+  if (command === "blame-lima-runtime")
+    return runtimeToolCommand(command, { env, platform: "win32" });
   return command;
 }
 

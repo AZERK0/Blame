@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { setupPath } from "./host-tool-path.ts";
+import { runtimeToolCommand, setupPath } from "./host-tool-path.ts";
 
 test("adds Windows package manager shim paths", () => {
   const path = setupPath({
@@ -24,6 +24,18 @@ test("adds Windows package manager shim paths", () => {
   assert.equal(entries.includes(String.raw`C:\Users\dev\AppData\Roaming\npm`), true);
   assert.equal(entries.includes(String.raw`C:\Users\dev\AppData\Local\pnpm`), true);
   assert.equal(entries.includes(String.raw`C:\Program Files\nodejs`), true);
+});
+
+test("resolves Windows runtime wrapper commands from packaged resources", () => {
+  const command = runtimeToolCommand("blame-wsl2-runtime", {
+    env: {
+      PATH: String.raw`C:\Windows\System32`,
+    },
+    execPath: String.raw`C:\Blame\Blame.exe`,
+    platform: "win32",
+  });
+
+  assert.equal(command, "blame-wsl2-runtime.cmd");
 });
 
 test("adds macOS packaged runtime shim path", () => {

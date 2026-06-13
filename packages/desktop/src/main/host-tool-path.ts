@@ -22,6 +22,21 @@ export function setupPath(input: SetupPathInput = {}) {
   ], platform).join(pathDelimiter(platform));
 }
 
+export function runtimeToolCommand(command: string, input: SetupPathInput = {}) {
+  const env = input.env ?? process.env;
+  const platform = input.platform ?? process.platform;
+  const execPath = input.execPath ?? process.execPath;
+  const execDir = dirnameForPlatform(execPath, platform);
+  if (platform === "win32") {
+    const file = command.endsWith(".cmd") ? command : `${command}.cmd`;
+    return windowsRuntimeToolPaths(env, execDir, platform)
+      .filter((path): path is string => Boolean(path))
+      .map((path) => win32.join(path, file))
+      .find((path) => existsSync(path)) ?? file;
+  }
+  return command;
+}
+
 function runtimeToolPaths(execDir: string, platform: NodeJS.Platform) {
   if (platform !== "darwin") return [];
   return [

@@ -15,7 +15,7 @@ import {
 import { homedir } from "node:os";
 import { basename, dirname, join, posix, resolve, win32 } from "node:path";
 import { promisify } from "node:util";
-import { setupPath } from "./host-tool-path.ts";
+import { runtimeToolCommand, setupPath } from "./host-tool-path.ts";
 
 const execFileAsync = promisify(execFile);
 const vmRuntimeWorktreeRoot = "/home/blame/.local/share/blame/runtime/worktrees";
@@ -118,10 +118,11 @@ export async function run(
 ) {
   const spec = runtimeCommand(command, args, input);
   const platform = input.platform ?? process.platform;
-  const commandSpec = executableRuntimeCommand(spec, platform);
+  const env = runtimeEnvironment(input, platform);
+  const commandSpec = executableRuntimeCommand(spec, platform, env);
   const result = await execFileAsync(commandSpec.command, commandSpec.args, {
     cwd: spec.cwd,
-    env: runtimeEnvironment(input, platform),
+    env,
     shell: false,
   });
   return {
@@ -137,11 +138,12 @@ export function spawnRuntime(
 ): ChildProcessWithoutNullStreams {
   const spec = runtimeCommand(command, args, input);
   const platform = input.platform ?? process.platform;
-  const commandSpec = executableRuntimeCommand(spec, platform);
+  const env = runtimeEnvironment(input, platform);
+  const commandSpec = executableRuntimeCommand(spec, platform, env);
   return spawn(commandSpec.command, commandSpec.args, {
     cwd: spec.cwd,
     detached: platform !== "win32",
-    env: runtimeEnvironment(input, platform),
+    env,
     shell: false,
   });
 }
@@ -274,25 +276,32 @@ function runtimeEnvironment(
 function executableRuntimeCommand(
   spec: RuntimeCommandSpec,
   platform: NodeJS.Platform,
+  env: NodeJS.ProcessEnv,
 ) {
   if (platform !== "win32") return spec;
   return {
-    args: ["/d", "/s", "/c", commandPromptLine(spec.command, spec.args)],
+    args: ["/d", "/s", "/c", commandPromptLine(spec.command, spec.args, env)],
     command: "cmd.exe",
   };
 }
 
-function commandPromptLine(command: string, args: string[]) {
+function commandPromptLine(
+  command: string,
+  args: string[],
+  env: NodeJS.ProcessEnv,
+) {
   return [
     "call",
-    commandPromptQuote(windowsBatchCommand(command)),
+    commandPromptQuote(windowsBatchCommand(command, env)),
     ...args.map(commandPromptQuote),
   ].join(" ");
 }
 
-function windowsBatchCommand(command: string) {
-  if (command === "blame-wsl2-runtime") return "blame-wsl2-runtime.cmd";
-  if (command === "blame-lima-runtime") return "blame-lima-runtime.cmd";
+function windowsBatchCommand(command: string, env: NodeJS.ProcessEnv) {
+  if (command === "blame-wsl2-runtime")
+    return runtimeToolCommand(command, { env, platform: "win32" });
+  if (command === "blame-lima-runtime")
+    return runtimeToolCommand(command, { env, platform: "win32" });
   return command;
 }
 
