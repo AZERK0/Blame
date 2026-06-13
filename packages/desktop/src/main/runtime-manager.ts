@@ -8,6 +8,7 @@ import {
 
 const execFileAsync = promisify(execFile);
 const commandTimeoutMs = 15_000;
+const lifecycleCommandTimeoutMs = 30 * 60_000;
 
 export type RuntimeState =
   | "ready"
@@ -79,6 +80,7 @@ export type RuntimeCommandRunner = (
   command: string,
   args: string[],
   env?: NodeJS.ProcessEnv,
+  timeoutMs?: number,
 ) => Promise<string>;
 
 type RuntimeManagerContext = {
@@ -254,7 +256,12 @@ function runRuntimeLifecycleCommand(
   if (!managedRuntimePlatform(context.platform)) {
     throw new Error(`Unsupported runtime platform: ${context.platform}`);
   }
-  return context.run(runtimeBinary(context.platform), [command], context.env);
+  return context.run(
+    runtimeBinary(context.platform),
+    [command],
+    context.env,
+    lifecycleCommandTimeoutMs,
+  );
 }
 
 function runtimeStatusReport(
@@ -410,11 +417,12 @@ async function runCommand(
   command: string,
   args: string[],
   env?: NodeJS.ProcessEnv,
+  timeoutMs = commandTimeoutMs,
 ) {
   const { stdout } = await execFileAsync(command, args, {
     env,
     shell: process.platform === "win32",
-    timeout: commandTimeoutMs,
+    timeout: timeoutMs,
   });
   return stdout;
 }

@@ -177,8 +177,10 @@ test("reports stopped Blame Lima VM as repairable", async () => {
 
 test("runs managed runtime lifecycle commands explicitly", async () => {
   const calls: string[] = [];
-  const manager = createRuntimeManager({ platform: "win32" }, async (command, args) => {
+  const timeouts: Array<number | undefined> = [];
+  const manager = createRuntimeManager({ platform: "win32" }, async (command, args, _env, timeoutMs) => {
     calls.push([command, ...args].join(" "));
+    timeouts.push(timeoutMs);
     return "ready";
   });
 
@@ -200,6 +202,20 @@ test("runs managed runtime lifecycle commands explicitly", async () => {
     "blame-wsl2-runtime uninstall",
     "blame-wsl2-runtime --version",
     "blame-wsl2-runtime status",
+  ]);
+  assert.deepEqual(timeouts, [
+    1_800_000,
+    undefined,
+    undefined,
+    1_800_000,
+    undefined,
+    undefined,
+    1_800_000,
+    undefined,
+    undefined,
+    1_800_000,
+    undefined,
+    undefined,
   ]);
 });
 
