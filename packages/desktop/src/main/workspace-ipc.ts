@@ -173,6 +173,7 @@ type ComposeConfig = {
 
 type RuntimeContainer = {
   Config?: {
+    Env?: string[];
     Labels?: Record<string, string>;
   };
   NetworkSettings?: {
@@ -591,7 +592,7 @@ async function runProjectComposeUp(worktree: string) {
   );
   await runComposeWithRetry(
     worktree,
-    [...args, "up", "-d", "--remove-orphans", ...services],
+    [...args, "up", "-d", "--force-recreate", "--remove-orphans", ...services],
     composeUpRetryDelaysMs,
     "compose start",
   );
@@ -1634,11 +1635,41 @@ async function labeledContainerPreviewUrl(worktree: string) {
   const binding = container.NetworkSettings?.Ports?.[`${port}/tcp`]?.[0];
   if (!binding?.HostPort) return null;
   const host = binding.HostIp || "127.0.0.1";
-  return previewUrl(
+  const url = previewUrl(
     `${host}:${binding.HostPort}`,
     labels["blame.preview.protocol"] || "http",
     labels["blame.preview.path"] || "/",
   );
+  return containerPublicOriginsMatchPreview(container, url) ? url : null;
+}
+
+function containerPublicOriginsMatchPreview(
+  container: RuntimeContainer,
+  previewUrl: string,
+) {
+  const expectedOrigin = previewOrigin(previewUrl);
+  if (!expectedOrigin) return true;
+  for (const value of container.Config?.Env ?? []) {
+    const [key, ...parts] = value.split("=");
+    if (!publicOriginEnvironmentKey(key)) continue;
+    const origin = previewOrigin(parts.join("="));
+    if (origin && origin !== expectedOrigin) return false;
+  }
+  return true;
+}
+
+function publicOriginEnvironmentKey(key: string) {
+  return [
+    "APP_URL",
+    "APPLICATION_URL",
+    "BETTER_AUTH_URL",
+    "CANONICAL_URL",
+    "NEXT_PUBLIC_APP_URL",
+    "NEXT_PUBLIC_BASE_URL",
+    "NEXTAUTH_URL",
+    "PUBLIC_URL",
+    "SITE_URL",
+  ].includes(key);
 }
 
 async function previewContainers(includeStopped: boolean, worktree: string) {
@@ -1816,6 +1847,14 @@ function previewUrl(address: string, protocol: string, path: string) {
     .replace(/^\[::\]:/, "127.0.0.1:");
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   return `${protocol}://${normalizedAddress}${normalizedPath}`;
+}
+
+function previewOrigin(value: string) {
+  try {
+    return new URL(value).origin;
+  } catch {
+    return undefined;
+  }
 }
 
 function numberValue(value: unknown) {
