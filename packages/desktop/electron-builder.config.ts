@@ -35,6 +35,12 @@ const config: Configuration = {
     homepage,
     ...(releaseVersion ? { version: releaseVersion } : {}),
   },
+  extraResources: [
+    {
+      from: "resources/runtime",
+      to: "runtime",
+    },
+  ],
   files: ["out/**/*", "icons/prod/**/*", "package.json"],
   linux: {
     category: "Development",

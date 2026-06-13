@@ -17,6 +17,10 @@ test("adds Windows package manager shim paths", () => {
   });
   const entries = path.split(";");
 
+  assert.equal(
+    entries.includes(String.raw`C:\Blame\resources\runtime\windows\bin`),
+    true,
+  );
   assert.equal(entries.includes(String.raw`C:\Users\dev\AppData\Roaming\npm`), true);
   assert.equal(entries.includes(String.raw`C:\Users\dev\AppData\Local\pnpm`), true);
   assert.equal(entries.includes(String.raw`C:\Program Files\nodejs`), true);

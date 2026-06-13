@@ -10,9 +10,12 @@ type SetupPathInput = {
 export function setupPath(input: SetupPathInput = {}) {
   const env = input.env ?? process.env;
   const platform = input.platform ?? process.platform;
+  const execPath = input.execPath ?? process.execPath;
+  const execDir = dirnameForPlatform(execPath, platform);
   return uniquePaths([
-    dirname(input.execPath ?? process.execPath),
+    execDir,
     ...runtimeToolPaths(platform),
+    ...windowsRuntimeToolPaths(env, execDir, platform),
     ...windowsPackageManagerPaths(env, platform),
     ...nodeVersionManagerPaths(env),
     env.PATH,
@@ -22,6 +25,23 @@ export function setupPath(input: SetupPathInput = {}) {
 function runtimeToolPaths(platform: NodeJS.Platform) {
   if (platform !== "darwin") return [];
   return ["/usr/local/bin", "/opt/homebrew/bin"];
+}
+
+function windowsRuntimeToolPaths(
+  env: NodeJS.ProcessEnv,
+  execDir: string,
+  platform: NodeJS.Platform,
+) {
+  if (platform !== "win32") return [];
+  return [
+    env.BLAME_RUNTIME_BIN_DIR,
+    win32.join(execDir, "resources", "runtime", "windows", "bin"),
+    win32.join(execDir, "runtime", "windows", "bin"),
+  ];
+}
+
+function dirnameForPlatform(path: string, platform: NodeJS.Platform) {
+  return platform === "win32" ? win32.dirname(path) : dirname(path);
 }
 
 function windowsPackageManagerPaths(

@@ -61,6 +61,49 @@ test("preserves managed runtime status output", async () => {
   assert.equal(status.issues[0]?.status, "unavailable");
 });
 
+test("uses managed runtime status checks from JSON output", async () => {
+  const manager = createRuntimeManager({ platform: "win32" }, async (_command, args) => {
+    if (args[0] !== "status") return "ok";
+    return JSON.stringify({
+      status: "unsupported",
+      checks: [
+        {
+          action: "Enable WSL2, then run Blame runtime setup again.",
+          name: "wsl",
+          status: "unsupported",
+        },
+      ],
+    });
+  });
+
+  const status = await manager.checkRuntimeDependencies();
+
+  assert.equal(status.status, "unsupported");
+  assert.equal(status.issues[0]?.name, "blame-runtime");
+  assert.equal(status.issues[0]?.status, "unsupported");
+  assert.match(status.issues[0]?.action ?? "", /Enable WSL2/);
+});
+
+test("reports missing managed runtime Git as repairable", async () => {
+  const manager = createRuntimeManager({ platform: "win32" }, async (_command, args) => {
+    if (args[0] !== "status") return "ok";
+    return JSON.stringify({
+      status: "repairable",
+      checks: [
+        { name: "wsl", status: "available" },
+        { name: "distro", status: "available" },
+        { name: "git", status: "missing" },
+      ],
+    });
+  });
+
+  const status = await manager.checkRuntimeDependencies();
+
+  assert.equal(status.status, "repairable");
+  assert.equal(status.issues[0]?.name, "git");
+  assert.equal(status.issues[0]?.status, "missing");
+});
+
 test("runs managed runtime lifecycle commands explicitly", async () => {
   const calls: string[] = [];
   const manager = createRuntimeManager({ platform: "win32" }, async (command, args) => {

@@ -167,6 +167,14 @@ function runtimeDependencyIssue(
   context: CheckContext,
   issue: RuntimeDependencyIssue,
 ) {
+  if (issue.action) {
+    return {
+      action: issue.action,
+      message: hostDependencyMessage(issue.name, issue.status),
+      name: issue.name,
+      status: issue.status,
+    };
+  }
   if (issue.name === "containerd") {
     return containerdUnavailableIssue(context.platform, issue.error);
   }

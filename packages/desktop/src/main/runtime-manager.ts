@@ -19,6 +19,7 @@ export type RuntimeState =
 export type RuntimeDependencyName =
   | "blame-runtime"
   | "containerd"
+  | "git"
   | "nerdctl"
   | "nerdctl-compose";
 
@@ -28,10 +29,36 @@ export type RuntimeDependencyStatus =
   | "unsupported";
 
 export type RuntimeDependencyIssue = {
+  action?: string;
   error?: unknown;
   name: RuntimeDependencyName;
   runtimeStatus?: RuntimeState;
   status: RuntimeDependencyStatus;
+};
+
+type ManagedRuntimeCheckName =
+  | "wsl"
+  | "wsl2"
+  | "distro"
+  | "agent"
+  | RuntimeDependencyName;
+
+type ManagedRuntimeCheckStatus =
+  | "available"
+  | "missing"
+  | "unavailable"
+  | "unsupported";
+
+type ManagedRuntimeStatusCheck = {
+  action?: string;
+  name: ManagedRuntimeCheckName;
+  status: ManagedRuntimeCheckStatus;
+};
+
+type ManagedRuntimeStatusReport = {
+  action?: string;
+  checks?: ManagedRuntimeStatusCheck[];
+  status?: RuntimeState;
 };
 
 export type RuntimeStatusReport = {
@@ -202,8 +229,7 @@ async function checkManagedRuntimeStatus(context: RuntimeManagerContext) {
     const output = await context.run(runtimeBinary(context.platform), [
       "status",
     ], context.env);
-    const status = parseRuntimeState(output);
-    return status === "ready" ? null : managedRuntimeStatusIssue(status);
+    return managedRuntimeStatusIssueFromOutput(output);
   } catch (error) {
     return runtimeIssue("blame-runtime", "unavailable", error, "broken");
   }
@@ -256,18 +282,88 @@ function runtimeIssue(
   status: RuntimeDependencyStatus,
   error?: unknown,
   runtimeStatus?: RuntimeState,
+  action?: string,
 ): RuntimeDependencyIssue {
-  return { error, name, runtimeStatus, status };
+  return { action, error, name, runtimeStatus, status };
 }
 
-function managedRuntimeStatusIssue(status: RuntimeState) {
+function managedRuntimeStatusIssueFromOutput(output: string) {
+  const report = parseManagedRuntimeStatusReport(output);
+  if (!report) {
+    const status = parseRuntimeState(output);
+    return status === "ready" ? null : managedRuntimeStatusIssue(status);
+  }
+  const check = report.checks?.find((item) => item.status !== "available");
+  if (!check) {
+    const status = report.status ?? "ready";
+    return status === "ready" ? null : managedRuntimeStatusIssue(status, report.action);
+  }
+  return managedRuntimeCheckIssue(check, report.status ?? "broken", report.action);
+}
+
+function managedRuntimeStatusIssue(status: RuntimeState, action?: string) {
   if (status === "missing") {
-    return runtimeIssue("blame-runtime", "missing", undefined, "missing");
+    return runtimeIssue("blame-runtime", "missing", undefined, "missing", action);
   }
   if (status === "unsupported") {
-    return runtimeIssue("blame-runtime", "unsupported", undefined, "unsupported");
+    return runtimeIssue(
+      "blame-runtime",
+      "unsupported",
+      undefined,
+      "unsupported",
+      action,
+    );
   }
-  return runtimeIssue("blame-runtime", "unavailable", undefined, status);
+  return runtimeIssue("blame-runtime", "unavailable", undefined, status, action);
+}
+
+function managedRuntimeCheckIssue(
+  check: ManagedRuntimeStatusCheck,
+  runtimeStatus: RuntimeState,
+  fallbackAction?: string,
+) {
+  return runtimeIssue(
+    runtimeDependencyName(check.name),
+    runtimeDependencyStatus(check.status),
+    undefined,
+    runtimeStatusForCheck(check, runtimeStatus),
+    check.action ?? fallbackAction,
+  );
+}
+
+function runtimeDependencyName(name: ManagedRuntimeCheckName): RuntimeDependencyName {
+  if (name === "wsl" || name === "wsl2" || name === "distro" || name === "agent")
+    return "blame-runtime";
+  return name;
+}
+
+function runtimeDependencyStatus(
+  status: ManagedRuntimeCheckStatus,
+): RuntimeDependencyStatus {
+  return status === "available" ? "unavailable" : status;
+}
+
+function runtimeStatusForCheck(
+  check: ManagedRuntimeStatusCheck,
+  fallback: RuntimeState,
+) {
+  if (check.name === "wsl" || check.name === "wsl2")
+    return check.status === "unsupported" ? "unsupported" : "broken";
+  if (check.name === "distro" || check.name === "agent") return "missing";
+  if (check.status === "missing") return "repairable";
+  return fallback;
+}
+
+function parseManagedRuntimeStatusReport(
+  output: string,
+): ManagedRuntimeStatusReport | null {
+  try {
+    const parsed = JSON.parse(output) as unknown;
+    if (!parsed || typeof parsed !== "object") return null;
+    return parsed as ManagedRuntimeStatusReport;
+  } catch {
+    return null;
+  }
 }
 
 function parseRuntimeState(output: string): RuntimeState {

@@ -71,6 +71,29 @@ test("reports unavailable Blame runtime on Windows", async () => {
   assert.match(report.issues[0]?.action ?? "", /Blame WSL2 Runtime/);
 });
 
+test("uses actionable WSL2 runtime messages from managed status", async () => {
+  const report = await checkHostDependencies(
+    { platform: "win32", setupScript: "echo ready" },
+    async (_command, args) => {
+      if (args[0] !== "status") return "ok";
+      return JSON.stringify({
+        status: "unsupported",
+        checks: [
+          {
+            action: "Enable WSL2, then run Blame runtime setup again.",
+            name: "wsl",
+            status: "unsupported",
+          },
+        ],
+      });
+    },
+  );
+
+  assert.equal(report.ok, false);
+  assert.equal(report.issues[0]?.name, "blame-runtime");
+  assert.match(report.issues[0]?.action ?? "", /Enable WSL2/);
+});
+
 test("does not cascade runtime checks when nerdctl is missing", async () => {
   const report = await checkHostDependencies(
     { platform: "linux", setupScript: "echo ready" },
