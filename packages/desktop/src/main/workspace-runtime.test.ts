@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   runtimeCommand,
+  runtimeAccessiblePath,
   runtimeManagedPath,
   storyBranch,
   worktreePath,
@@ -97,6 +98,23 @@ test("runs runtime cwd commands inside WSL2 or Lima", () => {
       ],
       command: "blame-wsl2-runtime",
     },
+  );
+});
+
+test("converts Windows host paths to WSL paths for runtime access", () => {
+  assert.equal(
+    runtimeAccessiblePath(
+      String.raw`C:\Users\vanwa\Downloads\projet_test\raphtest`,
+      "win32",
+    ),
+    "/mnt/c/Users/vanwa/Downloads/projet_test/raphtest",
+  );
+  assert.equal(
+    runtimeAccessiblePath(
+      "/home/blame/.local/share/blame/runtime/worktrees/Test",
+      "win32",
+    ),
+    "/home/blame/.local/share/blame/runtime/worktrees/Test",
   );
 });
 

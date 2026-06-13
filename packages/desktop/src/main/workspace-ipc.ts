@@ -76,6 +76,7 @@ import {
   pathExists as runtimePathExists,
   readDirectory as readRuntimeDirectory,
   readFile as readRuntimeFile,
+  runtimeAccessiblePath,
   runtimeManagedPath,
   resolveWorkspacePath as resolveRuntimePath,
   rm as rmRuntime,
@@ -401,6 +402,7 @@ async function searchRuntimeFiles(root: string, query: string, limit: number) {
 
 async function gitDiff(root: string) {
   const cwd = resolveRuntimePath(root);
+  await ensureRuntimeGitSafeDirectory(cwd);
   const { stdout } = await runRuntime("git", ["diff", "--no-ext-diff", "--"], {
     cwd,
   });
@@ -409,6 +411,7 @@ async function gitDiff(root: string) {
 
 async function gitRepositoryFingerprint(root: string) {
   const cwd = resolveRuntimePath(root);
+  await ensureRuntimeGitSafeDirectory(cwd);
   const remoteUrls = await gitRemoteUrls(cwd);
   if (remoteUrls.length > 0) {
     return fingerprintValue(["remotes", ...remoteUrls]);
@@ -428,6 +431,7 @@ async function createWorktree(input: CreateWorktreeInput) {
   const worktree = worktreePath(input);
 
   await ensureWorkspaceGitRepository(repositoryRoot);
+  await ensureRuntimeGitSafeDirectory(repositoryRoot);
   await mkdirRuntime(dirnameWorkspacePath(worktree));
 
   if (await worktreeRegistered(repositoryRoot, worktree)) {
@@ -1227,6 +1231,7 @@ function shouldSkip(name: string) {
 }
 
 async function gitRemoteUrls(cwd: string) {
+  await ensureRuntimeGitSafeDirectory(cwd);
   try {
     const { stdout } = await runRuntime(
       "git",
@@ -1247,6 +1252,7 @@ async function gitRemoteUrls(cwd: string) {
 }
 
 async function assertGitRepository(cwd: string) {
+  await ensureRuntimeGitSafeDirectory(cwd);
   await runRuntime("git", ["rev-parse", "--show-toplevel"], { cwd });
 }
 
@@ -1268,6 +1274,7 @@ async function isWorkspaceGitRepository(root: string) {
 }
 
 async function removeGitWorktree(repositoryRoot: string, worktree: string) {
+  await ensureRuntimeGitSafeDirectory(repositoryRoot);
   try {
     await runRuntime("git", ["worktree", "remove", "--force", worktree], {
       cwd: repositoryRoot,
@@ -1305,6 +1312,7 @@ function commandText(error: unknown, key: "stdout" | "stderr") {
 }
 
 async function branchExists(cwd: string, branch: string) {
+  await ensureRuntimeGitSafeDirectory(cwd);
   try {
     await runRuntime(
       "git",
@@ -1318,12 +1326,48 @@ async function branchExists(cwd: string, branch: string) {
 }
 
 async function worktreeRegistered(cwd: string, worktree: string) {
+  await ensureRuntimeGitSafeDirectory(cwd);
   const { stdout } = await runRuntime("git", ["worktree", "list", "--porcelain"], {
     cwd,
   });
   return stdout
     .split("\n")
     .some((line) => worktreeLineMatches(line, worktree));
+}
+
+async function ensureRuntimeGitSafeDirectory(cwd: string) {
+  if (process.platform !== "win32" || runtimeManagedPath(cwd)) return;
+  const safeDirectory = runtimeAccessiblePath(cwd, "win32");
+  const stdout = await configuredSafeDirectories();
+  if (safeDirectoryConfigured(stdout, safeDirectory)) return;
+  await runRuntime("git", [
+    "config",
+    "--global",
+    "--add",
+    "safe.directory",
+    safeDirectory,
+  ]);
+}
+
+async function configuredSafeDirectories() {
+  try {
+    const { stdout } = await runRuntime("git", [
+      "config",
+      "--global",
+      "--get-all",
+      "safe.directory",
+    ]);
+    return stdout;
+  } catch {
+    return "";
+  }
+}
+
+function safeDirectoryConfigured(stdout: string, safeDirectory: string) {
+  return stdout
+    .split("\n")
+    .map((line) => normalizedPath(line.trim()))
+    .includes(normalizedPath(safeDirectory));
 }
 
 function worktreeLineMatches(line: string, worktree: string) {

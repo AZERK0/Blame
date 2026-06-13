@@ -98,6 +98,13 @@ export function dirnameWorkspacePath(path: string) {
   return dirname(path);
 }
 
+export function runtimeAccessiblePath(
+  path: string,
+  platform: NodeJS.Platform = process.platform,
+) {
+  return runtimeCwdPath(path, platform);
+}
+
 export function runtimeCommand(
   command: string,
   args: string[],
