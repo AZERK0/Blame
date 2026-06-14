@@ -1,5 +1,4 @@
 import { cp, mkdtemp, rm } from "node:fs/promises"
-import { tmpdir } from "node:os"
 import { basename, dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { spawn } from "node:child_process"
@@ -34,6 +33,7 @@ function run(command, args, cwd) {
 }
 
 function stagingParentDir() {
-  if (process.platform === "win32") return rootDir
-  return tmpdir()
+  const customDir = process.env.BLAME_DESKTOP_PACKAGE_DIR?.trim()
+  if (customDir) return resolve(customDir)
+  return rootDir
 }

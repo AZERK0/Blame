@@ -3,6 +3,7 @@ packages:
 allowBuilds:
   '@swc/core': true
   electron: true
+  electron-winstaller: true
   es5-ext: true
   esbuild: true
   msw: true
