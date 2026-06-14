@@ -93,36 +93,49 @@ test_vm_running() {
   [ "$(vm_status)" = "Running" ]
 }
 
-run_vm_root_test() {
-  command="$1"
-  with_lima_environment shell "$vm_name" sudo -n sh -lc "$command" >/dev/null 2>&1
-}
-
 add_vm_checks() {
-  add_runtime_check "agent" "test -x /usr/local/bin/blame-runtime-agent"
-  add_runtime_check "containerd" "command -v containerd >/dev/null 2>&1 && (pgrep -x containerd >/dev/null 2>&1 || containerd --version >/dev/null 2>&1)"
-  add_runtime_check "nerdctl" "command -v nerdctl >/dev/null 2>&1"
-  add_runtime_check "nerdctl-compose" "nerdctl compose version >/dev/null 2>&1"
-  add_runtime_check "git" "command -v git >/dev/null 2>&1"
-}
-
-add_runtime_check() {
+  output="$(with_lima_environment shell "$vm_name" sudo -n sh -s <<'EOF' 2>/dev/null || true
+check() {
   name="$1"
-  command="$2"
-  status="$(runtime_check_status "$command")"
-  if [ "$status" = "available" ]; then
-    append_check "$(new_check "$name" "$status")"
+  shift
+  if "$@" >/dev/null 2>&1; then
+    printf '%s\tavailable\n' "$name"
   else
-    append_check "$(new_check "$name" "$status" "$repair_action")"
+    printf '%s\tmissing\n' "$name"
   fi
 }
-
-runtime_check_status() {
-  if run_vm_root_test "$1"; then
-    printf '%s' "available"
-  else
-    printf '%s' "missing"
+check agent test -x /usr/local/bin/blame-runtime-agent
+check containerd sh -lc 'command -v containerd >/dev/null 2>&1 && (pgrep -x containerd >/dev/null 2>&1 || containerd --version >/dev/null 2>&1)'
+check nerdctl sh -lc 'command -v nerdctl >/dev/null 2>&1'
+check nerdctl-compose sh -lc 'nerdctl compose version >/dev/null 2>&1'
+check git sh -lc 'command -v git >/dev/null 2>&1'
+EOF
+)"
+  if [ -z "$output" ]; then
+    for name in agent containerd nerdctl nerdctl-compose git; do
+      append_check "$(new_check "$name" "missing" "$repair_action")"
+    done
+    return
   fi
+  old_ifs="$IFS"
+  IFS='
+'
+  for line in $output; do
+    IFS="$old_ifs"
+    name="$(printf '%s' "$line" | cut -f 1)"
+    status="$(printf '%s' "$line" | cut -f 2)"
+    if [ -z "$name" ]; then
+      continue
+    fi
+    if [ "$status" = "available" ]; then
+      append_check "$(new_check "$name" "$status")"
+    else
+      append_check "$(new_check "$name" "missing" "$repair_action")"
+    fi
+    IFS='
+'
+  done
+  IFS="$old_ifs"
 }
 
 runtime_status() {

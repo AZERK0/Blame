@@ -58,20 +58,22 @@ function Test-WslAvailable {
   $result.Code -eq 0
 }
 
+function Test-DistroPresentText {
+  param([string]$Text)
+  $Text -match "(?m)^\s*\*?\s*$([regex]::Escape($DistroName))\s"
+}
+
 function Test-DistroPresent {
-  $text = Get-WslListText
-  $text -match "(?m)^\s*\*?\s*$([regex]::Escape($DistroName))\s"
+  Test-DistroPresentText (Get-WslListText)
+}
+
+function Test-DistroUsesWsl2Text {
+  param([string]$Text)
+  $Text -match "(?m)^\s*\*?\s*$([regex]::Escape($DistroName))\s+\S+\s+2\s*$"
 }
 
 function Test-DistroUsesWsl2 {
-  $text = Get-WslListText
-  $text -match "(?m)^\s*\*?\s*$([regex]::Escape($DistroName))\s+\S+\s+2\s*$"
-}
-
-function Test-DistroCommand {
-  param([string]$Command)
-  $result = Invoke-Distro $Command
-  $result.Code -eq 0
+  Test-DistroUsesWsl2Text (Get-WslListText)
 }
 
 function Test-ContainerRuntimeCommand {
@@ -97,12 +99,13 @@ function Get-StatusChecks {
     return $checks
   }
   $checks.Add((New-Check "wsl" "available"))
-  if (-not (Test-DistroPresent)) {
+  $wslListText = Get-WslListText
+  if (-not (Test-DistroPresentText $wslListText)) {
     $checks.Add((New-Check "distro" "missing" "Create the BlameRuntime WSL2 distro from Blame runtime setup."))
     return $checks
   }
   $checks.Add((New-Check "distro" "available"))
-  if (-not (Test-DistroUsesWsl2)) {
+  if (-not (Test-DistroUsesWsl2Text $wslListText)) {
     $checks.Add((New-Check "wsl2" "unsupported" "Convert BlameRuntime to WSL2 with wsl --set-version BlameRuntime 2, then retry."))
     return $checks
   }
@@ -113,19 +116,42 @@ function Get-StatusChecks {
 
 function Add-DistroChecks {
   param([System.Collections.Generic.List[object]]$Checks)
-  Add-DistroCheck $Checks "agent" "test -x /usr/local/bin/blame-runtime-agent"
-  Add-DistroCheck $Checks "containerd" "command -v containerd >/dev/null 2>&1 && pgrep -x containerd >/dev/null 2>&1 && test -S /run/containerd/containerd.sock"
-  Add-DistroCheck $Checks "nerdctl" "command -v nerdctl >/dev/null 2>&1"
-  Add-DistroCheck $Checks "nerdctl-compose" "nerdctl compose version >/dev/null 2>&1"
-  Add-DistroCheck $Checks "git" "command -v git >/dev/null 2>&1"
+  $command = @'
+check() {
+  name="$1"
+  shift
+  if "$@" >/dev/null 2>&1; then
+    printf '%s\tavailable\n' "$name"
+  else
+    printf '%s\tmissing\n' "$name"
+  fi
 }
-
-function Add-DistroCheck {
-  param([System.Collections.Generic.List[object]]$Checks, [string]$Name, [string]$Command)
-  if (Test-DistroCommand $Command) {
-    $Checks.Add((New-Check $Name "available"))
-  } else {
-    $Checks.Add((New-Check $Name "missing" "Repair BlameRuntime from Blame runtime setup."))
+check agent test -x /usr/local/bin/blame-runtime-agent
+check containerd sh -lc 'command -v containerd >/dev/null 2>&1 && pgrep -x containerd >/dev/null 2>&1 && test -S /run/containerd/containerd.sock'
+check nerdctl sh -lc 'command -v nerdctl >/dev/null 2>&1'
+check nerdctl-compose sh -lc 'nerdctl compose version >/dev/null 2>&1'
+check git sh -lc 'command -v git >/dev/null 2>&1'
+'@
+  $result = Invoke-Distro $command
+  if ($result.Code -ne 0) {
+    foreach ($name in @("agent", "containerd", "nerdctl", "nerdctl-compose", "git")) {
+      $Checks.Add((New-Check $name "missing" "Repair BlameRuntime from Blame runtime setup."))
+    }
+    return
+  }
+  foreach ($line in ($result.Output -split "`n")) {
+    if (-not $line.Trim()) {
+      continue
+    }
+    $parts = $line -split "`t", 2
+    if ($parts.Count -ne 2) {
+      continue
+    }
+    if ($parts[1] -eq "available") {
+      $Checks.Add((New-Check $parts[0] "available"))
+    } else {
+      $Checks.Add((New-Check $parts[0] "missing" "Repair BlameRuntime from Blame runtime setup."))
+    }
   }
 }
 
