@@ -41,6 +41,7 @@ export type RuntimeDependencyIssue = {
 type ManagedRuntimeCheckName =
   | "lima"
   | "vm"
+  | "host-home"
   | "wsl"
   | "wsl2"
   | "distro"
@@ -348,6 +349,7 @@ function runtimeDependencyName(name: ManagedRuntimeCheckName): RuntimeDependency
     || name === "wsl"
     || name === "wsl2"
     || name === "distro"
+    || name === "host-home"
     || name === "agent"
   )
     return "blame-runtime";

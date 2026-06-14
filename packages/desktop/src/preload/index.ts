@@ -90,6 +90,8 @@ const api: BlameDesktopApi = {
       ipcRenderer.invoke("workspace:ensure-runtime-ready"),
     repairRuntime: () =>
       ipcRenderer.invoke("workspace:repair-runtime"),
+    resetRuntime: () =>
+      ipcRenderer.invoke("workspace:reset-runtime"),
     projectRuntimeHealthy: (input) =>
       ipcRenderer.invoke("workspace:project-runtime-healthy", input),
     listProjectServices: (input) =>

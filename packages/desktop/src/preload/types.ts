@@ -210,6 +210,7 @@ export type BlameDesktopApi = {
     }): Promise<string | null>;
     ensureRuntimeReady(): Promise<HostDependencyReport>;
     repairRuntime(): Promise<HostDependencyReport>;
+    resetRuntime(): Promise<HostDependencyReport>;
     projectRuntimeHealthy(input: { worktree: string }): Promise<boolean>;
     listProjectServices(input: { worktree: string }): Promise<string[]>;
     startProjectServiceLogs(input: {

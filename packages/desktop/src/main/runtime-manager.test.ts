@@ -174,6 +174,31 @@ test("reports stopped Blame Lima VM as repairable", async () => {
   assert.equal(status.issues[0]?.status, "unavailable");
 });
 
+test("reports missing Lima host mount as runtime repair action", async () => {
+  const manager = createRuntimeManager({ platform: "darwin" }, async (_command, args) => {
+    if (args[0] !== "status") return "ok";
+    return JSON.stringify({
+      status: "repairable",
+      checks: [
+        { name: "lima", status: "available" },
+        { name: "vm", status: "available" },
+        {
+          action: "Reset BlameRuntime from Blame runtime setup so macOS project folders are mounted.",
+          name: "host-home",
+          status: "missing",
+        },
+      ],
+    });
+  });
+
+  const status = await manager.checkRuntimeDependencies();
+
+  assert.equal(status.status, "repairable");
+  assert.equal(status.issues[0]?.name, "blame-runtime");
+  assert.equal(status.issues[0]?.status, "missing");
+  assert.match(status.issues[0]?.action ?? "", /Reset BlameRuntime/);
+});
+
 
 test("runs managed runtime lifecycle commands explicitly", async () => {
   const calls: string[] = [];

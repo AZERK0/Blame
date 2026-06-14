@@ -299,6 +299,7 @@ export type WorkspaceClient = {
   projectRuntimeHealthy?(input: { worktree: string }): Promise<boolean>
   ensureRuntimeReady?(): Promise<unknown>
   repairRuntime?(): Promise<unknown>
+  resetRuntime?(): Promise<unknown>
   listProjectServices?(input: { worktree: string }): Promise<string[]>
   startProjectServiceLogs?(input: {
     service: string

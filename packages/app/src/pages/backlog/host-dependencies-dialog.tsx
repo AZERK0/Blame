@@ -51,6 +51,7 @@ export function HostDependenciesDialog({
       return
     }
     const url = dependencyUrl(issue)
+    if (!url) return
     if (platform.openExternalLink) platform.openExternalLink(url)
     else window.open(url, "_blank", "noopener,noreferrer")
   }
@@ -138,9 +139,21 @@ function dependencyRuntimeAction(
   platform: ReturnType<typeof usePlatform>
 ) {
   if (!managedRuntimePlatform(platform.platform)) return null
-  if (issue.name === "blame-runtime") return platform.workspace?.ensureRuntimeReady
+  if (issue.name === "blame-runtime") return blameRuntimeAction(issue, platform)
   if (containerRuntimeDependency(issue.name)) return platform.workspace?.repairRuntime
   return null
+}
+
+function blameRuntimeAction(
+  issue: HostDependencyIssue,
+  platform: ReturnType<typeof usePlatform>
+) {
+  if (resetRuntimeIssue(issue)) return platform.workspace?.resetRuntime
+  return platform.workspace?.ensureRuntimeReady
+}
+
+function resetRuntimeIssue(issue: HostDependencyIssue) {
+  return /\breset\b/i.test(issue.action)
 }
 
 function managedRuntimePlatform(platform?: string) {
@@ -156,6 +169,7 @@ function dependencyButtonLabel(
   platform: ReturnType<typeof usePlatform>
 ) {
   if (dependencyRuntimeAction(issue, platform)) {
+    if (resetRuntimeIssue(issue)) return "Reset Runtime"
     return issue.name === "blame-runtime" ? "Setup Runtime" : "Repair Runtime"
   }
   if (issue.status === "unsupported") return "Upgrade"
