@@ -1307,10 +1307,62 @@ function startProjectServiceLogProcess(
       emitProjectServiceLog(streamId, "exit", String(code ?? ""));
       return;
     }
-    stream.retry = setTimeout(() => {
-      startProjectServiceLogProcess(streamId, stream);
-    }, 1_000);
+    void fallbackProjectServiceLog(streamId, stream, code);
   });
+}
+
+async function fallbackProjectServiceLog(
+  streamId: string,
+  stream: ProjectServiceLogStream,
+  code: number | null,
+) {
+  if (await emitArchivedProjectServiceLog(streamId, stream)) {
+    projectServiceLogStreams.delete(streamId);
+    emitProjectServiceLog(streamId, "exit", String(code ?? ""));
+    return;
+  }
+  stream.retry = setTimeout(() => {
+    startProjectServiceLogProcess(streamId, stream);
+  }, 1_000);
+}
+
+async function emitArchivedProjectServiceLog(
+  streamId: string,
+  stream: ProjectServiceLogStream,
+) {
+  const content = await archivedProjectServiceLog(stream.worktree, stream.service);
+  if (!content) return false;
+  stream.hasOutput = true;
+  emitProjectServiceLog(streamId, "stdout", content);
+  return true;
+}
+
+async function archivedProjectServiceLog(worktree: string, service: string) {
+  try {
+    const log = await readRuntimeFile(setupLogPath(worktree));
+    return archivedServiceLogSection(log, service);
+  } catch {
+    return "";
+  }
+}
+
+function archivedServiceLogSection(log: string, service: string) {
+  const normalized = normalizedServiceName(service);
+  const lines = log
+    .split("\n")
+    .filter((line) => archivedServiceLogLine(line, normalized));
+  return lines.length ? `${lines.join("\n")}\n` : "";
+}
+
+function archivedServiceLogLine(line: string, service: string) {
+  const normalized = normalizedServiceName(line);
+  if (service === "deps")
+    return /\bdeps(?:-|_)?run\b/.test(normalized) || /\bservice deps\b/.test(normalized);
+  return normalized.includes(service);
+}
+
+function normalizedServiceName(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
 async function stopProjectServiceLogs(streamId: string) {

@@ -83,7 +83,9 @@ export function BacklogColumn({
               onReject={onReject}
               onStopAgent={onStopAgent}
               onUnpauseAgent={onUnpauseAgent}
-              setupInitializing={storySetupInitializing?.(story)}
+              setupInitializing={
+                storySetupInitializing?.(story) || queueInitializing
+              }
               story={story}
             />
           ))}
