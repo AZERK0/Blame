@@ -83,7 +83,7 @@ test("runtime agent client rejects failed exec responses with output", async () 
   await assert.rejects(
     client.exec({ args: [], command: "false" }),
     (error: unknown) => {
-      assert.equal((error as Error).message, "failed");
+      assert.equal((error as Error).message, "failed\npartial\nbad");
       assert.equal((error as { stderr?: string }).stderr, "bad");
       assert.equal((error as { stdout?: string }).stdout, "partial");
       return true;

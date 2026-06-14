@@ -311,7 +311,14 @@ function isAgentEvent(value: unknown): value is AgentEvent {
 }
 
 function agentError(response: AgentResponse) {
-  const error = new Error(response.error?.message || "Runtime agent request failed");
+  const message = [
+    response.error?.message || "Runtime agent request failed",
+    response.error?.stdout,
+    response.error?.stderr,
+  ]
+    .filter((part): part is string => typeof part === "string" && Boolean(part.trim()))
+    .join("\n");
+  const error = new Error(message);
   Object.assign(error, {
     runtimeAgentCommandFailed: true,
     stderr: response.error?.stderr ?? "",

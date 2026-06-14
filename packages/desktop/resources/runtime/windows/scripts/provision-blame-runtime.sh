@@ -104,34 +104,40 @@ def ensure_containerd():
     subprocess.Popen(["containerd"], stdout=log, stderr=log, start_new_session=True)
 
 def target_user(name):
-    if name != "blame" or os.geteuid() != 0:
+    if os.geteuid() != 0:
         return None
-    account = pwd.getpwnam("blame")
-    return account.pw_uid, account.pw_gid
+    return pwd.getpwnam(name)
 
-def demote(user):
-    if not user:
+def demote(account):
+    if not account or account.pw_uid == os.geteuid():
         return None
-    uid, gid = user
     def apply():
-        os.setgid(gid)
-        os.setuid(uid)
+        os.initgroups(account.pw_name, account.pw_gid)
+        os.setgid(account.pw_gid)
+        os.setuid(account.pw_uid)
     return apply
 
-def clean_env(values):
+def clean_env(values, account):
     env = os.environ.copy()
     for key, value in values.items():
         if isinstance(key, str) and isinstance(value, str):
             if key == "PATH" and windows_path(value):
                 continue
+            if account and key in ("HOME", "LOGNAME", "SHELL", "USER"):
+                continue
             env[key] = value
+    if account:
+        env["HOME"] = account.pw_dir
+        env["LOGNAME"] = account.pw_name
+        env["SHELL"] = account.pw_shell
+        env["USER"] = account.pw_name
     return env
 
 def windows_path(value):
     return ";" in value or "\\" in value
 
-def command_env(params):
-    return clean_env(params.get("env") or {})
+def command_env(params, account):
+    return clean_env(params.get("env") or {}, account)
 
 def command_cwd(params):
     cwd = params.get("cwd")
@@ -150,17 +156,18 @@ def prepare_command(params):
 
 def run_exec(params):
     command, args = prepare_command(params)
+    account = target_user(command_user(params))
     timeout = params.get("timeoutMs")
     timeout_seconds = float(timeout) / 1000 if isinstance(timeout, (int, float)) else None
     process = subprocess.run(
         [command, *args],
         cwd=command_cwd(params),
-        env=command_env(params),
+        env=command_env(params, account),
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         timeout=timeout_seconds,
-        preexec_fn=demote(target_user(command_user(params))),
+        preexec_fn=demote(account),
     )
     result = {"stdout": process.stdout, "stderr": process.stderr, "code": process.returncode}
     if process.returncode != 0:
@@ -185,14 +192,15 @@ def wait_process(process_id, process):
 
 def run_spawn(params):
     command, args = prepare_command(params)
+    account = target_user(command_user(params))
     process = subprocess.Popen(
         [command, *args],
         cwd=command_cwd(params),
-        env=command_env(params),
+        env=command_env(params, account),
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        preexec_fn=demote(target_user(command_user(params))),
+        preexec_fn=demote(account),
     )
     process_id = uuid.uuid4().hex
     processes[process_id] = process
