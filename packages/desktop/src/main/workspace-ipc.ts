@@ -1738,6 +1738,10 @@ async function removeGitWorktree(repositoryRoot: string, worktree: string) {
       worktree,
     ]);
   } catch (error) {
+    if (isPermissionDeniedError(error)) {
+      await removeStaleGitWorktree(repositoryRoot, worktree);
+      return;
+    }
     if (!isDirectoryNotEmptyError(error)) throw error;
     if (await worktreeRegistered(repositoryRoot, worktree)) throw error;
   }
@@ -1745,8 +1749,19 @@ async function removeGitWorktree(repositoryRoot: string, worktree: string) {
   await rmRuntime(worktree);
 }
 
+async function removeStaleGitWorktree(repositoryRoot: string, worktree: string) {
+  await rmRuntime(worktree);
+  await runRuntimeGit(repositoryRoot, ["worktree", "prune"]);
+  if (await worktreeRegistered(repositoryRoot, worktree))
+    throw new Error("Unable to unregister worktree.");
+}
+
 function isDirectoryNotEmptyError(error: unknown) {
   return commandText(error, "stderr").includes("Directory not empty");
+}
+
+function isPermissionDeniedError(error: unknown) {
+  return commandErrorText(error).includes("Permission denied");
 }
 
 function transientRuntimePullError(error: unknown) {
