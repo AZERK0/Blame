@@ -367,6 +367,31 @@ test("uses reusable node modules volumes for preview worktrees", () => {
     first,
     new RegExp(`${firstVolume}:\\n    name: ${firstVolume}\\n    external: true`),
   );
+  assert.match(first, /blame\.dependencies\.cache: "true"/);
+  assert.match(first, /blame\.dependencies\.cache\.key: "[a-f0-9]{12}"/);
+});
+
+test("uses explicit dependency volume key for preview worktrees", () => {
+  const compose = [
+    "services:",
+    "  frontend:",
+    "    volumes:",
+    "      - .:/workspace",
+    "    command:",
+    "      - corepack pnpm install && corepack pnpm dev",
+  ].join("\n");
+
+  const result = dockerComposeForPreview(
+    compose,
+    "/tmp/project/story-1",
+    "abc123abc123",
+  );
+
+  assert.match(
+    result,
+    /"blame_node_modules_abc123abc123:\/workspace\/node_modules"/,
+  );
+  assert.match(result, /blame\.dependencies\.cache\.key: "abc123abc123"/);
 });
 
 test("marks initialized dependency volumes before recursive chown", () => {

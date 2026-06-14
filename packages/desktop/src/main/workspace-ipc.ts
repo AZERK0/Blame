@@ -37,6 +37,7 @@ import {
   composeWithRuntimePortPlaceholders,
   composeWithoutNumericSuUser,
   composeWithAllocatedHostPorts,
+  dependencyVolumeHash,
   dockerComposeWithHostFileMounts,
   dockerComposeForPreview,
   dockerComposeWithPortableWindowsPaths,
@@ -143,7 +144,9 @@ type ResolveProjectPreviewUrlInput = {
 };
 
 type ComposeService = {
+  command?: string | string[];
   depends_on?: Record<string, { condition?: string } | string> | string[];
+  image?: string;
   labels?: Record<string, string> | string[];
   ports?: Array<{
     mode?: string;
@@ -151,6 +154,14 @@ type ComposeService = {
     published?: string | number;
     target?: string | number;
   }>;
+  volumes?: Array<
+    | string
+    | {
+        source?: string;
+        target?: string;
+        type?: string;
+      }
+  >;
 };
 
 type ComposeConfig = {
@@ -673,8 +684,15 @@ async function runProjectComposeUp(worktree: string) {
 
 async function runSetupTaskServices(worktree: string, config: ComposeConfig) {
   const services = setupTaskServices(config);
-  for (const service of services)
+  for (const service of services) {
+    const serviceConfig = config.services?.[service];
+    if (serviceConfig && await dependencyCacheReady(worktree, serviceConfig)) {
+      await appendRecoveryLog(worktree, `dependency cache hit: ${service}`);
+      continue;
+    }
     await runProjectComposeSetupService(worktree, service);
+    if (serviceConfig) await markDependencyCacheReady(worktree, serviceConfig);
+  }
   return new Set(services);
 }
 
@@ -687,9 +705,124 @@ async function runCompletedDependencyServices(
     (service) => !skippedServices.has(service),
   );
   for (const service of services) {
+    if (
+      service === "blame-dependencies-init" &&
+      await setupDependencyCachesReady(worktree, config)
+    ) {
+      await appendRecoveryLog(worktree, `dependency init cache hit: ${service}`);
+      continue;
+    }
     await runProjectComposeService(worktree, service);
   }
   return new Set(services);
+}
+
+async function setupDependencyCachesReady(
+  worktree: string,
+  config: ComposeConfig,
+) {
+  const services = setupTaskServices(config)
+    .map((service) => config.services?.[service])
+    .filter((service): service is ComposeService => Boolean(service));
+  if (services.length === 0) return false;
+  for (const service of services) {
+    if (!(await dependencyCacheReady(worktree, service))) return false;
+  }
+  return true;
+}
+
+async function dependencyCacheReady(
+  worktree: string,
+  service: ComposeService,
+) {
+  const cache = dependencyCache(service);
+  if (!cache) return false;
+  try {
+    await containerRuntime.container(
+      [
+        "run",
+        "--rm",
+        "--pull=never",
+        "-v",
+        `${cache.volume}:/node_modules`,
+        dependencyCacheImage(service),
+        "sh",
+        "-lc",
+        `test -e /node_modules/${dependencyCacheMarker(cache.key)}`,
+      ],
+      { cwd: worktree, env: setupEnvironment(worktree) },
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function markDependencyCacheReady(
+  worktree: string,
+  service: ComposeService,
+) {
+  const cache = dependencyCache(service);
+  if (!cache) return;
+  try {
+    await containerRuntime.container(
+      [
+        "run",
+        "--rm",
+        "--pull=never",
+        "-v",
+        `${cache.volume}:/node_modules`,
+        dependencyCacheImage(service),
+        "sh",
+        "-lc",
+        `touch /node_modules/${dependencyCacheMarker(cache.key)}`,
+      ],
+      { cwd: worktree, env: setupEnvironment(worktree) },
+    );
+  } catch (error) {
+    await appendRecoveryLog(
+      worktree,
+      `dependency cache marker failed: ${errorMessage(error).trim()}`,
+    );
+  }
+}
+
+function dependencyCache(service: ComposeService) {
+  const labels = serviceLabels(service);
+  if (labels["blame.dependencies.cache"] !== "true") return undefined;
+  const key = labels["blame.dependencies.cache.key"];
+  const volume = nodeModulesVolumeSource(service);
+  if (!key || !volume) return undefined;
+  return { key, volume };
+}
+
+function dependencyCacheImage(service: ComposeService) {
+  return service.image || "node:22-bookworm-slim";
+}
+
+function dependencyCacheMarker(key: string) {
+  return `.blame-deps-${key.replace(/[^a-f0-9]/gi, "")}.ready`;
+}
+
+function nodeModulesVolumeSource(service: ComposeService) {
+  for (const volume of service.volumes ?? []) {
+    const parsed = composeVolume(volume);
+    if (parsed?.target.replace(/\/$/, "").endsWith("/node_modules"))
+      return parsed.source;
+  }
+  return undefined;
+}
+
+function composeVolume(volume: NonNullable<ComposeService["volumes"]>[number]) {
+  if (typeof volume !== "string") {
+    if (!volume.source || !volume.target) return undefined;
+    if (volume.type && volume.type !== "volume") return undefined;
+    return { source: volume.source, target: volume.target };
+  }
+  const [source, target] = volume.split(":");
+  if (!source || !target || target.startsWith("./") || target.startsWith("../"))
+    return undefined;
+  return { source, target };
 }
 
 async function runProjectComposeService(worktree: string, service: string) {
@@ -1796,9 +1929,12 @@ async function prepareProjectCompose(
   compose: string,
   symlinkEnvMounts: Awaited<ReturnType<typeof envHostFileMounts>>,
 ) {
+  const dependencyKey = await dependencyVolumeHashForWorktree(worktree, compose);
   const allocatedCompose = await composeWithAllocatedHostPorts(
     composeWithNonMutatingNpmInstalls(
-      composeWithoutNumericSuUser(dockerComposeForPreview(compose, worktree)),
+      composeWithoutNumericSuUser(
+        dockerComposeForPreview(compose, worktree, dependencyKey),
+      ),
     ),
   );
   const envMounts = await materializedPreviewEnvHostFileMounts(
@@ -1809,6 +1945,36 @@ async function prepareProjectCompose(
     ...symlinkEnvMounts,
     ...envMounts,
   ]);
+}
+
+const dependencyHashFiles = [
+  "package.json",
+  "pnpm-lock.yaml",
+  "pnpm-workspace.yaml",
+  "package-lock.json",
+  "npm-shrinkwrap.json",
+  "yarn.lock",
+  "bun.lock",
+  "bun.lockb",
+];
+
+async function dependencyVolumeHashForWorktree(
+  worktree: string,
+  compose: string,
+) {
+  const hash = createHash("sha256");
+  let found = false;
+  for (const file of dependencyHashFiles) {
+    const path = joinWorkspacePath(worktree, file);
+    if (!(await runtimePathExists(path))) continue;
+    found = true;
+    hash.update(file);
+    hash.update("\0");
+    hash.update(await readRuntimeFile(path));
+    hash.update("\0");
+  }
+  if (!found) return dependencyVolumeHash(compose);
+  return hash.digest("hex").slice(0, 12);
 }
 
 function composePreviewOrigin(compose: string) {

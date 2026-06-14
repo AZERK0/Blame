@@ -1,8 +1,11 @@
 import { createHash } from "node:crypto";
 import { createServer } from "node:net";
 
-export function dockerComposeForPreview(compose: string, worktree: string) {
-  const dependencyVolumeKey = dependencyVolumeHash(compose);
+export function dockerComposeForPreview(
+  compose: string,
+  worktree: string,
+  dependencyVolumeKey = dependencyVolumeHash(compose),
+) {
   const previewCompose = dockerComposeWithEscapedCommandVariables(
     projectRootCompose(compose, worktree),
   );
@@ -363,6 +366,7 @@ function readServiceBlock(lines: string[], start: number, indent: number) {
 }
 
 type DependencyVolumePlan = {
+  key: string;
   mounts: string[];
   serviceMounts: Map<string, string[]>;
   services: string[];
@@ -389,7 +393,12 @@ function dependencyVolumePlan(
     index = block.end;
   }
   const mounts = uniqueStrings(Array.from(serviceMounts.values()).flat());
-  return { mounts, serviceMounts, services: Array.from(serviceMounts.keys()) };
+  return {
+    key: dependencyVolumeKey,
+    mounts,
+    serviceMounts,
+    services: Array.from(serviceMounts.keys()),
+  };
 }
 
 function plannedServiceMounts(
@@ -508,7 +517,12 @@ function addServiceMounts(
 ) {
   return mapServiceBlocks(lines, servicesLine, (block) => {
     const mounts = plan.serviceMounts.get(serviceName(block.lines[0]));
-    return mounts ? serviceBlockWithMounts(block.lines, mounts) : block.lines;
+    if (!mounts) return block.lines;
+    return serviceBlockWithDependencyCacheLabel(
+      serviceBlockWithMounts(block.lines, mounts),
+      mounts,
+      plan.key,
+    );
   });
 }
 
@@ -538,6 +552,57 @@ function serviceBlockWithMounts(lines: string[], mounts: string[]) {
     ...mountLines(mounts),
     ...targetLines.slice(targetVolumesEnd),
   ];
+}
+
+function serviceBlockWithDependencyCacheLabel(
+  lines: string[],
+  mounts: string[],
+  key: string,
+) {
+  if (!key) return lines;
+  if (!mounts.some((mount) => mountTarget(mount).endsWith("/node_modules")))
+    return lines;
+  return serviceBlockWithLabels(lines, {
+    "blame.dependencies.cache": "true",
+    "blame.dependencies.cache.key": key,
+  });
+}
+
+function serviceBlockWithLabels(lines: string[], labels: Record<string, string>) {
+  const labelsIndex = lines.findIndex((line) => /^\s{4}labels:\s*$/.test(line));
+  const missing = Object.entries(labels).filter(
+    ([key]) => !labelKeyExists(lines, key),
+  );
+  if (missing.length === 0) return lines;
+  const list = serviceUsesListLabels(lines);
+  const rendered = missing.map(([key, value]) =>
+    list ? `      - ${key}=${value}` : `      ${key}: ${JSON.stringify(value)}`,
+  );
+  if (labelsIndex === -1) {
+    const [serviceLine, ...serviceBody] = lines;
+    return [serviceLine, "    labels:", ...rendered, ...serviceBody];
+  }
+  return [
+    ...lines.slice(0, labelsIndex + 1),
+    ...rendered,
+    ...lines.slice(labelsIndex + 1),
+  ];
+}
+
+function labelKeyExists(lines: string[], key: string) {
+  if (!key) return true;
+  const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return lines.some((line) =>
+    new RegExp(`^\\s{6}(?:-\\s*)?${escaped}(?:=|:)`).test(line),
+  );
+}
+
+function serviceUsesListLabels(lines: string[]) {
+  const labelsIndex = lines.findIndex((line) => /^\s{4}labels:\s*$/.test(line));
+  const next = lines
+    .slice(labelsIndex + 1)
+    .find((line) => line.trim() && !line.trim().startsWith("#"));
+  return Boolean(next && /^\s{6}-/.test(next));
 }
 
 function serviceBlockWithoutMountTargets(lines: string[], targets: string[]) {
@@ -835,7 +900,7 @@ function uniqueStrings(values: string[]) {
   return Array.from(new Set(values));
 }
 
-function dependencyVolumeHash(compose: string) {
+export function dependencyVolumeHash(compose: string) {
   return createHash("sha256")
     .update(compose.replace(/\$\{BLAME_PROJECT_ROOT\}/g, ""))
     .digest("hex")
