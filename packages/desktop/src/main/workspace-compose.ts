@@ -381,16 +381,22 @@ function dependencyVolumePlan(
   const serviceMounts = new Map<string, string[]>();
   const serviceIndent = /^\s*/.exec(lines[servicesLine])?.[0].length ?? 0;
   const childIndent = serviceIndent + 2;
+  const blocks: Array<{ lines: string[]; name: string }> = [];
   for (let index = servicesLine + 1; index < lines.length; index += 1) {
     const block = readServiceBlock(lines, index, childIndent);
     if (!block) continue;
+    blocks.push({ lines: block.lines, name: serviceName(block.lines[0]) });
+    index = block.end;
+  }
+  const packageTargets = workspacePackageNodeModulesTargets(blocks, worktree);
+  for (const block of blocks) {
     const planned = plannedServiceMounts(
       block.lines,
       worktree,
       dependencyVolumeKey,
+      packageTargets,
     );
-    if (planned.length) serviceMounts.set(serviceName(block.lines[0]), planned);
-    index = block.end;
+    if (planned.length) serviceMounts.set(block.name, planned);
   }
   const mounts = uniqueStrings(Array.from(serviceMounts.values()).flat());
   return {
@@ -405,13 +411,50 @@ function plannedServiceMounts(
   lines: string[],
   worktree: string,
   dependencyVolumeKey: string,
+  packageTargets: string[],
 ) {
   const root = mountedWorkspacePath(lines, worktree);
-  if (!root || !runsNodePackageManager(lines)) return [];
+  if (!root) return [];
+  const nodeModulesMounts =
+    runsNodePackageManager(lines) || defaultNodeModulesMountExists(
+      lines,
+      `${root.replace(/\/$/, "")}/node_modules`,
+    )
+      ? nodeModulesMount(lines, root, dependencyVolumeKey)
+      : [];
+  const packageMounts = packageNodeModulesMounts(
+    lines,
+    root,
+    dependencyVolumeKey,
+    packageTargets,
+  );
   return [
-    ...missingNodeModulesMount(lines, root, dependencyVolumeKey),
-    ...missingPackageCacheMounts(lines),
+    ...nodeModulesMounts,
+    ...packageMounts,
+    ...(runsNodePackageManager(lines) ? missingPackageCacheMounts(lines) : []),
   ];
+}
+
+function workspacePackageNodeModulesTargets(
+  blocks: Array<{ lines: string[]; name: string }>,
+  worktree: string,
+) {
+  const targets = blocks.flatMap((block) => {
+    const root = mountedWorkspacePath(block.lines, worktree);
+    const workingDir = serviceWorkingDirectory(block.lines);
+    if (!root || !workingDir) return [];
+    const normalizedRoot = root.replace(/\/$/, "");
+    const normalizedWorkingDir = workingDir.replace(/\/$/, "");
+    if (!normalizedWorkingDir.startsWith(`${normalizedRoot}/`)) return [];
+    return [`${normalizedWorkingDir}/node_modules`];
+  });
+  return uniqueStrings(targets);
+}
+
+function serviceWorkingDirectory(lines: string[]) {
+  const line = lines.find((line) => /^\s{4}working_dir:\s*/.test(line));
+  if (!line) return "";
+  return line.replace(/^\s{4}working_dir:\s*/, "").trim().replace(/^"|"$/g, "");
 }
 
 function mountedWorkspacePath(lines: string[], worktree: string) {
@@ -443,7 +486,7 @@ function projectSource(value: string, worktree: string) {
   );
 }
 
-function missingNodeModulesMount(
+function nodeModulesMount(
   lines: string[],
   root: string,
   dependencyVolumeKey: string,
@@ -454,11 +497,49 @@ function missingNodeModulesMount(
     !defaultNodeModulesMountExists(lines, target)
   )
     return [];
-  return [`${nodeModulesVolumeName(dependencyVolumeKey)}:${target}`];
+  return [`${nodeModulesVolumeName(dependencyVolumeKey, root, target)}:${target}`];
 }
 
-function nodeModulesVolumeName(key: string) {
-  return key ? `blame_node_modules_${key}` : "blame_node_modules";
+function packageNodeModulesMounts(
+  lines: string[],
+  root: string,
+  dependencyVolumeKey: string,
+  packageTargets: string[],
+) {
+  const targets = runsNodePackageManager(lines)
+    ? packageTargets
+    : servicePackageNodeModulesTargets(lines, root, packageTargets);
+  return targets
+    .filter((target) => !mountTargetExists(lines, target))
+    .map((target) => `${nodeModulesVolumeName(dependencyVolumeKey, root, target)}:${target}`);
+}
+
+function servicePackageNodeModulesTargets(
+  lines: string[],
+  root: string,
+  packageTargets: string[],
+) {
+  const workingDir = serviceWorkingDirectory(lines).replace(/\/$/, "");
+  if (!workingDir) return [];
+  return packageTargets.filter((target) => target === `${workingDir}/node_modules`);
+}
+
+function nodeModulesVolumeName(key: string, root = "", target = "") {
+  if (!key) return "blame_node_modules";
+  const suffix = nodeModulesVolumeSuffix(root, target);
+  return suffix ? `blame_node_modules_${key}_${suffix}` : `blame_node_modules_${key}`;
+}
+
+function nodeModulesVolumeSuffix(root: string, target: string) {
+  const normalizedRoot = root.replace(/\/$/, "");
+  const normalizedTarget = target.replace(/\/node_modules\/?$/, "");
+  if (!normalizedRoot || normalizedTarget === normalizedRoot) return "";
+  if (!normalizedTarget.startsWith(`${normalizedRoot}/`)) return "";
+  return normalizedTarget
+    .slice(normalizedRoot.length + 1)
+    .replace(/[^a-zA-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .toLowerCase();
 }
 
 function missingPackageCacheMounts(lines: string[]) {

@@ -808,7 +808,7 @@ async function runCompletedDependencyServices(
   );
   for (const service of services) {
     if (
-      service === "blame-dependencies-init" &&
+      skippableDependencyInitService(service) &&
       await timedRecoveryStep(
         worktree,
         `dependency init cache check ${service}`,
@@ -823,6 +823,10 @@ async function runCompletedDependencyServices(
     );
   }
   return new Set(services);
+}
+
+function skippableDependencyInitService(service: string) {
+  return service === "blame-dependencies-init" || service === "blame-volumes-init";
 }
 
 async function setupDependencyCachesReady(
@@ -845,25 +849,27 @@ async function dependencyCacheReady(
 ) {
   const cache = dependencyCache(service);
   if (!cache) return false;
-  try {
-    await containerRuntime.container(
-      [
-        "run",
-        "--rm",
-        "--pull=never",
-        "-v",
-        `${cache.volume}:/node_modules`,
-        dependencyCacheImage(service),
-        "sh",
-        "-lc",
-        `test -e /node_modules/${dependencyCacheMarker(cache.key)}`,
-      ],
-      { cwd: worktree, env: setupEnvironment(worktree) },
-    );
-    return true;
-  } catch {
-    return false;
+  for (const volume of cache.volumes) {
+    try {
+      await containerRuntime.container(
+        [
+          "run",
+          "--rm",
+          "--pull=never",
+          "-v",
+          `${volume}:/node_modules`,
+          dependencyCacheImage(service),
+          "sh",
+          "-lc",
+          `test -e /node_modules/${dependencyCacheMarker(cache.key)}`,
+        ],
+        { cwd: worktree, env: setupEnvironment(worktree) },
+      );
+    } catch {
+      return false;
+    }
   }
+  return true;
 }
 
 async function markDependencyCacheReady(
@@ -873,20 +879,22 @@ async function markDependencyCacheReady(
   const cache = dependencyCache(service);
   if (!cache) return;
   try {
-    await containerRuntime.container(
-      [
-        "run",
-        "--rm",
-        "--pull=never",
-        "-v",
-        `${cache.volume}:/node_modules`,
-        dependencyCacheImage(service),
-        "sh",
-        "-lc",
-        `touch /node_modules/${dependencyCacheMarker(cache.key)}`,
-      ],
-      { cwd: worktree, env: setupEnvironment(worktree) },
-    );
+    for (const volume of cache.volumes) {
+      await containerRuntime.container(
+        [
+          "run",
+          "--rm",
+          "--pull=never",
+          "-v",
+          `${volume}:/node_modules`,
+          dependencyCacheImage(service),
+          "sh",
+          "-lc",
+          `touch /node_modules/${dependencyCacheMarker(cache.key)}`,
+        ],
+        { cwd: worktree, env: setupEnvironment(worktree) },
+      );
+    }
   } catch (error) {
     await appendRecoveryLog(
       worktree,
@@ -899,9 +907,9 @@ function dependencyCache(service: ComposeService) {
   const labels = serviceLabels(service);
   if (labels["blame.dependencies.cache"] !== "true") return undefined;
   const key = labels["blame.dependencies.cache.key"];
-  const volume = nodeModulesVolumeSource(service);
-  if (!key || !volume) return undefined;
-  return { key, volume };
+  const volumes = nodeModulesVolumeSources(service);
+  if (!key || volumes.length === 0) return undefined;
+  return { key, volumes };
 }
 
 function dependencyCacheImage(service: ComposeService) {
@@ -912,13 +920,15 @@ function dependencyCacheMarker(key: string) {
   return `.blame-deps-${key.replace(/[^a-f0-9]/gi, "")}.ready`;
 }
 
-function nodeModulesVolumeSource(service: ComposeService) {
-  for (const volume of service.volumes ?? []) {
-    const parsed = composeVolume(volume);
-    if (parsed?.target.replace(/\/$/, "").endsWith("/node_modules"))
-      return parsed.source;
-  }
-  return undefined;
+function nodeModulesVolumeSources(service: ComposeService) {
+  return uniqueStrings(
+    (service.volumes ?? []).flatMap((volume) => {
+      const parsed = composeVolume(volume);
+      return parsed?.target.replace(/\/$/, "").endsWith("/node_modules")
+        ? [parsed.source]
+        : [];
+    }),
+  );
 }
 
 function composeVolume(volume: NonNullable<ComposeService["volumes"]>[number]) {

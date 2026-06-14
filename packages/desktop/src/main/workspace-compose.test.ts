@@ -421,6 +421,158 @@ test("replaces generated node modules volume with dependency keyed volume", () =
   assert.match(result, /blame\.dependencies\.cache: "true"/);
 });
 
+test("uses dependency keyed node modules volume for runtime services", () => {
+  const compose = [
+    "services:",
+    "  deps:",
+    "    volumes:",
+    "      - .:/workspace",
+    "      - blame_node_modules:/workspace/node_modules",
+    "    command:",
+    "      - corepack pnpm install",
+    "  backend:",
+    "    working_dir: /workspace/apps/backend",
+    "    volumes:",
+    "      - .:/workspace",
+    "      - blame_node_modules:/workspace/node_modules",
+    "    command:",
+    "      - corepack pnpm dev",
+    "  web:",
+    "    working_dir: /workspace/apps/frontend",
+    "    volumes:",
+    "      - .:/workspace",
+    "      - blame_node_modules:/workspace/node_modules",
+    "    command:",
+    "      - corepack pnpm dev",
+    "volumes:",
+    "  blame_node_modules:",
+  ].join("\n");
+
+  const result = dockerComposeForPreview(
+    compose,
+    "/tmp/project/story-1",
+    "abc123abc123",
+  );
+
+  assert.equal(
+    result.match(/"blame_node_modules_abc123abc123:\/workspace\/node_modules"/g)
+      ?.length,
+    4,
+  );
+  assert.match(
+    result,
+    /"blame_node_modules_abc123abc123_apps_backend:\/workspace\/apps\/backend\/node_modules"/,
+  );
+  assert.match(
+    result,
+    /"blame_node_modules_abc123abc123_apps_frontend:\/workspace\/apps\/frontend\/node_modules"/,
+  );
+  assert.doesNotMatch(result, /"blame_node_modules:\/workspace\/node_modules"/);
+});
+
+const packageManagerComposeCases = [
+  {
+    cacheMount: /"blame_pnpm_store:\/pnpm\/store"/,
+    command: "corepack pnpm",
+    env: /npm_config_store_dir: "\/pnpm\/store"/,
+    name: "pnpm",
+  },
+  {
+    cacheMount: /"blame_npm_cache:\/npm\/cache"/,
+    command: "npm",
+    env: /NPM_CONFIG_CACHE: "\/npm\/cache"/,
+    name: "npm",
+  },
+  {
+    cacheMount: /"blame_yarn_cache:\/yarn\/cache"/,
+    command: "yarn",
+    env: /YARN_CACHE_FOLDER: "\/yarn\/cache"/,
+    name: "yarn",
+  },
+  {
+    cacheMount: /"blame_bun_cache:\/bun\/cache"/,
+    command: "bun",
+    env: /BUN_INSTALL_CACHE_DIR: "\/bun\/cache"/,
+    name: "bun",
+  },
+];
+
+for (const manager of packageManagerComposeCases) {
+  test(`adds keyed node_modules and cache volumes for single-package ${manager.name}`, () => {
+    const compose = [
+      "services:",
+      "  app:",
+      "    volumes:",
+      "      - .:/workspace",
+      "    command:",
+      `      - ${manager.command} install && ${manager.command} run dev`,
+    ].join("\n");
+
+    const result = dockerComposeForPreview(
+      compose,
+      "/tmp/project/story-1",
+      "abc123abc123",
+    );
+
+    assert.match(
+      result,
+      /"blame_node_modules_abc123abc123:\/workspace\/node_modules"/,
+    );
+    assert.match(result, manager.cacheMount);
+    assert.match(result, manager.env);
+    assert.match(result, /blame\.dependencies\.cache: "true"/);
+  });
+
+  test(`adds package node_modules volumes for ${manager.name} workspaces`, () => {
+    const compose = [
+      "services:",
+      "  deps:",
+      "    volumes:",
+      "      - .:/workspace",
+      "      - blame_node_modules:/workspace/node_modules",
+      "    command:",
+      `      - ${manager.command} install`,
+      "  backend:",
+      "    working_dir: /workspace/apps/backend",
+      "    volumes:",
+      "      - .:/workspace",
+      "      - blame_node_modules:/workspace/node_modules",
+      "    command:",
+      `      - ${manager.command} run dev`,
+      "  web:",
+      "    working_dir: /workspace/apps/frontend",
+      "    volumes:",
+      "      - .:/workspace",
+      "      - blame_node_modules:/workspace/node_modules",
+      "    command:",
+      `      - ${manager.command} run dev`,
+      "volumes:",
+      "  blame_node_modules:",
+    ].join("\n");
+
+    const result = dockerComposeForPreview(
+      compose,
+      "/tmp/project/story-1",
+      "abc123abc123",
+    );
+
+    assert.match(
+      result,
+      /"blame_node_modules_abc123abc123:\/workspace\/node_modules"/,
+    );
+    assert.match(
+      result,
+      /"blame_node_modules_abc123abc123_apps_backend:\/workspace\/apps\/backend\/node_modules"/,
+    );
+    assert.match(
+      result,
+      /"blame_node_modules_abc123abc123_apps_frontend:\/workspace\/apps\/frontend\/node_modules"/,
+    );
+    assert.match(result, manager.cacheMount);
+    assert.doesNotMatch(result, /"blame_node_modules:\/workspace\/node_modules"/);
+  });
+}
+
 test("marks initialized dependency volumes before recursive chown", () => {
   const compose = [
     "services:",
