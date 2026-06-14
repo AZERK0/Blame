@@ -74,6 +74,22 @@ function Test-DistroCommand {
   $result.Code -eq 0
 }
 
+function Test-ContainerRuntimeCommand {
+  param([string[]]$CommandArgs)
+  if ($CommandArgs[0] -match "^(compose|container|info|inspect|network|volume)$") {
+    return $true
+  }
+  $CommandArgs[0] -eq "sh" -and (($CommandArgs -join " ") -match "\bnerdctl\b")
+}
+
+function Ensure-ContainerdRunning {
+  $command = "if ! pgrep -x containerd >/dev/null 2>&1; then mkdir -p /run/containerd /var/log/blame-runtime; nohup containerd >/var/log/blame-runtime/containerd.log 2>&1 & sleep 2; fi; test -S /run/containerd/containerd.sock"
+  $result = Invoke-Distro $command
+  if ($result.Code -ne 0) {
+    throw $result.Output
+  }
+}
+
 function Get-StatusChecks {
   $checks = New-Object System.Collections.Generic.List[object]
   if (-not (Test-WslAvailable)) {
@@ -98,7 +114,7 @@ function Get-StatusChecks {
 function Add-DistroChecks {
   param([System.Collections.Generic.List[object]]$Checks)
   Add-DistroCheck $Checks "agent" "test -x /usr/local/bin/blame-runtime-agent"
-  Add-DistroCheck $Checks "containerd" "command -v containerd >/dev/null 2>&1 && (pgrep -x containerd >/dev/null 2>&1 || containerd --version >/dev/null 2>&1)"
+  Add-DistroCheck $Checks "containerd" "command -v containerd >/dev/null 2>&1 && pgrep -x containerd >/dev/null 2>&1 && test -S /run/containerd/containerd.sock"
   Add-DistroCheck $Checks "nerdctl" "command -v nerdctl >/dev/null 2>&1"
   Add-DistroCheck $Checks "nerdctl-compose" "nerdctl compose version >/dev/null 2>&1"
   Add-DistroCheck $Checks "git" "command -v git >/dev/null 2>&1"
@@ -280,11 +296,12 @@ function Invoke-RuntimeCommand {
     throw "BlameRuntime is not installed."
   }
   $user = "blame"
-  if ($CommandArgs[0] -match "^(compose|container|info|inspect|network|volume)$") {
+  $usesContainerRuntime = Test-ContainerRuntimeCommand $CommandArgs
+  if ($usesContainerRuntime) {
     $user = "root"
   }
-  if ($CommandArgs[0] -eq "sh" -and (($CommandArgs -join " ") -match "\bnerdctl\b")) {
-    $user = "root"
+  if ($usesContainerRuntime) {
+    Ensure-ContainerdRunning
   }
   & wsl.exe -d $DistroName -u $user -- @CommandArgs
   exit $LASTEXITCODE
