@@ -2,11 +2,9 @@ import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { basename, dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
-import { execFile, spawn } from "node:child_process"
-import { promisify } from "node:util"
+import { spawn } from "node:child_process"
 import YAML from "yaml"
 
-const execFileAsync = promisify(execFile)
 const desktopDir = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const rootDir = resolve(desktopDir, "../..")
 const workspaceFile = join(rootDir, "pnpm-workspace.yaml")
@@ -19,7 +17,6 @@ try {
   await deployPackage(deployDir, args)
   await rm(join(stagingDir, "out"), { force: true, recursive: true })
   await cp(join(desktopDir, "out"), join(stagingDir, "out"), { recursive: true })
-  await removeMacosExtendedAttributes(stagingDir)
   await run("pnpm", ["exec", "electron-builder", "--projectDir", stagingDir, "--config", join(stagingDir, "electron-builder.config.ts"), ...args], rootDir, {
     ...process.env,
     JITI_FS_CACHE: "false",
@@ -76,11 +73,6 @@ function run(command, args, cwd, env = process.env) {
       else rejectRun(new Error(`${command} ${args.join(" ")} exited with ${code}`))
     })
   })
-}
-
-async function removeMacosExtendedAttributes(path) {
-  if (process.platform !== "darwin") return
-  await execFileAsync("xattr", ["-cr", path])
 }
 
 function stagingParentDir() {
