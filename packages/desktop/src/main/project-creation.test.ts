@@ -174,6 +174,7 @@ test("pins package manager in generated package manifest", async () => {
     "@prisma/engines",
     "prisma",
     "sharp",
+    "unrs-resolver",
   ]);
 });
 

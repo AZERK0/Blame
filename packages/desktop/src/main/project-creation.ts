@@ -633,6 +633,7 @@ async function updatePackageJson(
 function pnpmOnlyBuiltDependencies(configuration: NewProjectConfiguration) {
   if (configuration.packageManager !== "pnpm") return [];
   return [
+    "unrs-resolver",
     ...(configuration.frontend === "next" ? ["sharp"] : []),
     ...(configuration.orm === "prisma" ? ["@prisma/engines", "prisma"] : []),
     ...(configuration.database === "sqlite" ? ["better-sqlite3"] : []),
