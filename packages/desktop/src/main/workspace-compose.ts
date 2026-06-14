@@ -1,6 +1,8 @@
+import { createHash } from "node:crypto";
 import { createServer } from "node:net";
 
 export function dockerComposeForPreview(compose: string, worktree: string) {
+  const dependencyVolumeKey = dependencyVolumeHash(compose);
   const previewCompose = dockerComposeWithEscapedCommandVariables(
     projectRootCompose(compose, worktree),
   );
@@ -11,6 +13,7 @@ export function dockerComposeForPreview(compose: string, worktree: string) {
       ),
     ),
     worktree,
+    dependencyVolumeKey,
   );
 }
 
@@ -237,11 +240,17 @@ export function dockerComposeWithPortableWindowsPaths(compose: string) {
 export function dockerComposeWithDependencyVolumes(
   compose: string,
   worktree = "",
+  dependencyVolumeKey = "",
 ) {
   const lines = compose.split("\n");
   const servicesLine = serviceSectionLine(lines);
   if (servicesLine === -1) return compose;
-  const plan = dependencyVolumePlan(lines, servicesLine, worktree);
+  const plan = dependencyVolumePlan(
+    lines,
+    servicesLine,
+    worktree,
+    dependencyVolumeKey,
+  );
   if (plan.mounts.length === 0)
     return normalizeTopLevelCacheVolumes(lines).join("\n");
   return normalizeTopLevelCacheVolumes(
@@ -363,6 +372,7 @@ function dependencyVolumePlan(
   lines: string[],
   servicesLine: number,
   worktree: string,
+  dependencyVolumeKey: string,
 ): DependencyVolumePlan {
   const serviceMounts = new Map<string, string[]>();
   const serviceIndent = /^\s*/.exec(lines[servicesLine])?.[0].length ?? 0;
@@ -370,7 +380,11 @@ function dependencyVolumePlan(
   for (let index = servicesLine + 1; index < lines.length; index += 1) {
     const block = readServiceBlock(lines, index, childIndent);
     if (!block) continue;
-    const planned = plannedServiceMounts(block.lines, worktree);
+    const planned = plannedServiceMounts(
+      block.lines,
+      worktree,
+      dependencyVolumeKey,
+    );
     if (planned.length) serviceMounts.set(serviceName(block.lines[0]), planned);
     index = block.end;
   }
@@ -378,11 +392,15 @@ function dependencyVolumePlan(
   return { mounts, serviceMounts, services: Array.from(serviceMounts.keys()) };
 }
 
-function plannedServiceMounts(lines: string[], worktree: string) {
+function plannedServiceMounts(
+  lines: string[],
+  worktree: string,
+  dependencyVolumeKey: string,
+) {
   const root = mountedWorkspacePath(lines, worktree);
   if (!root || !runsNodePackageManager(lines)) return [];
   return [
-    ...missingNodeModulesMount(lines, root),
+    ...missingNodeModulesMount(lines, root, dependencyVolumeKey),
     ...missingPackageCacheMounts(lines),
   ];
 }
@@ -416,10 +434,18 @@ function projectSource(value: string, worktree: string) {
   );
 }
 
-function missingNodeModulesMount(lines: string[], root: string) {
+function missingNodeModulesMount(
+  lines: string[],
+  root: string,
+  dependencyVolumeKey: string,
+) {
   const target = `${root.replace(/\/$/, "")}/node_modules`;
   if (mountTargetExists(lines, target)) return [];
-  return [`blame_node_modules:${target}`];
+  return [`${nodeModulesVolumeName(dependencyVolumeKey)}:${target}`];
+}
+
+function nodeModulesVolumeName(key: string) {
+  return key ? `blame_node_modules_${key}` : "blame_node_modules";
 }
 
 function missingPackageCacheMounts(lines: string[]) {
@@ -628,10 +654,18 @@ function dependencyInitService(mounts: string[]) {
   return [
     "  blame-dependencies-init:",
     "    image: node:22-bookworm-slim",
-    `    command: ${JSON.stringify(`sh -lc "mkdir -p ${paths.join(" ")} && chown -R 0:0 ${paths.join(" ")}"`)}`,
+    `    command: ${JSON.stringify(`sh -lc '${paths.map(volumeInitCommand).join("; ")}'`)}`,
     "    volumes:",
     ...mounts.map((mount) => `      - ${JSON.stringify(mount)}`),
   ];
+}
+
+function volumeInitCommand(path: string) {
+  const marker = `${path.replace(/\/$/, "")}/.blame-volume-ready`;
+  return [
+    `mkdir -p ${path}`,
+    `[ -e ${marker} ] || { chown -R 0:0 ${path} && touch ${marker}; }`,
+  ].join(" && ");
 }
 
 function mountLines(mounts: string[]) {
@@ -784,6 +818,8 @@ function missingTopLevelVolumeLines(mounts: string[], declaredVolumes: Set<strin
 
 function volumeYaml(name: string) {
   if (name === "blame_node_modules") return [`  ${name}:`];
+  if (name.startsWith("blame_node_modules_"))
+    return [`  ${name}:`, `    name: ${name}`];
   return [`  ${name}:`, `    name: ${name}`, "    external: true"];
 }
 
@@ -797,6 +833,13 @@ function volumeName(mount: string) {
 
 function uniqueStrings(values: string[]) {
   return Array.from(new Set(values));
+}
+
+function dependencyVolumeHash(compose: string) {
+  return createHash("sha256")
+    .update(compose.replace(/\$\{BLAME_PROJECT_ROOT\}/g, ""))
+    .digest("hex")
+    .slice(0, 12);
 }
 
 function startsNextTopLevelSection(line: string, indent: number) {

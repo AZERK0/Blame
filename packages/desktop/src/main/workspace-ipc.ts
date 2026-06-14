@@ -1879,14 +1879,21 @@ function containerMatchesWorktree(
   const labels = container.Config?.Labels ?? {};
   const workingDir = labels["com.docker.compose.project.working_dir"];
   const configFiles = labels["com.docker.compose.project.config_files"];
+  const normalizedWorktree = runtimeLabelPath(worktree);
   return (
-    workingDir === worktree ||
+    runtimeLabelPath(workingDir ?? "") === normalizedWorktree ||
     Boolean(
       configFiles
         ?.split(",")
-        .some((file) => resolve(file).startsWith(`${worktree}${sep}`)),
+        .some((file) =>
+          runtimeLabelPath(file).startsWith(`${normalizedWorktree}/`),
+        ),
     )
   );
+}
+
+function runtimeLabelPath(path: string) {
+  return path.replace(/\\/g, "/").replace(/\/+$/g, "");
 }
 
 async function waitForPreview(worktree: string, url: string) {

@@ -343,6 +343,51 @@ test("adds runtime dependency volumes for pnpm worktree installs", () => {
   );
 });
 
+test("uses reusable node modules volumes for preview worktrees", () => {
+  const compose = [
+    "services:",
+    "  frontend:",
+    "    volumes:",
+    "      - .:/workspace",
+    "    command:",
+    "      - corepack pnpm install && corepack pnpm dev",
+  ].join("\n");
+
+  const first = dockerComposeForPreview(compose, "/tmp/project/story-1");
+  const second = dockerComposeForPreview(compose, "/tmp/project/story-2");
+  const pattern =
+    /"(blame_node_modules_[a-f0-9]{12}):\/workspace\/node_modules"/;
+  const firstVolume = pattern.exec(first)?.[1];
+  const secondVolume = pattern.exec(second)?.[1];
+
+  assert.ok(firstVolume);
+  assert.equal(firstVolume, secondVolume);
+  assert.match(first, new RegExp(`${firstVolume}:\\n    name: ${firstVolume}`));
+  assert.doesNotMatch(
+    first,
+    new RegExp(`${firstVolume}:\\n    name: ${firstVolume}\\n    external: true`),
+  );
+});
+
+test("marks initialized dependency volumes before recursive chown", () => {
+  const compose = [
+    "services:",
+    "  frontend:",
+    "    volumes:",
+    "      - .:/workspace",
+    "    command:",
+    "      - npm install && npm run dev",
+  ].join("\n");
+
+  const result = dockerComposeForPreview(compose, "/tmp/project/story-1");
+
+  assert.match(result, /\.blame-volume-ready/);
+  assert.match(
+    result,
+    /\[ -e \/workspace\/node_modules\/\.blame-volume-ready \] \|\|/,
+  );
+});
+
 test("preserves list environment while adding npm cache volume", () => {
   const compose = [
     "services:",
