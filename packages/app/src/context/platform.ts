@@ -283,6 +283,7 @@ export type WorkspaceClient = {
     worktree: string
     setupScript: string
     dockerCompose: string
+    hostDependenciesChecked?: boolean
   }): Promise<{ runId: string }>
   collectProjectInitializationDiagnostics(input: {
     worktree: string

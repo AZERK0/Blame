@@ -134,10 +134,17 @@ export function useBacklogRotation(
       storyId: story.id,
       title: story.title,
     })
+    await backlog.update(story, {
+      agentLastEvent: "Project preview setup starting.",
+      branch: worktree.branch,
+      status: "in-progress",
+      worktree: worktree.worktree,
+    })
     const setup = await workspace.runProjectSetup({
       worktree: worktree.worktree,
       setupScript: initialization.setupScript,
       dockerCompose: initialization.dockerCompose,
+      hostDependenciesChecked: true,
     })
     backlog.setStorySetupInitializing(story, true)
     const unsubscribeSetup = workspace.onSetupEvent(setup.runId, (event) => {
@@ -181,10 +188,7 @@ export function useBacklogRotation(
       agentUsage: null,
       agentStatus: "Running",
       agentLastEvent: `Cline debug log: ${clineLogPath(worktree.worktree, session.sessionId)}`,
-      branch: worktree.branch,
       clineSessionId: session.sessionId,
-      status: "in-progress",
-      worktree: worktree.worktree,
     })
     void agent.sessions.sendDevelopment({
       sessionId: session.sessionId,
@@ -401,6 +405,7 @@ export function useBacklogRotation(
       worktree,
       setupScript,
       dockerCompose,
+      hostDependenciesChecked: true,
     })
     const unsubscribe = workspace.onSetupEvent(setup.runId, (event) => {
       void handleRepairedSetupEvent(story, event, worktree, unsubscribe)

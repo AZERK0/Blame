@@ -96,16 +96,6 @@ import {
 const previewStartupIntervalMs = 1_000;
 const forceKillDelayMs = 1_500;
 const previewResolveTimeoutMs = 45_000;
-const composePullRetryDelaysMs = [
-  2_000,
-  5_000,
-  10_000,
-  15_000,
-  20_000,
-  30_000,
-  45_000,
-  60_000,
-];
 const composeUpRetryDelaysMs = [2_000, 5_000, 10_000, 15_000];
 const globalPreviewVolumes = [
   "blame_bun_cache",
@@ -137,6 +127,7 @@ type RunProjectSetupInput = {
   worktree: string;
   setupScript: string;
   dockerCompose: string;
+  hostDependenciesChecked?: boolean;
 };
 
 type CheckHostDependenciesInput = {
@@ -473,28 +464,48 @@ async function runProjectSetup(input: RunProjectSetupInput) {
   const worktree = resolveRuntimePath(input.worktree);
   const env = setupEnvironment(worktree);
   const setupScript = setupScriptWithoutDockerRuntimeChecks(input.setupScript);
-  await assertHostDependencies({ env, setupScript });
-  await assertGitRepository(worktree);
+  if (!input.hostDependenciesChecked) {
+    await timedRecoveryStep(worktree, "host dependencies", () =>
+      assertHostDependencies({ env, setupScript }),
+    );
+  }
+  await timedRecoveryStep(worktree, "git repository check", () =>
+    assertGitRepository(worktree),
+  );
   const directory = joinWorkspacePath(worktree, ".blame", "initialization");
   const scriptPath = joinWorkspacePath(directory, "setup.sh");
   const composePath = joinWorkspacePath(directory, "docker-compose.yml");
   const logPath = setupLogPath(worktree);
-  const symlinkEnvMounts = await envHostFileMounts(worktree);
-
-  await mkdirRuntime(directory);
   await mkdirRuntime(dirnameWorkspacePath(logPath));
-  await writeRuntimeFile(scriptPath, setupScript);
   await writeRuntimeFile(logPath, "");
-  await writeRuntimeFile(
-    composePath,
-    await prepareProjectCompose(
-      worktree,
-      input.dockerCompose,
-      symlinkEnvMounts,
-    ),
+  const symlinkEnvMounts = await timedRecoveryStep(worktree, "env file scan", () =>
+    envHostFileMounts(worktree),
   );
-  await chmodRuntime(scriptPath, 0o755);
 
+  await timedRecoveryStep(worktree, "initialization files", async () => {
+    await mkdirRuntime(directory);
+    await writeRuntimeFile(scriptPath, setupScript);
+    await writeRuntimeFile(
+      composePath,
+      await prepareProjectCompose(
+        worktree,
+        input.dockerCompose,
+        symlinkEnvMounts,
+      ),
+    );
+    await chmodRuntime(scriptPath, 0o755);
+  });
+
+  return timedRecoveryStep(worktree, "setup process spawn", () =>
+    startProjectSetupProcess(worktree, scriptPath, env),
+  );
+}
+
+function startProjectSetupProcess(
+  worktree: string,
+  scriptPath: string,
+  env: NodeJS.ProcessEnv,
+) {
   const runId = randomUUID();
   const child = spawnRuntime("bash", [scriptPath], {
     cwd: worktree,
@@ -566,13 +577,27 @@ async function startProjectCompose(
   worktree: string,
   options: { reallocatePorts?: boolean } = {},
 ) {
-  await repairProjectCompose(worktree, options);
-  await runProjectComposeUp(worktree);
-  const previewUrl = await waitForPreviewUrl(worktree);
-  if (await syncPreviewRuntimeEnvironment(worktree, previewUrl)) {
-    await restartPreviewService(worktree, true);
+  await timedRecoveryStep(worktree, "compose repair", () =>
+    repairProjectCompose(worktree, options),
+  );
+  await timedRecoveryStep(worktree, "compose up", () =>
+    runProjectComposeUp(worktree),
+  );
+  const previewUrl = await timedRecoveryStep(worktree, "preview url resolve", () =>
+    waitForPreviewUrl(worktree),
+  );
+  if (
+    await timedRecoveryStep(worktree, "preview environment sync", () =>
+      syncPreviewRuntimeEnvironment(worktree, previewUrl),
+    )
+  ) {
+    await timedRecoveryStep(worktree, "preview service restart", () =>
+      restartPreviewService(worktree, true),
+    );
   }
-  await waitForPreview(worktree, previewUrl);
+  await timedRecoveryStep(worktree, "preview response wait", () =>
+    waitForPreview(worktree, previewUrl),
+  );
   return previewUrl;
 }
 
@@ -604,30 +629,43 @@ async function restartPreviewService(worktree: string, clearBuildCache = false) 
 
 async function runProjectComposeUp(worktree: string) {
   const args = composeArgs(worktree);
-  await ensureGlobalPreviewVolumes(worktree);
-  await runComposeWithRetry(
-    worktree,
-    [...args, "pull"],
-    composePullRetryDelaysMs,
-    "compose image pull",
+  await timedRecoveryStep(worktree, "compose volumes", () =>
+    ensureGlobalPreviewVolumes(worktree),
   );
-  const config = await composeConfig(worktree, projectComposePath(worktree));
-  const setupServices = await runSetupTaskServices(worktree, config);
-  const completedServices = await runCompletedDependencyServices(
-    worktree,
-    config,
-    setupServices,
+  const config = await timedRecoveryStep(worktree, "compose config", () =>
+    composeConfig(worktree, projectComposePath(worktree)),
   );
-  await startProjectLogStream(worktree);
+  const setupServices = await timedRecoveryStep(worktree, "compose setup services", () =>
+    runSetupTaskServices(worktree, config),
+  );
+  const completedServices = await timedRecoveryStep(
+    worktree,
+    "compose completed dependencies",
+    () => runCompletedDependencyServices(worktree, config, setupServices),
+  );
+  await timedRecoveryStep(worktree, "compose log stream", () =>
+    startProjectLogStream(worktree),
+  );
   const services = runtimeServices(
     config,
     new Set([...setupServices, ...completedServices]),
   );
-  await runComposeWithRetry(
-    worktree,
-    [...args, "up", "-d", "--force-recreate", "--remove-orphans", ...services],
-    composeUpRetryDelaysMs,
-    "compose start",
+  await timedRecoveryStep(worktree, "compose runtime services", () =>
+    runComposeWithRetry(
+      worktree,
+      [
+        ...args,
+        "up",
+        "-d",
+        "--pull",
+        "missing",
+        "--force-recreate",
+        "--remove-orphans",
+        ...services,
+      ],
+      composeUpRetryDelaysMs,
+      "compose start",
+    ),
   );
 }
 
@@ -1038,10 +1076,32 @@ async function stopSetupRunsForWorktree(worktree: string) {
 
 async function listProjectServices(worktreeInput: string) {
   const worktree = resolveRuntimePath(worktreeInput);
+  const composePath = projectComposePath(worktree);
+  try {
+    if (await runtimePathExists(composePath)) {
+      return composeConfigServiceNames(await readRuntimeFile(composePath));
+    }
+  } catch {}
+  return listProjectServicesWithCompose(worktree);
+}
+
+async function listProjectServicesWithCompose(worktree: string) {
   const { stdout } = await containerRuntime.compose(
     [...composeArgs(worktree), "config", "--services"],
     { cwd: worktree, env: setupEnvironment(worktree) },
   );
+  return serviceNamesFromText(stdout);
+}
+
+function composeConfigServiceNames(compose: string) {
+  const parsed = parseYaml(compose) as unknown;
+  if (!parsed || typeof parsed !== "object") return [];
+  const services = (parsed as ComposeConfig).services;
+  if (!services || typeof services !== "object") return [];
+  return Object.keys(services).sort(serviceSort);
+}
+
+function serviceNamesFromText(stdout: string) {
   return stdout
     .split("\n")
     .map((service) => service.trim())
@@ -1231,6 +1291,25 @@ function appendRecoveryOutput(worktree: string, data: Buffer) {
 async function appendRecoveryLog(worktree: string, message: string) {
   await mkdirRuntime(dirnameWorkspacePath(setupLogPath(worktree)));
   await appendRuntimeFile(setupLogPath(worktree), `\n[recovery ${message}]\n`);
+}
+
+async function timedRecoveryStep<T>(
+  worktree: string,
+  label: string,
+  action: () => Promise<T> | T,
+) {
+  const start = Date.now();
+  try {
+    return await action();
+  } finally {
+    await appendTimingLog(worktree, label, Date.now() - start);
+  }
+}
+
+async function appendTimingLog(worktree: string, label: string, duration: number) {
+  try {
+    await appendRecoveryLog(worktree, `timing ${label}: ${duration}ms`);
+  } catch {}
 }
 
 async function walk(
