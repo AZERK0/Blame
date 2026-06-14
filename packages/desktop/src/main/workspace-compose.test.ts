@@ -394,6 +394,33 @@ test("uses explicit dependency volume key for preview worktrees", () => {
   assert.match(result, /blame\.dependencies\.cache\.key: "abc123abc123"/);
 });
 
+test("replaces generated node modules volume with dependency keyed volume", () => {
+  const compose = [
+    "services:",
+    "  deps:",
+    "    volumes:",
+    "      - .:/workspace",
+    "      - blame_node_modules:/workspace/node_modules",
+    "    command:",
+    "      - corepack pnpm install",
+    "volumes:",
+    "  blame_node_modules:",
+  ].join("\n");
+
+  const result = dockerComposeForPreview(
+    compose,
+    "/tmp/project/story-1",
+    "abc123abc123",
+  );
+
+  assert.match(
+    result,
+    /"blame_node_modules_abc123abc123:\/workspace\/node_modules"/,
+  );
+  assert.doesNotMatch(result, /"blame_node_modules:\/workspace\/node_modules"/);
+  assert.match(result, /blame\.dependencies\.cache: "true"/);
+});
+
 test("marks initialized dependency volumes before recursive chown", () => {
   const compose = [
     "services:",

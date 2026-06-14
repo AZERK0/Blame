@@ -2437,8 +2437,15 @@ function containerCanStillRun(container: RuntimeContainer) {
 
 async function previewContainerForWorktree(worktree: string) {
   const containers = await previewContainers(true, worktree);
-  return containers.find((container) =>
+  const labeled = containers.find((container) =>
     containerMatchesWorktree(container, worktree),
+  );
+  if (labeled) return labeled;
+  const projectContainers = await composeProjectContainers(worktree);
+  return projectContainers.find(
+    (container) =>
+      !completedSetupContainer(container) &&
+      containerMatchesWorktree(container, worktree),
   );
 }
 

@@ -449,7 +449,11 @@ function missingNodeModulesMount(
   dependencyVolumeKey: string,
 ) {
   const target = `${root.replace(/\/$/, "")}/node_modules`;
-  if (mountTargetExists(lines, target)) return [];
+  if (
+    mountTargetExists(lines, target) &&
+    !defaultNodeModulesMountExists(lines, target)
+  )
+    return [];
   return [`${nodeModulesVolumeName(dependencyVolumeKey)}:${target}`];
 }
 
@@ -502,6 +506,15 @@ function mountTargetExists(lines: string[], target: string) {
   return lines.some(
     (line) => line.includes(`:${target}`) || line.includes(`target: ${target}`),
   );
+}
+
+function defaultNodeModulesMountExists(lines: string[], target: string) {
+  return lines.some((line) => {
+    const short = shortVolumeParts(line);
+    if (short?.target === target)
+      return short.source === "blame_node_modules";
+    return false;
+  });
 }
 
 function runsNodePackageManager(lines: string[]) {
