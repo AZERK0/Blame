@@ -5,6 +5,7 @@
   "runtimeRoot": "/home/blame/.local/share/blame/runtime",
   "nerdctlVersion": "2.1.6",
   "lima": {
+    "version": "2.1.2",
     "bin": "lima/bin"
   }
 }

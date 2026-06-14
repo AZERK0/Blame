@@ -6,8 +6,11 @@ runtime_home="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 manifest_path="$runtime_home/manifest.json"
 runtime_version="$(sed -n 's/.*"runtimeVersion"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$manifest_path" | head -n 1)"
 runtime_version="${runtime_version:-1}"
+lima_version="$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$manifest_path" | tail -n 1)"
+lima_version="${BLAME_LIMA_VERSION:-${lima_version:-2.1.2}}"
 lima_state_home="${LIMA_HOME:-$HOME/Library/Application Support/Blame/runtime/lima}"
-lima_action="Package bundled Lima resources with Blame, then run Blame runtime setup again."
+lima_install_home="${BLAME_LIMA_INSTALL_DIR:-$HOME/Library/Application Support/Blame/runtime/tools/lima}"
+lima_action="Install Blame Lima resources, then run Blame runtime setup again."
 vm_action="Create or repair the BlameRuntime Lima VM from Blame runtime setup."
 repair_action="Repair BlameRuntime from Blame runtime setup."
 
@@ -58,6 +61,10 @@ limactl_path() {
     printf '%s' "$BLAME_LIMA_BUNDLE_DIR/bin/limactl"
     return
   fi
+  if [ -x "$lima_install_home/bin/limactl" ]; then
+    printf '%s' "$lima_install_home/bin/limactl"
+    return
+  fi
   if [ -x "$runtime_home/lima/bin/limactl" ]; then
     printf '%s' "$runtime_home/lima/bin/limactl"
   fi
@@ -75,6 +82,42 @@ with_lima_environment() {
 
 test_lima_available() {
   with_lima_environment --version >/dev/null 2>&1
+}
+
+lima_architecture() {
+  case "$(uname -m)" in
+    arm64 | aarch64) printf '%s' "arm64" ;;
+    x86_64 | amd64) printf '%s' "x86_64" ;;
+    *) uname -m ;;
+  esac
+}
+
+lima_download_url() {
+  arch="$(lima_architecture)"
+  printf '%s' "${BLAME_LIMA_DOWNLOAD_URL:-https://github.com/lima-vm/lima/releases/download/v$lima_version/lima-$lima_version-Darwin-$arch.tar.gz}"
+}
+
+install_lima_bundle() {
+  if test_lima_available; then
+    return
+  fi
+  temp_dir="$(mktemp -d)"
+  archive="$temp_dir/lima.tar.gz"
+  extract_dir="$temp_dir/extract"
+  mkdir -p "$extract_dir"
+  curl -fsSL "$(lima_download_url)" -o "$archive"
+  tar -C "$extract_dir" -xzf "$archive"
+  bundle_bin="$(find "$extract_dir" -type f -path "*/bin/limactl" -print | head -n 1)"
+  if [ -z "$bundle_bin" ]; then
+    rm -rf "$temp_dir"
+    printf '%s\n' "Downloaded Lima archive does not contain limactl." >&2
+    exit 1
+  fi
+  bundle_root="$(CDPATH= cd -- "$(dirname -- "$bundle_bin")/.." && pwd)"
+  mkdir -p "$lima_install_home"
+  cp -R "$bundle_root/." "$lima_install_home/"
+  chmod +x "$lima_install_home/bin/limactl" "$lima_install_home/bin/lima"
+  rm -rf "$temp_dir"
 }
 
 vm_json() {
@@ -174,6 +217,7 @@ assert_lima_available() {
 }
 
 ensure_vm() {
+  install_lima_bundle
   assert_lima_available
   mkdir -p "$lima_state_home"
   if ! test_vm_present; then
