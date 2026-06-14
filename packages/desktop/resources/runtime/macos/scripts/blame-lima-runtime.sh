@@ -10,9 +10,10 @@ lima_version="$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p
 lima_version="${BLAME_LIMA_VERSION:-${lima_version:-2.1.2}}"
 lima_state_home="${LIMA_HOME:-$HOME/Library/Application Support/Blame/runtime/lima}"
 lima_install_home="${BLAME_LIMA_INSTALL_DIR:-$HOME/Library/Application Support/Blame/runtime/tools/lima}"
-lima_action="Install Blame Lima resources, then run Blame runtime setup again."
+lima_action="Install or download Blame Lima resources, then run Blame runtime setup again."
 vm_action="Create or repair the BlameRuntime Lima VM from Blame runtime setup."
 repair_action="Repair BlameRuntime from Blame runtime setup."
+mount_action="Reset BlameRuntime from Blame runtime setup so macOS project folders are mounted."
 
 json_escape() {
   printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
@@ -137,7 +138,8 @@ test_vm_running() {
 }
 
 add_vm_checks() {
-  output="$(with_lima_environment shell "$vm_name" sudo -n sh -s <<'EOF' 2>/dev/null || true
+  output="$(with_lima_environment shell "$vm_name" sudo -n sh -s -- "$HOME" <<'EOF' 2>/dev/null || true
+host_home="$1"
 check() {
   name="$1"
   shift
@@ -147,6 +149,7 @@ check() {
     printf '%s\tmissing\n' "$name"
   fi
 }
+check host-home test -d "$host_home"
 check agent test -x /usr/local/bin/blame-runtime-agent
 check containerd sh -lc 'command -v containerd >/dev/null 2>&1 && (pgrep -x containerd >/dev/null 2>&1 || containerd --version >/dev/null 2>&1)'
 check nerdctl sh -lc 'command -v nerdctl >/dev/null 2>&1'
@@ -172,6 +175,8 @@ EOF
     fi
     if [ "$status" = "available" ]; then
       append_check "$(new_check "$name" "$status")"
+    elif [ "$name" = "host-home" ]; then
+      append_check "$(new_check "$name" "missing" "$mount_action")"
     else
       append_check "$(new_check "$name" "missing" "$repair_action")"
     fi

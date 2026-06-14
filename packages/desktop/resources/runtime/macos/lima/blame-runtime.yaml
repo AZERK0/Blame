@@ -7,7 +7,9 @@ images:
 cpus: 4
 memory: "6GiB"
 disk: "80GiB"
-mounts: []
+mounts:
+  - location: "~"
+    writable: true
 containerd:
   system: false
   user: false
