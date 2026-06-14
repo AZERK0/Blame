@@ -1,4 +1,5 @@
 import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
+import { tmpdir } from "node:os"
 import { basename, dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { execFile, spawn } from "node:child_process"
@@ -85,5 +86,6 @@ async function removeMacosExtendedAttributes(path) {
 function stagingParentDir() {
   const customDir = process.env.BLAME_DESKTOP_PACKAGE_DIR?.trim()
   if (customDir) return resolve(customDir)
+  if (process.platform === "darwin") return tmpdir()
   return rootDir
 }
