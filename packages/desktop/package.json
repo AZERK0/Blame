@@ -19,7 +19,6 @@
   },
   "dependencies": {
     "@blame/agent-runtime": "workspace:*",
-    "@blame/app": "workspace:*",
     "electron-context-menu": "4.1.2",
     "electron-log": "^5",
     "electron-store": "^10",
@@ -28,6 +27,7 @@
     "yaml": "^2.9.0"
   },
   "devDependencies": {
+    "@blame/app": "workspace:*",
     "@types/node": "^24.12.0",
     "electron": "41.2.1",
     "electron-builder": "^26.8.1",
