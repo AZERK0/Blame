@@ -122,8 +122,13 @@ def clean_env(values):
     env = os.environ.copy()
     for key, value in values.items():
         if isinstance(key, str) and isinstance(value, str):
+            if key == "PATH" and windows_path(value):
+                continue
             env[key] = value
     return env
+
+def windows_path(value):
+    return ";" in value or "\\" in value
 
 def command_env(params):
     return clean_env(params.get("env") or {})

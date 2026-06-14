@@ -1,8 +1,10 @@
-import { readFile } from "node:fs/promises";
-import { join, resolve } from "node:path";
-
 import type { ProjectInitializationDiagnostics } from "@blame/agent-runtime";
 import { createContainerRuntime } from "./container-runtime.ts";
+import {
+  joinWorkspacePath,
+  readFile as readWorkspaceFile,
+  resolveWorkspacePath,
+} from "./workspace-runtime.ts";
 
 const maxDiagnosticLength = 32_000;
 const containerRuntime = createContainerRuntime();
@@ -16,10 +18,10 @@ export async function collectProjectInitializationDiagnostics(
   input: CollectProjectInitializationDiagnosticsInput,
   env: NodeJS.ProcessEnv,
 ): Promise<ProjectInitializationDiagnostics> {
-  const worktree = resolve(input.worktree);
+  const worktree = resolveWorkspacePath(input.worktree);
   const composeArgs = [
     "-f",
-    join(worktree, ".blame", "initialization", "docker-compose.yml"),
+    joinWorkspacePath(worktree, ".blame", "initialization", "docker-compose.yml"),
     "--project-directory",
     worktree,
   ];
@@ -72,7 +74,7 @@ async function serviceLogOutputs(
 async function setupLog(worktree: string) {
   try {
     return truncate(
-      await readFile(join(worktree, ".blame", "logs", "setup.log"), "utf8"),
+      await readWorkspaceFile(joinWorkspacePath(worktree, ".blame", "logs", "setup.log")),
     );
   } catch (error) {
     return errorText(error);

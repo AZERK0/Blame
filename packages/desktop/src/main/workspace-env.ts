@@ -20,6 +20,7 @@ import {
   readDirectory as readRuntimeDirectory,
   readFile as readRuntimeFile,
   runtimeManagedPath,
+  run as runRuntime,
   writeFile as writeRuntimeFile,
 } from "./workspace-runtime.ts";
 import { runtimeAgentClient, runtimeAgentSupported } from "./runtime-agent.ts";
@@ -365,8 +366,60 @@ async function projectEnvFiles(root: string) {
       return await runtimeAgentClient().scanEnvFiles(root);
     } catch {}
   }
+  if (runtimeManagedPath(root)) {
+    try {
+      return await runtimeProjectEnvFiles(root);
+    } catch {}
+  }
   const files = { runtime: [] as string[], templates: [] as string[] };
   await collectProjectEnvFiles(root, files);
+  return files;
+}
+
+async function runtimeProjectEnvFiles(root: string) {
+  const { stdout } = await runRuntime("find", [
+    root,
+    "(",
+    "-name",
+    ".git",
+    "-o",
+    "-name",
+    ".blame",
+    "-o",
+    "-name",
+    "build",
+    "-o",
+    "-name",
+    "coverage",
+    "-o",
+    "-name",
+    "dist",
+    "-o",
+    "-name",
+    "node_modules",
+    "-o",
+    "-name",
+    "out",
+    ")",
+    "-prune",
+    "-o",
+    "(",
+    "-type",
+    "f",
+    "-o",
+    "-type",
+    "l",
+    ")",
+    "-name",
+    ".env*",
+    "-print",
+  ]);
+  const files = { runtime: [] as string[], templates: [] as string[] };
+  for (const path of stdout.split("\n").filter(Boolean)) {
+    const name = basename(path);
+    if (runtimeEnvFile(name)) files.runtime.push(path);
+    if (templateEnvFile(name)) files.templates.push(path);
+  }
   return files;
 }
 
