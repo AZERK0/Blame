@@ -25,6 +25,7 @@ type RuntimeOptions = {
   cwd?: string;
   env?: NodeJS.ProcessEnv;
   platform?: NodeJS.Platform;
+  user?: "blame" | "root";
 };
 
 type RuntimeCommandSpec = {
@@ -128,6 +129,7 @@ export function runtimeCommand(
       args,
       input.cwd,
       platform,
+      input.user,
     );
   if (platform === "win32")
     return runtimeWrappedCommand(
@@ -136,6 +138,7 @@ export function runtimeCommand(
       args,
       input.cwd,
       platform,
+      input.user,
     );
   return { args, command, cwd: input.cwd };
 }
@@ -154,7 +157,7 @@ export async function run(
         command,
         cwd: input.cwd ? runtimeCwdPath(input.cwd, platform) : undefined,
         env,
-        user: "blame",
+        user: input.user ?? "blame",
       });
     } catch (error) {
       if (runtimeAgentCommandFailed(error)) throw error;
@@ -186,7 +189,7 @@ export function spawnRuntime(
       command,
       cwd: input.cwd ? runtimeCwdPath(input.cwd, platform) : undefined,
       env,
-      user: "blame",
+      user: input.user ?? "blame",
     });
   }
   const spec = runtimeCommand(command, args, input);
@@ -222,7 +225,7 @@ export async function rm(path: string, input: RuntimeOptions = {}) {
     await rmHost(path, { force: true, recursive: true });
     return;
   }
-  await run("rm", ["-rf", path], input);
+  await run("rm", ["-rf", path], { ...input, user: "root" });
 }
 
 export async function readFile(path: string, input: RuntimeOptions = {}) {
@@ -304,15 +307,16 @@ function runtimeWrappedCommand(
   args: string[],
   cwd?: string,
   platform: NodeJS.Platform = process.platform,
+  user: RuntimeOptions["user"] = "blame",
 ): RuntimeCommandSpec {
-  if (!cwd) return { args: [command, ...args], command: wrapper };
+  const commandArgs = user === "root"
+    ? ["root", command, ...args]
+    : [command, ...args];
+  if (!cwd) return { args: commandArgs, command: wrapper };
   const runtimeCwd = runtimeCwdPath(cwd, platform);
+  const script = `cd ${shellQuote(runtimeCwd)} && exec ${shellQuote(command)} ${args.map(shellQuote).join(" ")}`;
   return {
-    args: [
-      "sh",
-      "-lc",
-      `cd ${shellQuote(runtimeCwd)} && exec ${shellQuote(command)} ${args.map(shellQuote).join(" ")}`,
-    ],
+    args: user === "root" ? ["root", "sh", "-lc", script] : ["sh", "-lc", script],
     command: wrapper,
   };
 }

@@ -102,6 +102,35 @@ test("runs runtime cwd commands inside WSL2 or Lima", () => {
   );
 });
 
+test("routes root runtime commands through WSL2 or Lima", () => {
+  assert.deepEqual(
+    runtimeCommand("rm", ["-rf", "/home/blame/project"], {
+      platform: "win32",
+      user: "root",
+    }),
+    {
+      args: ["root", "rm", "-rf", "/home/blame/project"],
+      command: "blame-wsl2-runtime",
+    },
+  );
+  assert.deepEqual(
+    runtimeCommand("rm", ["-rf", "/home/blame/project"], {
+      cwd: "/home/blame",
+      platform: "darwin",
+      user: "root",
+    }),
+    {
+      args: [
+        "root",
+        "sh",
+        "-lc",
+        "cd '/home/blame' && exec 'rm' '-rf' '/home/blame/project'",
+      ],
+      command: "blame-lima-runtime",
+    },
+  );
+});
+
 test("converts Windows host paths to WSL paths for runtime access", () => {
   assert.equal(
     runtimeAccessiblePath(

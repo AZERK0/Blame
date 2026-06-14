@@ -218,6 +218,15 @@ invoke_runtime_command() {
   fi
   user="blame"
   case "${1:-}" in
+    root)
+      shift
+      if [ "$#" -eq 0 ]; then
+        printf '%s\n' "Missing runtime command." >&2
+        exit 1
+      fi
+      with_lima_environment shell "$vm_name" sudo -n -- "$@"
+      exit $?
+      ;;
     agent)
       shift
       with_lima_environment shell "$vm_name" sudo -n -- blame-runtime-agent "$@"

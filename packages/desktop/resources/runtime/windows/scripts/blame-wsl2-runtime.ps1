@@ -322,6 +322,13 @@ function Invoke-RuntimeCommand {
     throw "BlameRuntime is not installed."
   }
   $user = "blame"
+  if ($CommandArgs[0] -eq "root") {
+    if ($CommandArgs.Count -lt 2) {
+      throw "Missing runtime command."
+    }
+    $CommandArgs = $CommandArgs[1..($CommandArgs.Count - 1)]
+    $user = "root"
+  }
   if ($CommandArgs[0] -eq "agent") {
     if ($CommandArgs.Count -gt 1) {
       $CommandArgs = @("blame-runtime-agent") + $CommandArgs[1..($CommandArgs.Count - 1)]
