@@ -1,5 +1,9 @@
+import { execFile } from "node:child_process"
+import { join } from "node:path"
+import { promisify } from "node:util"
 import type { Configuration } from "electron-builder"
 
+const execFileAsync = promisify(execFile)
 const downloadBaseUrl = text(process.env.BLAME_DOWNLOAD_BASE_URL)
 const homepage = text(process.env.BLAME_HOMEPAGE) ?? "https://blame.dev"
 const maintainerEmail = text(process.env.BLAME_MAINTAINER_EMAIL) ?? "hello@blame.dev"
@@ -18,7 +22,27 @@ function text(value: string | undefined) {
   return trimmed ? trimmed : undefined
 }
 
+type PackContext = {
+  appOutDir: string
+  electronPlatformName: string
+  packager: {
+    appInfo: {
+      productFilename: string
+    }
+  }
+}
+
+async function removeMacosExtendedAttributes(context: PackContext) {
+  if (context.electronPlatformName !== "darwin") return
+  const appPath = join(
+    context.appOutDir,
+    `${context.packager.appInfo.productFilename}.app`,
+  )
+  await execFileAsync("xattr", ["-cr", appPath])
+}
+
 const config: Configuration = {
+  afterPack: removeMacosExtendedAttributes,
   appId: "dev.blame.desktop",
   productName: "Blame",
   artifactName: "blame-${os}-${arch}.${ext}",
