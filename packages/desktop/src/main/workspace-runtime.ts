@@ -106,6 +106,15 @@ export function runtimeAccessiblePath(
   return runtimeCwdPath(path, platform);
 }
 
+export function runtimeHostPath(
+  path: string,
+  platform: NodeJS.Platform = process.platform,
+) {
+  if (platform !== "win32" || !runtimeManagedPath(path, platform)) return path;
+  const normalized = normalizedRuntimePath(path).replace(/^\/+/, "");
+  return `\\\\wsl.localhost\\BlameRuntime\\${normalized.replace(/\//g, "\\")}`;
+}
+
 export function runtimeCommand(
   command: string,
   args: string[],

@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   runtimeCommand,
   runtimeAccessiblePath,
+  runtimeHostPath,
   runtimeManagedPath,
   storyBranch,
   worktreePath,
@@ -115,6 +116,20 @@ test("converts Windows host paths to WSL paths for runtime access", () => {
       "win32",
     ),
     "/home/blame/.local/share/blame/runtime/worktrees/Test",
+  );
+});
+
+test("converts WSL runtime paths to host UNC paths for Windows agents", () => {
+  assert.equal(
+    runtimeHostPath(
+      "/home/blame/.local/share/blame/runtime/worktrees/Test/story",
+      "win32",
+    ),
+    String.raw`\\wsl.localhost\BlameRuntime\home\blame\.local\share\blame\runtime\worktrees\Test\story`,
+  );
+  assert.equal(
+    runtimeHostPath("/home/dev/project", "win32"),
+    "/home/dev/project",
   );
 });
 
