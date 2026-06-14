@@ -1,5 +1,4 @@
 import { execFile } from "node:child_process"
-import { join } from "node:path"
 import { promisify } from "node:util"
 import type { Configuration } from "electron-builder"
 
@@ -34,11 +33,8 @@ type PackContext = {
 
 async function removeMacosExtendedAttributes(context: PackContext) {
   if (context.electronPlatformName !== "darwin") return
-  const appPath = join(
-    context.appOutDir,
-    `${context.packager.appInfo.productFilename}.app`,
-  )
-  await execFileAsync("xattr", ["-cr", appPath])
+  await execFileAsync("xattr", ["-cr", context.appOutDir])
+  console.log(`Removed macOS extended attributes from ${context.appOutDir}`)
 }
 
 const config: Configuration = {
