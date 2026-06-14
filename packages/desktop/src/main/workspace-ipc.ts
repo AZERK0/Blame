@@ -1,19 +1,8 @@
 import { type ChildProcessWithoutNullStreams } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import { readFileSync, readdirSync } from "node:fs";
-import {
-  readdir,
-  readFile,
-  stat,
-} from "node:fs/promises";
-import {
-  dirname,
-  join,
-  posix,
-  relative,
-  resolve,
-  sep,
-} from "node:path";
+import { readdir, readFile, stat } from "node:fs/promises";
+import { dirname, join, posix, relative, resolve, sep } from "node:path";
 import { BrowserWindow, ipcMain } from "electron";
 import { parse as parseYaml } from "yaml";
 import { generateNewProjectWithAgent } from "./agent-ipc";
@@ -256,7 +245,8 @@ export function registerWorkspaceIpcHandlers() {
   );
   ipcMain.handle(
     "workspace:ensure-git-repository",
-    (_event, input: { root: string }) => ensureWorkspaceGitRepository(input.root),
+    (_event, input: { root: string }) =>
+      ensureWorkspaceGitRepository(input.root),
   );
   ipcMain.handle(
     "workspace:create-project",
@@ -282,7 +272,9 @@ export function registerWorkspaceIpcHandlers() {
     "workspace:check-host-dependencies",
     (_event, input: CheckHostDependenciesInput) =>
       checkHostDependencies({
-        env: setupEnvironment(input.worktree ? resolveRuntimePath(input.worktree) : ""),
+        env: setupEnvironment(
+          input.worktree ? resolveRuntimePath(input.worktree) : "",
+        ),
         setupScript: input.setupScript,
       }),
   );
@@ -326,7 +318,8 @@ export function registerWorkspaceIpcHandlers() {
   );
   ipcMain.handle(
     "workspace:list-project-services",
-    (_event, input: { worktree: string }) => listProjectServices(input.worktree),
+    (_event, input: { worktree: string }) =>
+      listProjectServices(input.worktree),
   );
   ipcMain.handle(
     "workspace:start-project-service-logs",
@@ -348,7 +341,10 @@ async function listDirectory(input: WorkspacePathInput) {
     .filter((entry) => !entry.name.startsWith(".git"))
     .map((entry) => ({
       name: entry.name,
-      path: toWorkspacePath(input.root, joinWorkspacePath(directory, entry.name)),
+      path: toWorkspacePath(
+        input.root,
+        joinWorkspacePath(directory, entry.name),
+      ),
       type: entry.isDirectory() ? "directory" : "file",
     }))
     .sort((left, right) =>
@@ -401,10 +397,7 @@ async function searchRuntimeFiles(root: string, query: string, limit: number) {
 
 async function gitDiff(root: string) {
   const cwd = resolveRuntimePath(root);
-  await ensureRuntimeGitSafeDirectory(cwd);
-  const { stdout } = await runRuntime("git", ["diff", "--no-ext-diff", "--"], {
-    cwd,
-  });
+  const { stdout } = await runRuntimeGit(cwd, ["diff", "--no-ext-diff", "--"]);
   return stdout;
 }
 
@@ -429,8 +422,8 @@ async function createWorktree(input: CreateWorktreeInput) {
   const branch = storyBranch(input.storyId, input.title);
   const worktree = worktreePath(input);
 
-  await ensureWorkspaceGitRepository(repositoryRoot);
   await ensureRuntimeGitSafeDirectory(repositoryRoot);
+  await ensureWorkspaceGitRepository(repositoryRoot);
   await mkdirRuntime(dirnameWorkspacePath(worktree));
 
   if (await worktreeRegistered(repositoryRoot, worktree)) {
@@ -444,17 +437,20 @@ async function createWorktree(input: CreateWorktreeInput) {
   }
 
   if (await branchExists(repositoryRoot, branch)) {
-    await runRuntime("git", ["worktree", "add", worktree, branch], {
-      cwd: repositoryRoot,
-    });
+    await runRuntimeGit(repositoryRoot, ["worktree", "add", worktree, branch]);
     await syncProjectEnvFiles(repositoryRoot, worktree);
     removedWorktrees.delete(worktree);
     return { worktree, branch };
   }
 
-  await runRuntime("git", ["worktree", "add", "-b", branch, worktree, "HEAD"], {
-    cwd: repositoryRoot,
-  });
+  await runRuntimeGit(repositoryRoot, [
+    "worktree",
+    "add",
+    "-b",
+    branch,
+    worktree,
+    "HEAD",
+  ]);
   await syncProjectEnvFiles(repositoryRoot, worktree);
   removedWorktrees.delete(worktree);
   return { worktree, branch };
@@ -478,8 +474,10 @@ async function runProjectSetup(input: RunProjectSetupInput) {
   const logPath = setupLogPath(worktree);
   await mkdirRuntime(dirnameWorkspacePath(logPath));
   await writeRuntimeFile(logPath, "");
-  const symlinkEnvMounts = await timedRecoveryStep(worktree, "env file scan", () =>
-    envHostFileMounts(worktree),
+  const symlinkEnvMounts = await timedRecoveryStep(
+    worktree,
+    "env file scan",
+    () => envHostFileMounts(worktree),
   );
 
   await timedRecoveryStep(worktree, "initialization files", async () => {
@@ -529,14 +527,8 @@ function startProjectSetupProcess(
 
 function setupScriptWithoutDockerRuntimeChecks(script: string) {
   return script
-    .replace(
-      /\n?if\s+!\s+command\s+-v\s+docker\b[\s\S]*?\nfi\s*/g,
-      "\n",
-    )
-    .replace(
-      /\n?if\s+!\s+docker\s+compose\s+version\b[\s\S]*?\nfi\s*/g,
-      "\n",
-    )
+    .replace(/\n?if\s+!\s+command\s+-v\s+docker\b[\s\S]*?\nfi\s*/g, "\n")
+    .replace(/\n?if\s+!\s+docker\s+compose\s+version\b[\s\S]*?\nfi\s*/g, "\n")
     .replace(/^\s*command\s+-v\s+docker\b.*$/gm, "")
     .replace(/^\s*docker\s+compose\s+version\b.*$/gm, "")
     .replace(/\n{3,}/g, "\n\n");
@@ -583,8 +575,10 @@ async function startProjectCompose(
   await timedRecoveryStep(worktree, "compose up", () =>
     runProjectComposeUp(worktree),
   );
-  const previewUrl = await timedRecoveryStep(worktree, "preview url resolve", () =>
-    waitForPreviewUrl(worktree),
+  const previewUrl = await timedRecoveryStep(
+    worktree,
+    "preview url resolve",
+    () => waitForPreviewUrl(worktree),
   );
   if (
     await timedRecoveryStep(worktree, "preview environment sync", () =>
@@ -601,7 +595,10 @@ async function startProjectCompose(
   return previewUrl;
 }
 
-async function syncPreviewRuntimeEnvironment(worktree: string, previewUrl: string) {
+async function syncPreviewRuntimeEnvironment(
+  worktree: string,
+  previewUrl: string,
+) {
   const origin = previewOrigin(previewUrl);
   if (!origin) return false;
   if (await materializedPreviewEnvFilesMatch(worktree, origin)) return false;
@@ -613,7 +610,10 @@ async function clearPreviewBuildCache(worktree: string) {
   await rmRuntime(joinWorkspacePath(worktree, ".next"));
 }
 
-async function restartPreviewService(worktree: string, clearBuildCache = false) {
+async function restartPreviewService(
+  worktree: string,
+  clearBuildCache = false,
+) {
   const container = await previewContainerForWorktree(worktree);
   if (!container?.Id) return;
   await containerRuntime.container(["stop", container.Id], {
@@ -635,8 +635,10 @@ async function runProjectComposeUp(worktree: string) {
   const config = await timedRecoveryStep(worktree, "compose config", () =>
     composeConfig(worktree, projectComposePath(worktree)),
   );
-  const setupServices = await timedRecoveryStep(worktree, "compose setup services", () =>
-    runSetupTaskServices(worktree, config),
+  const setupServices = await timedRecoveryStep(
+    worktree,
+    "compose setup services",
+    () => runSetupTaskServices(worktree, config),
   );
   const completedServices = await timedRecoveryStep(
     worktree,
@@ -671,7 +673,8 @@ async function runProjectComposeUp(worktree: string) {
 
 async function runSetupTaskServices(worktree: string, config: ComposeConfig) {
   const services = setupTaskServices(config);
-  for (const service of services) await runProjectComposeSetupService(worktree, service);
+  for (const service of services)
+    await runProjectComposeSetupService(worktree, service);
   return new Set(services);
 }
 
@@ -698,7 +701,10 @@ async function runProjectComposeService(worktree: string, service: string) {
   if (result.stderr) await appendRecoveryLog(worktree, result.stderr.trimEnd());
 }
 
-async function runProjectComposeSetupService(worktree: string, service: string) {
+async function runProjectComposeSetupService(
+  worktree: string,
+  service: string,
+) {
   const result = await containerRuntime.compose(
     [
       ...composeArgs(worktree),
@@ -790,9 +796,10 @@ function serviceDependsOnCompletedServices(service: ComposeService) {
   const dependsOn = service.depends_on;
   if (!dependsOn || Array.isArray(dependsOn)) return [];
   return Object.entries(dependsOn)
-    .filter(([, value]) =>
-      typeof value === "object" &&
-      value?.condition === "service_completed_successfully",
+    .filter(
+      ([, value]) =>
+        typeof value === "object" &&
+        value?.condition === "service_completed_successfully",
     )
     .map(([service]) => service);
 }
@@ -813,12 +820,7 @@ async function ensureGlobalPreviewVolumes(worktree: string) {
 }
 
 function composeArgs(worktree: string) {
-  return [
-    "-f",
-    projectComposePath(worktree),
-    "--project-directory",
-    worktree,
-  ];
+  return ["-f", projectComposePath(worktree), "--project-directory", worktree];
 }
 
 async function runComposeWithRetry(
@@ -904,6 +906,7 @@ async function stopProjectSetup(input: StopProjectSetupInput) {
 async function removeWorktree(input: RemoveWorktreeInput) {
   const repositoryRoot = resolveRuntimePath(input.repositoryRoot);
   const worktree = resolveRuntimePath(input.worktree);
+  await ensureRuntimeGitSafeDirectory(repositoryRoot);
   await assertGitRepository(repositoryRoot);
   const registered = await worktreeRegistered(repositoryRoot, worktree);
   if (!registered && !(await runtimePathExists(worktree))) return false;
@@ -1017,7 +1020,12 @@ async function recoverProjectPreview(
 }
 
 async function runExistingProjectSetup(worktree: string) {
-  const scriptPath = joinWorkspacePath(worktree, ".blame", "initialization", "setup.sh");
+  const scriptPath = joinWorkspacePath(
+    worktree,
+    ".blame",
+    "initialization",
+    "setup.sh",
+  );
   if (!(await runtimePathExists(scriptPath))) return;
   await appendRecoveryLog(worktree, "setup starting");
   await new Promise<void>((resolve, reject) => {
@@ -1183,7 +1191,9 @@ async function stopProjectServiceLogs(streamId: string) {
 }
 
 function serviceSort(left: string, right: string) {
-  return servicePriority(left) - servicePriority(right) || left.localeCompare(right);
+  return (
+    servicePriority(left) - servicePriority(right) || left.localeCompare(right)
+  );
 }
 
 function servicePriority(service: string) {
@@ -1206,13 +1216,7 @@ async function startProjectLogStream(worktree: string) {
 function startProjectLogProcess(worktree: string, stream: ProjectLogStream) {
   if (stream.stopped) return;
   const process = containerRuntime.spawnCompose(
-    [
-      ...composeArgs(worktree),
-      "logs",
-      "--tail",
-      "120",
-      "--follow",
-    ],
+    [...composeArgs(worktree), "logs", "--tail", "120", "--follow"],
     {
       cwd: worktree,
       env: setupEnvironment(worktree),
@@ -1233,9 +1237,10 @@ function startProjectLogProcess(worktree: string, stream: ProjectLogStream) {
     if (projectLogStreams.get(worktree) !== stream) return;
     stream.process = undefined;
     if (stream.stopped) projectLogStreams.delete(worktree);
-    else stream.retry = setTimeout(() => {
-      startProjectLogProcess(worktree, stream);
-    }, 1_000);
+    else
+      stream.retry = setTimeout(() => {
+        startProjectLogProcess(worktree, stream);
+      }, 1_000);
   });
 }
 
@@ -1306,7 +1311,11 @@ async function timedRecoveryStep<T>(
   }
 }
 
-async function appendTimingLog(worktree: string, label: string, duration: number) {
+async function appendTimingLog(
+  worktree: string,
+  label: string,
+  duration: number,
+) {
   try {
     await appendRecoveryLog(worktree, `timing ${label}: ${duration}ms`);
   } catch {}
@@ -1361,13 +1370,12 @@ function shouldSkip(name: string) {
 }
 
 async function gitRemoteUrls(cwd: string) {
-  await ensureRuntimeGitSafeDirectory(cwd);
   try {
-    const { stdout } = await runRuntime(
-      "git",
-      ["config", "--get-regexp", "^remote\\..*\\.url$"],
-      { cwd },
-    );
+    const { stdout } = await runRuntimeGit(cwd, [
+      "config",
+      "--get-regexp",
+      "^remote\\..*\\.url$",
+    ]);
     return stdout
       .split("\n")
       .map((line) => line.trim())
@@ -1382,8 +1390,7 @@ async function gitRemoteUrls(cwd: string) {
 }
 
 async function assertGitRepository(cwd: string) {
-  await ensureRuntimeGitSafeDirectory(cwd);
-  await runRuntime("git", ["rev-parse", "--show-toplevel"], { cwd });
+  await runRuntimeGit(cwd, ["rev-parse", "--show-toplevel"]);
 }
 
 async function ensureWorkspaceGitRepository(root: string) {
@@ -1406,9 +1413,12 @@ async function isWorkspaceGitRepository(root: string) {
 async function removeGitWorktree(repositoryRoot: string, worktree: string) {
   await ensureRuntimeGitSafeDirectory(repositoryRoot);
   try {
-    await runRuntime("git", ["worktree", "remove", "--force", worktree], {
-      cwd: repositoryRoot,
-    });
+    await runRuntimeGit(repositoryRoot, [
+      "worktree",
+      "remove",
+      "--force",
+      worktree,
+    ]);
   } catch (error) {
     if (!isDirectoryNotEmptyError(error)) throw error;
     if (await worktreeRegistered(repositoryRoot, worktree)) throw error;
@@ -1428,7 +1438,11 @@ function transientRuntimePullError(error: unknown) {
 }
 
 function commandErrorText(error: unknown) {
-  return [errorMessageText(error), commandText(error, "stdout"), commandText(error, "stderr")].join("\n");
+  return [
+    errorMessageText(error),
+    commandText(error, "stdout"),
+    commandText(error, "stderr"),
+  ].join("\n");
 }
 
 function errorMessageText(error: unknown) {
@@ -1442,13 +1456,13 @@ function commandText(error: unknown, key: "stdout" | "stderr") {
 }
 
 async function branchExists(cwd: string, branch: string) {
-  await ensureRuntimeGitSafeDirectory(cwd);
   try {
-    await runRuntime(
-      "git",
-      ["show-ref", "--verify", "--quiet", `refs/heads/${branch}`],
-      { cwd },
-    );
+    await runRuntimeGit(cwd, [
+      "show-ref",
+      "--verify",
+      "--quiet",
+      `refs/heads/${branch}`,
+    ]);
     return true;
   } catch {
     return false;
@@ -1456,20 +1470,35 @@ async function branchExists(cwd: string, branch: string) {
 }
 
 async function worktreeRegistered(cwd: string, worktree: string) {
-  await ensureRuntimeGitSafeDirectory(cwd);
-  const { stdout } = await runRuntime("git", ["worktree", "list", "--porcelain"], {
-    cwd,
-  });
-  return stdout
-    .split("\n")
-    .some((line) => worktreeLineMatches(line, worktree));
+  const { stdout } = await runRuntimeGit(cwd, [
+    "worktree",
+    "list",
+    "--porcelain",
+  ]);
+  return stdout.split("\n").some((line) => worktreeLineMatches(line, worktree));
 }
 
 async function ensureRuntimeGitSafeDirectory(cwd: string) {
   if (process.platform !== "win32") return;
-  const safeDirectory = runtimeAccessiblePath(cwd, "win32");
+  const safeDirectory = runtimeGitSafeDirectory(cwd);
   const stdout = await configuredSafeDirectories();
   if (safeDirectoryConfigured(stdout, safeDirectory)) return;
+  await addRuntimeGitSafeDirectory(cwd);
+}
+
+async function runRuntimeGit(cwd: string, args: string[]) {
+  await ensureRuntimeGitSafeDirectory(cwd);
+  try {
+    return await runRuntime("git", args, { cwd });
+  } catch (error) {
+    if (!dubiousOwnershipError(error)) throw error;
+    await addRuntimeGitSafeDirectory(cwd);
+    return runRuntime("git", args, { cwd });
+  }
+}
+
+async function addRuntimeGitSafeDirectory(cwd: string) {
+  const safeDirectory = runtimeGitSafeDirectory(cwd);
   await runRuntime("git", [
     "config",
     "--global",
@@ -1477,6 +1506,15 @@ async function ensureRuntimeGitSafeDirectory(cwd: string) {
     "safe.directory",
     safeDirectory,
   ]);
+}
+
+function runtimeGitSafeDirectory(cwd: string) {
+  if (process.platform === "win32") return runtimeAccessiblePath(cwd, "win32");
+  return cwd;
+}
+
+function dubiousOwnershipError(error: unknown) {
+  return commandErrorText(error).includes("detected dubious ownership");
 }
 
 async function configuredSafeDirectories() {
@@ -1502,7 +1540,10 @@ function safeDirectoryConfigured(stdout: string, safeDirectory: string) {
 
 function worktreeLineMatches(line: string, worktree: string) {
   if (!line.startsWith("worktree ")) return false;
-  return normalizedPath(line.slice("worktree ".length).trim()) === normalizedPath(worktree);
+  return (
+    normalizedPath(line.slice("worktree ".length).trim()) ===
+    normalizedPath(worktree)
+  );
 }
 
 function normalizedPath(path: string) {
@@ -1518,7 +1559,11 @@ function setupEnvironment(worktree: string) {
     BLAME_HOST_UID: hostUserId(),
     CI: "true",
     BLAME_DOCKER_COMPOSE_FILE: projectComposePath(worktree),
-    BLAME_INITIALIZATION_DIR: joinWorkspacePath(worktree, ".blame", "initialization"),
+    BLAME_INITIALIZATION_DIR: joinWorkspacePath(
+      worktree,
+      ".blame",
+      "initialization",
+    ),
     BLAME_PROJECT_ROOT: worktree,
     BLAME_WORKTREE_ROOT: worktree,
     COMPOSE_PROJECT_NAME: `blame_${createHash("sha1")
@@ -1611,7 +1656,12 @@ function hostGroupId() {
 }
 
 function projectComposePath(worktree: string) {
-  return joinWorkspacePath(worktree, ".blame", "initialization", "docker-compose.yml");
+  return joinWorkspacePath(
+    worktree,
+    ".blame",
+    "initialization",
+    "docker-compose.yml",
+  );
 }
 
 function setupLogPath(worktree: string) {
@@ -1635,13 +1685,7 @@ async function composeConfig(
   composePath: string,
 ): Promise<ComposeConfig> {
   const { stdout } = await containerRuntime.compose(
-    [
-      "-f",
-      composePath,
-      "--project-directory",
-      worktree,
-      "config",
-    ],
+    ["-f", composePath, "--project-directory", worktree, "config"],
     { cwd: worktree, env: setupEnvironment(worktree) },
   );
   const parsed = parseYaml(stdout) as unknown;
@@ -1743,7 +1787,8 @@ async function repairComposeFile(
     worktree,
     envMounts,
   );
-  if (repairedCompose !== compose) await writeRuntimeFile(composePath, repairedCompose);
+  if (repairedCompose !== compose)
+    await writeRuntimeFile(composePath, repairedCompose);
 }
 
 async function prepareProjectCompose(
@@ -1753,20 +1798,17 @@ async function prepareProjectCompose(
 ) {
   const allocatedCompose = await composeWithAllocatedHostPorts(
     composeWithNonMutatingNpmInstalls(
-      composeWithoutNumericSuUser(
-        dockerComposeForPreview(compose, worktree),
-      ),
+      composeWithoutNumericSuUser(dockerComposeForPreview(compose, worktree)),
     ),
   );
   const envMounts = await materializedPreviewEnvHostFileMounts(
     worktree,
     composePreviewOrigin(allocatedCompose),
   );
-  return dockerComposeWithHostFileMounts(
-    allocatedCompose,
-    worktree,
-    [...symlinkEnvMounts, ...envMounts],
-  );
+  return dockerComposeWithHostFileMounts(allocatedCompose, worktree, [
+    ...symlinkEnvMounts,
+    ...envMounts,
+  ]);
 }
 
 function composePreviewOrigin(compose: string) {
@@ -1777,7 +1819,10 @@ function composePreviewOrigin(compose: string) {
 async function appendComposeDiagnostics(worktree: string) {
   await appendRecoveryLog(worktree, "compose diagnostics");
   await appendComposeOutput(worktree, ["ps", "-a"]);
-  const target = await composePreviewTarget(worktree, projectComposePath(worktree));
+  const target = await composePreviewTarget(
+    worktree,
+    projectComposePath(worktree),
+  );
   await appendComposeOutput(
     worktree,
     target
@@ -1914,7 +1959,9 @@ async function assertPreviewContainerCanStillStart(worktree: string) {
   const health = container.State?.Health?.Status;
   if (health === "unhealthy" || failedContainerStatus(status)) {
     await appendComposeDiagnostics(worktree);
-    throw new Error(`Preview container stopped before responding (${health || status})`);
+    throw new Error(
+      `Preview container stopped before responding (${health || status})`,
+    );
   }
 }
 
@@ -1996,7 +2043,9 @@ function containerCanStillRun(container: RuntimeContainer) {
 
 async function previewContainerForWorktree(worktree: string) {
   const containers = await previewContainers(true, worktree);
-  return containers.find((container) => containerMatchesWorktree(container, worktree));
+  return containers.find((container) =>
+    containerMatchesWorktree(container, worktree),
+  );
 }
 
 function failedContainerStatus(status: string | undefined) {
@@ -2091,9 +2140,11 @@ function setupLogText(type: "stdout" | "stderr" | "exit", data: string) {
 
 async function gitRootCommits(cwd: string) {
   try {
-    const { stdout } = await runRuntime("git", ["rev-list", "--max-parents=0", "HEAD"], {
-      cwd,
-    });
+    const { stdout } = await runRuntimeGit(cwd, [
+      "rev-list",
+      "--max-parents=0",
+      "HEAD",
+    ]);
     return stdout
       .split("\n")
       .map((line) => line.trim())
