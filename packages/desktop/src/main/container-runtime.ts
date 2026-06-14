@@ -6,6 +6,7 @@ import {
 import { posix } from "node:path";
 import { promisify } from "node:util";
 import { runtimeToolScript, setupPath } from "./host-tool-path.ts";
+import { runtimeAgentClient, runtimeAgentSupported } from "./runtime-agent.ts";
 
 const execFileAsync = promisify(execFile);
 
@@ -142,9 +143,22 @@ async function runRuntimeCommand(
   args: string[],
   options: ContainerRuntimeExecOptions = {},
 ) {
+  const env = runtimeEnvironment(options.env, platform);
+  if (useRuntimeAgent(platform, env)) {
+    try {
+      return await runtimeAgentClient({ env, platform }).exec({
+        args: runtimeCommandArgs(command, args),
+        command: "nerdctl",
+        cwd: options.cwd ? runtimeCwdPath(options.cwd, platform) : undefined,
+        env,
+        user: "root",
+      });
+    } catch (error) {
+      if (runtimeAgentCommandFailed(error)) throw error;
+    }
+  }
   const spec = runtimeCommand(platform, command, args);
   const commandSpec = commandWithRuntimeCwd(platform, spec, options.cwd);
-  const env = runtimeEnvironment(options.env, platform);
   const executableSpec = executableRuntimeCommand(platform, commandSpec, env);
   const result = await execFileAsync(executableSpec.command, executableSpec.args, {
     cwd: commandSpec.cwd,
@@ -162,9 +176,18 @@ function spawnRuntimeCommand(
   args: string[],
   options: ContainerRuntimeExecOptions = {},
 ) {
+  const env = runtimeEnvironment(options.env, platform);
+  if (useRuntimeAgent(platform, env)) {
+    return runtimeAgentClient({ env, platform }).spawn({
+      args: runtimeCommandArgs(command, args),
+      command: "nerdctl",
+      cwd: options.cwd ? runtimeCwdPath(options.cwd, platform) : undefined,
+      env,
+      user: "root",
+    });
+  }
   const spec = runtimeCommand(platform, command, args);
   const commandSpec = commandWithRuntimeCwd(platform, spec, options.cwd);
-  const env = runtimeEnvironment(options.env, platform);
   const executableSpec = executableRuntimeCommand(platform, commandSpec, env);
   return spawn(executableSpec.command, executableSpec.args, {
     cwd: commandSpec.cwd,
@@ -212,6 +235,18 @@ function runtimeEnvironment(
     ...process.env,
     PATH: setupPath({ platform }),
   };
+}
+
+function useRuntimeAgent(platform: NodeJS.Platform, env: NodeJS.ProcessEnv) {
+  return runtimeAgentSupported(platform) && env.BLAME_DISABLE_RUNTIME_AGENT !== "1";
+}
+
+function runtimeAgentCommandFailed(error: unknown) {
+  return Boolean(
+    error &&
+      typeof error === "object" &&
+      (error as { runtimeAgentCommandFailed?: boolean }).runtimeAgentCommandFailed,
+  );
 }
 
 function runtimeCwdPath(path: string, platform: NodeJS.Platform) {

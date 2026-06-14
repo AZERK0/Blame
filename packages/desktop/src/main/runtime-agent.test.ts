@@ -1,0 +1,157 @@
+import assert from "node:assert/strict";
+import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
+import { EventEmitter } from "node:events";
+import { PassThrough, Writable } from "node:stream";
+import test from "node:test";
+import { RuntimeAgentClient } from "./runtime-agent.ts";
+
+type Request = {
+  id: number;
+  method: string;
+  params: Record<string, unknown>;
+};
+
+class FakeAgentProcess extends EventEmitter {
+  readonly stdout = new PassThrough();
+  readonly stderr = new PassThrough();
+  readonly stdin: Writable;
+  exitCode: number | null = null;
+  signalCode: NodeJS.Signals | null = null;
+  requests: Request[] = [];
+  private readonly handle: (request: Request, process: FakeAgentProcess) => void;
+
+  constructor(handle: (request: Request, process: FakeAgentProcess) => void) {
+    super();
+    this.handle = handle;
+    this.stdin = new Writable({
+      write: (chunk, _encoding, callback) => {
+        const lines = chunk.toString().split("\n").filter(Boolean);
+        for (const line of lines) {
+          const request = JSON.parse(line) as Request;
+          this.requests.push(request);
+          this.handle(request, this);
+        }
+        callback();
+      },
+    });
+  }
+
+  kill() {
+    this.exitCode = 1;
+    this.emit("exit", 1);
+    return true;
+  }
+}
+
+test("runtime agent client sends exec requests over one WSL process", async () => {
+  const processes: FakeAgentProcess[] = [];
+  const spawnProcess = fakeSpawn(processes, (request, process) => {
+    process.stdout.write(
+      `${JSON.stringify({
+        id: request.id,
+        ok: true,
+        result: { stderr: "", stdout: "done" },
+      })}\n`,
+    );
+  });
+  const client = new RuntimeAgentClient({
+    env: { PATH: "/bin" },
+    platform: "win32",
+    spawnProcess,
+  });
+
+  const result = await client.exec({ args: ["status"], command: "git" });
+
+  assert.equal(result.stdout, "done");
+  assert.equal(processes.length, 1);
+  assert.equal(processes[0].requests[0].method, "exec");
+  assert.equal(processes[0].requests[0].params.command, "git");
+});
+
+test("runtime agent client rejects failed exec responses with output", async () => {
+  const spawnProcess = fakeSpawn([], (request, process) => {
+    process.stdout.write(
+      `${JSON.stringify({
+        error: { message: "failed", stderr: "bad", stdout: "partial" },
+        id: request.id,
+        ok: false,
+      })}\n`,
+    );
+  });
+  const client = new RuntimeAgentClient({ platform: "darwin", spawnProcess });
+
+  await assert.rejects(
+    client.exec({ args: [], command: "false" }),
+    (error: unknown) => {
+      assert.equal((error as Error).message, "failed");
+      assert.equal((error as { stderr?: string }).stderr, "bad");
+      assert.equal((error as { stdout?: string }).stdout, "partial");
+      return true;
+    },
+  );
+});
+
+test("runtime agent client proxies spawn output and exit events", async () => {
+  const spawnProcess = fakeSpawn([], (request, process) => {
+    setImmediate(() => {
+      process.stdout.write(
+        `${JSON.stringify({
+          id: request.id,
+          ok: true,
+          result: { processId: "process-1" },
+        })}\n`,
+      );
+      process.stdout.write(
+        `${JSON.stringify({
+          data: "hello\n",
+          event: "spawn",
+          processId: "process-1",
+          type: "stdout",
+        })}\n`,
+      );
+      process.stdout.write(
+        `${JSON.stringify({
+          code: 0,
+          event: "spawn",
+          processId: "process-1",
+          type: "exit",
+        })}\n`,
+      );
+    });
+  });
+  const client = new RuntimeAgentClient({ platform: "win32", spawnProcess });
+
+  const child = client.spawn({ args: ["hello"], command: "echo" });
+  const outputPromise = onceData(child);
+  const exitPromise = onceExit(child);
+  const output = await outputPromise;
+  const exitCode = await exitPromise;
+
+  assert.equal(output, "hello\n");
+  assert.equal(exitCode, 0);
+});
+
+function fakeSpawn(
+  processes: FakeAgentProcess[],
+  handle: (request: Request, process: FakeAgentProcess) => void,
+) {
+  return ((command: string, args: string[]) => {
+    const process = new FakeAgentProcess(handle);
+    processes.push(process);
+    assert.equal(typeof command, "string");
+    assert.ok(Array.isArray(args));
+    return process as unknown as ChildProcessWithoutNullStreams;
+  }) as typeof spawn;
+}
+
+function onceData(child: ChildProcessWithoutNullStreams) {
+  return new Promise<string>((resolve) => {
+    child.stdout.once("data", (data: Buffer) => resolve(data.toString()));
+  });
+}
+
+function onceExit(child: ChildProcessWithoutNullStreams) {
+  return new Promise<number | null>((resolve) => {
+    child.once("exit", (code) => resolve(code));
+  });
+}

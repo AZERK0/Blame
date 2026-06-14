@@ -205,6 +205,11 @@ invoke_runtime_command() {
   fi
   user="blame"
   case "${1:-}" in
+    agent)
+      shift
+      with_lima_environment shell "$vm_name" sudo -n -- blame-runtime-agent "$@"
+      exit $?
+      ;;
     compose | container | info | inspect | network | volume)
       user="root"
       ;;

@@ -296,6 +296,14 @@ function Invoke-RuntimeCommand {
     throw "BlameRuntime is not installed."
   }
   $user = "blame"
+  if ($CommandArgs[0] -eq "agent") {
+    if ($CommandArgs.Count -gt 1) {
+      $CommandArgs = @("blame-runtime-agent") + $CommandArgs[1..($CommandArgs.Count - 1)]
+    } else {
+      $CommandArgs = @("blame-runtime-agent")
+    }
+    $user = "root"
+  }
   $usesContainerRuntime = Test-ContainerRuntimeCommand $CommandArgs
   if ($usesContainerRuntime) {
     $user = "root"

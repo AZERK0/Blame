@@ -22,6 +22,7 @@ import {
   runtimeManagedPath,
   writeFile as writeRuntimeFile,
 } from "./workspace-runtime.ts";
+import { runtimeAgentClient, runtimeAgentSupported } from "./runtime-agent.ts";
 
 const ignoredEnvDirectories = new Set([
   ".git",
@@ -359,6 +360,11 @@ export function crossDeviceLinkError(error: unknown) {
 }
 
 async function projectEnvFiles(root: string) {
+  if (runtimeManagedPath(root) && runtimeAgentSupported(process.platform)) {
+    try {
+      return await runtimeAgentClient().scanEnvFiles(root);
+    } catch {}
+  }
   const files = { runtime: [] as string[], templates: [] as string[] };
   await collectProjectEnvFiles(root, files);
   return files;

@@ -16,6 +16,7 @@ import { homedir } from "node:os";
 import { basename, dirname, join, posix, resolve, win32 } from "node:path";
 import { promisify } from "node:util";
 import { runtimeToolScript, setupPath } from "./host-tool-path.ts";
+import { runtimeAgentClient, runtimeAgentSupported } from "./runtime-agent.ts";
 
 const execFileAsync = promisify(execFile);
 const vmRuntimeWorktreeRoot = "/home/blame/.local/share/blame/runtime/worktrees";
@@ -135,9 +136,22 @@ export async function run(
   args: string[],
   input: RuntimeOptions = {},
 ) {
-  const spec = runtimeCommand(command, args, input);
   const platform = input.platform ?? process.platform;
   const env = runtimeEnvironment(input, platform);
+  if (useRuntimeAgent(platform, env)) {
+    try {
+      return await runtimeAgentClient({ env, platform }).exec({
+        args,
+        command,
+        cwd: input.cwd ? runtimeCwdPath(input.cwd, platform) : undefined,
+        env,
+        user: "blame",
+      });
+    } catch (error) {
+      if (runtimeAgentCommandFailed(error)) throw error;
+    }
+  }
+  const spec = runtimeCommand(command, args, input);
   const commandSpec = executableRuntimeCommand(spec, platform, env);
   const result = await execFileAsync(commandSpec.command, commandSpec.args, {
     cwd: spec.cwd,
@@ -155,9 +169,18 @@ export function spawnRuntime(
   args: string[],
   input: RuntimeOptions = {},
 ): ChildProcessWithoutNullStreams {
-  const spec = runtimeCommand(command, args, input);
   const platform = input.platform ?? process.platform;
   const env = runtimeEnvironment(input, platform);
+  if (useRuntimeAgent(platform, env)) {
+    return runtimeAgentClient({ env, platform }).spawn({
+      args,
+      command,
+      cwd: input.cwd ? runtimeCwdPath(input.cwd, platform) : undefined,
+      env,
+      user: "blame",
+    });
+  }
+  const spec = runtimeCommand(command, args, input);
   const commandSpec = executableRuntimeCommand(spec, platform, env);
   return spawn(commandSpec.command, commandSpec.args, {
     cwd: spec.cwd,
@@ -311,6 +334,18 @@ function runtimeEnvironment(
     ...process.env,
     PATH: setupPath({ platform }),
   };
+}
+
+function useRuntimeAgent(platform: NodeJS.Platform, env: NodeJS.ProcessEnv) {
+  return runtimeAgentSupported(platform) && env.BLAME_DISABLE_RUNTIME_AGENT !== "1";
+}
+
+function runtimeAgentCommandFailed(error: unknown) {
+  return Boolean(
+    error &&
+      typeof error === "object" &&
+      (error as { runtimeAgentCommandFailed?: boolean }).runtimeAgentCommandFailed,
+  );
 }
 
 function executableRuntimeCommand(
