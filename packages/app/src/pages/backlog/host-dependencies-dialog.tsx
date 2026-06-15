@@ -140,7 +140,7 @@ function dependencyRuntimeAction(
 ) {
   if (!managedRuntimePlatform(platform.platform)) return null
   if (issue.name === "blame-runtime") return blameRuntimeAction(issue, platform)
-  if (containerRuntimeDependency(issue.name)) return platform.workspace?.repairRuntime
+  if (runtimeRepairDependency(issue.name)) return platform.workspace?.repairRuntime
   return null
 }
 
@@ -164,6 +164,10 @@ function containerRuntimeDependency(name: HostDependencyIssue["name"]) {
   return ["containerd", "nerdctl", "nerdctl-compose"].includes(name)
 }
 
+function runtimeRepairDependency(name: HostDependencyIssue["name"]) {
+  return name === "cline-sdk" || containerRuntimeDependency(name)
+}
+
 function dependencyButtonLabel(
   issue: HostDependencyIssue,
   platform: ReturnType<typeof usePlatform>
@@ -179,6 +183,7 @@ function dependencyButtonLabel(
 function dependencyLabel(issue: HostDependencyIssue) {
   const labels: Record<HostDependencyIssue["name"], string> = {
     "blame-runtime": "Blame Runtime",
+    "cline-sdk": "Cline SDK",
     containerd: "containerd",
     corepack: "Corepack",
     git: "Git",
@@ -197,6 +202,7 @@ function dependencyLabel(issue: HostDependencyIssue) {
 function dependencyUrl(issue: HostDependencyIssue) {
   const urls: Record<HostDependencyIssue["name"], string> = {
     "blame-runtime": "https://blame.dev",
+    "cline-sdk": "https://blame.dev",
     containerd: "https://containerd.io/",
     corepack: "https://nodejs.org/en/download",
     git: "https://git-scm.com/downloads",

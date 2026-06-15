@@ -12,6 +12,7 @@ const minimumNodeMajorVersion = 22;
 export type HostDependencyName =
   | "git"
   | "blame-runtime"
+  | "cline-sdk"
   | "containerd"
   | "nerdctl"
   | "nerdctl-compose"
@@ -263,6 +264,8 @@ function hostDependencyMessage(
   status: HostDependencyStatus,
 ) {
   if (name === "blame-runtime") return "Blame Runtime is not available.";
+  if (name === "cline-sdk")
+    return "Cline SDK is not installed in Blame Runtime.";
   if (name === "containerd") return "containerd is not available.";
   if (name === "nerdctl-compose") return "nerdctl compose is not available.";
   if (name === "node" && status === "unsupported")
@@ -286,6 +289,8 @@ function macHostDependencyAction(
 ) {
   if (name === "git")
     return "Install Xcode Command Line Tools or run brew install git.";
+  if (name === "cline-sdk")
+    return "Repair Blame Lima Runtime from Blame runtime setup.";
   if (containerRuntimeDependency(name))
     return "Start Blame Lima Runtime and ensure containerd, nerdctl, and nerdctl compose are available.";
   if (name === "corepack")
@@ -310,6 +315,8 @@ function windowsHostDependencyAction(
 ) {
   if (name === "git")
     return "Install Git for Windows or run winget install Git.Git.";
+  if (name === "cline-sdk")
+    return "Repair Blame WSL2 Runtime from Blame runtime setup.";
   if (containerRuntimeDependency(name))
     return "Start Blame WSL2 Runtime and ensure containerd, nerdctl, and nerdctl compose are available.";
   if (name === "corepack")
@@ -333,6 +340,8 @@ function linuxHostDependencyAction(
   status: HostDependencyStatus,
 ) {
   if (name === "git") return "Install git with your system package manager.";
+  if (name === "cline-sdk")
+    return "Repair Blame Native Runtime from Blame runtime setup.";
   if (containerRuntimeDependency(name))
     return "Start Blame Native Runtime and ensure containerd, nerdctl, and nerdctl compose are available.";
   if (name === "corepack")
@@ -355,6 +364,7 @@ function linuxHostDependencyAction(
 function hostDependencyLabel(name: HostDependencyName) {
   const labels: Record<HostDependencyName, string> = {
     "blame-runtime": "Blame Runtime",
+    "cline-sdk": "Cline SDK",
     containerd: "containerd",
     corepack: "Corepack",
     git: "Git",

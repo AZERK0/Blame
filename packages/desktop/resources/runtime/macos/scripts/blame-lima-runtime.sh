@@ -6,6 +6,7 @@ runtime_home="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 manifest_path="$runtime_home/manifest.json"
 runtime_version="$(sed -n 's/.*"runtimeVersion"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$manifest_path" | head -n 1)"
 runtime_version="${runtime_version:-1}"
+cline_sdk_version="${BLAME_CLINE_SDK_VERSION:-0.0.46}"
 lima_version="$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$manifest_path" | tail -n 1)"
 lima_version="${BLAME_LIMA_VERSION:-${lima_version:-2.1.2}}"
 lima_state_home="${LIMA_HOME:-$HOME/Library/Application Support/Blame/runtime/lima}"
@@ -138,8 +139,9 @@ test_vm_running() {
 }
 
 add_vm_checks() {
-  output="$(with_lima_environment shell "$vm_name" sudo -n sh -s -- "$HOME" <<'EOF' 2>/dev/null || true
+  output="$(with_lima_environment shell "$vm_name" sudo -n sh -s -- "$HOME" "$cline_sdk_version" <<'EOF' 2>/dev/null || true
 host_home="$1"
+cline_sdk_version="$2"
 check() {
   name="$1"
   shift
@@ -149,16 +151,41 @@ check() {
     printf '%s\tmissing\n' "$name"
   fi
 }
+node_major_ok() {
+  node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= 22 ? 0 : 1)'
+}
+valid_cline_sdk_install() {
+  node_major_ok
+  global_node_root="$(npm root -g)"
+  node - "$global_node_root" "$cline_sdk_version" <<'NODE'
+const fs = require("fs");
+const path = require("path");
+const root = process.argv[2];
+const version = process.argv[3];
+const sdkPackage = path.join(root, "@cline/sdk/package.json");
+const coreRoots = [
+  path.join(root, "@cline/core"),
+  path.join(root, "@cline/sdk/node_modules/@cline/core"),
+];
+const coreRoot = coreRoots.find((candidate) => fs.existsSync(path.join(candidate, "package.json")));
+if (!fs.existsSync(sdkPackage) || !coreRoot) process.exit(1);
+const sdk = JSON.parse(fs.readFileSync(sdkPackage, "utf8"));
+const core = JSON.parse(fs.readFileSync(path.join(coreRoot, "package.json"), "utf8"));
+const hub = path.join(coreRoot, "dist/hub/index.js");
+process.exit(sdk.version === version && core.version === version && fs.existsSync(hub) ? 0 : 1);
+NODE
+}
 check host-home test -d "$host_home"
 check agent test -x /usr/local/bin/blame-runtime-agent
 check containerd sh -lc 'command -v containerd >/dev/null 2>&1 && (pgrep -x containerd >/dev/null 2>&1 || containerd --version >/dev/null 2>&1)'
 check nerdctl sh -lc 'command -v nerdctl >/dev/null 2>&1'
 check nerdctl-compose sh -lc 'nerdctl compose version >/dev/null 2>&1'
 check git sh -lc 'command -v git >/dev/null 2>&1'
+check cline-sdk valid_cline_sdk_install
 EOF
 )"
   if [ -z "$output" ]; then
-    for name in agent containerd nerdctl nerdctl-compose git; do
+    for name in agent containerd nerdctl nerdctl-compose git cline-sdk; do
       append_check "$(new_check "$name" "missing" "$repair_action")"
     done
     return

@@ -2,6 +2,7 @@ set -eu
 
 runtime_version="${1:-1}"
 runtime_root="/home/blame/.local/share/blame/runtime"
+cline_sdk_version="${BLAME_CLINE_SDK_VERSION:-0.0.46}"
 nerdctl_version="${BLAME_NERDCTL_VERSION:-2.1.6}"
 
 ensure_user() {
@@ -29,10 +30,36 @@ ensure_node() {
 }
 
 ensure_cline_sdk() {
-  if node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= 22 ? 0 : 1)' >/dev/null 2>&1 && npm root -g >/dev/null 2>&1 && [ -e "$(npm root -g)/@cline/core/dist/hub/index.js" ]; then
+  if node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= 22 ? 0 : 1)' >/dev/null 2>&1 && npm root -g >/dev/null 2>&1 && valid_cline_sdk_install; then
     return
   fi
-  npm install -g @cline/sdk@0.0.42
+  npm install -g "@cline/sdk@$cline_sdk_version" "@cline/core@$cline_sdk_version"
+  valid_cline_sdk_install
+}
+
+valid_cline_sdk_install() {
+  global_node_root="$(npm root -g)"
+  node -e '
+const fs = require("fs");
+const path = require("path");
+const root = process.argv[1];
+const version = process.argv[2];
+const readVersion = (name) => JSON.parse(fs.readFileSync(path.join(root, name, "package.json"), "utf8")).version;
+const coreRoots = [
+  path.join(root, "@cline/core"),
+  path.join(root, "@cline/sdk/node_modules/@cline/core"),
+];
+const coreRoot = coreRoots.find((candidate) => fs.existsSync(path.join(candidate, "package.json")));
+const hub = coreRoot ? path.join(coreRoot, "dist/hub/index.js") : "";
+process.exit(
+  readVersion("@cline/sdk") === version &&
+  coreRoot &&
+  JSON.parse(fs.readFileSync(path.join(coreRoot, "package.json"), "utf8")).version === version &&
+  fs.existsSync(hub)
+    ? 0
+    : 1
+);
+' "$global_node_root" "$cline_sdk_version" >/dev/null 2>&1
 }
 
 runtime_architecture() {
@@ -258,8 +285,13 @@ def npm_root():
     return subprocess.check_output(["npm", "root", "-g"], text=True).strip()
 
 def cline_hub_module_path():
-    path = os.path.join(npm_root(), "@cline", "core", "dist", "hub", "index.js")
-    if not os.path.exists(path):
+    root = npm_root()
+    candidates = [
+        os.path.join(root, "@cline", "core", "dist", "hub", "index.js"),
+        os.path.join(root, "@cline", "sdk", "node_modules", "@cline", "core", "dist", "hub", "index.js"),
+    ]
+    path = next((candidate for candidate in candidates if os.path.exists(candidate)), None)
+    if not path:
         raise RuntimeError("Cline SDK is not installed in BlameRuntime")
     return path
 

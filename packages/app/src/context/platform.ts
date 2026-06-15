@@ -175,6 +175,7 @@ export type HostDependencyIssue = {
   name:
     | "git"
     | "blame-runtime"
+    | "cline-sdk"
     | "containerd"
     | "nerdctl"
     | "nerdctl-compose"

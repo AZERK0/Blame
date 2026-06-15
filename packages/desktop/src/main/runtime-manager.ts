@@ -20,6 +20,7 @@ export type RuntimeState =
 
 export type RuntimeDependencyName =
   | "blame-runtime"
+  | "cline-sdk"
   | "containerd"
   | "git"
   | "nerdctl"

@@ -5,6 +5,7 @@ $RuntimeHome = Split-Path -Parent $PSScriptRoot
 $ManifestPath = Join-Path $RuntimeHome "manifest.json"
 $Manifest = Get-Content $ManifestPath -Raw | ConvertFrom-Json
 $RuntimeVersion = [string]$Manifest.runtimeVersion
+$ClineSdkVersion = "0.0.46"
 $WslRequiredAction = "Enable WSL2 in Windows, restart if prompted, then run Blame runtime setup again."
 $RootfsAction = "Blame could not download the BlameRuntime WSL2 rootfs. Check the internet connection, then run Blame runtime setup again."
 
@@ -126,15 +127,40 @@ check() {
     printf '%s\tmissing\n' "$name"
   fi
 }
+node_major_ok() {
+  node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= 22 ? 0 : 1)'
+}
+valid_cline_sdk_install() {
+  node_major_ok
+  global_node_root="$(npm root -g)"
+  node - "$global_node_root" "__CLINE_SDK_VERSION__" <<'NODE'
+const fs = require("fs");
+const path = require("path");
+const root = process.argv[2];
+const version = process.argv[3];
+const sdkPackage = path.join(root, "@cline/sdk/package.json");
+const coreRoots = [
+  path.join(root, "@cline/core"),
+  path.join(root, "@cline/sdk/node_modules/@cline/core"),
+];
+const coreRoot = coreRoots.find((candidate) => fs.existsSync(path.join(candidate, "package.json")));
+if (!fs.existsSync(sdkPackage) || !coreRoot) process.exit(1);
+const sdk = JSON.parse(fs.readFileSync(sdkPackage, "utf8"));
+const core = JSON.parse(fs.readFileSync(path.join(coreRoot, "package.json"), "utf8"));
+const hub = path.join(coreRoot, "dist/hub/index.js");
+process.exit(sdk.version === version && core.version === version && fs.existsSync(hub) ? 0 : 1);
+NODE
+}
 check agent test -x /usr/local/bin/blame-runtime-agent
 check containerd sh -lc 'command -v containerd >/dev/null 2>&1 && pgrep -x containerd >/dev/null 2>&1 && test -S /run/containerd/containerd.sock'
 check nerdctl sh -lc 'command -v nerdctl >/dev/null 2>&1'
 check nerdctl-compose sh -lc 'nerdctl compose version >/dev/null 2>&1'
 check git sh -lc 'command -v git >/dev/null 2>&1'
-'@
+check cline-sdk valid_cline_sdk_install
+'@ -replace "__CLINE_SDK_VERSION__", $ClineSdkVersion
   $result = Invoke-Distro $command
   if ($result.Code -ne 0) {
-    foreach ($name in @("agent", "containerd", "nerdctl", "nerdctl-compose", "git")) {
+    foreach ($name in @("agent", "containerd", "nerdctl", "nerdctl-compose", "git", "cline-sdk")) {
       $Checks.Add((New-Check $name "missing" "Repair BlameRuntime from Blame runtime setup."))
     }
     return
