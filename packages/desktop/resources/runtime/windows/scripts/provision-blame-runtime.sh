@@ -325,8 +325,10 @@ def run_cline_hub_ensure(params):
         return {**hub_result_cache, "action": "connected"}
     hub_process = None
     hub_result_cache = None
-    # Use WSL2 IP so Electron on Windows can connect (WSL2 loopback forwarding
-    # is unreliable in nested-virtualisation environments such as VMware).
+    # In VMware nested-virtualisation, the WSL2 localhost proxy (127.0.0.1)
+    # does not work. We must use the real WSL2 VM IP. The Hyper-V NAT has a
+    # cold-start delay of ~30 s for the first TCP connection; we pre-warm it
+    # with a Windows-side curl so Electron always gets a fast route.
     try:
         hub_host = subprocess.run(
             ["hostname", "-I"], capture_output=True, text=True
@@ -337,33 +339,67 @@ def run_cline_hub_ensure(params):
     script = f"""
 const hub = await import({json.dumps("file://" + module)});
 const result = await hub.ensureHubServer({{
-  host: "{hub_host}",
+  host: "0.0.0.0",
   port: 25463,
   runtimeHandlers: hub.createLocalHubScheduleRuntimeHandlers()
 }});
+const url = result.url ? result.url.replace(/^ws:\\/\\/[^/]+/, "ws://{hub_host}:25463") : result.url;
 process.stdout.write(JSON.stringify({{
   action: result.action,
   authToken: result.authToken,
   status: "ready",
-  url: result.url
+  url: url
 }}) + "\\n");
 """
+    log_path = "/var/log/blame-runtime/cline-hub.log"
+    log_file = None
+    try:
+        os.makedirs("/var/log/blame-runtime", exist_ok=True)
+        log_file = open(log_path, "w", encoding="utf-8")
+        log_file.write(f"Pre-flight: Starting Cline hub on 0.0.0.0:25463 url=ws://{hub_host}:25463 module={module}\n")
+        log_file.flush()
+    except Exception:
+        pass
     env = clean_env({}, target_user("blame"))
     proc = subprocess.Popen(
         ["node", "--input-type=module", "-e", script],
         env=env,
         stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
+        stderr=log_file if log_file is not None else subprocess.DEVNULL,
         text=True,
         preexec_fn=demote(target_user("blame")),
     )
-    line = read_line_with_timeout(proc.stdout, 30)
+    if log_file is not None:
+        log_file.close()
+    line = read_line_with_timeout(proc.stdout, 10)
     if not line:
-        proc.kill()
-        raise RuntimeError("Cline hub server startup timed out")
+        exit_code = proc.poll()
+        if exit_code is None:
+            proc.kill()
+            exit_code = proc.wait()
+        stderr_content = ""
+        try:
+            with open(log_path, "r", encoding="utf-8") as f:
+                stderr_content = f.read()
+        except Exception as e:
+            stderr_content = f"Failed to read log file: {e}"
+        raise RuntimeError(f"Cline hub server startup failed or timed out. Code: {exit_code}, Stderr: {stderr_content}")
     result = json.loads(line)
     hub_process = proc
     hub_result_cache = result
+    # Pre-warm the Windows→WSL2 TCP route. The Hyper-V NAT in VMware needs
+    # ~30 s to establish routing state on the first connection; subsequent
+    # connections are instant. We block here (up to 35 s) so that by the
+    # time we return to Electron the route is already warm.
+    try:
+        subprocess.run(
+            ["/mnt/c/Windows/System32/curl.exe",
+             "--silent", "--max-time", "35", "--connect-timeout", "35",
+             f"http://{hub_host}:25463/health"],
+            capture_output=True, timeout=40,
+        )
+    except Exception:
+        pass
     return result
 
 def run_cline_hub_status(params):

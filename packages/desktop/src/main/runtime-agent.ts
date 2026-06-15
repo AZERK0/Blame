@@ -124,7 +124,7 @@ export class RuntimeAgentClient {
   }
 
   async clineHubEnsure(): Promise<AgentClineHubResult> {
-    const result = await this.request("clineHubEnsure", {}, 30_000);
+    const result = await this.request("clineHubEnsure", {}, 90_000);
     return result as AgentClineHubResult;
   }
 
