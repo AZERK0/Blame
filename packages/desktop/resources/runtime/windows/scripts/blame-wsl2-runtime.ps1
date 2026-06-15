@@ -147,8 +147,8 @@ const coreRoot = coreRoots.find((candidate) => fs.existsSync(path.join(candidate
 if (!fs.existsSync(sdkPackage) || !coreRoot) process.exit(1);
 const sdk = JSON.parse(fs.readFileSync(sdkPackage, "utf8"));
 const core = JSON.parse(fs.readFileSync(path.join(coreRoot, "package.json"), "utf8"));
-const hub = path.join(coreRoot, "dist/hub/index.js");
-process.exit(sdk.version === version && core.version === version && fs.existsSync(hub) ? 0 : 1);
+const sdkEntry = path.join(root, "@cline/sdk/dist/index.js");
+process.exit(sdk.version === version && core.version === version && fs.existsSync(sdkEntry) ? 0 : 1);
 NODE
 }
 check agent test -x /usr/local/bin/blame-runtime-agent

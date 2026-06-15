@@ -50,12 +50,12 @@ const coreRoots = [
   path.join(root, "@cline/sdk/node_modules/@cline/core"),
 ];
 const coreRoot = coreRoots.find((candidate) => fs.existsSync(path.join(candidate, "package.json")));
-const hub = coreRoot ? path.join(coreRoot, "dist/hub/index.js") : "";
+const sdkEntry = path.join(root, "@cline/sdk/dist/index.js");
 process.exit(
   readVersion("@cline/sdk") === version &&
   coreRoot &&
   JSON.parse(fs.readFileSync(path.join(coreRoot, "package.json"), "utf8")).version === version &&
-  fs.existsSync(hub)
+  fs.existsSync(sdkEntry)
     ? 0
     : 1
 );
@@ -286,12 +286,10 @@ def npm_root():
 
 def cline_hub_module_path():
     root = npm_root()
-    candidates = [
-        os.path.join(root, "@cline", "core", "dist", "hub", "index.js"),
-        os.path.join(root, "@cline", "sdk", "node_modules", "@cline", "core", "dist", "hub", "index.js"),
-    ]
-    path = next((candidate for candidate in candidates if os.path.exists(candidate)), None)
+    path = os.path.join(root, "@cline", "sdk", "dist", "index.js")
     if not path:
+        raise RuntimeError("Cline SDK is not installed in BlameRuntime")
+    if not os.path.exists(path):
         raise RuntimeError("Cline SDK is not installed in BlameRuntime")
     return path
 
