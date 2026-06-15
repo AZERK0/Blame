@@ -98,7 +98,7 @@ export class RuntimeAgentClient {
 
   spawn(input: AgentSpawnInput) {
     const child = new AgentChildProcess((processId) => {
-      void this.kill(processId);
+      void this.kill(processId).catch(() => undefined);
     });
     void this.request("spawn", input)
       .then((result) => {
@@ -126,7 +126,7 @@ export class RuntimeAgentClient {
     const process = this.ensureProcess();
     const id = this.nextId;
     this.nextId += 1;
-    const request: AgentRequest = { id, method, params };
+    const request: AgentRequest = { id, method, params: agentRequestParams(params) };
     return new Promise<unknown>((resolve, reject) => {
       const timer = setTimeout(() => {
         this.pending.delete(id);
@@ -262,6 +262,34 @@ class AgentChildProcess extends EventEmitter {
     this.emit("exit", code, null);
     this.emit("close", code, null);
   }
+}
+
+function agentRequestParams(params: Record<string, unknown>) {
+  const env = params.env;
+  if (!env || typeof env !== "object") return params;
+  return {
+    ...params,
+    env: runtimeCommandEnvironment(env as NodeJS.ProcessEnv),
+  };
+}
+
+function runtimeCommandEnvironment(env: NodeJS.ProcessEnv) {
+  return Object.fromEntries(
+    Object.entries(env).filter(([key, value]) =>
+      typeof value === "string" && runtimeEnvironmentKey(key),
+    ),
+  );
+}
+
+function runtimeEnvironmentKey(key: string) {
+  return (
+    key === "CI" ||
+    key === "COMPOSE_PROJECT_NAME" ||
+    key === "CONTAINERD_NAMESPACE" ||
+    key === "PATH" ||
+    key === "npm_config_yes" ||
+    key.startsWith("BLAME_")
+  );
 }
 
 function agentCommand(platform: NodeJS.Platform, env?: NodeJS.ProcessEnv) {

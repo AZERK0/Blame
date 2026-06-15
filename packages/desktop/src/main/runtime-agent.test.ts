@@ -131,6 +131,66 @@ test("runtime agent client proxies spawn output and exit events", async () => {
   assert.equal(exitCode, 0);
 });
 
+test("runtime agent client sends a compact command environment", async () => {
+  const processes: FakeAgentProcess[] = [];
+  const spawnProcess = fakeSpawn(processes, (request, process) => {
+    process.stdout.write(
+      `${JSON.stringify({
+        id: request.id,
+        ok: true,
+        result: { stderr: "", stdout: "done" },
+      })}\n`,
+    );
+  });
+  const client = new RuntimeAgentClient({ platform: "darwin", spawnProcess });
+
+  await client.exec({
+    args: [],
+    command: "true",
+    env: {
+      BLAME_PROJECT_ROOT: "/worktree",
+      COMPOSE_PROJECT_NAME: "blame_test",
+      npm_config_user_agent: "x".repeat(100_000),
+      PATH: "/bin",
+    },
+  });
+
+  const env = processes[0].requests[0].params.env as Record<string, string>;
+  assert.equal(env.BLAME_PROJECT_ROOT, "/worktree");
+  assert.equal(env.COMPOSE_PROJECT_NAME, "blame_test");
+  assert.equal(env.PATH, "/bin");
+  assert.equal(env.npm_config_user_agent, undefined);
+});
+
+test("runtime agent client treats stream kill as best effort", async () => {
+  const spawnProcess = fakeSpawn([], (request, process) => {
+    if (request.method === "spawn") {
+      process.stdout.write(
+        `${JSON.stringify({
+          id: request.id,
+          ok: true,
+          result: { processId: "process-1" },
+        })}\n`,
+      );
+    }
+    if (request.method === "kill") {
+      process.stdout.write(
+        `${JSON.stringify({
+          error: { message: "kill failed" },
+          id: request.id,
+          ok: false,
+        })}\n`,
+      );
+    }
+  });
+  const client = new RuntimeAgentClient({ platform: "darwin", spawnProcess });
+
+  const child = client.spawn({ args: [], command: "sleep" });
+  await new Promise((resolve) => setImmediate(resolve));
+
+  assert.equal(child.kill(), true);
+});
+
 function fakeSpawn(
   processes: FakeAgentProcess[],
   handle: (request: Request, process: FakeAgentProcess) => void,
