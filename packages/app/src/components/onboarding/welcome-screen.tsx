@@ -63,6 +63,8 @@ function useProjectOpening() {
   const projects = useProjects()
   const [hostDependenciesDialog, setHostDependenciesDialog] =
     React.useState<OpenProjectHostDependenciesDialogState>()
+  const [checkingOpenDependencies, setCheckingOpenDependencies] =
+    React.useState(false)
 
   async function chooseProject() {
     const result = await platform.openDirectoryPickerDialog?.({
@@ -73,8 +75,29 @@ function useProjectOpening() {
   }
 
   async function openProject(path: string) {
+    if (!(await checkOpenHostDependencies(path))) return
     const project = await projects.openProject(path)
     await checkProjectHostDependencies(project)
+  }
+
+  async function checkOpenHostDependencies(path: string) {
+    if (!platform.workspace?.checkHostDependencies) return true
+    setCheckingOpenDependencies(true)
+    try {
+      const report = await platform.workspace.checkHostDependencies({
+        setupScript: "",
+      })
+      if (report.ok) return true
+      setHostDependenciesDialog({
+        checking: false,
+        pendingPath: path,
+        report,
+        setupScript: "",
+      })
+      return false
+    } finally {
+      setCheckingOpenDependencies(false)
+    }
   }
 
   async function checkProjectHostDependencies(project: Project) {
@@ -102,7 +125,11 @@ function useProjectOpening() {
       const report = await platform.workspace.checkHostDependencies({
         setupScript: current.setupScript,
       })
-      if (report.ok) return setHostDependenciesDialog(undefined)
+      if (report.ok) {
+        setHostDependenciesDialog(undefined)
+        if (current.pendingPath) await openProject(current.pendingPath)
+        return
+      }
       setHostDependenciesDialog({ ...current, checking: false, report })
     } catch {
       setHostDependenciesDialog({ ...current, checking: false })
@@ -121,12 +148,14 @@ function useProjectOpening() {
       open: Boolean(hostDependenciesDialog),
       report: hostDependenciesDialog?.report,
     },
+    opening: projects.opening || checkingOpenDependencies,
     openProject,
   }
 }
 
 type OpenProjectHostDependenciesDialogState = {
   checking: boolean
+  pendingPath?: string
   report: HostDependencyReport
   setupScript: string
 }
