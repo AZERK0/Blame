@@ -307,23 +307,64 @@ def run_node_json(script, timeout=15):
         raise CommandError({"stdout": process.stdout, "stderr": process.stderr, "code": process.returncode})
     return json.loads(process.stdout or "{}")
 
+hub_process = None
+hub_result_cache = None
+
+def read_line_with_timeout(pipe, timeout):
+    result = [None]
+    def read():
+        result[0] = pipe.readline()
+    t = threading.Thread(target=read, daemon=True)
+    t.start()
+    t.join(timeout)
+    return result[0]
+
 def run_cline_hub_ensure(params):
+    global hub_process, hub_result_cache
+    if hub_process is not None and hub_process.poll() is None and hub_result_cache is not None:
+        return {**hub_result_cache, "action": "connected"}
+    hub_process = None
+    hub_result_cache = None
+    # Use WSL2 IP so Electron on Windows can connect (WSL2 loopback forwarding
+    # is unreliable in nested-virtualisation environments such as VMware).
+    try:
+        hub_host = subprocess.run(
+            ["hostname", "-I"], capture_output=True, text=True
+        ).stdout.strip().split()[0]
+    except Exception:
+        hub_host = "127.0.0.1"
     module = cline_hub_module_path()
     script = f"""
 const hub = await import({json.dumps("file://" + module)});
 const result = await hub.ensureHubServer({{
-  host: "127.0.0.1",
+  host: "{hub_host}",
   port: 25463,
   runtimeHandlers: hub.createLocalHubScheduleRuntimeHandlers()
 }});
-console.log(JSON.stringify({{
+process.stdout.write(JSON.stringify({{
   action: result.action,
   authToken: result.authToken,
   status: "ready",
   url: result.url
-}}));
+}}) + "\\n");
 """
-    return run_node_json(script, 30)
+    env = clean_env({}, target_user("blame"))
+    proc = subprocess.Popen(
+        ["node", "--input-type=module", "-e", script],
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        text=True,
+        preexec_fn=demote(target_user("blame")),
+    )
+    line = read_line_with_timeout(proc.stdout, 30)
+    if not line:
+        proc.kill()
+        raise RuntimeError("Cline hub server startup timed out")
+    result = json.loads(line)
+    hub_process = proc
+    hub_result_cache = result
+    return result
 
 def run_cline_hub_status(params):
     try:
@@ -334,7 +375,12 @@ def run_cline_hub_status(params):
         return {"status": "unavailable", "error": str(error)}
 
 def run_cline_hub_stop(params):
-    return {"status": "unsupported"}
+    global hub_process, hub_result_cache
+    if hub_process is not None:
+        hub_process.terminate()
+        hub_process = None
+        hub_result_cache = None
+    return {"status": "stopped"}
 
 def run_status():
     checks = {
