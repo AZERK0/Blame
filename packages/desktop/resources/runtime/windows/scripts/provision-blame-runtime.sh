@@ -20,6 +20,21 @@ ensure_packages() {
   apt-get install -y ca-certificates curl dbus-user-session git gzip iptables python3 slirp4netns tar uidmap xz-utils
 }
 
+ensure_node() {
+  if command -v node >/dev/null 2>&1 && node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= 22 ? 0 : 1)' >/dev/null 2>&1; then
+    return
+  fi
+  curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+  apt-get install -y nodejs
+}
+
+ensure_cline_sdk() {
+  if node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= 22 ? 0 : 1)' >/dev/null 2>&1 && npm root -g >/dev/null 2>&1 && [ -e "$(npm root -g)/@cline/core/dist/hub/index.js" ]; then
+    return
+  fi
+  npm install -g @cline/sdk@0.0.42
+}
+
 runtime_architecture() {
   case "$(uname -m)" in
     x86_64 | amd64) printf '%s' "amd64" ;;
@@ -77,6 +92,7 @@ import subprocess
 import sys
 import threading
 import uuid
+import urllib.request
 
 processes = {}
 write_lock = threading.Lock()
@@ -238,6 +254,58 @@ def run_scan_env_files(params):
                 templates.append(path)
     return {"runtime": runtime, "templates": templates}
 
+def npm_root():
+    return subprocess.check_output(["npm", "root", "-g"], text=True).strip()
+
+def cline_hub_module_path():
+    path = os.path.join(npm_root(), "@cline", "core", "dist", "hub", "index.js")
+    if not os.path.exists(path):
+        raise RuntimeError("Cline SDK is not installed in BlameRuntime")
+    return path
+
+def run_node_json(script, timeout=15):
+    process = subprocess.run(
+        ["node", "--input-type=module", "-e", script],
+        env=clean_env({}, target_user("blame")),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        timeout=timeout,
+        preexec_fn=demote(target_user("blame")),
+    )
+    if process.returncode != 0:
+        raise CommandError({"stdout": process.stdout, "stderr": process.stderr, "code": process.returncode})
+    return json.loads(process.stdout or "{}")
+
+def run_cline_hub_ensure(params):
+    module = cline_hub_module_path()
+    script = f"""
+const hub = await import({json.dumps("file://" + module)});
+const result = await hub.ensureHubServer({{
+  host: "127.0.0.1",
+  port: 25463,
+  runtimeHandlers: hub.createLocalHubScheduleRuntimeHandlers()
+}});
+console.log(JSON.stringify({{
+  action: result.action,
+  authToken: result.authToken,
+  status: "ready",
+  url: result.url
+}}));
+"""
+    return run_node_json(script, 30)
+
+def run_cline_hub_status(params):
+    try:
+        with urllib.request.urlopen("http://127.0.0.1:25463/health", timeout=3) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+            return {"status": "ready", "url": payload.get("url")}
+    except Exception as error:
+        return {"status": "unavailable", "error": str(error)}
+
+def run_cline_hub_stop(params):
+    return {"status": "unsupported"}
+
 def run_status():
     checks = {
         "version": version(),
@@ -253,6 +321,9 @@ methods = {
     "spawn": run_spawn,
     "kill": run_kill,
     "scanEnvFiles": run_scan_env_files,
+    "clineHubEnsure": run_cline_hub_ensure,
+    "clineHubStatus": run_cline_hub_status,
+    "clineHubStop": run_cline_hub_stop,
     "status": lambda params: run_status(),
 }
 
@@ -299,6 +370,8 @@ write_marker() {
 
 ensure_user
 ensure_packages
+ensure_node
+ensure_cline_sdk
 ensure_nerdctl_full
 ensure_runtime_paths
 ensure_containerd_config

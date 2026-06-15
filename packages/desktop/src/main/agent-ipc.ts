@@ -2,7 +2,7 @@ import { BlameAgentRuntime, type AgentEvent } from "@blame/agent-runtime"
 import { BrowserWindow, ipcMain, shell } from "electron"
 import { createServer, type ServerResponse } from "node:http"
 import type { AddressInfo } from "node:net"
-import { runtimeHostPath } from "./workspace-runtime"
+import { localWorkspaceInput, resolveAgentWorkspaceInput } from "./cline-backend-resolver"
 
 const runtime = new BlameAgentRuntime({
   emit(event) {
@@ -23,9 +23,11 @@ export function registerAgentIpcHandlers() {
     runtime.providers.deleteCredential(connection, id)
   )
   ipcMain.handle("agent:providers:login-oauth", (_event, input) => runtime.providers.loginOAuth(input))
-  ipcMain.handle("agent:sessions:start", (_event, input) => runtime.sessions.start(agentWorkspaceInput(input)))
+  ipcMain.handle("agent:sessions:start", async (_event, input) =>
+    runtime.sessions.start(await agentWorkspaceInput(input))
+  )
   ipcMain.handle("agent:sessions:start-development", (_event, input) =>
-    runtime.sessions.startDevelopment(agentWorkspaceInput(input))
+    agentWorkspaceInput(input).then((resolved) => runtime.sessions.startDevelopment(resolved))
   )
   ipcMain.handle("agent:sessions:send", (_event, input) => runtime.sessions.send(input))
   ipcMain.handle("agent:sessions:send-development", (_event, input) => runtime.sessions.sendDevelopment(input))
@@ -37,27 +39,27 @@ export function registerAgentIpcHandlers() {
   ipcMain.handle("agent:sessions:unsubscribe", (_event, sessionId) => runtime.sessions.unsubscribe(sessionId))
   ipcMain.handle("agent:approvals:resolve", (_event, input) => runtime.approvals.resolve(input))
   ipcMain.handle("agent:initializations:run", (_event, input) =>
-    runtime.initializations.run(agentWorkspaceInput(input))
+    agentWorkspaceInput(input).then((resolved) => runtime.initializations.run(resolved))
   )
   ipcMain.handle("agent:initializations:repair", (_event, input) =>
-    runtime.initializations.repair(agentWorkspaceInput(input))
+    agentWorkspaceInput(input).then((resolved) => runtime.initializations.repair(resolved))
   )
   ipcMain.handle("agent:initializations:assess-impact", (_event, input) =>
-    runtime.initializations.assessImpact(agentWorkspaceInput(input))
+    agentWorkspaceInput(input).then((resolved) => runtime.initializations.assessImpact(resolved))
   )
   ipcMain.handle("agent:new-projects:generate", (_event, input) => runtime.newProjects.generate(input))
   ipcMain.handle("agent:prompt-optimizer:optimize-user-story", (_event, input) =>
-    runtime.promptOptimizer.optimizeUserStory(agentWorkspaceInput(input))
+    agentWorkspaceInput(input).then((resolved) => runtime.promptOptimizer.optimizeUserStory(resolved))
   )
   ipcMain.handle("agent:approve-and-merge", (_event, input) =>
-    runtime.approveAndMerge(agentWorkspaceInput(input))
+    agentWorkspaceInput(input).then((resolved) => runtime.approveAndMerge(resolved))
   )
 }
 
 export function generateNewProjectWithAgent(
   input: Parameters<typeof runtime.newProjects.generate>[0]
 ) {
-  return runtime.newProjects.generate(input)
+  return agentWorkspaceInput(input).then((resolved) => runtime.newProjects.generate(resolved))
 }
 
 export function shutdownAgentRuntime() {
@@ -74,19 +76,11 @@ function emitAgentEvent(event: AgentEvent) {
 }
 
 export function agentWorkspaceInput<T extends Record<string, unknown>>(input: T) {
-  return {
-    ...input,
-    ...(typeof input.cwd === "string" ? { cwd: runtimeHostPath(input.cwd) } : {}),
-    ...(typeof input.workspaceRoot === "string"
-      ? { workspaceRoot: runtimeHostPath(input.workspaceRoot) }
-      : {}),
-    ...(typeof input.worktree === "string"
-      ? { worktree: runtimeHostPath(input.worktree) }
-      : {}),
-    ...(typeof input.repositoryRoot === "string"
-      ? { repositoryRoot: runtimeHostPath(input.repositoryRoot) }
-      : {}),
-  }
+  return resolveAgentWorkspaceInput(input)
+}
+
+export function localAgentWorkspaceInput<T extends Record<string, unknown>>(input: T) {
+  return localWorkspaceInput(input)
 }
 
 const streamClients = new Map<string, Set<ServerResponse>>()

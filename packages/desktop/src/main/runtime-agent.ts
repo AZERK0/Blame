@@ -52,6 +52,13 @@ type AgentScanEnvFilesResult = {
   templates: string[];
 };
 
+export type AgentClineHubResult = {
+  action?: string;
+  authToken?: string;
+  status?: string;
+  url?: string;
+};
+
 type RuntimeAgentClientInput = {
   env?: NodeJS.ProcessEnv;
   platform?: NodeJS.Platform;
@@ -114,6 +121,21 @@ export class RuntimeAgentClient {
   async scanEnvFiles(root: string): Promise<AgentScanEnvFilesResult> {
     const result = await this.request("scanEnvFiles", { root });
     return result as AgentScanEnvFilesResult;
+  }
+
+  async clineHubEnsure(): Promise<AgentClineHubResult> {
+    const result = await this.request("clineHubEnsure", {}, 30_000);
+    return result as AgentClineHubResult;
+  }
+
+  async clineHubStatus(): Promise<AgentClineHubResult> {
+    const result = await this.request("clineHubStatus", {}, 10_000);
+    return result as AgentClineHubResult;
+  }
+
+  async clineHubStop(): Promise<AgentClineHubResult> {
+    const result = await this.request("clineHubStop", {}, 10_000);
+    return result as AgentClineHubResult;
   }
 
   async kill(processId: string) {

@@ -6,6 +6,7 @@ import { promisify } from "node:util";
 
 import type {
   ClineCore,
+  ClineCoreOptions,
   CoreSessionConfig,
   CoreSessionEvent,
   OAuthCredentials as ClineOAuthCredentials,
@@ -13,6 +14,7 @@ import type {
   OAuthPrompt,
   OAuthProviderInterface,
   OAuthServerListeningInfo,
+  RemoteOptions as ClineRemoteOptions,
   SessionUsageSummary,
 } from "@cline/sdk";
 import {
@@ -67,6 +69,7 @@ import type { ProjectInitializationScan } from "./project-initialization.js";
 import type { ProductionSessionContext } from "./production.js";
 import type {
   AgentApprovalRequest,
+  AgentBackendConfig,
   AgentEvent,
   AgentRuntimeEvents,
   AgentUsageSummary,
@@ -184,7 +187,8 @@ type RuntimeOptions = {
 };
 
 export class BlameAgentRuntime {
-  private cline?: Promise<ClineCore>;
+  private clines = new Map<string, Promise<ClineCore>>();
+  private sessionBackendKeys = new Map<string, string>();
   private telemetryHandle?: Promise<
     Awaited<ReturnType<typeof createProductionTelemetry>>
   >;
@@ -270,24 +274,37 @@ export class BlameAgentRuntime {
     await this.disposeTelemetry();
   }
 
-  private async core() {
-    if (!this.cline) {
-      this.cline = Promise.all([import("@cline/sdk"), this.telemetry()]).then(
-        ([module, telemetry]) =>
-          module.ClineCore.create({
-            clientName: "blame",
-            backendMode: "auto",
-            toolPolicies: toolPolicies(false),
-            capabilities: {
-              requestToolApproval: (request: ToolApprovalRequest) =>
-                this.requestApproval(request),
-            },
-            logger: productionLogger,
-            telemetry: telemetry?.telemetry,
-          }),
-      );
-    }
-    return this.cline;
+  private async core(backend?: AgentBackendConfig) {
+    const key = backendKey(backend);
+    const current = this.clines.get(key);
+    if (current) return current;
+    const next = this.createCore(backend);
+    this.clines.set(key, next);
+    return next;
+  }
+
+  private async createCore(backend?: AgentBackendConfig) {
+    const [module, telemetry] = await Promise.all([
+      import("@cline/sdk"),
+      this.telemetry(),
+    ]);
+    return module.ClineCore.create({
+      ...coreBackendOptions(backend),
+      clientName: "blame",
+      toolPolicies: toolPolicies(false),
+      capabilities: {
+        requestToolApproval: (request: ToolApprovalRequest) =>
+          this.requestApproval(request),
+      },
+      logger: productionLogger,
+      telemetry: telemetry?.telemetry,
+    });
+  }
+
+  private async sessionCore(sessionId: string) {
+    const key = this.sessionBackendKeys.get(sessionId);
+    const current = key ? this.clines.get(key) : undefined;
+    return current ?? this.core();
   }
 
   private telemetry() {
@@ -334,11 +351,12 @@ export class BlameAgentRuntime {
           expires: resolvedCredential.oauthCredentials?.expires,
         });
       }
-      const cline = await this.core();
+      const cline = await this.core(input.backend);
       await appendLog(startLogFile, "cline core ready");
       const sessionId = createBlameSessionId();
       const sessionLogFile = sessionLogPath(input.cwd, sessionId);
-      await this.subscribeSession(sessionId);
+      await this.subscribeSession(sessionId, input.backend);
+      this.sessionBackendKeys.set(sessionId, backendKey(input.backend));
       this.sessionLogFiles.set(sessionId, sessionLogFile);
       this.sessionContexts.set(sessionId, sessionContext(input, sessionId));
       if (input.autoApproveWriteTools) {
@@ -399,6 +417,7 @@ export class BlameAgentRuntime {
         return { sessionId };
       }
       const session = await cline.start(startInput);
+      this.sessionBackendKeys.set(session.sessionId, backendKey(input.backend));
       await appendLog(startLogFile, "session created", {
         durationMs: Date.now() - startedAt,
         sessionId: session.sessionId,
@@ -477,7 +496,7 @@ export class BlameAgentRuntime {
   }
 
   private async sendSession(input: SendSessionInput) {
-    const cline = await this.core();
+    const cline = await this.sessionCore(input.sessionId);
     return this.sendPrompt(cline, input.sessionId, input.prompt, {
       userFiles: input.userFiles,
       userImages: input.userImages,
@@ -496,24 +515,34 @@ export class BlameAgentRuntime {
   }
 
   private async abortSession(sessionId: string) {
-    const cline = await this.core();
+    const cline = await this.sessionCore(sessionId);
     await cline.abort(sessionId, "User aborted from Blame");
   }
 
   private async listSessions() {
+    const lists = await Promise.all(
+      Array.from(this.clines.values()).map(async (cline) => {
+        try {
+          return await (await cline).list(50);
+        } catch {
+          return [];
+        }
+      }),
+    );
+    if (lists.length) return lists.flat();
     const cline = await this.core();
     return cline.list(50);
   }
 
   private async readMessages(sessionId: string) {
-    const cline = await this.core();
+    const cline = await this.sessionCore(sessionId);
     return cline.readMessages(sessionId);
   }
 
   private async readUsage(
     sessionId: string,
   ): Promise<AgentUsageSummary | undefined> {
-    const cline = await this.core();
+    const cline = await this.sessionCore(sessionId);
     return normalizeAgentUsageSummary(await cline.getAccumulatedUsage(sessionId));
   }
 
@@ -523,7 +552,7 @@ export class BlameAgentRuntime {
     assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd");
     const resolvedCredential = await this.initializationCredential(input);
     const scan = await scanProjectForInitialization(input.workspaceRoot);
-    const cline = await this.core();
+    const cline = await this.core(input.backend);
     let correction = input.validationFeedback;
     for (let attempt = 1; attempt <= maxInitializationAttempts; attempt += 1) {
       const submitTool = projectInitializationSubmitTool();
@@ -579,7 +608,7 @@ export class BlameAgentRuntime {
     assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd");
     const credential = await this.runtimeCredential(input);
     const scan = await scanProjectForInitialization(input.workspaceRoot);
-    const cline = await this.core();
+    const cline = await this.core(input.backend);
     let correction: InitializationCorrection | undefined;
     for (let attempt = 1; attempt <= maxInitializationAttempts; attempt += 1) {
       const session = await this.startProjectInitializationRepairAttempt(
@@ -637,7 +666,7 @@ export class BlameAgentRuntime {
     const deterministic = deterministicInitializationImpact(diagnostics);
     if (deterministic) return { ...deterministic, diagnostics };
     const credential = await this.runtimeCredential(input);
-    const cline = await this.core();
+    const cline = await this.core(input.backend);
     const session = await cline.start({
       prompt: projectInitializationImpactPrompt(diagnostics),
       config: initializationImpactConfig(input, credential),
@@ -662,10 +691,11 @@ export class BlameAgentRuntime {
   ): Promise<NewProjectGenerationResult> {
     assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd");
     const credential = await this.runtimeCredential(input);
-    const cline = await this.core();
+    const cline = await this.core(input.backend);
     const sessionId = input.sessionId ?? createBlameSessionId();
     const sessionLogFile = sessionLogPath(input.cwd, sessionId);
-    await this.subscribeSession(sessionId);
+    await this.subscribeSession(sessionId, input.backend);
+    this.sessionBackendKeys.set(sessionId, backendKey(input.backend));
     this.sessionLogFiles.set(sessionId, sessionLogFile);
     this.sessionContexts.set(sessionId, {
       maxIterations: newProjectGenerationMaxIterations(),
@@ -721,7 +751,7 @@ export class BlameAgentRuntime {
     if (!prompt)
       throw new Error("Prompt optimizer requires a user story prompt.");
     const credential = await this.runtimeCredential(input);
-    const cline = await this.core();
+    const cline = await this.core(input.backend);
     return optimizeUserStoryPrompt({ ...input, prompt }, cline, credential);
   }
 
@@ -818,7 +848,7 @@ export class BlameAgentRuntime {
     try {
       const startedAt = Date.now();
       const credential = await this.runtimeCredential(input);
-      const cline = await this.core();
+      const cline = await this.core(input.backend);
       const session = await cline.start({
         prompt: await commitMessagePrompt(input),
         config: commitMessageConfig(input, credential),
@@ -914,7 +944,7 @@ export class BlameAgentRuntime {
   ) {
     const startedAt = Date.now();
     const credential = await this.runtimeCredential(input);
-    const cline = await this.core();
+    const cline = await this.core(input.backend);
     const session = await cline.start({
       prompt: await mergeConflictPrompt(input, targetBranch, attempt),
       config: mergeConflictConfig(input, credential),
@@ -930,9 +960,12 @@ export class BlameAgentRuntime {
     return resultFailureMessage(session.result);
   }
 
-  private async subscribeSession(sessionId: string) {
+  private async subscribeSession(
+    sessionId: string,
+    backend?: AgentBackendConfig,
+  ) {
     this.unsubscribeSession(sessionId);
-    const cline = await this.core();
+    const cline = await this.core(backend);
     const unsubscribe = await cline.subscribe(
       (payload: CoreSessionEvent) => {
         const event = this.withSessionIteration(
@@ -1007,20 +1040,22 @@ export class BlameAgentRuntime {
     this.sessionEventSignatures.delete(sessionId);
     this.sessionIterations.delete(sessionId);
     this.sessionUsageSignatures.delete(sessionId);
+    this.sessionBackendKeys.delete(sessionId);
     void this.logSession(sessionId, "session unsubscribed");
   }
 
   private async activeSessionIds() {
     const sessionIds = new Set(this.unsubscribers.keys());
-    if (!this.cline) return Array.from(sessionIds);
-
-    try {
-      const cline = await this.cline;
-      const sessions = (await cline.list(50)) as RuntimeSessionSummary[];
-      sessions.forEach((session) => {
-        if (session.sessionId) sessionIds.add(session.sessionId);
-      });
-    } catch {}
+    await Promise.all(
+      Array.from(this.clines.values()).map(async (core) => {
+        try {
+          const sessions = (await (await core).list(50)) as RuntimeSessionSummary[];
+          sessions.forEach((session) => {
+            if (session.sessionId) sessionIds.add(session.sessionId);
+          });
+        } catch {}
+      }),
+    );
 
     return Array.from(sessionIds);
   }
@@ -1231,10 +1266,12 @@ export class BlameAgentRuntime {
   }
 
   private async disposeCore() {
-    if (!this.cline) return;
-    const cline = await this.cline;
-    await cline.dispose("Shutting down");
-    this.cline = undefined;
+    const clines = Array.from(this.clines.values());
+    this.clines.clear();
+    this.sessionBackendKeys.clear();
+    await Promise.allSettled(
+      clines.map(async (cline) => (await cline).dispose("Shutting down")),
+    );
   }
 
   private async disposeTelemetry() {
@@ -1265,6 +1302,7 @@ export class BlameAgentRuntime {
       cwd: input.cwd,
       workspaceRoot: input.workspaceRoot,
       systemPrompt: await developmentSystemPrompt(input),
+      backend: input.backend,
     });
   }
 
@@ -1375,6 +1413,61 @@ function toolPolicies(autoApproveWriteTools: boolean) {
     ...readTools.map((name) => [name, { autoApprove: true }]),
     ...writeTools.map((name) => [name, { autoApprove: autoApproveWriteTools }]),
   ]);
+}
+
+function backendKey(backend?: AgentBackendConfig) {
+  if (backend?.key) return backend.key;
+  if (!backend) return "auto";
+  if (backend.mode === "remote") return `remote:${backend.endpoint ?? ""}`;
+  if (backend.mode === "hub") return `hub:${backend.endpoint ?? "default"}`;
+  return backend.mode;
+}
+
+function coreBackendOptions(backend?: AgentBackendConfig): ClineCoreOptions {
+  if (!backend) return { backendMode: "auto" };
+  if (backend.mode === "remote") {
+    if (!backend.endpoint)
+      throw new Error("Remote Cline backend endpoint is required.");
+    return {
+      backendMode: "remote",
+      remote: remoteConnectionOptions(backend, backend.endpoint),
+    };
+  }
+  if (backend.mode === "hub") {
+    return {
+      backendMode: "hub",
+      hub: hubConnectionOptions(backend, backend.endpoint),
+    };
+  }
+  return { backendMode: backend.mode };
+}
+
+function remoteConnectionOptions(
+  backend: AgentBackendConfig,
+  endpoint: string,
+): ClineRemoteOptions {
+  return {
+    endpoint,
+    ...(backend.authToken ? { authToken: backend.authToken } : {}),
+    ...(backend.cwd ? { cwd: backend.cwd } : {}),
+    ...(backend.workspaceRoot ? { workspaceRoot: backend.workspaceRoot } : {}),
+    clientType: "blame-desktop",
+    displayName: "Blame",
+  };
+}
+
+function hubConnectionOptions(
+  backend: AgentBackendConfig,
+  endpoint: string | undefined,
+) {
+  return {
+    ...(endpoint ? { endpoint } : {}),
+    ...(backend.authToken ? { authToken: backend.authToken } : {}),
+    ...(backend.cwd ? { cwd: backend.cwd } : {}),
+    ...(backend.workspaceRoot ? { workspaceRoot: backend.workspaceRoot } : {}),
+    clientType: "blame-desktop",
+    displayName: "Blame",
+  };
 }
 
 function initializationConfig(

@@ -162,6 +162,30 @@ test("runtime agent client sends a compact command environment", async () => {
   assert.equal(env.npm_config_user_agent, undefined);
 });
 
+test("runtime agent client requests Cline hub ensure", async () => {
+  const processes: FakeAgentProcess[] = [];
+  const spawnProcess = fakeSpawn(processes, (request, process) => {
+    process.stdout.write(
+      `${JSON.stringify({
+        id: request.id,
+        ok: true,
+        result: {
+          authToken: "secret",
+          status: "ready",
+          url: "ws://127.0.0.1:25463/hub",
+        },
+      })}\n`,
+    );
+  });
+  const client = new RuntimeAgentClient({ platform: "darwin", spawnProcess });
+
+  const result = await client.clineHubEnsure();
+
+  assert.equal(processes[0].requests[0].method, "clineHubEnsure");
+  assert.equal(result.url, "ws://127.0.0.1:25463/hub");
+  assert.equal(result.authToken, "secret");
+});
+
 test("runtime agent client treats stream kill as best effort", async () => {
   const spawnProcess = fakeSpawn([], (request, process) => {
     if (request.method === "spawn") {

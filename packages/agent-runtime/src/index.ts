@@ -2,6 +2,8 @@ export { BlameAgentRuntime } from "./cline-runtime.js"
 export type {
   AgentEvent,
   AgentApprovalRequest,
+  AgentBackendConfig,
+  AgentBackendMode,
   AgentRuntimeEvents,
   AgentSessionRecord,
   AgentUsageSummary,

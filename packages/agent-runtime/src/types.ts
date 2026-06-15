@@ -20,6 +20,16 @@ export type BlameModel = {
 
 export type ReasoningEffort = "low" | "medium" | "high" | "xhigh"
 export type AgentMode = "act" | "plan" | "yolo"
+export type AgentBackendMode = "auto" | "local" | "hub" | "remote"
+
+export type AgentBackendConfig = {
+  authToken?: string
+  cwd?: string
+  endpoint?: string
+  key?: string
+  mode: AgentBackendMode
+  workspaceRoot?: string
+}
 
 export type BlameProvider = {
   id: string
@@ -104,6 +114,7 @@ export type StartSessionInput = {
   workspaceRoot: string
   systemPrompt?: string
   credentialLabel?: string
+  backend?: AgentBackendConfig
 }
 
 export type CodeSelectionAttachment = {
@@ -140,6 +151,7 @@ export type StartDevelopmentSessionInput = {
   cwd: string
   workspaceRoot: string
   codePractices?: ProjectCodePracticePreference[]
+  backend?: AgentBackendConfig
 }
 
 export type ApproveAndMergeInput = {
@@ -154,6 +166,7 @@ export type ApproveAndMergeInput = {
   title: string
   summary: string
   codePractices?: ProjectCodePracticePreference[]
+  backend?: AgentBackendConfig
 }
 
 export type ApproveAndMergeResult = {
@@ -292,6 +305,7 @@ export type InitializeProjectInput = {
     validationError: string
     previousResult: string
   }
+  backend?: AgentBackendConfig
 }
 
 export type InitializeProjectResult = {
@@ -351,6 +365,7 @@ export type AssessProjectInitializationImpactInput = {
   setupScript: string
   dockerCompose: string
   runConfigurations: ProjectRunConfiguration[]
+  backend?: AgentBackendConfig
 }
 
 export type AssessProjectInitializationImpactResult = {
@@ -376,6 +391,7 @@ export type RepairProjectInitializationInput = {
   diagnostics:
     | ProjectInitializationDiagnostics
     | ProjectInitializationImpactDiagnostics
+  backend?: AgentBackendConfig
 }
 
 export type RepairProjectInitializationResult = {
@@ -412,6 +428,7 @@ export type StartNewProjectGenerationInput = {
   workspaceRoot: string
   projectName: string
   sessionId?: string
+  backend?: AgentBackendConfig
 }
 
 export type NewProjectGenerationResult = {
@@ -429,6 +446,7 @@ export type OptimizeUserStoryPromptInput = {
   reasoningEffort?: ReasoningEffort
   credentialLabel?: string
   title?: string
+  backend?: AgentBackendConfig
 }
 
 export type OptimizeUserStoryPromptResult = {

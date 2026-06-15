@@ -20,6 +20,7 @@ import { runtimeAgentClient, runtimeAgentSupported } from "./runtime-agent.ts";
 
 const execFileAsync = promisify(execFile);
 const vmRuntimeWorktreeRoot = "/home/blame/.local/share/blame/runtime/worktrees";
+const macosRuntimeWorktreeSegment = "/Library/Application Support/Blame/runtime/worktrees";
 
 type RuntimeOptions = {
   cwd?: string;
@@ -78,6 +79,7 @@ export function runtimeManagedPath(
   platform: NodeJS.Platform = process.platform,
 ) {
   if (platform !== "darwin" && platform !== "win32") return false;
+  if (platform === "darwin") return macosRuntimeManagedPath(path);
   return normalizedRuntimePath(path) === vmRuntimeWorktreeRoot
     || normalizedRuntimePath(path).startsWith(`${vmRuntimeWorktreeRoot}/`);
 }
@@ -415,7 +417,8 @@ function platformWorktreeRoot(
   platform: NodeJS.Platform = process.platform,
   env: NodeJS.ProcessEnv = process.env,
 ) {
-  if (platform === "darwin" || platform === "win32") return vmRuntimeWorktreeRoot;
+  if (platform === "win32") return vmRuntimeWorktreeRoot;
+  if (platform === "darwin") return macosHostWorktreeRoot(env);
   const home = env.HOME || homedir() || "/home/blame";
   return posix.join(
     home.replace(/\\/g, "/"),
@@ -427,11 +430,35 @@ function platformWorktreeRoot(
   );
 }
 
+function macosHostWorktreeRoot(env: NodeJS.ProcessEnv = process.env) {
+  const home = env.HOME || homedir() || "/Users/blame";
+  return posix.join(
+    home.replace(/\\/g, "/"),
+    "Library",
+    "Application Support",
+    "Blame",
+    "runtime",
+    "worktrees",
+  );
+}
+
+function macosRuntimeManagedPath(path: string) {
+  const normalized = normalizedRuntimePath(path);
+  return (
+    normalized === vmRuntimeWorktreeRoot ||
+    normalized.startsWith(`${vmRuntimeWorktreeRoot}/`) ||
+    normalized.endsWith(macosRuntimeWorktreeSegment) ||
+    normalized.includes(`${macosRuntimeWorktreeSegment}/`)
+  );
+}
+
 function runtimePathLike(path: string) {
   const normalized = normalizedRuntimePath(path);
   return (
     normalized === vmRuntimeWorktreeRoot ||
     normalized.startsWith(`${vmRuntimeWorktreeRoot}/`) ||
+    normalized.endsWith(macosRuntimeWorktreeSegment) ||
+    normalized.includes(`${macosRuntimeWorktreeSegment}/`) ||
     normalized.includes("/.local/share/blame/runtime/worktrees/")
   );
 }

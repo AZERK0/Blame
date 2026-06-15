@@ -16,6 +16,10 @@ test("uses the shared runtime worktree root", () => {
     "/home/blame/.local/share/blame/runtime/worktrees",
   );
   assert.equal(
+    worktreeRoot("darwin", { HOME: "/Users/dev" }),
+    "/Users/dev/Library/Application Support/Blame/runtime/worktrees",
+  );
+  assert.equal(
     worktreeRoot("linux", { HOME: "/home/dev" }),
     "/home/dev/.local/share/blame/runtime/worktrees",
   );
@@ -37,12 +41,13 @@ test("builds stable worktree paths for every desktop platform", () => {
   );
   assert.equal(
     worktreePath({
+      env: { HOME: "/Users/blame" },
       platform: "darwin",
       repositoryRoot: "/Users/blame/Blame",
       storyId: 42,
       title: "Add login",
     }),
-    expectedRuntime,
+    "/Users/blame/Library/Application Support/Blame/runtime/worktrees/Blame/story-42-add-login",
   );
   assert.equal(
     worktreePath({
@@ -162,10 +167,25 @@ test("converts WSL runtime paths to host UNC paths for Windows agents", () => {
   );
 });
 
+test("keeps macOS managed worktree paths accessible to local agents", () => {
+  const path =
+    "/Users/dev/Library/Application Support/Blame/runtime/worktrees/Test/story";
+
+  assert.equal(runtimeHostPath(path, "darwin"), path);
+  assert.equal(runtimeAccessiblePath(path, "darwin"), path);
+});
+
 test("detects runtime-managed paths only on Windows and macOS", () => {
   const path = "/home/blame/.local/share/blame/runtime/worktrees/repo/story";
 
   assert.equal(runtimeManagedPath(path, "linux"), false);
   assert.equal(runtimeManagedPath(path, "darwin"), true);
   assert.equal(runtimeManagedPath(path, "win32"), true);
+  assert.equal(
+    runtimeManagedPath(
+      "/Users/dev/Library/Application Support/Blame/runtime/worktrees/repo/story",
+      "darwin",
+    ),
+    true,
+  );
 });
