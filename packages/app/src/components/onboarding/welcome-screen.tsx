@@ -18,14 +18,20 @@ import { useProjects } from "@/context/projects"
 import { createCloudApi } from "@/lib/cloud-api"
 import type { Project } from "@/lib/projects"
 import { HostDependenciesDialog } from "@/pages/backlog/host-dependencies-dialog"
+import { SettingsDialog, SettingsDialogButton } from "@/pages/settings/page"
 
 export function WelcomeScreen() {
   const projectOpening = useProjectOpening()
   const [newProjectOpen, setNewProjectOpen] = React.useState(false)
+  const [settingsOpen, setSettingsOpen] = React.useState(false)
 
   return (
     <>
-      <main className="flex min-h-screen items-center justify-center bg-background px-6 py-12 text-foreground">
+      <main className="relative flex min-h-screen items-center justify-center bg-background px-6 py-12 text-foreground">
+        <SettingsDialogButton
+          className="absolute top-4 right-4"
+          onClick={() => setSettingsOpen(true)}
+        />
         <section className="grid w-full max-w-3xl gap-7">
           <WelcomeHeader />
           <WelcomeActions
@@ -46,6 +52,7 @@ export function WelcomeScreen() {
         onOpenChange={setNewProjectOpen}
       />
       <HostDependenciesDialog {...projectOpening.hostDependenciesDialog} />
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
     </>
   )
 }
@@ -167,7 +174,6 @@ function WelcomeActions({
         onClick={onNewProject}
       />
       <WelcomeAction
-        active
         disabled={opening}
         icon={
           opening ? (
@@ -191,14 +197,12 @@ function WelcomeActions({
 }
 
 function WelcomeAction({
-  active,
   description,
   disabled,
   icon,
   label,
   onClick,
 }: {
-  active?: boolean
   description: string
   disabled?: boolean
   icon: React.ReactNode

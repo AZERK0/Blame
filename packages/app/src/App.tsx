@@ -6,7 +6,9 @@ import { QuickChatPage } from "@/components/chat/quick-chat-page"
 import { ConnectScreen } from "@/components/onboarding/connect-screen"
 import { AiPreferencesSetupScreen } from "@/components/onboarding/ai-preferences-setup-screen"
 import {
+  navigate,
   navigationPathname,
+  navigationPreviousPathname,
   subscribeToNavigation,
 } from "@/components/navigation/navigation"
 import { LoadingScreen } from "@/components/onboarding/loading-screen"
@@ -18,7 +20,9 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { useProjects } from "@/context/projects"
 import { AppLayout } from "@/layouts/app-layout"
-import { SettingsPage } from "@/pages/settings/page"
+import { SettingsDialog } from "@/pages/settings/page"
+
+const settingsPath = "/settings"
 
 const routes = [
   { path: "/backlog", title: "Backlog", element: <BacklogPage /> },
@@ -40,11 +44,6 @@ const routes = [
     path: "/word-assistant",
     title: "Word Assistant",
     element: <RoutePage title="Word Assistant" />,
-  },
-  {
-    path: "/settings",
-    title: "Settings",
-    element: <SettingsPage />,
   },
   { path: "/help", title: "Get Help", element: <RoutePage title="Get Help" /> },
   { path: "/search", title: "Search", element: <RoutePage title="Search" /> },
@@ -75,7 +74,19 @@ export function App() {
     navigationPathname,
     () => "/backlog"
   )
+  const previousPathname = React.useSyncExternalStore(
+    subscribeToNavigation,
+    navigationPreviousPathname,
+    () => "/backlog"
+  )
   const route = resolveRoute(pathname)
+  const settingsOpen = pathname === settingsPath
+  const previousRoute = resolvePreviousRoute(previousPathname)
+  const activeRoute = settingsOpen ? previousRoute : route
+
+  function closeSettings(open: boolean) {
+    if (!open) navigate(activeRoute.path)
+  }
 
   if (auth.status === "loading") return <LoadingScreen />
   if (auth.status === "unauthenticated") return <ConnectScreen />
@@ -93,12 +104,18 @@ export function App() {
     <TooltipProvider>
       <ProjectInitializationRunner />
       <UpdateStartupNotifier />
-      <AppLayout pathname={route.path} title={route.title}>
-        {route.element}
+      <AppLayout pathname={pathname} title={activeRoute.title}>
+        {activeRoute.element}
       </AppLayout>
+      <SettingsDialog open={settingsOpen} onOpenChange={closeSettings} />
       <Toaster />
     </TooltipProvider>
   )
+}
+
+function resolvePreviousRoute(pathname: string) {
+  if (pathname === settingsPath) return routes[0]
+  return resolveRoute(pathname)
 }
 
 export default App

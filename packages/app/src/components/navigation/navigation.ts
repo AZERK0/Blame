@@ -1,12 +1,17 @@
 const navigationEventName = "app:navigation"
 
 let currentPathname = initialPathname()
+let previousPathname = currentPathname
 
 export function navigate(pathname: string) {
-  currentPathname = normalizedPathname(pathname)
+  const nextPathname = normalizedPathname(pathname)
+  if (nextPathname !== currentPathname) previousPathname = currentPathname
+  currentPathname = nextPathname
   try {
     window.history.pushState(null, "", currentPathname)
-  } catch {}
+  } catch (error) {
+    void error
+  }
   window.dispatchEvent(new Event(navigationEventName))
 }
 
@@ -14,8 +19,13 @@ export function navigationPathname() {
   return currentPathname
 }
 
+export function navigationPreviousPathname() {
+  return previousPathname
+}
+
 export function subscribeToNavigation(callback: () => void) {
   const handlePopState = () => {
+    previousPathname = currentPathname
     currentPathname = initialPathname()
     callback()
   }

@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { useCloudAuth } from "@/context/cloud-auth"
+import { SettingsDialog, SettingsDialogButton } from "@/pages/settings/page"
 
 type AuthMode = "login" | "signup"
 type AuthFieldProps = {
@@ -25,30 +26,38 @@ type AuthFieldProps = {
 
 export function ConnectScreen() {
   const [mode, setMode] = React.useState<AuthMode>("login")
+  const [settingsOpen, setSettingsOpen] = React.useState(false)
   const introReady = useIntroReady()
 
   return (
-    <main className="light grid min-h-screen bg-background/10 text-foreground backdrop-blur-md lg:grid-cols-2">
-      <section className="flex flex-col gap-4 bg-background/50 p-6 md:p-10">
-        <div className="flex flex-1 items-center justify-center">
-          <div
-            key={mode}
-            className={`w-full max-w-xs transform-gpu transition-all delay-150 duration-700 ease-out motion-reduce:transform-none motion-reduce:transition-none ${
-              introReady
-                ? "blur-0 translate-y-0 scale-100 opacity-100"
-                : "translate-y-5 scale-[0.98] opacity-0 blur-md"
-            }`}
-          >
-            {mode === "login" ? (
-              <LoginForm onModeChange={setMode} />
-            ) : (
-              <SignupForm onModeChange={setMode} />
-            )}
+    <>
+      <main className="light relative grid min-h-screen bg-background/10 text-foreground backdrop-blur-md lg:grid-cols-2">
+        <SettingsDialogButton
+          className="absolute top-4 right-4 z-10"
+          onClick={() => setSettingsOpen(true)}
+        />
+        <section className="flex flex-col gap-4 bg-background/50 p-6 md:p-10">
+          <div className="flex flex-1 items-center justify-center">
+            <div
+              key={mode}
+              className={`w-full max-w-xs transform-gpu transition-all delay-150 duration-700 ease-out motion-reduce:transform-none motion-reduce:transition-none ${
+                introReady
+                  ? "blur-0 translate-y-0 scale-100 opacity-100"
+                  : "translate-y-5 scale-[0.98] opacity-0 blur-md"
+              }`}
+            >
+              {mode === "login" ? (
+                <LoginForm onModeChange={setMode} />
+              ) : (
+                <SignupForm onModeChange={setMode} />
+              )}
+            </div>
           </div>
-        </div>
-      </section>
-      <CoverImage introReady={introReady} />
-    </main>
+        </section>
+        <CoverImage introReady={introReady} />
+      </main>
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+    </>
   )
 }
 
