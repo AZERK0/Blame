@@ -9,6 +9,7 @@ import {
 } from "@/components/model/model-selector"
 import type { ProjectInitializationDatabaseMode } from "@blame/agent-runtime"
 import { Button } from "@/components/ui/button"
+import { HostDependenciesDialog } from "@/pages/backlog/host-dependencies-dialog"
 import {
   Dialog,
   DialogContent,
@@ -18,7 +19,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { useCloudAuth } from "@/context/cloud-auth"
-import { usePlatform, type WorkspaceClient } from "@/context/platform"
+import {
+  usePlatform,
+  type HostDependencyReport,
+  type WorkspaceClient,
+} from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import { CloudApiError, createCloudApi } from "@/lib/cloud-api"
 import { notifyProjectInitializationUpdated } from "@/components/project-initialization/project-initialization-events"
@@ -55,12 +60,18 @@ type InitializationAgentResult = Awaited<
   ReturnType<InitializationRunInput["agent"]["initializations"]["run"]>
 >
 
+type OpenHostDependenciesDialog = (
+  run: InitializationRunInput,
+  report: HostDependencyReport
+) => void
+
 export function ProjectInitializationRunner() {
   const controller = useProjectInitializationController()
   return (
     <>
       <InitializationModelDialog controller={controller} />
       <InitializationDatabaseDialog controller={controller} />
+      <HostDependenciesDialog {...controller.hostDependenciesDialog} />
     </>
   )
 }
@@ -78,6 +89,10 @@ function useProjectInitializationController() {
   )
   const dialog = useModelDialogState(activeProject?.id)
   const databaseDialog = useDatabaseDialogState()
+  const hostDependenciesDialog = useHostDependenciesDialogState(
+    platform.workspace,
+    databaseDialog.openDatabaseDialog
+  )
 
   useInitializationEffect(
     activeProject,
@@ -87,7 +102,8 @@ function useProjectInitializationController() {
     currentModel,
     selection.currentVariant,
     dialog.openModelDialog,
-    databaseDialog.openDatabaseDialog
+    databaseDialog.openDatabaseDialog,
+    hostDependenciesDialog.openHostDependenciesDialog
   )
 
   return initializationController({
@@ -98,6 +114,7 @@ function useProjectInitializationController() {
     currentVariant: selection.currentVariant,
     databaseDialog,
     dialog,
+    hostDependenciesDialog,
     removeRecentProject: projects.removeRecentProject,
     workspace: platform.workspace,
     refreshProviders: selection.refreshProviders,
@@ -112,6 +129,7 @@ function initializationController(input: {
   currentVariant: ModelSelection["currentVariant"]
   databaseDialog: ReturnType<typeof useDatabaseDialogState>
   dialog: ReturnType<typeof useModelDialogState>
+  hostDependenciesDialog: ReturnType<typeof useHostDependenciesDialogState>
   removeRecentProject: (path: string) => void
   workspace: WorkspaceClient | undefined
   refreshProviders: () => Promise<void>
@@ -129,6 +147,7 @@ function initializationController(input: {
     modelDialogOpen: input.dialog.modelDialogOpen,
     pendingProjectId: input.dialog.pendingProjectId,
     databaseDialogOpen: input.databaseDialog.open,
+    hostDependenciesDialog: input.hostDependenciesDialog.dialog,
     cancelDatabaseChoice,
     refreshProviders: input.refreshProviders,
     selectDatabaseMode: input.databaseDialog.selectDatabaseMode,
@@ -145,7 +164,8 @@ function initializationController(input: {
         input.currentVariant,
         input.dialog.closeModelDialog,
         input.workspace,
-        input.databaseDialog.openDatabaseDialog
+        input.databaseDialog.openDatabaseDialog,
+        input.hostDependenciesDialog.openHostDependenciesDialog
       ),
   }
 }
@@ -204,6 +224,58 @@ function useDatabaseDialogState() {
   }
 }
 
+function useHostDependenciesDialogState(
+  workspace: WorkspaceClient | undefined,
+  openDatabaseDialog: (run: InitializationRunInput) => void
+) {
+  const [pendingRun, setPendingRun] = React.useState<InitializationRunInput>()
+  const [report, setReport] = React.useState<HostDependencyReport>()
+  const [checking, setChecking] = React.useState(false)
+
+  const openHostDependenciesDialog = React.useCallback(
+    (run: InitializationRunInput, nextReport: HostDependencyReport) => {
+      setPendingRun(run)
+      setReport(nextReport)
+      setChecking(false)
+    },
+    []
+  )
+
+  async function recheck() {
+    if (!workspace || !pendingRun) return
+    setChecking(true)
+    try {
+      const nextReport = await checkInitializationHostDependencies(workspace)
+      if (!nextReport.ok) {
+        setReport(nextReport)
+        return
+      }
+      const run = pendingRun
+      setPendingRun(undefined)
+      setReport(undefined)
+      await startInitialization(run, workspace, openDatabaseDialog, undefined)
+    } finally {
+      setChecking(false)
+    }
+  }
+
+  return {
+    dialog: {
+      checking,
+      onOpenChange(open: boolean) {
+        if (!open) {
+          setPendingRun(undefined)
+          setReport(undefined)
+        }
+      },
+      onRecheck: recheck,
+      open: Boolean(pendingRun),
+      report,
+    },
+    openHostDependenciesDialog,
+  }
+}
+
 function startSelectedModel(
   project: InitializationRunInput["project"] | undefined,
   auth: InitializationAuth,
@@ -212,12 +284,18 @@ function startSelectedModel(
   variant: ModelSelection["currentVariant"],
   closeModelDialog: () => void,
   workspace: WorkspaceClient | undefined,
-  openDatabaseDialog: (run: InitializationRunInput) => void
+  openDatabaseDialog: (run: InitializationRunInput) => void,
+  openHostDependenciesDialog: OpenHostDependenciesDialog | undefined
 ) {
   const input = runInput(project, auth, agent, model, variant)
   if (!input) return
   closeModelDialog()
-  void startInitialization(input, workspace, openDatabaseDialog)
+  void startInitialization(
+    input,
+    workspace,
+    openDatabaseDialog,
+    openHostDependenciesDialog
+  )
 }
 
 function InitializationModelDialog({
@@ -351,7 +429,8 @@ function useInitializationEffect(
   currentModel: ModelSelection["currentModel"],
   currentVariant: ModelSelection["currentVariant"],
   openModelDialog: () => void,
-  openDatabaseDialog: (run: InitializationRunInput) => void
+  openDatabaseDialog: (run: InitializationRunInput) => void,
+  openHostDependenciesDialog: OpenHostDependenciesDialog | undefined
 ) {
   React.useEffect(
     () =>
@@ -364,6 +443,7 @@ function useInitializationEffect(
         currentVariant,
         openModelDialog,
         openDatabaseDialog,
+        openHostDependenciesDialog,
       }),
     [
       activeProject,
@@ -374,6 +454,7 @@ function useInitializationEffect(
       currentVariant,
       openModelDialog,
       openDatabaseDialog,
+      openHostDependenciesDialog,
     ]
   )
 }
@@ -387,6 +468,7 @@ function initializationEffect(input: {
   currentVariant: ModelSelection["currentVariant"]
   openModelDialog: () => void
   openDatabaseDialog: (run: InitializationRunInput) => void
+  openHostDependenciesDialog: OpenHostDependenciesDialog | undefined
 }) {
   if (!input.activeProject || input.auth.status !== "authenticated") return
   if (!input.agent) return
@@ -410,7 +492,12 @@ async function maybeInitializeProject(
     input.currentVariant
   )
   if (!run) return input.openModelDialog()
-  await startInitialization(run, input.workspace, input.openDatabaseDialog)
+  await startInitialization(
+    run,
+    input.workspace,
+    input.openDatabaseDialog,
+    input.openHostDependenciesDialog
+  )
 }
 
 function runInput(
@@ -448,13 +535,25 @@ async function runInitialization(input: InitializationRunInput) {
 async function startInitialization(
   input: InitializationRunInput,
   workspace: WorkspaceClient | undefined,
-  openDatabaseDialog: (run: InitializationRunInput) => void
+  openDatabaseDialog: (run: InitializationRunInput) => void,
+  openHostDependenciesDialog: OpenHostDependenciesDialog | undefined
 ) {
+  const report = workspace
+    ? await checkInitializationHostDependencies(workspace)
+    : undefined
+  if (report && !report.ok) {
+    openHostDependenciesDialog?.(input, report)
+    return
+  }
   if (await projectNeedsDatabaseChoice(input.project, workspace)) {
     openDatabaseDialog(input)
     return
   }
   await runInitialization(input)
+}
+
+function checkInitializationHostDependencies(workspace: WorkspaceClient) {
+  return workspace.checkHostDependencies({ setupScript: "" })
 }
 
 async function persistInitializationResult(
