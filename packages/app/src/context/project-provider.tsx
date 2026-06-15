@@ -83,6 +83,7 @@ function useProjectState(
       try {
         const project = await resolveProject(path, auth, platform)
         setState((current) => openProjectState(current, project))
+        return project
       } finally {
         setOpening(false)
       }

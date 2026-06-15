@@ -18,7 +18,7 @@ export type ProjectContextValue = {
   activeProject?: Project
   recentProjects: Project[]
   opening: boolean
-  openProject(path: string): Promise<void>
+  openProject(path: string): Promise<Project>
   openGeneratedProject(
     path: string,
     initialization: GeneratedProjectInitialization

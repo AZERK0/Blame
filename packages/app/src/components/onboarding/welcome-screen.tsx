@@ -11,16 +11,17 @@ import * as React from "react"
 
 import { NewProjectDialog } from "@/components/new-project/new-project-dialog"
 import { Button } from "@/components/ui/button"
+import { useCloudAuth } from "@/context/cloud-auth"
+import type { HostDependencyReport } from "@/context/platform"
+import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
+import { createCloudApi } from "@/lib/cloud-api"
 import type { Project } from "@/lib/projects"
+import { HostDependenciesDialog } from "@/pages/backlog/host-dependencies-dialog"
 
 export function WelcomeScreen() {
-  const projects = useProjects()
+  const projectOpening = useProjectOpening()
   const [newProjectOpen, setNewProjectOpen] = React.useState(false)
-
-  function openRecentProject(path: string) {
-    void projects.openProject(path)
-  }
 
   return (
     <>
@@ -28,15 +29,15 @@ export function WelcomeScreen() {
         <section className="grid w-full max-w-3xl gap-7">
           <WelcomeHeader />
           <WelcomeActions
-            opening={projects.opening}
+            opening={projectOpening.opening}
             onNewProject={() => setNewProjectOpen(true)}
-            onOpenProject={() => void projects.chooseProject()}
+            onOpenProject={() => void projectOpening.chooseProject()}
           />
           <RecentProjects
-            projects={projects.recentProjects}
-            opening={projects.opening}
-            onOpen={openRecentProject}
-            onRemove={projects.removeRecentProject}
+            projects={projectOpening.recentProjects}
+            opening={projectOpening.opening}
+            onOpen={projectOpening.openProject}
+            onRemove={projectOpening.removeRecentProject}
           />
         </section>
       </main>
@@ -44,8 +45,92 @@ export function WelcomeScreen() {
         open={newProjectOpen}
         onOpenChange={setNewProjectOpen}
       />
+      <HostDependenciesDialog {...projectOpening.hostDependenciesDialog} />
     </>
   )
+}
+
+function useProjectOpening() {
+  const auth = useCloudAuth()
+  const platform = usePlatform()
+  const projects = useProjects()
+  const [hostDependenciesDialog, setHostDependenciesDialog] =
+    React.useState<OpenProjectHostDependenciesDialogState>()
+
+  async function chooseProject() {
+    const result = await platform.openDirectoryPickerDialog?.({
+      title: "Open Project",
+    })
+    const path = Array.isArray(result) ? result[0] : result
+    if (path) await openProject(path)
+  }
+
+  async function openProject(path: string) {
+    const project = await projects.openProject(path)
+    await checkProjectHostDependencies(project)
+  }
+
+  async function checkProjectHostDependencies(project: Project) {
+    try {
+      const setupScript = await projectSetupScript(
+        auth.apiConnection,
+        project.id
+      )
+      if (!setupScript || !platform.workspace?.checkHostDependencies) return
+      const report = await platform.workspace.checkHostDependencies({
+        setupScript,
+      })
+      if (report.ok) return
+      setHostDependenciesDialog({ checking: false, report, setupScript })
+    } catch {
+      return
+    }
+  }
+
+  async function recheckHostDependencies() {
+    const current = hostDependenciesDialog
+    if (!current || !platform.workspace?.checkHostDependencies) return
+    setHostDependenciesDialog({ ...current, checking: true })
+    try {
+      const report = await platform.workspace.checkHostDependencies({
+        setupScript: current.setupScript,
+      })
+      if (report.ok) return setHostDependenciesDialog(undefined)
+      setHostDependenciesDialog({ ...current, checking: false, report })
+    } catch {
+      setHostDependenciesDialog({ ...current, checking: false })
+    }
+  }
+
+  return {
+    ...projects,
+    chooseProject,
+    hostDependenciesDialog: {
+      checking: Boolean(hostDependenciesDialog?.checking),
+      onOpenChange(open: boolean) {
+        if (!open) setHostDependenciesDialog(undefined)
+      },
+      onRecheck: recheckHostDependencies,
+      open: Boolean(hostDependenciesDialog),
+      report: hostDependenciesDialog?.report,
+    },
+    openProject,
+  }
+}
+
+type OpenProjectHostDependenciesDialogState = {
+  checking: boolean
+  report: HostDependencyReport
+  setupScript: string
+}
+
+async function projectSetupScript(
+  apiConnection: ReturnType<typeof useCloudAuth>["apiConnection"],
+  projectId: string
+) {
+  const snapshot =
+    await createCloudApi(apiConnection).projectInitialization(projectId)
+  return snapshot.initialization?.setupScript
 }
 
 function WelcomeHeader() {
