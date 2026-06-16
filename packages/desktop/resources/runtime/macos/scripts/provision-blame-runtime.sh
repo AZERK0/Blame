@@ -1,6 +1,6 @@
 set -eu
 
-runtime_version="${1:-2}"
+runtime_version="${1:-3}"
 runtime_root="/home/blame/.local/share/blame/runtime"
 cline_sdk_version="${BLAME_CLINE_SDK_VERSION:-0.0.46}"
 nerdctl_version="${BLAME_NERDCTL_VERSION:-2.1.6}"

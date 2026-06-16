@@ -1,3 +1,5 @@
+import { execFile } from "node:child_process"
+import { promisify } from "node:util"
 import type { AgentBackendConfig } from "@blame/agent-runtime"
 import { setupPath } from "./host-tool-path.ts"
 import { runtimeAgentClient } from "./runtime-agent.ts"
@@ -6,6 +8,8 @@ import {
   runtimeHostPath,
   runtimeManagedPath,
 } from "./workspace-runtime.ts"
+
+const execFileAsync = promisify(execFile)
 
 export type AgentWorkspaceResolution = {
   backend: AgentBackendConfig
@@ -109,9 +113,27 @@ async function ensureRuntimeClineHub(
       })
     const hub = await client.clineHubEnsure()
     if (!hub.url) throw new Error("Runtime Cline hub did not return a URL.")
+    if (platform === "win32" && hub.url) {
+      try {
+        const httpUrl = hub.url.replace(/^ws:\/\//i, "http://").replace(/\/hub\?.*$/, "/health")
+        await preWarmWindowsRoute(httpUrl)
+      } catch (error) {
+        // Ignore pre-warm errors
+      }
+    }
     return hub
   } catch (error) {
     throw runtimeBackendUnavailable(error)
+  }
+}
+
+async function preWarmWindowsRoute(url: string) {
+  try {
+    await execFileAsync("curl.exe", ["--silent", "--max-time", "35", "--connect-timeout", "35", url], {
+      timeout: 40_000,
+    })
+  } catch {
+    // Ignore errors during pre-warm
   }
 }
 

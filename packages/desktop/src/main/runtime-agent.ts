@@ -2,6 +2,7 @@ import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { EventEmitter } from "node:events";
 import { PassThrough } from "node:stream";
 import { createInterface } from "node:readline";
+import log from "electron-log";
 import { setupPath } from "./host-tool-path.ts";
 
 type AgentRequest = {
@@ -167,6 +168,7 @@ export class RuntimeAgentClient {
   private ensureProcess() {
     if (this.process && this.process.exitCode === null) return this.process;
     const spec = agentCommand(this.platform, this.env);
+    log.info(`Spawning runtime agent: ${spec.command} ${spec.args.join(" ")}`);
     const child = this.spawnProcess(spec.command, spec.args, {
       env: spec.env,
       shell: false,
@@ -174,9 +176,17 @@ export class RuntimeAgentClient {
     this.process = child;
     const lines = createInterface({ input: child.stdout });
     lines.on("line", (line) => this.handleLine(line));
-    child.stderr.on("data", () => undefined);
-    child.once("exit", () => this.rejectPending("Runtime agent exited"));
-    child.once("error", (error) => this.rejectPending(error.message));
+    child.stderr.on("data", (data) => {
+      log.error(`Runtime agent stderr: ${data.toString()}`);
+    });
+    child.once("exit", (code, signal) => {
+      log.error(`Runtime agent process exited with code: ${code}, signal: ${signal}`);
+      this.rejectPending("Runtime agent exited");
+    });
+    child.once("error", (error) => {
+      log.error(`Runtime agent process error: ${error.message}`);
+      this.rejectPending(error.message);
+    });
     return child;
   }
 

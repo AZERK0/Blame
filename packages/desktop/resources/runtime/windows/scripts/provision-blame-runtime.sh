@@ -1,6 +1,6 @@
 set -eu
 
-runtime_version="${1:-2}"
+runtime_version="${1:-3}"
 runtime_root="/home/blame/.local/share/blame/runtime"
 cline_sdk_version="${BLAME_CLINE_SDK_VERSION:-0.0.42}"
 nerdctl_version="${BLAME_NERDCTL_VERSION:-2.1.6}"
@@ -496,19 +496,6 @@ process.stdout.write(JSON.stringify({{
     result = json.loads(line)
     hub_process = proc
     hub_result_cache = result
-    # Pre-warm the Windows->WSL2 TCP route. The Hyper-V NAT in VMware needs
-    # ~30 s to establish routing state on the first connection; subsequent
-    # connections are instant. We block here (up to 35 s) so that by the
-    # time we return to Electron the route is already warm.
-    try:
-        subprocess.run(
-            ["/mnt/c/Windows/System32/curl.exe",
-             "--silent", "--max-time", "35", "--connect-timeout", "35",
-             f"http://{hub_host}:25463/health"],
-            capture_output=True, timeout=40,
-        )
-    except Exception:
-        pass
     return result
 
 def run_cline_hub_status(params):
