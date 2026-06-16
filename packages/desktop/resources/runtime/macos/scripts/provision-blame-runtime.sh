@@ -1,6 +1,6 @@
 set -eu
 
-runtime_version="${1:-3}"
+runtime_version="${1:-4}"
 runtime_root="/home/blame/.local/share/blame/runtime"
 cline_sdk_version="${BLAME_CLINE_SDK_VERSION:-0.0.46}"
 nerdctl_version="${BLAME_NERDCTL_VERSION:-2.1.6}"
@@ -139,12 +139,12 @@ def version():
         return "unknown"
 
 def ensure_containerd():
-    if subprocess.run(["pgrep", "-x", "containerd"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0:
+    if subprocess.run(["pgrep", "-x", "containerd"], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0:
         return
     os.makedirs("/run/containerd", exist_ok=True)
     os.makedirs("/var/log/blame-runtime", exist_ok=True)
     log = open("/var/log/blame-runtime/containerd.log", "ab")
-    subprocess.Popen(["containerd"], stdout=log, stderr=log, start_new_session=True)
+    subprocess.Popen(["containerd"], stdin=subprocess.DEVNULL, stdout=log, stderr=log, start_new_session=True)
 
 def target_user(name):
     if os.geteuid() != 0:
@@ -206,6 +206,7 @@ def run_exec(params):
         [command, *args],
         cwd=command_cwd(params),
         env=command_env(params, account),
+        stdin=subprocess.DEVNULL,
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -240,6 +241,7 @@ def run_spawn(params):
         [command, *args],
         cwd=command_cwd(params),
         env=command_env(params, account),
+        stdin=subprocess.DEVNULL,
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -297,6 +299,7 @@ def run_node_json(script, timeout=15):
     process = subprocess.run(
         ["node", "--input-type=module", "-e", script],
         env=clean_env({}, target_user("blame")),
+        stdin=subprocess.DEVNULL,
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -392,7 +395,7 @@ def run_cline_hub_ensure(params):
 
     # If we could not reuse, clean up port 25463 and discovery files to avoid EADDRINUSE
     try:
-        subprocess.run(["fuser", "-k", "25463/tcp"], capture_output=True)
+        subprocess.run(["fuser", "-k", "25463/tcp"], stdin=subprocess.DEVNULL, capture_output=True)
     except Exception:
         pass
     if discovery_dir and os.path.exists(discovery_dir):
@@ -435,6 +438,7 @@ process.stdout.write(JSON.stringify({{
     proc = subprocess.Popen(
         ["node", "--input-type=module", "-e", script],
         env=env,
+        stdin=subprocess.DEVNULL,
         stdout=subprocess.PIPE,
         stderr=log_file if log_file is not None else subprocess.DEVNULL,
         text=True,
@@ -481,8 +485,8 @@ def run_status():
         "version": version(),
         "python": True,
         "containerd": os.path.exists("/run/containerd/containerd.sock"),
-        "git": subprocess.run(["sh", "-lc", "command -v git"], stdout=subprocess.DEVNULL).returncode == 0,
-        "nerdctl": subprocess.run(["sh", "-lc", "command -v nerdctl"], stdout=subprocess.DEVNULL).returncode == 0,
+        "git": subprocess.run(["sh", "-lc", "command -v git"], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL).returncode == 0,
+        "nerdctl": subprocess.run(["sh", "-lc", "command -v nerdctl"], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL).returncode == 0,
     }
     return checks
 
