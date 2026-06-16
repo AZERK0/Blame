@@ -70,7 +70,7 @@ const clients = new Map<string, RuntimeAgentClient>();
 
 export function runtimeAgentClient(input: RuntimeAgentClientInput = {}) {
   const platform = input.platform ?? process.platform;
-  const key = `${platform}:${input.env?.PATH ?? ""}`;
+  const key = platform;
   const current = clients.get(key);
   if (current) return current;
   const next = new RuntimeAgentClient(input);

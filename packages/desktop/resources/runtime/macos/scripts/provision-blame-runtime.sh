@@ -1,6 +1,6 @@
 set -eu
 
-runtime_version="${1:-1}"
+runtime_version="${1:-2}"
 runtime_root="/home/blame/.local/share/blame/runtime"
 cline_sdk_version="${BLAME_CLINE_SDK_VERSION:-0.0.46}"
 nerdctl_version="${BLAME_NERDCTL_VERSION:-2.1.6}"
@@ -353,6 +353,8 @@ def run_cline_hub_ensure(params):
     except Exception:
         pass
 
+    import time
+
     reused = False
     if discovery_dir and os.path.exists(discovery_dir):
         try:
@@ -363,16 +365,25 @@ def run_cline_hub_ensure(params):
                     data = json.load(f)
                 pid = data.get("pid")
                 authToken = data.get("authToken")
-                if pid and authToken and is_pid_alive(pid) and is_port_listening(25463):
-                    url = f"ws://127.0.0.1:25463/hub?authToken={authToken}"
-                    hub_result_cache = {
-                        "action": "connected",
-                        "authToken": authToken,
-                        "status": "ready",
-                        "url": url
-                    }
-                    reused = True
-                    break
+                if pid and authToken and is_pid_alive(pid):
+                    # Process is alive. Wait up to 3 seconds for the port to start listening.
+                    port_ready = False
+                    for _ in range(15):
+                        if is_port_listening(25463):
+                            port_ready = True
+                            break
+                        time.sleep(0.2)
+                    
+                    if port_ready:
+                        url = f"ws://127.0.0.1:25463/hub?authToken={authToken}"
+                        hub_result_cache = {
+                            "action": "connected",
+                            "authToken": authToken,
+                            "status": "ready",
+                            "url": url
+                        }
+                        reused = True
+                        break
         except Exception:
             pass
 

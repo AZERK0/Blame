@@ -1,6 +1,6 @@
 set -eu
 
-runtime_version="${1:-1}"
+runtime_version="${1:-2}"
 runtime_root="/home/blame/.local/share/blame/runtime"
 cline_sdk_version="${BLAME_CLINE_SDK_VERSION:-0.0.42}"
 nerdctl_version="${BLAME_NERDCTL_VERSION:-2.1.6}"
@@ -120,6 +120,18 @@ import sys
 import threading
 import uuid
 import urllib.request
+import traceback
+
+def log_error(msg):
+    try:
+        os.makedirs("/var/log/blame-runtime", exist_ok=True)
+        with open("/var/log/blame-runtime/agent.log", "a", encoding="utf-8") as f_err:
+            f_err.write(msg + "\n")
+    except Exception:
+        pass
+
+sys.excepthook = lambda exctype, value, tb: log_error("".join(traceback.format_exception(exctype, value, tb)))
+
 
 processes = {}
 write_lock = threading.Lock()
@@ -364,6 +376,8 @@ def run_cline_hub_ensure(params):
     except Exception:
         pass
 
+    import time
+
     reused = False
     if discovery_dir and os.path.exists(discovery_dir):
         try:
@@ -374,17 +388,26 @@ def run_cline_hub_ensure(params):
                     data = json.load(f)
                 pid = data.get("pid")
                 authToken = data.get("authToken")
-                if pid and authToken and is_pid_alive(pid) and is_port_listening(25463):
-                    baseUrl = f"ws://{hub_host}:25463/hub"
-                    url = f"{baseUrl}?authToken={authToken}"
-                    hub_result_cache = {
-                        "action": "connected",
-                        "authToken": authToken,
-                        "status": "ready",
-                        "url": url
-                    }
-                    reused = True
-                    break
+                if pid and authToken and is_pid_alive(pid):
+                    # Process is alive. Wait up to 3 seconds for the port to start listening.
+                    port_ready = False
+                    for _ in range(15):
+                        if is_port_listening(25463):
+                            port_ready = True
+                            break
+                        time.sleep(0.2)
+                    
+                    if port_ready:
+                        baseUrl = f"ws://{hub_host}:25463/hub"
+                        url = f"{baseUrl}?authToken={authToken}"
+                        hub_result_cache = {
+                            "action": "connected",
+                            "authToken": authToken,
+                            "status": "ready",
+                            "url": url
+                        }
+                        reused = True
+                        break
         except Exception:
             pass
 
@@ -446,6 +469,17 @@ process.stdout.write(JSON.stringify({{
     )
     if log_file is not None:
         log_file.close()
+
+    def monitor_hub(process):
+        code = process.wait()
+        try:
+            with open("/var/log/blame-runtime/cline-hub-exit.log", "a", encoding="utf-8") as f_exit:
+                f_exit.write(f"Hub process {process.pid} exited with code {code}\n")
+        except Exception:
+            pass
+
+    threading.Thread(target=monitor_hub, args=(proc,), daemon=True).start()
+
     line = read_line_with_timeout(proc.stdout, 10)
     if not line:
         exit_code = proc.poll()
@@ -535,15 +569,19 @@ def serve():
             write({"id": 0, "ok": False, "error": {"message": str(error)}})
 
 def main():
-    command = sys.argv[1] if len(sys.argv) > 1 else "status"
-    if command == "status":
-        print("ready")
-    elif command == "version":
-        print(version())
-    elif command == "serve":
-        serve()
-    else:
-        os.execvp(command, sys.argv[1:])
+    try:
+        command = sys.argv[1] if len(sys.argv) > 1 else "status"
+        if command == "status":
+            print("ready")
+        elif command == "version":
+            print(version())
+        elif command == "serve":
+            serve()
+        else:
+            os.execvp(command, sys.argv[1:])
+    except Exception as e:
+        log_error(f"Error in main: {e}\n{traceback.format_exc()}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
