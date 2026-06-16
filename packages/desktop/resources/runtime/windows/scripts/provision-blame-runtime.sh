@@ -2,7 +2,7 @@ set -eu
 
 runtime_version="${1:-1}"
 runtime_root="/home/blame/.local/share/blame/runtime"
-cline_sdk_version="${BLAME_CLINE_SDK_VERSION:-0.0.46}"
+cline_sdk_version="${BLAME_CLINE_SDK_VERSION:-0.0.42}"
 nerdctl_version="${BLAME_NERDCTL_VERSION:-2.1.6}"
 
 ensure_user() {
@@ -325,6 +325,26 @@ def run_cline_hub_ensure(params):
         return {**hub_result_cache, "action": "connected"}
     hub_process = None
     hub_result_cache = None
+
+    import socket
+
+    def is_pid_alive(pid):
+        try:
+            os.kill(pid, 0)
+            return True
+        except OSError:
+            return False
+
+    def is_port_listening(port):
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(1.0)
+        try:
+            s.connect(("127.0.0.1", port))
+            s.close()
+            return True
+        except Exception:
+            return False
+
     # In VMware nested-virtualisation, the WSL2 localhost proxy (127.0.0.1)
     # does not work. We must use the real WSL2 VM IP. The Hyper-V NAT has a
     # cold-start delay of ~30 s for the first TCP connection; we pre-warm it
@@ -335,6 +355,55 @@ def run_cline_hub_ensure(params):
         ).stdout.strip().split()[0]
     except Exception:
         hub_host = "127.0.0.1"
+
+    # Try to reuse an existing healthy hub running inside WSL2
+    discovery_dir = None
+    try:
+        blame_account = pwd.getpwnam("blame")
+        discovery_dir = os.path.join(blame_account.pw_dir, ".cline", "data", "locks", "hub", "owners")
+    except Exception:
+        pass
+
+    reused = False
+    if discovery_dir and os.path.exists(discovery_dir):
+        try:
+            files = [f for f in os.listdir(discovery_dir) if f.endswith(".json")]
+            for filename in files:
+                filepath = os.path.join(discovery_dir, filename)
+                with open(filepath, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                pid = data.get("pid")
+                authToken = data.get("authToken")
+                if pid and authToken and is_pid_alive(pid) and is_port_listening(25463):
+                    baseUrl = f"ws://{hub_host}:25463/hub"
+                    url = f"{baseUrl}?authToken={authToken}"
+                    hub_result_cache = {
+                        "action": "connected",
+                        "authToken": authToken,
+                        "status": "ready",
+                        "url": url
+                    }
+                    reused = True
+                    break
+        except Exception:
+            pass
+
+    if reused:
+        return hub_result_cache
+
+    # If we could not reuse, clean up port 25463 and discovery files to avoid EADDRINUSE
+    try:
+        subprocess.run(["fuser", "-k", "25463/tcp"], capture_output=True)
+    except Exception:
+        pass
+    if discovery_dir and os.path.exists(discovery_dir):
+        try:
+            for f in os.listdir(discovery_dir):
+                if f.endswith(".json"):
+                    os.remove(os.path.join(discovery_dir, f))
+        except Exception:
+            pass
+
     module = cline_hub_module_path()
     script = f"""
 const hub = await import({json.dumps("file://" + module)});
@@ -343,7 +412,13 @@ const result = await hub.ensureHubServer({{
   port: 25463,
   runtimeHandlers: hub.createLocalHubScheduleRuntimeHandlers()
 }});
-const url = result.url ? result.url.replace(/^ws:\\/\\/[^/]+/, "ws://{hub_host}:25463") : result.url;
+// Replace host with the actual WSL2 IP, then embed authToken as a query
+// parameter so that connectToHub() (which runs on Windows and cannot read
+// the WSL2 discovery file) can still authenticate without the discovery file.
+const baseUrl = result.url ? result.url.replace(/^ws:\\/\\/[^/]+/, "ws://{hub_host}:25463") : result.url;
+const url = baseUrl && result.authToken
+  ? baseUrl + "?authToken=" + encodeURIComponent(result.authToken)
+  : baseUrl;
 process.stdout.write(JSON.stringify({{
   action: result.action,
   authToken: result.authToken,
@@ -387,7 +462,7 @@ process.stdout.write(JSON.stringify({{
     result = json.loads(line)
     hub_process = proc
     hub_result_cache = result
-    # Pre-warm the Windows→WSL2 TCP route. The Hyper-V NAT in VMware needs
+    # Pre-warm the Windows->WSL2 TCP route. The Hyper-V NAT in VMware needs
     # ~30 s to establish routing state on the first connection; subsequent
     # connections are instant. We block here (up to 35 s) so that by the
     # time we return to Electron the route is already warm.

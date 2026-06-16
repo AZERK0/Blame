@@ -325,6 +325,73 @@ def run_cline_hub_ensure(params):
         return {**hub_result_cache, "action": "connected"}
     hub_process = None
     hub_result_cache = None
+
+    import socket
+
+    def is_pid_alive(pid):
+        try:
+            os.kill(pid, 0)
+            return True
+        except OSError:
+            return False
+
+    def is_port_listening(port):
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(1.0)
+        try:
+            s.connect(("127.0.0.1", port))
+            s.close()
+            return True
+        except Exception:
+            return False
+
+    # Try to reuse an existing healthy hub running inside Lima
+    discovery_dir = None
+    try:
+        blame_account = pwd.getpwnam("blame")
+        discovery_dir = os.path.join(blame_account.pw_dir, ".cline", "data", "locks", "hub", "owners")
+    except Exception:
+        pass
+
+    reused = False
+    if discovery_dir and os.path.exists(discovery_dir):
+        try:
+            files = [f for f in os.listdir(discovery_dir) if f.endswith(".json")]
+            for filename in files:
+                filepath = os.path.join(discovery_dir, filename)
+                with open(filepath, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                pid = data.get("pid")
+                authToken = data.get("authToken")
+                if pid and authToken and is_pid_alive(pid) and is_port_listening(25463):
+                    url = f"ws://127.0.0.1:25463/hub?authToken={authToken}"
+                    hub_result_cache = {
+                        "action": "connected",
+                        "authToken": authToken,
+                        "status": "ready",
+                        "url": url
+                    }
+                    reused = True
+                    break
+        except Exception:
+            pass
+
+    if reused:
+        return hub_result_cache
+
+    # If we could not reuse, clean up port 25463 and discovery files to avoid EADDRINUSE
+    try:
+        subprocess.run(["fuser", "-k", "25463/tcp"], capture_output=True)
+    except Exception:
+        pass
+    if discovery_dir and os.path.exists(discovery_dir):
+        try:
+            for f in os.listdir(discovery_dir):
+                if f.endswith(".json"):
+                    os.remove(os.path.join(discovery_dir, f))
+        except Exception:
+            pass
+
     # Bind on 0.0.0.0 so the hub is reachable on all interfaces, but tell
     # the host to connect via 127.0.0.1 so it uses the fast Lima localhost
     # proxy rather than routing through the virtual switch.

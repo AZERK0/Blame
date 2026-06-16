@@ -5,7 +5,7 @@ $RuntimeHome = Split-Path -Parent $PSScriptRoot
 $ManifestPath = Join-Path $RuntimeHome "manifest.json"
 $Manifest = Get-Content $ManifestPath -Raw | ConvertFrom-Json
 $RuntimeVersion = [string]$Manifest.runtimeVersion
-$ClineSdkVersion = "0.0.46"
+$ClineSdkVersion = "0.0.42"
 $WslRequiredAction = "Enable WSL2 in Windows, restart if prompted, then run Blame runtime setup again."
 $RootfsAction = "Blame could not download the BlameRuntime WSL2 rootfs. Check the internet connection, then run Blame runtime setup again."
 
