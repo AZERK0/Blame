@@ -10,6 +10,8 @@ import { runtimeToolScript } from "./host-tool-path.ts";
 const execFileAsync = promisify(execFile);
 const commandTimeoutMs = 15_000;
 const lifecycleCommandTimeoutMs = 30 * 60_000;
+const readinessTimeoutMs = 90_000;
+const readinessPollIntervalMs = 1_000;
 
 export type RuntimeState =
   | "ready"
@@ -117,17 +119,17 @@ export class RuntimeManager {
 
   async ensureRuntimeReady() {
     await runRuntimeLifecycleCommand(this.context, "ensure");
-    return this.checkRuntimeDependencies();
+    return waitForRuntimeReadiness(this.context);
   }
 
   async repairRuntime() {
     await runRuntimeLifecycleCommand(this.context, "repair");
-    return this.checkRuntimeDependencies();
+    return waitForRuntimeReadiness(this.context);
   }
 
   async resetRuntime() {
     await runRuntimeLifecycleCommand(this.context, "reset");
-    return this.checkRuntimeDependencies();
+    return waitForRuntimeReadiness(this.context);
   }
 
   async uninstallRuntime() {
@@ -188,7 +190,9 @@ async function managedRuntimeIssues(context: RuntimeManagerContext) {
   const binaryIssue = await checkManagedRuntimeBinary(context);
   if (binaryIssue) return [binaryIssue];
   const statusIssue = await checkManagedRuntimeStatus(context);
-  return statusIssue ? [statusIssue] : [];
+  if (statusIssue) return [statusIssue];
+  const agentIssue = await checkManagedRuntimeAgent(context);
+  return agentIssue ? [agentIssue] : [];
 }
 
 async function checkLinuxNerdctl(context: RuntimeManagerContext) {
@@ -242,6 +246,20 @@ async function checkManagedRuntimeStatus(context: RuntimeManagerContext) {
   }
 }
 
+async function checkManagedRuntimeAgent(context: RuntimeManagerContext) {
+  try {
+    const output = await context.run(runtimeBinary(context.platform), [
+      "agent",
+      "status",
+    ], context.env);
+    return parseRuntimeState(output) === "ready"
+      ? null
+      : managedRuntimeAgentIssue();
+  } catch (error) {
+    return managedRuntimeAgentIssue(error);
+  }
+}
+
 function runRuntimeCommand(
   context: RuntimeManagerContext,
   command: ContainerRuntimeCommand,
@@ -265,6 +283,25 @@ function runRuntimeLifecycleCommand(
     context.env,
     lifecycleCommandTimeoutMs,
   );
+}
+
+async function waitForRuntimeReadiness(context: RuntimeManagerContext) {
+  const deadline = Date.now() + readinessTimeoutMs;
+  let report = await runtimeStatusReportFromContext(context);
+  while (runtimeReadinessPending(report) && Date.now() < deadline) {
+    await sleep(readinessPollIntervalMs);
+    report = await runtimeStatusReportFromContext(context);
+  }
+  return report;
+}
+
+async function runtimeStatusReportFromContext(context: RuntimeManagerContext) {
+  const issues = await runtimeDependencyIssues(context);
+  return runtimeStatusReport(context.platform, issues);
+}
+
+function runtimeReadinessPending(report: RuntimeStatusReport) {
+  return report.status !== "ready" && report.status !== "unsupported";
 }
 
 function runtimeStatusReport(
@@ -297,6 +334,16 @@ function runtimeIssue(
   action?: string,
 ): RuntimeDependencyIssue {
   return { action, error, name, runtimeStatus, status };
+}
+
+function managedRuntimeAgentIssue(error?: unknown) {
+  return runtimeIssue(
+    "blame-runtime",
+    "missing",
+    error,
+    "missing",
+    "Repair BlameRuntime from Blame runtime setup.",
+  );
 }
 
 function managedRuntimeStatusIssueFromOutput(output: string) {
@@ -401,6 +448,10 @@ function isRuntimeState(value: string): value is RuntimeState {
   return ["ready", "missing", "repairable", "unsupported", "broken"].includes(
     value,
   );
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function supportedRuntimePlatform(platform: NodeJS.Platform) {

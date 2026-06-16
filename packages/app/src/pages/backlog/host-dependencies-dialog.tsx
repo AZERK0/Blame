@@ -37,6 +37,7 @@ export function HostDependenciesDialog({
   const platform = usePlatform()
   const issues = report?.issues ?? []
   const [runningAction, setRunningAction] = React.useState<string | null>(null)
+  const busy = checking || Boolean(runningAction)
 
   async function runDependencyAction(issue: HostDependencyIssue) {
     const runtimeAction = dependencyRuntimeAction(issue, platform)
@@ -71,6 +72,7 @@ export function HostDependenciesDialog({
             <DependencyIssueRow
               key={`${issue.name}-${issue.status}`}
               issue={issue}
+              disabled={busy}
               loading={runningAction === `${issue.name}-${issue.status}`}
               platform={platform}
               onAction={runDependencyAction}
@@ -81,7 +83,7 @@ export function HostDependenciesDialog({
           <Button
             type="button"
             variant="outline"
-            disabled={checking || Boolean(runningAction)}
+            disabled={busy}
             onClick={() => void onRecheck()}
           >
             <RefreshCwIcon className={cn(checking && "animate-spin")} />
@@ -94,11 +96,13 @@ export function HostDependenciesDialog({
 }
 
 function DependencyIssueRow({
+  disabled,
   issue,
   loading,
   onAction,
   platform,
 }: {
+  disabled: boolean
   issue: HostDependencyIssue
   loading: boolean
   onAction(issue: HostDependencyIssue): Promise<void>
@@ -116,7 +120,7 @@ function DependencyIssueRow({
       <Button
         type="button"
         variant="outline"
-        disabled={loading}
+        disabled={disabled}
         onClick={() => void onAction(issue)}
       >
         <Icon className={cn(loading && "animate-spin")} />

@@ -33,8 +33,27 @@ test("uses passive managed runtime status checks", async () => {
   assert.deepEqual(calls, [
     "blame-lima-runtime --version",
     "blame-lima-runtime status",
+    "blame-lima-runtime agent status",
   ]);
   assert.equal(calls.some((call) => call.includes(" true")), false);
+});
+
+test("requires the managed runtime agent to execute", async () => {
+  const manager = createRuntimeManager(
+    { platform: "win32" },
+    async (_command, args) => {
+      if (args[0] === "agent")
+        throw new Error("blame-runtime-agent: command not found");
+      return "ready";
+    },
+  );
+
+  const status = await manager.checkRuntimeDependencies();
+
+  assert.equal(status.status, "missing");
+  assert.equal(status.issues[0]?.name, "blame-runtime");
+  assert.equal(status.issues[0]?.status, "missing");
+  assert.match(status.issues[0]?.action ?? "", /Repair BlameRuntime/);
 });
 
 test("reports managed runtime binary failures as missing", async () => {
@@ -238,27 +257,35 @@ test("runs managed runtime lifecycle commands explicitly", async () => {
     "blame-wsl2-runtime ensure",
     "blame-wsl2-runtime --version",
     "blame-wsl2-runtime status",
+    "blame-wsl2-runtime agent status",
     "blame-wsl2-runtime repair",
     "blame-wsl2-runtime --version",
     "blame-wsl2-runtime status",
+    "blame-wsl2-runtime agent status",
     "blame-wsl2-runtime reset",
     "blame-wsl2-runtime --version",
     "blame-wsl2-runtime status",
+    "blame-wsl2-runtime agent status",
     "blame-wsl2-runtime uninstall",
     "blame-wsl2-runtime --version",
     "blame-wsl2-runtime status",
+    "blame-wsl2-runtime agent status",
   ]);
   assert.deepEqual(timeouts, [
     1_800_000,
     undefined,
     undefined,
-    1_800_000,
-    undefined,
     undefined,
     1_800_000,
     undefined,
     undefined,
+    undefined,
     1_800_000,
+    undefined,
+    undefined,
+    undefined,
+    1_800_000,
+    undefined,
     undefined,
     undefined,
   ]);
