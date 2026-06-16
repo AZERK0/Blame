@@ -174,7 +174,7 @@ export class RuntimeAgentClient {
       shell: false,
     });
     this.process = child;
-    const lines = createInterface({ input: child.stdout });
+    const lines = createInterface({ input: child.stdout, terminal: false, output: null });
     lines.on("line", (line) => this.handleLine(line));
     child.stderr.on("data", (data) => {
       log.error(`Runtime agent stderr: ${data.toString()}`);

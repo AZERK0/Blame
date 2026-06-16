@@ -1,5 +1,4 @@
-import { execFile } from "node:child_process"
-import { promisify } from "node:util"
+import { spawn } from "node:child_process"
 import type { AgentBackendConfig } from "@blame/agent-runtime"
 import { setupPath } from "./host-tool-path.ts"
 import { runtimeAgentClient } from "./runtime-agent.ts"
@@ -8,8 +7,6 @@ import {
   runtimeHostPath,
   runtimeManagedPath,
 } from "./workspace-runtime.ts"
-
-const execFileAsync = promisify(execFile)
 
 export type AgentWorkspaceResolution = {
   backend: AgentBackendConfig
@@ -127,14 +124,28 @@ async function ensureRuntimeClineHub(
   }
 }
 
-async function preWarmWindowsRoute(url: string) {
-  try {
-    await execFileAsync("curl.exe", ["--silent", "--max-time", "35", "--connect-timeout", "35", url], {
-      timeout: 40_000,
-    })
-  } catch {
-    // Ignore errors during pre-warm
-  }
+function preWarmWindowsRoute(url: string): Promise<void> {
+  // IMPORTANT: stdio:'ignore' is required on Windows.
+  // execFile/execFileAsync causes curl.exe to inherit the write-end of the
+  // wsl.exe stdin pipe (bInheritHandles=TRUE when parent has open pipe handles).
+  // When curl.exe exits it closes that inherited handle; if it was the last
+  // writer the Python daemon receives EOF on stdin and exits cleanly (code 0).
+  // spawn with stdio:'ignore' sets bInheritHandles=FALSE so curl.exe never
+  // acquires any of the parent's pipe handles.
+  return new Promise<void>((resolve) => {
+    try {
+      const child = spawn(
+        "curl.exe",
+        ["--silent", "--max-time", "35", "--connect-timeout", "35", url],
+        { stdio: "ignore", windowsHide: true },
+      )
+      const timer = setTimeout(() => { child.kill(); resolve() }, 40_000)
+      child.on("close", () => { clearTimeout(timer); resolve() })
+      child.on("error", () => { clearTimeout(timer); resolve() })
+    } catch {
+      resolve()
+    }
+  })
 }
 
 function runtimeEnvironment(
