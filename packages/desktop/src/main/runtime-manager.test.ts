@@ -239,25 +239,74 @@ test("reports missing Lima host mount as runtime repair action", async () => {
 });
 
 
-test("runs managed runtime lifecycle commands explicitly", async () => {
+test("skips ensure when managed runtime is already ready", async () => {
+  const calls: string[] = [];
+  const manager = createRuntimeManager({ platform: "win32" }, async (command, args) => {
+    calls.push([command, ...args].join(" "));
+    if (args[0] === "status") {
+      return JSON.stringify({ status: "ready", checks: [] });
+    }
+    return "ready";
+  });
+
+  const report = await manager.ensureRuntimeReady();
+  assert.equal(report.status, "ready");
+  assert.deepEqual(calls, [
+    "blame-wsl2-runtime --version",
+    "blame-wsl2-runtime status",
+    "blame-wsl2-runtime agent status",
+  ]);
+});
+
+test("runs ensure when managed runtime is not ready", async () => {
+  const calls: string[] = [];
+  let isReady = false;
+  const manager = createRuntimeManager({ platform: "win32" }, async (command, args) => {
+    calls.push([command, ...args].join(" "));
+    if (args[0] === "status") {
+      if (!isReady) {
+        return JSON.stringify({
+          status: "missing",
+          checks: [{ name: "agent", status: "missing" }],
+        });
+      }
+      return JSON.stringify({ status: "ready", checks: [] });
+    }
+    if (args[0] === "ensure") {
+      isReady = true;
+    }
+    return "ready";
+  });
+
+  const report = await manager.ensureRuntimeReady();
+  assert.equal(report.status, "ready");
+  assert.deepEqual(calls, [
+    "blame-wsl2-runtime --version",
+    "blame-wsl2-runtime status",
+    "blame-wsl2-runtime ensure",
+    "blame-wsl2-runtime --version",
+    "blame-wsl2-runtime status",
+    "blame-wsl2-runtime agent status",
+  ]);
+});
+
+test("runs other managed runtime lifecycle commands explicitly", async () => {
   const calls: string[] = [];
   const timeouts: Array<number | undefined> = [];
   const manager = createRuntimeManager({ platform: "win32" }, async (command, args, _env, timeoutMs) => {
     calls.push([command, ...args].join(" "));
     timeouts.push(timeoutMs);
+    if (args[0] === "status") {
+      return JSON.stringify({ status: "ready", checks: [] });
+    }
     return "ready";
   });
 
-  await manager.ensureRuntimeReady();
   await manager.repairRuntime();
   await manager.resetRuntime();
   await manager.uninstallRuntime();
 
   assert.deepEqual(calls, [
-    "blame-wsl2-runtime ensure",
-    "blame-wsl2-runtime --version",
-    "blame-wsl2-runtime status",
-    "blame-wsl2-runtime agent status",
     "blame-wsl2-runtime repair",
     "blame-wsl2-runtime --version",
     "blame-wsl2-runtime status",
@@ -272,10 +321,6 @@ test("runs managed runtime lifecycle commands explicitly", async () => {
     "blame-wsl2-runtime agent status",
   ]);
   assert.deepEqual(timeouts, [
-    1_800_000,
-    undefined,
-    undefined,
-    undefined,
     1_800_000,
     undefined,
     undefined,

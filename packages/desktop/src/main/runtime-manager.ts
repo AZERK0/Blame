@@ -118,6 +118,10 @@ export class RuntimeManager {
   }
 
   async ensureRuntimeReady() {
+    const report = await this.getRuntimeStatus();
+    if (report.status === "ready") {
+      return report;
+    }
     await runRuntimeLifecycleCommand(this.context, "ensure");
     return waitForRuntimeReadiness(this.context);
   }
