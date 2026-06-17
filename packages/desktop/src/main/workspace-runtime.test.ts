@@ -392,5 +392,81 @@ test("sanitizeWorkspaceConfigFiles: handles host paths on Windows/non-managed wi
   assert.match(rootFileWritten, /sharp: true/);
 });
 
+test("sanitizeWorkspaceConfigFiles: deletes duplicate lockfiles on VM/managed paths", async () => {
+  const deletedFiles: string[] = [];
+  const worktree = "/home/blame/.local/share/blame/runtime/worktrees/repo/story";
+  
+  const mockFns = {
+    run: async (cmd: string, args: string[]) => {
+      const nameArg = args[args.indexOf("-name") + 1];
+      if (nameArg === "pnpm-workspace.yaml") {
+        return { stdout: `${worktree}/pnpm-workspace.yaml\n`, stderr: "" };
+      }
+      if (nameArg === "pnpm-lock.yaml") {
+        return {
+          stdout: `${worktree}/pnpm-lock.yaml\n${worktree}/apps/web/pnpm-lock.yaml\n`,
+          stderr: "",
+        };
+      }
+      return { stdout: "", stderr: "" };
+    },
+    readFile: async () => "",
+    writeFile: async () => {},
+    pathExists: async () => false,
+    joinWorkspacePath: (dir: string, ...parts: string[]) => [dir, ...parts].join("/"),
+    rm: async (p: string) => {
+      deletedFiles.push(p);
+    },
+    readdirHost: async () => [],
+    platform: "win32" as const,
+  };
+
+  await sanitizeWorkspaceConfigFiles(worktree, mockFns);
+  
+  assert.deepEqual(deletedFiles, [`${worktree}/apps/web/pnpm-lock.yaml`]);
+});
+
+test("sanitizeWorkspaceConfigFiles: deletes duplicate lockfiles on host/non-managed paths", async () => {
+  const deletedFiles: string[] = [];
+  
+  const mockFns = {
+    run: async () => {
+      throw new Error("should not be called for host paths");
+    },
+    readFile: async () => "",
+    writeFile: async () => {},
+    pathExists: async () => false,
+    joinWorkspacePath: (dir: string, ...parts: string[]) => [dir, ...parts].join("/"),
+    rm: async (p: string) => {
+      deletedFiles.push(p);
+    },
+    readdirHost: async (dir: string) => {
+      if (dir === "/host") {
+        return [
+          { name: "pnpm-lock.yaml", isFile: () => true, isDirectory: () => false },
+          { name: "apps", isFile: () => false, isDirectory: () => true },
+        ] as any;
+      }
+      if (dir === "/host/apps") {
+        return [
+          { name: "web", isFile: () => false, isDirectory: () => true },
+        ] as any;
+      }
+      if (dir === "/host/apps/web") {
+        return [
+          { name: "pnpm-lock.yaml", isFile: () => true, isDirectory: () => false },
+        ] as any;
+      }
+      return [];
+    },
+    platform: "win32" as const,
+  };
+
+  await sanitizeWorkspaceConfigFiles("/host", mockFns);
+  
+  assert.deepEqual(deletedFiles, ["/host/apps/web/pnpm-lock.yaml"]);
+});
+
+
 
 

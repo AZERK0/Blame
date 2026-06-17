@@ -2,7 +2,12 @@ import { BlameAgentRuntime, type AgentEvent } from "@blame/agent-runtime"
 import { BrowserWindow, ipcMain, shell } from "electron"
 import { createServer, type ServerResponse } from "node:http"
 import type { AddressInfo } from "node:net"
-import { localWorkspaceInput, resolveAgentWorkspaceInput } from "./cline-backend-resolver"
+import { execFile } from "node:child_process"
+import { promisify } from "node:util"
+import { resolveAgentWorkspaceInput } from "./cline-backend-resolver"
+import { run as runRuntime, runtimeManagedPath } from "./workspace-runtime"
+
+const execFileAsync = promisify(execFile)
 
 const runtime = new BlameAgentRuntime({
   emit(event) {
@@ -11,6 +16,14 @@ const runtime = new BlameAgentRuntime({
 }, {
   openExternalUrl(url) {
     void shell.openExternal(url)
+  },
+  async git(cwd, args) {
+    if (runtimeManagedPath(cwd)) {
+      const { stdout } = await runRuntime("git", args, { cwd });
+      return stdout;
+    }
+    const { stdout } = await execFileAsync("git", args, { cwd, maxBuffer: 20 * 1024 * 1024 });
+    return stdout;
   },
 })
 
@@ -52,7 +65,7 @@ export function registerAgentIpcHandlers() {
     agentWorkspaceInput(input).then((resolved) => runtime.promptOptimizer.optimizeUserStory(resolved))
   )
   ipcMain.handle("agent:approve-and-merge", (_event, input) =>
-    runtime.approveAndMerge(localAgentWorkspaceInput(input))
+    agentWorkspaceInput(input).then((resolved) => runtime.approveAndMerge(resolved))
   )
 }
 
@@ -79,9 +92,6 @@ export function agentWorkspaceInput<T extends Record<string, unknown>>(input: T)
   return resolveAgentWorkspaceInput(input)
 }
 
-export function localAgentWorkspaceInput<T extends Record<string, unknown>>(input: T) {
-  return localWorkspaceInput(input)
-}
 
 const streamClients = new Map<string, Set<ServerResponse>>()
 let streamServer: ReturnType<typeof createServer> | undefined

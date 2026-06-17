@@ -184,7 +184,10 @@ type DevelopmentPromptInput = Pick<
 
 type RuntimeOptions = {
   openExternalUrl?(url: string): void;
+  git?(cwd: string, args: string[]): Promise<string>;
 };
+
+let customGitRunner: ((cwd: string, args: string[]) => Promise<string>) | undefined;
 
 export class BlameAgentRuntime {
   private clines = new Map<string, Promise<ClineCore>>();
@@ -208,6 +211,9 @@ export class BlameAgentRuntime {
   constructor(events?: AgentRuntimeEvents, options: RuntimeOptions = {}) {
     this.events = events;
     this.options = options;
+    if (options.git) {
+      customGitRunner = options.git;
+    }
     // Eagerly pre-load Cline SDK and telemetry to avoid latency on first start
     void import("@cline/sdk").catch(() => undefined);
     void this.telemetry().catch(() => undefined);
@@ -2458,6 +2464,9 @@ function unresolvedMergeConflictMessage(conflicts: string[]) {
 
 async function git(cwd: string, args: string[]) {
   try {
+    if (customGitRunner) {
+      return (await customGitRunner(cwd, args)).trim();
+    }
     const { stdout } = await execFileAsync("git", args, {
       cwd,
       maxBuffer: 20 * 1024 * 1024,

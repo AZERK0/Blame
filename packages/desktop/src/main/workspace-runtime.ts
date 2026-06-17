@@ -634,6 +634,44 @@ async function findPnpmWorkspaceYamlFilesHost(
   return result;
 }
 
+async function findDuplicateLockFilesHost(
+  dir: string,
+  lockfileNames: string[],
+  readdirFn = readdirHost,
+): Promise<string[]> {
+  const result: string[] = [];
+  const queue = [dir];
+  while (queue.length > 0) {
+    const curr = queue.shift()!;
+    try {
+      const entries = await readdirFn(curr, { withFileTypes: true });
+      for (const entry of entries) {
+        const fullPath = join(curr, entry.name);
+        if (entry.isDirectory()) {
+          const name = entry.name;
+          if (
+            name.startsWith(".") ||
+            name === "node_modules" ||
+            name === "dist" ||
+            name === "build" ||
+            name === "out"
+          ) {
+            continue;
+          }
+          queue.push(fullPath);
+        } else if (entry.isFile() && lockfileNames.includes(entry.name)) {
+          if (curr !== dir) {
+            result.push(fullPath);
+          }
+        }
+      }
+    } catch {
+      // Ignore reading errors
+    }
+  }
+  return result;
+}
+
 export async function sanitizeWorkspaceConfigFiles(
   worktree: string,
   fns = {
@@ -709,9 +747,56 @@ export async function sanitizeWorkspaceConfigFiles(
         // Ignore deletion failure
       }
     }
+
+    // Now, sanitize duplicate lockfiles
+    let lockfilePaths: string[] = [];
+    const lockfileNames = [
+      "pnpm-lock.yaml",
+      "package-lock.json",
+      "yarn.lock",
+      "bun.lock",
+      "bun.lockb",
+    ];
+    if (!runtimeManagedPath(worktree, platform)) {
+      lockfilePaths = await findDuplicateLockFilesHost(
+        worktree,
+        lockfileNames,
+        fns.readdirHost,
+      );
+    } else {
+      for (const name of lockfileNames) {
+        try {
+          const { stdout } = await fns.run("find", [
+            worktree,
+            "-type",
+            "f",
+            "-name",
+            name,
+          ]);
+          const found = stdout.split("\n").filter(Boolean);
+          for (const p of found) {
+            const rootLockPath = fns.joinWorkspacePath(worktree, name);
+            if (p !== rootLockPath) {
+              lockfilePaths.push(p);
+            }
+          }
+        } catch {
+          // Ignore find errors
+        }
+      }
+    }
+
+    for (const lockPath of lockfilePaths) {
+      try {
+        await fns.rm(lockPath);
+      } catch {
+        // Ignore deletion failure
+      }
+    }
   } catch {
     // Ignore overall failure
   }
 }
+
 
 
