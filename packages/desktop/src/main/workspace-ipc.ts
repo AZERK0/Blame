@@ -89,7 +89,6 @@ const forceKillDelayMs = 1_500;
 const previewResolveTimeoutMs = 45_000;
 const composeUpRetryDelaysMs = [2_000, 5_000, 10_000, 15_000];
 const setupEnvironmentCacheTtlMs = 2_000;
-const runtimeEnvScanLimit = pLimit(16);
 const composeCallPromises = new Map<string, Promise<unknown>>();
 const globalPreviewVolumes = [
   "blame_bun_cache",
@@ -2030,17 +2029,18 @@ async function collectRuntimeEnvFiles(directory: string, files: string[]) {
     return;
   }
   await Promise.all(
-    entries.map((entry) =>
-      runtimeEnvScanLimit(async () => {
-        const path = join(directory, entry.name);
-        if (entry.isDirectory()) {
-          if (!ignoredRuntimeEnvDirectory(entry.name))
-            await collectRuntimeEnvFiles(path, files);
-          return;
+    entries.map(async (entry) => {
+      const path = join(directory, entry.name);
+      if (entry.isDirectory()) {
+        if (!ignoredRuntimeEnvDirectory(entry.name)) {
+          await collectRuntimeEnvFiles(path, files);
         }
-        if (entry.isFile() && runtimeEnvFile(entry.name)) files.push(path);
-      }),
-    ),
+        return;
+      }
+      if (entry.isFile() && runtimeEnvFile(entry.name)) {
+        files.push(path);
+      }
+    }),
   );
 }
 
