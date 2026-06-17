@@ -4,6 +4,7 @@ runtime_version="${1:-5}"
 runtime_root="/home/blame/.local/share/blame/runtime"
 cline_sdk_version="${BLAME_CLINE_SDK_VERSION:-0.0.46}"
 nerdctl_version="${BLAME_NERDCTL_VERSION:-2.1.6}"
+runtime_packages="ca-certificates curl dbus-user-session git gzip iptables python3 slirp4netns tar uidmap xz-utils"
 
 ensure_user() {
   if id blame >/dev/null 2>&1; then
@@ -16,9 +17,23 @@ ensure_packages() {
   if ! command -v apt-get >/dev/null 2>&1; then
     return
   fi
+  missing="$(missing_runtime_packages)"
+  if [ -z "$missing" ]; then
+    return
+  fi
   export DEBIAN_FRONTEND=noninteractive
   apt-get update
-  apt-get install -y ca-certificates curl dbus-user-session git gzip iptables python3 slirp4netns tar uidmap xz-utils
+  apt-get install -y $missing
+}
+
+missing_runtime_packages() {
+  missing=""
+  for package in $runtime_packages; do
+    if ! dpkg-query -W -f='${Status}' "$package" 2>/dev/null | grep -q "install ok installed"; then
+      missing="$missing $package"
+    fi
+  done
+  printf '%s' "$missing"
 }
 
 ensure_node() {
@@ -102,11 +117,23 @@ ensure_containerd_config() {
 
 ensure_containerd_running() {
   if pgrep -x containerd >/dev/null 2>&1; then
+    wait_for_containerd
     return
   fi
   mkdir -p /var/log/blame-runtime
   nohup containerd >/var/log/blame-runtime/containerd.log 2>&1 &
-  sleep 2
+  wait_for_containerd
+}
+
+wait_for_containerd() {
+  attempt=0
+  while [ "$attempt" -lt 30 ]; do
+    if [ -S /run/containerd/containerd.sock ]; then
+      return
+    fi
+    attempt=$((attempt + 1))
+    sleep 0.1
+  done
 }
 
 ensure_agent() {
