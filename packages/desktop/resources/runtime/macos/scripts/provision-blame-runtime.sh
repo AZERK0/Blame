@@ -112,7 +112,10 @@ ensure_containerd_running() {
 ensure_agent() {
   cat >/usr/local/bin/blame-runtime-agent <<'EOF'
 #!/usr/bin/env python3
+import atexit
+import concurrent.futures
 import json
+import multiprocessing
 import os
 import pwd
 import subprocess
@@ -124,12 +127,59 @@ import urllib.request
 processes = {}
 write_lock = threading.Lock()
 processes_lock = threading.Lock()
+json_pool_lock = threading.Lock()
+json_pool = None
+json_worker_count = max(1, min(2, os.cpu_count() or 1))
+large_json_threshold = 64 * 1024
 ignored_env_directories = {".git", ".blame", "build", "coverage", "dist", "node_modules", "out"}
 env_template_suffixes = (".example", ".sample", ".template")
 
+def serialize_json_line(value):
+    return json.dumps(value, separators=(",", ":")) + "\n"
+
+def json_size(value):
+    if value is None or isinstance(value, bool):
+        return 4
+    if isinstance(value, (int, float)):
+        return 16
+    if isinstance(value, str):
+        return len(value)
+    if isinstance(value, list):
+        return sum(json_size(item) for item in value)
+    if isinstance(value, dict):
+        return sum(len(str(key)) + json_size(item) for key, item in value.items())
+    return len(str(value))
+
+def json_executor():
+    global json_pool
+    with json_pool_lock:
+        if json_pool is None:
+            context = multiprocessing.get_context("spawn")
+            json_pool = concurrent.futures.ProcessPoolExecutor(max_workers=json_worker_count, mp_context=context)
+        return json_pool
+
+def shutdown_json_executor():
+    global json_pool
+    with json_pool_lock:
+        pool = json_pool
+        json_pool = None
+    if pool is not None:
+        pool.shutdown(wait=False, cancel_futures=True)
+
+atexit.register(shutdown_json_executor)
+
+def json_line(value):
+    if json_size(value) < large_json_threshold:
+        return serialize_json_line(value)
+    try:
+        return json_executor().submit(serialize_json_line, value).result()
+    except Exception:
+        return serialize_json_line(value)
+
 def write(value):
+    line = json_line(value)
     with write_lock:
-        sys.stdout.write(json.dumps(value, separators=(",", ":")) + "\n")
+        sys.stdout.write(line)
         sys.stdout.flush()
 
 def version():
