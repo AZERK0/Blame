@@ -12,6 +12,7 @@ import { basename, join, relative, resolve } from "node:path";
 import { promisify } from "node:util";
 import type { ApiConnection, ReasoningEffort } from "@blame/agent-runtime";
 import { setupPath } from "./host-tool-path.ts";
+import { sanitizeWorkspaceConfigFiles } from "./workspace-runtime.ts";
 
 const execFileAsync = promisify(execFile);
 const gitMaxBuffer = 20 * 1024 * 1024;
@@ -228,6 +229,8 @@ export async function createProject(input: CreateProjectInput) {
     sessionId: input.runId,
     workspaceRoot: target,
   });
+
+  await sanitizeWorkspaceConfigFiles(target);
 
   await initializeGeneratedRepository(target, emit);
 

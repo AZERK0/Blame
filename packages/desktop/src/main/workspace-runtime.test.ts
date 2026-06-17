@@ -288,43 +288,109 @@ test("hasMissingWorkspaceNodeModules: returns true when sub-package node_modules
 test("sanitizeWorkspaceConfigFiles: merges configs and deletes duplicate sub-package files", async () => {
   let rootFileWritten = "";
   let fileDeleted = "";
+  const worktree = "/home/blame/.local/share/blame/runtime/worktrees/repo/story";
+  const rootConfigPath = `${worktree}/pnpm-workspace.yaml`;
+  const subConfigPath = `${worktree}/apps/web/pnpm-workspace.yaml`;
   
   const mockFns = {
     run: async () => ({
-      stdout: "/workspace/pnpm-workspace.yaml\n/workspace/apps/web/pnpm-workspace.yaml\n",
+      stdout: `${rootConfigPath}\n${subConfigPath}\n`,
       stderr: "",
     }),
     readFile: async (p: string) => {
-      if (p === "/workspace/pnpm-workspace.yaml") {
+      if (p === rootConfigPath) {
         return "packages:\n  - apps/*\n";
       }
-      if (p === "/workspace/apps/web/pnpm-workspace.yaml") {
+      if (p === subConfigPath) {
         return "allowBuilds:\n  sharp: true\nignoredBuiltDependencies:\n  - sharp\n";
       }
       throw new Error("unexpected file read");
     },
     writeFile: async (p: string, data: string) => {
-      if (p === "/workspace/pnpm-workspace.yaml") {
+      if (p === rootConfigPath) {
         rootFileWritten = data;
         return;
       }
       throw new Error("unexpected file write");
     },
     pathExists: async (p: string) => {
-      return p === "/workspace/pnpm-workspace.yaml";
+      return p === rootConfigPath;
     },
     joinWorkspacePath: (dir: string, ...parts: string[]) => [dir, ...parts].join("/"),
     rm: async (p: string) => {
       fileDeleted = p;
     },
+    readdirHost: async () => [],
+    platform: "win32" as const,
   };
 
-  await sanitizeWorkspaceConfigFiles("/workspace", mockFns);
+  await sanitizeWorkspaceConfigFiles(worktree, mockFns);
   
-  assert.equal(fileDeleted, "/workspace/apps/web/pnpm-workspace.yaml");
+  assert.equal(fileDeleted, subConfigPath);
   assert.match(rootFileWritten, /allowBuilds/);
   assert.match(rootFileWritten, /sharp: true/);
   assert.match(rootFileWritten, /ignoredBuiltDependencies/);
 });
+
+test("sanitizeWorkspaceConfigFiles: handles host paths on Windows/non-managed with readdirHost", async () => {
+  let rootFileWritten = "";
+  let fileDeleted = "";
+  
+  const mockFns = {
+    run: async () => {
+      throw new Error("should not be called for host paths");
+    },
+    readFile: async (p: string) => {
+      if (p === "/host/pnpm-workspace.yaml") {
+        return "packages:\n  - apps/*\n";
+      }
+      if (p === "/host/apps/web/pnpm-workspace.yaml") {
+        return "allowBuilds:\n  sharp: true\n";
+      }
+      throw new Error("unexpected file read");
+    },
+    writeFile: async (p: string, data: string) => {
+      if (p === "/host/pnpm-workspace.yaml") {
+        rootFileWritten = data;
+        return;
+      }
+      throw new Error("unexpected file write");
+    },
+    pathExists: async (p: string) => {
+      return p === "/host/pnpm-workspace.yaml";
+    },
+    joinWorkspacePath: (dir: string, ...parts: string[]) => [dir, ...parts].join("/"),
+    rm: async (p: string) => {
+      fileDeleted = p;
+    },
+    readdirHost: async (dir: string) => {
+      if (dir === "/host") {
+        return [
+          { name: "pnpm-workspace.yaml", isFile: () => true, isDirectory: () => false },
+          { name: "apps", isFile: () => false, isDirectory: () => true },
+        ] as any;
+      }
+      if (dir === "/host/apps") {
+        return [
+          { name: "web", isFile: () => false, isDirectory: () => true },
+        ] as any;
+      }
+      if (dir === "/host/apps/web") {
+        return [
+          { name: "pnpm-workspace.yaml", isFile: () => true, isDirectory: () => false },
+        ] as any;
+      }
+      return [];
+    },
+  };
+
+  // "/host" is not runtime-managed on any OS platform.
+  await sanitizeWorkspaceConfigFiles("/host", mockFns);
+  
+  assert.equal(fileDeleted, "/host/apps/web/pnpm-workspace.yaml");
+  assert.match(rootFileWritten, /allowBuilds/);
+  assert.match(rootFileWritten, /sharp: true/);
+});
+
 
 

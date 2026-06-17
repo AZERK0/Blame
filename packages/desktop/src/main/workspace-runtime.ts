@@ -8,6 +8,7 @@ import {
   appendFile as appendHostFile,
   chmod as chmodHost,
   mkdir as mkdirHost,
+  readdir as readdirHost,
   readFile as readHostFile,
   rm as rmHost,
   writeFile as writeHostFile,
@@ -598,6 +599,41 @@ export async function hasMissingWorkspaceNodeModules(
   return false;
 }
 
+async function findPnpmWorkspaceYamlFilesHost(
+  dir: string,
+  readdirFn = readdirHost,
+): Promise<string[]> {
+  const result: string[] = [];
+  const queue = [dir];
+  while (queue.length > 0) {
+    const curr = queue.shift()!;
+    try {
+      const entries = await readdirFn(curr, { withFileTypes: true });
+      for (const entry of entries) {
+        const fullPath = join(curr, entry.name);
+        if (entry.isDirectory()) {
+          const name = entry.name;
+          if (
+            name.startsWith(".") ||
+            name === "node_modules" ||
+            name === "dist" ||
+            name === "build" ||
+            name === "out"
+          ) {
+            continue;
+          }
+          queue.push(fullPath);
+        } else if (entry.isFile() && entry.name === "pnpm-workspace.yaml") {
+          result.push(fullPath);
+        }
+      }
+    } catch {
+      // Ignore reading errors
+    }
+  }
+  return result;
+}
+
 export async function sanitizeWorkspaceConfigFiles(
   worktree: string,
   fns = {
@@ -607,17 +643,25 @@ export async function sanitizeWorkspaceConfigFiles(
     pathExists,
     joinWorkspacePath,
     rm,
+    readdirHost,
+    platform: process.platform,
   },
 ): Promise<void> {
   try {
-    const { stdout } = await fns.run("find", [
-      worktree,
-      "-type",
-      "f",
-      "-name",
-      "pnpm-workspace.yaml",
-    ]);
-    const paths = stdout.split("\n").filter(Boolean);
+    const platform = fns.platform;
+    let paths: string[] = [];
+    if (!runtimeManagedPath(worktree, platform)) {
+      paths = await findPnpmWorkspaceYamlFilesHost(worktree, fns.readdirHost);
+    } else {
+      const { stdout } = await fns.run("find", [
+        worktree,
+        "-type",
+        "f",
+        "-name",
+        "pnpm-workspace.yaml",
+      ]);
+      paths = stdout.split("\n").filter(Boolean);
+    }
     const rootConfigPath = fns.joinWorkspacePath(worktree, "pnpm-workspace.yaml");
 
     for (const configPath of paths) {
