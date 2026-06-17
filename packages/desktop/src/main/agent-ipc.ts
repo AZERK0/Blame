@@ -52,7 +52,7 @@ export function registerAgentIpcHandlers() {
     agentWorkspaceInput(input).then((resolved) => runtime.promptOptimizer.optimizeUserStory(resolved))
   )
   ipcMain.handle("agent:approve-and-merge", (_event, input) =>
-    agentWorkspaceInput(input).then((resolved) => runtime.approveAndMerge(resolved))
+    runtime.approveAndMerge(localAgentWorkspaceInput(input))
   )
 }
 
