@@ -53,6 +53,10 @@ type AgentScanEnvFilesResult = {
   templates: string[];
 };
 
+type AgentReadExistingFilesResult = {
+  files: Record<string, string | null>;
+};
+
 export type AgentClineHubResult = {
   action?: string;
   authToken?: string;
@@ -124,6 +128,13 @@ export class RuntimeAgentClient {
     return result as AgentScanEnvFilesResult;
   }
 
+  async readExistingFiles(
+    paths: string[],
+  ): Promise<AgentReadExistingFilesResult> {
+    const result = await this.request("readExistingFiles", { paths });
+    return result as AgentReadExistingFilesResult;
+  }
+
   async clineHubEnsure(): Promise<AgentClineHubResult> {
     const result = await this.request("clineHubEnsure", {}, 90_000);
     return result as AgentClineHubResult;
@@ -143,13 +154,21 @@ export class RuntimeAgentClient {
     await this.request("kill", { processId }, 5_000);
   }
 
-  private request(method: string, params: Record<string, unknown>, timeoutMs = defaultTimeoutMs) {
+  private request(
+    method: string,
+    params: Record<string, unknown>,
+    timeoutMs = defaultTimeoutMs,
+  ) {
     if (!runtimeAgentSupported(this.platform))
       return Promise.reject(new Error("Runtime agent is not supported"));
     const process = this.ensureProcess();
     const id = this.nextId;
     this.nextId += 1;
-    const request: AgentRequest = { id, method, params: agentRequestParams(params) };
+    const request: AgentRequest = {
+      id,
+      method,
+      params: agentRequestParams(params),
+    };
     return new Promise<unknown>((resolve, reject) => {
       const timer = setTimeout(() => {
         this.pending.delete(id);
@@ -180,7 +199,9 @@ export class RuntimeAgentClient {
       log.error(`Runtime agent stderr: ${data.toString()}`);
     });
     child.once("exit", (code, signal) => {
-      log.error(`Runtime agent process exited with code: ${code}, signal: ${signal}`);
+      log.error(
+        `Runtime agent process exited with code: ${code}, signal: ${signal}`,
+      );
       this.rejectPending("Runtime agent exited");
     });
     child.once("error", (error) => {
@@ -307,8 +328,8 @@ function agentRequestParams(params: Record<string, unknown>) {
 
 function runtimeCommandEnvironment(env: NodeJS.ProcessEnv) {
   return Object.fromEntries(
-    Object.entries(env).filter(([key, value]) =>
-      typeof value === "string" && runtimeEnvironmentKey(key),
+    Object.entries(env).filter(
+      ([key, value]) => typeof value === "string" && runtimeEnvironmentKey(key),
     ),
   );
 }
@@ -355,18 +376,18 @@ function agentCommand(platform: NodeJS.Platform, env?: NodeJS.ProcessEnv) {
 function isAgentResponse(value: unknown): value is AgentResponse {
   return Boolean(
     value &&
-      typeof value === "object" &&
-      typeof (value as AgentResponse).id === "number" &&
-      typeof (value as AgentResponse).ok === "boolean",
+    typeof value === "object" &&
+    typeof (value as AgentResponse).id === "number" &&
+    typeof (value as AgentResponse).ok === "boolean",
   );
 }
 
 function isAgentEvent(value: unknown): value is AgentEvent {
   return Boolean(
     value &&
-      typeof value === "object" &&
-      (value as AgentEvent).event === "spawn" &&
-      typeof (value as AgentEvent).processId === "string",
+    typeof value === "object" &&
+    (value as AgentEvent).event === "spawn" &&
+    typeof (value as AgentEvent).processId === "string",
   );
 }
 
@@ -376,7 +397,10 @@ function agentError(response: AgentResponse) {
     response.error?.stdout,
     response.error?.stderr,
   ]
-    .filter((part): part is string => typeof part === "string" && Boolean(part.trim()))
+    .filter(
+      (part): part is string =>
+        typeof part === "string" && Boolean(part.trim()),
+    )
     .join("\n");
   const error = new Error(message);
   Object.assign(error, {

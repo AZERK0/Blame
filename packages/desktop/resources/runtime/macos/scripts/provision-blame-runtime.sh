@@ -337,6 +337,17 @@ def run_scan_env_files(params):
                 templates.append(path)
     return {"runtime": runtime, "templates": templates}
 
+def run_read_existing_files(params):
+    result = {}
+    for path in params.get("paths") or []:
+        path = str(path)
+        if os.path.isfile(path):
+            with open(path, "r", encoding="utf-8") as file:
+                result[path] = file.read()
+        else:
+            result[path] = None
+    return {"files": result}
+
 def npm_root():
     return subprocess.check_output(["npm", "root", "-g"], text=True).strip()
 
@@ -556,6 +567,7 @@ methods = {
     "spawn": run_spawn,
     "kill": run_kill,
     "scanEnvFiles": run_scan_env_files,
+    "readExistingFiles": run_read_existing_files,
     "clineHubEnsure": run_cline_hub_ensure,
     "clineHubStatus": run_cline_hub_status,
     "clineHubStop": run_cline_hub_stop,

@@ -9,46 +9,89 @@ type WorkerResponse<Output> = {
   result?: Output
 }
 
+type PendingWorkerTask = {
+  abort?: () => void
+  reject: (error: Error) => void
+  resolve: (value: unknown) => void
+  signal?: AbortSignal
+}
+
+const workerClients = new Map<string, WorkerClient>()
+
 export function runWorkerTask<Input, Output>(
   url: URL,
   input: Input,
   signal?: AbortSignal
 ) {
-  return new Promise<Output>((resolve, reject) => {
-    const id = crypto.randomUUID()
-    const worker = new Worker(url, { type: "module" })
-    const abort = () => {
-      worker.terminate()
-      reject(new DOMException("Worker task aborted", "AbortError"))
-    }
-
-    if (signal?.aborted) {
-      abort()
-      return
-    }
-
-    signal?.addEventListener("abort", abort, { once: true })
-
-    worker.onmessage = ({ data }: MessageEvent<WorkerResponse<Output>>) => {
-      if (data.id !== id) return
-      worker.terminate()
-      signal?.removeEventListener("abort", abort)
-      if (data.error) reject(new Error(data.error))
-      else resolve(data.result as Output)
-    }
-
-    worker.onerror = (event) => {
-      worker.terminate()
-      signal?.removeEventListener("abort", abort)
-      reject(new Error(event.message))
-    }
-
-    worker.postMessage({ id, input } satisfies WorkerRequest<Input>)
-  })
+  return workerClient(url).request<Input, Output>(input, signal)
 }
 
 export function workerTaskAborted(error: unknown) {
   return error instanceof DOMException && error.name === "AbortError"
+}
+
+function workerClient(url: URL) {
+  const key = url.href
+  const current = workerClients.get(key)
+  if (current) return current
+  const next = new WorkerClient(key, url)
+  workerClients.set(key, next)
+  return next
+}
+
+class WorkerClient {
+  private readonly pending = new Map<string, PendingWorkerTask>()
+  private readonly worker: Worker
+
+  constructor(
+    private readonly key: string,
+    url: URL
+  ) {
+    this.worker = new Worker(url, { type: "module" })
+    this.worker.onmessage = ({ data }: MessageEvent<WorkerResponse<unknown>>) =>
+      this.resolve(data)
+    this.worker.onerror = (event) => this.fail(new Error(event.message))
+  }
+
+  request<Input, Output>(input: Input, signal?: AbortSignal) {
+    return new Promise<Output>((resolve, reject) => {
+      const id = crypto.randomUUID()
+      const abort = () => this.abort(id)
+      if (signal?.aborted) {
+        reject(new DOMException("Worker task aborted", "AbortError"))
+        return
+      }
+      this.pending.set(id, { abort, reject, resolve, signal })
+      signal?.addEventListener("abort", abort, { once: true })
+      this.worker.postMessage({ id, input } satisfies WorkerRequest<Input>)
+    })
+  }
+
+  private abort(id: string) {
+    const task = this.pending.get(id)
+    if (!task) return
+    this.pending.delete(id)
+    task.reject(new DOMException("Worker task aborted", "AbortError"))
+  }
+
+  private resolve(data: WorkerResponse<unknown>) {
+    const task = this.pending.get(data.id)
+    if (!task) return
+    this.pending.delete(data.id)
+    if (task.abort) task.signal?.removeEventListener("abort", task.abort)
+    if (data.error) task.reject(new Error(data.error))
+    else task.resolve(data.result)
+  }
+
+  private fail(error: Error) {
+    this.worker.terminate()
+    workerClients.delete(this.key)
+    for (const task of this.pending.values()) {
+      if (task.abort) task.signal?.removeEventListener("abort", task.abort)
+      task.reject(error)
+    }
+    this.pending.clear()
+  }
 }
 
 export type { WorkerRequest, WorkerResponse }

@@ -5,6 +5,7 @@ import { dirname, join, posix, relative, resolve, sep } from "node:path";
 import { BrowserWindow, ipcMain } from "electron";
 import { parse as parseYaml } from "yaml";
 import { generateNewProjectWithAgent } from "./agent-ipc";
+import { pLimit } from "./concurrency.ts";
 import {
   containerRuntimeEnvironment,
   createContainerRuntime,
@@ -69,6 +70,7 @@ import {
   joinWorkspacePath,
   mkdir as mkdirRuntime,
   pathExists as runtimePathExists,
+  readExistingFiles as readExistingRuntimeFiles,
   readDirectory as readRuntimeDirectory,
   readFile as readRuntimeFile,
   runtimeAccessiblePath,
@@ -86,6 +88,9 @@ const previewStartupIntervalMs = 1_000;
 const forceKillDelayMs = 1_500;
 const previewResolveTimeoutMs = 45_000;
 const composeUpRetryDelaysMs = [2_000, 5_000, 10_000, 15_000];
+const setupEnvironmentCacheTtlMs = 2_000;
+const runtimeEnvScanLimit = pLimit(16);
+const composeCallPromises = new Map<string, Promise<unknown>>();
 const globalPreviewVolumes = [
   "blame_bun_cache",
   "blame_corepack_cache",
@@ -211,10 +216,18 @@ type ProjectServiceLogStream = {
   worktree: string;
 };
 
+type SetupEnvironment = NodeJS.ProcessEnv & {
+  COMPOSE_PROJECT_NAME: string;
+};
+
 const setupRuns = new Map<string, SetupRun>();
 const projectLogStreams = new Map<string, ProjectLogStream>();
 const projectServiceLogStreams = new Map<string, ProjectServiceLogStream>();
 const previewRecoveries = new Map<string, Promise<string | null>>();
+const setupEnvironmentCache = new Map<
+  string,
+  { env?: SetupEnvironment; promise?: Promise<SetupEnvironment>; ts: number }
+>();
 const removingWorktrees = new Set<string>();
 const removedWorktrees = new Set<string>();
 const workspaceProcesses = new Set<ChildProcessWithoutNullStreams>();
@@ -454,6 +467,7 @@ async function createWorktree(input: CreateWorktreeInput) {
     await timedWorktreeCreateStep(timings, "env sync", () =>
       syncProjectEnvFiles(repositoryRoot, worktree),
     );
+    invalidateSetupEnvironment(worktree);
     removedWorktrees.delete(worktree);
     await appendWorktreeCreateTimings(worktree, timings, startedAt);
     return { worktree, branch };
@@ -472,13 +486,17 @@ async function createWorktree(input: CreateWorktreeInput) {
       branchExists(repositoryRoot, branch),
     )
   ) {
-    await timedWorktreeCreateStep(timings, "git worktree add existing branch", () =>
-      runRuntimeGit(repositoryRoot, ["worktree", "add", worktree, branch]),
+    await timedWorktreeCreateStep(
+      timings,
+      "git worktree add existing branch",
+      () =>
+        runRuntimeGit(repositoryRoot, ["worktree", "add", worktree, branch]),
     );
     created = true;
     await timedWorktreeCreateStep(timings, "env sync", () =>
       syncProjectEnvFiles(repositoryRoot, worktree),
     );
+    invalidateSetupEnvironment(worktree);
     removedWorktrees.delete(worktree);
     await appendWorktreeCreateTimings(worktree, timings, startedAt);
     return { worktree, branch };
@@ -498,6 +516,7 @@ async function createWorktree(input: CreateWorktreeInput) {
   await timedWorktreeCreateStep(timings, "env sync", () =>
     syncProjectEnvFiles(repositoryRoot, worktree),
   );
+  invalidateSetupEnvironment(worktree);
   removedWorktrees.delete(worktree);
   if (created) await appendWorktreeCreateTimings(worktree, timings, startedAt);
   return { worktree, branch };
@@ -565,15 +584,8 @@ async function runProjectSetup(input: RunProjectSetupInput) {
     await timedRecoveryStep(worktree, "setup script write", () =>
       writeRuntimeFile(scriptPath, setupScript),
     );
-    const compose = await timedRecoveryStep(
-      worktree,
-      "compose prepare",
-      () =>
-        prepareProjectCompose(
-          worktree,
-          input.dockerCompose,
-          symlinkEnvMounts,
-        ),
+    const compose = await timedRecoveryStep(worktree, "compose prepare", () =>
+      prepareProjectCompose(worktree, input.dockerCompose, symlinkEnvMounts),
     );
     await timedRecoveryStep(worktree, "compose file write", () =>
       writeRuntimeFile(composePath, compose),
@@ -705,6 +717,7 @@ async function syncPreviewRuntimeEnvironment(
   if (!origin) return false;
   if (await materializedPreviewEnvFilesMatch(worktree, origin)) return false;
   await materializedPreviewEnvHostFileMounts(worktree, origin);
+  invalidateSetupEnvironment(worktree);
   return true;
 }
 
@@ -780,9 +793,11 @@ async function runSetupTaskServices(worktree: string, config: ComposeConfig) {
     const serviceConfig = config.services?.[service];
     if (
       serviceConfig &&
-      await timedRecoveryStep(worktree, `dependency cache check ${service}`, () =>
-        dependencyCacheReady(worktree, serviceConfig),
-      )
+      (await timedRecoveryStep(
+        worktree,
+        `dependency cache check ${service}`,
+        () => dependencyCacheReady(worktree, serviceConfig),
+      ))
     ) {
       await appendRecoveryLog(worktree, `dependency cache hit: ${service}`);
       continue;
@@ -791,8 +806,10 @@ async function runSetupTaskServices(worktree: string, config: ComposeConfig) {
       runProjectComposeSetupService(worktree, service),
     );
     if (serviceConfig)
-      await timedRecoveryStep(worktree, `dependency cache mark ${service}`, () =>
-        markDependencyCacheReady(worktree, serviceConfig),
+      await timedRecoveryStep(
+        worktree,
+        `dependency cache mark ${service}`,
+        () => markDependencyCacheReady(worktree, serviceConfig),
       );
   }
   return new Set(services);
@@ -809,24 +826,31 @@ async function runCompletedDependencyServices(
   for (const service of services) {
     if (
       skippableDependencyInitService(service) &&
-      await timedRecoveryStep(
+      (await timedRecoveryStep(
         worktree,
         `dependency init cache check ${service}`,
         () => setupDependencyCachesReady(worktree, config),
-      )
+      ))
     ) {
-      await appendRecoveryLog(worktree, `dependency init cache hit: ${service}`);
+      await appendRecoveryLog(
+        worktree,
+        `dependency init cache hit: ${service}`,
+      );
       continue;
     }
-    await timedRecoveryStep(worktree, `compose dependency service ${service}`, () =>
-      runProjectComposeService(worktree, service),
+    await timedRecoveryStep(
+      worktree,
+      `compose dependency service ${service}`,
+      () => runProjectComposeService(worktree, service),
     );
   }
   return new Set(services);
 }
 
 function skippableDependencyInitService(service: string) {
-  return service === "blame-dependencies-init" || service === "blame-volumes-init";
+  return (
+    service === "blame-dependencies-init" || service === "blame-volumes-init"
+  );
 }
 
 async function setupDependencyCachesReady(
@@ -843,10 +867,7 @@ async function setupDependencyCachesReady(
   return true;
 }
 
-async function dependencyCacheReady(
-  worktree: string,
-  service: ComposeService,
-) {
+async function dependencyCacheReady(worktree: string, service: ComposeService) {
   const cache = dependencyCache(service);
   if (!cache) return false;
   const env = await setupEnvironment(worktree);
@@ -1479,7 +1500,10 @@ async function emitArchivedProjectServiceLog(
   streamId: string,
   stream: ProjectServiceLogStream,
 ) {
-  const content = await archivedProjectServiceLog(stream.worktree, stream.service);
+  const content = await archivedProjectServiceLog(
+    stream.worktree,
+    stream.service,
+  );
   if (!content) return false;
   stream.hasOutput = true;
   emitProjectServiceLog(streamId, "stdout", content);
@@ -1506,12 +1530,18 @@ function archivedServiceLogSection(log: string, service: string) {
 function archivedServiceLogLine(line: string, service: string) {
   const normalized = normalizedServiceName(line);
   if (service === "deps")
-    return /\bdeps(?:-|_)?run\b/.test(normalized) || /\bservice deps\b/.test(normalized);
+    return (
+      /\bdeps(?:-|_)?run\b/.test(normalized) ||
+      /\bservice deps\b/.test(normalized)
+    );
   return normalized.includes(service);
 }
 
 function normalizedServiceName(value: string) {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
 }
 
 async function stopProjectServiceLogs(streamId: string) {
@@ -1657,6 +1687,14 @@ async function appendTimingLog(
 ) {
   try {
     await appendRecoveryLog(worktree, `timing ${label}: ${duration}ms`);
+    await appendRuntimeFile(
+      timingLogPath(worktree),
+      `${JSON.stringify({
+        at: new Date().toISOString(),
+        durationMs: duration,
+        label,
+      })}\n`,
+    );
   } catch {}
 }
 
@@ -1770,7 +1808,10 @@ async function removeGitWorktree(repositoryRoot: string, worktree: string) {
   await rmRuntime(worktree);
 }
 
-async function removeStaleGitWorktree(repositoryRoot: string, worktree: string) {
+async function removeStaleGitWorktree(
+  repositoryRoot: string,
+  worktree: string,
+) {
   await rmRuntime(worktree);
   await runRuntimeGit(repositoryRoot, ["worktree", "prune"]);
   if (await worktreeRegistered(repositoryRoot, worktree))
@@ -1905,6 +1946,30 @@ function normalizedPath(path: string) {
 }
 
 async function setupEnvironment(worktree: string) {
+  const cached = setupEnvironmentCache.get(worktree);
+  const now = Date.now();
+  if (cached?.promise) return cached.promise;
+  if (cached?.env && now - cached.ts < setupEnvironmentCacheTtlMs)
+    return cached.env;
+  const promise = buildSetupEnvironment(worktree);
+  setupEnvironmentCache.set(worktree, {
+    promise,
+    ts: now,
+    env: cached?.env,
+  });
+  try {
+    const env = await promise;
+    setupEnvironmentCache.set(worktree, { env, ts: Date.now() });
+    return env;
+  } catch (error) {
+    setupEnvironmentCache.delete(worktree);
+    throw error;
+  }
+}
+
+async function buildSetupEnvironment(
+  worktree: string,
+): Promise<SetupEnvironment> {
   return {
     ...containerRuntimeEnvironment(process.env),
     ...(await worktreeRuntimeEnvironment(worktree)),
@@ -1927,6 +1992,10 @@ async function setupEnvironment(worktree: string) {
     npm_config_yes: "true",
     PATH: setupPath(),
   };
+}
+
+function invalidateSetupEnvironment(worktree: string) {
+  setupEnvironmentCache.delete(worktree);
 }
 
 function runtimeManagerEnvironment() {
@@ -1961,15 +2030,17 @@ async function collectRuntimeEnvFiles(directory: string, files: string[]) {
     return;
   }
   await Promise.all(
-    entries.map(async (entry) => {
-      const path = join(directory, entry.name);
-      if (entry.isDirectory()) {
-        if (!ignoredRuntimeEnvDirectory(entry.name))
-          await collectRuntimeEnvFiles(path, files);
-        return;
-      }
-      if (entry.isFile() && runtimeEnvFile(entry.name)) files.push(path);
-    }),
+    entries.map((entry) =>
+      runtimeEnvScanLimit(async () => {
+        const path = join(directory, entry.name);
+        if (entry.isDirectory()) {
+          if (!ignoredRuntimeEnvDirectory(entry.name))
+            await collectRuntimeEnvFiles(path, files);
+          return;
+        }
+        if (entry.isFile() && runtimeEnvFile(entry.name)) files.push(path);
+      }),
+    ),
   );
 }
 
@@ -2026,6 +2097,10 @@ function setupLogPath(worktree: string) {
   return joinWorkspacePath(worktree, ".blame", "logs", "setup.log");
 }
 
+function timingLogPath(worktree: string) {
+  return joinWorkspacePath(worktree, ".blame", "logs", "timing.jsonl");
+}
+
 async function composePreviewTarget(worktree: string, composePath: string) {
   const config = await composeConfig(worktree, composePath);
   const services = Object.entries(config.services ?? {});
@@ -2039,6 +2114,15 @@ async function composePreviewTarget(worktree: string, composePath: string) {
 }
 
 async function composeConfig(
+  worktree: string,
+  composePath: string,
+): Promise<ComposeConfig> {
+  return dedupeComposeCall(`config:${worktree}:${composePath}`, () =>
+    loadComposeConfig(worktree, composePath),
+  );
+}
+
+async function loadComposeConfig(
   worktree: string,
   composePath: string,
 ): Promise<ComposeConfig> {
@@ -2093,6 +2177,18 @@ async function composePublishedAddress(
   service: string,
   port: number,
 ) {
+  return dedupeComposeCall(
+    `port:${worktree}:${composePath}:${service}:${port}`,
+    () => loadComposePublishedAddress(worktree, composePath, service, port),
+  );
+}
+
+async function loadComposePublishedAddress(
+  worktree: string,
+  composePath: string,
+  service: string,
+  port: number,
+) {
   try {
     const { stdout } = await containerRuntime.compose(
       [
@@ -2110,6 +2206,14 @@ async function composePublishedAddress(
   } catch {
     return undefined;
   }
+}
+
+function dedupeComposeCall<T>(key: string, action: () => Promise<T>) {
+  const current = composeCallPromises.get(key) as Promise<T> | undefined;
+  if (current) return current;
+  const next = action().finally(() => composeCallPromises.delete(key));
+  composeCallPromises.set(key, next);
+  return next;
 }
 
 async function repairProjectCompose(
@@ -2207,16 +2311,17 @@ async function dependencyVolumeHashForWorktree(
   compose: string,
 ) {
   const hash = createHash("sha256");
-  const inputs = await Promise.all(
-    dependencyHashFiles.map(async (file) => {
-      const path = joinWorkspacePath(worktree, file);
-      if (!(await runtimePathExists(path))) return undefined;
-      return { content: await readRuntimeFile(path), file };
-    }),
+  const paths = dependencyHashFiles.map((file) => ({
+    file,
+    path: joinWorkspacePath(worktree, file),
+  }));
+  const contents = await readExistingRuntimeFiles(
+    paths.map(({ path }) => path),
   );
-  const foundInputs = inputs.filter(
-    (input): input is { content: string; file: string } => Boolean(input),
-  );
+  const foundInputs = paths.flatMap(({ file, path }) => {
+    const content = contents[path];
+    return typeof content === "string" ? [{ content, file }] : [];
+  });
   for (const { content, file } of foundInputs) {
     await appendRecoveryLog(worktree, `dependency hash input: ${file}`);
     hash.update(file);
@@ -2403,6 +2508,12 @@ async function projectRuntimeHealthy(worktreeInput: string) {
 }
 
 async function composeProjectContainers(worktree: string) {
+  return dedupeComposeCall(`containers:${worktree}`, () =>
+    loadComposeProjectContainers(worktree),
+  );
+}
+
+async function loadComposeProjectContainers(worktree: string) {
   try {
     const { stdout } = await containerRuntime.compose(
       [...composeArgs(worktree), "ps", "-a", "--format", "json"],

@@ -1,9 +1,11 @@
 import { execFile } from "node:child_process";
 import { basename, posix, resolve } from "node:path";
 import { promisify } from "node:util";
+import { pLimit } from "./concurrency.ts";
 
 const execFileAsync = promisify(execFile);
 const maxBuffer = 50 * 1024 * 1024;
+const gitReadLimit = pLimit(6);
 
 export type GitDirectoryInput = {
   path?: string;
@@ -36,7 +38,9 @@ export async function listGitDirectory(input: GitDirectoryInput) {
   const path = gitPath(input.path);
   const entries = new Map<string, GitTreeEntry>();
   const trees = await Promise.all(
-    input.refs.map((ref) => readGitTree(input.root, ref, path)),
+    input.refs.map((ref) =>
+      gitReadLimit(() => readGitTree(input.root, ref, path)),
+    ),
   );
   for (const stdout of trees) {
     parseTree(stdout, path).forEach((entry) => entries.set(entry.name, entry));

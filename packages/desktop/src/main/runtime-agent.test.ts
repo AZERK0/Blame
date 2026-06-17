@@ -18,7 +18,10 @@ class FakeAgentProcess extends EventEmitter {
   exitCode: number | null = null;
   signalCode: NodeJS.Signals | null = null;
   requests: Request[] = [];
-  private readonly handle: (request: Request, process: FakeAgentProcess) => void;
+  private readonly handle: (
+    request: Request,
+    process: FakeAgentProcess,
+  ) => void;
 
   constructor(handle: (request: Request, process: FakeAgentProcess) => void) {
     super();
@@ -184,6 +187,28 @@ test("runtime agent client requests Cline hub ensure", async () => {
   assert.equal(processes[0].requests[0].method, "clineHubEnsure");
   assert.equal(result.url, "ws://127.0.0.1:25463/hub");
   assert.equal(result.authToken, "secret");
+});
+
+test("runtime agent client batches existing file reads", async () => {
+  const processes: FakeAgentProcess[] = [];
+  const spawnProcess = fakeSpawn(processes, (request, process) => {
+    process.stdout.write(
+      `${JSON.stringify({
+        id: request.id,
+        ok: true,
+        result: { files: { "/worktree/package.json": "{}" } },
+      })}\n`,
+    );
+  });
+  const client = new RuntimeAgentClient({ platform: "darwin", spawnProcess });
+
+  const result = await client.readExistingFiles(["/worktree/package.json"]);
+
+  assert.equal(processes[0].requests[0].method, "readExistingFiles");
+  assert.deepEqual(processes[0].requests[0].params.paths, [
+    "/worktree/package.json",
+  ]);
+  assert.equal(result.files["/worktree/package.json"], "{}");
 });
 
 test("runtime agent client treats stream kill as best effort", async () => {

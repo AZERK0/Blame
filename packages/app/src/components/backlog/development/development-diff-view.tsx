@@ -7,7 +7,6 @@ import {
 import type { VcsFileDiff } from "@/components/backlog/development/development-workspace"
 import { MessageSquareIcon } from "lucide-react"
 
-import { DevelopmentScrollArea } from "@/components/backlog/development/development-scroll-area"
 import {
   diffKindClassName,
   filename,
@@ -21,6 +20,19 @@ type LineSelection = {
   anchor: number
   focus: number
 }
+
+const diffLineHeight = 20
+const diffVirtualizationThreshold = 400
+const diffOverscan = 24
+const diffScrollClassName = cn(
+  "min-h-0 w-full max-w-full flex-1 overflow-auto",
+  "[scrollbar-width:thin] [scrollbar-color:color-mix(in_oklab,var(--muted-foreground)_35%,transparent)_transparent]",
+  "[&::-webkit-scrollbar]:h-2.5 [&::-webkit-scrollbar]:w-2.5",
+  "[&::-webkit-scrollbar-corner]:bg-background",
+  "[&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border",
+  "[&::-webkit-scrollbar-thumb:hover]:bg-muted-foreground/45",
+  "[&::-webkit-scrollbar-track]:bg-transparent"
+)
 
 export function DevelopmentDiffView({
   diff,
@@ -48,9 +60,7 @@ export function DevelopmentDiffView({
         </div>
       )}
       {scroll ? (
-        <DevelopmentScrollArea className="min-h-0 w-full max-w-full flex-1">
-          <DiffCode patch={diff.patch} path={diff.file} />
-        </DevelopmentScrollArea>
+        <DiffCode patch={diff.patch} path={diff.file} scroll />
       ) : (
         <DiffCode patch={diff.patch} path={diff.file} />
       )}
@@ -191,7 +201,15 @@ function DiffLine({
   )
 }
 
-function DiffCode({ patch, path }: { patch: string; path: string }) {
+function DiffCode({
+  patch,
+  path,
+  scroll = false,
+}: {
+  patch: string
+  path: string
+  scroll?: boolean
+}) {
   const lines = useDiffLines(patch)
   const [dragging, setDragging] = React.useState(false)
   const [selection, setSelection] = React.useState<LineSelection>()
@@ -204,42 +222,190 @@ function DiffCode({ patch, path }: { patch: string; path: string }) {
     return () => window.removeEventListener("mouseup", stopDragging)
   }, [dragging])
 
+  const lineProps = diffLineHandlers({
+    dragging,
+    lines,
+    path,
+    selectedRange,
+    selection,
+    setDragging,
+    setSelection,
+  })
+
+  if (scroll && lines.length > diffVirtualizationThreshold) {
+    return <VirtualDiffCode lineProps={lineProps} lines={lines} />
+  }
+
+  if (scroll) {
+    return (
+      <div className={diffScrollClassName}>
+        <DiffCodeLines lineProps={lineProps} lines={lines} />
+      </div>
+    )
+  }
+
+  return <DiffCodeLines lineProps={lineProps} lines={lines} />
+}
+
+function DiffCodeLines({
+  lineProps,
+  lines,
+}: {
+  lineProps: DiffLineHandlers
+  lines: DiffCodeLine[]
+}) {
   return (
     <pre className="w-max min-w-full p-0 font-mono text-xs leading-5">
       {lines.map((line, index) => (
         <DiffLine
           key={`${index}:${line.content}`}
-          line={line.content}
-          lineNumber={index + 1}
-          newLineNumber={line.newLineNumber}
-          oldLineNumber={line.oldLineNumber}
-          path={path}
-          selectedRange={selectedRange}
-          showCommentButton={showCommentButton(selectedRange, index + 1)}
-          onDragLine={(lineNumber) => {
-            if (!dragging || !selection) return
-            setSelection({ ...selection, focus: lineNumber })
-          }}
-          onSelectLine={(lineNumber) => {
-            setDragging(true)
-            setSelection({ anchor: lineNumber, focus: lineNumber })
-          }}
-          onSendComment={(lineNumber) => {
-            const range = selectedLineRange(selectedRange, lineNumber)
-            dispatchCodeSelectionAttachment({
-              content: lines
-                .slice(range.start - 1, range.end)
-                .map((line) => line.content)
-                .join("\n"),
-              endLine: range.end,
-              path,
-              startLine: range.start,
-            })
-          }}
+          {...lineProps(line, index)}
         />
       ))}
     </pre>
   )
+}
+
+function VirtualDiffCode({
+  lineProps,
+  lines,
+}: {
+  lineProps: DiffLineHandlers
+  lines: DiffCodeLine[]
+}) {
+  const container = React.useRef<HTMLDivElement>(null)
+  const [scrollTop, setScrollTop] = React.useState(0)
+  const height = useElementHeight(container)
+  const visibleRange = visibleDiffWindow(scrollTop, height, lines.length)
+
+  return (
+    <div
+      ref={container}
+      className={cn(diffScrollClassName, "font-mono text-xs leading-5")}
+      onScroll={(event) => setScrollTop(event.currentTarget.scrollTop)}
+    >
+      <pre
+        className="relative w-max min-w-full p-0"
+        style={{ height: lines.length * diffLineHeight }}
+      >
+        <VirtualDiffLines
+          lineProps={lineProps}
+          lines={lines}
+          visibleRange={visibleRange}
+        />
+      </pre>
+    </div>
+  )
+}
+
+function VirtualDiffLines({
+  lineProps,
+  lines,
+  visibleRange,
+}: {
+  lineProps: DiffLineHandlers
+  lines: DiffCodeLine[]
+  visibleRange: { end: number; start: number }
+}) {
+  return (
+    <div
+      style={{
+        transform: `translateY(${visibleRange.start * diffLineHeight}px)`,
+      }}
+    >
+      {lines.slice(visibleRange.start, visibleRange.end).map((line, offset) => {
+        const index = visibleRange.start + offset
+        return (
+          <DiffLine
+            key={`${index}:${line.content}`}
+            {...lineProps(line, index)}
+          />
+        )
+      })}
+    </div>
+  )
+}
+
+function useElementHeight(ref: React.RefObject<HTMLElement | null>) {
+  const [height, setHeight] = React.useState(0)
+
+  React.useLayoutEffect(() => {
+    const element = ref.current
+    if (!element) return
+    const updateHeight = () => setHeight(element.clientHeight)
+    updateHeight()
+    const observer = new ResizeObserver(updateHeight)
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [ref])
+
+  return height
+}
+
+type DiffLineHandlers = (
+  line: DiffCodeLine,
+  index: number
+) => React.ComponentProps<typeof DiffLine>
+
+function diffLineHandlers({
+  dragging,
+  lines,
+  path,
+  selectedRange,
+  selection,
+  setDragging,
+  setSelection,
+}: {
+  dragging: boolean
+  lines: DiffCodeLine[]
+  path: string
+  selectedRange?: { end: number; start: number }
+  selection?: LineSelection
+  setDragging: React.Dispatch<React.SetStateAction<boolean>>
+  setSelection: React.Dispatch<React.SetStateAction<LineSelection | undefined>>
+}): DiffLineHandlers {
+  return (line, index) => ({
+    line: line.content,
+    lineNumber: index + 1,
+    newLineNumber: line.newLineNumber,
+    oldLineNumber: line.oldLineNumber,
+    path,
+    selectedRange,
+    showCommentButton: showCommentButton(selectedRange, index + 1),
+    onDragLine: (lineNumber) => {
+      if (!dragging || !selection) return
+      setSelection({ ...selection, focus: lineNumber })
+    },
+    onSelectLine: (lineNumber) => {
+      setDragging(true)
+      setSelection({ anchor: lineNumber, focus: lineNumber })
+    },
+    onSendComment: (lineNumber) => {
+      const range = selectedLineRange(selectedRange, lineNumber)
+      dispatchCodeSelectionAttachment({
+        content: lines
+          .slice(range.start - 1, range.end)
+          .map((line) => line.content)
+          .join("\n"),
+        endLine: range.end,
+        path,
+        startLine: range.start,
+      })
+    },
+  })
+}
+
+function visibleDiffWindow(
+  scrollTop: number,
+  height: number,
+  lineCount: number
+) {
+  const start = Math.max(
+    0,
+    Math.floor(scrollTop / diffLineHeight) - diffOverscan
+  )
+  const visible = Math.ceil(height / diffLineHeight) + diffOverscan * 2
+  return { end: Math.min(lineCount, start + visible), start }
 }
 
 function useDiffLines(patch: string) {

@@ -19,8 +19,10 @@ import { runtimeToolScript, setupPath } from "./host-tool-path.ts";
 import { runtimeAgentClient, runtimeAgentSupported } from "./runtime-agent.ts";
 
 const execFileAsync = promisify(execFile);
-const vmRuntimeWorktreeRoot = "/home/blame/.local/share/blame/runtime/worktrees";
-const macosRuntimeWorktreeSegment = "/Library/Application Support/Blame/runtime/worktrees";
+const vmRuntimeWorktreeRoot =
+  "/home/blame/.local/share/blame/runtime/worktrees";
+const macosRuntimeWorktreeSegment =
+  "/Library/Application Support/Blame/runtime/worktrees";
 
 type RuntimeOptions = {
   cwd?: string;
@@ -80,13 +82,14 @@ export function runtimeManagedPath(
 ) {
   if (platform !== "darwin" && platform !== "win32") return false;
   if (platform === "darwin") return macosRuntimeManagedPath(path);
-  return normalizedRuntimePath(path) === vmRuntimeWorktreeRoot
-    || normalizedRuntimePath(path).startsWith(`${vmRuntimeWorktreeRoot}/`);
+  return (
+    normalizedRuntimePath(path) === vmRuntimeWorktreeRoot ||
+    normalizedRuntimePath(path).startsWith(`${vmRuntimeWorktreeRoot}/`)
+  );
 }
 
 export function resolveWorkspacePath(path: string) {
-  if (runtimePathLike(path))
-    return normalizedRuntimePath(path);
+  if (runtimePathLike(path)) return normalizedRuntimePath(path);
   return resolve(path);
 }
 
@@ -97,8 +100,7 @@ export function joinWorkspacePath(root: string, ...paths: string[]) {
 }
 
 export function dirnameWorkspacePath(path: string) {
-  if (runtimePathLike(path))
-    return posix.dirname(normalizedRuntimePath(path));
+  if (runtimePathLike(path)) return posix.dirname(normalizedRuntimePath(path));
   return dirname(path);
 }
 
@@ -231,9 +233,37 @@ export async function rm(path: string, input: RuntimeOptions = {}) {
 }
 
 export async function readFile(path: string, input: RuntimeOptions = {}) {
-  if (!runtimeManagedPath(path, input.platform)) return readHostFile(path, "utf8");
+  if (!runtimeManagedPath(path, input.platform))
+    return readHostFile(path, "utf8");
   const { stdout } = await run("cat", [path], input);
   return stdout;
+}
+
+export async function readExistingFiles(
+  paths: string[],
+  input: RuntimeOptions = {},
+) {
+  const platform = input.platform ?? process.platform;
+  const env = runtimeEnvironment(input, platform);
+  if (
+    paths.every((path) => runtimeManagedPath(path, platform)) &&
+    useRuntimeAgent(platform, env)
+  ) {
+    try {
+      return (
+        await runtimeAgentClient({ env, platform }).readExistingFiles(paths)
+      ).files;
+    } catch (error) {
+      if (runtimeAgentCommandFailed(error)) throw error;
+    }
+  }
+  const entries = await Promise.all(
+    paths.map(async (path) => {
+      if (!(await pathExists(path, input))) return [path, null] as const;
+      return [path, await readFile(path, input)] as const;
+    }),
+  );
+  return Object.fromEntries(entries);
 }
 
 export async function readDirectory(path: string, input: RuntimeOptions = {}) {
@@ -269,7 +299,10 @@ export async function writeFile(
   const encoded = Buffer.from(data, "utf8").toString("base64");
   await run(
     "sh",
-    ["-lc", `printf %s ${shellQuote(encoded)} | base64 -d > ${shellQuote(path)}`],
+    [
+      "-lc",
+      `printf %s ${shellQuote(encoded)} | base64 -d > ${shellQuote(path)}`,
+    ],
     input,
   );
 }
@@ -295,7 +328,11 @@ export async function appendFile(
   );
 }
 
-export async function chmod(path: string, mode: number, input: RuntimeOptions = {}) {
+export async function chmod(
+  path: string,
+  mode: number,
+  input: RuntimeOptions = {},
+) {
   if (!runtimeManagedPath(path, input.platform)) {
     await chmodHost(path, mode);
     return;
@@ -311,14 +348,14 @@ function runtimeWrappedCommand(
   platform: NodeJS.Platform = process.platform,
   user: RuntimeOptions["user"] = "blame",
 ): RuntimeCommandSpec {
-  const commandArgs = user === "root"
-    ? ["root", command, ...args]
-    : [command, ...args];
+  const commandArgs =
+    user === "root" ? ["root", command, ...args] : [command, ...args];
   if (!cwd) return { args: commandArgs, command: wrapper };
   const runtimeCwd = runtimeCwdPath(cwd, platform);
   const script = `cd ${shellQuote(runtimeCwd)} && exec ${shellQuote(command)} ${args.map(shellQuote).join(" ")}`;
   return {
-    args: user === "root" ? ["root", "sh", "-lc", script] : ["sh", "-lc", script],
+    args:
+      user === "root" ? ["root", "sh", "-lc", script] : ["sh", "-lc", script],
     command: wrapper,
   };
 }
@@ -341,25 +378,27 @@ function encodeWslSegment(value: string) {
   return value;
 }
 
-function runtimeEnvironment(
-  input: RuntimeOptions,
-  platform: NodeJS.Platform,
-) {
-  return input.env ?? {
-    ...process.env,
-    PATH: setupPath({ platform }),
-  };
+function runtimeEnvironment(input: RuntimeOptions, platform: NodeJS.Platform) {
+  return (
+    input.env ?? {
+      ...process.env,
+      PATH: setupPath({ platform }),
+    }
+  );
 }
 
 function useRuntimeAgent(platform: NodeJS.Platform, env: NodeJS.ProcessEnv) {
-  return runtimeAgentSupported(platform) && env.BLAME_DISABLE_RUNTIME_AGENT !== "1";
+  return (
+    runtimeAgentSupported(platform) && env.BLAME_DISABLE_RUNTIME_AGENT !== "1"
+  );
 }
 
 function runtimeAgentCommandFailed(error: unknown) {
   return Boolean(
     error &&
-      typeof error === "object" &&
-      (error as { runtimeAgentCommandFailed?: boolean }).runtimeAgentCommandFailed,
+    typeof error === "object" &&
+    (error as { runtimeAgentCommandFailed?: boolean })
+      .runtimeAgentCommandFailed,
   );
 }
 
@@ -372,7 +411,14 @@ function executableRuntimeCommand(
   const script = runtimeToolScript(spec.command, { env, platform });
   if (script) {
     return {
-      args: ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script, ...spec.args],
+      args: [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        script,
+        ...spec.args,
+      ],
       command: "powershell.exe",
     };
   }
