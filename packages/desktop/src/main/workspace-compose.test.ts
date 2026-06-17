@@ -853,7 +853,7 @@ test("safely prepends corepack enable to commands using pnpm", () => {
 
   const result = dockerComposeWithCorepackPnpm(compose);
 
-  assert.match(result, /command: "\(corepack enable 2>\/dev\/null \|\| true\) && sh -lc 'corepack prepare pnpm@10.33.2 --activate && corepack pnpm dev'"/);
+  assert.match(result, /command: "sh -lc '\(corepack enable 2>\/dev\/null \|\| true\) && corepack prepare pnpm@10.33.2 --activate && corepack pnpm dev'"/);
   assert.match(result, /- \(corepack enable 2>\/dev\/null \|\| true\) && corepack prepare pnpm@10.33.2 --activate && corepack pnpm install/);
 });
 
