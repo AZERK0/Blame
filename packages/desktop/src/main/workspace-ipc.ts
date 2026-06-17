@@ -2207,18 +2207,24 @@ async function dependencyVolumeHashForWorktree(
   compose: string,
 ) {
   const hash = createHash("sha256");
-  let found = false;
-  for (const file of dependencyHashFiles) {
-    const path = joinWorkspacePath(worktree, file);
-    if (!(await runtimePathExists(path))) continue;
+  const inputs = await Promise.all(
+    dependencyHashFiles.map(async (file) => {
+      const path = joinWorkspacePath(worktree, file);
+      if (!(await runtimePathExists(path))) return undefined;
+      return { content: await readRuntimeFile(path), file };
+    }),
+  );
+  const foundInputs = inputs.filter(
+    (input): input is { content: string; file: string } => Boolean(input),
+  );
+  for (const { content, file } of foundInputs) {
     await appendRecoveryLog(worktree, `dependency hash input: ${file}`);
-    found = true;
     hash.update(file);
     hash.update("\0");
-    hash.update(await readRuntimeFile(path));
+    hash.update(content);
     hash.update("\0");
   }
-  if (!found) return dependencyVolumeHash(compose);
+  if (foundInputs.length === 0) return dependencyVolumeHash(compose);
   return hash.digest("hex").slice(0, 12);
 }
 
