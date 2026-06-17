@@ -3,7 +3,6 @@ import { ChevronRightIcon, DatabaseIcon, ServerIcon } from "lucide-react"
 import { toast } from "sonner"
 
 import {
-  ModelSelector,
   type ModelSelection,
   useModelSelection,
 } from "@/components/model/model-selector"
@@ -69,7 +68,6 @@ export function ProjectInitializationRunner() {
   const controller = useProjectInitializationController()
   return (
     <>
-      <InitializationModelDialog controller={controller} />
       <InitializationDatabaseDialog controller={controller} />
       <HostDependenciesDialog {...controller.hostDependenciesDialog} />
     </>
@@ -87,7 +85,6 @@ function useProjectInitializationController() {
     () => ({ apiConnection: auth.apiConnection, status: auth.status }),
     [auth.apiConnection, auth.status]
   )
-  const dialog = useModelDialogState(activeProject?.id)
   const databaseDialog = useDatabaseDialogState()
   const hostDependenciesDialog = useHostDependenciesDialogState(
     platform.workspace,
@@ -101,38 +98,21 @@ function useProjectInitializationController() {
     initializationAuth,
     currentModel,
     selection.currentVariant,
-    dialog.openModelDialog,
     databaseDialog.openDatabaseDialog,
     hostDependenciesDialog.openHostDependenciesDialog
   )
 
   return initializationController({
-    activeProject,
-    agent: platform.agent,
-    auth: initializationAuth,
-    currentModel,
-    currentVariant: selection.currentVariant,
     databaseDialog,
-    dialog,
     hostDependenciesDialog,
     removeRecentProject: projects.removeRecentProject,
-    workspace: platform.workspace,
-    refreshProviders: selection.refreshProviders,
   })
 }
 
 function initializationController(input: {
-  activeProject: InitializationRunInput["project"] | undefined
-  agent: InitializationRunInput["agent"] | undefined
-  auth: InitializationAuth
-  currentModel: ModelSelection["currentModel"]
-  currentVariant: ModelSelection["currentVariant"]
   databaseDialog: ReturnType<typeof useDatabaseDialogState>
-  dialog: ReturnType<typeof useModelDialogState>
   hostDependenciesDialog: ReturnType<typeof useHostDependenciesDialogState>
   removeRecentProject: (path: string) => void
-  workspace: WorkspaceClient | undefined
-  refreshProviders: () => Promise<void>
 }) {
   const cancelDatabaseChoice = () => {
     const project = input.databaseDialog.pendingRun?.project
@@ -141,53 +121,13 @@ function initializationController(input: {
   }
 
   return {
-    activeProjectId: input.activeProject?.id,
-    currentModelName: input.currentModel?.name,
-    hasModel: Boolean(input.currentModel),
-    modelDialogOpen: input.dialog.modelDialogOpen,
-    pendingProjectId: input.dialog.pendingProjectId,
     databaseDialogOpen: input.databaseDialog.open,
     hostDependenciesDialog: input.hostDependenciesDialog.dialog,
     cancelDatabaseChoice,
-    refreshProviders: input.refreshProviders,
     selectDatabaseMode: input.databaseDialog.selectDatabaseMode,
-    setModelDialogOpen: input.dialog.setModelDialogOpen,
     setDatabaseDialogOpen: (open: boolean) => {
       if (!open) cancelDatabaseChoice()
     },
-    startWithSelectedModel: () =>
-      startSelectedModel(
-        input.activeProject,
-        input.auth,
-        input.agent,
-        input.currentModel,
-        input.currentVariant,
-        input.dialog.closeModelDialog,
-        input.workspace,
-        input.databaseDialog.openDatabaseDialog,
-        input.hostDependenciesDialog.openHostDependenciesDialog
-      ),
-  }
-}
-
-function useModelDialogState(activeProjectId: string | undefined) {
-  const [modelDialogOpen, setModelDialogOpen] = React.useState(false)
-  const [pendingProjectId, setPendingProjectId] = React.useState<string>()
-  const openModelDialog = React.useCallback(() => {
-    setPendingProjectId(activeProjectId)
-    setModelDialogOpen(true)
-  }, [activeProjectId])
-  const closeModelDialog = React.useCallback(() => {
-    setModelDialogOpen(false)
-    setPendingProjectId(undefined)
-  }, [])
-
-  return {
-    closeModelDialog,
-    modelDialogOpen,
-    openModelDialog,
-    pendingProjectId,
-    setModelDialogOpen,
   }
 }
 
@@ -276,50 +216,6 @@ function useHostDependenciesDialogState(
   }
 }
 
-function startSelectedModel(
-  project: InitializationRunInput["project"] | undefined,
-  auth: InitializationAuth,
-  agent: InitializationRunInput["agent"] | undefined,
-  model: ModelSelection["currentModel"],
-  variant: ModelSelection["currentVariant"],
-  closeModelDialog: () => void,
-  workspace: WorkspaceClient | undefined,
-  openDatabaseDialog: (run: InitializationRunInput) => void,
-  openHostDependenciesDialog: OpenHostDependenciesDialog | undefined
-) {
-  const input = runInput(project, auth, agent, model, variant)
-  if (!input) return
-  closeModelDialog()
-  void startInitialization(
-    input,
-    workspace,
-    openDatabaseDialog,
-    openHostDependenciesDialog
-  )
-}
-
-function InitializationModelDialog({
-  controller,
-}: {
-  controller: ReturnType<typeof useProjectInitializationController>
-}) {
-  return (
-    <Dialog
-      open={
-        controller.modelDialogOpen &&
-        controller.pendingProjectId === controller.activeProjectId
-      }
-      onOpenChange={controller.setModelDialogOpen}
-    >
-      <DialogContent>
-        <InitializationModelDialogHeader />
-        <InitializationModelPicker modelName={controller.currentModelName} />
-        <InitializationModelDialogFooter controller={controller} />
-      </DialogContent>
-    </Dialog>
-  )
-}
-
 function InitializationDatabaseDialog({
   controller,
 }: {
@@ -373,54 +269,6 @@ function InitializationDatabaseDialog({
   )
 }
 
-function InitializationModelDialogHeader() {
-  return (
-    <DialogHeader>
-      <DialogTitle>Choose initialization model</DialogTitle>
-      <DialogDescription>
-        Blame needs a connected model to analyze this project and prepare its
-        worktree setup.
-      </DialogDescription>
-    </DialogHeader>
-  )
-}
-
-function InitializationModelPicker({ modelName }: { modelName?: string }) {
-  return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border p-3">
-      <span className="min-w-0 text-sm text-muted-foreground">
-        {modelName ?? "No model selected"}
-      </span>
-      <ModelSelector role="alternative" />
-    </div>
-  )
-}
-
-function InitializationModelDialogFooter({
-  controller,
-}: {
-  controller: ReturnType<typeof useProjectInitializationController>
-}) {
-  return (
-    <DialogFooter>
-      <Button
-        type="button"
-        disabled={!controller.hasModel}
-        onClick={controller.startWithSelectedModel}
-      >
-        Start initialization
-      </Button>
-      <Button
-        type="button"
-        variant="outline"
-        onClick={() => void controller.refreshProviders()}
-      >
-        Refresh models
-      </Button>
-    </DialogFooter>
-  )
-}
-
 function useInitializationEffect(
   activeProject: { id: string; name: string; path: string } | undefined,
   agent: NonNullable<ReturnType<typeof usePlatform>["agent"]> | undefined,
@@ -428,7 +276,6 @@ function useInitializationEffect(
   auth: InitializationAuth,
   currentModel: ModelSelection["currentModel"],
   currentVariant: ModelSelection["currentVariant"],
-  openModelDialog: () => void,
   openDatabaseDialog: (run: InitializationRunInput) => void,
   openHostDependenciesDialog: OpenHostDependenciesDialog | undefined
 ) {
@@ -441,7 +288,6 @@ function useInitializationEffect(
         auth,
         currentModel,
         currentVariant,
-        openModelDialog,
         openDatabaseDialog,
         openHostDependenciesDialog,
       }),
@@ -452,7 +298,6 @@ function useInitializationEffect(
       auth,
       currentModel,
       currentVariant,
-      openModelDialog,
       openDatabaseDialog,
       openHostDependenciesDialog,
     ]
@@ -466,7 +311,6 @@ function initializationEffect(input: {
   auth: InitializationAuth
   currentModel: ModelSelection["currentModel"]
   currentVariant: ModelSelection["currentVariant"]
-  openModelDialog: () => void
   openDatabaseDialog: (run: InitializationRunInput) => void
   openHostDependenciesDialog: OpenHostDependenciesDialog | undefined
 }) {
@@ -491,7 +335,7 @@ async function maybeInitializeProject(
     input.currentModel,
     input.currentVariant
   )
-  if (!run) return input.openModelDialog()
+  if (!run) return
   await startInitialization(
     run,
     input.workspace,
