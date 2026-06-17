@@ -47,8 +47,10 @@ type ManagedRuntimeCheckName =
   | "host-home"
   | "wsl"
   | "wsl2"
+  | "runtime-version"
   | "distro"
   | "agent"
+  | "node"
   | RuntimeDependencyName;
 
 type ManagedRuntimeCheckStatus =
@@ -402,7 +404,9 @@ function runtimeDependencyName(name: ManagedRuntimeCheckName): RuntimeDependency
     || name === "wsl2"
     || name === "distro"
     || name === "host-home"
+    || name === "runtime-version"
     || name === "agent"
+    || name === "node"
   )
     return "blame-runtime";
   return name;

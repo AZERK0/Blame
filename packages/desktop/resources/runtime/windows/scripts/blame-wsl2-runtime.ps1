@@ -49,6 +49,18 @@ function New-Check {
   [pscustomobject]$check
 }
 
+function Get-OptionalProperty {
+  param([object]$Value, [string]$Name)
+  if ($null -eq $Value) {
+    return $null
+  }
+  $property = $Value.PSObject.Properties[$Name]
+  if ($null -eq $property) {
+    return $null
+  }
+  $property.Value
+}
+
 function Get-WslListText {
   $result = Invoke-WslHost -WslArgs @("--list", "--verbose")
   ($result.Output -replace "`0", "")
@@ -131,7 +143,8 @@ node_major_ok() {
   node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= 22 ? 0 : 1)'
 }
 valid_cline_sdk_install() {
-  node_major_ok
+  node_major_ok || return 1
+  command -v npm >/dev/null 2>&1 || return 1
   global_node_root="$(npm root -g)"
   node - "$global_node_root" "__CLINE_SDK_VERSION__" <<'NODE'
 const fs = require("fs");
@@ -152,15 +165,18 @@ process.exit(sdk.version === version && core.version === version && fs.existsSyn
 NODE
 }
 check agent test -x /usr/local/bin/blame-runtime-agent
+check runtime-version sh -lc 'test "$(cat /etc/blame-runtime-version 2>/dev/null)" = "__RUNTIME_VERSION__"'
 check containerd sh -lc 'command -v containerd >/dev/null 2>&1 && pgrep -x containerd >/dev/null 2>&1 && test -S /run/containerd/containerd.sock'
 check nerdctl sh -lc 'command -v nerdctl >/dev/null 2>&1'
 check nerdctl-compose sh -lc 'nerdctl compose version >/dev/null 2>&1'
 check git sh -lc 'command -v git >/dev/null 2>&1'
 check cline-sdk valid_cline_sdk_install
-'@ -replace "__CLINE_SDK_VERSION__", $ClineSdkVersion
+'@
+  $command = $command -replace "__CLINE_SDK_VERSION__", $ClineSdkVersion
+  $command = $command -replace "__RUNTIME_VERSION__", $RuntimeVersion
   $result = Invoke-Distro $command
   if ($result.Code -ne 0) {
-    foreach ($name in @("agent", "containerd", "nerdctl", "nerdctl-compose", "git", "cline-sdk")) {
+    foreach ($name in @("agent", "runtime-version", "containerd", "nerdctl", "nerdctl-compose", "git", "cline-sdk")) {
       $Checks.Add((New-Check $name "missing" "Repair BlameRuntime from Blame runtime setup."))
     }
     return
@@ -207,27 +223,36 @@ function Assert-WslReady {
 }
 
 function Get-RootfsPath {
+  $spec = Get-RootfsSpec
   if ($env:BLAME_WSL2_ROOTFS -and (Test-Path $env:BLAME_WSL2_ROOTFS)) {
+    Assert-RootfsChecksum $env:BLAME_WSL2_ROOTFS $spec
     return $env:BLAME_WSL2_ROOTFS
   }
   $packagedRootfs = Join-Path $RuntimeHome "rootfs\BlameRuntime-rootfs.tar"
   if (Test-Path $packagedRootfs) {
+    Assert-RootfsChecksum $packagedRootfs $spec
     return $packagedRootfs
   }
   $packagedCompressedRootfs = Join-Path $RuntimeHome "rootfs\BlameRuntime-rootfs.tar.gz"
   if (Test-Path $packagedCompressedRootfs) {
+    Assert-RootfsChecksum $packagedCompressedRootfs $spec
     return $packagedCompressedRootfs
   }
-  Get-CachedRootfsPath
+  Get-CachedRootfsPath $spec
 }
 
 function Get-CachedRootfsPath {
-  $spec = Get-RootfsSpec
+  param([object]$Spec)
   $cacheRoot = Get-CacheRoot
-  $fileName = Split-Path $spec.url -Leaf
+  $fileName = Split-Path $Spec.url -Leaf
   $rootfs = Join-Path $cacheRoot $fileName
   if (Test-Path $rootfs) {
-    return $rootfs
+    try {
+      Assert-RootfsChecksum $rootfs $Spec
+      return $rootfs
+    } catch {
+      Remove-Item -Force $rootfs
+    }
   }
   New-Item -ItemType Directory -Force -Path $cacheRoot | Out-Null
   $download = "$rootfs.download"
@@ -235,7 +260,8 @@ function Get-CachedRootfsPath {
     Remove-Item -Force $download
   }
   try {
-    Invoke-WebRequest -UseBasicParsing -Uri $spec.url -OutFile $download
+    Invoke-WebRequest -UseBasicParsing -Uri $Spec.url -OutFile $download
+    Assert-RootfsChecksum $download $Spec
     Move-Item -Force $download $rootfs
     return $rootfs
   } catch {
@@ -246,6 +272,18 @@ function Get-CachedRootfsPath {
   }
 }
 
+function Assert-RootfsChecksum {
+  param([string]$Path, [object]$Spec)
+  $sha256 = Get-OptionalProperty $Spec "sha256"
+  if (-not $sha256) {
+    return
+  }
+  $actual = (Get-FileHash -Algorithm SHA256 -Path $Path).Hash.ToLowerInvariant()
+  if ($actual -ne ([string]$sha256).ToLowerInvariant()) {
+    throw "BlameRuntime rootfs checksum mismatch."
+  }
+}
+
 function Get-RootfsSpec {
   $architecture = Get-RuntimeArchitecture
   $spec = $Manifest.rootfs.$architecture
@@ -253,6 +291,12 @@ function Get-RootfsSpec {
     throw "BlameRuntime does not provide a WSL2 rootfs for $architecture."
   }
   $spec
+}
+
+function Test-RootfsSpecPrebaked {
+  $spec = Get-RootfsSpec
+  $kind = Get-OptionalProperty $spec "kind"
+  [string]$kind -eq "blame-prebaked"
 }
 
 function Get-RuntimeArchitecture {
@@ -274,7 +318,7 @@ function Get-CacheRoot {
 function Ensure-Distro {
   Assert-WslReady
   if (Test-DistroPresent) {
-    return
+    return $false
   }
   $rootfs = Get-RootfsPath
   if (-not $rootfs) {
@@ -286,6 +330,7 @@ function Ensure-Distro {
   if ($result.Code -ne 0) {
     throw $result.Output
   }
+  $true
 }
 
 function Invoke-Provisioner {
@@ -307,6 +352,51 @@ function Invoke-Provisioner {
   }
 }
 
+function Test-ImportedRuntimeReady {
+  $command = @'
+version_ok() {
+  test "$(cat /etc/blame-runtime-version 2>/dev/null)" = "__RUNTIME_VERSION__"
+}
+node_major_ok() {
+  node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= 22 ? 0 : 1)'
+}
+valid_cline_sdk_install() {
+  node_major_ok || return 1
+  command -v npm >/dev/null 2>&1 || return 1
+  global_node_root="$(npm root -g)"
+  node - "$global_node_root" "__CLINE_SDK_VERSION__" <<'NODE'
+const fs = require("fs");
+const path = require("path");
+const root = process.argv[2];
+const version = process.argv[3];
+const sdkPackage = path.join(root, "@cline/sdk/package.json");
+const coreRoots = [
+  path.join(root, "@cline/core"),
+  path.join(root, "@cline/sdk/node_modules/@cline/core"),
+];
+const coreRoot = coreRoots.find((candidate) => fs.existsSync(path.join(candidate, "package.json")));
+const sdkEntry = path.join(root, "@cline/sdk/dist/index.js");
+if (!fs.existsSync(sdkPackage) || !coreRoot) process.exit(1);
+const sdk = JSON.parse(fs.readFileSync(sdkPackage, "utf8"));
+const core = JSON.parse(fs.readFileSync(path.join(coreRoot, "package.json"), "utf8"));
+process.exit(sdk.version === version && core.version === version && fs.existsSync(sdkEntry) ? 0 : 1);
+NODE
+}
+version_ok &&
+  id blame >/dev/null 2>&1 &&
+  command -v node >/dev/null 2>&1 &&
+  node_major_ok &&
+  command -v nerdctl >/dev/null 2>&1 &&
+  command -v containerd >/dev/null 2>&1 &&
+  test -x /usr/local/bin/blame-runtime-agent &&
+  valid_cline_sdk_install
+'@
+  $command = $command -replace "__CLINE_SDK_VERSION__", $ClineSdkVersion
+  $command = $command -replace "__RUNTIME_VERSION__", $RuntimeVersion
+  $result = Invoke-Distro $command
+  $result.Code -eq 0
+}
+
 function Join-Arguments {
   param([string[]]$Items)
   ($Items | ForEach-Object { Quote-Argument $_ }) -join " "
@@ -321,7 +411,26 @@ function Quote-Argument {
 }
 
 function Ensure-Runtime {
-  Ensure-Distro
+  $created = Ensure-Distro
+  if ($created -and (Test-RootfsSpecPrebaked) -and (Test-ImportedRuntimeReady)) {
+    $containerdReady = $false
+    try {
+      Ensure-ContainerdRunning
+      $containerdReady = $true
+    } catch {
+      $containerdReady = $false
+    }
+    if ($containerdReady) {
+      Get-RuntimeStatus
+      return
+    }
+  }
+  Invoke-Provisioner
+  Get-RuntimeStatus
+}
+
+function Repair-Runtime {
+  Ensure-Distro | Out-Null
   Invoke-Provisioner
   Get-RuntimeStatus
 }
@@ -390,7 +499,7 @@ switch ($args[0]) {
     Ensure-Runtime
   }
   "repair" {
-    Ensure-Runtime
+    Repair-Runtime
   }
   "reset" {
     Reset-Runtime

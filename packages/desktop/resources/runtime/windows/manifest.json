@@ -6,9 +6,11 @@
   "nerdctlVersion": "2.1.6",
   "rootfs": {
     "amd64": {
+      "kind": "ubuntu",
       "url": "https://cloud-images.ubuntu.com/wsl/releases/24.04/current/ubuntu-noble-wsl-amd64-wsl.rootfs.tar.gz"
     },
     "arm64": {
+      "kind": "ubuntu",
       "url": "https://cloud-images.ubuntu.com/wsl/releases/24.04/current/ubuntu-noble-wsl-arm64-wsl.rootfs.tar.gz"
     }
   }

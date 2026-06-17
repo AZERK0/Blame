@@ -143,6 +143,31 @@ test("reports missing Windows runtime Cline SDK as repairable", async () => {
   assert.equal(status.issues[0]?.status, "missing");
 });
 
+test("reports stale Windows runtime version as repairable runtime", async () => {
+  const manager = createRuntimeManager({ platform: "win32" }, async (_command, args) => {
+    if (args[0] !== "status") return "ok";
+    return JSON.stringify({
+      status: "repairable",
+      checks: [
+        { name: "wsl", status: "available" },
+        { name: "distro", status: "available" },
+        {
+          action: "Repair BlameRuntime from Blame runtime setup.",
+          name: "runtime-version",
+          status: "missing",
+        },
+      ],
+    });
+  });
+
+  const status = await manager.checkRuntimeDependencies();
+
+  assert.equal(status.status, "repairable");
+  assert.equal(status.issues[0]?.name, "blame-runtime");
+  assert.equal(status.issues[0]?.status, "missing");
+  assert.match(status.issues[0]?.action ?? "", /Repair BlameRuntime/);
+});
+
 test("reports missing bundled Lima as managed runtime missing", async () => {
   const manager = createRuntimeManager({ platform: "darwin" }, async (_command, args) => {
     if (args[0] !== "status") return "ok";
