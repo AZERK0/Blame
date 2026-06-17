@@ -1,6 +1,6 @@
 set -eu
 
-runtime_version="${1:-3}"
+runtime_version="${1:-5}"
 runtime_root="/home/blame/.local/share/blame/runtime"
 cline_sdk_version="${BLAME_CLINE_SDK_VERSION:-0.0.42}"
 nerdctl_version="${BLAME_NERDCTL_VERSION:-2.1.6}"
@@ -135,6 +135,7 @@ sys.excepthook = lambda exctype, value, tb: log_error("".join(traceback.format_e
 
 processes = {}
 write_lock = threading.Lock()
+processes_lock = threading.Lock()
 ignored_env_directories = {".git", ".blame", "build", "coverage", "dist", "node_modules", "out"}
 env_template_suffixes = (".example", ".sample", ".template")
 
@@ -243,7 +244,8 @@ def stream_output(process_id, stream, stream_type):
 
 def wait_process(process_id, process):
     code = process.wait()
-    processes.pop(process_id, None)
+    with processes_lock:
+        processes.pop(process_id, None)
     write({"event": "spawn", "processId": process_id, "type": "exit", "code": code})
 
 def run_spawn(params):
@@ -260,7 +262,8 @@ def run_spawn(params):
         preexec_fn=demote(account),
     )
     process_id = uuid.uuid4().hex
-    processes[process_id] = process
+    with processes_lock:
+        processes[process_id] = process
     threading.Thread(target=stream_output, args=(process_id, process.stdout, "stdout"), daemon=True).start()
     threading.Thread(target=stream_output, args=(process_id, process.stderr, "stderr"), daemon=True).start()
     threading.Thread(target=wait_process, args=(process_id, process), daemon=True).start()
@@ -268,7 +271,8 @@ def run_spawn(params):
 
 def run_kill(params):
     process_id = str(params.get("processId") or "")
-    process = processes.get(process_id)
+    with processes_lock:
+        process = processes.get(process_id)
     if process and process.poll() is None:
         process.terminate()
     return {"stopped": bool(process)}
@@ -324,6 +328,7 @@ def run_node_json(script, timeout=15):
 
 hub_process = None
 hub_result_cache = None
+hub_lock = threading.Lock()
 
 def read_line_with_timeout(pipe, timeout):
     result = [None]
@@ -336,10 +341,11 @@ def read_line_with_timeout(pipe, timeout):
 
 def run_cline_hub_ensure(params):
     global hub_process, hub_result_cache
-    if hub_process is not None and hub_process.poll() is None and hub_result_cache is not None:
-        return {**hub_result_cache, "action": "connected"}
-    hub_process = None
-    hub_result_cache = None
+    with hub_lock:
+        if hub_process is not None and hub_process.poll() is None and hub_result_cache is not None:
+            return {**hub_result_cache, "action": "connected"}
+        hub_process = None
+        hub_result_cache = None
 
     import socket
 
@@ -516,11 +522,16 @@ def run_cline_hub_status(params):
 
 def run_cline_hub_stop(params):
     global hub_process, hub_result_cache
-    if hub_process is not None:
-        hub_process.terminate()
-        hub_process = None
-        hub_result_cache = None
-    return {"status": "stopped"}
+    with hub_lock:
+        if hub_process is not None:
+            hub_process.terminate()
+            try:
+                hub_process.wait(timeout=5)
+            except Exception:
+                pass
+            hub_process = None
+            hub_result_cache = None
+        return {"status": "stopped"}
 
 def run_status():
     checks = {
@@ -559,7 +570,8 @@ def handle(request):
 def serve():
     for line in sys.stdin:
         try:
-            handle(json.loads(line))
+            req = json.loads(line)
+            threading.Thread(target=handle, args=(req,), daemon=True).start()
         except Exception as error:
             write({"id": 0, "ok": False, "error": {"message": str(error)}})
 
