@@ -35,8 +35,10 @@ export async function gitDiffBetween(input: GitDiffInput) {
 export async function listGitDirectory(input: GitDirectoryInput) {
   const path = gitPath(input.path);
   const entries = new Map<string, GitTreeEntry>();
-  for (const ref of input.refs) {
-    const stdout = await readGitTree(input.root, ref, path);
+  const trees = await Promise.all(
+    input.refs.map((ref) => readGitTree(input.root, ref, path)),
+  );
+  for (const stdout of trees) {
     parseTree(stdout, path).forEach((entry) => entries.set(entry.name, entry));
   }
   return [...entries.values()].sort((left, right) =>
