@@ -4,6 +4,8 @@ import { basename, dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { spawn } from "node:child_process"
 import YAML from "yaml"
+import { loadEnvFiles } from "../../../scripts/env-files.mjs"
+import { prepareWindowsRuntimeManifest } from "../../../scripts/windows-runtime-manifest.mjs"
 
 const desktopDir = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const rootDir = resolve(desktopDir, "../..")
@@ -13,8 +15,11 @@ const deployDir = process.platform === "win32" ? basename(stagingDir) : stagingD
 const packageArgs = process.argv.slice(2)
 const args = packageArgs[0] === "--" ? packageArgs.slice(1) : packageArgs
 
+await loadEnvFiles(rootDir)
+
 try {
   await deployPackage(deployDir, args)
+  await prepareWindowsRuntimeManifest(join(stagingDir, "resources/runtime"))
   await rm(join(stagingDir, "out"), { force: true, recursive: true })
   await cp(join(desktopDir, "out"), join(stagingDir, "out"), { recursive: true })
   await run("pnpm", ["exec", "electron-builder", "--projectDir", stagingDir, "--config", join(stagingDir, "electron-builder.config.ts"), ...args], rootDir, {

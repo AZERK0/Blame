@@ -1,9 +1,8 @@
-import { createReadStream } from "node:fs"
-import { mkdir, readdir, readFile } from "node:fs/promises"
+import { readdir, readFile } from "node:fs/promises"
 import { dirname, extname, join, resolve } from "node:path"
 import { spawn } from "node:child_process"
-import { createInterface } from "node:readline"
 import { fileURLToPath } from "node:url"
+import { loadEnvFiles, requiredEnv } from "./env-files.mjs"
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const desktopDir = join(rootDir, "packages/desktop")
@@ -11,7 +10,7 @@ const distDir = join(desktopDir, "dist")
 const command = process.argv[2] ?? "help"
 const args = process.argv.slice(3)
 
-await loadEnvFiles([".env", ".env.local"])
+await loadEnvFiles(rootDir)
 
 if (command === "build") await build(args)
 else if (command === "deploy") await deploy()
@@ -99,54 +98,6 @@ function sshCommand(port) {
   const keyPath = process.env.BLAME_DOWNLOAD_SSH_KEY_PATH?.trim()
   if (keyPath) args.push("-i", keyPath)
   return args
-}
-
-function requiredEnv(name) {
-  const value = process.env[name]?.trim()
-  if (!value) throw new Error(`${name} is required`)
-  return value
-}
-
-async function loadEnvFiles(files) {
-  for (const file of files) {
-    await loadEnvFile(join(rootDir, file))
-  }
-}
-
-async function loadEnvFile(file) {
-  try {
-    await mkdir(dirname(file), { recursive: true })
-    const lines = createInterface({
-      crlfDelay: Infinity,
-      input: createReadStream(file),
-    })
-
-    for await (const line of lines) {
-      const entry = envEntry(line)
-      if (!entry || process.env[entry.name]) continue
-      process.env[entry.name] = entry.value
-    }
-  } catch (error) {
-    if (error?.code !== "ENOENT") throw error
-  }
-}
-
-function envEntry(line) {
-  const trimmed = line.trim()
-  if (!trimmed || trimmed.startsWith("#")) return undefined
-
-  const separatorIndex = trimmed.indexOf("=")
-  if (separatorIndex <= 0) return undefined
-
-  const name = trimmed.slice(0, separatorIndex).trim()
-  const value = unquote(trimmed.slice(separatorIndex + 1).trim())
-  return { name, value }
-}
-
-function unquote(value) {
-  if (value.startsWith('"') && value.endsWith('"')) return value.slice(1, -1)
-  if (value.startsWith("'") && value.endsWith("'")) return value.slice(1, -1)
-  return value
 }
 
 function run(command, args, cwd) {
