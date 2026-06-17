@@ -77,7 +77,7 @@ The manifest must:
 - for Nuxt, use the development command for source-mounted previews unless the setup lifecycle builds first
 - use exact environment variable names found in scripts, config, validators, and env examples
 - use internal service DNS URLs such as `http://backend:3333` for inter-container calls
-- omit browser-facing public origin variables when the framework can infer request host
+- omit or avoid defining browser-facing public origin variables (such as APP_URL, BETTER_AUTH_URL, or NEXTAUTH_URL) with hardcoded localhost URLs and fixed ports in the service environment. Because containers are mapped to dynamic ports on the host, hardcoded ports will cause origin mismatch/invalid origin errors. Let the framework infer the request host or let the environment file (.env) handle it.
 - include database migration setup tasks when migrations are detected and required
 - repair stale root-owned generated framework artifacts with a targeted setup task when diagnostics prove they block startup
 
