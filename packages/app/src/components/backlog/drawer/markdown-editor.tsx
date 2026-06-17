@@ -50,6 +50,10 @@ import type { UserStoryFileAttachment } from "@/components/backlog/data/backlog-
 import { fileAttachment } from "@/components/backlog/drawer/user-story-attachment-files"
 import { DevelopmentFileIcon } from "@/components/backlog/development/development-file-icon"
 import {
+  markdownPreviewBlocks,
+  type MarkdownPreviewBlock,
+} from "@/components/backlog/drawer/markdown-preview-parser"
+import {
   Command,
   CommandEmpty,
   CommandGroup,
@@ -58,6 +62,7 @@ import {
 } from "@/components/ui/command"
 import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover"
 import { usePlatform } from "@/context/platform"
+import { runWorkerTask, workerTaskAborted } from "@/lib/worker-task"
 import { cn } from "@/lib/utils"
 
 type PastedAttachment = {
@@ -85,19 +90,6 @@ type FileMentionResult = {
   path: string
   type: "directory" | "file"
 }
-
-type MarkdownPreviewBlock =
-  | {
-      code: string
-      key: string
-      type: "code"
-    }
-  | {
-      key: string
-      line: string
-      lineIndex: number
-      type: "line"
-    }
 
 function fileAttachments(files: File[]) {
   return files.map((file) => ({
@@ -583,7 +575,7 @@ function MarkdownPreview({
   onTaskToggle?: (lineIndex: number, checked: boolean) => void
   placeholder: string
 }) {
-  const blocks = markdownPreviewBlocks(markdown)
+  const blocks = useMarkdownPreviewBlocks(markdown)
   if (!markdown.trim()) {
     return (
       <div
@@ -599,7 +591,7 @@ function MarkdownPreview({
   return (
     <div
       className={cn(
-        "min-w-0 max-w-full space-y-2 overflow-x-hidden text-[0.9375rem] leading-6 select-text",
+        "max-w-full min-w-0 space-y-2 overflow-x-hidden text-[0.9375rem] leading-6 select-text",
         className
       )}
     >
@@ -620,56 +612,37 @@ function MarkdownPreview({
   )
 }
 
-function markdownPreviewBlocks(markdown: string) {
-  const blocks: MarkdownPreviewBlock[] = []
-  const lines = markdown.split("\n")
-  let codeStart: number | undefined
-  let codeLines: string[] = []
+function useMarkdownPreviewBlocks(markdown: string) {
+  const [blocks, setBlocks] = React.useState<MarkdownPreviewBlock[]>([])
 
-  lines.forEach((line, index) => {
-    if (line.startsWith("```")) {
-      if (codeStart === undefined) {
-        codeStart = index
-        codeLines = []
-        return
-      }
-      blocks.push({
-        code: codeLines.join("\n"),
-        key: `code-${codeStart}`,
-        type: "code",
+  React.useEffect(() => {
+    let active = true
+    const controller = new AbortController()
+    setBlocks([])
+    runWorkerTask<{ markdown: string }, MarkdownPreviewBlock[]>(
+      new URL("./markdown-preview.worker.ts", import.meta.url),
+      { markdown },
+      controller.signal
+    )
+      .catch((error) => {
+        if (workerTaskAborted(error)) return []
+        return markdownPreviewBlocks(markdown)
       })
-      codeStart = undefined
-      codeLines = []
-      return
+      .then((nextBlocks) => {
+        if (active) setBlocks(nextBlocks)
+      })
+    return () => {
+      active = false
+      controller.abort()
     }
-
-    if (codeStart !== undefined) {
-      codeLines.push(line)
-      return
-    }
-
-    blocks.push({
-      key: `line-${index}-${line}`,
-      line,
-      lineIndex: index,
-      type: "line",
-    })
-  })
-
-  if (codeStart !== undefined) {
-    blocks.push({
-      code: codeLines.join("\n"),
-      key: `code-${codeStart}`,
-      type: "code",
-    })
-  }
+  }, [markdown])
 
   return blocks
 }
 
 function MarkdownPreviewCode({ code }: { code: string }) {
   return (
-    <pre className="max-w-full overflow-x-auto rounded-lg border bg-muted/50 px-3 py-2 font-mono text-xs leading-relaxed text-foreground [scrollbar-color:color-mix(in_oklab,var(--muted-foreground)_35%,transparent)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-2.5 [&::-webkit-scrollbar-corner]:bg-background [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb:hover]:bg-muted-foreground/45 [&::-webkit-scrollbar-track]:bg-transparent">
+    <pre className="max-w-full [scrollbar-width:thin] [scrollbar-color:color-mix(in_oklab,var(--muted-foreground)_35%,transparent)_transparent] overflow-x-auto rounded-lg border bg-muted/50 px-3 py-2 font-mono text-xs leading-relaxed text-foreground [&::-webkit-scrollbar]:h-2.5 [&::-webkit-scrollbar-corner]:bg-background [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb:hover]:bg-muted-foreground/45 [&::-webkit-scrollbar-track]:bg-transparent">
       <code>{code}</code>
     </pre>
   )
@@ -777,7 +750,7 @@ function inlineMarkdownToken(
     return (
       <code
         key={index}
-        className="break-all rounded bg-muted px-1 py-0.5 text-xs"
+        className="rounded bg-muted px-1 py-0.5 text-xs break-all"
       >
         {token.slice(1, -1)}
       </code>
@@ -1165,7 +1138,7 @@ export const MarkdownEditor = React.forwardRef<
             if (typeof ref === "function") ref(element)
             else if (ref) ref.current = element
           }}
-          className="min-w-0 max-w-full overflow-hidden rounded-3xl bg-muted/50 p-1 transition-colors dark:bg-muted/50"
+          className="max-w-full min-w-0 overflow-hidden rounded-3xl bg-muted/50 p-1 transition-colors dark:bg-muted/50"
           onBlur={() => requestAnimationFrame(() => updateMention())}
           onKeyDownCapture={handleKeyDown}
           onPaste={handlePaste}
