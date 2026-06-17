@@ -99,7 +99,12 @@ import type {
 } from "./types.js";
 
 const execFileAsync = promisify(execFile);
-const readTools = ["read_files", "search_codebase", "fetch_web_content"];
+const readTools = [
+  "read_files",
+  "search_codebase",
+  "fetch_web_content",
+  "get_preview_devtools",
+];
 const writeTools = ["run_commands", "editor", "apply_patch"];
 const blockedCommandParts = [
   "rm -rf",
@@ -161,6 +166,18 @@ type ProjectInitializationSubmitTool = {
   input?: unknown;
 };
 
+type PreviewDevtoolsTarget = {
+  available: boolean;
+  browserUrl: string;
+  currentUrl?: string;
+  id?: string;
+  mcpServer: {
+    args: string[];
+    command: string;
+    name: string;
+  };
+};
+
 type DevelopmentUserInput = {
   prompt: string;
   userFiles: string[];
@@ -185,6 +202,7 @@ type DevelopmentPromptInput = Pick<
 type RuntimeOptions = {
   openExternalUrl?(url: string): void;
   git?(cwd: string, args: string[]): Promise<string>;
+  previewDevtools?(): PreviewDevtoolsTarget | undefined;
 };
 
 let customGitRunner: ((cwd: string, args: string[]) => Promise<string>) | undefined;
@@ -214,7 +232,6 @@ export class BlameAgentRuntime {
     if (options.git) {
       customGitRunner = options.git;
     }
-    // Eagerly pre-load Cline SDK and telemetry to avoid latency on first start
     void import("@cline/sdk").catch(() => undefined);
     void this.telemetry().catch(() => undefined);
   }
@@ -400,6 +417,7 @@ export class BlameAgentRuntime {
             enableSpawnAgent: false,
             enableAgentTeams: false,
             extensionContext: extensionContext(input),
+            extraTools: runtimeTools(this.options),
           }),
         },
         interactive: !autoSendPrompt,
@@ -1518,6 +1536,41 @@ function projectInitializationSubmitTool(): ProjectInitializationSubmitTool {
     },
   };
   return submit;
+}
+
+function runtimeTools(options: RuntimeOptions) {
+  const tools = [previewDevtoolsTool(options)].filter(
+    (tool): tool is AgentTool => Boolean(tool),
+  );
+  return tools.length ? tools : undefined;
+}
+
+function previewDevtoolsTool(options: RuntimeOptions): AgentTool | undefined {
+  if (!options.previewDevtools) return undefined;
+  return {
+    name: "get_preview_devtools",
+    description:
+      "Get the active Blame preview Chrome DevTools MCP server configuration and current preview URL.",
+    inputSchema: {
+      type: "object",
+      properties: {},
+      additionalProperties: false,
+    },
+    execute() {
+      const target = options.previewDevtools?.();
+      if (!target?.available) {
+        return {
+          available: false,
+          reason: "No active Blame preview is currently loaded.",
+        };
+      }
+      return {
+        ...target,
+        usage:
+          "Use the returned mcpServer command and args to connect chrome-devtools-mcp to this preview target.",
+      };
+    },
+  };
 }
 
 async function projectInitializationInputFromMessages(

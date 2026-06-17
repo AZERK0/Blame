@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import {
+  app,
   BrowserWindow,
   type IpcMainInvokeEvent,
   ipcMain,
@@ -30,6 +31,48 @@ type PreviewBrowserState = {
 type PreviewBrowserCaptureSize = "full" | "thumbnail";
 
 const previews = new Map<string, PreviewBrowserRecord>();
+const previewDevtoolsPort =
+  Number(process.env.BLAME_PREVIEW_DEVTOOLS_PORT) || 9222;
+const previewDevtoolsBrowserUrl = `http://127.0.0.1:${previewDevtoolsPort}`;
+let activePreviewDevtoolsTarget: PreviewBrowserState | undefined;
+
+export type PreviewDevtoolsTarget = {
+  available: boolean;
+  browserUrl: string;
+  currentUrl?: string;
+  id?: string;
+  mcpServer: {
+    args: string[];
+    command: string;
+    name: string;
+  };
+};
+
+export function enablePreviewDevtools() {
+  app.commandLine.appendSwitch(
+    "remote-debugging-port",
+    String(previewDevtoolsPort),
+  );
+}
+
+export function getPreviewDevtoolsTarget(): PreviewDevtoolsTarget {
+  return {
+    available: Boolean(activePreviewDevtoolsTarget),
+    browserUrl: previewDevtoolsBrowserUrl,
+    currentUrl: activePreviewDevtoolsTarget?.url,
+    id: activePreviewDevtoolsTarget?.id,
+    mcpServer: {
+      args: [
+        "-y",
+        "chrome-devtools-mcp@latest",
+        `--browser-url=${previewDevtoolsBrowserUrl}`,
+        "--no-usage-statistics",
+      ],
+      command: "npx",
+      name: "chrome-devtools",
+    },
+  };
+}
 
 export function registerPreviewBrowserIpcHandlers() {
   ipcMain.handle("preview-browser:create", (event) =>
@@ -119,6 +162,7 @@ function destroyPreviewBrowser(id: string) {
   const record = previews.get(id);
   if (!record) return false;
   previews.delete(id);
+  clearActivePreviewDevtoolsTarget(id);
   if (!record.owner.isDestroyed())
     record.owner.contentView.removeChildView(record.view);
   if (!record.view.webContents.isDestroyed()) record.view.webContents.close();
@@ -175,13 +219,20 @@ function sendPreviewBrowserState(
   record: PreviewBrowserRecord,
   state: Partial<Omit<PreviewBrowserState, "id">>,
 ) {
-  if (record.owner.isDestroyed()) return;
-  record.owner.webContents.send(`preview-browser:state:${record.id}`, {
+  const nextState = {
     id: record.id,
     loading: state.loading ?? record.view.webContents.isLoading(),
     url: state.url ?? record.view.webContents.getURL(),
     ...(state.error ? { error: state.error } : {}),
-  } satisfies PreviewBrowserState);
+  } satisfies PreviewBrowserState;
+  activePreviewDevtoolsTarget = nextState;
+  if (record.owner.isDestroyed()) return;
+  record.owner.webContents.send(`preview-browser:state:${record.id}`, nextState);
+}
+
+function clearActivePreviewDevtoolsTarget(id: string) {
+  if (activePreviewDevtoolsTarget?.id === id)
+    activePreviewDevtoolsTarget = undefined;
 }
 
 function normalizedBounds(bounds: PreviewBrowserBounds) {

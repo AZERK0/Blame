@@ -5,6 +5,7 @@ import type { AddressInfo } from "node:net"
 import { execFile } from "node:child_process"
 import { promisify } from "node:util"
 import { resolveAgentWorkspaceInput } from "./cline-backend-resolver"
+import { getPreviewDevtoolsTarget } from "./preview-browser-ipc"
 import { run as runRuntime, runtimeManagedPath } from "./workspace-runtime"
 
 const execFileAsync = promisify(execFile)
@@ -25,6 +26,7 @@ const runtime = new BlameAgentRuntime({
     const { stdout } = await execFileAsync("git", args, { cwd, maxBuffer: 20 * 1024 * 1024 });
     return stdout;
   },
+  previewDevtools: getPreviewDevtoolsTarget,
 })
 
 export function registerAgentIpcHandlers() {

@@ -17,7 +17,11 @@ import {
 import { registerAgentIpcHandlers, shutdownAgentRuntime } from "./agent-ipc"
 import { attachLiveLogWindow, registerLiveLogCapture } from "./desktop-live-log"
 import { checkForUpdatesOnStartup, registerDesktopUpdateIpcHandlers } from "./desktop-update-ipc"
-import { destroyAllPreviewBrowsers, registerPreviewBrowserIpcHandlers } from "./preview-browser-ipc"
+import {
+  destroyAllPreviewBrowsers,
+  enablePreviewDevtools,
+  registerPreviewBrowserIpcHandlers,
+} from "./preview-browser-ipc"
 import { registerTerminalIpcHandlers, shutdownTerminalSessions } from "./terminal-ipc"
 import { registerWorkspaceIpcHandlers, shutdownWorkspaceProcesses } from "./workspace-ipc"
 
@@ -40,6 +44,7 @@ try {
 app.setName("Blame")
 app.setAppUserModelId("dev.blame.desktop")
 app.setPath("userData", join(app.getPath("appData"), "dev.blame.desktop"))
+enablePreviewDevtools()
 registerLiveLogCapture()
 
 const singleInstanceLock = app.requestSingleInstanceLock()
