@@ -67,6 +67,7 @@ import {
   appendFile as appendRuntimeFile,
   chmod as chmodRuntime,
   dirnameWorkspacePath,
+  hasMissingWorkspaceNodeModules,
   joinWorkspacePath,
   mkdir as mkdirRuntime,
   pathExists as runtimePathExists,
@@ -869,6 +870,9 @@ async function setupDependencyCachesReady(
 async function dependencyCacheReady(worktree: string, service: ComposeService) {
   const cache = dependencyCache(service);
   if (!cache) return false;
+  if (await hasMissingWorkspaceNodeModules(worktree)) {
+    return false;
+  }
   const env = await setupEnvironment(worktree);
   for (const volume of cache.volumes) {
     try {

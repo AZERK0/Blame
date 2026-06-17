@@ -516,3 +516,83 @@ function normalizedRuntimePath(path: string) {
 function shellQuote(value: string) {
   return `'${value.replace(/'/g, "'\\''")}'`;
 }
+
+export async function hasMissingWorkspaceNodeModules(
+  worktree: string,
+  fns = {
+    run,
+    readFile,
+    pathExists,
+    dirnameWorkspacePath,
+    joinWorkspacePath,
+  },
+): Promise<boolean> {
+  try {
+    const { stdout } = await fns.run("find", [
+      worktree,
+      "-type",
+      "d",
+      "(",
+      "-name",
+      "node_modules",
+      "-o",
+      "-name",
+      ".git",
+      "-o",
+      "-name",
+      ".next",
+      "-o",
+      "-name",
+      ".nuxt",
+      "-o",
+      "-name",
+      ".svelte-kit",
+      "-o",
+      "-name",
+      "dist",
+      "-o",
+      "-name",
+      "build",
+      "-o",
+      "-name",
+      "out",
+      ")",
+      "-prune",
+      "-o",
+      "-name",
+      "package.json",
+      "-print",
+    ]);
+
+    const packageJsonPaths = stdout.split("\n").filter(Boolean);
+    for (const pkgPath of packageJsonPaths) {
+      const dir = fns.dirnameWorkspacePath(pkgPath);
+      if (dir === worktree) {
+        continue;
+      }
+      try {
+        const content = await fns.readFile(pkgPath);
+        const pkg = JSON.parse(content);
+        const hasDeps = Boolean(
+          (pkg.dependencies && Object.keys(pkg.dependencies).length > 0) ||
+            (pkg.devDependencies && Object.keys(pkg.devDependencies).length > 0) ||
+            (pkg.peerDependencies && Object.keys(pkg.peerDependencies).length > 0) ||
+            (pkg.optionalDependencies && Object.keys(pkg.optionalDependencies).length > 0),
+        );
+
+        if (hasDeps) {
+          const nodeModulesPath = fns.joinWorkspacePath(dir, "node_modules");
+          if (!(await fns.pathExists(nodeModulesPath))) {
+            return true;
+          }
+        }
+      } catch {
+        // If we fail to read or parse a specific package.json, skip it
+      }
+    }
+  } catch {
+    // If find command fails, we assume no missing workspace node_modules
+  }
+  return false;
+}
+
