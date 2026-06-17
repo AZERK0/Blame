@@ -656,6 +656,7 @@ function serviceBlockWithDependencyCacheLabel(
   if (!key) return lines;
   if (!mounts.some((mount) => mountTarget(mount).endsWith("/node_modules")))
     return lines;
+  if (!runsNodePackageManager(lines)) return lines;
   return serviceBlockWithLabels(lines, {
     "blame.dependencies.cache": "true",
     "blame.dependencies.cache.key": key,

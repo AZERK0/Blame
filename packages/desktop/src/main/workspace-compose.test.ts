@@ -808,3 +808,34 @@ test("uses existing pnpm store mount instead of adding a second store", () => {
     /pnpm_store:\n    name: blame_pnpm_store\n    external: true/,
   );
 });
+
+test("does not add dependency cache labels to setup tasks that do not run npm install", () => {
+  const compose = [
+    "services:",
+    "  clean_nuxt_cache:",
+    "    labels:",
+    "      blame.setup: \"true\"",
+    "    volumes:",
+    "      - .:/workspace",
+    "      - blame_node_modules:/workspace/node_modules",
+    "    command:",
+    "      - rm -rf .nuxt",
+    "  deps:",
+    "    labels:",
+    "      blame.setup: \"true\"",
+    "    volumes:",
+    "      - .:/workspace",
+    "      - blame_node_modules:/workspace/node_modules",
+    "    command:",
+    "      - npm install",
+  ].join("\n");
+
+  const result = dockerComposeWithDependencyVolumes(compose, "/tmp/project", "e9343feddfde");
+
+  assert.match(
+    result,
+    /clean_nuxt_cache:\n    depends_on:\n      - blame-dependencies-init\n    labels:\n      blame\.setup: "true"\n    volumes:/
+  );
+  assert.match(result, /deps:[\s\S]*?blame\.dependencies\.cache: "true"/);
+});
+
