@@ -9,6 +9,7 @@ import {
   worktreePath,
   worktreeRoot,
   hasMissingWorkspaceNodeModules,
+  sanitizeWorkspaceConfigFiles,
 } from "./workspace-runtime.ts";
 
 test("uses the shared runtime worktree root", () => {
@@ -283,4 +284,47 @@ test("hasMissingWorkspaceNodeModules: returns true when sub-package node_modules
   const result = await hasMissingWorkspaceNodeModules("/workspace", mockFns);
   assert.equal(result, true);
 });
+
+test("sanitizeWorkspaceConfigFiles: merges configs and deletes duplicate sub-package files", async () => {
+  let rootFileWritten = "";
+  let fileDeleted = "";
+  
+  const mockFns = {
+    run: async () => ({
+      stdout: "/workspace/pnpm-workspace.yaml\n/workspace/apps/web/pnpm-workspace.yaml\n",
+      stderr: "",
+    }),
+    readFile: async (p: string) => {
+      if (p === "/workspace/pnpm-workspace.yaml") {
+        return "packages:\n  - apps/*\n";
+      }
+      if (p === "/workspace/apps/web/pnpm-workspace.yaml") {
+        return "allowBuilds:\n  sharp: true\nignoredBuiltDependencies:\n  - sharp\n";
+      }
+      throw new Error("unexpected file read");
+    },
+    writeFile: async (p: string, data: string) => {
+      if (p === "/workspace/pnpm-workspace.yaml") {
+        rootFileWritten = data;
+        return;
+      }
+      throw new Error("unexpected file write");
+    },
+    pathExists: async (p: string) => {
+      return p === "/workspace/pnpm-workspace.yaml";
+    },
+    joinWorkspacePath: (dir: string, ...parts: string[]) => [dir, ...parts].join("/"),
+    rm: async (p: string) => {
+      fileDeleted = p;
+    },
+  };
+
+  await sanitizeWorkspaceConfigFiles("/workspace", mockFns);
+  
+  assert.equal(fileDeleted, "/workspace/apps/web/pnpm-workspace.yaml");
+  assert.match(rootFileWritten, /allowBuilds/);
+  assert.match(rootFileWritten, /sharp: true/);
+  assert.match(rootFileWritten, /ignoredBuiltDependencies/);
+});
+
 

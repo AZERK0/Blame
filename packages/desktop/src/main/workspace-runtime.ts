@@ -18,6 +18,8 @@ import { promisify } from "node:util";
 import { runtimeToolScript, setupPath } from "./host-tool-path.ts";
 import { runtimeAgentClient, runtimeAgentSupported } from "./runtime-agent.ts";
 
+import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
+
 const execFileAsync = promisify(execFile);
 const vmRuntimeWorktreeRoot =
   "/home/blame/.local/share/blame/runtime/worktrees";
@@ -595,4 +597,77 @@ export async function hasMissingWorkspaceNodeModules(
   }
   return false;
 }
+
+export async function sanitizeWorkspaceConfigFiles(
+  worktree: string,
+  fns = {
+    run,
+    readFile,
+    writeFile,
+    pathExists,
+    joinWorkspacePath,
+    rm,
+  },
+): Promise<void> {
+  try {
+    const { stdout } = await fns.run("find", [
+      worktree,
+      "-type",
+      "f",
+      "-name",
+      "pnpm-workspace.yaml",
+    ]);
+    const paths = stdout.split("\n").filter(Boolean);
+    const rootConfigPath = fns.joinWorkspacePath(worktree, "pnpm-workspace.yaml");
+
+    for (const configPath of paths) {
+      if (configPath === rootConfigPath) {
+        continue;
+      }
+      try {
+        if (await fns.pathExists(rootConfigPath)) {
+          const subContent = await fns.readFile(configPath);
+          const subYaml = parseYaml(subContent);
+
+          if (subYaml && (subYaml.allowBuilds || subYaml.ignoredBuiltDependencies)) {
+            const rootContent = await fns.readFile(rootConfigPath);
+            const rootYaml = parseYaml(rootContent) || {};
+
+            let changed = false;
+            if (subYaml.allowBuilds) {
+              rootYaml.allowBuilds = {
+                ...(rootYaml.allowBuilds || {}),
+                ...subYaml.allowBuilds,
+              };
+              changed = true;
+            }
+            if (subYaml.ignoredBuiltDependencies) {
+              const rootIgnored = new Set(rootYaml.ignoredBuiltDependencies || []);
+              for (const dep of subYaml.ignoredBuiltDependencies) {
+                rootIgnored.add(dep);
+              }
+              rootYaml.ignoredBuiltDependencies = Array.from(rootIgnored);
+              changed = true;
+            }
+
+            if (changed) {
+              await fns.writeFile(rootConfigPath, stringifyYaml(rootYaml));
+            }
+          }
+        }
+      } catch {
+        // If merge fails, proceed to delete to make Turbopack work
+      }
+
+      try {
+        await fns.rm(configPath);
+      } catch {
+        // Ignore deletion failure
+      }
+    }
+  } catch {
+    // Ignore overall failure
+  }
+}
+
 

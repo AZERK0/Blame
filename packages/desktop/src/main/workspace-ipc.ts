@@ -3,7 +3,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { readdir, readFile, stat } from "node:fs/promises";
 import { dirname, join, posix, relative, resolve, sep } from "node:path";
 import { BrowserWindow, ipcMain } from "electron";
-import { parse as parseYaml } from "yaml";
+import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import { generateNewProjectWithAgent } from "./agent-ipc";
 import { pLimit } from "./concurrency.ts";
 import {
@@ -68,6 +68,7 @@ import {
   chmod as chmodRuntime,
   dirnameWorkspacePath,
   hasMissingWorkspaceNodeModules,
+  sanitizeWorkspaceConfigFiles,
   joinWorkspacePath,
   mkdir as mkdirRuntime,
   pathExists as runtimePathExists,
@@ -2224,6 +2225,7 @@ async function repairProjectCompose(
   worktree: string,
   options: { reallocatePorts?: boolean } = {},
 ) {
+  await sanitizeWorkspaceConfigFiles(worktree);
   await repairComposeFile(worktree, projectComposePath(worktree), options);
 }
 
