@@ -1,6 +1,5 @@
 import { type ChildProcessWithoutNullStreams } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
-import { readFileSync, readdirSync } from "node:fs";
 import { readdir, readFile, stat } from "node:fs/promises";
 import { dirname, join, posix, relative, resolve, sep } from "node:path";
 import { BrowserWindow, ipcMain } from "electron";
@@ -274,17 +273,17 @@ export function registerWorkspaceIpcHandlers() {
   );
   ipcMain.handle(
     "workspace:collect-project-initialization-diagnostics",
-    (_event, input: CollectProjectInitializationDiagnosticsInput) =>
+    async (_event, input: CollectProjectInitializationDiagnosticsInput) =>
       collectProjectInitializationDiagnostics(
         input,
-        setupEnvironment(resolveRuntimePath(input.worktree)),
+        await setupEnvironment(resolveRuntimePath(input.worktree)),
       ),
   );
   ipcMain.handle(
     "workspace:check-host-dependencies",
-    (_event, input: CheckHostDependenciesInput) =>
+    async (_event, input: CheckHostDependenciesInput) =>
       checkHostDependencies({
-        env: setupEnvironment(
+        env: await setupEnvironment(
           input.worktree ? resolveRuntimePath(input.worktree) : "",
         ),
         setupScript: input.setupScript,
@@ -537,7 +536,7 @@ async function appendWorktreeCreateTimings(
 
 async function runProjectSetup(input: RunProjectSetupInput) {
   const worktree = resolveRuntimePath(input.worktree);
-  const env = setupEnvironment(worktree);
+  const env = await setupEnvironment(worktree);
   const setupScript = setupScriptWithoutDockerRuntimeChecks(input.setupScript);
   if (!input.hostDependenciesChecked) {
     await timedRecoveryStep(worktree, "host dependencies", () =>
@@ -719,14 +718,15 @@ async function restartPreviewService(
 ) {
   const container = await previewContainerForWorktree(worktree);
   if (!container?.Id) return;
+  const env = await setupEnvironment(worktree);
   await containerRuntime.container(["stop", container.Id], {
     cwd: worktree,
-    env: setupEnvironment(worktree),
+    env,
   });
   if (clearBuildCache) await clearPreviewBuildCache(worktree);
   await containerRuntime.container(["start", container.Id], {
     cwd: worktree,
-    env: setupEnvironment(worktree),
+    env,
   });
 }
 
@@ -849,6 +849,7 @@ async function dependencyCacheReady(
 ) {
   const cache = dependencyCache(service);
   if (!cache) return false;
+  const env = await setupEnvironment(worktree);
   for (const volume of cache.volumes) {
     try {
       await containerRuntime.container(
@@ -863,7 +864,7 @@ async function dependencyCacheReady(
           "-lc",
           `test -e /node_modules/${dependencyCacheMarker(cache.key)}`,
         ],
-        { cwd: worktree, env: setupEnvironment(worktree) },
+        { cwd: worktree, env },
       );
     } catch {
       return false;
@@ -879,6 +880,7 @@ async function markDependencyCacheReady(
   const cache = dependencyCache(service);
   if (!cache) return;
   try {
+    const env = await setupEnvironment(worktree);
     for (const volume of cache.volumes) {
       await containerRuntime.container(
         [
@@ -892,7 +894,7 @@ async function markDependencyCacheReady(
           "-lc",
           `touch /node_modules/${dependencyCacheMarker(cache.key)}`,
         ],
-        { cwd: worktree, env: setupEnvironment(worktree) },
+        { cwd: worktree, env },
       );
     }
   } catch (error) {
@@ -946,7 +948,7 @@ function composeVolume(volume: NonNullable<ComposeService["volumes"]>[number]) {
 async function runProjectComposeService(worktree: string, service: string) {
   const result = await containerRuntime.compose(
     [...composeArgs(worktree), "up", service],
-    { cwd: worktree, env: setupEnvironment(worktree) },
+    { cwd: worktree, env: await setupEnvironment(worktree) },
   );
   if (result.stdout) await appendRecoveryLog(worktree, result.stdout.trimEnd());
   if (result.stderr) await appendRecoveryLog(worktree, result.stderr.trimEnd());
@@ -965,7 +967,7 @@ async function runProjectComposeSetupService(
       "--interactive=false",
       service,
     ],
-    { cwd: worktree, env: setupEnvironment(worktree) },
+    { cwd: worktree, env: await setupEnvironment(worktree) },
   );
   if (result.stdout) await appendRecoveryLog(worktree, result.stdout.trimEnd());
   if (result.stderr) await appendRecoveryLog(worktree, result.stderr.trimEnd());
@@ -1060,12 +1062,13 @@ function uniqueStrings(values: string[]) {
 }
 
 async function ensureGlobalPreviewVolumes(worktree: string) {
+  const env = await setupEnvironment(worktree);
   await Promise.all(
     globalPreviewVolumes.map((volume) =>
       timedRecoveryStep(worktree, `compose volume create ${volume}`, () =>
         containerRuntime.volume(["create", volume], {
           cwd: worktree,
-          env: setupEnvironment(worktree),
+          env,
         }),
       ),
     ),
@@ -1088,7 +1091,7 @@ async function runComposeWithRetry(
     try {
       await containerRuntime.compose(args, {
         cwd: worktree,
-        env: setupEnvironment(worktree),
+        env: await setupEnvironment(worktree),
       });
       await appendTimingLog(
         worktree,
@@ -1171,7 +1174,7 @@ async function stopProjectSetup(input: StopProjectSetupInput) {
         "down",
         "--remove-orphans",
       ],
-      { cwd: worktree, env: setupEnvironment(worktree) },
+      { cwd: worktree, env: await setupEnvironment(worktree) },
     );
     return true;
   } catch {
@@ -1192,9 +1195,8 @@ async function removeWorktree(input: RemoveWorktreeInput) {
     await stopProjectLogStream(worktree);
     previewRecoveries.delete(worktree);
     await stopProjectSetup({ worktree });
-    await removeBlamePreviewProjectResources(
-      setupEnvironment(worktree).COMPOSE_PROJECT_NAME,
-    );
+    const env = await setupEnvironment(worktree);
+    await removeBlamePreviewProjectResources(env.COMPOSE_PROJECT_NAME);
     if (registered) await removeGitWorktree(repositoryRoot, worktree);
     else await rmRuntime(worktree);
     removedWorktrees.add(worktree);
@@ -1304,8 +1306,8 @@ async function runExistingProjectSetup(worktree: string) {
   );
   if (!(await runtimePathExists(scriptPath))) return;
   await appendRecoveryLog(worktree, "setup starting");
+  const env = await setupEnvironment(worktree);
   await new Promise<void>((resolve, reject) => {
-    const env = setupEnvironment(worktree);
     const child = spawnRuntime("bash", [scriptPath], {
       cwd: worktree,
       env,
@@ -1372,7 +1374,7 @@ async function listProjectServices(worktreeInput: string) {
 async function listProjectServicesWithCompose(worktree: string) {
   const { stdout } = await containerRuntime.compose(
     [...composeArgs(worktree), "config", "--services"],
-    { cwd: worktree, env: setupEnvironment(worktree) },
+    { cwd: worktree, env: await setupEnvironment(worktree) },
   );
   return serviceNamesFromText(stdout);
 }
@@ -1404,12 +1406,14 @@ async function startProjectServiceLogs(input: ProjectServiceLogsInput) {
   };
   projectServiceLogStreams.set(streamId, stream);
   setTimeout(() => {
-    startProjectServiceLogProcess(streamId, stream);
+    void startProjectServiceLogProcess(streamId, stream).catch((error) =>
+      emitProjectServiceLog(streamId, "stderr", errorMessage(error)),
+    );
   }, 0);
   return { streamId };
 }
 
-function startProjectServiceLogProcess(
+async function startProjectServiceLogProcess(
   streamId: string,
   stream: ProjectServiceLogStream,
 ) {
@@ -1426,7 +1430,7 @@ function startProjectServiceLogProcess(
     ],
     {
       cwd: stream.worktree,
-      env: setupEnvironment(stream.worktree),
+      env: await setupEnvironment(stream.worktree),
     },
   );
   stream.process = child;
@@ -1465,7 +1469,9 @@ async function fallbackProjectServiceLog(
     return;
   }
   stream.retry = setTimeout(() => {
-    startProjectServiceLogProcess(streamId, stream);
+    void startProjectServiceLogProcess(streamId, stream).catch((error) =>
+      emitProjectServiceLog(streamId, "stderr", errorMessage(error)),
+    );
   }, 1_000);
 }
 
@@ -1538,16 +1544,19 @@ async function startProjectLogStream(worktree: string) {
   await appendRunLogSection(worktree, "container logs");
   const stream = { stopped: false };
   projectLogStreams.set(worktree, stream);
-  startProjectLogProcess(worktree, stream);
+  await startProjectLogProcess(worktree, stream);
 }
 
-function startProjectLogProcess(worktree: string, stream: ProjectLogStream) {
+async function startProjectLogProcess(
+  worktree: string,
+  stream: ProjectLogStream,
+) {
   if (stream.stopped) return;
   const process = containerRuntime.spawnCompose(
     [...composeArgs(worktree), "logs", "--tail", "120", "--follow"],
     {
       cwd: worktree,
-      env: setupEnvironment(worktree),
+      env: await setupEnvironment(worktree),
     },
   );
   stream.process = process;
@@ -1567,7 +1576,9 @@ function startProjectLogProcess(worktree: string, stream: ProjectLogStream) {
     if (stream.stopped) projectLogStreams.delete(worktree);
     else
       stream.retry = setTimeout(() => {
-        startProjectLogProcess(worktree, stream);
+        void startProjectLogProcess(worktree, stream).catch((error) => {
+          void appendRunLogSection(worktree, errorMessage(error).trim());
+        });
       }, 1_000);
   });
 }
@@ -1893,10 +1904,10 @@ function normalizedPath(path: string) {
   return path.replace(/\\/g, "/").replace(/\/+$/g, "").toLowerCase();
 }
 
-function setupEnvironment(worktree: string) {
+async function setupEnvironment(worktree: string) {
   return {
     ...containerRuntimeEnvironment(process.env),
-    ...worktreeRuntimeEnvironment(worktree),
+    ...(await worktreeRuntimeEnvironment(worktree)),
     ...process.env,
     BLAME_HOST_GID: hostGroupId(),
     BLAME_HOST_UID: hostUserId(),
@@ -1925,42 +1936,46 @@ function runtimeManagerEnvironment() {
   };
 }
 
-function worktreeRuntimeEnvironment(worktree: string) {
+async function worktreeRuntimeEnvironment(worktree: string) {
   if (!worktree) return {};
   const environment: Record<string, string> = {};
-  for (const path of worktreeRuntimeEnvFiles(worktree)) {
-    Object.assign(environment, runtimeEnvValues(path));
+  const envFiles = await worktreeRuntimeEnvFiles(worktree);
+  const envValues = await Promise.all(envFiles.map(runtimeEnvValues));
+  for (const values of envValues) {
+    Object.assign(environment, values);
   }
   return environment;
 }
 
-function worktreeRuntimeEnvFiles(root: string) {
+async function worktreeRuntimeEnvFiles(root: string) {
   const files: string[] = [];
-  collectRuntimeEnvFiles(root, files);
-  return files;
+  await collectRuntimeEnvFiles(root, files);
+  return files.sort();
 }
 
-function collectRuntimeEnvFiles(directory: string, files: string[]) {
+async function collectRuntimeEnvFiles(directory: string, files: string[]) {
   let entries;
   try {
-    entries = readdirSync(directory, { withFileTypes: true });
+    entries = await readdir(directory, { withFileTypes: true });
   } catch {
     return;
   }
-  for (const entry of entries) {
-    const path = join(directory, entry.name);
-    if (entry.isDirectory()) {
-      if (!ignoredRuntimeEnvDirectory(entry.name))
-        collectRuntimeEnvFiles(path, files);
-      continue;
-    }
-    if (entry.isFile() && runtimeEnvFile(entry.name)) files.push(path);
-  }
+  await Promise.all(
+    entries.map(async (entry) => {
+      const path = join(directory, entry.name);
+      if (entry.isDirectory()) {
+        if (!ignoredRuntimeEnvDirectory(entry.name))
+          await collectRuntimeEnvFiles(path, files);
+        return;
+      }
+      if (entry.isFile() && runtimeEnvFile(entry.name)) files.push(path);
+    }),
+  );
 }
 
-function runtimeEnvValues(path: string) {
+async function runtimeEnvValues(path: string) {
   const values: Record<string, string> = {};
-  for (const line of readFileSync(path, "utf8").split("\n")) {
+  for (const line of (await readFile(path, "utf8")).split("\n")) {
     const match = /^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/.exec(line);
     if (match && match[2].trim()) values[match[1]] = match[2];
   }
@@ -2029,7 +2044,7 @@ async function composeConfig(
 ): Promise<ComposeConfig> {
   const { stdout } = await containerRuntime.compose(
     ["-f", composePath, "--project-directory", worktree, "config"],
-    { cwd: worktree, env: setupEnvironment(worktree) },
+    { cwd: worktree, env: await setupEnvironment(worktree) },
   );
   const parsed = parseYaml(stdout) as unknown;
   if (!parsed || typeof parsed !== "object") return {};
@@ -2089,7 +2104,7 @@ async function composePublishedAddress(
         service,
         String(port),
       ],
-      { cwd: worktree, env: setupEnvironment(worktree) },
+      { cwd: worktree, env: await setupEnvironment(worktree) },
     );
     return stdout.trim().split("\n").find(Boolean);
   } catch {
@@ -2231,7 +2246,7 @@ async function appendComposeOutput(worktree: string, args: string[]) {
   try {
     const { stdout, stderr } = await containerRuntime.compose(
       [...composeArgs(worktree), ...args],
-      { cwd: worktree, env: setupEnvironment(worktree) },
+      { cwd: worktree, env: await setupEnvironment(worktree) },
     );
     if (stdout) await appendRecoveryLog(worktree, stdout.trimEnd());
     if (stderr) await appendRecoveryLog(worktree, stderr.trimEnd());
@@ -2300,7 +2315,7 @@ async function previewContainers(includeStopped: boolean, worktree: string) {
         "--format",
         "{{.ID}}",
       ],
-      { cwd: worktree, env: setupEnvironment(worktree) },
+      { cwd: worktree, env: await setupEnvironment(worktree) },
     );
     const ids = stdout
       .split("\n")
@@ -2385,7 +2400,7 @@ async function composeProjectContainers(worktree: string) {
   try {
     const { stdout } = await containerRuntime.compose(
       [...composeArgs(worktree), "ps", "-a", "--format", "json"],
-      { cwd: worktree, env: setupEnvironment(worktree) },
+      { cwd: worktree, env: await setupEnvironment(worktree) },
     );
     const ids = composePsContainerIds(stdout);
     if (ids.length === 0) return [];
