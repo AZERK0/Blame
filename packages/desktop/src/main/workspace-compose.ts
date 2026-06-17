@@ -219,9 +219,72 @@ function escapeCommandVariables(line: string) {
 }
 
 export function dockerComposeWithCorepackPnpm(compose: string) {
-  return compose
-    .replace(/\bcorepack\s+enable\s*&&\s*/g, "")
-    .replace(/(?<!corepack)(^|[\s;&|])pnpm(?=\s)/g, "$1corepack pnpm");
+  const lines = compose.split("\n");
+  let inCommandBlock = false;
+  let commandIndent = 0;
+
+  const resultLines = lines.map((line) => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) {
+      return line;
+    }
+
+    const lineIndent = line.search(/\S/);
+    if (inCommandBlock && lineIndent <= commandIndent) {
+      inCommandBlock = false;
+    }
+
+    if (/^\s*command:\s*/.test(line)) {
+      inCommandBlock = true;
+      commandIndent = lineIndent;
+    }
+
+    if (inCommandBlock || /^\s*command:\s*/.test(line)) {
+      let command = line;
+      // Replace corepack enable && with the safe version
+      command = command.replace(/\bcorepack\s+enable\s*&&\s*/g, "(corepack enable 2>/dev/null || true) && ");
+      // Replace bare pnpm with corepack pnpm
+      command = command.replace(/(?<!corepack)(^|[\s;&|])pnpm(?=\s)/g, "$1corepack pnpm");
+      // Prepend corepack enable if pnpm is used but corepack enable is not in the command
+      if (/\b(?:corepack\s+prepare\s+pnpm@|corepack\s+pnpm|pnpm)\b/.test(command) && !/\bcorepack\s+enable\b/.test(command)) {
+        // Find if the command is a list item or an inline string
+        const listMatch = /^(\s*-\s*)(.*)$/.exec(command);
+        if (listMatch) {
+          const content = listMatch[2];
+          const shMatch = /^(\s*sh\s+-lc\s+['"])(.*)$/.exec(content);
+          if (shMatch) {
+            command = `${listMatch[1]}${shMatch[1]}(corepack enable 2>/dev/null || true) && ${shMatch[2]}`;
+          } else {
+            // Check if it starts with quote
+            const quoteMatch = /^(['"])(.*)$/.exec(content);
+            if (quoteMatch) {
+              command = `${listMatch[1]}${quoteMatch[1]}(corepack enable 2>/dev/null || true) && ${quoteMatch[2]}`;
+            } else {
+              command = `${listMatch[1]}(corepack enable 2>/dev/null || true) && ${content}`;
+            }
+          }
+        } else {
+          const inlineMatch = /^(\s*command:\s*sh\s+-lc\s+['"])(.*)$/.exec(command);
+          if (inlineMatch) {
+            command = `${inlineMatch[1]}(corepack enable 2>/dev/null || true) && ${inlineMatch[2]}`;
+          } else {
+            const inlineQuoteMatch = /^(\s*command:\s*['"])(.*)$/.exec(command);
+            if (inlineQuoteMatch) {
+              command = `${inlineQuoteMatch[1]}(corepack enable 2>/dev/null || true) && ${inlineQuoteMatch[2]}`;
+            } else {
+              const inlinePlainMatch = /^(\s*command:\s*)(.*)$/.exec(command);
+              if (inlinePlainMatch) {
+                command = `${inlinePlainMatch[1]}(corepack enable 2>/dev/null || true) && ${inlinePlainMatch[2]}`;
+              }
+            }
+          }
+        }
+      }
+      return command;
+    }
+    return line;
+  });
+  return resultLines.join("\n");
 }
 
 export function dockerComposeWithCiForPackageInstalls(compose: string) {
