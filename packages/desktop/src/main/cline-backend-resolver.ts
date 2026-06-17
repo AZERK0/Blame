@@ -110,10 +110,10 @@ async function ensureRuntimeClineHub(
       })
     const hub = await client.clineHubEnsure()
     if (!hub.url) throw new Error("Runtime Cline hub did not return a URL.")
-    if (platform === "win32" && hub.url) {
+    if ((platform === "win32" || platform === "darwin") && hub.url) {
       try {
         const httpUrl = hub.url.replace(/^ws:\/\//i, "http://").replace(/\/hub\?.*$/, "/health")
-        await preWarmWindowsRoute(httpUrl)
+        await preWarmRoute(httpUrl, platform)
       } catch (error) {
         // Ignore pre-warm errors
       }
@@ -124,7 +124,7 @@ async function ensureRuntimeClineHub(
   }
 }
 
-function preWarmWindowsRoute(url: string): Promise<void> {
+function preWarmRoute(url: string, platform: NodeJS.Platform): Promise<void> {
   // IMPORTANT: stdio:'ignore' is required on Windows.
   // execFile/execFileAsync causes curl.exe to inherit the write-end of the
   // wsl.exe stdin pipe (bInheritHandles=TRUE when parent has open pipe handles).
@@ -132,10 +132,11 @@ function preWarmWindowsRoute(url: string): Promise<void> {
   // writer the Python daemon receives EOF on stdin and exits cleanly (code 0).
   // spawn with stdio:'ignore' sets bInheritHandles=FALSE so curl.exe never
   // acquires any of the parent's pipe handles.
+  const bin = platform === "win32" ? "curl.exe" : "curl"
   return new Promise<void>((resolve) => {
     try {
       const child = spawn(
-        "curl.exe",
+        bin,
         ["--silent", "--max-time", "35", "--connect-timeout", "35", url],
         { stdio: "ignore", windowsHide: true },
       )

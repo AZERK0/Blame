@@ -208,6 +208,9 @@ export class BlameAgentRuntime {
   constructor(events?: AgentRuntimeEvents, options: RuntimeOptions = {}) {
     this.events = events;
     this.options = options;
+    // Eagerly pre-load Cline SDK and telemetry to avoid latency on first start
+    void import("@cline/sdk").catch(() => undefined);
+    void this.telemetry().catch(() => undefined);
   }
 
   providers = {
