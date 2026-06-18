@@ -202,7 +202,13 @@ type DevelopmentPromptInput = Pick<
 type RuntimeOptions = {
   openExternalUrl?(url: string): void;
   git?(cwd: string, args: string[]): Promise<string>;
-  previewDevtools?(): PreviewDevtoolsTarget | undefined;
+  previewDevtools?(
+    input?: PreviewDevtoolsTargetInput,
+  ): Promise<PreviewDevtoolsTarget | undefined> | PreviewDevtoolsTarget | undefined;
+};
+
+type PreviewDevtoolsTargetInput = {
+  timeoutMs?: number;
 };
 
 let customGitRunner: ((cwd: string, args: string[]) => Promise<string>) | undefined;
@@ -1553,15 +1559,25 @@ function previewDevtoolsTool(options: RuntimeOptions): AgentTool | undefined {
       "Get the active Blame preview Chrome DevTools MCP server configuration and current preview URL.",
     inputSchema: {
       type: "object",
-      properties: {},
+      properties: {
+        timeoutMs: {
+          type: "number",
+          description:
+            "Maximum time to wait for the Blame preview BrowserView to become ready, in milliseconds.",
+        },
+      },
       additionalProperties: false,
     },
-    execute() {
-      const target = options.previewDevtools?.();
+    async execute(input: unknown) {
+      const previewInput = previewDevtoolsInput(input);
+      const target = await options.previewDevtools?.(previewInput);
       if (!target?.available) {
         return {
           available: false,
           reason: "No active Blame preview is currently loaded.",
+          waitedMs: previewInput.timeoutMs,
+          recommendation:
+            "The preview may still be initializing. Call this tool again before concluding that preview access is unavailable.",
         };
       }
       return {
@@ -1571,6 +1587,12 @@ function previewDevtoolsTool(options: RuntimeOptions): AgentTool | undefined {
       };
     },
   };
+}
+
+function previewDevtoolsInput(input: unknown): PreviewDevtoolsTargetInput {
+  const record = asRecord(input);
+  const timeoutMs = Number(record.timeoutMs);
+  return Number.isFinite(timeoutMs) ? { timeoutMs } : {};
 }
 
 async function projectInitializationInputFromMessages(
@@ -1788,6 +1810,7 @@ function developmentStoryPrompt(
     "Work in the current worktree when code changes are clearly required.",
     "If the request is a question, analysis, opinion, explanation, or review request, inspect the project if useful and answer in Markdown without editing files.",
     "Only modify files when the request explicitly asks for implementation or when a concrete code change is necessary to satisfy it.",
+    "When browser verification is useful, call get_preview_devtools and wait for the Blame preview to become ready before deciding preview access is unavailable.",
   );
   return prompt.join("\n");
 }

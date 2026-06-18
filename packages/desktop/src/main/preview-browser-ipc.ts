@@ -29,11 +29,16 @@ type PreviewBrowserState = {
 };
 
 type PreviewBrowserCaptureSize = "full" | "thumbnail";
+type PreviewDevtoolsTargetInput = {
+  timeoutMs?: number;
+};
 
 const previews = new Map<string, PreviewBrowserRecord>();
 const previewDevtoolsPort =
   Number(process.env.BLAME_PREVIEW_DEVTOOLS_PORT) || 9222;
 const previewDevtoolsBrowserUrl = `http://127.0.0.1:${previewDevtoolsPort}`;
+const previewDevtoolsPollIntervalMs = 1_000;
+const previewDevtoolsWaitTimeoutMs = 180_000;
 let activePreviewDevtoolsTarget: PreviewBrowserState | undefined;
 
 export type PreviewDevtoolsTarget = {
@@ -55,9 +60,21 @@ export function enablePreviewDevtools() {
   );
 }
 
-export function getPreviewDevtoolsTarget(): PreviewDevtoolsTarget {
+export async function getPreviewDevtoolsTarget(
+  input: PreviewDevtoolsTargetInput = {},
+): Promise<PreviewDevtoolsTarget> {
+  const timeoutMs = normalizedPreviewDevtoolsTimeout(input.timeoutMs);
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (activePreviewDevtoolsTargetReady()) return previewDevtoolsTarget(true);
+    await delay(previewDevtoolsPollIntervalMs);
+  }
+  return previewDevtoolsTarget(false);
+}
+
+function previewDevtoolsTarget(available: boolean): PreviewDevtoolsTarget {
   return {
-    available: Boolean(activePreviewDevtoolsTarget),
+    available,
     browserUrl: previewDevtoolsBrowserUrl,
     currentUrl: activePreviewDevtoolsTarget?.url,
     id: activePreviewDevtoolsTarget?.id,
@@ -72,6 +89,19 @@ export function getPreviewDevtoolsTarget(): PreviewDevtoolsTarget {
       name: "chrome-devtools",
     },
   };
+}
+
+function activePreviewDevtoolsTargetReady() {
+  return Boolean(
+    activePreviewDevtoolsTarget?.url &&
+      !activePreviewDevtoolsTarget.loading &&
+      !activePreviewDevtoolsTarget.error,
+  );
+}
+
+function normalizedPreviewDevtoolsTimeout(value: number | undefined) {
+  if (!Number.isFinite(value) || !value) return previewDevtoolsWaitTimeoutMs;
+  return Math.max(1_000, Math.min(value, 300_000));
 }
 
 export function registerPreviewBrowserIpcHandlers() {
@@ -233,6 +263,10 @@ function sendPreviewBrowserState(
 function clearActivePreviewDevtoolsTarget(id: string) {
   if (activePreviewDevtoolsTarget?.id === id)
     activePreviewDevtoolsTarget = undefined;
+}
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function normalizedBounds(bounds: PreviewBrowserBounds) {
