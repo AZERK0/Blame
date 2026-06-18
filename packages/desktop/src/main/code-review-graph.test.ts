@@ -143,6 +143,19 @@ test("does not rebuild again after updating a dirty worktree snapshot", async ()
   assert.equal(commands.filter((args) => args[0] === "update").length, 1);
 });
 
+test("queries minimal context through MCP", async () => {
+  const service = serviceFixture();
+
+  const result = await service.minimalContext({
+    task: "debug login",
+    worktree: "/repo",
+  });
+
+  assert.equal(result.state, "ready");
+  assert.equal(result.source, "mcp");
+  assert.deepEqual(result.data, { status: "ok", summary: "ok" });
+});
+
 function serviceFixture(input: ServiceFixtureInput = {}) {
   const commands = input.commands ?? [];
   return new CodeReviewGraphService({

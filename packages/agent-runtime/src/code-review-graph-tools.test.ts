@@ -42,6 +42,17 @@ test("get_code_impact_radius normalizes compact query input", async () => {
   assert.equal(calls[0], "impact:/worktree:main:src/a.ts,src/b.ts:4:60000");
 });
 
+test("get_code_minimal_context passes the task and current worktree", async () => {
+  const calls: string[] = [];
+  const tools = codeReviewGraphTools(provider(calls), "/worktree");
+  const tool = tools.find((tool) => tool.name === "get_code_minimal_context");
+  assert.ok(tool);
+
+  await tool.execute({ task: "debug login", waitMs: 100_000 }, context());
+
+  assert.equal(calls[0], "minimal:/worktree:debug login:60000");
+});
+
 function provider(calls: string[] = []): CodeReviewGraphProvider {
   return {
     async architectureOverview(input) {
@@ -59,6 +70,10 @@ function provider(calls: string[] = []): CodeReviewGraphProvider {
           input.waitMs,
         ].join(":"),
       );
+      return { available: true, state: "ready", worktree: input.worktree };
+    },
+    async minimalContext(input) {
+      calls.push(`minimal:${input.worktree}:${input.task}:${input.waitMs}`);
       return { available: true, state: "ready", worktree: input.worktree };
     },
     async reviewContext(input) {

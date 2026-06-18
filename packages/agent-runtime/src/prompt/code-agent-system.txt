@@ -23,9 +23,12 @@ Your job is to satisfy the current backlog item completely. Not every backlog it
 ## Tool Use
 
 - Use repository search and file reads to build context before editing.
-- When code graph tools are available, call get_code_graph_status or get_code_architecture_overview before reading many files in an unfamiliar area.
+- When code graph tools are available, use them to reduce context before broad searches, file reads, or terminal exploration.
 - If the graph is missing or stale, call update_code_graph or use a code graph query with a bounded wait before concluding it is unavailable.
-- After creating or inspecting a diff, use get_code_impact_radius or get_code_review_context to identify the smallest useful context, risks, and test gaps before broad file reads.
+- Use get_code_minimal_context first for general orientation, unfamiliar areas, debugging, questions, or planning.
+- Use get_code_architecture_overview for architecture or coupling questions, not as a default replacement for every search.
+- After creating or inspecting a diff, use get_code_impact_radius or get_code_review_context to identify affected files, risks, test gaps, and context savings before broad file reads.
+- Let graph results choose the next targeted reads. If graph context is enough for the user's request, answer without additional file inspection.
 - Batch independent tool calls into the same response whenever possible, especially file reads, code searches, and unrelated verification commands. This reduces extra model iterations and avoids resending the full context unnecessarily.
 - Prefer dedicated tools over terminal commands when a tool can perform the task accurately, especially for file reads, code search, edits, web fetching, and structured operations.
 - Minimize context when inspecting files. Prefer search before reading files, and never read full files by default.

@@ -2,6 +2,7 @@ import type { CoreSessionConfig } from "@cline/sdk";
 import type {
   CodeGraphArchitectureOverviewInput,
   CodeGraphImpactRadiusInput,
+  CodeGraphMinimalContextInput,
   CodeGraphQueryInput,
   CodeGraphReviewContextInput,
   CodeGraphUpdateInput,
@@ -14,6 +15,7 @@ type ToolContext = Parameters<AgentTool["execute"]>[1];
 
 const statusToolName = "get_code_graph_status";
 const updateToolName = "update_code_graph";
+const minimalContextToolName = "get_code_minimal_context";
 const reviewContextToolName = "get_code_review_context";
 const impactRadiusToolName = "get_code_impact_radius";
 const architectureOverviewToolName = "get_code_architecture_overview";
@@ -21,6 +23,7 @@ const architectureOverviewToolName = "get_code_architecture_overview";
 export const codeReviewGraphToolNames = [
   statusToolName,
   updateToolName,
+  minimalContextToolName,
   reviewContextToolName,
   impactRadiusToolName,
   architectureOverviewToolName,
@@ -34,10 +37,30 @@ export function codeReviewGraphTools(
   return [
     codeGraphStatusTool(provider, worktree),
     codeGraphUpdateTool(provider, worktree),
+    codeGraphMinimalContextTool(provider, worktree),
     codeGraphReviewContextTool(provider, worktree),
     codeGraphImpactRadiusTool(provider, worktree),
     codeGraphArchitectureOverviewTool(provider, worktree),
   ];
+}
+
+function codeGraphMinimalContextTool(
+  provider: CodeReviewGraphProvider,
+  worktree: string,
+): AgentTool {
+  return {
+    name: minimalContextToolName,
+    description:
+      "Get ultra-compact local code graph context for the current task. Use this first for orientation before broad searches, file reads, or terminal exploration.",
+    inputSchema: minimalContextInputSchema,
+    execute(input: unknown, context: ToolContext) {
+      return provider.minimalContext({
+        ...minimalContextInput(input),
+        signal: context.signal,
+        worktree,
+      });
+    },
+  };
 }
 
 function codeGraphStatusTool(
@@ -178,6 +201,16 @@ function architectureOverviewInput(
   };
 }
 
+function minimalContextInput(
+  input: unknown,
+): Omit<CodeGraphMinimalContextInput, "worktree"> {
+  const record = asRecord(input);
+  return {
+    ...queryInput(input),
+    task: stringValue(record.task),
+  };
+}
+
 function updateInput(input: unknown): Omit<CodeGraphUpdateInput, "worktree"> {
   const record = asRecord(input);
   return {
@@ -198,6 +231,7 @@ function queryInput(input: unknown): Omit<CodeGraphQueryInput, "worktree"> {
   return {
     base: stringValue(record.base),
     changedFiles: stringArray(record.changedFiles),
+    task: stringValue(record.task),
     waitMs: boundedNumber(record.waitMs, 0, 60_000),
   };
 }
@@ -257,7 +291,18 @@ const queryProperties = {
     description:
       "Optional relative changed file paths. Omit to let code-review-graph detect the diff.",
   },
+  task: {
+    type: "string",
+    description:
+      "Short description of the current task so the graph can return the most relevant compact context.",
+  },
   waitMs: waitMsSchema,
+};
+
+const minimalContextInputSchema = {
+  type: "object",
+  properties: queryProperties,
+  additionalProperties: false,
 };
 
 const impactRadiusInputSchema = {

@@ -1,6 +1,7 @@
 import type {
   CodeGraphArchitectureOverviewInput,
   CodeGraphImpactRadiusInput,
+  CodeGraphMinimalContextInput,
   CodeGraphQueryResult,
   CodeGraphReviewContextInput,
   CodeGraphStatus,
@@ -120,6 +121,7 @@ const defaultUpdateWaitMs = 30_000;
 const availabilityTtlMs = 30_000;
 const forceKillDelayMs = 1_500;
 const mcpTools = [
+  "get_minimal_context_tool",
   "get_impact_radius_tool",
   "get_review_context_tool",
   "get_architecture_overview_tool",
@@ -180,6 +182,19 @@ export class CodeReviewGraphService {
       status,
       "get_impact_radius_tool",
       impactRadiusArgs(input),
+      input.signal,
+    );
+  }
+
+  async minimalContext(
+    input: CodeGraphMinimalContextInput,
+  ): Promise<CodeGraphQueryResult> {
+    const status = await this.ensureReady(input);
+    if (status.state !== "ready") return status;
+    return this.mcpQuery(
+      status,
+      "get_minimal_context_tool",
+      minimalContextArgs(input),
       input.signal,
     );
   }
@@ -392,6 +407,7 @@ export class CodeReviewGraphService {
   private async ensureReady(
     input:
       | CodeGraphImpactRadiusInput
+      | CodeGraphMinimalContextInput
       | CodeGraphReviewContextInput
       | CodeGraphArchitectureOverviewInput,
   ) {
@@ -500,6 +516,7 @@ const codeReviewGraph = new CodeReviewGraphService();
 export const codeReviewGraphProvider: CodeReviewGraphProvider = {
   architectureOverview: (input) => codeReviewGraph.architectureOverview(input),
   impactRadius: (input) => codeReviewGraph.impactRadius(input),
+  minimalContext: (input) => codeReviewGraph.minimalContext(input),
   reviewContext: (input) => codeReviewGraph.reviewContext(input),
   status: (input) => codeReviewGraph.status(input),
   update: (input) => codeReviewGraph.update(input),
@@ -1016,6 +1033,13 @@ function sameGitCommit(left: string, right: string) {
   return left === right || left.startsWith(right) || right.startsWith(left);
 }
 
+function minimalContextArgs(input: CodeGraphMinimalContextInput) {
+  return {
+    ...queryArgs(input),
+    ...(input.task ? { task: truncate(input.task, 300) } : {}),
+  };
+}
+
 function impactRadiusArgs(input: CodeGraphImpactRadiusInput) {
   return {
     ...queryArgs(input),
@@ -1033,7 +1057,10 @@ function reviewContextArgs(input: CodeGraphReviewContextInput) {
 }
 
 function queryArgs(
-  input: CodeGraphImpactRadiusInput | CodeGraphReviewContextInput,
+  input:
+    | CodeGraphImpactRadiusInput
+    | CodeGraphMinimalContextInput
+    | CodeGraphReviewContextInput,
 ) {
   return {
     ...(safeGitRef(input.base) ? { base: safeGitRef(input.base) } : {}),

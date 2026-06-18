@@ -19,6 +19,7 @@ export type {
   BlameProvider,
   CodeGraphArchitectureOverviewInput,
   CodeGraphImpactRadiusInput,
+  CodeGraphMinimalContextInput,
   CodeGraphQueryInput,
   CodeGraphQueryResult,
   CodeGraphReviewContextInput,

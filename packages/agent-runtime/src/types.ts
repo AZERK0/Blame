@@ -532,9 +532,12 @@ export type CodeGraphQueryInput = {
   base?: string
   changedFiles?: string[]
   signal?: AbortSignal
+  task?: string
   waitMs?: number
   worktree: string
 }
+
+export type CodeGraphMinimalContextInput = CodeGraphQueryInput
 
 export type CodeGraphImpactRadiusInput = CodeGraphQueryInput & {
   maxDepth?: number
@@ -559,6 +562,9 @@ export type CodeReviewGraphProvider = {
     input: CodeGraphArchitectureOverviewInput,
   ): Promise<CodeGraphQueryResult>
   impactRadius(input: CodeGraphImpactRadiusInput): Promise<CodeGraphQueryResult>
+  minimalContext(
+    input: CodeGraphMinimalContextInput,
+  ): Promise<CodeGraphQueryResult>
   reviewContext(
     input: CodeGraphReviewContextInput,
   ): Promise<CodeGraphQueryResult>
