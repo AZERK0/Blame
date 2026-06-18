@@ -158,14 +158,15 @@ export async function run(
 ) {
   const platform = input.platform ?? process.platform;
   let env = runtimeEnvironment(input, platform);
-  if (command === "git") {
+  const useAgent = useRuntimeAgent(platform, env);
+  if (command === "git" && useAgent) {
     env = {
       ...env,
       GIT_TERMINAL_PROMPT: "0",
       GIT_SSH_COMMAND: "ssh -o BatchMode=yes -o StrictHostKeyChecking=no",
     };
   }
-  if (useRuntimeAgent(platform, env)) {
+  if (useAgent) {
     try {
       return await runtimeAgentClient({ env, platform }).exec({
         args,
