@@ -341,7 +341,9 @@ function runtimeEnvironmentKey(key: string) {
     key === "CONTAINERD_NAMESPACE" ||
     key === "PATH" ||
     key === "npm_config_yes" ||
-    key.startsWith("BLAME_")
+    key.startsWith("BLAME_") ||
+    key.startsWith("GIT_") ||
+    key.startsWith("SSH_")
   );
 }
 

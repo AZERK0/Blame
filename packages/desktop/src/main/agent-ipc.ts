@@ -28,12 +28,17 @@ const runtime = new BlameAgentRuntime({
     void shell.openExternal(url)
   },
   async git(cwd, args) {
+    const gitEnv = {
+      ...process.env,
+      GIT_TERMINAL_PROMPT: "0",
+      GIT_SSH_COMMAND: "ssh -o BatchMode=yes",
+    };
     if (runtimeManagedPath(cwd)) {
       await ensureRuntimeGitUserIdentity();
-      const { stdout } = await runRuntime("git", args, { cwd });
+      const { stdout } = await runRuntime("git", args, { cwd, env: gitEnv });
       return stdout;
     }
-    const { stdout } = await execFileAsync("git", args, { cwd, maxBuffer: 20 * 1024 * 1024 });
+    const { stdout } = await execFileAsync("git", args, { cwd, env: gitEnv, maxBuffer: 20 * 1024 * 1024 });
     return stdout;
   },
   previewDevtools: getPreviewDevtoolsTarget,

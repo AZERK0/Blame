@@ -2601,6 +2601,11 @@ async function git(cwd: string, args: string[]) {
     }
     const { stdout } = await execFileAsync("git", args, {
       cwd,
+      env: {
+        ...process.env,
+        GIT_TERMINAL_PROMPT: "0",
+        GIT_SSH_COMMAND: "ssh -o BatchMode=yes",
+      },
       maxBuffer: 20 * 1024 * 1024,
     });
     return stdout.trim();
