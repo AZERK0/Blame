@@ -162,7 +162,7 @@ export async function run(
     env = {
       ...env,
       GIT_TERMINAL_PROMPT: "0",
-      GIT_SSH_COMMAND: "ssh -o BatchMode=yes",
+      GIT_SSH_COMMAND: "ssh -o BatchMode=yes -o StrictHostKeyChecking=no",
     };
   }
   if (useRuntimeAgent(platform, env)) {
