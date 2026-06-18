@@ -513,23 +513,32 @@ test("ensureRuntimeGitUserIdentity: reads host identity and configures global co
 test("ensureRuntimeGitUserIdentity: falls back to defaults if host reads fail", async () => {
   resetRuntimeGitIdentityConfiguredForTesting();
   const runCalls: [string, string[]][] = [];
+  const originalUser = process.env.USER;
+  const originalUsername = process.env.USERNAME;
+  delete process.env.USER;
+  delete process.env.USERNAME;
 
-  const mockFns = {
-    execFileAsync: async () => {
-      throw new Error("config not found");
-    },
-    run: async (cmd: string, args: string[]) => {
-      runCalls.push([cmd, args]);
-      return { stdout: "", stderr: "" };
-    },
-  };
+  try {
+    const mockFns = {
+      execFileAsync: async () => {
+        throw new Error("config not found");
+      },
+      run: async (cmd: string, args: string[]) => {
+        runCalls.push([cmd, args]);
+        return { stdout: "", stderr: "" };
+      },
+    };
 
-  await ensureRuntimeGitUserIdentity(mockFns);
+    await ensureRuntimeGitUserIdentity(mockFns);
 
-  assert.deepEqual(runCalls, [
-    ["git", ["config", "--global", "user.name", "Blame User"]],
-    ["git", ["config", "--global", "user.email", "blame@example.local"]],
-  ]);
+    assert.deepEqual(runCalls, [
+      ["git", ["config", "--global", "user.name", "Blame User"]],
+      ["git", ["config", "--global", "user.email", "blame@example.local"]],
+    ]);
+  } finally {
+    process.env.USER = originalUser;
+    process.env.USERNAME = originalUsername;
+  }
 });
 
 

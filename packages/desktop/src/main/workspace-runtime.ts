@@ -837,15 +837,36 @@ export async function ensureRuntimeGitUserIdentity(
       const { stdout } = await fns.execFileAsync("git", ["config", "--global", "user.name"]);
       name = stdout.trim();
     } catch (err) {
-      log.warn("ensureRuntimeGitUserIdentity: failed to read host user.name, falling back:", err);
-      name = "Blame User";
+      log.warn("ensureRuntimeGitUserIdentity: failed to read host global user.name:", err);
     }
+    if (!name) {
+      try {
+        const { stdout } = await fns.execFileAsync("git", ["config", "user.name"]);
+        name = stdout.trim();
+      } catch (err) {
+        log.warn("ensureRuntimeGitUserIdentity: failed to read host local user.name:", err);
+      }
+    }
+    if (!name) {
+      name = process.env.GIT_AUTHOR_NAME || process.env.GIT_COMMITTER_NAME || process.env.USER || process.env.USERNAME || "Blame User";
+    }
+
     try {
       const { stdout } = await fns.execFileAsync("git", ["config", "--global", "user.email"]);
       email = stdout.trim();
     } catch (err) {
-      log.warn("ensureRuntimeGitUserIdentity: failed to read host user.email, falling back:", err);
-      email = "blame@example.local";
+      log.warn("ensureRuntimeGitUserIdentity: failed to read host global user.email:", err);
+    }
+    if (!email) {
+      try {
+        const { stdout } = await fns.execFileAsync("git", ["config", "user.email"]);
+        email = stdout.trim();
+      } catch (err) {
+        log.warn("ensureRuntimeGitUserIdentity: failed to read host local user.email:", err);
+      }
+    }
+    if (!email) {
+      email = process.env.GIT_AUTHOR_EMAIL || process.env.GIT_COMMITTER_EMAIL || "blame@example.local";
     }
 
     log.info(`ensureRuntimeGitUserIdentity: configuring VM git identity: ${name} <${email}>`);
