@@ -2604,7 +2604,9 @@ async function git(cwd: string, args: string[]) {
       env: {
         ...process.env,
         GIT_TERMINAL_PROMPT: "0",
-        GIT_SSH_COMMAND: "ssh -o BatchMode=yes -o StrictHostKeyChecking=no",
+        GIT_SSH_COMMAND: process.platform === "win32"
+          ? "ssh.exe -o BatchMode=yes -o StrictHostKeyChecking=no"
+          : "ssh -o BatchMode=yes -o StrictHostKeyChecking=no",
       },
       maxBuffer: 20 * 1024 * 1024,
     });

@@ -32,7 +32,9 @@ const runtime = new BlameAgentRuntime({
       const gitEnv = {
         ...process.env,
         GIT_TERMINAL_PROMPT: "0",
-        GIT_SSH_COMMAND: "ssh -o BatchMode=yes -o StrictHostKeyChecking=no",
+        GIT_SSH_COMMAND: process.platform === "win32"
+          ? "ssh.exe -o BatchMode=yes -o StrictHostKeyChecking=no"
+          : "ssh -o BatchMode=yes -o StrictHostKeyChecking=no",
       };
       await ensureRuntimeGitUserIdentity();
       const { stdout } = await runRuntime("git", args, { cwd, env: gitEnv });

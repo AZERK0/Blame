@@ -163,7 +163,9 @@ export async function run(
     env = {
       ...env,
       GIT_TERMINAL_PROMPT: "0",
-      GIT_SSH_COMMAND: "ssh -o BatchMode=yes -o StrictHostKeyChecking=no",
+      GIT_SSH_COMMAND: platform === "win32"
+        ? "ssh.exe -o BatchMode=yes -o StrictHostKeyChecking=no"
+        : "ssh -o BatchMode=yes -o StrictHostKeyChecking=no",
     };
   }
   if (useAgent) {
@@ -391,12 +393,18 @@ function encodeWslSegment(value: string) {
 }
 
 function runtimeEnvironment(input: RuntimeOptions, platform: NodeJS.Platform) {
-  return (
-    input.env ?? {
-      ...process.env,
-      PATH: setupPath({ platform }),
-    }
-  );
+  const env = input.env ?? {
+    ...process.env,
+    PATH: setupPath({ platform }),
+  };
+  if (platform === "win32") {
+    const wslenv = "GIT_SSH_COMMAND/u:GIT_TERMINAL_PROMPT/u:GIT_AUTHOR_NAME/u:GIT_AUTHOR_EMAIL/u:GIT_COMMITTER_NAME/u:GIT_COMMITTER_EMAIL/u";
+    return {
+      ...env,
+      WSLENV: env.WSLENV ? `${env.WSLENV}:${wslenv}` : wslenv,
+    };
+  }
+  return env;
 }
 
 function useRuntimeAgent(platform: NodeJS.Platform, env: NodeJS.ProcessEnv) {
