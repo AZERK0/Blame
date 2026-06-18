@@ -191,6 +191,7 @@ export type SendDevelopmentSessionInput = {
   feedback?: string
   feedbackCodeSelectionAttachments?: CodeSelectionAttachment[]
   feedbackFileAttachments?: FileAttachment[]
+  feedbackOnly?: boolean
 }
 
 export type ProjectCodePracticeKey =

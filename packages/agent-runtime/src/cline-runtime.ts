@@ -204,7 +204,8 @@ type DevelopmentPromptInput = Pick<
   | "fileAttachments"
   | "summary"
   | "title"
->;
+> &
+  Pick<SendDevelopmentSessionInput, "feedbackOnly">;
 
 type RuntimeOptions = {
   codeReviewGraph?: CodeReviewGraphProvider;
@@ -1807,11 +1808,36 @@ async function developmentUserInput(
     ],
     attachmentDirectory,
   );
+  if (input.feedbackOnly) {
+    return {
+      prompt: developmentFeedbackPrompt(input, attachments),
+      userFiles: attachments.userFiles,
+      userImages: attachments.userImages,
+    };
+  }
   return {
     prompt: developmentStoryPrompt(input, attachments),
     userFiles: attachments.userFiles,
     userImages: attachments.userImages,
   };
+}
+
+function developmentFeedbackPrompt(
+  input: DevelopmentPromptInput,
+  attachments: DevelopmentAttachmentInput,
+) {
+  const prompt = [input.feedback?.trim()].filter(Boolean);
+  const feedbackAttachments = codeSelectionAttachmentsMarkdown(
+    input.feedbackCodeSelectionAttachments,
+  );
+  if (feedbackAttachments) prompt.push(feedbackAttachments);
+  const feedbackFiles = fileAttachmentReferences(input.feedbackFileAttachments);
+  if (feedbackFiles) prompt.push(feedbackFiles);
+  if (attachments.userImages.length)
+    prompt.push(attachments.userImages.join("\n"));
+  if (attachments.userFiles.length)
+    prompt.push(attachments.userFiles.join("\n"));
+  return prompt.join("\n\n");
 }
 
 function developmentStoryPrompt(

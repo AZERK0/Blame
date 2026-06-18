@@ -451,9 +451,9 @@ export function BacklogPage() {
         })
         return story
       }
-      if (auth.status !== "authenticated" || !agentSelection.currentModel) {
+      if (!story.clineSessionId) {
         toast.error("Unable to request changes", {
-          description: "Reconnect the provider and select a model.",
+          description: "This user story has no existing Cline session.",
           position: "bottom-right",
         })
         return story
@@ -466,58 +466,26 @@ export function BacklogPage() {
         })
         return story
       }
-      const codePractices = await projectCodePractices(auth, projects)
-      const enrichedFeedback = changeRequestFeedback(
-        story,
-        feedback,
-        await currentDiffSummary(story, platform)
-      )
-      const session = await agent.sessions.startDevelopment({
-        apiConnection: auth.apiConnection,
-        providerId: agentSelection.currentModel.provider.id,
-        modelId: agentSelection.currentModel.id,
-        credentialLabel: agentSelection.currentModel.credentialLabel,
-        reasoningEffort: agentSelection.currentVariant,
-        autoSendPrompt: false,
-        title: story.title,
-        summary: story.summary,
-        codeSelectionAttachments: story.codeSelectionAttachments ?? [],
-        fileAttachments: story.fileAttachments ?? [],
-        feedback: enrichedFeedback,
-        feedbackCodeSelectionAttachments: codeSelectionAttachments ?? [],
-        feedbackFileAttachments: fileAttachments ?? [],
-        cwd: story.worktree,
-        workspaceRoot: story.worktree,
-        codePractices,
-      })
-      if (!session) {
-        toast.error("Unable to request changes", {
-          description: "Desktop agent runtime is not available.",
-          position: "bottom-right",
-        })
-        return story
-      }
+      const sessionId = story.clineSessionId
       const run = await backlog.createAgentRun(story, {
         commentId,
-        clineSessionId: session.sessionId,
+        clineSessionId: sessionId,
         kind: "change-request",
       })
       const updatedStory = await updateStory(story, {
         agentLastError: null,
-        agentLastEvent: `Cline debug log: ${clineLogPath(story.worktree, session.sessionId)}`,
+        agentLastEvent: `Cline debug log: ${clineLogPath(story.worktree, sessionId)}`,
         agentActivities: [],
         agentFinalResponse: null,
         agentUsage: null,
-        agentModelId: agentSelection.currentModel.id,
-        agentProviderId: agentSelection.currentModel.provider.id,
         agentStatus: "Running",
-        clineSessionId: session.sessionId,
+        clineSessionId: sessionId,
         status: "in-progress",
       })
       let authenticationFailed = false
       const unsubscribe = subscribeAgentEvents(
         platform,
-        session.sessionId,
+        sessionId,
         (event) => {
           if (authenticationFailed) return
           authenticationFailed = expiredAuthenticationToken(
@@ -533,24 +501,19 @@ export function BacklogPage() {
         }
       )
       void agent.sessions.sendDevelopment({
-        sessionId: session.sessionId,
+        sessionId,
         title: story.title,
         summary: story.summary,
-        codeSelectionAttachments: story.codeSelectionAttachments ?? [],
-        fileAttachments: story.fileAttachments ?? [],
-        feedback: enrichedFeedback,
+        feedback,
+        feedbackOnly: true,
         feedbackCodeSelectionAttachments: codeSelectionAttachments ?? [],
         feedbackFileAttachments: fileAttachments ?? [],
       })
       return updatedStory
     },
     [
-      auth,
       backlog,
       platform,
-      projects,
-      agentSelection.currentModel,
-      agentSelection.currentVariant,
       updateStory,
       persistAgentEvent,
     ]
@@ -1266,22 +1229,6 @@ function resumeAgentFeedback(story: UserStory, diffSummary: string) {
     "Inspect the current git diff first, keep the useful existing changes, and continue until the story is ready for review.",
     ...details,
   ].join("\n")
-}
-
-function changeRequestFeedback(
-  story: UserStory,
-  feedback: string,
-  diffSummary: string
-) {
-  return [
-    feedback,
-    story.agentSessionSummary
-      ? `Previous session summary:\n${story.agentSessionSummary}`
-      : "",
-    diffSummary,
-  ]
-    .filter(Boolean)
-    .join("\n\n")
 }
 
 async function currentDiffSummary(story: UserStory, platform: Platform) {
