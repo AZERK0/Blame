@@ -10,6 +10,8 @@ import {
   worktreeRoot,
   hasMissingWorkspaceNodeModules,
   sanitizeWorkspaceConfigFiles,
+  ensureRuntimeGitUserIdentity,
+  resetRuntimeGitIdentityConfiguredForTesting,
 } from "./workspace-runtime.ts";
 
 test("uses the shared runtime worktree root", () => {
@@ -466,6 +468,70 @@ test("sanitizeWorkspaceConfigFiles: deletes duplicate lockfiles on host/non-mana
   
   assert.deepEqual(deletedFiles, ["/host/apps/web/pnpm-lock.yaml"]);
 });
+
+test("ensureRuntimeGitUserIdentity: reads host identity and configures global config inside VM", async () => {
+  resetRuntimeGitIdentityConfiguredForTesting();
+  const runCalls: [string, string[]][] = [];
+  const execCalls: string[][] = [];
+
+  const mockFns = {
+    execFileAsync: async (cmd: string, args: string[]) => {
+      execCalls.push([cmd, ...args]);
+      if (args[args.length - 1] === "user.name") {
+        return { stdout: "Host User\n", stderr: "" };
+      }
+      if (args[args.length - 1] === "user.email") {
+        return { stdout: "host@example.com\n", stderr: "" };
+      }
+      return { stdout: "", stderr: "" };
+    },
+    run: async (cmd: string, args: string[]) => {
+      runCalls.push([cmd, args]);
+      return { stdout: "", stderr: "" };
+    },
+  };
+
+  await ensureRuntimeGitUserIdentity(mockFns);
+
+  assert.deepEqual(execCalls, [
+    ["git", "config", "--global", "user.name"],
+    ["git", "config", "--global", "user.email"],
+  ]);
+  assert.deepEqual(runCalls, [
+    ["git", ["config", "--global", "user.name", "Host User"]],
+    ["git", ["config", "--global", "user.email", "host@example.com"]],
+  ]);
+
+  // Subsequent call should be a no-op due to caching
+  runCalls.length = 0;
+  execCalls.length = 0;
+  await ensureRuntimeGitUserIdentity(mockFns);
+  assert.equal(execCalls.length, 0);
+  assert.equal(runCalls.length, 0);
+});
+
+test("ensureRuntimeGitUserIdentity: falls back to defaults if host reads fail", async () => {
+  resetRuntimeGitIdentityConfiguredForTesting();
+  const runCalls: [string, string[]][] = [];
+
+  const mockFns = {
+    execFileAsync: async () => {
+      throw new Error("config not found");
+    },
+    run: async (cmd: string, args: string[]) => {
+      runCalls.push([cmd, args]);
+      return { stdout: "", stderr: "" };
+    },
+  };
+
+  await ensureRuntimeGitUserIdentity(mockFns);
+
+  assert.deepEqual(runCalls, [
+    ["git", ["config", "--global", "user.name", "Blame User"]],
+    ["git", ["config", "--global", "user.email", "blame@example.local"]],
+  ]);
+});
+
 
 
 

@@ -85,6 +85,8 @@ import {
   storyBranch,
   worktreePath,
   writeFile as writeRuntimeFile,
+  ensureRuntimeGitUserIdentity,
+  resetRuntimeGitIdentityConfigured,
 } from "./workspace-runtime";
 
 const previewStartupIntervalMs = 1_000;
@@ -307,18 +309,22 @@ export function registerWorkspaceIpcHandlers() {
   ipcMain.handle("workspace:get-runtime-status", () =>
     getRuntimeStatus({ env: runtimeManagerEnvironment() }),
   );
-  ipcMain.handle("workspace:ensure-runtime-ready", () =>
-    ensureRuntimeReady({ env: runtimeManagerEnvironment() }),
-  );
-  ipcMain.handle("workspace:repair-runtime", () =>
-    repairRuntime({ env: runtimeManagerEnvironment() }),
-  );
-  ipcMain.handle("workspace:reset-runtime", () =>
-    resetRuntime({ env: runtimeManagerEnvironment() }),
-  );
-  ipcMain.handle("workspace:uninstall-runtime", () =>
-    uninstallRuntime({ env: runtimeManagerEnvironment() }),
-  );
+  ipcMain.handle("workspace:ensure-runtime-ready", async () => {
+    resetRuntimeGitIdentityConfigured();
+    return ensureRuntimeReady({ env: runtimeManagerEnvironment() });
+  });
+  ipcMain.handle("workspace:repair-runtime", async () => {
+    resetRuntimeGitIdentityConfigured();
+    return repairRuntime({ env: runtimeManagerEnvironment() });
+  });
+  ipcMain.handle("workspace:reset-runtime", async () => {
+    resetRuntimeGitIdentityConfigured();
+    return resetRuntime({ env: runtimeManagerEnvironment() });
+  });
+  ipcMain.handle("workspace:uninstall-runtime", async () => {
+    resetRuntimeGitIdentityConfigured();
+    return uninstallRuntime({ env: runtimeManagerEnvironment() });
+  });
   ipcMain.handle(
     "workspace:stop-project-setup",
     (_event, input: StopProjectSetupInput) => stopProjectSetup(input),
@@ -1889,6 +1895,7 @@ async function ensureRuntimeGitSafeDirectory(cwd: string) {
 
 async function runRuntimeGit(cwd: string, args: string[]) {
   await ensureRuntimeGitSafeDirectory(cwd);
+  await ensureRuntimeGitUserIdentity();
   try {
     return await runRuntime("git", args, { cwd });
   } catch (error) {

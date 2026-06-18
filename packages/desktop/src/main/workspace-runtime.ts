@@ -18,6 +18,7 @@ import { basename, dirname, join, posix, resolve, win32 } from "node:path";
 import { promisify } from "node:util";
 import { runtimeToolScript, setupPath } from "./host-tool-path.ts";
 import { runtimeAgentClient, runtimeAgentSupported } from "./runtime-agent.ts";
+import log from "electron-log";
 
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 
@@ -797,6 +798,52 @@ export async function sanitizeWorkspaceConfigFiles(
     // Ignore overall failure
   }
 }
+
+let runtimeGitIdentityConfigured = false;
+
+export function resetRuntimeGitIdentityConfigured() {
+  runtimeGitIdentityConfigured = false;
+}
+
+export const resetRuntimeGitIdentityConfiguredForTesting = resetRuntimeGitIdentityConfigured;
+
+export async function ensureRuntimeGitUserIdentity(
+  fns = {
+    execFileAsync,
+    run,
+  }
+) {
+  if (runtimeGitIdentityConfigured) return;
+  try {
+    let name = "";
+    let email = "";
+    try {
+      const { stdout } = await fns.execFileAsync("git", ["config", "--global", "user.name"]);
+      name = stdout.trim();
+    } catch (err) {
+      log.warn("ensureRuntimeGitUserIdentity: failed to read host user.name, falling back:", err);
+      name = "Blame User";
+    }
+    try {
+      const { stdout } = await fns.execFileAsync("git", ["config", "--global", "user.email"]);
+      email = stdout.trim();
+    } catch (err) {
+      log.warn("ensureRuntimeGitUserIdentity: failed to read host user.email, falling back:", err);
+      email = "blame@example.local";
+    }
+
+    log.info(`ensureRuntimeGitUserIdentity: configuring VM git identity: ${name} <${email}>`);
+    await fns.run("git", ["config", "--global", "user.name", name]);
+    await fns.run("git", ["config", "--global", "user.email", email]);
+
+    runtimeGitIdentityConfigured = true;
+    log.info("ensureRuntimeGitUserIdentity: VM git identity configured successfully.");
+  } catch (err) {
+    log.error("ensureRuntimeGitUserIdentity: failed to configure VM git identity:", err);
+  }
+}
+
+
 
 
 

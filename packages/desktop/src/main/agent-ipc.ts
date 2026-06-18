@@ -10,7 +10,11 @@ import {
 } from "./code-review-graph"
 import { resolveAgentWorkspaceInput } from "./cline-backend-resolver"
 import { getPreviewDevtoolsTarget } from "./preview-browser-ipc"
-import { run as runRuntime, runtimeManagedPath } from "./workspace-runtime"
+import {
+  run as runRuntime,
+  runtimeManagedPath,
+  ensureRuntimeGitUserIdentity,
+} from "./workspace-runtime"
 
 const execFileAsync = promisify(execFile)
 
@@ -25,6 +29,7 @@ const runtime = new BlameAgentRuntime({
   },
   async git(cwd, args) {
     if (runtimeManagedPath(cwd)) {
+      await ensureRuntimeGitUserIdentity();
       const { stdout } = await runRuntime("git", args, { cwd });
       return stdout;
     }
