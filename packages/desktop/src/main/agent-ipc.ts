@@ -14,6 +14,7 @@ import {
   run as runRuntime,
   runtimeManagedPath,
   ensureRuntimeGitUserIdentity,
+  getRuntimeGitIdentity,
 } from "./workspace-runtime"
 
 const execFileAsync = promisify(execFile)
@@ -29,14 +30,17 @@ const runtime = new BlameAgentRuntime({
   },
   async git(cwd, args) {
     if (runtimeManagedPath(cwd)) {
+      await ensureRuntimeGitUserIdentity();
+      const { name, email } = getRuntimeGitIdentity();
       const gitEnv = {
         ...process.env,
         GIT_TERMINAL_PROMPT: "0",
         GIT_SSH_COMMAND: process.platform === "win32"
           ? "ssh.exe -o BatchMode=yes -o StrictHostKeyChecking=no"
           : "ssh -o BatchMode=yes -o StrictHostKeyChecking=no",
+        ...(name ? { GIT_AUTHOR_NAME: name, GIT_COMMITTER_NAME: name } : {}),
+        ...(email ? { GIT_AUTHOR_EMAIL: email, GIT_COMMITTER_EMAIL: email } : {}),
       };
-      await ensureRuntimeGitUserIdentity();
       const { stdout } = await runRuntime("git", args, { cwd, env: gitEnv });
       return stdout;
     }

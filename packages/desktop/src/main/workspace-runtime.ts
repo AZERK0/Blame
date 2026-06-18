@@ -160,12 +160,15 @@ export async function run(
   let env = runtimeEnvironment(input, platform);
   const useAgent = useRuntimeAgent(platform, env);
   if (command === "git" && useAgent) {
+    const { name, email } = getRuntimeGitIdentity();
     env = {
       ...env,
       GIT_TERMINAL_PROMPT: "0",
       GIT_SSH_COMMAND: platform === "win32"
         ? "ssh.exe -o BatchMode=yes -o StrictHostKeyChecking=no"
         : "ssh -o BatchMode=yes -o StrictHostKeyChecking=no",
+      ...(name ? { GIT_AUTHOR_NAME: name, GIT_COMMITTER_NAME: name } : {}),
+      ...(email ? { GIT_AUTHOR_EMAIL: email, GIT_COMMITTER_EMAIL: email } : {}),
     };
   }
   if (useAgent) {
@@ -816,9 +819,17 @@ export async function sanitizeWorkspaceConfigFiles(
 }
 
 let runtimeGitIdentityConfigured = false;
+let resolvedGitName = "";
+let resolvedGitEmail = "";
+
+export function getRuntimeGitIdentity() {
+  return { name: resolvedGitName, email: resolvedGitEmail };
+}
 
 export function resetRuntimeGitIdentityConfigured() {
   runtimeGitIdentityConfigured = false;
+  resolvedGitName = "";
+  resolvedGitEmail = "";
 }
 
 export const resetRuntimeGitIdentityConfiguredForTesting = resetRuntimeGitIdentityConfigured;
@@ -873,6 +884,8 @@ export async function ensureRuntimeGitUserIdentity(
     await fns.run("git", ["config", "--global", "user.name", name]);
     await fns.run("git", ["config", "--global", "user.email", email]);
 
+    resolvedGitName = name;
+    resolvedGitEmail = email;
     runtimeGitIdentityConfigured = true;
     log.info("ensureRuntimeGitUserIdentity: VM git identity configured successfully.");
   } catch (err) {
