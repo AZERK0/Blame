@@ -1,4 +1,5 @@
 export { BlameAgentRuntime } from "./cline-runtime.js"
+export { codeReviewGraphToolNames } from "./code-review-graph-tools.js"
 export type {
   AgentEvent,
   AgentApprovalRequest,
@@ -16,6 +17,16 @@ export type {
   AssessProjectInitializationImpactResult,
   BlameModel,
   BlameProvider,
+  CodeGraphArchitectureOverviewInput,
+  CodeGraphImpactRadiusInput,
+  CodeGraphQueryInput,
+  CodeGraphQueryResult,
+  CodeGraphReviewContextInput,
+  CodeGraphStatus,
+  CodeGraphStatusState,
+  CodeGraphUpdateInput,
+  CodeGraphUpdateResult,
+  CodeReviewGraphProvider,
   DeleteProviderCredentialInput,
   InitializeProjectInput,
   InitializeProjectResult,

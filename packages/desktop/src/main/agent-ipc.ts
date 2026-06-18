@@ -4,6 +4,10 @@ import { createServer, type ServerResponse } from "node:http"
 import type { AddressInfo } from "node:net"
 import { execFile } from "node:child_process"
 import { promisify } from "node:util"
+import {
+  codeReviewGraphProvider,
+  shutdownCodeReviewGraph,
+} from "./code-review-graph"
 import { resolveAgentWorkspaceInput } from "./cline-backend-resolver"
 import { getPreviewDevtoolsTarget } from "./preview-browser-ipc"
 import { run as runRuntime, runtimeManagedPath } from "./workspace-runtime"
@@ -15,6 +19,7 @@ const runtime = new BlameAgentRuntime({
     emitAgentEvent(event)
   },
 }, {
+  codeReviewGraph: codeReviewGraphProvider,
   openExternalUrl(url) {
     void shell.openExternal(url)
   },
@@ -77,9 +82,9 @@ export function generateNewProjectWithAgent(
   return agentWorkspaceInput(input).then((resolved) => runtime.newProjects.generate(resolved))
 }
 
-export function shutdownAgentRuntime() {
+export async function shutdownAgentRuntime() {
   shutdownAgentEventServer()
-  return runtime.shutdown()
+  await Promise.allSettled([runtime.shutdown(), shutdownCodeReviewGraph()])
 }
 
 function emitAgentEvent(event: AgentEvent) {

@@ -171,7 +171,7 @@ export async function run(
     }
   }
   const spec = runtimeCommand(command, args, input);
-  const commandSpec = executableRuntimeCommand(spec, platform, env);
+  const commandSpec = runtimeExecutableCommand(spec, platform, env);
   const result = await execFileAsync(commandSpec.command, commandSpec.args, {
     cwd: spec.cwd,
     env,
@@ -200,7 +200,7 @@ export function spawnRuntime(
     });
   }
   const spec = runtimeCommand(command, args, input);
-  const commandSpec = executableRuntimeCommand(spec, platform, env);
+  const commandSpec = runtimeExecutableCommand(spec, platform, env);
   return spawn(commandSpec.command, commandSpec.args, {
     cwd: spec.cwd,
     detached: platform !== "win32",
@@ -405,7 +405,7 @@ function runtimeAgentCommandFailed(error: unknown) {
   );
 }
 
-function executableRuntimeCommand(
+export function runtimeExecutableCommand(
   spec: RuntimeCommandSpec,
   platform: NodeJS.Platform,
   env: NodeJS.ProcessEnv,

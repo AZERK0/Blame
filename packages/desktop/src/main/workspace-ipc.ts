@@ -5,6 +5,7 @@ import { dirname, join, posix, relative, resolve, sep } from "node:path";
 import { BrowserWindow, ipcMain } from "electron";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import { generateNewProjectWithAgent } from "./agent-ipc";
+import { cleanupCodeReviewGraphWorktree } from "./code-review-graph";
 import { pLimit } from "./concurrency.ts";
 import {
   containerRuntimeEnvironment,
@@ -1219,6 +1220,7 @@ async function removeWorktree(input: RemoveWorktreeInput) {
     await stopSetupRunsForWorktree(worktree);
     await stopProjectLogStream(worktree);
     previewRecoveries.delete(worktree);
+    await cleanupCodeReviewGraphWorktree(worktree);
     await stopProjectSetup({ worktree });
     const env = await setupEnvironment(worktree);
     await removeBlamePreviewProjectResources(env.COMPOSE_PROJECT_NAME);

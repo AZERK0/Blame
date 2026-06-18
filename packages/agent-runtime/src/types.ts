@@ -489,6 +489,87 @@ export type AgentRuntimeEvents = {
   emit(event: AgentEvent): void
 }
 
+export type CodeGraphStatusState =
+  | "missing"
+  | "building"
+  | "ready"
+  | "stale"
+  | "error"
+
+export type CodeGraphStatus = {
+  available: boolean
+  branch?: string
+  builtCommit?: string
+  command?: string
+  contextSavings?: Record<string, unknown>
+  edges?: number
+  files?: number
+  languages?: string[]
+  lastUpdated?: string
+  message?: string
+  nodes?: number
+  recommendation?: string
+  staleReason?: string
+  state: CodeGraphStatusState
+  version?: string
+  worktree: string
+}
+
+export type CodeGraphUpdateInput = {
+  force?: boolean
+  signal?: AbortSignal
+  waitMs?: number
+  worktree: string
+}
+
+export type CodeGraphUpdateResult = CodeGraphStatus & {
+  action: "building" | "failed" | "skipped" | "unavailable" | "updated"
+  durationMs?: number
+  output?: string
+}
+
+export type CodeGraphQueryInput = {
+  base?: string
+  changedFiles?: string[]
+  signal?: AbortSignal
+  waitMs?: number
+  worktree: string
+}
+
+export type CodeGraphImpactRadiusInput = CodeGraphQueryInput & {
+  maxDepth?: number
+}
+
+export type CodeGraphReviewContextInput = CodeGraphImpactRadiusInput & {
+  includeSource?: boolean
+  maxLinesPerFile?: number
+}
+
+export type CodeGraphArchitectureOverviewInput = CodeGraphQueryInput & {
+  detailLevel?: "minimal" | "standard"
+}
+
+export type CodeGraphQueryResult = CodeGraphStatus & {
+  data?: unknown
+  source?: "cli" | "mcp"
+}
+
+export type CodeReviewGraphProvider = {
+  architectureOverview(
+    input: CodeGraphArchitectureOverviewInput,
+  ): Promise<CodeGraphQueryResult>
+  impactRadius(input: CodeGraphImpactRadiusInput): Promise<CodeGraphQueryResult>
+  reviewContext(
+    input: CodeGraphReviewContextInput,
+  ): Promise<CodeGraphQueryResult>
+  status(input: {
+    signal?: AbortSignal
+    waitMs?: number
+    worktree: string
+  }): Promise<CodeGraphStatus>
+  update(input: CodeGraphUpdateInput): Promise<CodeGraphUpdateResult>
+}
+
 export type ApprovalDecision = "approve" | "deny" | "always"
 
 export type AgentApprovalRequest = {

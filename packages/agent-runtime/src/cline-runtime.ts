@@ -24,6 +24,10 @@ import {
 } from "@cline/sdk";
 
 import {
+  codeReviewGraphToolNames,
+  codeReviewGraphTools,
+} from "./code-review-graph-tools.js";
+import {
   deleteProviderCredential,
   listProviders,
   resolveProviderCredential,
@@ -78,6 +82,8 @@ import type {
   ApproveAndMergeResult,
   AssessProjectInitializationImpactInput,
   AssessProjectInitializationImpactResult,
+  CodeGraphStatus,
+  CodeReviewGraphProvider,
   InitializeProjectInput,
   InitializeProjectResult,
   LoginOAuthProviderInput,
@@ -104,6 +110,7 @@ const readTools = [
   "search_codebase",
   "fetch_web_content",
   "get_preview_devtools",
+  ...codeReviewGraphToolNames,
 ];
 const writeTools = ["run_commands", "editor", "apply_patch"];
 const blockedCommandParts = [
@@ -200,6 +207,7 @@ type DevelopmentPromptInput = Pick<
 >;
 
 type RuntimeOptions = {
+  codeReviewGraph?: CodeReviewGraphProvider;
   openExternalUrl?(url: string): void;
   git?(cwd: string, args: string[]): Promise<string>;
   previewDevtools?(
@@ -394,6 +402,7 @@ export class BlameAgentRuntime {
       if (input.autoApproveWriteTools) {
         this.autoApprovedWriteToolSessions.add(sessionId);
       }
+      this.prepareSessionCodeGraph(sessionId, input.workspaceRoot);
       const autoSendPrompt = input.autoSendPrompt !== false;
       const startInput = {
         ...(autoSendPrompt ? { prompt: input.prompt } : {}),
@@ -423,7 +432,7 @@ export class BlameAgentRuntime {
             enableSpawnAgent: false,
             enableAgentTeams: false,
             extensionContext: extensionContext(input),
-            extraTools: runtimeTools(this.options),
+            extraTools: runtimeTools(this.options, input.workspaceRoot),
           }),
         },
         interactive: !autoSendPrompt,
@@ -466,6 +475,7 @@ export class BlameAgentRuntime {
           "Development session write tools auto-approved.",
         );
       }
+      this.prepareSessionCodeGraph(session.sessionId, input.workspaceRoot);
       await this.logSession(session.sessionId, "session subscribed");
       this.emitSessionNotice(
         session.sessionId,
@@ -1398,6 +1408,51 @@ export class BlameAgentRuntime {
     });
     return result;
   }
+
+  private prepareSessionCodeGraph(sessionId: string, worktree: string) {
+    const provider = this.options.codeReviewGraph;
+    if (!provider) return;
+    void this.prepareSessionCodeGraphAsync(sessionId, worktree, provider);
+  }
+
+  private async prepareSessionCodeGraphAsync(
+    sessionId: string,
+    worktree: string,
+    provider: CodeReviewGraphProvider,
+  ) {
+    try {
+      const status = await provider.status({ worktree });
+      this.emitCodeGraphNotice(sessionId, status);
+      if (status.state !== "missing" && status.state !== "stale") return;
+      if (!status.available) return;
+      this.emitSessionNotice(sessionId, "Code graph building");
+      this.emitCodeGraphNotice(
+        sessionId,
+        await provider.update({ waitMs: 30_000, worktree }),
+      );
+    } catch (error) {
+      this.emitSessionNotice(
+        sessionId,
+        `Code graph unavailable: ${errorMessage(error)}`,
+      );
+    }
+  }
+
+  private emitCodeGraphNotice(sessionId: string, status: CodeGraphStatus) {
+    if (status.state === "ready") {
+      this.emitSessionNotice(sessionId, "Code graph ready");
+      return;
+    }
+    if (status.state === "stale") {
+      this.emitSessionNotice(sessionId, "Code graph stale");
+      return;
+    }
+    if (status.state === "building") {
+      this.emitSessionNotice(sessionId, "Code graph building");
+      return;
+    }
+    this.emitSessionNotice(sessionId, "Code graph unavailable");
+  }
 }
 
 function normalizeEvent(
@@ -1544,10 +1599,11 @@ function projectInitializationSubmitTool(): ProjectInitializationSubmitTool {
   return submit;
 }
 
-function runtimeTools(options: RuntimeOptions) {
-  const tools = [previewDevtoolsTool(options)].filter(
-    (tool): tool is AgentTool => Boolean(tool),
-  );
+function runtimeTools(options: RuntimeOptions, worktree?: string) {
+  const tools = [
+    previewDevtoolsTool(options),
+    ...codeReviewGraphTools(options.codeReviewGraph, worktree),
+  ].filter((tool): tool is AgentTool => Boolean(tool));
   return tools.length ? tools : undefined;
 }
 
