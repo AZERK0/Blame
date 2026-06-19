@@ -54,6 +54,7 @@ import {
 } from "./project-initialization-impact.js";
 import { optimizeUserStoryPrompt } from "./prompt-optimization.js";
 import { loadPrompt } from "./prompt-loader.js";
+import { fallbackCommitSubject } from "./commit-message.js";
 import {
   appendProductionConfig,
   assertRepositoryPath,
@@ -880,15 +881,6 @@ export class BlameAgentRuntime {
     input: ApproveAndMergeInput,
     logFile: string,
   ) {
-    if (!commitMessageConventionEnabled(input)) {
-      const message = await fallbackCommitMessage(input);
-      await appendLog(logFile, "commit message fallback selected", {
-        reason: "commit_message_convention_disabled",
-        status: "fallback",
-        success: true,
-      });
-      return message;
-    }
     try {
       const startedAt = Date.now();
       const credential = await this.runtimeCredential(input);
@@ -901,16 +893,13 @@ export class BlameAgentRuntime {
         toolPolicies: initializationToolPolicies(),
       });
       const message = commitMessageFromAgentResult(session.result);
-      const validMessage = standardCommitMessageAllowed(input, message)
-        ? message
-        : undefined;
       await appendLog(logFile, "commit message agent finished", {
         durationMs: Date.now() - startedAt,
         sessionId: session.sessionId,
         status: resultStatus(asRecord(session.result)),
-        success: Boolean(validMessage),
+        success: Boolean(message),
       });
-      if (validMessage) return validMessage;
+      if (message) return message;
     } catch (error) {
       await appendLog(logFile, "commit message agent failed", {
         errorType: errorType(error),
@@ -2388,9 +2377,7 @@ async function fallbackCommitMessage(input: ApproveAndMergeInput) {
   ]);
   const files = statusFileNames(status);
   const standardConvention = commitMessageConventionEnabled(input);
-  const subject = standardConvention
-    ? fallbackEnglishCommitSubject(files)
-    : fallbackCommitSubject(input.title);
+  const subject = fallbackCommitSubject(input.title, files);
   const bracketPrefix = dominantBracketPrefix(log);
   if (!standardConvention && bracketPrefix) {
     return limitCommitMessage(`${bracketPrefix} ${subject}`);
@@ -2407,34 +2394,6 @@ function commitMessageFromAgentResult(result: unknown) {
     firstTextLine(payload.outputText) ??
     firstTextLine(payload.message)
   );
-}
-
-function standardCommitMessageAllowed(
-  input: ApproveAndMergeInput,
-  message: string | undefined,
-) {
-  if (!message) return false;
-  return !commitMessageConventionEnabled(input) || !looksFrench(message);
-}
-
-function fallbackCommitSubject(title: string) {
-  const subject = title
-    .trim()
-    .replace(/\s+/g, " ")
-    .replace(/[.!?]+$/g, "");
-  if (!subject) return "complete backlog item";
-  return subject.charAt(0).toLowerCase() + subject.slice(1);
-}
-
-function fallbackEnglishCommitSubject(files: string[]) {
-  if (
-    files.length &&
-    files.every((file) => /\.(test|spec)\.[jt]sx?$/.test(file))
-  )
-    return "cover story changes";
-  if (files.length && files.every((file) => /\.(md|mdx|txt)$/.test(file)))
-    return "document story changes";
-  return "apply story changes";
 }
 
 function commitMessageConventionEnabled(input: ApproveAndMergeInput) {
@@ -2492,16 +2451,6 @@ function limitCommitMessage(message: string) {
   return message.length <= 74
     ? message
     : message.slice(0, 74).replace(/\s+\S*$/, "");
-}
-
-function looksFrench(message: string) {
-  const normalized = message.toLowerCase();
-  return (
-    /[àâçéèêëîïôùûüÿœ]/.test(normalized) ||
-    /\b(avec|ajoute|ajouter|corrige|corriger|complète|completer|compléter|des|données|pour|sur|une)\b/.test(
-      normalized,
-    )
-  );
 }
 
 function isString(value: unknown): value is string {
