@@ -231,7 +231,7 @@ export function BacklogPage() {
       if (run) backlog.updateAgentRunLocal(nextStory, run, runInput)
       if (immediate) {
         void flushAgentUpdate(nextStory, run, input, runInput).catch(
-          () => undefined
+          reportAgentPersistenceError
         )
         return
       }
@@ -1029,6 +1029,10 @@ function inactiveStoryFields(): UserStoryUpdate {
 
 function activeStory(story: UserStory, stories: UserStory[]) {
   return stories.find((currentStory) => currentStory.id === story.id) ?? story
+}
+
+function reportAgentPersistenceError(error: unknown) {
+  console.error("Failed to persist agent update.", error)
 }
 
 type QueuedAgentUpdate = {

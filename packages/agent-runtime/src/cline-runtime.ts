@@ -1379,7 +1379,11 @@ export class BlameAgentRuntime {
           this.emitSessionError(sessionId, failure);
           return result;
         }
-        this.events?.emit({ type: "done", sessionId, payload: result });
+        this.events?.emit({
+          type: "done",
+          sessionId,
+          payload: doneResultPayload(result),
+        });
         return result;
       })
       .catch((error: unknown) => {
@@ -2844,7 +2848,12 @@ function normalizeClineAgentPayload(
       type: "done",
       sessionId,
       payload: {
-        reason: stringValue(payload.reason),
+        finishReason: stringValue(payload.finishReason),
+        reason:
+          stringValue(payload.reason) ??
+          stringValue(payload.finishReason) ??
+          stringValue(payload.status),
+        status: stringValue(payload.status),
         text: stringValue(payload.text),
         usage: payload.usage,
         raw,
@@ -3117,6 +3126,21 @@ function sendResultLogPayload(result: unknown, durationMs: number) {
       stringValue(payload.finishReason) ?? stringValue(payload.reason),
     status: resultStatus(payload) ?? "completed",
     ...summarizeUsage({ aggregateUsage: asRecord(payload.usage) as never }),
+  };
+}
+
+function doneResultPayload(result: unknown) {
+  const payload = asRecord(result);
+  const status = resultStatus(payload);
+  return {
+    finishReason: stringValue(payload.finishReason),
+    reason:
+      stringValue(payload.reason) ??
+      stringValue(payload.finishReason) ??
+      status,
+    status,
+    text: stringValue(payload.text) ?? stringValue(payload.outputText),
+    usage: payload.usage,
   };
 }
 

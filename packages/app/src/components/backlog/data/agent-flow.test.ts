@@ -123,6 +123,30 @@ test("keeps assistant messages between tools", () => {
   assert.equal(secondMessage.agentActivities?.[2]?.detail, "Je vais continuer.")
 })
 
+test("deduplicates a repeated assistant message after tools", () => {
+  const firstMessage = updateStory(
+    story(),
+    textEvent({ accumulatedText: "Je vais inspecter." })
+  )
+  const toolStarted = updateStory(
+    firstMessage,
+    toolEvent("tool_call", "read_files", 1, "call-1")
+  )
+  const repeatedMessage = updateStory(
+    toolStarted,
+    textEvent({ accumulatedText: "Je vais inspecter." })
+  )
+
+  assert.deepEqual(
+    repeatedMessage.agentActivities?.map((activity) => activity.kind),
+    ["message", "tool"]
+  )
+  assert.equal(
+    repeatedMessage.agentActivityUpdates?.at(-1)?.id,
+    "message-session-1"
+  )
+})
+
 test("marks a stopped assistant message as the final response", () => {
   const streaming = updateStory(story(), textEvent({ text: "Salut" }))
   const stopped = updateStory(
@@ -154,6 +178,28 @@ test("promotes a streamed message when the done response matches it", () => {
   )
 })
 
+test("uses the latest streamed message as the final response when done has no text", () => {
+  const firstMessage = updateStory(
+    story(),
+    textEvent({ text: "Je vais inspecter." })
+  )
+  const toolStarted = updateStory(
+    firstMessage,
+    toolEvent("tool_call", "read_files", 1, "call-1")
+  )
+  const finalMessage = updateStory(
+    toolStarted,
+    textEvent({ text: "Review rapide de la codebase." })
+  )
+  const completed = updateStory(finalMessage, doneEvent())
+  const activity = completed.agentActivities?.at(-1)
+
+  assert.equal(completed.agentFinalResponse, "Review rapide de la codebase.")
+  assert.equal(activity?.kind, "message")
+  assert.equal(activity?.messageKind, "final")
+  assert.equal(activity?.title, "Agent response")
+})
+
 function updateStory(story: UserStory, event: AgentEvent) {
   return { ...story, ...agentFlowUpdate(story, event) }
 }
@@ -172,9 +218,9 @@ function textEvent(payload: Record<string, unknown>): AgentEvent {
   }
 }
 
-function doneEvent(text: string): AgentEvent {
+function doneEvent(text?: string): AgentEvent {
   return {
-    payload: { text },
+    payload: text === undefined ? {} : { text },
     type: "done",
   }
 }

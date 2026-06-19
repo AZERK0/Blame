@@ -104,11 +104,35 @@ export async function shutdownAgentRuntime() {
 }
 
 function emitAgentEvent(event: AgentEvent) {
-  writeAgentEvent(event)
+  const transportEvent = agentTransportEvent(event)
+  writeAgentEvent(transportEvent)
   BrowserWindow.getAllWindows().forEach((window) => {
-    if (event.sessionId) window.webContents.send(`agent:sessions:event:${event.sessionId}`, event)
-    if (event.type === "approval") window.webContents.send("agent:approvals:event", event)
+    if (transportEvent.sessionId) {
+      window.webContents.send(
+        `agent:sessions:event:${transportEvent.sessionId}`,
+        transportEvent
+      )
+    }
+    if (transportEvent.type === "approval") {
+      window.webContents.send("agent:approvals:event", transportEvent)
+    }
   })
+}
+
+function agentTransportEvent(event: AgentEvent): AgentEvent {
+  return {
+    ...event,
+    payload: agentTransportPayload(event.payload),
+  }
+}
+
+function agentTransportPayload(payload: unknown) {
+  if (!payload || typeof payload !== "object" || !("raw" in payload)) {
+    return payload
+  }
+  const { raw, ...transportPayload } = payload as Record<string, unknown>
+  void raw
+  return transportPayload
 }
 
 export function agentWorkspaceInput<T extends Record<string, unknown>>(input: T) {

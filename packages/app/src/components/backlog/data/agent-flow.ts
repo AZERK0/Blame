@@ -25,7 +25,8 @@ export function agentFlowUpdate(
   event: AgentEvent
 ): UserStoryUpdate {
   const activity = eventActivity(story.agentActivities ?? [], event)
-  const finalResponse = eventFinalResponse(event)
+  const nextActivities = activity?.activities ?? story.agentActivities ?? []
+  const finalResponse = eventFinalResponse(nextActivities, event)
   const usage = eventUsage(story, event)
   const sessionSummary = eventSessionSummary(story, event)
   const update: UserStoryUpdate = {}
@@ -161,9 +162,10 @@ function messageActivities(
   const existing = activities.find((activity) => activity.id === id)
   const text = messageText(existing?.detail, payload)
   if (text === undefined || !text.trim()) return undefined
+  const duplicate = duplicateMessageActivity(activities, id, iteration, text)
   const messageKind = agentMessageKind(payload)
   return upsertActivity(activities, {
-    id,
+    id: duplicate?.id ?? id,
     kind: "message",
     title: messageKind === "final" ? "Agent response" : "Agent message",
     detail: text,
@@ -187,6 +189,21 @@ function messageActivityId(
       sameIteration(activity.iteration, iteration)
   ).length
   return `message-${iteration ?? "session"}-${count + 1}`
+}
+
+function duplicateMessageActivity(
+  activities: UserStoryAgentActivity[],
+  id: string,
+  iteration: number | undefined,
+  text: string
+) {
+  return activities.findLast(
+    (activity) =>
+      activity.id !== id &&
+      activity.kind === "message" &&
+      sameIteration(activity.iteration, iteration) &&
+      sameStreamedMessage(activity.detail, text)
+  )
 }
 
 function messageText(
@@ -339,11 +356,20 @@ function approvalActivities(
   })
 }
 
-function eventFinalResponse(event: AgentEvent) {
+function eventFinalResponse(
+  activities: UserStoryAgentActivity[],
+  event: AgentEvent
+) {
   if (event.type !== "done") return undefined
   const payload = eventPayload(event)
   const text = stringValue(payload.text)
-  return text?.trim() || undefined
+  return text?.trim() || lastMessageResponse(activities)
+}
+
+function lastMessageResponse(activities: UserStoryAgentActivity[]) {
+  const lastActivity = activities.at(-1)
+  if (lastActivity?.kind !== "message") return undefined
+  return lastActivity.detail.trim() || undefined
 }
 
 function upsertActivity(

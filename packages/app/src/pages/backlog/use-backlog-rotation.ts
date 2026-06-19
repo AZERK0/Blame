@@ -36,6 +36,7 @@ import { diagnoseAndRepairProjectInitialization } from "./project-initialization
 const maxConcurrentDevelopmentStories = 3
 const blockerRetryDelay = 30_000
 const previewRecoveryIntervalMs = 30_000
+const agentCompletionRecoveryIntervalMs = 10_000
 const agentEventPersistDelayMs = 1_500
 const setupToastId = "backlog-rotation-setup"
 const authToastId = "backlog-agent-auth"
@@ -61,6 +62,7 @@ export function useBacklogRotation(
   )
   const agentAuthenticationBlockedUntil = React.useRef(0)
   const previewRecoveryStoryIds = React.useRef(new Set<number>())
+  const agentCompletionRecoveryStoryIds = React.useRef(new Set<number>())
   const initializationRepairRunIds = React.useRef(new Set<string>())
   const storiesRef = React.useRef(backlog.stories)
   const [hostDependenciesDialog, setHostDependenciesDialog] =
@@ -78,6 +80,7 @@ export function useBacklogRotation(
     clearPendingAgentUpdates(pendingAgentUpdates.current)
     agentAuthenticationBlockedUntil.current = 0
     previewRecoveryStoryIds.current.clear()
+    agentCompletionRecoveryStoryIds.current.clear()
     initializationRepairRunIds.current.clear()
   }, [projects.activeProject?.id, selection.currentModel?.id])
 
@@ -489,6 +492,61 @@ export function useBacklogRotation(
     recoverActivePreviews,
   ])
 
+  React.useEffect(() => {
+    if (!platform.workspace || backlog.loading) return
+    recoverCompletedAgentRuns(storiesRef.current)
+    const timer = window.setInterval(
+      () => recoverCompletedAgentRuns(storiesRef.current),
+      agentCompletionRecoveryIntervalMs
+    )
+    return () => window.clearInterval(timer)
+  }, [backlog.loading, platform.workspace])
+
+  function recoverCompletedAgentRuns(stories: UserStory[]) {
+    stories.forEach((story) => {
+      const run = recoverableAgentRun(story)
+      if (!run || agentCompletionRecoveryStoryIds.current.has(story.id)) return
+      agentCompletionRecoveryStoryIds.current.add(story.id)
+      void recoverCompletedAgentRun(story, run).finally(() =>
+        agentCompletionRecoveryStoryIds.current.delete(story.id)
+      )
+    })
+  }
+
+  async function recoverCompletedAgentRun(
+    story: UserStory,
+    run: UserStoryAgentRun
+  ) {
+    const workspace = platform.workspace
+    const sessionId = run.clineSessionId ?? story.clineSessionId
+    if (!workspace || !story.worktree || !sessionId) return
+    const log = await workspace
+      .readFile({
+        root: story.worktree,
+        path: clineLogRelativePath(sessionId),
+      })
+      .catch(() => "")
+    if (!completedClineLog(log)) return
+    const currentStory = activeStory(story, storiesRef.current)
+    const currentRun = activeAgentRun(currentStory, run) ?? run
+    const event: AgentEvent = { payload: {}, type: "done" }
+    const flowUpdate = agentFlowUpdate(currentStory, event)
+    const text = agentEventText(event)
+    persistAgentUpdate(
+      currentStory,
+      {
+        ...flowUpdate,
+        agentLastError: null,
+        agentLastEvent: "Agent completed. Ready for review.",
+        agentStatus: null,
+        status: "in-review",
+      },
+      currentRun,
+      agentRunEventUpdate(flowUpdate, event, text),
+      true
+    )
+  }
+
   function persistAgentEvent(
     story: UserStory,
     run: UserStoryAgentRun | undefined,
@@ -574,7 +632,7 @@ export function useBacklogRotation(
     if (run) backlog.updateAgentRunLocal(nextStory, run, runInput)
     if (immediate) {
       void flushAgentUpdate(nextStory, run, input, runInput).catch(
-        () => undefined
+        reportAgentPersistenceError
       )
       return
     }
@@ -723,6 +781,14 @@ export function useBacklogRotation(
 
 function activeStory(story: UserStory, stories: UserStory[]) {
   return stories.find((currentStory) => currentStory.id === story.id) ?? story
+}
+
+function activeAgentRun(story: UserStory, run: UserStoryAgentRun) {
+  return story.agentRuns?.find((currentRun) => currentRun.id === run.id)
+}
+
+function reportAgentPersistenceError(error: unknown) {
+  console.error("Failed to persist agent update.", error)
 }
 
 type QueuedAgentUpdate = {
@@ -903,8 +969,64 @@ function rotationBlocker(
   return undefined
 }
 
+function recoverableAgentRun(story: UserStory) {
+  if (story.status !== "in-progress" || story.agentStatus !== "Running") {
+    return undefined
+  }
+  if (!story.worktree || !story.clineSessionId) return undefined
+  return story.agentRuns?.findLast(
+    (run) =>
+      run.status === "running" &&
+      !run.finalResponse &&
+      Boolean(run.clineSessionId ?? story.clineSessionId)
+  )
+}
+
 function clineLogPath(worktree: string, sessionId: string) {
   return `${worktree}/.blame/logs/cline-${sessionId}.log`
+}
+
+function clineLogRelativePath(sessionId: string) {
+  return `.blame/logs/cline-${sessionId}.log`
+}
+
+function completedClineLog(log: string) {
+  return log.split("\n").some(completedClineLogLine)
+}
+
+function completedClineLogLine(line: string) {
+  const entry = jsonRecord(line)
+  if (stringValue(entry.message) !== "event:done") return false
+  const payload = recordValue(entry.payload)
+  const reason =
+    stringValue(payload.reason) ??
+    stringValue(payload.finishReason) ??
+    stringValue(payload.status)
+  return !reason || !failedClineDoneReason(reason)
+}
+
+function jsonRecord(value: string) {
+  try {
+    return recordValue(JSON.parse(value))
+  } catch {
+    return {}
+  }
+}
+
+function recordValue(value: unknown) {
+  if (value && typeof value === "object")
+    return value as Record<string, unknown>
+  return {}
+}
+
+function stringValue(value: unknown) {
+  return typeof value === "string" ? value : undefined
+}
+
+function failedClineDoneReason(reason: string) {
+  return ["error", "aborted", "cancelled", "failed"].includes(
+    reason.toLowerCase()
+  )
 }
 
 function eventText(event: ProjectSetupEvent) {
