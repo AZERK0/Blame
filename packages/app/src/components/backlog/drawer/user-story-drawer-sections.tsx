@@ -196,12 +196,14 @@ function AgentRunTimeline({
                 <AgentActivityItem
                   key={`${run.id}-${node.id}`}
                   node={node}
+                  onFileLinkClick={onFileLinkClick}
                   onLoadDetail={(item) => loadActivityDetail(run, item)}
                   runActive={run.status === "running"}
                   value={`${run.id}-${node.id}`}
                 />
               ))}
               <AgentResponseItem
+                activities={run.activities ?? []}
                 response={run.finalResponse}
                 onFileLinkClick={onFileLinkClick}
               />
@@ -255,11 +257,13 @@ function RunCommentItem({
 
 function AgentActivityItem({
   node,
+  onFileLinkClick,
   onLoadDetail,
   runActive,
   value,
 }: {
   node: UserStoryActivityNode
+  onFileLinkClick?: (path: string) => void
   onLoadDetail: (activity: UserStoryAgentActivity) => Promise<string>
   runActive: boolean
   value: string
@@ -268,6 +272,7 @@ function AgentActivityItem({
     return (
       <AgentActivityGroupItem
         node={node}
+        onFileLinkClick={onFileLinkClick}
         onLoadDetail={onLoadDetail}
         runActive={runActive}
         value={value}
@@ -277,6 +282,7 @@ function AgentActivityItem({
   return (
     <AgentActivityLeafItem
       activity={node.activity}
+      onFileLinkClick={onFileLinkClick}
       onLoadDetail={onLoadDetail}
       runActive={runActive}
       value={value}
@@ -286,11 +292,13 @@ function AgentActivityItem({
 
 function AgentActivityGroupItem({
   node,
+  onFileLinkClick,
   onLoadDetail,
   runActive,
   value,
 }: {
   node: Extract<UserStoryActivityNode, { type: "group" }>
+  onFileLinkClick?: (path: string) => void
   onLoadDetail: (activity: UserStoryAgentActivity) => Promise<string>
   runActive: boolean
   value: string
@@ -319,6 +327,7 @@ function AgentActivityGroupItem({
           >
             <AgentActivityChildren
               nodes={node.children}
+              onFileLinkClick={onFileLinkClick}
               onLoadDetail={onLoadDetail}
               parentValue={value}
               runActive={runActive}
@@ -332,11 +341,13 @@ function AgentActivityGroupItem({
 
 function AgentActivityChildren({
   nodes,
+  onFileLinkClick,
   onLoadDetail,
   parentValue,
   runActive,
 }: {
   nodes: UserStoryActivityNode[]
+  onFileLinkClick?: (path: string) => void
   onLoadDetail: (activity: UserStoryAgentActivity) => Promise<string>
   parentValue: string
   runActive: boolean
@@ -349,6 +360,7 @@ function AgentActivityChildren({
           <AgentActivityItem
             key={node.id}
             node={node}
+            onFileLinkClick={onFileLinkClick}
             onLoadDetail={onLoadDetail}
             runActive={runActive}
             value={`${parentValue}-${node.id}`}
@@ -360,6 +372,39 @@ function AgentActivityChildren({
 }
 
 function AgentActivityLeafItem({
+  activity,
+  onFileLinkClick,
+  onLoadDetail,
+  runActive,
+  value,
+}: {
+  activity: UserStoryAgentActivity
+  onFileLinkClick?: (path: string) => void
+  onLoadDetail: (activity: UserStoryAgentActivity) => Promise<string>
+  runActive: boolean
+  value: string
+}) {
+  if (activity.kind === "message") {
+    return (
+      <AgentMarkdownTimelineItem
+        markdown={activity.detail}
+        onFileLinkClick={onFileLinkClick}
+        title={activity.title}
+      />
+    )
+  }
+
+  return (
+    <AgentActivityDetailLeafItem
+      activity={activity}
+      onLoadDetail={onLoadDetail}
+      runActive={runActive}
+      value={value}
+    />
+  )
+}
+
+function AgentActivityDetailLeafItem({
   activity,
   onLoadDetail,
   runActive,
@@ -480,15 +525,49 @@ function ActivityDetails({
 }
 
 function AgentResponseItem({
+  activities,
   onFileLinkClick,
   response,
 }: {
+  activities: UserStoryAgentActivity[]
   onFileLinkClick?: (path: string) => void
   response?: string | null
 }) {
   const markdown = response?.trim()
   if (!markdown) return null
+  if (sameMarkdown(markdown, terminalAgentMessage(activities))) return null
 
+  return (
+    <AgentMarkdownTimelineItem
+      markdown={markdown}
+      onFileLinkClick={onFileLinkClick}
+      title="Agent response"
+    />
+  )
+}
+
+function terminalAgentMessage(activities: UserStoryAgentActivity[]) {
+  const activity = activities.at(-1)
+  return activity?.kind === "message" ? activity.detail : undefined
+}
+
+function sameMarkdown(left: string, right: string | undefined) {
+  return normalizedMarkdown(left) === normalizedMarkdown(right ?? "")
+}
+
+function normalizedMarkdown(value: string) {
+  return value.trim().replace(/\r\n?/g, "\n")
+}
+
+function AgentMarkdownTimelineItem({
+  markdown,
+  onFileLinkClick,
+  title,
+}: {
+  markdown: string
+  onFileLinkClick?: (path: string) => void
+  title: string
+}) {
   return (
     <div
       className="relative grid grid-cols-[2.5rem_minmax(0,1fr)] items-start gap-1"
@@ -498,7 +577,7 @@ function AgentResponseItem({
         <BotIcon className="size-4" />
       </span>
       <div className="grid min-w-0 gap-3">
-        <h3 className="text-xl font-medium">Agent response</h3>
+        <h3 className="text-xl font-medium">{title}</h3>
         <div className="agent-response-effect">
           <MarkdownEditor
             markdown={markdown}

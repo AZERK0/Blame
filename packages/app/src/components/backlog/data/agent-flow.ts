@@ -92,6 +92,7 @@ function eventActivity(
   event: AgentEvent
 ) {
   if (event.type === "reasoning") return reasoningActivities(activities, event)
+  if (event.type === "text") return messageActivities(activities, event)
   if (event.type === "tool") return toolActivities(activities, event)
   if (event.type === "approval") return approvalActivities(activities, event)
 }
@@ -134,6 +135,53 @@ function appendStreamingText(current: string | undefined, next: string) {
   if (!current) return next
   if (next.startsWith(current)) return next
   return `${current}${next}`
+}
+
+function messageActivities(
+  activities: UserStoryAgentActivity[],
+  event: AgentEvent
+) {
+  const payload = eventPayload(event)
+  const iteration = numberValue(payload.iteration)
+  const id = messageActivityId(activities, iteration)
+  const existing = activities.find((activity) => activity.id === id)
+  const text = messageText(existing?.detail, payload)
+  if (text === undefined || !text.trim()) return undefined
+  return upsertActivity(activities, {
+    id,
+    kind: "message",
+    title: "Agent message",
+    detail: text,
+    status: "completed",
+    iteration,
+  })
+}
+
+function messageActivityId(
+  activities: UserStoryAgentActivity[],
+  iteration: number | undefined
+) {
+  const last = activities.at(-1)
+  if (last?.kind === "message" && sameIteration(last.iteration, iteration)) {
+    return last.id
+  }
+  const count = activities.filter(
+    (activity) =>
+      activity.kind === "message" &&
+      sameIteration(activity.iteration, iteration)
+  ).length
+  return `message-${iteration ?? "session"}-${count + 1}`
+}
+
+function messageText(
+  current: string | undefined,
+  payload: Record<string, unknown>
+) {
+  const accumulatedText = stringValue(payload.accumulatedText)
+  if (accumulatedText !== undefined) return accumulatedText
+  const text = stringValue(payload.text)
+  if (text !== undefined) return appendStreamingText(current, text)
+  return stringValue(payload.message)
 }
 
 function toolActivities(

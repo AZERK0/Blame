@@ -100,6 +100,29 @@ test("replaces reasoning with accumulated text when it is available", () => {
   assert.equal(accumulated.agentActivities?.[0]?.detail, "Now I understand.")
 })
 
+test("keeps assistant messages between tools", () => {
+  const firstMessage = updateStory(story(), textEvent({ text: "Je vais" }))
+  const completedMessage = updateStory(
+    firstMessage,
+    textEvent({ text: " inspecter." })
+  )
+  const toolStarted = updateStory(
+    completedMessage,
+    toolEvent("tool_call", "read_files", 1, "call-1")
+  )
+  const secondMessage = updateStory(
+    toolStarted,
+    textEvent({ text: "Je vais continuer." })
+  )
+
+  assert.deepEqual(
+    secondMessage.agentActivities?.map((activity) => activity.kind),
+    ["message", "tool", "message"]
+  )
+  assert.equal(secondMessage.agentActivities?.[0]?.detail, "Je vais inspecter.")
+  assert.equal(secondMessage.agentActivities?.[2]?.detail, "Je vais continuer.")
+})
+
 function updateStory(story: UserStory, event: AgentEvent) {
   return { ...story, ...agentFlowUpdate(story, event) }
 }
@@ -108,6 +131,13 @@ function reasoningEvent(payload: Record<string, unknown>): AgentEvent {
   return {
     payload,
     type: "reasoning",
+  }
+}
+
+function textEvent(payload: Record<string, unknown>): AgentEvent {
+  return {
+    payload,
+    type: "text",
   }
 }
 
