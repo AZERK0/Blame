@@ -3132,12 +3132,11 @@ function sendResultLogPayload(result: unknown, durationMs: number) {
 function doneResultPayload(result: unknown) {
   const payload = asRecord(result);
   const status = resultStatus(payload);
+  const finishReason = stringValue(payload.finishReason);
   return {
-    finishReason: stringValue(payload.finishReason),
-    reason:
-      stringValue(payload.reason) ??
-      stringValue(payload.finishReason) ??
-      status,
+    finishReason,
+    iterations: numberValue(payload.iterations),
+    reason: stringValue(payload.reason) ?? finishReason ?? status,
     status,
     text: stringValue(payload.text) ?? stringValue(payload.outputText),
     usage: payload.usage,

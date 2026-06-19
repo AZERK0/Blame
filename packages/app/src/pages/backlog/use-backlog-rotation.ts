@@ -37,6 +37,7 @@ const maxConcurrentDevelopmentStories = 3
 const blockerRetryDelay = 30_000
 const previewRecoveryIntervalMs = 30_000
 const agentCompletionRecoveryIntervalMs = 10_000
+const agentCompletionRecoveryGraceMs = 15_000
 const agentEventPersistDelayMs = 1_500
 const setupToastId = "backlog-rotation-setup"
 const authToastId = "backlog-agent-auth"
@@ -494,7 +495,6 @@ export function useBacklogRotation(
 
   React.useEffect(() => {
     if (!platform.workspace || backlog.loading) return
-    recoverCompletedAgentRuns(storiesRef.current)
     const timer = window.setInterval(
       () => recoverCompletedAgentRuns(storiesRef.current),
       agentCompletionRecoveryIntervalMs
@@ -978,8 +978,14 @@ function recoverableAgentRun(story: UserStory) {
     (run) =>
       run.status === "running" &&
       !run.finalResponse &&
+      staleAgentRun(run) &&
       Boolean(run.clineSessionId ?? story.clineSessionId)
   )
+}
+
+function staleAgentRun(run: UserStoryAgentRun) {
+  const updatedAt = run.updatedAt ?? run.createdAt
+  return Date.now() - new Date(updatedAt).getTime() >= agentCompletionRecoveryGraceMs
 }
 
 function clineLogPath(worktree: string, sessionId: string) {
