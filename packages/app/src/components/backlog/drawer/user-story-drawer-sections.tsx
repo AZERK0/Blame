@@ -387,6 +387,7 @@ function AgentActivityLeafItem({
   if (activity.kind === "message") {
     return (
       <AgentMarkdownTimelineItem
+        highlight={false}
         markdown={activity.detail}
         onFileLinkClick={onFileLinkClick}
         title={activity.title}
@@ -539,6 +540,7 @@ function AgentResponseItem({
 
   return (
     <AgentMarkdownTimelineItem
+      highlight
       markdown={markdown}
       onFileLinkClick={onFileLinkClick}
       title="Agent response"
@@ -560,10 +562,12 @@ function normalizedMarkdown(value: string) {
 }
 
 function AgentMarkdownTimelineItem({
+  highlight,
   markdown,
   onFileLinkClick,
   title,
 }: {
+  highlight: boolean
   markdown: string
   onFileLinkClick?: (path: string) => void
   title: string
@@ -578,7 +582,7 @@ function AgentMarkdownTimelineItem({
       </span>
       <div className="grid min-w-0 gap-3">
         <h3 className="text-xl font-medium">{title}</h3>
-        <div className="agent-response-effect">
+        <div className={highlight ? "agent-response-effect" : undefined}>
           <MarkdownEditor
             markdown={markdown}
             readOnly
