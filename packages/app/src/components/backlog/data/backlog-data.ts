@@ -44,6 +44,7 @@ export type UserStoryAgentActivity = {
   detail: string
   status?: "running" | "completed" | "failed"
   iteration?: number
+  messageKind?: "intermediate" | "final"
   parallelGroupId?: string
   toolCallId?: string
   toolName?: string

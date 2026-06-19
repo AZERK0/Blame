@@ -4,6 +4,7 @@ import { DateTime } from 'luxon'
 const kind = vine.enum(['initial', 'change-request', 'resume'])
 const status = vine.enum(['running', 'completed', 'failed'])
 const agentActivityKind = vine.enum(['reasoning', 'message', 'tool', 'approval', 'notice'])
+const agentActivityMessageKind = vine.enum(['intermediate', 'final'])
 const agentActivityStatus = vine.enum(['running', 'completed', 'failed'])
 const agentActivity = vine.object({
   id: vine.string().trim().minLength(1).maxLength(255),
@@ -12,6 +13,7 @@ const agentActivity = vine.object({
   detail: vine.string().maxLength(262144),
   status: agentActivityStatus.optional(),
   iteration: vine.number().optional(),
+  messageKind: agentActivityMessageKind.optional(),
   toolCallId: vine.string().trim().maxLength(255).optional(),
   detailArtifact: vine.string().trim().maxLength(2048).optional(),
   detailTruncated: vine.boolean().optional(),

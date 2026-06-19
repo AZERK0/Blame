@@ -2901,6 +2901,19 @@ function normalizeClineAgentPayload(
     };
   }
 
+  if (type === "assistant-message") {
+    return {
+      type: "text",
+      sessionId,
+      payload: {
+        accumulatedText: agentMessageText(asRecord(payload.message)),
+        finishReason: stringValue(payload.finishReason),
+        iteration: numberValue(payload.iteration),
+        raw,
+      },
+    };
+  }
+
   if (
     type === "tool-started" ||
     type === "tool-updated" ||
@@ -3174,6 +3187,18 @@ function normalizeContentEndEvent(
     };
   }
   return normalizeContentEvent(payload, sessionId, raw);
+}
+
+function agentMessageText(message: Record<string, unknown>) {
+  const content = message.content;
+  if (!Array.isArray(content)) return "";
+  return content.map(agentMessagePartText).join("");
+}
+
+function agentMessagePartText(value: unknown) {
+  const part = asRecord(value);
+  if (stringValue(part.type) !== "text") return "";
+  return stringValue(part.text) ?? "";
 }
 
 function toApprovalRequest(

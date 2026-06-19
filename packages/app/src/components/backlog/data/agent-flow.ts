@@ -147,13 +147,15 @@ function messageActivities(
   const existing = activities.find((activity) => activity.id === id)
   const text = messageText(existing?.detail, payload)
   if (text === undefined || !text.trim()) return undefined
+  const messageKind = agentMessageKind(payload)
   return upsertActivity(activities, {
     id,
     kind: "message",
-    title: "Agent message",
+    title: messageKind === "final" ? "Agent response" : "Agent message",
     detail: text,
     status: "completed",
     iteration,
+    messageKind,
   })
 }
 
@@ -182,6 +184,10 @@ function messageText(
   const text = stringValue(payload.text)
   if (text !== undefined) return appendStreamingText(current, text)
   return stringValue(payload.message)
+}
+
+function agentMessageKind(payload: Record<string, unknown>) {
+  return stringValue(payload.finishReason) === "stop" ? "final" : "intermediate"
 }
 
 function toolActivities(

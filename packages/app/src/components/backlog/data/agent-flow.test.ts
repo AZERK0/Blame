@@ -123,6 +123,21 @@ test("keeps assistant messages between tools", () => {
   assert.equal(secondMessage.agentActivities?.[2]?.detail, "Je vais continuer.")
 })
 
+test("marks a stopped assistant message as the final response", () => {
+  const streaming = updateStory(story(), textEvent({ text: "Salut" }))
+  const stopped = updateStory(
+    streaming,
+    textEvent({ accumulatedText: "Salut !", finishReason: "stop" })
+  )
+  const activity = stopped.agentActivities?.[0]
+
+  assert.equal(stopped.agentActivities?.length, 1)
+  assert.equal(activity?.kind, "message")
+  assert.equal(activity?.messageKind, "final")
+  assert.equal(activity?.title, "Agent response")
+  assert.equal(activity?.detail, "Salut !")
+})
+
 function updateStory(story: UserStory, event: AgentEvent) {
   return { ...story, ...agentFlowUpdate(story, event) }
 }

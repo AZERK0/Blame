@@ -387,7 +387,7 @@ function AgentActivityLeafItem({
   if (activity.kind === "message") {
     return (
       <AgentMarkdownTimelineItem
-        highlight={false}
+        highlight={activity.messageKind === "final"}
         markdown={activity.detail}
         onFileLinkClick={onFileLinkClick}
         title={activity.title}
@@ -536,7 +536,7 @@ function AgentResponseItem({
 }) {
   const markdown = response?.trim()
   if (!markdown) return null
-  if (sameMarkdown(markdown, terminalAgentMessage(activities))) return null
+  if (alreadyStreamedAgentMessage(markdown, activities)) return null
 
   return (
     <AgentMarkdownTimelineItem
@@ -548,9 +548,16 @@ function AgentResponseItem({
   )
 }
 
-function terminalAgentMessage(activities: UserStoryAgentActivity[]) {
-  const activity = activities.at(-1)
-  return activity?.kind === "message" ? activity.detail : undefined
+function alreadyStreamedAgentMessage(
+  markdown: string,
+  activities: UserStoryAgentActivity[]
+) {
+  return activities.some(
+    (activity) =>
+      activity.kind === "message" &&
+      activity.messageKind === "final" &&
+      sameMarkdown(markdown, activity.detail)
+  )
 }
 
 function sameMarkdown(left: string, right: string | undefined) {
