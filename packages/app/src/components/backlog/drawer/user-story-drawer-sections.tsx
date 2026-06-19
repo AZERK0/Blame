@@ -554,9 +554,7 @@ function alreadyStreamedAgentMessage(
 ) {
   return activities.some(
     (activity) =>
-      activity.kind === "message" &&
-      activity.messageKind === "final" &&
-      sameMarkdown(markdown, activity.detail)
+      activity.kind === "message" && sameMarkdown(markdown, activity.detail)
   )
 }
 

@@ -138,6 +138,22 @@ test("marks a stopped assistant message as the final response", () => {
   assert.equal(activity?.detail, "Salut !")
 })
 
+test("promotes a streamed message when the done response matches it", () => {
+  const streaming = updateStory(story(), textEvent({ text: "Salut !" }))
+  const completed = updateStory(streaming, doneEvent("Salut !"))
+  const activity = completed.agentActivities?.[0]
+
+  assert.equal(completed.agentFinalResponse, "Salut !")
+  assert.equal(completed.agentActivities?.length, 1)
+  assert.equal(activity?.kind, "message")
+  assert.equal(activity?.messageKind, "final")
+  assert.equal(activity?.title, "Agent response")
+  assert.deepEqual(
+    completed.agentActivityUpdates?.map((update) => update.id),
+    ["message-session-1"]
+  )
+})
+
 function updateStory(story: UserStory, event: AgentEvent) {
   return { ...story, ...agentFlowUpdate(story, event) }
 }
@@ -153,6 +169,13 @@ function textEvent(payload: Record<string, unknown>): AgentEvent {
   return {
     payload,
     type: "text",
+  }
+}
+
+function doneEvent(text: string): AgentEvent {
+  return {
+    payload: { text },
+    type: "done",
   }
 }
 

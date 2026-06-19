@@ -34,7 +34,21 @@ export function agentFlowUpdate(
     update.agentActivity = activity.activity
     update.agentActivityUpdates = activity.activityUpdates
   }
-  if (finalResponse !== undefined) update.agentFinalResponse = finalResponse
+  if (finalResponse !== undefined) {
+    const finalActivity = finalResponseActivity(
+      update.agentActivities ?? story.agentActivities ?? [],
+      finalResponse
+    )
+    if (finalActivity) {
+      update.agentActivities = finalActivity.activities
+      update.agentActivity = finalActivity.activity
+      update.agentActivityUpdates = [
+        ...(update.agentActivityUpdates ?? []),
+        finalActivity.activity,
+      ]
+    }
+    update.agentFinalResponse = finalResponse
+  }
   if (usage) update.agentUsage = usage
   if (sessionSummary !== undefined) update.agentSessionSummary = sessionSummary
   return update
@@ -188,6 +202,35 @@ function messageText(
 
 function agentMessageKind(payload: Record<string, unknown>) {
   return stringValue(payload.finishReason) === "stop" ? "final" : "intermediate"
+}
+
+function finalResponseActivity(
+  activities: UserStoryAgentActivity[],
+  finalResponse: string
+) {
+  const existing = activities.findLast(
+    (activity) =>
+      activity.kind === "message" &&
+      sameStreamedMessage(activity.detail, finalResponse)
+  )
+  if (!existing) return undefined
+  const { createdAt, updatedAt, ...activity } = existing
+  void createdAt
+  void updatedAt
+  return upsertActivity(activities, {
+    ...activity,
+    title: "Agent response",
+    messageKind: "final",
+    status: "completed",
+  })
+}
+
+function sameStreamedMessage(left: string, right: string) {
+  return normalizedStreamedMessage(left) === normalizedStreamedMessage(right)
+}
+
+function normalizedStreamedMessage(value: string) {
+  return value.trim().replace(/\r\n?/g, "\n")
 }
 
 function toolActivities(
