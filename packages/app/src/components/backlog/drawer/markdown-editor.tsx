@@ -613,12 +613,17 @@ function MarkdownPreview({
 }
 
 function useMarkdownPreviewBlocks(markdown: string) {
-  const [blocks, setBlocks] = React.useState<MarkdownPreviewBlock[]>([])
+  const [blocks, setBlocks] = React.useState<MarkdownPreviewBlock[]>(() =>
+    markdown.trim() ? markdownPreviewBlocks(markdown) : []
+  )
 
   React.useEffect(() => {
+    if (!markdown.trim()) {
+      setBlocks([])
+      return
+    }
     let active = true
     const controller = new AbortController()
-    setBlocks([])
     runWorkerTask<{ markdown: string }, MarkdownPreviewBlock[]>(
       new URL("./markdown-preview.worker.ts", import.meta.url),
       { markdown },
