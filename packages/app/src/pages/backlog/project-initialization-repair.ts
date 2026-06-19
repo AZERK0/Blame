@@ -3,6 +3,7 @@ import type {
   ProjectRunConfiguration,
   RepairProjectInitializationResult,
 } from "@blame/agent-runtime"
+import { repairKnownProjectInitializationFailure } from "@blame/agent-runtime"
 
 import type { useCloudAuth } from "@/context/cloud-auth"
 import type { usePlatform } from "@/context/platform"
@@ -43,6 +44,14 @@ async function diagnoseProjectInitialization(input: RepairInput) {
     worktree: input.worktree,
     launchError: input.launchError,
   })
+  const knownRepair = repairKnownProjectInitializationFailure({
+    diagnostics,
+    previewManifest: input.previewManifest ?? undefined,
+    setupScript: input.setupScript,
+    dockerCompose: input.dockerCompose,
+    runConfigurations: input.runConfigurations,
+  })
+  if (knownRepair) return knownRepair
   const result = await agent.initializations.repair({
     apiConnection: input.apiConnection,
     providerId: input.providerId,

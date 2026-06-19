@@ -1,5 +1,6 @@
 export { BlameAgentRuntime } from "./cline-runtime.js"
 export { codeReviewGraphToolNames } from "./code-review-graph-tools.js"
+export { repairKnownProjectInitializationFailure } from "./project-initialization-known-repairs.js"
 export type {
   AgentEvent,
   AgentApprovalRequest,
