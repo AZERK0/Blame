@@ -77,8 +77,38 @@ test("keeps sequential tools in the same iteration ungrouped", () => {
   assert.equal(secondStarted.agentActivities?.[1]?.parallelGroupId, undefined)
 })
 
+test("appends reasoning deltas while the agent is running", () => {
+  const firstDelta = updateStory(story(), reasoningEvent({ text: "Now" }))
+  const secondDelta = updateStory(firstDelta, reasoningEvent({ text: " I" }))
+  const thirdDelta = updateStory(
+    secondDelta,
+    reasoningEvent({ text: " understand." })
+  )
+
+  assert.equal(thirdDelta.agentActivities?.length, 1)
+  assert.equal(thirdDelta.agentActivities?.[0]?.detail, "Now I understand.")
+})
+
+test("replaces reasoning with accumulated text when it is available", () => {
+  const firstDelta = updateStory(story(), reasoningEvent({ text: "Now" }))
+  const accumulated = updateStory(
+    firstDelta,
+    reasoningEvent({ accumulatedText: "Now I understand." })
+  )
+
+  assert.equal(accumulated.agentActivities?.length, 1)
+  assert.equal(accumulated.agentActivities?.[0]?.detail, "Now I understand.")
+})
+
 function updateStory(story: UserStory, event: AgentEvent) {
   return { ...story, ...agentFlowUpdate(story, event) }
+}
+
+function reasoningEvent(payload: Record<string, unknown>): AgentEvent {
+  return {
+    payload,
+    type: "reasoning",
+  }
 }
 
 function toolEvent(

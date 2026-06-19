@@ -3134,8 +3134,7 @@ function normalizeContentEvent(
       sessionId,
       payload: {
         text: stringValue(payload.reasoning) ?? stringValue(payload.text) ?? "",
-        accumulatedText:
-          stringValue(payload.accumulated) ?? stringValue(payload.reasoning),
+        accumulatedText: stringValue(payload.accumulated),
         redacted: booleanValue(payload.redacted),
         raw,
       },

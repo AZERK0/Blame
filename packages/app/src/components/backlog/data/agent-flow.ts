@@ -102,12 +102,9 @@ function reasoningActivities(
 ) {
   const payload = eventPayload(event)
   const iteration = numberValue(payload.iteration)
-  const text =
-    stringValue(payload.accumulatedText) ??
-    stringValue(payload.reasoning) ??
-    stringValue(payload.text)
-  if (!text) return undefined
   const id = `reasoning-${iteration ?? "session"}`
+  const text = reasoningText(activities, id, payload)
+  if (!text) return undefined
   return upsertActivity(activities, {
     id,
     kind: "reasoning",
@@ -116,6 +113,27 @@ function reasoningActivities(
     status: "running",
     iteration,
   })
+}
+
+function reasoningText(
+  activities: UserStoryAgentActivity[],
+  id: string,
+  payload: Record<string, unknown>
+) {
+  const accumulatedText = stringValue(payload.accumulatedText)
+  if (accumulatedText !== undefined) return accumulatedText
+  const reasoning = stringValue(payload.reasoning)
+  if (reasoning !== undefined) return reasoning
+  const text = stringValue(payload.text)
+  if (text === undefined) return undefined
+  const existing = activities.find((activity) => activity.id === id)
+  return appendStreamingText(existing?.detail, text)
+}
+
+function appendStreamingText(current: string | undefined, next: string) {
+  if (!current) return next
+  if (next.startsWith(current)) return next
+  return `${current}${next}`
 }
 
 function toolActivities(

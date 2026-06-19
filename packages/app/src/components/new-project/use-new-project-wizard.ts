@@ -45,6 +45,7 @@ export type ProjectCreationLog = {
   type: "stdout" | "stderr" | "exit" | "agent"
   data: string
   channel?: "reasoning" | "text" | "tool" | "notice"
+  append?: boolean
 }
 
 export type ProjectCreationStatus =
@@ -455,20 +456,30 @@ function projectCreationLogFromAgentEvent(
   event: AgentEvent
 ): ProjectCreationLog | undefined {
   const text = projectCreationEventText(event)
-  if (!text) return undefined
+  if (text.value === undefined || text.value === "") return undefined
   if (event.type === "tool")
-    return { type: "agent", channel: "tool", data: `[tool] ${text}\n` }
+    return { type: "agent", channel: "tool", data: `[tool] ${text.value}\n` }
   if (event.type === "notice") {
-    if (isNoisyAgentNotice(text)) return undefined
-    return { type: "agent", channel: "notice", data: `${text}\n` }
+    if (isNoisyAgentNotice(text.value)) return undefined
+    return { type: "agent", channel: "notice", data: `${text.value}\n` }
   }
   if (event.type === "reasoning")
-    return { type: "agent", channel: "reasoning", data: `Planning: ${text}\n` }
+    return {
+      type: "agent",
+      channel: "reasoning",
+      data: `Planning: ${text.value}\n`,
+      append: text.append,
+    }
   if (event.type === "text")
-    return { type: "agent", channel: "text", data: `${text}\n` }
+    return {
+      type: "agent",
+      channel: "text",
+      data: `${text.value}\n`,
+      append: text.append,
+    }
   return {
     type: event.type === "error" ? "stderr" : "agent",
-    data: `${text}\n`,
+    data: `${text.value}\n`,
   }
 }
 
@@ -478,22 +489,57 @@ function appendProjectCreationLog(
 ) {
   if (!next.channel) return [...current, next]
   const last = current.at(-1)
-  if (last?.channel === next.channel) return [...current.slice(0, -1), next]
+  if (last?.channel === next.channel)
+    return [
+      ...current.slice(0, -1),
+      next.append ? appendStreamingProjectCreationLog(last, next) : next,
+    ]
   if (last?.data === next.data) return current
   return [...current, next]
 }
 
 function projectCreationEventText(event: AgentEvent) {
   if (event.type === "reasoning" || event.type === "text") {
-    return eventAccumulatedText(event.payload) || eventText(event.payload)
+    const accumulatedText = eventAccumulatedText(event.payload)
+    if (accumulatedText !== undefined) {
+      return { value: accumulatedText, append: false }
+    }
+    const deltaText = eventDeltaText(event.payload)
+    if (deltaText !== undefined) return { value: deltaText, append: true }
+    return { value: eventText(event.payload), append: false }
   }
-  return eventText(event.payload)
+  return { value: eventText(event.payload), append: false }
 }
 
 function eventAccumulatedText(payload: unknown) {
-  if (!payload || typeof payload !== "object") return ""
+  if (!payload || typeof payload !== "object") return undefined
   const value = (payload as Record<string, unknown>).accumulatedText
-  return typeof value === "string" ? cleanEventText(value) : ""
+  return typeof value === "string" ? cleanEventText(value) : undefined
+}
+
+function eventDeltaText(payload: unknown) {
+  if (!payload || typeof payload !== "object") return undefined
+  const value = (payload as Record<string, unknown>).text
+  return typeof value === "string" ? compactEventText(value) : undefined
+}
+
+function appendStreamingProjectCreationLog(
+  last: ProjectCreationLog,
+  next: ProjectCreationLog
+) {
+  const prefix = next.channel === "reasoning" ? "Planning: " : ""
+  const currentText = channelLogText(last.data, prefix)
+  const nextText = channelLogText(next.data, prefix)
+  const mergedText = nextText.startsWith(currentText)
+    ? nextText
+    : `${currentText}${nextText}`
+  return { ...next, data: `${prefix}${mergedText}\n` }
+}
+
+function channelLogText(data: string, prefix: string) {
+  const text =
+    prefix && data.startsWith(prefix) ? data.slice(prefix.length) : data
+  return text.endsWith("\n") ? text.slice(0, -1) : text
 }
 
 function eventText(payload: unknown): string {
@@ -510,7 +556,11 @@ function eventText(payload: unknown): string {
 }
 
 function cleanEventText(value: string) {
-  return value.trim().replace(/\n{3,}/g, "\n\n")
+  return compactEventText(value).trim()
+}
+
+function compactEventText(value: string) {
+  return value.replace(/\n{3,}/g, "\n\n")
 }
 
 async function initializeGeneratedProjectForBlame(input: {
