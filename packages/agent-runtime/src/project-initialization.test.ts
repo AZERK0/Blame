@@ -102,6 +102,27 @@ test("generates initialization artifacts from preview manifest", () => {
   assert.doesNotMatch(result.dockerCompose, /blame-volumes-init:\n\s+volumes:/);
 });
 
+test("uses webpack for Next preview manifests", () => {
+  const result = parseProjectInitializationResult(
+    JSON.stringify({
+      ...manifestResult,
+      previewManifest: {
+        ...manifestResult.previewManifest,
+        project: {
+          ...manifestResult.previewManifest.project,
+          detectedStack: ["node", "nextjs", "pnpm"],
+        },
+      },
+    }),
+  );
+
+  assert.match(result.dockerCompose, /corepack pnpm dev --webpack/);
+  assert.equal(
+    result.previewManifest?.services[0]?.command,
+    "corepack prepare pnpm@10.33.2 --activate && corepack pnpm dev --webpack",
+  );
+});
+
 test("waits for known database dependencies to become healthy", () => {
   const result = parseProjectInitializationPayload({
     ...manifestResult,

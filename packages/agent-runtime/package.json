@@ -13,7 +13,7 @@
     "build": "tsc && node scripts/copy-prompt.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "pnpm build && node --test dist/project-initialization.test.js dist/project-initialization-repair.test.js dist/project-initialization-known-repairs.test.js dist/project-initialization-impact.test.js dist/code-review-graph-tools.test.js"
+    "test": "pnpm build && node --test dist/project-initialization.test.js dist/project-initialization-repair.test.js dist/next-webpack-fallback.test.js dist/project-initialization-impact.test.js dist/code-review-graph-tools.test.js"
   },
   "dependencies": {
     "@cline/llms": "^0.0.46",

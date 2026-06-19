@@ -3,6 +3,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { readdir, readFile, stat } from "node:fs/promises";
 import { dirname, join, posix, relative, resolve, sep } from "node:path";
 import { BrowserWindow, ipcMain } from "electron";
+import { commandWithNextWebpackFallback } from "@blame/agent-runtime";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import { generateNewProjectWithAgent } from "./agent-ipc";
 import { cleanupCodeReviewGraphWorktree } from "./code-review-graph";
@@ -2245,11 +2246,14 @@ async function repairComposeFile(
 ) {
   if (!(await runtimePathExists(composePath))) return;
   const compose = await readRuntimeFile(composePath);
+  const nextCompose = (await worktreeHasNextProject(worktree))
+    ? commandWithNextWebpackFallback(compose)
+    : compose;
   const allocatedCompose = await composeWithAllocatedHostPorts(
     composeWithNonMutatingNpmInstalls(
       composeWithoutNumericSuUser(
         composeWithRuntimePortPlaceholders(
-          dockerComposeWithPortableWindowsPaths(compose),
+          dockerComposeWithPortableWindowsPaths(nextCompose),
           options.reallocatePorts,
         ),
       ),
@@ -2266,6 +2270,27 @@ async function repairComposeFile(
   );
   if (repairedCompose !== compose)
     await writeRuntimeFile(composePath, repairedCompose);
+}
+
+async function worktreeHasNextProject(worktree: string) {
+  const paths = ["package.json", "apps/web/package.json"].map((file) =>
+    joinWorkspacePath(worktree, file),
+  );
+  const files = await readExistingRuntimeFiles(paths);
+  return Object.values(files).some(nextPackageJson);
+}
+
+function nextPackageJson(content: string | null) {
+  if (!content) return false;
+  try {
+    const pkg = JSON.parse(content) as {
+      dependencies?: Record<string, unknown>;
+      devDependencies?: Record<string, unknown>;
+    };
+    return Boolean(pkg.dependencies?.next || pkg.devDependencies?.next);
+  } catch {
+    return false;
+  }
 }
 
 async function prepareProjectCompose(

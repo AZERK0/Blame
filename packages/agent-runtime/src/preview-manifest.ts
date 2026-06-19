@@ -10,6 +10,7 @@ import type {
   PreviewManifestServiceKind,
   PreviewManifestSetupTask,
 } from "./types.js";
+import { commandWithNextWebpackFallback } from "./next-webpack-fallback.js";
 
 type GeneratedInitializationArtifacts = {
   dockerCompose: string;
@@ -122,7 +123,30 @@ export function normalizePreviewManifestWithPreferences(
     caches,
     risks: manifest.risks,
   };
-  return applyPreviewManifestPreferences(normalized, preferences);
+  return applyPreviewManifestPreferences(
+    previewManifestWithNextWebpackFallback(normalized),
+    preferences,
+  );
+}
+
+function previewManifestWithNextWebpackFallback(manifest: PreviewManifest) {
+  if (!isNextProject(manifest.project)) return manifest;
+  return {
+    ...manifest,
+    services: manifest.services.map((service) => ({
+      ...service,
+      command:
+        service.kind === "preview" && service.command
+          ? commandWithNextWebpackFallback(service.command)
+          : service.command,
+    })),
+  };
+}
+
+function isNextProject(project: PreviewManifestProject) {
+  return (project.detectedStack ?? []).some((stack) =>
+    ["next", "nextjs", "next.js"].includes(stack.toLowerCase()),
+  );
 }
 
 function applyPreviewManifestPreferences(

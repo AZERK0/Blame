@@ -1,6 +1,6 @@
 export { BlameAgentRuntime } from "./cline-runtime.js"
 export { codeReviewGraphToolNames } from "./code-review-graph-tools.js"
-export { repairKnownProjectInitializationFailure } from "./project-initialization-known-repairs.js"
+export { commandWithNextWebpackFallback } from "./next-webpack-fallback.js"
 export type {
   AgentEvent,
   AgentApprovalRequest,
