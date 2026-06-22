@@ -541,7 +541,7 @@ function DrawerHeaderTitle({
         userStory?.status !== "backlog" &&
         userStory?.status !== "discarded"
       }
-      className="-mx-2 !h-auto rounded-md !border-transparent !bg-transparent px-2 py-1 font-heading !text-3xl leading-tight font-semibold shadow-none hover:!border-input focus-visible:!border-ring focus-visible:!ring-0 md:!text-3xl dark:!bg-transparent"
+      className="-mx-2 !h-auto rounded-md !border-transparent !bg-transparent px-2 py-1 font-heading !text-3xl leading-tight font-semibold shadow-none hover:!border-transparent focus:!border-transparent focus-visible:!border-transparent focus-visible:!ring-0 active:!border-transparent md:!text-3xl dark:!bg-transparent"
     />
   )
 }
