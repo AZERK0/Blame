@@ -5,7 +5,6 @@ import {
   LoaderCircleIcon,
   MessageSquareIcon,
   RotateCcwIcon,
-  SendIcon,
   Trash2Icon,
   XIcon,
 } from "lucide-react"
@@ -28,6 +27,7 @@ import type {
 } from "@/components/backlog/shared/backlog-types"
 import { drawerActions } from "@/components/backlog/drawer/user-story-drawer-helpers"
 import { Button } from "@/components/ui/button"
+import { Kbd } from "@/components/ui/kbd"
 import { cn } from "@/lib/utils"
 
 type DrawerActionConfig = {
@@ -48,7 +48,7 @@ const drawerActionConfig: Record<DrawerAction, DrawerActionConfig> = {
     variant: "outline",
   },
   "Send to Dev Agent": {
-    icon: SendIcon,
+    icon: LoaderCircleIcon,
     variant: "default",
     tone: "primary",
   },
@@ -163,6 +163,7 @@ function DrawerActionButton({
 }) {
   const actionStyle = drawerActionConfig[action]
   const Icon = loading ? LoaderCircleIcon : actionStyle.icon
+  const isSendToDevAgent = action === "Send to Dev Agent"
 
   return (
     <Button
@@ -179,8 +180,26 @@ function DrawerActionButton({
       onClick={onClick}
       aria-label={actionStyle.iconOnly ? action : undefined}
     >
-      <Icon className={cn(loading && "animate-spin")} />
+      {loading || !isSendToDevAgent ? (
+        <Icon className={cn(loading && "animate-spin")} />
+      ) : null}
       {!actionStyle.iconOnly && action}
+      {isSendToDevAgent && !loading ? (
+        <>
+          <Kbd
+            data-icon="inline-end"
+            className="translate-x-0.5 border-white/20 bg-white/15 text-white shadow-none"
+          >
+            ⌘
+          </Kbd>
+          <Kbd
+            data-icon="inline-end"
+            className="translate-x-0.5 border-white/20 bg-white/15 text-white shadow-none"
+          >
+            ⏎
+          </Kbd>
+        </>
+      ) : null}
     </Button>
   )
 }

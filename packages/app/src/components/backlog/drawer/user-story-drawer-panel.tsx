@@ -31,6 +31,7 @@ import type {
 import { DevelopmentContent } from "@/components/backlog/drawer/user-story-development"
 import { DrawerActions } from "@/components/backlog/drawer/user-story-drawer-actions"
 import {
+  drawerActions,
   hasDevelopmentTab,
   normalizeDevelopmentTab,
 } from "@/components/backlog/drawer/user-story-drawer-helpers"
@@ -191,6 +192,22 @@ export function UserStoryDrawerPanel({
     })
     return () => cancelAnimationFrame(frame)
   }, [focusComment, open, tab])
+
+  React.useEffect(() => {
+    const sendToDevAgentAvailable = drawerActions(mode, status).includes(
+      "Send to Dev Agent"
+    )
+    if (!open || !sendToDevAgentAvailable) return
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!isSendToDevAgentShortcut(event)) return
+      event.preventDefault()
+      void handleAction("Send to Dev Agent")
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  })
 
   React.useEffect(() => {
     const addCodeSelectionAttachment = (event: Event) => {
@@ -653,4 +670,14 @@ function readSidebarOpen() {
   } catch {
     return false
   }
+}
+
+function isSendToDevAgentShortcut(event: KeyboardEvent) {
+  return (
+    event.key === "Enter" &&
+    !event.repeat &&
+    !event.altKey &&
+    !event.shiftKey &&
+    (event.ctrlKey || event.metaKey)
+  )
 }
