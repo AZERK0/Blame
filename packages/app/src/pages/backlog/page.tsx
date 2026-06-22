@@ -361,6 +361,7 @@ export function BacklogPage() {
         modelId: agentSelection.currentModel.id,
         credentialLabel: agentSelection.currentModel.credentialLabel,
         reasoningEffort: agentSelection.currentVariant,
+        contextCompressionMode: agentSelection.contextCompressionMode,
         autoSendPrompt: false,
         title: story.title,
         summary: story.summary,
@@ -429,6 +430,7 @@ export function BacklogPage() {
       projects,
       agentSelection.currentModel,
       agentSelection.currentVariant,
+      agentSelection.contextCompressionMode,
       updateStory,
       persistAgentEvent,
     ]

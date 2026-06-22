@@ -161,6 +161,7 @@ export function useBacklogRotation(
       modelId: selection.currentModel.id,
       credentialLabel: selection.currentModel.credentialLabel,
       reasoningEffort: selection.currentVariant,
+      contextCompressionMode: selection.contextCompressionMode,
       autoSendPrompt: false,
       title: story.title,
       summary: story.summary,

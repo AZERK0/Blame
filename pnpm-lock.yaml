@@ -32,6 +32,9 @@ importers:
       '@cline/sdk':
         specifier: ^0.0.46
         version: 0.0.46(@opentelemetry/core@2.7.1(@opentelemetry/api@1.9.1))
+      headroom-ai:
+        specifier: 0.22.4
+        version: 0.22.4(@ai-sdk/provider@3.0.10)(@anthropic-ai/sdk@0.93.0(zod@4.4.3))(ai@6.0.184(zod@4.4.3))
     devDependencies:
       '@types/node':
         specifier: ^24.12.0
@@ -4977,6 +4980,24 @@ packages:
 
   headers-polyfill@5.0.1:
     resolution: {integrity: sha512-1TJ6Fih/b8h5TIcv+1+Hw0PDQWJTKDKzFZzcKOiW1wJza3XoAQlkCuXLbymPYB8+ZQyw8mHvdw560e8zVFIWyA==}
+
+  headroom-ai@0.22.4:
+    resolution: {integrity: sha512-9a0rgB/jsWe8gs/ggyUwe6E8DYwKAuBvlUml2ApwlUjb5EfJ611X6X+WG0SiXw3nO6sdyV1/+Ah5uw9P7ecnjw==}
+    engines: {node: '>=18.0.0'}
+    peerDependencies:
+      '@ai-sdk/provider': '>=1.0.0'
+      '@anthropic-ai/sdk': '>=0.30.0'
+      ai: '>=6.0.0'
+      openai: '>=4.0.0'
+    peerDependenciesMeta:
+      '@ai-sdk/provider':
+        optional: true
+      '@anthropic-ai/sdk':
+        optional: true
+      ai:
+        optional: true
+      openai:
+        optional: true
 
   help-me@5.0.0:
     resolution: {integrity: sha512-7xgomUX6ADmcYzFik0HzAxh/73YlKR9bmFzf51CZwR+b6YtzU2m0u49hQCqV6SvlqIqsaxovfwdvbnsw3b/zpg==}
@@ -12517,6 +12538,12 @@ snapshots:
     dependencies:
       '@types/set-cookie-parser': 2.4.10
       set-cookie-parser: 3.1.0
+
+  headroom-ai@0.22.4(@ai-sdk/provider@3.0.10)(@anthropic-ai/sdk@0.93.0(zod@4.4.3))(ai@6.0.184(zod@4.4.3)):
+    optionalDependencies:
+      '@ai-sdk/provider': 3.0.10
+      '@anthropic-ai/sdk': 0.93.0(zod@4.4.3)
+      ai: 6.0.184(zod@4.4.3)
 
   help-me@5.0.0: {}
 

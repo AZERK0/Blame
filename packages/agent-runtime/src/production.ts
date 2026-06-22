@@ -27,6 +27,7 @@ export type ProductionConfig = {
 }
 
 export type ProductionSessionContext = {
+  contextCompressionMode?: string
   durationMs?: number
   finishReason?: string
   maxIterations?: number
@@ -56,6 +57,7 @@ const allowedLogKeys = new Set([
   "cacheReadTokens",
   "cacheWriteTokens",
   "cost",
+  "contextCompressionMode",
   "durationMs",
   "errorType",
   "finishReason",

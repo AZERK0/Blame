@@ -102,6 +102,7 @@ export function QuickChatPage() {
       modelId: selection.currentModel.id,
       credentialLabel: selection.currentModel.credentialLabel,
       reasoningEffort: selection.currentVariant,
+      contextCompressionMode: selection.contextCompressionMode,
       prompt: inputPrompt,
       cwd: projects.activeProject.path,
       workspaceRoot: projects.activeProject.path,

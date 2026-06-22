@@ -21,6 +21,7 @@ export type BlameModel = {
 export type ReasoningEffort = "low" | "medium" | "high" | "xhigh"
 export type AgentMode = "act" | "plan" | "yolo"
 export type AgentBackendMode = "auto" | "local" | "hub" | "remote"
+export type AgentContextCompressionMode = "cline" | "headroom" | "off"
 
 export type AgentBackendConfig = {
   authToken?: string
@@ -103,6 +104,7 @@ export type StartSessionInput = {
   providerId: string
   modelId: string
   reasoningEffort?: ReasoningEffort
+  contextCompressionMode?: AgentContextCompressionMode
   autoApproveWriteTools?: boolean
   autoSendPrompt?: boolean
   mode?: AgentMode
@@ -140,6 +142,7 @@ export type StartDevelopmentSessionInput = {
   modelId: string
   credentialLabel?: string
   reasoningEffort?: ReasoningEffort
+  contextCompressionMode?: AgentContextCompressionMode
   autoSendPrompt?: boolean
   maxIterations?: number
   title: string

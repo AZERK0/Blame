@@ -5,6 +5,7 @@ import {
 } from "lucide-react"
 import * as React from "react"
 import type {
+  AgentContextCompressionMode,
   BlameModel as Model,
   BlameProvider as Provider,
   ProviderCredentialSummary,
@@ -52,12 +53,24 @@ import type {
 } from "@/context/cloud-auth"
 
 const storageKey = "blame.app.drawer-model-selection.v1"
+const contextCompressionStorageKey =
+  "blame.app.context-compression-mode.v1"
 const globalModelSelectionKey = "__global__"
 const recentLimit = 5
 const defaultVariant = "default"
+const defaultContextCompressionMode = "cline"
 const defaultCredentialLabel = "default"
 const openAICompatibleProviderID = "openai-compatible"
 const modelStateListeners = new Set<() => void>()
+const contextCompressionListeners = new Set<() => void>()
+const contextCompressionModeOptions: {
+  label: string
+  value: AgentContextCompressionMode
+}[] = [
+  { label: "Cline", value: "cline" },
+  { label: "Headroom", value: "headroom" },
+  { label: "Off", value: "off" },
+]
 export const popularProviders = [
   "openai-codex",
   "openai",
@@ -114,6 +127,9 @@ export function ModelSelector({ role }: { role?: ModelPreferenceRole }) {
       <ButtonGroup className="w-full min-w-0">
         <ModelPicker selection={selection} setDialog={setDialog} />
         <ModelVariantSelector selection={selection} />
+        {selection.role === "agent" ? (
+          <ContextCompressionSelector selection={selection} />
+        ) : null}
       </ButtonGroup>
       <ProviderSelectDialog
         open={dialog?.type === "providers"}
@@ -270,6 +286,37 @@ function ModelVariantSelector({ selection }: { selection: ModelSelection }) {
   )
 }
 
+function ContextCompressionSelector({
+  selection,
+}: {
+  selection: ModelSelection
+}) {
+  return (
+    <Select
+      value={selection.contextCompressionMode}
+      onValueChange={(value) =>
+        selection.setContextCompressionMode(contextCompressionMode(value))
+      }
+    >
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <SelectTrigger className="w-28 max-w-[45%]">
+            <SelectValue />
+          </SelectTrigger>
+        </TooltipTrigger>
+        <TooltipContent side="left">Choose context mode</TooltipContent>
+      </Tooltip>
+      <SelectContent>
+        {contextCompressionModeOptions.map((option) => (
+          <SelectItem key={option.value} value={option.value}>
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+}
+
 function ModelCommandItem({
   model,
   onSelect,
@@ -360,9 +407,13 @@ export function useModelSelection(options: ModelSelectionOptions = {}) {
   const [state, setState] = React.useState(() =>
     readModelState(providerState.directory)
   )
+  const [contextCompressionMode, setContextCompressionModeState] =
+    React.useState(readContextCompressionMode)
 
   React.useEffect(() => {
     const refreshState = () => setState(readModelState(providerState.directory))
+    const refreshContextMode = () =>
+      setContextCompressionModeState(readContextCompressionMode())
     const handleStorageChange = (event: StorageEvent) => {
       if (event.storageArea === localStorage && event.key === storageKey) {
         refreshState()
@@ -371,13 +422,28 @@ export function useModelSelection(options: ModelSelectionOptions = {}) {
 
     refreshState()
     modelStateListeners.add(refreshState)
+    contextCompressionListeners.add(refreshContextMode)
     window.addEventListener("storage", handleStorageChange)
 
     return () => {
       modelStateListeners.delete(refreshState)
+      contextCompressionListeners.delete(refreshContextMode)
       window.removeEventListener("storage", handleStorageChange)
     }
   }, [providerState.directory])
+
+  React.useEffect(() => {
+    const handleStorageChange = (event: StorageEvent) => {
+      if (
+        event.storageArea === localStorage &&
+        event.key === contextCompressionStorageKey
+      ) {
+        setContextCompressionModeState(readContextCompressionMode())
+      }
+    }
+    window.addEventListener("storage", handleStorageChange)
+    return () => window.removeEventListener("storage", handleStorageChange)
+  }, [])
 
   const models = React.useMemo(
     () => getModels(providerState.providers),
@@ -405,6 +471,7 @@ export function useModelSelection(options: ModelSelectionOptions = {}) {
     allProviders: providerState.providers?.all ?? [],
     credentials: providerState.providers?.credentials ?? [],
     connectedProviderIDs: getConnectedProviderIDs(providerState.providers),
+    contextCompressionMode,
     currentModel,
     currentVariant,
     directory: providerState.directory,
@@ -447,6 +514,11 @@ export function useModelSelection(options: ModelSelectionOptions = {}) {
         credentialLabel: currentModel?.credentialLabel ?? null,
         reasoningEffort: isReasoningEffort(variant ?? "") ? variant : null,
       }),
+    setContextCompressionMode: (mode: AgentContextCompressionMode) => {
+      localStorage.setItem(contextCompressionStorageKey, mode)
+      setContextCompressionModeState(mode)
+      for (const listener of contextCompressionListeners) listener()
+    },
   }
 }
 
@@ -797,6 +869,20 @@ function getVariantLabel(variant: string) {
   if (variant === defaultVariant) return "Default"
   if (variant === "xhigh") return "X High"
   return variant
+}
+
+function contextCompressionMode(
+  value: string
+): AgentContextCompressionMode {
+  if (value === "headroom" || value === "off") return value
+  return "cline"
+}
+
+function readContextCompressionMode(): AgentContextCompressionMode {
+  return contextCompressionMode(
+    localStorage.getItem(contextCompressionStorageKey) ??
+      defaultContextCompressionMode
+  )
 }
 
 function isReasoningEffort(value: string): value is ReasoningEffort {

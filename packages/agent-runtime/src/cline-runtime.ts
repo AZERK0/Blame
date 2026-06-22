@@ -27,6 +27,7 @@ import {
   codeReviewGraphToolNames,
   codeReviewGraphTools,
 } from "./code-review-graph-tools.js";
+import { contextCompressionConfig } from "./context-compression.js";
 import {
   deleteProviderCredential,
   listProviders,
@@ -430,7 +431,10 @@ export class BlameAgentRuntime {
             workspaceRoot: input.workspaceRoot,
             mode: input.mode ?? "act",
             maxIterations: input.maxIterations ?? defaultSessionMaxIterations,
-            compaction: blameCompactionConfig(this.productionConfig),
+            compaction: contextCompressionConfig(
+              this.productionConfig,
+              input.contextCompressionMode,
+            ),
             enableTools: true,
             enableSpawnAgent: false,
             enableAgentTeams: false,
@@ -1346,6 +1350,7 @@ export class BlameAgentRuntime {
       modelId: input.modelId,
       credentialLabel: input.credentialLabel,
       reasoningEffort: input.reasoningEffort,
+      contextCompressionMode: input.contextCompressionMode,
       autoApproveWriteTools: true,
       autoSendPrompt: input.autoSendPrompt !== false,
       mode: "act",
@@ -2743,6 +2748,7 @@ function startContext(input: StartSessionInput) {
   return {
     providerId: input.providerId,
     modelId: input.modelId,
+    contextCompressionMode: input.contextCompressionMode ?? "cline",
     mode: input.mode ?? "act",
     maxIterations: input.maxIterations ?? defaultSessionMaxIterations,
     ...promptMetadata(input.prompt),
@@ -2758,6 +2764,7 @@ function sessionContext(
     mode: input.mode ?? "act",
     modelId: input.modelId,
     providerId: input.providerId,
+    contextCompressionMode: input.contextCompressionMode ?? "cline",
     sessionId,
   };
 }
