@@ -568,44 +568,19 @@ function agentDisplayActivities(
   response?: string | null
 ) {
   const markdown = response?.trim()
-  if (!markdown) return activities
-  const candidateIndexes = new Set(
-    activities
-      .map((activity, index) =>
-        finalResponseActivity(activity, markdown) ? index : undefined
-      )
-      .filter((index) => index !== undefined)
-  )
-  const lastCandidateIndex = Array.from(candidateIndexes).at(-1)
-  if (lastCandidateIndex === undefined) return activities
-  if (lastCandidateIndex !== activities.length - 1) {
-    return activities.filter((_, index) => !candidateIndexes.has(index))
-  }
-  return activities
-    .map((activity, activityIndex) =>
-      activityIndex === lastCandidateIndex
-        ? {
-            ...activity,
-            detail: markdown,
-            messageKind: "final",
-            status: "completed",
-            title: "Agent response",
-          }
-        : activity
-    )
-    .filter(
-      (_, index) => index === lastCandidateIndex || !candidateIndexes.has(index)
-    )
-}
-
-function finalResponseActivity(
-  activity: UserStoryAgentActivity,
-  markdown: string
-) {
-  return (
-    activity.kind === "message" &&
-    sameStreamingMarkdown(activity.detail, markdown)
-  )
+  const last = activities.at(-1)
+  if (!markdown || last?.kind !== "message") return activities
+  if (!sameStreamingMarkdown(last.detail, markdown)) return activities
+  return [
+    ...activities.slice(0, -1),
+    {
+      ...last,
+      detail: markdown,
+      messageKind: "final" as const,
+      status: "completed" as const,
+      title: "Agent response",
+    },
+  ]
 }
 
 function alreadyStreamedAgentMessage(
@@ -624,8 +599,15 @@ function sameStreamingMarkdown(left: string | undefined, right: string) {
   if (!normalizedLeft) return false
   return (
     normalizedLeft === normalizedRight ||
-    normalizedRight.startsWith(normalizedLeft)
+    normalizedRight.startsWith(normalizedLeft) ||
+    sameLeadingMarkdown(normalizedLeft, normalizedRight)
   )
+}
+
+function sameLeadingMarkdown(left: string, right: string) {
+  const prefixLength = Math.min(left.length, right.length, 80)
+  if (prefixLength < 40) return false
+  return left.slice(0, prefixLength) === right.slice(0, prefixLength)
 }
 
 function sameMarkdown(left: string, right: string | undefined) {

@@ -43,16 +43,26 @@ export function agentFlowUpdate(
     if (finalActivity) {
       update.agentActivities = finalActivity.activities
       update.agentActivity = finalActivity.activity
-      update.agentActivityUpdates = [
-        ...(update.agentActivityUpdates ?? []),
-        finalActivity.activity,
-      ]
+      update.agentActivityUpdates = appendActivityUpdate(
+        update.agentActivityUpdates,
+        finalActivity.activity
+      )
     }
     update.agentFinalResponse = finalResponse
   }
   if (usage) update.agentUsage = usage
   if (sessionSummary !== undefined) update.agentSessionSummary = sessionSummary
   return update
+}
+
+function appendActivityUpdate(
+  updates: UserStoryAgentActivity[] | undefined,
+  activity: UserStoryAgentActivity
+) {
+  const current = updates ?? []
+  const existingIndex = current.findIndex((item) => item.id === activity.id)
+  if (existingIndex === -1) return [...current, activity]
+  return current.map((item, index) => (index === existingIndex ? activity : item))
 }
 
 export function shouldPersistAgentEvent(
@@ -110,6 +120,8 @@ function eventActivity(
   if (event.type === "text") return messageActivities(activities, event)
   if (event.type === "tool") return toolActivities(activities, event)
   if (event.type === "approval") return approvalActivities(activities, event)
+  if (event.type === "done")
+    return closeRunningInlineActivities(activities, ["message", "reasoning"])
 }
 
 function reasoningActivities(
@@ -118,17 +130,24 @@ function reasoningActivities(
 ) {
   const payload = eventPayload(event)
   const iteration = numberValue(payload.iteration)
-  const id = `reasoning-${iteration ?? "session"}`
+  const phase = streamPhase(payload)
+  if (closingStreamPhase(phase)) {
+    return closeRunningInlineActivities(activities, ["reasoning"])
+  }
+  const id = inlineActivityId(activities, "reasoning", iteration)
   const text = reasoningText(activities, id, payload)
   if (!text) return undefined
-  return upsertActivity(activities, {
-    id,
-    kind: "reasoning",
-    title: iteration ? `Agent reasoning ${iteration}` : "Agent reasoning",
-    detail: text,
-    status: "running",
-    iteration,
-  })
+  return upsertActivities(activities, [
+    ...closeRunningInlineActivityInputs(activities, ["message"]),
+    {
+      id,
+      kind: "reasoning",
+      title: iteration ? `Agent reasoning ${iteration}` : "Agent reasoning",
+      detail: text,
+      status: "running",
+      iteration,
+    },
+  ])
 }
 
 function reasoningText(
@@ -158,63 +177,152 @@ function messageActivities(
 ) {
   const payload = eventPayload(event)
   const iteration = numberValue(payload.iteration)
-  const id = messageActivityId(activities, iteration)
-  const existing = activities.find((activity) => activity.id === id)
-  const text = messageText(existing?.detail, payload)
+  const phase = streamPhase(payload)
+  if (closingStreamPhase(phase)) {
+    return closeRunningInlineActivities(activities, ["message"])
+  }
+  const id = inlineActivityId(activities, "message", iteration)
+  const text = messageText(activities, id, iteration, payload)
   if (text === undefined || !text.trim()) return undefined
-  const duplicate = duplicateMessageActivity(activities, id, iteration, text)
   const messageKind = agentMessageKind(payload)
-  return upsertActivity(activities, {
-    id: duplicate?.id ?? id,
-    kind: "message",
-    title: messageKind === "final" ? "Agent response" : "Agent message",
-    detail: text,
-    status: "completed",
-    iteration,
-    messageKind,
-  })
+  return upsertActivities(activities, [
+    ...closeRunningInlineActivityInputs(activities, ["reasoning"]),
+    {
+      id,
+      kind: "message",
+      title: messageKind === "final" ? "Agent response" : "Agent message",
+      detail: text,
+      status: messageKind === "final" ? "completed" : "running",
+      iteration,
+      messageKind,
+    },
+  ])
 }
 
-function messageActivityId(
+function inlineActivityId(
   activities: UserStoryAgentActivity[],
+  kind: "message" | "reasoning",
   iteration: number | undefined
 ) {
-  const last = activities.at(-1)
-  if (last?.kind === "message" && sameIteration(last.iteration, iteration)) {
-    return last.id
-  }
+  const active = activities.findLast(
+    (activity) =>
+      activity.kind === kind &&
+      activity.status === "running" &&
+      sameIteration(activity.iteration, iteration)
+  )
+  if (active) return active.id
+  const label = kind === "message" ? "message" : "reasoning"
   const count = activities.filter(
     (activity) =>
-      activity.kind === "message" &&
-      sameIteration(activity.iteration, iteration)
+      activity.kind === kind && sameIteration(activity.iteration, iteration)
   ).length
-  return `message-${iteration ?? "session"}-${count + 1}`
+  return `${label}-${iteration ?? "session"}-${count + 1}`
 }
 
-function duplicateMessageActivity(
-  activities: UserStoryAgentActivity[],
-  id: string,
-  iteration: number | undefined,
-  text: string
-) {
-  return activities.findLast(
-    (activity) =>
-      activity.id !== id &&
-      activity.kind === "message" &&
-      sameIteration(activity.iteration, iteration) &&
-      sameStreamedMessage(activity.detail, text)
+function streamPhase(payload: Record<string, unknown>) {
+  return stringValue(payload.phase) ?? stringValue(payload.hookEventName)
+}
+
+function closingStreamPhase(phase: string | undefined) {
+  return (
+    phase === "finished" ||
+    phase === "content_end" ||
+    phase === "end" ||
+    phase === "done"
   )
 }
 
+function closeRunningInlineActivities(
+  activities: UserStoryAgentActivity[],
+  kinds: Array<"message" | "reasoning">
+) {
+  const inputs = closeRunningInlineActivityInputs(activities, kinds)
+  if (!inputs.length) return undefined
+  return upsertActivities(activities, inputs)
+}
+
+function closeRunningInlineActivityInputs(
+  activities: UserStoryAgentActivity[],
+  kinds: Array<"message" | "reasoning">
+) {
+  return activities
+    .filter(
+      (activity) =>
+        activity.status === "running" &&
+        (activity.kind === "message" || activity.kind === "reasoning") &&
+        kinds.includes(activity.kind)
+    )
+    .map((activity) => {
+      const { createdAt, updatedAt, ...input } = activity
+      void createdAt
+      void updatedAt
+      return { ...input, status: "completed" }
+    })
+}
+
 function messageText(
-  current: string | undefined,
+  activities: UserStoryAgentActivity[],
+  id: string,
+  iteration: number | undefined,
   payload: Record<string, unknown>
 ) {
+  const current = activities.find((activity) => activity.id === id)?.detail
   const accumulatedText = stringValue(payload.accumulatedText)
-  if (accumulatedText !== undefined) return accumulatedText
+  if (accumulatedText !== undefined) {
+    return currentMessageAccumulatedText(
+      activities,
+      id,
+      iteration,
+      accumulatedText
+    )
+  }
   const text = stringValue(payload.text)
   if (text !== undefined) return appendStreamingText(current, text)
   return stringValue(payload.message)
+}
+
+function currentMessageAccumulatedText(
+  activities: UserStoryAgentActivity[],
+  id: string,
+  iteration: number | undefined,
+  accumulatedText: string
+) {
+  const previousText = previousMessageText(activities, id, iteration)
+  if (!previousText) return accumulatedText
+  const normalizedText = normalizedStreamedMessageLineEndings(accumulatedText)
+  const normalizedPreviousText =
+    normalizedStreamedMessageLineEndings(previousText)
+  const prefixLength = accumulatedPrefixLength(
+    normalizedText,
+    normalizedPreviousText
+  )
+  if (prefixLength === undefined) return accumulatedText
+  return normalizedText.slice(prefixLength).trimStart()
+}
+
+function previousMessageText(
+  activities: UserStoryAgentActivity[],
+  id: string,
+  iteration: number | undefined
+) {
+  return activities
+    .filter(
+      (activity) =>
+        activity.id !== id &&
+        activity.kind === "message" &&
+        sameIteration(activity.iteration, iteration)
+    )
+    .map((activity) => activity.detail)
+    .join("")
+}
+
+function accumulatedPrefixLength(value: string, prefix: string) {
+  if (value.startsWith(prefix)) return prefix.length
+  const compactPrefix = prefix.trimEnd()
+  if (compactPrefix && value.startsWith(compactPrefix)) {
+    return compactPrefix.length
+  }
+  return undefined
 }
 
 function agentMessageKind(payload: Record<string, unknown>) {
@@ -244,11 +352,12 @@ function finalResponseMessageActivity(
   activities: UserStoryAgentActivity[],
   finalResponse: string
 ) {
-  return activities.findLast(
-    (activity) =>
-      activity.kind === "message" &&
-      sameStreamingResponse(activity.detail, finalResponse)
-  )
+  const lastActivity = activities.at(-1)
+  if (lastActivity?.kind !== "message") return undefined
+  if (!sameStreamingResponse(lastActivity.detail, finalResponse)) {
+    return undefined
+  }
+  return lastActivity
 }
 
 function sameStreamingResponse(left: string, right: string) {
@@ -257,16 +366,23 @@ function sameStreamingResponse(left: string, right: string) {
   if (!normalizedLeft) return false
   return (
     normalizedLeft === normalizedRight ||
-    normalizedRight.startsWith(normalizedLeft)
+    normalizedRight.startsWith(normalizedLeft) ||
+    sameLeadingStreamedMessage(normalizedLeft, normalizedRight)
   )
 }
 
-function sameStreamedMessage(left: string, right: string) {
-  return normalizedStreamedMessage(left) === normalizedStreamedMessage(right)
+function sameLeadingStreamedMessage(left: string, right: string) {
+  const prefixLength = Math.min(left.length, right.length, 80)
+  if (prefixLength < 40) return false
+  return left.slice(0, prefixLength) === right.slice(0, prefixLength)
 }
 
 function normalizedStreamedMessage(value: string) {
-  return value.trim().replace(/\r\n?/g, "\n")
+  return normalizedStreamedMessageLineEndings(value).trim()
+}
+
+function normalizedStreamedMessageLineEndings(value: string) {
+  return value.replace(/\r\n?/g, "\n")
 }
 
 function toolActivities(
@@ -278,7 +394,10 @@ function toolActivities(
   const input = toolActivityInput(activities, payload, phase)
   return upsertActivities(
     activities,
-    toolActivityInputs(activities, phase, input)
+    [
+      ...closeRunningInlineActivityInputs(activities, ["message", "reasoning"]),
+      ...toolActivityInputs(activities, phase, input),
+    ]
   )
 }
 

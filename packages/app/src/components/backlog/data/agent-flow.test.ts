@@ -123,6 +123,157 @@ test("keeps assistant messages between tools", () => {
   assert.equal(secondMessage.agentActivities?.[2]?.detail, "Je vais continuer.")
 })
 
+test("starts a new assistant message after a text content block closes", () => {
+  const firstMessage = updateStory(story(), textEvent({ text: "Plan rapide." }))
+  const closedMessage = updateStory(
+    firstMessage,
+    textEvent({ phase: "finished", text: "Plan rapide." })
+  )
+  const secondMessage = updateStory(
+    closedMessage,
+    textEvent({ text: "Je continue." })
+  )
+
+  assert.deepEqual(
+    secondMessage.agentActivities?.map((activity) => activity.kind),
+    ["message", "message"]
+  )
+  assert.equal(secondMessage.agentActivities?.[0]?.detail, "Plan rapide.")
+  assert.equal(secondMessage.agentActivities?.[0]?.status, "completed")
+  assert.equal(secondMessage.agentActivities?.[1]?.detail, "Je continue.")
+})
+
+test("keeps cline assistant messages and tools in canonical order", () => {
+  const plan = updateStory(story(), textEvent({ text: "Plan rapide." }))
+  const firstTool = updateStory(
+    plan,
+    toolEvent("tool_call", "get_code_minimal_context", 1, "call-1")
+  )
+  const secondTool = updateStory(
+    firstTool,
+    toolEvent("tool_call", "run_commands", 1, "call-2")
+  )
+  const firstToolDone = updateStory(
+    secondTool,
+    toolEvent("tool_result", "get_code_minimal_context", 1, "call-1")
+  )
+  const secondToolDone = updateStory(
+    firstToolDone,
+    toolEvent("tool_result", "run_commands", 1, "call-2")
+  )
+  const bridgeMessage = updateStory(
+    secondToolDone,
+    textEvent({ text: "Je vais lire rapidement." })
+  )
+  const thirdTool = updateStory(
+    bridgeMessage,
+    toolEvent("tool_call", "read_files", 1, "call-3")
+  )
+  const fourthTool = updateStory(
+    thirdTool,
+    toolEvent("tool_call", "search_codebase", 1, "call-4")
+  )
+  const thirdToolDone = updateStory(
+    fourthTool,
+    toolEvent("tool_result", "read_files", 1, "call-3")
+  )
+  const fourthToolDone = updateStory(
+    thirdToolDone,
+    toolEvent("tool_result", "search_codebase", 1, "call-4")
+  )
+  const finalMessage = updateStory(
+    fourthToolDone,
+    textEvent({ text: "Franchement : base solide." })
+  )
+  const completed = updateStory(
+    finalMessage,
+    doneEvent("Franchement : base solide.")
+  )
+
+  assert.deepEqual(
+    completed.agentActivities?.map((activity) => activity.kind),
+    ["message", "tool", "tool", "message", "tool", "tool", "message"]
+  )
+  assert.equal(completed.agentActivities?.[0]?.detail, "Plan rapide.")
+  assert.equal(
+    completed.agentActivities?.[3]?.detail,
+    "Je vais lire rapidement."
+  )
+  assert.equal(completed.agentActivities?.[6]?.title, "Agent response")
+  assert.equal(
+    completed.agentActivities?.[6]?.detail,
+    "Franchement : base solide."
+  )
+})
+
+test("does not move a done response into a middle message", () => {
+  const message = updateStory(story(), textEvent({ text: "Plan rapide." }))
+  const toolStarted = updateStory(
+    message,
+    toolEvent("tool_call", "run_commands", 1, "call-1")
+  )
+  const completed = updateStory(toolStarted, doneEvent("Réponse finale."))
+
+  assert.deepEqual(
+    completed.agentActivities?.map((activity) => activity.kind),
+    ["message", "tool"]
+  )
+  assert.equal(completed.agentActivities?.[0]?.title, "Agent message")
+  assert.equal(completed.agentActivities?.[0]?.detail, "Plan rapide.")
+  assert.equal(completed.agentFinalResponse, "Réponse finale.")
+})
+
+test("starts a new assistant message from global accumulated text after a tool", () => {
+  const firstMessage = updateStory(
+    story(),
+    textEvent({ accumulatedText: "Plan rapide." })
+  )
+  const toolStarted = updateStory(
+    firstMessage,
+    toolEvent("tool_call", "get_code_minimal_context", 1, "call-1")
+  )
+  const secondMessage = updateStory(
+    toolStarted,
+    textEvent({ accumulatedText: "Plan rapide.\n\nJe vois le diff." })
+  )
+
+  assert.deepEqual(
+    secondMessage.agentActivities?.map((activity) => activity.kind),
+    ["message", "tool", "message"]
+  )
+  assert.equal(secondMessage.agentActivities?.[0]?.detail, "Plan rapide.")
+  assert.equal(secondMessage.agentActivities?.[2]?.detail, "Je vois le diff.")
+})
+
+test("keeps accumulated updates scoped to the current assistant message", () => {
+  const firstMessage = updateStory(
+    story(),
+    textEvent({ accumulatedText: "Plan rapide." })
+  )
+  const toolStarted = updateStory(
+    firstMessage,
+    toolEvent("tool_call", "get_code_minimal_context", 1, "call-1")
+  )
+  const secondMessage = updateStory(
+    toolStarted,
+    textEvent({ accumulatedText: "Plan rapide.\n\nJe vois" })
+  )
+  const updatedSecondMessage = updateStory(
+    secondMessage,
+    textEvent({ accumulatedText: "Plan rapide.\n\nJe vois le diff." })
+  )
+
+  assert.deepEqual(
+    updatedSecondMessage.agentActivities?.map((activity) => activity.kind),
+    ["message", "tool", "message"]
+  )
+  assert.equal(updatedSecondMessage.agentActivities?.[0]?.detail, "Plan rapide.")
+  assert.equal(
+    updatedSecondMessage.agentActivities?.[2]?.detail,
+    "Je vois le diff."
+  )
+})
+
 test("deduplicates a repeated assistant message after tools", () => {
   const firstMessage = updateStory(
     story(),
@@ -141,10 +292,22 @@ test("deduplicates a repeated assistant message after tools", () => {
     repeatedMessage.agentActivities?.map((activity) => activity.kind),
     ["message", "tool"]
   )
-  assert.equal(
-    repeatedMessage.agentActivityUpdates?.at(-1)?.id,
-    "message-session-1"
+})
+
+test("keeps repeated assistant text chunks when they are separate messages", () => {
+  const firstMessage = updateStory(story(), textEvent({ text: "Ok." }))
+  const toolStarted = updateStory(
+    firstMessage,
+    toolEvent("tool_call", "run_commands", 1, "call-1")
   )
+  const secondMessage = updateStory(toolStarted, textEvent({ text: "Ok." }))
+
+  assert.deepEqual(
+    secondMessage.agentActivities?.map((activity) => activity.kind),
+    ["message", "tool", "message"]
+  )
+  assert.equal(secondMessage.agentActivities?.[0]?.detail, "Ok.")
+  assert.equal(secondMessage.agentActivities?.[2]?.detail, "Ok.")
 })
 
 test("marks a stopped assistant message as the final response", () => {
@@ -192,6 +355,29 @@ test("promotes a partial streamed message to the full final response", () => {
   assert.equal(activity?.messageKind, "final")
   assert.equal(activity?.title, "Agent response")
   assert.equal(activity?.detail, "Salut !\n\nLa reponse complete.")
+  assert.deepEqual(
+    completed.agentActivityUpdates?.map((update) => update.id),
+    ["message-session-1"]
+  )
+})
+
+test("repairs a malformed streamed final response from the done text", () => {
+  const streamedText =
+    "Oui — globalement la codebase a l’air propre et assez bien structurée.\n\n" +
+    "Monorepo clair : backend,/frontend etpackages/shared."
+  const finalText =
+    "Oui — globalement la codebase a l’air propre et assez bien structurée.\n\n" +
+    "Monorepo clair : backend, frontend et packages/shared."
+  const streaming = updateStory(story(), textEvent({ text: streamedText }))
+  const completed = updateStory(streaming, doneEvent(finalText))
+  const activity = completed.agentActivities?.[0]
+
+  assert.equal(completed.agentFinalResponse, finalText)
+  assert.equal(completed.agentActivities?.length, 1)
+  assert.equal(activity?.kind, "message")
+  assert.equal(activity?.messageKind, "final")
+  assert.equal(activity?.title, "Agent response")
+  assert.equal(activity?.detail, finalText)
   assert.deepEqual(
     completed.agentActivityUpdates?.map((update) => update.id),
     ["message-session-1"]

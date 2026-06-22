@@ -238,6 +238,7 @@ export class BlameAgentRuntime {
   private sessionEventSignatures = new Map<string, Map<string, number>>();
   private sessionIterations = new Map<string, number>();
   private sessionUsageSignatures = new Map<string, string>();
+  private structuredEventSessions = new Set<string>();
   private readonly productionConfig = loadProductionConfig();
   private readonly events?: AgentRuntimeEvents;
   private readonly options: RuntimeOptions;
@@ -1001,6 +1002,7 @@ export class BlameAgentRuntime {
     const cline = await this.core(backend);
     const unsubscribe = await cline.subscribe(
       (payload: CoreSessionEvent) => {
+        if (this.shouldSkipFallbackChunk(sessionId, payload)) return;
         const event = this.withSessionIteration(
           sessionId,
           normalizeEvent(sessionId, payload),
@@ -1019,7 +1021,13 @@ export class BlameAgentRuntime {
     const eventIteration = numberValue(payload.iteration);
     if (eventIteration !== undefined)
       this.sessionIterations.set(sessionId, eventIteration);
-    if (event.type !== "tool" || eventIteration !== undefined) return event;
+    if (
+      (event.type !== "tool" &&
+        event.type !== "text" &&
+        event.type !== "reasoning") ||
+      eventIteration !== undefined
+    )
+      return event;
     const iteration = this.sessionIterations.get(sessionId);
     if (iteration === undefined) return event;
     return { ...event, payload: { ...payload, iteration } };
@@ -1074,7 +1082,20 @@ export class BlameAgentRuntime {
     this.sessionIterations.delete(sessionId);
     this.sessionUsageSignatures.delete(sessionId);
     this.sessionBackendKeys.delete(sessionId);
+    this.structuredEventSessions.delete(sessionId);
     void this.logSession(sessionId, "session unsubscribed");
+  }
+
+  private shouldSkipFallbackChunk(sessionId: string, event: CoreSessionEvent) {
+    if (event.type === "agent_event") {
+      this.structuredEventSessions.add(sessionId);
+      return false;
+    }
+    return (
+      event.type === "chunk" &&
+      event.payload.stream === "agent" &&
+      this.structuredEventSessions.has(sessionId)
+    );
   }
 
   private async activeSessionIds() {
@@ -3021,6 +3042,7 @@ function eventLogPayload(event: AgentEvent) {
 
 function duplicateEventSignature(event: AgentEvent) {
   if (event.type === "raw") return undefined;
+  if (event.type === "text" || event.type === "reasoning") return undefined;
   const payload = asRecord(event.payload);
   const text = eventText(payload);
   const tool = toolNameFromPayload(payload);
@@ -3170,7 +3192,7 @@ function normalizeContentEvent(
       sessionId,
       payload: {
         text: stringValue(payload.reasoning) ?? stringValue(payload.text) ?? "",
-        accumulatedText: stringValue(payload.accumulated),
+        phase: "started",
         redacted: booleanValue(payload.redacted),
         raw,
       },
@@ -3181,7 +3203,7 @@ function normalizeContentEvent(
     sessionId,
     payload: {
       text: stringValue(payload.text) ?? "",
-      accumulatedText: stringValue(payload.accumulated),
+      phase: "started",
       raw,
     },
   };
@@ -3209,7 +3231,21 @@ function normalizeContentEndEvent(
       },
     };
   }
-  return normalizeContentEvent(payload, sessionId, raw);
+  if (
+    stringValue(payload.contentType) === "reasoning" ||
+    stringValue(payload.contentType) === "thinking"
+  ) {
+    return {
+      type: "reasoning",
+      sessionId,
+      payload: { phase: "finished", raw },
+    };
+  }
+  return {
+    type: "text",
+    sessionId,
+    payload: { phase: "finished", raw },
+  };
 }
 
 function agentMessageText(message: Record<string, unknown>) {
