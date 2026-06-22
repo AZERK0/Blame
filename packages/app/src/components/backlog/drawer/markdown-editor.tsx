@@ -598,6 +598,13 @@ function MarkdownPreview({
       {blocks.map((block) =>
         block.type === "code" ? (
           <MarkdownPreviewCode key={block.key} code={block.code} />
+        ) : block.type === "table" ? (
+          <MarkdownPreviewTable
+            key={block.key}
+            header={block.header}
+            rows={block.rows}
+            onFileLinkClick={onFileLinkClick}
+          />
         ) : (
           <MarkdownPreviewLine
             key={block.key}
@@ -643,6 +650,77 @@ function useMarkdownPreviewBlocks(markdown: string) {
   }, [markdown])
 
   return blocks
+}
+
+function MarkdownPreviewTable({
+  header,
+  onFileLinkClick,
+  rows,
+}: {
+  header: string[]
+  onFileLinkClick?: (path: string) => void
+  rows: string[][]
+}) {
+  return (
+    <div className="max-w-full [scrollbar-width:thin] overflow-x-auto">
+      <table className="min-w-full border-collapse text-left text-sm">
+        <MarkdownPreviewTableHeader
+          cells={header}
+          onFileLinkClick={onFileLinkClick}
+        />
+        <tbody>
+          {rows.map((row, index) => (
+            <MarkdownPreviewTableRow
+              key={index}
+              cells={row}
+              onFileLinkClick={onFileLinkClick}
+            />
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function MarkdownPreviewTableHeader({
+  cells,
+  onFileLinkClick,
+}: {
+  cells: string[]
+  onFileLinkClick?: (path: string) => void
+}) {
+  return (
+    <thead>
+      <tr>
+        {cells.map((cell, index) => (
+          <th
+            key={index}
+            className="border border-border bg-muted/50 px-2.5 py-1.5 font-semibold"
+          >
+            {inlineMarkdown(cell, onFileLinkClick)}
+          </th>
+        ))}
+      </tr>
+    </thead>
+  )
+}
+
+function MarkdownPreviewTableRow({
+  cells,
+  onFileLinkClick,
+}: {
+  cells: string[]
+  onFileLinkClick?: (path: string) => void
+}) {
+  return (
+    <tr>
+      {cells.map((cell, index) => (
+        <td key={index} className="border border-border px-2.5 py-1.5">
+          {inlineMarkdown(cell, onFileLinkClick)}
+        </td>
+      ))}
+    </tr>
+  )
 }
 
 function MarkdownPreviewCode({ code }: { code: string }) {

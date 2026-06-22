@@ -15,3 +15,31 @@ test("splits markdown preview content into lines and fenced code blocks", () => 
     ]
   )
 })
+
+test("splits markdown preview content into table blocks", () => {
+  assert.deepEqual(
+    markdownPreviewBlocks(
+      [
+        "| Line | Before | After |",
+        "|------|--------|-------|",
+        '| 388 | label="+ Nouveau projet" | label="Nouveau projet" |',
+        '| 421 | label="+ Créer mon premier projet" | label="Créer mon premier projet" |',
+      ].join("\n")
+    ),
+    [
+      {
+        header: ["Line", "Before", "After"],
+        key: "table-0",
+        rows: [
+          ["388", 'label="+ Nouveau projet"', 'label="Nouveau projet"'],
+          [
+            "421",
+            'label="+ Créer mon premier projet"',
+            'label="Créer mon premier projet"',
+          ],
+        ],
+        type: "table",
+      },
+    ]
+  )
+})
