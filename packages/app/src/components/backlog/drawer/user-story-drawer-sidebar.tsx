@@ -1,5 +1,6 @@
 import * as React from "react"
 import type { AgentUsageSummary, AgentUsageTotals } from "@blame/agent-runtime"
+import { PanelRightCloseIcon } from "lucide-react"
 
 import type {
   BacklogColumnId,
@@ -10,19 +11,32 @@ import {
   useModelSelection,
 } from "@/components/model/model-selector"
 import { ColumnStatusBadge } from "@/components/backlog/shared/backlog-status-badge"
+import { Button } from "@/components/ui/button"
 import { usePlatform } from "@/context/platform"
 
 export function DrawerSidebar({
+  onCollapse,
   status,
   userStory,
 }: {
+  onCollapse: () => void
   status: BacklogColumnId
   userStory?: UserStory
 }) {
   return (
-    <aside className="p-5">
+    <aside className="relative p-5">
+      <Button
+        type="button"
+        className="absolute top-4 left-4 border bg-background/90 shadow-sm"
+        size="icon-sm"
+        variant="outline"
+        onClick={onCollapse}
+        aria-label="Hide sidebar"
+      >
+        <PanelRightCloseIcon />
+      </Button>
       <div className="grid gap-5">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start justify-between gap-4 pl-9">
           <SidebarField label="Model assigned">
             <ModelSelector />
           </SidebarField>
@@ -41,7 +55,7 @@ function TokenUsage({ userStory }: { userStory?: UserStory }) {
   if (!userStory?.clineSessionId && !userStory?.agentUsage) return null
 
   return (
-    <section className="grid gap-4 border-t pt-5">
+    <section className="grid gap-4">
       <TokenGroup title="Model configuration">
         <TokenStat label="Provider" value={userStory.agentProviderId} />
         <TokenStat label="Model" value={userStory.agentModelId} />

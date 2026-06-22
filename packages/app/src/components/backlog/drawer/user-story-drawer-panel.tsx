@@ -1,5 +1,11 @@
 import * as React from "react"
-import { AppWindowIcon, BookOpenIcon, CodeIcon, XIcon } from "lucide-react"
+import {
+  AppWindowIcon,
+  BookOpenIcon,
+  CodeIcon,
+  PanelRightOpenIcon,
+  XIcon,
+} from "lucide-react"
 
 import type {
   BacklogColumnId,
@@ -140,6 +146,7 @@ export function UserStoryDrawerPanel({
     path: string
   }>()
   const [pendingAction, setPendingAction] = React.useState<DrawerAction>()
+  const [sidebarOpen, setSidebarOpen] = React.useState(true)
   const [title, setTitle] = React.useState(
     mode === "create" ? "" : (userStory?.title ?? "")
   )
@@ -215,7 +222,7 @@ export function UserStoryDrawerPanel({
     >
       <DrawerClose asChild>
         <Button
-          className="absolute top-4 right-4 z-10"
+          className="absolute top-4 right-4 z-30"
           size="icon-sm"
           variant="ghost"
         >
@@ -228,7 +235,7 @@ export function UserStoryDrawerPanel({
         onValueChange={(value) => setTab(value as UserStoryDrawerTab)}
         className="min-h-0 flex-1 gap-0 overflow-hidden"
       >
-        <DrawerHeader className="gap-4 border-b px-6 py-6 pr-14">
+        <DrawerHeader className="gap-4 px-6 py-6 pr-14">
           <div className="min-w-0 flex-1">
             <DrawerTitle asChild>
               <DrawerHeaderTitle
@@ -266,7 +273,7 @@ export function UserStoryDrawerPanel({
           )}
         </DrawerHeader>
         <TabsContent value="user-story" className="min-h-0 overflow-hidden">
-          <DrawerBody status={status} userStory={userStory}>
+          <DrawerBody sidebarOpen={sidebarOpen}>
             <UserStoryContent
               commentCodeSelectionAttachments={commentCodeSelectionAttachments}
               commentFileAttachments={pendingFileAttachments(
@@ -363,7 +370,15 @@ export function UserStoryDrawerPanel({
           </TabsContent>
         )}
       </Tabs>
-      <DrawerFooter className="border-t bg-popover/95 px-6 py-4">
+      {tab === "user-story" && (
+        <DrawerSidebarIsland
+          open={sidebarOpen}
+          status={status}
+          userStory={userStory}
+          onOpenChange={setSidebarOpen}
+        />
+      )}
+      <DrawerFooter className="pointer-events-none absolute right-6 bottom-6 z-20 p-0">
         <DrawerActions
           loadingAction={
             pendingAction === "Approve & Merge" ? pendingAction : undefined
@@ -521,25 +536,59 @@ function DrawerHeaderTitle({
 
 function DrawerBody({
   children,
+  sidebarOpen,
+}: {
+  children: React.ReactNode
+  sidebarOpen: boolean
+}) {
+  const contentClassName = sidebarOpen
+    ? "mx-auto flex max-w-5xl flex-col gap-6 px-6 pt-6 pb-28 lg:mx-0 lg:mr-[26rem]"
+    : "mx-auto flex w-full max-w-5xl flex-col gap-6 px-6 pt-6 pb-28"
+
+  return (
+    <div className="relative h-full min-h-0 overflow-hidden">
+      <ScrollArea className="h-full min-h-0">
+        <div className={contentClassName}>{children}</div>
+      </ScrollArea>
+    </div>
+  )
+}
+
+function DrawerSidebarIsland({
+  onOpenChange,
+  open,
   status,
   userStory,
 }: {
-  children: React.ReactNode
+  onOpenChange: (open: boolean) => void
+  open: boolean
   status: BacklogColumnId
   userStory?: UserStory
 }) {
+  if (!open) {
+    return (
+      <Button
+        type="button"
+        className="absolute top-4 right-16 z-20 border bg-popover/95 shadow-lg backdrop-blur-xl"
+        size="icon-sm"
+        variant="outline"
+        onClick={() => onOpenChange(true)}
+        aria-label="Show sidebar"
+      >
+        <PanelRightOpenIcon />
+      </Button>
+    )
+  }
+
   return (
-    <div className="grid h-full min-h-0 grid-cols-[minmax(0,1fr)_minmax(20rem,24rem)] overflow-hidden">
+    <div className="absolute top-4 right-4 bottom-16 z-10 w-[min(24rem,calc(100%-2rem))] overflow-hidden rounded-xl bg-popover/85 shadow-2xl shadow-black/15 ring-1 ring-border/70 backdrop-blur-xl">
       <ScrollArea className="h-full min-h-0">
-        <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-6 py-6">
-          {children}
-        </div>
+        <DrawerSidebar
+          status={status}
+          userStory={userStory}
+          onCollapse={() => onOpenChange(false)}
+        />
       </ScrollArea>
-      <div className="h-full min-h-0 overflow-hidden border-l bg-muted/20">
-        <ScrollArea className="h-full min-h-0">
-          <DrawerSidebar status={status} userStory={userStory} />
-        </ScrollArea>
-      </div>
     </div>
   )
 }

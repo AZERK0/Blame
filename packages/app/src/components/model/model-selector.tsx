@@ -111,7 +111,7 @@ export function ModelSelector({ role }: { role?: ModelPreferenceRole }) {
 
   return (
     <>
-      <ButtonGroup>
+      <ButtonGroup className="w-full min-w-0">
         <ModelPicker selection={selection} setDialog={setDialog} />
         <ModelVariantSelector selection={selection} />
       </ButtonGroup>
@@ -159,10 +159,11 @@ function ModelPicker({
           <PopoverTrigger asChild>
             <Button
               variant="outline"
+              className="w-0 min-w-0 flex-1 justify-start"
               disabled={!selection.serverReady || selection.loading}
             >
               <ModelSummary model={selection.currentModel} />
-              <ChevronsUpDownIcon className="text-muted-foreground" />
+              <ChevronsUpDownIcon className="shrink-0 text-muted-foreground" />
             </Button>
           </PopoverTrigger>
         </TooltipTrigger>
@@ -252,7 +253,7 @@ function ModelVariantSelector({ selection }: { selection: ModelSelection }) {
     >
       <Tooltip>
         <TooltipTrigger asChild>
-          <SelectTrigger className="w-full capitalize">
+          <SelectTrigger className="w-28 max-w-[45%] capitalize">
             <SelectValue />
           </SelectTrigger>
         </TooltipTrigger>
@@ -301,9 +302,11 @@ function ModelSummary({ model }: { model: SelectableModel | undefined }) {
   }
 
   return (
-    <span className="flex min-w-0 items-center gap-2">
+    <span className="flex min-w-0 flex-1 items-center gap-2">
       <ProviderMark provider={model.provider} />
-      <span className="truncate">{modelDisplayName(model)}</span>
+      <span className="min-w-0 flex-1 truncate">
+        {modelDisplayName(model)}
+      </span>
     </span>
   )
 }

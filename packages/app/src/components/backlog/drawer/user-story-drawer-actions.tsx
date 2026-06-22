@@ -114,7 +114,7 @@ export function DrawerActions({
   story?: UserStory
 }) {
   return (
-    <div className="flex flex-wrap justify-end gap-2">
+    <div className="pointer-events-auto flex flex-wrap justify-start gap-2">
       {drawerActions(mode, status).map((action) => (
         <React.Fragment key={action}>
           {action === "Stop Agent" && story ? (
