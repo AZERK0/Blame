@@ -1143,7 +1143,7 @@ export const MarkdownEditor = React.forwardRef<
             if (typeof ref === "function") ref(element)
             else if (ref) ref.current = element
           }}
-          className="max-w-full min-w-0 overflow-hidden rounded-3xl bg-muted/50 p-1 transition-colors dark:bg-muted/50"
+          className="max-w-full min-w-0 overflow-hidden rounded-3xl bg-muted/50 p-1 transition-colors dark:bg-muted/50 shadow-xl shadow-black/10 ring-1 ring-foreground/20"
           onBlur={() => requestAnimationFrame(() => updateMention())}
           onKeyDownCapture={handleKeyDown}
           onPaste={handlePaste}
