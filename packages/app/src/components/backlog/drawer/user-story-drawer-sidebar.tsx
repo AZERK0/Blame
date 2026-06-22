@@ -3,6 +3,7 @@ import type { AgentUsageSummary, AgentUsageTotals } from "@blame/agent-runtime"
 
 import type { UserStory } from "@/components/backlog/data/backlog-data"
 import { useModelSelection } from "@/components/model/model-selector"
+import { Separator } from "@/components/ui/separator"
 import { usePlatform } from "@/context/platform"
 
 export function DrawerSidebar({
@@ -73,11 +74,11 @@ function usageContent(
 
 function TokenUsageTotals({ totals }: { totals: AgentUsageTotals }) {
   return (
-    <>
+    <div className="grid gap-4">
       <CostTokens totals={totals} />
       <InputOutputTokens totals={totals} />
       <CacheTokens totals={totals} />
-    </>
+    </div>
   )
 }
 
@@ -144,12 +145,11 @@ function TokenGroup({
   title: string
 }) {
   return (
-    <div className="grid grid-cols-2 gap-3 rounded-lg border bg-background/60 p-3">
-      <p className="col-span-full text-xs font-semibold text-muted-foreground">
-        {title}
-      </p>
-      {children}
-    </div>
+    <section className="grid gap-3">
+      <Separator />
+      <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+      <div className="grid grid-cols-2 gap-3">{children}</div>
+    </section>
   )
 }
 

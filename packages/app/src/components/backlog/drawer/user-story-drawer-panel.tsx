@@ -59,6 +59,8 @@ import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
+const drawerSidebarStorageKey = "blame.app.user-story-drawer-sidebar-open.v1"
+
 export function UserStoryDrawerPanel({
   focusComment,
   initialDevelopmentTab,
@@ -150,7 +152,7 @@ export function UserStoryDrawerPanel({
     path: string
   }>()
   const [pendingAction, setPendingAction] = React.useState<DrawerAction>()
-  const [sidebarOpen, setSidebarOpen] = React.useState(true)
+  const [sidebarOpen, setSidebarOpen] = React.useState(readSidebarOpen)
   const [title, setTitle] = React.useState(
     mode === "create" ? "" : (userStory?.title ?? "")
   )
@@ -161,6 +163,10 @@ export function UserStoryDrawerPanel({
   const summaryRef = React.useRef<HTMLDivElement>(null)
   const commentRef = React.useRef<HTMLDivElement>(null)
   const drawerContentRef = React.useRef<HTMLDivElement>(null)
+
+  React.useEffect(() => {
+    localStorage.setItem(drawerSidebarStorageKey, JSON.stringify(sidebarOpen))
+  }, [sidebarOpen])
 
   React.useEffect(() => {
     if (!focusComment) return
@@ -637,4 +643,14 @@ function createdAtLabel(userStory?: UserStory) {
   return new Intl.DateTimeFormat(undefined, {
     dateStyle: "medium",
   }).format(new Date(userStory.createdAt))
+}
+
+function readSidebarOpen() {
+  try {
+    return JSON.parse(
+      localStorage.getItem(drawerSidebarStorageKey) ?? "false"
+    ) === true
+  } catch {
+    return false
+  }
 }
