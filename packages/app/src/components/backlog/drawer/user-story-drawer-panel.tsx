@@ -578,7 +578,7 @@ function DrawerSidebarIsland({
   if (!open) return null
 
   return (
-    <div className="absolute top-4 right-4 bottom-16 z-10 w-[min(24rem,calc(100%-2rem))] overflow-hidden rounded-xl bg-popover/75 shadow-xl shadow-black/10 ring-1 ring-border/50 backdrop-blur-xl">
+    <div className="absolute top-4 right-4 bottom-16 z-10 w-[min(24rem,calc(100%-2rem))] h-fit overflow-hidden rounded-xl bg-input/40 dark:bg-muted shadow-xl shadow-black/10 ring-1 ring-foreground/20 backdrop-blur-xl">
       <ScrollArea className="h-full min-h-0">
         <DrawerSidebar userStory={userStory} />
       </ScrollArea>
