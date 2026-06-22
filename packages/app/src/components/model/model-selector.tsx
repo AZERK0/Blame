@@ -96,7 +96,6 @@ type ModelSelectionState = {
 
 export type ModelSelection = ReturnType<typeof useModelSelection>
 export type ModelPreferenceRole = "alternative" | "agent"
-type ModelSelectorLayout = "inline" | "stacked"
 type ModelSelectionOptions = {
   role?: ModelPreferenceRole
 }
@@ -106,43 +105,16 @@ type ModelDialog =
   | { type: "manage" }
   | undefined
 
-export function ModelSelector({
-  layout = "inline",
-  role,
-}: {
-  layout?: ModelSelectorLayout
-  role?: ModelPreferenceRole
-}) {
+export function ModelSelector({ role }: { role?: ModelPreferenceRole }) {
   const selection = useModelSelection({ role })
   const [dialog, setDialog] = React.useState<ModelDialog>()
 
   return (
     <>
-      {layout === "stacked" ? (
-        <div className="grid min-w-0 gap-3">
-          <ModelSelectorField label="Model">
-            <ModelPicker
-              layout={layout}
-              selection={selection}
-              setDialog={setDialog}
-            />
-          </ModelSelectorField>
-          {selection.variantOptions.length > 2 && (
-            <ModelSelectorField label="Reasoning">
-              <ModelVariantSelector layout={layout} selection={selection} />
-            </ModelSelectorField>
-          )}
-        </div>
-      ) : (
-        <ButtonGroup className="w-full min-w-0">
-          <ModelPicker
-            layout={layout}
-            selection={selection}
-            setDialog={setDialog}
-          />
-          <ModelVariantSelector layout={layout} selection={selection} />
-        </ButtonGroup>
-      )}
+      <ButtonGroup className="w-full min-w-0">
+        <ModelPicker selection={selection} setDialog={setDialog} />
+        <ModelVariantSelector selection={selection} />
+      </ButtonGroup>
       <ProviderSelectDialog
         open={dialog?.type === "providers"}
         selection={selection}
@@ -172,19 +144,13 @@ export function ModelSelector({
 }
 
 function ModelPicker({
-  layout,
   selection,
   setDialog,
 }: {
-  layout: ModelSelectorLayout
   selection: ModelSelection
   setDialog: (dialog: ModelDialog) => void
 }) {
   const [open, setOpen] = React.useState(false)
-  const buttonClassName =
-    layout === "stacked"
-      ? "w-full min-w-0 justify-start"
-      : "w-0 min-w-0 flex-1 justify-start"
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -193,7 +159,7 @@ function ModelPicker({
           <PopoverTrigger asChild>
             <Button
               variant="outline"
-              className={buttonClassName}
+              className="w-0 min-w-0 flex-1 justify-start"
               disabled={!selection.serverReady || selection.loading}
             >
               <ModelSummary model={selection.currentModel} />
@@ -275,16 +241,8 @@ function ModelPicker({
   )
 }
 
-function ModelVariantSelector({
-  layout,
-  selection,
-}: {
-  layout: ModelSelectorLayout
-  selection: ModelSelection
-}) {
+function ModelVariantSelector({ selection }: { selection: ModelSelection }) {
   if (selection.variantOptions.length <= 2) return null
-  const triggerClassName =
-    layout === "stacked" ? "w-full capitalize" : "w-28 max-w-[45%] capitalize"
 
   return (
     <Select
@@ -295,7 +253,7 @@ function ModelVariantSelector({
     >
       <Tooltip>
         <TooltipTrigger asChild>
-          <SelectTrigger className={triggerClassName}>
+          <SelectTrigger className="w-28 max-w-[45%] capitalize">
             <SelectValue />
           </SelectTrigger>
         </TooltipTrigger>
@@ -309,21 +267,6 @@ function ModelVariantSelector({
         ))}
       </SelectContent>
     </Select>
-  )
-}
-
-function ModelSelectorField({
-  children,
-  label,
-}: {
-  children: React.ReactNode
-  label: string
-}) {
-  return (
-    <div className="grid min-w-0 gap-1.5">
-      <p className="text-xs font-medium text-muted-foreground">{label}</p>
-      {children}
-    </div>
   )
 }
 

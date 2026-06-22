@@ -822,6 +822,7 @@ export const MarkdownEditor = React.forwardRef<
     onMarkdownChange?: (markdown: string) => void
     onOptimize?: (markdown: string) => Promise<string>
     readOnly?: boolean
+    toolbarEnd?: React.ReactNode
   }
 >(function MarkdownEditor(
   {
@@ -838,6 +839,7 @@ export const MarkdownEditor = React.forwardRef<
     onOptimize,
     placeholder,
     readOnly,
+    toolbarEnd,
   },
   ref
 ) {
@@ -1236,14 +1238,20 @@ export const MarkdownEditor = React.forwardRef<
                     onUndo={() => runHistoryCommand("undo")}
                   />
                 </div>
-                <TabsList className="h-7 rounded-lg bg-muted/70 p-0.5">
-                  <TabsTrigger className="h-6 px-2.5 text-xs" value="write">
-                    Write
-                  </TabsTrigger>
-                  <TabsTrigger className="h-6 px-2.5 text-xs" value="preview">
-                    Preview
-                  </TabsTrigger>
-                </TabsList>
+                <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
+                  {toolbarEnd}
+                  <TabsList className="h-8 rounded-lg bg-muted/70 p-0.5">
+                    <TabsTrigger className="h-7 px-3 text-xs" value="write">
+                      Write
+                    </TabsTrigger>
+                    <TabsTrigger
+                      className="h-7 px-3 text-xs"
+                      value="preview"
+                    >
+                      Preview
+                    </TabsTrigger>
+                  </TabsList>
+                </div>
               </div>
             </Tabs>
           )}

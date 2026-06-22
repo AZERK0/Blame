@@ -2,10 +2,7 @@ import * as React from "react"
 import type { AgentUsageSummary, AgentUsageTotals } from "@blame/agent-runtime"
 
 import type { UserStory } from "@/components/backlog/data/backlog-data"
-import {
-  ModelSelector,
-  useModelSelection,
-} from "@/components/model/model-selector"
+import { useModelSelection } from "@/components/model/model-selector"
 import { usePlatform } from "@/context/platform"
 
 export function DrawerSidebar({
@@ -24,10 +21,6 @@ export function DrawerSidebar({
             <p className="text-xs text-muted-foreground">
               Execution settings
             </p>
-          </div>
-          <div className="grid min-w-0 gap-1.5">
-            <p className="text-xs font-medium text-muted-foreground">Model</p>
-            <ModelSelector />
           </div>
         </section>
         <TokenUsage userStory={userStory} />

@@ -122,6 +122,9 @@ export function UserStoryDrawerPanel({
 }) {
   const hasDevelopment = hasDevelopmentTab(status)
   const hasPreview = status === "in-progress" || status === "in-review"
+  const sidebarAvailable = Boolean(
+    mode !== "create" && (userStory?.clineSessionId || userStory?.agentUsage)
+  )
   const [tab, setTab] = React.useState<UserStoryDrawerTab>(
     initialDrawerTab(hasDevelopment, hasPreview, focusComment, initialTab)
   )
@@ -221,7 +224,7 @@ export function UserStoryDrawerPanel({
       ref={drawerContentRef}
       className="inset-y-2 right-2 h-[calc(100svh-1rem)] overflow-hidden rounded-xl border data-[vaul-drawer-direction=right]:w-[min(90rem,calc(100vw-1rem))] data-[vaul-drawer-direction=right]:sm:max-w-none"
     >
-      {tab === "user-story" && (
+      {tab === "user-story" && sidebarAvailable && (
         <Button
           type="button"
           className="absolute top-6 right-16 z-30 border bg-background/90 shadow-sm"
@@ -286,7 +289,7 @@ export function UserStoryDrawerPanel({
           )}
         </DrawerHeader>
         <TabsContent value="user-story" className="min-h-0 overflow-hidden">
-          <DrawerBody sidebarOpen={sidebarOpen}>
+          <DrawerBody sidebarOpen={sidebarAvailable && sidebarOpen}>
             <UserStoryContent
               commentCodeSelectionAttachments={commentCodeSelectionAttachments}
               commentFileAttachments={pendingFileAttachments(
@@ -383,10 +386,9 @@ export function UserStoryDrawerPanel({
           </TabsContent>
         )}
       </Tabs>
-      {tab === "user-story" && (
+      {tab === "user-story" && sidebarAvailable && (
         <DrawerSidebarIsland
           open={sidebarOpen}
-          status={status}
           userStory={userStory}
         />
       )}
@@ -568,11 +570,9 @@ function DrawerBody({
 
 function DrawerSidebarIsland({
   open,
-  status,
   userStory,
 }: {
   open: boolean
-  status: BacklogColumnId
   userStory?: UserStory
 }) {
   if (!open) return null

@@ -37,6 +37,7 @@ import {
   userStoryActivityTree,
   type UserStoryActivityNode,
 } from "@/components/backlog/drawer/user-story-activity-tree"
+import { ModelSelector } from "@/components/model/model-selector"
 import { useProjects } from "@/context/projects"
 import { useCloudAuth } from "@/context/cloud-auth"
 import {
@@ -102,6 +103,7 @@ export function UserStoryContent({
     userStory,
     projects.activeProject?.path
   )
+  const editable = isEditable(mode, status)
 
   return (
     <>
@@ -117,7 +119,14 @@ export function UserStoryContent({
         onFileLinkClick={onFileLinkClick}
         onMarkdownChange={onSummaryChange}
         onOptimize={onSummaryOptimize}
-        readOnly={!isEditable(mode, status)}
+        readOnly={!editable}
+        toolbarEnd={
+          editable ? (
+            <div className="w-72 max-w-full min-w-0">
+              <ModelSelector />
+            </div>
+          ) : undefined
+        }
         placeholder="Describe the user story, expected behavior, and acceptance criteria."
         minHeight="min-h-80"
       />
