@@ -25,8 +25,9 @@ export function DrawerSidebar({
               Execution settings
             </p>
           </div>
-          <div className="grid min-w-0 gap-4">
-            <ModelSelector layout="stacked" />
+          <div className="grid min-w-0 gap-1.5">
+            <p className="text-xs font-medium text-muted-foreground">Model</p>
+            <ModelSelector />
           </div>
         </section>
         <TokenUsage userStory={userStory} />
