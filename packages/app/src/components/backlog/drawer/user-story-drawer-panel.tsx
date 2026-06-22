@@ -223,31 +223,31 @@ export function UserStoryDrawerPanel({
           <span className="sr-only">Close</span>
         </Button>
       </DrawerClose>
-      <DrawerHeader className="border-b px-6 py-6 pr-14">
-        <DrawerTitle asChild>
-          <DrawerHeaderTitle
-            mode={mode}
-            title={title}
-            userStory={userStory}
-            onTitleChange={setTitle}
-          />
-        </DrawerTitle>
-        <DrawerDescription asChild>
-          <div className="flex flex-wrap items-center gap-2">
-            <ColumnStatusBadge status={status} />
-            <span>{userStory?.owner ?? "Product"} created this</span>
-            <span>{createdAtLabel(userStory)}</span>
-          </div>
-        </DrawerDescription>
-      </DrawerHeader>
       <Tabs
         value={tab}
         onValueChange={(value) => setTab(value as UserStoryDrawerTab)}
         className="min-h-0 flex-1 gap-0 overflow-hidden"
       >
-        {hasDevelopment && (
-          <div className="border-b px-6 py-3">
-            <TabsList className="min-w-100">
+        <DrawerHeader className="gap-4 border-b px-6 py-6 pr-14">
+          <div className="min-w-0 flex-1">
+            <DrawerTitle asChild>
+              <DrawerHeaderTitle
+                mode={mode}
+                title={title}
+                userStory={userStory}
+                onTitleChange={setTitle}
+              />
+            </DrawerTitle>
+            <DrawerDescription asChild>
+              <div className="flex flex-wrap items-center gap-2">
+                <ColumnStatusBadge status={status} />
+                <span>{userStory?.owner ?? "Product"} created this</span>
+                <span>{createdAtLabel(userStory)}</span>
+              </div>
+            </DrawerDescription>
+          </div>
+          {hasDevelopment && (
+            <TabsList className="mt-2 min-w-100">
               <TabsTrigger value="user-story">
                 <BookOpenIcon />
                 User Story
@@ -263,8 +263,8 @@ export function UserStoryDrawerPanel({
                 Code
               </TabsTrigger>
             </TabsList>
-          </div>
-        )}
+          )}
+        </DrawerHeader>
         <TabsContent value="user-story" className="min-h-0 overflow-hidden">
           <DrawerBody status={status} userStory={userStory}>
             <UserStoryContent
