@@ -14,6 +14,7 @@ const maxServerActivityDetailLength = 262144
 type ActivityInput = Omit<UserStoryAgentActivity, "createdAt" | "updatedAt"> & {
   serverDetail?: string
 }
+type ActivityKind = UserStoryAgentActivity["kind"]
 type ActivityUpdate = {
   activities: UserStoryAgentActivity[]
   activity: UserStoryAgentActivity
@@ -121,7 +122,7 @@ function eventActivity(
   if (event.type === "tool") return toolActivities(activities, event)
   if (event.type === "approval") return approvalActivities(activities, event)
   if (event.type === "done")
-    return closeRunningInlineActivities(activities, ["message", "reasoning"])
+    return closeRunningActivities(activities, ["message", "reasoning", "tool"])
 }
 
 function reasoningActivities(
@@ -132,13 +133,13 @@ function reasoningActivities(
   const iteration = numberValue(payload.iteration)
   const phase = streamPhase(payload)
   if (closingStreamPhase(phase)) {
-    return closeRunningInlineActivities(activities, ["reasoning"])
+    return closeRunningActivities(activities, ["reasoning"])
   }
   const id = inlineActivityId(activities, "reasoning", iteration)
   const text = reasoningText(activities, id, payload)
   if (!text) return undefined
   return upsertActivities(activities, [
-    ...closeRunningInlineActivityInputs(activities, ["message"]),
+    ...closeRunningActivityInputs(activities, ["message", "tool"]),
     {
       id,
       kind: "reasoning",
@@ -179,14 +180,14 @@ function messageActivities(
   const iteration = numberValue(payload.iteration)
   const phase = streamPhase(payload)
   if (closingStreamPhase(phase)) {
-    return closeRunningInlineActivities(activities, ["message"])
+    return closeRunningActivities(activities, ["message"])
   }
   const id = inlineActivityId(activities, "message", iteration)
   const text = messageText(activities, id, iteration, payload)
   if (text === undefined || !text.trim()) return undefined
   const messageKind = agentMessageKind(payload)
   return upsertActivities(activities, [
-    ...closeRunningInlineActivityInputs(activities, ["reasoning"]),
+    ...closeRunningActivityInputs(activities, ["reasoning", "tool"]),
     {
       id,
       kind: "message",
@@ -232,25 +233,23 @@ function closingStreamPhase(phase: string | undefined) {
   )
 }
 
-function closeRunningInlineActivities(
+function closeRunningActivities(
   activities: UserStoryAgentActivity[],
-  kinds: Array<"message" | "reasoning">
+  kinds: ActivityKind[]
 ) {
-  const inputs = closeRunningInlineActivityInputs(activities, kinds)
+  const inputs = closeRunningActivityInputs(activities, kinds)
   if (!inputs.length) return undefined
   return upsertActivities(activities, inputs)
 }
 
-function closeRunningInlineActivityInputs(
+function closeRunningActivityInputs(
   activities: UserStoryAgentActivity[],
-  kinds: Array<"message" | "reasoning">
+  kinds: ActivityKind[]
 ) {
   return activities
     .filter(
       (activity) =>
-        activity.status === "running" &&
-        (activity.kind === "message" || activity.kind === "reasoning") &&
-        kinds.includes(activity.kind)
+        activity.status === "running" && kinds.includes(activity.kind)
     )
     .map((activity) => {
       const { createdAt, updatedAt, ...input } = activity
@@ -395,7 +394,7 @@ function toolActivities(
   return upsertActivities(
     activities,
     [
-      ...closeRunningInlineActivityInputs(activities, ["message", "reasoning"]),
+      ...closeRunningActivityInputs(activities, ["message", "reasoning"]),
       ...toolActivityInputs(activities, phase, input),
     ]
   )

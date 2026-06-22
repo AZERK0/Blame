@@ -310,6 +310,36 @@ test("keeps repeated assistant text chunks when they are separate messages", () 
   assert.equal(secondMessage.agentActivities?.[2]?.detail, "Ok.")
 })
 
+test("completes a running tool when the next assistant message starts", () => {
+  const toolStarted = updateStory(
+    story(),
+    toolEvent("tool_call", "read_files", 1, "call-1")
+  )
+  const message = updateStory(
+    toolStarted,
+    textEvent({ text: "Je continue après le tool." })
+  )
+
+  assert.deepEqual(
+    message.agentActivities?.map((activity) => activity.status),
+    ["completed", "running"]
+  )
+  assert.equal(message.agentActivities?.[0]?.kind, "tool")
+  assert.equal(message.agentActivities?.[1]?.kind, "message")
+})
+
+test("completes a running tool when the run finishes", () => {
+  const toolStarted = updateStory(
+    story(),
+    toolEvent("tool_call", "read_files", 1, "call-1")
+  )
+  const completed = updateStory(toolStarted, doneEvent())
+
+  assert.equal(completed.agentActivities?.length, 1)
+  assert.equal(completed.agentActivities?.[0]?.kind, "tool")
+  assert.equal(completed.agentActivities?.[0]?.status, "completed")
+})
+
 test("marks a stopped assistant message as the final response", () => {
   const streaming = updateStory(story(), textEvent({ text: "Salut" }))
   const stopped = updateStory(

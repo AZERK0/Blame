@@ -199,6 +199,10 @@ function AgentRunTimeline({
               run.activities ?? [],
               run.finalResponse
             )
+            const runningToolActivityId = currentRunningToolActivityId(
+              run.status,
+              activities
+            )
             return (
               <React.Fragment key={run.id}>
                 <RunCommentItem
@@ -213,6 +217,7 @@ function AgentRunTimeline({
                     onFileLinkClick={onFileLinkClick}
                     onLoadDetail={(item) => loadActivityDetail(run, item)}
                     runActive={run.status === "running"}
+                    runningToolActivityId={runningToolActivityId}
                     value={`${run.id}-${node.id}`}
                   />
                 ))}
@@ -275,12 +280,14 @@ function AgentActivityItem({
   onFileLinkClick,
   onLoadDetail,
   runActive,
+  runningToolActivityId,
   value,
 }: {
   node: UserStoryActivityNode
   onFileLinkClick?: (path: string) => void
   onLoadDetail: (activity: UserStoryAgentActivity) => Promise<string>
   runActive: boolean
+  runningToolActivityId?: string
   value: string
 }) {
   if (node.type === "group") {
@@ -290,6 +297,7 @@ function AgentActivityItem({
         onFileLinkClick={onFileLinkClick}
         onLoadDetail={onLoadDetail}
         runActive={runActive}
+        runningToolActivityId={runningToolActivityId}
         value={value}
       />
     )
@@ -300,6 +308,7 @@ function AgentActivityItem({
       onFileLinkClick={onFileLinkClick}
       onLoadDetail={onLoadDetail}
       runActive={runActive}
+      runningToolActivityId={runningToolActivityId}
       value={value}
     />
   )
@@ -310,12 +319,14 @@ function AgentActivityGroupItem({
   onFileLinkClick,
   onLoadDetail,
   runActive,
+  runningToolActivityId,
   value,
 }: {
   node: Extract<UserStoryActivityNode, { type: "group" }>
   onFileLinkClick?: (path: string) => void
   onLoadDetail: (activity: UserStoryAgentActivity) => Promise<string>
   runActive: boolean
+  runningToolActivityId?: string
   value: string
 }) {
   return (
@@ -328,7 +339,8 @@ function AgentActivityGroupItem({
           <AccordionTrigger className="min-h-8 items-center py-0 text-muted-foreground hover:no-underline">
             <span
               className={
-                runActive && groupIsRunning(node.activities)
+                runActive &&
+                groupIsRunning(node.activities, runningToolActivityId)
                   ? "agent-activity-running truncate"
                   : "truncate"
               }
@@ -346,6 +358,7 @@ function AgentActivityGroupItem({
               onLoadDetail={onLoadDetail}
               parentValue={value}
               runActive={runActive}
+              runningToolActivityId={runningToolActivityId}
             />
           </AccordionContent>
         </div>
@@ -360,12 +373,14 @@ function AgentActivityChildren({
   onLoadDetail,
   parentValue,
   runActive,
+  runningToolActivityId,
 }: {
   nodes: UserStoryActivityNode[]
   onFileLinkClick?: (path: string) => void
   onLoadDetail: (activity: UserStoryAgentActivity) => Promise<string>
   parentValue: string
   runActive: boolean
+  runningToolActivityId?: string
 }) {
   return (
     <div className="relative grid gap-2">
@@ -378,6 +393,7 @@ function AgentActivityChildren({
             onFileLinkClick={onFileLinkClick}
             onLoadDetail={onLoadDetail}
             runActive={runActive}
+            runningToolActivityId={runningToolActivityId}
             value={`${parentValue}-${node.id}`}
           />
         ))}
@@ -391,12 +407,14 @@ function AgentActivityLeafItem({
   onFileLinkClick,
   onLoadDetail,
   runActive,
+  runningToolActivityId,
   value,
 }: {
   activity: UserStoryAgentActivity
   onFileLinkClick?: (path: string) => void
   onLoadDetail: (activity: UserStoryAgentActivity) => Promise<string>
   runActive: boolean
+  runningToolActivityId?: string
   value: string
 }) {
   if (activity.kind === "message") {
@@ -415,6 +433,7 @@ function AgentActivityLeafItem({
       activity={activity}
       onLoadDetail={onLoadDetail}
       runActive={runActive}
+      runningToolActivityId={runningToolActivityId}
       value={value}
     />
   )
@@ -424,11 +443,13 @@ function AgentActivityDetailLeafItem({
   activity,
   onLoadDetail,
   runActive,
+  runningToolActivityId,
   value,
 }: {
   activity: UserStoryAgentActivity
   onLoadDetail: (activity: UserStoryAgentActivity) => Promise<string>
   runActive: boolean
+  runningToolActivityId?: string
   value: string
 }) {
   const [fullDetail, setFullDetail] = React.useState<string>()
@@ -455,7 +476,7 @@ function AgentActivityDetailLeafItem({
           <AccordionTrigger className="min-h-8 items-center py-0 text-muted-foreground hover:no-underline">
             <span
               className={
-                runActive && activity.status === "running"
+                activityIsRunning(activity, runActive, runningToolActivityId)
                   ? "agent-activity-running truncate"
                   : "truncate"
               }
@@ -477,8 +498,34 @@ function AgentActivityDetailLeafItem({
   )
 }
 
-function groupIsRunning(activities: UserStoryAgentActivity[]) {
-  return activities.some((activity) => activity.status === "running")
+function currentRunningToolActivityId(
+  runStatus: UserStoryAgentRun["status"],
+  activities: UserStoryAgentActivity[]
+) {
+  const lastActivity = activities.at(-1)
+  if (runStatus !== "running") return undefined
+  if (lastActivity?.kind !== "tool") return undefined
+  if (lastActivity.status !== "running") return undefined
+  return lastActivity.id
+}
+
+function activityIsRunning(
+  activity: UserStoryAgentActivity,
+  runActive: boolean,
+  runningToolActivityId: string | undefined
+) {
+  return (
+    runActive &&
+    activity.kind === "tool" &&
+    activity.id === runningToolActivityId
+  )
+}
+
+function groupIsRunning(
+  activities: UserStoryAgentActivity[],
+  runningToolActivityId: string | undefined
+) {
+  return activities.some((activity) => activity.id === runningToolActivityId)
 }
 
 function ActivityDetails({
