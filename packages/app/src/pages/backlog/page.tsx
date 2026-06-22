@@ -154,6 +154,14 @@ export function BacklogPage() {
   const persistQueuedAgentUpdate = React.useCallback(
     async (story: UserStory, update: QueuedAgentUpdate) => {
       let nextStory = activeStory(story, storiesRef.current)
+      const metadata = agentMetadataUpdate(update.input)
+      if (Object.keys(definedUpdate(metadata)).length) {
+        nextStory = await updateStory(
+          activeStory(nextStory, storiesRef.current),
+          metadata,
+          { cleanup: false }
+        )
+      }
       for (const activity of update.activities) {
         nextStory = await updateStory(
           activeStory(nextStory, storiesRef.current),
@@ -165,14 +173,6 @@ export function BacklogPage() {
             agentActivity: activity,
           })
         }
-      }
-      const metadata = agentMetadataUpdate(update.input)
-      if (Object.keys(definedUpdate(metadata)).length) {
-        nextStory = await updateStory(
-          activeStory(nextStory, storiesRef.current),
-          metadata,
-          { cleanup: false }
-        )
       }
       if (update.run) {
         const runMetadata = agentRunMetadataUpdate(update.runInput)

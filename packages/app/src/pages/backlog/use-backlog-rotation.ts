@@ -683,6 +683,13 @@ export function useBacklogRotation(
     update: QueuedAgentUpdate
   ) {
     let nextStory = activeStory(story, storiesRef.current)
+    const metadata = agentMetadataUpdate(update.input)
+    if (Object.keys(definedUpdate(metadata)).length) {
+      nextStory = await backlog.update(
+        activeStory(nextStory, storiesRef.current),
+        metadata
+      )
+    }
     for (const activity of update.activities) {
       nextStory = await backlog.update(
         activeStory(nextStory, storiesRef.current),
@@ -693,13 +700,6 @@ export function useBacklogRotation(
           agentActivity: activity,
         })
       }
-    }
-    const metadata = agentMetadataUpdate(update.input)
-    if (Object.keys(definedUpdate(metadata)).length) {
-      nextStory = await backlog.update(
-        activeStory(nextStory, storiesRef.current),
-        metadata
-      )
     }
     if (update.run) {
       const runMetadata = agentRunMetadataUpdate(update.runInput)
