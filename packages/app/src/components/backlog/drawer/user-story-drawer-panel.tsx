@@ -390,7 +390,7 @@ export function UserStoryDrawerPanel({
           userStory={userStory}
         />
       )}
-      <DrawerFooter className="pointer-events-none absolute right-6 bottom-6 z-20 p-0">
+      <DrawerFooter className="pointer-events-none absolute right-4 bottom-4 z-20 p-0">
         <DrawerActions
           loadingAction={
             pendingAction === "Approve & Merge" ? pendingAction : undefined
