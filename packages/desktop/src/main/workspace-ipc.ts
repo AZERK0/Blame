@@ -6,6 +6,10 @@ import { BrowserWindow, ipcMain } from "electron";
 import { commandWithNextWebpackFallback } from "@blame/agent-runtime";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import { generateNewProjectWithAgent } from "./agent-ipc";
+import {
+  optimizeAttachmentForAiContext,
+  type OptimizeAttachmentForAiContextInput,
+} from "./attachment-ai-context";
 import { cleanupCodeReviewGraphWorktree } from "./code-review-graph";
 import { pLimit } from "./concurrency.ts";
 import {
@@ -243,6 +247,11 @@ export function registerWorkspaceIpcHandlers() {
   setNewProjectAgentRuntime({ generate: generateNewProjectWithAgent });
   ipcMain.handle("workspace:path-exists", (_event, input: { path: string }) =>
     pathExists(input.path),
+  );
+  ipcMain.handle(
+    "workspace:optimize-attachment-for-ai-context",
+    (_event, input: OptimizeAttachmentForAiContextInput) =>
+      optimizeAttachmentForAiContext(input),
   );
   ipcMain.handle(
     "workspace:list-directory",

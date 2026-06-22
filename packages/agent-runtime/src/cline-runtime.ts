@@ -1965,7 +1965,16 @@ function fileAttachmentReference(
     StartDevelopmentSessionInput["fileAttachments"]
   >[number],
 ) {
-  return `- ${attachment.name} (${attachment.type || "application/octet-stream"}, ${attachment.size} bytes)`;
+  const label = `${attachment.name} (${attachment.type || "application/octet-stream"}, ${attachment.size} bytes)`;
+  if (!attachment.aiContextMarkdown?.trim()) return `- ${label}`;
+  const fence = markdownFence(attachment.aiContextMarkdown);
+  return [
+    `- ${label}`,
+    "",
+    `${fence}markdown`,
+    attachment.aiContextMarkdown.trim(),
+    fence,
+  ].join("\n");
 }
 
 async function fileAttachmentInputs(

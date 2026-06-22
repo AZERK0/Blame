@@ -40,6 +40,7 @@ export type UserStoryCodeSelectionAttachment = {
 
 export type UserStoryFileAttachment = {
   id: string
+  aiContextMarkdown?: string
   content: string
   name: string
   size: number

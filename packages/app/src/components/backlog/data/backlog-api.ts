@@ -239,6 +239,8 @@ function fileAttachment(value: unknown) {
   if (!isRecord(value)) return false
   return (
     typeof value.id === "string" &&
+    (!("aiContextMarkdown" in value) ||
+      typeof value.aiContextMarkdown === "string") &&
     typeof value.content === "string" &&
     typeof value.name === "string" &&
     typeof value.size === "number" &&

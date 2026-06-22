@@ -3,7 +3,9 @@ import {
   BoldIcon,
   CodeIcon,
   EllipsisIcon,
+  ExternalLinkIcon,
   Heading2Icon,
+  InfoIcon,
   ItalicIcon,
   LinkIcon,
   ListChecksIcon,
@@ -34,6 +36,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Separator } from "@/components/ui/separator"
+import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import {
@@ -66,6 +69,7 @@ import { runWorkerTask, workerTaskAborted } from "@/lib/worker-task"
 import { cn } from "@/lib/utils"
 
 type PastedAttachment = {
+  aiContextMarkdown?: string
   id: string
   file: File
   previewUrl?: string
@@ -75,6 +79,7 @@ type PastedAttachment = {
 }
 
 export type PendingFileAttachment = {
+  aiContextMarkdown?: string
   file: File
   id: string
 }
@@ -117,6 +122,16 @@ function selectedAttachments(event: React.ChangeEvent<HTMLInputElement>) {
       Boolean(file)
     )
   )
+}
+
+function aiContextAttachmentSupported(file: File) {
+  return supportedAiContextAttachmentExtensions().some((extension) =>
+    file.name.toLowerCase().endsWith(extension)
+  )
+}
+
+function supportedAiContextAttachmentExtensions() {
+  return [".pdf", ".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx"]
 }
 
 function fileMentionState(value: string, cursor: number): FileMentionState {
@@ -943,10 +958,18 @@ export const MarkdownEditor = React.forwardRef<
   const textareaRef = React.useRef<HTMLTextAreaElement>(null)
   const [draftMarkdown, setDraftMarkdown] = React.useState(markdown)
   const [optimizing, setOptimizing] = React.useState(false)
+  const [optimizingAttachments, setOptimizingAttachments] = React.useState(false)
+  const [optimizeAttachmentsForAiContext, setOptimizeAttachmentsForAiContext] =
+    React.useState(true)
   const [mode, setMode] = React.useState<MarkdownMode>("write")
   const value = readOnly || onMarkdownChange ? markdown : draftMarkdown
   const mentionOpen =
     mention.active && Boolean(mentionDirectory && platform.workspace)
+  const optimizableAttachmentsVisible = attachments.some(
+    (attachment) =>
+      attachment.source === "file" &&
+      aiContextAttachmentSupported(attachment.file)
+  )
 
   React.useEffect(() => {
     attachmentsRef.current = attachments
@@ -1129,9 +1152,26 @@ export const MarkdownEditor = React.forwardRef<
     nextAttachments.forEach((attachment) => {
       handledFileAttachmentIdsRef.current.add(attachment.id)
     })
-    onFileAttachmentsAdd(
-      await Promise.all(nextAttachments.map(persistentFileAttachment))
+    setOptimizingAttachments(
+      optimizeAttachmentsForAiContext &&
+        nextAttachments.some((attachment) =>
+          aiContextAttachmentSupported(attachment.file)
+        )
     )
+    try {
+      onFileAttachmentsAdd(
+        await Promise.all(
+          nextAttachments.map((attachment) =>
+            persistentFileAttachment(attachment, {
+              optimize: optimizeAttachmentsForAiContext,
+              workspace: platform.workspace,
+            })
+          )
+        )
+      )
+    } finally {
+      setOptimizingAttachments(false)
+    }
   }
 
   function addAttachments(nextAttachments: PastedAttachment[]) {
@@ -1289,6 +1329,52 @@ export const MarkdownEditor = React.forwardRef<
                   ))}
                 </div>
               )}
+              {optimizableAttachmentsVisible && (
+                <div className="mx-1 flex flex-wrap items-center justify-between gap-3 border-t border-border/60 px-3 py-2">
+                  <div className="flex min-w-0 items-center gap-2 text-sm">
+                    <Switch
+                      checked={optimizeAttachmentsForAiContext}
+                      disabled={optimizingAttachments}
+                      onCheckedChange={setOptimizeAttachmentsForAiContext}
+                    />
+                    <span className="text-foreground">
+                      Optimize attachments for AI context
+                    </span>
+                    {optimizingAttachments && (
+                      <LoaderCircleIcon className="size-3.5 animate-spin text-muted-foreground" />
+                    )}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          className="inline-flex size-5 items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
+                          aria-label="Attachment optimization details"
+                        >
+                          <InfoIcon className="size-3.5" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent
+                        className="max-w-72 text-pretty"
+                        sideOffset={6}
+                      >
+                        <span>
+                          Converts supported PDF, Word, PowerPoint, and Excel
+                          files to Markdown before sending them to the agent.
+                        </span>{" "}
+                        <a
+                          className="inline-flex items-center gap-1 underline underline-offset-2"
+                          href="https://github.com/microsoft/markitdown"
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          Microsoft MarkItDown
+                          <ExternalLinkIcon className="size-3" />
+                        </a>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                </div>
+              )}
               <div className="flex flex-wrap items-center justify-between gap-2 px-1 py-1.5">
                 <div className="flex min-w-0 flex-wrap items-center gap-0.5">
                   <input
@@ -1407,6 +1493,7 @@ function pendingFileAttachment(
   attachment: PendingFileAttachment
 ): PastedAttachment {
   return {
+    aiContextMarkdown: attachment.aiContextMarkdown,
     id: attachment.id,
     file: attachment.file,
     previewUrl: attachment.file.type.startsWith("image/")
@@ -1417,10 +1504,33 @@ function pendingFileAttachment(
 }
 
 async function persistentFileAttachment(
-  attachment: PastedAttachment
+  attachment: PastedAttachment,
+  options: {
+    optimize: boolean
+    workspace: ReturnType<typeof usePlatform>["workspace"]
+  }
 ): Promise<UserStoryFileAttachment> {
-  return {
-    ...(await fileAttachment(attachment.file)),
+  const persistedAttachment = {
+    ...(await fileAttachment(attachment.file, attachment.aiContextMarkdown)),
     id: attachment.id,
+  }
+  if (
+    persistedAttachment.aiContextMarkdown ||
+    !options.optimize ||
+    !options.workspace ||
+    !aiContextAttachmentSupported(attachment.file)
+  ) {
+    return persistedAttachment
+  }
+  try {
+    const result = await options.workspace.optimizeAttachmentForAiContext({
+      content: persistedAttachment.content,
+      name: persistedAttachment.name,
+      type: persistedAttachment.type,
+    })
+    if (!result.markdown.trim()) return persistedAttachment
+    return { ...persistedAttachment, aiContextMarkdown: result.markdown }
+  } catch {
+    return persistedAttachment
   }
 }

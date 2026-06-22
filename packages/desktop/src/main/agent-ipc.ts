@@ -8,6 +8,7 @@ import {
   codeReviewGraphProvider,
   shutdownCodeReviewGraph,
 } from "./code-review-graph"
+import { optimizeDevelopmentAttachments } from "./attachment-ai-context"
 import { resolveAgentWorkspaceInput } from "./cline-backend-resolver"
 import { getPreviewDevtoolsTarget } from "./preview-browser-ipc"
 import {
@@ -62,11 +63,15 @@ export function registerAgentIpcHandlers() {
   ipcMain.handle("agent:sessions:start", async (_event, input) =>
     runtime.sessions.start(await agentWorkspaceInput(input))
   )
-  ipcMain.handle("agent:sessions:start-development", (_event, input) =>
-    agentWorkspaceInput(input).then((resolved) => runtime.sessions.startDevelopment(resolved))
+  ipcMain.handle("agent:sessions:start-development", async (_event, input) =>
+    runtime.sessions.startDevelopment(
+      await optimizeDevelopmentAttachments(await agentWorkspaceInput(input))
+    )
   )
   ipcMain.handle("agent:sessions:send", (_event, input) => runtime.sessions.send(input))
-  ipcMain.handle("agent:sessions:send-development", (_event, input) => runtime.sessions.sendDevelopment(input))
+  ipcMain.handle("agent:sessions:send-development", async (_event, input) =>
+    runtime.sessions.sendDevelopment(await optimizeDevelopmentAttachments(input))
+  )
   ipcMain.handle("agent:sessions:abort", (_event, sessionId) => runtime.sessions.abort(sessionId))
   ipcMain.handle("agent:sessions:list", () => runtime.sessions.list())
   ipcMain.handle("agent:sessions:messages", (_event, sessionId) => runtime.sessions.messages(sessionId))

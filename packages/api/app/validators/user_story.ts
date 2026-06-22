@@ -31,6 +31,7 @@ const codeSelectionAttachment = vine.object({
 })
 const fileAttachment = vine.object({
   id: vine.string().trim().minLength(1).maxLength(255),
+  aiContextMarkdown: vine.string().maxLength(262144).optional(),
   content: vine.string().maxLength(10485760),
   name: vine.string().trim().minLength(1).maxLength(255),
   size: vine.number(),
