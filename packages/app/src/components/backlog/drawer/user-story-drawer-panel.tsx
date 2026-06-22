@@ -3,6 +3,7 @@ import {
   AppWindowIcon,
   BookOpenIcon,
   CodeIcon,
+  PanelRightCloseIcon,
   PanelRightOpenIcon,
   XIcon,
 } from "lucide-react"
@@ -220,11 +221,23 @@ export function UserStoryDrawerPanel({
       ref={drawerContentRef}
       className="inset-y-2 right-2 h-[calc(100svh-1rem)] overflow-hidden rounded-xl border data-[vaul-drawer-direction=right]:w-[min(90rem,calc(100vw-1rem))] data-[vaul-drawer-direction=right]:sm:max-w-none"
     >
+      {tab === "user-story" && (
+        <Button
+          type="button"
+          className="absolute top-6 right-16 z-30 border bg-background/90 shadow-sm"
+          size="icon-sm"
+          variant="outline"
+          onClick={() => setSidebarOpen((open) => !open)}
+          aria-label={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
+        >
+          {sidebarOpen ? <PanelRightCloseIcon /> : <PanelRightOpenIcon />}
+        </Button>
+      )}
       <DrawerClose asChild>
         <Button
-          className="absolute top-4 right-4 z-30"
+          className="absolute top-6 right-6 z-30 border bg-background/90 shadow-sm"
           size="icon-sm"
-          variant="ghost"
+          variant="outline"
         >
           <XIcon />
           <span className="sr-only">Close</span>
@@ -375,7 +388,6 @@ export function UserStoryDrawerPanel({
           open={sidebarOpen}
           status={status}
           userStory={userStory}
-          onOpenChange={setSidebarOpen}
         />
       )}
       <DrawerFooter className="pointer-events-none absolute right-6 bottom-6 z-20 p-0">
@@ -555,39 +567,20 @@ function DrawerBody({
 }
 
 function DrawerSidebarIsland({
-  onOpenChange,
   open,
   status,
   userStory,
 }: {
-  onOpenChange: (open: boolean) => void
   open: boolean
   status: BacklogColumnId
   userStory?: UserStory
 }) {
-  if (!open) {
-    return (
-      <Button
-        type="button"
-        className="absolute top-4 right-16 z-20 border bg-popover/95 shadow-lg backdrop-blur-xl"
-        size="icon-sm"
-        variant="outline"
-        onClick={() => onOpenChange(true)}
-        aria-label="Show sidebar"
-      >
-        <PanelRightOpenIcon />
-      </Button>
-    )
-  }
+  if (!open) return null
 
   return (
-    <div className="absolute top-4 right-4 bottom-16 z-10 w-[min(24rem,calc(100%-2rem))] overflow-hidden rounded-xl bg-popover/85 shadow-2xl shadow-black/15 ring-1 ring-border/70 backdrop-blur-xl">
+    <div className="absolute top-4 right-4 bottom-16 z-10 w-[min(24rem,calc(100%-2rem))] overflow-hidden rounded-xl bg-popover/75 shadow-xl shadow-black/10 ring-1 ring-border/50 backdrop-blur-xl">
       <ScrollArea className="h-full min-h-0">
-        <DrawerSidebar
-          status={status}
-          userStory={userStory}
-          onCollapse={() => onOpenChange(false)}
-        />
+        <DrawerSidebar userStory={userStory} />
       </ScrollArea>
     </div>
   )

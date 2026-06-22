@@ -1,47 +1,34 @@
 import * as React from "react"
 import type { AgentUsageSummary, AgentUsageTotals } from "@blame/agent-runtime"
-import { PanelRightCloseIcon } from "lucide-react"
 
-import type {
-  BacklogColumnId,
-  UserStory,
-} from "@/components/backlog/data/backlog-data"
+import type { UserStory } from "@/components/backlog/data/backlog-data"
 import {
   ModelSelector,
   useModelSelection,
 } from "@/components/model/model-selector"
-import { ColumnStatusBadge } from "@/components/backlog/shared/backlog-status-badge"
-import { Button } from "@/components/ui/button"
 import { usePlatform } from "@/context/platform"
 
 export function DrawerSidebar({
-  onCollapse,
-  status,
   userStory,
 }: {
-  onCollapse: () => void
-  status: BacklogColumnId
   userStory?: UserStory
 }) {
   return (
-    <aside className="relative p-5">
-      <Button
-        type="button"
-        className="absolute top-4 left-4 border bg-background/90 shadow-sm"
-        size="icon-sm"
-        variant="outline"
-        onClick={onCollapse}
-        aria-label="Hide sidebar"
-      >
-        <PanelRightCloseIcon />
-      </Button>
-      <div className="grid gap-5">
-        <div className="flex items-start justify-between gap-4 pl-9">
-          <SidebarField label="Model assigned">
-            <ModelSelector />
-          </SidebarField>
-          <ColumnStatusBadge status={status} />
-        </div>
+    <aside className="p-5 pr-14">
+      <div className="grid gap-6">
+        <section className="grid min-w-0 gap-5">
+          <div className="min-w-0">
+            <h2 className="text-sm font-semibold text-foreground">
+              Dev Agent
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Execution settings
+            </p>
+          </div>
+          <div className="grid min-w-0 gap-4">
+            <ModelSelector layout="stacked" />
+          </div>
+        </section>
         <TokenUsage userStory={userStory} />
       </div>
     </aside>
@@ -187,21 +174,6 @@ function TokenStat({
       <p className="text-sm font-medium break-words whitespace-pre-line text-foreground">
         {value || "-"}
       </p>
-    </div>
-  )
-}
-
-function SidebarField({
-  children,
-  label,
-}: {
-  children: React.ReactNode
-  label: string
-}) {
-  return (
-    <div className="grid min-w-0 flex-1 gap-2">
-      <p className="text-xs font-semibold text-muted-foreground">{label}</p>
-      {children}
     </div>
   )
 }
