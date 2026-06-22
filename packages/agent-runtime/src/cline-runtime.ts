@@ -27,7 +27,10 @@ import {
   codeReviewGraphToolNames,
   codeReviewGraphTools,
 } from "./code-review-graph-tools.js";
-import { contextCompressionConfig } from "./context-compression.js";
+import {
+  contextCompressionConfig,
+  contextCompressionExtensions,
+} from "./context-compression.js";
 import {
   deleteProviderCredential,
   listProviders,
@@ -434,11 +437,19 @@ export class BlameAgentRuntime {
             compaction: contextCompressionConfig(
               this.productionConfig,
               input.contextCompressionMode,
-              (message, payload) => this.logSession(sessionId, message, payload),
             ),
             enableTools: true,
             enableSpawnAgent: false,
             enableAgentTeams: false,
+            extensions: contextCompressionExtensions(
+              this.productionConfig,
+              input.contextCompressionMode,
+              {
+                logger: (message, payload) =>
+                  this.logSession(sessionId, message, payload),
+                modelId: input.modelId,
+              },
+            ),
             extensionContext: extensionContext(input),
             extraTools: runtimeTools(this.options, input.workspaceRoot),
           }),
