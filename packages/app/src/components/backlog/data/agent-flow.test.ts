@@ -178,6 +178,26 @@ test("promotes a streamed message when the done response matches it", () => {
   )
 })
 
+test("promotes a partial streamed message to the full final response", () => {
+  const streaming = updateStory(story(), textEvent({ text: "Salut" }))
+  const completed = updateStory(
+    streaming,
+    doneEvent("Salut !\n\nLa reponse complete.")
+  )
+  const activity = completed.agentActivities?.[0]
+
+  assert.equal(completed.agentFinalResponse, "Salut !\n\nLa reponse complete.")
+  assert.equal(completed.agentActivities?.length, 1)
+  assert.equal(activity?.kind, "message")
+  assert.equal(activity?.messageKind, "final")
+  assert.equal(activity?.title, "Agent response")
+  assert.equal(activity?.detail, "Salut !\n\nLa reponse complete.")
+  assert.deepEqual(
+    completed.agentActivityUpdates?.map((update) => update.id),
+    ["message-session-1"]
+  )
+})
+
 test("uses the latest streamed message as the final response when done has no text", () => {
   const firstMessage = updateStory(
     story(),

@@ -225,21 +225,40 @@ function finalResponseActivity(
   activities: UserStoryAgentActivity[],
   finalResponse: string
 ) {
-  const existing = activities.findLast(
-    (activity) =>
-      activity.kind === "message" &&
-      sameStreamedMessage(activity.detail, finalResponse)
-  )
+  const existing = finalResponseMessageActivity(activities, finalResponse)
   if (!existing) return undefined
   const { createdAt, updatedAt, ...activity } = existing
   void createdAt
   void updatedAt
   return upsertActivity(activities, {
     ...activity,
+    detail: finalResponse,
+    serverDetail: finalResponse,
     title: "Agent response",
     messageKind: "final",
     status: "completed",
   })
+}
+
+function finalResponseMessageActivity(
+  activities: UserStoryAgentActivity[],
+  finalResponse: string
+) {
+  return activities.findLast(
+    (activity) =>
+      activity.kind === "message" &&
+      sameStreamingResponse(activity.detail, finalResponse)
+  )
+}
+
+function sameStreamingResponse(left: string, right: string) {
+  const normalizedLeft = normalizedStreamedMessage(left)
+  const normalizedRight = normalizedStreamedMessage(right)
+  if (!normalizedLeft) return false
+  return (
+    normalizedLeft === normalizedRight ||
+    normalizedRight.startsWith(normalizedLeft)
+  )
 }
 
 function sameStreamedMessage(left: string, right: string) {

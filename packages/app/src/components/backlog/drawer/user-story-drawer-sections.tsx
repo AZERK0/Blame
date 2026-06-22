@@ -194,30 +194,36 @@ function AgentRunTimeline({
       <div className="relative grid gap-4 pt-6">
         <span className="absolute top-0 bottom-0 left-4 w-px bg-muted-foreground/35" />
         <Accordion type="multiple" className="contents">
-          {runs.map((run) => (
-            <React.Fragment key={run.id}>
-              <RunCommentItem
-                comment={runComment(run, commentsById)}
-                run={run}
-                onFileLinkClick={onFileLinkClick}
-              />
-              {userStoryActivityTree(run.activities ?? []).map((node) => (
-                <AgentActivityItem
-                  key={`${run.id}-${node.id}`}
-                  node={node}
+          {runs.map((run) => {
+            const activities = agentDisplayActivities(
+              run.activities ?? [],
+              run.finalResponse
+            )
+            return (
+              <React.Fragment key={run.id}>
+                <RunCommentItem
+                  comment={runComment(run, commentsById)}
+                  run={run}
                   onFileLinkClick={onFileLinkClick}
-                  onLoadDetail={(item) => loadActivityDetail(run, item)}
-                  runActive={run.status === "running"}
-                  value={`${run.id}-${node.id}`}
                 />
-              ))}
-              <AgentResponseItem
-                activities={run.activities ?? []}
-                response={run.finalResponse}
-                onFileLinkClick={onFileLinkClick}
-              />
-            </React.Fragment>
-          ))}
+                {userStoryActivityTree(activities).map((node) => (
+                  <AgentActivityItem
+                    key={`${run.id}-${node.id}`}
+                    node={node}
+                    onFileLinkClick={onFileLinkClick}
+                    onLoadDetail={(item) => loadActivityDetail(run, item)}
+                    runActive={run.status === "running"}
+                    value={`${run.id}-${node.id}`}
+                  />
+                ))}
+                <AgentResponseItem
+                  activities={activities}
+                  response={run.finalResponse}
+                  onFileLinkClick={onFileLinkClick}
+                />
+              </React.Fragment>
+            )
+          })}
         </Accordion>
       </div>
     </div>
@@ -557,6 +563,51 @@ function AgentResponseItem({
   )
 }
 
+function agentDisplayActivities(
+  activities: UserStoryAgentActivity[],
+  response?: string | null
+) {
+  const markdown = response?.trim()
+  if (!markdown) return activities
+  const candidateIndexes = new Set(
+    activities
+      .map((activity, index) =>
+        finalResponseActivity(activity, markdown) ? index : undefined
+      )
+      .filter((index) => index !== undefined)
+  )
+  const lastCandidateIndex = Array.from(candidateIndexes).at(-1)
+  if (lastCandidateIndex === undefined) return activities
+  if (lastCandidateIndex !== activities.length - 1) {
+    return activities.filter((_, index) => !candidateIndexes.has(index))
+  }
+  return activities
+    .map((activity, activityIndex) =>
+      activityIndex === lastCandidateIndex
+        ? {
+            ...activity,
+            detail: markdown,
+            messageKind: "final",
+            status: "completed",
+            title: "Agent response",
+          }
+        : activity
+    )
+    .filter(
+      (_, index) => index === lastCandidateIndex || !candidateIndexes.has(index)
+    )
+}
+
+function finalResponseActivity(
+  activity: UserStoryAgentActivity,
+  markdown: string
+) {
+  return (
+    activity.kind === "message" &&
+    sameStreamingMarkdown(activity.detail, markdown)
+  )
+}
+
 function alreadyStreamedAgentMessage(
   markdown: string,
   activities: UserStoryAgentActivity[]
@@ -564,6 +615,16 @@ function alreadyStreamedAgentMessage(
   return activities.some(
     (activity) =>
       activity.kind === "message" && sameMarkdown(markdown, activity.detail)
+  )
+}
+
+function sameStreamingMarkdown(left: string | undefined, right: string) {
+  const normalizedLeft = normalizedMarkdown(left ?? "")
+  const normalizedRight = normalizedMarkdown(right)
+  if (!normalizedLeft) return false
+  return (
+    normalizedLeft === normalizedRight ||
+    normalizedRight.startsWith(normalizedLeft)
   )
 }
 
