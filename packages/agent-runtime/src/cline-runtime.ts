@@ -434,6 +434,7 @@ export class BlameAgentRuntime {
             compaction: contextCompressionConfig(
               this.productionConfig,
               input.contextCompressionMode,
+              (message, payload) => this.logSession(sessionId, message, payload),
             ),
             enableTools: true,
             enableSpawnAgent: false,
