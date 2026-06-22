@@ -555,7 +555,7 @@ function DrawerBody({
 }) {
   const contentClassName = sidebarOpen
     ? "mx-auto flex max-w-5xl flex-col gap-6 px-6 pt-6 pb-28 lg:mx-0 lg:mr-[26rem]"
-    : "mx-auto flex w-full max-w-5xl flex-col gap-6 px-6 pt-6 pb-28"
+    : "flex w-full flex-col gap-6 px-6 pt-6 pb-28"
 
   return (
     <div className="relative h-full min-h-0 overflow-hidden">
