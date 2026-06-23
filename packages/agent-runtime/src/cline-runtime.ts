@@ -31,6 +31,7 @@ import {
   contextCompressionConfig,
   contextCompressionExtensions,
 } from "./context-compression.js";
+import { HeadroomSidecar } from "./headroom-sidecar.js";
 import {
   deleteProviderCredential,
   listProviders,
@@ -243,6 +244,7 @@ export class BlameAgentRuntime {
   private sessionIterations = new Map<string, number>();
   private sessionUsageSignatures = new Map<string, string>();
   private structuredEventSessions = new Set<string>();
+  private readonly headroomSidecar = new HeadroomSidecar();
   private readonly productionConfig = loadProductionConfig();
   private readonly events?: AgentRuntimeEvents;
   private readonly options: RuntimeOptions;
@@ -318,6 +320,7 @@ export class BlameAgentRuntime {
     this.sessionContexts.clear();
     this.sessionEventSignatures.clear();
     await this.disposeCore();
+    await this.headroomSidecar.dispose();
     await this.disposeTelemetry();
   }
 
@@ -410,6 +413,10 @@ export class BlameAgentRuntime {
         this.autoApprovedWriteToolSessions.add(sessionId);
       }
       this.prepareSessionCodeGraph(sessionId, input.workspaceRoot);
+      const headroomBaseUrl = await this.ensureHeadroomSidecar(
+        sessionId,
+        input,
+      );
       const autoSendPrompt = input.autoSendPrompt !== false;
       const startInput = {
         ...(autoSendPrompt ? { prompt: input.prompt } : {}),
@@ -447,6 +454,7 @@ export class BlameAgentRuntime {
               {
                 logger: (message, payload) =>
                   this.logSession(sessionId, message, payload),
+                headroomBaseUrl,
                 modelId: input.modelId,
               },
             ),
@@ -1333,6 +1341,23 @@ export class BlameAgentRuntime {
     const file = this.sessionLogFiles.get(sessionId);
     if (!file) return;
     await appendLog(file, message, payload);
+  }
+
+  private async ensureHeadroomSidecar(
+    sessionId: string,
+    input: StartSessionInput,
+  ) {
+    if (input.contextCompressionMode !== "headroom") return undefined;
+    const result = await this.headroomSidecar.ensure({
+      logger: (message, payload) => this.logSession(sessionId, message, payload),
+      logFile: headroomProxyLogPath(input.cwd),
+      requestLogFile: headroomRequestLogPath(input.cwd),
+    });
+    await this.logSession(sessionId, "headroom sidecar selected", {
+      headroomBaseUrl: result.baseUrl,
+      headroomSource: result.source,
+    });
+    return result.baseUrl;
   }
 
   private async disposeCore() {
@@ -2794,6 +2819,14 @@ function startLogPath(cwd: string) {
 
 function sessionLogPath(cwd: string, sessionId: string) {
   return join(cwd, ".blame", "logs", `cline-${sessionId}.log`);
+}
+
+function headroomProxyLogPath(cwd: string) {
+  return join(cwd, ".blame", "logs", "headroom-proxy.log");
+}
+
+function headroomRequestLogPath(cwd: string) {
+  return join(cwd, ".blame", "logs", "headroom-requests.jsonl");
 }
 
 async function appendLog(file: string, message: string, payload?: unknown) {

@@ -11,6 +11,7 @@ type ContextCompressionLogger = (
 ) => void | Promise<void>;
 type AgentPluginSetupApi = Parameters<NonNullable<AgentPlugin["setup"]>>[0];
 type ContextCompressionOptions = {
+  headroomBaseUrl?: string;
   logger?: ContextCompressionLogger;
   modelId?: string;
 };
@@ -28,7 +29,7 @@ type MessageStats = {
 type HeadroomCompressionResult = Awaited<ReturnType<typeof compress>>;
 
 const defaultHeadroomTimeoutMs = 15_000;
-const defaultHeadroomFallback = true;
+const defaultHeadroomFallback = false;
 const defaultHeadroomRetries = 1;
 const defaultHeadroomMaxInputTokens = 100_000;
 const defaultHeadroomReserveTokens = 4_000;
@@ -119,11 +120,12 @@ async function compressedHeadroomMessages(
   await logHeadroomCompression(
     options.logger,
     "headroom provider compression started",
-    headroomStartedPayload(stats, limits, options.modelId),
+    headroomStartedPayload(stats, limits, options),
   );
 
   try {
     const result = await compress(messages, {
+      baseUrl: options.headroomBaseUrl,
       fallback: defaultHeadroomFallback,
       model: options.modelId,
       retries: defaultHeadroomRetries,
@@ -153,13 +155,14 @@ async function compressedHeadroomMessages(
 function headroomStartedPayload(
   stats: MessageStats,
   limits: HeadroomLimits,
-  modelId: string | undefined,
+  options: ContextCompressionOptions,
 ) {
   return {
     estimatedInputTokens: limits.estimatedInputTokens,
     maxInputTokens: limits.maxInputTokens,
     messageCount: stats.messageCount,
-    modelId,
+    headroomBaseUrl: options.headroomBaseUrl,
+    modelId: options.modelId,
     targetTokens: limits.targetTokens,
     toolResultTokens: stats.toolResultTokens,
     triggerTokens: limits.triggerTokens,
