@@ -1576,6 +1576,76 @@ async function stopProjectServiceLogs(streamId: string) {
   return true;
 }
 
+export async function readProjectServiceLogs(input: {
+  service?: string;
+  tailLines?: number;
+  worktree: string;
+}) {
+  const worktree = resolveRuntimePath(input.worktree);
+  const services = await listProjectServices(worktree);
+  const service = selectedProjectService(input.service, services);
+  if (!service) {
+    return {
+      available: false,
+      reason: input.service
+        ? `Service "${input.service}" was not found.`
+        : "No services found yet.",
+      services,
+    };
+  }
+  return {
+    available: true,
+    service,
+    services,
+    ...(await projectServiceLogSnapshot(worktree, service, input.tailLines)),
+  };
+}
+
+async function projectServiceLogSnapshot(
+  worktree: string,
+  service: string,
+  tailLines?: number,
+) {
+  const lineCount = serviceLogTailLines(tailLines);
+  try {
+    const { stdout, stderr } = await containerRuntime.compose(
+      [...composeArgs(worktree), "logs", "--tail", String(lineCount), service],
+      { cwd: worktree, env: await setupEnvironment(worktree) },
+    );
+    if (stdout || stderr) return { source: "container", stderr, stdout };
+  } catch (error) {
+    return projectServiceLogFallback(worktree, service, error);
+  }
+  return projectServiceLogFallback(worktree, service);
+}
+
+async function projectServiceLogFallback(
+  worktree: string,
+  service: string,
+  error?: unknown,
+) {
+  const archived = await archivedProjectServiceLog(worktree, service);
+  if (archived) return { source: "setup-log", stderr: "", stdout: archived };
+  return {
+    source: "container",
+    stderr: error ? commandErrorText(error).trim() : "",
+    stdout: "",
+  };
+}
+
+function selectedProjectService(
+  service: string | undefined,
+  services: string[],
+) {
+  if (!service) return services[0];
+  return services.includes(service) ? service : undefined;
+}
+
+function serviceLogTailLines(value: number | undefined) {
+  if (!Number.isFinite(value)) return 120;
+  return Math.min(Math.max(Math.trunc(value ?? 120), 1), 1000);
+}
+
 function serviceSort(left: string, right: string) {
   return (
     servicePriority(left) - servicePriority(right) || left.localeCompare(right)

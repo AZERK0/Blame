@@ -117,6 +117,7 @@ const readTools = [
   "search_codebase",
   "fetch_web_content",
   "get_preview_devtools",
+  "get_preview_container_logs",
   ...codeReviewGraphToolNames,
 ];
 const writeTools = ["run_commands", "editor", "apply_patch"];
@@ -160,6 +161,7 @@ type RuntimeCredentialInput = {
 
 type ClineSdk = typeof import("@cline/sdk");
 type AgentTool = NonNullable<CoreSessionConfig["extraTools"]>[number];
+type ToolContext = Parameters<AgentTool["execute"]>[1];
 
 type PendingApproval = {
   request: AgentApprovalRequest;
@@ -221,11 +223,23 @@ type RuntimeOptions = {
   previewDevtools?(
     input?: PreviewDevtoolsTargetInput,
   ): Promise<PreviewDevtoolsTarget | undefined> | PreviewDevtoolsTarget | undefined;
+  previewContainerLogs?: PreviewContainerLogsProvider;
 };
 
 type PreviewDevtoolsTargetInput = {
   timeoutMs?: number;
 };
+
+type PreviewContainerLogsInput = {
+  service?: string;
+  signal?: AbortSignal;
+  tailLines?: number;
+  worktree: string;
+};
+
+type PreviewContainerLogsProvider = (
+  input: PreviewContainerLogsInput,
+) => Promise<unknown> | unknown;
 type HeadroomSavingsTotals = {
   compressionCount: number;
   lastTokensSaved: number;
@@ -1689,6 +1703,7 @@ function projectInitializationSubmitTool(): ProjectInitializationSubmitTool {
 function runtimeTools(options: RuntimeOptions, worktree?: string) {
   const tools = [
     previewDevtoolsTool(options),
+    previewContainerLogsTool(options, worktree),
     ...codeReviewGraphTools(options.codeReviewGraph, worktree),
   ].filter((tool): tool is AgentTool => Boolean(tool));
   return tools.length ? tools : undefined;
@@ -1736,6 +1751,63 @@ function previewDevtoolsInput(input: unknown): PreviewDevtoolsTargetInput {
   const record = asRecord(input);
   const timeoutMs = Number(record.timeoutMs);
   return Number.isFinite(timeoutMs) ? { timeoutMs } : {};
+}
+
+function previewContainerLogsTool(
+  options: RuntimeOptions,
+  worktree?: string,
+): AgentTool | undefined {
+  if (!options.previewContainerLogs || !worktree) return undefined;
+  return {
+    name: "get_preview_container_logs",
+    description:
+      "Get the Blame preview container logs for the current worktree. Returns available compose services, the selected service, recent stdout and stderr, and whether the logs came from live containers or the archived setup log. Use this read-only tool when debugging preview runtime, server, build, API, or database failures. Defaults to the first preview service and 120 tail lines.",
+    inputSchema: previewContainerLogsInputSchema(),
+    async execute(input: unknown, context: ToolContext) {
+      try {
+        return await options.previewContainerLogs?.({
+          ...previewContainerLogsInput(input),
+          signal: context.signal,
+          worktree,
+        });
+      } catch (error) {
+        return {
+          isError: true,
+          output: { error: errorMessage(error) },
+        };
+      }
+    },
+  };
+}
+
+function previewContainerLogsInputSchema() {
+  return {
+    type: "object",
+    properties: {
+      service: {
+        type: "string",
+        description:
+          "Optional compose service name to read logs for. When omitted, Blame selects the first preview service, matching the preview drawer.",
+      },
+      tailLines: {
+        type: "number",
+        description:
+          "Maximum number of recent log lines to return from live containers. Defaults to 120 and is capped at 1000.",
+      },
+    },
+    additionalProperties: false,
+  };
+}
+
+function previewContainerLogsInput(
+  input: unknown,
+): Omit<PreviewContainerLogsInput, "signal" | "worktree"> {
+  const record = asRecord(input);
+  const service = stringValue(record.service);
+  return {
+    ...(service ? { service } : {}),
+    tailLines: boundedNumber(record.tailLines, 1, 1000) ?? 120,
+  };
 }
 
 async function projectInitializationInputFromMessages(
@@ -3443,6 +3515,12 @@ function stringValue(value: unknown) {
 
 function numberValue(value: unknown) {
   return typeof value === "number" ? value : undefined;
+}
+
+function boundedNumber(value: unknown, min: number, max: number) {
+  const number = numberValue(value);
+  if (number === undefined || !Number.isFinite(number)) return undefined;
+  return Math.min(Math.max(number, min), max);
 }
 
 function booleanValue(value: unknown) {

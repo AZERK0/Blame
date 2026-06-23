@@ -49,6 +49,10 @@ const runtime = new BlameAgentRuntime({
     return stdout;
   },
   previewDevtools: getPreviewDevtoolsTarget,
+  previewContainerLogs: async (input) => {
+    const { readProjectServiceLogs } = await import("./workspace-ipc")
+    return readProjectServiceLogs(input)
+  },
 })
 
 export function registerAgentIpcHandlers() {
