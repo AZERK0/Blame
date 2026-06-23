@@ -11,9 +11,14 @@ type ContextCompressionLogger = (
 ) => void | Promise<void>;
 type AgentPluginSetupApi = Parameters<NonNullable<AgentPlugin["setup"]>>[0];
 type ContextCompressionOptions = {
+  compressor?: typeof compress;
   headroomBaseUrl?: string;
   logger?: ContextCompressionLogger;
   modelId?: string;
+};
+type PreparedHeadroomMessages = {
+  input: "native" | "text-transcript";
+  messages: Message[];
 };
 type HeadroomLimits = {
   estimatedInputTokens: number;
@@ -84,9 +89,21 @@ async function headroomProviderMessages(
   const stats = messageStats(messages);
   const limits = headroomLimits(productionConfig, stats.tokensBefore);
   if (!shouldCompress(stats, limits)) {
-    return skippedHeadroomMessages(messages, stats, limits, options.logger);
+    return skippedHeadroomMessages(
+      messages,
+      stats,
+      limits,
+      options.logger,
+      "below-threshold",
+    );
   }
-  return compressedHeadroomMessages(messages, stats, limits, options);
+  return compressedHeadroomMessages(
+    prepareHeadroomMessages(messages),
+    messages,
+    stats,
+    limits,
+    options,
+  );
 }
 
 async function skippedHeadroomMessages(
@@ -94,6 +111,7 @@ async function skippedHeadroomMessages(
   stats: MessageStats,
   limits: HeadroomLimits,
   logger?: ContextCompressionLogger,
+  reason = "below-threshold",
 ): Promise<Message[]> {
   await logHeadroomCompression(
     logger,
@@ -102,7 +120,7 @@ async function skippedHeadroomMessages(
       estimatedInputTokens: limits.estimatedInputTokens,
       maxInputTokens: limits.maxInputTokens,
       messageCount: stats.messageCount,
-      reason: "below-threshold",
+      reason,
       targetTokens: limits.targetTokens,
       toolResultTokens: stats.toolResultTokens,
       triggerTokens: limits.triggerTokens,
@@ -112,7 +130,8 @@ async function skippedHeadroomMessages(
 }
 
 async function compressedHeadroomMessages(
-  messages: Message[],
+  prepared: PreparedHeadroomMessages,
+  fallback: Message[],
   stats: MessageStats,
   limits: HeadroomLimits,
   options: ContextCompressionOptions,
@@ -124,7 +143,8 @@ async function compressedHeadroomMessages(
   );
 
   try {
-    const result = await compress(messages, {
+    const compressor = options.compressor ?? compress;
+    const result = await compressor(prepared.messages, {
       baseUrl: options.headroomBaseUrl,
       fallback: defaultHeadroomFallback,
       model: options.modelId,
@@ -136,9 +156,9 @@ async function compressedHeadroomMessages(
     await logHeadroomCompression(
       options.logger,
       "headroom provider compression completed",
-      headroomCompletedPayload(result, stats, limits),
+      headroomCompletedPayload(result, stats, limits, prepared),
     );
-    return headroomResultMessages(result, messages);
+    return await headroomResultMessages(result, fallback, options.logger);
   } catch (error) {
     await logHeadroomCompression(
       options.logger,
@@ -148,7 +168,7 @@ async function compressedHeadroomMessages(
         fallback: true,
       },
     );
-    return messages;
+    return fallback;
   }
 }
 
@@ -173,12 +193,14 @@ function headroomCompletedPayload(
   result: HeadroomCompressionResult,
   stats: MessageStats,
   limits: HeadroomLimits,
+  prepared: PreparedHeadroomMessages,
 ) {
   return {
     ccrHashCount: result.ccrHashes.length,
     compressed: result.compressed,
     compressionRatio: result.compressionRatio,
     fallback: !result.compressed,
+    headroomInput: prepared.input,
     estimatedInputTokens: limits.estimatedInputTokens,
     messageCountAfter: result.messages.length,
     messageCountBefore: stats.messageCount,
@@ -188,15 +210,6 @@ function headroomCompletedPayload(
     tokensSaved: result.tokensSaved,
     transformsApplied: result.transformsApplied.join(","),
   };
-}
-
-function headroomResultMessages(
-  result: HeadroomCompressionResult,
-  fallback: Message[],
-) {
-  return result.compressed && Array.isArray(result.messages)
-    ? (result.messages as Message[])
-    : fallback;
 }
 
 async function logHeadroomCompression(
@@ -209,6 +222,27 @@ async function logHeadroomCompression(
   } catch {
     return;
   }
+}
+
+async function headroomResultMessages(
+  result: HeadroomCompressionResult,
+  fallback: Message[],
+  logger?: ContextCompressionLogger,
+) {
+  if (!result.compressed || !Array.isArray(result.messages)) return fallback;
+  const messages = result.messages as Message[];
+  const toolIssue = toolStructureIssue(messages);
+  if (!toolIssue) return messages;
+  await logHeadroomCompression(
+    logger,
+    "headroom provider compression rejected",
+    {
+      fallback: true,
+      messageCount: messages.length,
+      reason: toolIssue,
+    },
+  );
+  return fallback;
 }
 
 function errorMessage(error: unknown) {
@@ -282,6 +316,113 @@ function largestToolResultTokens(messages: Message[]) {
   return largest;
 }
 
+function prepareHeadroomMessages(messages: Message[]): PreparedHeadroomMessages {
+  if (!hasToolHistory(messages)) return { input: "native", messages };
+  return {
+    input: "text-transcript",
+    messages: textTranscriptMessages(messages),
+  };
+}
+
+function hasToolHistory(messages: Message[]) {
+  return messages.some(
+    (message) =>
+      Array.isArray(message.content) &&
+      message.content.some((block: unknown) => toolBlock(recordValue(block))),
+  );
+}
+
+function toolStructureIssue(messages: Message[]) {
+  const pendingToolUseIds = new Set<string>();
+  for (const message of messages) {
+    if (!Array.isArray(message.content)) continue;
+    for (const block of message.content) {
+      const record = recordValue(block);
+      if (record?.type === "tool_use") {
+        const id = stringField(record.id);
+        if (id) pendingToolUseIds.add(id);
+      }
+      if (record?.type === "tool_result") {
+        const id = stringField(record.tool_use_id);
+        if (!id || !pendingToolUseIds.has(id)) return "orphan-tool-result";
+        pendingToolUseIds.delete(id);
+      }
+    }
+  }
+  return pendingToolUseIds.size ? "pending-tool-use" : undefined;
+}
+
+function toolBlock(record: Record<string, unknown> | undefined) {
+  return record?.type === "tool_use" || record?.type === "tool_result";
+}
+
+function textTranscriptMessage(message: Message): Message {
+  if (typeof message.content === "string") return message;
+  if (!Array.isArray(message.content)) return message;
+  return {
+    ...message,
+    content: message.content.map(transcriptBlockText).filter(Boolean).join("\n"),
+  };
+}
+
+function textTranscriptMessages(messages: Message[]): Message[] {
+  return [
+    {
+      role: "assistant",
+      content: transcriptText(messages),
+    },
+    {
+      role: "user",
+      content: continuationPrompt(messages),
+    },
+  ] as Message[];
+}
+
+function transcriptText(messages: Message[]) {
+  return messages
+    .map((message) => `[${message.role}]\n${textTranscriptMessage(message).content}`)
+    .join("\n\n");
+}
+
+function continuationPrompt(messages: Message[]) {
+  return lastUserText(messages) || "Continue the task using the transcript.";
+}
+
+function lastUserText(messages: Message[]) {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index];
+    if (message?.role !== "user") continue;
+    const text = textOnlyContent(message.content);
+    if (text) return text;
+  }
+  return undefined;
+}
+
+function textOnlyContent(content: Message["content"]) {
+  if (typeof content === "string") return content.trim();
+  if (!Array.isArray(content)) return "";
+  return content
+    .map((block) => {
+      const record = recordValue(block);
+      return record?.type === "text" ? primitiveText(record.text) : "";
+    })
+    .filter(Boolean)
+    .join("\n")
+    .trim();
+}
+
+function transcriptBlockText(block: unknown) {
+  const record = recordValue(block);
+  if (record?.type === "tool_use") {
+    const name = primitiveText(record.name) || "tool";
+    return `Tool call ${name}: ${safeJson(record.input)}`;
+  }
+  if (record?.type === "tool_result") {
+    return `Tool result: ${toolResultText(record)}`;
+  }
+  return contentBlockText(block);
+}
+
 function serializedMessage(message: Message) {
   if (typeof message.content === "string") {
     return `[${message.role}]: ${message.content}`;
@@ -322,6 +463,10 @@ function toolResultContentText(content: unknown): string {
 function blockType(block: unknown): string {
   const type = recordValue(block)?.type;
   return typeof type === "string" ? type : "unknown";
+}
+
+function stringField(value: unknown) {
+  return typeof value === "string" && value.length ? value : undefined;
 }
 
 function recordValue(value: unknown): Record<string, unknown> | undefined {

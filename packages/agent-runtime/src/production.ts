@@ -69,6 +69,7 @@ const allowedLogKeys = new Set([
   "finishReason",
   "headroomBaseUrl",
   "headroomCommand",
+  "headroomInput",
   "headroomPackage",
   "headroomPort",
   "headroomSource",
