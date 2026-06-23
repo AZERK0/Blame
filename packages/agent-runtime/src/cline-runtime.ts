@@ -2937,7 +2937,7 @@ function normalizeClineAgentPayload(
           stringValue(payload.status),
         status: stringValue(payload.status),
         text: stringValue(payload.text),
-        usage: payload.usage,
+        usage: doneUsagePayload(payload.usage),
         raw,
       },
     };
@@ -3147,6 +3147,27 @@ function eventUsageSummary(event: AgentEvent): AgentUsageSummary | undefined {
   return { aggregateUsage: usage as never };
 }
 
+function doneUsagePayload(value: unknown) {
+  const usage = asRecord(value);
+  if (!Object.keys(usage).length || usageHasTotals(usage)) return value;
+  return {
+    totalCacheReadTokens: usage.cacheReadTokens,
+    totalCacheWriteTokens: usage.cacheWriteTokens,
+    totalCost: usage.totalCost,
+    totalInputTokens: usage.inputTokens,
+    totalOutputTokens: usage.outputTokens,
+  };
+}
+
+function usageHasTotals(usage: Record<string, unknown>) {
+  return (
+    usage.totalInputTokens !== undefined ||
+    usage.totalOutputTokens !== undefined ||
+    usage.totalCacheReadTokens !== undefined ||
+    usage.totalCacheWriteTokens !== undefined
+  );
+}
+
 function normalizeAgentUsageSummary(
   summary: SessionUsageSummary | undefined,
 ): AgentUsageSummary | undefined {
@@ -3161,16 +3182,24 @@ function normalizeAgentUsageTotals(
   usage: SessionUsageSummary["usage"] | undefined,
 ) {
   if (!usage) return undefined;
+  const totalUsage = usage as SessionUsageSummary["usage"] & {
+    totalCacheReadTokens?: number;
+    totalCacheWriteTokens?: number;
+    totalInputTokens?: number;
+    totalOutputTokens?: number;
+  };
   return {
     cacheReadTokens: usage.cacheReadTokens,
     cacheWriteTokens: usage.cacheWriteTokens,
     inputTokens: usage.inputTokens,
     outputTokens: usage.outputTokens,
-    totalCacheReadTokens: usage.cacheReadTokens,
-    totalCacheWriteTokens: usage.cacheWriteTokens,
+    totalCacheReadTokens:
+      totalUsage.totalCacheReadTokens ?? usage.cacheReadTokens,
+    totalCacheWriteTokens:
+      totalUsage.totalCacheWriteTokens ?? usage.cacheWriteTokens,
     totalCost: usage.totalCost,
-    totalInputTokens: usage.inputTokens,
-    totalOutputTokens: usage.outputTokens,
+    totalInputTokens: totalUsage.totalInputTokens ?? usage.inputTokens,
+    totalOutputTokens: totalUsage.totalOutputTokens ?? usage.outputTokens,
   };
 }
 

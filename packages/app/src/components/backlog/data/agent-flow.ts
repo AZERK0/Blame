@@ -744,25 +744,103 @@ function usageFromUsageEvent(current: UserStoryAgentUsage, event: AgentEvent) {
   const payload = eventPayload(event)
   const payloadUsage = recordValue(payload.usage)
   const usage = Object.keys(payloadUsage).length ? payloadUsage : payload
+  const doneAggregate = event.type === "done" && !usageHasTotals(usage)
   return {
     ...current,
-    cacheReadTokens:
-      numberValue(usage.cacheReadTokens) ?? current.cacheReadTokens,
-    cacheWriteTokens:
-      numberValue(usage.cacheWriteTokens) ?? current.cacheWriteTokens,
-    cost: numberValue(usage.cost) ?? current.cost,
-    inputTokens: numberValue(usage.inputTokens) ?? current.inputTokens,
-    outputTokens: numberValue(usage.outputTokens) ?? current.outputTokens,
-    totalCacheReadTokens:
-      numberValue(usage.totalCacheReadTokens) ?? current.totalCacheReadTokens,
-    totalCacheWriteTokens:
-      numberValue(usage.totalCacheWriteTokens) ?? current.totalCacheWriteTokens,
-    totalCost: numberValue(usage.totalCost) ?? current.totalCost,
-    totalInputTokens:
-      numberValue(usage.totalInputTokens) ?? current.totalInputTokens,
-    totalOutputTokens:
-      numberValue(usage.totalOutputTokens) ?? current.totalOutputTokens,
+    ...usageTurnFields(current, usage, doneAggregate),
+    ...usageTotalFields(current, usage, doneAggregate),
   }
+}
+
+function usageTurnFields(
+  current: UserStoryAgentUsage,
+  usage: Record<string, unknown>,
+  doneAggregate: boolean
+) {
+  return {
+    cacheReadTokens: usageTurnValue(
+      current.cacheReadTokens,
+      usage.cacheReadTokens,
+      doneAggregate
+    ),
+    cacheWriteTokens: usageTurnValue(
+      current.cacheWriteTokens,
+      usage.cacheWriteTokens,
+      doneAggregate
+    ),
+    cost: usageTurnValue(current.cost, usage.cost, doneAggregate),
+    inputTokens: usageTurnValue(
+      current.inputTokens,
+      usage.inputTokens,
+      doneAggregate
+    ),
+    outputTokens: usageTurnValue(
+      current.outputTokens,
+      usage.outputTokens,
+      doneAggregate
+    ),
+  }
+}
+
+function usageTotalFields(
+  current: UserStoryAgentUsage,
+  usage: Record<string, unknown>,
+  doneAggregate: boolean
+) {
+  return {
+    totalCacheReadTokens: usageTotalValue(
+      current.totalCacheReadTokens,
+      usage.totalCacheReadTokens,
+      usage.cacheReadTokens,
+      doneAggregate
+    ),
+    totalCacheWriteTokens: usageTotalValue(
+      current.totalCacheWriteTokens,
+      usage.totalCacheWriteTokens,
+      usage.cacheWriteTokens,
+      doneAggregate
+    ),
+    totalCost: numberValue(usage.totalCost) ?? current.totalCost,
+    totalInputTokens: usageTotalValue(
+      current.totalInputTokens,
+      usage.totalInputTokens,
+      usage.inputTokens,
+      doneAggregate
+    ),
+    totalOutputTokens: usageTotalValue(
+      current.totalOutputTokens,
+      usage.totalOutputTokens,
+      usage.outputTokens,
+      doneAggregate
+    ),
+  }
+}
+
+function usageTurnValue(
+  current: number | undefined,
+  next: unknown,
+  doneAggregate: boolean
+) {
+  if (doneAggregate) return current
+  return numberValue(next) ?? current
+}
+
+function usageTotalValue(
+  current: number | undefined,
+  next: unknown,
+  aggregate: unknown,
+  doneAggregate: boolean
+) {
+  return numberValue(next) ?? (doneAggregate ? numberValue(aggregate) : current)
+}
+
+function usageHasTotals(usage: Record<string, unknown>) {
+  return (
+    usage.totalInputTokens !== undefined ||
+    usage.totalOutputTokens !== undefined ||
+    usage.totalCacheReadTokens !== undefined ||
+    usage.totalCacheWriteTokens !== undefined
+  )
 }
 
 function usageChanged(current: UserStoryAgentUsage, next: UserStoryAgentUsage) {

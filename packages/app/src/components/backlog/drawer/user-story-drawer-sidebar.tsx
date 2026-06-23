@@ -52,7 +52,9 @@ function usageContent(
   sessionUsage: SessionUsageState,
   agentUsage: UserStory["agentUsage"]
 ) {
-  if (sessionUsage.loading) {
+  const storyTotals = usageTotalsFromAgentUsage(agentUsage)
+
+  if (sessionUsage.loading && !storyTotals) {
     return (
       <TokenGroup title="Loading">
         <TokenStat label="Usage" value="Loading" />
@@ -60,7 +62,7 @@ function usageContent(
     )
   }
 
-  const totals = sessionUsage.totals ?? usageTotalsFromAgentUsage(agentUsage)
+  const totals = storyTotals ?? sessionUsage.totals
   if (!totals) {
     return (
       <TokenGroup title="Usage overview">

@@ -436,6 +436,58 @@ test("uses the latest streamed message as the final response when done has no te
   assert.equal(activity?.title, "Agent response")
 })
 
+test("keeps turn usage distinct from accumulated usage", () => {
+  const updated = updateStory(
+    story(),
+    usageEvent({
+      cacheReadTokens: 512,
+      inputTokens: 1200,
+      outputTokens: 80,
+      totalCacheReadTokens: 2048,
+      totalInputTokens: 4200,
+      totalOutputTokens: 210,
+    })
+  )
+
+  assert.equal(updated.agentUsage?.inputTokens, 1200)
+  assert.equal(updated.agentUsage?.outputTokens, 80)
+  assert.equal(updated.agentUsage?.totalInputTokens, 4200)
+  assert.equal(updated.agentUsage?.totalOutputTokens, 210)
+  assert.equal(updated.agentUsage?.cacheReadTokens, 512)
+  assert.equal(updated.agentUsage?.totalCacheReadTokens, 2048)
+})
+
+test("keeps last turn usage when done sends aggregate usage", () => {
+  const running = updateStory(
+    story(),
+    usageEvent({
+      cacheReadTokens: 512,
+      inputTokens: 1200,
+      outputTokens: 80,
+      totalCacheReadTokens: 2048,
+      totalInputTokens: 4200,
+      totalOutputTokens: 210,
+    })
+  )
+  const completed = updateStory(
+    running,
+    doneEvent("Done", {
+      cacheReadTokens: 4096,
+      inputTokens: 6200,
+      outputTokens: 320,
+      totalCost: 0.15,
+    })
+  )
+
+  assert.equal(completed.agentUsage?.inputTokens, 1200)
+  assert.equal(completed.agentUsage?.outputTokens, 80)
+  assert.equal(completed.agentUsage?.cacheReadTokens, 512)
+  assert.equal(completed.agentUsage?.totalInputTokens, 6200)
+  assert.equal(completed.agentUsage?.totalOutputTokens, 320)
+  assert.equal(completed.agentUsage?.totalCacheReadTokens, 4096)
+  assert.equal(completed.agentUsage?.totalCost, 0.15)
+})
+
 function updateStory(story: UserStory, event: AgentEvent) {
   return { ...story, ...agentFlowUpdate(story, event) }
 }
@@ -454,10 +506,20 @@ function textEvent(payload: Record<string, unknown>): AgentEvent {
   }
 }
 
-function doneEvent(text?: string): AgentEvent {
+function doneEvent(text?: string, usage?: Record<string, unknown>): AgentEvent {
   return {
-    payload: text === undefined ? {} : { text },
+    payload: {
+      ...(text === undefined ? {} : { text }),
+      ...(usage ? { usage } : {}),
+    },
     type: "done",
+  }
+}
+
+function usageEvent(usage: Record<string, unknown>): AgentEvent {
+  return {
+    payload: { usage },
+    type: "usage",
   }
 }
 
