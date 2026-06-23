@@ -15,7 +15,17 @@ type ContextCompressionOptions = {
   headroomBaseUrl?: string;
   logger?: ContextCompressionLogger;
   modelId?: string;
+  onCompression?: HeadroomCompressionListener;
 };
+export type HeadroomCompressionUsage = {
+  compressionRatio: number;
+  tokensAfter: number;
+  tokensBefore: number;
+  tokensSaved: number;
+};
+type HeadroomCompressionListener = (
+  usage: HeadroomCompressionUsage,
+) => void | Promise<void>;
 type PreparedHeadroomMessages = {
   input: "native" | "text-transcript";
   messages: Message[];
@@ -158,7 +168,15 @@ async function compressedHeadroomMessages(
       "headroom provider compression completed",
       headroomCompletedPayload(result, stats, limits, prepared),
     );
-    return await headroomResultMessages(result, fallback, options.logger);
+    const messages = await headroomResultMessages(
+      result,
+      fallback,
+      options.logger,
+    );
+    if (messages !== fallback) {
+      await notifyHeadroomCompression(options.onCompression, result);
+    }
+    return messages;
   } catch (error) {
     await logHeadroomCompression(
       options.logger,
@@ -169,6 +187,22 @@ async function compressedHeadroomMessages(
       },
     );
     return fallback;
+  }
+}
+
+async function notifyHeadroomCompression(
+  listener: HeadroomCompressionListener | undefined,
+  result: HeadroomCompressionResult,
+) {
+  try {
+    await listener?.({
+      compressionRatio: result.compressionRatio,
+      tokensAfter: result.tokensAfter,
+      tokensBefore: result.tokensBefore,
+      tokensSaved: result.tokensSaved,
+    });
+  } catch {
+    return;
   }
 }
 
@@ -316,7 +350,9 @@ function largestToolResultTokens(messages: Message[]) {
   return largest;
 }
 
-function prepareHeadroomMessages(messages: Message[]): PreparedHeadroomMessages {
+function prepareHeadroomMessages(
+  messages: Message[],
+): PreparedHeadroomMessages {
   if (!hasToolHistory(messages)) return { input: "native", messages };
   return {
     input: "text-transcript",
@@ -361,7 +397,10 @@ function textTranscriptMessage(message: Message): Message {
   if (!Array.isArray(message.content)) return message;
   return {
     ...message,
-    content: message.content.map(transcriptBlockText).filter(Boolean).join("\n"),
+    content: message.content
+      .map(transcriptBlockText)
+      .filter(Boolean)
+      .join("\n"),
   };
 }
 
@@ -380,7 +419,10 @@ function textTranscriptMessages(messages: Message[]): Message[] {
 
 function transcriptText(messages: Message[]) {
   return messages
-    .map((message) => `[${message.role}]\n${textTranscriptMessage(message).content}`)
+    .map(
+      (message) =>
+        `[${message.role}]\n${textTranscriptMessage(message).content}`,
+    )
     .join("\n\n");
 }
 

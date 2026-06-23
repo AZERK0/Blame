@@ -29,6 +29,12 @@ export type UserStoryAgentUsage = {
   cacheReadTokens?: number
   cacheWriteTokens?: number
   cost?: number
+  headroomCompressionCount?: number
+  headroomCompressionRatio?: number
+  headroomLastTokensSaved?: number
+  headroomTokensAfter?: number
+  headroomTokensBefore?: number
+  headroomTokensSaved?: number
   inputTokens: number
   outputTokens: number
   totalCacheReadTokens?: number

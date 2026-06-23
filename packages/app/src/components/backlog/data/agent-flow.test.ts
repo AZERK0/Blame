@@ -267,7 +267,10 @@ test("keeps accumulated updates scoped to the current assistant message", () => 
     updatedSecondMessage.agentActivities?.map((activity) => activity.kind),
     ["message", "tool", "message"]
   )
-  assert.equal(updatedSecondMessage.agentActivities?.[0]?.detail, "Plan rapide.")
+  assert.equal(
+    updatedSecondMessage.agentActivities?.[0]?.detail,
+    "Plan rapide."
+  )
   assert.equal(
     updatedSecondMessage.agentActivities?.[2]?.detail,
     "Je vois le diff."
@@ -486,6 +489,38 @@ test("keeps last turn usage when done sends aggregate usage", () => {
   assert.equal(completed.agentUsage?.totalOutputTokens, 320)
   assert.equal(completed.agentUsage?.totalCacheReadTokens, 4096)
   assert.equal(completed.agentUsage?.totalCost, 0.15)
+})
+
+test("keeps Headroom savings in usage updates", () => {
+  const updated = updateStory(
+    story(),
+    usageEvent({
+      headroomCompressionCount: 2,
+      headroomCompressionRatio: 0.24,
+      headroomLastTokensSaved: 15402,
+      headroomTokensAfter: 7810,
+      headroomTokensBefore: 33680,
+      headroomTokensSaved: 25870,
+    })
+  )
+  const next = updateStory(
+    updated,
+    usageEvent({
+      inputTokens: 1200,
+      outputTokens: 80,
+      totalInputTokens: 4200,
+      totalOutputTokens: 210,
+    })
+  )
+
+  assert.equal(next.agentUsage?.headroomCompressionCount, 2)
+  assert.equal(next.agentUsage?.headroomCompressionRatio, 0.24)
+  assert.equal(next.agentUsage?.headroomLastTokensSaved, 15402)
+  assert.equal(next.agentUsage?.headroomTokensAfter, 7810)
+  assert.equal(next.agentUsage?.headroomTokensBefore, 33680)
+  assert.equal(next.agentUsage?.headroomTokensSaved, 25870)
+  assert.equal(next.agentUsage?.inputTokens, 1200)
+  assert.equal(next.agentUsage?.totalInputTokens, 4200)
 })
 
 function updateStory(story: UserStory, event: AgentEvent) {

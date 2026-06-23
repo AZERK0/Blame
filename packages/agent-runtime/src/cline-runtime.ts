@@ -31,6 +31,7 @@ import {
   contextCompressionConfig,
   contextCompressionExtensions,
 } from "./context-compression.js";
+import type { HeadroomCompressionUsage } from "./context-compression.js";
 import { HeadroomSidecar } from "./headroom-sidecar.js";
 import {
   deleteProviderCredential,
@@ -225,6 +226,13 @@ type RuntimeOptions = {
 type PreviewDevtoolsTargetInput = {
   timeoutMs?: number;
 };
+type HeadroomSavingsTotals = {
+  compressionCount: number;
+  lastTokensSaved: number;
+  tokensAfter: number;
+  tokensBefore: number;
+  tokensSaved: number;
+};
 
 let customGitRunner: ((cwd: string, args: string[]) => Promise<string>) | undefined;
 
@@ -241,6 +249,7 @@ export class BlameAgentRuntime {
   private sessionLogFiles = new Map<string, string>();
   private sessionContexts = new Map<string, ProductionSessionContext>();
   private sessionEventSignatures = new Map<string, Map<string, number>>();
+  private sessionHeadroomSavings = new Map<string, HeadroomSavingsTotals>();
   private sessionIterations = new Map<string, number>();
   private sessionUsageSignatures = new Map<string, string>();
   private structuredEventSessions = new Set<string>();
@@ -456,6 +465,8 @@ export class BlameAgentRuntime {
                   this.logSession(sessionId, message, payload),
                 headroomBaseUrl,
                 modelId: input.modelId,
+                onCompression: (usage) =>
+                  this.recordHeadroomCompression(sessionId, usage),
               },
             ),
             extensionContext: extensionContext(input),
@@ -1103,6 +1114,7 @@ export class BlameAgentRuntime {
     this.autoApprovedWriteToolSessions.delete(sessionId);
     this.sessionContexts.delete(sessionId);
     this.sessionEventSignatures.delete(sessionId);
+    this.sessionHeadroomSavings.delete(sessionId);
     this.sessionIterations.delete(sessionId);
     this.sessionUsageSignatures.delete(sessionId);
     this.sessionBackendKeys.delete(sessionId);
@@ -1331,6 +1343,24 @@ export class BlameAgentRuntime {
   private emitSessionError(sessionId: string, message: string) {
     void this.logSession(sessionId, "error", { message });
     this.events?.emit({ type: "error", sessionId, payload: { message } });
+  }
+
+  private recordHeadroomCompression(
+    sessionId: string,
+    usage: HeadroomCompressionUsage,
+  ) {
+    const totals = nextHeadroomSavings(
+      this.sessionHeadroomSavings.get(sessionId),
+      usage,
+    );
+    this.sessionHeadroomSavings.set(sessionId, totals);
+    const event: AgentEvent = {
+      type: "usage",
+      sessionId,
+      payload: { usage: headroomUsagePayload(totals) },
+    };
+    void this.handleSessionEvent(sessionId, event);
+    this.events?.emit(event);
   }
 
   private async logSession(
@@ -3145,6 +3175,35 @@ function eventUsageSummary(event: AgentEvent): AgentUsageSummary | undefined {
   const usage = asRecord(payload.usage);
   if (!Object.keys(usage).length) return undefined;
   return { aggregateUsage: usage as never };
+}
+
+function nextHeadroomSavings(
+  current: HeadroomSavingsTotals | undefined,
+  usage: HeadroomCompressionUsage,
+): HeadroomSavingsTotals {
+  return {
+    compressionCount: (current?.compressionCount ?? 0) + 1,
+    lastTokensSaved: usage.tokensSaved,
+    tokensAfter: (current?.tokensAfter ?? 0) + usage.tokensAfter,
+    tokensBefore: (current?.tokensBefore ?? 0) + usage.tokensBefore,
+    tokensSaved: (current?.tokensSaved ?? 0) + usage.tokensSaved,
+  };
+}
+
+function headroomUsagePayload(totals: HeadroomSavingsTotals) {
+  return {
+    headroomCompressionCount: totals.compressionCount,
+    headroomCompressionRatio: headroomCompressionRatio(totals),
+    headroomLastTokensSaved: totals.lastTokensSaved,
+    headroomTokensAfter: totals.tokensAfter,
+    headroomTokensBefore: totals.tokensBefore,
+    headroomTokensSaved: totals.tokensSaved,
+  };
+}
+
+function headroomCompressionRatio(totals: HeadroomSavingsTotals) {
+  if (!totals.tokensBefore) return undefined;
+  return totals.tokensAfter / totals.tokensBefore;
 }
 
 function doneUsagePayload(value: unknown) {

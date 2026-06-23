@@ -88,6 +88,7 @@ test("keeps raw tool result arrays safe during Headroom estimation", async () =>
 
 test("compresses tool history as a text transcript", async () => {
   const logs: { message: string; payload?: unknown }[] = [];
+  const compressionUsages: unknown[] = [];
   let compressorMessages: Message[] = [];
   const builders = await registeredHeadroomBuilders(logs, {
     compressor: async (messages) => {
@@ -102,6 +103,9 @@ test("compresses tool history as a text transcript", async () => {
         tokensSaved: 9_900,
         transformsApplied: ["test"],
       };
+    },
+    onCompression: (usage) => {
+      compressionUsages.push(usage);
     },
   });
   const messages = [
@@ -131,11 +135,16 @@ test("compresses tool history as a text transcript", async () => {
 
   const result = await builders[0]?.build(messages);
 
-  assert.deepEqual(result, [{ role: "user", content: "compressed transcript" }]);
+  assert.deepEqual(result, [
+    { role: "user", content: "compressed transcript" },
+  ]);
   assert.equal(hasToolBlocks(compressorMessages), false);
   assert.equal(compressorMessages[0]?.role, "assistant");
   assert.equal(compressorMessages[1]?.role, "user");
-  assert.match(String(compressorMessages[0]?.content), /Tool call run_commands/);
+  assert.match(
+    String(compressorMessages[0]?.content),
+    /Tool call run_commands/,
+  );
   assert.match(String(compressorMessages[0]?.content), /Tool result:/);
   assert.equal(
     compressorMessages[1]?.content,
@@ -144,6 +153,14 @@ test("compresses tool history as a text transcript", async () => {
   assert.equal(logs[0]?.message, "headroom provider compression started");
   assert.equal(logs[1]?.message, "headroom provider compression completed");
   assert.equal(recordValue(logs[1]?.payload).headroomInput, "text-transcript");
+  assert.deepEqual(compressionUsages, [
+    {
+      compressionRatio: 0.1,
+      tokensAfter: 100,
+      tokensBefore: 10_000,
+      tokensSaved: 9_900,
+    },
+  ]);
 });
 
 test("does not add provider-bound extensions outside Headroom mode", () => {
@@ -154,7 +171,10 @@ test("does not add provider-bound extensions outside Headroom mode", () => {
 
 async function registeredHeadroomBuilders(
   logs: { message: string; payload?: unknown }[],
-  options: Pick<ContextCompressionExtensionOptions, "compressor"> = {},
+  options: Pick<
+    ContextCompressionExtensionOptions,
+    "compressor" | "onCompression"
+  > = {},
 ) {
   const extensions = contextCompressionExtensions(
     { compactionMaxInputTokens: 100_000 },

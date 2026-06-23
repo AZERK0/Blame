@@ -63,7 +63,9 @@ function appendActivityUpdate(
   const current = updates ?? []
   const existingIndex = current.findIndex((item) => item.id === activity.id)
   if (existingIndex === -1) return [...current, activity]
-  return current.map((item, index) => (index === existingIndex ? activity : item))
+  return current.map((item, index) =>
+    index === existingIndex ? activity : item
+  )
 }
 
 export function shouldPersistAgentEvent(
@@ -391,13 +393,10 @@ function toolActivities(
   const payload = eventPayload(event)
   const phase = stringValue(payload.phase) ?? stringValue(payload.hookEventName)
   const input = toolActivityInput(activities, payload, phase)
-  return upsertActivities(
-    activities,
-    [
-      ...closeRunningActivityInputs(activities, ["message", "reasoning"]),
-      ...toolActivityInputs(activities, phase, input),
-    ]
-  )
+  return upsertActivities(activities, [
+    ...closeRunningActivityInputs(activities, ["message", "reasoning"]),
+    ...toolActivityInputs(activities, phase, input),
+  ])
 }
 
 function toolActivityInput(
@@ -769,6 +768,21 @@ function usageTurnFields(
       doneAggregate
     ),
     cost: usageTurnValue(current.cost, usage.cost, doneAggregate),
+    headroomCompressionCount:
+      numberValue(usage.headroomCompressionCount) ??
+      current.headroomCompressionCount,
+    headroomCompressionRatio:
+      numberValue(usage.headroomCompressionRatio) ??
+      current.headroomCompressionRatio,
+    headroomLastTokensSaved:
+      numberValue(usage.headroomLastTokensSaved) ??
+      current.headroomLastTokensSaved,
+    headroomTokensAfter:
+      numberValue(usage.headroomTokensAfter) ?? current.headroomTokensAfter,
+    headroomTokensBefore:
+      numberValue(usage.headroomTokensBefore) ?? current.headroomTokensBefore,
+    headroomTokensSaved:
+      numberValue(usage.headroomTokensSaved) ?? current.headroomTokensSaved,
     inputTokens: usageTurnValue(
       current.inputTokens,
       usage.inputTokens,
@@ -848,6 +862,12 @@ function usageChanged(current: UserStoryAgentUsage, next: UserStoryAgentUsage) {
     current.cacheReadTokens !== next.cacheReadTokens ||
     current.cacheWriteTokens !== next.cacheWriteTokens ||
     current.cost !== next.cost ||
+    current.headroomCompressionCount !== next.headroomCompressionCount ||
+    current.headroomCompressionRatio !== next.headroomCompressionRatio ||
+    current.headroomLastTokensSaved !== next.headroomLastTokensSaved ||
+    current.headroomTokensAfter !== next.headroomTokensAfter ||
+    current.headroomTokensBefore !== next.headroomTokensBefore ||
+    current.headroomTokensSaved !== next.headroomTokensSaved ||
     current.inputTokens !== next.inputTokens ||
     current.outputTokens !== next.outputTokens ||
     current.totalCacheReadTokens !== next.totalCacheReadTokens ||

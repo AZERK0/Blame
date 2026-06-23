@@ -68,11 +68,17 @@ const allowedLogKeys = new Set([
   "fallback",
   "finishReason",
   "headroomBaseUrl",
+  "headroomCompressionCount",
+  "headroomCompressionRatio",
   "headroomCommand",
   "headroomInput",
+  "headroomLastTokensSaved",
   "headroomPackage",
   "headroomPort",
   "headroomSource",
+  "headroomTokensAfter",
+  "headroomTokensBefore",
+  "headroomTokensSaved",
   "headroomVenv",
   "inputTokens",
   "maxIterations",
@@ -207,6 +213,12 @@ export function summarizeUsage(summary: UsageSummary | undefined) {
     cacheReadTokens: usage.cacheReadTokens,
     cacheWriteTokens: usage.cacheWriteTokens,
     cost: usageCost(usage),
+    headroomCompressionCount: usageHeadroomField(usage, "headroomCompressionCount"),
+    headroomCompressionRatio: usageHeadroomField(usage, "headroomCompressionRatio"),
+    headroomLastTokensSaved: usageHeadroomField(usage, "headroomLastTokensSaved"),
+    headroomTokensAfter: usageHeadroomField(usage, "headroomTokensAfter"),
+    headroomTokensBefore: usageHeadroomField(usage, "headroomTokensBefore"),
+    headroomTokensSaved: usageHeadroomField(usage, "headroomTokensSaved"),
     inputTokens: usage.inputTokens,
     outputTokens: usage.outputTokens,
     totalCacheReadTokens: usageTotalCacheReadTokens(usage),
@@ -328,6 +340,10 @@ function totalCost(usage: UsageTotals) {
 
 function usageCost(usage: UsageTotals) {
   return "cost" in usage ? usage.cost : undefined
+}
+
+function usageHeadroomField(usage: UsageTotals, key: keyof AgentUsageTotals) {
+  return key in usage ? usage[key] : undefined
 }
 
 function usageTotalCost(usage: UsageTotals) {
