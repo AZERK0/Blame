@@ -65,6 +65,7 @@ const drawerSidebarStorageKey = "blame.app.user-story-drawer-sidebar-open.v1"
 export function UserStoryDrawerPanel({
   focusComment,
   initialDevelopmentTab,
+  initialDraft,
   initialTab,
   mode,
   open,
@@ -85,6 +86,7 @@ export function UserStoryDrawerPanel({
 }: {
   focusComment?: boolean
   initialDevelopmentTab: UserStoryDevelopmentTab
+  initialDraft?: Partial<Omit<UserStoryDraft, "projectId">>
   initialTab: UserStoryDrawerTab
   mode: UserStoryDrawerMode
   open: boolean
@@ -137,11 +139,17 @@ export function UserStoryDrawerPanel({
     )
   const [summaryCodeSelectionAttachments, setSummaryCodeSelectionAttachments] =
     React.useState<PendingCodeSelectionAttachment[]>(
-      userStory?.codeSelectionAttachments ?? []
+      mode === "create"
+        ? (initialDraft?.codeSelectionAttachments ?? [])
+        : (userStory?.codeSelectionAttachments ?? [])
     )
   const [summaryFileAttachments, setSummaryFileAttachments] = React.useState<
     UserStoryFileAttachment[]
-  >(userStory?.fileAttachments ?? [])
+  >(
+    mode === "create"
+      ? (initialDraft?.fileAttachments ?? [])
+      : (userStory?.fileAttachments ?? [])
+  )
   const [commentCodeSelectionAttachments, setCommentCodeSelectionAttachments] =
     React.useState<PendingCodeSelectionAttachment[]>([])
   const [commentFileAttachments, setCommentFileAttachments] = React.useState<
@@ -155,10 +163,12 @@ export function UserStoryDrawerPanel({
   const [pendingAction, setPendingAction] = React.useState<DrawerAction>()
   const [sidebarOpen, setSidebarOpen] = React.useState(readSidebarOpen)
   const [title, setTitle] = React.useState(
-    mode === "create" ? "" : (userStory?.title ?? "")
+    mode === "create" ? (initialDraft?.title ?? "") : (userStory?.title ?? "")
   )
   const [summary, setSummary] = React.useState(
-    mode === "create" ? "" : (userStory?.summary ?? "")
+    mode === "create"
+      ? (initialDraft?.summary ?? "")
+      : (userStory?.summary ?? "")
   )
   const [comment, setComment] = React.useState("")
   const summaryRef = React.useRef<HTMLDivElement>(null)
@@ -410,10 +420,7 @@ export function UserStoryDrawerPanel({
         )}
       </Tabs>
       {tab === "user-story" && sidebarAvailable && (
-        <DrawerSidebarIsland
-          open={sidebarOpen}
-          userStory={userStory}
-        />
+        <DrawerSidebarIsland open={sidebarOpen} userStory={userStory} />
       )}
       <DrawerFooter className="pointer-events-none absolute right-4 bottom-4 z-20 p-0">
         <DrawerActions
@@ -601,7 +608,7 @@ function DrawerSidebarIsland({
   if (!open) return null
 
   return (
-    <div className="absolute top-4 right-4 bottom-16 z-10 w-[min(24rem,calc(100%-2rem))] h-fit overflow-hidden rounded-xl bg-input/40 dark:bg-muted shadow-xl shadow-black/10 ring-1 ring-foreground/20 backdrop-blur-xl">
+    <div className="absolute top-4 right-4 bottom-16 z-10 h-fit w-[min(24rem,calc(100%-2rem))] overflow-hidden rounded-xl bg-input/40 shadow-xl ring-1 shadow-black/10 ring-foreground/20 backdrop-blur-xl dark:bg-muted">
       <ScrollArea className="h-full min-h-0">
         <DrawerSidebar userStory={userStory} />
       </ScrollArea>
@@ -664,9 +671,10 @@ function createdAtLabel(userStory?: UserStory) {
 
 function readSidebarOpen() {
   try {
-    return JSON.parse(
-      localStorage.getItem(drawerSidebarStorageKey) ?? "false"
-    ) === true
+    return (
+      JSON.parse(localStorage.getItem(drawerSidebarStorageKey) ?? "false") ===
+      true
+    )
   } catch {
     return false
   }

@@ -1,4 +1,7 @@
-import type { UserStory } from "@/components/backlog/data/backlog-data"
+import type {
+  UserStory,
+  UserStoryDraft,
+} from "@/components/backlog/data/backlog-data"
 
 export type UserStoryDrawerTab = "user-story" | "preview" | "development"
 export type UserStoryDevelopmentTab = "files" | "diff" | "terminal"
@@ -20,6 +23,7 @@ export type DrawerAction =
 export type DrawerTarget = {
   userStory?: UserStory
   mode: UserStoryDrawerMode
+  initialDraft?: Partial<Omit<UserStoryDraft, "projectId">>
   initialTab?: UserStoryDrawerTab
   initialDevelopmentTab?: UserStoryDevelopmentTab
   focusComment?: boolean

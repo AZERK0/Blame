@@ -112,6 +112,12 @@ function UserStoryAction({
   return (
     <StoryAction
       action={action}
+      className={
+        story.status === "done" && action === "View Diff" ? "flex-1" : undefined
+      }
+      label={
+        story.status === "done" && action === "View Diff" ? "Diff" : undefined
+      }
       onAction={onAction}
       onOpenDrawer={onOpenDrawer}
       onOpenWorktree={onOpenWorktree}

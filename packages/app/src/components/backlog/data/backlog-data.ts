@@ -20,6 +20,7 @@ export type BacklogAction =
   | "Request Changes"
   | "Reject"
   | "Approve & Merge"
+  | "Use Context"
   | "Rework"
   | "Delete Permanently"
 
@@ -263,6 +264,6 @@ export function userStoryActions(story: UserStory): BacklogAction[] {
       "Reject",
       "Approve & Merge",
     ]
-  if (story.status === "done") return ["View Diff"]
+  if (story.status === "done") return ["View Diff", "Use Context"]
   return ["Delete Permanently", "Rework"]
 }

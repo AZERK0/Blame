@@ -28,6 +28,7 @@ export type UserStoryDrawerProps = {
   onOpenChange: (open: boolean) => void
   userStory?: UserStory
   mode: UserStoryDrawerMode
+  initialDraft?: Partial<Omit<UserStoryDraft, "projectId">>
   initialTab?: UserStoryDrawerTab
   initialDevelopmentTab?: UserStoryDevelopmentTab
   focusComment?: boolean
@@ -69,6 +70,7 @@ export function UserStoryDrawer({
   onOpenChange,
   userStory,
   mode,
+  initialDraft,
   initialTab = "user-story",
   initialDevelopmentTab = "files",
   focusComment,
@@ -88,6 +90,7 @@ export function UserStoryDrawer({
   const drawerKey = [
     mode,
     userStory?.id ?? "draft",
+    initialDraftKey(initialDraft),
     status,
     initialTab,
     initialDevelopmentTab,
@@ -105,6 +108,7 @@ export function UserStoryDrawer({
         key={drawerKey}
         focusComment={focusComment}
         initialDevelopmentTab={initialDevelopmentTab}
+        initialDraft={initialDraft}
         initialTab={initialTab}
         mode={mode}
         open={open}
@@ -125,4 +129,17 @@ export function UserStoryDrawer({
       />
     </Drawer>
   )
+}
+
+function initialDraftKey(
+  initialDraft: Partial<Omit<UserStoryDraft, "projectId">> | undefined
+) {
+  return [
+    initialDraft?.title ?? "",
+    initialDraft?.summary ?? "",
+    ...(initialDraft?.fileAttachments ?? []).map((attachment) => attachment.id),
+    ...(initialDraft?.codeSelectionAttachments ?? []).map(
+      (attachment) => attachment.id
+    ),
+  ].join(":")
 }

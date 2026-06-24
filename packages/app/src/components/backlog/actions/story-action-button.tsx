@@ -3,6 +3,7 @@ import {
   CheckIcon,
   CircleStopIcon,
   ExternalLinkIcon,
+  FilePlus2Icon,
   FileTextIcon,
   FolderOpenIcon,
   GitMergeIcon,
@@ -101,6 +102,12 @@ const actionConfig: Record<BacklogAction, ActionConfig> = {
     variant: "default",
     tone: "primary",
   },
+  "Use Context": {
+    icon: FilePlus2Icon,
+    variant: "default",
+    tone: "primary",
+    compact: true,
+  },
   Rework: {
     icon: RotateCcwIcon,
     variant: "default",
@@ -196,7 +203,7 @@ export function StoryAction({
       onOpenDrawer(drawerTargetForAction(story, action))
       return
     }
-    if (action !== "Approve & Merge") {
+    if (action !== "Approve & Merge" && action !== "Use Context") {
       await runAction(story, action)
       return
     }
@@ -239,6 +246,7 @@ function directAction(action: BacklogAction) {
     action === "Discard" ||
     action === "Dequeue" ||
     action === "Approve & Merge" ||
+    action === "Use Context" ||
     action === "Rework"
   )
 }

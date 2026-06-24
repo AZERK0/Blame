@@ -10,6 +10,10 @@ import {
   shouldPersistAgentEvent,
 } from "@/components/backlog/data/agent-flow"
 import { subscribeAgentEvents } from "@/components/backlog/data/agent-event-stream"
+import {
+  changedFilesFromDiff,
+  completedStoryContextAttachment,
+} from "@/components/backlog/data/user-story-context"
 import { useBacklogStore } from "@/components/backlog/data/backlog-store"
 import type {
   BacklogAction,
@@ -485,23 +489,17 @@ export function BacklogPage() {
         status: "in-progress",
       })
       let authenticationFailed = false
-      const unsubscribe = subscribeAgentEvents(
-        platform,
-        sessionId,
-        (event) => {
-          if (authenticationFailed) return
-          authenticationFailed = expiredAuthenticationToken(
-            agentEventText(event)
-          )
-          persistAgentEvent(updatedStory, run, event)
-          if (
-            authenticationFailed ||
-            event.type === "done" ||
-            event.type === "error"
-          )
-            unsubscribe()
-        }
-      )
+      const unsubscribe = subscribeAgentEvents(platform, sessionId, (event) => {
+        if (authenticationFailed) return
+        authenticationFailed = expiredAuthenticationToken(agentEventText(event))
+        persistAgentEvent(updatedStory, run, event)
+        if (
+          authenticationFailed ||
+          event.type === "done" ||
+          event.type === "error"
+        )
+          unsubscribe()
+      })
       void agent.sessions.sendDevelopment({
         sessionId,
         title: story.title,
@@ -513,12 +511,7 @@ export function BacklogPage() {
       })
       return updatedStory
     },
-    [
-      backlog,
-      platform,
-      updateStory,
-      persistAgentEvent,
-    ]
+    [backlog, platform, updateStory, persistAgentEvent]
   )
 
   const approveAndMergeStory = React.useCallback(
@@ -650,9 +643,26 @@ export function BacklogPage() {
           status: "backlog",
         })
       }
+      if (action === "Use Context") {
+        const changedFiles = await completedStoryChangedFiles(
+          story,
+          platform,
+          projects.activeProject?.path
+        )
+        setDrawerTarget({
+          initialDraft: {
+            fileAttachments: [
+              completedStoryContextAttachment(story, changedFiles),
+            ],
+          },
+          initialTab: "user-story",
+          mode: "create",
+        })
+        return
+      }
       if (action === "Approve & Merge") return approveAndMergeStory(story)
     },
-    [approveAndMergeStory, updateStory]
+    [approveAndMergeStory, platform, projects.activeProject?.path, updateStory]
   )
 
   return (
@@ -706,6 +716,7 @@ export function BacklogPage() {
         }}
         userStory={drawerUserStory}
         mode={drawerTarget?.mode ?? "view"}
+        initialDraft={drawerTarget?.initialDraft}
         initialTab={drawerTarget?.initialTab}
         initialDevelopmentTab={drawerTarget?.initialDevelopmentTab}
         focusComment={drawerTarget?.focusComment}
@@ -1254,4 +1265,22 @@ function diffSummary(diff: string) {
     .slice(0, 20)
   if (files.length === 0) return "Current git diff: no local changes."
   return `Current git diff files: ${files.join(", ")}.`
+}
+
+async function completedStoryChangedFiles(
+  story: UserStory,
+  platform: Platform,
+  repositoryRoot: string | undefined
+) {
+  if (!repositoryRoot || !platform.workspace || !story.mergeCommit) return []
+  try {
+    const diff = await platform.workspace.gitDiffBetween({
+      from: story.baseCommit ?? `${story.mergeCommit}^`,
+      root: repositoryRoot,
+      to: story.mergeCommit,
+    })
+    return changedFilesFromDiff(diff)
+  } catch {
+    return []
+  }
 }
