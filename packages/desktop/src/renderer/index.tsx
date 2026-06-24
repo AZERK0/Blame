@@ -12,6 +12,7 @@ mountApp(root, {
     backlogStatusPip: window.blame.backlogStatusPip,
     platform: window.blame.platform,
     previewBrowser: window.blame.previewBrowser,
+    systemNotifications: window.blame.systemNotifications,
     terminal: window.blame.terminal,
     updates: window.blame.updates,
     workspace: window.blame.workspace,

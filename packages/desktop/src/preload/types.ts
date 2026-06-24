@@ -121,6 +121,15 @@ export type DesktopUpdates = {
   onStatus(callback: (status: DesktopUpdateStatus) => void): () => void;
 };
 
+export type SystemNotificationInput = {
+  body?: string;
+  title: string;
+};
+
+export type SystemNotifications = {
+  show(input: SystemNotificationInput): Promise<boolean>;
+};
+
 export type BacklogStatusPip = {
   onRequest(callback: (request: BacklogStatusPipRequest) => void): () => void;
   onSnapshot(
@@ -139,6 +148,7 @@ export type BlameDesktopApi = {
   openPath(path: string): Promise<string>;
   backlogStatusPip: BacklogStatusPip;
   platform: NodeJS.Platform;
+  systemNotifications: SystemNotifications;
   updates: DesktopUpdates;
   windowControls: WindowControls;
   previewBrowser: {

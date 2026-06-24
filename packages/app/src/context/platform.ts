@@ -42,6 +42,7 @@ export type Platform = {
   backlogStatusPip?: BacklogStatusPipClient
   platform?: string
   previewBrowser?: PreviewBrowserClient
+  systemNotifications?: SystemNotificationsClient
   terminal?: TerminalClient
   updates?: DesktopUpdatesClient
   workspace?: WorkspaceClient
@@ -66,6 +67,15 @@ export type BacklogStatusPipSnapshot = {
   hasActiveProject: boolean
   loading: boolean
   stories: UserStory[]
+}
+
+export type SystemNotificationInput = {
+  body?: string
+  title: string
+}
+
+export type SystemNotificationsClient = {
+  show(input: SystemNotificationInput): Promise<boolean>
 }
 
 export type BacklogStatusPipAction =

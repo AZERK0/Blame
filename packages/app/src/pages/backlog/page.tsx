@@ -67,6 +67,7 @@ export function BacklogPage() {
   const initializationStatus = projectInitialization?.status ?? null
   const queueInitializing = projectInitializing(initializationStatus)
   const storiesRef = React.useRef(backlog.stories)
+  const previousStoryStatuses = React.useRef<Map<number, BacklogColumnId>>()
   const pendingAgentUpdates = React.useRef(
     new Map<number, PendingAgentUpdate>()
   )
@@ -74,6 +75,15 @@ export function BacklogPage() {
   React.useEffect(() => {
     storiesRef.current = backlog.stories
   }, [backlog.stories])
+
+  React.useEffect(() => {
+    notifyStoriesMovedToReview(
+      backlog.stories,
+      previousStoryStatuses.current,
+      platform
+    )
+    previousStoryStatuses.current = storyStatusMap(backlog.stories)
+  }, [backlog.stories, platform])
 
   React.useEffect(() => {
     platform.backlogStatusPip?.publish({
@@ -1060,6 +1070,29 @@ function leavesRuntimeStatus(
   nextStatus: BacklogColumnId
 ) {
   return runtimeStatuses.has(currentStatus) && !runtimeStatuses.has(nextStatus)
+}
+
+function notifyStoriesMovedToReview(
+  stories: UserStory[],
+  previousStatuses: Map<number, BacklogColumnId> | undefined,
+  platform: ReturnType<typeof usePlatform>
+) {
+  if (!previousStatuses) return
+  for (const story of stories) {
+    const previousStatus = previousStatuses.get(story.id)
+    if (previousStatus === undefined || previousStatus === "in-review") continue
+    if (story.status !== "in-review") continue
+    void platform.systemNotifications
+      ?.show({
+        body: story.title,
+        title: "User story ready for review",
+      })
+      .catch(() => false)
+  }
+}
+
+function storyStatusMap(stories: UserStory[]) {
+  return new Map(stories.map((story) => [story.id, story.status]))
 }
 
 async function stopStoryRuntime(

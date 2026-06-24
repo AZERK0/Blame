@@ -8,6 +8,7 @@ import {
   BrowserWindow,
   dialog,
   ipcMain,
+  Notification,
   screen,
   shell,
   type BrowserWindowConstructorOptions,
@@ -211,6 +212,10 @@ function loadRenderer(window: BrowserWindow) {
 }
 
 function registerIpcHandlers() {
+  ipcMain.handle("notifications:show", (_event, input) => {
+    return showSystemNotification(input)
+  })
+
   ipcMain.handle("window:is-maximized", (event) => {
     return getEventWindow(event)?.isMaximized() ?? false
   })
@@ -246,6 +251,25 @@ function registerIpcHandlers() {
   ipcMain.handle("shell:open-path", (_event, path: string) => {
     return shell.openPath(path)
   })
+}
+
+function showSystemNotification(input: unknown) {
+  if (!Notification.isSupported()) return false
+  if (!systemNotificationInput(input)) return false
+  new Notification(input).show()
+  return true
+}
+
+function systemNotificationInput(input: unknown): input is {
+  body?: string
+  title: string
+} {
+  if (!input || typeof input !== "object") return false
+  const record = input as Record<string, unknown>
+  if (typeof record.title !== "string" || !record.title.trim()) return false
+  if (record.body !== undefined && typeof record.body !== "string")
+    return false
+  return true
 }
 
 function registerWindowStateEvents(window: BrowserWindow) {

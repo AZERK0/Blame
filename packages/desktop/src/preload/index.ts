@@ -32,6 +32,9 @@ const api: BlameDesktopApi = {
     request: (input) => ipcRenderer.invoke("backlog-status-pip:request", input),
   },
   platform: process.platform,
+  systemNotifications: {
+    show: (input) => ipcRenderer.invoke("notifications:show", input),
+  },
   updates: {
     check: () => ipcRenderer.invoke("updates:check"),
     download: () => ipcRenderer.invoke("updates:download"),
