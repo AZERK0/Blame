@@ -24,6 +24,10 @@ import type {
   StartNewProjectGenerationInput,
   StartSessionInput,
 } from "@blame/agent-runtime";
+import type {
+  BacklogStatusPipRequest,
+  BacklogStatusPipSnapshot,
+} from "@blame/app";
 import type { HostDependencyReport } from "../main/host-dependencies";
 import type { CreateProjectInput } from "../main/project-creation";
 
@@ -119,38 +123,12 @@ export type DesktopUpdates = {
 
 export type BacklogStatusPip = {
   onRequest(callback: (request: BacklogStatusPipRequest) => void): () => void;
+  onSnapshot(
+    callback: (snapshot: BacklogStatusPipSnapshot) => void,
+  ): () => void;
   open(): Promise<boolean>;
+  publish(snapshot: BacklogStatusPipSnapshot): void;
   request(input: BacklogStatusPipRequest): Promise<boolean>;
-};
-
-export type BacklogStatusPipAction =
-  | "Send to Dev Agent"
-  | "Discard"
-  | "Dequeue"
-  | "Open Worktree"
-  | "Open Preview"
-  | "Stop Agent"
-  | "Unpause Agent"
-  | "View Diff"
-  | "View Files"
-  | "View Terminal"
-  | "Request Changes"
-  | "Reject"
-  | "Approve & Merge"
-  | "Use Context"
-  | "Rework"
-  | "Delete Permanently";
-
-export type BacklogStatusPipRequest = {
-  action?: BacklogStatusPipAction;
-  drawer?: {
-    focusComment?: boolean;
-    initialDevelopmentTab?: "diff" | "files" | "terminal";
-    initialTab?: "user-story" | "development" | "preview";
-  };
-  rejectChoice?: "request-changes" | "discard";
-  stopChoice?: "pause-feedback" | "backlog" | "discard-worktree";
-  storyId: number;
 };
 
 export type BlameDesktopApi = {

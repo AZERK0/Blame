@@ -11,6 +11,11 @@ import { ProjectProvider } from "@/context/project-provider"
 import { ServerProvider } from "@/context/server-provider"
 
 export { App }
+export type {
+  BacklogStatusPipRequest,
+  BacklogStatusPipSnapshot,
+  Platform,
+} from "./context/platform"
 
 export type MountAppOptions = {
   platform?: Platform

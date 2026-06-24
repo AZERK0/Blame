@@ -75,6 +75,21 @@ export function BacklogPage() {
     storiesRef.current = backlog.stories
   }, [backlog.stories])
 
+  React.useEffect(() => {
+    platform.backlogStatusPip?.publish({
+      authStatus: auth.status,
+      hasActiveProject: Boolean(projects.activeProject),
+      loading: backlog.loading,
+      stories: backlog.stories,
+    })
+  }, [
+    auth.status,
+    backlog.loading,
+    backlog.stories,
+    platform.backlogStatusPip,
+    projects.activeProject,
+  ])
+
   React.useEffect(
     () => () => clearPendingAgentUpdates(pendingAgentUpdates.current),
     []

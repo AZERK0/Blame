@@ -17,7 +17,18 @@ const api: BlameDesktopApi = {
       return () =>
         ipcRenderer.removeListener("backlog-status-pip:request", handler);
     },
+    onSnapshot: (callback) => {
+      const handler = (
+        _event: unknown,
+        snapshot: Parameters<typeof callback>[0],
+      ) => callback(snapshot);
+      ipcRenderer.on("backlog-status-pip:snapshot", handler);
+      return () =>
+        ipcRenderer.removeListener("backlog-status-pip:snapshot", handler);
+    },
     open: () => ipcRenderer.invoke("backlog-status-pip:open"),
+    publish: (snapshot) =>
+      ipcRenderer.send("backlog-status-pip:snapshot", snapshot),
     request: (input) => ipcRenderer.invoke("backlog-status-pip:request", input),
   },
   platform: process.platform,

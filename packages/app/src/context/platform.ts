@@ -27,6 +27,7 @@ import type {
   ReasoningEffort,
 } from "@blame/agent-runtime"
 import type { NewProjectConfiguration } from "../components/new-project/new-project-options"
+import type { UserStory } from "../components/backlog/data/backlog-data"
 
 type PickerPaths = string | string[] | null
 
@@ -55,7 +56,16 @@ export type Platform = {
 export type BacklogStatusPipClient = {
   open(): Promise<boolean>
   onRequest(callback: (request: BacklogStatusPipRequest) => void): () => void
+  onSnapshot(callback: (snapshot: BacklogStatusPipSnapshot) => void): () => void
+  publish(snapshot: BacklogStatusPipSnapshot): void
   request(input: BacklogStatusPipRequest): Promise<boolean>
+}
+
+export type BacklogStatusPipSnapshot = {
+  authStatus: "loading" | "authenticated" | "unauthenticated"
+  hasActiveProject: boolean
+  loading: boolean
+  stories: UserStory[]
 }
 
 export type BacklogStatusPipAction =

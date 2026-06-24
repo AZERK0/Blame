@@ -2,7 +2,6 @@ import * as React from "react"
 
 import { BacklogColumnHeader } from "@/components/backlog/board/backlog-column"
 import { UserStoryCard } from "@/components/backlog/board/user-story-card"
-import { useBacklogStore } from "@/components/backlog/data/backlog-store"
 import type {
   BacklogAction,
   BacklogColumnId,
@@ -14,35 +13,36 @@ import type {
 } from "@/components/backlog/actions/story-action-dialogs"
 import type { DrawerTarget } from "@/components/backlog/shared/backlog-types"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { useCloudAuth } from "@/context/cloud-auth"
-import { usePlatform } from "@/context/platform"
-import { useProjects } from "@/context/projects"
+import { usePlatform, type BacklogStatusPipSnapshot } from "@/context/platform"
 
 const activeStatuses = new Set<BacklogColumnId>(["in-progress", "in-review"])
 const pageTitle = "Active User Stories"
-const refreshDelayMs = 2_500
+const initialSnapshot: BacklogStatusPipSnapshot = {
+  authStatus: "loading",
+  hasActiveProject: false,
+  loading: true,
+  stories: [],
+}
 
 export function BacklogStatusPipPage() {
-  const auth = useCloudAuth()
   const platform = usePlatform()
-  const projects = useProjects()
-  const backlog = useBacklogStore()
-  const loadBacklog = backlog.load
+  const [snapshot, setSnapshot] =
+    React.useState<BacklogStatusPipSnapshot>(initialSnapshot)
   const activeStories = React.useMemo(
-    () => backlog.stories.filter(activeStory).sort(compareActiveStories),
-    [backlog.stories]
+    () => snapshot.stories.filter(activeStory).sort(compareActiveStories),
+    [snapshot.stories]
   )
   const headerColumn = React.useMemo(
     () => ({
       description: statusText(
-        auth.status,
-        projects.activeProject,
+        snapshot.authStatus,
+        snapshot.hasActiveProject,
         activeStories.length
       ),
       id: headerColumnId(activeStories),
       title: "Active User Stories",
     }),
-    [activeStories, auth.status, projects.activeProject]
+    [activeStories, snapshot.authStatus, snapshot.hasActiveProject]
   )
 
   React.useEffect(() => {
@@ -50,11 +50,8 @@ export function BacklogStatusPipPage() {
   }, [])
 
   React.useEffect(() => {
-    if (auth.status !== "authenticated" || !projects.activeProject) return
-    void loadBacklog()
-    const timer = window.setInterval(() => void loadBacklog(), refreshDelayMs)
-    return () => window.clearInterval(timer)
-  }, [auth.status, loadBacklog, projects.activeProject])
+    return platform.backlogStatusPip?.onSnapshot(setSnapshot)
+  }, [platform.backlogStatusPip])
 
   return (
     <main className="flex h-svh min-h-0 flex-col overflow-hidden bg-background text-foreground">
@@ -95,9 +92,9 @@ export function BacklogStatusPipPage() {
             {!activeStories.length && (
               <div className="rounded-lg border bg-muted/30 px-4 py-6 text-center text-sm text-muted-foreground">
                 {emptyText(
-                  auth.status,
-                  projects.activeProject,
-                  backlog.loading
+                  snapshot.authStatus,
+                  snapshot.hasActiveProject,
+                  snapshot.loading
                 )}
               </div>
             )}
@@ -179,23 +176,23 @@ function headerColumnId(stories: UserStory[]): BacklogColumnId {
 }
 
 function statusText(
-  authStatus: ReturnType<typeof useCloudAuth>["status"],
-  activeProject: ReturnType<typeof useProjects>["activeProject"],
+  authStatus: BacklogStatusPipSnapshot["authStatus"],
+  hasActiveProject: boolean,
   activeCount: number
 ) {
   if (authStatus === "loading") return "Loading session"
   if (authStatus === "unauthenticated") return "Sign in to sync backlog"
-  if (!activeProject) return "Open a project to track active stories"
+  if (!hasActiveProject) return "Open a project to track active stories"
   return `${activeCount} active ${activeCount === 1 ? "story" : "stories"}`
 }
 
 function emptyText(
-  authStatus: ReturnType<typeof useCloudAuth>["status"],
-  activeProject: ReturnType<typeof useProjects>["activeProject"],
+  authStatus: BacklogStatusPipSnapshot["authStatus"],
+  hasActiveProject: boolean,
   loading: boolean
 ) {
   if (authStatus === "loading" || loading) return "Loading user stories."
   if (authStatus === "unauthenticated") return "Sign in to view active stories."
-  if (!activeProject) return "Open a project to load user stories."
+  if (!hasActiveProject) return "Open a project to load user stories."
   return "No user story is currently in progress or in review."
 }
