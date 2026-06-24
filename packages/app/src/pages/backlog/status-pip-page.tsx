@@ -1,5 +1,6 @@
 import * as React from "react"
 
+import { BacklogColumnHeader } from "@/components/backlog/board/backlog-column"
 import { UserStoryCard } from "@/components/backlog/board/user-story-card"
 import { useBacklogStore } from "@/components/backlog/data/backlog-store"
 import type {
@@ -28,8 +29,20 @@ export function BacklogStatusPipPage() {
   const backlog = useBacklogStore()
   const loadBacklog = backlog.load
   const activeStories = React.useMemo(
-    () => backlog.stories.filter(activeStory),
+    () => backlog.stories.filter(activeStory).sort(compareActiveStories),
     [backlog.stories]
+  )
+  const headerColumn = React.useMemo(
+    () => ({
+      description: statusText(
+        auth.status,
+        projects.activeProject,
+        activeStories.length
+      ),
+      id: headerColumnId(activeStories),
+      title: "Active User Stories",
+    }),
+    [activeStories, auth.status, projects.activeProject]
   )
 
   React.useEffect(() => {
@@ -45,52 +58,52 @@ export function BacklogStatusPipPage() {
 
   return (
     <main className="flex h-svh min-h-0 flex-col overflow-hidden bg-background text-foreground">
-      <header className="border-b px-4 py-3">
-        <h1 className="truncate text-sm font-semibold">Active User Stories</h1>
-        <p className="truncate text-xs text-muted-foreground">
-          {statusText(
-            auth.status,
-            projects.activeProject,
-            activeStories.length
-          )}
-        </p>
-      </header>
-      <ScrollArea className="min-h-0 flex-1">
-        <div className="flex flex-col gap-3 p-3">
-          {activeStories.map((story) => (
-            <UserStoryCard
-              key={story.id}
-              onAction={(story, action) =>
-                requestStoryAction(platform, story, action)
-              }
-              onDeleteUserStory={(story) =>
-                requestStoryAction(platform, story, "Delete Permanently")
-              }
-              onOpenDrawer={(target) => requestStoryDrawer(platform, target)}
-              onOpenWorktree={(story) =>
-                requestStoryAction(platform, story, "Open Worktree")
-              }
-              onReject={(story, choice) =>
-                requestRejectChoice(platform, story, choice)
-              }
-              onStopAgent={(story, choice) =>
-                requestStopChoice(platform, story, choice)
-              }
-              onUnpauseAgent={(story) =>
-                requestStoryAction(platform, story, "Unpause Agent").then(
-                  () => story
-                )
-              }
-              story={story}
-            />
-          ))}
-          {!activeStories.length && (
-            <div className="rounded-lg border bg-muted/30 px-4 py-6 text-center text-sm text-muted-foreground">
-              {emptyText(auth.status, projects.activeProject, backlog.loading)}
-            </div>
-          )}
-        </div>
-      </ScrollArea>
+      <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-lg border bg-muted/30">
+        <BacklogColumnHeader
+          column={headerColumn}
+          count={activeStories.length}
+        />
+        <ScrollArea className="min-h-0 flex-1 bg-foreground/5 dark:bg-background">
+          <div className="flex flex-col gap-3 p-3">
+            {activeStories.map((story) => (
+              <UserStoryCard
+                key={story.id}
+                onAction={(story, action) =>
+                  requestStoryAction(platform, story, action)
+                }
+                onDeleteUserStory={(story) =>
+                  requestStoryAction(platform, story, "Delete Permanently")
+                }
+                onOpenDrawer={(target) => requestStoryDrawer(platform, target)}
+                onOpenWorktree={(story) =>
+                  requestStoryAction(platform, story, "Open Worktree")
+                }
+                onReject={(story, choice) =>
+                  requestRejectChoice(platform, story, choice)
+                }
+                onStopAgent={(story, choice) =>
+                  requestStopChoice(platform, story, choice)
+                }
+                onUnpauseAgent={(story) =>
+                  requestStoryAction(platform, story, "Unpause Agent").then(
+                    () => story
+                  )
+                }
+                story={story}
+              />
+            ))}
+            {!activeStories.length && (
+              <div className="rounded-lg border bg-muted/30 px-4 py-6 text-center text-sm text-muted-foreground">
+                {emptyText(
+                  auth.status,
+                  projects.activeProject,
+                  backlog.loading
+                )}
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+      </section>
     </main>
   )
 }
@@ -147,6 +160,22 @@ async function requestStopChoice(
 
 function activeStory(story: UserStory) {
   return activeStatuses.has(story.status)
+}
+
+function compareActiveStories(left: UserStory, right: UserStory) {
+  return activeStoryRank(left) - activeStoryRank(right)
+}
+
+function activeStoryRank(story: UserStory) {
+  if (story.status === "in-review") return 0
+  return 1
+}
+
+function headerColumnId(stories: UserStory[]): BacklogColumnId {
+  if (stories.some((story) => story.status === "in-review")) return "in-review"
+  if (stories.some((story) => story.status === "in-progress"))
+    return "in-progress"
+  return "ready"
 }
 
 function statusText(

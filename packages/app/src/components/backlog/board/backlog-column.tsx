@@ -65,7 +65,7 @@ export function BacklogColumn({
 }) {
   return (
     <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-lg border bg-muted/30">
-      <ColumnHeader
+      <BacklogColumnHeader
         column={column}
         count={stories.length}
         queueInitializing={queueInitializing}
@@ -106,12 +106,12 @@ export function BacklogColumn({
   )
 }
 
-function ColumnHeader({
+export function BacklogColumnHeader({
   column,
   count,
   queueInitializing,
 }: {
-  column: (typeof backlogColumns)[number]
+  column: BacklogColumnHeaderColumn
   count: number
   queueInitializing?: boolean
 }) {
@@ -156,4 +156,10 @@ function ColumnHeader({
       <Badge variant="secondary">{count}</Badge>
     </div>
   )
+}
+
+type BacklogColumnHeaderColumn = {
+  description: string
+  id: BacklogColumnId
+  title: string
 }
