@@ -664,11 +664,21 @@ export function BacklogPage() {
     },
     [approveAndMergeStory, platform, projects.activeProject?.path, updateStory]
   )
+  const openStatusPip = React.useCallback(() => {
+    void platform.backlogStatusPip?.open().catch((error) => {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Unable to open status picture in picture."
+      )
+    })
+  }, [platform.backlogStatusPip])
 
   return (
     <div className="flex h-[calc(100svh_-_var(--header-height))] min-h-0 min-w-0 flex-col gap-4 overflow-hidden p-4 md:h-[calc(100svh_-_var(--header-height)_-_1rem)] lg:p-6">
       <BacklogToolbar
         disabled={!backlog.projectPath}
+        onOpenStatusPip={platform.backlogStatusPip ? openStatusPip : undefined}
         onCreateUserStory={openCreateDrawer}
         storyCount={backlog.stories.length}
       />

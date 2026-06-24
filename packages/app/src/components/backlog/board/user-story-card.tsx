@@ -25,6 +25,14 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 
+type UserStoryCardBodyProps = {
+  cleanup?: boolean
+  interactive?: boolean
+  onOpenDrawer?: OpenDrawer
+  setupInitializing?: boolean
+  story: UserStory
+}
+
 export function UserStoryCard({
   onAction,
   onDeleteUserStory,
@@ -57,54 +65,12 @@ export function UserStoryCard({
         size="sm"
         className="group/user-story relative z-1 rounded-lg bg-white! dark:bg-neutral-900!"
       >
-        <CardHeader className="gap-0 has-data-[slot=card-action]:grid-cols-[minmax(0,1fr)_auto]">
-          <p className="text-xs font-medium text-muted-foreground">
-            {userStoryLabel(story)}
-          </p>
-          {setupInitializing && (
-            <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-              <LoaderCircleIcon className="size-3 animate-spin" />
-              Initializing story setup
-            </div>
-          )}
-          {cleanup && (
-            <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-              <LoaderCircleIcon className="size-3 animate-spin" />
-              Removing story worktree
-            </div>
-          )}
-          <CardTitle className="min-w-0 text-base leading-snug">
-            <Button
-              type="button"
-              variant="link"
-              className="h-auto max-w-full min-w-0 shrink justify-start p-0 text-left text-base leading-snug font-medium break-words whitespace-normal text-card-foreground transition-colors group-hover/user-story:text-blue-600 hover:cursor-pointer dark:group-hover/user-story:text-blue-300"
-              onClick={() =>
-                onOpenDrawer({
-                  userStory: story,
-                  mode:
-                    story.status === "backlog" || story.status === "discarded"
-                      ? "edit"
-                      : "view",
-                  initialTab: "user-story",
-                })
-              }
-            >
-              {story.title}
-            </Button>
-          </CardTitle>
-          {storyStatus(story) && (
-            <CardAction>
-              <StoryStatusBadge status={storyStatus(story)} />
-            </CardAction>
-          )}
-        </CardHeader>
-        {storyDetail(story) && (
-          <CardContent>
-            <p className="text-xs font-medium text-muted-foreground">
-              {storyDetail(story)}
-            </p>
-          </CardContent>
-        )}
+        <UserStoryCardBody
+          cleanup={cleanup}
+          onOpenDrawer={onOpenDrawer}
+          setupInitializing={setupInitializing}
+          story={story}
+        />
         <CardFooter>
           <StoryActions
             onAction={onAction}
@@ -120,6 +86,89 @@ export function UserStoryCard({
       </Card>
     </div>
   )
+}
+
+export function ReadOnlyUserStoryCard({ story }: { story: UserStory }) {
+  return (
+    <div className="user-story-state-effect" data-story-state={story.status}>
+      <Card
+        size="sm"
+        className="group/user-story relative z-1 rounded-lg bg-white! dark:bg-neutral-900!"
+      >
+        <UserStoryCardBody interactive={false} story={story} />
+      </Card>
+    </div>
+  )
+}
+
+function UserStoryCardBody({
+  cleanup,
+  interactive = true,
+  onOpenDrawer,
+  setupInitializing,
+  story,
+}: UserStoryCardBodyProps) {
+  return (
+    <>
+      <CardHeader className="gap-0 has-data-[slot=card-action]:grid-cols-[minmax(0,1fr)_auto]">
+        <p className="text-xs font-medium text-muted-foreground">
+          {userStoryLabel(story)}
+        </p>
+        {setupInitializing && (
+          <StoryProgressLabel label="Initializing story setup" />
+        )}
+        {cleanup && <StoryProgressLabel label="Removing story worktree" />}
+        <CardTitle className="min-w-0 text-base leading-snug">
+          {interactive && onOpenDrawer ? (
+            <Button
+              type="button"
+              variant="link"
+              className="h-auto max-w-full min-w-0 shrink justify-start p-0 text-left text-base leading-snug font-medium break-words whitespace-normal text-card-foreground transition-colors group-hover/user-story:text-blue-600 hover:cursor-pointer dark:group-hover/user-story:text-blue-300"
+              onClick={() => onOpenDrawer(drawerTarget(story))}
+            >
+              {story.title}
+            </Button>
+          ) : (
+            <span className="block break-words text-card-foreground">
+              {story.title}
+            </span>
+          )}
+        </CardTitle>
+        {storyStatus(story) && (
+          <CardAction>
+            <StoryStatusBadge status={storyStatus(story)} />
+          </CardAction>
+        )}
+      </CardHeader>
+      {storyDetail(story) && (
+        <CardContent>
+          <p className="text-xs font-medium text-muted-foreground">
+            {storyDetail(story)}
+          </p>
+        </CardContent>
+      )}
+    </>
+  )
+}
+
+function StoryProgressLabel({ label }: { label: string }) {
+  return (
+    <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+      <LoaderCircleIcon className="size-3 animate-spin" />
+      {label}
+    </div>
+  )
+}
+
+function drawerTarget(story: UserStory) {
+  return {
+    userStory: story,
+    mode:
+      story.status === "backlog" || story.status === "discarded"
+        ? "edit"
+        : "view",
+    initialTab: "user-story",
+  } as const
 }
 
 function userStoryLabel(story: UserStory) {

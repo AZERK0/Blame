@@ -7,6 +7,9 @@ const api: BlameDesktopApi = {
     ipcRenderer.invoke("dialog:open-directory", options),
   openExternalLink: (url) => ipcRenderer.send("shell:open-external", url),
   openPath: (path) => ipcRenderer.invoke("shell:open-path", path),
+  backlogStatusPip: {
+    open: () => ipcRenderer.invoke("backlog-status-pip:open"),
+  },
   platform: process.platform,
   updates: {
     check: () => ipcRenderer.invoke("updates:check"),

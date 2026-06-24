@@ -1,13 +1,15 @@
-import { PlusIcon } from "lucide-react"
+import { PictureInPicture2Icon, PlusIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 
 export function BacklogToolbar({
   disabled,
+  onOpenStatusPip,
   onCreateUserStory,
   storyCount,
 }: {
   disabled?: boolean
+  onOpenStatusPip?: () => void
   onCreateUserStory: () => void
   storyCount: number
 }) {
@@ -22,6 +24,17 @@ export function BacklogToolbar({
         </p>
       </div>
       <div className="flex flex-wrap items-center justify-end gap-2">
+        {onOpenStatusPip && (
+          <Button
+            type="button"
+            variant="outline"
+            disabled={disabled}
+            onClick={onOpenStatusPip}
+          >
+            <PictureInPicture2Icon />
+            Status PiP
+          </Button>
+        )}
         <Button type="button" disabled={disabled} onClick={onCreateUserStory}>
           <PlusIcon />
           New User Story

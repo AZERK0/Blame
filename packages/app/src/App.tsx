@@ -1,6 +1,7 @@
 import * as React from "react"
 
 import { BacklogPage } from "@/pages/backlog/page"
+import { BacklogStatusPipPage } from "@/pages/backlog/status-pip-page"
 import { PracticesPage } from "@/pages/practices/page"
 import { QuickChatPage } from "@/components/chat/quick-chat-page"
 import { ConnectScreen } from "@/components/onboarding/connect-screen"
@@ -23,9 +24,15 @@ import { AppLayout } from "@/layouts/app-layout"
 import { SettingsDialog } from "@/pages/settings/page"
 
 const settingsPath = "/settings"
+const backlogStatusPipPath = "/backlog-status-pip"
 
 const routes = [
   { path: "/backlog", title: "Backlog", element: <BacklogPage /> },
+  {
+    path: backlogStatusPipPath,
+    title: "Active User Stories",
+    element: <BacklogStatusPipPage />,
+  },
   { path: "/chats", title: "Chats", element: <QuickChatPage /> },
   { path: "/git", title: "Git", element: <RoutePage title="Git" /> },
   { path: "/practices", title: "Code Practices", element: <PracticesPage /> },
@@ -81,6 +88,7 @@ export function App() {
   )
   const route = resolveRoute(pathname)
   const settingsOpen = pathname === settingsPath
+  const statusPipOpen = pathname === backlogStatusPipPath
   const previousRoute = resolvePreviousRoute(previousPathname)
   const activeRoute = settingsOpen ? previousRoute : route
 
@@ -88,6 +96,14 @@ export function App() {
     if (!open) navigate(activeRoute.path)
   }
 
+  if (statusPipOpen) {
+    return (
+      <TooltipProvider>
+        <BacklogStatusPipPage />
+        <Toaster />
+      </TooltipProvider>
+    )
+  }
   if (auth.status === "loading") return <LoadingScreen />
   if (auth.status === "unauthenticated") return <ConnectScreen />
   if (auth.aiPreferences === null) {

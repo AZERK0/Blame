@@ -15,6 +15,7 @@ import {
   type IpcMainInvokeEvent,
 } from "electron"
 import { registerAgentIpcHandlers, shutdownAgentRuntime } from "./agent-ipc"
+import { registerBacklogStatusPipIpcHandlers } from "./backlog-status-pip-ipc"
 import { attachLiveLogWindow, registerLiveLogCapture } from "./desktop-live-log"
 import { checkForUpdatesOnStartup, registerDesktopUpdateIpcHandlers } from "./desktop-update-ipc"
 import {
@@ -57,6 +58,11 @@ let quitAfterShutdown = false
 
 void app.whenReady().then(() => {
   registerIpcHandlers()
+  registerBacklogStatusPipIpcHandlers({
+    preloadPath: join(currentDirectory, "../preload/index.js"),
+    rendererFile: join(currentDirectory, "../renderer/index.html"),
+    rendererUrl: process.env.ELECTRON_RENDERER_URL,
+  })
   registerAgentIpcHandlers()
   registerPreviewBrowserIpcHandlers()
   registerTerminalIpcHandlers()

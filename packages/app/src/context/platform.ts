@@ -38,6 +38,7 @@ export type OpenDirectoryPickerOptions = {
 export type Platform = {
   agent?: AgentClient
   api?: ApiConnection
+  backlogStatusPip?: BacklogStatusPipClient
   platform?: string
   previewBrowser?: PreviewBrowserClient
   terminal?: TerminalClient
@@ -49,6 +50,10 @@ export type Platform = {
   ): Promise<PickerPaths>
   openExternalLink?(url: string): void
   openPath?(path: string): Promise<string>
+}
+
+export type BacklogStatusPipClient = {
+  open(): Promise<boolean>
 }
 
 export type WindowControlsClient = {

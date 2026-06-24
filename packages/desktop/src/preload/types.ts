@@ -117,12 +117,17 @@ export type DesktopUpdates = {
   onStatus(callback: (status: DesktopUpdateStatus) => void): () => void;
 };
 
+export type BacklogStatusPip = {
+  open(): Promise<boolean>;
+};
+
 export type BlameDesktopApi = {
   openDirectoryPicker(
     options?: OpenDirectoryPickerOptions,
   ): Promise<string | string[] | null>;
   openExternalLink(url: string): void;
   openPath(path: string): Promise<string>;
+  backlogStatusPip: BacklogStatusPip;
   platform: NodeJS.Platform;
   updates: DesktopUpdates;
   windowControls: WindowControls;
