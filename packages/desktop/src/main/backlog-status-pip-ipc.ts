@@ -49,7 +49,7 @@ function windowOptions(preloadPath: string): BrowserWindowConstructorOptions {
     minHeight: minWindowHeight,
     minWidth: minWindowWidth,
     show: false,
-    title: "Active User Stories",
+    title: "Picture-in-Picture - Active User Stories",
     alwaysOnTop: true,
     autoHideMenuBar: true,
     backgroundColor: "#ffffff",

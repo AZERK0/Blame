@@ -11,6 +11,7 @@ import { useCloudAuth } from "@/context/cloud-auth"
 import { useProjects } from "@/context/projects"
 
 const activeStatuses = new Set<BacklogColumnId>(["in-progress", "in-review"])
+const pageTitle = "Picture-in-Picture - Active User Stories"
 const refreshDelayMs = 2_500
 
 export function BacklogStatusPipPage() {
@@ -22,6 +23,10 @@ export function BacklogStatusPipPage() {
     () => backlog.stories.filter(activeStory),
     [backlog.stories]
   )
+
+  React.useEffect(() => {
+    document.title = pageTitle
+  }, [])
 
   React.useEffect(() => {
     if (auth.status !== "authenticated" || !projects.activeProject) return
