@@ -1,21 +1,29 @@
 import * as React from "react"
 
-import { ReadOnlyUserStoryCard } from "@/components/backlog/board/user-story-card"
+import { UserStoryCard } from "@/components/backlog/board/user-story-card"
 import { useBacklogStore } from "@/components/backlog/data/backlog-store"
 import type {
+  BacklogAction,
   BacklogColumnId,
   UserStory,
 } from "@/components/backlog/data/backlog-data"
+import type {
+  RejectChoice,
+  StopAgentChoice,
+} from "@/components/backlog/actions/story-action-dialogs"
+import type { DrawerTarget } from "@/components/backlog/shared/backlog-types"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useCloudAuth } from "@/context/cloud-auth"
+import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 
 const activeStatuses = new Set<BacklogColumnId>(["in-progress", "in-review"])
-const pageTitle = "Picture-in-Picture - Active User Stories"
+const pageTitle = "Active User Stories"
 const refreshDelayMs = 2_500
 
 export function BacklogStatusPipPage() {
   const auth = useCloudAuth()
+  const platform = usePlatform()
   const projects = useProjects()
   const backlog = useBacklogStore()
   const loadBacklog = backlog.load
@@ -50,7 +58,31 @@ export function BacklogStatusPipPage() {
       <ScrollArea className="min-h-0 flex-1">
         <div className="flex flex-col gap-3 p-3">
           {activeStories.map((story) => (
-            <ReadOnlyUserStoryCard key={story.id} story={story} />
+            <UserStoryCard
+              key={story.id}
+              onAction={(story, action) =>
+                requestStoryAction(platform, story, action)
+              }
+              onDeleteUserStory={(story) =>
+                requestStoryAction(platform, story, "Delete Permanently")
+              }
+              onOpenDrawer={(target) => requestStoryDrawer(platform, target)}
+              onOpenWorktree={(story) =>
+                requestStoryAction(platform, story, "Open Worktree")
+              }
+              onReject={(story, choice) =>
+                requestRejectChoice(platform, story, choice)
+              }
+              onStopAgent={(story, choice) =>
+                requestStopChoice(platform, story, choice)
+              }
+              onUnpauseAgent={(story) =>
+                requestStoryAction(platform, story, "Unpause Agent").then(
+                  () => story
+                )
+              }
+              story={story}
+            />
           ))}
           {!activeStories.length && (
             <div className="rounded-lg border bg-muted/30 px-4 py-6 text-center text-sm text-muted-foreground">
@@ -61,6 +93,56 @@ export function BacklogStatusPipPage() {
       </ScrollArea>
     </main>
   )
+}
+
+function requestStoryAction(
+  platform: ReturnType<typeof usePlatform>,
+  story: UserStory,
+  action: BacklogAction
+) {
+  return (
+    platform.backlogStatusPip?.request({ action, storyId: story.id }) ??
+    Promise.resolve(false)
+  )
+}
+
+function requestStoryDrawer(
+  platform: ReturnType<typeof usePlatform>,
+  target: DrawerTarget
+) {
+  if (!target.userStory) return
+  void platform.backlogStatusPip?.request({
+    drawer: {
+      focusComment: target.focusComment,
+      initialDevelopmentTab: target.initialDevelopmentTab,
+      initialTab: target.initialTab,
+    },
+    storyId: target.userStory.id,
+  })
+}
+
+async function requestRejectChoice(
+  platform: ReturnType<typeof usePlatform>,
+  story: UserStory,
+  choice: RejectChoice
+) {
+  await platform.backlogStatusPip?.request({
+    rejectChoice: choice,
+    storyId: story.id,
+  })
+  return story
+}
+
+async function requestStopChoice(
+  platform: ReturnType<typeof usePlatform>,
+  story: UserStory,
+  choice: StopAgentChoice
+) {
+  await platform.backlogStatusPip?.request({
+    stopChoice: choice,
+    storyId: story.id,
+  })
+  return story
 }
 
 function activeStory(story: UserStory) {

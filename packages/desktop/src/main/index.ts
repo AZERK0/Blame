@@ -59,6 +59,7 @@ let quitAfterShutdown = false
 void app.whenReady().then(() => {
   registerIpcHandlers()
   registerBacklogStatusPipIpcHandlers({
+    mainWindow: () => mainWindow,
     preloadPath: join(currentDirectory, "../preload/index.js"),
     rendererFile: join(currentDirectory, "../renderer/index.html"),
     rendererUrl: process.env.ELECTRON_RENDERER_URL,

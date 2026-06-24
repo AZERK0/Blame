@@ -6,7 +6,7 @@ import {
 } from "electron"
 
 const windowWidth = 360
-const windowHeight = 560
+const windowHeight = 600
 const minWindowWidth = 320
 const minWindowHeight = 360
 const edgeMargin = 24
@@ -15,14 +15,19 @@ const statusPipView = "backlog-status-pip"
 let statusPipWindow: BrowserWindow | undefined
 
 export function registerBacklogStatusPipIpcHandlers(input: {
+  mainWindow(): BrowserWindow | undefined
   preloadPath: string
   rendererFile: string
   rendererUrl?: string
 }) {
   ipcMain.handle("backlog-status-pip:open", () => openStatusPipWindow(input))
+  ipcMain.handle("backlog-status-pip:request", (_event, request) =>
+    sendStatusPipRequest(input.mainWindow(), request)
+  )
 }
 
 function openStatusPipWindow(input: {
+  mainWindow(): BrowserWindow | undefined
   preloadPath: string
   rendererFile: string
   rendererUrl?: string
@@ -34,6 +39,7 @@ function openStatusPipWindow(input: {
 
   const window = new BrowserWindow(windowOptions(input.preloadPath))
   statusPipWindow = window
+  window.setAspectRatio(0)
   window.on("closed", () => {
     if (statusPipWindow === window) statusPipWindow = undefined
   })
@@ -49,10 +55,14 @@ function windowOptions(preloadPath: string): BrowserWindowConstructorOptions {
     minHeight: minWindowHeight,
     minWidth: minWindowWidth,
     show: false,
-    title: "Picture-in-Picture - Active User Stories",
+    title: "Active User Stories",
+    type: "toolbar",
     alwaysOnTop: true,
     autoHideMenuBar: true,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#0a0a0a",
+    fullscreenable: false,
+    maximizable: false,
+    resizable: true,
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -94,4 +104,16 @@ function showStatusPipWindow(window: BrowserWindow) {
   if (window.isMinimized()) window.restore()
   window.show()
   window.focus()
+}
+
+function sendStatusPipRequest(
+  window: BrowserWindow | undefined,
+  request: unknown
+) {
+  if (!window || window.isDestroyed()) return false
+  if (window.isMinimized()) window.restore()
+  window.show()
+  window.focus()
+  window.webContents.send("backlog-status-pip:request", request)
+  return true
 }

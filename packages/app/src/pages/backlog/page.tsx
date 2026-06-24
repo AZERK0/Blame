@@ -32,6 +32,7 @@ import type {
 } from "@/components/backlog/actions/story-action-dialogs"
 import { useModelSelection } from "@/components/model/model-selector"
 import type { DrawerTarget } from "@/components/backlog/shared/backlog-types"
+import { drawerTargetForAction } from "@/components/backlog/shared/backlog-helpers"
 import { BacklogColumn } from "@/components/backlog/board/backlog-column"
 import { BacklogToolbar } from "@/components/backlog/board/backlog-toolbar"
 import { UserStoryDrawer } from "@/components/backlog/drawer/user-story-drawer"
@@ -39,7 +40,11 @@ import { HostDependenciesDialog } from "@/pages/backlog/host-dependencies-dialog
 import { useBacklogRotation } from "@/pages/backlog/use-backlog-rotation"
 import { assessAndRepairProjectInitializationImpact } from "@/pages/backlog/project-initialization-impact"
 import { useCloudAuth } from "@/context/cloud-auth"
-import { usePlatform, type Platform } from "@/context/platform"
+import {
+  usePlatform,
+  type BacklogStatusPipRequest,
+  type Platform,
+} from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import { createCloudApi } from "@/lib/cloud-api"
 import {
@@ -664,6 +669,58 @@ export function BacklogPage() {
     },
     [approveAndMergeStory, platform, projects.activeProject?.path, updateStory]
   )
+  const runStatusPipRequest = React.useCallback(
+    (request: BacklogStatusPipRequest) => {
+      const story = storiesRef.current.find(
+        (story) => story.id === request.storyId
+      )
+      if (!story) return
+      const currentStory = activeStory(story, storiesRef.current)
+
+      if (request.drawer) {
+        setDrawerTarget(statusPipDrawerTarget(currentStory, request))
+        return
+      }
+      if (request.rejectChoice) {
+        void rejectStory(currentStory, request.rejectChoice).catch(
+          reportStatusPipRequestError
+        )
+        return
+      }
+      if (request.stopChoice) {
+        void stopAgent(currentStory, request.stopChoice).catch(
+          reportStatusPipRequestError
+        )
+        return
+      }
+      if (!request.action) return
+      if (request.action === "Open Worktree") {
+        void openWorktree(currentStory).catch(reportStatusPipRequestError)
+        return
+      }
+      if (request.action === "Unpause Agent") {
+        void unpauseAgent(currentStory).catch(reportStatusPipRequestError)
+        return
+      }
+      if (
+        request.action === "Open Preview" ||
+        request.action === "View Diff" ||
+        request.action === "View Files" ||
+        request.action === "View Terminal" ||
+        request.action === "Request Changes"
+      ) {
+        setDrawerTarget(drawerTargetForAction(currentStory, request.action))
+        return
+      }
+      void runStoryAction(currentStory, request.action).catch(
+        reportStatusPipRequestError
+      )
+    },
+    [openWorktree, rejectStory, runStoryAction, stopAgent, unpauseAgent]
+  )
+  React.useEffect(() => {
+    return platform.backlogStatusPip?.onRequest(runStatusPipRequest)
+  }, [platform.backlogStatusPip, runStatusPipRequest])
   const openStatusPip = React.useCallback(() => {
     void platform.backlogStatusPip?.open().catch((error) => {
       toast.error(
@@ -1054,8 +1111,32 @@ function activeStory(story: UserStory, stories: UserStory[]) {
   return stories.find((currentStory) => currentStory.id === story.id) ?? story
 }
 
+function statusPipDrawerTarget(
+  story: UserStory,
+  request: BacklogStatusPipRequest
+): DrawerTarget {
+  return {
+    userStory: story,
+    mode:
+      story.status === "backlog" || story.status === "discarded"
+        ? "edit"
+        : "view",
+    focusComment: request.drawer?.focusComment,
+    initialDevelopmentTab: request.drawer?.initialDevelopmentTab,
+    initialTab: request.drawer?.initialTab ?? "user-story",
+  }
+}
+
 function reportAgentPersistenceError(error: unknown) {
   console.error("Failed to persist agent update.", error)
+}
+
+function reportStatusPipRequestError(error: unknown) {
+  toast.error("Unable to run picture in picture action", {
+    description:
+      error instanceof Error ? error.message : "An unexpected error occurred.",
+    position: "bottom-right",
+  })
 }
 
 type QueuedAgentUpdate = {

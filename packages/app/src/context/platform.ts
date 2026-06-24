@@ -54,6 +54,38 @@ export type Platform = {
 
 export type BacklogStatusPipClient = {
   open(): Promise<boolean>
+  onRequest(callback: (request: BacklogStatusPipRequest) => void): () => void
+  request(input: BacklogStatusPipRequest): Promise<boolean>
+}
+
+export type BacklogStatusPipAction =
+  | "Send to Dev Agent"
+  | "Discard"
+  | "Dequeue"
+  | "Open Worktree"
+  | "Open Preview"
+  | "Stop Agent"
+  | "Unpause Agent"
+  | "View Diff"
+  | "View Files"
+  | "View Terminal"
+  | "Request Changes"
+  | "Reject"
+  | "Approve & Merge"
+  | "Use Context"
+  | "Rework"
+  | "Delete Permanently"
+
+export type BacklogStatusPipRequest = {
+  action?: BacklogStatusPipAction
+  drawer?: {
+    focusComment?: boolean
+    initialDevelopmentTab?: "diff" | "files" | "terminal"
+    initialTab?: "user-story" | "development" | "preview"
+  }
+  rejectChoice?: "request-changes" | "discard"
+  stopChoice?: "pause-feedback" | "backlog" | "discard-worktree"
+  storyId: number
 }
 
 export type WindowControlsClient = {

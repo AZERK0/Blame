@@ -8,7 +8,17 @@ const api: BlameDesktopApi = {
   openExternalLink: (url) => ipcRenderer.send("shell:open-external", url),
   openPath: (path) => ipcRenderer.invoke("shell:open-path", path),
   backlogStatusPip: {
+    onRequest: (callback) => {
+      const handler = (
+        _event: unknown,
+        request: Parameters<typeof callback>[0],
+      ) => callback(request);
+      ipcRenderer.on("backlog-status-pip:request", handler);
+      return () =>
+        ipcRenderer.removeListener("backlog-status-pip:request", handler);
+    },
     open: () => ipcRenderer.invoke("backlog-status-pip:open"),
+    request: (input) => ipcRenderer.invoke("backlog-status-pip:request", input),
   },
   platform: process.platform,
   updates: {
