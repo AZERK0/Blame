@@ -316,6 +316,13 @@ export function registerWorkspaceIpcHandlers() {
     "workspace:git-unstage-files",
     (_event, input: GitFilesInput) => gitUnstageFiles(input),
   );
+  ipcMain.handle(
+    "workspace:git-rollback-files",
+    (_event, input: GitFilesInput) => gitRollbackFiles(input),
+  );
+  ipcMain.handle("workspace:git-delete-files", (_event, input: GitFilesInput) =>
+    gitDeleteFiles(input),
+  );
   ipcMain.handle("workspace:git-commit", (_event, input: GitCommitInput) =>
     gitCommit(input),
   );
@@ -574,6 +581,30 @@ async function gitUnstageFiles(input: GitFilesInput) {
   const paths = gitWorkspacePaths(input.paths);
   if (paths.length === 0) return false;
   await runRuntimeGit(cwd, ["restore", "--staged", "--", ...paths]);
+  return true;
+}
+
+async function gitRollbackFiles(input: GitFilesInput) {
+  const cwd = resolveRuntimePath(input.root);
+  const paths = gitWorkspacePaths(input.paths);
+  if (paths.length === 0) return false;
+  await runRuntimeGit(cwd, [
+    "restore",
+    "--staged",
+    "--worktree",
+    "--",
+    ...paths,
+  ]);
+  return true;
+}
+
+async function gitDeleteFiles(input: GitFilesInput) {
+  const cwd = resolveRuntimePath(input.root);
+  const paths = gitWorkspacePaths(input.paths);
+  if (paths.length === 0) return false;
+  await Promise.all(
+    paths.map((path) => rmRuntime(joinWorkspacePath(cwd, path))),
+  );
   return true;
 }
 

@@ -39,18 +39,22 @@ export function GitPage() {
           commitMessage={git.commitMessage}
           loading={git.loading}
           selected={git.selected}
+          selectedFilePaths={git.selectedFilePaths}
           status={git.status}
           onCommit={git.commit}
           onCommitMessageChange={git.setCommitMessage}
           onCommitPush={git.commitPush}
+          onClearSelection={git.clearFileSelection}
+          onDeleteFile={git.deleteFile}
           onFileSelect={git.setSelected}
+          onGitAddFile={git.gitAddFile}
           onRefresh={git.refresh}
-          onStageAll={git.stageAll}
-          onStageFile={git.stageFile}
-          onStageFiles={git.stageFiles}
-          onUnstageAll={git.unstageAll}
-          onUnstageFile={git.unstageFile}
-          onUnstageFiles={git.unstageFiles}
+          onRollbackFile={git.rollbackFile}
+          onSelectAll={git.selectAllFiles}
+          onSelectFile={git.selectFile}
+          onSelectFiles={git.selectFiles}
+          onUnselectFile={git.unselectFile}
+          onUnselectFiles={git.unselectFiles}
         />
         <GitHistoryPanel
           commits={git.commits}
@@ -82,7 +86,11 @@ function useGitController(root?: string, workspace?: WorkspaceClient) {
   const [loading, setLoading] = React.useState(Boolean(root && workspace))
   const [query, setQuery] = React.useState("")
   const [selected, setSelected] = React.useState<GitSelection>()
+  const [selectedFilePaths, setSelectedFilePaths] = React.useState(
+    () => new Set<string>()
+  )
   const [status, setStatus] = React.useState<GitStatusResult>()
+  const fileSelectionInitialized = React.useRef(false)
 
   const refresh = React.useCallback(async () => {
     if (!root || !workspace) return
@@ -108,6 +116,19 @@ function useGitController(root?: string, workspace?: WorkspaceClient) {
     const timer = window.setTimeout(() => void refresh(), 0)
     return () => window.clearTimeout(timer)
   }, [refresh])
+
+  React.useEffect(() => {
+    fileSelectionInitialized.current = false
+  }, [root])
+
+  React.useEffect(() => {
+    if (!status) return
+    const includeStaged = !fileSelectionInitialized.current
+    fileSelectionInitialized.current = true
+    setSelectedFilePaths((current) =>
+      reconcileSelectedFilePaths(current, status, includeStaged)
+    )
+  }, [status])
 
   React.useEffect(() => {
     return loadSelectionDiff(
@@ -138,35 +159,66 @@ function useGitController(root?: string, workspace?: WorkspaceClient) {
   return {
     busy,
     commit: () =>
-      runAction("Committing", commitAction(commitMessage, setCommitMessage)),
+      runAction(
+        "Committing",
+        commitAction(
+          commitMessage,
+          selectedFilePaths,
+          status,
+          setCommitMessage,
+          setSelectedFilePaths
+        )
+      ),
     commitMessage,
     commitPush: () =>
       runAction(
         "Committing and pushing",
-        commitPushAction(commitMessage, setCommitMessage)
+        commitPushAction(
+          commitMessage,
+          selectedFilePaths,
+          status,
+          setCommitMessage,
+          setSelectedFilePaths
+        )
       ),
     commits,
     diff,
     diffLoading,
     error,
+    deleteFile: (path: string) =>
+      runAction(
+        "Deleting file",
+        gitDeleteFileAction(path, setSelectedFilePaths)
+      ),
+    gitAddFile: (path: string) =>
+      runAction(
+        "Git add",
+        gitAddFileAction(path, setSelected, setSelectedFilePaths)
+      ),
     loading,
     query,
     refresh: () => void refresh(),
+    rollbackFile: (path: string) =>
+      runAction(
+        "Rolling back file",
+        gitRollbackFileAction(path, status, setSelectedFilePaths)
+      ),
     selected,
+    selectedFilePaths,
     setCommitMessage,
     setQuery,
     setSelected,
-    stageAll: () => runAction("Staging files", stageAllAction(status)),
-    stageFile: (path: string) =>
-      runAction("Staging file", stageFileAction(path, setSelected)),
-    stageFiles: (paths: string[]) =>
-      runAction("Staging files", stageFilesAction(paths)),
+    selectAllFiles: () => setSelectedFilePaths(statusFilePathSet(status)),
+    selectFile: (path: string) =>
+      setSelectedFilePaths((current) => addFilePaths(current, [path])),
+    selectFiles: (paths: string[]) =>
+      setSelectedFilePaths((current) => addFilePaths(current, paths)),
     status,
-    unstageAll: () => runAction("Unstaging files", unstageAllAction(status)),
-    unstageFile: (path: string) =>
-      runAction("Unstaging file", unstageFileAction(path, setSelected)),
-    unstageFiles: (paths: string[]) =>
-      runAction("Unstaging files", unstageFilesAction(paths)),
+    clearFileSelection: () => setSelectedFilePaths(new Set()),
+    unselectFile: (path: string) =>
+      setSelectedFilePaths((current) => removeFilePaths(current, [path])),
+    unselectFiles: (paths: string[]) =>
+      setSelectedFilePaths((current) => removeFilePaths(current, paths)),
     clearError: () => setError(""),
   }
 }
@@ -269,81 +321,159 @@ function selectionStillExists(
   )
 }
 
-function stageFileAction(
+function gitAddFileAction(
   path: string,
-  setSelected: (selection: GitSelection) => void
+  setSelected: (selection: GitSelection) => void,
+  setSelectedFilePaths: React.Dispatch<React.SetStateAction<Set<string>>>
 ): GitAction {
   return async (root, workspace) => {
     await workspace.gitStageFiles({ root, paths: [path] })
     setSelected(gitFileSelection(path, true))
+    setSelectedFilePaths((current) => addFilePaths(current, [path]))
   }
 }
 
-function unstageFileAction(
+function gitRollbackFileAction(
   path: string,
-  setSelected: (selection: GitSelection) => void
+  status: GitStatusResult | undefined,
+  setSelectedFilePaths: React.Dispatch<React.SetStateAction<Set<string>>>
 ): GitAction {
   return async (root, workspace) => {
-    await workspace.gitUnstageFiles({ root, paths: [path] })
-    setSelected(gitFileSelection(path, false))
+    if (gitAddedFile(status, path)) {
+      await workspace.gitUnstageFiles({ root, paths: [path] })
+    } else {
+      await workspace.gitRollbackFiles({ root, paths: [path] })
+    }
+    setSelectedFilePaths((current) => removeFilePaths(current, [path]))
   }
 }
 
-function stageAllAction(status?: GitStatusResult): GitAction {
-  return stageFilesAction(changedPaths(status, "unstaged"))
+function gitAddedFile(status: GitStatusResult | undefined, path: string) {
+  return (
+    status?.files.some(
+      (file) => file.path === path && file.staged && file.status === "added"
+    ) ?? false
+  )
 }
 
-function unstageAllAction(status?: GitStatusResult): GitAction {
-  return unstageFilesAction(changedPaths(status, "staged"))
-}
-
-function stageFilesAction(paths: string[]): GitAction {
-  return (root, workspace) => gitFilesAction(root, workspace, paths, "stage")
-}
-
-function unstageFilesAction(paths: string[]): GitAction {
-  return (root, workspace) => gitFilesAction(root, workspace, paths, "unstage")
-}
-
-function gitFilesAction(
-  root: string,
-  workspace: WorkspaceClient,
-  paths: string[],
-  action: "stage" | "unstage"
-) {
-  if (paths.length === 0) return Promise.resolve(false)
-  if (action === "stage") return workspace.gitStageFiles({ root, paths })
-  return workspace.gitUnstageFiles({ root, paths })
+function gitDeleteFileAction(
+  path: string,
+  setSelectedFilePaths: React.Dispatch<React.SetStateAction<Set<string>>>
+): GitAction {
+  return async (root, workspace) => {
+    await workspace.gitDeleteFiles({ root, paths: [path] })
+    setSelectedFilePaths((current) => removeFilePaths(current, [path]))
+  }
 }
 
 function commitAction(
   message: string,
-  setCommitMessage: (value: string) => void
+  selectedFilePaths: ReadonlySet<string>,
+  status: GitStatusResult | undefined,
+  setCommitMessage: (value: string) => void,
+  setSelectedFilePaths: (paths: Set<string>) => void
 ): GitAction {
   return async (root, workspace) => {
+    await prepareSelectedFiles(root, workspace, status, selectedFilePaths)
     await workspace.gitCommit({ root, message })
     setCommitMessage("")
+    setSelectedFilePaths(new Set())
   }
 }
 
 function commitPushAction(
   message: string,
-  setCommitMessage: (value: string) => void
+  selectedFilePaths: ReadonlySet<string>,
+  status: GitStatusResult | undefined,
+  setCommitMessage: (value: string) => void,
+  setSelectedFilePaths: (paths: Set<string>) => void
 ): GitAction {
   return async (root, workspace) => {
+    await prepareSelectedFiles(root, workspace, status, selectedFilePaths)
     await workspace.gitCommit({ root, message })
     setCommitMessage("")
+    setSelectedFilePaths(new Set())
     await workspace.gitPush({ root })
   }
 }
 
-function changedPaths(
+async function prepareSelectedFiles(
+  root: string,
+  workspace: WorkspaceClient,
   status: GitStatusResult | undefined,
-  key: "staged" | "unstaged"
+  selectedFilePaths: ReadonlySet<string>
+) {
+  const pathsToStage = selectedStatusPaths(status, selectedFilePaths)
+  const pathsToUnstage = unselectedStagedPaths(status, selectedFilePaths)
+  if (pathsToStage.length === 0)
+    throw new Error("Select files before committing")
+  if (pathsToUnstage.length > 0) {
+    await workspace.gitUnstageFiles({ root, paths: pathsToUnstage })
+  }
+  await workspace.gitStageFiles({ root, paths: pathsToStage })
+}
+
+function selectedStatusPaths(
+  status: GitStatusResult | undefined,
+  selectedFilePaths: ReadonlySet<string>
 ) {
   return (
-    status?.files.filter((file) => file[key]).map((file) => file.path) ?? []
+    status?.files
+      .filter((file) => selectedFilePaths.has(file.path))
+      .map((file) => file.path) ?? []
   )
+}
+
+function unselectedStagedPaths(
+  status: GitStatusResult | undefined,
+  selectedFilePaths: ReadonlySet<string>
+) {
+  return (
+    status?.files
+      .filter((file) => file.staged && !selectedFilePaths.has(file.path))
+      .map((file) => file.path) ?? []
+  )
+}
+
+function reconcileSelectedFilePaths(
+  current: Set<string>,
+  status: GitStatusResult,
+  includeStaged: boolean
+) {
+  const statusPaths = statusFilePathSet(status)
+  const next = new Set([...current].filter((path) => statusPaths.has(path)))
+  if (includeStaged) addStagedFilePaths(next, status)
+  return sameFilePathSet(current, next) ? current : next
+}
+
+function addStagedFilePaths(paths: Set<string>, status: GitStatusResult) {
+  for (const file of status.files) {
+    if (file.staged) paths.add(file.path)
+  }
+}
+
+function statusFilePathSet(status: GitStatusResult | undefined) {
+  return new Set(status?.files.map((file) => file.path) ?? [])
+}
+
+function addFilePaths(current: Set<string>, paths: string[]) {
+  const next = new Set(current)
+  for (const path of paths) next.add(path)
+  return next
+}
+
+function removeFilePaths(current: Set<string>, paths: string[]) {
+  const next = new Set(current)
+  for (const path of paths) next.delete(path)
+  return next
+}
+
+function sameFilePathSet(left: Set<string>, right: Set<string>) {
+  if (left.size !== right.size) return false
+  for (const path of left) {
+    if (!right.has(path)) return false
+  }
+  return true
 }
 
 function GitError({
@@ -381,10 +511,9 @@ function GitUnavailable() {
 function actionSuccess(label: string) {
   if (label === "Committing") return "Commit created"
   if (label === "Committing and pushing") return "Commit pushed"
-  if (label === "Staging files") return "Files staged"
-  if (label === "Unstaging files") return "Files unstaged"
-  if (label === "Staging file") return "File staged"
-  if (label === "Unstaging file") return "File unstaged"
+  if (label === "Deleting file") return "File deleted"
+  if (label === "Git add") return "File added to Git"
+  if (label === "Rolling back file") return "File changes rolled back"
   return "Git action completed"
 }
 

@@ -361,6 +361,8 @@ export type WorkspaceClient = {
   gitCommitDiff(input: { root: string; hash: string }): Promise<string>
   gitStageFiles(input: { root: string; paths: string[] }): Promise<boolean>
   gitUnstageFiles(input: { root: string; paths: string[] }): Promise<boolean>
+  gitRollbackFiles(input: { root: string; paths: string[] }): Promise<boolean>
+  gitDeleteFiles(input: { root: string; paths: string[] }): Promise<boolean>
   gitCommit(input: { root: string; message: string }): Promise<GitCommandResult>
   gitPush(input: { root: string }): Promise<GitCommandResult>
   listGitDirectory(input: {

@@ -206,6 +206,11 @@ export type BlameDesktopApi = {
     gitCommitDiff(input: { root: string; hash: string }): Promise<string>;
     gitStageFiles(input: { root: string; paths: string[] }): Promise<boolean>;
     gitUnstageFiles(input: { root: string; paths: string[] }): Promise<boolean>;
+    gitRollbackFiles(input: {
+      root: string;
+      paths: string[];
+    }): Promise<boolean>;
+    gitDeleteFiles(input: { root: string; paths: string[] }): Promise<boolean>;
     gitCommit(input: {
       root: string;
       message: string;

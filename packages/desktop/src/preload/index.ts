@@ -100,6 +100,10 @@ const api: BlameDesktopApi = {
       ipcRenderer.invoke("workspace:git-stage-files", input),
     gitUnstageFiles: (input) =>
       ipcRenderer.invoke("workspace:git-unstage-files", input),
+    gitRollbackFiles: (input) =>
+      ipcRenderer.invoke("workspace:git-rollback-files", input),
+    gitDeleteFiles: (input) =>
+      ipcRenderer.invoke("workspace:git-delete-files", input),
     gitCommit: (input) => ipcRenderer.invoke("workspace:git-commit", input),
     gitPush: (input) => ipcRenderer.invoke("workspace:git-push", input),
     listGitDirectory: (input) =>
