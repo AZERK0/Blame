@@ -45,7 +45,7 @@ export function GitHistoryPanel({
           <HistoryEmpty query={query} />
         ) : null}
         {filtered.length > 0 ? (
-          <div className="min-w-[42rem] p-2">
+          <div className="min-w-0 p-2">
             {filtered.map((commit) => (
               <CommitRow
                 commit={commit}
@@ -103,17 +103,15 @@ function CommitRow({
   return (
     <button
       className={cn(
-        "grid w-full grid-cols-[1.25rem_minmax(16rem,1fr)_9rem_8rem] items-center gap-3 rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted",
-        active && "bg-muted"
+        "relative grid w-full grid-cols-[1.25rem_minmax(0,1fr)_5.75rem] items-stretch gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted",
+        active &&
+          "bg-muted before:absolute before:top-1 before:bottom-1 before:left-0 before:w-0.5 before:rounded-full before:bg-blue-500"
       )}
       type="button"
       onClick={() => onSelect(selection)}
     >
       <CommitGraphDot active={active} />
-      <CommitMessage commit={commit} />
-      <span className="truncate text-muted-foreground">
-        {commit.authorName}
-      </span>
+      <CommitBody commit={commit} />
       <span
         className="truncate text-right text-xs text-muted-foreground"
         title={gitDateLabel(commit.date)}
@@ -126,8 +124,8 @@ function CommitRow({
 
 function CommitGraphDot({ active }: { active: boolean }) {
   return (
-    <span className="relative flex h-8 items-center justify-center">
-      <span className="absolute top-0 bottom-0 left-1/2 w-px -translate-x-1/2 bg-border" />
+    <span className="relative flex min-h-10 items-center justify-center">
+      <span className="absolute -top-2 -bottom-2 left-1/2 w-px -translate-x-1/2 bg-border" />
       <span
         className={cn(
           "relative z-1 size-2.5 rounded-full border bg-background",
@@ -138,36 +136,68 @@ function CommitGraphDot({ active }: { active: boolean }) {
   )
 }
 
-function CommitMessage({ commit }: { commit: GitLogCommit }) {
+function CommitBody({ commit }: { commit: GitLogCommit }) {
   return (
-    <span className="flex min-w-0 items-center gap-2">
-      <GitCommitIcon className="size-4 shrink-0 text-muted-foreground" />
-      <span className="min-w-0 truncate font-medium">{commit.message}</span>
-      <CommitRefs commit={commit} />
-      <span className="shrink-0 font-mono text-xs text-muted-foreground">
-        {shortGitHash(commit.hash)}
+    <span className="flex min-w-0 flex-col gap-1">
+      <span className="min-w-0 truncate leading-5 font-medium">
+        {commit.message}
+      </span>
+      <span className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+        <span className="shrink-0 font-mono">{shortGitHash(commit.hash)}</span>
+        <span className="min-w-0 truncate">{commit.authorName}</span>
+        <CommitRefs commit={commit} />
       </span>
     </span>
   )
 }
 
 function CommitRefs({ commit }: { commit: GitLogCommit }) {
-  const refs = commit.refs.slice(0, 3)
-  if (refs.length === 0) return null
+  const refs = visibleCommitRefs(commit)
+  if (refs.visible.length === 0 && refs.hidden === 0) return null
 
   return (
     <span className="flex min-w-0 shrink-0 items-center gap-1">
-      {refs.map((ref) => (
+      {refs.visible.map((ref) => (
         <Badge
-          className={cn("max-w-32 truncate px-1.5", gitRefClassName(ref.type))}
+          className={cn("max-w-24 truncate px-1.5", gitRefClassName(ref.type))}
           key={`${commit.hash}:${ref.type}:${ref.name}`}
           variant="outline"
         >
           {ref.name}
         </Badge>
       ))}
+      {refs.hidden > 0 ? (
+        <Badge
+          className="border-muted-foreground/20 bg-muted/60 px-1.5 text-muted-foreground"
+          title={commit.refs.map((ref) => ref.name).join(", ")}
+          variant="outline"
+        >
+          +{refs.hidden}
+        </Badge>
+      ) : null}
     </span>
   )
+}
+
+function visibleCommitRefs(commit: GitLogCommit) {
+  const primary = commit.refs.filter(primaryRef)
+  const visible = primary.slice(0, 2)
+  return {
+    hidden: Math.max(0, commit.refs.length - visible.length),
+    visible,
+  }
+}
+
+function primaryRef(ref: GitLogCommit["refs"][number]) {
+  if (ref.type === "tag") return true
+  return [
+    "HEAD",
+    "main",
+    "master",
+    "origin/HEAD",
+    "origin/main",
+    "origin/master",
+  ].includes(ref.name)
 }
 
 function HistoryEmpty({ query }: { query: string }) {

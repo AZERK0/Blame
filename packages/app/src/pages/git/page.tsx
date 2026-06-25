@@ -33,7 +33,7 @@ export function GitPage() {
       {git.error ? (
         <GitError message={git.error} onDismiss={git.clearError} />
       ) : null}
-      <div className="grid min-h-0 flex-1 grid-cols-1 overflow-auto border-t xl:grid-cols-[22rem_minmax(0,1fr)_30rem] xl:overflow-hidden">
+      <div className="grid min-h-0 flex-1 grid-cols-1 overflow-auto border-t xl:grid-cols-[18rem_minmax(22rem,30rem)_minmax(0,1fr)] xl:overflow-hidden">
         <GitWorkspacePanel
           busy={git.busy}
           commitMessage={git.commitMessage}
@@ -47,8 +47,10 @@ export function GitPage() {
           onRefresh={git.refresh}
           onStageAll={git.stageAll}
           onStageFile={git.stageFile}
+          onStageFiles={git.stageFiles}
           onUnstageAll={git.unstageAll}
           onUnstageFile={git.unstageFile}
+          onUnstageFiles={git.unstageFiles}
         />
         <GitHistoryPanel
           commits={git.commits}
@@ -157,10 +159,14 @@ function useGitController(root?: string, workspace?: WorkspaceClient) {
     stageAll: () => runAction("Staging files", stageAllAction(status)),
     stageFile: (path: string) =>
       runAction("Staging file", stageFileAction(path, setSelected)),
+    stageFiles: (paths: string[]) =>
+      runAction("Staging files", stageFilesAction(paths)),
     status,
     unstageAll: () => runAction("Unstaging files", unstageAllAction(status)),
     unstageFile: (path: string) =>
       runAction("Unstaging file", unstageFileAction(path, setSelected)),
+    unstageFiles: (paths: string[]) =>
+      runAction("Unstaging files", unstageFilesAction(paths)),
     clearError: () => setError(""),
   }
 }
@@ -241,10 +247,10 @@ function resolveSelection(
   commits: GitLogCommit[]
 ) {
   if (selectionStillExists(selected, status, commits)) return selected
-  const workspaceFile = status.files.find((file) => file.unstaged)
-  if (workspaceFile) return gitFileSelection(workspaceFile.path, false)
-  const stagedFile = status.files.find((file) => file.staged)
-  if (stagedFile) return gitFileSelection(stagedFile.path, true)
+  const changeFile = status.files.find((file) => !file.untracked)
+  if (changeFile) return gitFileSelection(changeFile.path, changeFile.staged)
+  const unversionedFile = status.files.find((file) => file.untracked)
+  if (unversionedFile) return gitFileSelection(unversionedFile.path, false)
   return commits[0] ? gitCommitSelection(commits[0].hash) : undefined
 }
 
@@ -284,13 +290,30 @@ function unstageFileAction(
 }
 
 function stageAllAction(status?: GitStatusResult): GitAction {
-  return (root, workspace) =>
-    workspace.gitStageFiles({ root, paths: changedPaths(status, "unstaged") })
+  return stageFilesAction(changedPaths(status, "unstaged"))
 }
 
 function unstageAllAction(status?: GitStatusResult): GitAction {
-  return (root, workspace) =>
-    workspace.gitUnstageFiles({ root, paths: changedPaths(status, "staged") })
+  return unstageFilesAction(changedPaths(status, "staged"))
+}
+
+function stageFilesAction(paths: string[]): GitAction {
+  return (root, workspace) => gitFilesAction(root, workspace, paths, "stage")
+}
+
+function unstageFilesAction(paths: string[]): GitAction {
+  return (root, workspace) => gitFilesAction(root, workspace, paths, "unstage")
+}
+
+function gitFilesAction(
+  root: string,
+  workspace: WorkspaceClient,
+  paths: string[],
+  action: "stage" | "unstage"
+) {
+  if (paths.length === 0) return Promise.resolve(false)
+  if (action === "stage") return workspace.gitStageFiles({ root, paths })
+  return workspace.gitUnstageFiles({ root, paths })
 }
 
 function commitAction(

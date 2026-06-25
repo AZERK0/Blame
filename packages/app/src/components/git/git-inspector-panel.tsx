@@ -20,7 +20,6 @@ import { DevelopmentDiffView } from "@/components/backlog/development/developmen
 import { GitBranchIcon, GitCommitIcon, GitPullRequestIcon } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 
@@ -44,7 +43,13 @@ export function GitInspectorPanel({
 
   return (
     <aside className="flex min-h-[34rem] min-w-0 flex-col bg-background xl:min-h-0">
-      <InspectorHeader commits={commits} selected={selected} status={status} />
+      <InspectorHeader
+        commits={commits}
+        diffLoading={diffLoading}
+        diffs={diffs}
+        selected={selected}
+        status={status}
+      />
       <div className="min-h-0 flex-1">
         {diffLoading ? <DiffSkeleton /> : null}
         {!diffLoading && selected ? <DiffStack diffs={diffs} /> : null}
@@ -58,25 +63,46 @@ export function GitInspectorPanel({
 
 function InspectorHeader({
   commits,
+  diffLoading,
+  diffs,
   selected,
   status,
 }: {
   commits: GitLogCommit[]
+  diffLoading: boolean
+  diffs: ReturnType<typeof parseGitDiff>
   selected?: GitSelection
   status?: GitStatusResult
 }) {
   if (selected?.type === "commit") {
     const commit = commits.find((item) => item.hash === selected.hash)
-    return <CommitHeader commit={commit} />
+    return (
+      <CommitHeader commit={commit} diffLoading={diffLoading} diffs={diffs} />
+    )
   }
   if (selected?.type === "file") {
     const file = status?.files.find((item) => item.path === selected.path)
-    return <FileHeader file={file} selected={selected} />
+    return (
+      <FileHeader
+        diffLoading={diffLoading}
+        diffs={diffs}
+        file={file}
+        selected={selected}
+      />
+    )
   }
   return <OverviewHeader status={status} />
 }
 
-function CommitHeader({ commit }: { commit?: GitLogCommit }) {
+function CommitHeader({
+  commit,
+  diffLoading,
+  diffs,
+}: {
+  commit?: GitLogCommit
+  diffLoading: boolean
+  diffs: ReturnType<typeof parseGitDiff>
+}) {
   return (
     <div className="flex min-w-0 flex-col gap-2 border-b px-3 py-3">
       <div className="flex min-w-0 items-center gap-2">
@@ -86,6 +112,7 @@ function CommitHeader({ commit }: { commit?: GitLogCommit }) {
         </span>
       </div>
       {commit ? <CommitMeta commit={commit} /> : null}
+      <DiffSummary diffLoading={diffLoading} diffs={diffs} />
     </div>
   )
 }
@@ -104,43 +131,78 @@ function CommitMeta({ commit }: { commit: GitLogCommit }) {
 
 function CommitRefBadges({ commit }: { commit: GitLogCommit }) {
   if (commit.refs.length === 0) return null
+  const visible = visibleInspectorRefs(commit)
+  const hidden = commit.refs.length - visible.length
 
   return (
-    <div className="flex min-w-0 flex-wrap gap-1">
-      {commit.refs.map((ref) => (
+    <div className="flex max-w-full min-w-0 flex-wrap gap-1 overflow-hidden">
+      {visible.map((ref) => (
         <Badge
-          className={cn("max-w-36 truncate", gitRefClassName(ref.type))}
+          className={cn("max-w-28 min-w-0 truncate", gitRefClassName(ref.type))}
           key={`${commit.hash}:${ref.type}:${ref.name}`}
           variant="outline"
         >
           {ref.name}
         </Badge>
       ))}
+      {hidden > 0 ? (
+        <Badge
+          className="border-muted-foreground/20 bg-muted/60 text-muted-foreground"
+          title={commit.refs.map((ref) => ref.name).join(", ")}
+          variant="outline"
+        >
+          +{hidden}
+        </Badge>
+      ) : null}
     </div>
   )
 }
 
+function visibleInspectorRefs(commit: GitLogCommit) {
+  const primary = commit.refs.filter(primaryRef)
+  return (primary.length ? primary : commit.refs).slice(0, 3)
+}
+
+function primaryRef(ref: GitLogCommit["refs"][number]) {
+  if (ref.type === "tag") return true
+  return [
+    "HEAD",
+    "main",
+    "master",
+    "origin/HEAD",
+    "origin/main",
+    "origin/master",
+  ].includes(ref.name)
+}
+
 function FileHeader({
+  diffLoading,
+  diffs,
   file,
   selected,
 }: {
+  diffLoading: boolean
+  diffs: ReturnType<typeof parseGitDiff>
   file?: GitStatusFile
   selected: Extract<GitSelection, { type: "file" }>
 }) {
   return (
-    <div className="flex min-w-0 items-center gap-2 border-b px-3 py-3">
-      <GitPullRequestIcon className="size-4 shrink-0 text-muted-foreground" />
-      <div className="min-w-0 flex-1">
-        <div className="truncate font-medium">{selected.path}</div>
-        <div className="text-xs text-muted-foreground">
-          {selected.staged ? "Staged diff" : "Workspace diff"}
+    <div className="flex min-w-0 flex-col gap-2 border-b px-3 py-3">
+      <div className="flex min-w-0 items-center gap-2">
+        <GitPullRequestIcon className="size-4 shrink-0 text-muted-foreground" />
+        <div className="min-w-0 flex-1">
+          <div className="truncate font-medium">{selected.path}</div>
+          <div className="text-xs text-muted-foreground">
+            {selected.staged ? "Staged diff" : "Workspace diff"}
+          </div>
         </div>
+        {file ? (
+          <Badge className={gitStatusClassName(file.status)} variant="outline">
+            {gitStatusLabel(file.status)}
+          </Badge>
+        ) : null}
       </div>
-      {file ? (
-        <Badge className={gitStatusClassName(file.status)} variant="outline">
-          {gitStatusLabel(file.status)}
-        </Badge>
-      ) : null}
+      <DiffSummary diffLoading={diffLoading} diffs={diffs} />
     </div>
   )
 }
@@ -192,19 +254,59 @@ function DiffStack({ diffs }: { diffs: ReturnType<typeof parseGitDiff> }) {
   }
 
   return (
-    <ScrollArea className="h-full">
-      <div className="flex min-w-0 flex-col gap-3 p-3">
+    <div className="h-full min-h-0 overflow-y-auto p-3">
+      <div className="flex max-w-full min-w-0 flex-col gap-3">
         {diffs.map((diff) => (
           <div
-            className="min-w-0 overflow-hidden rounded-md border"
+            className="h-[calc(100vh-var(--header-height)-13rem)] min-h-64 max-w-full min-w-0 overflow-hidden rounded-md border"
             key={diff.file}
           >
-            <DevelopmentDiffView diff={diff} scroll={false} title={diff.file} />
+            <DevelopmentDiffView diff={diff} scroll title={diff.file} />
           </div>
         ))}
       </div>
-    </ScrollArea>
+    </div>
   )
+}
+
+function DiffSummary({
+  diffLoading,
+  diffs,
+}: {
+  diffLoading: boolean
+  diffs: ReturnType<typeof parseGitDiff>
+}) {
+  if (diffLoading) {
+    return <div className="text-xs text-muted-foreground">Loading diff</div>
+  }
+  const summary = diffSummary(diffs)
+  if (!summary) return null
+  return (
+    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+      <span>{summary.files}</span>
+      <Badge
+        className="h-5 border-emerald-500/30 bg-emerald-500/10 px-1.5 text-emerald-600 dark:text-emerald-400"
+        variant="outline"
+      >
+        +{summary.additions}
+      </Badge>
+      <Badge
+        className="h-5 border-destructive/30 bg-destructive/10 px-1.5 text-destructive"
+        variant="outline"
+      >
+        -{summary.deletions}
+      </Badge>
+    </div>
+  )
+}
+
+function diffSummary(diffs: ReturnType<typeof parseGitDiff>) {
+  if (diffs.length === 0) return undefined
+  const additions = diffs.reduce((sum, diff) => sum + (diff.additions ?? 0), 0)
+  const deletions = diffs.reduce((sum, diff) => sum + (diff.deletions ?? 0), 0)
+  const files =
+    diffs.length === 1 ? "1 file changed" : `${diffs.length} files changed`
+  return { additions, deletions, files }
 }
 
 function DiffSkeleton() {
