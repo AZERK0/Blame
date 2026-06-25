@@ -4,7 +4,6 @@ import type {
   BacklogColumnId,
   UserStory,
   UserStoryAgentActivity,
-  UserStoryAgentRun,
   UserStoryFileAttachment,
 } from "@/components/backlog/data/backlog-data"
 import { createBacklogApi } from "@/components/backlog/data/backlog-api"
@@ -165,7 +164,7 @@ function AgentRunTimeline({
     providers: modelSelection.allProviders,
   })
   const loadActivityDetail = React.useCallback(
-    async (run: UserStoryAgentRun, activity: UserStoryAgentActivity) => {
+    async (run: { id: number }, activity: UserStoryAgentActivity) => {
       if (!userStory) return activity.detail
       return (
         await api.agentRunActivityDetail(userStory.id, run.id, activity.id)

@@ -1,6 +1,5 @@
 import * as React from "react"
 import {
-  BotIcon,
   BrainCircuitIcon,
   CheckCircle2Icon,
   ClipboardCheckIcon,
@@ -15,8 +14,10 @@ import {
 
 import type {
   UserStoryAgentActivity,
-  UserStoryAgentRun,
-  UserStoryComment,
+  UserStoryAgentRunKind,
+  UserStoryAgentRunStatus,
+  UserStoryAgentUsage,
+  UserStoryCodeSelectionAttachment,
   UserStoryFileAttachment,
 } from "@/components/backlog/data/backlog-data"
 import type { AgentConversationResponseHeader } from "@/components/chat/agent-conversation-header"
@@ -39,6 +40,32 @@ import {
 } from "@/components/ui/accordion"
 import { Button } from "@/components/ui/button"
 
+export type AgentConversationComment = {
+  author: string
+  body: string
+  codeSelectionAttachments?: UserStoryCodeSelectionAttachment[] | null
+  createdAt: string
+  fileAttachments?: UserStoryFileAttachment[] | null
+  id: number
+  updatedAt?: string | null
+}
+
+export type AgentConversationRun = {
+  activities?: UserStoryAgentActivity[] | null
+  clineSessionId?: string | null
+  commentId?: number | null
+  completedAt?: string | null
+  createdAt: string
+  finalResponse?: string | null
+  id: number
+  kind: UserStoryAgentRunKind
+  messageId?: number | null
+  sessionSummary?: string | null
+  status: UserStoryAgentRunStatus
+  updatedAt?: string | null
+  usage?: UserStoryAgentUsage | null
+}
+
 export function AgentConversationTimeline({
   comments,
   onFileLinkClick,
@@ -46,21 +73,21 @@ export function AgentConversationTimeline({
   responseHeader,
   runs,
 }: {
-  comments: UserStoryComment[]
+  comments: AgentConversationComment[]
   onFileLinkClick?: (path: string) => void
   onLoadActivityDetail?: (
-    run: UserStoryAgentRun,
+    run: AgentConversationRun,
     activity: UserStoryAgentActivity
   ) => Promise<string>
   responseHeader: AgentConversationResponseHeader
-  runs: UserStoryAgentRun[]
+  runs: AgentConversationRun[]
 }) {
   const commentsById = React.useMemo(
     () => new Map(comments.map((comment) => [comment.id, comment])),
     [comments]
   )
   const loadActivityDetail = React.useCallback(
-    (run: UserStoryAgentRun, activity: UserStoryAgentActivity) =>
+    (run: AgentConversationRun, activity: UserStoryAgentActivity) =>
       onLoadActivityDetail?.(run, activity) ?? Promise.resolve(activity.detail),
     [onLoadActivityDetail]
   )
@@ -201,9 +228,9 @@ function RunCommentItem({
   onFileLinkClick,
   run,
 }: {
-  comment?: UserStoryComment
+  comment?: AgentConversationComment
   onFileLinkClick?: (path: string) => void
-  run: UserStoryAgentRun
+  run: AgentConversationRun
 }) {
   if (run.kind === "initial") return null
   if (!comment) return null
@@ -473,7 +500,7 @@ function AgentActivityDetailLeafItem({
 }
 
 function currentRunningToolActivityId(
-  runStatus: UserStoryAgentRun["status"],
+  runStatus: AgentConversationRun["status"],
   activities: UserStoryAgentActivity[]
 ) {
   const lastActivity = activities.at(-1)
@@ -605,7 +632,7 @@ function AgentMarkdownTimelineItem({
       data-agent-response
     >
       <span className="relative z-10 flex size-8 items-center justify-center rounded-full border bg-background text-muted-foreground shadow-sm">
-        {icon ?? <BotIcon className="size-4" />}
+        {icon ?? <MessageSquareIcon className="size-4" />}
       </span>
       <div className="grid min-w-0 gap-3">
         <h3 className="text-xl font-medium">{title}</h3>
@@ -634,7 +661,7 @@ function ActivityToolIcon({
     return <BrainCircuitIcon className="size-4" />
   if (activity.kind === "approval")
     return <CheckCircle2Icon className="size-4" />
-  if (activity.kind !== "tool") return <BotIcon className="size-4" />
+  if (activity.kind !== "tool") return <MessageSquareIcon className="size-4" />
   if (toolName === "run_commands") return <TerminalIcon className="size-4" />
   if (toolName === "search_codebase") return <SearchIcon className="size-4" />
   if (toolName === "read_files") return <FileSearchIcon className="size-4" />
@@ -866,8 +893,9 @@ function commentDateLabel(value: string) {
 }
 
 function runComment(
-  run: UserStoryAgentRun,
-  commentsById: Map<number, UserStoryComment>
+  run: AgentConversationRun,
+  commentsById: Map<number, AgentConversationComment>
 ) {
-  return run.commentId ? commentsById.get(run.commentId) : undefined
+  const commentId = run.commentId ?? run.messageId
+  return commentId ? commentsById.get(commentId) : undefined
 }

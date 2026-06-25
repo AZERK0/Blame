@@ -66,11 +66,11 @@ export type UserStoryAgentUsage = {
   totalOutputTokens: number
 }
 
-function prepareAgentActivities(value: UserStoryAgentActivity[] | null) {
+export function prepareAgentActivities(value: UserStoryAgentActivity[] | null) {
   return value ? JSON.stringify(value) : null
 }
 
-function consumeAgentActivities(value: unknown) {
+export function consumeAgentActivities(value: unknown) {
   if (Array.isArray(value)) return value as UserStoryAgentActivity[]
   if (typeof value !== 'string') return null
   try {
@@ -81,11 +81,11 @@ function consumeAgentActivities(value: unknown) {
   }
 }
 
-function prepareAgentUsage(value: UserStoryAgentUsage | null) {
+export function prepareAgentUsage(value: UserStoryAgentUsage | null) {
   return value ? JSON.stringify(value) : null
 }
 
-function consumeAgentUsage(value: unknown) {
+export function consumeAgentUsage(value: unknown) {
   if (!value) return null
   if (typeof value === 'object') return value as UserStoryAgentUsage
   if (typeof value !== 'string') return null

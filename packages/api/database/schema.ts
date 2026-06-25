@@ -134,6 +134,95 @@ export class ProviderCredentialSchema extends BaseModel {
   declare userId: number
 }
 
+export class QuickChatAgentRunSchema extends BaseModel {
+  static $columns = ['activities', 'clineSessionId', 'completedAt', 'createdAt', 'finalResponse', 'id', 'kind', 'messageId', 'quickChatId', 'sessionSummary', 'status', 'updatedAt', 'usage'] as const
+  $columns = QuickChatAgentRunSchema.$columns
+  @column()
+  declare activities: any | null
+  @column()
+  declare clineSessionId: string | null
+  @column.dateTime()
+  declare completedAt: DateTime | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare finalResponse: string | null
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare kind: string
+  @column()
+  declare messageId: number | null
+  @column()
+  declare quickChatId: number
+  @column()
+  declare sessionSummary: string | null
+  @column()
+  declare status: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+  @column()
+  declare usage: any | null
+}
+
+export class QuickChatMessageSchema extends BaseModel {
+  static $columns = ['author', 'body', 'codeSelectionAttachments', 'createdAt', 'fileAttachments', 'id', 'quickChatId', 'updatedAt'] as const
+  $columns = QuickChatMessageSchema.$columns
+  @column()
+  declare author: string
+  @column()
+  declare body: string
+  @column()
+  declare codeSelectionAttachments: any | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare fileAttachments: any | null
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare quickChatId: number
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+}
+
+export class QuickChatSchema extends BaseModel {
+  static $columns = ['agentActivities', 'agentFinalResponse', 'agentLastError', 'agentLastEvent', 'agentModelId', 'agentProviderId', 'agentSessionSummary', 'agentStatus', 'agentUsage', 'clineSessionId', 'createdAt', 'id', 'projectId', 'title', 'updatedAt', 'workspace'] as const
+  $columns = QuickChatSchema.$columns
+  @column()
+  declare agentActivities: any | null
+  @column()
+  declare agentFinalResponse: string | null
+  @column()
+  declare agentLastError: string | null
+  @column()
+  declare agentLastEvent: string | null
+  @column()
+  declare agentModelId: string | null
+  @column()
+  declare agentProviderId: string | null
+  @column()
+  declare agentSessionSummary: string | null
+  @column()
+  declare agentStatus: string | null
+  @column()
+  declare agentUsage: any | null
+  @column()
+  declare clineSessionId: string | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare projectId: string
+  @column()
+  declare title: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+  @column()
+  declare workspace: string | null
+}
+
 export class UserAiPreferenceSchema extends BaseModel {
   static $columns = ['agentCredentialLabel', 'agentModelId', 'agentProviderId', 'agentReasoningEffort', 'alternativeCredentialLabel', 'alternativeModelId', 'alternativeProviderId', 'alternativeReasoningEffort', 'createdAt', 'updatedAt', 'userId'] as const
   $columns = UserAiPreferenceSchema.$columns

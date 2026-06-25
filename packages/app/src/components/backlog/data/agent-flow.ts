@@ -1,7 +1,6 @@
 import type { AgentEvent } from "@blame/agent-runtime"
 
 import type {
-  UserStory,
   UserStoryAgentActivity,
   UserStoryAgentUsage,
   UserStoryUpdate,
@@ -15,22 +14,39 @@ type ActivityInput = Omit<UserStoryAgentActivity, "createdAt" | "updatedAt"> & {
   serverDetail?: string
 }
 type ActivityKind = UserStoryAgentActivity["kind"]
+type ActivityStatus = NonNullable<UserStoryAgentActivity["status"]>
 type ActivityUpdate = {
   activities: UserStoryAgentActivity[]
   activity: UserStoryAgentActivity
   activityUpdates: UserStoryAgentActivity[]
 }
+export type AgentFlowState = {
+  agentActivities?: UserStoryAgentActivity[] | null
+  agentFinalResponse?: string | null
+  agentLastError?: string | null
+  agentSessionSummary?: string | null
+  agentUsage?: UserStoryAgentUsage | null
+}
+export type AgentFlowUpdate = Pick<
+  UserStoryUpdate,
+  | "agentActivities"
+  | "agentActivity"
+  | "agentActivityUpdates"
+  | "agentFinalResponse"
+  | "agentSessionSummary"
+  | "agentUsage"
+>
 
 export function agentFlowUpdate(
-  story: UserStory,
+  story: AgentFlowState,
   event: AgentEvent
-): UserStoryUpdate {
+): AgentFlowUpdate {
   const activity = eventActivity(story.agentActivities ?? [], event)
   const nextActivities = activity?.activities ?? story.agentActivities ?? []
   const finalResponse = eventFinalResponse(nextActivities, event)
   const usage = eventUsage(story, event)
   const sessionSummary = eventSessionSummary(story, event)
-  const update: UserStoryUpdate = {}
+  const update: AgentFlowUpdate = {}
   if (activity) {
     update.agentActivities = activity.activities
     update.agentActivity = activity.activity
@@ -70,7 +86,7 @@ function appendActivityUpdate(
 
 export function shouldPersistAgentEvent(
   event: AgentEvent,
-  update: UserStoryUpdate
+  update: AgentFlowUpdate
 ) {
   if (event.type === "done" || event.type === "error") return true
   if (
@@ -147,7 +163,7 @@ function reasoningActivities(
       kind: "reasoning",
       title: iteration ? `Agent reasoning ${iteration}` : "Agent reasoning",
       detail: text,
-      status: "running",
+      status: "running" as const,
       iteration,
     },
   ])
@@ -195,7 +211,7 @@ function messageActivities(
       kind: "message",
       title: messageKind === "final" ? "Agent response" : "Agent message",
       detail: text,
-      status: messageKind === "final" ? "completed" : "running",
+      status: messageKind === "final" ? "completed" : ("running" as const),
       iteration,
       messageKind,
     },
@@ -207,7 +223,8 @@ function inlineActivityId(
   kind: "message" | "reasoning",
   iteration: number | undefined
 ) {
-  const active = activities.findLast(
+  const active = lastMatchingActivity(
+    activities,
     (activity) =>
       activity.kind === kind &&
       activity.status === "running" &&
@@ -220,6 +237,16 @@ function inlineActivityId(
       activity.kind === kind && sameIteration(activity.iteration, iteration)
   ).length
   return `${label}-${iteration ?? "session"}-${count + 1}`
+}
+
+function lastMatchingActivity(
+  activities: UserStoryAgentActivity[],
+  predicate: (activity: UserStoryAgentActivity) => boolean
+) {
+  for (let index = activities.length - 1; index >= 0; index -= 1) {
+    const activity = activities[index]
+    if (activity && predicate(activity)) return activity
+  }
 }
 
 function streamPhase(payload: Record<string, unknown>) {
@@ -247,7 +274,7 @@ function closeRunningActivities(
 function closeRunningActivityInputs(
   activities: UserStoryAgentActivity[],
   kinds: ActivityKind[]
-) {
+): ActivityInput[] {
   return activities
     .filter(
       (activity) =>
@@ -257,7 +284,7 @@ function closeRunningActivityInputs(
       const { createdAt, updatedAt, ...input } = activity
       void createdAt
       void updatedAt
-      return { ...input, status: "completed" }
+      return { ...input, status: "completed" as const }
     })
 }
 
@@ -345,7 +372,7 @@ function finalResponseActivity(
     serverDetail: finalResponse,
     title: "Agent response",
     messageKind: "final",
-    status: "completed",
+    status: "completed" as const,
   })
 }
 
@@ -467,7 +494,8 @@ function matchingToolId(
   iteration: number | undefined,
   phase: string | undefined
 ) {
-  return activities.findLast(
+  return lastMatchingActivity(
+    activities,
     (activity) =>
       activity.kind === "tool" &&
       activity.toolName === toolName &&
@@ -488,7 +516,7 @@ function approvalActivities(
     kind: "approval",
     title: `Tool approval requested: ${toolName}`,
     detail: stringifyDetail(payload.input ?? payload),
-    status: "running",
+    status: "running" as const,
   })
 }
 
@@ -616,7 +644,7 @@ function toolTitle(toolName: string, phase: string | undefined) {
   return label
 }
 
-function toolStatus(phase: string | undefined) {
+function toolStatus(phase: string | undefined): ActivityStatus {
   if (phase === "finished" || phase === "tool_result") return "completed"
   if (phase === "agent_error") return "failed"
   return "running"
@@ -731,7 +759,10 @@ function compactValue(value: unknown): unknown {
   return value
 }
 
-function eventUsage(story: UserStory, event: AgentEvent) {
+function eventUsage(
+  story: AgentFlowState,
+  event: AgentEvent
+): UserStoryAgentUsage | undefined {
   const current = usageWithDefaults(story.agentUsage)
   if (event.type === "usage" || event.type === "done") {
     const next = usageFromUsageEvent(current, event)
@@ -739,15 +770,25 @@ function eventUsage(story: UserStory, event: AgentEvent) {
   }
 }
 
-function usageFromUsageEvent(current: UserStoryAgentUsage, event: AgentEvent) {
+function usageFromUsageEvent(
+  current: UserStoryAgentUsage,
+  event: AgentEvent
+): UserStoryAgentUsage {
   const payload = eventPayload(event)
   const payloadUsage = recordValue(payload.usage)
   const usage = Object.keys(payloadUsage).length ? payloadUsage : payload
   const doneAggregate = event.type === "done" && !usageHasTotals(usage)
-  return {
+  const next = {
     ...current,
     ...usageTurnFields(current, usage, doneAggregate),
     ...usageTotalFields(current, usage, doneAggregate),
+  }
+  return {
+    ...next,
+    inputTokens: next.inputTokens ?? 0,
+    outputTokens: next.outputTokens ?? 0,
+    totalInputTokens: next.totalInputTokens ?? 0,
+    totalOutputTokens: next.totalOutputTokens ?? 0,
   }
 }
 
@@ -878,7 +919,7 @@ function usageChanged(current: UserStoryAgentUsage, next: UserStoryAgentUsage) {
   )
 }
 
-function eventSessionSummary(story: UserStory, event: AgentEvent) {
+function eventSessionSummary(story: AgentFlowState, event: AgentEvent) {
   if (event.type !== "done" && event.type !== "error") return undefined
   const activities = story.agentActivities ?? []
   const files = fileMentions(activities)
@@ -904,7 +945,9 @@ function emptyUsage(): UserStoryAgentUsage {
   }
 }
 
-function usageWithDefaults(usage: UserStoryAgentUsage | null | undefined) {
+function usageWithDefaults(
+  usage: UserStoryAgentUsage | null | undefined
+): UserStoryAgentUsage {
   return { ...emptyUsage(), ...usage }
 }
 

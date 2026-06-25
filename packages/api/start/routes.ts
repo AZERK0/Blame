@@ -16,6 +16,9 @@ const ProjectCodePracticesController = () =>
   import('#controllers/project_code_practices_controller')
 const ProjectInitializationsController = () =>
   import('#controllers/project_initializations_controller')
+const QuickChatAgentRunsController = () => import('#controllers/quick_chat_agent_runs_controller')
+const QuickChatMessagesController = () => import('#controllers/quick_chat_messages_controller')
+const QuickChatsController = () => import('#controllers/quick_chats_controller')
 const UserAiPreferencesController = () => import('#controllers/user_ai_preferences_controller')
 const UserStoryAgentRunsController = () => import('#controllers/user_story_agent_runs_controller')
 const UserStoryCommentsController = () => import('#controllers/user_story_comments_controller')
@@ -81,6 +84,25 @@ router
       })
       .prefix('providers')
       .as('providers')
+      .use(middleware.auth())
+
+    router
+      .group(() => {
+        router.get('/', [QuickChatsController, 'index'])
+        router.post('/', [QuickChatsController, 'store'])
+        router.get('/:id', [QuickChatsController, 'show'])
+        router.patch('/:id', [QuickChatsController, 'update'])
+        router.delete('/:id', [QuickChatsController, 'destroy'])
+        router.post('/:id/messages', [QuickChatMessagesController, 'store'])
+        router.post('/:id/agent-runs', [QuickChatAgentRunsController, 'store'])
+        router.patch('/:id/agent-runs/:runId', [QuickChatAgentRunsController, 'update'])
+        router.get('/:id/agent-runs/:runId/activities/:activityId', [
+          QuickChatAgentRunsController,
+          'activityDetail',
+        ])
+      })
+      .prefix('projects/quick-chats')
+      .as('projects.quick_chats')
       .use(middleware.auth())
 
     router

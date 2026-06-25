@@ -3,11 +3,11 @@ import { DateTime } from 'luxon'
 
 const status = vine.enum(['backlog', 'ready', 'in-progress', 'in-review', 'done', 'discarded'])
 const priority = vine.enum(['Low', 'Medium', 'High'])
-const agentStatus = vine.enum(['Running', 'Paused'])
-const agentActivityKind = vine.enum(['reasoning', 'message', 'tool', 'approval', 'notice'])
-const agentActivityMessageKind = vine.enum(['intermediate', 'final'])
-const agentActivityStatus = vine.enum(['running', 'completed', 'failed'])
-const agentActivity = vine.object({
+export const agentStatus = vine.enum(['Running', 'Paused'])
+export const agentActivityKind = vine.enum(['reasoning', 'message', 'tool', 'approval', 'notice'])
+export const agentActivityMessageKind = vine.enum(['intermediate', 'final'])
+export const agentActivityStatus = vine.enum(['running', 'completed', 'failed'])
+export const agentActivity = vine.object({
   id: vine.string().trim().minLength(1).maxLength(255),
   kind: agentActivityKind,
   title: vine.string().trim().minLength(1).maxLength(255),
@@ -22,14 +22,14 @@ const agentActivity = vine.object({
   createdAt: vine.string().trim().minLength(1).maxLength(255),
   updatedAt: vine.string().trim().maxLength(255).optional(),
 })
-const codeSelectionAttachment = vine.object({
+export const codeSelectionAttachment = vine.object({
   id: vine.string().trim().minLength(1).maxLength(255),
   content: vine.string().maxLength(262144),
   endLine: vine.number(),
   path: vine.string().trim().minLength(1).maxLength(2048),
   startLine: vine.number(),
 })
-const fileAttachment = vine.object({
+export const fileAttachment = vine.object({
   id: vine.string().trim().minLength(1).maxLength(255),
   aiContextMarkdown: vine.string().maxLength(262144).optional(),
   content: vine.string().maxLength(10485760),
@@ -37,7 +37,7 @@ const fileAttachment = vine.object({
   size: vine.number(),
   type: vine.string().trim().maxLength(255),
 })
-const agentUsage = vine.object({
+export const agentUsage = vine.object({
   cacheReadTokens: vine.number().optional(),
   cacheWriteTokens: vine.number().optional(),
   cost: vine.number().optional(),
@@ -55,7 +55,7 @@ const agentUsage = vine.object({
   totalInputTokens: vine.number(),
   totalOutputTokens: vine.number(),
 })
-const nullableDateTime = vine
+export const nullableDateTime = vine
   .string()
   .trim()
   .nullable()

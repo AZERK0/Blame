@@ -38,6 +38,23 @@ export interface ApiDefinition {
       fail: typeof routes['projects.project_initializations.fail']
       repair: typeof routes['projects.project_initializations.repair']
     }
+    quickChats: {
+      quickChats: {
+        index: typeof routes['projects.quick_chats.quick_chats.index']
+        store: typeof routes['projects.quick_chats.quick_chats.store']
+        show: typeof routes['projects.quick_chats.quick_chats.show']
+        update: typeof routes['projects.quick_chats.quick_chats.update']
+        destroy: typeof routes['projects.quick_chats.quick_chats.destroy']
+      }
+      quickChatMessages: {
+        store: typeof routes['projects.quick_chats.quick_chat_messages.store']
+      }
+      quickChatAgentRuns: {
+        store: typeof routes['projects.quick_chats.quick_chat_agent_runs.store']
+        update: typeof routes['projects.quick_chats.quick_chat_agent_runs.update']
+        activityDetail: typeof routes['projects.quick_chats.quick_chat_agent_runs.activity_detail']
+      }
+    }
     userStories: {
       userStories: {
         index: typeof routes['projects.user_stories.user_stories.index']

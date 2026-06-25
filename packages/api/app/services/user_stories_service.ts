@@ -2,9 +2,8 @@ import Project from '#models/project'
 import UserStory, { type UserStoryAgentActivity } from '#models/user_story'
 import UserStoryAgentRun from '#models/user_story_agent_run'
 import UserStoryComment from '#models/user_story_comment'
+import { activityWithArtifact, artifactDetail } from '#services/agent_activity_artifacts'
 import ProjectsService from '#services/projects_service'
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { isAbsolute, join, resolve } from 'node:path'
 import { DateTime } from 'luxon'
 import type { Infer } from '@vinejs/vine/types'
 import type {
@@ -26,7 +25,6 @@ type CreateUserStoryAgentRunInput = Infer<typeof createUserStoryAgentRunValidato
 type UpdateUserStoryAgentRunInput = Infer<typeof updateUserStoryAgentRunValidator>
 
 const maxAgentActivities = 80
-const maxPersistedDetailLength = 4096
 
 export default class UserStoriesService {
   async list(userId: number, input: ListUserStoriesInput) {
@@ -118,7 +116,7 @@ export default class UserStoriesService {
     const activity = story.agentActivities?.find((item) => item.id === activityId)
     if (!activity) throw new Error('Agent activity not found.')
     if (!activity.detailArtifact) return { detail: activity.detail }
-    return { detail: await artifactDetail(story, activity) }
+    return { detail: await artifactDetail(story.worktree, activity) }
   }
 
   async createAgentRun(userId: number, id: number, input: CreateUserStoryAgentRunInput) {
@@ -159,7 +157,7 @@ export default class UserStoriesService {
     const activity = run.activities?.find((item) => item.id === activityId)
     if (!activity) throw new Error('Agent activity not found.')
     if (!activity.detailArtifact) return { detail: activity.detail }
-    return { detail: await artifactDetail(story, activity) }
+    return { detail: await artifactDetail(story.worktree, activity) }
   }
 
   async delete(userId: number, id: number) {
@@ -177,7 +175,11 @@ export default class UserStoriesService {
   private async updateInput(userStory: UserStory, input: UpdateUserStoryInput) {
     const { agentActivity, ...update } = input
     if (!agentActivity) return update
-    const activity = await activityWithArtifact(userStory, userStory.clineSessionId, agentActivity)
+    const activity = await activityWithArtifact(
+      userStory.worktree,
+      userStory.clineSessionId,
+      agentActivity
+    )
     return {
       ...update,
       agentActivities: upsertActivity(userStory.agentActivities ?? [], activity),
@@ -199,42 +201,12 @@ export default class UserStoriesService {
       ...agentRunCompletedAtUpdate(update),
     }
     if (!agentActivity) return nextUpdate
-    const activity = await activityWithArtifact(story, run.clineSessionId, agentActivity)
+    const activity = await activityWithArtifact(story.worktree, run.clineSessionId, agentActivity)
     return {
       ...nextUpdate,
       activities: upsertActivity(run.activities ?? [], activity),
     }
   }
-}
-
-async function activityWithArtifact(
-  story: UserStory,
-  sessionId: string | null | undefined,
-  activity: UserStoryAgentActivity
-): Promise<UserStoryAgentActivity> {
-  if (!story.worktree || activity.detail.length <= maxPersistedDetailLength) return activity
-  const artifact = await writeActivityArtifact(story, sessionId, activity)
-  return {
-    ...activity,
-    detail: middleExcerpt(activity.detail, maxPersistedDetailLength),
-    detailArtifact: artifact,
-    detailTruncated: true,
-    originalDetailLength: activity.detail.length,
-  }
-}
-
-async function writeActivityArtifact(
-  story: UserStory,
-  sessionId: string | null | undefined,
-  activity: UserStoryAgentActivity
-) {
-  const session = safeFilename(sessionId ?? 'unknown-session')
-  const directory = join(story.worktree!, '.blame', 'artifacts', 'agent-activities', session)
-  await mkdir(directory, { recursive: true })
-  const filename = `${safeFilename(activity.id)}.json`
-  const path = join(directory, filename)
-  await writeFile(path, JSON.stringify(activity, null, 2))
-  return path
 }
 
 function upsertActivity(activities: UserStoryAgentActivity[], input: UserStoryAgentActivity) {
@@ -243,32 +215,6 @@ function upsertActivity(activities: UserStoryAgentActivity[], input: UserStoryAg
     ? activities.map((activity) => (activity.id === input.id ? input : activity))
     : [...activities, input]
   return next.slice(Math.max(0, next.length - maxAgentActivities))
-}
-
-function middleExcerpt(value: string, length: number) {
-  if (value.length <= length) return value
-  const edgeLength = Math.floor((length - 20) / 2)
-  return `${value.slice(0, edgeLength)}\n...\n${value.slice(-edgeLength)}`
-}
-
-function safeFilename(value: string) {
-  return value.replace(/[^a-zA-Z0-9_.-]+/g, '-').slice(0, 160)
-}
-
-async function artifactDetail(story: UserStory, activity: UserStoryAgentActivity) {
-  const path = activity.detailArtifact
-  if (!path || !story.worktree || !isAbsolute(path)) return activity.detail
-  if (!isPathInside(resolve(path), resolve(story.worktree))) return activity.detail
-  try {
-    const artifact = JSON.parse(await readFile(path, 'utf8')) as UserStoryAgentActivity
-    return typeof artifact.detail === 'string' ? artifact.detail : activity.detail
-  } catch {
-    return activity.detail
-  }
-}
-
-function isPathInside(path: string, root: string) {
-  return path === root || path.startsWith(`${root}/`)
 }
 
 function terminalStatus(status: string | undefined) {

@@ -1,4 +1,5 @@
 import * as React from "react"
+import type { AgentEvent } from "@blame/agent-runtime"
 import {
   CheckCircle2Icon,
   Clock3Icon,
@@ -8,14 +9,19 @@ import {
   PlusIcon,
   SendIcon,
 } from "lucide-react"
+import { toast } from "sonner"
 
-import type { GitStatusResult, WorkspaceClient } from "@/context/platform"
 import type {
-  UserStoryAgentActivity,
-  UserStoryAgentRun,
-  UserStoryComment,
-  UserStoryFileAttachment,
-} from "@/components/backlog/data/backlog-data"
+  GitStatusResult,
+  Platform,
+  WorkspaceClient,
+} from "@/context/platform"
+import type { UserStoryFileAttachment } from "@/components/backlog/data/backlog-data"
+import {
+  agentEventText,
+  shouldPersistAgentEvent,
+} from "@/components/backlog/data/agent-flow"
+import { subscribeAgentEvents } from "@/components/backlog/data/agent-event-stream"
 import {
   codeSelectionAttachmentEvent,
   type CodeSelectionAttachment,
@@ -26,6 +32,28 @@ import {
   AgentConversationComposer,
   AgentConversationTimeline,
 } from "@/components/chat/agent-conversation"
+import {
+  clearPendingQuickChatAgentUpdates,
+  definedQuickChatUpdate,
+  immediateQuickChatAgentEvent,
+  pendingQuickChatAgentUpdate,
+  quickChatAgentEventUpdate,
+  quickChatAgentMetadataUpdate,
+  quickChatAgentRunEventUpdate,
+  quickChatAgentRunMetadataUpdate,
+  quickChatClineLogPath,
+  quickChatExpiredAuthenticationToken,
+  type PendingQuickChatAgentUpdate,
+  type QueuedQuickChatAgentUpdate,
+} from "@/components/chat/data/quick-chat-agent-flow"
+import type {
+  QuickChat,
+  QuickChatAgentRun,
+  QuickChatAgentRunUpdate,
+  QuickChatMessage,
+  QuickChatUpdate,
+} from "@/components/chat/data/quick-chat-data"
+import { useQuickChatStore } from "@/components/chat/data/quick-chat-store"
 import { agentConversationResponseHeader } from "@/components/chat/agent-conversation-header"
 import {
   ModelSelector,
@@ -35,45 +63,28 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
+import { useCloudAuth } from "@/context/cloud-auth"
 import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
+import { projectCodePractices } from "@/lib/project-code-practices"
 import { cn } from "@/lib/utils"
 
-const storagePrefix = "blame.app.quick-chat.v1"
-
-type QuickChatState = {
-  activeId: string
-  conversations: QuickChatConversation[]
-}
-
-type QuickChatConversation = {
-  comments: UserStoryComment[]
-  createdAt: string
-  id: string
-  modelId?: string | null
-  providerId?: string | null
-  runs: UserStoryAgentRun[]
-  storyId: number
-  title: string
-  updatedAt: string
-}
+const agentEventPersistDelayMs = 1_500
 
 export function ChatPage() {
   const projects = useProjects()
-  const project = projects.activeProject
-  const storageKey = `${storagePrefix}.${project?.id ?? "project"}`
+  const projectKey = projects.activeProject?.id ?? "project"
 
-  return <QuickChatProjectPage key={storageKey} storageKey={storageKey} />
+  return <QuickChatProjectPage key={projectKey} />
 }
 
-function QuickChatProjectPage({ storageKey }: { storageKey: string }) {
+function QuickChatProjectPage() {
+  const auth = useCloudAuth()
   const platform = usePlatform()
   const projects = useProjects()
-  const selection = useModelSelection()
+  const quickChats = useQuickChatStore()
+  const selection = useModelSelection({ role: "agent" })
   const project = projects.activeProject
-  const [chatState, setChatState] = React.useState(() =>
-    readQuickChatState(storageKey, project?.name)
-  )
   const [draft, setDraft] = React.useState("")
   const [draftEditorKey, setDraftEditorKey] = React.useState(0)
   const [draftCodeAttachments, setDraftCodeAttachments] = React.useState<
@@ -83,29 +94,46 @@ function QuickChatProjectPage({ storageKey }: { storageKey: string }) {
     UserStoryFileAttachment[]
   >([])
   const [gitStatus, setGitStatus] = React.useState<GitStatusResult>()
+  const [sending, setSending] = React.useState(false)
+  const chatsRef = React.useRef(quickChats.chats)
+  const pendingAgentUpdates = React.useRef(
+    new Map<number, PendingQuickChatAgentUpdate>()
+  )
   const draftRef = React.useRef<HTMLDivElement>(null)
   const feedEndRef = React.useRef<HTMLDivElement>(null)
-  const activeConversation = activeQuickChatConversation(chatState)
+  const activeConversation = quickChats.activeChat
   const responseHeader = agentConversationResponseHeader({
-    modelId: activeConversation?.modelId ?? selection.currentModel?.id,
+    modelId: activeConversation?.agentModelId ?? selection.currentModel?.id,
     providerId:
-      activeConversation?.providerId ?? selection.currentModel?.provider.id,
+      activeConversation?.agentProviderId ??
+      selection.currentModel?.provider.id,
     providers: selection.allProviders,
   })
   const branchName = gitStatus?.branch.current ?? "Current branch"
   const mentionDirectory = project?.path
+  const agentRunning = activeConversation?.agentStatus === "Running"
 
   React.useEffect(() => {
-    writeQuickChatState(storageKey, chatState)
-  }, [chatState, storageKey])
+    chatsRef.current = quickChats.chats
+  }, [quickChats.chats])
 
   React.useEffect(() => {
     return loadGitStatus(project?.path, platform.workspace, setGitStatus)
   }, [platform.workspace, project?.path])
 
   React.useEffect(() => {
+    const updates = pendingAgentUpdates.current
+    return () => clearPendingQuickChatAgentUpdates(updates)
+  }, [])
+
+  React.useEffect(() => {
     feedEndRef.current?.scrollIntoView({ block: "end" })
-  }, [activeConversation?.id, activeConversation?.runs.length])
+  }, [
+    activeConversation?.agentLastEvent,
+    activeConversation?.agentRuns?.length,
+    activeConversation?.id,
+    activeConversation?.messages?.length,
+  ])
 
   React.useEffect(() => {
     const addAttachment = (event: Event) => {
@@ -127,45 +155,370 @@ function QuickChatProjectPage({ storageKey }: { storageKey: string }) {
       window.removeEventListener(codeSelectionAttachmentEvent, addAttachment)
   }, [])
 
-  function createConversation() {
-    setChatState((current) => addQuickChatConversation(current, project?.name))
-    clearDraft()
+  function replaceChatRef(chat: QuickChat) {
+    const exists = chatsRef.current.some((item) => item.id === chat.id)
+    chatsRef.current = exists
+      ? chatsRef.current.map((item) => (item.id === chat.id ? chat : item))
+      : [chat, ...chatsRef.current]
   }
 
-  function selectConversation(id: string) {
-    setChatState((current) => ({ ...current, activeId: id }))
-    clearDraft()
+  function currentChat(chat: QuickChat) {
+    return chatsRef.current.find((item) => item.id === chat.id) ?? chat
   }
 
-  function submitDraft() {
-    if (!activeConversation || !draftHasContent()) return
-    const now = new Date().toISOString()
-    const comment = createQuickChatComment({
-      attachments: draftFileAttachments,
-      body: draft,
-      codeAttachments: draftCodeAttachments,
-      conversation: activeConversation,
-      now,
-    })
-    const run = createQuickChatRun({
-      comment,
-      conversation: activeConversation,
-      modelId: selection.currentModel?.id,
-      now,
-      providerId: selection.currentModel?.provider.id,
-    })
-    setChatState((current) =>
-      updateQuickChatConversation(current, activeConversation.id, (item) => ({
-        ...item,
-        comments: [...item.comments, comment],
-        modelId: run.modelId,
-        providerId: run.providerId,
-        runs: [...item.runs, run],
-        title: conversationTitle(item, draft),
-        updatedAt: now,
-      }))
+  function updateChatLocal(chat: QuickChat, input: QuickChatUpdate) {
+    const current = currentChat(chat)
+    const next = { ...current, ...definedQuickChatUpdate(input) } as QuickChat
+    replaceChatRef(next)
+    quickChats.updateLocal(current, input)
+    return next
+  }
+
+  async function persistQueuedAgentUpdate(
+    chat: QuickChat,
+    update: QueuedQuickChatAgentUpdate
+  ) {
+    let nextChat = currentChat(chat)
+    const metadata = quickChatAgentMetadataUpdate(update.input)
+    if (Object.keys(definedQuickChatUpdate(metadata)).length) {
+      nextChat = await quickChats.update(nextChat, metadata)
+      replaceChatRef(nextChat)
+    }
+    for (const activity of update.activities) {
+      nextChat = await quickChats.update(currentChat(nextChat), {
+        agentActivity: activity,
+      })
+      replaceChatRef(nextChat)
+      if (update.run) {
+        await quickChats.updateAgentRun(nextChat, update.run, {
+          agentActivity: activity,
+        })
+      }
+    }
+    if (update.run) await persistAgentRunMetadata(nextChat, update)
+    return nextChat
+  }
+
+  async function persistAgentRunMetadata(
+    chat: QuickChat,
+    update: QueuedQuickChatAgentUpdate
+  ) {
+    if (!update.run) return
+    const metadata = quickChatAgentRunMetadataUpdate(update.runInput)
+    if (!Object.keys(definedQuickChatUpdate(metadata)).length) return
+    await quickChats.updateAgentRun(chat, update.run, metadata)
+  }
+
+  function queueAgentUpdate(
+    chat: QuickChat,
+    run: QuickChatAgentRun | undefined,
+    input: QuickChatUpdate,
+    runInput: QuickChatAgentRunUpdate
+  ) {
+    const pending = pendingAgentUpdates.current.get(chat.id)
+    if (pending) window.clearTimeout(pending.timer)
+    const update = pendingQuickChatAgentUpdate(pending, input, run, runInput)
+    const timer = window.setTimeout(() => {
+      pendingAgentUpdates.current.delete(chat.id)
+      void persistQueuedAgentUpdate(chat, update).catch(
+        reportAgentPersistenceError
+      )
+    }, agentEventPersistDelayMs)
+    pendingAgentUpdates.current.set(chat.id, { ...update, timer })
+  }
+
+  function flushAgentUpdate(
+    chat: QuickChat,
+    run: QuickChatAgentRun | undefined,
+    input: QuickChatUpdate,
+    runInput: QuickChatAgentRunUpdate
+  ) {
+    const pending = pendingAgentUpdates.current.get(chat.id)
+    if (pending) window.clearTimeout(pending.timer)
+    pendingAgentUpdates.current.delete(chat.id)
+    return persistQueuedAgentUpdate(
+      chat,
+      pendingQuickChatAgentUpdate(pending, input, run, runInput)
     )
+  }
+
+  function persistAgentUpdate(
+    chat: QuickChat,
+    run: QuickChatAgentRun | undefined,
+    input: QuickChatUpdate,
+    runInput: QuickChatAgentRunUpdate,
+    immediate: boolean
+  ) {
+    const nextChat = updateChatLocal(chat, input)
+    if (run) quickChats.updateAgentRunLocal(nextChat, run, runInput)
+    if (immediate) {
+      void flushAgentUpdate(nextChat, run, input, runInput).catch(
+        reportAgentPersistenceError
+      )
+      return
+    }
+    queueAgentUpdate(nextChat, run, input, runInput)
+  }
+
+  function persistAgentEvent(
+    chat: QuickChat,
+    run: QuickChatAgentRun | undefined,
+    event: AgentEvent
+  ) {
+    const current = currentChat(chat)
+    const update = quickChatAgentEventUpdate(current, event)
+    if (!shouldPersistAgentEvent(event, update)) return
+    const text = agentEventText(event)
+    const runInput = quickChatAgentRunEventUpdate(update, event, text)
+    persistAgentUpdate(
+      current,
+      run,
+      update,
+      runInput,
+      immediateQuickChatAgentEvent(event)
+    )
+  }
+
+  async function createConversation() {
+    if (!project) {
+      showQuickChatError("Unable to create quick chat", "Open a project first.")
+      return
+    }
+    try {
+      const chat = await quickChats.create({
+        title: defaultQuickChatTitle(project.name),
+        workspace: project.path,
+      })
+      replaceChatRef(chat)
+      clearDraft()
+    } catch (error) {
+      showQuickChatError("Unable to create quick chat", errorMessage(error))
+    }
+  }
+
+  function selectConversation(id: number) {
+    quickChats.setActiveId(id)
     clearDraft()
+  }
+
+  async function submitDraft() {
+    if (!draftHasContent() || sending) return
+    const validationError = quickChatSendValidationError({
+      auth,
+      model: selection.currentModel,
+      platform,
+      projectPath: project?.path,
+    })
+    if (validationError) {
+      showQuickChatError("Unable to send quick change", validationError)
+      return
+    }
+    const messageBody = quickChatMessageBody(
+      draft,
+      draftCodeAttachments,
+      draftFileAttachments
+    )
+    const codeAttachments = draftCodeAttachments
+    const fileAttachments = draftFileAttachments
+    clearDraft()
+    setSending(true)
+    try {
+      const chat = await activeOrCreatedConversation(messageBody)
+      const message = await quickChats.createMessage(chat, {
+        body: messageBody,
+        codeSelectionAttachments: codeAttachments,
+        fileAttachments,
+      })
+      replaceChatRef(chatWithMessage(currentChat(chat), message))
+      await runAgentForMessage(chat, message, codeAttachments, fileAttachments)
+    } catch (error) {
+      showQuickChatError("Quick chat failed", errorMessage(error))
+    } finally {
+      setSending(false)
+    }
+  }
+
+  async function activeOrCreatedConversation(message: string) {
+    if (activeConversation) return currentChat(activeConversation)
+    const chat = await quickChats.create({
+      title: titleFromMessage(message, project?.name),
+      workspace: project?.path ?? null,
+    })
+    replaceChatRef(chat)
+    return chat
+  }
+
+  async function runAgentForMessage(
+    chat: QuickChat,
+    message: QuickChatMessage,
+    codeAttachments: PendingCodeSelectionAttachment[],
+    fileAttachments: UserStoryFileAttachment[]
+  ) {
+    const run = await quickChats.createAgentRun(chat, {
+      kind: chat.clineSessionId ? "change-request" : "resume",
+      messageId: message.id,
+    })
+    try {
+      await startAgentSession(
+        chat,
+        run,
+        message,
+        codeAttachments,
+        fileAttachments
+      )
+    } catch (error) {
+      await markAgentRunFailed(chat, run, error)
+      throw error
+    }
+  }
+
+  async function startAgentSession(
+    chat: QuickChat,
+    run: QuickChatAgentRun,
+    message: QuickChatMessage,
+    codeAttachments: PendingCodeSelectionAttachment[],
+    fileAttachments: UserStoryFileAttachment[]
+  ) {
+    const workspace = project!.path
+    const agent = platform.agent!
+    const existingSession = await resumableClineSession(
+      agent,
+      chat.clineSessionId
+    )
+    const title = quickChatTitle(chat, message.body, project?.name)
+    const session =
+      existingSession ??
+      (await agent.sessions.startDevelopment({
+        apiConnection: auth.apiConnection,
+        providerId: selection.currentModel!.provider.id,
+        modelId: selection.currentModel!.id,
+        credentialLabel: selection.currentModel!.credentialLabel,
+        reasoningEffort: selection.currentVariant,
+        contextCompressionMode: selection.contextCompressionMode,
+        autoSendPrompt: false,
+        title,
+        summary: message.body,
+        codeSelectionAttachments: codeAttachments,
+        fileAttachments,
+        cwd: workspace,
+        workspaceRoot: workspace,
+        codePractices: await projectCodePractices(auth, projects),
+      }))
+    const activeRun = await quickChats.updateAgentRun(chat, run, {
+      clineSessionId: session.sessionId,
+    })
+    const updatedChat = await quickChats.update(currentChat(chat), {
+      agentActivities: [],
+      agentFinalResponse: null,
+      agentLastError: null,
+      agentLastEvent: `Cline debug log: ${quickChatClineLogPath(
+        workspace,
+        session.sessionId
+      )}`,
+      agentModelId: selection.currentModel!.id,
+      agentProviderId: selection.currentModel!.provider.id,
+      agentStatus: "Running",
+      agentUsage: null,
+      clineSessionId: session.sessionId,
+      title,
+      workspace,
+    })
+    replaceChatRef(updatedChat)
+    subscribeQuickChatAgentEvents(updatedChat, activeRun, session.sessionId)
+    sendQuickChatPrompt({
+      codeAttachments,
+      existingSession: Boolean(existingSession),
+      fileAttachments,
+      message,
+      run: activeRun,
+      sessionId: session.sessionId,
+      title,
+      chat: updatedChat,
+    })
+  }
+
+  function subscribeQuickChatAgentEvents(
+    chat: QuickChat,
+    run: QuickChatAgentRun,
+    sessionId: string
+  ) {
+    let authenticationFailed = false
+    const unsubscribe = subscribeAgentEvents(platform, sessionId, (event) => {
+      if (authenticationFailed) return
+      const text = agentEventText(event)
+      authenticationFailed = quickChatExpiredAuthenticationToken(text)
+      if (authenticationFailed) showExpiredAuthenticationToast(text)
+      persistAgentEvent(chat, run, event)
+      if (
+        authenticationFailed ||
+        event.type === "done" ||
+        event.type === "error"
+      ) {
+        unsubscribe()
+      }
+    })
+  }
+
+  function sendQuickChatPrompt(input: {
+    chat: QuickChat
+    codeAttachments: PendingCodeSelectionAttachment[]
+    existingSession: boolean
+    fileAttachments: UserStoryFileAttachment[]
+    message: QuickChatMessage
+    run: QuickChatAgentRun
+    sessionId: string
+    title: string
+  }) {
+    const sendInput = input.existingSession
+      ? {
+          feedback: input.message.body,
+          feedbackCodeSelectionAttachments: input.codeAttachments,
+          feedbackFileAttachments: input.fileAttachments,
+          feedbackOnly: true,
+          sessionId: input.sessionId,
+          summary: input.message.body,
+          title: input.title,
+        }
+      : {
+          codeSelectionAttachments: input.codeAttachments,
+          fileAttachments: input.fileAttachments,
+          sessionId: input.sessionId,
+          summary: input.message.body,
+          title: input.title,
+        }
+    void platform.agent!.sessions.sendDevelopment(sendInput).catch((error) => {
+      const message = errorMessage(error)
+      persistAgentEvent(input.chat, input.run, {
+        payload: { message },
+        sessionId: input.sessionId,
+        type: "error",
+      })
+    })
+  }
+
+  async function markAgentRunFailed(
+    chat: QuickChat,
+    run: QuickChatAgentRun,
+    error: unknown
+  ) {
+    const message = errorMessage(error)
+    const completedAt = new Date().toISOString()
+    const chatInput = {
+      agentLastError: message,
+      agentLastEvent: message,
+      agentStatus: null,
+    }
+    const runInput = {
+      completedAt,
+      finalResponse: message,
+      status: "failed" as const,
+    }
+    updateChatLocal(chat, chatInput)
+    quickChats.updateAgentRunLocal(chat, run, runInput)
+    await Promise.all([
+      quickChats.update(chat, chatInput).catch(() => undefined),
+      quickChats.updateAgentRun(chat, run, runInput).catch(() => undefined),
+    ])
   }
 
   function draftHasContent() {
@@ -185,17 +538,17 @@ function QuickChatProjectPage({ storageKey }: { storageKey: string }) {
     <div className="flex h-[calc(100svh_-_var(--header-height))] min-h-0 min-w-0 flex-col overflow-hidden bg-background p-3 md:h-[calc(100svh_-_var(--header-height)_-_1rem)]">
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 xl:grid-cols-[18rem_minmax(0,1fr)]">
         <QuickChatHistoryPanel
-          activeId={chatState.activeId}
-          conversations={chatState.conversations}
+          activeId={quickChats.activeId}
+          conversations={quickChats.chats}
           onCreate={createConversation}
           onSelect={selectConversation}
         />
         <main className="flex min-h-0 min-w-0 flex-col overflow-hidden">
           <QuickChatHeader
-            activeId={chatState.activeId}
+            activeId={quickChats.activeId}
             branchName={branchName}
             changeCount={gitStatus?.files.length}
-            conversations={chatState.conversations}
+            conversations={quickChats.chats}
             projectName={project?.name ?? "Project"}
             projectPath={project?.path ?? ""}
             onCreate={createConversation}
@@ -203,14 +556,26 @@ function QuickChatProjectPage({ storageKey }: { storageKey: string }) {
           />
           <ScrollArea className="min-h-0 flex-1">
             <div className="mx-auto grid w-full max-w-5xl gap-10 px-4 py-8 md:px-8">
-              {activeConversation && activeConversation.runs.length > 0 ? (
+              <QuickChatStatus
+                error={quickChats.error}
+                loading={quickChats.loading}
+                projectPath={project?.path}
+              />
+              {activeConversation?.agentRuns?.length ? (
                 <AgentConversationTimeline
-                  comments={activeConversation.comments}
+                  comments={activeConversation.messages ?? []}
                   onFileLinkClick={(path) =>
                     openProjectPath(project?.path, path, platform.openPath)
                   }
+                  onLoadActivityDetail={(run, activity) =>
+                    quickChats.agentRunActivityDetail(
+                      activeConversation,
+                      run,
+                      activity
+                    )
+                  }
                   responseHeader={responseHeader}
-                  runs={activeConversation.runs}
+                  runs={activeConversation.agentRuns}
                 />
               ) : (
                 <QuickChatEmptyState />
@@ -222,6 +587,7 @@ function QuickChatProjectPage({ storageKey }: { storageKey: string }) {
             <div className="mx-auto max-w-5xl">
               <AgentConversationComposer
                 codeSelectionAttachments={draftCodeAttachments}
+                disabled={sending || agentRunning || !project}
                 editorKey={draftEditorKey}
                 editorRef={draftRef}
                 fileAttachments={pendingFileAttachments(draftFileAttachments)}
@@ -248,12 +614,16 @@ function QuickChatProjectPage({ storageKey }: { storageKey: string }) {
                 }
                 onMessageChange={setDraft}
                 onMessageSubmit={submitDraft}
-                placeholder="Ask for a focused code change"
-                submitLabel="Send"
+                placeholder={
+                  agentRunning
+                    ? "Agent is working in the current branch."
+                    : "Ask for a focused code change"
+                }
+                submitLabel={agentRunning ? "Running" : "Send"}
                 title="Message agent"
                 toolbarEnd={
                   <div className="w-[28rem] max-w-full min-w-0">
-                    <ModelSelector />
+                    <ModelSelector role="agent" />
                   </div>
                 }
               />
@@ -271,10 +641,10 @@ function QuickChatHistoryPanel({
   onCreate,
   onSelect,
 }: {
-  activeId: string
-  conversations: QuickChatConversation[]
+  activeId?: number
+  conversations: QuickChat[]
   onCreate: () => void
-  onSelect: (id: string) => void
+  onSelect: (id: number) => void
 }) {
   return (
     <aside className="hidden min-h-0 min-w-0 flex-col overflow-hidden rounded-3xl bg-input/35 shadow-xl ring-1 shadow-black/10 ring-foreground/15 backdrop-blur-xl xl:flex">
@@ -319,8 +689,8 @@ function QuickChatHistoryItem({
   onSelect,
 }: {
   active: boolean
-  conversation: QuickChatConversation
-  onSelect: (id: string) => void
+  conversation: QuickChat
+  onSelect: (id: number) => void
 }) {
   return (
     <button
@@ -342,7 +712,7 @@ function QuickChatHistoryItem({
       </span>
       <span className="flex items-center gap-1 text-xs text-muted-foreground">
         <Clock3Icon className="size-3" />
-        {relativeTimeLabel(conversation.updatedAt)}
+        {relativeTimeLabel(conversation.updatedAt ?? conversation.createdAt)}
       </span>
     </button>
   )
@@ -358,14 +728,14 @@ function QuickChatHeader({
   onCreate,
   onSelect,
 }: {
-  activeId: string
+  activeId?: number
   branchName: string
   changeCount?: number
-  conversations: QuickChatConversation[]
+  conversations: QuickChat[]
   projectName: string
   projectPath: string
   onCreate: () => void
-  onSelect: (id: string) => void
+  onSelect: (id: number) => void
 }) {
   return (
     <header className="grid gap-4 px-4 pt-4 md:px-6 md:pt-5">
@@ -427,6 +797,37 @@ function QuickChatHeader({
   )
 }
 
+function QuickChatStatus({
+  error,
+  loading,
+  projectPath,
+}: {
+  error?: string
+  loading: boolean
+  projectPath?: string
+}) {
+  if (!projectPath) {
+    return (
+      <div className="rounded-lg border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+        Open a project to use quick chat.
+      </div>
+    )
+  }
+  if (error) {
+    return (
+      <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        {error}
+      </div>
+    )
+  }
+  if (!loading) return null
+  return (
+    <div className="rounded-lg border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+      Loading quick chats.
+    </div>
+  )
+}
+
 function QuickChatEmptyState() {
   return (
     <div className="grid min-h-[18rem] place-items-center">
@@ -471,210 +872,75 @@ function loadGitStatus(
   }
 }
 
-function readQuickChatState(
-  storageKey: string,
-  projectName: string | undefined
-): QuickChatState {
-  const fallback = defaultQuickChatState(projectName)
-  try {
-    const parsed = JSON.parse(localStorage.getItem(storageKey) ?? "null")
-    return normalizeQuickChatState(parsed, fallback)
-  } catch {
-    return fallback
-  }
+function quickChatSendValidationError(input: {
+  auth: ReturnType<typeof useCloudAuth>
+  model: ReturnType<typeof useModelSelection>["currentModel"]
+  platform: Platform
+  projectPath?: string
+}) {
+  if (!input.projectPath) return "Open a project first."
+  if (input.auth.status !== "authenticated")
+    return "Reconnect the selected provider."
+  if (!input.model) return "Select a model first."
+  if (!input.platform.agent) return "Desktop agent runtime is not available."
 }
 
-function writeQuickChatState(storageKey: string, state: QuickChatState) {
-  try {
-    localStorage.setItem(storageKey, JSON.stringify(state))
-  } catch {
-    return
-  }
+function quickChatMessageBody(
+  draft: string,
+  codeAttachments: PendingCodeSelectionAttachment[],
+  fileAttachments: UserStoryFileAttachment[]
+) {
+  if (draft.trim()) return draft.trim()
+  if (codeAttachments.length || fileAttachments.length)
+    return "Attached context"
+  return ""
 }
 
-function defaultQuickChatState(projectName: string | undefined) {
-  const conversation = createEmptyConversation(projectName)
+function chatWithMessage(chat: QuickChat, message: QuickChatMessage) {
   return {
-    activeId: conversation.id,
-    conversations: [conversation],
+    ...chat,
+    messages: [...(chat.messages ?? []), message],
   }
 }
 
-function normalizeQuickChatState(
-  value: unknown,
-  fallback: QuickChatState
-): QuickChatState {
-  if (!value || typeof value !== "object") return fallback
-  const state = value as Partial<QuickChatState>
-  const conversations = Array.isArray(state.conversations)
-    ? state.conversations.filter(isQuickChatConversation)
-    : []
-  if (conversations.length === 0) return fallback
-  const activeId = conversations.some((item) => item.id === state.activeId)
-    ? state.activeId!
-    : conversations[0].id
-  return { activeId, conversations }
+function defaultQuickChatTitle(projectName: string | undefined) {
+  return projectName ? `${projectName} quick change` : "Quick change"
 }
 
-function isQuickChatConversation(
-  value: unknown
-): value is QuickChatConversation {
-  if (!value || typeof value !== "object") return false
-  const conversation = value as Partial<QuickChatConversation>
-  return Boolean(
-    typeof conversation.id === "string" &&
-    typeof conversation.title === "string" &&
-    typeof conversation.createdAt === "string" &&
-    typeof conversation.updatedAt === "string" &&
-    typeof conversation.storyId === "number" &&
-    Array.isArray(conversation.comments) &&
-    Array.isArray(conversation.runs)
-  )
-}
-
-function addQuickChatConversation(
-  state: QuickChatState,
+function quickChatTitle(
+  chat: QuickChat,
+  message: string,
   projectName: string | undefined
 ) {
-  const conversation = createEmptyConversation(projectName)
-  return {
-    activeId: conversation.id,
-    conversations: [conversation, ...state.conversations],
+  if ((chat.messages?.length ?? 0) > 1) return chat.title
+  if (chat.title !== defaultQuickChatTitle(projectName)) return chat.title
+  return titleFromMessage(message, projectName)
+}
+
+function titleFromMessage(message: string, projectName: string | undefined) {
+  const fallback = defaultQuickChatTitle(projectName)
+  return shortLabel(message.replace(/[#*_`>[\]()]/g, " ").trim(), 56, fallback)
+}
+
+function conversationPreview(conversation: QuickChat) {
+  if (conversation.agentStatus === "Running") {
+    return shortLabel(conversation.agentLastEvent ?? "Agent is working", 96)
   }
-}
-
-function createEmptyConversation(projectName: string | undefined) {
-  const now = new Date().toISOString()
-  return {
-    comments: [],
-    createdAt: now,
-    id: crypto.randomUUID(),
-    runs: [],
-    storyId: Date.now(),
-    title: projectName ? `${projectName} quick change` : "Quick change",
-    updatedAt: now,
+  if (conversation.agentLastError) {
+    return shortLabel(conversation.agentLastError, 96)
   }
+  const message = conversation.messages?.at(-1)
+  if (message) return shortLabel(message.body || "Attached context", 96)
+  return shortLabel(conversation.agentLastEvent ?? "No messages yet", 96)
 }
 
-function activeQuickChatConversation(state: QuickChatState) {
-  return (
-    state.conversations.find(
-      (conversation) => conversation.id === state.activeId
-    ) ?? state.conversations[0]
-  )
-}
-
-function updateQuickChatConversation(
-  state: QuickChatState,
-  id: string,
-  update: (conversation: QuickChatConversation) => QuickChatConversation
+function shortLabel(
+  value: string,
+  maxLength: number,
+  fallback = "Quick change"
 ) {
-  return {
-    ...state,
-    conversations: state.conversations.map((conversation) =>
-      conversation.id === id ? update(conversation) : conversation
-    ),
-  }
-}
-
-function createQuickChatComment({
-  attachments,
-  body,
-  codeAttachments,
-  conversation,
-  now,
-}: {
-  attachments: UserStoryFileAttachment[]
-  body: string
-  codeAttachments: PendingCodeSelectionAttachment[]
-  conversation: QuickChatConversation
-  now: string
-}): UserStoryComment {
-  return {
-    author: "You",
-    body,
-    codeSelectionAttachments: codeAttachments,
-    createdAt: now,
-    fileAttachments: attachments,
-    id: Date.now(),
-    updatedAt: now,
-    userStoryId: conversation.storyId,
-  }
-}
-
-function createQuickChatRun({
-  comment,
-  conversation,
-  modelId,
-  now,
-  providerId,
-}: {
-  comment: UserStoryComment
-  conversation: QuickChatConversation
-  modelId?: string
-  now: string
-  providerId?: string
-}): UserStoryAgentRun & {
-  modelId?: string
-  providerId?: string
-} {
-  const response = quickChatPendingResponse()
-  return {
-    activities: [quickChatResponseActivity(response, now)],
-    commentId: comment.id,
-    createdAt: now,
-    finalResponse: response,
-    id: Date.now() + 1,
-    kind: "resume",
-    modelId,
-    providerId,
-    status: "completed",
-    updatedAt: now,
-    userStoryId: conversation.storyId,
-  }
-}
-
-function quickChatResponseActivity(
-  response: string,
-  now: string
-): UserStoryAgentActivity {
-  return {
-    createdAt: now,
-    detail: response,
-    id: crypto.randomUUID(),
-    kind: "message",
-    messageKind: "final",
-    status: "completed",
-    title: "Agent response",
-    updatedAt: now,
-  }
-}
-
-function quickChatPendingResponse() {
-  return [
-    "Ready to work directly in the current project branch.",
-    "",
-    "Agent execution will plug into this thread next; the request is saved in this quick chat history.",
-  ].join("\n")
-}
-
-function conversationTitle(
-  conversation: QuickChatConversation,
-  message: string
-) {
-  if (conversation.runs.length > 0) return conversation.title
-  return shortLabel(message.replace(/[#*_`>[\]()]/g, " ").trim(), 56)
-}
-
-function conversationPreview(conversation: QuickChatConversation) {
-  const comment = conversation.comments.at(-1)
-  if (!comment) return "No messages yet"
-  return shortLabel(comment.body || "Attachment only", 96)
-}
-
-function shortLabel(value: string, maxLength: number) {
   const normalized = value.replace(/\s+/g, " ").trim()
-  if (!normalized) return "Quick change"
+  if (!normalized) return fallback
   if (normalized.length <= maxLength) return normalized
   return `${normalized.slice(0, maxLength - 1)}...`
 }
@@ -699,4 +965,39 @@ function openProjectPath(
   if (!openPath) return
   const target = path.startsWith("/") || !root ? path : `${root}/${path}`
   void openPath(target)
+}
+
+async function resumableClineSession(
+  agent: NonNullable<Platform["agent"]>,
+  sessionId: string | null | undefined
+) {
+  if (!sessionId) return undefined
+  try {
+    await agent.sessions.messages(sessionId)
+    return { sessionId }
+  } catch {
+    return undefined
+  }
+}
+
+function showExpiredAuthenticationToast(message: string) {
+  toast.error("Agent authentication expired", {
+    description: `${message} Reconnect the selected provider, then send again.`,
+    position: "bottom-right",
+  })
+}
+
+function showQuickChatError(title: string, description: string) {
+  toast.error(title, {
+    description,
+    position: "bottom-right",
+  })
+}
+
+function reportAgentPersistenceError(error: unknown) {
+  console.error("Failed to persist quick chat agent update.", error)
+}
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error)
 }

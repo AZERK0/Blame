@@ -259,6 +259,114 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/provider_credentials_controller').default['destroy']>>>
     }
   }
+  'projects.quick_chats.quick_chats.index': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/projects/quick-chats'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: ExtractQueryForGet<InferInput<(typeof import('#validators/quick_chat').listQuickChatsValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/quick_chats_controller').default['index']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/quick_chats_controller').default['index']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'projects.quick_chats.quick_chats.store': {
+    methods: ["POST"]
+    pattern: '/api/v1/projects/quick-chats'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/quick_chat').createQuickChatValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/quick_chat').createQuickChatValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/quick_chats_controller').default['store']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/quick_chats_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'projects.quick_chats.quick_chats.show': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/projects/quick-chats/:id'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/quick_chats_controller').default['show']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/quick_chats_controller').default['show']>>>
+    }
+  }
+  'projects.quick_chats.quick_chats.update': {
+    methods: ["PATCH"]
+    pattern: '/api/v1/projects/quick-chats/:id'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/quick_chat').updateQuickChatValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/quick_chat').updateQuickChatValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/quick_chats_controller').default['update']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/quick_chats_controller').default['update']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'projects.quick_chats.quick_chats.destroy': {
+    methods: ["DELETE"]
+    pattern: '/api/v1/projects/quick-chats/:id'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/quick_chats_controller').default['destroy']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/quick_chats_controller').default['destroy']>>>
+    }
+  }
+  'projects.quick_chats.quick_chat_messages.store': {
+    methods: ["POST"]
+    pattern: '/api/v1/projects/quick-chats/:id/messages'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/quick_chat').createQuickChatMessageValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/quick_chat').createQuickChatMessageValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/quick_chat_messages_controller').default['store']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/quick_chat_messages_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'projects.quick_chats.quick_chat_agent_runs.store': {
+    methods: ["POST"]
+    pattern: '/api/v1/projects/quick-chats/:id/agent-runs'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/quick_chat_agent_run').createQuickChatAgentRunValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/quick_chat_agent_run').createQuickChatAgentRunValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/quick_chat_agent_runs_controller').default['store']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/quick_chat_agent_runs_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'projects.quick_chats.quick_chat_agent_runs.update': {
+    methods: ["PATCH"]
+    pattern: '/api/v1/projects/quick-chats/:id/agent-runs/:runId'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/quick_chat_agent_run').updateQuickChatAgentRunValidator)>>
+      paramsTuple: [ParamValue, ParamValue]
+      params: { id: ParamValue; runId: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/quick_chat_agent_run').updateQuickChatAgentRunValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/quick_chat_agent_runs_controller').default['update']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/quick_chat_agent_runs_controller').default['update']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'projects.quick_chats.quick_chat_agent_runs.activity_detail': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/projects/quick-chats/:id/agent-runs/:runId/activities/:activityId'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue, ParamValue, ParamValue]
+      params: { id: ParamValue; runId: ParamValue; activityId: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/quick_chat_agent_runs_controller').default['activityDetail']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/quick_chat_agent_runs_controller').default['activityDetail']>>>
+    }
+  }
   'projects.user_stories.user_stories.index': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/projects/user-stories'
