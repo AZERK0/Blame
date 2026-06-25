@@ -1,6 +1,5 @@
 import * as React from "react"
 import {
-  BotIcon,
   CheckCircle2Icon,
   Clock3Icon,
   FolderGit2Icon,
@@ -8,7 +7,6 @@ import {
   MessageCircleIcon,
   PlusIcon,
   SendIcon,
-  SparklesIcon,
 } from "lucide-react"
 
 import type { GitStatusResult, WorkspaceClient } from "@/context/platform"
@@ -192,7 +190,7 @@ function QuickChatProjectPage({ storageKey }: { storageKey: string }) {
           onCreate={createConversation}
           onSelect={selectConversation}
         />
-        <main className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-3xl bg-background/80 shadow-xl ring-1 shadow-black/10 ring-foreground/15 backdrop-blur-xl">
+        <main className="flex min-h-0 min-w-0 flex-col overflow-hidden">
           <QuickChatHeader
             activeId={chatState.activeId}
             branchName={branchName}
@@ -203,18 +201,6 @@ function QuickChatProjectPage({ storageKey }: { storageKey: string }) {
             onCreate={createConversation}
             onSelect={selectConversation}
           />
-          <div className="border-b px-4 py-3 md:px-6">
-            <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <QuickChatScope
-                branchName={branchName}
-                changeCount={gitStatus?.files.length}
-                projectName={project?.name ?? "Project"}
-              />
-              <div className="w-full min-w-0 lg:w-[30rem]">
-                <ModelSelector />
-              </div>
-            </div>
-          </div>
           <ScrollArea className="min-h-0 flex-1">
             <div className="mx-auto grid w-full max-w-5xl gap-10 px-4 py-8 md:px-8">
               {activeConversation && activeConversation.runs.length > 0 ? (
@@ -265,6 +251,11 @@ function QuickChatProjectPage({ storageKey }: { storageKey: string }) {
                 placeholder="Ask for a focused code change"
                 submitLabel="Send"
                 title="Message agent"
+                toolbarEnd={
+                  <div className="w-[28rem] max-w-full min-w-0">
+                    <ModelSelector />
+                  </div>
+                }
               />
             </div>
           </div>
@@ -380,8 +371,7 @@ function QuickChatHeader({
     <header className="grid gap-4 px-4 pt-4 md:px-6 md:pt-5">
       <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
-          <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-            <SparklesIcon className="size-3.5" />
+          <div className="text-xs font-medium text-muted-foreground">
             Quick change
           </div>
           <h1 className="mt-1 truncate font-heading text-2xl font-semibold">
@@ -434,33 +424,6 @@ function QuickChatHeader({
         ))}
       </div>
     </header>
-  )
-}
-
-function QuickChatScope({
-  branchName,
-  changeCount,
-  projectName,
-}: {
-  branchName: string
-  changeCount?: number
-  projectName: string
-}) {
-  return (
-    <div className="flex min-w-0 items-center gap-3">
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-full border bg-muted text-muted-foreground shadow-sm">
-        <BotIcon className="size-5" />
-      </span>
-      <div className="min-w-0">
-        <p className="truncate text-sm font-medium">
-          {projectName} on {branchName}
-        </p>
-        <p className="truncate text-xs text-muted-foreground">
-          {changeCount ?? 0} current workspace change
-          {changeCount === 1 ? "" : "s"}
-        </p>
-      </div>
-    </div>
   )
 }
 

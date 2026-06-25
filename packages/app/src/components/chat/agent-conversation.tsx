@@ -132,6 +132,7 @@ export function AgentConversationComposer({
   placeholder,
   submitLabel,
   title,
+  toolbarEnd,
 }: {
   codeSelectionAttachments: PendingCodeSelectionAttachment[]
   disabled?: boolean
@@ -149,6 +150,7 @@ export function AgentConversationComposer({
   placeholder: string
   submitLabel: string
   title: string
+  toolbarEnd?: React.ReactNode
 }) {
   const hasMessageBody = Boolean(
     message.trim() || codeSelectionAttachments.length || fileAttachments.length
@@ -177,6 +179,7 @@ export function AgentConversationComposer({
         readOnly={disabled}
         placeholder={placeholder}
         minHeight="min-h-24"
+        toolbarEnd={toolbarEnd}
       />
       <div className="flex justify-end">
         <Button
