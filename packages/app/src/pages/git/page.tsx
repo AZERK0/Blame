@@ -51,11 +51,11 @@ export function GitPage() {
   if (!root || !platform.workspace) return <GitUnavailable />
 
   return (
-    <div className="flex h-[calc(100vh-var(--header-height))] min-h-0 flex-col overflow-hidden bg-background">
+    <div className="flex h-[calc(100svh_-_var(--header-height))] min-h-0 min-w-0 flex-col overflow-hidden bg-background md:h-[calc(100svh_-_var(--header-height)_-_1rem)]">
       {git.error ? (
         <GitError message={git.error} onDismiss={git.clearError} />
       ) : null}
-      <div className="grid min-h-0 flex-1 grid-cols-1 overflow-auto border-t xl:grid-cols-[18rem_minmax(22rem,30rem)_minmax(0,1fr)] xl:overflow-hidden">
+      <div className="grid min-h-0 flex-1 grid-cols-1 overflow-auto xl:grid-cols-[18rem_minmax(22rem,30rem)_minmax(0,1fr)] xl:overflow-hidden">
         <GitWorkspacePanel
           busy={git.busy}
           commitMessage={git.commitMessage}
