@@ -90,6 +90,18 @@ const api: BlameDesktopApi = {
     gitDiff: (input) => ipcRenderer.invoke("workspace:git-diff", input),
     gitDiffBetween: (input) =>
       ipcRenderer.invoke("workspace:git-diff-between", input),
+    gitStatus: (input) => ipcRenderer.invoke("workspace:git-status", input),
+    gitLog: (input) => ipcRenderer.invoke("workspace:git-log", input),
+    gitFileDiff: (input) =>
+      ipcRenderer.invoke("workspace:git-file-diff", input),
+    gitCommitDiff: (input) =>
+      ipcRenderer.invoke("workspace:git-commit-diff", input),
+    gitStageFiles: (input) =>
+      ipcRenderer.invoke("workspace:git-stage-files", input),
+    gitUnstageFiles: (input) =>
+      ipcRenderer.invoke("workspace:git-unstage-files", input),
+    gitCommit: (input) => ipcRenderer.invoke("workspace:git-commit", input),
+    gitPush: (input) => ipcRenderer.invoke("workspace:git-push", input),
     listGitDirectory: (input) =>
       ipcRenderer.invoke("workspace:list-git-directory", input),
     readGitFile: (input) => ipcRenderer.invoke("workspace:read-git-file", input),

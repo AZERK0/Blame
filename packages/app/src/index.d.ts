@@ -6,6 +6,12 @@ export declare const App: ComponentType
 export type {
   BacklogStatusPipRequest,
   BacklogStatusPipSnapshot,
+  GitBranchStatus,
+  GitCommandResult,
+  GitLogCommit,
+  GitLogCommitRef,
+  GitStatusFile,
+  GitStatusResult,
   Platform,
 } from "./context/platform"
 

@@ -188,7 +188,7 @@ function parents(path: string) {
     .filter(Boolean)
 }
 
-function parseGitDiff(diff: string): VcsFileDiff[] {
+export function parseGitDiff(diff: string): VcsFileDiff[] {
   return diff
     .split(/\ndiff --git /)
     .map((part, index) => (index === 0 ? part : `diff --git ${part}`))

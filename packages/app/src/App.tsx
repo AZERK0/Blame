@@ -2,6 +2,7 @@ import * as React from "react"
 
 import { BacklogPage } from "@/pages/backlog/page"
 import { BacklogStatusPipPage } from "@/pages/backlog/status-pip-page"
+import { GitPage } from "@/pages/git/page"
 import { PracticesPage } from "@/pages/practices/page"
 import { QuickChatPage } from "@/components/chat/quick-chat-page"
 import { ConnectScreen } from "@/components/onboarding/connect-screen"
@@ -34,7 +35,7 @@ const routes = [
     element: <BacklogStatusPipPage />,
   },
   { path: "/chats", title: "Chats", element: <QuickChatPage /> },
-  { path: "/git", title: "Git", element: <RoutePage title="Git" /> },
+  { path: "/git", title: "Git", element: <GitPage /> },
   { path: "/practices", title: "Code Practices", element: <PracticesPage /> },
   { path: "/team", title: "Team", element: <RoutePage title="Team" /> },
   {

@@ -209,6 +209,49 @@ export type WorktreeResult = {
   branch: string
 }
 
+export type GitBranchStatus = {
+  ahead: number
+  behind: number
+  current: string
+  detached: boolean
+  upstream?: string
+}
+
+export type GitStatusFile = {
+  indexStatus: string
+  originalPath?: string
+  path: string
+  staged: boolean
+  status: string
+  untracked: boolean
+  unstaged: boolean
+  worktreeStatus: string
+}
+
+export type GitStatusResult = {
+  branch: GitBranchStatus
+  files: GitStatusFile[]
+}
+
+export type GitLogCommitRef = {
+  name: string
+  type: "branch" | "head" | "remote" | "tag" | "other"
+}
+
+export type GitLogCommit = {
+  authorEmail: string
+  authorName: string
+  date: string
+  hash: string
+  message: string
+  parents: string[]
+  refs: GitLogCommitRef[]
+}
+
+export type GitCommandResult = {
+  output: string
+}
+
 export type ProjectSetupEvent = {
   runId: string
   type: "stdout" | "stderr" | "exit"
@@ -308,6 +351,18 @@ export type WorkspaceClient = {
     root: string
     to: string
   }): Promise<string>
+  gitStatus(input: { root: string }): Promise<GitStatusResult>
+  gitLog(input: { root: string; limit?: number }): Promise<GitLogCommit[]>
+  gitFileDiff(input: {
+    root: string
+    path: string
+    staged?: boolean
+  }): Promise<string>
+  gitCommitDiff(input: { root: string; hash: string }): Promise<string>
+  gitStageFiles(input: { root: string; paths: string[] }): Promise<boolean>
+  gitUnstageFiles(input: { root: string; paths: string[] }): Promise<boolean>
+  gitCommit(input: { root: string; message: string }): Promise<GitCommandResult>
+  gitPush(input: { root: string }): Promise<GitCommandResult>
   listGitDirectory(input: {
     path?: string
     refs: string[]

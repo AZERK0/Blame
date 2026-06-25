@@ -27,6 +27,9 @@ import type {
 import type {
   BacklogStatusPipRequest,
   BacklogStatusPipSnapshot,
+  GitCommandResult,
+  GitLogCommit,
+  GitStatusResult,
 } from "@blame/app";
 import type { HostDependencyReport } from "../main/host-dependencies";
 import type { CreateProjectInput } from "../main/project-creation";
@@ -193,6 +196,21 @@ export type BlameDesktopApi = {
       root: string;
       to: string;
     }): Promise<string>;
+    gitStatus(input: { root: string }): Promise<GitStatusResult>;
+    gitLog(input: { root: string; limit?: number }): Promise<GitLogCommit[]>;
+    gitFileDiff(input: {
+      root: string;
+      path: string;
+      staged?: boolean;
+    }): Promise<string>;
+    gitCommitDiff(input: { root: string; hash: string }): Promise<string>;
+    gitStageFiles(input: { root: string; paths: string[] }): Promise<boolean>;
+    gitUnstageFiles(input: { root: string; paths: string[] }): Promise<boolean>;
+    gitCommit(input: {
+      root: string;
+      message: string;
+    }): Promise<GitCommandResult>;
+    gitPush(input: { root: string }): Promise<GitCommandResult>;
     listGitDirectory(input: {
       path?: string;
       refs: string[];

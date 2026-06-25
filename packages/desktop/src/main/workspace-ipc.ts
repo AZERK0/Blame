@@ -120,6 +120,32 @@ type WorkspaceSearchInput = WorkspacePathInput & {
   limit?: number;
 };
 
+type GitLogInput = {
+  limit?: number;
+  root: string;
+};
+
+type GitPathInput = {
+  path: string;
+  root: string;
+  staged?: boolean;
+};
+
+type GitCommitDiffInput = {
+  hash: string;
+  root: string;
+};
+
+type GitFilesInput = {
+  paths: string[];
+  root: string;
+};
+
+type GitCommitInput = {
+  message: string;
+  root: string;
+};
+
 type CreateWorktreeInput = {
   repositoryRoot: string;
   storyId: number;
@@ -269,6 +295,32 @@ export function registerWorkspaceIpcHandlers() {
   );
   ipcMain.handle("workspace:git-diff-between", (_event, input: GitDiffInput) =>
     gitDiffBetween(input),
+  );
+  ipcMain.handle("workspace:git-status", (_event, input: { root: string }) =>
+    gitStatus(input.root),
+  );
+  ipcMain.handle("workspace:git-log", (_event, input: GitLogInput) =>
+    gitLog(input),
+  );
+  ipcMain.handle("workspace:git-file-diff", (_event, input: GitPathInput) =>
+    gitFileDiff(input),
+  );
+  ipcMain.handle(
+    "workspace:git-commit-diff",
+    (_event, input: GitCommitDiffInput) => gitCommitDiff(input),
+  );
+  ipcMain.handle("workspace:git-stage-files", (_event, input: GitFilesInput) =>
+    gitStageFiles(input),
+  );
+  ipcMain.handle(
+    "workspace:git-unstage-files",
+    (_event, input: GitFilesInput) => gitUnstageFiles(input),
+  );
+  ipcMain.handle("workspace:git-commit", (_event, input: GitCommitInput) =>
+    gitCommit(input),
+  );
+  ipcMain.handle("workspace:git-push", (_event, input: { root: string }) =>
+    gitPush(input.root),
   );
   ipcMain.handle(
     "workspace:list-git-directory",
@@ -441,6 +493,306 @@ async function gitDiff(root: string) {
   const cwd = resolveRuntimePath(root);
   const { stdout } = await runRuntimeGit(cwd, ["diff", "--no-ext-diff", "--"]);
   return stdout;
+}
+
+async function gitStatus(root: string) {
+  const cwd = resolveRuntimePath(root);
+  const branch = await gitBranchStatus(cwd);
+  const { stdout } = await runRuntimeGit(cwd, [
+    "status",
+    "--porcelain=v1",
+    "-z",
+    "--untracked-files=all",
+  ]);
+  return { branch, files: parseGitStatusFiles(stdout) };
+}
+
+async function gitLog(input: GitLogInput) {
+  const cwd = resolveRuntimePath(input.root);
+  const limit = Math.max(1, Math.min(input.limit ?? 200, 500));
+  try {
+    const { stdout } = await runRuntimeGit(cwd, [
+      "log",
+      "--all",
+      "--decorate=short",
+      `--max-count=${limit}`,
+      "--date=iso-strict",
+      "--pretty=format:%H%x1f%P%x1f%an%x1f%ae%x1f%ad%x1f%D%x1f%s%x1e",
+    ]);
+    return parseGitLog(stdout);
+  } catch {
+    return [];
+  }
+}
+
+async function gitFileDiff(input: GitPathInput) {
+  const cwd = resolveRuntimePath(input.root);
+  const path = gitWorkspacePath(input.path);
+  const args = input.staged
+    ? ["diff", "--cached", "--no-ext-diff", "--", path]
+    : ["diff", "--no-ext-diff", "--", path];
+  const { stdout } = await runRuntimeGit(cwd, args);
+  if (stdout || input.staged || !(await gitPathIsUntracked(cwd, path)))
+    return stdout;
+  return untrackedGitDiff(cwd, path);
+}
+
+async function gitCommitDiff(input: GitCommitDiffInput) {
+  const cwd = resolveRuntimePath(input.root);
+  const hash = gitHash(input.hash);
+  try {
+    const { stdout } = await runRuntimeGit(cwd, [
+      "diff",
+      "--no-ext-diff",
+      `${hash}^`,
+      hash,
+      "--",
+    ]);
+    return stdout;
+  } catch {
+    const { stdout } = await runRuntimeGit(cwd, [
+      "show",
+      "--format=",
+      "--no-ext-diff",
+      hash,
+      "--",
+    ]);
+    return stdout;
+  }
+}
+
+async function gitStageFiles(input: GitFilesInput) {
+  const cwd = resolveRuntimePath(input.root);
+  const paths = gitWorkspacePaths(input.paths);
+  if (paths.length === 0) return false;
+  await runRuntimeGit(cwd, ["add", "--", ...paths]);
+  return true;
+}
+
+async function gitUnstageFiles(input: GitFilesInput) {
+  const cwd = resolveRuntimePath(input.root);
+  const paths = gitWorkspacePaths(input.paths);
+  if (paths.length === 0) return false;
+  await runRuntimeGit(cwd, ["restore", "--staged", "--", ...paths]);
+  return true;
+}
+
+async function gitCommit(input: GitCommitInput) {
+  const cwd = resolveRuntimePath(input.root);
+  const message = input.message.trim();
+  if (!message) throw new Error("Commit message is required");
+  const result = await runRuntimeGit(cwd, [
+    "commit",
+    "--no-gpg-sign",
+    "-m",
+    message,
+  ]);
+  return { output: result.stdout || result.stderr };
+}
+
+async function gitPush(root: string) {
+  const cwd = resolveRuntimePath(root);
+  const result = await runRuntimeGit(cwd, ["push"]);
+  return { output: result.stdout || result.stderr };
+}
+
+async function gitBranchStatus(cwd: string) {
+  const { stdout } = await runRuntimeGit(cwd, [
+    "status",
+    "--porcelain=v2",
+    "--branch",
+    "--untracked-files=no",
+  ]);
+  return parseGitBranchStatus(stdout);
+}
+
+function parseGitBranchStatus(output: string) {
+  const branch = { ahead: 0, behind: 0, current: "HEAD", detached: true };
+  let oid = "";
+  let head = "";
+  let upstream: string | undefined;
+  for (const line of output.split("\n")) {
+    if (line.startsWith("# branch.oid ")) oid = line.slice(13).trim();
+    if (line.startsWith("# branch.head ")) head = line.slice(14).trim();
+    if (line.startsWith("# branch.upstream ")) upstream = line.slice(18).trim();
+    if (line.startsWith("# branch.ab "))
+      parseGitBranchAheadBehind(line, branch);
+  }
+  return {
+    ...branch,
+    current: head && head !== "(detached)" ? head : oid.slice(0, 7) || "HEAD",
+    detached: !head || head === "(detached)",
+    upstream,
+  };
+}
+
+function parseGitBranchAheadBehind(
+  line: string,
+  branch: { ahead: number; behind: number },
+) {
+  const match = line.match(/\+(\d+)\s+-(\d+)/);
+  if (!match) return;
+  branch.ahead = Number(match[1]);
+  branch.behind = Number(match[2]);
+}
+
+function parseGitStatusFiles(output: string) {
+  const records = output.split("\0").filter(Boolean);
+  const files = [];
+  for (let index = 0; index < records.length; index += 1) {
+    const record = records[index];
+    if (record.length < 4) continue;
+    const indexStatus = record[0];
+    const worktreeStatus = record[1];
+    const originalPath = renamedGitStatus(indexStatus)
+      ? records[index + 1]
+      : undefined;
+    if (originalPath) index += 1;
+    files.push(
+      gitStatusFile(record.slice(3), originalPath, indexStatus, worktreeStatus),
+    );
+  }
+  return files;
+}
+
+function gitStatusFile(
+  path: string,
+  originalPath: string | undefined,
+  indexStatus: string,
+  worktreeStatus: string,
+) {
+  return {
+    indexStatus,
+    originalPath,
+    path,
+    staged: gitStatusStaged(indexStatus),
+    status: gitFileStatus(indexStatus, worktreeStatus),
+    untracked: indexStatus === "?" && worktreeStatus === "?",
+    unstaged: gitStatusUnstaged(indexStatus, worktreeStatus),
+    worktreeStatus,
+  };
+}
+
+function renamedGitStatus(status: string) {
+  return status === "R" || status === "C";
+}
+
+function gitStatusStaged(status: string) {
+  return status !== " " && status !== "?" && status !== "!";
+}
+
+function gitStatusUnstaged(indexStatus: string, worktreeStatus: string) {
+  if (indexStatus === "?" && worktreeStatus === "?") return true;
+  return worktreeStatus !== " " && worktreeStatus !== "!";
+}
+
+function gitFileStatus(indexStatus: string, worktreeStatus: string) {
+  if (indexStatus === "?" && worktreeStatus === "?") return "untracked";
+  if (indexStatus === "U" || worktreeStatus === "U") return "conflict";
+  const status = indexStatus !== " " ? indexStatus : worktreeStatus;
+  if (status === "A") return "added";
+  if (status === "D") return "deleted";
+  if (status === "R") return "renamed";
+  if (status === "C") return "copied";
+  return "modified";
+}
+
+function parseGitLog(output: string) {
+  return output
+    .split("\x1e")
+    .map(parseGitLogRecord)
+    .filter((commit) => commit !== undefined);
+}
+
+function parseGitLogRecord(record: string) {
+  const parts = record.replace(/^\n+|\n+$/g, "").split("\x1f");
+  if (parts.length < 7 || !parts[0]) return undefined;
+  return {
+    authorEmail: parts[3],
+    authorName: parts[2],
+    date: parts[4],
+    hash: parts[0],
+    message: parts.slice(6).join("\x1f"),
+    parents: parts[1].split(" ").filter(Boolean),
+    refs: parseGitRefs(parts[5]),
+  };
+}
+
+function parseGitRefs(value: string) {
+  return value
+    .split(",")
+    .map((ref) => ref.trim())
+    .filter(Boolean)
+    .map((ref) => ({ name: gitRefName(ref), type: gitRefType(ref) }));
+}
+
+function gitRefName(ref: string) {
+  if (ref.startsWith("HEAD -> ")) return ref.slice(8);
+  if (ref.startsWith("tag: ")) return ref.slice(5);
+  return ref;
+}
+
+function gitRefType(ref: string) {
+  if (ref === "HEAD" || ref.startsWith("HEAD -> ")) return "head";
+  if (ref.startsWith("tag: ")) return "tag";
+  if (ref.includes("/")) return "remote";
+  return "branch";
+}
+
+function gitWorkspacePaths(paths: string[]) {
+  return [...new Set(paths.map(gitWorkspacePath))];
+}
+
+function gitWorkspacePath(value: string) {
+  const normalized = posix.normalize(value.replaceAll("\\", "/"));
+  if (
+    !normalized ||
+    normalized === "." ||
+    normalized === ".." ||
+    normalized.startsWith("../") ||
+    normalized.startsWith("/") ||
+    normalized.includes("\0")
+  ) {
+    throw new Error("Path escapes workspace");
+  }
+  return normalized;
+}
+
+function gitHash(value: string) {
+  if (!/^[0-9a-f]{7,40}$/i.test(value)) throw new Error("Invalid Git hash");
+  return value;
+}
+
+async function gitPathIsUntracked(cwd: string, path: string) {
+  const { stdout } = await runRuntimeGit(cwd, [
+    "ls-files",
+    "--others",
+    "--exclude-standard",
+    "--",
+    path,
+  ]);
+  return stdout.split("\n").some((line) => line.trim() === path);
+}
+
+async function untrackedGitDiff(cwd: string, path: string) {
+  try {
+    const { stdout } = await runRuntimeGit(cwd, [
+      "diff",
+      "--no-ext-diff",
+      "--no-index",
+      "--",
+      gitEmptyFilePath(cwd),
+      path,
+    ]);
+    return stdout;
+  } catch (error) {
+    return commandText(error, "stdout");
+  }
+}
+
+function gitEmptyFilePath(cwd: string) {
+  if (process.platform === "win32" && !runtimeManagedPath(cwd)) return "NUL";
+  return "/dev/null";
 }
 
 async function gitRepositoryFingerprint(root: string) {
