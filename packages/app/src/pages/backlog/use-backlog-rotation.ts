@@ -39,6 +39,8 @@ const previewRecoveryIntervalMs = 30_000
 const agentCompletionRecoveryIntervalMs = 10_000
 const agentCompletionRecoveryGraceMs = 15_000
 const agentEventPersistDelayMs = 1_500
+const interruptedAgentMessage =
+  "Agent interrupted while Blame was offline. Resume when ready."
 const setupToastId = "backlog-rotation-setup"
 const authToastId = "backlog-agent-auth"
 const initializationRepairToastId = "backlog-initialization-repair"
@@ -64,6 +66,8 @@ export function useBacklogRotation(
   const agentAuthenticationBlockedUntil = React.useRef(0)
   const previewRecoveryStoryIds = React.useRef(new Set<number>())
   const agentCompletionRecoveryStoryIds = React.useRef(new Set<number>())
+  const interruptedAgentRecoveryProjectIds = React.useRef(new Set<string>())
+  const interruptedAgentRecoveryStoryIds = React.useRef(new Set<number>())
   const initializationRepairRunIds = React.useRef(new Set<string>())
   const storiesRef = React.useRef(backlog.stories)
   const [hostDependenciesDialog, setHostDependenciesDialog] =
@@ -82,6 +86,7 @@ export function useBacklogRotation(
     agentAuthenticationBlockedUntil.current = 0
     previewRecoveryStoryIds.current.clear()
     agentCompletionRecoveryStoryIds.current.clear()
+    interruptedAgentRecoveryStoryIds.current.clear()
     initializationRepairRunIds.current.clear()
   }, [projects.activeProject?.id, selection.currentModel?.id])
 
@@ -494,15 +499,6 @@ export function useBacklogRotation(
     recoverActivePreviews,
   ])
 
-  React.useEffect(() => {
-    if (!platform.workspace || backlog.loading) return
-    const timer = window.setInterval(
-      () => recoverCompletedAgentRuns(storiesRef.current),
-      agentCompletionRecoveryIntervalMs
-    )
-    return () => window.clearInterval(timer)
-  }, [backlog.loading, platform.workspace])
-
   function recoverCompletedAgentRuns(stories: UserStory[]) {
     stories.forEach((story) => {
       const run = recoverableAgentRun(story)
@@ -514,19 +510,48 @@ export function useBacklogRotation(
     })
   }
 
+  function recoverInterruptedAgentRuns(stories: UserStory[]) {
+    stories.forEach((story) => {
+      const run = recoverableAgentRun(story)
+      if (!run || interruptedAgentRecoveryStoryIds.current.has(story.id))
+        return
+      interruptedAgentRecoveryStoryIds.current.add(story.id)
+      void recoverInterruptedAgentRun(story, run).finally(() =>
+        interruptedAgentRecoveryStoryIds.current.delete(story.id)
+      )
+    })
+  }
+
+  async function recoverInterruptedAgentRun(
+    story: UserStory,
+    run: UserStoryAgentRun
+  ) {
+    const log = await clineLog(story, run)
+    if (completedClineLog(log)) {
+      await recoverCompletedAgentRun(story, run)
+      return
+    }
+    const currentStory = activeStory(story, storiesRef.current)
+    const currentRun = activeAgentRun(currentStory, run) ?? run
+    const completedAt = new Date().toISOString()
+    await backlog.updateAgentRun(currentStory, currentRun, {
+      completedAt,
+      finalResponse: interruptedAgentMessage,
+      status: "failed",
+    })
+    await backlog.update(currentStory, {
+      agentLastError: interruptedAgentMessage,
+      agentLastEvent: interruptedAgentMessage,
+      agentStatus: "Paused",
+      status: "in-progress",
+    })
+  }
+
   async function recoverCompletedAgentRun(
     story: UserStory,
     run: UserStoryAgentRun
   ) {
-    const workspace = platform.workspace
-    const sessionId = run.clineSessionId ?? story.clineSessionId
-    if (!workspace || !story.worktree || !sessionId) return
-    const log = await workspace
-      .readFile({
-        root: story.worktree,
-        path: clineLogRelativePath(sessionId),
-      })
-      .catch(() => "")
+    const log = await clineLog(story, run)
     if (!completedClineLog(log)) return
     const currentStory = activeStory(story, storiesRef.current)
     const currentRun = activeAgentRun(currentStory, run) ?? run
@@ -547,6 +572,36 @@ export function useBacklogRotation(
       true
     )
   }
+
+  async function clineLog(story: UserStory, run: UserStoryAgentRun) {
+    const workspace = platform.workspace
+    const sessionId = run.clineSessionId ?? story.clineSessionId
+    if (!workspace || !story.worktree || !sessionId) return ""
+    return workspace
+      .readFile({
+        root: story.worktree,
+        path: clineLogRelativePath(sessionId),
+      })
+      .catch(() => "")
+  }
+
+  React.useEffect(() => {
+    if (!platform.workspace || backlog.loading) return
+    const projectId = backlog.projectId
+    if (!projectId || interruptedAgentRecoveryProjectIds.current.has(projectId))
+      return
+    interruptedAgentRecoveryProjectIds.current.add(projectId)
+    recoverInterruptedAgentRuns(storiesRef.current)
+  }, [backlog.loading, backlog.projectId, platform.workspace])
+
+  React.useEffect(() => {
+    if (!platform.workspace || backlog.loading) return
+    const timer = window.setInterval(
+      () => recoverCompletedAgentRuns(storiesRef.current),
+      agentCompletionRecoveryIntervalMs
+    )
+    return () => window.clearInterval(timer)
+  }, [backlog.loading, platform.workspace])
 
   function persistAgentEvent(
     story: UserStory,

@@ -462,6 +462,7 @@ export class BlameAgentRuntime {
               input.systemPrompt ?? loadPrompt("default-agent-system"),
             cwd: input.cwd,
             workspaceRoot: input.workspaceRoot,
+            checkpoint: { enabled: true },
             mode: input.mode ?? "act",
             maxIterations: input.maxIterations ?? defaultSessionMaxIterations,
             compaction: contextCompressionConfig(

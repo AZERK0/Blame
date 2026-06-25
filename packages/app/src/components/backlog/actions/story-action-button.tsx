@@ -174,7 +174,7 @@ export function StoryAction({
         onClick={() => void onUnpauseAgent(story)}
       >
         <Icon />
-        {label ?? action}
+        {label ?? "Resume Agent"}
       </Button>
     )
   }

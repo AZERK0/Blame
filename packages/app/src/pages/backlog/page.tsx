@@ -389,23 +389,25 @@ export function BacklogPage() {
         story,
         await currentDiffSummary(story, platform)
       )
-      const session = await agent.sessions.startDevelopment({
-        apiConnection: auth.apiConnection,
-        providerId: agentSelection.currentModel.provider.id,
-        modelId: agentSelection.currentModel.id,
-        credentialLabel: agentSelection.currentModel.credentialLabel,
-        reasoningEffort: agentSelection.currentVariant,
-        contextCompressionMode: agentSelection.contextCompressionMode,
-        autoSendPrompt: false,
-        title: story.title,
-        summary: story.summary,
-        codeSelectionAttachments: story.codeSelectionAttachments ?? [],
-        fileAttachments: story.fileAttachments ?? [],
-        feedback,
-        cwd: story.worktree,
-        workspaceRoot: story.worktree,
-        codePractices,
-      })
+      const session =
+        (await resumableClineSession(agent, story.clineSessionId)) ??
+        (await agent.sessions.startDevelopment({
+          apiConnection: auth.apiConnection,
+          providerId: agentSelection.currentModel.provider.id,
+          modelId: agentSelection.currentModel.id,
+          credentialLabel: agentSelection.currentModel.credentialLabel,
+          reasoningEffort: agentSelection.currentVariant,
+          contextCompressionMode: agentSelection.contextCompressionMode,
+          autoSendPrompt: false,
+          title: story.title,
+          summary: story.summary,
+          codeSelectionAttachments: story.codeSelectionAttachments ?? [],
+          fileAttachments: story.fileAttachments ?? [],
+          feedback,
+          cwd: story.worktree,
+          workspaceRoot: story.worktree,
+          codePractices,
+        }))
       if (!session) {
         toast.error("Unable to resume agent", {
           description: "Desktop agent runtime is not available.",
@@ -1392,6 +1394,19 @@ async function currentDiffSummary(story: UserStory, platform: Platform) {
     return diffSummary(diff)
   } catch {
     return ""
+  }
+}
+
+async function resumableClineSession(
+  agent: NonNullable<Platform["agent"]>,
+  sessionId: string | null | undefined
+) {
+  if (!sessionId) return undefined
+  try {
+    await agent.sessions.messages(sessionId)
+    return { sessionId }
+  } catch {
+    return undefined
   }
 }
 
