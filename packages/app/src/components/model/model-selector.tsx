@@ -18,6 +18,10 @@ import {
   ProviderSelectDialog,
 } from "@/components/model/connect-provider-dialog"
 import { ManageModelsDialog } from "@/components/model/manage-models-dialog"
+import {
+  iconNames,
+  type IconName,
+} from "@/components/provider-icons/types"
 import { Button } from "@/components/ui/button"
 import {
   Command,
@@ -61,6 +65,14 @@ const defaultVariant = "default"
 const defaultContextCompressionMode = "cline"
 const defaultCredentialLabel = "default"
 const openAICompatibleProviderID = "openai-compatible"
+const providerIconSprite = new URL(
+  "../provider-icons/sprite.svg",
+  import.meta.url
+).href
+const providerIconAliases: Partial<Record<string, IconName>> = {
+  "openai-codex": "openai",
+  "openai-native": "openai",
+}
 const modelStateListeners = new Set<() => void>()
 const contextCompressionListeners = new Set<() => void>()
 const contextCompressionModeOptions: {
@@ -391,14 +403,25 @@ function modelFree(model: SelectableModel) {
 }
 
 export function ProviderMark({ provider }: { provider: Provider }) {
+  const icon = providerIconName(provider.id)
+
   return (
-    <span
-      aria-label={provider.name}
-      className="flex size-5 shrink-0 items-center justify-center rounded-md bg-muted/60 text-[10px] font-semibold uppercase"
-    >
-      {provider.name.slice(0, 2)}
+    <span className="flex size-5 shrink-0 items-center justify-center rounded-md bg-muted/60">
+      <svg
+        aria-label={provider.name}
+        className="size-4"
+        data-component="provider-icon"
+        role="img"
+      >
+        <use href={`${providerIconSprite}#${icon}`} />
+      </svg>
     </span>
   )
+}
+
+function providerIconName(providerID: string): IconName {
+  const icon = providerIconAliases[providerID] ?? providerID
+  return iconNames.includes(icon as IconName) ? (icon as IconName) : "synthetic"
 }
 
 export function useModelSelection(options: ModelSelectionOptions = {}) {
