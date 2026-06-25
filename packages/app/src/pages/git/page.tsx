@@ -19,6 +19,13 @@ import {
 import { Button } from "@/components/ui/button"
 
 type GitAction = (root: string, workspace: WorkspaceClient) => Promise<unknown>
+type GitRefreshOptions = {
+  quiet?: boolean
+}
+
+const gitMonitorDelayMs = 1_500
+const gitMonitorHiddenDelayMs = 5_000
+const gitMonitorFocusDelayMs = 250
 
 export function GitPage() {
   const platform = usePlatform()
@@ -90,27 +97,38 @@ function useGitController(root?: string, workspace?: WorkspaceClient) {
     () => new Set<string>()
   )
   const [status, setStatus] = React.useState<GitStatusResult>()
+  const [stateVersion, setStateVersion] = React.useState(0)
+  const busyRef = React.useRef<string>()
+  const diffRef = React.useRef("")
   const fileSelectionInitialized = React.useRef(false)
+  const stateFingerprintRef = React.useRef("")
 
-  const refresh = React.useCallback(async () => {
-    if (!root || !workspace) return
-    setLoading(true)
-    try {
-      const [nextStatus, nextCommits] = await Promise.all([
-        workspace.gitStatus({ root }),
-        workspace.gitLog({ root, limit: 250 }),
-      ])
-      setStatus(nextStatus)
-      setCommits(nextCommits)
-      setSelected((current) =>
-        resolveSelection(current, nextStatus, nextCommits)
-      )
-    } catch (error) {
-      setError(errorText(error))
-    } finally {
-      setLoading(false)
-    }
-  }, [root, workspace])
+  const refresh = React.useCallback(
+    async (options: GitRefreshOptions = {}) => {
+      if (!root || !workspace) return
+      if (!options.quiet) setLoading(true)
+      try {
+        const [nextStatus, nextCommits] = await Promise.all([
+          workspace.gitStatus({ root }),
+          workspace.gitLog({ root, limit: 250 }),
+        ])
+        const nextFingerprint = gitStateFingerprint(nextStatus, nextCommits)
+        const stateChanged = nextFingerprint !== stateFingerprintRef.current
+        stateFingerprintRef.current = nextFingerprint
+        setStatus(nextStatus)
+        setCommits(nextCommits)
+        setSelected((current) =>
+          resolveSelection(current, nextStatus, nextCommits)
+        )
+        if (stateChanged) setStateVersion((current) => current + 1)
+      } catch (error) {
+        setError(errorText(error))
+      } finally {
+        if (!options.quiet) setLoading(false)
+      }
+    },
+    [root, workspace]
+  )
 
   React.useEffect(() => {
     const timer = window.setTimeout(() => void refresh(), 0)
@@ -119,7 +137,37 @@ function useGitController(root?: string, workspace?: WorkspaceClient) {
 
   React.useEffect(() => {
     fileSelectionInitialized.current = false
+    stateFingerprintRef.current = ""
   }, [root])
+
+  React.useEffect(() => {
+    busyRef.current = busy
+  }, [busy])
+
+  React.useEffect(() => {
+    diffRef.current = diff
+  }, [diff])
+
+  React.useEffect(() => {
+    return startGitStateMonitor(
+      root,
+      workspace,
+      busyRef,
+      stateFingerprintRef,
+      refresh
+    )
+  }, [refresh, root, workspace])
+
+  React.useEffect(() => {
+    return startSelectedDiffMonitor(
+      root,
+      workspace,
+      selected,
+      busyRef,
+      diffRef,
+      setDiff
+    )
+  }, [root, selected, workspace])
 
   React.useEffect(() => {
     if (!status) return
@@ -139,7 +187,7 @@ function useGitController(root?: string, workspace?: WorkspaceClient) {
       setDiffLoading,
       setError
     )
-  }, [root, selected, workspace])
+  }, [root, selected, stateVersion, workspace])
 
   const runAction = React.useCallback(
     (label: string, action: GitAction) => {
@@ -221,6 +269,121 @@ function useGitController(root?: string, workspace?: WorkspaceClient) {
       setSelectedFilePaths((current) => removeFilePaths(current, paths)),
     clearError: () => setError(""),
   }
+}
+
+function startGitStateMonitor(
+  root: string | undefined,
+  workspace: WorkspaceClient | undefined,
+  busyRef: React.RefObject<string | undefined>,
+  stateFingerprintRef: React.RefObject<string>,
+  refresh: (options?: GitRefreshOptions) => Promise<void>
+) {
+  if (!root || !workspace) return
+  return startGitMonitorTask(busyRef, () =>
+    refreshIfGitChanged(root, workspace, stateFingerprintRef, refresh)
+  )
+}
+
+function startSelectedDiffMonitor(
+  root: string | undefined,
+  workspace: WorkspaceClient | undefined,
+  selected: GitSelection | undefined,
+  busyRef: React.RefObject<string | undefined>,
+  diffRef: React.RefObject<string>,
+  setDiff: (value: string) => void
+) {
+  if (!root || !workspace || selected?.type !== "file") return
+  return startGitMonitorTask(busyRef, () =>
+    refreshSelectedDiff(root, workspace, selected, diffRef, setDiff)
+  )
+}
+
+function startGitMonitorTask(
+  busyRef: React.RefObject<string | undefined>,
+  task: () => Promise<void>
+) {
+  let stopped = false
+  let timer: number | undefined
+  let checking = false
+  const schedule = (delay: number) => {
+    if (timer) window.clearTimeout(timer)
+    timer = window.setTimeout(() => void check(), delay)
+  }
+  const check = async () => {
+    if (stopped) return
+    if (gitMonitorPaused(busyRef.current, checking)) {
+      schedule(gitMonitorPausedDelay())
+      return
+    }
+    checking = true
+    try {
+      await task()
+    } catch (error) {
+      void error
+    } finally {
+      checking = false
+      if (!stopped) schedule(gitMonitorDelayMs)
+    }
+  }
+  const queueFastCheck = () => schedule(gitMonitorFocusDelayMs)
+  schedule(gitMonitorDelayMs)
+  window.addEventListener("focus", queueFastCheck)
+  document.addEventListener("visibilitychange", queueFastCheck)
+  return () => {
+    stopped = true
+    if (timer) window.clearTimeout(timer)
+    window.removeEventListener("focus", queueFastCheck)
+    document.removeEventListener("visibilitychange", queueFastCheck)
+  }
+}
+
+function gitMonitorPaused(busy: string | undefined, checking: boolean) {
+  return document.hidden || Boolean(busy) || checking
+}
+
+function gitMonitorPausedDelay() {
+  return document.hidden ? gitMonitorHiddenDelayMs : gitMonitorDelayMs
+}
+
+async function refreshIfGitChanged(
+  root: string,
+  workspace: WorkspaceClient,
+  stateFingerprintRef: React.RefObject<string>,
+  refresh: (options?: GitRefreshOptions) => Promise<void>
+) {
+  const nextFingerprint = await gitMonitorFingerprint(root, workspace)
+  if (nextFingerprint !== stateFingerprintRef.current) {
+    await refresh({ quiet: true })
+  }
+}
+
+async function refreshSelectedDiff(
+  root: string,
+  workspace: WorkspaceClient,
+  selected: GitSelection,
+  diffRef: React.RefObject<string>,
+  setDiff: (value: string) => void
+) {
+  const nextDiff = await selectedDiff(root, workspace, selected)
+  if (nextDiff === diffRef.current) return
+  diffRef.current = nextDiff
+  setDiff(nextDiff)
+}
+
+async function gitMonitorFingerprint(root: string, workspace: WorkspaceClient) {
+  const [status, commits] = await Promise.all([
+    workspace.gitStatus({ root }),
+    workspace.gitLog({ root, limit: 1 }),
+  ])
+  return gitStateFingerprint(status, commits)
+}
+
+function gitStateFingerprint(status: GitStatusResult, commits: GitLogCommit[]) {
+  return JSON.stringify({
+    branch: status.branch,
+    files: status.files,
+    head: commits[0]?.hash ?? "",
+  })
 }
 
 function loadSelectionDiff(
