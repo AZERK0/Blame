@@ -74,9 +74,10 @@ export function GitHistoryPanel({
         ) : null}
         {filtered.length > 0 ? (
           <div className="min-w-0 p-2">
-            {filtered.map((commit) => (
+            {filtered.map((commit, index) => (
               <CommitRow
                 commit={commit}
+                latest={index === 0}
                 key={commit.hash}
                 selected={selected}
                 onSelect={onCommitSelect}
@@ -219,10 +220,12 @@ function nearHistoryBottom(viewport: HTMLElement) {
 
 function CommitRow({
   commit,
+  latest,
   onSelect,
   selected,
 }: {
   commit: GitLogCommit
+  latest: boolean
   onSelect(selection: GitSelection): void
   selected?: GitSelection
 }) {
@@ -239,7 +242,7 @@ function CommitRow({
       type="button"
       onClick={() => onSelect(selection)}
     >
-      <CommitGraphDot active={active} />
+      <CommitGraphDot active={active} latest={latest} />
       <CommitBody commit={commit} />
       <span
         className="truncate text-right text-xs text-muted-foreground"
@@ -251,16 +254,43 @@ function CommitRow({
   )
 }
 
-function CommitGraphDot({ active }: { active: boolean }) {
+function CommitGraphDot({
+  active,
+  latest,
+}: {
+  active: boolean
+  latest: boolean
+}) {
   return (
     <span className="relative flex min-h-10 items-center justify-center">
-      <span className="absolute -top-2 -bottom-2 left-1/2 w-px -translate-x-1/2 bg-border" />
       <span
         className={cn(
-          "relative z-1 size-2.5 rounded-full border bg-background",
-          active ? "border-blue-500 bg-blue-500" : "border-emerald-500"
+          "absolute -bottom-2 left-1/2 w-px -translate-x-1/2 bg-border",
+          latest ? "top-1/2" : "-top-2"
         )}
       />
+      {latest ? (
+        <span
+          className={cn(
+            "relative z-1 flex size-3.5 items-center justify-center rounded-full border bg-background",
+            active ? "border-blue-500" : "border-emerald-500"
+          )}
+        >
+          <span
+            className={cn(
+              "size-1.5 rounded-full",
+              active ? "bg-blue-500" : "bg-emerald-500"
+            )}
+          />
+        </span>
+      ) : (
+        <span
+          className={cn(
+            "relative z-1 size-2.5 rounded-full border bg-background",
+            active ? "border-blue-500 bg-blue-500" : "border-emerald-500"
+          )}
+        />
+      )}
     </span>
   )
 }
