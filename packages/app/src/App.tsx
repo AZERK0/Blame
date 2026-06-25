@@ -2,9 +2,9 @@ import * as React from "react"
 
 import { BacklogPage } from "@/pages/backlog/page"
 import { BacklogStatusPipPage } from "@/pages/backlog/status-pip-page"
+import { ChatPage } from "@/pages/chat/page"
 import { GitPage } from "@/pages/git/page"
 import { PracticesPage } from "@/pages/practices/page"
-import { QuickChatPage } from "@/components/chat/quick-chat-page"
 import { ConnectScreen } from "@/components/onboarding/connect-screen"
 import { AiPreferencesSetupScreen } from "@/components/onboarding/ai-preferences-setup-screen"
 import {
@@ -34,7 +34,7 @@ const routes = [
     title: "Active User Stories",
     element: <BacklogStatusPipPage />,
   },
-  { path: "/chats", title: "Chats", element: <QuickChatPage /> },
+  { path: "/chats", title: "Chats", element: <ChatPage /> },
   { path: "/git", title: "Git", element: <GitPage /> },
   { path: "/practices", title: "Code Practices", element: <PracticesPage /> },
   { path: "/team", title: "Team", element: <RoutePage title="Team" /> },
