@@ -65,7 +65,79 @@ export function GitPage() {
   const [conflictDialogOpen, setConflictDialogOpen] = React.useState(false)
   const [conflictAgentResolving, setConflictAgentResolving] =
     React.useState(false)
+  const [commitMessageGenerating, setCommitMessageGenerating] =
+    React.useState(false)
   const openedConflictFingerprintRef = React.useRef("")
+  const generateCommitMessageWithAgent = React.useCallback(async () => {
+    const selectedPaths = selectedGitFilePaths(
+      git.status,
+      git.selectedFilePaths
+    )
+    const validationError = generateCommitMessageValidationError(
+      auth,
+      platform,
+      root,
+      alternativeSelection.currentModel,
+      selectedPaths,
+      conflicts
+    )
+    if (validationError) {
+      toast.error("Unable to generate commit message", {
+        description: validationError,
+        position: "bottom-right",
+      })
+      return
+    }
+    const toastId = "git-ai-commit-message-generation"
+    setCommitMessageGenerating(true)
+    git.setError("")
+    toast.loading("Generating commit message", {
+      id: toastId,
+      position: "bottom-right",
+    })
+    try {
+      const codePractices = await projectCodePractices(auth, projects)
+      const result = await platform.agent!.generateCommitMessage({
+        apiConnection: auth.apiConnection,
+        providerId: alternativeSelection.currentModel!.provider.id,
+        modelId: alternativeSelection.currentModel!.id,
+        credentialLabel: alternativeSelection.currentModel!.credentialLabel,
+        reasoningEffort: alternativeSelection.currentVariant,
+        repositoryRoot: root!,
+        worktree: root!,
+        selectedPaths,
+        title: "Git commit",
+        summary: `Generate a commit message for ${selectedPaths.length} selected file${
+          selectedPaths.length > 1 ? "s" : ""
+        }.`,
+        codePractices,
+      })
+      git.setCommitMessage(result.message)
+      toast.success("Commit message generated", {
+        id: toastId,
+        position: "bottom-right",
+      })
+    } catch (error) {
+      const message = errorText(error)
+      git.setError(message)
+      toast.error("Commit message generation failed", {
+        description: message,
+        id: toastId,
+        position: "bottom-right",
+      })
+    } finally {
+      setCommitMessageGenerating(false)
+    }
+  }, [
+    alternativeSelection.currentModel,
+    alternativeSelection.currentVariant,
+    auth,
+    conflicts,
+    git,
+    platform,
+    projects,
+    root,
+  ])
   const resolveConflictsWithAgent = React.useCallback(async () => {
     const validationError = resolveMergeConflictsValidationError(
       auth,
@@ -160,6 +232,7 @@ export function GitPage() {
         <GitWorkspacePanel
           busy={git.busy}
           commitMessage={git.commitMessage}
+          generatingCommitMessage={commitMessageGenerating}
           loading={git.loading}
           selected={git.selected}
           selectedFilePaths={git.selectedFilePaths}
@@ -170,6 +243,7 @@ export function GitPage() {
           onClearSelection={git.clearFileSelection}
           onDeleteFile={git.deleteFile}
           onFileSelect={git.setSelected}
+          onGenerateCommitMessage={generateCommitMessageWithAgent}
           onGitAddFile={git.gitAddFile}
           onRefresh={git.refresh}
           onRollbackFile={git.rollbackFile}
@@ -599,6 +673,37 @@ function resolveMergeConflictsValidationError(
   if (!model) return "Select a model before resolving conflicts."
   if (!platform.agent?.resolveMergeConflicts)
     return "Desktop agent runtime is not available."
+}
+
+function generateCommitMessageValidationError(
+  auth: ReturnType<typeof useCloudAuth>,
+  platform: ReturnType<typeof usePlatform>,
+  root: string | undefined,
+  model: unknown,
+  selectedPaths: string[],
+  conflicts: GitStatusFile[]
+) {
+  if (!root) return "Unable to resolve the active project."
+  if (selectedPaths.length === 0)
+    return "Select files before generating a commit message."
+  if (conflicts.length > 0)
+    return "Resolve conflicts before generating a commit message."
+  if (auth.status !== "authenticated")
+    return "Reconnect the provider before generating a commit message."
+  if (!model) return "Select a model before generating a commit message."
+  if (!platform.agent?.generateCommitMessage)
+    return "Desktop agent runtime is not available."
+}
+
+function selectedGitFilePaths(
+  status: GitStatusResult | undefined,
+  selectedFilePaths: ReadonlySet<string>
+) {
+  return (
+    status?.files
+      .filter((file) => selectedFilePaths.has(file.path))
+      .map((file) => file.path) ?? []
+  )
 }
 
 function moreGitCommitsAvailable(

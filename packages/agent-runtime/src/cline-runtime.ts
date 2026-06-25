@@ -91,6 +91,8 @@ import type {
   AssessProjectInitializationImpactResult,
   CodeGraphStatus,
   CodeReviewGraphProvider,
+  GenerateCommitMessageInput,
+  GenerateCommitMessageResult,
   InitializeProjectInput,
   InitializeProjectResult,
   LoginOAuthProviderInput,
@@ -144,6 +146,9 @@ const openAICompatibleProviderID = "openai-compatible";
 type MergeConflictRuntimeInput =
   | ApproveAndMergeInput
   | ResolveMergeConflictsInput;
+type CommitMessageRuntimeInput =
+  | ApproveAndMergeInput
+  | GenerateCommitMessageInput;
 const attachmentDirectoryName = ".blame/attachments";
 
 type ToolApprovalRequest = {
@@ -337,6 +342,9 @@ export class BlameAgentRuntime {
 
   approveAndMerge = (input: ApproveAndMergeInput) =>
     this.approveAndMergeStory(input);
+
+  generateCommitMessage = (input: GenerateCommitMessageInput) =>
+    this.generateWorkspaceCommitMessage(input);
 
   resolveMergeConflicts = (input: ResolveMergeConflictsInput) =>
     this.resolveWorkspaceMergeConflicts(input);
@@ -924,9 +932,10 @@ export class BlameAgentRuntime {
   private async commitStoryWork(input: ApproveAndMergeInput) {
     const status = await storyStatus(input.worktree, "--porcelain");
     if (!status.trim()) return;
-    const message = await this.generateCommitMessage(
+    const message = await this.generateCommitMessageWithAgent(
       input,
       approveMergeLogPath(input.worktree),
+      "blame-approve-merge",
     );
     await addStoryChanges(input.worktree);
     await git(input.worktree, ["commit", "-m", message]);
@@ -937,9 +946,43 @@ export class BlameAgentRuntime {
       );
   }
 
-  private async generateCommitMessage(
-    input: ApproveAndMergeInput,
+  private async generateWorkspaceCommitMessage(
+    input: GenerateCommitMessageInput,
+  ): Promise<GenerateCommitMessageResult> {
+    assertRepositoryPath(input.repositoryRoot, "repositoryRoot");
+    assertRepositoryPath(input.worktree, "worktree");
+    await assertGitRepository(input.repositoryRoot);
+    await assertGitRepository(input.worktree);
+    const status = await storyStatus(
+      input.worktree,
+      "--porcelain",
+      commitMessagePaths(input),
+    );
+    if (!status.trim())
+      throw new Error(
+        "No selected changes available for commit message generation.",
+      );
+    const logFile = commitMessageLogPath(input.worktree);
+    await appendLog(logFile, "commit message generation requested", {
+      providerId: input.providerId,
+      modelId: input.modelId,
+      reasoningEffort: input.reasoningEffort,
+      repositoryRoot: input.repositoryRoot,
+      selectedPaths: input.selectedPaths ?? [],
+      worktree: input.worktree,
+    });
+    const message = await this.generateCommitMessageWithAgent(
+      input,
+      logFile,
+      "blame-commit-message-generation",
+    );
+    return { message };
+  }
+
+  private async generateCommitMessageWithAgent(
+    input: CommitMessageRuntimeInput,
     logFile: string,
+    source: string,
   ) {
     try {
       const startedAt = Date.now();
@@ -949,7 +992,7 @@ export class BlameAgentRuntime {
         prompt: await commitMessagePrompt(input),
         config: commitMessageConfig(input, credential),
         interactive: false,
-        source: "blame-approve-merge",
+        source,
         toolPolicies: initializationToolPolicies(),
       });
       const message = commitMessageFromAgentResult(session.result);
@@ -1941,7 +1984,7 @@ function initializationImpactConfig(
 }
 
 function commitMessageConfig(
-  input: ApproveAndMergeInput,
+  input: CommitMessageRuntimeInput,
   credential: { apiKey: string; baseUrl: string | null },
 ) {
   return appendProductionConfig({
@@ -2540,19 +2583,25 @@ async function mergeConflictFiles(cwd: string) {
   return files.split("\n").filter(Boolean);
 }
 
-async function commitMessagePrompt(input: ApproveAndMergeInput) {
+async function commitMessagePrompt(input: CommitMessageRuntimeInput) {
+  const paths = commitMessagePaths(input);
   const [status, changedFiles, diffStat, log] = await Promise.all([
-    storyStatus(input.worktree, "--porcelain"),
-    storyChangedFiles(input.worktree),
-    storyDiffStat(input.worktree),
+    storyStatus(input.worktree, "--porcelain", paths),
+    storyChangedFiles(input.worktree, paths),
+    storyDiffStat(input.worktree, paths),
     git(input.worktree, ["log", "-12", "--pretty=%s"]),
   ]);
+  const title = input.title || "Git changes";
+  const summary =
+    input.summary || "Generate a concise commit message for the selected changes.";
   return [
-    `Backlog item: ${input.title}`,
+    `Backlog item: ${title}`,
     "",
-    input.summary,
+    summary,
     "",
     `Git status:\n${truncateText(status, 8_000)}`,
+    "",
+    `Selected paths:\n${truncateText(paths.join("\n"), 8_000)}`,
     "",
     `Changed files:\n${truncateText(changedFiles, 12_000)}`,
     "",
@@ -2562,38 +2611,42 @@ async function commitMessagePrompt(input: ApproveAndMergeInput) {
   ].join("\n");
 }
 
-async function storyChangedFiles(cwd: string) {
+async function storyChangedFiles(cwd: string, paths = ["."]) {
   return git(cwd, [
     "diff",
     "--no-ext-diff",
     "--name-status",
     "HEAD",
     "--",
-    ".",
+    ...paths,
     ...runtimeArtifactPathspecs,
   ]);
 }
 
-async function storyDiffStat(cwd: string) {
+async function storyDiffStat(cwd: string, paths = ["."]) {
   return git(cwd, [
     "diff",
     "--no-ext-diff",
     "--stat",
     "HEAD",
     "--",
-    ".",
+    ...paths,
     ...runtimeArtifactPathspecs,
   ]);
 }
 
-async function fallbackCommitMessage(input: ApproveAndMergeInput) {
+async function fallbackCommitMessage(input: CommitMessageRuntimeInput) {
+  const paths = commitMessagePaths(input);
   const [status, log] = await Promise.all([
-    storyStatus(input.worktree, "--porcelain"),
+    storyStatus(input.worktree, "--porcelain", paths),
     git(input.worktree, ["log", "-12", "--pretty=%s"]),
   ]);
   const files = statusFileNames(status);
   const standardConvention = commitMessageConventionEnabled(input);
-  const subject = fallbackCommitSubject(input.title, files);
+  const subject = fallbackCommitSubject(
+    input.title || "selected changes",
+    files,
+  );
   const bracketPrefix = dominantBracketPrefix(log);
   if (!standardConvention && bracketPrefix) {
     return limitCommitMessage(`${bracketPrefix} ${subject}`);
@@ -2601,6 +2654,12 @@ async function fallbackCommitMessage(input: ApproveAndMergeInput) {
   const scope = commitScope(files);
   const type = commitType(files);
   return limitCommitMessage(`${type}${scope ? `(${scope})` : ""}: ${subject}`);
+}
+
+function commitMessagePaths(input: CommitMessageRuntimeInput) {
+  if (!("selectedPaths" in input)) return ["."];
+  const paths = input.selectedPaths?.filter(Boolean) ?? [];
+  return paths.length ? paths : ["."];
 }
 
 function commitMessageFromAgentResult(result: unknown) {
@@ -2612,7 +2671,7 @@ function commitMessageFromAgentResult(result: unknown) {
   );
 }
 
-function commitMessageConventionEnabled(input: ApproveAndMergeInput) {
+function commitMessageConventionEnabled(input: CommitMessageRuntimeInput) {
   return (
     input.codePractices?.find(
       (item) => item.practice === "commit_message_convention",
@@ -2703,7 +2762,11 @@ async function mergeConflictPrompt(
   ].join("\n");
 }
 
-async function storyStatus(cwd: string, format: "--porcelain" | "--short") {
+async function storyStatus(
+  cwd: string,
+  format: "--porcelain" | "--short",
+  paths = ["."],
+) {
   const envPathspecs = (await changedRuntimeEnvPaths(cwd)).map(
     (path) => `:!${path}`,
   );
@@ -2711,7 +2774,7 @@ async function storyStatus(cwd: string, format: "--porcelain" | "--short") {
     "status",
     format,
     "--",
-    ".",
+    ...paths,
     ...runtimeArtifactPathspecs,
     ...envPathspecs,
   ]);
@@ -2838,6 +2901,10 @@ function truncateText(value: string, limit: number) {
 
 function approveMergeLogPath(worktree: string) {
   return join(worktree, ".blame", "logs", "approve-merge.log");
+}
+
+function commitMessageLogPath(worktree: string) {
+  return join(worktree, ".blame", "logs", "commit-message.log");
 }
 
 function mergeConflictLogPath(worktree: string) {

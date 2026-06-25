@@ -9,6 +9,7 @@ import {
   ChevronRightIcon,
   GitBranchIcon,
   MinusIcon,
+  PencilLineIcon,
   PlusIcon,
   RefreshCwIcon,
   RotateCcwIcon,
@@ -49,6 +50,7 @@ import { cn } from "@/lib/utils"
 export function GitWorkspacePanel({
   busy,
   commitMessage,
+  generatingCommitMessage,
   loading,
   onCommit,
   onCommitMessageChange,
@@ -57,6 +59,7 @@ export function GitWorkspacePanel({
   onDeleteFile,
   onFileSelect,
   onGitAddFile,
+  onGenerateCommitMessage,
   onRefresh,
   onRollbackFile,
   onSelectAll,
@@ -70,6 +73,7 @@ export function GitWorkspacePanel({
 }: {
   busy?: string
   commitMessage: string
+  generatingCommitMessage: boolean
   loading: boolean
   onCommit(): void
   onCommitMessageChange(value: string): void
@@ -78,6 +82,7 @@ export function GitWorkspacePanel({
   onDeleteFile(path: string): void
   onFileSelect(selection: GitSelection): void
   onGitAddFile(path: string): void
+  onGenerateCommitMessage(): void
   onRefresh(): void
   onRollbackFile(path: string): void
   onSelectAll(): void
@@ -167,12 +172,15 @@ export function GitWorkspacePanel({
         <CommitComposer
           busy={busy}
           canCommit={selectedCount > 0 && !hasConflicts}
+          canGenerateMessage={selectedCount > 0 && !hasConflicts}
+          generatingMessage={generatingCommitMessage}
           hasConflicts={hasConflicts}
           hasChanges={hasChanges}
           message={commitMessage}
           onChange={onCommitMessageChange}
           onCommit={onCommit}
           onCommitPush={onCommitPush}
+          onGenerateMessage={onGenerateCommitMessage}
         />
       </aside>
       <ConfirmFileActionDialog
@@ -830,23 +838,30 @@ function fileActionButtonLabel(action: PendingFileAction) {
 function CommitComposer({
   busy,
   canCommit,
+  canGenerateMessage,
+  generatingMessage,
   hasConflicts,
   hasChanges,
   message,
   onChange,
   onCommit,
   onCommitPush,
+  onGenerateMessage,
 }: {
   busy?: string
   canCommit: boolean
+  canGenerateMessage: boolean
+  generatingMessage: boolean
   hasConflicts: boolean
   hasChanges: boolean
   message: string
   onChange(value: string): void
   onCommit(): void
   onCommitPush(): void
+  onGenerateMessage(): void
 }) {
-  const disabled = !canCommit || !message.trim() || Boolean(busy)
+  const actionBusy = Boolean(busy) || generatingMessage
+  const disabled = !canCommit || !message.trim() || actionBusy
 
   return (
     <div
@@ -855,13 +870,31 @@ function CommitComposer({
         !hasChanges && "opacity-70"
       )}
     >
-      <Textarea
-        className="min-h-24 resize-none font-mono text-xs"
-        disabled={!hasChanges || hasConflicts}
-        placeholder={commitMessagePlaceholder(hasChanges, hasConflicts)}
-        value={message}
-        onChange={(event) => onChange(event.target.value)}
-      />
+      <div className="relative min-w-0">
+        <Textarea
+          className="min-h-24 resize-none pb-10 pr-10 font-mono text-xs"
+          disabled={!hasChanges || hasConflicts || generatingMessage}
+          placeholder={commitMessagePlaceholder(hasChanges, hasConflicts)}
+          value={message}
+          onChange={(event) => onChange(event.target.value)}
+        />
+        <IconAction label="Generate commit message with AI">
+          <Button
+            className="absolute bottom-2 right-2"
+            disabled={!canGenerateMessage || actionBusy}
+            size="sm"
+            type="button"
+            variant="ghost"
+            onClick={onGenerateMessage}
+          >
+            <PencilLineIcon
+              className={cn("size-4", generatingMessage && "animate-pulse")}
+            />
+            Auto Message
+            <span className="sr-only">Generate commit message with AI</span>
+          </Button>
+        </IconAction>
+      </div>
       <div className="flex min-w-0 items-center gap-2">
         <Button
           className="flex-1"

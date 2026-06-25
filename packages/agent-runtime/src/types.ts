@@ -179,6 +179,25 @@ export type ApproveAndMergeResult = {
   targetBranch: string
 }
 
+export type GenerateCommitMessageInput = {
+  apiConnection: ApiConnection
+  providerId: string
+  modelId: string
+  credentialLabel?: string
+  reasoningEffort?: ReasoningEffort
+  repositoryRoot: string
+  worktree: string
+  title?: string
+  summary?: string
+  selectedPaths?: string[]
+  codePractices?: ProjectCodePracticePreference[]
+  backend?: AgentBackendConfig
+}
+
+export type GenerateCommitMessageResult = {
+  message: string
+}
+
 export type ResolveMergeConflictsInput = {
   apiConnection: ApiConnection
   providerId: string

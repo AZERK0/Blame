@@ -38,6 +38,7 @@ yarn-error.log*
 .DS_Store
 *.pem
 .idea/
+.blame/
 
 # Added by code-review-graph
 .code-review-graph/

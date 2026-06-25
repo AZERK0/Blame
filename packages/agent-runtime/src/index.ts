@@ -30,6 +30,8 @@ export type {
   CodeGraphUpdateResult,
   CodeReviewGraphProvider,
   DeleteProviderCredentialInput,
+  GenerateCommitMessageInput,
+  GenerateCommitMessageResult,
   InitializeProjectInput,
   InitializeProjectResult,
   LoginOAuthProviderInput,

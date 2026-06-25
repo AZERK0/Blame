@@ -264,6 +264,8 @@ const api: BlameDesktopApi = {
     },
     approveAndMerge: (input) =>
       ipcRenderer.invoke("agent:approve-and-merge", input),
+    generateCommitMessage: (input) =>
+      ipcRenderer.invoke("agent:generate-commit-message", input),
     resolveMergeConflicts: (input) =>
       ipcRenderer.invoke("agent:resolve-merge-conflicts", input),
   },

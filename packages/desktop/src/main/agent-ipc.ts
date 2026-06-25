@@ -99,6 +99,9 @@ export function registerAgentIpcHandlers() {
   ipcMain.handle("agent:approve-and-merge", (_event, input) =>
     agentWorkspaceInput(input).then((resolved) => runtime.approveAndMerge(resolved))
   )
+  ipcMain.handle("agent:generate-commit-message", (_event, input) =>
+    agentWorkspaceInput(input).then((resolved) => runtime.generateCommitMessage(resolved))
+  )
   ipcMain.handle("agent:resolve-merge-conflicts", (_event, input) =>
     agentWorkspaceInput(input).then((resolved) => runtime.resolveMergeConflicts(resolved))
   )

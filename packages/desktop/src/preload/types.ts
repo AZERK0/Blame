@@ -6,6 +6,8 @@ import type {
   ApproveAndMergeResult,
   AssessProjectInitializationImpactInput,
   AssessProjectInitializationImpactResult,
+  GenerateCommitMessageInput,
+  GenerateCommitMessageResult,
   InitializeProjectInput,
   InitializeProjectResult,
   ProjectInitializationDiagnostics,
@@ -374,6 +376,9 @@ export type BlameDesktopApi = {
     approveAndMerge(
       input: ApproveAndMergeInput,
     ): Promise<ApproveAndMergeResult>;
+    generateCommitMessage(
+      input: GenerateCommitMessageInput,
+    ): Promise<GenerateCommitMessageResult>;
     resolveMergeConflicts(
       input: ResolveMergeConflictsInput,
     ): Promise<ResolveMergeConflictsResult>;
