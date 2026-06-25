@@ -20,6 +20,7 @@ import type {
   UserStoryAgentRun,
   UserStoryComment,
 } from "@/components/backlog/data/backlog-data"
+import type { BlameProvider as Provider } from "@blame/agent-runtime"
 import { createBacklogApi } from "@/components/backlog/data/backlog-api"
 import type { PendingCodeSelectionAttachment } from "@/components/backlog/shared/comment-attachment-events"
 import type { UserStoryDrawerMode } from "@/components/backlog/shared/backlog-types"
@@ -37,7 +38,11 @@ import {
   userStoryActivityTree,
   type UserStoryActivityNode,
 } from "@/components/backlog/drawer/user-story-activity-tree"
-import { ModelSelector } from "@/components/model/model-selector"
+import {
+  ModelSelector,
+  ProviderMark,
+  useModelSelection,
+} from "@/components/model/model-selector"
 import { useProjects } from "@/context/projects"
 import { useCloudAuth } from "@/context/cloud-auth"
 import {
@@ -170,6 +175,11 @@ function AgentRunTimeline({
     [auth.apiConnection]
   )
   const runs = userStory?.agentRuns ?? []
+  const modelSelection = useModelSelection()
+  const responseHeader = agentResponseHeader(
+    userStory,
+    modelSelection.allProviders
+  )
   const commentsById = React.useMemo(
     () =>
       new Map(
@@ -216,6 +226,7 @@ function AgentRunTimeline({
                     node={node}
                     onFileLinkClick={onFileLinkClick}
                     onLoadDetail={(item) => loadActivityDetail(run, item)}
+                    responseHeader={responseHeader}
                     runActive={run.status === "running"}
                     runningToolActivityId={runningToolActivityId}
                     value={`${run.id}-${node.id}`}
@@ -224,6 +235,7 @@ function AgentRunTimeline({
                 <AgentResponseItem
                   activities={activities}
                   response={run.finalResponse}
+                  responseHeader={responseHeader}
                   onFileLinkClick={onFileLinkClick}
                 />
               </React.Fragment>
@@ -279,6 +291,7 @@ function AgentActivityItem({
   node,
   onFileLinkClick,
   onLoadDetail,
+  responseHeader,
   runActive,
   runningToolActivityId,
   value,
@@ -286,6 +299,7 @@ function AgentActivityItem({
   node: UserStoryActivityNode
   onFileLinkClick?: (path: string) => void
   onLoadDetail: (activity: UserStoryAgentActivity) => Promise<string>
+  responseHeader: AgentResponseHeader
   runActive: boolean
   runningToolActivityId?: string
   value: string
@@ -296,6 +310,7 @@ function AgentActivityItem({
         node={node}
         onFileLinkClick={onFileLinkClick}
         onLoadDetail={onLoadDetail}
+        responseHeader={responseHeader}
         runActive={runActive}
         runningToolActivityId={runningToolActivityId}
         value={value}
@@ -307,6 +322,7 @@ function AgentActivityItem({
       activity={node.activity}
       onFileLinkClick={onFileLinkClick}
       onLoadDetail={onLoadDetail}
+      responseHeader={responseHeader}
       runActive={runActive}
       runningToolActivityId={runningToolActivityId}
       value={value}
@@ -318,6 +334,7 @@ function AgentActivityGroupItem({
   node,
   onFileLinkClick,
   onLoadDetail,
+  responseHeader,
   runActive,
   runningToolActivityId,
   value,
@@ -325,6 +342,7 @@ function AgentActivityGroupItem({
   node: Extract<UserStoryActivityNode, { type: "group" }>
   onFileLinkClick?: (path: string) => void
   onLoadDetail: (activity: UserStoryAgentActivity) => Promise<string>
+  responseHeader: AgentResponseHeader
   runActive: boolean
   runningToolActivityId?: string
   value: string
@@ -357,6 +375,7 @@ function AgentActivityGroupItem({
               onFileLinkClick={onFileLinkClick}
               onLoadDetail={onLoadDetail}
               parentValue={value}
+              responseHeader={responseHeader}
               runActive={runActive}
               runningToolActivityId={runningToolActivityId}
             />
@@ -372,6 +391,7 @@ function AgentActivityChildren({
   onFileLinkClick,
   onLoadDetail,
   parentValue,
+  responseHeader,
   runActive,
   runningToolActivityId,
 }: {
@@ -379,6 +399,7 @@ function AgentActivityChildren({
   onFileLinkClick?: (path: string) => void
   onLoadDetail: (activity: UserStoryAgentActivity) => Promise<string>
   parentValue: string
+  responseHeader: AgentResponseHeader
   runActive: boolean
   runningToolActivityId?: string
 }) {
@@ -392,6 +413,7 @@ function AgentActivityChildren({
             node={node}
             onFileLinkClick={onFileLinkClick}
             onLoadDetail={onLoadDetail}
+            responseHeader={responseHeader}
             runActive={runActive}
             runningToolActivityId={runningToolActivityId}
             value={`${parentValue}-${node.id}`}
@@ -406,6 +428,7 @@ function AgentActivityLeafItem({
   activity,
   onFileLinkClick,
   onLoadDetail,
+  responseHeader,
   runActive,
   runningToolActivityId,
   value,
@@ -413,6 +436,7 @@ function AgentActivityLeafItem({
   activity: UserStoryAgentActivity
   onFileLinkClick?: (path: string) => void
   onLoadDetail: (activity: UserStoryAgentActivity) => Promise<string>
+  responseHeader: AgentResponseHeader
   runActive: boolean
   runningToolActivityId?: string
   value: string
@@ -421,9 +445,10 @@ function AgentActivityLeafItem({
     return (
       <AgentMarkdownTimelineItem
         highlight={activity.messageKind === "final"}
+        icon={agentMessageIcon(responseHeader)}
         markdown={activity.detail}
         onFileLinkClick={onFileLinkClick}
-        title={activity.title}
+        title={agentMessageTitle(activity, responseHeader)}
       />
     )
   }
@@ -591,10 +616,12 @@ function AgentResponseItem({
   activities,
   onFileLinkClick,
   response,
+  responseHeader,
 }: {
   activities: UserStoryAgentActivity[]
   onFileLinkClick?: (path: string) => void
   response?: string | null
+  responseHeader: AgentResponseHeader
 }) {
   const markdown = response?.trim()
   if (!markdown) return null
@@ -603,11 +630,64 @@ function AgentResponseItem({
   return (
     <AgentMarkdownTimelineItem
       highlight
+      icon={<ProviderMark provider={responseHeader.provider} />}
       markdown={markdown}
       onFileLinkClick={onFileLinkClick}
-      title="Agent response"
+      title={responseHeader.modelName ?? "Agent response"}
     />
   )
+}
+
+type AgentResponseHeader = {
+  modelName?: string
+  provider: Provider
+}
+
+function agentResponseHeader(
+  userStory: UserStory | undefined,
+  providers: Provider[]
+): AgentResponseHeader {
+  const provider = agentResponseProvider(userStory, providers)
+  const modelId = userStory?.agentModelId
+  const modelName = (modelId && provider.models[modelId]?.name) || modelId
+  return {
+    modelName,
+    provider,
+  }
+}
+
+function agentResponseProvider(
+  userStory: UserStory | undefined,
+  providers: Provider[]
+): Provider {
+  const providerId = userStory?.agentProviderId
+  const provider = providers.find((item) => item.id === providerId)
+  if (provider) return provider
+
+  return {
+    id: providerId || "synthetic",
+    name: providerId ? humanizeProviderId(providerId) : "Agent",
+    models: {},
+  }
+}
+
+function agentMessageIcon(header: AgentResponseHeader) {
+  return <ProviderMark provider={header.provider} />
+}
+
+function agentMessageTitle(
+  activity: UserStoryAgentActivity,
+  header: AgentResponseHeader
+) {
+  return header.modelName ?? activity.title
+}
+
+function humanizeProviderId(providerId: string) {
+  return providerId
+    .split(/[_-]+/)
+    .filter(Boolean)
+    .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
+    .join(" ")
 }
 
 function agentDisplayActivities(
@@ -667,14 +747,16 @@ function normalizedMarkdown(value: string) {
 
 function AgentMarkdownTimelineItem({
   highlight,
+  icon,
   markdown,
   onFileLinkClick,
   title,
 }: {
   highlight: boolean
+  icon?: React.ReactNode
   markdown: string
   onFileLinkClick?: (path: string) => void
-  title: string
+  title: React.ReactNode
 }) {
   return (
     <div
@@ -682,7 +764,7 @@ function AgentMarkdownTimelineItem({
       data-agent-response
     >
       <span className="relative z-10 flex size-8 items-center justify-center rounded-full border bg-background text-muted-foreground shadow-sm">
-        <BotIcon className="size-4" />
+        {icon ?? <BotIcon className="size-4" />}
       </span>
       <div className="grid min-w-0 gap-3">
         <h3 className="text-xl font-medium">{title}</h3>
