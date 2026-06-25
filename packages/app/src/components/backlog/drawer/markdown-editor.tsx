@@ -1401,9 +1401,6 @@ export const MarkdownEditor = React.forwardRef<
                     onRedo={() => runHistoryCommand("redo")}
                     onUndo={() => runHistoryCommand("undo")}
                   />
-                </div>
-                <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
-                  {toolbarEnd}
                   <TabsList className="h-8 rounded-lg bg-muted/70 p-0.5">
                     <TabsTrigger className="h-7 px-3 text-xs" value="write">
                       Write
@@ -1415,6 +1412,9 @@ export const MarkdownEditor = React.forwardRef<
                       Preview
                     </TabsTrigger>
                   </TabsList>
+                </div>
+                <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
+                  {toolbarEnd}
                 </div>
               </div>
             </Tabs>

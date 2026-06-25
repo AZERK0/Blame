@@ -122,7 +122,7 @@ export function UserStoryContent({
         readOnly={!editable}
         toolbarEnd={
           editable ? (
-            <div className="w-72 max-w-full min-w-0">
+            <div className="w-[28rem] max-w-full min-w-0">
               <ModelSelector />
             </div>
           ) : undefined
