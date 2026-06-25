@@ -91,6 +91,8 @@ const api: BlameDesktopApi = {
     gitDiffBetween: (input) =>
       ipcRenderer.invoke("workspace:git-diff-between", input),
     gitStatus: (input) => ipcRenderer.invoke("workspace:git-status", input),
+    gitCommitCount: (input) =>
+      ipcRenderer.invoke("workspace:git-commit-count", input),
     gitLog: (input) => ipcRenderer.invoke("workspace:git-log", input),
     gitFileDiff: (input) =>
       ipcRenderer.invoke("workspace:git-file-diff", input),

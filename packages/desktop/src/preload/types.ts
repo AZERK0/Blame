@@ -197,7 +197,12 @@ export type BlameDesktopApi = {
       to: string;
     }): Promise<string>;
     gitStatus(input: { root: string }): Promise<GitStatusResult>;
-    gitLog(input: { root: string; limit?: number }): Promise<GitLogCommit[]>;
+    gitCommitCount(input: { root: string }): Promise<number>;
+    gitLog(input: {
+      root: string;
+      limit?: number;
+      skip?: number;
+    }): Promise<GitLogCommit[]>;
     gitFileDiff(input: {
       root: string;
       path: string;

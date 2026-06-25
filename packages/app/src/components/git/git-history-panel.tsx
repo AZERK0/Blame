@@ -1,3 +1,4 @@
+import * as React from "react"
 import type { GitLogCommit } from "@/context/platform"
 import type { GitSelection } from "@/components/git/git-types"
 import { gitCommitSelection, gitSelectionKey } from "@/components/git/git-types"
@@ -17,31 +18,58 @@ import { cn } from "@/lib/utils"
 
 export function GitHistoryPanel({
   commits,
+  commitTotal,
+  hasMoreCommits,
   loading,
+  loadingMore,
   onCommitSelect,
+  onLoadMore,
   onQueryChange,
   query,
   selected,
 }: {
   commits: GitLogCommit[]
+  commitTotal?: number
+  hasMoreCommits: boolean
   loading: boolean
+  loadingMore: boolean
   onCommitSelect(selection: GitSelection): void
+  onLoadMore(): void
   onQueryChange(value: string): void
   query: string
   selected?: GitSelection
 }) {
   const filtered = filterCommits(commits, query)
+  const canLoadMoreHistory = hasMoreCommits && !query.trim()
+  const scrollAreaRef = React.useRef<HTMLDivElement>(null)
+  const scrollGuardRef = React.useRef<HistoryScrollGuard>({
+    frame: 0,
+    triggeredCommitCount: -1,
+  })
+
+  React.useEffect(() => {
+    return watchHistoryScroll(
+      scrollAreaRef,
+      canLoadMoreHistory,
+      commits.length,
+      loadingMore,
+      onLoadMore,
+      scrollGuardRef
+    )
+  }, [canLoadMoreHistory, commits.length, loadingMore, onLoadMore])
 
   return (
     <main className="flex min-h-[34rem] min-w-0 flex-col border-b bg-background xl:min-h-0 xl:border-r xl:border-b-0">
       <HistoryToolbar
-        count={filtered.length}
+        loadedCount={commits.length}
+        total={commitTotal}
+        hasMore={canLoadMoreHistory}
         query={query}
         onQueryChange={onQueryChange}
       />
-      <ScrollArea className="min-h-0 flex-1">
+      <ScrollArea className="min-h-0 flex-1" ref={scrollAreaRef}>
         {loading && commits.length === 0 ? <HistorySkeleton /> : null}
-        {!loading && filtered.length === 0 ? (
+        {!loading && !loadingMore && filtered.length === 0 ? (
           <HistoryEmpty query={query} />
         ) : null}
         {filtered.length > 0 ? (
@@ -54,7 +82,10 @@ export function GitHistoryPanel({
                 onSelect={onCommitSelect}
               />
             ))}
+            {loadingMore ? <HistoryLoadingMore /> : null}
           </div>
+        ) : loadingMore ? (
+          <HistoryLoadingMore />
         ) : null}
       </ScrollArea>
     </main>
@@ -62,13 +93,17 @@ export function GitHistoryPanel({
 }
 
 function HistoryToolbar({
-  count,
+  hasMore,
+  loadedCount,
   onQueryChange,
   query,
+  total,
 }: {
-  count: number
+  hasMore: boolean
+  loadedCount: number
   onQueryChange(value: string): void
   query: string
+  total?: number
 }) {
   return (
     <div className="flex min-w-0 items-center gap-3 border-b px-3 py-2">
@@ -82,9 +117,103 @@ function HistoryToolbar({
         />
       </div>
       <Badge className="shrink-0" variant="outline">
-        {count} commits
+        {historyCountLabel(total, loadedCount, hasMore)}
       </Badge>
     </div>
+  )
+}
+
+type HistoryScrollGuard = {
+  frame: number
+  triggeredCommitCount: number
+}
+
+function watchHistoryScroll(
+  scrollAreaRef: React.RefObject<HTMLDivElement | null>,
+  canLoadMoreHistory: boolean,
+  loadedCommitCount: number,
+  loadingMore: boolean,
+  onLoadMore: () => void,
+  scrollGuardRef: React.RefObject<HistoryScrollGuard>
+) {
+  const viewport = scrollAreaRef.current?.querySelector<HTMLElement>(
+    "[data-slot='scroll-area-viewport']"
+  )
+  if (!viewport) return
+  const handleScroll = () =>
+    scheduleHistoryScrollCheck(
+      viewport,
+      canLoadMoreHistory,
+      loadedCommitCount,
+      loadingMore,
+      onLoadMore,
+      scrollGuardRef
+    )
+  viewport.addEventListener("scroll", handleScroll)
+  return () => {
+    cancelHistoryScrollCheck(scrollGuardRef)
+    viewport.removeEventListener("scroll", handleScroll)
+  }
+}
+
+function historyCountLabel(
+  total: number | undefined,
+  loadedCount: number,
+  hasMore: boolean
+) {
+  if (total !== undefined) return `${total} commits`
+  return `${loadedCount}${hasMore ? "+" : ""} commits`
+}
+
+function scheduleHistoryScrollCheck(
+  viewport: HTMLElement,
+  canLoadMoreHistory: boolean,
+  loadedCommitCount: number,
+  loadingMore: boolean,
+  onLoadMore: () => void,
+  scrollGuardRef: React.RefObject<HistoryScrollGuard>
+) {
+  const guard = scrollGuardRef.current
+  if (guard.frame) return
+  guard.frame = window.requestAnimationFrame(() => {
+    guard.frame = 0
+    maybeLoadMoreHistory(
+      viewport,
+      canLoadMoreHistory,
+      loadedCommitCount,
+      loadingMore,
+      onLoadMore,
+      guard
+    )
+  })
+}
+
+function maybeLoadMoreHistory(
+  viewport: HTMLElement,
+  canLoadMoreHistory: boolean,
+  loadedCommitCount: number,
+  loadingMore: boolean,
+  onLoadMore: () => void,
+  guard: HistoryScrollGuard
+) {
+  if (!nearHistoryBottom(viewport) || !canLoadMoreHistory || loadingMore) return
+  if (guard.triggeredCommitCount === loadedCommitCount) return
+  guard.triggeredCommitCount = loadedCommitCount
+  onLoadMore()
+}
+
+function cancelHistoryScrollCheck(
+  scrollGuardRef: React.RefObject<HistoryScrollGuard>
+) {
+  const frame = scrollGuardRef.current.frame
+  if (!frame) return
+  window.cancelAnimationFrame(frame)
+  scrollGuardRef.current.frame = 0
+}
+
+function nearHistoryBottom(viewport: HTMLElement) {
+  return (
+    viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight < 260
   )
 }
 
@@ -216,6 +345,16 @@ function HistorySkeleton() {
     <div className="flex flex-col gap-2 p-3">
       {Array.from({ length: 12 }).map((_, index) => (
         <Skeleton className="h-8 w-full" key={index} />
+      ))}
+    </div>
+  )
+}
+
+function HistoryLoadingMore() {
+  return (
+    <div className="flex flex-col gap-2 p-2">
+      {Array.from({ length: 3 }).map((_, index) => (
+        <Skeleton className="h-10 w-full" key={index} />
       ))}
     </div>
   )

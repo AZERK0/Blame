@@ -23,9 +23,24 @@ type GitRefreshOptions = {
   quiet?: boolean
 }
 
+type LoadMoreGitCommitsInput = {
+  commitsRef: React.RefObject<GitLogCommit[]>
+  commitTotalRef: React.RefObject<number | undefined>
+  hasMoreCommitsRef: React.RefObject<boolean>
+  loadedCommitCountRef: React.RefObject<number>
+  loadingMoreCommitsRef: React.RefObject<boolean>
+  root: string | undefined
+  setCommits: React.Dispatch<React.SetStateAction<GitLogCommit[]>>
+  setError(value: string): void
+  setHasMoreCommits(value: boolean): void
+  setLoadingMoreCommits(value: boolean): void
+  workspace: WorkspaceClient | undefined
+}
+
 const gitMonitorDelayMs = 1_500
 const gitMonitorHiddenDelayMs = 5_000
 const gitMonitorFocusDelayMs = 250
+const gitLogPageSize = 100
 
 export function GitPage() {
   const platform = usePlatform()
@@ -65,10 +80,14 @@ export function GitPage() {
         />
         <GitHistoryPanel
           commits={git.commits}
+          commitTotal={git.commitTotal}
+          hasMoreCommits={git.hasMoreCommits}
           loading={git.loading}
+          loadingMore={git.loadingMoreCommits}
           query={git.query}
           selected={git.selected}
           onCommitSelect={git.setSelected}
+          onLoadMore={git.loadMoreCommits}
           onQueryChange={git.setQuery}
         />
         <GitInspectorPanel
@@ -87,10 +106,13 @@ function useGitController(root?: string, workspace?: WorkspaceClient) {
   const [busy, setBusy] = React.useState<string>()
   const [commitMessage, setCommitMessage] = React.useState("")
   const [commits, setCommits] = React.useState<GitLogCommit[]>([])
+  const [commitTotal, setCommitTotal] = React.useState<number>()
   const [diff, setDiff] = React.useState("")
   const [diffLoading, setDiffLoading] = React.useState(false)
   const [error, setError] = React.useState("")
+  const [hasMoreCommits, setHasMoreCommits] = React.useState(true)
   const [loading, setLoading] = React.useState(Boolean(root && workspace))
+  const [loadingMoreCommits, setLoadingMoreCommits] = React.useState(false)
   const [query, setQuery] = React.useState("")
   const [selected, setSelected] = React.useState<GitSelection>()
   const [selectedFilePaths, setSelectedFilePaths] = React.useState(
@@ -99,8 +121,13 @@ function useGitController(root?: string, workspace?: WorkspaceClient) {
   const [status, setStatus] = React.useState<GitStatusResult>()
   const [stateVersion, setStateVersion] = React.useState(0)
   const busyRef = React.useRef<string>()
+  const commitsRef = React.useRef<GitLogCommit[]>([])
+  const commitTotalRef = React.useRef<number>()
   const diffRef = React.useRef("")
   const fileSelectionInitialized = React.useRef(false)
+  const hasMoreCommitsRef = React.useRef(true)
+  const loadedCommitCountRef = React.useRef(gitLogPageSize)
+  const loadingMoreCommitsRef = React.useRef(false)
   const stateFingerprintRef = React.useRef("")
 
   const refresh = React.useCallback(
@@ -108,15 +135,28 @@ function useGitController(root?: string, workspace?: WorkspaceClient) {
       if (!root || !workspace) return
       if (!options.quiet) setLoading(true)
       try {
-        const [nextStatus, nextCommits] = await Promise.all([
+        const [nextStatus, nextCommits, nextCommitTotal] = await Promise.all([
           workspace.gitStatus({ root }),
-          workspace.gitLog({ root, limit: 250 }),
+          workspace.gitLog({ root, limit: loadedCommitCountRef.current }),
+          gitCommitTotal(root, workspace),
         ])
         const nextFingerprint = gitStateFingerprint(nextStatus, nextCommits)
         const stateChanged = nextFingerprint !== stateFingerprintRef.current
         stateFingerprintRef.current = nextFingerprint
+        loadedCommitCountRef.current = Math.max(
+          gitLogPageSize,
+          nextCommits.length
+        )
+        hasMoreCommitsRef.current = moreGitCommitsAvailable(
+          nextCommits.length,
+          loadedCommitCountRef.current,
+          nextCommitTotal
+        )
+        commitTotalRef.current = nextCommitTotal
         setStatus(nextStatus)
         setCommits(nextCommits)
+        setCommitTotal(nextCommitTotal)
+        setHasMoreCommits(hasMoreCommitsRef.current)
         setSelected((current) =>
           resolveSelection(current, nextStatus, nextCommits)
         )
@@ -137,6 +177,7 @@ function useGitController(root?: string, workspace?: WorkspaceClient) {
 
   React.useEffect(() => {
     fileSelectionInitialized.current = false
+    loadedCommitCountRef.current = gitLogPageSize
     stateFingerprintRef.current = ""
   }, [root])
 
@@ -145,8 +186,20 @@ function useGitController(root?: string, workspace?: WorkspaceClient) {
   }, [busy])
 
   React.useEffect(() => {
+    commitsRef.current = commits
+  }, [commits])
+
+  React.useEffect(() => {
     diffRef.current = diff
   }, [diff])
+
+  React.useEffect(() => {
+    hasMoreCommitsRef.current = hasMoreCommits
+  }, [hasMoreCommits])
+
+  React.useEffect(() => {
+    loadingMoreCommitsRef.current = loadingMoreCommits
+  }, [loadingMoreCommits])
 
   React.useEffect(() => {
     return startGitStateMonitor(
@@ -204,6 +257,24 @@ function useGitController(root?: string, workspace?: WorkspaceClient) {
     [refresh, root, workspace]
   )
 
+  const loadMoreCommits = React.useCallback(
+    () =>
+      loadMoreGitCommits({
+        commitTotalRef,
+        root,
+        workspace,
+        commitsRef,
+        hasMoreCommitsRef,
+        loadingMoreCommitsRef,
+        loadedCommitCountRef,
+        setCommits,
+        setError,
+        setHasMoreCommits,
+        setLoadingMoreCommits,
+      }),
+    [root, workspace]
+  )
+
   return {
     busy,
     commit: () =>
@@ -218,6 +289,7 @@ function useGitController(root?: string, workspace?: WorkspaceClient) {
         )
       ),
     commitMessage,
+    commitTotal,
     commitPush: () =>
       runAction(
         "Committing and pushing",
@@ -243,7 +315,10 @@ function useGitController(root?: string, workspace?: WorkspaceClient) {
         "Git add",
         gitAddFileAction(path, setSelected, setSelectedFilePaths)
       ),
+    hasMoreCommits,
+    loadMoreCommits,
     loading,
+    loadingMoreCommits,
     query,
     refresh: () => void refresh(),
     rollbackFile: (path: string) =>
@@ -378,12 +453,67 @@ async function gitMonitorFingerprint(root: string, workspace: WorkspaceClient) {
   return gitStateFingerprint(status, commits)
 }
 
+async function gitCommitTotal(root: string, workspace: WorkspaceClient) {
+  if (!workspace.gitCommitCount) return undefined
+  return workspace.gitCommitCount({ root })
+}
+
+function moreGitCommitsAvailable(
+  loadedCount: number,
+  requestedCount: number,
+  totalCount: number | undefined
+) {
+  if (totalCount === undefined) return loadedCount >= requestedCount
+  return loadedCount < totalCount
+}
+
 function gitStateFingerprint(status: GitStatusResult, commits: GitLogCommit[]) {
   return JSON.stringify({
     branch: status.branch,
     files: status.files,
     head: commits[0]?.hash ?? "",
   })
+}
+
+async function loadMoreGitCommits(input: LoadMoreGitCommitsInput) {
+  const { root, workspace } = input
+  if (!root || !workspace || !canLoadMoreGitCommits(input)) return
+  input.loadingMoreCommitsRef.current = true
+  input.setLoadingMoreCommits(true)
+  try {
+    const nextCommits = await workspace.gitLog({
+      root,
+      limit: gitLogPageSize,
+      skip: input.commitsRef.current.length,
+    })
+    input.setCommits((current) => appendGitCommits(current, nextCommits))
+    input.loadedCommitCountRef.current += nextCommits.length
+    input.hasMoreCommitsRef.current = moreGitCommitsAvailable(
+      input.loadedCommitCountRef.current,
+      input.loadedCommitCountRef.current,
+      input.commitTotalRef.current
+    )
+    if (nextCommits.length === 0) input.hasMoreCommitsRef.current = false
+    input.setHasMoreCommits(input.hasMoreCommitsRef.current)
+  } catch (error) {
+    input.setError(errorText(error))
+  } finally {
+    input.loadingMoreCommitsRef.current = false
+    input.setLoadingMoreCommits(false)
+  }
+}
+
+function canLoadMoreGitCommits(input: LoadMoreGitCommitsInput) {
+  return input.hasMoreCommitsRef.current && !input.loadingMoreCommitsRef.current
+}
+
+function appendGitCommits(
+  current: GitLogCommit[],
+  nextCommits: GitLogCommit[]
+) {
+  const hashes = new Set(current.map((commit) => commit.hash))
+  const uniqueCommits = nextCommits.filter((commit) => !hashes.has(commit.hash))
+  return [...current, ...uniqueCommits]
 }
 
 function loadSelectionDiff(

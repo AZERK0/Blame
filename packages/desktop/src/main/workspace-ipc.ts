@@ -123,6 +123,7 @@ type WorkspaceSearchInput = WorkspacePathInput & {
 type GitLogInput = {
   limit?: number;
   root: string;
+  skip?: number;
 };
 
 type GitPathInput = {
@@ -298,6 +299,10 @@ export function registerWorkspaceIpcHandlers() {
   );
   ipcMain.handle("workspace:git-status", (_event, input: { root: string }) =>
     gitStatus(input.root),
+  );
+  ipcMain.handle(
+    "workspace:git-commit-count",
+    (_event, input: { root: string }) => gitCommitCount(input.root),
   );
   ipcMain.handle("workspace:git-log", (_event, input: GitLogInput) =>
     gitLog(input),
@@ -516,19 +521,35 @@ async function gitStatus(root: string) {
 
 async function gitLog(input: GitLogInput) {
   const cwd = resolveRuntimePath(input.root);
-  const limit = Math.max(1, Math.min(input.limit ?? 200, 500));
+  const limit = Math.max(1, Math.min(input.limit ?? 200, 5_000));
+  const skip = Math.max(0, input.skip ?? 0);
   try {
     const { stdout } = await runRuntimeGit(cwd, [
       "log",
       "--all",
       "--decorate=short",
       `--max-count=${limit}`,
+      `--skip=${skip}`,
       "--date=iso-strict",
       "--pretty=format:%H%x1f%P%x1f%an%x1f%ae%x1f%ad%x1f%D%x1f%s%x1e",
     ]);
     return parseGitLog(stdout);
   } catch {
     return [];
+  }
+}
+
+async function gitCommitCount(root: string) {
+  const cwd = resolveRuntimePath(root);
+  try {
+    const { stdout } = await runRuntimeGit(cwd, [
+      "rev-list",
+      "--all",
+      "--count",
+    ]);
+    return Number(stdout.trim()) || 0;
+  } catch {
+    return 0;
   }
 }
 
