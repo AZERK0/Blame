@@ -8,6 +8,7 @@ export type {
   BacklogStatusPipSnapshot,
   GitBranchStatus,
   GitCommandResult,
+  GitConflictFile,
   GitLogCommit,
   GitLogCommitRef,
   GitStatusFile,

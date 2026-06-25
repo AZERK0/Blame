@@ -98,6 +98,16 @@ const api: BlameDesktopApi = {
       ipcRenderer.invoke("workspace:git-file-diff", input),
     gitCommitDiff: (input) =>
       ipcRenderer.invoke("workspace:git-commit-diff", input),
+    gitConflictFile: (input) =>
+      ipcRenderer.invoke("workspace:git-conflict-file", input),
+    gitAcceptConflictFile: (input) =>
+      ipcRenderer.invoke("workspace:git-accept-conflict-file", input),
+    gitResolveConflictFile: (input) =>
+      ipcRenderer.invoke("workspace:git-resolve-conflict-file", input),
+    gitAbortConflict: (input) =>
+      ipcRenderer.invoke("workspace:git-abort-conflict", input),
+    gitContinueConflict: (input) =>
+      ipcRenderer.invoke("workspace:git-continue-conflict", input),
     gitStageFiles: (input) =>
       ipcRenderer.invoke("workspace:git-stage-files", input),
     gitUnstageFiles: (input) =>

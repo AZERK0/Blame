@@ -132,6 +132,19 @@ type GitPathInput = {
   staged?: boolean;
 };
 
+type GitConflictFileInput = {
+  path: string;
+  root: string;
+};
+
+type GitAcceptConflictFileInput = GitConflictFileInput & {
+  side: "current" | "incoming";
+};
+
+type GitResolveConflictFileInput = GitConflictFileInput & {
+  content?: string;
+};
+
 type GitCommitDiffInput = {
   hash: string;
   root: string;
@@ -313,6 +326,27 @@ export function registerWorkspaceIpcHandlers() {
   ipcMain.handle(
     "workspace:git-commit-diff",
     (_event, input: GitCommitDiffInput) => gitCommitDiff(input),
+  );
+  ipcMain.handle(
+    "workspace:git-conflict-file",
+    (_event, input: GitConflictFileInput) => gitConflictFile(input),
+  );
+  ipcMain.handle(
+    "workspace:git-accept-conflict-file",
+    (_event, input: GitAcceptConflictFileInput) => gitAcceptConflictFile(input),
+  );
+  ipcMain.handle(
+    "workspace:git-resolve-conflict-file",
+    (_event, input: GitResolveConflictFileInput) =>
+      gitResolveConflictFile(input),
+  );
+  ipcMain.handle(
+    "workspace:git-abort-conflict",
+    (_event, input: { root: string }) => gitAbortConflict(input.root),
+  );
+  ipcMain.handle(
+    "workspace:git-continue-conflict",
+    (_event, input: { root: string }) => gitContinueConflict(input.root),
   );
   ipcMain.handle("workspace:git-stage-files", (_event, input: GitFilesInput) =>
     gitStageFiles(input),
@@ -589,12 +623,98 @@ async function gitCommitDiff(input: GitCommitDiffInput) {
   }
 }
 
+async function gitConflictFile(input: GitConflictFileInput) {
+  const cwd = resolveRuntimePath(input.root);
+  const path = gitWorkspacePath(input.path);
+  return {
+    base: await gitConflictStage(cwd, path, 1),
+    current: await gitConflictStage(cwd, path, 2),
+    incoming: await gitConflictStage(cwd, path, 3),
+    path,
+    result: await gitConflictResult(cwd, path),
+  };
+}
+
+async function gitAcceptConflictFile(input: GitAcceptConflictFileInput) {
+  const cwd = resolveRuntimePath(input.root);
+  const path = gitWorkspacePath(input.path);
+  await runRuntimeGit(cwd, [
+    "checkout",
+    input.side === "current" ? "--ours" : "--theirs",
+    "--",
+    path,
+  ]);
+  await runRuntimeGit(cwd, ["add", "--", path]);
+  return true;
+}
+
+async function gitResolveConflictFile(input: GitResolveConflictFileInput) {
+  const cwd = resolveRuntimePath(input.root);
+  const path = gitWorkspacePath(input.path);
+  if (input.content !== undefined) {
+    await writeRuntimeFile(joinWorkspacePath(cwd, path), input.content);
+  }
+  await runRuntimeGit(cwd, ["add", "--", path]);
+  return true;
+}
+
+async function gitAbortConflict(root: string) {
+  const cwd = resolveRuntimePath(root);
+  return gitConflictCommand(cwd, [
+    ["merge", "--abort"],
+    ["rebase", "--abort"],
+    ["cherry-pick", "--abort"],
+    ["revert", "--abort"],
+  ]);
+}
+
+async function gitContinueConflict(root: string) {
+  const cwd = resolveRuntimePath(root);
+  return gitConflictCommand(cwd, [
+    ["-c", "core.editor=true", "merge", "--continue"],
+    ["-c", "core.editor=true", "rebase", "--continue"],
+    ["-c", "core.editor=true", "cherry-pick", "--continue"],
+    ["-c", "core.editor=true", "revert", "--continue"],
+  ]);
+}
+
 async function gitStageFiles(input: GitFilesInput) {
   const cwd = resolveRuntimePath(input.root);
   const paths = gitWorkspacePaths(input.paths);
   if (paths.length === 0) return false;
   await runRuntimeGit(cwd, ["add", "--", ...paths]);
   return true;
+}
+
+async function gitConflictStage(cwd: string, path: string, stage: number) {
+  try {
+    const { stdout } = await runRuntimeGit(cwd, ["show", `:${stage}:${path}`]);
+    return stdout;
+  } catch {
+    return "";
+  }
+}
+
+async function gitConflictResult(cwd: string, path: string) {
+  try {
+    return await readRuntimeFile(joinWorkspacePath(cwd, path));
+  } catch {
+    return "";
+  }
+}
+
+async function gitConflictCommand(cwd: string, commands: string[][]) {
+  let lastError: unknown;
+  for (const command of commands) {
+    try {
+      const result = await runRuntimeGit(cwd, command);
+      return { output: result.stdout || result.stderr };
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  if (lastError instanceof Error) throw lastError;
+  throw new Error("Unable to complete Git conflict command");
 }
 
 async function gitUnstageFiles(input: GitFilesInput) {
@@ -714,6 +834,7 @@ function gitStatusFile(
   worktreeStatus: string,
 ) {
   return {
+    conflicted: gitStatusConflicted(indexStatus, worktreeStatus),
     indexStatus,
     originalPath,
     path,
@@ -740,13 +861,19 @@ function gitStatusUnstaged(indexStatus: string, worktreeStatus: string) {
 
 function gitFileStatus(indexStatus: string, worktreeStatus: string) {
   if (indexStatus === "?" && worktreeStatus === "?") return "untracked";
-  if (indexStatus === "U" || worktreeStatus === "U") return "conflict";
+  if (gitStatusConflicted(indexStatus, worktreeStatus)) return "conflict";
   const status = indexStatus !== " " ? indexStatus : worktreeStatus;
   if (status === "A") return "added";
   if (status === "D") return "deleted";
   if (status === "R") return "renamed";
   if (status === "C") return "copied";
   return "modified";
+}
+
+function gitStatusConflicted(indexStatus: string, worktreeStatus: string) {
+  return ["DD", "AU", "UD", "UA", "DU", "AA", "UU"].includes(
+    `${indexStatus}${worktreeStatus}`,
+  );
 }
 
 function parseGitLog(output: string) {

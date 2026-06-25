@@ -218,6 +218,7 @@ export type GitBranchStatus = {
 }
 
 export type GitStatusFile = {
+  conflicted?: boolean
   indexStatus: string
   originalPath?: string
   path: string
@@ -250,6 +251,14 @@ export type GitLogCommit = {
 
 export type GitCommandResult = {
   output: string
+}
+
+export type GitConflictFile = {
+  base: string
+  current: string
+  incoming: string
+  path: string
+  result: string
 }
 
 export type ProjectSetupEvent = {
@@ -364,6 +373,22 @@ export type WorkspaceClient = {
     staged?: boolean
   }): Promise<string>
   gitCommitDiff(input: { root: string; hash: string }): Promise<string>
+  gitConflictFile(input: {
+    root: string
+    path: string
+  }): Promise<GitConflictFile>
+  gitAcceptConflictFile(input: {
+    root: string
+    path: string
+    side: "current" | "incoming"
+  }): Promise<boolean>
+  gitResolveConflictFile(input: {
+    root: string
+    path: string
+    content?: string
+  }): Promise<boolean>
+  gitAbortConflict(input: { root: string }): Promise<GitCommandResult>
+  gitContinueConflict(input: { root: string }): Promise<GitCommandResult>
   gitStageFiles(input: { root: string; paths: string[] }): Promise<boolean>
   gitUnstageFiles(input: { root: string; paths: string[] }): Promise<boolean>
   gitRollbackFiles(input: { root: string; paths: string[] }): Promise<boolean>

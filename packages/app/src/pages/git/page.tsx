@@ -3,11 +3,13 @@ import { toast } from "sonner"
 
 import type {
   GitLogCommit,
+  GitStatusFile,
   GitStatusResult,
   WorkspaceClient,
 } from "@/context/platform"
 import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
+import { GitConflictDialog } from "@/components/git/git-conflict-dialog"
 import { GitHistoryPanel } from "@/components/git/git-history-panel"
 import { GitInspectorPanel } from "@/components/git/git-inspector-panel"
 import { GitWorkspacePanel } from "@/components/git/git-workspace-panel"
@@ -47,6 +49,26 @@ export function GitPage() {
   const projects = useProjects()
   const root = projects.activeProject?.path
   const git = useGitController(root, platform.workspace)
+  const conflicts = React.useMemo(
+    () => gitConflictFiles(git.status),
+    [git.status]
+  )
+  const conflictFingerprint = React.useMemo(
+    () => gitConflictFingerprint(conflicts),
+    [conflicts]
+  )
+  const [conflictDialogOpen, setConflictDialogOpen] = React.useState(false)
+  const openedConflictFingerprintRef = React.useRef("")
+
+  React.useEffect(() => {
+    if (conflicts.length === 0) {
+      openedConflictFingerprintRef.current = ""
+      return
+    }
+    if (openedConflictFingerprintRef.current === conflictFingerprint) return
+    openedConflictFingerprintRef.current = conflictFingerprint
+    setConflictDialogOpen(true)
+  }, [conflictFingerprint, conflicts.length])
 
   if (!root || !platform.workspace) return <GitUnavailable />
 
@@ -98,6 +120,15 @@ export function GitPage() {
           status={git.status}
         />
       </div>
+      <GitConflictDialog
+        conflicts={conflicts}
+        open={conflictDialogOpen}
+        root={root}
+        workspace={platform.workspace}
+        onError={git.setError}
+        onOpenChange={setConflictDialogOpen}
+        onRefresh={git.refresh}
+      />
     </div>
   )
 }
@@ -320,7 +351,7 @@ function useGitController(root?: string, workspace?: WorkspaceClient) {
     loading,
     loadingMoreCommits,
     query,
-    refresh: () => void refresh(),
+    refresh,
     rollbackFile: (path: string) =>
       runAction(
         "Rolling back file",
@@ -337,6 +368,7 @@ function useGitController(root?: string, workspace?: WorkspaceClient) {
     selectFiles: (paths: string[]) =>
       setSelectedFilePaths((current) => addFilePaths(current, paths)),
     status,
+    setError,
     clearFileSelection: () => setSelectedFilePaths(new Set()),
     unselectFile: (path: string) =>
       setSelectedFilePaths((current) => removeFilePaths(current, [path])),
@@ -456,6 +488,20 @@ async function gitMonitorFingerprint(root: string, workspace: WorkspaceClient) {
 async function gitCommitTotal(root: string, workspace: WorkspaceClient) {
   if (!workspace.gitCommitCount) return undefined
   return workspace.gitCommitCount({ root })
+}
+
+function gitConflictFiles(status: GitStatusResult | undefined) {
+  return (
+    status?.files.filter(
+      (file) => file.conflicted || file.status === "conflict"
+    ) ?? []
+  )
+}
+
+function gitConflictFingerprint(conflicts: GitStatusFile[]) {
+  return conflicts
+    .map((file) => `${file.indexStatus}${file.worktreeStatus}:${file.path}`)
+    .join("\n")
 }
 
 function moreGitCommitsAvailable(
@@ -696,6 +742,8 @@ async function prepareSelectedFiles(
   status: GitStatusResult | undefined,
   selectedFilePaths: ReadonlySet<string>
 ) {
+  if (gitConflictFiles(status).length > 0)
+    throw new Error("Resolve merge conflicts before committing")
   const pathsToStage = selectedStatusPaths(status, selectedFilePaths)
   const pathsToUnstage = unselectedStagedPaths(status, selectedFilePaths)
   if (pathsToStage.length === 0)

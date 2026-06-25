@@ -95,6 +95,10 @@ export function GitWorkspacePanel({
   const selectedCount =
     status?.files.filter((file) => selectedFilePaths.has(file.path)).length ?? 0
   const hasChanges = changes.length + unversioned.length > 0
+  const hasConflicts =
+    status?.files.some(
+      (file) => file.conflicted || file.status === "conflict"
+    ) ?? false
   const disabled = Boolean(busy)
   const [pendingAction, setPendingAction] =
     React.useState<PendingFileAction | null>(null)
@@ -162,7 +166,8 @@ export function GitWorkspacePanel({
         </ScrollArea>
         <CommitComposer
           busy={busy}
-          canCommit={selectedCount > 0}
+          canCommit={selectedCount > 0 && !hasConflicts}
+          hasConflicts={hasConflicts}
           hasChanges={hasChanges}
           message={commitMessage}
           onChange={onCommitMessageChange}
@@ -825,6 +830,7 @@ function fileActionButtonLabel(action: PendingFileAction) {
 function CommitComposer({
   busy,
   canCommit,
+  hasConflicts,
   hasChanges,
   message,
   onChange,
@@ -833,6 +839,7 @@ function CommitComposer({
 }: {
   busy?: string
   canCommit: boolean
+  hasConflicts: boolean
   hasChanges: boolean
   message: string
   onChange(value: string): void
@@ -850,8 +857,8 @@ function CommitComposer({
     >
       <Textarea
         className="min-h-24 resize-none font-mono text-xs"
-        disabled={!hasChanges}
-        placeholder={hasChanges ? "Commit message" : "No changes to commit"}
+        disabled={!hasChanges || hasConflicts}
+        placeholder={commitMessagePlaceholder(hasChanges, hasConflicts)}
         value={message}
         onChange={(event) => onChange(event.target.value)}
       />
@@ -875,18 +882,30 @@ function CommitComposer({
           Commit & Push
         </Button>
       </div>
-      <CommitHint busy={busy} canCommit={canCommit} hasChanges={hasChanges} />
+      <CommitHint
+        busy={busy}
+        canCommit={canCommit}
+        hasChanges={hasChanges}
+        hasConflicts={hasConflicts}
+      />
     </div>
   )
+}
+
+function commitMessagePlaceholder(hasChanges: boolean, hasConflicts: boolean) {
+  if (hasConflicts) return "Resolve conflicts first"
+  return hasChanges ? "Commit message" : "No changes to commit"
 }
 
 function CommitHint({
   busy,
   canCommit,
+  hasConflicts,
   hasChanges,
 }: {
   busy?: string
   canCommit: boolean
+  hasConflicts: boolean
   hasChanges: boolean
 }) {
   if (busy)
@@ -894,6 +913,12 @@ function CommitHint({
   if (!hasChanges)
     return (
       <div className="text-xs text-muted-foreground">No changes to commit.</div>
+    )
+  if (hasConflicts)
+    return (
+      <div className="text-xs text-muted-foreground">
+        Resolve conflicts before committing.
+      </div>
     )
   if (!canCommit)
     return (
