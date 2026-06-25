@@ -1145,8 +1145,6 @@ async function cleanupMergedStory(
 
 function inactiveStoryFields(): UserStoryUpdate {
   return {
-    agentModelId: null,
-    agentProviderId: null,
     agentStatus: null,
     branch: null,
     clineSessionId: null,
