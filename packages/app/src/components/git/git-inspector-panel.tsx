@@ -16,7 +16,11 @@ import {
   normalizeDiffs,
   parseGitDiff,
 } from "@/components/backlog/development/development-workspace"
-import { DevelopmentDiffView } from "@/components/backlog/development/development-diff-view"
+import {
+  DevelopmentDiffView,
+  DiffStats,
+} from "@/components/backlog/development/development-diff-view"
+import { DevelopmentScrollArea } from "@/components/backlog/development/development-scroll-area"
 import { GitBranchIcon, GitCommitIcon, GitPullRequestIcon } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -257,14 +261,25 @@ function DiffStack({ diffs }: { diffs: ReturnType<typeof parseGitDiff> }) {
     <div className="h-full min-h-0 overflow-y-auto p-3">
       <div className="flex max-w-full min-w-0 flex-col gap-3">
         {diffs.map((diff) => (
-          <div
-            className="h-[calc(100vh-var(--header-height)-13rem)] min-h-64 max-w-full min-w-0 overflow-hidden rounded-md border"
-            key={diff.file}
-          >
-            <DevelopmentDiffView diff={diff} scroll title={diff.file} />
-          </div>
+          <DiffCard diff={diff} key={diff.file} />
         ))}
       </div>
+    </div>
+  )
+}
+
+function DiffCard({ diff }: { diff: ReturnType<typeof parseGitDiff>[number] }) {
+  return (
+    <div className="max-w-full min-w-0 overflow-hidden rounded-md border">
+      <div className="flex min-w-0 items-center gap-2 border-b bg-background/95 px-4 py-2 backdrop-blur">
+        <span className="truncate font-medium">{diff.file}</span>
+        <DiffStats diff={diff} />
+      </div>
+      <DevelopmentScrollArea className="max-h-[32rem] w-full min-w-0 max-w-full">
+        <div className="w-max min-w-full">
+          <DevelopmentDiffView diff={diff} scroll={false} />
+        </div>
+      </DevelopmentScrollArea>
     </div>
   )
 }
