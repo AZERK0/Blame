@@ -7,8 +7,10 @@ import type {
   GitStatusResult,
   WorkspaceClient,
 } from "@/context/platform"
+import { useCloudAuth } from "@/context/cloud-auth"
 import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
+import { useModelSelection } from "@/components/model/model-selector"
 import { GitConflictDialog } from "@/components/git/git-conflict-dialog"
 import { GitHistoryPanel } from "@/components/git/git-history-panel"
 import { GitInspectorPanel } from "@/components/git/git-inspector-panel"
@@ -19,6 +21,7 @@ import {
   gitFileSelection,
 } from "@/components/git/git-types"
 import { Button } from "@/components/ui/button"
+import { projectCodePractices } from "@/lib/project-code-practices"
 
 type GitAction = (root: string, workspace: WorkspaceClient) => Promise<unknown>
 type GitRefreshOptions = {
@@ -45,8 +48,10 @@ const gitMonitorFocusDelayMs = 250
 const gitLogPageSize = 100
 
 export function GitPage() {
+  const auth = useCloudAuth()
   const platform = usePlatform()
   const projects = useProjects()
+  const alternativeSelection = useModelSelection({ role: "alternative" })
   const root = projects.activeProject?.path
   const git = useGitController(root, platform.workspace)
   const conflicts = React.useMemo(
@@ -58,7 +63,81 @@ export function GitPage() {
     [conflicts]
   )
   const [conflictDialogOpen, setConflictDialogOpen] = React.useState(false)
+  const [conflictAgentResolving, setConflictAgentResolving] =
+    React.useState(false)
   const openedConflictFingerprintRef = React.useRef("")
+  const resolveConflictsWithAgent = React.useCallback(async () => {
+    const validationError = resolveMergeConflictsValidationError(
+      auth,
+      platform,
+      root,
+      alternativeSelection.currentModel,
+      conflicts
+    )
+    if (validationError) {
+      toast.error("Unable to resolve conflicts with AI", {
+        description: validationError,
+        position: "bottom-right",
+      })
+      return
+    }
+    const toastId = "git-ai-merge-conflict-resolution"
+    setConflictAgentResolving(true)
+    git.setError("")
+    toast.loading("Resolving conflicts with AI", {
+      id: toastId,
+      position: "bottom-right",
+    })
+    try {
+      const codePractices = await projectCodePractices(auth, projects)
+      const result = await platform.agent!.resolveMergeConflicts({
+        apiConnection: auth.apiConnection,
+        providerId: alternativeSelection.currentModel!.provider.id,
+        modelId: alternativeSelection.currentModel!.id,
+        credentialLabel: alternativeSelection.currentModel!.credentialLabel,
+        reasoningEffort: alternativeSelection.currentVariant,
+        repositoryRoot: root!,
+        worktree: root!,
+        targetBranch: git.status?.branch.current,
+        title: "Resolve Git merge conflicts",
+        summary: `Resolve ${conflicts.length} conflicted file${conflicts.length > 1 ? "s" : ""} in the active repository.`,
+        codePractices,
+      })
+      await git.refresh({ quiet: true })
+      if (result.resolved) {
+        setConflictDialogOpen(false)
+        toast.success("Merge conflicts resolved", {
+          id: toastId,
+          position: "bottom-right",
+        })
+      } else {
+        toast.error("AI could not resolve every conflict", {
+          description: result.conflicts.join(", "),
+          id: toastId,
+          position: "bottom-right",
+        })
+      }
+    } catch (error) {
+      const message = errorText(error)
+      git.setError(message)
+      toast.error("AI conflict resolution failed", {
+        description: message,
+        id: toastId,
+        position: "bottom-right",
+      })
+    } finally {
+      setConflictAgentResolving(false)
+    }
+  }, [
+    alternativeSelection.currentModel,
+    alternativeSelection.currentVariant,
+    auth,
+    conflicts,
+    git,
+    platform,
+    projects,
+    root,
+  ])
 
   React.useEffect(() => {
     if (conflicts.length === 0) {
@@ -121,6 +200,7 @@ export function GitPage() {
         />
       </div>
       <GitConflictDialog
+        agentResolving={conflictAgentResolving}
         conflicts={conflicts}
         open={conflictDialogOpen}
         root={root}
@@ -128,6 +208,7 @@ export function GitPage() {
         onError={git.setError}
         onOpenChange={setConflictDialogOpen}
         onRefresh={git.refresh}
+        onResolveWithAgent={resolveConflictsWithAgent}
       />
     </div>
   )
@@ -502,6 +583,22 @@ function gitConflictFingerprint(conflicts: GitStatusFile[]) {
   return conflicts
     .map((file) => `${file.indexStatus}${file.worktreeStatus}:${file.path}`)
     .join("\n")
+}
+
+function resolveMergeConflictsValidationError(
+  auth: ReturnType<typeof useCloudAuth>,
+  platform: ReturnType<typeof usePlatform>,
+  root: string | undefined,
+  model: unknown,
+  conflicts: GitStatusFile[]
+) {
+  if (!root) return "Unable to resolve the active project."
+  if (conflicts.length === 0) return "There are no merge conflicts to resolve."
+  if (auth.status !== "authenticated")
+    return "Reconnect the provider before resolving conflicts."
+  if (!model) return "Select a model before resolving conflicts."
+  if (!platform.agent?.resolveMergeConflicts)
+    return "Desktop agent runtime is not available."
 }
 
 function moreGitCommitsAvailable(

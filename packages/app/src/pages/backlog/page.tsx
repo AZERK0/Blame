@@ -46,7 +46,7 @@ import {
   type Platform,
 } from "@/context/platform"
 import { useProjects } from "@/context/projects"
-import { createCloudApi } from "@/lib/cloud-api"
+import { projectCodePractices } from "@/lib/project-code-practices"
 import {
   projectInitializing,
   useProjectInitialization,
@@ -939,16 +939,6 @@ async function runPromptOptimizer(request: OptimizeUserStoryPromptRequest) {
       workspaceRoot: request.projectPath!,
     })
   return result.markdown
-}
-
-function projectCodePractices(
-  auth: ReturnType<typeof useCloudAuth>,
-  projects: ReturnType<typeof useProjects>
-) {
-  if (!projects.activeProject) return Promise.resolve([])
-  return createCloudApi(auth.apiConnection)
-    .projectInitialization(projects.activeProject.id)
-    .then((snapshot) => snapshot.practices)
 }
 
 type CheckInitializationImpactInput = {

@@ -179,6 +179,26 @@ export type ApproveAndMergeResult = {
   targetBranch: string
 }
 
+export type ResolveMergeConflictsInput = {
+  apiConnection: ApiConnection
+  providerId: string
+  modelId: string
+  credentialLabel?: string
+  reasoningEffort?: ReasoningEffort
+  repositoryRoot: string
+  worktree: string
+  title?: string
+  summary?: string
+  targetBranch?: string
+  codePractices?: ProjectCodePracticePreference[]
+  backend?: AgentBackendConfig
+}
+
+export type ResolveMergeConflictsResult = {
+  conflicts: string[]
+  resolved: boolean
+}
+
 export type SendSessionInput = {
   sessionId: string
   prompt: string

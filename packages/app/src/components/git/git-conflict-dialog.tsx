@@ -9,6 +9,7 @@ import {
   CheckCircle2Icon,
   GitMergeIcon,
   RotateCcwIcon,
+  SparklesIcon,
   XCircleIcon,
 } from "lucide-react"
 import { toast } from "sonner"
@@ -57,18 +58,22 @@ type MergeDocument = {
 }
 
 export function GitConflictDialog({
+  agentResolving,
   conflicts,
   onError,
   onOpenChange,
   onRefresh,
+  onResolveWithAgent,
   open,
   root,
   workspace,
 }: {
+  agentResolving: boolean
   conflicts: GitStatusFile[]
   onError(message: string): void
   onOpenChange(open: boolean): void
   onRefresh(): Promise<void> | void
+  onResolveWithAgent(): void
   open: boolean
   root?: string
   workspace?: WorkspaceClient
@@ -112,15 +117,18 @@ export function GitConflictDialog({
           />
         </div>
         <ConflictFooter
+          agentResolving={agentResolving}
           busy={state.busy}
           canApply={Boolean(state.document && state.activePath)}
           canContinue={conflicts.length === 0 && Boolean(root && workspace)}
+          canResolveWithAgent={conflicts.length > 0}
           disabled={state.disabled}
           onAbort={actions.abort}
           onAcceptCurrent={actions.acceptCurrent}
           onAcceptIncoming={actions.acceptIncoming}
           onApply={actions.apply}
           onContinue={actions.continueGit}
+          onResolveWithAgent={onResolveWithAgent}
         />
       </DialogContent>
     </Dialog>
@@ -446,31 +454,38 @@ function MergeResultCell({
 }
 
 function ConflictFooter({
+  agentResolving,
   busy,
   canApply,
   canContinue,
+  canResolveWithAgent,
   disabled,
   onAbort,
   onAcceptCurrent,
   onAcceptIncoming,
   onApply,
   onContinue,
+  onResolveWithAgent,
 }: {
+  agentResolving: boolean
   busy?: string
   canApply: boolean
   canContinue: boolean
+  canResolveWithAgent: boolean
   disabled: boolean
   onAbort(): void
   onAcceptCurrent(): void
   onAcceptIncoming(): void
   onApply(): void
   onContinue(): void
+  onResolveWithAgent(): void
 }) {
+  const actionDisabled = disabled || agentResolving
   return (
     <DialogFooter className="mx-0 mb-0 items-center gap-2 rounded-none bg-muted/30 px-5 py-3">
       <div className="mr-auto flex min-w-0 items-center gap-2">
         <Button
-          disabled={disabled || !canApply}
+          disabled={actionDisabled || !canApply}
           type="button"
           variant="outline"
           onClick={onAcceptCurrent}
@@ -478,19 +493,21 @@ function ConflictFooter({
           Accept current
         </Button>
         <Button
-          disabled={disabled || !canApply}
+          disabled={actionDisabled || !canApply}
           type="button"
           variant="outline"
           onClick={onAcceptIncoming}
         >
           Accept incoming
         </Button>
-        {busy ? (
-          <span className="truncate text-xs text-muted-foreground">{busy}</span>
+        {busy || agentResolving ? (
+          <span className="truncate text-xs text-muted-foreground">
+            {agentResolving ? "Resolving with AI" : busy}
+          </span>
         ) : null}
       </div>
       <Button
-        disabled={disabled}
+        disabled={actionDisabled}
         type="button"
         variant="destructive"
         onClick={onAbort}
@@ -498,12 +515,25 @@ function ConflictFooter({
         <XCircleIcon />
         Abort
       </Button>
-      <Button disabled={disabled || !canApply} type="button" onClick={onApply}>
+      <Button
+        disabled={actionDisabled || !canResolveWithAgent}
+        type="button"
+        variant="outline"
+        onClick={onResolveWithAgent}
+      >
+        <SparklesIcon />
+        Resolve with AI
+      </Button>
+      <Button
+        disabled={actionDisabled || !canApply}
+        type="button"
+        onClick={onApply}
+      >
         <CheckCircle2Icon />
         Apply
       </Button>
       <Button
-        disabled={!canContinue || Boolean(busy)}
+        disabled={!canContinue || Boolean(busy) || agentResolving}
         type="button"
         onClick={onContinue}
       >

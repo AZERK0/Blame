@@ -103,6 +103,8 @@ import type {
   RepairProjectInitializationInput,
   RepairProjectInitializationResult,
   ResolveApprovalInput,
+  ResolveMergeConflictsInput,
+  ResolveMergeConflictsResult,
   SaveProviderCredentialInput,
   SendDevelopmentSessionInput,
   SendSessionInput,
@@ -138,6 +140,10 @@ const runtimeArtifactPathspecs = runtimeArtifactPaths.map(
 );
 const productionLogger = createProductionLogger();
 const openAICompatibleProviderID = "openai-compatible";
+
+type MergeConflictRuntimeInput =
+  | ApproveAndMergeInput
+  | ResolveMergeConflictsInput;
 const attachmentDirectoryName = ".blame/attachments";
 
 type ToolApprovalRequest = {
@@ -331,6 +337,9 @@ export class BlameAgentRuntime {
 
   approveAndMerge = (input: ApproveAndMergeInput) =>
     this.approveAndMergeStory(input);
+
+  resolveMergeConflicts = (input: ResolveMergeConflictsInput) =>
+    this.resolveWorkspaceMergeConflicts(input);
 
   async shutdown() {
     const sessionIds = await this.activeSessionIds();
@@ -980,7 +989,7 @@ export class BlameAgentRuntime {
     } catch (error) {
       if (!(await hasMergeConflicts(input.worktree))) throw error;
     }
-    await this.resolveMergeConflicts(
+    await this.resolveMergeConflictsWithAgent(
       input,
       targetBranch,
       approveMergeLogPath(input.worktree),
@@ -992,10 +1001,38 @@ export class BlameAgentRuntime {
     await git(input.worktree, ["commit", "--no-edit"]);
   }
 
-  private async resolveMergeConflicts(
-    input: ApproveAndMergeInput,
+  private async resolveWorkspaceMergeConflicts(
+    input: ResolveMergeConflictsInput,
+  ): Promise<ResolveMergeConflictsResult> {
+    assertRepositoryPath(input.repositoryRoot, "repositoryRoot");
+    assertRepositoryPath(input.worktree, "worktree");
+    const logFile = mergeConflictLogPath(input.worktree);
+    await appendLog(logFile, "merge conflict resolution requested", {
+      providerId: input.providerId,
+      modelId: input.modelId,
+      reasoningEffort: input.reasoningEffort,
+      repositoryRoot: input.repositoryRoot,
+      worktree: input.worktree,
+    });
+    await assertGitRepository(input.repositoryRoot);
+    await assertGitRepository(input.worktree);
+    const targetBranch =
+      input.targetBranch || (await currentGitBranch(input.worktree)) || "HEAD";
+    await this.resolveMergeConflictsWithAgent(
+      input,
+      targetBranch,
+      logFile,
+      false,
+    );
+    const conflicts = await mergeConflictFiles(input.worktree);
+    return { conflicts, resolved: conflicts.length === 0 };
+  }
+
+  private async resolveMergeConflictsWithAgent(
+    input: MergeConflictRuntimeInput,
     targetBranch: string,
     logFile: string,
+    throwOnUnresolved = true,
   ) {
     let conflicts = await mergeConflictFiles(input.worktree);
     for (
@@ -1016,12 +1053,12 @@ export class BlameAgentRuntime {
       });
       if (failure && conflicts.length) throw new Error(failure);
     }
-    if (conflicts.length)
+    if (conflicts.length && throwOnUnresolved)
       throw new Error(unresolvedMergeConflictMessage(conflicts));
   }
 
   private async runMergeConflictAgent(
-    input: ApproveAndMergeInput,
+    input: MergeConflictRuntimeInput,
     targetBranch: string,
     attempt: number,
     logFile: string,
@@ -1928,7 +1965,7 @@ function commitMessageConfig(
 }
 
 function mergeConflictConfig(
-  input: ApproveAndMergeInput,
+  input: MergeConflictRuntimeInput,
   credential: { apiKey: string; baseUrl: string | null },
 ) {
   return appendProductionConfig({
@@ -2637,7 +2674,7 @@ function isString(value: unknown): value is string {
 }
 
 async function mergeConflictPrompt(
-  input: ApproveAndMergeInput,
+  input: MergeConflictRuntimeInput,
   targetBranch: string,
   attempt: number,
 ) {
@@ -2645,12 +2682,18 @@ async function mergeConflictPrompt(
     storyStatus(input.worktree, "--short"),
     git(input.worktree, ["diff", "--name-only", "--diff-filter=U"]),
   ]);
+  const title = input.title || "Current Git merge conflict";
+  const summary = input.summary || "Resolve the active merge conflicts.";
+  const storyBranch =
+    "storyBranch" in input && input.storyBranch
+      ? input.storyBranch
+      : await currentGitBranch(input.worktree);
   return [
-    `Backlog item: ${input.title}`,
+    `Backlog item: ${title}`,
     "",
-    input.summary,
+    summary,
     "",
-    `Story branch: ${input.storyBranch}`,
+    `Story branch: ${storyBranch || "HEAD"}`,
     `Target branch: ${targetBranch}`,
     `Resolution attempt: ${attempt} of ${maxMergeConflictResolutionAttempts}`,
     "",
@@ -2795,6 +2838,10 @@ function truncateText(value: string, limit: number) {
 
 function approveMergeLogPath(worktree: string) {
   return join(worktree, ".blame", "logs", "approve-merge.log");
+}
+
+function mergeConflictLogPath(worktree: string) {
+  return join(worktree, ".blame", "logs", "merge-conflicts.log");
 }
 
 function approveMergeContext(input: ApproveAndMergeInput) {

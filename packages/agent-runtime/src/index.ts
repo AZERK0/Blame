@@ -62,6 +62,8 @@ export type {
   ReasoningEffort,
   RepairProjectInitializationInput,
   RepairProjectInitializationResult,
+  ResolveMergeConflictsInput,
+  ResolveMergeConflictsResult,
   ResolveApprovalInput,
   SaveOAuthCredentialInput,
   SaveProviderCredentialInput,

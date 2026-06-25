@@ -18,6 +18,8 @@ import type {
   RepairProjectInitializationInput,
   RepairProjectInitializationResult,
   ResolveApprovalInput,
+  ResolveMergeConflictsInput,
+  ResolveMergeConflictsResult,
   SaveProviderCredentialInput,
   SendDevelopmentSessionInput,
   SendSessionInput,
@@ -196,6 +198,9 @@ export type AgentClient = {
     ): Promise<OptimizeUserStoryPromptResult>
   }
   approveAndMerge(input: ApproveAndMergeInput): Promise<ApproveAndMergeResult>
+  resolveMergeConflicts(
+    input: ResolveMergeConflictsInput
+  ): Promise<ResolveMergeConflictsResult>
 }
 
 export type WorkspaceEntry = {

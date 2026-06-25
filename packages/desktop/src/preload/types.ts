@@ -17,6 +17,8 @@ import type {
   RepairProjectInitializationInput,
   RepairProjectInitializationResult,
   ResolveApprovalInput,
+  ResolveMergeConflictsInput,
+  ResolveMergeConflictsResult,
   SaveProviderCredentialInput,
   SendDevelopmentSessionInput,
   SendSessionInput,
@@ -372,5 +374,8 @@ export type BlameDesktopApi = {
     approveAndMerge(
       input: ApproveAndMergeInput,
     ): Promise<ApproveAndMergeResult>;
+    resolveMergeConflicts(
+      input: ResolveMergeConflictsInput,
+    ): Promise<ResolveMergeConflictsResult>;
   };
 };
