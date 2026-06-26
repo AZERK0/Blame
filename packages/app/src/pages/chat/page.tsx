@@ -82,7 +82,6 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Separator } from "@/components/ui/separator"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
@@ -620,7 +619,7 @@ function QuickChatProjectPage() {
 
   return (
     <>
-      <div className="flex h-[calc(100svh_-_var(--header-height))] min-h-0 min-w-0 flex-col overflow-hidden bg-background p-3 md:h-[calc(100svh_-_var(--header-height)_-_1rem)]">
+      <div className="flex h-[calc(100svh_-_var(--header-height))] min-h-0 min-w-0 flex-col overflow-hidden p-4 md:h-[calc(100svh_-_var(--header-height)_-_1rem)] lg:p-6">
         <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 xl:grid-cols-[18rem_minmax(0,1fr)]">
           <QuickChatHistoryPanel
             activeId={activeConversation?.id}
@@ -739,8 +738,8 @@ function QuickChatHistoryPanel({
   onCreate: () => void
 }) {
   return (
-    <aside className="hidden min-h-0 min-w-0 flex-col overflow-hidden rounded-3xl bg-input/35 shadow-xl ring-1 shadow-black/10 ring-foreground/15 backdrop-blur-xl xl:flex">
-      <div className="flex items-center justify-between gap-3 px-4 py-4">
+    <aside className="hidden min-h-0 min-w-0 flex-col overflow-hidden rounded-lg border bg-muted/30 shadow-xl ring-1 shadow-black/10 ring-foreground/15 xl:flex">
+      <div className="flex items-center justify-between gap-3 border-b bg-muted/30 px-4 py-4">
         <div className="min-w-0">
           <h2 className="truncate text-sm font-semibold">Quick chats</h2>
           <p className="truncate text-xs text-muted-foreground">
@@ -758,8 +757,7 @@ function QuickChatHistoryPanel({
           <PlusIcon />
         </Button>
       </div>
-      <Separator />
-      <ScrollArea className="min-h-0 flex-1">
+      <ScrollArea className="min-h-0 flex-1 bg-foreground/5 dark:bg-background">
         <div className="grid gap-2 p-3">
           {conversations.map((conversation) => (
             <QuickChatHistoryItem
@@ -791,10 +789,10 @@ function QuickChatHistoryItem({
     >
       <button
         className={cn(
-          "grid min-w-0 gap-2 rounded-xl border p-3 text-left text-sm transition-colors",
+          "grid min-w-0 gap-2 rounded-lg border p-3 text-left text-sm ring-1 ring-foreground/10 transition-colors",
           active
             ? "border-blue-500/40 bg-blue-500/10"
-            : "border-transparent bg-background/45 hover:border-border hover:bg-background/70"
+            : "border-transparent bg-white! hover:border-border hover:bg-white! dark:bg-neutral-900! dark:hover:bg-neutral-900!"
         )}
         onClick={() => conversationActions.onSelect(conversation.id)}
         type="button"

@@ -64,7 +64,7 @@ export function BacklogColumn({
   stories: UserStory[]
 }) {
   return (
-    <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-lg border bg-muted/30">
+    <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-lg border bg-muted/30 shadow-xl ring-1 shadow-black/10 ring-foreground/15">
       <BacklogColumnHeader
         column={column}
         count={stories.length}
@@ -116,7 +116,7 @@ export function BacklogColumnHeader({
   queueInitializing?: boolean
 }) {
   return (
-    <div className="flex items-start justify-between gap-3 border-b p-4">
+    <div className="flex items-start justify-between gap-3 border-b bg-muted/30 p-4">
       <div className="flex min-w-0 items-start gap-2.5">
         <span
           className={cn(

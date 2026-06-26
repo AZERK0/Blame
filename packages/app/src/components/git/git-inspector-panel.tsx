@@ -46,7 +46,7 @@ export function GitInspectorPanel({
   )
 
   return (
-    <aside className="flex min-h-[34rem] min-w-0 flex-col bg-background xl:min-h-0">
+    <aside className="flex min-h-[34rem] min-w-0 flex-col overflow-hidden rounded-lg border bg-muted/30 shadow-xl ring-1 shadow-black/10 ring-foreground/15 xl:min-h-0">
       <InspectorHeader
         commits={commits}
         diffLoading={diffLoading}
@@ -54,7 +54,7 @@ export function GitInspectorPanel({
         selected={selected}
         status={status}
       />
-      <div className="min-h-0 flex-1">
+      <div className="min-h-0 flex-1 bg-foreground/5 dark:bg-background">
         {diffLoading ? <DiffSkeleton /> : null}
         {!diffLoading && selected ? <DiffStack diffs={diffs} /> : null}
         {!diffLoading && !selected ? (
@@ -108,7 +108,7 @@ function CommitHeader({
   diffs: ReturnType<typeof parseGitDiff>
 }) {
   return (
-    <div className="flex min-w-0 flex-col gap-2 border-b px-3 py-3">
+    <div className="flex min-w-0 flex-col gap-2 border-b bg-muted/30 px-3 py-3">
       <div className="flex min-w-0 items-center gap-2">
         <GitCommitIcon className="size-4 shrink-0 text-muted-foreground" />
         <span className="truncate font-medium">
@@ -191,7 +191,7 @@ function FileHeader({
   selected: Extract<GitSelection, { type: "file" }>
 }) {
   return (
-    <div className="flex min-w-0 flex-col gap-2 border-b px-3 py-3">
+    <div className="flex min-w-0 flex-col gap-2 border-b bg-muted/30 px-3 py-3">
       <div className="flex min-w-0 items-center gap-2">
         <GitPullRequestIcon className="size-4 shrink-0 text-muted-foreground" />
         <div className="min-w-0 flex-1">
@@ -213,7 +213,7 @@ function FileHeader({
 
 function OverviewHeader({ status }: { status?: GitStatusResult }) {
   return (
-    <div className="flex min-w-0 items-center gap-2 border-b px-3 py-3">
+    <div className="flex min-w-0 items-center gap-2 border-b bg-muted/30 px-3 py-3">
       <GitBranchIcon className="size-4 shrink-0 text-muted-foreground" />
       <div className="min-w-0">
         <div className="truncate font-medium">
@@ -271,7 +271,7 @@ function DiffStack({ diffs }: { diffs: ReturnType<typeof parseGitDiff> }) {
 function DiffCard({ diff }: { diff: ReturnType<typeof parseGitDiff>[number] }) {
   return (
     <div className="max-w-full min-w-0 overflow-hidden rounded-md border">
-      <div className="flex min-w-0 items-center gap-2 border-b bg-background/95 px-4 py-2 backdrop-blur">
+      <div className="flex min-w-0 items-center gap-2 border-b bg-muted/30 px-4 py-2">
         <span className="truncate font-medium">{diff.file}</span>
         <DiffStats diff={diff} />
       </div>

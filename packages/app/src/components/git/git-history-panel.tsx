@@ -59,7 +59,7 @@ export function GitHistoryPanel({
   }, [canLoadMoreHistory, commits.length, loadingMore, onLoadMore])
 
   return (
-    <main className="flex min-h-[34rem] min-w-0 flex-col border-b bg-background xl:min-h-0 xl:border-r xl:border-b-0">
+    <main className="flex min-h-[34rem] min-w-0 flex-col xl:min-h-0">
       <HistoryToolbar
         loadedCount={commits.length}
         total={commitTotal}
@@ -107,7 +107,7 @@ function HistoryToolbar({
   total?: number
 }) {
   return (
-    <div className="flex min-w-0 items-center gap-3 border-b px-3 py-2">
+    <div className="flex min-w-0 items-center gap-3 px-3 py-2">
       <div className="relative min-w-0 flex-1">
         <SearchIcon className="pointer-events-none absolute top-1/2 left-2 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
