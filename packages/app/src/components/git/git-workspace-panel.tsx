@@ -110,7 +110,7 @@ export function GitWorkspacePanel({
 
   return (
     <>
-      <aside className="flex min-h-[34rem] min-w-0 flex-col overflow-hidden rounded-lg border bg-muted/30 shadow-xl ring-1 shadow-black/10 ring-foreground/15 xl:min-h-0">
+      <aside className="flex min-h-[34rem] min-w-0 flex-col overflow-hidden rounded-2xl border bg-card shadow-xl ring-1 shadow-black/10 ring-foreground/10 xl:min-h-0">
         <WorkspaceHeader
           loading={loading}
           onRefresh={onRefresh}
@@ -124,7 +124,7 @@ export function GitWorkspacePanel({
           onClearSelection={onClearSelection}
           onSelectAll={onSelectAll}
         />
-        <ScrollArea className="min-h-0 flex-1 bg-foreground/5 dark:bg-background">
+        <ScrollArea className="min-h-0 flex-1 bg-muted/10 dark:bg-muted/20">
           {loading && !status ? <WorkspaceSkeleton /> : null}
           {status ? (
             <div className="flex min-w-0 flex-col gap-2 p-3">
@@ -216,7 +216,7 @@ function WorkspaceHeader({
   status?: GitStatusResult
 }) {
   return (
-    <div className="flex min-w-0 items-center gap-2 border-b bg-muted/30 px-3 py-2">
+    <div className="flex min-w-0 items-center gap-2 border-b bg-muted/20 px-3 py-2">
       <GitBranchIcon className="size-4 shrink-0 text-muted-foreground" />
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm font-medium">
@@ -275,7 +275,7 @@ function WorkspaceActions({
   const allSelected = fileCount > 0 && selectedCount === fileCount
 
   return (
-    <div className="flex items-center gap-2 border-b bg-muted/30 px-3 py-2">
+    <div className="flex items-center gap-2 border-b bg-muted/20 px-3 py-2">
       <Badge variant="outline">{selectedCount} selected</Badge>
       <Badge variant="outline">{unversionedCount} unversioned</Badge>
       <div className="ml-auto flex items-center gap-1">
@@ -866,7 +866,7 @@ function CommitComposer({
   return (
     <div
       className={cn(
-        "flex shrink-0 flex-col gap-2 border-t bg-muted/30 p-3",
+        "flex shrink-0 flex-col gap-2 border-t bg-muted/20 p-3",
         !hasChanges && "opacity-70"
       )}
     >
