@@ -641,10 +641,6 @@ function QuickChatProjectPage() {
           <main className="relative flex min-h-0 min-w-0 flex-col overflow-hidden">
             <div className="pointer-events-none absolute top-0 right-3 left-0 z-20 pb-10 md:pb-12">
               <div
-                className="absolute inset-0 backdrop-blur-sm"
-                style={topSoftBlurMask}
-              />
-              <div
                 className="absolute inset-0 backdrop-blur-xl"
                 style={topStrongBlurMask}
               />
