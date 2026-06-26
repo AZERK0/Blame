@@ -15,11 +15,11 @@ import {
 import { useCloudAuth } from "@/context/cloud-auth"
 import {
   CircleHelpIcon,
-  ClipboardCheckIcon,
+  ClipboardCheckIcon, CloudUploadIcon,
   GitBranchIcon,
   MessageCircleIcon,
   SearchIcon,
-  Settings2Icon,
+  Settings2Icon, ShieldCheckIcon,
   Table2Icon,
   UsersIcon,
 } from "lucide-react"
@@ -66,9 +66,14 @@ const data = {
       icon: <ClipboardCheckIcon />,
     },
     {
-      title: "Team",
-      url: "/team",
-      icon: <UsersIcon />,
+      title: "Security Audit",
+      url: "/security",
+      icon: <ShieldCheckIcon />,
+    },
+    {
+      title: "Deploy",
+      url: "/deploy",
+      icon: <CloudUploadIcon />,
     },
   ],
 }

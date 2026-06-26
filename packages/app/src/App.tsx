@@ -37,7 +37,8 @@ const routes = [
   { path: "/chats", title: "Chats", element: <ChatPage /> },
   { path: "/git", title: "Git", element: <GitPage /> },
   { path: "/practices", title: "Code Practices", element: <PracticesPage /> },
-  { path: "/team", title: "Team", element: <RoutePage title="Team" /> },
+  { path: "/security", title: "Security Audit", element: <RoutePage title="Security Audit" /> },
+  { path: "/deploy", title: "Deploy", element: <RoutePage title="Deploy" /> },
   {
     path: "/data-library",
     title: "Data Library",
