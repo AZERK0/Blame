@@ -16,6 +16,17 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 
+const historyToolbarSoftBlurMask = {
+  maskImage:
+    "linear-gradient(to bottom, black 0%, black 60%, transparent 100%)",
+  WebkitMaskImage:
+    "linear-gradient(to bottom, black 0%, black 60%, transparent 100%)",
+} satisfies React.CSSProperties
+const historyToolbarStrongBlurMask = {
+  maskImage: "linear-gradient(to bottom, black 0%, transparent 72%)",
+  WebkitMaskImage: "linear-gradient(to bottom, black 0%, transparent 72%)",
+} satisfies React.CSSProperties
+
 export function GitHistoryPanel({
   commits,
   commitTotal,
@@ -59,15 +70,27 @@ export function GitHistoryPanel({
   }, [canLoadMoreHistory, commits.length, loadingMore, onLoadMore])
 
   return (
-    <main className="flex min-h-[34rem] min-w-0 flex-col xl:min-h-0">
-      <HistoryToolbar
-        loadedCount={commits.length}
-        total={commitTotal}
-        hasMore={canLoadMoreHistory}
-        query={query}
-        onQueryChange={onQueryChange}
-      />
-      <ScrollArea className="min-h-0 flex-1" ref={scrollAreaRef}>
+    <main className="relative flex min-h-[34rem] min-w-0 flex-col xl:min-h-0">
+      <div className="absolute top-0 right-3 left-0 z-10 overflow-hidden pb-8">
+        <div
+          className="absolute inset-0 backdrop-blur-sm"
+          style={historyToolbarSoftBlurMask}
+        />
+        <div
+          className="absolute inset-0 backdrop-blur-2xl backdrop-saturate-150"
+          style={historyToolbarStrongBlurMask}
+        />
+        <div className="relative">
+          <HistoryToolbar
+            loadedCount={commits.length}
+            total={commitTotal}
+            hasMore={canLoadMoreHistory}
+            query={query}
+            onQueryChange={onQueryChange}
+          />
+        </div>
+      </div>
+      <ScrollArea className="min-h-0 flex-1 pt-14" ref={scrollAreaRef}>
         {loading && commits.length === 0 ? <HistorySkeleton /> : null}
         {!loading && !loadingMore && filtered.length === 0 ? (
           <HistoryEmpty query={query} />
