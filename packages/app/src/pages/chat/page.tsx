@@ -88,6 +88,24 @@ import { projectCodePractices } from "@/lib/project-code-practices"
 import { cn } from "@/lib/utils"
 
 const agentEventPersistDelayMs = 1_500
+const topSoftBlurMask = {
+  maskImage: "linear-gradient(to bottom, black 0%, black 60%, transparent 100%)",
+  WebkitMaskImage:
+    "linear-gradient(to bottom, black 0%, black 60%, transparent 100%)",
+} satisfies React.CSSProperties
+const topStrongBlurMask = {
+  maskImage: "linear-gradient(to bottom, black 0%, transparent 72%)",
+  WebkitMaskImage: "linear-gradient(to bottom, black 0%, transparent 72%)",
+} satisfies React.CSSProperties
+const bottomSoftBlurMask = {
+  maskImage: "linear-gradient(to top, black 0%, black 60%, transparent 100%)",
+  WebkitMaskImage:
+    "linear-gradient(to top, black 0%, black 60%, transparent 100%)",
+} satisfies React.CSSProperties
+const bottomStrongBlurMask = {
+  maskImage: "linear-gradient(to top, black 0%, transparent 72%)",
+  WebkitMaskImage: "linear-gradient(to top, black 0%, transparent 72%)",
+} satisfies React.CSSProperties
 
 type QuickChatDevelopmentSessionInput = {
   codeAttachments: PendingCodeSelectionAttachment[]
@@ -618,21 +636,33 @@ function QuickChatProjectPage() {
 
   return (
     <>
-      <div className="flex h-[calc(100svh_-_var(--header-height))] min-h-0 min-w-0 flex-col overflow-hidden p-4 md:h-[calc(100svh_-_var(--header-height)_-_1rem)] lg:p-6">
-        <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_18rem]">
-          <main className="flex min-h-0 min-w-0 flex-col overflow-hidden">
-            <QuickChatHeader
-              activeId={activeConversation?.id}
-              branchName={branchName}
-              changeCount={gitStatus?.files.length}
-              conversationActions={conversationActions}
-              conversations={quickChats.chats}
-              projectName={project?.name ?? "Project"}
-              projectPath={project?.path ?? ""}
-              onCreate={createConversation}
-            />
+      <div className="flex h-[calc(100svh_-_var(--header-height))] min-h-0 min-w-0 flex-col overflow-hidden md:h-[calc(100svh_-_var(--header-height)_-_1rem)]">
+        <div className="grid min-h-0 flex-1 grid-cols-1 gap-2 xl:grid-cols-[minmax(0,1fr)_18rem]">
+          <main className="relative flex min-h-0 min-w-0 flex-col overflow-hidden">
+            <div className="pointer-events-none absolute top-0 right-3 left-0 z-20 pb-10 md:pb-12">
+              <div
+                className="absolute inset-0 backdrop-blur-sm"
+                style={topSoftBlurMask}
+              />
+              <div
+                className="absolute inset-0 backdrop-blur-xl"
+                style={topStrongBlurMask}
+              />
+              <div className="pointer-events-auto relative">
+                <QuickChatHeader
+                  activeId={activeConversation?.id}
+                  branchName={branchName}
+                  changeCount={gitStatus?.files.length}
+                  conversationActions={conversationActions}
+                  conversations={quickChats.chats}
+                  projectName={project?.name ?? "Project"}
+                  projectPath={project?.path ?? ""}
+                  onCreate={createConversation}
+                />
+              </div>
+            </div>
             <ScrollArea className="min-h-0 flex-1">
-              <div className="mx-auto grid w-full max-w-5xl gap-10 px-4 py-8 md:px-8">
+              <div className="mx-auto grid w-full max-w-5xl gap-10 px-4 pt-24 pb-48 md:px-8 md:pt-28">
                 <QuickChatStatus
                   error={quickChats.error}
                   loading={quickChats.loading}
@@ -660,50 +690,62 @@ function QuickChatProjectPage() {
                 <div ref={feedEndRef} />
               </div>
             </ScrollArea>
-            <div className="p-3 md:p-5">
-              <div className="mx-auto max-w-5xl">
-                <AgentConversationComposer
-                  codeSelectionAttachments={draftCodeAttachments}
-                  disabled={sending || agentRunning || !project}
-                  editorKey={draftEditorKey}
-                  editorRef={draftRef}
-                  fileAttachments={pendingFileAttachments(draftFileAttachments)}
-                  mentionDirectory={mentionDirectory}
-                  message={draft}
-                  onCodeSelectionAttachmentRemove={(id) =>
-                    setDraftCodeAttachments((current) =>
-                      current.filter((attachment) => attachment.id !== id)
-                    )
-                  }
-                  onFileAttachmentRemove={(id) =>
-                    setDraftFileAttachments((current) =>
-                      current.filter((attachment) => attachment.id !== id)
-                    )
-                  }
-                  onFileAttachmentsAdd={(attachments) =>
-                    setDraftFileAttachments((current) => [
-                      ...current,
-                      ...attachments,
-                    ])
-                  }
-                  onFileLinkClick={(path) =>
-                    openProjectPath(project?.path, path, platform.openPath)
-                  }
-                  onMessageChange={setDraft}
-                  onMessageSubmit={submitDraft}
-                  placeholder={
-                    agentRunning
-                      ? "Agent is working in the current branch."
-                      : "Ask for a focused code change"
-                  }
-                  submitLabel={agentRunning ? "Running" : "Send"}
-                  title="Message agent"
-                  toolbarEnd={
-                    <div className="w-[28rem] max-w-full min-w-0">
-                      <ModelSelector role="agent" />
-                    </div>
-                  }
-                />
+            <div className="pointer-events-none absolute right-3 bottom-0 left-0 z-20 pt-10 md:pt-12">
+              <div
+                className="absolute inset-0 backdrop-blur-sm"
+                style={bottomSoftBlurMask}
+              />
+              <div
+                className="absolute inset-0 backdrop-blur-xl"
+                style={bottomStrongBlurMask}
+              />
+              <div className="pointer-events-auto relative p-3 md:p-5">
+                <div className="mx-auto max-w-5xl">
+                  <AgentConversationComposer
+                    codeSelectionAttachments={draftCodeAttachments}
+                    disabled={sending || agentRunning || !project}
+                    editorKey={draftEditorKey}
+                    editorRef={draftRef}
+                    fileAttachments={pendingFileAttachments(
+                      draftFileAttachments
+                    )}
+                    mentionDirectory={mentionDirectory}
+                    message={draft}
+                    onCodeSelectionAttachmentRemove={(id) =>
+                      setDraftCodeAttachments((current) =>
+                        current.filter((attachment) => attachment.id !== id)
+                      )
+                    }
+                    onFileAttachmentRemove={(id) =>
+                      setDraftFileAttachments((current) =>
+                        current.filter((attachment) => attachment.id !== id)
+                      )
+                    }
+                    onFileAttachmentsAdd={(attachments) =>
+                      setDraftFileAttachments((current) => [
+                        ...current,
+                        ...attachments,
+                      ])
+                    }
+                    onFileLinkClick={(path) =>
+                      openProjectPath(project?.path, path, platform.openPath)
+                    }
+                    onMessageChange={setDraft}
+                    onMessageSubmit={submitDraft}
+                    placeholder={
+                      agentRunning
+                        ? "Agent is working in the current branch."
+                        : "Ask for a focused code change"
+                    }
+                    submitLabel={agentRunning ? "Running" : "Send"}
+                    title="Message agent"
+                    toolbarEnd={
+                      <div className="w-[28rem] max-w-full min-w-0">
+                        <ModelSelector role="agent" />
+                      </div>
+                    }
+                  />
+                </div>
               </div>
             </div>
           </main>
@@ -737,7 +779,7 @@ function QuickChatHistoryPanel({
   onCreate: () => void
 }) {
   return (
-    <aside className="hidden min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border bg-card shadow-xl ring-1 shadow-black/10 ring-foreground/10 xl:flex">
+    <aside className="hidden min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border bg-card my-4 mr-4 shadow-xl ring-1 shadow-black/10 ring-foreground/10 xl:flex">
       <div className="flex items-center justify-between gap-3 border-b bg-muted/20 px-4 py-4">
         <div className="min-w-0">
           <h2 className="truncate text-sm font-semibold">Quick chats</h2>
