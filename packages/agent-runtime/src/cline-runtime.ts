@@ -397,6 +397,14 @@ export class BlameAgentRuntime {
     return current ?? this.core();
   }
 
+  private attachedSession(sessionId: string | null | undefined) {
+    const normalizedSessionId = sessionId?.trim();
+    if (!normalizedSessionId) return undefined;
+    if (!this.sessionContexts.has(normalizedSessionId)) return undefined;
+    if (!this.unsubscribers.has(normalizedSessionId)) return undefined;
+    return { sessionId: normalizedSessionId };
+  }
+
   private telemetry() {
     if (!this.telemetryHandle) {
       this.telemetryHandle = createProductionTelemetry(productionLogger);
@@ -443,7 +451,8 @@ export class BlameAgentRuntime {
       }
       const cline = await this.core(input.backend);
       await appendLog(startLogFile, "cline core ready");
-      const sessionId = createBlameSessionId();
+      const requestedSessionId = input.sessionId?.trim();
+      const sessionId = requestedSessionId || createBlameSessionId();
       const sessionLogFile = sessionLogPath(input.cwd, sessionId);
       await this.subscribeSession(sessionId, input.backend);
       this.sessionBackendKeys.set(sessionId, backendKey(input.backend));
@@ -460,6 +469,9 @@ export class BlameAgentRuntime {
       const autoSendPrompt = input.autoSendPrompt !== false;
       const startInput = {
         ...(autoSendPrompt ? { prompt: input.prompt } : {}),
+        ...(input.initialMessages?.length
+          ? { initialMessages: input.initialMessages }
+          : {}),
         ...(autoSendPrompt && input.userImages?.length
           ? { userImages: input.userImages }
           : {}),
@@ -650,6 +662,22 @@ export class BlameAgentRuntime {
   private async readMessages(sessionId: string) {
     const cline = await this.sessionCore(sessionId);
     return cline.readMessages(sessionId);
+  }
+
+  private async resumeMessages(
+    sessionId: string | null | undefined,
+    backend?: AgentBackendConfig,
+  ) {
+    const normalizedSessionId = sessionId?.trim();
+    if (!normalizedSessionId) return undefined;
+    try {
+      const messages = await (await this.core(backend)).readMessages(
+        normalizedSessionId,
+      );
+      return messages.length ? messages : undefined;
+    } catch {
+      return undefined;
+    }
   }
 
   private async readUsage(
@@ -1502,6 +1530,19 @@ export class BlameAgentRuntime {
   }
 
   private async startDevelopmentSession(input: StartDevelopmentSessionInput) {
+    const attachedSession = this.attachedSession(input.resumeSessionId);
+    if (attachedSession) {
+      await this.logSession(
+        attachedSession.sessionId,
+        "development session reused",
+      );
+      return attachedSession;
+    }
+    const resumeSessionId = input.resumeSessionId?.trim();
+    const initialMessages =
+      input.autoSendPrompt === false
+        ? await this.resumeMessages(resumeSessionId, input.backend)
+        : undefined;
     const developmentInput = await developmentUserInput(
       input,
       newAttachmentDirectory(input.cwd),
@@ -1515,6 +1556,8 @@ export class BlameAgentRuntime {
       contextCompressionMode: input.contextCompressionMode,
       autoApproveWriteTools: true,
       autoSendPrompt: input.autoSendPrompt !== false,
+      sessionId: initialMessages?.length ? resumeSessionId : undefined,
+      initialMessages,
       mode: "act",
       maxIterations: input.maxIterations ?? developmentMaxIterations(),
       prompt: developmentInput.prompt,

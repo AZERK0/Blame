@@ -360,6 +360,57 @@ export function BacklogPage() {
     },
     [platform, updateStory]
   )
+  const startStoryDevelopmentSession = React.useCallback(
+    async (
+      story: UserStory,
+      input: {
+        feedback?: string
+        feedbackCodeSelectionAttachments?: UserStoryCodeSelectionAttachment[]
+        feedbackFileAttachments?: UserStoryFileAttachment[]
+        resumeSessionId?: string | null
+        worktree: string
+      }
+    ) => {
+      if (auth.status !== "authenticated")
+        throw new Error("Reconnect the selected provider.")
+      const agent = platform.agent
+      if (!agent) throw new Error("Desktop agent runtime is not available.")
+      const providerId =
+        agentSelection.currentModel?.provider.id ?? story.agentProviderId
+      const modelId = agentSelection.currentModel?.id ?? story.agentModelId
+      if (!providerId || !modelId)
+        throw new Error("Select a model before resuming this user story.")
+      return agent.sessions.startDevelopment({
+        apiConnection: auth.apiConnection,
+        providerId,
+        modelId,
+        credentialLabel: agentSelection.currentModel?.credentialLabel,
+        reasoningEffort: agentSelection.currentVariant,
+        contextCompressionMode: agentSelection.contextCompressionMode,
+        autoSendPrompt: false,
+        title: story.title,
+        summary: story.summary,
+        codeSelectionAttachments: story.codeSelectionAttachments ?? [],
+        fileAttachments: story.fileAttachments ?? [],
+        feedback: input.feedback,
+        feedbackCodeSelectionAttachments:
+          input.feedbackCodeSelectionAttachments,
+        feedbackFileAttachments: input.feedbackFileAttachments,
+        resumeSessionId: input.resumeSessionId,
+        cwd: input.worktree,
+        workspaceRoot: input.worktree,
+        codePractices: await projectCodePractices(auth, projects),
+      })
+    },
+    [
+      auth,
+      agentSelection.contextCompressionMode,
+      agentSelection.currentModel,
+      agentSelection.currentVariant,
+      platform.agent,
+      projects,
+    ]
+  )
   const unpauseAgent = React.useCallback(
     async (story: UserStory) => {
       if (!story.worktree) {
@@ -384,30 +435,15 @@ export function BacklogPage() {
         })
         return story
       }
-      const codePractices = await projectCodePractices(auth, projects)
       const feedback = resumeAgentFeedback(
         story,
         await currentDiffSummary(story, platform)
       )
-      const session =
-        (await resumableClineSession(agent, story.clineSessionId)) ??
-        (await agent.sessions.startDevelopment({
-          apiConnection: auth.apiConnection,
-          providerId: agentSelection.currentModel.provider.id,
-          modelId: agentSelection.currentModel.id,
-          credentialLabel: agentSelection.currentModel.credentialLabel,
-          reasoningEffort: agentSelection.currentVariant,
-          contextCompressionMode: agentSelection.contextCompressionMode,
-          autoSendPrompt: false,
-          title: story.title,
-          summary: story.summary,
-          codeSelectionAttachments: story.codeSelectionAttachments ?? [],
-          fileAttachments: story.fileAttachments ?? [],
-          feedback,
-          cwd: story.worktree,
-          workspaceRoot: story.worktree,
-          codePractices,
-        }))
+      const session = await startStoryDevelopmentSession(story, {
+        feedback,
+        resumeSessionId: story.clineSessionId,
+        worktree: story.worktree,
+      })
       if (!session) {
         toast.error("Unable to resume agent", {
           description: "Desktop agent runtime is not available.",
@@ -463,10 +499,8 @@ export function BacklogPage() {
       auth,
       backlog,
       platform,
-      projects,
       agentSelection.currentModel,
-      agentSelection.currentVariant,
-      agentSelection.contextCompressionMode,
+      startStoryDevelopmentSession,
       updateStory,
       persistAgentEvent,
     ]
@@ -504,7 +538,23 @@ export function BacklogPage() {
         })
         return story
       }
-      const sessionId = story.clineSessionId
+      let session: { sessionId: string }
+      try {
+        session = await startStoryDevelopmentSession(story, {
+          feedback,
+          feedbackCodeSelectionAttachments: codeSelectionAttachments ?? [],
+          feedbackFileAttachments: fileAttachments ?? [],
+          resumeSessionId: story.clineSessionId,
+          worktree: story.worktree,
+        })
+      } catch (error) {
+        toast.error("Unable to request changes", {
+          description: errorMessage(error),
+          position: "bottom-right",
+        })
+        return story
+      }
+      const sessionId = session.sessionId
       const run = await backlog.createAgentRun(story, {
         commentId,
         clineSessionId: sessionId,
@@ -543,7 +593,7 @@ export function BacklogPage() {
       })
       return updatedStory
     },
-    [backlog, platform, updateStory, persistAgentEvent]
+    [backlog, platform, startStoryDevelopmentSession, updateStory, persistAgentEvent]
   )
 
   const approveAndMergeStory = React.useCallback(
@@ -1384,19 +1434,6 @@ async function currentDiffSummary(story: UserStory, platform: Platform) {
     return diffSummary(diff)
   } catch {
     return ""
-  }
-}
-
-async function resumableClineSession(
-  agent: NonNullable<Platform["agent"]>,
-  sessionId: string | null | undefined
-) {
-  if (!sessionId) return undefined
-  try {
-    await agent.sessions.messages(sessionId)
-    return { sessionId }
-  } catch {
-    return undefined
   }
 }
 

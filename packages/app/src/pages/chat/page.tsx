@@ -71,6 +71,27 @@ import { cn } from "@/lib/utils"
 
 const agentEventPersistDelayMs = 1_500
 
+type QuickChatDevelopmentSessionInput = {
+  codeAttachments: PendingCodeSelectionAttachment[]
+  fileAttachments: UserStoryFileAttachment[]
+  resumeSessionId?: string | null
+  summary: string
+  title: string
+  workspace: string
+}
+
+type QuickChatPromptInput = {
+  chat: QuickChat
+  codeAttachments: PendingCodeSelectionAttachment[]
+  fileAttachments: UserStoryFileAttachment[]
+  message: QuickChatMessage
+  run: QuickChatAgentRun
+  reusedSession: boolean
+  sessionId: string
+  summary: string
+  title: string
+}
+
 export function ChatPage() {
   const projects = useProjects()
   const projectKey = projects.activeProject?.id ?? "project"
@@ -380,30 +401,20 @@ function QuickChatProjectPage() {
     fileAttachments: UserStoryFileAttachment[]
   ) {
     const workspace = project!.path
-    const agent = platform.agent!
-    const existingSession = await resumableClineSession(
-      agent,
-      chat.clineSessionId
-    )
+    const resumeSessionId = chat.clineSessionId
     const title = quickChatTitle(chat, message.body, project?.name)
-    const session =
-      existingSession ??
-      (await agent.sessions.startDevelopment({
-        apiConnection: auth.apiConnection,
-        providerId: selection.currentModel!.provider.id,
-        modelId: selection.currentModel!.id,
-        credentialLabel: selection.currentModel!.credentialLabel,
-        reasoningEffort: selection.currentVariant,
-        contextCompressionMode: selection.contextCompressionMode,
-        autoSendPrompt: false,
-        title,
-        summary: message.body,
-        codeSelectionAttachments: codeAttachments,
-        fileAttachments,
-        cwd: workspace,
-        workspaceRoot: workspace,
-        codePractices: await projectCodePractices(auth, projects),
-      }))
+    const summary = quickChatDevelopmentSummary(chat, message.body)
+    const session = await startQuickChatDevelopmentSession({
+      codeAttachments,
+      fileAttachments,
+      resumeSessionId,
+      summary,
+      title,
+      workspace,
+    })
+    const reusedSession = Boolean(
+      resumeSessionId && session.sessionId === resumeSessionId
+    )
     const activeRun = await quickChats.updateAgentRun(chat, run, {
       clineSessionId: session.sessionId,
     })
@@ -425,15 +436,38 @@ function QuickChatProjectPage() {
     })
     replaceChatRef(updatedChat)
     subscribeQuickChatAgentEvents(updatedChat, activeRun, session.sessionId)
-    sendQuickChatPrompt({
+    await sendQuickChatPrompt({
       codeAttachments,
-      existingSession: Boolean(existingSession),
       fileAttachments,
       message,
+      reusedSession,
       run: activeRun,
       sessionId: session.sessionId,
+      summary,
       title,
       chat: updatedChat,
+    })
+  }
+
+  async function startQuickChatDevelopmentSession(
+    input: QuickChatDevelopmentSessionInput
+  ) {
+    return platform.agent!.sessions.startDevelopment({
+      apiConnection: auth.apiConnection,
+      providerId: selection.currentModel!.provider.id,
+      modelId: selection.currentModel!.id,
+      credentialLabel: selection.currentModel!.credentialLabel,
+      reasoningEffort: selection.currentVariant,
+      contextCompressionMode: selection.contextCompressionMode,
+      autoSendPrompt: false,
+      title: input.title,
+      summary: input.summary,
+      codeSelectionAttachments: input.codeAttachments,
+      fileAttachments: input.fileAttachments,
+      cwd: input.workspace,
+      resumeSessionId: input.resumeSessionId,
+      workspaceRoot: input.workspace,
+      codePractices: await projectCodePractices(auth, projects),
     })
   }
 
@@ -457,43 +491,20 @@ function QuickChatProjectPage() {
         unsubscribe()
       }
     })
+    return unsubscribe
   }
 
-  function sendQuickChatPrompt(input: {
-    chat: QuickChat
-    codeAttachments: PendingCodeSelectionAttachment[]
-    existingSession: boolean
-    fileAttachments: UserStoryFileAttachment[]
-    message: QuickChatMessage
-    run: QuickChatAgentRun
-    sessionId: string
-    title: string
-  }) {
-    const sendInput = input.existingSession
-      ? {
-          feedback: input.message.body,
-          feedbackCodeSelectionAttachments: input.codeAttachments,
-          feedbackFileAttachments: input.fileAttachments,
-          feedbackOnly: true,
-          sessionId: input.sessionId,
-          summary: input.message.body,
-          title: input.title,
-        }
-      : {
-          codeSelectionAttachments: input.codeAttachments,
-          fileAttachments: input.fileAttachments,
-          sessionId: input.sessionId,
-          summary: input.message.body,
-          title: input.title,
-        }
-    void platform.agent!.sessions.sendDevelopment(sendInput).catch((error) => {
+  async function sendQuickChatPrompt(input: QuickChatPromptInput) {
+    try {
+      await platform.agent!.sessions.sendDevelopment(quickChatSendInput(input))
+    } catch (error) {
       const message = errorMessage(error)
       persistAgentEvent(input.chat, input.run, {
         payload: { message },
         sessionId: input.sessionId,
         type: "error",
       })
-    })
+    }
   }
 
   async function markAgentRunFailed(
@@ -896,6 +907,62 @@ function quickChatMessageBody(
   return ""
 }
 
+function quickChatSendInput(input: QuickChatPromptInput) {
+  if (input.reusedSession) {
+    return {
+      feedback: input.message.body,
+      feedbackCodeSelectionAttachments: input.codeAttachments,
+      feedbackFileAttachments: input.fileAttachments,
+      feedbackOnly: true,
+      sessionId: input.sessionId,
+      summary: input.summary,
+      title: input.title,
+    }
+  }
+  return {
+    codeSelectionAttachments: input.codeAttachments,
+    fileAttachments: input.fileAttachments,
+    sessionId: input.sessionId,
+    summary: input.summary,
+    title: input.title,
+  }
+}
+
+function quickChatDevelopmentSummary(chat: QuickChat, message: string) {
+  const context = quickChatResumeContext(chat)
+  if (!context.length) return message
+  return [message, "", "Existing quick chat context:", ...context].join("\n")
+}
+
+function quickChatResumeContext(chat: QuickChat) {
+  return [
+    chat.agentSessionSummary
+      ? `Previous session summary:\n${chat.agentSessionSummary}`
+      : "",
+    chat.agentFinalResponse
+      ? `Last agent response:\n${chat.agentFinalResponse}`
+      : "",
+    ...quickChatRecentMessages(chat),
+    ...quickChatRecentRunSummaries(chat),
+    chat.agentLastEvent ? `Last recorded event: ${chat.agentLastEvent}` : "",
+    chat.agentLastError ? `Previous agent error: ${chat.agentLastError}` : "",
+  ].filter(Boolean)
+}
+
+function quickChatRecentMessages(chat: QuickChat) {
+  return (chat.messages ?? []).slice(-6).map((item) => {
+    const body = item.body.trim()
+    return body ? `User message: ${body}` : ""
+  })
+}
+
+function quickChatRecentRunSummaries(chat: QuickChat) {
+  return (chat.agentRuns ?? []).slice(-3).map((run) => {
+    const summary = run.sessionSummary?.trim()
+    return summary ? `Agent run summary: ${summary}` : ""
+  })
+}
+
 function chatWithMessage(chat: QuickChat, message: QuickChatMessage) {
   return {
     ...chat,
@@ -965,19 +1032,6 @@ function openProjectPath(
   if (!openPath) return
   const target = path.startsWith("/") || !root ? path : `${root}/${path}`
   void openPath(target)
-}
-
-async function resumableClineSession(
-  agent: NonNullable<Platform["agent"]>,
-  sessionId: string | null | undefined
-) {
-  if (!sessionId) return undefined
-  try {
-    await agent.sessions.messages(sessionId)
-    return { sessionId }
-  } catch {
-    return undefined
-  }
 }
 
 function showExpiredAuthenticationToast(message: string) {

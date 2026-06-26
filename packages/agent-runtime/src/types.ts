@@ -1,3 +1,5 @@
+import type { Message } from "@cline/sdk"
+
 export type ApiConnection = {
   url: string
   token?: string | null
@@ -110,6 +112,8 @@ export type StartSessionInput = {
   mode?: AgentMode
   maxIterations?: number
   prompt: string
+  sessionId?: string | null
+  initialMessages?: Message[]
   userImages?: string[]
   userFiles?: string[]
   cwd: string
@@ -152,6 +156,7 @@ export type StartDevelopmentSessionInput = {
   feedback?: string
   feedbackCodeSelectionAttachments?: CodeSelectionAttachment[]
   feedbackFileAttachments?: FileAttachment[]
+  resumeSessionId?: string | null
   cwd: string
   workspaceRoot: string
   codePractices?: ProjectCodePracticePreference[]
