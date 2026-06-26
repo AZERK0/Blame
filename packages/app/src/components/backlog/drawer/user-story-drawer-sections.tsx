@@ -29,6 +29,16 @@ import {
 import { useProjects } from "@/context/projects"
 import { useCloudAuth } from "@/context/cloud-auth"
 
+const commentComposerSoftBlurMask = {
+  maskImage: "linear-gradient(to top, black 0%, black 60%, transparent 100%)",
+  WebkitMaskImage:
+    "linear-gradient(to top, black 0%, black 60%, transparent 100%)",
+} satisfies React.CSSProperties
+const commentComposerStrongBlurMask = {
+  maskImage: "linear-gradient(to top, black 0%, transparent 72%)",
+  WebkitMaskImage: "linear-gradient(to top, black 0%, transparent 72%)",
+} satisfies React.CSSProperties
+
 export function UserStoryContent({
   commentCodeSelectionAttachments,
   commentFileAttachments,
@@ -116,30 +126,42 @@ export function UserStoryContent({
         onFileLinkClick={onFileLinkClick}
       />
       {mode !== "create" && (
-        <AgentConversationComposer
-          codeSelectionAttachments={commentCodeSelectionAttachments}
-          disabled={status === "done"}
-          editorKey={commentEditorKey}
-          editorRef={commentRef}
-          fileAttachments={commentFileAttachments}
-          mentionDirectory={mentionDirectory}
-          message={comment}
-          onCodeSelectionAttachmentRemove={
-            onCommentCodeSelectionAttachmentRemove
-          }
-          onFileAttachmentRemove={onCommentFileAttachmentRemove}
-          onFileAttachmentsAdd={onCommentFileAttachmentsAdd}
-          onFileLinkClick={onFileLinkClick}
-          onMessageChange={onCommentChange}
-          onMessageSubmit={onCommentSubmit}
-          placeholder={
-            status === "done"
-              ? "Comments are read-only after merge."
-              : "Add a comment"
-          }
-          submitLabel={commentButtonLabel(status)}
-          title="Add a comment"
-        />
+        <div className="sticky bottom-0 z-20 -mx-6 px-6 pt-10 pb-6">
+          <div
+            className="absolute inset-0 backdrop-blur-sm"
+            style={commentComposerSoftBlurMask}
+          />
+          <div
+            className="absolute inset-0 backdrop-blur-xl"
+            style={commentComposerStrongBlurMask}
+          />
+          <div className="relative">
+            <AgentConversationComposer
+              codeSelectionAttachments={commentCodeSelectionAttachments}
+              disabled={status === "done"}
+              editorKey={commentEditorKey}
+              editorRef={commentRef}
+              fileAttachments={commentFileAttachments}
+              mentionDirectory={mentionDirectory}
+              message={comment}
+              onCodeSelectionAttachmentRemove={
+                onCommentCodeSelectionAttachmentRemove
+              }
+              onFileAttachmentRemove={onCommentFileAttachmentRemove}
+              onFileAttachmentsAdd={onCommentFileAttachmentsAdd}
+              onFileLinkClick={onFileLinkClick}
+              onMessageChange={onCommentChange}
+              onMessageSubmit={onCommentSubmit}
+              placeholder={
+                status === "done"
+                  ? "Comments are read-only after merge."
+                  : "Add a comment"
+              }
+              submitLabel={commentButtonLabel(status)}
+              title="Add a comment"
+            />
+          </div>
+        </div>
       )}
     </>
   )

@@ -284,7 +284,7 @@ export function UserStoryDrawerPanel({
         onValueChange={(value) => setTab(value as UserStoryDrawerTab)}
         className="min-h-0 flex-1 gap-0 overflow-hidden"
       >
-        <DrawerHeader className="gap-4 px-6 py-6 pr-14">
+        <DrawerHeader className="relative z-20 gap-4 overflow-hidden bg-popover/70 px-6 py-6 pr-14 backdrop-blur-xl">
           <div className="min-w-0 flex-1">
             <DrawerTitle asChild>
               <DrawerHeaderTitle
