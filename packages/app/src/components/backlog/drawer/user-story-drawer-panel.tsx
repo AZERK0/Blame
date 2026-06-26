@@ -59,8 +59,19 @@ import {
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { cn } from "@/lib/utils"
 
 const drawerSidebarStorageKey = "blame.app.user-story-drawer-sidebar-open.v1"
+const drawerHeaderSoftBlurMask = {
+  maskImage:
+    "linear-gradient(to bottom, black 0%, black 60%, transparent 100%)",
+  WebkitMaskImage:
+    "linear-gradient(to bottom, black 0%, black 60%, transparent 100%)",
+} satisfies React.CSSProperties
+const drawerHeaderStrongBlurMask = {
+  maskImage: "linear-gradient(to bottom, black 0%, transparent 72%)",
+  WebkitMaskImage: "linear-gradient(to bottom, black 0%, transparent 72%)",
+} satisfies React.CSSProperties
 
 export function UserStoryDrawerPanel({
   focusComment,
@@ -282,9 +293,25 @@ export function UserStoryDrawerPanel({
       <Tabs
         value={tab}
         onValueChange={(value) => setTab(value as UserStoryDrawerTab)}
-        className="min-h-0 flex-1 gap-0 overflow-hidden"
+        className="relative min-h-0 flex-1 gap-0 overflow-hidden"
       >
-        <DrawerHeader className="relative z-20 gap-4 overflow-hidden bg-popover/70 px-6 py-6 pr-14 backdrop-blur-xl">
+        <DrawerHeader
+          className={cn(
+            "absolute top-0 right-0 left-0 z-[15] isolate gap-4 overflow-hidden px-6 pt-6 pb-14 pr-14",
+            tab === "user-story" &&
+              sidebarAvailable &&
+              sidebarOpen &&
+              "lg:mr-[26rem]"
+          )}
+        >
+          <div
+            className="absolute inset-0 -z-10 bg-popover/20 backdrop-blur-sm"
+            style={drawerHeaderSoftBlurMask}
+          />
+          <div
+            className="absolute inset-0 -z-10 bg-popover/20 backdrop-blur-2xl backdrop-saturate-150"
+            style={drawerHeaderStrongBlurMask}
+          />
           <div className="min-w-0 flex-1">
             <DrawerTitle asChild>
               <DrawerHeaderTitle
@@ -322,7 +349,10 @@ export function UserStoryDrawerPanel({
           )}
         </DrawerHeader>
         <TabsContent value="user-story" className="min-h-0 overflow-hidden">
-          <DrawerBody sidebarOpen={sidebarAvailable && sidebarOpen}>
+          <DrawerBody
+            headerTabsVisible={hasDevelopment}
+            sidebarOpen={sidebarAvailable && sidebarOpen}
+          >
             <UserStoryContent
               commentCodeSelectionAttachments={commentCodeSelectionAttachments}
               commentFileAttachments={pendingFileAttachments(
@@ -388,7 +418,13 @@ export function UserStoryDrawerPanel({
           </DrawerBody>
         </TabsContent>
         {hasPreview && (
-          <TabsContent value="preview" className="min-h-0 overflow-hidden">
+          <TabsContent
+            value="preview"
+            className={cn(
+              "min-h-0 overflow-hidden",
+              hasDevelopment ? "pt-36" : "pt-28"
+            )}
+          >
             <UserStoryPreview
               setupInitializing={setupInitializing}
               userStory={userStory}
@@ -407,7 +443,10 @@ export function UserStoryDrawerPanel({
           </TabsContent>
         )}
         {hasDevelopment && (
-          <TabsContent value="development" className="min-h-0 overflow-hidden">
+          <TabsContent
+            value="development"
+            className="min-h-0 overflow-hidden pt-36"
+          >
             <DevelopmentContent
               key={developmentFileTarget?.id ?? "development"}
               initialFilePath={developmentFileTarget?.path}
@@ -580,14 +619,20 @@ function DrawerHeaderTitle({
 
 function DrawerBody({
   children,
+  headerTabsVisible,
   sidebarOpen,
 }: {
   children: React.ReactNode
+  headerTabsVisible: boolean
   sidebarOpen: boolean
 }) {
+  const topPaddingClassName = headerTabsVisible ? "pt-36" : "pt-28"
   const contentClassName = sidebarOpen
-    ? "mx-auto flex max-w-5xl flex-col gap-6 px-6 pt-6 pb-28 lg:mx-0 lg:mr-[26rem]"
-    : "flex w-full flex-col gap-6 px-6 pt-6 pb-28"
+    ? cn(
+        "mx-auto flex max-w-5xl flex-col gap-6 px-6 pb-28 lg:mx-0 lg:mr-[26rem]",
+        topPaddingClassName
+      )
+    : cn("flex w-full flex-col gap-6 px-6 pb-28", topPaddingClassName)
 
   return (
     <div className="relative h-full min-h-0 overflow-hidden">
@@ -608,7 +653,7 @@ function DrawerSidebarIsland({
   if (!open) return null
 
   return (
-    <div className="absolute top-4 right-4 bottom-16 z-10 h-fit w-[min(24rem,calc(100%-2rem))] overflow-hidden rounded-xl bg-input/40 shadow-xl ring-1 shadow-black/10 ring-foreground/20 backdrop-blur-xl dark:bg-muted">
+    <div className="absolute top-4 right-4 bottom-16 z-20 h-fit w-[min(24rem,calc(100%-2rem))] overflow-hidden rounded-xl bg-input/40 shadow-xl ring-1 shadow-black/10 ring-foreground/20 backdrop-blur-xl dark:bg-muted">
       <ScrollArea className="h-full min-h-0">
         <DrawerSidebar userStory={userStory} />
       </ScrollArea>
