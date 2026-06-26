@@ -1,5 +1,6 @@
 import * as React from "react"
 import {
+  ArrowUpIcon,
   BrainCircuitIcon,
   CheckCircle2Icon,
   ClipboardCheckIcon,
@@ -191,32 +192,33 @@ export function AgentConversationComposer({
         </span>
         {title}
       </div>
-      <MarkdownEditor
-        key={editorKey}
-        codeSelectionAttachments={codeSelectionAttachments}
-        fileAttachments={fileAttachments}
-        mentionDirectory={mentionDirectory}
-        ref={editorRef}
-        markdown={message}
-        onCodeSelectionAttachmentRemove={onCodeSelectionAttachmentRemove}
-        onFileAttachmentRemove={onFileAttachmentRemove}
-        onFileAttachmentsAdd={onFileAttachmentsAdd}
-        onMarkdownChange={onMessageChange}
-        onFileLinkClick={onFileLinkClick}
-        readOnly={disabled}
-        placeholder={placeholder}
-        minHeight="min-h-24"
-        toolbarEnd={toolbarEnd}
-      />
-      <div className="flex justify-end">
+      <div className="relative">
+        <MarkdownEditor
+          key={editorKey}
+          codeSelectionAttachments={codeSelectionAttachments}
+          fileAttachments={fileAttachments}
+          mentionDirectory={mentionDirectory}
+          ref={editorRef}
+          markdown={message}
+          onCodeSelectionAttachmentRemove={onCodeSelectionAttachmentRemove}
+          onFileAttachmentRemove={onFileAttachmentRemove}
+          onFileAttachmentsAdd={onFileAttachmentsAdd}
+          onMarkdownChange={onMessageChange}
+          onFileLinkClick={onFileLinkClick}
+          readOnly={disabled}
+          placeholder={placeholder}
+          minHeight="min-h-24"
+          toolbarEnd={toolbarEnd}
+        />
         <Button
-          className="border-blue-500/40 bg-blue-500/10 text-blue-700 hover:bg-blue-500/20 dark:text-blue-300"
+          aria-label={submitLabel}
+          className="absolute top-3 right-3 z-10 size-9 rounded-full border-blue-500 bg-blue-500 p-0 text-white shadow-lg shadow-blue-500/25 hover:bg-blue-600 hover:text-white disabled:border-muted disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
           disabled={disabled || !hasMessageBody}
-          variant="outline"
+          size="icon-sm"
+          type="button"
           onClick={onMessageSubmit}
         >
-          <MessageSquareIcon />
-          {submitLabel}
+          <ArrowUpIcon className="size-4" />
         </Button>
       </div>
     </section>

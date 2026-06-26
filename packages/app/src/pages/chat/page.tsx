@@ -2,12 +2,11 @@ import * as React from "react"
 import type { AgentEvent } from "@blame/agent-runtime"
 import {
   CheckCircle2Icon,
-  Clock3Icon,
   CopyIcon,
   FolderGit2Icon,
   GitBranchIcon,
   MessageCircleIcon,
-  PlusIcon,
+  MessageCirclePlusIcon,
   SendIcon,
   Trash2Icon,
 } from "lucide-react"
@@ -620,13 +619,7 @@ function QuickChatProjectPage() {
   return (
     <>
       <div className="flex h-[calc(100svh_-_var(--header-height))] min-h-0 min-w-0 flex-col overflow-hidden p-4 md:h-[calc(100svh_-_var(--header-height)_-_1rem)] lg:p-6">
-        <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 xl:grid-cols-[18rem_minmax(0,1fr)]">
-          <QuickChatHistoryPanel
-            activeId={activeConversation?.id}
-            conversationActions={conversationActions}
-            conversations={quickChats.chats}
-            onCreate={createConversation}
-          />
+        <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_18rem]">
           <main className="flex min-h-0 min-w-0 flex-col overflow-hidden">
             <QuickChatHeader
               activeId={activeConversation?.id}
@@ -667,7 +660,7 @@ function QuickChatProjectPage() {
                 <div ref={feedEndRef} />
               </div>
             </ScrollArea>
-            <div className="border-t bg-background/70 p-3 md:p-5">
+            <div className="p-3 md:p-5">
               <div className="mx-auto max-w-5xl">
                 <AgentConversationComposer
                   codeSelectionAttachments={draftCodeAttachments}
@@ -714,6 +707,12 @@ function QuickChatProjectPage() {
               </div>
             </div>
           </main>
+          <QuickChatHistoryPanel
+            activeId={activeConversation?.id}
+            conversationActions={conversationActions}
+            conversations={quickChats.chats}
+            onCreate={createConversation}
+          />
         </div>
       </div>
       <DeleteQuickChatDialog
@@ -754,7 +753,7 @@ function QuickChatHistoryPanel({
           type="button"
           variant="outline"
         >
-          <PlusIcon />
+          <MessageCirclePlusIcon />
         </Button>
       </div>
       <ScrollArea className="min-h-0 flex-1 bg-muted/10 dark:bg-muted/20">
@@ -789,24 +788,25 @@ function QuickChatHistoryItem({
     >
       <button
         className={cn(
-          "grid min-w-0 gap-2 rounded-xl border p-3 text-left text-sm ring-1 ring-foreground/10 transition-colors",
+          "grid min-w-0 gap-1.5 rounded-xl border p-2.5 text-left text-sm ring-1 ring-foreground/10 transition-colors",
           active
             ? "border-blue-500/40 bg-blue-500/10"
-            : "border-transparent bg-white! hover:border-border hover:bg-white! dark:bg-muted/25! dark:hover:bg-muted/35!"
+            : "border-border/60 bg-input/40 hover:border-border hover:bg-input/10 dark:bg-muted dark:hover:bg-muted/50"
         )}
         onClick={() => conversationActions.onSelect(conversation.id)}
         type="button"
       >
-        <span className="flex min-w-0 items-center gap-2">
-          <MessageCircleIcon className="size-4 shrink-0 text-muted-foreground" />
-          <span className="truncate font-medium">{conversation.title}</span>
+        <span className="flex min-w-0 items-start gap-2">
+          <MessageCircleIcon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+          <span className="min-w-0 flex-1 truncate font-medium">
+            {conversation.title}
+          </span>
+          <span className="shrink-0 text-xs text-muted-foreground">
+            {relativeTimeLabel(conversation.updatedAt ?? conversation.createdAt)}
+          </span>
         </span>
-        <span className="line-clamp-2 text-xs leading-snug text-muted-foreground">
+        <span className="line-clamp-1 text-xs leading-snug text-muted-foreground">
           {conversationPreview(conversation)}
-        </span>
-        <span className="flex items-center gap-1 text-xs text-muted-foreground">
-          <Clock3Icon className="size-3" />
-          {relativeTimeLabel(conversation.updatedAt ?? conversation.createdAt)}
         </span>
       </button>
     </QuickChatConversationContextMenu>
@@ -869,7 +869,7 @@ function QuickChatHeader({
           type="button"
           variant="outline"
         >
-          <PlusIcon />
+          <MessageCirclePlusIcon />
           New
         </Button>
         {conversations.map((conversation) => (
