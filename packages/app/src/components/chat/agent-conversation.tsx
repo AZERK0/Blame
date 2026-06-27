@@ -103,7 +103,8 @@ export function AgentConversationTimeline({
           {runs.map((run) => {
             const activities = agentDisplayActivities(
               run.activities ?? [],
-              run.finalResponse
+              run.finalResponse,
+              run.status
             )
             const runningToolActivityId = currentRunningToolActivityId(
               run.status,
@@ -128,12 +129,6 @@ export function AgentConversationTimeline({
                     value={`${run.id}-${node.id}`}
                   />
                 ))}
-                <AgentResponseItem
-                  activities={activities}
-                  response={run.finalResponse}
-                  responseHeader={responseHeader}
-                  onFileLinkClick={onFileLinkClick}
-                />
               </React.Fragment>
             )
           })}
@@ -589,32 +584,6 @@ function ActivityDetails({
   )
 }
 
-function AgentResponseItem({
-  activities,
-  onFileLinkClick,
-  response,
-  responseHeader,
-}: {
-  activities: UserStoryAgentActivity[]
-  onFileLinkClick?: (path: string) => void
-  response?: string | null
-  responseHeader: AgentConversationResponseHeader
-}) {
-  const markdown = response?.trim()
-  if (!markdown) return null
-  if (alreadyStreamedAgentMessage(markdown, activities)) return null
-
-  return (
-    <AgentMarkdownTimelineItem
-      highlight
-      icon={<ProviderMark provider={responseHeader.provider} />}
-      markdown={markdown}
-      onFileLinkClick={onFileLinkClick}
-      title={responseHeader.modelName ?? "Agent response"}
-    />
-  )
-}
-
 function AgentMarkdownTimelineItem({
   highlight,
   icon,
@@ -811,32 +780,27 @@ function agentMessageTitle(
 
 function agentDisplayActivities(
   activities: UserStoryAgentActivity[],
-  response?: string | null
+  response: string | null | undefined,
+  status: AgentConversationRun["status"]
 ) {
   const markdown = response?.trim()
   const last = activities.at(-1)
-  if (!markdown || last?.kind !== "message") return activities
-  if (!sameStreamingMarkdown(last.detail, markdown)) return activities
+  if (last?.kind !== "message") return activities
+  const finalDetail =
+    markdown && sameStreamingMarkdown(last.detail, markdown)
+      ? markdown
+      : last.detail
+  if (status !== "completed" && finalDetail === last.detail) return activities
   return [
     ...activities.slice(0, -1),
     {
       ...last,
-      detail: markdown,
+      detail: finalDetail,
       messageKind: "final" as const,
       status: "completed" as const,
       title: "Agent response",
     },
   ]
-}
-
-function alreadyStreamedAgentMessage(
-  markdown: string,
-  activities: UserStoryAgentActivity[]
-) {
-  return activities.some(
-    (activity) =>
-      activity.kind === "message" && sameMarkdown(markdown, activity.detail)
-  )
 }
 
 function sameStreamingMarkdown(left: string | undefined, right: string) {
@@ -854,10 +818,6 @@ function sameLeadingMarkdown(left: string, right: string) {
   const prefixLength = Math.min(left.length, right.length, 80)
   if (prefixLength < 40) return false
   return left.slice(0, prefixLength) === right.slice(0, prefixLength)
-}
-
-function sameMarkdown(left: string, right: string | undefined) {
-  return normalizedMarkdown(left) === normalizedMarkdown(right ?? "")
 }
 
 function normalizedMarkdown(value: string) {
