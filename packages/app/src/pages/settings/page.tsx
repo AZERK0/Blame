@@ -35,6 +35,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { useTheme } from "@/components/providers/theme-provider"
 import { useCloudAuth } from "@/context/cloud-auth"
 import {
   usePlatform,
@@ -43,7 +51,14 @@ import {
 } from "@/context/platform"
 import { cn } from "@/lib/utils"
 
-type SettingsSectionId = "models" | "providers" | "desktop" | "account"
+type SettingsSectionId =
+  | "general"
+  | "models"
+  | "providers"
+  | "desktop"
+  | "account"
+
+type ThemeValue = "system" | "light" | "dark"
 
 type SettingsSection = {
   description: string
@@ -59,6 +74,12 @@ type ProviderDialog =
   | undefined
 
 const settingsSections: SettingsSection[] = [
+  {
+    description: "Appearance and interface preferences.",
+    icon: Settings2Icon,
+    id: "general",
+    title: "General",
+  },
   {
     description: "Default models and agent behavior.",
     icon: BrainCircuitIcon,
@@ -130,7 +151,7 @@ export function SettingsDialogButton({
 
 function SettingsContent() {
   const [activeSection, setActiveSection] =
-    React.useState<SettingsSectionId>("models")
+    React.useState<SettingsSectionId>("general")
   const section = settingsSections.find((item) => item.id === activeSection)
 
   return (
@@ -216,10 +237,64 @@ function SettingsSectionHeader({ section }: { section: SettingsSection }) {
 }
 
 function SettingsSectionContent({ section }: { section: SettingsSectionId }) {
+  if (section === "general") return <GeneralSettingsPanel />
   if (section === "providers") return <ProvidersSettingsPanel />
   if (section === "desktop") return <DesktopSettingsPanel />
   if (section === "account") return <AccountSettingsPanel />
   return <ModelsSettingsPanel />
+}
+
+function GeneralSettingsPanel() {
+  return (
+    <SettingsPanel>
+      <SettingsGroup
+        title="Interface"
+        description="Adjust how Blame looks and how dense the controls feel."
+      >
+        <SettingsRow
+          title="Theme"
+          description="Choose the color mode used by the application."
+        >
+          <ThemeSelect />
+        </SettingsRow>
+        <SettingsRow
+          title="Language"
+          description="Blame currently ships with English interface text."
+        >
+          <LanguagePreview />
+        </SettingsRow>
+      </SettingsGroup>
+    </SettingsPanel>
+  )
+}
+
+function ThemeSelect() {
+  const theme = useTheme()
+
+  return (
+    <Select
+      value={theme.theme}
+      onValueChange={(value) => theme.setTheme(themeValue(value))}
+    >
+      <SelectTrigger className="w-32">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="system">System</SelectItem>
+        <SelectItem value="light">Light</SelectItem>
+        <SelectItem value="dark">Dark</SelectItem>
+      </SelectContent>
+    </Select>
+  )
+}
+
+function LanguagePreview() {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-sm font-medium">English</span>
+      <Badge variant="outline">Coming soon</Badge>
+    </div>
+  )
 }
 
 function ModelsSettingsPanel() {
@@ -1064,4 +1139,9 @@ function updateErrorStatus(
 function providerConnectionLabel(count: number) {
   if (count === 1) return "1 connection"
   return `${count} connections`
+}
+
+function themeValue(value: string): ThemeValue {
+  if (value === "light" || value === "dark") return value
+  return "system"
 }
