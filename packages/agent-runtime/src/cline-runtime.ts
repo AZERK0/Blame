@@ -33,6 +33,7 @@ import {
 } from "./context-compression.js";
 import type { HeadroomCompressionUsage } from "./context-compression.js";
 import { HeadroomSidecar } from "./headroom-sidecar.js";
+import { blameSpecialistAgentsSystemPrompt } from "./specialist-agents.js";
 import {
   deleteProviderCredential,
   listProviders,
@@ -177,6 +178,11 @@ type ToolContext = Parameters<AgentTool["execute"]>[1];
 type PendingApproval = {
   request: AgentApprovalRequest;
   resolve(result: ToolApprovalResult): void;
+};
+
+type RuntimeStartSessionInput = StartSessionInput & {
+  enableAgentTeams?: boolean;
+  enableSpawnAgent?: boolean;
 };
 
 type RuntimeSessionSummary = {
@@ -412,7 +418,7 @@ export class BlameAgentRuntime {
     return this.telemetryHandle;
   }
 
-  private async startSession(input: StartSessionInput) {
+  private async startSession(input: RuntimeStartSessionInput) {
     assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd");
     const startLogFile = startLogPath(input.cwd);
     await appendLog(startLogFile, "start requested", startContext(input));
@@ -499,8 +505,8 @@ export class BlameAgentRuntime {
               input.contextCompressionMode,
             ),
             enableTools: true,
-            enableSpawnAgent: false,
-            enableAgentTeams: false,
+            enableSpawnAgent: input.enableSpawnAgent ?? false,
+            enableAgentTeams: input.enableAgentTeams ?? false,
             extensions: contextCompressionExtensions(
               this.productionConfig,
               input.contextCompressionMode,
@@ -1566,6 +1572,8 @@ export class BlameAgentRuntime {
       cwd: input.cwd,
       workspaceRoot: input.workspaceRoot,
       systemPrompt: await developmentSystemPrompt(input),
+      enableSpawnAgent: true,
+      enableAgentTeams: false,
       backend: input.backend,
     });
   }
@@ -2291,6 +2299,7 @@ async function developmentSystemPrompt(input: StartDevelopmentSessionInput) {
   const practices = input.codePractices ?? [];
   const rules = [
     loadPrompt("code-agent-system"),
+    blameSpecialistAgentsSystemPrompt(),
     developmentPracticePrompt(practices, "coding_style"),
     developmentPracticePrompt(practices, "layered_architecture"),
     developmentPracticePrompt(practices, "unit_tests"),
