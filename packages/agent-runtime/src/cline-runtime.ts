@@ -282,6 +282,7 @@ export class BlameAgentRuntime {
   private sessionEventSignatures = new Map<string, Map<string, number>>();
   private sessionHeadroomSavings = new Map<string, HeadroomSavingsTotals>();
   private sessionIterations = new Map<string, number>();
+  private sessionSpawnAgentActiveCounts = new Map<string, number>();
   private sessionUsageSignatures = new Map<string, string>();
   private structuredEventSessions = new Set<string>();
   private readonly headroomSidecar = new HeadroomSidecar();
@@ -1167,11 +1168,16 @@ export class BlameAgentRuntime {
     const unsubscribe = await cline.subscribe(
       (payload: CoreSessionEvent) => {
         if (this.shouldSkipFallbackChunk(sessionId, payload)) return;
+        const spawnAgentPhase = clineSessionSpawnAgentPhase(payload);
+        if (this.shouldSkipSessionDisplayEvent(sessionId, payload)) return;
         const event = this.withSessionIteration(
           sessionId,
           normalizeEvent(sessionId, payload),
         );
         if (this.shouldSkipDuplicateSessionEvent(sessionId, event)) return;
+        if (spawnAgentPhase) {
+          this.updateSessionSpawnAgentState(sessionId, spawnAgentPhase);
+        }
         void this.handleSessionEvent(sessionId, event);
         this.events?.emit(event);
       },
@@ -1245,10 +1251,33 @@ export class BlameAgentRuntime {
     this.sessionEventSignatures.delete(sessionId);
     this.sessionHeadroomSavings.delete(sessionId);
     this.sessionIterations.delete(sessionId);
+    this.sessionSpawnAgentActiveCounts.delete(sessionId);
     this.sessionUsageSignatures.delete(sessionId);
     this.sessionBackendKeys.delete(sessionId);
     this.structuredEventSessions.delete(sessionId);
     void this.logSession(sessionId, "session unsubscribed");
+  }
+
+  private shouldSkipSessionDisplayEvent(
+    sessionId: string,
+    event: CoreSessionEvent,
+  ) {
+    const spawnAgentActive =
+      (this.sessionSpawnAgentActiveCounts.get(sessionId) ?? 0) > 0;
+    return !shouldDisplayClineSessionEvent(event, spawnAgentActive);
+  }
+
+  private updateSessionSpawnAgentState(
+    sessionId: string,
+    phase: "started" | "finished",
+  ) {
+    const current = this.sessionSpawnAgentActiveCounts.get(sessionId) ?? 0;
+    const next = nextSpawnAgentActiveCount(current, phase);
+    if (next) {
+      this.sessionSpawnAgentActiveCounts.set(sessionId, next);
+      return;
+    }
+    this.sessionSpawnAgentActiveCounts.delete(sessionId);
   }
 
   private shouldSkipFallbackChunk(sessionId: string, event: CoreSessionEvent) {
@@ -1727,6 +1756,66 @@ function normalizeEvent(
   if (event.type === "agent_event")
     return normalizeAgentEvent(event, sessionId);
   return { type: "raw", sessionId, payload: event };
+}
+
+export function shouldDisplayClineSessionEvent(
+  event: CoreSessionEvent,
+  spawnAgentActive = false,
+) {
+  if (event.type === "agent_event") {
+    const payload = asRecord(event.payload.event);
+    if (stringValue(payload.type) === "usage") return true;
+    if (event.payload.teamRole === "teammate") return false;
+    if (stringValue(payload.parentAgentId)) return false;
+  }
+  if (event.type === "hook") {
+    if (stringValue(event.payload.parentAgentId)) return false;
+  }
+  if (spawnAgentActive) {
+    return clineSessionSpawnAgentPhase(event) !== undefined;
+  }
+  return true;
+}
+
+function clineSessionSpawnAgentPhase(event: CoreSessionEvent) {
+  const tool = clineSessionToolEvent(event);
+  if (tool?.toolName !== "spawn_agent") return undefined;
+  return tool.phase;
+}
+
+function clineSessionToolEvent(event: CoreSessionEvent) {
+  if (event.type === "agent_event") {
+    const payload = asRecord(event.payload.event);
+    if (stringValue(payload.contentType) !== "tool") return undefined;
+    const toolName = stringValue(payload.toolName);
+    if (!toolName) return undefined;
+    const type = stringValue(payload.type);
+    if (type === "content_start") {
+      return { phase: "started" as const, toolName };
+    }
+    if (type === "content_end") {
+      return { phase: "finished" as const, toolName };
+    }
+    return undefined;
+  }
+  if (event.type !== "hook") return undefined;
+  const toolName = stringValue(event.payload.toolName);
+  if (!toolName) return undefined;
+  if (event.payload.hookEventName === "tool_call") {
+    return { phase: "started" as const, toolName };
+  }
+  if (event.payload.hookEventName === "tool_result") {
+    return { phase: "finished" as const, toolName };
+  }
+  return undefined;
+}
+
+export function nextSpawnAgentActiveCount(
+  current: number,
+  phase: "started" | "finished",
+) {
+  if (phase === "started") return current + 1;
+  return Math.max(0, current - 1);
 }
 
 function toolPolicies(autoApproveWriteTools: boolean) {
@@ -3370,12 +3459,13 @@ function eventLogPayload(event: AgentEvent) {
   };
 }
 
-function duplicateEventSignature(event: AgentEvent) {
+export function duplicateEventSignature(event: AgentEvent) {
   if (event.type === "raw") return undefined;
   if (event.type === "text" || event.type === "reasoning") return undefined;
   const payload = asRecord(event.payload);
   const text = eventText(payload);
   const tool = toolNameFromPayload(payload);
+  if (tool === "spawn_agent") return undefined;
   const value =
     text || tool || stringValue(payload.reason) || stringValue(payload.status);
   if (!value) return undefined;
