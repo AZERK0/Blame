@@ -1,23 +1,33 @@
 import * as React from "react"
 import {
+  AlertCircleIcon,
+  BrainCircuitIcon,
   CheckCircle2Icon,
   DownloadIcon,
+  LoaderCircleIcon,
+  MonitorDownIcon,
+  PlugZapIcon,
   RefreshCwIcon,
   RotateCcwIcon,
   Settings2Icon,
+  SlidersHorizontalIcon,
+  UserRoundIcon,
+  type LucideIcon,
 } from "lucide-react"
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { ManageModelsDialog } from "@/components/model/manage-models-dialog"
+import {
+  ConnectProviderDialog,
+  ProviderSelectDialog,
+} from "@/components/model/connect-provider-dialog"
+import {
+  ModelSelector,
+  ProviderMark,
+  type ModelSelection,
+  useModelSelection,
+} from "@/components/model/model-selector"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import {
   Dialog,
   DialogContent,
@@ -25,7 +35,55 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { usePlatform, type DesktopUpdateStatus } from "@/context/platform"
+import { useCloudAuth } from "@/context/cloud-auth"
+import {
+  usePlatform,
+  type DesktopUpdateStatus,
+  type DesktopUpdatesClient,
+} from "@/context/platform"
+import { cn } from "@/lib/utils"
+
+type SettingsSectionId = "models" | "providers" | "desktop" | "account"
+
+type SettingsSection = {
+  description: string
+  icon: LucideIcon
+  id: SettingsSectionId
+  title: string
+}
+
+type ProviderDialog =
+  | { type: "providers" }
+  | { type: "connect"; providerId: string }
+  | { type: "models" }
+  | undefined
+
+const settingsSections: SettingsSection[] = [
+  {
+    description: "Default models and agent behavior.",
+    icon: BrainCircuitIcon,
+    id: "models",
+    title: "AI Models",
+  },
+  {
+    description: "API keys, OAuth accounts, and provider access.",
+    icon: PlugZapIcon,
+    id: "providers",
+    title: "Providers",
+  },
+  {
+    description: "Desktop updates and local capabilities.",
+    icon: MonitorDownIcon,
+    id: "desktop",
+    title: "Desktop",
+  },
+  {
+    description: "Signed-in user and session actions.",
+    icon: UserRoundIcon,
+    id: "account",
+    title: "Account",
+  },
+]
 
 const fallbackStatus: DesktopUpdateStatus = {
   currentVersion: "development",
@@ -42,16 +100,8 @@ export function SettingsDialog({
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[88vh] overflow-hidden p-0 sm:max-w-4xl">
-        <DialogHeader className="border-b px-6 py-5">
-          <DialogTitle>Settings</DialogTitle>
-          <DialogDescription>
-            Configure Blame and manage desktop updates.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="overflow-y-auto px-6 pb-6">
-          <SettingsContent />
-        </div>
+      <DialogContent className="h-[min(46rem,88vh)] overflow-hidden p-0 sm:max-w-5xl">
+        <SettingsContent />
       </DialogContent>
     </Dialog>
   )
@@ -79,59 +129,617 @@ export function SettingsDialogButton({
 }
 
 function SettingsContent() {
-  const platform = usePlatform()
-  const updates = platform.updates
-  const [updateStatus, setUpdateStatus] =
-    React.useState<DesktopUpdateStatus>(fallbackStatus)
-  const status = updates ? updateStatus : fallbackStatus
+  const [activeSection, setActiveSection] =
+    React.useState<SettingsSectionId>("models")
+  const section = settingsSections.find((item) => item.id === activeSection)
 
+  return (
+    <div className="flex h-full min-h-0 flex-col md:flex-row">
+      <SettingsSidebar
+        activeSection={activeSection}
+        onSectionChange={setActiveSection}
+      />
+      <main className="flex min-h-0 flex-1 flex-col">
+        <SettingsSectionHeader section={section ?? settingsSections[0]} />
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-6 md:px-8">
+          <SettingsSectionContent section={activeSection} />
+        </div>
+      </main>
+    </div>
+  )
+}
+
+function SettingsSidebar({
+  activeSection,
+  onSectionChange,
+}: {
+  activeSection: SettingsSectionId
+  onSectionChange(section: SettingsSectionId): void
+}) {
+  return (
+    <aside className="flex shrink-0 flex-col border-b bg-muted/30 md:w-60 md:border-r md:border-b-0">
+      <DialogHeader className="px-4 pt-5 pb-3 text-left">
+        <DialogTitle>Settings</DialogTitle>
+        <DialogDescription>Configure Blame.</DialogDescription>
+      </DialogHeader>
+      <nav className="flex gap-1 overflow-x-auto px-3 pb-3 md:flex-col md:overflow-visible">
+        {settingsSections.map((section) => (
+          <SettingsNavItem
+            key={section.id}
+            active={section.id === activeSection}
+            section={section}
+            onClick={() => onSectionChange(section.id)}
+          />
+        ))}
+      </nav>
+    </aside>
+  )
+}
+
+function SettingsNavItem({
+  active,
+  onClick,
+  section,
+}: {
+  active: boolean
+  onClick(): void
+  section: SettingsSection
+}) {
+  const Icon = section.icon
+
+  return (
+    <button
+      type="button"
+      className={cn(
+        "flex min-w-38 items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground md:min-w-0",
+        active && "bg-foreground/10 text-foreground"
+      )}
+      onClick={onClick}
+    >
+      <Icon className="size-4 shrink-0" />
+      <span className="truncate">{section.title}</span>
+    </button>
+  )
+}
+
+function SettingsSectionHeader({ section }: { section: SettingsSection }) {
+  return (
+    <header className="border-b px-5 py-5 md:px-8">
+      <h2 className="font-heading text-xl font-semibold tracking-normal">
+        {section.title}
+      </h2>
+      <p className="mt-1 text-sm text-muted-foreground">
+        {section.description}
+      </p>
+    </header>
+  )
+}
+
+function SettingsSectionContent({ section }: { section: SettingsSectionId }) {
+  if (section === "providers") return <ProvidersSettingsPanel />
+  if (section === "desktop") return <DesktopSettingsPanel />
+  if (section === "account") return <AccountSettingsPanel />
+  return <ModelsSettingsPanel />
+}
+
+function ModelsSettingsPanel() {
+  return (
+    <SettingsPanel>
+      <SettingsGroup
+        title="Model preferences"
+        description="Choose the saved defaults Blame uses when it starts agent work."
+      >
+        <SettingsRow
+          title="Agent model"
+          description="Used for development sessions, backlog execution, and chat."
+        >
+          <ModelSelectorBox role="agent" />
+        </SettingsRow>
+        <SettingsRow
+          title="Alternative model"
+          description="Used for lighter tasks such as project setup and prompt optimization."
+        >
+          <ModelSelectorBox role="alternative" />
+        </SettingsRow>
+      </SettingsGroup>
+    </SettingsPanel>
+  )
+}
+
+function ModelSelectorBox({ role }: { role: "agent" | "alternative" }) {
+  return (
+    <div className="w-full min-w-0 sm:w-96">
+      <ModelSelector role={role} />
+    </div>
+  )
+}
+
+function ProvidersSettingsPanel() {
+  const selection = useModelSelection({ role: "agent" })
+  const [dialog, setDialog] = React.useState<ProviderDialog>()
+  const connectedProviders = selection.allProviders.filter((provider) =>
+    selection.connectedProviderIDs.has(provider.id)
+  )
+
+  return (
+    <SettingsPanel>
+      <SettingsGroup
+        title="Provider connections"
+        description="Connect accounts and choose which models stay visible in Blame."
+      >
+        <ProvidersToolbar selection={selection} setDialog={setDialog} />
+        <ProviderConnectionList
+          connectedProviders={connectedProviders}
+          selection={selection}
+          setDialog={setDialog}
+        />
+      </SettingsGroup>
+      <ProviderDialogs
+        dialog={dialog}
+        selection={selection}
+        setDialog={setDialog}
+      />
+    </SettingsPanel>
+  )
+}
+
+function ProvidersToolbar({
+  selection,
+  setDialog,
+}: {
+  selection: ModelSelection
+  setDialog(dialog: ProviderDialog): void
+}) {
+  return (
+    <div className="flex flex-col gap-3 border-b py-4 sm:flex-row sm:items-center sm:justify-between">
+      <ProviderSummary selection={selection} />
+      <ProviderToolbarActions selection={selection} setDialog={setDialog} />
+    </div>
+  )
+}
+
+function ProviderToolbarActions({
+  selection,
+  setDialog,
+}: {
+  selection: ModelSelection
+  setDialog(dialog: ProviderDialog): void
+}) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      <RefreshProvidersButton selection={selection} />
+      <ManageModelsButton selection={selection} setDialog={setDialog} />
+      <ConnectProviderButton selection={selection} setDialog={setDialog} />
+    </div>
+  )
+}
+
+function ManageModelsButton({
+  selection,
+  setDialog,
+}: {
+  selection: ModelSelection
+  setDialog(dialog: ProviderDialog): void
+}) {
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      disabled={!selection.serverReady}
+      onClick={() => setDialog({ type: "models" })}
+    >
+      <SlidersHorizontalIcon />
+      Manage models
+    </Button>
+  )
+}
+
+function ConnectProviderButton({
+  selection,
+  setDialog,
+}: {
+  selection: ModelSelection
+  setDialog(dialog: ProviderDialog): void
+}) {
+  return (
+    <Button
+      type="button"
+      disabled={!selection.serverReady}
+      onClick={() => setDialog({ type: "providers" })}
+    >
+      <PlugZapIcon />
+      Connect
+    </Button>
+  )
+}
+
+function RefreshProvidersButton({ selection }: { selection: ModelSelection }) {
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      disabled={!selection.serverReady || selection.loading}
+      onClick={() => void selection.refreshProviders()}
+    >
+      {selection.loading ? (
+        <LoaderCircleIcon className="animate-spin" />
+      ) : (
+        <RefreshCwIcon />
+      )}
+      Refresh
+    </Button>
+  )
+}
+
+function ProviderSummary({ selection }: { selection: ModelSelection }) {
+  if (!selection.serverReady) {
+    return <StatusText title="Sidecar unavailable" tone="muted" />
+  }
+
+  if (selection.loading) {
+    return <StatusText title="Loading providers" tone="muted" />
+  }
+
+  return (
+    <StatusText
+      title={`${selection.connectedProviderIDs.size} connected provider${selection.connectedProviderIDs.size === 1 ? "" : "s"}`}
+      tone={selection.connectedProviderIDs.size ? "success" : "muted"}
+    />
+  )
+}
+
+function ProviderConnectionList({
+  connectedProviders,
+  selection,
+  setDialog,
+}: {
+  connectedProviders: ModelSelection["allProviders"]
+  selection: ModelSelection
+  setDialog(dialog: ProviderDialog): void
+}) {
+  if (!selection.serverReady)
+    return <ProviderEmptyState selection={selection} />
+
+  if (!connectedProviders.length) {
+    return <EmptySettingsState message="No provider connected yet." />
+  }
+
+  return (
+    <div>
+      {connectedProviders.map((provider) => (
+        <ProviderConnectionRow
+          key={provider.id}
+          provider={provider}
+          selection={selection}
+          onManage={() => openProviderDialog(provider.id, setDialog)}
+        />
+      ))}
+    </div>
+  )
+}
+
+function ProviderEmptyState({ selection }: { selection: ModelSelection }) {
+  return <EmptySettingsState message={selection.emptyMessage} />
+}
+
+function ProviderConnectionRow({
+  onManage,
+  provider,
+  selection,
+}: {
+  onManage(): void
+  provider: ModelSelection["allProviders"][number]
+  selection: ModelSelection
+}) {
+  const connectionCount = providerCredentialCount(selection, provider.id)
+
+  return (
+    <div className="flex flex-col gap-3 border-b py-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex min-w-0 items-center gap-3">
+        <ProviderMark provider={provider} />
+        <div className="min-w-0">
+          <div className="truncate text-sm font-medium">{provider.name}</div>
+          <div className="truncate text-sm text-muted-foreground">
+            {providerConnectionLabel(connectionCount)}
+          </div>
+        </div>
+      </div>
+      <Button type="button" variant="outline" size="sm" onClick={onManage}>
+        Manage
+      </Button>
+    </div>
+  )
+}
+
+function providerCredentialCount(
+  selection: ModelSelection,
+  providerId: string
+) {
+  return selection.credentials.filter((item) => item.providerId === providerId)
+    .length
+}
+
+function openProviderDialog(
+  providerId: string,
+  setDialog: (dialog: ProviderDialog) => void
+) {
+  setDialog({ type: "connect", providerId })
+}
+
+function ProviderDialogs({
+  dialog,
+  selection,
+  setDialog,
+}: {
+  dialog: ProviderDialog
+  selection: ModelSelection
+  setDialog(dialog: ProviderDialog): void
+}) {
+  return (
+    <>
+      <ProviderPickerDialog
+        dialog={dialog}
+        selection={selection}
+        setDialog={setDialog}
+      />
+      <ProviderConnectionDialog
+        dialog={dialog}
+        selection={selection}
+        setDialog={setDialog}
+      />
+      <ModelVisibilityDialog
+        dialog={dialog}
+        selection={selection}
+        setDialog={setDialog}
+      />
+    </>
+  )
+}
+
+function ProviderPickerDialog({
+  dialog,
+  selection,
+  setDialog,
+}: {
+  dialog: ProviderDialog
+  selection: ModelSelection
+  setDialog(dialog: ProviderDialog): void
+}) {
+  return (
+    <ProviderSelectDialog
+      open={dialog?.type === "providers"}
+      selection={selection}
+      onConnect={(providerId) => setDialog({ type: "connect", providerId })}
+      onOpenChange={(open) =>
+        setDialog(open ? { type: "providers" } : undefined)
+      }
+    />
+  )
+}
+
+function ProviderConnectionDialog({
+  dialog,
+  selection,
+  setDialog,
+}: {
+  dialog: ProviderDialog
+  selection: ModelSelection
+  setDialog(dialog: ProviderDialog): void
+}) {
+  return (
+    <ConnectProviderDialog
+      providerID={dialog?.type === "connect" ? dialog.providerId : undefined}
+      selection={selection}
+      onBack={() => setDialog({ type: "providers" })}
+      onOpenChange={(open) => {
+        if (!open) setDialog(undefined)
+      }}
+    />
+  )
+}
+
+function ModelVisibilityDialog({
+  dialog,
+  selection,
+  setDialog,
+}: {
+  dialog: ProviderDialog
+  selection: ModelSelection
+  setDialog(dialog: ProviderDialog): void
+}) {
+  return (
+    <ManageModelsDialog
+      open={dialog?.type === "models"}
+      selection={selection}
+      onConnectProvider={() => setDialog({ type: "providers" })}
+      onOpenChange={(open) => setDialog(open ? { type: "models" } : undefined)}
+    />
+  )
+}
+
+function DesktopSettingsPanel() {
+  const platform = usePlatform()
+  const updates = useDesktopUpdates(platform.updates)
+
+  return (
+    <SettingsPanel>
+      <DesktopUpdatesGroup platform={platform} updates={updates} />
+      <DesktopIntegrationGroup platform={platform} />
+    </SettingsPanel>
+  )
+}
+
+function DesktopUpdatesGroup({
+  platform,
+  updates,
+}: {
+  platform: ReturnType<typeof usePlatform>
+  updates: ReturnType<typeof useDesktopUpdates>
+}) {
+  return (
+    <SettingsGroup
+      title="Updates"
+      description="Follow the desktop release state and install updates when ready."
+    >
+      <UpdateOverview status={updates.status} />
+      <VersionGrid status={updates.status} />
+      {updates.status.phase === "downloading" ? (
+        <DownloadProgress progress={updates.status.progress ?? 0} />
+      ) : null}
+      <UpdateActions
+        status={updates.status}
+        updates={platform.updates}
+        run={updates.run}
+      />
+    </SettingsGroup>
+  )
+}
+
+function DesktopIntegrationGroup({
+  platform,
+}: {
+  platform: ReturnType<typeof usePlatform>
+}) {
+  return (
+    <SettingsGroup
+      title="Desktop integration"
+      description="Check which native features are available in this runtime."
+    >
+      <CapabilityRow label="Updates" enabled={!!platform.updates} />
+      <CapabilityRow label="Workspace access" enabled={!!platform.workspace} />
+      <CapabilityRow label="Terminal runner" enabled={!!platform.terminal} />
+      <CapabilityRow
+        label="System notifications"
+        enabled={!!platform.systemNotifications}
+      />
+      <CapabilityRow
+        label="Preview browser"
+        enabled={!!platform.previewBrowser}
+      />
+    </SettingsGroup>
+  )
+}
+
+function AccountSettingsPanel() {
+  const auth = useCloudAuth()
+  const user = auth.user
+
+  return (
+    <SettingsPanel>
+      <SettingsGroup
+        title="Session"
+        description="Review the signed-in user and end the current session."
+      >
+        <SettingsRow
+          title={user?.fullName || user?.email || "Signed in"}
+          description={user?.email ?? "Your account is authenticated."}
+        >
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => void auth.logout()}
+          >
+            Log out
+          </Button>
+        </SettingsRow>
+      </SettingsGroup>
+    </SettingsPanel>
+  )
+}
+
+function useDesktopUpdates(updates: DesktopUpdatesClient | undefined) {
+  const [status, setStatus] =
+    React.useState<DesktopUpdateStatus>(fallbackStatus)
+  const run = useDesktopUpdateRunner(setStatus)
+
+  useDesktopUpdateSubscription(updates, setStatus)
+
+  return { run, status }
+}
+
+function useDesktopUpdateSubscription(
+  updates: DesktopUpdatesClient | undefined,
+  setStatus: React.Dispatch<React.SetStateAction<DesktopUpdateStatus>>
+) {
   React.useEffect(() => {
-    if (!updates) return
+    if (!updates) {
+      setStatus(fallbackStatus)
+      return undefined
+    }
 
     let active = true
     void updates.getStatus().then((nextStatus) => {
-      if (active) setUpdateStatus(nextStatus)
+      if (active) setStatus(nextStatus)
     })
-    const unsubscribe = updates.onStatus(setUpdateStatus)
+    const unsubscribe = updates.onStatus(setStatus)
 
     return () => {
       active = false
       unsubscribe()
     }
-  }, [updates])
+  }, [setStatus, updates])
+}
 
-  async function run(action: () => Promise<DesktopUpdateStatus>) {
-    setUpdateStatus(await action())
-  }
+function useDesktopUpdateRunner(
+  setStatus: React.Dispatch<React.SetStateAction<DesktopUpdateStatus>>
+) {
+  return React.useCallback(
+    async (action: () => Promise<DesktopUpdateStatus>) => {
+      try {
+        setStatus(await action())
+      } catch (error) {
+        setStatus((current) => updateErrorStatus(current, error))
+      }
+    },
+    [setStatus]
+  )
+}
+
+function UpdateOverview({ status }: { status: DesktopUpdateStatus }) {
+  const summary = updateSummary(status)
 
   return (
-    <Card className="max-w-3xl">
-      <CardHeader>
-        <CardTitle>Updates</CardTitle>
-        <CardDescription>
-          Keep Blame current with the latest desktop release.
-        </CardDescription>
-        <CardAction>
-          <UpdateBadge status={status} />
-        </CardAction>
-      </CardHeader>
-      <CardContent className="space-y-5">
-        <VersionGrid status={status} />
-        <UpdateMessage status={status} />
-        {status.phase === "downloading" ? (
-          <DownloadProgress progress={status.progress ?? 0} />
-        ) : null}
-        <UpdateActions status={status} updates={updates} run={run} />
-      </CardContent>
-    </Card>
+    <div className="flex flex-col gap-3 border-b py-4 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex min-w-0 gap-3">
+        <span className={cn("mt-0.5 text-muted-foreground", summary.iconClass)}>
+          <UpdateStatusIcon status={status} />
+        </span>
+        <div className="min-w-0">
+          <div className="text-sm font-medium">{summary.title}</div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {summary.description}
+          </p>
+        </div>
+      </div>
+      <UpdateBadge status={status} />
+    </div>
   )
+}
+
+function UpdateStatusIcon({ status }: { status: DesktopUpdateStatus }) {
+  const className = cn(
+    "size-5",
+    status.phase === "checking" && "animate-spin",
+    status.phase === "downloading" && "animate-spin"
+  )
+
+  if (status.phase === "error") return <AlertCircleIcon className={className} />
+  if (status.phase === "available")
+    return <DownloadIcon className={className} />
+  if (status.phase === "checking" || status.phase === "downloading") {
+    return <LoaderCircleIcon className={className} />
+  }
+  if (status.phase === "downloaded" || status.phase === "not-available") {
+    return <CheckCircle2Icon className={className} />
+  }
+  return <MonitorDownIcon className={className} />
 }
 
 function VersionGrid({ status }: { status: DesktopUpdateStatus }) {
   return (
-    <div className="grid gap-3 text-sm md:grid-cols-2">
-      <VersionRow label="Current version" value={status.currentVersion} />
-      <VersionRow
+    <div className="grid gap-4 border-b py-4 sm:grid-cols-2">
+      <VersionCell label="Current version" value={status.currentVersion} />
+      <VersionCell
         label="Latest version"
         value={status.latestVersion ?? "Not checked"}
       />
@@ -140,118 +748,98 @@ function VersionGrid({ status }: { status: DesktopUpdateStatus }) {
 }
 
 function UpdateActions({
+  run,
   status,
   updates,
-  run,
 }: {
-  status: DesktopUpdateStatus
-  updates: ReturnType<typeof usePlatform>["updates"]
   run: (action: () => Promise<DesktopUpdateStatus>) => Promise<void>
+  status: DesktopUpdateStatus
+  updates: DesktopUpdatesClient | undefined
 }) {
   const busy = status.phase === "checking" || status.phase === "downloading"
 
   return (
-    <div className="flex flex-wrap gap-2">
-      <Button
-        type="button"
-        variant="outline"
-        disabled={!updates || busy}
-        onClick={() => updates && void run(updates.check)}
-      >
-        <RefreshCwIcon />
-        Check for updates
-      </Button>
-      <Button
-        type="button"
-        disabled={!updates || status.phase !== "available"}
-        onClick={() => updates && void run(updates.download)}
-      >
-        <DownloadIcon />
-        Download update
-      </Button>
-      <Button
-        type="button"
-        disabled={!updates || status.phase !== "downloaded"}
-        onClick={() => updates && void run(updates.install)}
-      >
-        <RotateCcwIcon />
-        Restart and install
-      </Button>
+    <div className="flex flex-wrap gap-2 py-4">
+      <CheckUpdateButton
+        busy={busy}
+        run={run}
+        status={status}
+        updates={updates}
+      />
+      <DownloadUpdateButton run={run} status={status} updates={updates} />
+      <InstallUpdateButton run={run} status={status} updates={updates} />
     </div>
   )
 }
 
-function VersionRow({ label, value }: { label: string; value: string }) {
+function CheckUpdateButton({
+  busy,
+  run,
+  status,
+  updates,
+}: {
+  busy: boolean
+  run: (action: () => Promise<DesktopUpdateStatus>) => Promise<void>
+  status: DesktopUpdateStatus
+  updates: DesktopUpdatesClient | undefined
+}) {
   return (
-    <div className="rounded-lg border bg-muted/30 p-3">
-      <div className="text-xs font-medium text-muted-foreground">{label}</div>
-      <div className="mt-1 text-sm font-medium">{value}</div>
-    </div>
+    <Button
+      type="button"
+      variant={status.phase === "idle" ? "default" : "outline"}
+      disabled={!updates || busy}
+      onClick={() => updates && void run(updates.check)}
+    >
+      <RefreshCwIcon />
+      Check
+    </Button>
   )
 }
 
-function UpdateBadge({ status }: { status: DesktopUpdateStatus }) {
-  if (status.phase === "available") return <Badge>Available</Badge>
-  if (status.phase === "downloaded") return <Badge>Ready</Badge>
-  if (status.phase === "error") return <Badge variant="destructive">Error</Badge>
-  if (status.phase === "unsupported") return <Badge variant="outline">Unavailable</Badge>
-  if (status.phase === "checking" || status.phase === "downloading") return <Badge variant="secondary">Working</Badge>
-  return <Badge variant="outline">Idle</Badge>
-}
-
-function UpdateMessage({ status }: { status: DesktopUpdateStatus }) {
-  if (status.phase === "error") {
-    return (
-      <Alert variant="destructive">
-        <AlertTitle>Update check failed</AlertTitle>
-        <AlertDescription>{status.error ?? "Unable to check for updates."}</AlertDescription>
-      </Alert>
-    )
-  }
-
-  if (status.phase === "unsupported") {
-    return (
-      <Alert>
-        <AlertTitle>Updates unavailable</AlertTitle>
-        <AlertDescription>{status.reason ?? "Updates are unavailable for this build."}</AlertDescription>
-      </Alert>
-    )
-  }
-
-  if (status.phase === "available") {
-    return (
-      <Alert>
-        <AlertTitle>Version {status.latestVersion} is available</AlertTitle>
-        <AlertDescription>Download the update when you are ready.</AlertDescription>
-      </Alert>
-    )
-  }
-
-  if (status.phase === "downloaded") {
-    return (
-      <Alert>
-        <CheckCircle2Icon />
-        <AlertTitle>Update downloaded</AlertTitle>
-        <AlertDescription>Restart Blame to install version {status.latestVersion}.</AlertDescription>
-      </Alert>
-    )
-  }
-
-  if (status.phase === "not-available") {
-    return (
-      <Alert>
-        <CheckCircle2Icon />
-        <AlertTitle>Blame is up to date</AlertTitle>
-        <AlertDescription>No newer desktop release is available.</AlertDescription>
-      </Alert>
-    )
-  }
+function DownloadUpdateButton({
+  run,
+  status,
+  updates,
+}: {
+  run: (action: () => Promise<DesktopUpdateStatus>) => Promise<void>
+  status: DesktopUpdateStatus
+  updates: DesktopUpdatesClient | undefined
+}) {
+  if (status.phase !== "available" && status.phase !== "downloading")
+    return null
 
   return (
-    <Alert>
-      <AlertTitle>Manual updates</AlertTitle>
-      <AlertDescription>Check for updates, then choose when to download and install.</AlertDescription>
-    </Alert>
+    <Button
+      type="button"
+      disabled={!updates || status.phase !== "available"}
+      onClick={() => updates && void run(updates.download)}
+    >
+      <DownloadIcon />
+      Download
+    </Button>
+  )
+}
+
+function InstallUpdateButton({
+  run,
+  status,
+  updates,
+}: {
+  run: (action: () => Promise<DesktopUpdateStatus>) => Promise<void>
+  status: DesktopUpdateStatus
+  updates: DesktopUpdatesClient | undefined
+}) {
+  if (status.phase !== "downloaded") return null
+
+  return (
+    <Button
+      type="button"
+      disabled={!updates}
+      onClick={() => updates && void run(updates.install)}
+    >
+      <RotateCcwIcon />
+      Restart and install
+    </Button>
   )
 }
 
@@ -259,12 +847,12 @@ function DownloadProgress({ progress }: { progress: number }) {
   const percent = Math.max(0, Math.min(100, progress))
 
   return (
-    <div className="space-y-2">
+    <div className="border-b py-4">
       <div className="flex justify-between text-sm">
         <span className="font-medium">Downloading update</span>
         <span className="text-muted-foreground">{Math.round(percent)}%</span>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-muted">
+      <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
         <div
           className="h-full rounded-full bg-primary transition-[width]"
           style={{ width: `${percent}%` }}
@@ -272,4 +860,208 @@ function DownloadProgress({ progress }: { progress: number }) {
       </div>
     </div>
   )
+}
+
+function CapabilityRow({
+  enabled,
+  label,
+}: {
+  enabled: boolean
+  label: string
+}) {
+  return (
+    <SettingsRow
+      title={label}
+      description={enabled ? "Available" : "Unavailable"}
+    >
+      <Badge variant={enabled ? "secondary" : "outline"}>
+        {enabled ? "Ready" : "Missing"}
+      </Badge>
+    </SettingsRow>
+  )
+}
+
+function SettingsPanel({ children }: { children: React.ReactNode }) {
+  return <div className="flex flex-col gap-5 py-6">{children}</div>
+}
+
+function SettingsGroup({
+  children,
+  description,
+  title,
+}: {
+  children: React.ReactNode
+  description: string
+  title: string
+}) {
+  return (
+    <section>
+      <div className="mb-3">
+        <h3 className="text-sm font-semibold">{title}</h3>
+        <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+      </div>
+      <div>{children}</div>
+    </section>
+  )
+}
+
+function SettingsRow({
+  children,
+  description,
+  title,
+}: {
+  children: React.ReactNode
+  description: string
+  title: React.ReactNode
+}) {
+  return (
+    <div className="flex flex-col gap-3 border-b py-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0">
+        <div className="truncate text-sm font-medium">{title}</div>
+        <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+      </div>
+      <div className="flex min-w-0 shrink-0 items-center gap-2 sm:justify-end">
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function StatusText({
+  title,
+  tone,
+}: {
+  title: string
+  tone: "muted" | "success"
+}) {
+  return (
+    <div className="flex items-center gap-2 text-sm">
+      <span
+        className={cn(
+          "size-2 rounded-full",
+          tone === "success" ? "bg-emerald-500" : "bg-muted-foreground"
+        )}
+      />
+      <span className="font-medium">{title}</span>
+    </div>
+  )
+}
+
+function EmptySettingsState({ message }: { message: string }) {
+  return (
+    <div className="border-b py-8 text-center text-sm text-muted-foreground">
+      {message}
+    </div>
+  )
+}
+
+function VersionCell({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0">
+      <div className="text-xs font-medium text-muted-foreground">{label}</div>
+      <div className="mt-1 truncate text-sm font-medium">{value}</div>
+    </div>
+  )
+}
+
+function UpdateBadge({ status }: { status: DesktopUpdateStatus }) {
+  if (status.phase === "available") return <Badge>Available</Badge>
+  if (status.phase === "downloaded") return <Badge>Ready</Badge>
+  if (status.phase === "error")
+    return <Badge variant="destructive">Error</Badge>
+  if (status.phase === "unsupported")
+    return <Badge variant="outline">Unavailable</Badge>
+  if (status.phase === "checking" || status.phase === "downloading")
+    return <Badge variant="secondary">Working</Badge>
+  if (status.phase === "not-available")
+    return <Badge variant="secondary">Current</Badge>
+  return <Badge variant="outline">Idle</Badge>
+}
+
+function updateSummary(status: DesktopUpdateStatus) {
+  if (status.phase === "error") {
+    return {
+      description: status.error ?? "Unable to check for updates.",
+      iconClass: "text-destructive",
+      title: "Update check failed",
+    }
+  }
+
+  if (status.phase === "unsupported") {
+    return {
+      description: status.reason ?? "Updates are unavailable for this build.",
+      iconClass: "",
+      title: "Updates unavailable",
+    }
+  }
+
+  if (status.phase === "available") {
+    return {
+      description: "Download the update now or keep working on this version.",
+      iconClass: "text-primary",
+      title: `Version ${status.latestVersion} is available`,
+    }
+  }
+
+  return runningUpdateSummary(status)
+}
+
+function runningUpdateSummary(status: DesktopUpdateStatus) {
+  if (status.phase === "downloaded") {
+    return {
+      description: `Restart Blame to install version ${status.latestVersion}.`,
+      iconClass: "text-emerald-500",
+      title: "Update downloaded",
+    }
+  }
+
+  if (status.phase === "downloading") {
+    return {
+      description: "The update package is downloading in the background.",
+      iconClass: "text-primary",
+      title: "Downloading update",
+    }
+  }
+
+  if (status.phase === "checking") {
+    return {
+      description: "Blame is checking the latest desktop release.",
+      iconClass: "text-primary",
+      title: "Checking for updates",
+    }
+  }
+
+  return idleUpdateSummary(status)
+}
+
+function idleUpdateSummary(status: DesktopUpdateStatus) {
+  if (status.phase === "not-available") {
+    return {
+      description: "No newer desktop release is available.",
+      iconClass: "text-emerald-500",
+      title: "Blame is up to date",
+    }
+  }
+
+  return {
+    description: "Check manually when you want to look for a new release.",
+    iconClass: "",
+    title: "Manual updates",
+  }
+}
+
+function updateErrorStatus(
+  status: DesktopUpdateStatus,
+  error: unknown
+): DesktopUpdateStatus {
+  return {
+    ...status,
+    error: error instanceof Error ? error.message : "Unable to update Blame.",
+    phase: "error",
+  }
+}
+
+function providerConnectionLabel(count: number) {
+  if (count === 1) return "1 connection"
+  return `${count} connections`
 }
