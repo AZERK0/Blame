@@ -11,6 +11,7 @@
     "deploy:desktop": "node scripts/desktop-release.mjs deploy",
     "deploy:windows-runtime": "node scripts/windows-runtime-rootfs.mjs deploy",
     "dev": "turbo run dev --filter=@blame/api --filter=@blame/desktop",
+    "dev:vitrine": "pnpm --filter @blame/vitrine dev",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "release:linux": "node scripts/desktop-release.mjs release --linux AppImage --x64",
