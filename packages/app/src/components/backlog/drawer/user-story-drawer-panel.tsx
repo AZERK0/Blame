@@ -297,7 +297,7 @@ export function UserStoryDrawerPanel({
       >
         <DrawerHeader
           className={cn(
-            "absolute top-0 right-0 left-0 z-[15] isolate gap-4 overflow-hidden px-6 pt-6 pb-14 pr-14",
+            "absolute top-0 right-0 left-0 z-[15] isolate gap-4 overflow-hidden px-6 pt-6 pb-6 pr-14",
             tab === "user-story" &&
               sidebarAvailable &&
               sidebarOpen &&
