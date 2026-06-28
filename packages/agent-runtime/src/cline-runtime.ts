@@ -2176,7 +2176,7 @@ function initializationPrompt(
   return projectInitializationCorrectionPrompt(scan, correction);
 }
 
-async function developmentUserInput(
+export async function developmentUserInput(
   input: DevelopmentPromptInput,
   attachmentDirectory: string,
 ) {
@@ -2212,10 +2212,8 @@ function developmentFeedbackPrompt(
   if (feedbackAttachments) prompt.push(feedbackAttachments);
   const feedbackFiles = fileAttachmentReferences(input.feedbackFileAttachments);
   if (feedbackFiles) prompt.push(feedbackFiles);
-  if (attachments.userImages.length)
-    prompt.push(attachments.userImages.join("\n"));
-  if (attachments.userFiles.length)
-    prompt.push(attachments.userFiles.join("\n"));
+  const attachmentReferences = clineAttachmentReferences(attachments);
+  if (attachmentReferences) prompt.push(attachmentReferences);
   return prompt.join("\n\n");
 }
 
@@ -2274,6 +2272,21 @@ function developmentStoryPrompt(
     "When browser verification is useful, call get_preview_devtools and wait for the Blame preview to become ready before deciding preview access is unavailable.",
   );
   return prompt.join("\n");
+}
+
+function clineAttachmentReferences(attachments: DevelopmentAttachmentInput) {
+  const references: string[] = [];
+  if (attachments.userImages.length) {
+    references.push(
+      `Images attached for model vision: ${attachments.userImages.length}`,
+    );
+  }
+  if (attachments.userFiles.length) {
+    references.push(
+      `Files attached for Cline context: ${attachments.userFiles.length}`,
+    );
+  }
+  return references.join("\n");
 }
 
 function codeSelectionAttachmentsMarkdown(
