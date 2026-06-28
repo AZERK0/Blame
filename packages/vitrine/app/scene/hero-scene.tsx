@@ -2,11 +2,11 @@
 
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
+import { Sky } from 'three/examples/jsm/objects/Sky.js'
 
 const TERRAIN_SIZE = 72
 const TERRAIN_SEGMENTS = 168
 const RIDGE_COUNT = 4
-const ROCK_COUNT = 18
 
 type SceneState = {
   cleanup: () => void
@@ -43,35 +43,34 @@ export function HeroScene() {
     <div
       ref={containerRef}
       aria-hidden="true"
-      className="absolute inset-0 -z-20 bg-[radial-gradient(circle_at_44%_24%,rgba(255,118,28,0.48),transparent_18%),radial-gradient(circle_at_48%_42%,rgba(2,5,12,0.3),transparent_38%),linear-gradient(180deg,#04060d_0%,#131a27_36%,#293244_58%,#080a12_100%)]"
+      className="absolute inset-0 -z-20 bg-[radial-gradient(circle_at_43%_24%,rgba(255,112,22,0.72),transparent_20%),radial-gradient(circle_at_49%_43%,rgba(255,70,16,0.24),transparent_34%),linear-gradient(180deg,#05040a_0%,#23101b_34%,#6b321b_56%,#07070f_100%)]"
     />
   )
 }
 
 function createHeroScene(container: HTMLDivElement): SceneState {
   const scene = new THREE.Scene()
-  scene.fog = new THREE.FogExp2(0x1c2635, 0.019)
+  scene.fog = new THREE.FogExp2(0x241421, 0.017)
 
-  const camera = new THREE.PerspectiveCamera(43, 1, 0.1, 180)
-  camera.position.set(0, 12.8, 32)
-  camera.rotation.x = -0.32
+  const camera = new THREE.PerspectiveCamera(48, 1, 0.1, 500000)
+  camera.position.set(0, 7.4, 21)
 
   const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true })
   renderer.setClearColor(0x000000, 0)
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75))
   renderer.outputColorSpace = THREE.SRGBColorSpace
   renderer.toneMapping = THREE.ACESFilmicToneMapping
-  renderer.toneMappingExposure = 1.18
+  renderer.toneMappingExposure = 1.34
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = THREE.PCFSoftShadowMap
   container.appendChild(renderer.domElement)
 
+  const sky = createRetroSky()
+  scene.add(sky)
+
   const rockTexture = createStoneTexture()
   const terrain = createTerrain(rockTexture)
   scene.add(terrain)
-
-  const foregroundRocks = createForegroundRocks(rockTexture)
-  scene.add(foregroundRocks)
 
   const sunset = createSunset()
   scene.add(sunset)
@@ -82,21 +81,21 @@ function createHeroScene(container: HTMLDivElement): SceneState {
   const particles = createAtmosphereParticles()
   scene.add(particles)
 
-  const ambientLight = new THREE.HemisphereLight(0xbfd5f0, 0x080a10, 1.45)
+  const ambientLight = new THREE.HemisphereLight(0xffbd72, 0x08070d, 1.18)
   scene.add(ambientLight)
 
-  const sunLight = new THREE.DirectionalLight(0xff8a24, 6.8)
-  sunLight.position.set(-11, 17, -23)
+  const sunLight = new THREE.DirectionalLight(0xff7a1c, 8.6)
+  sunLight.position.set(-12, 12, -24)
   sunLight.castShadow = true
   sunLight.shadow.mapSize.set(1536, 1536)
   scene.add(sunLight)
 
-  const sunFill = new THREE.PointLight(0xff5a1f, 52, 72, 1.7)
-  sunFill.position.set(-11, 9.6, -34)
+  const sunFill = new THREE.PointLight(0xff4b16, 78, 86, 1.55)
+  sunFill.position.set(-11.5, 7.6, -34)
   scene.add(sunFill)
 
-  const iceLight = new THREE.DirectionalLight(0x9dbfff, 1.35)
-  iceLight.position.set(15, 7, 17)
+  const iceLight = new THREE.DirectionalLight(0x7894ff, 0.62)
+  iceLight.position.set(15, 5, 15)
   scene.add(iceLight)
 
   const pointer = new THREE.Vector2(0, 0)
@@ -126,12 +125,11 @@ function createHeroScene(container: HTMLDivElement): SceneState {
     const elapsed = clock.getElapsedTime()
     pointer.lerp(targetPointer, 0.045)
 
-    camera.position.x = pointer.x * 1.35
-    camera.position.y = 12.8 - pointer.y * 0.55
-    camera.lookAt(pointer.x * 2.3, 0.2, -8)
+    camera.position.x = pointer.x * 1.1
+    camera.position.y = 7.4 - pointer.y * 0.32
+    camera.lookAt(pointer.x * 1.8, -0.78, -8.5)
 
-    terrain.rotation.z = Math.sin(elapsed * 0.08) * 0.008 + pointer.x * 0.018
-    foregroundRocks.rotation.z = pointer.x * 0.01
+    terrain.rotation.z = Math.sin(elapsed * 0.08) * 0.006 + pointer.x * 0.012
     sunset.scale.setScalar(1 + Math.sin(elapsed * 0.72) * 0.018)
     updateSunGlow(sunset, elapsed)
     particles.rotation.y = elapsed * 0.012
@@ -152,8 +150,8 @@ function createHeroScene(container: HTMLDivElement): SceneState {
       cancelAnimationFrame(animationFrame)
       window.removeEventListener('resize', resize)
       window.removeEventListener('pointermove', handlePointerMove)
+      disposeObject3D(sky)
       disposeObject3D(terrain)
-      disposeObject3D(foregroundRocks)
       disposeObject3D(sunset)
       ridges.forEach((ridge) => {
         ridge.geometry.dispose()
@@ -170,8 +168,8 @@ function createHeroScene(container: HTMLDivElement): SceneState {
 
 function createTerrain(stoneTexture: THREE.CanvasTexture) {
   const terrain = new THREE.Group()
-  terrain.add(createTerrainMesh(stoneTexture, 0, -2.35, -10, 1))
-  terrain.add(createTerrainMesh(stoneTexture, 18, -1.2, -36, 0.74))
+  terrain.add(createTerrainMesh(stoneTexture, 0, -2.65, -4.5, 1.05))
+  terrain.add(createTerrainMesh(stoneTexture, 18, -1.7, -29, 0.76))
   return terrain
 }
 
@@ -235,43 +233,6 @@ function createTerrainMesh(
   return mesh
 }
 
-function createForegroundRocks(stoneTexture: THREE.CanvasTexture) {
-  const group = new THREE.Group()
-  const geometry = new THREE.DodecahedronGeometry(1, 1)
-
-  for (let index = 0; index < ROCK_COUNT; index += 1) {
-    const side = index % 2 === 0 ? -1 : 1
-    const row = Math.floor(index / 2)
-    const material = new THREE.MeshStandardMaterial({
-      color: new THREE.Color(0x657589).offsetHSL(0, 0, (index % 5) * 0.018 - 0.035),
-      map: stoneTexture,
-      bumpMap: stoneTexture,
-      bumpScale: 0.28,
-      roughness: 0.98,
-      metalness: 0,
-      emissive: 0x0c121b,
-      emissiveIntensity: 0.08,
-      flatShading: true,
-    })
-    const rock = new THREE.Mesh(geometry.clone(), material)
-    const size = 0.9 + ((index * 17) % 9) * 0.12
-    rock.scale.set(size * (1.35 + row * 0.04), size * (0.58 + (index % 3) * 0.08), size)
-    rock.position.set(
-      side * (9.5 + row * 2.15 + Math.sin(index * 1.9) * 2.1),
-      -0.8 + row * 0.04,
-      5.8 + row * 2.3 + Math.cos(index * 1.2) * 1.1,
-    )
-    rock.rotation.set(index * 0.43, index * 0.81, index * 0.27)
-    rock.castShadow = true
-    rock.receiveShadow = true
-    group.add(rock)
-  }
-
-  group.position.set(0, -1.85, -9)
-  geometry.dispose()
-  return group
-}
-
 function createStoneTexture() {
   const canvas = document.createElement('canvas')
   canvas.width = 256
@@ -314,37 +275,59 @@ function createStoneTexture() {
   return texture
 }
 
+function createRetroSky() {
+  const sky = new Sky()
+  sky.scale.setScalar(450000)
+
+  const sunPosition = new THREE.Vector3()
+  const elevation = 3.6
+  const azimuth = -166
+  const phi = THREE.MathUtils.degToRad(90 - elevation)
+  const theta = THREE.MathUtils.degToRad(azimuth)
+
+  sunPosition.setFromSphericalCoords(1, phi, theta)
+
+  const uniforms = sky.material.uniforms
+  uniforms.turbidity.value = 18
+  uniforms.rayleigh.value = 1.7
+  uniforms.mieCoefficient.value = 0.085
+  uniforms.mieDirectionalG.value = 0.91
+  uniforms.sunPosition.value.copy(sunPosition)
+
+  return sky
+}
+
 function createSunset() {
   const sun = new THREE.Group()
-  sun.position.set(-10.8, 9.7, -37)
+  sun.position.set(-11.4, 7.7, -36)
 
   const coreMaterial = new THREE.MeshBasicMaterial({
-    color: 0xfff2b3,
+    color: 0xffffd7,
     transparent: true,
     opacity: 0.98,
     blending: THREE.AdditiveBlending,
     depthWrite: false,
   })
-  const core = new THREE.Mesh(new THREE.CircleGeometry(3.45, 96), coreMaterial)
+  const core = new THREE.Mesh(new THREE.CircleGeometry(3.75, 96), coreMaterial)
 
   const innerGlowMaterial = new THREE.MeshBasicMaterial({
-    color: 0xff8a24,
+    color: 0xff7a18,
     transparent: true,
-    opacity: 0.58,
+    opacity: 0.72,
     blending: THREE.AdditiveBlending,
     depthWrite: false,
   })
-  const innerGlow = new THREE.Mesh(new THREE.CircleGeometry(7.8, 96), innerGlowMaterial)
+  const innerGlow = new THREE.Mesh(new THREE.CircleGeometry(8.8, 96), innerGlowMaterial)
   innerGlow.position.z = -0.04
 
   const outerGlowMaterial = new THREE.MeshBasicMaterial({
-    color: 0xff3d12,
+    color: 0xff2f05,
     transparent: true,
-    opacity: 0.2,
+    opacity: 0.34,
     blending: THREE.AdditiveBlending,
     depthWrite: false,
   })
-  const outerGlow = new THREE.Mesh(new THREE.CircleGeometry(15, 128), outerGlowMaterial)
+  const outerGlow = new THREE.Mesh(new THREE.CircleGeometry(19, 128), outerGlowMaterial)
   outerGlow.position.z = -0.08
 
   sun.add(outerGlow, innerGlow, core)
