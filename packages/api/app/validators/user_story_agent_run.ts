@@ -14,6 +14,8 @@ const agentActivity = vine.object({
   status: agentActivityStatus.optional(),
   iteration: vine.number().optional(),
   messageKind: agentActivityMessageKind.optional(),
+  agentName: vine.string().trim().maxLength(255).optional(),
+  agentAvatar: vine.string().trim().maxLength(2048).optional(),
   toolCallId: vine.string().trim().maxLength(255).optional(),
   detailArtifact: vine.string().trim().maxLength(2048).optional(),
   detailTruncated: vine.boolean().optional(),

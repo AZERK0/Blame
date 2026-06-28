@@ -77,6 +77,80 @@ test("keeps sequential tools in the same iteration ungrouped", () => {
   assert.equal(secondStarted.agentActivities?.[1]?.parallelGroupId, undefined)
 })
 
+test("adds specialist response messages after spawn agent results", () => {
+  const started = updateStory(
+    story(),
+    spawnAgentToolEvent("tool_call", "call-1")
+  )
+  const completed = updateStory(
+    started,
+    spawnAgentToolEvent("tool_result", "call-1", {
+      text: "## Codebase Analysis\n\nLooks usable.",
+    })
+  )
+  const activities = completed.agentActivities ?? []
+  const message = activities[1]
+
+  assert.equal(activities.length, 2)
+  assert.equal(activities[0]?.kind, "tool")
+  assert.equal(message?.kind, "message")
+  assert.equal(message?.title, "Codebase Analyst")
+  assert.equal(message?.agentName, "Codebase Analyst")
+  assert.equal(message?.agentAvatar, "/agents/codebase-analyst.png")
+  assert.equal(message?.detail, "## Codebase Analysis\n\nLooks usable.")
+  assert.equal(message?.messageKind, "intermediate")
+})
+
+test("keeps string spawn agent results as specialist messages", () => {
+  const started = updateStory(
+    story(),
+    spawnAgentToolEvent("tool_call", "call-1")
+  )
+  const completed = updateStory(
+    started,
+    spawnAgentToolEvent("tool_result", "call-1", "Looks usable.")
+  )
+
+  assert.equal(completed.agentActivities?.[1]?.kind, "message")
+  assert.equal(completed.agentActivities?.[1]?.detail, "Looks usable.")
+})
+
+test("keeps specialist identity when spawn agent results omit the prompt", () => {
+  const started = updateStory(
+    story(),
+    spawnAgentToolEvent("tool_call", "call-1")
+  )
+  const completed = updateStory(
+    started,
+    spawnAgentToolEvent(
+      "tool_result",
+      "call-1",
+      { text: "Looks usable." },
+      false
+    )
+  )
+  const message = completed.agentActivities?.[1]
+
+  assert.equal(message?.title, "Codebase Analyst")
+  assert.equal(message?.agentAvatar, "/agents/codebase-analyst.png")
+})
+
+test("recognizes specialist identity from spawn agent response headings", () => {
+  const completed = updateStory(
+    story(),
+    spawnAgentToolEvent(
+      "tool_result",
+      "call-1",
+      { text: "## Codebase Analysis\n\nLooks usable." },
+      false
+    )
+  )
+  const message = completed.agentActivities?.[1]
+
+  assert.equal(message?.title, "Codebase Analyst")
+  assert.equal(message?.agentAvatar, "/agents/codebase-analyst.png")
+})
+
 test("appends reasoning deltas while the agent is running", () => {
   const firstDelta = updateStory(story(), reasoningEvent({ text: "Now" }))
   const secondDelta = updateStory(firstDelta, reasoningEvent({ text: " I" }))
@@ -570,6 +644,33 @@ function toolEvent(
       iteration,
       toolCallId,
       toolName,
+    },
+    type: "tool",
+  }
+}
+
+function spawnAgentToolEvent(
+  hookEventName: "tool_call" | "tool_result",
+  toolCallId: string,
+  output?: Record<string, unknown> | string,
+  includePrompt = true
+): AgentEvent {
+  return {
+    payload: {
+      hookEventName,
+      iteration: 1,
+      output,
+      toolCall: {
+        input: includePrompt
+          ? {
+              systemPrompt:
+                "You are Blame's Codebase Analyst specialist, an internal advisory sub-agent.",
+            }
+          : undefined,
+        name: "spawn_agent",
+      },
+      toolCallId,
+      toolName: "spawn_agent",
     },
     type: "tool",
   }

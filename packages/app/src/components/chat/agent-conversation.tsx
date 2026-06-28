@@ -39,6 +39,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 
 export type AgentConversationComment = {
@@ -418,7 +419,7 @@ function AgentActivityLeafItem({
     return (
       <AgentMarkdownTimelineItem
         highlight={activity.messageKind === "final"}
-        icon={agentMessageIcon(responseHeader)}
+        icon={agentMessageIcon(activity, responseHeader)}
         markdown={activity.detail}
         onFileLinkClick={onFileLinkClick}
         title={agentMessageTitle(activity, responseHeader)}
@@ -767,7 +768,19 @@ function humanizeToolName(value: string) {
     .join(" ")
 }
 
-function agentMessageIcon(header: AgentConversationResponseHeader) {
+function agentMessageIcon(
+  activity: UserStoryAgentActivity,
+  header: AgentConversationResponseHeader
+) {
+  const profile = agentMessageProfile(activity)
+  if (profile?.avatar) {
+    return (
+      <Avatar className="size-8">
+        <AvatarImage alt={profile.name} src={profile.avatar} />
+        <AvatarFallback>{agentInitials(profile.name)}</AvatarFallback>
+      </Avatar>
+    )
+  }
   return <ProviderMark provider={header.provider} />
 }
 
@@ -775,7 +788,63 @@ function agentMessageTitle(
   activity: UserStoryAgentActivity,
   header: AgentConversationResponseHeader
 ) {
+  const profile = agentMessageProfile(activity)
+  if (profile?.name) return profile.name
   return header.modelName ?? activity.title
+}
+
+function agentMessageProfile(activity: UserStoryAgentActivity) {
+  if (activity.agentAvatar) {
+    return {
+      name: activity.agentName ?? activity.title,
+      avatar: activity.agentAvatar,
+    }
+  }
+  if (!activity.id.startsWith("spawn-agent-response-")) {
+    return activity.agentName ? { name: activity.agentName } : undefined
+  }
+  return (
+    specialistAgentProfiles.find((agent) =>
+      agent.responseMatches.some((match) => activity.detail.includes(match))
+    ) ?? (activity.agentName ? { name: activity.agentName } : undefined)
+  )
+}
+
+const specialistAgentProfiles = [
+  {
+    name: "Codebase Analyst",
+    avatar: "/agents/codebase-analyst.png",
+    responseMatches: ["## Codebase Analysis"],
+  },
+  {
+    name: "Frontend Design Specialist",
+    avatar: "/agents/frontend-design-specialist.png",
+    responseMatches: ["## Frontend Design Review"],
+  },
+  {
+    name: "Risk & Review Analyst",
+    avatar: "/agents/risk-review-analyst.png",
+    responseMatches: ["## Risk Review"],
+  },
+  {
+    name: "Story Analyst",
+    avatar: "/agents/story-analyst.png",
+    responseMatches: ["## Story Analysis"],
+  },
+  {
+    name: "Test & Verification Analyst",
+    avatar: "/agents/test-verification-analyst.png",
+    responseMatches: ["## Verification Plan"],
+  },
+] as const
+
+function agentInitials(name: string | undefined) {
+  return (name ?? "Agent")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("")
 }
 
 function agentDisplayActivities(

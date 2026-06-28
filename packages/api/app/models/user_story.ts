@@ -22,6 +22,8 @@ export type UserStoryAgentActivity = {
   status?: 'running' | 'completed' | 'failed'
   iteration?: number
   messageKind?: 'intermediate' | 'final'
+  agentName?: string
+  agentAvatar?: string
   toolCallId?: string
   detailArtifact?: string
   detailTruncated?: boolean

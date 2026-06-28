@@ -420,9 +420,11 @@ function toolActivities(
   const payload = eventPayload(event)
   const phase = stringValue(payload.phase) ?? stringValue(payload.hookEventName)
   const input = toolActivityInput(activities, payload, phase)
+  const message = spawnAgentMessageActivityInput(input, payload)
   return upsertActivities(activities, [
     ...closeRunningActivityInputs(activities, ["message", "reasoning"]),
     ...toolActivityInputs(activities, phase, input),
+    ...(message ? [message] : []),
   ])
 }
 
@@ -437,6 +439,10 @@ function toolActivityInput(
   const iteration = numberValue(payload.iteration)
   const id = toolActivityId(activities, toolName, iteration, phase, toolCallId)
   const existing = activities.find((activity) => activity.id === id)
+  const agent =
+    toolName === "spawn_agent"
+      ? spawnAgentInfo(recordValue(toolCall.input), existing)
+      : undefined
   return {
     id,
     kind: "tool",
@@ -448,6 +454,8 @@ function toolActivityInput(
     parallelGroupId: existing?.parallelGroupId,
     toolCallId,
     toolName,
+    ...(agent ? { agentName: agent.name } : {}),
+    ...(agent?.avatar ? { agentAvatar: agent.avatar } : {}),
   }
 }
 
@@ -620,6 +628,101 @@ function parallelRunningTools(
       sameIteration(activity.iteration, input.iteration)
   )
 }
+
+function spawnAgentMessageActivityInput(
+  toolInput: ActivityInput,
+  payload: Record<string, unknown>
+): ActivityInput | undefined {
+  if (toolInput.toolName !== "spawn_agent") return undefined
+  if (toolInput.status !== "completed") return undefined
+  const text = spawnAgentResponseText(payload.output)
+  if (!text) return undefined
+  const agent =
+    spawnAgentInfo(recordValue(recordValue(payload.toolCall).input), toolInput) ??
+    spawnAgentInfoFromResponse(text) ??
+    fallbackSpawnAgentInfo
+  return {
+    id: `spawn-agent-response-${toolInput.id}`,
+    kind: "message",
+    title: agent.name,
+    detail: text,
+    serverDetail: text,
+    status: "completed",
+    messageKind: "intermediate",
+    iteration: toolInput.iteration,
+    agentName: agent.name,
+    ...(agent.avatar ? { agentAvatar: agent.avatar } : {}),
+  }
+}
+
+function spawnAgentResponseText(output: unknown) {
+  const outputRecord = recordValue(output)
+  const text = stringValue(outputRecord.text)?.trim()
+  if (text) return text
+  return stringValue(output)?.trim()
+}
+
+function spawnAgentInfoFromResponse(response: string) {
+  return specialistAgents.find((agent) =>
+    agent.responseMatches.some((match) => response.includes(match))
+  )
+}
+
+function spawnAgentInfo(
+  input: Record<string, unknown>,
+  existing?: UserStoryAgentActivity
+) {
+  const systemPrompt = stringValue(input.systemPrompt) ?? ""
+  const matchedAgent = specialistAgents.find((agent) =>
+    systemPrompt.includes(agent.promptMatch)
+  )
+  if (matchedAgent) return matchedAgent
+  if (!existing?.agentName) return undefined
+  return {
+    name: existing.agentName,
+    ...(existing.agentAvatar ? { avatar: existing.agentAvatar } : {}),
+    promptMatch: "",
+    responseMatches: [],
+  }
+}
+
+const fallbackSpawnAgentInfo = {
+  name: "Agent",
+  responseMatches: [],
+}
+
+const specialistAgents = [
+  {
+    name: "Codebase Analyst",
+    avatar: "/agents/codebase-analyst.png",
+    promptMatch: "Blame's Codebase Analyst",
+    responseMatches: ["## Codebase Analysis"],
+  },
+  {
+    name: "Frontend Design Specialist",
+    avatar: "/agents/frontend-design-specialist.png",
+    promptMatch: "Blame's Frontend Design Specialist",
+    responseMatches: ["## Frontend Design Review"],
+  },
+  {
+    name: "Risk & Review Analyst",
+    avatar: "/agents/risk-review-analyst.png",
+    promptMatch: "Blame's Risk & Review Analyst",
+    responseMatches: ["## Risk Review"],
+  },
+  {
+    name: "Story Analyst",
+    avatar: "/agents/story-analyst.png",
+    promptMatch: "Blame's Story Analyst",
+    responseMatches: ["## Story Analysis"],
+  },
+  {
+    name: "Test & Verification Analyst",
+    avatar: "/agents/test-verification-analyst.png",
+    promptMatch: "Blame's Test & Verification Analyst",
+    responseMatches: ["## Verification Plan"],
+  },
+] as const
 
 function sameIteration(left: number | undefined, right: number | undefined) {
   if (left !== undefined || right !== undefined) return left === right
