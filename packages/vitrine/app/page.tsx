@@ -30,7 +30,7 @@ export default function Home() {
         className="relative isolate min-h-screen overflow-hidden"
       >
         <HeroScene />
-        <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_50%_33%,rgba(255,185,104,0.2),transparent_30%),linear-gradient(180deg,rgba(5,7,18,0.42),rgba(5,7,18,0.14)_35%,rgba(5,7,18,0.92)_100%)]" />
+        <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_44%_25%,rgba(255,94,24,0.35),transparent_22%),radial-gradient(ellipse_at_50%_43%,rgba(5,7,18,0.55),rgba(5,7,18,0.18)_34%,transparent_58%),linear-gradient(180deg,rgba(5,7,18,0.5),rgba(5,7,18,0.12)_34%,rgba(5,7,18,0.94)_100%)]" />
         <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-48 bg-gradient-to-b from-[#050712]/80 to-transparent" />
 
         <SiteHeader />
