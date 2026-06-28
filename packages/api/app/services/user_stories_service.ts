@@ -29,19 +29,21 @@ const maxAgentActivities = 80
 export default class UserStoriesService {
   async list(userId: number, input: ListUserStoriesInput) {
     await new ProjectsService().findForUser(userId, input.projectId)
-    return UserStory.query()
+    const stories = await UserStory.query()
       .where('projectId', input.projectId)
-      .preload('comments', orderComments)
+      .preload('comments')
       .preload('agentRuns', orderAgentRuns)
       .orderBy('createdAt', 'asc')
+    return stories.map(sortStoryComments)
   }
 
   async find(userId: number, id: number) {
-    return this.userStoryQuery(userId)
+    const story = await this.userStoryQuery(userId)
       .where('id', id)
-      .preload('comments', orderComments)
+      .preload('comments')
       .preload('agentRuns', orderAgentRuns)
       .firstOrFail()
+    return sortStoryComments(story)
   }
 
   async create(userId: number, input: CreateUserStoryInput) {
@@ -93,7 +95,8 @@ export default class UserStoriesService {
       mergedAt: input.mergedAt === undefined ? userStory.mergedAt : input.mergedAt,
     })
     await userStory.save()
-    await userStory.load('comments', orderComments)
+    await userStory.load('comments')
+    sortStoryComments(userStory)
     await userStory.load('agentRuns', orderAgentRuns)
     return userStory
   }
@@ -225,10 +228,16 @@ function agentRunCompletedAtUpdate(input: { completedAt?: DateTime | null; statu
   return {}
 }
 
-function orderComments(query: ReturnType<typeof UserStoryComment.query>) {
+function orderAgentRuns(query: ReturnType<typeof UserStoryAgentRun.query>) {
   query.orderBy('userStoryId', 'asc').orderBy('createdAt', 'asc').orderBy('id', 'asc')
 }
 
-function orderAgentRuns(query: ReturnType<typeof UserStoryAgentRun.query>) {
-  query.orderBy('userStoryId', 'asc').orderBy('createdAt', 'asc').orderBy('id', 'asc')
+function sortStoryComments<T extends UserStory>(story: T) {
+  story.comments?.sort(compareComments)
+  return story
+}
+
+function compareComments(left: UserStoryComment, right: UserStoryComment) {
+  const createdAtDelta = left.createdAt.toMillis() - right.createdAt.toMillis()
+  return createdAtDelta || left.id - right.id
 }
