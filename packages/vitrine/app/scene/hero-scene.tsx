@@ -43,14 +43,14 @@ export function HeroScene() {
     <div
       ref={containerRef}
       aria-hidden="true"
-      className="absolute inset-0 -z-20 bg-[radial-gradient(circle_at_43%_24%,rgba(255,112,22,0.72),transparent_20%),radial-gradient(circle_at_49%_43%,rgba(255,70,16,0.24),transparent_34%),linear-gradient(180deg,#05040a_0%,#23101b_34%,#6b321b_56%,#07070f_100%)]"
+      className="absolute inset-0 -z-20 bg-[radial-gradient(circle_at_43%_24%,rgba(255,98,18,0.62),transparent_19%),radial-gradient(circle_at_49%_43%,rgba(40,58,88,0.3),transparent_36%),linear-gradient(180deg,#02040b_0%,#101827_36%,#24344a_58%,#05070d_100%)]"
     />
   )
 }
 
 function createHeroScene(container: HTMLDivElement): SceneState {
   const scene = new THREE.Scene()
-  scene.fog = new THREE.FogExp2(0x241421, 0.017)
+  scene.fog = new THREE.FogExp2(0x0b1220, 0.022)
 
   const camera = new THREE.PerspectiveCamera(48, 1, 0.1, 500000)
   camera.position.set(0, 7.4, 21)
@@ -60,7 +60,7 @@ function createHeroScene(container: HTMLDivElement): SceneState {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75))
   renderer.outputColorSpace = THREE.SRGBColorSpace
   renderer.toneMapping = THREE.ACESFilmicToneMapping
-  renderer.toneMappingExposure = 1.34
+  renderer.toneMappingExposure = 1.08
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = THREE.PCFSoftShadowMap
   container.appendChild(renderer.domElement)
@@ -81,20 +81,20 @@ function createHeroScene(container: HTMLDivElement): SceneState {
   const particles = createAtmosphereParticles()
   scene.add(particles)
 
-  const ambientLight = new THREE.HemisphereLight(0xffbd72, 0x08070d, 1.18)
+  const ambientLight = new THREE.HemisphereLight(0xc4d8ff, 0x05070d, 0.76)
   scene.add(ambientLight)
 
-  const sunLight = new THREE.DirectionalLight(0xff7a1c, 8.6)
+  const sunLight = new THREE.DirectionalLight(0xff7a1c, 6.8)
   sunLight.position.set(-12, 12, -24)
   sunLight.castShadow = true
   sunLight.shadow.mapSize.set(1536, 1536)
   scene.add(sunLight)
 
-  const sunFill = new THREE.PointLight(0xff4b16, 78, 86, 1.55)
+  const sunFill = new THREE.PointLight(0xff4b16, 58, 82, 1.55)
   sunFill.position.set(-11.5, 7.6, -34)
   scene.add(sunFill)
 
-  const iceLight = new THREE.DirectionalLight(0x7894ff, 0.62)
+  const iceLight = new THREE.DirectionalLight(0x7894ff, 0.5)
   iceLight.position.set(15, 5, 15)
   scene.add(iceLight)
 
@@ -136,7 +136,7 @@ function createHeroScene(container: HTMLDivElement): SceneState {
     particles.position.x = pointer.x * 0.65
 
     ridges.forEach((ridge, index) => {
-      ridge.material.opacity = 0.18 + Math.sin(elapsed * 0.8 + index) * 0.08
+      ridge.material.opacity = 0.08 + Math.sin(elapsed * 0.8 + index) * 0.035
     })
 
     renderer.render(scene, camera)
@@ -209,21 +209,29 @@ function createTerrainMesh(
 
     positions.setY(
       index,
-      (horizonRise + centralPeak + sidePeak + leftRidge + foregroundRidge + stratifiedNoise + fracturedNoise - 4.6) * scale,
+      (horizonRise * 0.8 +
+        centralPeak * 0.68 +
+        sidePeak * 0.7 +
+        leftRidge * 0.7 +
+        foregroundRidge * 0.72 +
+        stratifiedNoise * 0.58 +
+        fracturedNoise * 0.42 -
+        4.15) *
+        scale,
     )
   }
 
   geometry.computeVertexNormals()
 
   const material = new THREE.MeshStandardMaterial({
-    color: 0x5f6e80,
+    color: 0x313f51,
     map: stoneTexture,
     bumpMap: stoneTexture,
-    bumpScale: 0.38,
+    bumpScale: 0.22,
     roughness: 0.96,
     metalness: 0,
-    emissive: 0x111a27,
-    emissiveIntensity: 0.13,
+    emissive: 0x0b1320,
+    emissiveIntensity: 0.09,
   })
 
   const mesh = new THREE.Mesh(geometry, material)
@@ -256,10 +264,10 @@ function createStoneTexture() {
         Math.cos((x + y) * 0.41) * 9 +
         ((x * 13 + y * 7) % 23)
       const vein = Math.abs(Math.sin(x * 0.035 + Math.sin(y * 0.04) * 2.2)) * 28
-      const shade = THREE.MathUtils.clamp(92 + grain - vein, 42, 155)
-      data[index] = shade * 0.72
-      data[index + 1] = shade * 0.82
-      data[index + 2] = shade
+      const shade = THREE.MathUtils.clamp(72 + grain * 0.76 - vein * 0.82, 34, 122)
+      data[index] = shade * 0.55
+      data[index + 1] = shade * 0.68
+      data[index + 2] = shade * 0.9
       data[index + 3] = 255
     }
   }
@@ -288,10 +296,10 @@ function createRetroSky() {
   sunPosition.setFromSphericalCoords(1, phi, theta)
 
   const uniforms = sky.material.uniforms
-  uniforms.turbidity.value = 18
-  uniforms.rayleigh.value = 1.7
-  uniforms.mieCoefficient.value = 0.085
-  uniforms.mieDirectionalG.value = 0.91
+  uniforms.turbidity.value = 11
+  uniforms.rayleigh.value = 0.74
+  uniforms.mieCoefficient.value = 0.062
+  uniforms.mieDirectionalG.value = 0.9
   uniforms.sunPosition.value.copy(sunPosition)
 
   return sky
@@ -370,7 +378,7 @@ function createRidgeLines() {
 
     const geometry = new THREE.BufferGeometry().setFromPoints(points)
     const material = new THREE.LineBasicMaterial({
-      color: ridgeIndex === 2 ? 0xffd08a : 0xd8ecff,
+      color: ridgeIndex === 2 ? 0x8fa1b8 : 0x6f829d,
       transparent: true,
       opacity: 0.22,
       blending: THREE.AdditiveBlending,
