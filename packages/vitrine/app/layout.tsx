@@ -2,9 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Blame — Agentic IDE',
-  description:
-    'Blame transforme le code IA en workflow maîtrisé avec backlog, worktrees, previews, diffs et merge contrôlé.',
+  title: 'Blame',
+  description: 'Site vitrine de Blame',
 }
 
 type RootLayoutProps = Readonly<{
