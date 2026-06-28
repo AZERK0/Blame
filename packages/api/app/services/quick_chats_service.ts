@@ -205,9 +205,9 @@ function agentRunCompletedAtUpdate(input: { completedAt?: DateTime | null; statu
 }
 
 function orderMessages(query: ReturnType<typeof QuickChatMessage.query>) {
-  query.orderBy('createdAt', 'asc').orderBy('id', 'asc')
+  query.orderBy('quickChatId', 'asc').orderBy('createdAt', 'asc').orderBy('id', 'asc')
 }
 
 function orderAgentRuns(query: ReturnType<typeof QuickChatAgentRun.query>) {
-  query.orderBy('createdAt', 'asc').orderBy('id', 'asc')
+  query.orderBy('quickChatId', 'asc').orderBy('createdAt', 'asc').orderBy('id', 'asc')
 }

@@ -31,7 +31,7 @@ export default class UserStoriesService {
     await new ProjectsService().findForUser(userId, input.projectId)
     return UserStory.query()
       .where('projectId', input.projectId)
-      .preload('comments', (comments) => comments.orderBy('createdAt', 'asc').orderBy('id', 'asc'))
+      .preload('comments', orderComments)
       .preload('agentRuns', orderAgentRuns)
       .orderBy('createdAt', 'asc')
   }
@@ -39,7 +39,7 @@ export default class UserStoriesService {
   async find(userId: number, id: number) {
     return this.userStoryQuery(userId)
       .where('id', id)
-      .preload('comments', (comments) => comments.orderBy('createdAt', 'asc').orderBy('id', 'asc'))
+      .preload('comments', orderComments)
       .preload('agentRuns', orderAgentRuns)
       .firstOrFail()
   }
@@ -93,9 +93,7 @@ export default class UserStoriesService {
       mergedAt: input.mergedAt === undefined ? userStory.mergedAt : input.mergedAt,
     })
     await userStory.save()
-    await userStory.load('comments', (comments) =>
-      comments.orderBy('createdAt', 'asc').orderBy('id', 'asc')
-    )
+    await userStory.load('comments', orderComments)
     await userStory.load('agentRuns', orderAgentRuns)
     return userStory
   }
@@ -227,6 +225,10 @@ function agentRunCompletedAtUpdate(input: { completedAt?: DateTime | null; statu
   return {}
 }
 
+function orderComments(query: ReturnType<typeof UserStoryComment.query>) {
+  query.orderBy('userStoryId', 'asc').orderBy('createdAt', 'asc').orderBy('id', 'asc')
+}
+
 function orderAgentRuns(query: ReturnType<typeof UserStoryAgentRun.query>) {
-  query.orderBy('createdAt', 'asc').orderBy('id', 'asc')
+  query.orderBy('userStoryId', 'asc').orderBy('createdAt', 'asc').orderBy('id', 'asc')
 }
