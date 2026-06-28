@@ -139,39 +139,35 @@
 body {
   margin: 0;
   min-width: 320px;
+  background: #050712;
+  color: white;
+  text-rendering: geometricPrecision;
 }
 
-.page {
-  display: grid;
-  min-height: 100vh;
-  place-items: center;
-  padding: 32px;
+html {
+  scroll-behavior: smooth;
 }
 
-.intro {
-  max-width: 720px;
+canvas {
+  display: block;
 }
 
-.eyebrow {
-  margin: 0 0 16px;
-  color: #2563eb;
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0;
-  text-transform: uppercase;
+::selection {
+  background: rgba(251, 191, 36, 0.35);
+  color: white;
 }
 
-h1 {
-  margin: 0;
-  max-width: 680px;
-  font-size: clamp(40px, 8vw, 88px);
-  line-height: 0.95;
-}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 
-.summary {
-  max-width: 560px;
-  margin: 24px 0 0;
-  color: #4b5563;
-  font-size: 20px;
-  line-height: 1.6;
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }
