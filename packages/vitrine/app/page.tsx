@@ -136,22 +136,6 @@ export default function Home() {
               transform: translateX(115%);
             }
           }
-
-          @media (prefers-reduced-motion: reduce) {
-            .hero-stage canvas,
-            .landing-reveal,
-            .scene-warmup,
-            .scene-warmup-scan {
-              animation: none !important;
-              opacity: 1;
-              transform: none;
-              visibility: visible;
-            }
-
-            .scene-warmup {
-              display: none;
-            }
-          }
         `}</style>
       </section>
     </main>

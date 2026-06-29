@@ -81,10 +81,6 @@ export function HeroScene() {
       return undefined
     }
 
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      return undefined
-    }
-
     const sceneState = createHeroScene(container)
 
     return () => {
