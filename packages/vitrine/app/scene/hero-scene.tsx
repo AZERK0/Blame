@@ -10,17 +10,17 @@ const SUN_ELEVATION_DEGREES = 5.2
 const SUN_AZIMUTH_DEGREES = -166
 const SUN_DIRECTION = createSunDirection()
 const TWILIGHT_FOG_COLOR = 0x3666ff;
-const TERRAIN_TEXTURE_SIZE = 512
+const TERRAIN_TEXTURE_SIZE = 256
 const PLUS_FIELD_RADIUS = 11.5
 const PLUS_FIELD_STEP = 2.15
-const PLUS_FIELD_BACK_Z = -60
-const PLUS_FIELD_FRONT_Z = 22
-const PLUS_FIELD_POINTER_X_RANGE = 16
+const PLUS_FIELD_BACK_Z = -80
+const PLUS_FIELD_FRONT_Z = 0
+const PLUS_FIELD_POINTER_X_RANGE = 40
 const PLUS_FIELD_TERRAIN_CLEARANCE = 0.24
 const PRIMARY_TERRAIN_OFFSET = 0
-const PRIMARY_TERRAIN_Y = -3.05
-const PRIMARY_TERRAIN_Z = -9
-const PRIMARY_TERRAIN_SCALE = 1.04
+const PRIMARY_TERRAIN_Y = -5
+const PRIMARY_TERRAIN_Z = -15
+const PRIMARY_TERRAIN_SCALE = 2
 
 type SceneState = {
   cleanup: () => void
@@ -192,7 +192,6 @@ function createTerrain(textures: TerrainTextures) {
       PRIMARY_TERRAIN_SCALE,
     ),
   )
-  terrain.add(createTerrainMesh(textures, 24, -2.25, -54, 0.82))
   return terrain
 }
 
