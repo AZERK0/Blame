@@ -52,8 +52,8 @@ export default function Home() {
                 agentic IDE.
               </h1>
               <p className="mx-auto mt-7 max-w-2xl text-balance text-base leading-7 text-white/76 sm:text-lg md:text-xl">
-                Transforme chaque demande en worktree testable, avec preview,
-                diff et merge validé — sans perdre le fil de ton code.
+                Turn every request into an isolated worktree, with live preview,
+                diffs, and controlled merge.
               </p>
               <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
                 <a
