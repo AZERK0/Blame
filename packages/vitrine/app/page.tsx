@@ -1,34 +1,16 @@
 import Image from 'next/image'
-import { ArrowRight, GitBranch, Play, ShieldCheck } from 'lucide-react'
+import { ArrowRight, Play } from 'lucide-react'
 import { HeroScene } from './scene/hero-scene'
 
 const navigationItems = ['Product', 'Pricing', 'Download']
 
-const workflowColumns = [
-  {
-    title: 'Backlog',
-    items: ['Story prête', 'Critères cadrés', 'Contexte attaché'],
-    tone: 'from-sky-400/30',
-  },
-  {
-    title: 'Worktree',
-    items: ['Agent actif', 'Règles projet', 'Preview isolée'],
-    tone: 'from-[#b3acf3]/35',
-  },
-  {
-    title: 'Diff',
-    items: ['Tests relancés', 'Risques visibles', 'Merge validé'],
-    tone: 'from-emerald-300/30',
-  },
-]
-
 export default function Home() {
   return (
-    <main className="min-h-screen overflow-hidden bg-[#050712] text-white">
+    <main className="min-h-screen overflow-x-hidden bg-[#050712] text-white">
       <section
         id="top"
         aria-labelledby="hero-title"
-        className="hero-stage relative isolate min-h-screen overflow-hidden"
+        className="hero-stage relative isolate min-h-screen overflow-x-hidden"
       >
         <HeroScene />
         <SceneWarmup />
@@ -38,8 +20,8 @@ export default function Home() {
 
         <SiteHeader />
 
-        <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-9xl flex-col px-5 pb-6 pt-24 sm:px-8 lg:px-10">
-          <div className="flex flex-1 items-center justify-center pb-[34vh] pt-8 sm:pb-[30vh] lg:pb-[26vh]">
+        <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-9xl flex-col px-5 pb-0 pt-24 sm:px-8 lg:px-10">
+          <div className="flex flex-1 items-center justify-center pb-4 pt-8 sm:pb-6 lg:pb-8">
             <div className="text-center">
               <div className="landing-reveal landing-reveal-eyebrow mx-auto mb-5 inline-flex items-center gap-2 rounded-full border border-white/14 bg-white/[0.07] px-3 py-1.5 text-xs font-medium uppercase tracking-[0.32em] text-white/76 shadow-2xl shadow-black/30 backdrop-blur-md">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#b3acf3] shadow-[0_0_18px_rgba(179,172,243,0.9)]" />
@@ -242,60 +224,17 @@ function SiteHeader() {
 
 function ProductMockup() {
   return (
-    <div className="landing-reveal landing-reveal-mockup pointer-events-none absolute inset-x-4 bottom-6 z-20 mx-auto max-w-5xl sm:bottom-8 lg:bottom-10">
+    <div className="landing-reveal landing-reveal-mockup pointer-events-none z-20 mx-auto w-full max-w-5xl translate-y-[5%]">
       <div className="rounded-[2rem] border border-white/16 bg-white/[0.08] p-2 shadow-[0_32px_120px_rgba(0,0,0,0.55)] backdrop-blur-2xl sm:rounded-[2.5rem] sm:p-3">
         <div className="overflow-hidden rounded-[1.55rem] border border-white/10 bg-[#080b16]/92 shadow-inner sm:rounded-[2rem]">
-          <div className="flex items-center justify-between border-b border-white/8 bg-white/[0.04] px-4 py-3 sm:px-5">
-            <div className="flex items-center gap-2">
-              <span className="h-2.5 w-2.5 rounded-full bg-[#ff6b6b]" />
-              <span className="h-2.5 w-2.5 rounded-full bg-[#b3acf3]" />
-              <span className="h-2.5 w-2.5 rounded-full bg-[#5ee6a8]" />
-            </div>
-            <div className="hidden items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.22em] text-emerald-100 sm:flex">
-              <ShieldCheck className="h-3.5 w-3.5" />
-              Preview ready
-            </div>
-          </div>
-
-          <div className="grid min-h-[210px] grid-cols-1 gap-3 p-3 sm:min-h-[280px] sm:grid-cols-3 sm:p-5 lg:min-h-[340px] lg:gap-4">
-            {workflowColumns.map((column) => (
-              <div
-                key={column.title}
-                className="relative overflow-hidden rounded-3xl border border-white/9 bg-white/[0.045] p-4"
-              >
-                <div
-                  className={`absolute inset-x-0 top-0 h-24 bg-gradient-to-b ${column.tone} to-transparent opacity-80`}
-                />
-                <div className="relative flex items-center justify-between">
-                  <p className="text-sm font-semibold tracking-[-0.02em] text-white">
-                    {column.title}
-                  </p>
-                  <GitBranch className="h-4 w-4 text-white/45" />
-                </div>
-                <div className="relative mt-5 space-y-2.5">
-                  {column.items.map((item, index) => (
-                    <div
-                      key={item}
-                      className="rounded-2xl border border-white/8 bg-black/20 p-3"
-                    >
-                      <div className="mb-2 flex items-center gap-2">
-                        <span className="h-1.5 w-1.5 rounded-full bg-white/60" />
-                        <span className="text-xs font-medium text-white/78">
-                          {item}
-                        </span>
-                      </div>
-                      <div className="h-1.5 overflow-hidden rounded-full bg-white/8">
-                        <div
-                          className="h-full rounded-full bg-gradient-to-r from-white/35 via-[#bdc3fd]/75 to-emerald-200/80"
-                          style={{ width: `${48 + index * 18}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+          <Image
+            src="/desktop-backlog.png"
+            alt="Blame backlog desktop interface"
+            width={2450}
+            height={1385}
+            className="h-auto w-full"
+            priority
+          />
         </div>
       </div>
     </div>
