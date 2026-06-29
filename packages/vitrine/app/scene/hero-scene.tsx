@@ -4,8 +4,8 @@ import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { Sky } from 'three/examples/jsm/objects/Sky.js'
 
-const TERRAIN_SIZE = 90
-const TERRAIN_SEGMENTS = 168
+const TERRAIN_SIZE = 132
+const TERRAIN_SEGMENTS = 192
 const SUN_ELEVATION_DEGREES = 5.2
 const SUN_AZIMUTH_DEGREES = -166
 const SUN_DIRECTION = createSunDirection()
@@ -157,8 +157,8 @@ function createHeroScene(container: HTMLDivElement): SceneState {
 
 function createTerrain(textures: TerrainTextures) {
   const terrain = new THREE.Group()
-  terrain.add(createTerrainMesh(textures, 0, -2.65, -4.5, 1.05))
-  terrain.add(createTerrainMesh(textures, 18, -1.7, -29, 0.76))
+  terrain.add(createTerrainMesh(textures, 0, -3.05, -9, 1.04))
+  terrain.add(createTerrainMesh(textures, 24, -2.25, -54, 0.82))
   return terrain
 }
 
@@ -182,30 +182,47 @@ function createTerrainMesh(
   for (let index = 0; index < positions.count; index += 1) {
     const x = positions.getX(index)
     const z = positions.getZ(index)
-    const distanceFromCenter = Math.sqrt((x - 3) ** 2 + (z + 10) ** 2)
-    const packedNoise = fbm2((x + offset * 0.7) * 0.072, z * 0.072, 5)
-    const coarseNoise = fbm2((x - offset) * 0.036 + 31.7, z * 0.036 - 12.4, 4)
-    const horizonRise = THREE.MathUtils.smoothstep(-z, -7, 35) * 7.4
-    const centralPeak =
-      Math.exp(-((x + 9 + offset * 0.16) ** 2 + (z + 18) ** 2) / 78) * 9.8
-    const sidePeak = Math.exp(-((x - 22) ** 2 + (z + 23) ** 2) / 170) * 6.3
-    const leftRidge = Math.exp(-((x + 28) ** 2 + (z + 6) ** 2) / 220) * 5.4
-    const foregroundRidge =
-      Math.exp(-((z - 12) ** 2) / 26) * (3.2 + Math.sin(x * 0.41) * 0.95)
-    const stoneMass = (packedNoise - 0.5) * 2.1 + (coarseNoise - 0.5) * 1.6
+    const distanceFromBasin = Math.sqrt((x - 4) ** 2 + (z + 24) ** 2)
+    const packedNoise = fbm2((x + offset * 0.52) * 0.058, z * 0.058, 5)
+    const coarseNoise = fbm2((x - offset) * 0.025 + 31.7, z * 0.025 - 12.4, 4)
+    const horizonRise = THREE.MathUtils.smoothstep(-z, 4, 72) * 9.2
+    const longitudinalFold =
+      Math.sin((z + offset * 0.28) * 0.19 + x * 0.052 + coarseNoise * 1.35) *
+        0.5 +
+      0.5
+    const diagonalFold =
+      Math.sin(x * 0.145 - z * 0.082 + offset * 0.16 + packedNoise * 1.1) *
+        0.5 +
+      0.5
+    const striatedRidges = THREE.MathUtils.smoothstep(
+      0.48,
+      0.94,
+      longitudinalFold,
+    )
+    const erodedChannels = THREE.MathUtils.smoothstep(0.36, 0.88, diagonalFold)
+    const distantMesa =
+      Math.exp(-((z + 48) ** 2) / 560) *
+      (4.8 + Math.sin((x + offset) * 0.11) * 1.2)
+    const diagonalEscarpment =
+      Math.exp(-((x * 0.42 + z + 24 + offset * 0.22) ** 2) / 135) * 5.6
+    const foregroundShelf =
+      Math.exp(-((z - 18) ** 2) / 42) *
+      (2.2 + Math.sin((x - offset) * 0.24) * 0.55)
+    const stoneMass = (packedNoise - 0.5) * 1.55 + (coarseNoise - 0.5) * 1.25
     const windErosion =
-      Math.sin(distanceFromCenter * 0.46 + coarseNoise * 3.8) * 0.18
+      Math.sin(distanceFromBasin * 0.32 + coarseNoise * 4.2) * 0.16
 
     positions.setY(
       index,
       (horizonRise * 0.8 +
-        centralPeak * 0.68 +
-        sidePeak * 0.7 +
-        leftRidge * 0.7 +
-        foregroundRidge * 0.72 +
-        stoneMass * 0.72 +
+        distantMesa * 0.78 +
+        diagonalEscarpment * 0.68 +
+        foregroundShelf * 0.62 +
+        striatedRidges * (1.4 + coarseNoise * 1.1) +
+        erodedChannels * 0.76 +
+        stoneMass * 0.86 +
         windErosion -
-        4.15) *
+        4.65) *
         scale,
     )
   }
