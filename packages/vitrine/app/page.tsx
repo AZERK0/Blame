@@ -4,6 +4,29 @@ import { HeroScene } from './scene/hero-scene'
 
 const navigationItems = ['Product', 'Pricing', 'Download']
 
+const agentChaosCards = [
+  {
+    title: 'Parallel agents collide',
+    description:
+      'Running several agents at once is nearly impossible when they share the same branch, files, dependencies, and local server.',
+  },
+  {
+    title: 'Worktrees don’t scale alone',
+    description:
+      'Git worktrees are the right foundation, but raw worktrees still need dependencies installed, env files copied, ports assigned, servers launched, and previews linked to the right task.',
+  },
+  {
+    title: 'Context gets lost in chats',
+    description:
+      'Most AI coding starts from scattered prompts instead of structured user stories, acceptance criteria, project context, and a visible backlog.',
+  },
+  {
+    title: 'AI slop gets merged',
+    description:
+      'Without project-specific coding practices, agents generate code that may work once, but ignores architecture, tests, naming, error handling, and long-term maintainability.',
+  },
+]
+
 export default function Home() {
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#050712] text-white">
@@ -137,6 +160,65 @@ export default function Home() {
             }
           }
         `}</style>
+      </section>
+
+      <section
+        id="product"
+        aria-labelledby="agent-chaos-title"
+        className="relative isolate overflow-hidden px-5 py-24 sm:px-8 sm:py-32 lg:px-10"
+      >
+        <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-px bg-gradient-to-r from-transparent via-white/18 to-transparent" />
+        <div className="pointer-events-none absolute left-1/2 top-0 -z-10 h-[38rem] w-[38rem] -translate-x-1/2 rounded-full bg-[#b3acf3]/10 blur-3xl" />
+        <div className="mx-auto max-w-7xl">
+          <div className="mx-auto max-w-4xl text-center">
+            <p className="mb-5 text-xs font-semibold uppercase tracking-[0.36em] text-[#b3acf3]">
+              THE AGENT CHAOS
+            </p>
+            <h2
+              id="agent-chaos-title"
+              className="text-balance text-[clamp(2.5rem,6vw,5.5rem)] font-semibold leading-[0.92] tracking-[-0.075em] text-white"
+            >
+              AI coding is fast.
+              <br />
+              Shipping it safely is the hard part.
+            </h2>
+            <p className="mx-auto mt-7 max-w-3xl text-balance text-base leading-7 text-white/68 sm:text-lg md:text-xl">
+              The problem is no longer generating code. The problem is keeping
+              agent work isolated, testable, reviewable, and aligned with your
+              engineering standards.
+            </p>
+          </div>
+
+          <div className="mt-16 grid gap-4 md:grid-cols-2 lg:mt-20">
+            {agentChaosCards.map((card, index) => (
+              <article
+                key={card.title}
+                className="group relative overflow-hidden rounded-3xl border border-white/12 bg-white/[0.055] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.28)] backdrop-blur-xl transition duration-200 hover:-translate-y-1 hover:border-[#b3acf3]/36 hover:bg-white/[0.075] sm:p-7"
+              >
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(179,172,243,0.16),transparent_32%)] opacity-0 transition duration-200 group-hover:opacity-100" />
+                <div className="relative">
+                  <div className="mb-8 flex items-center justify-between gap-4">
+                    <span className="text-xs font-semibold uppercase tracking-[0.28em] text-white/36">
+                      0{index + 1}
+                    </span>
+                    <span className="h-px flex-1 bg-gradient-to-r from-white/14 to-transparent" />
+                  </div>
+                  <h3 className="text-2xl font-semibold tracking-[-0.035em] text-white sm:text-3xl">
+                    {card.title}
+                  </h3>
+                  <p className="mt-4 text-base leading-7 text-white/64">
+                    {card.description}
+                  </p>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <p className="mx-auto mt-14 max-w-3xl text-center text-xl font-semibold leading-8 tracking-[-0.03em] text-white sm:text-2xl">
+            Blame turns agent output into isolated, previewable, reviewable
+            engineering work.
+          </p>
+        </div>
       </section>
     </main>
   );
