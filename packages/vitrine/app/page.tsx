@@ -224,9 +224,9 @@ function SiteHeader() {
 
 function ProductMockup() {
   return (
-    <div className="landing-reveal landing-reveal-mockup pointer-events-none z-20 mx-auto w-full max-w-5xl translate-y-[5%]">
-      <div className="rounded-[2rem] border border-white/16 bg-white/[0.08] p-2 shadow-[0_32px_120px_rgba(0,0,0,0.55)] backdrop-blur-2xl sm:rounded-[2.5rem] sm:p-3">
-        <div className="overflow-hidden rounded-[1.55rem] border border-white/10 bg-[#080b16]/92 shadow-inner sm:rounded-[2rem]">
+    <div className="landing-reveal landing-reveal-mockup pointer-events-none z-20 mx-auto mb-4 w-full max-w-5xl">
+      <div className="rounded-2xl border border-white/16 bg-white/[0.08] p-2 shadow-[0_32px_120px_rgba(0,0,0,0.55)] backdrop-blur-2xl sm:p-3">
+        <div className="overflow-hidden rounded-xl border border-white/10 bg-[#080b16]/92 shadow-inner">
           <Image
             src="/desktop-backlog.png"
             alt="Blame backlog desktop interface"
