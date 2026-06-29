@@ -27,6 +27,32 @@ const agentChaosCards = [
   },
 ]
 
+const parallelWorkflowSteps = [
+  'User Story',
+  'Prepared Worktree',
+  'Live Preview',
+  'Diff Review',
+  'Controlled Merge',
+]
+
+const parallelAgentCards = [
+  {
+    title: 'Isolated by default',
+    description:
+      'Every agent works on its own task, branch, worktree, and context — keeping your main workspace clean.',
+  },
+  {
+    title: 'Ready to run',
+    description:
+      'Blame prepares dependencies, env files, ports, commands, servers, and preview links for each task.',
+  },
+  {
+    title: 'Controlled until merge',
+    description:
+      'Review the running result, inspect the diff, ask for changes, and merge only when the work is accepted.',
+  },
+]
+
 export default function Home() {
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#050712] text-white">
@@ -218,6 +244,79 @@ export default function Home() {
             Blame turns agent output into isolated, previewable, reviewable
             engineering work.
           </p>
+        </div>
+      </section>
+
+      <section
+        id="workflow"
+        aria-labelledby="parallel-agent-title"
+        className="relative isolate overflow-hidden px-5 py-24 sm:px-8 sm:py-32 lg:px-10"
+      >
+        <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-px bg-gradient-to-r from-transparent via-white/14 to-transparent" />
+        <div className="pointer-events-none absolute bottom-0 left-1/2 -z-10 h-[30rem] w-[44rem] -translate-x-1/2 rounded-full bg-[#b3acf3]/8 blur-3xl" />
+        <div className="mx-auto max-w-[1100px]">
+          <div className="mx-auto max-w-4xl text-center">
+            <p className="mb-5 text-xs font-semibold uppercase tracking-[0.36em] text-[#b3acf3]">
+              PARALLEL AGENT WORK
+            </p>
+            <h2
+              id="parallel-agent-title"
+              className="text-balance text-[clamp(2.35rem,5vw,4.8rem)] font-semibold leading-[0.95] tracking-[-0.07em] text-white"
+            >
+              Run multiple agents in parallel.
+              <br />
+              Without breaking your workflow.
+            </h2>
+            <p className="mx-auto mt-7 max-w-[720px] text-balance text-base leading-7 text-white/68 sm:text-lg md:text-xl">
+              Launch several agents at once, each isolated in its own
+              ready-to-run workspace with preview, diffs, and merge control
+              built in.
+            </p>
+          </div>
+
+          <div
+            aria-label="Parallel agent workflow"
+            className="mx-auto mt-10 flex max-w-5xl flex-wrap items-center justify-center gap-2 sm:mt-12"
+          >
+            {parallelWorkflowSteps.map((step, index) => (
+              <div key={step} className="flex items-center gap-2">
+                <span className="rounded-full border border-white/12 bg-white/[0.06] px-3 py-2 text-xs font-semibold text-white/78 shadow-2xl shadow-black/20 backdrop-blur-xl sm:px-4 sm:text-sm">
+                  {step}
+                </span>
+                {index < parallelWorkflowSteps.length - 1 ? (
+                  <ArrowRight
+                    aria-hidden="true"
+                    className="h-4 w-4 text-[#b3acf3]/64"
+                  />
+                ) : null}
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-12 grid gap-4 md:grid-cols-3 lg:mt-14">
+            {parallelAgentCards.map((card, index) => (
+              <article
+                key={card.title}
+                className="group relative overflow-hidden rounded-3xl border border-white/12 bg-white/[0.052] p-6 shadow-[0_22px_70px_rgba(0,0,0,0.24)] backdrop-blur-xl transition duration-200 hover:-translate-y-1 hover:border-[#b3acf3]/34 hover:bg-white/[0.074]"
+              >
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(179,172,243,0.14),transparent_38%)] opacity-0 transition duration-200 group-hover:opacity-100" />
+                <div className="relative">
+                  <div className="mb-7 flex items-center gap-3">
+                    <span className="grid h-8 w-8 place-items-center rounded-full border border-white/12 bg-white/[0.07] text-xs font-semibold text-[#d7d2ff]">
+                      0{index + 1}
+                    </span>
+                    <span className="h-px flex-1 bg-gradient-to-r from-white/16 to-transparent" />
+                  </div>
+                  <h3 className="text-2xl font-semibold tracking-[-0.035em] text-white">
+                    {card.title}
+                  </h3>
+                  <p className="mt-4 text-sm leading-6 text-white/64 sm:text-base sm:leading-7">
+                    {card.description}
+                  </p>
+                </div>
+              </article>
+            ))}
+          </div>
         </div>
       </section>
     </main>
