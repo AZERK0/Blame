@@ -11,6 +11,16 @@ const SUN_AZIMUTH_DEGREES = -166
 const SUN_DIRECTION = createSunDirection()
 const TWILIGHT_FOG_COLOR = 0x3666ff;
 const TERRAIN_TEXTURE_SIZE = 512
+const PLUS_FIELD_RADIUS = 11.5
+const PLUS_FIELD_STEP = 2.15
+const PLUS_FIELD_BACK_Z = -60
+const PLUS_FIELD_FRONT_Z = 22
+const PLUS_FIELD_POINTER_X_RANGE = 16
+const PLUS_FIELD_TERRAIN_CLEARANCE = 0.24
+const PRIMARY_TERRAIN_OFFSET = 0
+const PRIMARY_TERRAIN_Y = -3.05
+const PRIMARY_TERRAIN_Z = -9
+const PRIMARY_TERRAIN_SCALE = 1.04
 
 type SceneState = {
   cleanup: () => void
@@ -25,6 +35,18 @@ type TerrainTextures = {
 type SunMaterials = {
   core: THREE.MeshBasicMaterial
   halo: THREE.SpriteMaterial
+}
+
+type PlusMarker = {
+  mesh: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>
+  localX: number
+  localZ: number
+  baseOpacity: number
+}
+
+type PlusField = {
+  group: THREE.Group
+  markers: PlusMarker[]
 }
 
 export function HeroScene() {
@@ -80,6 +102,9 @@ function createHeroScene(container: HTMLDivElement): SceneState {
   const terrain = createTerrain(terrainTextures)
   scene.add(terrain)
 
+  const plusField = createPlusField()
+  terrain.add(plusField.group)
+
   const atmosphericHaze = createAtmosphericHaze()
   scene.add(atmosphericHaze)
 
@@ -130,6 +155,7 @@ function createHeroScene(container: HTMLDivElement): SceneState {
     camera.lookAt(pointer.x * 1.8, -0.52, -8.5)
 
     terrain.rotation.z = Math.sin(elapsed * 0.08) * 0.006 + pointer.x * 0.012
+    updatePlusField(plusField, pointer, elapsed)
     atmosphericHaze.material.uniforms.uTime.value = elapsed
 
     renderer.render(scene, camera)
@@ -157,7 +183,15 @@ function createHeroScene(container: HTMLDivElement): SceneState {
 
 function createTerrain(textures: TerrainTextures) {
   const terrain = new THREE.Group()
-  terrain.add(createTerrainMesh(textures, 0, -3.05, -9, 1.04))
+  terrain.add(
+    createTerrainMesh(
+      textures,
+      PRIMARY_TERRAIN_OFFSET,
+      PRIMARY_TERRAIN_Y,
+      PRIMARY_TERRAIN_Z,
+      PRIMARY_TERRAIN_SCALE,
+    ),
+  )
   terrain.add(createTerrainMesh(textures, 24, -2.25, -54, 0.82))
   return terrain
 }
@@ -182,49 +216,7 @@ function createTerrainMesh(
   for (let index = 0; index < positions.count; index += 1) {
     const x = positions.getX(index)
     const z = positions.getZ(index)
-    const distanceFromBasin = Math.sqrt((x - 4) ** 2 + (z + 24) ** 2)
-    const packedNoise = fbm2((x + offset * 0.52) * 0.058, z * 0.058, 5)
-    const coarseNoise = fbm2((x - offset) * 0.025 + 31.7, z * 0.025 - 12.4, 4)
-    const horizonRise = THREE.MathUtils.smoothstep(-z, 4, 72) * 9.2
-    const longitudinalFold =
-      Math.sin((z + offset * 0.28) * 0.19 + x * 0.052 + coarseNoise * 1.35) *
-        0.5 +
-      0.5
-    const diagonalFold =
-      Math.sin(x * 0.145 - z * 0.082 + offset * 0.16 + packedNoise * 1.1) *
-        0.5 +
-      0.5
-    const striatedRidges = THREE.MathUtils.smoothstep(
-      0.48,
-      0.94,
-      longitudinalFold,
-    )
-    const erodedChannels = THREE.MathUtils.smoothstep(0.36, 0.88, diagonalFold)
-    const distantMesa =
-      Math.exp(-((z + 48) ** 2) / 560) *
-      (4.8 + Math.sin((x + offset) * 0.11) * 1.2)
-    const diagonalEscarpment =
-      Math.exp(-((x * 0.42 + z + 24 + offset * 0.22) ** 2) / 135) * 5.6
-    const foregroundShelf =
-      Math.exp(-((z - 18) ** 2) / 42) *
-      (2.2 + Math.sin((x - offset) * 0.24) * 0.55)
-    const stoneMass = (packedNoise - 0.5) * 1.55 + (coarseNoise - 0.5) * 1.25
-    const windErosion =
-      Math.sin(distanceFromBasin * 0.32 + coarseNoise * 4.2) * 0.16
-
-    positions.setY(
-      index,
-      (horizonRise * 0.8 +
-        distantMesa * 0.78 +
-        diagonalEscarpment * 0.68 +
-        foregroundShelf * 0.62 +
-        striatedRidges * (1.4 + coarseNoise * 1.1) +
-        erodedChannels * 0.76 +
-        stoneMass * 0.86 +
-        windErosion -
-        4.65) *
-        scale,
-    )
+    positions.setY(index, sampleTerrainHeight(x, z, offset, scale))
   }
 
   geometry.computeVertexNormals()
@@ -246,6 +238,155 @@ function createTerrainMesh(
   mesh.castShadow = false
   mesh.position.set(0, y, z)
   return mesh
+}
+
+function sampleTerrainHeight(
+  x: number,
+  z: number,
+  offset: number,
+  scale: number,
+) {
+  const distanceFromBasin = Math.sqrt((x - 4) ** 2 + (z + 24) ** 2)
+  const packedNoise = fbm2((x + offset * 0.52) * 0.058, z * 0.058, 5)
+  const coarseNoise = fbm2((x - offset) * 0.025 + 31.7, z * 0.025 - 12.4, 4)
+  const horizonRise = THREE.MathUtils.smoothstep(-z, 4, 72) * 9.2
+  const longitudinalFold =
+    Math.sin((z + offset * 0.28) * 0.19 + x * 0.052 + coarseNoise * 1.35) *
+      0.5 +
+    0.5
+  const diagonalFold =
+    Math.sin(x * 0.145 - z * 0.082 + offset * 0.16 + packedNoise * 1.1) *
+      0.5 +
+    0.5
+  const striatedRidges = THREE.MathUtils.smoothstep(
+    0.48,
+    0.94,
+    longitudinalFold,
+  )
+  const erodedChannels = THREE.MathUtils.smoothstep(0.36, 0.88, diagonalFold)
+  const distantMesa =
+    Math.exp(-((z + 48) ** 2) / 560) *
+    (4.8 + Math.sin((x + offset) * 0.11) * 1.2)
+  const diagonalEscarpment =
+    Math.exp(-((x * 0.42 + z + 24 + offset * 0.22) ** 2) / 135) * 5.6
+  const foregroundShelf =
+    Math.exp(-((z - 18) ** 2) / 42) *
+    (2.2 + Math.sin((x - offset) * 0.24) * 0.55)
+  const stoneMass = (packedNoise - 0.5) * 1.55 + (coarseNoise - 0.5) * 1.25
+  const windErosion = Math.sin(distanceFromBasin * 0.32 + coarseNoise * 4.2) * 0.16
+
+  return (
+    (horizonRise * 0.8 +
+      distantMesa * 0.78 +
+      diagonalEscarpment * 0.68 +
+      foregroundShelf * 0.62 +
+      striatedRidges * (1.4 + coarseNoise * 1.1) +
+      erodedChannels * 0.76 +
+      stoneMass * 0.86 +
+      windErosion -
+      4.65) *
+    scale
+  )
+}
+
+function createPlusField(): PlusField {
+  const group = new THREE.Group()
+  const markers: PlusMarker[] = []
+  const geometry = createPlusGeometry()
+
+  group.position.set(0, PRIMARY_TERRAIN_Y, 0)
+  group.renderOrder = 8
+
+  for (let localZ = -PLUS_FIELD_RADIUS; localZ <= PLUS_FIELD_RADIUS; localZ += PLUS_FIELD_STEP) {
+    for (let localX = -PLUS_FIELD_RADIUS; localX <= PLUS_FIELD_RADIUS; localX += PLUS_FIELD_STEP) {
+      const distance = Math.sqrt(localX ** 2 + localZ ** 2)
+
+      if (distance > PLUS_FIELD_RADIUS) {
+        continue
+      }
+
+      const edgeFade = 1 - THREE.MathUtils.smoothstep(
+        PLUS_FIELD_RADIUS * 0.52,
+        PLUS_FIELD_RADIUS,
+        distance,
+      )
+      const material = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.1 + edgeFade * 0.46,
+        depthWrite: false,
+        depthTest: false,
+        blending: THREE.AdditiveBlending,
+        side: THREE.DoubleSide,
+      })
+      const mesh = new THREE.Mesh(geometry, material)
+      const jitterX = (hashNoise2(localX * 2.7, localZ * 2.7) - 0.5) * 0.42
+      const jitterZ = (hashNoise2(localX * 3.1 + 17, localZ * 3.1 - 11) - 0.5) * 0.42
+
+      mesh.position.x = localX + jitterX
+      mesh.position.z = localZ + jitterZ
+      mesh.rotation.x = -Math.PI / 2
+      mesh.rotation.z = (hashNoise2(localX + 8, localZ - 6) - 0.5) * 0.16
+      mesh.scale.setScalar(0.66 + edgeFade * 0.18)
+      markers.push({ mesh, localX: mesh.position.x, localZ: mesh.position.z, baseOpacity: material.opacity })
+      group.add(mesh)
+    }
+  }
+
+  return { group, markers }
+}
+
+function createPlusGeometry() {
+  const shape = new THREE.Shape()
+  const armLength = 0.42
+  const armWidth = 0.12
+
+  shape.moveTo(-armWidth, -armLength)
+  shape.lineTo(armWidth, -armLength)
+  shape.lineTo(armWidth, -armWidth)
+  shape.lineTo(armLength, -armWidth)
+  shape.lineTo(armLength, armWidth)
+  shape.lineTo(armWidth, armWidth)
+  shape.lineTo(armWidth, armLength)
+  shape.lineTo(-armWidth, armLength)
+  shape.lineTo(-armWidth, armWidth)
+  shape.lineTo(-armLength, armWidth)
+  shape.lineTo(-armLength, -armWidth)
+  shape.lineTo(-armWidth, -armWidth)
+  shape.closePath()
+
+  return new THREE.ShapeGeometry(shape)
+}
+
+function updatePlusField(field: PlusField, pointer: THREE.Vector2, elapsed: number) {
+  const targetZ = THREE.MathUtils.mapLinear(
+    pointer.y,
+    -1,
+    1,
+    PLUS_FIELD_BACK_Z,
+    PLUS_FIELD_FRONT_Z,
+  )
+  field.group.position.x = THREE.MathUtils.lerp(
+    field.group.position.x,
+    pointer.x * PLUS_FIELD_POINTER_X_RANGE,
+    0.075,
+  )
+  field.group.position.z = THREE.MathUtils.lerp(field.group.position.z, targetZ, 0.075)
+
+  for (const marker of field.markers) {
+    const terrainX = field.group.position.x + marker.localX
+    const terrainZ = field.group.position.z + marker.localZ - PRIMARY_TERRAIN_Z
+    const height = sampleTerrainHeight(
+      terrainX,
+      terrainZ,
+      PRIMARY_TERRAIN_OFFSET,
+      PRIMARY_TERRAIN_SCALE,
+    )
+    const pulse = Math.sin(elapsed * 1.7 + marker.localX * 0.26 + marker.localZ * 0.19) * 0.08
+
+    marker.mesh.position.y = height + PLUS_FIELD_TERRAIN_CLEARANCE
+    marker.mesh.material.opacity = Math.max(0.02, marker.baseOpacity + pulse)
+  }
 }
 
 function createAtmosphericHaze() {
