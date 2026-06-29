@@ -9,7 +9,7 @@ const TERRAIN_SEGMENTS = 168
 const SUN_ELEVATION_DEGREES = 5.2
 const SUN_AZIMUTH_DEGREES = -166
 const SUN_DIRECTION = createSunDirection()
-const TWILIGHT_FOG_COLOR = 0x2c315a
+const TWILIGHT_FOG_COLOR = 0x3666ff;
 const TERRAIN_TEXTURE_SIZE = 512
 
 type SceneState = {
@@ -76,9 +76,6 @@ function createHeroScene(container: HTMLDivElement): SceneState {
   const sky = createAtmosphericSky()
   scene.add(sky)
 
-  const sun = createSunsetSun()
-  scene.add(sun)
-
   const terrainTextures = createStoneTextures(renderer)
   const terrain = createTerrain(terrainTextures)
   scene.add(terrain)
@@ -134,7 +131,6 @@ function createHeroScene(container: HTMLDivElement): SceneState {
 
     terrain.rotation.z = Math.sin(elapsed * 0.08) * 0.006 + pointer.x * 0.012
     atmosphericHaze.material.uniforms.uTime.value = elapsed
-    updateSunGlow(sun, elapsed)
 
     renderer.render(scene, camera)
     animationFrame = requestAnimationFrame(animate)
@@ -148,7 +144,6 @@ function createHeroScene(container: HTMLDivElement): SceneState {
       window.removeEventListener('resize', resize)
       window.removeEventListener('pointermove', handlePointerMove)
       disposeObject3D(sky)
-      disposeObject3D(sun)
       disposeObject3D(terrain)
       disposeObject3D(atmosphericHaze)
       terrainTextures.color.dispose()
@@ -240,8 +235,8 @@ function createAtmosphericHaze() {
   const geometry = new THREE.SphereGeometry(95, 48, 24)
   const material = new THREE.ShaderMaterial({
     uniforms: {
-      uDuskColor: { value: new THREE.Color(0x9799fc) },
-      uHorizonColor: { value: new THREE.Color(0xbdc3fd) },
+      uDuskColor: { value: new THREE.Color(0x202a55) },
+      uHorizonColor: { value: new THREE.Color(0x5d5578) },
       uTime: { value: 0 },
     },
     vertexShader: `
@@ -302,7 +297,7 @@ function createAtmosphericHaze() {
         float veil = smoothstep(0.18, 0.82, drift) * 0.34 + 0.66;
         float warmCore = smoothstep(0.0, 0.72, horizonBand) * smoothstep(-22.0, 7.0, vWorldPosition.x);
         vec3 color = mix(uDuskColor, uHorizonColor, warmCore * 0.64);
-        float alpha = distanceFade * horizonBand * groundLift * veil * 0.12;
+        float alpha = distanceFade * horizonBand * groundLift * veil * 0.08;
 
         gl_FragColor = vec4(color, alpha);
       }
@@ -480,14 +475,14 @@ function createAtmosphericSky() {
   sky.material.fragmentShader = sky.material.fragmentShader.replace(
     'gl_FragColor = vec4( texColor, 1.0 );',
     `
-      vec3 paletteZenith = vec3(0.592, 0.600, 0.988);
-      vec3 paletteHorizon = vec3(0.741, 0.765, 0.992);
-      vec3 paletteSun = vec3(0.702, 0.675, 0.953);
+      vec3 paletteZenith = vec3(0.024, 0.032, 1);
+      vec3 paletteHorizon = vec3(0.260, 0.235, 1);
+      vec3 paletteSun = vec3(0.470, 0.410, 1);
       float horizonTint = 1.0 - smoothstep(0.0, 0.58, direction.y);
       float sunTint = pow(max(dot(direction, vSunDirection), 0.0), 12.0);
       vec3 paletteColor = mix(paletteZenith, paletteHorizon, horizonTint);
-      paletteColor = mix(paletteColor, paletteSun, sunTint * 0.44);
-      texColor = mix(texColor, paletteColor, 0.72);
+      paletteColor = mix(paletteColor, paletteSun, sunTint * 0.38);
+      texColor = mix(texColor * 0.38, paletteColor, 0.82);
       gl_FragColor = vec4( texColor, 1.0 );
     `,
   )
@@ -500,47 +495,6 @@ function createAtmosphericSky() {
   sky.material.depthTest = false
   sky.renderOrder = -1000
   return sky
-}
-
-function createSunsetSun() {
-  const sun = new THREE.Group()
-  sun.position.copy(SUN_DIRECTION).multiplyScalar(52)
-  sun.renderOrder = -900
-
-  const coreMaterial = new THREE.MeshBasicMaterial({
-    color: 0xbdc3fd,
-    transparent: true,
-    opacity: 0.98,
-    fog: false,
-    toneMapped: false,
-  })
-  const core = new THREE.Mesh(
-    new THREE.SphereGeometry(1.65, 48, 24),
-    coreMaterial,
-  )
-  sun.add(core)
-
-  const haloTexture = createRadialGlowTexture()
-  const haloMaterial = new THREE.SpriteMaterial({
-    map: haloTexture,
-    color: 0xb3acf3,
-    transparent: true,
-    opacity: 0.56,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-    depthTest: false,
-    fog: false,
-    toneMapped: false,
-  })
-  const halo = new THREE.Sprite(haloMaterial)
-  halo.scale.set(17, 17, 1)
-  sun.add(halo)
-
-  sun.userData.materials = {
-    core: coreMaterial,
-    halo: haloMaterial,
-  } satisfies SunMaterials
-  return sun
 }
 
 function createRadialGlowTexture() {
