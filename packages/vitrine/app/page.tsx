@@ -10,7 +10,7 @@ export default function Home() {
       <section
         id="top"
         aria-labelledby="hero-title"
-        className="hero-stage relative isolate min-h-screen overflow-x-hidden"
+        className="hero-stage relative isolate min-h-screen overflow-hidden"
       >
         <HeroScene />
         <SceneWarmup />
