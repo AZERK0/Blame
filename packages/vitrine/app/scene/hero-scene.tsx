@@ -5,14 +5,11 @@ import * as THREE from 'three'
 import { Sky } from 'three/examples/jsm/objects/Sky.js'
 
 const TERRAIN_SIZE = 132
-const TERRAIN_SEGMENTS = 192
 const SUN_ELEVATION_DEGREES = 5.2
 const SUN_AZIMUTH_DEGREES = -166
 const SUN_DIRECTION = createSunDirection()
-const TWILIGHT_FOG_COLOR = 0x3666ff;
-const TERRAIN_TEXTURE_SIZE = 256
+const TWILIGHT_FOG_COLOR = 0x3666ff
 const PLUS_FIELD_RADIUS = 11.5
-const PLUS_FIELD_STEP = 2.15
 const PLUS_FIELD_BACK_Z = -80
 const PLUS_FIELD_FRONT_Z = 0
 const PLUS_FIELD_POINTER_X_RANGE = 40
@@ -21,6 +18,10 @@ const PRIMARY_TERRAIN_OFFSET = 0
 const PRIMARY_TERRAIN_Y = -5
 const PRIMARY_TERRAIN_Z = -15
 const PRIMARY_TERRAIN_SCALE = 2
+const FRAME_DELTA_MAX = 0.1
+const CAMERA_POINTER_RESPONSE = 7
+const PLUS_FIELD_RESPONSE = 9
+const PLUS_HEIGHT_RESPONSE = 20
 
 type SceneState = {
   cleanup: () => void
@@ -28,25 +29,46 @@ type SceneState = {
 
 type TerrainTextures = {
   color: THREE.CanvasTexture
-  bump: THREE.CanvasTexture
-  roughness: THREE.CanvasTexture
+  bump?: THREE.CanvasTexture
+  roughness?: THREE.CanvasTexture
 }
 
-type SunMaterials = {
-  core: THREE.MeshBasicMaterial
-  halo: THREE.SpriteMaterial
+type SceneQuality = {
+  terrainSegments: number
+  terrainTextureSize: number
+  plusFieldStep: number
+  pixelRatioCap: number
+  anisotropyCap: number
+  plusHeightUpdateInterval: number
+  plusHeightMoveThreshold: number
+  useDetailedTerrainMaterial: boolean
 }
+
+type StoneTextureKind = 'color' | 'bump' | 'roughness'
 
 type PlusMarker = {
-  mesh: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>
   localX: number
   localZ: number
+  scale: number
+  rotation: number
   baseOpacity: number
+  pulsePhase: number
+  currentHeight: number
+  targetHeight: number
 }
 
 type PlusField = {
   group: THREE.Group
+  mesh: THREE.InstancedMesh<THREE.BufferGeometry, THREE.ShaderMaterial>
   markers: PlusMarker[]
+  matrix: THREE.Matrix4
+  position: THREE.Vector3
+  quaternion: THREE.Quaternion
+  scale: THREE.Vector3
+  euler: THREE.Euler
+  lastHeightUpdate: number
+  lastSampleX: number
+  lastSampleZ: number
 }
 
 export function HeroScene() {
@@ -74,21 +96,111 @@ export function HeroScene() {
     <div
       ref={containerRef}
       aria-hidden="true"
-      className="absolute inset-0 -z-20"
+      className="absolute inset-x-0 top-0 -z-20 h-screen"
     />
   )
 }
 
+function createSceneQuality(): SceneQuality {
+  const navigatorProfile = navigator as Navigator & {
+    connection?: { saveData?: boolean }
+    deviceMemory?: number
+  }
+  const cores = navigator.hardwareConcurrency ?? 4
+  const memory = navigatorProfile.deviceMemory ?? 8
+  const saveData = navigatorProfile.connection?.saveData === true
+  const coarsePointer = window.matchMedia('(pointer: coarse)').matches
+  const narrowViewport = window.innerWidth < 900
+  const pixelLoad = window.innerWidth * window.innerHeight * window.devicePixelRatio ** 2
+
+  if (saveData || coarsePointer || narrowViewport || cores <= 4 || memory <= 4) {
+    return createLeanSceneQuality()
+  }
+
+  if (cores >= 10 && memory >= 8 && pixelLoad < 3_200_000) {
+    return {
+      terrainSegments: 128,
+      terrainTextureSize: 192,
+      plusFieldStep: 2.55,
+      pixelRatioCap: 1.35,
+      anisotropyCap: 6,
+      plusHeightUpdateInterval: 1 / 45,
+      plusHeightMoveThreshold: 0.1,
+      useDetailedTerrainMaterial: true,
+    }
+  }
+
+  return {
+    terrainSegments: 96,
+    terrainTextureSize: 160,
+    plusFieldStep: 2.95,
+    pixelRatioCap: 1.1,
+    anisotropyCap: 4,
+    plusHeightUpdateInterval: 1 / 36,
+    plusHeightMoveThreshold: 0.14,
+    useDetailedTerrainMaterial: false,
+  }
+}
+
+function createLeanSceneQuality(): SceneQuality {
+  return {
+    terrainSegments: 64,
+    terrainTextureSize: 128,
+    plusFieldStep: 3.45,
+    pixelRatioCap: 1,
+    anisotropyCap: 2,
+    plusHeightUpdateInterval: 1 / 30,
+    plusHeightMoveThreshold: 0.18,
+    useDetailedTerrainMaterial: false,
+  }
+}
+
+function createSoftwareSceneQuality(): SceneQuality {
+  return {
+    terrainSegments: 48,
+    terrainTextureSize: 96,
+    plusFieldStep: 4.4,
+    pixelRatioCap: 0.75,
+    anisotropyCap: 1,
+    plusHeightUpdateInterval: 1 / 24,
+    plusHeightMoveThreshold: 0.24,
+    useDetailedTerrainMaterial: false,
+  }
+}
+
+function usesSoftwareRenderer(renderer: THREE.WebGLRenderer) {
+  const context = renderer.getContext()
+  const debugInfo = context.getExtension('WEBGL_debug_renderer_info')
+
+  if (!debugInfo) {
+    return false
+  }
+
+  const rendererName = String(
+    context.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL),
+  ).toLowerCase()
+
+  return /swiftshader|software|llvmpipe|mesa offscreen/.test(rendererName)
+}
+
 function createHeroScene(container: HTMLDivElement): SceneState {
+  let quality = createSceneQuality()
   const scene = new THREE.Scene()
   scene.fog = new THREE.FogExp2(TWILIGHT_FOG_COLOR, 0.012)
 
   const camera = new THREE.PerspectiveCamera(48, 1, 0.1, 500000)
   camera.position.set(0, 7.4, 21)
 
-  const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true })
+  const renderer = new THREE.WebGLRenderer({
+    alpha: true,
+    antialias: false,
+    powerPreference: 'high-performance',
+  })
+  if (usesSoftwareRenderer(renderer)) {
+    quality = createSoftwareSceneQuality()
+  }
   renderer.setClearColor(0x000000, 0)
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75))
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, quality.pixelRatioCap))
   renderer.outputColorSpace = THREE.SRGBColorSpace
   renderer.toneMapping = THREE.ACESFilmicToneMapping
   renderer.toneMappingExposure = 0.62
@@ -98,15 +210,12 @@ function createHeroScene(container: HTMLDivElement): SceneState {
   const sky = createAtmosphericSky()
   scene.add(sky)
 
-  const terrainTextures = createStoneTextures(renderer)
-  const terrain = createTerrain(terrainTextures)
+  const terrainTextures = createStoneTextures(renderer, quality)
+  const terrain = createTerrain(terrainTextures, quality)
   scene.add(terrain)
 
-  const plusField = createPlusField()
+  const plusField = createPlusField(quality)
   terrain.add(plusField.group)
-
-  const atmosphericHaze = createAtmosphericHaze()
-  scene.add(atmosphericHaze)
 
   const ambientLight = new THREE.HemisphereLight(0xbdc3fd, 0x07101f, 0.78)
   scene.add(ambientLight)
@@ -129,7 +238,7 @@ function createHeroScene(container: HTMLDivElement): SceneState {
 
   const resize = () => {
     const { width, height } = container.getBoundingClientRect()
-    renderer.setSize(width, height, false)
+    renderer.setSize(width, height)
     camera.aspect = width / Math.max(height, 1)
     camera.updateProjectionMatrix()
   }
@@ -147,16 +256,16 @@ function createHeroScene(container: HTMLDivElement): SceneState {
   let animationFrame = 0
 
   const animate = () => {
-    const elapsed = clock.getElapsedTime()
-    pointer.lerp(targetPointer, 0.045)
+    const delta = Math.min(clock.getDelta(), FRAME_DELTA_MAX)
+    const elapsed = clock.elapsedTime
+    pointer.lerp(targetPointer, createFrameLerp(CAMERA_POINTER_RESPONSE, delta))
 
     camera.position.x = pointer.x * 1.1
     camera.position.y = 7.4 - pointer.y * 0.32
     camera.lookAt(pointer.x * 1.8, -0.52, -8.5)
 
     terrain.rotation.z = Math.sin(elapsed * 0.08) * 0.006 + pointer.x * 0.012
-    updatePlusField(plusField, pointer, elapsed)
-    atmosphericHaze.material.uniforms.uTime.value = elapsed
+    updatePlusField(plusField, targetPointer, elapsed, delta, quality)
 
     renderer.render(scene, camera)
     animationFrame = requestAnimationFrame(animate)
@@ -171,21 +280,21 @@ function createHeroScene(container: HTMLDivElement): SceneState {
       window.removeEventListener('pointermove', handlePointerMove)
       disposeObject3D(sky)
       disposeObject3D(terrain)
-      disposeObject3D(atmosphericHaze)
       terrainTextures.color.dispose()
-      terrainTextures.bump.dispose()
-      terrainTextures.roughness.dispose()
+      terrainTextures.bump?.dispose()
+      terrainTextures.roughness?.dispose()
       renderer.dispose()
       renderer.domElement.remove()
     },
   }
 }
 
-function createTerrain(textures: TerrainTextures) {
+function createTerrain(textures: TerrainTextures, quality: SceneQuality) {
   const terrain = new THREE.Group()
   terrain.add(
     createTerrainMesh(
       textures,
+      quality,
       PRIMARY_TERRAIN_OFFSET,
       PRIMARY_TERRAIN_Y,
       PRIMARY_TERRAIN_Z,
@@ -197,6 +306,7 @@ function createTerrain(textures: TerrainTextures) {
 
 function createTerrainMesh(
   textures: TerrainTextures,
+  quality: SceneQuality,
   offset: number,
   y: number,
   z: number,
@@ -205,8 +315,8 @@ function createTerrainMesh(
   const geometry = new THREE.PlaneGeometry(
     TERRAIN_SIZE,
     TERRAIN_SIZE,
-    TERRAIN_SEGMENTS,
-    TERRAIN_SEGMENTS,
+    quality.terrainSegments,
+    quality.terrainSegments,
   )
   geometry.rotateX(-Math.PI / 2)
 
@@ -220,7 +330,29 @@ function createTerrainMesh(
 
   geometry.computeVertexNormals()
 
-  const material = new THREE.MeshStandardMaterial({
+  const material = createTerrainMaterial(textures, quality)
+
+  const mesh = new THREE.Mesh(geometry, material)
+  mesh.receiveShadow = true
+  mesh.castShadow = false
+  mesh.position.set(0, y, z)
+  return mesh
+}
+
+function createTerrainMaterial(
+  textures: TerrainTextures,
+  quality: SceneQuality,
+) {
+  if (!quality.useDetailedTerrainMaterial) {
+    return new THREE.MeshLambertMaterial({
+      color: 0x1d2a42,
+      map: textures.color,
+      emissive: 0x071225,
+      emissiveIntensity: 0.18,
+    })
+  }
+
+  return new THREE.MeshStandardMaterial({
     color: 0x1d2a42,
     map: textures.color,
     bumpMap: textures.bump,
@@ -231,12 +363,6 @@ function createTerrainMesh(
     emissive: 0x071225,
     emissiveIntensity: 0.12,
   })
-
-  const mesh = new THREE.Mesh(geometry, material)
-  mesh.receiveShadow = true
-  mesh.castShadow = false
-  mesh.position.set(0, y, z)
-  return mesh
 }
 
 function sampleTerrainHeight(
@@ -288,7 +414,7 @@ function sampleTerrainHeight(
   )
 }
 
-function createPlusField(): PlusField {
+function createPlusField(quality: SceneQuality): PlusField {
   const group = new THREE.Group()
   const markers: PlusMarker[] = []
   const geometry = createPlusGeometry()
@@ -296,8 +422,8 @@ function createPlusField(): PlusField {
   group.position.set(0, PRIMARY_TERRAIN_Y, 0)
   group.renderOrder = 8
 
-  for (let localZ = -PLUS_FIELD_RADIUS; localZ <= PLUS_FIELD_RADIUS; localZ += PLUS_FIELD_STEP) {
-    for (let localX = -PLUS_FIELD_RADIUS; localX <= PLUS_FIELD_RADIUS; localX += PLUS_FIELD_STEP) {
+  for (let localZ = -PLUS_FIELD_RADIUS; localZ <= PLUS_FIELD_RADIUS; localZ += quality.plusFieldStep) {
+    for (let localX = -PLUS_FIELD_RADIUS; localX <= PLUS_FIELD_RADIUS; localX += quality.plusFieldStep) {
       const distance = Math.sqrt(localX ** 2 + localZ ** 2)
 
       if (distance > PLUS_FIELD_RADIUS) {
@@ -309,30 +435,58 @@ function createPlusField(): PlusField {
         PLUS_FIELD_RADIUS,
         distance,
       )
-      const material = new THREE.MeshBasicMaterial({
-        color: 0xffffff,
-        transparent: true,
-        opacity: 0.1 + edgeFade * 0.46,
-        depthWrite: false,
-        depthTest: false,
-        blending: THREE.AdditiveBlending,
-        side: THREE.DoubleSide,
-      })
-      const mesh = new THREE.Mesh(geometry, material)
       const jitterX = (hashNoise2(localX * 2.7, localZ * 2.7) - 0.5) * 0.42
       const jitterZ = (hashNoise2(localX * 3.1 + 17, localZ * 3.1 - 11) - 0.5) * 0.42
+      const markerX = localX + jitterX
+      const markerZ = localZ + jitterZ
 
-      mesh.position.x = localX + jitterX
-      mesh.position.z = localZ + jitterZ
-      mesh.rotation.x = -Math.PI / 2
-      mesh.rotation.z = (hashNoise2(localX + 8, localZ - 6) - 0.5) * 0.16
-      mesh.scale.setScalar(0.66 + edgeFade * 0.18)
-      markers.push({ mesh, localX: mesh.position.x, localZ: mesh.position.z, baseOpacity: material.opacity })
-      group.add(mesh)
+      markers.push({
+        localX: markerX,
+        localZ: markerZ,
+        rotation: (hashNoise2(localX + 8, localZ - 6) - 0.5) * 0.16,
+        scale: 0.66 + edgeFade * 0.18,
+        baseOpacity: 0.1 + edgeFade * 0.46,
+        pulsePhase: markerX * 0.26 + markerZ * 0.19,
+        currentHeight: 0,
+        targetHeight: 0,
+      })
     }
   }
 
-  return { group, markers }
+  const material = createPlusMaterial()
+  const mesh = new THREE.InstancedMesh(geometry, material, markers.length)
+  const baseOpacity = new Float32Array(markers.length)
+  const pulsePhase = new Float32Array(markers.length)
+  const field = {
+    group,
+    mesh,
+    markers,
+    matrix: new THREE.Matrix4(),
+    position: new THREE.Vector3(),
+    quaternion: new THREE.Quaternion(),
+    scale: new THREE.Vector3(),
+    euler: new THREE.Euler(),
+    lastHeightUpdate: -Infinity,
+    lastSampleX: Infinity,
+    lastSampleZ: Infinity,
+  }
+
+  for (let index = 0; index < markers.length; index += 1) {
+    const marker = markers[index]
+    baseOpacity[index] = marker.baseOpacity
+    pulsePhase[index] = marker.pulsePhase
+  }
+
+  geometry.setAttribute('aBaseOpacity', new THREE.InstancedBufferAttribute(baseOpacity, 1))
+  geometry.setAttribute('aPulsePhase', new THREE.InstancedBufferAttribute(pulsePhase, 1))
+  mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage)
+  mesh.frustumCulled = false
+  group.add(mesh)
+  updatePlusTargetHeights(field, 0)
+  snapPlusHeightsToTargets(field)
+  updatePlusMatrices(field, 0)
+
+  return field
 }
 
 function createPlusGeometry() {
@@ -357,7 +511,46 @@ function createPlusGeometry() {
   return new THREE.ShapeGeometry(shape)
 }
 
-function updatePlusField(field: PlusField, pointer: THREE.Vector2, elapsed: number) {
+function createPlusMaterial() {
+  return new THREE.ShaderMaterial({
+    uniforms: {
+      uTime: { value: 0 },
+    },
+    vertexShader: `
+      uniform float uTime;
+      attribute float aBaseOpacity;
+      attribute float aPulsePhase;
+      varying float vOpacity;
+
+      void main() {
+        vOpacity = max(0.02, aBaseOpacity + sin(uTime * 1.7 + aPulsePhase) * 0.08);
+        vec4 instancePosition = instanceMatrix * vec4(position, 1.0);
+        gl_Position = projectionMatrix * modelViewMatrix * instancePosition;
+      }
+    `,
+    fragmentShader: `
+      varying float vOpacity;
+
+      void main() {
+        gl_FragColor = vec4(1.0, 1.0, 1.0, vOpacity);
+      }
+    `,
+    transparent: true,
+    depthWrite: false,
+    depthTest: false,
+    blending: THREE.AdditiveBlending,
+    side: THREE.DoubleSide,
+  })
+}
+
+function updatePlusField(
+  field: PlusField,
+  pointer: THREE.Vector2,
+  elapsed: number,
+  delta: number,
+  quality: SceneQuality,
+) {
+  const follow = createFrameLerp(PLUS_FIELD_RESPONSE, delta)
   const targetZ = THREE.MathUtils.mapLinear(
     pointer.y,
     -1,
@@ -368,125 +561,115 @@ function updatePlusField(field: PlusField, pointer: THREE.Vector2, elapsed: numb
   field.group.position.x = THREE.MathUtils.lerp(
     field.group.position.x,
     pointer.x * PLUS_FIELD_POINTER_X_RANGE,
-    0.075,
+    follow,
   )
-  field.group.position.z = THREE.MathUtils.lerp(field.group.position.z, targetZ, 0.075)
+  field.group.position.z = THREE.MathUtils.lerp(field.group.position.z, targetZ, follow)
+  field.mesh.material.uniforms.uTime.value = elapsed
+
+  if (!shouldUpdatePlusHeights(field, elapsed, quality)) {
+    updatePlusMatrices(field, delta)
+    return
+  }
+
+  updatePlusTargetHeights(field, elapsed)
+  updatePlusMatrices(field, delta)
+}
+
+function shouldUpdatePlusHeights(
+  field: PlusField,
+  elapsed: number,
+  quality: SceneQuality,
+) {
+  if (elapsed - field.lastHeightUpdate < quality.plusHeightUpdateInterval) {
+    return false
+  }
+
+  const movement = Math.hypot(
+    field.group.position.x - field.lastSampleX,
+    field.group.position.z - field.lastSampleZ,
+  )
+
+  return movement >= quality.plusHeightMoveThreshold
+}
+
+function updatePlusTargetHeights(field: PlusField, elapsed: number) {
+  field.lastHeightUpdate = elapsed
+  field.lastSampleX = field.group.position.x
+  field.lastSampleZ = field.group.position.z
 
   for (const marker of field.markers) {
     const terrainX = field.group.position.x + marker.localX
     const terrainZ = field.group.position.z + marker.localZ - PRIMARY_TERRAIN_Z
-    const height = sampleTerrainHeight(
+    marker.targetHeight = sampleTerrainHeight(
       terrainX,
       terrainZ,
       PRIMARY_TERRAIN_OFFSET,
       PRIMARY_TERRAIN_SCALE,
     )
-    const pulse = Math.sin(elapsed * 1.7 + marker.localX * 0.26 + marker.localZ * 0.19) * 0.08
-
-    marker.mesh.position.y = height + PLUS_FIELD_TERRAIN_CLEARANCE
-    marker.mesh.material.opacity = Math.max(0.02, marker.baseOpacity + pulse)
   }
 }
 
-function createAtmosphericHaze() {
-  const geometry = new THREE.SphereGeometry(95, 48, 24)
-  const material = new THREE.ShaderMaterial({
-    uniforms: {
-      uDuskColor: { value: new THREE.Color(0x202a55) },
-      uHorizonColor: { value: new THREE.Color(0x5d5578) },
-      uTime: { value: 0 },
-    },
-    vertexShader: `
-      varying vec3 vWorldPosition;
-
-      void main() {
-        vec4 worldPosition = modelMatrix * vec4(position, 1.0);
-        vWorldPosition = worldPosition.xyz;
-        gl_Position = projectionMatrix * viewMatrix * worldPosition;
-      }
-    `,
-    fragmentShader: `
-      uniform vec3 uDuskColor;
-      uniform vec3 uHorizonColor;
-      uniform float uTime;
-      varying vec3 vWorldPosition;
-
-      float hash(vec2 point) {
-        return fract(sin(dot(point, vec2(127.1, 311.7))) * 43758.5453123);
-      }
-
-      float noise(vec2 point) {
-        vec2 cell = floor(point);
-        vec2 local = fract(point);
-        vec2 curve = local * local * (3.0 - 2.0 * local);
-
-        float bottomLeft = hash(cell);
-        float bottomRight = hash(cell + vec2(1.0, 0.0));
-        float topLeft = hash(cell + vec2(0.0, 1.0));
-        float topRight = hash(cell + vec2(1.0, 1.0));
-
-        return mix(
-          mix(bottomLeft, bottomRight, curve.x),
-          mix(topLeft, topRight, curve.x),
-          curve.y
-        );
-      }
-
-      float fbm(vec2 point) {
-        float value = 0.0;
-        float amplitude = 0.5;
-        mat2 rotation = mat2(0.8, -0.6, 0.6, 0.8);
-
-        for (int octave = 0; octave < 4; octave += 1) {
-          value += noise(point) * amplitude;
-          point = rotation * point * 2.05 + 17.0;
-          amplitude *= 0.5;
-        }
-
-        return value;
-      }
-
-      void main() {
-        float distanceFade = smoothstep(9.0, 66.0, -vWorldPosition.z);
-        float horizonBand = 1.0 - smoothstep(-0.4, 7.6, abs(vWorldPosition.y - 0.55));
-        float groundLift = 1.0 - smoothstep(-2.0, 8.0, vWorldPosition.y);
-        float drift = fbm(vWorldPosition.xz * 0.022 + vec2(uTime * 0.01, -uTime * 0.006));
-        float veil = smoothstep(0.18, 0.82, drift) * 0.34 + 0.66;
-        float warmCore = smoothstep(0.0, 0.72, horizonBand) * smoothstep(-22.0, 7.0, vWorldPosition.x);
-        vec3 color = mix(uDuskColor, uHorizonColor, warmCore * 0.64);
-        float alpha = distanceFade * horizonBand * groundLift * veil * 0.08;
-
-        gl_FragColor = vec4(color, alpha);
-      }
-    `,
-    transparent: true,
-    depthWrite: false,
-    depthTest: false,
-    side: THREE.BackSide,
-    blending: THREE.NormalBlending,
-  })
-
-  const haze = new THREE.Mesh(geometry, material)
-  haze.position.set(0, -1.25, -19)
-  haze.renderOrder = -40
-  return haze
+function snapPlusHeightsToTargets(field: PlusField) {
+  for (const marker of field.markers) {
+    marker.currentHeight = marker.targetHeight
+  }
 }
 
-function createStoneTextures(renderer: THREE.WebGLRenderer): TerrainTextures {
+function updatePlusMatrices(field: PlusField, delta: number) {
+  const heightFollow = createFrameLerp(PLUS_HEIGHT_RESPONSE, delta)
+
+  for (let index = 0; index < field.markers.length; index += 1) {
+    const marker = field.markers[index]
+    marker.currentHeight = THREE.MathUtils.lerp(
+      marker.currentHeight,
+      marker.targetHeight,
+      heightFollow,
+    )
+
+    field.position.set(
+      marker.localX,
+      marker.currentHeight + PLUS_FIELD_TERRAIN_CLEARANCE,
+      marker.localZ,
+    )
+    field.euler.set(-Math.PI / 2, 0, marker.rotation)
+    field.quaternion.setFromEuler(field.euler)
+    field.scale.setScalar(marker.scale)
+    field.matrix.compose(field.position, field.quaternion, field.scale)
+    field.mesh.setMatrixAt(index, field.matrix)
+  }
+
+  field.mesh.instanceMatrix.needsUpdate = true
+}
+
+function createFrameLerp(response: number, delta: number) {
+  return 1 - Math.exp(-response * delta)
+}
+
+function createStoneTextures(
+  renderer: THREE.WebGLRenderer,
+  quality: SceneQuality,
+): TerrainTextures {
+  const color = createStoneTexture('color', renderer, quality)
+
+  if (!quality.useDetailedTerrainMaterial) {
+    return { color }
+  }
+
   return {
-    color: createStoneTexture('color', renderer),
-    bump: createStoneTexture('bump', renderer),
-    roughness: createStoneTexture('roughness', renderer),
+    color,
+    bump: createStoneTexture('bump', renderer, quality),
+    roughness: createStoneTexture('roughness', renderer, quality),
   }
 }
 
 function createStoneTexture(
-  kind: keyof TerrainTextures,
+  kind: StoneTextureKind,
   renderer: THREE.WebGLRenderer,
+  quality: SceneQuality,
 ) {
   const canvas = document.createElement('canvas')
-  canvas.width = TERRAIN_TEXTURE_SIZE
-  canvas.height = TERRAIN_TEXTURE_SIZE
+  canvas.width = quality.terrainTextureSize
+  canvas.height = quality.terrainTextureSize
 
   const context = canvas.getContext('2d')
 
@@ -565,7 +748,10 @@ function createStoneTexture(
   texture.generateMipmaps = true
   texture.minFilter = THREE.LinearMipmapLinearFilter
   texture.magFilter = THREE.LinearFilter
-  texture.anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), 16)
+  texture.anisotropy = Math.min(
+    renderer.capabilities.getMaxAnisotropy(),
+    quality.anisotropyCap,
+  )
   return texture
 }
 
@@ -652,46 +838,6 @@ function createAtmosphericSky() {
   sky.material.depthTest = false
   sky.renderOrder = -1000
   return sky
-}
-
-function createRadialGlowTexture() {
-  const canvas = document.createElement('canvas')
-  canvas.width = 128
-  canvas.height = 128
-
-  const context = canvas.getContext('2d')
-
-  if (!context) {
-    throw new Error('Unable to create sun glow texture canvas context')
-  }
-
-  const gradient = context.createRadialGradient(64, 64, 0, 64, 64, 64)
-  gradient.addColorStop(0, 'rgba(189, 195, 253, 1)')
-  gradient.addColorStop(0.18, 'rgba(179, 172, 243, 0.82)')
-  gradient.addColorStop(0.48, 'rgba(151, 153, 252, 0.28)')
-  gradient.addColorStop(1, 'rgba(151, 153, 252, 0)')
-
-  context.fillStyle = gradient
-  context.fillRect(0, 0, canvas.width, canvas.height)
-
-  const texture = new THREE.CanvasTexture(canvas)
-  texture.colorSpace = THREE.SRGBColorSpace
-  texture.minFilter = THREE.LinearFilter
-  texture.magFilter = THREE.LinearFilter
-  return texture
-}
-
-function updateSunGlow(sun: THREE.Group, elapsed: number) {
-  const materials = sun.userData.materials as SunMaterials | undefined
-
-  if (!materials) {
-    return
-  }
-
-  const heatPulse =
-    Math.sin(elapsed * 1.45) * 0.5 + Math.sin(elapsed * 2.2) * 0.25
-  materials.core.opacity = 0.96 + heatPulse * 0.018
-  materials.halo.opacity = 0.52 + heatPulse * 0.04
 }
 
 function disposeMaterial(material: THREE.Material | THREE.Material[]) {

@@ -14,7 +14,6 @@ export default function Home() {
       >
         <HeroScene />
         <SceneWarmup />
-        <div className="pointer-events-none absolute -inset-8 -z-10 backdrop-blur-[12px] [mask-image:radial-gradient(ellipse_at_center,transparent_0%,transparent_48%,black_78%)]" />
         <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_center,rgba(2,4,10,0.12)_0%,rgba(2,4,10,0.24)_42%,rgba(2,4,10,0.52)_72%,rgba(2,4,10,0.86)_100%)]" />
         <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-56 bg-gradient-to-b from-[#050712]/64 to-transparent" />
 
