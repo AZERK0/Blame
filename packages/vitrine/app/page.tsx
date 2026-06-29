@@ -1,7 +1,8 @@
+import Image from 'next/image'
 import { ArrowRight, GitBranch, Play, ShieldCheck } from 'lucide-react'
 import { HeroScene } from './scene/hero-scene'
 
-const navigationItems = ['Produit', 'Workflow', 'Sécurité']
+const navigationItems = ['Product', 'Pricing', 'Download']
 
 const workflowColumns = [
   {
@@ -90,10 +91,17 @@ function SiteHeader() {
           className="group flex items-center gap-3 rounded-full focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-[#050712]"
           aria-label="Blame accueil"
         >
-          <span className="grid h-10 w-10 place-items-center rounded-2xl border border-white/12 bg-white/[0.08] text-sm font-black tracking-[-0.16em] shadow-2xl shadow-black/25 backdrop-blur-md transition duration-200 group-hover:bg-white/[0.12]">
-            B/
+          <span className="grid h-10 w-10 place-items-center">
+            <Image
+              src="/icons/blame-icon-256.png"
+              alt=""
+              width={40}
+              height={40}
+              className="h-10 w-10 object-contain"
+              priority
+            />
           </span>
-          <span className="text-lg font-semibold tracking-[-0.05em] text-white">
+          <span className="text-2xl font-extrabold tracking-[-0.05em] text-white">
             Blame
           </span>
         </a>
