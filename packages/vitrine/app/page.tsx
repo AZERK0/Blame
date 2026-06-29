@@ -36,20 +36,20 @@ export default function Home() {
 
         <SiteHeader />
 
-        <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl flex-col px-5 pb-6 pt-24 sm:px-8 lg:px-10">
+        <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-9xl flex-col px-5 pb-6 pt-24 sm:px-8 lg:px-10">
           <div className="flex flex-1 items-center justify-center pb-[34vh] pt-8 sm:pb-[30vh] lg:pb-[26vh]">
-            <div className="mx-auto max-w-4xl text-center">
+            <div className="text-center">
               <div className="mx-auto mb-5 inline-flex items-center gap-2 rounded-full border border-white/14 bg-white/[0.07] px-3 py-1.5 text-xs font-medium uppercase tracking-[0.32em] text-white/76 shadow-2xl shadow-black/30 backdrop-blur-md">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#b3acf3] shadow-[0_0_18px_rgba(179,172,243,0.9)]" />
                 Agentic IDE
               </div>
               <h1
                 id="hero-title"
-                className="text-balance text-[clamp(3.4rem,10vw,9.5rem)] font-semibold leading-[0.82] tracking-[-0.095em] text-white drop-shadow-[0_20px_70px_rgba(0,0,0,0.55)]"
+                className="text-balance text-[clamp(3.4rem,10vw,9.5rem)] font-semibold leading-[0.9] tracking-[-0.095em] text-white drop-shadow-[0_20px_70px_rgba(0,0,0,0.55)]"
               >
-                AI coding,
+                The industrial-grade
                 <br />
-                under control.
+                agentic IDE.
               </h1>
               <p className="mx-auto mt-7 max-w-2xl text-balance text-base leading-7 text-white/76 sm:text-lg md:text-xl">
                 Transforme chaque demande en worktree testable, avec preview,
@@ -58,7 +58,7 @@ export default function Home() {
               <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
                 <a
                   href="#waitlist"
-                  className="group inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-[#080b16] shadow-[0_18px_60px_rgba(255,255,255,0.22)] transition duration-200 hover:-translate-y-0.5 hover:bg-[#bdc3fd] focus:outline-none focus:ring-2 focus:ring-[#b3acf3] focus:ring-offset-2 focus:ring-offset-[#050712]"
+                  className="group inline-flex min-h-12 items-center justify-centerleading-[0.82] tracking-[-0.095em] gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-[#080b16] shadow-[0_18px_60px_rgba(255,255,255,0.22)] transition duration-200 hover:-translate-y-0.5 hover:bg-[#bdc3fd] focus:outline-none focus:ring-2 focus:ring-[#b3acf3] focus:ring-offset-2 focus:ring-offset-[#050712]"
                 >
                   Request access
                   <ArrowRight className="h-4 w-4 transition duration-200 group-hover:translate-x-0.5" />
@@ -78,7 +78,7 @@ export default function Home() {
         </div>
       </section>
     </main>
-  )
+  );
 }
 
 function SiteHeader() {
