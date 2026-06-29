@@ -11,6 +11,20 @@ const SUN_AZIMUTH_DEGREES = -166
 const SUN_DIRECTION = createSunDirection()
 const TWILIGHT_FOG_COLOR = 0x3666ff;
 const TERRAIN_TEXTURE_SIZE = 512
+const GIT_LINE_RAIN_DROP_COUNT = 34
+
+type GitLineRainDrop = {
+  sprite: THREE.Sprite
+  baseX: number
+  startY: number
+  fallDistance: number
+  z: number
+  speed: number
+  phase: number
+  sway: number
+  parallax: number
+  baseOpacity: number
+}
 
 type SceneState = {
   cleanup: () => void
@@ -25,6 +39,10 @@ type TerrainTextures = {
 type SunMaterials = {
   core: THREE.MeshBasicMaterial
   halo: THREE.SpriteMaterial
+}
+
+type GitLineRainUserData = {
+  drops: GitLineRainDrop[]
 }
 
 export function HeroScene() {
@@ -80,6 +98,9 @@ function createHeroScene(container: HTMLDivElement): SceneState {
   const terrain = createTerrain(terrainTextures)
   scene.add(terrain)
 
+  const gitLineRain = createGitLineRain()
+  scene.add(gitLineRain)
+
   const atmosphericHaze = createAtmosphericHaze()
   scene.add(atmosphericHaze)
 
@@ -131,6 +152,7 @@ function createHeroScene(container: HTMLDivElement): SceneState {
 
     terrain.rotation.z = Math.sin(elapsed * 0.08) * 0.006 + pointer.x * 0.012
     atmosphericHaze.material.uniforms.uTime.value = elapsed
+    updateGitLineRain(gitLineRain, elapsed, pointer)
 
     renderer.render(scene, camera)
     animationFrame = requestAnimationFrame(animate)
@@ -145,6 +167,7 @@ function createHeroScene(container: HTMLDivElement): SceneState {
       window.removeEventListener('pointermove', handlePointerMove)
       disposeObject3D(sky)
       disposeObject3D(terrain)
+      disposeObject3D(gitLineRain)
       disposeObject3D(atmosphericHaze)
       terrainTextures.color.dispose()
       terrainTextures.bump.dispose()
@@ -330,6 +353,141 @@ function createAtmosphericHaze() {
   haze.position.set(0, -1.25, -19)
   haze.renderOrder = -40
   return haze
+}
+
+function createGitLineRain() {
+  const rain = new THREE.Group()
+  const drops: GitLineRainDrop[] = []
+
+  for (let index = 0; index < GIT_LINE_RAIN_DROP_COUNT; index += 1) {
+    const depthLayer = index % 3
+    const depthRatio = depthLayer / 2
+    const z = THREE.MathUtils.lerp(-38, -82, depthRatio) - hashNoise2(index, 13) * 14
+    const baseX = THREE.MathUtils.lerp(-35, 35, hashNoise2(index, 29))
+    const startY = THREE.MathUtils.lerp(10.5, 22, hashNoise2(index, 41))
+    const fallDistance = THREE.MathUtils.lerp(17, 26, hashNoise2(index, 53))
+    const value = Math.round(THREE.MathUtils.lerp(7, 96, hashNoise2(index, 67)))
+    const sign = hashNoise2(index, 79) > 0.42 ? '+' : '-'
+    const baseOpacity = THREE.MathUtils.lerp(0.78, 0.32, depthRatio)
+    const sprite = new THREE.Sprite(
+      createGitLineRainMaterial(`${sign}${value}`, depthRatio, index, baseOpacity),
+    )
+    const scale = THREE.MathUtils.lerp(1.28, 0.72, depthRatio)
+
+    sprite.scale.set(scale * 2.15, scale * 0.82, 1)
+    sprite.renderOrder = -55 - depthLayer
+    rain.add(sprite)
+    drops.push({
+      sprite,
+      baseX,
+      startY,
+      fallDistance,
+      z,
+      speed: THREE.MathUtils.lerp(0.035, 0.074, hashNoise2(index, 83)),
+      phase: hashNoise2(index, 97),
+      sway: THREE.MathUtils.lerp(0.25, 1.35, hashNoise2(index, 109)),
+      parallax: THREE.MathUtils.lerp(0.16, 0.56, 1 - depthRatio),
+      baseOpacity,
+    })
+  }
+
+  rain.userData = { drops } satisfies GitLineRainUserData
+  rain.renderOrder = -60
+  return rain
+}
+
+function createGitLineRainMaterial(
+  label: string,
+  depthRatio: number,
+  index: number,
+  baseOpacity: number,
+) {
+  const texture = createGitLineRainTexture(label, depthRatio, index)
+  return new THREE.SpriteMaterial({
+    map: texture,
+    color: new THREE.Color().setHSL(0.64, 0.94, THREE.MathUtils.lerp(0.84, 0.62, depthRatio)),
+    transparent: true,
+    opacity: baseOpacity,
+    depthWrite: false,
+    depthTest: true,
+    blending: THREE.AdditiveBlending,
+  })
+}
+
+function createGitLineRainTexture(
+  label: string,
+  depthRatio: number,
+  index: number,
+) {
+  const canvas = document.createElement('canvas')
+  canvas.width = 192
+  canvas.height = 128
+
+  const context = canvas.getContext('2d')
+
+  if (!context) {
+    throw new Error('Unable to create git line rain texture canvas context')
+  }
+
+  context.clearRect(0, 0, canvas.width, canvas.height)
+  context.save()
+  context.translate(canvas.width / 2, canvas.height / 2)
+  context.rotate(THREE.MathUtils.degToRad(THREE.MathUtils.lerp(-7, 7, hashNoise2(index, 131))))
+  context.filter = `blur(${THREE.MathUtils.lerp(0.15, 1.65, depthRatio).toFixed(2)}px)`
+  context.textAlign = 'center'
+  context.textBaseline = 'middle'
+  context.font = '700 34px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace'
+  context.shadowColor = 'rgba(179, 172, 243, 0.9)'
+  context.shadowBlur = THREE.MathUtils.lerp(20, 8, depthRatio)
+  context.strokeStyle = `rgba(189, 195, 253, ${THREE.MathUtils.lerp(0.32, 0.16, depthRatio)})`
+  context.lineWidth = 2
+  context.strokeText(label, 0, -10)
+  context.fillStyle = `rgba(232, 237, 255, ${THREE.MathUtils.lerp(0.94, 0.52, depthRatio)})`
+  context.fillText(label, 0, -10)
+
+  const trailGradient = context.createLinearGradient(0, 10, 0, 62)
+  trailGradient.addColorStop(0, `rgba(189, 195, 253, ${THREE.MathUtils.lerp(0.26, 0.12, depthRatio)})`)
+  trailGradient.addColorStop(0.42, `rgba(151, 153, 252, ${THREE.MathUtils.lerp(0.12, 0.05, depthRatio)})`)
+  trailGradient.addColorStop(1, 'rgba(151, 153, 252, 0)')
+  context.strokeStyle = trailGradient
+  context.lineWidth = THREE.MathUtils.lerp(2.6, 1.2, depthRatio)
+  context.beginPath()
+  context.moveTo(-18, 10)
+  context.quadraticCurveTo(-10, 32, -14, 62)
+  context.moveTo(16, 8)
+  context.quadraticCurveTo(8, 34, 10, 58)
+  context.stroke()
+  context.restore()
+
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.colorSpace = THREE.SRGBColorSpace
+  texture.minFilter = THREE.LinearFilter
+  texture.magFilter = THREE.LinearFilter
+  return texture
+}
+
+function updateGitLineRain(
+  rain: THREE.Group,
+  elapsed: number,
+  pointer: THREE.Vector2,
+) {
+  const { drops } = rain.userData as GitLineRainUserData
+
+  for (const drop of drops) {
+    const progress = (drop.phase + elapsed * drop.speed) % 1
+    const fallEase = progress * progress * (3 - 2 * progress)
+    const wind = Math.sin(elapsed * 0.32 + drop.phase * Math.PI * 2) * drop.sway
+
+    drop.sprite.position.set(
+      drop.baseX + wind + pointer.x * drop.parallax * 4.5,
+      drop.startY - fallEase * drop.fallDistance - pointer.y * drop.parallax * 1.3,
+      drop.z,
+    )
+    drop.sprite.material.opacity =
+      drop.baseOpacity *
+      THREE.MathUtils.smoothstep(0.02, 0.16, progress) *
+      (1 - THREE.MathUtils.smoothstep(0.78, 1, progress))
+  }
 }
 
 function createStoneTextures(renderer: THREE.WebGLRenderer): TerrainTextures {
