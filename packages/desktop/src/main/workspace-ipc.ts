@@ -2883,9 +2883,11 @@ async function repairComposeFile(
 }
 
 async function worktreeHasNextProject(worktree: string) {
-  const paths = ["package.json", "apps/web/package.json"].map((file) =>
-    joinWorkspacePath(worktree, file),
-  );
+  const paths = [
+    "package.json",
+    "apps/web/package.json",
+    "packages/vitrine/package.json",
+  ].map((file) => joinWorkspacePath(worktree, file));
   const files = await readExistingRuntimeFiles(paths);
   return Object.values(files).some(nextPackageJson);
 }
