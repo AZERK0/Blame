@@ -4,7 +4,7 @@ import Link from 'next/link'
 const navigationItems = [
   { label: 'Product', href: '/#workflow' },
   { label: 'Pricing', href: '/pricing' },
-  { label: 'Download', href: '/#download' },
+  { label: 'Download', href: '/download' },
 ]
 
 export function SiteHeader() {
@@ -45,7 +45,7 @@ export function SiteHeader() {
         </nav>
 
         <Link
-          href="/#download"
+          href="/download"
           className="inline-flex min-h-10 items-center justify-center rounded-full border border-white/14 bg-white/[0.08] px-4 text-sm font-semibold text-white/90 shadow-2xl shadow-black/20 backdrop-blur-xl transition duration-200 hover:bg-white/[0.14] focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-[#050505]"
         >
           Early access

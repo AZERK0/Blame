@@ -375,7 +375,7 @@ function HeroFrame({ progress }: { progress: number }) {
           </p>
           <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <a
-              href="#download"
+              href="/download"
               className="group inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-[#080808] shadow-[0_18px_60px_rgba(255,255,255,0.22)] transition duration-200 hover:-translate-y-0.5 hover:bg-[#dfe7ff] focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-[#050505]"
             >
               Request access
@@ -816,7 +816,7 @@ function CtaVisual({ progress }: { progress: number }) {
   return (
     <div className="flex flex-col gap-3" style={revealStyle(progress, 0.1)}>
       <a
-        href="#download"
+        href="/download"
         className="group inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-[#080808] shadow-[0_18px_60px_rgba(255,255,255,0.2)] transition duration-200 hover:-translate-y-0.5 hover:bg-[#dfe7ff] focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-[#050505]"
       >
         Download Blame

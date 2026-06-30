@@ -94,8 +94,7 @@ export function PricingCard() {
         {billingCycle === 'yearly' ? (
           <p className="mt-2 text-sm font-medium text-[#111]/54">Save €36 every year.</p>
         ) : null}
-
-        <Link href="/#download" className={buttonVariants({ variant: 'dark', className: 'mt-8 w-full' })}>
+        <Link href="/download" className={buttonVariants({ variant: 'dark', className: 'mt-8 w-full' })}>
           Get Blame Pro
         </Link>
 
