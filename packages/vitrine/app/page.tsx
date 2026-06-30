@@ -53,6 +53,33 @@ const parallelAgentCards = [
   },
 ]
 
+const cloudWorkspaceCards = [
+  {
+    label: 'sync/backlog',
+    title: 'Backlog synced',
+    description:
+      'Recover your tasks, user stories, acceptance criteria, and workflow state across devices.',
+  },
+  {
+    label: 'project/standards',
+    title: 'Standards remembered',
+    description:
+      'Keep your coding practices, architecture rules, testing preferences, and agent instructions attached to the project.',
+  },
+  {
+    label: 'providers/ready',
+    title: 'Providers ready',
+    description:
+      'Reconnect to your AI providers without rebuilding your setup every time you switch machines.',
+  },
+  {
+    label: 'local/execution',
+    title: 'Local execution',
+    description:
+      'Agents work inside local worktrees, with local previews and diffs. The cloud syncs the control plane.',
+  },
+]
+
 export default function Home() {
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#050712] text-white">
@@ -316,6 +343,68 @@ export default function Home() {
                 </div>
               </article>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="cloud-workspace"
+        aria-labelledby="cloud-workspace-title"
+        className="relative isolate overflow-hidden px-5 py-24 sm:px-8 sm:py-32 lg:px-10"
+      >
+        <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-px bg-gradient-to-r from-transparent via-white/14 to-transparent" />
+        <div className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[32rem] w-[48rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#b3acf3]/7 blur-3xl" />
+        <div className="pointer-events-none absolute bottom-0 left-1/2 -z-10 h-px w-full max-w-5xl -translate-x-1/2 bg-gradient-to-r from-transparent via-[#b3acf3]/22 to-transparent" />
+
+        <div className="mx-auto max-w-[1100px]">
+          <div className="mx-auto max-w-4xl text-center">
+            <p className="mb-5 text-xs font-semibold uppercase tracking-[0.36em] text-[#b3acf3]">
+              CLOUD WORKSPACE
+            </p>
+            <h2
+              id="cloud-workspace-title"
+              className="text-balance text-[clamp(2.35rem,5vw,4.8rem)] font-semibold leading-[0.95] tracking-[-0.07em] text-white"
+            >
+              Pick up where you left off.
+              <br />
+              On any machine.
+            </h2>
+            <p className="mx-auto mt-7 max-w-[720px] text-balance text-base leading-7 text-white/68 sm:text-lg md:text-xl">
+              Your backlog, user stories, provider connections, code practices,
+              and project workflow stay synced — while code execution,
+              worktrees, previews, and diffs stay local.
+            </p>
+          </div>
+
+          <div className="mt-12 grid gap-4 md:grid-cols-2 lg:mt-14">
+            {cloudWorkspaceCards.map((card) => (
+              <article
+                key={card.title}
+                className="group relative overflow-hidden rounded-3xl border border-white/12 bg-white/[0.045] p-6 shadow-[0_22px_70px_rgba(0,0,0,0.22)] backdrop-blur-xl transition duration-200 hover:-translate-y-0.5 hover:border-[#b3acf3]/34 hover:bg-white/[0.065] sm:p-7"
+              >
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(179,172,243,0.12),transparent_36%)] opacity-0 transition duration-200 group-hover:opacity-100" />
+                <div className="relative">
+                  <div className="mb-7 flex items-center gap-3">
+                    <span className="rounded-full border border-white/12 bg-[#080b16]/70 px-3 py-1.5 font-mono text-[0.68rem] font-medium uppercase tracking-[0.16em] text-[#d7d2ff]/82">
+                      {card.label}
+                    </span>
+                    <span className="h-px flex-1 bg-gradient-to-r from-white/16 to-transparent" />
+                  </div>
+                  <h3 className="text-2xl font-semibold tracking-[-0.035em] text-white sm:text-3xl">
+                    {card.title}
+                  </h3>
+                  <p className="mt-4 text-sm leading-6 text-white/64 sm:text-base sm:leading-7">
+                    {card.description}
+                  </p>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <div className="mt-12 flex justify-center">
+            <p className="rounded-full border border-[#b3acf3]/22 bg-[#b3acf3]/10 px-4 py-2 text-center text-sm font-semibold tracking-[-0.01em] text-[#e7e4ff] shadow-[0_0_44px_rgba(179,172,243,0.14)] backdrop-blur-xl sm:text-base">
+              Cloud control plane. Local engineering execution.
+            </p>
           </div>
         </div>
       </section>
