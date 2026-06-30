@@ -275,7 +275,7 @@ const storyScenes = [
 
 const heroScrollUnits = 1.1
 const heroStoryOverlapUnits = 0.24
-const viewportHeightPerUnit = 150
+const viewportHeightPerUnit = 105
 const sceneScrollWeights = storyScenes.map(sceneScrollWeight)
 const sceneTimelineSegments = buildSceneTimeline(sceneScrollWeights)
 const storyScrollUnits = sceneScrollWeights.reduce(
@@ -862,7 +862,6 @@ function StoryBackdrop({
         className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_10%,rgba(255,255,255,0.12),transparent_44%)]"
         style={{ opacity: glow }}
       />
-      <div className="absolute inset-0 opacity-[0.12] [background-image:linear-gradient(rgba(255,255,255,0.16)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.16)_1px,transparent_1px)] [background-size:88px_88px]" />
       <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#050505] to-transparent" />
     </div>
   )
