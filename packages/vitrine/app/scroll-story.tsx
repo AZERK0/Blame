@@ -54,6 +54,7 @@ type SceneMetrics = {
 
 const storyStartProgress = 0.15
 const totalScrollHeight = 1260
+const scrollProgressResponse = 14
 
 const agentChaosCards = [
   {
@@ -882,29 +883,56 @@ function SceneDots({
 
 function useScrollProgress(ref: RefObject<HTMLElement | null>) {
   const [progress, setProgress] = useState(0)
+  const progressRef = useRef(0)
+  const targetRef = useRef(0)
 
   useEffect(() => {
     let frame = 0
-    const update = () => {
-      frame = 0
+    let lastFrameTime = performance.now()
+    const readProgress = () => {
       const node = ref.current
-      if (!node) return
+      if (!node) return targetRef.current
       const scrollable = node.offsetHeight - window.innerHeight
-      const next = clamp(-node.getBoundingClientRect().top / scrollable, 0, 1)
-      setProgress((current) =>
-        Math.abs(current - next) < 0.001 ? current : next
-      )
+      if (scrollable <= 0) return 0
+      return clamp(-node.getBoundingClientRect().top / scrollable, 0, 1)
     }
-    const requestUpdate = () => {
-      if (!frame) frame = window.requestAnimationFrame(update)
+    const animate = (time: number) => {
+      const delta = Math.min((time - lastFrameTime) / 1000, 0.05)
+      const current = progressRef.current
+      const target = targetRef.current
+      const amount = 1 - Math.exp(-scrollProgressResponse * delta)
+      const next =
+        Math.abs(target - current) < 0.0005
+          ? target
+          : current + (target - current) * amount
+      lastFrameTime = time
+      progressRef.current = next
+      setProgress(next)
+      if (next === target) {
+        frame = 0
+        return
+      }
+      frame = window.requestAnimationFrame(animate)
     }
-    update()
-    window.addEventListener('scroll', requestUpdate, { passive: true })
-    window.addEventListener('resize', requestUpdate)
+    const requestAnimation = () => {
+      if (frame) return
+      lastFrameTime = performance.now()
+      frame = window.requestAnimationFrame(animate)
+    }
+    const updateTarget = () => {
+      targetRef.current = readProgress()
+      requestAnimation()
+    }
+    const initialProgress = readProgress()
+    progressRef.current = initialProgress
+    targetRef.current = initialProgress
+    setProgress(initialProgress)
+    window.addEventListener('scroll', updateTarget, { passive: true })
+    window.addEventListener('resize', updateTarget)
     return () => {
       if (frame) window.cancelAnimationFrame(frame)
-      window.removeEventListener('scroll', requestUpdate)
-      window.removeEventListener('resize', requestUpdate)
+      window.removeEventListener('scroll', updateTarget)
+      window.removeEventListener('resize', updateTarget)
     }
   }, [ref])
 
