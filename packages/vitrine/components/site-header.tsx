@@ -1,0 +1,58 @@
+import Image from 'next/image'
+import Link from 'next/link'
+
+const navigationItems = [
+  { label: 'Product', href: '/#product' },
+  { label: 'Pricing', href: '/pricing' },
+  { label: 'Download', href: '/#download' },
+]
+
+export function SiteHeader() {
+  return (
+    <header className="landing-reveal landing-reveal-header fixed inset-x-0 top-0 z-30">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5 sm:px-8 lg:px-10">
+        <Link
+          href="/#top"
+          className="group flex items-center gap-3 rounded-full focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-[#050712]"
+          aria-label="Blame home"
+        >
+          <span className="grid h-10 w-10 place-items-center">
+            <Image
+              src="/icons/blame-icon-256.png"
+              alt=""
+              width={40}
+              height={40}
+              className="h-10 w-10 object-contain"
+              priority
+            />
+          </span>
+          <span className="text-2xl font-extrabold tracking-[-0.05em] text-white">
+            Blame
+          </span>
+        </Link>
+
+        <nav
+          aria-label="Main navigation"
+          className="hidden items-center gap-1 rounded-full border border-white/10 bg-[#070a15]/35 p-1 text-sm text-white/70 shadow-2xl shadow-black/20 backdrop-blur-xl md:flex"
+        >
+          {navigationItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="rounded-full px-4 py-2 transition duration-200 hover:bg-white/[0.08] hover:text-white focus:outline-none focus:ring-2 focus:ring-white/40"
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+
+        <Link
+          href="/#download"
+          className="inline-flex min-h-10 items-center justify-center rounded-full border border-white/14 bg-white/[0.08] px-4 text-sm font-semibold text-white/90 shadow-2xl shadow-black/20 backdrop-blur-xl transition duration-200 hover:bg-white/[0.14] focus:outline-none focus:ring-2 focus:ring-[#b3acf3] focus:ring-offset-2 focus:ring-offset-[#050712]"
+        >
+          Early access
+        </Link>
+      </div>
+    </header>
+  )
+}

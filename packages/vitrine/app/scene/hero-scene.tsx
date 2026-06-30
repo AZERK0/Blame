@@ -23,6 +23,46 @@ const CAMERA_POINTER_RESPONSE = 7
 const PLUS_FIELD_RESPONSE = 9
 const PLUS_HEIGHT_RESPONSE = 20
 
+type TerrainRelief = {
+  heightScale: number
+  horizonRise: number
+  ridgeIntensity: number
+  mesaIntensity: number
+  escarpmentIntensity: number
+  foregroundShelfIntensity: number
+  stoneMassIntensity: number
+  baseDepth: number
+}
+
+const terrainReliefPresets = {
+  default: {
+    heightScale: 1,
+    horizonRise: 9.2,
+    ridgeIntensity: 1,
+    mesaIntensity: 1,
+    escarpmentIntensity: 1,
+    foregroundShelfIntensity: 1,
+    stoneMassIntensity: 1,
+    baseDepth: 4.65,
+  },
+  pricing: {
+    heightScale: 0.74,
+    horizonRise: 6.6,
+    ridgeIntensity: 0.72,
+    mesaIntensity: 1.28,
+    escarpmentIntensity: 0.48,
+    foregroundShelfIntensity: 0.36,
+    stoneMassIntensity: 0.62,
+    baseDepth: 3.9,
+  },
+} satisfies Record<string, TerrainRelief>
+
+export type HeroSceneTerrainPreset = keyof typeof terrainReliefPresets
+
+type HeroSceneProps = {
+  terrainPreset?: HeroSceneTerrainPreset
+}
+
 type SceneState = {
   cleanup: () => void
 }
@@ -69,9 +109,10 @@ type PlusField = {
   lastHeightUpdate: number
   lastSampleX: number
   lastSampleZ: number
+  terrainRelief: TerrainRelief
 }
 
-export function HeroScene() {
+export function HeroScene({ terrainPreset = 'default' }: HeroSceneProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -81,12 +122,12 @@ export function HeroScene() {
       return undefined
     }
 
-    const sceneState = createHeroScene(container)
+    const sceneState = createHeroScene(container, terrainReliefPresets[terrainPreset])
 
     return () => {
       sceneState.cleanup()
     }
-  }, [])
+  }, [terrainPreset])
 
   return (
     <div
@@ -179,7 +220,10 @@ function usesSoftwareRenderer(renderer: THREE.WebGLRenderer) {
   return /swiftshader|software|llvmpipe|mesa offscreen/.test(rendererName)
 }
 
-function createHeroScene(container: HTMLDivElement): SceneState {
+function createHeroScene(
+  container: HTMLDivElement,
+  terrainRelief: TerrainRelief,
+): SceneState {
   let quality = createSceneQuality()
   const scene = new THREE.Scene()
   scene.fog = new THREE.FogExp2(TWILIGHT_FOG_COLOR, 0.012)
@@ -207,10 +251,10 @@ function createHeroScene(container: HTMLDivElement): SceneState {
   scene.add(sky)
 
   const terrainTextures = createStoneTextures(renderer, quality)
-  const terrain = createTerrain(terrainTextures, quality)
+  const terrain = createTerrain(terrainTextures, quality, terrainRelief)
   scene.add(terrain)
 
-  const plusField = createPlusField(quality)
+  const plusField = createPlusField(quality, terrainRelief)
   terrain.add(plusField.group)
 
   const ambientLight = new THREE.HemisphereLight(0xbdc3fd, 0x07101f, 0.78)
@@ -285,7 +329,11 @@ function createHeroScene(container: HTMLDivElement): SceneState {
   }
 }
 
-function createTerrain(textures: TerrainTextures, quality: SceneQuality) {
+function createTerrain(
+  textures: TerrainTextures,
+  quality: SceneQuality,
+  terrainRelief: TerrainRelief,
+) {
   const terrain = new THREE.Group()
   terrain.add(
     createTerrainMesh(
@@ -295,6 +343,7 @@ function createTerrain(textures: TerrainTextures, quality: SceneQuality) {
       PRIMARY_TERRAIN_Y,
       PRIMARY_TERRAIN_Z,
       PRIMARY_TERRAIN_SCALE,
+      terrainRelief,
     ),
   )
   return terrain
@@ -307,6 +356,7 @@ function createTerrainMesh(
   y: number,
   z: number,
   scale: number,
+  terrainRelief: TerrainRelief,
 ) {
   const geometry = new THREE.PlaneGeometry(
     TERRAIN_SIZE,
@@ -321,7 +371,7 @@ function createTerrainMesh(
   for (let index = 0; index < positions.count; index += 1) {
     const x = positions.getX(index)
     const z = positions.getZ(index)
-    positions.setY(index, sampleTerrainHeight(x, z, offset, scale))
+    positions.setY(index, sampleTerrainHeight(x, z, offset, scale, terrainRelief))
   }
 
   geometry.computeVertexNormals()
@@ -366,11 +416,12 @@ function sampleTerrainHeight(
   z: number,
   offset: number,
   scale: number,
+  terrainRelief: TerrainRelief,
 ) {
   const distanceFromBasin = Math.sqrt((x - 4) ** 2 + (z + 24) ** 2)
   const packedNoise = fbm2((x + offset * 0.52) * 0.058, z * 0.058, 5)
   const coarseNoise = fbm2((x - offset) * 0.025 + 31.7, z * 0.025 - 12.4, 4)
-  const horizonRise = THREE.MathUtils.smoothstep(-z, 4, 72) * 9.2
+  const horizonRise = THREE.MathUtils.smoothstep(-z, 4, 72) * terrainRelief.horizonRise
   const longitudinalFold =
     Math.sin((z + offset * 0.28) * 0.19 + x * 0.052 + coarseNoise * 1.35) *
       0.5 +
@@ -398,19 +449,23 @@ function sampleTerrainHeight(
 
   return (
     (horizonRise * 0.8 +
-      distantMesa * 0.78 +
-      diagonalEscarpment * 0.68 +
-      foregroundShelf * 0.62 +
-      striatedRidges * (1.4 + coarseNoise * 1.1) +
+      distantMesa * 0.78 * terrainRelief.mesaIntensity +
+      diagonalEscarpment * 0.68 * terrainRelief.escarpmentIntensity +
+      foregroundShelf * 0.62 * terrainRelief.foregroundShelfIntensity +
+      striatedRidges * (1.4 + coarseNoise * 1.1) * terrainRelief.ridgeIntensity +
       erodedChannels * 0.76 +
-      stoneMass * 0.86 +
+      stoneMass * 0.86 * terrainRelief.stoneMassIntensity +
       windErosion -
-      4.65) *
-    scale
+      terrainRelief.baseDepth) *
+    scale *
+    terrainRelief.heightScale
   )
 }
 
-function createPlusField(quality: SceneQuality): PlusField {
+function createPlusField(
+  quality: SceneQuality,
+  terrainRelief: TerrainRelief,
+): PlusField {
   const group = new THREE.Group()
   const markers: PlusMarker[] = []
   const geometry = createPlusGeometry()
@@ -465,6 +520,7 @@ function createPlusField(quality: SceneQuality): PlusField {
     lastHeightUpdate: -Infinity,
     lastSampleX: Infinity,
     lastSampleZ: Infinity,
+    terrainRelief,
   }
 
   for (let index = 0; index < markers.length; index += 1) {
@@ -601,6 +657,7 @@ function updatePlusTargetHeights(field: PlusField, elapsed: number) {
       terrainZ,
       PRIMARY_TERRAIN_OFFSET,
       PRIMARY_TERRAIN_SCALE,
+      field.terrainRelief,
     )
   }
 }

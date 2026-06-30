@@ -3,7 +3,7 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'Blame',
-  description: 'Site vitrine de Blame',
+  description: 'The industrial-grade agentic IDE.',
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
@@ -21,7 +21,7 @@ type RootLayoutProps = Readonly<{
 
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html lang="fr">
+    <html lang="en">
       <body>{children}</body>
     </html>
   )

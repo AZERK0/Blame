@@ -12,9 +12,10 @@ import {
   ShieldCheck,
   Sparkles,
 } from 'lucide-react'
+import { LandingRevealStyles } from '@/components/landing-reveal-styles'
+import { SceneWarmup } from '@/components/scene-warmup'
+import { SiteHeader } from '@/components/site-header'
 import { HeroScene } from './scene/hero-scene'
-
-const navigationItems = ['Product', 'Pricing', 'Download']
 
 const agentChaosCards = [
   {
@@ -276,83 +277,7 @@ export default function Home() {
 
           <ProductMockup />
         </div>
-        <style>{`
-          .hero-stage canvas {
-            opacity: 0;
-            transform: scale(1.015);
-            animation: sceneCanvasReveal 920ms cubic-bezier(0.2, 0.8, 0.2, 1) 160ms forwards;
-          }
-
-          .landing-reveal {
-            opacity: 0;
-            transform: translate3d(0, 18px, 0);
-            animation: landingReveal 760ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-          }
-
-          .landing-reveal-header {
-            animation-delay: 80ms;
-          }
-
-          .landing-reveal-eyebrow {
-            animation-delay: 150ms;
-          }
-
-          .landing-reveal-title {
-            animation-delay: 220ms;
-          }
-
-          .landing-reveal-copy {
-            animation-delay: 330ms;
-          }
-
-          .landing-reveal-actions {
-            animation-delay: 430ms;
-          }
-
-          .landing-reveal-mockup {
-            animation-delay: 540ms;
-            transform: translate3d(0, 24px, 0) scale(0.985);
-          }
-
-          .scene-warmup {
-            animation: sceneWarmupExit 560ms cubic-bezier(0.3, 0, 0, 1) 820ms forwards;
-          }
-
-          .scene-warmup-scan {
-            animation: warmupScan 940ms cubic-bezier(0.7, 0, 0.2, 1) 120ms forwards;
-          }
-
-          @keyframes sceneCanvasReveal {
-            to {
-              opacity: 1;
-              transform: scale(1);
-            }
-          }
-
-          @keyframes landingReveal {
-            to {
-              opacity: 1;
-              transform: translate3d(0, 0, 0) scale(1);
-            }
-          }
-
-          @keyframes sceneWarmupExit {
-            to {
-              opacity: 0;
-              transform: scale(1.015);
-              visibility: hidden;
-            }
-          }
-
-          @keyframes warmupScan {
-            from {
-              transform: translateX(-115%);
-            }
-            to {
-              transform: translateX(115%);
-            }
-          }
-        `}</style>
+        <LandingRevealStyles />
       </section>
 
       <section
@@ -939,70 +864,6 @@ export default function Home() {
       </section>
     </main>
   );
-}
-
-function SceneWarmup() {
-  return (
-    <div
-      aria-hidden="true"
-      className="scene-warmup pointer-events-none absolute inset-0 z-0 overflow-hidden bg-[#050712]"
-    >
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_38%,rgba(179,172,243,0.22),transparent_28%),linear-gradient(180deg,rgba(5,7,18,0.7),rgba(5,7,18,0.92))]" />
-      <div className="absolute inset-x-0 top-[42%] h-px overflow-hidden bg-white/[0.08]">
-        <div className="scene-warmup-scan h-full w-2/3 bg-gradient-to-r from-transparent via-[#d7d2ff]/70 to-transparent shadow-[0_0_26px_rgba(179,172,243,0.65)]" />
-      </div>
-    </div>
-  )
-}
-
-function SiteHeader() {
-  return (
-    <header className="landing-reveal landing-reveal-header fixed inset-x-0 top-0 z-30">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5 sm:px-8 lg:px-10">
-        <a
-          href="#top"
-          className="group flex items-center gap-3 rounded-full focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-[#050712]"
-          aria-label="Blame accueil"
-        >
-          <span className="grid h-10 w-10 place-items-center">
-            <Image
-              src="/icons/blame-icon-256.png"
-              alt=""
-              width={40}
-              height={40}
-              className="h-10 w-10 object-contain"
-              priority
-            />
-          </span>
-          <span className="text-2xl font-extrabold tracking-[-0.05em] text-white">
-            Blame
-          </span>
-        </a>
-
-        <nav
-          aria-label="Navigation principale"
-          className="hidden items-center gap-1 rounded-full border border-white/10 bg-[#070a15]/35 p-1 text-sm text-white/70 shadow-2xl shadow-black/20 backdrop-blur-xl md:flex"
-        >
-          {navigationItems.map((item) => (
-            <a
-              key={item}
-              href={`#${item.toLowerCase()}`}
-              className="rounded-full px-4 py-2 transition duration-200 hover:bg-white/[0.08] hover:text-white focus:outline-none focus:ring-2 focus:ring-white/40"
-            >
-              {item}
-            </a>
-          ))}
-        </nav>
-
-        <a
-          href="#waitlist"
-          className="inline-flex min-h-10 items-center justify-center rounded-full border border-white/14 bg-white/[0.08] px-4 text-sm font-semibold text-white/90 shadow-2xl shadow-black/20 backdrop-blur-xl transition duration-200 hover:bg-white/[0.14] focus:outline-none focus:ring-2 focus:ring-[#b3acf3] focus:ring-offset-2 focus:ring-offset-[#050712]"
-        >
-          Early access
-        </a>
-      </div>
-    </header>
-  )
 }
 
 function ProductMockup() {
