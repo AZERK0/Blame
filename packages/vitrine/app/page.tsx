@@ -1,5 +1,15 @@
 import Image from 'next/image'
-import { ArrowRight, Play } from 'lucide-react'
+import {
+  ArrowRight,
+  ClipboardCheck,
+  Code2,
+  GitPullRequestArrow,
+  Palette,
+  Play,
+  Search,
+  ShieldCheck,
+  Sparkles,
+} from 'lucide-react'
 import { HeroScene } from './scene/hero-scene'
 
 const navigationItems = ['Product', 'Pricing', 'Download']
@@ -127,6 +137,49 @@ const practiceDetectionRows = [
     label: 'Commit convention',
     status: 'Detected',
     mode: 'Match codebase',
+  },
+]
+
+const specialistAgentCards = [
+  {
+    title: 'Codebase Analyst',
+    description:
+      'Maps the repository structure, stack, conventions, dependencies, and affected files.',
+    icon: Search,
+    accent: 'text-[#b3acf3]',
+    glow: 'bg-[#b3acf3]/12',
+  },
+  {
+    title: 'Story Analyst',
+    description:
+      'Turns vague requests into clear goals, acceptance criteria, non-goals, constraints, and edge cases.',
+    icon: ClipboardCheck,
+    accent: 'text-[#8fd8ff]',
+    glow: 'bg-[#8fd8ff]/10',
+  },
+  {
+    title: 'Frontend Specialist',
+    description:
+      'Reviews layout, hierarchy, responsiveness, accessibility, design consistency, and product-grade UI polish.',
+    icon: Palette,
+    accent: 'text-[#f0c987]',
+    glow: 'bg-[#f0c987]/10',
+  },
+  {
+    title: 'Test & Verification Analyst',
+    description:
+      'Defines what should be tested, which commands should run, and which behaviors need proof.',
+    icon: Code2,
+    accent: 'text-[#7dd3a8]',
+    glow: 'bg-[#7dd3a8]/10',
+  },
+  {
+    title: 'Risk Review Analyst',
+    description:
+      'Looks for regressions, unsafe assumptions, security issues, data risks, and merge blockers.',
+    icon: ShieldCheck,
+    accent: 'text-[#ffa5b8]',
+    glow: 'bg-[#ffa5b8]/10',
   },
 ]
 
@@ -566,6 +619,133 @@ export default function Home() {
             No more one-shot code. Every agent works inside your engineering
             standards.
           </p>
+        </div>
+      </section>
+
+      <section
+        id="specialist-agents"
+        aria-labelledby="specialist-agents-title"
+        className="relative isolate overflow-hidden px-5 py-24 sm:px-8 sm:py-32 lg:px-10"
+      >
+        <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-px bg-gradient-to-r from-transparent via-white/14 to-transparent" />
+        <div className="pointer-events-none absolute left-1/2 top-10 -z-10 h-[34rem] w-[42rem] -translate-x-1/2 rounded-full bg-[#b3acf3]/8 blur-3xl" />
+        <div className="pointer-events-none absolute bottom-0 left-[-12rem] -z-10 h-[26rem] w-[26rem] rounded-full bg-[#7dd3a8]/5 blur-3xl" />
+
+        <div className="mx-auto max-w-[1100px]">
+          <div className="mx-auto max-w-4xl text-center">
+            <p className="mb-5 text-xs font-semibold uppercase tracking-[0.36em] text-[#b3acf3]">
+              SPECIALIST AGENTS
+            </p>
+            <h2
+              id="specialist-agents-title"
+              className="text-balance text-[clamp(2.35rem,5vw,4.8rem)] font-semibold leading-[0.95] tracking-[-0.07em] text-white"
+            >
+              One main agent.
+              <br />
+              Five focused reviewers.
+            </h2>
+            <p className="mx-auto mt-7 max-w-[760px] text-balance text-base leading-7 text-white/68 sm:text-lg md:text-xl">
+              The main agent implements the task. Specialist agents help it
+              understand the repository, clarify intent, improve UI quality,
+              plan verification, and catch risks before merge.
+            </p>
+          </div>
+
+          <div className="mt-14 overflow-hidden rounded-[2rem] border border-white/12 bg-[#080b16]/70 shadow-[0_28px_90px_rgba(0,0,0,0.32)] backdrop-blur-xl lg:mt-16">
+            <div className="grid gap-px bg-white/8 lg:grid-cols-[0.92fr_1.35fr]">
+              <div className="relative overflow-hidden bg-[#080b16]/92 p-6 sm:p-8">
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_8%,rgba(179,172,243,0.16),transparent_38%)]" />
+                <div className="relative flex h-full flex-col justify-between gap-10">
+                  <div>
+                    <div className="mb-7 flex items-center gap-3">
+                      <span className="grid h-10 w-10 place-items-center rounded-2xl border border-[#b3acf3]/24 bg-[#b3acf3]/12 text-[#d7d2ff] shadow-[0_0_30px_rgba(179,172,243,0.16)]">
+                        <Sparkles className="h-5 w-5" />
+                      </span>
+                      <span className="rounded-full border border-white/12 bg-white/[0.06] px-3 py-1.5 font-mono text-[0.68rem] font-medium uppercase tracking-[0.16em] text-white/54">
+                        Main coding agent
+                      </span>
+                    </div>
+                    <h3 className="text-3xl font-semibold tracking-[-0.045em] text-white sm:text-4xl">
+                      Implements the task.
+                    </h3>
+                    <p className="mt-5 text-sm leading-6 text-white/64 sm:text-base sm:leading-7">
+                      Edits the code, integrates specialist feedback, prepares
+                      the diff, and keeps the work attached to its user story.
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-[#b3acf3]/18 bg-[#b3acf3]/10 p-4">
+                    <div className="flex items-center gap-3 text-sm font-semibold text-[#e7e4ff]">
+                      <GitPullRequestArrow className="h-4 w-4" />
+                      One controlled implementation path
+                    </div>
+                    <p className="mt-2 text-xs leading-5 text-white/54">
+                      Not five agents coding in five directions — one agent
+                      builds while focused reviewers sharpen the result.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white/[0.025] p-4 sm:p-5 lg:p-6">
+                <div className="mb-4 flex flex-col gap-2 px-1 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#b3acf3]">
+                      Supported by reviewers
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-white/54">
+                      Each specialist advises from one quality angle.
+                    </p>
+                  </div>
+                  <span className="font-mono text-xs uppercase tracking-[0.14em] text-white/36">
+                    advisory layer
+                  </span>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-2">
+                  {specialistAgentCards.map((agent, index) => {
+                    const Icon = agent.icon
+
+                    return (
+                      <article
+                        key={agent.title}
+                        className="group relative overflow-hidden rounded-2xl border border-white/10 bg-[#080b16]/82 p-4 transition duration-200 hover:-translate-y-0.5 hover:border-white/18 hover:bg-[#0d1020]/88"
+                      >
+                        <div
+                          className={`pointer-events-none absolute -right-10 -top-10 h-24 w-24 rounded-full ${agent.glow} blur-2xl transition duration-200 group-hover:opacity-80`}
+                        />
+                        <div className="relative">
+                          <div className="mb-4 flex items-center justify-between gap-3">
+                            <span
+                              className={`grid h-9 w-9 place-items-center rounded-xl border border-white/10 bg-white/[0.055] ${agent.accent}`}
+                            >
+                              <Icon className="h-4 w-4" />
+                            </span>
+                            <span className="font-mono text-[0.65rem] uppercase tracking-[0.16em] text-white/32">
+                              0{index + 1}
+                            </span>
+                          </div>
+                          <h3 className="text-lg font-semibold tracking-[-0.025em] text-white">
+                            {agent.title}
+                          </h3>
+                          <p className="mt-3 text-sm leading-6 text-white/58">
+                            {agent.description}
+                          </p>
+                        </div>
+                      </article>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-white/10 bg-[#050712]/64 px-5 py-5 sm:px-8">
+              <p className="text-center text-lg font-semibold leading-7 tracking-[-0.025em] text-white sm:text-xl">
+                Specialists advise. The main agent integrates. The developer
+                decides.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
     </main>
