@@ -290,6 +290,7 @@ const storyStartProgress =
 const totalScrollHeight = totalTimelineUnits * viewportHeightPerUnit
 const sceneEnterShare = 0.1
 const sceneExitStart = 0.88
+const sectionContentTriggerProgress = 0.46
 const workflowAnchorLocalProgress = sceneEnterShare * 1.35
 const workflowAnchorProgress = pageProgressForStoryLocal(
   0,
@@ -426,21 +427,30 @@ function StorySceneFrame({
   scene: StoryScene
   metrics: SceneMetrics
 }) {
+  const contentActive = metrics.local >= sectionContentTriggerProgress
+
   return (
     <article
       aria-hidden={metrics.visibility < 0.05}
-      className="absolute inset-0 flex items-center px-5 py-20 sm:px-8 lg:px-10"
+      className="absolute inset-0 px-5 py-20 sm:px-8 lg:px-10"
       style={sceneFrameStyle(metrics)}
     >
-      <div className="mx-auto grid w-full max-w-7xl gap-8 lg:grid-cols-[0.82fr_1.18fr] lg:items-center lg:gap-12">
-        <StoryCopy scene={scene} progress={metrics.local} />
-        <StoryVisual scene={scene} progress={metrics.local} />
+      <div className="relative mx-auto h-full w-full max-w-7xl">
+        <StoryTitle scene={scene} progress={metrics.local} />
+        <div
+          className="absolute inset-x-0 bottom-0 top-[35vh] flex items-center lg:inset-y-0 lg:left-[38%] lg:right-0"
+          style={sectionContentStyle(contentActive)}
+        >
+          <div className="w-full">
+            <StoryVisual scene={scene} active={contentActive} />
+          </div>
+        </div>
       </div>
     </article>
   )
 }
 
-function StoryCopy({
+function StoryTitle({
   scene,
   progress,
 }: {
@@ -448,22 +458,16 @@ function StoryCopy({
   progress: number
 }) {
   return (
-    <div className="max-w-2xl">
-      <p
-        className="mb-5 text-xs font-semibold uppercase text-white/54"
-        style={revealStyle(progress, -0.34)}
-      >
+    <div className="absolute z-10" style={sceneTitleStyle(progress)}>
+      <p className="mb-5 text-xs font-semibold uppercase text-white/54">
         {scene.eyebrow}
       </p>
-      <h2
-        className="text-balance text-[clamp(2.4rem,6vw,5.9rem)] font-semibold leading-[0.95] text-white"
-        style={revealStyle(progress, -0.28)}
-      >
+      <h2 className="text-balance text-[clamp(3rem,8vw,8rem)] font-semibold leading-[0.92] text-white">
         {scene.title}
       </h2>
       <p
-        className="mt-6 max-w-xl text-balance text-base leading-7 text-white/68 sm:text-lg"
-        style={revealStyle(progress, -0.18)}
+        className="mt-5 max-w-xl text-balance text-base leading-7 text-white/68 sm:text-lg"
+        style={titleDescriptionStyle(progress)}
       >
         {scene.description}
       </p>
@@ -473,36 +477,36 @@ function StoryCopy({
 
 function StoryVisual({
   scene,
-  progress,
+  active,
 }: {
   scene: StoryScene
-  progress: number
+  active: boolean
 }) {
   if (scene.visual === 'workflow')
-    return <WorkflowVisual cards={scene.cards ?? []} progress={progress} />
+    return <WorkflowVisual active={active} cards={scene.cards ?? []} />
   if (scene.visual === 'imageCards')
-    return <ImageCardsVisual cards={scene.cards ?? []} progress={progress} />
-  if (scene.visual === 'agents') return <AgentsVisual progress={progress} />
+    return <ImageCardsVisual active={active} cards={scene.cards ?? []} />
+  if (scene.visual === 'agents') return <AgentsVisual active={active} />
   if (scene.visual === 'build')
-    return <BuildVisual cards={scene.cards ?? []} progress={progress} />
-  if (scene.visual === 'cta') return <CtaVisual progress={progress} />
+    return <BuildVisual active={active} cards={scene.cards ?? []} />
+  if (scene.visual === 'cta') return <CtaVisual active={active} />
   return (
     <ProgressiveCards
       accent={scene.accent}
+      active={active}
       cards={scene.cards ?? []}
-      progress={progress}
     />
   )
 }
 
 function ProgressiveCards({
   accent,
+  active,
   cards,
-  progress,
 }: {
   accent: string
+  active: boolean
   cards: readonly StoryCard[]
-  progress: number
 }) {
   return (
     <div className="relative min-h-[24rem] sm:min-h-[28rem] lg:min-h-[32rem]">
@@ -510,7 +514,7 @@ function ProgressiveCards({
         <article
           key={card.title}
           className="absolute inset-x-0 top-0 overflow-hidden border border-white/14 bg-[#111316]/88 p-5 shadow-[0_28px_100px_rgba(0,0,0,0.48)] backdrop-blur-2xl supports-[backdrop-filter]:bg-[#111316]/76 sm:p-6 lg:p-7"
-          style={stackedCardStyle(progress, index, cards.length)}
+          style={stackedCardStyle(active, index)}
         >
           <div className="mb-8 flex items-center gap-3">
             <span
@@ -538,11 +542,11 @@ function ProgressiveCards({
 }
 
 function WorkflowVisual({
+  active,
   cards,
-  progress,
 }: {
+  active: boolean
   cards: readonly StoryCard[]
-  progress: number
 }) {
   return (
     <div className="grid gap-5 lg:grid-cols-[0.82fr_1.18fr] lg:items-center">
@@ -550,35 +554,30 @@ function WorkflowVisual({
         {cards.map((card, index) => (
           <WorkflowStep
             key={card.title}
+            active={active}
             card={card}
             index={index}
-            progress={progress}
-            total={cards.length}
           />
         ))}
       </div>
-      <ScreenshotPanel progress={progress} tone="#9fd7ff" />
+      <ScreenshotPanel active={active} delay={420} tone="#9fd7ff" />
     </div>
   )
 }
 
 function WorkflowStep({
+  active,
   card,
   index,
-  progress,
-  total,
 }: {
+  active: boolean
   card: StoryCard
   index: number
-  progress: number
-  total: number
 }) {
-  const amount = staggerProgress(progress, index, total)
-
   return (
     <article
       className="border border-white/12 bg-white/[0.065] p-4 shadow-[0_18px_60px_rgba(0,0,0,0.28)] backdrop-blur-xl"
-      style={slideRevealStyle(amount, index % 2 === 0 ? -18 : 18)}
+      style={revealItemStyle(active, index * 120, index % 2 === 0 ? -18 : 18)}
     >
       <div className="flex items-start gap-3">
         <span className="grid h-8 w-8 shrink-0 place-items-center border border-white/14 bg-white/[0.075] font-mono text-xs text-white/76">
@@ -598,26 +597,26 @@ function WorkflowStep({
 }
 
 function ImageCardsVisual({
+  active,
   cards,
-  progress,
 }: {
+  active: boolean
   cards: readonly StoryCard[]
-  progress: number
 }) {
   return (
     <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-      <ScreenshotPanel progress={progress} tone="#f5a3b7" />
-      <CompactCardList cards={cards} progress={progress} />
+      <ScreenshotPanel active={active} delay={0} tone="#f5a3b7" />
+      <CompactCardList active={active} cards={cards} />
     </div>
   )
 }
 
 function CompactCardList({
+  active,
   cards,
-  progress,
 }: {
+  active: boolean
   cards: readonly StoryCard[]
-  progress: number
 }) {
   return (
     <div className="grid gap-3">
@@ -625,10 +624,7 @@ function CompactCardList({
         <article
           key={card.title}
           className="border border-white/12 bg-[#0d0d0d]/80 p-4 backdrop-blur-xl"
-          style={slideRevealStyle(
-            staggerProgress(progress, index, cards.length),
-            20
-          )}
+          style={revealItemStyle(active, index * 130 + 180, 20)}
         >
           <p className="mb-3 font-mono text-xs uppercase text-white/36">
             {card.label}
@@ -644,16 +640,18 @@ function CompactCardList({
 }
 
 function ScreenshotPanel({
-  progress,
+  active,
+  delay,
   tone,
 }: {
-  progress: number
+  active: boolean
+  delay: number
   tone: string
 }) {
   return (
     <div
       className="border border-white/14 bg-white/[0.07] p-2 shadow-[0_30px_110px_rgba(0,0,0,0.48)] backdrop-blur-2xl"
-      style={screenshotStyle(progress, tone)}
+      style={screenshotStyle(active, tone, delay)}
     >
       <div className="overflow-hidden border border-white/10 bg-[#0a0a0a]">
         <Image
@@ -668,17 +666,17 @@ function ScreenshotPanel({
   )
 }
 
-function AgentsVisual({ progress }: { progress: number }) {
+function AgentsVisual({ active }: { active: boolean }) {
   return (
     <div className="grid gap-4 lg:grid-cols-[0.78fr_1.22fr] lg:items-stretch">
-      <MainAgentPanel progress={progress} />
+      <MainAgentPanel active={active} />
       <div className="grid gap-3 sm:grid-cols-2">
         {specialistAgentCards.map((agent, index) => (
           <SpecialistCard
+            active={active}
             key={agent.title}
             agent={agent}
             index={index}
-            progress={progress}
           />
         ))}
       </div>
@@ -686,11 +684,11 @@ function AgentsVisual({ progress }: { progress: number }) {
   )
 }
 
-function MainAgentPanel({ progress }: { progress: number }) {
+function MainAgentPanel({ active }: { active: boolean }) {
   return (
     <article
       className="flex min-h-72 flex-col justify-between border border-white/12 bg-white/[0.07] p-6 shadow-[0_26px_90px_rgba(0,0,0,0.36)] backdrop-blur-xl"
-      style={slideRevealStyle(agentProgress(progress, 0, 6), -22)}
+      style={revealItemStyle(active, 0, -22)}
     >
       <div>
         <span className="mb-6 grid h-10 w-10 place-items-center border border-white/14 bg-white/[0.08] text-white">
@@ -713,20 +711,20 @@ function MainAgentPanel({ progress }: { progress: number }) {
 }
 
 function SpecialistCard({
+  active,
   agent,
   index,
-  progress,
 }: {
+  active: boolean
   agent: SpecialistAgent
   index: number
-  progress: number
 }) {
   const Icon = agent.icon
 
   return (
     <article
       className="border border-white/10 bg-[#0d0d0d]/82 p-4 shadow-[0_18px_60px_rgba(0,0,0,0.24)] backdrop-blur-xl"
-      style={slideRevealStyle(agentProgress(progress, index + 1, 6), 22)}
+      style={revealItemStyle(active, index * 95 + 130, 22)}
     >
       <div className="mb-4 flex items-center justify-between gap-3">
         <span
@@ -746,29 +744,29 @@ function SpecialistCard({
 }
 
 function BuildVisual({
+  active,
   cards,
-  progress,
 }: {
+  active: boolean
   cards: readonly StoryCard[]
-  progress: number
 }) {
   return (
     <div className="grid gap-5 lg:grid-cols-[0.78fr_1.22fr] lg:items-center">
-      <BuildSteps cards={cards} progress={progress} />
+      <BuildSteps active={active} cards={cards} />
       <div className="relative">
-        <ScreenshotPanel progress={progress} tone="#92d8bf" />
-        <BuildBadge progress={progress} />
+        <ScreenshotPanel active={active} delay={260} tone="#92d8bf" />
+        <BuildBadge active={active} />
       </div>
     </div>
   )
 }
 
 function BuildSteps({
+  active,
   cards,
-  progress,
 }: {
+  active: boolean
   cards: readonly StoryCard[]
-  progress: number
 }) {
   return (
     <div className="grid gap-3">
@@ -776,10 +774,7 @@ function BuildSteps({
         <article
           key={card.title}
           className="border border-white/12 bg-white/[0.06] p-4 backdrop-blur-xl"
-          style={slideRevealStyle(
-            staggerProgress(progress, index, cards.length),
-            -20
-          )}
+          style={revealItemStyle(active, index * 120, -20)}
         >
           <p className="mb-3 flex items-center gap-2 font-mono text-xs text-white/38">
             <Boxes className="h-4 w-4" />
@@ -795,11 +790,11 @@ function BuildSteps({
   )
 }
 
-function BuildBadge({ progress }: { progress: number }) {
+function BuildBadge({ active }: { active: boolean }) {
   return (
     <div
       className="absolute -bottom-5 left-5 right-5 border border-white/12 bg-[#101010]/90 p-4 shadow-[0_22px_80px_rgba(0,0,0,0.38)] backdrop-blur-xl sm:left-auto sm:w-72"
-      style={slideRevealStyle(smoothstep(0.58, 0.9, progress), 18)}
+      style={revealItemStyle(active, 620, 18)}
     >
       <p className="flex items-center gap-2 text-sm font-semibold text-white">
         <FileCode2 className="h-4 w-4 text-[#92d8bf]" />
@@ -812,9 +807,9 @@ function BuildBadge({ progress }: { progress: number }) {
   )
 }
 
-function CtaVisual({ progress }: { progress: number }) {
+function CtaVisual({ active }: { active: boolean }) {
   return (
-    <div className="flex flex-col gap-3" style={revealStyle(progress, 0.1)}>
+    <div className="flex flex-col gap-3" style={revealItemStyle(active, 80, 18)}>
       <a
         href="#download"
         className="group inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-[#080808] shadow-[0_18px_60px_rgba(255,255,255,0.2)] transition duration-200 hover:-translate-y-0.5 hover:bg-[#dfe7ff] focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-[#050505]"
@@ -1036,53 +1031,83 @@ function sceneFrameStyle(metrics: SceneMetrics): CSSProperties {
   }
 }
 
-function stackedCardStyle(progress: number, index: number, total: number) {
-  const interval = stackedCardInterval(total)
-  const reveal = stackedCardProgress(progress, index, total)
-  const eased = easeOut(reveal)
-  const exitStart = index * interval + interval * 0.66
-  const exitEnd = (index + 1) * interval - interval * 0.08
-  const exit =
-    index === total - 1 ? 0 : smoothstep(exitStart, exitEnd, progress)
-  const x = (1 - eased) * 110 - exit * 28
-  const y = index * 24 - exit * 10
-  const scale = 0.93 + eased * 0.07 - exit * 0.02
+function sceneTitleStyle(progress: number): CSSProperties {
+  const compact = smoothstep(0.12, 0.46, progress)
+  const opacity = smoothstep(0, 0.08, progress)
+
+  return {
+    left: `${lerp(50, 0, compact)}%`,
+    maxWidth: `${lerp(76, 31, compact)}rem`,
+    opacity,
+    top: `${lerp(50, 10, compact)}%`,
+    transform: `translate3d(${lerp(-50, 0, compact)}%, ${lerp(-50, 0, compact)}%, 0) scale(${lerp(1, 0.58, compact)})`,
+    transformOrigin: 'top left',
+  }
+}
+
+function titleDescriptionStyle(progress: number): CSSProperties {
+  const amount = smoothstep(0.38, 0.58, progress)
+
+  return {
+    opacity: amount,
+    transform: `translate3d(0, ${(1 - amount) * 10}px, 0)`,
+  }
+}
+
+function sectionContentStyle(active: boolean): CSSProperties {
+  return {
+    opacity: active ? 1 : 0,
+    pointerEvents: active ? 'auto' : 'none',
+    transform: active
+      ? 'translate3d(0, 0, 0)'
+      : 'translate3d(0, 22px, 0)',
+    transition: revealTransition(0, 520),
+  }
+}
+
+function stackedCardStyle(active: boolean, index: number) {
+  const y = index * 24
+  const scale = 1 - index * 0.012
+  const visibleTransform = `translate3d(${index * 4}px, ${y}px, 0) scale(${scale})`
+  const hiddenTransform = `translate3d(96px, ${y + 20}px, 0) scale(0.94)`
 
   return {
     borderRadius: 8,
-    opacity: eased * (1 - exit * 0.08),
-    transform: `translate3d(${x}px, ${y}px, 0) scale(${scale})`,
+    opacity: active ? 1 : 0,
+    transform: active ? visibleTransform : hiddenTransform,
+    transition: revealTransition(index * 190, 740),
     zIndex: index + 1,
   } satisfies CSSProperties
 }
 
-function revealStyle(progress: number, start: number): CSSProperties {
-  const amount = smoothstep(start, start + 0.22, progress)
-
+function revealItemStyle(
+  active: boolean,
+  delay: number,
+  x: number
+): CSSProperties {
   return {
-    opacity: amount,
-    transform: `translate3d(0, ${(1 - amount) * 18}px, 0)`,
+    borderRadius: 8,
+    opacity: active ? 1 : 0,
+    transform: active ? 'translate3d(0, 0, 0)' : `translate3d(${x}px, 16px, 0)`,
+    transition: revealTransition(delay, 620),
   }
 }
 
-function slideRevealStyle(amount: number, x: number): CSSProperties {
-  const eased = easeOut(amount)
-
+function screenshotStyle(
+  active: boolean,
+  tone: string,
+  delay: number
+): CSSProperties {
   return {
     borderRadius: 8,
-    opacity: eased,
-    transform: `translate3d(${(1 - eased) * x}px, ${(1 - eased) * 12}px, 0)`,
-  }
-}
-
-function screenshotStyle(progress: number, tone: string): CSSProperties {
-  const amount = smoothstep(0.16, 0.72, progress)
-
-  return {
-    borderRadius: 8,
-    boxShadow: `0 30px 110px rgba(0,0,0,0.48), 0 0 ${amount * 70}px ${tone}33`,
-    opacity: amount,
-    transform: `perspective(1200px) rotateX(${(1 - amount) * 8}deg) translate3d(0, ${(1 - amount) * 26}px, 0) scale(${0.94 + amount * 0.06})`,
+    boxShadow: active
+      ? `0 30px 110px rgba(0,0,0,0.48), 0 0 70px ${tone}33`
+      : '0 30px 110px rgba(0,0,0,0.42), 0 0 0 transparent',
+    opacity: active ? 1 : 0,
+    transform: active
+      ? 'perspective(1200px) rotateX(0deg) translate3d(0, 0, 0) scale(1)'
+      : 'perspective(1200px) rotateX(8deg) translate3d(0, 26px, 0) scale(0.94)',
+    transition: revealTransition(delay, 720),
   }
 }
 
@@ -1093,26 +1118,6 @@ function dotStyle(progress: number, index: number): CSSProperties {
     opacity: 0.32 + active * 0.68,
     transform: `scale(${1 + active * 0.75})`,
   }
-}
-
-function stackedCardProgress(progress: number, index: number, total: number) {
-  const interval = stackedCardInterval(total)
-  const start = index * interval
-  return smoothstep(start, start + interval * 0.55, progress)
-}
-
-function stackedCardInterval(total: number) {
-  return 0.8 / total
-}
-
-function agentProgress(progress: number, index: number, total: number) {
-  const start = index / (total + 4)
-  return smoothstep(start, start + 0.22, progress)
-}
-
-function staggerProgress(progress: number, index: number, total: number) {
-  const start = index / (total + 0.8)
-  return smoothstep(start, start + 0.34, progress)
 }
 
 function pageProgressForStoryLocal(index: number, local: number) {
@@ -1152,6 +1157,14 @@ function smoothstep(edge0: number, edge1: number, value: number) {
 
 function easeOut(value: number) {
   return 1 - Math.pow(1 - clamp(value, 0, 1), 3)
+}
+
+function revealTransition(delay: number, duration: number) {
+  return `opacity ${duration}ms cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms, transform ${duration}ms cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms, box-shadow ${duration}ms cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms`
+}
+
+function lerp(start: number, end: number, amount: number) {
+  return start + (end - start) * amount
 }
 
 function clamp(value: number, min: number, max: number) {
