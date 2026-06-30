@@ -1,8 +1,10 @@
 import Image from 'next/image'
 import {
   ArrowRight,
+  Boxes,
   ClipboardCheck,
   Code2,
+  FileCode2,
   GitPullRequestArrow,
   Palette,
   Play,
@@ -181,6 +183,41 @@ const specialistAgentCards = [
     accent: 'text-[#ffa5b8]',
     glow: 'bg-[#ffa5b8]/10',
   },
+]
+
+const projectCreationCards = [
+  {
+    title: 'Stack choices',
+    description:
+      'Frontend, backend, database, UI library, ORM, package manager, and project type.',
+    badge: 'Web · Desktop · Mobile · Script',
+  },
+  {
+    title: 'Clean baseline',
+    description:
+      'A structured project setup with scripts, env templates, linting, tests, and conventions.',
+    badge: 'Scripts · Tests · Linting',
+  },
+  {
+    title: 'Practices included',
+    description:
+      'Coding style, architecture rules, testing strategy, and commit conventions from the beginning.',
+    badge: 'Rules from day one',
+  },
+  {
+    title: 'Built for the workflow',
+    description:
+      'User stories, worktrees, previews, diffs, reviews, and controlled merges are ready from day one.',
+    badge: 'Agent-ready',
+  },
+]
+
+const foundationManifestRows = [
+  ['stack', 'React · Adonis · PostgreSQL · Prisma'],
+  ['package manager', 'pnpm workspace'],
+  ['quality gates', 'typecheck · lint · test'],
+  ['practices', 'style · architecture · commits'],
+  ['agent workflow', 'stories · previews · diffs · reviews'],
 ]
 
 export default function Home() {
@@ -746,6 +783,111 @@ export default function Home() {
               </p>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section
+        id="project-creation"
+        aria-labelledby="project-creation-title"
+        className="relative isolate overflow-hidden px-5 py-24 sm:px-8 sm:py-32 lg:px-10"
+      >
+        <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-px bg-gradient-to-r from-transparent via-white/14 to-transparent" />
+        <div className="pointer-events-none absolute left-1/2 top-16 -z-10 h-[30rem] w-[42rem] -translate-x-1/2 rounded-full bg-[#b3acf3]/7 blur-3xl" />
+        <div className="pointer-events-none absolute bottom-0 right-[-10rem] -z-10 h-[24rem] w-[24rem] rounded-full bg-[#7dd3a8]/5 blur-3xl" />
+
+        <div className="mx-auto max-w-[1100px]">
+          <div className="mx-auto max-w-4xl text-center">
+            <p className="mb-5 text-xs font-semibold uppercase tracking-[0.36em] text-[#b3acf3]">
+              PROJECT CREATION
+            </p>
+            <h2
+              id="project-creation-title"
+              className="text-balance text-[clamp(2.35rem,5vw,4.8rem)] font-semibold leading-[0.95] tracking-[-0.07em] text-white"
+            >
+              From empty folder to agent-ready codebase.
+            </h2>
+            <p className="mx-auto mt-7 max-w-[760px] text-balance text-base leading-7 text-white/68 sm:text-lg md:text-xl">
+              Pick a stack. Blame generates a clean foundation with scripts,
+              dependencies, environment templates, code practices, and
+              development commands already prepared for AI-assisted work.
+            </p>
+          </div>
+
+          <div className="mt-14 grid gap-4 lg:grid-cols-[1fr_0.9fr] lg:items-stretch lg:mt-16">
+            <div className="grid gap-4 md:grid-cols-2">
+              {projectCreationCards.map((card, index) => (
+                <article
+                  key={card.title}
+                  className="group relative overflow-hidden rounded-3xl border border-white/12 bg-white/[0.045] p-6 shadow-[0_22px_70px_rgba(0,0,0,0.2)] backdrop-blur-xl transition duration-200 hover:-translate-y-0.5 hover:border-[#b3acf3]/30 hover:bg-white/[0.064] sm:p-7"
+                >
+                  <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(179,172,243,0.12),transparent_38%)] opacity-0 transition duration-200 group-hover:opacity-100" />
+                  <div className="relative">
+                    <div className="mb-7 flex items-center gap-3">
+                      <span className="grid h-8 w-8 place-items-center rounded-full border border-white/12 bg-[#080b16]/72 font-mono text-[0.68rem] font-semibold text-[#d7d2ff]">
+                        0{index + 1}
+                      </span>
+                      <span className="h-px flex-1 bg-gradient-to-r from-white/16 to-transparent" />
+                    </div>
+                    <h3 className="text-2xl font-semibold tracking-[-0.035em] text-white">
+                      {card.title}
+                    </h3>
+                    <p className="mt-4 text-sm leading-6 text-white/62 sm:text-base sm:leading-7">
+                      {card.description}
+                    </p>
+                    <p className="mt-6 rounded-full border border-white/10 bg-white/[0.045] px-3 py-1.5 font-mono text-[0.68rem] font-medium uppercase tracking-[0.14em] text-white/42">
+                      {card.badge}
+                    </p>
+                  </div>
+                </article>
+              ))}
+            </div>
+
+            <aside className="relative overflow-hidden rounded-[2rem] border border-white/12 bg-[#080b16]/72 p-5 shadow-[0_28px_90px_rgba(0,0,0,0.28)] backdrop-blur-xl sm:p-6 lg:p-7">
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_24%_0%,rgba(125,211,168,0.12),transparent_34%),radial-gradient(circle_at_100%_100%,rgba(179,172,243,0.11),transparent_34%)]" />
+              <div className="relative flex h-full flex-col">
+                <div className="mb-8 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <span className="grid h-10 w-10 place-items-center rounded-2xl border border-[#7dd3a8]/20 bg-[#7dd3a8]/10 text-[#bceccc] shadow-[0_0_30px_rgba(125,211,168,0.12)]">
+                      <Boxes className="h-5 w-5" />
+                    </span>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#b3acf3]">
+                        Foundation manifest
+                      </p>
+                      <p className="mt-1 text-sm text-white/48">
+                        Generated once, then evolved through the workflow.
+                      </p>
+                    </div>
+                  </div>
+                  <FileCode2 className="hidden h-5 w-5 text-white/28 sm:block" />
+                </div>
+
+                <div className="divide-y divide-white/8 overflow-hidden rounded-2xl border border-white/10 bg-[#050712]/58">
+                  {foundationManifestRows.map(([label, value]) => (
+                    <div
+                      key={label}
+                      className="grid gap-2 px-4 py-4 text-sm sm:grid-cols-[0.72fr_1fr] sm:items-center"
+                    >
+                      <span className="font-mono text-[0.68rem] font-medium uppercase tracking-[0.16em] text-white/36">
+                        {label}
+                      </span>
+                      <span className="text-white/74">{value}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <p className="mt-auto pt-7 text-sm leading-6 text-white/54">
+                  Not throwaway code from a prompt — a clean engineering
+                  baseline for agents to build, test, preview, review, and
+                  improve safely.
+                </p>
+              </div>
+            </aside>
+          </div>
+
+          <p className="mx-auto mt-12 max-w-3xl text-center text-xl font-semibold leading-8 tracking-[-0.03em] text-white sm:text-2xl">
+            Generated once. Built to evolve.
+          </p>
         </div>
       </section>
     </main>
