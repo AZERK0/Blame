@@ -2,7 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 
 const navigationItems = [
-  { label: 'Product', href: '/#product' },
+  { label: 'Product', href: '/#workflow' },
   { label: 'Pricing', href: '/pricing' },
   { label: 'Download', href: '/#download' },
 ]
@@ -13,7 +13,7 @@ export function SiteHeader() {
       <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5 sm:px-8 lg:px-10">
         <Link
           href="/#top"
-          className="group flex items-center gap-3 rounded-full focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-[#050712]"
+          className="group flex items-center gap-3 rounded-full focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-[#050505]"
           aria-label="Blame home"
         >
           <span className="grid h-10 w-10 place-items-center">
@@ -26,9 +26,7 @@ export function SiteHeader() {
               priority
             />
           </span>
-          <span className="text-2xl font-extrabold tracking-[-0.05em] text-white">
-            Blame
-          </span>
+          <span className="text-2xl font-extrabold text-white">Blame</span>
         </Link>
 
         <nav
@@ -48,7 +46,7 @@ export function SiteHeader() {
 
         <Link
           href="/#download"
-          className="inline-flex min-h-10 items-center justify-center rounded-full border border-white/14 bg-white/[0.08] px-4 text-sm font-semibold text-white/90 shadow-2xl shadow-black/20 backdrop-blur-xl transition duration-200 hover:bg-white/[0.14] focus:outline-none focus:ring-2 focus:ring-[#b3acf3] focus:ring-offset-2 focus:ring-offset-[#050712]"
+          className="inline-flex min-h-10 items-center justify-center rounded-full border border-white/14 bg-white/[0.08] px-4 text-sm font-semibold text-white/90 shadow-2xl shadow-black/20 backdrop-blur-xl transition duration-200 hover:bg-white/[0.14] focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-[#050505]"
         >
           Early access
         </Link>
