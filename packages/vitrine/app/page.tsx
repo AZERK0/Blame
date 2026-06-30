@@ -890,6 +890,53 @@ export default function Home() {
           </p>
         </div>
       </section>
+
+      <section
+        id="download"
+        aria-labelledby="final-cta-title"
+        className="relative isolate overflow-hidden px-5 py-24 sm:px-8 sm:py-32 lg:px-10"
+      >
+        <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-px bg-gradient-to-r from-transparent via-white/14 to-transparent" />
+        <div className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[36rem] w-[36rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#b3acf3]/12 blur-3xl" />
+        <div className="pointer-events-none absolute bottom-0 left-1/2 -z-10 h-64 w-[54rem] -translate-x-1/2 bg-[radial-gradient(ellipse_at_center,rgba(125,211,168,0.1),transparent_68%)]" />
+
+        <div className="mx-auto max-w-[980px] overflow-hidden rounded-[2rem] border border-white/12 bg-white/[0.045] p-6 text-center shadow-[0_34px_120px_rgba(0,0,0,0.36)] backdrop-blur-2xl sm:p-10 lg:p-14">
+          <div className="pointer-events-none mx-auto mb-8 h-px max-w-sm bg-gradient-to-r from-transparent via-[#b3acf3]/50 to-transparent" />
+          <h2
+            id="final-cta-title"
+            className="text-balance text-[clamp(2.7rem,6vw,6rem)] font-semibold leading-[0.92] tracking-[-0.08em] text-white"
+          >
+            Give agents work.
+            <br />
+            Keep engineering control.
+          </h2>
+          <p className="mx-auto mt-7 max-w-[720px] text-balance text-base leading-7 text-white/70 sm:text-lg md:text-xl">
+            Run AI agents inside isolated worktrees, preview their output,
+            review every diff, and merge only when you are ready.
+          </p>
+
+          <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <a
+              href="#download"
+              className="group inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold tracking-[-0.01em] text-[#080b16] shadow-[0_18px_60px_rgba(255,255,255,0.22)] transition duration-200 hover:-translate-y-0.5 hover:bg-[#bdc3fd] focus:outline-none focus:ring-2 focus:ring-[#b3acf3] focus:ring-offset-2 focus:ring-offset-[#050712]"
+            >
+              Download Blame
+              <ArrowRight className="h-4 w-4 transition duration-200 group-hover:translate-x-0.5" />
+            </a>
+            <a
+              href="#workflow"
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-white/14 bg-white/[0.06] px-5 py-3 text-sm font-semibold text-white/90 backdrop-blur-md transition duration-200 hover:-translate-y-0.5 hover:bg-white/[0.1] focus:outline-none focus:ring-2 focus:ring-white/45 focus:ring-offset-2 focus:ring-offset-[#050712]"
+            >
+              <Play className="h-4 w-4 fill-current" />
+              See the workflow
+            </a>
+          </div>
+
+          <p className="mt-7 text-sm font-medium tracking-[-0.01em] text-white/50 sm:text-base">
+            Desktop-first. Cloud-synced. Local execution.
+          </p>
+        </div>
+      </section>
     </main>
   );
 }
