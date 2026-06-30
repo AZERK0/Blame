@@ -48,12 +48,14 @@ type StoryScene = {
 
 type SceneMetrics = {
   local: number
-  offset: number
   visibility: number
 }
 
-const storyStartProgress = 0.15
-const totalScrollHeight = 1260
+type SceneTimelineSegment = {
+  start: number
+  end: number
+}
+
 const scrollProgressResponse = 14
 
 const agentChaosCards = [
@@ -271,16 +273,35 @@ const storyScenes = [
   },
 ] satisfies StoryScene[]
 
+const heroScrollUnits = 1.1
+const heroStoryOverlapUnits = 0.24
+const viewportHeightPerUnit = 150
+const sceneScrollWeights = storyScenes.map(sceneScrollWeight)
+const sceneTimelineSegments = buildSceneTimeline(sceneScrollWeights)
+const storyScrollUnits = sceneScrollWeights.reduce(
+  (total, weight) => total + weight,
+  0
+)
+const totalTimelineUnits =
+  heroScrollUnits + storyScrollUnits - heroStoryOverlapUnits
+const heroEndProgress = heroScrollUnits / totalTimelineUnits
+const storyStartProgress =
+  (heroScrollUnits - heroStoryOverlapUnits) / totalTimelineUnits
+const totalScrollHeight = totalTimelineUnits * viewportHeightPerUnit
+const sceneEnterShare = 0.1
+const sceneExitStart = 0.88
+const workflowAnchorLocalProgress = sceneEnterShare * 1.35
+const workflowAnchorProgress = pageProgressForStoryLocal(
+  0,
+  workflowAnchorLocalProgress
+)
+
 export function ScrollStory() {
   const sectionRef = useRef<HTMLElement>(null)
   const progress = useScrollProgress(sectionRef)
-  const heroProgress = smoothstep(0.02, storyStartProgress, progress)
-  const storyProgress = clamp(
-    (progress - storyStartProgress) / (1 - storyStartProgress),
-    0,
-    1
-  )
-  const storyVisibility = smoothstep(0.78, 1, heroProgress)
+  const heroProgress = timelineProgress(progress, 0, heroEndProgress)
+  const storyProgress = timelineProgress(progress, storyStartProgress, 1)
+  const storyVisibility = smoothstep(0.62, 0.86, heroProgress)
   const metrics = useMemo(
     () =>
       sceneMetrics(storyProgress).map((metric) => ({
@@ -301,7 +322,7 @@ export function ScrollStory() {
       <span
         id="workflow"
         className="absolute"
-        style={{ top: `${totalScrollHeight * storyStartProgress}vh` }}
+        style={{ top: `${totalScrollHeight * workflowAnchorProgress}vh` }}
       />
       <span id="download" className="absolute bottom-0" />
       <div className="fixed inset-0 isolate overflow-hidden">
@@ -484,12 +505,12 @@ function ProgressiveCards({
   progress: number
 }) {
   return (
-    <div className="relative min-h-[22rem] sm:min-h-[28rem] lg:min-h-[34rem]">
+    <div className="relative min-h-[24rem] sm:min-h-[28rem] lg:min-h-[32rem]">
       {cards.map((card, index) => (
         <article
           key={card.title}
-          className="absolute inset-x-0 top-0 border border-white/12 bg-white/[0.075] p-5 shadow-[0_26px_90px_rgba(0,0,0,0.38)] backdrop-blur-xl sm:p-6 lg:p-7"
-          style={stackCardStyle(progress, index, cards.length)}
+          className="absolute inset-x-0 top-0 overflow-hidden border border-white/14 bg-[#111316]/88 p-5 shadow-[0_28px_100px_rgba(0,0,0,0.48)] backdrop-blur-2xl supports-[backdrop-filter]:bg-[#111316]/76 sm:p-6 lg:p-7"
+          style={stackedCardStyle(progress, index, cards.length)}
         >
           <div className="mb-8 flex items-center gap-3">
             <span
@@ -507,7 +528,7 @@ function ProgressiveCards({
           <h3 className="text-2xl font-semibold leading-tight text-white sm:text-3xl">
             {card.title}
           </h3>
-          <p className="mt-4 max-w-xl text-sm leading-6 text-white/62 sm:text-base sm:leading-7">
+          <p className="mt-4 max-w-xl text-sm leading-6 text-white/66 sm:text-base sm:leading-7">
             {card.description}
           </p>
         </article>
@@ -669,7 +690,7 @@ function MainAgentPanel({ progress }: { progress: number }) {
   return (
     <article
       className="flex min-h-72 flex-col justify-between border border-white/12 bg-white/[0.07] p-6 shadow-[0_26px_90px_rgba(0,0,0,0.36)] backdrop-blur-xl"
-      style={slideRevealStyle(staggerProgress(progress, 0, 6), -22)}
+      style={slideRevealStyle(agentProgress(progress, 0, 6), -22)}
     >
       <div>
         <span className="mb-6 grid h-10 w-10 place-items-center border border-white/14 bg-white/[0.08] text-white">
@@ -705,7 +726,7 @@ function SpecialistCard({
   return (
     <article
       className="border border-white/10 bg-[#0d0d0d]/82 p-4 shadow-[0_18px_60px_rgba(0,0,0,0.24)] backdrop-blur-xl"
-      style={slideRevealStyle(staggerProgress(progress, index + 1, 6), 22)}
+      style={slideRevealStyle(agentProgress(progress, index + 1, 6), 22)}
     >
       <div className="mb-4 flex items-center justify-between gap-3">
         <span
@@ -939,16 +960,34 @@ function useScrollProgress(ref: RefObject<HTMLElement | null>) {
   return progress
 }
 
+function sceneScrollWeight(scene: StoryScene) {
+  if (scene.visual === 'agents') return 1.42
+  if (scene.visual === 'cards') return 1.32
+  return 1
+}
+
+function buildSceneTimeline(weights: readonly number[]) {
+  const total = weights.reduce((sum, weight) => sum + weight, 0)
+  let cursor = 0
+
+  return weights.map((weight) => {
+    const start = cursor / total
+    cursor += weight
+    return { start, end: cursor / total } satisfies SceneTimelineSegment
+  })
+}
+
 function sceneMetrics(progress: number) {
   return storyScenes.map((_, index) => {
-    const offset = progress * storyScenes.length - index
-    const entering = smoothstep(-0.42, 0, offset)
-    const exiting =
-      index === storyScenes.length - 1 ? 1 : 1 - smoothstep(0.76, 1, offset)
+    const segment = sceneTimelineSegments[index]
+    const isLastScene = index === storyScenes.length - 1
+    const start = segment?.start ?? 0
+    const end = segment?.end ?? 1
+    const local = timelineProgress(progress, start, end)
+
     return {
-      local: clamp(offset, 0, 1),
-      offset,
-      visibility: entering * exiting,
+      local,
+      visibility: sceneVisibility(local, isLastScene),
     }
   })
 }
@@ -963,7 +1002,7 @@ function heroFrameStyle(progress: number): CSSProperties {
 }
 
 function heroCopyStyle(progress: number): CSSProperties {
-  const amount = smoothstep(0.1, 0.68, progress)
+  const amount = easeOut(timelineProgress(progress, 0, 0.68))
 
   return {
     opacity: 1 - amount,
@@ -972,8 +1011,8 @@ function heroCopyStyle(progress: number): CSSProperties {
 }
 
 function heroMockupStyle(progress: number): CSSProperties {
-  const lift = smoothstep(0.04, 0.9, progress)
-  const fade = smoothstep(0.72, 1, progress)
+  const lift = easeOut(timelineProgress(progress, 0, 0.9))
+  const fade = smoothstep(0.5, 0.86, progress)
 
   return {
     opacity: 1 - fade,
@@ -990,29 +1029,30 @@ function storyInterfaceStyle(visibility: number): CSSProperties {
 
 function sceneFrameStyle(metrics: SceneMetrics): CSSProperties {
   const visibility = easeOut(metrics.visibility)
-  const y = (1 - visibility) * 22 * Math.sign(metrics.offset || 1)
 
   return {
     opacity: visibility,
     pointerEvents: visibility > 0.75 ? 'auto' : 'none',
-    transform: `translate3d(0, ${y}px, 0) scale(${0.965 + visibility * 0.035})`,
+    transform: `translate3d(0, ${(1 - visibility) * 18}px, 0) scale(${0.985 + visibility * 0.015})`,
   }
 }
 
-function stackCardStyle(progress: number, index: number, total: number) {
-  const reveal = staggerProgress(progress, index, total)
-  const exit = smoothstep(
-    (index + 0.82) / total,
-    (index + 1.2) / total,
-    progress
-  )
-  const x = (1 - reveal) * 120 - exit * 42
-  const y = index * 22 - exit * 18
+function stackedCardStyle(progress: number, index: number, total: number) {
+  const interval = stackedCardInterval(total)
+  const reveal = stackedCardProgress(progress, index, total)
+  const eased = easeOut(reveal)
+  const exitStart = index * interval + interval * 0.66
+  const exitEnd = (index + 1) * interval - interval * 0.08
+  const exit =
+    index === total - 1 ? 0 : smoothstep(exitStart, exitEnd, progress)
+  const x = (1 - eased) * 110 - exit * 28
+  const y = index * 24 - exit * 10
+  const scale = 0.93 + eased * 0.07 - exit * 0.02
 
   return {
     borderRadius: 8,
-    opacity: reveal * (1 - exit * 0.28),
-    transform: `translate3d(${x}px, ${y}px, 0) scale(${0.92 + reveal * 0.08 - exit * 0.04})`,
+    opacity: eased * (1 - exit * 0.08),
+    transform: `translate3d(${x}px, ${y}px, 0) scale(${scale})`,
     zIndex: index + 1,
   } satisfies CSSProperties
 }
@@ -1056,20 +1096,54 @@ function dotStyle(progress: number, index: number): CSSProperties {
   }
 }
 
+function stackedCardProgress(progress: number, index: number, total: number) {
+  const interval = stackedCardInterval(total)
+  const start = index * interval
+  return smoothstep(start, start + interval * 0.55, progress)
+}
+
+function stackedCardInterval(total: number) {
+  return 0.8 / total
+}
+
+function agentProgress(progress: number, index: number, total: number) {
+  const start = index / (total + 4)
+  return smoothstep(start, start + 0.22, progress)
+}
+
 function staggerProgress(progress: number, index: number, total: number) {
   const start = index / (total + 0.8)
   return smoothstep(start, start + 0.34, progress)
+}
+
+function pageProgressForStoryLocal(index: number, local: number) {
+  const segment = sceneTimelineSegments[index] ?? { start: 0, end: 1 }
+  const sceneProgress =
+    segment.start + (segment.end - segment.start) * clamp(local, 0, 1)
+  return storyStartProgress + sceneProgress * (1 - storyStartProgress)
 }
 
 function scrollToScene(node: HTMLElement | null, index: number) {
   if (!node) return
   const top = node.getBoundingClientRect().top + window.scrollY
   const scrollable = node.offsetHeight - window.innerHeight
-  const sceneProgress = index / storyScenes.length
   window.scrollTo({
     behavior: 'smooth',
-    top: top + scrollable * (storyStartProgress + sceneProgress * (1 - storyStartProgress)),
+    top:
+      top +
+      scrollable * pageProgressForStoryLocal(index, workflowAnchorLocalProgress),
   })
+}
+
+function timelineProgress(progress: number, start: number, end: number) {
+  if (end <= start) return 1
+  return clamp((progress - start) / (end - start), 0, 1)
+}
+
+function sceneVisibility(local: number, isLastScene: boolean) {
+  const enter = smoothstep(0, sceneEnterShare, local)
+  const exit = isLastScene ? 1 : 1 - smoothstep(sceneExitStart, 1, local)
+  return enter * exit
 }
 
 function smoothstep(edge0: number, edge1: number, value: number) {
