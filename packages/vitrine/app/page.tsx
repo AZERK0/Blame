@@ -80,6 +80,56 @@ const cloudWorkspaceCards = [
   },
 ]
 
+const codePracticeCards = [
+  {
+    title: 'Code like the project',
+    description:
+      'Match existing conventions or apply a professional standard when the codebase has none.',
+    badge: 'Match codebase',
+  },
+  {
+    title: 'Test the behavior',
+    description:
+      'Use TDD and structured test cases for behavior, state, validation, data flows, boundaries, and failures.',
+    badge: 'Pro standard',
+  },
+  {
+    title: 'Respect the architecture',
+    description:
+      'Guide agents toward layered, Clean, Onion, or Hexagonal structures with clear dependencies.',
+    badge: 'Architecture rules',
+  },
+  {
+    title: 'Commit cleanly',
+    description:
+      'Keep generated work compatible with Conventional Commits and readable project history.',
+    badge: 'Detected',
+  },
+]
+
+const practiceDetectionRows = [
+  {
+    label: 'Coding style',
+    status: 'Not detected',
+    mode: 'Pro standard',
+  },
+  {
+    label: 'Unit tests',
+    status: 'Not detected',
+    mode: 'Disabled / Pro standard',
+  },
+  {
+    label: 'Layered architecture',
+    status: 'Not detected',
+    mode: 'Match codebase / Pro standard',
+  },
+  {
+    label: 'Commit convention',
+    status: 'Detected',
+    mode: 'Match codebase',
+  },
+]
+
 export default function Home() {
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#050712] text-white">
@@ -406,6 +456,116 @@ export default function Home() {
               Cloud control plane. Local engineering execution.
             </p>
           </div>
+        </div>
+      </section>
+
+      <section
+        id="code-practices"
+        aria-labelledby="code-practices-title"
+        className="relative isolate overflow-hidden px-5 py-24 sm:px-8 sm:py-32 lg:px-10"
+      >
+        <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-px bg-gradient-to-r from-transparent via-white/14 to-transparent" />
+        <div className="pointer-events-none absolute left-1/2 top-20 -z-10 h-[34rem] w-[34rem] -translate-x-1/2 rounded-full bg-[#b3acf3]/9 blur-3xl" />
+        <div className="pointer-events-none absolute bottom-16 right-[-12rem] -z-10 h-[28rem] w-[28rem] rounded-full bg-[#7dd3a8]/6 blur-3xl" />
+
+        <div className="mx-auto max-w-[1100px]">
+          <div className="mx-auto max-w-4xl text-center">
+            <p className="mb-5 text-xs font-semibold uppercase tracking-[0.36em] text-[#b3acf3]">
+              CODE PRACTICES
+            </p>
+            <h2
+              id="code-practices-title"
+              className="text-balance text-[clamp(2.35rem,5vw,4.8rem)] font-semibold leading-[0.95] tracking-[-0.07em] text-white"
+            >
+              AI agents should not improvise your architecture.
+            </h2>
+            <p className="mx-auto mt-7 max-w-[760px] text-balance text-base leading-7 text-white/68 sm:text-lg md:text-xl">
+              Blame gives agents persistent engineering rules for coding style,
+              tests, architecture, and commits — so every task follows the
+              standards of your project instead of producing disposable AI slop.
+            </p>
+          </div>
+
+          <div className="mt-14 grid gap-4 md:grid-cols-2 lg:mt-16">
+            {codePracticeCards.map((card) => (
+              <article
+                key={card.title}
+                className="group relative overflow-hidden rounded-3xl border border-white/12 bg-white/[0.05] p-6 shadow-[0_22px_70px_rgba(0,0,0,0.24)] backdrop-blur-xl transition duration-200 hover:-translate-y-1 hover:border-[#b3acf3]/34 hover:bg-white/[0.072] sm:p-7"
+              >
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_16%_0%,rgba(179,172,243,0.15),transparent_36%)] opacity-0 transition duration-200 group-hover:opacity-100" />
+                <div className="relative">
+                  <div className="mb-7 flex items-center justify-between gap-4">
+                    <span className="rounded-full border border-[#b3acf3]/18 bg-[#b3acf3]/10 px-3 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-[#d7d2ff]">
+                      {card.badge}
+                    </span>
+                    <span className="h-px flex-1 bg-gradient-to-r from-white/16 to-transparent" />
+                  </div>
+                  <h3 className="text-2xl font-semibold tracking-[-0.035em] text-white sm:text-3xl">
+                    {card.title}
+                  </h3>
+                  <p className="mt-4 text-sm leading-6 text-white/64 sm:text-base sm:leading-7">
+                    {card.description}
+                  </p>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <div className="mt-6 overflow-hidden rounded-3xl border border-white/12 bg-[#080b16]/72 shadow-[0_24px_80px_rgba(0,0,0,0.32)] backdrop-blur-xl sm:mt-8">
+            <div className="flex flex-col gap-3 border-b border-white/10 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#b3acf3]">
+                  Practice detection
+                </p>
+                <p className="mt-2 text-sm leading-6 text-white/58">
+                  Blame checks what your repository already says before agents
+                  start writing.
+                </p>
+              </div>
+              <span className="inline-flex w-fit items-center rounded-full border border-[#7dd3a8]/18 bg-[#7dd3a8]/10 px-3 py-1.5 text-xs font-semibold text-[#bceccc]">
+                Repository-aware rules
+              </span>
+            </div>
+
+            <div className="divide-y divide-white/8">
+              {practiceDetectionRows.map((row) => {
+                const isDetected = row.status === 'Detected'
+
+                return (
+                  <div
+                    key={row.label}
+                    className="grid gap-3 px-5 py-4 text-sm sm:grid-cols-[1.1fr_0.7fr_1fr] sm:items-center sm:px-6"
+                  >
+                    <span className="font-medium text-white/86">{row.label}</span>
+                    <span
+                      className={`inline-flex w-fit items-center gap-2 rounded-full border px-2.5 py-1 text-xs font-semibold ${
+                        isDetected
+                          ? 'border-[#7dd3a8]/20 bg-[#7dd3a8]/10 text-[#bceccc]'
+                          : 'border-white/12 bg-white/[0.055] text-white/54'
+                      }`}
+                    >
+                      <span
+                        className={`h-1.5 w-1.5 rounded-full ${
+                          isDetected
+                            ? 'bg-[#7dd3a8] shadow-[0_0_14px_rgba(125,211,168,0.65)]'
+                            : 'bg-white/36'
+                        }`}
+                      />
+                      {row.status}
+                    </span>
+                    <span className="font-mono text-xs uppercase tracking-[0.14em] text-white/44 sm:text-right">
+                      {row.mode}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          <p className="mx-auto mt-12 max-w-3xl text-center text-xl font-semibold leading-8 tracking-[-0.03em] text-white sm:text-2xl">
+            No more one-shot code. Every agent works inside your engineering
+            standards.
+          </p>
         </div>
       </section>
     </main>
