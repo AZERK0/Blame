@@ -2,7 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 
 const navigationItems = [
-  { label: 'Product', href: '/#workflow' },
+  { label: 'Product', href: '/' },
   { label: 'Pricing', href: '/pricing' },
   { label: 'Download', href: '/download' },
 ]

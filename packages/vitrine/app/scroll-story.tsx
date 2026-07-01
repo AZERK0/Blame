@@ -274,7 +274,7 @@ const storyScenes = [
 ] satisfies StoryScene[]
 
 const heroScrollUnits = 1.1
-const heroStoryOverlapUnits = 0.24
+const heroStoryOverlapUnits = 0.38
 const viewportHeightPerUnit = 105
 const sceneScrollWeights = storyScenes.map(sceneScrollWeight)
 const sceneTimelineSegments = buildSceneTimeline(sceneScrollWeights)
@@ -290,9 +290,9 @@ const storyStartProgress =
 const totalScrollHeight = totalTimelineUnits * viewportHeightPerUnit
 const sceneEnterShare = 0.1
 const sceneExitStart = 0.98
-const sectionContentTriggerProgress = 0.46
+const sectionContentTriggerProgress = 0.38
 const sectionItemTriggerEndProgress = sceneExitStart
-const sectionFinalItemHoldSlots = 2
+const sectionFinalItemHoldSlots = 1
 const workflowAnchorLocalProgress = sceneEnterShare * 1.35
 const workflowAnchorProgress = pageProgressForStoryLocal(
   0,
@@ -429,6 +429,9 @@ function StorySceneFrame({
   scene: StoryScene
   metrics: SceneMetrics
 }) {
+  if (scene.visual === 'cta')
+    return <CtaSceneFrame scene={scene} metrics={metrics} />
+
   const contentActive = metrics.local >= sectionContentTriggerProgress
 
   return (
@@ -456,6 +459,47 @@ function StorySceneFrame({
   )
 }
 
+function CtaSceneFrame({
+  scene,
+  metrics,
+}: {
+  scene: StoryScene
+  metrics: SceneMetrics
+}) {
+  const contentActive = metrics.local >= 0.36
+
+  return (
+    <article
+      aria-hidden={metrics.visibility < 0.05}
+      className="absolute inset-0 px-5 py-20 sm:px-8 lg:px-10"
+      style={sceneFrameStyle(metrics)}
+    >
+      <div className="mx-auto flex h-full w-full max-w-7xl items-center justify-center">
+        <div className="w-full text-center" style={ctaGroupStyle(metrics.local)}>
+          <p className="mb-5 text-sm font-semibold uppercase text-white/68">
+            {scene.eyebrow}
+          </p>
+          <h2
+            className="mx-auto max-w-6xl text-balance font-semibold leading-[0.92] text-white"
+            style={ctaTitleStyle(metrics.local)}
+          >
+            {scene.title}
+          </h2>
+          <p
+            className="mx-auto mt-6 max-w-4xl text-balance text-lg leading-8 text-white/76 sm:text-xl"
+            style={revealItemStyle(contentActive, 0, 18)}
+          >
+            {scene.description}
+          </p>
+          <div className="mt-8 flex justify-center">
+            <CtaVisual active={contentActive} />
+          </div>
+        </div>
+      </div>
+    </article>
+  )
+}
+
 function StoryTitle({
   scene,
   progress,
@@ -464,7 +508,10 @@ function StoryTitle({
   progress: number
 }) {
   return (
-    <div className="absolute z-10 text-center" style={sceneTitleStyle(progress)}>
+    <div
+      className="absolute z-10 text-center"
+      style={sceneTitleStyle(progress)}
+    >
       <p className="mb-5 text-sm font-semibold uppercase text-white/68">
         {scene.eyebrow}
       </p>
@@ -892,23 +939,31 @@ function BuildBadge({ active }: { active: boolean }) {
 
 function CtaVisual({ active }: { active: boolean }) {
   return (
-    <div className="flex flex-col gap-3" style={revealItemStyle(active, 0, 18)}>
-      <a
-        href="/download"
-        className="group inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-[#080808] shadow-[0_18px_60px_rgba(255,255,255,0.2)] transition duration-200 hover:-translate-y-0.5 hover:bg-[#dfe7ff] focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-[#050505]"
-      >
-        Download Blame
-        <ArrowRight className="h-4 w-4 transition duration-200 group-hover:translate-x-0.5" />
-      </a>
+    <div
+      className="flex flex-col items-center justify-center gap-3 sm:flex-row sm:items-start"
+      style={revealItemStyle(active, 0, 18)}
+    >
       <a
         href="#top"
-        className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-white/14 bg-white/[0.07] px-5 py-3 text-sm font-semibold text-white/90 backdrop-blur-md transition duration-200 hover:-translate-y-0.5 hover:bg-white/[0.11] focus:outline-none focus:ring-2 focus:ring-white/45 focus:ring-offset-2 focus:ring-offset-[#050505]"
+        className="inline-flex min-h-14 items-center justify-center gap-2.5 rounded-full border border-white/14 bg-white/[0.07] px-7 py-4 text-base font-semibold text-white/90 backdrop-blur-md transition duration-200 hover:-translate-y-0.5 hover:bg-white/[0.11] focus:outline-none focus:ring-2 focus:ring-white/45 focus:ring-offset-2 focus:ring-offset-[#050505]"
       >
-        <Play className="h-4 w-4 fill-current" />
+        <Play className="h-5 w-5 fill-current" />
         Replay the story
       </a>
+      <div className="flex flex-col items-center gap-2">
+        <a
+          href="/download"
+          className="group inline-flex min-h-14 items-center justify-center gap-2.5 rounded-full bg-white px-7 py-4 text-base font-semibold text-[#080808] shadow-[0_18px_60px_rgba(255,255,255,0.2)] transition duration-200 hover:-translate-y-0.5 hover:bg-[#dfe7ff] focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-[#050505]"
+        >
+          Or write your own
+          <ArrowRight className="h-5 w-5 transition duration-200 group-hover:translate-x-0.5" />
+        </a>
+        <p className="text-center text-xs font-light leading-5 text-white/56 sm:text-sm">
+          Download Blame now.
+        </p>
+      </div>
     </div>
-  )
+  );
 }
 
 function StoryBackdrop({
@@ -1126,6 +1181,23 @@ function sceneTitleStyle(progress: number): CSSProperties {
     transform: `translate3d(-50%, ${lerp(-50, 0, compact)}%, 0) scale(${lerp(1, 0.62, compact)})`,
     transformOrigin: 'top center',
     width: `${lerp(92, 84, compact)}rem`,
+  }
+}
+
+function ctaTitleStyle(progress: number): CSSProperties {
+  const compact = smoothstep(0.12, 0.42, progress)
+
+  return {
+    fontSize: `clamp(${lerp(3.8, 3.04, compact).toFixed(2)}rem, ${lerp(9, 7.2, compact).toFixed(2)}vw, ${lerp(9.5, 7.6, compact).toFixed(2)}rem)`,
+  }
+}
+
+function ctaGroupStyle(progress: number): CSSProperties {
+  const amount = smoothstep(0, 0.18, progress)
+
+  return {
+    opacity: amount,
+    transform: `translate3d(0, ${(1 - amount) * 18}px, 0) scale(${0.97 + amount * 0.03})`,
   }
 }
 
