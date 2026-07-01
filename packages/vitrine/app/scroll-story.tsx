@@ -289,8 +289,10 @@ const storyStartProgress =
   (heroScrollUnits - heroStoryOverlapUnits) / totalTimelineUnits
 const totalScrollHeight = totalTimelineUnits * viewportHeightPerUnit
 const sceneEnterShare = 0.1
-const sceneExitStart = 0.88
+const sceneExitStart = 0.98
 const sectionContentTriggerProgress = 0.46
+const sectionItemTriggerEndProgress = sceneExitStart
+const sectionFinalItemHoldSlots = 2
 const workflowAnchorLocalProgress = sceneEnterShare * 1.35
 const workflowAnchorProgress = pageProgressForStoryLocal(
   0,
@@ -438,11 +440,15 @@ function StorySceneFrame({
       <div className="relative mx-auto h-full w-full max-w-7xl">
         <StoryTitle scene={scene} progress={metrics.local} />
         <div
-          className="absolute inset-x-0 bottom-0 top-[35vh] flex items-center lg:inset-y-0 lg:left-[38%] lg:right-0"
+          className="absolute inset-x-0 bottom-0 top-[35vh] flex items-center lg:top-[26vh]"
           style={sectionContentStyle(contentActive)}
         >
-          <div className="w-full">
-            <StoryVisual scene={scene} active={contentActive} />
+          <div className="mx-auto w-full max-w-5xl">
+            <StoryVisual
+              scene={scene}
+              active={contentActive}
+              progress={metrics.local}
+            />
           </div>
         </div>
       </div>
@@ -458,15 +464,15 @@ function StoryTitle({
   progress: number
 }) {
   return (
-    <div className="absolute z-10" style={sceneTitleStyle(progress)}>
-      <p className="mb-5 text-xs font-semibold uppercase text-white/54">
+    <div className="absolute z-10 text-center" style={sceneTitleStyle(progress)}>
+      <p className="mb-5 text-sm font-semibold uppercase text-white/68">
         {scene.eyebrow}
       </p>
-      <h2 className="text-balance text-[clamp(3rem,8vw,8rem)] font-semibold leading-[0.92] text-white">
+      <h2 className="text-balance text-[clamp(3.2rem,8.8vw,8.8rem)] font-semibold leading-[0.92] text-white">
         {scene.title}
       </h2>
       <p
-        className="mt-5 max-w-xl text-balance text-base leading-7 text-white/68 sm:text-lg"
+        className="mx-auto mt-5 max-w-4xl text-balance text-lg leading-8 text-white/76 sm:text-xl"
         style={titleDescriptionStyle(progress)}
       >
         {scene.description}
@@ -478,23 +484,45 @@ function StoryTitle({
 function StoryVisual({
   scene,
   active,
+  progress,
 }: {
   scene: StoryScene
   active: boolean
+  progress: number
 }) {
   if (scene.visual === 'workflow')
-    return <WorkflowVisual active={active} cards={scene.cards ?? []} />
+    return (
+      <WorkflowVisual
+        active={active}
+        cards={scene.cards ?? []}
+        progress={progress}
+      />
+    )
   if (scene.visual === 'imageCards')
-    return <ImageCardsVisual active={active} cards={scene.cards ?? []} />
-  if (scene.visual === 'agents') return <AgentsVisual active={active} />
+    return (
+      <ImageCardsVisual
+        active={active}
+        cards={scene.cards ?? []}
+        progress={progress}
+      />
+    )
+  if (scene.visual === 'agents')
+    return <AgentsVisual active={active} progress={progress} />
   if (scene.visual === 'build')
-    return <BuildVisual active={active} cards={scene.cards ?? []} />
+    return (
+      <BuildVisual
+        active={active}
+        cards={scene.cards ?? []}
+        progress={progress}
+      />
+    )
   if (scene.visual === 'cta') return <CtaVisual active={active} />
   return (
     <ProgressiveCards
       accent={scene.accent}
       active={active}
       cards={scene.cards ?? []}
+      progress={progress}
     />
   )
 }
@@ -503,10 +531,12 @@ function ProgressiveCards({
   accent,
   active,
   cards,
+  progress,
 }: {
   accent: string
   active: boolean
   cards: readonly StoryCard[]
+  progress: number
 }) {
   return (
     <div className="relative min-h-[24rem] sm:min-h-[28rem] lg:min-h-[32rem]">
@@ -514,7 +544,10 @@ function ProgressiveCards({
         <article
           key={card.title}
           className="absolute inset-x-0 top-0 overflow-hidden border border-white/14 bg-[#111316]/88 p-5 shadow-[0_28px_100px_rgba(0,0,0,0.48)] backdrop-blur-2xl supports-[backdrop-filter]:bg-[#111316]/76 sm:p-6 lg:p-7"
-          style={stackedCardStyle(active, index)}
+          style={stackedCardStyle(
+            active && itemTriggered(progress, index, cards.length),
+            index
+          )}
         >
           <div className="mb-8 flex items-center gap-3">
             <span
@@ -544,9 +577,11 @@ function ProgressiveCards({
 function WorkflowVisual({
   active,
   cards,
+  progress,
 }: {
   active: boolean
   cards: readonly StoryCard[]
+  progress: number
 }) {
   return (
     <div className="grid gap-5 lg:grid-cols-[0.82fr_1.18fr] lg:items-center">
@@ -557,10 +592,16 @@ function WorkflowVisual({
             active={active}
             card={card}
             index={index}
+            progress={progress}
+            total={cards.length}
           />
         ))}
       </div>
-      <ScreenshotPanel active={active} delay={420} tone="#9fd7ff" />
+      <ScreenshotPanel
+        active={active && itemTriggered(progress, cards.length, cards.length + 1)}
+        delay={0}
+        tone="#9fd7ff"
+      />
     </div>
   )
 }
@@ -569,15 +610,23 @@ function WorkflowStep({
   active,
   card,
   index,
+  progress,
+  total,
 }: {
   active: boolean
   card: StoryCard
   index: number
+  progress: number
+  total: number
 }) {
   return (
     <article
       className="border border-white/12 bg-white/[0.065] p-4 shadow-[0_18px_60px_rgba(0,0,0,0.28)] backdrop-blur-xl"
-      style={revealItemStyle(active, index * 120, index % 2 === 0 ? -18 : 18)}
+      style={revealItemStyle(
+        active && itemTriggered(progress, index, total),
+        0,
+        index % 2 === 0 ? -18 : 18
+      )}
     >
       <div className="flex items-start gap-3">
         <span className="grid h-8 w-8 shrink-0 place-items-center border border-white/14 bg-white/[0.075] font-mono text-xs text-white/76">
@@ -599,14 +648,20 @@ function WorkflowStep({
 function ImageCardsVisual({
   active,
   cards,
+  progress,
 }: {
   active: boolean
   cards: readonly StoryCard[]
+  progress: number
 }) {
   return (
     <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-      <ScreenshotPanel active={active} delay={0} tone="#f5a3b7" />
-      <CompactCardList active={active} cards={cards} />
+      <ScreenshotPanel
+        active={active && itemTriggered(progress, 0, cards.length + 1)}
+        delay={0}
+        tone="#f5a3b7"
+      />
+      <CompactCardList active={active} cards={cards} progress={progress} />
     </div>
   )
 }
@@ -614,9 +669,11 @@ function ImageCardsVisual({
 function CompactCardList({
   active,
   cards,
+  progress,
 }: {
   active: boolean
   cards: readonly StoryCard[]
+  progress: number
 }) {
   return (
     <div className="grid gap-3">
@@ -624,7 +681,11 @@ function CompactCardList({
         <article
           key={card.title}
           className="border border-white/12 bg-[#0d0d0d]/80 p-4 backdrop-blur-xl"
-          style={revealItemStyle(active, index * 130 + 180, 20)}
+          style={revealItemStyle(
+            active && itemTriggered(progress, index + 1, cards.length + 1),
+            0,
+            20
+          )}
         >
           <p className="mb-3 font-mono text-xs uppercase text-white/36">
             {card.label}
@@ -666,14 +727,20 @@ function ScreenshotPanel({
   )
 }
 
-function AgentsVisual({ active }: { active: boolean }) {
+function AgentsVisual({
+  active,
+  progress,
+}: {
+  active: boolean
+  progress: number
+}) {
   return (
     <div className="grid gap-4 lg:grid-cols-[0.78fr_1.22fr] lg:items-stretch">
-      <MainAgentPanel active={active} />
+      <MainAgentPanel active={active && itemTriggered(progress, 0, 6)} />
       <div className="grid gap-3 sm:grid-cols-2">
         {specialistAgentCards.map((agent, index) => (
           <SpecialistCard
-            active={active}
+            active={active && itemTriggered(progress, index + 1, 6)}
             key={agent.title}
             agent={agent}
             index={index}
@@ -724,7 +791,7 @@ function SpecialistCard({
   return (
     <article
       className="border border-white/10 bg-[#0d0d0d]/82 p-4 shadow-[0_18px_60px_rgba(0,0,0,0.24)] backdrop-blur-xl"
-      style={revealItemStyle(active, index * 95 + 130, 22)}
+      style={revealItemStyle(active, 0, 22)}
     >
       <div className="mb-4 flex items-center justify-between gap-3">
         <span
@@ -746,16 +813,26 @@ function SpecialistCard({
 function BuildVisual({
   active,
   cards,
+  progress,
 }: {
   active: boolean
   cards: readonly StoryCard[]
+  progress: number
 }) {
   return (
     <div className="grid gap-5 lg:grid-cols-[0.78fr_1.22fr] lg:items-center">
-      <BuildSteps active={active} cards={cards} />
+      <BuildSteps active={active} cards={cards} progress={progress} />
       <div className="relative">
-        <ScreenshotPanel active={active} delay={260} tone="#92d8bf" />
-        <BuildBadge active={active} />
+        <ScreenshotPanel
+          active={active && itemTriggered(progress, cards.length, cards.length + 2)}
+          delay={0}
+          tone="#92d8bf"
+        />
+        <BuildBadge
+          active={
+            active && itemTriggered(progress, cards.length + 1, cards.length + 2)
+          }
+        />
       </div>
     </div>
   )
@@ -764,9 +841,11 @@ function BuildVisual({
 function BuildSteps({
   active,
   cards,
+  progress,
 }: {
   active: boolean
   cards: readonly StoryCard[]
+  progress: number
 }) {
   return (
     <div className="grid gap-3">
@@ -774,7 +853,11 @@ function BuildSteps({
         <article
           key={card.title}
           className="border border-white/12 bg-white/[0.06] p-4 backdrop-blur-xl"
-          style={revealItemStyle(active, index * 120, -20)}
+          style={revealItemStyle(
+            active && itemTriggered(progress, index, cards.length + 2),
+            0,
+            -20
+          )}
         >
           <p className="mb-3 flex items-center gap-2 font-mono text-xs text-white/38">
             <Boxes className="h-4 w-4" />
@@ -794,7 +877,7 @@ function BuildBadge({ active }: { active: boolean }) {
   return (
     <div
       className="absolute -bottom-5 left-5 right-5 border border-white/12 bg-[#101010]/90 p-4 shadow-[0_22px_80px_rgba(0,0,0,0.38)] backdrop-blur-xl sm:left-auto sm:w-72"
-      style={revealItemStyle(active, 620, 18)}
+      style={revealItemStyle(active, 0, 18)}
     >
       <p className="flex items-center gap-2 text-sm font-semibold text-white">
         <FileCode2 className="h-4 w-4 text-[#92d8bf]" />
@@ -809,7 +892,7 @@ function BuildBadge({ active }: { active: boolean }) {
 
 function CtaVisual({ active }: { active: boolean }) {
   return (
-    <div className="flex flex-col gap-3" style={revealItemStyle(active, 80, 18)}>
+    <div className="flex flex-col gap-3" style={revealItemStyle(active, 0, 18)}>
       <a
         href="/download"
         className="group inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-[#080808] shadow-[0_18px_60px_rgba(255,255,255,0.2)] transition duration-200 hover:-translate-y-0.5 hover:bg-[#dfe7ff] focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-[#050505]"
@@ -1036,12 +1119,13 @@ function sceneTitleStyle(progress: number): CSSProperties {
   const opacity = smoothstep(0, 0.08, progress)
 
   return {
-    left: `${lerp(50, 0, compact)}%`,
-    maxWidth: `${lerp(76, 31, compact)}rem`,
+    left: '50%',
+    maxWidth: 'calc(100vw - 2.5rem)',
     opacity,
-    top: `${lerp(50, 10, compact)}%`,
-    transform: `translate3d(${lerp(-50, 0, compact)}%, ${lerp(-50, 0, compact)}%, 0) scale(${lerp(1, 0.58, compact)})`,
-    transformOrigin: 'top left',
+    top: `${lerp(50, 8, compact)}%`,
+    transform: `translate3d(-50%, ${lerp(-50, 0, compact)}%, 0) scale(${lerp(1, 0.62, compact)})`,
+    transformOrigin: 'top center',
+    width: `${lerp(92, 84, compact)}rem`,
   }
 }
 
@@ -1075,7 +1159,7 @@ function stackedCardStyle(active: boolean, index: number) {
     borderRadius: 8,
     opacity: active ? 1 : 0,
     transform: active ? visibleTransform : hiddenTransform,
-    transition: revealTransition(index * 190, 740),
+    transition: revealTransition(0, 740),
     zIndex: index + 1,
   } satisfies CSSProperties
 }
@@ -1118,6 +1202,19 @@ function dotStyle(progress: number, index: number): CSSProperties {
     opacity: 0.32 + active * 0.68,
     transform: `scale(${1 + active * 0.75})`,
   }
+}
+
+function itemTriggered(progress: number, index: number, total: number) {
+  if (total <= 1) return progress >= sectionContentTriggerProgress
+  const last = total - 1
+  const finalSlot = last + sectionFinalItemHoldSlots
+  const amount = clamp(index, 0, last) / finalSlot
+  const trigger = lerp(
+    sectionContentTriggerProgress,
+    sectionItemTriggerEndProgress,
+    amount
+  )
+  return progress >= trigger
 }
 
 function pageProgressForStoryLocal(index: number, local: number) {
