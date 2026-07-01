@@ -276,6 +276,9 @@ const storyScenes = [
 const heroScrollUnits = 1.1
 const heroStoryOverlapUnits = 0.38
 const viewportHeightPerUnit = 105
+const sectionIntroScrollUnits = 0.7
+const sectionItemScrollUnits = 0.24
+const sectionOutroScrollUnits = 0.06
 const sceneScrollWeights = storyScenes.map(sceneScrollWeight)
 const sceneTimelineSegments = buildSceneTimeline(sceneScrollWeights)
 const storyScrollUnits = sceneScrollWeights.reduce(
@@ -290,9 +293,6 @@ const storyStartProgress =
 const totalScrollHeight = totalTimelineUnits * viewportHeightPerUnit
 const sceneEnterShare = 0.1
 const sceneExitStart = 0.98
-const sectionContentTriggerProgress = 0.38
-const sectionItemTriggerEndProgress = sceneExitStart
-const sectionFinalItemHoldSlots = 1
 const workflowAnchorLocalProgress = sceneEnterShare * 1.35
 const workflowAnchorProgress = pageProgressForStoryLocal(
   0,
@@ -432,7 +432,8 @@ function StorySceneFrame({
   if (scene.visual === 'cta')
     return <CtaSceneFrame scene={scene} metrics={metrics} />
 
-  const contentActive = metrics.local >= sectionContentTriggerProgress
+  const contentActive =
+    metrics.local >= sectionContentStartProgress(sceneRevealCount(scene))
 
   return (
     <article
@@ -640,7 +641,7 @@ function WorkflowVisual({
             card={card}
             index={index}
             progress={progress}
-            total={cards.length}
+            total={cards.length + 1}
           />
         ))}
       </div>
@@ -1093,9 +1094,30 @@ function useScrollProgress(ref: RefObject<HTMLElement | null>) {
 }
 
 function sceneScrollWeight(scene: StoryScene) {
-  if (scene.visual === 'agents') return 1.42
-  if (scene.visual === 'cards') return 1.32
-  return 1
+  if (scene.visual === 'cta') return 1.08
+  return sectionScrollWeight(sceneRevealCount(scene))
+}
+
+function sceneRevealCount(scene: StoryScene) {
+  const cards = scene.cards?.length ?? 0
+
+  if (scene.visual === 'agents') return 6
+  if (scene.visual === 'workflow') return cards + 1
+  if (scene.visual === 'imageCards') return cards + 1
+  if (scene.visual === 'build') return cards + 2
+  return Math.max(1, cards)
+}
+
+function sectionScrollWeight(total: number) {
+  return (
+    sectionIntroScrollUnits +
+    Math.max(1, total) * sectionItemScrollUnits +
+    sectionOutroScrollUnits
+  )
+}
+
+function sectionContentStartProgress(total: number) {
+  return sectionIntroScrollUnits / sectionScrollWeight(total)
 }
 
 function buildSceneTimeline(weights: readonly number[]) {
@@ -1277,15 +1299,12 @@ function dotStyle(progress: number, index: number): CSSProperties {
 }
 
 function itemTriggered(progress: number, index: number, total: number) {
-  if (total <= 1) return progress >= sectionContentTriggerProgress
-  const last = total - 1
-  const finalSlot = last + sectionFinalItemHoldSlots
-  const amount = clamp(index, 0, last) / finalSlot
-  const trigger = lerp(
-    sectionContentTriggerProgress,
-    sectionItemTriggerEndProgress,
-    amount
-  )
+  const count = Math.max(1, total)
+  const step = clamp(index, 0, count - 1)
+  const trigger =
+    (sectionIntroScrollUnits + step * sectionItemScrollUnits) /
+    sectionScrollWeight(count)
+
   return progress >= trigger
 }
 
