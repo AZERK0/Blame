@@ -366,7 +366,7 @@ function HeroFrame({ progress }: { progress: number }) {
           </div>
           <h1
             id="hero-title"
-            className="text-balance text-[clamp(3.4rem,10vw,9.5rem)] font-semibold leading-[0.9] text-white drop-shadow-[0_20px_70px_rgba(0,0,0,0.55)]"
+            className="text-balance text-[clamp(3.4rem,10vw,9.5rem)] font-semibold leading-[0.9] tracking-tighter text-white drop-shadow-[0_20px_70px_rgba(0,0,0,0.55)] sm:leading-32"
           >
             The industrial-grade
             <br />
@@ -397,7 +397,7 @@ function HeroFrame({ progress }: { progress: number }) {
 
       <HeroMockup progress={progress} />
     </div>
-  )
+  );
 }
 
 function HeroMockup({ progress }: { progress: number }) {
@@ -406,20 +406,18 @@ function HeroMockup({ progress }: { progress: number }) {
       className="pointer-events-none z-20 mx-auto mb-4 w-full max-w-5xl"
       style={heroMockupStyle(progress)}
     >
-      <div className="border border-white/16 bg-white/[0.08] p-2 shadow-[0_32px_120px_rgba(0,0,0,0.55)] backdrop-blur-2xl sm:p-3">
-        <div className="overflow-hidden border border-white/10 bg-[#0a0a0a] shadow-inner">
-          <Image
-            src="/desktop-backlog.png"
-            alt="Blame backlog desktop interface"
-            width={2450}
-            height={1385}
-            className="h-auto w-full"
-            priority
-          />
-        </div>
+      <div className="overflow-hidden rounded-2xl border border-white/16 bg-white/[0.08] p-2 shadow-[0_32px_120px_rgba(0,0,0,0.55)] backdrop-blur-2xl sm:p-3">
+        <Image
+          src="/desktop-backlog.png"
+          alt="Blame backlog desktop interface"
+          width={2450}
+          height={1385}
+          className="h-auto w-full rounded-xl"
+          priority
+        />
       </div>
     </div>
-  )
+  );
 }
 
 function StorySceneFrame({
@@ -477,17 +475,17 @@ function CtaSceneFrame({
     >
       <div className="mx-auto flex h-full w-full max-w-7xl items-center justify-center">
         <div className="w-full text-center" style={ctaGroupStyle(metrics.local)}>
-          <p className="mb-5 text-sm font-semibold uppercase text-white/68">
+          <p className="mb-5 text-base font-semibold uppercase tracking-wide text-white/68 sm:text-lg">
             {scene.eyebrow}
           </p>
           <h2
-            className="mx-auto max-w-6xl text-balance font-semibold leading-[0.92] text-white"
+            className="mx-auto max-w-6xl text-balance font-semibold leading-[0.9] tracking-tighter text-white sm:leading-32"
             style={ctaTitleStyle(metrics.local)}
           >
             {scene.title}
           </h2>
           <p
-            className="mx-auto mt-6 max-w-4xl text-balance text-lg leading-8 text-white/76 sm:text-xl"
+            className="mx-auto mt-6 max-w-5xl text-balance text-xl leading-8 text-white/76 sm:text-2xl sm:leading-9"
             style={revealItemStyle(contentActive, 0, 18)}
           >
             {scene.description}
@@ -513,14 +511,14 @@ function StoryTitle({
       className="absolute z-10 text-center"
       style={sceneTitleStyle(progress)}
     >
-      <p className="mb-5 text-sm font-semibold uppercase text-white/68">
+      <p className="mb-5 text-base font-semibold uppercase tracking-wide text-white/68 sm:text-lg">
         {scene.eyebrow}
       </p>
-      <h2 className="text-balance text-[clamp(3.2rem,8.8vw,8.8rem)] font-semibold leading-[0.92] text-white">
+      <h2 className="text-balance text-[clamp(3.2rem,8.8vw,8.8rem)] font-semibold leading-[0.9] tracking-tighter text-white sm:leading-32">
         {scene.title}
       </h2>
       <p
-        className="mx-auto mt-5 max-w-4xl text-balance text-lg leading-8 text-white/76 sm:text-xl"
+        className="mx-auto mt-5 max-w-5xl text-balance text-xl leading-8 text-white/76 sm:text-2xl sm:leading-9"
         style={titleDescriptionStyle(progress)}
       >
         {scene.description}
@@ -759,20 +757,18 @@ function ScreenshotPanel({
 }) {
   return (
     <div
-      className="border border-white/14 bg-white/[0.07] p-2 shadow-[0_30px_110px_rgba(0,0,0,0.48)] backdrop-blur-2xl"
+      className="overflow-hidden rounded-2xl border border-white/14 bg-white/[0.07] p-2 shadow-[0_30px_110px_rgba(0,0,0,0.48)] backdrop-blur-2xl"
       style={screenshotStyle(active, tone, delay)}
     >
-      <div className="overflow-hidden border border-white/10 bg-[#0a0a0a]">
-        <Image
-          src="/desktop-backlog.png"
-          alt="Blame desktop backlog interface"
-          width={2450}
-          height={1385}
-          className="h-auto w-full"
-        />
-      </div>
+      <Image
+        src="/desktop-backlog.png"
+        alt="Blame desktop backlog interface"
+        width={2450}
+        height={1385}
+        className="h-auto w-full rounded-xl"
+      />
     </div>
-  )
+  );
 }
 
 function AgentsVisual({
@@ -1166,7 +1162,7 @@ function heroCopyStyle(progress: number): CSSProperties {
 
 function heroMockupStyle(progress: number): CSSProperties {
   const lift = easeOut(timelineProgress(progress, 0, 0.9))
-  const fade = smoothstep(0.5, 0.86, progress)
+  const fade = smoothstep(0.34, 0.72, progress)
 
   return {
     opacity: 1 - fade,
@@ -1277,7 +1273,6 @@ function screenshotStyle(
   delay: number
 ): CSSProperties {
   return {
-    borderRadius: 8,
     boxShadow: active
       ? `0 30px 110px rgba(0,0,0,0.48), 0 0 70px ${tone}33`
       : '0 30px 110px rgba(0,0,0,0.42), 0 0 0 transparent',

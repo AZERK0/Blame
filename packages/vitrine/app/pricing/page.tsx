@@ -60,7 +60,7 @@ export default function PricingPage() {
             </div>
             <h1
               id="pricing-title"
-              className="landing-reveal landing-reveal-title text-balance text-[clamp(3.2rem,8vw,7.5rem)] font-semibold leading-[0.9] tracking-[-0.09em] text-white drop-shadow-[0_20px_70px_rgba(0,0,0,0.55)]"
+              className="landing-reveal landing-reveal-title text-balance text-[clamp(3.2rem,8vw,7.5rem)] font-semibold leading-[0.9] tracking-tighter text-white drop-shadow-[0_20px_70px_rgba(0,0,0,0.55)] sm:leading-32"
             >
               One plan.
               <br />
@@ -93,7 +93,7 @@ export default function PricingPage() {
             </p>
             <h2
               id="pricing-faq-title"
-              className="text-balance text-[clamp(2.3rem,5vw,4.5rem)] font-semibold leading-[0.95] tracking-[-0.07em] text-white"
+              className="text-balance text-[clamp(2.3rem,5vw,4.5rem)] font-semibold leading-[0.9] tracking-tighter text-white sm:leading-32"
             >
               Common pricing questions.
             </h2>

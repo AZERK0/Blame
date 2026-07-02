@@ -118,7 +118,7 @@ export default function DownloadPage() {
             </div>
             <h1
               id="download-title"
-              className="landing-reveal landing-reveal-title max-w-4xl text-balance text-[clamp(3.2rem,8vw,7.5rem)] font-semibold leading-[0.9] tracking-[-0.09em] text-white drop-shadow-[0_20px_70px_rgba(0,0,0,0.55)]"
+              className="landing-reveal landing-reveal-title max-w-4xl text-balance text-[clamp(3.2rem,8vw,7.5rem)] font-semibold leading-[0.9] tracking-tighter text-white drop-shadow-[0_20px_70px_rgba(0,0,0,0.55)] sm:leading-32"
             >
               Download Blame.
               <br />
@@ -203,7 +203,7 @@ export default function DownloadPage() {
             <p className="mb-4 text-xs font-semibold uppercase tracking-[0.36em] text-[#b3acf3]">
               Release files
             </p>
-            <h2 className="max-w-3xl text-balance text-[clamp(2.3rem,5vw,4.5rem)] font-semibold leading-[0.95] tracking-[-0.07em] text-white">
+            <h2 className="max-w-3xl text-balance text-[clamp(2.3rem,5vw,4.5rem)] font-semibold leading-[0.9] tracking-tighter text-white sm:leading-32">
               Need the zip or update metadata?
             </h2>
             <p className="mt-5 max-w-2xl text-base leading-7 text-white/62 sm:text-lg">
