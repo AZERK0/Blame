@@ -4,16 +4,9 @@ import Image from 'next/image'
 import {
   ArrowRight,
   Boxes,
-  ClipboardCheck,
-  Code2,
   FileCode2,
   GitPullRequestArrow,
-  Palette,
   Play,
-  Search,
-  ShieldCheck,
-  Sparkles,
-  type LucideIcon,
 } from 'lucide-react'
 import {
   useEffect,
@@ -24,6 +17,7 @@ import {
   type RefObject,
 } from 'react'
 import { SceneWarmup } from '@/components/scene-warmup'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { HeroScene } from './scene/hero-scene'
 
 type StoryCard = {
@@ -33,7 +27,7 @@ type StoryCard = {
 }
 
 type SpecialistAgent = StoryCard & {
-  icon: LucideIcon
+  image: string
   color: string
 }
 
@@ -155,35 +149,35 @@ const specialistAgentCards = [
     title: 'Codebase Analyst',
     description:
       'Maps structure, stack, conventions, dependencies, and affected files.',
-    icon: Search,
+    image: '/agents/codebase-analyst.png',
     color: '#9fd7ff',
   },
   {
     title: 'Story Analyst',
     description:
       'Clarifies goals, acceptance criteria, constraints, and edge cases.',
-    icon: ClipboardCheck,
+    image: '/agents/story-analyst.png',
     color: '#f7cf83',
   },
   {
     title: 'Frontend Specialist',
     description:
       'Checks hierarchy, responsiveness, accessibility, and product polish.',
-    icon: Palette,
+    image: '/agents/frontend-design-specialist.png',
     color: '#f5a3b7',
   },
   {
     title: 'Test Analyst',
     description:
       'Plans commands, proof points, behaviors, and regression coverage.',
-    icon: Code2,
+    image: '/agents/test-verification-analyst.png',
     color: '#92d8bf',
   },
   {
     title: 'Risk Reviewer',
     description:
       'Looks for unsafe assumptions, data risks, and merge blockers.',
-    icon: ShieldCheck,
+    image: '/agents/risk-review-analyst.png',
     color: '#d5c7ff',
   },
 ] satisfies SpecialistAgent[]
@@ -808,9 +802,6 @@ function MainAgentPanel({ active }: { active: boolean }) {
       style={revealItemStyle(active, 0, -22)}
     >
       <div>
-        <span className="mb-4 grid h-10 w-10 place-items-center border border-white/14 bg-white/[0.08] text-white sm:mb-5 lg:mb-6">
-          <Sparkles className="h-5 w-5" />
-        </span>
         <h3 className="text-xl font-semibold leading-tight text-white sm:text-2xl lg:text-3xl">
           Implements the task.
         </h3>
@@ -836,8 +827,6 @@ function SpecialistCard({
   agent: SpecialistAgent
   index: number
 }) {
-  const Icon = agent.icon
-
   return (
     <article
       className="border border-white/10 bg-[#0d0d0d]/82 p-3 shadow-[0_18px_60px_rgba(0,0,0,0.24)] backdrop-blur-xl sm:p-4"
@@ -845,10 +834,20 @@ function SpecialistCard({
     >
       <div className="mb-2 flex items-center justify-between gap-3 sm:mb-4">
         <span
-          className="grid h-8 w-8 place-items-center border border-white/12 bg-white/[0.065] sm:h-9 sm:w-9"
-          style={{ color: agent.color }}
+          className="rounded-full border border-white/12 bg-white/[0.065] p-0.5 shadow-[0_0_24px_rgba(255,255,255,0.08)]"
+          style={{
+            boxShadow: `0 0 24px color-mix(in srgb, ${agent.color} 26%, transparent)`,
+          }}
         >
-          <Icon className="h-4 w-4" />
+          <Avatar className="size-8 sm:size-9">
+            <AvatarImage src={agent.image} alt="" />
+            <AvatarFallback aria-label={agent.title}>
+              {agent.title
+                .split(' ')
+                .map((word) => word[0])
+                .join('')}
+            </AvatarFallback>
+          </Avatar>
         </span>
         <span className="font-mono text-xs text-white/32">0{index + 1}</span>
       </div>
