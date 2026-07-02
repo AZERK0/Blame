@@ -73,13 +73,6 @@ function DownloadActions({ artifact }: { artifact: DownloadArtifact }) {
         Download for {osLabels[artifact.os]}
         <ArrowRight className="h-5 w-5" />
       </Link>
-      <a
-        href="#all-downloads"
-        className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-white/14 bg-white/[0.06] px-5 py-3 text-sm font-semibold text-white/90 backdrop-blur-md transition duration-200 hover:-translate-y-0.5 hover:bg-white/[0.1] focus:outline-none focus:ring-2 focus:ring-white/45 focus:ring-offset-2 focus:ring-offset-[#050505]"
-      >
-        <MonitorDown className="h-4 w-4" />
-        Choose another platform
-      </a>
     </div>
   )
 }

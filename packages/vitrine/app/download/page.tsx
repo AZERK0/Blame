@@ -62,12 +62,6 @@ const primaryArtifacts = [
   },
 ] satisfies DownloadArtifact[]
 
-const trustItems = [
-  'Latest channel hosted by Blame release infrastructure',
-  'Local-first desktop execution for code, servers, and worktrees',
-  'Separate installers for macOS, Windows, and Linux environments',
-]
-
 export default function DownloadPage() {
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#050712] text-white">
@@ -104,15 +98,6 @@ export default function DownloadPage() {
             </p>
 
             <DownloadClientSection artifacts={primaryArtifacts} mode="actions" />
-
-            <ul className="landing-reveal landing-reveal-copy mt-8 grid gap-3 text-sm leading-6 text-white/62">
-              {trustItems.map((item) => (
-                <li key={item} className="flex items-start gap-3">
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#92d8bf]" />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
           </div>
 
           <div
