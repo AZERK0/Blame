@@ -436,16 +436,16 @@ function StorySceneFrame({
   return (
     <article
       aria-hidden={metrics.visibility < 0.05}
-      className="absolute inset-0 px-5 py-20 sm:px-8 lg:px-10"
+      className="absolute inset-0 px-5 py-16 sm:px-8 sm:py-20 lg:px-10"
       style={sceneFrameStyle(metrics)}
     >
       <div className="relative mx-auto h-full w-full max-w-7xl">
         <StoryTitle scene={scene} progress={metrics.local} />
         <div
-          className="absolute inset-x-0 bottom-0 top-[35vh] flex items-center lg:top-[26vh]"
+          className="absolute inset-x-0 bottom-8 top-[38vh] flex items-start sm:bottom-0 sm:top-[40vh] lg:top-[38vh] xl:top-[32vh] 2xl:top-[26vh]"
           style={sectionContentStyle(contentActive)}
         >
-          <div className="mx-auto w-full max-w-5xl">
+          <div className="mx-auto w-full max-w-5xl self-center">
             <StoryVisual
               scene={scene}
               active={contentActive}
@@ -479,10 +479,12 @@ function CtaSceneFrame({
             {scene.eyebrow}
           </p>
           <h2
-            className="mx-auto max-w-6xl text-balance font-semibold leading-[0.9] tracking-tighter text-white sm:leading-32"
+            className="mx-auto max-w-6xl text-balance font-semibold leading-[0.9] tracking-tighter text-white sm:leading-[0.92]"
             style={ctaTitleStyle(metrics.local)}
           >
-            {scene.title}
+            Give agents work.
+            <br />
+            Keep engineering control.
           </h2>
           <p
             className="mx-auto mt-6 max-w-5xl text-balance text-xl leading-8 text-white/76 sm:text-2xl sm:leading-9"
@@ -511,14 +513,14 @@ function StoryTitle({
       className="absolute z-10 text-center"
       style={sceneTitleStyle(progress)}
     >
-      <p className="mb-5 text-base font-semibold uppercase tracking-wide text-white/68 sm:text-lg">
+      <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-white/68 sm:mb-4 sm:text-sm lg:mb-5 lg:text-base">
         {scene.eyebrow}
       </p>
-      <h2 className="text-balance text-[clamp(3.2rem,8.8vw,8.8rem)] font-semibold leading-[0.9] tracking-tighter text-white sm:leading-32">
+      <h2 className="text-balance text-[clamp(2.45rem,min(8.2vw,10.5vh),8.8rem)] font-semibold leading-[0.9] tracking-tighter text-white sm:leading-[0.92]">
         {scene.title}
       </h2>
       <p
-        className="mx-auto mt-5 max-w-5xl text-balance text-xl leading-8 text-white/76 sm:text-2xl sm:leading-9"
+        className="mx-auto mt-3 max-w-4xl text-balance text-sm leading-6 text-white/76 sm:mt-4 sm:text-lg sm:leading-7 lg:mt-5 lg:text-xl lg:leading-8"
         style={titleDescriptionStyle(progress)}
       >
         {scene.description}
@@ -585,17 +587,17 @@ function ProgressiveCards({
   progress: number
 }) {
   return (
-    <div className="relative min-h-[24rem] sm:min-h-[28rem] lg:min-h-[32rem]">
+    <div className="relative min-h-[19rem] sm:min-h-[22rem] lg:min-h-[26rem] xl:min-h-[30rem]">
       {cards.map((card, index) => (
         <article
           key={card.title}
-          className="absolute inset-x-0 top-0 overflow-hidden border border-white/14 bg-[#111316]/88 p-5 shadow-[0_28px_100px_rgba(0,0,0,0.48)] backdrop-blur-2xl supports-[backdrop-filter]:bg-[#111316]/76 sm:p-6 lg:p-7"
+          className="absolute inset-x-0 top-0 overflow-hidden border border-white/14 bg-[#111316]/88 p-4 shadow-[0_28px_100px_rgba(0,0,0,0.48)] backdrop-blur-2xl supports-[backdrop-filter]:bg-[#111316]/76 sm:p-5 lg:p-6 xl:p-7"
           style={stackedCardStyle(
             active && itemTriggered(progress, index, cards.length),
             index
           )}
         >
-          <div className="mb-8 flex items-center gap-3">
+          <div className="mb-5 flex items-center gap-3 sm:mb-6 lg:mb-8">
             <span
               className="h-2 w-2 rounded-full"
               style={{
@@ -608,10 +610,10 @@ function ProgressiveCards({
               {card.label ?? `0${index + 1}`}
             </span>
           </div>
-          <h3 className="text-2xl font-semibold leading-tight text-white sm:text-3xl">
+          <h3 className="text-xl font-semibold leading-tight text-white sm:text-2xl lg:text-3xl">
             {card.title}
           </h3>
-          <p className="mt-4 max-w-xl text-sm leading-6 text-white/66 sm:text-base sm:leading-7">
+          <p className="mt-3 max-w-xl text-sm leading-6 text-white/66 sm:mt-4 sm:text-base sm:leading-7">
             {card.description}
           </p>
         </article>
@@ -630,8 +632,8 @@ function WorkflowVisual({
   progress: number
 }) {
   return (
-    <div className="grid gap-5 lg:grid-cols-[0.82fr_1.18fr] lg:items-center">
-      <div className="grid gap-3">
+    <div className="grid gap-4 lg:grid-cols-[0.82fr_1.18fr] lg:items-center xl:gap-5">
+      <div className="grid gap-2 sm:gap-3">
         {cards.map((card, index) => (
           <WorkflowStep
             key={card.title}
@@ -643,11 +645,13 @@ function WorkflowVisual({
           />
         ))}
       </div>
-      <ScreenshotPanel
-        active={active && itemTriggered(progress, cards.length, cards.length + 1)}
-        delay={0}
-        tone="#9fd7ff"
-      />
+      <div className="hidden sm:block">
+        <ScreenshotPanel
+          active={active && itemTriggered(progress, cards.length, cards.length + 1)}
+          delay={0}
+          tone="#9fd7ff"
+        />
+      </div>
     </div>
   )
 }
@@ -667,7 +671,7 @@ function WorkflowStep({
 }) {
   return (
     <article
-      className="border border-white/12 bg-white/[0.065] p-4 shadow-[0_18px_60px_rgba(0,0,0,0.28)] backdrop-blur-xl"
+      className="border border-white/12 bg-white/[0.065] p-3 shadow-[0_18px_60px_rgba(0,0,0,0.28)] backdrop-blur-xl sm:p-4"
       style={revealItemStyle(
         active && itemTriggered(progress, index, total),
         0,
@@ -682,7 +686,7 @@ function WorkflowStep({
           <h3 className="text-lg font-semibold leading-tight text-white">
             {card.title}
           </h3>
-          <p className="mt-2 text-sm leading-6 text-white/58">
+          <p className="mt-1.5 text-sm leading-5 text-white/58 sm:mt-2 sm:leading-6">
             {card.description}
           </p>
         </div>
@@ -701,12 +705,14 @@ function ImageCardsVisual({
   progress: number
 }) {
   return (
-    <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-      <ScreenshotPanel
-        active={active && itemTriggered(progress, 0, cards.length + 1)}
-        delay={0}
-        tone="#f5a3b7"
-      />
+    <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr] lg:items-center xl:gap-5">
+      <div className="hidden sm:block">
+        <ScreenshotPanel
+          active={active && itemTriggered(progress, 0, cards.length + 1)}
+          delay={0}
+          tone="#f5a3b7"
+        />
+      </div>
       <CompactCardList active={active} cards={cards} progress={progress} />
     </div>
   )
@@ -722,22 +728,22 @@ function CompactCardList({
   progress: number
 }) {
   return (
-    <div className="grid gap-3">
+    <div className="grid gap-2 sm:gap-3">
       {cards.map((card, index) => (
         <article
           key={card.title}
-          className="border border-white/12 bg-[#0d0d0d]/80 p-4 backdrop-blur-xl"
+          className="border border-white/12 bg-[#0d0d0d]/80 p-3 backdrop-blur-xl sm:p-4"
           style={revealItemStyle(
             active && itemTriggered(progress, index + 1, cards.length + 1),
             0,
             20
           )}
         >
-          <p className="mb-3 font-mono text-xs uppercase text-white/36">
+          <p className="mb-2 font-mono text-xs uppercase text-white/36 sm:mb-3">
             {card.label}
           </p>
           <h3 className="text-lg font-semibold text-white">{card.title}</h3>
-          <p className="mt-2 text-sm leading-6 text-white/58">
+          <p className="mt-1.5 text-sm leading-5 text-white/58 sm:mt-2 sm:leading-6">
             {card.description}
           </p>
         </article>
@@ -765,7 +771,7 @@ function ScreenshotPanel({
         alt="Blame desktop backlog interface"
         width={2450}
         height={1385}
-        className="h-auto w-full rounded-xl"
+        className="h-auto max-h-[24vh] w-full rounded-xl object-contain sm:max-h-[30vh] lg:max-h-[38vh] xl:max-h-none"
       />
     </div>
   );
@@ -779,9 +785,9 @@ function AgentsVisual({
   progress: number
 }) {
   return (
-    <div className="grid gap-4 lg:grid-cols-[0.78fr_1.22fr] lg:items-stretch">
+    <div className="grid gap-3 lg:grid-cols-[0.78fr_1.22fr] lg:items-stretch xl:gap-4">
       <MainAgentPanel active={active && itemTriggered(progress, 0, 6)} />
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
         {specialistAgentCards.map((agent, index) => (
           <SpecialistCard
             active={active && itemTriggered(progress, index + 1, 6)}
@@ -798,22 +804,22 @@ function AgentsVisual({
 function MainAgentPanel({ active }: { active: boolean }) {
   return (
     <article
-      className="flex min-h-72 flex-col justify-between border border-white/12 bg-white/[0.07] p-6 shadow-[0_26px_90px_rgba(0,0,0,0.36)] backdrop-blur-xl"
+      className="flex min-h-40 flex-col justify-between border border-white/12 bg-white/[0.07] p-4 shadow-[0_26px_90px_rgba(0,0,0,0.36)] backdrop-blur-xl sm:min-h-56 sm:p-5 lg:min-h-64 lg:p-6"
       style={revealItemStyle(active, 0, -22)}
     >
       <div>
-        <span className="mb-6 grid h-10 w-10 place-items-center border border-white/14 bg-white/[0.08] text-white">
+        <span className="mb-4 grid h-10 w-10 place-items-center border border-white/14 bg-white/[0.08] text-white sm:mb-5 lg:mb-6">
           <Sparkles className="h-5 w-5" />
         </span>
-        <h3 className="text-3xl font-semibold leading-tight text-white">
+        <h3 className="text-xl font-semibold leading-tight text-white sm:text-2xl lg:text-3xl">
           Implements the task.
         </h3>
-        <p className="mt-4 text-sm leading-6 text-white/62">
+        <p className="mt-3 text-sm leading-5 text-white/62 sm:mt-4 sm:leading-6">
           Edits the code, integrates specialist feedback, prepares the diff, and
           keeps work attached to the story.
         </p>
       </div>
-      <p className="mt-8 flex items-center gap-3 text-sm font-semibold text-white/78">
+      <p className="mt-4 flex items-center gap-3 text-sm font-semibold text-white/78 lg:mt-8">
         <GitPullRequestArrow className="h-4 w-4" />
         One controlled implementation path
       </p>
@@ -834,20 +840,22 @@ function SpecialistCard({
 
   return (
     <article
-      className="border border-white/10 bg-[#0d0d0d]/82 p-4 shadow-[0_18px_60px_rgba(0,0,0,0.24)] backdrop-blur-xl"
+      className="border border-white/10 bg-[#0d0d0d]/82 p-3 shadow-[0_18px_60px_rgba(0,0,0,0.24)] backdrop-blur-xl sm:p-4"
       style={revealItemStyle(active, 0, 22)}
     >
-      <div className="mb-4 flex items-center justify-between gap-3">
+      <div className="mb-2 flex items-center justify-between gap-3 sm:mb-4">
         <span
-          className="grid h-9 w-9 place-items-center border border-white/12 bg-white/[0.065]"
+          className="grid h-8 w-8 place-items-center border border-white/12 bg-white/[0.065] sm:h-9 sm:w-9"
           style={{ color: agent.color }}
         >
           <Icon className="h-4 w-4" />
         </span>
         <span className="font-mono text-xs text-white/32">0{index + 1}</span>
       </div>
-      <h3 className="text-base font-semibold text-white">{agent.title}</h3>
-      <p className="mt-2 text-sm leading-6 text-white/56">
+      <h3 className="text-sm font-semibold leading-tight text-white sm:text-base">
+        {agent.title}
+      </h3>
+      <p className="mt-1.5 text-xs leading-4 text-white/56 sm:mt-2 sm:text-sm sm:leading-6">
         {agent.description}
       </p>
     </article>
@@ -864,9 +872,9 @@ function BuildVisual({
   progress: number
 }) {
   return (
-    <div className="grid gap-5 lg:grid-cols-[0.78fr_1.22fr] lg:items-center">
+    <div className="grid gap-4 lg:grid-cols-[0.78fr_1.22fr] lg:items-center xl:gap-5">
       <BuildSteps active={active} cards={cards} progress={progress} />
-      <div className="relative">
+      <div className="relative hidden sm:block">
         <ScreenshotPanel
           active={active && itemTriggered(progress, cards.length, cards.length + 2)}
           delay={0}
@@ -892,23 +900,23 @@ function BuildSteps({
   progress: number
 }) {
   return (
-    <div className="grid gap-3">
+    <div className="grid gap-2 sm:gap-3">
       {cards.map((card, index) => (
         <article
           key={card.title}
-          className="border border-white/12 bg-white/[0.06] p-4 backdrop-blur-xl"
+          className="border border-white/12 bg-white/[0.06] p-3 backdrop-blur-xl sm:p-4"
           style={revealItemStyle(
             active && itemTriggered(progress, index, cards.length + 2),
             0,
             -20
           )}
         >
-          <p className="mb-3 flex items-center gap-2 font-mono text-xs text-white/38">
+          <p className="mb-2 flex items-center gap-2 font-mono text-xs text-white/38 sm:mb-3">
             <Boxes className="h-4 w-4" />
             {card.label}
           </p>
           <h3 className="text-lg font-semibold text-white">{card.title}</h3>
-          <p className="mt-2 text-sm leading-6 text-white/58">
+          <p className="mt-1.5 text-sm leading-5 text-white/58 sm:mt-2 sm:leading-6">
             {card.description}
           </p>
         </article>
@@ -920,7 +928,7 @@ function BuildSteps({
 function BuildBadge({ active }: { active: boolean }) {
   return (
     <div
-      className="absolute -bottom-5 left-5 right-5 border border-white/12 bg-[#101010]/90 p-4 shadow-[0_22px_80px_rgba(0,0,0,0.38)] backdrop-blur-xl sm:left-auto sm:w-72"
+      className="absolute -bottom-4 left-4 right-4 border border-white/12 bg-[#101010]/90 p-3 shadow-[0_22px_80px_rgba(0,0,0,0.38)] backdrop-blur-xl sm:-bottom-5 sm:left-auto sm:w-72 sm:p-4"
       style={revealItemStyle(active, 0, 18)}
     >
       <p className="flex items-center gap-2 text-sm font-semibold text-white">
