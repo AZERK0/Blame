@@ -638,7 +638,9 @@ function WorkflowVisual({
       <div className="hidden sm:block">
         <ScreenshotPanel
           active={active && itemTriggered(progress, cards.length, cards.length + 1)}
+          alt="Blame desktop preview interface"
           delay={0}
+          src="/desktop-preview.png"
           tone="#9fd7ff"
         />
       </div>
@@ -699,7 +701,9 @@ function ImageCardsVisual({
       <div className="hidden sm:block">
         <ScreenshotPanel
           active={active && itemTriggered(progress, 0, cards.length + 1)}
+          alt="Blame desktop code practices interface"
           delay={0}
+          src="/desktop-practices.png"
           tone="#f5a3b7"
         />
       </div>
@@ -744,11 +748,15 @@ function CompactCardList({
 
 function ScreenshotPanel({
   active,
+  alt,
   delay,
+  src,
   tone,
 }: {
   active: boolean
+  alt: string
   delay: number
+  src: string
   tone: string
 }) {
   return (
@@ -757,8 +765,8 @@ function ScreenshotPanel({
       style={screenshotStyle(active, tone, delay)}
     >
       <Image
-        src="/desktop-backlog.png"
-        alt="Blame desktop backlog interface"
+        src={src}
+        alt={alt}
         width={2450}
         height={1385}
         className="h-auto max-h-[24vh] w-full rounded-xl object-contain sm:max-h-[30vh] lg:max-h-[38vh] xl:max-h-none"
@@ -872,7 +880,9 @@ function BuildVisual({
       <div className="relative hidden sm:block">
         <ScreenshotPanel
           active={active && itemTriggered(progress, cards.length, cards.length + 2)}
+          alt="Blame desktop new project interface"
           delay={0}
+          src="/desktop-new-project.png"
           tone="#92d8bf"
         />
         <BuildBadge
