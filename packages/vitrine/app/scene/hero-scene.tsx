@@ -55,6 +55,16 @@ const terrainReliefPresets = {
     stoneMassIntensity: 0.62,
     baseDepth: 3.9,
   },
+  download: {
+    heightScale: 0.86,
+    horizonRise: 7.45,
+    ridgeIntensity: 0.9,
+    mesaIntensity: 0.82,
+    escarpmentIntensity: 0.68,
+    foregroundShelfIntensity: 0.52,
+    stoneMassIntensity: 0.78,
+    baseDepth: 4.18,
+  },
 } satisfies Record<string, TerrainRelief>
 
 export type HeroSceneTerrainPreset = keyof typeof terrainReliefPresets
