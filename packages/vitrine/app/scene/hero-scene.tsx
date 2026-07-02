@@ -146,7 +146,7 @@ export function HeroScene({ terrainPreset = 'default' }: HeroSceneProps) {
     <div
       ref={containerRef}
       aria-hidden="true"
-      className="absolute inset-x-0 top-0 -z-20 h-screen"
+      className="absolute inset-0 -z-20"
     />
   )
 }
