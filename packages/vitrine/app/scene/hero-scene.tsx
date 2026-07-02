@@ -4,7 +4,12 @@ import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { Sky } from 'three/examples/jsm/objects/Sky.js'
 
-const TERRAIN_SIZE = 132
+const TERRAIN_REFERENCE_WIDTH = 132
+const TERRAIN_DEPTH = 132
+const TERRAIN_REFERENCE_ASPECT = 16 / 9
+const TERRAIN_ULTRAWIDE_MARGIN = 1.25
+const TERRAIN_WIDTH_SNAP = 4
+const TERRAIN_MIN_WIDTH_MARGIN = 5
 const SUN_ELEVATION_DEGREES = 5.2
 const SUN_AZIMUTH_DEGREES = -166
 const SUN_DIRECTION = createSunDirection()
@@ -14,6 +19,8 @@ const PLUS_FIELD_BACK_Z = -80
 const PLUS_FIELD_FRONT_Z = 0
 const PLUS_FIELD_POINTER_X_RANGE = 40
 const PLUS_FIELD_TERRAIN_CLEARANCE = 0.24
+const TERRAIN_MIN_WIDTH =
+  (PLUS_FIELD_POINTER_X_RANGE + PLUS_FIELD_RADIUS + TERRAIN_MIN_WIDTH_MARGIN) * 2
 const PRIMARY_TERRAIN_OFFSET = 0
 const PRIMARY_TERRAIN_Y = -5
 const PRIMARY_TERRAIN_Z = -15
@@ -83,6 +90,22 @@ type TerrainTextures = {
   color: THREE.CanvasTexture
   bump?: THREE.CanvasTexture
   roughness?: THREE.CanvasTexture
+}
+
+type TerrainLayout = {
+  width: number
+  depth: number
+  widthSegments: number
+  depthSegments: number
+}
+
+type ResponsiveTerrain = {
+  group: THREE.Group
+  mesh: THREE.Mesh<
+    THREE.PlaneGeometry,
+    THREE.MeshLambertMaterial | THREE.MeshStandardMaterial
+  >
+  layout: TerrainLayout
 }
 
 type SceneQuality = {
@@ -266,11 +289,17 @@ function createHeroScene(
   scene.add(sky)
 
   const terrainTextures = createStoneTextures(renderer, quality)
-  const terrain = createTerrain(terrainTextures, quality, terrainRelief)
-  scene.add(terrain)
+  const initialBounds = container.getBoundingClientRect()
+  const terrainLayout = createTerrainLayout(
+    quality,
+    initialBounds.width,
+    initialBounds.height,
+  )
+  const terrain = createTerrain(terrainTextures, quality, terrainLayout, terrainRelief)
+  scene.add(terrain.group)
 
   const plusField = createPlusField(quality, terrainRelief)
-  terrain.add(plusField.group)
+  terrain.group.add(plusField.group)
 
   const ambientLight = new THREE.HemisphereLight(0xbdc3fd, 0x07101f, 0.78)
   scene.add(ambientLight)
@@ -296,6 +325,7 @@ function createHeroScene(
     renderer.setSize(width, height)
     camera.aspect = width / Math.max(height, 1)
     camera.updateProjectionMatrix()
+    updateTerrainLayout(terrain, quality, terrainRelief, width, height)
   }
 
   const handlePointerMove = (event: PointerEvent) => {
@@ -319,7 +349,7 @@ function createHeroScene(
     camera.position.y = 7.4 - pointer.y * 0.32
     camera.lookAt(pointer.x * 1.8, -0.52, -8.5)
 
-    terrain.rotation.z = Math.sin(elapsed * 0.08) * 0.006 + pointer.x * 0.012
+    terrain.group.rotation.z = Math.sin(elapsed * 0.08) * 0.006 + pointer.x * 0.012
     updatePlusField(plusField, targetPointer, elapsed, delta, quality)
 
     renderer.render(scene, camera)
@@ -334,7 +364,7 @@ function createHeroScene(
       window.removeEventListener('resize', resize)
       window.removeEventListener('pointermove', handlePointerMove)
       disposeObject3D(sky)
-      disposeObject3D(terrain)
+      disposeObject3D(terrain.group)
       terrainTextures.color.dispose()
       terrainTextures.bump?.dispose()
       terrainTextures.roughness?.dispose()
@@ -355,37 +385,122 @@ function createRenderer(quality: SceneQuality) {
 function createTerrain(
   textures: TerrainTextures,
   quality: SceneQuality,
+  layout: TerrainLayout,
   terrainRelief: TerrainRelief,
-) {
+): ResponsiveTerrain {
   const terrain = new THREE.Group()
-  terrain.add(
-    createTerrainMesh(
-      textures,
-      quality,
-      PRIMARY_TERRAIN_OFFSET,
-      PRIMARY_TERRAIN_Y,
-      PRIMARY_TERRAIN_Z,
-      PRIMARY_TERRAIN_SCALE,
-      terrainRelief,
-    ),
+  const mesh = createTerrainMesh(
+    textures,
+    quality,
+    layout,
+    PRIMARY_TERRAIN_OFFSET,
+    PRIMARY_TERRAIN_Y,
+    PRIMARY_TERRAIN_Z,
+    PRIMARY_TERRAIN_SCALE,
+    terrainRelief,
   )
-  return terrain
+  terrain.add(mesh)
+
+  return {
+    group: terrain,
+    mesh,
+    layout,
+  }
+}
+
+function createTerrainLayout(
+  quality: SceneQuality,
+  viewportWidth: number,
+  viewportHeight: number,
+): TerrainLayout {
+  const aspect = viewportWidth / Math.max(viewportHeight, 1)
+  const aspectWidthScale = aspect / TERRAIN_REFERENCE_ASPECT
+  const visibleWidthScale =
+    aspectWidthScale > 1
+      ? 1 + (aspectWidthScale - 1) * TERRAIN_ULTRAWIDE_MARGIN
+      : aspectWidthScale
+  const width = Math.ceil(
+    Math.max(
+      TERRAIN_MIN_WIDTH,
+      TERRAIN_REFERENCE_WIDTH * visibleWidthScale,
+    ) / TERRAIN_WIDTH_SNAP,
+  ) * TERRAIN_WIDTH_SNAP
+  const widthSegments = Math.max(
+    32,
+    Math.round(quality.terrainSegments * (width / TERRAIN_REFERENCE_WIDTH)),
+  )
+
+  return {
+    width,
+    depth: TERRAIN_DEPTH,
+    widthSegments,
+    depthSegments: quality.terrainSegments,
+  }
+}
+
+function updateTerrainLayout(
+  terrain: ResponsiveTerrain,
+  quality: SceneQuality,
+  terrainRelief: TerrainRelief,
+  viewportWidth: number,
+  viewportHeight: number,
+) {
+  const nextLayout = createTerrainLayout(quality, viewportWidth, viewportHeight)
+
+  if (isSameTerrainLayout(terrain.layout, nextLayout)) {
+    return
+  }
+
+  terrain.mesh.geometry.dispose()
+  terrain.mesh.geometry = createTerrainGeometry(
+    nextLayout,
+    PRIMARY_TERRAIN_OFFSET,
+    PRIMARY_TERRAIN_SCALE,
+    terrainRelief,
+  )
+  terrain.layout = nextLayout
+}
+
+function isSameTerrainLayout(current: TerrainLayout, next: TerrainLayout) {
+  return (
+    current.width === next.width &&
+    current.depth === next.depth &&
+    current.widthSegments === next.widthSegments &&
+    current.depthSegments === next.depthSegments
+  )
 }
 
 function createTerrainMesh(
   textures: TerrainTextures,
   quality: SceneQuality,
+  layout: TerrainLayout,
   offset: number,
   y: number,
   z: number,
   scale: number,
   terrainRelief: TerrainRelief,
 ) {
+  const geometry = createTerrainGeometry(layout, offset, scale, terrainRelief)
+  const material = createTerrainMaterial(textures, quality)
+
+  const mesh = new THREE.Mesh(geometry, material)
+  mesh.receiveShadow = true
+  mesh.castShadow = false
+  mesh.position.set(0, y, z)
+  return mesh
+}
+
+function createTerrainGeometry(
+  layout: TerrainLayout,
+  offset: number,
+  scale: number,
+  terrainRelief: TerrainRelief,
+) {
   const geometry = new THREE.PlaneGeometry(
-    TERRAIN_SIZE,
-    TERRAIN_SIZE,
-    quality.terrainSegments,
-    quality.terrainSegments,
+    layout.width,
+    layout.depth,
+    layout.widthSegments,
+    layout.depthSegments,
   )
   geometry.rotateX(-Math.PI / 2)
 
@@ -398,14 +513,7 @@ function createTerrainMesh(
   }
 
   geometry.computeVertexNormals()
-
-  const material = createTerrainMaterial(textures, quality)
-
-  const mesh = new THREE.Mesh(geometry, material)
-  mesh.receiveShadow = true
-  mesh.castShadow = false
-  mesh.position.set(0, y, z)
-  return mesh
+  return geometry
 }
 
 function createTerrainMaterial(
