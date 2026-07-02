@@ -22,6 +22,8 @@ const FRAME_DELTA_MAX = 0.1
 const CAMERA_POINTER_RESPONSE = 7
 const PLUS_FIELD_RESPONSE = 9
 const PLUS_HEIGHT_RESPONSE = 20
+const TERRAIN_HORIZON_FADE_START_Z = -48
+const TERRAIN_HORIZON_FADE_END_Z = -66
 
 type TerrainRelief = {
   heightScale: number
@@ -89,6 +91,7 @@ type SceneQuality = {
   plusFieldStep: number
   pixelRatioCap: number
   anisotropyCap: number
+  useNativeAntialias: boolean
   plusHeightUpdateInterval: number
   plusHeightMoveThreshold: number
   useDetailedTerrainMaterial: boolean
@@ -171,6 +174,7 @@ function createSceneQuality(): SceneQuality {
       plusFieldStep: 2.55,
       pixelRatioCap: 1.35,
       anisotropyCap: 6,
+      useNativeAntialias: true,
       plusHeightUpdateInterval: 1 / 45,
       plusHeightMoveThreshold: 0.1,
       useDetailedTerrainMaterial: true,
@@ -183,6 +187,7 @@ function createSceneQuality(): SceneQuality {
     plusFieldStep: 2.95,
     pixelRatioCap: 1.1,
     anisotropyCap: 4,
+    useNativeAntialias: true,
     plusHeightUpdateInterval: 1 / 36,
     plusHeightMoveThreshold: 0.14,
     useDetailedTerrainMaterial: false,
@@ -196,6 +201,7 @@ function createLeanSceneQuality(): SceneQuality {
     plusFieldStep: 3.45,
     pixelRatioCap: 1,
     anisotropyCap: 2,
+    useNativeAntialias: true,
     plusHeightUpdateInterval: 1 / 30,
     plusHeightMoveThreshold: 0.18,
     useDetailedTerrainMaterial: false,
@@ -209,6 +215,7 @@ function createSoftwareSceneQuality(): SceneQuality {
     plusFieldStep: 4.4,
     pixelRatioCap: 0.75,
     anisotropyCap: 1,
+    useNativeAntialias: false,
     plusHeightUpdateInterval: 1 / 24,
     plusHeightMoveThreshold: 0.24,
     useDetailedTerrainMaterial: false,
@@ -241,13 +248,11 @@ function createHeroScene(
   const camera = new THREE.PerspectiveCamera(48, 1, 0.1, 500000)
   camera.position.set(0, 7.4, 21)
 
-  const renderer = new THREE.WebGLRenderer({
-    alpha: true,
-    antialias: false,
-    powerPreference: 'high-performance',
-  })
+  let renderer = createRenderer(quality)
   if (usesSoftwareRenderer(renderer)) {
+    renderer.dispose()
     quality = createSoftwareSceneQuality()
+    renderer = createRenderer(quality)
   }
   renderer.setClearColor(0x000000, 0)
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, quality.pixelRatioCap))
@@ -339,6 +344,14 @@ function createHeroScene(
   }
 }
 
+function createRenderer(quality: SceneQuality) {
+  return new THREE.WebGLRenderer({
+    alpha: true,
+    antialias: quality.useNativeAntialias,
+    powerPreference: 'high-performance',
+  })
+}
+
 function createTerrain(
   textures: TerrainTextures,
   quality: SceneQuality,
@@ -400,15 +413,15 @@ function createTerrainMaterial(
   quality: SceneQuality,
 ) {
   if (!quality.useDetailedTerrainMaterial) {
-    return new THREE.MeshLambertMaterial({
+    return applyTerrainHorizonFade(new THREE.MeshLambertMaterial({
       color: 0x1d2a42,
       map: textures.color,
       emissive: 0x071225,
       emissiveIntensity: 0.18,
-    })
+    }))
   }
 
-  return new THREE.MeshStandardMaterial({
+  return applyTerrainHorizonFade(new THREE.MeshStandardMaterial({
     color: 0x1d2a42,
     map: textures.color,
     bumpMap: textures.bump,
@@ -418,7 +431,48 @@ function createTerrainMaterial(
     metalness: 0,
     emissive: 0x071225,
     emissiveIntensity: 0.12,
-  })
+  }))
+}
+
+function applyTerrainHorizonFade<
+  Material extends THREE.MeshLambertMaterial | THREE.MeshStandardMaterial,
+>(material: Material): Material {
+  material.transparent = true
+  material.onBeforeCompile = (shader) => {
+    shader.vertexShader = shader.vertexShader
+      .replace(
+        '#include <common>',
+        `
+          #include <common>
+          varying float vTerrainLocalZ;
+        `,
+      )
+      .replace(
+        '#include <begin_vertex>',
+        `
+          #include <begin_vertex>
+          vTerrainLocalZ = position.z;
+        `,
+      )
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        '#include <common>',
+        `
+          #include <common>
+          varying float vTerrainLocalZ;
+        `,
+      )
+      .replace(
+        'vec4 diffuseColor = vec4( diffuse, opacity );',
+        `
+          float terrainHorizonAlpha = smoothstep(${TERRAIN_HORIZON_FADE_END_Z.toFixed(1)}, ${TERRAIN_HORIZON_FADE_START_Z.toFixed(1)}, vTerrainLocalZ);
+          vec4 diffuseColor = vec4( diffuse, opacity * terrainHorizonAlpha );
+        `,
+      )
+  }
+  material.customProgramCacheKey = () => 'terrain-horizon-fade-v1'
+
+  return material
 }
 
 function sampleTerrainHeight(
