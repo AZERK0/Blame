@@ -81,10 +81,6 @@ export default function DownloadPage() {
 
         <div className="relative z-10 mx-auto grid min-h-[calc(100vh-6rem)] w-full max-w-7xl items-center gap-12 py-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
           <div>
-            <div className="landing-reveal landing-reveal-eyebrow mb-5 inline-flex items-center gap-2 rounded-full border border-white/14 bg-white/[0.07] px-3 py-1.5 text-xs font-medium uppercase tracking-[0.32em] text-white/76 shadow-2xl shadow-black/30 backdrop-blur-md">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#9fd7ff] shadow-[0_0_18px_rgba(159,215,255,0.9)]" />
-              Latest desktop release
-            </div>
             <h1
               id="download-title"
               className="landing-reveal landing-reveal-title max-w-4xl text-balance text-[clamp(3.2rem,8vw,7.5rem)] font-semibold leading-[0.9] tracking-tighter text-white drop-shadow-[0_20px_70px_rgba(0,0,0,0.55)] sm:leading-32"

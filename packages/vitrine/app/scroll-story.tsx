@@ -354,10 +354,6 @@ function HeroFrame({ progress }: { progress: number }) {
         style={heroCopyStyle(progress)}
       >
         <div className="text-center">
-          <div className="mx-auto mb-5 inline-flex items-center gap-2 rounded-full border border-white/14 bg-white/[0.07] px-3 py-1.5 text-xs font-medium uppercase text-white/76 shadow-2xl shadow-black/30 backdrop-blur-md">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#9fd7ff] shadow-[0_0_18px_rgba(159,215,255,0.9)]" />
-            Agentic IDE
-          </div>
           <h1
             id="hero-title"
             className="text-balance text-[clamp(3.4rem,10vw,9.5rem)] font-semibold leading-[0.9] tracking-tighter text-white drop-shadow-[0_20px_70px_rgba(0,0,0,0.55)] sm:leading-32"

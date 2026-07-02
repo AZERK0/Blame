@@ -48,14 +48,11 @@ export function PricingCard() {
           <div className="grid h-12 w-12 place-items-center rounded-xl border border-black/5 bg-white shadow-[0_8px_28px_rgba(0,0,0,0.12)]">
             <Boxes className="h-5 w-5" />
           </div>
-          <span className="rounded-full bg-[#111] px-3 py-1 text-xs font-semibold text-white">
-            Simple plan
-          </span>
         </div>
 
         <div className="mt-7">
           <h2 className="text-2xl font-semibold tracking-[-0.04em] text-[#111]">
-            Blame Pro
+            Blame License
           </h2>
           <p className="mt-3 text-base leading-6 text-[#111]/70">
             Agent worktrees, previews, and review control.
