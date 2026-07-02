@@ -1,5 +1,8 @@
+'use client'
+
 import Image from 'next/image'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 
 const navigationItems = [
   { label: 'Product', href: '/' },
@@ -7,7 +10,17 @@ const navigationItems = [
   { label: 'Download', href: '/download' },
 ]
 
+function isNavigationItemActive(pathname: string, href: string) {
+  if (href === '/') {
+    return pathname === '/'
+  }
+
+  return pathname === href || pathname.startsWith(`${href}/`)
+}
+
 export function SiteHeader() {
+  const pathname = usePathname()
+
   return (
     <header className="landing-reveal landing-reveal-header fixed inset-x-0 top-0 z-30">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5 sm:px-8 lg:px-10">
@@ -33,15 +46,24 @@ export function SiteHeader() {
           aria-label="Main navigation"
           className="hidden items-center gap-1 rounded-full border border-white/10 bg-[#070a15]/35 p-1 text-sm text-white/70 shadow-2xl shadow-black/20 backdrop-blur-xl md:flex"
         >
-          {navigationItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="rounded-full px-4 py-2 transition duration-200 hover:bg-white/[0.08] hover:text-white focus:outline-none focus:ring-2 focus:ring-white/40"
-            >
-              {item.label}
-            </Link>
-          ))}
+          {navigationItems.map((item) => {
+            const isActive = isNavigationItemActive(pathname, item.href)
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={isActive ? 'page' : undefined}
+                className={
+                  isActive
+                    ? 'rounded-full bg-white text-[#070a15] px-4 py-2 font-semibold shadow-lg shadow-white/10 transition duration-200 hover:bg-white hover:text-[#070a15] focus:outline-none focus:ring-2 focus:ring-white/40'
+                    : 'rounded-full px-4 py-2 transition duration-200 hover:bg-white/[0.08] hover:text-white focus:outline-none focus:ring-2 focus:ring-white/40'
+                }
+              >
+                {item.label}
+              </Link>
+            )
+          })}
         </nav>
 
         <Link
