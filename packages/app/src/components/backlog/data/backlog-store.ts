@@ -22,6 +22,7 @@ import { useProjects } from "@/context/projects"
 
 type BacklogState = {
   cleanupStoryIds: Set<number>
+  detailedStoryIds: Set<number>
   error?: string
   loading: boolean
   projectId?: string
@@ -34,11 +35,13 @@ export function useBacklogStore() {
   const projects = useProjects()
   const [state, setState] = React.useState<BacklogState>({
     cleanupStoryIds: new Set(),
+    detailedStoryIds: new Set(),
     loading: false,
     setupInitializingStoryIds: new Set(),
     stories: [],
   })
   const loadRequestId = React.useRef(0)
+  const detailRequests = React.useRef(new Map<number, Promise<UserStory>>())
   const updateQueues = React.useRef(new Map<number, Promise<unknown>>())
   const projectId = projects.activeProject?.id
   const projectPath = projects.activeProject?.path
@@ -53,6 +56,7 @@ export function useBacklogStore() {
     if (!projectId) {
       setState({
         cleanupStoryIds: new Set(),
+        detailedStoryIds: new Set(),
         loading: false,
         projectId: undefined,
         setupInitializingStoryIds: new Set(),
@@ -81,6 +85,7 @@ export function useBacklogStore() {
             : "Unable to load user stories.",
         loading: false,
         projectId,
+        detailedStoryIds: new Set(),
         setupInitializingStoryIds: new Set(),
         stories: [],
       })
@@ -102,6 +107,11 @@ export function useBacklogStore() {
       const story = await api.create({ ...input, projectId })
       setState((current) => ({
         ...current,
+        detailedStoryIds: storyStateIds(
+          current.detailedStoryIds,
+          story.id,
+          true
+        ),
         stories: [...current.stories, story],
       }))
       return story
@@ -119,6 +129,11 @@ export function useBacklogStore() {
           const nextStory = await api.update(story.id, input)
           setState((current) => ({
             ...current,
+            detailedStoryIds: storyStateIds(
+              current.detailedStoryIds,
+              nextStory.id,
+              true
+            ),
             stories: current.stories.map((currentStory) =>
               currentStory.id === story.id
                 ? mergeUserStory(currentStory, nextStory)
@@ -146,6 +161,11 @@ export function useBacklogStore() {
       const comment = await api.createComment(story.id, input)
       setState((current) => ({
         ...current,
+        detailedStoryIds: storyStateIds(
+          current.detailedStoryIds,
+          story.id,
+          true
+        ),
         stories: current.stories.map((currentStory) =>
           currentStory.id === story.id
             ? storyWithComment(currentStory, comment)
@@ -161,6 +181,11 @@ export function useBacklogStore() {
       const run = await api.createAgentRun(story.id, input)
       setState((current) => ({
         ...current,
+        detailedStoryIds: storyStateIds(
+          current.detailedStoryIds,
+          story.id,
+          true
+        ),
         stories: current.stories.map((currentStory) =>
           currentStory.id === story.id
             ? mergeStoryAgentRun(currentStory, run)
@@ -216,6 +241,36 @@ export function useBacklogStore() {
       api.activityDetail(story.id, activityId),
     [api]
   )
+  const loadDetail = React.useCallback(
+    async (story: Pick<UserStory, "id">) => {
+      const existingRequest = detailRequests.current.get(story.id)
+      if (existingRequest) return existingRequest
+      const request = api
+        .get(story.id)
+        .then((loadedStory) => {
+          setState((current) => ({
+            ...current,
+            detailedStoryIds: storyStateIds(
+              current.detailedStoryIds,
+              loadedStory.id,
+              true
+            ),
+            stories: current.stories.map((currentStory) =>
+              currentStory.id === loadedStory.id
+                ? mergeUserStory(currentStory, loadedStory)
+                : currentStory
+            ),
+          }))
+          return loadedStory
+        })
+        .finally(() => {
+          detailRequests.current.delete(story.id)
+        })
+      detailRequests.current.set(story.id, request)
+      return request
+    },
+    [api]
+  )
   const updateLocal = React.useCallback(
     (story: UserStory, input: UserStoryUpdate) => {
       setState((current) => ({
@@ -235,6 +290,11 @@ export function useBacklogStore() {
       await api.delete(story.id)
       setState((current) => ({
         ...current,
+        detailedStoryIds: storyStateIds(
+          current.detailedStoryIds,
+          story.id,
+          false
+        ),
         stories: current.stories.filter(
           (currentStory) => currentStory.id !== story.id
         ),
@@ -291,6 +351,7 @@ export function useBacklogStore() {
     createAgentRun,
     createComment,
     activityDetail,
+    loadDetail,
     load,
     projectId,
     projectPath,
@@ -298,6 +359,8 @@ export function useBacklogStore() {
     setStoryCleanup,
     setStorySetupInitializing,
     storyCleanup,
+    storyDetailsLoaded: (story?: Pick<UserStory, "id">) =>
+      Boolean(story && state.detailedStoryIds?.has(story.id)),
     storySetupInitializing,
     storiesForColumn,
     update,
@@ -383,7 +446,11 @@ function setupInitializingStoryIds(
   return storyStateIds(current, storyId, initializing)
 }
 
-function storyStateIds(current: Set<number>, storyId: number, active: boolean) {
+function storyStateIds(
+  current: Set<number> | undefined,
+  storyId: number,
+  active: boolean
+) {
   const next = new Set(current)
   if (active) next.add(storyId)
   else next.delete(storyId)
@@ -392,10 +459,16 @@ function storyStateIds(current: Set<number>, storyId: number, active: boolean) {
 
 function loadingState(current: BacklogState, projectId: string): BacklogState {
   if (current.projectId === projectId) {
-    return { ...current, error: undefined, loading: true }
+    return {
+      ...current,
+      detailedStoryIds: current.detailedStoryIds ?? new Set(),
+      error: undefined,
+      loading: true,
+    }
   }
   return {
     cleanupStoryIds: new Set(),
+    detailedStoryIds: new Set(),
     loading: true,
     projectId,
     setupInitializingStoryIds: new Set(),

@@ -13,6 +13,9 @@ export default class QuickChatsController {
       data: request.qs(),
     })
     const quickChats = await new QuickChatsService().list(auth.getUserOrFail().id, query)
+    if (query.view === 'summary') {
+      return serialize(quickChats.map((quickChat) => QuickChatTransformer.summary(quickChat)))
+    }
 
     return serialize(quickChats.map((quickChat) => QuickChatTransformer.transform(quickChat)))
   }

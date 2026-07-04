@@ -74,6 +74,7 @@ export const nullableDateTime = vine
 
 export const listUserStoriesValidator = vine.create({
   projectId: vine.string().trim().minLength(1),
+  view: vine.enum(['summary', 'detail']).optional(),
 })
 
 export const createUserStoryValidator = vine.create({

@@ -20,10 +20,23 @@ export function mergeQuickChat(currentChat: QuickChat, serverChat: QuickChat) {
   const newestChat = newestValue(currentChat, serverChat)
   return {
     ...newestChat,
+    agentActivities: providedValue(
+      newestChat.agentActivities,
+      currentChat.agentActivities
+    ),
+    agentFinalResponse: providedValue(
+      newestChat.agentFinalResponse,
+      currentChat.agentFinalResponse
+    ),
     agentRuns: mergeAgentRuns(
       currentChat.agentRuns ?? [],
       serverChat.agentRuns ?? []
     ),
+    agentSessionSummary: providedValue(
+      newestChat.agentSessionSummary,
+      currentChat.agentSessionSummary
+    ),
+    agentUsage: providedValue(newestChat.agentUsage, currentChat.agentUsage),
     messages: mergeMessages(
       currentChat.messages ?? [],
       serverChat.messages ?? []
@@ -122,6 +135,10 @@ function mergeActivities(
 
 function newestDefined<T>(...values: (T | null | undefined)[]) {
   return values.find((value) => value !== null && value !== undefined) ?? null
+}
+
+function providedValue<T>(value: T | undefined, fallback: T | undefined) {
+  return value === undefined ? fallback : value
 }
 
 function mergeById<T extends { id: number | string }>(

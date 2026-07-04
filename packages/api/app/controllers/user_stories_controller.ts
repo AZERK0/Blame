@@ -13,6 +13,9 @@ export default class UserStoriesController {
       data: request.qs(),
     })
     const stories = await new UserStoriesService().list(auth.getUserOrFail().id, query)
+    if (query.view === 'summary') {
+      return serialize(stories.map((story) => UserStoryTransformer.summary(story)))
+    }
 
     return serialize(stories.map((story) => UserStoryTransformer.transform(story)))
   }

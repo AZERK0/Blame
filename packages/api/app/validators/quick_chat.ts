@@ -9,6 +9,7 @@ import {
 
 export const listQuickChatsValidator = vine.create({
   projectId: vine.string().trim().minLength(1),
+  view: vine.enum(['summary', 'detail']).optional(),
 })
 
 export const createQuickChatValidator = vine.create({

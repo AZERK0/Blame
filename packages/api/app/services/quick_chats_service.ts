@@ -30,12 +30,12 @@ const maxAgentActivities = 80
 export default class QuickChatsService {
   async list(userId: number, input: ListQuickChatsInput) {
     await new ProjectsService().findForUser(userId, input.projectId)
-    return QuickChat.query()
+    const query = QuickChat.query()
       .where('projectId', input.projectId)
-      .preload('messages', orderMessages)
-      .preload('agentRuns', orderAgentRuns)
       .orderBy('updatedAt', 'desc')
       .orderBy('createdAt', 'desc')
+    if (input.view === 'summary') return query
+    return query.preload('messages', orderMessages).preload('agentRuns', orderAgentRuns)
   }
 
   async find(userId: number, id: number) {

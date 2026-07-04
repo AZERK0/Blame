@@ -22,7 +22,20 @@ export function createQuickChatApi(connection: ApiConnection) {
         await request<unknown>(
           connection,
           baseUrl,
-          `/projects/quick-chats?${new URLSearchParams({ projectId })}`
+          `/projects/quick-chats?${new URLSearchParams({
+            projectId,
+            view: "summary",
+          })}`
+        ),
+        { detail: false }
+      )
+    },
+    async get(id: number) {
+      return quickChat(
+        await request<unknown>(
+          connection,
+          baseUrl,
+          `/projects/quick-chats/${id}`
         )
       )
     },
@@ -134,14 +147,18 @@ function activityDetail(value: unknown) {
   return value as QuickChatActivityDetail
 }
 
-function quickChatList(value: unknown) {
-  if (Array.isArray(value)) return value.map(quickChat)
+function quickChatList(value: unknown, options: QuickChatOptions = {}) {
+  if (Array.isArray(value)) return value.map((item) => quickChat(item, options))
   if (!isRecord(value)) throw new Error("Unable to read quick chats.")
-  if ("data" in value) return quickChatList(value.data)
+  if ("data" in value) return quickChatList(value.data, options)
   throw new Error("Unable to read quick chats.")
 }
 
-function quickChat(value: unknown) {
+type QuickChatOptions = {
+  detail?: boolean
+}
+
+function quickChat(value: unknown, options: QuickChatOptions = {}) {
   const chat = transformerValue(value)
   const id = numericId(recordValue(chat).id)
   if (!isRecord(chat)) throw new Error("Unable to read quick chat.")
@@ -150,16 +167,21 @@ function quickChat(value: unknown) {
     throw new Error("Unable to read quick chat.")
   if (typeof chat.title !== "string")
     throw new Error("Unable to read quick chat.")
-  return {
+  const output = {
     ...chat,
-    agentRuns: Array.isArray(chat.agentRuns)
-      ? chat.agentRuns.map(quickChatAgentRun)
-      : [],
     id,
-    messages: Array.isArray(chat.messages)
-      ? chat.messages.map(quickChatMessage)
-      : [],
   } as QuickChat
+  if (Array.isArray(chat.agentRuns)) {
+    output.agentRuns = chat.agentRuns.map(quickChatAgentRun)
+  } else if (options.detail !== false) {
+    output.agentRuns = []
+  }
+  if (Array.isArray(chat.messages)) {
+    output.messages = chat.messages.map(quickChatMessage)
+  } else if (options.detail !== false) {
+    output.messages = []
+  }
+  return output
 }
 
 function quickChatMessage(value: unknown) {

@@ -23,13 +23,34 @@ export function mergeUserStory(
   const newestStory = newestValue(currentStory, serverStory)
   return {
     ...newestStory,
+    agentActivities: providedValue(
+      newestStory.agentActivities,
+      currentStory.agentActivities
+    ),
+    agentFinalResponse: providedValue(
+      newestStory.agentFinalResponse,
+      currentStory.agentFinalResponse
+    ),
     agentRuns: mergeAgentRuns(
       currentStory.agentRuns ?? [],
       serverStory.agentRuns ?? []
     ),
+    agentSessionSummary: providedValue(
+      newestStory.agentSessionSummary,
+      currentStory.agentSessionSummary
+    ),
+    agentUsage: providedValue(newestStory.agentUsage, currentStory.agentUsage),
+    codeSelectionAttachments: providedValue(
+      newestStory.codeSelectionAttachments,
+      currentStory.codeSelectionAttachments
+    ),
     comments: mergeComments(
       currentStory.comments ?? [],
       serverStory.comments ?? []
+    ),
+    fileAttachments: providedValue(
+      newestStory.fileAttachments,
+      currentStory.fileAttachments
     ),
   }
 }
@@ -115,6 +136,10 @@ function mergeActivities(
 
 function newestDefined<T>(...values: (T | null | undefined)[]) {
   return values.find((value) => value !== null && value !== undefined) ?? null
+}
+
+function providedValue<T>(value: T | undefined, fallback: T | undefined) {
+  return value === undefined ? fallback : value
 }
 
 function mergeById<T extends { id: number | string }>(

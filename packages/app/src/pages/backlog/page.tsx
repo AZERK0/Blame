@@ -67,6 +67,7 @@ export function BacklogPage() {
   const initializationStatus = projectInitialization?.status ?? null
   const queueInitializing = projectInitializing(initializationStatus)
   const storiesRef = React.useRef(backlog.stories)
+  const drawerLoadRequestId = React.useRef(0)
   const previousStoryStatuses = React.useRef<Map<number, BacklogColumnId>>()
   const pendingAgentUpdates = React.useRef(
     new Map<number, PendingAgentUpdate>()
@@ -113,11 +114,36 @@ export function BacklogPage() {
       ) ?? drawerTarget.userStory
     )
   }, [backlog.stories, drawerTarget])
-  const openDrawer = React.useCallback((target: DrawerTarget) => {
-    setDrawerTarget(target)
-  }, [])
+  const openDrawer = React.useCallback(
+    (target: DrawerTarget) => {
+      const requestId = ++drawerLoadRequestId.current
+      setDrawerTarget(target)
+      if (!target.userStory) {
+        return
+      }
+      const currentStory = activeStory(target.userStory, storiesRef.current)
+      if (backlog.storyDetailsLoaded(currentStory)) {
+        setDrawerTarget({ ...target, userStory: currentStory })
+        return
+      }
+      void backlog
+        .loadDetail(currentStory)
+        .then(() => {
+          if (drawerLoadRequestId.current !== requestId) return
+        })
+        .catch((error) => {
+          if (drawerLoadRequestId.current !== requestId) return
+          toast.error("Unable to load user story details", {
+            description: errorMessage(error),
+            position: "bottom-right",
+          })
+        })
+    },
+    [backlog]
+  )
   const openCreateDrawer = React.useCallback(() => {
     if (!backlog.projectPath) return
+    drawerLoadRequestId.current += 1
     setDrawerTarget({
       mode: "create",
       initialTab: "user-story",
@@ -413,19 +439,20 @@ export function BacklogPage() {
   )
   const unpauseAgent = React.useCallback(
     async (story: UserStory) => {
-      if (!story.worktree) {
+      const currentStory = await detailedStory(story, backlog)
+      if (!currentStory.worktree) {
         toast.error("Unable to resume agent", {
           description: "This user story has no active worktree.",
           position: "bottom-right",
         })
-        return story
+        return currentStory
       }
       if (auth.status !== "authenticated" || !agentSelection.currentModel) {
         toast.error("Unable to resume agent", {
           description: "Reconnect the provider and select a model.",
           position: "bottom-right",
         })
-        return story
+        return currentStory
       }
       const agent = platform.agent
       if (!agent) {
@@ -433,31 +460,31 @@ export function BacklogPage() {
           description: "Desktop agent runtime is not available.",
           position: "bottom-right",
         })
-        return story
+        return currentStory
       }
       const feedback = resumeAgentFeedback(
-        story,
-        await currentDiffSummary(story, platform)
+        currentStory,
+        await currentDiffSummary(currentStory, platform)
       )
-      const session = await startStoryDevelopmentSession(story, {
+      const session = await startStoryDevelopmentSession(currentStory, {
         feedback,
-        resumeSessionId: story.clineSessionId,
-        worktree: story.worktree,
+        resumeSessionId: currentStory.clineSessionId,
+        worktree: currentStory.worktree,
       })
       if (!session) {
         toast.error("Unable to resume agent", {
           description: "Desktop agent runtime is not available.",
           position: "bottom-right",
         })
-        return story
+        return currentStory
       }
-      const run = await backlog.createAgentRun(story, {
+      const run = await backlog.createAgentRun(currentStory, {
         clineSessionId: session.sessionId,
         kind: "resume",
       })
-      const updatedStory = await updateStory(story, {
+      const updatedStory = await updateStory(currentStory, {
         agentLastError: null,
-        agentLastEvent: `Cline debug log: ${clineLogPath(story.worktree, session.sessionId)}`,
+        agentLastEvent: `Cline debug log: ${clineLogPath(currentStory.worktree, session.sessionId)}`,
         agentActivities: [],
         agentFinalResponse: null,
         agentUsage: null,
@@ -487,10 +514,10 @@ export function BacklogPage() {
       )
       void agent.sessions.sendDevelopment({
         sessionId: session.sessionId,
-        title: story.title,
-        summary: story.summary,
-        codeSelectionAttachments: story.codeSelectionAttachments ?? [],
-        fileAttachments: story.fileAttachments ?? [],
+        title: currentStory.title,
+        summary: currentStory.summary,
+        codeSelectionAttachments: currentStory.codeSelectionAttachments ?? [],
+        fileAttachments: currentStory.fileAttachments ?? [],
         feedback,
       })
       return updatedStory
@@ -593,7 +620,13 @@ export function BacklogPage() {
       })
       return updatedStory
     },
-    [backlog, platform, startStoryDevelopmentSession, updateStory, persistAgentEvent]
+    [
+      backlog,
+      platform,
+      startStoryDevelopmentSession,
+      updateStory,
+      persistAgentEvent,
+    ]
   )
 
   const approveAndMergeStory = React.useCallback(
@@ -709,32 +742,35 @@ export function BacklogPage() {
   )
   const runStoryAction = React.useCallback(
     async (story: UserStory, action: BacklogAction) => {
+      const currentStory = await detailedStoryForAction(story, action, backlog)
       if (action === "Send to Dev Agent") {
-        return updateStory(story, { status: "ready" })
+        return updateStory(currentStory, { status: "ready" })
       }
       if (action === "Discard") {
-        return updateStory(story, {
+        return updateStory(currentStory, {
           discardedReason: "Discarded from backlog",
           status: "discarded",
         })
       }
-      if (action === "Dequeue") return updateStory(story, { status: "backlog" })
+      if (action === "Dequeue")
+        return updateStory(currentStory, { status: "backlog" })
       if (action === "Rework") {
-        return updateStory(story, {
+        return updateStory(currentStory, {
           discardedReason: null,
           status: "backlog",
         })
       }
       if (action === "Use Context") {
         const changedFiles = await completedStoryChangedFiles(
-          story,
+          currentStory,
           platform,
           projects.activeProject?.path
         )
+        drawerLoadRequestId.current += 1
         setDrawerTarget({
           initialDraft: {
             fileAttachments: [
-              completedStoryContextAttachment(story, changedFiles),
+              completedStoryContextAttachment(currentStory, changedFiles),
             ],
           },
           initialTab: "user-story",
@@ -742,9 +778,16 @@ export function BacklogPage() {
         })
         return
       }
-      if (action === "Approve & Merge") return approveAndMergeStory(story)
+      if (action === "Approve & Merge")
+        return approveAndMergeStory(currentStory)
     },
-    [approveAndMergeStory, platform, projects.activeProject?.path, updateStory]
+    [
+      approveAndMergeStory,
+      backlog,
+      platform,
+      projects.activeProject?.path,
+      updateStory,
+    ]
   )
   const runStatusPipRequest = React.useCallback(
     (request: BacklogStatusPipRequest) => {
@@ -755,7 +798,7 @@ export function BacklogPage() {
       const currentStory = activeStory(story, storiesRef.current)
 
       if (request.drawer) {
-        setDrawerTarget(statusPipDrawerTarget(currentStory, request))
+        openDrawer(statusPipDrawerTarget(currentStory, request))
         return
       }
       if (request.rejectChoice) {
@@ -786,14 +829,21 @@ export function BacklogPage() {
         request.action === "View Terminal" ||
         request.action === "Request Changes"
       ) {
-        setDrawerTarget(drawerTargetForAction(currentStory, request.action))
+        openDrawer(drawerTargetForAction(currentStory, request.action))
         return
       }
       void runStoryAction(currentStory, request.action).catch(
         reportStatusPipRequestError
       )
     },
-    [openWorktree, rejectStory, runStoryAction, stopAgent, unpauseAgent]
+    [
+      openDrawer,
+      openWorktree,
+      rejectStory,
+      runStoryAction,
+      stopAgent,
+      unpauseAgent,
+    ]
   )
   React.useEffect(() => {
     return platform.backlogStatusPip?.onRequest(runStatusPipRequest)
@@ -856,7 +906,10 @@ export function BacklogPage() {
       <UserStoryDrawer
         open={Boolean(drawerTarget)}
         onOpenChange={(open) => {
-          if (!open) setDrawerTarget(undefined)
+          if (!open) {
+            drawerLoadRequestId.current += 1
+            setDrawerTarget(undefined)
+          }
         }}
         userStory={drawerUserStory}
         mode={drawerTarget?.mode ?? "view"}
@@ -1197,6 +1250,27 @@ function inactiveStoryFields(): UserStoryUpdate {
 
 function activeStory(story: UserStory, stories: UserStory[]) {
   return stories.find((currentStory) => currentStory.id === story.id) ?? story
+}
+
+function detailedStory(
+  story: UserStory,
+  backlog: ReturnType<typeof useBacklogStore>
+) {
+  if (backlog.storyDetailsLoaded(story)) return Promise.resolve(story)
+  return backlog.loadDetail(story)
+}
+
+function detailedStoryForAction(
+  story: UserStory,
+  action: BacklogAction,
+  backlog: ReturnType<typeof useBacklogStore>
+) {
+  if (!storyActionRequiresDetail(action)) return Promise.resolve(story)
+  return detailedStory(story, backlog)
+}
+
+function storyActionRequiresDetail(action: BacklogAction) {
+  return action === "Approve & Merge" || action === "Use Context"
 }
 
 function statusPipDrawerTarget(

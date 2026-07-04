@@ -201,6 +201,16 @@ export function UserStoryDrawerPanel({
   }, [focusComment])
 
   React.useEffect(() => {
+    if (mode === "create") return
+    setSummaryCodeSelectionAttachments((current) =>
+      mergeAttachments(current, userStory?.codeSelectionAttachments ?? [])
+    )
+    setSummaryFileAttachments((current) =>
+      mergeAttachments(current, userStory?.fileAttachments ?? [])
+    )
+  }, [mode, userStory?.codeSelectionAttachments, userStory?.fileAttachments])
+
+  React.useEffect(() => {
     if (!open || focusComment || tab !== "user-story") return
     const frame = requestAnimationFrame(() => {
       const responses = drawerContentRef.current?.querySelectorAll<HTMLElement>(
@@ -297,7 +307,7 @@ export function UserStoryDrawerPanel({
       >
         <DrawerHeader
           className={cn(
-            "absolute top-0 right-0 left-0 z-[15] isolate gap-4 overflow-hidden px-6 pt-6 pb-6 pr-14",
+            "absolute top-0 right-0 left-0 isolate z-[15] gap-4 overflow-hidden px-6 pt-6 pr-14 pb-6",
             tab === "user-story" &&
               sidebarAvailable &&
               sidebarOpen &&
@@ -733,4 +743,15 @@ function isSendToDevAgentShortcut(event: KeyboardEvent) {
     !event.shiftKey &&
     (event.ctrlKey || event.metaKey)
   )
+}
+
+function mergeAttachments<T extends { id: string }>(current: T[], loaded: T[]) {
+  const loadedIds = new Set(loaded.map((attachment) => attachment.id))
+  const missing = loaded.filter(
+    (attachment) => !current.some((item) => item.id === attachment.id)
+  )
+  if (!missing.length && current.every((item) => loadedIds.has(item.id))) {
+    return current
+  }
+  return [...missing, ...current]
 }

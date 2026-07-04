@@ -89,7 +89,8 @@ import { cn } from "@/lib/utils"
 
 const agentEventPersistDelayMs = 1_500
 const topSoftBlurMask = {
-  maskImage: "linear-gradient(to bottom, black 0%, black 60%, transparent 100%)",
+  maskImage:
+    "linear-gradient(to bottom, black 0%, black 60%, transparent 100%)",
   WebkitMaskImage:
     "linear-gradient(to bottom, black 0%, black 60%, transparent 100%)",
 } satisfies React.CSSProperties
@@ -174,6 +175,8 @@ function QuickChatProjectPage() {
   const activeConversation = newConversationActive
     ? undefined
     : quickChats.activeChat
+  const activeConversationLoaded =
+    !activeConversation || quickChats.chatDetailsLoaded(activeConversation)
   const responseHeader = agentConversationResponseHeader({
     modelId: activeConversation?.agentModelId ?? selection.currentModel?.id,
     providerId:
@@ -199,6 +202,14 @@ function QuickChatProjectPage() {
   React.useEffect(() => {
     return loadGitStatus(project?.path, platform.workspace, setGitStatus)
   }, [platform.workspace, project?.path])
+
+  React.useEffect(() => {
+    if (!activeConversation || quickChats.chatDetailsLoaded(activeConversation))
+      return
+    void quickChats.loadDetail(activeConversation).catch((error) => {
+      showQuickChatError("Unable to load quick chat", errorMessage(error))
+    })
+  }, [activeConversation, quickChats])
 
   React.useEffect(() => {
     const updates = pendingAgentUpdates.current
@@ -370,6 +381,12 @@ function QuickChatProjectPage() {
   function selectConversation(id: number) {
     setNewConversationActive(false)
     quickChats.setActiveId(id)
+    const chat = chatsRef.current.find((item) => item.id === id)
+    if (chat && !quickChats.chatDetailsLoaded(chat)) {
+      void quickChats.loadDetail(chat).catch((error) => {
+        showQuickChatError("Unable to load quick chat", errorMessage(error))
+      })
+    }
     clearDraft()
   }
 
@@ -398,14 +415,16 @@ function QuickChatProjectPage() {
     void copyConversationText(conversation.title, "Conversation title copied.")
   }
 
-  function copyConversationLastMessage(conversation: QuickChat) {
-    const message = lastConversationMessageText(conversation)
+  async function copyConversationLastMessage(conversation: QuickChat) {
+    const current = await detailedConversation(conversation)
+    const message = lastConversationMessageText(current)
     if (!message) return
     void copyConversationText(message, "Last message copied.")
   }
 
-  function copyConversationAgentResponse(conversation: QuickChat) {
-    const response = lastAgentResponseText(conversation)
+  async function copyConversationAgentResponse(conversation: QuickChat) {
+    const current = await detailedConversation(conversation)
+    const response = lastAgentResponseText(current)
     if (!response) return
     void copyConversationText(response, "Last agent response copied.")
   }
@@ -448,13 +467,24 @@ function QuickChatProjectPage() {
   }
 
   async function activeOrCreatedConversation(message: string) {
-    if (activeConversation) return currentChat(activeConversation)
+    if (activeConversation) {
+      return currentChat(await detailedConversation(activeConversation))
+    }
     const chat = await quickChats.create({
       title: titleFromMessage(message, project?.name),
       workspace: project?.path ?? null,
     })
     replaceChatRef(chat)
     setNewConversationActive(false)
+    return chat
+  }
+
+  async function detailedConversation(conversation: QuickChat) {
+    if (quickChats.chatDetailsLoaded(conversation)) {
+      return currentChat(conversation)
+    }
+    const chat = await quickChats.loadDetail(conversation)
+    replaceChatRef(chat)
     return chat
   }
 
@@ -661,10 +691,11 @@ function QuickChatProjectPage() {
               <div className="mx-auto grid w-full max-w-5xl gap-10 px-4 pt-24 pb-48 md:px-8 md:pt-28">
                 <QuickChatStatus
                   error={quickChats.error}
-                  loading={quickChats.loading}
+                  loading={quickChats.loading || !activeConversationLoaded}
                   projectPath={project?.path}
                 />
-                {activeConversation?.agentRuns?.length ? (
+                {activeConversationLoaded &&
+                activeConversation?.agentRuns?.length ? (
                   <AgentConversationTimeline
                     comments={activeConversation.messages ?? []}
                     onFileLinkClick={(path) =>
@@ -680,9 +711,9 @@ function QuickChatProjectPage() {
                     responseHeader={responseHeader}
                     runs={activeConversation.agentRuns}
                   />
-                ) : (
+                ) : activeConversationLoaded ? (
                   <QuickChatEmptyState />
-                )}
+                ) : null}
                 <div ref={feedEndRef} />
               </div>
             </ScrollArea>
@@ -775,7 +806,7 @@ function QuickChatHistoryPanel({
   onCreate: () => void
 }) {
   return (
-    <aside className="hidden min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border bg-card my-4 mr-4 shadow-xl ring-1 shadow-black/10 ring-foreground/10 xl:flex">
+    <aside className="my-4 mr-4 hidden min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border bg-card shadow-xl ring-1 shadow-black/10 ring-foreground/10 xl:flex">
       <div className="flex items-center justify-between gap-3 border-b bg-muted/20 px-4 py-4">
         <div className="min-w-0">
           <h2 className="truncate text-sm font-semibold">Quick chats</h2>
@@ -840,7 +871,9 @@ function QuickChatHistoryItem({
             {conversation.title}
           </span>
           <span className="shrink-0 text-xs text-muted-foreground">
-            {relativeTimeLabel(conversation.updatedAt ?? conversation.createdAt)}
+            {relativeTimeLabel(
+              conversation.updatedAt ?? conversation.createdAt
+            )}
           </span>
         </span>
         <span className="line-clamp-1 text-xs leading-snug text-muted-foreground">
@@ -1083,8 +1116,8 @@ function DeleteQuickChatDialog({
           </AlertDialogMedia>
           <AlertDialogTitle>Delete conversation</AlertDialogTitle>
           <AlertDialogDescription>
-            This will permanently delete this quick chat from the database.
-            This action cannot be undone.
+            This will permanently delete this quick chat from the database. This
+            action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -1241,6 +1274,7 @@ function conversationPreview(conversation: QuickChat) {
   if (conversation.agentLastError) {
     return shortLabel(conversation.agentLastError, 96)
   }
+  if (conversation.preview) return shortLabel(conversation.preview, 96)
   const message = conversation.messages?.at(-1)
   if (message) return shortLabel(message.body || "Attached context", 96)
   return shortLabel(conversation.agentLastEvent ?? "No messages yet", 96)

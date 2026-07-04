@@ -29,11 +29,9 @@ const maxAgentActivities = 80
 export default class UserStoriesService {
   async list(userId: number, input: ListUserStoriesInput) {
     await new ProjectsService().findForUser(userId, input.projectId)
-    const stories = await UserStory.query()
-      .where('projectId', input.projectId)
-      .preload('comments')
-      .preload('agentRuns', orderAgentRuns)
-      .orderBy('createdAt', 'asc')
+    const query = UserStory.query().where('projectId', input.projectId).orderBy('createdAt', 'asc')
+    if (input.view === 'summary') return query
+    const stories = await query.preload('comments').preload('agentRuns', orderAgentRuns)
     return stories.map(sortStoryComments)
   }
 

@@ -19,7 +19,20 @@ export function createBacklogApi(connection: ApiConnection) {
         await request<unknown>(
           connection,
           baseUrl,
-          `/projects/user-stories?${new URLSearchParams({ projectId })}`
+          `/projects/user-stories?${new URLSearchParams({
+            projectId,
+            view: "summary",
+          })}`
+        ),
+        { detail: false }
+      )
+    },
+    async get(id: number) {
+      return userStory(
+        await request<unknown>(
+          connection,
+          baseUrl,
+          `/projects/user-stories/${id}`
         )
       )
     },
@@ -182,14 +195,18 @@ function userStoryComment(value: unknown) {
   } satisfies UserStoryComment
 }
 
-function userStoryList(value: unknown) {
-  if (Array.isArray(value)) return value.map(userStory)
+function userStoryList(value: unknown, options: UserStoryOptions = {}) {
+  if (Array.isArray(value)) return value.map((item) => userStory(item, options))
   if (!isRecord(value)) throw new Error("Unable to read user stories.")
-  if ("data" in value) return userStoryList(value.data)
+  if ("data" in value) return userStoryList(value.data, options)
   throw new Error("Unable to read user stories.")
 }
 
-function userStory(value: unknown) {
+type UserStoryOptions = {
+  detail?: boolean
+}
+
+function userStory(value: unknown, options: UserStoryOptions = {}) {
   const story = transformerValue(value)
   const id = numericId(recordValue(story).id)
   if (!isRecord(story)) throw new Error("Unable to read user story.")
@@ -198,20 +215,29 @@ function userStory(value: unknown) {
     throw new Error("Unable to read user story.")
   if (typeof story.title !== "string")
     throw new Error("Unable to read user story.")
-  return {
+  const output = {
     ...story,
-    codeSelectionAttachments: codeSelectionAttachments(
-      recordValue(story).codeSelectionAttachments
-    ),
-    fileAttachments: fileAttachments(recordValue(story).fileAttachments),
     id,
-    agentRuns: Array.isArray(story.agentRuns)
-      ? story.agentRuns.map(userStoryAgentRun)
-      : [],
-    comments: Array.isArray(story.comments)
-      ? story.comments.map(userStoryComment)
-      : [],
   } as UserStory
+  if (options.detail !== false || "codeSelectionAttachments" in story) {
+    output.codeSelectionAttachments = codeSelectionAttachments(
+      recordValue(story).codeSelectionAttachments
+    )
+  }
+  if (options.detail !== false || "fileAttachments" in story) {
+    output.fileAttachments = fileAttachments(recordValue(story).fileAttachments)
+  }
+  if (Array.isArray(story.agentRuns)) {
+    output.agentRuns = story.agentRuns.map(userStoryAgentRun)
+  } else if (options.detail !== false) {
+    output.agentRuns = []
+  }
+  if (Array.isArray(story.comments)) {
+    output.comments = story.comments.map(userStoryComment)
+  } else if (options.detail !== false) {
+    output.comments = []
+  }
+  return output
 }
 
 function codeSelectionAttachments(value: unknown) {

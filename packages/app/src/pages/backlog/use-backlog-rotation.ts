@@ -97,12 +97,13 @@ export function useBacklogRotation(
 
   async function startStory(story: UserStory) {
     if (!projects.activeProject) return
+    const detailedStory = await backlog.loadDetail(story)
     const blocker = rotationBlocker(
       auth.status,
       platform,
       selection.currentModel
     )
-    if (blocker) return reportBlocker(story, blocker)
+    if (blocker) return reportBlocker(detailedStory, blocker)
 
     const projectInitialization = await createCloudApi(
       auth.apiConnection
@@ -114,9 +115,10 @@ export function useBacklogRotation(
       !initialization.setupScript ||
       !initialization.dockerCompose
     ) {
-      if (projectInitializing(initialization?.status)) return retryStory(story)
+      if (projectInitializing(initialization?.status))
+        return retryStory(detailedStory)
       reportBlocker(
-        story,
+        detailedStory,
         "Project initialization is required before starting queued user stories."
       )
       return
@@ -131,7 +133,7 @@ export function useBacklogRotation(
     })
     if (!dependencies.ok) {
       reportHostDependencyBlocker(
-        story,
+        detailedStory,
         dependencies,
         initialization.setupScript
       )
@@ -140,10 +142,10 @@ export function useBacklogRotation(
 
     const worktree = await workspace.createWorktree({
       repositoryRoot: projects.activeProject.path,
-      storyId: story.id,
-      title: story.title,
+      storyId: detailedStory.id,
+      title: detailedStory.title,
     })
-    await backlog.update(story, {
+    await backlog.update(detailedStory, {
       agentLastEvent: "Project preview setup starting.",
       branch: worktree.branch,
       status: "in-progress",
@@ -155,9 +157,15 @@ export function useBacklogRotation(
       dockerCompose: initialization.dockerCompose,
       hostDependenciesChecked: true,
     })
-    backlog.setStorySetupInitializing(story, true)
+    backlog.setStorySetupInitializing(detailedStory, true)
     const unsubscribeSetup = workspace.onSetupEvent(setup.runId, (event) => {
-      void handleSetupEvent(story, setup.runId, event, worktree.worktree, initialization)
+      void handleSetupEvent(
+        detailedStory,
+        setup.runId,
+        event,
+        worktree.worktree,
+        initialization
+      )
       if (event.type === "exit") unsubscribeSetup()
     })
     const session = await agent.sessions.startDevelopment({
@@ -168,15 +176,15 @@ export function useBacklogRotation(
       reasoningEffort: selection.currentVariant,
       contextCompressionMode: selection.contextCompressionMode,
       autoSendPrompt: false,
-      title: story.title,
-      summary: story.summary,
-      codeSelectionAttachments: story.codeSelectionAttachments ?? [],
-      fileAttachments: story.fileAttachments ?? [],
+      title: detailedStory.title,
+      summary: detailedStory.summary,
+      codeSelectionAttachments: detailedStory.codeSelectionAttachments ?? [],
+      fileAttachments: detailedStory.fileAttachments ?? [],
       cwd: worktree.worktree,
       workspaceRoot: worktree.worktree,
       codePractices: projectInitialization.practices,
     })
-    const run = await backlog.createAgentRun(story, {
+    const run = await backlog.createAgentRun(detailedStory, {
       clineSessionId: session.sessionId,
       kind: "initial",
     })
@@ -184,13 +192,13 @@ export function useBacklogRotation(
       platform,
       session.sessionId,
       (event) => {
-        persistAgentEvent(story, run, event)
+        persistAgentEvent(detailedStory, run, event)
         if (event.type === "done" || event.type === "error")
           unsubscribeSession()
       }
     )
 
-    await backlog.update(story, {
+    await backlog.update(detailedStory, {
       agentModelId: selection.currentModel.id,
       agentProviderId: selection.currentModel.provider.id,
       agentActivities: [],
@@ -202,10 +210,10 @@ export function useBacklogRotation(
     })
     void agent.sessions.sendDevelopment({
       sessionId: session.sessionId,
-      title: story.title,
-      summary: story.summary,
-      codeSelectionAttachments: story.codeSelectionAttachments ?? [],
-      fileAttachments: story.fileAttachments ?? [],
+      title: detailedStory.title,
+      summary: detailedStory.summary,
+      codeSelectionAttachments: detailedStory.codeSelectionAttachments ?? [],
+      fileAttachments: detailedStory.fileAttachments ?? [],
     })
   }
 
@@ -276,14 +284,14 @@ export function useBacklogRotation(
     const text = eventText(event)
     const previewUrl = await setupPreviewUrl(event, worktree)
     const recovered = Boolean(
-      previewUrl &&
-        setupError(event) &&
-        (await projectRuntimeHealthy(worktree))
+      previewUrl && setupError(event) && (await projectRuntimeHealthy(worktree))
     )
     if (event.type === "exit") backlog.setStorySetupInitializing(story, false)
     await backlog.update(story, {
       agentLastError: setupError(event) && !recovered ? text : undefined,
-      agentLastEvent: recovered ? "Project preview containers are running." : text,
+      agentLastEvent: recovered
+        ? "Project preview containers are running."
+        : text,
       previewUrl,
     })
     return { recovered }
@@ -513,8 +521,7 @@ export function useBacklogRotation(
   function recoverInterruptedAgentRuns(stories: UserStory[]) {
     stories.forEach((story) => {
       const run = recoverableAgentRun(story)
-      if (!run || interruptedAgentRecoveryStoryIds.current.has(story.id))
-        return
+      if (!run || interruptedAgentRecoveryStoryIds.current.has(story.id)) return
       interruptedAgentRecoveryStoryIds.current.add(story.id)
       void recoverInterruptedAgentRun(story, run).finally(() =>
         interruptedAgentRecoveryStoryIds.current.delete(story.id)
@@ -1041,7 +1048,9 @@ function recoverableAgentRun(story: UserStory) {
 
 function staleAgentRun(run: UserStoryAgentRun) {
   const updatedAt = run.updatedAt ?? run.createdAt
-  return Date.now() - new Date(updatedAt).getTime() >= agentCompletionRecoveryGraceMs
+  return (
+    Date.now() - new Date(updatedAt).getTime() >= agentCompletionRecoveryGraceMs
+  )
 }
 
 function clineLogPath(worktree: string, sessionId: string) {

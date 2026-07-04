@@ -50,6 +50,7 @@ export type QuickChat = {
   createdAt: string
   id: number
   messages?: QuickChatMessage[]
+  preview?: string | null
   agentRuns?: QuickChatAgentRun[]
   projectId: string
   title: string

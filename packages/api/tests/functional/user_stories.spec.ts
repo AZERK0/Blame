@@ -120,6 +120,71 @@ test.group('user stories', (group) => {
     assert.equal(body.data[0].title, 'Alpha story')
   })
 
+  test('lists story summaries without detail payloads', async ({ client, assert }) => {
+    const user = await createUser()
+    const project = await createProject(user.id, 'Alpha')
+    const story = await client
+      .post('/api/v1/projects/user-stories')
+      .loginAs(user)
+      .json({
+        projectId: project.id,
+        title: 'Large story',
+        summary: 'Large summary',
+        codeSelectionAttachments: [
+          {
+            id: 'selection-1',
+            content: 'const value = true',
+            endLine: 12,
+            path: 'src/example.ts',
+            startLine: 10,
+          },
+        ],
+        fileAttachments: [
+          {
+            id: 'file-1',
+            content: 'SGVsbG8=',
+            name: 'hello.txt',
+            size: 5,
+            type: 'text/plain',
+          },
+        ],
+      })
+    const created = story.body() as unknown as UserStoryBody
+
+    await client
+      .post(`/api/v1/projects/user-stories/${created.data.id}/comments`)
+      .loginAs(user)
+      .json({ body: 'Feedback' })
+    await client
+      .post(`/api/v1/projects/user-stories/${created.data.id}/agent-runs`)
+      .loginAs(user)
+      .json({ kind: 'initial' })
+
+    const summaryResponse = await client
+      .get('/api/v1/projects/user-stories')
+      .qs({ projectId: project.id, view: 'summary' })
+      .loginAs(user)
+
+    summaryResponse.assertStatus(200)
+    const summary = summaryResponse.body() as unknown as UserStoryListBody
+    assert.equal(summary.data[0].title, 'Large story')
+    assert.isUndefined(summary.data[0].codeSelectionAttachments)
+    assert.isUndefined(summary.data[0].fileAttachments)
+    assert.isUndefined(summary.data[0].comments)
+    assert.isUndefined(summary.data[0].agentRuns)
+
+    const detailResponse = await client
+      .get(`/api/v1/projects/user-stories/${created.data.id}`)
+      .loginAs(user)
+
+    detailResponse.assertStatus(200)
+    const detail = detailResponse.body() as unknown as UserStoryBody
+    assert.lengthOf(detail.data.codeSelectionAttachments ?? [], 1)
+    assert.lengthOf(detail.data.fileAttachments ?? [], 1)
+    assert.lengthOf(detail.data.comments ?? [], 1)
+    assert.lengthOf(detail.data.agentRuns ?? [], 1)
+  })
+
   test('creates updates and deletes a story', async ({ client, assert }) => {
     const user = await createUser()
     const project = await createProject(user.id, 'Alpha')

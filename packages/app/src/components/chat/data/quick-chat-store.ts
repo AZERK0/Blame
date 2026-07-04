@@ -23,6 +23,7 @@ import { useProjects } from "@/context/projects"
 type QuickChatState = {
   activeId?: number
   chats: QuickChat[]
+  detailedChatIds: Set<number>
   error?: string
   loading: boolean
   projectId?: string
@@ -33,8 +34,10 @@ export function useQuickChatStore() {
   const projects = useProjects()
   const [state, setState] = React.useState<QuickChatState>({
     chats: [],
+    detailedChatIds: new Set(),
     loading: false,
   })
+  const detailRequests = React.useRef(new Map<number, Promise<QuickChat>>())
   const loadRequestId = React.useRef(0)
   const updateQueues = React.useRef(new Map<number, Promise<unknown>>())
   const projectId = projects.activeProject?.id
@@ -47,7 +50,12 @@ export function useQuickChatStore() {
   const load = React.useCallback(async () => {
     const requestId = ++loadRequestId.current
     if (!projectId) {
-      setState({ chats: [], loading: false, projectId: undefined })
+      setState({
+        chats: [],
+        detailedChatIds: new Set(),
+        loading: false,
+        projectId: undefined,
+      })
       return
     }
     setState((current) => loadingState(current, projectId))
@@ -69,6 +77,7 @@ export function useQuickChatStore() {
       if (loadRequestId.current !== requestId) return
       setState({
         chats: [],
+        detailedChatIds: new Set(),
         error:
           error instanceof Error
             ? error.message
@@ -95,6 +104,7 @@ export function useQuickChatStore() {
         ...current,
         activeId: chat.id,
         chats: [chat, ...current.chats],
+        detailedChatIds: chatStateIds(current.detailedChatIds, chat.id, true),
       }))
       return chat
     },
@@ -115,6 +125,11 @@ export function useQuickChatStore() {
               currentChat.id === chat.id
                 ? mergeQuickChat(currentChat, nextChat)
                 : currentChat
+            ),
+            detailedChatIds: chatStateIds(
+              current.detailedChatIds,
+              nextChat.id,
+              true
             ),
           }))
           return nextChat
@@ -141,6 +156,7 @@ export function useQuickChatStore() {
             ? quickChatWithMessage(currentChat, message)
             : currentChat
         ),
+        detailedChatIds: chatStateIds(current.detailedChatIds, chat.id, true),
       }))
       return message
     },
@@ -157,6 +173,7 @@ export function useQuickChatStore() {
             ? mergeQuickChatAgentRun(currentChat, run)
             : currentChat
         ),
+        detailedChatIds: chatStateIds(current.detailedChatIds, chat.id, true),
       }))
       return run
     },
@@ -205,6 +222,37 @@ export function useQuickChatStore() {
     []
   )
 
+  const loadDetail = React.useCallback(
+    async (chat: Pick<QuickChat, "id">) => {
+      const existingRequest = detailRequests.current.get(chat.id)
+      if (existingRequest) return existingRequest
+      const request = api
+        .get(chat.id)
+        .then((loadedChat) => {
+          setState((current) => ({
+            ...current,
+            chats: current.chats.map((currentChat) =>
+              currentChat.id === loadedChat.id
+                ? mergeQuickChat(currentChat, loadedChat)
+                : currentChat
+            ),
+            detailedChatIds: chatStateIds(
+              current.detailedChatIds,
+              loadedChat.id,
+              true
+            ),
+          }))
+          return loadedChat
+        })
+        .finally(() => {
+          detailRequests.current.delete(chat.id)
+        })
+      detailRequests.current.set(chat.id, request)
+      return request
+    },
+    [api]
+  )
+
   const agentRunActivityDetail = React.useCallback(
     async (
       chat: QuickChat,
@@ -247,6 +295,7 @@ export function useQuickChatStore() {
         chats: current.chats.filter(
           (currentChat) => currentChat.id !== chat.id
         ),
+        detailedChatIds: chatStateIds(current.detailedChatIds, chat.id, false),
       }))
     },
     [api]
@@ -261,10 +310,13 @@ export function useQuickChatStore() {
     activeChat:
       state.chats.find((chat) => chat.id === state.activeId) ?? state.chats[0],
     agentRunActivityDetail,
+    chatDetailsLoaded: (chat?: Pick<QuickChat, "id">) =>
+      Boolean(chat && state.detailedChatIds?.has(chat.id)),
     create,
     createAgentRun,
     createMessage,
     load,
+    loadDetail,
     projectId,
     projectPath,
     remove,
@@ -347,11 +399,28 @@ function loadingState(
   projectId: string
 ): QuickChatState {
   if (current.projectId === projectId) {
-    return { ...current, error: undefined, loading: true }
+    return {
+      ...current,
+      detailedChatIds: current.detailedChatIds ?? new Set(),
+      error: undefined,
+      loading: true,
+    }
   }
   return {
     chats: [],
+    detailedChatIds: new Set(),
     loading: true,
     projectId,
   }
+}
+
+function chatStateIds(
+  current: Set<number> | undefined,
+  chatId: number,
+  enabled: boolean
+) {
+  const next = new Set(current)
+  if (enabled) next.add(chatId)
+  else next.delete(chatId)
+  return next
 }
