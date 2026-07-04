@@ -84,16 +84,11 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
+import { useScrollMagnet } from "@/hooks/use-scroll-magnet"
 import { projectCodePractices } from "@/lib/project-code-practices"
 import { cn } from "@/lib/utils"
 
 const agentEventPersistDelayMs = 1_500
-const topSoftBlurMask = {
-  maskImage:
-    "linear-gradient(to bottom, black 0%, black 60%, transparent 100%)",
-  WebkitMaskImage:
-    "linear-gradient(to bottom, black 0%, black 60%, transparent 100%)",
-} satisfies React.CSSProperties
 const topStrongBlurMask = {
   maskImage: "linear-gradient(to bottom, black 0%, transparent 72%)",
   WebkitMaskImage: "linear-gradient(to bottom, black 0%, transparent 72%)",
@@ -184,6 +179,7 @@ function QuickChatProjectPage() {
       selection.currentModel?.provider.id,
     providers: selection.allProviders,
   })
+  const conversationScrollKey = quickChatScrollKey(activeConversation)
   const branchName = gitStatus?.branch.current ?? "Current branch"
   const mentionDirectory = project?.path
   const agentRunning = activeConversation?.agentStatus === "Running"
@@ -216,14 +212,11 @@ function QuickChatProjectPage() {
     return () => clearPendingQuickChatAgentUpdates(updates)
   }, [])
 
-  React.useEffect(() => {
-    feedEndRef.current?.scrollIntoView({ block: "end" })
-  }, [
-    activeConversation?.agentLastEvent,
-    activeConversation?.agentRuns?.length,
-    activeConversation?.id,
-    activeConversation?.messages?.length,
-  ])
+  useScrollMagnet(
+    feedEndRef,
+    conversationScrollKey,
+    activeConversation?.id ?? "new"
+  )
 
   React.useEffect(() => {
     const addAttachment = (event: Event) => {
@@ -792,6 +785,28 @@ function QuickChatProjectPage() {
       />
     </>
   )
+}
+
+function quickChatScrollKey(chat: QuickChat | undefined) {
+  const run = chat?.agentRuns?.at(-1)
+  const activities = run?.activities ?? []
+  const activity = activities.at(-1)
+
+  return [
+    chat?.id ?? "new",
+    chat?.agentLastEvent?.length ?? 0,
+    chat?.messages?.length ?? 0,
+    chat?.updatedAt ?? "",
+    chat?.agentStatus ?? "",
+    run?.id ?? "",
+    run?.status ?? "",
+    run?.updatedAt ?? "",
+    run?.finalResponse?.length ?? 0,
+    activities.length,
+    activity?.id ?? "",
+    activity?.detail.length ?? 0,
+    activity?.updatedAt ?? "",
+  ].join(":")
 }
 
 function QuickChatHistoryPanel({

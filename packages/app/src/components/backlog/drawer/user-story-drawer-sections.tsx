@@ -28,6 +28,7 @@ import {
 } from "@/components/model/model-selector"
 import { useProjects } from "@/context/projects"
 import { useCloudAuth } from "@/context/cloud-auth"
+import { useScrollMagnet } from "@/hooks/use-scroll-magnet"
 
 const commentComposerSoftBlurMask = {
   maskImage: "linear-gradient(to top, black 0%, black 60%, transparent 100%)",
@@ -95,6 +96,10 @@ export function UserStoryContent({
     projects.activeProject?.path
   )
   const editable = isEditable(mode, status)
+  const contentEndRef = React.useRef<HTMLDivElement>(null)
+  const timelineScrollKey = userStoryTimelineScrollKey(userStory)
+
+  useScrollMagnet(contentEndRef, timelineScrollKey, userStory?.id ?? mode)
 
   return (
     <>
@@ -163,6 +168,7 @@ export function UserStoryContent({
           </div>
         </div>
       )}
+      <div ref={contentEndRef} />
     </>
   )
 }
@@ -204,6 +210,28 @@ function AgentRunTimeline({
       runs={userStory?.agentRuns ?? []}
     />
   )
+}
+
+function userStoryTimelineScrollKey(userStory: UserStory | undefined) {
+  const run = userStory?.agentRuns?.at(-1)
+  const activities = run?.activities ?? []
+  const activity = activities.at(-1)
+
+  return [
+    userStory?.id ?? "new",
+    userStory?.agentLastEvent?.length ?? 0,
+    userStory?.comments?.length ?? 0,
+    userStory?.updatedAt ?? "",
+    userStory?.agentStatus ?? "",
+    run?.id ?? "",
+    run?.status ?? "",
+    run?.updatedAt ?? "",
+    run?.finalResponse?.length ?? 0,
+    activities.length,
+    activity?.id ?? "",
+    activity?.detail.length ?? 0,
+    activity?.updatedAt ?? "",
+  ].join(":")
 }
 
 function fileMentionDirectory(

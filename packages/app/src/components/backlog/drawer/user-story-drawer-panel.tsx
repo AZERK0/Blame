@@ -184,7 +184,6 @@ export function UserStoryDrawerPanel({
   const [comment, setComment] = React.useState("")
   const summaryRef = React.useRef<HTMLDivElement>(null)
   const commentRef = React.useRef<HTMLDivElement>(null)
-  const drawerContentRef = React.useRef<HTMLDivElement>(null)
 
   React.useEffect(() => {
     localStorage.setItem(drawerSidebarStorageKey, JSON.stringify(sidebarOpen))
@@ -209,20 +208,6 @@ export function UserStoryDrawerPanel({
       mergeAttachments(current, userStory?.fileAttachments ?? [])
     )
   }, [mode, userStory?.codeSelectionAttachments, userStory?.fileAttachments])
-
-  React.useEffect(() => {
-    if (!open || focusComment || tab !== "user-story") return
-    const frame = requestAnimationFrame(() => {
-      const responses = drawerContentRef.current?.querySelectorAll<HTMLElement>(
-        "[data-agent-response]"
-      )
-      responses?.item(responses.length - 1)?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      })
-    })
-    return () => cancelAnimationFrame(frame)
-  }, [focusComment, open, tab])
 
   React.useEffect(() => {
     const sendToDevAgentAvailable = drawerActions(mode, status).includes(
@@ -274,10 +259,7 @@ export function UserStoryDrawerPanel({
   }, [status])
 
   return (
-    <DrawerContent
-      ref={drawerContentRef}
-      className="inset-y-2 right-2 h-[calc(100svh-1rem)] overflow-hidden rounded-xl border data-[vaul-drawer-direction=right]:w-[min(90rem,calc(100vw-1rem))] data-[vaul-drawer-direction=right]:sm:max-w-none"
-    >
+    <DrawerContent className="inset-y-2 right-2 h-[calc(100svh-1rem)] overflow-hidden rounded-xl border data-[vaul-drawer-direction=right]:w-[min(90rem,calc(100vw-1rem))] data-[vaul-drawer-direction=right]:sm:max-w-none">
       {tab === "user-story" && sidebarAvailable && (
         <Button
           type="button"
