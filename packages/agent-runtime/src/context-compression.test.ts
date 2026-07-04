@@ -90,11 +90,11 @@ test("disables compaction for off context mode", () => {
   assert.equal(config.compact, undefined);
 });
 
-test("disables late Cline compaction for Headroom context mode", () => {
+test("keeps Cline compaction when Headroom context mode is requested", () => {
   const config = contextCompressionConfig({}, "headroom");
 
-  assert.equal(config.enabled, false);
-  assert.equal(config.strategy, undefined);
+  assert.equal(config.enabled, true);
+  assert.equal(config.strategy, "basic");
   assert.equal(config.compact, undefined);
 });
 
@@ -225,6 +225,7 @@ test("compresses tool history as a text transcript", async () => {
 test("does not add provider-bound extensions outside Headroom mode", () => {
   assert.equal(contextCompressionExtensions({}, undefined), undefined);
   assert.equal(contextCompressionExtensions({}, "cline"), undefined);
+  assert.equal(contextCompressionExtensions({}, "headroom"), undefined);
   assert.equal(contextCompressionExtensions({}, "off"), undefined);
 });
 
@@ -239,6 +240,7 @@ async function registeredHeadroomBuilders(
     { compactionMaxInputTokens: 100_000 },
     "headroom",
     {
+      headroomEnabled: true,
       logger: (message, payload) => {
         logs.push({ message, payload });
       },

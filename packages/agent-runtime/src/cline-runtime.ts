@@ -30,6 +30,7 @@ import {
 import {
   contextCompressionConfig,
   contextCompressionExtensions,
+  effectiveContextCompressionMode,
 } from "./context-compression.js";
 import type { HeadroomCompressionUsage } from "./context-compression.js";
 import { HeadroomSidecar } from "./headroom-sidecar.js";
@@ -86,6 +87,7 @@ import type { ProductionSessionContext } from "./production.js";
 import type {
   AgentApprovalRequest,
   AgentBackendConfig,
+  AgentContextCompressionMode,
   AgentEvent,
   AgentRuntimeEvents,
   AgentUsageSummary,
@@ -474,6 +476,9 @@ export class BlameAgentRuntime {
       const requestedSessionId = input.sessionId?.trim();
       const sessionId = requestedSessionId || createBlameSessionId();
       const sessionLogFile = sessionLogPath(input.cwd, sessionId);
+      const contextCompressionMode = effectiveContextCompressionMode(
+        input.contextCompressionMode,
+      );
       await this.subscribeSession(sessionId, input.backend);
       this.sessionBackendKeys.set(sessionId, backendKey(input.backend));
       this.sessionLogFiles.set(sessionId, sessionLogFile);
@@ -485,6 +490,7 @@ export class BlameAgentRuntime {
       const headroomBaseUrl = await this.ensureHeadroomSidecar(
         sessionId,
         input,
+        contextCompressionMode,
       );
       const autoSendPrompt = input.autoSendPrompt !== false;
       const pluginPaths = runtimePluginPaths(
@@ -531,14 +537,14 @@ export class BlameAgentRuntime {
             ...(pluginPaths ? { pluginPaths } : {}),
             compaction: contextCompressionConfig(
               this.productionConfig,
-              input.contextCompressionMode,
+              contextCompressionMode,
             ),
             enableTools: true,
             enableSpawnAgent: input.enableSpawnAgent ?? false,
             enableAgentTeams: input.enableAgentTeams ?? false,
             extensions: contextCompressionExtensions(
               this.productionConfig,
-              input.contextCompressionMode,
+              contextCompressionMode,
               {
                 logger: (message, payload) =>
                   this.logSession(sessionId, message, payload),
@@ -1588,8 +1594,9 @@ export class BlameAgentRuntime {
   private async ensureHeadroomSidecar(
     sessionId: string,
     input: StartSessionInput,
+    mode: AgentContextCompressionMode,
   ) {
-    if (input.contextCompressionMode !== "headroom") return undefined;
+    if (mode !== "headroom") return undefined;
     const result = await this.headroomSidecar.ensure({
       logger: (message, payload) => this.logSession(sessionId, message, payload),
       logFile: headroomProxyLogPath(input.cwd),
@@ -3211,12 +3218,16 @@ function credentialLabel(input: RuntimeCredentialInput) {
 }
 
 function startContext(input: StartSessionInput) {
+  const contextCompressionMode = effectiveContextCompressionMode(
+    input.contextCompressionMode,
+  );
+
   return {
     providerId: input.providerId,
     modelId: input.modelId,
     checkpointEnabled: input.checkpointEnabled,
     configExtensions: input.configExtensions?.join(","),
-    contextCompressionMode: input.contextCompressionMode ?? "cline",
+    contextCompressionMode,
     disableMcpSettingsTools: input.disableMcpSettingsTools,
     mode: input.mode ?? "act",
     maxIterations: input.maxIterations ?? defaultSessionMaxIterations,
@@ -3229,12 +3240,16 @@ function sessionContext(
   input: StartSessionInput,
   sessionId: string,
 ): ProductionSessionContext {
+  const contextCompressionMode = effectiveContextCompressionMode(
+    input.contextCompressionMode,
+  );
+
   return {
     maxIterations: input.maxIterations ?? defaultSessionMaxIterations,
     mode: input.mode ?? "act",
     modelId: input.modelId,
     providerId: input.providerId,
-    contextCompressionMode: input.contextCompressionMode ?? "cline",
+    contextCompressionMode,
     checkpointEnabled: input.checkpointEnabled,
     configExtensions: input.configExtensions?.join(","),
     disableMcpSettingsTools: input.disableMcpSettingsTools,

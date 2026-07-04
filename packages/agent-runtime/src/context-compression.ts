@@ -12,6 +12,7 @@ type ContextCompressionLogger = (
 type AgentPluginSetupApi = Parameters<NonNullable<AgentPlugin["setup"]>>[0];
 type ContextCompressionOptions = {
   compressor?: typeof compress;
+  headroomEnabled?: boolean;
   headroomBaseUrl?: string;
   logger?: ContextCompressionLogger;
   modelId?: string;
@@ -52,12 +53,13 @@ const defaultHeadroomTriggerRatio = 0.35;
 const defaultHeadroomTargetRatio = 0.7;
 const defaultHeadroomLargeToolResultTokens = 8_000;
 const minimumHeadroomTokenBudget = 4_000;
+const headroomContextCompressionEnabled = false;
 
 export function contextCompressionConfig(
   productionConfig: ProductionConfig,
   mode: AgentContextCompressionMode | undefined,
 ): CoreCompactionConfig {
-  const selectedMode = mode ?? "cline";
+  const selectedMode = effectiveContextCompressionMode(mode);
   if (selectedMode === "off") return { enabled: false };
   if (selectedMode === "headroom") return { enabled: false };
   return blameCompactionConfig(productionConfig);
@@ -68,8 +70,20 @@ export function contextCompressionExtensions(
   mode: AgentContextCompressionMode | undefined,
   options: ContextCompressionOptions = {},
 ): AgentPlugin[] | undefined {
-  if (mode !== "headroom") return undefined;
+  if (
+    effectiveContextCompressionMode(mode, options.headroomEnabled) !==
+    "headroom"
+  )
+    return undefined;
   return [headroomMessageBuilderExtension(productionConfig, options)];
+}
+
+export function effectiveContextCompressionMode(
+  mode: AgentContextCompressionMode | undefined,
+  headroomEnabled = headroomContextCompressionEnabled,
+): AgentContextCompressionMode {
+  if (mode === "headroom" && !headroomEnabled) return "cline";
+  return mode ?? "cline";
 }
 
 function headroomMessageBuilderExtension(
