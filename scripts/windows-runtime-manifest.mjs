@@ -4,6 +4,10 @@ import { readFile, writeFile } from "node:fs/promises"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { loadEnvFiles, text } from "./env-files.mjs"
+import {
+  runtimeClineSdkVersion,
+  syncRuntimeSdkVersions,
+} from "./runtime-sdk-version.mjs"
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const desktopDir = join(rootDir, "packages/desktop")
@@ -11,11 +15,17 @@ const runtimeRoot = join(desktopDir, "resources/runtime")
 const windowsManifest = "windows/manifest.json"
 const architectures = ["amd64", "arm64"]
 
+export async function prepareRuntimeManifests(targetRuntimeRoot = runtimeRoot) {
+  await syncRuntimeSdkVersions(targetRuntimeRoot)
+  return prepareWindowsRuntimeManifest(targetRuntimeRoot)
+}
+
 export async function prepareWindowsRuntimeManifest(targetRuntimeRoot = runtimeRoot) {
   const manifestPath = join(targetRuntimeRoot, windowsManifest)
   const manifest = JSON.parse(await readFile(manifestPath, "utf8"))
   const runtimeVersion = runtimeVersionFor(manifest)
   manifest.runtimeVersion = runtimeVersion
+  manifest.clineSdkVersion = await runtimeClineSdkVersion()
   manifest.rootfs = rootfsSpecs(manifest, runtimeVersion)
   await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8")
   return manifest
@@ -104,5 +114,5 @@ function trimSlash(value) {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   await loadEnvFiles(rootDir)
-  await prepareWindowsRuntimeManifest(process.argv[2] ? resolve(process.argv[2]) : runtimeRoot)
+  await prepareRuntimeManifests(process.argv[2] ? resolve(process.argv[2]) : runtimeRoot)
 }

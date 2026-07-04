@@ -15,6 +15,7 @@ import {
   rootfsPublicBaseUrl,
   runtimeRootfsFileName,
 } from "./windows-runtime-manifest.mjs"
+import { runtimeClineSdkVersion } from "./runtime-sdk-version.mjs"
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const desktopDir = join(rootDir, "packages/desktop")
@@ -50,6 +51,7 @@ async function buildRootfs() {
 
 async function buildArchitecture(architecture) {
   const runtimeVersion = requiredRuntimeVersion()
+  const clineSdkVersion = await runtimeClineSdkVersion()
   const ubuntuRootfs = requiredUbuntuRootfs(architecture)
   const output = join(outputDir, runtimeRootfsFileName(architecture, runtimeVersion))
   const distroName = `BlameRuntimeBuild${architecture}`
@@ -67,6 +69,8 @@ async function buildArchitecture(architecture) {
     await powershell.path(output),
     "-RuntimeVersion",
     runtimeVersion,
+    "-ClineSdkVersion",
+    clineSdkVersion,
     "-DistroName",
     distroName,
     "-Replace",

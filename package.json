@@ -18,6 +18,7 @@
     "release:macos": "node scripts/desktop-release.mjs release --mac --x64 --arm64",
     "release:windows-runtime": "node scripts/windows-runtime-rootfs.mjs release",
     "release:windows": "node scripts/desktop-release.mjs release --win --x64",
+    "sync:runtime-sdk": "node scripts/runtime-sdk-version.mjs",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test"
   },

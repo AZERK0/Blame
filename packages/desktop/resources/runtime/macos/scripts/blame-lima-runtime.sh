@@ -6,7 +6,8 @@ runtime_home="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 manifest_path="$runtime_home/manifest.json"
 runtime_version="$(sed -n 's/.*"runtimeVersion"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$manifest_path" | head -n 1)"
 runtime_version="${runtime_version:-1}"
-cline_sdk_version="${BLAME_CLINE_SDK_VERSION:-0.0.46}"
+manifest_cline_sdk_version="$(sed -n 's/.*"clineSdkVersion"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$manifest_path" | head -n 1)"
+cline_sdk_version="${BLAME_CLINE_SDK_VERSION:-${manifest_cline_sdk_version:-0.0.55}}"
 lima_version="$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$manifest_path" | tail -n 1)"
 lima_version="${BLAME_LIMA_VERSION:-${lima_version:-2.1.2}}"
 lima_state_home="${LIMA_HOME:-$HOME/Library/Application Support/Blame/runtime/lima}"
@@ -139,9 +140,10 @@ test_vm_running() {
 }
 
 add_vm_checks() {
-  output="$(with_lima_environment shell "$vm_name" sudo -n sh -s -- "$HOME" "$cline_sdk_version" <<'EOF' 2>/dev/null || true
+  output="$(with_lima_environment shell "$vm_name" sudo -n sh -s -- "$HOME" "$cline_sdk_version" "$runtime_version" <<'EOF' 2>/dev/null || true
 host_home="$1"
 cline_sdk_version="$2"
+runtime_version="$3"
 check() {
   name="$1"
   shift
@@ -177,6 +179,7 @@ NODE
 }
 check host-home test -d "$host_home"
 check agent test -x /usr/local/bin/blame-runtime-agent
+check runtime-version sh -lc 'test "$(cat /etc/blame-runtime-version 2>/dev/null)" = "$1"' sh "$runtime_version"
 check containerd sh -lc 'command -v containerd >/dev/null 2>&1 && (pgrep -x containerd >/dev/null 2>&1 || containerd --version >/dev/null 2>&1)'
 check nerdctl sh -lc 'command -v nerdctl >/dev/null 2>&1'
 check nerdctl-compose sh -lc 'nerdctl compose version >/dev/null 2>&1'
@@ -185,7 +188,7 @@ check cline-sdk valid_cline_sdk_install
 EOF
 )"
   if [ -z "$output" ]; then
-    for name in agent containerd nerdctl nerdctl-compose git cline-sdk; do
+    for name in agent runtime-version containerd nerdctl nerdctl-compose git cline-sdk; do
       append_check "$(new_check "$name" "missing" "$repair_action")"
     done
     return
@@ -262,7 +265,7 @@ ensure_vm() {
 
 invoke_provisioner() {
   provisioner="$runtime_home/scripts/provision-blame-runtime.sh"
-  with_lima_environment shell "$vm_name" sudo -n sh -s -- "$runtime_version" <"$provisioner"
+  with_lima_environment shell "$vm_name" sudo -n sh -s -- "$runtime_version" "$cline_sdk_version" <"$provisioner"
 }
 
 ensure_runtime() {

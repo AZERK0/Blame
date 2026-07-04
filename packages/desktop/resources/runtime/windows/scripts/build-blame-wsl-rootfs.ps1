@@ -2,6 +2,7 @@ param(
   [string]$UbuntuRootfs = "",
   [string]$Output = "",
   [string]$RuntimeVersion = "",
+  [string]$ClineSdkVersion = "",
   [string]$DistroName = "BlameRuntimeBuild",
   [switch]$KeepDistro,
   [switch]$Replace,
@@ -65,7 +66,7 @@ function Invoke-Provisioner {
   $content = Get-Content $script -Raw
   $process = [System.Diagnostics.Process]::new()
   $process.StartInfo.FileName = "wsl.exe"
-  $process.StartInfo.Arguments = Join-Arguments @("-d", $DistroName, "-u", "root", "--", "sh", "-s", "--", $RuntimeVersion)
+  $process.StartInfo.Arguments = Join-Arguments @("-d", $DistroName, "-u", "root", "--", "sh", "-s", "--", $RuntimeVersion, (Resolve-ClineSdkVersion))
   $process.StartInfo.RedirectStandardInput = $true
   $process.StartInfo.RedirectStandardOutput = $false
   $process.StartInfo.RedirectStandardError = $false
@@ -77,6 +78,23 @@ function Invoke-Provisioner {
   if ($process.ExitCode -ne 0) {
     throw "BlameRuntime rootfs provisioning failed."
   }
+}
+
+function Resolve-ClineSdkVersion {
+  if ($env:BLAME_CLINE_SDK_VERSION) {
+    return [string]$env:BLAME_CLINE_SDK_VERSION
+  }
+  if ($ClineSdkVersion) {
+    return $ClineSdkVersion
+  }
+  $manifestPath = Join-Path (Split-Path -Parent $PSScriptRoot) "manifest.json"
+  if (Test-Path $manifestPath) {
+    $manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
+    if ($manifest.PSObject.Properties["clineSdkVersion"]) {
+      return [string]$manifest.clineSdkVersion
+    }
+  }
+  "0.0.55"
 }
 
 function Join-Arguments {

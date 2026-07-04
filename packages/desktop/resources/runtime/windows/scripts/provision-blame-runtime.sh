@@ -2,7 +2,7 @@ set -eu
 
 runtime_version="${1:-5}"
 runtime_root="/home/blame/.local/share/blame/runtime"
-cline_sdk_version="${BLAME_CLINE_SDK_VERSION:-0.0.42}"
+cline_sdk_version="${BLAME_CLINE_SDK_VERSION:-${2:-0.0.55}}"
 nerdctl_version="${BLAME_NERDCTL_VERSION:-2.1.6}"
 runtime_packages="ca-certificates curl dbus-user-session git gzip iptables python3 slirp4netns tar uidmap xz-utils"
 

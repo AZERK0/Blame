@@ -5,7 +5,13 @@ $RuntimeHome = Split-Path -Parent $PSScriptRoot
 $ManifestPath = Join-Path $RuntimeHome "manifest.json"
 $Manifest = Get-Content $ManifestPath -Raw | ConvertFrom-Json
 $RuntimeVersion = [string]$Manifest.runtimeVersion
-$ClineSdkVersion = "0.0.42"
+$ClineSdkVersion = if ($env:BLAME_CLINE_SDK_VERSION) {
+  [string]$env:BLAME_CLINE_SDK_VERSION
+} elseif ($Manifest.PSObject.Properties["clineSdkVersion"]) {
+  [string]$Manifest.clineSdkVersion
+} else {
+  "0.0.55"
+}
 $WslRequiredAction = "Enable WSL2 in Windows, restart if prompted, then run Blame runtime setup again."
 $RootfsAction = "Blame could not download the BlameRuntime WSL2 rootfs. Check the internet connection, then run Blame runtime setup again."
 
@@ -338,7 +344,7 @@ function Invoke-Provisioner {
   $content = Get-Content $script -Raw
   $process = [System.Diagnostics.Process]::new()
   $process.StartInfo.FileName = "wsl.exe"
-  $process.StartInfo.Arguments = Join-Arguments @("-d", $DistroName, "-u", "root", "--", "sh", "-s", "--", $RuntimeVersion)
+  $process.StartInfo.Arguments = Join-Arguments @("-d", $DistroName, "-u", "root", "--", "sh", "-s", "--", $RuntimeVersion, $ClineSdkVersion)
   $process.StartInfo.RedirectStandardInput = $true
   $process.StartInfo.RedirectStandardOutput = $false
   $process.StartInfo.RedirectStandardError = $false

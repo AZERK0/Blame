@@ -5,9 +5,9 @@
   "type": "module",
   "main": "./out/main/index.js",
   "scripts": {
-    "predev": "pnpm --filter @blame/agent-runtime build",
+    "predev": "node ../../scripts/runtime-sdk-version.mjs && pnpm --filter @blame/agent-runtime build",
     "dev": "node scripts/dev.mjs",
-    "prebuild": "pnpm --filter @blame/agent-runtime build",
+    "prebuild": "node ../../scripts/runtime-sdk-version.mjs && pnpm --filter @blame/agent-runtime build",
     "build": "electron-vite build",
     "package": "node scripts/package.mjs",
     "package:linux": "node scripts/package.mjs --linux",
