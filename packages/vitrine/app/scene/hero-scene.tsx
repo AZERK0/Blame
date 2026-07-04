@@ -31,6 +31,7 @@ const PLUS_FIELD_RESPONSE = 9
 const PLUS_HEIGHT_RESPONSE = 20
 const TERRAIN_HORIZON_FADE_START_Z = -48
 const TERRAIN_HORIZON_FADE_END_Z = -66
+const MOBILE_VIEWPORT_BREAKPOINT = 768
 
 type TerrainRelief = {
   heightScale: number
@@ -245,6 +246,13 @@ function createSoftwareSceneQuality(): SceneQuality {
   }
 }
 
+function isMobileSceneDevice() {
+  return (
+    window.innerWidth < MOBILE_VIEWPORT_BREAKPOINT ||
+    window.matchMedia('(pointer: coarse)').matches
+  )
+}
+
 function usesSoftwareRenderer(renderer: THREE.WebGLRenderer) {
   const context = renderer.getContext()
   const debugInfo = context.getExtension('WEBGL_debug_renderer_info')
@@ -265,6 +273,7 @@ function createHeroScene(
   terrainRelief: TerrainRelief,
 ): SceneState {
   let quality = createSceneQuality()
+  const shouldRenderInteractivePlusField = !isMobileSceneDevice()
   const scene = new THREE.Scene()
   scene.fog = new THREE.FogExp2(TWILIGHT_FOG_COLOR, 0.012)
 
@@ -298,8 +307,13 @@ function createHeroScene(
   const terrain = createTerrain(terrainTextures, quality, terrainLayout, terrainRelief)
   scene.add(terrain.group)
 
-  const plusField = createPlusField(quality, terrainRelief)
-  terrain.group.add(plusField.group)
+  const plusField = shouldRenderInteractivePlusField
+    ? createPlusField(quality, terrainRelief)
+    : null
+
+  if (plusField) {
+    terrain.group.add(plusField.group)
+  }
 
   const ambientLight = new THREE.HemisphereLight(0xbdc3fd, 0x07101f, 0.78)
   scene.add(ambientLight)
@@ -350,7 +364,9 @@ function createHeroScene(
     camera.lookAt(pointer.x * 1.8, -0.52, -8.5)
 
     terrain.group.rotation.z = Math.sin(elapsed * 0.08) * 0.006 + pointer.x * 0.012
-    updatePlusField(plusField, targetPointer, elapsed, delta, quality)
+    if (plusField) {
+      updatePlusField(plusField, targetPointer, elapsed, delta, quality)
+    }
 
     renderer.render(scene, camera)
     animationFrame = requestAnimationFrame(animate)
