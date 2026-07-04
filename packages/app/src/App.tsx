@@ -5,6 +5,8 @@ import { BacklogStatusPipPage } from "@/pages/backlog/status-pip-page"
 import { ChatPage } from "@/pages/chat/page"
 import { GitPage } from "@/pages/git/page"
 import { PracticesPage } from "@/pages/practices/page"
+import { BacklogStoreProvider } from "@/components/backlog/data/backlog-store"
+import { QuickChatStoreProvider } from "@/components/chat/data/quick-chat-store"
 import { ConnectScreen } from "@/components/onboarding/connect-screen"
 import { AiPreferencesSetupScreen } from "@/components/onboarding/ai-preferences-setup-screen"
 import {
@@ -120,13 +122,17 @@ export function App() {
 
   return (
     <TooltipProvider>
-      <ProjectInitializationRunner />
-      <UpdateStartupNotifier />
-      <AppLayout pathname={pathname} title={activeRoute.title}>
-        {activeRoute.element}
-      </AppLayout>
-      <SettingsDialog open={settingsOpen} onOpenChange={closeSettings} />
-      <Toaster />
+      <BacklogStoreProvider>
+        <QuickChatStoreProvider>
+          <ProjectInitializationRunner />
+          <UpdateStartupNotifier />
+          <AppLayout pathname={pathname} title={activeRoute.title}>
+            {activeRoute.element}
+          </AppLayout>
+          <SettingsDialog open={settingsOpen} onOpenChange={closeSettings} />
+          <Toaster />
+        </QuickChatStoreProvider>
+      </BacklogStoreProvider>
     </TooltipProvider>
   )
 }

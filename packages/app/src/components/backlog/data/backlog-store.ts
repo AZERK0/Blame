@@ -30,7 +30,30 @@ type BacklogState = {
   stories: UserStory[]
 }
 
+type BacklogStoreValue = ReturnType<typeof useBacklogStoreValue>
+
+const BacklogStoreContext = React.createContext<BacklogStoreValue | undefined>(
+  undefined
+)
+
+export function BacklogStoreProvider({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  const value = useBacklogStoreValue()
+
+  return React.createElement(BacklogStoreContext.Provider, { value }, children)
+}
+
 export function useBacklogStore() {
+  const context = React.useContext(BacklogStoreContext)
+  if (!context)
+    throw new Error("useBacklogStore must be used within BacklogStoreProvider")
+  return context
+}
+
+function useBacklogStoreValue() {
   const auth = useCloudAuth()
   const projects = useProjects()
   const [state, setState] = React.useState<BacklogState>({

@@ -29,7 +29,32 @@ type QuickChatState = {
   projectId?: string
 }
 
+type QuickChatStoreValue = ReturnType<typeof useQuickChatStoreValue>
+
+const QuickChatStoreContext = React.createContext<
+  QuickChatStoreValue | undefined
+>(undefined)
+
+export function QuickChatStoreProvider({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  const value = useQuickChatStoreValue()
+
+  return React.createElement(QuickChatStoreContext.Provider, { value }, children)
+}
+
 export function useQuickChatStore() {
+  const context = React.useContext(QuickChatStoreContext)
+  if (!context)
+    throw new Error(
+      "useQuickChatStore must be used within QuickChatStoreProvider"
+    )
+  return context
+}
+
+function useQuickChatStoreValue() {
   const auth = useCloudAuth()
   const projects = useProjects()
   const [state, setState] = React.useState<QuickChatState>({
