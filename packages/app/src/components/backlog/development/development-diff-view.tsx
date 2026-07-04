@@ -24,15 +24,7 @@ type LineSelection = {
 const diffLineHeight = 20
 const diffVirtualizationThreshold = 400
 const diffOverscan = 24
-const diffScrollClassName = cn(
-  "min-h-0 w-full max-w-full flex-1 overflow-auto",
-  "[scrollbar-width:thin] [scrollbar-color:color-mix(in_oklab,var(--muted-foreground)_35%,transparent)_transparent]",
-  "[&::-webkit-scrollbar]:h-2.5 [&::-webkit-scrollbar]:w-2.5",
-  "[&::-webkit-scrollbar-corner]:bg-background",
-  "[&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border",
-  "[&::-webkit-scrollbar-thumb:hover]:bg-muted-foreground/45",
-  "[&::-webkit-scrollbar-track]:bg-transparent"
-)
+const diffScrollClassName = "min-h-0 w-full max-w-full flex-1 overflow-auto"
 
 export function DevelopmentDiffView({
   diff,

@@ -677,7 +677,7 @@ function MarkdownPreviewTable({
   rows: string[][]
 }) {
   return (
-    <div className="max-w-full [scrollbar-width:thin] overflow-x-auto">
+    <div className="max-w-full overflow-x-auto">
       <table className="min-w-full border-collapse text-left text-sm">
         <MarkdownPreviewTableHeader
           cells={header}
@@ -740,7 +740,7 @@ function MarkdownPreviewTableRow({
 
 function MarkdownPreviewCode({ code }: { code: string }) {
   return (
-    <pre className="max-w-full [scrollbar-width:thin] [scrollbar-color:color-mix(in_oklab,var(--muted-foreground)_35%,transparent)_transparent] overflow-x-auto rounded-lg border bg-muted/50 px-3 py-2 font-mono text-xs leading-relaxed text-foreground [&::-webkit-scrollbar]:h-2.5 [&::-webkit-scrollbar-corner]:bg-background [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb:hover]:bg-muted-foreground/45 [&::-webkit-scrollbar-track]:bg-transparent">
+    <pre className="max-w-full overflow-x-auto rounded-lg border bg-muted/50 px-3 py-2 font-mono text-xs leading-relaxed text-foreground">
       <code>{code}</code>
     </pre>
   )

@@ -881,7 +881,7 @@ export function BacklogPage() {
           Loading user stories.
         </div>
       )}
-      <div className="-mx-6 min-h-0 min-w-0 flex-1 [scrollbar-width:thin] [scrollbar-color:color-mix(in_oklab,var(--muted-foreground)_35%,transparent)_transparent] overflow-x-auto overflow-y-hidden px-6 [&::-webkit-scrollbar]:h-2.5 [&::-webkit-scrollbar-corner]:bg-background [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb:hover]:bg-muted-foreground/45 [&::-webkit-scrollbar-track]:bg-transparent">
+      <div className="-mx-6 min-h-0 min-w-0 flex-1 overflow-x-auto overflow-y-hidden px-6">
         <div className="grid h-full min-w-500 auto-rows-[minmax(0,1fr)] grid-cols-6 gap-3 pb-3">
           {backlogColumns.map((column) => (
             <BacklogColumn

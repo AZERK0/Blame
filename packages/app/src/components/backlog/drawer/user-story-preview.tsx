@@ -862,11 +862,10 @@ function ServiceLogTabs({
       className="flex h-10 w-full flex-none items-end overflow-hidden pr-52 pt-1"
       role="tablist"
     >
-      <div className="flex w-full [scrollbar-width:none] items-end gap-1 overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:hidden">
+      <div className="no-scrollbar flex w-full items-end gap-1 overflow-x-auto overflow-y-hidden">
         {services.map((service, index) => {
           const isSelected = selectedService === service
           const isFirst = index === 0
-          const isLast = index === services.length - 1
 
           return (
             <button
@@ -1082,12 +1081,6 @@ function SetupLogPanel({
           ref={logRef}
           className={cn(
             "min-h-0 flex-1 select-text overflow-auto rounded-lg bg-zinc-950 p-4 font-mono text-xs whitespace-pre-wrap text-zinc-100",
-            "[scrollbar-color:color-mix(in_oklab,var(--muted-foreground)_35%,transparent)_transparent] [scrollbar-width:thin]",
-            "[&::-webkit-scrollbar]:h-2.5 [&::-webkit-scrollbar]:w-2.5",
-            "[&::-webkit-scrollbar-corner]:bg-background",
-            "[&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border",
-            "[&::-webkit-scrollbar-thumb:hover]:bg-muted-foreground/45",
-            "[&::-webkit-scrollbar-track]:bg-transparent",
             firstServiceSelected && "rounded-tl-none"
           )}
         >
