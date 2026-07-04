@@ -7,6 +7,12 @@ import {
   contextCompressionConfig,
   contextCompressionExtensions,
 } from "./context-compression.js";
+import {
+  applyProductionEnvironment,
+  blameCheckpointConfig,
+  loadProductionConfig,
+  runtimePluginPaths,
+} from "./production.js";
 
 type AgentPluginSetupApi = Parameters<NonNullable<AgentPlugin["setup"]>>[0];
 type AgentMessageBuilder = Parameters<
@@ -22,6 +28,59 @@ test("keeps Cline compaction as the default context mode", () => {
   assert.equal(config.enabled, true);
   assert.equal(config.strategy, "basic");
   assert.equal(config.compact, undefined);
+});
+
+test("keeps Cline checkpoints enabled by default", () => {
+  assert.equal(blameCheckpointConfig({}).enabled, true);
+  assert.equal(
+    blameCheckpointConfig({ checkpointEnabled: false }).enabled,
+    false,
+  );
+});
+
+test("loads Blame runtime feature config from environment", () => {
+  const config = loadProductionConfig({
+    BLAME_AGENT_CHECKPOINTS_ENABLED: "false",
+    BLAME_AGENT_CONFIG_EXTENSIONS: "plugins,skills,unknown",
+    BLAME_AGENT_MCP_SETTINGS_TOOLS_ENABLED: "false",
+    BLAME_AGENT_MESSAGE_BUILDER_MAX_TOOL_RESULT_CHARS: "12000",
+    BLAME_AGENT_PLUGIN_PATHS: "/tmp/plugin-a,/tmp/plugin-b",
+  } as NodeJS.ProcessEnv);
+
+  assert.equal(config.checkpointEnabled, false);
+  assert.deepEqual(config.configExtensions, ["plugins", "skills"]);
+  assert.equal(config.disableMcpSettingsTools, true);
+  assert.equal(config.messageBuilderMaxToolResultChars, 12000);
+  assert.deepEqual(config.pluginPaths, ["/tmp/plugin-a", "/tmp/plugin-b"]);
+});
+
+test("maps Blame message builder budgets to Cline env defaults", () => {
+  const env: NodeJS.ProcessEnv = {
+    CLINE_MESSAGE_BUILDER_MAX_TOTAL_TEXT_BYTES: "9000",
+  };
+
+  applyProductionEnvironment(
+    {
+      messageBuilderMaxToolResultChars: 1200,
+      messageBuilderMaxTotalTextBytes: 2400,
+      messageBuilderMinOutdatedRewriteBytes: 600,
+    },
+    env,
+  );
+
+  assert.equal(env.CLINE_MESSAGE_BUILDER_MAX_TOOL_RESULT_CHARS, "1200");
+  assert.equal(env.CLINE_MESSAGE_BUILDER_MAX_TOTAL_TEXT_BYTES, "9000");
+  assert.equal(env.CLINE_MESSAGE_BUILDER_MIN_OUTDATED_REWRITE_BYTES, "600");
+});
+
+test("deduplicates configured plugin paths", () => {
+  assert.deepEqual(
+    runtimePluginPaths({ pluginPaths: ["/tmp/a", "/tmp/b"] }, [
+      "/tmp/b",
+      "/tmp/c",
+    ]),
+    ["/tmp/a", "/tmp/b", "/tmp/c"],
+  );
 });
 
 test("disables compaction for off context mode", () => {

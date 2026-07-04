@@ -6,6 +6,8 @@ import type {
   ApproveAndMergeResult,
   AssessProjectInitializationImpactInput,
   AssessProjectInitializationImpactResult,
+  CompareCheckpointInput,
+  CompareCheckpointResult,
   GenerateCommitMessageInput,
   GenerateCommitMessageResult,
   InitializeProjectInput,
@@ -21,6 +23,8 @@ import type {
   ResolveApprovalInput,
   ResolveMergeConflictsInput,
   ResolveMergeConflictsResult,
+  RestoreCheckpointInput,
+  RestoreCheckpointResult,
   SaveProviderCredentialInput,
   SendDevelopmentSessionInput,
   SendSessionInput,
@@ -341,8 +345,14 @@ export type BlameDesktopApi = {
       send(input: SendSessionInput): Promise<unknown>;
       sendDevelopment(input: SendDevelopmentSessionInput): Promise<unknown>;
       abort(sessionId: string): Promise<void>;
+      compareCheckpoint(
+        input: CompareCheckpointInput,
+      ): Promise<CompareCheckpointResult>;
       list(): Promise<unknown>;
       messages(sessionId: string): Promise<unknown>;
+      restoreCheckpoint(
+        input: RestoreCheckpointInput,
+      ): Promise<RestoreCheckpointResult>;
       usage(sessionId: string): Promise<AgentUsageSummary | undefined>;
       eventStreamUrl(sessionId: string): Promise<string | null>;
       onEvent(

@@ -63,15 +63,19 @@ import { optimizeUserStoryPrompt } from "./prompt-optimization.js";
 import { loadPrompt } from "./prompt-loader.js";
 import { fallbackCommitSubject } from "./commit-message.js";
 import {
+  applyProductionEnvironment,
   appendProductionConfig,
   assertRepositoryPath,
   assertWorkspacePath,
+  blameCheckpointConfig,
   blameCompactionConfig,
   createProductionLogger,
   createProductionTelemetry,
   loadProductionConfig,
   promptMetadata,
   recordUsageTelemetry,
+  runtimeConfigExtensions,
+  runtimePluginPaths,
   safeLogPayload,
   shouldAbortForUsage,
   summarizeUsage,
@@ -92,6 +96,8 @@ import type {
   AssessProjectInitializationImpactResult,
   CodeGraphStatus,
   CodeReviewGraphProvider,
+  CompareCheckpointInput,
+  CompareCheckpointResult,
   GenerateCommitMessageInput,
   GenerateCommitMessageResult,
   InitializeProjectInput,
@@ -108,6 +114,8 @@ import type {
   ResolveApprovalInput,
   ResolveMergeConflictsInput,
   ResolveMergeConflictsResult,
+  RestoreCheckpointInput,
+  RestoreCheckpointResult,
   SaveProviderCredentialInput,
   SendDevelopmentSessionInput,
   SendSessionInput,
@@ -296,6 +304,7 @@ export class BlameAgentRuntime {
     if (options.git) {
       customGitRunner = options.git;
     }
+    applyProductionEnvironment(this.productionConfig);
     void import("@cline/sdk").catch(() => undefined);
     void this.telemetry().catch(() => undefined);
   }
@@ -319,8 +328,12 @@ export class BlameAgentRuntime {
     sendDevelopment: (input: SendDevelopmentSessionInput) =>
       this.sendDevelopmentSession(input),
     abort: (sessionId: string) => this.abortSession(sessionId),
+    compareCheckpoint: (input: CompareCheckpointInput) =>
+      this.compareCheckpoint(input),
     list: () => this.listSessions(),
     messages: (sessionId: string) => this.readMessages(sessionId),
+    restoreCheckpoint: (input: RestoreCheckpointInput) =>
+      this.restoreCheckpoint(input),
     usage: (sessionId: string) => this.readUsage(sessionId),
     unsubscribe: (sessionId: string) => this.unsubscribeSession(sessionId),
   };
@@ -474,6 +487,13 @@ export class BlameAgentRuntime {
         input,
       );
       const autoSendPrompt = input.autoSendPrompt !== false;
+      const pluginPaths = runtimePluginPaths(
+        this.productionConfig,
+        input.pluginPaths,
+      );
+      const configExtensions =
+        input.configExtensions ??
+        runtimeConfigExtensions(this.productionConfig);
       const startInput = {
         ...(autoSendPrompt ? { prompt: input.prompt } : {}),
         ...(input.initialMessages?.length
@@ -498,9 +518,17 @@ export class BlameAgentRuntime {
               input.systemPrompt ?? loadPrompt("default-agent-system"),
             cwd: input.cwd,
             workspaceRoot: input.workspaceRoot,
-            checkpoint: { enabled: true },
+            checkpoint: {
+              enabled:
+                input.checkpointEnabled ??
+                blameCheckpointConfig(this.productionConfig).enabled,
+            },
             mode: input.mode ?? "act",
             maxIterations: input.maxIterations ?? defaultSessionMaxIterations,
+            disableMcpSettingsTools:
+              input.disableMcpSettingsTools ??
+              this.productionConfig.disableMcpSettingsTools,
+            ...(pluginPaths ? { pluginPaths } : {}),
             compaction: contextCompressionConfig(
               this.productionConfig,
               input.contextCompressionMode,
@@ -523,6 +551,10 @@ export class BlameAgentRuntime {
             extensionContext: extensionContext(input),
             extraTools: runtimeTools(this.options, input.workspaceRoot),
           }),
+        },
+        localRuntime: {
+          ...(configExtensions ? { configExtensions } : {}),
+          ...(pluginPaths ? { pluginPaths } : {}),
         },
         interactive: !autoSendPrompt,
         source: "blame-desktop",
@@ -649,6 +681,28 @@ export class BlameAgentRuntime {
   private async abortSession(sessionId: string) {
     const cline = await this.sessionCore(sessionId);
     await cline.abort(sessionId, "User aborted from Blame");
+  }
+
+  private async compareCheckpoint(
+    input: CompareCheckpointInput,
+  ): Promise<CompareCheckpointResult> {
+    const cline = await this.sessionCore(input.sessionId);
+    return cline.compareCheckpoint(input);
+  }
+
+  private async restoreCheckpoint(
+    input: RestoreCheckpointInput,
+  ): Promise<RestoreCheckpointResult> {
+    const cline = await this.sessionCore(input.sessionId);
+    return cline.restore({
+      checkpointRunCount: input.checkpointRunCount,
+      cwd: input.cwd,
+      restore: {
+        messages: false,
+        workspace: input.restore?.workspace ?? true,
+      },
+      sessionId: input.sessionId,
+    });
   }
 
   private async listSessions() {
@@ -1589,6 +1643,9 @@ export class BlameAgentRuntime {
       credentialLabel: input.credentialLabel,
       reasoningEffort: input.reasoningEffort,
       contextCompressionMode: input.contextCompressionMode,
+      checkpointEnabled: input.checkpointEnabled,
+      configExtensions: input.configExtensions,
+      disableMcpSettingsTools: input.disableMcpSettingsTools,
       autoApproveWriteTools: true,
       autoSendPrompt: input.autoSendPrompt !== false,
       sessionId: initialMessages?.length ? resumeSessionId : undefined,
@@ -1598,6 +1655,7 @@ export class BlameAgentRuntime {
       prompt: developmentInput.prompt,
       userFiles: developmentInput.userFiles,
       userImages: developmentInput.userImages,
+      pluginPaths: input.pluginPaths,
       cwd: input.cwd,
       workspaceRoot: input.workspaceRoot,
       systemPrompt: await developmentSystemPrompt(input),
@@ -3156,9 +3214,13 @@ function startContext(input: StartSessionInput) {
   return {
     providerId: input.providerId,
     modelId: input.modelId,
+    checkpointEnabled: input.checkpointEnabled,
+    configExtensions: input.configExtensions?.join(","),
     contextCompressionMode: input.contextCompressionMode ?? "cline",
+    disableMcpSettingsTools: input.disableMcpSettingsTools,
     mode: input.mode ?? "act",
     maxIterations: input.maxIterations ?? defaultSessionMaxIterations,
+    pluginPathCount: input.pluginPaths?.length ?? 0,
     ...promptMetadata(input.prompt),
   };
 }
@@ -3173,6 +3235,10 @@ function sessionContext(
     modelId: input.modelId,
     providerId: input.providerId,
     contextCompressionMode: input.contextCompressionMode ?? "cline",
+    checkpointEnabled: input.checkpointEnabled,
+    configExtensions: input.configExtensions?.join(","),
+    disableMcpSettingsTools: input.disableMcpSettingsTools,
+    pluginPathCount: input.pluginPaths?.length ?? 0,
     sessionId,
   };
 }

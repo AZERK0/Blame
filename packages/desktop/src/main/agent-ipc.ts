@@ -77,8 +77,14 @@ export function registerAgentIpcHandlers() {
     runtime.sessions.sendDevelopment(await optimizeDevelopmentAttachments(input))
   )
   ipcMain.handle("agent:sessions:abort", (_event, sessionId) => runtime.sessions.abort(sessionId))
+  ipcMain.handle("agent:sessions:compare-checkpoint", (_event, input) =>
+    runtime.sessions.compareCheckpoint(input)
+  )
   ipcMain.handle("agent:sessions:list", () => runtime.sessions.list())
   ipcMain.handle("agent:sessions:messages", (_event, sessionId) => runtime.sessions.messages(sessionId))
+  ipcMain.handle("agent:sessions:restore-checkpoint", (_event, input) =>
+    runtime.sessions.restoreCheckpoint(input)
+  )
   ipcMain.handle("agent:sessions:usage", (_event, sessionId) => runtime.sessions.usage(sessionId))
   ipcMain.handle("agent:sessions:event-stream-url", (_event, sessionId) => agentEventStreamUrl(sessionId))
   ipcMain.handle("agent:sessions:unsubscribe", (_event, sessionId) => runtime.sessions.unsubscribe(sessionId))

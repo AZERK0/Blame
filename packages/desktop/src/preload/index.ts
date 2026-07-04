@@ -223,9 +223,13 @@ const api: BlameDesktopApi = {
         ipcRenderer.invoke("agent:sessions:send-development", input),
       abort: (sessionId) =>
         ipcRenderer.invoke("agent:sessions:abort", sessionId),
+      compareCheckpoint: (input) =>
+        ipcRenderer.invoke("agent:sessions:compare-checkpoint", input),
       list: () => ipcRenderer.invoke("agent:sessions:list"),
       messages: (sessionId) =>
         ipcRenderer.invoke("agent:sessions:messages", sessionId),
+      restoreCheckpoint: (input) =>
+        ipcRenderer.invoke("agent:sessions:restore-checkpoint", input),
       usage: (sessionId) =>
         ipcRenderer.invoke("agent:sessions:usage", sessionId),
       eventStreamUrl: (sessionId) =>

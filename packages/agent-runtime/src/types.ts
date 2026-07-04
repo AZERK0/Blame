@@ -1,4 +1,8 @@
-import type { Message } from "@cline/sdk"
+import type {
+  CompareCheckpointResult as ClineCompareCheckpointResult,
+  Message,
+  RestoreResult as ClineRestoreResult,
+} from "@cline/sdk"
 
 export type ApiConnection = {
   url: string
@@ -24,6 +28,7 @@ export type ReasoningEffort = "low" | "medium" | "high" | "xhigh"
 export type AgentMode = "act" | "plan" | "yolo"
 export type AgentBackendMode = "auto" | "local" | "hub" | "remote"
 export type AgentContextCompressionMode = "cline" | "headroom" | "off"
+export type AgentRuntimeConfigExtension = "plugins" | "rules" | "skills" | "workflows"
 
 export type AgentBackendConfig = {
   authToken?: string
@@ -109,8 +114,12 @@ export type StartSessionInput = {
   contextCompressionMode?: AgentContextCompressionMode
   autoApproveWriteTools?: boolean
   autoSendPrompt?: boolean
+  checkpointEnabled?: boolean
+  configExtensions?: AgentRuntimeConfigExtension[]
+  disableMcpSettingsTools?: boolean
   mode?: AgentMode
   maxIterations?: number
+  pluginPaths?: string[]
   prompt: string
   sessionId?: string | null
   initialMessages?: Message[]
@@ -148,7 +157,11 @@ export type StartDevelopmentSessionInput = {
   reasoningEffort?: ReasoningEffort
   contextCompressionMode?: AgentContextCompressionMode
   autoSendPrompt?: boolean
+  checkpointEnabled?: boolean
+  configExtensions?: AgentRuntimeConfigExtension[]
+  disableMcpSettingsTools?: boolean
   maxIterations?: number
+  pluginPaths?: string[]
   title: string
   summary: string
   codeSelectionAttachments?: CodeSelectionAttachment[]
@@ -241,6 +254,22 @@ export type SendDevelopmentSessionInput = {
   feedbackFileAttachments?: FileAttachment[]
   feedbackOnly?: boolean
 }
+
+export type CompareCheckpointInput = {
+  checkpointRunCount: number
+  cwd?: string
+  sessionId: string
+}
+
+export type CompareCheckpointResult = ClineCompareCheckpointResult
+
+export type RestoreCheckpointInput = CompareCheckpointInput & {
+  restore?: {
+    workspace?: boolean
+  }
+}
+
+export type RestoreCheckpointResult = ClineRestoreResult
 
 export type ProjectCodePracticeKey =
   | "coding_style"

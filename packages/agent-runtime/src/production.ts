@@ -1,39 +1,55 @@
 import { createHash } from "node:crypto"
-import { isAbsolute, relative, resolve } from "node:path"
+import { delimiter, isAbsolute, relative, resolve } from "node:path"
 import { platform, release } from "node:os"
 
 import type {
   BasicLogger,
+  CoreCheckpointConfig,
   ConfiguredTelemetryHandle,
   CoreCompactionConfig,
   ITelemetryService,
   CoreSessionConfig,
   SessionUsageSummary,
 } from "@cline/sdk"
-import type { AgentUsageSummary, AgentUsageTotals } from "./types.js"
+import type {
+  AgentRuntimeConfigExtension,
+  AgentUsageSummary,
+  AgentUsageTotals,
+} from "./types.js"
 
 export type ProductionConfig = {
+  checkpointEnabled?: boolean
   compactionEnabled?: boolean
   compactionMaxInputTokens?: number
   compactionPreserveRecentTokens?: number
   compactionReserveTokens?: number
   compactionStrategy?: "agentic" | "basic"
   compactionThresholdRatio?: number
+  configExtensions?: AgentRuntimeConfigExtension[]
+  disableMcpSettingsTools?: boolean
   maxInputTokens?: number
+  messageBuilderMaxToolResultChars?: number
+  messageBuilderMaxTotalTextBytes?: number
+  messageBuilderMinOutdatedRewriteBytes?: number
   maxOutputTokens?: number
   maxParallelToolCalls?: number
   maxSessionCostUsd?: number
   maxTotalTokens?: number
+  pluginPaths?: string[]
 }
 
 export type ProductionSessionContext = {
+  checkpointEnabled?: boolean
+  configExtensions?: string
   contextCompressionMode?: string
+  disableMcpSettingsTools?: boolean
   durationMs?: number
   finishReason?: string
   maxIterations?: number
   mode?: string
   modelId?: string
   providerId?: string
+  pluginPathCount?: number
   sessionId?: string
   status?: string
   storyId?: string | number
@@ -57,10 +73,13 @@ const allowedLogKeys = new Set([
   "cacheReadTokens",
   "cacheWriteTokens",
   "ccrHashCount",
+  "checkpointEnabled",
   "compressed",
   "compressionRatio",
+  "configExtensions",
   "cost",
   "contextCompressionMode",
+  "disableMcpSettingsTools",
   "durationMs",
   "error",
   "errorType",
@@ -83,6 +102,9 @@ const allowedLogKeys = new Set([
   "inputTokens",
   "maxIterations",
   "maxInputTokens",
+  "messageBuilderMaxToolResultChars",
+  "messageBuilderMaxTotalTextBytes",
+  "messageBuilderMinOutdatedRewriteBytes",
   "messageCount",
   "messageCountAfter",
   "messageCountBefore",
@@ -93,6 +115,7 @@ const allowedLogKeys = new Set([
   "promptHash",
   "promptLength",
   "providerId",
+  "pluginPathCount",
   "reason",
   "sessionId",
   "status",
@@ -115,18 +138,34 @@ const allowedLogKeys = new Set([
 
 export function loadProductionConfig(env: NodeJS.ProcessEnv = process.env): ProductionConfig {
   return {
+    checkpointEnabled: booleanValue(env.BLAME_AGENT_CHECKPOINTS_ENABLED, true),
     compactionEnabled: booleanValue(env.BLAME_AGENT_COMPACTION_ENABLED, true),
     compactionMaxInputTokens: positiveNumber(env.BLAME_AGENT_COMPACTION_MAX_INPUT_TOKENS),
     compactionPreserveRecentTokens: positiveNumber(env.BLAME_AGENT_COMPACTION_PRESERVE_RECENT_TOKENS),
     compactionReserveTokens: positiveNumber(env.BLAME_AGENT_COMPACTION_RESERVE_TOKENS),
     compactionStrategy: compactionStrategy(env.BLAME_AGENT_COMPACTION_STRATEGY),
     compactionThresholdRatio: ratioNumber(env.BLAME_AGENT_COMPACTION_THRESHOLD_RATIO),
+    configExtensions: configExtensions(env.BLAME_AGENT_CONFIG_EXTENSIONS),
+    disableMcpSettingsTools: !booleanValue(env.BLAME_AGENT_MCP_SETTINGS_TOOLS_ENABLED, true),
     maxInputTokens: positiveNumber(env.BLAME_AGENT_MAX_INPUT_TOKENS),
+    messageBuilderMaxToolResultChars: positiveNumber(env.BLAME_AGENT_MESSAGE_BUILDER_MAX_TOOL_RESULT_CHARS),
+    messageBuilderMaxTotalTextBytes: positiveNumber(env.BLAME_AGENT_MESSAGE_BUILDER_MAX_TOTAL_TEXT_BYTES),
+    messageBuilderMinOutdatedRewriteBytes: positiveNumber(env.BLAME_AGENT_MESSAGE_BUILDER_MIN_OUTDATED_REWRITE_BYTES),
     maxOutputTokens: positiveNumber(env.BLAME_AGENT_MAX_OUTPUT_TOKENS),
     maxParallelToolCalls: positiveNumber(env.BLAME_AGENT_MAX_PARALLEL_TOOL_CALLS, 8),
     maxSessionCostUsd: positiveNumber(env.BLAME_AGENT_MAX_SESSION_COST_USD),
     maxTotalTokens: positiveNumber(env.BLAME_AGENT_MAX_TOTAL_TOKENS),
+    pluginPaths: listValue(env.BLAME_AGENT_PLUGIN_PATHS),
   }
+}
+
+export function applyProductionEnvironment(
+  config: ProductionConfig,
+  env: NodeJS.ProcessEnv = process.env
+) {
+  setDefaultEnvValue(env, "CLINE_MESSAGE_BUILDER_MAX_TOOL_RESULT_CHARS", config.messageBuilderMaxToolResultChars)
+  setDefaultEnvValue(env, "CLINE_MESSAGE_BUILDER_MAX_TOTAL_TEXT_BYTES", config.messageBuilderMaxTotalTextBytes)
+  setDefaultEnvValue(env, "CLINE_MESSAGE_BUILDER_MIN_OUTDATED_REWRITE_BYTES", config.messageBuilderMinOutdatedRewriteBytes)
 }
 
 export async function createProductionTelemetry(
@@ -171,7 +210,10 @@ export function appendProductionConfig<T extends CoreSessionConfig>(config: T): 
     ...config,
     execution: {
       ...config.execution,
-      loopDetection: config.execution?.loopDetection ?? { hardThreshold: 5, softThreshold: 3 },
+      loopDetection: config.execution?.loopDetection ?? {
+        hardThreshold: 5,
+        softThreshold: 3,
+      },
       maxConsecutiveMistakes: config.execution?.maxConsecutiveMistakes ?? 3,
     },
     maxConsecutiveMistakes: configWithLimits.maxConsecutiveMistakes ?? 3,
@@ -179,17 +221,30 @@ export function appendProductionConfig<T extends CoreSessionConfig>(config: T): 
   }
 }
 
+export function blameCheckpointConfig(config: ProductionConfig): CoreCheckpointConfig {
+  return {
+    enabled: config.checkpointEnabled ?? true,
+  }
+}
+
 export function blameCompactionConfig(config: ProductionConfig): CoreCompactionConfig {
   return {
     enabled: config.compactionEnabled ?? true,
     ...(config.compactionMaxInputTokens ? { maxInputTokens: config.compactionMaxInputTokens } : {}),
-    ...(config.compactionPreserveRecentTokens
-      ? { preserveRecentTokens: config.compactionPreserveRecentTokens }
-      : {}),
+    ...(config.compactionPreserveRecentTokens ? { preserveRecentTokens: config.compactionPreserveRecentTokens } : {}),
     ...(config.compactionReserveTokens ? { reserveTokens: config.compactionReserveTokens } : {}),
     strategy: config.compactionStrategy ?? "basic",
     ...(config.compactionThresholdRatio ? { thresholdRatio: config.compactionThresholdRatio } : {}),
   }
+}
+
+export function runtimeConfigExtensions(config: ProductionConfig) {
+  return config.configExtensions?.length ? config.configExtensions : undefined
+}
+
+export function runtimePluginPaths(config: ProductionConfig, paths?: string[]) {
+  const pluginPaths = [...(config.pluginPaths ?? []), ...(paths ?? [])]
+  return pluginPaths.length ? Array.from(new Set(pluginPaths)) : undefined
 }
 
 export function assertWorkspacePath(path: string, workspaceRoot: string, label: string) {
@@ -326,6 +381,34 @@ function compactionStrategy(value: string | undefined) {
   return value === "agentic" ? "agentic" : "basic"
 }
 
+function configExtensions(value: string | undefined) {
+  const allowed = new Set<AgentRuntimeConfigExtension>([
+    "plugins",
+    "rules",
+    "skills",
+    "workflows",
+  ])
+  const values = listValue(value).filter(
+    (entry): entry is AgentRuntimeConfigExtension =>
+      allowed.has(entry as AgentRuntimeConfigExtension)
+  )
+  return values.length ? values : undefined
+}
+
+function listValue(value: string | undefined) {
+  if (!value) return []
+  return value
+    .split(delimiter)
+    .flatMap((entry) => entry.split(","))
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+}
+
+function setDefaultEnvValue(env: NodeJS.ProcessEnv, key: string, value: number | undefined) {
+  if (value === undefined || env[key]) return
+  env[key] = String(value)
+}
+
 function numberValue(value: unknown) {
   return typeof value === "number" ? value : 0
 }
@@ -343,7 +426,7 @@ function usageCost(usage: UsageTotals) {
 }
 
 function usageHeadroomField(usage: UsageTotals, key: keyof AgentUsageTotals) {
-  return key in usage ? usage[key] : undefined
+  return (usage as Partial<AgentUsageTotals>)[key]
 }
 
 function usageTotalCost(usage: UsageTotals) {
