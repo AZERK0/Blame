@@ -122,13 +122,21 @@ export function agentEventText(event: AgentEvent) {
 export function completedAgentRun(event: AgentEvent) {
   if (event.type !== "done") return false
   if (!event.payload || typeof event.payload !== "object") return true
-  if ("reason" in event.payload && typeof event.payload.reason === "string") {
-    return !failedDoneReason(event.payload.reason)
-  }
-  if ("status" in event.payload && typeof event.payload.status === "string") {
-    return !failedDoneReason(event.payload.status)
-  }
-  return true
+  const reason = doneReason(event.payload as Record<string, unknown>)
+  if (!reason) return true
+  return completedDoneReason(reason)
+}
+
+export function failedAgentRun(event: AgentEvent) {
+  if (event.type === "error") return true
+  if (event.type !== "done") return false
+  if (!event.payload || typeof event.payload !== "object") return false
+  const reason = doneReason(event.payload as Record<string, unknown>)
+  return reason ? failedDoneReason(reason) : false
+}
+
+export function terminalAgentRunEvent(event: AgentEvent) {
+  return completedAgentRun(event) || failedAgentRun(event)
 }
 
 function eventActivity(
@@ -203,7 +211,7 @@ function messageActivities(
   const id = inlineActivityId(activities, "message", iteration)
   const text = messageText(activities, id, iteration, payload)
   if (text === undefined || !text.trim()) return undefined
-  const messageKind = agentMessageKind(payload)
+  const messageKind = agentMessageKind()
   return upsertActivities(activities, [
     ...closeRunningActivityInputs(activities, ["reasoning", "tool"]),
     {
@@ -325,6 +333,9 @@ function currentMessageAccumulatedText(
     normalizedPreviousText
   )
   if (prefixLength === undefined) return accumulatedText
+  if (!safeAccumulatedPrefixBoundary(normalizedText, prefixLength)) {
+    return accumulatedText
+  }
   return normalizedText.slice(prefixLength).trimStart()
 }
 
@@ -353,8 +364,14 @@ function accumulatedPrefixLength(value: string, prefix: string) {
   return undefined
 }
 
-function agentMessageKind(payload: Record<string, unknown>) {
-  return stringValue(payload.finishReason) === "stop" ? "final" : "intermediate"
+function safeAccumulatedPrefixBoundary(value: string, index: number) {
+  if (index <= 0) return false
+  if (index >= value.length) return true
+  return /\s/.test(value[index - 1] ?? "") || /\s/.test(value[index] ?? "")
+}
+
+function agentMessageKind() {
+  return "intermediate"
 }
 
 function finalResponseActivity(
@@ -532,7 +549,7 @@ function eventFinalResponse(
   activities: UserStoryAgentActivity[],
   event: AgentEvent
 ) {
-  if (event.type !== "done") return undefined
+  if (!completedAgentRun(event)) return undefined
   const payload = eventPayload(event)
   const text = stringValue(payload.text)
   return text?.trim() || lastMessageResponse(activities)
@@ -808,7 +825,35 @@ function approvalEventText(payload: object) {
 }
 
 function failedDoneReason(reason: string) {
-  return ["error", "aborted", "cancelled", "failed"].includes(reason)
+  return [
+    "aborted",
+    "cancelled",
+    "canceled",
+    "error",
+    "failed",
+    "max-iterations",
+    "max_iterations",
+    "mistake-limit",
+    "mistake_limit",
+  ].includes(normalizedDoneReason(reason))
+}
+
+function completedDoneReason(reason: string) {
+  return ["complete", "completed", "done", "success", "succeeded"].includes(
+    normalizedDoneReason(reason)
+  )
+}
+
+function doneReason(payload: Record<string, unknown>) {
+  return (
+    stringValue(payload.status) ??
+    stringValue(payload.reason) ??
+    stringValue(payload.finishReason)
+  )
+}
+
+function normalizedDoneReason(reason: string) {
+  return reason.trim().toLowerCase()
 }
 
 function eventPayload(event: AgentEvent) {

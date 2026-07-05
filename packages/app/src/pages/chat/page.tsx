@@ -595,11 +595,7 @@ function QuickChatProjectPage() {
       authenticationFailed = quickChatExpiredAuthenticationToken(text)
       if (authenticationFailed) showExpiredAuthenticationToast(text)
       persistAgentEvent(chat, run, event)
-      if (
-        authenticationFailed ||
-        event.type === "done" ||
-        event.type === "error"
-      ) {
+      if (authenticationFailed || immediateQuickChatAgentEvent(event)) {
         unsubscribe()
       }
     })

@@ -4,7 +4,7 @@ import test from "node:test"
 import type { AgentEvent } from "@blame/agent-runtime"
 
 import type { UserStory } from "./backlog-data.ts"
-import { agentFlowUpdate } from "./agent-flow.ts"
+import { agentFlowUpdate, completedAgentRun } from "./agent-flow.ts"
 
 test("completes a running tool when a fallback result has no tool call id", () => {
   const started = updateStory(
@@ -351,6 +351,33 @@ test("keeps accumulated updates scoped to the current assistant message", () => 
   )
 })
 
+test("does not cut current accumulated messages that share a previous prefix", () => {
+  const firstMessage = updateStory(
+    story(),
+    textEvent({ accumulatedText: "Je vais lire rapidement." })
+  )
+  const toolStarted = updateStory(
+    firstMessage,
+    toolEvent("tool_call", "read_files", 1, "call-1")
+  )
+  const secondMessage = updateStory(
+    toolStarted,
+    textEvent({
+      accumulatedText:
+        "Je vais lire rapidement les points d'entree: README, package root.",
+    })
+  )
+
+  assert.deepEqual(
+    secondMessage.agentActivities?.map((activity) => activity.kind),
+    ["message", "tool", "message"]
+  )
+  assert.equal(
+    secondMessage.agentActivities?.[2]?.detail,
+    "Je vais lire rapidement les points d'entree: README, package root."
+  )
+})
+
 test("deduplicates a repeated assistant message after tools", () => {
   const firstMessage = updateStory(
     story(),
@@ -417,7 +444,7 @@ test("completes a running tool when the run finishes", () => {
   assert.equal(completed.agentActivities?.[0]?.status, "completed")
 })
 
-test("marks a stopped assistant message as the final response", () => {
+test("keeps stopped assistant messages intermediate until done", () => {
   const streaming = updateStory(story(), textEvent({ text: "Salut" }))
   const stopped = updateStory(
     streaming,
@@ -427,9 +454,24 @@ test("marks a stopped assistant message as the final response", () => {
 
   assert.equal(stopped.agentActivities?.length, 1)
   assert.equal(activity?.kind, "message")
-  assert.equal(activity?.messageKind, "final")
-  assert.equal(activity?.title, "Agent response")
+  assert.equal(activity?.messageKind, "intermediate")
+  assert.equal(activity?.title, "Agent message")
   assert.equal(activity?.detail, "Salut !")
+  assert.equal(stopped.agentFinalResponse, undefined)
+})
+
+test("does not complete runs from assistant message stop events", () => {
+  const event = doneEvent(undefined, undefined, { finishReason: "stop" })
+  const streaming = updateStory(
+    story(),
+    textEvent({ text: "Intermediate answer" })
+  )
+  const stopped = updateStory(streaming, event)
+
+  assert.equal(completedAgentRun(event), false)
+  assert.equal(stopped.agentFinalResponse, undefined)
+  assert.equal(stopped.agentStatus, undefined)
+  assert.equal(stopped.agentActivities?.[0]?.messageKind, "intermediate")
 })
 
 test("promotes a streamed message when the done response matches it", () => {
@@ -615,11 +657,16 @@ function textEvent(payload: Record<string, unknown>): AgentEvent {
   }
 }
 
-function doneEvent(text?: string, usage?: Record<string, unknown>): AgentEvent {
+function doneEvent(
+  text?: string,
+  usage?: Record<string, unknown>,
+  extra?: Record<string, unknown>
+): AgentEvent {
   return {
     payload: {
       ...(text === undefined ? {} : { text }),
       ...(usage ? { usage } : {}),
+      ...(extra ?? {}),
     },
     type: "done",
   }

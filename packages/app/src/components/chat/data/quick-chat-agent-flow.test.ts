@@ -23,6 +23,24 @@ test("marks a completed quick chat agent run", () => {
   assert.ok(runUpdate.completedAt)
 })
 
+test("keeps quick chat running after a nonterminal done event", () => {
+  const event = agentEvent("done", {
+    finishReason: "stop",
+    text: "Intermediate answer",
+  })
+  const update = quickChatAgentEventUpdate(chat(), event)
+  const runUpdate = quickChatAgentRunEventUpdate(
+    update,
+    event,
+    "Intermediate answer"
+  )
+
+  assert.equal(update.agentStatus, undefined)
+  assert.equal(update.agentFinalResponse, undefined)
+  assert.equal(runUpdate.status, undefined)
+  assert.equal(runUpdate.completedAt, undefined)
+})
+
 test("marks a failed quick chat agent run", () => {
   const event = agentEvent("error", { message: "Boom" })
   const update = quickChatAgentEventUpdate(chat(), event)

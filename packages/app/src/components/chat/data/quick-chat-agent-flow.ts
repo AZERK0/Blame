@@ -11,6 +11,8 @@ import {
   agentEventText,
   agentFlowUpdate,
   completedAgentRun,
+  failedAgentRun,
+  terminalAgentRunEvent,
 } from "../../backlog/data/agent-flow.ts"
 
 export type QueuedQuickChatAgentUpdate = {
@@ -83,8 +85,7 @@ export function quickChatAgentRunEventUpdate(
 
 export function immediateQuickChatAgentEvent(event: AgentEvent) {
   return (
-    completedAgentRun(event) ||
-    event.type === "error" ||
+    terminalAgentRunEvent(event) ||
     quickChatExpiredAuthenticationToken(agentEventText(event))
   )
 }
@@ -102,10 +103,7 @@ export function quickChatExpiredAuthenticationToken(message: string) {
 }
 
 export function quickChatFailedAgentRun(event: AgentEvent) {
-  return (
-    event.type === "error" ||
-    (event.type === "done" && !completedAgentRun(event))
-  )
+  return failedAgentRun(event)
 }
 
 export function quickChatAgentMetadataUpdate(

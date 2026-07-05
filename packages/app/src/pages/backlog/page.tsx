@@ -7,7 +7,9 @@ import {
   agentEventText,
   agentFlowUpdate,
   completedAgentRun,
+  failedAgentRun,
   shouldPersistAgentEvent,
+  terminalAgentRunEvent,
 } from "@/components/backlog/data/agent-flow"
 import { subscribeAgentEvents } from "@/components/backlog/data/agent-event-stream"
 import {
@@ -513,11 +515,7 @@ export function BacklogPage() {
             agentEventText(event)
           )
           persistAgentEvent(updatedStory, run, event)
-          if (
-            authenticationFailed ||
-            event.type === "done" ||
-            event.type === "error"
-          )
+          if (authenticationFailed || terminalAgentRunEvent(event))
             unsubscribe()
         }
       )
@@ -611,11 +609,7 @@ export function BacklogPage() {
         if (authenticationFailed) return
         authenticationFailed = expiredAuthenticationToken(agentEventText(event))
         persistAgentEvent(updatedStory, run, event)
-        if (
-          authenticationFailed ||
-          event.type === "done" ||
-          event.type === "error"
-        )
+        if (authenticationFailed || terminalAgentRunEvent(event))
           unsubscribe()
       })
       void agent.sessions.sendDevelopment({
@@ -1582,8 +1576,7 @@ function agentRunEventUpdate(
 
 function immediateAgentEvent(event: AgentEvent) {
   return (
-    completedAgentRun(event) ||
-    event.type === "error" ||
+    terminalAgentRunEvent(event) ||
     expiredAuthenticationToken(agentEventText(event))
   )
 }
@@ -1645,13 +1638,6 @@ function expiredAuthenticationToken(message: string) {
   return (
     normalized.includes("authentication token") &&
     normalized.includes("invalidated")
-  )
-}
-
-function failedAgentRun(event: AgentEvent) {
-  return (
-    event.type === "error" ||
-    (event.type === "done" && !completedAgentRun(event))
   )
 }
 

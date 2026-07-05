@@ -18,7 +18,9 @@ import {
   agentEventText,
   agentFlowUpdate,
   completedAgentRun,
+  failedAgentRun,
   shouldPersistAgentEvent,
+  terminalAgentRunEvent,
 } from "@/components/backlog/data/agent-flow"
 import { subscribeAgentEvents } from "@/components/backlog/data/agent-event-stream"
 import type { useBacklogStore } from "@/components/backlog/data/backlog-store"
@@ -194,8 +196,7 @@ export function useBacklogRotation(
       session.sessionId,
       (event) => {
         persistAgentEvent(detailedStory, run, event)
-        if (event.type === "done" || event.type === "error")
-          unsubscribeSession()
+        if (terminalAgentRunEvent(event)) unsubscribeSession()
       }
     )
 
@@ -681,7 +682,7 @@ export function useBacklogRotation(
       },
       run,
       runInput,
-      event.type === "done" || event.type === "error"
+      terminalAgentRunEvent(event)
     )
   }
 
@@ -1164,11 +1165,4 @@ function agentAuthenticationErrorKey(story: UserStory) {
 
 function initializationRepairToast(story: UserStory) {
   return `${initializationRepairToastId}-${story.id}`
-}
-
-function failedAgentRun(event: AgentEvent) {
-  return (
-    event.type === "error" ||
-    (event.type === "done" && !completedAgentRun(event))
-  )
 }
