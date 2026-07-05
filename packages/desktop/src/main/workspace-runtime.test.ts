@@ -38,7 +38,7 @@ test("builds stable worktree paths for every desktop platform", () => {
       env: { HOME: "/home/dev" },
       platform: "linux",
       repositoryRoot: "/mnt/dev/web/Blame",
-      storyId: 42,
+      storyId: "42",
       title: "Add login",
     }),
     "/home/dev/.local/share/blame/runtime/worktrees/Blame/story-42-add-login",
@@ -48,7 +48,7 @@ test("builds stable worktree paths for every desktop platform", () => {
       env: { HOME: "/Users/blame" },
       platform: "darwin",
       repositoryRoot: "/Users/blame/Blame",
-      storyId: 42,
+      storyId: "42",
       title: "Add login",
     }),
     "/Users/blame/Library/Application Support/Blame/runtime/worktrees/Blame/story-42-add-login",
@@ -57,7 +57,7 @@ test("builds stable worktree paths for every desktop platform", () => {
     worktreePath({
       platform: "win32",
       repositoryRoot: String.raw`C:\Users\blame\Blame`,
-      storyId: 42,
+      storyId: "42",
       title: "Add login",
     }),
     expectedRuntime,
@@ -65,7 +65,7 @@ test("builds stable worktree paths for every desktop platform", () => {
 });
 
 test("keeps story branch naming unchanged", () => {
-  assert.equal(storyBranch(42, "Add login"), "blame/story-42-add-login");
+  assert.equal(storyBranch("42", "Add login"), "blame/story-42-add-login");
 });
 
 test("routes commands through the platform runtime", () => {
@@ -540,7 +540,6 @@ test("ensureRuntimeGitUserIdentity: falls back to defaults if host reads fail", 
     process.env.USERNAME = originalUsername;
   }
 });
-
 
 
 

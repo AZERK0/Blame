@@ -5,7 +5,7 @@ export type CodePracticeKey =
   | "commit_message_convention"
 
 export type CodePractice = {
-  id: number
+  id: string
   projectId: string
   practice: CodePracticeKey
   detected: boolean

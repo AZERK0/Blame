@@ -192,7 +192,7 @@ function AgentRunTimeline({
     providers: modelSelection.allProviders,
   })
   const loadActivityDetail = React.useCallback(
-    async (run: { id: number }, activity: UserStoryAgentActivity) => {
+    async (run: { id: string }, activity: UserStoryAgentActivity) => {
       if (!userStory) return activity.detail
       return (
         await api.agentRunActivityDetail(userStory.id, run.id, activity.id)

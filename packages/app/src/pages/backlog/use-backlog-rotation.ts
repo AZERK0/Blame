@@ -13,6 +13,7 @@ import type {
   UserStoryAgentRunUpdate,
   UserStoryUpdate,
 } from "@/components/backlog/data/backlog-data"
+import { userStoryDisplayId } from "@/components/backlog/data/backlog-data"
 import {
   agentEventText,
   agentFlowUpdate,
@@ -56,18 +57,18 @@ export function useBacklogRotation(
   const selection = useModelSelection({ role: "agent" })
   const alternativeSelection = useModelSelection({ role: "alternative" })
   const ensureProjectPreviewUrl = platform.workspace?.ensureProjectPreviewUrl
-  const startingStoryIds = React.useRef(new Set<number>())
-  const blockedStories = React.useRef(new Map<number, number>())
+  const startingStoryIds = React.useRef(new Set<string>())
+  const blockedStories = React.useRef(new Map<string, number>())
   const reportedBlockers = React.useRef(new Set<string>())
   const reportedAgentErrors = React.useRef(new Set<string>())
   const pendingAgentUpdates = React.useRef(
-    new Map<number, PendingAgentUpdate>()
+    new Map<string, PendingAgentUpdate>()
   )
   const agentAuthenticationBlockedUntil = React.useRef(0)
-  const previewRecoveryStoryIds = React.useRef(new Set<number>())
-  const agentCompletionRecoveryStoryIds = React.useRef(new Set<number>())
+  const previewRecoveryStoryIds = React.useRef(new Set<string>())
+  const agentCompletionRecoveryStoryIds = React.useRef(new Set<string>())
   const interruptedAgentRecoveryProjectIds = React.useRef(new Set<string>())
-  const interruptedAgentRecoveryStoryIds = React.useRef(new Set<number>())
+  const interruptedAgentRecoveryStoryIds = React.useRef(new Set<string>())
   const initializationRepairRunIds = React.useRef(new Set<string>())
   const storiesRef = React.useRef(backlog.stories)
   const [hostDependenciesDialog, setHostDependenciesDialog] =
@@ -142,7 +143,7 @@ export function useBacklogRotation(
 
     const worktree = await workspace.createWorktree({
       repositoryRoot: projects.activeProject.path,
-      storyId: detailedStory.id,
+      storyId: userStoryDisplayId(detailedStory),
       title: detailedStory.title,
     })
     await backlog.update(detailedStory, {
@@ -869,11 +870,11 @@ type HostDependenciesDialogState = {
   checking: boolean
   report: HostDependencyReport
   setupScript: string
-  storyId: number
+  storyId: string
   storyTitle: string
 }
 
-function clearPendingAgentUpdates(updates: Map<number, PendingAgentUpdate>) {
+function clearPendingAgentUpdates(updates: Map<string, PendingAgentUpdate>) {
   updates.forEach((update) => window.clearTimeout(update.timer))
   updates.clear()
 }
@@ -980,8 +981,8 @@ function runningStories(stories: UserStory[]) {
 
 function queuedStories(
   stories: UserStory[],
-  startingStoryIds: Set<number>,
-  blockedStories: Map<number, number>
+  startingStoryIds: Set<string>,
+  blockedStories: Map<string, number>
 ) {
   const now = Date.now()
   return stories
@@ -998,8 +999,8 @@ function queuedStories(
 }
 
 function blocked(
-  storyId: number,
-  blockedStories: Map<number, number>,
+  storyId: string,
+  blockedStories: Map<string, number>,
   now: number
 ) {
   const retryAt = blockedStories.get(storyId)
@@ -1134,7 +1135,7 @@ function repairArtifacts(
 
 function activePreviewStory(
   story: UserStory,
-  setupInitializingStoryIds: Set<number>
+  setupInitializingStoryIds: Set<string>
 ) {
   return (
     (story.status === "in-progress" || story.status === "in-review") &&

@@ -5,7 +5,7 @@ export default class extends BaseSchema {
 
   async up() {
     this.schema.createTable('projects', (table) => {
-      table.string('id').primary()
+      table.uuid('id').primary()
       table.uuid('user_id').notNullable().references('id').inTable('users').onDelete('CASCADE')
       table.string('repository_fingerprint').nullable()
       table.string('name').notNullable()
@@ -17,13 +17,14 @@ export default class extends BaseSchema {
     })
 
     this.schema.createTable(this.tableName, (table) => {
-      table.increments('id').notNullable()
+      table.uuid('id').primary()
       table
-        .string('project_id')
+        .uuid('project_id')
         .notNullable()
         .references('id')
         .inTable('projects')
         .onDelete('CASCADE')
+      table.integer('story_number').unsigned().notNullable()
       table.string('title').notNullable()
       table.text('summary').notNullable()
       table.string('status').notNullable()
@@ -41,6 +42,7 @@ export default class extends BaseSchema {
       table.timestamp('updated_at').nullable()
 
       table.index(['project_id', 'status'])
+      table.unique(['project_id', 'story_number'])
     })
   }
 

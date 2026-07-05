@@ -57,7 +57,7 @@ const nullableDateTime = vine
   })
 
 export const createUserStoryAgentRunValidator = vine.create({
-  commentId: vine.number().nullable().optional(),
+  commentId: vine.string().trim().uuid().nullable().optional(),
   kind,
   clineSessionId: vine.string().trim().maxLength(255).nullable().optional(),
   status: status.optional(),

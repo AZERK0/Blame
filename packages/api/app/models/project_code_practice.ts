@@ -1,4 +1,5 @@
-import { BaseModel, column } from '@adonisjs/lucid/orm'
+import { assignUuidV7Id } from '#lib/uuid_v7_model'
+import { BaseModel, beforeCreate, column } from '@adonisjs/lucid/orm'
 import { DateTime } from 'luxon'
 
 export type ProjectCodePracticeKey =
@@ -8,8 +9,15 @@ export type ProjectCodePracticeKey =
   | 'commit_message_convention'
 
 export default class ProjectCodePractice extends BaseModel {
+  static selfAssignPrimaryKey = true
+
   @column({ isPrimary: true })
-  declare id: number
+  declare id: string
+
+  @beforeCreate()
+  static assignId(practice: ProjectCodePractice) {
+    assignUuidV7Id(practice)
+  }
 
   @column()
   declare projectId: string

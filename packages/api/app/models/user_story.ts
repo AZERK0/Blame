@@ -1,4 +1,5 @@
-import { BaseModel, column, hasMany } from '@adonisjs/lucid/orm'
+import { assignUuidV7Id } from '#lib/uuid_v7_model'
+import { BaseModel, beforeCreate, column, hasMany } from '@adonisjs/lucid/orm'
 import { DateTime } from 'luxon'
 import UserStoryAgentRun from '#models/user_story_agent_run'
 import UserStoryComment from '#models/user_story_comment'
@@ -130,11 +131,21 @@ export function consumeFileAttachments(value: unknown) {
 }
 
 export default class UserStory extends BaseModel {
+  static selfAssignPrimaryKey = true
+
   @column({ isPrimary: true })
-  declare id: number
+  declare id: string
+
+  @beforeCreate()
+  static assignId(story: UserStory) {
+    assignUuidV7Id(story)
+  }
 
   @column()
   declare projectId: string
+
+  @column()
+  declare storyNumber: number
 
   @column()
   declare title: string

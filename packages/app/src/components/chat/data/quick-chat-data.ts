@@ -15,8 +15,8 @@ export type QuickChatMessage = {
   codeSelectionAttachments?: UserStoryCodeSelectionAttachment[] | null
   createdAt: string
   fileAttachments?: UserStoryFileAttachment[] | null
-  id: number
-  quickChatId: number
+  id: string
+  quickChatId: string
   updatedAt?: string | null
 }
 
@@ -26,10 +26,10 @@ export type QuickChatAgentRun = {
   completedAt?: string | null
   createdAt: string
   finalResponse?: string | null
-  id: number
+  id: string
   kind: UserStoryAgentRunKind
-  messageId?: number | null
-  quickChatId: number
+  messageId?: string | null
+  quickChatId: string
   sessionSummary?: string | null
   status: UserStoryAgentRunStatus
   updatedAt?: string | null
@@ -48,7 +48,7 @@ export type QuickChat = {
   agentUsage?: UserStoryAgentUsage | null
   clineSessionId?: string | null
   createdAt: string
-  id: number
+  id: string
   messages?: QuickChatMessage[]
   preview?: string | null
   agentRuns?: QuickChatAgentRun[]
@@ -93,7 +93,7 @@ export type QuickChatMessageDraft = Pick<
 export type QuickChatAgentRunDraft = {
   clineSessionId?: string | null
   kind: UserStoryAgentRunKind
-  messageId?: number | null
+  messageId?: string | null
   status?: UserStoryAgentRunStatus
 }
 

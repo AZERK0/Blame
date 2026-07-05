@@ -14,7 +14,6 @@ export default class ProjectsService {
 
     if (!existing) {
       return Project.create({
-        id: crypto.randomUUID(),
         name: input.name,
         repositoryFingerprint: input.repositoryFingerprint ?? null,
         userId,

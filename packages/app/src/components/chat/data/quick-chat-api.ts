@@ -30,7 +30,7 @@ export function createQuickChatApi(connection: ApiConnection) {
         { detail: false }
       )
     },
-    async get(id: number) {
+    async get(id: string) {
       return quickChat(
         await request<unknown>(
           connection,
@@ -47,7 +47,7 @@ export function createQuickChatApi(connection: ApiConnection) {
         })
       )
     },
-    async update(id: number, input: QuickChatUpdate) {
+    async update(id: string, input: QuickChatUpdate) {
       return quickChat(
         await request<unknown>(
           connection,
@@ -60,7 +60,7 @@ export function createQuickChatApi(connection: ApiConnection) {
         )
       )
     },
-    async createMessage(id: number, input: QuickChatMessageDraft) {
+    async createMessage(id: string, input: QuickChatMessageDraft) {
       return quickChatMessage(
         await request<unknown>(
           connection,
@@ -73,7 +73,7 @@ export function createQuickChatApi(connection: ApiConnection) {
         )
       )
     },
-    async createAgentRun(id: number, input: QuickChatAgentRunDraft) {
+    async createAgentRun(id: string, input: QuickChatAgentRunDraft) {
       return quickChatAgentRun(
         await request<unknown>(
           connection,
@@ -87,8 +87,8 @@ export function createQuickChatApi(connection: ApiConnection) {
       )
     },
     async updateAgentRun(
-      id: number,
-      runId: number,
+      id: string,
+      runId: string,
       input: QuickChatAgentRunUpdate
     ) {
       return quickChatAgentRun(
@@ -104,8 +104,8 @@ export function createQuickChatApi(connection: ApiConnection) {
       )
     },
     async agentRunActivityDetail(
-      id: number,
-      runId: number,
+      id: string,
+      runId: string,
       activityId: string
     ) {
       return activityDetail(
@@ -116,7 +116,7 @@ export function createQuickChatApi(connection: ApiConnection) {
         )
       )
     },
-    async delete(id: number) {
+    async delete(id: string) {
       await request<void>(connection, baseUrl, `/projects/quick-chats/${id}`, {
         method: "DELETE",
       })
@@ -160,7 +160,7 @@ type QuickChatOptions = {
 
 function quickChat(value: unknown, options: QuickChatOptions = {}) {
   const chat = transformerValue(value)
-  const id = numericId(recordValue(chat).id)
+  const id = stringId(recordValue(chat).id)
   if (!isRecord(chat)) throw new Error("Unable to read quick chat.")
   if (id === undefined) throw new Error("Unable to read quick chat.")
   if (typeof chat.projectId !== "string")
@@ -186,8 +186,8 @@ function quickChat(value: unknown, options: QuickChatOptions = {}) {
 
 function quickChatMessage(value: unknown) {
   const message = transformerValue(value)
-  const id = numericId(recordValue(message).id)
-  const quickChatId = numericId(recordValue(message).quickChatId)
+  const id = stringId(recordValue(message).id)
+  const quickChatId = stringId(recordValue(message).quickChatId)
   if (!isRecord(message)) throw new Error("Unable to read quick chat message.")
   if (id === undefined || quickChatId === undefined)
     throw new Error("Unable to read quick chat message.")
@@ -207,8 +207,8 @@ function quickChatMessage(value: unknown) {
 
 function quickChatAgentRun(value: unknown) {
   const run = transformerValue(value)
-  const id = numericId(recordValue(run).id)
-  const quickChatId = numericId(recordValue(run).quickChatId)
+  const id = stringId(recordValue(run).id)
+  const quickChatId = stringId(recordValue(run).quickChatId)
   if (!isRecord(run)) throw new Error("Unable to read quick chat agent run.")
   if (id === undefined || quickChatId === undefined)
     throw new Error("Unable to read quick chat agent run.")
@@ -216,7 +216,12 @@ function quickChatAgentRun(value: unknown) {
     throw new Error("Unable to read quick chat agent run.")
   if (typeof run.status !== "string")
     throw new Error("Unable to read quick chat agent run.")
-  return { ...run, id, quickChatId } as QuickChatAgentRun
+  return {
+    ...run,
+    id,
+    messageId: stringId(recordValue(run).messageId) ?? null,
+    quickChatId,
+  } as QuickChatAgentRun
 }
 
 function transformerValue(value: unknown): unknown {
@@ -257,12 +262,9 @@ async function responseMessage(response: Response) {
   return response.statusText
 }
 
-function numericId(value: unknown) {
-  if (typeof value === "number") return value
-  if (typeof value === "string") {
-    const parsed = Number(value)
-    return Number.isFinite(parsed) ? parsed : undefined
-  }
+function stringId(value: unknown) {
+  if (typeof value !== "string") return undefined
+  return value.trim() ? value : undefined
 }
 
 function recordValue(value: unknown) {

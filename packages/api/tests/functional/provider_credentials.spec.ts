@@ -5,7 +5,7 @@ import { test } from '@japa/runner'
 
 type CredentialBody = {
   data: {
-    id: number
+    id: string
     providerId: string
     label: string
     baseUrl: string | null

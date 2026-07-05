@@ -50,8 +50,8 @@ export type BlameProvider = {
 }
 
 export type ProviderCredentialSummary = {
-  id: number
-  userId: number
+  id: string
+  userId: string
   providerId: string
   label: string
   authMethod?: "api-key" | "oauth"
@@ -79,7 +79,7 @@ export type SaveProviderCredentialInput = {
 }
 
 export type DeleteProviderCredentialInput = {
-  id: number
+  id: string
 }
 
 export type OAuthCredentials = {

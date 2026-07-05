@@ -15,7 +15,7 @@ type ApiResponse<T> = {
 }
 
 type ResolvedCredential = {
-  id: number
+  id: string
   providerId: string
   label: string
   authMethod?: "api-key" | "oauth"
@@ -139,8 +139,8 @@ function normalizeCredential(value: unknown): ProviderCredentialSummary | undefi
   if (!isRecord(credential)) return undefined
 
   const normalized = {
-    id: typeof credential.id === "number" ? credential.id : Number(credential.id),
-    userId: numberField(credential, "userId", "user_id"),
+    id: stringField(credential, "id"),
+    userId: stringField(credential, "userId", "user_id"),
     providerId: stringField(credential, "providerId", "provider_id"),
     label: stringField(credential, "label"),
     authMethod: authMethodField(credential),
@@ -151,7 +151,7 @@ function normalizeCredential(value: unknown): ProviderCredentialSummary | undefi
     createdAt: stringField(credential, "createdAt", "created_at"),
     updatedAt: nullableStringField(credential, "updatedAt", "updated_at"),
   }
-  if (!Number.isFinite(normalized.id) || !normalized.providerId) return undefined
+  if (!normalized.id || !normalized.providerId) return undefined
   return normalized
 }
 
@@ -170,11 +170,6 @@ function stringArrayField(value: Record<string, unknown>, ...keys: string[]) {
 function nullableStringField(value: Record<string, unknown>, ...keys: string[]) {
   const field = firstField(value, keys)
   return typeof field === "string" ? field : null
-}
-
-function numberField(value: Record<string, unknown>, ...keys: string[]) {
-  const field = firstField(value, keys)
-  return typeof field === "number" ? field : Number(field)
 }
 
 function authMethodField(value: Record<string, unknown>): "api-key" | "oauth" {

@@ -89,7 +89,7 @@ export default class ProviderCredentialsService {
     }
   }
 
-  async delete(userId: string, id: number) {
+  async delete(userId: string, id: string) {
     const credential = await ProviderCredential.query()
       .where('userId', userId)
       .where('id', id)

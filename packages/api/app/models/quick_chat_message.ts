@@ -1,4 +1,5 @@
-import { BaseModel, belongsTo, column } from '@adonisjs/lucid/orm'
+import { assignUuidV7Id } from '#lib/uuid_v7_model'
+import { BaseModel, beforeCreate, belongsTo, column } from '@adonisjs/lucid/orm'
 import { DateTime } from 'luxon'
 import QuickChat from '#models/quick_chat'
 import {
@@ -12,11 +13,18 @@ import {
 import type { BelongsTo } from '@adonisjs/lucid/types/relations'
 
 export default class QuickChatMessage extends BaseModel {
+  static selfAssignPrimaryKey = true
+
   @column({ isPrimary: true })
-  declare id: number
+  declare id: string
+
+  @beforeCreate()
+  static assignId(message: QuickChatMessage) {
+    assignUuidV7Id(message)
+  }
 
   @column()
-  declare quickChatId: number
+  declare quickChatId: string
 
   @column()
   declare body: string

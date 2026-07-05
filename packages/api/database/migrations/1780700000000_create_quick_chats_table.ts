@@ -3,9 +3,9 @@ import { BaseSchema } from '@adonisjs/lucid/schema'
 export default class extends BaseSchema {
   async up() {
     this.schema.createTable('quick_chats', (table) => {
-      table.increments('id').notNullable()
+      table.uuid('id').primary()
       table
-        .string('project_id')
+        .uuid('project_id')
         .notNullable()
         .references('id')
         .inTable('projects')
@@ -29,10 +29,9 @@ export default class extends BaseSchema {
     })
 
     this.schema.createTable('quick_chat_messages', (table) => {
-      table.increments('id').notNullable()
+      table.uuid('id').primary()
       table
-        .integer('quick_chat_id')
-        .unsigned()
+        .uuid('quick_chat_id')
         .notNullable()
         .references('id')
         .inTable('quick_chats')
@@ -48,17 +47,15 @@ export default class extends BaseSchema {
     })
 
     this.schema.createTable('quick_chat_agent_runs', (table) => {
-      table.increments('id').notNullable()
+      table.uuid('id').primary()
       table
-        .integer('quick_chat_id')
-        .unsigned()
+        .uuid('quick_chat_id')
         .notNullable()
         .references('id')
         .inTable('quick_chats')
         .onDelete('CASCADE')
       table
-        .integer('message_id')
-        .unsigned()
+        .uuid('message_id')
         .nullable()
         .references('id')
         .inTable('quick_chat_messages')

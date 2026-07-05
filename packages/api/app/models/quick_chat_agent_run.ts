@@ -1,4 +1,5 @@
-import { BaseModel, belongsTo, column } from '@adonisjs/lucid/orm'
+import { assignUuidV7Id } from '#lib/uuid_v7_model'
+import { BaseModel, beforeCreate, belongsTo, column } from '@adonisjs/lucid/orm'
 import { DateTime } from 'luxon'
 import QuickChat from '#models/quick_chat'
 import QuickChatMessage from '#models/quick_chat_message'
@@ -16,14 +17,21 @@ export type QuickChatAgentRunKind = 'initial' | 'change-request' | 'resume'
 export type QuickChatAgentRunStatus = 'running' | 'completed' | 'failed'
 
 export default class QuickChatAgentRun extends BaseModel {
+  static selfAssignPrimaryKey = true
+
   @column({ isPrimary: true })
-  declare id: number
+  declare id: string
+
+  @beforeCreate()
+  static assignId(run: QuickChatAgentRun) {
+    assignUuidV7Id(run)
+  }
 
   @column()
-  declare quickChatId: number
+  declare quickChatId: string
 
   @column()
-  declare messageId: number | null
+  declare messageId: string | null
 
   @column()
   declare kind: QuickChatAgentRunKind

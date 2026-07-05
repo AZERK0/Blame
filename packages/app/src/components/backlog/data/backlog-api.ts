@@ -27,7 +27,7 @@ export function createBacklogApi(connection: ApiConnection) {
         { detail: false }
       )
     },
-    async get(id: number) {
+    async get(id: string) {
       return userStory(
         await request<unknown>(
           connection,
@@ -44,7 +44,7 @@ export function createBacklogApi(connection: ApiConnection) {
         })
       )
     },
-    async update(id: number, input: UserStoryUpdate) {
+    async update(id: string, input: UserStoryUpdate) {
       return userStory(
         await request<unknown>(
           connection,
@@ -57,7 +57,7 @@ export function createBacklogApi(connection: ApiConnection) {
         )
       )
     },
-    async activityDetail(id: number, activityId: string) {
+    async activityDetail(id: string, activityId: string) {
       return activityDetail(
         await request<unknown>(
           connection,
@@ -66,7 +66,7 @@ export function createBacklogApi(connection: ApiConnection) {
         )
       )
     },
-    async createAgentRun(id: number, input: UserStoryAgentRunDraft) {
+    async createAgentRun(id: string, input: UserStoryAgentRunDraft) {
       return userStoryAgentRun(
         await request<unknown>(
           connection,
@@ -80,8 +80,8 @@ export function createBacklogApi(connection: ApiConnection) {
       )
     },
     async updateAgentRun(
-      id: number,
-      runId: number,
+      id: string,
+      runId: string,
       input: UserStoryAgentRunUpdate
     ) {
       return userStoryAgentRun(
@@ -97,8 +97,8 @@ export function createBacklogApi(connection: ApiConnection) {
       )
     },
     async agentRunActivityDetail(
-      id: number,
-      runId: number,
+      id: string,
+      runId: string,
       activityId: string
     ) {
       return activityDetail(
@@ -110,7 +110,7 @@ export function createBacklogApi(connection: ApiConnection) {
       )
     },
     async createComment(
-      id: number,
+      id: string,
       input: Pick<UserStoryComment, "body" | "codeSelectionAttachments">
     ) {
       return userStoryComment(
@@ -125,7 +125,7 @@ export function createBacklogApi(connection: ApiConnection) {
         )
       )
     },
-    async delete(id: number) {
+    async delete(id: string) {
       await request<void>(connection, baseUrl, `/projects/user-stories/${id}`, {
         method: "DELETE",
       })
@@ -158,8 +158,8 @@ function activityDetail(value: unknown) {
 
 function userStoryAgentRun(value: unknown) {
   const run = transformerValue(value)
-  const id = numericId(recordValue(run).id)
-  const userStoryId = numericId(recordValue(run).userStoryId)
+  const id = stringId(recordValue(run).id)
+  const userStoryId = stringId(recordValue(run).userStoryId)
   if (!isRecord(run)) throw new Error("Unable to read user story agent run.")
   if (id === undefined || userStoryId === undefined)
     throw new Error("Unable to read user story agent run.")
@@ -167,13 +167,18 @@ function userStoryAgentRun(value: unknown) {
     throw new Error("Unable to read user story agent run.")
   if (typeof run.status !== "string")
     throw new Error("Unable to read user story agent run.")
-  return { ...run, id, userStoryId } as UserStoryAgentRun
+  return {
+    ...run,
+    commentId: stringId(recordValue(run).commentId) ?? null,
+    id,
+    userStoryId,
+  } as UserStoryAgentRun
 }
 
 function userStoryComment(value: unknown) {
   const comment = transformerValue(value)
-  const id = numericId(recordValue(comment).id)
-  const userStoryId = numericId(recordValue(comment).userStoryId)
+  const id = stringId(recordValue(comment).id)
+  const userStoryId = stringId(recordValue(comment).userStoryId)
   if (!isRecord(comment)) throw new Error("Unable to read user story comment.")
   if (id === undefined) throw new Error("Unable to read user story comment.")
   if (typeof comment.body !== "string")
@@ -191,7 +196,7 @@ function userStoryComment(value: unknown) {
         : new Date().toISOString(),
     id,
     updatedAt: typeof comment.updatedAt === "string" ? comment.updatedAt : null,
-    userStoryId: userStoryId ?? 0,
+    userStoryId: userStoryId ?? "",
   } satisfies UserStoryComment
 }
 
@@ -208,9 +213,11 @@ type UserStoryOptions = {
 
 function userStory(value: unknown, options: UserStoryOptions = {}) {
   const story = transformerValue(value)
-  const id = numericId(recordValue(story).id)
+  const id = stringId(recordValue(story).id)
   if (!isRecord(story)) throw new Error("Unable to read user story.")
   if (id === undefined) throw new Error("Unable to read user story.")
+  if (typeof story.storyNumber !== "number")
+    throw new Error("Unable to read user story.")
   if (typeof story.projectId !== "string")
     throw new Error("Unable to read user story.")
   if (typeof story.title !== "string")
@@ -218,6 +225,7 @@ function userStory(value: unknown, options: UserStoryOptions = {}) {
   const output = {
     ...story,
     id,
+    storyNumber: story.storyNumber,
   } as UserStory
   if (options.detail !== false || "codeSelectionAttachments" in story) {
     output.codeSelectionAttachments = codeSelectionAttachments(
@@ -311,11 +319,9 @@ function recordValue(value: unknown) {
   return isRecord(value) ? value : {}
 }
 
-function numericId(value: unknown) {
-  if (typeof value === "number") return value
+function stringId(value: unknown) {
   if (typeof value !== "string") return undefined
-  const parsed = Number(value)
-  return Number.isInteger(parsed) ? parsed : undefined
+  return value.trim() ? value : undefined
 }
 
 function unwrapResponse<T>(value: unknown) {

@@ -122,7 +122,7 @@ export function UserStoryDrawerPanel({
   onRequestChanges: (
     story: UserStory,
     feedback: string,
-    commentId: number,
+    commentId: string,
     codeSelectionAttachments: UserStoryComment["codeSelectionAttachments"],
     fileAttachments: UserStoryComment["fileAttachments"]
   ) => Promise<UserStory>

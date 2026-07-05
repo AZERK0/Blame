@@ -3,6 +3,7 @@ import { LoaderCircleIcon } from "lucide-react"
 import {
   type BacklogAction,
   type UserStory,
+  userStoryDisplayId,
 } from "@/components/backlog/data/backlog-data"
 import type {
   RejectChoice,
@@ -172,5 +173,5 @@ function drawerTarget(story: UserStory) {
 }
 
 function userStoryLabel(story: UserStory) {
-  return `US-${String(story.id).padStart(3, "0")}`
+  return userStoryDisplayId(story)
 }

@@ -1,11 +1,19 @@
-import { BaseModel, column } from '@adonisjs/lucid/orm'
+import { assignUuidV7Id } from '#lib/uuid_v7_model'
+import { BaseModel, beforeCreate, column } from '@adonisjs/lucid/orm'
 import { DateTime } from 'luxon'
 
 export type ProviderCredentialAuthMethod = 'api-key' | 'oauth'
 
 export default class ProviderCredential extends BaseModel {
+  static selfAssignPrimaryKey = true
+
   @column({ isPrimary: true })
-  declare id: number
+  declare id: string
+
+  @beforeCreate()
+  static assignId(credential: ProviderCredential) {
+    assignUuidV7Id(credential)
+  }
 
   @column()
   declare userId: string

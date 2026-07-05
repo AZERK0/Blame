@@ -21,9 +21,9 @@ import { useCloudAuth } from "@/context/cloud-auth"
 import { useProjects } from "@/context/projects"
 
 type QuickChatState = {
-  activeId?: number
+  activeId?: string
   chats: QuickChat[]
-  detailedChatIds: Set<number>
+  detailedChatIds: Set<string>
   error?: string
   loading: boolean
   projectId?: string
@@ -42,7 +42,11 @@ export function QuickChatStoreProvider({
 }) {
   const value = useQuickChatStoreValue()
 
-  return React.createElement(QuickChatStoreContext.Provider, { value }, children)
+  return React.createElement(
+    QuickChatStoreContext.Provider,
+    { value },
+    children
+  )
 }
 
 export function useQuickChatStore() {
@@ -62,9 +66,9 @@ function useQuickChatStoreValue() {
     detailedChatIds: new Set(),
     loading: false,
   })
-  const detailRequests = React.useRef(new Map<number, Promise<QuickChat>>())
+  const detailRequests = React.useRef(new Map<string, Promise<QuickChat>>())
   const loadRequestId = React.useRef(0)
-  const updateQueues = React.useRef(new Map<number, Promise<unknown>>())
+  const updateQueues = React.useRef(new Map<string, Promise<unknown>>())
   const projectId = projects.activeProject?.id
   const projectPath = projects.activeProject?.path
   const api = React.useMemo(
@@ -326,7 +330,7 @@ function useQuickChatStoreValue() {
     [api]
   )
 
-  const setActiveId = React.useCallback((activeId: number | undefined) => {
+  const setActiveId = React.useCallback((activeId: string | undefined) => {
     setState((current) => ({ ...current, activeId }))
   }, [])
 
@@ -353,7 +357,7 @@ function useQuickChatStoreValue() {
   }
 }
 
-function activeQuickChatId(activeId: number | undefined, chats: QuickChat[]) {
+function activeQuickChatId(activeId: string | undefined, chats: QuickChat[]) {
   if (activeId && chats.some((chat) => chat.id === activeId)) return activeId
   return chats[0]?.id
 }
@@ -440,8 +444,8 @@ function loadingState(
 }
 
 function chatStateIds(
-  current: Set<number> | undefined,
-  chatId: number,
+  current: Set<string> | undefined,
+  chatId: string,
   enabled: boolean
 ) {
   const next = new Set(current)

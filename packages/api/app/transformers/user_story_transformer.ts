@@ -8,6 +8,7 @@ export default class UserStoryTransformer extends BaseTransformer<UserStory> {
     return {
       id: story.id,
       projectId: story.projectId,
+      storyNumber: story.storyNumber,
       title: story.title,
       summary: story.summary,
       status: story.status,
@@ -36,6 +37,7 @@ export default class UserStoryTransformer extends BaseTransformer<UserStory> {
       ...this.pick(this.resource, [
         'id',
         'projectId',
+        'storyNumber',
         'title',
         'summary',
         'codeSelectionAttachments',

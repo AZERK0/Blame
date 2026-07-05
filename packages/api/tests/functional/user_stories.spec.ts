@@ -21,7 +21,8 @@ type UserStoryBody = {
       inputTokens: number
       totalInputTokens: number
     }
-    id: number
+    id: string
+    storyNumber: number
     priority: string
     status: string
     codeSelectionAttachments?: CodeSelectionAttachment[]
@@ -42,8 +43,8 @@ type UserStoryCommentBody = {
     body: string
     codeSelectionAttachments?: CodeSelectionAttachment[]
     fileAttachments?: FileAttachment[]
-    id: number
-    userStoryId: number
+    id: string
+    userStoryId: string
   }
 }
 
@@ -71,12 +72,12 @@ type UserStoryAgentRunBody = {
       id: string
       originalDetailLength?: number
     }[]
-    commentId?: number | null
+    commentId?: string | null
     finalResponse?: string | null
-    id: number
+    id: string
     kind: string
     status: string
-    userStoryId: number
+    userStoryId: string
     usage?: {
       inputTokens: number
       totalInputTokens: number
@@ -659,7 +660,6 @@ function createUser() {
 
 function createProject(userId: string, name: string) {
   return Project.create({
-    id: crypto.randomUUID(),
     name,
     repositoryFingerprint: crypto.randomUUID(),
     userId,

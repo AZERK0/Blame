@@ -48,7 +48,7 @@ function codePracticeList(value: unknown) {
 function codePractice(value: unknown) {
   const practice = transformerValue(value)
   if (!isRecord(practice)) throw new Error("Unable to read code practice.")
-  if (typeof practice.id !== "number")
+  if (typeof practice.id !== "string")
     throw new Error("Unable to read code practice.")
   if (typeof practice.projectId !== "string")
     throw new Error("Unable to read code practice.")

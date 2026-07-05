@@ -35,7 +35,7 @@ export default class UserStoriesService {
     return stories.map(sortStoryComments)
   }
 
-  async find(userId: string, id: number) {
+  async find(userId: string, id: string) {
     const story = await this.userStoryQuery(userId)
       .where('id', id)
       .preload('comments')
@@ -51,6 +51,7 @@ export default class UserStoriesService {
 
     const userStory = await UserStory.create({
       projectId: input.projectId,
+      storyNumber: await this.nextStoryNumber(input.projectId),
       title: input.title,
       summary: input.summary,
       codeSelectionAttachments: input.codeSelectionAttachments ?? null,
@@ -81,7 +82,7 @@ export default class UserStoriesService {
     return userStory
   }
 
-  async update(userId: string, id: number, input: UpdateUserStoryInput) {
+  async update(userId: string, id: string, input: UpdateUserStoryInput) {
     if (input.projectId) {
       await new ProjectsService().findForUser(userId, input.projectId)
     }
@@ -99,7 +100,7 @@ export default class UserStoriesService {
     return userStory
   }
 
-  async createComment(userId: string, id: number, input: CreateUserStoryCommentInput) {
+  async createComment(userId: string, id: string, input: CreateUserStoryCommentInput) {
     await this.find(userId, id)
     return UserStoryComment.create({
       author: 'Product',
@@ -110,7 +111,7 @@ export default class UserStoriesService {
     })
   }
 
-  async activityDetail(userId: string, id: number, activityId: string) {
+  async activityDetail(userId: string, id: string, activityId: string) {
     const story = await this.find(userId, id)
     const activity = story.agentActivities?.find((item) => item.id === activityId)
     if (!activity) throw new Error('Agent activity not found.')
@@ -118,7 +119,7 @@ export default class UserStoriesService {
     return { detail: await artifactDetail(story.worktree, activity) }
   }
 
-  async createAgentRun(userId: string, id: number, input: CreateUserStoryAgentRunInput) {
+  async createAgentRun(userId: string, id: string, input: CreateUserStoryAgentRunInput) {
     const story = await this.find(userId, id)
     if (input.commentId && !story.comments.some((comment) => comment.id === input.commentId)) {
       throw new Error('User story comment not found.')
@@ -138,8 +139,8 @@ export default class UserStoriesService {
 
   async updateAgentRun(
     userId: string,
-    id: number,
-    runId: number,
+    id: string,
+    runId: string,
     input: UpdateUserStoryAgentRunInput
   ) {
     const story = await this.find(userId, id)
@@ -150,7 +151,7 @@ export default class UserStoriesService {
     return run
   }
 
-  async agentRunActivityDetail(userId: string, id: number, runId: number, activityId: string) {
+  async agentRunActivityDetail(userId: string, id: string, runId: string, activityId: string) {
     const story = await this.find(userId, id)
     const run = await this.agentRunQuery(story, runId)
     const activity = run.activities?.find((item) => item.id === activityId)
@@ -159,7 +160,7 @@ export default class UserStoriesService {
     return { detail: await artifactDetail(story.worktree, activity) }
   }
 
-  async delete(userId: string, id: number) {
+  async delete(userId: string, id: string) {
     const userStory = await this.find(userId, id)
     await userStory.delete()
   }
@@ -185,7 +186,15 @@ export default class UserStoriesService {
     }
   }
 
-  private agentRunQuery(story: UserStory, runId: number) {
+  private async nextStoryNumber(projectId: string) {
+    const latest = await UserStory.query()
+      .where('projectId', projectId)
+      .orderBy('storyNumber', 'desc')
+      .first()
+    return (latest?.storyNumber ?? 0) + 1
+  }
+
+  private agentRunQuery(story: UserStory, runId: string) {
     return UserStoryAgentRun.query().where('userStoryId', story.id).where('id', runId).firstOrFail()
   }
 
@@ -237,5 +246,5 @@ function sortStoryComments<T extends UserStory>(story: T) {
 
 function compareComments(left: UserStoryComment, right: UserStoryComment) {
   const createdAtDelta = left.createdAt.toMillis() - right.createdAt.toMillis()
-  return createdAtDelta || left.id - right.id
+  return createdAtDelta || left.id.localeCompare(right.id)
 }

@@ -19,7 +19,7 @@ export class AuthAccessTokenSchema extends BaseModel {
   @column()
   declare hash: string
   @column({ isPrimary: true })
-  declare id: number
+  declare id: string
   @column.dateTime()
   declare lastUsedAt: DateTime | null
   @column()
@@ -44,7 +44,7 @@ export class ProjectCodePracticeSchema extends BaseModel {
   @column()
   declare enabled: boolean
   @column({ isPrimary: true })
-  declare id: number
+  declare id: string
   @column()
   declare practice: string
   @column()
@@ -121,7 +121,7 @@ export class ProviderCredentialSchema extends BaseModel {
   @column.dateTime()
   declare expiresAt: DateTime | null
   @column({ isPrimary: true })
-  declare id: number
+  declare id: string
   @column()
   declare label: string
   @column()
@@ -148,13 +148,13 @@ export class QuickChatAgentRunSchema extends BaseModel {
   @column()
   declare finalResponse: string | null
   @column({ isPrimary: true })
-  declare id: number
+  declare id: string
   @column()
   declare kind: string
   @column()
-  declare messageId: number | null
+  declare messageId: string | null
   @column()
-  declare quickChatId: number
+  declare quickChatId: string
   @column()
   declare sessionSummary: string | null
   @column()
@@ -179,9 +179,9 @@ export class QuickChatMessageSchema extends BaseModel {
   @column()
   declare fileAttachments: any | null
   @column({ isPrimary: true })
-  declare id: number
+  declare id: string
   @column()
-  declare quickChatId: number
+  declare quickChatId: string
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
 }
@@ -212,7 +212,7 @@ export class QuickChatSchema extends BaseModel {
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
   @column({ isPrimary: true })
-  declare id: number
+  declare id: string
   @column()
   declare projectId: string
   @column()
@@ -251,7 +251,7 @@ export class UserAiPreferenceSchema extends BaseModel {
 }
 
 export class UserStorySchema extends BaseModel {
-  static $columns = ['agentActivities', 'agentFinalResponse', 'agentLastError', 'agentLastEvent', 'agentModelId', 'agentProviderId', 'agentSessionSummary', 'agentStatus', 'agentUsage', 'baseCommit', 'branch', 'clineSessionId', 'codeSelectionAttachments', 'createdAt', 'discardedReason', 'fileAttachments', 'id', 'mergeCommit', 'mergedAt', 'owner', 'previewUrl', 'priority', 'projectId', 'status', 'summary', 'title', 'updatedAt', 'worktree'] as const
+  static $columns = ['agentActivities', 'agentFinalResponse', 'agentLastError', 'agentLastEvent', 'agentModelId', 'agentProviderId', 'agentSessionSummary', 'agentStatus', 'agentUsage', 'baseCommit', 'branch', 'clineSessionId', 'codeSelectionAttachments', 'createdAt', 'discardedReason', 'fileAttachments', 'id', 'mergeCommit', 'mergedAt', 'owner', 'previewUrl', 'priority', 'projectId', 'status', 'storyNumber', 'summary', 'title', 'updatedAt', 'worktree'] as const
   $columns = UserStorySchema.$columns
   @column()
   declare agentActivities: any | null
@@ -286,7 +286,7 @@ export class UserStorySchema extends BaseModel {
   @column()
   declare fileAttachments: any | null
   @column({ isPrimary: true })
-  declare id: number
+  declare id: string
   @column()
   declare mergeCommit: string | null
   @column.dateTime()
@@ -301,6 +301,8 @@ export class UserStorySchema extends BaseModel {
   declare projectId: string
   @column()
   declare status: string
+  @column()
+  declare storyNumber: number
   @column()
   declare summary: string
   @column()
@@ -319,7 +321,7 @@ export class UserStoryAgentRunSchema extends BaseModel {
   @column()
   declare clineSessionId: string | null
   @column()
-  declare commentId: number | null
+  declare commentId: string | null
   @column.dateTime()
   declare completedAt: DateTime | null
   @column.dateTime({ autoCreate: true })
@@ -327,7 +329,7 @@ export class UserStoryAgentRunSchema extends BaseModel {
   @column()
   declare finalResponse: string | null
   @column({ isPrimary: true })
-  declare id: number
+  declare id: string
   @column()
   declare kind: string
   @column()
@@ -339,7 +341,7 @@ export class UserStoryAgentRunSchema extends BaseModel {
   @column()
   declare usage: any | null
   @column()
-  declare userStoryId: number
+  declare userStoryId: string
 }
 
 export class UserStoryCommentSchema extends BaseModel {
@@ -356,11 +358,11 @@ export class UserStoryCommentSchema extends BaseModel {
   @column()
   declare fileAttachments: any | null
   @column({ isPrimary: true })
-  declare id: number
+  declare id: string
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
   @column()
-  declare userStoryId: number
+  declare userStoryId: string
 }
 
 export class UserSchema extends BaseModel {

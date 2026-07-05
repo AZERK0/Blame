@@ -10,7 +10,7 @@ import {
 test("builds completed story context with stable sections", () => {
   const markdown = completedStoryContextMarkdown(story(), ["src/app.ts"])
 
-  assert.match(markdown, /# Context from completed User Story #42/)
+  assert.match(markdown, /# Context from completed US-042/)
   assert.match(markdown, /## Original request\nOriginal summary/)
   assert.match(markdown, /## Session summary\nSession completed./)
   assert.match(markdown, /## Final agent response\nImplemented the feature./)
@@ -79,13 +79,14 @@ function story(): UserStory {
     baseCommit: "abc123",
     branch: "story/feature",
     createdAt: "2026-06-24T00:00:00.000Z",
-    id: 42,
+    id: "018f0000-0000-7000-8000-000000000042",
     mergeCommit: "def456",
     mergedAt: "2026-06-24T01:00:00.000Z",
     owner: "Product",
     priority: "Medium",
     projectId: "project",
     status: "done",
+    storyNumber: 42,
     summary: "Original summary",
     title: "Finished feature",
   }

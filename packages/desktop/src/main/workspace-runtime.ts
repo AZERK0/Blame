@@ -52,7 +52,7 @@ export function worktreePath(input: {
   env?: NodeJS.ProcessEnv;
   platform?: NodeJS.Platform;
   repositoryRoot: string;
-  storyId: number;
+  storyId: string;
   title: string;
 }) {
   const repositoryName = repositoryBasename(
@@ -67,11 +67,11 @@ export function worktreePath(input: {
   );
 }
 
-export function storyBranch(storyId: number, title: string) {
+export function storyBranch(storyId: string, title: string) {
   return `blame/story-${storyId}-${storySlug(storyId, title)}`;
 }
 
-export function storySlug(storyId: number, title: string) {
+export function storySlug(storyId: string, title: string) {
   const slug = title
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
@@ -892,7 +892,6 @@ export async function ensureRuntimeGitUserIdentity(
     log.error("ensureRuntimeGitUserIdentity: failed to configure VM git identity:", err);
   }
 }
-
 
 
 

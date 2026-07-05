@@ -7,7 +7,7 @@ type QuickChatBody = {
   data: {
     agentFinalResponse?: string | null
     agentRuns?: QuickChatAgentRunBody['data'][]
-    id: number
+    id: string
     messages?: QuickChatMessageBody['data'][]
     title: string
   }
@@ -20,16 +20,16 @@ type QuickChatListBody = {
 type QuickChatMessageBody = {
   data: {
     body: string
-    id: number
-    quickChatId: number
+    id: string
+    quickChatId: string
   }
 }
 
 type QuickChatAgentRunBody = {
   data: {
-    id: number
+    id: string
     kind: string
-    quickChatId: number
+    quickChatId: string
     status: string
   }
 }
@@ -90,7 +90,6 @@ function createUser() {
 
 function createProject(userId: string, name: string) {
   return Project.create({
-    id: crypto.randomUUID(),
     name,
     repositoryFingerprint: crypto.randomUUID(),
     userId,

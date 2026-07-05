@@ -317,7 +317,7 @@ export class BlameAgentRuntime {
       connection: ApiConnection,
       input: SaveProviderCredentialInput,
     ) => saveProviderCredential(connection, input),
-    deleteCredential: (connection: ApiConnection, id: number) =>
+    deleteCredential: (connection: ApiConnection, id: string) =>
       deleteProviderCredential(connection, { id }),
     loginOAuth: (input: LoginOAuthProviderInput) => this.loginOAuth(input),
   };

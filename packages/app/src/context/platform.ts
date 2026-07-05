@@ -113,7 +113,7 @@ export type BacklogStatusPipRequest = {
   }
   rejectChoice?: "request-changes" | "discard"
   stopChoice?: "pause-feedback" | "backlog" | "discard-worktree"
-  storyId: number
+  storyId: string
 }
 
 export type WindowControlsClient = {
@@ -160,7 +160,7 @@ export type AgentClient = {
       connection: ApiConnection,
       input: SaveProviderCredentialInput
     ): Promise<unknown>
-    deleteCredential(connection: ApiConnection, id: number): Promise<void>
+    deleteCredential(connection: ApiConnection, id: string): Promise<void>
     loginOAuth(input: LoginOAuthProviderInput): Promise<unknown>
   }
   sessions: {
@@ -176,7 +176,9 @@ export type AgentClient = {
     ): Promise<CompareCheckpointResult>
     list(): Promise<unknown>
     messages(sessionId: string): Promise<unknown>
-    restoreCheckpoint(input: RestoreCheckpointInput): Promise<RestoreCheckpointResult>
+    restoreCheckpoint(
+      input: RestoreCheckpointInput
+    ): Promise<RestoreCheckpointResult>
     usage(sessionId: string): Promise<AgentUsageSummary | undefined>
     eventStreamUrl?(sessionId: string): Promise<string | null>
     onEvent(
@@ -440,7 +442,7 @@ export type WorkspaceClient = {
   }>
   createWorktree(input: {
     repositoryRoot: string
-    storyId: number
+    storyId: string
     title: string
   }): Promise<WorktreeResult>
   checkHostDependencies(input: {

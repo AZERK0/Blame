@@ -7,7 +7,7 @@ import type {
 import type { ReasoningEffort } from "@blame/agent-runtime"
 
 export type CloudUser = {
-  id: number
+  id: string
   fullName: string | null
   email: string
   createdAt: string
@@ -36,7 +36,7 @@ export type CloudAiPreferences = {
 
 export type CloudProject = {
   id: string
-  userId: number
+  userId: string
   repositoryFingerprint: string | null
   name: string
   createdAt: string
@@ -73,7 +73,7 @@ export type CloudProjectInitialization = {
 }
 
 export type CloudProjectCodePractice = {
-  id: number
+  id: string
   projectId: string
   practice: CloudProjectCodePracticeKey
   detected: boolean

@@ -38,7 +38,7 @@ export default class QuickChatsService {
     return query.preload('messages', orderMessages).preload('agentRuns', orderAgentRuns)
   }
 
-  async find(userId: string, id: number) {
+  async find(userId: string, id: string) {
     return this.quickChatQuery(userId)
       .where('id', id)
       .preload('messages', orderMessages)
@@ -68,7 +68,7 @@ export default class QuickChatsService {
     return quickChat
   }
 
-  async update(userId: string, id: number, input: UpdateQuickChatInput) {
+  async update(userId: string, id: string, input: UpdateQuickChatInput) {
     const quickChat = await this.find(userId, id)
     const update = await this.updateInput(quickChat, input)
     quickChat.merge(update)
@@ -78,7 +78,7 @@ export default class QuickChatsService {
     return quickChat
   }
 
-  async createMessage(userId: string, id: number, input: CreateQuickChatMessageInput) {
+  async createMessage(userId: string, id: string, input: CreateQuickChatMessageInput) {
     await this.find(userId, id)
     return QuickChatMessage.create({
       author: 'You',
@@ -89,7 +89,7 @@ export default class QuickChatsService {
     })
   }
 
-  async createAgentRun(userId: string, id: number, input: CreateQuickChatAgentRunInput) {
+  async createAgentRun(userId: string, id: string, input: CreateQuickChatAgentRunInput) {
     const quickChat = await this.find(userId, id)
     if (input.messageId && !quickChat.messages.some((message) => message.id === input.messageId)) {
       throw new Error('Quick chat message not found.')
@@ -109,8 +109,8 @@ export default class QuickChatsService {
 
   async updateAgentRun(
     userId: string,
-    id: number,
-    runId: number,
+    id: string,
+    runId: string,
     input: UpdateQuickChatAgentRunInput
   ) {
     const quickChat = await this.find(userId, id)
@@ -121,7 +121,7 @@ export default class QuickChatsService {
     return run
   }
 
-  async agentRunActivityDetail(userId: string, id: number, runId: number, activityId: string) {
+  async agentRunActivityDetail(userId: string, id: string, runId: string, activityId: string) {
     const quickChat = await this.find(userId, id)
     const run = await this.agentRunQuery(quickChat, runId)
     const activity = run.activities?.find((item) => item.id === activityId)
@@ -130,7 +130,7 @@ export default class QuickChatsService {
     return { detail: await artifactDetail(quickChat.workspace, activity) }
   }
 
-  async delete(userId: string, id: number) {
+  async delete(userId: string, id: string) {
     const quickChat = await this.find(userId, id)
     await quickChat.delete()
   }
@@ -156,7 +156,7 @@ export default class QuickChatsService {
     }
   }
 
-  private agentRunQuery(quickChat: QuickChat, runId: number) {
+  private agentRunQuery(quickChat: QuickChat, runId: string) {
     return QuickChatAgentRun.query()
       .where('quickChatId', quickChat.id)
       .where('id', runId)

@@ -270,7 +270,7 @@ export type BlameDesktopApi = {
     }>;
     createWorktree(input: {
       repositoryRoot: string;
-      storyId: number;
+      storyId: string;
       title: string;
     }): Promise<WorktreeResult>;
     checkHostDependencies(input: {
@@ -334,7 +334,7 @@ export type BlameDesktopApi = {
         connection: ApiConnection,
         input: SaveProviderCredentialInput,
       ): Promise<unknown>;
-      deleteCredential(connection: ApiConnection, id: number): Promise<void>;
+      deleteCredential(connection: ApiConnection, id: string): Promise<void>;
       loginOAuth(input: LoginOAuthProviderInput): Promise<unknown>;
     };
     sessions: {

@@ -130,7 +130,7 @@ export function quickChatAgentRunMetadataUpdate(
 }
 
 export function clearPendingQuickChatAgentUpdates(
-  updates: Map<number, PendingQuickChatAgentUpdate>
+  updates: Map<string, PendingQuickChatAgentUpdate>
 ) {
   updates.forEach((update) => window.clearTimeout(update.timer))
   updates.clear()

@@ -1,4 +1,5 @@
-import { BaseModel, belongsTo, column } from '@adonisjs/lucid/orm'
+import { assignUuidV7Id } from '#lib/uuid_v7_model'
+import { BaseModel, beforeCreate, belongsTo, column } from '@adonisjs/lucid/orm'
 import { DateTime } from 'luxon'
 import UserStory, {
   type UserStoryAgentActivity,
@@ -42,14 +43,21 @@ function consumeUsage(value: unknown) {
 }
 
 export default class UserStoryAgentRun extends BaseModel {
+  static selfAssignPrimaryKey = true
+
   @column({ isPrimary: true })
-  declare id: number
+  declare id: string
+
+  @beforeCreate()
+  static assignId(run: UserStoryAgentRun) {
+    assignUuidV7Id(run)
+  }
 
   @column()
-  declare userStoryId: number
+  declare userStoryId: string
 
   @column()
-  declare commentId: number | null
+  declare commentId: string | null
 
   @column()
   declare kind: UserStoryAgentRunKind

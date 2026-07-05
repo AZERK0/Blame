@@ -18,7 +18,6 @@ test.group('projects', (group) => {
   test('reuses a legacy project without repository fingerprint', async ({ client, assert }) => {
     const user = await createUser()
     const legacyProject = await Project.create({
-      id: crypto.randomUUID(),
       name: 'Alpha',
       repositoryFingerprint: null,
       userId: user.id,
@@ -45,7 +44,6 @@ test.group('projects', (group) => {
     const user = await createUser()
 
     await Project.create({
-      id: crypto.randomUUID(),
       name: 'Alpha',
       repositoryFingerprint: null,
       userId: user.id,

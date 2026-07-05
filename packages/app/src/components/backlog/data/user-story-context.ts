@@ -1,7 +1,8 @@
-import type {
-  UserStory,
-  UserStoryFileAttachment,
-} from "@/components/backlog/data/backlog-data"
+import {
+  userStoryDisplayId,
+  type UserStory,
+  type UserStoryFileAttachment,
+} from "./backlog-data.ts"
 
 export function completedStoryContextAttachment(
   story: UserStory,
@@ -13,7 +14,7 @@ export function completedStoryContextAttachment(
     aiContextMarkdown: markdown,
     content: base64(bytes),
     id: crypto.randomUUID(),
-    name: `context-from-us-${story.id}.md`,
+    name: `context-from-${userStoryDisplayId(story).toLowerCase()}.md`,
     size: bytes.length,
     type: "text/markdown",
   }
@@ -24,7 +25,7 @@ export function completedStoryContextMarkdown(
   changedFiles: string[] = []
 ) {
   return [
-    `# Context from completed User Story #${story.id}`,
+    `# Context from completed ${userStoryDisplayId(story)}`,
     "",
     "## Source",
     `Title: ${available(story.title)}`,

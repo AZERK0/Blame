@@ -21,12 +21,12 @@ import { useCloudAuth } from "@/context/cloud-auth"
 import { useProjects } from "@/context/projects"
 
 type BacklogState = {
-  cleanupStoryIds: Set<number>
-  detailedStoryIds: Set<number>
+  cleanupStoryIds: Set<string>
+  detailedStoryIds: Set<string>
   error?: string
   loading: boolean
   projectId?: string
-  setupInitializingStoryIds: Set<number>
+  setupInitializingStoryIds: Set<string>
   stories: UserStory[]
 }
 
@@ -64,8 +64,8 @@ function useBacklogStoreValue() {
     stories: [],
   })
   const loadRequestId = React.useRef(0)
-  const detailRequests = React.useRef(new Map<number, Promise<UserStory>>())
-  const updateQueues = React.useRef(new Map<number, Promise<unknown>>())
+  const detailRequests = React.useRef(new Map<string, Promise<UserStory>>())
+  const updateQueues = React.useRef(new Map<string, Promise<unknown>>())
   const projectId = projects.activeProject?.id
   const projectPath = projects.activeProject?.path
 
@@ -462,16 +462,16 @@ function definedUpdate(input: UserStoryUpdate | UserStoryAgentRunUpdate) {
 }
 
 function setupInitializingStoryIds(
-  current: Set<number>,
-  storyId: number,
+  current: Set<string>,
+  storyId: string,
   initializing: boolean
 ) {
   return storyStateIds(current, storyId, initializing)
 }
 
 function storyStateIds(
-  current: Set<number> | undefined,
-  storyId: number,
+  current: Set<string> | undefined,
+  storyId: string,
   active: boolean
 ) {
   const next = new Set(current)

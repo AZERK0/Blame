@@ -68,9 +68,9 @@ export function BacklogPage() {
   const queueInitializing = projectInitializing(initializationStatus)
   const storiesRef = React.useRef(backlog.stories)
   const drawerLoadRequestId = React.useRef(0)
-  const previousStoryStatuses = React.useRef<Map<number, BacklogColumnId>>()
+  const previousStoryStatuses = React.useRef<Map<string, BacklogColumnId>>()
   const pendingAgentUpdates = React.useRef(
-    new Map<number, PendingAgentUpdate>()
+    new Map<string, PendingAgentUpdate>()
   )
 
   React.useEffect(() => {
@@ -536,7 +536,7 @@ export function BacklogPage() {
     async (
       story: UserStory,
       feedback: string,
-      commentId: number,
+      commentId: string,
       codeSelectionAttachments:
         | UserStoryCodeSelectionAttachment[]
         | null
@@ -1169,7 +1169,7 @@ function leavesRuntimeStatus(
 
 function notifyStoriesMovedToReview(
   stories: UserStory[],
-  previousStatuses: Map<number, BacklogColumnId> | undefined,
+  previousStatuses: Map<string, BacklogColumnId> | undefined,
   platform: ReturnType<typeof usePlatform>
 ) {
   if (!previousStatuses) return
@@ -1312,7 +1312,7 @@ type PendingAgentUpdate = QueuedAgentUpdate & {
   timer: number
 }
 
-function clearPendingAgentUpdates(updates: Map<number, PendingAgentUpdate>) {
+function clearPendingAgentUpdates(updates: Map<string, PendingAgentUpdate>) {
   updates.forEach((update) => window.clearTimeout(update.timer))
   updates.clear()
 }

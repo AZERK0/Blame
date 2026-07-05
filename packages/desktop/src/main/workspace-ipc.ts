@@ -162,7 +162,7 @@ type GitCommitInput = {
 
 type CreateWorktreeInput = {
   repositoryRoot: string;
-  storyId: number;
+  storyId: string;
   title: string;
 };
 

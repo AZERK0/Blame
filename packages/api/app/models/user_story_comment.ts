@@ -1,4 +1,5 @@
-import { BaseModel, belongsTo, column } from '@adonisjs/lucid/orm'
+import { assignUuidV7Id } from '#lib/uuid_v7_model'
+import { BaseModel, beforeCreate, belongsTo, column } from '@adonisjs/lucid/orm'
 import { DateTime } from 'luxon'
 import UserStory from '#models/user_story'
 import {
@@ -12,11 +13,18 @@ import {
 import type { BelongsTo } from '@adonisjs/lucid/types/relations'
 
 export default class UserStoryComment extends BaseModel {
+  static selfAssignPrimaryKey = true
+
   @column({ isPrimary: true })
-  declare id: number
+  declare id: string
+
+  @beforeCreate()
+  static assignId(comment: UserStoryComment) {
+    assignUuidV7Id(comment)
+  }
 
   @column()
-  declare userStoryId: number
+  declare userStoryId: string
 
   @column()
   declare body: string

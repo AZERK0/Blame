@@ -48,20 +48,20 @@ export type AgentConversationComment = {
   codeSelectionAttachments?: UserStoryCodeSelectionAttachment[] | null
   createdAt: string
   fileAttachments?: UserStoryFileAttachment[] | null
-  id: number
+  id: string
   updatedAt?: string | null
 }
 
 export type AgentConversationRun = {
   activities?: UserStoryAgentActivity[] | null
   clineSessionId?: string | null
-  commentId?: number | null
+  commentId?: string | null
   completedAt?: string | null
   createdAt: string
   finalResponse?: string | null
-  id: number
+  id: string
   kind: UserStoryAgentRunKind
-  messageId?: number | null
+  messageId?: string | null
   sessionSummary?: string | null
   status: UserStoryAgentRunStatus
   updatedAt?: string | null
@@ -925,7 +925,7 @@ function commentDateLabel(value: string) {
 
 function runComment(
   run: AgentConversationRun,
-  commentsById: Map<number, AgentConversationComment>
+  commentsById: Map<string, AgentConversationComment>
 ) {
   const commentId = run.commentId ?? run.messageId
   return commentId ? commentsById.get(commentId) : undefined

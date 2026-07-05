@@ -84,9 +84,9 @@ export type UserStoryFileAttachment = {
 export type UserStoryAgentRunKind = "initial" | "change-request" | "resume"
 export type UserStoryAgentRunStatus = "running" | "completed" | "failed"
 export type UserStoryAgentRun = {
-  id: number
-  userStoryId: number
-  commentId?: number | null
+  id: string
+  userStoryId: string
+  commentId?: string | null
   kind: UserStoryAgentRunKind
   clineSessionId?: string | null
   status: UserStoryAgentRunStatus
@@ -100,8 +100,8 @@ export type UserStoryAgentRun = {
 }
 
 export type UserStoryComment = {
-  id: number
-  userStoryId: number
+  id: string
+  userStoryId: string
   body: string
   codeSelectionAttachments?: UserStoryCodeSelectionAttachment[] | null
   fileAttachments?: UserStoryFileAttachment[] | null
@@ -111,8 +111,9 @@ export type UserStoryComment = {
 }
 
 export type UserStory = {
-  id: number
+  id: string
   projectId: string
+  storyNumber: number
   title: string
   summary: string
   codeSelectionAttachments?: UserStoryCodeSelectionAttachment[] | null
@@ -193,7 +194,7 @@ export type UserStoryActivityDetail = {
 }
 
 export type UserStoryAgentRunDraft = {
-  commentId?: number | null
+  commentId?: string | null
   kind: UserStoryAgentRunKind
   clineSessionId?: string | null
   status?: UserStoryAgentRunStatus
@@ -247,6 +248,10 @@ export const backlogColumns = [
     description: "Rejected or cancelled",
   },
 ] satisfies { id: BacklogColumnId; title: string; description: string }[]
+
+export function userStoryDisplayId(story: Pick<UserStory, "storyNumber">) {
+  return `US-${String(story.storyNumber).padStart(3, "0")}`
+}
 
 export function userStoryActions(story: UserStory): BacklogAction[] {
   if (story.status === "backlog") return ["Discard", "Send to Dev Agent"]

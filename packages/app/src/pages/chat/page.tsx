@@ -129,7 +129,7 @@ type QuickChatConversationActions = {
   onCopyLastMessage(conversation: QuickChat): void
   onCopyTitle(conversation: QuickChat): void
   onDelete(conversation: QuickChat): void
-  onSelect(id: number): void
+  onSelect(id: string): void
 }
 
 export function ChatPage() {
@@ -163,7 +163,7 @@ function QuickChatProjectPage() {
   const [sending, setSending] = React.useState(false)
   const chatsRef = React.useRef(quickChats.chats)
   const pendingAgentUpdates = React.useRef(
-    new Map<number, PendingQuickChatAgentUpdate>()
+    new Map<string, PendingQuickChatAgentUpdate>()
   )
   const draftRef = React.useRef<HTMLDivElement>(null)
   const feedEndRef = React.useRef<HTMLDivElement>(null)
@@ -371,7 +371,7 @@ function QuickChatProjectPage() {
     clearDraft()
   }
 
-  function selectConversation(id: number) {
+  function selectConversation(id: string) {
     setNewConversationActive(false)
     quickChats.setActiveId(id)
     const chat = chatsRef.current.find((item) => item.id === id)

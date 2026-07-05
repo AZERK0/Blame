@@ -5,7 +5,7 @@ const kind = vine.enum(['initial', 'change-request', 'resume'])
 const status = vine.enum(['running', 'completed', 'failed'])
 
 export const createQuickChatAgentRunValidator = vine.create({
-  messageId: vine.number().nullable().optional(),
+  messageId: vine.string().trim().uuid().nullable().optional(),
   kind,
   clineSessionId: vine.string().trim().maxLength(255).nullable().optional(),
   status: status.optional(),
