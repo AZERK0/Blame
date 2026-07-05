@@ -62,6 +62,28 @@ test("reads a merged story from Git history", async () => {
   }
 });
 
+test("excludes runtime env files from Git history diffs", async () => {
+  const repository = await createRepository();
+  try {
+    const base = await revision(repository);
+    await writeFile(join(repository, ".env.test"), "DATABASE_URL=test\n");
+    await writeFile(join(repository, ".env.example"), "DATABASE_URL=\n");
+    await commit(repository, "env files");
+    const merge = await revision(repository);
+
+    const diff = await gitDiffBetween({
+      from: base,
+      root: repository,
+      to: merge,
+    });
+
+    assert.doesNotMatch(diff, /\.env\.test/);
+    assert.match(diff, /\.env\.example/);
+  } finally {
+    await rm(repository, { force: true, recursive: true });
+  }
+});
+
 test("rejects unsafe Git history inputs", async () => {
   const repository = await createRepository();
   try {

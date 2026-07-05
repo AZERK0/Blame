@@ -124,6 +124,8 @@ const actionConfig: Record<BacklogAction, ActionConfig> = {
 export function StoryAction({
   action,
   className,
+  icon,
+  iconOnly,
   label,
   onAction,
   onOpenDrawer,
@@ -134,6 +136,8 @@ export function StoryAction({
 }: {
   action: BacklogAction
   className?: string
+  icon?: ActionConfig["icon"]
+  iconOnly?: boolean
   label?: string
   onAction?: StoryActionHandler
   onOpenDrawer: OpenDrawer
@@ -196,7 +200,8 @@ export function StoryAction({
   }
 
   const actionStyle = actionConfig[action]
-  const Icon = loading ? LoaderCircleIcon : actionStyle.icon
+  const Icon = loading ? LoaderCircleIcon : (icon ?? actionStyle.icon)
+  const buttonIconOnly = iconOnly ?? actionStyle.iconOnly
   const runAction = directAction(action) && onAction
   const handleClick = async () => {
     if (!runAction) {
@@ -219,11 +224,11 @@ export function StoryAction({
     <Button
       type="button"
       disabled={loading}
-      size={actionStyle.iconOnly ? "icon-sm" : "sm"}
+      size={buttonIconOnly ? "icon-sm" : "sm"}
       variant={actionStyle.variant}
       className={cn(
         "justify-start",
-        actionStyle.iconOnly && "justify-center",
+        buttonIconOnly && "justify-center",
         !actionStyle.compact && "w-full",
         actionStyle.tone === "primary" &&
           "bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500",
@@ -232,10 +237,10 @@ export function StoryAction({
         className
       )}
       onClick={() => void handleClick()}
-      aria-label={actionStyle.iconOnly ? action : undefined}
+      aria-label={buttonIconOnly ? (label ?? action) : undefined}
     >
       <Icon className={cn(loading && "animate-spin")} />
-      {!actionStyle.iconOnly && (label ?? action)}
+      {!buttonIconOnly && (label ?? action)}
     </Button>
   )
 }

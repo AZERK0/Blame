@@ -53,6 +53,7 @@ import {
 } from "@/components/project-initialization/use-project-initialization"
 
 const agentEventPersistDelayMs = 1_500
+const reviewDiffRefreshDelayMs = 1_500
 
 export function BacklogPage() {
   const backlog = useBacklogStore()
@@ -66,6 +67,10 @@ export function BacklogPage() {
   const projectInitialization = useProjectInitialization()
   const initializationStatus = projectInitialization?.status ?? null
   const queueInitializing = projectInitializing(initializationStatus)
+  const reviewDiffStates = useReviewDiffStates(
+    backlog.stories,
+    platform.workspace
+  )
   const storiesRef = React.useRef(backlog.stories)
   const drawerLoadRequestId = React.useRef(0)
   const previousStoryStatuses = React.useRef<Map<string, BacklogColumnId>>()
@@ -210,6 +215,10 @@ export function BacklogPage() {
       })
     },
     [backlog, platform, projects.activeProject?.path]
+  )
+  const reviewDiffEmpty = React.useCallback(
+    (story: UserStory) => reviewDiffStates.get(story.id) === "empty",
+    [reviewDiffStates]
   )
   const persistQueuedAgentUpdate = React.useCallback(
     async (story: UserStory, update: QueuedAgentUpdate) => {
@@ -722,6 +731,29 @@ export function BacklogPage() {
       updateStory,
     ]
   )
+  const markReviewStoryDone = React.useCallback(
+    async (story: UserStory) => {
+      const doneStory = await updateStory(story, {
+        ...inactiveStoryFields(),
+        agentLastError: null,
+        agentLastEvent: "Marked as done.",
+        status: "done",
+      })
+      toast.success("Story marked as done", {
+        position: "bottom-right",
+      })
+      return doneStory
+    },
+    [updateStory]
+  )
+  const completeReviewStory = React.useCallback(
+    async (story: UserStory) => {
+      const emptyDiff = await currentReviewDiffEmpty(story, platform.workspace)
+      if (emptyDiff) return markReviewStoryDone(story)
+      return approveAndMergeStory(story)
+    },
+    [approveAndMergeStory, markReviewStoryDone, platform.workspace]
+  )
   const optimizeUserStory = React.useCallback(
     (input: { summary: string; title: string }) =>
       optimizeUserStoryPrompt({
@@ -778,11 +810,10 @@ export function BacklogPage() {
         })
         return
       }
-      if (action === "Approve & Merge")
-        return approveAndMergeStory(currentStory)
+      if (action === "Approve & Merge") return completeReviewStory(currentStory)
     },
     [
-      approveAndMergeStory,
+      completeReviewStory,
       backlog,
       platform,
       projects.activeProject?.path,
@@ -893,6 +924,7 @@ export function BacklogPage() {
               onOpenDrawer={openDrawer}
               onOpenWorktree={openWorktree}
               onReject={rejectStory}
+              reviewDiffEmpty={reviewDiffEmpty}
               onStopAgent={stopAgent}
               onUnpauseAgent={unpauseAgent}
               queueInitializing={column.id === "ready" && queueInitializing}
@@ -931,15 +963,153 @@ export function BacklogPage() {
         }}
         onOpenDrawer={openDrawer}
         onOptimizeUserStory={optimizeUserStory}
-        onApproveAndMerge={approveAndMergeStory}
+        onApproveAndMerge={completeReviewStory}
         onRequestChanges={requestChanges}
         onReject={rejectStory}
+        reviewDiffEmpty={
+          drawerUserStory ? reviewDiffEmpty(drawerUserStory) : false
+        }
         onStopAgent={stopAgent}
         setupInitializing={backlog.storySetupInitializing(drawerUserStory)}
       />
       <HostDependenciesDialog {...rotation.hostDependenciesDialog} />
     </div>
   )
+}
+
+type ReviewDiffState = "changed" | "empty"
+type ReviewDiffStory = Pick<UserStory, "id"> & { worktree: string }
+type ReviewDiffResult = {
+  id: string
+  state?: ReviewDiffState
+}
+type ReviewDiffStateSetter = React.Dispatch<
+  React.SetStateAction<Map<string, ReviewDiffState>>
+>
+
+function useReviewDiffStates(
+  stories: UserStory[],
+  workspace: Platform["workspace"]
+) {
+  const [states, setStates] = React.useState(
+    () => new Map<string, ReviewDiffState>()
+  )
+
+  React.useEffect(() => {
+    return subscribeReviewDiffStates(stories, workspace, setStates)
+  }, [stories, workspace])
+
+  return states
+}
+
+function subscribeReviewDiffStates(
+  stories: UserStory[],
+  workspace: Platform["workspace"],
+  setStates: ReviewDiffStateSetter
+) {
+  let cancelled = false
+  const loadStates = () =>
+    loadReviewDiffStates(stories, workspace, setStates, () => cancelled)
+  loadStates()
+  const timer = setInterval(() => {
+    if (document.visibilityState === "visible") loadStates()
+  }, reviewDiffRefreshDelayMs)
+  return () => {
+    cancelled = true
+    clearInterval(timer)
+  }
+}
+
+function loadReviewDiffStates(
+  stories: UserStory[],
+  workspace: Platform["workspace"],
+  setStates: ReviewDiffStateSetter,
+  cancelled: () => boolean
+) {
+  const reviewStories = reviewDiffStories(stories)
+  if (!workspace || !reviewStories.length) {
+    setStates((current) => pruneReviewDiffStates(current, reviewStories))
+    return
+  }
+  void Promise.all(
+    reviewStories.map((story) => loadReviewDiffState(story, workspace))
+  ).then((results) => {
+    if (cancelled()) return
+    setStates((current) =>
+      mergeReviewDiffStates(current, reviewStories, results)
+    )
+  })
+}
+
+function reviewDiffStories(stories: UserStory[]): ReviewDiffStory[] {
+  return stories.flatMap((story) =>
+    story.status === "in-review" && story.worktree
+      ? [{ id: story.id, worktree: story.worktree }]
+      : []
+  )
+}
+
+async function loadReviewDiffState(
+  story: ReviewDiffStory,
+  workspace: NonNullable<Platform["workspace"]>
+): Promise<ReviewDiffResult> {
+  try {
+    const diff = await workspace.gitDiff({ root: story.worktree })
+    const state = changedFilesFromDiff(diff).length ? "changed" : "empty"
+    return { id: story.id, state }
+  } catch {
+    return { id: story.id }
+  }
+}
+
+function mergeReviewDiffStates(
+  current: Map<string, ReviewDiffState>,
+  stories: ReviewDiffStory[],
+  results: ReviewDiffResult[]
+) {
+  const next = retainedReviewDiffStates(current, stories)
+  for (const result of results) {
+    if (result.state) next.set(result.id, result.state)
+    else next.delete(result.id)
+  }
+  return sameReviewDiffStates(current, next) ? current : next
+}
+
+function pruneReviewDiffStates(
+  current: Map<string, ReviewDiffState>,
+  stories: ReviewDiffStory[]
+) {
+  const next = retainedReviewDiffStates(current, stories)
+  return sameReviewDiffStates(current, next) ? current : next
+}
+
+function retainedReviewDiffStates(
+  current: Map<string, ReviewDiffState>,
+  stories: ReviewDiffStory[]
+) {
+  const storyIds = new Set(stories.map((story) => story.id))
+  return new Map([...current].filter(([id]) => storyIds.has(id)))
+}
+
+function sameReviewDiffStates(
+  current: Map<string, ReviewDiffState>,
+  next: Map<string, ReviewDiffState>
+) {
+  if (current.size !== next.size) return false
+  return [...current].every(([id, state]) => next.get(id) === state)
+}
+
+async function currentReviewDiffEmpty(
+  story: UserStory,
+  workspace: Platform["workspace"]
+) {
+  if (!story.worktree || !workspace) return false
+  try {
+    const diff = await workspace.gitDiff({ root: story.worktree })
+    return changedFilesFromDiff(diff).length === 0
+  } catch {
+    return false
+  }
 }
 
 function approveAndMergeValidationError(

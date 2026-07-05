@@ -1,3 +1,5 @@
+import { Trash2Icon } from "lucide-react"
+
 import {
   type UserStory,
   userStoryActions,
@@ -22,6 +24,7 @@ export function StoryActions({
   onOpenWorktree,
   onDeleteUserStory,
   onReject,
+  reviewDiffEmpty,
   onStopAgent,
   onUnpauseAgent,
   story,
@@ -31,6 +34,7 @@ export function StoryActions({
   onOpenWorktree: (story: UserStory) => Promise<void>
   onDeleteUserStory: (story: UserStory) => Promise<void>
   onReject: (story: UserStory, choice: RejectChoice) => Promise<UserStory>
+  reviewDiffEmpty?: boolean
   onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
   onUnpauseAgent: (story: UserStory) => Promise<UserStory>
   story: UserStory
@@ -42,6 +46,7 @@ export function StoryActions({
         onOpenDrawer={onOpenDrawer}
         onOpenWorktree={onOpenWorktree}
         onReject={onReject}
+        reviewDiffEmpty={reviewDiffEmpty}
         story={story}
       />
     )
@@ -189,12 +194,14 @@ function ReviewActions({
   onOpenDrawer,
   onOpenWorktree,
   onReject,
+  reviewDiffEmpty,
   story,
 }: {
   onAction: StoryActionHandler
   onOpenDrawer: OpenDrawer
   onOpenWorktree: (story: UserStory) => Promise<void>
   onReject: (story: UserStory, choice: RejectChoice) => Promise<UserStory>
+  reviewDiffEmpty?: boolean
   story: UserStory
 }) {
   return (
@@ -218,13 +225,28 @@ function ReviewActions({
         />
       </div>
       <div className="grid grid-cols-2 gap-2">
-        <RejectDialog
-          onOpenDrawer={onOpenDrawer}
-          onReject={onReject}
-          story={story}
-        />
+        {reviewDiffEmpty ? (
+          <StoryAction
+            action="Discard"
+            className="w-full"
+            icon={Trash2Icon}
+            iconOnly={false}
+            label="Discard"
+            onAction={onAction}
+            onOpenDrawer={onOpenDrawer}
+            onOpenWorktree={onOpenWorktree}
+            story={story}
+          />
+        ) : (
+          <RejectDialog
+            onOpenDrawer={onOpenDrawer}
+            onReject={onReject}
+            story={story}
+          />
+        )}
         <StoryAction
           action="Approve & Merge"
+          label={reviewDiffEmpty ? "Mark as Done" : undefined}
           onAction={onAction}
           onOpenDrawer={onOpenDrawer}
           onOpenWorktree={onOpenWorktree}

@@ -57,6 +57,7 @@ export type UserStoryDrawerProps = {
     codeSelectionAttachments: UserStoryComment["codeSelectionAttachments"],
     fileAttachments: UserStoryComment["fileAttachments"]
   ) => Promise<UserStory>
+  reviewDiffEmpty?: boolean
   onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
   onUpdateUserStory: (
     story: UserStory,
@@ -82,6 +83,7 @@ export function UserStoryDrawer({
   onOptimizeUserStory,
   onReject,
   onRequestChanges,
+  reviewDiffEmpty,
   onStopAgent,
   onUpdateUserStory,
   setupInitializing,
@@ -121,6 +123,7 @@ export function UserStoryDrawer({
         onOptimizeUserStory={onOptimizeUserStory}
         onRequestChanges={onRequestChanges}
         onReject={onReject}
+        reviewDiffEmpty={reviewDiffEmpty}
         onStopAgent={onStopAgent}
         onUpdateUserStory={onUpdateUserStory}
         setupInitializing={setupInitializing}

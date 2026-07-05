@@ -61,10 +61,12 @@ import {
 } from "./workspace-env";
 import {
   ensureGitRepository,
+  excludedGitPathspec,
   gitDiffBetween,
   isGitRepository,
   listGitDirectory,
   readGitFile,
+  runtimeEnvPath,
   type GitDiffInput,
   type GitDirectoryInput,
   type GitFileInput,
@@ -537,8 +539,30 @@ async function searchRuntimeFiles(root: string, query: string, limit: number) {
 
 async function gitDiff(root: string) {
   const cwd = resolveRuntimePath(root);
-  const { stdout } = await runRuntimeGit(cwd, ["diff", "--no-ext-diff", "--"]);
+  const excludedEnvFiles = await changedRuntimeEnvPathspecs(cwd);
+  const { stdout } = await runRuntimeGit(cwd, [
+    "diff",
+    "--no-ext-diff",
+    "--",
+    ".",
+    ...excludedEnvFiles,
+  ]);
   return stdout;
+}
+
+async function changedRuntimeEnvPathspecs(cwd: string) {
+  const { stdout } = await runRuntimeGit(cwd, [
+    "ls-files",
+    "--modified",
+    "--deleted",
+    "--others",
+    "--exclude-standard",
+  ]);
+  return stdout
+    .split("\n")
+    .filter(Boolean)
+    .filter(runtimeEnvPath)
+    .map(excludedGitPathspec);
 }
 
 async function gitStatus(root: string) {

@@ -91,6 +91,7 @@ export function UserStoryDrawerPanel({
   onReject,
   onStopAgent,
   onUpdateUserStory,
+  reviewDiffEmpty,
   setupInitializing,
   status,
   userStory,
@@ -132,6 +133,7 @@ export function UserStoryDrawerPanel({
     story: UserStory,
     input: UserStoryUpdate
   ) => Promise<UserStory>
+  reviewDiffEmpty?: boolean
   setupInitializing?: boolean
   status: BacklogColumnId
   userStory?: UserStory
@@ -455,9 +457,7 @@ export function UserStoryDrawerPanel({
       )}
       <DrawerFooter className="pointer-events-none absolute right-4 bottom-4 z-20 p-0">
         <DrawerActions
-          loadingAction={
-            pendingAction === "Approve & Merge" ? pendingAction : undefined
-          }
+          loadingAction={pendingAction}
           mode={mode}
           status={status}
           onAction={(action) => {
@@ -466,6 +466,7 @@ export function UserStoryDrawerPanel({
           onDeleteUserStory={onDeleteUserStory}
           onOpenDrawer={onOpenDrawer}
           onReject={onReject}
+          reviewDiffEmpty={reviewDiffEmpty}
           onStopAgent={onStopAgent}
           story={userStory}
         />

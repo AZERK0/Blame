@@ -40,6 +40,7 @@ export function UserStoryCard({
   onOpenDrawer,
   onOpenWorktree,
   onReject,
+  reviewDiffEmpty,
   onStopAgent,
   onUnpauseAgent,
   cleanup,
@@ -54,6 +55,7 @@ export function UserStoryCard({
   onOpenDrawer: OpenDrawer
   onOpenWorktree: (story: UserStory) => Promise<void>
   onReject: (story: UserStory, choice: RejectChoice) => Promise<UserStory>
+  reviewDiffEmpty?: boolean
   onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
   onUnpauseAgent: (story: UserStory) => Promise<UserStory>
   cleanup?: boolean
@@ -79,6 +81,7 @@ export function UserStoryCard({
             onOpenDrawer={onOpenDrawer}
             onOpenWorktree={onOpenWorktree}
             onReject={onReject}
+            reviewDiffEmpty={reviewDiffEmpty}
             onStopAgent={onStopAgent}
             onUnpauseAgent={onUnpauseAgent}
             story={story}

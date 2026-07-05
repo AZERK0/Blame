@@ -39,6 +39,7 @@ export function BacklogColumn({
   onOpenDrawer,
   onOpenWorktree,
   onReject,
+  reviewDiffEmpty,
   onStopAgent,
   onUnpauseAgent,
   queueInitializing,
@@ -56,6 +57,7 @@ export function BacklogColumn({
   onOpenDrawer: OpenDrawer
   onOpenWorktree: (story: UserStory) => Promise<void>
   onReject: (story: UserStory, choice: RejectChoice) => Promise<UserStory>
+  reviewDiffEmpty?: (story: UserStory) => boolean
   onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
   onUnpauseAgent: (story: UserStory) => Promise<UserStory>
   queueInitializing?: boolean
@@ -81,6 +83,7 @@ export function BacklogColumn({
               onOpenDrawer={onOpenDrawer}
               onOpenWorktree={onOpenWorktree}
               onReject={onReject}
+              reviewDiffEmpty={reviewDiffEmpty?.(story)}
               onStopAgent={onStopAgent}
               onUnpauseAgent={onUnpauseAgent}
               setupInitializing={

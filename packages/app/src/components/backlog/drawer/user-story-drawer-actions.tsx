@@ -100,6 +100,7 @@ export function DrawerActions({
   onOpenDrawer,
   onReject,
   onStopAgent,
+  reviewDiffEmpty,
   status,
   story,
 }: {
@@ -110,6 +111,7 @@ export function DrawerActions({
   onOpenDrawer: OpenDrawer
   onReject: (story: UserStory, choice: RejectChoice) => Promise<UserStory>
   onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
+  reviewDiffEmpty?: boolean
   status: BacklogColumnId
   story?: UserStory
 }) {
@@ -125,13 +127,23 @@ export function DrawerActions({
               triggerSize="default"
             />
           ) : action === "Reject" && story ? (
-            <RejectDialog
-              onOpenDrawer={onOpenDrawer}
-              onReject={onReject}
-              story={story}
-              triggerClassName="w-auto"
-              triggerSize="default"
-            />
+            reviewDiffEmpty ? (
+              <DrawerActionButton
+                action={action}
+                icon={Trash2Icon}
+                label="Discard"
+                loading={loadingAction === action}
+                onClick={() => onAction(action)}
+              />
+            ) : (
+              <RejectDialog
+                onOpenDrawer={onOpenDrawer}
+                onReject={onReject}
+                story={story}
+                triggerClassName="w-auto"
+                triggerSize="default"
+              />
+            )
           ) : action === "Delete Permanently" && story ? (
             <DeleteUserStoryDialog
               onDeleteUserStory={onDeleteUserStory}
@@ -142,6 +154,11 @@ export function DrawerActions({
           ) : (
             <DrawerActionButton
               action={action}
+              label={
+                reviewDiffEmpty && action === "Approve & Merge"
+                  ? "Mark as Done"
+                  : undefined
+              }
               loading={loadingAction === action}
               onClick={() => onAction(action)}
             />
@@ -154,15 +171,19 @@ export function DrawerActions({
 
 function DrawerActionButton({
   action,
+  icon,
+  label,
   loading,
   onClick,
 }: {
   action: DrawerAction
+  icon?: DrawerActionConfig["icon"]
+  label?: string
   loading: boolean
   onClick?: () => void
 }) {
   const actionStyle = drawerActionConfig[action]
-  const Icon = loading ? LoaderCircleIcon : actionStyle.icon
+  const Icon = loading ? LoaderCircleIcon : (icon ?? actionStyle.icon)
   const isSendToDevAgent = action === "Send to Dev Agent"
 
   return (
@@ -183,7 +204,7 @@ function DrawerActionButton({
       {loading || !isSendToDevAgent ? (
         <Icon className={cn(loading && "animate-spin")} />
       ) : null}
-      {!actionStyle.iconOnly && action}
+      {!actionStyle.iconOnly && (label ?? action)}
       {isSendToDevAgent && !loading ? (
         <>
           <Kbd

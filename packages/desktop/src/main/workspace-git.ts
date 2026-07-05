@@ -24,12 +24,21 @@ export type GitDiffInput = {
 };
 
 export async function gitDiffBetween(input: GitDiffInput) {
+  const from = revision(input.from);
+  const to = revision(input.to);
+  const excludedEnvFiles = await committedRuntimeEnvPathspecs(
+    input.root,
+    from,
+    to,
+  );
   const { stdout } = await runGit(input.root, [
     "diff",
     "--no-ext-diff",
-    revision(input.from),
-    revision(input.to),
+    from,
+    to,
     "--",
+    ".",
+    ...excludedEnvFiles,
   ]);
   return stdout;
 }
@@ -122,6 +131,37 @@ function revision(value: string) {
     throw new Error("Invalid Git revision");
   }
   return value;
+}
+
+export function runtimeEnvPath(path: string) {
+  const name = basename(path);
+  if (name !== ".env" && !name.startsWith(".env.")) return false;
+  return ![".example", ".sample", ".template"].some((suffix) =>
+    name.endsWith(suffix),
+  );
+}
+
+export function excludedGitPathspec(path: string) {
+  return `:!${gitPath(path)}`;
+}
+
+async function committedRuntimeEnvPathspecs(
+  root: string,
+  from: string,
+  to: string,
+) {
+  const { stdout } = await runGit(root, [
+    "diff",
+    "--name-only",
+    from,
+    to,
+    "--",
+  ]);
+  return stdout
+    .split("\n")
+    .filter(Boolean)
+    .filter(runtimeEnvPath)
+    .map(excludedGitPathspec);
 }
 
 function gitPath(value?: string) {
