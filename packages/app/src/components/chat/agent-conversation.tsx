@@ -130,6 +130,9 @@ export function AgentConversationTimeline({
                     value={`${run.id}-${node.id}`}
                   />
                 ))}
+                {agentThinkingVisible(run.status, activities) ? (
+                  <AgentThinkingTimelineItem key={`${run.id}-thinking`} />
+                ) : null}
               </React.Fragment>
             )
           })}
@@ -256,6 +259,24 @@ function RunCommentItem({
           placeholder=""
           minHeight="min-h-24"
         />
+      </div>
+    </div>
+  )
+}
+
+function AgentThinkingTimelineItem() {
+  return (
+    <div className="relative grid grid-cols-[2.5rem_minmax(0,1fr)] items-start gap-1">
+      <span className="relative z-10 flex size-8 items-center justify-center">
+        <span className="agent-thinking-mark" aria-hidden="true" />
+      </span>
+      <div className="flex min-w-0 items-center gap-2 pt-1 text-sm text-muted-foreground">
+        <span className="agent-thinking-text">Thinking</span>
+        <span className="agent-thinking-dots" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+        </span>
       </div>
     </div>
   )
@@ -506,6 +527,16 @@ function currentRunningToolActivityId(
   if (lastActivity?.kind !== "tool") return undefined
   if (lastActivity.status !== "running") return undefined
   return lastActivity.id
+}
+
+function agentThinkingVisible(
+  status: AgentConversationRun["status"],
+  activities: UserStoryAgentActivity[]
+) {
+  if (status !== "running") return false
+  const lastActivity = activities.at(-1)
+  if (!lastActivity) return true
+  return lastActivity.kind !== "tool" || lastActivity.status !== "running"
 }
 
 function activityIsRunning(
