@@ -9,9 +9,13 @@ import {
   type SignupInput,
 } from "@/context/cloud-auth"
 import { usePlatform } from "@/context/platform"
+import {
+  readCloudSession,
+  removeCloudSession,
+  writeCloudSession,
+} from "@/context/cloud-auth-storage"
 import { createCloudApi } from "@/lib/cloud-api"
 
-const storageKey = "blame.app.cloud-session.v1"
 const configuredApiUrl = import.meta.env.VITE_CLOUD_API_URL?.trim()
 const defaultApiUrl =
   configuredApiUrl || "https://api.blame.raphael-charpentier.fr/api/v1"
@@ -58,7 +62,7 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
           url: apiUrl,
           token: session.token,
         }).aiPreferences()
-        setCloudSession({ ...session, user })
+        writeCloudSession({ ...session, user })
         setState({
           status: "authenticated",
           session: { ...session, user },
@@ -83,7 +87,7 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
         url: apiUrl,
         token: session.token,
       }).aiPreferences()
-      setCloudSession(session)
+      writeCloudSession(session)
       setState({ status: "authenticated", session, aiPreferences })
     },
     [apiUrl]
@@ -96,7 +100,7 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
         url: apiUrl,
         token: session.token,
       }).aiPreferences()
-      setCloudSession(session)
+      writeCloudSession(session)
       setState({ status: "authenticated", session, aiPreferences })
     },
     [apiUrl]
@@ -155,33 +159,4 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
       {children}
     </CloudAuthContext.Provider>
   )
-}
-
-function readCloudSession() {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(storageKey) ?? "")
-    if (!isCloudSession(parsed)) return undefined
-    return parsed
-  } catch {
-    return undefined
-  }
-}
-
-function setCloudSession(session: CloudSession) {
-  localStorage.setItem(storageKey, JSON.stringify(session))
-}
-
-function removeCloudSession() {
-  localStorage.removeItem(storageKey)
-}
-
-function isCloudSession(value: unknown): value is CloudSession {
-  if (!value || typeof value !== "object") return false
-  if (!("token" in value) || typeof value.token !== "string") return false
-  if (!("user" in value) || !value.user || typeof value.user !== "object")
-    return false
-  if (!("id" in value.user) || typeof value.user.id !== "number") return false
-  if (!("email" in value.user) || typeof value.user.email !== "string")
-    return false
-  return "initials" in value.user && typeof value.user.initials === "string"
 }
