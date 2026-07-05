@@ -6,13 +6,7 @@ export default class extends BaseSchema {
   async up() {
     this.schema.createTable('projects', (table) => {
       table.string('id').primary()
-      table
-        .integer('user_id')
-        .notNullable()
-        .unsigned()
-        .references('id')
-        .inTable('users')
-        .onDelete('CASCADE')
+      table.uuid('user_id').notNullable().references('id').inTable('users').onDelete('CASCADE')
       table.string('repository_fingerprint').nullable()
       table.string('name').notNullable()
       table.timestamp('created_at').notNullable()

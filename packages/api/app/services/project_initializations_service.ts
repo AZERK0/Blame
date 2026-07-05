@@ -15,12 +15,12 @@ type FailInput = Infer<typeof failProjectInitializationValidator>
 type RepairInput = Infer<typeof repairProjectInitializationValidator>
 
 export default class ProjectInitializationsService {
-  async show(userId: number, projectId: string) {
+  async show(userId: string, projectId: string) {
     await new ProjectsService().findForUser(userId, projectId)
     return this.snapshot(projectId)
   }
 
-  async start(userId: number, projectId: string, input: StartInput) {
+  async start(userId: string, projectId: string, input: StartInput) {
     await new ProjectsService().findForUser(userId, projectId)
     const initialization = await this.initialization(projectId)
     initialization.merge({
@@ -35,7 +35,7 @@ export default class ProjectInitializationsService {
     return this.snapshot(projectId)
   }
 
-  async complete(userId: number, projectId: string, input: CompleteInput) {
+  async complete(userId: string, projectId: string, input: CompleteInput) {
     await new ProjectsService().findForUser(userId, projectId)
     const runConfigurations = input.runConfigurations ?? []
     validateRunConfigurations(runConfigurations)
@@ -56,7 +56,7 @@ export default class ProjectInitializationsService {
     return this.snapshot(projectId)
   }
 
-  async fail(userId: number, projectId: string, input: FailInput) {
+  async fail(userId: string, projectId: string, input: FailInput) {
     await new ProjectsService().findForUser(userId, projectId)
     const initialization = await this.initialization(projectId)
     initialization.merge({
@@ -69,7 +69,7 @@ export default class ProjectInitializationsService {
     return this.snapshot(projectId)
   }
 
-  async repair(userId: number, projectId: string, input: RepairInput) {
+  async repair(userId: string, projectId: string, input: RepairInput) {
     await new ProjectsService().findForUser(userId, projectId)
     const initialization = await this.initialization(projectId)
     const runConfigurations = input.runConfigurations ?? initialization.runConfigurations ?? []

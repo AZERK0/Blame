@@ -5,7 +5,7 @@ export type AiReasoningEffort = 'low' | 'medium' | 'high' | 'xhigh'
 
 export default class UserAiPreference extends BaseModel {
   @column({ isPrimary: true })
-  declare userId: number
+  declare userId: string
 
   @column()
   declare alternativeProviderId: string

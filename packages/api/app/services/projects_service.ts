@@ -5,11 +5,11 @@ import type { ensureProjectValidator } from '#validators/project'
 type EnsureProjectInput = Infer<typeof ensureProjectValidator>
 
 export default class ProjectsService {
-  async list(userId: number) {
+  async list(userId: string) {
     return Project.query().where('userId', userId).orderBy('updatedAt', 'desc')
   }
 
-  async ensure(userId: number, input: EnsureProjectInput) {
+  async ensure(userId: string, input: EnsureProjectInput) {
     const existing = await this.findExistingProject(userId, input)
 
     if (!existing) {
@@ -26,7 +26,7 @@ export default class ProjectsService {
     return existing
   }
 
-  private async findExistingProject(userId: number, input: EnsureProjectInput) {
+  private async findExistingProject(userId: string, input: EnsureProjectInput) {
     if (!input.repositoryFingerprint) {
       return undefined
     }
@@ -55,7 +55,7 @@ export default class ProjectsService {
     return legacyMatch
   }
 
-  async findForUser(userId: number, id: string) {
+  async findForUser(userId: string, id: string) {
     return Project.query().where('userId', userId).where('id', id).firstOrFail()
   }
 }

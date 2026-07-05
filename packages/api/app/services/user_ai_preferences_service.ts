@@ -5,11 +5,11 @@ import type { Infer } from '@vinejs/vine/types'
 type SaveUserAiPreferenceInput = Infer<typeof saveUserAiPreferenceValidator>
 
 export default class UserAiPreferencesService {
-  get(userId: number) {
+  get(userId: string) {
     return UserAiPreference.find(userId)
   }
 
-  async save(userId: number, input: SaveUserAiPreferenceInput) {
+  async save(userId: string, input: SaveUserAiPreferenceInput) {
     const existing = await UserAiPreference.find(userId)
     const values = {
       userId,

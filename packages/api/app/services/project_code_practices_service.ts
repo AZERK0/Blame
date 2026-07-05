@@ -13,14 +13,14 @@ const practiceOrder: ProjectCodePracticeKey[] = [
 ]
 
 export default class ProjectCodePracticesService {
-  async list(userId: number, projectId: string) {
+  async list(userId: string, projectId: string) {
     await new ProjectsService().findForUser(userId, projectId)
     const practices = await ProjectCodePractice.query().where('projectId', projectId)
     return practices.sort((left, right) => this.order(left.practice) - this.order(right.practice))
   }
 
   async update(
-    userId: number,
+    userId: string,
     projectId: string,
     practice: string,
     input: UpdateProjectCodePracticeInput

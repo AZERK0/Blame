@@ -5,13 +5,7 @@ export default class extends BaseSchema {
 
   async up() {
     this.schema.createTable(this.tableName, (table) => {
-      table
-        .integer('user_id')
-        .unsigned()
-        .notNullable()
-        .primary()
-        .references('users.id')
-        .onDelete('CASCADE')
+      table.uuid('user_id').notNullable().primary().references('users.id').onDelete('CASCADE')
       table.string('alternative_provider_id').notNullable()
       table.string('alternative_model_id').notNullable()
       table.string('alternative_credential_label').nullable()

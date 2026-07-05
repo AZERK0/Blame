@@ -6,7 +6,7 @@ export default class Project extends BaseModel {
   declare id: string
 
   @column()
-  declare userId: number
+  declare userId: string
 
   @column()
   declare repositoryFingerprint: string | null

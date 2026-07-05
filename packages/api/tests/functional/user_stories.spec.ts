@@ -657,7 +657,7 @@ function createUser() {
   })
 }
 
-function createProject(userId: number, name: string) {
+function createProject(userId: string, name: string) {
   return Project.create({
     id: crypto.randomUUID(),
     name,

@@ -39,11 +39,11 @@ type UpsertProviderCredentialInput = {
 const defaultLabel = 'default'
 
 export default class ProviderCredentialsService {
-  async list(userId: number) {
+  async list(userId: string) {
     return ProviderCredential.query().where('userId', userId).orderBy('providerId', 'asc')
   }
 
-  async save(userId: number, input: SaveProviderCredentialInput) {
+  async save(userId: string, input: SaveProviderCredentialInput) {
     return this.upsert(userId, {
       providerId: input.providerId,
       label: input.label,
@@ -57,7 +57,7 @@ export default class ProviderCredentialsService {
     })
   }
 
-  async saveOAuth(userId: number, input: SaveOAuthCredentialInput) {
+  async saveOAuth(userId: string, input: SaveOAuthCredentialInput) {
     return this.upsert(userId, {
       providerId: input.providerId,
       label: input.label,
@@ -71,7 +71,7 @@ export default class ProviderCredentialsService {
     })
   }
 
-  async resolve(userId: number, input: ResolveProviderCredentialInput) {
+  async resolve(userId: string, input: ResolveProviderCredentialInput) {
     const credential = await ProviderCredential.query()
       .where('userId', userId)
       .where('providerId', input.providerId)
@@ -89,7 +89,7 @@ export default class ProviderCredentialsService {
     }
   }
 
-  async delete(userId: number, id: number) {
+  async delete(userId: string, id: number) {
     const credential = await ProviderCredential.query()
       .where('userId', userId)
       .where('id', id)
@@ -97,7 +97,7 @@ export default class ProviderCredentialsService {
     await credential.delete()
   }
 
-  private async upsert(userId: number, input: UpsertProviderCredentialInput) {
+  private async upsert(userId: string, input: UpsertProviderCredentialInput) {
     const label = input.label ?? defaultLabel
     const existing = await ProviderCredential.query()
       .where('userId', userId)

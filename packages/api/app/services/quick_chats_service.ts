@@ -28,7 +28,7 @@ type UpdateQuickChatAgentRunInput = Infer<typeof updateQuickChatAgentRunValidato
 const maxAgentActivities = 80
 
 export default class QuickChatsService {
-  async list(userId: number, input: ListQuickChatsInput) {
+  async list(userId: string, input: ListQuickChatsInput) {
     await new ProjectsService().findForUser(userId, input.projectId)
     const query = QuickChat.query()
       .where('projectId', input.projectId)
@@ -38,7 +38,7 @@ export default class QuickChatsService {
     return query.preload('messages', orderMessages).preload('agentRuns', orderAgentRuns)
   }
 
-  async find(userId: number, id: number) {
+  async find(userId: string, id: number) {
     return this.quickChatQuery(userId)
       .where('id', id)
       .preload('messages', orderMessages)
@@ -46,7 +46,7 @@ export default class QuickChatsService {
       .firstOrFail()
   }
 
-  async create(userId: number, input: CreateQuickChatInput) {
+  async create(userId: string, input: CreateQuickChatInput) {
     await new ProjectsService().findForUser(userId, input.projectId)
     const quickChat = await QuickChat.create({
       projectId: input.projectId,
@@ -68,7 +68,7 @@ export default class QuickChatsService {
     return quickChat
   }
 
-  async update(userId: number, id: number, input: UpdateQuickChatInput) {
+  async update(userId: string, id: number, input: UpdateQuickChatInput) {
     const quickChat = await this.find(userId, id)
     const update = await this.updateInput(quickChat, input)
     quickChat.merge(update)
@@ -78,7 +78,7 @@ export default class QuickChatsService {
     return quickChat
   }
 
-  async createMessage(userId: number, id: number, input: CreateQuickChatMessageInput) {
+  async createMessage(userId: string, id: number, input: CreateQuickChatMessageInput) {
     await this.find(userId, id)
     return QuickChatMessage.create({
       author: 'You',
@@ -89,7 +89,7 @@ export default class QuickChatsService {
     })
   }
 
-  async createAgentRun(userId: number, id: number, input: CreateQuickChatAgentRunInput) {
+  async createAgentRun(userId: string, id: number, input: CreateQuickChatAgentRunInput) {
     const quickChat = await this.find(userId, id)
     if (input.messageId && !quickChat.messages.some((message) => message.id === input.messageId)) {
       throw new Error('Quick chat message not found.')
@@ -108,7 +108,7 @@ export default class QuickChatsService {
   }
 
   async updateAgentRun(
-    userId: number,
+    userId: string,
     id: number,
     runId: number,
     input: UpdateQuickChatAgentRunInput
@@ -121,7 +121,7 @@ export default class QuickChatsService {
     return run
   }
 
-  async agentRunActivityDetail(userId: number, id: number, runId: number, activityId: string) {
+  async agentRunActivityDetail(userId: string, id: number, runId: number, activityId: string) {
     const quickChat = await this.find(userId, id)
     const run = await this.agentRunQuery(quickChat, runId)
     const activity = run.activities?.find((item) => item.id === activityId)
@@ -130,12 +130,12 @@ export default class QuickChatsService {
     return { detail: await artifactDetail(quickChat.workspace, activity) }
   }
 
-  async delete(userId: number, id: number) {
+  async delete(userId: string, id: number) {
     const quickChat = await this.find(userId, id)
     await quickChat.delete()
   }
 
-  private quickChatQuery(userId: number) {
+  private quickChatQuery(userId: string) {
     return QuickChat.query().whereIn(
       'projectId',
       Project.query().select('id').where('userId', userId)

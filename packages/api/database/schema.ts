@@ -25,7 +25,7 @@ export class AuthAccessTokenSchema extends BaseModel {
   @column()
   declare name: string | null
   @column()
-  declare tokenableId: number
+  declare tokenableId: string
   @column()
   declare type: string
   @column.dateTime({ autoCreate: true, autoUpdate: true })
@@ -100,7 +100,7 @@ export class ProjectSchema extends BaseModel {
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
   @column()
-  declare userId: number
+  declare userId: string
 }
 
 export class ProviderCredentialSchema extends BaseModel {
@@ -131,7 +131,7 @@ export class ProviderCredentialSchema extends BaseModel {
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
   @column()
-  declare userId: number
+  declare userId: string
 }
 
 export class QuickChatAgentRunSchema extends BaseModel {
@@ -247,7 +247,7 @@ export class UserAiPreferenceSchema extends BaseModel {
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
   @column({ isPrimary: true })
-  declare userId: number
+  declare userId: string
 }
 
 export class UserStorySchema extends BaseModel {
@@ -373,7 +373,7 @@ export class UserSchema extends BaseModel {
   @column()
   declare fullName: string | null
   @column({ isPrimary: true })
-  declare id: number
+  declare id: string
   @column({ serializeAs: null })
   declare password: string
   @column.dateTime({ autoCreate: true, autoUpdate: true })

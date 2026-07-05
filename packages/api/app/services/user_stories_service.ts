@@ -27,7 +27,7 @@ type UpdateUserStoryAgentRunInput = Infer<typeof updateUserStoryAgentRunValidato
 const maxAgentActivities = 80
 
 export default class UserStoriesService {
-  async list(userId: number, input: ListUserStoriesInput) {
+  async list(userId: string, input: ListUserStoriesInput) {
     await new ProjectsService().findForUser(userId, input.projectId)
     const query = UserStory.query().where('projectId', input.projectId).orderBy('createdAt', 'asc')
     if (input.view === 'summary') return query
@@ -35,7 +35,7 @@ export default class UserStoriesService {
     return stories.map(sortStoryComments)
   }
 
-  async find(userId: number, id: number) {
+  async find(userId: string, id: number) {
     const story = await this.userStoryQuery(userId)
       .where('id', id)
       .preload('comments')
@@ -44,7 +44,7 @@ export default class UserStoriesService {
     return sortStoryComments(story)
   }
 
-  async create(userId: number, input: CreateUserStoryInput) {
+  async create(userId: string, input: CreateUserStoryInput) {
     if (input.projectId) {
       await new ProjectsService().findForUser(userId, input.projectId)
     }
@@ -81,7 +81,7 @@ export default class UserStoriesService {
     return userStory
   }
 
-  async update(userId: number, id: number, input: UpdateUserStoryInput) {
+  async update(userId: string, id: number, input: UpdateUserStoryInput) {
     if (input.projectId) {
       await new ProjectsService().findForUser(userId, input.projectId)
     }
@@ -99,7 +99,7 @@ export default class UserStoriesService {
     return userStory
   }
 
-  async createComment(userId: number, id: number, input: CreateUserStoryCommentInput) {
+  async createComment(userId: string, id: number, input: CreateUserStoryCommentInput) {
     await this.find(userId, id)
     return UserStoryComment.create({
       author: 'Product',
@@ -110,7 +110,7 @@ export default class UserStoriesService {
     })
   }
 
-  async activityDetail(userId: number, id: number, activityId: string) {
+  async activityDetail(userId: string, id: number, activityId: string) {
     const story = await this.find(userId, id)
     const activity = story.agentActivities?.find((item) => item.id === activityId)
     if (!activity) throw new Error('Agent activity not found.')
@@ -118,7 +118,7 @@ export default class UserStoriesService {
     return { detail: await artifactDetail(story.worktree, activity) }
   }
 
-  async createAgentRun(userId: number, id: number, input: CreateUserStoryAgentRunInput) {
+  async createAgentRun(userId: string, id: number, input: CreateUserStoryAgentRunInput) {
     const story = await this.find(userId, id)
     if (input.commentId && !story.comments.some((comment) => comment.id === input.commentId)) {
       throw new Error('User story comment not found.')
@@ -137,7 +137,7 @@ export default class UserStoriesService {
   }
 
   async updateAgentRun(
-    userId: number,
+    userId: string,
     id: number,
     runId: number,
     input: UpdateUserStoryAgentRunInput
@@ -150,7 +150,7 @@ export default class UserStoriesService {
     return run
   }
 
-  async agentRunActivityDetail(userId: number, id: number, runId: number, activityId: string) {
+  async agentRunActivityDetail(userId: string, id: number, runId: number, activityId: string) {
     const story = await this.find(userId, id)
     const run = await this.agentRunQuery(story, runId)
     const activity = run.activities?.find((item) => item.id === activityId)
@@ -159,12 +159,12 @@ export default class UserStoriesService {
     return { detail: await artifactDetail(story.worktree, activity) }
   }
 
-  async delete(userId: number, id: number) {
+  async delete(userId: string, id: number) {
     const userStory = await this.find(userId, id)
     await userStory.delete()
   }
 
-  private userStoryQuery(userId: number) {
+  private userStoryQuery(userId: string) {
     return UserStory.query().whereIn(
       'projectId',
       Project.query().select('id').where('userId', userId)
