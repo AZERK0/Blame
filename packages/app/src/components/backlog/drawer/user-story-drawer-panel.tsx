@@ -413,15 +413,18 @@ export function UserStoryDrawerPanel({
         </TabsContent>
         {hasPreview && (
           <TabsContent
+            forceMount
             value="preview"
             className={cn(
               "min-h-0 overflow-hidden",
+              tab !== "preview" && "hidden",
               hasDevelopment ? "pt-36" : "pt-28"
             )}
           >
             <UserStoryPreview
               setupInitializing={setupInitializing}
               userStory={userStory}
+              visible={tab === "preview"}
               onCapture={(file) => {
                 void addPreviewCaptureAttachment(file)
                 setTab("user-story")

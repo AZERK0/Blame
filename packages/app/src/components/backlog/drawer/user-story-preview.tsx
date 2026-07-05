@@ -56,6 +56,7 @@ type NativePreviewPanelProps = {
   previewKey: string
   previewState: PreviewState
   reloadKey: number
+  sessionKey: string
   source: string
   visible: boolean
 }
@@ -84,17 +85,58 @@ type NativePreviewBoundsStability = {
   boundsKey: string
   stableFrames: number
 }
+type NativePreviewSession = {
+  browserId?: string
+  client: PreviewBrowserClient
+  loading?: Promise<string>
+  references: number
+  releaseAt: number
+  source?: string
+  state?: NativePreviewStateInput
+  timeout?: number
+}
 
+const nativePreviewRetainedSessionLimit = 3
+const nativePreviewRetentionMs = 30 * 60_000
 const nativePreviewStableFrames = 3
+const nativePreviewSessions = new Map<string, NativePreviewSession>()
+
+export function UserStoryPreviewWarmup({
+  userStories,
+}: {
+  userStories: UserStory[]
+}) {
+  const platform = usePlatform()
+  const previewBrowser = platform.previewBrowser
+  const stories = React.useMemo(
+    () => nativePreviewWarmupStories(userStories),
+    [userStories]
+  )
+
+  if (!previewBrowser) return null
+  return stories.map((story) => {
+    const source = previewSource(story.previewUrl ?? "")
+    return (
+      <NativePreviewWarmup
+        key={nativePreviewKeyFor(story, source)}
+        client={previewBrowser}
+        sessionKey={nativePreviewKeyFor(story, source)}
+        source={source}
+      />
+    )
+  })
+}
 
 export function UserStoryPreview({
   onCapture,
   setupInitializing,
   userStory,
+  visible = true,
 }: {
   onCapture?: (file: File) => void
   setupInitializing?: boolean
   userStory?: UserStory
+  visible?: boolean
 }) {
   const platform = usePlatform()
   const previewBrowser = platform.previewBrowser
@@ -112,6 +154,7 @@ export function UserStoryPreview({
   const timeoutRef = React.useRef<number | undefined>(undefined)
   const previewUrl = recoveredPreviewUrl ?? userStory?.previewUrl
   const baseSource = previewUrl ? previewSource(previewUrl) : undefined
+  const nativePreviewSessionKey = nativePreviewKeyFor(userStory, baseSource)
   const [editedPreview, setEditedPreview] = React.useState<{
     baseSource?: string
     url: string
@@ -137,13 +180,15 @@ export function UserStoryPreview({
   const locationBlocked =
     previewLoad.key === previewKey && previewLoad.locationBlocked
   const hasSetupLog = Boolean(userStory?.worktree)
-  const services = useProjectServices(userStory?.worktree)
   const [selectedLogService, setSelectedLogService] = React.useState("")
   const [tab, setTab] = React.useState(source ? "preview" : "setup-log")
   const autoSelectedPreviewSourceRef = React.useRef<string | undefined>(
     undefined
   )
   const activeTab = activePreviewTab(tab, Boolean(source), hasSetupLog)
+  const services = useProjectServices(
+    visible && activeTab === "setup-log" ? userStory?.worktree : undefined
+  )
   const [nativePreviewState, setNativePreviewState] =
     React.useState<NativePreviewState>()
   const [previewCapture, setPreviewCapture] =
@@ -343,8 +388,12 @@ export function UserStoryPreview({
           />
           {source && (
             <TabsContent
+              forceMount
               value="preview"
-              className="h-full min-h-0 overflow-hidden"
+              className={cn(
+                "h-full min-h-0 overflow-hidden",
+                activeTab !== "preview" && "hidden"
+              )}
             >
               {setupPreviewWaiting ? (
                 <PreviewWaitingPanel />
@@ -356,8 +405,9 @@ export function UserStoryPreview({
                   previewKey={nativePreviewKey}
                   previewState={displayedPreviewState}
                   reloadKey={reloadKey}
+                  sessionKey={nativePreviewSessionKey}
                   source={source}
-                  visible={activeTab === "preview"}
+                  visible={visible && activeTab === "preview"}
                 />
               ) : (
                 <PreviewPanel
@@ -382,7 +432,7 @@ export function UserStoryPreview({
                 onSelectService={setSelectedLogService}
                 service={selectedLogService}
                 services={services}
-                worktree={userStory?.worktree}
+                worktree={visible ? userStory?.worktree : undefined}
               />
             </TabsContent>
           )}
@@ -448,6 +498,28 @@ function PreviewWaitingPanel() {
   )
 }
 
+function NativePreviewWarmup({
+  client,
+  sessionKey,
+  source,
+}: {
+  client: PreviewBrowserClient
+  sessionKey: string
+  source: string
+}) {
+  const handleState = React.useCallback(
+    (state: NativePreviewStateInput) => {
+      updateNativePreviewSessionState(sessionKey, state)
+    },
+    [sessionKey]
+  )
+  const browserId = useNativePreviewId(client, sessionKey, handleState)
+
+  useNativePreviewLoad(client, browserId, sessionKey, source, handleState)
+
+  return null
+}
+
 function NativePreviewPanel({
   client,
   onCaptureReady,
@@ -455,11 +527,19 @@ function NativePreviewPanel({
   previewKey,
   previewState,
   reloadKey,
+  sessionKey,
   source,
   visible,
 }: NativePreviewPanelProps) {
   const surfaceRef = React.useRef<HTMLDivElement>(null)
-  const browserId = useNativePreviewId(client)
+  const handleState = React.useCallback(
+    (state: NativePreviewStateInput) => {
+      updateNativePreviewSessionState(sessionKey, state)
+      onState(state)
+    },
+    [onState, sessionKey]
+  )
+  const browserId = useNativePreviewId(client, sessionKey, handleState)
   const ambilightColor = useNativePreviewAmbilightColor(
     client,
     browserId,
@@ -469,11 +549,11 @@ function NativePreviewPanel({
 
   React.useEffect(() => {
     if (!browserId) return
-    return client.onState({ id: browserId }, onState)
-  }, [browserId, client, onState])
+    return client.onState({ id: browserId }, handleState)
+  }, [browserId, client, handleState])
 
-  useNativePreviewLoad(client, browserId, source, onState)
-  useNativePreviewReload(client, browserId, reloadKey, source, onState)
+  useNativePreviewLoad(client, browserId, sessionKey, source, handleState)
+  useNativePreviewReload(client, browserId, reloadKey, source, handleState)
   useNativePreviewCapture(client, browserId, source, onCaptureReady)
   useNativePreviewBounds(
     client,
@@ -534,25 +614,131 @@ function NativePreviewFrame({
   )
 }
 
-function useNativePreviewId(client: PreviewBrowserClient) {
+async function acquireNativePreviewSession(
+  client: PreviewBrowserClient,
+  key: string
+) {
+  const session = nativePreviewSession(client, key)
+  session.references += 1
+  clearNativePreviewRetention(session)
+  if (!session.browserId) {
+    session.loading ??= createNativePreviewSession(session)
+    await session.loading
+  }
+  return session
+}
+
+function nativePreviewSession(client: PreviewBrowserClient, key: string) {
+  const current = nativePreviewSessions.get(key)
+  if (current) return current
+  const session = {
+    client,
+    references: 0,
+    releaseAt: 0,
+  } satisfies NativePreviewSession
+  nativePreviewSessions.set(key, session)
+  return session
+}
+
+async function createNativePreviewSession(session: NativePreviewSession) {
+  try {
+    const { id } = await session.client.create()
+    session.browserId = id
+    return id
+  } finally {
+    session.loading = undefined
+  }
+}
+
+function releaseNativePreviewSession(key: string) {
+  const session = nativePreviewSessions.get(key)
+  if (!session) return
+  session.references = Math.max(0, session.references - 1)
+  if (session.references > 0) return
+  session.releaseAt = Date.now()
+  hideNativePreviewSession(session)
+  session.timeout = window.setTimeout(
+    () => destroyNativePreviewSession(key),
+    nativePreviewRetentionMs
+  )
+  trimNativePreviewSessions()
+}
+
+function updateNativePreviewSessionState(
+  key: string,
+  state: NativePreviewStateInput
+) {
+  const session = nativePreviewSessions.get(key)
+  if (session) session.state = state
+}
+
+function clearNativePreviewRetention(session: NativePreviewSession) {
+  if (!session.timeout) return
+  window.clearTimeout(session.timeout)
+  session.timeout = undefined
+}
+
+function hideNativePreviewSession(session: NativePreviewSession) {
+  if (!session.browserId) return
+  void session.client.setBounds({
+    bounds: hiddenPreviewBrowserBounds(),
+    id: session.browserId,
+    visible: false,
+  })
+}
+
+function destroyNativePreviewSession(key: string) {
+  const session = nativePreviewSessions.get(key)
+  if (!session || session.references > 0) return
+  nativePreviewSessions.delete(key)
+  clearNativePreviewRetention(session)
+  if (session.browserId) void session.client.destroy({ id: session.browserId })
+}
+
+function trimNativePreviewSessions() {
+  const retained = Array.from(nativePreviewSessions.entries())
+    .filter(([, session]) => session.references === 0)
+    .sort((left, right) => left[1].releaseAt - right[1].releaseAt)
+  while (retained.length > nativePreviewRetainedSessionLimit) {
+    const next = retained.shift()
+    if (next) destroyNativePreviewSession(next[0])
+  }
+}
+
+function useNativePreviewId(
+  client: PreviewBrowserClient,
+  sessionKey: string,
+  onState: (state: NativePreviewStateInput) => void
+) {
   const [browserId, setBrowserId] = React.useState<string>()
 
   React.useEffect(() => {
     let cancelled = false
-    let createdId: string | undefined
-    void client.create().then(({ id }) => {
-      createdId = id
+    void acquireNativePreviewSession(client, sessionKey)
+      .then((session) => {
+        if (cancelled) {
+          return
+        }
+        if (session.state) onState(session.state)
+        setBrowserId(session.browserId)
+      })
+      .catch((error) => {
+        releaseNativePreviewSession(sessionKey)
+        if (!cancelled) {
+          onState(
+            nativePreviewErrorState(error, "Unable to create preview", "")
+          )
+        }
+      })
+    return () => {
       if (cancelled) {
-        void client.destroy({ id })
         return
       }
-      setBrowserId(id)
-    })
-    return () => {
       cancelled = true
-      if (createdId) void client.destroy({ id: createdId })
+      setBrowserId(undefined)
+      releaseNativePreviewSession(sessionKey)
     }
-  }, [client])
+  }, [client, onState, sessionKey])
 
   return browserId
 }
@@ -567,16 +753,27 @@ function reloadNativePreview(
 function useNativePreviewLoad(
   client: PreviewBrowserClient,
   browserId: string | undefined,
+  sessionKey: string,
   source: string,
   onState: (state: NativePreviewStateInput) => void
 ) {
+  const sourceRef = React.useRef(source)
+
   React.useEffect(() => {
     if (!browserId) return
+    const session = nativePreviewSessions.get(sessionKey)
+    const sourceChanged = sourceRef.current !== source
+    sourceRef.current = source
+    if (session?.source && !sourceChanged) {
+      if (session.state) onState(session.state)
+      return
+    }
+    if (session) session.source = source
     onState({ loading: true, url: source })
     void client.load({ id: browserId, url: source }).catch((error) => {
       onState(nativePreviewErrorState(error, "Unable to load preview", source))
     })
-  }, [browserId, client, onState, source])
+  }, [browserId, client, onState, sessionKey, source])
 }
 
 function useSetupPreviewReady(
@@ -691,7 +888,7 @@ function useNativePreviewBounds(
       window.removeEventListener("resize", updateBounds)
       window.removeEventListener("scroll", updateBounds, true)
       void client.setBounds({
-        bounds: { height: 0, width: 0, x: 0, y: 0 },
+        bounds: hiddenPreviewBrowserBounds(),
         id: browserId,
         visible: false,
       })
@@ -1400,6 +1597,10 @@ function previewBrowserBounds(rect: DOMRect) {
   }
 }
 
+function hiddenPreviewBrowserBounds() {
+  return { height: 0, width: 0, x: 0, y: 0 }
+}
+
 function nativePreviewSurfaceBounds(element: HTMLDivElement | null) {
   return element
     ? previewBrowserBounds(element.getBoundingClientRect())
@@ -1431,6 +1632,46 @@ function previewAmbilightShadow(color: PreviewAmbilightColor | undefined) {
 function previewSource(previewUrl: string) {
   if (/^https?:\/\//.test(previewUrl)) return previewUrl
   return `http://${previewUrl}`
+}
+
+function nativePreviewWarmupStories(userStories: UserStory[]) {
+  return userStories
+    .filter(nativePreviewWarmupStory)
+    .sort(nativePreviewWarmupStorySort)
+    .slice(0, nativePreviewRetainedSessionLimit)
+}
+
+function nativePreviewWarmupStory(story: UserStory) {
+  return Boolean(
+    story.previewUrl &&
+      (story.status === "in-review" || story.status === "in-progress")
+  )
+}
+
+function nativePreviewWarmupStorySort(left: UserStory, right: UserStory) {
+  return (
+    nativePreviewWarmupStatusPriority(right) -
+      nativePreviewWarmupStatusPriority(left) ||
+    nativePreviewWarmupTime(right) - nativePreviewWarmupTime(left)
+  )
+}
+
+function nativePreviewWarmupStatusPriority(story: UserStory) {
+  if (story.status === "in-review") return 2
+  if (story.status === "in-progress") return 1
+  return 0
+}
+
+function nativePreviewWarmupTime(story: UserStory) {
+  const time = new Date(story.updatedAt ?? story.createdAt).getTime()
+  return Number.isFinite(time) ? time : 0
+}
+
+function nativePreviewKeyFor(
+  userStory: UserStory | undefined,
+  source?: string
+) {
+  return [userStory?.id ?? "preview", source ?? ""].join(":")
 }
 
 function previewPathUrl(source: string, path: string) {

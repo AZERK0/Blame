@@ -38,6 +38,7 @@ import { drawerTargetForAction } from "@/components/backlog/shared/backlog-helpe
 import { BacklogColumn } from "@/components/backlog/board/backlog-column"
 import { BacklogToolbar } from "@/components/backlog/board/backlog-toolbar"
 import { UserStoryDrawer } from "@/components/backlog/drawer/user-story-drawer"
+import { UserStoryPreviewWarmup } from "@/components/backlog/drawer/user-story-preview"
 import { HostDependenciesDialog } from "@/pages/backlog/host-dependencies-dialog"
 import { useBacklogRotation } from "@/pages/backlog/use-backlog-rotation"
 import { assessAndRepairProjectInitializationImpact } from "@/pages/backlog/project-initialization-impact"
@@ -966,6 +967,7 @@ export function BacklogPage() {
         onStopAgent={stopAgent}
         setupInitializing={backlog.storySetupInitializing(drawerUserStory)}
       />
+      <UserStoryPreviewWarmup userStories={backlog.stories} />
       <HostDependenciesDialog {...rotation.hostDependenciesDialog} />
     </div>
   )
