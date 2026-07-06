@@ -168,7 +168,7 @@ review: verify file and line references, then report findings first.
 investigate: verify the observed cause before proposing or applying a fix.
 implement: verify edited files and the most relevant project workflow.
 bugfix: validate the changed path against the failure mode.
-frontend: verify affected states in Preview when feasible.
+frontend: verify affected states through Blame Preview, container logs, DevTools console/network checks, or focused UI interaction when feasible.
 risky: add an extra focused check for the risk that made the task risky.
 prompt_or_docs: inspect the final rendered text or diff, then run the relevant package check if the build copies or consumes the artifact.
 </verification_matrix>
@@ -180,6 +180,17 @@ prompt_or_docs: inspect the final rendered text or diff, then run the relevant p
 - When the task specifies an output format, threshold, or accuracy target, check the result against it before completing.
 - If verification cannot be run, explain why and provide the exact command that would verify the work.
 - Re-read or inspect the final diff before answering.
+
+<verification_cost_control>
+- Verification must be risk-scaled and time-conscious. Prefer the fastest reliable check that proves the changed behavior.
+- Do not run full workspace lint, typecheck, test, or build by default after small scoped changes.
+- For lint and format checks, target only the modified files when project tooling supports file arguments.
+- For TypeScript, prefer the touched package or app typecheck over workspace-wide checks. Avoid file-only `tsc` when it would ignore project configuration.
+- Skip typecheck, lint, tests, or build when the change cannot affect that surface, such as prompt text, docs, comments, copy-only edits, or isolated styling, unless the artifact is consumed by a build step.
+- For frontend changes, prefer Blame Preview, container logs, DevTools console/network checks, and focused UI interaction over production builds.
+- Run production build only when the change affects build configuration, dependencies, shared packages, SSR/static generation, routing/build-time behavior, or when faster runtime checks are unavailable or inconclusive.
+- If a broad check is skipped for efficiency, say what was checked instead and what remains unverified.
+</verification_cost_control>
 
 <coverage_disclosure>
 - Do not imply exhaustive coverage when verification was sampled, scoped, skipped, manually inspected, or bounded by time, tools, permissions, missing dependencies, or top-N searches.

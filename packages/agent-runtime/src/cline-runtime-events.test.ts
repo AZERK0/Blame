@@ -173,6 +173,7 @@ test("renders the Blame development system prompt without Cline placeholders", a
   assert.match(prompt, /<frontend_protocol>/);
   assert.match(prompt, /## Task Classification/);
   assert.match(prompt, /<verification_matrix>/);
+  assert.match(prompt, /<verification_cost_control>/);
   assert.match(prompt, /<coverage_disclosure>/);
   assert.match(prompt, /<external_action_guard>/);
   assert.match(prompt, /## Special Requests/);
@@ -184,6 +185,8 @@ test("renders the Blame development system prompt without Cline placeholders", a
   assert.match(prompt, /## Architecture: Match Codebase/);
   assert.match(prompt, /## Unit Tests: Professional TDD/);
   assert.match(prompt, /A passing test suite is not proof/);
+  assert.match(prompt, /Do not run full workspace lint/);
+  assert.match(prompt, /Blame Preview, container logs, DevTools console\/network checks/);
   assert.match(prompt, new RegExp(process.cwd().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   assert.doesNotMatch(prompt, /\{\{[A-Z_]+\}\}/);
   assert.doesNotMatch(prompt, /You are Cline/);
