@@ -57,6 +57,23 @@ export function createBacklogApi(connection: ApiConnection) {
         )
       )
     },
+    async undoComment(
+      id: string,
+      commentId: string,
+      input?: { clineSessionId?: string }
+    ) {
+      return userStory(
+        await request<unknown>(
+          connection,
+          baseUrl,
+          `/projects/user-stories/${id}/comments/${commentId}/undo`,
+          {
+            body: input ? JSON.stringify(input) : undefined,
+            method: "POST",
+          }
+        )
+      )
+    },
     async activityDetail(id: string, activityId: string) {
       return activityDetail(
         await request<unknown>(

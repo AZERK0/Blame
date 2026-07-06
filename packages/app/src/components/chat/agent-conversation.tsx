@@ -5,13 +5,18 @@ import {
   CheckCircle2Icon,
   ClipboardCheckIcon,
   Code2Icon,
+  CopyIcon,
   FileSearchIcon,
   ListChecksIcon,
   MessageSquareIcon,
   PencilIcon,
+  RotateCcwIcon,
   SearchIcon,
   TerminalIcon,
+  ThumbsDownIcon,
+  ThumbsUpIcon,
 } from "lucide-react"
+import { toast } from "sonner"
 
 import type {
   UserStoryAgentActivity,
@@ -41,6 +46,12 @@ import {
 } from "@/components/ui/accordion"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import { cn } from "@/lib/utils"
 
 export type AgentConversationComment = {
   author: string
@@ -68,14 +79,28 @@ export type AgentConversationRun = {
   usage?: UserStoryAgentUsage | null
 }
 
+export type AgentConversationUserMessageUndo = {
+  checkpointRunCount: number
+  comment: AgentConversationComment
+  run: AgentConversationRun
+}
+
+type AgentConversationVisibleMessage =
+  | { type: "activity"; activityId: string; runId: string }
+  | { type: "comment"; runId: string }
+
 export function AgentConversationTimeline({
   comments,
+  onUserMessageUndo,
   onFileLinkClick,
   onLoadActivityDetail,
   responseHeader,
   runs,
 }: {
   comments: AgentConversationComment[]
+  onUserMessageUndo?: (
+    target: AgentConversationUserMessageUndo
+  ) => Promise<void> | void
   onFileLinkClick?: (path: string) => void
   onLoadActivityDetail?: (
     run: AgentConversationRun,
@@ -93,6 +118,10 @@ export function AgentConversationTimeline({
       onLoadActivityDetail?.(run, activity) ?? Promise.resolve(activity.detail),
     [onLoadActivityDetail]
   )
+  const lastVisibleMessage = React.useMemo(
+    () => lastAgentConversationVisibleMessage(runs, commentsById),
+    [commentsById, runs]
+  )
 
   if (runs.length === 0) return null
 
@@ -101,12 +130,13 @@ export function AgentConversationTimeline({
       <div className="relative grid gap-4 pt-6">
         <span className="absolute top-0 bottom-0 left-4 w-px bg-muted-foreground/35" />
         <Accordion type="multiple" className="contents">
-          {runs.map((run) => {
+          {runs.map((run, index) => {
             const activities = agentDisplayActivities(
               run.activities ?? [],
               run.finalResponse,
               run.status
             )
+            const checkpointRunCount = index + 1
             const runningToolActivityId = currentRunningToolActivityId(
               run.status,
               activities
@@ -114,9 +144,23 @@ export function AgentConversationTimeline({
             return (
               <React.Fragment key={run.id}>
                 <RunCommentItem
+                  alwaysVisible={
+                    lastVisibleMessage?.type === "comment" &&
+                    lastVisibleMessage.runId === run.id
+                  }
                   comment={runComment(run, commentsById)}
                   run={run}
                   onFileLinkClick={onFileLinkClick}
+                  onUndo={
+                    onUserMessageUndo
+                      ? (comment) =>
+                          onUserMessageUndo({
+                            checkpointRunCount,
+                            comment,
+                            run,
+                          })
+                      : undefined
+                  }
                 />
                 {userStoryActivityTree(activities).map((node) => (
                   <AgentActivityItem
@@ -124,6 +168,12 @@ export function AgentConversationTimeline({
                     node={node}
                     onFileLinkClick={onFileLinkClick}
                     onLoadDetail={(item) => loadActivityDetail(run, item)}
+                    alwaysVisibleActivityId={
+                      lastVisibleMessage?.type === "activity" &&
+                      lastVisibleMessage.runId === run.id
+                        ? lastVisibleMessage.activityId
+                        : undefined
+                    }
                     responseHeader={responseHeader}
                     runActive={run.status === "running"}
                     runningToolActivityId={runningToolActivityId}
@@ -225,19 +275,23 @@ export function AgentConversationComposer({
 }
 
 function RunCommentItem({
+  alwaysVisible,
   comment,
   onFileLinkClick,
+  onUndo,
   run,
 }: {
+  alwaysVisible: boolean
   comment?: AgentConversationComment
   onFileLinkClick?: (path: string) => void
+  onUndo?: (comment: AgentConversationComment) => Promise<void> | void
   run: AgentConversationRun
 }) {
   if (run.kind === "initial") return null
   if (!comment) return null
 
   return (
-    <div className="relative grid grid-cols-[2.5rem_minmax(0,1fr)] items-start gap-1">
+    <div className="group/message relative grid grid-cols-[2.5rem_minmax(0,1fr)] items-start gap-1">
       <span className="relative z-10 flex size-8 items-center justify-center rounded-full border bg-background text-muted-foreground shadow-sm">
         <MessageSquareIcon className="size-4" />
       </span>
@@ -258,6 +312,13 @@ function RunCommentItem({
           onFileLinkClick={onFileLinkClick}
           placeholder=""
           minHeight="min-h-24"
+        />
+        <MarkdownMessageActions
+          alwaysVisible={alwaysVisible}
+          createdAt={comment.createdAt}
+          markdown={comment.body}
+          onUndo={onUndo ? () => onUndo(comment) : undefined}
+          undoDisabled={run.status === "running"}
         />
       </div>
     </div>
@@ -283,6 +344,7 @@ function AgentThinkingTimelineItem() {
 }
 
 function AgentActivityItem({
+  alwaysVisibleActivityId,
   node,
   onFileLinkClick,
   onLoadDetail,
@@ -291,6 +353,7 @@ function AgentActivityItem({
   runningToolActivityId,
   value,
 }: {
+  alwaysVisibleActivityId?: string
   node: UserStoryActivityNode
   onFileLinkClick?: (path: string) => void
   onLoadDetail: (activity: UserStoryAgentActivity) => Promise<string>
@@ -302,6 +365,7 @@ function AgentActivityItem({
   if (node.type === "group") {
     return (
       <AgentActivityGroupItem
+        alwaysVisibleActivityId={alwaysVisibleActivityId}
         node={node}
         onFileLinkClick={onFileLinkClick}
         onLoadDetail={onLoadDetail}
@@ -314,6 +378,7 @@ function AgentActivityItem({
   }
   return (
     <AgentActivityLeafItem
+      alwaysVisible={node.activity.id === alwaysVisibleActivityId}
       activity={node.activity}
       onFileLinkClick={onFileLinkClick}
       onLoadDetail={onLoadDetail}
@@ -326,6 +391,7 @@ function AgentActivityItem({
 }
 
 function AgentActivityGroupItem({
+  alwaysVisibleActivityId,
   node,
   onFileLinkClick,
   onLoadDetail,
@@ -334,6 +400,7 @@ function AgentActivityGroupItem({
   runningToolActivityId,
   value,
 }: {
+  alwaysVisibleActivityId?: string
   node: Extract<UserStoryActivityNode, { type: "group" }>
   onFileLinkClick?: (path: string) => void
   onLoadDetail: (activity: UserStoryAgentActivity) => Promise<string>
@@ -366,6 +433,7 @@ function AgentActivityGroupItem({
             contentClassName="data-open:h-auto! data-open:overflow-visible"
           >
             <AgentActivityChildren
+              alwaysVisibleActivityId={alwaysVisibleActivityId}
               nodes={node.children}
               onFileLinkClick={onFileLinkClick}
               onLoadDetail={onLoadDetail}
@@ -382,6 +450,7 @@ function AgentActivityGroupItem({
 }
 
 function AgentActivityChildren({
+  alwaysVisibleActivityId,
   nodes,
   onFileLinkClick,
   onLoadDetail,
@@ -390,6 +459,7 @@ function AgentActivityChildren({
   runActive,
   runningToolActivityId,
 }: {
+  alwaysVisibleActivityId?: string
   nodes: UserStoryActivityNode[]
   onFileLinkClick?: (path: string) => void
   onLoadDetail: (activity: UserStoryAgentActivity) => Promise<string>
@@ -404,6 +474,7 @@ function AgentActivityChildren({
       <Accordion type="multiple" className="contents">
         {nodes.map((node) => (
           <AgentActivityItem
+            alwaysVisibleActivityId={alwaysVisibleActivityId}
             key={node.id}
             node={node}
             onFileLinkClick={onFileLinkClick}
@@ -420,6 +491,7 @@ function AgentActivityChildren({
 }
 
 function AgentActivityLeafItem({
+  alwaysVisible,
   activity,
   onFileLinkClick,
   onLoadDetail,
@@ -428,6 +500,7 @@ function AgentActivityLeafItem({
   runningToolActivityId,
   value,
 }: {
+  alwaysVisible: boolean
   activity: UserStoryAgentActivity
   onFileLinkClick?: (path: string) => void
   onLoadDetail: (activity: UserStoryAgentActivity) => Promise<string>
@@ -439,10 +512,13 @@ function AgentActivityLeafItem({
   if (activity.kind === "message") {
     return (
       <AgentMarkdownTimelineItem
+        alwaysVisible={alwaysVisible}
+        createdAt={activity.createdAt}
         highlight={activity.messageKind === "final"}
         icon={agentMessageIcon(activity, responseHeader)}
         markdown={activity.detail}
         onFileLinkClick={onFileLinkClick}
+        showFeedback={activity.messageKind === "final"}
         title={agentMessageTitle(activity, responseHeader)}
       />
     )
@@ -527,6 +603,33 @@ function currentRunningToolActivityId(
   if (lastActivity?.kind !== "tool") return undefined
   if (lastActivity.status !== "running") return undefined
   return lastActivity.id
+}
+
+function lastAgentConversationVisibleMessage(
+  runs: AgentConversationRun[],
+  commentsById: Map<string, AgentConversationComment>
+): AgentConversationVisibleMessage | undefined {
+  let lastMessage: AgentConversationVisibleMessage | undefined
+  for (const run of runs) {
+    if (run.kind !== "initial" && runComment(run, commentsById)) {
+      lastMessage = { runId: run.id, type: "comment" }
+    }
+    const activities = agentDisplayActivities(
+      run.activities ?? [],
+      run.finalResponse,
+      run.status
+    )
+    for (const activity of activities) {
+      if (activity.kind === "message") {
+        lastMessage = {
+          activityId: activity.id,
+          runId: run.id,
+          type: "activity",
+        }
+      }
+    }
+  }
+  return lastMessage
 }
 
 function agentThinkingVisible(
@@ -617,21 +720,27 @@ function ActivityDetails({
 }
 
 function AgentMarkdownTimelineItem({
+  alwaysVisible,
+  createdAt,
   highlight,
   icon,
   markdown,
   onFileLinkClick,
+  showFeedback,
   title,
 }: {
+  alwaysVisible: boolean
+  createdAt: string
   highlight: boolean
   icon?: React.ReactNode
   markdown: string
   onFileLinkClick?: (path: string) => void
+  showFeedback?: boolean
   title: React.ReactNode
 }) {
   return (
     <div
-      className="relative grid grid-cols-[2.5rem_minmax(0,1fr)] items-start gap-1"
+      className="group/message relative grid grid-cols-[2.5rem_minmax(0,1fr)] items-start gap-1"
       data-agent-response
     >
       <span className="relative z-10 flex size-8 items-center justify-center rounded-full border bg-background text-muted-foreground shadow-sm">
@@ -648,8 +757,173 @@ function AgentMarkdownTimelineItem({
             minHeight="min-h-24"
           />
         </div>
+        <MarkdownMessageActions
+          alwaysVisible={alwaysVisible}
+          createdAt={createdAt}
+          markdown={markdown}
+          showFeedback={showFeedback}
+        />
       </div>
     </div>
+  )
+}
+
+export function MarkdownMessageActions({
+  alwaysVisible = true,
+  createdAt,
+  markdown,
+  onUndo,
+  showFeedback,
+  undoDisabled,
+}: {
+  alwaysVisible?: boolean
+  createdAt?: string | null
+  markdown: string
+  onUndo?: () => Promise<void> | void
+  showFeedback?: boolean
+  undoDisabled?: boolean
+}) {
+  const [feedback, setFeedback] = React.useState<"dislike" | "like">()
+  const [undoing, setUndoing] = React.useState(false)
+  const dateLabel = messageActionDateLabel(createdAt)
+
+  async function copy() {
+    try {
+      await writeClipboardText(markdown)
+      toast.success("Message copied.", { position: "bottom-right" })
+    } catch (error) {
+      toast.error("Unable to copy", {
+        description: errorMessage(error),
+        position: "bottom-right",
+      })
+    }
+  }
+
+  async function undo() {
+    if (!onUndo || undoing) return
+    setUndoing(true)
+    try {
+      await onUndo()
+    } catch (error) {
+      toast.error("Unable to undo message", {
+        description: errorMessage(error),
+        position: "bottom-right",
+      })
+    } finally {
+      setUndoing(false)
+    }
+  }
+
+  function preventMouseFocus(event: React.MouseEvent<HTMLButtonElement>) {
+    event.preventDefault()
+  }
+
+  return (
+    <div
+      className={cn(
+        "flex min-h-6 items-center gap-3 transition-opacity",
+        alwaysVisible
+          ? "opacity-100"
+          : "pointer-events-none opacity-0 group-focus-within/message:pointer-events-auto group-focus-within/message:opacity-100 group-hover/message:pointer-events-auto group-hover/message:opacity-100"
+      )}
+    >
+      <div className="flex shrink-0 items-center gap-1.5">
+        <MarkdownActionTooltip label="Copy">
+          <Button
+            aria-label="Copy"
+            onMouseDown={preventMouseFocus}
+            onClick={copy}
+            size="icon-xs"
+            type="button"
+            variant="ghost"
+          >
+            <CopyIcon className="size-3" />
+          </Button>
+        </MarkdownActionTooltip>
+        {onUndo ? (
+          <MarkdownActionTooltip label={undoing ? "Undoing" : "Undo"}>
+            <Button
+              aria-label={undoing ? "Undoing" : "Undo"}
+              disabled={undoDisabled || undoing}
+              onMouseDown={preventMouseFocus}
+              onClick={undo}
+              size="icon-xs"
+              type="button"
+              variant="ghost"
+            >
+              <RotateCcwIcon className="size-3" />
+            </Button>
+          </MarkdownActionTooltip>
+        ) : null}
+        {showFeedback ? (
+          <>
+            <MarkdownActionTooltip label="Like">
+              <Button
+                aria-label="Like"
+                aria-pressed={feedback === "like"}
+                className={
+                  feedback === "like"
+                    ? "bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/15 dark:text-emerald-300"
+                    : undefined
+                }
+                onClick={() =>
+                  setFeedback(feedback === "like" ? undefined : "like")
+                }
+                onMouseDown={preventMouseFocus}
+                size="icon-xs"
+                type="button"
+                variant="ghost"
+              >
+                <ThumbsUpIcon className="size-3" />
+              </Button>
+            </MarkdownActionTooltip>
+            <MarkdownActionTooltip label="Dislike">
+              <Button
+                aria-label="Dislike"
+                aria-pressed={feedback === "dislike"}
+                className={
+                  feedback === "dislike"
+                    ? "bg-destructive/10 text-destructive hover:!bg-destructive/15 dark:bg-destructive/20 dark:hover:!bg-destructive/30"
+                    : undefined
+                }
+                onClick={() =>
+                  setFeedback(feedback === "dislike" ? undefined : "dislike")
+                }
+                onMouseDown={preventMouseFocus}
+                size="icon-xs"
+                type="button"
+                variant="ghost"
+              >
+                <ThumbsDownIcon className="size-3" />
+              </Button>
+            </MarkdownActionTooltip>
+          </>
+        ) : null}
+      </div>
+      {dateLabel ? (
+        <time
+          className="ml-auto shrink-0 text-xs font-medium text-muted-foreground"
+          dateTime={createdAt ?? undefined}
+        >
+          {dateLabel}
+        </time>
+      ) : null}
+    </div>
+  )
+}
+
+function MarkdownActionTooltip({
+  children,
+  label,
+}: {
+  children: React.ReactNode
+  label: string
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
   )
 }
 
@@ -931,6 +1205,17 @@ function truncateMiddle(value: string | undefined, maxLength: number) {
   return `${value.slice(0, edgeLength)}\n...\n${value.slice(-edgeLength)}`
 }
 
+async function writeClipboardText(value: string) {
+  if (!navigator.clipboard?.writeText) {
+    throw new Error("Clipboard is not available.")
+  }
+  await navigator.clipboard.writeText(value)
+}
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error)
+}
+
 function recordValue(value: unknown) {
   if (value && typeof value === "object")
     return value as Record<string, unknown>
@@ -948,6 +1233,16 @@ function numberValue(value: unknown) {
 function commentDateLabel(value: string) {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return "Just now"
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date)
+}
+
+function messageActionDateLabel(value: string | null | undefined) {
+  if (!value) return undefined
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return undefined
   return new Intl.DateTimeFormat(undefined, {
     dateStyle: "medium",
     timeStyle: "short",

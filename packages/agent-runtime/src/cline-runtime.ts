@@ -7,6 +7,7 @@ import { promisify } from "node:util";
 import type {
   ClineCore,
   ClineCoreOptions,
+  ClineCoreStartInput,
   CoreSessionConfig,
   CoreSessionEvent,
   OAuthCredentials as ClineOAuthCredentials,
@@ -249,7 +250,10 @@ type RuntimeOptions = {
   git?(cwd: string, args: string[]): Promise<string>;
   previewDevtools?(
     input?: PreviewDevtoolsTargetInput,
-  ): Promise<PreviewDevtoolsTarget | undefined> | PreviewDevtoolsTarget | undefined;
+  ):
+    | Promise<PreviewDevtoolsTarget | undefined>
+    | PreviewDevtoolsTarget
+    | undefined;
   previewContainerLogs?: PreviewContainerLogsProvider;
 };
 
@@ -275,7 +279,9 @@ type HeadroomSavingsTotals = {
   tokensSaved: number;
 };
 
-let customGitRunner: ((cwd: string, args: string[]) => Promise<string>) | undefined;
+let customGitRunner:
+  | ((cwd: string, args: string[]) => Promise<string>)
+  | undefined;
 
 export class BlameAgentRuntime {
   private clines = new Map<string, Promise<ClineCore>>();
@@ -289,6 +295,7 @@ export class BlameAgentRuntime {
   private autoApprovedWriteToolSessions = new Set<string>();
   private sessionLogFiles = new Map<string, string>();
   private sessionContexts = new Map<string, ProductionSessionContext>();
+  private sessionStartInputs = new Map<string, ClineCoreStartInput>();
   private sessionEventSignatures = new Map<string, Map<string, number>>();
   private sessionHeadroomSavings = new Map<string, HeadroomSavingsTotals>();
   private sessionIterations = new Map<string, number>();
@@ -566,6 +573,7 @@ export class BlameAgentRuntime {
         source: "blame-desktop",
         toolPolicies: toolPolicies(!!input.autoApproveWriteTools),
       } as const;
+      this.sessionStartInputs.set(sessionId, startInput);
       if (autoSendPrompt) {
         void cline
           .start(startInput)
@@ -700,15 +708,80 @@ export class BlameAgentRuntime {
     input: RestoreCheckpointInput,
   ): Promise<RestoreCheckpointResult> {
     const cline = await this.sessionCore(input.sessionId);
-    return cline.restore({
+    const restoreMessages = input.restore?.messages ?? false;
+    const start = restoreMessages
+      ? this.restoreCheckpointStartInput(input.sessionId)
+      : undefined;
+    const result = await cline.restore({
       checkpointRunCount: input.checkpointRunCount,
       cwd: input.cwd,
       restore: {
-        messages: false,
+        messages: restoreMessages,
+        omitCheckpointMessageFromSession:
+          input.restore?.omitCheckpointMessageFromSession,
         workspace: input.restore?.workspace ?? true,
       },
+      ...(start ? { start } : {}),
       sessionId: input.sessionId,
     });
+    await this.attachRestoredCheckpointSession(
+      input.sessionId,
+      result.sessionId,
+      start,
+      cline,
+    );
+    return result;
+  }
+
+  private restoreCheckpointStartInput(sessionId: string) {
+    const start = this.sessionStartInputs.get(sessionId);
+    if (!start) {
+      throw new Error(
+        "Unable to restore Cline messages for a session started before this app session.",
+      );
+    }
+    const restoredSessionId = createBlameSessionId();
+    return {
+      ...start,
+      config: {
+        ...start.config,
+        sessionId: restoredSessionId,
+      },
+    };
+  }
+
+  private async attachRestoredCheckpointSession(
+    sourceSessionId: string,
+    restoredSessionId: string | undefined,
+    start: ClineCoreStartInput | undefined,
+    cline: ClineCore,
+  ) {
+    if (!restoredSessionId || !start) return;
+    if (restoredSessionId === sourceSessionId) return;
+    if (!this.unsubscribers.has(restoredSessionId)) {
+      await this.subscribeCoreSession(restoredSessionId, cline);
+    }
+    const backendKeyValue = this.sessionBackendKeys.get(sourceSessionId);
+    if (backendKeyValue)
+      this.sessionBackendKeys.set(restoredSessionId, backendKeyValue);
+    const cwd = start.config.cwd;
+    if (cwd) {
+      this.sessionLogFiles.set(
+        restoredSessionId,
+        sessionLogPath(cwd, restoredSessionId),
+      );
+    }
+    const context = this.sessionContexts.get(sourceSessionId);
+    if (context) {
+      this.sessionContexts.set(restoredSessionId, {
+        ...context,
+        sessionId: restoredSessionId,
+      });
+    }
+    this.sessionStartInputs.set(restoredSessionId, start);
+    if (this.autoApprovedWriteToolSessions.has(sourceSessionId)) {
+      this.autoApprovedWriteToolSessions.add(restoredSessionId);
+    }
   }
 
   private async listSessions() {
@@ -738,9 +811,9 @@ export class BlameAgentRuntime {
     const normalizedSessionId = sessionId?.trim();
     if (!normalizedSessionId) return undefined;
     try {
-      const messages = await (await this.core(backend)).readMessages(
-        normalizedSessionId,
-      );
+      const messages = await (
+        await this.core(backend)
+      ).readMessages(normalizedSessionId);
       return messages.length ? messages : undefined;
     } catch {
       return undefined;
@@ -751,7 +824,9 @@ export class BlameAgentRuntime {
     sessionId: string,
   ): Promise<AgentUsageSummary | undefined> {
     const cline = await this.sessionCore(sessionId);
-    return normalizeAgentUsageSummary(await cline.getAccumulatedUsage(sessionId));
+    return normalizeAgentUsageSummary(
+      await cline.getAccumulatedUsage(sessionId),
+    );
   }
 
   private async initializeProject(
@@ -766,7 +841,11 @@ export class BlameAgentRuntime {
       const submitTool = projectInitializationSubmitTool();
       const session = await cline.start({
         prompt: initializationPrompt(scan, correction),
-        config: initializationConfig(input, resolvedCredential, submitTool.tool),
+        config: initializationConfig(
+          input,
+          resolvedCredential,
+          submitTool.tool,
+        ),
         interactive: false,
         source: "blame-project-initialization",
         toolPolicies: initializationToolPolicies(),
@@ -1223,8 +1302,12 @@ export class BlameAgentRuntime {
     sessionId: string,
     backend?: AgentBackendConfig,
   ) {
-    this.unsubscribeSession(sessionId);
     const cline = await this.core(backend);
+    await this.subscribeCoreSession(sessionId, cline);
+  }
+
+  private async subscribeCoreSession(sessionId: string, cline: ClineCore) {
+    this.unsubscribeSession(sessionId);
     const unsubscribe = await cline.subscribe(
       (payload: CoreSessionEvent) => {
         if (this.shouldSkipFallbackChunk(sessionId, payload)) return;
@@ -1314,6 +1397,7 @@ export class BlameAgentRuntime {
     this.sessionSpawnAgentActiveCounts.delete(sessionId);
     this.sessionUsageSignatures.delete(sessionId);
     this.sessionBackendKeys.delete(sessionId);
+    this.sessionStartInputs.delete(sessionId);
     this.structuredEventSessions.delete(sessionId);
     void this.logSession(sessionId, "session unsubscribed");
   }
@@ -1357,7 +1441,9 @@ export class BlameAgentRuntime {
     await Promise.all(
       Array.from(this.clines.values()).map(async (core) => {
         try {
-          const sessions = (await (await core).list(50)) as RuntimeSessionSummary[];
+          const sessions = (await (
+            await core
+          ).list(50)) as RuntimeSessionSummary[];
           sessions.forEach((session) => {
             if (session.sessionId) sessionIds.add(session.sessionId);
           });
@@ -1598,7 +1684,8 @@ export class BlameAgentRuntime {
   ) {
     if (mode !== "headroom") return undefined;
     const result = await this.headroomSidecar.ensure({
-      logger: (message, payload) => this.logSession(sessionId, message, payload),
+      logger: (message, payload) =>
+        this.logSession(sessionId, message, payload),
       logFile: headroomProxyLogPath(input.cwd),
       requestLogFile: headroomRequestLogPath(input.cwd),
     });
@@ -1613,6 +1700,7 @@ export class BlameAgentRuntime {
     const clines = Array.from(this.clines.values());
     this.clines.clear();
     this.sessionBackendKeys.clear();
+    this.sessionStartInputs.clear();
     await Promise.allSettled(
       clines.map(async (cline) => (await cline).dispose("Shutting down")),
     );
@@ -2479,7 +2567,9 @@ export async function buildDevelopmentSystemPrompt(
   });
 }
 
-function developmentPracticePrompts(practices: ProjectCodePracticePreference[]) {
+function developmentPracticePrompts(
+  practices: ProjectCodePracticePreference[],
+) {
   return [
     developmentPracticePrompt(practices, "coding_style"),
     developmentPracticePrompt(practices, "layered_architecture"),
@@ -2822,7 +2912,8 @@ async function commitMessagePrompt(input: CommitMessageRuntimeInput) {
   ]);
   const title = input.title || "Git changes";
   const summary =
-    input.summary || "Generate a concise commit message for the selected changes.";
+    input.summary ||
+    "Generate a concise commit message for the selected changes.";
   return [
     `Backlog item: ${title}`,
     "",
@@ -3093,9 +3184,10 @@ async function git(cwd: string, args: string[]) {
       env: {
         ...process.env,
         GIT_TERMINAL_PROMPT: "0",
-        GIT_SSH_COMMAND: process.platform === "win32"
-          ? "ssh.exe -o BatchMode=yes -o StrictHostKeyChecking=no"
-          : "ssh -o BatchMode=yes -o StrictHostKeyChecking=no",
+        GIT_SSH_COMMAND:
+          process.platform === "win32"
+            ? "ssh.exe -o BatchMode=yes -o StrictHostKeyChecking=no"
+            : "ssh -o BatchMode=yes -o StrictHostKeyChecking=no",
       },
       maxBuffer: 20 * 1024 * 1024,
     });

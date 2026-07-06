@@ -331,6 +331,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/quick_chat_messages_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
+  'projects.quick_chats.quick_chat_messages.undo': {
+    methods: ["POST"]
+    pattern: '/api/v1/projects/quick-chats/:id/messages/:messageId/undo'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue, ParamValue]
+      params: { id: ParamValue; messageId: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/quick_chat_messages_controller').default['undo']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/quick_chat_messages_controller').default['undo']>>>
+    }
+  }
   'projects.quick_chats.quick_chat_agent_runs.store': {
     methods: ["POST"]
     pattern: '/api/v1/projects/quick-chats/:id/agent-runs'
@@ -485,6 +497,18 @@ export interface Registry {
       query: ExtractQuery<InferInput<(typeof import('#validators/user_story_comment').createUserStoryCommentValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/user_story_comments_controller').default['store']>>>
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/user_story_comments_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'projects.user_stories.user_story_comments.undo': {
+    methods: ["POST"]
+    pattern: '/api/v1/projects/user-stories/:id/comments/:commentId/undo'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue, ParamValue]
+      params: { id: ParamValue; commentId: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/user_story_comments_controller').default['undo']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/user_story_comments_controller').default['undo']>>>
     }
   }
 }

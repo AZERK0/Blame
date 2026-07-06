@@ -32,6 +32,7 @@ import { pendingFileAttachments } from "@/components/backlog/drawer/user-story-a
 import {
   AgentConversationComposer,
   AgentConversationTimeline,
+  type AgentConversationUserMessageUndo,
 } from "@/components/chat/agent-conversation"
 import {
   clearPendingQuickChatAgentUpdates,
@@ -404,6 +405,35 @@ function QuickChatProjectPage() {
     }
   }
 
+  async function undoQuickChatMessage(
+    target: AgentConversationUserMessageUndo
+  ) {
+    if (!activeConversation) return
+    const current = await detailedConversation(activeConversation)
+    const restored = await restoreQuickChatCheckpoint(
+      platform,
+      current,
+      target.run.clineSessionId ?? current.clineSessionId,
+      target.checkpointRunCount
+    )
+    const nextConversation = await quickChats.undoMessage(
+      current,
+      target.comment.id,
+      { clineSessionId: restored.sessionId }
+    )
+    replaceChatRef(nextConversation)
+    setDraft(target.comment.body)
+    setDraftCodeAttachments(target.comment.codeSelectionAttachments ?? [])
+    setDraftFileAttachments(target.comment.fileAttachments ?? [])
+    setDraftEditorKey((key) => key + 1)
+    requestAnimationFrame(() => {
+      draftRef.current
+        ?.querySelector<HTMLElement>("[data-markdown-editor-input='true']")
+        ?.focus()
+    })
+    toast.success("Message restored to editor.", { position: "bottom-right" })
+  }
+
   function copyConversationTitle(conversation: QuickChat) {
     void copyConversationText(conversation.title, "Conversation title copied.")
   }
@@ -697,6 +727,7 @@ function QuickChatProjectPage() {
                         activity
                       )
                     }
+                    onUserMessageUndo={undoQuickChatMessage}
                     responseHeader={responseHeader}
                     runs={activeConversation.agentRuns}
                   />
@@ -1170,6 +1201,28 @@ function loadGitStatus(
   return () => {
     cancelled = true
   }
+}
+
+async function restoreQuickChatCheckpoint(
+  platform: Platform,
+  chat: QuickChat,
+  sessionId: string | null | undefined,
+  checkpointRunCount: number
+) {
+  if (!platform.agent)
+    throw new Error("Desktop agent runtime is not available.")
+  if (!sessionId) throw new Error("This message has no Cline session.")
+  if (!chat.workspace) throw new Error("This quick chat has no workspace.")
+  return platform.agent.sessions.restoreCheckpoint({
+    checkpointRunCount,
+    cwd: chat.workspace,
+    restore: {
+      messages: true,
+      omitCheckpointMessageFromSession: true,
+      workspace: false,
+    },
+    sessionId,
+  })
 }
 
 function quickChatSendValidationError(input: {

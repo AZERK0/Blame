@@ -176,6 +176,18 @@ function useBacklogStoreValue() {
     },
     [api]
   )
+  const undoComment = React.useCallback(
+    async (
+      story: UserStory,
+      commentId: string,
+      input?: { clineSessionId?: string }
+    ) => {
+      const nextStory = await api.undoComment(story.id, commentId, input)
+      replaceStory(nextStory, setState)
+      return nextStory
+    },
+    [api]
+  )
   const createComment = React.useCallback(
     async (
       story: UserStory,
@@ -386,6 +398,7 @@ function useBacklogStoreValue() {
       Boolean(story && state.detailedStoryIds?.has(story.id)),
     storySetupInitializing,
     storiesForColumn,
+    undoComment,
     update,
     updateAgentRun,
     updateAgentRunLocal,
@@ -478,6 +491,19 @@ function storyStateIds(
   if (active) next.add(storyId)
   else next.delete(storyId)
   return next
+}
+
+function replaceStory(
+  story: UserStory,
+  setState: React.Dispatch<React.SetStateAction<BacklogState>>
+) {
+  setState((current) => ({
+    ...current,
+    detailedStoryIds: storyStateIds(current.detailedStoryIds, story.id, true),
+    stories: current.stories.map((currentStory) =>
+      currentStory.id === story.id ? story : currentStory
+    ),
+  }))
 }
 
 function loadingState(current: BacklogState, projectId: string): BacklogState {

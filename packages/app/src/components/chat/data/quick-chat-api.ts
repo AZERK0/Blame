@@ -60,6 +60,23 @@ export function createQuickChatApi(connection: ApiConnection) {
         )
       )
     },
+    async undoMessage(
+      id: string,
+      messageId: string,
+      input?: { clineSessionId?: string }
+    ) {
+      return quickChat(
+        await request<unknown>(
+          connection,
+          baseUrl,
+          `/projects/quick-chats/${id}/messages/${messageId}/undo`,
+          {
+            body: input ? JSON.stringify(input) : undefined,
+            method: "POST",
+          }
+        )
+      )
+    },
     async createMessage(id: string, input: QuickChatMessageDraft) {
       return quickChatMessage(
         await request<unknown>(

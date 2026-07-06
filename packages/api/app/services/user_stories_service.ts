@@ -1,5 +1,5 @@
 import Project from '#models/project'
-import UserStory, { type UserStoryAgentActivity } from '#models/user_story'
+import UserStory, { type UserStoryAgentActivity, type UserStoryStatus } from '#models/user_story'
 import UserStoryAgentRun from '#models/user_story_agent_run'
 import UserStoryComment from '#models/user_story_comment'
 import { activityWithArtifact, artifactDetail } from '#services/agent_activity_artifacts'
@@ -109,6 +109,29 @@ export default class UserStoriesService {
       fileAttachments: input.fileAttachments ?? null,
       userStoryId: id,
     })
+  }
+
+  async undoComment(
+    userId: string,
+    id: string,
+    commentId: string,
+    clineSessionId?: string
+  ) {
+    const story = await this.find(userId, id)
+    const comment = story.comments.find((item) => item.id === commentId)
+    if (!comment) throw new Error('User story comment not found.')
+    const deletedCommentIds = new Set(
+      story.comments.filter((item) => sameOrAfter(item, comment)).map((item) => item.id)
+    )
+    const deletedRunIds = new Set(
+      storyRunIdsFromComments(story.agentRuns, commentId, deletedCommentIds)
+    )
+    await deleteStoryRuns(story.id, [...deletedRunIds])
+    await deleteStoryComments(story.id, [...deletedCommentIds])
+    const remainingRuns = story.agentRuns.filter((run) => !deletedRunIds.has(run.id))
+    story.merge(storyUndoUpdate(remainingRuns, story.status, clineSessionId))
+    await story.save()
+    return this.find(userId, id)
   }
 
   async activityDetail(userId: string, id: string, activityId: string) {
@@ -247,4 +270,68 @@ function sortStoryComments<T extends UserStory>(story: T) {
 function compareComments(left: UserStoryComment, right: UserStoryComment) {
   const createdAtDelta = left.createdAt.toMillis() - right.createdAt.toMillis()
   return createdAtDelta || left.id.localeCompare(right.id)
+}
+
+function storyRunIdsFromComments(
+  runs: UserStoryAgentRun[],
+  commentId: string,
+  deletedCommentIds: Set<string>
+) {
+  const index = runs.findIndex((run) => run.commentId === commentId)
+  if (index >= 0) return runs.slice(index).map((run) => run.id)
+  return runs
+    .filter((run) => run.commentId && deletedCommentIds.has(run.commentId))
+    .map((run) => run.id)
+}
+
+async function deleteStoryRuns(storyId: string, ids: string[]) {
+  if (!ids.length) return
+  await UserStoryAgentRun.query().where('userStoryId', storyId).whereIn('id', ids).delete()
+}
+
+async function deleteStoryComments(storyId: string, ids: string[]) {
+  if (!ids.length) return
+  await UserStoryComment.query().where('userStoryId', storyId).whereIn('id', ids).delete()
+}
+
+function storyUndoUpdate(
+  remainingRuns: UserStoryAgentRun[],
+  currentStatus: UserStoryStatus,
+  clineSessionId?: string
+): Partial<UserStory> {
+  const lastRun = remainingRuns.at(-1)
+  return {
+    agentActivities: lastRun?.activities ?? [],
+    agentFinalResponse: lastRun?.finalResponse ?? null,
+    agentLastError: null,
+    agentLastEvent: lastRun ? agentRunLastEvent(lastRun) : null,
+    agentSessionSummary: lastRun?.sessionSummary ?? null,
+    agentStatus: null,
+    agentUsage: lastRun?.usage ?? null,
+    clineSessionId: clineSessionId ?? lastRun?.clineSessionId ?? null,
+    status: storyStatusAfterUndo(lastRun, currentStatus),
+  }
+}
+
+function storyStatusAfterUndo(
+  lastRun: UserStoryAgentRun | undefined,
+  currentStatus: UserStoryStatus
+): UserStoryStatus {
+  if (!lastRun) return 'backlog'
+  if (lastRun.status === 'running') return 'in-progress'
+  if (currentStatus === 'done') return 'in-review'
+  if (currentStatus === 'discarded') return 'backlog'
+  if (currentStatus === 'backlog' || currentStatus === 'ready') return currentStatus
+  return 'in-review'
+}
+
+function agentRunLastEvent(run: UserStoryAgentRun) {
+  if (run.status === 'failed') return run.finalResponse ?? 'Agent run failed.'
+  if (run.status === 'running') return 'Agent is running.'
+  return run.finalResponse ?? 'Agent run completed.'
+}
+
+function sameOrAfter<T extends { createdAt: DateTime; id: string }>(item: T, target: T) {
+  const delta = item.createdAt.toMillis() - target.createdAt.toMillis()
+  return delta > 0 || (delta === 0 && item.id.localeCompare(target.id) >= 0)
 }

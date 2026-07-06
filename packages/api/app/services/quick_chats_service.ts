@@ -89,6 +89,29 @@ export default class QuickChatsService {
     })
   }
 
+  async undoMessage(
+    userId: string,
+    id: string,
+    messageId: string,
+    clineSessionId?: string
+  ) {
+    const quickChat = await this.find(userId, id)
+    const message = quickChat.messages.find((item) => item.id === messageId)
+    if (!message) throw new Error('Quick chat message not found.')
+    const deletedMessageIds = new Set(
+      quickChat.messages.filter((item) => sameOrAfter(item, message)).map((item) => item.id)
+    )
+    const deletedRunIds = new Set(
+      quickChatRunIdsFromMessages(quickChat.agentRuns, messageId, deletedMessageIds)
+    )
+    await deleteQuickChatRuns(quickChat.id, [...deletedRunIds])
+    await deleteQuickChatMessages(quickChat.id, [...deletedMessageIds])
+    const remainingRuns = quickChat.agentRuns.filter((run) => !deletedRunIds.has(run.id))
+    quickChat.merge(quickChatUndoUpdate(remainingRuns, clineSessionId))
+    await quickChat.save()
+    return this.find(userId, id)
+  }
+
   async createAgentRun(userId: string, id: string, input: CreateQuickChatAgentRunInput) {
     const quickChat = await this.find(userId, id)
     if (input.messageId && !quickChat.messages.some((message) => message.id === input.messageId)) {
@@ -210,4 +233,54 @@ function orderMessages(query: ReturnType<typeof QuickChatMessage.query>) {
 
 function orderAgentRuns(query: ReturnType<typeof QuickChatAgentRun.query>) {
   query.orderBy('quickChatId', 'asc').orderBy('createdAt', 'asc').orderBy('id', 'asc')
+}
+
+function quickChatRunIdsFromMessages(
+  runs: QuickChatAgentRun[],
+  messageId: string,
+  deletedMessageIds: Set<string>
+) {
+  const index = runs.findIndex((run) => run.messageId === messageId)
+  if (index >= 0) return runs.slice(index).map((run) => run.id)
+  return runs
+    .filter((run) => run.messageId && deletedMessageIds.has(run.messageId))
+    .map((run) => run.id)
+}
+
+async function deleteQuickChatRuns(quickChatId: string, ids: string[]) {
+  if (!ids.length) return
+  await QuickChatAgentRun.query().where('quickChatId', quickChatId).whereIn('id', ids).delete()
+}
+
+async function deleteQuickChatMessages(quickChatId: string, ids: string[]) {
+  if (!ids.length) return
+  await QuickChatMessage.query().where('quickChatId', quickChatId).whereIn('id', ids).delete()
+}
+
+function quickChatUndoUpdate(
+  remainingRuns: QuickChatAgentRun[],
+  clineSessionId?: string
+): Partial<QuickChat> {
+  const lastRun = remainingRuns.at(-1)
+  return {
+    agentActivities: lastRun?.activities ?? [],
+    agentFinalResponse: lastRun?.finalResponse ?? null,
+    agentLastError: null,
+    agentLastEvent: lastRun ? agentRunLastEvent(lastRun) : null,
+    agentSessionSummary: lastRun?.sessionSummary ?? null,
+    agentStatus: null,
+    agentUsage: lastRun?.usage ?? null,
+    clineSessionId: clineSessionId ?? lastRun?.clineSessionId ?? null,
+  }
+}
+
+function agentRunLastEvent(run: QuickChatAgentRun) {
+  if (run.status === 'failed') return run.finalResponse ?? 'Agent run failed.'
+  if (run.status === 'running') return 'Agent is running.'
+  return run.finalResponse ?? 'Agent run completed.'
+}
+
+function sameOrAfter<T extends { createdAt: DateTime; id: string }>(item: T, target: T) {
+  const delta = item.createdAt.toMillis() - target.createdAt.toMillis()
+  return delta > 0 || (delta === 0 && item.id.localeCompare(target.id) >= 0)
 }

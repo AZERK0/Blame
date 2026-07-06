@@ -20,6 +20,8 @@ import {
 import {
   AgentConversationComposer,
   AgentConversationTimeline,
+  MarkdownMessageActions,
+  type AgentConversationUserMessageUndo,
 } from "@/components/chat/agent-conversation"
 import { agentConversationResponseHeader } from "@/components/chat/agent-conversation-header"
 import {
@@ -52,6 +54,7 @@ export function UserStoryContent({
   onCommentFileAttachmentRemove,
   onCommentFileAttachmentsAdd,
   onCommentSubmit,
+  onCommentUndo,
   onSummaryChange,
   onSummaryCodeSelectionAttachmentRemove,
   onSummaryFileAttachmentRemove,
@@ -76,6 +79,7 @@ export function UserStoryContent({
   onCommentFileAttachmentRemove: (id: string) => void
   onCommentFileAttachmentsAdd: (attachments: UserStoryFileAttachment[]) => void
   onCommentSubmit: () => void
+  onCommentUndo?: (target: AgentConversationUserMessageUndo) => Promise<void>
   onSummaryChange?: (summary: string) => void
   onSummaryCodeSelectionAttachmentRemove: (id: string) => void
   onSummaryFileAttachmentRemove: (id: string) => void
@@ -103,33 +107,45 @@ export function UserStoryContent({
 
   return (
     <>
-      <MarkdownEditor
-        codeSelectionAttachments={summaryCodeSelectionAttachments}
-        fileAttachments={summaryFileAttachments}
-        mentionDirectory={mentionDirectory}
-        ref={summaryRef}
-        markdown={summary}
-        onCodeSelectionAttachmentRemove={onSummaryCodeSelectionAttachmentRemove}
-        onFileAttachmentRemove={onSummaryFileAttachmentRemove}
-        onFileAttachmentsAdd={onSummaryFileAttachmentsAdd}
-        onFileLinkClick={onFileLinkClick}
-        onMarkdownChange={onSummaryChange}
-        onOptimize={onSummaryOptimize}
-        readOnly={!editable}
-        toolbarEnd={
-          editable ? (
-            <div className="w-[28rem] max-w-full min-w-0">
-              <ModelSelector />
-            </div>
-          ) : undefined
-        }
-        placeholder="Describe the user story, expected behavior, and acceptance criteria."
-        minHeight="min-h-80"
-      />
+      <div className="group/message grid gap-3">
+        <MarkdownEditor
+          codeSelectionAttachments={summaryCodeSelectionAttachments}
+          fileAttachments={summaryFileAttachments}
+          mentionDirectory={mentionDirectory}
+          ref={summaryRef}
+          markdown={summary}
+          onCodeSelectionAttachmentRemove={
+            onSummaryCodeSelectionAttachmentRemove
+          }
+          onFileAttachmentRemove={onSummaryFileAttachmentRemove}
+          onFileAttachmentsAdd={onSummaryFileAttachmentsAdd}
+          onFileLinkClick={onFileLinkClick}
+          onMarkdownChange={onSummaryChange}
+          onOptimize={onSummaryOptimize}
+          readOnly={!editable}
+          toolbarEnd={
+            editable ? (
+              <div className="w-[28rem] max-w-full min-w-0">
+                <ModelSelector />
+              </div>
+            ) : undefined
+          }
+          placeholder="Describe the user story, expected behavior, and acceptance criteria."
+          minHeight="min-h-80"
+        />
+        {summary.trim() ? (
+          <MarkdownMessageActions
+            alwaysVisible={summaryActionsAlwaysVisible(userStory)}
+            createdAt={userStory?.createdAt}
+            markdown={summary}
+          />
+        ) : null}
+      </div>
       <AgentRunTimeline
-        userStory={userStory}
-        onFileLinkClick={onFileLinkClick}
-      />
+      userStory={userStory}
+      onFileLinkClick={onFileLinkClick}
+      onCommentUndo={status === "in-review" ? onCommentUndo : undefined}
+    />
       {mode !== "create" && (
         <div className="sticky bottom-0 z-20 -mx-6 px-6 pt-10 pb-6">
           <div
@@ -174,9 +190,11 @@ export function UserStoryContent({
 }
 
 function AgentRunTimeline({
+  onCommentUndo,
   onFileLinkClick,
   userStory,
 }: {
+  onCommentUndo?: (target: AgentConversationUserMessageUndo) => Promise<void>
   onFileLinkClick?: (path: string) => void
   userStory?: UserStory
 }) {
@@ -206,6 +224,7 @@ function AgentRunTimeline({
       comments={userStory?.comments ?? []}
       onFileLinkClick={onFileLinkClick}
       onLoadActivityDetail={loadActivityDetail}
+      onUserMessageUndo={onCommentUndo}
       responseHeader={responseHeader}
       runs={userStory?.agentRuns ?? []}
     />
@@ -232,6 +251,16 @@ function userStoryTimelineScrollKey(userStory: UserStory | undefined) {
     activity?.detail.length ?? 0,
     activity?.updatedAt ?? "",
   ].join(":")
+}
+
+function summaryActionsAlwaysVisible(userStory: UserStory | undefined) {
+  const runs = userStory?.agentRuns ?? []
+  if (!runs.length) return true
+  return !runs.some(
+    (run) =>
+      run.kind !== "initial" ||
+      (run.activities ?? []).some((activity) => activity.kind === "message")
+  )
 }
 
 function fileMentionDirectory(

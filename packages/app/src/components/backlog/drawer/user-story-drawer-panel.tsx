@@ -37,6 +37,7 @@ import {
 } from "@/components/backlog/drawer/user-story-drawer-helpers"
 import { DrawerSidebar } from "@/components/backlog/drawer/user-story-drawer-sidebar"
 import { UserStoryContent } from "@/components/backlog/drawer/user-story-drawer-sections"
+import type { AgentConversationUserMessageUndo } from "@/components/chat/agent-conversation"
 import { UserStoryPreview } from "@/components/backlog/drawer/user-story-preview"
 import {
   fileAttachment,
@@ -90,6 +91,7 @@ export function UserStoryDrawerPanel({
   onRequestChanges,
   onReject,
   onStopAgent,
+  onUndoUserStoryComment,
   onUpdateUserStory,
   reviewDiffEmpty,
   setupInitializing,
@@ -129,6 +131,10 @@ export function UserStoryDrawerPanel({
   ) => Promise<UserStory>
   onReject: (story: UserStory, choice: RejectChoice) => Promise<UserStory>
   onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
+  onUndoUserStoryComment: (
+    story: UserStory,
+    target: AgentConversationUserMessageUndo
+  ) => Promise<UserStory>
   onUpdateUserStory: (
     story: UserStory,
     input: UserStoryUpdate
@@ -203,12 +209,15 @@ export function UserStoryDrawerPanel({
 
   React.useEffect(() => {
     if (mode === "create") return
-    setSummaryCodeSelectionAttachments((current) =>
-      mergeAttachments(current, userStory?.codeSelectionAttachments ?? [])
-    )
-    setSummaryFileAttachments((current) =>
-      mergeAttachments(current, userStory?.fileAttachments ?? [])
-    )
+    const frame = requestAnimationFrame(() => {
+      setSummaryCodeSelectionAttachments((current) =>
+        mergeAttachments(current, userStory?.codeSelectionAttachments ?? [])
+      )
+      setSummaryFileAttachments((current) =>
+        mergeAttachments(current, userStory?.fileAttachments ?? [])
+      )
+    })
+    return () => cancelAnimationFrame(frame)
   }, [mode, userStory?.codeSelectionAttachments, userStory?.fileAttachments])
 
   React.useEffect(() => {
@@ -376,6 +385,7 @@ export function UserStoryDrawerPanel({
               onCommentSubmit={() => {
                 void submitComment()
               }}
+              onCommentUndo={undoCommentMessage}
               onSummaryCodeSelectionAttachmentRemove={(id) =>
                 setSummaryCodeSelectionAttachments((current) =>
                   current.filter((attachment) => attachment.id !== id)
@@ -573,6 +583,22 @@ export function UserStoryDrawerPanel({
     } finally {
       setPendingAction(undefined)
     }
+  }
+
+  async function undoCommentMessage(target: AgentConversationUserMessageUndo) {
+    if (!userStory) return
+    const comment = target.comment
+    await onUndoUserStoryComment(userStory, target)
+    setComment(comment.body)
+    setCommentCodeSelectionAttachments(comment.codeSelectionAttachments ?? [])
+    setCommentFileAttachments(comment.fileAttachments ?? [])
+    setCommentEditorKey((key) => key + 1)
+    setTab("user-story")
+    requestAnimationFrame(() => {
+      commentRef.current
+        ?.querySelector<HTMLElement>("[data-markdown-editor-input='true']")
+        ?.focus()
+    })
   }
 }
 

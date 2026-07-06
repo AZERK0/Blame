@@ -48,6 +48,7 @@ export interface ApiDefinition {
       }
       quickChatMessages: {
         store: typeof routes['projects.quick_chats.quick_chat_messages.store']
+        undo: typeof routes['projects.quick_chats.quick_chat_messages.undo']
       }
       quickChatAgentRuns: {
         store: typeof routes['projects.quick_chats.quick_chat_agent_runs.store']
@@ -71,6 +72,7 @@ export interface ApiDefinition {
       }
       userStoryComments: {
         store: typeof routes['projects.user_stories.user_story_comments.store']
+        undo: typeof routes['projects.user_stories.user_story_comments.undo']
       }
     }
   }

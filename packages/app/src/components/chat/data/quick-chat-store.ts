@@ -174,6 +174,18 @@ function useQuickChatStoreValue() {
     },
     [api]
   )
+  const undoMessage = React.useCallback(
+    async (
+      chat: QuickChat,
+      messageId: string,
+      input?: { clineSessionId?: string }
+    ) => {
+      const nextChat = await api.undoMessage(chat.id, messageId, input)
+      replaceChat(nextChat, setState)
+      return nextChat
+    },
+    [api]
+  )
 
   const createMessage = React.useCallback(
     async (chat: QuickChat, input: QuickChatMessageDraft) => {
@@ -350,6 +362,7 @@ function useQuickChatStoreValue() {
     projectPath,
     remove,
     setActiveId,
+    undoMessage,
     update,
     updateAgentRun,
     updateAgentRunLocal,
@@ -452,4 +465,17 @@ function chatStateIds(
   if (enabled) next.add(chatId)
   else next.delete(chatId)
   return next
+}
+
+function replaceChat(
+  chat: QuickChat,
+  setState: React.Dispatch<React.SetStateAction<QuickChatState>>
+) {
+  setState((current) => ({
+    ...current,
+    chats: current.chats.map((currentChat) =>
+      currentChat.id === chat.id ? chat : currentChat
+    ),
+    detailedChatIds: chatStateIds(current.detailedChatIds, chat.id, true),
+  }))
 }

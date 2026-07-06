@@ -14,6 +14,7 @@ import type {
   UserStoryDrawerMode,
   UserStoryDrawerTab,
 } from "@/components/backlog/shared/backlog-types"
+import type { AgentConversationUserMessageUndo } from "@/components/chat/agent-conversation"
 import { UserStoryDrawerPanel } from "@/components/backlog/drawer/user-story-drawer-panel"
 import { Drawer } from "@/components/ui/drawer"
 
@@ -59,6 +60,10 @@ export type UserStoryDrawerProps = {
   ) => Promise<UserStory>
   reviewDiffEmpty?: boolean
   onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
+  onUndoUserStoryComment: (
+    story: UserStory,
+    target: AgentConversationUserMessageUndo
+  ) => Promise<UserStory>
   onUpdateUserStory: (
     story: UserStory,
     input: UserStoryUpdate
@@ -85,6 +90,7 @@ export function UserStoryDrawer({
   onRequestChanges,
   reviewDiffEmpty,
   onStopAgent,
+  onUndoUserStoryComment,
   onUpdateUserStory,
   setupInitializing,
 }: UserStoryDrawerProps) {
@@ -125,6 +131,7 @@ export function UserStoryDrawer({
         onReject={onReject}
         reviewDiffEmpty={reviewDiffEmpty}
         onStopAgent={onStopAgent}
+        onUndoUserStoryComment={onUndoUserStoryComment}
         onUpdateUserStory={onUpdateUserStory}
         setupInitializing={setupInitializing}
         status={status}

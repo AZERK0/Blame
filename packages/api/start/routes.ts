@@ -94,6 +94,7 @@ router
         router.patch('/:id', [QuickChatsController, 'update'])
         router.delete('/:id', [QuickChatsController, 'destroy'])
         router.post('/:id/messages', [QuickChatMessagesController, 'store'])
+        router.post('/:id/messages/:messageId/undo', [QuickChatMessagesController, 'undo'])
         router.post('/:id/agent-runs', [QuickChatAgentRunsController, 'store'])
         router.patch('/:id/agent-runs/:runId', [QuickChatAgentRunsController, 'update'])
         router.get('/:id/agent-runs/:runId/activities/:activityId', [
@@ -120,6 +121,7 @@ router
           'activityDetail',
         ])
         router.post('/:id/comments', [UserStoryCommentsController, 'store'])
+        router.post('/:id/comments/:commentId/undo', [UserStoryCommentsController, 'undo'])
       })
       .prefix('projects/user-stories')
       .as('projects.user_stories')

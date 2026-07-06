@@ -38,6 +38,7 @@ import { drawerTargetForAction } from "@/components/backlog/shared/backlog-helpe
 import { BacklogColumn } from "@/components/backlog/board/backlog-column"
 import { BacklogToolbar } from "@/components/backlog/board/backlog-toolbar"
 import { UserStoryDrawer } from "@/components/backlog/drawer/user-story-drawer"
+import type { AgentConversationUserMessageUndo } from "@/components/chat/agent-conversation"
 import { UserStoryPreviewWarmup } from "@/components/backlog/drawer/user-story-preview"
 import { HostDependenciesDialog } from "@/pages/backlog/host-dependencies-dialog"
 import { useBacklogRotation } from "@/pages/backlog/use-backlog-rotation"
@@ -610,8 +611,7 @@ export function BacklogPage() {
         if (authenticationFailed) return
         authenticationFailed = expiredAuthenticationToken(agentEventText(event))
         persistAgentEvent(updatedStory, run, event)
-        if (authenticationFailed || terminalAgentRunEvent(event))
-          unsubscribe()
+        if (authenticationFailed || terminalAgentRunEvent(event)) unsubscribe()
       })
       void agent.sessions.sendDevelopment({
         sessionId,
@@ -631,6 +631,29 @@ export function BacklogPage() {
       updateStory,
       persistAgentEvent,
     ]
+  )
+  const undoUserStoryComment = React.useCallback(
+    async (story: UserStory, target: AgentConversationUserMessageUndo) => {
+      const currentStory = await detailedStory(
+        activeStory(story, storiesRef.current),
+        backlog
+      )
+      const restored = await restoreStoryCheckpoint(
+        platform,
+        currentStory,
+        target.run.clineSessionId ?? currentStory.clineSessionId,
+        target.checkpointRunCount
+      )
+      const nextStory = await backlog.undoComment(
+        currentStory,
+        target.comment.id,
+        { clineSessionId: restored.sessionId }
+      )
+      replaceStoryAfterUndo(nextStory, storiesRef, setDrawerTarget)
+      toast.success("Message restored to editor.", { position: "bottom-right" })
+      return nextStory
+    },
+    [backlog, platform]
   )
 
   const approveAndMergeStory = React.useCallback(
@@ -965,6 +988,7 @@ export function BacklogPage() {
           drawerUserStory ? reviewDiffEmpty(drawerUserStory) : false
         }
         onStopAgent={stopAgent}
+        onUndoUserStoryComment={undoUserStoryComment}
         setupInitializing={backlog.storySetupInitializing(drawerUserStory)}
       />
       <UserStoryPreviewWarmup userStories={backlog.stories} />
@@ -1416,6 +1440,46 @@ function inactiveStoryFields(): UserStoryUpdate {
 
 function activeStory(story: UserStory, stories: UserStory[]) {
   return stories.find((currentStory) => currentStory.id === story.id) ?? story
+}
+
+function replaceStoryAfterUndo(
+  story: UserStory,
+  storiesRef: { current: UserStory[] },
+  setDrawerTarget: React.Dispatch<
+    React.SetStateAction<DrawerTarget | undefined>
+  >
+) {
+  storiesRef.current = storiesRef.current.map((currentStory) =>
+    currentStory.id === story.id ? story : currentStory
+  )
+  setDrawerTarget((current) =>
+    current?.userStory?.id === story.id
+      ? { ...current, userStory: story }
+      : current
+  )
+}
+
+async function restoreStoryCheckpoint(
+  platform: Platform,
+  story: UserStory,
+  sessionId: string | null | undefined,
+  checkpointRunCount: number
+) {
+  if (!platform.agent)
+    throw new Error("Desktop agent runtime is not available.")
+  if (!sessionId) throw new Error("This message has no Cline session.")
+  if (!story.worktree)
+    throw new Error("This user story has no active worktree.")
+  return platform.agent.sessions.restoreCheckpoint({
+    checkpointRunCount,
+    cwd: story.worktree,
+    restore: {
+      messages: true,
+      omitCheckpointMessageFromSession: true,
+      workspace: false,
+    },
+    sessionId,
+  })
 }
 
 function detailedStory(
