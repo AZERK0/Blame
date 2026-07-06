@@ -1,37 +1,48 @@
 ## Architecture: Standard Professional
 
-Design for maintainability, clear boundaries, and controlled dependencies. Apply Clean, Onion, and Hexagonal Architecture principles proportionally to the size and risk of the change. Do not over-architect small behavior. When the existing project has a clear architecture, improve within it instead of replacing it wholesale.
+<practice_scope>
+Design for maintainability, clear boundaries, and controlled dependencies. Apply architectural structure proportionally to the size, risk, and existing maturity of the project.
+</practice_scope>
 
-Use dependency direction as the main rule:
-- outer layers such as UI, HTTP, CLI, database, filesystem, SDKs, and external APIs may depend on inner layers;
-- application use cases may depend on the domain and on stable ports they define or own;
-- domain code must not depend on frameworks, transport objects, ORM models, SDK clients, UI objects, filesystem details, or infrastructure adapters.
+### Core Direction
 
-Separate responsibilities by role:
-- controller, route, handler, or presenter: translate external input and output, perform superficial validation, call application code;
-- use case or application service: express one business intention, orchestrate dependencies, enforce application rules, return a clear result;
-- domain model: hold business concepts, invariants, state transitions, and domain validations;
-- repository or adapter: perform persistence or integration details behind a stable contract;
-- DTO, mapper, or serializer: translate between transport, database, external payload, view model, and domain formats.
+- Outer layers may depend on inner layers: UI, HTTP, CLI, database, filesystem, SDKs, and external APIs.
+- Application code may orchestrate domain rules and stable ports.
+- Domain code must not depend on frameworks, transport objects, ORM records, SDK clients, UI objects, filesystem details, or infrastructure adapters.
+- Map external shapes at boundaries instead of leaking database, API, transport, or UI objects into core logic.
 
-Prefer ports and adapters for volatile boundaries. When business logic needs Git, Docker, filesystem, database, AI providers, command runners, preview servers, clocks, mail, payments, or third-party APIs, depend on an explicit port such as `UserRepositoryPort`, `ClockPort`, `FileStoragePort`, or `ProviderClientPort`. Implement the technical detail in an adapter such as `PrismaUserRepository`, `SystemClock`, `S3FileStorageAdapter`, or `OpenAIProviderAdapter`.
+### Responsibility Boundaries
 
-Use established design patterns as architectural tools when they make the design clearer, more extensible, or easier to maintain. When a recurring design problem appears, prefer a known pattern over an ad-hoc structure. Use creational patterns such as Factory, Factory Method, Abstract Factory, Builder, Prototype, or Singleton when object creation has meaningful complexity or lifecycle constraints. Use structural patterns such as Adapter, Facade, Proxy, Decorator, Composite, Bridge, or Flyweight to isolate external systems, simplify subsystems, control access, or compose behavior. Use behavioral patterns such as Strategy, Command, State, Observer, Template Method, Chain of Responsibility, Iterator, Mediator, Memento, or Visitor to express interchangeable behavior, executable actions, lifecycle transitions, event reactions, or complex control flow. Apply patterns intentionally and keep their implementation lightweight. A pattern should clarify the code, reduce coupling, isolate volatility, or make business behavior easier to evolve.
+- Controllers, routes, handlers, and presenters translate external input/output and call application code.
+- Use cases and application services express one business intention, orchestrate dependencies, enforce application rules, and return explicit outcomes.
+- Domain models hold business concepts, invariants, lifecycle transitions, and validations when real rules exist.
+- Repositories and adapters isolate persistence, filesystem, network, provider, shell, container, clock, and third-party details.
+- DTOs, mappers, and serializers translate between external payloads, persistence shapes, view models, and domain/application shapes.
 
-Use cases should be explicit for meaningful workflows. Name them by intent, such as `CreateUserStory`, `StartDevelopmentWorktree`, `ArchiveUserStory`, `MergeCompletedStory`, `SyncEnvironmentFiles`, or `AssignPreviewPort`. A use case should not receive framework request objects, render UI, know database schemas, or expose SDK errors directly.
+### Structure Triggers
 
-Model the domain when rules exist. Use entities for concepts with identity and lifecycle, such as `UserStory`, `Project`, `Worktree`, or `DevelopmentSession`. Use value objects for values with real validation or meaning, such as `StoryId`, `ProjectPath`, `BranchName`, `PortNumber`, or `EnvironmentVariableName`. Do not wrap every primitive by default.
+Add structure when it pays for itself:
 
-Keep external shapes out of the core. Do not leak ORM records into domain rules, external API responses into UI state, React objects into use cases, database schemas into business decisions, or transport DTOs into domain entities. Map at the boundary where formats cross.
+- A workflow has meaningful business rules, side effects, or multiple infrastructure dependencies.
+- A dependency is volatile, expensive, security-sensitive, or hard to test.
+- Multiple callers need the same behavior through a stable contract.
+- A known design pattern clearly reduces coupling, isolates volatility, or clarifies behavior.
 
-For frontend architecture, separate presentational UI from application state and data orchestration. Keep purely local UI state inside components, such as temporary inputs, open modals, hover state, and local toggles. Use existing stores, query caches, reducers, or state containers for shared business state, server-backed cached data, multi-component workflows, and persistent user-facing state, such as the current user, selected project, backlog, user stories, active worktree, preview status, agent execution state, provider configuration, code practices, diffs, and review state. Components should render state and dispatch intentions; stores or application services should own data loading, mutation flows, derived state, and business decisions when those concerns outgrow a single component.
+Keep structure lightweight:
 
-Do not create a store for trivial component-local state. Prefer the project's existing frontend state pattern before introducing a new one. State containers should support the frontend architecture, not turn React components into mini backends or move every UI detail into global state.
+- Use explicit use cases for meaningful workflows.
+- Use ports and adapters for volatile boundaries.
+- Use entities or value objects only when identity, lifecycle, invariants, or validation matter.
+- Return typed results, success/failure objects, or clear domain/application errors instead of ambiguous `null`, bare booleans, or unclassified exceptions.
+- Assemble dependencies in a predictable composition root when dependencies become non-trivial.
 
-Return explicit outcomes. Prefer `Result<T, Error>`, success/failure objects, typed domain errors, or application errors over ambiguous `null`, bare booleans, partial objects, or unclassified exceptions. Distinguish business errors such as `UserStoryNotFound`, `WorktreeAlreadyExists`, `InvalidStoryStatusTransition`, `PortUnavailable`, `MissingEnvironmentFile`, and `MergeConflictDetected` from technical failures so adapters can translate them to HTTP, UI messages, logs, or retries.
+### Frontend Architecture
 
-Assemble dependencies in a clear composition root. Create repositories, adapters, clients, and use cases in one predictable wiring location instead of instantiating technical dependencies throughout business logic.
+- Components render state and dispatch intentions.
+- Keep local UI details local.
+- Put shared business state, server-backed data, workflow orchestration, and persistent app state in the project's existing store/query/service pattern.
+- Do not create global stores for trivial component-local state.
 
-Organize modules around the domain when it helps the code communicate its purpose. Prefer cohesive feature or domain modules such as `stories`, `worktrees`, `projects`, `providers`, `code-practices`, or `preview` over purely technical folders when the project can support it. Keep each module cohesive, expose a limited API, avoid circular dependencies, and group code that changes together.
-
-Use architecture only where it pays for itself. A small helper may stay a helper. A simple pass-through does not need six files, a port, and a mapper. A real workflow with business rules, side effects, and volatile infrastructure deserves a use case, isolated domain rules, explicit errors, and inverted technical dependencies. A design pattern is useful when it makes the implementation simpler to reason about; it is not useful when it only adds ceremony.
+<avoid>
+Do not over-architect small behavior. A helper may stay a helper. A pass-through does not need six files. Do not replace a clear existing architecture wholesale when a local improvement solves the request.
+</avoid>

@@ -1,40 +1,33 @@
 ## Coding Style: Standard Industrial Professional
 
-Apply this standard to all code you create or touch, even when the existing project is less strict. Keep the scope narrow: improve the changed code without launching unrelated refactors.
+<practice_scope>
+Apply this standard to code you create or touch. Improve only within the requested scope; do not launch unrelated cleanup.
+</practice_scope>
 
-Write explicit, readable, maintainable code:
-- choose precise intention-revealing names;
-- keep functions short and focused on one responsibility;
-- make conditions and control flow easy to follow;
-- avoid hidden logic, ambiguous abbreviations, clever tricks, and surprising side effects;
-- prefer self-explanatory code; use comments only to explain non-obvious intent, constraints, or trade-offs;
-- remove dead code, unused variables, duplicated logic introduced by the change, debug leftovers, TODOs, hacks, and temporary placeholders.
+### Readability
 
-Use strong typing when the language supports it:
-- avoid `any`, unsafe casts, and catch-all object shapes;
-- type public inputs, outputs, and module boundaries as stable internal APIs;
-- model business states with clear dedicated types when that reduces ambiguity.
+- Use precise, intention-revealing names.
+- Keep functions short, focused, and easy to scan.
+- Prefer straightforward control flow over cleverness.
+- Make state, side effects, and data transformations explicit.
+- Use comments only for non-obvious intent, constraints, or trade-offs.
 
-Handle errors deliberately:
-- catch errors at the level that can act on them;
-- provide understandable messages or explicit fallbacks;
-- never use empty `catch` blocks, silent masking, or `console.log` as error handling.
+### Correctness
 
-Keep responsibilities separated inside each file:
-- separate parsing, validation, business logic, side effects, and presentation when they are distinct concerns;
-- place private helpers where their role is clear;
-- introduce abstractions only when they remove real complexity or duplication.
+- Use strong types when the language supports them.
+- Avoid `any`, unsafe casts, catch-all object shapes, and ambiguous partial states unless the surrounding project leaves no better option.
+- Validate external input before trusting it.
+- Handle errors deliberately; never use empty catches, silent masking, or `console.log` as error handling.
+- Never log or expose secrets.
 
-Favor deterministic and secure defaults:
-- avoid implicit execution-order dependencies, magic fallbacks, dangerous defaults, and unexpected mutation;
-- validate external input before using it;
-- never log or expose secrets;
-- avoid naive shell command construction and obvious injection paths.
+### Maintainability
 
-Avoid waste without premature optimization:
-- do not repeat expensive parsing, I/O, network calls, or large-array work unnecessarily;
-- avoid easily preventable React re-renders in touched components.
+- Separate parsing, validation, business logic, side effects, and presentation when they are distinct concerns.
+- Introduce abstractions only when they remove real complexity, reduce meaningful duplication, or match an established local pattern.
+- Remove dead code, unused variables, duplicated logic introduced by the change, debug leftovers, TODOs, hacks, and temporary placeholders.
+- Avoid unnecessary repeated parsing, I/O, network calls, expensive loops, or preventable React re-renders in touched code.
 
-Keep formatting strict:
-- use the project formatter when available;
-- otherwise keep imports, indentation, naming style, and file organization consistent, readable, and aligned with the language ecosystem.
+### Formatting
+
+- Use the project formatter when available.
+- Otherwise keep imports, indentation, naming style, and file organization consistent with the language ecosystem and surrounding files.

@@ -1,18 +1,26 @@
-Write exactly one Git commit message that matches this repository.
+## Commit Message: Match Codebase
 
-Infer the dominant convention from recent commits and repo guidance: format, type or prefix, scope style, casing, length, ticket format, and whether bodies are used.
+<output_contract>
+Output exactly one Git commit message. No explanation, markdown, quotes, prefix labels, or alternatives.
+</output_contract>
 
-Output only the final message: no explanation, markdown, quotes, or prefix.
+### Infer The Local Convention
 
-Write the message in English unless recent commits show that the repository habitually uses another language.
+Infer the dominant convention from recent commits and repository guidance:
 
-When writing in English, translate non-English backlog titles, summaries, and code-change descriptions instead of copying their language.
+- format, prefix, type, scope, casing, subject length, ticket style, and body usage;
+- whether the repo uses Conventional Commits, bracket prefixes, tickets, free-form subjects, or another house style;
+- whether the repo normally writes commit messages in English or another language.
 
-Prefer the local convention over generic rules. If the repo uses Conventional Commits, use:
-- `type(scope): message` when a clear scope exists;
-- `type: message` when no clear scope exists;
-- `type(scope)!: message` only for breaking changes.
+### Write The Message
 
-If no convention is clear, fall back to Conventional Commits with `feat`, `fix`, `refactor`, `perf`, `docs`, `style`, `test`, `chore`, `build`, `ci`, or `revert`.
-
-Focus on the main intention of the diff. Ignore generated noise, formatting, and tiny cleanup unless that is the whole change. Reuse local domain words and scopes, use present-tense imperative mood, stay specific, avoid vague verbs like `update` or `change`, and keep the subject at 74 characters or less unless local history clearly differs.
+- Prefer the local convention over generic rules.
+- If the repo clearly uses Conventional Commits, use `type(scope): message`, `type: message`, or `type(scope)!: message`.
+- If no convention is clear, fall back to Conventional Commits.
+- Translate non-English backlog titles, summaries, and change descriptions when writing in English.
+- Focus on the main intention of the diff.
+- Ignore generated noise, formatting, and tiny cleanup unless that is the whole change.
+- Reuse local domain words and scopes.
+- Use present-tense imperative mood when compatible with the local convention.
+- Be specific; avoid vague verbs like `update` or `change`.
+- Keep the subject at 74 characters or less unless local history clearly differs.

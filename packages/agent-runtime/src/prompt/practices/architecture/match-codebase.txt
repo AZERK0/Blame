@@ -1,33 +1,34 @@
 ## Architecture: Match Codebase
 
-Preserve the project architecture that already exists. Before changing code, infer the dominant organization from nearby files, similar features, imports, naming, folder boundaries, and dependency direction. Make the new work look like it belongs there.
+<practice_scope>
+Preserve the architecture that already exists. Make new work feel native to the current project instead of introducing a better-looking architecture from outside.
+</practice_scope>
 
-Resolve architectural choices in this order:
-- the current file and neighboring files;
-- the current feature, module, or package;
-- similar features elsewhere in the repository;
-- general architectural practice.
+### Decision Order
 
-Follow existing boundaries even when they are imperfect:
-- UI, components, hooks, stores, and state management;
-- routes, controllers, handlers, services, and actions;
-- repositories, data access, DTOs, clients, mappers, and helpers;
-- domain, application, infrastructure, and shared modules;
-- public exports, barrels, private folders, monorepo package boundaries, and import aliases.
+Resolve architectural choices from nearest evidence to broadest evidence:
 
-Add code where a maintainer would expect it:
-- prefer the folder that already contains a similar feature;
-- reuse local helpers, types, services, clients, and return shapes when they fit;
-- match existing file names, module shape, dependency style, and abstraction level;
-- keep new feature code structurally similar to an existing feature.
+1. Current file and neighboring files.
+2. Current feature, module, package, or app.
+3. Similar features elsewhere in the repository.
+4. General architectural practice.
 
-Keep architectural diffs minimal:
-- implement the requested behavior without moving modules, renaming folders, or reshaping the package map;
-- avoid broad import churn, barrel rewrites, new dependency inversion patterns, or feature-wide refactors unless directly required;
-- improve locally only where the task touches the code and the benefit is immediate.
+### Native Fit Rules
 
-Do not introduce a superior architecture unless the user explicitly asks for it. Avoid adding Clean Architecture, domain/application/infrastructure layers, repositories, use cases, ports, factories, mappers, wrappers, or interfaces when the project does not already use that pattern or the change does not need it.
+- Put code where a maintainer would expect to find it.
+- Reuse local services, helpers, types, clients, stores, mappers, return shapes, and error shapes when they fit.
+- Match local file names, public exports, import style, dependency direction, and abstraction level.
+- Respect existing boundaries between UI, state, routes, controllers, services, data access, domain code, shared modules, packages, and private folders.
+- Keep the change structurally similar to a nearby or analogous feature when one exists.
 
-Avoid isolated abstractions. A new abstraction should have a clear local precedent, multiple real uses, or remove concrete duplication or complexity in the requested change. Do not create one-use interfaces, one-use factories, artificial repositories, or wrappers around already clear APIs.
+### Baseline Guardrails
 
-Respect project maturity. Small scripts, simple CRUD apps, prototypes, and lightweight frontends should stay simple. Enterprise structure is not an improvement when it makes the changed code less native to the repository.
+- Keep architectural diffs small and directly tied to the request.
+- Do not move modules, rename folders, reshape package boundaries, rewrite barrels, or create broad import churn unless required.
+- Do not add new layers, repositories, ports, factories, mappers, wrappers, or interfaces unless the project already uses them nearby or the change truly needs them.
+- Add an abstraction only when it has local precedent, multiple real uses, or removes concrete duplication or complexity in the touched code.
+- Do not copy a weak local pattern when it is clearly unsafe, broken, or incompatible with the user request. Make the narrowest safe correction instead.
+
+<avoid>
+Do not "upgrade" the project to Clean Architecture, Hexagonal Architecture, domain layers, global stores, repositories, or enterprise patterns just because they are generally good. Small scripts, prototypes, simple CRUD apps, and lightweight frontends should stay simple.
+</avoid>

@@ -1,21 +1,28 @@
-Write exactly one Conventional Commit message.
+## Commit Message: Conventional Commit
 
-Output only the final message: no explanation, markdown, quotes, prefix, body, or footer unless a breaking change requires it.
+<output_contract>
+Output exactly one Conventional Commit message. No explanation, markdown, quotes, prefix labels, or alternatives.
+</output_contract>
 
-Format:
-- `type(scope): message` when a clear scope exists;
-- `type: message` when no clear scope exists;
-- `type(scope)!: message` for breaking changes.
+### Format
 
-Rules:
-- maximum 74 characters total;
-- write the message in English;
-- translate non-English backlog titles, summaries, and code-change descriptions to English instead of copying their language;
-- use present tense, imperative mood, and a lowercase verb;
-- focus on the main meaningful change;
-- ignore trivial noise;
-- be specific and avoid vague verbs like `update` or `change`.
+- `type(scope): message` when a clear scope exists.
+- `type: message` when no clear scope exists.
+- `type(scope)!: message` only for breaking changes.
 
-Use the best type: `feat`, `fix`, `refactor`, `perf`, `docs`, `style`, `test`, `chore`, `build`, `ci`, or `revert`.
+### Rules
 
-Infer a short scope from the main changed area, such as `auth`, `api`, `ui`, `prompt`, `agent`, `practices`, or `tests`. Prefer a domain or package name over a file extension. Do not add trailing punctuation.
+- Maximum 74 characters total unless a breaking-change footer is required.
+- Write in English.
+- Translate non-English backlog titles, summaries, and change descriptions instead of copying their language.
+- Use present tense, imperative mood, and a lowercase verb.
+- Focus on the main meaningful change.
+- Ignore generated noise and trivial cleanup.
+- Be specific; avoid vague verbs like `update` or `change`.
+- Infer a short scope from the main changed area, such as `auth`, `api`, `ui`, `prompt`, `agent`, `practices`, or `tests`.
+- Prefer a domain or package scope over a file extension.
+- Do not add trailing punctuation.
+
+<allowed_types>
+feat, fix, refactor, perf, docs, style, test, chore, build, ci, revert
+</allowed_types>

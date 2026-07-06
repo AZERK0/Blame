@@ -1665,7 +1665,7 @@ export class BlameAgentRuntime {
       pluginPaths: input.pluginPaths,
       cwd: input.cwd,
       workspaceRoot: input.workspaceRoot,
-      systemPrompt: await developmentSystemPrompt(input),
+      systemPrompt: await buildDevelopmentSystemPrompt(input),
       enableSpawnAgent: true,
       enableAgentTeams: false,
       backend: input.backend,
@@ -2461,25 +2461,35 @@ function newAttachmentDirectory(cwd: string) {
   return join(cwd, attachmentDirectoryName, randomUUID());
 }
 
-async function developmentSystemPrompt(input: StartDevelopmentSessionInput) {
+export async function buildDevelopmentSystemPrompt(
+  input: StartDevelopmentSessionInput,
+) {
   const metadata = await buildWorkspaceMetadata(input.cwd);
   const practices = input.codePractices ?? [];
-  const rules = [
-    loadPrompt("code-agent-system"),
-    blameSpecialistAgentsSystemPrompt(),
+  return renderPrompt(loadPrompt("code-agent-system"), {
+    BLAME_PRACTICES: developmentPracticePrompts(practices),
+    BLAME_SPECIALISTS: blameSpecialistAgentsSystemPrompt(),
+    CURRENT_DATE: new Date().toISOString().slice(0, 10),
+    CWD: input.cwd,
+    IDE_NAME: "Blame",
+    PLATFORM_NAME: process.platform,
+    WORKSPACE_METADATA: metadata,
+    WORKSPACE_NAME: basename(input.workspaceRoot),
+    WORKSPACE_ROOT: input.workspaceRoot,
+  });
+}
+
+function developmentPracticePrompts(practices: ProjectCodePracticePreference[]) {
+  return [
     developmentPracticePrompt(practices, "coding_style"),
     developmentPracticePrompt(practices, "layered_architecture"),
     developmentPracticePrompt(practices, "unit_tests"),
   ].join("\n\n");
-  return getClineDefaultSystemPrompt({
-    ide: "Blame",
-    metadata,
-    mode: "act",
-    platform: process.platform,
-    providerId: input.providerId,
-    rules: mergeRulesForSystemPrompt(undefined, rules),
-    workspaceName: basename(input.workspaceRoot),
-    workspaceRoot: input.workspaceRoot,
+}
+
+function renderPrompt(template: string, values: Record<string, string>) {
+  return template.replace(/{{([A-Z_]+)}}/g, (placeholder, key) => {
+    return values[key] ?? placeholder;
   });
 }
 

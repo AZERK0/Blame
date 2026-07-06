@@ -8,6 +8,7 @@ import type { CoreSessionEvent } from "@cline/sdk";
 import type { AgentEvent } from "./types.js";
 
 import {
+  buildDevelopmentSystemPrompt,
   developmentUserInput,
   duplicateEventSignature,
   nextSpawnAgentActiveCount,
@@ -145,6 +146,37 @@ test("keeps development feedback attachments out of the prompt", async () => {
   } finally {
     await rm(attachmentDirectory, { force: true, recursive: true });
   }
+});
+
+test("renders the Blame development system prompt without Cline placeholders", async () => {
+  const prompt = await buildDevelopmentSystemPrompt({
+    apiConnection: { token: "token", url: "https://example.com" },
+    codePractices: [
+      { enabled: true, practice: "coding_style" },
+      { enabled: false, practice: "layered_architecture" },
+      { enabled: true, practice: "unit_tests" },
+    ],
+    cwd: process.cwd(),
+    modelId: "model",
+    providerId: "provider",
+    summary: "Summary",
+    title: "Title",
+    workspaceRoot: process.cwd(),
+  });
+
+  assert.match(prompt, /^# Blame Development Agent/);
+  assert.match(prompt, /<runtime_context>/);
+  assert.match(prompt, /<workspace_metadata>/);
+  assert.match(prompt, /## Task Classification/);
+  assert.match(prompt, /<verification_matrix>/);
+  assert.match(prompt, /## Blame Multi-Agent Mode/);
+  assert.match(prompt, /## Coding Style: Standard Industrial Professional/);
+  assert.match(prompt, /## Architecture: Match Codebase/);
+  assert.match(prompt, /## Unit Tests: Professional TDD/);
+  assert.match(prompt, new RegExp(process.cwd().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  assert.doesNotMatch(prompt, /\{\{[A-Z_]+\}\}/);
+  assert.doesNotMatch(prompt, /You are Cline/);
+  assert.doesNotMatch(prompt, /CLINE_RULES|CLINE_METADATA/);
 });
 
 function agentEvent(

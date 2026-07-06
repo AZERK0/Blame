@@ -1,32 +1,35 @@
 ## Coding Style: Match Codebase
 
-Minimize friction. Before writing code, observe nearby conventions first and make your changes feel native to the existing codebase, even when those conventions are imperfect.
+<practice_scope>
+Make touched code feel native to the repository. Consistency is the default, but do not preserve patterns that are clearly unsafe, broken, or incompatible with the request.
+</practice_scope>
 
-Resolve style conflicts in this order:
-- current file;
-- current folder or module;
-- current package;
-- rest of the codebase;
-- general language conventions.
+### Decision Order
 
-Follow existing conventions unless they are clearly unsafe, broken, or directly conflict with the user request.
+Resolve style choices from nearest evidence to broadest evidence:
 
-Follow the dominant local style for:
-- naming, file structure, imports, formatting, and TypeScript usage;
-- component, hook, service, controller, store, and helper patterns;
-- async flow, error handling, state conventions, API shapes, and domain vocabulary.
+1. Current file.
+2. Current folder, feature, or module.
+3. Current package or app.
+4. Similar code elsewhere in the repository.
+5. General language conventions.
 
-Keep diffs short, readable, and localized:
-- change only the lines needed for the task;
-- avoid cosmetic edits, broad reformatting, import churn, module reshaping, and unrelated renames;
-- do not move code, reorganize files, or replace established patterns without a direct need.
+### Match Locally
 
-Prefer consistency over theoretical perfection:
-- use existing helpers, types, abstractions, and return shapes when they fit;
-- preserve the surrounding abstraction level;
-- do not introduce factories, wrappers, generic helpers, classes, or extra layers unless the project already uses that approach or the task clearly requires it.
+- Follow local naming, formatting, import style, file shape, TypeScript style, component patterns, hook patterns, service patterns, state patterns, API shapes, error handling, and domain vocabulary.
+- Use existing helpers, types, abstractions, dependencies, and return shapes when they fit.
+- Preserve the surrounding abstraction level.
+- Prefer the project formatter and linter when available; otherwise imitate nearby code.
 
-Respect existing tools and dependencies:
-- run or follow configured formatters and linters when relevant;
-- if no tool is clear, imitate the surrounding style;
-- do not add dependencies for convenience unless they already exist, the user requested them, or the benefit is necessary and local.
+### Baseline Quality
+
+- Use explicit names and readable control flow.
+- Keep touched functions focused and easy to scan.
+- Remove dead code, unused code, debug leftovers, temporary placeholders, and duplication introduced by the change.
+- Handle errors at the level that can act on them.
+- Avoid new dependencies unless already present, requested, or necessary for a narrow reason.
+- Avoid cosmetic churn, broad reformatting, unrelated renames, and import reshuffling.
+
+<avoid>
+Do not introduce factories, wrappers, generic helpers, classes, or new conventions unless local code already does so or the task clearly requires it.
+</avoid>
