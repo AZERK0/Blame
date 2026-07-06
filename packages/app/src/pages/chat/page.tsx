@@ -737,7 +737,7 @@ function QuickChatProjectPage() {
                 <div ref={feedEndRef} />
               </div>
             </ScrollArea>
-            <div className="pointer-events-none absolute right-3 bottom-0 left-0 z-20 pt-10 md:pt-12">
+            <div className="pointer-events-none absolute right-3 bottom-0 left-0 z-20 pt-2 md:pt-3">
               <div
                 className="absolute inset-0 backdrop-blur-sm"
                 style={bottomSoftBlurMask}
@@ -785,7 +785,6 @@ function QuickChatProjectPage() {
                         : "Ask for a focused code change"
                     }
                     submitLabel={agentRunning ? "Running" : "Send"}
-                    title="Message agent"
                     toolbarEnd={
                       <div className="w-[28rem] max-w-full min-w-0">
                         <ModelSelector role="agent" />

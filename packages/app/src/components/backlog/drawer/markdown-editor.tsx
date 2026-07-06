@@ -217,6 +217,17 @@ function markdownWithTaskPrefix(value: string, cursor: number) {
   }
 }
 
+function isPlainEnter(event: React.KeyboardEvent<HTMLElement>) {
+  return (
+    event.key === "Enter" &&
+    !event.shiftKey &&
+    !event.metaKey &&
+    !event.ctrlKey &&
+    !event.altKey &&
+    !event.nativeEvent.isComposing
+  )
+}
+
 function markdownListEnterResult(value: string, cursor: number) {
   const bounds = lineBounds(value, cursor)
   const line = value.slice(bounds.start, bounds.end)
@@ -914,6 +925,7 @@ export const MarkdownEditor = React.forwardRef<
     onFileLinkClick?: (path: string) => void
     onMarkdownChange?: (markdown: string) => void
     onOptimize?: (markdown: string) => Promise<string>
+    onSubmitShortcut?: () => void
     readOnly?: boolean
     toolbarEnd?: React.ReactNode
   }
@@ -930,6 +942,7 @@ export const MarkdownEditor = React.forwardRef<
     onFileLinkClick,
     onMarkdownChange,
     onOptimize,
+    onSubmitShortcut,
     placeholder,
     readOnly,
     toolbarEnd,
@@ -1200,14 +1213,12 @@ export const MarkdownEditor = React.forwardRef<
   function handleTextareaKeyDown(
     event: React.KeyboardEvent<HTMLTextAreaElement>
   ) {
-    if (
-      event.key !== "Enter" ||
-      event.shiftKey ||
-      event.metaKey ||
-      event.ctrlKey ||
-      event.altKey
-    )
+    if (!isPlainEnter(event)) return
+    if (onSubmitShortcut) {
+      event.preventDefault()
+      if (!event.repeat) onSubmitShortcut()
       return
+    }
     const textarea = event.currentTarget
     if (textarea.selectionStart !== textarea.selectionEnd) return
     const result = markdownListEnterResult(value, textarea.selectionStart)

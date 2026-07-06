@@ -226,21 +226,28 @@ export function AgentConversationComposer({
   onMessageSubmit: () => void
   placeholder: string
   submitLabel: string
-  title: string
+  title?: string
   toolbarEnd?: React.ReactNode
 }) {
   const hasMessageBody = Boolean(
     message.trim() || codeSelectionAttachments.length || fileAttachments.length
   )
 
+  function submitMessage() {
+    if (disabled || !hasMessageBody) return
+    onMessageSubmit()
+  }
+
   return (
     <section className="grid gap-3">
-      <div className="flex items-center gap-4 text-xl font-medium">
-        <span className="flex size-11 items-center justify-center rounded-full border bg-muted text-muted-foreground shadow-sm">
-          <MessageSquareIcon className="size-5" />
-        </span>
-        {title}
-      </div>
+      {title ? (
+        <div className="flex items-center gap-4 text-xl font-medium">
+          <span className="flex size-11 items-center justify-center rounded-full border bg-muted text-muted-foreground shadow-sm">
+            <MessageSquareIcon className="size-5" />
+          </span>
+          {title}
+        </div>
+      ) : null}
       <div className="relative">
         <MarkdownEditor
           key={editorKey}
@@ -257,6 +264,7 @@ export function AgentConversationComposer({
           readOnly={disabled}
           placeholder={placeholder}
           minHeight="min-h-24"
+          onSubmitShortcut={submitMessage}
           toolbarEnd={toolbarEnd}
         />
         <Button
@@ -265,7 +273,7 @@ export function AgentConversationComposer({
           disabled={disabled || !hasMessageBody}
           size="icon-sm"
           type="button"
-          onClick={onMessageSubmit}
+          onClick={submitMessage}
         >
           <ArrowUpIcon className="size-4" />
         </Button>
