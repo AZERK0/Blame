@@ -167,8 +167,13 @@ test("renders the Blame development system prompt without Cline placeholders", a
   assert.match(prompt, /^# Blame Development Agent/);
   assert.match(prompt, /<runtime_context>/);
   assert.match(prompt, /<workspace_metadata>/);
+  assert.match(prompt, /<judgment_defaults>/);
+  assert.match(prompt, /<frontend_protocol>/);
   assert.match(prompt, /## Task Classification/);
   assert.match(prompt, /<verification_matrix>/);
+  assert.match(prompt, /## Special Requests/);
+  assert.match(prompt, /## Autonomy And Continuity/);
+  assert.match(prompt, /## Progress Updates/);
   assert.match(prompt, /## Blame Multi-Agent Mode/);
   assert.match(prompt, /## Coding Style: Standard Industrial Professional/);
   assert.match(prompt, /## Architecture: Match Codebase/);
