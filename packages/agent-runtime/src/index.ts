@@ -34,6 +34,8 @@ export type {
   DeleteProviderCredentialInput,
   GenerateCommitMessageInput,
   GenerateCommitMessageResult,
+  GenerateUserStoryTitleInput,
+  GenerateUserStoryTitleResult,
   InitializeProjectInput,
   InitializeProjectResult,
   LoginOAuthProviderInput,

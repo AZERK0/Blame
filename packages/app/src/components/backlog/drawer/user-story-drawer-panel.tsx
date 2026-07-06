@@ -21,6 +21,7 @@ import type {
   StopAgentChoice,
 } from "@/components/backlog/actions/story-action-dialogs"
 import { ColumnStatusBadge } from "@/components/backlog/shared/backlog-status-badge"
+import { UserStoryTitleCloud } from "@/components/backlog/shared/user-story-title-cloud"
 import type {
   DrawerAction,
   OpenDrawer,
@@ -96,6 +97,7 @@ export function UserStoryDrawerPanel({
   reviewDiffEmpty,
   setupInitializing,
   status,
+  titleGenerating,
   userStory,
 }: {
   focusComment?: boolean
@@ -142,6 +144,7 @@ export function UserStoryDrawerPanel({
   reviewDiffEmpty?: boolean
   setupInitializing?: boolean
   status: BacklogColumnId
+  titleGenerating?: boolean
   userStory?: UserStory
 }) {
   const hasDevelopment = hasDevelopmentTab(status)
@@ -206,6 +209,12 @@ export function UserStoryDrawerPanel({
     })
     return () => cancelAnimationFrame(frame)
   }, [focusComment])
+
+  React.useEffect(() => {
+    if (mode === "create") return
+    if (!titleGenerating) return
+    setTitle(userStory?.title ?? "")
+  }, [mode, titleGenerating, userStory?.title])
 
   React.useEffect(() => {
     if (mode === "create") return
@@ -320,6 +329,7 @@ export function UserStoryDrawerPanel({
               <DrawerHeaderTitle
                 mode={mode}
                 title={title}
+                titleGenerating={titleGenerating}
                 userStory={userStory}
                 onTitleChange={setTitle}
               />
@@ -617,25 +627,29 @@ function DrawerHeaderTitle({
   mode,
   onTitleChange,
   title,
+  titleGenerating,
   userStory,
 }: {
   mode: UserStoryDrawerMode
   onTitleChange: (title: string) => void
   title: string
+  titleGenerating?: boolean
   userStory?: UserStory
 }) {
   return (
-    <Input
-      value={title}
-      onChange={(event) => onTitleChange(event.currentTarget.value)}
-      placeholder="User story title"
-      readOnly={
-        mode !== "create" &&
-        userStory?.status !== "backlog" &&
-        userStory?.status !== "discarded"
-      }
-      className="-mx-2 !h-auto rounded-md !border-transparent !bg-transparent px-2 py-1 font-heading !text-3xl leading-tight font-semibold shadow-none hover:!border-transparent focus:!border-transparent focus-visible:!border-transparent focus-visible:!ring-0 active:!border-transparent md:!text-3xl dark:!bg-transparent"
-    />
+    <UserStoryTitleCloud active={titleGenerating} className="block w-full">
+      <Input
+        value={title}
+        onChange={(event) => onTitleChange(event.currentTarget.value)}
+        placeholder="User story title"
+        readOnly={
+          mode !== "create" &&
+          userStory?.status !== "backlog" &&
+          userStory?.status !== "discarded"
+        }
+        className="-mx-2 !h-auto rounded-md !border-transparent !bg-transparent px-2 py-1 font-heading !text-3xl leading-tight font-semibold shadow-none hover:!border-transparent focus:!border-transparent focus-visible:!border-transparent focus-visible:!ring-0 active:!border-transparent md:!text-3xl dark:!bg-transparent"
+      />
+    </UserStoryTitleCloud>
   )
 }
 

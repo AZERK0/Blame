@@ -223,6 +223,94 @@
     -webkit-background-clip: text;
   }
 
+  .user-story-title-cloud {
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+  }
+
+  .user-story-title-cloud-active {
+    min-height: 1.25rem;
+  }
+
+  .user-story-title-cloud-placeholder {
+    display: block;
+    width: 100%;
+    visibility: hidden;
+  }
+
+  .magic-cloud {
+    position: relative;
+    display: block;
+    width: 100%;
+    min-height: 1.25rem;
+    overflow: hidden;
+    border-radius: 0.5rem;
+    background: linear-gradient(
+      90deg,
+      rgba(var(--cloud-rgb, 148, 163, 184), 0.08) 0%,
+      rgba(var(--cloud-rgb, 148, 163, 184), 0.18) 25%,
+      rgba(var(--cloud-rgb, 148, 163, 184), 0.25) 50%,
+      rgba(var(--cloud-rgb, 148, 163, 184), 0.18) 75%,
+      rgba(var(--cloud-rgb, 148, 163, 184), 0.08) 100%
+    );
+    background-size: 300% 100%;
+    filter: blur(6px);
+    transform-origin: center;
+    animation:
+      cloud-drift 5s ease-in-out infinite,
+      cloud-breathe 4s ease-in-out infinite,
+      ethereal-glow 3s ease-in-out infinite;
+  }
+
+  .user-story-title-cloud-active > .magic-cloud {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    left: 0;
+    min-width: 6rem;
+    margin-top: -0.625rem;
+  }
+
+  .magic-cloud::before {
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 40%;
+    height: 100%;
+    content: "";
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.15),
+      rgba(255, 255, 255, 0.15),
+      transparent
+    );
+    filter: blur(3px);
+    opacity: 0.6;
+    animation: shimmer 4s ease-in-out infinite;
+  }
+
+  .magic-cloud::after {
+    position: absolute;
+    top: 0;
+    right: -100%;
+    width: 40%;
+    height: 100%;
+    content: "";
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(var(--cloud-rgb, 148, 163, 184), 0.12),
+      rgba(var(--cloud-rgb, 148, 163, 184), 0.2),
+      rgba(var(--cloud-rgb, 148, 163, 184), 0.12),
+      transparent
+    );
+    filter: blur(4px);
+    opacity: 0.5;
+    animation: shimmer-reverse 4.5s ease-in-out infinite;
+  }
+
   .agent-response-effect {
     position: relative;
     overflow: hidden;
@@ -427,6 +515,63 @@
 
   50% {
     background-position: 100% 50%;
+  }
+}
+
+@keyframes cloud-drift {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes cloud-breathe {
+  0%,
+  100% {
+    transform: scaleX(0.98) scaleY(0.92);
+  }
+
+  50% {
+    transform: scaleX(1.01) scaleY(1.04);
+  }
+}
+
+@keyframes ethereal-glow {
+  0%,
+  100% {
+    opacity: 0.58;
+  }
+
+  50% {
+    opacity: 0.88;
+  }
+}
+
+@keyframes shimmer {
+  0%,
+  35% {
+    left: -100%;
+  }
+
+  70%,
+  100% {
+    left: 120%;
+  }
+}
+
+@keyframes shimmer-reverse {
+  0%,
+  30% {
+    right: -100%;
+  }
+
+  75%,
+  100% {
+    right: 120%;
   }
 }
 

@@ -14,6 +14,7 @@ import {
   storyStatus,
 } from "@/components/backlog/shared/backlog-helpers"
 import { StoryStatusBadge } from "@/components/backlog/shared/backlog-status-badge"
+import { UserStoryTitleCloud } from "@/components/backlog/shared/user-story-title-cloud"
 import type { OpenDrawer } from "@/components/backlog/shared/backlog-types"
 import { StoryActions } from "@/components/backlog/actions/story-actions"
 import { Button } from "@/components/ui/button"
@@ -32,6 +33,7 @@ type UserStoryCardBodyProps = {
   onOpenDrawer?: OpenDrawer
   setupInitializing?: boolean
   story: UserStory
+  titleGenerating?: boolean
 }
 
 export function UserStoryCard({
@@ -46,6 +48,7 @@ export function UserStoryCard({
   cleanup,
   setupInitializing,
   story,
+  titleGenerating,
 }: {
   onAction: (
     story: UserStory,
@@ -61,6 +64,7 @@ export function UserStoryCard({
   cleanup?: boolean
   setupInitializing?: boolean
   story: UserStory
+  titleGenerating?: boolean
 }) {
   return (
     <div className="user-story-state-effect" data-story-state={story.status}>
@@ -73,6 +77,7 @@ export function UserStoryCard({
           onOpenDrawer={onOpenDrawer}
           setupInitializing={setupInitializing}
           story={story}
+          titleGenerating={titleGenerating}
         />
         <CardFooter>
           <StoryActions
@@ -111,6 +116,7 @@ function UserStoryCardBody({
   onOpenDrawer,
   setupInitializing,
   story,
+  titleGenerating,
 }: UserStoryCardBodyProps) {
   return (
     <>
@@ -130,12 +136,24 @@ function UserStoryCardBody({
               className="h-auto max-w-full min-w-0 shrink justify-start p-0 text-left text-base leading-snug font-medium break-words whitespace-normal text-card-foreground transition-colors group-hover/user-story:text-blue-600 hover:cursor-pointer dark:group-hover/user-story:text-blue-300"
               onClick={() => onOpenDrawer(drawerTarget(story))}
             >
-              {story.title}
+              <UserStoryTitleCloud
+                active={titleGenerating}
+                className="block w-full"
+              >
+                <span className="block break-words">
+                  {story.title}
+                </span>
+              </UserStoryTitleCloud>
             </Button>
           ) : (
-            <span className="block break-words text-card-foreground">
-              {story.title}
-            </span>
+            <UserStoryTitleCloud
+              active={titleGenerating}
+              className="block w-full"
+            >
+              <span className="block break-words text-card-foreground">
+                {story.title}
+              </span>
+            </UserStoryTitleCloud>
           )}
         </CardTitle>
         {storyStatus(story) && (

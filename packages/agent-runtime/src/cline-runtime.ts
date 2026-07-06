@@ -62,6 +62,7 @@ import {
   projectInitializationImpactPrompt,
 } from "./project-initialization-impact.js";
 import { optimizeUserStoryPrompt } from "./prompt-optimization.js";
+import { generateUserStoryTitle } from "./user-story-title-generation.js";
 import { loadPrompt } from "./prompt-loader.js";
 import { fallbackCommitSubject } from "./commit-message.js";
 import {
@@ -103,6 +104,8 @@ import type {
   CompareCheckpointResult,
   GenerateCommitMessageInput,
   GenerateCommitMessageResult,
+  GenerateUserStoryTitleInput,
+  GenerateUserStoryTitleResult,
   InitializeProjectInput,
   InitializeProjectResult,
   LoginOAuthProviderInput,
@@ -367,6 +370,8 @@ export class BlameAgentRuntime {
   promptOptimizer = {
     optimizeUserStory: (input: OptimizeUserStoryPromptInput) =>
       this.optimizeUserStoryPrompt(input),
+    generateUserStoryTitle: (input: GenerateUserStoryTitleInput) =>
+      this.generateUserStoryTitle(input),
   };
 
   approveAndMerge = (input: ApproveAndMergeInput) =>
@@ -1040,6 +1045,18 @@ export class BlameAgentRuntime {
     const credential = await this.runtimeCredential(input);
     const cline = await this.core(input.backend);
     return optimizeUserStoryPrompt({ ...input, prompt }, cline, credential);
+  }
+
+  private async generateUserStoryTitle(
+    input: GenerateUserStoryTitleInput,
+  ): Promise<GenerateUserStoryTitleResult> {
+    assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd");
+    const prompt = input.prompt.trim();
+    if (!prompt)
+      throw new Error("Title generator requires a user story prompt.");
+    const credential = await this.runtimeCredential(input);
+    const cline = await this.core(input.backend);
+    return generateUserStoryTitle({ ...input, prompt }, cline, credential);
   }
 
   private async initializationCredential(input: InitializeProjectInput) {

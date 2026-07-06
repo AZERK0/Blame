@@ -102,6 +102,9 @@ export function registerAgentIpcHandlers() {
   ipcMain.handle("agent:prompt-optimizer:optimize-user-story", (_event, input) =>
     agentWorkspaceInput(input).then((resolved) => runtime.promptOptimizer.optimizeUserStory(resolved))
   )
+  ipcMain.handle("agent:prompt-optimizer:generate-user-story-title", (_event, input) =>
+    agentWorkspaceInput(input).then((resolved) => runtime.promptOptimizer.generateUserStoryTitle(resolved))
+  )
   ipcMain.handle("agent:approve-and-merge", (_event, input) =>
     agentWorkspaceInput(input).then((resolved) => runtime.approveAndMerge(resolved))
   )

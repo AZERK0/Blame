@@ -45,6 +45,7 @@ export function BacklogColumn({
   queueInitializing,
   storyCleanup,
   storySetupInitializing,
+  storyTitleGenerating,
   stories,
 }: {
   column: (typeof backlogColumns)[number]
@@ -63,6 +64,7 @@ export function BacklogColumn({
   queueInitializing?: boolean
   storyCleanup?: (story: UserStory) => boolean
   storySetupInitializing?: (story: UserStory) => boolean
+  storyTitleGenerating?: (story: UserStory) => boolean
   stories: UserStory[]
 }) {
   return (
@@ -90,6 +92,7 @@ export function BacklogColumn({
                 storySetupInitializing?.(story) || queueInitializing
               }
               story={story}
+              titleGenerating={storyTitleGenerating?.(story)}
             />
           ))}
           {column.id === "backlog" && (

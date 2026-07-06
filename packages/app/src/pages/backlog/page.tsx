@@ -58,6 +58,7 @@ import {
 
 const agentEventPersistDelayMs = 1_500
 const reviewDiffRefreshDelayMs = 1_500
+const untitledUserStoryTitle = "Untitled user story"
 
 export function BacklogPage() {
   const backlog = useBacklogStore()
@@ -68,6 +69,8 @@ export function BacklogPage() {
   const alternativeSelection = useModelSelection({ role: "alternative" })
   const rotation = useBacklogRotation(backlog)
   const [drawerTarget, setDrawerTarget] = React.useState<DrawerTarget>()
+  const [titleGeneratingStoryIds, setTitleGeneratingStoryIds] =
+    React.useState(() => new Set<string>())
   const projectInitialization = useProjectInitialization()
   const initializationStatus = projectInitialization?.status ?? null
   const queueInitializing = projectInitializing(initializationStatus)
@@ -790,11 +793,54 @@ export function BacklogPage() {
       alternativeSelection.currentVariant,
     ]
   )
+  const storyTitleGenerating = React.useCallback(
+    (story: UserStory) => titleGeneratingStoryIds.has(story.id),
+    [titleGeneratingStoryIds]
+  )
+  const setStoryTitleGenerating = React.useCallback(
+    (storyId: string, generating: boolean) => {
+      setTitleGeneratingStoryIds((current) =>
+        titleGenerationStoryIds(current, storyId, generating)
+      )
+    },
+    []
+  )
+  const startQueuedStoryTitleGeneration = React.useCallback(
+    (story: UserStory) => {
+      const request = queuedUserStoryTitleRequest({
+        auth,
+        model: alternativeSelection.currentModel,
+        platform,
+        projectPath: projects.activeProject?.path,
+        reasoningEffort: alternativeSelection.currentVariant,
+        story,
+        updateStory,
+      })
+      if (!request) return
+      setStoryTitleGenerating(story.id, true)
+      void runQueuedStoryTitleGeneration(request)
+        .catch(() => undefined)
+        .finally(() => setStoryTitleGenerating(story.id, false))
+    },
+    [
+      auth,
+      alternativeSelection.currentModel,
+      alternativeSelection.currentVariant,
+      platform,
+      projects.activeProject?.path,
+      setStoryTitleGenerating,
+      updateStory,
+    ]
+  )
   const runStoryAction = React.useCallback(
     async (story: UserStory, action: BacklogAction) => {
       const currentStory = await detailedStoryForAction(story, action, backlog)
       if (action === "Send to Dev Agent") {
-        return updateStory(currentStory, { status: "ready" })
+        const queuedStory = await updateStory(currentStory, {
+          status: "ready",
+        })
+        startQueuedStoryTitleGeneration(queuedStory)
+        return queuedStory
       }
       if (action === "Discard") {
         return updateStory(currentStory, {
@@ -832,6 +878,7 @@ export function BacklogPage() {
     },
     [
       completeReviewStory,
+      startQueuedStoryTitleGeneration,
       backlog,
       platform,
       projects.activeProject?.path,
@@ -948,6 +995,7 @@ export function BacklogPage() {
               queueInitializing={column.id === "ready" && queueInitializing}
               storyCleanup={backlog.storyCleanup}
               storySetupInitializing={backlog.storySetupInitializing}
+              storyTitleGenerating={storyTitleGenerating}
               stories={backlog.storiesForColumn(column.id)}
             />
           ))}
@@ -969,6 +1017,7 @@ export function BacklogPage() {
         focusComment={drawerTarget?.focusComment}
         onCreateUserStory={async (input) => {
           const story = await backlog.create(input)
+          startQueuedStoryTitleGeneration(story)
           setDrawerTarget({ userStory: story, mode: "edit" })
           return story
         }}
@@ -977,7 +1026,9 @@ export function BacklogPage() {
         }
         onDeleteUserStory={(story) => backlog.remove(story)}
         onUpdateUserStory={async (story, input) => {
-          return updateStory(story, input)
+          const nextStory = await updateStory(story, input)
+          startQueuedStoryTitleGeneration(nextStory)
+          return nextStory
         }}
         onOpenDrawer={openDrawer}
         onOptimizeUserStory={optimizeUserStory}
@@ -990,6 +1041,9 @@ export function BacklogPage() {
         onStopAgent={stopAgent}
         onUndoUserStoryComment={undoUserStoryComment}
         setupInitializing={backlog.storySetupInitializing(drawerUserStory)}
+        titleGenerating={
+          drawerUserStory ? storyTitleGenerating(drawerUserStory) : false
+        }
       />
       <UserStoryPreviewWarmup userStories={backlog.stories} />
       <HostDependenciesDialog {...rotation.hostDependenciesDialog} />
@@ -1232,6 +1286,116 @@ async function runPromptOptimizer(request: OptimizeUserStoryPromptRequest) {
       workspaceRoot: request.projectPath!,
     })
   return result.markdown
+}
+
+type QueuedUserStoryTitleRequest = {
+  story: UserStory
+  auth: ReturnType<typeof useCloudAuth>
+  platform: ReturnType<typeof usePlatform>
+  projectPath?: string
+  model: ReturnType<typeof useModelSelection>["currentModel"]
+  reasoningEffort: ReturnType<typeof useModelSelection>["currentVariant"]
+  updateStory: (
+    story: UserStory,
+    input: UserStoryUpdate,
+    options?: { cleanup?: boolean }
+  ) => Promise<UserStory>
+}
+
+function queuedUserStoryTitleRequest(
+  request: QueuedUserStoryTitleRequest
+) {
+  if (!queuedStoryNeedsGeneratedTitle(request.story)) return undefined
+  if (queuedStoryTitleGenerationBlocked(request)) return undefined
+  return request
+}
+
+function queuedStoryTitleGenerationBlocked(
+  request: QueuedUserStoryTitleRequest
+) {
+  return (
+    !request.story.summary.trim() ||
+    !request.projectPath ||
+    request.auth.status !== "authenticated" ||
+    !request.model ||
+    !request.platform.agent?.promptOptimizer.generateUserStoryTitle
+  )
+}
+
+async function runQueuedStoryTitleGeneration(
+  request: QueuedUserStoryTitleRequest
+) {
+  const title = await generatedQueuedStoryTitle(request)
+  return persistGeneratedQueuedStoryTitle(request, title)
+}
+
+async function generatedQueuedStoryTitle(
+  request: QueuedUserStoryTitleRequest
+) {
+  const result =
+    await request.platform.agent!.promptOptimizer.generateUserStoryTitle(
+      queuedStoryTitleGenerationInput(request)
+    )
+  const title = generatedUserStoryTitle(result.title)
+  if (!title) throw new Error("Title generator agent did not return a title.")
+  return title
+}
+
+async function persistGeneratedQueuedStoryTitle(
+  request: QueuedUserStoryTitleRequest,
+  title: string
+) {
+  return request.updateStory(
+    request.story,
+    { title },
+    { cleanup: false }
+  )
+}
+
+function queuedStoryTitleGenerationInput(request: QueuedUserStoryTitleRequest) {
+  return {
+    apiConnection: request.auth.apiConnection,
+    providerId: request.model!.provider.id,
+    modelId: request.model!.id,
+    credentialLabel: request.model!.credentialLabel,
+    reasoningEffort: request.reasoningEffort,
+    prompt: request.story.summary,
+    cwd: request.projectPath!,
+    workspaceRoot: request.projectPath!,
+  }
+}
+
+function queuedStoryNeedsGeneratedTitle(
+  story: Pick<UserStory, "status" | "title">
+) {
+  return story.status === "ready" && missingUserStoryTitle(story.title)
+}
+
+function titleGenerationStoryIds(
+  current: Set<string>,
+  storyId: string,
+  generating: boolean
+) {
+  const next = new Set(current)
+  if (generating) next.add(storyId)
+  else next.delete(storyId)
+  return next.size === current.size && next.has(storyId) === current.has(storyId)
+    ? current
+    : next
+}
+
+function missingUserStoryTitle(title: string) {
+  const value = title.trim()
+  return !value || value.toLowerCase() === untitledUserStoryTitle.toLowerCase()
+}
+
+function generatedUserStoryTitle(title: string) {
+  return title
+    .trim()
+    .replace(/[.!?:;]+$/g, "")
+    .split(/\s+/)
+    .slice(0, 6)
+    .join(" ")
 }
 
 type CheckInitializationImpactInput = {

@@ -220,6 +220,23 @@ export type GenerateCommitMessageResult = {
   message: string;
 };
 
+export type GenerateUserStoryTitleInput = {
+  apiConnection: ApiConnection;
+  providerId: string;
+  modelId: string;
+  prompt: string;
+  cwd: string;
+  workspaceRoot: string;
+  reasoningEffort?: ReasoningEffort;
+  credentialLabel?: string;
+  backend?: AgentBackendConfig;
+};
+
+export type GenerateUserStoryTitleResult = {
+  sessionId: string;
+  title: string;
+};
+
 export type ResolveMergeConflictsInput = {
   apiConnection: ApiConnection;
   providerId: string;
