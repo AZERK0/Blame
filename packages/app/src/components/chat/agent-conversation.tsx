@@ -339,13 +339,8 @@ function AgentThinkingTimelineItem() {
       <span className="relative z-10 flex size-8 items-center justify-center">
         <span className="agent-thinking-mark" aria-hidden="true" />
       </span>
-      <div className="flex min-w-0 items-center gap-2 pt-1 text-sm text-muted-foreground">
+      <div className="flex min-w-0 items-center pt-1 text-sm text-muted-foreground">
         <span className="agent-thinking-text">Thinking</span>
-        <span className="agent-thinking-dots" aria-hidden="true">
-          <span />
-          <span />
-          <span />
-        </span>
       </div>
     </div>
   )
