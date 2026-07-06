@@ -28,6 +28,7 @@ Loop:
 
 - Test behavior, not implementation.
 - Prefer input-output assertions, observable effects, public contracts, useful errors, final state, and dependency calls that are part of the contract.
+- Connect each meaningful test to a requested behavior or risk. A passing test suite is not proof of the user request unless it exercises the changed behavior.
 - Avoid private-detail assertions, massive snapshots, irrelevant call ordering, over-mocking, arbitrary sleeps, and flaky execution-order dependencies.
 - Use the existing framework, helpers, factories, fixtures, naming, folders, mocks, and command style.
 - Do not add a new framework when one already exists.

@@ -11,6 +11,7 @@ Apply this standard to code you create or touch. Improve only within the request
 - Prefer straightforward control flow over cleverness.
 - Make state, side effects, and data transformations explicit.
 - Use comments only for non-obvious intent, constraints, or trade-offs.
+- Do not add comments that explain where a change came from, why the implementation is correct, or what the next line does when the code already shows it.
 
 ### Correctness
 
