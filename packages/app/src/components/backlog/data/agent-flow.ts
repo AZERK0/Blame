@@ -208,7 +208,7 @@ function messageActivities(
   if (closingStreamPhase(phase)) {
     return closeRunningActivities(activities, ["message"])
   }
-  const id = inlineActivityId(activities, "message", iteration)
+  const id = messageActivityId(activities, iteration, payload)
   const text = messageText(activities, id, iteration, payload)
   if (text === undefined || !text.trim()) return undefined
   const messageKind = agentMessageKind()
@@ -226,25 +226,71 @@ function messageActivities(
   ])
 }
 
+function messageActivityId(
+  activities: UserStoryAgentActivity[],
+  iteration: number | undefined,
+  payload: Record<string, unknown>
+) {
+  const active = inlineActivity(activities, "message", iteration)
+  if (active) return active.id
+  const accumulatedText = stringValue(payload.accumulatedText)
+  const lastActivity = activities.at(-1)
+  if (
+    accumulatedText !== undefined &&
+    reusableClosedMessage(lastActivity, iteration, accumulatedText)
+  ) {
+    return lastActivity.id
+  }
+  return nextInlineActivityId(activities, "message", iteration)
+}
+
 function inlineActivityId(
   activities: UserStoryAgentActivity[],
   kind: "message" | "reasoning",
   iteration: number | undefined
 ) {
-  const active = lastMatchingActivity(
+  const active = inlineActivity(activities, kind, iteration)
+  if (active) return active.id
+  return nextInlineActivityId(activities, kind, iteration)
+}
+
+function inlineActivity(
+  activities: UserStoryAgentActivity[],
+  kind: "message" | "reasoning",
+  iteration: number | undefined
+) {
+  return lastMatchingActivity(
     activities,
     (activity) =>
       activity.kind === kind &&
       activity.status === "running" &&
       sameIteration(activity.iteration, iteration)
   )
-  if (active) return active.id
+}
+
+function nextInlineActivityId(
+  activities: UserStoryAgentActivity[],
+  kind: "message" | "reasoning",
+  iteration: number | undefined
+) {
   const label = kind === "message" ? "message" : "reasoning"
   const count = activities.filter(
     (activity) =>
       activity.kind === kind && sameIteration(activity.iteration, iteration)
   ).length
   return `${label}-${iteration ?? "session"}-${count + 1}`
+}
+
+function reusableClosedMessage(
+  activity: UserStoryAgentActivity | undefined,
+  iteration: number | undefined,
+  accumulatedText: string
+) {
+  return (
+    activity?.kind === "message" &&
+    sameIteration(activity.iteration, iteration) &&
+    sameStreamingResponse(activity.detail, accumulatedText)
+  )
 }
 
 function lastMatchingActivity(

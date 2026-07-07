@@ -217,6 +217,37 @@ test("starts a new assistant message after a text content block closes", () => {
   assert.equal(secondMessage.agentActivities?.[1]?.detail, "Je continue.")
 })
 
+test("updates a closed streamed message with the complete assistant message", () => {
+  const partialText =
+    "Salut, oui ça va bien — et toi ?\n\n" +
+    "Je n’ai pas de demande d’implémentation concrète ici, donc je n’ai pas modifié le code. Si tu veux, je peux :\n" +
+    "- clarifier l’“Untitled user story” en critères d’acceptation,\n" +
+    "- analyser le projet et proposer une "
+  const completeText =
+    `${partialText}approche,\n` +
+    "- ou l’implémenter directement si tu me donnes le comportement attendu."
+  const toolStarted = updateStory(
+    story(),
+    toolEvent("tool_call", "skills", 1, "call-1")
+  )
+  const toolCompleted = updateStory(
+    toolStarted,
+    toolEvent("tool_result", "skills", 1, "call-1")
+  )
+  const streamed = updateStory(toolCompleted, textEvent({ text: partialText }))
+  const closed = updateStory(streamed, textEvent({ phase: "content_end" }))
+  const completed = updateStory(
+    closed,
+    textEvent({ accumulatedText: completeText, finishReason: "stop" })
+  )
+
+  assert.deepEqual(
+    completed.agentActivities?.map((activity) => activity.kind),
+    ["tool", "message"]
+  )
+  assert.equal(completed.agentActivities?.[1]?.detail, completeText)
+})
+
 test("keeps cline assistant messages and tools in canonical order", () => {
   const plan = updateStory(story(), textEvent({ text: "Plan rapide." }))
   const firstTool = updateStory(
