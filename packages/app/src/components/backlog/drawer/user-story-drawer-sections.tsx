@@ -142,10 +142,11 @@ export function UserStoryContent({
         ) : null}
       </div>
       <AgentRunTimeline
-      userStory={userStory}
-      onFileLinkClick={onFileLinkClick}
-      onCommentUndo={status === "in-review" ? onCommentUndo : undefined}
-    />
+        connectSummaryActions={Boolean(summary.trim())}
+        userStory={userStory}
+        onFileLinkClick={onFileLinkClick}
+        onCommentUndo={status === "in-review" ? onCommentUndo : undefined}
+      />
       {mode !== "create" && (
         <div className="sticky bottom-0 z-20 -mx-6 px-6 pt-10 pb-6">
           <div
@@ -190,10 +191,12 @@ export function UserStoryContent({
 }
 
 function AgentRunTimeline({
+  connectSummaryActions,
   onCommentUndo,
   onFileLinkClick,
   userStory,
 }: {
+  connectSummaryActions?: boolean
   onCommentUndo?: (target: AgentConversationUserMessageUndo) => Promise<void>
   onFileLinkClick?: (path: string) => void
   userStory?: UserStory
@@ -227,6 +230,7 @@ function AgentRunTimeline({
       onUserMessageUndo={onCommentUndo}
       responseHeader={responseHeader}
       runs={userStory?.agentRuns ?? []}
+      topOffset={connectSummaryActions ? "message-actions" : "default"}
     />
   )
 }

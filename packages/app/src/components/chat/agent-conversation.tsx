@@ -96,6 +96,7 @@ export function AgentConversationTimeline({
   onLoadActivityDetail,
   responseHeader,
   runs,
+  topOffset = "default",
 }: {
   comments: AgentConversationComment[]
   onUserMessageUndo?: (
@@ -108,6 +109,7 @@ export function AgentConversationTimeline({
   ) => Promise<string>
   responseHeader: AgentConversationResponseHeader
   runs: AgentConversationRun[]
+  topOffset?: "default" | "message-actions"
 }) {
   const commentsById = React.useMemo(
     () => new Map(comments.map((comment) => [comment.id, comment])),
@@ -124,11 +126,17 @@ export function AgentConversationTimeline({
   )
 
   if (runs.length === 0) return null
+  const lineTop = agentConversationLineTop(topOffset)
 
   return (
-    <div className="-mt-6 grid gap-0">
-      <div className="relative grid gap-4 pt-6">
-        <span className="absolute top-0 bottom-0 left-4 w-px bg-muted-foreground/35" />
+    <div className="grid gap-0">
+      <div className="relative grid gap-4">
+        <span
+          className={cn(
+            "absolute bottom-0 left-4 w-px bg-muted-foreground/35",
+            lineTop
+          )}
+        />
         <Accordion type="multiple" className="contents">
           {runs.map((run, index) => {
             const activities = agentDisplayActivities(
@@ -190,6 +198,11 @@ export function AgentConversationTimeline({
       </div>
     </div>
   )
+}
+
+function agentConversationLineTop(topOffset: "default" | "message-actions") {
+  if (topOffset === "message-actions") return "-top-[3.75rem]"
+  return "-top-6"
 }
 
 export function AgentConversationComposer({
@@ -830,87 +843,89 @@ export function MarkdownMessageActions({
           : "pointer-events-none opacity-0 group-focus-within/message:pointer-events-auto group-focus-within/message:opacity-100 group-hover/message:pointer-events-auto group-hover/message:opacity-100"
       )}
     >
-      <div className="flex shrink-0 items-center gap-1.5">
-        <MarkdownActionTooltip label="Copy">
-          <Button
-            aria-label="Copy"
-            onMouseDown={preventMouseFocus}
-            onClick={copy}
-            size="icon-xs"
-            type="button"
-            variant="ghost"
+      <div className="ml-auto flex shrink-0 items-center gap-3">
+        {dateLabel ? (
+          <time
+            className="shrink-0 text-xs font-medium text-muted-foreground"
+            dateTime={createdAt ?? undefined}
           >
-            <CopyIcon className="size-3" />
-          </Button>
-        </MarkdownActionTooltip>
-        {onUndo ? (
-          <MarkdownActionTooltip label={undoing ? "Undoing" : "Undo"}>
+            {dateLabel}
+          </time>
+        ) : null}
+        <div className="flex shrink-0 items-center gap-1.5">
+          <MarkdownActionTooltip label="Copy">
             <Button
-              aria-label={undoing ? "Undoing" : "Undo"}
-              disabled={undoDisabled || undoing}
+              aria-label="Copy"
               onMouseDown={preventMouseFocus}
-              onClick={undo}
+              onClick={copy}
               size="icon-xs"
               type="button"
               variant="ghost"
             >
-              <RotateCcwIcon className="size-3" />
+              <CopyIcon className="size-3" />
             </Button>
           </MarkdownActionTooltip>
-        ) : null}
-        {showFeedback ? (
-          <>
-            <MarkdownActionTooltip label="Like">
+          {onUndo ? (
+            <MarkdownActionTooltip label={undoing ? "Undoing" : "Undo"}>
               <Button
-                aria-label="Like"
-                aria-pressed={feedback === "like"}
-                className={
-                  feedback === "like"
-                    ? "bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/15 dark:text-emerald-300"
-                    : undefined
-                }
-                onClick={() =>
-                  setFeedback(feedback === "like" ? undefined : "like")
-                }
+                aria-label={undoing ? "Undoing" : "Undo"}
+                disabled={undoDisabled || undoing}
                 onMouseDown={preventMouseFocus}
+                onClick={undo}
                 size="icon-xs"
                 type="button"
                 variant="ghost"
               >
-                <ThumbsUpIcon className="size-3" />
+                <RotateCcwIcon className="size-3" />
               </Button>
             </MarkdownActionTooltip>
-            <MarkdownActionTooltip label="Dislike">
-              <Button
-                aria-label="Dislike"
-                aria-pressed={feedback === "dislike"}
-                className={
-                  feedback === "dislike"
-                    ? "bg-destructive/10 text-destructive hover:!bg-destructive/15 dark:bg-destructive/20 dark:hover:!bg-destructive/30"
-                    : undefined
-                }
-                onClick={() =>
-                  setFeedback(feedback === "dislike" ? undefined : "dislike")
-                }
-                onMouseDown={preventMouseFocus}
-                size="icon-xs"
-                type="button"
-                variant="ghost"
-              >
-                <ThumbsDownIcon className="size-3" />
-              </Button>
-            </MarkdownActionTooltip>
-          </>
-        ) : null}
+          ) : null}
+          {showFeedback ? (
+            <>
+              <MarkdownActionTooltip label="Like">
+                <Button
+                  aria-label="Like"
+                  aria-pressed={feedback === "like"}
+                  className={
+                    feedback === "like"
+                      ? "bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/15 dark:text-emerald-300"
+                      : undefined
+                  }
+                  onClick={() =>
+                    setFeedback(feedback === "like" ? undefined : "like")
+                  }
+                  onMouseDown={preventMouseFocus}
+                  size="icon-xs"
+                  type="button"
+                  variant="ghost"
+                >
+                  <ThumbsUpIcon className="size-3" />
+                </Button>
+              </MarkdownActionTooltip>
+              <MarkdownActionTooltip label="Dislike">
+                <Button
+                  aria-label="Dislike"
+                  aria-pressed={feedback === "dislike"}
+                  className={
+                    feedback === "dislike"
+                      ? "bg-destructive/10 text-destructive hover:!bg-destructive/15 dark:bg-destructive/20 dark:hover:!bg-destructive/30"
+                      : undefined
+                  }
+                  onClick={() =>
+                    setFeedback(feedback === "dislike" ? undefined : "dislike")
+                  }
+                  onMouseDown={preventMouseFocus}
+                  size="icon-xs"
+                  type="button"
+                  variant="ghost"
+                >
+                  <ThumbsDownIcon className="size-3" />
+                </Button>
+              </MarkdownActionTooltip>
+            </>
+          ) : null}
+        </div>
       </div>
-      {dateLabel ? (
-        <time
-          className="ml-auto shrink-0 text-xs font-medium text-muted-foreground"
-          dateTime={createdAt ?? undefined}
-        >
-          {dateLabel}
-        </time>
-      ) : null}
     </div>
   )
 }
