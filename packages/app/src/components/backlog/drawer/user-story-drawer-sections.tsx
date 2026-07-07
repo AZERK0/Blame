@@ -42,18 +42,29 @@ const commentComposerStrongBlurMask = {
   WebkitMaskImage: "linear-gradient(to top, black 0%, transparent 72%)",
 } satisfies React.CSSProperties
 
+type UserStoryCommentComposerProps = {
+  commentCodeSelectionAttachments: PendingCodeSelectionAttachment[]
+  commentFileAttachments: PendingFileAttachment[]
+  comment: string
+  commentEditorKey: number
+  commentRef: React.RefObject<HTMLDivElement | null>
+  onCommentChange: (comment: string) => void
+  onCommentCodeSelectionAttachmentRemove: (id: string) => void
+  onCommentFileAttachmentRemove: (id: string) => void
+  onCommentFileAttachmentsAdd: (attachments: UserStoryFileAttachment[]) => void
+  onCommentSubmit: () => void
+  onFileLinkClick?: (path: string) => void
+  status: BacklogColumnId
+  userStory?: UserStory
+}
+
+type UserStoryFixedSectionProps = UserStoryCommentComposerProps & {
+  actions?: React.ReactNode
+  mode: UserStoryDrawerMode
+}
+
 export function UserStoryContent({
-  commentCodeSelectionAttachments,
-  commentFileAttachments,
-  comment,
-  commentEditorKey,
-  commentRef,
   mode,
-  onCommentChange,
-  onCommentCodeSelectionAttachmentRemove,
-  onCommentFileAttachmentRemove,
-  onCommentFileAttachmentsAdd,
-  onCommentSubmit,
   onCommentUndo,
   onSummaryChange,
   onSummaryCodeSelectionAttachmentRemove,
@@ -68,17 +79,7 @@ export function UserStoryContent({
   summaryRef,
   userStory,
 }: {
-  commentCodeSelectionAttachments: PendingCodeSelectionAttachment[]
-  commentFileAttachments: PendingFileAttachment[]
-  comment: string
-  commentEditorKey: number
-  commentRef: React.RefObject<HTMLDivElement | null>
   mode: UserStoryDrawerMode
-  onCommentChange: (comment: string) => void
-  onCommentCodeSelectionAttachmentRemove: (id: string) => void
-  onCommentFileAttachmentRemove: (id: string) => void
-  onCommentFileAttachmentsAdd: (attachments: UserStoryFileAttachment[]) => void
-  onCommentSubmit: () => void
   onCommentUndo?: (target: AgentConversationUserMessageUndo) => Promise<void>
   onSummaryChange?: (summary: string) => void
   onSummaryCodeSelectionAttachmentRemove: (id: string) => void
@@ -93,12 +94,7 @@ export function UserStoryContent({
   summaryRef: React.RefObject<HTMLDivElement | null>
   userStory?: UserStory
 }) {
-  const projects = useProjects()
-  const mentionDirectory = fileMentionDirectory(
-    status,
-    userStory,
-    projects.activeProject?.path
-  )
+  const mentionDirectory = useFileMentionDirectory(status, userStory)
   const editable = isEditable(mode, status)
   const contentEndRef = React.useRef<HTMLDivElement>(null)
   const timelineScrollKey = userStoryTimelineScrollKey(userStory)
@@ -147,47 +143,97 @@ export function UserStoryContent({
         onFileLinkClick={onFileLinkClick}
         onCommentUndo={status === "in-review" ? onCommentUndo : undefined}
       />
-      {mode !== "create" && (
-        <div className="sticky bottom-0 z-20 -mx-6 px-6 pt-10 pb-6">
-          <div
-            className="absolute inset-0 backdrop-blur-sm"
-            style={commentComposerSoftBlurMask}
-          />
-          <div
-            className="absolute inset-0 backdrop-blur-xl"
-            style={commentComposerStrongBlurMask}
-          />
-          <div className="relative">
-            <AgentConversationComposer
-              codeSelectionAttachments={commentCodeSelectionAttachments}
-              disabled={status === "done"}
-              editorKey={commentEditorKey}
-              editorRef={commentRef}
-              fileAttachments={commentFileAttachments}
-              mentionDirectory={mentionDirectory}
-              message={comment}
-              onCodeSelectionAttachmentRemove={
-                onCommentCodeSelectionAttachmentRemove
-              }
-              onFileAttachmentRemove={onCommentFileAttachmentRemove}
-              onFileAttachmentsAdd={onCommentFileAttachmentsAdd}
-              onFileLinkClick={onFileLinkClick}
-              onMessageChange={onCommentChange}
-              onMessageSubmit={onCommentSubmit}
-              placeholder={
-                status === "done"
-                  ? "Comments are read-only after merge."
-                  : "Add a comment"
-              }
-              submitLabel={commentButtonLabel(status)}
-              title="Add a comment"
-            />
-          </div>
-        </div>
-      )}
-      <div ref={contentEndRef} />
+      <div ref={contentEndRef} className={mode === "create" ? "h-8" : "h-64"} />
     </>
   )
+}
+
+export function UserStoryFixedSection({
+  actions,
+  mode,
+  ...commentComposerProps
+}: UserStoryFixedSectionProps) {
+  const commentComposerVisible = mode !== "create"
+
+  if (!commentComposerVisible && !actions) return null
+
+  return (
+    <div className={fixedSectionClassName(commentComposerVisible)}>
+      <div
+        className="absolute inset-0 backdrop-blur-sm"
+        style={commentComposerSoftBlurMask}
+      />
+      <div
+        className="absolute inset-0 backdrop-blur-xl"
+        style={commentComposerStrongBlurMask}
+      />
+      <div className="relative grid gap-3">
+        {commentComposerVisible ? (
+          <UserStoryCommentComposer {...commentComposerProps} />
+        ) : null}
+        {actions ? <div className="flex justify-end">{actions}</div> : null}
+      </div>
+    </div>
+  )
+}
+
+function UserStoryCommentComposer({
+  commentCodeSelectionAttachments,
+  commentFileAttachments,
+  comment,
+  commentEditorKey,
+  commentRef,
+  onCommentChange,
+  onCommentCodeSelectionAttachmentRemove,
+  onCommentFileAttachmentRemove,
+  onCommentFileAttachmentsAdd,
+  onCommentSubmit,
+  onFileLinkClick,
+  status,
+  userStory,
+}: UserStoryCommentComposerProps) {
+  const mentionDirectory = useFileMentionDirectory(status, userStory)
+
+  return (
+    <AgentConversationComposer
+      codeSelectionAttachments={commentCodeSelectionAttachments}
+      disabled={status === "done"}
+      editorKey={commentEditorKey}
+      editorRef={commentRef}
+      fileAttachments={commentFileAttachments}
+      mentionDirectory={mentionDirectory}
+      message={comment}
+      onCodeSelectionAttachmentRemove={onCommentCodeSelectionAttachmentRemove}
+      onFileAttachmentRemove={onCommentFileAttachmentRemove}
+      onFileAttachmentsAdd={onCommentFileAttachmentsAdd}
+      onFileLinkClick={onFileLinkClick}
+      onMessageChange={onCommentChange}
+      onMessageSubmit={onCommentSubmit}
+      placeholder={commentPlaceholder(status)}
+      submitLabel={commentButtonLabel(status)}
+      title="Add a comment"
+    />
+  )
+}
+
+function commentPlaceholder(status: BacklogColumnId) {
+  if (status === "done") return "Comments are read-only after merge."
+  return "Add a comment"
+}
+
+function fixedSectionClassName(commentComposerVisible: boolean) {
+  if (commentComposerVisible) {
+    return "pointer-events-auto relative -mx-6 px-6 pt-10 pb-6"
+  }
+  return "pointer-events-auto relative -mx-6 px-6 pt-6 pb-6"
+}
+
+function useFileMentionDirectory(
+  status: BacklogColumnId,
+  userStory: UserStory | undefined
+) {
+  const projects = useProjects()
+  return fileMentionDirectory(status, userStory, projects.activeProject?.path)
 }
 
 function AgentRunTimeline({

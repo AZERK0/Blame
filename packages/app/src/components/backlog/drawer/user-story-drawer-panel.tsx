@@ -37,7 +37,10 @@ import {
   normalizeDevelopmentTab,
 } from "@/components/backlog/drawer/user-story-drawer-helpers"
 import { DrawerSidebar } from "@/components/backlog/drawer/user-story-drawer-sidebar"
-import { UserStoryContent } from "@/components/backlog/drawer/user-story-drawer-sections"
+import {
+  UserStoryContent,
+  UserStoryFixedSection,
+} from "@/components/backlog/drawer/user-story-drawer-sections"
 import type { AgentConversationUserMessageUndo } from "@/components/chat/agent-conversation"
 import { UserStoryPreview } from "@/components/backlog/drawer/user-story-preview"
 import {
@@ -54,7 +57,6 @@ import {
   DrawerClose,
   DrawerContent,
   DrawerDescription,
-  DrawerFooter,
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer"
@@ -278,6 +280,23 @@ export function UserStoryDrawerPanel({
     }
   }, [status])
 
+  const drawerActionButtons = (
+    <DrawerActions
+      loadingAction={pendingAction}
+      mode={mode}
+      status={status}
+      onAction={(action) => {
+        void handleAction(action)
+      }}
+      onDeleteUserStory={onDeleteUserStory}
+      onOpenDrawer={onOpenDrawer}
+      onReject={onReject}
+      reviewDiffEmpty={reviewDiffEmpty}
+      onStopAgent={onStopAgent}
+      story={userStory}
+    />
+  )
+
   return (
     <DrawerContent className="inset-y-2 right-2 h-[calc(100svh-1rem)] overflow-hidden rounded-xl border data-[vaul-drawer-direction=right]:w-[min(90rem,calc(100vw-1rem))] data-[vaul-drawer-direction=right]:sm:max-w-none">
       {tab === "user-story" && sidebarAvailable && (
@@ -363,38 +382,49 @@ export function UserStoryDrawerPanel({
         </DrawerHeader>
         <TabsContent value="user-story" className="min-h-0 overflow-hidden">
           <DrawerBody
+            fixedSection={
+              <UserStoryFixedSection
+                actions={drawerActionButtons}
+                commentCodeSelectionAttachments={
+                  commentCodeSelectionAttachments
+                }
+                commentFileAttachments={pendingFileAttachments(
+                  commentFileAttachments
+                )}
+                comment={comment}
+                commentEditorKey={commentEditorKey}
+                commentRef={commentRef}
+                mode={mode}
+                onCommentChange={setComment}
+                onCommentCodeSelectionAttachmentRemove={(id) =>
+                  setCommentCodeSelectionAttachments((current) =>
+                    current.filter((attachment) => attachment.id !== id)
+                  )
+                }
+                onCommentFileAttachmentRemove={(id) =>
+                  setCommentFileAttachments((current) =>
+                    current.filter((attachment) => attachment.id !== id)
+                  )
+                }
+                onCommentFileAttachmentsAdd={(attachments) =>
+                  setCommentFileAttachments((current) => [
+                    ...current,
+                    ...attachments,
+                  ])
+                }
+                onCommentSubmit={() => {
+                  void submitComment()
+                }}
+                onFileLinkClick={openDevelopmentFile}
+                status={status}
+                userStory={userStory}
+              />
+            }
             headerTabsVisible={hasDevelopment}
             sidebarOpen={sidebarAvailable && sidebarOpen}
           >
             <UserStoryContent
-              commentCodeSelectionAttachments={commentCodeSelectionAttachments}
-              commentFileAttachments={pendingFileAttachments(
-                commentFileAttachments
-              )}
-              comment={comment}
-              commentEditorKey={commentEditorKey}
-              commentRef={commentRef}
               mode={mode}
-              onCommentChange={setComment}
-              onCommentCodeSelectionAttachmentRemove={(id) =>
-                setCommentCodeSelectionAttachments((current) =>
-                  current.filter((attachment) => attachment.id !== id)
-                )
-              }
-              onCommentFileAttachmentRemove={(id) =>
-                setCommentFileAttachments((current) =>
-                  current.filter((attachment) => attachment.id !== id)
-                )
-              }
-              onCommentFileAttachmentsAdd={(attachments) =>
-                setCommentFileAttachments((current) => [
-                  ...current,
-                  ...attachments,
-                ])
-              }
-              onCommentSubmit={() => {
-                void submitComment()
-              }}
               onCommentUndo={undoCommentMessage}
               onSummaryCodeSelectionAttachmentRemove={(id) =>
                 setSummaryCodeSelectionAttachments((current) =>
@@ -478,22 +508,11 @@ export function UserStoryDrawerPanel({
       {tab === "user-story" && sidebarAvailable && (
         <DrawerSidebarIsland open={sidebarOpen} userStory={userStory} />
       )}
-      <DrawerFooter className="pointer-events-none absolute right-4 bottom-4 z-20 p-0">
-        <DrawerActions
-          loadingAction={pendingAction}
-          mode={mode}
-          status={status}
-          onAction={(action) => {
-            void handleAction(action)
-          }}
-          onDeleteUserStory={onDeleteUserStory}
-          onOpenDrawer={onOpenDrawer}
-          onReject={onReject}
-          reviewDiffEmpty={reviewDiffEmpty}
-          onStopAgent={onStopAgent}
-          story={userStory}
-        />
-      </DrawerFooter>
+      {tab !== "user-story" && (
+        <div className="pointer-events-none absolute right-4 bottom-4 z-20 p-0">
+          {drawerActionButtons}
+        </div>
+      )}
     </DrawerContent>
   )
 
@@ -655,10 +674,12 @@ function DrawerHeaderTitle({
 
 function DrawerBody({
   children,
+  fixedSection,
   headerTabsVisible,
   sidebarOpen,
 }: {
   children: React.ReactNode
+  fixedSection?: React.ReactNode
   headerTabsVisible: boolean
   sidebarOpen: boolean
 }) {
@@ -669,12 +690,23 @@ function DrawerBody({
         topPaddingClassName
       )
     : cn("flex w-full flex-col gap-6 px-6 pb-28", topPaddingClassName)
+  const fixedSectionClassName = sidebarOpen
+    ? "pointer-events-none absolute right-0 bottom-0 left-0 z-20 lg:right-[26rem]"
+    : "pointer-events-none absolute right-0 bottom-0 left-0 z-20"
+  const fixedSectionContentClassName = sidebarOpen
+    ? "mx-auto max-w-5xl px-6 lg:mx-0"
+    : "px-6"
 
   return (
     <div className="relative h-full min-h-0 overflow-hidden">
       <ScrollArea className="h-full min-h-0">
         <div className={contentClassName}>{children}</div>
       </ScrollArea>
+      {fixedSection ? (
+        <div className={fixedSectionClassName}>
+          <div className={fixedSectionContentClassName}>{fixedSection}</div>
+        </div>
+      ) : null}
     </div>
   )
 }
