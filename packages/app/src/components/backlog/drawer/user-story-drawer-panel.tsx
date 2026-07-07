@@ -420,6 +420,7 @@ export function UserStoryDrawerPanel({
                 userStory={userStory}
               />
             }
+            footerScrollbarOffset={mode === "create" ? "actions" : "comment"}
             headerTabsVisible={hasDevelopment}
             sidebarOpen={sidebarAvailable && sidebarOpen}
           >
@@ -675,15 +676,24 @@ function DrawerHeaderTitle({
 function DrawerBody({
   children,
   fixedSection,
+  footerScrollbarOffset,
   headerTabsVisible,
   sidebarOpen,
 }: {
   children: React.ReactNode
   fixedSection?: React.ReactNode
+  footerScrollbarOffset: "actions" | "comment"
   headerTabsVisible: boolean
   sidebarOpen: boolean
 }) {
   const topPaddingClassName = headerTabsVisible ? "pt-36" : "pt-28"
+  const scrollbarTopClassName = headerTabsVisible
+    ? "[&_[data-slot=scroll-area-scrollbar]]:!top-36"
+    : "[&_[data-slot=scroll-area-scrollbar]]:!top-28"
+  const scrollbarBottomClassName =
+    footerScrollbarOffset === "comment"
+      ? "[&_[data-slot=scroll-area-scrollbar]]:!bottom-64"
+      : "[&_[data-slot=scroll-area-scrollbar]]:!bottom-28"
   const contentClassName = sidebarOpen
     ? cn(
         "mx-auto flex max-w-5xl flex-col gap-6 px-6 pb-28 lg:mx-0 lg:mr-[26rem]",
@@ -699,7 +709,14 @@ function DrawerBody({
 
   return (
     <div className="relative h-full min-h-0 overflow-hidden">
-      <ScrollArea className="h-full min-h-0">
+      <ScrollArea
+        className={cn(
+          "h-full min-h-0",
+          "[&_[data-slot=scroll-area-scrollbar]]:!h-auto",
+          scrollbarTopClassName,
+          scrollbarBottomClassName
+        )}
+      >
         <div className={contentClassName}>{children}</div>
       </ScrollArea>
       {fixedSection ? (

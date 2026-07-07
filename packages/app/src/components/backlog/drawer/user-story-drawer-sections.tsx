@@ -143,7 +143,7 @@ export function UserStoryContent({
         onFileLinkClick={onFileLinkClick}
         onCommentUndo={status === "in-review" ? onCommentUndo : undefined}
       />
-      <div ref={contentEndRef} className={mode === "create" ? "h-8" : "h-64"} />
+      <div ref={contentEndRef} className={mode === "create" ? "h-8" : "h-24"} />
     </>
   )
 }
