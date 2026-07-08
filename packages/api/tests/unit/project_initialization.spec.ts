@@ -8,6 +8,7 @@ const configurations = [
     command: 'pnpm dev',
     cwd: '.',
     default: true,
+    previewUrl: 'http://localhost:5173/',
   },
 ]
 

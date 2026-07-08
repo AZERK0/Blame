@@ -9,6 +9,7 @@ type ProjectRunConfiguration = {
   command: string
   cwd: string
   default: boolean
+  previewUrl?: string | null
 }
 
 type PreviewManifest = Record<string, unknown>

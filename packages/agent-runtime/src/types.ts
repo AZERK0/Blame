@@ -317,6 +317,7 @@ export type ProjectRunConfiguration = {
   command: string;
   cwd: string;
   default: boolean;
+  previewUrl?: string;
 };
 
 export type PreviewManifestConfidence = "low" | "medium" | "high";

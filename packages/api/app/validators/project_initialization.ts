@@ -17,6 +17,7 @@ const runConfiguration = vine.object({
   command: vine.string().trim().minLength(1).maxLength(2000),
   cwd: vine.string().trim().minLength(1).maxLength(500),
   default: vine.boolean(),
+  previewUrl: vine.string().trim().minLength(1).maxLength(2048).nullable().optional(),
 })
 
 export const startProjectInitializationValidator = vine.create({

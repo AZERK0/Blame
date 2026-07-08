@@ -118,9 +118,9 @@ export function UserStoryPreviewWarmup({
     const source = previewSource(story.previewUrl ?? "")
     return (
       <NativePreviewWarmup
-        key={nativePreviewKeyFor(story, source)}
+        key={nativePreviewKeyFor(story.id, source)}
         client={previewBrowser}
-        sessionKey={nativePreviewKeyFor(story, source)}
+        sessionKey={nativePreviewKeyFor(story.id, source)}
         source={source}
       />
     )
@@ -129,14 +129,20 @@ export function UserStoryPreviewWarmup({
 
 export function UserStoryPreview({
   onCapture,
+  previewTitle,
+  previewUrl: previewUrlInput,
   setupInitializing,
   userStory,
   visible = true,
+  worktree,
 }: {
   onCapture?: (file: File) => void
+  previewTitle?: string
+  previewUrl?: string
   setupInitializing?: boolean
   userStory?: UserStory
   visible?: boolean
+  worktree?: string
 }) {
   const platform = usePlatform()
   const previewBrowser = platform.previewBrowser
@@ -152,9 +158,15 @@ export function UserStoryPreview({
   const locationIntervalRef = React.useRef<number | undefined>(undefined)
   const requestRef = React.useRef<AbortController | undefined>(undefined)
   const timeoutRef = React.useRef<number | undefined>(undefined)
-  const previewUrl = recoveredPreviewUrl ?? userStory?.previewUrl
+  const previewIdentity = userStory?.id ?? previewTitle ?? "preview"
+  const setupLogWorktree = userStory?.worktree ?? worktree
+  const configuredPreviewUrl = userStory?.previewUrl ?? previewUrlInput
+  const previewUrl = recoveredPreviewUrl ?? configuredPreviewUrl
   const baseSource = previewUrl ? previewSource(previewUrl) : undefined
-  const nativePreviewSessionKey = nativePreviewKeyFor(userStory, baseSource)
+  const nativePreviewSessionKey = nativePreviewKeyFor(
+    previewIdentity,
+    baseSource
+  )
   const [editedPreview, setEditedPreview] = React.useState<{
     baseSource?: string
     url: string
@@ -179,7 +191,7 @@ export function UserStoryPreview({
     previewLoad.key === previewKey ? previewLoad.location : undefined
   const locationBlocked =
     previewLoad.key === previewKey && previewLoad.locationBlocked
-  const hasSetupLog = Boolean(userStory?.worktree)
+  const hasSetupLog = Boolean(setupLogWorktree)
   const [selectedLogService, setSelectedLogService] = React.useState("")
   const [tab, setTab] = React.useState(source ? "preview" : "setup-log")
   const autoSelectedPreviewSourceRef = React.useRef<string | undefined>(
@@ -187,7 +199,7 @@ export function UserStoryPreview({
   )
   const activeTab = activePreviewTab(tab, Boolean(source), hasSetupLog)
   const services = useProjectServices(
-    visible && activeTab === "setup-log" ? userStory?.worktree : undefined
+    visible && activeTab === "setup-log" ? setupLogWorktree : undefined
   )
   const [nativePreviewState, setNativePreviewState] =
     React.useState<NativePreviewState>()
@@ -298,10 +310,10 @@ export function UserStoryPreview({
   }
 
   const recoverPreview = () => {
-    if (!userStory?.worktree || !platform.workspace?.ensureProjectPreviewUrl)
+    if (!setupLogWorktree || !platform.workspace?.ensureProjectPreviewUrl)
       return
     void platform.workspace
-      .ensureProjectPreviewUrl({ worktree: userStory.worktree })
+      .ensureProjectPreviewUrl({ worktree: setupLogWorktree })
       .then((previewUrl) => {
         if (previewUrl) setRecoveredPreviewUrl(previewUrl)
       })
@@ -418,7 +430,7 @@ export function UserStoryPreview({
                   previewKey={previewKey}
                   previewState={previewState}
                   source={source}
-                  title={`${userStory?.id ?? "user-story"} preview`}
+                  title={`${previewIdentity} preview`}
                 />
               )}
             </TabsContent>
@@ -432,7 +444,7 @@ export function UserStoryPreview({
                 onSelectService={setSelectedLogService}
                 service={selectedLogService}
                 services={services}
-                worktree={visible ? userStory?.worktree : undefined}
+                worktree={visible ? setupLogWorktree : undefined}
               />
             </TabsContent>
           )}
@@ -1667,11 +1679,8 @@ function nativePreviewWarmupTime(story: UserStory) {
   return Number.isFinite(time) ? time : 0
 }
 
-function nativePreviewKeyFor(
-  userStory: UserStory | undefined,
-  source?: string
-) {
-  return [userStory?.id ?? "preview", source ?? ""].join(":")
+function nativePreviewKeyFor(key: string | undefined, source?: string) {
+  return [key ?? "preview", source ?? ""].join(":")
 }
 
 function previewPathUrl(source: string, path: string) {

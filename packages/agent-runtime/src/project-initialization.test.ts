@@ -83,6 +83,43 @@ test("parses project run configurations", () => {
   assert.deepEqual(result.runConfigurations, baseResult.runConfigurations);
 });
 
+test("parses run configuration preview urls", () => {
+  const result = parseProjectInitializationResult(
+    JSON.stringify({
+      ...baseResult,
+      runConfigurations: [
+        {
+          ...baseResult.runConfigurations[0],
+          previewUrl: "http://localhost:5173/",
+        },
+      ],
+    }),
+  );
+
+  assert.equal(
+    result.runConfigurations[0]?.previewUrl,
+    "http://localhost:5173/",
+  );
+});
+
+test("rejects invalid run configuration preview urls", () => {
+  assert.throws(
+    () =>
+      parseProjectInitializationResult(
+        JSON.stringify({
+          ...baseResult,
+          runConfigurations: [
+            {
+              ...baseResult.runConfigurations[0],
+              previewUrl: "http://localhost:5173/\nnext",
+            },
+          ],
+        }),
+      ),
+    /previewUrl is invalid/,
+  );
+});
+
 test("generates initialization artifacts from preview manifest", () => {
   const result = parseProjectInitializationResult(JSON.stringify(manifestResult));
 

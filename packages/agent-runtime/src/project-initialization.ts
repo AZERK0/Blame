@@ -236,6 +236,7 @@ export const projectInitializationResultSchema = {
           command: { type: "string" },
           cwd: { type: "string" },
           default: { type: "boolean" },
+          previewUrl: { type: "string" },
         },
       },
     },
@@ -449,6 +450,7 @@ function parseRunConfiguration(value: unknown): ProjectRunConfiguration {
   const name = stringValue(value.name);
   const command = stringValue(value.command);
   const cwd = stringValue(value.cwd);
+  const previewUrl = stringValue(value.previewUrl);
   if (!id || !/^[a-zA-Z0-9_-]{1,80}$/.test(id))
     throw new Error("Initialization run configuration id is invalid");
   if (!name || name.length > 120)
@@ -459,12 +461,25 @@ function parseRunConfiguration(value: unknown): ProjectRunConfiguration {
     throw new Error("Initialization run configuration cwd must stay inside the project");
   if (typeof value.default !== "boolean")
     throw new Error("Initialization run configuration default must be boolean");
-  return { id, name, command, cwd, default: value.default };
+  if (previewUrl && invalidRunConfigurationPreviewUrl(previewUrl))
+    throw new Error("Initialization run configuration previewUrl is invalid");
+  return {
+    id,
+    name,
+    command,
+    cwd,
+    default: value.default,
+    ...(previewUrl ? { previewUrl } : {}),
+  };
 }
 
 function unsafeRunConfigurationCwd(cwd: string) {
   return cwd.startsWith("/") || cwd.startsWith("\\") || /^[a-zA-Z]:/.test(cwd) ||
     cwd.split(/[\\/]/).includes("..");
+}
+
+function invalidRunConfigurationPreviewUrl(previewUrl: string) {
+  return previewUrl.length > 2_048 || /[\r\n]/.test(previewUrl);
 }
 
 function parsePractice(values: unknown[], practice: ProjectCodePracticeKey) {

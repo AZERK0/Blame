@@ -142,10 +142,18 @@ function validateRunConfigurations(
     throw new Error('Only one run configuration can be the default')
   }
   for (const configuration of configurations) {
-    if (/[\r\n]/.test(configuration.command) || unsafeCwd(configuration.cwd)) {
+    if (
+      /[\r\n]/.test(configuration.command) ||
+      unsafeCwd(configuration.cwd) ||
+      invalidPreviewUrl(configuration.previewUrl)
+    ) {
       throw new Error('Run configuration is invalid')
     }
   }
+}
+
+function invalidPreviewUrl(previewUrl: string | null | undefined) {
+  return Boolean(previewUrl && /[\r\n]/.test(previewUrl))
 }
 
 function unsafeCwd(cwd: string) {

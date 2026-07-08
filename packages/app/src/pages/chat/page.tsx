@@ -29,6 +29,11 @@ import {
   type PendingCodeSelectionAttachment,
 } from "@/components/backlog/shared/comment-attachment-events"
 import { pendingFileAttachments } from "@/components/backlog/drawer/user-story-attachment-files"
+import { UserStoryPreview } from "@/components/backlog/drawer/user-story-preview"
+import {
+  projectPreviewConfiguration,
+  projectRunConfigurationPreviewUrl,
+} from "@/components/backlog/board/project-run-configuration"
 import {
   AgentConversationComposer,
   AgentConversationTimeline,
@@ -85,6 +90,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
+import { useProjectInitialization } from "@/components/project-initialization/use-project-initialization"
 import { useScrollMagnet } from "@/hooks/use-scroll-magnet"
 import { projectCodePractices } from "@/lib/project-code-practices"
 import { cn } from "@/lib/utils"
@@ -144,9 +150,14 @@ function QuickChatProjectPage() {
   const auth = useCloudAuth()
   const platform = usePlatform()
   const projects = useProjects()
+  const projectInitialization = useProjectInitialization()
   const quickChats = useQuickChatStore()
   const selection = useModelSelection({ role: "agent" })
   const project = projects.activeProject
+  const previewConfiguration = projectPreviewConfiguration(
+    projectInitialization?.initialization?.runConfigurations ?? []
+  )
+  const previewUrl = projectRunConfigurationPreviewUrl(previewConfiguration)
   const [draft, setDraft] = React.useState("")
   const [draftEditorKey, setDraftEditorKey] = React.useState(0)
   const [draftCodeAttachments, setDraftCodeAttachments] = React.useState<
@@ -686,7 +697,14 @@ function QuickChatProjectPage() {
   return (
     <>
       <div className="flex h-[calc(100svh_-_var(--header-height))] min-h-0 min-w-0 flex-col overflow-hidden md:h-[calc(100svh_-_var(--header-height)_-_1rem)]">
-        <div className="grid min-h-0 flex-1 grid-cols-1 gap-2 xl:grid-cols-[minmax(0,1fr)_18rem]">
+        <div
+          className={cn(
+            "grid min-h-0 flex-1 grid-cols-1 gap-2",
+            previewUrl
+              ? "xl:grid-cols-[minmax(0,1fr)_minmax(24rem,34rem)]"
+              : "xl:grid-cols-[minmax(0,1fr)_18rem]"
+          )}
+        >
           <main className="relative flex min-h-0 min-w-0 flex-col overflow-hidden">
             <div className="pointer-events-none absolute top-0 right-3 left-0 z-20 pb-10 md:pb-12">
               <div
@@ -795,10 +813,12 @@ function QuickChatProjectPage() {
               </div>
             </div>
           </main>
-          <QuickChatHistoryPanel
+          <QuickChatSidePanel
             activeId={activeConversation?.id}
             conversationActions={conversationActions}
             conversations={quickChats.chats}
+            previewTitle={previewConfiguration?.name}
+            previewUrl={previewUrl}
             onCreate={createConversation}
           />
         </div>
@@ -835,19 +855,71 @@ function quickChatScrollKey(chat: QuickChat | undefined) {
   ].join(":")
 }
 
+function QuickChatSidePanel({
+  activeId,
+  conversationActions,
+  conversations,
+  previewTitle,
+  previewUrl,
+  onCreate,
+}: {
+  activeId?: string
+  conversationActions: QuickChatConversationActions
+  conversations: QuickChat[]
+  previewTitle?: string
+  previewUrl?: string
+  onCreate: () => void
+}) {
+  if (!previewUrl) {
+    return (
+      <QuickChatHistoryPanel
+        activeId={activeId}
+        conversationActions={conversationActions}
+        conversations={conversations}
+        onCreate={onCreate}
+      />
+    )
+  }
+
+  return (
+    <aside className="my-4 mr-4 hidden min-h-0 min-w-0 flex-col gap-2 xl:flex">
+      <div className="min-h-0 flex-1 overflow-hidden rounded-2xl border bg-card shadow-xl ring-1 shadow-black/10 ring-foreground/10">
+        <UserStoryPreview
+          previewTitle={previewTitle ?? "Project preview"}
+          previewUrl={previewUrl}
+        />
+      </div>
+      <QuickChatHistoryPanel
+        activeId={activeId}
+        className="m-0 h-72 flex-none"
+        conversationActions={conversationActions}
+        conversations={conversations}
+        onCreate={onCreate}
+      />
+    </aside>
+  )
+}
+
 function QuickChatHistoryPanel({
   activeId,
+  className,
   conversationActions,
   conversations,
   onCreate,
 }: {
-  activeId?: number
+  activeId?: string
+  className?: string
   conversationActions: QuickChatConversationActions
   conversations: QuickChat[]
   onCreate: () => void
 }) {
   return (
-    <aside className="my-4 mr-4 hidden min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border bg-card shadow-xl ring-1 shadow-black/10 ring-foreground/10 xl:flex">
+    <aside
+      className={cn(
+        "my-4 mr-4 hidden min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border bg-card shadow-xl ring-1 shadow-black/10 ring-foreground/10 xl:flex",
+        className
+      )}
+    >
       <div className="flex items-center justify-between gap-3 border-b bg-muted/20 px-4 py-4">
         <div className="min-w-0">
           <h2 className="truncate text-sm font-semibold">Quick chats</h2>
@@ -935,7 +1007,7 @@ function QuickChatHeader({
   projectPath,
   onCreate,
 }: {
-  activeId?: number
+  activeId?: string
   branchName: string
   changeCount?: number
   conversationActions: QuickChatConversationActions

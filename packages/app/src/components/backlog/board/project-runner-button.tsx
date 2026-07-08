@@ -1,6 +1,7 @@
 import type { ProjectRunConfiguration } from "@blame/agent-runtime"
 import {
   ChevronDownIcon,
+  MonitorIcon,
   PlayIcon,
   RotateCwIcon,
   SquareIcon,
@@ -10,11 +11,7 @@ import * as React from "react"
 
 import { Button } from "@/components/ui/button"
 import { ButtonGroup } from "@/components/ui/button-group"
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-} from "@/components/ui/drawer"
+import { Drawer, DrawerContent, DrawerHeader } from "@/components/ui/drawer"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,6 +31,8 @@ import {
   type ProjectRunSession,
   useProjectRunner,
 } from "@/components/backlog/board/use-project-runner"
+import { projectRunConfigurationPreviewUrl } from "@/components/backlog/board/project-run-configuration"
+import { UserStoryPreview } from "@/components/backlog/drawer/user-story-preview"
 
 type Runner = ReturnType<typeof useProjectRunner>
 
@@ -45,6 +44,7 @@ export function ProjectRunnerButton({
   projectPath?: string
 }) {
   const runner = useProjectRunner(configurations, projectPath)
+  const [previewOpen, setPreviewOpen] = React.useState(false)
   if (!runner.selected) return null
   return (
     <TooltipProvider>
@@ -54,10 +54,19 @@ export function ProjectRunnerButton({
           runner={runner}
         />
         <RunnerStartButton projectPath={projectPath} runner={runner} />
+        <RunnerPreviewButton
+          runner={runner}
+          onOpen={() => setPreviewOpen(true)}
+        />
         <RunnerStopButton runner={runner} />
         <RunnerLogsButton runner={runner} />
       </ButtonGroup>
       <RunnerLogsDrawer runner={runner} />
+      <RunnerPreviewDrawer
+        open={previewOpen}
+        runner={runner}
+        onOpenChange={setPreviewOpen}
+      />
     </TooltipProvider>
   )
 }
@@ -72,7 +81,10 @@ function RunnerConfigurationMenu({
   return (
     <DropdownMenu>
       <RunnerConfigurationTrigger runner={runner} />
-      <RunnerConfigurationContent configurations={configurations} runner={runner} />
+      <RunnerConfigurationContent
+        configurations={configurations}
+        runner={runner}
+      />
     </DropdownMenu>
   )
 }
@@ -80,7 +92,11 @@ function RunnerConfigurationMenu({
 function RunnerConfigurationTrigger({ runner }: { runner: Runner }) {
   return (
     <DropdownMenuTrigger asChild>
-      <Button className="min-w-36 justify-between" type="button" variant="ghost">
+      <Button
+        className="min-w-36 justify-between"
+        type="button"
+        variant="ghost"
+      >
         <span className="flex min-w-0 items-center gap-2">
           <RunStatusDot session={runner.selectedSession} />
           <span className="truncate">{runner.selected?.name}</span>
@@ -211,6 +227,29 @@ function RunnerStopButton({ runner }: { runner: Runner }) {
   )
 }
 
+function RunnerPreviewButton({
+  runner,
+  onOpen,
+}: {
+  runner: Runner
+  onOpen: () => void
+}) {
+  const previewUrl = projectRunConfigurationPreviewUrl(runner.selected)
+  return (
+    <IconTooltip label="Open preview">
+      <Button
+        disabled={!previewUrl}
+        size="icon"
+        type="button"
+        variant="ghost"
+        onClick={onOpen}
+      >
+        <MonitorIcon />
+      </Button>
+    </IconTooltip>
+  )
+}
+
 function RunnerLogsButton({ runner }: { runner: Runner }) {
   return (
     <IconTooltip label="Open run logs">
@@ -242,6 +281,31 @@ function IconTooltip({
   )
 }
 
+function RunnerPreviewDrawer({
+  open,
+  runner,
+  onOpenChange,
+}: {
+  open: boolean
+  runner: Runner
+  onOpenChange: (open: boolean) => void
+}) {
+  const previewUrl = projectRunConfigurationPreviewUrl(runner.selected)
+  return (
+    <Drawer direction="bottom" open={open} onOpenChange={onOpenChange}>
+      <DrawerContent className="h-[80vh] overflow-hidden p-0">
+        {previewUrl ? (
+          <UserStoryPreview
+            previewTitle={runner.selected?.name}
+            previewUrl={previewUrl}
+            visible={open}
+          />
+        ) : null}
+      </DrawerContent>
+    </Drawer>
+  )
+}
+
 function RunnerLogsDrawer({ runner }: { runner: Runner }) {
   const activeSession = runner.activeSession
   return (
@@ -253,7 +317,10 @@ function RunnerLogsDrawer({ runner }: { runner: Runner }) {
       <DrawerContent className="h-[50vh]">
         <RunnerLogsHeader runner={runner} session={activeSession} />
         {activeSession ? (
-          <RunnerLogOutput key={activeSession.configurationId} session={activeSession} />
+          <RunnerLogOutput
+            key={activeSession.configurationId}
+            session={activeSession}
+          />
         ) : null}
       </DrawerContent>
     </Drawer>
@@ -294,7 +361,11 @@ function RunnerSessionTabs({
   session?: ProjectRunSession
 }) {
   return (
-    <Tabs value={session?.configurationId} onValueChange={runner.selectSession} className="overflow-y-hidden">
+    <Tabs
+      value={session?.configurationId}
+      onValueChange={runner.selectSession}
+      className="overflow-y-hidden"
+    >
       <TabsList>
         {runner.sessions.map((item) => (
           <TabsTrigger key={item.configurationId} value={item.configurationId}>
