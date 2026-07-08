@@ -31,12 +31,13 @@ export function ConnectScreen() {
 
   return (
     <>
-      <main className="light relative grid min-h-screen bg-background/10 text-foreground backdrop-blur-md lg:grid-cols-2">
+      <main className="light relative min-h-screen bg-background/10 text-foreground backdrop-blur-md">
         <SettingsDialogButton
           className="absolute top-4 right-4 z-10"
           onClick={() => setSettingsOpen(true)}
         />
-        <section className="flex flex-col gap-4 bg-background/50 p-6 md:p-10">
+        <section className="flex min-h-screen flex-col gap-4 bg-background/50 p-6 md:p-10">
+          <AppLogo />
           <div className="flex flex-1 items-center justify-center">
             <div
               key={mode}
@@ -54,34 +55,23 @@ export function ConnectScreen() {
             </div>
           </div>
         </section>
-        <CoverImage introReady={introReady} />
       </main>
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
     </>
   )
 }
 
-function CoverImage({ introReady }: { introReady: boolean }) {
+function AppLogo() {
   return (
-    <div className="relative hidden overflow-hidden bg-background/50 p-6 lg:flex">
-      <img
-        alt=""
-        className={`h-[calc(100vh-3rem)] w-full transform-gpu rounded-2xl object-cover opacity-80 brightness-150 invert transition-transform delay-200 duration-1000 ease-out motion-reduce:transform-none motion-reduce:transition-none ${
-          introReady ? "scale-100" : "scale-[1.04]"
-        }`}
-        src="/welcome-screen.webp"
-      />
-      <div className="absolute inset-0 flex flex-col items-center justify-center gap-6">
+    <div className="flex items-center gap-3" aria-label="Blame">
+      <span className="grid h-10 w-10 place-items-center">
         <img
           alt=""
-          className={`size-40 transform-gpu rounded-3xl transition-all delay-500 duration-700 ease-out motion-reduce:transform-none motion-reduce:transition-none ${
-            introReady
-              ? "translate-y-0 scale-100 opacity-100"
-              : "translate-y-4 scale-[0.82] opacity-0"
-          }`}
+          className="h-10 w-10 object-contain"
           src="/web-app-manifest-512x512.png"
         />
-      </div>
+      </span>
+      <span className="text-2xl font-extrabold">Blame</span>
     </div>
   )
 }
