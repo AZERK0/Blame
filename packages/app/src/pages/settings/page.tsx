@@ -28,6 +28,7 @@ import {
 } from "@/components/model/model-selector"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Switch } from "@/components/ui/switch"
 import {
   Dialog,
   DialogContent,
@@ -49,6 +50,7 @@ import {
   type DesktopUpdateStatus,
   type DesktopUpdatesClient,
 } from "@/context/platform"
+import { useSystemNotificationsEnabled } from "@/lib/system-notifications"
 import { cn } from "@/lib/utils"
 
 type SettingsSectionId =
@@ -675,11 +677,25 @@ function DesktopIntegrationGroup({
 }: {
   platform: ReturnType<typeof usePlatform>
 }) {
+  const [notificationsEnabled, setNotificationsEnabled] =
+    useSystemNotificationsEnabled()
+
   return (
     <SettingsGroup
       title="Desktop integration"
       description="Check which native features are available in this runtime."
     >
+      <SettingsRow
+        title="System notifications"
+        description="Show desktop alerts when agents need attention or finish a response."
+      >
+        <Switch
+          aria-label="Toggle system notifications"
+          checked={notificationsEnabled}
+          disabled={!platform.systemNotifications}
+          onCheckedChange={setNotificationsEnabled}
+        />
+      </SettingsRow>
       <CapabilityRow label="Updates" enabled={!!platform.updates} />
       <CapabilityRow label="Workspace access" enabled={!!platform.workspace} />
       <CapabilityRow label="Terminal runner" enabled={!!platform.terminal} />

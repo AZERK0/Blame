@@ -35,6 +35,7 @@ import type {
 import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import { createCloudApi } from "@/lib/cloud-api"
+import { showSystemNotification } from "@/lib/system-notifications"
 import { diagnoseAndRepairProjectInitialization } from "./project-initialization-repair"
 
 const maxConcurrentDevelopmentStories = 3
@@ -984,12 +985,10 @@ function notifyCommentResponseCompleted(
   platform: ReturnType<typeof usePlatform>
 ) {
   if (!run?.commentId) return
-  void platform.systemNotifications
-    ?.show({
-      body: `${userStoryDisplayId(story)} · ${story.title}`,
-      title: "Agent replied to a comment",
-    })
-    .catch(() => false)
+  void showSystemNotification(platform, {
+    body: `${userStoryDisplayId(story)} · ${story.title}`,
+    title: "Agent replied to a comment",
+  })
 }
 
 function runningStories(stories: UserStory[]) {

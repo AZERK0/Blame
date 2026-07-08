@@ -55,6 +55,7 @@ import {
 } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import { projectCodePractices } from "@/lib/project-code-practices"
+import { showSystemNotification } from "@/lib/system-notifications"
 import {
   projectInitializing,
   useProjectInitialization,
@@ -1538,12 +1539,10 @@ function notifyStoriesMovedToReview(
     const previousStatus = previousStatuses.get(story.id)
     if (previousStatus === undefined || previousStatus === "in-review") continue
     if (story.status !== "in-review") continue
-    void platform.systemNotifications
-      ?.show({
-        body: story.title,
-        title: "User story ready for review",
-      })
-      .catch(() => false)
+    void showSystemNotification(platform, {
+      body: story.title,
+      title: "User story ready for review",
+    })
   }
 }
 
@@ -1557,12 +1556,10 @@ function notifyCommentResponseCompleted(
   platform: ReturnType<typeof usePlatform>
 ) {
   if (!run?.commentId) return
-  void platform.systemNotifications
-    ?.show({
-      body: `${userStoryDisplayId(story)} · ${story.title}`,
-      title: "Agent replied to a comment",
-    })
-    .catch(() => false)
+  void showSystemNotification(platform, {
+    body: `${userStoryDisplayId(story)} · ${story.title}`,
+    title: "Agent replied to a comment",
+  })
 }
 
 async function stopStoryRuntime(

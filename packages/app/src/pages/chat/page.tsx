@@ -94,6 +94,7 @@ import { useProjects } from "@/context/projects"
 import { useProjectInitialization } from "@/components/project-initialization/use-project-initialization"
 import { useScrollMagnet } from "@/hooks/use-scroll-magnet"
 import { projectCodePractices } from "@/lib/project-code-practices"
+import { showSystemNotification } from "@/lib/system-notifications"
 import { cn } from "@/lib/utils"
 
 const agentEventPersistDelayMs = 1_500
@@ -376,12 +377,10 @@ function QuickChatProjectPage() {
   }
 
   function notifyQuickChatResponseCompleted(chat: QuickChat) {
-    void platform.systemNotifications
-      ?.show({
-        body: chat.title,
-        title: "Agent response ready",
-      })
-      .catch(() => false)
+    void showSystemNotification(platform, {
+      body: chat.title,
+      title: "Agent response ready",
+    })
   }
 
   function createConversation() {
