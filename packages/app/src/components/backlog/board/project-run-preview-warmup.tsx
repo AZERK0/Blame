@@ -21,10 +21,11 @@ export function ProjectRunConfigurationPreviewWarmup({
 }) {
   const previewUrl = projectRunConfigurationPreviewUrl(configuration)
   if (!enabled || !configuration || !previewUrl) return null
+  const previewKey = projectRunConfigurationPreviewKey(configuration, scope)
   return (
     <PreviewUrlWarmup
-      devtoolsTarget={devtoolsTarget}
-      previewKey={projectRunConfigurationPreviewKey(configuration, scope)}
+      devtoolsScope={devtoolsTarget ? previewKey : undefined}
+      previewKey={previewKey}
       previewUrl={previewUrl}
       trigger={trigger}
     />

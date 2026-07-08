@@ -1,5 +1,7 @@
 import type { ProjectRunConfiguration } from "@blame/agent-runtime"
 
+import { runnerPreviewDevtoolsScope } from "@/components/backlog/shared/preview-devtools-scope"
+
 export function projectRunConfigurationPreviewUrl(
   configuration?: ProjectRunConfiguration
 ) {
@@ -23,5 +25,5 @@ export function projectRunConfigurationPreviewKey(
   configuration?: ProjectRunConfiguration,
   scope = "project"
 ) {
-  return `${scope}:${configuration?.id ?? "preview"}`
+  return runnerPreviewDevtoolsScope(configuration, scope)
 }

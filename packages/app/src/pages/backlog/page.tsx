@@ -35,6 +35,7 @@ import type {
 import { useModelSelection } from "@/components/model/model-selector"
 import type { DrawerTarget } from "@/components/backlog/shared/backlog-types"
 import { drawerTargetForAction } from "@/components/backlog/shared/backlog-helpers"
+import { storyPreviewDevtoolsScope } from "@/components/backlog/shared/preview-devtools-scope"
 import { BacklogColumn } from "@/components/backlog/board/backlog-column"
 import { BacklogToolbar } from "@/components/backlog/board/backlog-toolbar"
 import { UserStoryDrawer } from "@/components/backlog/drawer/user-story-drawer"
@@ -441,6 +442,7 @@ export function BacklogPage() {
         resumeSessionId: input.resumeSessionId,
         cwd: input.worktree,
         workspaceRoot: input.worktree,
+        previewDevtoolsScope: storyPreviewDevtoolsScope(story.id),
         codePractices: await projectCodePractices(auth, projects),
       })
     },

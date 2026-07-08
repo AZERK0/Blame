@@ -355,9 +355,12 @@ export type PreviewBrowserClient = {
     callback: (state: PreviewBrowserState) => void
   ): () => void
   reload(input: { id: string }): Promise<boolean>
+  setDevtoolsScope(input: {
+    id: string
+    scope?: string | null
+  }): Promise<boolean>
   setBounds(input: {
     bounds: PreviewBrowserBounds
-    devtoolsTarget?: boolean
     id: string
     visible: boolean
   }): Promise<boolean>

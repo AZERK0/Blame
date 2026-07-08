@@ -24,6 +24,7 @@ import {
 } from "@/components/backlog/data/agent-flow"
 import { subscribeAgentEvents } from "@/components/backlog/data/agent-event-stream"
 import type { useBacklogStore } from "@/components/backlog/data/backlog-store"
+import { storyPreviewDevtoolsScope } from "@/components/backlog/shared/preview-devtools-scope"
 import { useModelSelection } from "@/components/model/model-selector"
 import { useCloudAuth } from "@/context/cloud-auth"
 import type { CloudProjectInitialization } from "@/context/cloud-auth"
@@ -185,6 +186,7 @@ export function useBacklogRotation(
       fileAttachments: detailedStory.fileAttachments ?? [],
       cwd: worktree.worktree,
       workspaceRoot: worktree.worktree,
+      previewDevtoolsScope: storyPreviewDevtoolsScope(detailedStory.id),
       codePractices: projectInitialization.practices,
     })
     const run = await backlog.createAgentRun(detailedStory, {

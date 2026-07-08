@@ -76,6 +76,8 @@ const api: BlameDesktopApi = {
       return () => ipcRenderer.removeListener(channel, handler);
     },
     reload: (input) => ipcRenderer.invoke("preview-browser:reload", input),
+    setDevtoolsScope: (input) =>
+      ipcRenderer.invoke("preview-browser:set-devtools-scope", input),
     setBounds: (input) =>
       ipcRenderer.invoke("preview-browser:set-bounds", input),
   },

@@ -218,6 +218,7 @@ type PreviewDevtoolsTarget = {
   browserUrl: string;
   currentUrl?: string;
   id?: string;
+  scope?: string;
   mcpServer: {
     args: string[];
     command: string;
@@ -261,6 +262,7 @@ type RuntimeOptions = {
 };
 
 type PreviewDevtoolsTargetInput = {
+  scope?: string;
   timeoutMs?: number;
 };
 
@@ -567,7 +569,11 @@ export class BlameAgentRuntime {
               },
             ),
             extensionContext: extensionContext(input),
-            extraTools: runtimeTools(this.options, input.workspaceRoot),
+            extraTools: runtimeTools(
+              this.options,
+              input.workspaceRoot,
+              input.previewDevtoolsScope,
+            ),
           }),
         },
         localRuntime: {
@@ -1770,6 +1776,7 @@ export class BlameAgentRuntime {
       pluginPaths: input.pluginPaths,
       cwd: input.cwd,
       workspaceRoot: input.workspaceRoot,
+      previewDevtoolsScope: input.previewDevtoolsScope,
       systemPrompt: await buildDevelopmentSystemPrompt(input),
       enableSpawnAgent: true,
       enableAgentTeams: false,
@@ -2091,21 +2098,28 @@ function projectInitializationSubmitTool(): ProjectInitializationSubmitTool {
   return submit;
 }
 
-function runtimeTools(options: RuntimeOptions, worktree?: string) {
+function runtimeTools(
+  options: RuntimeOptions,
+  worktree?: string,
+  previewDevtoolsScope?: string,
+) {
   const tools = [
-    previewDevtoolsTool(options),
+    previewDevtoolsTool(options, previewDevtoolsScope),
     previewContainerLogsTool(options, worktree),
     ...codeReviewGraphTools(options.codeReviewGraph, worktree),
   ].filter((tool): tool is AgentTool => Boolean(tool));
   return tools.length ? tools : undefined;
 }
 
-function previewDevtoolsTool(options: RuntimeOptions): AgentTool | undefined {
+function previewDevtoolsTool(
+  options: RuntimeOptions,
+  previewDevtoolsScope?: string,
+): AgentTool | undefined {
   if (!options.previewDevtools) return undefined;
   return {
     name: "get_preview_devtools",
     description:
-      "Get the active Blame preview Chrome DevTools MCP server configuration and current preview URL.",
+      "Get this agent session's Blame preview Chrome DevTools MCP server configuration and current preview URL.",
     inputSchema: {
       type: "object",
       properties: {
@@ -2118,12 +2132,14 @@ function previewDevtoolsTool(options: RuntimeOptions): AgentTool | undefined {
       additionalProperties: false,
     },
     async execute(input: unknown) {
-      const previewInput = previewDevtoolsInput(input);
+      const previewInput = previewDevtoolsInput(input, previewDevtoolsScope);
       const target = await options.previewDevtools?.(previewInput);
       if (!target?.available) {
         return {
           available: false,
-          reason: "No active Blame preview is currently loaded.",
+          reason: previewDevtoolsScope
+            ? "No Blame preview is currently loaded for this agent session."
+            : "No active Blame preview is currently loaded.",
           waitedMs: previewInput.timeoutMs,
           recommendation:
             "The preview may still be initializing. Call this tool again before concluding that preview access is unavailable.",
@@ -2138,10 +2154,16 @@ function previewDevtoolsTool(options: RuntimeOptions): AgentTool | undefined {
   };
 }
 
-function previewDevtoolsInput(input: unknown): PreviewDevtoolsTargetInput {
+function previewDevtoolsInput(
+  input: unknown,
+  scope: string | undefined,
+): PreviewDevtoolsTargetInput {
   const record = asRecord(input);
   const timeoutMs = Number(record.timeoutMs);
-  return Number.isFinite(timeoutMs) ? { timeoutMs } : {};
+  return {
+    ...(scope ? { scope } : {}),
+    ...(Number.isFinite(timeoutMs) ? { timeoutMs } : {}),
+  };
 }
 
 function previewContainerLogsTool(
@@ -2439,7 +2461,7 @@ function developmentStoryPrompt(
     "Work in the current worktree when code changes are clearly required.",
     "If the request is a question, analysis, opinion, explanation, or review request, inspect the project if useful and answer in Markdown without editing files.",
     "Only modify files when the request explicitly asks for implementation or when a concrete code change is necessary to satisfy it.",
-    "When browser verification is useful, call get_preview_devtools and wait for the Blame preview to become ready before deciding preview access is unavailable.",
+    "When browser verification is useful, call get_preview_devtools and wait for this session's Blame preview to become ready before deciding preview access is unavailable.",
   );
   return prompt.join("\n");
 }

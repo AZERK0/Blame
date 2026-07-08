@@ -132,6 +132,7 @@ export type StartSessionInput = {
   cwd: string;
   workspaceRoot: string;
   systemPrompt?: string;
+  previewDevtoolsScope?: string;
   credentialLabel?: string;
   backend?: AgentBackendConfig;
 };
@@ -176,6 +177,7 @@ export type StartDevelopmentSessionInput = {
   resumeSessionId?: string | null;
   cwd: string;
   workspaceRoot: string;
+  previewDevtoolsScope?: string;
   codePractices?: ProjectCodePracticePreference[];
   backend?: AgentBackendConfig;
 };

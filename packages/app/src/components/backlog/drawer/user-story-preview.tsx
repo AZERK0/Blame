@@ -11,6 +11,7 @@ import {
 } from "lucide-react"
 
 import type { UserStory } from "@/components/backlog/data/backlog-data"
+import { storyPreviewDevtoolsScope } from "@/components/backlog/shared/preview-devtools-scope"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { type PreviewBrowserClient, usePlatform } from "@/context/platform"
@@ -51,6 +52,7 @@ type PreviewPanelProps = {
 }
 type NativePreviewPanelProps = {
   client: PreviewBrowserClient
+  devtoolsScope?: string
   onCaptureReady: (capture?: PreviewCaptureHandler) => void
   onState: (state: NativePreviewStateInput) => void
   previewKey: string
@@ -61,7 +63,7 @@ type NativePreviewPanelProps = {
   visible: boolean
 }
 type PreviewUrlWarmupProps = {
-  devtoolsTarget?: boolean
+  devtoolsScope?: string
   enabled?: boolean
   previewKey: string
   previewUrl?: string
@@ -111,7 +113,7 @@ const previewWarmupDelayMs = [1_000, 2_000, 5_000, 15_000, 30_000]
 const previewWarmupTimeoutMs = 180_000
 
 export function PreviewUrlWarmup({
-  devtoolsTarget,
+  devtoolsScope,
   enabled = true,
   previewKey,
   previewUrl,
@@ -129,10 +131,10 @@ export function PreviewUrlWarmup({
   const [completed, setCompleted] = React.useState(false)
   const handleState = React.useCallback(
     (state: NativePreviewStateInput) => {
-      if (!devtoolsTarget && (state.error || (!state.loading && state.url)))
+      if (!devtoolsScope && (state.error || (!state.loading && state.url)))
         setCompleted(true)
     },
-    [devtoolsTarget]
+    [devtoolsScope]
   )
 
   React.useEffect(() => {
@@ -143,7 +145,7 @@ export function PreviewUrlWarmup({
   return (
     <NativePreviewWarmup
       client={previewBrowser}
-      devtoolsTarget={devtoolsTarget}
+      devtoolsScope={devtoolsScope}
       onState={handleState}
       sessionKey={sessionKey}
       source={source}
@@ -166,11 +168,13 @@ export function UserStoryPreviewWarmup({
   if (!previewBrowser) return null
   return stories.map((story) => {
     const source = previewSource(story.previewUrl ?? "")
+    const previewScope = storyPreviewDevtoolsScope(story.id)
     return (
       <NativePreviewWarmup
-        key={nativePreviewKeyFor(story.id, source)}
+        key={nativePreviewKeyFor(previewScope, source)}
         client={previewBrowser}
-        sessionKey={nativePreviewKeyFor(story.id, source)}
+        devtoolsScope={previewScope}
+        sessionKey={nativePreviewKeyFor(previewScope, source)}
         source={source}
       />
     )
@@ -211,7 +215,10 @@ export function UserStoryPreview({
   const requestRef = React.useRef<AbortController | undefined>(undefined)
   const timeoutRef = React.useRef<number | undefined>(undefined)
   const previewLabel = userStory?.id ?? previewTitle ?? "preview"
-  const previewIdentity = previewSessionKey ?? previewLabel
+  const previewScope = userStory
+    ? storyPreviewDevtoolsScope(userStory.id)
+    : previewSessionKey
+  const previewIdentity = previewScope ?? previewLabel
   const setupLogWorktree = userStory?.worktree ?? worktree
   const configuredPreviewUrl = userStory?.previewUrl ?? previewUrlInput
   const previewUrl = recoveredPreviewUrl ?? configuredPreviewUrl
@@ -465,6 +472,7 @@ export function UserStoryPreview({
               ) : previewBrowser ? (
                 <NativePreviewPanel
                   client={previewBrowser}
+                  devtoolsScope={previewScope}
                   onCaptureReady={setPreviewCaptureHandler}
                   onState={handleNativePreviewState}
                   previewKey={nativePreviewKey}
@@ -565,13 +573,13 @@ function PreviewWaitingPanel() {
 
 function NativePreviewWarmup({
   client,
-  devtoolsTarget,
+  devtoolsScope,
   onState,
   sessionKey,
   source,
 }: {
   client: PreviewBrowserClient
-  devtoolsTarget?: boolean
+  devtoolsScope?: string
   onState?: (state: NativePreviewStateInput) => void
   sessionKey: string
   source: string
@@ -586,13 +594,14 @@ function NativePreviewWarmup({
   const browserId = useNativePreviewId(client, sessionKey, handleState)
 
   useNativePreviewLoad(client, browserId, sessionKey, source, handleState)
-  useHiddenNativePreviewBounds(client, browserId, Boolean(devtoolsTarget))
+  useNativePreviewDevtoolsScope(client, browserId, devtoolsScope)
 
   return null
 }
 
 function NativePreviewPanel({
   client,
+  devtoolsScope,
   onCaptureReady,
   onState,
   previewKey,
@@ -624,6 +633,7 @@ function NativePreviewPanel({
   }, [browserId, client, handleState])
 
   useNativePreviewLoad(client, browserId, sessionKey, source, handleState)
+  useNativePreviewDevtoolsScope(client, browserId, devtoolsScope)
   useNativePreviewReload(client, browserId, reloadKey, source, handleState)
   useNativePreviewCapture(client, browserId, source, onCaptureReady)
   useNativePreviewBounds(
@@ -847,28 +857,18 @@ function useNativePreviewLoad(
   }, [browserId, client, onState, sessionKey, source])
 }
 
-function useHiddenNativePreviewBounds(
+function useNativePreviewDevtoolsScope(
   client: PreviewBrowserClient,
   browserId: string | undefined,
-  devtoolsTarget: boolean
+  devtoolsScope: string | undefined
 ) {
   React.useEffect(() => {
-    if (!browserId || !devtoolsTarget) return
-    void client.setBounds({
-      bounds: hiddenPreviewBrowserBounds(),
-      devtoolsTarget,
+    if (!browserId || !devtoolsScope) return
+    void client.setDevtoolsScope({
       id: browserId,
-      visible: false,
+      scope: devtoolsScope,
     })
-    return () => {
-      void client.setBounds({
-        bounds: hiddenPreviewBrowserBounds(),
-        devtoolsTarget: false,
-        id: browserId,
-        visible: false,
-      })
-    }
-  }, [browserId, client, devtoolsTarget])
+  }, [browserId, client, devtoolsScope])
 }
 
 function usePreviewWarmupReady(

@@ -29,7 +29,10 @@ import {
   type PendingCodeSelectionAttachment,
 } from "@/components/backlog/shared/comment-attachment-events"
 import { pendingFileAttachments } from "@/components/backlog/drawer/user-story-attachment-files"
-import { projectPreviewConfiguration } from "@/components/backlog/board/project-run-configuration"
+import {
+  projectPreviewConfiguration,
+  projectRunConfigurationPreviewKey,
+} from "@/components/backlog/board/project-run-configuration"
 import { ProjectRunConfigurationPreviewWarmup } from "@/components/backlog/board/project-run-preview-warmup"
 import {
   AgentConversationComposer,
@@ -616,6 +619,10 @@ function QuickChatProjectPage() {
       cwd: input.workspace,
       resumeSessionId: input.resumeSessionId,
       workspaceRoot: input.workspace,
+      previewDevtoolsScope: projectRunConfigurationPreviewKey(
+        previewConfiguration,
+        input.workspace
+      ),
       codePractices: await projectCodePractices(auth, projects),
     })
   }
@@ -818,7 +825,7 @@ function QuickChatProjectPage() {
       <ProjectRunConfigurationPreviewWarmup
         configuration={previewConfiguration}
         devtoolsTarget
-        scope={project?.id}
+        scope={project?.path}
       />
       <DeleteQuickChatDialog
         conversation={conversationToDelete}
