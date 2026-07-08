@@ -952,7 +952,6 @@ function QuickChatHistoryItem({
         type="button"
       >
         <span className="flex min-w-0 items-start gap-2">
-          <MessageCircleIcon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
           <span className="min-w-0 flex-1 truncate font-medium">
             {conversation.title}
           </span>
