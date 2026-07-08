@@ -9,6 +9,7 @@ import {
 } from "electron";
 
 type PreviewBrowserRecord = {
+  devtoolsTarget: boolean;
   id: string;
   owner: BrowserWindow;
   state?: PreviewBrowserState;
@@ -118,7 +119,12 @@ export function registerPreviewBrowserIpcHandlers() {
     "preview-browser:set-bounds",
     (
       _event,
-      input: { bounds: PreviewBrowserBounds; id: string; visible: boolean },
+      input: {
+        bounds: PreviewBrowserBounds;
+        devtoolsTarget?: boolean;
+        id: string;
+        visible: boolean;
+      },
     ) => setPreviewBrowserBounds(input),
   );
   ipcMain.handle("preview-browser:reload", (_event, input: { id: string }) =>
@@ -139,7 +145,7 @@ function createPreviewBrowser(event: IpcMainInvokeEvent) {
   if (!owner) throw new Error("Preview owner window not found");
   const id = randomUUID();
   const view = createPreviewBrowserView();
-  const record = { id, owner, view, visible: false };
+  const record = { devtoolsTarget: false, id, owner, view, visible: false };
   previews.set(id, record);
   owner.contentView.addChildView(view);
   view.setBounds({ height: 0, width: 0, x: 0, y: 0 });
@@ -173,6 +179,7 @@ async function loadPreviewBrowser(input: { id: string; url: string }) {
 
 function setPreviewBrowserBounds(input: {
   bounds: PreviewBrowserBounds;
+  devtoolsTarget?: boolean;
   id: string;
   visible: boolean;
 }) {
@@ -180,6 +187,8 @@ function setPreviewBrowserBounds(input: {
   if (!record) return false;
   const bounds = normalizedBounds(input.bounds);
   const visible = input.visible && bounds.width > 0 && bounds.height > 0;
+  if ("devtoolsTarget" in input)
+    record.devtoolsTarget = Boolean(input.devtoolsTarget);
   record.visible = visible;
   record.view.setBounds(bounds);
   record.view.setVisible(visible);
@@ -280,7 +289,7 @@ function syncActivePreviewDevtoolsTarget(
   record: PreviewBrowserRecord,
   state: PreviewBrowserState,
 ) {
-  if (record.visible) {
+  if (record.visible || record.devtoolsTarget) {
     activePreviewDevtoolsTarget = state;
     return;
   }

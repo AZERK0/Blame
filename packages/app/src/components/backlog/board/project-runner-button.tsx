@@ -267,13 +267,18 @@ function RunnerStartButton({
 }
 
 function RunnerStopButton({ runner }: { runner: Runner }) {
+  const running = runner.selectedSession?.status === "running"
   return (
     <IconTooltip label="Stop selected configuration">
       <Button
-        disabled={runner.selectedSession?.status !== "running"}
+        className={
+          running
+            ? "bg-destructive/10 text-destructive hover:bg-destructive/20"
+            : "bg-muted text-destructive hover:bg-muted/80"
+        }
+        disabled={!running}
         size="icon"
         type="button"
-        variant="destructive"
         onClick={runner.stopSelected}
       >
         <SquareIcon />

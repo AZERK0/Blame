@@ -29,12 +29,7 @@ import {
   type PendingCodeSelectionAttachment,
 } from "@/components/backlog/shared/comment-attachment-events"
 import { pendingFileAttachments } from "@/components/backlog/drawer/user-story-attachment-files"
-import { UserStoryPreview } from "@/components/backlog/drawer/user-story-preview"
-import {
-  projectPreviewConfiguration,
-  projectRunConfigurationPreviewKey,
-  projectRunConfigurationPreviewUrl,
-} from "@/components/backlog/board/project-run-configuration"
+import { projectPreviewConfiguration } from "@/components/backlog/board/project-run-configuration"
 import { ProjectRunConfigurationPreviewWarmup } from "@/components/backlog/board/project-run-preview-warmup"
 import {
   AgentConversationComposer,
@@ -158,11 +153,6 @@ function QuickChatProjectPage() {
   const project = projects.activeProject
   const previewConfiguration = projectPreviewConfiguration(
     projectInitialization?.initialization?.runConfigurations ?? []
-  )
-  const previewUrl = projectRunConfigurationPreviewUrl(previewConfiguration)
-  const previewSessionKey = projectRunConfigurationPreviewKey(
-    previewConfiguration,
-    project?.id
   )
   const [draft, setDraft] = React.useState("")
   const [draftEditorKey, setDraftEditorKey] = React.useState(0)
@@ -706,9 +696,7 @@ function QuickChatProjectPage() {
         <div
           className={cn(
             "grid min-h-0 flex-1 grid-cols-1 gap-2",
-            previewUrl
-              ? "xl:grid-cols-[minmax(0,1fr)_minmax(24rem,34rem)]"
-              : "xl:grid-cols-[minmax(0,1fr)_18rem]"
+            "xl:grid-cols-[minmax(0,1fr)_18rem]"
           )}
         >
           <main className="relative flex min-h-0 min-w-0 flex-col overflow-hidden">
@@ -823,15 +811,13 @@ function QuickChatProjectPage() {
             activeId={activeConversation?.id}
             conversationActions={conversationActions}
             conversations={quickChats.chats}
-            previewSessionKey={previewSessionKey}
-            previewTitle={previewConfiguration?.name}
-            previewUrl={previewUrl}
             onCreate={createConversation}
           />
         </div>
       </div>
       <ProjectRunConfigurationPreviewWarmup
         configuration={previewConfiguration}
+        devtoolsTarget
         scope={project?.id}
       />
       <DeleteQuickChatDialog
@@ -870,47 +856,20 @@ function QuickChatSidePanel({
   activeId,
   conversationActions,
   conversations,
-  previewSessionKey,
-  previewTitle,
-  previewUrl,
   onCreate,
 }: {
   activeId?: string
   conversationActions: QuickChatConversationActions
   conversations: QuickChat[]
-  previewSessionKey: string
-  previewTitle?: string
-  previewUrl?: string
   onCreate: () => void
 }) {
-  if (!previewUrl) {
-    return (
-      <QuickChatHistoryPanel
-        activeId={activeId}
-        conversationActions={conversationActions}
-        conversations={conversations}
-        onCreate={onCreate}
-      />
-    )
-  }
-
   return (
-    <aside className="my-4 mr-4 hidden min-h-0 min-w-0 flex-col gap-2 xl:flex">
-      <div className="min-h-0 flex-1 overflow-hidden rounded-2xl border bg-card shadow-xl ring-1 shadow-black/10 ring-foreground/10">
-        <UserStoryPreview
-          previewSessionKey={previewSessionKey}
-          previewTitle={previewTitle ?? "Project preview"}
-          previewUrl={previewUrl}
-        />
-      </div>
-      <QuickChatHistoryPanel
-        activeId={activeId}
-        className="m-0 h-72 flex-none"
-        conversationActions={conversationActions}
-        conversations={conversations}
-        onCreate={onCreate}
-      />
-    </aside>
+    <QuickChatHistoryPanel
+      activeId={activeId}
+      conversationActions={conversationActions}
+      conversations={conversations}
+      onCreate={onCreate}
+    />
   )
 }
 

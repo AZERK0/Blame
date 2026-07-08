@@ -61,6 +61,7 @@ type NativePreviewPanelProps = {
   visible: boolean
 }
 type PreviewUrlWarmupProps = {
+  devtoolsTarget?: boolean
   enabled?: boolean
   previewKey: string
   previewUrl?: string
@@ -110,6 +111,7 @@ const previewWarmupDelayMs = [1_000, 2_000, 5_000, 15_000, 30_000]
 const previewWarmupTimeoutMs = 180_000
 
 export function PreviewUrlWarmup({
+  devtoolsTarget,
   enabled = true,
   previewKey,
   previewUrl,
@@ -125,9 +127,13 @@ export function PreviewUrlWarmup({
     trigger
   )
   const [completed, setCompleted] = React.useState(false)
-  const handleState = React.useCallback((state: NativePreviewStateInput) => {
-    if (state.error || (!state.loading && state.url)) setCompleted(true)
-  }, [])
+  const handleState = React.useCallback(
+    (state: NativePreviewStateInput) => {
+      if (!devtoolsTarget && (state.error || (!state.loading && state.url)))
+        setCompleted(true)
+    },
+    [devtoolsTarget]
+  )
 
   React.useEffect(() => {
     setCompleted(false)
@@ -137,6 +143,7 @@ export function PreviewUrlWarmup({
   return (
     <NativePreviewWarmup
       client={previewBrowser}
+      devtoolsTarget={devtoolsTarget}
       onState={handleState}
       sessionKey={sessionKey}
       source={source}
@@ -558,11 +565,13 @@ function PreviewWaitingPanel() {
 
 function NativePreviewWarmup({
   client,
+  devtoolsTarget,
   onState,
   sessionKey,
   source,
 }: {
   client: PreviewBrowserClient
+  devtoolsTarget?: boolean
   onState?: (state: NativePreviewStateInput) => void
   sessionKey: string
   source: string
@@ -577,6 +586,7 @@ function NativePreviewWarmup({
   const browserId = useNativePreviewId(client, sessionKey, handleState)
 
   useNativePreviewLoad(client, browserId, sessionKey, source, handleState)
+  useHiddenNativePreviewBounds(client, browserId, Boolean(devtoolsTarget))
 
   return null
 }
@@ -835,6 +845,30 @@ function useNativePreviewLoad(
       onState(nativePreviewErrorState(error, "Unable to load preview", source))
     })
   }, [browserId, client, onState, sessionKey, source])
+}
+
+function useHiddenNativePreviewBounds(
+  client: PreviewBrowserClient,
+  browserId: string | undefined,
+  devtoolsTarget: boolean
+) {
+  React.useEffect(() => {
+    if (!browserId || !devtoolsTarget) return
+    void client.setBounds({
+      bounds: hiddenPreviewBrowserBounds(),
+      devtoolsTarget,
+      id: browserId,
+      visible: false,
+    })
+    return () => {
+      void client.setBounds({
+        bounds: hiddenPreviewBrowserBounds(),
+        devtoolsTarget: false,
+        id: browserId,
+        visible: false,
+      })
+    }
+  }, [browserId, client, devtoolsTarget])
 }
 
 function usePreviewWarmupReady(
