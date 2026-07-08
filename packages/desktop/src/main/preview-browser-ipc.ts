@@ -11,7 +11,9 @@ import {
 type PreviewBrowserRecord = {
   id: string;
   owner: BrowserWindow;
+  state?: PreviewBrowserState;
   view: WebContentsView;
+  visible: boolean;
 };
 
 type PreviewBrowserBounds = {
@@ -137,7 +139,7 @@ function createPreviewBrowser(event: IpcMainInvokeEvent) {
   if (!owner) throw new Error("Preview owner window not found");
   const id = randomUUID();
   const view = createPreviewBrowserView();
-  const record = { id, owner, view };
+  const record = { id, owner, view, visible: false };
   previews.set(id, record);
   owner.contentView.addChildView(view);
   view.setBounds({ height: 0, width: 0, x: 0, y: 0 });
@@ -176,8 +178,12 @@ function setPreviewBrowserBounds(input: {
 }) {
   const record = previews.get(input.id);
   if (!record) return false;
-  record.view.setBounds(normalizedBounds(input.bounds));
-  record.view.setVisible(input.visible);
+  const bounds = normalizedBounds(input.bounds);
+  const visible = input.visible && bounds.width > 0 && bounds.height > 0;
+  record.visible = visible;
+  record.view.setBounds(bounds);
+  record.view.setVisible(visible);
+  syncActivePreviewDevtoolsTarget(record, previewBrowserState(record));
   return true;
 }
 
@@ -255,9 +261,30 @@ function sendPreviewBrowserState(
     url: state.url ?? record.view.webContents.getURL(),
     ...(state.error ? { error: state.error } : {}),
   } satisfies PreviewBrowserState;
-  activePreviewDevtoolsTarget = nextState;
+  record.state = nextState;
+  syncActivePreviewDevtoolsTarget(record, nextState);
   if (record.owner.isDestroyed()) return;
   record.owner.webContents.send(`preview-browser:state:${record.id}`, nextState);
+}
+
+function previewBrowserState(record: PreviewBrowserRecord) {
+  if (record.state) return record.state;
+  return {
+    id: record.id,
+    loading: record.view.webContents.isLoading(),
+    url: record.view.webContents.getURL(),
+  } satisfies PreviewBrowserState;
+}
+
+function syncActivePreviewDevtoolsTarget(
+  record: PreviewBrowserRecord,
+  state: PreviewBrowserState,
+) {
+  if (record.visible) {
+    activePreviewDevtoolsTarget = state;
+    return;
+  }
+  clearActivePreviewDevtoolsTarget(record.id);
 }
 
 function clearActivePreviewDevtoolsTarget(id: string) {

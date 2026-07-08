@@ -18,3 +18,10 @@ export function projectPreviewConfiguration(
     ) ?? configurations.find(projectRunConfigurationPreviewUrl)
   )
 }
+
+export function projectRunConfigurationPreviewKey(
+  configuration?: ProjectRunConfiguration,
+  scope = "project"
+) {
+  return `${scope}:${configuration?.id ?? "preview"}`
+}

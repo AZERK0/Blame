@@ -60,6 +60,12 @@ type NativePreviewPanelProps = {
   source: string
   visible: boolean
 }
+type PreviewUrlWarmupProps = {
+  enabled?: boolean
+  previewKey: string
+  previewUrl?: string
+  trigger?: number | string
+}
 type PreviewIslandProps = {
   activeTab: string
   captureDisabled?: boolean
@@ -100,6 +106,43 @@ const nativePreviewRetainedSessionLimit = 3
 const nativePreviewRetentionMs = 30 * 60_000
 const nativePreviewStableFrames = 3
 const nativePreviewSessions = new Map<string, NativePreviewSession>()
+const previewWarmupDelayMs = [1_000, 2_000, 5_000, 15_000, 30_000]
+const previewWarmupTimeoutMs = 180_000
+
+export function PreviewUrlWarmup({
+  enabled = true,
+  previewKey,
+  previewUrl,
+  trigger,
+}: PreviewUrlWarmupProps) {
+  const platform = usePlatform()
+  const previewBrowser = platform.previewBrowser
+  const source = previewUrl ? previewSource(previewUrl) : undefined
+  const sessionKey = nativePreviewKeyFor(previewKey, source)
+  const ready = usePreviewWarmupReady(
+    source,
+    Boolean(enabled && previewBrowser),
+    trigger
+  )
+  const [completed, setCompleted] = React.useState(false)
+  const handleState = React.useCallback((state: NativePreviewStateInput) => {
+    if (state.error || (!state.loading && state.url)) setCompleted(true)
+  }, [])
+
+  React.useEffect(() => {
+    setCompleted(false)
+  }, [enabled, sessionKey, trigger])
+
+  if (!previewBrowser || !source || !ready || completed) return null
+  return (
+    <NativePreviewWarmup
+      client={previewBrowser}
+      onState={handleState}
+      sessionKey={sessionKey}
+      source={source}
+    />
+  )
+}
 
 export function UserStoryPreviewWarmup({
   userStories,
@@ -129,6 +172,7 @@ export function UserStoryPreviewWarmup({
 
 export function UserStoryPreview({
   onCapture,
+  previewSessionKey,
   previewTitle,
   previewUrl: previewUrlInput,
   setupInitializing,
@@ -137,6 +181,7 @@ export function UserStoryPreview({
   worktree,
 }: {
   onCapture?: (file: File) => void
+  previewSessionKey?: string
   previewTitle?: string
   previewUrl?: string
   setupInitializing?: boolean
@@ -158,7 +203,8 @@ export function UserStoryPreview({
   const locationIntervalRef = React.useRef<number | undefined>(undefined)
   const requestRef = React.useRef<AbortController | undefined>(undefined)
   const timeoutRef = React.useRef<number | undefined>(undefined)
-  const previewIdentity = userStory?.id ?? previewTitle ?? "preview"
+  const previewLabel = userStory?.id ?? previewTitle ?? "preview"
+  const previewIdentity = previewSessionKey ?? previewLabel
   const setupLogWorktree = userStory?.worktree ?? worktree
   const configuredPreviewUrl = userStory?.previewUrl ?? previewUrlInput
   const previewUrl = recoveredPreviewUrl ?? configuredPreviewUrl
@@ -430,7 +476,7 @@ export function UserStoryPreview({
                   previewKey={previewKey}
                   previewState={previewState}
                   source={source}
-                  title={`${previewIdentity} preview`}
+                  title={`${previewLabel} preview`}
                 />
               )}
             </TabsContent>
@@ -512,18 +558,21 @@ function PreviewWaitingPanel() {
 
 function NativePreviewWarmup({
   client,
+  onState,
   sessionKey,
   source,
 }: {
   client: PreviewBrowserClient
+  onState?: (state: NativePreviewStateInput) => void
   sessionKey: string
   source: string
 }) {
   const handleState = React.useCallback(
     (state: NativePreviewStateInput) => {
       updateNativePreviewSessionState(sessionKey, state)
+      onState?.(state)
     },
-    [sessionKey]
+    [onState, sessionKey]
   )
   const browserId = useNativePreviewId(client, sessionKey, handleState)
 
@@ -776,7 +825,7 @@ function useNativePreviewLoad(
     const session = nativePreviewSessions.get(sessionKey)
     const sourceChanged = sourceRef.current !== source
     sourceRef.current = source
-    if (session?.source && !sourceChanged) {
+    if (session?.source && !sourceChanged && !session.state?.error) {
       if (session.state) onState(session.state)
       return
     }
@@ -786,6 +835,47 @@ function useNativePreviewLoad(
       onState(nativePreviewErrorState(error, "Unable to load preview", source))
     })
   }, [browserId, client, onState, sessionKey, source])
+}
+
+function usePreviewWarmupReady(
+  source: string | undefined,
+  enabled: boolean,
+  trigger: number | string | undefined
+) {
+  const [ready, setReady] = React.useState(false)
+
+  React.useEffect(() => {
+    setReady(false)
+    if (!enabled || !source) return
+    let cancelled = false
+    let timeout: number | undefined
+    let attempt = 0
+    const deadline = Date.now() + previewWarmupTimeoutMs
+    const check = async () => {
+      const responds = await previewResponds(source)
+      if (cancelled) return
+      if (responds) {
+        setReady(true)
+        return
+      }
+      if (Date.now() >= deadline) return
+      timeout = window.setTimeout(check, previewWarmupDelay(attempt))
+      attempt += 1
+    }
+    void check()
+    return () => {
+      cancelled = true
+      if (timeout) window.clearTimeout(timeout)
+    }
+  }, [enabled, source, trigger])
+
+  return ready
+}
+
+function previewWarmupDelay(attempt: number) {
+  return previewWarmupDelayMs[
+    Math.min(attempt, previewWarmupDelayMs.length - 1)
+  ]
 }
 
 function useSetupPreviewReady(

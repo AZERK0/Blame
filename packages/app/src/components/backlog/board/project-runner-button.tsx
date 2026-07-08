@@ -31,7 +31,11 @@ import {
   type ProjectRunSession,
   useProjectRunner,
 } from "@/components/backlog/board/use-project-runner"
-import { projectRunConfigurationPreviewUrl } from "@/components/backlog/board/project-run-configuration"
+import {
+  projectRunConfigurationPreviewKey,
+  projectRunConfigurationPreviewUrl,
+} from "@/components/backlog/board/project-run-configuration"
+import { ProjectRunConfigurationPreviewWarmup } from "@/components/backlog/board/project-run-preview-warmup"
 import { UserStoryPreview } from "@/components/backlog/drawer/user-story-preview"
 
 type Runner = ReturnType<typeof useProjectRunner>
@@ -45,15 +49,35 @@ export function ProjectRunnerButton({
 }) {
   const runner = useProjectRunner(configurations, projectPath)
   const [previewOpen, setPreviewOpen] = React.useState(false)
+  const [warmupRequest, setWarmupRequest] =
+    React.useState<ProjectPreviewWarmupRequest>()
+  const warmupConfiguration = configurations.find(
+    (configuration) => configuration.id === warmupRequest?.configurationId
+  )
+  const requestPreviewWarmup = React.useCallback(
+    (configuration?: ProjectRunConfiguration) => {
+      if (!projectRunConfigurationPreviewUrl(configuration)) return
+      setWarmupRequest((current) => ({
+        configurationId: configuration.id,
+        trigger: (current?.trigger ?? 0) + 1,
+      }))
+    },
+    []
+  )
   if (!runner.selected) return null
   return (
     <TooltipProvider>
       <ButtonGroup className="rounded-lg border bg-muted p-0.5">
         <RunnerConfigurationMenu
           configurations={configurations}
+          onPreviewWarmup={requestPreviewWarmup}
           runner={runner}
         />
-        <RunnerStartButton projectPath={projectPath} runner={runner} />
+        <RunnerStartButton
+          projectPath={projectPath}
+          runner={runner}
+          onPreviewWarmup={requestPreviewWarmup}
+        />
         <RunnerPreviewButton
           runner={runner}
           onOpen={() => setPreviewOpen(true)}
@@ -64,18 +88,31 @@ export function ProjectRunnerButton({
       <RunnerLogsDrawer runner={runner} />
       <RunnerPreviewDrawer
         open={previewOpen}
+        projectPath={projectPath}
         runner={runner}
         onOpenChange={setPreviewOpen}
+      />
+      <ProjectRunConfigurationPreviewWarmup
+        configuration={warmupConfiguration}
+        scope={projectPath}
+        trigger={warmupRequest?.trigger}
       />
     </TooltipProvider>
   )
 }
 
+type ProjectPreviewWarmupRequest = {
+  configurationId: string
+  trigger: number
+}
+
 function RunnerConfigurationMenu({
   configurations,
+  onPreviewWarmup,
   runner,
 }: {
   configurations: ProjectRunConfiguration[]
+  onPreviewWarmup: (configuration?: ProjectRunConfiguration) => void
   runner: Runner
 }) {
   return (
@@ -83,6 +120,7 @@ function RunnerConfigurationMenu({
       <RunnerConfigurationTrigger runner={runner} />
       <RunnerConfigurationContent
         configurations={configurations}
+        onPreviewWarmup={onPreviewWarmup}
         runner={runner}
       />
     </DropdownMenu>
@@ -109,9 +147,11 @@ function RunnerConfigurationTrigger({ runner }: { runner: Runner }) {
 
 function RunnerConfigurationContent({
   configurations,
+  onPreviewWarmup,
   runner,
 }: {
   configurations: ProjectRunConfiguration[]
+  onPreviewWarmup: (configuration?: ProjectRunConfiguration) => void
   runner: Runner
 }) {
   return (
@@ -122,6 +162,7 @@ function RunnerConfigurationContent({
         <ConfigurationMenuItem
           key={configuration.id}
           configuration={configuration}
+          onPreviewWarmup={onPreviewWarmup}
           runner={runner}
         />
       ))}
@@ -131,9 +172,11 @@ function RunnerConfigurationContent({
 
 function ConfigurationMenuItem({
   configuration,
+  onPreviewWarmup,
   runner,
 }: {
   configuration: ProjectRunConfiguration
+  onPreviewWarmup: (configuration?: ProjectRunConfiguration) => void
   runner: Runner
 }) {
   const session = runner.sessionFor(configuration.id)
@@ -145,7 +188,8 @@ function ConfigurationMenuItem({
       <RunStatusDot session={session} />
       <span className="flex-1 truncate">{configuration.name}</span>
       <ConfigurationMenuAction
-        configurationId={configuration.id}
+        configuration={configuration}
+        onPreviewWarmup={onPreviewWarmup}
         running={session?.status === "running"}
         runner={runner}
       />
@@ -154,19 +198,24 @@ function ConfigurationMenuItem({
 }
 
 function ConfigurationMenuAction({
-  configurationId,
+  configuration,
+  onPreviewWarmup,
   running,
   runner,
 }: {
-  configurationId: string
+  configuration: ProjectRunConfiguration
+  onPreviewWarmup: (configuration?: ProjectRunConfiguration) => void
   running: boolean
   runner: Runner
 }) {
   const run = (event: React.PointerEvent<HTMLButtonElement>) => {
     event.preventDefault()
     event.stopPropagation()
-    if (running) runner.stop(configurationId)
-    else runner.start(configurationId)
+    if (running) runner.stop(configuration.id)
+    else {
+      onPreviewWarmup(configuration)
+      runner.start(configuration.id)
+    }
   }
   return (
     <button
@@ -185,13 +234,19 @@ function ConfigurationMenuAction({
 }
 
 function RunnerStartButton({
+  onPreviewWarmup,
   projectPath,
   runner,
 }: {
+  onPreviewWarmup: (configuration?: ProjectRunConfiguration) => void
   projectPath?: string
   runner: Runner
 }) {
   const running = runner.selectedSession?.status === "running"
+  const start = () => {
+    onPreviewWarmup(runner.selected)
+    runner.startSelected()
+  }
   return (
     <IconTooltip label={running ? "Rerun configuration" : "Run configuration"}>
       <Button
@@ -203,7 +258,7 @@ function RunnerStartButton({
         disabled={!projectPath || !runner.terminal}
         size="icon"
         type="button"
-        onClick={runner.startSelected}
+        onClick={start}
       >
         {running ? <RotateCwIcon /> : <PlayIcon />}
       </Button>
@@ -283,19 +338,26 @@ function IconTooltip({
 
 function RunnerPreviewDrawer({
   open,
+  projectPath,
   runner,
   onOpenChange,
 }: {
   open: boolean
+  projectPath?: string
   runner: Runner
   onOpenChange: (open: boolean) => void
 }) {
   const previewUrl = projectRunConfigurationPreviewUrl(runner.selected)
+  const previewSessionKey = projectRunConfigurationPreviewKey(
+    runner.selected,
+    projectPath
+  )
   return (
     <Drawer direction="bottom" open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="h-[80vh] overflow-hidden p-0">
         {previewUrl ? (
           <UserStoryPreview
+            previewSessionKey={previewSessionKey}
             previewTitle={runner.selected?.name}
             previewUrl={previewUrl}
             visible={open}

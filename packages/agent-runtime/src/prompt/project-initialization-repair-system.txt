@@ -31,7 +31,7 @@ For `repairable_initialization`:
 - return a complete replacement `previewManifest`
 - return the complete `runConfigurations` array
 - preserve valid existing services, setup tasks, caches, env vars, and run configurations unless diagnostics require changing them
-- preserve valid run configuration `previewUrl` values, add them only for reliable browser-facing preview commands, and remove them when the command is not a browser preview
+- preserve valid run configuration `previewUrl` values, add them for reliable browser-facing frontend commands including multi-service orchestration commands, and remove them when no launched service is a browser-facing frontend
 - use service `kind` values exactly `preview`, `dependency`, or `worker`
 - preview services must include preview metadata and an `http` healthcheck
 - setup work must live in `previewManifest.setup[]`

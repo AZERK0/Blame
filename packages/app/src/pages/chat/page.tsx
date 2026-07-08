@@ -32,8 +32,10 @@ import { pendingFileAttachments } from "@/components/backlog/drawer/user-story-a
 import { UserStoryPreview } from "@/components/backlog/drawer/user-story-preview"
 import {
   projectPreviewConfiguration,
+  projectRunConfigurationPreviewKey,
   projectRunConfigurationPreviewUrl,
 } from "@/components/backlog/board/project-run-configuration"
+import { ProjectRunConfigurationPreviewWarmup } from "@/components/backlog/board/project-run-preview-warmup"
 import {
   AgentConversationComposer,
   AgentConversationTimeline,
@@ -158,6 +160,10 @@ function QuickChatProjectPage() {
     projectInitialization?.initialization?.runConfigurations ?? []
   )
   const previewUrl = projectRunConfigurationPreviewUrl(previewConfiguration)
+  const previewSessionKey = projectRunConfigurationPreviewKey(
+    previewConfiguration,
+    project?.id
+  )
   const [draft, setDraft] = React.useState("")
   const [draftEditorKey, setDraftEditorKey] = React.useState(0)
   const [draftCodeAttachments, setDraftCodeAttachments] = React.useState<
@@ -817,12 +823,17 @@ function QuickChatProjectPage() {
             activeId={activeConversation?.id}
             conversationActions={conversationActions}
             conversations={quickChats.chats}
+            previewSessionKey={previewSessionKey}
             previewTitle={previewConfiguration?.name}
             previewUrl={previewUrl}
             onCreate={createConversation}
           />
         </div>
       </div>
+      <ProjectRunConfigurationPreviewWarmup
+        configuration={previewConfiguration}
+        scope={project?.id}
+      />
       <DeleteQuickChatDialog
         conversation={conversationToDelete}
         deleting={deletingConversation}
@@ -859,6 +870,7 @@ function QuickChatSidePanel({
   activeId,
   conversationActions,
   conversations,
+  previewSessionKey,
   previewTitle,
   previewUrl,
   onCreate,
@@ -866,6 +878,7 @@ function QuickChatSidePanel({
   activeId?: string
   conversationActions: QuickChatConversationActions
   conversations: QuickChat[]
+  previewSessionKey: string
   previewTitle?: string
   previewUrl?: string
   onCreate: () => void
@@ -885,6 +898,7 @@ function QuickChatSidePanel({
     <aside className="my-4 mr-4 hidden min-h-0 min-w-0 flex-col gap-2 xl:flex">
       <div className="min-h-0 flex-1 overflow-hidden rounded-2xl border bg-card shadow-xl ring-1 shadow-black/10 ring-foreground/10">
         <UserStoryPreview
+          previewSessionKey={previewSessionKey}
           previewTitle={previewTitle ?? "Project preview"}
           previewUrl={previewUrl}
         />
