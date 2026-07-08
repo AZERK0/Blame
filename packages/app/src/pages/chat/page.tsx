@@ -20,6 +20,7 @@ import type {
 import type { UserStoryFileAttachment } from "@/components/backlog/data/backlog-data"
 import {
   agentEventText,
+  completedAgentRun,
   shouldPersistAgentEvent,
 } from "@/components/backlog/data/agent-flow"
 import { subscribeAgentEvents } from "@/components/backlog/data/agent-event-stream"
@@ -364,6 +365,7 @@ function QuickChatProjectPage() {
     if (!shouldPersistAgentEvent(event, update)) return
     const text = agentEventText(event)
     const runInput = quickChatAgentRunEventUpdate(update, event, text)
+    if (completedAgentRun(event)) notifyQuickChatResponseCompleted(current)
     persistAgentUpdate(
       current,
       run,
@@ -371,6 +373,15 @@ function QuickChatProjectPage() {
       runInput,
       immediateQuickChatAgentEvent(event)
     )
+  }
+
+  function notifyQuickChatResponseCompleted(chat: QuickChat) {
+    void platform.systemNotifications
+      ?.show({
+        body: chat.title,
+        title: "Agent response ready",
+      })
+      .catch(() => false)
   }
 
   function createConversation() {

@@ -582,6 +582,7 @@ export function useBacklogRotation(
       agentRunEventUpdate(flowUpdate, event, text),
       true
     )
+    notifyCommentResponseCompleted(currentStory, currentRun, platform)
   }
 
   async function clineLog(story: UserStory, run: UserStoryAgentRun) {
@@ -643,6 +644,7 @@ export function useBacklogRotation(
       return
     }
     if (completedAgentRun(event)) {
+      notifyCommentResponseCompleted(currentStory, run, platform)
       persistAgentUpdate(
         currentStory,
         {
@@ -974,6 +976,20 @@ function agentRunEventUpdate(
     input.completedAt = new Date().toISOString()
   }
   return input
+}
+
+function notifyCommentResponseCompleted(
+  story: UserStory,
+  run: UserStoryAgentRun | undefined,
+  platform: ReturnType<typeof usePlatform>
+) {
+  if (!run?.commentId) return
+  void platform.systemNotifications
+    ?.show({
+      body: `${userStoryDisplayId(story)} · ${story.title}`,
+      title: "Agent replied to a comment",
+    })
+    .catch(() => false)
 }
 
 function runningStories(stories: UserStory[]) {

@@ -2,7 +2,10 @@ import * as React from "react"
 import type { AgentEvent } from "@blame/agent-runtime"
 import { toast } from "sonner"
 
-import { backlogColumns } from "@/components/backlog/data/backlog-data"
+import {
+  backlogColumns,
+  userStoryDisplayId,
+} from "@/components/backlog/data/backlog-data"
 import {
   agentEventText,
   agentFlowUpdate,
@@ -327,6 +330,8 @@ export function BacklogPage() {
       if (!shouldPersistAgentEvent(event, update)) return
       const text = agentEventText(event)
       const runInput = agentRunEventUpdate(update, event, text)
+      if (completedAgentRun(event))
+        notifyCommentResponseCompleted(currentStory, run, platform)
       persistAgentUpdate(
         currentStory,
         run,
@@ -335,7 +340,7 @@ export function BacklogPage() {
         immediateAgentEvent(event)
       )
     },
-    [persistAgentUpdate]
+    [persistAgentUpdate, platform]
   )
   const rejectStory = React.useCallback(
     async (story: UserStory, choice: RejectChoice) => {
@@ -1544,6 +1549,20 @@ function notifyStoriesMovedToReview(
 
 function storyStatusMap(stories: UserStory[]) {
   return new Map(stories.map((story) => [story.id, story.status]))
+}
+
+function notifyCommentResponseCompleted(
+  story: UserStory,
+  run: UserStoryAgentRun | undefined,
+  platform: ReturnType<typeof usePlatform>
+) {
+  if (!run?.commentId) return
+  void platform.systemNotifications
+    ?.show({
+      body: `${userStoryDisplayId(story)} · ${story.title}`,
+      title: "Agent replied to a comment",
+    })
+    .catch(() => false)
 }
 
 async function stopStoryRuntime(
