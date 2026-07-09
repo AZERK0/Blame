@@ -110,7 +110,12 @@ export type WindowControls = {
   isMaximized(): Promise<boolean>;
   minimize(): Promise<void>;
   onMaximized(callback: (maximized: boolean) => void): () => void;
+  setPresentation(input: WindowPresentationInput): Promise<boolean>;
   toggleMaximize(): Promise<void>;
+};
+
+export type WindowPresentationInput = {
+  mode: "app" | "connect" | "welcome";
 };
 
 export type DesktopUpdatePhase =

@@ -59,6 +59,8 @@ const api: BlameDesktopApi = {
       ipcRenderer.on("window:maximized", handler);
       return () => ipcRenderer.removeListener("window:maximized", handler);
     },
+    setPresentation: (input) =>
+      ipcRenderer.invoke("window:set-presentation", input),
     toggleMaximize: () => ipcRenderer.invoke("window:toggle-maximize"),
   },
   previewBrowser: {

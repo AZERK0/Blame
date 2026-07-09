@@ -22,6 +22,7 @@ import { UpdateStartupNotifier } from "@/components/updates/update-startup-notif
 import { Toaster } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { useCloudAuth } from "@/context/cloud-auth"
+import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import { AppLayout } from "@/layouts/app-layout"
 import { SettingsDialog } from "@/pages/settings/page"
@@ -79,6 +80,7 @@ function RoutePage({ title }: { title: string }) {
 
 export function App() {
   const auth = useCloudAuth()
+  const platform = usePlatform()
   const projects = useProjects()
   const pathname = React.useSyncExternalStore(
     subscribeToNavigation,
@@ -95,6 +97,19 @@ export function App() {
   const statusPipOpen = pathname === backlogStatusPipPath
   const previousRoute = resolvePreviousRoute(previousPathname)
   const activeRoute = settingsOpen ? previousRoute : route
+  const windowPresentation = windowPresentationMode({
+    activeProject: projects.activeProject,
+    aiPreferences: auth.aiPreferences,
+    authStatus: auth.status,
+    statusPipOpen,
+  })
+
+  React.useEffect(() => {
+    if (!windowPresentation) return
+    void platform.windowControls?.setPresentation({
+      mode: windowPresentation,
+    })
+  }, [platform.windowControls, windowPresentation])
 
   function closeSettings(open: boolean) {
     if (!open) navigate(activeRoute.path)
@@ -140,6 +155,18 @@ export function App() {
 function resolvePreviousRoute(pathname: string) {
   if (pathname === settingsPath) return routes[0]
   return resolveRoute(pathname)
+}
+
+function windowPresentationMode(input: {
+  activeProject: unknown
+  aiPreferences: unknown
+  authStatus: ReturnType<typeof useCloudAuth>["status"]
+  statusPipOpen: boolean
+}) {
+  if (input.statusPipOpen || input.authStatus === "loading") return undefined
+  if (input.authStatus === "unauthenticated") return "connect"
+  if (input.aiPreferences !== null && !input.activeProject) return "welcome"
+  return "app"
 }
 
 export default App

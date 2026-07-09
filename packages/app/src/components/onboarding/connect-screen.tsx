@@ -31,12 +31,12 @@ export function ConnectScreen() {
 
   return (
     <>
-      <main className="light relative min-h-screen bg-background/10 text-foreground backdrop-blur-md">
+      <main className="light relative h-svh overflow-hidden bg-background/10 text-foreground backdrop-blur-md">
         <SettingsDialogButton
           className="absolute top-4 right-4 z-10"
           onClick={() => setSettingsOpen(true)}
         />
-        <section className="flex min-h-screen flex-col gap-4 bg-background/50 p-6 md:p-10">
+        <section className="flex h-full flex-col gap-4 bg-background/50 p-6 md:p-8">
           <AppLogo />
           <div className="flex flex-1 items-center justify-center">
             <div

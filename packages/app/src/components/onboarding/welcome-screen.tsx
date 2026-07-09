@@ -27,7 +27,7 @@ export function WelcomeScreen() {
 
   return (
     <>
-      <main className="relative flex min-h-screen items-center justify-center bg-background px-6 py-12 text-foreground">
+      <main className="relative flex h-svh items-center justify-center overflow-hidden bg-background px-6 py-8 text-foreground">
         <SettingsDialogButton
           className="absolute top-4 right-4"
           onClick={() => setSettingsOpen(true)}
