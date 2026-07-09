@@ -64,6 +64,7 @@ import {
 import { optimizeUserStoryPrompt } from "./prompt-optimization.js";
 import { generateUserStoryTitle } from "./user-story-title-generation.js";
 import { loadPrompt } from "./prompt-loader.js";
+import { knownOpenAICodexPreviewModels } from "./openai-codex-preview-models.js";
 import { fallbackCommitSubject } from "./commit-message.js";
 import {
   applyProductionEnvironment,
@@ -532,6 +533,10 @@ export class BlameAgentRuntime {
             modelId: input.modelId,
             apiKey: resolvedCredential.apiKey,
             baseUrl: resolvedCredential.baseUrl ?? undefined,
+            knownModels: knownOpenAICodexPreviewModels(
+              input.providerId,
+              input.modelId,
+            ),
             thinking: !!input.reasoningEffort,
             reasoningEffort: input.reasoningEffort,
             systemPrompt:
@@ -2067,6 +2072,7 @@ function initializationConfig(
     modelId: input.modelId,
     apiKey: credential.apiKey,
     baseUrl: credential.baseUrl ?? undefined,
+    knownModels: knownOpenAICodexPreviewModels(input.providerId, input.modelId),
     thinking: !!input.reasoningEffort,
     reasoningEffort: input.reasoningEffort,
     systemPrompt: loadPrompt("project-initialization-system"),
@@ -2282,6 +2288,7 @@ function initializationRepairConfig(
     modelId: input.modelId,
     apiKey: credential.apiKey,
     baseUrl: credential.baseUrl ?? undefined,
+    knownModels: knownOpenAICodexPreviewModels(input.providerId, input.modelId),
     thinking: !!input.reasoningEffort,
     reasoningEffort: input.reasoningEffort,
     systemPrompt: loadPrompt("project-initialization-repair-system"),
@@ -2303,6 +2310,7 @@ function initializationImpactConfig(
     modelId: input.modelId,
     apiKey: credential.apiKey,
     baseUrl: credential.baseUrl ?? undefined,
+    knownModels: knownOpenAICodexPreviewModels(input.providerId, input.modelId),
     thinking: !!input.reasoningEffort,
     reasoningEffort: input.reasoningEffort,
     systemPrompt: loadPrompt("project-initialization-impact-system"),
@@ -2324,6 +2332,7 @@ function commitMessageConfig(
     modelId: input.modelId,
     apiKey: credential.apiKey,
     baseUrl: credential.baseUrl ?? undefined,
+    knownModels: knownOpenAICodexPreviewModels(input.providerId, input.modelId),
     thinking: !!input.reasoningEffort,
     reasoningEffort: input.reasoningEffort,
     systemPrompt: developmentPracticePrompt(
@@ -2348,6 +2357,7 @@ function mergeConflictConfig(
     modelId: input.modelId,
     apiKey: credential.apiKey,
     baseUrl: credential.baseUrl ?? undefined,
+    knownModels: knownOpenAICodexPreviewModels(input.providerId, input.modelId),
     thinking: !!input.reasoningEffort,
     reasoningEffort: input.reasoningEffort,
     systemPrompt: loadPrompt("merge-conflict-resolution"),
@@ -2635,6 +2645,7 @@ async function newProjectGenerationConfig(
     modelId: input.modelId,
     apiKey: credential.apiKey,
     baseUrl: credential.baseUrl ?? undefined,
+    knownModels: knownOpenAICodexPreviewModels(input.providerId, input.modelId),
     thinking: !!input.reasoningEffort,
     reasoningEffort: input.reasoningEffort,
     systemPrompt: getClineDefaultSystemPrompt({

@@ -1,6 +1,7 @@
 import { getAllProviders, getModelsForProvider } from "@cline/llms"
 import type { ModelInfo, ProviderInfo } from "@cline/llms"
 
+import { openAICodexPreviewModels } from "./openai-codex-preview-models.js"
 import type { BlameModel, BlameProvider } from "./types.js"
 
 export async function listClineProviders() {
@@ -13,6 +14,7 @@ export async function listClineProviders() {
 
 async function toBlameProvider(provider: ProviderInfo): Promise<BlameProvider> {
   const models = await getModelsForProvider(provider.id)
+  const providerModels = providerModelsWithPreview(provider.id, models)
 
   return {
     id: provider.id,
@@ -22,8 +24,22 @@ async function toBlameProvider(provider: ProviderInfo): Promise<BlameProvider> {
     defaultModelId: provider.defaultModelId,
     capabilities: provider.capabilities,
     models: Object.fromEntries(
-      Object.entries(models).map(([modelId, model]) => [modelId, toBlameModel(modelId, model)])
+      Object.entries(providerModels).map(([modelId, model]) => [
+        modelId,
+        toBlameModel(modelId, model),
+      ])
     ),
+  }
+}
+
+function providerModelsWithPreview(
+  providerId: string,
+  models: Record<string, ModelInfo>
+) {
+  if (providerId !== "openai-codex") return models
+  return {
+    ...openAICodexPreviewModels,
+    ...models,
   }
 }
 
