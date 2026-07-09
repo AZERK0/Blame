@@ -3,7 +3,7 @@ import type {
   QuickChatAgentRun,
   QuickChatMessage,
 } from "@/components/chat/data/quick-chat-data"
-import type { UserStoryAgentActivity } from "@/components/backlog/data/backlog-data"
+import { mergeAgentActivities } from "../../backlog/data/agent-activity-merge.ts"
 
 export function mergeLoadedQuickChats(
   currentChats: QuickChat[],
@@ -20,9 +20,9 @@ export function mergeQuickChat(currentChat: QuickChat, serverChat: QuickChat) {
   const newestChat = newestValue(currentChat, serverChat)
   return {
     ...newestChat,
-    agentActivities: providedValue(
-      newestChat.agentActivities,
-      currentChat.agentActivities
+    agentActivities: mergeAgentActivities(
+      currentChat.agentActivities ?? [],
+      serverChat.agentActivities ?? []
     ),
     agentFinalResponse: providedValue(
       newestChat.agentFinalResponse,
@@ -98,7 +98,7 @@ function mergeAgentRun(
   const newestRun = newestValue(currentRun, serverRun)
   return {
     ...newestRun,
-    activities: mergeActivities(
+    activities: mergeAgentActivities(
       currentRun.activities ?? [],
       serverRun.activities ?? []
     ),
@@ -114,23 +114,6 @@ function mergeAgentRun(
     ),
     usage: newestDefined(newestRun.usage, currentRun.usage, serverRun.usage),
   }
-}
-
-function mergeActivities(
-  currentActivities: UserStoryAgentActivity[],
-  serverActivities: UserStoryAgentActivity[]
-) {
-  const activities = new Map(currentActivities.map((item) => [item.id, item]))
-  serverActivities.forEach((serverActivity) => {
-    const currentActivity = activities.get(serverActivity.id)
-    activities.set(
-      serverActivity.id,
-      currentActivity
-        ? newestValue(currentActivity, serverActivity)
-        : serverActivity
-    )
-  })
-  return sortedByCreatedAt([...activities.values()])
 }
 
 function newestDefined<T>(...values: (T | null | undefined)[]) {

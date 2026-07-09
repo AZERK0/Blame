@@ -49,6 +49,87 @@ test("keeps the newest activity state", () => {
   assert.equal(merged.agentRuns?.[0].activities?.[0].status, "completed")
 })
 
+test("does not shorten a streamed message with a stale server response", () => {
+  const currentActivity = activity(
+    "message-session-1",
+    "2026-06-11T10:00:02.000Z",
+    "running",
+    "La réponse continue de s'écrire."
+  )
+  const serverActivity = activity(
+    "message-session-1",
+    "2026-06-11T10:00:04.000Z",
+    "running",
+    "La réponse continue"
+  )
+  const current = {
+    ...story([run([currentActivity])]),
+    agentActivities: [currentActivity],
+  }
+  const server = {
+    ...story([run([serverActivity])]),
+    agentActivities: [serverActivity],
+    updatedAt: "2026-06-11T10:00:04.000Z",
+  }
+
+  const merged = mergeUserStory(current, server)
+
+  assert.equal(
+    merged.agentActivities?.[0]?.detail,
+    "La réponse continue de s'écrire."
+  )
+  assert.equal(
+    merged.agentRuns?.[0].activities?.[0]?.detail,
+    "La réponse continue de s'écrire."
+  )
+})
+
+test("accepts a completed server message that corrects streamed text", () => {
+  const currentActivity = activity(
+    "message-session-1",
+    "2026-06-11T10:00:02.000Z",
+    "running",
+    "Réponse provisoire trop longue"
+  )
+  const serverActivity = activity(
+    "message-session-1",
+    "2026-06-11T10:00:04.000Z",
+    "completed",
+    "Réponse finale"
+  )
+
+  const merged = mergeUserStory(
+    story([run([currentActivity])]),
+    story([run([serverActivity])])
+  )
+
+  assert.equal(merged.agentRuns?.[0].activities?.[0]?.detail, "Réponse finale")
+  assert.equal(merged.agentRuns?.[0].activities?.[0]?.status, "completed")
+})
+
+test("keeps a parallel tool grouped when a server response omits its group", () => {
+  const currentActivity = {
+    ...activity("tool-1", "2026-06-11T10:00:02.000Z", "running"),
+    parallelGroupId: "parallel-tools-1-tool-1",
+  }
+  const serverActivity = activity(
+    "tool-1",
+    "2026-06-11T10:00:04.000Z",
+    "completed"
+  )
+
+  const merged = mergeUserStory(
+    story([run([currentActivity])]),
+    story([run([serverActivity])])
+  )
+
+  assert.equal(
+    merged.agentRuns?.[0].activities?.[0]?.parallelGroupId,
+    "parallel-tools-1-tool-1"
+  )
+  assert.equal(merged.agentRuns?.[0].activities?.[0]?.status, "completed")
+})
+
 function story(agentRuns: UserStoryAgentRun[]): UserStory {
   return {
     agentRuns,
@@ -79,13 +160,14 @@ function run(activities: UserStoryAgentActivity[]): UserStoryAgentRun {
 function activity(
   id: string,
   updatedAt = "2026-06-11T10:00:03.000Z",
-  status: UserStoryAgentActivity["status"] = "completed"
+  status: UserStoryAgentActivity["status"] = "completed",
+  detail = ""
 ): UserStoryAgentActivity {
   return {
     createdAt: "2026-06-11T10:00:00.000Z",
-    detail: "",
+    detail,
     id,
-    kind: "tool",
+    kind: id.startsWith("message-") ? "message" : "tool",
     status,
     title: id,
     updatedAt,

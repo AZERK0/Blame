@@ -1,9 +1,9 @@
 import type {
   UserStory,
-  UserStoryAgentActivity,
   UserStoryAgentRun,
   UserStoryComment,
 } from "./backlog-data.ts"
+import { mergeAgentActivities } from "./agent-activity-merge.ts"
 
 export function mergeLoadedStories(
   currentStories: UserStory[],
@@ -23,9 +23,9 @@ export function mergeUserStory(
   const newestStory = newestValue(currentStory, serverStory)
   return {
     ...newestStory,
-    agentActivities: providedValue(
-      newestStory.agentActivities,
-      currentStory.agentActivities
+    agentActivities: mergeAgentActivities(
+      currentStory.agentActivities ?? [],
+      serverStory.agentActivities ?? []
     ),
     agentFinalResponse: providedValue(
       newestStory.agentFinalResponse,
@@ -99,7 +99,7 @@ function mergeAgentRun(
   const newestRun = newestValue(currentRun, serverRun)
   return {
     ...newestRun,
-    activities: mergeActivities(
+    activities: mergeAgentActivities(
       currentRun.activities ?? [],
       serverRun.activities ?? []
     ),
@@ -115,23 +115,6 @@ function mergeAgentRun(
     ),
     usage: newestDefined(newestRun.usage, currentRun.usage, serverRun.usage),
   }
-}
-
-function mergeActivities(
-  currentActivities: UserStoryAgentActivity[],
-  serverActivities: UserStoryAgentActivity[]
-) {
-  const activities = new Map(currentActivities.map((item) => [item.id, item]))
-  serverActivities.forEach((serverActivity) => {
-    const currentActivity = activities.get(serverActivity.id)
-    activities.set(
-      serverActivity.id,
-      currentActivity
-        ? newestValue(currentActivity, serverActivity)
-        : serverActivity
-    )
-  })
-  return sortedByCreatedAt([...activities.values()])
 }
 
 function newestDefined<T>(...values: (T | null | undefined)[]) {
