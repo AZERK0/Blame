@@ -1,4 +1,3 @@
-import { execFile, execFileSync } from "node:child_process"
 import { homedir } from "node:os"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
@@ -40,11 +39,11 @@ const currentDirectory = dirname(fileURLToPath(import.meta.url))
 const shutdownTimeoutMs = 4_000
 const defaultWindowWidth = 1440
 const defaultWindowHeight = 900
+const appWindowTitle = "Blame"
 const appMinWindowWidth = 960
 const appMinWindowHeight = 640
 const freeWindowMaxSize = 100000
 const initialWindowShowFallbackMs = 8_000
-const presentationRetryDelaysMs = [0, 80, 180, 360, 720]
 const onboardingWindows = {
   connect: {
     height: 680,
@@ -58,12 +57,6 @@ const onboardingWindows = {
   },
 }
 type WindowBounds = { height: number; width: number; x: number; y: number }
-type WindowPresentation = { height: number; title: string; width: number }
-type HyprlandPlacement = {
-  bounds: WindowBounds
-  hyprlandBounds?: WindowBounds
-  workspace?: number | string
-}
 
 try {
   process.chdir(homedir())
@@ -82,9 +75,6 @@ if (!singleInstanceLock) app.exit(0)
 let mainWindow: BrowserWindow | undefined
 let shutdownPromise: Promise<void> | undefined
 let quitAfterShutdown = false
-let hyprlandOnboardingFloating = false
-let windowPresentationToken = 0
-let hyprlandPresentationToken = 0
 
 void app.whenReady().then(() => {
   registerIpcHandlers()
@@ -299,33 +289,28 @@ function registerIpcHandlers() {
 
 function setWindowPresentation(window: BrowserWindow | null, input: unknown) {
   if (!window || !windowPresentationInput(input)) return false
-  const token = ++windowPresentationToken
   if (input.mode === "app") {
     setAppWindowPresentation(window)
     return true
   }
-  setOnboardingWindowPresentation(window, input.mode, token)
+  setOnboardingWindowPresentation(window, input.mode)
   return true
 }
 
 function setOnboardingWindowPresentation(
   window: BrowserWindow,
-  mode: "connect" | "welcome",
-  token: number
+  mode: "connect" | "welcome"
 ) {
   const presentation = onboardingWindows[mode]
-  const placement = getOnboardingPlacement(window, presentation)
   if (window.isMaximized()) window.unmaximize()
   window.setTitle(presentation.title)
   window.setAlwaysOnTop(false)
-  applyOnboardingWindowSize(window, presentation, placement.bounds)
+  applyOnboardingWindowSize(window, presentation)
   showPresentedWindow(window)
-  scheduleOnboardingWindowSize(window, presentation, placement.bounds, token)
-  setHyprlandOnboardingWindow(presentation, true, placement)
 }
 
 function setAppWindowPresentation(window: BrowserWindow) {
-  window.setTitle("Blame")
+  window.setTitle(appWindowTitle)
   window.setResizable(true)
   window.setMaximumSize(freeWindowMaxSize, freeWindowMaxSize)
   window.setMinimumSize(appMinWindowWidth, appMinWindowHeight)
@@ -333,15 +318,6 @@ function setAppWindowPresentation(window: BrowserWindow) {
     display: getPreferredDisplay(window),
   })
   showPresentedWindow(window)
-  if (hyprlandOnboardingFloating)
-    setHyprlandOnboardingWindow(
-      {
-        height: defaultWindowHeight,
-        title: "Blame",
-        width: defaultWindowWidth,
-      },
-      false
-    )
 }
 
 function scheduleInitialWindowShow(window: BrowserWindow) {
@@ -371,308 +347,22 @@ function resizeWindow(
 
 function applyOnboardingWindowSize(
   window: BrowserWindow,
-  presentation: { height: number; width: number },
-  bounds: WindowBounds
+  presentation: { height: number; width: number }
 ) {
   window.setResizable(true)
   window.setMinimumSize(1, 1)
   window.setMaximumSize(freeWindowMaxSize, freeWindowMaxSize)
-  resizeWindow(window, presentation.width, presentation.height, { bounds })
+  resizeWindow(window, presentation.width, presentation.height, {
+    display: getPreferredDisplay(window),
+  })
   window.setMinimumSize(presentation.width, presentation.height)
   window.setMaximumSize(presentation.width, presentation.height)
   window.setResizable(false)
 }
 
-function scheduleOnboardingWindowSize(
-  window: BrowserWindow,
-  presentation: { height: number; width: number },
-  bounds: WindowBounds,
-  token: number
-) {
-  for (const delay of presentationRetryDelaysMs)
-    setTimeout(() => {
-      if (window.isDestroyed() || token !== windowPresentationToken) return
-      applyOnboardingWindowSize(window, presentation, bounds)
-    }, delay)
-}
-
-function getOnboardingPlacement(
-  window: BrowserWindow,
-  presentation: WindowPresentation
-): HyprlandPlacement {
-  const hyprlandPlacement = getHyprlandFocusedPlacement(presentation)
-  if (hyprlandPlacement) return hyprlandPlacement
-  return {
-    bounds: fitWindowBounds(
-      { height: presentation.height, width: presentation.width },
-      getPreferredDisplay(window)
-    ),
-  }
-}
-
 function getPreferredDisplay(window: BrowserWindow) {
-  const hyprlandDisplay = getHyprlandFocusedDisplay()
-  if (hyprlandDisplay) return hyprlandDisplay
   if (window.isVisible()) return screen.getDisplayMatching(window.getBounds())
   return screen.getDisplayNearestPoint(screen.getCursorScreenPoint())
-}
-
-function setHyprlandOnboardingWindow(
-  presentation: WindowPresentation,
-  floating: boolean,
-  placement?: HyprlandPlacement
-) {
-  if (process.platform !== "linux") return
-  if (!process.env.HYPRLAND_INSTANCE_SIGNATURE) return
-  hyprlandOnboardingFloating = floating
-  const token = ++hyprlandPresentationToken
-  for (const delay of presentationRetryDelaysMs)
-    setTimeout(() => {
-      void applyHyprlandWindowPresentation(
-        presentation,
-        floating,
-        token,
-        placement
-      )
-    }, delay)
-}
-
-async function applyHyprlandWindowPresentation(
-  presentation: WindowPresentation,
-  floating: boolean,
-  token: number,
-  placement?: HyprlandPlacement
-) {
-  if (token !== hyprlandPresentationToken) return
-  if (!(await hasHyprlandWindow(presentation.title))) return
-  if (floating && placement?.workspace !== undefined)
-    await dispatchHyprland(
-      hyprlandMoveToWorkspaceDispatcher(presentation.title, placement.workspace)
-    )
-  if (!(await dispatchHyprland(hyprlandFocusWindowDispatcher(presentation.title))))
-    return
-  if (token !== hyprlandPresentationToken) return
-  await dispatchHyprland(
-    `hl.dsp.window.float({ action = "${floating ? "set" : "unset"}" })`
-  )
-  if (floating && placement && token === hyprlandPresentationToken)
-    await dispatchHyprland(
-      hyprlandMoveWindowDispatcher(
-        presentation.title,
-        placement.hyprlandBounds ?? placement.bounds
-      )
-    )
-  if (floating && token === hyprlandPresentationToken)
-    await dispatchHyprland(hyprlandResizeWindowDispatcher(presentation))
-}
-
-function hyprlandFocusWindowDispatcher(title: string) {
-  return `hl.dsp.focus({ window = "title:^(${escapedHyprlandRegex(title)})$" })`
-}
-
-function hyprlandMoveToWorkspaceDispatcher(
-  title: string,
-  workspace: number | string
-) {
-  return `hl.dsp.window.move({ workspace = ${hyprlandWorkspaceValue(workspace)}, follow = false, window = "${hyprlandTitleSelector(title)}" })`
-}
-
-function hyprlandMoveWindowDispatcher(title: string, bounds: WindowBounds) {
-  return `hl.dsp.window.move({ x = ${bounds.x}, y = ${bounds.y}, "exact", window = "${hyprlandTitleSelector(title)}" })`
-}
-
-function hyprlandResizeWindowDispatcher(presentation: WindowPresentation) {
-  return `hl.dsp.window.resize({ x = ${presentation.width}, y = ${presentation.height}, "exact", window = "${hyprlandTitleSelector(presentation.title)}" })`
-}
-
-function getHyprlandFocusedPlacement(
-  presentation: WindowPresentation
-): HyprlandPlacement | undefined {
-  const monitor = getHyprlandFocusedMonitor()
-  if (!monitor) return undefined
-  const area = hyprlandMonitorWorkArea(monitor)
-  if (!area) return undefined
-  const localArea = hyprlandMonitorLocalWorkArea(monitor)
-  const bounds = centerBoundsInArea(
-    { height: presentation.height, width: presentation.width },
-    area
-  )
-  const hyprlandBounds = localArea
-    ? centerBoundsInArea(
-        { height: presentation.height, width: presentation.width },
-        localArea
-      )
-    : undefined
-  const workspace = hyprlandMonitorWorkspace(monitor)
-  return { bounds, hyprlandBounds, workspace }
-}
-
-function getHyprlandFocusedDisplay() {
-  const monitor = getHyprlandFocusedMonitor()
-  const area = monitor ? hyprlandMonitorWorkArea(monitor) : undefined
-  if (!area) return undefined
-  return screen.getDisplayNearestPoint({
-    x: area.x + Math.round(area.width / 2),
-    y: area.y + Math.round(area.height / 2),
-  })
-}
-
-function getHyprlandFocusedMonitor() {
-  if (process.platform !== "linux") return undefined
-  if (!process.env.HYPRLAND_INSTANCE_SIGNATURE) return undefined
-  const output = execFileOutputSync("hyprctl", ["monitors", "-j"])
-  if (output === null) return undefined
-  try {
-    const monitors = JSON.parse(output)
-    if (!Array.isArray(monitors)) return undefined
-    return monitors.find((monitor) => hyprlandMonitorFocused(monitor))
-  } catch {
-    return undefined
-  }
-}
-
-function hyprlandMonitorFocused(monitor: unknown) {
-  if (!monitor || typeof monitor !== "object") return false
-  return (monitor as Record<string, unknown>).focused === true
-}
-
-function hyprlandMonitorWorkArea(monitor: unknown): WindowBounds | undefined {
-  const frame = hyprlandMonitorFrame(monitor)
-  if (!frame) return undefined
-  return {
-    height: frame.height,
-    width: frame.width,
-    x: frame.x,
-    y: frame.y,
-  }
-}
-
-function hyprlandMonitorLocalWorkArea(
-  monitor: unknown
-): WindowBounds | undefined {
-  const frame = hyprlandMonitorFrame(monitor)
-  if (!frame) return undefined
-  return {
-    height: frame.height,
-    width: frame.width,
-    x: frame.left,
-    y: frame.top,
-  }
-}
-
-function hyprlandMonitorFrame(monitor: unknown) {
-  if (!monitor || typeof monitor !== "object") return undefined
-  const record = monitor as Record<string, unknown>
-  const x = numberValue(record.x)
-  const y = numberValue(record.y)
-  const width = numberValue(record.width)
-  const height = numberValue(record.height)
-  if (
-    x === undefined ||
-    y === undefined ||
-    width === undefined ||
-    height === undefined
-  )
-    return undefined
-  const reserved = Array.isArray(record.reserved) ? record.reserved : []
-  const left = numberValue(reserved[0]) ?? 0
-  const top = numberValue(reserved[1]) ?? 0
-  const right = numberValue(reserved[2]) ?? 0
-  const bottom = numberValue(reserved[3]) ?? 0
-  return {
-    height: Math.max(1, height - top - bottom),
-    left,
-    top,
-    width: Math.max(1, width - left - right),
-    x: x + left,
-    y: y + top,
-  }
-}
-
-function centerBoundsInArea(
-  bounds: { height: number; width: number },
-  area: WindowBounds
-) {
-  const width = Math.min(bounds.width, area.width)
-  const height = Math.min(bounds.height, area.height)
-  const x = area.x + Math.round((area.width - width) / 2)
-  const y = area.y + Math.round((area.height - height) / 2)
-  return { height, width, x, y }
-}
-
-function hyprlandMonitorWorkspace(monitor: unknown) {
-  if (!monitor || typeof monitor !== "object") return undefined
-  const activeWorkspace = (monitor as Record<string, unknown>).activeWorkspace
-  if (!activeWorkspace || typeof activeWorkspace !== "object") return undefined
-  const record = activeWorkspace as Record<string, unknown>
-  const id = numberValue(record.id)
-  if (id !== undefined) return id
-  return typeof record.name === "string" ? record.name : undefined
-}
-
-async function hasHyprlandWindow(title: string) {
-  const output = await execFileOutput("hyprctl", ["clients", "-j"])
-  if (output === null) return false
-  try {
-    const clients = JSON.parse(output)
-    return (
-      Array.isArray(clients) &&
-      clients.some((client) => hyprlandClientTitle(client) === title)
-    )
-  } catch {
-    return false
-  }
-}
-
-function hyprlandClientTitle(client: unknown) {
-  if (!client || typeof client !== "object") return undefined
-  return (client as Record<string, unknown>).title
-}
-
-async function dispatchHyprland(dispatcher: string) {
-  return (await execFileOutput("hyprctl", ["dispatch", dispatcher])) !== null
-}
-
-function execFileOutputSync(command: string, args: string[]) {
-  try {
-    return execFileSync(command, args, {
-      encoding: "utf8",
-      timeout: 500,
-    })
-  } catch {
-    return null
-  }
-}
-
-function execFileOutput(command: string, args: string[]) {
-  return new Promise<string | null>((resolve) => {
-    execFile(command, args, (error, stdout) => {
-      resolve(error ? null : String(stdout))
-    })
-  })
-}
-
-function numberValue(value: unknown) {
-  return typeof value === "number" && Number.isFinite(value) ? value : undefined
-}
-
-function hyprlandWorkspaceValue(workspace: number | string) {
-  if (typeof workspace === "number") return String(workspace)
-  const numericWorkspace = Number(workspace)
-  if (Number.isInteger(numericWorkspace)) return String(numericWorkspace)
-  return `"${escapedLuaString(workspace)}"`
-}
-
-function hyprlandTitleSelector(title: string) {
-  return `title:^(${escapedHyprlandRegex(title)})$`
-}
-
-function escapedLuaString(value: string) {
-  return value.replace(/[\\"]/g, "\\$&")
-}
-
-function escapedHyprlandRegex(value: string) {
-  return value.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&")
 }
 
 function windowPresentationInput(input: unknown): input is {
