@@ -18,6 +18,7 @@ import {
 } from "electron"
 import { registerAgentIpcHandlers, shutdownAgentRuntime } from "./agent-ipc"
 import { registerBacklogStatusPipIpcHandlers } from "./backlog-status-pip-ipc"
+import { desktopAppIdentity } from "./desktop-app-identity"
 import { attachLiveLogWindow, registerLiveLogCapture } from "./desktop-live-log"
 import { checkForUpdatesOnStartup, registerDesktopUpdateIpcHandlers } from "./desktop-update-ipc"
 import {
@@ -39,7 +40,6 @@ const currentDirectory = dirname(fileURLToPath(import.meta.url))
 const shutdownTimeoutMs = 4_000
 const defaultWindowWidth = 1440
 const defaultWindowHeight = 900
-const appWindowTitle = "Blame"
 const appMinWindowWidth = 960
 const appMinWindowHeight = 640
 const freeWindowMaxSize = 100000
@@ -62,9 +62,10 @@ try {
   process.chdir(homedir())
 } catch {}
 
-app.setName("Blame")
-app.setAppUserModelId("dev.blame.desktop")
-app.setPath("userData", join(app.getPath("appData"), "dev.blame.desktop"))
+const appIdentity = desktopAppIdentity(app.isPackaged)
+app.setName(appIdentity.name)
+app.setAppUserModelId(appIdentity.appId)
+app.setPath("userData", join(app.getPath("appData"), appIdentity.appId))
 enablePreviewDevtools()
 registerLiveLogCapture()
 
@@ -141,7 +142,7 @@ function createMainWindow() {
     width: bounds.width,
     height: bounds.height,
     show: false,
-    title: "Blame",
+    title: appIdentity.name,
     autoHideMenuBar: true,
     backgroundColor: "#00000000",
     frame: false,
@@ -310,7 +311,7 @@ function setOnboardingWindowPresentation(
 }
 
 function setAppWindowPresentation(window: BrowserWindow) {
-  window.setTitle(appWindowTitle)
+  window.setTitle(appIdentity.name)
   window.setResizable(true)
   window.setMaximumSize(freeWindowMaxSize, freeWindowMaxSize)
   window.setMinimumSize(appMinWindowWidth, appMinWindowHeight)
