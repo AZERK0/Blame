@@ -1,4 +1,6 @@
 import { AppLink } from "@/components/navigation/app-link"
+import { quickChatSelectedEvent } from "@/components/chat/data/quick-chat-data"
+import { useQuickChatStore } from "@/components/chat/data/quick-chat-store"
 import { QuickChatHistory } from "@/components/sidebar/quick-chat-history"
 import {
   SidebarGroup,
@@ -22,6 +24,8 @@ export function NavMain({
   label?: string
   pathname: string
 }) {
+  const quickChats = useQuickChatStore()
+
   return (
     <SidebarGroup>
       {label ? <SidebarGroupLabel>{label}</SidebarGroupLabel> : null}
@@ -32,14 +36,26 @@ export function NavMain({
               <SidebarMenuButton
                 asChild
                 tooltip={item.title}
-                isActive={pathname === item.url}
+                isActive={
+                  pathname === item.url &&
+                  (item.url !== "/chats" || !quickChats.activeId)
+                }
               >
-                <AppLink href={item.url}>
+                <AppLink
+                  href={item.url}
+                  onClick={() => {
+                    if (item.url !== "/chats") return
+                    quickChats.setActiveId(undefined)
+                    window.dispatchEvent(new Event(quickChatSelectedEvent))
+                  }}
+                >
                   {item.icon}
                   <span>{item.title}</span>
                 </AppLink>
               </SidebarMenuButton>
-              {item.url === "/chats" ? <QuickChatHistory /> : null}
+              {item.url === "/chats" ? (
+                <QuickChatHistory pathname={pathname} />
+              ) : null}
             </SidebarMenuItem>
           ))}
         </SidebarMenu>

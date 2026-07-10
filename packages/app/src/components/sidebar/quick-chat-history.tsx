@@ -27,7 +27,7 @@ import {
 
 const chatPageSize = 5
 
-export function QuickChatHistory() {
+export function QuickChatHistory({ pathname }: { pathname: string }) {
   const quickChats = useQuickChatStore()
   const [pagination, setPagination] = React.useState({
     count: chatPageSize,
@@ -85,9 +85,10 @@ export function QuickChatHistory() {
           <SidebarMenuSubItem className="group/chat" key={chat.id}>
             <SidebarMenuButton
               asChild
-              className="h-7 pr-11 pl-2 text-xs"
-              isActive={quickChats.activeId === chat.id}
-              size="sm"
+              className="h-8 pr-12 pl-2 text-sm"
+              isActive={
+                pathname === "/chats" && quickChats.activeId === chat.id
+              }
               tooltip={chat.title}
             >
               <AppLink
@@ -101,27 +102,21 @@ export function QuickChatHistory() {
               </AppLink>
             </SidebarMenuButton>
             <time
-              className={`pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-[10px] leading-none text-muted-foreground tabular-nums transition-opacity ${
-                chat.agentStatus === "Running"
-                  ? ""
-                  : "group-focus-within/chat:opacity-0 group-hover/chat:opacity-0"
-              }`}
+              className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-xs leading-none text-muted-foreground tabular-nums transition-opacity group-focus-within/chat:opacity-0 group-hover/chat:opacity-0"
               dateTime={chat.updatedAt ?? chat.createdAt}
               title={exactTimeLabel(chat.updatedAt ?? chat.createdAt)}
             >
               {relativeTimeLabel(chat.updatedAt ?? chat.createdAt)}
             </time>
-            {chat.agentStatus !== "Running" ? (
-              <button
-                aria-label={`Delete ${chat.title}`}
-                className="absolute top-1/2 right-1 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity outline-none group-focus-within/chat:opacity-100 group-hover/chat:opacity-100 hover:bg-destructive/10 hover:text-destructive focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-sidebar-ring"
-                onClick={() => setChatToDelete(chat)}
-                title={`Delete ${chat.title}`}
-                type="button"
-              >
-                <XIcon className="size-3.5" />
-              </button>
-            ) : null}
+            <button
+              aria-label={`Delete ${chat.title}`}
+              className="absolute top-1/2 right-1 flex size-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity outline-none group-focus-within/chat:opacity-100 group-hover/chat:opacity-100 hover:bg-destructive/10 hover:text-destructive focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+              onClick={() => setChatToDelete(chat)}
+              title={`Delete ${chat.title}`}
+              type="button"
+            >
+              <XIcon className="size-4" />
+            </button>
           </SidebarMenuSubItem>
         ))}
         {chats.length > chatPageSize ? (
