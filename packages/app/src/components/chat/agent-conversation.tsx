@@ -136,6 +136,7 @@ export function AgentConversationTimeline({
           key={run.id}
           checkpointRunCount={index + 1}
           comment={runComment(run, commentsById)}
+          highlightFinalResponse={index === runs.length - 1}
           lastVisibleMessage={lastVisibleMessage}
           onFileLinkClick={onFileLinkClick}
           onLoadActivityDetail={(activity) => loadActivityDetail(run, activity)}
@@ -151,6 +152,7 @@ export function AgentConversationTimeline({
 function AgentConversationTurn({
   checkpointRunCount,
   comment,
+  highlightFinalResponse,
   lastVisibleMessage,
   onFileLinkClick,
   onLoadActivityDetail,
@@ -160,6 +162,7 @@ function AgentConversationTurn({
 }: {
   checkpointRunCount: number
   comment?: AgentConversationComment
+  highlightFinalResponse: boolean
   lastVisibleMessage?: AgentConversationVisibleMessage
   onFileLinkClick?: (path: string) => void
   onLoadActivityDetail: (activity: UserStoryAgentActivity) => Promise<string>
@@ -222,6 +225,7 @@ function AgentConversationTurn({
               />
             }
             createdAt={visibleResponse.createdAt}
+            highlight={highlightFinalResponse && Boolean(finalMessage)}
             markdown={visibleResponse.detail}
             onFileLinkClick={onFileLinkClick}
             showFeedback={Boolean(finalMessage)}
@@ -853,6 +857,7 @@ function AgentMarkdownTimelineItem({
   alwaysVisible,
   avatar,
   createdAt,
+  highlight,
   markdown,
   onFileLinkClick,
   showFeedback,
@@ -860,6 +865,7 @@ function AgentMarkdownTimelineItem({
   alwaysVisible: boolean
   avatar?: React.ReactNode
   createdAt: string
+  highlight: boolean
   markdown: string
   onFileLinkClick?: (path: string) => void
   showFeedback?: boolean
@@ -868,7 +874,12 @@ function AgentMarkdownTimelineItem({
     <div className="group/message relative min-w-0" data-agent-response>
       {avatar ? <div className="absolute top-0 -left-10">{avatar}</div> : null}
       <div className="grid min-w-0 gap-2">
-        <div className="min-w-0 [&>div]:bg-transparent [&>div]:p-0 [&>div]:shadow-none [&>div]:ring-0">
+        <div
+          className={cn(
+            "min-w-0 [&>div]:bg-transparent [&>div]:p-0 [&>div]:shadow-none [&>div]:ring-0",
+            highlight && "agent-response-effect"
+          )}
+        >
           <MarkdownEditor
             markdown={markdown}
             readOnly
