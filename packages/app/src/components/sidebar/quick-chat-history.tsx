@@ -25,12 +25,13 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
 
-const chatPageSize = 5
+const initialChatCount = 3
+const chatPageStep = 5
 
 export function QuickChatHistory({ pathname }: { pathname: string }) {
   const quickChats = useQuickChatStore()
   const [pagination, setPagination] = React.useState({
-    count: chatPageSize,
+    count: initialChatCount,
     projectId: quickChats.projectId,
   })
   const [chatToDelete, setChatToDelete] = React.useState<QuickChat | null>(null)
@@ -42,7 +43,7 @@ export function QuickChatHistory({ pathname }: { pathname: string }) {
   const visibleCount =
     pagination.projectId === quickChats.projectId
       ? pagination.count
-      : chatPageSize
+      : initialChatCount
   const visibleChats = chats.slice(0, visibleCount)
 
   function setVisibleCount(update: (current: number) => number) {
@@ -119,14 +120,14 @@ export function QuickChatHistory({ pathname }: { pathname: string }) {
             </button>
           </SidebarMenuSubItem>
         ))}
-        {chats.length > chatPageSize ? (
+        {chats.length > initialChatCount ? (
           <SidebarMenuSubItem className="flex items-center gap-1 px-1 pt-1">
             {visibleCount < chats.length ? (
               <button
                 className="rounded px-1.5 py-1 text-[11px] font-medium text-muted-foreground outline-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring"
                 onClick={() =>
                   setVisibleCount((current) =>
-                    Math.min(current + chatPageSize, chats.length)
+                    Math.min(current + chatPageStep, chats.length)
                   )
                 }
                 type="button"
@@ -134,12 +135,12 @@ export function QuickChatHistory({ pathname }: { pathname: string }) {
                 Show more
               </button>
             ) : null}
-            {visibleCount > chatPageSize ? (
+            {visibleCount > initialChatCount ? (
               <button
                 className="rounded px-1.5 py-1 text-[11px] font-medium text-muted-foreground outline-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring"
                 onClick={() =>
                   setVisibleCount((current) =>
-                    Math.max(chatPageSize, current - chatPageSize)
+                    Math.max(initialChatCount, current - chatPageStep)
                   )
                 }
                 type="button"
