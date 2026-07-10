@@ -123,6 +123,10 @@ export function AgentConversationTimeline({
     () => lastAgentConversationVisibleMessage(runs, commentsById),
     [commentsById, runs]
   )
+  const highlightedFinalResponseRunId = React.useMemo(
+    () => lastFinalResponseRunId(runs),
+    [runs]
+  )
 
   if (runs.length === 0) return null
 
@@ -136,7 +140,7 @@ export function AgentConversationTimeline({
           key={run.id}
           checkpointRunCount={index + 1}
           comment={runComment(run, commentsById)}
-          highlightFinalResponse={index === runs.length - 1}
+          highlightFinalResponse={run.id === highlightedFinalResponseRunId}
           lastVisibleMessage={lastVisibleMessage}
           onFileLinkClick={onFileLinkClick}
           onLoadActivityDetail={(activity) => loadActivityDetail(run, activity)}
@@ -764,6 +768,21 @@ function lastAgentConversationVisibleMessage(
     }
   }
   return lastMessage
+}
+
+function lastFinalResponseRunId(runs: AgentConversationRun[]) {
+  return [...runs]
+    .reverse()
+    .find((run) =>
+      agentDisplayActivities(
+        run.activities ?? [],
+        run.finalResponse,
+        run.status
+      ).some(
+        (activity) =>
+          activity.kind === "message" && activity.messageKind === "final"
+      )
+    )?.id
 }
 
 function agentThinkingVisible(
