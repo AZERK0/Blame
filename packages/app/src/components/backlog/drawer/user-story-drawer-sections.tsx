@@ -203,7 +203,6 @@ function UserStoryCommentComposer({
       onMessageSubmit={onCommentSubmit}
       placeholder={commentPlaceholder(status)}
       submitLabel={commentButtonLabel(status)}
-      title="Add a comment"
     />
   )
 }
@@ -215,7 +214,7 @@ function commentPlaceholder(status: BacklogColumnId) {
 
 function fixedSectionClassName(commentComposerVisible: boolean) {
   if (commentComposerVisible) {
-    return "pointer-events-auto relative -mx-6 px-6 pt-10 pb-6"
+    return "pointer-events-auto relative -mx-6 px-6 pt-4 pb-6"
   }
   return "pointer-events-auto relative -mx-6 px-6 pt-6 pb-6"
 }
