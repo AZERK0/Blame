@@ -104,6 +104,15 @@ import { showSystemNotification } from "@/lib/system-notifications"
 import { cn } from "@/lib/utils"
 
 const agentEventPersistDelayMs = 1_500
+const topStrongBlurMask = {
+  maskImage: "linear-gradient(to bottom, black 0%, transparent 72%)",
+  WebkitMaskImage: "linear-gradient(to bottom, black 0%, transparent 72%)",
+} satisfies React.CSSProperties
+const bottomBlurMask = {
+  maskImage: "linear-gradient(to top, black 0%, black 60%, transparent 100%)",
+  WebkitMaskImage:
+    "linear-gradient(to top, black 0%, black 60%, transparent 100%)",
+} satisfies React.CSSProperties
 
 type QuickChatDevelopmentSessionInput = {
   codeAttachments: PendingCodeSelectionAttachment[]
@@ -702,8 +711,12 @@ function QuickChatProjectPage() {
           )}
         >
           <main className="relative flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border bg-background/70">
-            <div className="z-20 border-b bg-background/95 backdrop-blur-sm">
-              <div>
+            <div className="pointer-events-none absolute inset-x-0 top-0 z-20 pb-10 md:pb-12">
+              <div
+                className="absolute inset-0 backdrop-blur-xl"
+                style={topStrongBlurMask}
+              />
+              <div className="pointer-events-auto relative">
                 <QuickChatHeader
                   activeId={activeConversation?.id}
                   branchName={branchName}
@@ -721,7 +734,7 @@ function QuickChatProjectPage() {
                 <MessageScrollerViewport>
                   <MessageScrollerContent
                     aria-busy={agentRunning}
-                    className="mx-auto w-full max-w-4xl gap-10 px-4 py-8 md:px-8 md:py-12"
+                    className="mx-auto w-full max-w-4xl gap-10 px-4 pt-24 pb-48 md:px-8 md:pt-28"
                   >
                     <QuickChatStatus
                       error={quickChats.error}
@@ -755,52 +768,60 @@ function QuickChatProjectPage() {
                     ) : null}
                   </MessageScrollerContent>
                 </MessageScrollerViewport>
-                <MessageScrollerButton />
+                <MessageScrollerButton className="bottom-40 md:bottom-44" />
               </MessageScroller>
             </MessageScrollerProvider>
-            <div className="relative z-20 -mt-24 bg-[linear-gradient(to_bottom,transparent_0%,var(--background)_5rem,var(--background)_100%)] px-3 pt-28 pb-3 md:px-5 md:pt-32 md:pb-5">
-              <div className="mx-auto max-w-4xl">
-                <AgentConversationComposer
-                  codeSelectionAttachments={draftCodeAttachments}
-                  disabled={sending || agentRunning || !project}
-                  editorKey={draftEditorKey}
-                  editorRef={draftRef}
-                  fileAttachments={pendingFileAttachments(draftFileAttachments)}
-                  mentionDirectory={mentionDirectory}
-                  message={draft}
-                  onCodeSelectionAttachmentRemove={(id) =>
-                    setDraftCodeAttachments((current) =>
-                      current.filter((attachment) => attachment.id !== id)
-                    )
-                  }
-                  onFileAttachmentRemove={(id) =>
-                    setDraftFileAttachments((current) =>
-                      current.filter((attachment) => attachment.id !== id)
-                    )
-                  }
-                  onFileAttachmentsAdd={(attachments) =>
-                    setDraftFileAttachments((current) => [
-                      ...current,
-                      ...attachments,
-                    ])
-                  }
-                  onFileLinkClick={(path) =>
-                    openProjectPath(project?.path, path, platform.openPath)
-                  }
-                  onMessageChange={setDraft}
-                  onMessageSubmit={submitDraft}
-                  placeholder={
-                    agentRunning
-                      ? "Agent is working in the current branch."
-                      : "Ask for a focused code change"
-                  }
-                  submitLabel={agentRunning ? "Running" : "Send"}
-                  toolbarEnd={
-                    <div className="w-[28rem] max-w-full min-w-0">
-                      <ModelSelector role="agent" />
-                    </div>
-                  }
-                />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 pt-10 md:pt-12">
+              <div
+                className="absolute inset-0 bg-background/40 backdrop-blur-xl"
+                style={bottomBlurMask}
+              />
+              <div className="pointer-events-auto relative px-3 pb-3 md:px-5 md:pb-5">
+                <div className="mx-auto max-w-4xl">
+                  <AgentConversationComposer
+                    codeSelectionAttachments={draftCodeAttachments}
+                    disabled={sending || agentRunning || !project}
+                    editorKey={draftEditorKey}
+                    editorRef={draftRef}
+                    fileAttachments={pendingFileAttachments(
+                      draftFileAttachments
+                    )}
+                    mentionDirectory={mentionDirectory}
+                    message={draft}
+                    onCodeSelectionAttachmentRemove={(id) =>
+                      setDraftCodeAttachments((current) =>
+                        current.filter((attachment) => attachment.id !== id)
+                      )
+                    }
+                    onFileAttachmentRemove={(id) =>
+                      setDraftFileAttachments((current) =>
+                        current.filter((attachment) => attachment.id !== id)
+                      )
+                    }
+                    onFileAttachmentsAdd={(attachments) =>
+                      setDraftFileAttachments((current) => [
+                        ...current,
+                        ...attachments,
+                      ])
+                    }
+                    onFileLinkClick={(path) =>
+                      openProjectPath(project?.path, path, platform.openPath)
+                    }
+                    onMessageChange={setDraft}
+                    onMessageSubmit={submitDraft}
+                    placeholder={
+                      agentRunning
+                        ? "Agent is working in the current branch."
+                        : "Ask for a focused code change"
+                    }
+                    submitLabel={agentRunning ? "Running" : "Send"}
+                    toolbarEnd={
+                      <div className="w-[28rem] max-w-full min-w-0">
+                        <ModelSelector role="agent" />
+                      </div>
+                    }
+                  />
+                </div>
               </div>
             </div>
           </main>

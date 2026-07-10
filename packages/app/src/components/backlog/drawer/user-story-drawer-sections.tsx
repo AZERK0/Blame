@@ -31,6 +31,12 @@ import {
 import { useProjects } from "@/context/projects"
 import { useCloudAuth } from "@/context/cloud-auth"
 
+const commentComposerBlurMask = {
+  maskImage: "linear-gradient(to top, black 0%, black 60%, transparent 100%)",
+  WebkitMaskImage:
+    "linear-gradient(to top, black 0%, black 60%, transparent 100%)",
+} satisfies React.CSSProperties
+
 type UserStoryCommentComposerProps = {
   commentCodeSelectionAttachments: PendingCodeSelectionAttachment[]
   commentFileAttachments: PendingFileAttachment[]
@@ -145,12 +151,19 @@ export function UserStoryFixedSection({
 
   return (
     <div className={fixedSectionClassName(commentComposerVisible)}>
-      <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_0%,var(--background)_5rem,var(--background)_100%)]" />
-      <div className="relative grid gap-3 pt-4">
+      <div
+        className="pointer-events-none absolute inset-0 bg-background/40 backdrop-blur-xl"
+        style={commentComposerBlurMask}
+      />
+      <div className="relative grid gap-3">
         {commentComposerVisible ? (
-          <UserStoryCommentComposer {...commentComposerProps} />
+          <div className="mx-auto w-full max-w-4xl">
+            <UserStoryCommentComposer {...commentComposerProps} />
+          </div>
         ) : null}
-        {actions ? <div className="flex justify-end">{actions}</div> : null}
+        {actions ? (
+          <div className="flex w-full justify-end">{actions}</div>
+        ) : null}
       </div>
     </div>
   )
@@ -202,7 +215,7 @@ function commentPlaceholder(status: BacklogColumnId) {
 
 function fixedSectionClassName(commentComposerVisible: boolean) {
   if (commentComposerVisible) {
-    return "pointer-events-auto relative -mx-6 -mt-20 px-6 pt-24 pb-6"
+    return "pointer-events-auto relative -mx-6 px-6 pt-10 pb-6"
   }
   return "pointer-events-auto relative -mx-6 px-6 pt-6 pb-6"
 }

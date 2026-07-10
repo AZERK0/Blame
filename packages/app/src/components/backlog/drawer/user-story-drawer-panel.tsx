@@ -708,7 +708,7 @@ function DrawerBody({
   const fixedSectionClassName = sidebarOpen
     ? "pointer-events-none absolute right-0 bottom-0 left-0 z-20 lg:right-[26rem]"
     : "pointer-events-none absolute right-0 bottom-0 left-0 z-20"
-  const fixedSectionContentClassName = "mx-auto max-w-4xl px-6"
+  const fixedSectionContentClassName = "w-full px-6"
 
   return (
     <div className="relative h-full min-h-0 overflow-hidden">
