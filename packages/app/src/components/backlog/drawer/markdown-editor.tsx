@@ -751,8 +751,8 @@ function MarkdownPreviewTableRow({
 
 function MarkdownPreviewCode({ code }: { code: string }) {
   return (
-    <pre className="max-w-full overflow-x-auto rounded-lg border bg-muted/50 px-3 py-2 font-mono text-xs leading-relaxed text-foreground">
-      <code>{code}</code>
+    <pre className="w-full max-w-full min-w-0 overflow-x-auto rounded-lg border bg-muted/50 px-3 py-2 font-mono text-xs leading-relaxed text-foreground">
+      <code className="block w-max min-w-full">{code}</code>
     </pre>
   )
 }
@@ -971,7 +971,8 @@ export const MarkdownEditor = React.forwardRef<
   const textareaRef = React.useRef<HTMLTextAreaElement>(null)
   const [draftMarkdown, setDraftMarkdown] = React.useState(markdown)
   const [optimizing, setOptimizing] = React.useState(false)
-  const [optimizingAttachments, setOptimizingAttachments] = React.useState(false)
+  const [optimizingAttachments, setOptimizingAttachments] =
+    React.useState(false)
   const [optimizeAttachmentsForAiContext, setOptimizeAttachmentsForAiContext] =
     React.useState(true)
   const [mode, setMode] = React.useState<MarkdownMode>("write")
@@ -1274,7 +1275,7 @@ export const MarkdownEditor = React.forwardRef<
             if (typeof ref === "function") ref(element)
             else if (ref) ref.current = element
           }}
-          className="max-w-full min-w-0 overflow-hidden rounded-3xl bg-muted/50 p-1 transition-colors dark:bg-muted/50 shadow-xl shadow-black/10 ring-1 ring-foreground/20"
+          className="max-w-full min-w-0 overflow-hidden rounded-3xl bg-muted/50 p-1 shadow-xl ring-1 shadow-black/10 ring-foreground/20 transition-colors dark:bg-muted/50"
           onBlur={() => requestAnimationFrame(() => updateMention())}
           onKeyDownCapture={handleKeyDown}
           onPaste={handlePaste}
@@ -1416,10 +1417,7 @@ export const MarkdownEditor = React.forwardRef<
                     <TabsTrigger className="h-7 px-3 text-xs" value="write">
                       Write
                     </TabsTrigger>
-                    <TabsTrigger
-                      className="h-7 px-3 text-xs"
-                      value="preview"
-                    >
+                    <TabsTrigger className="h-7 px-3 text-xs" value="preview">
                       Preview
                     </TabsTrigger>
                   </TabsList>

@@ -61,6 +61,13 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer"
 import { Input } from "@/components/ui/input"
+import {
+  MessageScroller,
+  MessageScrollerButton,
+  MessageScrollerContent,
+  MessageScrollerProvider,
+  MessageScrollerViewport,
+} from "@/components/ui/message-scroller"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
@@ -382,6 +389,10 @@ export function UserStoryDrawerPanel({
         </DrawerHeader>
         <TabsContent value="user-story" className="min-h-0 overflow-hidden">
           <DrawerBody
+            messageButtonClassName={
+              mode === "create" ? "bottom-32" : "bottom-72"
+            }
+            resetKey={userStory?.id ?? mode}
             fixedSection={
               <UserStoryFixedSection
                 actions={drawerActionButtons}
@@ -420,7 +431,6 @@ export function UserStoryDrawerPanel({
                 userStory={userStory}
               />
             }
-            footerScrollbarOffset={mode === "create" ? "actions" : "comment"}
             headerTabsVisible={hasDevelopment}
             sidebarOpen={sidebarAvailable && sidebarOpen}
           >
@@ -676,24 +686,19 @@ function DrawerHeaderTitle({
 function DrawerBody({
   children,
   fixedSection,
-  footerScrollbarOffset,
   headerTabsVisible,
+  messageButtonClassName,
+  resetKey,
   sidebarOpen,
 }: {
   children: React.ReactNode
   fixedSection?: React.ReactNode
-  footerScrollbarOffset: "actions" | "comment"
   headerTabsVisible: boolean
+  messageButtonClassName: string
+  resetKey: string
   sidebarOpen: boolean
 }) {
   const topPaddingClassName = headerTabsVisible ? "pt-36" : "pt-28"
-  const scrollbarTopClassName = headerTabsVisible
-    ? "[&_[data-slot=scroll-area-scrollbar]]:!top-36"
-    : "[&_[data-slot=scroll-area-scrollbar]]:!top-28"
-  const scrollbarBottomClassName =
-    footerScrollbarOffset === "comment"
-      ? "[&_[data-slot=scroll-area-scrollbar]]:!bottom-64"
-      : "[&_[data-slot=scroll-area-scrollbar]]:!bottom-28"
   const contentClassName = sidebarOpen
     ? cn(
         "mx-auto flex max-w-5xl flex-col gap-6 px-6 pb-28 lg:mx-0 lg:mr-[26rem]",
@@ -703,22 +708,22 @@ function DrawerBody({
   const fixedSectionClassName = sidebarOpen
     ? "pointer-events-none absolute right-0 bottom-0 left-0 z-20 lg:right-[26rem]"
     : "pointer-events-none absolute right-0 bottom-0 left-0 z-20"
-  const fixedSectionContentClassName = sidebarOpen
-    ? "mx-auto max-w-5xl px-6 lg:mx-0"
-    : "px-6"
+  const fixedSectionContentClassName = "mx-auto max-w-4xl px-6"
 
   return (
     <div className="relative h-full min-h-0 overflow-hidden">
-      <ScrollArea
-        className={cn(
-          "h-full min-h-0",
-          "[&_[data-slot=scroll-area-scrollbar]]:!h-auto",
-          scrollbarTopClassName,
-          scrollbarBottomClassName
-        )}
-      >
-        <div className={contentClassName}>{children}</div>
-      </ScrollArea>
+      <MessageScrollerProvider key={resetKey}>
+        <MessageScroller className="h-full">
+          <MessageScrollerViewport aria-label="User story details">
+            <MessageScrollerContent className={contentClassName} role="group">
+              {children}
+            </MessageScrollerContent>
+          </MessageScrollerViewport>
+          <MessageScrollerButton
+            className={cn("right-6 z-30", messageButtonClassName)}
+          />
+        </MessageScroller>
+      </MessageScrollerProvider>
       {fixedSection ? (
         <div className={fixedSectionClassName}>
           <div className={fixedSectionContentClassName}>{fixedSection}</div>

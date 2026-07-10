@@ -223,6 +223,14 @@
     -webkit-background-clip: text;
   }
 
+  @media (prefers-reduced-motion: reduce) {
+    .agent-activity-running,
+    .agent-thinking-mark,
+    .agent-thinking-text {
+      animation: none;
+    }
+  }
+
   .user-story-title-cloud {
     position: relative;
     display: inline-block;

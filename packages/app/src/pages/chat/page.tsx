@@ -87,30 +87,23 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu"
+import {
+  MessageScroller,
+  MessageScrollerButton,
+  MessageScrollerContent,
+  MessageScrollerProvider,
+  MessageScrollerViewport,
+} from "@/components/ui/message-scroller"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import { useProjectInitialization } from "@/components/project-initialization/use-project-initialization"
-import { useScrollMagnet } from "@/hooks/use-scroll-magnet"
 import { projectCodePractices } from "@/lib/project-code-practices"
 import { showSystemNotification } from "@/lib/system-notifications"
 import { cn } from "@/lib/utils"
 
 const agentEventPersistDelayMs = 1_500
-const topStrongBlurMask = {
-  maskImage: "linear-gradient(to bottom, black 0%, transparent 72%)",
-  WebkitMaskImage: "linear-gradient(to bottom, black 0%, transparent 72%)",
-} satisfies React.CSSProperties
-const bottomSoftBlurMask = {
-  maskImage: "linear-gradient(to top, black 0%, black 60%, transparent 100%)",
-  WebkitMaskImage:
-    "linear-gradient(to top, black 0%, black 60%, transparent 100%)",
-} satisfies React.CSSProperties
-const bottomStrongBlurMask = {
-  maskImage: "linear-gradient(to top, black 0%, transparent 72%)",
-  WebkitMaskImage: "linear-gradient(to top, black 0%, transparent 72%)",
-} satisfies React.CSSProperties
 
 type QuickChatDevelopmentSessionInput = {
   codeAttachments: PendingCodeSelectionAttachment[]
@@ -179,7 +172,6 @@ function QuickChatProjectPage() {
     new Map<string, PendingQuickChatAgentUpdate>()
   )
   const draftRef = React.useRef<HTMLDivElement>(null)
-  const feedEndRef = React.useRef<HTMLDivElement>(null)
   const activeConversation = newConversationActive
     ? undefined
     : quickChats.activeChat
@@ -192,7 +184,6 @@ function QuickChatProjectPage() {
       selection.currentModel?.provider.id,
     providers: selection.allProviders,
   })
-  const conversationScrollKey = quickChatScrollKey(activeConversation)
   const branchName = gitStatus?.branch.current ?? "Current branch"
   const mentionDirectory = project?.path
   const agentRunning = activeConversation?.agentStatus === "Running"
@@ -224,12 +215,6 @@ function QuickChatProjectPage() {
     const updates = pendingAgentUpdates.current
     return () => clearPendingQuickChatAgentUpdates(updates)
   }, [])
-
-  useScrollMagnet(
-    feedEndRef,
-    conversationScrollKey,
-    activeConversation?.id ?? "new"
-  )
 
   React.useEffect(() => {
     const addAttachment = (event: Event) => {
@@ -716,13 +701,9 @@ function QuickChatProjectPage() {
             "xl:grid-cols-[minmax(0,1fr)_18rem]"
           )}
         >
-          <main className="relative flex min-h-0 min-w-0 flex-col overflow-hidden">
-            <div className="pointer-events-none absolute top-0 right-3 left-0 z-20 pb-10 md:pb-12">
-              <div
-                className="absolute inset-0 backdrop-blur-xl"
-                style={topStrongBlurMask}
-              />
-              <div className="pointer-events-auto relative">
+          <main className="relative flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border bg-background/70">
+            <div className="z-20 border-b bg-background/95 backdrop-blur-sm">
+              <div>
                 <QuickChatHeader
                   activeId={activeConversation?.id}
                   branchName={branchName}
@@ -735,92 +716,91 @@ function QuickChatProjectPage() {
                 />
               </div>
             </div>
-            <ScrollArea className="min-h-0 flex-1">
-              <div className="mx-auto grid w-full max-w-5xl gap-10 px-4 pt-24 pb-48 md:px-8 md:pt-28">
-                <QuickChatStatus
-                  error={quickChats.error}
-                  loading={quickChats.loading || !activeConversationLoaded}
-                  projectPath={project?.path}
+            <MessageScrollerProvider key={activeConversation?.id ?? "new-chat"}>
+              <MessageScroller>
+                <MessageScrollerViewport>
+                  <MessageScrollerContent
+                    aria-busy={agentRunning}
+                    className="mx-auto w-full max-w-4xl gap-10 px-4 py-8 md:px-8 md:py-12"
+                  >
+                    <QuickChatStatus
+                      error={quickChats.error}
+                      loading={quickChats.loading || !activeConversationLoaded}
+                      projectPath={project?.path}
+                    />
+                    {activeConversationLoaded &&
+                    activeConversation?.agentRuns?.length ? (
+                      <AgentConversationTimeline
+                        comments={activeConversation.messages ?? []}
+                        onFileLinkClick={(path) =>
+                          openProjectPath(
+                            project?.path,
+                            path,
+                            platform.openPath
+                          )
+                        }
+                        onLoadActivityDetail={(run, activity) =>
+                          quickChats.agentRunActivityDetail(
+                            activeConversation,
+                            run,
+                            activity
+                          )
+                        }
+                        onUserMessageUndo={undoQuickChatMessage}
+                        responseHeader={responseHeader}
+                        runs={activeConversation.agentRuns}
+                      />
+                    ) : activeConversationLoaded ? (
+                      <QuickChatEmptyState />
+                    ) : null}
+                  </MessageScrollerContent>
+                </MessageScrollerViewport>
+                <MessageScrollerButton />
+              </MessageScroller>
+            </MessageScrollerProvider>
+            <div className="relative z-20 -mt-24 bg-[linear-gradient(to_bottom,transparent_0%,var(--background)_5rem,var(--background)_100%)] px-3 pt-28 pb-3 md:px-5 md:pt-32 md:pb-5">
+              <div className="mx-auto max-w-4xl">
+                <AgentConversationComposer
+                  codeSelectionAttachments={draftCodeAttachments}
+                  disabled={sending || agentRunning || !project}
+                  editorKey={draftEditorKey}
+                  editorRef={draftRef}
+                  fileAttachments={pendingFileAttachments(draftFileAttachments)}
+                  mentionDirectory={mentionDirectory}
+                  message={draft}
+                  onCodeSelectionAttachmentRemove={(id) =>
+                    setDraftCodeAttachments((current) =>
+                      current.filter((attachment) => attachment.id !== id)
+                    )
+                  }
+                  onFileAttachmentRemove={(id) =>
+                    setDraftFileAttachments((current) =>
+                      current.filter((attachment) => attachment.id !== id)
+                    )
+                  }
+                  onFileAttachmentsAdd={(attachments) =>
+                    setDraftFileAttachments((current) => [
+                      ...current,
+                      ...attachments,
+                    ])
+                  }
+                  onFileLinkClick={(path) =>
+                    openProjectPath(project?.path, path, platform.openPath)
+                  }
+                  onMessageChange={setDraft}
+                  onMessageSubmit={submitDraft}
+                  placeholder={
+                    agentRunning
+                      ? "Agent is working in the current branch."
+                      : "Ask for a focused code change"
+                  }
+                  submitLabel={agentRunning ? "Running" : "Send"}
+                  toolbarEnd={
+                    <div className="w-[28rem] max-w-full min-w-0">
+                      <ModelSelector role="agent" />
+                    </div>
+                  }
                 />
-                {activeConversationLoaded &&
-                activeConversation?.agentRuns?.length ? (
-                  <AgentConversationTimeline
-                    comments={activeConversation.messages ?? []}
-                    onFileLinkClick={(path) =>
-                      openProjectPath(project?.path, path, platform.openPath)
-                    }
-                    onLoadActivityDetail={(run, activity) =>
-                      quickChats.agentRunActivityDetail(
-                        activeConversation,
-                        run,
-                        activity
-                      )
-                    }
-                    onUserMessageUndo={undoQuickChatMessage}
-                    responseHeader={responseHeader}
-                    runs={activeConversation.agentRuns}
-                  />
-                ) : activeConversationLoaded ? (
-                  <QuickChatEmptyState />
-                ) : null}
-                <div ref={feedEndRef} />
-              </div>
-            </ScrollArea>
-            <div className="pointer-events-none absolute right-3 bottom-0 left-0 z-20 pt-2 md:pt-3">
-              <div
-                className="absolute inset-0 backdrop-blur-sm"
-                style={bottomSoftBlurMask}
-              />
-              <div
-                className="absolute inset-0 backdrop-blur-xl"
-                style={bottomStrongBlurMask}
-              />
-              <div className="pointer-events-auto relative p-3 md:p-5">
-                <div className="mx-auto max-w-5xl">
-                  <AgentConversationComposer
-                    codeSelectionAttachments={draftCodeAttachments}
-                    disabled={sending || agentRunning || !project}
-                    editorKey={draftEditorKey}
-                    editorRef={draftRef}
-                    fileAttachments={pendingFileAttachments(
-                      draftFileAttachments
-                    )}
-                    mentionDirectory={mentionDirectory}
-                    message={draft}
-                    onCodeSelectionAttachmentRemove={(id) =>
-                      setDraftCodeAttachments((current) =>
-                        current.filter((attachment) => attachment.id !== id)
-                      )
-                    }
-                    onFileAttachmentRemove={(id) =>
-                      setDraftFileAttachments((current) =>
-                        current.filter((attachment) => attachment.id !== id)
-                      )
-                    }
-                    onFileAttachmentsAdd={(attachments) =>
-                      setDraftFileAttachments((current) => [
-                        ...current,
-                        ...attachments,
-                      ])
-                    }
-                    onFileLinkClick={(path) =>
-                      openProjectPath(project?.path, path, platform.openPath)
-                    }
-                    onMessageChange={setDraft}
-                    onMessageSubmit={submitDraft}
-                    placeholder={
-                      agentRunning
-                        ? "Agent is working in the current branch."
-                        : "Ask for a focused code change"
-                    }
-                    submitLabel={agentRunning ? "Running" : "Send"}
-                    toolbarEnd={
-                      <div className="w-[28rem] max-w-full min-w-0">
-                        <ModelSelector role="agent" />
-                      </div>
-                    }
-                  />
-                </div>
               </div>
             </div>
           </main>
@@ -845,28 +825,6 @@ function QuickChatProjectPage() {
       />
     </>
   )
-}
-
-function quickChatScrollKey(chat: QuickChat | undefined) {
-  const run = chat?.agentRuns?.at(-1)
-  const activities = run?.activities ?? []
-  const activity = activities.at(-1)
-
-  return [
-    chat?.id ?? "new",
-    chat?.agentLastEvent?.length ?? 0,
-    chat?.messages?.length ?? 0,
-    chat?.updatedAt ?? "",
-    chat?.agentStatus ?? "",
-    run?.id ?? "",
-    run?.status ?? "",
-    run?.updatedAt ?? "",
-    run?.finalResponse?.length ?? 0,
-    activities.length,
-    activity?.id ?? "",
-    activity?.detail.length ?? 0,
-    activity?.updatedAt ?? "",
-  ].join(":")
 }
 
 function QuickChatSidePanel({

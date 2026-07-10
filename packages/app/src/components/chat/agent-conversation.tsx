@@ -96,7 +96,6 @@ export function AgentConversationTimeline({
   onLoadActivityDetail,
   responseHeader,
   runs,
-  topOffset = "default",
 }: {
   comments: AgentConversationComment[]
   onUserMessageUndo?: (
@@ -126,83 +125,111 @@ export function AgentConversationTimeline({
   )
 
   if (runs.length === 0) return null
-  const lineTop = agentConversationLineTop(topOffset)
 
   return (
-    <div className="grid gap-0">
-      <div className="relative grid gap-4">
-        <span
-          className={cn(
-            "absolute bottom-0 left-4 w-px bg-muted-foreground/35",
-            lineTop
-          )}
+    <div
+      className="grid gap-10"
+      aria-busy={runs.some((run) => run.status === "running")}
+    >
+      {runs.map((run, index) => (
+        <AgentConversationTurn
+          key={run.id}
+          checkpointRunCount={index + 1}
+          comment={runComment(run, commentsById)}
+          lastVisibleMessage={lastVisibleMessage}
+          onFileLinkClick={onFileLinkClick}
+          onLoadActivityDetail={(activity) => loadActivityDetail(run, activity)}
+          onUserMessageUndo={onUserMessageUndo}
+          responseHeader={responseHeader}
+          run={run}
         />
-        <Accordion type="multiple" className="contents">
-          {runs.map((run, index) => {
-            const activities = agentDisplayActivities(
-              run.activities ?? [],
-              run.finalResponse,
-              run.status
-            )
-            const checkpointRunCount = index + 1
-            const runningToolActivityId = currentRunningToolActivityId(
-              run.status,
-              activities
-            )
-            return (
-              <React.Fragment key={run.id}>
-                <RunCommentItem
-                  alwaysVisible={
-                    lastVisibleMessage?.type === "comment" &&
-                    lastVisibleMessage.runId === run.id
-                  }
-                  comment={runComment(run, commentsById)}
-                  run={run}
-                  onFileLinkClick={onFileLinkClick}
-                  onUndo={
-                    onUserMessageUndo
-                      ? (comment) =>
-                          onUserMessageUndo({
-                            checkpointRunCount,
-                            comment,
-                            run,
-                          })
-                      : undefined
-                  }
-                />
-                {userStoryActivityTree(activities).map((node) => (
-                  <AgentActivityItem
-                    key={`${run.id}-${node.id}`}
-                    node={node}
-                    onFileLinkClick={onFileLinkClick}
-                    onLoadDetail={(item) => loadActivityDetail(run, item)}
-                    alwaysVisibleActivityId={
-                      lastVisibleMessage?.type === "activity" &&
-                      lastVisibleMessage.runId === run.id
-                        ? lastVisibleMessage.activityId
-                        : undefined
-                    }
-                    responseHeader={responseHeader}
-                    runActive={run.status === "running"}
-                    runningToolActivityId={runningToolActivityId}
-                    value={`${run.id}-${node.id}`}
-                  />
-                ))}
-                {agentThinkingVisible(run.status, activities) ? (
-                  <AgentThinkingTimelineItem key={`${run.id}-thinking`} />
-                ) : null}
-              </React.Fragment>
-            )
-          })}
-        </Accordion>
-      </div>
+      ))}
     </div>
   )
 }
 
-function agentConversationLineTop(topOffset: "default" | "message-actions") {
-  if (topOffset === "message-actions") return "-top-[3.75rem]"
-  return "-top-6"
+function AgentConversationTurn({
+  checkpointRunCount,
+  comment,
+  lastVisibleMessage,
+  onFileLinkClick,
+  onLoadActivityDetail,
+  onUserMessageUndo,
+  responseHeader,
+  run,
+}: {
+  checkpointRunCount: number
+  comment?: AgentConversationComment
+  lastVisibleMessage?: AgentConversationVisibleMessage
+  onFileLinkClick?: (path: string) => void
+  onLoadActivityDetail: (activity: UserStoryAgentActivity) => Promise<string>
+  onUserMessageUndo?: (
+    target: AgentConversationUserMessageUndo
+  ) => Promise<void> | void
+  responseHeader: AgentConversationResponseHeader
+  run: AgentConversationRun
+}) {
+  const activities = agentDisplayActivities(
+    run.activities ?? [],
+    run.finalResponse,
+    run.status
+  )
+  const finalMessage = [...activities]
+    .reverse()
+    .find(
+      (activity) =>
+        activity.kind === "message" && activity.messageKind === "final"
+    )
+  const visibleResponse = finalMessage ?? failedRunResponse(run, activities)
+  const workActivities = visibleResponse
+    ? activities.filter((activity) => activity.id !== visibleResponse.id)
+    : activities
+
+  return (
+    <section className="grid gap-5" aria-label="Conversation turn">
+      <RunCommentItem
+        alwaysVisible={
+          lastVisibleMessage?.type === "comment" &&
+          lastVisibleMessage.runId === run.id
+        }
+        comment={comment}
+        run={run}
+        onFileLinkClick={onFileLinkClick}
+        onUndo={
+          comment && onUserMessageUndo
+            ? () => onUserMessageUndo({ checkpointRunCount, comment, run })
+            : undefined
+        }
+      />
+      <div className="grid min-w-0 gap-5">
+        <AgentWorkDetails
+          activities={workActivities}
+          onFileLinkClick={onFileLinkClick}
+          onLoadDetail={onLoadActivityDetail}
+          responseHeader={responseHeader}
+          run={run}
+        />
+        {visibleResponse ? (
+          <AgentMarkdownTimelineItem
+            alwaysVisible={
+              lastVisibleMessage?.type === "activity" &&
+              lastVisibleMessage.runId === run.id
+            }
+            avatar={
+              <AgentResponseAvatar
+                activity={visibleResponse}
+                responseHeader={responseHeader}
+              />
+            }
+            createdAt={visibleResponse.createdAt}
+            markdown={visibleResponse.detail}
+            onFileLinkClick={onFileLinkClick}
+            showFeedback={Boolean(finalMessage)}
+          />
+        ) : null}
+      </div>
+    </section>
+  )
 }
 
 export function AgentConversationComposer({
@@ -312,49 +339,134 @@ function RunCommentItem({
   if (!comment) return null
 
   return (
-    <div className="group/message relative grid grid-cols-[2.5rem_minmax(0,1fr)] items-start gap-1">
-      <span className="relative z-10 flex size-8 items-center justify-center rounded-full border bg-background text-muted-foreground shadow-sm">
-        <MessageSquareIcon className="size-4" />
-      </span>
-      <div className="grid min-w-0 gap-3">
-        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <h3 className="text-xl font-medium">User comment</h3>
-          <p className="text-xs font-medium text-muted-foreground">
-            {comment.author} · {commentDateLabel(comment.createdAt)}
-          </p>
+    <div className="group/message relative w-full min-w-0 pl-[12%]">
+      <div className="ml-auto grid w-full max-w-3xl min-w-0 gap-2 overflow-hidden">
+        <div className="max-w-full min-w-0 overflow-hidden rounded-3xl bg-muted/80 p-1 ring-1 ring-foreground/10 [&>div]:max-w-full [&>div]:min-w-0 [&>div]:bg-transparent [&>div]:shadow-none [&>div]:ring-0">
+          <MarkdownEditor
+            codeSelectionAttachments={comment.codeSelectionAttachments ?? []}
+            fileAttachments={pendingFileAttachments(
+              comment.fileAttachments ?? []
+            )}
+            markdown={comment.body}
+            readOnly
+            onFileLinkClick={onFileLinkClick}
+            placeholder=""
+            minHeight="min-h-0"
+          />
         </div>
-        <MarkdownEditor
-          codeSelectionAttachments={comment.codeSelectionAttachments ?? []}
-          fileAttachments={pendingFileAttachments(
-            comment.fileAttachments ?? []
-          )}
-          markdown={comment.body}
-          readOnly
-          onFileLinkClick={onFileLinkClick}
-          placeholder=""
-          minHeight="min-h-24"
-        />
-        <MarkdownMessageActions
-          alwaysVisible={alwaysVisible}
-          createdAt={comment.createdAt}
-          markdown={comment.body}
-          onUndo={onUndo ? () => onUndo(comment) : undefined}
-          undoDisabled={run.status === "running"}
-        />
+        <div className="flex items-center justify-end gap-2">
+          <span className="text-xs text-muted-foreground">
+            {commentDateLabel(comment.createdAt)}
+          </span>
+          <MarkdownMessageActions
+            alwaysVisible={alwaysVisible}
+            markdown={comment.body}
+            onUndo={onUndo ? () => onUndo(comment) : undefined}
+            undoDisabled={run.status === "running"}
+          />
+        </div>
+      </div>
+      <div className="absolute top-0 -right-10">
+        <UserMessageAvatar author={comment.author} />
       </div>
     </div>
   )
 }
 
+function AgentWorkDetails({
+  activities,
+  onFileLinkClick,
+  onLoadDetail,
+  responseHeader,
+  run,
+}: {
+  activities: UserStoryAgentActivity[]
+  onFileLinkClick?: (path: string) => void
+  onLoadDetail: (activity: UserStoryAgentActivity) => Promise<string>
+  responseHeader: AgentConversationResponseHeader
+  run: AgentConversationRun
+}) {
+  const running = run.status === "running"
+  const [open, setOpen] = React.useState(false)
+  const runningToolActivityId = currentRunningToolActivityId(
+    run.status,
+    activities
+  )
+  const thinking = agentThinkingVisible(run.status, activities)
+
+  if (activities.length === 0 && !thinking) return null
+
+  const stepCount = activities.filter(
+    (activity) => activity.kind !== "message"
+  ).length
+  const stateLabel = running
+    ? "Working"
+    : run.status === "failed"
+      ? "Work stopped"
+      : "Work completed"
+
+  return (
+    <Accordion
+      type="single"
+      collapsible
+      value={running || open ? "work" : ""}
+      onValueChange={(value) => {
+        if (!running) setOpen(value === "work")
+      }}
+    >
+      <AccordionItem value="work" className="border-0 px-0">
+        <AccordionTrigger className="min-h-10 items-center justify-start gap-2 py-1 text-muted-foreground hover:no-underline [&>svg]:ml-0">
+          <span className="flex min-w-0 items-center gap-2.5 text-sm">
+            <span
+              className={cn(
+                "size-2 shrink-0 rounded-full",
+                running
+                  ? "agent-thinking-mark"
+                  : run.status === "failed"
+                    ? "bg-destructive"
+                    : "bg-emerald-500"
+              )}
+              aria-hidden="true"
+            />
+            <span className={running ? "agent-activity-running" : undefined}>
+              {stateLabel}
+            </span>
+            <span className="font-normal text-muted-foreground">
+              · {stepCount || activities.length}{" "}
+              {stepCount === 1 ? "step" : "steps"}
+            </span>
+          </span>
+        </AccordionTrigger>
+        <AccordionContent className="pt-2 pb-2 pl-1">
+          <Accordion type="multiple" className="grid gap-1">
+            {userStoryActivityTree(activities).map((node) => (
+              <AgentActivityItem
+                key={`${run.id}-${node.id}`}
+                node={node}
+                onFileLinkClick={onFileLinkClick}
+                onLoadDetail={onLoadDetail}
+                responseHeader={responseHeader}
+                runActive={running}
+                runningToolActivityId={runningToolActivityId}
+                value={`${run.id}-${node.id}`}
+              />
+            ))}
+          </Accordion>
+          {thinking ? <AgentThinkingTimelineItem /> : null}
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
+  )
+}
+
 function AgentThinkingTimelineItem() {
   return (
-    <div className="relative grid grid-cols-[2.5rem_minmax(0,1fr)] items-start gap-1">
-      <span className="relative z-10 flex size-8 items-center justify-center">
-        <span className="agent-thinking-mark" aria-hidden="true" />
-      </span>
-      <div className="flex min-w-0 items-center pt-1 text-sm text-muted-foreground">
-        <span className="agent-thinking-text">Thinking</span>
-      </div>
+    <div
+      className="flex min-w-0 items-center gap-3 px-2 py-2 text-sm text-muted-foreground"
+      role="status"
+    >
+      <span className="agent-thinking-mark" aria-hidden="true" />
+      <span className="agent-thinking-text">Thinking</span>
     </div>
   )
 }
@@ -427,8 +539,8 @@ function AgentActivityGroupItem({
 }) {
   return (
     <AccordionItem value={value} className="border-b-0!">
-      <div className="relative grid grid-cols-[2.5rem_minmax(0,1fr)] items-start gap-1 text-sm">
-        <span className="relative z-10 flex size-8 items-center justify-center rounded-full border bg-background text-muted-foreground shadow-sm">
+      <div className="grid grid-cols-[2rem_minmax(0,1fr)] items-start gap-2 text-sm">
+        <span className="flex size-8 items-center justify-center text-muted-foreground">
           <ListChecksIcon className="size-4" />
         </span>
         <div className="min-w-0">
@@ -485,8 +597,7 @@ function AgentActivityChildren({
   runningToolActivityId?: string
 }) {
   return (
-    <div className="relative grid gap-2">
-      <span className="absolute top-0 bottom-0 left-4 w-px bg-muted-foreground/35" />
+    <div className="grid gap-1 border-l pl-3">
       <Accordion type="multiple" className="contents">
         {nodes.map((node) => (
           <AgentActivityItem
@@ -529,13 +640,16 @@ function AgentActivityLeafItem({
     return (
       <AgentMarkdownTimelineItem
         alwaysVisible={alwaysVisible}
+        avatar={
+          <AgentResponseAvatar
+            activity={activity}
+            responseHeader={responseHeader}
+          />
+        }
         createdAt={activity.createdAt}
-        highlight={activity.messageKind === "final"}
-        icon={agentMessageIcon(activity, responseHeader)}
         markdown={activity.detail}
         onFileLinkClick={onFileLinkClick}
         showFeedback={activity.messageKind === "final"}
-        title={agentMessageTitle(activity, responseHeader)}
       />
     )
   }
@@ -580,8 +694,8 @@ function AgentActivityDetailLeafItem({
 
   return (
     <AccordionItem value={value} className="border-b-0!">
-      <div className="relative grid grid-cols-[2.5rem_minmax(0,1fr)] items-start gap-1 text-sm">
-        <span className="relative z-10 flex size-8 items-center justify-center rounded-full border bg-background text-muted-foreground shadow-sm">
+      <div className="grid grid-cols-[2rem_minmax(0,1fr)] items-start gap-2 text-sm">
+        <span className="flex size-8 items-center justify-center text-muted-foreground">
           <ActivityToolIcon activity={activity} toolName={details.toolName} />
         </span>
         <div className="min-w-0">
@@ -737,40 +851,30 @@ function ActivityDetails({
 
 function AgentMarkdownTimelineItem({
   alwaysVisible,
+  avatar,
   createdAt,
-  highlight,
-  icon,
   markdown,
   onFileLinkClick,
   showFeedback,
-  title,
 }: {
   alwaysVisible: boolean
+  avatar?: React.ReactNode
   createdAt: string
-  highlight: boolean
-  icon?: React.ReactNode
   markdown: string
   onFileLinkClick?: (path: string) => void
   showFeedback?: boolean
-  title: React.ReactNode
 }) {
   return (
-    <div
-      className="group/message relative grid grid-cols-[2.5rem_minmax(0,1fr)] items-start gap-1"
-      data-agent-response
-    >
-      <span className="relative z-10 flex size-8 items-center justify-center rounded-full border bg-background text-muted-foreground shadow-sm">
-        {icon ?? <MessageSquareIcon className="size-4" />}
-      </span>
-      <div className="grid min-w-0 gap-3">
-        <h3 className="text-xl font-medium">{title}</h3>
-        <div className={highlight ? "agent-response-effect" : undefined}>
+    <div className="group/message relative min-w-0" data-agent-response>
+      {avatar ? <div className="absolute top-0 -left-10">{avatar}</div> : null}
+      <div className="grid min-w-0 gap-2">
+        <div className="min-w-0 [&>div]:bg-transparent [&>div]:p-0 [&>div]:shadow-none [&>div]:ring-0">
           <MarkdownEditor
             markdown={markdown}
             readOnly
             onFileLinkClick={onFileLinkClick}
             placeholder=""
-            minHeight="min-h-24"
+            minHeight="min-h-0"
           />
         </div>
         <MarkdownMessageActions
@@ -782,6 +886,50 @@ function AgentMarkdownTimelineItem({
       </div>
     </div>
   )
+}
+
+function UserMessageAvatar({ author }: { author: string }) {
+  return (
+    <Avatar size="default" aria-label={author}>
+      <AvatarFallback>{agentInitials(author)}</AvatarFallback>
+    </Avatar>
+  )
+}
+
+function AgentResponseAvatar({
+  activity,
+  responseHeader,
+}: {
+  activity: UserStoryAgentActivity
+  responseHeader: AgentConversationResponseHeader
+}) {
+  if (activity.agentAvatar) {
+    const name = activity.agentName ?? "Agent"
+    return (
+      <Avatar aria-label={name}>
+        <AvatarImage alt={name} src={activity.agentAvatar} />
+        <AvatarFallback>{agentInitials(name)}</AvatarFallback>
+      </Avatar>
+    )
+  }
+
+  return (
+    <span
+      aria-label={activity.agentName ?? responseHeader.provider.name}
+      className="flex size-8 shrink-0 items-center justify-center rounded-full border bg-background"
+    >
+      <ProviderMark provider={responseHeader.provider} />
+    </span>
+  )
+}
+
+function agentInitials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("")
 }
 
 export function MarkdownMessageActions({
@@ -1091,85 +1239,6 @@ function humanizeToolName(value: string) {
     .join(" ")
 }
 
-function agentMessageIcon(
-  activity: UserStoryAgentActivity,
-  header: AgentConversationResponseHeader
-) {
-  const profile = agentMessageProfile(activity)
-  if (profile?.avatar) {
-    return (
-      <Avatar className="size-8">
-        <AvatarImage alt={profile.name} src={profile.avatar} />
-        <AvatarFallback>{agentInitials(profile.name)}</AvatarFallback>
-      </Avatar>
-    )
-  }
-  return <ProviderMark provider={header.provider} />
-}
-
-function agentMessageTitle(
-  activity: UserStoryAgentActivity,
-  header: AgentConversationResponseHeader
-) {
-  const profile = agentMessageProfile(activity)
-  if (profile?.name) return profile.name
-  return header.modelName ?? activity.title
-}
-
-function agentMessageProfile(activity: UserStoryAgentActivity) {
-  if (activity.agentAvatar) {
-    return {
-      name: activity.agentName ?? activity.title,
-      avatar: activity.agentAvatar,
-    }
-  }
-  if (!activity.id.startsWith("spawn-agent-response-")) {
-    return activity.agentName ? { name: activity.agentName } : undefined
-  }
-  return (
-    specialistAgentProfiles.find((agent) =>
-      agent.responseMatches.some((match) => activity.detail.includes(match))
-    ) ?? (activity.agentName ? { name: activity.agentName } : undefined)
-  )
-}
-
-const specialistAgentProfiles = [
-  {
-    name: "Codebase Analyst",
-    avatar: "/agents/codebase-analyst.png",
-    responseMatches: ["## Codebase Analysis"],
-  },
-  {
-    name: "Frontend Design Specialist",
-    avatar: "/agents/frontend-design-specialist.png",
-    responseMatches: ["## Frontend Design Review"],
-  },
-  {
-    name: "Risk & Review Analyst",
-    avatar: "/agents/risk-review-analyst.png",
-    responseMatches: ["## Risk Review"],
-  },
-  {
-    name: "Story Analyst",
-    avatar: "/agents/story-analyst.png",
-    responseMatches: ["## Story Analysis"],
-  },
-  {
-    name: "Test & Verification Analyst",
-    avatar: "/agents/test-verification-analyst.png",
-    responseMatches: ["## Verification Plan"],
-  },
-] as const
-
-function agentInitials(name: string | undefined) {
-  return (name ?? "Agent")
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("")
-}
-
 function agentDisplayActivities(
   activities: UserStoryAgentActivity[],
   response: string | null | undefined,
@@ -1193,6 +1262,28 @@ function agentDisplayActivities(
       title: "Agent response",
     },
   ]
+}
+
+function failedRunResponse(
+  run: AgentConversationRun,
+  activities: UserStoryAgentActivity[]
+): UserStoryAgentActivity | undefined {
+  if (run.status !== "failed") return undefined
+  const message = [...activities]
+    .reverse()
+    .find((activity) => activity.kind === "message")
+  if (message) return message
+  const response = run.finalResponse?.trim()
+  if (!response) return undefined
+  return {
+    createdAt: run.completedAt ?? run.updatedAt ?? run.createdAt,
+    detail: response,
+    id: `${run.id}-failed-response`,
+    kind: "message",
+    messageKind: "final",
+    status: "failed",
+    title: "Agent error",
+  }
 }
 
 function sameStreamingMarkdown(left: string | undefined, right: string) {
