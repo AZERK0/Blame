@@ -20,6 +20,11 @@ import {
   completedStoryContextAttachment,
 } from "@/components/backlog/data/user-story-context"
 import { useBacklogStore } from "@/components/backlog/data/backlog-store"
+import {
+  selectBacklogStory,
+  selectedBacklogStoryId,
+  subscribeToBacklogStorySelection,
+} from "@/components/backlog/data/backlog-navigation"
 import type {
   BacklogAction,
   BacklogColumnId,
@@ -74,8 +79,9 @@ export function BacklogPage() {
   const alternativeSelection = useModelSelection({ role: "alternative" })
   const rotation = useBacklogRotation(backlog)
   const [drawerTarget, setDrawerTarget] = React.useState<DrawerTarget>()
-  const [titleGeneratingStoryIds, setTitleGeneratingStoryIds] =
-    React.useState(() => new Set<string>())
+  const [titleGeneratingStoryIds, setTitleGeneratingStoryIds] = React.useState(
+    () => new Set<string>()
+  )
   const projectInitialization = useProjectInitialization()
   const initializationStatus = projectInitialization?.status ?? null
   const queueInitializing = projectInitializing(initializationStatus)
@@ -84,6 +90,7 @@ export function BacklogPage() {
     platform.workspace
   )
   const storiesRef = React.useRef(backlog.stories)
+  const openDrawerRef = React.useRef<(target: DrawerTarget) => void>(() => {})
   const drawerLoadRequestId = React.useRef(0)
   const previousStoryStatuses = React.useRef<Map<string, BacklogColumnId>>()
   const pendingAgentUpdates = React.useRef(
@@ -158,6 +165,9 @@ export function BacklogPage() {
     },
     [backlog]
   )
+  React.useEffect(() => {
+    openDrawerRef.current = openDrawer
+  }, [openDrawer])
   const openCreateDrawer = React.useCallback(() => {
     if (!backlog.projectPath) return
     drawerLoadRequestId.current += 1
@@ -166,6 +176,25 @@ export function BacklogPage() {
       initialTab: "user-story",
     })
   }, [backlog.projectPath])
+  React.useEffect(() => {
+    const openSelectedStory = () => {
+      const selectedStoryId = selectedBacklogStoryId()
+      if (!selectedStoryId) {
+        setDrawerTarget(undefined)
+        return
+      }
+      const story = storiesRef.current.find(
+        (item) => item.id === selectedStoryId
+      )
+      if (story) openDrawerRef.current({ mode: "edit", userStory: story })
+    }
+    const timer = window.setTimeout(openSelectedStory, 0)
+    const unsubscribe = subscribeToBacklogStorySelection(openSelectedStory)
+    return () => {
+      window.clearTimeout(timer)
+      unsubscribe()
+    }
+  }, [])
   const updateStoryLocal = React.useCallback(
     (story: UserStory, input: UserStoryUpdate) => {
       const currentStory = activeStory(story, storiesRef.current)
@@ -1015,6 +1044,7 @@ export function BacklogPage() {
           if (!open) {
             drawerLoadRequestId.current += 1
             setDrawerTarget(undefined)
+            selectBacklogStory(undefined)
           }
         }}
         userStory={drawerUserStory}
@@ -1310,9 +1340,7 @@ type QueuedUserStoryTitleRequest = {
   ) => Promise<UserStory>
 }
 
-function queuedUserStoryTitleRequest(
-  request: QueuedUserStoryTitleRequest
-) {
+function queuedUserStoryTitleRequest(request: QueuedUserStoryTitleRequest) {
   if (!queuedStoryNeedsGeneratedTitle(request.story)) return undefined
   if (queuedStoryTitleGenerationBlocked(request)) return undefined
   return request
@@ -1337,9 +1365,7 @@ async function runQueuedStoryTitleGeneration(
   return persistGeneratedQueuedStoryTitle(request, title)
 }
 
-async function generatedQueuedStoryTitle(
-  request: QueuedUserStoryTitleRequest
-) {
+async function generatedQueuedStoryTitle(request: QueuedUserStoryTitleRequest) {
   const result =
     await request.platform.agent!.promptOptimizer.generateUserStoryTitle(
       queuedStoryTitleGenerationInput(request)
@@ -1353,11 +1379,7 @@ async function persistGeneratedQueuedStoryTitle(
   request: QueuedUserStoryTitleRequest,
   title: string
 ) {
-  return request.updateStory(
-    request.story,
-    { title },
-    { cleanup: false }
-  )
+  return request.updateStory(request.story, { title }, { cleanup: false })
 }
 
 function queuedStoryTitleGenerationInput(request: QueuedUserStoryTitleRequest) {
@@ -1387,7 +1409,8 @@ function titleGenerationStoryIds(
   const next = new Set(current)
   if (generating) next.add(storyId)
   else next.delete(storyId)
-  return next.size === current.size && next.has(storyId) === current.has(storyId)
+  return next.size === current.size &&
+    next.has(storyId) === current.has(storyId)
     ? current
     : next
 }
