@@ -2,13 +2,10 @@ import * as React from "react"
 import type { AgentEvent } from "@blame/agent-runtime"
 import {
   CheckCircle2Icon,
-  CopyIcon,
   FolderGit2Icon,
   GitBranchIcon,
-  MessageCircleIcon,
   MessageCirclePlusIcon,
   SendIcon,
-  Trash2Icon,
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -54,12 +51,13 @@ import {
   type PendingQuickChatAgentUpdate,
   type QueuedQuickChatAgentUpdate,
 } from "@/components/chat/data/quick-chat-agent-flow"
-import type {
-  QuickChat,
-  QuickChatAgentRun,
-  QuickChatAgentRunUpdate,
-  QuickChatMessage,
-  QuickChatUpdate,
+import {
+  quickChatSelectedEvent,
+  type QuickChat,
+  type QuickChatAgentRun,
+  type QuickChatAgentRunUpdate,
+  type QuickChatMessage,
+  type QuickChatUpdate,
 } from "@/components/chat/data/quick-chat-data"
 import { useQuickChatStore } from "@/components/chat/data/quick-chat-store"
 import { agentConversationResponseHeader } from "@/components/chat/agent-conversation-header"
@@ -67,26 +65,8 @@ import {
   ModelSelector,
   useModelSelection,
 } from "@/components/model/model-selector"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogMedia,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu"
 import {
   MessageScroller,
   MessageScrollerButton,
@@ -94,14 +74,12 @@ import {
   MessageScrollerProvider,
   MessageScrollerViewport,
 } from "@/components/ui/message-scroller"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import { useProjectInitialization } from "@/components/project-initialization/use-project-initialization"
 import { projectCodePractices } from "@/lib/project-code-practices"
 import { showSystemNotification } from "@/lib/system-notifications"
-import { cn } from "@/lib/utils"
 
 const agentEventPersistDelayMs = 1_500
 const topStrongBlurMask = {
@@ -135,14 +113,6 @@ type QuickChatPromptInput = {
   title: string
 }
 
-type QuickChatConversationActions = {
-  onCopyAgentResponse(conversation: QuickChat): void
-  onCopyLastMessage(conversation: QuickChat): void
-  onCopyTitle(conversation: QuickChat): void
-  onDelete(conversation: QuickChat): void
-  onSelect(id: string): void
-}
-
 export function ChatPage() {
   const projects = useProjects()
   const projectKey = projects.activeProject?.id ?? "project"
@@ -169,11 +139,6 @@ function QuickChatProjectPage() {
   const [draftFileAttachments, setDraftFileAttachments] = React.useState<
     UserStoryFileAttachment[]
   >([])
-  const [newConversationActive, setNewConversationActive] =
-    React.useState(false)
-  const [conversationToDelete, setConversationToDelete] =
-    React.useState<QuickChat | null>(null)
-  const [deletingConversation, setDeletingConversation] = React.useState(false)
   const [gitStatus, setGitStatus] = React.useState<GitStatusResult>()
   const [sending, setSending] = React.useState(false)
   const chatsRef = React.useRef(quickChats.chats)
@@ -181,9 +146,7 @@ function QuickChatProjectPage() {
     new Map<string, PendingQuickChatAgentUpdate>()
   )
   const draftRef = React.useRef<HTMLDivElement>(null)
-  const activeConversation = newConversationActive
-    ? undefined
-    : quickChats.activeChat
+  const activeConversation = quickChats.activeChat
   const activeConversationLoaded =
     !activeConversation || quickChats.chatDetailsLoaded(activeConversation)
   const responseHeader = agentConversationResponseHeader({
@@ -196,14 +159,6 @@ function QuickChatProjectPage() {
   const branchName = gitStatus?.branch.current ?? "Current branch"
   const mentionDirectory = project?.path
   const agentRunning = activeConversation?.agentStatus === "Running"
-  const conversationActions: QuickChatConversationActions = {
-    onCopyAgentResponse: copyConversationAgentResponse,
-    onCopyLastMessage: copyConversationLastMessage,
-    onCopyTitle: copyConversationTitle,
-    onDelete: requestConversationDeletion,
-    onSelect: selectConversation,
-  }
-
   React.useEffect(() => {
     chatsRef.current = quickChats.chats
   }, [quickChats.chats])
@@ -223,6 +178,18 @@ function QuickChatProjectPage() {
   React.useEffect(() => {
     const updates = pendingAgentUpdates.current
     return () => clearPendingQuickChatAgentUpdates(updates)
+  }, [])
+
+  React.useEffect(() => {
+    const clearSelectedChatDraft = () => {
+      setDraft("")
+      setDraftCodeAttachments([])
+      setDraftFileAttachments([])
+      setDraftEditorKey((key) => key + 1)
+    }
+    window.addEventListener(quickChatSelectedEvent, clearSelectedChatDraft)
+    return () =>
+      window.removeEventListener(quickChatSelectedEvent, clearSelectedChatDraft)
   }, [])
 
   React.useEffect(() => {
@@ -382,41 +349,8 @@ function QuickChatProjectPage() {
       showQuickChatError("Unable to create quick chat", "Open a project first.")
       return
     }
-    setNewConversationActive(true)
+    quickChats.setActiveId(undefined)
     clearDraft()
-  }
-
-  function selectConversation(id: string) {
-    setNewConversationActive(false)
-    quickChats.setActiveId(id)
-    const chat = chatsRef.current.find((item) => item.id === id)
-    if (chat && !quickChats.chatDetailsLoaded(chat)) {
-      void quickChats.loadDetail(chat).catch((error) => {
-        showQuickChatError("Unable to load quick chat", errorMessage(error))
-      })
-    }
-    clearDraft()
-  }
-
-  function requestConversationDeletion(conversation: QuickChat) {
-    setConversationToDelete(conversation)
-  }
-
-  async function deleteConversation() {
-    const conversation = conversationToDelete
-    if (!conversation || deletingConversation) return
-    setDeletingConversation(true)
-    try {
-      await quickChats.remove(conversation)
-      chatsRef.current = chatsRef.current.filter(
-        (chat) => chat.id !== conversation.id
-      )
-      setConversationToDelete(null)
-    } catch (error) {
-      showQuickChatError("Unable to delete quick chat", errorMessage(error))
-    } finally {
-      setDeletingConversation(false)
-    }
   }
 
   async function undoQuickChatMessage(
@@ -446,24 +380,6 @@ function QuickChatProjectPage() {
         ?.focus()
     })
     toast.success("Message restored to editor.", { position: "bottom-right" })
-  }
-
-  function copyConversationTitle(conversation: QuickChat) {
-    void copyConversationText(conversation.title, "Conversation title copied.")
-  }
-
-  async function copyConversationLastMessage(conversation: QuickChat) {
-    const current = await detailedConversation(conversation)
-    const message = lastConversationMessageText(current)
-    if (!message) return
-    void copyConversationText(message, "Last message copied.")
-  }
-
-  async function copyConversationAgentResponse(conversation: QuickChat) {
-    const current = await detailedConversation(conversation)
-    const response = lastAgentResponseText(current)
-    if (!response) return
-    void copyConversationText(response, "Last agent response copied.")
   }
 
   async function submitDraft() {
@@ -704,12 +620,7 @@ function QuickChatProjectPage() {
   return (
     <>
       <div className="flex h-[calc(100svh_-_var(--header-height))] min-h-0 min-w-0 flex-col overflow-hidden md:h-[calc(100svh_-_var(--header-height)_-_1rem)]">
-        <div
-          className={cn(
-            "grid min-h-0 flex-1 grid-cols-1 gap-2",
-            "xl:grid-cols-[minmax(0,1fr)_18rem]"
-          )}
-        >
+        <div className="grid min-h-0 flex-1 grid-cols-1 gap-2">
           <main className="relative flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border bg-background/70">
             <div className="pointer-events-none absolute inset-x-0 top-0 z-20 pb-10 md:pb-12">
               <div
@@ -718,11 +629,8 @@ function QuickChatProjectPage() {
               />
               <div className="pointer-events-auto relative">
                 <QuickChatHeader
-                  activeId={activeConversation?.id}
                   branchName={branchName}
                   changeCount={gitStatus?.files.length}
-                  conversationActions={conversationActions}
-                  conversations={quickChats.chats}
                   projectName={project?.name ?? "Project"}
                   projectPath={project?.path ?? ""}
                   onCreate={createConversation}
@@ -825,12 +733,6 @@ function QuickChatProjectPage() {
               </div>
             </div>
           </main>
-          <QuickChatSidePanel
-            activeId={activeConversation?.id}
-            conversationActions={conversationActions}
-            conversations={quickChats.chats}
-            onCreate={createConversation}
-          />
         </div>
       </div>
       <ProjectRunConfigurationPreviewWarmup
@@ -838,148 +740,19 @@ function QuickChatProjectPage() {
         devtoolsTarget
         scope={project?.path}
       />
-      <DeleteQuickChatDialog
-        conversation={conversationToDelete}
-        deleting={deletingConversation}
-        onCancel={() => setConversationToDelete(null)}
-        onConfirm={deleteConversation}
-      />
     </>
   )
 }
 
-function QuickChatSidePanel({
-  activeId,
-  conversationActions,
-  conversations,
-  onCreate,
-}: {
-  activeId?: string
-  conversationActions: QuickChatConversationActions
-  conversations: QuickChat[]
-  onCreate: () => void
-}) {
-  return (
-    <QuickChatHistoryPanel
-      activeId={activeId}
-      conversationActions={conversationActions}
-      conversations={conversations}
-      onCreate={onCreate}
-    />
-  )
-}
-
-function QuickChatHistoryPanel({
-  activeId,
-  className,
-  conversationActions,
-  conversations,
-  onCreate,
-}: {
-  activeId?: string
-  className?: string
-  conversationActions: QuickChatConversationActions
-  conversations: QuickChat[]
-  onCreate: () => void
-}) {
-  return (
-    <aside
-      className={cn(
-        "my-4 mr-4 hidden min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border bg-card shadow-xl ring-1 shadow-black/10 ring-foreground/10 xl:flex",
-        className
-      )}
-    >
-      <div className="flex items-center justify-between gap-3 border-b bg-muted/20 px-4 py-4">
-        <div className="min-w-0">
-          <h2 className="truncate text-sm font-semibold">Quick chats</h2>
-          <p className="truncate text-xs text-muted-foreground">
-            {conversations.length} conversation
-            {conversations.length > 1 ? "s" : ""}
-          </p>
-        </div>
-        <Button
-          aria-label="New quick chat"
-          onClick={onCreate}
-          size="icon-sm"
-          type="button"
-          variant="outline"
-        >
-          <MessageCirclePlusIcon />
-        </Button>
-      </div>
-      <ScrollArea className="min-h-0 flex-1 bg-muted/10 dark:bg-muted/20">
-        <div className="grid gap-2 p-3">
-          {conversations.map((conversation) => (
-            <QuickChatHistoryItem
-              active={conversation.id === activeId}
-              conversationActions={conversationActions}
-              conversation={conversation}
-              key={conversation.id}
-            />
-          ))}
-        </div>
-      </ScrollArea>
-    </aside>
-  )
-}
-
-function QuickChatHistoryItem({
-  active,
-  conversationActions,
-  conversation,
-}: {
-  active: boolean
-  conversationActions: QuickChatConversationActions
-  conversation: QuickChat
-}) {
-  return (
-    <QuickChatConversationContextMenu
-      actions={conversationActions}
-      conversation={conversation}
-    >
-      <button
-        className={cn(
-          "grid min-w-0 gap-1.5 rounded-xl border p-2.5 text-left text-sm ring-1 ring-foreground/10 transition-colors",
-          active
-            ? "border-blue-500/40 bg-blue-500/10"
-            : "border-border/60 bg-input/40 hover:border-border hover:bg-input/10 dark:bg-muted dark:hover:bg-muted/50"
-        )}
-        onClick={() => conversationActions.onSelect(conversation.id)}
-        type="button"
-      >
-        <span className="flex min-w-0 items-start gap-2">
-          <span className="min-w-0 flex-1 truncate font-medium">
-            {conversation.title}
-          </span>
-          <span className="shrink-0 text-xs text-muted-foreground">
-            {relativeTimeLabel(
-              conversation.updatedAt ?? conversation.createdAt
-            )}
-          </span>
-        </span>
-        <span className="line-clamp-1 text-xs leading-snug text-muted-foreground">
-          {conversationPreview(conversation)}
-        </span>
-      </button>
-    </QuickChatConversationContextMenu>
-  )
-}
-
 function QuickChatHeader({
-  activeId,
   branchName,
   changeCount,
-  conversationActions,
-  conversations,
   projectName,
   projectPath,
   onCreate,
 }: {
-  activeId?: string
   branchName: string
   changeCount?: number
-  conversationActions: QuickChatConversationActions
-  conversations: QuickChat[]
   projectName: string
   projectPath: string
   onCreate: () => void
@@ -1013,7 +786,7 @@ function QuickChatHeader({
           </Badge>
         </div>
       </div>
-      <div className="flex items-center gap-2 overflow-x-auto pb-3 xl:hidden">
+      <div className="flex items-center gap-2 pb-3">
         <Button
           className="shrink-0"
           onClick={onCreate}
@@ -1024,99 +797,8 @@ function QuickChatHeader({
           <MessageCirclePlusIcon />
           New
         </Button>
-        {conversations.map((conversation) => (
-          <QuickChatConversationContextMenu
-            actions={conversationActions}
-            conversation={conversation}
-            key={conversation.id}
-          >
-            <button
-              className={cn(
-                "h-7 max-w-56 shrink-0 rounded-lg border px-2 text-sm transition-colors",
-                conversation.id === activeId
-                  ? "border-blue-500/40 bg-blue-500/10 text-foreground"
-                  : "border-border bg-background/60 text-muted-foreground"
-              )}
-              onClick={() => conversationActions.onSelect(conversation.id)}
-              type="button"
-            >
-              <span className="block truncate">{conversation.title}</span>
-            </button>
-          </QuickChatConversationContextMenu>
-        ))}
       </div>
     </header>
-  )
-}
-
-function QuickChatConversationContextMenu({
-  actions,
-  children,
-  conversation,
-}: {
-  actions: QuickChatConversationActions
-  children: React.ReactNode
-  conversation: QuickChat
-}) {
-  return (
-    <ContextMenu>
-      <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
-      <ContextMenuContent className="w-56">
-        <QuickChatConversationMenuItems
-          actions={actions}
-          conversation={conversation}
-        />
-      </ContextMenuContent>
-    </ContextMenu>
-  )
-}
-
-function QuickChatConversationMenuItems({
-  actions,
-  conversation,
-}: {
-  actions: QuickChatConversationActions
-  conversation: QuickChat
-}) {
-  const lastMessage = lastConversationMessageText(conversation)
-  const lastAgentResponse = lastAgentResponseText(conversation)
-  const agentRunning = conversation.agentStatus === "Running"
-
-  return (
-    <>
-      <ContextMenuItem onSelect={() => actions.onSelect(conversation.id)}>
-        <MessageCircleIcon className="size-4" />
-        Open conversation
-      </ContextMenuItem>
-      <ContextMenuSeparator />
-      <ContextMenuItem onSelect={() => actions.onCopyTitle(conversation)}>
-        <CopyIcon className="size-4" />
-        Copy title
-      </ContextMenuItem>
-      <ContextMenuItem
-        disabled={!lastMessage}
-        onSelect={() => actions.onCopyLastMessage(conversation)}
-      >
-        <CopyIcon className="size-4" />
-        Copy last message
-      </ContextMenuItem>
-      <ContextMenuItem
-        disabled={!lastAgentResponse}
-        onSelect={() => actions.onCopyAgentResponse(conversation)}
-      >
-        <CopyIcon className="size-4" />
-        Copy last agent response
-      </ContextMenuItem>
-      <ContextMenuSeparator />
-      <ContextMenuItem
-        disabled={agentRunning}
-        onSelect={() => actions.onDelete(conversation)}
-        variant="destructive"
-      >
-        <Trash2Icon className="size-4" />
-        Delete conversation
-      </ContextMenuItem>
-    </>
   )
 }
 
@@ -1169,53 +851,6 @@ function QuickChatEmptyState() {
         </div>
       </div>
     </div>
-  )
-}
-
-function DeleteQuickChatDialog({
-  conversation,
-  deleting,
-  onCancel,
-  onConfirm,
-}: {
-  conversation: QuickChat | null
-  deleting: boolean
-  onCancel(): void
-  onConfirm(): void
-}) {
-  return (
-    <AlertDialog
-      open={Boolean(conversation)}
-      onOpenChange={(open) => {
-        if (!open && !deleting) onCancel()
-      }}
-    >
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogMedia>
-            <Trash2Icon />
-          </AlertDialogMedia>
-          <AlertDialogTitle>Delete conversation</AlertDialogTitle>
-          <AlertDialogDescription>
-            This will permanently delete this quick chat from the database. This
-            action cannot be undone.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            disabled={deleting}
-            variant="destructive"
-            onClick={(event) => {
-              event.preventDefault()
-              onConfirm()
-            }}
-          >
-            Delete permanently
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
   )
 }
 
@@ -1370,50 +1005,6 @@ function titleFromMessage(message: string, projectName: string | undefined) {
   return shortLabel(message.replace(/[#*_`>[\]()]/g, " ").trim(), 56, fallback)
 }
 
-function conversationPreview(conversation: QuickChat) {
-  if (conversation.agentStatus === "Running") {
-    return shortLabel(conversation.agentLastEvent ?? "Agent is working", 96)
-  }
-  if (conversation.agentLastError) {
-    return shortLabel(conversation.agentLastError, 96)
-  }
-  if (conversation.preview) return shortLabel(conversation.preview, 96)
-  const message = conversation.messages?.at(-1)
-  if (message) return shortLabel(message.body || "Attached context", 96)
-  return shortLabel(conversation.agentLastEvent ?? "No messages yet", 96)
-}
-
-function lastConversationMessageText(conversation: QuickChat) {
-  return conversation.messages?.at(-1)?.body.trim() ?? ""
-}
-
-function lastAgentResponseText(conversation: QuickChat) {
-  const response = conversation.agentFinalResponse?.trim()
-  if (response) return response
-  const runs = conversation.agentRuns ?? []
-  for (let index = runs.length - 1; index >= 0; index -= 1) {
-    const runResponse = runs[index]?.finalResponse?.trim()
-    if (runResponse) return runResponse
-  }
-  return ""
-}
-
-async function copyConversationText(value: string, successMessage: string) {
-  try {
-    await writeClipboardText(value)
-    toast.success(successMessage, { position: "bottom-right" })
-  } catch (error) {
-    showQuickChatError("Unable to copy", errorMessage(error))
-  }
-}
-
-async function writeClipboardText(value: string) {
-  if (!navigator.clipboard?.writeText) {
-    throw new Error("Clipboard is not available.")
-  }
-  await navigator.clipboard.writeText(value)
-}
-
 function shortLabel(
   value: string,
   maxLength: number,
@@ -1423,18 +1014,6 @@ function shortLabel(
   if (!normalized) return fallback
   if (normalized.length <= maxLength) return normalized
   return `${normalized.slice(0, maxLength - 1)}...`
-}
-
-function relativeTimeLabel(value: string) {
-  const date = new Date(value)
-  const diffMs = Date.now() - date.getTime()
-  if (Number.isNaN(diffMs) || diffMs < 60_000) return "Just now"
-  const diffMinutes = Math.floor(diffMs / 60_000)
-  if (diffMinutes < 60) return `${diffMinutes}m ago`
-  const diffHours = Math.floor(diffMinutes / 60)
-  if (diffHours < 24) return `${diffHours}h ago`
-  const diffDays = Math.floor(diffHours / 24)
-  return `${diffDays}d ago`
 }
 
 function openProjectPath(

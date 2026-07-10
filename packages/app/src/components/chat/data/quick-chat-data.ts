@@ -7,6 +7,8 @@ import type {
   UserStoryFileAttachment,
 } from "@/components/backlog/data/backlog-data"
 
+export const quickChatSelectedEvent = "quick-chat:selected"
+
 export type QuickChatAgentStatus = "Running" | "Paused"
 
 export type QuickChatMessage = {

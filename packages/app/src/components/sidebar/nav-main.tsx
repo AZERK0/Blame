@@ -1,4 +1,5 @@
 import { AppLink } from "@/components/navigation/app-link"
+import { QuickChatHistory } from "@/components/sidebar/quick-chat-history"
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -38,6 +39,7 @@ export function NavMain({
                   <span>{item.title}</span>
                 </AppLink>
               </SidebarMenuButton>
+              {item.url === "/chats" ? <QuickChatHistory /> : null}
             </SidebarMenuItem>
           ))}
         </SidebarMenu>

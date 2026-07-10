@@ -351,8 +351,7 @@ function useQuickChatStoreValue() {
 
   return {
     ...state,
-    activeChat:
-      state.chats.find((chat) => chat.id === state.activeId) ?? state.chats[0],
+    activeChat: state.chats.find((chat) => chat.id === state.activeId),
     agentRunActivityDetail,
     chatDetailsLoaded: (chat?: Pick<QuickChat, "id">) =>
       Boolean(chat && state.detailedChatIds?.has(chat.id)),
