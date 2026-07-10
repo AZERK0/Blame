@@ -152,7 +152,10 @@ function useQuickChatStoreValue() {
             ...current,
             chats: current.chats.map((currentChat) =>
               currentChat.id === chat.id
-                ? mergeQuickChat(currentChat, nextChat)
+                ? mergeQuickChat(currentChat, nextChat, {
+                    replaceAgentActivities:
+                      input.agentActivities !== undefined,
+                  })
                 : currentChat
             ),
             detailedChatIds: chatStateIds(

@@ -130,6 +130,30 @@ test("keeps a parallel tool grouped when a server response omits its group", () 
   assert.equal(merged.agentRuns?.[0].activities?.[0]?.status, "completed")
 })
 
+test("clears previous run activities when a new run explicitly resets them", () => {
+  const previousActivity = activity(
+    "message-session-1",
+    "2026-06-11T10:00:02.000Z",
+    "completed",
+    "Ancienne réponse."
+  )
+  const current = {
+    ...story([run([previousActivity])]),
+    agentActivities: [previousActivity],
+  }
+  const server = {
+    ...current,
+    agentActivities: [],
+    updatedAt: "2026-06-11T10:00:04.000Z",
+  }
+
+  const merged = mergeUserStory(current, server, {
+    replaceAgentActivities: true,
+  })
+
+  assert.deepEqual(merged.agentActivities, [])
+})
+
 function story(agentRuns: UserStoryAgentRun[]): UserStory {
   return {
     agentRuns,

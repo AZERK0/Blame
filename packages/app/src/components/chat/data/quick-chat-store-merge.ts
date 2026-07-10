@@ -16,14 +16,20 @@ export function mergeLoadedQuickChats(
   })
 }
 
-export function mergeQuickChat(currentChat: QuickChat, serverChat: QuickChat) {
+export function mergeQuickChat(
+  currentChat: QuickChat,
+  serverChat: QuickChat,
+  options: { replaceAgentActivities?: boolean } = {}
+) {
   const newestChat = newestValue(currentChat, serverChat)
   return {
     ...newestChat,
-    agentActivities: mergeAgentActivities(
-      currentChat.agentActivities ?? [],
-      serverChat.agentActivities ?? []
-    ),
+    agentActivities: options.replaceAgentActivities
+      ? serverChat.agentActivities
+      : mergeAgentActivities(
+          currentChat.agentActivities ?? [],
+          serverChat.agentActivities ?? []
+        ),
     agentFinalResponse: providedValue(
       newestChat.agentFinalResponse,
       currentChat.agentFinalResponse

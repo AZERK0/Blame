@@ -18,15 +18,18 @@ export function mergeLoadedStories(
 
 export function mergeUserStory(
   currentStory: UserStory,
-  serverStory: UserStory
+  serverStory: UserStory,
+  options: { replaceAgentActivities?: boolean } = {}
 ) {
   const newestStory = newestValue(currentStory, serverStory)
   return {
     ...newestStory,
-    agentActivities: mergeAgentActivities(
-      currentStory.agentActivities ?? [],
-      serverStory.agentActivities ?? []
-    ),
+    agentActivities: options.replaceAgentActivities
+      ? serverStory.agentActivities
+      : mergeAgentActivities(
+          currentStory.agentActivities ?? [],
+          serverStory.agentActivities ?? []
+        ),
     agentFinalResponse: providedValue(
       newestStory.agentFinalResponse,
       currentStory.agentFinalResponse

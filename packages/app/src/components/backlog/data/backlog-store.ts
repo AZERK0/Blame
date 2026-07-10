@@ -159,7 +159,10 @@ function useBacklogStoreValue() {
             ),
             stories: current.stories.map((currentStory) =>
               currentStory.id === story.id
-                ? mergeUserStory(currentStory, nextStory)
+                ? mergeUserStory(currentStory, nextStory, {
+                    replaceAgentActivities:
+                      input.agentActivities !== undefined,
+                  })
                 : currentStory
             ),
           }))
