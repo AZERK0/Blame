@@ -858,9 +858,9 @@ function ActivityDetails({
   loading: boolean
   onLoadDetail: () => void
 }) {
-  const sections = activityDetailSections(details)
   const inspectedFiles = readFilesInput(details)
   const editedFiles = applyPatchInput(details)
+  const customDetails = toolDetailContent(details)
   const loadButton = detailsHasArtifact(details) ? (
     <Button
       className="justify-self-start"
@@ -874,7 +874,7 @@ function ActivityDetails({
     </Button>
   ) : null
 
-  if (sections.length === 0 && !inspectedFiles && !editedFiles) {
+  if (!customDetails && !inspectedFiles && !editedFiles) {
     return (
       <div className="grid gap-2">
         <p className="rounded-md border bg-muted/25 px-3 py-2 text-sm text-muted-foreground">
@@ -889,25 +889,226 @@ function ActivityDetails({
     <div className="grid gap-2">
       {inspectedFiles ? <InspectedFiles files={inspectedFiles} /> : null}
       {editedFiles ? <EditedFiles files={editedFiles} /> : null}
-      {sections.length > 0 ? (
-        <div className="grid gap-2 rounded-md border bg-muted/20 p-2">
-          {sections.map((section) => (
-            <div
-              key={section.label}
-              className="grid gap-1 rounded bg-background/60 p-3"
+      {customDetails}
+      {loadButton}
+    </div>
+  )
+}
+
+function ToolSurface({
+  children,
+  durationMs,
+  label,
+}: {
+  children: React.ReactNode
+  durationMs?: number
+  label: string
+}) {
+  return (
+    <div className="min-w-0 overflow-hidden rounded-lg border bg-muted/15">
+      <div className="flex items-center justify-between gap-3 border-b bg-muted/25 px-3 py-2 text-xs font-medium text-muted-foreground">
+        <span>{label}</span>
+        {durationMs !== undefined ? (
+          <span className="tabular-nums">{durationMs} ms</span>
+        ) : null}
+      </div>
+      <div className="grid min-w-0 gap-2 p-2.5">{children}</div>
+    </div>
+  )
+}
+
+function ToolRows({
+  emptyLabel,
+  values,
+}: {
+  emptyLabel: string
+  values: string[]
+}) {
+  if (values.length === 0)
+    return <p className="px-1 text-xs text-muted-foreground">{emptyLabel}</p>
+  return (
+    <div className="grid gap-1.5">
+      {values.map((value, index) => (
+        <div
+          className="min-w-0 rounded-md bg-background/70 px-3 py-2 font-mono text-xs leading-relaxed text-foreground/85"
+          key={`${value}-${index}`}
+        >
+          <div className="overflow-x-auto whitespace-pre-wrap break-words">{value}</div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function ResultCards({ value }: { value: unknown }) {
+  const entries = outputEntries(value)
+  return (
+    <div className="grid gap-2">
+      {entries.map((entry, index) => (
+        <div className="min-w-0 rounded-md bg-background/70 p-3" key={index}>
+          <div className="mb-2 flex min-w-0 items-center justify-between gap-3 text-xs">
+            <span className="truncate font-medium" title={entry.query}>
+              {entry.query || `Result ${index + 1}`}
+            </span>
+            <span
+              className={cn(
+                "shrink-0 rounded-full px-2 py-0.5 font-medium",
+                entry.success === false
+                  ? "bg-red-500/10 text-red-600 dark:text-red-400"
+                  : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+              )}
             >
-              <div className="flex items-center justify-between gap-3 text-xs font-medium text-muted-foreground">
-                <span>{section.label}</span>
-                {section.meta ? <span>{section.meta}</span> : null}
-              </div>
-              <div className="font-mono text-xs leading-relaxed break-words text-foreground/80">
-                {section.value}
-              </div>
+              {entry.success === false ? "Failed" : "Completed"}
+            </span>
+          </div>
+          {entry.result ? (
+            <div>
+              <pre className="max-h-72 overflow-auto whitespace-pre-wrap break-words font-mono text-xs leading-relaxed text-muted-foreground">
+                {entry.result.text}
+              </pre>
+              {entry.result.truncated ? (
+                <p className="mt-2 text-[11px] text-amber-700 dark:text-amber-400">
+                  Showing a compact preview. Load full detail for the complete result.
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function toolDetailContent(details: ActivityDetail): React.ReactNode {
+  if (readFilesInput(details) || applyPatchInput(details)) return null
+  const input = recordValue(details.input)
+  const toolName = details.toolName ?? "tool"
+
+  if (toolName === "search_codebase") {
+    return (
+      <ToolSurface durationMs={details.durationMs} label="Search patterns">
+        <ToolRows
+          emptyLabel="No search pattern provided"
+          values={stringArray(input.queries)}
+        />
+        {details.output !== undefined ? <ResultCards value={details.output} /> : null}
+      </ToolSurface>
+    )
+  }
+
+  if (toolName === "run_commands") {
+    return (
+      <ToolSurface durationMs={details.durationMs} label="Terminal session">
+        <ToolRows
+          emptyLabel="No command provided"
+          values={stringArray(input.commands)}
+        />
+        {details.output !== undefined ? <ResultCards value={details.output} /> : null}
+      </ToolSurface>
+    )
+  }
+
+  if (toolName === "fetch_web_content") {
+    const requests = arrayValue(input.requests).map((request) => {
+      const value = recordValue(request)
+      return [stringValue(value.url), stringValue(value.prompt)]
+        .filter((part): part is string => Boolean(part))
+        .join("\n")
+    })
+    return (
+      <ToolSurface durationMs={details.durationMs} label="Web content">
+        <ToolRows emptyLabel="No URL provided" values={requests} />
+        {details.output !== undefined ? <ResultCards value={details.output} /> : null}
+      </ToolSurface>
+    )
+  }
+
+  if (toolName === "skills") {
+    const skill = stringValue(input.skill)
+    const args = stringValue(input.args)
+    return (
+      <ToolSurface durationMs={details.durationMs} label="Skill invocation">
+        <ToolRows
+          emptyLabel="No skill specified"
+          values={skill ? [`/${skill}${args ? ` ${args}` : ""}`] : []}
+        />
+        {details.output !== undefined ? <ResultCards value={details.output} /> : null}
+      </ToolSurface>
+    )
+  }
+
+  if (codeGraphTool(toolName)) {
+    return (
+      <ToolSurface durationMs={details.durationMs} label={toolLabel(toolName)}>
+        <StructuredValue label="Scope" value={details.input} />
+        <StructuredValue label="Graph report" value={details.output} />
+      </ToolSurface>
+    )
+  }
+
+  if (toolName === "get_preview_devtools" || toolName === "get_preview_container_logs") {
+    return (
+      <ToolSurface durationMs={details.durationMs} label="Preview diagnostics">
+        <StructuredValue label="Request" value={details.input} />
+        <StructuredValue label="Status" value={details.output} />
+      </ToolSurface>
+    )
+  }
+
+  return (
+    <ToolSurface durationMs={details.durationMs} label={toolLabel(toolName)}>
+      <StructuredValue label="Input" value={details.input} />
+      <StructuredValue label="Output" value={details.output} />
+    </ToolSurface>
+  )
+}
+
+function StructuredValue({ label, value }: { label: string; value: unknown }) {
+  if (value === undefined || value === null) return null
+  if (Array.isArray(value)) {
+    return (
+      <div className="grid gap-1.5">
+        <span className="px-1 text-xs font-medium text-muted-foreground">{label}</span>
+        {value.map((entry, index) => (
+          <StructuredValue key={index} label={`Item ${index + 1}`} value={entry} />
+        ))}
+      </div>
+    )
+  }
+  if (typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>).filter(
+      ([, entry]) => entry !== undefined && entry !== null
+    )
+    return (
+      <div className="grid gap-1.5 rounded-md bg-background/70 p-3">
+        <span className="text-xs font-medium text-muted-foreground">{label}</span>
+        <dl className="grid gap-2">
+          {entries.map(([key, entry]) => (
+            <div className="grid min-w-0 gap-0.5 sm:grid-cols-[9rem_1fr]" key={key}>
+              <dt className="truncate text-xs text-muted-foreground" title={key}>
+                {humanizeToolName(key)}
+              </dt>
+              <dd className="min-w-0">
+                {typeof entry === "object" ? (
+                  <StructuredValue label={humanizeToolName(key)} value={entry} />
+                ) : (
+                  <span className="block overflow-x-auto whitespace-pre-wrap break-words font-mono text-xs leading-relaxed text-foreground/85">
+                    {displayScalar(entry)}
+                  </span>
+                )}
+              </dd>
             </div>
           ))}
-        </div>
-      ) : null}
-      {loadButton}
+        </dl>
+      </div>
+    )
+  }
+  return (
+    <div className="rounded-md bg-background/70 p-3">
+      <div className="mb-1 text-xs font-medium text-muted-foreground">{label}</div>
+      <pre className="max-h-72 overflow-auto whitespace-pre-wrap break-words font-mono text-xs leading-relaxed">
+        {displayScalar(value)}
+      </pre>
     </div>
   )
 }
@@ -968,7 +1169,7 @@ function InspectedFiles({ files }: { files: InspectedFile[] }) {
             key={`${file.path}-${file.startLine ?? "start"}-${file.endLine ?? "end"}-${index}`}
             title={file.path}
           >
-            <span className="shrink-0">Readed</span>
+            <span className="shrink-0">Read</span>
             <span className="truncate text-sky-600 dark:text-sky-400">
               {name}
             </span>
@@ -1351,6 +1552,7 @@ function ActivityToolIcon({
   if (toolName === "search_codebase") return <SearchIcon className="size-4" />
   if (toolName === "read_files") return <FileSearchIcon className="size-4" />
   if (toolName === "apply_patch") return <Code2Icon className="size-4" />
+  if (toolName === "editor") return <PencilIcon className="size-4" />
   if (toolName === "write_file") return <PencilIcon className="size-4" />
   if (toolName === "list_files") return <ListChecksIcon className="size-4" />
   return <ClipboardCheckIcon className="size-4" />
@@ -1366,10 +1568,9 @@ type ActivityDetail = {
   toolName?: string
 }
 
-type ActivityDetailSection = {
-  label: string
-  meta?: string
-  value: string
+type DisplayText = {
+  text: string
+  truncated: boolean
 }
 
 function activityDetails(activity: UserStoryAgentActivity): ActivityDetail {
@@ -1406,7 +1607,7 @@ function activityTitle(
   if (activity.kind !== "tool") return activity.title
   const inspectedFiles = readFilesInput(details)
   if (inspectedFiles) {
-    return `Readed ${inspectedFiles.length} ${inspectedFiles.length === 1 ? "file" : "files"}`
+    return `Read ${inspectedFiles.length} ${inspectedFiles.length === 1 ? "file" : "files"}`
   }
   const editedFiles = applyPatchInput(details)
   if (editedFiles) {
@@ -1416,24 +1617,6 @@ function activityTitle(
     return activity.agentName
   }
   return toolLabel(details.toolName ?? activity.title)
-}
-
-function activityDetailSections(
-  details: ActivityDetail
-): ActivityDetailSection[] {
-  if (readFilesInput(details) || applyPatchInput(details)) return []
-  const sections: ActivityDetailSection[] = []
-  const input = summarizeValue(details.input)
-  const output = summarizeOutput(details.output)
-  if (input) sections.push({ label: "Input", value: input })
-  if (output) {
-    sections.push({
-      label: "Output",
-      meta: details.durationMs ? `${details.durationMs} ms` : undefined,
-      value: output,
-    })
-  }
-  return sections
 }
 
 function applyPatchInput(details: ActivityDetail): EditedFile[] | undefined {
@@ -1578,27 +1761,59 @@ function splitFilePath(path: string) {
   }
 }
 
-function summarizeOutput(value: unknown) {
-  if (Array.isArray(value)) {
-    return value
-      .map((entry, index) => outputEntryLabel(entry, index))
-      .join("\n\n")
-  }
-  return summarizeValue(value)
+function outputEntries(value: unknown) {
+  return arrayValue(value).map((item) => {
+    const entry = recordValue(item)
+    return {
+      query: displayText(entry.query)?.text ?? "",
+      result: displayText(entry.result) ?? displayText(scalarSummary(item)),
+      success: typeof entry.success === "boolean" ? entry.success : undefined,
+    }
+  })
 }
 
-function outputEntryLabel(value: unknown, index: number) {
-  const entry = recordValue(value)
-  const title = stringValue(entry.query) ?? `Result ${index + 1}`
-  const result = stringValue(entry.result) ?? summarizeValue(entry)
-  const status = entry.success === false ? "failed" : "ok"
-  return `${title}\n${status}\n${truncateMiddle(result, 1200)}`
+function arrayValue(value: unknown) {
+  if (Array.isArray(value)) return value
+  return value === undefined || value === null ? [] : [value]
 }
 
-function summarizeValue(value: unknown) {
-  if (value === undefined || value === null) return ""
-  if (typeof value === "string") return truncateMiddle(value, 1200)
-  return truncateMiddle(JSON.stringify(value, undefined, 2), 1200)
+function stringArray(value: unknown) {
+  return Array.isArray(value)
+    ? value.filter((entry): entry is string => typeof entry === "string")
+    : []
+}
+
+function scalarSummary(value: unknown) {
+  if (typeof value === "string") return value
+  if (!value || typeof value !== "object") return displayScalar(value)
+  const record = value as Record<string, unknown>
+  return record.output ?? record.message ?? record.reason ?? ""
+}
+
+function displayText(value: unknown): DisplayText | undefined {
+  if (typeof value === "string") return { text: value, truncated: false }
+  const compact = recordValue(value)
+  const excerpt = stringValue(compact.excerpt)
+  if (!excerpt) return undefined
+  return { text: excerpt, truncated: compact.truncated === true }
+}
+
+function displayScalar(value: unknown) {
+  if (typeof value === "boolean") return value ? "Yes" : "No"
+  if (value === undefined) return "Not provided"
+  if (value === null) return "None"
+  return String(value)
+}
+
+function codeGraphTool(toolName: string) {
+  return [
+    "get_code_minimal_context",
+    "get_code_review_context",
+    "get_code_impact_radius",
+    "get_code_architecture_overview",
+    "get_code_graph_status",
+    "update_code_graph",
+  ].includes(toolName)
 }
 
 function parseDetail(value: string) {
@@ -1615,9 +1830,21 @@ function toolLabel(toolName: string) {
   if (normalized === "run_commands") return "Terminal command"
   if (normalized === "read_files") return "File inspection"
   if (normalized === "search_codebase") return "Code search"
+  if (normalized === "fetch_web_content") return "Web content"
   if (normalized === "apply_patch") return "Code edit"
+  if (normalized === "editor") return "File edit"
   if (normalized === "write_file") return "File write"
   if (normalized === "list_files") return "File listing"
+  if (normalized === "get_preview_devtools") return "Preview DevTools"
+  if (normalized === "get_preview_container_logs") return "Preview logs"
+  if (normalized === "get_code_minimal_context") return "Code context"
+  if (normalized === "get_code_review_context") return "Code review context"
+  if (normalized === "get_code_impact_radius") return "Code impact"
+  if (normalized === "get_code_architecture_overview")
+    return "Architecture overview"
+  if (normalized === "get_code_graph_status") return "Code graph status"
+  if (normalized === "update_code_graph") return "Code graph update"
+  if (normalized === "skills") return "Skill"
   return humanizeToolName(normalized)
 }
 
