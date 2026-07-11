@@ -2,6 +2,7 @@ import * as React from "react"
 
 import { SiteHeader, WindowControls } from "@/components/layout/site-header"
 import { AppSidebar } from "@/components/sidebar/app-sidebar"
+import { useQuickChatStore } from "@/components/chat/data/quick-chat-store"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { useProjects } from "@/context/projects"
 import { projectColorValue } from "@/lib/projects"
@@ -19,7 +20,10 @@ export function AppLayout({
   title: string
 }) {
   const projects = useProjects()
+  const quickChats = useQuickChatStore()
   const haloColor = projectColorValue(projects.activeProject?.color)
+  const headerTitle =
+    pathname === "/chat" ? (quickChats.activeChat?.title ?? title) : title
   const [windowShellOpen, setWindowShellOpen] = React.useState(false)
   const closeTimerRef = React.useRef<number | undefined>(undefined)
   const openedAtRef = React.useRef(0)
@@ -94,7 +98,7 @@ export function AppLayout({
         data-window-shell-inset
         className="z-[1] min-w-0 overflow-hidden"
       >
-        <SiteHeader title={title} />
+        <SiteHeader title={headerTitle} />
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           {children}
         </div>
