@@ -859,6 +859,8 @@ function ActivityDetails({
   onLoadDetail: () => void
 }) {
   const sections = activityDetailSections(details)
+  const inspectedFiles = readFilesInput(details)
+  const editedFiles = applyPatchInput(details)
   const loadButton = detailsHasArtifact(details) ? (
     <Button
       className="justify-self-start"
@@ -872,7 +874,7 @@ function ActivityDetails({
     </Button>
   ) : null
 
-  if (sections.length === 0) {
+  if (sections.length === 0 && !inspectedFiles && !editedFiles) {
     return (
       <div className="grid gap-2">
         <p className="rounded-md border bg-muted/25 px-3 py-2 text-sm text-muted-foreground">
@@ -885,23 +887,102 @@ function ActivityDetails({
 
   return (
     <div className="grid gap-2">
-      <div className="grid gap-2 rounded-md border bg-muted/20 p-2">
-        {sections.map((section) => (
-          <div
-            key={section.label}
-            className="grid gap-1 rounded bg-background/60 p-3"
-          >
-            <div className="flex items-center justify-between gap-3 text-xs font-medium text-muted-foreground">
-              <span>{section.label}</span>
-              {section.meta ? <span>{section.meta}</span> : null}
+      {inspectedFiles ? <InspectedFiles files={inspectedFiles} /> : null}
+      {editedFiles ? <EditedFiles files={editedFiles} /> : null}
+      {sections.length > 0 ? (
+        <div className="grid gap-2 rounded-md border bg-muted/20 p-2">
+          {sections.map((section) => (
+            <div
+              key={section.label}
+              className="grid gap-1 rounded bg-background/60 p-3"
+            >
+              <div className="flex items-center justify-between gap-3 text-xs font-medium text-muted-foreground">
+                <span>{section.label}</span>
+                {section.meta ? <span>{section.meta}</span> : null}
+              </div>
+              <div className="font-mono text-xs leading-relaxed break-words text-foreground/80">
+                {section.value}
+              </div>
             </div>
-            <div className="font-mono text-xs leading-relaxed break-words text-foreground/80">
-              {section.value}
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      ) : null}
       {loadButton}
+    </div>
+  )
+}
+
+type EditedFile = {
+  additions?: number
+  deletions?: number
+  path: string
+}
+
+function EditedFiles({ files }: { files: EditedFile[] }) {
+  return (
+    <div className="grid gap-1.5 py-0.5">
+      {files.map((file) => {
+        const { name } = splitFilePath(file.path)
+        return (
+          <div
+            className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground"
+            key={file.path}
+            title={file.path}
+          >
+            <span className="shrink-0">Edited</span>
+            <span className="truncate text-sky-600 dark:text-sky-400">
+              {name}
+            </span>
+            {file.additions !== undefined ? (
+              <span className="shrink-0 text-emerald-600 dark:text-emerald-400">
+                +{file.additions}
+              </span>
+            ) : null}
+            {file.deletions !== undefined ? (
+              <span className="shrink-0 text-red-600 dark:text-red-400">
+                -{file.deletions}
+              </span>
+            ) : null}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+type InspectedFile = {
+  endLine?: number
+  path: string
+  startLine?: number
+}
+
+function InspectedFiles({ files }: { files: InspectedFile[] }) {
+  return (
+    <div className="grid gap-1.5 py-0.5">
+      {files.map((file, index) => {
+        const { name } = splitFilePath(file.path)
+        const lineCount = inspectedLineCount(file)
+        return (
+          <div
+            className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground"
+            key={`${file.path}-${file.startLine ?? "start"}-${file.endLine ?? "end"}-${index}`}
+            title={file.path}
+          >
+            <span className="shrink-0">Readed</span>
+            <span className="truncate text-sky-600 dark:text-sky-400">
+              {name}
+            </span>
+            <span className="shrink-0 text-muted-foreground/70">
+              {inspectedLineRange(file)}
+            </span>
+            {lineCount !== undefined ? (
+              <span className="shrink-0 text-emerald-600 dark:text-emerald-400">
+                {lineCount} {lineCount === 1 ? "line" : "lines"}
+              </span>
+            ) : null}
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -1323,6 +1404,14 @@ function activityTitle(
   details: ActivityDetail
 ) {
   if (activity.kind !== "tool") return activity.title
+  const inspectedFiles = readFilesInput(details)
+  if (inspectedFiles) {
+    return `Readed ${inspectedFiles.length} ${inspectedFiles.length === 1 ? "file" : "files"}`
+  }
+  const editedFiles = applyPatchInput(details)
+  if (editedFiles) {
+    return `Edited ${editedFiles.length} ${editedFiles.length === 1 ? "file" : "files"}`
+  }
   if (details.toolName === "spawn_agent" && activity.agentName) {
     return activity.agentName
   }
@@ -1332,6 +1421,7 @@ function activityTitle(
 function activityDetailSections(
   details: ActivityDetail
 ): ActivityDetailSection[] {
+  if (readFilesInput(details) || applyPatchInput(details)) return []
   const sections: ActivityDetailSection[] = []
   const input = summarizeValue(details.input)
   const output = summarizeOutput(details.output)
@@ -1344,6 +1434,148 @@ function activityDetailSections(
     })
   }
   return sections
+}
+
+function applyPatchInput(details: ActivityDetail): EditedFile[] | undefined {
+  const patch =
+    details.toolName === "apply_patch"
+      ? applyPatchExcerpt(details.input)
+      : undefined
+  if (!patch) return appliedPatchOutputFiles(details.output)
+
+  const files: EditedFile[] = []
+  let current: EditedFile | undefined
+  for (const line of patch.split("\n")) {
+    const path = line.match(/^\*\*\* (?:Update|Add|Delete) File: (.+)$/)?.[1]
+    if (path) {
+      current = { additions: 0, deletions: 0, path: path.trim() }
+      files.push(current)
+      continue
+    }
+    if (!current || line.startsWith("+++ ") || line.startsWith("--- ")) continue
+    if (line.startsWith("+")) current.additions += 1
+    if (line.startsWith("-")) current.deletions += 1
+  }
+  return files.length > 0 ? files : undefined
+}
+
+function appliedPatchOutputFiles(value: unknown): EditedFile[] | undefined {
+  const pending = [value]
+  const visited = new Set<object>()
+
+  while (pending.length > 0) {
+    let candidate = pending.shift()
+    if (typeof candidate === "string") {
+      try {
+        candidate = JSON.parse(candidate)
+      } catch {
+        continue
+      }
+    }
+    if (!candidate || typeof candidate !== "object") continue
+    if (visited.has(candidate)) continue
+    visited.add(candidate)
+
+    if (Array.isArray(candidate)) {
+      pending.push(...candidate)
+      continue
+    }
+
+    const output = candidate as Record<string, unknown>
+    if (stringValue(output.query) !== "apply_patch" || output.success === false)
+      continue
+    const result = stringValue(output.result)
+    if (!result) continue
+    const fileList = result.match(
+      /Successfully applied patch to the following files:\s*([\s\S]*)/i
+    )?.[1]
+    if (!fileList) continue
+    const files = fileList
+      .split("\n")
+      .map((path) => path.trim())
+      .filter(Boolean)
+      .map((path) => ({ path }))
+    if (files.length > 0) return files
+  }
+
+  return undefined
+}
+
+function applyPatchExcerpt(value: unknown): string | undefined {
+  const pending = [value]
+  const visited = new Set<object>()
+
+  while (pending.length > 0) {
+    const candidate = pending.shift()
+    if (typeof candidate === "string") return candidate
+    if (!candidate || typeof candidate !== "object") continue
+    if (visited.has(candidate)) continue
+    visited.add(candidate)
+
+    if (Array.isArray(candidate)) {
+      pending.unshift(...candidate)
+      continue
+    }
+
+    const record = candidate as Record<string, unknown>
+    const excerpt = stringValue(record.excerpt)
+    if (excerpt) return excerpt
+    if (record.input !== undefined) pending.unshift(record.input)
+  }
+
+  return undefined
+}
+
+function readFilesInput(details: ActivityDetail): InspectedFile[] | undefined {
+  if (details.toolName !== "read_files") return undefined
+  const input = recordValue(details.input)
+  if (!Array.isArray(input.files)) return undefined
+
+  const files = input.files.flatMap((value): InspectedFile[] => {
+    const file = recordValue(value)
+    const path = stringValue(file.path)
+    if (!path) return []
+    return [
+      {
+        endLine: positiveInteger(file.end_line),
+        path,
+        startLine: positiveInteger(file.start_line),
+      },
+    ]
+  })
+  return files.length > 0 ? files : undefined
+}
+
+function positiveInteger(value: unknown) {
+  const number = numberValue(value)
+  return number !== undefined && Number.isInteger(number) && number > 0
+    ? number
+    : undefined
+}
+
+function inspectedLineCount(file: InspectedFile) {
+  if (file.startLine === undefined || file.endLine === undefined)
+    return undefined
+  return Math.abs(file.endLine - file.startLine) + 1
+}
+
+function inspectedLineRange(file: InspectedFile) {
+  if (file.startLine !== undefined && file.endLine !== undefined) {
+    return `L${file.startLine}–${file.endLine}`
+  }
+  if (file.startLine !== undefined) return `From L${file.startLine}`
+  if (file.endLine !== undefined) return `Through L${file.endLine}`
+  return "Entire file"
+}
+
+function splitFilePath(path: string) {
+  const normalized = path.replaceAll("\\", "/")
+  const separator = normalized.lastIndexOf("/")
+  if (separator < 0) return { directory: "", name: normalized }
+  return {
+    directory: normalized.slice(0, separator),
+    name: normalized.slice(separator + 1) || normalized,
+  }
 }
 
 function summarizeOutput(value: unknown) {

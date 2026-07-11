@@ -502,6 +502,7 @@ function toolActivityInput(
   const iteration = numberValue(payload.iteration)
   const id = toolActivityId(activities, toolName, iteration, phase, toolCallId)
   const existing = activities.find((activity) => activity.id === id)
+  const existingDetail = parseDetailRecord(existing?.detail)
   const agent =
     toolName === "spawn_agent"
       ? spawnAgentInfo(recordValue(toolCall.input), existing)
@@ -510,8 +511,8 @@ function toolActivityInput(
     id,
     kind: "tool",
     title: toolTitle(toolName, phase),
-    detail: toolDetail(payload, true),
-    serverDetail: toolDetail(payload, false),
+    detail: toolDetail(payload, true, existingDetail),
+    serverDetail: toolDetail(payload, false, existingDetail),
     status: toolStatus(phase),
     iteration,
     parallelGroupId: existing?.parallelGroupId,
@@ -816,20 +817,51 @@ function toolStatus(phase: string | undefined): ActivityStatus {
   return "running"
 }
 
-function toolDetail(payload: Record<string, unknown>, compact: boolean) {
+function toolDetail(
+  payload: Record<string, unknown>,
+  compact: boolean,
+  existing: Record<string, unknown>
+) {
   const toolCall = recordValue(payload.toolCall)
   const detail = {
-    durationMs: payload.durationMs,
-    toolName: stringValue(toolCall.name) ?? stringValue(toolCall.toolName),
-    input: compact ? compactValue(toolCall.input) : toolCall.input,
-    output: compact ? compactValue(payload.output) : payload.output,
-    update: compact ? compactValue(payload.update) : payload.update,
-    hookEventName: payload.hookEventName,
+    durationMs: payload.durationMs ?? existing.durationMs,
+    toolName:
+      stringValue(toolCall.name) ??
+      stringValue(toolCall.toolName) ??
+      existing.toolName,
+    input:
+      toolCall.input === undefined
+        ? existing.input
+        : compact
+          ? compactValue(toolCall.input)
+          : toolCall.input,
+    output:
+      payload.output === undefined
+        ? existing.output
+        : compact
+          ? compactValue(payload.output)
+          : payload.output,
+    update:
+      payload.update === undefined
+        ? existing.update
+        : compact
+          ? compactValue(payload.update)
+          : payload.update,
+    hookEventName: payload.hookEventName ?? existing.hookEventName,
   }
   return stringifyDetail(
     detail,
     compact ? maxActivityDetailLength : maxServerActivityDetailLength
   )
+}
+
+function parseDetailRecord(value: string | undefined) {
+  if (!value) return {}
+  try {
+    return recordValue(JSON.parse(value))
+  } catch {
+    return {}
+  }
 }
 
 function toolEventText(payload: object) {

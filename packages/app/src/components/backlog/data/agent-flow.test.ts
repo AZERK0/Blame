@@ -20,6 +20,34 @@ test("completes a running tool when a fallback result has no tool call id", () =
   assert.equal(completed.agentActivities?.[0]?.status, "completed")
 })
 
+test("preserves tool input when the completion event only contains output", () => {
+  const patch = "*** Begin Patch\n*** Update File: example.ts\n+changed\n*** End Patch"
+  const started = updateStory(story(), {
+    type: "tool",
+    payload: {
+      phase: "started",
+      toolCall: { id: "call-1", name: "apply_patch", input: { excerpt: patch } },
+    },
+  })
+  const completed = updateStory(started, {
+    type: "tool",
+    payload: {
+      output: {
+        query: "apply_patch",
+        result: "Successfully applied patch to the following files:\nexample.ts",
+        success: true,
+      },
+      phase: "finished",
+      toolCall: { id: "call-1", name: "apply_patch" },
+    },
+  })
+
+  const detail = JSON.parse(completed.agentActivities?.[0]?.detail ?? "{}")
+  assert.deepEqual(detail.input, { excerpt: patch })
+  assert.equal(detail.output.query, "apply_patch")
+  assert.equal(completed.agentActivities?.[0]?.status, "completed")
+})
+
 test("does not duplicate a completed tool when its fallback result arrives", () => {
   const started = updateStory(
     story(),

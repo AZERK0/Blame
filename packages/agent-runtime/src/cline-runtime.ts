@@ -304,6 +304,7 @@ export class BlameAgentRuntime {
   private sessionStartInputs = new Map<string, ClineCoreStartInput>();
   private sessionEventSignatures = new Map<string, Map<string, number>>();
   private sessionHeadroomSavings = new Map<string, HeadroomSavingsTotals>();
+  private sessionToolInputs = new Map<string, unknown>();
   private sessionIterations = new Map<string, number>();
   private sessionSpawnAgentActiveCounts = new Map<string, number>();
   private sessionUsageSignatures = new Map<string, string>();
@@ -1342,7 +1343,7 @@ export class BlameAgentRuntime {
         if (this.shouldSkipSessionDisplayEvent(sessionId, payload)) return;
         const event = this.withSessionIteration(
           sessionId,
-          normalizeEvent(sessionId, payload),
+          this.withToolInput(sessionId, normalizeEvent(sessionId, payload)),
         );
         if (this.shouldSkipDuplicateSessionEvent(sessionId, event)) return;
         if (spawnAgentPhase) {
@@ -1371,6 +1372,29 @@ export class BlameAgentRuntime {
     const iteration = this.sessionIterations.get(sessionId);
     if (iteration === undefined) return event;
     return { ...event, payload: { ...payload, iteration } };
+  }
+
+  private withToolInput(sessionId: string, event: AgentEvent) {
+    if (event.type !== "tool") return event;
+    const payload = asRecord(event.payload);
+    const toolCall = asRecord(payload.toolCall);
+    const toolCallId = stringValue(toolCall.id) ?? stringValue(payload.toolCallId);
+    if (!toolCallId) return event;
+    const key = `${sessionId}:${toolCallId}`;
+    const completed =
+      payload.phase === "finished" || payload.hookEventName === "tool_result";
+    if (toolCall.input !== undefined) {
+      if (completed) this.sessionToolInputs.delete(key);
+      else this.sessionToolInputs.set(key, toolCall.input);
+      return event;
+    }
+    const input = this.sessionToolInputs.get(key);
+    if (input === undefined) return event;
+    if (completed) this.sessionToolInputs.delete(key);
+    return {
+      ...event,
+      payload: { ...payload, toolCall: { ...toolCall, input } },
+    };
   }
 
   private shouldSkipDuplicateSessionEvent(
@@ -1422,6 +1446,9 @@ export class BlameAgentRuntime {
     this.sessionHeadroomSavings.delete(sessionId);
     this.sessionIterations.delete(sessionId);
     this.sessionSpawnAgentActiveCounts.delete(sessionId);
+    for (const key of this.sessionToolInputs.keys()) {
+      if (key.startsWith(`${sessionId}:`)) this.sessionToolInputs.delete(key);
+    }
     this.sessionUsageSignatures.delete(sessionId);
     this.sessionBackendKeys.delete(sessionId);
     this.sessionStartInputs.delete(sessionId);
