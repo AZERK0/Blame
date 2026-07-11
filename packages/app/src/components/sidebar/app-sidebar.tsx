@@ -32,8 +32,8 @@ const data = {
       icon: <Table2Icon />,
     },
     {
-      title: "Chats",
-      url: "/chats",
+      title: "Chat",
+      url: "/chat",
       icon: <MessageCircleIcon />,
     },
     {

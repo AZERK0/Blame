@@ -88,12 +88,12 @@ export function QuickChatHistory({ pathname }: { pathname: string }) {
               asChild
               className="h-8 pr-12 pl-2 text-sm"
               isActive={
-                pathname === "/chats" && quickChats.activeId === chat.id
+                pathname === "/chat" && quickChats.activeId === chat.id
               }
               tooltip={chat.title}
             >
               <AppLink
-                href="/chats"
+                href="/chat"
                 onClick={() => {
                   quickChats.setActiveId(chat.id)
                   window.dispatchEvent(new Event(quickChatSelectedEvent))

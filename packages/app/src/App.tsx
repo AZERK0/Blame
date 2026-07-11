@@ -37,7 +37,7 @@ const routes = [
     title: "Active User Stories",
     element: <BacklogStatusPipPage />,
   },
-  { path: "/chats", title: "Chats", element: <ChatPage /> },
+  { path: "/chat", title: "Chat", element: <ChatPage /> },
   { path: "/git", title: "Git", element: <GitPage /> },
   { path: "/practices", title: "Code Practices", element: <PracticesPage /> },
   { path: "/security", title: "Security Audit", element: <RoutePage title="Security Audit" /> },

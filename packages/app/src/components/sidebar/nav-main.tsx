@@ -49,14 +49,14 @@ export function NavMain({
                 tooltip={item.title}
                 isActive={
                   pathname === item.url &&
-                  (item.url !== "/chats" || !quickChats.activeId) &&
+                  (item.url !== "/chat" || !quickChats.activeId) &&
                   (item.url !== "/backlog" || !selectedStoryId)
                 }
               >
                 <AppLink
                   href={item.url}
                   onClick={() => {
-                    if (item.url === "/chats") {
+                    if (item.url === "/chat") {
                       quickChats.setActiveId(undefined)
                       window.dispatchEvent(new Event(quickChatSelectedEvent))
                     }
@@ -67,7 +67,7 @@ export function NavMain({
                   <span>{item.title}</span>
                 </AppLink>
               </SidebarMenuButton>
-              {item.url === "/chats" ? (
+              {item.url === "/chat" ? (
                 <QuickChatHistory pathname={pathname} />
               ) : null}
               {item.url === "/backlog" ? (
