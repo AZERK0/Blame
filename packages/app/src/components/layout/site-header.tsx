@@ -10,25 +10,37 @@ import { ProjectRunnerButton } from "@/components/backlog/board/project-runner-b
 import { useProjectInitialization } from "@/components/project-initialization/use-project-initialization"
 import { useProjects } from "@/context/projects"
 
+const siteHeaderBlurMask = {
+  maskImage: "linear-gradient(to bottom, black 5%, transparent 72%)",
+  WebkitMaskImage: "linear-gradient(to bottom, black 5%, transparent 72%)",
+} satisfies React.CSSProperties
+
 export function SiteHeader({ title }: { title: string }) {
   const projects = useProjects()
   const projectInitialization = useProjectInitialization()
   return (
-    <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
-      <div className="flex min-w-0 flex-1 items-center gap-1 px-4 lg:gap-2 lg:px-6">
-        <SidebarTrigger className="-ml-1" />
-        <Separator
-          orientation="vertical"
-          className="mx-2 data-[orientation=vertical]:h-4"
-        />
-        <h1 className="truncate text-base font-medium">{title}</h1>
-        <div className="ml-auto">
-          <ProjectRunnerButton
-            configurations={
-              projectInitialization?.initialization?.runConfigurations ?? []
-            }
-            projectPath={projects.activeProject?.path}
+    <header className="pointer-events-none absolute inset-x-0 top-0 z-20 pb-10 md:pb-12">
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 backdrop-blur-xl"
+        style={siteHeaderBlurMask}
+      />
+      <div className="pointer-events-auto relative flex h-(--header-height) items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
+        <div className="flex min-w-0 flex-1 items-center gap-1 px-4 lg:gap-2 lg:px-6">
+          <SidebarTrigger className="-ml-1" />
+          <Separator
+            orientation="vertical"
+            className="mx-2 data-[orientation=vertical]:h-4"
           />
+          <h1 className="truncate text-base font-medium">{title}</h1>
+          <div className="ml-auto">
+            <ProjectRunnerButton
+              configurations={
+                projectInitialization?.initialization?.runConfigurations ?? []
+              }
+              projectPath={projects.activeProject?.path}
+            />
+          </div>
         </div>
       </div>
     </header>

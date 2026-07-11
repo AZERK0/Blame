@@ -32,15 +32,18 @@ export function AppLayout({
     setWindowShellOpen(false)
   }, [])
 
-  const openWindowShell = React.useCallback((event: React.MouseEvent) => {
-    window.clearTimeout(closeTimerRef.current)
-    pointerYRef.current = event.clientY
-    openedAtRef.current = window.performance.now()
-    setWindowShellOpen(true)
-    closeTimerRef.current = window.setTimeout(() => {
-      closeWindowShellIfPointerOutside()
-    }, windowShellGraceMs)
-  }, [closeWindowShellIfPointerOutside])
+  const openWindowShell = React.useCallback(
+    (event: React.MouseEvent) => {
+      window.clearTimeout(closeTimerRef.current)
+      pointerYRef.current = event.clientY
+      openedAtRef.current = window.performance.now()
+      setWindowShellOpen(true)
+      closeTimerRef.current = window.setTimeout(() => {
+        closeWindowShellIfPointerOutside()
+      }, windowShellGraceMs)
+    },
+    [closeWindowShellIfPointerOutside]
+  )
 
   React.useEffect(() => {
     return () => window.clearTimeout(closeTimerRef.current)
@@ -92,7 +95,9 @@ export function AppLayout({
         className="z-[1] min-w-0 overflow-hidden"
       >
         <SiteHeader title={title} />
-        {children}
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          {children}
+        </div>
       </SidebarInset>
     </SidebarProvider>
   )

@@ -67,7 +67,7 @@ function resolveRoute(pathname: string) {
 
 function RoutePage({ title }: { title: string }) {
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 lg:p-6">
+    <div className="flex flex-1 flex-col gap-4 px-4 pt-[calc(var(--header-height)+1rem)] pb-4 lg:px-6 lg:pt-[calc(var(--header-height)+1.5rem)] lg:pb-6">
       <div className="rounded-lg border bg-card p-6 text-card-foreground">
         <h2 className="text-lg font-semibold">{title}</h2>
         <p className="mt-2 text-sm text-muted-foreground">

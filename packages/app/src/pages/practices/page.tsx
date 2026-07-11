@@ -52,7 +52,7 @@ export function PracticesPage() {
   const store = useCodePracticesStore()
 
   return (
-    <div className="flex flex-1 flex-col items-center p-4 lg:p-6">
+    <div className="flex flex-1 flex-col items-center px-4 pt-[calc(var(--header-height)+1rem)] pb-4 lg:px-6 lg:pt-[calc(var(--header-height)+1.5rem)] lg:pb-6">
       <div className="flex w-full max-w-3xl flex-col gap-4">
         <div>
           <h2 className="font-heading text-2xl font-semibold tracking-normal">

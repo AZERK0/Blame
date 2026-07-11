@@ -1,19 +1,9 @@
 import * as React from "react"
 import type { AgentEvent } from "@blame/agent-runtime"
-import {
-  CheckCircle2Icon,
-  FolderGit2Icon,
-  GitBranchIcon,
-  MessageCirclePlusIcon,
-  SendIcon,
-} from "lucide-react"
+import { SendIcon } from "lucide-react"
 import { toast } from "sonner"
 
-import type {
-  GitStatusResult,
-  Platform,
-  WorkspaceClient,
-} from "@/context/platform"
+import type { Platform } from "@/context/platform"
 import type { UserStoryFileAttachment } from "@/components/backlog/data/backlog-data"
 import {
   agentEventText,
@@ -65,8 +55,6 @@ import {
   ModelSelector,
   useModelSelection,
 } from "@/components/model/model-selector"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import {
   MessageScroller,
   MessageScrollerButton,
@@ -83,10 +71,6 @@ import { showSystemNotification } from "@/lib/system-notifications"
 import { generateAgentTitle } from "@/lib/agent-title-generation"
 
 const agentEventPersistDelayMs = 1_500
-const topStrongBlurMask = {
-  maskImage: "linear-gradient(to bottom, black 0%, transparent 72%)",
-  WebkitMaskImage: "linear-gradient(to bottom, black 0%, transparent 72%)",
-} satisfies React.CSSProperties
 const bottomBlurMask = {
   maskImage: "linear-gradient(to top, black 0%, black 60%, transparent 100%)",
   WebkitMaskImage:
@@ -140,7 +124,6 @@ function QuickChatProjectPage() {
   const [draftFileAttachments, setDraftFileAttachments] = React.useState<
     UserStoryFileAttachment[]
   >([])
-  const [gitStatus, setGitStatus] = React.useState<GitStatusResult>()
   const [sending, setSending] = React.useState(false)
   const chatsRef = React.useRef(quickChats.chats)
   const pendingAgentUpdates = React.useRef(
@@ -157,16 +140,11 @@ function QuickChatProjectPage() {
       selection.currentModel?.provider.id,
     providers: selection.allProviders,
   })
-  const branchName = gitStatus?.branch.current ?? "Current branch"
   const mentionDirectory = project?.path
   const agentRunning = activeConversation?.agentStatus === "Running"
   React.useEffect(() => {
     chatsRef.current = quickChats.chats
   }, [quickChats.chats])
-
-  React.useEffect(() => {
-    return loadGitStatus(project?.path, platform.workspace, setGitStatus)
-  }, [platform.workspace, project?.path])
 
   React.useEffect(() => {
     if (!activeConversation || quickChats.chatDetailsLoaded(activeConversation))
@@ -343,15 +321,6 @@ function QuickChatProjectPage() {
       body: chat.title,
       title: "Agent response ready",
     })
-  }
-
-  function createConversation() {
-    if (!project) {
-      showQuickChatError("Unable to create quick chat", "Open a project first.")
-      return
-    }
-    quickChats.setActiveId(undefined)
-    clearDraft()
   }
 
   async function undoQuickChatMessage(
@@ -648,30 +617,15 @@ function QuickChatProjectPage() {
 
   return (
     <>
-      <div className="flex h-[calc(100svh_-_var(--header-height))] min-h-0 min-w-0 flex-col overflow-hidden md:h-[calc(100svh_-_var(--header-height)_-_1rem)]">
+      <div className="flex h-svh min-h-0 min-w-0 flex-col overflow-hidden md:h-[calc(100svh_-_1rem)]">
         <div className="grid min-h-0 flex-1 grid-cols-1 gap-2">
-          <main className="relative flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border bg-background/70">
-            <div className="pointer-events-none absolute inset-x-0 top-0 z-20 pb-10 md:pb-12">
-              <div
-                className="absolute inset-0 backdrop-blur-xl"
-                style={topStrongBlurMask}
-              />
-              <div className="pointer-events-auto relative">
-                <QuickChatHeader
-                  branchName={branchName}
-                  changeCount={gitStatus?.files.length}
-                  projectName={project?.name ?? "Project"}
-                  projectPath={project?.path ?? ""}
-                  onCreate={createConversation}
-                />
-              </div>
-            </div>
+          <main className="relative flex min-h-0 min-w-0 flex-col overflow-hidden">
             <MessageScrollerProvider key={activeConversation?.id ?? "new-chat"}>
               <MessageScroller>
                 <MessageScrollerViewport>
                   <MessageScrollerContent
                     aria-busy={agentRunning}
-                    className="mx-auto w-full max-w-4xl gap-10 px-4 pt-24 pb-48 md:px-8 md:pt-28"
+                    className="mx-auto w-full max-w-4xl gap-10 px-4 pt-[calc(var(--header-height)+1rem)] pb-48 md:px-8"
                   >
                     <QuickChatStatus
                       error={quickChats.error}
@@ -773,64 +727,6 @@ function QuickChatProjectPage() {
   )
 }
 
-function QuickChatHeader({
-  branchName,
-  changeCount,
-  projectName,
-  projectPath,
-  onCreate,
-}: {
-  branchName: string
-  changeCount?: number
-  projectName: string
-  projectPath: string
-  onCreate: () => void
-}) {
-  return (
-    <header className="grid gap-4 px-4 pt-4 md:px-6 md:pt-5">
-      <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="min-w-0">
-          <div className="text-xs font-medium text-muted-foreground">
-            Quick change
-          </div>
-          <h1 className="mt-1 truncate font-heading text-2xl font-semibold">
-            Fast agent chat
-          </h1>
-          <p className="truncate text-sm text-muted-foreground">
-            {projectPath}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge className="max-w-64 justify-start gap-1" variant="outline">
-            <FolderGit2Icon className="size-3" />
-            <span className="truncate">{projectName}</span>
-          </Badge>
-          <Badge className="max-w-56 justify-start gap-1" variant="secondary">
-            <GitBranchIcon className="size-3" />
-            <span className="truncate">{branchName}</span>
-          </Badge>
-          <Badge className="gap-1" variant="outline">
-            <CheckCircle2Icon className="size-3" />
-            {changeCount ?? 0} change{changeCount === 1 ? "" : "s"}
-          </Badge>
-        </div>
-      </div>
-      <div className="flex items-center gap-2 pb-3">
-        <Button
-          className="shrink-0"
-          onClick={onCreate}
-          size="sm"
-          type="button"
-          variant="outline"
-        >
-          <MessageCirclePlusIcon />
-          New
-        </Button>
-      </div>
-    </header>
-  )
-}
-
 function QuickChatStatus({
   error,
   loading,
@@ -881,29 +777,6 @@ function QuickChatEmptyState() {
       </div>
     </div>
   )
-}
-
-function loadGitStatus(
-  root: string | undefined,
-  workspace: WorkspaceClient | undefined,
-  setGitStatus: React.Dispatch<
-    React.SetStateAction<GitStatusResult | undefined>
-  >
-) {
-  let cancelled = false
-  setGitStatus(undefined)
-  if (!root || !workspace) return () => undefined
-  void workspace
-    .gitStatus({ root })
-    .then((status) => {
-      if (!cancelled) setGitStatus(status)
-    })
-    .catch(() => {
-      if (!cancelled) setGitStatus(undefined)
-    })
-  return () => {
-    cancelled = true
-  }
 }
 
 async function restoreQuickChatCheckpoint(

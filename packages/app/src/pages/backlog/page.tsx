@@ -993,7 +993,7 @@ export function BacklogPage() {
   }, [platform.backlogStatusPip])
 
   return (
-    <div className="flex h-[calc(100svh_-_var(--header-height))] min-h-0 min-w-0 flex-col gap-4 overflow-hidden p-4 md:h-[calc(100svh_-_var(--header-height)_-_1rem)] lg:p-6">
+    <div className="flex h-svh min-h-0 min-w-0 flex-col gap-4 overflow-hidden px-4 pt-[calc(var(--header-height)+1rem)] pb-4 md:h-[calc(100svh_-_1rem)] lg:px-6 lg:pt-[calc(var(--header-height)+1.5rem)] lg:pb-6">
       <BacklogToolbar
         disabled={!backlog.projectPath}
         onOpenStatusPip={platform.backlogStatusPip ? openStatusPip : undefined}
