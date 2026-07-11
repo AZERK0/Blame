@@ -80,6 +80,7 @@ import { useProjects } from "@/context/projects"
 import { useProjectInitialization } from "@/components/project-initialization/use-project-initialization"
 import { projectCodePractices } from "@/lib/project-code-practices"
 import { showSystemNotification } from "@/lib/system-notifications"
+import { generateAgentTitle } from "@/lib/agent-title-generation"
 
 const agentEventPersistDelayMs = 1_500
 const topStrongBlurMask = {
@@ -428,8 +429,36 @@ function QuickChatProjectPage() {
       workspace: project?.path ?? null,
     })
     replaceChatRef(chat)
-    setNewConversationActive(false)
+    void generateQuickChatTitle(chat, message)
     return chat
+  }
+
+  async function generateQuickChatTitle(chat: QuickChat, message: string) {
+    const generateTitle = platform.agent?.promptOptimizer.generateTitle
+    const model = selection.currentModel
+    if (
+      !generateTitle ||
+      !model ||
+      !project?.path ||
+      auth.status !== "authenticated"
+    )
+      return
+    try {
+      const title = await generateAgentTitle(generateTitle, {
+        apiConnection: auth.apiConnection,
+        context: "quick-chat",
+        providerId: model.provider.id,
+        modelId: model.id,
+        credentialLabel: model.credentialLabel,
+        reasoningEffort: selection.currentVariant,
+        prompt: message,
+        workspace: project.path,
+      })
+      const updatedChat = await quickChats.update(currentChat(chat), { title })
+      replaceChatRef(updatedChat)
+    } catch {
+      return
+    }
   }
 
   async function detailedConversation(conversation: QuickChat) {

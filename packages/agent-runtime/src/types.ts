@@ -222,8 +222,9 @@ export type GenerateCommitMessageResult = {
   message: string;
 };
 
-export type GenerateUserStoryTitleInput = {
+export type GenerateTitleInput = {
   apiConnection: ApiConnection;
+  context: "quick-chat" | "user-story";
   providerId: string;
   modelId: string;
   prompt: string;
@@ -234,7 +235,7 @@ export type GenerateUserStoryTitleInput = {
   backend?: AgentBackendConfig;
 };
 
-export type GenerateUserStoryTitleResult = {
+export type GenerateTitleResult = {
   sessionId: string;
   title: string;
 };

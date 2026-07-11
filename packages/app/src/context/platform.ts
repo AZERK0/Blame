@@ -11,8 +11,8 @@ import type {
   CompareCheckpointResult,
   GenerateCommitMessageInput,
   GenerateCommitMessageResult,
-  GenerateUserStoryTitleInput,
-  GenerateUserStoryTitleResult,
+  GenerateTitleInput,
+  GenerateTitleResult,
   InitializeProjectInput,
   InitializeProjectResult,
   ProjectInitializationDiagnostics,
@@ -215,9 +215,7 @@ export type AgentClient = {
     optimizeUserStory(
       input: OptimizeUserStoryPromptInput
     ): Promise<OptimizeUserStoryPromptResult>
-    generateUserStoryTitle(
-      input: GenerateUserStoryTitleInput
-    ): Promise<GenerateUserStoryTitleResult>
+    generateTitle(input: GenerateTitleInput): Promise<GenerateTitleResult>
   }
   approveAndMerge(input: ApproveAndMergeInput): Promise<ApproveAndMergeResult>
   generateCommitMessage(

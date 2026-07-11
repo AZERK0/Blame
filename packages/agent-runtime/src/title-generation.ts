@@ -3,8 +3,8 @@ import type { ClineCore } from "@cline/sdk";
 import { loadPrompt } from "./prompt-loader.js";
 import { appendProductionConfig } from "./production.js";
 import type {
-  GenerateUserStoryTitleInput,
-  GenerateUserStoryTitleResult,
+  GenerateTitleInput,
+  GenerateTitleResult,
 } from "./types.js";
 
 type TitleGenerationCredential = {
@@ -12,16 +12,16 @@ type TitleGenerationCredential = {
   baseUrl: string | null;
 };
 
-export async function generateUserStoryTitle(
-  input: GenerateUserStoryTitleInput,
+export async function generateTitle(
+  input: GenerateTitleInput,
   cline: ClineCore,
   credential: TitleGenerationCredential,
-): Promise<GenerateUserStoryTitleResult> {
+): Promise<GenerateTitleResult> {
   const session = await cline.start({
     prompt: titleGenerationUserPrompt(input),
     config: titleGenerationConfig(input, credential),
     interactive: false,
-    source: "blame-user-story-title-generator",
+    source: `blame-${input.context}-title-generator`,
   });
   const title = generatedTitle(session.result?.text);
   if (!title) throw new Error("Title generator agent did not return a title.");
@@ -29,7 +29,7 @@ export async function generateUserStoryTitle(
 }
 
 function titleGenerationConfig(
-  input: GenerateUserStoryTitleInput,
+  input: GenerateTitleInput,
   credential: TitleGenerationCredential,
 ) {
   return appendProductionConfig({
@@ -39,7 +39,7 @@ function titleGenerationConfig(
     baseUrl: credential.baseUrl ?? undefined,
     thinking: !!input.reasoningEffort,
     reasoningEffort: input.reasoningEffort,
-    systemPrompt: loadPrompt("user-story-title-generator-system"),
+    systemPrompt: loadPrompt("title-generator-system"),
     cwd: input.cwd,
     workspaceRoot: input.workspaceRoot,
     enableTools: false,
@@ -49,8 +49,9 @@ function titleGenerationConfig(
   });
 }
 
-function titleGenerationUserPrompt(input: GenerateUserStoryTitleInput) {
-  return ["User story content:", input.prompt.trim()].join("\n");
+function titleGenerationUserPrompt(input: GenerateTitleInput) {
+  const contentLabel = input.context === "quick-chat" ? "Quick chat request" : "User story content";
+  return [`${contentLabel}:`, input.prompt.trim()].join("\n");
 }
 
 function generatedTitle(value: unknown) {

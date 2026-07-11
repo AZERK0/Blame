@@ -61,6 +61,7 @@ import {
 import { useProjects } from "@/context/projects"
 import { projectCodePractices } from "@/lib/project-code-practices"
 import { showSystemNotification } from "@/lib/system-notifications"
+import { generateAgentTitle } from "@/lib/agent-title-generation"
 import {
   projectInitializing,
   useProjectInitialization,
@@ -1354,7 +1355,7 @@ function queuedStoryTitleGenerationBlocked(
     !request.projectPath ||
     request.auth.status !== "authenticated" ||
     !request.model ||
-    !request.platform.agent?.promptOptimizer.generateUserStoryTitle
+    !request.platform.agent?.promptOptimizer.generateTitle
   )
 }
 
@@ -1366,13 +1367,10 @@ async function runQueuedStoryTitleGeneration(
 }
 
 async function generatedQueuedStoryTitle(request: QueuedUserStoryTitleRequest) {
-  const result =
-    await request.platform.agent!.promptOptimizer.generateUserStoryTitle(
-      queuedStoryTitleGenerationInput(request)
-    )
-  const title = generatedUserStoryTitle(result.title)
-  if (!title) throw new Error("Title generator agent did not return a title.")
-  return title
+  return generateAgentTitle(
+    request.platform.agent!.promptOptimizer.generateTitle,
+    queuedStoryTitleGenerationInput(request)
+  )
 }
 
 async function persistGeneratedQueuedStoryTitle(
@@ -1385,13 +1383,13 @@ async function persistGeneratedQueuedStoryTitle(
 function queuedStoryTitleGenerationInput(request: QueuedUserStoryTitleRequest) {
   return {
     apiConnection: request.auth.apiConnection,
+    context: "user-story" as const,
     providerId: request.model!.provider.id,
     modelId: request.model!.id,
     credentialLabel: request.model!.credentialLabel,
     reasoningEffort: request.reasoningEffort,
     prompt: request.story.summary,
-    cwd: request.projectPath!,
-    workspaceRoot: request.projectPath!,
+    workspace: request.projectPath!,
   }
 }
 
@@ -1418,15 +1416,6 @@ function titleGenerationStoryIds(
 function missingUserStoryTitle(title: string) {
   const value = title.trim()
   return !value || value.toLowerCase() === untitledUserStoryTitle.toLowerCase()
-}
-
-function generatedUserStoryTitle(title: string) {
-  return title
-    .trim()
-    .replace(/[.!?:;]+$/g, "")
-    .split(/\s+/)
-    .slice(0, 6)
-    .join(" ")
 }
 
 type CheckInitializationImpactInput = {

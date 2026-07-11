@@ -62,7 +62,7 @@ import {
   projectInitializationImpactPrompt,
 } from "./project-initialization-impact.js";
 import { optimizeUserStoryPrompt } from "./prompt-optimization.js";
-import { generateUserStoryTitle } from "./user-story-title-generation.js";
+import { generateTitle } from "./title-generation.js";
 import { loadPrompt } from "./prompt-loader.js";
 import { knownOpenAICodexPreviewModels } from "./openai-codex-preview-models.js";
 import { fallbackCommitSubject } from "./commit-message.js";
@@ -105,8 +105,8 @@ import type {
   CompareCheckpointResult,
   GenerateCommitMessageInput,
   GenerateCommitMessageResult,
-  GenerateUserStoryTitleInput,
-  GenerateUserStoryTitleResult,
+  GenerateTitleInput,
+  GenerateTitleResult,
   InitializeProjectInput,
   InitializeProjectResult,
   LoginOAuthProviderInput,
@@ -373,8 +373,7 @@ export class BlameAgentRuntime {
   promptOptimizer = {
     optimizeUserStory: (input: OptimizeUserStoryPromptInput) =>
       this.optimizeUserStoryPrompt(input),
-    generateUserStoryTitle: (input: GenerateUserStoryTitleInput) =>
-      this.generateUserStoryTitle(input),
+    generateTitle: (input: GenerateTitleInput) => this.generateTitle(input),
   };
 
   approveAndMerge = (input: ApproveAndMergeInput) =>
@@ -1058,16 +1057,16 @@ export class BlameAgentRuntime {
     return optimizeUserStoryPrompt({ ...input, prompt }, cline, credential);
   }
 
-  private async generateUserStoryTitle(
-    input: GenerateUserStoryTitleInput,
-  ): Promise<GenerateUserStoryTitleResult> {
+  private async generateTitle(
+    input: GenerateTitleInput,
+  ): Promise<GenerateTitleResult> {
     assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd");
     const prompt = input.prompt.trim();
     if (!prompt)
-      throw new Error("Title generator requires a user story prompt.");
+      throw new Error("Title generator requires a prompt.");
     const credential = await this.runtimeCredential(input);
     const cline = await this.core(input.backend);
-    return generateUserStoryTitle({ ...input, prompt }, cline, credential);
+    return generateTitle({ ...input, prompt }, cline, credential);
   }
 
   private async initializationCredential(input: InitializeProjectInput) {

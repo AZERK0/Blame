@@ -269,8 +269,8 @@ const api: BlameDesktopApi = {
     promptOptimizer: {
       optimizeUserStory: (input) =>
         ipcRenderer.invoke("agent:prompt-optimizer:optimize-user-story", input),
-      generateUserStoryTitle: (input) =>
-        ipcRenderer.invoke("agent:prompt-optimizer:generate-user-story-title", input),
+      generateTitle: (input) =>
+        ipcRenderer.invoke("agent:prompt-optimizer:generate-title", input),
     },
     approveAndMerge: (input) =>
       ipcRenderer.invoke("agent:approve-and-merge", input),
