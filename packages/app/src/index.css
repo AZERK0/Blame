@@ -325,8 +325,8 @@
     padding: 1px;
     border-radius: var(--radius-3xl);
     box-shadow:
-      0 0 0 1px oklch(0.7 0.17 250 / 20%),
-      0 0 12px oklch(0.65 0.2 250 / 22%);
+      0 0 0 1px var(--agent-response-glow-color, oklch(0.7 0.17 250 / 20%)),
+      0 0 12px var(--agent-response-glow-color, oklch(0.65 0.2 250 / 22%));
   }
 
   .agent-response-effect::before {
@@ -339,9 +339,19 @@
     background: conic-gradient(
       from 0deg,
       transparent 0deg 190deg,
-      oklch(0.72 0.2 285 / 55%) 235deg,
-      oklch(0.78 0.16 230 / 90%) 285deg,
-      oklch(0.62 0.22 255) 325deg,
+      color-mix(
+          in oklch,
+          var(--agent-response-color, oklch(0.72 0.2 285)) 55%,
+          transparent
+        )
+        235deg,
+      color-mix(
+          in oklch,
+          var(--agent-response-color, oklch(0.78 0.16 230)) 90%,
+          transparent
+        )
+        285deg,
+      var(--agent-response-color, oklch(0.62 0.22 255)) 325deg,
       transparent 360deg
     );
     content: "";
@@ -355,6 +365,43 @@
   }
 
   .dark .agent-response-effect > * {
+    background: oklch(0.269 0 0) !important;
+  }
+
+  .sub-agent-response-effect {
+    position: relative;
+    padding: 1px;
+    border-radius: var(--radius-3xl);
+  }
+
+  .sub-agent-response-effect::before {
+    position: absolute;
+    z-index: 1;
+    inset: 0;
+    padding: 1px;
+    pointer-events: none;
+    border-radius: inherit;
+    background: radial-gradient(
+      ellipse 90% 140% at top left,
+      var(--agent-response-color) 0%,
+      var(--agent-response-glow-color) 42%,
+      transparent 78%
+    );
+    content: "";
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+  }
+
+  .sub-agent-response-effect > * {
+    position: relative;
+    z-index: 0;
+    border-radius: inherit;
+    background: oklch(1 0 0) !important;
+  }
+
+  .dark .sub-agent-response-effect > * {
     background: oklch(0.269 0 0) !important;
   }
 

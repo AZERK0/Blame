@@ -53,6 +53,40 @@ import {
 } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
+type SpecialistAgentAppearance = {
+  avatar: string
+  color: string
+  glowColor: string
+}
+
+const specialistAgentAppearances: Record<string, SpecialistAgentAppearance> = {
+  "Codebase Analyst": {
+    avatar: "/agents/codebase-analyst.png",
+    color: "oklch(0.78 0.16 195)",
+    glowColor: "oklch(0.72 0.19 195 / 28%)",
+  },
+  "Frontend Design Specialist": {
+    avatar: "/agents/frontend-design-specialist.png",
+    color: "oklch(0.75 0.23 350)",
+    glowColor: "oklch(0.7 0.24 350 / 28%)",
+  },
+  "Risk & Review Analyst": {
+    avatar: "/agents/risk-review-analyst.png",
+    color: "oklch(0.78 0.19 55)",
+    glowColor: "oklch(0.72 0.2 55 / 28%)",
+  },
+  "Story Analyst": {
+    avatar: "/agents/story-analyst.png",
+    color: "oklch(0.72 0.22 300)",
+    glowColor: "oklch(0.67 0.23 300 / 28%)",
+  },
+  "Test & Verification Analyst": {
+    avatar: "/agents/test-verification-analyst.png",
+    color: "oklch(0.76 0.2 145)",
+    glowColor: "oklch(0.7 0.2 145 / 28%)",
+  },
+}
+
 export type AgentConversationComment = {
   author: string
   body: string
@@ -645,16 +679,14 @@ function AgentActivityLeafItem({
   value: string
 }) {
   if (activity.kind === "message") {
+    const specialistAppearance = specialistAgentAppearance(activity)
     return (
       <AgentMarkdownTimelineItem
         alwaysVisible={alwaysVisible}
-        avatar={
-          <AgentResponseAvatar
-            activity={activity}
-            responseHeader={responseHeader}
-          />
-        }
         createdAt={activity.createdAt}
+        effectColor={specialistAppearance?.color}
+        effectGlowColor={specialistAppearance?.glowColor}
+        highlight={false}
         markdown={activity.detail}
         onFileLinkClick={onFileLinkClick}
         showFeedback={activity.messageKind === "final"}
@@ -876,6 +908,8 @@ function AgentMarkdownTimelineItem({
   alwaysVisible,
   avatar,
   createdAt,
+  effectColor,
+  effectGlowColor,
   highlight,
   markdown,
   onFileLinkClick,
@@ -884,11 +918,21 @@ function AgentMarkdownTimelineItem({
   alwaysVisible: boolean
   avatar?: React.ReactNode
   createdAt: string
+  effectColor?: string
+  effectGlowColor?: string
   highlight: boolean
   markdown: string
   onFileLinkClick?: (path: string) => void
   showFeedback?: boolean
 }) {
+  const effectStyle =
+    effectColor && effectGlowColor
+      ? ({
+          "--agent-response-color": effectColor,
+          "--agent-response-glow-color": effectGlowColor,
+        } as React.CSSProperties)
+      : undefined
+
   return (
     <div className="group/message relative min-w-0" data-agent-response>
       {avatar ? <div className="absolute top-0 -left-10">{avatar}</div> : null}
@@ -896,8 +940,10 @@ function AgentMarkdownTimelineItem({
         <div
           className={cn(
             "min-w-0 [&>div]:bg-transparent [&>div]:p-0 [&>div]:shadow-none [&>div]:ring-0",
-            highlight && "agent-response-effect"
+            highlight && "agent-response-effect",
+            effectColor && "sub-agent-response-effect"
           )}
+          style={effectStyle}
         >
           <MarkdownEditor
             markdown={markdown}
@@ -933,11 +979,13 @@ function AgentResponseAvatar({
   activity: UserStoryAgentActivity
   responseHeader: AgentConversationResponseHeader
 }) {
-  if (activity.agentAvatar) {
+  const specialistAppearance = specialistAgentAppearance(activity)
+  const avatar = activity.agentAvatar ?? specialistAppearance?.avatar
+  if (avatar) {
     const name = activity.agentName ?? "Agent"
     return (
       <Avatar aria-label={name}>
-        <AvatarImage alt={name} src={activity.agentAvatar} />
+        <AvatarImage alt={name} src={avatar} />
         <AvatarFallback>{agentInitials(name)}</AvatarFallback>
       </Avatar>
     )
@@ -951,6 +999,17 @@ function AgentResponseAvatar({
       <ProviderMark provider={responseHeader.provider} />
     </span>
   )
+}
+
+function specialistAgentAppearance(activity: UserStoryAgentActivity) {
+  if (activity.messageKind !== "intermediate" || !activity.agentName) {
+    return undefined
+  }
+  return specialistAgentAppearanceByName(activity.agentName)
+}
+
+function specialistAgentAppearanceByName(name: string | undefined) {
+  return name ? specialistAgentAppearances[name] : undefined
 }
 
 function agentInitials(name: string) {
@@ -1130,6 +1189,20 @@ function ActivityToolIcon({
   activity: UserStoryAgentActivity
   toolName: string | undefined
 }) {
+  if (activity.kind === "tool" && toolName === "spawn_agent") {
+    const name = activity.agentName ?? "Agent"
+    const avatar =
+      activity.agentAvatar ??
+      specialistAgentAppearanceByName(activity.agentName)?.avatar
+    if (avatar) {
+      return (
+        <Avatar size="sm" aria-label={name}>
+          <AvatarImage alt={name} src={avatar} />
+          <AvatarFallback>{agentInitials(name)}</AvatarFallback>
+        </Avatar>
+      )
+    }
+  }
   if (activity.kind === "reasoning")
     return <BrainCircuitIcon className="size-4" />
   if (activity.kind === "approval")
@@ -1192,6 +1265,9 @@ function activityTitle(
   details: ActivityDetail
 ) {
   if (activity.kind !== "tool") return activity.title
+  if (details.toolName === "spawn_agent" && activity.agentName) {
+    return activity.agentName
+  }
   return toolLabel(details.toolName ?? activity.title)
 }
 
