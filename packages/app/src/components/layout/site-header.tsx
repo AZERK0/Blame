@@ -30,7 +30,7 @@ export function SiteHeader({ title }: { title: string }) {
           <SidebarTrigger className="-ml-1" />
           <Separator
             orientation="vertical"
-            className="mx-2 data-[orientation=vertical]:h-4"
+            className="mx-2 my-auto data-[orientation=vertical]:h-4"
           />
           <h1 className="truncate text-base font-medium">{title}</h1>
           <div className="ml-auto">
