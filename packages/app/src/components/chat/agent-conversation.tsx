@@ -977,7 +977,8 @@ function AgentMarkdownTimelineItem({
           <div
             ref={contentRef}
             className={cn(
-              "sub-agent-response-content relative",
+              "relative [&>div]:bg-transparent [&>div]:p-0 [&>div]:shadow-none [&>div]:ring-0",
+              effectColor && "sub-agent-response-content",
               collapsible &&
                 "overflow-hidden transition-[max-height] duration-500 ease-in-out motion-reduce:transition-none"
             )}
