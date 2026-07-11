@@ -6,6 +6,8 @@ import {
   ClipboardCheckIcon,
   Code2Icon,
   CopyIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
   FileSearchIcon,
   ListChecksIcon,
   MessageSquareIcon,
@@ -925,6 +927,11 @@ function AgentMarkdownTimelineItem({
   onFileLinkClick?: (path: string) => void
   showFeedback?: boolean
 }) {
+  const contentRef = React.useRef<HTMLDivElement>(null)
+  const [expanded, setExpanded] = React.useState(false)
+  const [contentOverflows, setContentOverflows] = React.useState(false)
+  const [contentHeight, setContentHeight] = React.useState(320)
+  const collapsible = Boolean(effectColor)
   const effectStyle =
     effectColor && effectGlowColor
       ? ({
@@ -932,6 +939,24 @@ function AgentMarkdownTimelineItem({
           "--agent-response-glow-color": effectGlowColor,
         } as React.CSSProperties)
       : undefined
+
+  React.useEffect(() => {
+    const content = contentRef.current
+    if (!collapsible || !content) {
+      setContentOverflows(false)
+      return
+    }
+
+    const updateOverflow = () => {
+      const nextHeight = content.scrollHeight
+      setContentHeight(nextHeight)
+      setContentOverflows(nextHeight > 320)
+    }
+    updateOverflow()
+    const observer = new ResizeObserver(updateOverflow)
+    observer.observe(content)
+    return () => observer.disconnect()
+  }, [collapsible, markdown])
 
   return (
     <div className="group/message relative min-w-0" data-agent-response>
@@ -941,17 +966,49 @@ function AgentMarkdownTimelineItem({
           className={cn(
             "min-w-0 [&>div]:bg-transparent [&>div]:p-0 [&>div]:shadow-none [&>div]:ring-0",
             highlight && "agent-response-effect",
-            effectColor && "sub-agent-response-effect"
+            effectColor && "sub-agent-response-effect",
+            collapsible &&
+              contentOverflows &&
+              !expanded &&
+              "sub-agent-response-collapsed"
           )}
           style={effectStyle}
         >
-          <MarkdownEditor
-            markdown={markdown}
-            readOnly
-            onFileLinkClick={onFileLinkClick}
-            placeholder=""
-            minHeight="min-h-0"
-          />
+          <div
+            ref={contentRef}
+            className={cn(
+              "sub-agent-response-content relative",
+              collapsible &&
+                "overflow-hidden transition-[max-height] duration-500 ease-in-out motion-reduce:transition-none"
+            )}
+            style={
+              collapsible
+                ? { maxHeight: expanded ? `${contentHeight}px` : "20rem" }
+                : undefined
+            }
+          >
+            <MarkdownEditor
+              markdown={markdown}
+              readOnly
+              onFileLinkClick={onFileLinkClick}
+              placeholder=""
+              minHeight="min-h-0"
+            />
+          </div>
+          {collapsible && contentOverflows ? (
+            <Button
+              aria-label={
+                expanded ? "Replier la réponse" : "Afficher la réponse complète"
+              }
+              className="sub-agent-response-toggle absolute bottom-2 left-1/2 z-2 -translate-x-1/2 rounded-full shadow-sm transition-[background-color,transform] duration-300 motion-reduce:transition-none"
+              onClick={() => setExpanded((value) => !value)}
+              size="icon-sm"
+              type="button"
+              variant="outline"
+            >
+              {expanded ? <ChevronUpIcon /> : <ChevronDownIcon />}
+            </Button>
+          ) : null}
         </div>
         <MarkdownMessageActions
           alwaysVisible={alwaysVisible}
