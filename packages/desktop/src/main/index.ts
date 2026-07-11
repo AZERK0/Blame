@@ -75,7 +75,8 @@ if (!singleInstanceLock) app.exit(0)
 
 let mainWindow: BrowserWindow | undefined
 let shutdownPromise: Promise<void> | undefined
-let quitAfterShutdown = false
+let shutdownRequested = false
+let readyToQuit = false
 
 void app.whenReady().then(() => {
   registerIpcHandlers()
@@ -90,7 +91,8 @@ void app.whenReady().then(() => {
   registerTerminalIpcHandlers()
   registerDesktopUpdateIpcHandlers({
     beforeInstall() {
-      quitAfterShutdown = true
+      shutdownRequested = true
+      readyToQuit = true
     },
   })
   registerWorkspaceIpcHandlers()
@@ -99,10 +101,12 @@ void app.whenReady().then(() => {
 })
 
 app.on("activate", () => {
+  if (shutdownRequested) return
   if (BrowserWindow.getAllWindows().length === 0) mainWindow = createMainWindow()
 })
 
 app.on("second-instance", () => {
+  if (shutdownRequested) return
   showMainWindow()
 })
 
@@ -111,7 +115,8 @@ app.on("window-all-closed", () => {
 })
 
 app.on("before-quit", (event) => {
-  if (quitAfterShutdown) return
+  shutdownRequested = true
+  if (readyToQuit) return
   event.preventDefault()
   void quitGracefully()
 })
@@ -157,6 +162,16 @@ function createMainWindow() {
     ...(process.platform === "darwin" ? macosWindowOptions() : {}),
   }
   const window = new BrowserWindow(options)
+
+  window.on("close", (event) => {
+    if (process.platform === "darwin" || readyToQuit) return
+    event.preventDefault()
+    shutdownRequested = true
+    void quitGracefully()
+  })
+  window.on("closed", () => {
+    if (mainWindow === window) mainWindow = undefined
+  })
 
   hidePlatformWindowButtons(window)
   state.manage(window)
@@ -403,8 +418,9 @@ function getEventWindow(event: IpcMainInvokeEvent | IpcMainEvent) {
 }
 
 async function quitGracefully() {
+  shutdownRequested = true
   await shutdownApplication()
-  quitAfterShutdown = true
+  readyToQuit = true
   app.quit()
 }
 
