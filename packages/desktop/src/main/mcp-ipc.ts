@@ -223,7 +223,7 @@ function validateServer(input: unknown): McpServerConfig {
   )
     throw new Error("Invalid MCP transport");
   const disabled = input.disabled === true;
-  const oauth = { configured: false, supported: transport !== "stdio" };
+  const oauth = validateOAuthStatus(input.oauth, transport !== "stdio");
   if (transport === "stdio") {
     const command = requiredString(input.command, "Command");
     return {
@@ -250,6 +250,20 @@ function validateServer(input: unknown): McpServerConfig {
     disabled,
     url,
     headers: stringRecord(input.headers),
+  };
+}
+
+function validateOAuthStatus(input: unknown, supported: boolean) {
+  if (!isRecord(input)) return { configured: false, supported };
+  return {
+    configured: supported && input.configured === true,
+    lastAuthenticatedAt:
+      typeof input.lastAuthenticatedAt === "number"
+        ? input.lastAuthenticatedAt
+        : undefined,
+    lastError:
+      typeof input.lastError === "string" ? input.lastError : undefined,
+    supported,
   };
 }
 
