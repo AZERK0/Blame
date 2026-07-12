@@ -29,11 +29,25 @@ export function showSystemNotification(
   platform: Pick<Platform, "systemNotifications">,
   input: SystemNotificationInput
 ) {
-  if (!systemNotificationsEnabled()) return Promise.resolve(false)
+  if (
+    !shouldShowSystemNotification(
+      systemNotificationsEnabled(),
+      document.hasFocus()
+    )
+  ) {
+    return Promise.resolve(false)
+  }
   return (
     platform.systemNotifications?.show(input).catch(() => false) ??
     Promise.resolve(false)
   )
+}
+
+export function shouldShowSystemNotification(
+  enabled: boolean,
+  appFocused: boolean
+) {
+  return enabled && !appFocused
 }
 
 function systemNotificationsEnabled() {
