@@ -24,6 +24,7 @@ export default defineConfig({
     },
   },
   renderer: {
+    base: "./",
     plugins: [appPlugin],
     publicDir: "../../../app/public",
     root: "src/renderer",

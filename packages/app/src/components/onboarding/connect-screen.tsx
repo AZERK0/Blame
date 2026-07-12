@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { useCloudAuth } from "@/context/cloud-auth"
+import { publicAssetUrl } from "@/lib/public-asset-url"
 import { SettingsDialog, SettingsDialogButton } from "@/pages/settings/page"
 
 type AuthMode = "login" | "signup"
@@ -68,7 +69,7 @@ function AppLogo() {
         <img
           alt=""
           className="h-10 w-10 object-contain"
-          src="/web-app-manifest-512x512.png"
+          src={publicAssetUrl("web-app-manifest-512x512.png")}
         />
       </span>
       <span className="text-2xl font-extrabold">Blame</span>

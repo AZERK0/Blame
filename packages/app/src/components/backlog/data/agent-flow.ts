@@ -1,3 +1,5 @@
+import { publicAssetUrl } from "../../../lib/public-asset-url.ts"
+
 import type { AgentEvent } from "@blame/agent-runtime"
 
 import type {
@@ -758,31 +760,31 @@ const fallbackSpawnAgentInfo = {
 const specialistAgents = [
   {
     name: "Codebase Analyst",
-    avatar: "/agents/codebase-analyst.png",
+    avatar: publicAssetUrl("agents/codebase-analyst.png"),
     promptMatch: "Blame's Codebase Analyst",
     responseMatches: ["## Codebase Analysis"],
   },
   {
     name: "Frontend Design Specialist",
-    avatar: "/agents/frontend-design-specialist.png",
+    avatar: publicAssetUrl("agents/frontend-design-specialist.png"),
     promptMatch: "Blame's Frontend Design Specialist",
     responseMatches: ["## Frontend Design Review"],
   },
   {
     name: "Risk & Review Analyst",
-    avatar: "/agents/risk-review-analyst.png",
+    avatar: publicAssetUrl("agents/risk-review-analyst.png"),
     promptMatch: "Blame's Risk & Review Analyst",
     responseMatches: ["## Risk Review"],
   },
   {
     name: "Story Analyst",
-    avatar: "/agents/story-analyst.png",
+    avatar: publicAssetUrl("agents/story-analyst.png"),
     promptMatch: "Blame's Story Analyst",
     responseMatches: ["## Story Analysis"],
   },
   {
     name: "Test & Verification Analyst",
-    avatar: "/agents/test-verification-analyst.png",
+    avatar: publicAssetUrl("agents/test-verification-analyst.png"),
     promptMatch: "Blame's Test & Verification Analyst",
     responseMatches: ["## Verification Plan"],
   },
