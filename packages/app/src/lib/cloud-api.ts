@@ -4,6 +4,8 @@ import type {
   CloudSession,
   CloudUser,
   type CloudAiPreferences,
+  type CloudMcpConfiguration,
+  type CloudMcpServer,
   SaveAiPreferencesInput,
   LoginInput,
   SignupInput,
@@ -54,6 +56,24 @@ export function createCloudApi(connection: ApiConnection) {
         body: JSON.stringify(input),
         method: "PUT",
       }).then(cloudAiPreferencesRequired)
+    },
+    mcpConfiguration() {
+      return request<unknown>(
+        connection,
+        baseUrl,
+        "/account/mcp-configurations"
+      ).then(cloudMcpConfiguration)
+    },
+    saveMcpConfiguration(servers: CloudMcpServer[]) {
+      return request<unknown>(
+        connection,
+        baseUrl,
+        "/account/mcp-configurations",
+        {
+          body: JSON.stringify({ servers }),
+          method: "PUT",
+        }
+      ).then(cloudMcpConfigurationRequired)
     },
     projects() {
       return request<unknown>(connection, baseUrl, "/projects").then(
@@ -203,6 +223,19 @@ function cloudAiPreferencesRequired(value: unknown) {
     throw new Error("Unable to read AI preferences.")
   }
   return preferences as CloudAiPreferences
+}
+
+function cloudMcpConfiguration(value: unknown) {
+  const configuration = transformerValue(value)
+  if (configuration === null) return null
+  return cloudMcpConfigurationRequired(value)
+}
+
+function cloudMcpConfigurationRequired(value: unknown) {
+  const configuration = transformerValue(value)
+  if (!isRecord(configuration) || !Array.isArray(configuration.servers))
+    throw new Error("Unable to read MCP configuration.")
+  return configuration as CloudMcpConfiguration
 }
 
 function transformerValue(value: unknown): unknown {

@@ -13,6 +13,7 @@ import type QuickChatAgentRunTransformer from '#transformers/quick_chat_agent_ru
 import type QuickChatMessageTransformer from '#transformers/quick_chat_message_transformer'
 import type QuickChatTransformer from '#transformers/quick_chat_transformer'
 import type UserAiPreferenceTransformer from '#transformers/user_ai_preference_transformer'
+import type UserMcpConfigurationTransformer from '#transformers/user_mcp_configuration_transformer'
 import type UserStoryAgentRunTransformer from '#transformers/user_story_agent_run_transformer'
 import type UserStoryCommentTransformer from '#transformers/user_story_comment_transformer'
 import type UserStoryTransformer from '#transformers/user_story_transformer'
@@ -50,6 +51,10 @@ export namespace Data {
   export type UserAiPreference = InferData<UserAiPreferenceTransformer>
   export namespace UserAiPreference {
     export type Variants = InferVariants<UserAiPreferenceTransformer>
+  }
+  export type UserMcpConfiguration = InferData<UserMcpConfigurationTransformer>
+  export namespace UserMcpConfiguration {
+    export type Variants = InferVariants<UserMcpConfigurationTransformer>
   }
   export type UserStoryAgentRun = InferData<UserStoryAgentRunTransformer>
   export namespace UserStoryAgentRun {

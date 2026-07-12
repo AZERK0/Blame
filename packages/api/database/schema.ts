@@ -250,6 +250,19 @@ export class UserAiPreferenceSchema extends BaseModel {
   declare userId: string
 }
 
+export class UserMcpConfigurationSchema extends BaseModel {
+  static $columns = ['createdAt', 'servers', 'updatedAt', 'userId'] as const
+  $columns = UserMcpConfigurationSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare servers: any
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+  @column({ isPrimary: true })
+  declare userId: string
+}
+
 export class UserStorySchema extends BaseModel {
   static $columns = ['agentActivities', 'agentFinalResponse', 'agentLastError', 'agentLastEvent', 'agentModelId', 'agentProviderId', 'agentSessionSummary', 'agentStatus', 'agentUsage', 'baseCommit', 'branch', 'clineSessionId', 'codeSelectionAttachments', 'createdAt', 'discardedReason', 'fileAttachments', 'id', 'mergeCommit', 'mergedAt', 'owner', 'previewUrl', 'priority', 'projectId', 'status', 'storyNumber', 'summary', 'title', 'updatedAt', 'worktree'] as const
   $columns = UserStorySchema.$columns

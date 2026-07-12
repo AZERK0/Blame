@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
+import { useCloudAuth, type CloudMcpServer } from "@/context/cloud-auth"
 import {
   usePlatform,
   type McpServerConfig,
@@ -48,6 +49,7 @@ const emptyForm = (): FormState => ({
 
 export function McpSettingsPanel() {
   const client = usePlatform().mcp
+  const cloud = useCloudAuth()
   const [servers, setServers] = React.useState<McpServerConfig[]>([])
   const [adding, setAdding] = React.useState(false)
   const [loading, setLoading] = React.useState(true)
@@ -60,15 +62,37 @@ export function McpSettingsPanel() {
     }
     void client
       .list()
-      .then(setServers)
+      .then(async (localServers) => {
+        if (cloud.status !== "authenticated") return setServers(localServers)
+        if (cloud.mcpConfiguration) {
+          return setServers(
+            await client.mergeCloud(
+              cloud.user.id,
+              cloud.mcpConfiguration.servers
+            )
+          )
+        }
+        await cloud.saveMcpConfiguration(toCloudServers(localServers))
+        setServers(
+          await client.mergeCloud(
+            cloud.user.id,
+            toCloudServers(localServers),
+            true
+          )
+        )
+      })
       .catch((reason) => setError(errorMessage(reason)))
       .finally(() => setLoading(false))
-  }, [client])
+  }, [client, cloud.status, cloud.mcpConfiguration])
 
   async function update(action: () => Promise<McpServerConfig[]>) {
     setError(undefined)
     try {
-      setServers(await action())
+      const updated = await action()
+      setServers(updated)
+      if (cloud.status === "authenticated") {
+        await cloud.saveMcpConfiguration(toCloudServers(updated))
+      }
     } catch (reason) {
       setError(errorMessage(reason))
     }
@@ -151,6 +175,27 @@ export function McpSettingsPanel() {
       </section>
     </div>
   )
+}
+
+function toCloudServers(servers: McpServerConfig[]): CloudMcpServer[] {
+  return servers.map((server) => ({
+    command: server.transport === "stdio" ? server.command : undefined,
+    disabled: server.disabled,
+    name: server.name,
+    transport: server.transport,
+    url: server.transport === "stdio" ? undefined : safeCloudUrl(server.url),
+  }))
+}
+
+function safeCloudUrl(value: string | undefined) {
+  if (!value) return undefined
+  const url = new URL(value)
+  if (url.username || url.password || url.search || url.hash) {
+    throw new Error(
+      "Remove credentials and parameters from the MCP URL before syncing it."
+    )
+  }
+  return url.toString()
 }
 
 function McpServerSummary({

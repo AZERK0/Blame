@@ -34,6 +34,20 @@ export type CloudAiPreferences = {
   updatedAt: string | null
 }
 
+export type CloudMcpServer = {
+  command?: string
+  disabled: boolean
+  name: string
+  transport: "stdio" | "streamableHttp" | "sse"
+  url?: string
+}
+
+export type CloudMcpConfiguration = {
+  createdAt: string
+  servers: CloudMcpServer[]
+  updatedAt: string | null
+}
+
 export type CloudProject = {
   id: string
   userId: string
@@ -102,11 +116,13 @@ export type CloudAuthContextValue = {
   status: "loading" | "authenticated" | "unauthenticated"
   apiConnection: ApiConnection
   aiPreferences?: CloudAiPreferences | null
+  mcpConfiguration?: CloudMcpConfiguration | null
   user?: CloudUser
   token?: string
   login(input: LoginInput): Promise<void>
   signup(input: SignupInput): Promise<void>
   saveAiPreferences(input: SaveAiPreferencesInput): Promise<void>
+  saveMcpConfiguration(servers: CloudMcpServer[]): Promise<void>
   refreshAiPreferences(): Promise<void>
   logout(): Promise<void>
 }

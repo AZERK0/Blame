@@ -9,6 +9,8 @@ export type ScannedRoutes = {
     'profile.profile.show': { paramsTuple?: []; params?: {} }
     'profile.user_ai_preferences.show': { paramsTuple?: []; params?: {} }
     'profile.user_ai_preferences.update': { paramsTuple?: []; params?: {} }
+    'profile.user_mcp_configurations.show': { paramsTuple?: []; params?: {} }
+    'profile.user_mcp_configurations.update': { paramsTuple?: []; params?: {} }
     'profile.access_tokens.destroy': { paramsTuple?: []; params?: {} }
     'projects.projects.index': { paramsTuple?: []; params?: {} }
     'projects.projects.store': { paramsTuple?: []; params?: {} }
@@ -50,6 +52,7 @@ export type ScannedRoutes = {
   GET: {
     'profile.profile.show': { paramsTuple?: []; params?: {} }
     'profile.user_ai_preferences.show': { paramsTuple?: []; params?: {} }
+    'profile.user_mcp_configurations.show': { paramsTuple?: []; params?: {} }
     'projects.projects.index': { paramsTuple?: []; params?: {} }
     'projects.project_code_practices.index': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
@@ -66,6 +69,7 @@ export type ScannedRoutes = {
   HEAD: {
     'profile.profile.show': { paramsTuple?: []; params?: {} }
     'profile.user_ai_preferences.show': { paramsTuple?: []; params?: {} }
+    'profile.user_mcp_configurations.show': { paramsTuple?: []; params?: {} }
     'projects.projects.index': { paramsTuple?: []; params?: {} }
     'projects.project_code_practices.index': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
@@ -102,6 +106,7 @@ export type ScannedRoutes = {
   }
   PUT: {
     'profile.user_ai_preferences.update': { paramsTuple?: []; params?: {} }
+    'profile.user_mcp_configurations.update': { paramsTuple?: []; params?: {} }
   }
   PATCH: {
     'projects.project_code_practices.update': { paramsTuple: [ParamValue,ParamValue]; params: {'projectId': ParamValue,'practice': ParamValue} }

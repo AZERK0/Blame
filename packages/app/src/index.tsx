@@ -14,6 +14,7 @@ export { App }
 export type {
   BacklogStatusPipRequest,
   BacklogStatusPipSnapshot,
+  CloudMcpServerConfig,
   GitBranchStatus,
   GitCommandResult,
   GitLogCommit,

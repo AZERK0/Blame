@@ -15,6 +15,7 @@ export const controllers = {
   QuickChatMessages: () => import('#controllers/quick_chat_messages_controller'),
   QuickChats: () => import('#controllers/quick_chats_controller'),
   UserAiPreferences: () => import('#controllers/user_ai_preferences_controller'),
+  UserMcpConfigurations: () => import('#controllers/user_mcp_configurations_controller'),
   UserStories: () => import('#controllers/user_stories_controller'),
   UserStoryAgentRuns: () => import('#controllers/user_story_agent_runs_controller'),
   UserStoryComments: () => import('#controllers/user_story_comments_controller'),

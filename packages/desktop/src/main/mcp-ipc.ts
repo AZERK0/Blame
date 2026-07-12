@@ -3,7 +3,7 @@ import {
   clearMcpOAuth,
   listMcpOAuthStatuses,
 } from "@blame/agent-runtime";
-import type { McpServerConfig } from "@blame/app";
+import type { CloudMcpServerConfig, McpServerConfig } from "@blame/app";
 import { ipcMain, shell } from "electron";
 import { chmod, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
@@ -16,6 +16,49 @@ let authorizationRunning = false;
 export function registerMcpIpcHandlers() {
   ipcMain.handle("mcp:list", () =>
     runSettingsOperation(async () => listServers()),
+  );
+  ipcMain.handle(
+    "mcp:merge-cloud",
+    (_event, userIdInput, input, adoptLocalInput) =>
+      runSettingsOperation(async () => {
+        const userId = validateUserId(userIdInput);
+        const adoptLocal = adoptLocalInput === true;
+        const cloudServers = validateCloudServers(input);
+        const settings = await readSettings();
+        const merged: McpSettings["mcpServers"] = Object.fromEntries(
+          Object.entries(settings.mcpServers).filter(
+            ([, server]) => cloudOwner(server) !== userId,
+          ),
+        );
+        for (const cloudServer of cloudServers) {
+          const local = settings.mcpServers[cloudServer.name];
+          const preserveLocal =
+            local &&
+            (cloudOwner(local) === userId ||
+              (adoptLocal && cloudOwner(local) === undefined)) &&
+            sameCloudEndpoint(local, cloudServer);
+          merged[cloudServer.name] = {
+            ...(preserveLocal ? local : {}),
+            ...serializeCloudServer(cloudServer),
+            metadata: { blameCloudUserId: userId },
+          };
+        }
+        await writeSettings({ ...settings, mcpServers: merged });
+        return listServers({ ...settings, mcpServers: merged });
+      }),
+  );
+  ipcMain.handle("mcp:detach-cloud", (_event, userIdInput) =>
+    runSettingsOperation(async () => {
+      const userId = validateUserId(userIdInput);
+      const settings = await readSettings();
+      settings.mcpServers = Object.fromEntries(
+        Object.entries(settings.mcpServers).filter(
+          ([, server]) => cloudOwner(server) !== userId,
+        ),
+      );
+      await writeSettings(settings);
+      return listServers(settings);
+    }),
   );
   ipcMain.handle("mcp:save", (_event, input, previousName) =>
     runSettingsOperation(async () => {
@@ -210,6 +253,89 @@ function serializeServer(server: McpServerConfig): Record<string, unknown> {
     url: server.url,
     headers: server.headers,
   };
+}
+
+function serializeCloudServer(
+  server: CloudMcpServerConfig,
+): Record<string, unknown> {
+  return server.transport === "stdio"
+    ? { command: server.command, disabled: server.disabled, type: "stdio" }
+    : {
+        disabled: server.disabled,
+        type: server.transport,
+        url: server.url,
+      };
+}
+
+function validateCloudServers(input: unknown): CloudMcpServerConfig[] {
+  if (!Array.isArray(input) || input.length > 100)
+    throw new Error("Invalid cloud MCP configuration");
+  const names = new Set<string>();
+  return input.map((value) => {
+    if (!isRecord(value)) throw new Error("Invalid cloud MCP server");
+    const name = validateName(value.name);
+    if (names.has(name.toLocaleLowerCase()))
+      throw new Error("Cloud MCP server names must be unique");
+    names.add(name.toLocaleLowerCase());
+    const transport = value.transport;
+    if (transport === "stdio") {
+      const command = requiredString(value.command, "Command");
+      if (/\s/.test(command))
+        throw new Error("Cloud MCP commands cannot contain arguments");
+      return { command, disabled: value.disabled === true, name, transport };
+    }
+    if (transport !== "streamableHttp" && transport !== "sse")
+      throw new Error("Invalid cloud MCP transport");
+    const url = safeCloudUrl(requiredString(value.url, "URL"));
+    return { disabled: value.disabled === true, name, transport, url };
+  });
+}
+
+function safeCloudUrl(value: string) {
+  const url = new URL(value);
+  if (
+    (url.protocol !== "http:" && url.protocol !== "https:") ||
+    url.username ||
+    url.password ||
+    url.search ||
+    url.hash
+  ) {
+    throw new Error("Cloud MCP URLs cannot contain credentials or parameters");
+  }
+  return url.toString();
+}
+
+function cloudOwner(server: Record<string, unknown>) {
+  return isRecord(server.metadata) &&
+    typeof server.metadata.blameCloudUserId === "string"
+    ? server.metadata.blameCloudUserId
+    : undefined;
+}
+
+function sameCloudEndpoint(
+  local: Record<string, unknown>,
+  cloud: CloudMcpServerConfig,
+) {
+  const transport = isRecord(local.transport) ? local.transport : local;
+  if (transport.type !== cloud.transport) return false;
+  return cloud.transport === "stdio"
+    ? transport.command === cloud.command
+    : normalizedUrl(transport.url) === normalizedUrl(cloud.url);
+}
+
+function normalizedUrl(value: unknown) {
+  if (typeof value !== "string") return undefined;
+  try {
+    return new URL(value).toString();
+  } catch {
+    return undefined;
+  }
+}
+
+function validateUserId(input: unknown) {
+  if (typeof input !== "string" || !/^[0-9a-f-]{20,80}$/i.test(input))
+    throw new Error("Invalid cloud user");
+  return input;
 }
 
 function validateServer(input: unknown): McpServerConfig {

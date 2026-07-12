@@ -88,7 +88,13 @@ export type McpServerConfig = {
 export type McpServersClient = {
   authorize(name: string): Promise<McpServerConfig[]>
   disconnectOAuth(name: string): Promise<McpServerConfig[]>
+  detachCloud(userId: string): Promise<McpServerConfig[]>
   list(): Promise<McpServerConfig[]>
+  mergeCloud(
+    userId: string,
+    servers: CloudMcpServerConfig[],
+    adoptLocal?: boolean
+  ): Promise<McpServerConfig[]>
   save(
     server: McpServerConfig,
     previousName?: string
@@ -96,6 +102,11 @@ export type McpServersClient = {
   remove(name: string): Promise<McpServerConfig[]>
   setEnabled(name: string, enabled: boolean): Promise<McpServerConfig[]>
 }
+
+export type CloudMcpServerConfig = Pick<
+  McpServerConfig,
+  "command" | "disabled" | "name" | "transport" | "url"
+>
 
 export type BacklogStatusPipClient = {
   open(): Promise<boolean>

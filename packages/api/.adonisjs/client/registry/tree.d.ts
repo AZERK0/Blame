@@ -18,6 +18,10 @@ export interface ApiDefinition {
       show: typeof routes['profile.user_ai_preferences.show']
       update: typeof routes['profile.user_ai_preferences.update']
     }
+    userMcpConfigurations: {
+      show: typeof routes['profile.user_mcp_configurations.show']
+      update: typeof routes['profile.user_mcp_configurations.update']
+    }
     accessTokens: {
       destroy: typeof routes['profile.access_tokens.destroy']
     }

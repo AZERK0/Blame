@@ -20,6 +20,8 @@ const QuickChatAgentRunsController = () => import('#controllers/quick_chat_agent
 const QuickChatMessagesController = () => import('#controllers/quick_chat_messages_controller')
 const QuickChatsController = () => import('#controllers/quick_chats_controller')
 const UserAiPreferencesController = () => import('#controllers/user_ai_preferences_controller')
+const UserMcpConfigurationsController = () =>
+  import('#controllers/user_mcp_configurations_controller')
 const UserStoryAgentRunsController = () => import('#controllers/user_story_agent_runs_controller')
 const UserStoryCommentsController = () => import('#controllers/user_story_comments_controller')
 
@@ -42,6 +44,8 @@ router
         router.get('profile', [controllers.Profile, 'show'])
         router.get('ai-preferences', [UserAiPreferencesController, 'show'])
         router.put('ai-preferences', [UserAiPreferencesController, 'update'])
+        router.get('mcp-configurations', [UserMcpConfigurationsController, 'show'])
+        router.put('mcp-configurations', [UserMcpConfigurationsController, 'update'])
         router.post('logout', [controllers.AccessTokens, 'destroy'])
       })
       .prefix('account')

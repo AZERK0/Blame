@@ -4,6 +4,8 @@ import {
   CloudAuthContext,
   type CloudAiPreferences,
   type CloudSession,
+  type CloudMcpConfiguration,
+  type CloudMcpServer,
   type LoginInput,
   type SaveAiPreferencesInput,
   type SignupInput,
@@ -27,6 +29,7 @@ type CloudAuthState =
       status: "authenticated"
       session: CloudSession
       aiPreferences: CloudAiPreferences | null
+      mcpConfiguration: CloudMcpConfiguration | null
     }
 
 export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
@@ -58,19 +61,25 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
       .profile()
       .then(async (user) => {
         if (!alive) return
-        const aiPreferences = await createCloudApi({
+        const api = createCloudApi({
           url: apiUrl,
           token: session.token,
-        }).aiPreferences()
+        })
+        const [aiPreferences, mcpConfiguration] = await Promise.all([
+          api.aiPreferences(),
+          api.mcpConfiguration().catch(() => null),
+        ])
         writeCloudSession({ ...session, user })
         setState({
           status: "authenticated",
           session: { ...session, user },
           aiPreferences,
+          mcpConfiguration,
         })
       })
       .catch(() => {
         if (!alive) return
+        void platform.mcp?.detachCloud(session.user.id)
         removeCloudSession()
         setState({ status: "unauthenticated" })
       })
@@ -83,12 +92,21 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
   const login = React.useCallback(
     async (input: LoginInput) => {
       const session = await createCloudApi({ url: apiUrl }).login(input)
-      const aiPreferences = await createCloudApi({
+      const api = createCloudApi({
         url: apiUrl,
         token: session.token,
-      }).aiPreferences()
+      })
+      const [aiPreferences, mcpConfiguration] = await Promise.all([
+        api.aiPreferences(),
+        api.mcpConfiguration().catch(() => null),
+      ])
       writeCloudSession(session)
-      setState({ status: "authenticated", session, aiPreferences })
+      setState({
+        status: "authenticated",
+        session,
+        aiPreferences,
+        mcpConfiguration,
+      })
     },
     [apiUrl]
   )
@@ -96,12 +114,21 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
   const signup = React.useCallback(
     async (input: SignupInput) => {
       const session = await createCloudApi({ url: apiUrl }).signup(input)
-      const aiPreferences = await createCloudApi({
+      const api = createCloudApi({
         url: apiUrl,
         token: session.token,
-      }).aiPreferences()
+      })
+      const [aiPreferences, mcpConfiguration] = await Promise.all([
+        api.aiPreferences(),
+        api.mcpConfiguration().catch(() => null),
+      ])
       writeCloudSession(session)
-      setState({ status: "authenticated", session, aiPreferences })
+      setState({
+        status: "authenticated",
+        session,
+        aiPreferences,
+        mcpConfiguration,
+      })
     },
     [apiUrl]
   )
@@ -130,15 +157,32 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
     [apiConnection, token]
   )
 
+  const saveMcpConfiguration = React.useCallback(
+    async (servers: CloudMcpServer[]) => {
+      if (!token) return
+      const mcpConfiguration =
+        await createCloudApi(apiConnection).saveMcpConfiguration(servers)
+      setState((current) =>
+        current.status === "authenticated"
+          ? { ...current, mcpConfiguration }
+          : current
+      )
+    },
+    [apiConnection, token]
+  )
+
   const logout = React.useCallback(async () => {
     if (token) {
       await createCloudApi(apiConnection)
         .logout()
         .catch(() => undefined)
     }
+    if (state.status === "authenticated") {
+      await platform.mcp?.detachCloud(state.session.user.id)
+    }
     removeCloudSession()
     setState({ status: "unauthenticated" })
-  }, [apiConnection, token])
+  }, [apiConnection, platform.mcp, state, token])
 
   return (
     <CloudAuthContext.Provider
@@ -146,10 +190,13 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
         apiConnection,
         aiPreferences:
           state.status === "authenticated" ? state.aiPreferences : undefined,
+        mcpConfiguration:
+          state.status === "authenticated" ? state.mcpConfiguration : undefined,
         login,
         logout,
         refreshAiPreferences,
         saveAiPreferences,
+        saveMcpConfiguration,
         signup,
         status: state.status,
         token,

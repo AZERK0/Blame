@@ -1,0 +1,31 @@
+import UserMcpConfigurationsService from '#services/user_mcp_configurations_service'
+import UserMcpConfigurationTransformer from '#transformers/user_mcp_configuration_transformer'
+import { saveUserMcpConfigurationValidator } from '#validators/user_mcp_configuration'
+import type { HttpContext } from '@adonisjs/core/http'
+
+export default class UserMcpConfigurationsController {
+  async show({ auth, serialize }: HttpContext) {
+    const configuration = await new UserMcpConfigurationsService().get(auth.getUserOrFail().id)
+    if (!configuration) return { data: null }
+    return serialize(UserMcpConfigurationTransformer.transform(configuration))
+  }
+
+  async update({ auth, request, response, serialize }: HttpContext) {
+    let configuration
+    try {
+      configuration = await new UserMcpConfigurationsService().save(
+        auth.getUserOrFail().id,
+        await request.validateUsing(saveUserMcpConfigurationValidator)
+      )
+    } catch (error) {
+      if (error instanceof Error && error.message.startsWith('Invalid ')) {
+        return response.unprocessableEntity({ message: error.message })
+      }
+      if (error instanceof Error && error.message.startsWith('MCP ')) {
+        return response.unprocessableEntity({ message: error.message })
+      }
+      throw error
+    }
+    return serialize(UserMcpConfigurationTransformer.transform(configuration))
+  }
+}

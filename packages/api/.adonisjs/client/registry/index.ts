@@ -36,6 +36,18 @@ const routes = {
     tokens: [{"old":"/api/v1/account/ai-preferences","type":0,"val":"api","end":""},{"old":"/api/v1/account/ai-preferences","type":0,"val":"v1","end":""},{"old":"/api/v1/account/ai-preferences","type":0,"val":"account","end":""},{"old":"/api/v1/account/ai-preferences","type":0,"val":"ai-preferences","end":""}],
     types: placeholder as Registry['profile.user_ai_preferences.update']['types'],
   },
+  'profile.user_mcp_configurations.show': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/account/mcp-configurations',
+    tokens: [{"old":"/api/v1/account/mcp-configurations","type":0,"val":"api","end":""},{"old":"/api/v1/account/mcp-configurations","type":0,"val":"v1","end":""},{"old":"/api/v1/account/mcp-configurations","type":0,"val":"account","end":""},{"old":"/api/v1/account/mcp-configurations","type":0,"val":"mcp-configurations","end":""}],
+    types: placeholder as Registry['profile.user_mcp_configurations.show']['types'],
+  },
+  'profile.user_mcp_configurations.update': {
+    methods: ["PUT"],
+    pattern: '/api/v1/account/mcp-configurations',
+    tokens: [{"old":"/api/v1/account/mcp-configurations","type":0,"val":"api","end":""},{"old":"/api/v1/account/mcp-configurations","type":0,"val":"v1","end":""},{"old":"/api/v1/account/mcp-configurations","type":0,"val":"account","end":""},{"old":"/api/v1/account/mcp-configurations","type":0,"val":"mcp-configurations","end":""}],
+    types: placeholder as Registry['profile.user_mcp_configurations.update']['types'],
+  },
   'profile.access_tokens.destroy': {
     methods: ["POST"],
     pattern: '/api/v1/account/logout',
