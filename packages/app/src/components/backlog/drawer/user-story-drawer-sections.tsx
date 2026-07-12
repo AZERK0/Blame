@@ -118,6 +118,7 @@ export function UserStoryContent({
           }
           placeholder="Describe the user story, expected behavior, and acceptance criteria."
           minHeight="min-h-80"
+          maxHeight="max-h-180"
         />
         {summary.trim() ? (
           <MarkdownMessageActions

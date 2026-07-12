@@ -914,6 +914,7 @@ export const MarkdownEditor = React.forwardRef<
   HTMLDivElement,
   {
     markdown: string
+    maxHeight: string
     minHeight: string
     placeholder: string
     codeSelectionAttachments?: PendingCodeSelectionAttachment[]
@@ -934,6 +935,7 @@ export const MarkdownEditor = React.forwardRef<
     codeSelectionAttachments,
     fileAttachments,
     markdown,
+    maxHeight,
     mentionDirectory,
     minHeight,
     onCodeSelectionAttachmentRemove,
@@ -1307,7 +1309,8 @@ export const MarkdownEditor = React.forwardRef<
                   data-markdown-editor-input="true"
                   className={cn(
                     minHeight,
-                    "resize-y rounded-3xl border-0 bg-input/40 px-4 py-3.5 pr-40 text-[0.9375rem] shadow-none placeholder:text-muted-foreground/55 focus-visible:border-0 focus-visible:ring-0 md:text-[0.9375rem] dark:bg-muted dark:placeholder:text-muted-foreground/50"
+                    maxHeight,
+                    "resize-none overflow-y-auto rounded-3xl border-0 bg-input/40 px-4 py-3.5 pr-40 text-[0.9375rem] shadow-none placeholder:text-muted-foreground/55 focus-visible:border-0 focus-visible:ring-0 md:text-[0.9375rem] dark:bg-muted dark:placeholder:text-muted-foreground/50"
                   )}
                   placeholder={placeholder}
                   value={value}

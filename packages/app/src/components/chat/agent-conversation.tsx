@@ -370,6 +370,7 @@ export function AgentConversationComposer({
           readOnly={disabled}
           placeholder={placeholder}
           minHeight="min-h-24"
+          maxHeight="max-h-80"
           onSubmitShortcut={submitMessage}
           toolbarEnd={toolbarEnd}
         />
