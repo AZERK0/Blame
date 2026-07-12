@@ -31,4 +31,13 @@ export default await Env.create(new URL('../', import.meta.url), {
 
   // Session
   SESSION_DRIVER: Env.schema.enum(['cookie', 'memory', 'database'] as const),
+
+  // Stripe Billing
+  STRIPE_SECRET_KEY: Env.schema.string.optional(),
+  STRIPE_WEBHOOK_SECRET: Env.schema.string.optional(),
+  STRIPE_MONTHLY_PRICE_ID: Env.schema.string.optional(),
+  STRIPE_YEARLY_PRICE_ID: Env.schema.string.optional(),
+  STRIPE_CHECKOUT_SUCCESS_URL: Env.schema.string.optional({ format: 'url', tld: false }),
+  STRIPE_CHECKOUT_CANCEL_URL: Env.schema.string.optional({ format: 'url', tld: false }),
+  STRIPE_PORTAL_RETURN_URL: Env.schema.string.optional({ format: 'url', tld: false }),
 })

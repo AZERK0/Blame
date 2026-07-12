@@ -20,6 +20,13 @@ export type CloudSession = {
   token: string
 }
 
+export type CloudLicense = {
+  licensed: boolean
+  status: string
+  currentPeriodEnd: string | null
+  cancelAtPeriodEnd: boolean
+}
+
 export type CloudAiModelPreference = {
   providerId: string
   modelId: string
@@ -117,6 +124,7 @@ export type CloudAuthContextValue = {
   apiConnection: ApiConnection
   aiPreferences?: CloudAiPreferences | null
   mcpConfiguration?: CloudMcpConfiguration | null
+  license?: CloudLicense
   user?: CloudUser
   token?: string
   login(input: LoginInput): Promise<void>
@@ -124,6 +132,9 @@ export type CloudAuthContextValue = {
   saveAiPreferences(input: SaveAiPreferencesInput): Promise<void>
   saveMcpConfiguration(servers: CloudMcpServer[]): Promise<void>
   refreshAiPreferences(): Promise<void>
+  refreshLicense(): Promise<void>
+  startCheckout(cycle: "monthly" | "yearly"): Promise<void>
+  openBillingPortal(): Promise<void>
   logout(): Promise<void>
 }
 

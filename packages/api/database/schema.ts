@@ -223,6 +223,17 @@ export class QuickChatSchema extends BaseModel {
   declare workspace: string | null
 }
 
+export class StripeWebhookEventSchema extends BaseModel {
+  static $columns = ['id', 'processedAt', 'type'] as const
+  $columns = StripeWebhookEventSchema.$columns
+  @column({ isPrimary: true })
+  declare id: string
+  @column.dateTime()
+  declare processedAt: DateTime
+  @column()
+  declare type: string
+}
+
 export class UserAiPreferenceSchema extends BaseModel {
   static $columns = ['agentCredentialLabel', 'agentModelId', 'agentProviderId', 'agentReasoningEffort', 'alternativeCredentialLabel', 'alternativeModelId', 'alternativeProviderId', 'alternativeReasoningEffort', 'createdAt', 'updatedAt', 'userId'] as const
   $columns = UserAiPreferenceSchema.$columns
@@ -376,6 +387,33 @@ export class UserStoryCommentSchema extends BaseModel {
   declare updatedAt: DateTime | null
   @column()
   declare userStoryId: string
+}
+
+export class UserSubscriptionSchema extends BaseModel {
+  static $columns = ['cancelAtPeriodEnd', 'createdAt', 'currentPeriodEnd', 'lastStripeEventCreatedAt', 'status', 'stripeCheckoutSessionId', 'stripeCustomerId', 'stripePriceId', 'stripeSubscriptionId', 'updatedAt', 'userId'] as const
+  $columns = UserSubscriptionSchema.$columns
+  @column()
+  declare cancelAtPeriodEnd: boolean
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column.dateTime()
+  declare currentPeriodEnd: DateTime | null
+  @column()
+  declare lastStripeEventCreatedAt: bigint | number | null
+  @column()
+  declare status: string
+  @column()
+  declare stripeCheckoutSessionId: string | null
+  @column()
+  declare stripeCustomerId: string
+  @column()
+  declare stripePriceId: string | null
+  @column()
+  declare stripeSubscriptionId: string | null
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+  @column({ isPrimary: true })
+  declare userId: string
 }
 
 export class UserSchema extends BaseModel {

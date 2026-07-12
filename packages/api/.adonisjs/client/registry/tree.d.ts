@@ -2,6 +2,14 @@
 import type { routes } from './index.ts'
 
 export interface ApiDefinition {
+  stripeWebhooks: typeof routes['stripe_webhooks']
+  billing: {
+    billing: {
+      show: typeof routes['billing.billing.show']
+      checkout: typeof routes['billing.billing.checkout']
+      portal: typeof routes['billing.billing.portal']
+    }
+  }
   auth: {
     newAccount: {
       store: typeof routes['auth.new_account.store']

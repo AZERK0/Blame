@@ -4,6 +4,10 @@ type ParamValue = string | number | bigint | boolean
 
 export type ScannedRoutes = {
   ALL: {
+    'stripe_webhooks': { paramsTuple?: []; params?: {} }
+    'billing.billing.show': { paramsTuple?: []; params?: {} }
+    'billing.billing.checkout': { paramsTuple?: []; params?: {} }
+    'billing.billing.portal': { paramsTuple?: []; params?: {} }
     'auth.new_account.store': { paramsTuple?: []; params?: {} }
     'auth.access_tokens.store': { paramsTuple?: []; params?: {} }
     'profile.profile.show': { paramsTuple?: []; params?: {} }
@@ -50,6 +54,7 @@ export type ScannedRoutes = {
     'projects.user_stories.user_story_comments.undo': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'commentId': ParamValue} }
   }
   GET: {
+    'billing.billing.show': { paramsTuple?: []; params?: {} }
     'profile.profile.show': { paramsTuple?: []; params?: {} }
     'profile.user_ai_preferences.show': { paramsTuple?: []; params?: {} }
     'profile.user_mcp_configurations.show': { paramsTuple?: []; params?: {} }
@@ -67,6 +72,7 @@ export type ScannedRoutes = {
     'projects.user_stories.user_story_agent_runs.activity_detail': { paramsTuple: [ParamValue,ParamValue,ParamValue]; params: {'id': ParamValue,'runId': ParamValue,'activityId': ParamValue} }
   }
   HEAD: {
+    'billing.billing.show': { paramsTuple?: []; params?: {} }
     'profile.profile.show': { paramsTuple?: []; params?: {} }
     'profile.user_ai_preferences.show': { paramsTuple?: []; params?: {} }
     'profile.user_mcp_configurations.show': { paramsTuple?: []; params?: {} }
@@ -84,6 +90,9 @@ export type ScannedRoutes = {
     'projects.user_stories.user_story_agent_runs.activity_detail': { paramsTuple: [ParamValue,ParamValue,ParamValue]; params: {'id': ParamValue,'runId': ParamValue,'activityId': ParamValue} }
   }
   POST: {
+    'stripe_webhooks': { paramsTuple?: []; params?: {} }
+    'billing.billing.checkout': { paramsTuple?: []; params?: {} }
+    'billing.billing.portal': { paramsTuple?: []; params?: {} }
     'auth.new_account.store': { paramsTuple?: []; params?: {} }
     'auth.access_tokens.store': { paramsTuple?: []; params?: {} }
     'profile.access_tokens.destroy': { paramsTuple?: []; params?: {} }

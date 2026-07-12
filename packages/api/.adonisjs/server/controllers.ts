@@ -5,6 +5,7 @@
 
 export const controllers = {
   AccessTokens: () => import('#controllers/access_tokens_controller'),
+  Billing: () => import('#controllers/billing_controller'),
   NewAccount: () => import('#controllers/new_account_controller'),
   Profile: () => import('#controllers/profile_controller'),
   ProjectCodePractices: () => import('#controllers/project_code_practices_controller'),
@@ -14,6 +15,7 @@ export const controllers = {
   QuickChatAgentRuns: () => import('#controllers/quick_chat_agent_runs_controller'),
   QuickChatMessages: () => import('#controllers/quick_chat_messages_controller'),
   QuickChats: () => import('#controllers/quick_chats_controller'),
+  StripeWebhooks: () => import('#controllers/stripe_webhooks_controller'),
   UserAiPreferences: () => import('#controllers/user_ai_preferences_controller'),
   UserMcpConfigurations: () => import('#controllers/user_mcp_configurations_controller'),
   UserStories: () => import('#controllers/user_stories_controller'),

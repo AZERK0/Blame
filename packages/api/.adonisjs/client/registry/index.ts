@@ -6,6 +6,30 @@ import type { ApiDefinition } from './tree.d.ts'
 const placeholder: any = {}
 
 const routes = {
+  'stripe_webhooks': {
+    methods: ["POST"],
+    pattern: '/api/v1/webhooks/stripe',
+    tokens: [{"old":"/api/v1/webhooks/stripe","type":0,"val":"api","end":""},{"old":"/api/v1/webhooks/stripe","type":0,"val":"v1","end":""},{"old":"/api/v1/webhooks/stripe","type":0,"val":"webhooks","end":""},{"old":"/api/v1/webhooks/stripe","type":0,"val":"stripe","end":""}],
+    types: placeholder as Registry['stripe_webhooks']['types'],
+  },
+  'billing.billing.show': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/billing',
+    tokens: [{"old":"/api/v1/billing","type":0,"val":"api","end":""},{"old":"/api/v1/billing","type":0,"val":"v1","end":""},{"old":"/api/v1/billing","type":0,"val":"billing","end":""}],
+    types: placeholder as Registry['billing.billing.show']['types'],
+  },
+  'billing.billing.checkout': {
+    methods: ["POST"],
+    pattern: '/api/v1/billing/checkout',
+    tokens: [{"old":"/api/v1/billing/checkout","type":0,"val":"api","end":""},{"old":"/api/v1/billing/checkout","type":0,"val":"v1","end":""},{"old":"/api/v1/billing/checkout","type":0,"val":"billing","end":""},{"old":"/api/v1/billing/checkout","type":0,"val":"checkout","end":""}],
+    types: placeholder as Registry['billing.billing.checkout']['types'],
+  },
+  'billing.billing.portal': {
+    methods: ["POST"],
+    pattern: '/api/v1/billing/portal',
+    tokens: [{"old":"/api/v1/billing/portal","type":0,"val":"api","end":""},{"old":"/api/v1/billing/portal","type":0,"val":"v1","end":""},{"old":"/api/v1/billing/portal","type":0,"val":"billing","end":""},{"old":"/api/v1/billing/portal","type":0,"val":"portal","end":""}],
+    types: placeholder as Registry['billing.billing.portal']['types'],
+  },
   'auth.new_account.store': {
     methods: ["POST"],
     pattern: '/api/v1/auth/signup',

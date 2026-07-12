@@ -24,6 +24,8 @@ const UserMcpConfigurationsController = () =>
   import('#controllers/user_mcp_configurations_controller')
 const UserStoryAgentRunsController = () => import('#controllers/user_story_agent_runs_controller')
 const UserStoryCommentsController = () => import('#controllers/user_story_comments_controller')
+const BillingController = () => import('#controllers/billing_controller')
+const StripeWebhooksController = () => import('#controllers/stripe_webhooks_controller')
 
 router.get('/', () => {
   return { hello: 'world' }
@@ -31,6 +33,18 @@ router.get('/', () => {
 
 router
   .group(() => {
+    router.post('webhooks/stripe', [StripeWebhooksController, 'handle'])
+
+    router
+      .group(() => {
+        router.get('/', [BillingController, 'show'])
+        router.post('/checkout', [BillingController, 'checkout'])
+        router.post('/portal', [BillingController, 'portal'])
+      })
+      .prefix('billing')
+      .as('billing')
+      .use(middleware.auth())
+
     router
       .group(() => {
         router.post('signup', [controllers.NewAccount, 'store'])
@@ -75,7 +89,7 @@ router
       })
       .prefix('projects')
       .as('projects')
-      .use(middleware.auth())
+      .use([middleware.auth(), middleware.license()])
 
     router
       .group(() => {
@@ -88,7 +102,7 @@ router
       })
       .prefix('providers')
       .as('providers')
-      .use(middleware.auth())
+      .use([middleware.auth(), middleware.license()])
 
     router
       .group(() => {
@@ -108,7 +122,7 @@ router
       })
       .prefix('projects/quick-chats')
       .as('projects.quick_chats')
-      .use(middleware.auth())
+      .use([middleware.auth(), middleware.license()])
 
     router
       .group(() => {
@@ -129,6 +143,6 @@ router
       })
       .prefix('projects/user-stories')
       .as('projects.user_stories')
-      .use(middleware.auth())
+      .use([middleware.auth(), middleware.license()])
   })
   .prefix('/api/v1')

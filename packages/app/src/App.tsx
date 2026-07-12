@@ -16,6 +16,7 @@ import {
   subscribeToNavigation,
 } from "@/components/navigation/navigation"
 import { LoadingScreen } from "@/components/onboarding/loading-screen"
+import { LicenseScreen } from "@/components/onboarding/license-screen"
 import { WelcomeScreen } from "@/components/onboarding/welcome-screen"
 import { ProjectInitializationRunner } from "@/components/project-initialization/project-initialization-runner"
 import { UpdateStartupNotifier } from "@/components/updates/update-startup-notifier"
@@ -40,7 +41,11 @@ const routes = [
   { path: "/chat", title: "Chat", element: <ChatPage /> },
   { path: "/git", title: "Git", element: <GitPage /> },
   { path: "/practices", title: "Code Practices", element: <PracticesPage /> },
-  { path: "/security", title: "Security Audit", element: <RoutePage title="Security Audit" /> },
+  {
+    path: "/security",
+    title: "Security Audit",
+    element: <RoutePage title="Security Audit" />,
+  },
   { path: "/deploy", title: "Deploy", element: <RoutePage title="Deploy" /> },
   {
     path: "/data-library",
@@ -115,6 +120,9 @@ export function App() {
     if (!open) navigate(activeRoute.path)
   }
 
+  if (auth.status === "loading") return <LoadingScreen />
+  if (auth.status === "unauthenticated") return <ConnectScreen />
+  if (!auth.license?.licensed) return <LicenseScreen />
   if (statusPipOpen) {
     return (
       <TooltipProvider>
@@ -123,8 +131,6 @@ export function App() {
       </TooltipProvider>
     )
   }
-  if (auth.status === "loading") return <LoadingScreen />
-  if (auth.status === "unauthenticated") return <ConnectScreen />
   if (auth.aiPreferences === null) {
     return (
       <TooltipProvider>

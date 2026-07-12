@@ -3,6 +3,7 @@ import type {
   CloudProjectInitializationSnapshot,
   CloudSession,
   CloudUser,
+  CloudLicense,
   type CloudAiPreferences,
   type CloudMcpConfiguration,
   type CloudMcpServer,
@@ -43,6 +44,25 @@ export function createCloudApi(connection: ApiConnection) {
     },
     profile() {
       return request<CloudUser>(connection, baseUrl, "/account/profile")
+    },
+    license() {
+      return request<CloudLicense>(connection, baseUrl, "/billing")
+    },
+    checkout(cycle: "monthly" | "yearly") {
+      return request<{ url: string }>(
+        connection,
+        baseUrl,
+        "/billing/checkout",
+        {
+          body: JSON.stringify({ cycle }),
+          method: "POST",
+        }
+      )
+    },
+    billingPortal() {
+      return request<{ url: string }>(connection, baseUrl, "/billing/portal", {
+        method: "POST",
+      })
     },
     aiPreferences() {
       return request<unknown>(

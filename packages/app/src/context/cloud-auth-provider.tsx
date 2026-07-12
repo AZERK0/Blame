@@ -6,6 +6,7 @@ import {
   type CloudSession,
   type CloudMcpConfiguration,
   type CloudMcpServer,
+  type CloudLicense,
   type LoginInput,
   type SaveAiPreferencesInput,
   type SignupInput,
@@ -30,6 +31,7 @@ type CloudAuthState =
       session: CloudSession
       aiPreferences: CloudAiPreferences | null
       mcpConfiguration: CloudMcpConfiguration | null
+      license: CloudLicense
     }
 
 export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
@@ -65,7 +67,8 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
           url: apiUrl,
           token: session.token,
         })
-        const [aiPreferences, mcpConfiguration] = await Promise.all([
+        const [license, aiPreferences, mcpConfiguration] = await Promise.all([
+          api.license(),
           api.aiPreferences(),
           api.mcpConfiguration().catch(() => null),
         ])
@@ -75,6 +78,7 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
           session: { ...session, user },
           aiPreferences,
           mcpConfiguration,
+          license,
         })
       })
       .catch(() => {
@@ -96,7 +100,8 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
         url: apiUrl,
         token: session.token,
       })
-      const [aiPreferences, mcpConfiguration] = await Promise.all([
+      const [license, aiPreferences, mcpConfiguration] = await Promise.all([
+        api.license(),
         api.aiPreferences(),
         api.mcpConfiguration().catch(() => null),
       ])
@@ -106,6 +111,7 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
         session,
         aiPreferences,
         mcpConfiguration,
+        license,
       })
     },
     [apiUrl]
@@ -118,7 +124,8 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
         url: apiUrl,
         token: session.token,
       })
-      const [aiPreferences, mcpConfiguration] = await Promise.all([
+      const [license, aiPreferences, mcpConfiguration] = await Promise.all([
+        api.license(),
         api.aiPreferences(),
         api.mcpConfiguration().catch(() => null),
       ])
@@ -128,6 +135,7 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
         session,
         aiPreferences,
         mcpConfiguration,
+        license,
       })
     },
     [apiUrl]
@@ -156,6 +164,33 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
     },
     [apiConnection, token]
   )
+
+  const refreshLicense = React.useCallback(async () => {
+    if (!token) return
+    const license = await createCloudApi(apiConnection).license()
+    setState((current) =>
+      current.status === "authenticated" ? { ...current, license } : current
+    )
+  }, [apiConnection, token])
+
+  const openBillingUrl = React.useCallback(
+    (url: string) => {
+      if (platform.openExternalLink) platform.openExternalLink(url)
+      else window.open(url, "_blank", "noopener,noreferrer")
+    },
+    [platform]
+  )
+
+  const startCheckout = React.useCallback(
+    async (cycle: "monthly" | "yearly") => {
+      openBillingUrl((await createCloudApi(apiConnection).checkout(cycle)).url)
+    },
+    [apiConnection, openBillingUrl]
+  )
+
+  const openBillingPortal = React.useCallback(async () => {
+    openBillingUrl((await createCloudApi(apiConnection).billingPortal()).url)
+  }, [apiConnection, openBillingUrl])
 
   const saveMcpConfiguration = React.useCallback(
     async (servers: CloudMcpServer[]) => {
@@ -192,12 +227,16 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
           state.status === "authenticated" ? state.aiPreferences : undefined,
         mcpConfiguration:
           state.status === "authenticated" ? state.mcpConfiguration : undefined,
+        license: state.status === "authenticated" ? state.license : undefined,
         login,
         logout,
+        openBillingPortal,
         refreshAiPreferences,
+        refreshLicense,
         saveAiPreferences,
         saveMcpConfiguration,
         signup,
+        startCheckout,
         status: state.status,
         token,
         user: state.status === "authenticated" ? state.session.user : undefined,
