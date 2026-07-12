@@ -1,0 +1,93 @@
+import type {
+  UserStoryCodeSelectionAttachment,
+  UserStoryFileAttachment,
+} from "@/components/backlog/data/backlog-data"
+
+export type ComposerDraft = {
+  codeSelectionAttachments: UserStoryCodeSelectionAttachment[]
+  fileAttachments: UserStoryFileAttachment[]
+  markdown: string
+}
+
+export function composerDraftStorageKey(
+  projectId: string,
+  kind: "backlog" | "chat",
+  targetId?: string
+) {
+  return `blame.app.composer-draft.v1:${projectId}:${kind}:${targetId ?? "new"}`
+}
+
+export function readComposerDraft(
+  storage: Pick<Storage, "getItem">,
+  key: string
+): ComposerDraft | undefined {
+  try {
+    const value = storage.getItem(key)
+    if (!value) return undefined
+    const parsed: unknown = JSON.parse(value)
+    return isComposerDraft(parsed) ? parsed : undefined
+  } catch {
+    return undefined
+  }
+}
+
+export function writeComposerDraft(
+  storage: Pick<Storage, "removeItem" | "setItem">,
+  key: string,
+  draft: ComposerDraft
+) {
+  if (
+    !draft.markdown &&
+    draft.codeSelectionAttachments.length === 0 &&
+    draft.fileAttachments.length === 0
+  ) {
+    storage.removeItem(key)
+    return
+  }
+  storage.setItem(key, JSON.stringify(draft))
+}
+
+export function removeComposerDraft(
+  storage: Pick<Storage, "removeItem">,
+  key: string
+) {
+  storage.removeItem(key)
+}
+
+function isComposerDraft(value: unknown): value is ComposerDraft {
+  if (!value || typeof value !== "object") return false
+  const draft = value as Record<string, unknown>
+  return (
+    typeof draft.markdown === "string" &&
+    Array.isArray(draft.codeSelectionAttachments) &&
+    draft.codeSelectionAttachments.every(isCodeSelectionAttachment) &&
+    Array.isArray(draft.fileAttachments) &&
+    draft.fileAttachments.every(isFileAttachment)
+  )
+}
+
+function isCodeSelectionAttachment(value: unknown) {
+  if (!value || typeof value !== "object") return false
+  const attachment = value as Record<string, unknown>
+  return (
+    typeof attachment.id === "string" &&
+    typeof attachment.content === "string" &&
+    typeof attachment.path === "string" &&
+    typeof attachment.startLine === "number" &&
+    typeof attachment.endLine === "number"
+  )
+}
+
+function isFileAttachment(value: unknown) {
+  if (!value || typeof value !== "object") return false
+  const attachment = value as Record<string, unknown>
+  return (
+    typeof attachment.id === "string" &&
+    typeof attachment.content === "string" &&
+    typeof attachment.name === "string" &&
+    typeof attachment.size === "number" &&
+    typeof attachment.type === "string" &&
+    (attachment.aiContextMarkdown === undefined ||
+      typeof attachment.aiContextMarkdown === "string")
+  )
+}

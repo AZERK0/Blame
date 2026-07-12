@@ -42,7 +42,6 @@ import {
   type QueuedQuickChatAgentUpdate,
 } from "@/components/chat/data/quick-chat-agent-flow"
 import {
-  quickChatSelectedEvent,
   type QuickChat,
   type QuickChatAgentRun,
   type QuickChatAgentRunUpdate,
@@ -51,6 +50,12 @@ import {
 } from "@/components/chat/data/quick-chat-data"
 import { useQuickChatStore } from "@/components/chat/data/quick-chat-store"
 import { agentConversationResponseHeader } from "@/components/chat/agent-conversation-header"
+import {
+  composerDraftStorageKey,
+  readComposerDraft,
+  removeComposerDraft,
+  writeComposerDraft,
+} from "@/components/backlog/drawer/composer-draft-storage"
 import {
   ModelSelector,
   useModelSelection,
@@ -132,6 +137,12 @@ function QuickChatProjectPage() {
   )
   const draftRef = React.useRef<HTMLDivElement>(null)
   const activeConversation = quickChats.activeChat
+  const draftStorageKey = composerDraftStorageKey(
+    project?.id ?? "project",
+    "chat",
+    activeConversation?.id
+  )
+  const loadedDraftStorageKeyRef = React.useRef<string>()
   const activeConversationLoaded =
     !activeConversation || quickChats.chatDetailsLoaded(activeConversation)
   const responseHeader = agentConversationResponseHeader({
@@ -161,16 +172,21 @@ function QuickChatProjectPage() {
   }, [])
 
   React.useEffect(() => {
-    const clearSelectedChatDraft = () => {
-      setDraft("")
-      setDraftCodeAttachments([])
-      setDraftFileAttachments([])
+    if (loadedDraftStorageKeyRef.current !== draftStorageKey) {
+      loadedDraftStorageKeyRef.current = draftStorageKey
+      const storedDraft = readComposerDraft(localStorage, draftStorageKey)
+      setDraft(storedDraft?.markdown ?? "")
+      setDraftCodeAttachments(storedDraft?.codeSelectionAttachments ?? [])
+      setDraftFileAttachments(storedDraft?.fileAttachments ?? [])
       setDraftEditorKey((key) => key + 1)
+      return
     }
-    window.addEventListener(quickChatSelectedEvent, clearSelectedChatDraft)
-    return () =>
-      window.removeEventListener(quickChatSelectedEvent, clearSelectedChatDraft)
-  }, [])
+    writeComposerDraft(localStorage, draftStorageKey, {
+      markdown: draft,
+      codeSelectionAttachments: draftCodeAttachments,
+      fileAttachments: draftFileAttachments,
+    })
+  }, [draft, draftCodeAttachments, draftFileAttachments, draftStorageKey])
 
   React.useEffect(() => {
     const addAttachment = (event: Event) => {
@@ -372,7 +388,6 @@ function QuickChatProjectPage() {
     )
     const codeAttachments = draftCodeAttachments
     const fileAttachments = draftFileAttachments
-    clearDraft()
     setSending(true)
     try {
       const chat = await activeOrCreatedConversation(messageBody)
@@ -381,6 +396,7 @@ function QuickChatProjectPage() {
         codeSelectionAttachments: codeAttachments,
         fileAttachments,
       })
+      clearDraft()
       replaceChatRef(chatWithMessage(currentChat(chat), message))
       await runAgentForMessage(chat, message, codeAttachments, fileAttachments)
     } catch (error) {
@@ -396,7 +412,9 @@ function QuickChatProjectPage() {
     setCancelingAgent(true)
     try {
       await platform.agent.sessions.abort(sessionId)
-      toast.success("Agent cancellation requested.", { position: "bottom-right" })
+      toast.success("Agent cancellation requested.", {
+        position: "bottom-right",
+      })
     } catch (error) {
       showQuickChatError("Unable to cancel agent", errorMessage(error))
     } finally {
@@ -624,6 +642,7 @@ function QuickChatProjectPage() {
   }
 
   function clearDraft() {
+    removeComposerDraft(localStorage, draftStorageKey)
     setDraft("")
     setDraftCodeAttachments([])
     setDraftFileAttachments([])

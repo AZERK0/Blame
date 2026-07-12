@@ -48,6 +48,12 @@ import {
   pendingFileAttachments,
 } from "@/components/backlog/drawer/user-story-attachment-files"
 import {
+  composerDraftStorageKey,
+  readComposerDraft,
+  removeComposerDraft,
+  writeComposerDraft,
+} from "@/components/backlog/drawer/composer-draft-storage"
+import {
   codeSelectionAttachmentEvent,
   type CodeSelectionAttachment,
   type PendingCodeSelectionAttachment,
@@ -156,6 +162,15 @@ export function UserStoryDrawerPanel({
   titleGenerating?: boolean
   userStory?: UserStory
 }) {
+  const draftStorageKey = composerDraftStorageKey(
+    userStory?.projectId ?? initialDraft?.projectId ?? "project",
+    "backlog",
+    userStory?.id
+  )
+  const storedDraft = React.useMemo(
+    () => readComposerDraft(localStorage, draftStorageKey),
+    [draftStorageKey]
+  )
   const hasDevelopment = hasDevelopmentTab(status)
   const hasPreview = status === "in-progress" || status === "in-review"
   const sidebarAvailable = Boolean(
@@ -171,21 +186,25 @@ export function UserStoryDrawerPanel({
   const [summaryCodeSelectionAttachments, setSummaryCodeSelectionAttachments] =
     React.useState<PendingCodeSelectionAttachment[]>(
       mode === "create"
-        ? (initialDraft?.codeSelectionAttachments ?? [])
+        ? (storedDraft?.codeSelectionAttachments ??
+            initialDraft?.codeSelectionAttachments ??
+            [])
         : (userStory?.codeSelectionAttachments ?? [])
     )
   const [summaryFileAttachments, setSummaryFileAttachments] = React.useState<
     UserStoryFileAttachment[]
   >(
     mode === "create"
-      ? (initialDraft?.fileAttachments ?? [])
+      ? (storedDraft?.fileAttachments ?? initialDraft?.fileAttachments ?? [])
       : (userStory?.fileAttachments ?? [])
   )
   const [commentCodeSelectionAttachments, setCommentCodeSelectionAttachments] =
-    React.useState<PendingCodeSelectionAttachment[]>([])
+    React.useState<PendingCodeSelectionAttachment[]>(
+      mode === "create" ? [] : (storedDraft?.codeSelectionAttachments ?? [])
+    )
   const [commentFileAttachments, setCommentFileAttachments] = React.useState<
     UserStoryFileAttachment[]
-  >([])
+  >(mode === "create" ? [] : (storedDraft?.fileAttachments ?? []))
   const [commentEditorKey, setCommentEditorKey] = React.useState(0)
   const [developmentFileTarget, setDevelopmentFileTarget] = React.useState<{
     id: string
@@ -198,16 +217,39 @@ export function UserStoryDrawerPanel({
   )
   const [summary, setSummary] = React.useState(
     mode === "create"
-      ? (initialDraft?.summary ?? "")
+      ? (storedDraft?.markdown ?? initialDraft?.summary ?? "")
       : (userStory?.summary ?? "")
   )
-  const [comment, setComment] = React.useState("")
+  const [comment, setComment] = React.useState(
+    mode === "create" ? "" : (storedDraft?.markdown ?? "")
+  )
   const summaryRef = React.useRef<HTMLDivElement>(null)
   const commentRef = React.useRef<HTMLDivElement>(null)
 
   React.useEffect(() => {
     localStorage.setItem(drawerSidebarStorageKey, JSON.stringify(sidebarOpen))
   }, [sidebarOpen])
+
+  React.useEffect(() => {
+    writeComposerDraft(localStorage, draftStorageKey, {
+      markdown: mode === "create" ? summary : comment,
+      codeSelectionAttachments:
+        mode === "create"
+          ? summaryCodeSelectionAttachments
+          : commentCodeSelectionAttachments,
+      fileAttachments:
+        mode === "create" ? summaryFileAttachments : commentFileAttachments,
+    })
+  }, [
+    comment,
+    commentCodeSelectionAttachments,
+    commentFileAttachments,
+    draftStorageKey,
+    mode,
+    summary,
+    summaryCodeSelectionAttachments,
+    summaryFileAttachments,
+  ])
 
   React.useEffect(() => {
     if (!focusComment) return
@@ -543,6 +585,7 @@ export function UserStoryDrawerPanel({
             summaryFileAttachments
           )
         )
+        removeComposerDraft(localStorage, draftStorageKey)
       }
       if (mode !== "create" && userStory) {
         if (action === "Approve & Merge") {
@@ -606,6 +649,7 @@ export function UserStoryDrawerPanel({
         codeSelectionAttachments: commentCodeSelectionAttachments,
         fileAttachments: commentFileAttachments,
       })
+      removeComposerDraft(localStorage, draftStorageKey)
       setComment("")
       setCommentCodeSelectionAttachments([])
       setCommentFileAttachments([])
