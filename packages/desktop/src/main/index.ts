@@ -64,9 +64,11 @@ try {
 } catch {}
 
 const appIdentity = desktopAppIdentity(app.isPackaged)
+const billingDeepLink = "blame://billing/refresh"
 app.setName(appIdentity.name)
 app.setAppUserModelId(appIdentity.appId)
 app.setPath("userData", join(app.getPath("appData"), appIdentity.appId))
+app.setAsDefaultProtocolClient("blame")
 enablePreviewDevtools()
 registerLiveLogCapture()
 
@@ -78,6 +80,7 @@ let mainWindow: BrowserWindow | undefined
 let shutdownPromise: Promise<void> | undefined
 let shutdownRequested = false
 let readyToQuit = false
+let pendingBillingRefresh = process.argv.some((argument) => argument === billingDeepLink)
 
 void app.whenReady().then(() => {
   registerIpcHandlers()
@@ -107,9 +110,15 @@ app.on("activate", () => {
   if (BrowserWindow.getAllWindows().length === 0) mainWindow = createMainWindow()
 })
 
-app.on("second-instance", () => {
+app.on("second-instance", (_event, commandLine) => {
   if (shutdownRequested) return
   showMainWindow()
+  handleDeepLink(commandLine.find((argument) => argument.startsWith("blame://")))
+})
+
+app.on("open-url", (event, url) => {
+  event.preventDefault()
+  handleDeepLink(url)
 })
 
 app.on("window-all-closed", () => {
@@ -222,6 +231,15 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max)
 }
 
+function handleDeepLink(url: string | undefined) {
+  if (url !== billingDeepLink) return
+  pendingBillingRefresh = true
+  showMainWindow()
+  if (!mainWindow || mainWindow.webContents.isLoading()) return
+  pendingBillingRefresh = false
+  mainWindow.webContents.send("billing:refresh-license")
+}
+
 function showMainWindow() {
   const window = mainWindow ?? BrowserWindow.getAllWindows()[0]
   if (!window) {
@@ -298,6 +316,12 @@ function registerIpcHandlers() {
 
   ipcMain.on("shell:open-external", (_event, url: string) => {
     void shell.openExternal(url)
+  })
+
+  ipcMain.on("billing:renderer-ready", (event) => {
+    if (!pendingBillingRefresh) return
+    pendingBillingRefresh = false
+    event.sender.send("billing:refresh-license")
   })
 
   ipcMain.handle("shell:open-path", (_event, path: string) => {

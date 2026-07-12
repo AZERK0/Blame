@@ -41,6 +41,7 @@ const config: Configuration = {
   afterPack: removeMacosExtendedAttributes,
   appId: "dev.blame.desktop",
   productName: "Blame",
+  protocols: [{ name: "Blame", schemes: ["blame"] }],
   artifactName: "blame-${os}-${arch}.${ext}",
   directories: {
     buildResources: ".",

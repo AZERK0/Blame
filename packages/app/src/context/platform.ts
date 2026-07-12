@@ -47,6 +47,10 @@ export type OpenDirectoryPickerOptions = {
 }
 
 export type Platform = {
+  billing?: {
+    onRefreshLicense(callback: () => void): () => void
+    ready(): void
+  }
   agent?: AgentClient
   api?: ApiConnection
   backlogStatusPip?: BacklogStatusPipClient

@@ -173,6 +173,15 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
     )
   }, [apiConnection, token])
 
+  React.useEffect(() => {
+    if (!platform.billing || !token) return
+    const unsubscribe = platform.billing.onRefreshLicense(() => {
+      void refreshLicense()
+    })
+    platform.billing.ready()
+    return unsubscribe
+  }, [platform.billing, refreshLicense, token])
+
   const openBillingUrl = React.useCallback(
     (url: string) => {
       if (platform.openExternalLink) platform.openExternalLink(url)

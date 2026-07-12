@@ -168,6 +168,10 @@ export type BacklogStatusPip = {
 };
 
 export type BlameDesktopApi = {
+  billing: {
+    onRefreshLicense(callback: () => void): () => void;
+    ready(): void;
+  };
   openDirectoryPicker(
     options?: OpenDirectoryPickerOptions,
   ): Promise<string | string[] | null>;

@@ -3,6 +3,14 @@ import type { AgentEvent } from "@blame/agent-runtime";
 import type { BlameDesktopApi } from "./types";
 
 const api: BlameDesktopApi = {
+  billing: {
+    ready: () => ipcRenderer.send("billing:renderer-ready"),
+    onRefreshLicense: (callback) => {
+      const handler = () => callback();
+      ipcRenderer.on("billing:refresh-license", handler);
+      return () => ipcRenderer.removeListener("billing:refresh-license", handler);
+    },
+  },
   mcp: {
     authorize: (name) => ipcRenderer.invoke("mcp:authorize", name),
     disconnectOAuth: (name) => ipcRenderer.invoke("mcp:disconnect-oauth", name),
