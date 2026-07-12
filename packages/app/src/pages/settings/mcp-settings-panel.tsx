@@ -162,17 +162,30 @@ function McpServerSummary({
   loading: boolean
   servers: McpServerConfig[]
 }) {
-  if (!available)
-    return <p className="text-sm text-muted-foreground">Desktop app required</p>
-  if (loading)
-    return <p className="text-sm text-muted-foreground">Loading servers…</p>
+  if (!available) return <McpStatusText title="Desktop app required" />
+  if (loading) return <McpStatusText title="Loading servers" />
   const enabled = servers.filter((server) => !server.disabled).length
   return (
-    <div>
-      <div className="text-sm font-medium">
-        {servers.length} {servers.length === 1 ? "server" : "servers"}
-      </div>
-      <div className="text-sm text-muted-foreground">{enabled} enabled</div>
+    <McpStatusText
+      title={`${enabled} connected server${enabled === 1 ? "" : "s"}`}
+      success={enabled > 0}
+    />
+  )
+}
+
+function McpStatusText({
+  success = false,
+  title,
+}: {
+  success?: boolean
+  title: string
+}) {
+  return (
+    <div className="flex items-center gap-2 text-sm">
+      <span
+        className={`size-2 rounded-full ${success ? "bg-emerald-500" : "bg-muted-foreground"}`}
+      />
+      <span className="font-medium">{title}</span>
     </div>
   )
 }
