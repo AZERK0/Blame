@@ -8,9 +8,7 @@ import {
   Trash2Icon,
 } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -79,13 +77,18 @@ export function McpSettingsPanel() {
   return (
     <div className="flex flex-col gap-5 py-6">
       <section>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h3 className="text-sm font-semibold">Server connections</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Give Blame agents access to external tools and context.
-            </p>
-          </div>
+        <div className="mb-3">
+          <h3 className="text-sm font-semibold">Server connections</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Give Blame agents access to external tools and context.
+          </p>
+        </div>
+        <div className="flex flex-col gap-3 border-b py-4 sm:flex-row sm:items-center sm:justify-between">
+          <McpServerSummary
+            available={Boolean(client)}
+            loading={loading}
+            servers={servers}
+          />
           <Button
             type="button"
             disabled={!client || adding}
@@ -112,14 +115,9 @@ export function McpSettingsPanel() {
           />
         )}
 
-        <div className="mt-5 grid gap-3">
-          {loading && (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              Loading servers…
-            </p>
-          )}
+        <div>
           {!loading && client && servers.length === 0 && !adding && (
-            <div className="rounded-xl border border-dashed px-5 py-10 text-center">
+            <div className="border-b py-10 text-center">
               <ServerIcon className="mx-auto size-6 text-muted-foreground" />
               <p className="mt-3 text-sm font-medium">No MCP servers added</p>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -128,7 +126,7 @@ export function McpSettingsPanel() {
             </div>
           )}
           {servers.map((server) => (
-            <McpServerCard
+            <McpServerRow
               key={server.name}
               server={server}
               onToggle={(enabled) =>
@@ -155,7 +153,31 @@ export function McpSettingsPanel() {
   )
 }
 
-function McpServerCard({
+function McpServerSummary({
+  available,
+  loading,
+  servers,
+}: {
+  available: boolean
+  loading: boolean
+  servers: McpServerConfig[]
+}) {
+  if (!available)
+    return <p className="text-sm text-muted-foreground">Desktop app required</p>
+  if (loading)
+    return <p className="text-sm text-muted-foreground">Loading servers…</p>
+  const enabled = servers.filter((server) => !server.disabled).length
+  return (
+    <div>
+      <div className="text-sm font-medium">
+        {servers.length} {servers.length === 1 ? "server" : "servers"}
+      </div>
+      <div className="text-sm text-muted-foreground">{enabled} enabled</div>
+    </div>
+  )
+}
+
+function McpServerRow({
   server,
   onAuthorize,
   onDisconnectOAuth,
@@ -174,83 +196,73 @@ function McpServerCard({
       ? [server.command, ...(server.args ?? [])].join(" ")
       : server.url
   return (
-    <Card size="sm">
-      <CardContent className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted">
+    <div className="flex flex-col gap-3 border-b py-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex min-w-0 items-center gap-3">
+        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted">
           <ServerIcon className="size-4" />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="font-medium">{server.name}</p>
-            <Badge variant={server.disabled ? "outline" : "secondary"}>
-              {server.disabled ? "Disabled" : "Ready"}
-            </Badge>
-          </div>
+          <div className="truncate text-sm font-medium">{server.name}</div>
           <p
-            className="mt-1 truncate font-mono text-xs text-muted-foreground"
+            className="truncate text-sm text-muted-foreground"
             title={endpoint}
           >
+            {server.disabled ? "Disabled" : transportLabel(server.transport)} ·{" "}
             {endpoint}
           </p>
-          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-            <span>{transportLabel(server.transport)}</span>
-            {server.oauth.supported && (
-              <span>
-                ·{" "}
-                {server.oauth.configured
-                  ? "OAuth connected"
-                  : "OAuth available"}
-              </span>
-            )}
-          </div>
+          {server.oauth.supported && (
+            <p className="text-sm text-muted-foreground">
+              {server.oauth.configured ? "OAuth connected" : "OAuth available"}
+            </p>
+          )}
           {server.oauth.lastError && (
             <p className="mt-1 text-xs text-destructive">
               {server.oauth.lastError}
             </p>
           )}
         </div>
-        <div className="flex items-center gap-2 self-end sm:self-auto">
-          {server.oauth.supported && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={server.disabled || authorizing}
-              onClick={async () => {
-                setAuthorizing(true)
-                try {
-                  if (server.oauth.configured) await onDisconnectOAuth()
-                  else await onAuthorize()
-                } finally {
-                  setAuthorizing(false)
-                }
-              }}
-            >
-              <KeyRoundIcon />
-              {authorizing
-                ? "Waiting…"
-                : server.oauth.configured
-                  ? "Disconnect"
-                  : "Connect"}
-            </Button>
-          )}
-          <Switch
-            checked={!server.disabled}
-            aria-label={`Enable ${server.name} MCP server`}
-            onCheckedChange={onToggle}
-          />
+      </div>
+      <div className="flex items-center gap-2 self-end sm:self-auto">
+        {server.oauth.supported && (
           <Button
             type="button"
-            variant="ghost"
-            size="icon-sm"
-            aria-label={`Remove ${server.name}`}
-            onClick={onRemove}
+            variant="outline"
+            size="sm"
+            disabled={server.disabled || authorizing}
+            onClick={async () => {
+              setAuthorizing(true)
+              try {
+                if (server.oauth.configured) await onDisconnectOAuth()
+                else await onAuthorize()
+              } finally {
+                setAuthorizing(false)
+              }
+            }}
           >
-            <Trash2Icon />
+            <KeyRoundIcon />
+            {authorizing
+              ? "Waiting…"
+              : server.oauth.configured
+                ? "Disconnect"
+                : "Connect"}
           </Button>
-        </div>
-      </CardContent>
-    </Card>
+        )}
+        <Switch
+          checked={!server.disabled}
+          aria-label={`Enable ${server.name} MCP server`}
+          onCheckedChange={onToggle}
+        />
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          aria-label={`Remove ${server.name}`}
+          onClick={onRemove}
+        >
+          <Trash2Icon />
+        </Button>
+      </div>
+    </div>
   )
 }
 
