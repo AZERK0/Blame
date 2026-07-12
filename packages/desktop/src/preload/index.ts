@@ -4,6 +4,8 @@ import type { BlameDesktopApi } from "./types";
 
 const api: BlameDesktopApi = {
   mcp: {
+    authorize: (name) => ipcRenderer.invoke("mcp:authorize", name),
+    disconnectOAuth: (name) => ipcRenderer.invoke("mcp:disconnect-oauth", name),
     list: () => ipcRenderer.invoke("mcp:list"),
     save: (server, previousName) =>
       ipcRenderer.invoke("mcp:save", server, previousName),

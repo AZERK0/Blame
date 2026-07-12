@@ -1,6 +1,12 @@
-export { BlameAgentRuntime } from "./cline-runtime.js"
-export { codeReviewGraphToolNames } from "./code-review-graph-tools.js"
-export { commandWithNextWebpackFallback } from "./next-webpack-fallback.js"
+export { BlameAgentRuntime } from "./cline-runtime.js";
+export { codeReviewGraphToolNames } from "./code-review-graph-tools.js";
+export { commandWithNextWebpackFallback } from "./next-webpack-fallback.js";
+export {
+  authorizeMcpOAuth,
+  clearMcpOAuth,
+  listMcpOAuthStatuses,
+  type McpOAuthStatus,
+} from "./mcp-oauth.js";
 export type {
   AgentEvent,
   AgentApprovalRequest,
@@ -80,4 +86,4 @@ export type {
   StartNewProjectGenerationInput,
   StartDevelopmentSessionInput,
   StartSessionInput,
-} from "./types.js"
+} from "./types.js";

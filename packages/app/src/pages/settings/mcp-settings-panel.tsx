@@ -2,6 +2,7 @@ import * as React from "react"
 import {
   AlertCircleIcon,
   ChevronDownIcon,
+  KeyRoundIcon,
   PlusIcon,
   ServerIcon,
   Trash2Icon,
@@ -136,6 +137,16 @@ export function McpSettingsPanel() {
               onRemove={() =>
                 client && update(() => client.remove(server.name))
               }
+              onAuthorize={() =>
+                client
+                  ? update(() => client.authorize(server.name))
+                  : Promise.resolve()
+              }
+              onDisconnectOAuth={() =>
+                client
+                  ? update(() => client.disconnectOAuth(server.name))
+                  : Promise.resolve()
+              }
             />
           ))}
         </div>
@@ -146,13 +157,18 @@ export function McpSettingsPanel() {
 
 function McpServerCard({
   server,
+  onAuthorize,
+  onDisconnectOAuth,
   onRemove,
   onToggle,
 }: {
   server: McpServerConfig
+  onAuthorize(): Promise<void>
+  onDisconnectOAuth(): Promise<void>
   onRemove(): void
   onToggle(enabled: boolean): void
 }) {
+  const [authorizing, setAuthorizing] = React.useState(false)
   const endpoint =
     server.transport === "stdio"
       ? [server.command, ...(server.args ?? [])].join(" ")
@@ -176,11 +192,48 @@ function McpServerCard({
           >
             {endpoint}
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {transportLabel(server.transport)}
-          </p>
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <span>{transportLabel(server.transport)}</span>
+            {server.oauth.supported && (
+              <span>
+                ·{" "}
+                {server.oauth.configured
+                  ? "OAuth connected"
+                  : "OAuth available"}
+              </span>
+            )}
+          </div>
+          {server.oauth.lastError && (
+            <p className="mt-1 text-xs text-destructive">
+              {server.oauth.lastError}
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-2 self-end sm:self-auto">
+          {server.oauth.supported && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={server.disabled || authorizing}
+              onClick={async () => {
+                setAuthorizing(true)
+                try {
+                  if (server.oauth.configured) await onDisconnectOAuth()
+                  else await onAuthorize()
+                } finally {
+                  setAuthorizing(false)
+                }
+              }}
+            >
+              <KeyRoundIcon />
+              {authorizing
+                ? "Waiting…"
+                : server.oauth.configured
+                  ? "Disconnect"
+                  : "Connect"}
+            </Button>
+          )}
           <Switch
             checked={!server.disabled}
             aria-label={`Enable ${server.name} MCP server`}
@@ -228,6 +281,7 @@ function McpServerForm({
       form.transport === "stdio"
         ? {
             name: form.name,
+            oauth: { configured: false, supported: false },
             transport: "stdio",
             disabled: false,
             command: form.command,
@@ -237,6 +291,7 @@ function McpServerForm({
           }
         : {
             name: form.name,
+            oauth: { configured: false, supported: true },
             transport: form.transport,
             disabled: false,
             url: form.url,

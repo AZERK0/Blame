@@ -75,11 +75,19 @@ export type McpServerConfig = {
   env?: Record<string, string>
   headers?: Record<string, string>
   name: string
+  oauth: {
+    configured: boolean
+    lastAuthenticatedAt?: number
+    lastError?: string
+    supported: boolean
+  }
   transport: McpTransport
   url?: string
 }
 
 export type McpServersClient = {
+  authorize(name: string): Promise<McpServerConfig[]>
+  disconnectOAuth(name: string): Promise<McpServerConfig[]>
   list(): Promise<McpServerConfig[]>
   save(
     server: McpServerConfig,

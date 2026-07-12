@@ -1,40 +1,118 @@
+import {
+  authorizeMcpOAuth,
+  clearMcpOAuth,
+  listMcpOAuthStatuses,
+} from "@blame/agent-runtime";
 import type { McpServerConfig } from "@blame/app";
-import { ipcMain } from "electron";
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { ipcMain, shell } from "electron";
+import { chmod, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 
 type McpSettings = { mcpServers: Record<string, Record<string, unknown>> };
+let settingsOperation: Promise<unknown> = Promise.resolve();
+let authorizationRunning = false;
 
 export function registerMcpIpcHandlers() {
-  ipcMain.handle("mcp:list", () => listServers());
-  ipcMain.handle("mcp:save", async (_event, input, previousName) => {
-    const server = validateServer(input);
-    const settings = await readSettings();
-    if (typeof previousName === "string" && previousName !== server.name) {
-      delete settings.mcpServers[previousName];
-    }
-    settings.mcpServers[server.name] = serializeServer(server);
-    await writeSettings(settings);
-    return listServers(settings);
-  });
-  ipcMain.handle("mcp:remove", async (_event, input) => {
-    const name = validateName(input);
-    const settings = await readSettings();
-    delete settings.mcpServers[name];
-    await writeSettings(settings);
-    return listServers(settings);
-  });
-  ipcMain.handle("mcp:set-enabled", async (_event, input, enabled) => {
-    const name = validateName(input);
-    if (typeof enabled !== "boolean") throw new Error("Invalid enabled state");
-    const settings = await readSettings();
-    const server = settings.mcpServers[name];
-    if (!server) throw new Error("MCP server not found");
-    server.disabled = !enabled;
-    await writeSettings(settings);
-    return listServers(settings);
-  });
+  ipcMain.handle("mcp:list", () =>
+    runSettingsOperation(async () => listServers()),
+  );
+  ipcMain.handle("mcp:save", (_event, input, previousName) =>
+    runSettingsOperation(async () => {
+      const server = validateServer(input);
+      const settings = await readSettings();
+      const existing =
+        typeof previousName === "string"
+          ? settings.mcpServers[previousName]
+          : settings.mcpServers[server.name];
+      if (typeof previousName === "string" && previousName !== server.name) {
+        delete settings.mcpServers[previousName];
+      }
+      const preserveOAuth = existing && sameEndpoint(existing, server);
+      settings.mcpServers[server.name] = {
+        ...(existing ?? {}),
+        ...serializeServer(server),
+        ...(preserveOAuth && existing.oauth
+          ? { oauth: existing.oauth }
+          : { oauth: undefined }),
+      };
+      await writeSettings(settings);
+      return listServers(settings);
+    }),
+  );
+  ipcMain.handle("mcp:remove", (_event, input) =>
+    runSettingsOperation(async () => {
+      const name = validateName(input);
+      const settings = await readSettings();
+      delete settings.mcpServers[name];
+      await writeSettings(settings);
+      return listServers(settings);
+    }),
+  );
+  ipcMain.handle("mcp:set-enabled", (_event, input, enabled) =>
+    runSettingsOperation(async () => {
+      const name = validateName(input);
+      if (typeof enabled !== "boolean")
+        throw new Error("Invalid enabled state");
+      const settings = await readSettings();
+      const server = settings.mcpServers[name];
+      if (!server) throw new Error("MCP server not found");
+      server.disabled = !enabled;
+      await writeSettings(settings);
+      return listServers(settings);
+    }),
+  );
+  ipcMain.handle("mcp:authorize", (_event, input) =>
+    runSettingsOperation(async () => {
+      const name = validateName(input);
+      if (authorizationRunning)
+        throw new Error("Another MCP authorization is already in progress");
+      authorizationRunning = true;
+      try {
+        await authorizeMcpOAuth({
+          filePath: settingsPath(),
+          serverName: name,
+          openUrl: openAuthorizationUrl,
+        });
+        return listServers();
+      } finally {
+        await protectSettingsFile();
+        authorizationRunning = false;
+      }
+    }),
+  );
+  ipcMain.handle("mcp:disconnect-oauth", (_event, input) =>
+    runSettingsOperation(async () => {
+      clearMcpOAuth(settingsPath(), validateName(input));
+      await protectSettingsFile();
+      return listServers();
+    }),
+  );
+}
+
+async function runSettingsOperation<T>(
+  operation: () => Promise<T>,
+): Promise<T> {
+  const result = settingsOperation.then(operation, operation);
+  settingsOperation = result.catch(() => undefined);
+  return result;
+}
+
+async function openAuthorizationUrl(value: string) {
+  const url = new URL(value);
+  const loopbackHttp =
+    url.protocol === "http:" &&
+    (url.hostname === "127.0.0.1" ||
+      url.hostname === "localhost" ||
+      url.hostname === "[::1]");
+  if (
+    url.username ||
+    url.password ||
+    (url.protocol !== "https:" && !loopbackHttp)
+  ) {
+    throw new Error("The MCP server returned an unsafe authorization URL");
+  }
+  await shell.openExternal(url.toString());
 }
 
 function settingsPath() {
@@ -67,6 +145,11 @@ async function writeSettings(settings: McpSettings) {
     mode: 0o600,
   });
   await rename(temporaryPath, path);
+  await protectSettingsFile();
+}
+
+async function protectSettingsFile() {
+  if (process.platform !== "win32") await chmod(settingsPath(), 0o600);
 }
 
 function listServers(
@@ -74,14 +157,26 @@ function listServers(
 ): Promise<McpServerConfig[]> | McpServerConfig[] {
   if (!settings)
     return readSettings().then(listServers) as Promise<McpServerConfig[]>;
-  return Object.entries(settings.mcpServers).map(([name, value]) =>
-    deserializeServer(name, value),
+  const statuses = new Map(
+    safeOAuthStatuses().map((status) => [status.serverName, status]),
   );
+  return Object.entries(settings.mcpServers).map(([name, value]) =>
+    deserializeServer(name, value, statuses.get(name)),
+  );
+}
+
+function safeOAuthStatuses() {
+  try {
+    return listMcpOAuthStatuses(settingsPath());
+  } catch {
+    return [];
+  }
 }
 
 function deserializeServer(
   name: string,
   value: Record<string, unknown>,
+  oauth?: ReturnType<typeof listMcpOAuthStatuses>[number],
 ): McpServerConfig {
   const nested = isRecord(value.transport) ? value.transport : value;
   const transport =
@@ -92,6 +187,7 @@ function deserializeServer(
     ...nested,
     disabled: value.disabled === true,
     name,
+    oauth: oauth ?? { configured: false, supported: transport !== "stdio" },
     transport,
   });
 }
@@ -127,10 +223,12 @@ function validateServer(input: unknown): McpServerConfig {
   )
     throw new Error("Invalid MCP transport");
   const disabled = input.disabled === true;
+  const oauth = { configured: false, supported: transport !== "stdio" };
   if (transport === "stdio") {
     const command = requiredString(input.command, "Command");
     return {
       name,
+      oauth,
       transport,
       disabled,
       command,
@@ -147,11 +245,23 @@ function validateServer(input: unknown): McpServerConfig {
   }
   return {
     name,
+    oauth,
     transport,
     disabled,
     url,
     headers: stringRecord(input.headers),
   };
+}
+
+function sameEndpoint(
+  existing: Record<string, unknown>,
+  server: McpServerConfig,
+) {
+  const transport = isRecord(existing.transport)
+    ? existing.transport
+    : existing;
+  if (server.transport === "stdio") return false;
+  return transport.type === server.transport && transport.url === server.url;
 }
 
 function validateName(value: unknown) {
