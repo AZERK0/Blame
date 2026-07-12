@@ -3,6 +3,14 @@ import type { AgentEvent } from "@blame/agent-runtime";
 import type { BlameDesktopApi } from "./types";
 
 const api: BlameDesktopApi = {
+  mcp: {
+    list: () => ipcRenderer.invoke("mcp:list"),
+    save: (server, previousName) =>
+      ipcRenderer.invoke("mcp:save", server, previousName),
+    remove: (name) => ipcRenderer.invoke("mcp:remove", name),
+    setEnabled: (name, enabled) =>
+      ipcRenderer.invoke("mcp:set-enabled", name, enabled),
+  },
   openDirectoryPicker: (options) =>
     ipcRenderer.invoke("dialog:open-directory", options),
   openExternalLink: (url) => ipcRenderer.send("shell:open-external", url),
@@ -124,7 +132,8 @@ const api: BlameDesktopApi = {
     gitPush: (input) => ipcRenderer.invoke("workspace:git-push", input),
     listGitDirectory: (input) =>
       ipcRenderer.invoke("workspace:list-git-directory", input),
-    readGitFile: (input) => ipcRenderer.invoke("workspace:read-git-file", input),
+    readGitFile: (input) =>
+      ipcRenderer.invoke("workspace:read-git-file", input),
     gitRepositoryFingerprint: (input) =>
       ipcRenderer.invoke("workspace:git-repository-fingerprint", input),
     ensureGitRepository: (input) =>
@@ -138,7 +147,10 @@ const api: BlameDesktopApi = {
     runProjectSetup: (input) =>
       ipcRenderer.invoke("workspace:run-project-setup", input),
     collectProjectInitializationDiagnostics: (input) =>
-      ipcRenderer.invoke("workspace:collect-project-initialization-diagnostics", input),
+      ipcRenderer.invoke(
+        "workspace:collect-project-initialization-diagnostics",
+        input,
+      ),
     stopProjectSetup: (input) =>
       ipcRenderer.invoke("workspace:stop-project-setup", input),
     removeWorktree: (input) =>
@@ -149,10 +161,8 @@ const api: BlameDesktopApi = {
       ipcRenderer.invoke("workspace:ensure-project-preview-url", input),
     ensureRuntimeReady: () =>
       ipcRenderer.invoke("workspace:ensure-runtime-ready"),
-    repairRuntime: () =>
-      ipcRenderer.invoke("workspace:repair-runtime"),
-    resetRuntime: () =>
-      ipcRenderer.invoke("workspace:reset-runtime"),
+    repairRuntime: () => ipcRenderer.invoke("workspace:repair-runtime"),
+    resetRuntime: () => ipcRenderer.invoke("workspace:reset-runtime"),
     projectRuntimeHealthy: (input) =>
       ipcRenderer.invoke("workspace:project-runtime-healthy", input),
     listProjectServices: (input) =>
@@ -259,12 +269,14 @@ const api: BlameDesktopApi = {
     },
     initializations: {
       run: (input) => ipcRenderer.invoke("agent:initializations:run", input),
-      repair: (input) => ipcRenderer.invoke("agent:initializations:repair", input),
+      repair: (input) =>
+        ipcRenderer.invoke("agent:initializations:repair", input),
       assessImpact: (input) =>
         ipcRenderer.invoke("agent:initializations:assess-impact", input),
     },
     newProjects: {
-      generate: (input) => ipcRenderer.invoke("agent:new-projects:generate", input),
+      generate: (input) =>
+        ipcRenderer.invoke("agent:new-projects:generate", input),
     },
     promptOptimizer: {
       optimizeUserStory: (input) =>

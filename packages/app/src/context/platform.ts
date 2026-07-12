@@ -55,6 +55,7 @@ export type Platform = {
   systemNotifications?: SystemNotificationsClient
   terminal?: TerminalClient
   updates?: DesktopUpdatesClient
+  mcp?: McpServersClient
   workspace?: WorkspaceClient
   windowControls?: WindowControlsClient
   openDirectoryPickerDialog?(
@@ -62,6 +63,30 @@ export type Platform = {
   ): Promise<PickerPaths>
   openExternalLink?(url: string): void
   openPath?(path: string): Promise<string>
+}
+
+export type McpTransport = "stdio" | "streamableHttp" | "sse"
+
+export type McpServerConfig = {
+  args?: string[]
+  command?: string
+  cwd?: string
+  disabled: boolean
+  env?: Record<string, string>
+  headers?: Record<string, string>
+  name: string
+  transport: McpTransport
+  url?: string
+}
+
+export type McpServersClient = {
+  list(): Promise<McpServerConfig[]>
+  save(
+    server: McpServerConfig,
+    previousName?: string
+  ): Promise<McpServerConfig[]>
+  remove(name: string): Promise<McpServerConfig[]>
+  setEnabled(name: string, enabled: boolean): Promise<McpServerConfig[]>
 }
 
 export type BacklogStatusPipClient = {

@@ -6,6 +6,7 @@ import {
   DownloadIcon,
   LoaderCircleIcon,
   MonitorDownIcon,
+  ServerCogIcon,
   PlugZapIcon,
   RefreshCwIcon,
   RotateCcwIcon,
@@ -52,11 +53,13 @@ import {
 } from "@/context/platform"
 import { useSystemNotificationsEnabled } from "@/lib/system-notifications"
 import { cn } from "@/lib/utils"
+import { McpSettingsPanel } from "./mcp-settings-panel"
 
 type SettingsSectionId =
   | "general"
   | "models"
   | "providers"
+  | "mcp"
   | "desktop"
   | "account"
 
@@ -93,6 +96,12 @@ const settingsSections: SettingsSection[] = [
     icon: PlugZapIcon,
     id: "providers",
     title: "Providers",
+  },
+  {
+    description: "External tools and context for agents.",
+    icon: ServerCogIcon,
+    id: "mcp",
+    title: "MCP Servers",
   },
   {
     description: "Desktop updates and local capabilities.",
@@ -241,6 +250,7 @@ function SettingsSectionHeader({ section }: { section: SettingsSection }) {
 function SettingsSectionContent({ section }: { section: SettingsSectionId }) {
   if (section === "general") return <GeneralSettingsPanel />
   if (section === "providers") return <ProvidersSettingsPanel />
+  if (section === "mcp") return <McpSettingsPanel />
   if (section === "desktop") return <DesktopSettingsPanel />
   if (section === "account") return <AccountSettingsPanel />
   return <ModelsSettingsPanel />

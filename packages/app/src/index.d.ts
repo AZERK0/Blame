@@ -13,6 +13,8 @@ export type {
   GitLogCommitRef,
   GitStatusFile,
   GitStatusResult,
+  McpServerConfig,
+  McpServersClient,
   Platform,
 } from "./context/platform"
 

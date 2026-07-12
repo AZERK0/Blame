@@ -28,6 +28,7 @@ import {
 } from "./preview-browser-ipc"
 import { registerTerminalIpcHandlers, shutdownTerminalSessions } from "./terminal-ipc"
 import { registerWorkspaceIpcHandlers, shutdownWorkspaceProcesses } from "./workspace-ipc"
+import { registerMcpIpcHandlers } from "./mcp-ipc"
 
 contextMenu({
   showInspectElement: true,
@@ -88,6 +89,7 @@ void app.whenReady().then(() => {
   })
   registerAgentIpcHandlers()
   registerPreviewBrowserIpcHandlers()
+  registerMcpIpcHandlers()
   registerTerminalIpcHandlers()
   registerDesktopUpdateIpcHandlers({
     beforeInstall() {

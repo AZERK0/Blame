@@ -41,6 +41,7 @@ import type {
   GitLogCommit,
   GitStatusResult,
 } from "@blame/app";
+import type { McpServersClient } from "@blame/app";
 import type { HostDependencyReport } from "../main/host-dependencies";
 import type { CreateProjectInput } from "../main/project-creation";
 
@@ -176,6 +177,7 @@ export type BlameDesktopApi = {
   platform: NodeJS.Platform;
   systemNotifications: SystemNotifications;
   updates: DesktopUpdates;
+  mcp: McpServersClient;
   windowControls: WindowControls;
   previewBrowser: {
     capture(input: {
