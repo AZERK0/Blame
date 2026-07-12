@@ -14,6 +14,7 @@ import {
   PencilIcon,
   RotateCcwIcon,
   SearchIcon,
+  SquareIcon,
   TerminalIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
@@ -277,6 +278,8 @@ function AgentConversationTurn({
 }
 
 export function AgentConversationComposer({
+  agentRunning = false,
+  cancelingAgent = false,
   codeSelectionAttachments,
   disabled,
   editorKey,
@@ -290,11 +293,14 @@ export function AgentConversationComposer({
   onFileLinkClick,
   onMessageChange,
   onMessageSubmit,
+  onAgentCancel,
   placeholder,
   submitLabel,
   title,
   toolbarEnd,
 }: {
+  agentRunning?: boolean
+  cancelingAgent?: boolean
   codeSelectionAttachments: PendingCodeSelectionAttachment[]
   disabled?: boolean
   editorKey: number
@@ -308,6 +314,7 @@ export function AgentConversationComposer({
   onFileLinkClick?: (path: string) => void
   onMessageChange: (message: string) => void
   onMessageSubmit: () => void
+  onAgentCancel?: () => void
   placeholder: string
   submitLabel: string
   title?: string
@@ -321,6 +328,20 @@ export function AgentConversationComposer({
     if (disabled || !hasMessageBody) return
     onMessageSubmit()
   }
+
+  function handlePrimaryAction() {
+    if (agentRunning) {
+      if (!cancelingAgent) onAgentCancel?.()
+      return
+    }
+    submitMessage()
+  }
+
+  const primaryActionLabel = agentRunning
+    ? cancelingAgent
+      ? "Canceling agent"
+      : "Cancel agent"
+    : submitLabel
 
   return (
     <section className="grid gap-3">
@@ -352,14 +373,27 @@ export function AgentConversationComposer({
           toolbarEnd={toolbarEnd}
         />
         <Button
-          aria-label={submitLabel}
-          className="absolute top-3 right-3 z-10 size-9 rounded-full border-blue-500 bg-blue-500 p-0 text-white shadow-lg shadow-blue-500/25 hover:bg-blue-600 hover:text-white disabled:border-muted disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
-          disabled={disabled || !hasMessageBody}
+          aria-label={primaryActionLabel}
+          className={cn(
+            "absolute top-3 right-3 z-10 size-9 rounded-full p-0 text-white shadow-lg disabled:border-muted disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none",
+            agentRunning
+              ? "border-destructive bg-destructive shadow-destructive/25 hover:bg-destructive/90 hover:text-white"
+              : "border-blue-500 bg-blue-500 shadow-blue-500/25 hover:bg-blue-600 hover:text-white"
+          )}
+          disabled={
+            agentRunning
+              ? cancelingAgent || !onAgentCancel
+              : disabled || !hasMessageBody
+          }
           size="icon-sm"
           type="button"
-          onClick={submitMessage}
+          onClick={handlePrimaryAction}
         >
-          <ArrowUpIcon className="size-4" />
+          {agentRunning ? (
+            <SquareIcon className="size-3.5 fill-current" />
+          ) : (
+            <ArrowUpIcon className="size-4" />
+          )}
         </Button>
       </div>
     </section>

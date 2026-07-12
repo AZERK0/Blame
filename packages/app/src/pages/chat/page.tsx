@@ -125,6 +125,7 @@ function QuickChatProjectPage() {
     UserStoryFileAttachment[]
   >([])
   const [sending, setSending] = React.useState(false)
+  const [cancelingAgent, setCancelingAgent] = React.useState(false)
   const chatsRef = React.useRef(quickChats.chats)
   const pendingAgentUpdates = React.useRef(
     new Map<string, PendingQuickChatAgentUpdate>()
@@ -386,6 +387,20 @@ function QuickChatProjectPage() {
       showQuickChatError("Quick chat failed", errorMessage(error))
     } finally {
       setSending(false)
+    }
+  }
+
+  async function cancelAgent() {
+    const sessionId = activeConversation?.clineSessionId
+    if (!agentRunning || !sessionId || !platform.agent || cancelingAgent) return
+    setCancelingAgent(true)
+    try {
+      await platform.agent.sessions.abort(sessionId)
+      toast.success("Agent cancellation requested.", { position: "bottom-right" })
+    } catch (error) {
+      showQuickChatError("Unable to cancel agent", errorMessage(error))
+    } finally {
+      setCancelingAgent(false)
     }
   }
 
@@ -670,6 +685,8 @@ function QuickChatProjectPage() {
               <div className="pointer-events-auto relative px-3 pb-3 md:px-5 md:pb-5">
                 <div className="mx-auto max-w-4xl">
                   <AgentConversationComposer
+                    agentRunning={agentRunning}
+                    cancelingAgent={cancelingAgent}
                     codeSelectionAttachments={draftCodeAttachments}
                     disabled={sending || agentRunning || !project}
                     editorKey={draftEditorKey}
@@ -700,6 +717,7 @@ function QuickChatProjectPage() {
                     }
                     onMessageChange={setDraft}
                     onMessageSubmit={submitDraft}
+                    onAgentCancel={cancelAgent}
                     placeholder={
                       agentRunning
                         ? "Agent is working in the current branch."
