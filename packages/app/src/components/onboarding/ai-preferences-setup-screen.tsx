@@ -1,5 +1,10 @@
 import * as React from "react"
-import { LoaderCircleIcon, PlusIcon, SparklesIcon } from "lucide-react"
+import {
+  LoaderCircleIcon,
+  PlusIcon,
+  SparklesIcon,
+  UserRoundIcon,
+} from "lucide-react"
 import { toast } from "sonner"
 
 import {
@@ -33,6 +38,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useCloudAuth } from "@/context/cloud-auth"
+import { navigate } from "@/components/navigation/navigation"
 
 type SetupDialog =
   | { type: "providers" }
@@ -87,7 +93,15 @@ export function AiPreferencesSetupScreen() {
   }
 
   return (
-    <main className="light flex min-h-screen items-center justify-center bg-background p-6 text-foreground">
+    <main className="light relative flex min-h-screen items-center justify-center bg-background p-6 text-foreground">
+      <Button
+        type="button"
+        variant="ghost"
+        className="absolute top-4 right-4"
+        onClick={() => navigate("/account/privacy")}
+      >
+        <UserRoundIcon /> Account
+      </Button>
       <section className="grid w-full max-w-5xl gap-6">
         <div className="grid gap-2">
           <div className="flex size-12 items-center justify-center rounded-lg bg-primary text-primary-foreground">

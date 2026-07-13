@@ -7,6 +7,65 @@
 import { BaseModel, column } from '@adonisjs/lucid/orm'
 import { DateTime } from 'luxon'
 
+export class AccountClosureRequestSchema extends BaseModel {
+  static $columns = ['activeDeletionCompletedAt', 'activeDeletionDeadline', 'activeDeletionDeadlineBreachedAt', 'backupExpirationDeadline', 'emailFingerprint', 'externalCleanupCompletedAt', 'id', 'lastError', 'ledgerRecordedAt', 'nextRetryAt', 'processingStartedAt', 'receiptTokenHash', 'requestedAt', 'retainUntil', 'retryCount', 'sourceUserId', 'status', 'stripeCheckoutSessionId', 'stripeCustomerId', 'stripePriceId', 'stripeSubscriptionId', 'subscriptionCancelAtPeriodEnd', 'subscriptionCreatedAt', 'subscriptionCurrentPeriodEnd', 'subscriptionStatus', 'subscriptionUpdatedAt', 'updatedAt'] as const
+  $columns = AccountClosureRequestSchema.$columns
+  @column.dateTime()
+  declare activeDeletionCompletedAt: DateTime | null
+  @column.dateTime()
+  declare activeDeletionDeadline: DateTime
+  @column.dateTime()
+  declare activeDeletionDeadlineBreachedAt: DateTime | null
+  @column.dateTime()
+  declare backupExpirationDeadline: DateTime | null
+  @column()
+  declare emailFingerprint: string
+  @column.dateTime()
+  declare externalCleanupCompletedAt: DateTime | null
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare lastError: string | null
+  @column.dateTime()
+  declare ledgerRecordedAt: DateTime | null
+  @column.dateTime()
+  declare nextRetryAt: DateTime | null
+  @column.dateTime()
+  declare processingStartedAt: DateTime | null
+  @column()
+  declare receiptTokenHash: string | null
+  @column.dateTime()
+  declare requestedAt: DateTime
+  @column.dateTime()
+  declare retainUntil: DateTime
+  @column()
+  declare retryCount: number
+  @column()
+  declare sourceUserId: string
+  @column()
+  declare status: string
+  @column()
+  declare stripeCheckoutSessionId: string | null
+  @column()
+  declare stripeCustomerId: string | null
+  @column()
+  declare stripePriceId: string | null
+  @column()
+  declare stripeSubscriptionId: string | null
+  @column()
+  declare subscriptionCancelAtPeriodEnd: boolean | null
+  @column.dateTime()
+  declare subscriptionCreatedAt: DateTime | null
+  @column.dateTime()
+  declare subscriptionCurrentPeriodEnd: DateTime | null
+  @column()
+  declare subscriptionStatus: string | null
+  @column.dateTime()
+  declare subscriptionUpdatedAt: DateTime | null
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+}
+
 export class AuthAccessTokenSchema extends BaseModel {
   static $columns = ['abilities', 'createdAt', 'expiresAt', 'hash', 'id', 'lastUsedAt', 'name', 'tokenableId', 'type', 'updatedAt'] as const
   $columns = AuthAccessTokenSchema.$columns
@@ -417,8 +476,12 @@ export class UserSubscriptionSchema extends BaseModel {
 }
 
 export class UserSchema extends BaseModel {
-  static $columns = ['createdAt', 'email', 'fullName', 'id', 'password', 'updatedAt'] as const
+  static $columns = ['activeDeletionDeadline', 'closureRequestedAt', 'createdAt', 'email', 'fullName', 'id', 'password', 'privacyVerificationBlockedUntil', 'privacyVerificationFailureCount', 'privacyVerificationWindowStartedAt', 'updatedAt'] as const
   $columns = UserSchema.$columns
+  @column.dateTime()
+  declare activeDeletionDeadline: DateTime | null
+  @column.dateTime()
+  declare closureRequestedAt: DateTime | null
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
   @column()
@@ -429,6 +492,12 @@ export class UserSchema extends BaseModel {
   declare id: string
   @column({ serializeAs: null })
   declare password: string
+  @column.dateTime()
+  declare privacyVerificationBlockedUntil: DateTime | null
+  @column()
+  declare privacyVerificationFailureCount: number
+  @column.dateTime()
+  declare privacyVerificationWindowStartedAt: DateTime | null
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
 }

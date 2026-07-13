@@ -1,0 +1,11 @@
+/etc/dokploy/traefik/dynamic/access.log {
+  daily
+  rotate 350
+  maxage 350
+  missingok
+  notifempty
+  compress
+  delaycompress
+  dateext
+  copytruncate
+}

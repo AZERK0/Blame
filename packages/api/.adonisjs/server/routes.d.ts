@@ -5,6 +5,7 @@ type ParamValue = string | number | bigint | boolean
 export type ScannedRoutes = {
   ALL: {
     'stripe_webhooks': { paramsTuple?: []; params?: {} }
+    'account_privacy.status': { paramsTuple?: []; params?: {} }
     'billing.billing.show': { paramsTuple?: []; params?: {} }
     'billing.billing.checkout': { paramsTuple?: []; params?: {} }
     'billing.billing.portal': { paramsTuple?: []; params?: {} }
@@ -15,6 +16,8 @@ export type ScannedRoutes = {
     'profile.user_ai_preferences.update': { paramsTuple?: []; params?: {} }
     'profile.user_mcp_configurations.show': { paramsTuple?: []; params?: {} }
     'profile.user_mcp_configurations.update': { paramsTuple?: []; params?: {} }
+    'profile.account_privacy.download': { paramsTuple?: []; params?: {} }
+    'profile.account_privacy.close': { paramsTuple?: []; params?: {} }
     'profile.access_tokens.destroy': { paramsTuple?: []; params?: {} }
     'projects.projects.index': { paramsTuple?: []; params?: {} }
     'projects.projects.store': { paramsTuple?: []; params?: {} }
@@ -91,10 +94,13 @@ export type ScannedRoutes = {
   }
   POST: {
     'stripe_webhooks': { paramsTuple?: []; params?: {} }
+    'account_privacy.status': { paramsTuple?: []; params?: {} }
     'billing.billing.checkout': { paramsTuple?: []; params?: {} }
     'billing.billing.portal': { paramsTuple?: []; params?: {} }
     'auth.new_account.store': { paramsTuple?: []; params?: {} }
     'auth.access_tokens.store': { paramsTuple?: []; params?: {} }
+    'profile.account_privacy.download': { paramsTuple?: []; params?: {} }
+    'profile.account_privacy.close': { paramsTuple?: []; params?: {} }
     'profile.access_tokens.destroy': { paramsTuple?: []; params?: {} }
     'projects.projects.store': { paramsTuple?: []; params?: {} }
     'projects.project_initializations.start': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }

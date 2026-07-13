@@ -26,6 +26,31 @@ export class CloudApiError extends Error {
   }
 }
 
+export type CloudAccountExport = {
+  format: "blame-account-export"
+  version: number
+  generatedAt: string
+  account: Record<string, unknown>
+  security: Record<string, unknown>
+  billing: Record<string, unknown> | null
+  settings: Record<string, unknown>
+  integrations: Record<string, unknown>
+  workspace: Record<string, unknown>
+  additionalRecords: Record<string, unknown>
+}
+
+export type CloudAccountClosureReceipt = {
+  requestId: string
+  receiptToken: string | null
+  status: string
+  requestedAt: string
+  activeDeletionDeadline: string
+  activeDeletionCompletedAt: string | null
+  backupExpirationDeadline: string | null
+  statusEndpoint: string
+  supportContact: string
+}
+
 export function createCloudApi(connection: ApiConnection) {
   const baseUrl = connection.url.replace(/\/$/, "")
 
@@ -44,6 +69,30 @@ export function createCloudApi(connection: ApiConnection) {
     },
     profile() {
       return request<CloudUser>(connection, baseUrl, "/account/profile")
+    },
+    exportAccount(password: string) {
+      return request<CloudAccountExport>(
+        connection,
+        baseUrl,
+        "/account/export",
+        { body: JSON.stringify({ password }), method: "POST" }
+      )
+    },
+    closeAccount(input: { password: string; confirmation: string }) {
+      return request<CloudAccountClosureReceipt>(
+        connection,
+        baseUrl,
+        "/account/closure",
+        { body: JSON.stringify(input), method: "POST" }
+      )
+    },
+    closureStatus(requestId: string, receiptToken: string) {
+      return request<CloudAccountClosureReceipt>(
+        connection,
+        baseUrl,
+        "/account/closure-status",
+        { body: JSON.stringify({ requestId, receiptToken }), method: "POST" }
+      )
     },
     license() {
       return request<CloudLicense>(connection, baseUrl, "/billing")

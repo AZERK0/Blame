@@ -59,27 +59,12 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    void createCloudApi({ url: apiUrl, token: session.token })
-      .profile()
-      .then(async (user) => {
+    const api = createCloudApi({ url: apiUrl, token: session.token })
+    void hydrateSession(api, session, true)
+      .then((authenticatedState) => {
         if (!alive) return
-        const api = createCloudApi({
-          url: apiUrl,
-          token: session.token,
-        })
-        const [license, aiPreferences, mcpConfiguration] = await Promise.all([
-          api.license(),
-          api.aiPreferences(),
-          api.mcpConfiguration().catch(() => null),
-        ])
-        writeCloudSession({ ...session, user })
-        setState({
-          status: "authenticated",
-          session: { ...session, user },
-          aiPreferences,
-          mcpConfiguration,
-          license,
-        })
+        writeCloudSession(authenticatedState.session)
+        setState(authenticatedState)
       })
       .catch(() => {
         if (!alive) return
@@ -91,7 +76,7 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       alive = false
     }
-  }, [apiUrl])
+  }, [apiUrl, platform.mcp])
 
   const login = React.useCallback(
     async (input: LoginInput) => {
@@ -100,19 +85,9 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
         url: apiUrl,
         token: session.token,
       })
-      const [license, aiPreferences, mcpConfiguration] = await Promise.all([
-        api.license(),
-        api.aiPreferences(),
-        api.mcpConfiguration().catch(() => null),
-      ])
+      const authenticatedState = await hydrateSession(api, session)
       writeCloudSession(session)
-      setState({
-        status: "authenticated",
-        session,
-        aiPreferences,
-        mcpConfiguration,
-        license,
-      })
+      setState(authenticatedState)
     },
     [apiUrl]
   )
@@ -124,19 +99,9 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
         url: apiUrl,
         token: session.token,
       })
-      const [license, aiPreferences, mcpConfiguration] = await Promise.all([
-        api.license(),
-        api.aiPreferences(),
-        api.mcpConfiguration().catch(() => null),
-      ])
+      const authenticatedState = await hydrateSession(api, session)
       writeCloudSession(session)
-      setState({
-        status: "authenticated",
-        session,
-        aiPreferences,
-        mcpConfiguration,
-        license,
-      })
+      setState(authenticatedState)
     },
     [apiUrl]
   )
@@ -216,16 +181,21 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
   )
 
   const logout = React.useCallback(async () => {
-    if (token) {
-      await createCloudApi(apiConnection)
-        .logout()
-        .catch(() => undefined)
+    try {
+      if (token) {
+        await createCloudApi(apiConnection)
+          .logout()
+          .catch(() => undefined)
+      }
+      if (state.status === "authenticated") {
+        await platform.mcp?.detachCloud(state.session.user.id)
+      }
+    } catch {
+      return
+    } finally {
+      removeCloudSession()
+      setState({ status: "unauthenticated" })
     }
-    if (state.status === "authenticated") {
-      await platform.mcp?.detachCloud(state.session.user.id)
-    }
-    removeCloudSession()
-    setState({ status: "unauthenticated" })
   }, [apiConnection, platform.mcp, state, token])
 
   return (
@@ -254,4 +224,31 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
       {children}
     </CloudAuthContext.Provider>
   )
+}
+
+const unavailableLicense: CloudLicense = {
+  licensed: false,
+  status: "unavailable",
+  currentPeriodEnd: null,
+  cancelAtPeriodEnd: false,
+}
+
+async function hydrateSession(
+  api: ReturnType<typeof createCloudApi>,
+  session: CloudSession,
+  refreshProfile = false
+): Promise<Extract<CloudAuthState, { status: "authenticated" }>> {
+  const user = refreshProfile ? await api.profile() : session.user
+  const [license, aiPreferences, mcpConfiguration] = await Promise.all([
+    api.license().catch(() => unavailableLicense),
+    api.aiPreferences().catch(() => null),
+    api.mcpConfiguration().catch(() => null),
+  ])
+  return {
+    status: "authenticated",
+    session: { ...session, user },
+    aiPreferences,
+    mcpConfiguration,
+    license,
+  }
 }

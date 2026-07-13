@@ -12,6 +12,12 @@ const routes = {
     tokens: [{"old":"/api/v1/webhooks/stripe","type":0,"val":"api","end":""},{"old":"/api/v1/webhooks/stripe","type":0,"val":"v1","end":""},{"old":"/api/v1/webhooks/stripe","type":0,"val":"webhooks","end":""},{"old":"/api/v1/webhooks/stripe","type":0,"val":"stripe","end":""}],
     types: placeholder as Registry['stripe_webhooks']['types'],
   },
+  'account_privacy.status': {
+    methods: ["POST"],
+    pattern: '/api/v1/account/closure-status',
+    tokens: [{"old":"/api/v1/account/closure-status","type":0,"val":"api","end":""},{"old":"/api/v1/account/closure-status","type":0,"val":"v1","end":""},{"old":"/api/v1/account/closure-status","type":0,"val":"account","end":""},{"old":"/api/v1/account/closure-status","type":0,"val":"closure-status","end":""}],
+    types: placeholder as Registry['account_privacy.status']['types'],
+  },
   'billing.billing.show': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/billing',
@@ -71,6 +77,18 @@ const routes = {
     pattern: '/api/v1/account/mcp-configurations',
     tokens: [{"old":"/api/v1/account/mcp-configurations","type":0,"val":"api","end":""},{"old":"/api/v1/account/mcp-configurations","type":0,"val":"v1","end":""},{"old":"/api/v1/account/mcp-configurations","type":0,"val":"account","end":""},{"old":"/api/v1/account/mcp-configurations","type":0,"val":"mcp-configurations","end":""}],
     types: placeholder as Registry['profile.user_mcp_configurations.update']['types'],
+  },
+  'profile.account_privacy.download': {
+    methods: ["POST"],
+    pattern: '/api/v1/account/export',
+    tokens: [{"old":"/api/v1/account/export","type":0,"val":"api","end":""},{"old":"/api/v1/account/export","type":0,"val":"v1","end":""},{"old":"/api/v1/account/export","type":0,"val":"account","end":""},{"old":"/api/v1/account/export","type":0,"val":"export","end":""}],
+    types: placeholder as Registry['profile.account_privacy.download']['types'],
+  },
+  'profile.account_privacy.close': {
+    methods: ["POST"],
+    pattern: '/api/v1/account/closure',
+    tokens: [{"old":"/api/v1/account/closure","type":0,"val":"api","end":""},{"old":"/api/v1/account/closure","type":0,"val":"v1","end":""},{"old":"/api/v1/account/closure","type":0,"val":"account","end":""},{"old":"/api/v1/account/closure","type":0,"val":"closure","end":""}],
+    types: placeholder as Registry['profile.account_privacy.close']['types'],
   },
   'profile.access_tokens.destroy': {
     methods: ["POST"],

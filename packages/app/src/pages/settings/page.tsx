@@ -54,6 +54,7 @@ import {
 import { useSystemNotificationsEnabled } from "@/lib/system-notifications"
 import { cn } from "@/lib/utils"
 import { McpSettingsPanel } from "./mcp-settings-panel"
+import { AccountPrivacyPanel } from "./account-privacy-panel"
 
 type SettingsSectionId =
   | "general"
@@ -744,6 +745,7 @@ function AccountSettingsPanel() {
           </Button>
         </SettingsRow>
       </SettingsGroup>
+      <AccountPrivacyPanel />
     </SettingsPanel>
   )
 }

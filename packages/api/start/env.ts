@@ -22,6 +22,7 @@ export default await Env.create(new URL('../', import.meta.url), {
   APP_KEY: Env.schema.secret(),
   APP_URL: Env.schema.string({ format: 'url', tld: false }),
   CORS_ORIGIN: Env.schema.string.optional(),
+  ACCOUNT_CLOSURE_LEDGER_DIRECTORY: Env.schema.string.optional(),
 
   DB_HOST: Env.schema.string({ format: 'host' }),
   DB_PORT: Env.schema.number(),

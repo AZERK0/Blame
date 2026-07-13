@@ -27,8 +27,15 @@ import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import { AppLayout } from "@/layouts/app-layout"
 import { SettingsDialog } from "@/pages/settings/page"
+import { AccountPrivacyPage } from "@/pages/account-privacy/page"
+import { AccountClosureReceiptPage } from "@/pages/account-privacy/account-closure-receipt-page"
+import {
+  getAccountClosureReceipt,
+  subscribeToAccountClosureReceipt,
+} from "@/lib/account-closure-receipt-storage"
 
 const settingsPath = "/settings"
+const accountPrivacyPath = "/account/privacy"
 const backlogStatusPipPath = "/backlog-status-pip"
 
 const routes = [
@@ -87,6 +94,11 @@ export function App() {
   const auth = useCloudAuth()
   const platform = usePlatform()
   const projects = useProjects()
+  const closureReceipt = React.useSyncExternalStore(
+    subscribeToAccountClosureReceipt,
+    getAccountClosureReceipt,
+    getAccountClosureReceipt
+  )
   const pathname = React.useSyncExternalStore(
     subscribeToNavigation,
     navigationPathname,
@@ -99,11 +111,13 @@ export function App() {
   )
   const route = resolveRoute(pathname)
   const settingsOpen = pathname === settingsPath
+  const accountPrivacyOpen = pathname === accountPrivacyPath
   const statusPipOpen = pathname === backlogStatusPipPath
   const previousRoute = resolvePreviousRoute(previousPathname)
   const activeRoute = settingsOpen ? previousRoute : route
   const windowPresentation = windowPresentationMode({
     activeProject: projects.activeProject,
+    accountPrivacyOpen,
     aiPreferences: auth.aiPreferences,
     authStatus: auth.status,
     statusPipOpen,
@@ -121,7 +135,23 @@ export function App() {
   }
 
   if (auth.status === "loading") return <LoadingScreen />
+  if (auth.status === "unauthenticated" && closureReceipt) {
+    return (
+      <TooltipProvider>
+        <AccountClosureReceiptPage receipt={closureReceipt} />
+        <Toaster />
+      </TooltipProvider>
+    )
+  }
   if (auth.status === "unauthenticated") return <ConnectScreen />
+  if (accountPrivacyOpen) {
+    return (
+      <TooltipProvider>
+        <AccountPrivacyPage />
+        <Toaster />
+      </TooltipProvider>
+    )
+  }
   if (!auth.license?.licensed) return <LicenseScreen />
   if (statusPipOpen) {
     return (
@@ -164,6 +194,7 @@ function resolvePreviousRoute(pathname: string) {
 }
 
 function windowPresentationMode(input: {
+  accountPrivacyOpen: boolean
   activeProject: unknown
   aiPreferences: unknown
   authStatus: ReturnType<typeof useCloudAuth>["status"]
@@ -171,6 +202,7 @@ function windowPresentationMode(input: {
 }) {
   if (input.statusPipOpen || input.authStatus === "loading") return undefined
   if (input.authStatus === "unauthenticated") return "connect"
+  if (input.accountPrivacyOpen) return "app"
   if (input.aiPreferences !== null && !input.activeProject) return "welcome"
   return "app"
 }

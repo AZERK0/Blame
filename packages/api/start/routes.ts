@@ -26,6 +26,7 @@ const UserStoryAgentRunsController = () => import('#controllers/user_story_agent
 const UserStoryCommentsController = () => import('#controllers/user_story_comments_controller')
 const BillingController = () => import('#controllers/billing_controller')
 const StripeWebhooksController = () => import('#controllers/stripe_webhooks_controller')
+const AccountPrivacyController = () => import('#controllers/account_privacy_controller')
 
 router.get('/', () => {
   return { hello: 'world' }
@@ -34,6 +35,7 @@ router.get('/', () => {
 router
   .group(() => {
     router.post('webhooks/stripe', [StripeWebhooksController, 'handle'])
+    router.post('account/closure-status', [AccountPrivacyController, 'status'])
 
     router
       .group(() => {
@@ -60,6 +62,8 @@ router
         router.put('ai-preferences', [UserAiPreferencesController, 'update'])
         router.get('mcp-configurations', [UserMcpConfigurationsController, 'show'])
         router.put('mcp-configurations', [UserMcpConfigurationsController, 'update'])
+        router.post('export', [AccountPrivacyController, 'download'])
+        router.post('closure', [AccountPrivacyController, 'close'])
         router.post('logout', [controllers.AccessTokens, 'destroy'])
       })
       .prefix('account')

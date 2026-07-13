@@ -112,50 +112,74 @@ export default class BillingService {
     const price = this.config(
       cycle === 'monthly' ? 'STRIPE_MONTHLY_PRICE_ID' : 'STRIPE_YEARLY_PRICE_ID'
     )
-    let subscription = await UserSubscription.find(user.id)
-    if (subscription && licensedStatuses.has(subscription.status)) {
+    const subscription = await this.ensureCustomer(user)
+    if (licensedStatuses.has(subscription.status)) {
       throw new Error('An active subscription already exists')
     }
+    return this.createCheckoutSession(user.id, price)
+  }
 
-    if (!subscription) {
-      const customer = await this.stripeClient().customers.create(
-        { email: user.email, name: user.fullName ?? undefined, metadata: { blameUserId: user.id } },
-        { idempotencyKey: `blame-customer-${user.id}` }
-      )
-      subscription = await UserSubscription.firstOrCreate(
-        { userId: user.id },
-        { stripeCustomerId: customer.id, status: 'inactive' }
-      )
-    }
-
-    return db.transaction(async (trx) => {
-      const locked = await UserSubscription.query({ client: trx })
+  private ensureCustomer(user: User) {
+    return db.transaction(async (transaction) => {
+      await this.lockActiveUser(user.id, transaction)
+      const existing = await UserSubscription.query({ client: transaction })
         .where('user_id', user.id)
+        .first()
+      if (existing) return existing
+      const customer = await this.stripeClient().customers.create(customerInput(user), {
+        idempotencyKey: `blame-customer-${user.id}`,
+      })
+      return UserSubscription.create(
+        { userId: user.id, stripeCustomerId: customer.id, status: 'inactive' },
+        { client: transaction }
+      )
+    })
+  }
+
+  private createCheckoutSession(userId: string, price: string) {
+    return db.transaction(async (transaction) => {
+      await this.lockActiveUser(userId, transaction)
+      const subscription = await UserSubscription.query({ client: transaction })
+        .where('user_id', userId)
         .forUpdate()
         .firstOrFail()
-      if (locked.stripeCheckoutSessionId) {
+      if (subscription.stripeCheckoutSessionId) {
         const existing = await this.stripeClient().checkout.sessions.retrieve(
-          locked.stripeCheckoutSessionId
+          subscription.stripeCheckoutSessionId
         )
         if (existing.status === 'open' && existing.url) return existing.url
       }
 
-      const session = await this.stripeClient().checkout.sessions.create({
-        mode: 'subscription',
-        customer: locked.stripeCustomerId,
-        client_reference_id: user.id,
-        line_items: [{ price, quantity: 1 }],
-        allow_promotion_codes: false,
-        success_url: this.config('STRIPE_CHECKOUT_SUCCESS_URL'),
-        cancel_url: this.config('STRIPE_CHECKOUT_CANCEL_URL'),
-        subscription_data: { metadata: { blameUserId: user.id } },
-      })
+      const session = await this.createStripeCheckoutSession(subscription, userId, price)
       if (!session.url) throw new Error('Stripe did not return a checkout URL')
-      locked.useTransaction(trx)
-      locked.stripeCheckoutSessionId = session.id
-      await locked.save()
+      subscription.useTransaction(transaction)
+      subscription.stripeCheckoutSessionId = session.id
+      await subscription.save()
       return session.url
     })
+  }
+
+  private createStripeCheckoutSession(
+    subscription: UserSubscription,
+    userId: string,
+    price: string
+  ) {
+    return this.stripeClient().checkout.sessions.create({
+      mode: 'subscription',
+      customer: subscription.stripeCustomerId,
+      client_reference_id: userId,
+      line_items: [{ price, quantity: 1 }],
+      allow_promotion_codes: false,
+      success_url: this.config('STRIPE_CHECKOUT_SUCCESS_URL'),
+      cancel_url: this.config('STRIPE_CHECKOUT_CANCEL_URL'),
+      subscription_data: { metadata: { blameUserId: userId } },
+    })
+  }
+
+  private async lockActiveUser(userId: string, transaction: Parameters<User['useTransaction']>[0]) {
+    const user = await User.query({ client: transaction }).where('id', userId).forUpdate().first()
+    if (!user || user.closureRequestedAt) throw new Error('This account is closing')
+    return user
   }
 
   async createPortal(userId: string) {
@@ -165,6 +189,17 @@ export default class BillingService {
       return_url: this.config('STRIPE_PORTAL_RETURN_URL'),
     })
     return session.url
+  }
+
+  async deleteCustomer(customerId: string) {
+    try {
+      await this.stripeClient().customers.del(customerId)
+    } catch (error) {
+      if (error instanceof Stripe.errors.StripeInvalidRequestError && error.statusCode === 404) {
+        return
+      }
+      throw error
+    }
   }
 
   constructEvent(payload: string, signature: string) {
@@ -234,5 +269,13 @@ export default class BillingService {
       ...(eventCreatedAt === undefined ? {} : { lastStripeEventCreatedAt: eventCreatedAt }),
     })
     await local.save()
+  }
+}
+
+function customerInput(user: User) {
+  return {
+    email: user.email,
+    name: user.fullName ?? undefined,
+    metadata: { blameUserId: user.id },
   }
 }

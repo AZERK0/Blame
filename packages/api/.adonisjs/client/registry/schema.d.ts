@@ -19,6 +19,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/stripe_webhooks_controller').default['handle']>>>
     }
   }
+  'account_privacy.status': {
+    methods: ["POST"]
+    pattern: '/api/v1/account/closure-status'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/account_privacy').accountClosureStatusValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/account_privacy').accountClosureStatusValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/account_privacy_controller').default['status']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/account_privacy_controller').default['status']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
   'billing.billing.show': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/billing'
@@ -137,6 +149,30 @@ export interface Registry {
       query: ExtractQuery<InferInput<(typeof import('#validators/user_mcp_configuration').saveUserMcpConfigurationValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/user_mcp_configurations_controller').default['update']>>>
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/user_mcp_configurations_controller').default['update']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'profile.account_privacy.download': {
+    methods: ["POST"]
+    pattern: '/api/v1/account/export'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/account_privacy').accountExportValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/account_privacy').accountExportValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/account_privacy_controller').default['download']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/account_privacy_controller').default['download']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'profile.account_privacy.close': {
+    methods: ["POST"]
+    pattern: '/api/v1/account/closure'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/account_privacy').accountClosureValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/account_privacy').accountClosureValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/account_privacy_controller').default['close']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/account_privacy_controller').default['close']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
   'profile.access_tokens.destroy': {

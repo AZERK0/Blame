@@ -1,0 +1,64 @@
+#!/bin/sh
+set -eu
+
+validate_docker_identifier() {
+  identifier="$1"
+  case "$identifier" in
+    ''|*[!A-Za-z0-9_.-]*)
+      printf 'Invalid Docker identifier: %s\n' "$identifier" >&2
+      return 64
+      ;;
+  esac
+}
+
+resolve_api_container() {
+  configured_container="${BLAME_API_CONTAINER:-}"
+  configured_service="${BLAME_API_SERVICE:-}"
+
+  if [ -n "$configured_container" ] && [ -n "$configured_service" ]; then
+    printf 'Set only BLAME_API_CONTAINER or BLAME_API_SERVICE\n' >&2
+    return 64
+  fi
+  if [ -z "$configured_container$configured_service" ]; then
+    printf 'Set BLAME_API_CONTAINER or BLAME_API_SERVICE\n' >&2
+    return 64
+  fi
+
+  if [ -n "$configured_container" ]; then
+    validate_docker_identifier "$configured_container" || return
+    printf '%s\n' "$configured_container"
+    return
+  fi
+
+  validate_docker_identifier "$configured_service" || return
+  running_containers="$(docker ps --filter "label=com.docker.swarm.service.name=$configured_service" --filter status=running --format '{{.ID}}')" || return
+  api_container="$(printf '%s\n' "$running_containers" | sed -n '1p')"
+
+  if [ -z "$api_container" ]; then
+    printf 'No running container found for Docker service %s\n' "$configured_service" >&2
+    return 69
+  fi
+
+  printf '%s\n' "$api_container"
+}
+
+if ! command -v docker >/dev/null 2>&1; then
+  printf 'Docker CLI is required\n' >&2
+  exit 69
+fi
+
+api_container="$(resolve_api_container)" || {
+  resolution_status=$?
+  exit "$resolution_status"
+}
+container_running="$(docker inspect --format '{{.State.Running}}' "$api_container" 2>/dev/null)" || {
+  printf 'Unable to inspect API container %s\n' "$api_container" >&2
+  exit 69
+}
+
+if [ "$container_running" != 'true' ]; then
+  printf 'API container %s is not running\n' "$api_container" >&2
+  exit 69
+fi
+
+docker exec "$api_container" node ace accounts:purge-closed

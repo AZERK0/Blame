@@ -1,0 +1,14 @@
+#!/bin/sh
+set -u
+
+exit_status=0
+
+if ! /usr/local/sbin/blame-purge-closed-accounts; then
+  exit_status=1
+fi
+
+if ! /usr/local/sbin/blame-prune-dokploy-logs; then
+  exit_status=1
+fi
+
+exit "$exit_status"

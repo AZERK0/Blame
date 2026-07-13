@@ -1,0 +1,12 @@
+[Unit]
+Description=Run Blame retention hourly
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+RandomizedDelaySec=5min
+AccuracySec=1min
+Unit=blame-retention.service
+
+[Install]
+WantedBy=timers.target

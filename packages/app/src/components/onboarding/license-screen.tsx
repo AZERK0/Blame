@@ -1,6 +1,12 @@
 import * as React from "react"
-import { CheckIcon, LoaderCircleIcon, LogOutIcon } from "lucide-react"
+import {
+  CheckIcon,
+  LoaderCircleIcon,
+  LogOutIcon,
+  UserRoundIcon,
+} from "lucide-react"
 
+import { navigate } from "@/components/navigation/navigation"
 import { Button } from "@/components/ui/button"
 import { useCloudAuth } from "@/context/cloud-auth"
 
@@ -68,6 +74,9 @@ export function LicenseScreen() {
           </Button>
           <Button variant="ghost" onClick={() => void auth.logout()}>
             <LogOutIcon /> Sign out
+          </Button>
+          <Button variant="ghost" onClick={() => navigate("/account/privacy")}>
+            <UserRoundIcon /> Privacy and account data
           </Button>
         </div>
         {error ? (

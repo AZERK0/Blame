@@ -3,6 +3,9 @@ import type { routes } from './index.ts'
 
 export interface ApiDefinition {
   stripeWebhooks: typeof routes['stripe_webhooks']
+  accountPrivacy: {
+    status: typeof routes['account_privacy.status']
+  }
   billing: {
     billing: {
       show: typeof routes['billing.billing.show']
@@ -29,6 +32,10 @@ export interface ApiDefinition {
     userMcpConfigurations: {
       show: typeof routes['profile.user_mcp_configurations.show']
       update: typeof routes['profile.user_mcp_configurations.update']
+    }
+    accountPrivacy: {
+      download: typeof routes['profile.account_privacy.download']
+      close: typeof routes['profile.account_privacy.close']
     }
     accessTokens: {
       destroy: typeof routes['profile.access_tokens.destroy']

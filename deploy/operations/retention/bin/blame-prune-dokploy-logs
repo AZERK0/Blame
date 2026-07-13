@@ -1,0 +1,40 @@
+#!/bin/sh
+set -u
+
+retention_minutes=504000
+exit_status=0
+
+prune_log_directory() {
+  log_directory="$1"
+  log_scope="$2"
+
+  if [ ! -e "$log_directory" ]; then
+    return
+  fi
+
+  if [ ! -d "$log_directory" ] || [ -L "$log_directory" ]; then
+    printf 'Unsafe Dokploy log directory: %s\n' "$log_directory" >&2
+    return 65
+  fi
+
+  if [ "$log_scope" = 'traefik' ]; then
+    find -P "$log_directory" -xdev -maxdepth 1 -type f \
+      \( -name 'access.log-*' -o -name 'access.log.*' \) \
+      -mmin "+$retention_minutes" -print -delete
+    return
+  fi
+
+  find -P "$log_directory" -xdev -type f -name '*.log' -mmin "+$retention_minutes" -print -delete
+}
+
+for log_directory in /etc/dokploy/logs /etc/dokploy/schedules /etc/dokploy/volume-backups; do
+  if ! prune_log_directory "$log_directory" 'dokploy'; then
+    exit_status=1
+  fi
+done
+
+if ! prune_log_directory /etc/dokploy/traefik/dynamic 'traefik'; then
+  exit_status=1
+fi
+
+exit "$exit_status"
