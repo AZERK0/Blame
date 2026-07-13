@@ -45,6 +45,69 @@ export default class BillingService {
     }
   }
 
+  async reconcile(userId: string) {
+    const local = await UserSubscription.find(userId)
+    if (!local) return this.status(userId)
+    const requestedAt = Math.floor(Date.now() / 1000)
+
+    const subscriptions = await this.stripeClient().subscriptions.list({
+      customer: local.stripeCustomerId,
+      status: 'all',
+      limit: 100,
+    })
+    const allowedPrices = new Set([
+      this.config('STRIPE_MONTHLY_PRICE_ID'),
+      this.config('STRIPE_YEARLY_PRICE_ID'),
+    ])
+    const matching = subscriptions.data
+      .map((subscription) => ({
+        subscription,
+        item: subscription.items.data.find((item) => allowedPrices.has(item.price.id)),
+      }))
+      .filter(
+        (
+          candidate
+        ): candidate is { subscription: Stripe.Subscription; item: Stripe.SubscriptionItem } =>
+          candidate.item !== undefined
+      )
+      .sort((left, right) => {
+        const now = DateTime.utc().toSeconds()
+        const leftLicensed =
+          licensedStatuses.has(left.subscription.status) && left.item.current_period_end > now
+            ? 1
+            : 0
+        const rightLicensed =
+          licensedStatuses.has(right.subscription.status) && right.item.current_period_end > now
+            ? 1
+            : 0
+        return (
+          rightLicensed - leftLicensed || right.subscription.created - left.subscription.created
+        )
+      })[0]
+
+    await db.transaction(async (trx) => {
+      const locked = await UserSubscription.query({ client: trx })
+        .where('user_id', userId)
+        .forUpdate()
+        .firstOrFail()
+      if ((locked.lastStripeEventCreatedAt ?? 0) > requestedAt) return
+      if (matching) {
+        await this.applySubscription(locked, matching.subscription, undefined, trx)
+        return
+      }
+      locked.useTransaction(trx)
+      locked.merge({
+        stripeSubscriptionId: null,
+        stripePriceId: null,
+        status: 'inactive',
+        currentPeriodEnd: null,
+        cancelAtPeriodEnd: false,
+      })
+      await locked.save()
+    })
+    return this.status(userId)
+  }
+
   async createCheckout(user: User, cycle: BillingCycle) {
     const price = this.config(
       cycle === 'monthly' ? 'STRIPE_MONTHLY_PRICE_ID' : 'STRIPE_YEARLY_PRICE_ID'
@@ -127,6 +190,7 @@ export default class BillingService {
             : stripeSubscription.customer.id
         const local = await UserSubscription.query({ client: trx })
           .where('stripe_customer_id', customerId)
+          .forUpdate()
           .first()
         if (local) {
           if (
@@ -136,26 +200,39 @@ export default class BillingService {
             await StripeWebhookEvent.create({ id: event.id, type: event.type }, { client: trx })
             return
           }
-          const priceId = stripeSubscription.items.data[0]?.price.id ?? null
-          const allowedPrice =
-            priceId === this.config('STRIPE_MONTHLY_PRICE_ID') ||
-            priceId === this.config('STRIPE_YEARLY_PRICE_ID')
-          local.useTransaction(trx)
-          local.merge({
-            stripeSubscriptionId: stripeSubscription.id,
-            stripePriceId: priceId,
-            status: allowedPrice ? stripeSubscription.status : 'inactive',
-            currentPeriodEnd: DateTime.fromSeconds(
-              stripeSubscription.items.data[0]?.current_period_end ?? 0
-            ),
-            cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
-            lastStripeEventCreatedAt: event.created,
-          })
-          await local.save()
+          const allowed = stripeSubscription.items.data.some(
+            (item) =>
+              item.price.id === this.config('STRIPE_MONTHLY_PRICE_ID') ||
+              item.price.id === this.config('STRIPE_YEARLY_PRICE_ID')
+          )
+          if (allowed) await this.applySubscription(local, stripeSubscription, event.created, trx)
         }
       }
 
       await StripeWebhookEvent.create({ id: event.id, type: event.type }, { client: trx })
     })
+  }
+
+  private async applySubscription(
+    local: UserSubscription,
+    stripeSubscription: Stripe.Subscription,
+    eventCreatedAt?: number,
+    trx?: Parameters<UserSubscription['useTransaction']>[0]
+  ) {
+    const item = stripeSubscription.items.data.find(
+      (candidate) =>
+        candidate.price.id === this.config('STRIPE_MONTHLY_PRICE_ID') ||
+        candidate.price.id === this.config('STRIPE_YEARLY_PRICE_ID')
+    )
+    if (trx) local.useTransaction(trx)
+    local.merge({
+      stripeSubscriptionId: stripeSubscription.id,
+      stripePriceId: item?.price.id ?? null,
+      status: item ? stripeSubscription.status : 'inactive',
+      currentPeriodEnd: item ? DateTime.fromSeconds(item.current_period_end) : null,
+      cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
+      ...(eventCreatedAt === undefined ? {} : { lastStripeEventCreatedAt: eventCreatedAt }),
+    })
+    await local.save()
   }
 }

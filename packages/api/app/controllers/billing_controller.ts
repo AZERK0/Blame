@@ -3,7 +3,7 @@ import type { HttpContext } from '@adonisjs/core/http'
 
 export default class BillingController {
   async show({ auth }: HttpContext) {
-    return new BillingService().status(auth.getUserOrFail().id)
+    return new BillingService().reconcile(auth.getUserOrFail().id)
   }
 
   async checkout({ auth, request, response }: HttpContext) {
