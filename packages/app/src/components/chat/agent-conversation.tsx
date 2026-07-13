@@ -1073,6 +1073,16 @@ function toolDetailContent(details: ActivityDetail): React.ReactNode {
     )
   }
 
+  if (toolName === "spawn_agent") {
+    const task = stringValue(input.task)
+    return (
+      <ToolSurface durationMs={details.durationMs} label={toolLabel(toolName)}>
+        <StructuredValue label="Input" value={task ? { task } : undefined} />
+        <StructuredValue label="Output" value={details.output} />
+      </ToolSurface>
+    )
+  }
+
   if (codeGraphTool(toolName)) {
     return (
       <ToolSurface durationMs={details.durationMs} label={toolLabel(toolName)}>
