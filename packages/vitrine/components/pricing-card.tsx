@@ -24,12 +24,12 @@ const billingOptions = {
 type BillingCycle = keyof typeof billingOptions
 
 const licenseFacts = [
-  '1 developer license',
-  'Windows, macOS & Linux',
-  'Product updates included',
-  'Bring your own AI access',
-  'Cancel anytime',
-]
+  "1 developer license",
+  "Windows, macOS & Linux",
+  "Product updates included",
+  "Use your own AI provider",
+  "Cancel anytime",
+];
 
 export function PricingCard() {
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly')
