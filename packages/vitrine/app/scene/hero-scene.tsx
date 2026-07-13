@@ -81,6 +81,7 @@ export type HeroSceneTerrainPreset = keyof typeof terrainReliefPresets
 
 type HeroSceneProps = {
   terrainPreset?: HeroSceneTerrainPreset
+  celebration?: boolean
 }
 
 type SceneState = {
@@ -149,7 +150,10 @@ type PlusField = {
   terrainRelief: TerrainRelief
 }
 
-export function HeroScene({ terrainPreset = 'default' }: HeroSceneProps) {
+export function HeroScene({
+  terrainPreset = 'default',
+  celebration = false,
+}: HeroSceneProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -159,12 +163,16 @@ export function HeroScene({ terrainPreset = 'default' }: HeroSceneProps) {
       return undefined
     }
 
-    const sceneState = createHeroScene(container, terrainReliefPresets[terrainPreset])
+    const sceneState = createHeroScene(
+      container,
+      terrainReliefPresets[terrainPreset],
+      celebration && !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    )
 
     return () => {
       sceneState.cleanup()
     }
-  }, [terrainPreset])
+  }, [celebration, terrainPreset])
 
   return (
     <div
@@ -271,6 +279,7 @@ function usesSoftwareRenderer(renderer: THREE.WebGLRenderer) {
 function createHeroScene(
   container: HTMLDivElement,
   terrainRelief: TerrainRelief,
+  celebration: boolean,
 ): SceneState {
   let quality = createSceneQuality()
   const shouldRenderInteractivePlusField = !isMobileSceneDevice()
@@ -307,6 +316,11 @@ function createHeroScene(
   const terrain = createTerrain(terrainTextures, quality, terrainLayout, terrainRelief)
   scene.add(terrain.group)
 
+  const celebrationWaves = celebration ? createCelebrationWaves(terrain) : []
+  for (const wave of celebrationWaves) {
+    terrain.group.add(wave)
+  }
+
   const plusField = shouldRenderInteractivePlusField
     ? createPlusField(quality, terrainRelief)
     : null
@@ -340,6 +354,7 @@ function createHeroScene(
     camera.aspect = width / Math.max(height, 1)
     camera.updateProjectionMatrix()
     updateTerrainLayout(terrain, quality, terrainRelief, width, height)
+    updateCelebrationWaveGeometry(celebrationWaves, terrain.mesh.geometry)
   }
 
   const handlePointerMove = (event: PointerEvent) => {
@@ -367,6 +382,7 @@ function createHeroScene(
     if (plusField) {
       updatePlusField(plusField, targetPointer, elapsed, delta, quality)
     }
+    updateCelebrationWaves(celebrationWaves, elapsed)
 
     renderer.render(scene, camera)
     animationFrame = requestAnimationFrame(animate)
@@ -396,6 +412,82 @@ function createRenderer(quality: SceneQuality) {
     antialias: quality.useNativeAntialias,
     powerPreference: 'high-performance',
   })
+}
+
+function createCelebrationWaves(terrain: ResponsiveTerrain) {
+  return [0, 0.42].map((delay) => {
+    const material = new THREE.ShaderMaterial({
+      uniforms: {
+        uRadius: { value: 0 },
+        uOpacity: { value: 0 },
+        uColor: {
+          value: new THREE.Color(delay === 0 ? 0xa8e3ff : 0x858cff),
+        },
+      },
+      vertexShader: `
+        varying vec2 vTerrainPosition;
+
+        void main() {
+          vTerrainPosition = position.xz;
+          vec3 liftedPosition = position + normal * 0.08;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(liftedPosition, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform float uRadius;
+        uniform float uOpacity;
+        uniform vec3 uColor;
+        varying vec2 vTerrainPosition;
+
+        void main() {
+          float distanceFromOrigin = length(vTerrainPosition - vec2(0.0, -3.0));
+          float ring = 1.0 - smoothstep(0.0, 1.15, abs(distanceFromOrigin - uRadius));
+          gl_FragColor = vec4(uColor, ring * uOpacity);
+        }
+      `,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+    })
+    const wave = new THREE.Mesh(terrain.mesh.geometry.clone(), material)
+    wave.position.copy(terrain.mesh.position)
+    wave.renderOrder = 12
+    wave.userData.celebrationDelay = delay
+    return wave
+  })
+}
+
+function updateCelebrationWaveGeometry(
+  waves: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>[],
+  terrainGeometry: THREE.PlaneGeometry,
+) {
+  for (const wave of waves) {
+    if (wave.userData.terrainGeometry === terrainGeometry) {
+      continue
+    }
+    wave.geometry.dispose()
+    wave.geometry = terrainGeometry.clone()
+    wave.userData.terrainGeometry = terrainGeometry
+  }
+}
+
+function updateCelebrationWaves(
+  waves: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>[],
+  elapsed: number,
+) {
+  for (const wave of waves) {
+    const progress = THREE.MathUtils.clamp(
+      (elapsed - 0.58 - Number(wave.userData.celebrationDelay)) / 1.75,
+      0,
+      1,
+    )
+    const easedProgress = 1 - (1 - progress) ** 3
+    wave.material.uniforms.uRadius.value = THREE.MathUtils.lerp(0.2, 42, easedProgress)
+    wave.material.uniforms.uOpacity.value =
+      Math.sin(progress * Math.PI) * (1 - progress * 0.58) * 0.72
+    wave.visible = progress > 0 && progress < 1
+  }
 }
 
 function createTerrain(
