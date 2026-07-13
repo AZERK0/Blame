@@ -2,6 +2,7 @@ import type {
   LegalBlock,
   LegalSection,
 } from "@/components/legal-document-page";
+import { legalDocumentReadyForPublication } from "@/content/legal-publication";
 
 const paragraph = (text: string): LegalBlock => ({ type: "paragraph", text });
 const list = (...items: string[]): LegalBlock => ({ type: "list", items });
@@ -609,12 +610,13 @@ export const termsSections = [
 ] satisfies readonly LegalSection[];
 
 const termsApprovedForPublication = true;
-const serializedTermsContent = JSON.stringify({
-  termsEffectiveDate,
-  termsIntroduction,
-  termsSections,
-  termsVersion,
-});
 
-export const termsReadyForPublication =
-  termsApprovedForPublication && !serializedTermsContent.includes("[[");
+export const termsReadyForPublication = legalDocumentReadyForPublication(
+  termsApprovedForPublication,
+  {
+    termsEffectiveDate,
+    termsIntroduction,
+    termsSections,
+    termsVersion,
+  },
+);

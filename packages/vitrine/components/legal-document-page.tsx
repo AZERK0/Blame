@@ -42,7 +42,10 @@ export function LegalDocumentPage(props: LegalDocumentPageProps) {
     <main className="min-h-screen overflow-x-clip bg-[#050712] text-white">
       <SiteHeader />
       <LegalDocumentHeader {...props} />
-      <LegalDocumentBody sections={props.sections} />
+      <LegalDocumentBody
+        documentTitle={props.title}
+        sections={props.sections}
+      />
       <LandingRevealStyles />
     </main>
   );
@@ -123,14 +126,16 @@ function Introduction({ paragraphs }: { paragraphs: readonly string[] }) {
 }
 
 function LegalDocumentBody({
+  documentTitle,
   sections,
 }: {
+  documentTitle: string;
   sections: readonly LegalSection[];
 }) {
   return (
     <div className="px-5 pb-24 sm:px-8 sm:pb-32 lg:px-10">
       <div className="mx-auto grid w-full max-w-5xl gap-10 lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-16">
-        <TableOfContents sections={sections} />
+        <TableOfContents documentTitle={documentTitle} sections={sections} />
         <article className="min-w-0 divide-y divide-white/10 rounded-[2rem] border border-white/12 bg-white/[0.045] px-6 shadow-[0_32px_120px_rgba(0,0,0,0.32)] backdrop-blur-2xl sm:px-10">
           {sections.map((section) => (
             <LegalSectionView key={section.id} section={section} />
@@ -142,10 +147,16 @@ function LegalDocumentBody({
   );
 }
 
-function TableOfContents({ sections }: { sections: readonly LegalSection[] }) {
+function TableOfContents({
+  documentTitle,
+  sections,
+}: {
+  documentTitle: string;
+  sections: readonly LegalSection[];
+}) {
   return (
     <nav
-      aria-label="Terms of Service sections"
+      aria-label={`${documentTitle} sections`}
       className="self-start lg:sticky lg:top-28 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto lg:pr-3"
     >
       <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#b3acf3]">
