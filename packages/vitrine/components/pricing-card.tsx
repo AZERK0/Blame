@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Boxes, Check } from 'lucide-react'
+import { Boxes, Check, Info } from 'lucide-react'
 
 import { buttonVariants } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -23,22 +23,21 @@ const billingOptions = {
 
 type BillingCycle = keyof typeof billingOptions
 
-const primaryFeatures = [
-  '1 developer account',
-  'Parallel agent worktrees',
-  'Live previews for every task',
-  'Diff review before merge',
-]
-
-const secondaryFeatures = [
-  'Cloud-synced backlog',
-  'Project coding practices',
-  'Local-first execution',
+const licenseFacts = [
+  '1 developer license',
+  'Windows, macOS & Linux',
+  'Product updates included',
+  'Bring your own AI access',
+  'Cancel anytime',
 ]
 
 export function PricingCard() {
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly')
+  const [isTooltipHovered, setIsTooltipHovered] = useState(false)
+  const [isTooltipFocused, setIsTooltipFocused] = useState(false)
+  const [isTooltipPinned, setIsTooltipPinned] = useState(false)
   const selectedBilling = billingOptions[billingCycle]
+  const isTooltipOpen = isTooltipHovered || isTooltipFocused || isTooltipPinned
 
   return (
     <Card className="landing-reveal landing-reveal-actions relative mt-12 w-full max-w-[430px] overflow-hidden rounded-[2rem] border-white/18 bg-white/[0.08] p-2 shadow-[0_34px_120px_rgba(0,0,0,0.42)] backdrop-blur-2xl">
@@ -55,7 +54,7 @@ export function PricingCard() {
             Blame License
           </h2>
           <p className="mt-3 text-base leading-6 text-[#111]/70">
-            Agent worktrees, previews, and review control.
+            Full access to the Blame desktop app.
           </p>
         </div>
 
@@ -92,25 +91,64 @@ export function PricingCard() {
           <p className="mt-2 text-sm font-medium text-[#111]/54">Save €36 every year.</p>
         ) : null}
         <Link href="/download" className={buttonVariants({ variant: 'dark', className: 'mt-8 w-full' })}>
-          Get Blame Pro
+          Get Blame
         </Link>
+        <p className="mt-3 text-center text-xs leading-5 text-[#111]/54">
+          AI usage is not included and may be billed separately by your provider.
+        </p>
 
-        <ul className="mt-8 space-y-4 text-base text-[#111]">
-          {primaryFeatures.map((feature) => (
-            <li key={feature} className="flex items-center gap-3">
+        <ul className="mt-7 space-y-4 text-base text-[#111]">
+          {licenseFacts.map((fact) => (
+            <li key={fact} className="relative flex items-center gap-3">
               <Check className="h-4 w-4 shrink-0" />
-              {feature}
-            </li>
-          ))}
-        </ul>
-
-        <div className="my-7 h-px bg-black/10" />
-
-        <ul className="space-y-4 text-base text-[#111]">
-          {secondaryFeatures.map((feature) => (
-            <li key={feature} className="flex items-center gap-3">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#111]" />
-              {feature}
+              <span>{fact}</span>
+              {fact === 'Bring your own AI access' ? (
+                <span
+                  className="flex"
+                  onMouseEnter={() => setIsTooltipHovered(true)}
+                  onMouseLeave={() => setIsTooltipHovered(false)}
+                >
+                  <button
+                    type="button"
+                    className="grid h-6 w-6 place-items-center rounded-full text-[#111]/50 transition hover:bg-black/[0.06] hover:text-[#111] focus:outline-none focus:ring-2 focus:ring-[#111]/20"
+                    aria-label="More information about AI usage"
+                    aria-describedby="ai-usage-tooltip"
+                    aria-expanded={isTooltipOpen}
+                    onClick={() => setIsTooltipPinned((isPinned) => !isPinned)}
+                    onFocus={() => setIsTooltipFocused(true)}
+                    onBlur={() => {
+                      setIsTooltipFocused(false)
+                      setIsTooltipPinned(false)
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Escape') {
+                        setIsTooltipFocused(false)
+                        setIsTooltipPinned(false)
+                      }
+                    }}
+                  >
+                    <Info className="h-3.5 w-3.5" aria-hidden="true" />
+                  </button>
+                  <span
+                    id="ai-usage-tooltip"
+                    role="tooltip"
+                    className={cn(
+                      'absolute bottom-full left-0 z-20 mb-2 w-full max-w-72 rounded-xl bg-[#111] p-4 text-left text-white shadow-[0_14px_40px_rgba(0,0,0,0.28)] transition duration-150',
+                      isTooltipOpen
+                        ? 'visible translate-y-0 opacity-100'
+                        : 'invisible translate-y-1 opacity-0',
+                    )}
+                  >
+                    <span className="block text-sm font-semibold">AI usage is not included</span>
+                    <span className="mt-1.5 block text-xs leading-5 text-white/70">
+                      Blame provides the software layer used to run and control coding agents.
+                      Connect your own supported AI provider using an API key or compatible
+                      OAuth-based subscription authentication. Provider usage, limits, and charges
+                      remain subject to that provider.
+                    </span>
+                  </span>
+                </span>
+              ) : null}
             </li>
           ))}
         </ul>
