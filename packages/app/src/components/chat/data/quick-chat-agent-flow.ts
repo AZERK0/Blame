@@ -26,6 +26,8 @@ export type PendingQuickChatAgentUpdate = QueuedQuickChatAgentUpdate & {
   timer: number
 }
 
+const agentCompletionRecoveryGraceMs = 15_000
+
 export function quickChatAgentEventUpdate(
   chat: QuickChat,
   event: AgentEvent
@@ -92,6 +94,29 @@ export function immediateQuickChatAgentEvent(event: AgentEvent) {
 
 export function quickChatClineLogPath(workspace: string, sessionId: string) {
   return `${workspace}/.blame/logs/cline-${sessionId}.log`
+}
+
+export function quickChatClineLogRelativePath(sessionId: string) {
+  return `.blame/logs/cline-${sessionId}.log`
+}
+
+export function recoverableQuickChatAgentRun(
+  chat: QuickChat,
+  now = Date.now()
+) {
+  if (chat.agentStatus !== "Running" || !chat.workspace) return undefined
+  return chat.agentRuns?.findLast((run) => {
+    const updatedAt = run.updatedAt ?? run.createdAt
+    return (
+      run.status === "running" &&
+      Boolean(run.clineSessionId ?? chat.clineSessionId) &&
+      now - new Date(updatedAt).getTime() >= agentCompletionRecoveryGraceMs
+    )
+  })
+}
+
+export function completedQuickChatClineLog(log: string) {
+  return log.split("\n").some(completedQuickChatClineLogLine)
 }
 
 export function quickChatExpiredAuthenticationToken(message: string) {
@@ -198,4 +223,39 @@ function upsertAgentActivity(
   const exists = activities.some((item) => item.id === activity.id)
   if (!exists) return [...activities, activity]
   return activities.map((item) => (item.id === activity.id ? activity : item))
+}
+
+function completedQuickChatClineLogLine(line: string) {
+  const entry = jsonRecord(line)
+  if (stringValue(entry.message) !== "event:done") return false
+  const payload = recordValue(entry.payload)
+  const reason =
+    stringValue(payload.reason) ??
+    stringValue(payload.finishReason) ??
+    stringValue(payload.status)
+  return !reason || !failedQuickChatDoneReason(reason)
+}
+
+function jsonRecord(value: string) {
+  try {
+    return recordValue(JSON.parse(value))
+  } catch {
+    return {}
+  }
+}
+
+function recordValue(value: unknown) {
+  if (value && typeof value === "object")
+    return value as Record<string, unknown>
+  return {}
+}
+
+function stringValue(value: unknown) {
+  return typeof value === "string" ? value : undefined
+}
+
+function failedQuickChatDoneReason(reason: string) {
+  return ["error", "aborted", "cancelled", "failed"].includes(
+    reason.toLowerCase()
+  )
 }

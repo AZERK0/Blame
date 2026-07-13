@@ -29,6 +29,7 @@ import {
 } from "@/components/chat/agent-conversation"
 import {
   clearPendingQuickChatAgentUpdates,
+  completedQuickChatClineLog,
   definedQuickChatUpdate,
   immediateQuickChatAgentEvent,
   pendingQuickChatAgentUpdate,
@@ -37,7 +38,9 @@ import {
   quickChatAgentRunEventUpdate,
   quickChatAgentRunMetadataUpdate,
   quickChatClineLogPath,
+  quickChatClineLogRelativePath,
   quickChatExpiredAuthenticationToken,
+  recoverableQuickChatAgentRun,
   type PendingQuickChatAgentUpdate,
   type QueuedQuickChatAgentUpdate,
 } from "@/components/chat/data/quick-chat-agent-flow"
@@ -76,6 +79,7 @@ import { showSystemNotification } from "@/lib/system-notifications"
 import { generateAgentTitle } from "@/lib/agent-title-generation"
 
 const agentEventPersistDelayMs = 1_500
+const agentCompletionRecoveryIntervalMs = 10_000
 const bottomBlurMask = {
   maskImage: "linear-gradient(to top, black 0%, black 60%, transparent 100%)",
   WebkitMaskImage:
@@ -135,6 +139,14 @@ function QuickChatProjectPage() {
   const pendingAgentUpdates = React.useRef(
     new Map<string, PendingQuickChatAgentUpdate>()
   )
+  const recoveringAgentRunIds = React.useRef(new Set<string>())
+  const recoverAgentEventRef = React.useRef<
+    (
+      chat: QuickChat,
+      run: QuickChatAgentRun | undefined,
+      event: AgentEvent
+    ) => Promise<QuickChat | void>
+  >(() => Promise.resolve())
   const draftRef = React.useRef<HTMLDivElement>(null)
   const activeConversation = quickChats.activeChat
   const draftStorageKey = composerDraftStorageKey(
@@ -170,6 +182,38 @@ function QuickChatProjectPage() {
     const updates = pendingAgentUpdates.current
     return () => clearPendingQuickChatAgentUpdates(updates)
   }, [])
+
+  React.useEffect(() => {
+    if (!platform.workspace || !activeConversationLoaded || !activeConversation)
+      return
+    const recover = async () => {
+      const current = currentChat(activeConversation)
+      const run = recoverableQuickChatAgentRun(current)
+      const workspace = platform.workspace
+      const sessionId = run?.clineSessionId ?? current.clineSessionId
+      if (!run || !workspace || !current.workspace || !sessionId) return
+      if (recoveringAgentRunIds.current.has(run.id)) return
+      recoveringAgentRunIds.current.add(run.id)
+      try {
+        const log = await workspace
+          .readFile({
+            root: current.workspace,
+            path: quickChatClineLogRelativePath(sessionId),
+          })
+          .catch(() => "")
+        if (!completedQuickChatClineLog(log)) return
+        await recoverAgentEventRef.current(currentChat(current), run, {
+          payload: {},
+          type: "done",
+        })
+      } finally {
+        recoveringAgentRunIds.current.delete(run.id)
+      }
+    }
+    void recover()
+    const timer = window.setInterval(recover, agentCompletionRecoveryIntervalMs)
+    return () => window.clearInterval(timer)
+  }, [activeConversation, activeConversationLoaded, platform.workspace])
 
   React.useEffect(() => {
     if (loadedDraftStorageKeyRef.current !== draftStorageKey) {
@@ -305,12 +349,13 @@ function QuickChatProjectPage() {
     const nextChat = updateChatLocal(chat, input)
     if (run) quickChats.updateAgentRunLocal(nextChat, run, runInput)
     if (immediate) {
-      void flushAgentUpdate(nextChat, run, input, runInput).catch(
-        reportAgentPersistenceError
-      )
-      return
+      return flushAgentUpdate(nextChat, run, input, runInput).catch((error) => {
+        reportAgentPersistenceError(error)
+        throw error
+      })
     }
     queueAgentUpdate(nextChat, run, input, runInput)
+    return Promise.resolve(nextChat)
   }
 
   function persistAgentEvent(
@@ -324,7 +369,7 @@ function QuickChatProjectPage() {
     const text = agentEventText(event)
     const runInput = quickChatAgentRunEventUpdate(update, event, text)
     if (completedAgentRun(event)) notifyQuickChatResponseCompleted(current)
-    persistAgentUpdate(
+    return persistAgentUpdate(
       current,
       run,
       update,
@@ -332,6 +377,10 @@ function QuickChatProjectPage() {
       immediateQuickChatAgentEvent(event)
     )
   }
+
+  React.useEffect(() => {
+    recoverAgentEventRef.current = persistAgentEvent
+  })
 
   function notifyQuickChatResponseCompleted(chat: QuickChat) {
     void showSystemNotification(platform, {
@@ -589,9 +638,9 @@ function QuickChatProjectPage() {
       const text = agentEventText(event)
       authenticationFailed = quickChatExpiredAuthenticationToken(text)
       if (authenticationFailed) showExpiredAuthenticationToast(text)
-      persistAgentEvent(chat, run, event)
+      const persisted = persistAgentEvent(chat, run, event)
       if (authenticationFailed || immediateQuickChatAgentEvent(event)) {
-        unsubscribe()
+        void Promise.resolve(persisted).then(unsubscribe, unsubscribe)
       }
     })
     return unsubscribe

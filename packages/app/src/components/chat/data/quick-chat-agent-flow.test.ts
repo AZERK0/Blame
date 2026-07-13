@@ -5,9 +5,11 @@ import type { AgentEvent } from "@blame/agent-runtime"
 
 import type { QuickChat, QuickChatAgentRun } from "./quick-chat-data.ts"
 import {
+  completedQuickChatClineLog,
   pendingQuickChatAgentUpdate,
   quickChatAgentEventUpdate,
   quickChatAgentRunEventUpdate,
+  recoverableQuickChatAgentRun,
 } from "./quick-chat-agent-flow.ts"
 import type { UserStoryAgentActivity } from "@/components/backlog/data/backlog-data"
 
@@ -79,22 +81,68 @@ test("accumulates queued quick chat activity updates", () => {
   assert.equal(second.runInput.finalResponse, "Finished")
 })
 
-function chat(): QuickChat {
+test("recognizes a completed quick chat agent log", () => {
+  const log = [
+    JSON.stringify({ message: "event:text", payload: { text: "Done" } }),
+    JSON.stringify({ message: "event:done", payload: { finishReason: "stop" } }),
+  ].join("\n")
+
+  assert.equal(completedQuickChatClineLog(log), true)
+})
+
+test("does not recover a failed or incomplete quick chat agent log", () => {
+  const failed = JSON.stringify({
+    message: "event:done",
+    payload: { reason: "failed" },
+  })
+
+  assert.equal(completedQuickChatClineLog(failed), false)
+  assert.equal(completedQuickChatClineLog("not json"), false)
+})
+
+test("selects only stale running quick chat agent runs for recovery", () => {
+  const current = run({
+    clineSessionId: "session",
+    updatedAt: "2026-06-25T10:00:00.000Z",
+  })
+  const input = chat({
+    agentRuns: [current],
+    agentStatus: "Running",
+    workspace: "/workspace",
+  })
+
+  assert.equal(
+    recoverableQuickChatAgentRun(input, Date.parse("2026-06-25T10:00:16.000Z")),
+    current
+  )
+  assert.equal(
+    recoverableQuickChatAgentRun(input, Date.parse("2026-06-25T10:00:10.000Z")),
+    undefined
+  )
+  assert.equal(
+    recoverableQuickChatAgentRun({ ...input, agentStatus: null }, Infinity),
+    undefined
+  )
+})
+
+function chat(input: Partial<QuickChat> = {}): QuickChat {
   return {
     createdAt: "2026-06-25T10:00:00.000Z",
     id: 1,
     projectId: "project",
     title: "Quick change",
+    ...input,
   }
 }
 
-function run(): QuickChatAgentRun {
+function run(input: Partial<QuickChatAgentRun> = {}): QuickChatAgentRun {
   return {
     createdAt: "2026-06-25T10:00:00.000Z",
     id: 1,
     kind: "resume",
     quickChatId: 1,
     status: "running",
+    ...input,
   }
 }
 
