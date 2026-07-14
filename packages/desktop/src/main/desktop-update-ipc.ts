@@ -26,7 +26,7 @@ export type DesktopUpdateStatus = {
 }
 
 type DesktopUpdateOptions = {
-  beforeInstall(): void
+  beforeInstall(): Promise<void>
 }
 
 let status: DesktopUpdateStatus = initialStatus()
@@ -44,8 +44,8 @@ export function registerDesktopUpdateIpcHandlers(options: DesktopUpdateOptions) 
     await downloadUpdate()
     return status
   })
-  ipcMain.handle("updates:install", () => {
-    installUpdate(options)
+  ipcMain.handle("updates:install", async () => {
+    await installUpdate(options)
     return status
   })
 }
@@ -121,9 +121,9 @@ async function downloadUpdate() {
   }
 }
 
-function installUpdate(options: DesktopUpdateOptions) {
+async function installUpdate(options: DesktopUpdateOptions) {
   if (status.phase !== "downloaded") return
-  options.beforeInstall()
+  await options.beforeInstall()
   autoUpdater.quitAndInstall(false, true)
 }
 

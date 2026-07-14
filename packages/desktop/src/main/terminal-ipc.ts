@@ -1,6 +1,7 @@
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process"
 import { randomUUID } from "node:crypto"
 import { BrowserWindow, ipcMain } from "electron"
+import { withoutTelemetryEnvironment } from "@blame/telemetry"
 import {
   pathExists,
   spawnRuntime,
@@ -28,12 +29,13 @@ async function startTerminal(cwd: string) {
 
   const id = randomUUID()
   const shell = terminalShell(directory)
+  const environment = withoutTelemetryEnvironment(process.env)
   const child = shell.runtime
-    ? spawnRuntime(shell.command, shell.args, { cwd: directory, env: process.env })
+    ? spawnRuntime(shell.command, shell.args, { cwd: directory, env: environment })
     : spawn(shell.command, shell.args, {
         cwd: directory,
         detached: process.platform !== "win32",
-        env: process.env,
+        env: environment,
       })
   const session = { id, cwd: directory, process: child }
   sessions.set(id, session)

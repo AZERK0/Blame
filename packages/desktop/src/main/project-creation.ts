@@ -11,6 +11,7 @@ import {
 import { basename, join, relative, resolve } from "node:path";
 import { promisify } from "node:util";
 import type { ApiConnection, ReasoningEffort } from "@blame/agent-runtime";
+import { withoutTelemetryEnvironment } from "@blame/telemetry";
 import { setupPath } from "./host-tool-path.ts";
 import { sanitizeWorkspaceConfigFiles } from "./workspace-runtime.ts";
 
@@ -286,7 +287,11 @@ async function ensureGeneratedProjectGitignore(target: string) {
 }
 
 async function git(cwd: string, args: string[]) {
-  await execFileAsync("git", args, { cwd, maxBuffer: gitMaxBuffer });
+  await execFileAsync("git", args, {
+    cwd,
+    env: withoutTelemetryEnvironment(process.env),
+    maxBuffer: gitMaxBuffer,
+  });
 }
 
 export async function validateProjectTarget(
@@ -1002,7 +1007,7 @@ function runCommand(
     const child = spawn(recipe.command, recipe.args, {
       cwd: recipe.cwd,
       env: {
-        ...process.env,
+        ...withoutTelemetryEnvironment(process.env),
         CI: "true",
         PATH: setupPath(),
         npm_config_yes: "true",

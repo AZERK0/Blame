@@ -1,4 +1,5 @@
 import { BlameAgentRuntime, type AgentEvent } from "@blame/agent-runtime"
+import { withoutTelemetryEnvironment } from "@blame/telemetry"
 import { BrowserWindow, ipcMain, shell } from "electron"
 import { createServer, type ServerResponse } from "node:http"
 import type { AddressInfo } from "node:net"
@@ -34,7 +35,7 @@ const runtime = new BlameAgentRuntime({
       await ensureRuntimeGitUserIdentity();
       const { name, email } = getRuntimeGitIdentity();
       const gitEnv = {
-        ...process.env,
+        ...withoutTelemetryEnvironment(process.env),
         GIT_TERMINAL_PROMPT: "0",
         GIT_SSH_COMMAND: process.platform === "win32"
           ? "ssh.exe -o BatchMode=yes -o StrictHostKeyChecking=no"
@@ -45,7 +46,11 @@ const runtime = new BlameAgentRuntime({
       const { stdout } = await runRuntime("git", args, { cwd, env: gitEnv });
       return stdout;
     }
-    const { stdout } = await execFileAsync("git", args, { cwd, maxBuffer: 20 * 1024 * 1024 });
+    const { stdout } = await execFileAsync("git", args, {
+      cwd,
+      env: withoutTelemetryEnvironment(process.env),
+      maxBuffer: 20 * 1024 * 1024,
+    });
     return stdout;
   },
   previewDevtools: getPreviewDevtoolsTarget,

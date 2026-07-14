@@ -7,20 +7,30 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./dist/index.js"
+    },
+    "./telemetry-cohorts": {
+      "types": "./src/telemetry-cohorts.ts",
+      "default": "./dist/telemetry-cohorts.js"
     }
   },
   "scripts": {
     "build": "tsc && node scripts/copy-prompt.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "pnpm build && node --test dist/project-initialization.test.js dist/project-initialization-repair.test.js dist/next-webpack-fallback.test.js dist/project-initialization-impact.test.js dist/code-review-graph-tools.test.js dist/commit-message.test.js dist/context-compression.test.js dist/headroom-sidecar.test.js dist/specialist-agents.test.js dist/cline-runtime-events.test.js"
+    "test": "pnpm build && node --test dist/project-initialization.test.js dist/project-initialization-repair.test.js dist/next-webpack-fallback.test.js dist/project-initialization-impact.test.js dist/code-review-graph-tools.test.js dist/commit-message.test.js dist/context-compression.test.js dist/headroom-sidecar.test.js dist/specialist-agents.test.js dist/cline-runtime-events.test.js dist/agent-telemetry.test.js"
   },
   "dependencies": {
+    "@blame/telemetry": "workspace:*",
     "@cline/llms": "^0.0.55",
     "@cline/sdk": "^0.0.55",
     "headroom-ai": "0.22.4"
   },
   "devDependencies": {
+    "@opentelemetry/api": "1.9.1",
+    "@opentelemetry/api-logs": "0.220.0",
+    "@opentelemetry/sdk-logs": "0.220.0",
+    "@opentelemetry/sdk-metrics": "2.9.0",
+    "@opentelemetry/sdk-trace": "2.9.0",
     "@types/node": "^24.12.0",
     "typescript": "~5.9.3"
   }

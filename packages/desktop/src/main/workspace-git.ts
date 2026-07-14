@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process";
 import { basename, posix, resolve } from "node:path";
 import { promisify } from "node:util";
+import { withoutTelemetryEnvironment } from "@blame/telemetry";
 import { pLimit } from "./concurrency.ts";
 
 const execFileAsync = promisify(execFile);
@@ -178,7 +179,11 @@ function gitPath(value?: string) {
 }
 
 function runGit(root: string, args: string[]) {
-  return execFileAsync("git", args, { cwd: root, maxBuffer });
+  return execFileAsync("git", args, {
+    cwd: root,
+    env: withoutTelemetryEnvironment(process.env),
+    maxBuffer,
+  });
 }
 
 async function hasGitHead(cwd: string) {

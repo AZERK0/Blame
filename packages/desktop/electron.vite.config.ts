@@ -8,7 +8,7 @@ export default defineConfig({
         exclude: ["electron-context-menu", "electron-window-state"],
       },
       rollupOptions: {
-        input: { index: "src/main/index.ts" },
+        input: { index: "src/main/bootstrap.ts" },
       },
     },
   },

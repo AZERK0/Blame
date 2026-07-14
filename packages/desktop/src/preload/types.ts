@@ -8,6 +8,7 @@ import type {
   AssessProjectInitializationImpactResult,
   CompareCheckpointInput,
   CompareCheckpointResult,
+  ExecutionTelemetryCohorts,
   GenerateCommitMessageInput,
   GenerateCommitMessageResult,
   GenerateTitleInput,
@@ -286,8 +287,11 @@ export type BlameDesktopApi = {
       path: string;
     }>;
     createWorktree(input: {
+      executionId: string;
       repositoryRoot: string;
       storyId: string;
+      storyReference: string;
+      telemetryCohorts?: ExecutionTelemetryCohorts;
       title: string;
     }): Promise<WorktreeResult>;
     checkHostDependencies(input: {
@@ -295,6 +299,9 @@ export type BlameDesktopApi = {
       worktree?: string;
     }): Promise<HostDependencyReport>;
     runProjectSetup(input: {
+      executionId: string;
+      storyId: string;
+      telemetryCohorts?: ExecutionTelemetryCohorts;
       worktree: string;
       setupScript: string;
       dockerCompose: string;
@@ -313,6 +320,9 @@ export type BlameDesktopApi = {
       worktree: string;
     }): Promise<string | null>;
     ensureProjectPreviewUrl(input: {
+      executionId: string;
+      storyId?: string;
+      telemetryCohorts?: ExecutionTelemetryCohorts;
       worktree: string;
     }): Promise<string | null>;
     ensureRuntimeReady(): Promise<HostDependencyReport>;

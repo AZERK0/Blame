@@ -11,6 +11,9 @@
 |
 */
 
+import { initializeApiTelemetry, shutdownApiTelemetry } from '#start/telemetry'
+
+initializeApiTelemetry()
 await import('reflect-metadata')
 const { Ignitor, prettyPrintError } = await import('@adonisjs/core')
 
@@ -36,12 +39,14 @@ new Ignitor(APP_ROOT, { importer: IMPORTER })
     app.booting(async () => {
       await import('#start/env')
     })
+    app.terminating(shutdownApiTelemetry)
     app.listen('SIGTERM', () => app.terminate())
     app.listenIf(app.managedByPm2, 'SIGINT', () => app.terminate())
   })
   .ace()
   .handle(process.argv.splice(2))
-  .catch((error) => {
+  .catch(async (error) => {
     process.exitCode = 1
     prettyPrintError(error)
+    await shutdownApiTelemetry()
   })

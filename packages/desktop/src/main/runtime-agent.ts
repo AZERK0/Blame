@@ -1,4 +1,5 @@
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
+import { withoutTelemetryEnvironment } from "@blame/telemetry";
 import { EventEmitter } from "node:events";
 import { PassThrough } from "node:stream";
 import { createInterface } from "node:readline";
@@ -349,10 +350,11 @@ function runtimeEnvironmentKey(key: string) {
 
 function agentCommand(platform: NodeJS.Platform, env?: NodeJS.ProcessEnv) {
   const nextEnv = {
-    ...process.env,
+    ...withoutTelemetryEnvironment(process.env),
     ...env,
     PATH: setupPath({ env, platform }),
   };
+  const sanitizedEnv = withoutTelemetryEnvironment(nextEnv);
   if (platform === "win32") {
     return {
       args: [
@@ -365,13 +367,13 @@ function agentCommand(platform: NodeJS.Platform, env?: NodeJS.ProcessEnv) {
         "serve",
       ],
       command: "wsl.exe",
-      env: nextEnv,
+      env: sanitizedEnv,
     };
   }
   return {
     args: ["agent", "serve"],
     command: "blame-lima-runtime",
-    env: nextEnv,
+    env: sanitizedEnv,
   };
 }
 

@@ -1,0 +1,64 @@
+services:
+  otel-collector-storage-init:
+    image: busybox:1.37.0
+    command:
+      - chown
+      - 10001:10001
+      - /var/lib/otelcol
+    restart: "no"
+    read_only: true
+    user: 0:0
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - otel-collector-storage:/var/lib/otelcol
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.156.0
+    command:
+      - --config=/etc/otelcol-contrib/config.yaml
+    restart: unless-stopped
+    read_only: true
+    user: 10001:10001
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    mem_limit: ${BLAME_OTEL_CONTAINER_MEMORY_LIMIT:-1g}
+    stop_grace_period: 30s
+    depends_on:
+      otel-collector-storage-init:
+        condition: service_completed_successfully
+    environment:
+      BLAME_OTEL_BACKEND_ENDPOINT: ${BLAME_OTEL_BACKEND_ENDPOINT:?BLAME_OTEL_BACKEND_ENDPOINT is required}
+      BLAME_OTEL_BACKEND_AUTHORIZATION: ${BLAME_OTEL_BACKEND_AUTHORIZATION:?BLAME_OTEL_BACKEND_AUTHORIZATION is required}
+      BLAME_OTEL_BACKEND_INSECURE: "${BLAME_OTEL_BACKEND_INSECURE:-false}"
+      BLAME_OTEL_ROLLOUT_VERSION: ${BLAME_OTEL_ROLLOUT_VERSION:-disabled}
+      BLAME_OTEL_ROLLOUT_SAMPLING_PERCENTAGE: "${BLAME_OTEL_ROLLOUT_SAMPLING_PERCENTAGE:-25}"
+      BLAME_OTEL_NORMAL_SAMPLING_PERCENTAGE: "${BLAME_OTEL_NORMAL_SAMPLING_PERCENTAGE:-5}"
+      BLAME_OTEL_SLOW_TRACE_THRESHOLD_MS: "${BLAME_OTEL_SLOW_TRACE_THRESHOLD_MS:-120000}"
+      BLAME_OTEL_TAIL_DECISION_WAIT: ${BLAME_OTEL_TAIL_DECISION_WAIT:-15m}
+      BLAME_OTEL_TAIL_ROOT_GRACE_PERIOD: ${BLAME_OTEL_TAIL_ROOT_GRACE_PERIOD:-10s}
+      BLAME_OTEL_TAIL_NUM_TRACES: "${BLAME_OTEL_TAIL_NUM_TRACES:-50000}"
+      BLAME_OTEL_EXPECTED_NEW_TRACES_PER_SEC: "${BLAME_OTEL_EXPECTED_NEW_TRACES_PER_SEC:-20}"
+      BLAME_OTEL_MEMORY_LIMIT_MIB: "${BLAME_OTEL_MEMORY_LIMIT_MIB:-768}"
+      BLAME_OTEL_MEMORY_SPIKE_LIMIT_MIB: "${BLAME_OTEL_MEMORY_SPIKE_LIMIT_MIB:-128}"
+      GOMEMLIMIT: ${BLAME_OTEL_GO_MEMORY_LIMIT:-896MiB}
+    ports:
+      - ${BLAME_OTEL_BIND_ADDRESS:-127.0.0.1}:${BLAME_OTEL_GRPC_PORT:-4317}:4317
+      - ${BLAME_OTEL_BIND_ADDRESS:-127.0.0.1}:${BLAME_OTEL_HTTP_PORT:-4318}:4318
+      - ${BLAME_OTEL_BIND_ADDRESS:-127.0.0.1}:${BLAME_OTEL_HEALTH_PORT:-13133}:13133
+      - ${BLAME_OTEL_BIND_ADDRESS:-127.0.0.1}:${BLAME_OTEL_INTERNAL_METRICS_PORT:-8888}:8888
+    volumes:
+      - ./otel-collector.yaml:/etc/otelcol-contrib/config.yaml:ro
+      - otel-collector-storage:/var/lib/otelcol
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+
+volumes:
+  otel-collector-storage:

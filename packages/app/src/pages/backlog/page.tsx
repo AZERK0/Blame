@@ -459,7 +459,9 @@ export function BacklogPage() {
       const modelId = agentSelection.currentModel?.id ?? story.agentModelId
       if (!providerId || !modelId)
         throw new Error("Select a model before resuming this user story.")
-      return agent.sessions.startDevelopment({
+      const executionId = crypto.randomUUID()
+      const storyId = story.id
+      const session = await agent.sessions.startDevelopment({
         apiConnection: auth.apiConnection,
         providerId,
         modelId,
@@ -480,7 +482,10 @@ export function BacklogPage() {
         workspaceRoot: input.worktree,
         previewDevtoolsScope: storyPreviewDevtoolsScope(story.id),
         codePractices: await projectCodePractices(auth, projects),
+        executionId,
+        storyId,
       })
+      return { ...session, executionId, storyId }
     },
     [
       auth,
@@ -563,7 +568,9 @@ export function BacklogPage() {
         }
       )
       void agent.sessions.sendDevelopment({
+        executionId: session.executionId,
         sessionId: session.sessionId,
+        storyId: session.storyId,
         title: currentStory.title,
         summary: currentStory.summary,
         codeSelectionAttachments: currentStory.codeSelectionAttachments ?? [],
@@ -615,7 +622,7 @@ export function BacklogPage() {
         })
         return story
       }
-      let session: { sessionId: string }
+      let session: { executionId: string; sessionId: string; storyId: string }
       try {
         session = await startStoryDevelopmentSession(story, {
           feedback,
@@ -655,7 +662,9 @@ export function BacklogPage() {
         if (authenticationFailed || terminalAgentRunEvent(event)) unsubscribe()
       })
       void agent.sessions.sendDevelopment({
+        executionId: session.executionId,
         sessionId,
+        storyId: session.storyId,
         title: story.title,
         summary: story.summary,
         feedback,
@@ -722,6 +731,7 @@ export function BacklogPage() {
         const codePractices = await projectCodePractices(auth, projects)
         const result = await platform.agent!.approveAndMerge({
           apiConnection: auth.apiConnection,
+          executionId: crypto.randomUUID(),
           providerId: alternativeSelection.currentModel!.provider.id,
           modelId: alternativeSelection.currentModel!.id,
           credentialLabel: alternativeSelection.currentModel!.credentialLabel,
@@ -731,6 +741,7 @@ export function BacklogPage() {
           storyBranch: story.branch!,
           title: story.title,
           summary: story.summary,
+          storyId: story.id,
           codePractices,
         })
         toast.success("Story approved and merged", {

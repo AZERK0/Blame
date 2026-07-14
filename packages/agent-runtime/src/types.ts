@@ -135,6 +135,8 @@ export type StartSessionInput = {
   previewDevtoolsScope?: string;
   credentialLabel?: string;
   backend?: AgentBackendConfig;
+  executionId?: string;
+  storyId?: string;
 };
 
 export type CodeSelectionAttachment = {
@@ -180,6 +182,8 @@ export type StartDevelopmentSessionInput = {
   previewDevtoolsScope?: string;
   codePractices?: ProjectCodePracticePreference[];
   backend?: AgentBackendConfig;
+  executionId?: string;
+  storyId?: string;
 };
 
 export type ApproveAndMergeInput = {
@@ -195,6 +199,8 @@ export type ApproveAndMergeInput = {
   summary: string;
   codePractices?: ProjectCodePracticePreference[];
   backend?: AgentBackendConfig;
+  executionId?: string;
+  storyId?: string;
 };
 
 export type ApproveAndMergeResult = {
@@ -216,6 +222,8 @@ export type GenerateCommitMessageInput = {
   selectedPaths?: string[];
   codePractices?: ProjectCodePracticePreference[];
   backend?: AgentBackendConfig;
+  executionId?: string;
+  storyId?: string;
 };
 
 export type GenerateCommitMessageResult = {
@@ -233,6 +241,8 @@ export type GenerateTitleInput = {
   reasoningEffort?: ReasoningEffort;
   credentialLabel?: string;
   backend?: AgentBackendConfig;
+  executionId?: string;
+  storyId?: string;
 };
 
 export type GenerateTitleResult = {
@@ -253,6 +263,8 @@ export type ResolveMergeConflictsInput = {
   targetBranch?: string;
   codePractices?: ProjectCodePracticePreference[];
   backend?: AgentBackendConfig;
+  executionId?: string;
+  storyId?: string;
 };
 
 export type ResolveMergeConflictsResult = {
@@ -263,12 +275,16 @@ export type ResolveMergeConflictsResult = {
 export type SendSessionInput = {
   sessionId: string;
   prompt: string;
+  executionId?: string;
+  storyId?: string;
   userImages?: string[];
   userFiles?: string[];
 };
 
 export type SendDevelopmentSessionInput = {
   sessionId: string;
+  executionId?: string;
+  storyId?: string;
   title: string;
   summary: string;
   codeSelectionAttachments?: CodeSelectionAttachment[];
@@ -411,6 +427,8 @@ export type InitializeProjectInput = {
     previousResult: string;
   };
   backend?: AgentBackendConfig;
+  executionId?: string;
+  storyId?: string;
 };
 
 export type InitializeProjectResult = {
@@ -471,6 +489,8 @@ export type AssessProjectInitializationImpactInput = {
   dockerCompose: string;
   runConfigurations: ProjectRunConfiguration[];
   backend?: AgentBackendConfig;
+  executionId?: string;
+  storyId?: string;
 };
 
 export type AssessProjectInitializationImpactResult = {
@@ -497,6 +517,8 @@ export type RepairProjectInitializationInput = {
     | ProjectInitializationDiagnostics
     | ProjectInitializationImpactDiagnostics;
   backend?: AgentBackendConfig;
+  executionId?: string;
+  storyId?: string;
 };
 
 export type RepairProjectInitializationResult = {
@@ -534,6 +556,8 @@ export type StartNewProjectGenerationInput = {
   projectName: string;
   sessionId?: string;
   backend?: AgentBackendConfig;
+  executionId?: string;
+  storyId?: string;
 };
 
 export type NewProjectGenerationResult = {
@@ -552,6 +576,8 @@ export type OptimizeUserStoryPromptInput = {
   credentialLabel?: string;
   title?: string;
   backend?: AgentBackendConfig;
+  executionId?: string;
+  storyId?: string;
 };
 
 export type OptimizeUserStoryPromptResult = {
@@ -588,6 +614,15 @@ export type AgentUsageTotals = {
 export type AgentUsageSummary = {
   aggregateUsage?: AgentUsageTotals;
   usage?: AgentUsageTotals;
+};
+
+export type ExecutionTelemetryCohorts = {
+  agentStrategy: "single_agent" | "multi_agent";
+  modelId: string;
+  providerId: string;
+  repositoryLanguage?: string;
+  repositorySizeBucket?: "small" | "medium" | "large" | "very_large";
+  taskComplexityBucket: "small" | "medium" | "large";
 };
 
 export type AgentEvent = {

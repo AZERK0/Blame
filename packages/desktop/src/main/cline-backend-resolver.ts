@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process"
+import { withoutTelemetryEnvironment } from "@blame/telemetry"
 import type { AgentBackendConfig } from "@blame/agent-runtime"
 import { setupPath } from "./host-tool-path.ts"
 import { runtimeAgentClient } from "./runtime-agent.ts"
@@ -138,7 +139,11 @@ function preWarmRoute(url: string, platform: NodeJS.Platform): Promise<void> {
       const child = spawn(
         bin,
         ["--silent", "--max-time", "35", "--connect-timeout", "35", url],
-        { stdio: "ignore", windowsHide: true },
+        {
+          env: withoutTelemetryEnvironment(process.env),
+          stdio: "ignore",
+          windowsHide: true,
+        }
       )
       const timer = setTimeout(() => { child.kill(); resolve() }, 40_000)
       child.on("close", () => { clearTimeout(timer); resolve() })
@@ -154,10 +159,12 @@ function runtimeEnvironment(
   platform: NodeJS.Platform,
 ) {
   return {
-    env: options.env ?? {
-      ...process.env,
-      PATH: setupPath({ platform }),
-    },
+    env: withoutTelemetryEnvironment(
+      options.env ?? {
+        ...process.env,
+        PATH: setupPath({ platform }),
+      }
+    ),
     platform,
   }
 }

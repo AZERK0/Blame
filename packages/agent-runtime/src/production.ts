@@ -1,16 +1,16 @@
-import { createHash } from "node:crypto"
 import { delimiter, isAbsolute, relative, resolve } from "node:path"
-import { platform, release } from "node:os"
-
 import type {
   BasicLogger,
   CoreCheckpointConfig,
-  ConfiguredTelemetryHandle,
   CoreCompactionConfig,
-  ITelemetryService,
   CoreSessionConfig,
   SessionUsageSummary,
 } from "@cline/sdk"
+import {
+  getBlameTelemetry,
+  sanitizeText,
+  type TelemetrySeverity,
+} from "@blame/telemetry"
 import type {
   AgentRuntimeConfigExtension,
   AgentUsageSummary,
@@ -55,7 +55,6 @@ export type ProductionSessionContext = {
   storyId?: string | number
 }
 
-type TelemetryHandle = Pick<ConfiguredTelemetryHandle, "dispose" | "flush" | "telemetry">
 type UsageSummary = AgentUsageSummary | SessionUsageSummary
 type UsageTotals = AgentUsageTotals | NonNullable<SessionUsageSummary["usage"]>
 
@@ -81,24 +80,17 @@ const allowedLogKeys = new Set([
   "contextCompressionMode",
   "disableMcpSettingsTools",
   "durationMs",
-  "error",
   "errorType",
   "estimatedInputTokens",
   "fallback",
-  "finishReason",
-  "headroomBaseUrl",
   "headroomCompressionCount",
   "headroomCompressionRatio",
-  "headroomCommand",
-  "headroomInput",
   "headroomLastTokensSaved",
-  "headroomPackage",
   "headroomPort",
   "headroomSource",
   "headroomTokensAfter",
   "headroomTokensBefore",
   "headroomTokensSaved",
-  "headroomVenv",
   "inputTokens",
   "maxIterations",
   "maxInputTokens",
@@ -112,11 +104,9 @@ const allowedLogKeys = new Set([
   "mode",
   "modelId",
   "outputTokens",
-  "promptHash",
   "promptLength",
   "providerId",
   "pluginPathCount",
-  "reason",
   "sessionId",
   "status",
   "storyId",
@@ -135,6 +125,21 @@ const allowedLogKeys = new Set([
   "transformsApplied",
   "triggerTokens",
 ])
+
+const stableStringLogKeys = new Set([
+  "contextCompressionMode",
+  "errorType",
+  "headroomSource",
+  "mode",
+  "modelId",
+  "providerId",
+  "sessionId",
+  "status",
+  "storyId",
+  "toolName",
+])
+
+const stableStringPattern = /^[A-Za-z0-9][A-Za-z0-9._:@-]{0,127}$/
 
 export function loadProductionConfig(env: NodeJS.ProcessEnv = process.env): ProductionConfig {
   return {
@@ -168,35 +173,35 @@ export function applyProductionEnvironment(
   setDefaultEnvValue(env, "CLINE_MESSAGE_BUILDER_MIN_OUTDATED_REWRITE_BYTES", config.messageBuilderMinOutdatedRewriteBytes)
 }
 
-export async function createProductionTelemetry(
-  logger: BasicLogger,
-  env: NodeJS.ProcessEnv = process.env
-): Promise<TelemetryHandle | undefined> {
-  if (!telemetryEnabled(env)) return undefined
-  const sdk = await import("@cline/sdk")
-  return sdk.createConfiguredTelemetryHandle({
-    enabled: true,
-    logger,
-    metadata: telemetryMetadata(),
-    name: "blame-agent-runtime",
-    serviceName: "blame-agent-runtime",
-  })
-}
-
 export function createProductionLogger(): BasicLogger {
   return {
     debug: (_message: string, metadata?: unknown) =>
-      console.debug("[blame-agent]", "sdk debug", safeLogPayload(metadata)),
+      writeProductionLog("debug", "blame.agent.sdk.debug", metadata),
     log: (_message: string, metadata?: unknown) =>
-      console.info("[blame-agent]", "sdk log", safeLogPayload(metadata)),
+      writeProductionLog("info", "blame.agent.sdk.log", metadata),
     error: (_message: string, metadata?: unknown) =>
-      console.error("[blame-agent]", "sdk error", safeLogPayload(metadata)),
+      writeProductionLog("error", "blame.agent.sdk.error", metadata),
   }
+}
+
+function writeProductionLog(
+  severity: TelemetrySeverity,
+  eventName: string,
+  metadata?: unknown
+) {
+  const record = getBlameTelemetry().structuredLog(
+    severity,
+    eventName,
+    safeLogPayload(metadata)
+  )
+  const serialized = JSON.stringify(record)
+  if (severity === "error") console.error(serialized)
+  else if (severity === "debug") console.debug(serialized)
+  else console.info(serialized)
 }
 
 export function promptMetadata(prompt: string) {
   return {
-    promptHash: createHash("sha256").update(prompt).digest("hex"),
     promptLength: prompt.length,
   }
 }
@@ -312,51 +317,27 @@ export function usageLimitMessage(summary: UsageSummary | undefined, config: Pro
   return "Usage limit exceeded."
 }
 
-export function recordUsageTelemetry(
-  telemetry: ITelemetryService | undefined,
-  summary: UsageSummary | undefined,
-  context: ProductionSessionContext
-) {
-  const usage = summarizeUsage(summary)
-  if (!Object.keys(usage).length) return
-  telemetry?.recordCounter("blame.agent.tokens.input", numberValue(usage.inputTokens), context)
-  telemetry?.recordCounter("blame.agent.tokens.output", numberValue(usage.outputTokens), context)
-  telemetry?.recordGauge("blame.agent.cost.usd", numberValue(usage.cost ?? usage.totalCost), context)
-}
-
 export function safeLogPayload(value: unknown): Record<string, unknown> {
   if (!isRecord(value)) return {}
   return Object.fromEntries(
     Object.entries(value)
       .filter(([key]) => allowedLogKeys.has(key) && !secretKeys.includes(key))
-      .map(([key, field]) => [key, safeLogValue(field)])
+      .map(([key, field]) => [key, safeLogValue(key, field)])
+      .filter(
+        (entry): entry is [string, string | number | boolean] =>
+          entry[1] !== undefined
+      )
   )
 }
 
-function telemetryEnabled(env: NodeJS.ProcessEnv) {
-  if (env.OTEL_TELEMETRY_ENABLED === "true") return true
-  if (env.OTEL_SDK_DISABLED === "true") return false
-  return Boolean(
-    env.OTEL_EXPORTER_OTLP_ENDPOINT ||
-      env.OTEL_LOGS_EXPORTER ||
-      env.OTEL_METRICS_EXPORTER
-  )
-}
-
-function telemetryMetadata() {
-  return {
-    cline_type: "desktop",
-    extension_version: "0.0.0",
-    os_type: platform(),
-    os_version: release(),
-    platform: "blame",
-    platform_version: process.version,
-  }
-}
-
-function safeLogValue(value: unknown): unknown {
+function safeLogValue(
+  key: string,
+  value: unknown
+): string | number | boolean | undefined {
   if (typeof value === "number" || typeof value === "boolean") return value
-  if (typeof value === "string") return value.slice(0, 255)
+  if (typeof value !== "string" || !stableStringLogKeys.has(key)) return undefined
+  const sanitizedValue = sanitizeText(value)
+  if (stableStringPattern.test(sanitizedValue)) return sanitizedValue
   return undefined
 }
 

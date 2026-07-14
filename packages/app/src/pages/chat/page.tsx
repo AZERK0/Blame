@@ -88,6 +88,7 @@ const bottomBlurMask = {
 
 type QuickChatDevelopmentSessionInput = {
   codeAttachments: PendingCodeSelectionAttachment[]
+  executionId: string
   fileAttachments: UserStoryFileAttachment[]
   resumeSessionId?: string | null
   summary: string
@@ -98,6 +99,7 @@ type QuickChatDevelopmentSessionInput = {
 type QuickChatPromptInput = {
   chat: QuickChat
   codeAttachments: PendingCodeSelectionAttachment[]
+  executionId: string
   fileAttachments: UserStoryFileAttachment[]
   message: QuickChatMessage
   run: QuickChatAgentRun
@@ -556,8 +558,10 @@ function QuickChatProjectPage() {
     const resumeSessionId = chat.clineSessionId
     const title = quickChatTitle(chat, message.body, project?.name)
     const summary = quickChatDevelopmentSummary(chat, message.body)
+    const executionId = crypto.randomUUID()
     const session = await startQuickChatDevelopmentSession({
       codeAttachments,
+      executionId,
       fileAttachments,
       resumeSessionId,
       summary,
@@ -590,6 +594,7 @@ function QuickChatProjectPage() {
     subscribeQuickChatAgentEvents(updatedChat, activeRun, session.sessionId)
     await sendQuickChatPrompt({
       codeAttachments,
+      executionId,
       fileAttachments,
       message,
       reusedSession,
@@ -624,6 +629,7 @@ function QuickChatProjectPage() {
         input.workspace
       ),
       codePractices: await projectCodePractices(auth, projects),
+      executionId: input.executionId,
     })
   }
 
@@ -918,6 +924,7 @@ function quickChatSendInput(input: QuickChatPromptInput) {
       feedbackCodeSelectionAttachments: input.codeAttachments,
       feedbackFileAttachments: input.fileAttachments,
       feedbackOnly: true,
+      executionId: input.executionId,
       sessionId: input.sessionId,
       summary: input.summary,
       title: input.title,
@@ -925,6 +932,7 @@ function quickChatSendInput(input: QuickChatPromptInput) {
   }
   return {
     codeSelectionAttachments: input.codeAttachments,
+    executionId: input.executionId,
     fileAttachments: input.fileAttachments,
     sessionId: input.sessionId,
     summary: input.summary,

@@ -1,4 +1,5 @@
 import { execFile } from "node:child_process";
+import { withoutTelemetryEnvironment } from "@blame/telemetry";
 import { existsSync } from "node:fs";
 import { dirname } from "node:path";
 import { promisify } from "node:util";
@@ -139,7 +140,10 @@ async function cleanupProjectWithCompose(
         "--remove-orphans",
       ],
       {
-        env: { ...process.env, COMPOSE_PROJECT_NAME: project.name },
+        env: {
+          ...withoutTelemetryEnvironment(process.env),
+          COMPOSE_PROJECT_NAME: project.name,
+        },
       },
     );
     await removeProjectVolumes(exec, project.name);
@@ -334,9 +338,11 @@ async function defaultExecFile(
   args: string[],
   options?: Record<string, unknown>,
 ) {
+  const environment = options?.env as NodeJS.ProcessEnv | undefined;
   const result = await execFileAsync(file, args, {
     ...options,
     encoding: "utf8",
+    env: withoutTelemetryEnvironment(environment ?? process.env),
   });
   return {
     stdout: String(result.stdout),

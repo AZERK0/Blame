@@ -25,6 +25,12 @@ import {
 } from "@cline/sdk";
 
 import {
+  getBlameTelemetry,
+  type Context,
+  withoutTelemetryEnvironment,
+} from "@blame/telemetry";
+
+import {
   codeReviewGraphToolNames,
   codeReviewGraphTools,
 } from "./code-review-graph-tools.js";
@@ -66,6 +72,8 @@ import { generateTitle } from "./title-generation.js";
 import { loadPrompt } from "./prompt-loader.js";
 import { knownOpenAICodexPreviewModels } from "./openai-codex-preview-models.js";
 import { fallbackCommitSubject } from "./commit-message.js";
+import { AgentTelemetry } from "./agent-telemetry.js";
+import { taskComplexityBucket } from "./telemetry-cohorts.js";
 import {
   applyProductionEnvironment,
   appendProductionConfig,
@@ -74,10 +82,8 @@ import {
   blameCheckpointConfig,
   blameCompactionConfig,
   createProductionLogger,
-  createProductionTelemetry,
   loadProductionConfig,
   promptMetadata,
-  recordUsageTelemetry,
   runtimeConfigExtensions,
   runtimePluginPaths,
   safeLogPayload,
@@ -157,6 +163,7 @@ const runtimeArtifactPathspecs = runtimeArtifactPaths.map(
   (path) => `:!${path}`,
 );
 const productionLogger = createProductionLogger();
+const blameTelemetry = getBlameTelemetry();
 const openAICompatibleProviderID = "openai-compatible";
 
 type MergeConflictRuntimeInput =
@@ -204,6 +211,11 @@ type RuntimeSessionSummary = {
   sessionId?: string;
 };
 
+type RuntimeClineResult = {
+  result?: Record<string, unknown> & { text?: string };
+  sessionId: string;
+};
+
 type InitializationCorrection = {
   previousResult: string;
   validationError: string;
@@ -212,6 +224,31 @@ type InitializationCorrection = {
 type ProjectInitializationSubmitTool = {
   tool: AgentTool;
   input?: unknown;
+};
+
+type InitializationCredential = {
+  apiKey: string;
+  authMethod?: string;
+  baseUrl: string | null;
+};
+
+type ProjectInitializationAttempt = {
+  result: unknown;
+  sessionId: string;
+  submittedInput?: unknown;
+};
+
+type ProjectInitializationRepairAttempt = {
+  sessionId: string;
+  text: string;
+};
+
+type StoryMergePreparation = {
+  baseCommit: string;
+  integration: string;
+  targetBranch: string;
+  targetClean: boolean;
+  upstream?: GitUpstream;
 };
 
 type PreviewDevtoolsTarget = {
@@ -292,9 +329,7 @@ let customGitRunner:
 export class BlameAgentRuntime {
   private clines = new Map<string, Promise<ClineCore>>();
   private sessionBackendKeys = new Map<string, string>();
-  private telemetryHandle?: Promise<
-    Awaited<ReturnType<typeof createProductionTelemetry>>
-  >;
+  private readonly agentTelemetry = new AgentTelemetry();
   private unsubscribers = new Map<string, () => void>();
   private pendingApprovals = new Map<string, PendingApproval>();
   private alwaysAllowedTools = new Set<string>();
@@ -302,6 +337,7 @@ export class BlameAgentRuntime {
   private sessionLogFiles = new Map<string, string>();
   private sessionContexts = new Map<string, ProductionSessionContext>();
   private sessionStartInputs = new Map<string, ClineCoreStartInput>();
+  private sessionQualityBaselines = new Map<string, string>();
   private sessionEventSignatures = new Map<string, Map<string, number>>();
   private sessionHeadroomSavings = new Map<string, HeadroomSavingsTotals>();
   private sessionToolInputs = new Map<string, unknown>();
@@ -322,7 +358,6 @@ export class BlameAgentRuntime {
     }
     applyProductionEnvironment(this.productionConfig);
     void import("@cline/sdk").catch(() => undefined);
-    void this.telemetry().catch(() => undefined);
   }
 
   providers = {
@@ -389,7 +424,7 @@ export class BlameAgentRuntime {
   async shutdown() {
     const sessionIds = await this.activeSessionIds();
     await Promise.allSettled(
-      sessionIds.map((sessionId) => this.abortSession(sessionId)),
+      sessionIds.map((sessionId) => this.abortSession(sessionId, false)),
     );
     sessionIds.forEach((sessionId) => this.unsubscribeSession(sessionId));
     this.resolvePendingApprovals();
@@ -398,7 +433,7 @@ export class BlameAgentRuntime {
     this.sessionEventSignatures.clear();
     await this.disposeCore();
     await this.headroomSidecar.dispose();
-    await this.disposeTelemetry();
+    this.agentTelemetry.shutdown();
   }
 
   private async core(backend?: AgentBackendConfig) {
@@ -411,10 +446,7 @@ export class BlameAgentRuntime {
   }
 
   private async createCore(backend?: AgentBackendConfig) {
-    const [module, telemetry] = await Promise.all([
-      import("@cline/sdk"),
-      this.telemetry(),
-    ]);
+    const module = await import("@cline/sdk");
     return module.ClineCore.create({
       ...coreBackendOptions(backend),
       clientName: "blame",
@@ -424,7 +456,6 @@ export class BlameAgentRuntime {
           this.requestApproval(request),
       },
       logger: productionLogger,
-      telemetry: telemetry?.telemetry,
     });
   }
 
@@ -442,28 +473,42 @@ export class BlameAgentRuntime {
     return { sessionId: normalizedSessionId };
   }
 
-  private telemetry() {
-    if (!this.telemetryHandle) {
-      this.telemetryHandle = createProductionTelemetry(productionLogger);
-    }
-    return this.telemetryHandle;
-  }
-
   private async startSession(input: RuntimeStartSessionInput) {
     assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd");
+    const requestedSessionId = input.sessionId?.trim();
+    const sessionId = requestedSessionId || createBlameSessionId();
+    this.agentTelemetry.start(sessionId, {
+      ...input,
+      taskComplexityBucket: sessionTaskComplexity(input),
+    });
+    const telemetryContext = this.agentTelemetry.context(sessionId);
+    const codeGraphPreparation = this.prepareSessionCodeGraph(
+      sessionId,
+      input.workspaceRoot,
+    );
     const startLogFile = startLogPath(input.cwd);
-    await appendLog(startLogFile, "start requested", startContext(input));
+    await appendLog(
+      startLogFile,
+      "start requested",
+      startContext(input),
+      telemetryContext,
+    );
     const startedAt = Date.now();
     try {
       const credential = await resolveProviderCredential(input.apiConnection, {
         providerId: input.providerId,
         label: credentialLabel(input),
       });
-      await appendLog(startLogFile, "credential resolved", {
-        providerId: credential.providerId,
-        authMethod: credential.authMethod,
-        hasBaseUrl: !!credential.baseUrl,
-      });
+      await appendLog(
+        startLogFile,
+        "credential resolved",
+        {
+          providerId: credential.providerId,
+          authMethod: credential.authMethod,
+          hasBaseUrl: !!credential.baseUrl,
+        },
+        telemetryContext,
+      );
       const resolvedCredential = await this.refreshOAuthCredential(
         input.apiConnection,
         credential,
@@ -471,25 +516,42 @@ export class BlameAgentRuntime {
           force: forceOAuthRefresh(credential.providerId),
         },
       );
-      await appendLog(startLogFile, "credential refreshed", {
-        providerId: resolvedCredential.providerId,
-        authMethod: resolvedCredential.authMethod,
-        hasBaseUrl: !!resolvedCredential.baseUrl,
-        expires: resolvedCredential.oauthCredentials?.expires,
-      });
+      this.agentTelemetry.setAuthentication(
+        sessionId,
+        resolvedCredential.authMethod,
+      );
+      await appendLog(
+        startLogFile,
+        "credential refreshed",
+        {
+          providerId: resolvedCredential.providerId,
+          authMethod: resolvedCredential.authMethod,
+          hasBaseUrl: !!resolvedCredential.baseUrl,
+          expires: resolvedCredential.oauthCredentials?.expires,
+        },
+        telemetryContext,
+      );
       await this.syncClineOAuthProviderSettings(resolvedCredential);
       if (resolvedCredential.authMethod === "oauth") {
-        await appendLog(startLogFile, "cline oauth settings synced", {
-          providerId: resolvedCredential.providerId,
-          accountId: resolvedCredential.oauthCredentials?.accountId,
-          email: resolvedCredential.oauthCredentials?.email,
-          expires: resolvedCredential.oauthCredentials?.expires,
-        });
+        await appendLog(
+          startLogFile,
+          "cline oauth settings synced",
+          {
+            providerId: resolvedCredential.providerId,
+            accountId: resolvedCredential.oauthCredentials?.accountId,
+            email: resolvedCredential.oauthCredentials?.email,
+            expires: resolvedCredential.oauthCredentials?.expires,
+          },
+          telemetryContext,
+        );
       }
       const cline = await this.core(input.backend);
-      await appendLog(startLogFile, "cline core ready");
-      const requestedSessionId = input.sessionId?.trim();
-      const sessionId = requestedSessionId || createBlameSessionId();
+      await appendLog(
+        startLogFile,
+        "cline core ready",
+        undefined,
+        telemetryContext,
+      );
       const sessionLogFile = sessionLogPath(input.cwd, sessionId);
       const contextCompressionMode = effectiveContextCompressionMode(
         input.contextCompressionMode,
@@ -501,7 +563,7 @@ export class BlameAgentRuntime {
       if (input.autoApproveWriteTools) {
         this.autoApprovedWriteToolSessions.add(sessionId);
       }
-      this.prepareSessionCodeGraph(sessionId, input.workspaceRoot);
+      await waitForTelemetryCohorts(codeGraphPreparation);
       const headroomBaseUrl = await this.ensureHeadroomSidecar(
         sessionId,
         input,
@@ -590,10 +652,15 @@ export class BlameAgentRuntime {
         toolPolicies: toolPolicies(!!input.autoApproveWriteTools),
       } as const;
       this.sessionStartInputs.set(sessionId, startInput);
+      await this.captureSessionQualityBaseline(sessionId);
       if (autoSendPrompt) {
-        void cline
-          .start(startInput)
-          .then((session: { sessionId: string }) =>
+        this.agentTelemetry.startModelRequest(sessionId);
+        void this.agentTelemetry
+          .withinSession<RuntimeClineResult>(
+            sessionId,
+            () => cline.start(startInput) as Promise<RuntimeClineResult>,
+          )
+          .then((session) =>
             this.completeSessionStart(
               startLogFile,
               startedAt,
@@ -609,13 +676,22 @@ export class BlameAgentRuntime {
         this.emitSessionNotice(sessionId, `Cline debug log: ${sessionLogFile}`);
         return { sessionId };
       }
-      const session = await cline.start(startInput);
+      const session =
+        await this.agentTelemetry.withinSession<RuntimeClineResult>(
+          sessionId,
+          () => cline.start(startInput) as Promise<RuntimeClineResult>,
+        );
       this.sessionBackendKeys.set(session.sessionId, backendKey(input.backend));
-      await appendLog(startLogFile, "session created", {
-        durationMs: Date.now() - startedAt,
-        sessionId: session.sessionId,
-        logFile: sessionLogFile,
-      });
+      await appendLog(
+        startLogFile,
+        "session created",
+        {
+          durationMs: Date.now() - startedAt,
+          sessionId: session.sessionId,
+          logFile: sessionLogFile,
+        },
+        this.agentTelemetry.context(session.sessionId),
+      );
       await this.logSession(session.sessionId, "session created", {
         ...startContext(input),
         logFile: sessionLogFile,
@@ -626,7 +702,11 @@ export class BlameAgentRuntime {
           "Development session write tools auto-approved.",
         );
       }
-      this.prepareSessionCodeGraph(session.sessionId, input.workspaceRoot);
+      if (session.sessionId !== sessionId) {
+        await waitForTelemetryCohorts(
+          this.prepareSessionCodeGraph(session.sessionId, input.workspaceRoot),
+        );
+      }
       await this.logSession(session.sessionId, "session subscribed");
       this.emitSessionNotice(
         session.sessionId,
@@ -637,14 +717,22 @@ export class BlameAgentRuntime {
           ...promptMetadata(input.prompt),
         });
       }
+      this.agentTelemetry.ready(session.sessionId, true);
       return session;
     } catch (error) {
-      await appendLog(startLogFile, "start failed", {
-        durationMs: Date.now() - startedAt,
-        errorType: errorType(error),
-        message: errorMessage(error),
-        status: "failed",
-      });
+      const activeContext = this.agentTelemetry.context(sessionId);
+      await appendLog(
+        startLogFile,
+        "start failed",
+        {
+          durationMs: Date.now() - startedAt,
+          errorType: errorType(error),
+          message: errorMessage(error),
+          status: "failed",
+        },
+        activeContext,
+      );
+      this.agentTelemetry.fail(sessionId, error);
       throw error;
     }
   }
@@ -656,11 +744,17 @@ export class BlameAgentRuntime {
     sessionId: string,
     sessionLogFile: string,
   ) {
-    await appendLog(startLogFile, "session created", {
-      durationMs: Date.now() - startedAt,
-      sessionId,
-      logFile: sessionLogFile,
-    });
+    const activeContext = this.agentTelemetry.context(sessionId);
+    await appendLog(
+      startLogFile,
+      "session created",
+      {
+        durationMs: Date.now() - startedAt,
+        sessionId,
+        logFile: sessionLogFile,
+      },
+      activeContext,
+    );
     await this.logSession(sessionId, "session created", {
       ...startContext(input),
       logFile: sessionLogFile,
@@ -679,22 +773,47 @@ export class BlameAgentRuntime {
     sessionId: string,
     error: unknown,
   ) {
+    const activeContext = this.agentTelemetry.context(sessionId);
     const message = errorMessage(error);
-    await appendLog(startLogFile, "start failed", {
-      durationMs: Date.now() - startedAt,
-      errorType: errorType(error),
-      message,
-      status: "failed",
-    });
+    await appendLog(
+      startLogFile,
+      "start failed",
+      {
+        durationMs: Date.now() - startedAt,
+        errorType: errorType(error),
+        message,
+        status: "failed",
+      },
+      activeContext,
+    );
     this.emitSessionError(sessionId, message);
+    this.agentTelemetry.fail(sessionId, error);
   }
 
-  private async sendSession(input: SendSessionInput) {
-    const cline = await this.sessionCore(input.sessionId);
-    return this.sendPrompt(cline, input.sessionId, input.prompt, {
-      userFiles: input.userFiles,
-      userImages: input.userImages,
-    });
+  private async sendSession(
+    input: SendSessionInput,
+    interventionType?: string,
+  ) {
+    this.agentTelemetry.beginTurn(
+      input.sessionId,
+      input.executionId,
+      input.storyId,
+      sessionTaskComplexity(input),
+    );
+    if (interventionType) {
+      this.agentTelemetry.humanIntervention(input.sessionId, interventionType);
+    }
+    try {
+      await this.captureSessionQualityBaseline(input.sessionId);
+      const cline = await this.sessionCore(input.sessionId);
+      return await this.sendPrompt(cline, input.sessionId, input.prompt, {
+        userFiles: input.userFiles,
+        userImages: input.userImages,
+      });
+    } catch (error) {
+      this.agentTelemetry.fail(input.sessionId, error);
+      throw error;
+    }
   }
 
   private async sendDevelopmentSession(input: SendDevelopmentSessionInput) {
@@ -702,15 +821,26 @@ export class BlameAgentRuntime {
       input,
       this.attachmentDirectory(input.sessionId),
     );
-    return this.sendSession({
-      sessionId: input.sessionId,
-      ...developmentInput,
-    });
+    return this.sendSession(
+      {
+        sessionId: input.sessionId,
+        executionId: input.executionId,
+        storyId: input.storyId,
+        ...developmentInput,
+      },
+      input.feedbackOnly ? "feedback" : undefined,
+    );
   }
 
-  private async abortSession(sessionId: string) {
+  private async abortSession(sessionId: string, humanInitiated = true) {
     const cline = await this.sessionCore(sessionId);
-    await cline.abort(sessionId, "User aborted from Blame");
+    if (humanInitiated)
+      this.agentTelemetry.humanIntervention(sessionId, "abort");
+    try {
+      await cline.abort(sessionId, "User aborted from Blame");
+    } finally {
+      this.agentTelemetry.cancel(sessionId);
+    }
   }
 
   private async compareCheckpoint(
@@ -721,6 +851,14 @@ export class BlameAgentRuntime {
   }
 
   private async restoreCheckpoint(
+    input: RestoreCheckpointInput,
+  ): Promise<RestoreCheckpointResult> {
+    return this.agentTelemetry.runCheckpointRestore(input.sessionId, () =>
+      this.restoreCheckpointWorkflow(input),
+    );
+  }
+
+  private async restoreCheckpointWorkflow(
     input: RestoreCheckpointInput,
   ): Promise<RestoreCheckpointResult> {
     const cline = await this.sessionCore(input.sessionId);
@@ -774,6 +912,7 @@ export class BlameAgentRuntime {
   ) {
     if (!restoredSessionId || !start) return;
     if (restoredSessionId === sourceSessionId) return;
+    this.agentTelemetry.restore(sourceSessionId, restoredSessionId);
     if (!this.unsubscribers.has(restoredSessionId)) {
       await this.subscribeCoreSession(restoredSessionId, cline);
     }
@@ -795,6 +934,7 @@ export class BlameAgentRuntime {
       });
     }
     this.sessionStartInputs.set(restoredSessionId, start);
+    await this.captureSessionQualityBaseline(restoredSessionId);
     if (this.autoApprovedWriteToolSessions.has(sourceSessionId)) {
       this.autoApprovedWriteToolSessions.add(restoredSessionId);
     }
@@ -848,64 +988,97 @@ export class BlameAgentRuntime {
   private async initializeProject(
     input: InitializeProjectInput,
   ): Promise<InitializeProjectResult> {
+    return this.agentTelemetry.runBusinessOperation(
+      input,
+      "project_initialization",
+      () => this.initializeProjectWorkflow(input),
+    );
+  }
+
+  private async initializeProjectWorkflow(
+    input: InitializeProjectInput,
+  ): Promise<InitializeProjectResult> {
     assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd");
     const resolvedCredential = await this.initializationCredential(input);
     const scan = await scanProjectForInitialization(input.workspaceRoot);
     const cline = await this.core(input.backend);
     let correction = input.validationFeedback;
     for (let attempt = 1; attempt <= maxInitializationAttempts; attempt += 1) {
-      const submitTool = projectInitializationSubmitTool();
-      const session = await cline.start({
-        prompt: initializationPrompt(scan, correction),
-        config: initializationConfig(
-          input,
-          resolvedCredential,
-          submitTool.tool,
-        ),
-        interactive: false,
-        source: "blame-project-initialization",
-        toolPolicies: initializationToolPolicies(),
-      });
-      const submittedInput =
-        submitTool.input ??
-        projectInitializationInputFromResult(session.result) ??
-        (await projectInitializationInputFromMessages(
-          cline,
-          session.sessionId,
-        ));
-      const result = submittedInput ?? session.result?.text;
-      if (!result)
-        throw new Error("Project initialization agent did not return a result");
+      const result = await this.startProjectInitializationAttempt(
+        cline,
+        input,
+        scan,
+        resolvedCredential,
+        correction,
+      );
       try {
-        return {
-          sessionId: session.sessionId,
-          ...(submittedInput
-            ? parseProjectInitializationPayload(
-                submittedInput,
-                scan,
-                input.preferences,
-              )
-            : parseProjectInitializationResult(
-                String(result),
-                scan,
-                input.preferences,
-              )),
-        };
+        return parseProjectInitializationAttempt(result, scan, input);
       } catch (error) {
         if (attempt === maxInitializationAttempts) throw error;
-        correction = {
-          previousResult:
-            typeof result === "string" ? result : JSON.stringify(result),
-          validationError: errorMessage(error),
-        };
+        correction = this.projectInitializationRetry(
+          input,
+          "project_initialization",
+          result.result,
+          error,
+        );
       }
     }
-    throw new Error(
-      "Project initialization agent did not return a valid result",
+    throw new Error("Project initialization agent did not return a valid result");
+  }
+
+  private async startProjectInitializationAttempt(
+    cline: ClineCore,
+    input: InitializeProjectInput,
+    scan: ProjectInitializationScan,
+    credential: InitializationCredential,
+    correction?: InitializationCorrection,
+  ) {
+    const submitTool = projectInitializationSubmitTool();
+    const session = await this.startProjectInitializationAgent(
+      cline,
+      input,
+      scan,
+      credential,
+      submitTool.tool,
+      correction,
+    );
+    return collectProjectInitializationAttempt(cline, session, submitTool);
+  }
+
+  private startProjectInitializationAgent(
+    cline: ClineCore,
+    input: InitializeProjectInput,
+    scan: ProjectInitializationScan,
+    credential: InitializationCredential,
+    submitTool: AgentTool,
+    correction: InitializationCorrection | undefined,
+  ) {
+    return this.agentTelemetry.runOperation(
+      input,
+      "project_initialization",
+      () =>
+        cline.start({
+          prompt: initializationPrompt(scan, correction),
+          config: initializationConfig(input, credential, submitTool),
+          interactive: false,
+          source: "blame-project-initialization",
+          toolPolicies: initializationToolPolicies(),
+        }) as Promise<RuntimeClineResult>,
+      credential.authMethod,
     );
   }
 
   private async repairProjectInitialization(
+    input: RepairProjectInitializationInput,
+  ): Promise<RepairProjectInitializationResult> {
+    return this.agentTelemetry.runBusinessOperation(
+      input,
+      "project_initialization_repair",
+      () => this.repairProjectInitializationWorkflow(input),
+    );
+  }
+
+  private async repairProjectInitializationWorkflow(
     input: RepairProjectInitializationInput,
   ): Promise<RepairProjectInitializationResult> {
     assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd");
@@ -914,53 +1087,72 @@ export class BlameAgentRuntime {
     const cline = await this.core(input.backend);
     let correction: InitializationCorrection | undefined;
     for (let attempt = 1; attempt <= maxInitializationAttempts; attempt += 1) {
-      const session = await this.startProjectInitializationRepairAttempt(
+      const result = await this.startProjectInitializationRepairAttempt(
         cline,
         input,
         scan,
         credential,
         correction,
       );
-      const text = session.result?.text;
-      if (!text)
-        throw new Error(
-          "Project initialization repair agent did not return a result",
-        );
       try {
-        return {
-          sessionId: session.sessionId,
-          ...parseProjectInitializationRepairResult(text, scan),
-        };
+        return parseProjectInitializationRepairAttempt(result, scan);
       } catch (error) {
         if (attempt === maxInitializationAttempts) throw error;
-        correction = {
-          previousResult: text,
-          validationError: errorMessage(error),
-        };
+        correction = this.projectInitializationRetry(
+          input,
+          "project_initialization_repair",
+          result.text,
+          error,
+        );
       }
     }
-    throw new Error(
-      "Project initialization repair agent did not return a valid result",
-    );
+    throw new Error("Project initialization repair agent did not return a valid result");
   }
 
-  private startProjectInitializationRepairAttempt(
+  private async startProjectInitializationRepairAttempt(
     cline: ClineCore,
     input: RepairProjectInitializationInput,
     scan: ProjectInitializationScan,
-    credential: { apiKey: string; baseUrl: string | null },
+    credential: InitializationCredential,
     correction?: InitializationCorrection,
+  ): Promise<ProjectInitializationRepairAttempt> {
+    const session = await this.agentTelemetry.runOperation(
+      input,
+      "project_initialization_repair",
+      () =>
+        cline.start({
+          prompt: projectInitializationRepairPrompt(input, scan, correction),
+          config: initializationRepairConfig(input, credential),
+          interactive: false,
+          source: "blame-project-initialization-repair",
+          toolPolicies: initializationToolPolicies(),
+        }) as Promise<RuntimeClineResult>,
+      credential.authMethod,
+    );
+    return projectInitializationRepairAttempt(session);
+  }
+
+  private projectInitializationRetry(
+    input: InitializeProjectInput | RepairProjectInitializationInput,
+    operationName: string,
+    previousResult: unknown,
+    error: unknown,
   ) {
-    return cline.start({
-      prompt: projectInitializationRepairPrompt(input, scan, correction),
-      config: initializationRepairConfig(input, credential),
-      interactive: false,
-      source: "blame-project-initialization-repair",
-      toolPolicies: initializationToolPolicies(),
-    });
+    this.agentTelemetry.recordOperationRetry(input, operationName, error);
+    return initializationCorrection(previousResult, error);
   }
 
   private async assessProjectInitializationImpact(
+    input: AssessProjectInitializationImpactInput,
+  ): Promise<AssessProjectInitializationImpactResult> {
+    return this.agentTelemetry.runBusinessOperation(
+      input,
+      "project_initialization_impact",
+      () => this.assessProjectInitializationImpactWorkflow(input),
+    );
+  }
+
+  private async assessProjectInitializationImpactWorkflow(
     input: AssessProjectInitializationImpactInput,
   ): Promise<AssessProjectInitializationImpactResult> {
     assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd");
@@ -970,13 +1162,12 @@ export class BlameAgentRuntime {
     if (deterministic) return { ...deterministic, diagnostics };
     const credential = await this.runtimeCredential(input);
     const cline = await this.core(input.backend);
-    const session = await cline.start({
-      prompt: projectInitializationImpactPrompt(diagnostics),
-      config: initializationImpactConfig(input, credential),
-      interactive: false,
-      source: "blame-project-initialization-impact",
-      toolPolicies: initializationToolPolicies(),
-    });
+    const session = await this.startProjectInitializationImpactAgent(
+      input,
+      diagnostics,
+      credential,
+      cline,
+    );
     const text = session.result?.text;
     if (!text)
       throw new Error(
@@ -989,6 +1180,29 @@ export class BlameAgentRuntime {
     };
   }
 
+  private startProjectInitializationImpactAgent(
+    input: AssessProjectInitializationImpactInput,
+    diagnostics: Awaited<
+      ReturnType<typeof collectProjectInitializationImpactDiagnostics>
+    >,
+    credential: InitializationCredential,
+    cline: ClineCore,
+  ) {
+    return this.agentTelemetry.runOperation(
+      input,
+      "project_initialization_impact",
+      () =>
+        cline.start({
+          prompt: projectInitializationImpactPrompt(diagnostics),
+          config: initializationImpactConfig(input, credential),
+          interactive: false,
+          source: "blame-project-initialization-impact",
+          toolPolicies: initializationToolPolicies(),
+        }) as Promise<RuntimeClineResult>,
+      credential.authMethod,
+    );
+  }
+
   private async generateNewProject(
     input: StartNewProjectGenerationInput,
   ): Promise<NewProjectGenerationResult> {
@@ -996,6 +1210,8 @@ export class BlameAgentRuntime {
     const credential = await this.runtimeCredential(input);
     const cline = await this.core(input.backend);
     const sessionId = input.sessionId ?? createBlameSessionId();
+    this.agentTelemetry.start(sessionId, input);
+    this.agentTelemetry.setAuthentication(sessionId, credential.authMethod);
     const sessionLogFile = sessionLogPath(input.cwd, sessionId);
     await this.subscribeSession(sessionId, input.backend);
     this.sessionBackendKeys.set(sessionId, backendKey(input.backend));
@@ -1012,18 +1228,25 @@ export class BlameAgentRuntime {
     this.emitSessionNotice(sessionId, `Cline debug log: ${sessionLogFile}`);
 
     try {
-      const session = await cline.start({
-        prompt: newProjectGenerationPrompt(input),
-        config: await newProjectGenerationConfig(
-          input,
-          credential,
+      const config = await newProjectGenerationConfig(
+        input,
+        credential,
+        sessionId,
+        this.productionConfig,
+      );
+      this.agentTelemetry.startModelRequest(sessionId);
+      const session =
+        await this.agentTelemetry.withinSession<RuntimeClineResult>(
           sessionId,
-          this.productionConfig,
-        ),
-        interactive: false,
-        source: "blame-new-project-generation",
-        toolPolicies: toolPolicies(true),
-      });
+          () =>
+            cline.start({
+              prompt: newProjectGenerationPrompt(input),
+              config,
+              interactive: false,
+              source: "blame-new-project-generation",
+              toolPolicies: toolPolicies(true),
+            }) as Promise<RuntimeClineResult>,
+        );
       const failure = resultFailureMessage(session.result);
       if (failure) {
         if (!(await generatedProjectLooksReady(input.cwd)))
@@ -1055,7 +1278,12 @@ export class BlameAgentRuntime {
       throw new Error("Prompt optimizer requires a user story prompt.");
     const credential = await this.runtimeCredential(input);
     const cline = await this.core(input.backend);
-    return optimizeUserStoryPrompt({ ...input, prompt }, cline, credential);
+    return this.agentTelemetry.runOperation(
+      input,
+      "prompt_optimization",
+      () => optimizeUserStoryPrompt({ ...input, prompt }, cline, credential),
+      credential.authMethod,
+    );
   }
 
   private async generateTitle(
@@ -1063,11 +1291,15 @@ export class BlameAgentRuntime {
   ): Promise<GenerateTitleResult> {
     assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd");
     const prompt = input.prompt.trim();
-    if (!prompt)
-      throw new Error("Title generator requires a prompt.");
+    if (!prompt) throw new Error("Title generator requires a prompt.");
     const credential = await this.runtimeCredential(input);
     const cline = await this.core(input.backend);
-    return generateTitle({ ...input, prompt }, cline, credential);
+    return this.agentTelemetry.runOperation(
+      input,
+      "title_generation",
+      () => generateTitle({ ...input, prompt }, cline, credential),
+      credential.authMethod,
+    );
   }
 
   private async initializationCredential(input: InitializeProjectInput) {
@@ -1085,6 +1317,14 @@ export class BlameAgentRuntime {
   private async approveAndMergeStory(
     input: ApproveAndMergeInput,
   ): Promise<ApproveAndMergeResult> {
+    return this.agentTelemetry.runBusinessOperation(input, "merge", () =>
+      this.approveAndMergeStoryOperation(input),
+    );
+  }
+
+  private async approveAndMergeStoryOperation(
+    input: ApproveAndMergeInput,
+  ): Promise<ApproveAndMergeResult> {
     assertRepositoryPath(input.repositoryRoot, "repositoryRoot");
     assertRepositoryPath(input.worktree, "worktree");
     const logFile = approveMergeLogPath(input.worktree);
@@ -1093,6 +1333,20 @@ export class BlameAgentRuntime {
       "approve merge requested",
       approveMergeContext(input),
     );
+    const preparation = await this.prepareStoryMerge(input);
+    await this.commitStoryWork(input);
+    await this.mergeTargetIntoStory(
+      input,
+      preparation.targetBranch,
+      preparation.upstream,
+    );
+    await removeRuntimeEnvChanges(input.worktree, preparation.baseCommit);
+    return this.finalizeStoryMerge(input, logFile, preparation);
+  }
+
+  private async prepareStoryMerge(
+    input: ApproveAndMergeInput,
+  ): Promise<StoryMergePreparation> {
     await assertGitRepository(input.repositoryRoot);
     await assertGitRepository(input.worktree);
     const targetBranch = await currentGitBranch(input.repositoryRoot);
@@ -1104,9 +1358,16 @@ export class BlameAgentRuntime {
       : await integrationWorktree(input.repositoryRoot, targetBranch);
     await pullIntegrationWorktree(integration, upstream);
     const baseCommit = await git(integration, ["rev-parse", "HEAD"]);
-    await this.commitStoryWork(input);
-    await this.mergeTargetIntoStory(input, targetBranch, upstream);
-    await removeRuntimeEnvChanges(input.worktree, baseCommit);
+    return { baseCommit, integration, targetBranch, targetClean, upstream };
+  }
+
+  private async finalizeStoryMerge(
+    input: ApproveAndMergeInput,
+    logFile: string,
+    preparation: StoryMergePreparation,
+  ) {
+    const { baseCommit, integration, targetBranch, targetClean, upstream } =
+      preparation;
     try {
       await git(integration, ["merge", "--ff-only", input.storyBranch]);
       const mergeCommit = await git(integration, ["rev-parse", "HEAD"]);
@@ -1190,13 +1451,19 @@ export class BlameAgentRuntime {
       const startedAt = Date.now();
       const credential = await this.runtimeCredential(input);
       const cline = await this.core(input.backend);
-      const session = await cline.start({
-        prompt: await commitMessagePrompt(input),
-        config: commitMessageConfig(input, credential),
-        interactive: false,
-        source,
-        toolPolicies: initializationToolPolicies(),
-      });
+      const session = await this.agentTelemetry.runOperation(
+        input,
+        "commit_message_generation",
+        async () =>
+          cline.start({
+            prompt: await commitMessagePrompt(input),
+            config: commitMessageConfig(input, credential),
+            interactive: false,
+            source,
+            toolPolicies: initializationToolPolicies(),
+          }),
+        credential.authMethod,
+      );
       const message = commitMessageFromAgentResult(session.result);
       await appendLog(logFile, "commit message agent finished", {
         durationMs: Date.now() - startedAt,
@@ -1311,13 +1578,19 @@ export class BlameAgentRuntime {
     const startedAt = Date.now();
     const credential = await this.runtimeCredential(input);
     const cline = await this.core(input.backend);
-    const session = await cline.start({
-      prompt: await mergeConflictPrompt(input, targetBranch, attempt),
-      config: mergeConflictConfig(input, credential),
-      interactive: false,
-      source: "blame-merge-conflict-resolution",
-      toolPolicies: toolPolicies(true),
-    });
+    const session = await this.agentTelemetry.runOperation(
+      input,
+      "merge_conflict_resolution",
+      async () =>
+        cline.start({
+          prompt: await mergeConflictPrompt(input, targetBranch, attempt),
+          config: mergeConflictConfig(input, credential),
+          interactive: false,
+          source: "blame-merge-conflict-resolution",
+          toolPolicies: toolPolicies(true),
+        }),
+      credential.authMethod,
+    );
     await appendLog(logFile, "merge conflict agent run completed", {
       durationMs: Date.now() - startedAt,
       sessionId: session.sessionId,
@@ -1335,9 +1608,10 @@ export class BlameAgentRuntime {
   }
 
   private async subscribeCoreSession(sessionId: string, cline: ClineCore) {
-    this.unsubscribeSession(sessionId);
+    this.unsubscribeSession(sessionId, true);
     const unsubscribe = await cline.subscribe(
       (payload: CoreSessionEvent) => {
+        this.agentTelemetry.observeCoreEvent(sessionId, payload);
         if (this.shouldSkipFallbackChunk(sessionId, payload)) return;
         const spawnAgentPhase = clineSessionSpawnAgentPhase(payload);
         if (this.shouldSkipSessionDisplayEvent(sessionId, payload)) return;
@@ -1414,30 +1688,75 @@ export class BlameAgentRuntime {
   }
 
   private async handleSessionEvent(sessionId: string, event: AgentEvent) {
+    const activeContext = this.agentTelemetry.context(sessionId);
+    const eventUsage = eventUsageSummary(event);
+    const usage = await this.usageForEvent(sessionId, event, eventUsage);
+    if (event.type === "done" && usage)
+      this.agentTelemetry.recordUsageSummary(sessionId, usage);
+    const qualityContext =
+      event.type === "done"
+        ? this.agentTelemetry.completeModelRequest(sessionId, event.payload)
+        : undefined;
+    if (event.type === "done") {
+      await this.recordSessionQuality(sessionId, qualityContext);
+    }
+    this.agentTelemetry.observeEvent(sessionId, event);
     await this.logSession(
       sessionId,
       `event:${event.type}`,
       eventLogPayload(event),
+      activeContext,
     );
-    const eventUsage = eventUsageSummary(event);
-    if (!eventUsage) return;
-    const usage = eventUsage ?? (await this.readUsage(sessionId));
+    if (!usage) return;
+    await this.handleUsageUpdate(sessionId, usage, activeContext);
+  }
+
+  private async usageForEvent(
+    sessionId: string,
+    event: AgentEvent,
+    eventUsage: AgentUsageSummary | undefined,
+  ) {
+    if (eventUsage || event.type !== "done") return eventUsage;
+    const span = blameTelemetry.startSpan("blame.agent.usage_summary", {
+      parent: this.agentTelemetry.context(sessionId),
+    });
+    try {
+      const usage = await blameTelemetry.withinSpan(span, () =>
+        this.readUsage(sessionId),
+      );
+      span.end();
+      return usage;
+    } catch (error) {
+      span.recordError(error).end("failed");
+      return undefined;
+    }
+  }
+
+  private async handleUsageUpdate(
+    sessionId: string,
+    usage: AgentUsageSummary,
+    activeContext: Context | undefined,
+  ) {
     const usageSignature = JSON.stringify(summarizeUsage(usage));
     if (this.sessionUsageSignatures.get(sessionId) === usageSignature) return;
     this.sessionUsageSignatures.set(sessionId, usageSignature);
     const context = this.sessionContexts.get(sessionId) ?? { sessionId };
-    await this.logSession(sessionId, "usage updated", {
-      ...context,
-      ...summarizeUsage(usage),
-    });
-    recordUsageTelemetry((await this.telemetry())?.telemetry, usage, context);
+    await this.logSession(
+      sessionId,
+      "usage updated",
+      {
+        ...context,
+        ...summarizeUsage(usage),
+      },
+      activeContext,
+    );
     if (!shouldAbortForUsage(usage, this.productionConfig)) return;
     const message = usageLimitMessage(usage, this.productionConfig);
     this.emitSessionError(sessionId, message);
-    await this.abortSession(sessionId);
+    await this.abortSession(sessionId, false);
   }
 
-  private unsubscribeSession(sessionId: string) {
+  private unsubscribeSession(sessionId: string, preserveTelemetry = false) {
     this.unsubscribers.get(sessionId)?.();
     this.unsubscribers.delete(sessionId);
     this.autoApprovedWriteToolSessions.delete(sessionId);
@@ -1451,9 +1770,44 @@ export class BlameAgentRuntime {
     }
     this.sessionUsageSignatures.delete(sessionId);
     this.sessionBackendKeys.delete(sessionId);
+    this.sessionQualityBaselines.delete(sessionId);
     this.sessionStartInputs.delete(sessionId);
     this.structuredEventSessions.delete(sessionId);
+    if (!preserveTelemetry) this.agentTelemetry.remove(sessionId);
     void this.logSession(sessionId, "session unsubscribed");
+  }
+
+  private async recordSessionQuality(
+    sessionId: string,
+    parent: Context | undefined,
+  ) {
+    const cwd = this.sessionStartInputs.get(sessionId)?.config.cwd;
+    const baseline = this.sessionQualityBaselines.get(sessionId);
+    if (!cwd || baseline === undefined) return;
+    const span = blameTelemetry.startSpan("blame.agent.quality", { parent });
+    try {
+      const status = await blameTelemetry.withinSpan(span, () =>
+        workspaceStatus(cwd),
+      );
+      this.agentTelemetry.recordQuality(
+        sessionId,
+        qualityFromStatusDelta(baseline, status),
+      );
+      this.sessionQualityBaselines.set(sessionId, status);
+      span.end();
+    } catch (error) {
+      span.recordError(error).end("failed");
+    }
+  }
+
+  private async captureSessionQualityBaseline(sessionId: string) {
+    const cwd = this.sessionStartInputs.get(sessionId)?.config.cwd;
+    if (!cwd) return;
+    try {
+      this.sessionQualityBaselines.set(sessionId, await workspaceStatus(cwd));
+    } catch {
+      this.sessionQualityBaselines.delete(sessionId);
+    }
   }
 
   private shouldSkipSessionDisplayEvent(
@@ -1545,6 +1899,12 @@ export class BlameAgentRuntime {
 
     return new Promise((resolve) => {
       const approval = toApprovalRequest(request, toolName);
+      if (approval.sessionId) {
+        this.agentTelemetry.humanIntervention(
+          approval.sessionId,
+          "tool_approval",
+        );
+      }
       this.pendingApprovals.set(approval.id, { request: approval, resolve });
       if (approval.sessionId)
         void this.logSession(
@@ -1725,10 +2085,11 @@ export class BlameAgentRuntime {
     sessionId: string,
     message: string,
     payload?: unknown,
+    activeContext: Context | undefined = this.agentTelemetry.context(sessionId),
   ) {
     const file = this.sessionLogFiles.get(sessionId);
     if (!file) return;
-    await appendLog(file, message, payload);
+    await appendLog(file, message, payload, activeContext);
   }
 
   private async ensureHeadroomSidecar(
@@ -1754,17 +2115,11 @@ export class BlameAgentRuntime {
     const clines = Array.from(this.clines.values());
     this.clines.clear();
     this.sessionBackendKeys.clear();
+    this.sessionQualityBaselines.clear();
     this.sessionStartInputs.clear();
     await Promise.allSettled(
       clines.map(async (cline) => (await cline).dispose("Shutting down")),
     );
-  }
-
-  private async disposeTelemetry() {
-    const telemetry = await this.telemetryHandle;
-    await telemetry?.flush();
-    await telemetry?.dispose();
-    this.telemetryHandle = undefined;
   }
 
   private async startDevelopmentSession(input: StartDevelopmentSessionInput) {
@@ -1812,6 +2167,8 @@ export class BlameAgentRuntime {
       enableSpawnAgent: true,
       enableAgentTeams: false,
       backend: input.backend,
+      executionId: input.executionId,
+      storyId: input.storyId,
     });
   }
 
@@ -1833,25 +2190,31 @@ export class BlameAgentRuntime {
     attachments: Pick<SendSessionInput, "userFiles" | "userImages"> = {},
   ) {
     const startedAt = Date.now();
-    const result = cline
-      .send({
-        sessionId,
-        prompt,
-        ...(attachments.userImages?.length
-          ? { userImages: attachments.userImages }
-          : {}),
-        ...(attachments.userFiles?.length
-          ? { userFiles: attachments.userFiles }
-          : {}),
-      })
+    this.agentTelemetry.startModelRequest(sessionId);
+    const activeContext = this.agentTelemetry.context(sessionId);
+    const result = this.agentTelemetry
+      .withinSession(sessionId, () =>
+        cline.send({
+          sessionId,
+          prompt,
+          ...(attachments.userImages?.length
+            ? { userImages: attachments.userImages }
+            : {}),
+          ...(attachments.userFiles?.length
+            ? { userFiles: attachments.userFiles }
+            : {}),
+        }),
+      )
       .then((result: unknown) => {
         void this.logSession(
           sessionId,
           "send resolved",
           sendResultLogPayload(result, Date.now() - startedAt),
+          activeContext,
         );
         const failure = resultFailureMessage(result);
         if (failure) {
+          this.agentTelemetry.fail(sessionId, new Error(failure));
           this.emitSessionError(sessionId, failure);
           return result;
         }
@@ -1864,48 +2227,74 @@ export class BlameAgentRuntime {
       })
       .catch((error: unknown) => {
         const message = errorMessage(error);
-        void this.logSession(sessionId, "send failed", {
-          durationMs: Date.now() - startedAt,
-          errorType: errorType(error),
-          message,
-          status: "failed",
-        });
+        void this.logSession(
+          sessionId,
+          "send failed",
+          {
+            durationMs: Date.now() - startedAt,
+            errorType: errorType(error),
+            message,
+            status: "failed",
+          },
+          activeContext,
+        );
         this.emitSessionError(sessionId, message);
         throw error;
       });
-    void this.logSession(sessionId, "prompt sent", {
-      ...promptMetadata(prompt),
-    });
+    void this.logSession(
+      sessionId,
+      "prompt sent",
+      {
+        ...promptMetadata(prompt),
+      },
+      activeContext,
+    );
     return result;
   }
 
-  private prepareSessionCodeGraph(sessionId: string, worktree: string) {
+  private async prepareSessionCodeGraph(sessionId: string, worktree: string) {
     const provider = this.options.codeReviewGraph;
     if (!provider) return;
-    void this.prepareSessionCodeGraphAsync(sessionId, worktree, provider);
+    try {
+      const status = await provider.status({ worktree });
+      this.agentTelemetry.setRepositoryCohorts(
+        sessionId,
+        status.languages,
+        status.files,
+      );
+      this.emitCodeGraphNotice(sessionId, status);
+      if (status.state !== "missing" && status.state !== "stale") return;
+      if (!status.available) return;
+      void this.updateSessionCodeGraph(sessionId, worktree, provider);
+    } catch (error) {
+      this.emitCodeGraphUnavailable(sessionId, error);
+    }
   }
 
-  private async prepareSessionCodeGraphAsync(
+  private async updateSessionCodeGraph(
     sessionId: string,
     worktree: string,
     provider: CodeReviewGraphProvider,
   ) {
+    this.emitSessionNotice(sessionId, "Code graph building");
     try {
-      const status = await provider.status({ worktree });
-      this.emitCodeGraphNotice(sessionId, status);
-      if (status.state !== "missing" && status.state !== "stale") return;
-      if (!status.available) return;
-      this.emitSessionNotice(sessionId, "Code graph building");
-      this.emitCodeGraphNotice(
+      const updatedStatus = await provider.update({ waitMs: 30_000, worktree });
+      this.agentTelemetry.setRepositoryCohorts(
         sessionId,
-        await provider.update({ waitMs: 30_000, worktree }),
+        updatedStatus.languages,
+        updatedStatus.files,
       );
+      this.emitCodeGraphNotice(sessionId, updatedStatus);
     } catch (error) {
-      this.emitSessionNotice(
-        sessionId,
-        `Code graph unavailable: ${errorMessage(error)}`,
-      );
+      this.emitCodeGraphUnavailable(sessionId, error);
     }
+  }
+
+  private emitCodeGraphUnavailable(sessionId: string, error: unknown) {
+    this.emitSessionNotice(
+      sessionId,
+      `Code graph unavailable: ${errorMessage(error)}`,
+    );
   }
 
   private emitCodeGraphNotice(sessionId: string, status: CodeGraphStatus) {
@@ -1964,6 +2353,15 @@ function normalizeEvent(
   if (event.type === "agent_event")
     return normalizeAgentEvent(event, sessionId);
   return { type: "raw", sessionId, payload: event };
+}
+
+async function waitForTelemetryCohorts(preparation: Promise<void>) {
+  let timeout: NodeJS.Timeout | undefined;
+  const deadline = new Promise<void>((resolve) => {
+    timeout = setTimeout(resolve, 200);
+  });
+  await Promise.race([preparation, deadline]);
+  if (timeout) clearTimeout(timeout);
 }
 
 export function shouldDisplayClineSessionEvent(
@@ -2128,6 +2526,75 @@ function projectInitializationSubmitTool(): ProjectInitializationSubmitTool {
     },
   };
   return submit;
+}
+
+async function collectProjectInitializationAttempt(
+  cline: ClineCore,
+  session: RuntimeClineResult,
+  submitTool: ProjectInitializationSubmitTool,
+): Promise<ProjectInitializationAttempt> {
+  const submittedInput =
+    submitTool.input ??
+    projectInitializationInputFromResult(session.result) ??
+    (await projectInitializationInputFromMessages(cline, session.sessionId));
+  const result = submittedInput ?? session.result?.text;
+  if (!result)
+    throw new Error("Project initialization agent did not return a result");
+  return { result, sessionId: session.sessionId, submittedInput };
+}
+
+function parseProjectInitializationAttempt(
+  attempt: ProjectInitializationAttempt,
+  scan: ProjectInitializationScan,
+  input: InitializeProjectInput,
+) {
+  const initialization = attempt.submittedInput
+    ? parseProjectInitializationPayload(
+        attempt.submittedInput,
+        scan,
+        input.preferences,
+      )
+    : parseProjectInitializationResult(
+        String(attempt.result),
+        scan,
+        input.preferences,
+      );
+  return { sessionId: attempt.sessionId, ...initialization };
+}
+
+function projectInitializationRepairAttempt(
+  session: RuntimeClineResult,
+): ProjectInitializationRepairAttempt {
+  const text = session.result?.text;
+  if (!text)
+    throw new Error(
+      "Project initialization repair agent did not return a result",
+    );
+  return { sessionId: session.sessionId, text };
+}
+
+function parseProjectInitializationRepairAttempt(
+  attempt: ProjectInitializationRepairAttempt,
+  scan: ProjectInitializationScan,
+) {
+  return {
+    sessionId: attempt.sessionId,
+    ...parseProjectInitializationRepairResult(attempt.text, scan),
+  };
+}
+
+function initializationCorrection(
+  previousResult: unknown,
+  error: unknown,
+): InitializationCorrection {
+  const serializedResult =
+    typeof previousResult === "string"
+      ? previousResult
+      : JSON.stringify(previousResult);
+  return {
+    previousResult: serializedResult ?? String(previousResult),
+    validationError: errorMessage(error),
+  };
 }
 
 function runtimeTools(
@@ -3246,6 +3713,59 @@ function splitLines(value: string) {
   return value.split("\n").filter(Boolean);
 }
 
+export function qualityFromStatus(status: string) {
+  return qualityFromStatusDelta("", status);
+}
+
+export function qualityFromStatusDelta(baseline: string, status: string) {
+  const baselinePaths = new Set(
+    statusEntries(baseline).map(({ path }) => path),
+  );
+  const entries = statusEntries(status).filter(
+    ({ path }) => !baselinePaths.has(path),
+  );
+  return {
+    filesModified: new Set(entries.map((entry) => entry.path)).size,
+    testsAdded: entries.filter(
+      (entry) => entry.added && testFilePath(entry.path),
+    ).length,
+  };
+}
+
+function statusEntries(status: string) {
+  return splitLines(status).map(statusEntry);
+}
+
+function statusEntry(line: string) {
+  const separator = line[2] === " " ? 2 : line[1] === " " ? 1 : 2;
+  const status = line.slice(0, separator);
+  const path =
+    line
+      .slice(separator + 1)
+      .split(" -> ")
+      .at(-1) ?? "";
+  return {
+    added: status === "??" || status.includes("A"),
+    path,
+  };
+}
+
+function testFilePath(path: string) {
+  return /(?:^|\/)(?:__tests__|tests?)\/|\.(?:spec|test)\.[^/]+$/i.test(path);
+}
+
+function sessionTaskComplexity(
+  input: Pick<SendSessionInput, "prompt" | "userFiles" | "userImages">,
+) {
+  const attachmentCount =
+    (input.userFiles?.length ?? 0) + (input.userImages?.length ?? 0);
+  return taskComplexityBucket(input.prompt.length, attachmentCount);
+}
+
+function workspaceStatus(cwd: string) {
+  return git(cwd, ["status", "--porcelain=v1", "--untracked-files=all"]);
+}
+
 function unresolvedMergeConflictMessage(conflicts: string[]) {
   return `Merge conflict agent finished with unresolved conflicts: ${conflicts.join(", ")}`;
 }
@@ -3258,7 +3778,7 @@ async function git(cwd: string, args: string[]) {
     const { stdout } = await execFileAsync("git", args, {
       cwd,
       env: {
-        ...process.env,
+        ...withoutTelemetryEnvironment(process.env),
         GIT_TERMINAL_PROMPT: "0",
         GIT_SSH_COMMAND:
           process.platform === "win32"
@@ -3459,12 +3979,17 @@ function headroomRequestLogPath(cwd: string) {
   return join(cwd, ".blame", "logs", "headroom-requests.jsonl");
 }
 
-async function appendLog(file: string, message: string, payload?: unknown) {
+async function appendLog(
+  file: string,
+  message: string,
+  payload?: unknown,
+  activeContext?: import("@blame/telemetry").Context,
+) {
   try {
     await mkdir(dirname(file), { recursive: true });
     await appendFile(
       file,
-      `${JSON.stringify(logLine(message, safeLogPayload(payload)))}\n`,
+      `${JSON.stringify(logLine(message, safeLogPayload(payload), activeContext))}\n`,
       "utf8",
     );
   } catch {
@@ -3472,12 +3997,26 @@ async function appendLog(file: string, message: string, payload?: unknown) {
   }
 }
 
-function logLine(message: string, payload?: unknown) {
-  return {
-    ts: new Date().toISOString(),
-    message,
-    payload,
-  };
+function logLine(
+  message: string,
+  payload?: unknown,
+  activeContext?: import("@blame/telemetry").Context,
+) {
+  return blameTelemetry.structuredLog(
+    logSeverity(payload),
+    logEventName(message),
+    safeLogPayload(payload),
+    activeContext,
+  );
+}
+
+function logEventName(message: string) {
+  return `blame.agent.${message.replace(/[^a-zA-Z0-9_.-]/g, "_")}`;
+}
+
+function logSeverity(payload: unknown) {
+  const status = stringValue(asRecord(payload).status);
+  return status === "failed" || status === "error" ? "error" : "info";
 }
 
 function resultFailureMessage(result: unknown) {

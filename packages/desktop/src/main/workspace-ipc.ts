@@ -3,7 +3,39 @@ import { createHash, randomUUID } from "node:crypto";
 import { readdir, readFile, stat } from "node:fs/promises";
 import { dirname, join, posix, relative, resolve, sep } from "node:path";
 import { BrowserWindow, ipcMain } from "electron";
-import { commandWithNextWebpackFallback } from "@blame/agent-runtime";
+import {
+  commandWithNextWebpackFallback,
+  type ExecutionTelemetryCohorts,
+} from "@blame/agent-runtime";
+import {
+  ATTR_BLAME_AGENT_ROLE,
+  ATTR_BLAME_AGENT_STRATEGY,
+  ATTR_BLAME_EXECUTION_ID,
+  ATTR_BLAME_EXECUTION_KIND,
+  ATTR_BLAME_EXECUTION_STATUS,
+  ATTR_BLAME_MULTI_AGENT_ENABLED,
+  ATTR_BLAME_MULTI_AGENT_USED,
+  ATTR_BLAME_OPERATION_NAME,
+  ATTR_BLAME_REPOSITORY_LANGUAGE,
+  ATTR_BLAME_REPOSITORY_SIZE_BUCKET,
+  ATTR_BLAME_STORY_ID,
+  ATTR_BLAME_TASK_COMPLEXITY_BUCKET,
+  ATTR_BLAME_WORKTREE_ID,
+  ATTR_ERROR_TYPE,
+  ATTR_GEN_AI_PROVIDER_NAME,
+  ATTR_GEN_AI_REQUEST_MODEL,
+  boundedMetricDimensionName,
+  getBlameTelemetry,
+  getExecutionRegistry,
+  errorAttributes,
+  opaqueIdentifier,
+  semanticGenAiProviderName,
+  withoutTelemetryEnvironment,
+  type BlameSpan,
+  type ExecutionComponent,
+  type ExecutionDescriptor,
+  type TelemetryOutcome,
+} from "@blame/telemetry";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import { generateNewProjectWithAgent } from "./agent-ipc";
 import {
@@ -12,6 +44,10 @@ import {
 } from "./attachment-ai-context";
 import { cleanupCodeReviewGraphWorktree } from "./code-review-graph";
 import { pLimit } from "./concurrency.ts";
+import {
+  repositoryTelemetryCohorts,
+  type RepositoryTelemetryCohorts,
+} from "./repository-telemetry-cohorts";
 import {
   containerRuntimeEnvironment,
   createContainerRuntime,
@@ -95,12 +131,52 @@ import {
   ensureRuntimeGitUserIdentity,
   resetRuntimeGitIdentityConfigured,
 } from "./workspace-runtime";
+import {
+  startWorkspaceStep,
+  traceWorkspaceStep,
+} from "./workspace-step-telemetry";
 
 const previewStartupIntervalMs = 1_000;
+const repositoryLanguageCohorts = new Set([
+  "c",
+  "cpp",
+  "csharp",
+  "css",
+  "dart",
+  "go",
+  "html",
+  "java",
+  "javascript",
+  "kotlin",
+  "mixed",
+  "other",
+  "php",
+  "python",
+  "ruby",
+  "rust",
+  "shell",
+  "swift",
+  "typescript",
+  "vue",
+]);
+const repositorySizeCohorts = new Set([
+  "small",
+  "medium",
+  "large",
+  "very_large",
+]);
+const taskComplexityCohorts = new Set(["small", "medium", "large"]);
+const repositoryTelemetryCache = new Map<
+  string,
+  Promise<RepositoryTelemetryCohorts | undefined>
+>();
 const forceKillDelayMs = 1_500;
 const previewResolveTimeoutMs = 45_000;
 const composeUpRetryDelaysMs = [2_000, 5_000, 10_000, 15_000];
 const setupEnvironmentCacheTtlMs = 2_000;
+const worktreeSetupOperationName = "blame.worktree.setup";
+const projectSetupOperationName = "blame.project.setup";
+const previewStartOperationName = "blame.preview.start";
 const composeCallPromises = new Map<string, Promise<unknown>>();
 const globalPreviewVolumes = [
   "blame_bun_cache",
@@ -162,13 +238,21 @@ type GitCommitInput = {
   root: string;
 };
 
-type CreateWorktreeInput = {
+type ExecutionContextInput = {
+  executionId: string;
+  storyId?: string;
+  telemetryCohorts?: ExecutionTelemetryCohorts;
+};
+
+type CreateWorktreeInput = ExecutionContextInput & {
   repositoryRoot: string;
   storyId: string;
+  storyReference: string;
   title: string;
 };
 
-type RunProjectSetupInput = {
+type RunProjectSetupInput = ExecutionContextInput & {
+  storyId: string;
   worktree: string;
   setupScript: string;
   dockerCompose: string;
@@ -197,6 +281,9 @@ type RemoveWorktreeInput = {
 type ResolveProjectPreviewUrlInput = {
   worktree: string;
 };
+
+type EnsureProjectPreviewUrlInput = ExecutionContextInput &
+  ResolveProjectPreviewUrlInput;
 
 type ComposeService = {
   command?: string | string[];
@@ -248,7 +335,34 @@ type RuntimeContainer = {
 type SetupRun = {
   id: string;
   process: ChildProcessWithoutNullStreams;
+  processSpan: BlameSpan;
   startedAt: number;
+  telemetry: ExecutionOperation;
+  worktree: string;
+};
+
+type ExecutionOperation = {
+  component: ExecutionComponent;
+  descriptor: ExecutionDescriptor;
+  finished: boolean;
+  operationName: string;
+};
+
+type ProjectSetupFiles = {
+  composePath: string;
+  directory: string;
+  dockerCompose: string;
+  scriptPath: string;
+  setupScript: string;
+  symlinkEnvMounts: Awaited<ReturnType<typeof envHostFileMounts>>;
+  worktree: string;
+};
+
+type WorktreeCreationContext = {
+  branch: string;
+  repositoryRoot: string;
+  startedAt: number;
+  timings: Array<{ duration: number; label: string }>;
   worktree: string;
 };
 
@@ -450,7 +564,7 @@ export function registerWorkspaceIpcHandlers() {
   );
   ipcMain.handle(
     "workspace:ensure-project-preview-url",
-    (_event, input: ResolveProjectPreviewUrlInput) =>
+    (_event, input: EnsureProjectPreviewUrlInput) =>
       ensureProjectPreviewUrl(input),
   );
   ipcMain.handle(
@@ -1015,13 +1129,46 @@ async function gitRepositoryFingerprint(root: string) {
 }
 
 async function createWorktree(input: CreateWorktreeInput) {
-  const repositoryRoot = resolveRuntimePath(input.repositoryRoot);
-  const branch = storyBranch(input.storyId, input.title);
-  const worktree = worktreePath(input);
-  const timings: Array<{ duration: number; label: string }> = [];
-  const startedAt = Date.now();
-  let created = false;
+  const operation = beginExecutionOperation(
+    input,
+    worktreeSetupOperationName,
+    createWorktreePath(input),
+  );
+  const cohorts = enrichExecutionRepositoryCohorts(
+    operation,
+    input.repositoryRoot,
+  );
+  return runExecutionOperation(operation, async () => {
+    const result = await createWorktreeOperation(input);
+    await waitForRepositoryCohorts(cohorts);
+    return result;
+  });
+}
 
+async function createWorktreeOperation(input: CreateWorktreeInput) {
+  const context = worktreeCreationContext(input);
+  await prepareWorktreeCreation(context);
+  if (await reuseRegisteredWorktree(context)) return worktreeResult(context);
+  await assertWorktreePathAvailable(context);
+  await addStoryWorktree(context);
+  await completeWorktreeCreation(context);
+  return worktreeResult(context);
+}
+
+function worktreeCreationContext(
+  input: CreateWorktreeInput,
+): WorktreeCreationContext {
+  return {
+    branch: storyBranch(input.storyReference, input.title),
+    repositoryRoot: resolveRuntimePath(input.repositoryRoot),
+    startedAt: Date.now(),
+    timings: [],
+    worktree: createWorktreePath(input),
+  };
+}
+
+async function prepareWorktreeCreation(context: WorktreeCreationContext) {
+  const { repositoryRoot, timings, worktree } = context;
   await timedWorktreeCreateStep(timings, "git safe directory", () =>
     ensureRuntimeGitSafeDirectory(repositoryRoot),
   );
@@ -1031,68 +1178,68 @@ async function createWorktree(input: CreateWorktreeInput) {
   await timedWorktreeCreateStep(timings, "worktree parent mkdir", () =>
     mkdirRuntime(dirnameWorkspacePath(worktree)),
   );
+}
 
-  if (
-    await timedWorktreeCreateStep(timings, "worktree registered check", () =>
-      worktreeRegistered(repositoryRoot, worktree),
-    )
-  ) {
-    await timedWorktreeCreateStep(timings, "env sync", () =>
-      syncProjectEnvFiles(repositoryRoot, worktree),
-    );
-    invalidateSetupEnvironment(worktree);
-    removedWorktrees.delete(worktree);
-    await appendWorktreeCreateTimings(worktree, timings, startedAt);
-    return { worktree, branch };
-  }
-
-  if (
-    await timedWorktreeCreateStep(timings, "worktree path exists check", () =>
-      runtimePathExists(worktree),
-    )
-  ) {
-    throw new Error("Worktree directory already exists but is not registered");
-  }
-
-  if (
-    await timedWorktreeCreateStep(timings, "branch exists check", () =>
-      branchExists(repositoryRoot, branch),
-    )
-  ) {
-    await timedWorktreeCreateStep(
-      timings,
-      "git worktree add existing branch",
-      () =>
-        runRuntimeGit(repositoryRoot, ["worktree", "add", worktree, branch]),
-    );
-    created = true;
-    await timedWorktreeCreateStep(timings, "env sync", () =>
-      syncProjectEnvFiles(repositoryRoot, worktree),
-    );
-    invalidateSetupEnvironment(worktree);
-    removedWorktrees.delete(worktree);
-    await appendWorktreeCreateTimings(worktree, timings, startedAt);
-    return { worktree, branch };
-  }
-
-  await timedWorktreeCreateStep(timings, "git worktree add new branch", () =>
-    runRuntimeGit(repositoryRoot, [
-      "worktree",
-      "add",
-      "-b",
-      branch,
-      worktree,
-      "HEAD",
-    ]),
+async function reuseRegisteredWorktree(context: WorktreeCreationContext) {
+  const { repositoryRoot, timings, worktree } = context;
+  const registered = await timedWorktreeCreateStep(
+    timings,
+    "worktree registered check",
+    () => worktreeRegistered(repositoryRoot, worktree),
   );
-  created = true;
+  if (!registered) return false;
+  await completeWorktreeCreation(context);
+  return true;
+}
+
+async function assertWorktreePathAvailable(context: WorktreeCreationContext) {
+  const exists = await timedWorktreeCreateStep(
+    context.timings,
+    "worktree path exists check",
+    () => runtimePathExists(context.worktree),
+  );
+  if (exists)
+    throw new Error("Worktree directory already exists but is not registered");
+}
+
+async function addStoryWorktree(context: WorktreeCreationContext) {
+  const { branch, repositoryRoot, timings, worktree } = context;
+  const existing = await timedWorktreeCreateStep(
+    timings,
+    "branch exists check",
+    () => branchExists(repositoryRoot, branch),
+  );
+  const label = existing
+    ? "git worktree add existing branch"
+    : "git worktree add new branch";
+  const args = existing
+    ? ["worktree", "add", worktree, branch]
+    : ["worktree", "add", "-b", branch, worktree, "HEAD"];
+  await timedWorktreeCreateStep(timings, label, () =>
+    runRuntimeGit(repositoryRoot, args),
+  );
+}
+
+async function completeWorktreeCreation(context: WorktreeCreationContext) {
+  const { repositoryRoot, startedAt, timings, worktree } = context;
   await timedWorktreeCreateStep(timings, "env sync", () =>
     syncProjectEnvFiles(repositoryRoot, worktree),
   );
   invalidateSetupEnvironment(worktree);
   removedWorktrees.delete(worktree);
-  if (created) await appendWorktreeCreateTimings(worktree, timings, startedAt);
-  return { worktree, branch };
+  await appendWorktreeCreateTimings(worktree, timings, startedAt);
+}
+
+function worktreeResult(context: WorktreeCreationContext) {
+  return { branch: context.branch, worktree: context.worktree };
+}
+
+function createWorktreePath(input: CreateWorktreeInput) {
+  return worktreePath({
+    repositoryRoot: input.repositoryRoot,
+    storyId: input.storyReference,
+    title: input.title,
+  });
 }
 
 async function timedWorktreeCreateStep<T>(
@@ -1102,7 +1249,7 @@ async function timedWorktreeCreateStep<T>(
 ) {
   const start = Date.now();
   try {
-    return await action();
+    return await traceWorkspaceStep(label, action);
   } finally {
     timings.push({ duration: Date.now() - start, label });
   }
@@ -1126,11 +1273,211 @@ async function appendWorktreeCreateTimings(
   );
 }
 
+function beginExecutionOperation(
+  input: ExecutionContextInput,
+  operationName: string,
+  worktree?: string,
+): ExecutionOperation {
+  const descriptor = executionDescriptor(input, worktree);
+  const component = getExecutionRegistry().beginComponent(
+    descriptor,
+    operationName,
+    { [ATTR_BLAME_OPERATION_NAME]: operationName },
+  );
+  return {
+    component,
+    descriptor,
+    finished: false,
+    operationName,
+  };
+}
+
+async function runExecutionOperation<T>(
+  operation: ExecutionOperation,
+  action: () => Promise<T>,
+  outcome = (_result: T): TelemetryOutcome => "succeeded",
+) {
+  return getBlameTelemetry().withinSpan(operation.component.span, async () => {
+    try {
+      const result = await action();
+      finishExecutionOperation(operation, outcome(result));
+      return result;
+    } catch (error) {
+      finishExecutionOperation(operation, "failed", error);
+      throw error;
+    }
+  });
+}
+
+function finishExecutionOperation(
+  operation: ExecutionOperation,
+  outcome: TelemetryOutcome,
+  error?: unknown,
+) {
+  if (operation.finished) return;
+  operation.finished = true;
+  recordOperationMetrics(
+    operation.component.span,
+    operation.operationName,
+    outcome,
+    error,
+    operation.descriptor,
+  );
+  if (outcome === "failed") operation.component.fail(error ?? new Error());
+  else if (outcome === "canceled") operation.component.cancel();
+  else operation.component.succeed();
+}
+
+function executionDescriptor(
+  input: ExecutionContextInput,
+  worktree?: string,
+): ExecutionDescriptor {
+  return {
+    attributes: executionCohortAttributes(input.telemetryCohorts),
+    executionId: input.executionId,
+    storyId: input.storyId,
+    worktreeId: worktree ? opaqueIdentifier(worktree) : undefined,
+  };
+}
+
+function executionCohortAttributes(
+  cohorts: ExecutionTelemetryCohorts | undefined,
+) {
+  const workspaceAttributes = { [ATTR_BLAME_EXECUTION_KIND]: "workspace" };
+  if (!cohorts) return workspaceAttributes;
+  const strategy = boundedAgentStrategy(cohorts.agentStrategy);
+  return {
+    ...workspaceAttributes,
+    [ATTR_BLAME_AGENT_ROLE]: "lead",
+    [ATTR_BLAME_AGENT_STRATEGY]: strategy,
+    [ATTR_BLAME_MULTI_AGENT_ENABLED]: strategy === "multi_agent",
+    [ATTR_BLAME_MULTI_AGENT_USED]: false,
+    [ATTR_BLAME_REPOSITORY_LANGUAGE]: boundedRepositoryLanguage(
+      cohorts.repositoryLanguage,
+    ),
+    [ATTR_BLAME_REPOSITORY_SIZE_BUCKET]: boundedCohortValue(
+      cohorts.repositorySizeBucket,
+      repositorySizeCohorts,
+    ),
+    [ATTR_BLAME_TASK_COMPLEXITY_BUCKET]: boundedCohortValue(
+      cohorts.taskComplexityBucket,
+      taskComplexityCohorts,
+    ),
+    [ATTR_GEN_AI_PROVIDER_NAME]: semanticGenAiProviderName(cohorts.providerId),
+    [ATTR_GEN_AI_REQUEST_MODEL]: boundedMetricDimensionName(cohorts.modelId),
+  };
+}
+
+function boundedAgentStrategy(value: string) {
+  return value === "multi_agent" ? value : "single_agent";
+}
+
+function boundedRepositoryLanguage(value: string | undefined) {
+  if (!value) return undefined;
+  return repositoryLanguageCohorts.has(value) ? value : "other";
+}
+
+function boundedCohortValue(value: string | undefined, allowed: Set<string>) {
+  return value && allowed.has(value) ? value : undefined;
+}
+
+async function enrichExecutionRepositoryCohorts(
+  operation: ExecutionOperation,
+  repositoryRoot: string,
+) {
+  const cohorts = await loadRepositoryTelemetryCohorts(repositoryRoot);
+  if (!cohorts) return;
+  const attributes = {
+    [ATTR_BLAME_REPOSITORY_LANGUAGE]: cohorts.repositoryLanguage,
+    [ATTR_BLAME_REPOSITORY_SIZE_BUCKET]: cohorts.repositorySizeBucket,
+  };
+  operation.descriptor.attributes = {
+    ...operation.descriptor.attributes,
+    ...attributes,
+  };
+  getExecutionRegistry().setAttributes(
+    operation.descriptor.executionId,
+    attributes,
+  );
+}
+
+function loadRepositoryTelemetryCohorts(repositoryRoot: string) {
+  const root = resolveRuntimePath(repositoryRoot);
+  const cached = repositoryTelemetryCache.get(root);
+  if (cached) return cached;
+  const pending = readRepositoryTelemetryCohorts(root);
+  repositoryTelemetryCache.set(root, pending);
+  void pending.then((cohorts) => {
+    if (!cohorts) repositoryTelemetryCache.delete(root);
+  });
+  return pending;
+}
+
+async function readRepositoryTelemetryCohorts(root: string) {
+  try {
+    const result = await runRuntime("git", ["ls-files", "-z"], { cwd: root });
+    return repositoryTelemetryCohorts(result.stdout);
+  } catch {
+    return undefined;
+  }
+}
+
+async function waitForRepositoryCohorts(preparation: Promise<void>) {
+  let timeout: NodeJS.Timeout | undefined;
+  const deadline = new Promise<void>((resolve) => {
+    timeout = setTimeout(resolve, 100);
+  });
+  await Promise.race([preparation, deadline]);
+  if (timeout) clearTimeout(timeout);
+}
+
 async function runProjectSetup(input: RunProjectSetupInput) {
+  const operation = beginExecutionOperation(
+    input,
+    projectSetupOperationName,
+    input.worktree,
+  );
+  void enrichExecutionRepositoryCohorts(operation, input.worktree);
+  try {
+    return await getBlameTelemetry().withinSpan(operation.component.span, () =>
+      runProjectSetupOperation(input, operation),
+    );
+  } catch (error) {
+    finishExecutionOperation(operation, "failed", error);
+    throw error;
+  }
+}
+
+async function runProjectSetupOperation(
+  input: RunProjectSetupInput,
+  operation: ExecutionOperation,
+) {
   const worktree = resolveRuntimePath(input.worktree);
   const env = await setupEnvironment(worktree);
   const setupScript = setupScriptWithoutDockerRuntimeChecks(input.setupScript);
-  if (!input.hostDependenciesChecked) {
+  await validateProjectSetup(
+    worktree,
+    setupScript,
+    env,
+    input.hostDependenciesChecked,
+  );
+  const scriptPath = await prepareProjectSetupFiles(
+    worktree,
+    setupScript,
+    input.dockerCompose,
+  );
+  return timedRecoveryStep(worktree, "setup process spawn", () =>
+    startProjectSetupProcess(worktree, scriptPath, env, operation),
+  );
+}
+
+async function validateProjectSetup(
+  worktree: string,
+  setupScript: string,
+  env: NodeJS.ProcessEnv,
+  hostDependenciesChecked?: boolean,
+) {
+  if (!hostDependenciesChecked) {
     await timedRecoveryStep(worktree, "host dependencies", () =>
       assertHostDependencies({ env, setupScript }),
     );
@@ -1138,6 +1485,13 @@ async function runProjectSetup(input: RunProjectSetupInput) {
   await timedRecoveryStep(worktree, "git repository check", () =>
     assertGitRepository(worktree),
   );
+}
+
+async function prepareProjectSetupFiles(
+  worktree: string,
+  setupScript: string,
+  dockerCompose: string,
+) {
   const directory = joinWorkspacePath(worktree, ".blame", "initialization");
   const scriptPath = joinWorkspacePath(directory, "setup.sh");
   const composePath = joinWorkspacePath(directory, "docker-compose.yml");
@@ -1149,27 +1503,45 @@ async function runProjectSetup(input: RunProjectSetupInput) {
     "env file scan",
     () => envHostFileMounts(worktree),
   );
+  await writeProjectSetupFiles({
+    composePath,
+    directory,
+    dockerCompose,
+    scriptPath,
+    setupScript,
+    symlinkEnvMounts,
+    worktree,
+  });
+  return scriptPath;
+}
 
-  await timedRecoveryStep(worktree, "initialization files", async () => {
-    await timedRecoveryStep(worktree, "initialization directory mkdir", () =>
-      mkdirRuntime(directory),
+async function writeProjectSetupFiles(input: ProjectSetupFiles) {
+  await timedRecoveryStep(input.worktree, "initialization files", async () => {
+    await timedRecoveryStep(
+      input.worktree,
+      "initialization directory mkdir",
+      () => mkdirRuntime(input.directory),
     );
-    await timedRecoveryStep(worktree, "setup script write", () =>
-      writeRuntimeFile(scriptPath, setupScript),
+    await timedRecoveryStep(input.worktree, "setup script write", () =>
+      writeRuntimeFile(input.scriptPath, input.setupScript),
     );
-    const compose = await timedRecoveryStep(worktree, "compose prepare", () =>
-      prepareProjectCompose(worktree, input.dockerCompose, symlinkEnvMounts),
+    const compose = await prepareProjectSetupCompose(input);
+    await timedRecoveryStep(input.worktree, "compose file write", () =>
+      writeRuntimeFile(input.composePath, compose),
     );
-    await timedRecoveryStep(worktree, "compose file write", () =>
-      writeRuntimeFile(composePath, compose),
-    );
-    await timedRecoveryStep(worktree, "setup script chmod", () =>
-      chmodRuntime(scriptPath, 0o755),
+    await timedRecoveryStep(input.worktree, "setup script chmod", () =>
+      chmodRuntime(input.scriptPath, 0o755),
     );
   });
+}
 
-  return timedRecoveryStep(worktree, "setup process spawn", () =>
-    startProjectSetupProcess(worktree, scriptPath, env),
+function prepareProjectSetupCompose(input: ProjectSetupFiles) {
+  return timedRecoveryStep(input.worktree, "compose prepare", () =>
+    prepareProjectCompose(
+      input.worktree,
+      input.dockerCompose,
+      input.symlinkEnvMounts,
+    ),
   );
 }
 
@@ -1177,31 +1549,47 @@ function startProjectSetupProcess(
   worktree: string,
   scriptPath: string,
   env: NodeJS.ProcessEnv,
+  telemetry: ExecutionOperation,
 ) {
   const runId = randomUUID();
   const child = spawnRuntime("bash", [scriptPath], {
     cwd: worktree,
     env,
   });
+  const processSpan = startWorkspaceStep(
+    "setup process runtime",
+    telemetry.component.span.context,
+  );
   trackWorkspaceProcess(child);
   setupRuns.set(runId, {
     id: runId,
     process: child,
+    processSpan,
     startedAt: Date.now(),
+    telemetry,
     worktree,
   });
+  registerProjectSetupProcessEvents(child, runId, worktree);
+  return { runId };
+}
 
+function registerProjectSetupProcessEvents(
+  child: ChildProcessWithoutNullStreams,
+  runId: string,
+  worktree: string,
+) {
   child.stdout.on("data", (data: Buffer) =>
     emitSetupOutput(runId, worktree, "stdout", data.toString()),
   );
   child.stderr.on("data", (data: Buffer) =>
     emitSetupOutput(runId, worktree, "stderr", data.toString()),
   );
+  child.once("error", (error) => {
+    failProjectSetupProcess(runId, worktree, error);
+  });
   child.on("exit", (code) => {
     void completeProjectSetup(runId, worktree, code);
   });
-
-  return { runId };
 }
 
 function setupScriptWithoutDockerRuntimeChecks(script: string) {
@@ -1219,24 +1607,40 @@ async function completeProjectSetup(
   code: number | null,
 ) {
   const run = setupRuns.get(runId);
-  if (run) {
-    await appendTimingLog(
-      worktree,
-      "setup process runtime",
-      Date.now() - run.startedAt,
-    );
-  }
-  if (code !== 0) {
-    setupRuns.delete(runId);
-    emitSetupOutput(runId, worktree, "exit", String(code ?? ""));
-    return;
-  }
+  if (!run) return;
+  finishSetupProcessSpan(run, code);
+  await getBlameTelemetry().withinSpan(
+    run.telemetry.component.span,
+    async () => {
+      run.telemetry.component.span.setAttributes({
+        "process.exit.code": code ?? -1,
+      });
+      await appendTimingLog(
+        worktree,
+        "setup process runtime",
+        Date.now() - run.startedAt,
+      );
+      if (code === 0) return completeSuccessfulProjectSetup(run);
+      finishSetupRun(run, "failed", new Error("Project setup process failed"));
+      emitSetupOutput(runId, worktree, "exit", String(code ?? ""));
+    },
+  );
+}
 
+function finishSetupProcessSpan(run: SetupRun, code: number | null) {
+  const outcome = code === 0 ? "succeeded" : "failed";
+  run.processSpan.setAttributes({
+    "process.exit.code": code ?? -1,
+    ...(outcome === "failed" ? { [ATTR_ERROR_TYPE]: "Error" } : {}),
+  });
+  run.processSpan.end(outcome);
+}
+
+async function completeSuccessfulProjectSetup(run: SetupRun) {
+  const { id: runId, worktree } = run;
   try {
-    const existingPreviewUrl = await labeledContainerPreviewUrl(worktree);
-    if (!existingPreviewUrl) await startProjectCompose(worktree);
-    else await startProjectLogStream(worktree);
-    setupRuns.delete(runId);
+    await traceSetupPreview(run, () => completeSetupPreview(worktree));
+    finishSetupRun(run, "succeeded");
     emitSetupOutput(
       runId,
       worktree,
@@ -1246,10 +1650,160 @@ async function completeProjectSetup(
     emitSetupOutput(runId, worktree, "exit", "0");
   } catch (error) {
     await stopProjectLogStream(worktree);
-    setupRuns.delete(runId);
+    finishSetupRun(run, "failed", error);
     emitSetupOutput(runId, worktree, "stderr", errorMessage(error));
     emitSetupOutput(runId, worktree, "exit", "1");
   }
+}
+
+async function completeSetupPreview(worktree: string) {
+  const existingPreviewUrl = await labeledContainerPreviewUrl(worktree);
+  if (!existingPreviewUrl) return startProjectCompose(worktree);
+  await startProjectLogStream(worktree);
+  return existingPreviewUrl;
+}
+
+function failProjectSetupProcess(
+  runId: string,
+  worktree: string,
+  error: unknown,
+) {
+  const run = setupRuns.get(runId);
+  if (!run) return;
+  finishSetupRun(run, "failed", error);
+  emitSetupOutput(runId, worktree, "stderr", errorMessage(error));
+  emitSetupOutput(runId, worktree, "exit", "1");
+}
+
+function finishSetupRun(
+  run: SetupRun,
+  outcome: TelemetryOutcome,
+  error?: unknown,
+) {
+  setupRuns.delete(run.id);
+  run.processSpan.end(outcome);
+  finishExecutionOperation(run.telemetry, outcome, error);
+}
+
+async function traceSetupPreview<T>(run: SetupRun, action: () => Promise<T>) {
+  const telemetry = getBlameTelemetry();
+  const operationName = previewStartOperationName;
+  const span = telemetry.startSpan(operationName, {
+    attributes: operationSpanAttributes(
+      run.telemetry.descriptor,
+      operationName,
+    ),
+    parent: run.telemetry.component.span.context,
+  });
+  return telemetry.withinSpan(span, () =>
+    runSpanOperation(span, operationName, run.telemetry.descriptor, action),
+  );
+}
+
+async function runSpanOperation<T>(
+  span: BlameSpan,
+  operationName: string,
+  descriptor: ExecutionDescriptor,
+  action: () => Promise<T>,
+) {
+  try {
+    const result = await action();
+    recordOperationMetrics(
+      span,
+      operationName,
+      "succeeded",
+      undefined,
+      descriptor,
+    );
+    span.end("succeeded");
+    return result;
+  } catch (error) {
+    span.recordError(error);
+    recordOperationMetrics(span, operationName, "failed", error, descriptor);
+    span.end("failed");
+    throw error;
+  }
+}
+
+function recordOperationMetrics(
+  span: BlameSpan,
+  operationName: string,
+  outcome: TelemetryOutcome,
+  error?: unknown,
+  descriptor?: ExecutionDescriptor,
+) {
+  const attributes = operationMetricAttributes(
+    operationName,
+    outcome,
+    error,
+    descriptor,
+  );
+  const telemetry = getBlameTelemetry();
+  telemetry.count(`${operationName}.count`, 1, attributes, span.context);
+  telemetry.record(
+    `${operationName}.duration`,
+    span.durationSeconds(),
+    attributes,
+    span.context,
+  );
+  recordOperationLog(span, outcome, attributes, error);
+}
+
+function operationMetricAttributes(
+  operationName: string,
+  outcome: TelemetryOutcome,
+  error?: unknown,
+  descriptor?: ExecutionDescriptor,
+) {
+  return {
+    ...metricCohortAttributes(descriptor),
+    [ATTR_BLAME_EXECUTION_STATUS]: outcome,
+    [ATTR_BLAME_OPERATION_NAME]: operationName,
+    ...(outcome === "failed"
+      ? { [ATTR_ERROR_TYPE]: operationErrorType(error) }
+      : {}),
+  };
+}
+
+function recordOperationLog(
+  span: BlameSpan,
+  outcome: TelemetryOutcome,
+  attributes: Record<string, unknown>,
+  error?: unknown,
+) {
+  const telemetry = getBlameTelemetry();
+  telemetry.log(
+    outcome === "failed" ? "error" : "info",
+    "blame.operation.completed",
+    {
+      ...attributes,
+      ...(error ? errorAttributes(error) : {}),
+    },
+    span.context,
+  );
+}
+
+function metricCohortAttributes(descriptor: ExecutionDescriptor | undefined) {
+  const latest = descriptor
+    ? getExecutionRegistry().attributes(descriptor.executionId)
+    : undefined;
+  return latest ?? descriptor?.attributes;
+}
+
+function operationSpanAttributes(
+  descriptor: ExecutionDescriptor,
+  operationName: string,
+) {
+  return {
+    [ATTR_BLAME_EXECUTION_ID]: descriptor.executionId,
+    [ATTR_BLAME_OPERATION_NAME]: operationName,
+    [ATTR_BLAME_STORY_ID]: descriptor.storyId,
+    [ATTR_BLAME_WORKTREE_ID]: descriptor.worktreeId,
+  };
+}
+
+function operationErrorType(_error: unknown) {
+  return "ToolError";
 }
 
 async function startProjectCompose(
@@ -1831,7 +2385,7 @@ async function safeComposePreviewTarget(worktree: string, composePath: string) {
   }
 }
 
-async function ensureProjectPreviewUrl(input: ResolveProjectPreviewUrlInput) {
+async function ensureProjectPreviewUrl(input: EnsureProjectPreviewUrlInput) {
   const worktree = resolveRuntimePath(input.worktree);
   if (removedWorktrees.has(worktree)) return null;
   if (removingWorktrees.has(worktree)) return null;
@@ -1849,7 +2403,7 @@ async function ensureProjectPreviewUrl(input: ResolveProjectPreviewUrlInput) {
   if (!(await projectSetupCompleted(worktree))) return null;
   const recovery = previewRecoveries.get(worktree);
   if (recovery) return recovery;
-  const nextRecovery = recoverProjectPreview(worktree, {
+  const nextRecovery = runPreviewRecovery(input, worktree, {
     reallocatePorts: Boolean(currentUrl),
   }).finally(() => {
     previewRecoveries.delete(worktree);
@@ -1874,6 +2428,23 @@ async function projectSetupCompleted(worktree: string) {
   } catch {
     return false;
   }
+}
+
+async function runPreviewRecovery(
+  input: EnsureProjectPreviewUrlInput,
+  worktree: string,
+  options: { reallocatePorts?: boolean },
+) {
+  const operation = beginExecutionOperation(
+    input,
+    previewStartOperationName,
+    worktree,
+  );
+  void enrichExecutionRepositoryCohorts(operation, worktree);
+  const action = () => recoverProjectPreview(worktree, options);
+  return runExecutionOperation(operation, action, (result) =>
+    result ? "succeeded" : "canceled",
+  );
 }
 
 async function recoverProjectPreview(
@@ -1928,6 +2499,9 @@ async function runExistingProjectSetup(worktree: string) {
 
 export async function shutdownWorkspaceProcesses() {
   const activeProcesses = Array.from(workspaceProcesses);
+  Array.from(setupRuns.values()).forEach((run) =>
+    finishSetupRun(run, "canceled"),
+  );
   setupRuns.clear();
   projectLogStreams.clear();
   projectServiceLogStreams.clear();
@@ -1952,7 +2526,7 @@ async function stopSetupRunsForWorktree(worktree: string) {
   );
   await Promise.all(
     runs.map(async (run) => {
-      setupRuns.delete(run.id);
+      finishSetupRun(run, "canceled");
       await stopChildProcess(run.process);
     }),
   );
@@ -2321,7 +2895,7 @@ async function timedRecoveryStep<T>(
 ) {
   const start = Date.now();
   try {
-    return await action();
+    return await traceWorkspaceStep(label, action);
   } finally {
     await appendTimingLog(worktree, label, Date.now() - start);
   }
@@ -2618,10 +3192,11 @@ async function setupEnvironment(worktree: string) {
 async function buildSetupEnvironment(
   worktree: string,
 ): Promise<SetupEnvironment> {
-  return {
-    ...containerRuntimeEnvironment(process.env),
+  const hostEnvironment = withoutTelemetryEnvironment(process.env);
+  const environment = {
+    ...containerRuntimeEnvironment(hostEnvironment),
     ...(await worktreeRuntimeEnvironment(worktree)),
-    ...process.env,
+    ...hostEnvironment,
     BLAME_HOST_GID: hostGroupId(),
     BLAME_HOST_UID: hostUserId(),
     CI: "true",
@@ -2640,6 +3215,7 @@ async function buildSetupEnvironment(
     npm_config_yes: "true",
     PATH: setupPath(),
   };
+  return withoutTelemetryEnvironment(environment) as SetupEnvironment;
 }
 
 function invalidateSetupEnvironment(worktree: string) {
@@ -2648,7 +3224,7 @@ function invalidateSetupEnvironment(worktree: string) {
 
 function runtimeManagerEnvironment() {
   return {
-    ...process.env,
+    ...withoutTelemetryEnvironment(process.env),
     PATH: setupPath(),
   };
 }

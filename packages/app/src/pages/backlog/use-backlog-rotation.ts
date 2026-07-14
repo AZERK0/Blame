@@ -1,5 +1,6 @@
 import * as React from "react"
 import { toast } from "sonner"
+import { taskComplexityBucket } from "@blame/agent-runtime/telemetry-cohorts"
 import type {
   AgentEvent,
   PreviewManifest,
@@ -145,9 +146,19 @@ export function useBacklogRotation(
       return
     }
 
+    const executionId = crypto.randomUUID()
+    const storyId = detailedStory.id
+    const telemetryCohorts = storyTelemetryCohorts(
+      detailedStory,
+      selection.currentModel.id,
+      selection.currentModel.provider.id
+    )
     const worktree = await workspace.createWorktree({
+      executionId,
       repositoryRoot: projects.activeProject.path,
-      storyId: userStoryDisplayId(detailedStory),
+      storyId,
+      storyReference: userStoryDisplayId(detailedStory),
+      telemetryCohorts,
       title: detailedStory.title,
     })
     await backlog.update(detailedStory, {
@@ -157,6 +168,9 @@ export function useBacklogRotation(
       worktree: worktree.worktree,
     })
     const setup = await workspace.runProjectSetup({
+      executionId,
+      storyId,
+      telemetryCohorts,
       worktree: worktree.worktree,
       setupScript: initialization.setupScript,
       dockerCompose: initialization.dockerCompose,
@@ -169,7 +183,8 @@ export function useBacklogRotation(
         setup.runId,
         event,
         worktree.worktree,
-        initialization
+        initialization,
+        executionId
       )
       if (event.type === "exit") unsubscribeSetup()
     })
@@ -189,6 +204,8 @@ export function useBacklogRotation(
       workspaceRoot: worktree.worktree,
       previewDevtoolsScope: storyPreviewDevtoolsScope(detailedStory.id),
       codePractices: projectInitialization.practices,
+      executionId,
+      storyId,
     })
     const run = await backlog.createAgentRun(detailedStory, {
       clineSessionId: session.sessionId,
@@ -214,7 +231,9 @@ export function useBacklogRotation(
       clineSessionId: session.sessionId,
     })
     void agent.sessions.sendDevelopment({
+      executionId,
       sessionId: session.sessionId,
+      storyId,
       title: detailedStory.title,
       summary: detailedStory.summary,
       codeSelectionAttachments: detailedStory.codeSelectionAttachments ?? [],
@@ -316,11 +335,19 @@ export function useBacklogRotation(
     runId: string,
     event: ProjectSetupEvent,
     worktree: string,
-    initialization: CloudProjectInitialization
+    initialization: CloudProjectInitialization,
+    executionId: string
   ) {
     const result = await persistSetupEvent(story, event, worktree)
     if (setupError(event) && event.type === "exit" && !result.recovered) {
-      await repairFailedSetup(story, runId, event, worktree, initialization)
+      await repairFailedSetup(
+        story,
+        runId,
+        event,
+        worktree,
+        initialization,
+        executionId
+      )
     }
   }
 
@@ -329,7 +356,8 @@ export function useBacklogRotation(
     runId: string,
     event: ProjectSetupEvent,
     worktree: string,
-    initialization: CloudProjectInitialization
+    initialization: CloudProjectInitialization,
+    executionId: string
   ) {
     if (initializationRepairRunIds.current.has(runId)) return
     initializationRepairRunIds.current.add(runId)
@@ -342,7 +370,13 @@ export function useBacklogRotation(
       await backlog.update(story, {
         agentLastEvent: "Diagnosing failed project initialization.",
       })
-      await diagnoseAndRetryFailedSetup(story, event, worktree, initialization)
+      await diagnoseAndRetryFailedSetup(
+        story,
+        event,
+        worktree,
+        initialization,
+        executionId
+      )
     } catch (error) {
       const message = `Initialization diagnosis failed: ${errorMessage(error)}`
       toast.error("Initialization diagnosis failed", {
@@ -362,10 +396,12 @@ export function useBacklogRotation(
     story: UserStory,
     event: ProjectSetupEvent,
     worktree: string,
-    initialization: CloudProjectInitialization
+    initialization: CloudProjectInitialization,
+    executionId: string
   ) {
     const result = await diagnoseAndRepairProjectInitialization({
       apiConnection: auth.apiConnection,
+      executionId,
       platform,
       projectId: initialization.projectId,
       providerId: alternativeSelection.currentModel!.provider.id,
@@ -375,6 +411,7 @@ export function useBacklogRotation(
       worktree,
       previewManifest: initialization.previewManifest as PreviewManifest | null,
       setupScript: initialization.setupScript!,
+      storyId: story.id,
       dockerCompose: initialization.dockerCompose!,
       runConfigurations: initialization.runConfigurations,
       launchError: eventText(event),
@@ -398,7 +435,8 @@ export function useBacklogRotation(
       story,
       worktree,
       result.setupScript,
-      result.dockerCompose
+      result.dockerCompose,
+      executionId
     )
   }
 
@@ -419,12 +457,15 @@ export function useBacklogRotation(
     story: UserStory,
     worktree: string,
     setupScript: string,
-    dockerCompose: string
+    dockerCompose: string,
+    executionId: string
   ) {
     const workspace = platform.workspace
     if (!workspace) return
     backlog.setStorySetupInitializing(story, true)
     const setup = await workspace.runProjectSetup({
+      executionId,
+      storyId: story.id,
       worktree,
       setupScript,
       dockerCompose,
@@ -484,7 +525,16 @@ export function useBacklogRotation(
           if (!story.worktree || previewRecoveryStoryIds.current.has(story.id))
             return
           previewRecoveryStoryIds.current.add(story.id)
-          void ensureProjectPreviewUrl({ worktree: story.worktree })
+          void ensureProjectPreviewUrl({
+            executionId: crypto.randomUUID(),
+            storyId: story.id,
+            telemetryCohorts: storyTelemetryCohorts(
+              story,
+              story.agentModelId,
+              story.agentProviderId
+            ),
+            worktree: story.worktree,
+          })
             .then((previewUrl) => persistRecoveredPreviewUrl(story, previewUrl))
             .catch(() => undefined)
             .finally(() => previewRecoveryStoryIds.current.delete(story.id))
@@ -1070,6 +1120,28 @@ function staleAgentRun(run: UserStoryAgentRun) {
   return (
     Date.now() - new Date(updatedAt).getTime() >= agentCompletionRecoveryGraceMs
   )
+}
+
+function storyTaskComplexity(story: UserStory) {
+  const promptLength = story.title.length + story.summary.length
+  const attachmentCount =
+    (story.codeSelectionAttachments?.length ?? 0) +
+    (story.fileAttachments?.length ?? 0)
+  return taskComplexityBucket(promptLength, attachmentCount)
+}
+
+function storyTelemetryCohorts(
+  story: UserStory,
+  modelId: string | null | undefined,
+  providerId: string | null | undefined
+) {
+  if (!modelId || !providerId) return undefined
+  return {
+    agentStrategy: "multi_agent" as const,
+    modelId,
+    providerId,
+    taskComplexityBucket: storyTaskComplexity(story),
+  }
 }
 
 function clineLogPath(worktree: string, sessionId: string) {

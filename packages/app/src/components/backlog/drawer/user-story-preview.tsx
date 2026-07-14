@@ -373,7 +373,11 @@ export function UserStoryPreview({
     if (!setupLogWorktree || !platform.workspace?.ensureProjectPreviewUrl)
       return
     void platform.workspace
-      .ensureProjectPreviewUrl({ worktree: setupLogWorktree })
+      .ensureProjectPreviewUrl({
+        executionId: crypto.randomUUID(),
+        storyId: userStory?.id,
+        worktree: setupLogWorktree,
+      })
       .then((previewUrl) => {
         if (previewUrl) setRecoveredPreviewUrl(previewUrl)
       })

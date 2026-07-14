@@ -1,5 +1,6 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { withoutTelemetryEnvironment } from "@blame/telemetry";
 import {
   runtimeCommand,
   runtimeName,
@@ -482,9 +483,10 @@ async function runCommand(
   env?: NodeJS.ProcessEnv,
   timeoutMs = commandTimeoutMs,
 ) {
-  const commandSpec = executableRuntimeCommand(command, args, env ?? process.env);
+  const environment = withoutTelemetryEnvironment(env ?? process.env);
+  const commandSpec = executableRuntimeCommand(command, args, environment);
   const { stdout } = await execFileAsync(commandSpec.command, commandSpec.args, {
-    env,
+    env: environment,
     shell: false,
     timeout: timeoutMs,
   });

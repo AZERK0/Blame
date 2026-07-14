@@ -9,6 +9,7 @@ import type {
   CodeGraphUpdateResult,
   CodeReviewGraphProvider,
 } from "@blame/agent-runtime";
+import { withoutTelemetryEnvironment } from "@blame/telemetry";
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { createInterface } from "node:readline";
 import { setupPath } from "./host-tool-path.ts";
@@ -933,7 +934,7 @@ function spawnWorkspaceCommand(command: string, args: string[], cwd: string) {
 
 function commandEnvironment() {
   return {
-    ...process.env,
+    ...withoutTelemetryEnvironment(process.env),
     PATH: setupPath(),
     PYTHONUTF8: "1",
   };

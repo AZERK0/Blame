@@ -12,6 +12,7 @@ import {
   blameCheckpointConfig,
   loadProductionConfig,
   runtimePluginPaths,
+  safeLogPayload,
 } from "./production.js";
 
 type AgentPluginSetupApi = Parameters<NonNullable<AgentPlugin["setup"]>>[0];
@@ -80,6 +81,37 @@ test("deduplicates configured plugin paths", () => {
       "/tmp/c",
     ]),
     ["/tmp/a", "/tmp/b", "/tmp/c"],
+  );
+});
+
+test("keeps production log metadata structured and private", () => {
+  assert.deepEqual(
+    safeLogPayload({
+      durationMs: 120,
+      error: "private failure message",
+      errorType: "ProviderApiError",
+      finishReason: "private model output",
+      headroomPackage: "/private/headroom.whl",
+      modelId: "claude-3-7-sonnet",
+      reason: "contains private source code",
+      success: false,
+      toolName: "read_file",
+    }),
+    {
+      durationMs: 120,
+      errorType: "ProviderApiError",
+      modelId: "claude-3-7-sonnet",
+      success: false,
+      toolName: "read_file",
+    },
+  );
+  assert.deepEqual(
+    safeLogPayload({
+      modelId: "https://private.example/model",
+      providerId: "/private/provider",
+      sessionId: "session with prompt content",
+    }),
+    {},
   );
 });
 

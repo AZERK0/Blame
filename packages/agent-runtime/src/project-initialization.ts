@@ -3,6 +3,8 @@ import { readdir, readFile, stat } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { promisify } from "node:util";
 
+import { withoutTelemetryEnvironment } from "@blame/telemetry";
+
 import type {
   PreviewManifest,
   ProjectInitializationPreferences,
@@ -400,6 +402,7 @@ async function gitLog(root: string) {
       ["log", "-12", "--pretty=%s"],
       {
         cwd: root,
+        env: withoutTelemetryEnvironment(process.env),
         timeout: 3000,
       },
     );

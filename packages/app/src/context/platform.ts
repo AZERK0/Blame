@@ -9,6 +9,7 @@ import type {
   AssessProjectInitializationImpactResult,
   CompareCheckpointInput,
   CompareCheckpointResult,
+  ExecutionTelemetryCohorts,
   GenerateCommitMessageInput,
   GenerateCommitMessageResult,
   GenerateTitleInput,
@@ -501,8 +502,11 @@ export type WorkspaceClient = {
     path: string
   }>
   createWorktree(input: {
+    executionId: string
     repositoryRoot: string
     storyId: string
+    storyReference: string
+    telemetryCohorts?: ExecutionTelemetryCohorts
     title: string
   }): Promise<WorktreeResult>
   checkHostDependencies(input: {
@@ -510,6 +514,9 @@ export type WorkspaceClient = {
     worktree?: string
   }): Promise<HostDependencyReport>
   runProjectSetup(input: {
+    executionId: string
+    storyId: string
+    telemetryCohorts?: ExecutionTelemetryCohorts
     worktree: string
     setupScript: string
     dockerCompose: string
@@ -525,7 +532,12 @@ export type WorkspaceClient = {
     worktree: string
   }): Promise<boolean>
   resolveProjectPreviewUrl(input: { worktree: string }): Promise<string | null>
-  ensureProjectPreviewUrl(input: { worktree: string }): Promise<string | null>
+  ensureProjectPreviewUrl(input: {
+    executionId: string
+    storyId?: string
+    telemetryCohorts?: ExecutionTelemetryCohorts
+    worktree: string
+  }): Promise<string | null>
   projectRuntimeHealthy?(input: { worktree: string }): Promise<boolean>
   ensureRuntimeReady?(): Promise<unknown>
   repairRuntime?(): Promise<unknown>

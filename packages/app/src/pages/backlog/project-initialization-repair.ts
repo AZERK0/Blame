@@ -11,6 +11,7 @@ import { notifyProjectInitializationUpdated } from "@/components/project-initial
 
 type RepairInput = {
   apiConnection: ReturnType<typeof useCloudAuth>["apiConnection"]
+  executionId: string
   platform: ReturnType<typeof usePlatform>
   projectId: string
   providerId: string
@@ -20,6 +21,7 @@ type RepairInput = {
   worktree: string
   previewManifest?: PreviewManifest | null
   setupScript: string
+  storyId: string
   dockerCompose: string
   runConfigurations: ProjectRunConfiguration[]
   launchError: string
@@ -56,6 +58,8 @@ async function diagnoseProjectInitialization(input: RepairInput) {
     dockerCompose: input.dockerCompose,
     runConfigurations: input.runConfigurations,
     diagnostics,
+    executionId: input.executionId,
+    storyId: input.storyId,
   })
   return result
 }

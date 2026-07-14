@@ -1,6 +1,7 @@
 import { homedir } from "node:os"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
+import { shutdownBlameTelemetry } from "@blame/telemetry"
 import contextMenu from "electron-context-menu"
 import windowState from "electron-window-state"
 import {
@@ -19,7 +20,11 @@ import {
 import { registerAgentIpcHandlers, shutdownAgentRuntime } from "./agent-ipc"
 import { registerBacklogStatusPipIpcHandlers } from "./backlog-status-pip-ipc"
 import { desktopAppIdentity } from "./desktop-app-identity"
-import { attachLiveLogWindow, registerLiveLogCapture } from "./desktop-live-log"
+import {
+  attachLiveLogWindow,
+  flushLiveLogs,
+  registerLiveLogCapture,
+} from "./desktop-live-log"
 import { checkForUpdatesOnStartup, registerDesktopUpdateIpcHandlers } from "./desktop-update-ipc"
 import {
   destroyAllPreviewBrowsers,
@@ -38,7 +43,8 @@ contextMenu({
 })
 
 const currentDirectory = dirname(fileURLToPath(import.meta.url))
-const shutdownTimeoutMs = 4_000
+const runtimeShutdownTimeoutMs = 4_000
+const telemetryShutdownTimeoutMs = 4_000
 const defaultWindowWidth = 1440
 const defaultWindowHeight = 900
 const appMinWindowWidth = 960
@@ -95,8 +101,9 @@ void app.whenReady().then(() => {
   registerMcpIpcHandlers()
   registerTerminalIpcHandlers()
   registerDesktopUpdateIpcHandlers({
-    beforeInstall() {
+    async beforeInstall() {
       shutdownRequested = true
+      await shutdownApplication()
       readyToQuit = true
     },
   })
@@ -456,25 +463,34 @@ async function exitFromSignal() {
 }
 
 function shutdownApplication() {
-  if (!shutdownPromise) shutdownPromise = withTimeout(cleanupApplication(), shutdownTimeoutMs)
+  if (!shutdownPromise) shutdownPromise = cleanupApplication()
   return shutdownPromise
 }
 
 async function cleanupApplication() {
   destroyAllPreviewBrowsers()
-  await Promise.allSettled([
+  const runtimeShutdown = Promise.allSettled([
     shutdownTerminalSessions(),
     shutdownWorkspaceProcesses(),
     shutdownAgentRuntime(),
-  ])
+  ]).then(() => undefined)
+  await settleWithin(runtimeShutdown, runtimeShutdownTimeoutMs)
+  await settleWithin(shutdownBlameTelemetry(), telemetryShutdownTimeoutMs)
+  await settleWithin(flushLiveLogs(), telemetryShutdownTimeoutMs)
 }
 
-function withTimeout(task: Promise<void>, timeout: number) {
+function settleWithin(task: Promise<void>, timeout: number) {
   return new Promise<void>((resolve) => {
     const timer = setTimeout(resolve, timeout)
-    task.finally(() => {
-      clearTimeout(timer)
-      resolve()
-    })
+    void task.then(
+      () => {
+        clearTimeout(timer)
+        resolve()
+      },
+      () => {
+        clearTimeout(timer)
+        resolve()
+      }
+    )
   })
 }

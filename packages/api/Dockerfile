@@ -33,7 +33,7 @@ RUN pnpm install
 ENV NODE_OPTIONS="--max-old-space-size=4096"
 
 # Build the backend
-RUN pnpm --filter @blame/api build
+RUN pnpm --filter @blame/api... build
 
 # -----------------------------------------------------------------------------
 # Production stage

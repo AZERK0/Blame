@@ -4,6 +4,7 @@ import { mkdtemp, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { app } from "electron";
+import { withoutTelemetryEnvironment } from "@blame/telemetry";
 
 const markItDownInstallTimeoutMs = 5 * 60_000;
 const markItDownRunTimeoutMs = 45_000;
@@ -232,7 +233,11 @@ function execFileText(command: string, args: string[], timeout: number) {
     execFile(
       command,
       args,
-      { maxBuffer: 1024 * 1024 * 2, timeout },
+      {
+        env: withoutTelemetryEnvironment(process.env),
+        maxBuffer: 1024 * 1024 * 2,
+        timeout,
+      },
       (error, stdout) => {
         if (error) reject(error);
         else resolve(stdout);

@@ -5,6 +5,8 @@ import { dirname, join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { promisify } from "node:util";
 
+import { withoutTelemetryEnvironment } from "@blame/telemetry";
+
 type HeadroomSidecarLogger = (
   message: string,
   payload?: unknown,
@@ -135,9 +137,11 @@ async function ensureHeadroomVenv(
     headroomVenv: venv,
   });
   await execFileAsync(pythonCommand(env), ["-m", "venv", venv], {
+    env: withoutTelemetryEnvironment(process.env),
     maxBuffer: 1024 * 1024,
   });
   await execFileAsync(venvPython(venv), ["-m", "pip", "install", headroomPackage(env)], {
+    env: withoutTelemetryEnvironment(process.env),
     maxBuffer: 20 * 1024 * 1024,
   });
   return command;
@@ -150,7 +154,10 @@ function spawnHeadroom(
 ) {
   const args = proxyArgs(port, options.requestLogFile);
   const child = spawn(command, args, {
-    env: { ...process.env, ...(options.env ?? {}) },
+    env: withoutTelemetryEnvironment({
+      ...process.env,
+      ...(options.env ?? {}),
+    }),
     stdio: ["ignore", "pipe", "pipe"],
   });
   pipeOutput(child, options.logFile);
@@ -220,7 +227,10 @@ async function healthy(baseUrl: string) {
 
 async function commandAvailable(command: string) {
   try {
-    await execFileAsync(command, ["--version"], { maxBuffer: 1024 * 1024 });
+    await execFileAsync(command, ["--version"], {
+      env: withoutTelemetryEnvironment(process.env),
+      maxBuffer: 1024 * 1024,
+    });
     return true;
   } catch {
     return false;
