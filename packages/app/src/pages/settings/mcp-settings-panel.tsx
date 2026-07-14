@@ -3,6 +3,7 @@ import {
   AlertCircleIcon,
   ChevronDownIcon,
   KeyRoundIcon,
+  PencilIcon,
   PlusIcon,
   ServerIcon,
   Trash2Icon,
@@ -25,6 +26,7 @@ import {
   type McpServerConfig,
   type McpTransport,
 } from "@/context/platform"
+import { formatArguments, parseArguments } from "./mcp-arguments"
 
 type Entry = { id: string; key: string; value: string }
 type FormState = {
@@ -37,45 +39,46 @@ type FormState = {
   url: string
 }
 
-const emptyForm = (): FormState => ({
-  args: "",
-  command: "",
-  cwd: "",
-  entries: [],
-  name: "",
-  transport: "stdio",
-  url: "",
+const formState = (server?: McpServerConfig): FormState => ({
+  args: formatArguments(server?.args ?? []),
+  command: server?.command ?? "",
+  cwd: server?.cwd ?? "",
+  entries: localEntries(server),
+  name: server?.name ?? "",
+  transport: server?.transport ?? "stdio",
+  url: server?.url ?? "",
 })
 
 export function McpSettingsPanel() {
   const client = usePlatform().mcp
   const cloud = useCloudAuth()
+  const cloudMcpConfiguration = cloud.mcpConfiguration
+  const cloudStatus = cloud.status
+  const cloudUserId = cloud.user?.id
+  const saveCloudMcpConfiguration = cloud.saveMcpConfiguration
   const [servers, setServers] = React.useState<McpServerConfig[]>([])
   const [adding, setAdding] = React.useState(false)
-  const [loading, setLoading] = React.useState(true)
+  const [editingName, setEditingName] = React.useState<string>()
+  const [loading, setLoading] = React.useState(Boolean(client))
   const [error, setError] = React.useState<string>()
 
   React.useEffect(() => {
-    if (!client) {
-      setLoading(false)
-      return
-    }
+    if (!client) return
     void client
       .list()
       .then(async (localServers) => {
-        if (cloud.status !== "authenticated") return setServers(localServers)
-        if (cloud.mcpConfiguration) {
+        if (cloudStatus !== "authenticated" || !cloudUserId) {
+          return setServers(localServers)
+        }
+        if (cloudMcpConfiguration) {
           return setServers(
-            await client.mergeCloud(
-              cloud.user.id,
-              cloud.mcpConfiguration.servers
-            )
+            await client.mergeCloud(cloudUserId, cloudMcpConfiguration.servers)
           )
         }
-        await cloud.saveMcpConfiguration(toCloudServers(localServers))
+        await saveCloudMcpConfiguration(toCloudServers(localServers))
         setServers(
           await client.mergeCloud(
-            cloud.user.id,
+            cloudUserId,
             toCloudServers(localServers),
             true
           )
@@ -83,19 +86,34 @@ export function McpSettingsPanel() {
       })
       .catch((reason) => setError(errorMessage(reason)))
       .finally(() => setLoading(false))
-  }, [client, cloud.status, cloud.mcpConfiguration])
+  }, [
+    client,
+    cloudMcpConfiguration,
+    cloudStatus,
+    cloudUserId,
+    saveCloudMcpConfiguration,
+  ])
 
   async function update(action: () => Promise<McpServerConfig[]>) {
     setError(undefined)
+    let updated: McpServerConfig[]
     try {
-      const updated = await action()
-      setServers(updated)
-      if (cloud.status === "authenticated") {
-        await cloud.saveMcpConfiguration(toCloudServers(updated))
-      }
+      updated = await action()
     } catch (reason) {
       setError(errorMessage(reason))
+      return false
     }
+    setServers(updated)
+    if (cloud.status === "authenticated") {
+      try {
+        await cloud.saveMcpConfiguration(toCloudServers(updated))
+      } catch (reason) {
+        setError(
+          `Saved on this device. Cloud sync failed: ${errorMessage(reason)}`
+        )
+      }
+    }
+    return true
   }
 
   return (
@@ -115,8 +133,11 @@ export function McpSettingsPanel() {
           />
           <Button
             type="button"
-            disabled={!client || adding}
-            onClick={() => setAdding(true)}
+            disabled={!client || adding || Boolean(editingName)}
+            onClick={() => {
+              setEditingName(undefined)
+              setAdding(true)
+            }}
           >
             <PlusIcon />
             Add server
@@ -133,8 +154,9 @@ export function McpSettingsPanel() {
           <McpServerForm
             onCancel={() => setAdding(false)}
             onSave={async (server) => {
-              await update(() => client.save(server))
-              setAdding(false)
+              const saved = await update(() => client.save(server))
+              if (saved) setAdding(false)
+              return saved
             }}
           />
         )}
@@ -149,28 +171,48 @@ export function McpSettingsPanel() {
               </p>
             </div>
           )}
-          {servers.map((server) => (
-            <McpServerRow
-              key={server.name}
-              server={server}
-              onToggle={(enabled) =>
-                client && update(() => client.setEnabled(server.name, enabled))
-              }
-              onRemove={() =>
-                client && update(() => client.remove(server.name))
-              }
-              onAuthorize={() =>
-                client
-                  ? update(() => client.authorize(server.name))
-                  : Promise.resolve()
-              }
-              onDisconnectOAuth={() =>
-                client
-                  ? update(() => client.disconnectOAuth(server.name))
-                  : Promise.resolve()
-              }
-            />
-          ))}
+          {servers.map((server) =>
+            editingName === server.name && client ? (
+              <McpServerForm
+                key={server.name}
+                server={server}
+                onCancel={() => setEditingName(undefined)}
+                onSave={async (updatedServer) => {
+                  const saved = await update(() =>
+                    client.save(updatedServer, server.name)
+                  )
+                  if (saved) setEditingName(undefined)
+                  return saved
+                }}
+              />
+            ) : (
+              <McpServerRow
+                key={server.name}
+                server={server}
+                onEdit={() => {
+                  setAdding(false)
+                  setEditingName(server.name)
+                }}
+                onToggle={(enabled) =>
+                  client &&
+                  void update(() => client.setEnabled(server.name, enabled))
+                }
+                onRemove={() =>
+                  client && void update(() => client.remove(server.name))
+                }
+                onAuthorize={() =>
+                  client
+                    ? update(() => client.authorize(server.name))
+                    : Promise.resolve(false)
+                }
+                onDisconnectOAuth={() =>
+                  client
+                    ? update(() => client.disconnectOAuth(server.name))
+                    : Promise.resolve(false)
+                }
+              />
+            )
+          )}
         </div>
       </section>
     </div>
@@ -209,13 +251,19 @@ function McpServerSummary({
 }) {
   if (!available) return <McpStatusText title="Desktop app required" />
   if (loading) return <McpStatusText title="Loading servers" />
-  const enabled = servers.filter((server) => !server.disabled).length
-  return (
-    <McpStatusText
-      title={`${enabled} connected server${enabled === 1 ? "" : "s"}`}
-      success={enabled > 0}
-    />
-  )
+  const connected = servers.filter(
+    (server) => !server.disabled && !server.requiresLocalSetup
+  ).length
+  const setupRequired = servers.filter(
+    (server) => server.requiresLocalSetup
+  ).length
+  const status = [
+    `${connected} connected server${connected === 1 ? "" : "s"}`,
+    setupRequired ? `${setupRequired} setup required` : undefined,
+  ]
+    .filter(Boolean)
+    .join(" · ")
+  return <McpStatusText title={status} success={connected > 0} />
 }
 
 function McpStatusText({
@@ -239,12 +287,14 @@ function McpServerRow({
   server,
   onAuthorize,
   onDisconnectOAuth,
+  onEdit,
   onRemove,
   onToggle,
 }: {
   server: McpServerConfig
-  onAuthorize(): Promise<void>
-  onDisconnectOAuth(): Promise<void>
+  onAuthorize(): Promise<boolean>
+  onDisconnectOAuth(): Promise<boolean>
+  onEdit(): void
   onRemove(): void
   onToggle(enabled: boolean): void
 }) {
@@ -255,7 +305,7 @@ function McpServerRow({
       : server.url
   return (
     <div className="flex flex-col gap-3 border-b py-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex min-w-0 items-center gap-3">
+      <div className="flex min-w-0 flex-1 items-center gap-3">
         <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted">
           <ServerIcon className="size-4" />
         </div>
@@ -265,23 +315,33 @@ function McpServerRow({
             className="truncate text-sm text-muted-foreground"
             title={endpoint}
           >
-            {server.disabled ? "Disabled" : transportLabel(server.transport)} ·{" "}
-            {endpoint}
+            {server.requiresLocalSetup
+              ? "Setup required"
+              : server.disabled
+                ? "Disabled"
+                : transportLabel(server.transport)}{" "}
+            · {endpoint}
           </p>
-          {server.oauth.supported && (
+          {server.requiresLocalSetup && (
+            <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+              Local arguments and credentials are not synced. Review this server
+              on this device.
+            </p>
+          )}
+          {server.oauth.supported && !server.requiresLocalSetup && (
             <p className="text-sm text-muted-foreground">
               {server.oauth.configured ? "OAuth connected" : "OAuth available"}
             </p>
           )}
           {server.oauth.lastError && (
-            <p className="mt-1 text-xs text-destructive">
+            <p className="mt-1 text-xs break-all text-destructive">
               {server.oauth.lastError}
             </p>
           )}
         </div>
       </div>
-      <div className="flex items-center gap-2 self-end sm:self-auto">
-        {server.oauth.supported && (
+      <div className="flex shrink-0 items-center gap-2 self-end sm:self-auto">
+        {server.oauth.supported && !server.requiresLocalSetup && (
           <Button
             type="button"
             variant="outline"
@@ -305,8 +365,23 @@ function McpServerRow({
                 : "Connect"}
           </Button>
         )}
+        <Button
+          type="button"
+          variant={server.requiresLocalSetup ? "outline" : "ghost"}
+          size={server.requiresLocalSetup ? "sm" : "icon-sm"}
+          aria-label={
+            server.requiresLocalSetup
+              ? `Complete ${server.name} setup`
+              : `Edit ${server.name}`
+          }
+          onClick={onEdit}
+        >
+          <PencilIcon />
+          {server.requiresLocalSetup && "Complete setup"}
+        </Button>
         <Switch
-          checked={!server.disabled}
+          checked={!server.disabled && !server.requiresLocalSetup}
+          disabled={server.requiresLocalSetup}
           aria-label={`Enable ${server.name} MCP server`}
           onCheckedChange={onToggle}
         />
@@ -327,12 +402,14 @@ function McpServerRow({
 function McpServerForm({
   onCancel,
   onSave,
+  server,
 }: {
   onCancel(): void
-  onSave(server: McpServerConfig): Promise<void>
+  onSave(server: McpServerConfig): Promise<boolean>
+  server?: McpServerConfig
 }) {
-  const [form, setForm] = React.useState(emptyForm)
-  const [advanced, setAdvanced] = React.useState(false)
+  const [form, setForm] = React.useState(() => formState(server))
+  const [advanced, setAdvanced] = React.useState(Boolean(server))
   const [saving, setSaving] = React.useState(false)
   const [error, setError] = React.useState<string>()
   const firstInput = React.useRef<HTMLInputElement>(null)
@@ -342,33 +419,11 @@ function McpServerForm({
     event.preventDefault()
     setError(undefined)
     setSaving(true)
-    const pairs = Object.fromEntries(
-      form.entries
-        .filter((entry) => entry.key.trim())
-        .map((entry) => [entry.key.trim(), entry.value])
-    )
-    const server: McpServerConfig =
-      form.transport === "stdio"
-        ? {
-            name: form.name,
-            oauth: { configured: false, supported: false },
-            transport: "stdio",
-            disabled: false,
-            command: form.command,
-            args: splitArguments(form.args),
-            cwd: form.cwd || undefined,
-            env: pairs,
-          }
-        : {
-            name: form.name,
-            oauth: { configured: false, supported: true },
-            transport: form.transport,
-            disabled: false,
-            url: form.url,
-            headers: pairs,
-          }
     try {
-      await onSave(server)
+      const saved = await onSave(
+        serverFromForm(form, server?.disabled ?? false)
+      )
+      if (!saved) setSaving(false)
     } catch (reason) {
       setError(errorMessage(reason))
       setSaving(false)
@@ -378,12 +433,29 @@ function McpServerForm({
   return (
     <form className="mt-5 rounded-xl border bg-muted/20 p-4" onSubmit={submit}>
       <div className="mb-4">
-        <h4 className="text-sm font-semibold">Add an MCP server</h4>
+        <h4 className="text-sm font-semibold">
+          {server ? `Edit ${server.name}` : "Add an MCP server"}
+        </h4>
         <p className="mt-1 text-xs text-muted-foreground">
-          Choose how Blame should connect.
+          {server
+            ? "Update how Blame connects on this device."
+            : "Choose how Blame should connect."}
         </p>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2">
+      {server?.requiresLocalSetup && (
+        <Notice>
+          This server was synced without its local arguments, working directory,
+          environment variables, headers, or OAuth credentials. Re-enter what it
+          needs, save, then reconnect OAuth if applicable.
+        </Notice>
+      )}
+      <div
+        className={
+          server?.requiresLocalSetup
+            ? "mt-4 grid gap-4 sm:grid-cols-2"
+            : "grid gap-4 sm:grid-cols-2"
+        }
+      >
         <Field label="Name">
           <Input
             ref={firstInput}
@@ -491,7 +563,13 @@ function McpServerForm({
           Cancel
         </Button>
         <Button type="submit" disabled={saving}>
-          {saving ? "Adding…" : "Add server"}
+          {saving
+            ? server
+              ? "Saving…"
+              : "Adding…"
+            : server
+              ? "Save changes"
+              : "Add server"}
         </Button>
       </div>
     </form>
@@ -622,10 +700,46 @@ function errorMessage(reason: unknown) {
     ? reason.message
     : "Could not update MCP servers."
 }
-function splitArguments(value: string) {
-  return (
-    value
-      .match(/(?:[^\s"]+|"[^"]*")+/g)
-      ?.map((part) => part.replace(/^"|"$/g, "")) ?? []
+
+function localEntries(server?: McpServerConfig): Entry[] {
+  const values = server?.transport === "stdio" ? server.env : server?.headers
+  return Object.entries(values ?? {}).map(([key, value]) => ({
+    id: crypto.randomUUID(),
+    key,
+    value,
+  }))
+}
+
+function serverFromForm(form: FormState, disabled: boolean): McpServerConfig {
+  const values = entryValues(form.entries)
+  const common = {
+    disabled,
+    name: form.name,
+    requiresLocalSetup: false,
+  }
+  return form.transport === "stdio"
+    ? {
+        ...common,
+        args: parseArguments(form.args),
+        command: form.command,
+        cwd: form.cwd || undefined,
+        env: values,
+        oauth: { configured: false, supported: false },
+        transport: "stdio",
+      }
+    : {
+        ...common,
+        headers: values,
+        oauth: { configured: false, supported: true },
+        transport: form.transport,
+        url: form.url,
+      }
+}
+
+function entryValues(entries: Entry[]) {
+  return Object.fromEntries(
+    entries
+      .filter((entry) => entry.key.trim())
+      .map((entry) => [entry.key.trim(), entry.value])
   )
 }

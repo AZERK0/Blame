@@ -8,8 +8,15 @@ import { ipcMain, shell } from "electron";
 import { chmod, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
+import {
+  cloudDisabled,
+  cloudOwner,
+  completedCloudMetadata,
+  localSetupRequired,
+  mergeCloudServers,
+  type McpSettings,
+} from "./mcp-cloud-sync";
 
-type McpSettings = { mcpServers: Record<string, Record<string, unknown>> };
 let settingsOperation: Promise<unknown> = Promise.resolve();
 let authorizationRunning = false;
 
@@ -25,26 +32,14 @@ export function registerMcpIpcHandlers() {
         const adoptLocal = adoptLocalInput === true;
         const cloudServers = validateCloudServers(input);
         const settings = await readSettings();
-        const merged: McpSettings["mcpServers"] = Object.fromEntries(
-          Object.entries(settings.mcpServers).filter(
-            ([, server]) => cloudOwner(server) !== userId,
-          ),
+        const merged = mergeCloudServers(
+          settings,
+          userId,
+          cloudServers,
+          adoptLocal,
         );
-        for (const cloudServer of cloudServers) {
-          const local = settings.mcpServers[cloudServer.name];
-          const preserveLocal =
-            local &&
-            (cloudOwner(local) === userId ||
-              (adoptLocal && cloudOwner(local) === undefined)) &&
-            sameCloudEndpoint(local, cloudServer);
-          merged[cloudServer.name] = {
-            ...(preserveLocal ? local : {}),
-            ...serializeCloudServer(cloudServer),
-            metadata: { blameCloudUserId: userId },
-          };
-        }
-        await writeSettings({ ...settings, mcpServers: merged });
-        return listServers({ ...settings, mcpServers: merged });
+        await writeSettings(merged);
+        return listServers(merged);
       }),
   );
   ipcMain.handle("mcp:detach-cloud", (_event, userIdInput) =>
@@ -64,17 +59,23 @@ export function registerMcpIpcHandlers() {
     runSettingsOperation(async () => {
       const server = validateServer(input);
       const settings = await readSettings();
-      const existing =
+      const originalName =
         typeof previousName === "string"
-          ? settings.mcpServers[previousName]
-          : settings.mcpServers[server.name];
-      if (typeof previousName === "string" && previousName !== server.name) {
-        delete settings.mcpServers[previousName];
+          ? validateName(previousName)
+          : undefined;
+      const existing = settings.mcpServers[originalName ?? server.name];
+      if (originalName && !existing) throw new Error("MCP server not found");
+      if (hasNameConflict(settings, server.name, originalName)) {
+        throw new Error("An MCP server with this name already exists");
+      }
+      if (originalName && originalName !== server.name) {
+        delete settings.mcpServers[originalName];
       }
       const preserveOAuth = existing && sameEndpoint(existing, server);
       settings.mcpServers[server.name] = {
         ...(existing ?? {}),
         ...serializeServer(server),
+        metadata: completedCloudMetadata(existing),
         ...(preserveOAuth && existing.oauth
           ? { oauth: existing.oauth }
           : { oauth: undefined }),
@@ -100,6 +101,8 @@ export function registerMcpIpcHandlers() {
       const settings = await readSettings();
       const server = settings.mcpServers[name];
       if (!server) throw new Error("MCP server not found");
+      if (localSetupRequired(server))
+        throw new Error("Complete this MCP server setup before enabling it");
       server.disabled = !enabled;
       await writeSettings(settings);
       return listServers(settings);
@@ -110,6 +113,11 @@ export function registerMcpIpcHandlers() {
       const name = validateName(input);
       if (authorizationRunning)
         throw new Error("Another MCP authorization is already in progress");
+      const settings = await readSettings();
+      const server = settings.mcpServers[name];
+      if (!server) throw new Error("MCP server not found");
+      if (localSetupRequired(server))
+        throw new Error("Complete this MCP server setup before authorizing it");
       authorizationRunning = true;
       try {
         await authorizeMcpOAuth({
@@ -228,9 +236,10 @@ function deserializeServer(
       : "stdio";
   return validateServer({
     ...nested,
-    disabled: value.disabled === true,
+    disabled: cloudDisabled(value) ?? value.disabled === true,
     name,
     oauth: oauth ?? { configured: false, supported: transport !== "stdio" },
+    requiresLocalSetup: localSetupRequired(value),
     transport,
   });
 }
@@ -253,18 +262,6 @@ function serializeServer(server: McpServerConfig): Record<string, unknown> {
     url: server.url,
     headers: server.headers,
   };
-}
-
-function serializeCloudServer(
-  server: CloudMcpServerConfig,
-): Record<string, unknown> {
-  return server.transport === "stdio"
-    ? { command: server.command, disabled: server.disabled, type: "stdio" }
-    : {
-        disabled: server.disabled,
-        type: server.transport,
-        url: server.url,
-      };
 }
 
 function validateCloudServers(input: unknown): CloudMcpServerConfig[] {
@@ -305,33 +302,6 @@ function safeCloudUrl(value: string) {
   return url.toString();
 }
 
-function cloudOwner(server: Record<string, unknown>) {
-  return isRecord(server.metadata) &&
-    typeof server.metadata.blameCloudUserId === "string"
-    ? server.metadata.blameCloudUserId
-    : undefined;
-}
-
-function sameCloudEndpoint(
-  local: Record<string, unknown>,
-  cloud: CloudMcpServerConfig,
-) {
-  const transport = isRecord(local.transport) ? local.transport : local;
-  if (transport.type !== cloud.transport) return false;
-  return cloud.transport === "stdio"
-    ? transport.command === cloud.command
-    : normalizedUrl(transport.url) === normalizedUrl(cloud.url);
-}
-
-function normalizedUrl(value: unknown) {
-  if (typeof value !== "string") return undefined;
-  try {
-    return new URL(value).toString();
-  } catch {
-    return undefined;
-  }
-}
-
 function validateUserId(input: unknown) {
   if (typeof input !== "string" || !/^[0-9a-f-]{20,80}$/i.test(input))
     throw new Error("Invalid cloud user");
@@ -350,11 +320,13 @@ function validateServer(input: unknown): McpServerConfig {
     throw new Error("Invalid MCP transport");
   const disabled = input.disabled === true;
   const oauth = validateOAuthStatus(input.oauth, transport !== "stdio");
+  const requiresLocalSetup = input.requiresLocalSetup === true;
   if (transport === "stdio") {
     const command = requiredString(input.command, "Command");
     return {
       name,
       oauth,
+      requiresLocalSetup,
       transport,
       disabled,
       command,
@@ -372,6 +344,7 @@ function validateServer(input: unknown): McpServerConfig {
   return {
     name,
     oauth,
+    requiresLocalSetup,
     transport,
     disabled,
     url,
@@ -408,6 +381,18 @@ function validateName(value: unknown) {
   const name = requiredString(value, "Name");
   if (name.length > 80) throw new Error("Name is too long");
   return name;
+}
+function hasNameConflict(
+  settings: McpSettings,
+  name: string,
+  originalName?: string,
+) {
+  const normalizedName = name.toLocaleLowerCase();
+  return Object.keys(settings.mcpServers).some(
+    (existingName) =>
+      existingName !== originalName &&
+      existingName.toLocaleLowerCase() === normalizedName,
+  );
 }
 function requiredString(value: unknown, label: string) {
   if (typeof value !== "string" || !value.trim())

@@ -98,6 +98,7 @@ export type McpServerConfig = {
     lastError?: string
     supported: boolean
   }
+  requiresLocalSetup: boolean
   transport: McpTransport
   url?: string
 }
