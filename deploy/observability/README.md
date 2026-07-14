@@ -67,6 +67,8 @@ La redaction conserve les conventions sémantiques utiles et les attributs méti
 
 Les identifiants `blame.story.id`, `blame.execution.id`, `blame.worktree.id`, `blame.agent.id` et `blame.agent.parent_id` restent disponibles dans les traces et logs. Ils sont interdits dans les métriques, comme les identifiants utilisateur, URLs de dépôt, chemins de fichiers, prompts et messages d'erreur.
 
+Les dimensions runtime `blame.runtime.name`, `blame.runtime.operation`, `blame.runtime.phase`, `blame.runtime.state`, `blame.runtime.dependency.name` et `blame.runtime.dependency.status` sont bornées côté application puis admises par le Collector. Elles permettent de comparer WSL2, Lima et le runtime Linux natif sans exporter de commande, d’argument ou de sortie de processus.
+
 Les noms historiques suivants sont normalisés vers les conventions retenues :
 
 | Historique                         | Convention                              |
@@ -95,7 +97,7 @@ La politique garde :
 
 La cohorte normale exclut explicitement la version en rollout. Les probabilités ne se cumulent donc pas. La valeur `disabled` désactive de fait la cohorte rollout tant qu'aucun service n'utilise cette version.
 
-`BLAME_OTEL_TAIL_DECISION_WAIT` vaut quinze minutes par défaut afin que les spans enfants d'une exécution longue restent en attente du root span. Après réception de ce root span, le Collector attend encore `BLAME_OTEL_TAIL_ROOT_GRACE_PERIOD`. Augmenter la fenêtre si une exécution légitime peut la dépasser.
+`BLAME_OTEL_TAIL_DECISION_WAIT` vaut trente-cinq minutes par défaut afin de couvrir la limite de trente minutes des opérations d’installation ou de réparation WSL2/Lima. Après réception du root span, le Collector attend encore `BLAME_OTEL_TAIL_ROOT_GRACE_PERIOD`. Augmenter la fenêtre si une exécution légitime peut la dépasser.
 
 La capacité minimale de `BLAME_OTEL_TAIL_NUM_TRACES` doit couvrir approximativement :
 

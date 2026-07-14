@@ -169,6 +169,16 @@ processors:
       - blame.execution.status
       - blame.repository.language
       - blame.repository.size_bucket
+      - blame.runtime.dependency.name
+      - blame.runtime.dependency.status
+      - blame.runtime.initial_state
+      - blame.runtime.name
+      - blame.runtime.operation
+      - blame.runtime.phase
+      - blame.runtime.probe.name
+      - blame.runtime.readiness.poll_count
+      - blame.runtime.report.stage
+      - blame.runtime.state
       - blame.task.complexity_bucket
       - blame.multi_agent.enabled
       - blame.multi_agent.used
@@ -316,6 +326,15 @@ processors:
       - blame.execution.status
       - blame.repository.language
       - blame.repository.size_bucket
+      - blame.runtime.dependency.name
+      - blame.runtime.dependency.status
+      - blame.runtime.initial_state
+      - blame.runtime.name
+      - blame.runtime.operation
+      - blame.runtime.phase
+      - blame.runtime.probe.name
+      - blame.runtime.report.stage
+      - blame.runtime.state
       - blame.task.complexity_bucket
       - blame.multi_agent.enabled
       - blame.multi_agent.used

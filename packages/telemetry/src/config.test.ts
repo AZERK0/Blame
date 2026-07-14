@@ -19,7 +19,11 @@ import {
   httpSpanName,
   sqlSpanName,
 } from "./redacting-span-processor.js";
-import { metricInstrumentOptions } from "./metric-options.js";
+import {
+  metricInstrumentOptions,
+  runtimeDurationBucketBoundaries,
+  runtimeReadinessPollBucketBoundaries,
+} from "./metric-options.js";
 import {
   boundedMetricDimensionName,
   metricAttributes,
@@ -184,6 +188,24 @@ test("defines semantic metric units", () => {
     metricInstrumentOptions("blame.agent.retries_per_execution").unit,
     "{retry}",
   );
+  assert.equal(
+    metricInstrumentOptions("blame.runtime.operation.count").unit,
+    "{operation}",
+  );
+  assert.equal(
+    metricInstrumentOptions("blame.runtime.readiness.polls").unit,
+    "{poll}",
+  );
+  assert.deepEqual(
+    metricInstrumentOptions("blame.runtime.operation.duration").advice
+      ?.explicitBucketBoundaries,
+    runtimeDurationBucketBoundaries,
+  );
+  assert.deepEqual(
+    metricInstrumentOptions("blame.runtime.readiness.polls").advice
+      ?.explicitBucketBoundaries,
+    runtimeReadinessPollBucketBoundaries,
+  );
 });
 
 test("defines semantic GenAI histogram boundaries", () => {
@@ -204,7 +226,10 @@ test("removes unbounded metric dimensions", () => {
     "blame.agent.role": "lead",
     "blame.execution.id": "execution-1",
     "blame.execution.kind": "agent",
+    "blame.runtime.name": "blame-wsl2",
+    "blame.runtime.operation": "ensure",
     "blame.story.id": "story-1",
+    "error.type": "RuntimeError",
     "exception.message": "private failure",
     "file.path": "/private/path",
     "gen_ai.request.model": "gpt-test",
@@ -212,6 +237,9 @@ test("removes unbounded metric dimensions", () => {
   assert.deepEqual(attributes, {
     "blame.agent.role": "lead",
     "blame.execution.kind": "agent",
+    "blame.runtime.name": "blame-wsl2",
+    "blame.runtime.operation": "ensure",
+    "error.type": "RuntimeError",
     "gen_ai.request.model": "gpt-test",
   });
 });

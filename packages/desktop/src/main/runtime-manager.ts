@@ -7,6 +7,13 @@ import {
   type ContainerRuntimeCommand,
 } from "./container-runtime.ts";
 import { runtimeToolScript } from "./host-tool-path.ts";
+import {
+  runtimeTelemetry,
+  type RuntimeTelemetryOperation,
+  type RuntimeTelemetryOperationName,
+  type RuntimeTelemetryProbeName,
+  type RuntimeTelemetryRecorder,
+} from "./runtime-telemetry.ts";
 
 const execFileAsync = promisify(execFile);
 const commandTimeoutMs = 15_000;
@@ -29,10 +36,7 @@ export type RuntimeDependencyName =
   | "nerdctl"
   | "nerdctl-compose";
 
-export type RuntimeDependencyStatus =
-  | "missing"
-  | "unavailable"
-  | "unsupported";
+export type RuntimeDependencyStatus = "missing" | "unavailable" | "unsupported";
 
 export type RuntimeDependencyIssue = {
   action?: string;
@@ -93,22 +97,31 @@ export type RuntimeCommandRunner = (
 
 type RuntimeManagerContext = {
   env?: NodeJS.ProcessEnv;
+  observation?: RuntimeTelemetryOperation;
   platform: NodeJS.Platform;
+  probesEnabled?: boolean;
   run: RuntimeCommandRunner;
 };
 
+type RuntimeManagerAction = (
+  context: RuntimeManagerContext,
+) => Promise<RuntimeStatusReport>;
+
 export class RuntimeManager {
   private readonly context: RuntimeManagerContext;
+  private readonly telemetry: RuntimeTelemetryRecorder;
 
   constructor(
     input: RuntimeManagerInput = {},
     run: RuntimeCommandRunner = runCommand,
+    telemetry: RuntimeTelemetryRecorder = runtimeTelemetry,
   ) {
     this.context = {
       env: input.env,
       platform: input.platform ?? process.platform,
       run,
     };
+    this.telemetry = telemetry;
   }
 
   getRuntimeStatus() {
@@ -116,40 +129,43 @@ export class RuntimeManager {
   }
 
   async checkRuntimeDependencies(): Promise<RuntimeStatusReport> {
-    const issues = await runtimeDependencyIssues(this.context);
-    return runtimeStatusReport(this.context.platform, issues);
+    return this.observe("status", checkRuntimeStatus);
   }
 
   async ensureRuntimeReady() {
-    const report = await this.getRuntimeStatus();
-    if (report.status === "ready") {
-      return report;
-    }
-    await runRuntimeLifecycleCommand(this.context, "ensure");
-    return waitForRuntimeReadiness(this.context);
+    return this.observe("ensure", ensureRuntimeOperation);
   }
 
   async repairRuntime() {
-    await runRuntimeLifecycleCommand(this.context, "repair");
-    return waitForRuntimeReadiness(this.context);
+    return this.observe("repair", repairRuntimeOperation);
   }
 
   async resetRuntime() {
-    await runRuntimeLifecycleCommand(this.context, "reset");
-    return waitForRuntimeReadiness(this.context);
+    return this.observe("reset", resetRuntimeOperation);
   }
 
   async uninstallRuntime() {
-    await runRuntimeLifecycleCommand(this.context, "uninstall");
-    return this.checkRuntimeDependencies();
+    return this.observe("uninstall", uninstallRuntimeOperation);
+  }
+
+  private observe(
+    operation: RuntimeTelemetryOperationName,
+    action: RuntimeManagerAction,
+  ) {
+    return this.telemetry.runOperation(
+      runtimeName(this.context.platform),
+      operation,
+      (observation) => action({ ...this.context, observation }),
+    );
   }
 }
 
 export function createRuntimeManager(
   input: RuntimeManagerInput = {},
   run: RuntimeCommandRunner = runCommand,
+  telemetry: RuntimeTelemetryRecorder = runtimeTelemetry,
 ) {
-  return new RuntimeManager(input, run);
+  return new RuntimeManager(input, run, telemetry);
 }
 
 export function getRuntimeStatus(input: RuntimeManagerInput = {}) {
@@ -174,6 +190,73 @@ export function resetRuntime(input: RuntimeManagerInput = {}) {
 
 export function uninstallRuntime(input: RuntimeManagerInput = {}) {
   return createRuntimeManager(input).uninstallRuntime();
+}
+
+async function ensureRuntimeOperation(context: RuntimeManagerContext) {
+  const report = await checkRuntimeStatus(context);
+  context.observation?.initial(report);
+  if (report.status === "ready") {
+    context.observation?.readinessPolls(0);
+    return report;
+  }
+  await runLifecyclePhase(context, "ensure");
+  return waitForReadinessPhase(context);
+}
+
+function repairRuntimeOperation(context: RuntimeManagerContext) {
+  return runReadyLifecycleOperation(context, "repair");
+}
+
+function resetRuntimeOperation(context: RuntimeManagerContext) {
+  return runReadyLifecycleOperation(context, "reset");
+}
+
+async function runReadyLifecycleOperation(
+  context: RuntimeManagerContext,
+  command: "repair" | "reset",
+) {
+  await runLifecyclePhase(context, command);
+  return waitForReadinessPhase(context);
+}
+
+async function uninstallRuntimeOperation(context: RuntimeManagerContext) {
+  await runLifecyclePhase(context, "uninstall");
+  return checkRuntimeStatus(context);
+}
+
+function checkRuntimeStatus(context: RuntimeManagerContext) {
+  return observeRuntimePhase(context, "status_check", () =>
+    runtimeStatusReportFromContext(context),
+  );
+}
+
+function runLifecyclePhase(
+  context: RuntimeManagerContext,
+  command: "ensure" | "repair" | "reset" | "uninstall",
+) {
+  return observeRuntimePhase(context, "lifecycle_command", () =>
+    runRuntimeLifecycleCommand(context, command),
+  );
+}
+
+function waitForReadinessPhase(context: RuntimeManagerContext) {
+  const action = () => waitForRuntimeReadiness(context);
+  return (
+    context.observation?.phase("readiness_wait", action, readinessOutcome) ??
+    action()
+  );
+}
+
+function readinessOutcome(report: RuntimeStatusReport) {
+  return report.status === "ready" ? "succeeded" : "failed";
+}
+
+function observeRuntimePhase<T>(
+  context: RuntimeManagerContext,
+  phase: "lifecycle_command" | "readiness_wait" | "status_check",
+  action: () => Promise<T>,
+) {
+  return context.observation?.phase(phase, action) ?? action();
 }
 
 async function runtimeDependencyIssues(context: RuntimeManagerContext) {
@@ -204,7 +287,9 @@ async function managedRuntimeIssues(context: RuntimeManagerContext) {
 
 async function checkLinuxNerdctl(context: RuntimeManagerContext) {
   try {
-    await context.run("nerdctl", ["--version"], context.env);
+    await observeRuntimeProbe(context, "nerdctl", "binary", () =>
+      context.run("nerdctl", ["--version"], context.env),
+    );
     return null;
   } catch (error) {
     return runtimeIssue("nerdctl", "missing", error);
@@ -213,7 +298,9 @@ async function checkLinuxNerdctl(context: RuntimeManagerContext) {
 
 async function checkRuntimeConnection(context: RuntimeManagerContext) {
   try {
-    await runRuntimeCommand(context, "info", []);
+    await observeRuntimeProbe(context, "containerd", "connection", () =>
+      runRuntimeCommand(context, "info", []),
+    );
     return null;
   } catch (error) {
     return runtimeIssue("containerd", "unavailable", error);
@@ -226,7 +313,9 @@ async function checkRuntimeTool(
   args: string[],
 ) {
   try {
-    await runRuntimeCommand(context, command, args);
+    await observeRuntimeProbe(context, "nerdctl-compose", "compose", () =>
+      runRuntimeCommand(context, command, args),
+    );
     return null;
   } catch (error) {
     return runtimeIssue("nerdctl-compose", "missing", error);
@@ -235,7 +324,9 @@ async function checkRuntimeTool(
 
 async function checkManagedRuntimeBinary(context: RuntimeManagerContext) {
   try {
-    await context.run(runtimeBinary(context.platform), ["--version"], context.env);
+    await observeRuntimeProbe(context, "blame-runtime", "binary", () =>
+      context.run(runtimeBinary(context.platform), ["--version"], context.env),
+    );
     return null;
   } catch (error) {
     return runtimeIssue("blame-runtime", "missing", error, "missing");
@@ -244,9 +335,13 @@ async function checkManagedRuntimeBinary(context: RuntimeManagerContext) {
 
 async function checkManagedRuntimeStatus(context: RuntimeManagerContext) {
   try {
-    const output = await context.run(runtimeBinary(context.platform), [
+    const output = await observeRuntimeProbe(
+      context,
+      "blame-runtime",
       "status",
-    ], context.env);
+      () =>
+        context.run(runtimeBinary(context.platform), ["status"], context.env),
+    );
     return managedRuntimeStatusIssueFromOutput(output);
   } catch (error) {
     return runtimeIssue("blame-runtime", "unavailable", error, "broken");
@@ -255,16 +350,33 @@ async function checkManagedRuntimeStatus(context: RuntimeManagerContext) {
 
 async function checkManagedRuntimeAgent(context: RuntimeManagerContext) {
   try {
-    const output = await context.run(runtimeBinary(context.platform), [
+    const output = await observeRuntimeProbe(
+      context,
+      "blame-runtime",
       "agent",
-      "status",
-    ], context.env);
+      () =>
+        context.run(
+          runtimeBinary(context.platform),
+          ["agent", "status"],
+          context.env,
+        ),
+    );
     return parseRuntimeState(output) === "ready"
       ? null
       : managedRuntimeAgentIssue();
   } catch (error) {
     return managedRuntimeAgentIssue(error);
   }
+}
+
+function observeRuntimeProbe<T>(
+  context: RuntimeManagerContext,
+  dependency: RuntimeDependencyName,
+  probe: RuntimeTelemetryProbeName,
+  action: () => Promise<T>,
+) {
+  if (!context.observation || context.probesEnabled === false) return action();
+  return context.observation.probe(dependency, probe, action);
 }
 
 function runRuntimeCommand(
@@ -294,11 +406,15 @@ function runRuntimeLifecycleCommand(
 
 async function waitForRuntimeReadiness(context: RuntimeManagerContext) {
   const deadline = Date.now() + readinessTimeoutMs;
-  let report = await runtimeStatusReportFromContext(context);
+  const pollingContext = { ...context, probesEnabled: false };
+  let report = await runtimeStatusReportFromContext(pollingContext);
+  let pollCount = 1;
   while (runtimeReadinessPending(report) && Date.now() < deadline) {
     await sleep(readinessPollIntervalMs);
-    report = await runtimeStatusReportFromContext(context);
+    report = await runtimeStatusReportFromContext(pollingContext);
+    pollCount += 1;
   }
+  context.observation?.readinessPolls(pollCount);
   return report;
 }
 
@@ -362,14 +478,26 @@ function managedRuntimeStatusIssueFromOutput(output: string) {
   const check = report.checks?.find((item) => item.status !== "available");
   if (!check) {
     const status = report.status ?? "ready";
-    return status === "ready" ? null : managedRuntimeStatusIssue(status, report.action);
+    return status === "ready"
+      ? null
+      : managedRuntimeStatusIssue(status, report.action);
   }
-  return managedRuntimeCheckIssue(check, report.status ?? "broken", report.action);
+  return managedRuntimeCheckIssue(
+    check,
+    report.status ?? "broken",
+    report.action,
+  );
 }
 
 function managedRuntimeStatusIssue(status: RuntimeState, action?: string) {
   if (status === "missing") {
-    return runtimeIssue("blame-runtime", "missing", undefined, "missing", action);
+    return runtimeIssue(
+      "blame-runtime",
+      "missing",
+      undefined,
+      "missing",
+      action,
+    );
   }
   if (status === "unsupported") {
     return runtimeIssue(
@@ -380,7 +508,13 @@ function managedRuntimeStatusIssue(status: RuntimeState, action?: string) {
       action,
     );
   }
-  return runtimeIssue("blame-runtime", "unavailable", undefined, status, action);
+  return runtimeIssue(
+    "blame-runtime",
+    "unavailable",
+    undefined,
+    status,
+    action,
+  );
 }
 
 function managedRuntimeCheckIssue(
@@ -397,17 +531,19 @@ function managedRuntimeCheckIssue(
   );
 }
 
-function runtimeDependencyName(name: ManagedRuntimeCheckName): RuntimeDependencyName {
+function runtimeDependencyName(
+  name: ManagedRuntimeCheckName,
+): RuntimeDependencyName {
   if (
-    name === "lima"
-    || name === "vm"
-    || name === "wsl"
-    || name === "wsl2"
-    || name === "distro"
-    || name === "host-home"
-    || name === "runtime-version"
-    || name === "agent"
-    || name === "node"
+    name === "lima" ||
+    name === "vm" ||
+    name === "wsl" ||
+    name === "wsl2" ||
+    name === "distro" ||
+    name === "host-home" ||
+    name === "runtime-version" ||
+    name === "agent" ||
+    name === "node"
   )
     return "blame-runtime";
   return name;
@@ -429,8 +565,7 @@ function runtimeStatusForCheck(
     return check.status === "unsupported" ? "unsupported" : "broken";
   if (check.name === "vm")
     return check.status === "missing" ? "missing" : fallback;
-  if (check.name === "distro" || check.name === "agent")
-    return "missing";
+  if (check.name === "distro" || check.name === "agent") return "missing";
   if (check.status === "missing") return "repairable";
   return fallback;
 }
@@ -485,11 +620,15 @@ async function runCommand(
 ) {
   const environment = withoutTelemetryEnvironment(env ?? process.env);
   const commandSpec = executableRuntimeCommand(command, args, environment);
-  const { stdout } = await execFileAsync(commandSpec.command, commandSpec.args, {
-    env: environment,
-    shell: false,
-    timeout: timeoutMs,
-  });
+  const { stdout } = await execFileAsync(
+    commandSpec.command,
+    commandSpec.args,
+    {
+      env: environment,
+      shell: false,
+      timeout: timeoutMs,
+    },
+  );
   return stdout;
 }
 
@@ -502,7 +641,14 @@ function executableRuntimeCommand(
   const script = runtimeToolScript(command, { env, platform: "win32" });
   if (script) {
     return {
-      args: ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script, ...args],
+      args: [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        script,
+        ...args,
+      ],
       command: "powershell.exe",
     };
   }
