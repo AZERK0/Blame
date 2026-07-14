@@ -18,6 +18,18 @@ const routes = {
     tokens: [{"old":"/api/v1/account/closure-status","type":0,"val":"api","end":""},{"old":"/api/v1/account/closure-status","type":0,"val":"v1","end":""},{"old":"/api/v1/account/closure-status","type":0,"val":"account","end":""},{"old":"/api/v1/account/closure-status","type":0,"val":"closure-status","end":""}],
     types: placeholder as Registry['account_privacy.status']['types'],
   },
+  'telemetry_ingestion.store': {
+    methods: ["POST"],
+    pattern: '/api/v1/telemetry/otlp/v1/:signal',
+    tokens: [{"old":"/api/v1/telemetry/otlp/v1/:signal","type":0,"val":"api","end":""},{"old":"/api/v1/telemetry/otlp/v1/:signal","type":0,"val":"v1","end":""},{"old":"/api/v1/telemetry/otlp/v1/:signal","type":0,"val":"telemetry","end":""},{"old":"/api/v1/telemetry/otlp/v1/:signal","type":0,"val":"otlp","end":""},{"old":"/api/v1/telemetry/otlp/v1/:signal","type":0,"val":"v1","end":""},{"old":"/api/v1/telemetry/otlp/v1/:signal","type":1,"val":"signal","end":""}],
+    types: placeholder as Registry['telemetry_ingestion.store']['types'],
+  },
+  'telemetry_sessions.show': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/telemetry/session',
+    tokens: [{"old":"/api/v1/telemetry/session","type":0,"val":"api","end":""},{"old":"/api/v1/telemetry/session","type":0,"val":"v1","end":""},{"old":"/api/v1/telemetry/session","type":0,"val":"telemetry","end":""},{"old":"/api/v1/telemetry/session","type":0,"val":"session","end":""}],
+    types: placeholder as Registry['telemetry_sessions.show']['types'],
+  },
   'billing.billing.show': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/billing',

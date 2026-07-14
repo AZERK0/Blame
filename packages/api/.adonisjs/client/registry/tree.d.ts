@@ -6,6 +6,12 @@ export interface ApiDefinition {
   accountPrivacy: {
     status: typeof routes['account_privacy.status']
   }
+  telemetryIngestion: {
+    store: typeof routes['telemetry_ingestion.store']
+  }
+  telemetrySessions: {
+    show: typeof routes['telemetry_sessions.show']
+  }
   billing: {
     billing: {
       show: typeof routes['billing.billing.show']

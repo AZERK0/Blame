@@ -6,6 +6,8 @@ export type ScannedRoutes = {
   ALL: {
     'stripe_webhooks': { paramsTuple?: []; params?: {} }
     'account_privacy.status': { paramsTuple?: []; params?: {} }
+    'telemetry_ingestion.store': { paramsTuple: [ParamValue]; params: {'signal': ParamValue} }
+    'telemetry_sessions.show': { paramsTuple?: []; params?: {} }
     'billing.billing.show': { paramsTuple?: []; params?: {} }
     'billing.billing.checkout': { paramsTuple?: []; params?: {} }
     'billing.billing.portal': { paramsTuple?: []; params?: {} }
@@ -57,6 +59,7 @@ export type ScannedRoutes = {
     'projects.user_stories.user_story_comments.undo': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'commentId': ParamValue} }
   }
   GET: {
+    'telemetry_sessions.show': { paramsTuple?: []; params?: {} }
     'billing.billing.show': { paramsTuple?: []; params?: {} }
     'profile.profile.show': { paramsTuple?: []; params?: {} }
     'profile.user_ai_preferences.show': { paramsTuple?: []; params?: {} }
@@ -75,6 +78,7 @@ export type ScannedRoutes = {
     'projects.user_stories.user_story_agent_runs.activity_detail': { paramsTuple: [ParamValue,ParamValue,ParamValue]; params: {'id': ParamValue,'runId': ParamValue,'activityId': ParamValue} }
   }
   HEAD: {
+    'telemetry_sessions.show': { paramsTuple?: []; params?: {} }
     'billing.billing.show': { paramsTuple?: []; params?: {} }
     'profile.profile.show': { paramsTuple?: []; params?: {} }
     'profile.user_ai_preferences.show': { paramsTuple?: []; params?: {} }
@@ -95,6 +99,7 @@ export type ScannedRoutes = {
   POST: {
     'stripe_webhooks': { paramsTuple?: []; params?: {} }
     'account_privacy.status': { paramsTuple?: []; params?: {} }
+    'telemetry_ingestion.store': { paramsTuple: [ParamValue]; params: {'signal': ParamValue} }
     'billing.billing.checkout': { paramsTuple?: []; params?: {} }
     'billing.billing.portal': { paramsTuple?: []; params?: {} }
     'auth.new_account.store': { paramsTuple?: []; params?: {} }

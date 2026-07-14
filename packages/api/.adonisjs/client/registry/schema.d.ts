@@ -31,6 +31,30 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/account_privacy_controller').default['status']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
+  'telemetry_ingestion.store': {
+    methods: ["POST"]
+    pattern: '/api/v1/telemetry/otlp/v1/:signal'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { signal: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/telemetry_ingestion_controller').default['store']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/telemetry_ingestion_controller').default['store']>>>
+    }
+  }
+  'telemetry_sessions.show': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/telemetry/session'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/telemetry_sessions_controller').default['show']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/telemetry_sessions_controller').default['show']>>>
+    }
+  }
   'billing.billing.show': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/billing'
