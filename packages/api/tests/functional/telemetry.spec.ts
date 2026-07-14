@@ -21,6 +21,7 @@ test.group('telemetry', (group) => {
     const user = await createUser()
     const sessionResponse = await client.get('/api/v1/telemetry/session').loginAs(user)
     sessionResponse.assertStatus(200)
+    sessionResponse.assertHeader('cache-control', 'private, no-store')
     const session = responseData(sessionResponse.body())
     let forwardedPayload = Buffer.alloc(0)
     const originalFetch = globalThis.fetch
