@@ -1,6 +1,5 @@
 import { homedir } from "node:os"
-import { dirname, join } from "node:path"
-import { fileURLToPath } from "node:url"
+import { join } from "node:path"
 import { shutdownBlameTelemetry } from "@blame/telemetry"
 import contextMenu from "electron-context-menu"
 import windowState from "electron-window-state"
@@ -20,6 +19,7 @@ import {
 import { registerAgentIpcHandlers, shutdownAgentRuntime } from "./agent-ipc"
 import { registerBacklogStatusPipIpcHandlers } from "./backlog-status-pip-ipc"
 import { desktopAppIdentity } from "./desktop-app-identity"
+import { desktopResourcePaths } from "./desktop-resource-paths"
 import {
   attachLiveLogWindow,
   flushLiveLogs,
@@ -43,7 +43,7 @@ contextMenu({
   showSearchWithGoogle: false,
 })
 
-const currentDirectory = dirname(fileURLToPath(import.meta.url))
+const desktopResources = desktopResourcePaths(app.getAppPath())
 const runtimeShutdownTimeoutMs = 4_000
 const telemetryShutdownTimeoutMs = 4_000
 const defaultWindowWidth = 1440
@@ -93,8 +93,8 @@ void app.whenReady().then(() => {
   registerIpcHandlers()
   registerBacklogStatusPipIpcHandlers({
     mainWindow: () => mainWindow,
-    preloadPath: join(currentDirectory, "../preload/index.js"),
-    rendererFile: join(currentDirectory, "../renderer/index.html"),
+    preloadPath: desktopResources.preload,
+    rendererFile: desktopResources.renderer,
     rendererUrl: process.env.ELECTRON_RENDERER_URL,
   })
   registerAgentIpcHandlers()
@@ -175,7 +175,7 @@ function createMainWindow() {
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
-      preload: join(currentDirectory, "../preload/index.js"),
+      preload: desktopResources.preload,
       sandbox: true,
     },
     ...(process.platform === "win32" ? windowsWindowOptions() : {}),
@@ -283,7 +283,7 @@ function loadRenderer(window: BrowserWindow) {
     void window.loadURL(process.env.ELECTRON_RENDERER_URL)
     return
   }
-  void window.loadFile(join(currentDirectory, "../renderer/index.html"))
+  void window.loadFile(desktopResources.renderer)
 }
 
 function registerIpcHandlers() {
