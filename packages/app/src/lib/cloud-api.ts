@@ -15,6 +15,7 @@ import type {
   ApiConnection,
   ProjectRunConfiguration,
 } from "@blame/agent-runtime"
+import type { TelemetryExportSession } from "@/context/platform"
 
 export class CloudApiError extends Error {
   constructor(
@@ -69,6 +70,11 @@ export function createCloudApi(connection: ApiConnection) {
     },
     profile() {
       return request<CloudUser>(connection, baseUrl, "/account/profile")
+    },
+    telemetrySession() {
+      return request<unknown>(connection, baseUrl, "/telemetry/session").then(
+        cloudTelemetrySession
+      )
     },
     exportAccount(password: string) {
       return request<CloudAccountExport>(
@@ -305,6 +311,18 @@ function cloudMcpConfigurationRequired(value: unknown) {
   if (!isRecord(configuration) || !Array.isArray(configuration.servers))
     throw new Error("Unable to read MCP configuration.")
   return configuration as CloudMcpConfiguration
+}
+
+function cloudTelemetrySession(value: unknown): TelemetryExportSession {
+  const session = transformerValue(value)
+  if (!isRecord(session)) throw new Error("Unable to read telemetry session.")
+  if (typeof session.endpoint !== "string")
+    throw new Error("Unable to read telemetry session.")
+  if (typeof session.expiresAt !== "string")
+    throw new Error("Unable to read telemetry session.")
+  if (typeof session.token !== "string")
+    throw new Error("Unable to read telemetry session.")
+  return session as TelemetryExportSession
 }
 
 function transformerValue(value: unknown): unknown {

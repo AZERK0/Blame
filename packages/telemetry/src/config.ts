@@ -1,6 +1,7 @@
 import { ATTR_DEPLOYMENT_ENVIRONMENT_NAME } from "./semantic-attributes.js";
 
 export type BlameTelemetryConfig = {
+  authorization?: TelemetryExportAuthorization;
   deploymentEnvironment: string;
   enabled: boolean;
   endpoint?: string;
@@ -11,9 +12,16 @@ export type BlameTelemetryConfig = {
 };
 
 export type BlameTelemetryOptions = {
+  authorization?: TelemetryExportAuthorization;
+  endpoint?: string;
   environment?: NodeJS.ProcessEnv;
   serviceName: string;
   serviceVersion: string;
+};
+
+export type TelemetryExportAuthorization = {
+  headers(): Promise<Record<string, string>>;
+  isReady(): boolean;
 };
 
 export type TelemetrySignal = "logs" | "metrics" | "traces";
@@ -31,11 +39,14 @@ export function loadTelemetryConfig(
   options: BlameTelemetryOptions,
 ): BlameTelemetryConfig {
   const environment = options.environment ?? process.env;
-  const endpoint = validEndpoint(environment.OTEL_EXPORTER_OTLP_ENDPOINT);
+  const endpoint = validEndpoint(
+    options.endpoint ?? environment.OTEL_EXPORTER_OTLP_ENDPOINT,
+  );
   const disabled =
     environment.OTEL_SDK_DISABLED?.trim().toLowerCase() === "true";
   const deploymentEnvironment = deploymentName(environment);
   return {
+    authorization: options.authorization,
     deploymentEnvironment,
     enabled: Boolean(endpoint) && !disabled,
     endpoint,

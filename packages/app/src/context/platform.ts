@@ -59,6 +59,7 @@ export type Platform = {
   previewBrowser?: PreviewBrowserClient
   systemNotifications?: SystemNotificationsClient
   terminal?: TerminalClient
+  telemetry?: TelemetryClient
   updates?: DesktopUpdatesClient
   mcp?: McpServersClient
   workspace?: WorkspaceClient
@@ -68,6 +69,17 @@ export type Platform = {
   ): Promise<PickerPaths>
   openExternalLink?(url: string): void
   openPath?(path: string): Promise<string>
+}
+
+export type TelemetryExportSession = {
+  endpoint: string
+  expiresAt: string
+  token: string
+}
+
+export type TelemetryClient = {
+  configure(session: TelemetryExportSession): Promise<boolean>
+  disable(): Promise<boolean>
 }
 
 export type McpTransport = "stdio" | "streamableHttp" | "sse"

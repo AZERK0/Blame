@@ -18,6 +18,7 @@ import {
   writeCloudSession,
 } from "@/context/cloud-auth-storage"
 import { createCloudApi } from "@/lib/cloud-api"
+import { useCloudTelemetry } from "@/context/cloud-telemetry"
 
 const configuredApiUrl = import.meta.env.VITE_CLOUD_API_URL?.trim()
 const defaultApiUrl =
@@ -46,6 +47,7 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
     () => ({ url: apiUrl, token }),
     [apiUrl, token]
   )
+  useCloudTelemetry(platform.telemetry, apiConnection, Boolean(token))
 
   React.useEffect(() => {
     let alive = true

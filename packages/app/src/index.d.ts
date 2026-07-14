@@ -17,6 +17,7 @@ export type {
   McpServerConfig,
   McpServersClient,
   Platform,
+  TelemetryExportSession,
 } from "./context/platform"
 
 export type MountAppOptions = {

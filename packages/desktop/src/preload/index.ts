@@ -8,8 +8,13 @@ const api: BlameDesktopApi = {
     onRefreshLicense: (callback) => {
       const handler = () => callback();
       ipcRenderer.on("billing:refresh-license", handler);
-      return () => ipcRenderer.removeListener("billing:refresh-license", handler);
+      return () =>
+        ipcRenderer.removeListener("billing:refresh-license", handler);
     },
+  },
+  telemetry: {
+    configure: (session) => ipcRenderer.invoke("telemetry:configure", session),
+    disable: () => ipcRenderer.invoke("telemetry:disable"),
   },
   mcp: {
     authorize: (name) => ipcRenderer.invoke("mcp:authorize", name),

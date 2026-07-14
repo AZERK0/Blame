@@ -16,6 +16,7 @@ mountApp(root, {
     previewBrowser: window.blame.previewBrowser,
     systemNotifications: window.blame.systemNotifications,
     terminal: window.blame.terminal,
+    telemetry: window.blame.telemetry,
     updates: window.blame.updates,
     workspace: window.blame.workspace,
     windowControls: window.blame.windowControls,

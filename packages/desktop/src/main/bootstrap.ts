@@ -1,9 +1,6 @@
-import { initializeBlameTelemetry } from "@blame/telemetry"
 import { app } from "electron"
+import { initializeDesktopTelemetry } from "./desktop-telemetry"
 
-initializeBlameTelemetry({
-  serviceName: "blame-desktop",
-  serviceVersion: app.getVersion(),
-})
+initializeDesktopTelemetry(app.getVersion(), app.isPackaged)
 
 await import("./index")

@@ -27,6 +27,11 @@ import {
   type BlameTelemetryOptions,
 } from "./config.js";
 import { ExecutionRegistry } from "./execution-registry.js";
+import {
+  GatedLogRecordExporter,
+  GatedMetricExporter,
+  GatedSpanExporter,
+} from "./gated-exporters.js";
 import { RedactingSpanProcessor } from "./redacting-span-processor.js";
 import { allowedMetricAttributeKeys } from "./redaction.js";
 import { ATTR_DEPLOYMENT_ENVIRONMENT_NAME } from "./semantic-attributes.js";
@@ -75,40 +80,64 @@ function createNodeSdk(config: BlameTelemetryConfig) {
   return new NodeSDK({
     autoDetectResources: false,
     instrumentations: createInstrumentations(config.serviceName),
-    logRecordProcessors: createLogProcessors(endpoint),
-    metricReaders: createMetricReaders(endpoint, config.exportIntervalMs),
+    logRecordProcessors: createLogProcessors(config),
+    metricReaders: createMetricReaders(config),
     resource: createResource(config),
-    spanProcessors: createSpanProcessors(endpoint),
+    spanProcessors: createSpanProcessors(config),
     views: createMetricViews(),
   });
 }
 
-function createLogProcessors(endpoint: string) {
+function createLogProcessors(config: BlameTelemetryConfig) {
+  const exporter = new OTLPLogExporter({
+    headers: authorizationHeaders(config),
+    url: otlpSignalEndpoint(config.endpoint!, "logs"),
+  });
   return [
     new BatchLogRecordProcessor({
-      exporter: new OTLPLogExporter({
-        url: otlpSignalEndpoint(endpoint, "logs"),
-      }),
+      exporter: config.authorization
+        ? new GatedLogRecordExporter(exporter, () =>
+            config.authorization!.isReady(),
+          )
+        : exporter,
     }),
   ];
 }
 
-function createMetricReaders(endpoint: string, exportIntervalMs: number) {
+function createMetricReaders(config: BlameTelemetryConfig) {
+  const exporter = new OTLPMetricExporter({
+    headers: authorizationHeaders(config),
+    url: otlpSignalEndpoint(config.endpoint!, "metrics"),
+  });
   return [
     new PeriodicExportingMetricReader({
-      exporter: new OTLPMetricExporter({
-        url: otlpSignalEndpoint(endpoint, "metrics"),
-      }),
-      exportIntervalMillis: exportIntervalMs,
+      exporter: config.authorization
+        ? new GatedMetricExporter(exporter, () =>
+            config.authorization!.isReady(),
+          )
+        : exporter,
+      exportIntervalMillis: config.exportIntervalMs,
     }),
   ];
 }
 
-function createSpanProcessors(endpoint: string) {
+function createSpanProcessors(config: BlameTelemetryConfig) {
   const exporter = new OTLPTraceExporter({
-    url: otlpSignalEndpoint(endpoint, "traces"),
+    headers: authorizationHeaders(config),
+    url: otlpSignalEndpoint(config.endpoint!, "traces"),
   });
-  return [new RedactingSpanProcessor(), new BatchSpanProcessor({ exporter })];
+  const gatedExporter = config.authorization
+    ? new GatedSpanExporter(exporter, () => config.authorization!.isReady())
+    : exporter;
+  return [
+    new RedactingSpanProcessor(),
+    new BatchSpanProcessor({ exporter: gatedExporter }),
+  ];
+}
+
+function authorizationHeaders(config: BlameTelemetryConfig) {
+  const authorization = config.authorization;
+  return authorization ? () => authorization.headers() : undefined;
 }
 
 function createMetricViews(): ViewOptions[] {

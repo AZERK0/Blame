@@ -56,6 +56,22 @@ test("requires a valid generic OTLP endpoint", () => {
   );
 });
 
+test("accepts an explicit authenticated endpoint", () => {
+  const authorization = {
+    headers: async () => ({ Authorization: "Bearer short-lived" }),
+    isReady: () => true,
+  };
+  const config = loadTelemetryConfig({
+    ...options,
+    authorization,
+    endpoint: "https://api.example.test/telemetry/otlp",
+    environment: {},
+  });
+  assert.equal(config.enabled, true);
+  assert.equal(config.endpoint, "https://api.example.test/telemetry/otlp");
+  assert.equal(config.authorization, authorization);
+});
+
 test("honors the SDK disable switch", () => {
   const config = loadTelemetryConfig({
     ...options,

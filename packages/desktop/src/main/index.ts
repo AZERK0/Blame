@@ -32,6 +32,7 @@ import {
   registerPreviewBrowserIpcHandlers,
 } from "./preview-browser-ipc"
 import { registerTerminalIpcHandlers, shutdownTerminalSessions } from "./terminal-ipc"
+import { registerTelemetryIpcHandlers } from "./telemetry-ipc"
 import { registerWorkspaceIpcHandlers, shutdownWorkspaceProcesses } from "./workspace-ipc"
 import { registerMcpIpcHandlers } from "./mcp-ipc"
 
@@ -100,6 +101,7 @@ void app.whenReady().then(() => {
   registerPreviewBrowserIpcHandlers()
   registerMcpIpcHandlers()
   registerTerminalIpcHandlers()
+  registerTelemetryIpcHandlers()
   registerDesktopUpdateIpcHandlers({
     async beforeInstall() {
       shutdownRequested = true

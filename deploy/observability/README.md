@@ -33,6 +33,31 @@ L'image `otel/opentelemetry-collector-contrib` est épinglée à `0.156.0`. Tout
 
 ## Connexion des applications
 
+Le Backend Blame peut exporter directement vers le Collector avec une credential serveur. Le Desktop distribué ne doit jamais recevoir cette credential. Son flux conventionnel est :
+
+```text
+compte Blame authentifié
+→ jeton telemetry:write de 15 minutes
+→ /api/v1/telemetry/otlp/v1/{traces,metrics,logs}
+→ credential serveur
+→ Collector
+```
+
+La gateway est configurée sur le Backend avec :
+
+```sh
+BLAME_TELEMETRY_PUBLIC_ENDPOINT=https://api.example.com/api/v1/telemetry/otlp
+BLAME_TELEMETRY_UPSTREAM_ENDPOINT=https://otel-internal.example.com
+BLAME_TELEMETRY_UPSTREAM_HEADERS=Authorization=Basic%20replace-me
+BLAME_TELEMETRY_TOKEN_SECRET=replace-with-at-least-32-random-characters
+BLAME_TELEMETRY_TOKEN_TTL_SECONDS=900
+BLAME_TELEMETRY_MAX_PAYLOAD_BYTES=4194304
+BLAME_TELEMETRY_REQUESTS_PER_MINUTE=120
+BLAME_TELEMETRY_UPSTREAM_TIMEOUT_MS=10000
+```
+
+La route d’émission de session utilise l’authentification du compte. Les routes OTLP acceptent uniquement `application/x-protobuf`, vérifient signature, audience, scope et expiration, limitent le débit par compte et bornent le corps avant de le transmettre. L’identifiant du compte sert uniquement à cette limite locale et n’est pas ajouté aux signaux.
+
 Pour une application exécutée sur le même hôte :
 
 ```sh

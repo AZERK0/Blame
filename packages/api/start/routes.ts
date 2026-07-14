@@ -27,6 +27,8 @@ const UserStoryCommentsController = () => import('#controllers/user_story_commen
 const BillingController = () => import('#controllers/billing_controller')
 const StripeWebhooksController = () => import('#controllers/stripe_webhooks_controller')
 const AccountPrivacyController = () => import('#controllers/account_privacy_controller')
+const TelemetryIngestionController = () => import('#controllers/telemetry_ingestion_controller')
+const TelemetrySessionsController = () => import('#controllers/telemetry_sessions_controller')
 
 router.get('/', () => {
   return { hello: 'world' }
@@ -36,6 +38,9 @@ router
   .group(() => {
     router.post('webhooks/stripe', [StripeWebhooksController, 'handle'])
     router.post('account/closure-status', [AccountPrivacyController, 'status'])
+    router.post('telemetry/otlp/v1/:signal', [TelemetryIngestionController, 'store'])
+
+    router.get('telemetry/session', [TelemetrySessionsController, 'show']).use(middleware.auth())
 
     router
       .group(() => {

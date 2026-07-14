@@ -2,7 +2,7 @@
 
 `@blame/telemetry` fournit le SDK OpenTelemetry commun aux processus Node de Blame. Un seul SDK est initialisé par processus : `blame-desktop` dans Electron main et `blame-api` avant le chargement d’AdonisJS.
 
-La télémétrie reste désactivée tant que `OTEL_EXPORTER_OTLP_ENDPOINT` n’est pas défini avec une URL HTTP(S) valide. `OTEL_SDK_DISABLED=true` force sa désactivation. Aucun endpoint local implicite n’est utilisé.
+La télémétrie reste désactivée tant qu’un endpoint HTTP(S) valide n’est pas fourni par `OTEL_EXPORTER_OTLP_ENDPOINT` ou explicitement par l’application. `OTEL_SDK_DISABLED=true` force sa désactivation. Aucun endpoint local implicite n’est utilisé par le package.
 
 ## Configuration
 
@@ -13,6 +13,20 @@ OTEL_RESOURCE_ATTRIBUTES=deployment.environment.name=production,service.namespac
 ```
 
 Le transport est OTLP/HTTP protobuf. L’endpoint générique est la seule source des trois URLs de signal : les variables `OTEL_EXPORTER_OTLP_{TRACES,METRICS,LOGS}_ENDPOINT` ne peuvent pas le remplacer. Les en-têtes, certificats, délais et options de compression OTLP standard restent gérés par les exporters officiels. Les variables `OTEL_*` sont retirées de l’environnement transmis aux shells, scripts projet, containers et processus auxiliaires.
+
+## Authentification du Desktop
+
+Le build Desktop contient uniquement l’URL publique de la gateway OTLP de l’API Blame. Après authentification du compte, le renderer demande une session à `/api/v1/telemetry/session`. L’API renvoie un jeton HMAC limité à l’écriture de télémétrie et valable quinze minutes. Electron main conserve ce jeton en mémoire, l’ajoute dynamiquement à chaque export et le supprime à la déconnexion ou à l’expiration.
+
+Avant la première session valide, après expiration et après déconnexion, les exporters authentifiés abandonnent localement leurs batches sans effectuer de requête réseau. Le renouvellement intervient deux minutes avant expiration et réessaie sans interrompre l’application si l’API est indisponible.
+
+Le secret de signature et la credential du Collector restent exclusivement dans l’environnement du Backend. Aucun des éléments suivants ne doit entrer dans un build Desktop :
+
+- `BLAME_TELEMETRY_TOKEN_SECRET`
+- `BLAME_TELEMETRY_UPSTREAM_HEADERS`
+- `OTEL_EXPORTER_OTLP_HEADERS`
+
+`BLAME_TELEMETRY_ENDPOINT` peut remplacer l’URL publique dans un environnement Desktop contrôlé. Ce paramètre n’est pas secret. Un `OTEL_EXPORTER_OTLP_ENDPOINT` explicite conserve le mode direct destiné au développement ou à une installation auto-hébergée.
 
 ## Ressources et attributs
 

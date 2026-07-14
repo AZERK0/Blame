@@ -43,6 +43,7 @@ import type {
   GitStatusResult,
 } from "@blame/app";
 import type { McpServersClient } from "@blame/app";
+import type { TelemetryExportSession } from "@blame/app";
 import type { HostDependencyReport } from "../main/host-dependencies";
 import type { CreateProjectInput } from "../main/project-creation";
 
@@ -172,6 +173,10 @@ export type BlameDesktopApi = {
   billing: {
     onRefreshLicense(callback: () => void): () => void;
     ready(): void;
+  };
+  telemetry: {
+    configure(session: TelemetryExportSession): Promise<boolean>;
+    disable(): Promise<boolean>;
   };
   openDirectoryPicker(
     options?: OpenDirectoryPickerOptions,
