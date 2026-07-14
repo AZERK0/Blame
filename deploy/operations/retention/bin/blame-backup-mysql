@@ -1,0 +1,36 @@
+#!/bin/sh
+set -eu
+
+backup_directory="${BLAME_BACKUP_DIRECTORY:-/var/backups/blame/mysql}"
+backup_key_file="${BLAME_BACKUP_KEY_FILE:-/etc/blame/backup.key}"
+mysql_service="${BLAME_MYSQL_SERVICE:-}"
+
+case "$mysql_service" in
+  ''|*[!A-Za-z0-9_.-]*)
+    printf 'Invalid MySQL service identifier: %s\n' "$mysql_service" >&2
+    exit 64
+    ;;
+esac
+
+command -v docker >/dev/null 2>&1
+command -v gzip >/dev/null 2>&1
+command -v openssl >/dev/null 2>&1
+test -r "$backup_key_file"
+install -d -m 0700 "$backup_directory"
+container="$(docker ps --filter "label=com.docker.swarm.service.name=$mysql_service" --filter status=running --format '{{.ID}}' | sed -n '1p')"
+test -n "$container"
+timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+backup="$backup_directory/blame-mysql-$timestamp.sql.gz.enc"
+temporary="$backup.tmp"
+trap 'rm -f "$temporary" "$temporary.sha256"' EXIT HUP INT TERM
+
+docker exec "$container" sh -ec 'MYSQL_PWD="$MYSQL_PASSWORD" exec mysqldump --single-transaction --quick --routines --events --triggers --hex-blob --set-gtid-purged=OFF --no-tablespaces -u "$MYSQL_USER" "$MYSQL_DATABASE"' |
+  gzip -9 |
+  openssl enc -aes-256-cbc -salt -pbkdf2 -iter 200000 -pass "file:$backup_key_file" > "$temporary"
+openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass "file:$backup_key_file" -in "$temporary" | gzip -t
+chmod 0600 "$temporary"
+mv "$temporary" "$backup"
+sha256sum "$backup" > "$temporary.sha256"
+chmod 0600 "$temporary.sha256"
+mv "$temporary.sha256" "$backup.sha256"
+find -P "$backup_directory" -xdev -type f \( -name '*.sql.gz.enc' -o -name '*.sql.gz.enc.sha256' \) -mtime +80 -delete

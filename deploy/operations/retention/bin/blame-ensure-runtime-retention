@@ -1,0 +1,71 @@
+#!/bin/sh
+set -eu
+
+ledger_directory=/var/lib/blame/account-closure-ledger
+
+validate_identifier() {
+  case "$1" in
+    ''|*[!A-Za-z0-9_.-]*)
+      printf 'Invalid Docker service identifier: %s\n' "$1" >&2
+      return 64
+      ;;
+  esac
+}
+
+service_log_driver() {
+  docker service inspect --format '{{if .Spec.TaskTemplate.LogDriver}}{{.Spec.TaskTemplate.LogDriver.Name}}{{end}}' "$1"
+}
+
+running_log_driver() {
+  container="$(docker ps --filter "label=com.docker.swarm.service.name=$1" --filter status=running --format '{{.ID}}' | sed -n '1p')"
+  [ -n "$container" ] || return 69
+  docker inspect --format '{{.HostConfig.LogConfig.Type}}' "$container"
+}
+
+ensure_journald() {
+  service="$1"
+  validate_identifier "$service"
+  docker service inspect "$service" >/dev/null
+  if [ "$(service_log_driver "$service")" != 'journald' ] || [ "$(running_log_driver "$service")" != 'journald' ]; then
+    case " ${BLAME_STOP_FIRST_LOG_SERVICES:-} " in
+      *" $service "*)
+        docker service update --detach=false --force --update-order stop-first --log-driver journald "$service"
+        ;;
+      *)
+        docker service update --detach=false --force --log-driver journald "$service"
+        ;;
+    esac
+  fi
+}
+
+ensure_api_runtime() {
+  service="$1"
+  environment="$(docker service inspect --format '{{range .Spec.TaskTemplate.ContainerSpec.Env}}{{println .}}{{end}}' "$service")"
+  mount="$(docker service inspect --format '{{range .Spec.TaskTemplate.ContainerSpec.Mounts}}{{if eq .Target "/var/lib/blame/account-closure-ledger"}}{{.Source}}{{end}}{{end}}' "$service")"
+  set -- docker service update --detach=false
+  changed=0
+  if ! printf '%s\n' "$environment" | grep -qx "ACCOUNT_CLOSURE_LEDGER_DIRECTORY=$ledger_directory"; then
+    set -- "$@" --env-add "ACCOUNT_CLOSURE_LEDGER_DIRECTORY=$ledger_directory"
+    changed=1
+  fi
+  if [ "$mount" != "$ledger_directory" ]; then
+    [ -z "$mount" ] || set -- "$@" --mount-rm "$ledger_directory"
+    set -- "$@" --mount-add "type=bind,src=$ledger_directory,dst=$ledger_directory"
+    changed=1
+  fi
+  if [ "$(service_log_driver "$service")" != 'journald' ]; then
+    set -- "$@" --log-driver journald
+    changed=1
+  fi
+  [ "$changed" -eq 0 ] || "$@" "$service"
+}
+
+command -v docker >/dev/null 2>&1
+install -d -m 0700 -o 1001 -g 1001 "$ledger_directory"
+api_service="${BLAME_API_SERVICE:-}"
+validate_identifier "$api_service"
+docker service inspect "$api_service" >/dev/null
+ensure_api_runtime "$api_service"
+for service in ${BLAME_LOG_SERVICES:-}; do
+  [ "$service" = "$api_service" ] || ensure_journald "$service"
+done

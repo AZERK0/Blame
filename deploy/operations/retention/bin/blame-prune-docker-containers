@@ -1,0 +1,17 @@
+#!/bin/sh
+set -eu
+
+retention_seconds=30240000
+cutoff="$(( $(date +%s) - retention_seconds ))"
+
+docker ps -a --filter status=exited --format '{{.ID}} {{.Names}}' | while read -r container name; do
+  case "$name" in
+    blame-*) ;;
+    *) continue ;;
+  esac
+  finished_at="$(docker inspect --format '{{.State.FinishedAt}}' "$container")"
+  finished_epoch="$(date -d "$finished_at" +%s 2>/dev/null || printf '0')"
+  if [ "$finished_epoch" -gt 0 ] && [ "$finished_epoch" -lt "$cutoff" ]; then
+    docker rm "$container"
+  fi
+done

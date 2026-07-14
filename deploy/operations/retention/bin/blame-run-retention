@@ -3,11 +3,19 @@ set -u
 
 exit_status=0
 
+if ! /usr/local/sbin/blame-ensure-runtime-retention; then
+  exit_status=1
+fi
+
 if ! /usr/local/sbin/blame-purge-closed-accounts; then
   exit_status=1
 fi
 
 if ! /usr/local/sbin/blame-prune-dokploy-logs; then
+  exit_status=1
+fi
+
+if ! /usr/local/sbin/blame-prune-docker-containers; then
   exit_status=1
 fi
 

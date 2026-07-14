@@ -73,5 +73,6 @@ ENV NODE_ENV=production
 ENV HOST=0.0.0.0
 ENV PORT=3333
 ENV TZ=UTC
+ENV ACCOUNT_CLOSURE_LEDGER_DIRECTORY=/var/lib/blame/account-closure-ledger
 
 CMD ["node", "bin/server.js"]

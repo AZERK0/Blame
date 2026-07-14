@@ -19,6 +19,8 @@ aws --endpoint-url "$OVH_S3_ENDPOINT" s3api get-bucket-lifecycle-configuration \
 
 In Dokploy, select this dedicated bucket for every Blame database, volume, and web-server backup. Run a test backup and a restore test. Inventory OVH snapshots, database-managed backups, replicas, exports, and any second destination; disable them or independently cap them at 90 days. Object Lock, legal holds, and versioning settings must not preserve backup data past the approved period unless a documented legal hold applies. OVHcloud lifecycle execution is asynchronous, so audit object ages regularly and lower the 80-day trigger if any object approaches 90 days.
 
+Until the dedicated OVH Object Storage destination is configured, the host creates a daily encrypted MySQL dump in `/var/backups/blame/mysql` and deletes dump and checksum files after 80 days. The encryption key is generated once at `/etc/blame/backup.key`; copy it to an approved offline secret store because a server loss otherwise makes the local backups unrecoverable. This local rotation enforces the retention ceiling but is not an off-host disaster-recovery copy.
+
 ## Account closure ledger and restore barrier
 
 Set `ACCOUNT_CLOSURE_LEDGER_DIRECTORY=/var/lib/blame/account-closure-ledger` in the API production environment. Mount that exact directory as durable, encrypted storage shared by every API task that can serve the same database. It must remain outside the MySQL backup dataset so restoring an older database cannot remove a later closure tombstone. Restrict the directory to the API runtime identity, replicate its immutable records to a separate private Gravelines destination, and retain each record for the five-year rights-request period or ten-year billing-evidence period encoded by the service.
@@ -48,12 +50,23 @@ sudo install -D -m 0750 deploy/operations/retention/bin/blame-purge-closed-accou
   /usr/local/sbin/blame-purge-closed-accounts
 sudo install -D -m 0750 deploy/operations/retention/bin/blame-prune-dokploy-logs \
   /usr/local/sbin/blame-prune-dokploy-logs
+sudo install -D -m 0750 deploy/operations/retention/bin/blame-ensure-runtime-retention \
+  /usr/local/sbin/blame-ensure-runtime-retention
+sudo install -D -m 0750 deploy/operations/retention/bin/blame-prune-docker-containers \
+  /usr/local/sbin/blame-prune-docker-containers
+sudo install -D -m 0750 deploy/operations/retention/bin/blame-backup-mysql \
+  /usr/local/sbin/blame-backup-mysql
 sudo install -D -m 0600 deploy/operations/retention/blame-retention.env.example \
   /etc/blame/retention.env
+sudo sh -c 'test -s /etc/blame/backup.key || (umask 077 && openssl rand -base64 48 > /etc/blame/backup.key)'
 sudo install -D -m 0644 deploy/operations/retention/systemd/blame-retention.service \
   /etc/systemd/system/blame-retention.service
 sudo install -D -m 0644 deploy/operations/retention/systemd/blame-retention.timer \
   /etc/systemd/system/blame-retention.timer
+sudo install -D -m 0644 deploy/operations/retention/systemd/blame-backup.service \
+  /etc/systemd/system/blame-backup.service
+sudo install -D -m 0644 deploy/operations/retention/systemd/blame-backup.timer \
+  /etc/systemd/system/blame-backup.timer
 sudo install -D -m 0644 deploy/operations/retention/logrotate/blame-traefik-access \
   /etc/logrotate.d/blame-traefik-access
 ```
@@ -71,6 +84,9 @@ sudo systemctl status blame-retention.service
 sudo journalctl -u blame-retention.service --since today
 sudo systemctl enable --now blame-retention.timer
 systemctl list-timers blame-retention.timer
+sudo systemctl start blame-backup.service
+sudo systemctl enable --now blame-backup.timer
+systemctl list-timers blame-backup.timer
 ```
 
 Confirm hourly successful account-purge output, connect unit failures to host alerting, and investigate every failed unit immediately. Do not create a second Dokploy schedule for the same purge command while this timer is active.
