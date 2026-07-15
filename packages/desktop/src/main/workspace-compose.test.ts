@@ -40,8 +40,61 @@ test("materializes preview public origins from allocated ports", async () => {
   const hostPort = /127\.0\.0\.1:(\d+):3000/.exec(result)?.[1];
 
   assert.ok(hostPort);
-  assert.match(result, new RegExp(`BETTER_AUTH_URL: "http://localhost:${hostPort}"`));
-  assert.match(result, new RegExp(`NEXTAUTH_URL: "http://localhost:${hostPort}/api/auth"`));
+  assert.match(
+    result,
+    new RegExp(`BETTER_AUTH_URL: "http://localhost:${hostPort}"`),
+  );
+  assert.match(
+    result,
+    new RegExp(`NEXTAUTH_URL: "http://localhost:${hostPort}/api/auth"`),
+  );
+});
+
+test("materializes typed browser binding placeholders", async () => {
+  const compose = [
+    "services:",
+    "  web:",
+    "    environment:",
+    '      PUBLIC_API_URL: "http://localhost:__BLAME_PREVIEW_PORT_api_3000__/api"',
+    '      PUBLIC_PORT: "__BLAME_PREVIEW_PORT_api_3000__"',
+    "    ports:",
+    '      - "127.0.0.1::3000"',
+    "  api:",
+    "    ports:",
+    '      - "127.0.0.1::3000"',
+  ].join("\n");
+
+  const result = await composeWithAllocatedHostPorts(compose);
+  const hostPorts = Array.from(result.matchAll(/127\.0\.0\.1:(\d+):3000/g)).map(
+    (match) => match[1],
+  );
+
+  assert.equal(hostPorts.length, 2);
+  assert.notEqual(hostPorts[0], hostPorts[1]);
+  assert.match(
+    result,
+    new RegExp(`PUBLIC_API_URL: "http://localhost:${hostPorts[1]}/api"`),
+  );
+  assert.match(result, new RegExp(`PUBLIC_PORT: "${hostPorts[1]}"`));
+  assert.doesNotMatch(result, /__BLAME_PREVIEW_PORT/);
+});
+
+test("keeps ambiguous legacy browser placeholders unresolved", async () => {
+  const compose = [
+    "services:",
+    "  web:",
+    "    environment:",
+    '      PUBLIC_API_URL: "__BLAME_PREVIEW_ORIGIN_3000__/api"',
+    "    ports:",
+    '      - "127.0.0.1::3000"',
+    "  api:",
+    "    ports:",
+    '      - "127.0.0.1::3000"',
+  ].join("\n");
+
+  const result = await composeWithAllocatedHostPorts(compose);
+
+  assert.match(result, /__BLAME_PREVIEW_ORIGIN_3000__/);
 });
 
 test("keeps explicit localhost ports unchanged", async () => {
@@ -200,7 +253,10 @@ test("normalizes preview compose before writing it", () => {
 
   const result = dockerComposeForPreview(compose, "/tmp/project");
 
-  assert.doesNotMatch(result, /user: "\$\{BLAME_HOST_UID\}:\$\{BLAME_HOST_GID\}"/);
+  assert.doesNotMatch(
+    result,
+    /user: "\$\{BLAME_HOST_UID\}:\$\{BLAME_HOST_GID\}"/,
+  );
   assert.match(result, /CI: "true"/);
   assert.doesNotMatch(result, /corepack corepack pnpm/);
 });
@@ -241,7 +297,10 @@ test("does not force host uid user for rootless runtime mounts", () => {
 
   const result = dockerComposeForPreview(compose, "/tmp/project");
 
-  assert.doesNotMatch(result, /user: "\$\{BLAME_HOST_UID\}:\$\{BLAME_HOST_GID\}"/);
+  assert.doesNotMatch(
+    result,
+    /user: "\$\{BLAME_HOST_UID\}:\$\{BLAME_HOST_GID\}"/,
+  );
 });
 
 test("mounts host env files over worktree symlinks inside services", () => {
@@ -365,7 +424,9 @@ test("uses reusable node modules volumes for preview worktrees", () => {
   assert.match(first, new RegExp(`${firstVolume}:\\n    name: ${firstVolume}`));
   assert.doesNotMatch(
     first,
-    new RegExp(`${firstVolume}:\\n    name: ${firstVolume}\\n    external: true`),
+    new RegExp(
+      `${firstVolume}:\\n    name: ${firstVolume}\\n    external: true`,
+    ),
   );
   assert.match(first, /blame\.dependencies\.cache: "true"/);
   assert.match(first, /blame\.dependencies\.cache\.key: "[a-f0-9]{12}"/);
@@ -569,7 +630,10 @@ for (const manager of packageManagerComposeCases) {
       /"blame_node_modules_abc123abc123_apps_frontend:\/workspace\/apps\/frontend\/node_modules"/,
     );
     assert.match(result, manager.cacheMount);
-    assert.doesNotMatch(result, /"blame_node_modules:\/workspace\/node_modules"/);
+    assert.doesNotMatch(
+      result,
+      /"blame_node_modules:\/workspace\/node_modules"/,
+    );
   });
 }
 
@@ -814,7 +878,7 @@ test("does not add dependency cache labels to setup tasks that do not run npm in
     "services:",
     "  clean_nuxt_cache:",
     "    labels:",
-    "      blame.setup: \"true\"",
+    '      blame.setup: "true"',
     "    volumes:",
     "      - .:/workspace",
     "      - blame_node_modules:/workspace/node_modules",
@@ -822,7 +886,7 @@ test("does not add dependency cache labels to setup tasks that do not run npm in
     "      - rm -rf .nuxt",
     "  deps:",
     "    labels:",
-    "      blame.setup: \"true\"",
+    '      blame.setup: "true"',
     "    volumes:",
     "      - .:/workspace",
     "      - blame_node_modules:/workspace/node_modules",
@@ -830,11 +894,15 @@ test("does not add dependency cache labels to setup tasks that do not run npm in
     "      - npm install",
   ].join("\n");
 
-  const result = dockerComposeWithDependencyVolumes(compose, "/tmp/project", "e9343feddfde");
+  const result = dockerComposeWithDependencyVolumes(
+    compose,
+    "/tmp/project",
+    "e9343feddfde",
+  );
 
   assert.match(
     result,
-    /clean_nuxt_cache:\n    depends_on:\n      - blame-dependencies-init\n    labels:\n      blame\.setup: "true"\n    volumes:/
+    /clean_nuxt_cache:\n    depends_on:\n      - blame-dependencies-init\n    labels:\n      blame\.setup: "true"\n    volumes:/,
   );
   assert.match(result, /deps:[\s\S]*?blame\.dependencies\.cache: "true"/);
 });
@@ -853,8 +921,12 @@ test("safely prepends corepack enable to commands using pnpm", () => {
 
   const result = dockerComposeWithCorepackPnpm(compose);
 
-  assert.match(result, /command: "sh -lc '\(corepack enable 2>\/dev\/null \|\| true\) && corepack prepare pnpm@10.33.2 --activate && corepack pnpm dev'"/);
-  assert.match(result, /- \(corepack enable 2>\/dev\/null \|\| true\) && corepack prepare pnpm@10.33.2 --activate && corepack pnpm install/);
+  assert.match(
+    result,
+    /command: "sh -lc '\(corepack enable 2>\/dev\/null \|\| true\) && corepack prepare pnpm@10.33.2 --activate && corepack pnpm dev'"/,
+  );
+  assert.match(
+    result,
+    /- \(corepack enable 2>\/dev\/null \|\| true\) && corepack prepare pnpm@10.33.2 --activate && corepack pnpm install/,
+  );
 });
-
-

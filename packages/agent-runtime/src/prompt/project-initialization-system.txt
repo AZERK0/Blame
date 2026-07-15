@@ -14,7 +14,7 @@ Call `submit_project_initialization` exactly once with the complete initializati
 
 Call the tool with exactly this top-level shape:
 
-{"previewManifest":{"version":1,"confidence":"high","project":{"root":".","detectedStack":["node"],"confidence":"high"},"setup":[{"id":"deps","image":"node:22-bookworm","workingDir":"/workspace","command":"corepack prepare pnpm@10.33.2 --activate && corepack pnpm install"}],"services":[{"id":"web","kind":"preview","image":"node:22-bookworm","workingDir":"/workspace","command":"corepack prepare pnpm@10.33.2 --activate && corepack pnpm dev","preview":{"internalPort":3000,"protocol":"http","path":"/"},"healthcheck":{"type":"http","path":"/","timeoutMs":30000}}],"caches":[{"name":"blame_node_modules","target":"/workspace/node_modules"}],"risks":[]},"runConfigurations":[{"id":"web","name":"Web application","command":"pnpm dev","cwd":".","default":true,"previewUrl":"http://localhost:3000"}],"practices":[{"practice":"coding_style","detected":true,"comment":"..."},{"practice":"unit_tests","detected":false,"comment":"..."},{"practice":"layered_architecture","detected":true,"comment":"..."},{"practice":"commit_message_convention","detected":false,"comment":"..."}]}
+{"previewManifest":{"version":2,"confidence":"high","project":{"root":".","detectedStack":["node"],"confidence":"high"},"setup":[{"id":"deps","image":"node:22-bookworm","workingDir":"/workspace","command":"corepack prepare pnpm@10.33.2 --activate && corepack pnpm install"}],"services":[{"id":"backend","kind":"worker","image":"node:22-bookworm","workingDir":"/workspace","command":"node server.js","endpoints":[{"id":"http","protocol":"http","port":3333,"healthcheck":{"type":"tcp","timeoutMs":30000}}]},{"id":"web","kind":"preview","image":"node:22-bookworm","workingDir":"/workspace","command":"corepack prepare pnpm@10.33.2 --activate && corepack pnpm dev","preview":{"internalPort":3000,"protocol":"http","path":"/"},"healthcheck":{"type":"http","path":"/","timeoutMs":30000},"endpoints":[{"id":"http","protocol":"http","port":3000}],"bindings":[{"target":{"type":"environment","key":"SERVER_API_URL"},"source":{"service":"backend","endpoint":"http"},"exposure":"server","format":"url"}]}],"caches":[{"name":"blame_node_modules","target":"/workspace/node_modules"}],"risks":[],"probes":[{"id":"backend-through-web","from":"host","target":{"service":"web","endpoint":"http","path":"/api/health"},"type":"http","acceptedStatuses":[200,401,403,404],"required":true}]},"runConfigurations":[{"id":"web","name":"Web application","command":"pnpm dev","cwd":".","default":true,"previewUrl":"http://localhost:3000"}],"practices":[{"practice":"coding_style","detected":true,"comment":"..."},{"practice":"unit_tests","detected":false,"comment":"..."},{"practice":"layered_architecture","detected":true,"comment":"..."},{"practice":"commit_message_convention","detected":false,"comment":"..."}]}
 
 ## Analysis Method
 
@@ -50,13 +50,14 @@ Call the tool with exactly this top-level shape:
 <manifest_contract>
 `previewManifest` must:
 
-- use `version: 1`
+- use `version: 2`
 - set `confidence` to `low`, `medium`, or `high`
 - describe the detected project under `project`
 - describe setup work under `setup[]`
 - describe runtime services under `services[]`
 - describe reusable cache volumes under `caches[]`
 - describe known non-blocking concerns under `risks[]`
+- describe functional connectivity checks under `probes[]`
 </manifest_contract>
 
 <setup_task_contract>
@@ -78,6 +79,7 @@ Every service must have:
 - `image`
 - `workingDir` when it executes project code
 - `command` unless the image has a safe built-in default, such as a database image
+- `endpoints[]` for every port consumed by another service, exposed to the browser, or checked for readiness
 
 Every preview service must also have:
 
@@ -89,6 +91,26 @@ Every preview service must also have:
 - `healthcheck.timeoutMs`
 </service_contract>
 
+<binding_contract>
+Use `bindings[]` on a consuming service for every runtime address derived from another service or from the allocated browser origin.
+
+- `target.type` must be `environment` and `target.key` must use the exact variable name read by project code.
+- `source.service` and `source.endpoint` must reference a declared service endpoint.
+- Use `exposure: "server"` for values read inside a container. Blame compiles these to internal service DNS.
+- Use `exposure: "browser"` only for values embedded in browser code. Blame publishes that source endpoint on loopback and compiles the value after allocating the host port.
+- Use `format` to request `url`, `host`, `port`, or `host-port`; default to `url`.
+- Never encode a topology-derived address directly in `environment` when it can be represented as a binding.
+</binding_contract>
+
+<probe_contract>
+Use `probes[]` to prove that required service paths work after startup.
+
+- Add a required host HTTP probe through the preview service for each critical backend route or proxy boundary.
+- A route with authentication may accept explicit statuses such as 200, 401, 403, or 404, but never accept a 5xx response.
+- Use service-origin TCP or HTTP probes when a dependency must be reachable before the preview is considered ready.
+- Keep probes evidence-based. Use an empty array when no safe functional path can be identified.
+</probe_contract>
+
 <manifest_rules>
 - Use base images and bind-mounted source assumptions, not project Dockerfiles.
 - Prefer `node:22-bookworm` for Node services unless the scan proves another Node major is required.
@@ -99,8 +121,8 @@ Every preview service must also have:
 - For npm dependency installs, use `npm install --no-package-lock`.
 - For Nuxt, use the development command for source-mounted previews unless the setup lifecycle builds first.
 - Use exact environment variable names found in scripts, config, validators, and env examples.
-- Use internal service DNS URLs such as `http://backend:3333` for inter-container calls.
-- Omit or avoid browser-facing public origin variables such as `APP_URL`, `BETTER_AUTH_URL`, or `NEXTAUTH_URL` with hardcoded localhost URLs and fixed ports. Dynamic host ports make hardcoded public origins fragile.
+- Represent inter-service and browser-origin addresses with typed bindings instead of literal localhost or internal DNS values.
+- Distinguish variables read by server-side framework code from variables embedded in browser bundles; declare both when the project uses both.
 - Include database migration setup tasks when migrations are detected and required.
 - Repair stale root-owned generated framework artifacts with a targeted setup task only when diagnostics prove they block startup.
 </manifest_rules>

@@ -1,5 +1,6 @@
 import { BaseModel, column } from '@adonisjs/lucid/orm'
 import { DateTime } from 'luxon'
+import type { PreviewManifest } from '@blame/preview-contract'
 
 export type ProjectInitializationStatus = 'pending' | 'running' | 'done' | 'error'
 
@@ -11,8 +12,6 @@ type ProjectRunConfiguration = {
   default: boolean
   previewUrl?: string | null
 }
-
-type PreviewManifest = Record<string, unknown>
 
 export function prepareRunConfigurations(value: ProjectRunConfiguration[] | null) {
   return value ? JSON.stringify(value) : null

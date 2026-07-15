@@ -10,7 +10,7 @@
   },
   "scripts": {
     "start": "node bin/server.js",
-    "predev": "pnpm --filter @blame/telemetry build",
+    "predev": "pnpm --filter @blame/preview-contract build && pnpm --filter @blame/telemetry build",
     "build": "node ace.js build",
     "dev": "node ace.js serve --hmr",
     "test": "node ace.js test",
@@ -65,6 +65,7 @@
     "@adonisjs/session": "^8.1.0",
     "@adonisjs/shield": "^9.0.0",
     "@blame/telemetry": "workspace:*",
+    "@blame/preview-contract": "workspace:*",
     "@japa/api-client": "^3.2.1",
     "@tuyau/core": "^1.2.2",
     "@vinejs/vine": "^4.3.1",

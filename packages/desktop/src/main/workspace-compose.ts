@@ -39,8 +39,9 @@ export function dockerComposeWithHostFileMounts(
     if (!root) return block.lines;
     return serviceBlockWithMounts(
       block.lines,
-      mounts.map((mount) =>
-        `${mount.hostPath}:${root.replace(/\/$/, "")}/${mount.containerPath}`,
+      mounts.map(
+        (mount) =>
+          `${mount.hostPath}:${root.replace(/\/$/, "")}/${mount.containerPath}`,
       ),
     );
   }).join("\n");
@@ -58,7 +59,9 @@ export function composeWithNonMutatingNpmInstalls(compose: string) {
     /(^|[\s;&|"'`(])npm\s+install\b([^\n;&|"'`]*)/g,
     (match, prefix: string, args: string) => {
       const options = args.trim();
-      if (npmInstallTokens(options).some((token) => token === "--no-package-lock"))
+      if (
+        npmInstallTokens(options).some((token) => token === "--no-package-lock")
+      )
         return match;
       if (hasNpmInstallPackageArguments(options)) return match;
       const suffix = options ? ` ${options}` : "";
@@ -96,22 +99,66 @@ function npmOptionTakesValue(option: string) {
 
 export async function composeWithAllocatedHostPorts(compose: string) {
   const result: string[] = [];
-  const portMappings = new Map<number, number>();
+  const portMappings: ComposePortMapping[] = [];
+  let serviceId: string | undefined;
   for (const line of compose.split("\n")) {
+    serviceId = composeServiceId(line, serviceId);
     const allocated = allocatedPortLine(line);
     if (allocated) {
       const port = await freeLocalPort();
-      portMappings.set(allocated.targetPort, port);
+      portMappings.push({
+        hostPort: port,
+        serviceId,
+        targetPort: allocated.targetPort,
+      });
       result.push(
         `${allocated.prefix}${allocated.quote}${allocated.host}:${port}:${allocated.targetPort}${allocated.protocol}${allocated.quote}${allocated.suffix}`,
       );
       continue;
     }
     const explicit = explicitPortLine(line);
-    if (explicit) portMappings.set(explicit.targetPort, explicit.hostPort);
+    if (explicit) portMappings.push({ ...explicit, serviceId });
     result.push(line);
   }
-  return composeWithPreviewPublicOrigins(result.join("\n"), portMappings);
+  const unambiguousPorts = unambiguousPortMappings(portMappings);
+  return composeWithBindingPlaceholders(
+    composeWithPreviewPublicOrigins(
+      result.join("\n"),
+      portMappings,
+      unambiguousPorts,
+    ),
+    portMappings,
+    unambiguousPorts,
+  );
+}
+
+type ComposePortMapping = {
+  hostPort: number;
+  serviceId?: string;
+  targetPort: number;
+};
+
+function composeServiceId(line: string, current: string | undefined) {
+  if (/^services:\s*(?:#.*)?$/.test(line)) return undefined;
+  if (/^\S/.test(line)) return undefined;
+  const match = /^  ([A-Za-z0-9][A-Za-z0-9_.-]*):\s*(?:#.*)?$/.exec(line);
+  return match?.[1] ?? current;
+}
+
+function unambiguousPortMappings(mappings: ComposePortMapping[]) {
+  const candidates = new Map<number, Set<number>>();
+  for (const mapping of mappings) {
+    const ports = candidates.get(mapping.targetPort) ?? new Set<number>();
+    ports.add(mapping.hostPort);
+    candidates.set(mapping.targetPort, ports);
+  }
+  return new Map(
+    Array.from(candidates).flatMap(([targetPort, hostPorts]) =>
+      hostPorts.size === 1
+        ? [[targetPort, Array.from(hostPorts)[0]] as const]
+        : [],
+    ),
+  );
 }
 
 export function composeWithRuntimePortPlaceholders(
@@ -121,8 +168,14 @@ export function composeWithRuntimePortPlaceholders(
   if (!enabled) return compose;
   return compose.replace(
     /(\s*-\s*["']?)(127\.0\.0\.1|localhost):\d+:(\d+)(\/[a-z]+)?(["']?\s*(?:#.*)?)$/gm,
-    (_match, prefix: string, host: string, targetPort: string, protocol = "", suffix: string) =>
-      `${prefix}${host}::${targetPort}${protocol}${suffix}`,
+    (
+      _match,
+      prefix: string,
+      host: string,
+      targetPort: string,
+      protocol = "",
+      suffix: string,
+    ) => `${prefix}${host}::${targetPort}${protocol}${suffix}`,
   );
 }
 
@@ -156,16 +209,104 @@ function explicitPortLine(line: string) {
 
 function composeWithPreviewPublicOrigins(
   compose: string,
+  portMappings: ComposePortMapping[],
+  unambiguousPorts: Map<number, number>,
+) {
+  if (portMappings.length === 0) return compose;
+  let serviceId: string | undefined;
+  return compose
+    .split("\n")
+    .map((line) => {
+      serviceId = composeServiceId(line, serviceId);
+      return line.replace(
+        publicOriginAssignmentPattern(),
+        (match, prefix: string, port: string) => {
+          const targetPort = Number.parseInt(port, 10);
+          const hostPort =
+            servicePort(portMappings, serviceId, targetPort) ??
+            unambiguousPorts.get(targetPort);
+          return hostPort ? `${prefix}http://localhost:${hostPort}` : match;
+        },
+      );
+    })
+    .join("\n");
+}
+
+function composeWithBindingPlaceholders(
+  compose: string,
+  portMappings: ComposePortMapping[],
+  unambiguousPorts: Map<number, number>,
+) {
+  return compose
+    .replace(
+      /__BLAME_PREVIEW_ORIGIN_([A-Za-z0-9][A-Za-z0-9_.-]*)_(\d+)__/g,
+      (match, serviceId: string, port: string) =>
+        previewOriginPlaceholder(match, serviceId, port, portMappings),
+    )
+    .replace(
+      /__BLAME_PREVIEW_PORT_([A-Za-z0-9][A-Za-z0-9_.-]*)_(\d+)__/g,
+      (match, serviceId: string, port: string) =>
+        previewPortPlaceholder(match, serviceId, port, portMappings),
+    )
+    .replace(/__BLAME_PREVIEW_ORIGIN_(\d+)__/g, (match, port: string) =>
+      legacyPreviewOriginPlaceholder(match, port, unambiguousPorts),
+    )
+    .replace(/__BLAME_PREVIEW_PORT_(\d+)__/g, (match, port: string) =>
+      legacyPreviewPortPlaceholder(match, port, unambiguousPorts),
+    );
+}
+
+function previewOriginPlaceholder(
+  fallback: string,
+  serviceId: string,
+  port: string,
+  portMappings: ComposePortMapping[],
+) {
+  const hostPort = servicePort(
+    portMappings,
+    serviceId,
+    Number.parseInt(port, 10),
+  );
+  return hostPort ? `http://localhost:${hostPort}` : fallback;
+}
+
+function previewPortPlaceholder(
+  fallback: string,
+  serviceId: string,
+  port: string,
+  portMappings: ComposePortMapping[],
+) {
+  return String(
+    servicePort(portMappings, serviceId, Number.parseInt(port, 10)) ?? fallback,
+  );
+}
+
+function servicePort(
+  mappings: ComposePortMapping[],
+  serviceId: string | undefined,
+  targetPort: number,
+) {
+  return mappings.find(
+    (mapping) =>
+      mapping.serviceId === serviceId && mapping.targetPort === targetPort,
+  )?.hostPort;
+}
+
+function legacyPreviewOriginPlaceholder(
+  fallback: string,
+  port: string,
   portMappings: Map<number, number>,
 ) {
-  if (portMappings.size === 0) return compose;
-  return compose.replace(
-    publicOriginAssignmentPattern(),
-    (match, prefix: string, port: string) => {
-      const hostPort = portMappings.get(Number.parseInt(port, 10));
-      return hostPort ? `${prefix}http://localhost:${hostPort}` : match;
-    },
-  );
+  const hostPort = portMappings.get(Number.parseInt(port, 10));
+  return hostPort ? `http://localhost:${hostPort}` : fallback;
+}
+
+function legacyPreviewPortPlaceholder(
+  fallback: string,
+  port: string,
+  portMappings: Map<number, number>,
+) {
+  return String(portMappings.get(Number.parseInt(port, 10)) ?? fallback);
 }
 
 function publicOriginAssignmentPattern() {
@@ -192,7 +333,11 @@ export function dockerComposeWithEscapedCommandVariables(compose: string) {
   return lines
     .map((line) => {
       const indent = /^\s*/.exec(line)?.[0].length ?? 0;
-      if (commandIndent !== undefined && line.trim() && indent <= commandIndent) {
+      if (
+        commandIndent !== undefined &&
+        line.trim() &&
+        indent <= commandIndent
+      ) {
         commandIndent = undefined;
       }
       if (/^\s*command:\s*/.test(line)) commandIndent = indent;
@@ -242,11 +387,22 @@ export function dockerComposeWithCorepackPnpm(compose: string) {
     if (inCommandBlock || /^\s*command:\s*/.test(line)) {
       let command = line;
       // Replace corepack enable && with the safe version
-      command = command.replace(/\bcorepack\s+enable\s*&&\s*/g, "(corepack enable 2>/dev/null || true) && ");
+      command = command.replace(
+        /\bcorepack\s+enable\s*&&\s*/g,
+        "(corepack enable 2>/dev/null || true) && ",
+      );
       // Replace bare pnpm with corepack pnpm
-      command = command.replace(/(?<!corepack)(^|[\s;&|])pnpm(?=\s)/g, "$1corepack pnpm");
+      command = command.replace(
+        /(?<!corepack)(^|[\s;&|])pnpm(?=\s)/g,
+        "$1corepack pnpm",
+      );
       // Prepend corepack enable if pnpm is used but corepack enable is not in the command
-      if (/\b(?:corepack\s+prepare\s+pnpm@|corepack\s+pnpm|pnpm)\b/.test(command) && !/\bcorepack\s+enable\b/.test(command)) {
+      if (
+        /\b(?:corepack\s+prepare\s+pnpm@|corepack\s+pnpm|pnpm)\b/.test(
+          command,
+        ) &&
+        !/\bcorepack\s+enable\b/.test(command)
+      ) {
         // Check if the command has a sh -lc wrapper (with optional backslash for nested quotes)
         const shMatch = /^(.*?\bsh\s+-lc\s+(?:\\?['"]))(.*)$/.exec(command);
         if (shMatch) {
@@ -264,7 +420,9 @@ export function dockerComposeWithCorepackPnpm(compose: string) {
               command = `${listMatch[1]}(corepack enable 2>/dev/null || true) && ${content}`;
             }
           } else {
-            const inlineQuoteMatch = /^(\s*command:\s*\\?['"])(.*)$/.exec(command);
+            const inlineQuoteMatch = /^(\s*command:\s*\\?['"])(.*)$/.exec(
+              command,
+            );
             if (inlineQuoteMatch) {
               command = `${inlineQuoteMatch[1]}(corepack enable 2>/dev/null || true) && ${inlineQuoteMatch[2]}`;
             } else {
@@ -475,7 +633,8 @@ function plannedServiceMounts(
   const root = mountedWorkspacePath(lines, worktree);
   if (!root) return [];
   const nodeModulesMounts =
-    runsNodePackageManager(lines) || defaultNodeModulesMountExists(
+    runsNodePackageManager(lines) ||
+    defaultNodeModulesMountExists(
       lines,
       `${root.replace(/\/$/, "")}/node_modules`,
     )
@@ -513,7 +672,10 @@ function workspacePackageNodeModulesTargets(
 function serviceWorkingDirectory(lines: string[]) {
   const line = lines.find((line) => /^\s{4}working_dir:\s*/.test(line));
   if (!line) return "";
-  return line.replace(/^\s{4}working_dir:\s*/, "").trim().replace(/^"|"$/g, "");
+  return line
+    .replace(/^\s{4}working_dir:\s*/, "")
+    .trim()
+    .replace(/^"|"$/g, "");
 }
 
 function mountedWorkspacePath(lines: string[], worktree: string) {
@@ -556,7 +718,9 @@ function nodeModulesMount(
     !defaultNodeModulesMountExists(lines, target)
   )
     return [];
-  return [`${nodeModulesVolumeName(dependencyVolumeKey, root, target)}:${target}`];
+  return [
+    `${nodeModulesVolumeName(dependencyVolumeKey, root, target)}:${target}`,
+  ];
 }
 
 function packageNodeModulesMounts(
@@ -570,7 +734,10 @@ function packageNodeModulesMounts(
     : servicePackageNodeModulesTargets(lines, root, packageTargets);
   return targets
     .filter((target) => !mountTargetExists(lines, target))
-    .map((target) => `${nodeModulesVolumeName(dependencyVolumeKey, root, target)}:${target}`);
+    .map(
+      (target) =>
+        `${nodeModulesVolumeName(dependencyVolumeKey, root, target)}:${target}`,
+    );
 }
 
 function servicePackageNodeModulesTargets(
@@ -580,13 +747,17 @@ function servicePackageNodeModulesTargets(
 ) {
   const workingDir = serviceWorkingDirectory(lines).replace(/\/$/, "");
   if (!workingDir) return [];
-  return packageTargets.filter((target) => target === `${workingDir}/node_modules`);
+  return packageTargets.filter(
+    (target) => target === `${workingDir}/node_modules`,
+  );
 }
 
 function nodeModulesVolumeName(key: string, root = "", target = "") {
   if (!key) return "blame_node_modules";
   const suffix = nodeModulesVolumeSuffix(root, target);
-  return suffix ? `blame_node_modules_${key}_${suffix}` : `blame_node_modules_${key}`;
+  return suffix
+    ? `blame_node_modules_${key}_${suffix}`
+    : `blame_node_modules_${key}`;
 }
 
 function nodeModulesVolumeSuffix(root: string, target: string) {
@@ -651,8 +822,7 @@ function mountTargetExists(lines: string[], target: string) {
 function defaultNodeModulesMountExists(lines: string[], target: string) {
   return lines.some((line) => {
     const short = shortVolumeParts(line);
-    if (short?.target === target)
-      return short.source === "blame_node_modules";
+    if (short?.target === target) return short.source === "blame_node_modules";
     return false;
   });
 }
@@ -722,7 +892,10 @@ function serviceBlockWithDependencyCacheLabel(
   });
 }
 
-function serviceBlockWithLabels(lines: string[], labels: Record<string, string>) {
+function serviceBlockWithLabels(
+  lines: string[],
+  labels: Record<string, string>,
+) {
   const labelsIndex = lines.findIndex((line) => /^\s{4}labels:\s*$/.test(line));
   const missing = Object.entries(labels).filter(
     ([key]) => !labelKeyExists(lines, key),
@@ -760,14 +933,18 @@ function serviceUsesListLabels(lines: string[]) {
 }
 
 function serviceBlockWithoutMountTargets(lines: string[], targets: string[]) {
-  const volumesIndex = lines.findIndex((line) => /^\s{4}volumes:\s*$/.test(line));
+  const volumesIndex = lines.findIndex((line) =>
+    /^\s{4}volumes:\s*$/.test(line),
+  );
   if (volumesIndex === -1) return lines;
   const volumesEnd = serviceBlockSectionEnd(lines, volumesIndex);
   return [
     ...lines.slice(0, volumesIndex + 1),
-    ...lines.slice(volumesIndex + 1, volumesEnd).filter((line) =>
-      !targets.some((target) => mountLineTargets(line, target)),
-    ),
+    ...lines
+      .slice(volumesIndex + 1, volumesEnd)
+      .filter(
+        (line) => !targets.some((target) => mountLineTargets(line, target)),
+      ),
     ...lines.slice(volumesEnd),
   ];
 }
@@ -945,7 +1122,9 @@ function addTopLevelVolumes(lines: string[], plan: DependencyVolumePlan) {
   const declaredVolumes = topLevelVolumeNames(lines, volumesLine);
   const volumeLines = missingTopLevelVolumeLines(plan.mounts, declaredVolumes);
   if (volumesLine === -1)
-    return volumeLines.length > 0 ? [...lines, "volumes:", ...volumeLines] : lines;
+    return volumeLines.length > 0
+      ? [...lines, "volumes:", ...volumeLines]
+      : lines;
   return [
     ...lines.slice(0, volumesLine + 1),
     ...volumeLines,
@@ -1029,7 +1208,10 @@ function topLevelVolumeLines(mounts: string[]) {
   return ["volumes:", ...missingTopLevelVolumeLines(mounts, new Set())];
 }
 
-function missingTopLevelVolumeLines(mounts: string[], declaredVolumes: Set<string>) {
+function missingTopLevelVolumeLines(
+  mounts: string[],
+  declaredVolumes: Set<string>,
+) {
   return uniqueStrings(mounts.map(volumeName))
     .filter((name) => !declaredVolumes.has(name))
     .flatMap(volumeYaml);

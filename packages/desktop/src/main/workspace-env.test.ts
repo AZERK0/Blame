@@ -148,6 +148,44 @@ test("materializes preview public env values", () => {
   );
 });
 
+test("materializes typed binding values without framework-specific keys", () => {
+  assert.equal(
+    materializePreviewEnvValues(
+      "PRIVATE_BACKEND_ORIGIN=http://localhost:3333\nUNCHANGED=value\n",
+      "http://localhost:42251",
+      {
+        PRIVATE_BACKEND_ORIGIN: "http://backend:3333",
+        BROWSER_ORIGIN: "http://localhost:42251",
+      },
+    ),
+    [
+      "PRIVATE_BACKEND_ORIGIN=http://backend:3333",
+      "UNCHANGED=value",
+      "BROWSER_ORIGIN=http://localhost:42251",
+      "",
+    ].join("\n"),
+  );
+});
+
+test("repairs unambiguous legacy localhost service URLs", () => {
+  assert.equal(
+    materializePreviewEnvValues(
+      [
+        "PRIVATE_BACKEND_ORIGIN=http://localhost:3333/api",
+        'DATABASE_URL="mysql://127.0.0.1:3306/app"',
+      ].join("\n"),
+      undefined,
+      {},
+      { "3333": "backend", "3306": "database" },
+    ),
+    [
+      "PRIVATE_BACKEND_ORIGIN=http://backend:3333/api",
+      'DATABASE_URL="mysql://database:3306/app"',
+      "",
+    ].join("\n"),
+  );
+});
+
 test("detects stale materialized preview env files", async () => {
   const root = await mkdtemp(join(tmpdir(), "blame-env-preview-"));
   try {

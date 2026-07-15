@@ -20,6 +20,7 @@ import type {
   NewProjectGenerationResult,
   OptimizeUserStoryPromptInput,
   OptimizeUserStoryPromptResult,
+  PreviewManifest,
   ProviderListResponse,
   RepairProjectInitializationInput,
   RepairProjectInitializationResult,
@@ -310,6 +311,7 @@ export type BlameDesktopApi = {
       worktree: string;
       setupScript: string;
       dockerCompose: string;
+      previewManifest?: PreviewManifest;
       hostDependenciesChecked?: boolean;
     }): Promise<{ runId: string }>;
     collectProjectInitializationDiagnostics(input: {

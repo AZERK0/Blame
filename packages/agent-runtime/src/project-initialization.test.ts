@@ -27,8 +27,16 @@ const baseResult = {
   practices: [
     { practice: "coding_style", detected: false, comment: "Not detected." },
     { practice: "unit_tests", detected: false, comment: "Not detected." },
-    { practice: "layered_architecture", detected: false, comment: "Not detected." },
-    { practice: "commit_message_convention", detected: false, comment: "Not detected." },
+    {
+      practice: "layered_architecture",
+      detected: false,
+      comment: "Not detected.",
+    },
+    {
+      practice: "commit_message_convention",
+      detected: false,
+      comment: "Not detected.",
+    },
   ],
 };
 
@@ -121,7 +129,9 @@ test("rejects invalid run configuration preview urls", () => {
 });
 
 test("generates initialization artifacts from preview manifest", () => {
-  const result = parseProjectInitializationResult(JSON.stringify(manifestResult));
+  const result = parseProjectInitializationResult(
+    JSON.stringify(manifestResult),
+  );
 
   assert.equal(result.previewManifest?.services[0]?.kind, "preview");
   assert.match(result.setupScript, /COMPOSE_PROJECT_NAME/);
@@ -129,7 +139,10 @@ test("generates initialization artifacts from preview manifest", () => {
   assert.match(result.dockerCompose, /blame\.preview: "true"/);
   assert.match(result.dockerCompose, /"127\.0\.0\.1::3000"/);
   assert.match(result.dockerCompose, /healthcheck:/);
-  assert.match(result.dockerCompose, /blame_node_modules:\/workspace\/node_modules/);
+  assert.match(
+    result.dockerCompose,
+    /blame_node_modules:\/workspace\/node_modules/,
+  );
   assert.doesNotMatch(result.dockerCompose, /user: "\$\{BLAME_HOST_UID\}/);
   assert.match(
     result.dockerCompose,
@@ -137,6 +150,83 @@ test("generates initialization artifacts from preview manifest", () => {
   );
   assert.doesNotMatch(result.dockerCompose, /3000:3000/);
   assert.doesNotMatch(result.dockerCompose, /blame-volumes-init:\n\s+volumes:/);
+});
+
+test("compiles version two service and browser bindings", () => {
+  const web = {
+    ...manifestResult.previewManifest.services[0],
+    endpoints: [{ id: "http", protocol: "http", port: 3000 }],
+    bindings: [
+      {
+        target: { type: "environment", key: "SERVER_API_URL" },
+        source: { service: "backend", endpoint: "http" },
+        exposure: "server",
+      },
+      {
+        target: { type: "environment", key: "PUBLIC_APP_URL" },
+        source: { service: "web", endpoint: "http" },
+        exposure: "browser",
+        path: "/app",
+      },
+      {
+        target: { type: "environment", key: "PUBLIC_API_URL" },
+        source: { service: "backend", endpoint: "http" },
+        exposure: "browser",
+        path: "/api",
+      },
+    ],
+  };
+  const result = parseProjectInitializationPayload({
+    ...manifestResult,
+    previewManifest: {
+      ...manifestResult.previewManifest,
+      version: 2,
+      services: [
+        {
+          id: "backend",
+          kind: "worker",
+          image: "node:22-bookworm",
+          command: "node server.js",
+          endpoints: [
+            {
+              id: "http",
+              protocol: "http",
+              port: 3333,
+              healthcheck: { type: "tcp", timeoutMs: 30_000 },
+            },
+          ],
+        },
+        web,
+      ],
+      probes: [
+        {
+          id: "api-proxy",
+          from: "host",
+          target: { service: "web", endpoint: "http", path: "/api/health" },
+          type: "http",
+        },
+      ],
+    },
+  });
+
+  assert.match(result.dockerCompose, /SERVER_API_URL: "http:\/\/backend:3333"/);
+  assert.match(
+    result.dockerCompose,
+    /PUBLIC_APP_URL: "http:\/\/localhost:__BLAME_PREVIEW_PORT_web_3000__\/app"/,
+  );
+  assert.match(
+    result.dockerCompose,
+    /PUBLIC_API_URL: "http:\/\/localhost:__BLAME_PREVIEW_PORT_backend_3333__\/api"/,
+  );
+  assert.match(result.dockerCompose, /backend:[\s\S]*"127\.0\.0\.1::3333"/);
+  assert.match(
+    result.dockerCompose,
+    /web:[\s\S]*backend:\n\s+condition: service_healthy/,
+  );
+  assert.match(
+    result.dockerCompose,
+    /blame\.binding\.0\.source\.service: "backend"/,
+  );
 });
 
 test("uses webpack for Next preview manifests", () => {
@@ -204,10 +294,7 @@ test("waits for known database dependencies to become healthy", () => {
     result.dockerCompose,
     /backend:[\s\S]*node -e[\s\S]*const host=\\?"db\\?"/,
   );
-  assert.match(
-    result.dockerCompose,
-    /backend:[\s\S]*node ace migration:run/,
-  );
+  assert.match(result.dockerCompose, /backend:[\s\S]*node ace migration:run/);
   assert.match(
     result.dockerCompose,
     /backend:[\s\S]*\$\{BLAME_PROJECT_ROOT\}:\/workspace/,
@@ -524,7 +611,9 @@ test("rejects broad workspace ownership repair commands", () => {
 test("rejects run configuration cwd outside the project", () => {
   const result = {
     ...baseResult,
-    runConfigurations: [{ ...baseResult.runConfigurations[0], cwd: "../outside" }],
+    runConfigurations: [
+      { ...baseResult.runConfigurations[0], cwd: "../outside" },
+    ],
   };
 
   assert.throws(

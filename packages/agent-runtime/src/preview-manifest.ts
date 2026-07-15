@@ -1,15 +1,18 @@
+import {
+  parsePreviewManifest as parseContractPreviewManifest,
+  validatePreviewManifest as validateContractPreviewManifest,
+} from "@blame/preview-contract";
 import type {
   PreviewManifest,
+  PreviewManifestBinding,
   PreviewManifestCache,
+  PreviewManifestEndpoint,
   PreviewManifestEnvironment,
-  PreviewManifestHealthcheck,
-  ProjectInitializationPreferences,
   PreviewManifestProject,
-  PreviewManifestRisk,
   PreviewManifestService,
-  PreviewManifestServiceKind,
   PreviewManifestSetupTask,
-} from "./types.js";
+} from "@blame/preview-contract";
+import type { ProjectInitializationPreferences } from "./types.js";
 import { commandWithNextWebpackFallback } from "./next-webpack-fallback.js";
 
 type GeneratedInitializationArtifacts = {
@@ -17,42 +20,8 @@ type GeneratedInitializationArtifacts = {
   setupScript: string;
 };
 
-const serviceKinds = new Set<PreviewManifestServiceKind>([
-  "preview",
-  "dependency",
-  "worker",
-]);
-const confidenceValues = new Set(["low", "medium", "high"]);
-const riskLevels = new Set(["low", "medium", "high"]);
-const unsafeCommandPatterns = [
-  /\brm\s+-rf\s+\/(?:\s|$)/,
-  /\bsudo\b/,
-  /\bchmod\s+-R\s+777\s+\/(?:\s|$)/,
-  /\bcurl\b[\s\S]*\|\s*(?:sh|bash)\b/,
-  /\bwget\b[\s\S]*\|\s*(?:sh|bash)\b/,
-  /\bssh-keygen\b/,
-  /\bgit\s+push\b/,
-  /\bgit\s+reset\s+--hard\b/,
-  /\bgit\s+clean\s+-fdx\b/,
-  /\b--privileged\b/,
-  /\bnetwork_mode\s*:\s*host\b/,
-  /\/var\/run\/docker\.sock/,
-  /\bdocker\.sock\b/,
-];
-
 export function parsePreviewManifest(value: unknown): PreviewManifest {
-  if (!isRecord(value)) throw new Error("previewManifest must be an object");
-  const manifest: PreviewManifest = {
-    version: parseVersion(value.version),
-    confidence: parseConfidence(value.confidence),
-    project: parseProject(value.project),
-    setup: parseSetupTasks(value.setup),
-    services: parseServices(value.services),
-    caches: parseCaches(value.caches),
-    risks: parseRisks(value.risks),
-  };
-  validatePreviewManifest(manifest);
-  return normalizePreviewManifest(manifest);
+  return normalizePreviewManifest(parseContractPreviewManifest(value));
 }
 
 export function generatePreviewArtifacts(
@@ -71,22 +40,7 @@ export function generatePreviewArtifacts(
 }
 
 export function validatePreviewManifest(manifest: PreviewManifest) {
-  if (manifest.version !== 1) {
-    throw new Error("previewManifest version must be 1");
-  }
-  uniqueIds("setup task", manifest.setup.map((task) => task.id));
-  uniqueIds("service", manifest.services.map((service) => service.id));
-  uniqueIds("cache", manifest.caches.map((cache) => cache.name));
-  const knownIds = new Set([
-    ...manifest.setup.map((task) => task.id),
-    ...manifest.services.map((service) => service.id),
-  ]);
-  for (const task of manifest.setup) validateSetupTask(task, knownIds);
-  for (const service of manifest.services) validateService(service, knownIds);
-  for (const cache of manifest.caches) validateCache(cache);
-  if (!manifest.services.some((service) => service.kind === "preview")) {
-    throw new Error("previewManifest must define a preview service");
-  }
+  validateContractPreviewManifest(manifest);
 }
 
 export function normalizePreviewManifest(
@@ -100,6 +54,9 @@ export function normalizePreviewManifestWithPreferences(
   preferences?: ProjectInitializationPreferences,
 ): PreviewManifest {
   const caches = normalizedCaches(manifest);
+  const services = manifest.services.map((service) =>
+    normalizeService(service, caches),
+  );
   const normalized = {
     ...manifest,
     project: {
@@ -117,8 +74,8 @@ export function normalizePreviewManifestWithPreferences(
       ),
       dependsOn: uniqueStrings(task.dependsOn ?? []),
     })),
-    services: manifest.services.map((service) =>
-      normalizeService(service, caches),
+    services: services.map((service) =>
+      normalizeServiceBindings(service, services),
     ),
     caches,
     risks: manifest.risks,
@@ -127,6 +84,87 @@ export function normalizePreviewManifestWithPreferences(
     previewManifestWithNextWebpackFallback(normalized),
     preferences,
   );
+}
+
+function normalizeServiceBindings(
+  service: PreviewManifestService,
+  services: PreviewManifestService[],
+) {
+  const bindings = service.bindings ?? [];
+  const environment = { ...service.environment };
+  for (const binding of bindings) {
+    environment[binding.target.key] = compiledBindingValue(binding, services);
+  }
+  return {
+    ...service,
+    environment,
+    dependsOn: uniqueStrings([
+      ...(service.dependsOn ?? []),
+      ...serverBindingDependencies(service, bindings),
+    ]),
+  };
+}
+
+function serverBindingDependencies(
+  service: PreviewManifestService,
+  bindings: PreviewManifestBinding[],
+) {
+  return bindings
+    .filter((binding) => binding.exposure === "server")
+    .map((binding) => binding.source.service)
+    .filter((sourceId) => sourceId !== service.id);
+}
+
+function compiledBindingValue(
+  binding: PreviewManifestBinding,
+  services: PreviewManifestService[],
+) {
+  const source = services.find(({ id }) => id === binding.source.service);
+  const endpoint = source && serviceEndpoint(source, binding.source.endpoint);
+  if (!source || !endpoint)
+    throw new Error("previewManifest binding source is unknown");
+  if (binding.exposure === "browser")
+    return browserBindingValue(binding, endpoint);
+  return serverBindingValue(binding, source.id, endpoint);
+}
+
+function browserBindingValue(
+  binding: PreviewManifestBinding,
+  endpoint: PreviewManifestEndpoint,
+) {
+  const port = `__BLAME_PREVIEW_PORT_${binding.source.service}_${endpoint.port}__`;
+  const path = binding.path ?? "";
+  if (binding.format === "host") return "localhost";
+  if (binding.format === "port") return port;
+  if (binding.format === "host-port") return `localhost:${port}`;
+  return `${endpoint.protocol}://localhost:${port}${path}`;
+}
+
+function serverBindingValue(
+  binding: PreviewManifestBinding,
+  host: string,
+  endpoint: PreviewManifestEndpoint,
+) {
+  if (binding.format === "host") return host;
+  if (binding.format === "port") return String(endpoint.port);
+  if (binding.format === "host-port") return `${host}:${endpoint.port}`;
+  return `${endpoint.protocol}://${host}:${endpoint.port}${binding.path ?? ""}`;
+}
+
+function serviceEndpoint(
+  service: PreviewManifestService,
+  endpointId: string,
+): PreviewManifestEndpoint | undefined {
+  const endpoint = (service.endpoints ?? []).find(
+    ({ id }) => id === endpointId,
+  );
+  if (endpoint) return endpoint;
+  if (endpointId !== "preview" || !service.preview) return undefined;
+  return {
+    id: "preview",
+    protocol: service.preview.protocol,
+    port: service.preview.internalPort,
+  };
 }
 
 function previewManifestWithNextWebpackFallback(manifest: PreviewManifest) {
@@ -178,14 +216,36 @@ function manifestWithoutComposeDatabase(manifest: PreviewManifest) {
     setup,
     services: manifest.services
       .filter((service) => !databaseServiceIds.has(service.id))
-      .map((service) => ({
-        ...service,
-        environment: withoutDatabaseEnvironment(service.environment),
-        dependsOn: withoutIds(
-          service.dependsOn,
+      .map((service) =>
+        withoutComposeDatabaseBindings(
+          service,
           new Set([...databaseServiceIds, ...removedSetupIds]),
         ),
-      })),
+      ),
+    probes: (manifest.probes ?? []).filter(
+      (probe) =>
+        !databaseServiceIds.has(probe.target.service) &&
+        !databaseServiceIds.has(probe.from),
+    ),
+  };
+}
+
+function withoutComposeDatabaseBindings(
+  service: PreviewManifestService,
+  blockedIds: Set<string>,
+) {
+  const removedBindings = (service.bindings ?? []).filter((binding) =>
+    blockedIds.has(binding.source.service),
+  );
+  const environment = withoutDatabaseEnvironment(service.environment) ?? {};
+  for (const binding of removedBindings) delete environment[binding.target.key];
+  return {
+    ...service,
+    environment,
+    bindings: (service.bindings ?? []).filter(
+      (binding) => !blockedIds.has(binding.source.service),
+    ),
+    dependsOn: withoutIds(service.dependsOn, blockedIds),
   };
 }
 
@@ -233,10 +293,7 @@ function databaseEnvironmentKey(key: string) {
   );
 }
 
-function withoutIds(
-  ids: string[] | undefined,
-  blockedIds: Set<string>,
-) {
+function withoutIds(ids: string[] | undefined, blockedIds: Set<string>) {
   return uniqueStrings((ids ?? []).filter((id) => !blockedIds.has(id)));
 }
 
@@ -294,15 +351,17 @@ function normalizedAppEnvironment(environment: PreviewManifestEnvironment) {
 
 function placeholderEnvironmentValue(value: string) {
   const normalized = value.trim().toLowerCase();
-  return [
-    "preview",
-    "placeholder",
-    "preview-app-key",
-    "blame-dev-app-key",
-    "changeme",
-    "change-me",
-    "replace-me",
-  ].includes(normalized) || normalized.startsWith("your_");
+  return (
+    [
+      "preview",
+      "placeholder",
+      "preview-app-key",
+      "blame-dev-app-key",
+      "changeme",
+      "change-me",
+      "replace-me",
+    ].includes(normalized) || normalized.startsWith("your_")
+  );
 }
 
 function normalizedCaches(manifest: PreviewManifest) {
@@ -360,9 +419,7 @@ function cacheEnvironment(caches: PreviewManifestCache[]) {
     ...(byTarget.has("/pnpm/store")
       ? { npm_config_store_dir: "/pnpm/store" }
       : {}),
-    ...(byTarget.has("/npm/cache")
-      ? { NPM_CONFIG_CACHE: "/npm/cache" }
-      : {}),
+    ...(byTarget.has("/npm/cache") ? { NPM_CONFIG_CACHE: "/npm/cache" } : {}),
   };
 }
 
@@ -379,13 +436,15 @@ function setupScript() {
 }
 
 function composeYaml(manifest: PreviewManifest) {
-  const runtimeServiceIds = new Set(manifest.services.map((service) => service.id));
+  const runtimeServiceIds = new Set(
+    manifest.services.map((service) => service.id),
+  );
   const lines = [
     "services:",
     ...volumeInitService(manifest.caches),
     ...manifest.setup.flatMap((task) => setupTaskYaml(task, manifest.caches)),
     ...manifest.services.flatMap((service) =>
-      serviceYaml(service, manifest.services, manifest.caches, runtimeServiceIds),
+      serviceYaml(service, manifest, manifest.caches, runtimeServiceIds),
     ),
     "volumes:",
     ...manifest.caches.flatMap((cache) => [`  ${cache.name}:`]),
@@ -401,8 +460,8 @@ function volumeInitService(caches: PreviewManifestCache[]) {
     "    image: node:22-bookworm-slim",
     `    command: ${yamlString(`sh -lc "mkdir -p ${targets} && chown -R 0:0 ${targets}"`)}`,
     "    volumes:",
-    ...caches.map((cache) =>
-      `      - ${yamlString(`${cache.name}:${cache.target}`)}`,
+    ...caches.map(
+      (cache) => `      - ${yamlString(`${cache.name}:${cache.target}`)}`,
     ),
   ];
 }
@@ -421,7 +480,12 @@ function setupTaskYaml(
     ...environmentYaml(task.environment ?? {}),
     ...dependsOnYaml([
       ...(caches.length > 0
-        ? [dependsOnEntry("blame-volumes-init", "service_completed_successfully")]
+        ? [
+            dependsOnEntry(
+              "blame-volumes-init",
+              "service_completed_successfully",
+            ),
+          ]
         : []),
       ...(task.dependsOn ?? []).map((id) =>
         dependsOnEntry(id, "service_completed_successfully"),
@@ -433,7 +497,7 @@ function setupTaskYaml(
 
 function serviceYaml(
   service: PreviewManifestService,
-  services: PreviewManifestService[],
+  manifest: PreviewManifest,
   caches: PreviewManifestCache[],
   runtimeServiceIds: Set<string>,
 ) {
@@ -446,32 +510,65 @@ function serviceYaml(
     ...(service.command
       ? [
           `    command: ${yamlString(
-            `sh -lc ${shellQuote(serviceCommand(service, services))}`,
+            `sh -lc ${shellQuote(serviceCommand(service, manifest.services))}`,
           )}`,
         ]
       : []),
     ...environmentYaml(service.environment ?? {}),
     ...labelsYaml(service),
-    ...portsYaml(service),
+    ...portsYaml(service, manifest),
     ...serviceHealthcheckYaml(service),
     ...dependsOnYaml([
-      ...(service.dependsOn ?? []).filter((id) => runtimeServiceIds.has(id)).map((id) =>
-        dependsOnEntry(id, serviceDependencyCondition(id, services)),
-      ),
+      ...(service.dependsOn ?? [])
+        .filter((id) => runtimeServiceIds.has(id))
+        .map((id) =>
+          dependsOnEntry(id, serviceDependencyCondition(id, manifest.services)),
+        ),
     ]),
     ...volumeYaml(caches, serviceNeedsWorkspace(service)),
   ];
 }
 
 function labelsYaml(service: PreviewManifestService) {
-  if (service.kind !== "preview" || !service.preview) return [];
+  const labels = [
+    ["blame.service.id", service.id],
+    ["blame.service.kind", service.kind],
+    ...previewLabels(service),
+    ...endpointLabels(service),
+    ...bindingLabels(service),
+  ];
   return [
     "    labels:",
-    `      blame.preview: "true"`,
-    `      blame.preview.port: ${yamlString(String(service.preview.internalPort))}`,
-    `      blame.preview.protocol: ${yamlString(service.preview.protocol)}`,
-    `      blame.preview.path: ${yamlString(service.preview.path)}`,
+    ...labels.map(([key, value]) => `      ${key}: ${yamlString(value)}`),
   ];
+}
+
+function previewLabels(service: PreviewManifestService) {
+  if (service.kind !== "preview" || !service.preview) return [];
+  return [
+    ["blame.preview", "true"],
+    ["blame.preview.port", String(service.preview.internalPort)],
+    ["blame.preview.protocol", service.preview.protocol],
+    ["blame.preview.path", service.preview.path],
+  ];
+}
+
+function endpointLabels(service: PreviewManifestService) {
+  return (service.endpoints ?? []).flatMap((endpoint, index) => [
+    [`blame.endpoint.${index}.id`, endpoint.id],
+    [`blame.endpoint.${index}.protocol`, endpoint.protocol],
+    [`blame.endpoint.${index}.port`, String(endpoint.port)],
+  ]);
+}
+
+function bindingLabels(service: PreviewManifestService) {
+  return (service.bindings ?? []).flatMap((binding, index) => [
+    [`blame.binding.${index}.key`, binding.target.key],
+    [`blame.binding.${index}.source.service`, binding.source.service],
+    [`blame.binding.${index}.source.endpoint`, binding.source.endpoint],
+    [`blame.binding.${index}.exposure`, binding.exposure],
+    [`blame.binding.${index}.format`, binding.format ?? "url"],
+  ]);
 }
 
 function serviceCommand(
@@ -485,7 +582,8 @@ function serviceCommand(
 function serviceNeedsWorkspace(service: PreviewManifestService) {
   return (
     service.kind !== "dependency" ||
-    (!!service.command && (service.workingDir ?? "/workspace").startsWith("/workspace"))
+    (!!service.command &&
+      (service.workingDir ?? "/workspace").startsWith("/workspace"))
   );
 }
 
@@ -496,14 +594,17 @@ function dependencyWaitCommands(
   if (!nodeImage(service.image)) return [];
   return (service.dependsOn ?? [])
     .map((id) => services.find((candidate) => candidate.id === id))
-    .filter(isMysqlDependency)
-    .map((dependency) => waitForTcpCommand(dependency.id, 3306));
+    .map((dependency) => dependencyWaitTarget(dependency))
+    .filter((target): target is { host: string; port: number } => !!target)
+    .map((target) => waitForTcpCommand(target.host, target.port));
 }
 
-function isMysqlDependency(
-  service: PreviewManifestService | undefined,
-): service is PreviewManifestService {
-  return !!service && mysqlImage(service.image);
+function dependencyWaitTarget(service: PreviewManifestService | undefined) {
+  if (!service) return undefined;
+  const endpoint = (service.endpoints ?? [])[0];
+  if (endpoint) return { host: service.id, port: endpoint.port };
+  if (mysqlImage(service.image)) return { host: service.id, port: 3306 };
+  return undefined;
 }
 
 function waitForTcpCommand(host: string, port: number) {
@@ -519,29 +620,72 @@ function waitForTcpCommand(host: string, port: number) {
   return `node -e ${shellQuote(script)}`;
 }
 
-function portsYaml(service: PreviewManifestService) {
-  if (service.kind !== "preview" || !service.preview) return [];
+function portsYaml(service: PreviewManifestService, manifest: PreviewManifest) {
+  const ports = publishedServicePorts(service, manifest);
+  if (ports.length === 0) return [];
   return [
     "    ports:",
-    `      - ${yamlString(`127.0.0.1::${service.preview.internalPort}`)}`,
+    ...ports.map((port) => `      - ${yamlString(`127.0.0.1::${port}`)}`),
   ];
+}
+
+function publishedServicePorts(
+  service: PreviewManifestService,
+  manifest: PreviewManifest,
+) {
+  const endpointIds = [
+    ...browserBindingEndpointIds(service.id, manifest.services),
+    ...hostProbeEndpointIds(service.id, manifest),
+  ];
+  const endpointPorts = endpointIds.flatMap((endpointId) => {
+    const endpoint = serviceEndpoint(service, endpointId);
+    return endpoint ? [endpoint.port] : [];
+  });
+  return Array.from(
+    new Set([
+      ...(service.preview ? [service.preview.internalPort] : []),
+      ...endpointPorts,
+    ]),
+  );
+}
+
+function browserBindingEndpointIds(
+  serviceId: string,
+  services: PreviewManifestService[],
+) {
+  return services.flatMap((consumer) =>
+    (consumer.bindings ?? [])
+      .filter(
+        (binding) =>
+          binding.exposure === "browser" &&
+          binding.source.service === serviceId,
+      )
+      .map((binding) => binding.source.endpoint),
+  );
+}
+
+function hostProbeEndpointIds(serviceId: string, manifest: PreviewManifest) {
+  return (manifest.probes ?? [])
+    .filter(
+      (probe) => probe.from === "host" && probe.target.service === serviceId,
+    )
+    .map((probe) => probe.target.endpoint);
 }
 
 function serviceHealthcheckYaml(service: PreviewManifestService) {
   return (
-    knownDependencyHealthcheckYaml(service) ??
-    httpHealthcheckYaml(service.healthcheck, service.preview)
+    knownDependencyHealthcheckYaml(service) ?? declaredHealthcheckYaml(service)
   );
 }
 
-function httpHealthcheckYaml(
-  healthcheck: PreviewManifestHealthcheck | undefined,
-  preview: PreviewManifestService["preview"],
-) {
-  if (!healthcheck || !preview) return [];
+function declaredHealthcheckYaml(service: PreviewManifestService) {
+  const endpoint = healthcheckEndpoint(service);
+  if (!endpoint) return [];
+  const command = endpointHealthcheckCommand(service.image, endpoint);
+  if (!command) return [];
+  const healthcheck = endpoint.healthcheck;
+  if (!healthcheck) return [];
   const retries = Math.max(1, Math.ceil(healthcheck.timeoutMs / 5_000));
-  const url = `http://127.0.0.1:${preview.internalPort}${healthcheck.path}`;
-  const command = `node -e "fetch('${url}').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"`;
   return [
     "    healthcheck:",
     "      test:",
@@ -551,6 +695,55 @@ function httpHealthcheckYaml(
     "      timeout: 5s",
     `      retries: ${retries}`,
   ];
+}
+
+function healthcheckEndpoint(service: PreviewManifestService) {
+  const explicit = (service.endpoints ?? []).find(
+    ({ healthcheck }) => healthcheck,
+  );
+  if (explicit) return explicit;
+  if (!service.healthcheck || !service.preview) return undefined;
+  return {
+    id: "preview",
+    protocol: service.preview.protocol,
+    port: service.preview.internalPort,
+    healthcheck: service.healthcheck,
+  } satisfies PreviewManifestEndpoint;
+}
+
+function endpointHealthcheckCommand(
+  image: string,
+  endpoint: PreviewManifestEndpoint,
+) {
+  if (!endpoint.healthcheck) return undefined;
+  if (nodeImage(image)) return nodeHealthcheckCommand(endpoint);
+  if (pythonImage(image)) return pythonHealthcheckCommand(endpoint);
+  return undefined;
+}
+
+function nodeHealthcheckCommand(endpoint: PreviewManifestEndpoint) {
+  if (endpoint.healthcheck?.type === "tcp") {
+    return waitForTcpHealthcheckCommand(endpoint.port);
+  }
+  const path = endpoint.healthcheck?.path ?? "/";
+  const url = `${endpoint.protocol}://127.0.0.1:${endpoint.port}${path}`;
+  const script = `fetch(${JSON.stringify(url)}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))`;
+  return `node -e ${shellQuote(script)}`;
+}
+
+function waitForTcpHealthcheckCommand(port: number) {
+  const script = `const s=require("net").connect(${port},"127.0.0.1",()=>process.exit(0));s.once("error",()=>process.exit(1));s.setTimeout(4000,()=>process.exit(1))`;
+  return `node -e ${shellQuote(script)}`;
+}
+
+function pythonHealthcheckCommand(endpoint: PreviewManifestEndpoint) {
+  if (endpoint.healthcheck?.type === "tcp") {
+    const script = `import socket;socket.create_connection(("127.0.0.1",${endpoint.port}),4).close()`;
+    return `python -c ${shellQuote(script)}`;
+  }
+  const path = endpoint.healthcheck?.path ?? "/";
+  const url = `${endpoint.protocol}://127.0.0.1:${endpoint.port}${path}`;
+  return `python -c ${shellQuote(`import urllib.request;urllib.request.urlopen(${JSON.stringify(url)},timeout=4).close()`)}`;
 }
 
 function knownDependencyHealthcheckYaml(service: PreviewManifestService) {
@@ -588,6 +781,10 @@ function nodeImage(image: string) {
   return /^node(?::|$)/.test(image) || /\/node(?::|$)/.test(image);
 }
 
+function pythonImage(image: string) {
+  return /^python(?::|$)/.test(image) || /\/python(?::|$)/.test(image);
+}
+
 function environmentYaml(environment: PreviewManifestEnvironment) {
   const entries = Object.entries(environment).sort(([left], [right]) =>
     left.localeCompare(right),
@@ -599,9 +796,7 @@ function environmentYaml(environment: PreviewManifestEnvironment) {
   ];
 }
 
-function dependsOnYaml(
-  services: Array<{ condition?: string; id: string }>,
-) {
+function dependsOnYaml(services: Array<{ condition?: string; id: string }>) {
   const uniqueServices = uniqueDependsOnEntries(services);
   if (uniqueServices.length === 0) return [];
   return [
@@ -617,7 +812,9 @@ function dependsOnEntry(id: string, condition?: string) {
   return { condition, id };
 }
 
-function uniqueDependsOnEntries(services: Array<{ condition?: string; id: string }>) {
+function uniqueDependsOnEntries(
+  services: Array<{ condition?: string; id: string }>,
+) {
   const entries = new Map<string, { condition?: string; id: string }>();
   for (const service of services) {
     if (!service.id) continue;
@@ -631,331 +828,13 @@ function volumeYaml(caches: PreviewManifestCache[], includeWorkspace: boolean) {
   if (!includeWorkspace) return [];
   return [
     "    volumes:",
-    ...(includeWorkspace ? [`      - "\${BLAME_PROJECT_ROOT}:/workspace"`] : []),
+    ...(includeWorkspace
+      ? [`      - "\${BLAME_PROJECT_ROOT}:/workspace"`]
+      : []),
     ...caches.map(
       (cache) => `      - ${yamlString(`${cache.name}:${cache.target}`)}`,
     ),
   ];
-}
-
-function parseVersion(value: unknown): 1 {
-  if (value !== 1) throw new Error("previewManifest version must be 1");
-  return 1;
-}
-
-function parseConfidence(value: unknown) {
-  if (typeof value !== "string" || !confidenceValues.has(value)) {
-    throw new Error("previewManifest confidence is invalid");
-  }
-  return value as PreviewManifest["confidence"];
-}
-
-function parseProject(value: unknown): PreviewManifestProject {
-  if (value === undefined) return {};
-  if (!isRecord(value)) throw new Error("previewManifest project must be an object");
-  return {
-    root: optionalString(value.root, "project.root"),
-    detectedStack: optionalStringArray(value.detectedStack, "project.detectedStack"),
-    confidence:
-      value.confidence === undefined ? undefined : parseConfidence(value.confidence),
-  };
-}
-
-function parseSetupTasks(value: unknown) {
-  if (!Array.isArray(value)) throw new Error("previewManifest setup must be an array");
-  return value.map(parseSetupTask);
-}
-
-function parseSetupTask(value: unknown): PreviewManifestSetupTask {
-  if (!isRecord(value)) throw new Error("previewManifest setup task must be an object");
-  return {
-    id: requiredId(value.id, "setup.id"),
-    image: requiredString(value.image, "setup.image"),
-    workingDir: optionalString(value.workingDir, "setup.workingDir"),
-    command: requiredString(value.command, "setup.command"),
-    runAs: parseSetupRunAs(value.runAs),
-    environment: parseEnvironment(value.environment, "setup.environment"),
-    dependsOn: optionalStringArray(value.dependsOn, "setup.dependsOn"),
-  };
-}
-
-function parseServices(value: unknown) {
-  if (!Array.isArray(value)) throw new Error("previewManifest services must be an array");
-  return value.map(parseService);
-}
-
-function parseService(value: unknown): PreviewManifestService {
-  if (!isRecord(value)) throw new Error("previewManifest service must be an object");
-  const kind = serviceKind(value.kind);
-  return {
-    id: requiredId(value.id, "service.id"),
-    kind,
-    image: requiredString(value.image, "service.image"),
-    workingDir: optionalString(value.workingDir, "service.workingDir"),
-    command: optionalString(value.command, "service.command"),
-    environment: parseEnvironment(value.environment, "service.environment"),
-    dependsOn: optionalStringArray(value.dependsOn, "service.dependsOn"),
-    preview: value.preview === undefined ? undefined : parsePreview(value.preview),
-    healthcheck:
-      value.healthcheck === undefined
-        ? undefined
-        : parseHealthcheck(value.healthcheck),
-  };
-}
-
-function parsePreview(value: unknown): PreviewManifestService["preview"] {
-  if (!isRecord(value)) throw new Error("previewManifest preview must be an object");
-  return {
-    internalPort: internalPort(value.internalPort, "preview.internalPort"),
-    protocol: httpProtocol(value.protocol),
-    path: pathValue(value.path, "preview.path"),
-  };
-}
-
-function parseHealthcheck(value: unknown): PreviewManifestHealthcheck {
-  if (!isRecord(value)) throw new Error("previewManifest healthcheck must be an object");
-  if (value.type !== "http") {
-    throw new Error("previewManifest healthcheck type must be http");
-  }
-  return {
-    type: "http",
-    path: pathValue(value.path, "healthcheck.path"),
-    timeoutMs: timeoutMs(value.timeoutMs),
-  };
-}
-
-function parseCaches(value: unknown) {
-  if (value === undefined) return [];
-  if (!Array.isArray(value)) throw new Error("previewManifest caches must be an array");
-  return value.map(parseCache);
-}
-
-function parseCache(value: unknown): PreviewManifestCache {
-  if (!isRecord(value)) throw new Error("previewManifest cache must be an object");
-  return {
-    name: requiredId(value.name, "cache.name"),
-    target: absolutePath(value.target, "cache.target"),
-  };
-}
-
-function parseRisks(value: unknown) {
-  if (value === undefined) return [];
-  if (!Array.isArray(value)) throw new Error("previewManifest risks must be an array");
-  return value.map(parseRisk);
-}
-
-function parseRisk(value: unknown): PreviewManifestRisk {
-  if (!isRecord(value)) throw new Error("previewManifest risk must be an object");
-  if (typeof value.level !== "string" || !riskLevels.has(value.level)) {
-    throw new Error("previewManifest risk level is invalid");
-  }
-  return {
-    level: value.level as PreviewManifestRisk["level"],
-    message: requiredString(value.message, "risk.message"),
-  };
-}
-
-function validateSetupTask(
-  task: PreviewManifestSetupTask,
-  serviceIds: Set<string>,
-) {
-  validateCommand(task.command, `setup task ${task.id}`);
-  validateSetupRunAs(task);
-  validateImage(task.image, `setup task ${task.id}`);
-  validateWorkingDir(task.workingDir);
-  validateDependsOn(task.dependsOn ?? [], serviceIds, `setup task ${task.id}`);
-}
-
-function validateService(
-  service: PreviewManifestService,
-  serviceIds: Set<string>,
-) {
-  validateImage(service.image, `service ${service.id}`);
-  validateWorkingDir(service.workingDir);
-  validateDependsOn(service.dependsOn ?? [], serviceIds, `service ${service.id}`);
-  if (service.command) validateCommand(service.command, `service ${service.id}`);
-  if (service.kind !== "dependency" && !service.command) {
-    throw new Error(`previewManifest service ${service.id} command is required`);
-  }
-  if (service.kind === "preview") {
-    if (!service.preview) {
-      throw new Error(`previewManifest service ${service.id} preview is required`);
-    }
-    if (!service.healthcheck) {
-      throw new Error(`previewManifest service ${service.id} healthcheck is required`);
-    }
-  }
-  if (service.kind !== "preview" && service.preview) {
-    throw new Error(`previewManifest service ${service.id} preview is only allowed on preview services`);
-  }
-}
-
-function validateCache(cache: PreviewManifestCache) {
-  absolutePath(cache.target, `cache ${cache.name}`);
-  rejectSensitiveMount(cache.target, `cache ${cache.name}`);
-}
-
-function validateCommand(command: string, context: string) {
-  if (command.length > 4_000) {
-    throw new Error(`previewManifest ${context} command is too long`);
-  }
-  if (unsafeCommandPatterns.some((pattern) => pattern.test(command))) {
-    throw new Error(`previewManifest ${context} command is unsafe`);
-  }
-  if (unsafeWorkspaceOwnershipCommand(command)) {
-    throw new Error(`previewManifest ${context} command is unsafe`);
-  }
-}
-
-function validateSetupRunAs(task: PreviewManifestSetupTask) {
-  if (task.runAs !== "root") return;
-  if (!workspacePermissionRepairCommand(task.command)) {
-    throw new Error(
-      `previewManifest setup task ${task.id} cannot run as root`,
-    );
-  }
-}
-
-function validateImage(image: string, context: string) {
-  if (image.includes("${") || image.includes("$")) {
-    throw new Error(`previewManifest ${context} image must be literal`);
-  }
-}
-
-function validateWorkingDir(workingDir: string | undefined) {
-  if (workingDir !== undefined) absolutePath(workingDir, "workingDir");
-}
-
-function validateDependsOn(
-  dependsOn: string[],
-  serviceIds: Set<string>,
-  context: string,
-) {
-  for (const id of dependsOn) {
-    if (!serviceIds.has(id)) {
-      throw new Error(`previewManifest ${context} depends on unknown service ${id}`);
-    }
-  }
-}
-
-function uniqueIds(context: string, ids: string[]) {
-  if (new Set(ids).size !== ids.length) {
-    throw new Error(`previewManifest ${context} ids must be unique`);
-  }
-}
-
-function serviceKind(value: unknown): PreviewManifestServiceKind {
-  if (typeof value !== "string" || !serviceKinds.has(value as PreviewManifestServiceKind)) {
-    throw new Error("previewManifest service kind is invalid");
-  }
-  return value as PreviewManifestServiceKind;
-}
-
-function internalPort(value: unknown, field: string) {
-  if (
-    typeof value !== "number" ||
-    !Number.isInteger(value) ||
-    value < 1 ||
-    value > 65_535
-  ) {
-    throw new Error(`previewManifest ${field} is invalid`);
-  }
-  return value;
-}
-
-function timeoutMs(value: unknown) {
-  if (
-    typeof value !== "number" ||
-    !Number.isInteger(value) ||
-    value < 1_000 ||
-    value > 300_000
-  ) {
-    throw new Error("previewManifest healthcheck timeoutMs is invalid");
-  }
-  return value;
-}
-
-function httpProtocol(value: unknown): "http" {
-  if (value !== "http") throw new Error("previewManifest protocol must be http");
-  return "http";
-}
-
-function pathValue(value: unknown, field: string) {
-  const path = requiredString(value, field);
-  if (!path.startsWith("/") || path.includes("\n") || path.includes("\r")) {
-    throw new Error(`previewManifest ${field} is invalid`);
-  }
-  return path;
-}
-
-function parseEnvironment(value: unknown, field: string) {
-  if (value === undefined) return undefined;
-  if (!isRecord(value)) throw new Error(`previewManifest ${field} must be an object`);
-  return Object.fromEntries(
-    Object.entries(value).map(([key, item]) => {
-      if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) {
-        throw new Error(`previewManifest ${field} key is invalid`);
-      }
-      if (typeof item !== "string") {
-        throw new Error(`previewManifest ${field} value must be a string`);
-      }
-      return [key, item];
-    }),
-  );
-}
-
-function parseSetupRunAs(value: unknown) {
-  if (value === undefined) return undefined;
-  if (value !== "host" && value !== "root") {
-    throw new Error("previewManifest setup.runAs is invalid");
-  }
-  return value;
-}
-
-function optionalStringArray(value: unknown, field: string) {
-  if (value === undefined) return undefined;
-  if (!Array.isArray(value) || !value.every((item) => typeof item === "string")) {
-    throw new Error(`previewManifest ${field} must be a string array`);
-  }
-  return value;
-}
-
-function optionalString(value: unknown, field: string) {
-  if (value === undefined) return undefined;
-  return requiredString(value, field);
-}
-
-function requiredString(value: unknown, field: string) {
-  if (typeof value !== "string" || !value.trim()) {
-    throw new Error(`previewManifest ${field} is required`);
-  }
-  return value.trim();
-}
-
-function requiredId(value: unknown, field: string) {
-  const id = requiredString(value, field);
-  if (!/^[a-zA-Z0-9_-]{1,80}$/.test(id)) {
-    throw new Error(`previewManifest ${field} is invalid`);
-  }
-  return id;
-}
-
-function absolutePath(value: unknown, field: string) {
-  const path = requiredString(value, field);
-  if (!path.startsWith("/") || path.includes("..")) {
-    throw new Error(`previewManifest ${field} must be an absolute path`);
-  }
-  rejectSensitiveMount(path, field);
-  return path;
-}
-
-function rejectSensitiveMount(path: string, field: string) {
-  if (["/", "/root", "/home", "/var/run/docker.sock"].includes(path)) {
-    throw new Error(`previewManifest ${field} target is unsafe`);
-  }
-  if (path.startsWith("/home/") || path.includes("docker.sock")) {
-    throw new Error(`previewManifest ${field} target is unsafe`);
-  }
 }
 
 function runsNodePackageManager(commands: string) {
@@ -1010,8 +889,4 @@ function yamlString(value: string) {
 
 function shellQuote(value: string) {
   return `'${value.replace(/'/g, `'\\''`)}'`;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === "object";
 }

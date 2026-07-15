@@ -179,6 +179,8 @@ export function useBacklogRotation(
       worktree: worktree.worktree,
       setupScript: initialization.setupScript,
       dockerCompose: initialization.dockerCompose,
+      previewManifest:
+        (initialization.previewManifest as PreviewManifest | null) ?? undefined,
       hostDependenciesChecked: true,
     })
     backlog.setStorySetupInitializing(detailedStory, true)
@@ -441,6 +443,7 @@ export function useBacklogRotation(
       worktree,
       result.setupScript,
       result.dockerCompose,
+      result.previewManifest,
       executionId
     )
   }
@@ -463,6 +466,7 @@ export function useBacklogRotation(
     worktree: string,
     setupScript: string,
     dockerCompose: string,
+    previewManifest: PreviewManifest | undefined,
     executionId: string
   ) {
     const workspace = platform.workspace
@@ -474,6 +478,7 @@ export function useBacklogRotation(
       worktree,
       setupScript,
       dockerCompose,
+      previewManifest,
       hostDependenciesChecked: true,
     })
     const unsubscribe = workspace.onSetupEvent(setup.runId, (event) => {
@@ -836,11 +841,8 @@ export function useBacklogRotation(
     if (pending) window.clearTimeout(pending.timer)
     pendingAgentUpdates.current.delete(story.id)
     const update = pendingAgentUpdate(pending, input, run, runInput)
-    return persistTerminalAgentUpdate(
-      window.localStorage,
-      story,
-      update,
-      () => persistQueuedAgentUpdate(story, update)
+    return persistTerminalAgentUpdate(window.localStorage, story, update, () =>
+      persistQueuedAgentUpdate(story, update)
     )
   }
 

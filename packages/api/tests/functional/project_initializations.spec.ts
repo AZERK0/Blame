@@ -55,15 +55,7 @@ test.group('project initializations', (group) => {
       .loginAs(user)
       .json({
         clineSessionId: 'session-1',
-        previewManifest: {
-          version: 1,
-          confidence: 'high',
-          project: { root: '.' },
-          setup: [],
-          services: [],
-          caches: [],
-          risks: [],
-        },
+        previewManifest: previewManifest('high'),
         setupScript: '#!/usr/bin/env bash\npnpm install',
         dockerCompose: 'services:\n  web:\n    image: node',
         runConfigurations: [
@@ -125,7 +117,7 @@ test.group('project initializations', (group) => {
       .loginAs(user)
       .json({
         setupScript: '#!/usr/bin/env bash\npnpm install',
-        previewManifest: { version: 1, confidence: 'medium' },
+        previewManifest: previewManifest('medium'),
         dockerCompose: 'services:\n  web:\n    image: node',
         runConfigurations: [],
         practices: [
@@ -141,7 +133,7 @@ test.group('project initializations', (group) => {
       .loginAs(user)
       .json({
         clineSessionId: 'repair-session',
-        previewManifest: { version: 1, confidence: 'high' },
+        previewManifest: previewManifest('high'),
         setupScript: '#!/usr/bin/env bash\ncorepack pnpm install',
         dockerCompose: 'services:\n  web:\n    image: node:22',
         runConfigurations: [
@@ -192,7 +184,45 @@ test.group('project initializations', (group) => {
 
     response.assertStatus(404)
   })
+
+  test('rejects an invalid preview manifest before persistence', async ({ client }) => {
+    const user = await createUser()
+    const project = await createProject(user.id, 'Alpha')
+
+    const response = await client
+      .post(`/api/v1/projects/${project.id}/initialization/complete`)
+      .loginAs(user)
+      .json({
+        previewManifest: { version: 2, confidence: 'high' },
+        setupScript: 'pnpm install',
+        dockerCompose: 'services:\n  web:\n    image: node',
+        practices: [],
+      })
+
+    response.assertStatus(422)
+  })
 })
+
+function previewManifest(confidence: 'low' | 'medium' | 'high') {
+  return {
+    version: 1,
+    confidence,
+    project: { root: '.' },
+    setup: [],
+    services: [
+      {
+        id: 'web',
+        kind: 'preview',
+        image: 'node:22-bookworm',
+        command: 'pnpm dev',
+        preview: { internalPort: 3000, protocol: 'http', path: '/' },
+        healthcheck: { type: 'http', path: '/', timeoutMs: 30_000 },
+      },
+    ],
+    caches: [],
+    risks: [],
+  }
+}
 
 function createUser() {
   return User.create({

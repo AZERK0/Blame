@@ -29,11 +29,14 @@ Classify the failure as exactly one of:
 For `repairable_initialization`:
 
 - return a complete replacement `previewManifest`
+- upgrade legacy manifests to `version: 2`
 - return the complete `runConfigurations` array
 - preserve valid existing services, setup tasks, caches, env vars, and run configurations unless diagnostics require changing them
 - preserve valid run configuration `previewUrl` values, add them for reliable browser-facing frontend commands including multi-service orchestration commands, and remove them when no launched service is a browser-facing frontend
 - use service `kind` values exactly `preview`, `dependency`, or `worker`
 - preview services must include preview metadata and an `http` healthcheck
+- declare typed endpoints and bindings for every topology-derived runtime address
+- add a required functional probe for each evidenced frontend-to-backend proxy boundary
 - setup work must live in `previewManifest.setup[]`
 - setup tasks may include `runAs: "root"` only for targeted cleanup or ownership repair of generated workspace artifacts such as `/workspace/.nuxt`, `/workspace/.next`, `/workspace/.vite`, or `/workspace/node_modules`
 - normal dependency installation tasks must omit `runAs` or use `runAs: "host"`

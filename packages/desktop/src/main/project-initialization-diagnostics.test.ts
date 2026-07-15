@@ -4,7 +4,10 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import test from "node:test";
 
-import { collectProjectInitializationDiagnostics } from "./project-initialization-diagnostics.ts";
+import {
+  collectProjectInitializationDiagnostics,
+  sanitizeProjectDiagnostic,
+} from "./project-initialization-diagnostics.ts";
 
 test("collects compose configuration, status, and every service log", async () => {
   const root = await mkdtemp(join(tmpdir(), "blame-diagnostics-"));
@@ -13,7 +16,10 @@ test("collects compose configuration, status, and every service log", async () =
   await mkdir(join(worktree, ".blame", "initialization"), { recursive: true });
   await mkdir(join(worktree, ".blame", "logs"), { recursive: true });
   await mkdir(bin);
-  await writeFile(join(worktree, ".blame", "logs", "setup.log"), "setup failed");
+  await writeFile(
+    join(worktree, ".blame", "logs", "setup.log"),
+    "setup failed",
+  );
   await writeFile(
     join(bin, "nerdctl"),
     `#!/usr/bin/env bash
@@ -37,4 +43,24 @@ exit 1
   assert.equal(result.composePs, "containers");
   assert.equal(result.serviceLogs.web, "web log");
   assert.match(result.serviceLogs.worker, /worker unavailable/);
-})
+});
+
+test("redacts secrets while retaining topology diagnostics", () => {
+  const result = sanitizeProjectDiagnostic(
+    [
+      "API_URL: http://backend:3333",
+      'DB_PASSWORD: "private value"',
+      "AUTH_TOKEN=secret-token",
+      '{"clientSecret":"json secret"}',
+      "DATABASE_URL=mysql://user:password@database:3306/app",
+      "Authorization: Bearer token-value",
+    ].join("\n"),
+  );
+
+  assert.match(result, /API_URL: http:\/\/backend:3333/);
+  assert.doesNotMatch(
+    result,
+    /private value|secret-token|json secret|user:password|token-value/,
+  );
+  assert.match(result, /DB_PASSWORD: \[REDACTED\]/);
+});

@@ -21,7 +21,12 @@ export async function collectProjectInitializationDiagnostics(
   const worktree = resolveWorkspacePath(input.worktree);
   const composeArgs = [
     "-f",
-    joinWorkspacePath(worktree, ".blame", "initialization", "docker-compose.yml"),
+    joinWorkspacePath(
+      worktree,
+      ".blame",
+      "initialization",
+      "docker-compose.yml",
+    ),
     "--project-directory",
     worktree,
   ];
@@ -32,7 +37,7 @@ export async function collectProjectInitializationDiagnostics(
   ]);
   return {
     setupLog: await setupLog(worktree),
-    launchError: input.launchError,
+    launchError: sanitizeProjectDiagnostic(input.launchError),
     composeConfig: await commandOutput(worktree, env, [
       ...composeArgs,
       "config",
@@ -74,7 +79,11 @@ async function serviceLogOutputs(
 async function setupLog(worktree: string) {
   try {
     return truncate(
-      await readWorkspaceFile(joinWorkspacePath(worktree, ".blame", "logs", "setup.log")),
+      sanitizeProjectDiagnostic(
+        await readWorkspaceFile(
+          joinWorkspacePath(worktree, ".blame", "logs", "setup.log"),
+        ),
+      ),
     );
   } catch (error) {
     return errorText(error);
@@ -88,9 +97,13 @@ async function commandOutput(
 ) {
   try {
     const result = await containerRuntime.compose(args, { cwd: worktree, env });
-    return truncate([result.stdout, result.stderr].filter(Boolean).join("\n"));
+    return truncate(
+      sanitizeProjectDiagnostic(
+        [result.stdout, result.stderr].filter(Boolean).join("\n"),
+      ),
+    );
   } catch (error) {
-    return truncate(commandErrorText(error));
+    return truncate(sanitizeProjectDiagnostic(commandErrorText(error)));
   }
 }
 
@@ -123,4 +136,14 @@ function errorText(error: unknown) {
 function truncate(value: string) {
   if (value.length <= maxDiagnosticLength) return value;
   return value.slice(value.length - maxDiagnosticLength);
+}
+
+export function sanitizeProjectDiagnostic(value: string) {
+  return value
+    .replace(
+      /((?:^|[\s{,])["']?[A-Za-z_][A-Za-z0-9_]*(?:PASSWORD|SECRET|TOKEN|API_KEY|APP_KEY|CREDENTIAL|COOKIE)[A-Za-z0-9_]*["']?\s*[:=]\s*)(?:"[^"\r\n]*"|'[^'\r\n]*'|[^\s,}\]]+)/gim,
+      "$1[REDACTED]",
+    )
+    .replace(/([a-z][a-z0-9+.-]*:\/\/)[^\s/:@]+:[^\s/@]+@/gi, "$1[REDACTED]@")
+    .replace(/\bBearer\s+[A-Za-z0-9._~+/-]+=*/gi, "Bearer [REDACTED]");
 }

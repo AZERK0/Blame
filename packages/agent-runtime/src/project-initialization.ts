@@ -132,9 +132,18 @@ export const projectInitializationResultSchema = {
     previewManifest: {
       type: "object",
       additionalProperties: false,
-      required: ["version", "confidence", "project", "setup", "services", "caches", "risks"],
+      required: [
+        "version",
+        "confidence",
+        "project",
+        "setup",
+        "services",
+        "caches",
+        "risks",
+        "probes",
+      ],
       properties: {
-        version: { const: 1 },
+        version: { const: 2 },
         confidence: { enum: ["low", "medium", "high"] },
         project: {
           type: "object",
@@ -157,7 +166,10 @@ export const projectInitializationResultSchema = {
               workingDir: { type: "string" },
               command: { type: "string" },
               runAs: { enum: ["host", "root"] },
-              environment: { type: "object", additionalProperties: { type: "string" } },
+              environment: {
+                type: "object",
+                additionalProperties: { type: "string" },
+              },
               dependsOn: { type: "array", items: { type: "string" } },
             },
           },
@@ -167,14 +179,17 @@ export const projectInitializationResultSchema = {
           items: {
             type: "object",
             additionalProperties: false,
-            required: ["id", "kind", "image"],
+            required: ["id", "kind", "image", "endpoints"],
             properties: {
               id: { type: "string" },
               kind: { enum: ["preview", "dependency", "worker"] },
               image: { type: "string" },
               workingDir: { type: "string" },
               command: { type: "string" },
-              environment: { type: "object", additionalProperties: { type: "string" } },
+              environment: {
+                type: "object",
+                additionalProperties: { type: "string" },
+              },
               dependsOn: { type: "array", items: { type: "string" } },
               preview: {
                 type: "object",
@@ -193,7 +208,71 @@ export const projectInitializationResultSchema = {
                 properties: {
                   type: { const: "http" },
                   path: { type: "string" },
-                  timeoutMs: { type: "integer", minimum: 1000, maximum: 300000 },
+                  timeoutMs: {
+                    type: "integer",
+                    minimum: 1000,
+                    maximum: 300000,
+                  },
+                },
+              },
+              endpoints: {
+                type: "array",
+                maxItems: 20,
+                items: {
+                  type: "object",
+                  additionalProperties: false,
+                  required: ["id", "protocol", "port"],
+                  properties: {
+                    id: { type: "string" },
+                    protocol: { enum: ["http", "https", "tcp"] },
+                    port: { type: "integer", minimum: 1, maximum: 65535 },
+                    healthcheck: {
+                      type: "object",
+                      additionalProperties: false,
+                      required: ["type", "timeoutMs"],
+                      properties: {
+                        type: { enum: ["http", "tcp"] },
+                        path: { type: "string" },
+                        timeoutMs: {
+                          type: "integer",
+                          minimum: 1000,
+                          maximum: 300000,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+              bindings: {
+                type: "array",
+                maxItems: 50,
+                items: {
+                  type: "object",
+                  additionalProperties: false,
+                  required: ["target", "source", "exposure"],
+                  properties: {
+                    target: {
+                      type: "object",
+                      additionalProperties: false,
+                      required: ["type", "key"],
+                      properties: {
+                        type: { const: "environment" },
+                        key: { type: "string" },
+                      },
+                    },
+                    source: {
+                      type: "object",
+                      additionalProperties: false,
+                      required: ["service", "endpoint"],
+                      properties: {
+                        service: { type: "string" },
+                        endpoint: { type: "string" },
+                      },
+                    },
+                    exposure: { enum: ["server", "browser"] },
+                    format: { enum: ["url", "host", "port", "host-port"] },
+                    path: { type: "string" },
+                  },
                 },
               },
             },
@@ -220,6 +299,37 @@ export const projectInitializationResultSchema = {
             properties: {
               level: { enum: ["low", "medium", "high"] },
               message: { type: "string" },
+            },
+          },
+        },
+        probes: {
+          type: "array",
+          maxItems: 50,
+          items: {
+            type: "object",
+            additionalProperties: false,
+            required: ["id", "from", "target", "type"],
+            properties: {
+              id: { type: "string" },
+              from: { type: "string" },
+              target: {
+                type: "object",
+                additionalProperties: false,
+                required: ["service", "endpoint"],
+                properties: {
+                  service: { type: "string" },
+                  endpoint: { type: "string" },
+                  path: { type: "string" },
+                },
+              },
+              type: { enum: ["http", "tcp"] },
+              acceptedStatuses: {
+                type: "array",
+                maxItems: 20,
+                items: { type: "integer", minimum: 100, maximum: 499 },
+              },
+              timeoutMs: { type: "integer", minimum: 1000, maximum: 300000 },
+              required: { type: "boolean" },
             },
           },
         },
@@ -326,7 +436,8 @@ export function parseProjectInitializationPayload(
     : undefined;
   const generated = manifest ? generatePreviewArtifacts(manifest) : undefined;
   const setupScript = generated?.setupScript ?? stringValue(parsed.setupScript);
-  const dockerCompose = generated?.dockerCompose ?? stringValue(parsed.dockerCompose);
+  const dockerCompose =
+    generated?.dockerCompose ?? stringValue(parsed.dockerCompose);
   if (!setupScript) {
     throw new Error("Initialization result is missing previewManifest");
   }
@@ -440,9 +551,15 @@ export function parseRunConfigurations(value: unknown) {
   const configurations = value.map(parseRunConfiguration);
   const ids = new Set(configurations.map((configuration) => configuration.id));
   if (ids.size !== configurations.length)
-    throw new Error("Initialization result run configuration ids must be unique");
-  if (configurations.filter((configuration) => configuration.default).length > 1)
-    throw new Error("Initialization result must have at most one default run configuration");
+    throw new Error(
+      "Initialization result run configuration ids must be unique",
+    );
+  if (
+    configurations.filter((configuration) => configuration.default).length > 1
+  )
+    throw new Error(
+      "Initialization result must have at most one default run configuration",
+    );
   return configurations;
 }
 
@@ -461,7 +578,9 @@ function parseRunConfiguration(value: unknown): ProjectRunConfiguration {
   if (!command || command.length > 2_000 || /[\r\n]/.test(command))
     throw new Error("Initialization run configuration command is invalid");
   if (!cwd || cwd.length > 500 || unsafeRunConfigurationCwd(cwd))
-    throw new Error("Initialization run configuration cwd must stay inside the project");
+    throw new Error(
+      "Initialization run configuration cwd must stay inside the project",
+    );
   if (typeof value.default !== "boolean")
     throw new Error("Initialization run configuration default must be boolean");
   if (previewUrl && invalidRunConfigurationPreviewUrl(previewUrl))
@@ -477,8 +596,12 @@ function parseRunConfiguration(value: unknown): ProjectRunConfiguration {
 }
 
 function unsafeRunConfigurationCwd(cwd: string) {
-  return cwd.startsWith("/") || cwd.startsWith("\\") || /^[a-zA-Z]:/.test(cwd) ||
-    cwd.split(/[\\/]/).includes("..");
+  return (
+    cwd.startsWith("/") ||
+    cwd.startsWith("\\") ||
+    /^[a-zA-Z]:/.test(cwd) ||
+    cwd.split(/[\\/]/).includes("..")
+  );
 }
 
 function invalidRunConfigurationPreviewUrl(previewUrl: string) {
@@ -591,7 +714,10 @@ function validateDockerCompose(
       "Initialization result dockerCompose must use literal service URLs for inter-container runtime configuration instead of preserving existing localhost values",
     );
   }
-  if (requiresDatabaseMigration(compose, scan) && !runsDatabaseMigration(compose)) {
+  if (
+    requiresDatabaseMigration(compose, scan) &&
+    !runsDatabaseMigration(compose)
+  ) {
     throw new Error(
       "Initialization result dockerCompose must run detected database migrations before starting backend services",
     );
@@ -659,7 +785,10 @@ function forcesHostUidUser(compose: string) {
 }
 
 function previewWorkspaceMountsProject(compose: string) {
-  if (!compose.includes("blame.preview") || !compose.includes("working_dir: /workspace")) {
+  if (
+    !compose.includes("blame.preview") ||
+    !compose.includes("working_dir: /workspace")
+  ) {
     return true;
   }
   return /(?:-\s*[^:\n]+:\s*\/workspace|target:\s*\/workspace)\s*(?:#.*)?$/m.test(
@@ -686,7 +815,8 @@ function usesNuxtPreviewWithoutBuild(
 ) {
   if (!scan || !/\bnpm\s+run\s+preview\b/.test(compose)) return false;
   const usesNuxt = Object.entries(scan.files).some(
-    ([path, content]) => path.endsWith("package.json") && /"nuxt"\s*:/.test(content.toLowerCase()),
+    ([path, content]) =>
+      path.endsWith("package.json") && /"nuxt"\s*:/.test(content.toLowerCase()),
   );
   return usesNuxt && !/\b(?:npm\s+run\s+build|nuxt\s+build)\b/.test(compose);
 }
@@ -704,7 +834,9 @@ function usesNumericSuUser(compose: string) {
 function overridesEnvironmentDrivenServeCommand(compose: string) {
   if (!/\bhost:\s*0\.0\.0\.0\b/.test(compose)) return false;
   if (!/\bport:\s*[0-9]+\b/.test(compose)) return false;
-  return /\b(?:node\s+ace|ace)\s+serve\b[^\n]*(?:--host|--port)\b/.test(compose);
+  return /\b(?:node\s+ace|ace)\s+serve\b[^\n]*(?:--host|--port)\b/.test(
+    compose,
+  );
 }
 
 function usesInterpolatedContainerHost(compose: string) {

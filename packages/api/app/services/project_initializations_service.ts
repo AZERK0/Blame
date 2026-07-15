@@ -2,6 +2,8 @@ import ProjectCodePractice from '#models/project_code_practice'
 import ProjectInitialization from '#models/project_initialization'
 import ProjectsService from '#services/projects_service'
 import type { Infer } from '@vinejs/vine/types'
+import { Exception } from '@adonisjs/core/exceptions'
+import { parsePreviewManifest } from '@blame/preview-contract'
 import type {
   completeProjectInitializationValidator,
   failProjectInitializationValidator,
@@ -39,12 +41,13 @@ export default class ProjectInitializationsService {
     await new ProjectsService().findForUser(userId, projectId)
     const runConfigurations = input.runConfigurations ?? []
     validateRunConfigurations(runConfigurations)
+    const previewManifest = validatedPreviewManifest(input.previewManifest)
     const initialization = await this.initialization(projectId)
     initialization.merge({
       status: 'done',
       step: 'completed',
       clineSessionId: input.clineSessionId ?? initialization.clineSessionId,
-      previewManifest: input.previewManifest ?? null,
+      previewManifest: previewManifest ?? null,
       setupScript: input.setupScript,
       dockerCompose: input.dockerCompose,
       runConfigurations,
@@ -74,11 +77,12 @@ export default class ProjectInitializationsService {
     const initialization = await this.initialization(projectId)
     const runConfigurations = input.runConfigurations ?? initialization.runConfigurations ?? []
     validateRunConfigurations(runConfigurations)
+    const previewManifest = validatedPreviewManifest(input.previewManifest)
     initialization.merge({
       status: 'done',
       step: 'completed',
       clineSessionId: input.clineSessionId ?? initialization.clineSessionId,
-      previewManifest: input.previewManifest ?? initialization.previewManifest,
+      previewManifest: previewManifest ?? initialization.previewManifest,
       setupScript: input.setupScript,
       dockerCompose: input.dockerCompose,
       runConfigurations,
@@ -124,6 +128,19 @@ export default class ProjectInitializationsService {
       })
       await projectCodePractice.save()
     }
+  }
+}
+
+function validatedPreviewManifest(value: unknown) {
+  if (value === undefined) return undefined
+  try {
+    return parsePreviewManifest(value)
+  } catch (error) {
+    throw new Exception(error instanceof Error ? error.message : 'Preview manifest is invalid', {
+      status: 422,
+      code: 'E_PREVIEW_MANIFEST_INVALID',
+      cause: error,
+    })
   }
 }
 

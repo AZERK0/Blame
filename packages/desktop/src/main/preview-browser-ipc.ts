@@ -7,6 +7,7 @@ import {
   shell,
   WebContentsView,
 } from "electron";
+import { getBlameTelemetry } from "@blame/telemetry";
 
 type PreviewBrowserRecord = {
   devtoolsScope?: string;
@@ -110,13 +111,13 @@ function previewDevtoolsTarget(
 }
 
 function previewDevtoolsTargetForScope(scope: string | undefined) {
-  return scope ? previewDevtoolsTargets.get(scope) : activePreviewDevtoolsTarget;
+  return scope
+    ? previewDevtoolsTargets.get(scope)
+    : activePreviewDevtoolsTarget;
 }
 
 function previewDevtoolsTargetReady(target: PreviewBrowserState | undefined) {
-  return Boolean(
-    target?.url && !target.loading && !target.error,
-  );
+  return Boolean(target?.url && !target.loading && !target.error);
 }
 
 function normalizedPreviewDevtoolsScope(scope: string | undefined) {
@@ -170,7 +171,7 @@ function createPreviewBrowser(event: IpcMainInvokeEvent) {
   const owner = BrowserWindow.fromWebContents(event.sender);
   if (!owner) throw new Error("Preview owner window not found");
   const id = randomUUID();
-  const view = createPreviewBrowserView();
+  const view = createPreviewBrowserView(id);
   const record = { id, owner, view, visible: false };
   previews.set(id, record);
   owner.contentView.addChildView(view);
@@ -182,18 +183,47 @@ function createPreviewBrowser(event: IpcMainInvokeEvent) {
     return { action: "deny" };
   });
   attachPreviewBrowserEvents(record);
+  attachPreviewRequestTelemetry(record);
   owner.once("closed", () => destroyPreviewBrowser(id));
   return { id };
 }
 
-function createPreviewBrowserView() {
+function createPreviewBrowserView(id: string) {
   return new WebContentsView({
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
+      partition: `blame-preview-${id}`,
       sandbox: true,
     },
   });
+}
+
+function attachPreviewRequestTelemetry(record: PreviewBrowserRecord) {
+  record.view.webContents.session.webRequest.onCompleted(
+    { urls: ["http://*/*", "https://*/*"] },
+    (details) => {
+      if (details.statusCode < 500) return;
+      const attributes = {
+        "http.response.status_code": details.statusCode,
+        "network.protocol.name": details.url.startsWith("https:")
+          ? "https"
+          : "http",
+        "blame.preview.resource_type": previewResourceType(
+          details.resourceType,
+        ),
+      };
+      const telemetry = getBlameTelemetry();
+      telemetry.count("blame.preview.http.server_error", 1, attributes);
+      telemetry.log("warn", "blame.preview.request.failed", attributes);
+    },
+  );
+}
+
+function previewResourceType(value: string) {
+  return ["mainFrame", "subFrame", "xhr", "fetch"].includes(value)
+    ? value
+    : "other";
 }
 
 async function loadPreviewBrowser(input: { id: string; url: string }) {
@@ -226,7 +256,9 @@ function setPreviewBrowserDevtoolsScope(input: {
   const record = previews.get(input.id);
   if (!record) return false;
   clearPreviewDevtoolsScope(record);
-  record.devtoolsScope = normalizedPreviewDevtoolsScope(input.scope ?? undefined);
+  record.devtoolsScope = normalizedPreviewDevtoolsScope(
+    input.scope ?? undefined,
+  );
   syncPreviewDevtoolsTargets(record, previewBrowserState(record));
   return true;
 }
@@ -308,7 +340,10 @@ function sendPreviewBrowserState(
   record.state = nextState;
   syncPreviewDevtoolsTargets(record, nextState);
   if (record.owner.isDestroyed()) return;
-  record.owner.webContents.send(`preview-browser:state:${record.id}`, nextState);
+  record.owner.webContents.send(
+    `preview-browser:state:${record.id}`,
+    nextState,
+  );
 }
 
 function previewBrowserState(record: PreviewBrowserRecord) {
@@ -324,7 +359,8 @@ function syncPreviewDevtoolsTargets(
   record: PreviewBrowserRecord,
   state: PreviewBrowserState,
 ) {
-  if (record.devtoolsScope) previewDevtoolsTargets.set(record.devtoolsScope, state);
+  if (record.devtoolsScope)
+    previewDevtoolsTargets.set(record.devtoolsScope, state);
   if (record.visible) {
     activePreviewDevtoolsTarget = state;
     return;
@@ -335,7 +371,8 @@ function syncPreviewDevtoolsTargets(
 function clearPreviewDevtoolsScope(record: PreviewBrowserRecord) {
   if (!record.devtoolsScope) return;
   const target = previewDevtoolsTargets.get(record.devtoolsScope);
-  if (target?.id === record.id) previewDevtoolsTargets.delete(record.devtoolsScope);
+  if (target?.id === record.id)
+    previewDevtoolsTargets.delete(record.devtoolsScope);
 }
 
 function clearPreviewDevtoolsTargets(record: PreviewBrowserRecord) {

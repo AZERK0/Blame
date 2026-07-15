@@ -21,6 +21,7 @@ import type {
   NewProjectGenerationResult,
   OptimizeUserStoryPromptInput,
   OptimizeUserStoryPromptResult,
+  PreviewManifest,
   ProviderListResponse,
   RepairProjectInitializationInput,
   RepairProjectInitializationResult,
@@ -533,6 +534,7 @@ export type WorkspaceClient = {
     worktree: string
     setupScript: string
     dockerCompose: string
+    previewManifest?: PreviewManifest
     hostDependenciesChecked?: boolean
   }): Promise<{ runId: string }>
   collectProjectInitializationDiagnostics(input: {

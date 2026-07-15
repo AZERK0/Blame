@@ -3,6 +3,7 @@ import type {
   Message,
   RestoreResult as ClineRestoreResult,
 } from "@cline/sdk";
+import type { PreviewManifest } from "@blame/preview-contract";
 
 export type ApiConnection = {
   url: string;
@@ -339,71 +340,27 @@ export type ProjectRunConfiguration = {
   previewUrl?: string;
 };
 
-export type PreviewManifestConfidence = "low" | "medium" | "high";
-
-export type PreviewManifestEnvironment = Record<string, string>;
-
-export type PreviewManifestProject = {
-  root?: string;
-  detectedStack?: string[];
-  confidence?: PreviewManifestConfidence;
-};
-
-export type PreviewManifestSetupTask = {
-  id: string;
-  image: string;
-  workingDir?: string;
-  command: string;
-  runAs?: "host" | "root";
-  environment?: PreviewManifestEnvironment;
-  dependsOn?: string[];
-};
-
-export type PreviewManifestServiceKind = "preview" | "dependency" | "worker";
-
-export type PreviewManifestPreview = {
-  internalPort: number;
-  protocol: "http";
-  path: string;
-};
-
-export type PreviewManifestHealthcheck = {
-  type: "http";
-  path: string;
-  timeoutMs: number;
-};
-
-export type PreviewManifestService = {
-  id: string;
-  kind: PreviewManifestServiceKind;
-  image: string;
-  workingDir?: string;
-  command?: string;
-  environment?: PreviewManifestEnvironment;
-  dependsOn?: string[];
-  preview?: PreviewManifestPreview;
-  healthcheck?: PreviewManifestHealthcheck;
-};
-
-export type PreviewManifestCache = {
-  name: string;
-  target: string;
-};
-
-export type PreviewManifestRisk = {
-  level: "low" | "medium" | "high";
-  message: string;
-};
-
-export type PreviewManifest = {
-  version: 1;
-  confidence: PreviewManifestConfidence;
-  project: PreviewManifestProject;
-  setup: PreviewManifestSetupTask[];
-  services: PreviewManifestService[];
-  caches: PreviewManifestCache[];
-  risks: PreviewManifestRisk[];
-};
+export type {
+  PreviewManifest,
+  PreviewManifestBinding,
+  PreviewManifestBindingSource,
+  PreviewManifestBindingTarget,
+  PreviewManifestCache,
+  PreviewManifestConfidence,
+  PreviewManifestEndpoint,
+  PreviewManifestEndpointHealthcheck,
+  PreviewManifestEnvironment,
+  PreviewManifestHealthcheck,
+  PreviewManifestPreview,
+  PreviewManifestProbe,
+  PreviewManifestProbeTarget,
+  PreviewManifestProject,
+  PreviewManifestRisk,
+  PreviewManifestService,
+  PreviewManifestServiceKind,
+  PreviewManifestSetupTask,
+  PreviewManifestVersion,
+} from "@blame/preview-contract";
 
 export type ProjectInitializationDatabaseMode = "existing" | "compose";
 

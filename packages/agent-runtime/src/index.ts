@@ -4,6 +4,13 @@ export type { TaskComplexityBucket } from "./telemetry-cohorts.js";
 export { codeReviewGraphToolNames } from "./code-review-graph-tools.js";
 export { commandWithNextWebpackFallback } from "./next-webpack-fallback.js";
 export {
+  generatePreviewArtifacts,
+  normalizePreviewManifest,
+  normalizePreviewManifestWithPreferences,
+  parsePreviewManifest,
+  validatePreviewManifest,
+} from "./preview-manifest.js";
+export {
   authorizeMcpOAuth,
   clearMcpOAuth,
   listMcpOAuthStatuses,
@@ -54,16 +61,24 @@ export type {
   OptimizeUserStoryPromptInput,
   OptimizeUserStoryPromptResult,
   PreviewManifest,
+  PreviewManifestBinding,
+  PreviewManifestBindingSource,
+  PreviewManifestBindingTarget,
   PreviewManifestCache,
   PreviewManifestConfidence,
+  PreviewManifestEndpoint,
+  PreviewManifestEndpointHealthcheck,
   PreviewManifestEnvironment,
   PreviewManifestHealthcheck,
   PreviewManifestPreview,
+  PreviewManifestProbe,
+  PreviewManifestProbeTarget,
   PreviewManifestProject,
   PreviewManifestRisk,
   PreviewManifestService,
   PreviewManifestServiceKind,
   PreviewManifestSetupTask,
+  PreviewManifestVersion,
   ProjectCodePracticeKey,
   ProjectCodePracticePreference,
   ProjectCodePracticeResult,

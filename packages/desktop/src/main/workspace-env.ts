@@ -50,6 +50,12 @@ export type EnvHostFileMount = {
   hostPath: string;
 };
 
+export type EnvFileOverride = {
+  directory: string;
+  localHosts?: Record<string, string>;
+  values: Record<string, string>;
+};
+
 const publicOriginEnvironmentKeys = new Set([
   "APP_URL",
   "APPLICATION_URL",
@@ -123,12 +129,18 @@ export async function envHostFileMounts(worktree: string) {
 export async function materializedPreviewEnvHostFileMounts(
   worktree: string,
   previewOrigin: string | undefined,
+  overrides: EnvFileOverride[] = [],
 ) {
-  if (!previewOrigin) return [];
+  if (!previewOrigin && overrides.length === 0) return [];
   const files = await projectEnvFiles(worktree);
   const mounts = await Promise.all(
     files.runtime.map((path) =>
-      materializedPreviewEnvHostFileMount(worktree, path, previewOrigin),
+      materializedPreviewEnvHostFileMount(
+        worktree,
+        path,
+        previewOrigin,
+        overrides,
+      ),
     ),
   );
   return mounts.filter((mount): mount is EnvHostFileMount => Boolean(mount));
@@ -137,12 +149,18 @@ export async function materializedPreviewEnvHostFileMounts(
 export async function materializedPreviewEnvFilesMatch(
   worktree: string,
   previewOrigin: string | undefined,
+  overrides: EnvFileOverride[] = [],
 ) {
-  if (!previewOrigin) return true;
+  if (!previewOrigin && overrides.length === 0) return true;
   const files = await projectEnvFiles(worktree);
   const matches = await Promise.all(
     files.runtime.map((path) =>
-      materializedPreviewEnvFileMatches(worktree, path, previewOrigin),
+      materializedPreviewEnvFileMatches(
+        worktree,
+        path,
+        previewOrigin,
+        overrides,
+      ),
     ),
   );
   return matches.every(Boolean);
@@ -151,10 +169,17 @@ export async function materializedPreviewEnvFilesMatch(
 async function materializedPreviewEnvHostFileMount(
   worktree: string,
   path: string,
-  previewOrigin: string,
+  previewOrigin: string | undefined,
+  overrides: EnvFileOverride[],
 ) {
   const content = await readWorkspaceEnvFile(path);
-  const materialized = materializePreviewEnvValues(content, previewOrigin);
+  const override = envFileOverride(worktree, path, overrides);
+  const materialized = materializePreviewEnvValues(
+    content,
+    previewOrigin,
+    override.values,
+    override.localHosts,
+  );
   if (materialized === content) return null;
   const relativePath = relativeWorkspacePath(worktree, path);
   const hostPath = joinWorkspacePath(
@@ -173,10 +198,17 @@ async function materializedPreviewEnvHostFileMount(
 async function materializedPreviewEnvFileMatches(
   worktree: string,
   path: string,
-  previewOrigin: string,
+  previewOrigin: string | undefined,
+  overrides: EnvFileOverride[],
 ) {
   const content = await readWorkspaceEnvFile(path);
-  const materialized = materializePreviewEnvValues(content, previewOrigin);
+  const override = envFileOverride(worktree, path, overrides);
+  const materialized = materializePreviewEnvValues(
+    content,
+    previewOrigin,
+    override.values,
+    override.localHosts,
+  );
   if (materialized === content) return true;
   const relativePath = relativeWorkspacePath(worktree, path);
   const hostPath = joinWorkspacePath(
@@ -194,24 +226,85 @@ async function materializedPreviewEnvFileMatches(
 
 export function materializePreviewEnvValues(
   content: string,
-  previewOrigin: string,
+  previewOrigin: string | undefined,
+  overrides: Record<string, string> = {},
+  localHosts: Record<string, string> = {},
 ) {
   let hasPublicOrigin = false;
   let hasNextPublicAppUrl = false;
+  const usedKeys = new Set<string>();
   const lines = content.split("\n").map((line) => {
     const parsed = envLine(line);
     if (!parsed) return line;
+    usedKeys.add(parsed.key);
     if (parsed.key === "NEXT_PUBLIC_APP_URL") hasNextPublicAppUrl = true;
-    if (!publicOriginEnvironmentKeys.has(parsed.key)) return line;
+    if (overrides[parsed.key] !== undefined) {
+      return materializedEnvLine(
+        parsed.key,
+        parsed.value,
+        overrides[parsed.key],
+      );
+    }
+    const internalServiceValue = materializedInternalServiceValue(
+      parsed.value,
+      localHosts,
+    );
+    if (internalServiceValue !== parsed.value) {
+      return `${parsed.key}=${internalServiceValue}`;
+    }
+    if (!previewOrigin || !publicOriginEnvironmentKeys.has(parsed.key))
+      return line;
     hasPublicOrigin = true;
     const nextValue = materializedPreviewEnvValue(parsed.value, previewOrigin);
     return `${parsed.key}=${nextValue}`;
   });
   while (lines.length > 0 && lines[lines.length - 1] === "") lines.pop();
-  if (hasPublicOrigin && !hasNextPublicAppUrl) {
+  for (const [key, value] of Object.entries(overrides)) {
+    if (!usedKeys.has(key)) lines.push(`${key}=${value}`);
+  }
+  if (previewOrigin && hasPublicOrigin && !hasNextPublicAppUrl) {
     lines.push(`NEXT_PUBLIC_APP_URL=${previewOrigin}`);
   }
   return normalizeEnvText(lines.join("\n"));
+}
+
+function envFileOverride(
+  worktree: string,
+  path: string,
+  overrides: EnvFileOverride[],
+) {
+  const directory = posix.dirname(relativeWorkspacePath(worktree, path));
+  return (
+    overrides.find((override) => override.directory === directory) ?? {
+      directory,
+      values: {},
+    }
+  );
+}
+
+function materializedEnvLine(key: string, currentValue: string, value: string) {
+  const quote = envValueQuote(currentValue);
+  return `${key}=${quote}${value}${quote}`;
+}
+
+function materializedInternalServiceValue(
+  value: string,
+  localHosts: Record<string, string>,
+) {
+  const quote = envValueQuote(value);
+  const unquoted = unquoteEnvValue(value.trim());
+  try {
+    const url = new URL(unquoted);
+    const service = localPreviewHost(url.hostname) && localHosts[url.port];
+    if (!service) return value;
+    const nextValue = unquoted.replace(
+      /^([a-z][a-z0-9+.-]*:\/\/)(?:localhost|127\.0\.0\.1|\[::1\])/i,
+      `$1${service}`,
+    );
+    return quote ? `${quote}${nextValue}${quote}` : nextValue;
+  } catch {
+    return value;
+  }
 }
 
 function materializedPreviewEnvValue(value: string, previewOrigin: string) {
@@ -242,7 +335,7 @@ function unquoteEnvValue(value: string) {
 }
 
 function localPreviewHost(host: string) {
-  return host === "localhost" || host === "127.0.0.1";
+  return host === "localhost" || host === "127.0.0.1" || host === "[::1]";
 }
 
 async function envHostFileMount(worktree: string, path: string) {
@@ -255,7 +348,10 @@ async function envHostFileMount(worktree: string, path: string) {
   };
 }
 
-async function writeRuntimeEnvFile(destinationPath: string, sourcePath: string) {
+async function writeRuntimeEnvFile(
+  destinationPath: string,
+  sourcePath: string,
+) {
   const source = await readFile(sourcePath, "utf8");
   const destination = (await runtimePathExists(destinationPath))
     ? await readRuntimeFile(destinationPath)

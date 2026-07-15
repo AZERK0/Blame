@@ -1,12 +1,21 @@
 import { type ChildProcessWithoutNullStreams } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import { readdir, readFile, stat } from "node:fs/promises";
+import { createConnection } from "node:net";
 import { dirname, join, posix, relative, resolve, sep } from "node:path";
 import { BrowserWindow, ipcMain } from "electron";
 import {
   commandWithNextWebpackFallback,
+  generatePreviewArtifacts,
   type ExecutionTelemetryCohorts,
 } from "@blame/agent-runtime";
+import {
+  parsePreviewManifest,
+  type PreviewManifest,
+  type PreviewManifestEndpoint,
+  type PreviewManifestProbe,
+  type PreviewManifestService,
+} from "@blame/preview-contract";
 import {
   ATTR_BLAME_AGENT_ROLE,
   ATTR_BLAME_AGENT_STRATEGY,
@@ -75,6 +84,11 @@ import {
   type CollectProjectInitializationDiagnosticsInput,
 } from "./project-initialization-diagnostics";
 import {
+  previewComposeEnvOverrides,
+  validatePreviewComposeBindings,
+} from "./preview-compose-validation";
+import { previewContainerFailure } from "./preview-readiness";
+import {
   composeWithNonMutatingNpmInstalls,
   composeWithRuntimePortPlaceholders,
   composeWithoutNumericSuUser,
@@ -137,6 +151,9 @@ import {
 } from "./workspace-step-telemetry";
 
 const previewStartupIntervalMs = 1_000;
+const previewDiscoveryGraceMs = 15_000;
+const previewResponseTimeoutMs = 120_000;
+const previewRequestTimeoutMs = 5_000;
 const repositoryLanguageCohorts = new Set([
   "c",
   "cpp",
@@ -256,6 +273,7 @@ type RunProjectSetupInput = ExecutionContextInput & {
   worktree: string;
   setupScript: string;
   dockerCompose: string;
+  previewManifest?: PreviewManifest;
   hostDependenciesChecked?: boolean;
 };
 
@@ -352,6 +370,8 @@ type ProjectSetupFiles = {
   composePath: string;
   directory: string;
   dockerCompose: string;
+  manifest?: PreviewManifest;
+  manifestPath: string;
   scriptPath: string;
   setupScript: string;
   symlinkEnvMounts: Awaited<ReturnType<typeof envHostFileMounts>>;
@@ -384,6 +404,25 @@ type ProjectServiceLogStream = {
 type SetupEnvironment = NodeJS.ProcessEnv & {
   COMPOSE_PROJECT_NAME: string;
 };
+
+type PreviewRuntimeErrorCode =
+  | "preview_container_missing"
+  | "preview_container_stopped"
+  | "preview_manifest_invalid"
+  | "preview_probe_failed"
+  | "preview_probe_unsupported"
+  | "preview_response_timeout"
+  | "preview_url_timeout";
+
+class PreviewRuntimeError extends Error {
+  constructor(
+    readonly code: PreviewRuntimeErrorCode,
+    message: string,
+  ) {
+    super(message);
+    this.name = "PreviewRuntimeError";
+  }
+}
 
 const setupRuns = new Map<string, SetupRun>();
 const projectLogStreams = new Map<string, ProjectLogStream>();
@@ -1454,7 +1493,13 @@ async function runProjectSetupOperation(
 ) {
   const worktree = resolveRuntimePath(input.worktree);
   const env = await setupEnvironment(worktree);
-  const setupScript = setupScriptWithoutDockerRuntimeChecks(input.setupScript);
+  const manifest = input.previewManifest
+    ? parsePreviewManifest(input.previewManifest)
+    : undefined;
+  const generated = manifest ? generatePreviewArtifacts(manifest) : undefined;
+  const setupScript = setupScriptWithoutDockerRuntimeChecks(
+    generated?.setupScript ?? input.setupScript,
+  );
   await validateProjectSetup(
     worktree,
     setupScript,
@@ -1464,7 +1509,8 @@ async function runProjectSetupOperation(
   const scriptPath = await prepareProjectSetupFiles(
     worktree,
     setupScript,
-    input.dockerCompose,
+    generated?.dockerCompose ?? input.dockerCompose,
+    manifest,
   );
   return timedRecoveryStep(worktree, "setup process spawn", () =>
     startProjectSetupProcess(worktree, scriptPath, env, operation),
@@ -1491,10 +1537,12 @@ async function prepareProjectSetupFiles(
   worktree: string,
   setupScript: string,
   dockerCompose: string,
+  previewManifest?: PreviewManifest,
 ) {
   const directory = joinWorkspacePath(worktree, ".blame", "initialization");
   const scriptPath = joinWorkspacePath(directory, "setup.sh");
   const composePath = joinWorkspacePath(directory, "docker-compose.yml");
+  const manifestPath = joinWorkspacePath(directory, "preview-manifest.json");
   const logPath = setupLogPath(worktree);
   await mkdirRuntime(dirnameWorkspacePath(logPath));
   await writeRuntimeFile(logPath, "");
@@ -1507,6 +1555,10 @@ async function prepareProjectSetupFiles(
     composePath,
     directory,
     dockerCompose,
+    manifest: previewManifest
+      ? parsePreviewManifest(previewManifest)
+      : undefined,
+    manifestPath,
     scriptPath,
     setupScript,
     symlinkEnvMounts,
@@ -1529,10 +1581,24 @@ async function writeProjectSetupFiles(input: ProjectSetupFiles) {
     await timedRecoveryStep(input.worktree, "compose file write", () =>
       writeRuntimeFile(input.composePath, compose),
     );
+    await timedRecoveryStep(input.worktree, "preview manifest write", () =>
+      writeProjectPreviewManifest(input),
+    );
     await timedRecoveryStep(input.worktree, "setup script chmod", () =>
       chmodRuntime(input.scriptPath, 0o755),
     );
   });
+}
+
+async function writeProjectPreviewManifest(input: ProjectSetupFiles) {
+  if (!input.manifest) {
+    await rmRuntime(input.manifestPath);
+    return;
+  }
+  await writeRuntimeFile(
+    input.manifestPath,
+    `${JSON.stringify(input.manifest, null, 2)}\n`,
+  );
 }
 
 function prepareProjectSetupCompose(input: ProjectSetupFiles) {
@@ -1657,10 +1723,7 @@ async function completeSuccessfulProjectSetup(run: SetupRun) {
 }
 
 async function completeSetupPreview(worktree: string) {
-  const existingPreviewUrl = await labeledContainerPreviewUrl(worktree);
-  if (!existingPreviewUrl) return startProjectCompose(worktree);
-  await startProjectLogStream(worktree);
-  return existingPreviewUrl;
+  return startProjectCompose(worktree);
 }
 
 function failProjectSetupProcess(
@@ -1802,8 +1865,12 @@ function operationSpanAttributes(
   };
 }
 
-function operationErrorType(_error: unknown) {
-  return "ToolError";
+function operationErrorType(error: unknown) {
+  if (error instanceof PreviewRuntimeError) return error.code;
+  if (error instanceof Error && error.name) {
+    return boundedMetricDimensionName(error.name);
+  }
+  return "Error";
 }
 
 async function startProjectCompose(
@@ -1833,6 +1900,9 @@ async function startProjectCompose(
   await timedRecoveryStep(worktree, "preview response wait", () =>
     waitForPreview(worktree, previewUrl),
   );
+  await timedRecoveryStep(worktree, "preview probes", () =>
+    runPreviewProbes(worktree),
+  );
   return previewUrl;
 }
 
@@ -1842,10 +1912,19 @@ async function syncPreviewRuntimeEnvironment(
 ) {
   const origin = previewOrigin(previewUrl);
   if (!origin) return false;
-  if (await materializedPreviewEnvFilesMatch(worktree, origin)) return false;
-  await materializedPreviewEnvHostFileMounts(worktree, origin);
+  const overrides = await projectPreviewEnvOverrides(worktree);
+  if (await materializedPreviewEnvFilesMatch(worktree, origin, overrides)) {
+    return false;
+  }
+  await materializedPreviewEnvHostFileMounts(worktree, origin, overrides);
   invalidateSetupEnvironment(worktree);
   return true;
+}
+
+async function projectPreviewEnvOverrides(worktree: string) {
+  const composePath = projectComposePath(worktree);
+  if (!(await runtimePathExists(composePath))) return [];
+  return previewComposeEnvOverrides(await readRuntimeFile(composePath));
 }
 
 async function clearPreviewBuildCache(worktree: string) {
@@ -2302,7 +2381,10 @@ async function waitForPreviewUrl(worktree: string) {
     `preview url resolve timed out after ${attempts} attempts`,
   );
   await appendComposeDiagnostics(worktree);
-  throw new Error("Unable to resolve project preview URL");
+  throw new PreviewRuntimeError(
+    "preview_url_timeout",
+    "Unable to resolve project preview URL",
+  );
 }
 
 async function stopProjectSetup(input: StopProjectSetupInput) {
@@ -2397,8 +2479,9 @@ async function ensureProjectPreviewUrl(input: EnsureProjectPreviewUrlInput) {
     const envMatches = await materializedPreviewEnvFilesMatch(
       worktree,
       currentOrigin,
+      await projectPreviewEnvOverrides(worktree),
     );
-    if (envMatches) return currentUrl;
+    if (envMatches && (await previewProbesPass(worktree))) return currentUrl;
   }
   if (!(await projectSetupCompleted(worktree))) return null;
   const recovery = previewRecoveries.get(worktree);
@@ -2410,6 +2493,19 @@ async function ensureProjectPreviewUrl(input: EnsureProjectPreviewUrlInput) {
   });
   previewRecoveries.set(worktree, nextRecovery);
   return nextRecovery;
+}
+
+async function previewProbesPass(worktree: string) {
+  try {
+    await runPreviewProbes(worktree);
+    return true;
+  } catch (error) {
+    await appendRecoveryLog(
+      worktree,
+      `preview functional check failed: ${operationErrorType(error)}`,
+    );
+    return false;
+  }
 }
 
 function setupRunningForWorktree(worktree: string) {
@@ -3318,6 +3414,15 @@ function projectComposePath(worktree: string) {
   );
 }
 
+function projectPreviewManifestPath(worktree: string) {
+  return joinWorkspacePath(
+    worktree,
+    ".blame",
+    "initialization",
+    "preview-manifest.json",
+  );
+}
+
 function setupLogPath(worktree: string) {
   return joinWorkspacePath(worktree, ".blame", "logs", "setup.log");
 }
@@ -3469,9 +3574,13 @@ async function repairComposeFile(
       ),
     ),
   );
+  validatePreviewComposeBindings(allocatedCompose);
+  const overrides = previewComposeEnvOverrides(allocatedCompose);
+  await logPreviewEnvOverrides(worktree, overrides);
   const envMounts = await materializedPreviewEnvHostFileMounts(
     worktree,
     composePreviewOrigin(allocatedCompose),
+    overrides,
   );
   const repairedCompose = dockerComposeWithHostFileMounts(
     allocatedCompose,
@@ -3530,6 +3639,11 @@ async function prepareProjectCompose(
     "compose allocate ports",
     () => composeWithAllocatedHostPorts(normalizedCompose),
   );
+  await timedRecoveryStep(worktree, "compose binding validation", () =>
+    validatePreviewComposeBindings(allocatedCompose),
+  );
+  const overrides = previewComposeEnvOverrides(allocatedCompose);
+  await logPreviewEnvOverrides(worktree, overrides);
   const envMounts = await timedRecoveryStep(
     worktree,
     "preview env host mounts",
@@ -3537,6 +3651,7 @@ async function prepareProjectCompose(
       materializedPreviewEnvHostFileMounts(
         worktree,
         composePreviewOrigin(allocatedCompose),
+        overrides,
       ),
   );
   return timedRecoveryStep(worktree, "compose inject host mounts", () =>
@@ -3544,6 +3659,29 @@ async function prepareProjectCompose(
       ...symlinkEnvMounts,
       ...envMounts,
     ]),
+  );
+}
+
+async function logPreviewEnvOverrides(
+  worktree: string,
+  overrides: Array<{
+    localHosts?: Record<string, string>;
+    values: Record<string, string>;
+  }>,
+) {
+  const bindings = overrides.reduce(
+    (count, override) => count + Object.keys(override.values).length,
+    0,
+  );
+  const inferredHosts = overrides.reduce(
+    (count, override) =>
+      count + Object.values(override.localHosts ?? {}).filter(Boolean).length,
+    0,
+  );
+  if (bindings + inferredHosts === 0) return;
+  await appendRecoveryLog(
+    worktree,
+    `preview env overrides prepared: ${bindings} bindings, ${inferredHosts} inferred hosts`,
   );
 }
 
@@ -3716,8 +3854,10 @@ function runtimeLabelPath(path: string) {
 }
 
 async function waitForPreview(worktree: string, url: string) {
+  const startedAt = Date.now();
+  const deadline = startedAt + previewResponseTimeoutMs;
   let attempts = 0;
-  for (;;) {
+  while (Date.now() < deadline) {
     attempts += 1;
     if (await previewResponds(url)) {
       await appendRecoveryLog(
@@ -3726,25 +3866,285 @@ async function waitForPreview(worktree: string, url: string) {
       );
       return;
     }
-    await assertPreviewContainerCanStillStart(worktree);
+    await assertPreviewContainerCanStillStart(worktree, startedAt);
     await delay(previewStartupIntervalMs);
+  }
+  await appendComposeDiagnostics(worktree);
+  throw new PreviewRuntimeError(
+    "preview_response_timeout",
+    `Preview did not respond within ${previewResponseTimeoutMs / 1_000} seconds`,
+  );
+}
+
+async function runPreviewProbes(worktree: string) {
+  const manifest = await readProjectPreviewManifest(worktree);
+  if (!manifest?.probes?.length) return;
+  let passed = 0;
+  for (const probe of manifest.probes) {
+    try {
+      await executePreviewProbe(worktree, manifest, probe);
+      passed += 1;
+    } catch (error) {
+      await appendRecoveryLog(worktree, `preview probe ${probe.id} failed`);
+      if (probe.required !== false) throw previewProbeError(error, probe.id);
+    }
+  }
+  await appendRecoveryLog(
+    worktree,
+    `preview probes passed: ${passed}/${manifest.probes.length}`,
+  );
+}
+
+async function readProjectPreviewManifest(worktree: string) {
+  const path = projectPreviewManifestPath(worktree);
+  if (!(await runtimePathExists(path))) return undefined;
+  try {
+    return parsePreviewManifest(JSON.parse(await readRuntimeFile(path)));
+  } catch (error) {
+    throw new PreviewRuntimeError(
+      "preview_manifest_invalid",
+      `Persisted preview manifest is invalid: ${errorMessageText(error)}`,
+    );
   }
 }
 
-async function assertPreviewContainerCanStillStart(worktree: string) {
-  const container = await previewContainerForWorktree(worktree);
-  if (!container) {
-    await appendComposeDiagnostics(worktree);
-    throw new Error("Preview container is not running");
+async function executePreviewProbe(
+  worktree: string,
+  manifest: PreviewManifest,
+  probe: PreviewManifestProbe,
+) {
+  const endpoint = manifestProbeEndpoint(manifest, probe);
+  if (probe.from === "host") {
+    await executeHostPreviewProbe(worktree, probe, endpoint);
+    return;
   }
-  const status = container.State?.Status;
-  const health = container.State?.Health?.Status;
-  if (health === "unhealthy" || failedContainerStatus(status)) {
-    await appendComposeDiagnostics(worktree);
-    throw new Error(
-      `Preview container stopped before responding (${health || status})`,
+  await executeServicePreviewProbe(worktree, manifest, probe, endpoint);
+}
+
+function manifestProbeEndpoint(
+  manifest: PreviewManifest,
+  probe: PreviewManifestProbe,
+) {
+  const service = manifest.services.find(
+    ({ id }) => id === probe.target.service,
+  );
+  const endpoint =
+    service && manifestServiceEndpoint(service, probe.target.endpoint);
+  if (!endpoint) {
+    throw new PreviewRuntimeError(
+      "preview_manifest_invalid",
+      `Preview probe ${probe.id} references an unknown endpoint`,
     );
   }
+  return endpoint;
+}
+
+function manifestServiceEndpoint(
+  service: PreviewManifestService,
+  endpointId: string,
+): PreviewManifestEndpoint | undefined {
+  const endpoint = (service.endpoints ?? []).find(
+    ({ id }) => id === endpointId,
+  );
+  if (endpoint) return endpoint;
+  if (endpointId !== "preview" || !service.preview) return undefined;
+  return {
+    id: "preview",
+    protocol: service.preview.protocol,
+    port: service.preview.internalPort,
+  };
+}
+
+async function executeHostPreviewProbe(
+  worktree: string,
+  probe: PreviewManifestProbe,
+  endpoint: PreviewManifestEndpoint,
+) {
+  const address = await composePublishedAddress(
+    worktree,
+    projectComposePath(worktree),
+    probe.target.service,
+    endpoint.port,
+  );
+  if (!address) throw new Error("Probe target is not published to the host");
+  if (probe.type === "tcp") {
+    await connectToProbeAddress(address, probe.timeoutMs ?? 10_000);
+    return;
+  }
+  const url = previewUrl(
+    address,
+    endpoint.protocol,
+    probe.target.path ?? endpoint.healthcheck?.path ?? "/",
+  );
+  await requestProbeUrl(url, probe);
+}
+
+async function requestProbeUrl(url: string, probe: PreviewManifestProbe) {
+  const response = await fetch(url, {
+    method: "GET",
+    signal: AbortSignal.timeout(probe.timeoutMs ?? 10_000),
+  });
+  if (probeAcceptsStatus(probe, response.status)) return;
+  throw new Error(`Unexpected probe status ${response.status}`);
+}
+
+function probeAcceptsStatus(probe: PreviewManifestProbe, status: number) {
+  return probe.acceptedStatuses?.length
+    ? probe.acceptedStatuses.includes(status)
+    : status < 500;
+}
+
+function connectToProbeAddress(address: string, timeoutMs: number) {
+  const url = new URL(previewUrl(address, "http", "/"));
+  return new Promise<void>((resolve, reject) => {
+    const socket = createConnection(Number(url.port), url.hostname);
+    const timeout = setTimeout(
+      () => socket.destroy(new Error("Probe timed out")),
+      timeoutMs,
+    );
+    socket.once("connect", () => {
+      clearTimeout(timeout);
+      socket.destroy();
+      resolve();
+    });
+    socket.once("error", (error) => {
+      clearTimeout(timeout);
+      reject(error);
+    });
+  });
+}
+
+async function executeServicePreviewProbe(
+  worktree: string,
+  manifest: PreviewManifest,
+  probe: PreviewManifestProbe,
+  endpoint: PreviewManifestEndpoint,
+) {
+  const consumer = manifest.services.find(({ id }) => id === probe.from);
+  const command = consumer && serviceProbeCommand(consumer, probe, endpoint);
+  if (!command) {
+    throw new PreviewRuntimeError(
+      "preview_probe_unsupported",
+      `Preview probe ${probe.id} has no supported runtime`,
+    );
+  }
+  await containerRuntime.compose(
+    [...composeArgs(worktree), "exec", "-T", probe.from, ...command],
+    { cwd: worktree, env: await setupEnvironment(worktree) },
+  );
+}
+
+function serviceProbeCommand(
+  service: PreviewManifestService,
+  probe: PreviewManifestProbe,
+  endpoint: PreviewManifestEndpoint,
+) {
+  const javascriptRuntime = serviceJavascriptRuntime(service);
+  if (javascriptRuntime) {
+    return [javascriptRuntime, "-e", nodeProbeScript(probe, endpoint)];
+  }
+  if (serviceUsesPython(service)) {
+    return ["python", "-c", pythonProbeScript(probe, endpoint)];
+  }
+  return undefined;
+}
+
+function serviceJavascriptRuntime(service: PreviewManifestService) {
+  if (
+    /(?:^|\/)bun(?::|$)/.test(service.image) ||
+    /\bbun\b/.test(service.command ?? "")
+  ) {
+    return "bun";
+  }
+  if (
+    /(?:^|\/)node(?::|$)/.test(service.image) ||
+    /\b(?:node|npm|pnpm|yarn)\b/.test(service.command ?? "")
+  ) {
+    return "node";
+  }
+  return undefined;
+}
+
+function serviceUsesPython(service: PreviewManifestService) {
+  return (
+    /(?:^|\/)python(?::|$)/.test(service.image) ||
+    /\bpython\b/.test(service.command ?? "")
+  );
+}
+
+function nodeProbeScript(
+  probe: PreviewManifestProbe,
+  endpoint: PreviewManifestEndpoint,
+) {
+  const timeout = probe.timeoutMs ?? 10_000;
+  if (probe.type === "tcp") {
+    return nodeTcpProbeScript(probe.target.service, endpoint.port, timeout);
+  }
+  const url = internalProbeUrl(probe, endpoint);
+  const accepted = JSON.stringify(probe.acceptedStatuses ?? []);
+  return `const a=${accepted};fetch(${JSON.stringify(url)},{signal:AbortSignal.timeout(${timeout})}).then(r=>process.exit((a.length?a.includes(r.status):r.status<500)?0:1)).catch(()=>process.exit(1))`;
+}
+
+function nodeTcpProbeScript(host: string, port: number, timeout: number) {
+  return `const s=require("net").connect(${port},${JSON.stringify(host)},()=>process.exit(0));s.once("error",()=>process.exit(1));s.setTimeout(${timeout},()=>process.exit(1))`;
+}
+
+function pythonProbeScript(
+  probe: PreviewManifestProbe,
+  endpoint: PreviewManifestEndpoint,
+) {
+  const timeout = Math.ceil((probe.timeoutMs ?? 10_000) / 1_000);
+  if (probe.type === "tcp") {
+    return `import socket\nsocket.create_connection((${JSON.stringify(probe.target.service)},${endpoint.port}),${timeout}).close()`;
+  }
+  const accepted = JSON.stringify(probe.acceptedStatuses ?? []);
+  return [
+    "import sys,urllib.request,urllib.error",
+    `accepted=${accepted}`,
+    `url=${JSON.stringify(internalProbeUrl(probe, endpoint))}`,
+    `timeout=${timeout}`,
+    "try:\n status=urllib.request.urlopen(url,timeout=timeout).status\nexcept urllib.error.HTTPError as error:\n status=error.code",
+    "sys.exit(0 if (status in accepted if accepted else status < 500) else 1)",
+  ].join("\n");
+}
+
+function internalProbeUrl(
+  probe: PreviewManifestProbe,
+  endpoint: PreviewManifestEndpoint,
+) {
+  const path = probe.target.path ?? endpoint.healthcheck?.path ?? "/";
+  return `${endpoint.protocol}://${probe.target.service}:${endpoint.port}${path}`;
+}
+
+function previewProbeError(error: unknown, probeId: string) {
+  if (error instanceof PreviewRuntimeError) return error;
+  return new PreviewRuntimeError(
+    "preview_probe_failed",
+    `Required preview probe ${probeId} failed: ${errorMessageText(error)}`,
+  );
+}
+
+async function assertPreviewContainerCanStillStart(
+  worktree: string,
+  startedAt: number,
+) {
+  const container = await previewContainerForWorktree(worktree);
+  const status = container?.State?.Status;
+  const health = container?.State?.Health?.Status;
+  const failure = previewContainerFailure({
+    discoveryGraceMs: previewDiscoveryGraceMs,
+    elapsedMs: Date.now() - startedAt,
+    found: Boolean(container),
+    health,
+    status,
+  });
+  if (!failure) return;
+  await appendComposeDiagnostics(worktree);
+  const state = health || status || "missing";
+  throw new PreviewRuntimeError(
+    failure,
+    `Preview container cannot become ready (${state})`,
+  );
 }
 
 async function projectRuntimeHealthy(worktreeInput: string) {
@@ -3849,7 +4249,10 @@ function failedContainerStatus(status: string | undefined) {
 
 async function previewResponds(url: string) {
   try {
-    const response = await fetch(url, { method: "GET" });
+    const response = await fetch(url, {
+      method: "GET",
+      signal: AbortSignal.timeout(previewRequestTimeoutMs),
+    });
     return response.status < 500;
   } catch {
     return false;
