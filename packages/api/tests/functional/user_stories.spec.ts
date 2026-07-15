@@ -30,6 +30,7 @@ type UserStoryBody = {
     fileAttachments?: FileAttachment[]
     baseCommit?: string | null
     mergeCommit?: string | null
+    runConfigurationId?: string | null
     title: string
   }
 }
@@ -197,6 +198,7 @@ test.group('user stories', (group) => {
       .loginAs(user)
       .json({
         projectId: project.id,
+        runConfigurationId: 'web-app',
         title: 'Persist draft',
         summary: 'Initial summary',
         codeSelectionAttachments: [
@@ -223,6 +225,7 @@ test.group('user stories', (group) => {
     const created = createResponse.body() as unknown as UserStoryBody
     assert.equal(created.data.status, 'backlog')
     assert.equal(created.data.priority, 'Medium')
+    assert.equal(created.data.runConfigurationId, 'web-app')
     assert.deepEqual(created.data.codeSelectionAttachments, [
       {
         id: 'selection-1',
@@ -249,6 +252,7 @@ test.group('user stories', (group) => {
         title: 'Persisted draft',
         status: 'ready',
         priority: 'High',
+        runConfigurationId: 'admin-app',
         baseCommit: '1111111111111111111111111111111111111111',
         mergeCommit: '2222222222222222222222222222222222222222',
         codeSelectionAttachments: [
@@ -276,6 +280,7 @@ test.group('user stories', (group) => {
     assert.equal(updated.data.title, 'Persisted draft')
     assert.equal(updated.data.status, 'ready')
     assert.equal(updated.data.priority, 'High')
+    assert.equal(updated.data.runConfigurationId, 'admin-app')
     assert.equal(updated.data.baseCommit, '1111111111111111111111111111111111111111')
     assert.equal(updated.data.mergeCommit, '2222222222222222222222222222222222222222')
     assert.deepEqual(updated.data.codeSelectionAttachments, [
@@ -304,6 +309,7 @@ test.group('user stories', (group) => {
     showResponse.assertStatus(200)
     const shown = showResponse.body() as UserStoryBody
     assert.equal(shown.data.id, created.data.id)
+    assert.equal(shown.data.runConfigurationId, 'admin-app')
 
     const deleteResponse = await client
       .delete(`/api/v1/projects/user-stories/${created.data.id}`)

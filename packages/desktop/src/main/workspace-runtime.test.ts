@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
 import {
   runtimeCommand,
@@ -8,11 +11,25 @@ import {
   storyBranch,
   worktreePath,
   worktreeRoot,
+  writeFileAtomic,
   hasMissingWorkspaceNodeModules,
   sanitizeWorkspaceConfigFiles,
   ensureRuntimeGitUserIdentity,
   resetRuntimeGitIdentityConfiguredForTesting,
 } from "./workspace-runtime.ts";
+
+test("replaces runtime state files atomically", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "blame-runtime-state-"));
+  const path = join(directory, "state.json");
+  try {
+    await writeFileAtomic(path, '{"status":"running"}');
+    await writeFileAtomic(path, '{"status":"stopped"}');
+    assert.equal(await readFile(path, "utf8"), '{"status":"stopped"}');
+    assert.deepEqual(await readdir(directory), ["state.json"]);
+  } finally {
+    await rm(directory, { force: true, recursive: true });
+  }
+});
 
 test("uses the shared runtime worktree root", () => {
   assert.equal(
@@ -203,7 +220,8 @@ test("hasMissingWorkspaceNodeModules: returns false for single-package root proj
     readFile: async () => JSON.stringify({ dependencies: { foo: "1.0.0" } }),
     pathExists: async () => false,
     dirnameWorkspacePath: (p: string) => "/workspace",
-    joinWorkspacePath: (dir: string, ...parts: string[]) => [dir, ...parts].join("/"),
+    joinWorkspacePath: (dir: string, ...parts: string[]) =>
+      [dir, ...parts].join("/"),
   };
 
   const result = await hasMissingWorkspaceNodeModules("/workspace", mockFns);
@@ -227,7 +245,8 @@ test("hasMissingWorkspaceNodeModules: returns false for sub-packages with no dep
       if (p.includes("apps/web")) return "/workspace/apps/web";
       return "/workspace";
     },
-    joinWorkspacePath: (dir: string, ...parts: string[]) => [dir, ...parts].join("/"),
+    joinWorkspacePath: (dir: string, ...parts: string[]) =>
+      [dir, ...parts].join("/"),
   };
 
   const result = await hasMissingWorkspaceNodeModules("/workspace", mockFns);
@@ -254,7 +273,8 @@ test("hasMissingWorkspaceNodeModules: returns false when sub-package node_module
       if (p.includes("apps/web")) return "/workspace/apps/web";
       return "/workspace";
     },
-    joinWorkspacePath: (dir: string, ...parts: string[]) => [dir, ...parts].join("/"),
+    joinWorkspacePath: (dir: string, ...parts: string[]) =>
+      [dir, ...parts].join("/"),
   };
 
   const result = await hasMissingWorkspaceNodeModules("/workspace", mockFns);
@@ -280,7 +300,8 @@ test("hasMissingWorkspaceNodeModules: returns true when sub-package node_modules
       if (p.includes("apps/web")) return "/workspace/apps/web";
       return "/workspace";
     },
-    joinWorkspacePath: (dir: string, ...parts: string[]) => [dir, ...parts].join("/"),
+    joinWorkspacePath: (dir: string, ...parts: string[]) =>
+      [dir, ...parts].join("/"),
   };
 
   const result = await hasMissingWorkspaceNodeModules("/workspace", mockFns);
@@ -290,10 +311,11 @@ test("hasMissingWorkspaceNodeModules: returns true when sub-package node_modules
 test("sanitizeWorkspaceConfigFiles: merges configs and deletes duplicate sub-package files", async () => {
   let rootFileWritten = "";
   let fileDeleted = "";
-  const worktree = "/home/blame/.local/share/blame/runtime/worktrees/repo/story";
+  const worktree =
+    "/home/blame/.local/share/blame/runtime/worktrees/repo/story";
   const rootConfigPath = `${worktree}/pnpm-workspace.yaml`;
   const subConfigPath = `${worktree}/apps/web/pnpm-workspace.yaml`;
-  
+
   const mockFns = {
     run: async () => ({
       stdout: `${rootConfigPath}\n${subConfigPath}\n`,
@@ -318,7 +340,8 @@ test("sanitizeWorkspaceConfigFiles: merges configs and deletes duplicate sub-pac
     pathExists: async (p: string) => {
       return p === rootConfigPath;
     },
-    joinWorkspacePath: (dir: string, ...parts: string[]) => [dir, ...parts].join("/"),
+    joinWorkspacePath: (dir: string, ...parts: string[]) =>
+      [dir, ...parts].join("/"),
     rm: async (p: string) => {
       fileDeleted = p;
     },
@@ -327,7 +350,7 @@ test("sanitizeWorkspaceConfigFiles: merges configs and deletes duplicate sub-pac
   };
 
   await sanitizeWorkspaceConfigFiles(worktree, mockFns);
-  
+
   assert.equal(fileDeleted, subConfigPath);
   assert.match(rootFileWritten, /allowBuilds/);
   assert.match(rootFileWritten, /sharp: true/);
@@ -337,7 +360,7 @@ test("sanitizeWorkspaceConfigFiles: merges configs and deletes duplicate sub-pac
 test("sanitizeWorkspaceConfigFiles: handles host paths on Windows/non-managed with readdirHost", async () => {
   let rootFileWritten = "";
   let fileDeleted = "";
-  
+
   const mockFns = {
     run: async () => {
       throw new Error("should not be called for host paths");
@@ -361,14 +384,19 @@ test("sanitizeWorkspaceConfigFiles: handles host paths on Windows/non-managed wi
     pathExists: async (p: string) => {
       return p === "/host/pnpm-workspace.yaml";
     },
-    joinWorkspacePath: (dir: string, ...parts: string[]) => [dir, ...parts].join("/"),
+    joinWorkspacePath: (dir: string, ...parts: string[]) =>
+      [dir, ...parts].join("/"),
     rm: async (p: string) => {
       fileDeleted = p;
     },
     readdirHost: async (dir: string) => {
       if (dir === "/host") {
         return [
-          { name: "pnpm-workspace.yaml", isFile: () => true, isDirectory: () => false },
+          {
+            name: "pnpm-workspace.yaml",
+            isFile: () => true,
+            isDirectory: () => false,
+          },
           { name: "apps", isFile: () => false, isDirectory: () => true },
         ] as any;
       }
@@ -379,7 +407,11 @@ test("sanitizeWorkspaceConfigFiles: handles host paths on Windows/non-managed wi
       }
       if (dir === "/host/apps/web") {
         return [
-          { name: "pnpm-workspace.yaml", isFile: () => true, isDirectory: () => false },
+          {
+            name: "pnpm-workspace.yaml",
+            isFile: () => true,
+            isDirectory: () => false,
+          },
         ] as any;
       }
       return [];
@@ -388,7 +420,7 @@ test("sanitizeWorkspaceConfigFiles: handles host paths on Windows/non-managed wi
 
   // "/host" is not runtime-managed on any OS platform.
   await sanitizeWorkspaceConfigFiles("/host", mockFns);
-  
+
   assert.equal(fileDeleted, "/host/apps/web/pnpm-workspace.yaml");
   assert.match(rootFileWritten, /allowBuilds/);
   assert.match(rootFileWritten, /sharp: true/);
@@ -396,8 +428,9 @@ test("sanitizeWorkspaceConfigFiles: handles host paths on Windows/non-managed wi
 
 test("sanitizeWorkspaceConfigFiles: deletes duplicate lockfiles on VM/managed paths", async () => {
   const deletedFiles: string[] = [];
-  const worktree = "/home/blame/.local/share/blame/runtime/worktrees/repo/story";
-  
+  const worktree =
+    "/home/blame/.local/share/blame/runtime/worktrees/repo/story";
+
   const mockFns = {
     run: async (cmd: string, args: string[]) => {
       const nameArg = args[args.indexOf("-name") + 1];
@@ -415,7 +448,8 @@ test("sanitizeWorkspaceConfigFiles: deletes duplicate lockfiles on VM/managed pa
     readFile: async () => "",
     writeFile: async () => {},
     pathExists: async () => false,
-    joinWorkspacePath: (dir: string, ...parts: string[]) => [dir, ...parts].join("/"),
+    joinWorkspacePath: (dir: string, ...parts: string[]) =>
+      [dir, ...parts].join("/"),
     rm: async (p: string) => {
       deletedFiles.push(p);
     },
@@ -424,13 +458,13 @@ test("sanitizeWorkspaceConfigFiles: deletes duplicate lockfiles on VM/managed pa
   };
 
   await sanitizeWorkspaceConfigFiles(worktree, mockFns);
-  
+
   assert.deepEqual(deletedFiles, [`${worktree}/apps/web/pnpm-lock.yaml`]);
 });
 
 test("sanitizeWorkspaceConfigFiles: deletes duplicate lockfiles on host/non-managed paths", async () => {
   const deletedFiles: string[] = [];
-  
+
   const mockFns = {
     run: async () => {
       throw new Error("should not be called for host paths");
@@ -438,14 +472,19 @@ test("sanitizeWorkspaceConfigFiles: deletes duplicate lockfiles on host/non-mana
     readFile: async () => "",
     writeFile: async () => {},
     pathExists: async () => false,
-    joinWorkspacePath: (dir: string, ...parts: string[]) => [dir, ...parts].join("/"),
+    joinWorkspacePath: (dir: string, ...parts: string[]) =>
+      [dir, ...parts].join("/"),
     rm: async (p: string) => {
       deletedFiles.push(p);
     },
     readdirHost: async (dir: string) => {
       if (dir === "/host") {
         return [
-          { name: "pnpm-lock.yaml", isFile: () => true, isDirectory: () => false },
+          {
+            name: "pnpm-lock.yaml",
+            isFile: () => true,
+            isDirectory: () => false,
+          },
           { name: "apps", isFile: () => false, isDirectory: () => true },
         ] as any;
       }
@@ -456,7 +495,11 @@ test("sanitizeWorkspaceConfigFiles: deletes duplicate lockfiles on host/non-mana
       }
       if (dir === "/host/apps/web") {
         return [
-          { name: "pnpm-lock.yaml", isFile: () => true, isDirectory: () => false },
+          {
+            name: "pnpm-lock.yaml",
+            isFile: () => true,
+            isDirectory: () => false,
+          },
         ] as any;
       }
       return [];
@@ -465,7 +508,7 @@ test("sanitizeWorkspaceConfigFiles: deletes duplicate lockfiles on host/non-mana
   };
 
   await sanitizeWorkspaceConfigFiles("/host", mockFns);
-  
+
   assert.deepEqual(deletedFiles, ["/host/apps/web/pnpm-lock.yaml"]);
 });
 
@@ -540,7 +583,3 @@ test("ensureRuntimeGitUserIdentity: falls back to defaults if host reads fail", 
     process.env.USERNAME = originalUsername;
   }
 });
-
-
-
-

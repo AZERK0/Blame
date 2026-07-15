@@ -123,6 +123,7 @@ export type UserStory = {
   owner: string
   branch?: string | null
   previewUrl?: string | null
+  runConfigurationId?: string | null
   worktree?: string | null
   agentStatus?: UserStoryAgentStatus | null
   clineSessionId?: string | null
@@ -169,6 +170,7 @@ export type UserStoryUpdate = Partial<
     | "owner"
     | "branch"
     | "previewUrl"
+    | "runConfigurationId"
     | "worktree"
     | "agentStatus"
     | "clineSessionId"

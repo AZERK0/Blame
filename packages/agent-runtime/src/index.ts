@@ -3,6 +3,7 @@ export { taskComplexityBucket } from "./telemetry-cohorts.js";
 export type { TaskComplexityBucket } from "./telemetry-cohorts.js";
 export { codeReviewGraphToolNames } from "./code-review-graph-tools.js";
 export { commandWithNextWebpackFallback } from "./next-webpack-fallback.js";
+export { parseRunConfigurations } from "./project-initialization.js";
 export {
   generatePreviewArtifacts,
   normalizePreviewManifest,
@@ -85,6 +86,9 @@ export type {
   ProjectInitializationImpactClassification,
   ProjectInitializationImpactDiagnostics,
   ProjectRunConfiguration,
+  ProjectRunConfigurationCategory,
+  ProjectRunConfigurationStatus,
+  ProjectPreviewRuntimeState,
   ProjectInitializationDiagnostics,
   ProjectInitializationRepairClassification,
   ProviderCredentialSummary,

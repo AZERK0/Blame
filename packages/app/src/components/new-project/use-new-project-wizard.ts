@@ -1,6 +1,7 @@
 import * as React from "react"
 import type {
   AgentEvent,
+  PreviewManifest,
   ProjectCodePracticeResult,
   ProjectRunConfiguration,
 } from "@blame/agent-runtime"
@@ -79,6 +80,7 @@ type GeneratedProjectInitializationResult = {
   sessionId: string
   setupScript: string
   dockerCompose: string
+  previewManifest?: PreviewManifest
   runConfigurations: ProjectRunConfiguration[]
   practices: ProjectCodePracticeResult[]
 }
@@ -619,6 +621,7 @@ function openGeneratedProjectWithInitialization(
   return input.openGeneratedProject(input.path, {
     clineSessionId: initialization.sessionId,
     dockerCompose: initialization.dockerCompose,
+    previewManifest: initialization.previewManifest,
     runConfigurations: initialization.runConfigurations,
     practices: initialization.practices,
     setupScript: initialization.setupScript,
@@ -650,6 +653,7 @@ function initializationValidationFeedback(
   result: {
     setupScript: string
     dockerCompose: string
+    previewManifest?: PreviewManifest
     runConfigurations: ProjectRunConfiguration[]
     practices: ProjectCodePracticeResult[]
   }
@@ -659,6 +663,7 @@ function initializationValidationFeedback(
     previousResult: JSON.stringify({
       setupScript: result.setupScript,
       dockerCompose: result.dockerCompose,
+      previewManifest: result.previewManifest,
       runConfigurations: result.runConfigurations,
       practices: result.practices,
     }),

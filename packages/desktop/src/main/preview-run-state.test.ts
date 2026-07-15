@@ -1,0 +1,106 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import type { PreviewManifest } from "@blame/agent-runtime";
+
+import {
+  initialPreviewRuntimeSelection,
+  previewRunConfigurationStatus,
+  previewRunConfigurationServiceIds,
+  selectedPreviewRunConfiguration,
+} from "./preview-run-state.ts";
+
+const configurations = [
+  {
+    id: "marketing",
+    name: "Marketing",
+    command: "pnpm dev",
+    cwd: "apps/marketing",
+    default: true,
+    services: ["marketing"],
+  },
+  {
+    id: "app",
+    name: "App",
+    command: "pnpm dev",
+    cwd: "apps/app",
+    default: false,
+    services: ["app"],
+  },
+];
+
+test("selects the story recommendation before the project default", () => {
+  const state = initialPreviewRuntimeSelection(configurations, "app");
+  assert.equal(
+    selectedPreviewRunConfiguration(configurations, state)?.id,
+    "app",
+  );
+});
+
+test("reports a selected configuration as running from its target service", () => {
+  const state = initialPreviewRuntimeSelection(configurations, "app");
+  assert.equal(
+    previewRunConfigurationStatus(
+      configurations[1],
+      [{ service: "app", status: "running" }],
+      state,
+    ),
+    "running",
+  );
+});
+
+test("treats an intentional clean stop as stopped", () => {
+  assert.equal(
+    previewRunConfigurationStatus(
+      configurations[1],
+      [{ exitCode: 0, service: "app", status: "exited" }],
+      { desiredStatus: "stopped", selectedConfigurationId: "app" },
+    ),
+    "stopped",
+  );
+});
+
+test("reports an unexpected clean exit from the selected service", () => {
+  assert.equal(
+    previewRunConfigurationStatus(
+      configurations[1],
+      [{ exitCode: 0, service: "app", status: "exited" }],
+      { desiredStatus: "running", selectedConfigurationId: "app" },
+    ),
+    "error",
+  );
+});
+
+test("reports unhealthy target services as errors", () => {
+  assert.equal(
+    previewRunConfigurationStatus(
+      configurations[0],
+      [{ health: "unhealthy", service: "marketing", status: "running" }],
+      { desiredStatus: "running", selectedConfigurationId: "marketing" },
+    ),
+    "error",
+  );
+});
+
+test("includes backend dependencies in a web run configuration", () => {
+  const manifest = {
+    services: [
+      { id: "database", kind: "dependency" },
+      { id: "backend", kind: "worker", dependsOn: ["database"] },
+      {
+        id: "app",
+        kind: "preview",
+        bindings: [
+          {
+            exposure: "server",
+            source: { endpoint: "http", service: "backend" },
+            target: { key: "API_URL", type: "environment" },
+          },
+        ],
+      },
+    ],
+  } as PreviewManifest;
+  assert.deepEqual(
+    previewRunConfigurationServiceIds(configurations[1], manifest),
+    ["app", "backend", "database"],
+  );
+});

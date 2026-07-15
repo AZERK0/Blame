@@ -181,6 +181,8 @@ export function useBacklogRotation(
       dockerCompose: initialization.dockerCompose,
       previewManifest:
         (initialization.previewManifest as PreviewManifest | null) ?? undefined,
+      runConfigurations: initialization.runConfigurations,
+      runConfigurationId: detailedStory.runConfigurationId ?? undefined,
       hostDependenciesChecked: true,
     })
     backlog.setStorySetupInitializing(detailedStory, true)
@@ -444,6 +446,8 @@ export function useBacklogRotation(
       result.setupScript,
       result.dockerCompose,
       result.previewManifest,
+      result.runConfigurations,
+      story.runConfigurationId ?? undefined,
       executionId
     )
   }
@@ -467,6 +471,10 @@ export function useBacklogRotation(
     setupScript: string,
     dockerCompose: string,
     previewManifest: PreviewManifest | undefined,
+    runConfigurations:
+      | CloudProjectInitialization["runConfigurations"]
+      | undefined,
+    runConfigurationId: string | undefined,
     executionId: string
   ) {
     const workspace = platform.workspace
@@ -479,6 +487,8 @@ export function useBacklogRotation(
       setupScript,
       dockerCompose,
       previewManifest,
+      runConfigurations,
+      runConfigurationId,
       hostDependenciesChecked: true,
     })
     const unsubscribe = workspace.onSetupEvent(setup.runId, (event) => {

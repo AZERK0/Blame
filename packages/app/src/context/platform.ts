@@ -22,6 +22,8 @@ import type {
   OptimizeUserStoryPromptInput,
   OptimizeUserStoryPromptResult,
   PreviewManifest,
+  ProjectPreviewRuntimeState,
+  ProjectRunConfiguration,
   ProviderListResponse,
   RepairProjectInitializationInput,
   RepairProjectInitializationResult,
@@ -535,6 +537,8 @@ export type WorkspaceClient = {
     setupScript: string
     dockerCompose: string
     previewManifest?: PreviewManifest
+    runConfigurations?: ProjectRunConfiguration[]
+    runConfigurationId?: string
     hostDependenciesChecked?: boolean
   }): Promise<{ runId: string }>
   collectProjectInitializationDiagnostics(input: {
@@ -554,6 +558,14 @@ export type WorkspaceClient = {
     worktree: string
   }): Promise<string | null>
   projectRuntimeHealthy?(input: { worktree: string }): Promise<boolean>
+  projectPreviewRuntimeState?(input: {
+    worktree: string
+  }): Promise<ProjectPreviewRuntimeState>
+  controlProjectPreview?(input: {
+    action: "start" | "stop" | "restart"
+    configurationId?: string
+    worktree: string
+  }): Promise<ProjectPreviewRuntimeState>
   ensureRuntimeReady?(): Promise<unknown>
   repairRuntime?(): Promise<unknown>
   resetRuntime?(): Promise<unknown>

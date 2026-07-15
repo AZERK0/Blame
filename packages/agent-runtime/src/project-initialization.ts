@@ -341,13 +341,38 @@ export const projectInitializationResultSchema = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["id", "name", "command", "cwd", "default"],
+        required: [
+          "id",
+          "name",
+          "command",
+          "cwd",
+          "default",
+          "category",
+          "services",
+          "scopes",
+        ],
         properties: {
           id: { type: "string" },
           name: { type: "string" },
           command: { type: "string" },
           cwd: { type: "string" },
           default: { type: "boolean" },
+          category: {
+            enum: ["web", "mobile", "desktop", "terminal", "service", "other"],
+          },
+          services: {
+            type: "array",
+            items: { type: "string" },
+            minItems: 1,
+            maxItems: 20,
+          },
+          previewService: { type: "string" },
+          scopes: {
+            type: "array",
+            items: { type: "string" },
+            minItems: 1,
+            maxItems: 50,
+          },
           previewUrl: { type: "string" },
         },
       },
@@ -444,14 +469,55 @@ export function parseProjectInitializationPayload(
   if (!dockerCompose) {
     throw new Error("Initialization result is missing generated dockerCompose");
   }
+  const runConfigurations = parseRunConfigurations(parsed.runConfigurations);
+  validateRunConfigurationTopology(runConfigurations, manifest);
   validateProjectInitializationArtifacts(setupScript, dockerCompose, scan);
   return {
     previewManifest: manifest,
     setupScript,
     dockerCompose,
-    runConfigurations: parseRunConfigurations(parsed.runConfigurations),
+    runConfigurations,
     practices: parsePractices(parsed.practices),
   };
+}
+
+function validateRunConfigurationTopology(
+  configurations: ProjectRunConfiguration[],
+  manifest: PreviewManifest | undefined,
+) {
+  if (!manifest) return;
+  const services = new Set(manifest.services.map(({ id }) => id));
+  for (const configuration of configurations) {
+    validateRunConfigurationServices(configuration, manifest, services);
+  }
+}
+
+function validateRunConfigurationServices(
+  configuration: ProjectRunConfiguration,
+  manifest: PreviewManifest,
+  services: Set<string>,
+) {
+  for (const service of configuration.services ?? []) {
+    if (!services.has(service)) {
+      throw new Error(
+        `Initialization run configuration ${configuration.id} references unknown service ${service}`,
+      );
+    }
+  }
+  if (!configuration.previewService) return;
+  if (!services.has(configuration.previewService)) {
+    throw new Error(
+      `Initialization run configuration ${configuration.id} previewService is unknown`,
+    );
+  }
+  const preview = manifest.services.find(
+    ({ id }) => id === configuration.previewService,
+  );
+  if (preview?.kind !== "preview") {
+    throw new Error(
+      `Initialization run configuration ${configuration.id} previewService is not browser-facing`,
+    );
+  }
 }
 
 async function topLevelEntries(root: string) {
@@ -566,6 +632,13 @@ export function parseRunConfigurations(value: unknown) {
 function parseRunConfiguration(value: unknown): ProjectRunConfiguration {
   if (!isRecord(value))
     throw new Error("Initialization run configuration must be an object");
+  return {
+    ...parseRunConfigurationBase(value),
+    ...parseRunConfigurationTopology(value),
+  };
+}
+
+function parseRunConfigurationBase(value: Record<string, unknown>) {
   const id = stringValue(value.id);
   const name = stringValue(value.name);
   const command = stringValue(value.command);
@@ -593,6 +666,75 @@ function parseRunConfiguration(value: unknown): ProjectRunConfiguration {
     default: value.default,
     ...(previewUrl ? { previewUrl } : {}),
   };
+}
+
+function parseRunConfigurationTopology(value: Record<string, unknown>) {
+  const category = parseRunConfigurationCategory(value.category);
+  const services = parseRunConfigurationStrings(value.services, "services", 20);
+  const scopes = parseRunConfigurationStrings(value.scopes, "scopes", 50);
+  const previewService = stringValue(value.previewService);
+  if (category && !services.length) {
+    throw new Error(
+      "Initialization run configuration services must not be empty",
+    );
+  }
+  if (category && !scopes.length) {
+    throw new Error(
+      "Initialization run configuration scopes must not be empty",
+    );
+  }
+  if (category === "web" && !previewService) {
+    throw new Error(
+      "Initialization web run configuration requires previewService",
+    );
+  }
+  if (previewService && !services.includes(previewService)) {
+    throw new Error(
+      "Initialization run configuration previewService must be a configured service",
+    );
+  }
+  return {
+    ...(category ? { category } : {}),
+    ...(services.length ? { services } : {}),
+    ...(previewService ? { previewService } : {}),
+    ...(scopes.length ? { scopes } : {}),
+  };
+}
+
+function parseRunConfigurationCategory(
+  value: unknown,
+): ProjectRunConfiguration["category"] {
+  if (value === undefined) return undefined;
+  if (
+    value !== "web" &&
+    value !== "mobile" &&
+    value !== "desktop" &&
+    value !== "terminal" &&
+    value !== "service" &&
+    value !== "other"
+  ) {
+    throw new Error("Initialization run configuration category is invalid");
+  }
+  return value;
+}
+
+function parseRunConfigurationStrings(
+  value: unknown,
+  field: string,
+  maximum: number,
+) {
+  if (value === undefined) return [];
+  if (
+    !Array.isArray(value) ||
+    value.length > maximum ||
+    value.some(
+      (entry) =>
+        typeof entry !== "string" || !entry.trim() || entry.length > 500,
+    )
+  ) {
+    throw new Error(`Initialization run configuration ${field} is invalid`);
+  }
+  return Array.from(new Set((value as string[]).map((entry) => entry.trim())));
 }
 
 function unsafeRunConfigurationCwd(cwd: string) {

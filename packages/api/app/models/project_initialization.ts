@@ -10,6 +10,10 @@ type ProjectRunConfiguration = {
   command: string
   cwd: string
   default: boolean
+  category?: 'web' | 'mobile' | 'desktop' | 'terminal' | 'service' | 'other'
+  services?: string[]
+  previewService?: string | null
+  scopes?: string[]
   previewUrl?: string | null
 }
 

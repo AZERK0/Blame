@@ -183,6 +183,9 @@ export default class UserStory extends BaseModel {
   declare previewUrl: string | null
 
   @column()
+  declare runConfigurationId: string | null
+
+  @column()
   declare worktree: string | null
 
   @column()

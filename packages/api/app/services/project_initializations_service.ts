@@ -3,7 +3,7 @@ import ProjectInitialization from '#models/project_initialization'
 import ProjectsService from '#services/projects_service'
 import type { Infer } from '@vinejs/vine/types'
 import { Exception } from '@adonisjs/core/exceptions'
-import { parsePreviewManifest } from '@blame/preview-contract'
+import { parsePreviewManifest, type PreviewManifest } from '@blame/preview-contract'
 import type {
   completeProjectInitializationValidator,
   failProjectInitializationValidator,
@@ -40,8 +40,8 @@ export default class ProjectInitializationsService {
   async complete(userId: string, projectId: string, input: CompleteInput) {
     await new ProjectsService().findForUser(userId, projectId)
     const runConfigurations = input.runConfigurations ?? []
-    validateRunConfigurations(runConfigurations)
     const previewManifest = validatedPreviewManifest(input.previewManifest)
+    validateRunConfigurations(runConfigurations, previewManifest)
     const initialization = await this.initialization(projectId)
     initialization.merge({
       status: 'done',
@@ -76,13 +76,14 @@ export default class ProjectInitializationsService {
     await new ProjectsService().findForUser(userId, projectId)
     const initialization = await this.initialization(projectId)
     const runConfigurations = input.runConfigurations ?? initialization.runConfigurations ?? []
-    validateRunConfigurations(runConfigurations)
-    const previewManifest = validatedPreviewManifest(input.previewManifest)
+    const previewManifest =
+      validatedPreviewManifest(input.previewManifest) ?? initialization.previewManifest
+    validateRunConfigurations(runConfigurations, previewManifest)
     initialization.merge({
       status: 'done',
       step: 'completed',
       clineSessionId: input.clineSessionId ?? initialization.clineSessionId,
-      previewManifest: previewManifest ?? initialization.previewManifest,
+      previewManifest,
       setupScript: input.setupScript,
       dockerCompose: input.dockerCompose,
       runConfigurations,
@@ -149,24 +150,48 @@ function defaultEnabledPractice(practice: CompleteInput['practices'][number]) {
 }
 
 function validateRunConfigurations(
-  configurations: NonNullable<CompleteInput['runConfigurations']>
+  configurations: NonNullable<CompleteInput['runConfigurations']>,
+  manifest: PreviewManifest | null | undefined
 ) {
   const ids = new Set(configurations.map((configuration) => configuration.id))
   if (ids.size !== configurations.length) {
-    throw new Error('Run configuration ids must be unique')
+    invalidRunConfiguration('Run configuration ids must be unique')
   }
   if (configurations.filter((configuration) => configuration.default).length > 1) {
-    throw new Error('Only one run configuration can be the default')
+    invalidRunConfiguration('Only one run configuration can be the default')
   }
   for (const configuration of configurations) {
     if (
       /[\r\n]/.test(configuration.command) ||
       unsafeCwd(configuration.cwd) ||
-      invalidPreviewUrl(configuration.previewUrl)
+      invalidPreviewUrl(configuration.previewUrl) ||
+      invalidRunConfigurationTopology(configuration, manifest)
     ) {
-      throw new Error('Run configuration is invalid')
+      invalidRunConfiguration('Run configuration is invalid')
     }
   }
+}
+
+function invalidRunConfiguration(message: string): never {
+  throw new Exception(message, {
+    status: 422,
+    code: 'E_RUN_CONFIGURATION_INVALID',
+  })
+}
+
+function invalidRunConfigurationTopology(
+  configuration: NonNullable<CompleteInput['runConfigurations']>[number],
+  manifest: PreviewManifest | null | undefined
+) {
+  const services = configuration.services ?? []
+  if (configuration.category && (!services.length || !configuration.scopes?.length)) return true
+  if (configuration.category === 'web' && !configuration.previewService) return true
+  if (configuration.previewService && !services.includes(configuration.previewService)) return true
+  if (!manifest) return false
+  const serviceIds = new Set(manifest.services.map(({ id }) => id))
+  if (services.some((service) => !serviceIds.has(service))) return true
+  const preview = manifest.services.find(({ id }) => id === configuration.previewService)
+  return Boolean(configuration.previewService && preview?.kind !== 'preview')
 }
 
 function invalidPreviewUrl(previewUrl: string | null | undefined) {

@@ -13,6 +13,7 @@ import type {
 } from "@/context/cloud-auth"
 import type {
   ApiConnection,
+  PreviewManifest,
   ProjectRunConfiguration,
 } from "@blame/agent-runtime"
 import type { TelemetryExportSession } from "@/context/platform"
@@ -200,7 +201,7 @@ export function createCloudApi(connection: ApiConnection) {
       projectId: string,
       input: {
         clineSessionId?: string | null
-        previewManifest?: Record<string, unknown>
+        previewManifest?: PreviewManifest
         setupScript: string
         dockerCompose: string
         runConfigurations: ProjectRunConfiguration[]
@@ -233,7 +234,7 @@ export function createCloudApi(connection: ApiConnection) {
       projectId: string,
       input: {
         clineSessionId?: string | null
-        previewManifest?: Record<string, unknown>
+        previewManifest?: PreviewManifest
         setupScript: string
         dockerCompose: string
         runConfigurations: ProjectRunConfiguration[]

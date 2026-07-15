@@ -244,11 +244,13 @@ export type GenerateTitleInput = {
   backend?: AgentBackendConfig;
   executionId?: string;
   storyId?: string;
+  runConfigurations?: ProjectRunConfiguration[];
 };
 
 export type GenerateTitleResult = {
   sessionId: string;
   title: string;
+  runConfigurationId?: string;
 };
 
 export type ResolveMergeConflictsInput = {
@@ -337,7 +339,33 @@ export type ProjectRunConfiguration = {
   command: string;
   cwd: string;
   default: boolean;
+  category?: ProjectRunConfigurationCategory;
+  services?: string[];
+  previewService?: string;
+  scopes?: string[];
   previewUrl?: string;
+};
+
+export type ProjectRunConfigurationCategory =
+  | "web"
+  | "mobile"
+  | "desktop"
+  | "terminal"
+  | "service"
+  | "other";
+
+export type ProjectRunConfigurationStatus =
+  | "running"
+  | "stopped"
+  | "starting"
+  | "error";
+
+export type ProjectPreviewRuntimeState = {
+  configurations: ProjectRunConfiguration[];
+  desiredStatus: "running" | "stopped";
+  previewUrl?: string;
+  selectedConfigurationId?: string;
+  statuses: Record<string, ProjectRunConfigurationStatus>;
 };
 
 export type {

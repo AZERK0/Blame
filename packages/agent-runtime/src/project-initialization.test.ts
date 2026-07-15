@@ -81,7 +81,15 @@ const manifestResult = {
     caches: [],
     risks: [],
   },
-  runConfigurations: baseResult.runConfigurations,
+  runConfigurations: [
+    {
+      ...baseResult.runConfigurations[0],
+      category: "web",
+      services: ["web"],
+      previewService: "web",
+      scopes: ["frontend", "apps/web"],
+    },
+  ],
   practices: baseResult.practices,
 };
 
@@ -489,6 +497,41 @@ test("parses initialization tool payloads", () => {
 
   assert.equal(result.previewManifest?.confidence, "high");
   assert.match(result.dockerCompose, /blame\.preview: "true"/);
+  assert.equal(result.runConfigurations[0]?.category, "web");
+  assert.deepEqual(result.runConfigurations[0]?.services, ["web"]);
+});
+
+test("rejects run configurations with unknown manifest services", () => {
+  assert.throws(
+    () =>
+      parseProjectInitializationPayload({
+        ...manifestResult,
+        runConfigurations: [
+          {
+            ...manifestResult.runConfigurations[0],
+            services: ["missing"],
+            previewService: "missing",
+          },
+        ],
+      }),
+    /references unknown service missing/,
+  );
+});
+
+test("requires classified run configurations to declare usable topology", () => {
+  assert.throws(
+    () =>
+      parseProjectInitializationPayload({
+        ...manifestResult,
+        runConfigurations: [
+          {
+            ...manifestResult.runConfigurations[0],
+            services: [],
+          },
+        ],
+      }),
+    /services must not be empty/,
+  );
 });
 
 test("rejects non canonical initialization fields", () => {

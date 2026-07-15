@@ -12,6 +12,11 @@ import {
 
 import type { UserStory } from "@/components/backlog/data/backlog-data"
 import { storyPreviewDevtoolsScope } from "@/components/backlog/shared/preview-devtools-scope"
+import { UserStoryPreviewRunnerControls } from "@/components/backlog/drawer/user-story-preview-runner"
+import {
+  useUserStoryPreviewRunner,
+  type UserStoryPreviewRunner,
+} from "@/components/backlog/drawer/use-user-story-preview-runner"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { type PreviewBrowserClient, usePlatform } from "@/context/platform"
@@ -81,6 +86,11 @@ type PreviewIslandProps = {
   onReload: () => void
   previewLocation?: string
   source?: string
+  previewRunner?: UserStoryPreviewRunner
+  onRunConfigurationChange?: (
+    configurationId: string,
+    previewUrl?: string
+  ) => void
 }
 type PreviewCaptureHandler = () => Promise<File | undefined>
 type NativePreviewFrameProps = {
@@ -183,6 +193,7 @@ export function UserStoryPreviewWarmup({
 
 export function UserStoryPreview({
   onCapture,
+  onRunConfigurationChange,
   previewSessionKey,
   previewTitle,
   previewUrl: previewUrlInput,
@@ -192,6 +203,10 @@ export function UserStoryPreview({
   worktree,
 }: {
   onCapture?: (file: File) => void
+  onRunConfigurationChange?: (
+    configurationId: string,
+    previewUrl?: string
+  ) => void
   previewSessionKey?: string
   previewTitle?: string
   previewUrl?: string
@@ -221,7 +236,10 @@ export function UserStoryPreview({
   const previewIdentity = previewScope ?? previewLabel
   const setupLogWorktree = userStory?.worktree ?? worktree
   const configuredPreviewUrl = userStory?.previewUrl ?? previewUrlInput
-  const previewUrl = recoveredPreviewUrl ?? configuredPreviewUrl
+  const previewRunner = useUserStoryPreviewRunner(setupLogWorktree, visible)
+  const previewUrl = previewRunner.runtime
+    ? previewRunner.runtime.previewUrl
+    : (recoveredPreviewUrl ?? configuredPreviewUrl)
   const baseSource = previewUrl ? previewSource(previewUrl) : undefined
   const nativePreviewSessionKey = nativePreviewKeyFor(
     previewIdentity,
@@ -459,6 +477,8 @@ export function UserStoryPreview({
             onNavigatePath={navigatePreviewPath}
             onOpen={openPreview}
             onReload={reloadPreview}
+            onRunConfigurationChange={onRunConfigurationChange}
+            previewRunner={previewRunner}
             previewLocation={displayedPreviewLocation}
             source={source}
           />
@@ -1154,6 +1174,8 @@ function PreviewIsland({
   onNavigatePath,
   onOpen,
   onReload,
+  onRunConfigurationChange,
+  previewRunner,
   previewLocation,
   source,
 }: PreviewIslandProps) {
@@ -1179,6 +1201,12 @@ function PreviewIsland({
           onReload={onReload}
         />
       )}
+      {previewRunner?.runtime && (
+        <UserStoryPreviewRunnerControls
+          runner={previewRunner}
+          onConfigurationChange={onRunConfigurationChange}
+        />
+      )}
       <div className="min-w-2 flex-1" />
       <PreviewTabSelector hasPreview={hasPreview} hasSetupLog={hasSetupLog} />
     </div>
@@ -1196,7 +1224,7 @@ function ServiceLogTabs({
 }) {
   return (
     <div
-      className="flex h-10 w-full flex-none items-end overflow-hidden pr-52 pt-1"
+      className="flex h-10 w-full flex-none items-end overflow-hidden pt-1 pr-52"
       role="tablist"
     >
       <div className="no-scrollbar flex w-full items-end gap-1 overflow-x-auto overflow-y-hidden">
@@ -1417,7 +1445,7 @@ function SetupLogPanel({
         <pre
           ref={logRef}
           className={cn(
-            "min-h-0 flex-1 select-text overflow-auto rounded-lg bg-zinc-950 p-4 font-mono text-xs whitespace-pre-wrap text-zinc-100",
+            "min-h-0 flex-1 overflow-auto rounded-lg bg-zinc-950 p-4 font-mono text-xs whitespace-pre-wrap text-zinc-100 select-text",
             firstServiceSelected && "rounded-tl-none"
           )}
         >
@@ -1498,9 +1526,8 @@ function useProjectServiceLog(worktree?: string | null, service?: string) {
           return
         }
         setState((current) => ({ ...current, loading: false }))
-        cleanup = platform.workspace?.onProjectServiceLog?.(
-          streamId,
-          (event) => {
+        cleanup =
+          platform.workspace?.onProjectServiceLog?.(streamId, (event) => {
             if (event.type === "exit") return
             setState((current) => ({
               ...current,
@@ -1508,8 +1535,7 @@ function useProjectServiceLog(worktree?: string | null, service?: string) {
               error: "",
               loading: false,
             }))
-          }
-        ) ?? (() => {})
+          }) ?? (() => {})
       })
       .catch((error) => {
         if (!cancelled) {
@@ -1784,7 +1810,7 @@ function nativePreviewWarmupStories(userStories: UserStory[]) {
 function nativePreviewWarmupStory(story: UserStory) {
   return Boolean(
     story.previewUrl &&
-      (story.status === "in-review" || story.status === "in-progress")
+    (story.status === "in-review" || story.status === "in-progress")
   )
 }
 

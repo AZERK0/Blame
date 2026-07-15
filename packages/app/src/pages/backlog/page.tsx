@@ -1,5 +1,5 @@
 import * as React from "react"
-import type { AgentEvent } from "@blame/agent-runtime"
+import type { AgentEvent, ProjectRunConfiguration } from "@blame/agent-runtime"
 import { toast } from "sonner"
 
 import {
@@ -67,7 +67,7 @@ import {
 import { useProjects } from "@/context/projects"
 import { projectCodePractices } from "@/lib/project-code-practices"
 import { showSystemNotification } from "@/lib/system-notifications"
-import { generateAgentTitle } from "@/lib/agent-title-generation"
+import { generateAgentTitleSelection } from "@/lib/agent-title-generation"
 import {
   projectInitializing,
   useProjectInitialization,
@@ -896,22 +896,28 @@ export function BacklogPage() {
     },
     []
   )
-  const startQueuedStoryTitleGeneration = React.useCallback(
-    (story: UserStory) => {
+  const generateQueuedStoryTitle = React.useCallback(
+    async (story: UserStory, beforeQueue = false) => {
       const request = queuedUserStoryTitleRequest({
         auth,
         model: alternativeSelection.currentModel,
         platform,
         projectPath: projects.activeProject?.path,
         reasoningEffort: alternativeSelection.currentVariant,
-        story,
+        runConfigurations:
+          projectInitialization?.initialization?.runConfigurations ?? [],
+        story: beforeQueue ? { ...story, status: "ready" } : story,
         updateStory,
       })
       if (!request) return
       setStoryTitleGenerating(story.id, true)
-      void runQueuedStoryTitleGeneration(request)
-        .catch(() => undefined)
-        .finally(() => setStoryTitleGenerating(story.id, false))
+      try {
+        return await runQueuedStoryTitleGeneration(request)
+      } catch {
+        return undefined
+      } finally {
+        setStoryTitleGenerating(story.id, false)
+      }
     },
     [
       auth,
@@ -919,6 +925,7 @@ export function BacklogPage() {
       alternativeSelection.currentVariant,
       platform,
       projects.activeProject?.path,
+      projectInitialization?.initialization?.runConfigurations,
       setStoryTitleGenerating,
       updateStory,
     ]
@@ -927,11 +934,13 @@ export function BacklogPage() {
     async (story: UserStory, action: BacklogAction) => {
       const currentStory = await detailedStoryForAction(story, action, backlog)
       if (action === "Send to Dev Agent") {
-        const queuedStory = await updateStory(currentStory, {
+        const generatedStory = await generateQueuedStoryTitle(
+          currentStory,
+          true
+        )
+        return updateStory(generatedStory ?? currentStory, {
           status: "ready",
         })
-        startQueuedStoryTitleGeneration(queuedStory)
-        return queuedStory
       }
       if (action === "Discard") {
         return updateStory(currentStory, {
@@ -969,7 +978,7 @@ export function BacklogPage() {
     },
     [
       completeReviewStory,
-      startQueuedStoryTitleGeneration,
+      generateQueuedStoryTitle,
       backlog,
       platform,
       projects.activeProject?.path,
@@ -1109,7 +1118,7 @@ export function BacklogPage() {
         focusComment={drawerTarget?.focusComment}
         onCreateUserStory={async (input) => {
           const story = await backlog.create(input)
-          startQueuedStoryTitleGeneration(story)
+          void generateQueuedStoryTitle(story)
           setDrawerTarget({ userStory: story, mode: "edit" })
           return story
         }}
@@ -1119,7 +1128,7 @@ export function BacklogPage() {
         onDeleteUserStory={(story) => backlog.remove(story)}
         onUpdateUserStory={async (story, input) => {
           const nextStory = await updateStory(story, input)
-          startQueuedStoryTitleGeneration(nextStory)
+          void generateQueuedStoryTitle(nextStory)
           return nextStory
         }}
         onOpenDrawer={openDrawer}
@@ -1387,6 +1396,7 @@ type QueuedUserStoryTitleRequest = {
   projectPath?: string
   model: ReturnType<typeof useModelSelection>["currentModel"]
   reasoningEffort: ReturnType<typeof useModelSelection>["currentVariant"]
+  runConfigurations: ProjectRunConfiguration[]
   updateStory: (
     story: UserStory,
     input: UserStoryUpdate,
@@ -1395,7 +1405,7 @@ type QueuedUserStoryTitleRequest = {
 }
 
 function queuedUserStoryTitleRequest(request: QueuedUserStoryTitleRequest) {
-  if (!queuedStoryNeedsGeneratedTitle(request.story)) return undefined
+  if (!queuedStoryNeedsGeneratedTitle(request)) return undefined
   if (queuedStoryTitleGenerationBlocked(request)) return undefined
   return request
 }
@@ -1420,7 +1430,7 @@ async function runQueuedStoryTitleGeneration(
 }
 
 async function generatedQueuedStoryTitle(request: QueuedUserStoryTitleRequest) {
-  return generateAgentTitle(
+  return generateAgentTitleSelection(
     request.platform.agent!.promptOptimizer.generateTitle,
     queuedStoryTitleGenerationInput(request)
   )
@@ -1428,9 +1438,18 @@ async function generatedQueuedStoryTitle(request: QueuedUserStoryTitleRequest) {
 
 async function persistGeneratedQueuedStoryTitle(
   request: QueuedUserStoryTitleRequest,
-  title: string
+  generated: { title: string; runConfigurationId?: string }
 ) {
-  return request.updateStory(request.story, { title }, { cleanup: false })
+  return request.updateStory(
+    request.story,
+    {
+      title: missingUserStoryTitle(request.story.title)
+        ? generated.title
+        : request.story.title,
+      runConfigurationId: generated.runConfigurationId ?? null,
+    },
+    { cleanup: false }
+  )
 }
 
 function queuedStoryTitleGenerationInput(request: QueuedUserStoryTitleRequest) {
@@ -1442,14 +1461,18 @@ function queuedStoryTitleGenerationInput(request: QueuedUserStoryTitleRequest) {
     credentialLabel: request.model!.credentialLabel,
     reasoningEffort: request.reasoningEffort,
     prompt: request.story.summary,
+    runConfigurations: request.runConfigurations,
     workspace: request.projectPath!,
   }
 }
 
-function queuedStoryNeedsGeneratedTitle(
-  story: Pick<UserStory, "status" | "title">
-) {
-  return story.status === "ready" && missingUserStoryTitle(story.title)
+function queuedStoryNeedsGeneratedTitle(request: QueuedUserStoryTitleRequest) {
+  if (request.story.status !== "ready") return false
+  if (missingUserStoryTitle(request.story.title)) return true
+  if (!request.runConfigurations.length) return false
+  return !request.runConfigurations.some(
+    ({ id }) => id === request.story.runConfigurationId
+  )
 }
 
 function titleGenerationStoryIds(

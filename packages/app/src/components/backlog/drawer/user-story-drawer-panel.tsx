@@ -528,6 +528,13 @@ export function UserStoryDrawerPanel({
               setupInitializing={setupInitializing}
               userStory={userStory}
               visible={tab === "preview"}
+              onRunConfigurationChange={(runConfigurationId, previewUrl) => {
+                if (!userStory) return
+                void onUpdateUserStory(userStory, {
+                  previewUrl: previewUrl ?? null,
+                  runConfigurationId,
+                })
+              }}
               onCapture={(file) => {
                 void addPreviewCaptureAttachment(file)
                 setTab("user-story")

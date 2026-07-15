@@ -155,6 +155,7 @@ async function completeGeneratedProjectInitialization(
     projectId,
     {
       clineSessionId: initialization.clineSessionId,
+      previewManifest: initialization.previewManifest,
       setupScript: initialization.setupScript,
       dockerCompose: initialization.dockerCompose,
       runConfigurations: initialization.runConfigurations,
@@ -166,10 +167,22 @@ async function completeGeneratedProjectInitialization(
 
 function generatedProjectPractices() {
   return [
-    practice("coding_style", "Blame generated this project with the standard coding style baseline."),
-    practice("unit_tests", "Blame generated this project with the standard testing baseline."),
-    practice("layered_architecture", "Blame generated this project with the standard project architecture baseline."),
-    practice("commit_message_convention", "Blame generated this project with the standard commit convention baseline."),
+    practice(
+      "coding_style",
+      "Blame generated this project with the standard coding style baseline."
+    ),
+    practice(
+      "unit_tests",
+      "Blame generated this project with the standard testing baseline."
+    ),
+    practice(
+      "layered_architecture",
+      "Blame generated this project with the standard project architecture baseline."
+    ),
+    practice(
+      "commit_message_convention",
+      "Blame generated this project with the standard commit convention baseline."
+    ),
   ]
 }
 
@@ -262,10 +275,7 @@ async function removeUnavailableProjects(
   apiConnection: ReturnType<typeof useCloudAuth>["apiConnection"],
   workspace: ReturnType<typeof usePlatform>["workspace"]
 ) {
-  const cloudProjects = await availableCloudProjects(
-    authStatus,
-    apiConnection
-  )
+  const cloudProjects = await availableCloudProjects(authStatus, apiConnection)
   const recent = await availableLocalProjects(state.recent, workspace)
   const available = cloudProjects
     ? recent.filter((project) => projectExistsInCloud(project, cloudProjects))

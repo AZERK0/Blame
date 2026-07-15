@@ -3,6 +3,7 @@ import {
   spawn,
   type ChildProcessWithoutNullStreams,
 } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import { withoutTelemetryEnvironment } from "@blame/telemetry";
 import { existsSync } from "node:fs";
 import {
@@ -11,6 +12,7 @@ import {
   mkdir as mkdirHost,
   readdir as readdirHost,
   readFile as readHostFile,
+  rename as renameHost,
   rm as rmHost,
   writeFile as writeHostFile,
 } from "node:fs/promises";
@@ -165,9 +167,10 @@ export async function run(
     env = {
       ...env,
       GIT_TERMINAL_PROMPT: "0",
-      GIT_SSH_COMMAND: platform === "win32"
-        ? "ssh.exe -o BatchMode=yes -o StrictHostKeyChecking=no"
-        : "ssh -o BatchMode=yes -o StrictHostKeyChecking=no",
+      GIT_SSH_COMMAND:
+        platform === "win32"
+          ? "ssh.exe -o BatchMode=yes -o StrictHostKeyChecking=no"
+          : "ssh -o BatchMode=yes -o StrictHostKeyChecking=no",
       ...(name ? { GIT_AUTHOR_NAME: name, GIT_COMMITTER_NAME: name } : {}),
       ...(email ? { GIT_AUTHOR_EMAIL: email, GIT_COMMITTER_EMAIL: email } : {}),
     };
@@ -325,6 +328,25 @@ export async function writeFile(
   );
 }
 
+export async function writeFileAtomic(
+  path: string,
+  data: string,
+  input: RuntimeOptions = {},
+) {
+  const temporaryPath = `${path}.${randomUUID()}.tmp`;
+  try {
+    await writeFile(temporaryPath, data, input);
+    if (runtimeManagedPath(path, input.platform)) {
+      await run("mv", ["--", temporaryPath, path], input);
+      return;
+    }
+    await renameHost(temporaryPath, path);
+  } catch (error) {
+    await rm(temporaryPath, input).catch(() => undefined);
+    throw error;
+  }
+}
+
 export async function appendFile(
   path: string,
   data: string,
@@ -404,7 +426,8 @@ function runtimeEnvironment(input: RuntimeOptions, platform: NodeJS.Platform) {
     },
   );
   if (platform === "win32") {
-    const wslenv = "GIT_SSH_COMMAND/u:GIT_TERMINAL_PROMPT/u:GIT_AUTHOR_NAME/u:GIT_AUTHOR_EMAIL/u:GIT_COMMITTER_NAME/u:GIT_COMMITTER_EMAIL/u";
+    const wslenv =
+      "GIT_SSH_COMMAND/u:GIT_TERMINAL_PROMPT/u:GIT_AUTHOR_NAME/u:GIT_AUTHOR_EMAIL/u:GIT_COMMITTER_NAME/u:GIT_COMMITTER_EMAIL/u";
     return {
       ...env,
       WSLENV: env.WSLENV ? `${env.WSLENV}:${wslenv}` : wslenv,
@@ -601,9 +624,12 @@ export async function hasMissingWorkspaceNodeModules(
         const pkg = JSON.parse(content);
         const hasDeps = Boolean(
           (pkg.dependencies && Object.keys(pkg.dependencies).length > 0) ||
-            (pkg.devDependencies && Object.keys(pkg.devDependencies).length > 0) ||
-            (pkg.peerDependencies && Object.keys(pkg.peerDependencies).length > 0) ||
-            (pkg.optionalDependencies && Object.keys(pkg.optionalDependencies).length > 0),
+          (pkg.devDependencies &&
+            Object.keys(pkg.devDependencies).length > 0) ||
+          (pkg.peerDependencies &&
+            Object.keys(pkg.peerDependencies).length > 0) ||
+          (pkg.optionalDependencies &&
+            Object.keys(pkg.optionalDependencies).length > 0),
         );
 
         if (hasDeps) {
@@ -723,7 +749,10 @@ export async function sanitizeWorkspaceConfigFiles(
       ]);
       paths = stdout.split("\n").filter(Boolean);
     }
-    const rootConfigPath = fns.joinWorkspacePath(worktree, "pnpm-workspace.yaml");
+    const rootConfigPath = fns.joinWorkspacePath(
+      worktree,
+      "pnpm-workspace.yaml",
+    );
 
     for (const configPath of paths) {
       if (configPath === rootConfigPath) {
@@ -734,7 +763,10 @@ export async function sanitizeWorkspaceConfigFiles(
           const subContent = await fns.readFile(configPath);
           const subYaml = parseYaml(subContent);
 
-          if (subYaml && (subYaml.allowBuilds || subYaml.ignoredBuiltDependencies)) {
+          if (
+            subYaml &&
+            (subYaml.allowBuilds || subYaml.ignoredBuiltDependencies)
+          ) {
             const rootContent = await fns.readFile(rootConfigPath);
             const rootYaml = parseYaml(rootContent) || {};
 
@@ -747,7 +779,9 @@ export async function sanitizeWorkspaceConfigFiles(
               changed = true;
             }
             if (subYaml.ignoredBuiltDependencies) {
-              const rootIgnored = new Set(rootYaml.ignoredBuiltDependencies || []);
+              const rootIgnored = new Set(
+                rootYaml.ignoredBuiltDependencies || [],
+              );
               for (const dep of subYaml.ignoredBuiltDependencies) {
                 rootIgnored.add(dep);
               }
@@ -835,66 +869,105 @@ export function resetRuntimeGitIdentityConfigured() {
   resolvedGitEmail = "";
 }
 
-export const resetRuntimeGitIdentityConfiguredForTesting = resetRuntimeGitIdentityConfigured;
+export const resetRuntimeGitIdentityConfiguredForTesting =
+  resetRuntimeGitIdentityConfigured;
 
 export async function ensureRuntimeGitUserIdentity(
   fns = {
     execFileAsync,
     run,
-  }
+  },
 ) {
   if (runtimeGitIdentityConfigured) return;
   try {
     let name = "";
     let email = "";
     try {
-      const { stdout } = await fns.execFileAsync("git", ["config", "--global", "user.name"]);
+      const { stdout } = await fns.execFileAsync("git", [
+        "config",
+        "--global",
+        "user.name",
+      ]);
       name = stdout.trim();
     } catch (err) {
-      log.warn("ensureRuntimeGitUserIdentity: failed to read host global user.name:", err);
+      log.warn(
+        "ensureRuntimeGitUserIdentity: failed to read host global user.name:",
+        err,
+      );
     }
     if (!name) {
       try {
-        const { stdout } = await fns.execFileAsync("git", ["config", "user.name"]);
+        const { stdout } = await fns.execFileAsync("git", [
+          "config",
+          "user.name",
+        ]);
         name = stdout.trim();
       } catch (err) {
-        log.warn("ensureRuntimeGitUserIdentity: failed to read host local user.name:", err);
+        log.warn(
+          "ensureRuntimeGitUserIdentity: failed to read host local user.name:",
+          err,
+        );
       }
     }
     if (!name) {
-      name = process.env.GIT_AUTHOR_NAME || process.env.GIT_COMMITTER_NAME || process.env.USER || process.env.USERNAME || "Blame User";
+      name =
+        process.env.GIT_AUTHOR_NAME ||
+        process.env.GIT_COMMITTER_NAME ||
+        process.env.USER ||
+        process.env.USERNAME ||
+        "Blame User";
     }
 
     try {
-      const { stdout } = await fns.execFileAsync("git", ["config", "--global", "user.email"]);
+      const { stdout } = await fns.execFileAsync("git", [
+        "config",
+        "--global",
+        "user.email",
+      ]);
       email = stdout.trim();
     } catch (err) {
-      log.warn("ensureRuntimeGitUserIdentity: failed to read host global user.email:", err);
+      log.warn(
+        "ensureRuntimeGitUserIdentity: failed to read host global user.email:",
+        err,
+      );
     }
     if (!email) {
       try {
-        const { stdout } = await fns.execFileAsync("git", ["config", "user.email"]);
+        const { stdout } = await fns.execFileAsync("git", [
+          "config",
+          "user.email",
+        ]);
         email = stdout.trim();
       } catch (err) {
-        log.warn("ensureRuntimeGitUserIdentity: failed to read host local user.email:", err);
+        log.warn(
+          "ensureRuntimeGitUserIdentity: failed to read host local user.email:",
+          err,
+        );
       }
     }
     if (!email) {
-      email = process.env.GIT_AUTHOR_EMAIL || process.env.GIT_COMMITTER_EMAIL || "blame@example.local";
+      email =
+        process.env.GIT_AUTHOR_EMAIL ||
+        process.env.GIT_COMMITTER_EMAIL ||
+        "blame@example.local";
     }
 
-    log.info(`ensureRuntimeGitUserIdentity: configuring VM git identity: ${name} <${email}>`);
+    log.info(
+      `ensureRuntimeGitUserIdentity: configuring VM git identity: ${name} <${email}>`,
+    );
     await fns.run("git", ["config", "--global", "user.name", name]);
     await fns.run("git", ["config", "--global", "user.email", email]);
 
     resolvedGitName = name;
     resolvedGitEmail = email;
     runtimeGitIdentityConfigured = true;
-    log.info("ensureRuntimeGitUserIdentity: VM git identity configured successfully.");
+    log.info(
+      "ensureRuntimeGitUserIdentity: VM git identity configured successfully.",
+    );
   } catch (err) {
-    log.error("ensureRuntimeGitUserIdentity: failed to configure VM git identity:", err);
+    log.error(
+      "ensureRuntimeGitUserIdentity: failed to configure VM git identity:",
+      err,
+    );
   }
 }
-
-
-

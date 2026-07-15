@@ -17,6 +17,10 @@ type InitializationBody = {
         command: string
         cwd: string
         default: boolean
+        category?: string
+        services?: string[]
+        previewService?: string | null
+        scopes?: string[]
       }>
       error: string | null
       repairReason: string | null
@@ -59,7 +63,17 @@ test.group('project initializations', (group) => {
         setupScript: '#!/usr/bin/env bash\npnpm install',
         dockerCompose: 'services:\n  web:\n    image: node',
         runConfigurations: [
-          { id: 'web', name: 'Web application', command: 'pnpm dev', cwd: '.', default: true },
+          {
+            id: 'web',
+            name: 'Web application',
+            command: 'pnpm dev',
+            cwd: '.',
+            default: true,
+            category: 'web',
+            services: ['web'],
+            previewService: 'web',
+            scopes: ['frontend', 'backend'],
+          },
         ],
         practices: [
           { practice: 'coding_style', detected: false, comment: 'No style config found.' },
@@ -75,6 +89,8 @@ test.group('project initializations', (group) => {
     assert.equal(completed.data.initialization?.clineSessionId, 'session-1')
     assert.equal(completed.data.initialization?.previewManifest?.version, 1)
     assert.equal(completed.data.initialization?.runConfigurations[0]?.command, 'pnpm dev')
+    assert.equal(completed.data.initialization?.runConfigurations[0]?.category, 'web')
+    assert.deepEqual(completed.data.initialization?.runConfigurations[0]?.services, ['web'])
     assert.lengthOf(completed.data.practices, 4)
     assert.isTrue(completed.data.practices.some((practice) => practice.detected))
     assert.isTrue(
@@ -196,6 +212,35 @@ test.group('project initializations', (group) => {
         previewManifest: { version: 2, confidence: 'high' },
         setupScript: 'pnpm install',
         dockerCompose: 'services:\n  web:\n    image: node',
+        practices: [],
+      })
+
+    response.assertStatus(422)
+  })
+
+  test('rejects run configurations outside the preview topology', async ({ client }) => {
+    const user = await createUser()
+    const project = await createProject(user.id, 'Alpha')
+    const response = await client
+      .post(`/api/v1/projects/${project.id}/initialization/complete`)
+      .loginAs(user)
+      .json({
+        previewManifest: previewManifest('high'),
+        setupScript: 'pnpm install',
+        dockerCompose: 'services:\n  web:\n    image: node',
+        runConfigurations: [
+          {
+            id: 'admin',
+            name: 'Admin application',
+            command: 'pnpm dev',
+            cwd: 'apps/admin',
+            default: true,
+            category: 'web',
+            services: ['admin'],
+            previewService: 'admin',
+            scopes: ['admin'],
+          },
+        ],
         practices: [],
       })
 

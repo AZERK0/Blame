@@ -2,10 +2,7 @@ import type { ClineCore } from "@cline/sdk";
 
 import { loadPrompt } from "./prompt-loader.js";
 import { appendProductionConfig } from "./production.js";
-import type {
-  GenerateTitleInput,
-  GenerateTitleResult,
-} from "./types.js";
+import type { GenerateTitleInput, GenerateTitleResult } from "./types.js";
 
 type TitleGenerationCredential = {
   apiKey: string;
@@ -23,9 +20,10 @@ export async function generateTitle(
     interactive: false,
     source: `blame-${input.context}-title-generator`,
   });
-  const title = generatedTitle(session.result?.text);
-  if (!title) throw new Error("Title generator agent did not return a title.");
-  return { sessionId: session.sessionId, title };
+  const generated = generatedTitle(session.result?.text, input);
+  if (!generated)
+    throw new Error("Title generator agent did not return a title.");
+  return { sessionId: session.sessionId, ...generated };
 }
 
 function titleGenerationConfig(
@@ -50,14 +48,80 @@ function titleGenerationConfig(
 }
 
 function titleGenerationUserPrompt(input: GenerateTitleInput) {
-  const contentLabel = input.context === "quick-chat" ? "Quick chat request" : "User story content";
-  return [`${contentLabel}:`, input.prompt.trim()].join("\n");
+  const contentLabel =
+    input.context === "quick-chat"
+      ? "Quick chat request"
+      : "User story content";
+  const configurations = titleRunConfigurations(input);
+  return [
+    `${contentLabel}:`,
+    input.prompt.trim(),
+    ...(configurations.length
+      ? [
+          "Available containerized run configurations:",
+          JSON.stringify(configurations),
+        ]
+      : []),
+  ].join("\n");
 }
 
-function generatedTitle(value: unknown) {
-  const candidate = titleCandidate(value);
+function titleRunConfigurations(input: GenerateTitleInput) {
+  if (input.context !== "user-story") return [];
+  return (input.runConfigurations ?? []).map((configuration) => ({
+    id: configuration.id,
+    name: configuration.name,
+    category: configuration.category ?? "other",
+    cwd: configuration.cwd,
+    services: configuration.services ?? [],
+    scopes: configuration.scopes ?? [],
+    previewService: configuration.previewService,
+  }));
+}
+
+export function generatedTitle(
+  value: unknown,
+  input: Pick<GenerateTitleInput, "runConfigurations"> = {},
+) {
+  const parsed = generatedTitlePayload(value);
+  const candidate = titleCandidate(parsed.title);
   if (!candidate) return undefined;
-  return candidate.split(/\s+/).slice(0, 6).join(" ");
+  const runConfigurationId = validRunConfigurationId(
+    parsed.runConfigurationId,
+    input.runConfigurations,
+  );
+  return {
+    title: candidate.split(/\s+/).slice(0, 6).join(" "),
+    ...(runConfigurationId ? { runConfigurationId } : {}),
+  };
+}
+
+function generatedTitlePayload(value: unknown) {
+  const text = stringValue(value)?.trim();
+  if (!text) return {};
+  const candidate = text
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "");
+  try {
+    const parsed = JSON.parse(candidate) as unknown;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return { title: text };
+    }
+    const record = parsed as Record<string, unknown>;
+    return {
+      title: record.title,
+      runConfigurationId: record.runConfigurationId,
+    };
+  } catch {
+    return { title: text };
+  }
+}
+
+function validRunConfigurationId(
+  value: unknown,
+  configurations: GenerateTitleInput["runConfigurations"],
+) {
+  if (typeof value !== "string") return undefined;
+  return configurations?.some(({ id }) => id === value) ? value : undefined;
 }
 
 function titleCandidate(value: unknown) {

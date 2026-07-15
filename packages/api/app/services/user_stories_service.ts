@@ -65,6 +65,7 @@ export default class UserStoriesService {
       owner: input.owner ?? 'Product',
       branch: input.branch ?? null,
       previewUrl: input.previewUrl ?? null,
+      runConfigurationId: input.runConfigurationId ?? null,
       worktree: input.worktree ?? null,
       agentStatus: input.agentStatus ?? null,
       clineSessionId: input.clineSessionId ?? null,
@@ -115,12 +116,7 @@ export default class UserStoriesService {
     })
   }
 
-  async undoComment(
-    userId: string,
-    id: string,
-    commentId: string,
-    clineSessionId?: string
-  ) {
+  async undoComment(userId: string, id: string, commentId: string, clineSessionId?: string) {
     const story = await this.find(userId, id)
     const comment = story.comments.find((item) => item.id === commentId)
     if (!comment) throw new Error('User story comment not found.')
