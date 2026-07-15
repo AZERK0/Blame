@@ -23,6 +23,9 @@ export default class UserStoryTransformer extends BaseTransformer<UserStory> {
       agentModelId: story.agentModelId,
       agentLastEvent: story.agentLastEvent,
       agentLastError: story.agentLastError,
+      runningAgentRuns: (story.agentRuns ?? []).map((run) =>
+        UserStoryAgentRunTransformer.summary(run)
+      ),
       mergedAt: story.mergedAt,
       mergeCommit: story.mergeCommit,
       baseCommit: story.baseCommit,

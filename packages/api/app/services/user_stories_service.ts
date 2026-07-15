@@ -30,7 +30,11 @@ export default class UserStoriesService {
   async list(userId: string, input: ListUserStoriesInput) {
     await new ProjectsService().findForUser(userId, input.projectId)
     const query = UserStory.query().where('projectId', input.projectId).orderBy('createdAt', 'asc')
-    if (input.view === 'summary') return query
+    if (input.view === 'summary') {
+      return query.preload('agentRuns', (runs) =>
+        runs.where('status', 'running').orderBy('createdAt', 'asc')
+      )
+    }
     const stories = await query.preload('comments').preload('agentRuns', orderAgentRuns)
     return stories.map(sortStoryComments)
   }

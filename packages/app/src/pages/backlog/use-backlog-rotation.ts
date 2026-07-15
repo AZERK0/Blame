@@ -24,6 +24,11 @@ import {
   terminalAgentRunEvent,
 } from "@/components/backlog/data/agent-flow"
 import { subscribeAgentEvents } from "@/components/backlog/data/agent-event-stream"
+import { persistTerminalAgentUpdate } from "@/components/backlog/data/agent-terminal-outbox"
+import {
+  completedClineLog,
+  finalAssistantResponse,
+} from "@/components/backlog/data/agent-run-recovery"
 import type { useBacklogStore } from "@/components/backlog/data/backlog-store"
 import { storyPreviewDevtoolsScope } from "@/components/backlog/shared/preview-devtools-scope"
 import { useModelSelection } from "@/components/model/model-selector"
@@ -588,12 +593,9 @@ export function useBacklogRotation(
     story: UserStory,
     run: UserStoryAgentRun
   ) {
-    const log = await clineLog(story, run)
-    if (completedClineLog(log)) {
-      await recoverCompletedAgentRun(story, run)
-      return
-    }
-    const currentStory = activeStory(story, storiesRef.current)
+    if (await recoverCompletedAgentRun(story, run)) return
+    const detailedStory = await backlog.loadDetail(story)
+    const currentStory = detailedStory
     const currentRun = activeAgentRun(currentStory, run) ?? run
     const completedAt = new Date().toISOString()
     await backlog.updateAgentRun(currentStory, currentRun, {
@@ -601,6 +603,7 @@ export function useBacklogRotation(
       finalResponse: interruptedAgentMessage,
       status: "failed",
     })
+    if (!activelyRunningStory(currentStory)) return
     await backlog.update(currentStory, {
       agentLastError: interruptedAgentMessage,
       agentLastEvent: interruptedAgentMessage,
@@ -613,13 +616,34 @@ export function useBacklogRotation(
     story: UserStory,
     run: UserStoryAgentRun
   ) {
-    const log = await clineLog(story, run)
-    if (!completedClineLog(log)) return
-    const currentStory = activeStory(story, storiesRef.current)
+    const detailedStory = await backlog.loadDetail(story)
+    const currentStory = detailedStory
     const currentRun = activeAgentRun(currentStory, run) ?? run
-    const event: AgentEvent = { payload: {}, type: "done" }
+    if (currentRun.status !== "running") return true
+    const log = await clineLog(currentStory, currentRun)
+    const response = await recoveredFinalResponse(currentStory, currentRun)
+    const nextRun = nextAgentRun(currentStory, currentRun)
+    if (
+      !completedClineLog(log, currentRun.createdAt, nextRun?.createdAt) &&
+      !nextRun
+    ) {
+      return false
+    }
+    const event: AgentEvent = {
+      payload: response ? { text: response } : {},
+      type: "done",
+    }
     const flowUpdate = agentFlowUpdate(currentStory, event)
     const text = agentEventText(event)
+    if (!activelyRunningStory(currentStory)) {
+      await backlog.updateAgentRun(currentStory, currentRun, {
+        completedAt: new Date().toISOString(),
+        finalResponse: response,
+        status: "completed",
+      })
+      notifyCommentResponseCompleted(currentStory, currentRun, platform)
+      return true
+    }
     persistAgentUpdate(
       currentStory,
       {
@@ -634,6 +658,23 @@ export function useBacklogRotation(
       true
     )
     notifyCommentResponseCompleted(currentStory, currentRun, platform)
+    return true
+  }
+
+  async function recoveredFinalResponse(
+    story: UserStory,
+    run: UserStoryAgentRun
+  ) {
+    const sessionId = run.clineSessionId ?? story.clineSessionId
+    if (!sessionId || !platform.agent) return undefined
+    const messages = await platform.agent.sessions
+      .messages(sessionId)
+      .catch(() => undefined)
+    return finalAssistantResponse(
+      messages,
+      run.createdAt,
+      nextAgentRun(story, run)?.createdAt
+    )
   }
 
   async function clineLog(story: UserStory, run: UserStoryAgentRun) {
@@ -795,7 +836,12 @@ export function useBacklogRotation(
     if (pending) window.clearTimeout(pending.timer)
     pendingAgentUpdates.current.delete(story.id)
     const update = pendingAgentUpdate(pending, input, run, runInput)
-    return persistQueuedAgentUpdate(story, update)
+    return persistTerminalAgentUpdate(
+      window.localStorage,
+      story,
+      update,
+      () => persistQueuedAgentUpdate(story, update)
+    )
   }
 
   async function persistQueuedAgentUpdate(
@@ -1102,17 +1148,29 @@ function rotationBlocker(
 }
 
 function recoverableAgentRun(story: UserStory) {
-  if (story.status !== "in-progress" || story.agentStatus !== "Running") {
-    return undefined
-  }
-  if (!story.worktree || !story.clineSessionId) return undefined
-  return story.agentRuns?.findLast(
+  const runs = new Map(
+    (story.runningAgentRuns ?? []).map((run) => [run.id, run])
+  )
+  story.agentRuns?.forEach((run) => runs.set(run.id, run))
+  return [...runs.values()].findLast(
     (run) =>
       run.status === "running" &&
       !run.finalResponse &&
       staleAgentRun(run) &&
       Boolean(run.clineSessionId ?? story.clineSessionId)
   )
+}
+
+function nextAgentRun(story: UserStory, run: UserStoryAgentRun) {
+  return story.agentRuns?.find(
+    (candidate) =>
+      candidate.id !== run.id &&
+      Date.parse(candidate.createdAt) > Date.parse(run.createdAt)
+  )
+}
+
+function activelyRunningStory(story: UserStory) {
+  return story.status === "in-progress" && story.agentStatus === "Running"
 }
 
 function staleAgentRun(run: UserStoryAgentRun) {
@@ -1150,45 +1208,6 @@ function clineLogPath(worktree: string, sessionId: string) {
 
 function clineLogRelativePath(sessionId: string) {
   return `.blame/logs/cline-${sessionId}.log`
-}
-
-function completedClineLog(log: string) {
-  return log.split("\n").some(completedClineLogLine)
-}
-
-function completedClineLogLine(line: string) {
-  const entry = jsonRecord(line)
-  if (stringValue(entry.message) !== "event:done") return false
-  const payload = recordValue(entry.payload)
-  const reason =
-    stringValue(payload.reason) ??
-    stringValue(payload.finishReason) ??
-    stringValue(payload.status)
-  return !reason || !failedClineDoneReason(reason)
-}
-
-function jsonRecord(value: string) {
-  try {
-    return recordValue(JSON.parse(value))
-  } catch {
-    return {}
-  }
-}
-
-function recordValue(value: unknown) {
-  if (value && typeof value === "object")
-    return value as Record<string, unknown>
-  return {}
-}
-
-function stringValue(value: unknown) {
-  return typeof value === "string" ? value : undefined
-}
-
-function failedClineDoneReason(reason: string) {
-  return ["error", "aborted", "cancelled", "failed"].includes(
-    reason.toLowerCase()
-  )
 }
 
 function eventText(event: ProjectSetupEvent) {

@@ -257,6 +257,9 @@ function userStory(value: unknown, options: UserStoryOptions = {}) {
   } else if (options.detail !== false) {
     output.agentRuns = []
   }
+  if (Array.isArray(story.runningAgentRuns)) {
+    output.runningAgentRuns = story.runningAgentRuns.map(userStoryAgentRun)
+  }
   if (Array.isArray(story.comments)) {
     output.comments = story.comments.map(userStoryComment)
   } else if (options.detail !== false) {

@@ -135,6 +135,7 @@ export type UserStory = {
   agentUsage?: UserStoryAgentUsage | null
   agentSessionSummary?: string | null
   agentRuns?: UserStoryAgentRun[]
+  runningAgentRuns?: UserStoryAgentRun[]
   mergedAt?: string | null
   mergeCommit?: string | null
   baseCommit?: string | null

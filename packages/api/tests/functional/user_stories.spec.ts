@@ -11,6 +11,7 @@ type UserStoryBody = {
   data: {
     comments?: UserStoryCommentBody['data'][]
     agentRuns?: UserStoryAgentRunBody['data'][]
+    runningAgentRuns?: UserStoryAgentRunBody['data'][]
     agentActivities?: {
       detail: string
       detailArtifact?: string
@@ -173,6 +174,7 @@ test.group('user stories', (group) => {
     assert.isUndefined(summary.data[0].fileAttachments)
     assert.isUndefined(summary.data[0].comments)
     assert.isUndefined(summary.data[0].agentRuns)
+    assert.lengthOf(summary.data[0].runningAgentRuns ?? [], 1)
 
     const detailResponse = await client
       .get(`/api/v1/projects/user-stories/${created.data.id}`)

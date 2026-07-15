@@ -71,6 +71,7 @@ import { optimizeUserStoryPrompt } from "./prompt-optimization.js";
 import { generateTitle } from "./title-generation.js";
 import { loadPrompt } from "./prompt-loader.js";
 import { knownOpenAICodexPreviewModels } from "./openai-codex-preview-models.js";
+import { createProviderCompatibleFetch } from "./provider-schema-compatibility.js";
 import { fallbackCommitSubject } from "./commit-message.js";
 import { AgentTelemetry } from "./agent-telemetry.js";
 import { taskComplexityBucket } from "./telemetry-cohorts.js";
@@ -455,6 +456,7 @@ export class BlameAgentRuntime {
         requestToolApproval: (request: ToolApprovalRequest) =>
           this.requestApproval(request),
       },
+      fetch: createProviderCompatibleFetch(),
       logger: productionLogger,
     });
   }
