@@ -269,7 +269,7 @@ export const projectInitializationResultSchema = {
           services: {
             type: "array",
             items: { type: "string" },
-            minItems: 1,
+            minItems: 0,
             maxItems: 20,
           },
           previewService: { type: "string" },
@@ -480,7 +480,7 @@ function parseRunConfigurationTopology(value: Record<string, unknown>) {
   const services = parseRunConfigurationStrings(value.services, "services", 20);
   const scopes = parseRunConfigurationStrings(value.scopes, "scopes", 50);
   const previewService = stringValue(value.previewService);
-  if (category && !services.length) {
+  if (requiresContainerServices(category) && !services.length) {
     throw new Error(
       "Initialization run configuration services must not be empty",
     );
@@ -502,10 +502,16 @@ function parseRunConfigurationTopology(value: Record<string, unknown>) {
   }
   return {
     ...(category ? { category } : {}),
-    ...(services.length ? { services } : {}),
+    ...(value.services !== undefined ? { services } : {}),
     ...(previewService ? { previewService } : {}),
     ...(scopes.length ? { scopes } : {}),
   };
+}
+
+function requiresContainerServices(
+  category: ProjectRunConfiguration["category"],
+) {
+  return category === "web" || category === "service";
 }
 
 function parseRunConfigurationCategory(
@@ -816,7 +822,9 @@ function requiresDatabaseMigration(
 ) {
   if (!scan || !usesRelationalDatabase(compose)) return false;
   const scopes = initializationEvidenceScopes(manifest);
-  if (scan.discovery?.migrationPaths.some((path) => pathInScopes(path, scopes))) {
+  if (
+    scan.discovery?.migrationPaths.some((path) => pathInScopes(path, scopes))
+  ) {
     return true;
   }
   return relevantInitializationFiles(scan, manifest).some(([path, content]) => {
@@ -829,7 +837,9 @@ function relevantInitializationFiles(
   manifest: PreviewManifest | undefined,
 ) {
   const scopes = initializationEvidenceScopes(manifest);
-  return Object.entries(scan.files).filter(([path]) => pathInScopes(path, scopes));
+  return Object.entries(scan.files).filter(([path]) =>
+    pathInScopes(path, scopes),
+  );
 }
 
 function initializationEvidenceScopes(manifest: PreviewManifest | undefined) {

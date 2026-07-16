@@ -252,6 +252,35 @@ test("returns no compose targets when setup has no runtime services", () => {
   );
 });
 
+test("does not start unrelated compose services for a host-only desktop configuration", () => {
+  const desktopConfiguration = {
+    id: "desktop",
+    name: "Desktop development",
+    command: "pnpm dev",
+    cwd: ".",
+    default: true,
+    category: "desktop" as const,
+    services: [],
+    scopes: ["desktop", "backend"],
+  };
+  const state = initialPreviewRuntimeSelection(
+    [desktopConfiguration],
+    undefined,
+  );
+
+  assert.deepEqual(
+    selectedPreviewRuntimeServiceIds([desktopConfiguration], state, [
+      "vitrine",
+      "api",
+    ]),
+    [],
+  );
+  assert.equal(
+    previewRunConfigurationStatus(desktopConfiguration, [], state),
+    "stopped",
+  );
+});
+
 test("selects configured runtime services and preserves the legacy fallback", () => {
   const state = initialPreviewRuntimeSelection(configurations, "app");
   assert.deepEqual(

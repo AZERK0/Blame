@@ -675,6 +675,39 @@ test("requires classified run configurations to declare usable topology", () => 
   );
 });
 
+test("keeps explicit host-only desktop launch configurations", () => {
+  const result = parseProjectInitializationPayload({
+    ...manifestResult,
+    runConfigurations: [
+      {
+        id: "desktop",
+        name: "Desktop development",
+        command: "pnpm dev",
+        cwd: ".",
+        default: true,
+        category: "desktop",
+        services: [],
+        scopes: ["desktop", "backend"],
+      },
+      {
+        ...manifestResult.runConfigurations[0],
+        default: false,
+      },
+    ],
+  });
+
+  assert.deepEqual(result.runConfigurations[0], {
+    id: "desktop",
+    name: "Desktop development",
+    command: "pnpm dev",
+    cwd: ".",
+    default: true,
+    category: "desktop",
+    services: [],
+    scopes: ["desktop", "backend"],
+  });
+});
+
 test("keeps backend service configurations independent from web previews", () => {
   assert.throws(
     () =>

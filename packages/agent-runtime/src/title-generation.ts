@@ -57,10 +57,7 @@ function titleGenerationUserPrompt(input: GenerateTitleInput) {
     `${contentLabel}:`,
     input.prompt.trim(),
     ...(configurations.length
-      ? [
-          "Available containerized run configurations:",
-          JSON.stringify(configurations),
-        ]
+      ? ["Available run configurations:", JSON.stringify(configurations)]
       : []),
   ].join("\n");
 }

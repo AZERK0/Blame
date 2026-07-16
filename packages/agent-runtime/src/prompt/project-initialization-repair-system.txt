@@ -32,6 +32,7 @@ For `repairable_initialization`:
 - upgrade legacy manifests to `version: 2`
 - return the complete `runConfigurations` array
 - preserve or repair each run configuration `category`, `services`, `previewService`, and `scopes`
+- preserve explicit root orchestration and host-only desktop, mobile, terminal, or other launch configurations; these may keep `services: []` when no faithful container counterpart exists
 - preserve valid existing services, setup tasks, caches, env vars, and run configurations unless diagnostics require changing them
 - preserve the absence of a browser preview for libraries, CLIs, batches, workers, and other projects without browser-facing evidence; never add a fake HTTP service or port
 - preserve valid run configuration `previewUrl` values, add them for reliable browser-facing frontend commands including multi-service orchestration commands, and remove them when no launched service is a browser-facing frontend

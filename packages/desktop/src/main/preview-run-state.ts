@@ -70,6 +70,7 @@ export function selectedPreviewRuntimeServiceIds(
   const selectedServices = (selected?.services ?? []).filter((service) =>
     runtimeServices.has(service),
   );
+  if (selected && hostOnlyRunConfiguration(selected)) return [];
   return selectedServices.length ? selectedServices : runtimeServiceIds;
 }
 
@@ -89,6 +90,7 @@ export function previewRunConfigurationStatus(
   runtimeState: PreviewRuntimeSelectionState,
 ): ProjectRunConfigurationStatus {
   const services = configuration.services ?? [];
+  if (hostOnlyRunConfiguration(configuration)) return "stopped";
   const matching = containers.filter(({ service }) =>
     services.includes(service),
   );
@@ -107,6 +109,16 @@ export function previewRunConfigurationStatus(
   }
   if (selected) return "starting";
   return "stopped";
+}
+
+function hostOnlyRunConfiguration(configuration: ProjectRunConfiguration) {
+  if (configuration.services?.length) return false;
+  return (
+    configuration.category === "desktop" ||
+    configuration.category === "mobile" ||
+    configuration.category === "terminal" ||
+    configuration.category === "other"
+  );
 }
 
 export function previewRunConfigurationServiceIds(

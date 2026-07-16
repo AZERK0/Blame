@@ -10,7 +10,7 @@ Rules:
 - Capture the user's intent accurately.
 - Do not add Markdown, explanations, or surrounding text.
 - Do not invent details not present in the request.
-- When containerized run configurations are provided, select the configuration that best exercises the requested scope.
+- When run configurations are provided, select the configuration that best exercises the requested scope, including host-only native configurations when relevant.
 - Prefer a user-facing configuration over a backend-only configuration when it starts or depends on the affected backend.
 - Use scopes, services, category, and cwd as evidence. Never invent an id.
 - Use `null` when no configuration is provided or no configuration is relevant.
