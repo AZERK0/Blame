@@ -1,7 +1,6 @@
 import * as React from "react"
 import type {
   PreviewManifest,
-  ProjectCodePracticeResult,
   ProjectRunConfiguration,
 } from "@blame/agent-runtime"
 
@@ -13,7 +12,6 @@ export type GeneratedProjectInitialization = {
   previewManifest?: PreviewManifest
   runConfigurations: ProjectRunConfiguration[]
   clineSessionId?: string
-  practices?: ProjectCodePracticeResult[]
 }
 
 export type ProjectContextValue = {

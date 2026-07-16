@@ -296,6 +296,9 @@ const api: BlameDesktopApi = {
       assessImpact: (input) =>
         ipcRenderer.invoke("agent:initializations:assess-impact", input),
     },
+    codePractices: {
+      run: (input) => ipcRenderer.invoke("agent:code-practices:run", input),
+    },
     newProjects: {
       generate: (input) =>
         ipcRenderer.invoke("agent:new-projects:generate", input),

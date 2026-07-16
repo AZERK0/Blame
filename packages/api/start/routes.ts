@@ -14,6 +14,8 @@ import { controllers } from '#generated/controllers'
 const ProviderCredentialsController = () => import('#controllers/provider_credentials_controller')
 const ProjectCodePracticesController = () =>
   import('#controllers/project_code_practices_controller')
+const ProjectCodePracticeAnalysesController = () =>
+  import('#controllers/project_code_practice_analyses_controller')
 const ProjectInitializationsController = () =>
   import('#controllers/project_initializations_controller')
 const QuickChatAgentRunsController = () => import('#controllers/quick_chat_agent_runs_controller')
@@ -83,6 +85,26 @@ router
         router.patch('/:projectId/code-practices/:practice', [
           ProjectCodePracticesController,
           'update',
+        ])
+        router.get('/:projectId/code-practice-analysis', [
+          ProjectCodePracticeAnalysesController,
+          'show',
+        ])
+        router.post('/:projectId/code-practice-analysis/start', [
+          ProjectCodePracticeAnalysesController,
+          'start',
+        ])
+        router.post('/:projectId/code-practice-analysis/complete', [
+          ProjectCodePracticeAnalysesController,
+          'complete',
+        ])
+        router.post('/:projectId/code-practice-analysis/fail', [
+          ProjectCodePracticeAnalysesController,
+          'fail',
+        ])
+        router.post('/:projectId/code-practice-analysis/viewed', [
+          ProjectCodePracticeAnalysesController,
+          'viewed',
         ])
         router.get('/:projectId/initialization', [ProjectInitializationsController, 'show'])
         router.post('/:projectId/initialization/start', [ProjectInitializationsController, 'start'])

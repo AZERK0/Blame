@@ -27,6 +27,7 @@ export function NavMain({
     title: string
     url: string
     icon?: React.ReactNode
+    status?: React.ReactNode
   }[]
   label?: string
   pathname: string
@@ -65,6 +66,11 @@ export function NavMain({
                 >
                   {item.icon}
                   <span>{item.title}</span>
+                  {item.status ? (
+                    <span className="ml-auto inline-flex items-center">
+                      {item.status}
+                    </span>
+                  ) : null}
                 </AppLink>
               </SidebarMenuButton>
               {item.url === "/chat" ? (

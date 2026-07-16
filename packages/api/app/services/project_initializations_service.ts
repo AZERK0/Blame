@@ -55,7 +55,6 @@ export default class ProjectInitializationsService {
       repairReason: null,
     })
     await initialization.save()
-    await this.savePractices(projectId, input.practices)
     return this.snapshot(projectId)
   }
 
@@ -109,27 +108,6 @@ export default class ProjectInitializationsService {
         .orderBy('practice'),
     }
   }
-
-  private async savePractices(projectId: string, practices: CompleteInput['practices']) {
-    for (const practice of practices) {
-      const projectCodePractice = await ProjectCodePractice.firstOrCreate(
-        { projectId, practice: practice.practice },
-        {
-          projectId,
-          practice: practice.practice,
-          detected: practice.detected,
-          enabled: defaultEnabledPractice(practice),
-          comment: practice.comment,
-        }
-      )
-
-      projectCodePractice.merge({
-        detected: practice.detected,
-        comment: practice.comment,
-      })
-      await projectCodePractice.save()
-    }
-  }
 }
 
 function validatedPreviewManifest(value: unknown) {
@@ -143,10 +121,6 @@ function validatedPreviewManifest(value: unknown) {
       cause: error,
     })
   }
-}
-
-function defaultEnabledPractice(practice: CompleteInput['practices'][number]) {
-  return practice.practice === 'coding_style' || practice.detected
 }
 
 function validateRunConfigurations(

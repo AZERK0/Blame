@@ -26,6 +26,8 @@ export type {
   AgentSessionRecord,
   AgentUsageSummary,
   AgentUsageTotals,
+  AnalyzeProjectCodePracticesInput,
+  AnalyzeProjectCodePracticesResult,
   ExecutionTelemetryCohorts,
   ApproveAndMergeInput,
   ApproveAndMergeResult,

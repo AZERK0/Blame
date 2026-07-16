@@ -8,8 +8,6 @@ import { withoutTelemetryEnvironment } from "@blame/telemetry";
 import type {
   PreviewManifest,
   ProjectInitializationPreferences,
-  ProjectCodePracticeKey,
-  ProjectCodePracticeResult,
   ProjectRunConfiguration,
 } from "./types.js";
 import {
@@ -17,16 +15,11 @@ import {
   parsePreviewManifest,
   normalizePreviewManifestWithPreferences,
 } from "./preview-manifest.js";
+import { jsonPayload } from "./json-payload.js";
 
 const execFileAsync = promisify(execFile);
 const maxFileBytes = 16_000;
 const maxCorrectionPayloadLength = 24_000;
-const requiredPractices: ProjectCodePracticeKey[] = [
-  "coding_style",
-  "unit_tests",
-  "layered_architecture",
-  "commit_message_convention",
-];
 const ignoredDirectories = new Set([
   ".git",
   "node_modules",
@@ -116,7 +109,6 @@ type ParsedProjectInitialization = {
   setupScript: string;
   dockerCompose: string;
   runConfigurations: ProjectRunConfiguration[];
-  practices: ProjectCodePracticeResult[];
 };
 
 type ProjectInitializationCorrection = {
@@ -127,7 +119,7 @@ type ProjectInitializationCorrection = {
 export const projectInitializationResultSchema = {
   type: "object",
   additionalProperties: false,
-  required: ["previewManifest", "runConfigurations", "practices"],
+  required: ["previewManifest", "runConfigurations"],
   properties: {
     previewManifest: {
       type: "object",
@@ -377,26 +369,6 @@ export const projectInitializationResultSchema = {
         },
       },
     },
-    practices: {
-      type: "array",
-      items: {
-        type: "object",
-        additionalProperties: false,
-        required: ["practice", "detected", "comment"],
-        properties: {
-          practice: {
-            enum: [
-              "coding_style",
-              "unit_tests",
-              "layered_architecture",
-              "commit_message_convention",
-            ],
-          },
-          detected: { type: "boolean" },
-          comment: { type: "string" },
-        },
-      },
-    },
   },
 } as const;
 
@@ -477,7 +449,6 @@ export function parseProjectInitializationPayload(
     setupScript,
     dockerCompose,
     runConfigurations,
-    practices: parsePractices(parsed.practices),
   };
 }
 
@@ -609,23 +580,6 @@ async function gitLog(root: string) {
   } catch {
     return [];
   }
-}
-
-function jsonPayload(text: string) {
-  const trimmed = text.trim();
-  if (trimmed.startsWith("{")) return trimmed;
-  const match = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (match?.[1]) return match[1].trim();
-  const start = trimmed.indexOf("{");
-  const end = trimmed.lastIndexOf("}");
-  if (start >= 0 && end > start) return trimmed.slice(start, end + 1);
-  return trimmed;
-}
-
-function parsePractices(value: unknown) {
-  if (!Array.isArray(value))
-    throw new Error("Initialization result is missing practices");
-  return requiredPractices.map((practice) => parsePractice(value, practice));
 }
 
 export function parseRunConfigurations(value: unknown) {
@@ -767,19 +721,6 @@ function unsafeRunConfigurationCwd(cwd: string) {
 
 function invalidRunConfigurationPreviewUrl(previewUrl: string) {
   return previewUrl.length > 2_048 || /[\r\n]/.test(previewUrl);
-}
-
-function parsePractice(values: unknown[], practice: ProjectCodePracticeKey) {
-  const value = values.find(
-    (item) => isRecord(item) && item.practice === practice,
-  );
-  if (!isRecord(value))
-    throw new Error(`Initialization result is missing ${practice}`);
-  if (typeof value.detected !== "boolean")
-    throw new Error(`${practice} detected must be boolean`);
-  const comment = stringValue(value.comment);
-  if (!comment) throw new Error(`${practice} comment is required`);
-  return { practice, detected: value.detected, comment };
 }
 
 export function validateProjectInitializationArtifacts(

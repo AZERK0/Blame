@@ -1,7 +1,10 @@
 import Project from '#models/project'
+import ProjectCodePractice from '#models/project_code_practice'
 import User from '#models/user'
+import UserSubscription from '#models/user_subscription'
 import testUtils from '@adonisjs/core/services/test_utils'
 import { test } from '@japa/runner'
+import { DateTime } from 'luxon'
 
 type InitializationBody = {
   data: {
@@ -38,9 +41,10 @@ test.group('project initializations', (group) => {
   group.setup(() => testUtils.db().migrate())
   group.each.setup(() => testUtils.db().truncate())
 
-  test('tracks initialization state and practices', async ({ client, assert }) => {
+  test('tracks initialization independently from practices', async ({ client, assert }) => {
     const user = await createUser()
     const project = await createProject(user.id, 'Alpha')
+    await createCodePractice(project.id)
 
     const startResponse = await client
       .post(`/api/v1/projects/${project.id}/initialization/start`)
@@ -75,12 +79,6 @@ test.group('project initializations', (group) => {
             scopes: ['frontend', 'backend'],
           },
         ],
-        practices: [
-          { practice: 'coding_style', detected: false, comment: 'No style config found.' },
-          { practice: 'unit_tests', detected: false, comment: 'No test runner found.' },
-          { practice: 'layered_architecture', detected: true, comment: 'Modules are separated.' },
-          { practice: 'commit_message_convention', detected: false, comment: 'Messages vary.' },
-        ],
       })
 
     completeResponse.assertStatus(200)
@@ -91,18 +89,8 @@ test.group('project initializations', (group) => {
     assert.equal(completed.data.initialization?.runConfigurations[0]?.command, 'pnpm dev')
     assert.equal(completed.data.initialization?.runConfigurations[0]?.category, 'web')
     assert.deepEqual(completed.data.initialization?.runConfigurations[0]?.services, ['web'])
-    assert.lengthOf(completed.data.practices, 4)
-    assert.isTrue(completed.data.practices.some((practice) => practice.detected))
-    assert.isTrue(
-      completed.data.practices.some(
-        (practice) => practice.practice === 'coding_style' && !practice.detected && practice.enabled
-      )
-    )
-    assert.isTrue(
-      completed.data.practices
-        .filter((practice) => practice.practice !== 'coding_style')
-        .every((practice) => practice.enabled === practice.detected)
-    )
+    assert.lengthOf(completed.data.practices, 1)
+    assert.equal(completed.data.practices[0].comment, 'Strict linting and typing are configured.')
   })
 
   test('stores initialization failures', async ({ client, assert }) => {
@@ -128,6 +116,7 @@ test.group('project initializations', (group) => {
   }) => {
     const user = await createUser()
     const project = await createProject(user.id, 'Alpha')
+    await createCodePractice(project.id)
     await client
       .post(`/api/v1/projects/${project.id}/initialization/complete`)
       .loginAs(user)
@@ -136,12 +125,6 @@ test.group('project initializations', (group) => {
         previewManifest: previewManifest('medium'),
         dockerCompose: 'services:\n  web:\n    image: node',
         runConfigurations: [],
-        practices: [
-          { practice: 'coding_style', detected: false, comment: 'No style config found.' },
-          { practice: 'unit_tests', detected: false, comment: 'No test runner found.' },
-          { practice: 'layered_architecture', detected: true, comment: 'Modules are separated.' },
-          { practice: 'commit_message_convention', detected: false, comment: 'Messages vary.' },
-        ],
       })
 
     const response = await client
@@ -178,10 +161,8 @@ test.group('project initializations', (group) => {
       '#!/usr/bin/env bash\ncorepack pnpm install'
     )
     assert.equal(body.data.initialization?.runConfigurations[0]?.command, 'corepack pnpm dev')
-    assert.lengthOf(body.data.practices, 4)
-    assert.isTrue(
-      body.data.practices.some((practice) => practice.practice === 'layered_architecture')
-    )
+    assert.lengthOf(body.data.practices, 1)
+    assert.equal(body.data.practices[0].comment, 'Strict linting and typing are configured.')
   })
 
   test('rejects initialization repair for another user project', async ({ client }) => {
@@ -212,7 +193,6 @@ test.group('project initializations', (group) => {
         previewManifest: { version: 2, confidence: 'high' },
         setupScript: 'pnpm install',
         dockerCompose: 'services:\n  web:\n    image: node',
-        practices: [],
       })
 
     response.assertStatus(422)
@@ -241,7 +221,6 @@ test.group('project initializations', (group) => {
             scopes: ['admin'],
           },
         ],
-        practices: [],
       })
 
     response.assertStatus(422)
@@ -269,10 +248,25 @@ function previewManifest(confidence: 'low' | 'medium' | 'high') {
   }
 }
 
-function createUser() {
-  return User.create({
+async function createUser() {
+  const user = await User.create({
     email: `${crypto.randomUUID()}@example.com`,
     password: 'password123',
+  })
+  await createSubscription(user.id)
+  return user
+}
+
+function createSubscription(userId: string) {
+  return UserSubscription.create({
+    userId,
+    stripeCustomerId: `cus_${userId}`,
+    stripeSubscriptionId: `sub_${userId}`,
+    stripePriceId: 'price_test',
+    stripeCheckoutSessionId: `cs_${userId}`,
+    status: 'active',
+    currentPeriodEnd: DateTime.utc().plus({ days: 30 }),
+    cancelAtPeriodEnd: false,
   })
 }
 
@@ -281,5 +275,15 @@ function createProject(userId: string, name: string) {
     name,
     repositoryFingerprint: crypto.randomUUID(),
     userId,
+  })
+}
+
+function createCodePractice(projectId: string) {
+  return ProjectCodePractice.create({
+    projectId,
+    practice: 'coding_style',
+    detected: true,
+    enabled: true,
+    comment: 'Strict linting and typing are configured.',
   })
 }

@@ -2,6 +2,8 @@ import * as React from "react"
 import type {
   AgentEvent,
   AgentUsageSummary,
+  AnalyzeProjectCodePracticesInput,
+  AnalyzeProjectCodePracticesResult,
   ApiConnection,
   ApproveAndMergeInput,
   ApproveAndMergeResult,
@@ -270,6 +272,11 @@ export type AgentClient = {
     assessImpact(
       input: AssessProjectInitializationImpactInput
     ): Promise<AssessProjectInitializationImpactResult>
+  }
+  codePractices: {
+    run(
+      input: AnalyzeProjectCodePracticesInput
+    ): Promise<AnalyzeProjectCodePracticesResult>
   }
   newProjects: {
     generate(

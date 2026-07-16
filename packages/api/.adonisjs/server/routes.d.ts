@@ -25,6 +25,11 @@ export type ScannedRoutes = {
     'projects.projects.store': { paramsTuple?: []; params?: {} }
     'projects.project_code_practices.index': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_code_practices.update': { paramsTuple: [ParamValue,ParamValue]; params: {'projectId': ParamValue,'practice': ParamValue} }
+    'projects.project_code_practice_analyses.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'projects.project_code_practice_analyses.start': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'projects.project_code_practice_analyses.complete': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'projects.project_code_practice_analyses.fail': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'projects.project_code_practice_analyses.viewed': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.start': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.complete': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
@@ -66,6 +71,7 @@ export type ScannedRoutes = {
     'profile.user_mcp_configurations.show': { paramsTuple?: []; params?: {} }
     'projects.projects.index': { paramsTuple?: []; params?: {} }
     'projects.project_code_practices.index': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'projects.project_code_practice_analyses.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'providers.provider_credentials.catalog': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.index': { paramsTuple?: []; params?: {} }
@@ -85,6 +91,7 @@ export type ScannedRoutes = {
     'profile.user_mcp_configurations.show': { paramsTuple?: []; params?: {} }
     'projects.projects.index': { paramsTuple?: []; params?: {} }
     'projects.project_code_practices.index': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'projects.project_code_practice_analyses.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'providers.provider_credentials.catalog': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.index': { paramsTuple?: []; params?: {} }
@@ -108,6 +115,10 @@ export type ScannedRoutes = {
     'profile.account_privacy.close': { paramsTuple?: []; params?: {} }
     'profile.access_tokens.destroy': { paramsTuple?: []; params?: {} }
     'projects.projects.store': { paramsTuple?: []; params?: {} }
+    'projects.project_code_practice_analyses.start': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'projects.project_code_practice_analyses.complete': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'projects.project_code_practice_analyses.fail': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'projects.project_code_practice_analyses.viewed': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.start': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.complete': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.fail': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }

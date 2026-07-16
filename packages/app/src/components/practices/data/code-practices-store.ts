@@ -7,6 +7,7 @@ import type {
 } from "@/components/practices/data/code-practices-data"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { useProjects } from "@/context/projects"
+import { subscribeCodePracticeAnalysisUpdated } from "@/components/practices/data/code-practice-analysis-events"
 
 type CodePracticesState = {
   error?: string
@@ -63,6 +64,11 @@ export function useCodePracticesStore() {
     const timer = window.setTimeout(() => void load(), 0)
     return () => window.clearTimeout(timer)
   }, [load])
+
+  React.useEffect(() => {
+    if (!projectId) return
+    return subscribeCodePracticeAnalysisUpdated(projectId, () => void load())
+  }, [load, projectId])
 
   const updateEnabled = React.useCallback(
     async (practice: CodePractice, enabled: boolean) => {

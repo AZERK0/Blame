@@ -17,6 +17,10 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useCodePracticesStore } from "@/components/practices/data/code-practices-store"
+import {
+  useCodePracticeAnalysis,
+  useMarkCodePracticeAnalysisViewed,
+} from "@/components/practices/data/use-code-practice-analysis"
 import { cn } from "@/lib/utils"
 import type {
   CodePractice,
@@ -43,13 +47,15 @@ const practiceDescriptions: Record<CodePracticeKey, string> = {
 
 const codebaseModeLabels: Record<CodePracticeKey, string> = {
   coding_style: "Match codebase",
-  unit_tests: "Disabled",
+  unit_tests: "Match codebase",
   layered_architecture: "Match codebase",
   commit_message_convention: "Match codebase",
 }
 
 export function PracticesPage() {
   const store = useCodePracticesStore()
+  const analysis = useCodePracticeAnalysis()
+  useMarkCodePracticeAnalysisViewed(analysis)
 
   return (
     <div className="flex flex-1 flex-col items-center px-4 pt-[calc(var(--header-height)+1rem)] pb-4 lg:px-6 lg:pt-[calc(var(--header-height)+1.5rem)] lg:pb-6">

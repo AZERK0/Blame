@@ -1,6 +1,8 @@
 import type {
   AgentEvent,
   AgentUsageSummary,
+  AnalyzeProjectCodePracticesInput,
+  AnalyzeProjectCodePracticesResult,
   ApiConnection,
   ApproveAndMergeInput,
   ApproveAndMergeResult,
@@ -418,6 +420,11 @@ export type BlameDesktopApi = {
       assessImpact(
         input: AssessProjectInitializationImpactInput,
       ): Promise<AssessProjectInitializationImpactResult>;
+    };
+    codePractices: {
+      run(
+        input: AnalyzeProjectCodePracticesInput,
+      ): Promise<AnalyzeProjectCodePracticesResult>;
     };
     newProjects: {
       generate(

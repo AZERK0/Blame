@@ -13,15 +13,18 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { useCloudAuth } from "@/context/cloud-auth"
+import { useCodePracticeAnalysis } from "@/components/practices/data/use-code-practice-analysis"
 import {
   CircleHelpIcon,
-  ClipboardCheckIcon, CloudUploadIcon,
+  ClipboardCheckIcon,
+  CloudUploadIcon,
   GitBranchIcon,
+  LoaderCircleIcon,
   MessageCircleIcon,
   SearchIcon,
-  Settings2Icon, ShieldCheckIcon,
+  Settings2Icon,
+  ShieldCheckIcon,
   Table2Icon,
-  UsersIcon,
 } from "lucide-react"
 
 const data = {
@@ -83,6 +86,12 @@ export function AppSidebar({
   ...props
 }: React.ComponentProps<typeof Sidebar> & { pathname: string }) {
   const auth = useCloudAuth()
+  const codePracticeAnalysis = useCodePracticeAnalysis()
+  const projectItems = data.project.map((item) =>
+    item.url === "/practices"
+      ? { ...item, status: codePracticeAnalysisStatus(codePracticeAnalysis) }
+      : item
+  )
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>
@@ -95,7 +104,7 @@ export function AppSidebar({
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} pathname={pathname} />
-        <NavMain items={data.project} label="Project" pathname={pathname} />
+        <NavMain items={projectItems} label="Project" pathname={pathname} />
         <NavSecondary
           items={data.navSecondary}
           pathname={pathname}
@@ -106,5 +115,29 @@ export function AppSidebar({
         {auth.user ? <NavUser user={auth.user} onLogout={auth.logout} /> : null}
       </SidebarFooter>
     </Sidebar>
+  )
+}
+
+function codePracticeAnalysisStatus(
+  analysis: ReturnType<typeof useCodePracticeAnalysis>
+) {
+  if (
+    !analysis ||
+    analysis.status === "pending" ||
+    analysis.status === "running"
+  ) {
+    return (
+      <LoaderCircleIcon
+        aria-label="Code practices analysis in progress"
+        className="size-3.5 animate-spin text-muted-foreground"
+      />
+    )
+  }
+  if (analysis.status !== "done" || analysis.viewedAt) return undefined
+  return (
+    <span
+      aria-label="New code practices analysis"
+      className="size-2 rounded-full bg-blue-500"
+    />
   )
 }

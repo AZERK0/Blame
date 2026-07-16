@@ -366,7 +366,7 @@ function runInput(
 async function runInitialization(input: InitializationRunInput) {
   const cloud = createCloudApi(input.auth.apiConnection)
   toast.loading(`Initializing ${input.project.name}`, {
-    description: "Blame is analyzing project setup and code practices.",
+    description: "Blame is analyzing the project runtime and preview setup.",
     id: toastId,
     position: "bottom-right",
   })
@@ -450,7 +450,6 @@ async function completeProjectInitialization(
     setupScript: result.setupScript,
     dockerCompose: result.dockerCompose,
     runConfigurations: result.runConfigurations,
-    practices: result.practices,
   })
   notifyProjectInitializationUpdated(input.project.id)
 }
@@ -476,7 +475,6 @@ function validationFeedback(
       setupScript: result.setupScript,
       dockerCompose: result.dockerCompose,
       runConfigurations: result.runConfigurations,
-      practices: result.practices,
     }),
   }
 }
@@ -555,7 +553,7 @@ function showError(error: unknown) {
 
 function showSuccess() {
   toast.success("Project initialized", {
-    description: "Worktree setup and code practices were saved.",
+    description: "Worktree and preview setup were saved.",
     id: toastId,
     position: "bottom-right",
   })

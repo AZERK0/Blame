@@ -9,6 +9,7 @@ export const controllers = {
   Billing: () => import('#controllers/billing_controller'),
   NewAccount: () => import('#controllers/new_account_controller'),
   Profile: () => import('#controllers/profile_controller'),
+  ProjectCodePracticeAnalyses: () => import('#controllers/project_code_practice_analyses_controller'),
   ProjectCodePractices: () => import('#controllers/project_code_practices_controller'),
   ProjectInitializations: () => import('#controllers/project_initializations_controller'),
   Projects: () => import('#controllers/projects_controller'),

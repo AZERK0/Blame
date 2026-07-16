@@ -56,6 +56,13 @@ export interface ApiDefinition {
       index: typeof routes['projects.project_code_practices.index']
       update: typeof routes['projects.project_code_practices.update']
     }
+    projectCodePracticeAnalyses: {
+      show: typeof routes['projects.project_code_practice_analyses.show']
+      start: typeof routes['projects.project_code_practice_analyses.start']
+      complete: typeof routes['projects.project_code_practice_analyses.complete']
+      fail: typeof routes['projects.project_code_practice_analyses.fail']
+      viewed: typeof routes['projects.project_code_practice_analyses.viewed']
+    }
     projectInitializations: {
       show: typeof routes['projects.project_initializations.show']
       start: typeof routes['projects.project_initializations.start']

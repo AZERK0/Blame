@@ -259,6 +259,66 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_code_practices_controller').default['update']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
+  'projects.project_code_practice_analyses.show': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/projects/:projectId/code-practice-analysis'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { projectId: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_code_practice_analyses_controller').default['show']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_code_practice_analyses_controller').default['show']>>>
+    }
+  }
+  'projects.project_code_practice_analyses.start': {
+    methods: ["POST"]
+    pattern: '/api/v1/projects/:projectId/code-practice-analysis/start'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/project_code_practice_analysis').startProjectCodePracticeAnalysisValidator)>>
+      paramsTuple: [ParamValue]
+      params: { projectId: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/project_code_practice_analysis').startProjectCodePracticeAnalysisValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_code_practice_analyses_controller').default['start']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_code_practice_analyses_controller').default['start']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'projects.project_code_practice_analyses.complete': {
+    methods: ["POST"]
+    pattern: '/api/v1/projects/:projectId/code-practice-analysis/complete'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/project_code_practice_analysis').completeProjectCodePracticeAnalysisValidator)>>
+      paramsTuple: [ParamValue]
+      params: { projectId: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/project_code_practice_analysis').completeProjectCodePracticeAnalysisValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_code_practice_analyses_controller').default['complete']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_code_practice_analyses_controller').default['complete']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'projects.project_code_practice_analyses.fail': {
+    methods: ["POST"]
+    pattern: '/api/v1/projects/:projectId/code-practice-analysis/fail'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/project_code_practice_analysis').failProjectCodePracticeAnalysisValidator)>>
+      paramsTuple: [ParamValue]
+      params: { projectId: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/project_code_practice_analysis').failProjectCodePracticeAnalysisValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_code_practice_analyses_controller').default['fail']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_code_practice_analyses_controller').default['fail']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'projects.project_code_practice_analyses.viewed': {
+    methods: ["POST"]
+    pattern: '/api/v1/projects/:projectId/code-practice-analysis/viewed'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { projectId: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_code_practice_analyses_controller').default['viewed']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_code_practice_analyses_controller').default['viewed']>>>
+    }
+  }
   'projects.project_initializations.show': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/projects/:projectId/initialization'

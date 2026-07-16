@@ -45,6 +45,17 @@ const projectCodePracticeColumns = [
   'created_at',
   'updated_at',
 ]
+const projectCodePracticeAnalysisColumns = [
+  'project_id',
+  'status',
+  'cline_session_id',
+  'agent_provider_id',
+  'agent_model_id',
+  'error',
+  'viewed_at',
+  'created_at',
+  'updated_at',
+]
 const userStoryColumns = [
   'id',
   'project_id',
@@ -191,6 +202,15 @@ export default class AccountExportQueries {
     return this.ownedRows(
       'project_code_practices',
       projectCodePracticeColumns,
+      'project_id',
+      projectIds
+    )
+  }
+
+  projectCodePracticeAnalyses(projectIds: string[]) {
+    return this.ownedRows(
+      'project_code_practice_analyses',
+      projectCodePracticeAnalysisColumns,
       'project_id',
       projectIds
     )

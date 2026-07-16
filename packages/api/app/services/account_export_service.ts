@@ -101,6 +101,7 @@ async function projectExport(queries: AccountExportQueries, projectIds: string[]
       'run_configurations',
     ]),
     projectCodePractices: await queries.projectCodePractices(projectIds),
+    projectCodePracticeAnalyses: await queries.projectCodePracticeAnalyses(projectIds),
   }
 }
 

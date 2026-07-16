@@ -1,5 +1,6 @@
 import type {
   CloudProject,
+  CloudProjectCodePracticeAnalysis,
   CloudProjectInitializationSnapshot,
   CloudSession,
   CloudUser,
@@ -14,6 +15,7 @@ import type {
 import type {
   ApiConnection,
   PreviewManifest,
+  ProjectCodePracticeResult,
   ProjectRunConfiguration,
 } from "@blame/agent-runtime"
 import type { TelemetryExportSession } from "@/context/platform"
@@ -182,6 +184,61 @@ export function createCloudApi(connection: ApiConnection) {
         `/projects/${encodeURIComponent(projectId)}/initialization`
       ).then(cloudProjectInitializationSnapshot)
     },
+    projectCodePracticeAnalysis(projectId: string) {
+      return request<unknown>(
+        connection,
+        baseUrl,
+        `/projects/${encodeURIComponent(projectId)}/code-practice-analysis`
+      ).then(cloudProjectCodePracticeAnalysis)
+    },
+    startProjectCodePracticeAnalysis(
+      projectId: string,
+      input: { providerId: string; modelId: string }
+    ) {
+      return projectCodePracticeAnalysisRequest(
+        connection,
+        baseUrl,
+        projectId,
+        "start",
+        input
+      )
+    },
+    completeProjectCodePracticeAnalysis(
+      projectId: string,
+      input: {
+        clineSessionId?: string | null
+        practices: ProjectCodePracticeResult[]
+      }
+    ) {
+      return projectCodePracticeAnalysisRequest(
+        connection,
+        baseUrl,
+        projectId,
+        "complete",
+        input
+      )
+    },
+    failProjectCodePracticeAnalysis(
+      projectId: string,
+      input: { clineSessionId?: string | null; error: string }
+    ) {
+      return projectCodePracticeAnalysisRequest(
+        connection,
+        baseUrl,
+        projectId,
+        "fail",
+        input
+      )
+    },
+    markProjectCodePracticeAnalysisViewed(projectId: string) {
+      return projectCodePracticeAnalysisRequest(
+        connection,
+        baseUrl,
+        projectId,
+        "viewed",
+        {}
+      )
+    },
     startProjectInitialization(
       projectId: string,
       input: {
@@ -205,11 +262,6 @@ export function createCloudApi(connection: ApiConnection) {
         setupScript: string
         dockerCompose: string
         runConfigurations: ProjectRunConfiguration[]
-        practices: Array<{
-          practice: string
-          detected: boolean
-          comment: string
-        }>
       }
     ) {
       return request<unknown>(
@@ -281,6 +333,29 @@ function cloudProjectInitializationSnapshot(value: unknown) {
     throw new Error("Unable to read project initialization.")
   }
   return snapshot as CloudProjectInitializationSnapshot
+}
+
+function cloudProjectCodePracticeAnalysis(value: unknown) {
+  const analysis = transformerValue(value)
+  if (!isRecord(analysis) || typeof analysis.projectId !== "string") {
+    throw new Error("Unable to read project code practice analysis.")
+  }
+  return analysis as CloudProjectCodePracticeAnalysis
+}
+
+function projectCodePracticeAnalysisRequest(
+  connection: ApiConnection,
+  baseUrl: string,
+  projectId: string,
+  action: "start" | "complete" | "fail" | "viewed",
+  body: unknown
+) {
+  return request<unknown>(
+    connection,
+    baseUrl,
+    `/projects/${encodeURIComponent(projectId)}/code-practice-analysis/${action}`,
+    { body: JSON.stringify(body), method: "POST" }
+  ).then(cloudProjectCodePracticeAnalysis)
 }
 
 function cloudAiPreferences(value: unknown) {

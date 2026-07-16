@@ -159,35 +159,9 @@ async function completeGeneratedProjectInitialization(
       setupScript: initialization.setupScript,
       dockerCompose: initialization.dockerCompose,
       runConfigurations: initialization.runConfigurations,
-      practices: initialization.practices ?? generatedProjectPractices(),
     }
   )
   notifyProjectInitializationUpdated(projectId)
-}
-
-function generatedProjectPractices() {
-  return [
-    practice(
-      "coding_style",
-      "Blame generated this project with the standard coding style baseline."
-    ),
-    practice(
-      "unit_tests",
-      "Blame generated this project with the standard testing baseline."
-    ),
-    practice(
-      "layered_architecture",
-      "Blame generated this project with the standard project architecture baseline."
-    ),
-    practice(
-      "commit_message_convention",
-      "Blame generated this project with the standard commit convention baseline."
-    ),
-  ]
-}
-
-function practice(practice: string, comment: string) {
-  return { practice, detected: true, comment }
 }
 
 async function resolveProject(

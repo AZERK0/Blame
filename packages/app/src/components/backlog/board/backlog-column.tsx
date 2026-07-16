@@ -150,7 +150,7 @@ export function BacklogColumnHeader({
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="right" className="max-w-64 text-pretty">
-                  Blame is analyzing the project setup and code practices. This
+                  Blame is analyzing the project runtime and preview setup. This
                   only happens the first time the project is opened; afterwards,
                   the result is saved.
                 </TooltipContent>

@@ -1,12 +1,5 @@
 import vine from '@vinejs/vine'
 
-const practice = vine.enum([
-  'coding_style',
-  'unit_tests',
-  'layered_architecture',
-  'commit_message_convention',
-])
-
 const runConfiguration = vine.object({
   id: vine
     .string()
@@ -44,13 +37,6 @@ export const completeProjectInitializationValidator = vine.create({
   setupScript: vine.string().minLength(1),
   dockerCompose: vine.string().minLength(1),
   runConfigurations: vine.array(runConfiguration).maxLength(20).optional(),
-  practices: vine.array(
-    vine.object({
-      practice,
-      detected: vine.boolean(),
-      comment: vine.string().trim().minLength(1).maxLength(2048),
-    })
-  ),
 })
 
 export const failProjectInitializationValidator = vine.create({

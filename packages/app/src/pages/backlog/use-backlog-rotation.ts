@@ -41,6 +41,7 @@ import type {
 import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import { createCloudApi } from "@/lib/cloud-api"
+import { effectiveProjectCodePractices } from "@/lib/project-code-practice-preferences"
 import { showSystemNotification } from "@/lib/system-notifications"
 import { diagnoseAndRepairProjectInitialization } from "./project-initialization-repair"
 
@@ -212,7 +213,9 @@ export function useBacklogRotation(
       cwd: worktree.worktree,
       workspaceRoot: worktree.worktree,
       previewDevtoolsScope: storyPreviewDevtoolsScope(detailedStory.id),
-      codePractices: projectInitialization.practices,
+      codePractices: effectiveProjectCodePractices(
+        projectInitialization.practices
+      ),
       executionId,
       storyId,
     })

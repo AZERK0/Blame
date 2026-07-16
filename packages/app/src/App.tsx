@@ -19,6 +19,7 @@ import { LoadingScreen } from "@/components/onboarding/loading-screen"
 import { LicenseScreen } from "@/components/onboarding/license-screen"
 import { WelcomeScreen } from "@/components/onboarding/welcome-screen"
 import { ProjectInitializationRunner } from "@/components/project-initialization/project-initialization-runner"
+import { ProjectCodePracticesRunner } from "@/components/practices/project-code-practices-runner"
 import { UpdateStartupNotifier } from "@/components/updates/update-startup-notifier"
 import { Toaster } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
@@ -176,6 +177,7 @@ export function App() {
       <BacklogStoreProvider>
         <QuickChatStoreProvider>
           <ProjectInitializationRunner />
+          <ProjectCodePracticesRunner />
           <UpdateStartupNotifier />
           <AppLayout pathname={pathname} title={activeRoute.title}>
             {activeRoute.element}

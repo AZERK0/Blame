@@ -58,6 +58,12 @@ import {
   scanProjectForInitialization,
 } from "./project-initialization.js";
 import {
+  parseProjectCodePracticesResult,
+  projectCodePracticesCorrectionPrompt,
+  projectCodePracticesPrompt,
+  projectCodePracticesResultSchema,
+} from "./project-code-practices.js";
+import {
   parseProjectInitializationRepairResult,
   projectInitializationRepairPrompt,
 } from "./project-initialization-repair.js";
@@ -101,6 +107,8 @@ import type {
   AgentEvent,
   AgentRuntimeEvents,
   AgentUsageSummary,
+  AnalyzeProjectCodePracticesInput,
+  AnalyzeProjectCodePracticesResult,
   ApiConnection,
   ApproveAndMergeInput,
   ApproveAndMergeResult,
@@ -222,7 +230,7 @@ type InitializationCorrection = {
   validationError: string;
 };
 
-type ProjectInitializationSubmitTool = {
+type StructuredResultSubmitTool = {
   tool: AgentTool;
   input?: unknown;
 };
@@ -238,6 +246,15 @@ type ProjectInitializationAttempt = {
   sessionId: string;
   submittedInput?: unknown;
 };
+
+type ProjectCodePracticesAttempt = {
+  input: unknown;
+  sessionId: string;
+};
+
+type CodePracticesAttemptOutcome =
+  | { complete: true; result: AnalyzeProjectCodePracticesResult }
+  | { complete: false; correction: InitializationCorrection };
 
 type ProjectInitializationRepairAttempt = {
   sessionId: string;
@@ -400,6 +417,11 @@ export class BlameAgentRuntime {
       this.repairProjectInitialization(input),
     assessImpact: (input: AssessProjectInitializationImpactInput) =>
       this.assessProjectInitializationImpact(input),
+  };
+
+  codePractices = {
+    run: (input: AnalyzeProjectCodePracticesInput) =>
+      this.analyzeProjectCodePractices(input),
   };
 
   newProjects = {
@@ -997,6 +1019,112 @@ export class BlameAgentRuntime {
     );
   }
 
+  private async analyzeProjectCodePractices(
+    input: AnalyzeProjectCodePracticesInput,
+  ): Promise<AnalyzeProjectCodePracticesResult> {
+    return this.agentTelemetry.runBusinessOperation(
+      input,
+      "project_code_practices",
+      () => this.analyzeProjectCodePracticesWorkflow(input),
+    );
+  }
+
+  private async analyzeProjectCodePracticesWorkflow(
+    input: AnalyzeProjectCodePracticesInput,
+  ): Promise<AnalyzeProjectCodePracticesResult> {
+    assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd");
+    const credential = await this.initializationCredential(input);
+    const scan = await scanProjectForInitialization(input.workspaceRoot);
+    const cline = await this.core(input.backend);
+    return this.runCodePracticesAttempts(cline, input, scan, credential);
+  }
+
+  private async runCodePracticesAttempts(
+    cline: ClineCore,
+    input: AnalyzeProjectCodePracticesInput,
+    scan: ProjectInitializationScan,
+    credential: InitializationCredential,
+  ): Promise<AnalyzeProjectCodePracticesResult> {
+    let correction = input.validationFeedback;
+    for (let attempt = 1; attempt <= maxInitializationAttempts; attempt += 1) {
+      const result = await this.startCodePracticesAttempt(
+        cline,
+        input,
+        scan,
+        credential,
+        correction,
+      );
+      const outcome = this.codePracticesAttemptOutcome(input, result, attempt);
+      if (outcome.complete) return outcome.result;
+      correction = outcome.correction;
+    }
+    throw new Error("Code practice analysis did not return a valid result");
+  }
+
+  private codePracticesAttemptOutcome(
+    input: AnalyzeProjectCodePracticesInput,
+    result: ProjectCodePracticesAttempt,
+    attempt: number,
+  ): CodePracticesAttemptOutcome {
+    try {
+      return { complete: true, result: parsedCodePracticesAttempt(result) };
+    } catch (error) {
+      if (attempt === maxInitializationAttempts) throw error;
+      const correction = this.projectInitializationRetry(
+        input,
+        "project_code_practices",
+        result.input,
+        error,
+      );
+      return { complete: false, correction };
+    }
+  }
+
+  private async startCodePracticesAttempt(
+    cline: ClineCore,
+    input: AnalyzeProjectCodePracticesInput,
+    scan: ProjectInitializationScan,
+    credential: InitializationCredential,
+    correction?: InitializationCorrection,
+  ) {
+    const submit = projectCodePracticesSubmitTool();
+    const session = await this.startCodePracticesAgent(
+      cline,
+      input,
+      scan,
+      credential,
+      submit.tool,
+      correction,
+    );
+    if (!submit.input) {
+      throw new Error("Code practice analysis agent did not return a result");
+    }
+    return { input: submit.input, sessionId: session.sessionId };
+  }
+
+  private startCodePracticesAgent(
+    cline: ClineCore,
+    input: AnalyzeProjectCodePracticesInput,
+    scan: ProjectInitializationScan,
+    credential: InitializationCredential,
+    submitTool: AgentTool,
+    correction?: InitializationCorrection,
+  ) {
+    return this.agentTelemetry.runOperation(
+      input,
+      "project_code_practices",
+      () =>
+        cline.start({
+          prompt: codePracticesPrompt(scan, correction),
+          config: codePracticesConfig(input, credential, submitTool),
+          interactive: false,
+          source: "blame-project-code-practices",
+          toolPolicies: codePracticesToolPolicies(),
+        }) as Promise<RuntimeClineResult>,
+      credential.authMethod,
+    );
+  }
+
   private async initializeProjectWorkflow(
     input: InitializeProjectInput,
   ): Promise<InitializeProjectResult> {
@@ -1304,7 +1432,7 @@ export class BlameAgentRuntime {
     );
   }
 
-  private async initializationCredential(input: InitializeProjectInput) {
+  private async initializationCredential(input: RuntimeCredentialInput) {
     return this.runtimeCredential(input);
   }
 
@@ -2512,8 +2640,49 @@ function initializationConfig(
   });
 }
 
-function projectInitializationSubmitTool(): ProjectInitializationSubmitTool {
-  const submit: ProjectInitializationSubmitTool = {
+function codePracticesConfig(
+  input: AnalyzeProjectCodePracticesInput,
+  credential: { apiKey: string; baseUrl: string | null },
+  submitTool: AgentTool,
+) {
+  return appendProductionConfig({
+    providerId: input.providerId,
+    modelId: input.modelId,
+    apiKey: credential.apiKey,
+    baseUrl: credential.baseUrl ?? undefined,
+    knownModels: knownOpenAICodexPreviewModels(input.providerId, input.modelId),
+    thinking: !!input.reasoningEffort,
+    reasoningEffort: input.reasoningEffort,
+    systemPrompt: loadPrompt("project-code-practices-system"),
+    cwd: input.cwd,
+    workspaceRoot: input.workspaceRoot,
+    enableTools: true,
+    enableSpawnAgent: false,
+    enableAgentTeams: false,
+    extraTools: [submitTool],
+    maxIterations: 6,
+  });
+}
+
+function projectCodePracticesSubmitTool(): StructuredResultSubmitTool {
+  const submit: StructuredResultSubmitTool = {
+    input: undefined,
+    tool: {
+      name: "submit_project_code_practices",
+      description: "Submit the complete project code practice analysis.",
+      inputSchema: projectCodePracticesResultSchema,
+      lifecycle: { completesRun: true },
+      execute(input: unknown) {
+        submit.input = input;
+        return { accepted: true };
+      },
+    },
+  };
+  return submit;
+}
+
+function projectInitializationSubmitTool(): StructuredResultSubmitTool {
+  const submit: StructuredResultSubmitTool = {
     input: undefined,
     tool: {
       name: "submit_project_initialization",
@@ -2533,7 +2702,7 @@ function projectInitializationSubmitTool(): ProjectInitializationSubmitTool {
 async function collectProjectInitializationAttempt(
   cline: ClineCore,
   session: RuntimeClineResult,
-  submitTool: ProjectInitializationSubmitTool,
+  submitTool: StructuredResultSubmitTool,
 ): Promise<ProjectInitializationAttempt> {
   const submittedInput =
     submitTool.input ??
@@ -2562,6 +2731,16 @@ function parseProjectInitializationAttempt(
         input.preferences,
       );
   return { sessionId: attempt.sessionId, ...initialization };
+}
+
+function parsedCodePracticesAttempt(attempt: {
+  input: unknown;
+  sessionId: string;
+}): AnalyzeProjectCodePracticesResult {
+  return {
+    sessionId: attempt.sessionId,
+    practices: parseProjectCodePracticesResult(attempt.input),
+  };
 }
 
 function projectInitializationRepairAttempt(
@@ -2871,6 +3050,14 @@ function initializationPrompt(
 ) {
   if (!correction) return projectInitializationPrompt(scan);
   return projectInitializationCorrectionPrompt(scan, correction);
+}
+
+function codePracticesPrompt(
+  scan: ProjectInitializationScan,
+  correction?: InitializationCorrection,
+) {
+  if (!correction) return projectCodePracticesPrompt(scan);
+  return projectCodePracticesCorrectionPrompt(scan, correction);
 }
 
 export async function developmentUserInput(
@@ -4052,6 +4239,14 @@ function resultStatus(payload: Record<string, unknown>) {
 function initializationToolPolicies() {
   return Object.fromEntries([
     ["submit_project_initialization", { autoApprove: true }],
+    ...readTools.map((name) => [name, { autoApprove: true }]),
+    ...writeTools.map((name) => [name, { enabled: false, autoApprove: false }]),
+  ]);
+}
+
+function codePracticesToolPolicies() {
+  return Object.fromEntries([
+    ["submit_project_code_practices", { autoApprove: true }],
     ...readTools.map((name) => [name, { autoApprove: true }]),
     ...writeTools.map((name) => [name, { enabled: false, autoApprove: false }]),
   ]);

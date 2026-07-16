@@ -2,7 +2,6 @@ import * as React from "react"
 import type {
   AgentEvent,
   PreviewManifest,
-  ProjectCodePracticeResult,
   ProjectRunConfiguration,
 } from "@blame/agent-runtime"
 import { toast } from "sonner"
@@ -82,7 +81,6 @@ type GeneratedProjectInitializationResult = {
   dockerCompose: string
   previewManifest?: PreviewManifest
   runConfigurations: ProjectRunConfiguration[]
-  practices: ProjectCodePracticeResult[]
 }
 
 export type NewProjectWizard = ReturnType<typeof useNewProjectWizard>
@@ -623,7 +621,6 @@ function openGeneratedProjectWithInitialization(
     dockerCompose: initialization.dockerCompose,
     previewManifest: initialization.previewManifest,
     runConfigurations: initialization.runConfigurations,
-    practices: initialization.practices,
     setupScript: initialization.setupScript,
   })
 }
@@ -655,7 +652,6 @@ function initializationValidationFeedback(
     dockerCompose: string
     previewManifest?: PreviewManifest
     runConfigurations: ProjectRunConfiguration[]
-    practices: ProjectCodePracticeResult[]
   }
 ) {
   return {
@@ -665,7 +661,6 @@ function initializationValidationFeedback(
       dockerCompose: result.dockerCompose,
       previewManifest: result.previewManifest,
       runConfigurations: result.runConfigurations,
-      practices: result.practices,
     }),
   }
 }

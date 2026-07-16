@@ -422,6 +422,15 @@ export type InitializeProjectResult = {
   setupScript: string;
   dockerCompose: string;
   runConfigurations: ProjectRunConfiguration[];
+};
+
+export type AnalyzeProjectCodePracticesInput = Omit<
+  InitializeProjectInput,
+  "preferences"
+>;
+
+export type AnalyzeProjectCodePracticesResult = {
+  sessionId: string;
   practices: ProjectCodePracticeResult[];
 };
 

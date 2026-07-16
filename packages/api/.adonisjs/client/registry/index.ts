@@ -132,6 +132,36 @@ const routes = {
     tokens: [{"old":"/api/v1/projects/:projectId/code-practices/:practice","type":0,"val":"api","end":""},{"old":"/api/v1/projects/:projectId/code-practices/:practice","type":0,"val":"v1","end":""},{"old":"/api/v1/projects/:projectId/code-practices/:practice","type":0,"val":"projects","end":""},{"old":"/api/v1/projects/:projectId/code-practices/:practice","type":1,"val":"projectId","end":""},{"old":"/api/v1/projects/:projectId/code-practices/:practice","type":0,"val":"code-practices","end":""},{"old":"/api/v1/projects/:projectId/code-practices/:practice","type":1,"val":"practice","end":""}],
     types: placeholder as Registry['projects.project_code_practices.update']['types'],
   },
+  'projects.project_code_practice_analyses.show': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/projects/:projectId/code-practice-analysis',
+    tokens: [{"old":"/api/v1/projects/:projectId/code-practice-analysis","type":0,"val":"api","end":""},{"old":"/api/v1/projects/:projectId/code-practice-analysis","type":0,"val":"v1","end":""},{"old":"/api/v1/projects/:projectId/code-practice-analysis","type":0,"val":"projects","end":""},{"old":"/api/v1/projects/:projectId/code-practice-analysis","type":1,"val":"projectId","end":""},{"old":"/api/v1/projects/:projectId/code-practice-analysis","type":0,"val":"code-practice-analysis","end":""}],
+    types: placeholder as Registry['projects.project_code_practice_analyses.show']['types'],
+  },
+  'projects.project_code_practice_analyses.start': {
+    methods: ["POST"],
+    pattern: '/api/v1/projects/:projectId/code-practice-analysis/start',
+    tokens: [{"old":"/api/v1/projects/:projectId/code-practice-analysis/start","type":0,"val":"api","end":""},{"old":"/api/v1/projects/:projectId/code-practice-analysis/start","type":0,"val":"v1","end":""},{"old":"/api/v1/projects/:projectId/code-practice-analysis/start","type":0,"val":"projects","end":""},{"old":"/api/v1/projects/:projectId/code-practice-analysis/start","type":1,"val":"projectId","end":""},{"old":"/api/v1/projects/:projectId/code-practice-analysis/start","type":0,"val":"code-practice-analysis","end":""},{"old":"/api/v1/projects/:projectId/code-practice-analysis/start","type":0,"val":"start","end":""}],
+    types: placeholder as Registry['projects.project_code_practice_analyses.start']['types'],
+  },
+  'projects.project_code_practice_analyses.complete': {
+    methods: ["POST"],
+    pattern: '/api/v1/projects/:projectId/code-practice-analysis/complete',
+    tokens: [{"old":"/api/v1/projects/:projectId/code-practice-analysis/complete","type":0,"val":"api","end":""},{"old":"/api/v1/projects/:projectId/code-practice-analysis/complete","type":0,"val":"v1","end":""},{"old":"/api/v1/projects/:projectId/code-practice-analysis/complete","type":0,"val":"projects","end":""},{"old":"/api/v1/projects/:projectId/code-practice-analysis/complete","type":1,"val":"projectId","end":""},{"old":"/api/v1/projects/:projectId/code-practice-analysis/complete","type":0,"val":"code-practice-analysis","end":""},{"old":"/api/v1/projects/:projectId/code-practice-analysis/complete","type":0,"val":"complete","end":""}],
+    types: placeholder as Registry['projects.project_code_practice_analyses.complete']['types'],
+  },
+  'projects.project_code_practice_analyses.fail': {
+    methods: ["POST"],
+    pattern: '/api/v1/projects/:projectId/code-practice-analysis/fail',
+    tokens: [{"old":"/api/v1/projects/:projectId/code-practice-analysis/fail","type":0,"val":"api","end":""},{"old":"/api/v1/projects/:projectId/code-practice-analysis/fail","type":0,"val":"v1","end":""},{"old":"/api/v1/projects/:projectId/code-practice-analysis/fail","type":0,"val":"projects","end":""},{"old":"/api/v1/projects/:projectId/code-practice-analysis/fail","type":1,"val":"projectId","end":""},{"old":"/api/v1/projects/:projectId/code-practice-analysis/fail","type":0,"val":"code-practice-analysis","end":""},{"old":"/api/v1/projects/:projectId/code-practice-analysis/fail","type":0,"val":"fail","end":""}],
+    types: placeholder as Registry['projects.project_code_practice_analyses.fail']['types'],
+  },
+  'projects.project_code_practice_analyses.viewed': {
+    methods: ["POST"],
+    pattern: '/api/v1/projects/:projectId/code-practice-analysis/viewed',
+    tokens: [{"old":"/api/v1/projects/:projectId/code-practice-analysis/viewed","type":0,"val":"api","end":""},{"old":"/api/v1/projects/:projectId/code-practice-analysis/viewed","type":0,"val":"v1","end":""},{"old":"/api/v1/projects/:projectId/code-practice-analysis/viewed","type":0,"val":"projects","end":""},{"old":"/api/v1/projects/:projectId/code-practice-analysis/viewed","type":1,"val":"projectId","end":""},{"old":"/api/v1/projects/:projectId/code-practice-analysis/viewed","type":0,"val":"code-practice-analysis","end":""},{"old":"/api/v1/projects/:projectId/code-practice-analysis/viewed","type":0,"val":"viewed","end":""}],
+    types: placeholder as Registry['projects.project_code_practice_analyses.viewed']['types'],
+  },
   'projects.project_initializations.show': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/projects/:projectId/initialization',

@@ -70,6 +70,12 @@ export type CloudProjectInitializationStatus =
   | "done"
   | "error"
 
+export type CloudProjectCodePracticeAnalysisStatus =
+  | "pending"
+  | "running"
+  | "done"
+  | "error"
+
 export type CloudProjectCodePracticeKey =
   | "coding_style"
   | "unit_tests"
@@ -100,6 +106,18 @@ export type CloudProjectCodePractice = {
   detected: boolean
   enabled: boolean
   comment: string
+  createdAt: string
+  updatedAt: string | null
+}
+
+export type CloudProjectCodePracticeAnalysis = {
+  projectId: string
+  status: CloudProjectCodePracticeAnalysisStatus
+  clineSessionId: string | null
+  agentProviderId: string | null
+  agentModelId: string | null
+  error: string | null
+  viewedAt: string | null
   createdAt: string
   updatedAt: string | null
 }

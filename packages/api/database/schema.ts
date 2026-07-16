@@ -91,6 +91,29 @@ export class AuthAccessTokenSchema extends BaseModel {
   declare updatedAt: DateTime | null
 }
 
+export class ProjectCodePracticeAnalysisSchema extends BaseModel {
+  static $columns = ['agentModelId', 'agentProviderId', 'clineSessionId', 'createdAt', 'error', 'projectId', 'status', 'updatedAt', 'viewedAt'] as const
+  $columns = ProjectCodePracticeAnalysisSchema.$columns
+  @column()
+  declare agentModelId: string | null
+  @column()
+  declare agentProviderId: string | null
+  @column()
+  declare clineSessionId: string | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare error: string | null
+  @column({ isPrimary: true })
+  declare projectId: string
+  @column()
+  declare status: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+  @column.dateTime()
+  declare viewedAt: DateTime | null
+}
+
 export class ProjectCodePracticeSchema extends BaseModel {
   static $columns = ['comment', 'createdAt', 'detected', 'enabled', 'id', 'practice', 'projectId', 'updatedAt'] as const
   $columns = ProjectCodePracticeSchema.$columns
