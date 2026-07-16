@@ -11,6 +11,7 @@ import {
 } from "lucide-react"
 
 import type { UserStory } from "@/components/backlog/data/backlog-data"
+import { ProjectRunnerLogTabs } from "@/components/backlog/board/project-runner-controls"
 import { storyPreviewDevtoolsScope } from "@/components/backlog/shared/preview-devtools-scope"
 import { UserStoryPreviewRunnerControls } from "@/components/backlog/drawer/user-story-preview-runner"
 import {
@@ -79,11 +80,15 @@ type PreviewIslandProps = {
   captureDisabled?: boolean
   hasPreview: boolean
   hasSetupLog: boolean
+  logService?: string
+  logServices: string[]
   locationBlocked: boolean
   onCapture?: () => void
+  onLogServiceChange: (service: string) => void
   onNavigatePath: (path: string) => void
   onOpen: () => void
   onReload: () => void
+  onRunnerMenuOpenChange: (open: boolean) => void
   previewLocation?: string
   source?: string
   previewRunner?: UserStoryPreviewRunner
@@ -91,6 +96,16 @@ type PreviewIslandProps = {
     configurationId: string,
     previewUrl?: string
   ) => void
+}
+type PreviewLogToolbarProps = {
+  hasPreview: boolean
+  hasSetupLog: boolean
+  onConfigurationChange?: (configurationId: string, previewUrl?: string) => void
+  onMenuOpenChange: (open: boolean) => void
+  onServiceChange: (service: string) => void
+  runner?: UserStoryPreviewRunner
+  service?: string
+  services: string[]
 }
 type PreviewCaptureHandler = () => Promise<File | undefined>
 type NativePreviewFrameProps = {
@@ -269,8 +284,9 @@ export function UserStoryPreview({
     previewLoad.key === previewKey ? previewLoad.location : undefined
   const locationBlocked =
     previewLoad.key === previewKey && previewLoad.locationBlocked
-  const hasSetupLog = Boolean(setupLogWorktree)
+  const hasSetupLog = Boolean(setupLogWorktree && !setupInitializing)
   const [selectedLogService, setSelectedLogService] = React.useState("")
+  const [runnerMenuOpen, setRunnerMenuOpen] = React.useState(false)
   const [tab, setTab] = React.useState(source ? "preview" : "setup-log")
   const autoSelectedPreviewSourceRef = React.useRef<string | undefined>(
     undefined
@@ -459,6 +475,8 @@ export function UserStoryPreview({
     setTab("preview")
   }, [setupPreviewWaiting, source])
 
+  if (setupInitializing && !source) return <PreviewInitializationPanel />
+
   if (source || hasSetupLog) {
     return (
       <div className="h-full min-h-0 overflow-hidden">
@@ -472,11 +490,15 @@ export function UserStoryPreview({
             captureDisabled={setupPreviewWaiting || !previewCapture}
             hasPreview={Boolean(source)}
             hasSetupLog={hasSetupLog}
+            logService={selectedLogService}
+            logServices={services}
             locationBlocked={displayedLocationBlocked}
             onCapture={capturePreview}
+            onLogServiceChange={setSelectedLogService}
             onNavigatePath={navigatePreviewPath}
             onOpen={openPreview}
             onReload={reloadPreview}
+            onRunnerMenuOpenChange={setRunnerMenuOpen}
             onRunConfigurationChange={onRunConfigurationChange}
             previewRunner={previewRunner}
             previewLocation={displayedPreviewLocation}
@@ -504,7 +526,9 @@ export function UserStoryPreview({
                   reloadKey={reloadKey}
                   sessionKey={nativePreviewSessionKey}
                   source={source}
-                  visible={visible && activeTab === "preview"}
+                  visible={
+                    visible && activeTab === "preview" && !runnerMenuOpen
+                  }
                 />
               ) : (
                 <PreviewPanel
@@ -526,9 +550,8 @@ export function UserStoryPreview({
               className="h-full min-h-0 overflow-hidden"
             >
               <SetupLogPanel
-                onSelectService={setSelectedLogService}
                 service={selectedLogService}
-                services={services}
+                serviceCount={services.length}
                 worktree={visible ? setupLogWorktree : undefined}
               />
             </TabsContent>
@@ -589,7 +612,33 @@ function PreviewWaitingPanel() {
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-muted/20 px-4 pt-[72px] pb-4">
       <div className="relative min-h-0 flex-1 overflow-hidden rounded-lg border bg-background">
-        <PreviewLoadingState />
+        <PreviewInitializationState />
+      </div>
+    </div>
+  )
+}
+
+function PreviewInitializationPanel() {
+  return (
+    <div className="flex h-full min-h-0 items-center justify-center bg-muted/20 p-6">
+      <PreviewInitializationState />
+    </div>
+  )
+}
+
+function PreviewInitializationState() {
+  return (
+    <div className="flex h-full w-full flex-col items-center justify-center gap-5 bg-background p-8 text-center">
+      <div className="space-y-1">
+        <h3 className="font-heading text-lg font-semibold">
+          Initializing preview
+        </h3>
+        <p className="text-sm text-muted-foreground">
+          Preparing the isolated worktree and its containers.
+        </p>
+      </div>
+      <div className="h-1.5 w-full max-w-sm overflow-hidden rounded-full bg-muted">
+        <div className="h-full w-full animate-pulse rounded-full bg-primary/70" />
       </div>
     </div>
   )
@@ -1169,21 +1218,37 @@ function PreviewIsland({
   captureDisabled,
   hasPreview,
   hasSetupLog,
+  logService,
+  logServices,
   locationBlocked,
   onCapture,
+  onLogServiceChange,
   onNavigatePath,
   onOpen,
   onReload,
   onRunConfigurationChange,
+  onRunnerMenuOpenChange,
   previewRunner,
   previewLocation,
   source,
 }: PreviewIslandProps) {
-  const showingLogs = activeTab === "setup-log"
-
+  if (activeTab === "setup-log") {
+    return (
+      <PreviewLogToolbar
+        hasPreview={hasPreview}
+        hasSetupLog={hasSetupLog}
+        onConfigurationChange={onRunConfigurationChange}
+        onMenuOpenChange={onRunnerMenuOpenChange}
+        onServiceChange={onLogServiceChange}
+        runner={previewRunner}
+        service={logService}
+        services={logServices}
+      />
+    )
+  }
   return (
     <div className="pointer-events-none absolute inset-x-4 top-4 z-20 flex items-center gap-1.5">
-      {!showingLogs && source ? (
+      {source ? (
         <PreviewAddress
           locationBlocked={locationBlocked}
           onNavigatePath={onNavigatePath}
@@ -1194,7 +1259,7 @@ function PreviewIsland({
       ) : (
         <div className="min-w-2 flex-1" />
       )}
-      {!showingLogs && source && (
+      {source && (
         <PreviewActions
           captureDisabled={captureDisabled}
           onCapture={onCapture}
@@ -1205,9 +1270,39 @@ function PreviewIsland({
         <UserStoryPreviewRunnerControls
           runner={previewRunner}
           onConfigurationChange={onRunConfigurationChange}
+          onMenuOpenChange={onRunnerMenuOpenChange}
         />
       )}
       <div className="min-w-2 flex-1" />
+      <PreviewTabSelector hasPreview={hasPreview} hasSetupLog={hasSetupLog} />
+    </div>
+  )
+}
+
+function PreviewLogToolbar({
+  hasPreview,
+  hasSetupLog,
+  onConfigurationChange,
+  onMenuOpenChange,
+  onServiceChange,
+  runner,
+  service,
+  services,
+}: PreviewLogToolbarProps) {
+  return (
+    <div className="pointer-events-none absolute inset-x-4 top-4 z-20 flex h-10 items-center gap-2">
+      <ServiceLogTabs
+        selectedService={service}
+        services={services}
+        onSelectService={onServiceChange}
+      />
+      {runner?.runtime && (
+        <UserStoryPreviewRunnerControls
+          onConfigurationChange={onConfigurationChange}
+          onMenuOpenChange={onMenuOpenChange}
+          runner={runner}
+        />
+      )}
       <PreviewTabSelector hasPreview={hasPreview} hasSetupLog={hasSetupLog} />
     </div>
   )
@@ -1223,55 +1318,18 @@ function ServiceLogTabs({
   onSelectService: (service: string) => void
 }) {
   return (
-    <div
-      className="flex h-10 w-full flex-none items-end overflow-hidden pt-1 pr-52"
-      role="tablist"
-    >
-      <div className="no-scrollbar flex w-full items-end gap-1 overflow-x-auto overflow-y-hidden">
-        {services.map((service, index) => {
-          const isSelected = selectedService === service
-          const isFirst = index === 0
-
-          return (
-            <button
-              key={service}
-              aria-selected={isSelected}
-              role="tab"
-              className={cn(
-                [
-                  "relative h-9 shrink-0 rounded-t-xl border border-transparent bg-transparent px-7 text-sm whitespace-nowrap text-muted-foreground capitalize",
-                  "transition-[color,background-color,border-color] duration-150 hover:text-foreground",
-
-                  "[--corner-bg:transparent] [--tab-bg:#09090b]",
-
-                  "before:pointer-events-none before:absolute before:bottom-0 before:-left-4 before:h-4 before:w-4 before:content-['']",
-                  "before:rounded-br-xl before:shadow-[4px_4px_0_4px_var(--corner-bg)]",
-                  "before:transition-shadow before:duration-150",
-
-                  "after:pointer-events-none after:absolute after:-right-4 after:bottom-0 after:h-4 after:w-4 after:content-['']",
-                  "after:rounded-bl-xl after:shadow-[-4px_4px_0_4px_var(--corner-bg)]",
-                  "after:transition-shadow after:duration-150",
-                ],
-                isSelected && [
-                  "z-10 -mb-px bg-[var(--tab-bg)] text-foreground",
-                  "[--corner-bg:var(--tab-bg)]",
-                ],
-                isSelected && isFirst && "before:hidden"
-              )}
-              type="button"
-              onClick={() => onSelectService(service)}
-            >
-              {service}
-            </button>
-          )
-        })}
-
-        {services.length === 0 && (
-          <span className="px-4 pb-2 text-sm text-muted-foreground">
-            Loading services
-          </span>
-        )}
-      </div>
+    <div className="pointer-events-auto min-w-0 flex-1 overflow-x-auto">
+      {services.length ? (
+        <ProjectRunnerLogTabs
+          items={services.map((service) => ({ id: service, label: service }))}
+          value={selectedService}
+          onValueChange={onSelectService}
+        />
+      ) : (
+        <span className="px-2 text-sm text-muted-foreground">
+          Loading services
+        </span>
+      )}
     </div>
   )
 }
@@ -1415,19 +1473,16 @@ function BlockedLocationBadge() {
 }
 
 function SetupLogPanel({
-  onSelectService,
   service,
-  services,
+  serviceCount,
   worktree,
 }: {
-  onSelectService: (service: string) => void
   service: string
-  services: string[]
+  serviceCount: number
   worktree?: string | null
 }) {
   const { content, error, loading } = useProjectServiceLog(worktree, service)
   const logRef = React.useRef<HTMLPreElement>(null)
-  const firstServiceSelected = services[0] === service
 
   React.useEffect(() => {
     const element = logRef.current
@@ -1435,23 +1490,13 @@ function SetupLogPanel({
   }, [content])
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-muted/20 px-4 pt-4 pb-4">
-      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
-        <ServiceLogTabs
-          selectedService={service}
-          services={services}
-          onSelectService={onSelectService}
-        />
-        <pre
-          ref={logRef}
-          className={cn(
-            "min-h-0 flex-1 overflow-auto rounded-lg bg-zinc-950 p-4 font-mono text-xs whitespace-pre-wrap text-zinc-100 select-text",
-            firstServiceSelected && "rounded-tl-none"
-          )}
-        >
-          {serviceLogContent(content, error, loading, services.length)}
-        </pre>
-      </div>
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-muted/20 px-4 pt-16 pb-4">
+      <pre
+        ref={logRef}
+        className="min-h-0 flex-1 overflow-auto rounded-lg border bg-zinc-950 p-4 font-mono text-xs whitespace-pre-wrap text-zinc-100 select-text"
+      >
+        {serviceLogContent(content, error, loading, serviceCount)}
+      </pre>
     </div>
   )
 }

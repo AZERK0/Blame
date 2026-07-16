@@ -4,6 +4,7 @@ import type { PreviewManifest } from "@blame/agent-runtime";
 
 import {
   initialPreviewRuntimeSelection,
+  normalizeStoredRunConfigurations,
   previewRunConfigurationStatus,
   previewRunConfigurationServiceIds,
   selectedPreviewRunConfiguration,
@@ -102,5 +103,48 @@ test("includes backend dependencies in a web run configuration", () => {
   assert.deepEqual(
     previewRunConfigurationServiceIds(configurations[1], manifest),
     ["app", "backend", "database"],
+  );
+});
+
+test("repairs service configurations widened to the only web preview", () => {
+  const manifest = {
+    services: [
+      { id: "backend", kind: "worker", workingDir: "/workspace/apps/backend" },
+      {
+        id: "web",
+        kind: "preview",
+        preview: { internalPort: 3000, path: "/", protocol: "http" },
+      },
+    ],
+  } as PreviewManifest;
+  const repaired = normalizeStoredRunConfigurations(
+    [
+      {
+        ...configurations[1],
+        category: "service",
+        id: "backend",
+        previewService: "web",
+        scopes: ["apps/backend", "api"],
+        services: ["web"],
+      },
+    ],
+    manifest,
+  );
+  assert.deepEqual(repaired[0]?.services, ["backend"]);
+  assert.equal(repaired[0]?.previewService, undefined);
+});
+
+test("keeps legacy unclassified web configurations compatible", () => {
+  const configuration = {
+    ...configurations[1],
+    previewService: "app",
+    services: ["app"],
+  };
+  const manifest = {
+    services: [{ id: "app", kind: "preview" }],
+  } as PreviewManifest;
+  assert.deepEqual(
+    normalizeStoredRunConfigurations([configuration], manifest),
+    [configuration],
   );
 });

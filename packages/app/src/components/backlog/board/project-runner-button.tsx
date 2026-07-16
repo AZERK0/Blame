@@ -1,32 +1,14 @@
 import type { ProjectRunConfiguration } from "@blame/agent-runtime"
-import {
-  ChevronDownIcon,
-  MonitorIcon,
-  PlayIcon,
-  RotateCwIcon,
-  SquareIcon,
-  TerminalIcon,
-} from "lucide-react"
+import { MonitorIcon, SquareIcon, TerminalIcon } from "lucide-react"
 import * as React from "react"
 
 import { Button } from "@/components/ui/button"
-import { ButtonGroup } from "@/components/ui/button-group"
 import { Drawer, DrawerContent, DrawerHeader } from "@/components/ui/drawer"
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
+  ProjectRunnerControls,
+  ProjectRunnerLogTabs,
+  RunnerIconTooltip,
+} from "@/components/backlog/board/project-runner-controls"
 import {
   type ProjectRunSession,
   useProjectRunner,
@@ -56,6 +38,7 @@ export function ProjectRunnerButton({
   )
   const requestPreviewWarmup = React.useCallback(
     (configuration?: ProjectRunConfiguration) => {
+      if (!configuration) return
       if (!projectRunConfigurationPreviewUrl(configuration)) return
       setWarmupRequest((current) => ({
         configurationId: configuration.id,
@@ -66,25 +49,29 @@ export function ProjectRunnerButton({
   )
   if (!runner.selected) return null
   return (
-    <TooltipProvider>
-      <ButtonGroup className="rounded-lg border bg-muted p-0.5">
-        <RunnerConfigurationMenu
-          configurations={configurations}
-          onPreviewWarmup={requestPreviewWarmup}
-          runner={runner}
-        />
-        <RunnerStartButton
-          projectPath={projectPath}
-          runner={runner}
-          onPreviewWarmup={requestPreviewWarmup}
-        />
-        <RunnerPreviewButton
-          runner={runner}
-          onOpen={() => setPreviewOpen(true)}
-        />
-        <RunnerStopButton runner={runner} />
-        <RunnerLogsButton runner={runner} />
-      </ButtonGroup>
+    <>
+      <ProjectRunnerControls
+        afterStart={
+          <RunnerPreviewButton
+            runner={runner}
+            onOpen={() => setPreviewOpen(true)}
+          />
+        }
+        afterStop={<RunnerLogsButton runner={runner} />}
+        configurations={configurations}
+        disabled={!projectPath || !runner.terminal}
+        pending={runner.pendingOperation}
+        selectedId={runner.selected.id}
+        statusFor={(id) => runner.sessionFor(id)?.status ?? "stopped"}
+        onSelect={runner.select}
+        onStart={(id) => {
+          requestPreviewWarmup(
+            configurations.find((configuration) => configuration.id === id)
+          )
+          runner.start(id)
+        }}
+        onStop={runner.stop}
+      />
       <RunnerLogsDrawer runner={runner} />
       <RunnerPreviewDrawer
         open={previewOpen}
@@ -97,194 +84,13 @@ export function ProjectRunnerButton({
         scope={projectPath}
         trigger={warmupRequest?.trigger}
       />
-    </TooltipProvider>
+    </>
   )
 }
 
 type ProjectPreviewWarmupRequest = {
   configurationId: string
   trigger: number
-}
-
-function RunnerConfigurationMenu({
-  configurations,
-  onPreviewWarmup,
-  runner,
-}: {
-  configurations: ProjectRunConfiguration[]
-  onPreviewWarmup: (configuration?: ProjectRunConfiguration) => void
-  runner: Runner
-}) {
-  return (
-    <DropdownMenu>
-      <RunnerConfigurationTrigger runner={runner} />
-      <RunnerConfigurationContent
-        configurations={configurations}
-        onPreviewWarmup={onPreviewWarmup}
-        runner={runner}
-      />
-    </DropdownMenu>
-  )
-}
-
-function RunnerConfigurationTrigger({ runner }: { runner: Runner }) {
-  return (
-    <DropdownMenuTrigger asChild>
-      <Button
-        className="min-w-36 justify-between"
-        type="button"
-        variant="ghost"
-      >
-        <span className="flex min-w-0 items-center gap-2">
-          <RunStatusDot session={runner.selectedSession} />
-          <span className="truncate">{runner.selected?.name}</span>
-        </span>
-        <ChevronDownIcon />
-      </Button>
-    </DropdownMenuTrigger>
-  )
-}
-
-function RunnerConfigurationContent({
-  configurations,
-  onPreviewWarmup,
-  runner,
-}: {
-  configurations: ProjectRunConfiguration[]
-  onPreviewWarmup: (configuration?: ProjectRunConfiguration) => void
-  runner: Runner
-}) {
-  return (
-    <DropdownMenuContent align="end" className="min-w-64">
-      <DropdownMenuLabel>Run configurations</DropdownMenuLabel>
-      <DropdownMenuSeparator />
-      {configurations.map((configuration) => (
-        <ConfigurationMenuItem
-          key={configuration.id}
-          configuration={configuration}
-          onPreviewWarmup={onPreviewWarmup}
-          runner={runner}
-        />
-      ))}
-    </DropdownMenuContent>
-  )
-}
-
-function ConfigurationMenuItem({
-  configuration,
-  onPreviewWarmup,
-  runner,
-}: {
-  configuration: ProjectRunConfiguration
-  onPreviewWarmup: (configuration?: ProjectRunConfiguration) => void
-  runner: Runner
-}) {
-  const session = runner.sessionFor(configuration.id)
-  return (
-    <DropdownMenuItem
-      className="py-1.5"
-      onSelect={() => runner.select(configuration.id)}
-    >
-      <RunStatusDot session={session} />
-      <span className="flex-1 truncate">{configuration.name}</span>
-      <ConfigurationMenuAction
-        configuration={configuration}
-        onPreviewWarmup={onPreviewWarmup}
-        running={session?.status === "running"}
-        runner={runner}
-      />
-    </DropdownMenuItem>
-  )
-}
-
-function ConfigurationMenuAction({
-  configuration,
-  onPreviewWarmup,
-  running,
-  runner,
-}: {
-  configuration: ProjectRunConfiguration
-  onPreviewWarmup: (configuration?: ProjectRunConfiguration) => void
-  running: boolean
-  runner: Runner
-}) {
-  const run = (event: React.PointerEvent<HTMLButtonElement>) => {
-    event.preventDefault()
-    event.stopPropagation()
-    if (running) runner.stop(configuration.id)
-    else {
-      onPreviewWarmup(configuration)
-      runner.start(configuration.id)
-    }
-  }
-  return (
-    <button
-      aria-label={running ? "Stop configuration" : "Run configuration"}
-      className="rounded-md p-1 hover:bg-foreground/10"
-      type="button"
-      onPointerDown={run}
-    >
-      {running ? (
-        <SquareIcon className="text-destructive" />
-      ) : (
-        <PlayIcon className="text-emerald-500" />
-      )}
-    </button>
-  )
-}
-
-function RunnerStartButton({
-  onPreviewWarmup,
-  projectPath,
-  runner,
-}: {
-  onPreviewWarmup: (configuration?: ProjectRunConfiguration) => void
-  projectPath?: string
-  runner: Runner
-}) {
-  const running = runner.selectedSession?.status === "running"
-  const start = () => {
-    onPreviewWarmup(runner.selected)
-    runner.startSelected()
-  }
-  return (
-    <IconTooltip label={running ? "Rerun configuration" : "Run configuration"}>
-      <Button
-        className={
-          running
-            ? "bg-emerald-600 text-white hover:bg-emerald-500"
-            : "bg-muted text-emerald-500 hover:bg-muted/80 hover:text-emerald-400"
-        }
-        disabled={!projectPath || !runner.terminal}
-        size="icon"
-        type="button"
-        onClick={start}
-      >
-        {running ? <RotateCwIcon /> : <PlayIcon />}
-      </Button>
-    </IconTooltip>
-  )
-}
-
-function RunnerStopButton({ runner }: { runner: Runner }) {
-  const running = runner.selectedSession?.status === "running"
-  return (
-    <IconTooltip label="Stop selected configuration">
-      <Button
-        className={
-          running
-            ? "bg-destructive/10 text-destructive hover:bg-destructive/20"
-            : "bg-muted text-destructive hover:bg-muted/80"
-        }
-        disabled={!running}
-        size="icon"
-        type="button"
-        onClick={runner.stopSelected}
-      >
-        <SquareIcon />
-      </Button>
-    </IconTooltip>
-  )
 }
 
 function RunnerPreviewButton({
@@ -296,7 +102,7 @@ function RunnerPreviewButton({
 }) {
   const previewUrl = projectRunConfigurationPreviewUrl(runner.selected)
   return (
-    <IconTooltip label="Open preview">
+    <RunnerIconTooltip label="Open preview">
       <Button
         disabled={!previewUrl}
         size="icon"
@@ -306,13 +112,13 @@ function RunnerPreviewButton({
       >
         <MonitorIcon />
       </Button>
-    </IconTooltip>
+    </RunnerIconTooltip>
   )
 }
 
 function RunnerLogsButton({ runner }: { runner: Runner }) {
   return (
-    <IconTooltip label="Open run logs">
+    <RunnerIconTooltip label="Open run logs">
       <Button
         disabled={runner.sessions.length === 0}
         size="icon"
@@ -322,22 +128,7 @@ function RunnerLogsButton({ runner }: { runner: Runner }) {
       >
         <TerminalIcon />
       </Button>
-    </IconTooltip>
-  )
-}
-
-function IconTooltip({
-  children,
-  label,
-}: {
-  children: React.ReactElement
-  label: string
-}) {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>{children}</TooltipTrigger>
-      <TooltipContent>{label}</TooltipContent>
-    </Tooltip>
+    </RunnerIconTooltip>
   )
 }
 
@@ -428,20 +219,15 @@ function RunnerSessionTabs({
   session?: ProjectRunSession
 }) {
   return (
-    <Tabs
+    <ProjectRunnerLogTabs
+      items={runner.sessions.map((item) => ({
+        id: item.configurationId,
+        label: item.name,
+        status: item.status,
+      }))}
       value={session?.configurationId}
       onValueChange={runner.selectSession}
-      className="overflow-y-hidden"
-    >
-      <TabsList>
-        {runner.sessions.map((item) => (
-          <TabsTrigger key={item.configurationId} value={item.configurationId}>
-            <RunStatusDot session={item} />
-            {item.name}
-          </TabsTrigger>
-        ))}
-      </TabsList>
-    </Tabs>
+    />
   )
 }
 
@@ -459,14 +245,4 @@ function RunnerLogOutput({ session }: { session: ProjectRunSession }) {
       {session.logs || "No output yet."}
     </pre>
   )
-}
-
-function RunStatusDot({ session }: { session?: ProjectRunSession }) {
-  const tone =
-    session?.status === "running"
-      ? "bg-emerald-500"
-      : session?.status === "error"
-        ? "bg-destructive"
-        : "bg-muted-foreground/45"
-  return <span className={`size-2 shrink-0 rounded-full ${tone}`} />
 }

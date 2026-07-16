@@ -2,6 +2,7 @@ import type { ProjectPreviewRuntimeState } from "@blame/agent-runtime"
 import * as React from "react"
 import { toast } from "sonner"
 
+import type { ProjectRunnerPendingOperation } from "@/components/backlog/board/project-runner-types"
 import { usePlatform } from "@/context/platform"
 
 export type PreviewRunnerAction = "start" | "stop" | "restart"
@@ -15,13 +16,33 @@ export function useUserStoryPreviewRunner(
 ) {
   const workspace = usePlatform().workspace
   const [runtime, setRuntime] = React.useState<ProjectPreviewRuntimeState>()
+  const [selection, setSelection] = React.useState<{
+    configurationId: string
+    worktree?: string | null
+  }>()
+  const select = React.useCallback(
+    (configurationId: string) => setSelection({ configurationId, worktree }),
+    [worktree]
+  )
   usePreviewRuntimePolling(workspace, worktree, enabled, setRuntime)
-  const { control, pending } = usePreviewRuntimeControl(
+  const { control, pendingOperation } = usePreviewRuntimeControl(
     workspace,
     worktree,
-    setRuntime
+    setRuntime,
+    select
   )
-  return { control, pending, runtime }
+  const selectedOverride =
+    selection && selection.worktree === worktree
+      ? selection.configurationId
+      : undefined
+  const selectedId = selectedConfigurationId(runtime, selectedOverride)
+  return {
+    control,
+    pendingOperation,
+    runtime,
+    selectedId,
+    select,
+  }
 }
 
 function usePreviewRuntimePolling(
@@ -68,26 +89,32 @@ async function refreshPreviewRuntime(
 function usePreviewRuntimeControl(
   workspace: ReturnType<typeof usePlatform>["workspace"],
   worktree: string | null | undefined,
-  setRuntime: PreviewRuntimeSetter
+  setRuntime: PreviewRuntimeSetter,
+  setSelectedId: (configurationId: string) => void
 ) {
-  const [pending, setPending] = React.useState(false)
+  const [pendingOperation, setPendingOperation] =
+    React.useState<ProjectRunnerPendingOperation>()
   const control = React.useCallback(
     async (action: PreviewRunnerAction, configurationId?: string) => {
-      if (!worktree || !workspace?.controlProjectPreview) return undefined
-      setPending(true)
+      if (!worktree || !workspace?.controlProjectPreview || pendingOperation)
+        return undefined
+      const selectedId = configurationId
+      if (!selectedId) return undefined
+      setSelectedId(selectedId)
+      setPendingOperation({ action, configurationId: selectedId })
       const next = await requestPreviewRuntime(
         workspace,
         worktree,
         action,
-        configurationId
+        selectedId
       )
       if (next) setRuntime(next)
-      setPending(false)
+      setPendingOperation(undefined)
       return next
     },
-    [setRuntime, workspace, worktree]
+    [pendingOperation, setRuntime, setSelectedId, workspace, worktree]
   )
-  return { control, pending }
+  return { control, pendingOperation }
 }
 
 async function requestPreviewRuntime(
@@ -114,6 +141,16 @@ async function requestPreviewRuntime(
 export type UserStoryPreviewRunner = ReturnType<
   typeof useUserStoryPreviewRunner
 >
+
+function selectedConfigurationId(
+  runtime: ProjectPreviewRuntimeState | undefined,
+  selectedOverride: string | undefined
+) {
+  const overrideExists = runtime?.configurations.some(
+    ({ id }) => id === selectedOverride
+  )
+  return overrideExists ? selectedOverride : runtime?.selectedConfigurationId
+}
 
 function errorText(error: unknown) {
   return error instanceof Error ? error.message : String(error)

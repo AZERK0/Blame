@@ -103,6 +103,7 @@ Every run configuration must classify and group a runnable project surface:
 - In monorepos, create one configuration per independently useful application surface, such as marketing site, customer app, admin app, mobile app, desktop app, API service, or terminal tool.
 - Include backend and shared package scopes on every user-facing configuration that exercises them. A backend-focused story must still select a user-facing configuration whose Compose dependencies start the backend.
 - Never create a backend-only default when a frontend or orchestration surface is needed to exercise that backend.
+- Keep manual configurations literal: a `service` configuration for an API must start that API service and its dependencies only, must not declare `previewService`, and must not target a `preview` service. Automatic story selection may still choose the full `web` configuration for backend work so the feature remains testable end to end.
 </container_run_configuration_contract>
 
 <binding_contract>

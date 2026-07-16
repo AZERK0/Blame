@@ -186,10 +186,19 @@ function invalidRunConfigurationTopology(
   const services = configuration.services ?? []
   if (configuration.category && (!services.length || !configuration.scopes?.length)) return true
   if (configuration.category === 'web' && !configuration.previewService) return true
+  if (configuration.category && configuration.category !== 'web' && configuration.previewService)
+    return true
   if (configuration.previewService && !services.includes(configuration.previewService)) return true
   if (!manifest) return false
   const serviceIds = new Set(manifest.services.map(({ id }) => id))
   if (services.some((service) => !serviceIds.has(service))) return true
+  if (
+    configuration.category &&
+    configuration.category !== 'web' &&
+    manifest.services.some(({ id, kind }) => services.includes(id) && kind === 'preview')
+  ) {
+    return true
+  }
   const preview = manifest.services.find(({ id }) => id === configuration.previewService)
   return Boolean(configuration.previewService && preview?.kind !== 'preview')
 }

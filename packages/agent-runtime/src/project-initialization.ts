@@ -497,10 +497,29 @@ function validateRunConfigurationServices(
   manifest: PreviewManifest,
   services: Set<string>,
 ) {
+  if (
+    configuration.category &&
+    configuration.category !== "web" &&
+    configuration.previewService
+  ) {
+    throw new Error(
+      `Initialization run configuration ${configuration.id} exposes a browser preview outside the web category`,
+    );
+  }
   for (const service of configuration.services ?? []) {
     if (!services.has(service)) {
       throw new Error(
         `Initialization run configuration ${configuration.id} references unknown service ${service}`,
+      );
+    }
+    const manifestService = manifest.services.find(({ id }) => id === service);
+    if (
+      configuration.category &&
+      configuration.category !== "web" &&
+      manifestService?.kind === "preview"
+    ) {
+      throw new Error(
+        `Initialization run configuration ${configuration.id} directly starts a browser preview outside the web category`,
       );
     }
   }

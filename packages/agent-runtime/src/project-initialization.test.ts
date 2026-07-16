@@ -534,6 +534,26 @@ test("requires classified run configurations to declare usable topology", () => 
   );
 });
 
+test("keeps backend service configurations independent from web previews", () => {
+  assert.throws(
+    () =>
+      parseProjectInitializationPayload({
+        ...manifestResult,
+        runConfigurations: [
+          {
+            ...manifestResult.runConfigurations[0],
+            category: "service",
+            id: "backend",
+            previewService: "web",
+            scopes: ["backend"],
+            services: ["web"],
+          },
+        ],
+      }),
+    /browser preview outside the web category/,
+  );
+});
+
 test("rejects non canonical initialization fields", () => {
   assert.throws(
     () =>

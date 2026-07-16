@@ -93,6 +93,7 @@ import {
 import { previewContainerFailure } from "./preview-readiness";
 import {
   initialPreviewRuntimeSelection,
+  normalizeStoredRunConfigurations,
   previewRunConfigurationStatus,
   previewRunConfigurationServiceIds,
   selectedPreviewRunConfiguration,
@@ -165,6 +166,7 @@ const previewStartupIntervalMs = 1_000;
 const previewDiscoveryGraceMs = 15_000;
 const previewResponseTimeoutMs = 120_000;
 const previewRequestTimeoutMs = 5_000;
+const previewStopTimeoutSeconds = 3;
 const repositoryLanguageCohorts = new Set([
   "c",
   "cpp",
@@ -1753,6 +1755,9 @@ function containerizedRunConfiguration(
   configuration: ProjectRunConfiguration,
   previews: PreviewManifestService[],
 ) {
+  if (configuration.category && configuration.category !== "web") {
+    return configuration;
+  }
   const preview = matchingPreviewService(configuration, previews);
   if (!preview) return configuration;
   return {
@@ -1771,11 +1776,12 @@ function matchingPreviewService(
   previews: PreviewManifestService[],
 ) {
   const port = runConfigurationPreviewPort(configuration.previewUrl);
-  return (
+  const explicit =
+    previews.find(({ id }) => id === configuration.previewService) ??
     previews.find(({ id }) => configuration.services?.includes(id)) ??
-    previews.find(({ preview }) => preview?.internalPort === port) ??
-    (previews.length === 1 ? previews[0] : undefined)
-  );
+    previews.find(({ preview }) => preview?.internalPort === port);
+  if (explicit || configuration.category === "web") return explicit;
+  return previews.length === 1 ? previews[0] : undefined;
 }
 
 function runConfigurationPreviewPort(value: string | undefined) {
@@ -2934,6 +2940,7 @@ async function startProjectPreview(
     selectedConfigurationId: selected.id,
   });
   if (restart) await stopRunConfigurationServices(worktree, selected);
+  await stopInactiveRunConfigurationServices(worktree, selected);
   await startProjectCompose(worktree);
   return projectPreviewRuntimeState(worktree);
 }
@@ -2947,13 +2954,44 @@ async function stopRunConfigurationServices(
   worktree: string,
   configuration: ProjectRunConfiguration,
 ) {
+  const services = await runConfigurationServiceIds(worktree, configuration);
+  await stopComposeServices(worktree, services);
+}
+
+async function stopInactiveRunConfigurationServices(
+  worktree: string,
+  configuration: ProjectRunConfiguration,
+) {
+  const config = await composeConfig(worktree, projectComposePath(worktree));
+  const active = new Set(
+    await runConfigurationServiceIds(worktree, configuration),
+  );
+  const inactive = composeRuntimeServices(config).filter(
+    (service) => !active.has(service),
+  );
+  await stopComposeServices(worktree, inactive);
+}
+
+async function runConfigurationServiceIds(
+  worktree: string,
+  configuration: ProjectRunConfiguration,
+) {
   const manifest = await readProjectPreviewManifest(worktree);
-  const services = manifest
+  return manifest
     ? previewRunConfigurationServiceIds(configuration, manifest)
-    : await composeRunConfigurationServiceIds(worktree, configuration);
+    : composeRunConfigurationServiceIds(worktree, configuration);
+}
+
+async function stopComposeServices(worktree: string, services: string[]) {
   if (!services.length) return;
   await containerRuntime.compose(
-    [...composeArgs(worktree), "stop", "--timeout", "10", ...services],
+    [
+      ...composeArgs(worktree),
+      "stop",
+      "--timeout",
+      String(previewStopTimeoutSeconds),
+      ...services,
+    ],
     { cwd: worktree, env: await setupEnvironment(worktree) },
   );
 }
@@ -3012,7 +3050,15 @@ async function previewRuntimeStopped(worktree: string) {
 async function readProjectRunConfigurations(worktree: string) {
   const path = projectRunConfigurationsPath(worktree);
   if (!(await runtimePathExists(path))) return [];
-  return parseRunConfigurations(JSON.parse(await readRuntimeFile(path)));
+  const configurations = parseRunConfigurations(
+    JSON.parse(await readRuntimeFile(path)),
+  );
+  const manifest = await readProjectPreviewManifest(worktree);
+  const normalized = normalizeStoredRunConfigurations(configurations, manifest);
+  if (JSON.stringify(configurations) !== JSON.stringify(normalized)) {
+    await writeRuntimeJson(path, normalized);
+  }
+  return normalized;
 }
 
 async function readPreviewRuntimeFileState(
@@ -3200,34 +3246,21 @@ async function listProjectServices(worktreeInput: string) {
   const composePath = projectComposePath(worktree);
   try {
     if (await runtimePathExists(composePath)) {
-      return composeConfigServiceNames(await readRuntimeFile(composePath));
+      return composeRuntimeServiceNames(await readRuntimeFile(composePath));
     }
   } catch {}
   return listProjectServicesWithCompose(worktree);
 }
 
 async function listProjectServicesWithCompose(worktree: string) {
-  const { stdout } = await containerRuntime.compose(
-    [...composeArgs(worktree), "config", "--services"],
-    { cwd: worktree, env: await setupEnvironment(worktree) },
-  );
-  return serviceNamesFromText(stdout);
+  const config = await composeConfig(worktree, projectComposePath(worktree));
+  return composeRuntimeServices(config).sort(serviceSort);
 }
 
-function composeConfigServiceNames(compose: string) {
+function composeRuntimeServiceNames(compose: string) {
   const parsed = parseYaml(compose) as unknown;
   if (!parsed || typeof parsed !== "object") return [];
-  const services = (parsed as ComposeConfig).services;
-  if (!services || typeof services !== "object") return [];
-  return Object.keys(services).sort(serviceSort);
-}
-
-function serviceNamesFromText(stdout: string) {
-  return stdout
-    .split("\n")
-    .map((service) => service.trim())
-    .filter(Boolean)
-    .sort(serviceSort);
+  return composeRuntimeServices(parsed as ComposeConfig).sort(serviceSort);
 }
 
 async function startProjectServiceLogs(input: ProjectServiceLogsInput) {

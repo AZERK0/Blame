@@ -43,6 +43,16 @@ export function selectedPreviewRunConfiguration(
   );
 }
 
+export function normalizeStoredRunConfigurations(
+  configurations: ProjectRunConfiguration[],
+  manifest: PreviewManifest | undefined,
+) {
+  if (!manifest) return configurations;
+  return configurations.map((configuration) =>
+    normalizeStoredRunConfiguration(configuration, manifest),
+  );
+}
+
 export function previewRunConfigurationStatus(
   configuration: ProjectRunConfiguration,
   containers: PreviewRuntimeContainerState[],
@@ -97,6 +107,50 @@ function previewServiceDependencies(service: PreviewManifestService) {
         .filter(({ exposure }) => exposure === "server")
         .map(({ source }) => source.service),
     ]),
+  );
+}
+
+function normalizeStoredRunConfiguration(
+  configuration: ProjectRunConfiguration,
+  manifest: PreviewManifest,
+) {
+  if (
+    !configuration.category ||
+    configuration.category === "web" ||
+    !configuration.previewService
+  ) {
+    return configuration;
+  }
+  const service = matchingNonPreviewService(configuration, manifest.services);
+  if (!service) return configuration;
+  return {
+    ...configuration,
+    previewService: undefined,
+    services: [service.id],
+  };
+}
+
+function matchingNonPreviewService(
+  configuration: ProjectRunConfiguration,
+  services: PreviewManifestService[],
+) {
+  const candidates = services.filter(({ kind }) => kind !== "preview");
+  return (
+    candidates.find(({ id }) => id === configuration.id) ??
+    candidates.find((service) =>
+      configurationMatchesService(configuration, service),
+    )
+  );
+}
+
+function configurationMatchesService(
+  configuration: ProjectRunConfiguration,
+  service: PreviewManifestService,
+) {
+  const servicePath = service.workingDir?.replace(/^\/workspace\/?/, "");
+  return (configuration.scopes ?? []).some(
+    (scope) =>
+      scope === service.id || Boolean(servicePath && scope === servicePath),
   );
 }
 
