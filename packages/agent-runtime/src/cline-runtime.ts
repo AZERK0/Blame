@@ -58,11 +58,15 @@ import {
   scanProjectForInitialization,
 } from "./project-initialization.js";
 import {
-  parseProjectCodePracticesResult,
   projectCodePracticesCorrectionPrompt,
   projectCodePracticesPrompt,
   projectCodePracticesResultSchema,
+  resolveProjectCodePracticesResult,
 } from "./project-code-practices.js";
+import {
+  scanProjectCodePractices,
+  type ProjectCodePracticesScan,
+} from "./project-code-practices-scan.js";
 import {
   parseProjectInitializationRepairResult,
   projectInitializationRepairPrompt,
@@ -1034,7 +1038,7 @@ export class BlameAgentRuntime {
   ): Promise<AnalyzeProjectCodePracticesResult> {
     assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd");
     const credential = await this.initializationCredential(input);
-    const scan = await scanProjectForInitialization(input.workspaceRoot);
+    const scan = await scanProjectCodePractices(input.workspaceRoot);
     const cline = await this.core(input.backend);
     return this.runCodePracticesAttempts(cline, input, scan, credential);
   }
@@ -1042,7 +1046,7 @@ export class BlameAgentRuntime {
   private async runCodePracticesAttempts(
     cline: ClineCore,
     input: AnalyzeProjectCodePracticesInput,
-    scan: ProjectInitializationScan,
+    scan: ProjectCodePracticesScan,
     credential: InitializationCredential,
   ): Promise<AnalyzeProjectCodePracticesResult> {
     let correction = input.validationFeedback;
@@ -1054,7 +1058,12 @@ export class BlameAgentRuntime {
         credential,
         correction,
       );
-      const outcome = this.codePracticesAttemptOutcome(input, result, attempt);
+      const outcome = this.codePracticesAttemptOutcome(
+        input,
+        result,
+        scan,
+        attempt,
+      );
       if (outcome.complete) return outcome.result;
       correction = outcome.correction;
     }
@@ -1064,10 +1073,14 @@ export class BlameAgentRuntime {
   private codePracticesAttemptOutcome(
     input: AnalyzeProjectCodePracticesInput,
     result: ProjectCodePracticesAttempt,
+    scan: ProjectCodePracticesScan,
     attempt: number,
   ): CodePracticesAttemptOutcome {
     try {
-      return { complete: true, result: parsedCodePracticesAttempt(result) };
+      return {
+        complete: true,
+        result: parsedCodePracticesAttempt(result, scan),
+      };
     } catch (error) {
       if (attempt === maxInitializationAttempts) throw error;
       const correction = this.projectInitializationRetry(
@@ -1083,7 +1096,7 @@ export class BlameAgentRuntime {
   private async startCodePracticesAttempt(
     cline: ClineCore,
     input: AnalyzeProjectCodePracticesInput,
-    scan: ProjectInitializationScan,
+    scan: ProjectCodePracticesScan,
     credential: InitializationCredential,
     correction?: InitializationCorrection,
   ) {
@@ -1105,7 +1118,7 @@ export class BlameAgentRuntime {
   private startCodePracticesAgent(
     cline: ClineCore,
     input: AnalyzeProjectCodePracticesInput,
-    scan: ProjectInitializationScan,
+    scan: ProjectCodePracticesScan,
     credential: InitializationCredential,
     submitTool: AgentTool,
     correction?: InitializationCorrection,
@@ -2660,7 +2673,7 @@ function codePracticesConfig(
     enableSpawnAgent: false,
     enableAgentTeams: false,
     extraTools: [submitTool],
-    maxIterations: 6,
+    maxIterations: 4,
   });
 }
 
@@ -2733,13 +2746,13 @@ function parseProjectInitializationAttempt(
   return { sessionId: attempt.sessionId, ...initialization };
 }
 
-function parsedCodePracticesAttempt(attempt: {
-  input: unknown;
-  sessionId: string;
-}): AnalyzeProjectCodePracticesResult {
+function parsedCodePracticesAttempt(
+  attempt: { input: unknown; sessionId: string },
+  scan: ProjectCodePracticesScan,
+): AnalyzeProjectCodePracticesResult {
   return {
     sessionId: attempt.sessionId,
-    practices: parseProjectCodePracticesResult(attempt.input),
+    practices: resolveProjectCodePracticesResult(attempt.input, scan.commits),
   };
 }
 
@@ -3053,7 +3066,7 @@ function initializationPrompt(
 }
 
 function codePracticesPrompt(
-  scan: ProjectInitializationScan,
+  scan: ProjectCodePracticesScan,
   correction?: InitializationCorrection,
 ) {
   if (!correction) return projectCodePracticesPrompt(scan);
@@ -4247,7 +4260,7 @@ function initializationToolPolicies() {
 function codePracticesToolPolicies() {
   return Object.fromEntries([
     ["submit_project_code_practices", { autoApprove: true }],
-    ...readTools.map((name) => [name, { autoApprove: true }]),
+    ...readTools.map((name) => [name, { enabled: false, autoApprove: false }]),
     ...writeTools.map((name) => [name, { enabled: false, autoApprove: false }]),
   ]);
 }

@@ -2,7 +2,7 @@ import type {
   ProjectCodePracticeKey,
   ProjectCodePracticeResult,
 } from "./types.js";
-import type { ProjectInitializationScan } from "./project-initialization.js";
+import type { ProjectCodePracticesScan } from "./project-code-practices-scan.js";
 import { jsonPayload } from "./json-payload.js";
 
 const requiredPractices: ProjectCodePracticeKey[] = [
@@ -40,20 +40,17 @@ export const projectCodePracticesResultSchema = {
   },
 } as const;
 
-export function projectCodePracticesPrompt(scan: ProjectInitializationScan) {
+export function projectCodePracticesPrompt(scan: ProjectCodePracticesScan) {
   return [
-    "Analyze the code practices in this project scan according to your system instructions.",
+    "Analyze the code practices from the comprehensive project evidence below.",
     "Call submit_project_code_practices exactly once with the complete result.",
     "Do not answer with JSON text.",
-    `Project: ${scan.rootName}`,
-    `Root entries: ${JSON.stringify(scan.topLevelEntries)}`,
-    `Recent git log: ${JSON.stringify(scan.gitLog)}`,
-    `Strategic files: ${JSON.stringify(scan.files)}`,
+    `Project evidence: ${JSON.stringify(scan)}`,
   ].join("\n");
 }
 
 export function projectCodePracticesCorrectionPrompt(
-  scan: ProjectInitializationScan,
+  scan: ProjectCodePracticesScan,
   correction: CodePracticesCorrection,
 ) {
   return [
@@ -81,6 +78,33 @@ export function parseProjectCodePracticesResult(
   return requiredPractices.map((practice) =>
     parsePractice(practices, practice),
   );
+}
+
+export function resolveProjectCodePracticesResult(
+  value: unknown,
+  commits: ProjectCodePracticesScan["commits"],
+) {
+  const practices = parseProjectCodePracticesResult(value);
+  if (!commits.evaluatedCount) return practices;
+  return practices.map((practice) =>
+    practice.practice === "commit_message_convention"
+      ? commitMessageConventionResult(commits)
+      : practice,
+  );
+}
+
+function commitMessageConventionResult(
+  commits: ProjectCodePracticesScan["commits"],
+): ProjectCodePracticeResult {
+  const detected = commits.conventionalCount > commits.evaluatedCount / 2;
+  const conclusion = detected
+    ? "the majority follows the convention"
+    : "the majority does not follow the convention";
+  return {
+    practice: "commit_message_convention",
+    detected,
+    comment: `${commits.conventionalCount} of ${commits.evaluatedCount} evaluated commits use Conventional Commits, so ${conclusion}.`,
+  };
 }
 
 function parseText(value: string) {
