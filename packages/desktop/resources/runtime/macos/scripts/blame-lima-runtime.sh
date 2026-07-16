@@ -8,11 +8,9 @@ runtime_version="$(sed -n 's/.*"runtimeVersion"[[:space:]]*:[[:space:]]*"\([^"]*
 runtime_version="${runtime_version:-1}"
 manifest_cline_sdk_version="$(sed -n 's/.*"clineSdkVersion"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$manifest_path" | head -n 1)"
 cline_sdk_version="${BLAME_CLINE_SDK_VERSION:-${manifest_cline_sdk_version:-0.0.55}}"
-lima_version="$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$manifest_path" | tail -n 1)"
-lima_version="${BLAME_LIMA_VERSION:-${lima_version:-2.1.2}}"
 lima_state_home="${LIMA_HOME:-$HOME/Library/Application Support/Blame/runtime/lima}"
 lima_install_home="${BLAME_LIMA_INSTALL_DIR:-$HOME/Library/Application Support/Blame/runtime/tools/lima}"
-lima_action="Install or download Blame Lima resources, then run Blame runtime setup again."
+lima_action="Install Blame again with its verified Lima runtime bundle, then run Blame runtime setup again."
 vm_action="Create or repair the BlameRuntime Lima VM from Blame runtime setup."
 repair_action="Repair BlameRuntime from Blame runtime setup."
 mount_action="Reset BlameRuntime from Blame runtime setup so macOS project folders are mounted."
@@ -64,6 +62,10 @@ limactl_path() {
     printf '%s' "$BLAME_LIMA_BUNDLE_DIR/bin/limactl"
     return
   fi
+  if [ -x "$runtime_home/lima/bundle/bin/limactl" ]; then
+    printf '%s' "$runtime_home/lima/bundle/bin/limactl"
+    return
+  fi
   if [ -x "$lima_install_home/bin/limactl" ]; then
     printf '%s' "$lima_install_home/bin/limactl"
     return
@@ -87,40 +89,12 @@ test_lima_available() {
   with_lima_environment --version >/dev/null 2>&1
 }
 
-lima_architecture() {
-  case "$(uname -m)" in
-    arm64 | aarch64) printf '%s' "arm64" ;;
-    x86_64 | amd64) printf '%s' "x86_64" ;;
-    *) uname -m ;;
-  esac
-}
-
-lima_download_url() {
-  arch="$(lima_architecture)"
-  printf '%s' "${BLAME_LIMA_DOWNLOAD_URL:-https://github.com/lima-vm/lima/releases/download/v$lima_version/lima-$lima_version-Darwin-$arch.tar.gz}"
-}
-
 install_lima_bundle() {
   if test_lima_available; then
     return
   fi
-  temp_dir="$(mktemp -d)"
-  archive="$temp_dir/lima.tar.gz"
-  extract_dir="$temp_dir/extract"
-  mkdir -p "$extract_dir"
-  curl -fsSL "$(lima_download_url)" -o "$archive"
-  tar -C "$extract_dir" -xzf "$archive"
-  bundle_bin="$(find "$extract_dir" -type f -path "*/bin/limactl" -print | head -n 1)"
-  if [ -z "$bundle_bin" ]; then
-    rm -rf "$temp_dir"
-    printf '%s\n' "Downloaded Lima archive does not contain limactl." >&2
-    exit 1
-  fi
-  bundle_root="$(CDPATH= cd -- "$(dirname -- "$bundle_bin")/.." && pwd)"
-  mkdir -p "$lima_install_home"
-  cp -R "$bundle_root/." "$lima_install_home/"
-  chmod +x "$lima_install_home/bin/limactl" "$lima_install_home/bin/lima"
-  rm -rf "$temp_dir"
+  printf '%s\n' "$lima_action" >&2
+  exit 1
 }
 
 vm_json() {
@@ -140,8 +114,8 @@ test_vm_running() {
 }
 
 add_vm_checks() {
-  output="$(with_lima_environment shell "$vm_name" sudo -n sh -s -- "$HOME" "$cline_sdk_version" "$runtime_version" <<'EOF' 2>/dev/null || true
-host_home="$1"
+  output="$(with_lima_environment shell "$vm_name" sudo -n sh -s -- "$HOME/Library/Application Support/Blame" "$cline_sdk_version" "$runtime_version" <<'EOF' 2>/dev/null || true
+host_mount="$1"
 cline_sdk_version="$2"
 runtime_version="$3"
 check() {
@@ -177,7 +151,7 @@ const sdkEntry = path.join(root, "@cline/sdk/dist/index.js");
 process.exit(sdk.version === version && core.version === version && fs.existsSync(sdkEntry) ? 0 : 1);
 NODE
 }
-check host-home test -d "$host_home"
+check host-home test -d "$host_mount"
 check agent test -x /usr/local/bin/blame-runtime-agent
 check runtime-version sh -lc 'test "$(cat /etc/blame-runtime-version 2>/dev/null)" = "$1"' sh "$runtime_version"
 check containerd sh -lc 'command -v containerd >/dev/null 2>&1 && (pgrep -x containerd >/dev/null 2>&1 || containerd --version >/dev/null 2>&1)'

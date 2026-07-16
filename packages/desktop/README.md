@@ -52,10 +52,6 @@ Optional GitHub variables:
 BLAME_HOMEPAGE
 BLAME_MAINTAINER_EMAIL
 BLAME_MAINTAINER_NAME
-BLAME_RUNTIME_ROOTFS_AMD64_SHA256
-BLAME_RUNTIME_ROOTFS_AMD64_URL
-BLAME_RUNTIME_ROOTFS_ARM64_SHA256
-BLAME_RUNTIME_ROOTFS_ARM64_URL
 BLAME_RUNTIME_VERSION
 ```
 
@@ -73,35 +69,36 @@ The repository includes a Dokploy-ready Dockerfile at `deploy/downloads/Dockerfi
 
 If you prefer Docker Compose, `deploy/downloads/docker-compose.yml` uses the same image and serves `/var/www/blame-downloads` by default. Override the host path with `BLAME_DOWNLOADS_PATH` if needed.
 
-## Windows WSL Runtime Rootfs
+## Prebuilt Desktop Runtimes
 
-Windows releases can use a pre-baked WSL2 rootfs so first setup skips the full runtime provisioner. Set these values in `.env.local`:
+Windows and macOS installers use versioned runtime images so first setup only imports an image instead of installing Node, the Cline SDK, containerd, BuildKit, and nerdctl.
 
-```txt
-BLAME_VERSION=0.1.0
-BLAME_RUNTIME_VERSION=5
-BLAME_RUNTIME_UBUNTU_ROOTFS_AMD64=/path/to/ubuntu-noble-wsl-amd64-wsl.rootfs.tar.gz
-BLAME_RUNTIME_UBUNTU_ROOTFS_ARM64=/path/to/ubuntu-noble-wsl-arm64-wsl.rootfs.tar.gz
-```
-
-Build and upload the runtime images:
+On Arch Linux, start Docker and install `qemu-img` plus `qemu-system-x86_64`. Then set `BLAME_RUNTIME_VERSION` in `.env.local` and build both runtimes for the host architecture:
 
 ```bash
-pnpm release:windows-runtime
+pnpm build:runtime
 ```
 
-The build step must run on Windows with WSL2 available, or from WSL when Windows interop exposes `powershell.exe`, `wsl.exe`, and `wslpath`. A plain Linux host cannot build the WSL export because it cannot run `wsl.exe --import` or `wsl.exe --export`. From Linux, use `pnpm deploy:windows-runtime` only after the `.tar.gz` files already exist in `packages/desktop/dist/runtime/windows`.
+The platform-specific commands are useful while iterating:
 
-The command creates `packages/desktop/dist/runtime/windows/blame-runtime-wsl-<arch>-v<BLAME_RUNTIME_VERSION>.tar.gz`, uploads it to:
-
-```txt
-/var/www/blame-downloads/latest/runtime/windows
-/var/www/blame-downloads/releases/<BLAME_VERSION>/runtime/windows
+```bash
+pnpm build:runtime:windows
+pnpm build:runtime:macos
 ```
 
-It then writes `BLAME_RUNTIME_ROOTFS_<ARCH>_URL` and `BLAME_RUNTIME_ROOTFS_<ARCH>_SHA256` back to `.env.local`. During desktop packaging, the Windows runtime manifest is generated from those env values inside the temporary package directory. If those variables are absent, the packaged manifest keeps the Ubuntu fallback rootfs.
+The Windows command builds a WSL-compatible rootfs with Docker and does not require Windows, WSL, or PowerShell. The macOS command builds a Lima qcow2 image inside a temporary QEMU VM. Lima and every downloaded base image are pinned and checksum-verified.
 
-Use `pnpm release:windows-runtime -- --arch amd64` or `--arch arm64` to build only one architecture.
+The macOS builder also reboots the finished image and checks the runtime. Run `pnpm verify:runtime:macos` to repeat only that verification without rebuilding it.
+
+Artifacts are written below `packages/desktop/dist/runtime/windows` and `packages/desktop/dist/runtime/macos`. Add `-- --arch amd64`, `-- --arch arm64`, `-- --arch x86_64`, or `-- --arch aarch64` to a platform command. `pnpm build:runtime:all` builds all four artifacts; foreign architectures require Docker binfmt and the matching QEMU system emulator and firmware.
+
+Once all four artifacts exist, publish them and their immutable manifest with:
+
+```bash
+pnpm deploy:runtime
+```
+
+`pnpm release:runtime` combines the all-architecture build and deployment. Files are published under `runtime/v<BLAME_RUNTIME_VERSION>`, and desktop release packaging refuses an unverified or missing target runtime. The manual `Runtime release` GitHub Actions workflow is the native x86-64/ARM64 fallback when local cross-emulation is not available.
 
 ## VPS Linux Builds
 

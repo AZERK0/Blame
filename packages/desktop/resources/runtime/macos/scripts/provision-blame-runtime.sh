@@ -4,7 +4,8 @@ runtime_version="${1:-5}"
 runtime_root="/home/blame/.local/share/blame/runtime"
 cline_sdk_version="${BLAME_CLINE_SDK_VERSION:-${2:-0.0.55}}"
 nerdctl_version="${BLAME_NERDCTL_VERSION:-2.1.6}"
-runtime_packages="ca-certificates curl dbus-user-session git gzip iptables python3 slirp4netns tar uidmap xz-utils"
+node_version="${BLAME_NODE_VERSION:-22.23.1}"
+runtime_packages="ca-certificates curl dbus-user-session git gzip iptables procps python3 slirp4netns tar uidmap xz-utils"
 
 ensure_user() {
   if id blame >/dev/null 2>&1; then
@@ -37,11 +38,38 @@ missing_runtime_packages() {
 }
 
 ensure_node() {
-  if command -v node >/dev/null 2>&1 && node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= 22 ? 0 : 1)' >/dev/null 2>&1; then
+  if command -v node >/dev/null 2>&1 && node -e 'process.exit(process.versions.node === process.argv[1] ? 0 : 1)' "$node_version" >/dev/null 2>&1; then
     return
   fi
-  curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
-  apt-get install -y nodejs
+  arch="$(node_archive_architecture)"
+  archive="node-v${node_version}-linux-${arch}.tar.xz"
+  temp_dir="$(mktemp -d)"
+  curl -fsSL "https://nodejs.org/dist/v${node_version}/${archive}" -o "$temp_dir/$archive"
+  printf '%s  %s\n' "$(node_archive_sha256 "$arch")" "$temp_dir/$archive" | sha256sum -c - >/dev/null
+  tar -C /usr/local --strip-components=1 -xJf "$temp_dir/$archive"
+  rm -rf "$temp_dir"
+}
+
+node_archive_architecture() {
+  case "$(runtime_architecture)" in
+    amd64) printf '%s' "x64" ;;
+    arm64) printf '%s' "arm64" ;;
+    *) return 1 ;;
+  esac
+}
+
+node_archive_sha256() {
+  case "$node_version:$1" in
+    22.23.1:x64) printf '%s' "9749e988f437343b7fa832c69ded82a312e41a03116d766797ac14f6f9eee578" ;;
+    22.23.1:arm64) printf '%s' "0294e8b915ab75f92c7513d2fcb830ae06e10684e6c603e99a87dbf8835389c1" ;;
+    *)
+      if [ -z "${BLAME_NODE_SHA256:-}" ]; then
+        printf '%s\n' "BLAME_NODE_SHA256 is required for Node $node_version on $1." >&2
+        return 1
+      fi
+      printf '%s' "$BLAME_NODE_SHA256"
+      ;;
+  esac
 }
 
 ensure_cline_sdk() {
@@ -86,7 +114,7 @@ runtime_architecture() {
 }
 
 ensure_nerdctl_full() {
-  if command -v nerdctl >/dev/null 2>&1 && command -v buildkitd >/dev/null 2>&1 && [ -x /opt/cni/bin/bridge ]; then
+  if nerdctl --version 2>/dev/null | grep -q "nerdctl version ${nerdctl_version}" && command -v buildkitd >/dev/null 2>&1 && [ -x /usr/local/libexec/cni/bridge ]; then
     return
   fi
   arch="$(runtime_architecture)"
@@ -94,8 +122,23 @@ ensure_nerdctl_full() {
   url="https://github.com/containerd/nerdctl/releases/download/v${nerdctl_version}/${archive}"
   temp_dir="$(mktemp -d)"
   curl -fsSL "$url" -o "$temp_dir/$archive"
+  printf '%s  %s\n' "$(nerdctl_archive_sha256 "$arch")" "$temp_dir/$archive" | sha256sum -c - >/dev/null
   tar -C /usr/local -xzf "$temp_dir/$archive"
   rm -rf "$temp_dir"
+}
+
+nerdctl_archive_sha256() {
+  case "$nerdctl_version:$1" in
+    2.1.6:amd64) printf '%s' "c30545867913696210991fe055761ae2e2d36344da2a351bcd1073fb5c71e232" ;;
+    2.1.6:arm64) printf '%s' "2f98346ed3dcaf47cfd6461a5685e582284329a1ece1d952ade881b9fe7491e8" ;;
+    *)
+      if [ -z "${BLAME_NERDCTL_SHA256:-}" ]; then
+        printf '%s\n' "BLAME_NERDCTL_SHA256 is required for nerdctl $nerdctl_version on $1." >&2
+        return 1
+      fi
+      printf '%s' "$BLAME_NERDCTL_SHA256"
+      ;;
+  esac
 }
 
 ensure_runtime_paths() {
@@ -116,6 +159,9 @@ ensure_containerd_config() {
 }
 
 ensure_containerd_running() {
+  if [ "${BLAME_RUNTIME_BAKE:-0}" = "1" ]; then
+    return
+  fi
   if pgrep -x containerd >/dev/null 2>&1; then
     wait_for_containerd
     return
@@ -643,6 +689,7 @@ write_marker() {
   printf '%s\n' "$runtime_version" >/etc/blame-runtime-version
 }
 
+cd /
 ensure_user
 ensure_packages
 ensure_node

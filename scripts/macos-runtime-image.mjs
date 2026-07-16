@@ -1,0 +1,581 @@
+import { spawn } from "node:child_process";
+import {
+  access,
+  mkdir,
+  readFile,
+  readdir,
+  rename,
+  rm,
+  writeFile,
+} from "node:fs/promises";
+import { dirname, join, resolve } from "node:path";
+import { tmpdir } from "node:os";
+import { fileURLToPath } from "node:url";
+import {
+  loadEnvFiles,
+  requiredEnv,
+  text,
+  upsertEnvValues,
+} from "./env-files.mjs";
+import { resolveLimaBundle } from "./lima-runtime-bundle.mjs";
+import { sha256File } from "./file-sha256.mjs";
+import {
+  macosImagePublicBaseUrl,
+  runtimeLimaImageFileName,
+} from "./runtime-manifest.mjs";
+import { runtimeClineSdkVersion } from "./runtime-sdk-version.mjs";
+
+const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const desktopDir = join(rootDir, "packages/desktop");
+const runtimeRoot = join(desktopDir, "resources/runtime/macos");
+const manifestPath = join(runtimeRoot, "manifest.json");
+const provisionerPath = join(runtimeRoot, "scripts/provision-blame-runtime.sh");
+const outputDir = join(desktopDir, "dist/runtime/macos");
+const buildRoot = join(tmpdir(), "blame-runtime-macos");
+const envFile = join(rootDir, ".env.local");
+const architectures = ["x86_64", "aarch64"];
+const command = process.argv[2] ?? "help";
+const rawArgs = process.argv.slice(3);
+const args = rawArgs[0] === "--" ? rawArgs.slice(1) : rawArgs;
+
+await loadEnvFiles(rootDir);
+
+if (command === "build") await buildImages();
+else if (command === "verify") await verifyImages();
+else if (command === "deploy") await deployImages();
+else if (command === "release") {
+  await buildImages();
+  await deployImages();
+} else {
+  printHelp();
+  process.exit(command === "help" ? 0 : 1);
+}
+
+async function buildImages() {
+  if (process.platform !== "linux")
+    throw new Error("The Lima image builder currently requires a Linux host.");
+  await assertExecutable(
+    "qemu-img",
+    "qemu-img is required to build Lima runtime images.",
+  );
+  await mkdir(outputDir, { recursive: true });
+  for (const architecture of selectedArchitectures()) {
+    await buildImage(architecture);
+  }
+}
+
+async function buildImage(architecture) {
+  await assertQemuArchitecture(architecture);
+  const manifest = await runtimeManifest();
+  const bundle = await resolveLimaBundle(manifest, "linux", hostArchitecture());
+  const runtimeVersion = requiredRuntimeVersion();
+  const buildId = `${runtimeVersion}-${architecture}-${process.pid}`;
+  const limaHome = join(buildRoot, buildId);
+  const instanceName = "build";
+  const templatePath = join(limaHome, "builder.yaml");
+  const outputPath = join(
+    outputDir,
+    runtimeLimaImageFileName(architecture, runtimeVersion),
+  );
+  const temporaryOutputPath = `${outputPath}.building-${process.pid}`;
+  const environment = limaEnvironment(bundle, limaHome);
+
+  await rm(limaHome, { force: true, recursive: true });
+  await mkdir(limaHome, { recursive: true });
+  await writeFile(
+    templatePath,
+    builderTemplate(manifest, architecture),
+    "utf8",
+  );
+
+  try {
+    await runLimactl(
+      bundle,
+      ["start", "--name", instanceName, "--tty=false", templatePath],
+      environment,
+    );
+    await provisionImage(bundle, instanceName, environment);
+    await finalizeImage(bundle, instanceName, environment);
+    await waitForStoppedInstance(bundle, instanceName, environment);
+    await flattenImage(
+      join(limaHome, instanceName, "disk"),
+      temporaryOutputPath,
+    );
+    await verifyImage(bundle, architecture, temporaryOutputPath, environment);
+    await rename(temporaryOutputPath, outputPath);
+    console.log(`Built ${outputPath}`);
+  } finally {
+    await bestEffortLimactl(
+      bundle,
+      ["delete", "--force", instanceName],
+      environment,
+    );
+    await rm(temporaryOutputPath, { force: true });
+    await rm(limaHome, { force: true, recursive: true });
+  }
+}
+
+async function verifyImages() {
+  if (process.platform !== "linux")
+    throw new Error("The Lima image verifier currently requires a Linux host.");
+  for (const architecture of selectedArchitectures()) {
+    await verifyExistingImage(architecture);
+  }
+}
+
+async function verifyExistingImage(architecture) {
+  await assertQemuArchitecture(architecture);
+  const manifest = await runtimeManifest();
+  const bundle = await resolveLimaBundle(manifest, "linux", hostArchitecture());
+  const runtimeVersion = requiredRuntimeVersion();
+  const limaHome = join(
+    buildRoot,
+    `${runtimeVersion}-verify-${architecture}-${process.pid}`,
+  );
+  const image = join(
+    outputDir,
+    runtimeLimaImageFileName(architecture, runtimeVersion),
+  );
+  await mkdir(limaHome, { recursive: true });
+  try {
+    await verifyImage(
+      bundle,
+      architecture,
+      image,
+      limaEnvironment(bundle, limaHome),
+    );
+  } finally {
+    await rm(limaHome, { force: true, recursive: true });
+  }
+}
+
+async function verifyImage(bundle, architecture, image, environment) {
+  await access(image);
+  const instanceName = "verify";
+  const templatePath = join(environment.LIMA_HOME, "verify.yaml");
+  await writeFile(
+    templatePath,
+    await verificationTemplate(image, architecture),
+    "utf8",
+  );
+  try {
+    await runLimactl(
+      bundle,
+      ["start", "--name", instanceName, "--tty=false", templatePath],
+      environment,
+    );
+    await verifyRuntime(bundle, instanceName, environment);
+    console.log(`Verified ${image}`);
+  } finally {
+    await bestEffortLimactl(
+      bundle,
+      ["delete", "--force", instanceName],
+      environment,
+    );
+  }
+}
+
+async function verifyRuntime(bundle, instanceName, environment) {
+  const runtimeVersion = requiredRuntimeVersion();
+  const clineSdkVersion = await runtimeClineSdkVersion();
+  const nodeVersion = requiredNodeVersion();
+  const checks = [
+    `grep -qx ${JSON.stringify(runtimeVersion)} /etc/blame-runtime-version`,
+    "test -x /usr/local/bin/blame-runtime-agent",
+    `blame-runtime-agent version | grep -qx ${JSON.stringify(runtimeVersion)}`,
+    `node -e 'process.exit(process.versions.node === process.argv[1] ? 0 : 1)' ${JSON.stringify(nodeVersion)}`,
+    `npm list --global --depth=0 @cline/sdk@${clineSdkVersion} @cline/core@${clineSdkVersion}`,
+    "nerdctl --version",
+    "buildkitd --version",
+    "test -x /usr/local/libexec/cni/bridge",
+    "id blame",
+    "! id blamebuilder >/dev/null 2>&1",
+  ].join("\n");
+  await runLimactl(
+    bundle,
+    ["shell", instanceName, "sudo", "-n", "sh", "-lc", checks],
+    environment,
+  );
+}
+
+async function verificationTemplate(image, architecture) {
+  return [
+    "vmType: qemu",
+    `arch: ${architecture}`,
+    "plain: true",
+    "images:",
+    `  - location: ${JSON.stringify(image)}`,
+    `    arch: ${architecture}`,
+    `    digest: ${JSON.stringify(`sha256:${await sha256File(image)}`)}`,
+    "cpus: 2",
+    'memory: "2GiB"',
+    'disk: "20GiB"',
+    ...qemuFirmwareConfiguration(architecture),
+    "mounts: []",
+    "containerd:",
+    "  system: false",
+    "  user: false",
+    "networks: []",
+    "user:",
+    "  name: blamecheck",
+    "  uid: 1000",
+    '  home: "/home/blamecheck"',
+    '  shell: "/bin/bash"',
+    "",
+  ].join("\n");
+}
+
+async function provisionImage(bundle, instanceName, environment) {
+  const runtimeVersion = requiredRuntimeVersion();
+  const clineSdkVersion = await runtimeClineSdkVersion();
+  const provisioner = await readFile(provisionerPath, "utf8");
+  await runLimactl(
+    bundle,
+    [
+      "shell",
+      instanceName,
+      "sudo",
+      "-n",
+      "env",
+      "BLAME_RUNTIME_BAKE=1",
+      `BLAME_NERDCTL_VERSION=${requiredNerdctlVersion()}`,
+      `BLAME_NODE_VERSION=${requiredNodeVersion()}`,
+      "sh",
+      "-s",
+      "--",
+      runtimeVersion,
+      clineSdkVersion,
+    ],
+    environment,
+    provisioner,
+  );
+}
+
+async function finalizeImage(bundle, instanceName, environment) {
+  const script = [
+    "set -eu",
+    "cd /",
+    "cloud-init clean --logs --seed >/dev/null 2>&1 || true",
+    "rm -rf /home/blamebuilder/.ssh /root/.ssh /var/lib/cloud/instances/*",
+    "rm -f /etc/ssh/ssh_host_* /var/lib/dbus/machine-id",
+    ": >/etc/machine-id",
+    "apt-get clean >/dev/null 2>&1 || true",
+    "rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /root/.npm /root/.cache",
+    "find /var/log -type f -exec truncate -s 0 {} \\; >/dev/null 2>&1 || true",
+    "userdel --force --remove blamebuilder >/dev/null 2>&1 || true",
+    "sync",
+    "nohup sh -c 'sleep 1; poweroff' >/dev/null 2>&1 &",
+  ].join("\n");
+  await runLimactl(
+    bundle,
+    ["shell", instanceName, "sudo", "-n", "sh", "-s"],
+    environment,
+    script,
+  );
+}
+
+async function waitForStoppedInstance(bundle, instanceName, environment) {
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    const state = await instanceState(bundle, instanceName, environment);
+    if (state === "Stopped") return;
+    await delay(1000);
+  }
+  throw new Error(`Lima builder instance ${instanceName} did not stop.`);
+}
+
+async function instanceState(bundle, instanceName, environment) {
+  const result = await output(
+    limactlPath(bundle),
+    ["list", "--json", instanceName],
+    environment,
+  );
+  if (!result.trim()) return "Missing";
+  return JSON.parse(result).status;
+}
+
+async function flattenImage(source, destination) {
+  await access(source);
+  await rm(destination, { force: true });
+  await run("qemu-img", ["convert", "-O", "qcow2", "-c", source, destination]);
+  await run("qemu-img", ["check", destination]);
+}
+
+async function deployImages() {
+  const files = await runtimeFiles();
+  if (!files.length)
+    throw new Error(`No Lima runtime images found in ${outputDir}`);
+
+  const runtimeVersion = requiredRuntimeVersion();
+  const remote = remoteSpec();
+  const relativeTarget = `runtime/v${runtimeVersion}/macos`;
+  await createRemoteDirectory(remote, relativeTarget);
+  await uploadFiles(files, remote, relativeTarget);
+  await writeRuntimeEnv(files, runtimeVersion);
+}
+
+async function runtimeFiles() {
+  const runtimeVersion = requiredRuntimeVersion();
+  const expected = new Set(
+    architectures.map((architecture) =>
+      runtimeLimaImageFileName(architecture, runtimeVersion),
+    ),
+  );
+  const entries = await readdir(outputDir);
+  return entries
+    .filter((entry) => expected.has(entry))
+    .map((entry) => join(outputDir, entry));
+}
+
+async function writeRuntimeEnv(files, runtimeVersion) {
+  const baseUrl = macosImagePublicBaseUrl(runtimeVersion);
+  if (!baseUrl)
+    throw new Error(
+      "BLAME_RUNTIME_BASE_URL or BLAME_DOWNLOAD_BASE_URL is required",
+    );
+
+  const values = [["BLAME_RUNTIME_VERSION", runtimeVersion]];
+  for (const file of files) {
+    const architecture = architectureFromFile(file);
+    if (!architecture) continue;
+    const name = architecture.toUpperCase();
+    values.push([
+      `BLAME_RUNTIME_LIMA_${name}_URL`,
+      `${baseUrl}/${runtimeLimaImageFileName(architecture, runtimeVersion)}`,
+    ]);
+    values.push([`BLAME_RUNTIME_LIMA_${name}_SHA256`, await sha256File(file)]);
+  }
+  await upsertEnvValues(envFile, values);
+}
+
+function builderTemplate(manifest, architecture) {
+  const image = manifest.baseImages[architecture];
+  if (!image?.url || !image?.sha256)
+    throw new Error(`Missing base image for ${architecture}.`);
+  return [
+    "vmType: qemu",
+    `arch: ${architecture}`,
+    "plain: true",
+    "images:",
+    `  - location: ${JSON.stringify(image.url)}`,
+    `    arch: ${architecture}`,
+    `    digest: ${JSON.stringify(`sha256:${image.sha256}`)}`,
+    "cpus: 4",
+    'memory: "4GiB"',
+    'disk: "20GiB"',
+    ...qemuFirmwareConfiguration(architecture),
+    "mounts: []",
+    "containerd:",
+    "  system: false",
+    "  user: false",
+    "networks: []",
+    "user:",
+    "  name: blamebuilder",
+    "  uid: 1000",
+    '  home: "/home/blamebuilder"',
+    '  shell: "/bin/bash"',
+    "",
+  ].join("\n");
+}
+
+function qemuFirmwareConfiguration(architecture) {
+  const firmware = text(process.env.BLAME_QEMU_AARCH64_FIRMWARE);
+  if (architecture !== "aarch64" || !firmware) return [];
+  return [
+    "firmware:",
+    "  images:",
+    `    - location: ${JSON.stringify(resolve(rootDir, firmware))}`,
+    "      arch: aarch64",
+    "      vmType: qemu",
+  ];
+}
+
+function selectedArchitectures() {
+  if (args.includes("--all-architectures")) return architectures;
+  const explicit = valueArg("--arch");
+  const selected = explicit
+    ? explicit
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean)
+    : [hostArchitecture()];
+  for (const architecture of selected) {
+    if (!architectures.includes(architecture))
+      throw new Error(`Unsupported Lima architecture: ${architecture}`);
+  }
+  return selected;
+}
+
+function hostArchitecture() {
+  return process.arch === "arm64" ? "aarch64" : "x86_64";
+}
+
+async function assertQemuArchitecture(architecture) {
+  const command =
+    architecture === "aarch64" ? "qemu-system-aarch64" : "qemu-system-x86_64";
+  await assertExecutable(
+    command,
+    `${command} is required. Install the matching QEMU system emulator and UEFI firmware.`,
+  );
+}
+
+async function runtimeManifest() {
+  return JSON.parse(await readFile(manifestPath, "utf8"));
+}
+
+function requiredRuntimeVersion() {
+  return requiredEnv("BLAME_RUNTIME_VERSION");
+}
+
+function requiredNerdctlVersion() {
+  return text(process.env.BLAME_NERDCTL_VERSION) ?? "2.1.6";
+}
+
+function requiredNodeVersion() {
+  return text(process.env.BLAME_NODE_VERSION) ?? "22.23.1";
+}
+
+function architectureFromFile(file) {
+  return file.match(/blame-runtime-lima-(x86_64|aarch64)-v/)?.[1];
+}
+
+function valueArg(name) {
+  const index = args.indexOf(name);
+  return index < 0 ? undefined : args[index + 1];
+}
+
+function limaEnvironment(bundle, limaHome) {
+  return {
+    ...process.env,
+    LIMA_HOME: limaHome,
+    PATH: `${join(bundle, "bin")}:${process.env.PATH ?? ""}`,
+  };
+}
+
+function limactlPath(bundle) {
+  return join(bundle, "bin/limactl");
+}
+
+function runLimactl(bundle, commandArgs, environment, input) {
+  return run(limactlPath(bundle), commandArgs, { env: environment, input });
+}
+
+async function bestEffortLimactl(bundle, commandArgs, environment) {
+  try {
+    await runLimactl(bundle, commandArgs, environment);
+  } catch {
+    return;
+  }
+}
+
+function remoteSpec() {
+  return {
+    destination: `${requiredEnv("BLAME_DOWNLOAD_USER")}@${requiredEnv("BLAME_DOWNLOAD_HOST")}`,
+    path: requiredEnv("BLAME_DOWNLOAD_PATH"),
+  };
+}
+
+async function createRemoteDirectory(remote, relativeTarget) {
+  await run("ssh", [
+    ...sshCommand(),
+    remote.destination,
+    `mkdir -p '${remote.path}/${relativeTarget}'`,
+  ]);
+}
+
+async function uploadFiles(files, remote, relativeTarget) {
+  await run("rsync", [
+    "-az",
+    "-e",
+    ["ssh", ...sshCommand()].join(" "),
+    ...files,
+    `${remote.destination}:${remote.path}/${relativeTarget}/`,
+  ]);
+}
+
+function sshCommand() {
+  const values = ["-p", text(process.env.BLAME_DOWNLOAD_SSH_PORT) ?? "22"];
+  const keyPath = text(process.env.BLAME_DOWNLOAD_SSH_KEY_PATH);
+  if (keyPath) values.push("-i", keyPath);
+  return values;
+}
+
+async function assertExecutable(executable, message) {
+  const candidates = (process.env.PATH ?? "")
+    .split(":")
+    .filter(Boolean)
+    .map((entry) => join(entry, executable));
+  for (const candidate of candidates) {
+    try {
+      await access(candidate);
+      return;
+    } catch {
+      continue;
+    }
+  }
+  throw new Error(message);
+}
+
+function run(commandName, commandArgs, options = {}) {
+  return new Promise((resolveRun, rejectRun) => {
+    const child = spawn(commandName, commandArgs, {
+      cwd: rootDir,
+      env: options.env ?? process.env,
+      shell: false,
+      stdio: [
+        options.input === undefined ? "inherit" : "pipe",
+        "inherit",
+        "inherit",
+      ],
+    });
+    if (options.input !== undefined) child.stdin.end(options.input);
+    child.once("error", rejectRun);
+    child.once("exit", (code) => {
+      if (code === 0) resolveRun();
+      else
+        rejectRun(
+          new Error(
+            `${commandName} ${commandArgs.join(" ")} exited with ${code}`,
+          ),
+        );
+    });
+  });
+}
+
+function output(commandName, commandArgs, environment) {
+  return new Promise((resolveOutput, rejectOutput) => {
+    const child = spawn(commandName, commandArgs, {
+      cwd: rootDir,
+      env: environment,
+      shell: false,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    let stdout = "";
+    let stderr = "";
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk;
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk;
+    });
+    child.once("error", rejectOutput);
+    child.once("exit", (code) => {
+      if (code === 0) resolveOutput(stdout);
+      else
+        rejectOutput(
+          new Error(
+            `${commandName} ${commandArgs.join(" ")} exited with ${code}: ${stderr}`,
+          ),
+        );
+    });
+  });
+}
+
+function delay(milliseconds) {
+  return new Promise((resolveDelay) => setTimeout(resolveDelay, milliseconds));
+}
+
+function printHelp() {
+  console.log(
+    "Usage: node scripts/macos-runtime-image.mjs <build|verify|deploy|release> [--arch x86_64,aarch64] [--all-architectures]",
+  );
+}

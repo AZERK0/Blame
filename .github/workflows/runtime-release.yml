@@ -1,0 +1,116 @@
+name: Runtime release
+
+on:
+  workflow_dispatch:
+    inputs:
+      runtime_version:
+        description: Runtime version
+        required: true
+        type: string
+      deploy:
+        default: true
+        description: Upload runtime artifacts
+        required: true
+        type: boolean
+
+jobs:
+  build:
+    name: Build runtime ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: x86-64
+            firmware_package: ovmf
+            runner: ubuntu-latest
+            qemu_package: qemu-system-x86
+            windows_arch: amd64
+            macos_arch: x86_64
+          - name: arm64
+            firmware_package: qemu-efi-aarch64
+            runner: ubuntu-24.04-arm
+            qemu_package: qemu-system-arm
+            windows_arch: arm64
+            macos_arch: aarch64
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install image build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ${{ matrix.qemu_package }} ${{ matrix.firmware_package }} qemu-utils
+
+      - name: Build WSL rootfs
+        run: pnpm build:runtime:windows -- --arch ${{ matrix.windows_arch }}
+        env:
+          BLAME_RUNTIME_VERSION: ${{ inputs.runtime_version }}
+
+      - name: Build Lima image
+        run: pnpm build:runtime:macos -- --arch ${{ matrix.macos_arch }}
+        env:
+          BLAME_RUNTIME_VERSION: ${{ inputs.runtime_version }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          compression-level: 0
+          name: blame-runtime-${{ matrix.name }}
+          path: |
+            packages/desktop/dist/runtime/windows/*.tar.gz
+            packages/desktop/dist/runtime/macos/*.qcow2
+          if-no-files-found: error
+          retention-days: 1
+
+  deploy:
+    name: Deploy runtime
+    needs: build
+    if: inputs.deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          path: packages/desktop/dist/runtime
+          pattern: blame-runtime-*
+
+      - name: Configure SSH
+        env:
+          BLAME_DOWNLOAD_SSH_KEY: ${{ secrets.BLAME_DOWNLOAD_SSH_KEY }}
+          BLAME_DOWNLOAD_HOST: ${{ secrets.BLAME_DOWNLOAD_HOST }}
+          BLAME_DOWNLOAD_SSH_PORT: ${{ secrets.BLAME_DOWNLOAD_SSH_PORT || 22 }}
+        run: |
+          mkdir -p ~/.ssh
+          key_path="$RUNNER_TEMP/blame-runtime-id_ed25519"
+          printf '%s\n' "$BLAME_DOWNLOAD_SSH_KEY" > "$key_path"
+          chmod 600 "$key_path"
+          ssh-keyscan -p "$BLAME_DOWNLOAD_SSH_PORT" "$BLAME_DOWNLOAD_HOST" > ~/.ssh/known_hosts
+          echo "BLAME_RUNTIME_SSH_KEY=$key_path" >> "$GITHUB_ENV"
+
+      - name: Upload runtime artifacts
+        run: pnpm deploy:runtime
+        env:
+          BLAME_DOWNLOAD_BASE_URL: ${{ secrets.BLAME_DOWNLOAD_BASE_URL }}
+          BLAME_DOWNLOAD_HOST: ${{ secrets.BLAME_DOWNLOAD_HOST }}
+          BLAME_DOWNLOAD_PATH: ${{ secrets.BLAME_DOWNLOAD_PATH }}
+          BLAME_DOWNLOAD_SSH_KEY_PATH: ${{ env.BLAME_RUNTIME_SSH_KEY }}
+          BLAME_DOWNLOAD_SSH_PORT: ${{ secrets.BLAME_DOWNLOAD_SSH_PORT || 22 }}
+          BLAME_DOWNLOAD_USER: ${{ secrets.BLAME_DOWNLOAD_USER }}
+          BLAME_RUNTIME_VERSION: ${{ inputs.runtime_version }}

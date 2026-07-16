@@ -1,8 +1,9 @@
-Place bundled Lima binaries here at packaging time.
+The packaging script downloads and verifies the architecture-specific Lima bundle here.
 
 Expected layout:
 
 ```text
-lima/bin/limactl
-lima/bin/lima
+lima/bundle/bin/limactl
+lima/bundle/bin/lima
+lima/bundle/share/lima
 ```

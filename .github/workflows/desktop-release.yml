@@ -25,7 +25,7 @@ jobs:
       matrix:
         include:
           - name: macos-x64
-            runner: macos-latest
+            runner: macos-15-intel
             args: --mac --x64
           - name: macos-arm64
             runner: macos-latest
@@ -74,11 +74,8 @@ jobs:
           BLAME_HOMEPAGE: ${{ vars.BLAME_HOMEPAGE }}
           BLAME_MAINTAINER_EMAIL: ${{ vars.BLAME_MAINTAINER_EMAIL }}
           BLAME_MAINTAINER_NAME: ${{ vars.BLAME_MAINTAINER_NAME }}
-          BLAME_RUNTIME_ROOTFS_AMD64_SHA256: ${{ vars.BLAME_RUNTIME_ROOTFS_AMD64_SHA256 }}
-          BLAME_RUNTIME_ROOTFS_AMD64_URL: ${{ vars.BLAME_RUNTIME_ROOTFS_AMD64_URL }}
-          BLAME_RUNTIME_ROOTFS_ARM64_SHA256: ${{ vars.BLAME_RUNTIME_ROOTFS_ARM64_SHA256 }}
-          BLAME_RUNTIME_ROOTFS_ARM64_URL: ${{ vars.BLAME_RUNTIME_ROOTFS_ARM64_URL }}
           BLAME_RUNTIME_VERSION: ${{ vars.BLAME_RUNTIME_VERSION }}
+          BLAME_REQUIRE_PREBUILT_RUNTIME: true
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
       - uses: actions/upload-artifact@v4

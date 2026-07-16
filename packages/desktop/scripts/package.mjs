@@ -1,11 +1,11 @@
-import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
+import { access, cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { basename, dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { spawn } from "node:child_process"
 import YAML from "yaml"
 import { loadEnvFiles } from "../../../scripts/env-files.mjs"
-import { prepareRuntimeManifests } from "../../../scripts/windows-runtime-manifest.mjs"
+import { prepareRuntimeManifests } from "../../../scripts/runtime-manifest.mjs"
 
 const desktopDir = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const rootDir = resolve(desktopDir, "../..")
@@ -19,17 +19,71 @@ await loadEnvFiles(rootDir)
 
 try {
   await deployPackage(deployDir, args)
-  await prepareRuntimeManifests(join(stagingDir, "resources/runtime"))
+  await prepareRuntimeManifests(join(stagingDir, "resources/runtime"), runtimePackagingOptions(args))
   await rm(join(stagingDir, "out"), { force: true, recursive: true })
-  await cp(join(desktopDir, "out"), join(stagingDir, "out"), { recursive: true })
+  await cp(join(desktopDir, "out"), join(stagingDir, "out"), {
+    recursive: true,
+  })
   await run("pnpm", ["exec", "electron-builder", "--projectDir", stagingDir, "--config", join(stagingDir, "electron-builder.config.ts"), ...args], rootDir, {
     ...process.env,
     JITI_FS_CACHE: "false",
   })
+  await preserveRuntimeArtifacts(join(stagingDir, "dist"))
   await rm(join(desktopDir, "dist"), { force: true, recursive: true })
-  await cp(join(stagingDir, "dist"), join(desktopDir, "dist"), { recursive: true })
+  await cp(join(stagingDir, "dist"), join(desktopDir, "dist"), {
+    recursive: true,
+  })
 } finally {
   await rm(stagingDir, { force: true, recursive: true })
+}
+
+function runtimePackagingOptions(builderArgs) {
+  const requirePrebuilt = releaseRuntimeRequired()
+  const targetPlatform = builderTargetPlatform(builderArgs)
+  if (targetPlatform === "win32") {
+    const architecture =
+      builderArgs.includes("--arm64") ||
+      (!builderArgs.includes("--x64") && process.arch === "arm64")
+        ? "arm64"
+        : "amd64"
+    return {
+      requireWindowsPrebuiltArchitecture: requirePrebuilt ? architecture : undefined,
+    }
+  }
+  if (targetPlatform === "darwin") {
+    const architecture = builderArgs.includes("--x64") ? "x86_64" : builderArgs.includes("--arm64") || process.arch === "arm64" ? "aarch64" : "x86_64"
+    return {
+      macosBundleArchitecture: architecture,
+      requireMacosPrebuiltArchitecture: requirePrebuilt ? architecture : undefined,
+    }
+  }
+  return {}
+}
+
+function builderTargetPlatform(builderArgs) {
+  if (builderArgs.some((arg) => arg === "--win" || arg === "win"))
+    return "win32"
+  if (builderArgs.some((arg) => arg === "--mac" || arg === "mac"))
+    return "darwin"
+  if (builderArgs.some((arg) => arg === "--linux" || arg === "linux"))
+    return "linux"
+  return process.platform
+}
+
+function releaseRuntimeRequired() {
+  const explicit = process.env.BLAME_REQUIRE_PREBUILT_RUNTIME?.trim()
+  if (explicit) return explicit === "true"
+  return Boolean(process.env.BLAME_VERSION?.trim())
+}
+
+async function preserveRuntimeArtifacts(stagedDist) {
+  const runtimeDist = join(desktopDir, "dist/runtime")
+  try {
+    await access(runtimeDist)
+  } catch {
+    return
+  }
+  await cp(runtimeDist, join(stagedDist, "runtime"), { recursive: true })
 }
 
 async function deployPackage(targetDir, builderArgs) {
@@ -71,7 +125,12 @@ async function runDeploy(targetDir) {
 
 function run(command, args, cwd, env = process.env) {
   return new Promise((resolveRun, rejectRun) => {
-    const child = spawn(command, args, { cwd, env, shell: process.platform === "win32", stdio: "inherit" })
+    const child = spawn(command, args, {
+      cwd,
+      env,
+      shell: process.platform === "win32",
+      stdio: "inherit",
+    })
     child.once("error", rejectRun)
     child.once("exit", (code) => {
       if (code === 0) resolveRun()

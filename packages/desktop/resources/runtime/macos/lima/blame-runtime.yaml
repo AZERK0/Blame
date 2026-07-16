@@ -2,13 +2,13 @@ vmType: vz
 images:
   - location: "https://cloud-images.ubuntu.com/releases/24.04/release/ubuntu-24.04-server-cloudimg-arm64.img"
     arch: "aarch64"
+    digest: "sha256:7df0201546f75b8bcc1044594c806c35749421ad3c9bc1be2a3ab806cfae39cc"
   - location: "https://cloud-images.ubuntu.com/releases/24.04/release/ubuntu-24.04-server-cloudimg-amd64.img"
     arch: "x86_64"
-cpus: 4
-memory: "6GiB"
+    digest: "sha256:ffe6203da54deeb6db5d2a98a83f9ec8e55f149d3f7ba622e1abe5fa966ee3d6"
 disk: "80GiB"
 mounts:
-  - location: "~"
+  - location: "~/Library/Application Support/Blame"
     writable: true
 containerd:
   system: false
