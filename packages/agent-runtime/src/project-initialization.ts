@@ -1,10 +1,3 @@
-import { execFile } from "node:child_process";
-import { readdir, readFile, stat } from "node:fs/promises";
-import { basename, join } from "node:path";
-import { promisify } from "node:util";
-
-import { withoutTelemetryEnvironment } from "@blame/telemetry";
-
 import type {
   PreviewManifest,
   ProjectInitializationPreferences,
@@ -16,93 +9,14 @@ import {
   normalizePreviewManifestWithPreferences,
 } from "./preview-manifest.js";
 import { jsonPayload } from "./json-payload.js";
+import type { ProjectInitializationScan } from "./project-initialization-scan.js";
 
-const execFileAsync = promisify(execFile);
-const maxFileBytes = 16_000;
+export {
+  scanProjectForInitialization,
+  type ProjectInitializationScan,
+} from "./project-initialization-scan.js";
+
 const maxCorrectionPayloadLength = 24_000;
-const ignoredDirectories = new Set([
-  ".git",
-  "node_modules",
-  "dist",
-  "build",
-  "out",
-  ".next",
-  ".turbo",
-  "coverage",
-]);
-const strategicFiles = [
-  "package.json",
-  "pnpm-workspace.yaml",
-  "turbo.json",
-  "vite.config.ts",
-  "vite.config.js",
-  "next.config.js",
-  "next.config.ts",
-  "docker-compose.yml",
-  "docker-compose.yaml",
-  "compose.yml",
-  "compose.yaml",
-  ".env.example",
-  ".env.sample",
-  ".env.template",
-  ".env.local.example",
-  ".env.development",
-  "apps/api/.env.example",
-  "apps/api/.env.sample",
-  "apps/api/.env.template",
-  "apps/api/package.json",
-  "apps/api/src/env.ts",
-  "apps/api/start/env.ts",
-  "apps/backend/.env.example",
-  "apps/backend/.env.sample",
-  "apps/backend/.env.template",
-  "apps/backend/package.json",
-  "apps/backend/src/env.ts",
-  "apps/backend/start/env.ts",
-  "apps/frontend/.env.example",
-  "apps/frontend/.env.sample",
-  "apps/frontend/.env.template",
-  "apps/frontend/nuxt.config.js",
-  "apps/frontend/nuxt.config.ts",
-  "apps/frontend/package.json",
-  "apps/web/.env.example",
-  "apps/web/.env.sample",
-  "apps/web/.env.template",
-  "apps/web/next.config.js",
-  "apps/web/next.config.ts",
-  "apps/web/nuxt.config.js",
-  "apps/web/nuxt.config.ts",
-  "apps/web/package.json",
-  "README.md",
-  "AGENTS.md",
-  "tsconfig.json",
-  "eslint.config.js",
-  "eslint.config.mjs",
-  "prettier.config.js",
-  ".prettierrc",
-  ".vscode/tasks.json",
-];
-const strategicDirectories = [
-  "database/migrations",
-  "apps/api/database/migrations",
-  "apps/backend/database/migrations",
-  "apps/server/database/migrations",
-  "prisma",
-  "apps/api/prisma",
-  "apps/backend/prisma",
-  "apps/server/prisma",
-  "drizzle",
-  "apps/api/drizzle",
-  "apps/backend/drizzle",
-  "apps/server/drizzle",
-];
-
-export type ProjectInitializationScan = {
-  rootName: string;
-  topLevelEntries: string[];
-  files: Record<string, string>;
-  gitLog: string[];
-};
 
 type ParsedProjectInitialization = {
   previewManifest?: PreviewManifest;
@@ -372,26 +286,13 @@ export const projectInitializationResultSchema = {
   },
 } as const;
 
-export async function scanProjectForInitialization(
-  root: string,
-): Promise<ProjectInitializationScan> {
-  return {
-    rootName: basename(root),
-    topLevelEntries: await topLevelEntries(root),
-    files: await strategicFileContents(root),
-    gitLog: await gitLog(root),
-  };
-}
-
 export function projectInitializationPrompt(scan: ProjectInitializationScan) {
   return [
     "Analyze this project scan according to your system instructions.",
     "Call submit_project_initialization exactly once with the complete result.",
     "Do not answer with JSON text.",
-    `Project: ${scan.rootName}`,
-    `Root entries: ${JSON.stringify(scan.topLevelEntries)}`,
-    `Recent git log: ${JSON.stringify(scan.gitLog)}`,
-    `Strategic files: ${JSON.stringify(scan.files)}`,
+    "Use read_files or search_codebase only when a required runtime fact is absent from this evidence.",
+    `Project evidence: ${JSON.stringify(scan)}`,
   ].join("\n");
 }
 
@@ -442,8 +343,13 @@ export function parseProjectInitializationPayload(
     throw new Error("Initialization result is missing generated dockerCompose");
   }
   const runConfigurations = parseRunConfigurations(parsed.runConfigurations);
-  validateRunConfigurationTopology(runConfigurations, manifest);
-  validateProjectInitializationArtifacts(setupScript, dockerCompose, scan);
+  validateProjectInitializationOutput(
+    setupScript,
+    dockerCompose,
+    runConfigurations,
+    scan,
+    manifest,
+  );
   return {
     previewManifest: manifest,
     setupScript,
@@ -507,78 +413,6 @@ function validateRunConfigurationServices(
     throw new Error(
       `Initialization run configuration ${configuration.id} previewService is not browser-facing`,
     );
-  }
-}
-
-async function topLevelEntries(root: string) {
-  try {
-    const entries = await readdir(root, { withFileTypes: true });
-    return entries
-      .filter((entry) => !ignoredDirectories.has(entry.name))
-      .slice(0, 80)
-      .map((entry) => `${entry.name}${entry.isDirectory() ? "/" : ""}`);
-  } catch {
-    return [];
-  }
-}
-
-async function strategicFileContents(root: string) {
-  const files: Record<string, string> = {};
-  for (const path of strategicFiles) {
-    const content = await readStrategicFile(root, path);
-    if (content) files[path] = content;
-  }
-  for (const path of strategicDirectories) {
-    const content = await readStrategicDirectory(root, path);
-    if (content) files[`${path}/`] = content;
-  }
-  return files;
-}
-
-async function readStrategicFile(root: string, path: string) {
-  const target = join(root, path);
-  try {
-    const info = await stat(target);
-    if (!info.isFile() || info.size > maxFileBytes) return;
-    return readFile(target, "utf8");
-  } catch {
-    return undefined;
-  }
-}
-
-async function readStrategicDirectory(root: string, path: string) {
-  const target = join(root, path);
-  try {
-    const entries = await readdir(target, { withFileTypes: true });
-    const names = entries
-      .filter((entry) => entry.isFile())
-      .map((entry) => entry.name)
-      .sort()
-      .slice(0, 120);
-    if (names.length === 0) return;
-    return names.join("\n");
-  } catch {
-    return undefined;
-  }
-}
-
-async function gitLog(root: string) {
-  try {
-    const { stdout } = await execFileAsync(
-      "git",
-      ["log", "-12", "--pretty=%s"],
-      {
-        cwd: root,
-        env: withoutTelemetryEnvironment(process.env),
-        timeout: 3000,
-      },
-    );
-    return stdout
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean);
-  } catch {
-    return [];
   }
 }
 
@@ -727,6 +561,7 @@ export function validateProjectInitializationArtifacts(
   script: string,
   compose: string,
   scan?: ProjectInitializationScan,
+  manifest?: PreviewManifest,
 ) {
   const normalizedScript = script.toLowerCase();
   const normalizedCompose = compose.toLowerCase();
@@ -740,12 +575,24 @@ export function validateProjectInitializationArtifacts(
       "Initialization result setupScript must not require Docker or Docker Compose",
     );
   }
-  validateDockerCompose(normalizedCompose, scan);
+  validateDockerCompose(normalizedCompose, scan, manifest);
+}
+
+export function validateProjectInitializationOutput(
+  script: string,
+  compose: string,
+  configurations: ProjectRunConfiguration[],
+  scan?: ProjectInitializationScan,
+  manifest?: PreviewManifest,
+) {
+  validateRunConfigurationTopology(configurations, manifest);
+  validateProjectInitializationArtifacts(script, compose, scan, manifest);
 }
 
 function validateDockerCompose(
   compose: string,
   scan?: ProjectInitializationScan,
+  manifest?: PreviewManifest,
 ) {
   const duplicateKey = duplicateYamlMappingKey(compose);
   if (duplicateKey) {
@@ -761,7 +608,10 @@ function validateDockerCompose(
       "Initialization result dockerCompose must let the runtime allocate host ports",
     );
   }
-  if (!hasRuntimeAllocatedPortMapping(compose)) {
+  if (
+    requiresRuntimeAllocatedPort(manifest) &&
+    !hasRuntimeAllocatedPortMapping(compose)
+  ) {
     throw new Error(
       "Initialization result dockerCompose must expose runtime-allocated host ports",
     );
@@ -781,12 +631,12 @@ function validateDockerCompose(
       "Initialization result dockerCompose preview service must mount the project source at /workspace",
     );
   }
-  if (missingNodeDependencyInstall(compose, scan)) {
+  if (missingNodeDependencyInstall(compose, scan, manifest)) {
     throw new Error(
       "Initialization result dockerCompose must install detected Node dependencies before starting services",
     );
   }
-  if (usesNuxtPreviewWithoutBuild(compose, scan)) {
+  if (usesNuxtPreviewWithoutBuild(compose, scan, manifest)) {
     throw new Error(
       "Initialization result dockerCompose must build Nuxt before running its preview script or use the development script",
     );
@@ -817,7 +667,7 @@ function validateDockerCompose(
     );
   }
   if (
-    requiresDatabaseMigration(compose, scan) &&
+    requiresDatabaseMigration(compose, scan, manifest) &&
     !runsDatabaseMigration(compose)
   ) {
     throw new Error(
@@ -847,6 +697,11 @@ function validateDockerCompose(
       "Initialization result dockerCompose must make node_modules volumes writable by the host user before package installs",
     );
   }
+}
+
+function requiresRuntimeAllocatedPort(manifest: PreviewManifest | undefined) {
+  if (!manifest) return true;
+  return manifest.services.some(({ kind }) => kind === "preview");
 }
 
 function launchesCompose(script: string) {
@@ -901,9 +756,11 @@ function previewWorkspaceMountsProject(compose: string) {
 function missingNodeDependencyInstall(
   compose: string,
   scan: ProjectInitializationScan | undefined,
+  manifest: PreviewManifest | undefined,
 ) {
   if (!scan || !compose.includes("image: node:")) return false;
-  if (!Object.keys(scan.files).some((path) => path.endsWith("package.json"))) {
+  const files = relevantInitializationFiles(scan, manifest);
+  if (!files.some(([path]) => path.endsWith("package.json"))) {
     return false;
   }
   return !/\b(?:npm\s+(?:ci|install)|corepack\s+pnpm\s+install|yarn\s+install|bun\s+install)\b/.test(
@@ -914,9 +771,10 @@ function missingNodeDependencyInstall(
 function usesNuxtPreviewWithoutBuild(
   compose: string,
   scan: ProjectInitializationScan | undefined,
+  manifest: PreviewManifest | undefined,
 ) {
   if (!scan || !/\bnpm\s+run\s+preview\b/.test(compose)) return false;
-  const usesNuxt = Object.entries(scan.files).some(
+  const usesNuxt = relevantInitializationFiles(scan, manifest).some(
     ([path, content]) =>
       path.endsWith("package.json") && /"nuxt"\s*:/.test(content.toLowerCase()),
   );
@@ -954,11 +812,46 @@ function usesInterpolatedServiceUrl(compose: string) {
 function requiresDatabaseMigration(
   compose: string,
   scan: ProjectInitializationScan | undefined,
+  manifest: PreviewManifest | undefined,
 ) {
   if (!scan || !usesRelationalDatabase(compose)) return false;
-  return Object.entries(scan.files).some(([path, content]) => {
+  const scopes = initializationEvidenceScopes(manifest);
+  if (scan.discovery?.migrationPaths.some((path) => pathInScopes(path, scopes))) {
+    return true;
+  }
+  return relevantInitializationFiles(scan, manifest).some(([path, content]) => {
     return path.endsWith("/migrations/") && content.trim().length > 0;
   });
+}
+
+function relevantInitializationFiles(
+  scan: ProjectInitializationScan,
+  manifest: PreviewManifest | undefined,
+) {
+  const scopes = initializationEvidenceScopes(manifest);
+  return Object.entries(scan.files).filter(([path]) => pathInScopes(path, scopes));
+}
+
+function initializationEvidenceScopes(manifest: PreviewManifest | undefined) {
+  if (!manifest) return ["."];
+  const root = normalizedEvidenceScope(manifest.project.root);
+  if (root !== ".") return [root];
+  const serviceScopes = manifest.services.flatMap(({ workingDir }) =>
+    workingDir ? [normalizedEvidenceScope(workingDir)] : [],
+  );
+  if (serviceScopes.includes(".")) return ["."];
+  return serviceScopes.length ? [...new Set(serviceScopes)] : ["."];
+}
+
+function normalizedEvidenceScope(path: string | undefined) {
+  const normalized = path?.replaceAll("\\", "/").replace(/^\/workspace\/?/, "");
+  return normalized?.replace(/^\.\//, "").replace(/\/$/, "") || ".";
+}
+
+function pathInScopes(path: string, scopes: string[]) {
+  return scopes.some(
+    (scope) => scope === "." || path === scope || path.startsWith(`${scope}/`),
+  );
 }
 
 function usesRelationalDatabase(compose: string) {

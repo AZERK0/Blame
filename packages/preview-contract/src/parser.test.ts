@@ -61,6 +61,24 @@ test("accepts typed service bindings and probes", () => {
   assert.deepEqual(parsed.probes?.[0]?.acceptedStatuses, [200, 401]);
 });
 
+test("accepts worker-only projects without a browser preview", () => {
+  const value = manifest();
+  value.services = [value.services[0]];
+  value.probes = [];
+
+  const parsed = parsePreviewManifest(value);
+
+  assert.equal(parsed.services[0]?.kind, "worker");
+});
+
+test("accepts libraries without runtime services", () => {
+  const value = manifest();
+  value.services = [];
+  value.probes = [];
+
+  assert.deepEqual(parsePreviewManifest(value).services, []);
+});
+
 test("allows explicit browser bindings to backend services", () => {
   const value = manifest();
   value.services[1].bindings![0].exposure = "browser";

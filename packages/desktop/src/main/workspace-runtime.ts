@@ -30,6 +30,24 @@ const vmRuntimeWorktreeRoot =
   "/home/blame/.local/share/blame/runtime/worktrees";
 const macosRuntimeWorktreeSegment =
   "/Library/Application Support/Blame/runtime/worktrees";
+const ignoredProjectSearchDirectories = [
+  ".blame",
+  ".cache",
+  ".git",
+  ".next",
+  ".nuxt",
+  ".output",
+  ".pnpm-store",
+  ".svelte-kit",
+  ".turbo",
+  ".venv",
+  "__pycache__",
+  "coverage",
+  "node_modules",
+  "site-packages",
+  "venv",
+];
+const maxProjectFileSearchResults = 30_000;
 
 type RuntimeOptions = {
   cwd?: string;
@@ -305,6 +323,50 @@ export async function readDirectory(path: string, input: RuntimeOptions = {}) {
         name,
       };
     });
+}
+
+export async function findProjectFilesByName(
+  root: string,
+  name: string,
+  fns: {
+    run: (command: string, args: string[]) => Promise<{ stdout: string }>;
+  } = { run },
+) {
+  if (!name || name.includes("/") || name.includes("\\")) return [];
+  try {
+    const { stdout } = await fns.run(
+      "find",
+      projectFileSearchArguments(root, name),
+    );
+    return [...new Set(stdout.split("\n").filter(Boolean))].slice(
+      0,
+      maxProjectFileSearchResults,
+    );
+  } catch {
+    return [];
+  }
+}
+
+function projectFileSearchArguments(root: string, name: string) {
+  const ignoredNames = ignoredProjectSearchDirectories.flatMap(
+    (directory, index) =>
+      index ? ["-o", "-name", directory] : ["-name", directory],
+  );
+  return [
+    root,
+    "-type",
+    "d",
+    "(",
+    ...ignoredNames,
+    ")",
+    "-prune",
+    "-o",
+    "-type",
+    "f",
+    "-name",
+    name,
+    "-print",
+  ];
 }
 
 export async function writeFile(

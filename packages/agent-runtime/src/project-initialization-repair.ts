@@ -1,6 +1,6 @@
 import {
   parseRunConfigurations,
-  validateProjectInitializationArtifacts,
+  validateProjectInitializationOutput,
   type ProjectInitializationScan,
 } from "./project-initialization.js"
 import {
@@ -64,7 +64,13 @@ export function parseProjectInitializationRepairResult(
     throw new Error("Repairable initialization result must include complete artifacts")
   }
   const runConfigurations = parseRunConfigurations(parsed.runConfigurations)
-  validateProjectInitializationArtifacts(setupScript, dockerCompose, scan)
+  validateProjectInitializationOutput(
+    setupScript,
+    dockerCompose,
+    runConfigurations,
+    scan,
+    previewManifest,
+  )
   return { classification, reason, previewManifest, setupScript, dockerCompose, runConfigurations }
 }
 
@@ -77,7 +83,8 @@ function repairPrompt(input: RepairProjectInitializationInput, scan: ProjectInit
     `Current runConfigurations: ${JSON.stringify(input.runConfigurations)}`,
     `Initialization diagnostics: ${JSON.stringify(input.diagnostics)}`,
     `Project root entries: ${JSON.stringify(scan.topLevelEntries)}`,
-    `Strategic project files: ${JSON.stringify(scan.files)}`,
+    `Project discovery: ${JSON.stringify(scan.discovery ?? null)}`,
+    `Project evidence files: ${JSON.stringify(scan.files)}`,
   ].join("\n")
 }
 

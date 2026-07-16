@@ -124,6 +124,41 @@ test("rejects invalid repaired artifacts", () => {
   )
 })
 
+test("rejects repaired configurations that reference unknown services", () => {
+  assert.throws(
+    () =>
+      parseProjectInitializationRepairResult(
+        JSON.stringify({
+          classification: "repairable_initialization",
+          reason: "The service selection changed.",
+          previewManifest: {
+            version: 2,
+            confidence: "high",
+            project: { root: ".", detectedStack: ["node"] },
+            setup: [],
+            services: [],
+            caches: [],
+            risks: [],
+            probes: [],
+          },
+          runConfigurations: [
+            {
+              id: "worker",
+              name: "Worker",
+              command: "node worker.js",
+              cwd: ".",
+              default: true,
+              category: "service",
+              services: ["missing"],
+              scopes: ["backend"],
+            },
+          ],
+        }),
+      ),
+    /references unknown service missing/,
+  )
+})
+
 test("accepts local public origin placeholders in repaired artifacts", () => {
   const result = parseProjectInitializationRepairResult(
     JSON.stringify({

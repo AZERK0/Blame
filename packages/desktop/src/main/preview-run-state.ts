@@ -43,6 +43,36 @@ export function selectedPreviewRunConfiguration(
   );
 }
 
+export function shouldStartBrowserPreview(
+  configurations: ProjectRunConfiguration[],
+  state: PreviewRuntimeSelectionState,
+  manifest: PreviewManifest | undefined,
+) {
+  const selected = selectedPreviewRunConfiguration(configurations, state);
+  if (!manifest) {
+    return configurations.length === 0 || Boolean(selected?.previewService);
+  }
+  if (!selected) return manifest.services.some(browserPreviewService);
+  if (selected.category && selected.category !== "web") return false;
+  return manifest.services.some(
+    (service) =>
+      service.id === selected.previewService && browserPreviewService(service),
+  );
+}
+
+export function selectedPreviewRuntimeServiceIds(
+  configurations: ProjectRunConfiguration[],
+  state: PreviewRuntimeSelectionState,
+  runtimeServiceIds: string[],
+) {
+  const selected = selectedPreviewRunConfiguration(configurations, state);
+  const runtimeServices = new Set(runtimeServiceIds);
+  const selectedServices = (selected?.services ?? []).filter((service) =>
+    runtimeServices.has(service),
+  );
+  return selectedServices.length ? selectedServices : runtimeServiceIds;
+}
+
 export function normalizeStoredRunConfigurations(
   configurations: ProjectRunConfiguration[],
   manifest: PreviewManifest | undefined,
@@ -108,6 +138,10 @@ function previewServiceDependencies(service: PreviewManifestService) {
         .map(({ source }) => source.service),
     ]),
   );
+}
+
+function browserPreviewService(service: PreviewManifestService) {
+  return service.kind === "preview" && Boolean(service.preview);
 }
 
 function normalizeStoredRunConfiguration(

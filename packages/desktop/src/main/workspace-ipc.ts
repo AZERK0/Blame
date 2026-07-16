@@ -96,7 +96,9 @@ import {
   normalizeStoredRunConfigurations,
   previewRunConfigurationStatus,
   previewRunConfigurationServiceIds,
+  selectedPreviewRuntimeServiceIds,
   selectedPreviewRunConfiguration,
+  shouldStartBrowserPreview,
   type PreviewRuntimeSelectionState,
 } from "./preview-run-state";
 import {
@@ -155,8 +157,13 @@ import {
   writeFile as writeRuntimeFile,
   writeFileAtomic as writeRuntimeFileAtomic,
   ensureRuntimeGitUserIdentity,
+  findProjectFilesByName,
   resetRuntimeGitIdentityConfigured,
 } from "./workspace-runtime";
+import {
+  detectedStackUsesNext,
+  packageJsonUsesNext,
+} from "./project-stack-detection";
 import {
   startWorkspaceStep,
   traceWorkspaceStep,
@@ -1975,13 +1982,17 @@ function finishSetupProcessSpan(run: SetupRun, code: number | null) {
 async function completeSuccessfulProjectSetup(run: SetupRun) {
   const { id: runId, worktree } = run;
   try {
-    await traceSetupPreview(run, () => completeSetupPreview(worktree));
+    const previewUrl = await traceSetupPreview(run, () =>
+      completeSetupPreview(worktree),
+    );
     finishSetupRun(run, "succeeded");
     emitSetupOutput(
       runId,
       worktree,
       "stdout",
-      "Project preview containers are running.\n",
+      previewUrl
+        ? "Project preview containers are running.\n"
+        : "Project runtime is ready.\n",
     );
     emitSetupOutput(runId, worktree, "exit", "0");
   } catch (error) {
@@ -2154,7 +2165,7 @@ async function startProjectCompose(
     runProjectComposeUp(worktree),
   );
   if (await stopPreviewStartWhenRequested(worktree)) return undefined;
-  if (await selectedRunConfigurationHasNoPreview(worktree)) {
+  if (!(await projectRuntimeShouldStartBrowserPreview(worktree))) {
     await timedRecoveryStep(worktree, "preview probes", () =>
       runPreviewProbes(worktree),
     );
@@ -2190,14 +2201,13 @@ async function startSelectedWebPreview(worktree: string) {
   return previewUrl;
 }
 
-async function selectedRunConfigurationHasNoPreview(worktree: string) {
-  const [configurations, state] = await Promise.all([
+async function projectRuntimeShouldStartBrowserPreview(worktree: string) {
+  const [configurations, state, manifest] = await Promise.all([
     readProjectRunConfigurations(worktree),
     readPreviewRuntimeFileState(worktree),
+    readProjectPreviewManifest(worktree),
   ]);
-  if (!configurations.length) return false;
-  return !selectedPreviewRunConfiguration(configurations, state)
-    ?.previewService;
+  return shouldStartBrowserPreview(configurations, state, manifest);
 }
 
 async function syncPreviewRuntimeEnvironment(
@@ -2261,9 +2271,6 @@ async function runProjectComposeUp(worktree: string) {
     "compose completed dependencies",
     () => runCompletedDependencyServices(worktree, config, setupServices),
   );
-  await timedRecoveryStep(worktree, "compose log stream", () =>
-    startProjectLogStream(worktree),
-  );
   const services = runtimeServices(
     config,
     new Set([...setupServices, ...completedServices]),
@@ -2271,6 +2278,10 @@ async function runProjectComposeUp(worktree: string) {
   const selectedServices = await selectedComposeRuntimeServices(
     worktree,
     services,
+  );
+  if (!selectedServices.length) return;
+  await timedRecoveryStep(worktree, "compose log stream", () =>
+    startProjectLogStream(worktree),
   );
   await timedRecoveryStep(worktree, "compose runtime services", () =>
     runComposeWithRetry(
@@ -2299,11 +2310,11 @@ async function selectedComposeRuntimeServices(
     readProjectRunConfigurations(worktree),
     readPreviewRuntimeFileState(worktree),
   ]);
-  const selected = selectedPreviewRunConfiguration(configurations, state);
-  const services = (selected?.services ?? []).filter((service) =>
-    runtimeServiceIds.includes(service),
+  return selectedPreviewRuntimeServiceIds(
+    configurations,
+    state,
+    runtimeServiceIds,
   );
-  return services.length ? services : runtimeServiceIds;
 }
 
 async function runSetupTaskServices(worktree: string, config: ComposeConfig) {
@@ -2758,14 +2769,15 @@ async function resolveProjectPreviewUrl(input: ResolveProjectPreviewUrlInput) {
   const worktree = resolveRuntimePath(input.worktree);
   if (removedWorktrees.has(worktree)) return null;
   if (!(await isWorkspaceGitRepository(worktree))) return null;
-  const configurations = await readProjectRunConfigurations(worktree);
-  const runtimeState = await readPreviewRuntimeFileState(worktree);
+  const [configurations, runtimeState, manifest] = await Promise.all([
+    readProjectRunConfigurations(worktree),
+    readPreviewRuntimeFileState(worktree),
+    readProjectPreviewManifest(worktree),
+  ]);
   if (runtimeState.desiredStatus === "stopped") return null;
-  const selected = selectedPreviewRunConfiguration(
-    configurations,
-    runtimeState,
-  );
-  if (configurations.length > 0 && !selected?.previewService) return null;
+  if (!shouldStartBrowserPreview(configurations, runtimeState, manifest)) {
+    return null;
+  }
   const composePath = projectComposePath(worktree);
   if (!(await runtimePathExists(composePath)))
     return labeledContainerPreviewUrl(worktree);
@@ -2795,16 +2807,15 @@ async function ensureProjectPreviewUrl(input: EnsureProjectPreviewUrlInput) {
   if (removingWorktrees.has(worktree)) return null;
   if (!(await isWorkspaceGitRepository(worktree))) return null;
   if (setupRunningForWorktree(worktree)) return null;
-  const [configurations, runtimeState] = await Promise.all([
+  const [configurations, runtimeState, manifest] = await Promise.all([
     readProjectRunConfigurations(worktree),
     readPreviewRuntimeFileState(worktree),
+    readProjectPreviewManifest(worktree),
   ]);
   if (runtimeState.desiredStatus === "stopped") return null;
-  const selected = selectedPreviewRunConfiguration(
-    configurations,
-    runtimeState,
-  );
-  if (configurations.length > 0 && !selected?.previewService) return null;
+  if (!shouldStartBrowserPreview(configurations, runtimeState, manifest)) {
+    return null;
+  }
   const currentUrl = await resolveProjectPreviewUrl({ worktree });
   if (currentUrl && (await previewResponds(currentUrl))) {
     const currentOrigin = previewOrigin(currentUrl);
@@ -4232,26 +4243,24 @@ async function repairComposeFile(
 }
 
 async function worktreeHasNextProject(worktree: string) {
-  const paths = [
-    "package.json",
-    "apps/web/package.json",
-    "packages/vitrine/package.json",
-  ].map((file) => joinWorkspacePath(worktree, file));
-  const files = await readExistingRuntimeFiles(paths);
-  return Object.values(files).some(nextPackageJson);
+  const manifest = await readProjectPreviewManifest(worktree).catch(
+    () => undefined,
+  );
+  const detectedStackResult = detectedStackUsesNext(manifest);
+  if (detectedStackResult !== undefined) return detectedStackResult;
+  const paths = await findProjectFilesByName(worktree, "package.json");
+  return projectPackageFilesUseNext(paths);
 }
 
-function nextPackageJson(content: string | null) {
-  if (!content) return false;
-  try {
-    const pkg = JSON.parse(content) as {
-      dependencies?: Record<string, unknown>;
-      devDependencies?: Record<string, unknown>;
-    };
-    return Boolean(pkg.dependencies?.next || pkg.devDependencies?.next);
-  } catch {
-    return false;
+async function projectPackageFilesUseNext(paths: string[]) {
+  const batchSize = 64;
+  for (let index = 0; index < paths.length; index += batchSize) {
+    const files = await readExistingRuntimeFiles(
+      paths.slice(index, index + batchSize),
+    );
+    if (Object.values(files).some(packageJsonUsesNext)) return true;
   }
+  return false;
 }
 
 async function prepareProjectCompose(

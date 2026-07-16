@@ -16,6 +16,7 @@ import {
   sanitizeWorkspaceConfigFiles,
   ensureRuntimeGitUserIdentity,
   resetRuntimeGitIdentityConfiguredForTesting,
+  findProjectFilesByName,
 } from "./workspace-runtime.ts";
 
 test("replaces runtime state files atomically", async () => {
@@ -79,6 +80,27 @@ test("builds stable worktree paths for every desktop platform", () => {
     }),
     expectedRuntime,
   );
+});
+
+test("findProjectFilesByName searches arbitrary paths without excluding project-like build folders", async () => {
+  let args: string[] = [];
+  const paths = await findProjectFilesByName("/workspace", "package.json", {
+    run: async (_command, receivedArgs) => {
+      args = receivedArgs;
+      return {
+        stdout:
+          "/workspace/package.json\n/workspace/unusual/build/app/package.json\n",
+      };
+    },
+  });
+
+  assert.deepEqual(paths, [
+    "/workspace/package.json",
+    "/workspace/unusual/build/app/package.json",
+  ]);
+  assert.ok(args.includes("node_modules"));
+  assert.equal(args.includes("build"), false);
+  assert.equal(args.includes("dist"), false);
 });
 
 test("keeps story branch naming unchanged", () => {

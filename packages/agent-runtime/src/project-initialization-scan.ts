@@ -1,0 +1,235 @@
+import { basename } from "node:path";
+
+import {
+  balancedGitMessages,
+  discoverProjectFiles,
+  isDatabaseEvidencePath,
+  isMigrationEvidencePath,
+  isProjectDocumentationPath,
+  isProjectEntrypointPath,
+  isProjectLockFilePath,
+  isProjectManifestPath,
+  isRuntimeEvidencePath,
+  isSourceCodePath,
+  isTestCodePath,
+  preferNonGeneratedProjectPaths,
+  readBoundedProjectFiles,
+  recentProjectGitLogs,
+  selectBalancedProjectPaths,
+  topLevelProjectEntries,
+  type ProjectFileDiscovery,
+  type ProjectRootEvidence,
+} from "./project-discovery.js";
+
+type InitializationCandidates = {
+  manifestPaths: string[];
+  runtimePaths: string[];
+  entrypointPaths: string[];
+  documentationPaths: string[];
+  sourcePaths: string[];
+  databaseConfigurationPaths: string[];
+};
+
+export type ProjectInitializationScan = {
+  rootName: string;
+  topLevelEntries: string[];
+  files: Record<string, string>;
+  gitLog: string[];
+  discovery?: {
+    scannedFileCount: number;
+    scannedDirectoryCount: number;
+    ignoredDirectoryCount: number;
+    truncated: boolean;
+    projectRoots: ProjectRootEvidence[];
+    repositoryRoots: string[];
+    manifestFileCount: number;
+    manifestPaths: string[];
+    lockFileCount: number;
+    lockFilePaths: string[];
+    runtimeEvidenceFileCount: number;
+    runtimeEvidencePaths: string[];
+    entrypointFileCount: number;
+    entrypointPaths: string[];
+    databaseFileCount: number;
+    databasePaths: string[];
+    migrationFileCount: number;
+    migrationPaths: string[];
+  };
+};
+
+export async function scanProjectForInitialization(
+  root: string,
+): Promise<ProjectInitializationScan> {
+  const discovery = await discoverProjectFiles(root);
+  const candidates = initializationCandidates(discovery);
+  const [files, gitLog] = await Promise.all([
+    initializationEvidence(root, candidates),
+    initializationGitLog(root, discovery.repositoryRoots),
+  ]);
+  return {
+    rootName: basename(root),
+    topLevelEntries: topLevelProjectEntries(discovery),
+    files,
+    gitLog,
+    discovery: initializationDiscovery(discovery),
+  };
+}
+
+function initializationCandidates(
+  discovery: ProjectFileDiscovery,
+): InitializationCandidates {
+  const { files, projectRoots } = discovery;
+  const entrypointPaths = balanced(
+    files,
+    projectRoots,
+    isProjectEntrypointPath,
+    16,
+  );
+  return {
+    manifestPaths: balanced(files, projectRoots, isProjectManifestPath, 32),
+    runtimePaths: balanced(files, projectRoots, isRuntimeEvidencePath, 24),
+    entrypointPaths,
+    documentationPaths: balanced(
+      files,
+      projectRoots,
+      isProjectDocumentationPath,
+      4,
+    ),
+    sourcePaths: initializationSourcePaths(discovery, entrypointPaths),
+    databaseConfigurationPaths: databaseConfigurationPaths(discovery),
+  };
+}
+
+function balanced(
+  files: string[],
+  roots: ProjectRootEvidence[],
+  predicate: (path: string) => boolean,
+  limit: number,
+) {
+  const matchingPaths = files.filter(predicate);
+  const preferredPaths = preferNonGeneratedProjectPaths(matchingPaths, roots);
+  return selectBalancedProjectPaths(preferredPaths, roots, limit);
+}
+
+function initializationSourcePaths(
+  discovery: ProjectFileDiscovery,
+  entrypointPaths: string[],
+) {
+  const entrypoints = new Set(entrypointPaths);
+  const paths = discovery.files.filter(
+    (path) =>
+      isSourceCodePath(path) && !isTestCodePath(path) && !entrypoints.has(path),
+  );
+  const preferredPaths = preferNonGeneratedProjectPaths(
+    paths,
+    discovery.projectRoots,
+  );
+  return selectBalancedProjectPaths(preferredPaths, discovery.projectRoots, 10);
+}
+
+function databaseConfigurationPaths(discovery: ProjectFileDiscovery) {
+  const paths = discovery.files.filter(
+    (path) =>
+      isDatabaseEvidencePath(path) && isReadableDatabaseConfiguration(path),
+  );
+  const preferredPaths = preferNonGeneratedProjectPaths(
+    paths,
+    discovery.projectRoots,
+  );
+  return selectBalancedProjectPaths(preferredPaths, discovery.projectRoots, 6);
+}
+
+function isReadableDatabaseConfiguration(path: string) {
+  const name = path.split("/").at(-1)?.toLowerCase() ?? "";
+  return (
+    name === "alembic.ini" ||
+    name === "schema.prisma" ||
+    /^(drizzle|prisma)\.config\.[a-z0-9]+$/.test(name)
+  );
+}
+
+async function initializationEvidence(
+  root: string,
+  candidates: InitializationCandidates,
+) {
+  const evidence = await Promise.all([
+    readBoundedProjectFiles(root, candidates.manifestPaths, 30_000, 5_000),
+    readBoundedProjectFiles(root, candidates.runtimePaths, 14_000, 3_000),
+    readBoundedProjectFiles(root, candidates.entrypointPaths, 8_000, 2_000),
+    readBoundedProjectFiles(root, candidates.documentationPaths, 3_000, 2_000),
+    readBoundedProjectFiles(root, candidates.sourcePaths, 8_000, 2_000),
+    readBoundedProjectFiles(
+      root,
+      candidates.databaseConfigurationPaths,
+      3_000,
+      1_500,
+    ),
+  ]);
+  return Object.assign({}, ...evidence) as Record<string, string>;
+}
+
+async function initializationGitLog(root: string, repositories: string[]) {
+  const logs = await recentProjectGitLogs(root, repositories, 12);
+  return balancedGitMessages(logs, 12);
+}
+
+function initializationDiscovery(discovery: ProjectFileDiscovery) {
+  return {
+    scannedFileCount: discovery.files.length,
+    scannedDirectoryCount: discovery.scannedDirectoryCount,
+    ignoredDirectoryCount: discovery.ignoredDirectoryCount,
+    truncated: discovery.truncated,
+    projectRoots: discovery.projectRoots.slice(0, 120),
+    repositoryRoots: discovery.repositoryRoots.slice(0, 60),
+    ...initializationDiscoveryPaths(discovery),
+  };
+}
+
+function initializationDiscoveryPaths(discovery: ProjectFileDiscovery) {
+  const summarize = (predicate: (path: string) => boolean, limit: number) =>
+    discoveryPathSummary(discovery, predicate, limit);
+  const manifests = summarize(isProjectManifestPath, 120);
+  const locks = summarize(isProjectLockFilePath, 120);
+  const runtime = summarize(isRuntimeEvidencePath, 120);
+  const entrypoints = summarize(isProjectEntrypointPath, 120);
+  const database = summarize(isNonMigrationDatabasePath, 80);
+  const migrations = summarize(isMigrationEvidencePath, 80);
+  return {
+    manifestFileCount: manifests.count,
+    manifestPaths: manifests.paths,
+    lockFileCount: locks.count,
+    lockFilePaths: locks.paths,
+    runtimeEvidenceFileCount: runtime.count,
+    runtimeEvidencePaths: runtime.paths,
+    entrypointFileCount: entrypoints.count,
+    entrypointPaths: entrypoints.paths,
+    databaseFileCount: database.count,
+    databasePaths: database.paths,
+    migrationFileCount: migrations.count,
+    migrationPaths: migrations.paths,
+  };
+}
+
+function discoveryPathSummary(
+  discovery: ProjectFileDiscovery,
+  predicate: (path: string) => boolean,
+  limit: number,
+) {
+  const paths = matchingPaths(discovery, predicate);
+  return {
+    count: paths.length,
+    paths: selectBalancedProjectPaths(paths, discovery.projectRoots, limit),
+  };
+}
+
+function matchingPaths(
+  discovery: ProjectFileDiscovery,
+  predicate: (path: string) => boolean,
+) {
+  const matches = discovery.files.filter(predicate);
+  return preferNonGeneratedProjectPaths(matches, discovery.projectRoots);
+}
+
+function isNonMigrationDatabasePath(path: string) {
+  return isDatabaseEvidencePath(path) && !isMigrationEvidencePath(path);
+}

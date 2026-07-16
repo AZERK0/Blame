@@ -11,9 +11,23 @@ import {
   buildDevelopmentSystemPrompt,
   developmentUserInput,
   duplicateEventSignature,
+  initializationToolPolicies,
   nextSpawnAgentActiveCount,
   shouldDisplayClineSessionEvent,
 } from "./cline-runtime.js";
+
+test("limits initialization fallback tools to project reads and search", () => {
+  const policies = initializationToolPolicies();
+
+  assert.deepEqual(policies.read_files, { autoApprove: true });
+  assert.deepEqual(policies.search_codebase, { autoApprove: true });
+  assert.deepEqual(policies.fetch_web_content, disabledToolPolicy());
+  assert.deepEqual(policies.get_preview_devtools, disabledToolPolicy());
+  assert.deepEqual(policies.get_preview_container_logs, disabledToolPolicy());
+  assert.deepEqual(policies.run_commands, disabledToolPolicy());
+  assert.deepEqual(policies.editor, disabledToolPolicy());
+  assert.deepEqual(policies.apply_patch, disabledToolPolicy());
+});
 
 test("hides teammate agent content events", () => {
   assert.equal(
@@ -229,6 +243,10 @@ function toolEvent(toolName: string): AgentEvent {
     sessionId: "session",
     type: "tool",
   };
+}
+
+function disabledToolPolicy() {
+  return { enabled: false, autoApprove: false };
 }
 
 function fileAttachment(name: string, type: string) {

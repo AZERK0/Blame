@@ -7,7 +7,9 @@ import {
   normalizeStoredRunConfigurations,
   previewRunConfigurationStatus,
   previewRunConfigurationServiceIds,
+  selectedPreviewRuntimeServiceIds,
   selectedPreviewRunConfiguration,
+  shouldStartBrowserPreview,
 } from "./preview-run-state.ts";
 
 const configurations = [
@@ -28,6 +30,15 @@ const configurations = [
     services: ["app"],
   },
 ];
+const browserPreviewManifest = {
+  services: [
+    {
+      id: "web",
+      kind: "preview",
+      preview: { internalPort: 3000, path: "/", protocol: "http" },
+    },
+  ],
+} as PreviewManifest;
 
 test("selects the story recommendation before the project default", () => {
   const state = initialPreviewRuntimeSelection(configurations, "app");
@@ -146,5 +157,112 @@ test("keeps legacy unclassified web configurations compatible", () => {
   assert.deepEqual(
     normalizeStoredRunConfigurations([configuration], manifest),
     [configuration],
+  );
+});
+
+test("does not start a browser for a manifest without a preview service", () => {
+  const manifest = {
+    services: [{ id: "worker", kind: "worker" }],
+  } as PreviewManifest;
+  assert.equal(
+    shouldStartBrowserPreview([], { desiredStatus: "running" }, manifest),
+    false,
+  );
+});
+
+test("does not start a browser for selected service or terminal runs", () => {
+  for (const category of ["service", "terminal"] as const) {
+    const configuration = {
+      ...configurations[0],
+      category,
+      previewService: "web",
+      services: ["web"],
+    };
+    assert.equal(
+      shouldStartBrowserPreview(
+        [configuration],
+        initialPreviewRuntimeSelection([configuration], undefined),
+        browserPreviewManifest,
+      ),
+      false,
+    );
+  }
+});
+
+test("starts a browser for the selected web preview", () => {
+  const configuration = {
+    ...configurations[0],
+    category: "web" as const,
+    previewService: "web",
+    services: ["web"],
+  };
+  assert.equal(
+    shouldStartBrowserPreview(
+      [configuration],
+      initialPreviewRuntimeSelection([configuration], undefined),
+      browserPreviewManifest,
+    ),
+    true,
+  );
+});
+
+test("starts a browser from a web manifest without stored configurations", () => {
+  assert.equal(
+    shouldStartBrowserPreview(
+      [],
+      { desiredStatus: "running" },
+      browserPreviewManifest,
+    ),
+    true,
+  );
+});
+
+test("keeps manifest-less preview discovery compatible", () => {
+  assert.equal(
+    shouldStartBrowserPreview([], { desiredStatus: "running" }, undefined),
+    true,
+  );
+  assert.equal(
+    shouldStartBrowserPreview(
+      configurations,
+      initialPreviewRuntimeSelection(configurations, undefined),
+      undefined,
+    ),
+    false,
+  );
+  const legacyPreview = { ...configurations[0], previewService: "marketing" };
+  assert.equal(
+    shouldStartBrowserPreview(
+      [legacyPreview],
+      initialPreviewRuntimeSelection([legacyPreview], undefined),
+      undefined,
+    ),
+    true,
+  );
+});
+
+test("returns no compose targets when setup has no runtime services", () => {
+  assert.deepEqual(
+    selectedPreviewRuntimeServiceIds(
+      configurations,
+      initialPreviewRuntimeSelection(configurations, undefined),
+      [],
+    ),
+    [],
+  );
+});
+
+test("selects configured runtime services and preserves the legacy fallback", () => {
+  const state = initialPreviewRuntimeSelection(configurations, "app");
+  assert.deepEqual(
+    selectedPreviewRuntimeServiceIds(configurations, state, [
+      "marketing",
+      "app",
+    ]),
+    ["app"],
+  );
+  assert.deepEqual(
+    selectedPreviewRuntimeServiceIds([], state, ["marketing", "app"]),
+    ["marketing", "app"],
   );
 });

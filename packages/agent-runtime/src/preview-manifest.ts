@@ -439,17 +439,18 @@ function composeYaml(manifest: PreviewManifest) {
   const runtimeServiceIds = new Set(
     manifest.services.map((service) => service.id),
   );
-  const lines = [
-    "services:",
+  const services = [
     ...volumeInitService(manifest.caches),
     ...manifest.setup.flatMap((task) => setupTaskYaml(task, manifest.caches)),
     ...manifest.services.flatMap((service) =>
       serviceYaml(service, manifest, manifest.caches, runtimeServiceIds),
     ),
-    "volumes:",
-    ...manifest.caches.flatMap((cache) => [`  ${cache.name}:`]),
   ];
-  return lines.join("\n");
+  const volumes = manifest.caches.flatMap((cache) => [`  ${cache.name}:`]);
+  return [
+    ...(services.length ? ["services:", ...services] : ["services: {}"]),
+    ...(volumes.length ? ["volumes:", ...volumes] : ["volumes: {}"]),
+  ].join("\n");
 }
 
 function volumeInitService(caches: PreviewManifestCache[]) {

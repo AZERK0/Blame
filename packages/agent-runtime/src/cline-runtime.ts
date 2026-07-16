@@ -159,6 +159,10 @@ const readTools = [
   "get_preview_container_logs",
   ...codeReviewGraphToolNames,
 ];
+const initializationFallbackReadTools = new Set([
+  "read_files",
+  "search_codebase",
+]);
 const writeTools = ["run_commands", "editor", "apply_patch"];
 const blockedCommandParts = [
   "rm -rf",
@@ -4249,10 +4253,15 @@ function resultStatus(payload: Record<string, unknown>) {
   );
 }
 
-function initializationToolPolicies() {
+export function initializationToolPolicies() {
   return Object.fromEntries([
     ["submit_project_initialization", { autoApprove: true }],
-    ...readTools.map((name) => [name, { autoApprove: true }]),
+    ...readTools.map((name) => [
+      name,
+      initializationFallbackReadTools.has(name)
+        ? { autoApprove: true }
+        : { enabled: false, autoApprove: false },
+    ]),
     ...writeTools.map((name) => [name, { enabled: false, autoApprove: false }]),
   ]);
 }

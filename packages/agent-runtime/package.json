@@ -17,7 +17,7 @@
     "build": "tsc && node scripts/copy-prompt.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "pnpm build && node --test dist/project-initialization.test.js dist/project-code-practices.test.js dist/project-initialization-repair.test.js dist/next-webpack-fallback.test.js dist/project-initialization-impact.test.js dist/code-review-graph-tools.test.js dist/commit-message.test.js dist/context-compression.test.js dist/headroom-sidecar.test.js dist/specialist-agents.test.js dist/cline-runtime-events.test.js dist/agent-telemetry.test.js dist/provider-schema-compatibility.test.js dist/title-generation.test.js"
+    "test": "pnpm build && node --test dist/project-initialization.test.js dist/project-code-practices.test.js dist/project-scanners.test.js dist/project-initialization-repair.test.js dist/next-webpack-fallback.test.js dist/project-initialization-impact.test.js dist/code-review-graph-tools.test.js dist/commit-message.test.js dist/context-compression.test.js dist/headroom-sidecar.test.js dist/specialist-agents.test.js dist/cline-runtime-events.test.js dist/agent-telemetry.test.js dist/provider-schema-compatibility.test.js dist/title-generation.test.js"
   },
   "dependencies": {
     "@blame/preview-contract": "workspace:*",

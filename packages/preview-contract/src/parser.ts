@@ -83,9 +83,6 @@ export function validatePreviewManifest(manifest: PreviewManifest) {
   for (const cache of manifest.caches) validateCache(cache);
   validateTopology(manifest);
   validateVersionTwoContract(manifest);
-  if (!manifest.services.some(({ kind }) => kind === "preview")) {
-    throw new Error("previewManifest must define a preview service");
-  }
 }
 
 function validateVersionTwoContract(manifest: PreviewManifest) {

@@ -4,7 +4,9 @@ import test from "node:test";
 import {
   parseProjectInitializationPayload,
   parseProjectInitializationResult,
+  validateProjectInitializationArtifacts,
 } from "./project-initialization.js";
+import { parsePreviewManifest } from "./preview-manifest.js";
 
 const baseResult = {
   setupScript: "set -euo pipefail",
@@ -159,6 +161,145 @@ test("generates initialization artifacts from preview manifest", () => {
   assert.doesNotMatch(result.dockerCompose, /3000:3000/);
   assert.doesNotMatch(result.dockerCompose, /blame-volumes-init:\n\s+volumes:/);
 });
+
+test("supports libraries without runtime or browser services", () => {
+  const result = parseProjectInitializationResult(
+    JSON.stringify(nonBrowserInitialization([], [])),
+  );
+
+  assert.equal(result.runConfigurations.length, 0);
+  assert.match(result.dockerCompose, /^services: \{\}/m);
+  assert.match(result.dockerCompose, /^volumes: \{\}/m);
+  assert.doesNotMatch(result.dockerCompose, /127\.0\.0\.1::/);
+});
+
+test("supports persistent workers without browser ports", () => {
+  const result = parseProjectInitializationResult(
+    JSON.stringify(nonBrowserInitialization([workerService()], [workerRun()])),
+  );
+
+  assert.match(result.dockerCompose, /blame\.service\.kind: "worker"/);
+  assert.doesNotMatch(result.dockerCompose, /127\.0\.0\.1::/);
+});
+
+test("keeps runtime ports mandatory for browser and legacy manifests", () => {
+  const compose = "services:\n  web:\n    image: node:22-bookworm";
+  const manifest = parsePreviewManifest(manifestResult.previewManifest);
+
+  assert.throws(
+    () =>
+      validateProjectInitializationArtifacts(
+        "set -euo pipefail",
+        compose,
+        undefined,
+        manifest,
+      ),
+    /runtime-allocated host ports/,
+  );
+  assert.throws(
+    () => validateProjectInitializationArtifacts("set -euo pipefail", compose),
+    /runtime-allocated host ports/,
+  );
+});
+
+test("scopes validation evidence to the selected project root", () => {
+  const manifest = parsePreviewManifest(scopedWorkerManifest());
+
+  assert.doesNotThrow(() =>
+    validateProjectInitializationArtifacts(
+      "set -euo pipefail",
+      scopedWorkerCompose(),
+      unrelatedProjectScan,
+      manifest,
+    ),
+  );
+});
+
+function nonBrowserInitialization(
+  services: unknown[],
+  runConfigurations: unknown[],
+) {
+  return {
+    ...manifestResult,
+    previewManifest: {
+      ...manifestResult.previewManifest,
+      project: { root: ".", detectedStack: ["python"] },
+      setup: [],
+      services,
+      caches: [],
+      probes: [],
+    },
+    runConfigurations,
+  };
+}
+
+function workerService() {
+  return {
+    id: "worker",
+    kind: "worker",
+    image: "python:3.13-slim",
+    workingDir: "/workspace",
+    command: "python worker.py",
+    endpoints: [],
+  };
+}
+
+function workerRun() {
+  return {
+    id: "worker",
+    name: "Worker",
+    command: "python worker.py",
+    cwd: ".",
+    default: true,
+    category: "service",
+    services: ["worker"],
+    scopes: ["worker"],
+  };
+}
+
+function scopedWorkerManifest() {
+  const initialization = nonBrowserInitialization(
+    [
+      {
+        ...workerService(),
+        image: "node:22-bookworm",
+        workingDir: "/workspace/selected",
+        command: "node worker.js",
+      },
+      {
+        id: "database",
+        kind: "dependency",
+        image: "postgres:17",
+        endpoints: [],
+      },
+    ],
+    [],
+  );
+  return {
+    ...initialization.previewManifest,
+    project: { root: "selected" },
+  };
+}
+
+function scopedWorkerCompose() {
+  return [
+    "services:",
+    "  worker:",
+    "    image: node:22-bookworm",
+    "  database:",
+    "    image: postgres:17",
+  ].join("\n");
+}
+
+const unrelatedProjectScan = {
+  rootName: "parent",
+  topLevelEntries: [],
+  files: {
+    "unrelated/package.json": '{"dependencies":{"nuxt":"latest"}}',
+    "unrelated/migrations/": "001_create_users.sql",
+  },
+  gitLog: [],
+};
 
 test("compiles version two service and browser bindings", () => {
   const web = {

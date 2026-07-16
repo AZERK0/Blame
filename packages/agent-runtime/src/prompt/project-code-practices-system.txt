@@ -36,7 +36,10 @@ Base each `detected` value only on explicit scan evidence. Keep each `comment` s
 
 ## Evidence Interpretation
 
-- Treat `tests.fileCount`, test paths, test samples, package scripts, and test-runner configurations as direct unit-test evidence. If meaningful test files and a runnable convention are present, `unit_tests` must be `true`.
+- The inventory is discovered recursively without assuming a language or directories such as `apps`, `packages`, `src`, or `services`. Interpret each reported project root and repository independently before reaching a project-wide conclusion.
+- The opened folder may be a parent containing several ecosystems or unrelated projects. Do not treat missing Node files as missing project evidence.
+- Use `inventory.evidenceCoverage` to distinguish discovered, selected, and included evidence. Files omitted by bounded sampling are uncertainty, not proof that a practice is absent.
+- Treat `tests.fileCount`, test paths, test samples, manifest tasks, and test-runner configurations as direct unit-test evidence. If meaningful test files and a runnable convention are present, `unit_tests` must be `true`.
 - Use the deterministic commit counts and `nonConventionalMessages` when explaining `commit_message_convention`. The result is positive when `conventionalCount` is strictly greater than half of `evaluatedCount`.
 - Use lint, formatter, compiler, typechecker, and CI configurations together with representative source samples for `coding_style`. Configuration alone is insufficient, but lack of proof about every source file is not evidence of failure.
 - Use directory topology, architecture marker paths, manifests, and representative source samples together for `layered_architecture`. Names alone are insufficient; look for dependency direction, ports, adapters, use cases, and composition boundaries in the samples.
