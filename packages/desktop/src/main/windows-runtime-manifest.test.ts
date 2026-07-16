@@ -6,6 +6,7 @@ import {
   mkdtemp,
   readFile,
   rm,
+  symlink,
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -99,6 +100,17 @@ test("keeps the Lima template while embedding its verified bundle", async () => 
     });
     await access(path.join(runtimeRoot, "macos/lima/blame-runtime.yaml"));
     await access(path.join(runtimeRoot, "macos/lima/bundle/bin/limactl"));
+    await access(
+      path.join(runtimeRoot, "macos/lima/bundle/share/lima/templates"),
+    );
+    await access(
+      path.join(runtimeRoot, "macos/lima/bundle/share/doc/lima/LICENSE"),
+    );
+    await assert.rejects(
+      access(
+        path.join(runtimeRoot, "macos/lima/bundle/share/doc/lima/templates"),
+      ),
+    );
   } finally {
     if (previousBundle) process.env.BLAME_LIMA_BUNDLE_DIR = previousBundle;
     else delete process.env.BLAME_LIMA_BUNDLE_DIR;
@@ -157,10 +169,19 @@ function assertVerifiedSpecs(
 
 async function createFakeLimaBundle(bundleRoot: string) {
   const binRoot = path.join(bundleRoot, "bin");
+  const documentationRoot = path.join(bundleRoot, "share/doc/lima");
   await mkdir(binRoot, { recursive: true });
-  await mkdir(path.join(bundleRoot, "share/lima"), { recursive: true });
+  await mkdir(documentationRoot, { recursive: true });
+  await mkdir(path.join(bundleRoot, "share/lima/templates"), {
+    recursive: true,
+  });
   await writeFile(path.join(binRoot, "limactl"), "", { mode: 0o755 });
   await writeFile(path.join(binRoot, "lima"), "", { mode: 0o755 });
+  await writeFile(path.join(documentationRoot, "LICENSE"), "Apache-2.0\n");
+  await symlink(
+    "../../lima/templates",
+    path.join(documentationRoot, "templates"),
+  );
 }
 
 async function readRuntimeManifest(runtimeRoot: string, platform: string) {

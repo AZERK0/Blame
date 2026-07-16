@@ -46,6 +46,10 @@ export async function copyLimaBundle(
   const bundleDir = await resolveLimaBundle(manifest, platform, architecture);
   await rm(destination, { force: true, recursive: true });
   await cp(bundleDir, destination, { recursive: true });
+  await rm(join(destination, "share/doc/lima/templates"), {
+    force: true,
+    recursive: true,
+  });
 }
 
 function archiveSpec(manifest, platform, architecture) {
