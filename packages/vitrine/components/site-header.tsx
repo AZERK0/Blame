@@ -22,7 +22,7 @@ export function SiteHeader() {
   const pathname = usePathname()
 
   return (
-    <header className="landing-reveal landing-reveal-header fixed inset-x-0 top-0 z-30">
+    <header className="landing-reveal landing-reveal-header fixed inset-x-0 top-0 z-30 bg-gradient-to-b from-[#050505]/90 via-[#050505]/45 to-transparent">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5 sm:px-8 lg:px-10">
         <Link
           href="/#top"

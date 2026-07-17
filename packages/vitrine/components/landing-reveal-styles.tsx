@@ -46,6 +46,94 @@ export function LandingRevealStyles() {
         animation: warmupScan 940ms cubic-bezier(0.7, 0, 0.2, 1) 120ms forwards;
       }
 
+      .story-title {
+        text-wrap: balance;
+        font-size: clamp(2.5rem, 5.6vw, 5rem);
+        font-weight: 600;
+        letter-spacing: -0.015em;
+        line-height: 1.05;
+      }
+
+      .story-eyebrow {
+        color: var(--primary);
+        font-size: clamp(1.0625rem, 1.7vw, 1.5rem);
+        font-weight: 600;
+        letter-spacing: 0;
+        line-height: 1.2;
+      }
+
+      .story-copy {
+        color: rgb(134, 134, 139);
+        font-size: clamp(1.0625rem, 1.5vw, 1.3125rem);
+        font-weight: 500;
+        letter-spacing: -0.01em;
+        line-height: 1.4;
+      }
+
+      .highlights-rail {
+        scrollbar-width: none;
+      }
+
+      .highlights-rail::-webkit-scrollbar {
+        display: none;
+      }
+
+      .specialist-card {
+        isolation: isolate;
+        position: relative;
+      }
+
+      .specialist-card::before {
+        background: radial-gradient(
+          ellipse 90% 140% at top left,
+          var(--agent-response-color) 0%,
+          var(--agent-response-glow-color) 42%,
+          transparent 78%
+        );
+        border-radius: inherit;
+        content: "";
+        inset: -1px;
+        mask:
+          linear-gradient(#000 0 0) content-box,
+          linear-gradient(#000 0 0);
+        mask-composite: exclude;
+        opacity: 0;
+        padding: 2px;
+        pointer-events: none;
+        position: absolute;
+        transition: opacity 300ms ease;
+        z-index: 1;
+      }
+
+      .specialist-card:hover {
+        border-color: transparent;
+        box-shadow:
+          0 0 0 1px var(--agent-response-glow-color),
+          0 0 28px var(--agent-response-glow-color);
+      }
+
+      .specialist-card:hover::before {
+        opacity: 1;
+      }
+
+      .story-reveal {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+      }
+
+      .story-reveal[data-visible="false"] {
+        opacity: 0;
+        transform: translate3d(0, var(--story-reveal-distance), 0);
+      }
+
+      .story-reveal[data-visible="true"] {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+        transition:
+          opacity 760ms cubic-bezier(0.22, 1, 0.36, 1) var(--story-reveal-delay),
+          transform 760ms cubic-bezier(0.22, 1, 0.36, 1) var(--story-reveal-delay);
+      }
+
       @keyframes sceneCanvasReveal {
         to {
           opacity: 1;
@@ -76,6 +164,30 @@ export function LandingRevealStyles() {
           transform: translateX(115%);
         }
       }
+
+      @media (prefers-reduced-motion: reduce) {
+        .hero-stage canvas,
+        .landing-reveal,
+        .scene-warmup,
+        .scene-warmup-scan,
+        .story-reveal,
+        .story-reveal[data-visible="false"],
+        .story-reveal[data-visible="true"],
+        .specialist-card {
+          animation: none;
+          opacity: 1;
+          transform: none;
+          transition: none;
+        }
+
+        .specialist-card::before {
+          transition: none;
+        }
+
+        .scene-warmup {
+          visibility: hidden;
+        }
+      }
     `}</style>
-  )
+  );
 }
