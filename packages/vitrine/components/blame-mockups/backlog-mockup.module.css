@@ -196,6 +196,61 @@
   color: white;
 }
 
+.chatHistory {
+  display: grid;
+  gap: 0.1cqw;
+  margin: 0.04cqw 0 0.15cqw 0.84cqw;
+  padding: 0.08cqw 0 0.08cqw 0.42cqw;
+  border-left: 1px solid rgb(255 255 255 / 13%);
+}
+
+.chatHistoryButton {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  width: 100%;
+  height: 1.42cqw;
+  gap: 0.3cqw;
+  padding: 0 0.38cqw;
+  border: 0;
+  border-radius: 0.32cqw;
+  background: transparent;
+  color: rgb(255 255 255 / 62%);
+  cursor: pointer;
+  font-size: 0.49cqw;
+  text-align: left;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.chatHistoryButton > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chatHistoryButton time {
+  color: rgb(255 255 255 / 38%);
+  font-size: 0.44cqw;
+  line-height: 1;
+  transition: color 150ms ease;
+}
+
+.chatHistoryButton:not(:disabled):hover {
+  background: rgb(255 255 255 / 10%);
+  color: white;
+}
+
+.chatHistoryButton:not(:disabled):hover time {
+  color: rgb(255 255 255 / 62%);
+}
+
+.chatHistoryButton:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
 .secondaryNavigation {
   display: grid;
   margin-top: auto;
@@ -710,10 +765,22 @@ button.newStoryAction:hover {
   border: 0;
   background: transparent;
   color: var(--mock-foreground);
+  cursor: pointer;
   font-size: 0.72cqw;
   font-weight: 550;
   line-height: 1.26;
   text-align: left;
+  transition: color 150ms ease;
+}
+
+.storyStateEffect:hover .storyHeader > strong {
+  color: #93c5fd;
+}
+
+.storyHeader > strong:hover {
+  text-decoration: underline;
+  text-decoration-thickness: max(1px, 0.055cqw);
+  text-underline-offset: 0.12em;
 }
 
 .storyHeader > strong span {

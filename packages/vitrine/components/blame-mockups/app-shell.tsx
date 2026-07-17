@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   ChevronDown,
@@ -44,6 +44,12 @@ const secondaryNavigation: ShellNavigationItem[] = [
   { label: "Search", icon: Search },
 ];
 
+const recentChats = [
+  { title: "Polish onboarding flow", time: "2m" },
+  { title: "Fix preview navigation", time: "1h" },
+  { title: "Review release checklist", time: "3h" },
+] as const;
+
 export function BlameAppShell({
   ariaHidden = false,
   children,
@@ -75,7 +81,7 @@ function AppSidebar({ interactive }: { interactive: boolean }) {
     <aside className={styles.sidebar}>
       <ProjectSelector interactive={interactive} />
       <nav className={styles.sidebarNavigation} aria-label="App navigation">
-        <NavigationItems items={mainNavigation} interactive={interactive} />
+        <MainNavigation interactive={interactive} />
         <NavigationGroup
           label="Project"
           items={projectNavigation}
@@ -89,6 +95,41 @@ function AppSidebar({ interactive }: { interactive: boolean }) {
       />
       <UserProfile interactive={interactive} />
     </aside>
+  );
+}
+
+function MainNavigation({ interactive }: { interactive: boolean }) {
+  return (
+    <div>
+      {mainNavigation.map((item) => (
+        <Fragment key={item.label}>
+          <NavigationButton item={item} interactive={interactive} />
+          {item.label === "Chats" ? (
+            <RecentChats interactive={interactive} />
+          ) : null}
+        </Fragment>
+      ))}
+    </div>
+  );
+}
+
+function RecentChats({ interactive }: { interactive: boolean }) {
+  return (
+    <div className={styles.chatHistory}>
+      {recentChats.map((chat) => (
+        <button
+          key={chat.title}
+          type="button"
+          aria-disabled="true"
+          className={styles.chatHistoryButton}
+          disabled={!interactive}
+          tabIndex={-1}
+        >
+          <span>{chat.title}</span>
+          <time>{chat.time}</time>
+        </button>
+      ))}
+    </div>
   );
 }
 
