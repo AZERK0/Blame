@@ -118,8 +118,8 @@
 }
 
 .projectSelector > svg {
-  width: 0.66cqw;
-  height: 0.66cqw;
+  width: 0.78cqw;
+  height: 0.78cqw;
   color: rgb(255 255 255 / 55%);
 }
 
@@ -132,13 +132,13 @@
   background: #ec4899;
   box-shadow: 0 0 1.15cqw rgb(236 72 153 / 35%);
   color: white;
-  font-size: 0.62cqw;
+  font-size: 0.72cqw;
   font-weight: 700;
 }
 
 .projectName {
   overflow: hidden;
-  font-size: 0.59cqw;
+  font-size: 0.72cqw;
   font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -159,7 +159,7 @@
   margin: 0;
   padding: 0.25cqw 0.38cqw;
   color: rgb(255 255 255 / 55%);
-  font-size: 0.47cqw;
+  font-size: 0.58cqw;
   font-weight: 500;
 }
 
@@ -179,8 +179,8 @@
 }
 
 .navigationButton svg {
-  width: 0.68cqw;
-  height: 0.68cqw;
+  width: 0.82cqw;
+  height: 0.82cqw;
   flex: none;
   stroke-width: 1.8;
 }
@@ -219,8 +219,8 @@
 }
 
 .userProfile > svg {
-  width: 0.67cqw;
-  height: 0.67cqw;
+  width: 0.78cqw;
+  height: 0.78cqw;
   color: rgb(255 255 255 / 58%);
 }
 
@@ -233,7 +233,7 @@
   border-radius: 0.42cqw;
   background: rgb(18 18 20 / 72%);
   color: rgb(255 255 255 / 76%);
-  font-size: 0.45cqw;
+  font-size: 0.54cqw;
   font-weight: 650;
 }
 
@@ -251,13 +251,13 @@
 }
 
 .userDetails strong {
-  font-size: 0.52cqw;
+  font-size: 0.64cqw;
   font-weight: 650;
 }
 
 .userDetails small {
   color: rgb(255 255 255 / 48%);
-  font-size: 0.4cqw;
+  font-size: 0.49cqw;
 }
 
 .appMain {
@@ -293,7 +293,7 @@
 }
 
 .appHeader > strong {
-  font-size: 0.62cqw;
+  font-size: 0.74cqw;
   font-weight: 600;
 }
 
@@ -326,8 +326,8 @@
 }
 
 .shellControl svg {
-  width: 0.7cqw;
-  height: 0.7cqw;
+  width: 0.82cqw;
+  height: 0.82cqw;
 }
 
 .runnerControls {
@@ -341,13 +341,13 @@
   border-radius: 0.47cqw;
   background: rgb(255 255 255 / 7%);
   color: rgb(255 255 255 / 68%);
-  font-size: 0.48cqw;
+  font-size: 0.58cqw;
   font-weight: 600;
 }
 
 .runnerControls > svg {
-  width: 0.54cqw;
-  height: 0.54cqw;
+  width: 0.68cqw;
+  height: 0.68cqw;
 }
 
 .runnerControls .shellControl {
@@ -406,7 +406,7 @@
 
 .backlogToolbar h2 {
   font-family: "Nunito Sans", "Source Sans 3", Inter, sans-serif;
-  font-size: 0.93cqw;
+  font-size: 1.05cqw;
   font-weight: 650;
   letter-spacing: -0.015em;
 }
@@ -414,7 +414,7 @@
 .backlogToolbar p {
   margin-top: 0.12cqw;
   color: var(--mock-muted-foreground);
-  font-size: 0.49cqw;
+  font-size: 0.6cqw;
 }
 
 .toolbarActions {
@@ -479,8 +479,8 @@ button.primaryToolbarButton:active {
 
 .toolbarButton svg,
 .primaryToolbarButton svg {
-  width: 0.65cqw;
-  height: 0.65cqw;
+  width: 0.74cqw;
+  height: 0.74cqw;
 }
 
 .boardViewport {
@@ -529,8 +529,8 @@ button.primaryToolbarButton:active {
 }
 
 .laneDot {
-  width: 0.52cqw;
-  height: 0.52cqw;
+  width: 0.62cqw;
+  height: 0.62cqw;
   margin-top: 0.14cqw;
   border: max(1px, 0.09cqw) solid currentColor;
   border-radius: 999px;
@@ -571,13 +571,13 @@ button.primaryToolbarButton:active {
 }
 
 .laneHeading strong {
-  font-size: 0.59cqw;
+  font-size: 0.72cqw;
   font-weight: 650;
 }
 
 .laneHeading small {
   color: var(--mock-muted-foreground);
-  font-size: 0.4cqw;
+  font-size: 0.5cqw;
   font-weight: 500;
 }
 
@@ -590,7 +590,7 @@ button.primaryToolbarButton:active {
   border-radius: 999px;
   background: rgb(255 255 255 / 8%);
   color: rgb(255 255 255 / 66%);
-  font-size: 0.42cqw;
+  font-size: 0.5cqw;
   font-variant-numeric: tabular-nums;
   font-weight: 650;
 }
@@ -633,8 +633,8 @@ button.newStoryAction:hover {
 }
 
 .newStoryAction svg {
-  width: 0.58cqw;
-  height: 0.58cqw;
+  width: 0.7cqw;
+  height: 0.7cqw;
 }
 
 .storyStateEffect {
@@ -704,7 +704,7 @@ button.newStoryAction:hover {
 
 .storyReference {
   color: var(--mock-muted-foreground);
-  font-size: 0.39cqw;
+  font-size: 0.48cqw;
   font-weight: 600;
 }
 
@@ -717,7 +717,7 @@ button.newStoryAction:hover {
   border: 0;
   background: transparent;
   color: var(--mock-foreground);
-  font-size: 0.59cqw;
+  font-size: 0.72cqw;
   font-weight: 550;
   line-height: 1.26;
   text-align: left;
@@ -751,7 +751,7 @@ button.newStoryAction:hover {
   border-radius: 999px;
   background: rgb(139 92 246 / 12%);
   color: #c4b5fd;
-  font-size: 0.37cqw;
+  font-size: 0.45cqw;
   font-weight: 600;
   white-space: nowrap;
 }
@@ -790,7 +790,7 @@ button.newStoryAction:hover {
   margin: -0.12cqw 0 0;
   padding: 0 0.5cqw 0.48cqw;
   color: var(--mock-muted-foreground);
-  font-size: 0.4cqw;
+  font-size: 0.5cqw;
   font-weight: 500;
 }
 
@@ -903,14 +903,19 @@ button.storyAction[data-tone="preview"]:hover {
 }
 
 .storyAction svg {
-  width: 0.52cqw;
-  height: 0.52cqw;
+  width: 0.62cqw;
+  height: 0.62cqw;
   flex: none;
 }
 
 .storyAction span {
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.mockupFrame[data-variant="hero"]
+  :is(.toolbarButton, .primaryToolbarButton, .newStoryAction, .storyAction) {
+  font-size: clamp(5px, 0.66cqw, 11px);
 }
 
 .movingStoryLayer {

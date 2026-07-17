@@ -84,7 +84,7 @@ const actionConfig: Record<StoryActionId, StoryActionConfig> = {
 export function HeroBacklogMockup() {
   const backlog = useHeroBacklog();
   return (
-    <div className={styles.mockupFrame}>
+    <div className={styles.mockupFrame} data-variant="hero">
       <BlameAppShell>
         <BacklogBoard
           stories={backlog.stories}

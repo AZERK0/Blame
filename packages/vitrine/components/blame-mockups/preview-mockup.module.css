@@ -68,7 +68,7 @@
 
 .drawerHeader h2 {
   margin: 0;
-  font-size: clamp(9px, 1.33cqw, 30px);
+  font-size: clamp(10px, 1.45cqw, 32px);
   font-weight: 600;
   line-height: 1.08;
   letter-spacing: -0.025em;
@@ -80,7 +80,7 @@
   gap: 0.35cqw;
   margin-top: 0.22cqw;
   color: #858585;
-  font-size: clamp(6px, 0.49cqw, 11px);
+  font-size: clamp(7px, 0.6cqw, 13px);
   line-height: 1;
 }
 
@@ -151,8 +151,8 @@
 
 .outerTabs svg,
 .previewTabs svg {
-  width: max(7px, 0.64cqw);
-  height: max(7px, 0.64cqw);
+  width: max(8px, 0.75cqw);
+  height: max(8px, 0.75cqw);
   stroke-width: 1.9;
 }
 
@@ -161,8 +161,8 @@
   top: 1.02cqw;
   right: 1.02cqw;
   display: grid;
-  width: max(16px, 1.24cqw);
-  height: max(16px, 1.24cqw);
+  width: max(18px, 1.38cqw);
+  height: max(18px, 1.38cqw);
   place-items: center;
   border: 1px solid rgba(255, 255, 255, 0.11);
   border-radius: min(0.35cqw, 8px);
@@ -171,8 +171,8 @@
 }
 
 .closeButton svg {
-  width: 55%;
-  height: 55%;
+  width: 60%;
+  height: 60%;
 }
 
 .previewPanel,
@@ -209,7 +209,7 @@
   background: rgba(15, 15, 15, 0.94);
   color: #666;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.26);
-  font-size: clamp(6px, 0.53cqw, 12px);
+  font-size: clamp(7px, 0.62cqw, 14px);
 }
 
 .addressBar > span {
@@ -253,8 +253,8 @@
 }
 
 .addressBar svg {
-  width: 52%;
-  height: 52%;
+  width: 60%;
+  height: 60%;
 }
 
 .previewActions {
@@ -294,8 +294,8 @@
 }
 
 .previewActions svg {
-  width: 48%;
-  height: 48%;
+  width: 58%;
+  height: 58%;
 }
 
 .captureToast {
@@ -307,7 +307,7 @@
   border-radius: 999px;
   background: rgba(16, 42, 34, 0.96);
   color: #87efc5;
-  font-size: clamp(6px, 0.45cqw, 10px);
+  font-size: clamp(7px, 0.52cqw, 11px);
   white-space: nowrap;
   animation: toast-in 180ms ease-out both;
 }
@@ -768,13 +768,13 @@
 .logHeader strong {
   margin-left: auto;
   color: #5ee6b2;
-  font-size: 0.5cqw;
+  font-size: 0.6cqw;
   font-weight: 500;
 }
 
 .runningDot {
-  width: 0.42cqw;
-  height: 0.42cqw;
+  width: 0.5cqw;
+  height: 0.5cqw;
   border-radius: 50%;
   background: #10b981;
   box-shadow: 0 0 0.8cqw rgba(16, 185, 129, 0.55);
@@ -784,7 +784,7 @@
   display: grid;
   gap: 0.66cqw;
   padding-top: 1.25cqw;
-  font-size: clamp(6px, 0.55cqw, 12px);
+  font-size: clamp(7px, 0.65cqw, 14px);
 }
 
 .logBody > div {
@@ -830,7 +830,7 @@
 
 .detailEyebrow {
   color: #818cf8;
-  font-size: 0.55cqw;
+  font-size: 0.65cqw;
   font-weight: 650;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -838,7 +838,7 @@
 
 .detailMain h3 {
   margin: 0.55cqw 0 0;
-  font-size: 1.4cqw;
+  font-size: 1.55cqw;
   letter-spacing: -0.03em;
 }
 
@@ -846,13 +846,13 @@
   max-width: 33cqw;
   margin: 0.7cqw 0 1.5cqw;
   color: #a3a3a3;
-  font-size: 0.65cqw;
+  font-size: 0.75cqw;
   line-height: 1.55;
 }
 
 .detailMain h4 {
   margin: 0 0 0.6cqw;
-  font-size: 0.66cqw;
+  font-size: 0.76cqw;
 }
 
 .checklist {
@@ -869,13 +869,13 @@
   border-radius: 0.4cqw;
   background: rgba(255, 255, 255, 0.025);
   color: #d4d4d4;
-  font-size: 0.58cqw;
+  font-size: 0.68cqw;
 }
 
 .checklist i {
   display: grid;
-  width: 0.72cqw;
-  height: 0.72cqw;
+  width: 0.82cqw;
+  height: 0.82cqw;
   place-items: center;
   border: 1px solid #525252;
   border-radius: 0.2cqw;
@@ -900,20 +900,20 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 0.55cqw;
   background: rgba(255, 255, 255, 0.025);
-  font-size: 0.55cqw;
+  font-size: 0.65cqw;
 }
 
 .activityCard > span {
   margin-bottom: 0.5cqw;
   color: #a3a3a3;
-  font-size: 0.5cqw;
+  font-size: 0.58cqw;
   text-transform: uppercase;
 }
 
 .activityCard small {
   margin-bottom: 0.55cqw;
   color: #737373;
-  font-size: 0.48cqw;
+  font-size: 0.56cqw;
 }
 
 .codePanel {
@@ -930,13 +930,13 @@
   border-right: 1px solid rgba(255, 255, 255, 0.08);
   background: #121419;
   color: #8b8f99;
-  font-size: 0.55cqw;
+  font-size: 0.64cqw;
 }
 
 .codePanel > aside strong {
   margin-bottom: 0.55cqw;
   color: #d4d4d8;
-  font-size: 0.58cqw;
+  font-size: 0.68cqw;
 }
 
 .codePanel > aside span {
@@ -961,12 +961,12 @@
   padding: 0 0.8cqw;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   color: #d4d4d8;
-  font-size: 0.55cqw;
+  font-size: 0.64cqw;
 }
 
 .editorBar small {
   color: #71717a;
-  font-size: 0.45cqw;
+  font-size: 0.54cqw;
 }
 
 .editor pre {
@@ -974,7 +974,7 @@
   padding: 1.2cqw 0;
   color: #cbd5e1;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.68cqw;
+  font-size: 0.75cqw;
   line-height: 1.85;
 }
 
