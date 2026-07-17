@@ -17,52 +17,29 @@ import {
 import { StaticBacklogMockup } from "./backlog-mockup";
 import styles from "./preview-mockup.module.css";
 
-type DrawerTab = "story" | "preview" | "code";
-type PreviewTab = "preview" | "logs";
-type MockupTab<T extends string> = {
-  id: T;
-  label: string;
-  Icon: typeof BookOpenIcon;
-};
-type AccessibleTabListProps<T extends string> = {
-  activeTab: T;
-  ariaLabel: string;
-  className: string;
-  idPrefix: string;
-  tabs: ReadonlyArray<MockupTab<T>>;
-  onTabChange: (tab: T) => void;
-};
-type AccessibleTabButtonProps<T extends string> = {
-  index: number;
-  listProps: AccessibleTabListProps<T>;
-  tab: MockupTab<T>;
-};
 type PreviewToolbarProps = {
   captured: boolean;
   path: string;
-  previewTab: PreviewTab;
   refreshing: boolean;
-  tabsId: string;
   onCapture: () => void;
   onPathChange: (path: string) => void;
   onRefresh: () => void;
-  onTabChange: (tab: PreviewTab) => void;
 };
 type PreviewActionsProps = Pick<
   PreviewToolbarProps,
   "captured" | "refreshing" | "onCapture" | "onRefresh"
 >;
 
-const drawerTabs: ReadonlyArray<MockupTab<DrawerTab>> = [
-  { id: "story", label: "User Story", Icon: BookOpenIcon },
-  { id: "preview", label: "Preview", Icon: AppWindowIcon },
-  { id: "code", label: "Code", Icon: CodeIcon },
-];
+const drawerModes = [
+  { label: "User Story", Icon: BookOpenIcon },
+  { label: "Preview", Icon: AppWindowIcon },
+  { label: "Code", Icon: CodeIcon },
+] as const;
 
-const previewTabs: ReadonlyArray<MockupTab<PreviewTab>> = [
-  { id: "preview", label: "Preview", Icon: MonitorIcon },
-  { id: "logs", label: "Run logs", Icon: PlayIcon },
-];
+const toolbarModes = [
+  { label: "Preview", Icon: MonitorIcon },
+  { label: "Run logs", Icon: PlayIcon },
+] as const;
 
 const boardColumns = [
   { title: "Backlog", tone: "mint", tickets: ["Refine onboarding"] },
@@ -81,17 +58,7 @@ const boardColumns = [
   { title: "Discarded", tone: "rose", tickets: ["Health snapshot"] },
 ] as const;
 
-const logLines = [
-  { time: "10:42:08", text: "Starting web preview on port 46023" },
-  { time: "10:42:09", text: "Compiled successfully in 412ms" },
-  { time: "10:42:09", text: "Local: http://localhost:46023/" },
-  { time: "10:42:13", text: "GET / 200 in 38ms" },
-] as const;
-
 export function LivePreviewMockup() {
-  const [drawerTab, setDrawerTab] = React.useState<DrawerTab>("preview");
-  const drawerTabsId = React.useId();
-
   return (
     <section
       className={styles.scene}
@@ -100,45 +67,21 @@ export function LivePreviewMockup() {
       <div className={styles.backdrop} aria-hidden="true">
         <StaticBacklogMockup />
       </div>
-      <PreviewDrawer
-        activeTab={drawerTab}
-        tabsId={drawerTabsId}
-        onTabChange={setDrawerTab}
-      />
+      <PreviewDrawer />
     </section>
   );
 }
 
-function PreviewDrawer({
-  activeTab,
-  tabsId,
-  onTabChange,
-}: {
-  activeTab: DrawerTab;
-  tabsId: string;
-  onTabChange: (tab: DrawerTab) => void;
-}) {
+function PreviewDrawer() {
   return (
     <div className={styles.drawer}>
-      <DrawerHeader
-        activeTab={activeTab}
-        tabsId={tabsId}
-        onTabChange={onTabChange}
-      />
-      <DrawerPanels activeTab={activeTab} tabsId={tabsId} />
+      <DrawerHeader />
+      <PreviewPanel />
     </div>
   );
 }
 
-function DrawerHeader({
-  activeTab,
-  tabsId,
-  onTabChange,
-}: {
-  activeTab: DrawerTab;
-  tabsId: string;
-  onTabChange: (tab: DrawerTab) => void;
-}) {
+function DrawerHeader() {
   return (
     <header className={styles.drawerHeader}>
       <div className={styles.headerBlur} />
@@ -148,11 +91,7 @@ function DrawerHeader({
         <span>Product created this</span>
         <span>Jul 2, 2026</span>
       </div>
-      <OuterTabs
-        activeTab={activeTab}
-        tabsId={tabsId}
-        onTabChange={onTabChange}
-      />
+      <PreviewMode location="drawer" />
       <span className={styles.closeButton} aria-hidden="true">
         <XIcon />
       </span>
@@ -160,175 +99,43 @@ function DrawerHeader({
   );
 }
 
-function OuterTabs({
-  activeTab,
-  tabsId,
-  onTabChange,
-}: {
-  activeTab: DrawerTab;
-  tabsId: string;
-  onTabChange: (tab: DrawerTab) => void;
-}) {
-  return (
-    <AccessibleTabList
-      activeTab={activeTab}
-      ariaLabel="User story views"
-      className={styles.outerTabs}
-      idPrefix={tabsId}
-      tabs={drawerTabs}
-      onTabChange={onTabChange}
-    />
-  );
-}
-
-function AccessibleTabList<T extends string>(props: AccessibleTabListProps<T>) {
+function PreviewMode({ location }: { location: "drawer" | "toolbar" }) {
+  const modes = location === "drawer" ? drawerModes : toolbarModes;
   return (
     <div
-      className={props.className}
-      role="tablist"
-      aria-label={props.ariaLabel}
+      className={location === "drawer" ? styles.drawerMode : styles.toolbarMode}
     >
-      {props.tabs.map((tab, index) => (
-        <AccessibleTabButton
-          key={tab.id}
-          index={index}
-          listProps={props}
-          tab={tab}
-        />
+      {modes.map(({ Icon, label }) => (
+        <button
+          key={label}
+          type="button"
+          data-active={label === "Preview"}
+          disabled
+        >
+          <Icon />
+          <span>{label}</span>
+        </button>
       ))}
     </div>
   );
 }
 
-function AccessibleTabButton<T extends string>({
-  index,
-  listProps,
-  tab,
-}: AccessibleTabButtonProps<T>) {
-  const { Icon, id, label } = tab;
-  const active = listProps.activeTab === id;
-  return (
-    <button
-      type="button"
-      role="tab"
-      id={tabId(listProps.idPrefix, id)}
-      aria-controls={panelId(listProps.idPrefix, id)}
-      aria-label={label}
-      aria-selected={active}
-      data-active={active}
-      tabIndex={active ? 0 : -1}
-      onClick={() => listProps.onTabChange(id)}
-      onKeyDown={(event) => handleTabKey(event, index, listProps)}
-    >
-      <Icon />
-      <span>{label}</span>
-    </button>
-  );
-}
-
-function handleTabKey<T extends string>(
-  event: React.KeyboardEvent<HTMLButtonElement>,
-  index: number,
-  props: AccessibleTabListProps<T>,
-) {
-  const nextIndex = tabIndexForKey(event.key, index, props.tabs.length);
-  if (nextIndex === undefined) return;
-  const tabList = event.currentTarget.parentElement;
-  event.preventDefault();
-  props.onTabChange(props.tabs[nextIndex].id);
-  tabList
-    ?.querySelectorAll<HTMLButtonElement>("[role='tab']")
-    [nextIndex]?.focus();
-}
-
-function tabIndexForKey(key: string, index: number, length: number) {
-  if (key === "ArrowRight") return (index + 1) % length;
-  if (key === "ArrowLeft") return (index - 1 + length) % length;
-  if (key === "Home") return 0;
-  if (key === "End") return length - 1;
-  return undefined;
-}
-
-function tabId(prefix: string, tab: string) {
-  return `${prefix}-tab-${tab}`;
-}
-
-function panelId(prefix: string, tab: string) {
-  return `${prefix}-panel-${tab}`;
-}
-
-function DrawerPanels({
-  activeTab,
-  tabsId,
-}: {
-  activeTab: DrawerTab;
-  tabsId: string;
-}) {
-  const panels: Record<DrawerTab, React.ReactNode> = {
-    story: <UserStoryPanel />,
-    preview: <PreviewPanel />,
-    code: <CodePanel />,
-  };
-  return drawerTabs.map(({ id }) => (
-    <TabPanel key={id} activeTab={activeTab} idPrefix={tabsId} tab={id}>
-      {panels[id]}
-    </TabPanel>
-  ));
-}
-
-function TabPanel<T extends string>({
-  activeTab,
-  children,
-  className,
-  idPrefix,
-  tab,
-}: {
-  activeTab: T;
-  children: React.ReactNode;
-  className?: string;
-  idPrefix: string;
-  tab: T;
-}) {
-  return (
-    <div
-      role="tabpanel"
-      id={panelId(idPrefix, tab)}
-      aria-labelledby={tabId(idPrefix, tab)}
-      className={className}
-      hidden={activeTab !== tab}
-      tabIndex={0}
-    >
-      {children}
-    </div>
-  );
-}
-
 function PreviewPanel() {
-  const [previewTab, setPreviewTab] = React.useState<PreviewTab>("preview");
   const [path, setPath] = React.useState("/");
   const [refreshing, refresh] = useTransientFlag(650);
   const [captured, capture] = useTransientFlag(1100);
-  const previewTabsId = React.useId();
 
   return (
     <div className={styles.previewPanel}>
       <PreviewToolbar
         captured={captured}
         path={path}
-        previewTab={previewTab}
         refreshing={refreshing}
-        tabsId={previewTabsId}
         onCapture={capture}
         onPathChange={setPath}
         onRefresh={refresh}
-        onTabChange={setPreviewTab}
       />
-      <BrowserFrame
-        path={path}
-        previewTab={previewTab}
-        refreshing={refreshing}
-        tabsId={previewTabsId}
-      />
+      <BrowserFrame path={path} refreshing={refreshing} />
     </div>
   );
 }
@@ -351,13 +158,10 @@ function useTransientFlag(duration: number) {
 function PreviewToolbar({
   captured,
   path,
-  previewTab,
   refreshing,
-  tabsId,
   onCapture,
   onPathChange,
   onRefresh,
-  onTabChange,
 }: PreviewToolbarProps) {
   return (
     <div className={styles.previewToolbar}>
@@ -369,11 +173,7 @@ function PreviewToolbar({
         onRefresh={onRefresh}
       />
       <span className={styles.toolbarSpacer} />
-      <PreviewTabs
-        activeTab={previewTab}
-        tabsId={tabsId}
-        onTabChange={onTabChange}
-      />
+      <PreviewMode location="toolbar" />
     </div>
   );
 }
@@ -471,70 +271,19 @@ function CaptureFeedback({ captured }: { captured: boolean }) {
   );
 }
 
-function PreviewTabs({
-  activeTab,
-  tabsId,
-  onTabChange,
-}: {
-  activeTab: PreviewTab;
-  tabsId: string;
-  onTabChange: (tab: PreviewTab) => void;
-}) {
-  return (
-    <AccessibleTabList
-      activeTab={activeTab}
-      ariaLabel="Preview output"
-      className={styles.previewTabs}
-      idPrefix={tabsId}
-      tabs={previewTabs}
-      onTabChange={onTabChange}
-    />
-  );
-}
-
 function BrowserFrame({
   path,
-  previewTab,
   refreshing,
-  tabsId,
 }: {
   path: string;
-  previewTab: PreviewTab;
   refreshing: boolean;
-  tabsId: string;
 }) {
   return (
     <div className={styles.browserFrame} aria-busy={refreshing}>
-      <PreviewOutputPanels activeTab={previewTab} path={path} tabsId={tabsId} />
+      <MiniSite path={path} />
       {refreshing ? <LoadingCover /> : null}
     </div>
   );
-}
-
-function PreviewOutputPanels({
-  activeTab,
-  path,
-  tabsId,
-}: {
-  activeTab: PreviewTab;
-  path: string;
-  tabsId: string;
-}) {
-  const panels: Record<PreviewTab, React.ReactNode> = {
-    preview: <MiniSite path={path} />,
-    logs: <RunLogs />,
-  };
-  return previewTabs.map(({ id }) => (
-    <TabPanel
-      key={id}
-      activeTab={activeTab}
-      className={styles.browserTabPanel}
-      idPrefix={tabsId}
-      tab={id}
-    >
-      {panels[id]}
-    </TabPanel>
-  ));
 }
 
 function LoadingCover() {
@@ -644,117 +393,6 @@ function MiniColumn({ tickets, title, tone }: (typeof boardColumns)[number]) {
           <i />
         </span>
       ))}
-    </div>
-  );
-}
-
-function RunLogs() {
-  return (
-    <div className={styles.runLogs}>
-      <div className={styles.logHeader}>
-        <span className={styles.runningDot} />
-        Web application <strong>running</strong>
-      </div>
-      <div className={styles.logBody}>
-        {logLines.map((line, index) => (
-          <div key={line.time + line.text}>
-            <span>{String(index + 1).padStart(2, "0")}</span>
-            <time>{line.time}</time>
-            <code>{line.text}</code>
-          </div>
-        ))}
-        <div className={styles.logCursor}>
-          <span>05</span>
-          <time>10:42:13</time>
-          <code>
-            ready <i />
-          </code>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function UserStoryPanel() {
-  return (
-    <div className={styles.detailPanel}>
-      <div className={styles.detailMain}>
-        <span className={styles.detailEyebrow}>User story</span>
-        <h3>Build a live project preview</h3>
-        <p>
-          As a product engineer, I can inspect the agent output while it works
-          so feedback stays fast and grounded.
-        </p>
-        <h4>Acceptance criteria</h4>
-        <Checklist
-          items={[
-            "Preview opens inside the story",
-            "Refresh keeps the active path",
-            "Run logs remain one click away",
-          ]}
-        />
-      </div>
-      <aside className={styles.activityCard}>
-        <span>Activity</span>
-        <b>Agent started a worktree</b>
-        <small>2 minutes ago</small>
-        <b>Preview is ready</b>
-        <small>Just now</small>
-      </aside>
-    </div>
-  );
-}
-
-function Checklist({ items }: { items: string[] }) {
-  return (
-    <div className={styles.checklist}>
-      {items.map((item, index) => (
-        <span key={item}>
-          <i data-checked={index < 2}>{index < 2 ? <CheckIcon /> : null}</i>
-          {item}
-        </span>
-      ))}
-    </div>
-  );
-}
-
-function CodePanel() {
-  return (
-    <div className={styles.codePanel}>
-      <aside>
-        <strong>Files</strong>
-        <span>app</span>
-        <span className={styles.activeFile}>page.tsx</span>
-        <span>globals.css</span>
-        <span>components</span>
-        <span>preview.tsx</span>
-      </aside>
-      <CodeEditor />
-    </div>
-  );
-}
-
-function CodeEditor() {
-  return (
-    <div className={styles.editor}>
-      <div className={styles.editorBar}>
-        <span>page.tsx</span>
-        <small>TypeScript React</small>
-      </div>
-      <pre>
-        <code>
-          <i>1</i>
-          <b>export default function</b> Product() {"{"}
-          {"\n"}
-          <i>2</i> <b>return</b> ({"\n"}
-          <i>3</i> &lt;main className=<em>&quot;product&quot;</em>&gt;{"\n"}
-          <i>4</i> &lt;Preview /&gt;{"\n"}
-          <i>5</i> &lt;/main&gt;{"\n"}
-          <i>6</i> ){"\n"}
-          <i>7</i>
-          {"}"}
-        </code>
-      </pre>
     </div>
   );
 }
