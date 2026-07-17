@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
-import { Boxes, Check, Info } from 'lucide-react'
+import { Check, Info } from 'lucide-react'
 
 import { buttonVariants } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -44,9 +45,13 @@ export function PricingCard() {
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(255,255,255,0.18),transparent_28%),radial-gradient(circle_at_80%_18%,rgba(179,172,243,0.2),transparent_36%)]" />
       <CardContent className="relative rounded-[1.55rem] border border-white/14 bg-[#f7f7f8]/90 p-6 text-[#111] shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_18px_60px_rgba(0,0,0,0.24)] backdrop-blur-xl sm:p-7">
         <div className="flex items-start justify-between gap-4">
-          <div className="grid h-12 w-12 place-items-center rounded-xl border border-black/5 bg-white shadow-[0_8px_28px_rgba(0,0,0,0.12)]">
-            <Boxes className="h-5 w-5" />
-          </div>
+          <Image
+            src="/icons/blame-dark-app-icon.png"
+            alt=""
+            width={48}
+            height={48}
+            className="h-12 w-12 object-contain"
+          />
         </div>
 
         <div className="mt-7">
