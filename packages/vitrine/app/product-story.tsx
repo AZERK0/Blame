@@ -14,6 +14,9 @@ import {
   Workflow,
 } from "lucide-react";
 import { HighlightsCarousel } from "@/components/highlights-carousel";
+import { PipelineBacklogMockup } from "@/components/blame-mockups/backlog-mockup";
+import { LivePreviewMockup } from "@/components/blame-mockups/preview-mockup";
+import { ProjectCreationMockup } from "@/components/blame-mockups/project-creation-mockup";
 import { ScrollReveal } from "@/components/scroll-reveal";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FinalCtaScene } from "./scene/final-cta-scene";
@@ -128,13 +131,7 @@ function WorkflowSection() {
       <div className="mx-auto max-w-7xl">
         <WorkflowHeading />
         <ScrollReveal delay={110} className="mt-20 sm:mt-28">
-          <Image
-            src="/desktop-backlog.png"
-            alt="Blame backlog showing stories moving through the development workflow"
-            width={2450}
-            height={1385}
-            className="h-auto w-full"
-          />
+          <PipelineBacklogMockup />
         </ScrollReveal>
         <ScrollReveal delay={160}>
           <p className="story-copy mx-auto mt-12 max-w-4xl text-center sm:mt-16">
@@ -223,11 +220,7 @@ function PreviewSection() {
       <div className="mx-auto max-w-7xl">
         <PreviewHeading />
         <ScrollReveal delay={120} className="mt-20 sm:mt-28">
-          <ScreenshotFrame
-            alt="Blame displaying a running local preview beside the active story"
-            src="/desktop-preview.png"
-            tone="blue"
-          />
+          <LivePreviewMockup />
         </ScrollReveal>
         <ReviewStory />
       </div>
@@ -529,13 +522,7 @@ function ProjectCreationCopy() {
 function ProjectCreationImage() {
   return (
     <div className="overflow-hidden rounded-2xl bg-[#171109] p-2 shadow-[0_35px_100px_rgba(70,42,10,0.25)] sm:p-3 lg:translate-x-8 xl:translate-x-12">
-      <Image
-        src="/desktop-new-project.png"
-        alt="Blame guided web project creation interface"
-        width={2258}
-        height={1385}
-        className="h-auto w-full rounded-xl"
-      />
+      <ProjectCreationMockup />
     </div>
   );
 }
@@ -584,37 +571,6 @@ function FinalCtaActions() {
       >
         View pricing
       </Link>
-    </div>
-  );
-}
-
-function ScreenshotFrame({
-  alt,
-  src,
-  tone = "neutral",
-}: {
-  alt: string;
-  src: string;
-  tone?: "neutral" | "blue";
-}) {
-  const glow =
-    tone === "blue" ? "shadow-[0_40px_160px_rgba(80,132,255,0.2)]" : "";
-  return (
-    <div
-      className={`overflow-hidden rounded-2xl border border-white/14 bg-white/[0.07] p-2 shadow-[0_40px_140px_rgba(0,0,0,0.58)] sm:rounded-3xl sm:p-3 ${glow}`}
-    >
-      <div className="flex items-center gap-1.5 px-2 pb-2.5 pt-0.5 sm:px-3 sm:pb-3">
-        <span className="h-2 w-2 rounded-full bg-white/20" />
-        <span className="h-2 w-2 rounded-full bg-white/12" />
-        <span className="h-2 w-2 rounded-full bg-white/8" />
-      </div>
-      <Image
-        src={src}
-        alt={alt}
-        width={2450}
-        height={1385}
-        className="h-auto w-full rounded-xl border border-white/8"
-      />
     </div>
   );
 }

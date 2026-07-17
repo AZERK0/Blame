@@ -1,6 +1,5 @@
 'use client'
 
-import Image from 'next/image'
 import { ArrowRight, Play } from 'lucide-react'
 import {
   useEffect,
@@ -10,6 +9,7 @@ import {
   type RefObject,
 } from 'react'
 import { SceneWarmup } from '@/components/scene-warmup'
+import { HeroBacklogMockup } from '@/components/blame-mockups/backlog-mockup'
 import { HeroScene } from './scene/hero-scene'
 
 const heroStageHeight = 207
@@ -22,9 +22,16 @@ type ScrollAnimationState = {
   target: number
 }
 
+type StoryBackdropProps = {
+  heroProgress: number
+  progress: number
+}
+
 export function LandingHero() {
   const sectionRef = useRef<HTMLElement>(null)
   const progress = useScrollProgress(sectionRef)
+  const reducedMotion = useReducedMotion()
+  const backdropProgress = reducedMotion ? reducedMotionProgress(progress) : progress
 
   return (
     <section
@@ -38,30 +45,48 @@ export function LandingHero() {
       <div className="sticky top-0 isolate h-screen overflow-hidden">
         <HeroScene />
         <SceneWarmup />
-        <StoryBackdrop heroProgress={progress} progress={progress} />
-        <HeroFrame progress={progress} />
+        <StoryBackdrop
+          heroProgress={backdropProgress}
+          progress={backdropProgress}
+        />
+        <HeroFrame progress={progress} reducedMotion={reducedMotion} />
       </div>
     </section>
   )
 }
 
-function HeroFrame({ progress }: { progress: number }) {
+function HeroFrame({
+  progress,
+  reducedMotion,
+}: {
+  progress: number
+  reducedMotion: boolean
+}) {
+  const hidden = progress >= 0.72
   return (
     <div
+      aria-hidden={hidden || undefined}
       className="absolute inset-0 z-10 mx-auto flex w-full max-w-9xl flex-col px-5 pb-0 pt-24 sm:px-8 lg:px-10"
-      style={heroFrameStyle(progress)}
+      inert={hidden || undefined}
+      style={heroFrameStyle(progress, reducedMotion)}
     >
-      <HeroCopy progress={progress} />
-      <HeroMockup progress={progress} />
+      <HeroCopy progress={progress} reducedMotion={reducedMotion} />
+      <HeroMockup progress={progress} reducedMotion={reducedMotion} />
     </div>
   )
 }
 
-function HeroCopy({ progress }: { progress: number }) {
+function HeroCopy({
+  progress,
+  reducedMotion,
+}: {
+  progress: number
+  reducedMotion: boolean
+}) {
   return (
     <div
       className="flex flex-1 items-center justify-center pb-4 pt-8 sm:pb-6 lg:pb-8"
-      style={heroCopyStyle(progress)}
+      style={heroCopyStyle(progress, reducedMotion)}
     >
       <div className="text-center">
         <h1
@@ -103,33 +128,26 @@ function HeroActions() {
   )
 }
 
-function HeroMockup({ progress }: { progress: number }) {
+function HeroMockup({
+  progress,
+  reducedMotion,
+}: {
+  progress: number
+  reducedMotion: boolean
+}) {
   return (
     <div
-      className="pointer-events-none z-20 mx-auto mb-4 w-full max-w-5xl"
-      style={heroMockupStyle(progress)}
+      className="z-20 mx-auto mb-4 w-full max-w-5xl"
+      style={heroMockupStyle(progress, reducedMotion)}
     >
       <div className="overflow-hidden rounded-2xl border border-white/16 bg-white/[0.08] p-2 shadow-[0_32px_120px_rgba(0,0,0,0.55)] backdrop-blur-2xl sm:p-3">
-        <Image
-          src="/desktop-backlog.png"
-          alt="Blame backlog desktop interface"
-          width={2450}
-          height={1385}
-          className="h-auto w-full rounded-xl"
-          priority
-        />
+        <HeroBacklogMockup />
       </div>
     </div>
   )
 }
 
-function StoryBackdrop({
-  heroProgress,
-  progress,
-}: {
-  heroProgress: number
-  progress: number
-}) {
+function StoryBackdrop({ heroProgress, progress }: StoryBackdropProps) {
   const glow = 0.1 + progress * 0.24
   const veil = 0.12 + heroProgress * 0.68
   const blur = heroProgress * 18
@@ -161,6 +179,18 @@ function useScrollProgress(ref: RefObject<HTMLElement | null>) {
   const [progress, setProgress] = useState(0)
   useEffect(() => connectScrollProgress(ref, setProgress), [ref])
   return progress
+}
+
+function useReducedMotion() {
+  const [reducedMotion, setReducedMotion] = useState(false)
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const update = () => setReducedMotion(media.matches)
+    update()
+    media.addEventListener('change', update)
+    return () => media.removeEventListener('change', update)
+  }, [])
+  return reducedMotion
 }
 
 function connectScrollProgress(
@@ -230,12 +260,21 @@ function readScrollProgress(node: HTMLElement | null) {
   return clamp(-node.getBoundingClientRect().top / scrollable, 0, 1)
 }
 
-function heroFrameStyle(progress: number): CSSProperties {
-  const opacity = 1 - smoothstep(0.72, 0.98, progress)
+function heroFrameStyle(
+  progress: number,
+  reducedMotion: boolean,
+): CSSProperties {
+  const opacity = reducedMotion
+    ? reducedMotionOpacity(progress)
+    : 1 - smoothstep(0.72, 0.98, progress)
   return { opacity, pointerEvents: progress < 0.72 ? 'auto' : 'none' }
 }
 
-function heroCopyStyle(progress: number): CSSProperties {
+function heroCopyStyle(
+  progress: number,
+  reducedMotion: boolean,
+): CSSProperties {
+  if (reducedMotion) return { opacity: reducedMotionOpacity(progress) }
   const amount = easeOut(timelineProgress(progress, 0, 0.68))
   return {
     opacity: 1 - amount,
@@ -243,13 +282,25 @@ function heroCopyStyle(progress: number): CSSProperties {
   }
 }
 
-function heroMockupStyle(progress: number): CSSProperties {
+function heroMockupStyle(
+  progress: number,
+  reducedMotion: boolean,
+): CSSProperties {
+  if (reducedMotion) return { opacity: reducedMotionOpacity(progress) }
   const lift = easeOut(timelineProgress(progress, 0, 0.9))
   const fade = smoothstep(0.34, 0.72, progress)
   return {
     opacity: 1 - fade,
     transform: `translate3d(0, ${lift * -82}vh, 0) scale(${1 + lift * 0.42})`,
   }
+}
+
+function reducedMotionOpacity(progress: number) {
+  return progress < 0.72 ? 1 : 0
+}
+
+function reducedMotionProgress(progress: number) {
+  return progress < 0.72 ? 0 : 1
 }
 
 function timelineProgress(progress: number, start: number, end: number) {
