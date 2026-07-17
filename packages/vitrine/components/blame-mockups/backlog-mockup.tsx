@@ -1,9 +1,9 @@
 "use client";
 
 import {
-  type CSSProperties,
-  type FocusEvent,
+  type Dispatch,
   type RefObject,
+  type SetStateAction,
   useEffect,
   useRef,
   useState,
@@ -31,8 +31,7 @@ import { BlameAppShell } from "./app-shell";
 import {
   backlogColumns,
   heroBacklogStories,
-  nextPipelineStatus,
-  pipelineBacklogStories,
+  pipelineStoryTitles,
   storyStatusLabel,
   type BacklogColumnId,
   type MockStory,
@@ -63,6 +62,39 @@ type StoryActionConfig = {
   iconOnly?: boolean;
 };
 
+type BacklogController = {
+  createStory: () => void;
+  pipActive: boolean;
+  runAction: (storyId: string, action: StoryActionId) => void;
+  stories: MockStory[];
+  togglePip: () => void;
+};
+
+type PipelineDelayRange = readonly [minimum: number, maximum: number];
+type StorySetter = Dispatch<SetStateAction<MockStory[]>>;
+
+const pipelineBatchSize = 3;
+
+const pipelineDelayRanges: Record<BacklogColumnId, PipelineDelayRange> = {
+  backlog: [1000, 1500],
+  ready: [500, 800],
+  "in-progress": [3500, 5500],
+  "in-review": [1800, 3800],
+  done: [2600, 4000],
+  discarded: [2200, 3400],
+};
+
+const pipelineReschedulingActions = new Set<StoryActionId>([
+  "approve",
+  "dequeue",
+  "discard",
+  "reject",
+  "rework",
+  "send",
+  "stop",
+  "trash",
+]);
+
 const actionConfig: Record<StoryActionId, StoryActionConfig> = {
   approve: { icon: Check, label: "Approve & Merge", tone: "success" },
   dequeue: { icon: RotateCcw, label: "Dequeue", tone: "destructive" },
@@ -86,44 +118,34 @@ export function HeroBacklogMockup() {
   return (
     <div className={styles.mockupFrame} data-variant="hero">
       <BlameAppShell>
-        <BacklogBoard
-          stories={backlog.stories}
-          selectedStoryId={backlog.selectedStoryId}
-          onAction={backlog.runAction}
-          onCreateStory={backlog.createStory}
-          onSelectStory={backlog.setSelectedStoryId}
-          onTogglePip={backlog.togglePip}
-          pipActive={backlog.pipActive}
-        />
+        <InteractiveBacklogBoard backlog={backlog} />
       </BlameAppShell>
     </div>
   );
 }
 
 export function PipelineBacklogMockup() {
-  const rootRef = useRef<HTMLDivElement>(null);
-  const [hovered, setHovered] = useState(false);
-  const [focused, setFocused] = useState(false);
-  const visible = useIntersectionVisible(rootRef);
   const documentVisible = useDocumentVisible();
-  const reducedMotion = useReducedMotion();
-  const stories = usePipelineStories(
-    hovered || focused || !visible || !documentVisible || reducedMotion,
-  );
+  const backlog = usePipelineBacklog(!documentVisible);
 
   return (
-    <div
-      ref={rootRef}
-      className={styles.mockupFrame}
-      onBlurCapture={(event) => setFocused(focusStayedInside(event))}
-      onFocusCapture={() => setFocused(true)}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
+    <div className={styles.mockupFrame} data-variant="pipeline">
       <BlameAppShell>
-        <BacklogBoard stories={stories} pipeline />
+        <InteractiveBacklogBoard backlog={backlog} />
       </BlameAppShell>
     </div>
+  );
+}
+
+function InteractiveBacklogBoard({ backlog }: { backlog: BacklogController }) {
+  return (
+    <BacklogBoard
+      stories={backlog.stories}
+      onAction={backlog.runAction}
+      onCreateStory={backlog.createStory}
+      onTogglePip={backlog.togglePip}
+      pipActive={backlog.pipActive}
+    />
   );
 }
 
@@ -159,34 +181,22 @@ type BacklogBoardProps = {
   stories: ReadonlyArray<MockStory>;
   onAction?: (storyId: string, action: StoryActionId) => void;
   onCreateStory?: () => void;
-  onSelectStory?: (storyId: string) => void;
   onTogglePip?: () => void;
-  pipeline?: boolean;
   pipActive?: boolean;
-  selectedStoryId?: string;
 };
 
 function BoardLanes(props: BacklogBoardProps) {
   return (
-    <div
-      className={styles.boardGrid}
-      data-pipeline={props.pipeline || undefined}
-    >
+    <div className={styles.boardGrid}>
       {backlogColumns.map((column) => (
         <BacklogLane
           key={column.id}
           column={column}
           stories={props.stories}
-          showStories={!props.pipeline}
-          selectedStoryId={props.selectedStoryId}
           onAction={props.onAction}
           onCreateStory={props.onCreateStory}
-          onSelectStory={props.onSelectStory}
         />
       ))}
-      {props.pipeline ? (
-        <MovingPipelineStories stories={props.stories} />
-      ) : null}
     </div>
   );
 }
@@ -298,9 +308,6 @@ function BacklogLane(props: BacklogLaneProps) {
           columnId={props.column.id}
           onAction={props.onAction}
           onCreateStory={props.onCreateStory}
-          onSelectStory={props.onSelectStory}
-          selectedStoryId={props.selectedStoryId}
-          showStories={props.showStories}
           stories={laneStories}
         />
       </div>
@@ -311,25 +318,15 @@ function BacklogLane(props: BacklogLaneProps) {
 type BacklogLaneProps = {
   column: (typeof backlogColumns)[number];
   stories: ReadonlyArray<MockStory>;
-  showStories: boolean;
-  selectedStoryId?: string;
   onAction?: (storyId: string, action: StoryActionId) => void;
   onCreateStory?: () => void;
-  onSelectStory?: (storyId: string) => void;
 };
 
-function LaneStories({ columnId, showStories, ...props }: LaneStoriesProps) {
-  if (!showStories) return null;
+function LaneStories({ columnId, ...props }: LaneStoriesProps) {
   return (
     <>
       {props.stories.map((story) => (
-        <StoryCard
-          key={story.id}
-          story={story}
-          selected={story.id === props.selectedStoryId}
-          onAction={props.onAction}
-          onSelect={props.onSelectStory}
-        />
+        <StoryCard key={story.id} story={story} onAction={props.onAction} />
       ))}
       {columnId === "backlog" ? (
         <NewStoryAction onClick={props.onCreateStory} />
@@ -379,54 +376,36 @@ function NewStoryAction({ onClick }: { onClick?: () => void }) {
 }
 
 function StoryCard({
-  compact = false,
   onAction,
-  onSelect,
-  selected,
   story,
 }: {
-  compact?: boolean;
   onAction?: (storyId: string, action: StoryActionId) => void;
-  onSelect?: (storyId: string) => void;
-  selected?: boolean;
   story: MockStory;
 }) {
   return (
     <article
       className={styles.storyStateEffect}
-      data-selected={selected || undefined}
       data-story-state={story.status}
     >
-      <div className={styles.storyCard} data-compact={compact || undefined}>
-        <StoryCardHeader story={story} onSelect={onSelect} />
+      <div className={styles.storyCard}>
+        <StoryCardHeader story={story} />
         {story.detail ? (
           <p className={styles.storyDetail}>{story.detail}</p>
         ) : null}
-        <StoryActions compact={compact} story={story} onAction={onAction} />
+        <StoryActions story={story} onAction={onAction} />
       </div>
     </article>
   );
 }
 
-function StoryCardHeader({
-  onSelect,
-  story,
-}: {
-  onSelect?: (storyId: string) => void;
-  story: MockStory;
-}) {
-  const title = <span>{story.title}</span>;
+function StoryCardHeader({ story }: { story: MockStory }) {
   return (
     <header className={styles.storyHeader}>
       <span className={styles.storyReference}>{story.reference}</span>
       <StatusBadge story={story} />
-      {onSelect ? (
-        <button type="button" onClick={() => onSelect(story.id)}>
-          {title}
-        </button>
-      ) : (
-        <strong>{title}</strong>
-      )}
+      <strong>
+        <span>{story.title}</span>
+      </strong>
     </header>
   );
 }
@@ -441,22 +420,15 @@ function StatusBadge({ story }: { story: MockStory }) {
 }
 
 function StoryActions({
-  compact,
   onAction,
   story,
 }: {
-  compact: boolean;
   onAction?: (storyId: string, action: StoryActionId) => void;
   story: MockStory;
 }) {
   const runAction = onAction
     ? (action: StoryActionId) => onAction(story.id, action)
     : undefined;
-  if (compact) {
-    return (
-      <ActionRow actions={[primaryStoryAction(story)]} onAction={runAction} />
-    );
-  }
   if (story.status === "in-progress" || story.status === "in-review") {
     return <DevelopmentActions story={story} onAction={runAction} />;
   }
@@ -566,40 +538,17 @@ function StoryActionContent({ config }: { config: StoryActionConfig }) {
   );
 }
 
-function MovingPipelineStories({
-  stories,
-}: {
-  stories: ReadonlyArray<MockStory>;
-}) {
-  return (
-    <div className={styles.movingStoryLayer} aria-live="off">
-      {stories.map((story, row) => (
-        <div
-          key={story.id}
-          className={styles.movingStory}
-          style={pipelineStoryPosition(story.status, row)}
-        >
-          <StoryCard compact story={story} />
-        </div>
-      ))}
-    </div>
-  );
-}
-
 function useHeroBacklog() {
   const [stories, setStories] = useState(() =>
     cloneStories(heroBacklogStories),
   );
-  const [selectedStoryId, setSelectedStoryId] = useState<string>();
   const [pipActive, setPipActive] = useState(false);
 
   function runAction(storyId: string, action: StoryActionId) {
-    setSelectedStoryId(storyId);
     setStories((current) => updateStoryCollection(current, storyId, action));
   }
 
   function createStory() {
-    setSelectedStoryId("story-716");
     setStories((current) => addDraftStory(current));
   }
 
@@ -607,40 +556,76 @@ function useHeroBacklog() {
     createStory,
     pipActive,
     runAction,
-    selectedStoryId,
-    setSelectedStoryId,
     stories,
     togglePip: () => setPipActive((current) => !current),
   };
 }
 
-function usePipelineStories(paused: boolean) {
-  const [stories, setStories] = useState(() =>
-    cloneStories(pipelineBacklogStories),
-  );
-  useEffect(() => {
-    if (paused) return;
-    const interval = window.setInterval(() => {
-      setStories((current) => current.map(advancePipelineStory));
-    }, 2600);
-    return () => window.clearInterval(interval);
-  }, [paused]);
-  return stories;
+function usePipelineBacklog(paused: boolean): BacklogController {
+  const pipeline = usePipelineStories(paused);
+  const [pipActive, setPipActive] = useState(false);
+
+  return {
+    createStory: pipeline.createStory,
+    pipActive,
+    runAction: pipeline.runAction,
+    stories: pipeline.stories,
+    togglePip: () => setPipActive((current) => !current),
+  };
 }
 
-function useIntersectionVisible(ref: RefObject<HTMLElement | null>) {
-  const [visible, setVisible] = useState(true);
+function usePipelineStories(paused: boolean) {
+  const [stories, setStories] = useState(() => createPipelineBatch(0));
+  const batchIndex = useRef(0);
+  const storyTimers = useRef(new Map<string, number>());
+  const replacementTimer = useRef<number | undefined>(undefined);
+
+  usePipelineSchedule(
+    paused,
+    stories,
+    batchIndex,
+    storyTimers,
+    replacementTimer,
+    setStories,
+  );
+
+  return {
+    createStory: () =>
+      createPipelineStory(
+        batchIndex,
+        storyTimers.current,
+        replacementTimer,
+        setStories,
+      ),
+    runAction: (storyId: string, action: StoryActionId) =>
+      runPipelineAction(storyId, action, storyTimers.current, setStories),
+    stories,
+  };
+}
+
+function usePipelineSchedule(
+  paused: boolean,
+  stories: MockStory[],
+  batchIndex: RefObject<number>,
+  storyTimers: RefObject<Map<string, number>>,
+  replacementTimer: RefObject<number | undefined>,
+  setStories: StorySetter,
+) {
+  const timers = storyTimers;
+  const replacement = replacementTimer;
   useEffect(() => {
-    const element = ref.current;
-    if (!element || typeof IntersectionObserver === "undefined") return;
-    const observer = new IntersectionObserver(
-      ([entry]) => setVisible(entry.isIntersecting),
-      { threshold: 0.08 },
-    );
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, [ref]);
-  return visible;
+    if (paused) {
+      clearPipelineSchedule(timers.current, replacement);
+      return;
+    }
+    scheduleStoryTransitions(stories, timers.current, setStories);
+    scheduleNextPipelineBatch(stories, batchIndex, replacement, setStories);
+  }, [batchIndex, paused, replacement, setStories, stories, timers]);
+
+  useEffect(
+    () => () => clearPipelineSchedule(timers.current, replacement),
+    [replacement, timers],
+  );
 }
 
 function useDocumentVisible() {
@@ -656,16 +641,97 @@ function useDocumentVisible() {
   return visible;
 }
 
-function useReducedMotion() {
-  const [reduced, setReduced] = useState(false);
-  useEffect(() => {
-    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const syncPreference = () => setReduced(media.matches);
-    syncPreference();
-    media.addEventListener("change", syncPreference);
-    return () => media.removeEventListener("change", syncPreference);
-  }, []);
-  return reduced;
+function scheduleStoryTransitions(
+  stories: ReadonlyArray<MockStory>,
+  timers: Map<string, number>,
+  setStories: StorySetter,
+) {
+  stories.forEach((story) => {
+    if (isTerminalStory(story) || timers.has(story.id)) return;
+    const timer = window.setTimeout(() => {
+      timers.delete(story.id);
+      setStories((current) =>
+        current.map((item) =>
+          item.id === story.id ? advancePipelineStory(item) : item,
+        ),
+      );
+    }, randomPipelineDelay(story.status));
+    timers.set(story.id, timer);
+  });
+}
+
+function scheduleNextPipelineBatch(
+  stories: ReadonlyArray<MockStory>,
+  batchIndex: RefObject<number>,
+  replacementTimer: RefObject<number | undefined>,
+  setStories: StorySetter,
+) {
+  if (!stories.every(isTerminalStory)) {
+    clearReplacementTimer(replacementTimer);
+    return;
+  }
+  if (replacementTimer.current !== undefined) return;
+  replacementTimer.current = window.setTimeout(() => {
+    batchIndex.current += 1;
+    setStories(createPipelineBatch(batchIndex.current));
+    replacementTimer.current = undefined;
+  }, terminalBatchDelay(stories));
+}
+
+function runPipelineAction(
+  storyId: string,
+  action: StoryActionId,
+  timers: Map<string, number>,
+  setStories: StorySetter,
+) {
+  if (pipelineReschedulingActions.has(action)) {
+    clearStoryTimer(storyId, timers);
+  }
+  setStories((current) => updateStoryCollection(current, storyId, action));
+}
+
+function createPipelineStory(
+  batchIndex: RefObject<number>,
+  timers: Map<string, number>,
+  replacementTimer: RefObject<number | undefined>,
+  setStories: StorySetter,
+) {
+  clearPipelineSchedule(timers, replacementTimer);
+  batchIndex.current += 1;
+  const [draft] = createPipelineBatch(batchIndex.current);
+  setStories((current) => addPipelineDraft(current, draft));
+  return draft.id;
+}
+
+function addPipelineDraft(stories: MockStory[], draft: MockStory) {
+  if (stories.length < pipelineBatchSize) return [...stories, draft];
+  const terminalIndex = stories.findIndex(isTerminalStory);
+  const replacementIndex = terminalIndex === -1 ? 0 : terminalIndex;
+  return stories.filter((_, index) => index !== replacementIndex).concat(draft);
+}
+
+function clearStoryTimer(storyId: string, timers: Map<string, number>) {
+  const timer = timers.get(storyId);
+  if (timer !== undefined) window.clearTimeout(timer);
+  timers.delete(storyId);
+}
+
+function clearReplacementTimer(
+  replacementTimer: RefObject<number | undefined>,
+) {
+  if (replacementTimer.current !== undefined) {
+    window.clearTimeout(replacementTimer.current);
+  }
+  replacementTimer.current = undefined;
+}
+
+function clearPipelineSchedule(
+  timers: Map<string, number>,
+  replacementTimer: RefObject<number | undefined>,
+) {
+  timers.forEach((timer) => window.clearTimeout(timer));
+  timers.clear();
+  clearReplacementTimer(replacementTimer);
 }
 
 function updateStoryCollection(
@@ -722,9 +788,46 @@ function advancePipelineStory(story: MockStory) {
   const status = nextPipelineStatus(story.status);
   const nextStory = storyInStatus(story, status);
   if (status === "done") return { ...nextStory, detail: "Merged moments ago" };
-  if (status === "discarded")
-    return { ...nextStory, detail: "Ready to rework" };
+  if (status === "discarded") {
+    return { ...nextStory, detail: "Rejected during review" };
+  }
   return nextStory;
+}
+
+function nextPipelineStatus(status: BacklogColumnId): BacklogColumnId {
+  if (status === "backlog") return "ready";
+  if (status === "ready") return "in-progress";
+  if (status === "in-progress") return "in-review";
+  if (status === "in-review") {
+    return Math.random() < 0.8 ? "done" : "discarded";
+  }
+  return status;
+}
+
+function createPipelineBatch(batchIndex: number): MockStory[] {
+  return Array.from({ length: pipelineBatchSize }, (_, position) => {
+    const sequence = batchIndex * pipelineBatchSize + position;
+    const storyNumber = 804 + sequence;
+    return {
+      id: `pipeline-${batchIndex}-${position}`,
+      reference: `US-${storyNumber}`,
+      title: pipelineStoryTitles[sequence % pipelineStoryTitles.length],
+      status: "backlog" as const,
+    };
+  });
+}
+
+function randomPipelineDelay(status: BacklogColumnId) {
+  const [minimum, maximum] = pipelineDelayRanges[status];
+  return Math.round(minimum + Math.random() * (maximum - minimum));
+}
+
+function terminalBatchDelay(stories: ReadonlyArray<MockStory>) {
+  return Math.max(...stories.map((story) => randomPipelineDelay(story.status)));
+}
+
+function isTerminalStory(story: MockStory) {
+  return story.status === "done" || story.status === "discarded";
 }
 
 function addDraftStory(stories: MockStory[]) {
@@ -747,15 +850,6 @@ function simpleStoryActions(story: MockStory): StoryActionId[] {
   return ["trash", "rework"];
 }
 
-function primaryStoryAction(story: MockStory): StoryActionId {
-  if (story.status === "backlog") return "send";
-  if (story.status === "ready") return "dequeue";
-  if (story.status === "in-progress") return "stop";
-  if (story.status === "in-review") return "approve";
-  if (story.status === "done") return "use-context";
-  return "rework";
-}
-
 function badgeTone(label: string) {
   if (label === "Running") return "running";
   if (label === "Paused") return "paused";
@@ -763,16 +857,6 @@ function badgeTone(label: string) {
   if (label === "Rejected") return "rejected";
   if (label === "Draft") return "draft";
   return "queued";
-}
-
-function pipelineStoryPosition(status: BacklogColumnId, row: number) {
-  const laneIndex = backlogColumns.findIndex((column) => column.id === status);
-  const lanePercentage = laneIndex * (100 / backlogColumns.length);
-  const laneGapOffset = 0.48 + laneIndex * 0.075;
-  return {
-    "--lane-offset": `calc(${lanePercentage}% + ${laneGapOffset}cqw)`,
-    "--story-offset": `${row * 6.1}cqw`,
-  } as CSSProperties;
 }
 
 function cloneStories(stories: ReadonlyArray<MockStory>) {
@@ -784,8 +868,4 @@ function storiesForColumn(
   id: BacklogColumnId,
 ) {
   return stories.filter((story) => story.status === id);
-}
-
-function focusStayedInside(event: FocusEvent<HTMLDivElement>) {
-  return event.currentTarget.contains(event.relatedTarget as Node | null);
 }

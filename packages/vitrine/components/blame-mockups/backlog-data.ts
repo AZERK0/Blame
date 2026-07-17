@@ -141,25 +141,20 @@ export const heroBacklogStories: ReadonlyArray<MockStory> = [
   },
 ];
 
-export const pipelineBacklogStories: ReadonlyArray<MockStory> = [
-  {
-    id: "pipeline-804",
-    reference: "US-804",
-    title: "Add keyboard command palette",
-    status: "backlog",
-  },
-  {
-    id: "pipeline-805",
-    reference: "US-805",
-    title: "Verify deployment rollback flow",
-    status: "in-progress",
-    agentStatus: "Running",
-  },
-];
-
-export const pipelineStatusOrder = backlogColumns.map(
-  (column) => column.id,
-) as BacklogColumnId[];
+export const pipelineStoryTitles = [
+  "Add keyboard command palette",
+  "Verify deployment rollback flow",
+  "Create release health dashboard",
+  "Stream local preview logs",
+  "Improve branch conflict guidance",
+  "Add project template presets",
+  "Capture agent execution metrics",
+  "Secure environment variable sync",
+  "Polish review approval flow",
+  "Generate accessible form states",
+  "Track preview performance budgets",
+  "Simplify worktree cleanup",
+] as const;
 
 export function storyStatusLabel(story: MockStory) {
   if (story.status === "backlog") return "Draft";
@@ -168,9 +163,4 @@ export function storyStatusLabel(story: MockStory) {
   if (story.status === "in-review") return "Review";
   if (story.status === "done") return "Merged";
   return "Rejected";
-}
-
-export function nextPipelineStatus(status: BacklogColumnId) {
-  const index = pipelineStatusOrder.indexOf(status);
-  return pipelineStatusOrder[(index + 1) % pipelineStatusOrder.length];
 }
