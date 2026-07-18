@@ -82,9 +82,15 @@ export type TelemetryExportSession = {
   token: string
 }
 
+export type RuntimeDiagnosticInput = {
+  detail: string
+  operation: "ensure" | "repair" | "reset"
+}
+
 export type TelemetryClient = {
   configure(session: TelemetryExportSession): Promise<boolean>
   disable(): Promise<boolean>
+  sendRuntimeDiagnostic?(input: RuntimeDiagnosticInput): Promise<boolean>
 }
 
 export type McpTransport = "stdio" | "streamableHttp" | "sse"

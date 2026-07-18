@@ -1,5 +1,6 @@
 import * as React from "react"
 import { DownloadIcon, LoaderCircleIcon, RefreshCwIcon } from "lucide-react"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -13,9 +14,17 @@ import {
 import type {
   HostDependencyIssue,
   HostDependencyReport,
+  RuntimeDiagnosticInput,
 } from "@/context/platform"
 import { usePlatform } from "@/context/platform"
 import { cn } from "@/lib/utils"
+import {
+  runtimeFailureDetail,
+  runtimeFailureTitle,
+  runtimeReportFailure,
+} from "@/pages/backlog/runtime-failure"
+
+const runtimeFailureToastId = "runtime-action-failure"
 
 export type HostDependenciesDialogProps = {
   checking: boolean
@@ -44,8 +53,19 @@ export function HostDependenciesDialog({
     if (runtimeAction) {
       setRunningAction(`${issue.name}-${issue.status}`)
       try {
-        await runtimeAction()
+        const result = await runtimeAction.run()
+        const reportFailure = runtimeReportFailure(result)
+        if (reportFailure) {
+          showRuntimeFailureToast(
+            reportFailure,
+            runtimeAction.operation,
+            platform
+          )
+          return
+        }
         await onRecheck()
+      } catch (error) {
+        showRuntimeFailureToast(error, runtimeAction.operation, platform)
       } finally {
         setRunningAction(null)
       }
@@ -108,7 +128,6 @@ function DependencyIssueRow({
   onAction(issue: HostDependencyIssue): Promise<void>
   platform: ReturnType<typeof usePlatform>
 }) {
-  const Icon = loading ? LoaderCircleIcon : dependencyButtonIcon(issue, platform)
   return (
     <div className="grid gap-3 rounded-lg border bg-muted/20 p-3 sm:grid-cols-[1fr_auto] sm:items-center">
       <div className="min-w-0">
@@ -123,19 +142,29 @@ function DependencyIssueRow({
         disabled={disabled}
         onClick={() => void onAction(issue)}
       >
-        <Icon className={cn(loading && "animate-spin")} />
+        <DependencyButtonIcon
+          issue={issue}
+          loading={loading}
+          platform={platform}
+        />
         {loading ? "Preparing" : dependencyButtonLabel(issue, platform)}
       </Button>
     </div>
   )
 }
 
-function dependencyButtonIcon(
-  issue: HostDependencyIssue,
+function DependencyButtonIcon({
+  issue,
+  loading,
+  platform,
+}: {
+  issue: HostDependencyIssue
+  loading: boolean
   platform: ReturnType<typeof usePlatform>
-) {
-  if (dependencyRuntimeAction(issue, platform)) return RefreshCwIcon
-  return DownloadIcon
+}) {
+  if (loading) return <LoaderCircleIcon className="animate-spin" />
+  if (dependencyRuntimeAction(issue, platform)) return <RefreshCwIcon />
+  return <DownloadIcon />
 }
 
 function dependencyRuntimeAction(
@@ -144,7 +173,9 @@ function dependencyRuntimeAction(
 ) {
   if (!managedRuntimePlatform(platform.platform)) return null
   if (issue.name === "blame-runtime") return blameRuntimeAction(issue, platform)
-  if (runtimeRepairDependency(issue.name)) return platform.workspace?.repairRuntime
+  if (runtimeRepairDependency(issue.name)) {
+    return createRuntimeAction("repair", platform.workspace?.repairRuntime)
+  }
   return null
 }
 
@@ -152,8 +183,17 @@ function blameRuntimeAction(
   issue: HostDependencyIssue,
   platform: ReturnType<typeof usePlatform>
 ) {
-  if (resetRuntimeIssue(issue)) return platform.workspace?.resetRuntime
-  return platform.workspace?.ensureRuntimeReady
+  if (resetRuntimeIssue(issue)) {
+    return createRuntimeAction("reset", platform.workspace?.resetRuntime)
+  }
+  return createRuntimeAction("ensure", platform.workspace?.ensureRuntimeReady)
+}
+
+function createRuntimeAction(
+  operation: RuntimeDiagnosticInput["operation"],
+  run: (() => Promise<unknown>) | undefined
+) {
+  return run ? { operation, run } : null
 }
 
 function resetRuntimeIssue(issue: HostDependencyIssue) {
@@ -220,4 +260,50 @@ function dependencyUrl(issue: HostDependencyIssue) {
     pip: "https://packaging.python.org/en/latest/tutorials/installing-packages/",
   }
   return urls[issue.name]
+}
+
+function showRuntimeFailureToast(
+  error: unknown,
+  operation: RuntimeDiagnosticInput["operation"],
+  platform: ReturnType<typeof usePlatform>
+) {
+  const detail = runtimeFailureDetail(error)
+  const send = platform.telemetry?.sendRuntimeDiagnostic
+  toast.error(runtimeFailureTitle(operation), {
+    action: send
+      ? {
+          label: "Send diagnostic",
+          onClick: () =>
+            void submitRuntimeDiagnostic({ detail, operation }, platform),
+        }
+      : undefined,
+    description: detail,
+    duration: Infinity,
+    id: runtimeFailureToastId,
+  })
+}
+
+async function submitRuntimeDiagnostic(
+  input: RuntimeDiagnosticInput,
+  platform: ReturnType<typeof usePlatform>
+) {
+  try {
+    const sent = await platform.telemetry?.sendRuntimeDiagnostic?.(input)
+    if (!sent) {
+      showDiagnosticSendFailure()
+      return
+    }
+    toast.dismiss(runtimeFailureToastId)
+    toast.success("Runtime diagnostic sent", {
+      description: "The error details were sent to Blame for investigation.",
+    })
+  } catch {
+    showDiagnosticSendFailure()
+  }
+}
+
+function showDiagnosticSendFailure() {
+  toast.error("Unable to send runtime diagnostic", {
+    description: "Check your connection and sign-in status, then try again.",
+  })
 }

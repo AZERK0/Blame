@@ -15,6 +15,8 @@ const api: BlameDesktopApi = {
   telemetry: {
     configure: (session) => ipcRenderer.invoke("telemetry:configure", session),
     disable: () => ipcRenderer.invoke("telemetry:disable"),
+    sendRuntimeDiagnostic: (input) =>
+      ipcRenderer.invoke("telemetry:send-runtime-diagnostic", input),
   },
   mcp: {
     authorize: (name) => ipcRenderer.invoke("mcp:authorize", name),

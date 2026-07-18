@@ -10,6 +10,7 @@ const developmentEndpoint = "http://localhost:3333/api/v1/telemetry/otlp"
 let activeSession: TelemetryExportSession | undefined
 let expectedEndpoint = productionEndpoint
 let gatewayMode = true
+let telemetryEnabled = false
 
 const authorization: TelemetryExportAuthorization = {
   async headers(): Promise<Record<string, string>> {
@@ -28,12 +29,14 @@ export function initializeDesktopTelemetry(
   gatewayMode = Boolean(gatewayEndpoint) || !directEndpoint
   expectedEndpoint =
     gatewayEndpoint || directEndpoint || defaultEndpoint(packaged)
-  return initializeBlameTelemetry({
+  const config = initializeBlameTelemetry({
     authorization: gatewayMode ? authorization : undefined,
     endpoint: expectedEndpoint,
     serviceName: "blame-desktop",
     serviceVersion,
   })
+  telemetryEnabled = config.enabled
+  return config
 }
 
 export function configureDesktopTelemetry(value: unknown) {
@@ -51,6 +54,10 @@ export function configureDesktopTelemetry(value: unknown) {
 export function disableDesktopTelemetry() {
   activeSession = undefined
   return true
+}
+
+export function desktopTelemetryReady() {
+  return telemetryEnabled && (!gatewayMode || sessionReady())
 }
 
 function sessionReady() {

@@ -48,6 +48,7 @@ import type {
   GitStatusResult,
 } from "@blame/app";
 import type { McpServersClient } from "@blame/app";
+import type { RuntimeDiagnosticInput } from "@blame/app";
 import type { TelemetryExportSession } from "@blame/app";
 import type { HostDependencyReport } from "../main/host-dependencies";
 import type { CreateProjectInput } from "../main/project-creation";
@@ -182,6 +183,7 @@ export type BlameDesktopApi = {
   telemetry: {
     configure(session: TelemetryExportSession): Promise<boolean>;
     disable(): Promise<boolean>;
+    sendRuntimeDiagnostic(input: RuntimeDiagnosticInput): Promise<boolean>;
   };
   openDirectoryPicker(
     options?: OpenDirectoryPickerOptions,

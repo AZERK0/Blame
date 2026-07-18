@@ -24,6 +24,7 @@ export type {
   McpServerConfig,
   McpServersClient,
   Platform,
+  RuntimeDiagnosticInput,
   TelemetryExportSession,
 } from "./context/platform"
 

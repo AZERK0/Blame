@@ -37,6 +37,7 @@ import { allowedMetricAttributeKeys } from "./redaction.js";
 import { ATTR_DEPLOYMENT_ENVIRONMENT_NAME } from "./semantic-attributes.js";
 
 let activeConfig: BlameTelemetryConfig | undefined;
+let activeLogRecordProcessors: BatchLogRecordProcessor[] = [];
 let nodeSdk: NodeSDK | undefined;
 let shutdownPromise: Promise<void> | undefined;
 const telemetry = new BlameTelemetry();
@@ -52,6 +53,7 @@ export function initializeBlameTelemetry(
     nodeSdk = createNodeSdk(activeConfig);
     nodeSdk.start();
   } catch {
+    activeLogRecordProcessors = [];
     nodeSdk = undefined;
     activeConfig = { ...activeConfig, enabled: false };
     writeTelemetryDiagnostic("blame.telemetry.initialization_failed");
@@ -67,6 +69,12 @@ export function getExecutionRegistry() {
   return executions;
 }
 
+export async function forceFlushBlameTelemetryLogs() {
+  await Promise.all(
+    activeLogRecordProcessors.map((processor) => processor.forceFlush()),
+  );
+}
+
 export async function shutdownBlameTelemetry(timeoutMs = 3_000) {
   if (shutdownPromise) return shutdownPromise;
   executions.shutdown();
@@ -77,10 +85,11 @@ export async function shutdownBlameTelemetry(timeoutMs = 3_000) {
 function createNodeSdk(config: BlameTelemetryConfig) {
   const endpoint = config.endpoint;
   if (!endpoint) throw new Error("OTLP endpoint is required");
+  activeLogRecordProcessors = createLogProcessors(config);
   return new NodeSDK({
     autoDetectResources: false,
     instrumentations: createInstrumentations(config.serviceName),
-    logRecordProcessors: createLogProcessors(config),
+    logRecordProcessors: activeLogRecordProcessors,
     metricReaders: createMetricReaders(config),
     resource: createResource(config),
     spanProcessors: createSpanProcessors(config),
