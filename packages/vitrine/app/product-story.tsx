@@ -4,12 +4,14 @@ import type { CSSProperties } from "react";
 import {
   ArrowRight,
   Check,
-  Cloud,
   FileDiff,
   GitBranch,
   GitMerge,
-  Laptop,
+  KeyRound,
+  ListChecks,
+  MessagesSquare,
   MonitorPlay,
+  ServerCog,
   Sparkles,
   Workflow,
 } from "lucide-react";
@@ -74,15 +76,32 @@ const specialistAgents = [
   },
 ];
 
-
-const syncedItems = [
-  "Backlog",
-  "Story context",
-  "Code practices",
-  "Workspace state",
+const cloudContinuityItems = [
+  {
+    title: "Stories & conversations",
+    description:
+      "Every user story and its full conversation history stays linked to the project.",
+    icon: MessagesSquare,
+  },
+  {
+    title: "Code practices & preferences",
+    description:
+      "Your enabled practices and project preferences return exactly as you set them.",
+    icon: ListChecks,
+  },
+  {
+    title: "Provider connections",
+    description:
+      "Tokens and OAuth connections stay ready, so each provider works without another setup.",
+    icon: KeyRound,
+  },
+  {
+    title: "MCP configurations",
+    description:
+      "Every configured MCP server is restored when you move to another computer.",
+    icon: ServerCog,
+  },
 ];
-
-const localItems = ["Worktrees", "Commands", "Live previews", "Diffs"];
 
 const reviewActions = [
   { label: "Review the evidence", icon: FileDiff },
@@ -101,7 +120,7 @@ export function ProductStory() {
       <ParallelAgentsSection />
       <PracticesSection />
       <SpecialistsSection />
-      <LocalExecutionSection />
+      <CloudContinuitySection />
       <ProjectCreationSection />
       <FinalCtaSection />
     </div>
@@ -457,76 +476,57 @@ function specialistCardStyle(agent: (typeof specialistAgents)[number]) {
   } as CSSProperties;
 }
 
-function LocalExecutionSection() {
+function CloudContinuitySection() {
   return (
     <section className="bg-[linear-gradient(180deg,#050505_0%,#101012_100%)] px-5 py-32 sm:px-8 sm:py-40 lg:px-10 lg:py-48">
       <div className="mx-auto max-w-7xl">
         <ScrollReveal className="text-center">
-          <p className="story-eyebrow">Local execution</p>
+          <p className="story-eyebrow">Blame Cloud</p>
           <h2 className="story-title mx-auto mt-5 max-w-6xl">
-            The cloud coordinates. Your machine executes.
+            Change computers. Keep every detail.
           </h2>
-        </ScrollReveal>
-        <ExecutionDiagram />
-        <ScrollReveal delay={180}>
-          <p className="mx-auto mt-12 max-w-2xl text-center text-sm leading-6 text-white/38">
-            Connect the AI provider you choose. Provider usage remains separate.
+          <p className="story-copy mx-auto mt-7 max-w-3xl">
+            Open the same project on another computer and Blame restores the
+            context around it. No rebuilding your workflow from scratch.
           </p>
         </ScrollReveal>
+        <CloudContinuityPanel />
       </div>
     </section>
   );
 }
 
-function ExecutionDiagram() {
+function CloudContinuityPanel() {
   return (
-    <div className="mt-20 grid overflow-hidden rounded-[2rem] border border-white/12 bg-white/[0.025] lg:mt-28 lg:grid-cols-2">
-      <ExecutionColumn
-        icon={Cloud}
-        items={syncedItems}
-        label="Synced"
-        title="A shared control plane."
-      />
-      <ExecutionColumn
-        icon={Laptop}
-        items={localItems}
-        label="Local"
-        title="A workspace you control."
-      />
-    </div>
-  );
-}
-
-function ExecutionColumn({
-  icon: Icon,
-  items,
-  label,
-  title,
-}: {
-  icon: typeof Cloud;
-  items: readonly string[];
-  label: string;
-  title: string;
-}) {
-  return (
-    <ScrollReveal className="h-full">
-      <div className="h-full border-b border-white/10 p-8 last:border-0 sm:p-12 lg:border-b-0 lg:border-r lg:p-16 lg:last:border-r-0">
-        <Icon className="h-7 w-7 text-[#9fd7ff]" />
-        <p className="mt-12 font-mono text-xs uppercase tracking-[0.18em] text-white/32">
-          {label}
-        </p>
-        <h3 className="mt-4 text-[clamp(1.75rem,3vw,2.75rem)] font-semibold leading-[1.05] tracking-[-0.035em] text-white">
-          {title}
-        </h3>
-        <ul className="mt-12 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-white/10 pt-8">
-          {items.map((item) => (
-            <li key={item} className="text-sm font-medium text-white/52">
-              {item}
-            </li>
+    <ScrollReveal delay={120} className="mx-auto mt-20 max-w-5xl lg:mt-28">
+      <div className="overflow-hidden rounded-[2rem] border border-white/12 bg-[radial-gradient(circle_at_50%_0%,rgba(84,163,255,0.14),transparent_42%),rgba(255,255,255,0.025)]">
+        <ul className="grid sm:grid-cols-2">
+          {cloudContinuityItems.map((item) => (
+            <CloudContinuityItem key={item.title} item={item} />
           ))}
         </ul>
       </div>
     </ScrollReveal>
+  );
+}
+
+function CloudContinuityItem({
+  item,
+}: {
+  item: (typeof cloudContinuityItems)[number];
+}) {
+  const Icon = item.icon;
+
+  return (
+    <li className="border-b border-white/10 p-8 last:border-b-0 sm:border-r sm:p-10 sm:even:border-r-0 sm:[&:nth-last-child(-n+2)]:border-b-0">
+      <Icon className="size-6 text-[#9fd7ff]" />
+      <h4 className="mt-6 text-xl font-semibold tracking-[-0.02em] text-white">
+        {item.title}
+      </h4>
+      <p className="mt-3 text-sm font-medium leading-6 text-white/48">
+        {item.description}
+      </p>
+    </li>
   );
 }
 
