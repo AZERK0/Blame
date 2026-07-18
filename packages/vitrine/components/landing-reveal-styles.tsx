@@ -70,6 +70,49 @@ export function LandingRevealStyles() {
         line-height: 1.4;
       }
 
+      .user-story-state-effect {
+        position: relative;
+      }
+
+      .user-story-state-effect[data-story-state="in-progress"] {
+        overflow: hidden;
+        padding: 1px;
+      }
+
+      .user-story-state-effect[data-story-state="in-progress"]::before {
+        position: absolute;
+        inset: -150%;
+        background: conic-gradient(
+          from 0deg,
+          transparent 0deg 245deg,
+          oklch(0.85 0.12 235 / 75%) 285deg,
+          oklch(0.65 0.22 255) 325deg,
+          transparent 360deg
+        );
+        content: "";
+        animation: userStoryBorderRotation 2.6s linear infinite;
+        pointer-events: none;
+      }
+
+      .workspace-smart-sweep {
+        display: inline-block;
+        color: transparent;
+        background-image: linear-gradient(
+          105deg,
+          #8fdcff 28%,
+          #8fdcff 40%,
+          #c4b5fd 48%,
+          #a78bfa 54%,
+          #8fdcff 62%,
+          #8fdcff 76%
+        );
+        background-size: 300% 100%;
+        background-position: 100% 0;
+        background-clip: text;
+        -webkit-background-clip: text;
+        animation: workspaceSmartSweep 4s ease-out infinite;
+      }
+
       .highlights-rail {
         scrollbar-width: none;
       }
@@ -165,6 +208,21 @@ export function LandingRevealStyles() {
         }
       }
 
+      @keyframes userStoryBorderRotation {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      @keyframes workspaceSmartSweep {
+        from {
+          background-position: 100% 0;
+        }
+        to {
+          background-position: 0 0;
+        }
+      }
+
       @media (prefers-reduced-motion: reduce) {
         .hero-stage canvas,
         .landing-reveal,
@@ -173,11 +231,18 @@ export function LandingRevealStyles() {
         .story-reveal,
         .story-reveal[data-visible="false"],
         .story-reveal[data-visible="true"],
-        .specialist-card {
+        .specialist-card,
+        .user-story-state-effect[data-story-state="in-progress"]::before,
+        .workspace-smart-sweep {
           animation: none;
           opacity: 1;
           transform: none;
           transition: none;
+        }
+
+        .workspace-smart-sweep {
+          color: #8fdcff;
+          background: none;
         }
 
         .specialist-card::before {

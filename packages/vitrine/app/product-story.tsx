@@ -168,18 +168,28 @@ function WorkspaceSection() {
   return (
     <section className="bg-[#1d1d1f] px-3 py-24 sm:px-6 sm:py-32 lg:px-8 lg:py-40">
       <ScrollReveal className="mx-auto max-w-[1480px]" distance={0}>
-        <div className="relative min-h-[680px] overflow-hidden rounded-[2rem] border border-white/10 sm:min-h-[760px] sm:rounded-[3rem]">
-          <WorkspacePhoto />
-          <div className="absolute inset-x-0 bottom-0 z-10 p-8 sm:p-14 lg:p-20">
-            <p className="story-eyebrow">Isolated by default</p>
-            <h2 className="mt-5 max-w-4xl text-balance text-[clamp(2.75rem,5.8vw,5.5rem)] font-semibold leading-[0.96] tracking-[-0.04em] text-white">
-              One story. Its own workspace.
-            </h2>
-            <p className="mt-8 max-w-2xl text-[1.0625rem] font-medium leading-7 text-white/68 sm:text-[1.3125rem] sm:leading-8">
-              Blame prepares a dedicated branch, worktree, environment, port,
-              and local runtime around the work.
-            </p>
-            <WorkspaceSignals />
+        <div
+          className="user-story-state-effect rounded-[2rem] sm:rounded-[3rem]"
+          data-story-state="in-progress"
+        >
+          <div className="relative z-[1] min-h-[680px] overflow-hidden rounded-[2rem] border border-white/10 sm:min-h-[760px] sm:rounded-[3rem]">
+            <WorkspacePhoto />
+            <div className="absolute inset-x-0 bottom-0 z-10 p-8 sm:p-14 lg:p-20">
+              <p className="story-eyebrow">Isolated by default</p>
+              <h2 className="mt-5 max-w-5xl text-balance text-[clamp(2.75rem,5.8vw,5.5rem)] font-semibold leading-[0.96] tracking-[-0.04em] text-white">
+                One story. Its own{" "}
+                <span className="workspace-smart-sweep">
+                  <strong className="font-bold">smart</strong> workspace.
+                </span>
+              </h2>
+              <p className="mt-8 max-w-3xl text-[1.0625rem] font-medium leading-7 text-white/68 sm:text-[1.3125rem] sm:leading-8">
+                Blame automatically analyzes your project, determines what the
+                story needs, and prepares a dedicated branch, worktree,
+                environment, port, and local runtime before implementation
+                starts.
+              </p>
+              <WorkspaceSignals />
+            </div>
           </div>
         </div>
       </ScrollReveal>
