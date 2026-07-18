@@ -91,7 +91,7 @@ function HeroCopy({
       <div className="text-center">
         <h1
           id="hero-title"
-          className="text-balance text-[clamp(3.4rem,10vw,9.5rem)] font-semibold leading-[0.9] tracking-tighter text-white drop-shadow-[0_20px_70px_rgba(0,0,0,0.55)] sm:leading-32"
+          className="text-balance text-[clamp(3.2rem,9vw,8.5rem)] font-semibold leading-[0.9] tracking-tighter text-white drop-shadow-[0_20px_70px_rgba(0,0,0,0.55)] sm:leading-32"
         >
           The industrial-grade
           <br />
@@ -137,12 +137,10 @@ function HeroMockup({
 }) {
   return (
     <div
-      className="z-20 mx-auto mb-4 w-full max-w-5xl"
+      className="z-20 mx-auto mb-4 w-full max-w-[68rem]"
       style={heroMockupStyle(progress, reducedMotion)}
     >
-      <div className="overflow-hidden rounded-2xl border border-white/16 bg-white/[0.08] p-2 shadow-[0_32px_120px_rgba(0,0,0,0.55)] backdrop-blur-2xl sm:p-3">
-        <HeroBacklogMockup />
-      </div>
+      <HeroBacklogMockup />
     </div>
   )
 }
@@ -291,7 +289,7 @@ function heroMockupStyle(
   const fade = smoothstep(0.34, 0.72, progress)
   return {
     opacity: 1 - fade,
-    transform: `translate3d(0, ${lift * -82}vh, 0) scale(${1 + lift * 0.42})`,
+    transform: `translate3d(0, ${lift * -24}vh, 0) perspective(1200px) rotate3d(1, -0.16, 0, ${lift * 32}deg) scale(${1 + lift * 0.42})`,
   }
 }
 

@@ -962,6 +962,14 @@ button.storyAction[data-tone="preview"]:hover {
   text-overflow: ellipsis;
 }
 
+.mockupFrame[data-variant="hero"] {
+  border: 0;
+  border-radius: clamp(10px, 1vw, 16px);
+  box-shadow:
+    0 42px 120px rgb(0 0 0 / 64%),
+    0 14px 42px rgb(0 0 0 / 52%);
+}
+
 .mockupFrame[data-variant="hero"]
   :is(.toolbarButton, .primaryToolbarButton, .newStoryAction, .storyAction) {
   font-size: clamp(5px, 0.66cqw, 11px);

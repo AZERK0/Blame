@@ -17,6 +17,10 @@ import { HighlightsCarousel } from "@/components/highlights-carousel";
 import { PipelineBacklogMockup } from "@/components/blame-mockups/backlog-mockup";
 import { LivePreviewMockup } from "@/components/blame-mockups/preview-mockup";
 import { ProjectCreationMockup } from "@/components/blame-mockups/project-creation-mockup";
+import {
+  projectCreationAccentClassName,
+  projectCreationPanelClassName,
+} from "@/components/project-creation-theme";
 import { ScrollReveal } from "@/components/scroll-reveal";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FinalCtaScene } from "./scene/final-cta-scene";
@@ -487,7 +491,9 @@ function ProjectCreationSection() {
   return (
     <section className="bg-[#1d1d1f] px-3 py-24 sm:px-6 sm:py-32 lg:px-8 lg:py-40">
       <ScrollReveal className="mx-auto max-w-[1480px]" distance={0}>
-        <div className="overflow-hidden rounded-[2rem] bg-[#edc991] text-[#171109] ring-1 ring-black/[0.05] sm:rounded-[3rem]">
+        <div
+          className={`overflow-hidden rounded-[2rem] ring-1 ring-white/[0.08] sm:rounded-[3rem] ${projectCreationPanelClassName}`}
+        >
           <div className="grid gap-16 p-8 sm:p-14 lg:grid-cols-[0.68fr_1.32fr] lg:items-center lg:p-20 xl:p-24">
             <ProjectCreationCopy />
             <ProjectCreationImage />
@@ -501,13 +507,15 @@ function ProjectCreationSection() {
 function ProjectCreationCopy() {
   return (
     <div>
-      <p className="text-[clamp(1.0625rem,1.7vw,1.5rem)] font-semibold leading-[1.2] text-[#3545ad]">
+      <p
+        className={`text-[clamp(1.0625rem,1.7vw,1.5rem)] font-semibold leading-[1.2] ${projectCreationAccentClassName}`}
+      >
         Project creation
       </p>
       <h2 className="mt-5 text-balance text-[clamp(3rem,5.8vw,5.75rem)] font-semibold leading-[0.95] tracking-[-0.04em]">
         Start ready.
       </h2>
-      <p className="mt-8 max-w-lg text-[1.0625rem] font-medium leading-7 text-[#171109]/62 sm:text-[1.3125rem] sm:leading-8">
+      <p className="mt-8 max-w-lg text-[1.0625rem] font-medium leading-7 text-white/62 sm:text-[1.3125rem] sm:leading-8">
         Choose a web stack. Blame generates the structure, tooling, environment
         files, and preview configuration inside the same workflow.
       </p>
@@ -521,7 +529,7 @@ function ProjectCreationCopy() {
 
 function ProjectCreationImage() {
   return (
-    <div className="overflow-hidden rounded-2xl bg-[#171109] p-2 shadow-[0_35px_100px_rgba(70,42,10,0.25)] sm:p-3 lg:translate-x-8 xl:translate-x-12">
+    <div className="overflow-hidden rounded-2xl bg-[#090b0f] p-2 shadow-[0_35px_100px_rgba(4,25,26,0.55)] sm:p-3 lg:translate-x-8 xl:translate-x-12">
       <ProjectCreationMockup />
     </div>
   );
