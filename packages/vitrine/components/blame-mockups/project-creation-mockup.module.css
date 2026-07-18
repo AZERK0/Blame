@@ -225,7 +225,6 @@
 }
 
 .field input,
-.selectField select,
 .inputRow button {
   height: 2.65em;
   border: 1px solid rgb(255 255 255 / 10%);
@@ -241,8 +240,7 @@
   outline: none;
 }
 
-.field input:focus,
-.selectField select:focus {
+.field input:focus {
   border-color: #5275f5;
   box-shadow: 0 0 0 2px rgb(82 117 245 / 18%);
 }
@@ -292,13 +290,6 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.8em;
-}
-
-.selectField select {
-  width: 100%;
-  padding: 0 0.75em;
-  color-scheme: dark;
-  outline: none;
 }
 
 .advancedGrid {

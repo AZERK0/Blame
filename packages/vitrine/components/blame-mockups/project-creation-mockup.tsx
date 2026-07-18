@@ -10,6 +10,13 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   advancedOptions,
   backendOptions,
   databaseOptions,
@@ -537,25 +544,37 @@ function SelectField({ label, options, value, onChange }: SelectFieldProps) {
   const selected =
     options.find((option) => option.value === value) ?? options[0];
   return (
-    <label className={styles.selectField}>
-      <span>{label}</span>
-      <select
-        value={selected?.value}
-        onChange={(event) => onChange(event.target.value)}
-      >
-        <SelectOptions options={options} />
-      </select>
+    <div className={styles.selectField}>
+      <span id={selectLabelId(label)}>{label}</span>
+      <Select value={selected?.value} onValueChange={onChange}>
+        <SelectTrigger
+          aria-labelledby={selectLabelId(label)}
+          className="w-full border-white/10 bg-black/20 px-[0.75em] py-0 text-[1em] text-white/90 shadow-none hover:bg-white/[0.04] focus-visible:border-[#5275f5] focus-visible:ring-2 focus-visible:ring-[#5275f5]/20 data-[size=default]:h-[2.65em] [&_svg]:size-[1.2em]"
+        >
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent
+          className="z-[100] border-white/10 bg-[#181818] text-[clamp(0.625rem,0.8vw,0.8125rem)] text-[#f4f4f5] shadow-[0_1rem_3rem_rgba(0,0,0,0.55)]"
+        >
+          {options.map((option) => (
+            <SelectItem
+              key={option.value}
+              value={option.value}
+              disabled={option.disabled}
+              className="text-[1em] focus:bg-white/10 focus:text-white [&_svg:not([class*='size-'])]:size-[1em]"
+            >
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
       <small>{selected?.description}</small>
-    </label>
+    </div>
   );
 }
 
-function SelectOptions({ options }: { options: ProjectOption[] }) {
-  return options.map((option) => (
-    <option key={option.value} value={option.value} disabled={option.disabled}>
-      {option.label}
-    </option>
-  ));
+function selectLabelId(label: string) {
+  return `project-creation-${label.toLowerCase().replace(/[^a-z]+/g, "-")}`;
 }
 
 function WizardFooter({ wizard }: { wizard: WizardModel }) {

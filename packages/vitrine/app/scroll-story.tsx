@@ -12,7 +12,7 @@ import { SceneWarmup } from '@/components/scene-warmup'
 import { HeroBacklogMockup } from '@/components/blame-mockups/backlog-mockup'
 import { HeroScene } from './scene/hero-scene'
 
-const heroStageHeight = 207
+const heroStageHeight = 180
 const scrollProgressResponse = 14
 
 type ScrollAnimationState = {

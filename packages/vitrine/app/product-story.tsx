@@ -463,7 +463,11 @@ function AgentPortrait({
 }) {
   return (
     <Avatar className="size-18">
-      <AvatarImage src={agent.image} alt="" />
+      <AvatarImage
+        src={agent.image}
+        alt=""
+        style={{ imageRendering: "pixelated" }}
+      />
       <AvatarFallback aria-label={agent.title}>A</AvatarFallback>
     </Avatar>
   );
@@ -478,7 +482,7 @@ function specialistCardStyle(agent: (typeof specialistAgents)[number]) {
 
 function CloudContinuitySection() {
   return (
-    <section className="bg-[linear-gradient(180deg,#050505_0%,#101012_100%)] px-5 py-32 sm:px-8 sm:py-40 lg:px-10 lg:py-48">
+    <section className="bg-[#1d1d1f] px-5 py-32 sm:px-8 sm:py-40 lg:px-10 lg:py-48">
       <div className="mx-auto max-w-7xl">
         <ScrollReveal className="text-center">
           <p className="story-eyebrow">Blame Cloud</p>
@@ -499,7 +503,7 @@ function CloudContinuitySection() {
 function CloudContinuityPanel() {
   return (
     <ScrollReveal delay={120} className="mx-auto mt-20 max-w-5xl lg:mt-28">
-      <div className="overflow-hidden rounded-[2rem] border border-white/12 bg-[radial-gradient(circle_at_50%_0%,rgba(84,163,255,0.14),transparent_42%),rgba(255,255,255,0.025)]">
+      <div className="overflow-hidden rounded-[2rem] border border-white/12 bg-[#0a0a0c] shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
         <ul className="grid sm:grid-cols-2">
           {cloudContinuityItems.map((item) => (
             <CloudContinuityItem key={item.title} item={item} />
@@ -532,7 +536,7 @@ function CloudContinuityItem({
 
 function ProjectCreationSection() {
   return (
-    <section className="bg-[#1d1d1f] px-3 py-24 sm:px-6 sm:py-32 lg:px-8 lg:py-40">
+    <section className="bg-black px-3 pb-24 pt-24 sm:px-6 sm:pb-32 sm:pt-32 lg:px-8 lg:pb-40 lg:pt-40">
       <ScrollReveal className="mx-auto max-w-[1480px]" distance={0}>
         <div
           className={`overflow-hidden rounded-[2rem] ring-1 ring-white/[0.08] sm:rounded-[3rem] ${projectCreationPanelClassName}`}
@@ -576,7 +580,7 @@ function ProjectCreationImage() {
 
 function FinalCtaSection() {
   return (
-    <section className="relative isolate flex min-h-[100svh] items-center overflow-hidden border-t-[24px] border-[#1d1d1f] bg-black px-5 py-32 sm:border-t-[32px] sm:px-8 sm:py-40 lg:border-t-[48px] lg:px-10">
+    <section className="relative isolate flex min-h-[100svh] items-center overflow-hidden bg-black px-5 py-32 sm:px-8 sm:py-40 lg:px-10">
       <FinalCtaBackdrop />
       <ScrollReveal className="relative z-10 mx-auto w-full max-w-7xl text-center">
         <p className="story-eyebrow">Blame early access</p>
