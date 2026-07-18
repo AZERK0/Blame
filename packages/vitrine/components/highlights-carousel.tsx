@@ -53,7 +53,7 @@ const highlights: Highlight[] = [
   },
   {
     eyebrow: "Live preview",
-    title: "See it run. Keep the final say.",
+    title: "See each isolated worktree in action.",
     description:
       "Preview locally. Review every change. Merge when it earns it.",
     image: "/desktop-preview.png",

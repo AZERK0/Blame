@@ -247,7 +247,7 @@ function PreviewHeading() {
     <ScrollReveal className="text-center">
       <p className="story-eyebrow">Live preview</p>
       <h2 className="story-title mx-auto mt-5 max-w-6xl">
-        See the result. Not just the diff.
+        See each isolated worktree in action.
       </h2>
       <p className="story-copy mx-auto mt-7 max-w-3xl">
         Open the running app beside the story. Inspect files, terminal output,
