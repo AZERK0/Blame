@@ -66,9 +66,9 @@ function observeReveal(
         return;
       }
 
-      if (entry.intersectionRatio >= 0.08) setIsVisible(true);
+      setIsVisible(true);
     },
-    { threshold: [0, 0.08] },
+    { rootMargin: "0px 0px -12% 0px", threshold: 0 },
   );
 
   observer.observe(element);
