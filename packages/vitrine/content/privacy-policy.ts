@@ -13,8 +13,8 @@ const notice = (
 ): LegalBlock => ({ type: "notice", title, paragraphs, items });
 
 export const privacyEffectiveDate = "13 July 2026";
-export const privacyLastUpdated = "13 July 2026";
-export const privacyVersion = "1.0";
+export const privacyLastUpdated = "19 July 2026";
+export const privacyVersion = "1.2";
 
 export const privacyIntroduction = [
   'This Privacy Policy explains how Raphael Charpentier EI, a French individual entrepreneur applying the micro-enterprise regime and operating under the trade name MK Holding ("Blame", "we", "us", or "our"), collects, uses, stores, discloses, and otherwise processes personal data in connection with Blame Desktop, the blame.so website, cloud services, accounts, billing, updates, and support (together, the "Services").',
@@ -61,25 +61,8 @@ export const privacySections = [
     ],
   },
   {
-    id: "important-publication-information",
-    title: "3. Remaining requirements before publication",
-    blocks: [
-      notice(
-        "Draft publication lock",
-        [
-          "This draft remains unavailable in production until the following operational safeguards are implemented. Confirmation of a policy commitment does not replace the process needed to honour it in practice.",
-        ],
-        [
-          "Retention and rights operations: the verified in-app export and closure procedure, protected receipt, restore-safe closure ledger, active-cloud deletion retry process, and versioned retention controls are implemented. Before production publication, mount and replicate the production closure ledger, apply the OVH backup lifecycle and host log-retention configuration, test a restore reconciliation, and retain verification evidence.",
-          "Credential security: [[ROTATE THE PRODUCTION APP_KEY AWAY FROM THE PUBLIC EXAMPLE AND RE-ENCRYPT EXISTING CREDENTIALS OR REQUIRE USERS TO RECONNECT]].",
-          "Business-customer processor terms: [[PUBLISH BLAME'S CUSTOMER DPA AND MATERIAL SUBPROCESSOR REGISTER BEFORE ACCEPTING CUSTOMER-CONTROLLED PERSONAL DATA UNDER A PROCESSOR ROLE]].",
-        ],
-      ),
-    ],
-  },
-  {
     id: "data-flow-summary",
-    title: "4. What stays local, what reaches Blame, and what goes elsewhere",
+    title: "3. What stays local, what reaches Blame, and what goes elsewhere",
     blocks: [
       notice("Data-flow summary", [
         "Opening a repository in Blame does not, by itself, upload a complete copy of that repository to Blame. However, selected code, attached files, prompts, project-initialisation material, agent activity, tool results, command output, errors, and other working content can be stored in Blame cloud services and transmitted to the AI provider, gateway, MCP server, or integration used for a task.",
@@ -94,7 +77,7 @@ export const privacySections = [
   },
   {
     id: "personal-data-categories",
-    title: "5. Personal data we process",
+    title: "4. Personal data we process",
     blocks: [
       paragraph(
         "The categories below describe data we may process depending on the features you use. A file, prompt, log, or repository can contain any category of personal data even when Blame does not ask for that data directly.",
@@ -111,8 +94,9 @@ export const privacySections = [
         "AI connection data: provider and model selection, credential label, authentication method, custom base URL, OAuth provider account identifier and email, access and refresh credentials, API key, credential expiry, reasoning settings, and connection status.",
         "MCP and integration data: server name, enabled status, transport, executable command or credential-free URL synchronised to Blame cloud, plus local arguments, working directories, environment variables, HTTP headers, OAuth tokens, tool inputs, tool results, and connection events.",
         "Local application data: Account token and profile, up to ten recent project records, unsent prompts, selected code and complete draft attachments, model choices, theme, notification and sidebar preferences, window state, Cline session data, local runtime state, and functional interface storage.",
+        "Operational telemetry data: application, operating-system, architecture and runtime versions; opaque execution, story and worktree identifiers; operation names, phases, outcomes and durations; runtime state and bounded dependency status; provider, model and authentication-method categories; token usage and estimated cost; tool names and categories; bounded error types; dominant repository-language and repository-size buckets; task-complexity buckets derived from prompt length and attachment count; and technical request metadata needed to authenticate, rate-limit and deliver telemetry.",
         "Diagnostics and support data: local application, renderer, agent, setup, command, model-request, service, container, performance and error logs; crash or stack information; file paths; configuration; support messages; screenshots; attachments; and any diagnostic bundle you choose to send.",
-        "Derived data: repository fingerprints, initials, session summaries, status and usage totals, estimated cost, broad product statistics if analytics are introduced as described below, and inferences needed to detect fraud, abuse, or security incidents.",
+        "Derived data: repository fingerprints, initials, session summaries, status and usage totals, estimated cost, aggregated product-reliability and feature-performance statistics, and inferences needed to detect fraud, abuse, or security incidents.",
       ),
       notice("Sensitive and third-party personal data", [
         "Blame does not ask you to submit special-category data, government identifiers, health data, biometric data, precise geolocation, private communications, or other highly sensitive personal data in source code, prompts, attachments, or logs. The Services cannot reliably detect every such item. Do not provide it unless it is necessary, lawful, and appropriately protected, and do not place secrets in prompts or files sent to a third party.",
@@ -121,7 +105,7 @@ export const privacySections = [
   },
   {
     id: "sources-of-personal-data",
-    title: "6. Sources of personal data",
+    title: "5. Sources of personal data",
     blocks: [
       list(
         "Directly from you when you register, subscribe, configure the Services, create content, connect a provider or integration, communicate with us, or submit a rights request.",
@@ -135,7 +119,7 @@ export const privacySections = [
   },
   {
     id: "purposes-and-legal-bases",
-    title: "7. Why we process data and our legal bases",
+    title: "6. Why we process data and our legal bases",
     blocks: [
       paragraph(
         "For people in the EEA, United Kingdom, Switzerland, and other jurisdictions that require a legal basis, we rely on the bases below. More than one basis may apply when the purposes are genuinely distinct.",
@@ -146,7 +130,7 @@ export const privacySections = [
         "Bill and maintain transaction records: to create checkout and portal sessions, reconcile subscription status, issue or support invoices and refunds, retain contract evidence, and comply with accounting, tax, consumer, and payment obligations. Basis: contract and legal obligation.",
         "Secure and operate the Services: to authenticate requests, prevent credential misuse, fraud and abuse, troubleshoot failures, protect repositories and infrastructure, maintain availability, investigate incidents, and enforce our terms. Basis: our legitimate interests in providing a secure and reliable service, compliance with legal obligations where applicable, and contract where necessary to deliver the service.",
         "Provide support and communicate about the Services: to answer questions, investigate diagnostics you submit, deliver essential Account, security, billing, legal, and service messages, and manage complaints. Basis: contract, steps requested by you, legal obligation, and our legitimate interests in supporting users and resolving disputes.",
-        "Improve the product without training AI models on Customer Content: to fix defects, assess reliability, understand broad feature performance, and improve workflows using minimised operational data, feedback, and future analytics configured as described in this Policy. Basis: our legitimate interests where the processing is necessary and proportionate; consent where required for terminal access or non-essential analytics.",
+        "Measure and improve the product without training AI models on Customer Content: to fix defects, assess reliability, understand broad feature and runtime performance, control operational cost, and improve workflows using minimised operational telemetry and feedback. Basis: our legitimate interests in operating and improving a reliable service where the processing is necessary and proportionate. We do not rely on this interest to collect raw Customer Content, local logs, or reusable credentials through operational telemetry.",
         "Comply with law and protect legal rights: to respond to valid legal process, sanctions or regulatory obligations, retain required records, establish or defend claims, and assist competent authorities. Basis: legal obligation and our legitimate interests in protecting legal rights.",
         "Send optional marketing or use content for future model training: only if such a feature is introduced and you have given the separate consent required for that specific purpose. Basis: consent. These activities are not currently performed by Blame.",
       ),
@@ -160,7 +144,7 @@ export const privacySections = [
   },
   {
     id: "required-and-optional-data",
-    title: "8. When providing data is required",
+    title: "7. When providing data is required",
     blocks: [
       paragraph(
         "An email address, Account credentials, and the core technical records needed to authenticate and secure the Account are required to provide cloud features. Required checkout and billing information is needed to purchase a Subscription. If you do not provide those items, we cannot create the relevant Account, transaction, or paid service.",
@@ -172,7 +156,7 @@ export const privacySections = [
   },
   {
     id: "desktop-and-local-storage",
-    title: "9. Desktop and local-device processing",
+    title: "8. Desktop and local-device processing",
     blocks: [
       paragraph(
         "Blame Desktop stores data in browser-like application storage, the Electron user-data directory, project and worktree directories, local runtime or virtualisation storage, and Cline data directories. This can include the bearer token and Account profile, recent absolute project paths, unsent drafts with full code and attachments, provider choices, sessions, settings, OAuth credentials, MCP secrets, logs, agent artifacts, and runtime state.",
@@ -187,7 +171,7 @@ export const privacySections = [
   },
   {
     id: "cloud-and-repository-content",
-    title: "10. Cloud processing of project and repository content",
+    title: "9. Cloud processing of project and repository content",
     blocks: [
       paragraph(
         "Blame cloud services store more than Account metadata. Depending on the feature, they can store story and chat content, selected code, complete attachments, comments, project-initialisation content, absolute workspace or worktree paths, Git and preview metadata, agent activities, command or tool results, errors, final responses, summaries, sessions, model details, and usage or cost information.",
@@ -202,7 +186,7 @@ export const privacySections = [
   },
   {
     id: "ai-providers-and-model-training",
-    title: "11. AI providers, gateways, and model training",
+    title: "10. AI providers, gateways, and model training",
     blocks: [
       paragraph(
         "Blame connects to the AI provider, model, OAuth service, or custom OpenAI-compatible gateway that you select. The selected service may receive prompts, source code, attachments, images, project and workspace context, diffs, tool calls, terminal and container output, logs, web or MCP results, provider and model settings, session identifiers, and other content needed to perform the task. Calls may travel directly from your device or through a gateway associated with the selected connection.",
@@ -218,7 +202,7 @@ export const privacySections = [
   },
   {
     id: "mcp-and-other-integrations",
-    title: "12. MCP servers and other integrations",
+    title: "11. MCP servers and other integrations",
     blocks: [
       paragraph(
         "An enabled MCP server or other integration can receive prompts, identifiers, source code, file content, command or tool inputs, and any context sent through its tools. It may also read from or act on external systems within the permissions you grant. A local executable can access your device with the operating-system permissions of the process that starts it.",
@@ -233,7 +217,7 @@ export const privacySections = [
   },
   {
     id: "payments-and-stripe",
-    title: "13. Payments and Stripe",
+    title: "12. Payments and Stripe",
     blocks: [
       paragraph(
         "Stripe processes checkout, payment-method, billing-portal, refund, dispute, fraud-prevention, tax, and transaction information. Blame sends Stripe your Account email, full name, and Blame user identifier and receives customer, checkout, subscription, price, status, period, cancellation, and webhook information. Blame does not store full payment-card numbers or card security codes.",
@@ -245,23 +229,27 @@ export const privacySections = [
   },
   {
     id: "diagnostics-logs-and-telemetry",
-    title: "14. Diagnostics, logs, and telemetry",
+    title: "13. Diagnostics, logs, and telemetry",
     blocks: [
       paragraph(
-        "Blame automatically creates local operational logs. These can include application and renderer console output, stack traces, file paths, raw command output, setup and container logs, full model-request or prompt material, tool events, performance information, errors, OAuth account metadata, and information contained in your project. Local logs are not automatically uploaded to Blame under the current production configuration, but cloud activity records described elsewhere in this Policy are stored as part of the requested service.",
+        "Blame automatically creates operational logs on your device. These can include application and renderer console output, stack traces, file paths, raw command output, setup and container logs, model-request or prompt material, tool events, performance information, errors, OAuth account metadata, and information contained in your project. These local log files rotate on the device and are not automatically uploaded to Blame. Cloud activity records that form part of content you ask Blame to store remain governed by the other sections of this Policy.",
       ),
-      paragraph(
-        "If you send logs or a diagnostic bundle to support, Blame will receive and use them to investigate the issue. Review them first and remove secrets, credentials, unrelated source code, and unnecessary personal data. Blame will not ask for a password, complete API key, or reusable OAuth token in a support request.",
-      ),
-      notice("Current telemetry position", [
-        "Blame does not currently operate first-party behavioural analytics or automatic remote crash reporting in the packaged production Desktop App. The runtime supports OpenTelemetry when an operator or environment enables an exporter. In that case, technical metadata and usage or cost metrics can be sent to the endpoint configured by that operator; they are not sent to Blame unless Blame is identified as that endpoint.",
-        "Before Blame enables remote product analytics, audience measurement, or crash reporting for its own purposes, we will identify the exact events and fields, provider, destinations, purpose, legal basis, retention period, and user control. We will obtain prior consent for non-essential device access or collection where required, provide an equally accessible refusal and withdrawal control, and will not describe merely pseudonymous data as anonymous.",
+      notice("Automatic operational telemetry", [
+        "When you are signed in to the packaged Desktop App, Blame automatically sends minimised operational telemetry to Blame's self-hosted observability systems in OVHcloud's Gravelines region. The telemetry consists of structured events, metrics and traces used to measure availability, runtime and agent reliability, operation outcomes and durations, broad feature performance, token and estimated-cost trends, capacity, and recurring technical failures.",
+        "Blame's cloud services generate comparable server-side events, metrics and traces for API, network, runtime and database operations. Database statements are masked, request fields are filtered, and these signals are used for the same operational purposes.",
+        "Depending on the operation, the telemetry may contain app, operating-system, architecture and runtime versions; opaque execution, story and worktree identifiers; operation, phase, outcome and duration; runtime and bounded dependency states; provider, model and authentication-method categories; token usage and estimated cost; tool names and categories; bounded error types; dominant repository-language and repository-size buckets; task-complexity buckets derived from prompt length and attachment count; and technical request metadata. The gateway authenticates the short-lived telemetry session and may process the Account identifier and IP address for access control, abuse prevention and rate limiting.",
+        "Automatic telemetry is designed not to include prompts, source code, file content or paths, repository URLs, commands or arguments, stdout or stderr, tool arguments or results, reusable credentials, cookies or tokens, free-form error messages, or stack traces. Warning and error records sent through OpenTelemetry contain stable event names and bounded metadata rather than the underlying local log message. Redaction and allowlists are applied in the Desktop App and again by the collector. Opaque and pseudonymous identifiers are not described as anonymous.",
+        "Blame processes this telemetry on the basis of its legitimate interests in securing, operating, diagnosing and improving a reliable service. It is not used for advertising, cross-service tracking, individual employee-performance monitoring, automated decisions producing legal or similarly significant effects, or AI-model training. You may object to legitimate-interest processing as described in Section 20.",
+      ]),
+      notice("Runtime diagnostic sent only after your explicit action", [
+        "If a runtime setup, repair or reset operation fails, the Desktop App may display the failure detail and offer a Send diagnostic action. No detailed runtime diagnostic is sent merely because the failure occurred. Selecting that action explicitly sends the displayed operation type, runtime type, bounded error category and failure detail to Blame for investigation. The submitted detail is limited in length but can reproduce paths, configuration, command output, project information or other personal or confidential information contained in the error.",
+        "Review the displayed detail before sending it. Do not send the diagnostic if it contains secrets, credentials, unrelated source code or unnecessary personal data. You are not required to submit a diagnostic to continue using the Services or obtain general support. Blame will not ask for a password, complete API key or reusable OAuth token in a support request.",
       ]),
     ],
   },
   {
     id: "website-cookies-and-similar-technologies",
-    title: "15. Website, cookies, and similar technologies",
+    title: "14. Website, cookies, and similar technologies",
     blocks: [
       paragraph(
         "The Blame marketing website does not currently use advertising cookies or first-party behavioural analytics. It uses device capability information locally to recommend a compatible download and adapt rendering quality. Web and download infrastructure may process ordinary request logs such as IP address, timestamp, requested path, status, referrer, and user agent.",
@@ -276,7 +264,7 @@ export const privacySections = [
   },
   {
     id: "recipients-and-disclosures",
-    title: "16. Who receives personal data",
+    title: "15. Who receives personal data",
     blocks: [
       paragraph(
         "We disclose personal data only as needed for the purposes described in this Policy, on your instructions, or as required by law. Recipient categories are:",
@@ -292,7 +280,7 @@ export const privacySections = [
         "A potential buyer, successor, financing source, or adviser in a genuine restructuring, financing, sale, merger, or transfer of all or part of the business, subject to confidentiality and applicable notice requirements.",
       ),
       paragraph(
-        "We require processors selected by Blame to process personal data under written instructions, confidentiality, security, deletion or return, assistance, and subprocessor terms appropriate to their role. Business customers may request the current material subprocessor list and contact legal@blame.so to arrange an applicable Data Processing Addendum before processor services begin.",
+        "We require processors selected by Blame to process personal data under written instructions, confidentiality, security, deletion or return, assistance, and subprocessor terms appropriate to their role. The Blame Data Processing Addendum is available at https://blame.so/legal/dpa and the current Subprocessor Register is available at https://blame.so/legal/subprocessors.",
       ),
       notice("No sale or targeted advertising", [
         "Blame does not sell or rent personal data, disclose it for cross-context behavioural advertising, or exchange it for advertising value. Blame does not allow third parties to track people across unrelated websites through Blame for targeted advertising. If this practice changes, we will update this Policy and implement any required opt-out before the change takes effect.",
@@ -301,7 +289,7 @@ export const privacySections = [
   },
   {
     id: "international-transfers",
-    title: "17. International transfers",
+    title: "16. International transfers",
     blocks: [
       paragraph(
         "Blame is established in France. Blame's primary website, API, database, backup and download infrastructure, and the Customer Content stored in those systems, are hosted by OVH SAS in OVHcloud's Gravelines region in France. Domain-name, DNS, CDN, email, security, support, and maintenance operations may use OVHcloud's distributed infrastructure, authorised affiliates, and service-specific subprocessors under the applicable OVHcloud terms.",
@@ -322,7 +310,7 @@ export const privacySections = [
   },
   {
     id: "retention-and-deletion",
-    title: "18. How long we keep data",
+    title: "17. How long we keep data",
     blocks: [
       paragraph(
         "We keep personal data only for the period needed for the relevant purpose, then delete or irreversibly anonymise it unless a longer period is required or permitted by law. The following periods apply to Blame-controlled systems and do not override a third party's retention under its own terms:",
@@ -331,6 +319,7 @@ export const privacySections = [
         "Account, project, story, chat, attachment, agent, preference, and provider-connection data: while the Account is active or until the relevant item is deleted. Following verified Account closure, access is disabled and deletion from active Blame cloud systems is completed within 30 days, except data retained for the reasons below. A protected receipt lets you check the recorded status after sign-out.",
         "API keys, OAuth credentials, and access tokens held by Blame: until deleted, revoked, replaced, or the Account is closed, then removed from active systems within 30 days. A token may be retained temporarily where needed to investigate misuse or an incident.",
         "Local repositories, worktrees, drafts, sessions, credentials, MCP settings, logs, runtime data, and application storage: until you delete them. Blame cannot remotely erase local copies and uninstalling may not remove them.",
+        "Operational telemetry events, metrics and traces held in Blame's self-hosted observability systems: up to 14 days from collection. Aggregated statistics may be retained longer only where they no longer identify or can reasonably be linked to an Account, device, project, story, worktree or person.",
         "Active service, API, authentication, download, and security logs held by Blame or its infrastructure providers: up to 12 months, unless a shorter operational setting applies or a longer period is needed for a documented security incident, legal claim, or legal obligation.",
         "Support correspondence and diagnostics you submit: up to three years after the request is closed. Material needed to establish, exercise, or defend a legal claim may be isolated and retained for the applicable limitation period.",
         "Contracts, order and acceptance evidence, invoices, payment and accounting records: ten years from the relevant transaction, delivery, or end of the contract where French accounting or electronic-contract retention law requires it.",
@@ -345,7 +334,7 @@ export const privacySections = [
   },
   {
     id: "security",
-    title: "19. Security",
+    title: "18. Security",
     blocks: [
       paragraph(
         "We use technical and organisational measures designed to protect personal data in light of its nature, the risks, the state of the art, and the cost of implementation. Measures may include access controls, password and server-token hashing, transport security, restricted administrative access, dependency and update controls, logging safeguards, backup controls, and incident-response procedures.",
@@ -360,7 +349,7 @@ export const privacySections = [
   },
   {
     id: "your-controls",
-    title: "20. Your choices and controls",
+    title: "19. Your choices and controls",
     blocks: [
       list(
         "Edit Account details available in the Account interface or ask privacy@blame.so to correct them.",
@@ -379,7 +368,7 @@ export const privacySections = [
   },
   {
     id: "privacy-rights",
-    title: "21. Your privacy rights",
+    title: "20. Your privacy rights",
     blocks: [
       paragraph(
         "Depending on the law that applies, you may have the right to ask whether we process your personal data and to request access, a copy, correction, deletion, restriction, portability, or information about recipients. You may object to processing based on legitimate interests, object to direct marketing at any time, withdraw consent prospectively, and lodge a complaint with a supervisory authority. French law also allows you to define instructions concerning the retention, erasure, and communication of your personal data after death.",
@@ -400,10 +389,10 @@ export const privacySections = [
   },
   {
     id: "california-and-us-notices",
-    title: "22. California and other U.S. privacy notices",
+    title: "21. California and other U.S. privacy notices",
     blocks: [
       paragraph(
-        "For California residents, the categories of personal information collected through the online Services, their sources, business purposes, and categories of recipients are described in Sections 5, 6, 7, and 16. We provide the review and correction methods in Sections 20 and 21, explain how material Policy changes are communicated in Section 26, and display the effective date above.",
+        "For California residents, the categories of personal information collected through the online Services, their sources, business purposes, and categories of recipients are described in Sections 4, 5, 6, and 15. We provide the review and correction methods in Sections 19 and 20, explain how material Policy changes are communicated in Section 25, and display the effective date above.",
       ),
       paragraph(
         "Blame does not currently respond differently to a browser's legacy Do Not Track signal because Blame does not use cross-site behavioural advertising or permit third parties to track users across unrelated services through Blame. Where a legally recognised opt-out preference signal such as Global Privacy Control applies, we will process it as required. Because no sale or sharing for targeted advertising currently occurs, such a signal does not change the present experience.",
@@ -418,7 +407,7 @@ export const privacySections = [
   },
   {
     id: "children",
-    title: "23. Children",
+    title: "22. Children",
     blocks: [
       paragraph(
         "The Services are intended only for people who are at least eighteen years old and have reached the age of legal majority where they live. They are not directed to children, and a parent may not create an Account for a child to use. We do not knowingly collect personal data from a child through an authorised Account.",
@@ -430,7 +419,7 @@ export const privacySections = [
   },
   {
     id: "automated-decision-making",
-    title: "24. Automated decision-making",
+    title: "23. Automated decision-making",
     blocks: [
       paragraph(
         "Blame's coding agents generate suggestions and can perform technical actions at your direction, but Blame does not use them to make solely automated decisions about you that produce legal or similarly significant effects. Subscription status and technical access may be updated automatically from payment or security events, but you may contact support@blame.so for review of an access or billing issue.",
@@ -442,7 +431,7 @@ export const privacySections = [
   },
   {
     id: "communications-and-marketing",
-    title: "25. Service communications and marketing",
+    title: "24. Service communications and marketing",
     blocks: [
       paragraph(
         "We may send essential messages about Account verification, security, billing, subscriptions, legal changes, incidents, support, updates, or service availability. These are service communications rather than marketing, and some cannot be disabled while the relevant Account or Subscription remains active.",
@@ -454,7 +443,7 @@ export const privacySections = [
   },
   {
     id: "changes-to-this-policy",
-    title: "26. Changes to this Policy",
+    title: "25. Changes to this Policy",
     blocks: [
       paragraph(
         "We may update this Policy to reflect changes in the Services, providers, technology, or law. The current version, effective date, and last-updated date appear at the top. Earlier versions and a summary of material changes will be available on request at privacy@blame.so.",
@@ -466,7 +455,7 @@ export const privacySections = [
   },
   {
     id: "questions-and-complaints",
-    title: "27. Questions and complaints",
+    title: "26. Questions and complaints",
     blocks: [
       paragraph(
         "Send privacy questions, complaints, and rights requests to privacy@blame.so or by post to Raphael Charpentier EI / MK Holding, 36 rue des Geltines, 69390 Millery, France. We will acknowledge and investigate a privacy complaint and explain the outcome and any available review route without undue delay.",
@@ -481,7 +470,7 @@ export const privacySections = [
   },
 ] satisfies readonly LegalSection[];
 
-const privacyApprovedForPublication = false;
+const privacyApprovedForPublication = true;
 
 export const privacyReadyForPublication = legalDocumentReadyForPublication(
   privacyApprovedForPublication,

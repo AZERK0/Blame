@@ -13,8 +13,8 @@ const notice = (
 ): LegalBlock => ({ type: "notice", title, paragraphs, items });
 
 export const termsEffectiveDate = "13 July 2026";
-export const termsLastUpdated = "13 July 2026";
-export const termsVersion = "1.0";
+export const termsLastUpdated = "18 July 2026";
+export const termsVersion = "1.1";
 
 export const termsIntroduction = [
   'These Terms of Service form a legally binding agreement between you and Raphael Charpentier EI, a French individual entrepreneur applying the micro-enterprise regime and operating under the trade name MK Holding, whose business is domiciled at 36 rue des Geltines, 69390 Millery, France, registered with the French National Business Register and the Lyon Trade and Companies Register under SIREN number 984 448 217 (R.C.S. Lyon) ("Blame", "we", "us", or "our"). VAT is not applicable pursuant to Article 293 B of the French General Tax Code. They govern your download, installation, access to, and use of the Blame desktop application, websites, cloud services, APIs, updates, support, and related services.',
@@ -244,7 +244,7 @@ export const termsSections = [
         "You represent that you have all rights, permissions, notices, and lawful bases needed for Blame and the Third-Party Services you select to process User Content as instructed. You must not submit content that infringes intellectual-property, privacy, confidentiality, publicity, contractual, or other rights, or that you are prohibited from disclosing.",
       ),
       paragraph(
-        "If you use the Services to process personal data on behalf of a business, you are responsible for determining your role and complying with applicable data-protection law. Where Blame acts as your processor, the Data Processing Addendum at https://blame.so/legal/dpa applies once properly completed. You must not use the Services for special-category, highly sensitive, health, financial-account, government-identifier, or children’s data unless the applicable documentation expressly supports that use and legally required safeguards are in place.",
+        "If you use the Services to process personal data on behalf of a business, you are responsible for determining your role and complying with applicable data-protection law. Where Blame acts as your processor, the Data Processing Addendum at https://blame.so/legal/dpa is incorporated into the agreement and applies to that processing. The current Subprocessor Register is available at https://blame.so/legal/subprocessors. You must not use the Services for special-category, highly sensitive, health, financial-account, government-identifier, or children’s data unless the applicable documentation expressly supports that use and legally required safeguards are in place.",
       ),
       notice("AI training policy", [
         "As of the effective date, Blame does not use User Content or Output to train or fine-tune an artificial-intelligence model. Blame will not introduce such use merely through an update to these Terms. Any future use will require separate clear prior notice and the user’s optional affirmative consent, will apply only prospectively, and may be withdrawn at any time. Refusing or withdrawing that consent will not restrict the core paid Services.",
@@ -328,10 +328,10 @@ export const termsSections = [
       paragraph(
         "A party may disclose confidential information where law or valid legal process requires it, after giving advance notice where legally permitted and reasonable assistance at the other party’s expense. Trade-secret duties continue for as long as the information remains a trade secret; other confidentiality duties continue for five years after the later of disclosure or termination. Duties concerning personal data continue for as long as applicable law requires.",
       ),
-      notice("Diagnostics and analytics", [
+      notice("Diagnostics and telemetry", [
         "Blame creates diagnostic logs locally on your device and in project or worktree .blame directories. These logs may include technical configuration, operating-system and runtime information, provider and model identifiers, session identifiers, token and estimated-cost data, tool names, command or process output, file paths, prompt hashes and lengths, OAuth account metadata, and error details. Local logs are not automatically transmitted to Blame.",
-        "If you request support, you control which logs you provide and should remove secrets and unrelated personal or confidential information first. Blame does not currently operate first-party behavioural analytics or remote crash reporting in the production Desktop App.",
-        "Blame may introduce audience measurement or remote product diagnostics to understand aggregate feature use, performance, reliability, and broad usage trends. Before enabling them, we will describe the data categories, purposes, recipients, retention, legal basis, and available controls in the Privacy Policy and obtain any notice or consent required by law. We will not sell analytics data or use it for targeted advertising or individual employee-performance monitoring.",
+        "When you are signed in, Blame automatically sends minimised operational events, metrics and traces to Blame to measure reliability, operation outcomes and durations, broad feature performance, usage and cost trends, capacity and recurring technical failures. This telemetry is designed to exclude prompts, source code, file content and paths, repository URLs, commands and output, tool arguments and results, reusable credentials, free-form error messages and stack traces. The Privacy Policy describes the exact categories, purposes, retention and legal basis.",
+        "If a runtime setup, repair or reset operation fails, Blame sends the detailed failure information only if you select the Send diagnostic action. You should review the displayed information and not submit it if it contains secrets or unrelated personal or confidential information. Blame does not sell telemetry data or use it for targeted advertising, individual employee-performance monitoring or AI-model training.",
       ]),
     ],
   },
