@@ -20,6 +20,8 @@ type RevealStyle = CSSProperties & {
   "--story-reveal-distance": string;
 };
 
+type VisibilitySetter = (isVisible: boolean) => void;
+
 export function ScrollReveal({
   children,
   className = "",
@@ -50,7 +52,7 @@ export function ScrollReveal({
 
 function observeReveal(
   element: HTMLDivElement | null,
-  setIsVisible: (isVisible: boolean) => void,
+  setIsVisible: VisibilitySetter,
 ) {
   if (!element || typeof IntersectionObserver === "undefined") {
     setIsVisible(true);
@@ -59,18 +61,43 @@ function observeReveal(
 
   setIsVisible(false);
 
-  const observer = new IntersectionObserver(
+  const activationObserver = createActivationObserver(setIsVisible);
+  const viewportExitObserver = createViewportExitObserver(setIsVisible);
+
+  activationObserver.observe(element);
+  viewportExitObserver.observe(element);
+
+  return () => {
+    activationObserver.disconnect();
+    viewportExitObserver.disconnect();
+  };
+}
+
+function createActivationObserver(setIsVisible: VisibilitySetter) {
+  return new IntersectionObserver(
     ([entry]) => {
-      if (!entry?.isIntersecting) {
-        setIsVisible(false);
+      if (entry?.isIntersecting) {
+        setIsVisible(true);
         return;
       }
 
-      setIsVisible(true);
+      if (entry && entry.boundingClientRect.bottom <= 0) {
+        setIsVisible(false);
+      }
     },
-    { rootMargin: "0px 0px -12% 0px", threshold: 0 },
+    { rootMargin: "0px 0px -10% 0px", threshold: 0 },
   );
+}
 
-  observer.observe(element);
-  return () => observer.disconnect();
+function createViewportExitObserver(setIsVisible: VisibilitySetter) {
+  return new IntersectionObserver(([entry]) => {
+    if (
+      entry &&
+      !entry.isIntersecting &&
+      entry.rootBounds &&
+      entry.boundingClientRect.top >= entry.rootBounds.bottom
+    ) {
+      setIsVisible(false);
+    }
+  });
 }
