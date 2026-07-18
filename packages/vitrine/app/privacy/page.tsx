@@ -25,7 +25,6 @@ export default function PrivacyPolicyPage() {
   return (
     <LegalDocumentPage
       effectiveDate={privacyEffectiveDate}
-      eyebrow="Legal"
       introduction={privacyIntroduction}
       lastUpdated={privacyLastUpdated}
       sections={privacySections}

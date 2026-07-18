@@ -23,7 +23,6 @@ export type LegalSection = {
 
 type LegalDocumentPageProps = {
   effectiveDate: string;
-  eyebrow: string;
   introduction: readonly string[];
   lastUpdated: string;
   sections: readonly LegalSection[];
@@ -56,7 +55,7 @@ function LegalDocumentHeader(props: LegalDocumentPageProps) {
     <header className="relative isolate px-5 pb-14 pt-32 sm:px-8 sm:pb-18 lg:px-10">
       <div className="pointer-events-none absolute inset-0 -z-20 bg-[radial-gradient(circle_at_48%_12%,rgba(179,172,243,0.14),transparent_34%),linear-gradient(180deg,#070a17_0%,#050712_88%)]" />
       <div className="mx-auto w-full max-w-5xl">
-        <DocumentIdentity eyebrow={props.eyebrow} title={props.title} />
+        <DocumentIdentity title={props.title} />
         <DocumentDates
           effectiveDate={props.effectiveDate}
           lastUpdated={props.lastUpdated}
@@ -69,17 +68,10 @@ function LegalDocumentHeader(props: LegalDocumentPageProps) {
 }
 
 function DocumentIdentity({
-  eyebrow,
   title,
-}: Pick<LegalDocumentPageProps, "eyebrow" | "title">) {
+}: Pick<LegalDocumentPageProps, "title">) {
   return (
     <div>
-      <div className="grid size-14 place-items-center rounded-2xl bg-[#b3acf3]/12 text-[#dedaff] ring-1 ring-[#b3acf3]/20">
-        <FileText className="size-6" aria-hidden="true" />
-      </div>
-      <p className="landing-reveal landing-reveal-eyebrow mt-8 text-xs font-semibold uppercase tracking-[0.34em] text-[#b3acf3]">
-        {eyebrow}
-      </p>
       <h1 className="landing-reveal landing-reveal-title mt-4 max-w-4xl text-balance text-[clamp(3rem,8vw,6rem)] font-semibold leading-[0.92] tracking-[-0.065em]">
         {title}
       </h1>
@@ -134,8 +126,7 @@ function LegalDocumentBody({
 }) {
   return (
     <div className="px-5 pb-24 sm:px-8 sm:pb-32 lg:px-10">
-      <div className="mx-auto grid w-full max-w-5xl gap-10 lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-16">
-        <TableOfContents documentTitle={documentTitle} sections={sections} />
+      <div className="mx-auto w-full max-w-5xl">
         <article className="min-w-0 divide-y divide-white/10 rounded-[2rem] border border-white/12 bg-white/[0.045] px-6 shadow-[0_32px_120px_rgba(0,0,0,0.32)] backdrop-blur-2xl sm:px-10">
           {sections.map((section) => (
             <LegalSectionView key={section.id} section={section} />

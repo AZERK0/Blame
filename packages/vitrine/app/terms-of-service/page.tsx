@@ -25,7 +25,6 @@ export default function TermsOfServicePage() {
   return (
     <LegalDocumentPage
       effectiveDate={termsEffectiveDate}
-      eyebrow="Legal"
       introduction={termsIntroduction}
       lastUpdated={termsLastUpdated}
       sections={termsSections}
