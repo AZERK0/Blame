@@ -41,7 +41,7 @@ import {
 } from "./project-creation-data";
 import styles from "./project-creation-mockup.module.css";
 
-const initialParentPath = "/Users/raphael/Projects";
+const initialParentPath = "/Users/Blame/Projects";
 const initialProjectName = "blame-starter";
 const parentPathInputId = "project-creation-parent-path";
 const projectNameInputId = "project-creation-name";
