@@ -20,6 +20,7 @@ export default await Env.create(new URL('../', import.meta.url), {
 
   // App
   APP_KEY: Env.schema.secret(),
+  APP_KEY_PREVIOUS: Env.schema.secret.optional(),
   APP_URL: Env.schema.string({ format: 'url', tld: false }),
   CORS_ORIGIN: Env.schema.string.optional(),
   ACCOUNT_CLOSURE_LEDGER_DIRECTORY: Env.schema.string.optional(),

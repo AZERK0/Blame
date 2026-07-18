@@ -1,4 +1,6 @@
 import ProviderCredential from '#models/provider_credential'
+import CredentialEncryptionRotationService from '#services/credential_encryption_rotation_service'
+import ProviderCredentialsService from '#services/provider_credentials_service'
 import User from '#models/user'
 import testUtils from '@adonisjs/core/services/test_utils'
 import { test } from '@japa/runner'
@@ -143,6 +145,40 @@ test.group('provider credentials', (group) => {
     listResponse.assertStatus(200)
     const list = listResponse.body() as unknown as CredentialListBody
     assert.deepEqual(list.data[0].modelIds, ['qwen3.7-plus', 'qwen3-coder-plus'])
+  })
+
+  test('re-encrypts API keys and OAuth credentials atomically', async ({ assert }) => {
+    const user = await createUser()
+    const credentials = new ProviderCredentialsService()
+    const stored = await credentials.saveOAuth(user.id, {
+      providerId: 'anthropic',
+      label: 'Work',
+      apiKey: 'sk-oauth-provider-key',
+      oauthCredentials: {
+        access: 'oauth-access-token',
+        refresh: 'oauth-refresh-token',
+        expires: Date.now() + 60_000,
+      },
+    })
+    const previousApiKeyCiphertext = stored.encryptedApiKey
+    const previousOauthCiphertext = stored.encryptedOauthCredentials
+
+    const rotation = new CredentialEncryptionRotationService()
+    const rotated = await rotation.rotate()
+    const verified = await rotation.verify()
+    await stored.refresh()
+    const resolved = await credentials.resolve(user.id, {
+      providerId: 'anthropic',
+      label: 'Work',
+    })
+
+    assert.equal(rotated, 1)
+    assert.equal(verified, 1)
+    assert.notEqual(stored.encryptedApiKey, previousApiKeyCiphertext)
+    assert.notEqual(stored.encryptedOauthCredentials, previousOauthCiphertext)
+    assert.equal(resolved.apiKey, 'sk-oauth-provider-key')
+    assert.equal(resolved.oauthCredentials?.access, 'oauth-access-token')
+    assert.equal(resolved.oauthCredentials?.refresh, 'oauth-refresh-token')
   })
 })
 
