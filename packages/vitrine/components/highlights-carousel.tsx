@@ -20,6 +20,7 @@ type HighlightTone = "blue" | "lavender" | "night" | "photo" | "teal";
 type Highlight = {
   alt: string;
   description: string;
+  emphasizeWorkspace?: boolean;
   eyebrow: string;
   image: string;
   imageHeight: number;
@@ -41,7 +42,8 @@ const highlights: Highlight[] = [
   },
   {
     eyebrow: "Isolated by default",
-    title: "One story. Its own workspace.",
+    title: "One story. Its own smart workspace.",
+    emphasizeWorkspace: true,
     description: "A dedicated worktree, environment, port, and local runtime.",
     image: "/home-illustrations/1.jpg",
     imageHeight: 5304,
@@ -358,7 +360,16 @@ function HighlightCard({ highlight }: { highlight: Highlight }) {
           {highlight.eyebrow}
         </p>
         <h3 className="mt-3 text-balance text-[clamp(1.75rem,2.5vw,2.25rem)] font-semibold leading-[1.08] tracking-[-0.025em]">
-          {highlight.title}
+          {highlight.emphasizeWorkspace ? (
+            <>
+              One story. Its own{" "}
+              <span className="workspace-smart-sweep">
+                <strong className="font-bold">smart</strong> workspace.
+              </span>
+            </>
+          ) : (
+            highlight.title
+          )}
         </h3>
         <p className="mt-4 max-w-xl text-base font-medium leading-6 opacity-60 sm:text-lg sm:leading-7">
           {highlight.description}
