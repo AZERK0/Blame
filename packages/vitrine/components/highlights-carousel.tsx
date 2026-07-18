@@ -13,21 +13,33 @@ import {
   projectCreationAccentClassName,
   projectCreationPanelClassName,
 } from "@/components/project-creation-theme";
+import {
+  parallelAgentProviders,
+  ProviderLogo,
+} from "@/components/provider-logos";
 import { ScrollReveal } from "@/components/scroll-reveal";
 
 type HighlightTone = "blue" | "lavender" | "night" | "photo" | "teal";
 
-type Highlight = {
-  alt: string;
+type HighlightBase = {
   description: string;
   emphasizeWorkspace?: boolean;
   eyebrow: string;
-  image: string;
-  imageHeight: number;
-  imageWidth: number;
   title: string;
   tone: HighlightTone;
 };
+
+type Highlight = HighlightBase &
+  (
+    | {
+        alt: string;
+        image: string;
+        imageHeight: number;
+        imageWidth: number;
+        visual?: "image";
+      }
+    | { visual: "providers" }
+  );
 
 const highlights: Highlight[] = [
   {
@@ -61,6 +73,13 @@ const highlights: Highlight[] = [
     imageWidth: 2258,
     alt: "Blame live preview and review interface",
     tone: "blue",
+  },
+  {
+    eyebrow: "Parallel agents",
+    title: "Every agent. The right model.",
+    description: "Run multiple agents in parallel across 50 AI providers.",
+    visual: "providers",
+    tone: "night",
   },
   {
     eyebrow: "Code practices",
@@ -380,6 +399,10 @@ function HighlightCard({ highlight }: { highlight: Highlight }) {
 }
 
 function HighlightVisual({ highlight }: { highlight: Highlight }) {
+  if (highlight.visual === "providers") {
+    return <ProviderHighlightVisual />;
+  }
+
   if (highlight.tone === "photo") {
     return (
       <div className="absolute inset-0 overflow-hidden rounded-xl">
@@ -406,6 +429,32 @@ function HighlightVisual({ highlight }: { highlight: Highlight }) {
         sizes="(max-width: 768px) 80vw, 980px"
         className={`h-auto max-h-full w-auto max-w-full rounded-xl object-contain ${toneImageAuraStyles[highlight.tone]}`}
       />
+    </div>
+  );
+}
+
+function ProviderHighlightVisual() {
+  return (
+    <div
+      className="absolute inset-x-[8%] bottom-8 flex h-[52%] flex-col justify-center sm:bottom-10"
+      data-highlight-visual="providers"
+    >
+      <ul
+        aria-label="Supported AI providers"
+        className="grid grid-cols-3 gap-x-10 gap-y-10 sm:gap-x-20 sm:gap-y-12"
+      >
+        {parallelAgentProviders.map((provider) => (
+          <li key={provider.name} className="flex justify-center">
+            <ProviderLogo
+              provider={provider}
+              className="size-12 text-white sm:size-14 lg:size-16"
+            />
+          </li>
+        ))}
+      </ul>
+      <p className="mt-8 text-center text-sm font-medium text-white/46 sm:mt-10 sm:text-base">
+        + any OpenAI-compatible API
+      </p>
     </div>
   );
 }

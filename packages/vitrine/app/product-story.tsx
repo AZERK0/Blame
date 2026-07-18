@@ -21,6 +21,10 @@ import {
   projectCreationAccentClassName,
   projectCreationPanelClassName,
 } from "@/components/project-creation-theme";
+import {
+  parallelAgentProviders,
+  ProviderLogo,
+} from "@/components/provider-logos";
 import { ScrollReveal } from "@/components/scroll-reveal";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FinalCtaScene } from "./scene/final-cta-scene";
@@ -69,6 +73,7 @@ const specialistAgents = [
   },
 ];
 
+
 const syncedItems = [
   "Backlog",
   "Story context",
@@ -92,6 +97,7 @@ export function ProductStory() {
       <WorkflowSection />
       <WorkspaceSection />
       <PreviewSection />
+      <ParallelAgentsSection />
       <PracticesSection />
       <SpecialistsSection />
       <LocalExecutionSection />
@@ -287,6 +293,58 @@ function ReviewActions() {
         </li>
       ))}
     </ul>
+  );
+}
+
+function ParallelAgentsSection() {
+  return (
+    <section
+      id="parallel-agents"
+      aria-labelledby="parallel-agents-title"
+      className="border-y-[24px] border-[#1d1d1f] bg-black px-5 py-32 sm:border-y-[32px] sm:px-8 sm:py-40 lg:border-y-[48px] lg:px-10 lg:py-48"
+    >
+      <div className="mx-auto max-w-7xl">
+        <ScrollReveal className="text-center">
+          <p className="story-eyebrow">Parallel agents</p>
+          <h2
+            id="parallel-agents-title"
+            className="story-title mx-auto mt-5 max-w-6xl"
+          >
+            Run every agent on the model that fits.
+          </h2>
+          <p className="story-copy mx-auto mt-7 max-w-3xl">
+            Launch multiple agents in parallel, even across different
+            providers. Blame supports 50 AI providers, so every task can use the
+            model that fits it best.
+          </p>
+        </ScrollReveal>
+        <ProviderRail />
+      </div>
+    </section>
+  );
+}
+
+function ProviderRail() {
+  return (
+    <div className="mt-20 lg:mt-28">
+      <ul className="mx-auto grid max-w-4xl grid-cols-3 gap-x-10 gap-y-14 sm:gap-x-20 sm:gap-y-20">
+        {parallelAgentProviders.map((provider, index) => (
+          <li key={provider.name}>
+            <ScrollReveal delay={index * 60} className="flex justify-center">
+              <ProviderLogo
+                provider={provider}
+                className="size-12 text-white sm:size-16"
+              />
+            </ScrollReveal>
+          </li>
+        ))}
+      </ul>
+      <ScrollReveal delay={360}>
+        <p className="mt-14 text-center text-sm font-medium text-white/46 sm:mt-20 sm:text-base">
+          + any OpenAI-compatible API
+        </p>
+      </ScrollReveal>
+    </div>
   );
 }
 
