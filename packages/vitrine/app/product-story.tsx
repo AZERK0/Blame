@@ -369,7 +369,7 @@ function PracticesCopy() {
       <p className="text-[clamp(1.0625rem,1.7vw,1.5rem)] font-semibold leading-[1.2] text-[#3545ad]">
         Code practices
       </p>
-      <h2 className="mt-5 text-balance text-[clamp(2.5rem,4.8vw,4.75rem)] font-semibold leading-[0.97] tracking-[-0.04em]">
+      <h2 className="mt-5 text-balance text-[clamp(2.25rem,3.5vw,3.75rem)] font-semibold leading-[0.97] tracking-[-0.04em]">
         Your standards become the default.
       </h2>
       <p className="mt-8 max-w-xl text-[1.0625rem] font-medium leading-7 text-[#11131a]/62 sm:text-[1.3125rem] sm:leading-8">
@@ -580,24 +580,20 @@ function ProjectCreationCopy() {
       >
         Project creation
       </p>
-      <h2 className="mt-5 text-balance text-[clamp(3rem,5.8vw,5.75rem)] font-semibold leading-[0.95] tracking-[-0.04em]">
-        Start ready.
+      <h2 className="mt-5 text-balance text-[clamp(2.25rem,3.5vw,3.75rem)] font-semibold leading-[0.95] tracking-[-0.04em]">
+        From empty folder to agent-ready
       </h2>
       <p className="mt-8 max-w-lg text-[1.0625rem] font-medium leading-7 text-white/62 sm:text-[1.3125rem] sm:leading-8">
         Choose a web stack. Blame generates the structure, tooling, environment
         files, and preview configuration inside the same workflow.
       </p>
-      <div className="mt-12 flex items-center gap-3 text-sm font-semibold">
-        <Sparkles className="h-5 w-5" />
-        From empty folder to agent-ready.
-      </div>
     </div>
   );
 }
 
 function ProjectCreationImage() {
   return (
-    <div className="overflow-hidden rounded-2xl bg-[#090b0f] p-2 shadow-[0_35px_100px_rgba(4,25,26,0.55)] sm:p-3 lg:translate-x-8 xl:translate-x-12">
+    <div className="overflow-hidden lg:translate-x-8 xl:translate-x-12">
       <ProjectCreationMockup />
     </div>
   );

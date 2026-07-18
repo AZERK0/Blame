@@ -9,7 +9,6 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { StaticBacklogMockup } from "./backlog-mockup";
 import {
   advancedOptions,
   backendOptions,
@@ -44,10 +43,6 @@ export function ProjectCreationMockup() {
   const wizard = useProjectCreationWizard();
   return (
     <div className={styles.root} aria-label="Interactive project creation demo">
-      <div className={styles.backdrop} aria-hidden="true">
-        <StaticBacklogMockup />
-      </div>
-      <div className={styles.overlay} />
       <WizardDialog wizard={wizard} />
     </div>
   );
