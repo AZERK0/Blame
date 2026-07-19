@@ -5,7 +5,7 @@ import {
 import type { TelemetryExportSession } from "@blame/app"
 
 const productionEndpoint =
-  "https://api.blame.raphael-charpentier.fr/api/v1/telemetry/otlp"
+  "https://api.blame.so/api/v1/telemetry/otlp"
 const developmentEndpoint = "http://localhost:3333/api/v1/telemetry/otlp"
 let activeSession: TelemetryExportSession | undefined
 let expectedEndpoint = productionEndpoint

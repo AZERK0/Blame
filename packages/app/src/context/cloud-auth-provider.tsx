@@ -22,7 +22,7 @@ import { useCloudTelemetry } from "@/context/cloud-telemetry"
 
 const configuredApiUrl = import.meta.env.VITE_CLOUD_API_URL?.trim()
 const defaultApiUrl =
-  configuredApiUrl || "https://api.blame.raphael-charpentier.fr/api/v1"
+  configuredApiUrl || "https://api.blame.so/api/v1"
 
 type CloudAuthState =
   | { status: "loading" }

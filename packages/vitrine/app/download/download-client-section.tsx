@@ -8,7 +8,7 @@ import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { DownloadArtifact } from './page'
 
-const downloadBaseUrl = 'https://download.blame.raphael-charpentier.fr/latest'
+const downloadBaseUrl = 'https://download.blame.so/latest'
 
 type DetectedOs = DownloadArtifact['os']
 
