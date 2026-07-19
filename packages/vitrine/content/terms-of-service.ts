@@ -13,8 +13,8 @@ const notice = (
 ): LegalBlock => ({ type: "notice", title, paragraphs, items });
 
 export const termsEffectiveDate = "13 July 2026";
-export const termsLastUpdated = "18 July 2026";
-export const termsVersion = "1.1";
+export const termsLastUpdated = "19 July 2026";
+export const termsVersion = "1.2";
 
 export const termsIntroduction = [
   'These Terms of Service form a legally binding agreement between you and Raphael Charpentier EI, a French individual entrepreneur applying the micro-enterprise regime and operating under the trade name MK Holding, whose business is domiciled at 36 rue des Geltines, 69390 Millery, France, registered with the French National Business Register and the Lyon Trade and Companies Register under SIREN number 984 448 217 (R.C.S. Lyon) ("Blame", "we", "us", or "our"). VAT is not applicable pursuant to Article 293 B of the French General Tax Code. They govern your download, installation, access to, and use of the Blame desktop application, websites, cloud services, APIs, updates, support, and related services.',
@@ -34,7 +34,7 @@ export const termsSections = [
         "These Terms apply to individual accounts and to any paid or unpaid plan, early-access programme, trial, preview, or beta that refers to them. An order page, checkout page, accepted quotation, or order form may contain plan-specific terms. If there is a conflict, an individually signed order form prevails, followed by the checkout or order terms, these Terms, and incorporated policies, in that order.",
       ),
       paragraph(
-        "The Privacy Policy at https://blame.so/privacy, any applicable Data Processing Addendum at https://blame.so/legal/dpa, and any plan-specific or supplemental terms expressly presented to you are incorporated by reference. A separate refund policy applies only if it is expressly presented at checkout and identified as forming part of the agreement.",
+        "The Privacy Policy at https://blame.so/privacy, Refund Policy at https://blame.so/refund-policy, any applicable Data Processing Addendum at https://blame.so/legal/dpa, and any plan-specific or supplemental terms expressly presented to you are incorporated by reference in their respective scope.",
       ),
     ],
   },
@@ -139,10 +139,10 @@ export const termsSections = [
     title: "7. Renewal, cancellation, and refunds",
     blocks: [
       paragraph(
-        "Unless checkout states that a plan is non-renewing, each Subscription automatically renews for successive periods equal to the selected billing period until cancelled. We will provide any renewal reminder required by applicable law. You may cancel through the electronic cancellation facility at https://blame.so/cancel, through the billing portal, or by contacting billing@blame.so. We will send a durable confirmation stating the date on which cancellation takes effect and its consequences.",
+        "Unless checkout states that a plan is non-renewing, each Subscription automatically renews for successive periods equal to the selected billing period until cancelled. We will provide any renewal reminder required by applicable law. You may cancel through the Stripe Customer Portal opened by the Billing link under Consumer rights on blame.so, or by contacting billing@blame.so. We will send a durable confirmation stating the date on which cancellation takes effect and its consequences.",
       ),
       paragraph(
-        "For Consumers in France, the electronic cancellation facility is free, direct, easy to access, and permanently available online, including when the Subscription was originally concluded through another channel. Contacting support is an additional option and does not replace that facility. The French-language contract reproduces the statutory provisions required by Article L. 215-4 of the French Consumer Code at https://blame.so/fr/conditions-generales-de-service#renouvellement.",
+        "For Consumers in France, the Billing link provides free, direct, easy, and permanent access to the Stripe Customer Portal, including when the Subscription was originally concluded through another channel. Contacting support is an additional option and does not replace that facility. The French-language contract reproduces the statutory provisions required by Article L. 215-4 of the French Consumer Code at https://blame.so/fr/conditions-generales-de-service#renouvellement.",
       ),
       paragraph(
         "Cancellation stops future renewal and ordinarily takes effect at the end of the paid billing period. You retain access until then unless you request earlier account closure, a refund requires earlier termination, or we are legally entitled to suspend or terminate access. Cancellation does not itself delete the Account or local files.",
@@ -561,7 +561,7 @@ export const termsSections = [
       notice(
         "For Consumers covered by French law",
         [
-          "The following is an English rendering of the statutory notice for continuous digital content and digital services. Before publication to French Consumers, the prescribed French wording must be inserted in a clearly identified box in the French terms. The contractual supply period is the entire period during which the Subscription remains active, whether billed monthly or annually.",
+          "The following is an English rendering of the statutory notice for continuous digital content and digital services. The prescribed French wording, adapted to the monthly and annual contractual supply periods, appears in the clearly identified statutory box at https://blame.so/fr/conditions-generales-de-service#garanties-legales.",
           "The Consumer is entitled to implementation of the legal conformity guarantee if a lack of conformity appears at any time during the active Subscription. During that period, the Consumer is required to establish only the existence of the lack of conformity and not the date on which it appeared.",
           "The legal conformity guarantee includes the obligation to provide all updates necessary to maintain conformity throughout the active Subscription.",
           "The legal conformity guarantee entitles the Consumer to have the digital content or digital service brought into conformity without undue delay after the request, free of charge, and without major inconvenience.",

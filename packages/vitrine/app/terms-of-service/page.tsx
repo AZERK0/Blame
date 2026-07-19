@@ -24,6 +24,10 @@ export default function TermsOfServicePage() {
 
   return (
     <LegalDocumentPage
+      languageRoutes={{
+        englishHref: "/terms-of-service",
+        frenchHref: "/fr/conditions-generales-de-service",
+      }}
       effectiveDate={termsEffectiveDate}
       introduction={termsIntroduction}
       lastUpdated={termsLastUpdated}

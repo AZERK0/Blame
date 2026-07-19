@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { ArrowLeft, FileText } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 import { LandingRevealStyles } from "@/components/landing-reveal-styles";
+import { LanguageSelector } from "@/components/language-selector";
 import { SiteHeader } from "@/components/site-header";
 import { buttonVariants } from "@/components/ui/button";
 
@@ -22,9 +23,14 @@ export type LegalSection = {
 };
 
 type LegalDocumentPageProps = {
+  languageRoutes?: {
+    englishHref: string;
+    frenchHref: string;
+  };
   effectiveDate: string;
   introduction: readonly string[];
   lastUpdated: string;
+  language?: "en" | "fr";
   sections: readonly LegalSection[];
   title: string;
   version: string;
@@ -38,11 +44,14 @@ const inlineReferenceClassName =
 
 export function LegalDocumentPage(props: LegalDocumentPageProps) {
   return (
-    <main className="min-h-screen overflow-x-clip bg-[#050712] text-white">
+    <main
+      lang={props.language ?? "en"}
+      className="min-h-screen overflow-x-clip bg-[#050712] text-white"
+    >
       <SiteHeader />
       <LegalDocumentHeader {...props} />
       <LegalDocumentBody
-        documentTitle={props.title}
+        language={props.language ?? "en"}
         sections={props.sections}
       />
       <LandingRevealStyles />
@@ -58,18 +67,23 @@ function LegalDocumentHeader(props: LegalDocumentPageProps) {
         <DocumentIdentity title={props.title} />
         <DocumentDates
           effectiveDate={props.effectiveDate}
+          language={props.language}
           lastUpdated={props.lastUpdated}
           version={props.version}
         />
         <Introduction paragraphs={props.introduction} />
+        {props.languageRoutes ? (
+          <LanguageSelector
+            {...props.languageRoutes}
+            language={props.language ?? "en"}
+          />
+        ) : null}
       </div>
     </header>
   );
 }
 
-function DocumentIdentity({
-  title,
-}: Pick<LegalDocumentPageProps, "title">) {
+function DocumentIdentity({ title }: Pick<LegalDocumentPageProps, "title">) {
   return (
     <div>
       <h1 className="landing-reveal landing-reveal-title mt-4 max-w-4xl text-balance text-[clamp(3rem,8vw,6rem)] font-semibold leading-[0.92] tracking-[-0.065em]">
@@ -81,21 +95,32 @@ function DocumentIdentity({
 
 function DocumentDates({
   effectiveDate,
+  language,
   lastUpdated,
   version,
-}: Pick<LegalDocumentPageProps, "effectiveDate" | "lastUpdated" | "version">) {
+}: Pick<
+  LegalDocumentPageProps,
+  "effectiveDate" | "language" | "lastUpdated" | "version"
+>) {
+  const labels =
+    language === "fr"
+      ? {
+          effective: "Date d’entrée en vigueur",
+          updated: "Dernière mise à jour",
+        }
+      : { effective: "Effective date", updated: "Last updated" };
   return (
     <dl className="landing-reveal landing-reveal-copy mt-8 flex flex-wrap gap-x-10 gap-y-3 text-sm text-white/48">
       <div className="flex gap-2">
-        <dt>Effective date:</dt>
+        <dt>{labels.effective} :</dt>
         <dd className="text-white/72">{effectiveDate}</dd>
       </div>
       <div className="flex gap-2">
-        <dt>Last updated:</dt>
+        <dt>{labels.updated} :</dt>
         <dd className="text-white/72">{lastUpdated}</dd>
       </div>
       <div className="flex gap-2">
-        <dt>Version:</dt>
+        <dt>Version :</dt>
         <dd className="text-white/72">{version}</dd>
       </div>
     </dl>
@@ -118,10 +143,10 @@ function Introduction({ paragraphs }: { paragraphs: readonly string[] }) {
 }
 
 function LegalDocumentBody({
-  documentTitle,
+  language,
   sections,
 }: {
-  documentTitle: string;
+  language: "en" | "fr";
   sections: readonly LegalSection[];
 }) {
   return (
@@ -131,38 +156,10 @@ function LegalDocumentBody({
           {sections.map((section) => (
             <LegalSectionView key={section.id} section={section} />
           ))}
-          <DocumentBackLink />
+          <DocumentBackLink language={language} />
         </article>
       </div>
     </div>
-  );
-}
-
-function TableOfContents({
-  documentTitle,
-  sections,
-}: {
-  documentTitle: string;
-  sections: readonly LegalSection[];
-}) {
-  return (
-    <nav
-      aria-label={`${documentTitle} sections`}
-      className="self-start lg:sticky lg:top-28 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto lg:pr-3"
-    >
-      <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#b3acf3]">
-        Contents
-      </p>
-      <ol className="mt-5 space-y-2 border-l border-white/10 pl-4 text-sm leading-6 text-white/48">
-        {sections.map((section) => (
-          <li key={section.id}>
-            <a className="transition hover:text-white" href={`#${section.id}`}>
-              {section.title}
-            </a>
-          </li>
-        ))}
-      </ol>
-    </nav>
   );
 }
 
@@ -261,12 +258,12 @@ function LegalTextSegment({ value }: { value: string }) {
   return value;
 }
 
-function DocumentBackLink() {
+function DocumentBackLink({ language }: { language: "en" | "fr" }) {
   return (
     <div className="py-10">
       <Link href="/" className={buttonVariants({ variant: "outline" })}>
         <ArrowLeft className="size-4" />
-        Back to Blame
+        {language === "fr" ? "Retour à Blame" : "Back to Blame"}
       </Link>
     </div>
   );

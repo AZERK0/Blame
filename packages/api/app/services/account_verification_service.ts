@@ -18,6 +18,10 @@ export default class AccountVerificationService {
     return this.verify(user, password, confirmationMatches)
   }
 
+  verifyConsumerContract(user: User, password: string) {
+    return this.verify(user, password, true)
+  }
+
   private async verify(user: User, password: string, confirmationMatches: boolean) {
     if (await this.isBlocked(user.id)) return 'blocked'
     const passwordMatches = await hash.verify(user.password, password)
