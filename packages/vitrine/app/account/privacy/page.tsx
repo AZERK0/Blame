@@ -27,25 +27,19 @@ export default function AccountPrivacyPage() {
 
 function AccountPrivacyCard() {
   return (
-    <article className="mx-auto w-full max-w-4xl rounded-[2rem] border border-white/12 bg-white/[0.055] p-2 shadow-[0_32px_120px_rgba(0,0,0,0.4)] backdrop-blur-2xl">
-      <div className="rounded-[1.55rem] border border-white/10 bg-[#090c18]/90 px-6 py-10 sm:px-12 sm:py-14">
+    <div className="relative isolate px-5 pb-14 pt-32 sm:px-8 sm:pb-18 lg:px-10">
+      <div className="mx-auto w-full max-w-5xl">
         <PrivacyHeader />
         <PrivacyChoices />
         <PrivacyContact />
       </div>
-    </article>
+    </div>
   );
 }
 
 function PrivacyHeader() {
   return (
     <header>
-      <div className="grid size-14 place-items-center rounded-2xl bg-[#b3acf3]/12 text-[#dedaff] ring-1 ring-[#b3acf3]/20">
-        <ShieldCheck className="size-6" aria-hidden="true" />
-      </div>
-      <p className="mt-8 text-xs font-semibold uppercase tracking-[0.34em] text-[#b3acf3]">
-        Account privacy
-      </p>
       <h1 className="mt-4 text-balance text-[clamp(2.8rem,7vw,5.5rem)] font-semibold leading-[0.94] tracking-[-0.06em]">
         Your data, under your control.
       </h1>
