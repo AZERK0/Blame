@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 const footerGroups = [
@@ -48,8 +49,21 @@ export function SiteFooter() {
 function PublisherSummary() {
   return (
     <div>
-      <Link href="/" className="text-2xl font-extrabold tracking-[-0.04em]">
-        Blame
+      <Link
+        href="/"
+        className="inline-flex items-center gap-3 text-2xl font-extrabold tracking-[-0.04em]"
+        aria-label="Blame home"
+      >
+        <span className="grid h-10 w-10 place-items-center">
+          <Image
+            src="/icons/blame-dark-app-icon.png"
+            alt=""
+            width={40}
+            height={40}
+            className="h-10 w-10 object-contain"
+          />
+        </span>
+        <span>Blame</span>
       </Link>
       <p className="mt-4 max-w-md text-sm leading-7 text-white/52">
         Blame is published by Raphael Charpentier EI, operating under the trade
