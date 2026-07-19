@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { LegalDocumentPage } from "@/components/legal-document-page";
@@ -10,12 +9,19 @@ import {
   termsSections,
   termsVersion,
 } from "@/content/terms-of-service";
+import { createIndexablePageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata = createIndexablePageMetadata({
   title: "Terms of Service · Blame",
   description:
     "Terms governing access to and use of Blame Desktop and related services.",
-};
+  canonicalPath: "/terms-of-service",
+  languageAlternates: {
+    en: "/terms-of-service",
+    fr: "/fr/conditions-generales-de-service",
+    "x-default": "/terms-of-service",
+  },
+});
 
 export default function TermsOfServicePage() {
   if (process.env.NODE_ENV === "production" && !termsReadyForPublication) {

@@ -1,17 +1,18 @@
-import type { Metadata } from 'next'
 import { CheckCircle2 } from 'lucide-react'
 
 import { LandingRevealStyles } from '@/components/landing-reveal-styles'
 import { SceneWarmup } from '@/components/scene-warmup'
 import { SiteHeader } from '@/components/site-header'
-import { HeroScene } from '../scene/hero-scene'
+import { HeroScene } from '@/app/scene/hero-scene'
+import { createIndexablePageMetadata } from '@/lib/seo'
 import { DownloadClientSection } from './download-client-section'
 
-export const metadata: Metadata = {
+export const metadata = createIndexablePageMetadata({
   title: 'Download · Blame',
   description:
     'Download the latest Blame desktop app for macOS, Windows, and Linux.',
-}
+  canonicalPath: '/download',
+})
 
 type DownloadArtifact = {
   id: 'macos-arm64' | 'macos-x64' | 'windows-x64' | 'linux-x86_64'

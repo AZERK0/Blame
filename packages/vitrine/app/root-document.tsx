@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { SiteFooter } from "@/components/site-footer";
+import { siteUrl } from "@/lib/site";
 import "./globals.css";
 
 const googleTagManagerId = "GTM-P4TLSMCV";
@@ -9,7 +10,8 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
 })(window,document,'script','dataLayer','${googleTagManagerId}');`;
 
-export const metadata: Metadata = {
+export const rootMetadata: Metadata = {
+  metadataBase: siteUrl,
   title: "Blame",
   description: "The industrial-grade agentic IDE.",
   icons: {
@@ -25,13 +27,14 @@ export const metadata: Metadata = {
   },
 };
 
-type RootLayoutProps = Readonly<{
+type RootDocumentProps = Readonly<{
   children: React.ReactNode;
+  language: "en" | "fr";
 }>;
 
-export default function RootLayout({ children }: RootLayoutProps) {
+export function RootDocument({ children, language }: RootDocumentProps) {
   return (
-    <html lang="en">
+    <html lang={language}>
       <head>
         <script
           dangerouslySetInnerHTML={{

@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { LegalDocumentPage } from "@/components/legal-document-page";
@@ -10,11 +9,13 @@ import {
   legalNoticeSections,
   legalNoticeVersion,
 } from "@/content/legal-notice";
+import { createIndexablePageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata = createIndexablePageMetadata({
   title: "Legal Notice · Blame",
   description: "Legal information for Blame.",
-};
+  canonicalPath: "/legal-notice",
+});
 
 export default function LegalNoticePage() {
   if (

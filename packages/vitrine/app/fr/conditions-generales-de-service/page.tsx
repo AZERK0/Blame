@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { LegalDocumentPage } from "@/components/legal-document-page";
@@ -10,12 +9,20 @@ import {
   frenchTermsSections,
   frenchTermsVersion,
 } from "@/content/french-terms-of-service";
+import { createIndexablePageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata = createIndexablePageMetadata({
   title: "Conditions Générales de Service et de Vente · Blame",
   description:
     "Conditions contractuelles françaises applicables aux services Blame.",
-};
+  canonicalPath: "/fr/conditions-generales-de-service",
+  locale: "fr_FR",
+  languageAlternates: {
+    en: "/terms-of-service",
+    fr: "/fr/conditions-generales-de-service",
+    "x-default": "/terms-of-service",
+  },
+});
 
 export default function FrenchTermsOfServicePage() {
   if (

@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { LegalDocumentPage } from "@/components/legal-document-page";
@@ -10,12 +9,14 @@ import {
   privacySections,
   privacyVersion,
 } from "@/content/privacy-policy";
+import { createIndexablePageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata = createIndexablePageMetadata({
   title: "Privacy Policy · Blame",
   description:
     "How Blame handles personal data across Blame Desktop, its website, cloud services, billing, and support.",
-};
+  canonicalPath: "/privacy",
+});
 
 export default function PrivacyPolicyPage() {
   if (process.env.NODE_ENV === "production" && !privacyReadyForPublication) {

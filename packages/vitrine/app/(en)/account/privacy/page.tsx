@@ -10,6 +10,7 @@ export const metadata: Metadata = {
   title: "Privacy and Account Data · Blame",
   description:
     "Export your Blame cloud data or request permanent account closure.",
+  robots: { index: false, follow: true },
 };
 
 export default function AccountPrivacyPage() {

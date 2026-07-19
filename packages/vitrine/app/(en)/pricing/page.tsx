@@ -1,16 +1,17 @@
-import type { Metadata } from 'next'
 import { HelpCircle } from 'lucide-react'
 
 import { LandingRevealStyles } from '@/components/landing-reveal-styles'
 import { PricingCard } from '@/components/pricing-card'
 import { SceneWarmup } from '@/components/scene-warmup'
 import { SiteHeader } from '@/components/site-header'
-import { HeroScene } from '../scene/hero-scene'
+import { HeroScene } from '@/app/scene/hero-scene'
+import { createIndexablePageMetadata } from '@/lib/seo'
 
-export const metadata: Metadata = {
+export const metadata = createIndexablePageMetadata({
   title: 'Pricing · Blame',
   description: 'Simple pricing for Blame: one plan for agentic development workflows.',
-}
+  canonicalPath: '/pricing',
+})
 
 const faqItems = [
   {
