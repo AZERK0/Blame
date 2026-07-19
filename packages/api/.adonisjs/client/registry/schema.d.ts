@@ -31,6 +31,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/account_privacy_controller').default['status']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
+  'consumer_contracts.withdraw': {
+    methods: ["POST"]
+    pattern: '/api/v1/consumer-contract/withdrawal'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/consumer_contract').withdrawalValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/consumer_contract').withdrawalValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/consumer_contracts_controller').default['withdraw']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/consumer_contracts_controller').default['withdraw']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
   'telemetry_ingestion.store': {
     methods: ["POST"]
     pattern: '/api/v1/telemetry/otlp/v1/:signal'

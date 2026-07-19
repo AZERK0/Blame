@@ -10,6 +10,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { LegalLink } from "@/components/legal/legal-link"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { publicAssetUrl } from "@/lib/public-asset-url"
 import { SettingsDialog, SettingsDialogButton } from "@/pages/settings/page"
@@ -113,6 +114,7 @@ function LoginForm({ onModeChange }: { onModeChange(mode: AuthMode): void }) {
           action="Sign in with GitHub"
           onClick={() => form.fail("GitHub authentication is not available.")}
         />
+        <AuthLegalNotice mode="login" />
         <ModePrompt action="Sign up" onClick={() => onModeChange("signup")}>
           Don&apos;t have an account?
         </ModePrompt>
@@ -154,6 +156,7 @@ function SignupForm({ onModeChange }: { onModeChange(mode: AuthMode): void }) {
           setPasswordConfirmation={setPasswordConfirmation}
         />
         <AuthError error={form.error} />
+        <AuthLegalNotice mode="signup" />
         <SubmitButton loading={form.loading}>Create account</SubmitButton>
         <SocialAuthButton
           action="Sign up with GitHub"
@@ -164,6 +167,21 @@ function SignupForm({ onModeChange }: { onModeChange(mode: AuthMode): void }) {
         </ModePrompt>
       </FieldGroup>
     </form>
+  )
+}
+
+function AuthLegalNotice({ mode }: { mode: AuthMode }) {
+  return (
+    <FieldDescription className="px-2 text-center text-xs leading-5 text-foreground/60">
+      {mode === "signup"
+        ? "By creating an account, you agree to the "
+        : "Blame is provided under our "}
+      <LegalLink page="terms">Terms of Service</LegalLink>
+      {mode === "signup"
+        ? " and acknowledge the "
+        : ". Learn how we handle personal data in our "}
+      <LegalLink page="privacy">Privacy Policy</LegalLink>.
+    </FieldDescription>
   )
 }
 

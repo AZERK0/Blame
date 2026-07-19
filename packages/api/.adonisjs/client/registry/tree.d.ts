@@ -6,6 +6,9 @@ export interface ApiDefinition {
   accountPrivacy: {
     status: typeof routes['account_privacy.status']
   }
+  consumerContracts: {
+    withdraw: typeof routes['consumer_contracts.withdraw']
+  }
   telemetryIngestion: {
     store: typeof routes['telemetry_ingestion.store']
   }

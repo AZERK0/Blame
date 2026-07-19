@@ -61,7 +61,7 @@ function DownloadActions({ artifact }: { artifact: DownloadArtifact }) {
   const DownloadIcon = artifact.os === 'macos' ? Apple : Monitor
 
   return (
-    <div className="landing-reveal landing-reveal-actions mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
+    <div className="landing-reveal landing-reveal-actions mt-9 flex max-w-xl flex-col items-start gap-3">
       <Link
         href={artifactUrl(artifact.fileName)}
         className={cn(
@@ -73,7 +73,25 @@ function DownloadActions({ artifact }: { artifact: DownloadArtifact }) {
         Download for {osLabels[artifact.os]}
         <ArrowRight className="h-5 w-5" />
       </Link>
+      <DownloadLegalNotice />
     </div>
+  )
+}
+
+function DownloadLegalNotice() {
+  const legalLinkClassName = 'text-white/80 underline underline-offset-2 hover:text-white'
+
+  return (
+    <p className="text-sm leading-6 text-white/56">
+      By downloading or using Blame, you agree to the{' '}
+      <Link className={legalLinkClassName} href="/terms-of-service">Terms of Service</Link>{' '}
+      and acknowledge the{' '}
+      <Link className={legalLinkClassName} href="/privacy">Privacy Policy</Link>. Paid
+      subscriptions are also subject to our{' '}
+      <Link className={legalLinkClassName} href="/refund-policy">Refund Policy</Link>{' '}
+      and applicable{' '}
+      <Link className={legalLinkClassName} href="/withdraw">withdrawal rights</Link>.
+    </p>
   )
 }
 

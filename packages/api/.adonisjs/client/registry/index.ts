@@ -18,6 +18,12 @@ const routes = {
     tokens: [{"old":"/api/v1/account/closure-status","type":0,"val":"api","end":""},{"old":"/api/v1/account/closure-status","type":0,"val":"v1","end":""},{"old":"/api/v1/account/closure-status","type":0,"val":"account","end":""},{"old":"/api/v1/account/closure-status","type":0,"val":"closure-status","end":""}],
     types: placeholder as Registry['account_privacy.status']['types'],
   },
+  'consumer_contracts.withdraw': {
+    methods: ["POST"],
+    pattern: '/api/v1/consumer-contract/withdrawal',
+    tokens: [{"old":"/api/v1/consumer-contract/withdrawal","type":0,"val":"api","end":""},{"old":"/api/v1/consumer-contract/withdrawal","type":0,"val":"v1","end":""},{"old":"/api/v1/consumer-contract/withdrawal","type":0,"val":"consumer-contract","end":""},{"old":"/api/v1/consumer-contract/withdrawal","type":0,"val":"withdrawal","end":""}],
+    types: placeholder as Registry['consumer_contracts.withdraw']['types'],
+  },
   'telemetry_ingestion.store': {
     methods: ["POST"],
     pattern: '/api/v1/telemetry/otlp/v1/:signal',

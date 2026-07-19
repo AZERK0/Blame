@@ -98,6 +98,7 @@ export function PricingCard() {
         <Link href="/download" className={buttonVariants({ variant: 'dark', className: 'mt-8 w-full' })}>
           Get Blame
         </Link>
+        <PricingLegalLinks />
         <p className="mt-3 text-center text-xs leading-5 text-[#111]/54">
           AI usage is not included and may be billed separately by your provider.
         </p>
@@ -159,5 +160,27 @@ export function PricingCard() {
         </ul>
       </CardContent>
     </Card>
+  )
+}
+
+function PricingLegalLinks() {
+  return (
+    <nav
+      aria-label="Purchase policies"
+      className="mt-3 flex flex-wrap justify-center gap-x-3 gap-y-1 text-xs leading-5 text-[#111]/54"
+    >
+      <Link className="underline underline-offset-2 hover:text-[#111]" href="/terms-of-service">
+        Terms
+      </Link>
+      <Link className="underline underline-offset-2 hover:text-[#111]" href="/privacy">
+        Privacy
+      </Link>
+      <Link className="underline underline-offset-2 hover:text-[#111]" href="/refund-policy">
+        Refunds
+      </Link>
+      <Link className="underline underline-offset-2 hover:text-[#111]" href="/withdraw">
+        Withdrawal
+      </Link>
+    </nav>
   )
 }

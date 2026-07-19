@@ -2,6 +2,7 @@ import * as React from "react"
 import { ArrowRightIcon, CheckIcon, LoaderCircleIcon } from "lucide-react"
 
 import blameDarkAppIconUrl from "../../../../vitrine/public/icons/blame-dark-app-icon.png?url"
+import { LegalLink } from "@/components/legal/legal-link"
 import { Button } from "@/components/ui/button"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { SettingsDialog, SettingsDialogButton } from "@/pages/settings/page"
@@ -169,10 +170,33 @@ function CheckoutButton({
         {loading ? <LoaderCircleIcon className="animate-spin" /> : null}
         {loading ? "Opening checkout" : "Get Blame"}
       </Button>
+      <PurchaseLegalLinks />
       <p className="mt-3 text-center text-xs leading-5 text-[#111]/54">
         AI usage is not included and may be billed separately by your provider.
       </p>
     </div>
+  )
+}
+
+function PurchaseLegalLinks() {
+  return (
+    <nav
+      aria-label="Purchase policies"
+      className="mt-3 flex flex-wrap justify-center gap-x-3 gap-y-1 text-xs leading-5 text-[#111]/54"
+    >
+      <LegalLink page="terms" className="hover:text-[#111]">
+        Terms
+      </LegalLink>
+      <LegalLink page="privacy" className="hover:text-[#111]">
+        Privacy
+      </LegalLink>
+      <LegalLink page="refund" className="hover:text-[#111]">
+        Refunds
+      </LegalLink>
+      <LegalLink page="withdrawal" className="hover:text-[#111]">
+        Withdrawal
+      </LegalLink>
+    </nav>
   )
 }
 
