@@ -4305,7 +4305,7 @@ function logSeverity(payload: unknown) {
   return status === "failed" || status === "error" ? "error" : "info";
 }
 
-function resultFailureMessage(result: unknown) {
+export function resultFailureMessage(result: unknown) {
   const payload = asRecord(result);
   const status = resultStatus(payload);
   if (
@@ -4315,13 +4315,13 @@ function resultFailureMessage(result: unknown) {
     )
   )
     return undefined;
+  const error = asRecord(payload.error);
   const message =
+    stringValue(error.message) ??
     stringValue(payload.error) ??
     stringValue(payload.message) ??
     firstTextLine(payload.text);
-  return message
-    ? `Cline send ended with status ${status}: ${message}`
-    : `Cline send ended with status ${status}.`;
+  return message ?? `Agent session ended with status ${status}.`;
 }
 
 function resultStatus(payload: Record<string, unknown>) {
@@ -4359,10 +4359,14 @@ function normalizeHookEvent(
   fallbackSessionId: string,
 ): AgentEvent {
   const type = event.payload.hookEventName === "agent_error" ? "error" : "tool";
+  const payload = asRecord(event.payload);
   return {
     type,
     sessionId: event.payload.sessionId ?? fallbackSessionId,
-    payload: event.payload,
+    payload:
+      type === "error"
+        ? normalizedErrorPayload(payload, event.payload)
+        : event.payload,
   };
 }
 
@@ -4378,12 +4382,20 @@ function normalizeAgentEvent(
   );
 }
 
-function normalizeClineAgentPayload(
+export function normalizeClineAgentPayload(
   payload: Record<string, unknown>,
   sessionId: string,
   raw: unknown,
 ): AgentEvent {
   const type = stringValue(payload.type);
+
+  if (type === "error") {
+    return {
+      type: "error",
+      sessionId,
+      payload: normalizedErrorPayload(payload, raw),
+    };
+  }
 
   if (type === "content_start" || type === "content_update") {
     return normalizeContentEvent(payload, sessionId, raw);
@@ -4525,14 +4537,10 @@ function normalizeClineAgentPayload(
   }
 
   if (type === "run-failed") {
-    const error = asRecord(payload.error);
     return {
       type: "error",
       sessionId,
-      payload: {
-        message: stringValue(error.message) ?? "Agent session failed",
-        raw,
-      },
+      payload: normalizedErrorPayload(payload, raw),
     };
   }
 
@@ -4553,6 +4561,23 @@ function normalizeClineAgentPayload(
     type: "raw",
     sessionId,
     payload,
+  };
+}
+
+function normalizedErrorPayload(
+  payload: Record<string, unknown>,
+  raw: unknown,
+) {
+  const error = asRecord(payload.error);
+  return {
+    iteration: numberValue(payload.iteration),
+    message:
+      stringValue(error.message) ??
+      stringValue(payload.message) ??
+      stringValue(payload.error) ??
+      "Agent session failed.",
+    recoverable: booleanValue(payload.recoverable),
+    raw,
   };
 }
 

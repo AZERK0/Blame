@@ -4,7 +4,11 @@ import test from "node:test"
 import type { AgentEvent } from "@blame/agent-runtime"
 
 import type { UserStory } from "./backlog-data.ts"
-import { agentFlowUpdate, completedAgentRun } from "./agent-flow.ts"
+import {
+  agentErrorText,
+  agentFlowUpdate,
+  completedAgentRun,
+} from "./agent-flow.ts"
 
 test("completes a running tool when a fallback result has no tool call id", () => {
   const started = updateStory(
@@ -189,6 +193,44 @@ test("appends reasoning deltas while the agent is running", () => {
 
   assert.equal(thirdDelta.agentActivities?.length, 1)
   assert.equal(thirdDelta.agentActivities?.[0]?.detail, "Now I understand.")
+})
+
+test("records agent errors as dedicated failed activities", () => {
+  const streaming = updateStory(story(), textEvent({ text: "Working." }))
+  const failed = updateStory(streaming, {
+    payload: {
+      error: { message: "Cline: Provider unavailable" },
+      iteration: 2,
+    },
+    type: "error",
+  })
+  const activities = failed.agentActivities ?? []
+
+  assert.deepEqual(
+    activities.map((activity) => activity.kind),
+    ["message", "error"]
+  )
+  assert.equal(activities[0]?.status, "completed")
+  assert.equal(activities[1]?.detail, "Provider unavailable")
+  assert.equal(activities[1]?.status, "failed")
+  assert.equal(activities[1]?.title, "Agent error")
+})
+
+test("removes provider labels from legacy agent errors", () => {
+  assert.equal(
+    agentErrorText("Cline: Provider unavailable"),
+    "Provider unavailable"
+  )
+  assert.equal(
+    agentErrorText(
+      "Cline send ended with status failed: Cline: Provider unavailable"
+    ),
+    "Provider unavailable"
+  )
+  assert.equal(
+    agentErrorText("Cline send ended with status failed."),
+    "Agent session ended with status failed."
+  )
 })
 
 test("replaces reasoning with accumulated text when it is available", () => {

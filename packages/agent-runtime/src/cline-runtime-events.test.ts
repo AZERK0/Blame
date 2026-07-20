@@ -14,6 +14,8 @@ import {
   duplicateEventSignature,
   initializationToolPolicies,
   nextSpawnAgentActiveCount,
+  normalizeClineAgentPayload,
+  resultFailureMessage,
   shouldDisplayClineSessionEvent,
   workspaceSessionIds,
 } from "./cline-runtime.js";
@@ -89,6 +91,39 @@ test("hides sub-agent hook events", () => {
 
 test("keeps lead hook events", () => {
   assert.equal(shouldDisplayClineSessionEvent(hookEvent()), true);
+});
+
+test("normalizes SDK agent errors with their message and recovery state", () => {
+  const event = normalizeClineAgentPayload(
+    {
+      error: new Error("Provider unavailable"),
+      iteration: 3,
+      recoverable: true,
+      type: "error",
+    },
+    "session",
+    "raw",
+  );
+
+  assert.equal(event.type, "error");
+  assert.deepEqual(event.payload, {
+    iteration: 3,
+    message: "Provider unavailable",
+    recoverable: true,
+    raw: "raw",
+  });
+});
+
+test("formats failed agent results without a provider label", () => {
+  const detailed = resultFailureMessage({
+    finishReason: "error",
+    error: new Error("Provider unavailable"),
+  });
+  const generic = resultFailureMessage({ finishReason: "mistake_limit" });
+
+  assert.equal(detailed, "Provider unavailable");
+  assert.equal(generic, "Agent session ended with status mistake_limit.");
+  assert.doesNotMatch(`${detailed} ${generic}`, /cline/i);
 });
 
 test("hides untagged sub-agent text while spawn agent is active", () => {

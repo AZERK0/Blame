@@ -107,6 +107,7 @@ export function shouldPersistAgentEvent(
 
 export function agentEventText(event: AgentEvent) {
   if (!event.payload || typeof event.payload !== "object") return ""
+  if (event.type === "error") return errorEventText(event.payload)
   if (event.type === "tool") return toolEventText(event.payload)
   if (event.type === "approval") return approvalEventText(event.payload)
   if ("text" in event.payload && typeof event.payload.text === "string") {
@@ -119,6 +120,32 @@ export function agentEventText(event: AgentEvent) {
     return event.payload.error
   }
   return ""
+}
+
+export function agentErrorText(value: string) {
+  const text = value.trim()
+  const result = text.match(
+    /^cline send ended with status ([\w-]+)(?::\s*([\s\S]+)|\.)?$/i
+  )
+  if (result) {
+    return result[2]
+      ? agentErrorText(result[2])
+      : `Agent session ended with status ${result[1]}.`
+  }
+  return text.replace(
+    /^cline(?:\s+(?:mid-stream\s+)?(?:agent\s+)?error)?\s*:\s*/i,
+    ""
+  )
+}
+
+function errorEventText(payload: object) {
+  const value = payload as Record<string, unknown>
+  const error = recordValue(value.error)
+  const text =
+    stringValue(error.message) ??
+    stringValue(value.message) ??
+    stringValue(value.error)
+  return text ? agentErrorText(text) : ""
 }
 
 export function completedAgentRun(event: AgentEvent) {
@@ -145,12 +172,47 @@ function eventActivity(
   activities: UserStoryAgentActivity[],
   event: AgentEvent
 ) {
+  if (event.type === "error") return errorActivities(activities, event)
   if (event.type === "reasoning") return reasoningActivities(activities, event)
   if (event.type === "text") return messageActivities(activities, event)
   if (event.type === "tool") return toolActivities(activities, event)
   if (event.type === "approval") return approvalActivities(activities, event)
   if (event.type === "done")
     return closeRunningActivities(activities, ["message", "reasoning", "tool"])
+}
+
+function errorActivities(
+  activities: UserStoryAgentActivity[],
+  event: AgentEvent
+) {
+  const payload = eventPayload(event)
+  const detail = agentEventText(event) || "Agent session failed."
+  const iteration = numberValue(payload.iteration)
+  const existing = lastMatchingActivity(
+    activities,
+    (activity) => activity.kind === "error" && activity.detail === detail
+  )
+  return upsertActivities(activities, [
+    ...closeRunningActivityInputs(activities, ["message", "reasoning", "tool"]),
+    {
+      id: existing?.id ?? nextErrorActivityId(activities, iteration),
+      kind: "error",
+      title: "Agent error",
+      detail,
+      status: "failed",
+      iteration,
+    },
+  ])
+}
+
+function nextErrorActivityId(
+  activities: UserStoryAgentActivity[],
+  iteration: number | undefined
+) {
+  const count = activities.filter(
+    (activity) => activity.kind === "error"
+  ).length
+  return `error-${iteration ?? "session"}-${count + 1}`
 }
 
 function reasoningActivities(

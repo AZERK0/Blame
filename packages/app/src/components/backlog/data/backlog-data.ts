@@ -46,7 +46,7 @@ export type UserStoryAgentUsage = {
 }
 export type UserStoryAgentActivity = {
   id: string
-  kind: "reasoning" | "message" | "tool" | "approval" | "notice"
+  kind: "reasoning" | "message" | "tool" | "approval" | "notice" | "error"
   title: string
   detail: string
   status?: "running" | "completed" | "failed"

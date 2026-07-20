@@ -1,5 +1,6 @@
 import * as React from "react"
 import {
+  AlertCircleIcon,
   ArrowUpIcon,
   BrainCircuitIcon,
   CheckCircle2Icon,
@@ -21,6 +22,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 
+import { agentErrorText } from "@/components/backlog/data/agent-flow"
 import type {
   UserStoryAgentActivity,
   UserStoryAgentRunKind,
@@ -225,7 +227,10 @@ function AgentConversationTurn({
       (activity) =>
         activity.kind === "message" && activity.messageKind === "final"
     )
-  const visibleResponse = finalMessage ?? failedRunResponse(run, activities)
+  const visibleError = [...activities]
+    .reverse()
+    .find((activity) => activity.kind === "error")
+  const visibleResponse = visibleError ?? finalMessage ?? failedRunResponse(run)
   const workActivities = visibleResponse
     ? activities.filter((activity) => activity.id !== visibleResponse.id)
     : activities
@@ -254,7 +259,16 @@ function AgentConversationTurn({
           responseHeader={responseHeader}
           run={run}
         />
-        {visibleResponse ? (
+        {visibleResponse?.kind === "error" ? (
+          <AgentErrorTimelineItem
+            alwaysVisible={
+              lastVisibleMessage?.type === "activity" &&
+              lastVisibleMessage.runId === run.id
+            }
+            createdAt={visibleResponse.createdAt}
+            detail={visibleResponse.detail}
+          />
+        ) : visibleResponse ? (
           <AgentMarkdownTimelineItem
             alwaysVisible={
               lastVisibleMessage?.type === "activity" &&
@@ -828,7 +842,7 @@ function lastAgentConversationVisibleMessage(
       run.status
     )
     for (const activity of activities) {
-      if (activity.kind === "message") {
+      if (activity.kind === "message" || activity.kind === "error") {
         lastMessage = {
           activityId: activity.id,
           runId: run.id,
@@ -1346,6 +1360,35 @@ function AgentMarkdownTimelineItem({
           showFeedback={showFeedback}
         />
       </div>
+    </div>
+  )
+}
+
+function AgentErrorTimelineItem({
+  alwaysVisible,
+  createdAt,
+  detail,
+}: {
+  alwaysVisible: boolean
+  createdAt: string
+  detail: string
+}) {
+  return (
+    <div className="group/message grid min-w-0 gap-2" role="alert">
+      <div className="flex min-w-0 gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-destructive shadow-sm">
+        <AlertCircleIcon className="mt-0.5 size-5 shrink-0" />
+        <div className="min-w-0">
+          <p className="text-sm font-semibold">Agent error</p>
+          <p className="mt-1 text-sm leading-relaxed break-words whitespace-pre-wrap">
+            {detail}
+          </p>
+        </div>
+      </div>
+      <MarkdownMessageActions
+        alwaysVisible={alwaysVisible}
+        createdAt={createdAt}
+        markdown={detail}
+      />
     </div>
   )
 }
@@ -1934,22 +1977,15 @@ function agentDisplayActivities(
 }
 
 function failedRunResponse(
-  run: AgentConversationRun,
-  activities: UserStoryAgentActivity[]
+  run: AgentConversationRun
 ): UserStoryAgentActivity | undefined {
   if (run.status !== "failed") return undefined
-  const message = [...activities]
-    .reverse()
-    .find((activity) => activity.kind === "message")
-  if (message) return message
-  const response = run.finalResponse?.trim()
-  if (!response) return undefined
+  const response = agentErrorText(run.finalResponse ?? "")
   return {
     createdAt: run.completedAt ?? run.updatedAt ?? run.createdAt,
-    detail: response,
+    detail: response || "Agent session failed.",
     id: `${run.id}-failed-response`,
-    kind: "message",
-    messageKind: "final",
+    kind: "error",
     status: "failed",
     title: "Agent error",
   }

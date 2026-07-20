@@ -4,7 +4,14 @@ import { DateTime } from 'luxon'
 const status = vine.enum(['backlog', 'ready', 'in-progress', 'in-review', 'done', 'discarded'])
 const priority = vine.enum(['Low', 'Medium', 'High'])
 export const agentStatus = vine.enum(['Running', 'Paused'])
-export const agentActivityKind = vine.enum(['reasoning', 'message', 'tool', 'approval', 'notice'])
+export const agentActivityKind = vine.enum([
+  'reasoning',
+  'message',
+  'tool',
+  'approval',
+  'notice',
+  'error',
+])
 export const agentActivityMessageKind = vine.enum(['intermediate', 'final'])
 export const agentActivityStatus = vine.enum(['running', 'completed', 'failed'])
 export const agentActivity = vine.object({
