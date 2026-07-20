@@ -8,6 +8,7 @@ import {
 } from "@/components/backlog/data/backlog-data"
 import type { OpenDrawer } from "@/components/backlog/shared/backlog-types"
 import { UserStoryCard } from "@/components/backlog/board/user-story-card"
+import type { UserStoryDiffStats } from "@/components/backlog/development/user-story-diff-stats"
 import type {
   RejectChoice,
   StopAgentChoice,
@@ -33,6 +34,7 @@ const columnColors = {
 
 export function BacklogColumn({
   column,
+  diffStats,
   onAction,
   onCreateUserStory,
   onDeleteUserStory,
@@ -49,6 +51,7 @@ export function BacklogColumn({
   stories,
 }: {
   column: (typeof backlogColumns)[number]
+  diffStats?: (story: UserStory) => UserStoryDiffStats | undefined
   onAction: (
     story: UserStory,
     action: BacklogAction
@@ -80,6 +83,7 @@ export function BacklogColumn({
             <UserStoryCard
               key={story.id}
               cleanup={storyCleanup?.(story)}
+              diffStats={diffStats?.(story)}
               onAction={onAction}
               onDeleteUserStory={onDeleteUserStory}
               onOpenDrawer={onOpenDrawer}

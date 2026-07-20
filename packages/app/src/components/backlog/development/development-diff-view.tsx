@@ -7,6 +7,7 @@ import {
 import type { VcsFileDiff } from "@/components/backlog/development/development-workspace"
 import { MessageSquareIcon } from "lucide-react"
 
+import { DiffStats } from "@/components/backlog/development/development-diff-stats"
 import {
   diffKindClassName,
   filename,
@@ -57,25 +58,6 @@ export function DevelopmentDiffView({
         <DiffCode patch={diff.patch} path={diff.file} />
       )}
     </div>
-  )
-}
-
-export function DiffStats({ diff }: { diff: VcsFileDiff }) {
-  return (
-    <span className="ml-auto flex shrink-0 items-center gap-1">
-      <Badge
-        className="h-5 border-emerald-500/30 bg-emerald-500/10 px-1.5 text-emerald-600 dark:text-emerald-400"
-        variant="outline"
-      >
-        +{diff.additions ?? 0}
-      </Badge>
-      <Badge
-        className="h-5 border-destructive/30 bg-destructive/10 px-1.5 text-destructive"
-        variant="outline"
-      >
-        -{diff.deletions ?? 0}
-      </Badge>
-    </span>
   )
 }
 

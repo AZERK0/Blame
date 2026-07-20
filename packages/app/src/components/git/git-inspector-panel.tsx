@@ -16,10 +16,8 @@ import {
   normalizeDiffs,
   parseGitDiff,
 } from "@/components/backlog/development/development-workspace"
-import {
-  DevelopmentDiffView,
-  DiffStats,
-} from "@/components/backlog/development/development-diff-view"
+import { DiffStats } from "@/components/backlog/development/development-diff-stats"
+import { DevelopmentDiffView } from "@/components/backlog/development/development-diff-view"
 import { DevelopmentScrollArea } from "@/components/backlog/development/development-scroll-area"
 import { GitBranchIcon, GitCommitIcon, GitPullRequestIcon } from "lucide-react"
 

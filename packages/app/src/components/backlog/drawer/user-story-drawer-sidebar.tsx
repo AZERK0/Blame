@@ -2,11 +2,19 @@ import * as React from "react"
 import type { AgentUsageSummary, AgentUsageTotals } from "@blame/agent-runtime"
 
 import type { UserStory } from "@/components/backlog/data/backlog-data"
+import { DiffStats } from "@/components/backlog/development/development-diff-stats"
+import type { UserStoryDiffStats } from "@/components/backlog/development/user-story-diff-stats"
 import { useModelSelection } from "@/components/model/model-selector"
 import { Separator } from "@/components/ui/separator"
 import { usePlatform } from "@/context/platform"
 
-export function DrawerSidebar({ userStory }: { userStory?: UserStory }) {
+export function DrawerSidebar({
+  diffStats,
+  userStory,
+}: {
+  diffStats?: UserStoryDiffStats
+  userStory?: UserStory
+}) {
   return (
     <aside className="p-5 pr-14">
       <div className="grid gap-6">
@@ -16,9 +24,22 @@ export function DrawerSidebar({ userStory }: { userStory?: UserStory }) {
             <p className="text-xs text-muted-foreground">Execution settings</p>
           </div>
         </section>
+        {diffStats && <CodeChanges diffStats={diffStats} />}
         <TokenUsage userStory={userStory} />
       </div>
     </aside>
+  )
+}
+
+function CodeChanges({ diffStats }: { diffStats: UserStoryDiffStats }) {
+  return (
+    <TokenGroup title="Code changes">
+      <TokenStat
+        className="col-span-2"
+        label="Lines added / removed"
+        value={<DiffStats className="ml-0" diff={diffStats} />}
+      />
+    </TokenGroup>
   )
 }
 

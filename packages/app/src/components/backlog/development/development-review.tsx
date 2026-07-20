@@ -3,10 +3,8 @@ import type { VcsFileDiff } from "@/components/backlog/development/development-w
 import { ChevronDownIcon, ChevronRightIcon, FileDiffIcon, FileIcon } from "lucide-react"
 import { Collapsible } from "radix-ui"
 
-import {
-  DevelopmentDiffView,
-  DiffStats,
-} from "@/components/backlog/development/development-diff-view"
+import { DiffStats } from "@/components/backlog/development/development-diff-stats"
+import { DevelopmentDiffView } from "@/components/backlog/development/development-diff-view"
 import { DevelopmentScrollArea } from "@/components/backlog/development/development-scroll-area"
 import {
   diffKindClassName,

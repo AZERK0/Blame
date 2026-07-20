@@ -13,6 +13,7 @@ import {
   storyDetail,
   storyStatus,
 } from "@/components/backlog/shared/backlog-helpers"
+import type { UserStoryDiffStats } from "@/components/backlog/development/user-story-diff-stats"
 import { StoryStatusBadge } from "@/components/backlog/shared/backlog-status-badge"
 import { UserStoryTitleCloud } from "@/components/backlog/shared/user-story-title-cloud"
 import type { OpenDrawer } from "@/components/backlog/shared/backlog-types"
@@ -37,6 +38,7 @@ type UserStoryCardBodyProps = {
 }
 
 export function UserStoryCard({
+  diffStats,
   onAction,
   onDeleteUserStory,
   onOpenDrawer,
@@ -50,6 +52,7 @@ export function UserStoryCard({
   story,
   titleGenerating,
 }: {
+  diffStats?: UserStoryDiffStats
   onAction: (
     story: UserStory,
     action: BacklogAction
@@ -81,6 +84,7 @@ export function UserStoryCard({
         />
         <CardFooter>
           <StoryActions
+            diffStats={diffStats}
             onAction={onAction}
             onDeleteUserStory={onDeleteUserStory}
             onOpenDrawer={onOpenDrawer}

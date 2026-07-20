@@ -52,6 +52,7 @@ import { drawerTargetForAction } from "@/components/backlog/shared/backlog-helpe
 import { storyPreviewDevtoolsScope } from "@/components/backlog/shared/preview-devtools-scope"
 import { BacklogColumn } from "@/components/backlog/board/backlog-column"
 import { BacklogToolbar } from "@/components/backlog/board/backlog-toolbar"
+import { useUserStoryDiffStats } from "@/components/backlog/development/user-story-diff-stats"
 import { UserStoryDrawer } from "@/components/backlog/drawer/user-story-drawer"
 import type { AgentConversationUserMessageUndo } from "@/components/chat/agent-conversation"
 import { UserStoryPreviewWarmup } from "@/components/backlog/drawer/user-story-preview"
@@ -75,7 +76,6 @@ import {
 
 const agentEventPersistDelayMs = 1_500
 const terminalAgentRetryIntervalMs = 10_000
-const reviewDiffRefreshDelayMs = 1_500
 const untitledUserStoryTitle = "Untitled user story"
 
 export function BacklogPage() {
@@ -93,9 +93,10 @@ export function BacklogPage() {
   const projectInitialization = useProjectInitialization()
   const initializationStatus = projectInitialization?.status ?? null
   const queueInitializing = projectInitializing(initializationStatus)
-  const reviewDiffStates = useReviewDiffStates(
+  const userStoryDiffStats = useUserStoryDiffStats(
     backlog.stories,
-    platform.workspace
+    platform.workspace,
+    projects.activeProject?.path
   )
   const storiesRef = React.useRef(backlog.stories)
   const openDrawerRef = React.useRef<(target: DrawerTarget) => void>(() => {})
@@ -267,8 +268,12 @@ export function BacklogPage() {
     [backlog, platform, projects.activeProject?.path]
   )
   const reviewDiffEmpty = React.useCallback(
-    (story: UserStory) => reviewDiffStates.get(story.id) === "empty",
-    [reviewDiffStates]
+    (story: UserStory) => userStoryDiffStats.get(story.id)?.files === 0,
+    [userStoryDiffStats]
+  )
+  const storyDiffStats = React.useCallback(
+    (story: UserStory) => userStoryDiffStats.get(story.id),
+    [userStoryDiffStats]
   )
   const persistQueuedAgentUpdate = React.useCallback(
     async (story: UserStory, update: QueuedAgentUpdate) => {
@@ -1083,6 +1088,7 @@ export function BacklogPage() {
             <BacklogColumn
               key={column.id}
               column={column}
+              diffStats={storyDiffStats}
               onAction={runStoryAction}
               onCreateUserStory={openCreateDrawer}
               onDeleteUserStory={backlog.remove}
@@ -1102,6 +1108,9 @@ export function BacklogPage() {
         </div>
       </div>
       <UserStoryDrawer
+        diffStats={
+          drawerUserStory ? storyDiffStats(drawerUserStory) : undefined
+        }
         open={Boolean(drawerTarget)}
         onOpenChange={(open) => {
           if (!open) {
@@ -1150,128 +1159,6 @@ export function BacklogPage() {
       <HostDependenciesDialog {...rotation.hostDependenciesDialog} />
     </div>
   )
-}
-
-type ReviewDiffState = "changed" | "empty"
-type ReviewDiffStory = Pick<UserStory, "id"> & { worktree: string }
-type ReviewDiffResult = {
-  id: string
-  state?: ReviewDiffState
-}
-type ReviewDiffStateSetter = React.Dispatch<
-  React.SetStateAction<Map<string, ReviewDiffState>>
->
-
-function useReviewDiffStates(
-  stories: UserStory[],
-  workspace: Platform["workspace"]
-) {
-  const [states, setStates] = React.useState(
-    () => new Map<string, ReviewDiffState>()
-  )
-
-  React.useEffect(() => {
-    return subscribeReviewDiffStates(stories, workspace, setStates)
-  }, [stories, workspace])
-
-  return states
-}
-
-function subscribeReviewDiffStates(
-  stories: UserStory[],
-  workspace: Platform["workspace"],
-  setStates: ReviewDiffStateSetter
-) {
-  let cancelled = false
-  const loadStates = () =>
-    loadReviewDiffStates(stories, workspace, setStates, () => cancelled)
-  loadStates()
-  const timer = setInterval(() => {
-    if (document.visibilityState === "visible") loadStates()
-  }, reviewDiffRefreshDelayMs)
-  return () => {
-    cancelled = true
-    clearInterval(timer)
-  }
-}
-
-function loadReviewDiffStates(
-  stories: UserStory[],
-  workspace: Platform["workspace"],
-  setStates: ReviewDiffStateSetter,
-  cancelled: () => boolean
-) {
-  const reviewStories = reviewDiffStories(stories)
-  if (!workspace || !reviewStories.length) {
-    setStates((current) => pruneReviewDiffStates(current, reviewStories))
-    return
-  }
-  void Promise.all(
-    reviewStories.map((story) => loadReviewDiffState(story, workspace))
-  ).then((results) => {
-    if (cancelled()) return
-    setStates((current) =>
-      mergeReviewDiffStates(current, reviewStories, results)
-    )
-  })
-}
-
-function reviewDiffStories(stories: UserStory[]): ReviewDiffStory[] {
-  return stories.flatMap((story) =>
-    story.status === "in-review" && story.worktree
-      ? [{ id: story.id, worktree: story.worktree }]
-      : []
-  )
-}
-
-async function loadReviewDiffState(
-  story: ReviewDiffStory,
-  workspace: NonNullable<Platform["workspace"]>
-): Promise<ReviewDiffResult> {
-  try {
-    const diff = await workspace.gitDiff({ root: story.worktree })
-    const state = changedFilesFromDiff(diff).length ? "changed" : "empty"
-    return { id: story.id, state }
-  } catch {
-    return { id: story.id }
-  }
-}
-
-function mergeReviewDiffStates(
-  current: Map<string, ReviewDiffState>,
-  stories: ReviewDiffStory[],
-  results: ReviewDiffResult[]
-) {
-  const next = retainedReviewDiffStates(current, stories)
-  for (const result of results) {
-    if (result.state) next.set(result.id, result.state)
-    else next.delete(result.id)
-  }
-  return sameReviewDiffStates(current, next) ? current : next
-}
-
-function pruneReviewDiffStates(
-  current: Map<string, ReviewDiffState>,
-  stories: ReviewDiffStory[]
-) {
-  const next = retainedReviewDiffStates(current, stories)
-  return sameReviewDiffStates(current, next) ? current : next
-}
-
-function retainedReviewDiffStates(
-  current: Map<string, ReviewDiffState>,
-  stories: ReviewDiffStory[]
-) {
-  const storyIds = new Set(stories.map((story) => story.id))
-  return new Map([...current].filter(([id]) => storyIds.has(id)))
-}
-
-function sameReviewDiffStates(
-  current: Map<string, ReviewDiffState>,
-  next: Map<string, ReviewDiffState>
-) {
-  if (current.size !== next.size) return false
-  return [...current].every(([id, state]) => next.get(id) === state)
 }
 
 async function currentReviewDiffEmpty(

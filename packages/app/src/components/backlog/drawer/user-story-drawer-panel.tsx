@@ -30,6 +30,7 @@ import type {
   UserStoryDrawerTab,
 } from "@/components/backlog/shared/backlog-types"
 import { DevelopmentContent } from "@/components/backlog/drawer/user-story-development"
+import type { UserStoryDiffStats } from "@/components/backlog/development/user-story-diff-stats"
 import { DrawerActions } from "@/components/backlog/drawer/user-story-drawer-actions"
 import {
   drawerActions,
@@ -91,6 +92,7 @@ const drawerHeaderStrongBlurMask = {
 } satisfies React.CSSProperties
 
 export function UserStoryDrawerPanel({
+  diffStats,
   focusComment,
   initialDevelopmentTab,
   initialDraft,
@@ -115,6 +117,7 @@ export function UserStoryDrawerPanel({
   titleGenerating,
   userStory,
 }: {
+  diffStats?: UserStoryDiffStats
   focusComment?: boolean
   initialDevelopmentTab: UserStoryDevelopmentTab
   initialDraft?: Partial<Omit<UserStoryDraft, "projectId">>
@@ -556,6 +559,7 @@ export function UserStoryDrawerPanel({
           >
             <DevelopmentContent
               key={developmentFileTarget?.id ?? "development"}
+              diffStats={diffStats}
               initialFilePath={developmentFileTarget?.path}
               status={status}
               tab={developmentTab}
@@ -566,7 +570,11 @@ export function UserStoryDrawerPanel({
         )}
       </Tabs>
       {tab === "user-story" && sidebarAvailable && (
-        <DrawerSidebarIsland open={sidebarOpen} userStory={userStory} />
+        <DrawerSidebarIsland
+          diffStats={diffStats}
+          open={sidebarOpen}
+          userStory={userStory}
+        />
       )}
       {tab !== "user-story" && (
         <div className="pointer-events-none absolute right-4 bottom-4 z-20 p-0">
@@ -785,9 +793,11 @@ function DrawerBody({
 }
 
 function DrawerSidebarIsland({
+  diffStats,
   open,
   userStory,
 }: {
+  diffStats?: UserStoryDiffStats
   open: boolean
   userStory?: UserStory
 }) {
@@ -796,7 +806,7 @@ function DrawerSidebarIsland({
   return (
     <div className="absolute top-4 right-4 bottom-16 z-20 h-fit w-[min(24rem,calc(100%-2rem))] overflow-hidden rounded-xl bg-input/40 shadow-xl ring-1 shadow-black/10 ring-foreground/20 backdrop-blur-xl dark:bg-muted">
       <ScrollArea className="h-full min-h-0">
-        <DrawerSidebar userStory={userStory} />
+        <DrawerSidebar diffStats={diffStats} userStory={userStory} />
       </ScrollArea>
     </div>
   )

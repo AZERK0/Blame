@@ -21,6 +21,8 @@ import {
   type BacklogAction,
   type UserStory,
 } from "@/components/backlog/data/backlog-data"
+import { DiffStats } from "@/components/backlog/development/development-diff-stats"
+import type { UserStoryDiffStats } from "@/components/backlog/development/user-story-diff-stats"
 import { drawerTargetForAction } from "@/components/backlog/shared/backlog-helpers"
 import type { OpenDrawer } from "@/components/backlog/shared/backlog-types"
 import { StopAgentDialog } from "@/components/backlog/actions/story-action-dialogs"
@@ -124,6 +126,7 @@ const actionConfig: Record<BacklogAction, ActionConfig> = {
 export function StoryAction({
   action,
   className,
+  diffStats,
   icon,
   iconOnly,
   label,
@@ -136,6 +139,7 @@ export function StoryAction({
 }: {
   action: BacklogAction
   className?: string
+  diffStats?: UserStoryDiffStats
   icon?: ActionConfig["icon"]
   iconOnly?: boolean
   label?: string
@@ -202,6 +206,7 @@ export function StoryAction({
   const actionStyle = actionConfig[action]
   const Icon = loading ? LoaderCircleIcon : (icon ?? actionStyle.icon)
   const buttonIconOnly = iconOnly ?? actionStyle.iconOnly
+  const showIcon = action !== "View Diff" || !diffStats
   const runAction = directAction(action) && onAction
   const handleClick = async () => {
     if (!runAction) {
@@ -239,8 +244,11 @@ export function StoryAction({
       onClick={() => void handleClick()}
       aria-label={buttonIconOnly ? (label ?? action) : undefined}
     >
-      <Icon className={cn(loading && "animate-spin")} />
+      {showIcon && <Icon className={cn(loading && "animate-spin")} />}
       {!buttonIconOnly && (label ?? action)}
+      {!buttonIconOnly && action === "View Diff" && diffStats && (
+        <DiffStats compact diff={diffStats} />
+      )}
     </Button>
   )
 }

@@ -4,6 +4,7 @@ import {
   type UserStory,
   userStoryActions,
 } from "@/components/backlog/data/backlog-data"
+import type { UserStoryDiffStats } from "@/components/backlog/development/user-story-diff-stats"
 import type { OpenDrawer } from "@/components/backlog/shared/backlog-types"
 import {
   type StoryActionHandler,
@@ -19,6 +20,7 @@ import {
 import { Separator } from "@/components/ui/separator"
 
 export function StoryActions({
+  diffStats,
   onAction,
   onOpenDrawer,
   onOpenWorktree,
@@ -29,6 +31,7 @@ export function StoryActions({
   onUnpauseAgent,
   story,
 }: {
+  diffStats?: UserStoryDiffStats
   onAction: StoryActionHandler
   onOpenDrawer: OpenDrawer
   onOpenWorktree: (story: UserStory) => Promise<void>
@@ -42,6 +45,7 @@ export function StoryActions({
   if (story.status === "in-review") {
     return (
       <ReviewActions
+        diffStats={diffStats}
         onAction={onAction}
         onOpenDrawer={onOpenDrawer}
         onOpenWorktree={onOpenWorktree}
@@ -55,6 +59,7 @@ export function StoryActions({
   if (story.status === "in-progress") {
     return (
       <ProgressActions
+        diffStats={diffStats}
         onAction={onAction}
         onOpenDrawer={onOpenDrawer}
         onOpenWorktree={onOpenWorktree}
@@ -71,6 +76,7 @@ export function StoryActions({
         <UserStoryAction
           key={action}
           action={action}
+          diffStats={diffStats}
           onAction={onAction}
           onDeleteUserStory={onDeleteUserStory}
           onOpenDrawer={onOpenDrawer}
@@ -86,6 +92,7 @@ export function StoryActions({
 
 function UserStoryAction({
   action,
+  diffStats,
   onAction,
   onDeleteUserStory,
   onOpenDrawer,
@@ -95,6 +102,7 @@ function UserStoryAction({
   story,
 }: {
   action: ReturnType<typeof userStoryActions>[number]
+  diffStats?: UserStoryDiffStats
   onAction: StoryActionHandler
   onDeleteUserStory: (story: UserStory) => Promise<void>
   onOpenDrawer: OpenDrawer
@@ -117,6 +125,7 @@ function UserStoryAction({
   return (
     <StoryAction
       action={action}
+      diffStats={diffStats}
       className={
         story.status === "done" && action === "View Diff" ? "flex-1" : undefined
       }
@@ -134,6 +143,7 @@ function UserStoryAction({
 }
 
 function ProgressActions({
+  diffStats,
   onAction,
   onOpenDrawer,
   onOpenWorktree,
@@ -141,6 +151,7 @@ function ProgressActions({
   onUnpauseAgent,
   story,
 }: {
+  diffStats?: UserStoryDiffStats
   onAction: StoryActionHandler
   onOpenDrawer: OpenDrawer
   onOpenWorktree: (story: UserStory) => Promise<void>
@@ -150,7 +161,11 @@ function ProgressActions({
 }) {
   return (
     <div className="grid w-full gap-2">
-      <DevelopmentActions onOpenDrawer={onOpenDrawer} story={story} />
+      <DevelopmentActions
+        diffStats={diffStats}
+        onOpenDrawer={onOpenDrawer}
+        story={story}
+      />
       <Separator className="my-1" />
       <div className="grid grid-cols-2 gap-2">
         <StoryAction
@@ -190,6 +205,7 @@ function ProgressActions({
 }
 
 function ReviewActions({
+  diffStats,
   onAction,
   onOpenDrawer,
   onOpenWorktree,
@@ -197,6 +213,7 @@ function ReviewActions({
   reviewDiffEmpty,
   story,
 }: {
+  diffStats?: UserStoryDiffStats
   onAction: StoryActionHandler
   onOpenDrawer: OpenDrawer
   onOpenWorktree: (story: UserStory) => Promise<void>
@@ -206,7 +223,11 @@ function ReviewActions({
 }) {
   return (
     <div className="grid w-full gap-2">
-      <DevelopmentActions onOpenDrawer={onOpenDrawer} story={story} />
+      <DevelopmentActions
+        diffStats={diffStats}
+        onOpenDrawer={onOpenDrawer}
+        story={story}
+      />
       <Separator className="my-1" />
       <div className="grid grid-cols-2 gap-2">
         <StoryAction
@@ -258,9 +279,11 @@ function ReviewActions({
 }
 
 function DevelopmentActions({
+  diffStats,
   onOpenDrawer,
   story,
 }: {
+  diffStats?: UserStoryDiffStats
   onOpenDrawer: OpenDrawer
   story: UserStory
 }) {
@@ -268,6 +291,7 @@ function DevelopmentActions({
     <div className="grid grid-cols-3 gap-2">
       <StoryAction
         action="View Diff"
+        diffStats={diffStats}
         label="Diff"
         onOpenDrawer={onOpenDrawer}
         story={story}

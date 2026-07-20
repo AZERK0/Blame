@@ -6,7 +6,9 @@ import type {
   UserStory,
 } from "@/components/backlog/data/backlog-data"
 import { DevelopmentCodePanel } from "@/components/backlog/development/development-code-panel"
+import { DiffStats } from "@/components/backlog/development/development-diff-stats"
 import { DevelopmentTerminal } from "@/components/backlog/development/development-terminal"
+import type { UserStoryDiffStats } from "@/components/backlog/development/user-story-diff-stats"
 import type { UserStoryDevelopmentTab } from "@/components/backlog/shared/backlog-types"
 import {
   Sidebar,
@@ -34,12 +36,14 @@ const developmentTabs = [
 const rootDevelopmentStatuses = new Set<BacklogColumnId>(["backlog", "ready"])
 
 export function DevelopmentContent({
+  diffStats,
   initialFilePath,
   onTabChange,
   status,
   tab,
   userStory,
 }: {
+  diffStats?: UserStoryDiffStats
   initialFilePath?: string
   onTabChange: (tab: UserStoryDevelopmentTab) => void
   status: BacklogColumnId
@@ -82,6 +86,9 @@ export function DevelopmentContent({
                     >
                       <item.icon />
                       <span>{item.label}</span>
+                      {item.id === "diff" && diffStats && (
+                        <DiffStats compact diff={diffStats} />
+                      )}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}

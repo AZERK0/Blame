@@ -15,6 +15,7 @@ import type {
   UserStoryDrawerTab,
 } from "@/components/backlog/shared/backlog-types"
 import type { AgentConversationUserMessageUndo } from "@/components/chat/agent-conversation"
+import type { UserStoryDiffStats } from "@/components/backlog/development/user-story-diff-stats"
 import { UserStoryDrawerPanel } from "@/components/backlog/drawer/user-story-drawer-panel"
 import { Drawer } from "@/components/ui/drawer"
 
@@ -25,6 +26,7 @@ export type {
 } from "@/components/backlog/shared/backlog-types"
 
 export type UserStoryDrawerProps = {
+  diffStats?: UserStoryDiffStats
   open: boolean
   onOpenChange: (open: boolean) => void
   userStory?: UserStory
@@ -73,6 +75,7 @@ export type UserStoryDrawerProps = {
 }
 
 export function UserStoryDrawer({
+  diffStats,
   open,
   onOpenChange,
   userStory,
@@ -116,6 +119,7 @@ export function UserStoryDrawer({
     >
       <UserStoryDrawerPanel
         key={drawerKey}
+        diffStats={diffStats}
         focusComment={focusComment}
         initialDevelopmentTab={initialDevelopmentTab}
         initialDraft={initialDraft}
