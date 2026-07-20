@@ -5,6 +5,7 @@ import {
   CheckCircle2Icon,
   DownloadIcon,
   LoaderCircleIcon,
+  LogOutIcon,
   MonitorDownIcon,
   ServerCogIcon,
   PlugZapIcon,
@@ -30,6 +31,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
+import { TooltipProvider } from "@/components/ui/tooltip"
 import {
   Dialog,
   DialogContent,
@@ -134,7 +136,9 @@ export function SettingsDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="h-[min(46rem,88vh)] overflow-hidden p-0 sm:max-w-5xl">
-        <SettingsContent />
+        <TooltipProvider>
+          <SettingsContent />
+        </TooltipProvider>
       </DialogContent>
     </Dialog>
   )
@@ -151,31 +155,37 @@ export function SettingsDialogButton({
     <Button
       type="button"
       variant="ghost"
-      size="icon-sm"
+      size="sm"
       aria-label="Open settings"
       className={className}
       onClick={onClick}
     >
       <Settings2Icon />
+      Settings
     </Button>
   )
 }
 
 function SettingsContent() {
+  const auth = useCloudAuth()
   const [activeSection, setActiveSection] =
     React.useState<SettingsSectionId>("general")
-  const section = settingsSections.find((item) => item.id === activeSection)
+  const accountDisabled = auth.status !== "authenticated"
+  const visibleSection =
+    accountDisabled && activeSection === "account" ? "general" : activeSection
+  const section = settingsSections.find((item) => item.id === visibleSection)
 
   return (
     <div className="flex h-full min-h-0 flex-col md:flex-row">
       <SettingsSidebar
-        activeSection={activeSection}
+        accountDisabled={accountDisabled}
+        activeSection={visibleSection}
         onSectionChange={setActiveSection}
       />
       <main className="flex min-h-0 flex-1 flex-col">
         <SettingsSectionHeader section={section ?? settingsSections[0]} />
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-6 md:px-8">
-          <SettingsSectionContent section={activeSection} />
+          <SettingsSectionContent section={visibleSection} />
         </div>
       </main>
     </div>
@@ -183,9 +193,11 @@ function SettingsContent() {
 }
 
 function SettingsSidebar({
+  accountDisabled,
   activeSection,
   onSectionChange,
 }: {
+  accountDisabled: boolean
   activeSection: SettingsSectionId
   onSectionChange(section: SettingsSectionId): void
 }) {
@@ -200,6 +212,7 @@ function SettingsSidebar({
           <SettingsNavItem
             key={section.id}
             active={section.id === activeSection}
+            disabled={accountDisabled && section.id === "account"}
             section={section}
             onClick={() => onSectionChange(section.id)}
           />
@@ -211,10 +224,12 @@ function SettingsSidebar({
 
 function SettingsNavItem({
   active,
+  disabled,
   onClick,
   section,
 }: {
   active: boolean
+  disabled: boolean
   onClick(): void
   section: SettingsSection
 }) {
@@ -224,9 +239,11 @@ function SettingsNavItem({
     <button
       type="button"
       className={cn(
-        "flex min-w-38 items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground md:min-w-0",
+        "flex min-w-38 items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-muted-foreground md:min-w-0",
         active && "bg-foreground/10 text-foreground"
       )}
+      disabled={disabled}
+      title={disabled ? "Sign in to manage your account" : undefined}
       onClick={onClick}
     >
       <Icon className="size-4 shrink-0" />
@@ -738,9 +755,10 @@ function AccountSettingsPanel() {
         >
           <Button
             type="button"
-            variant="outline"
+            variant="destructive"
             onClick={() => void auth.logout()}
           >
+            <LogOutIcon />
             Log out
           </Button>
         </SettingsRow>

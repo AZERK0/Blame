@@ -2,10 +2,10 @@ import * as React from "react"
 import { ArrowRightIcon, CheckIcon, LoaderCircleIcon } from "lucide-react"
 
 import blameDarkAppIconUrl from "../../../../vitrine/public/icons/blame-dark-app-icon.png?url"
+import { CompactWindowChrome } from "@/components/layout/compact-window-chrome"
 import { LegalLink } from "@/components/legal/legal-link"
 import { Button } from "@/components/ui/button"
 import { useCloudAuth } from "@/context/cloud-auth"
-import { SettingsDialog, SettingsDialogButton } from "@/pages/settings/page"
 
 const billingOptions = {
   monthly: { label: "Monthly", price: "€13", suffix: "/month" },
@@ -27,17 +27,13 @@ export function LicenseScreen() {
   const actions = useLicenseActions()
   const [billingCycle, setBillingCycle] =
     React.useState<BillingCycle>("monthly")
-  const [settingsOpen, setSettingsOpen] = React.useState(false)
 
   return (
-    <>
-      <main className="light relative min-h-svh overflow-y-auto bg-[#ededf0] text-[#111]">
-        <SettingsDialogButton
-          className="absolute top-4 right-4 z-10"
-          onClick={() => setSettingsOpen(true)}
-        />
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_-10%,rgba(255,255,255,0.95),transparent_42%),radial-gradient(circle_at_15%_85%,rgba(179,172,243,0.18),transparent_34%)]" />
-        <section className="relative mx-auto flex min-h-svh w-full max-w-xl flex-col items-center justify-center px-6 py-10 sm:py-14">
+    <main className="light relative min-h-svh overflow-y-auto bg-[#ededf0] text-[#111]">
+      <CompactWindowChrome />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_-10%,rgba(255,255,255,0.95),transparent_42%),radial-gradient(circle_at_15%_85%,rgba(179,172,243,0.18),transparent_34%)]" />
+      <section className="relative mx-auto flex min-h-svh w-full max-w-xl flex-col items-center justify-center px-6 pt-10 pb-16 sm:pt-14 sm:pb-16">
+        <div className="flex w-full [zoom:.8] flex-col items-center">
           <PricingCard
             billingCycle={billingCycle}
             loading={actions.pending === billingCycle}
@@ -47,10 +43,9 @@ export function LicenseScreen() {
           />
           <LicenseError error={actions.error} />
           <LicenseActions actions={actions} />
-        </section>
-      </main>
-      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
-    </>
+        </div>
+      </section>
+    </main>
   )
 }
 

@@ -12,7 +12,6 @@ import {
   screen,
   shell,
   type BrowserWindowConstructorOptions,
-  type Display,
   type IpcMainEvent,
   type IpcMainInvokeEvent,
 } from "electron"
@@ -35,6 +34,13 @@ import { registerTerminalIpcHandlers, shutdownTerminalSessions } from "./termina
 import { registerTelemetryIpcHandlers } from "./telemetry-ipc"
 import { registerWorkspaceIpcHandlers, shutdownWorkspaceProcesses } from "./workspace-ipc"
 import { registerMcpIpcHandlers } from "./mcp-ipc"
+import { configureHyprlandWindow } from "./hyprland-window"
+import {
+  isMainWindowRole,
+  mainWindowPresentation,
+  type MainWindowPresentation,
+  type MainWindowRole,
+} from "./main-window-presentation"
 
 contextMenu({
   showInspectElement: true,
@@ -46,24 +52,7 @@ contextMenu({
 const desktopResources = desktopResourcePaths(app.getAppPath())
 const runtimeShutdownTimeoutMs = 4_000
 const telemetryShutdownTimeoutMs = 4_000
-const defaultWindowWidth = 1440
-const defaultWindowHeight = 900
-const appMinWindowWidth = 960
-const appMinWindowHeight = 640
-const freeWindowMaxSize = 100000
 const initialWindowShowFallbackMs = 8_000
-const onboardingWindows = {
-  connect: {
-    height: 680,
-    title: "Blame - Connect",
-    width: 820,
-  },
-  welcome: {
-    height: 680,
-    title: "Blame - Welcome",
-    width: 820,
-  },
-}
 type WindowBounds = { height: number; width: number; x: number; y: number }
 
 try {
@@ -84,6 +73,7 @@ const singleInstanceLock = app.requestSingleInstanceLock()
 if (!singleInstanceLock) app.exit(0)
 
 let mainWindow: BrowserWindow | undefined
+let mainWindowRole: MainWindowRole | undefined
 let shutdownPromise: Promise<void> | undefined
 let shutdownRequested = false
 let readyToQuit = false
@@ -110,13 +100,13 @@ void app.whenReady().then(() => {
     },
   })
   registerWorkspaceIpcHandlers()
-  mainWindow = createMainWindow()
+  replaceMainWindow("compact")
   checkForUpdatesOnStartup()
 })
 
 app.on("activate", () => {
   if (shutdownRequested) return
-  if (BrowserWindow.getAllWindows().length === 0) mainWindow = createMainWindow()
+  if (!mainWindow || mainWindow.isDestroyed()) replaceMainWindow("compact")
 })
 
 app.on("second-instance", (_event, commandLine) => {
@@ -149,29 +139,55 @@ process.once("SIGTERM", () => {
   void exitFromSignal()
 })
 
-function createMainWindow() {
-  const defaultSize = getDefaultWindowSize()
-  const state = windowState({
-    defaultHeight: defaultSize.height,
-    defaultWidth: defaultSize.width,
-  })
-  const bounds = fitWindowBounds({
-    height: state.height,
-    width: state.width,
-    x: state.x,
-    y: state.y,
-  })
-  const options: BrowserWindowConstructorOptions = {
-    x: bounds.x,
-    y: bounds.y,
-    width: bounds.width,
+function createMainWindow(
+  role: MainWindowRole,
+  pathname?: string,
+  replacedWindow?: BrowserWindow
+) {
+  const presentation = mainWindowPresentation(appIdentity.name, role)
+  const state = createWorkspaceWindowState(role, presentation)
+  const bounds = mainWindowBounds(role, presentation, state)
+  const fittedPresentation = {
+    ...presentation,
     height: bounds.height,
+    width: bounds.width,
+  }
+  const window = new BrowserWindow(
+    mainWindowOptions(role, presentation, bounds)
+  )
+
+  registerMainWindowEvents(window)
+  preventRendererTitleChanges(window)
+  hidePlatformWindowButtons(window)
+  state?.manage(window)
+  attachLiveLogWindow(window)
+  registerWindowStateEvents(window)
+  loadRenderer(window, role, pathname)
+  scheduleInitialWindowShow(window, role, fittedPresentation, replacedWindow)
+  return window
+}
+
+function mainWindowOptions(
+  role: MainWindowRole,
+  presentation: MainWindowPresentation,
+  bounds: WindowBounds
+): BrowserWindowConstructorOptions {
+  return {
+    ...bounds,
+    minHeight: Math.min(presentation.minHeight, bounds.height),
+    minWidth: Math.min(presentation.minWidth, bounds.width),
     show: false,
-    title: appIdentity.name,
+    title: presentation.title,
     autoHideMenuBar: true,
     backgroundColor: "#00000000",
     frame: false,
+    fullscreenable: role === "workspace",
+    maximizable: role === "workspace",
+    resizable: presentation.resizable,
     transparent: process.platform !== "win32",
+    ...(role === "compact"
+      ? { maxHeight: bounds.height, maxWidth: bounds.width }
+      : {}),
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -181,8 +197,9 @@ function createMainWindow() {
     ...(process.platform === "win32" ? windowsWindowOptions() : {}),
     ...(process.platform === "darwin" ? macosWindowOptions() : {}),
   }
-  const window = new BrowserWindow(options)
+}
 
+function registerMainWindowEvents(window: BrowserWindow) {
   window.on("close", (event) => {
     if (process.platform === "darwin" || readyToQuit) return
     event.preventDefault()
@@ -190,24 +207,45 @@ function createMainWindow() {
     void quitGracefully()
   })
   window.on("closed", () => {
-    if (mainWindow === window) mainWindow = undefined
+    if (mainWindow !== window) return
+    mainWindow = undefined
+    mainWindowRole = undefined
   })
-
-  hidePlatformWindowButtons(window)
-  state.manage(window)
-  attachLiveLogWindow(window)
-  registerWindowStateEvents(window)
-  loadRenderer(window)
-  scheduleInitialWindowShow(window)
-  return window
 }
 
-function getDefaultWindowSize() {
-  const { workAreaSize } = screen.getPrimaryDisplay()
-  return {
-    height: Math.min(defaultWindowHeight, Math.floor(workAreaSize.height * 0.9)),
-    width: Math.min(defaultWindowWidth, Math.floor(workAreaSize.width * 0.9)),
+function preventRendererTitleChanges(window: BrowserWindow) {
+  window.on("page-title-updated", (event) => event.preventDefault())
+}
+
+function createWorkspaceWindowState(
+  role: MainWindowRole,
+  presentation: MainWindowPresentation
+) {
+  if (role !== "workspace") return
+  return windowState({
+    defaultHeight: presentation.height,
+    defaultWidth: presentation.width,
+  })
+}
+
+function mainWindowBounds(
+  role: MainWindowRole,
+  presentation: MainWindowPresentation,
+  state?: ReturnType<typeof windowState>
+) {
+  if (role === "compact") {
+    const display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint())
+    return fitWindowBounds(presentation, display)
   }
+  return fitWindowBounds({
+    height: Math.max(
+      state?.height ?? presentation.height,
+      presentation.minHeight
+    ),
+    width: Math.max(state?.width ?? presentation.width, presentation.minWidth),
+    x: state?.x,
+    y: state?.y,
+  })
 }
 
 function fitWindowBounds(
@@ -250,14 +288,11 @@ function handleDeepLink(url: string | undefined) {
 }
 
 function showMainWindow() {
-  const window = mainWindow ?? BrowserWindow.getAllWindows()[0]
-  if (!window) {
-    mainWindow = createMainWindow()
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    replaceMainWindow("compact")
     return
   }
-  if (window.isMinimized()) window.restore()
-  window.show()
-  window.focus()
+  showPresentedWindow(mainWindow)
 }
 
 function windowsWindowOptions(): BrowserWindowConstructorOptions {
@@ -278,12 +313,28 @@ function hidePlatformWindowButtons(window: BrowserWindow) {
   window.setWindowButtonVisibility(false)
 }
 
-function loadRenderer(window: BrowserWindow) {
+function loadRenderer(
+  window: BrowserWindow,
+  role: MainWindowRole,
+  pathname?: string
+) {
+  const query = rendererQuery(role, pathname)
   if (process.env.ELECTRON_RENDERER_URL) {
-    void window.loadURL(process.env.ELECTRON_RENDERER_URL)
+    const url = new URL(process.env.ELECTRON_RENDERER_URL)
+    for (const [name, value] of Object.entries(query)) {
+      url.searchParams.set(name, value)
+    }
+    void window.loadURL(url.toString())
     return
   }
-  void window.loadFile(desktopResources.renderer)
+  void window.loadFile(desktopResources.renderer, { query })
+}
+
+function rendererQuery(role: MainWindowRole, pathname?: string) {
+  return {
+    "window-role": role,
+    ...(pathname ? { route: pathname } : {}),
+  }
 }
 
 function registerIpcHandlers() {
@@ -339,44 +390,36 @@ function registerIpcHandlers() {
 }
 
 function setWindowPresentation(window: BrowserWindow | null, input: unknown) {
-  if (!window || !windowPresentationInput(input)) return false
-  if (input.mode === "app") {
-    setAppWindowPresentation(window)
-    return true
+  if (!window || window !== mainWindow || !windowPresentationInput(input)) {
+    return false
   }
-  setOnboardingWindowPresentation(window, input.mode)
+  if (input.role === mainWindowRole) return true
+  replaceMainWindow(input.role, input.pathname)
   return true
 }
 
-function setOnboardingWindowPresentation(
+function replaceMainWindow(role: MainWindowRole, pathname?: string) {
+  const replacedWindow = mainWindow
+  mainWindow = createMainWindow(role, pathname, replacedWindow)
+  mainWindowRole = role
+}
+
+function scheduleInitialWindowShow(
   window: BrowserWindow,
-  mode: "connect" | "welcome"
+  role: MainWindowRole,
+  presentation: MainWindowPresentation,
+  replacedWindow?: BrowserWindow
 ) {
-  const presentation = onboardingWindows[mode]
-  if (window.isMaximized()) window.unmaximize()
-  window.setTitle(presentation.title)
-  window.setAlwaysOnTop(false)
-  applyOnboardingWindowSize(window, presentation)
-  showPresentedWindow(window)
-}
-
-function setAppWindowPresentation(window: BrowserWindow) {
-  window.setTitle(appIdentity.name)
-  window.setResizable(true)
-  window.setMaximumSize(freeWindowMaxSize, freeWindowMaxSize)
-  window.setMinimumSize(appMinWindowWidth, appMinWindowHeight)
-  resizeWindow(window, defaultWindowWidth, defaultWindowHeight, {
-    display: getPreferredDisplay(window),
-  })
-  showPresentedWindow(window)
-}
-
-function scheduleInitialWindowShow(window: BrowserWindow) {
-  window.once("ready-to-show", () => {
-    setTimeout(() => {
-      if (!window.isDestroyed() && !window.isVisible()) window.show()
-    }, initialWindowShowFallbackMs)
-  })
+  let presented = false
+  const present = () => {
+    if (presented || window.isDestroyed()) return
+    presented = true
+    showPresentedWindow(window)
+    configureHyprlandWindow({ presentation, role })
+    destroyReplacedWindow(replacedWindow)
+  }
+  window.once("ready-to-show", present)
+  setTimeout(present, initialWindowShowFallbackMs)
 }
 
 function showPresentedWindow(window: BrowserWindow) {
@@ -385,43 +428,25 @@ function showPresentedWindow(window: BrowserWindow) {
   window.focus()
 }
 
-function resizeWindow(
-  window: BrowserWindow,
-  width: number,
-  height: number,
-  options?: { bounds?: WindowBounds; display?: Display }
-) {
-  const bounds =
-    options?.bounds ?? fitWindowBounds({ height, width }, options?.display)
-  window.setBounds(bounds, true)
-}
-
-function applyOnboardingWindowSize(
-  window: BrowserWindow,
-  presentation: { height: number; width: number }
-) {
-  window.setResizable(true)
-  window.setMinimumSize(1, 1)
-  window.setMaximumSize(freeWindowMaxSize, freeWindowMaxSize)
-  resizeWindow(window, presentation.width, presentation.height, {
-    display: getPreferredDisplay(window),
-  })
-  window.setMinimumSize(presentation.width, presentation.height)
-  window.setMaximumSize(presentation.width, presentation.height)
-  window.setResizable(false)
-}
-
-function getPreferredDisplay(window: BrowserWindow) {
-  if (window.isVisible()) return screen.getDisplayMatching(window.getBounds())
-  return screen.getDisplayNearestPoint(screen.getCursorScreenPoint())
+function destroyReplacedWindow(window: BrowserWindow | undefined) {
+  if (window && !window.isDestroyed()) window.destroy()
 }
 
 function windowPresentationInput(input: unknown): input is {
-  mode: "app" | "connect" | "welcome"
+  pathname?: string
+  role: MainWindowRole
 } {
   if (!input || typeof input !== "object") return false
-  const mode = (input as Record<string, unknown>).mode
-  return mode === "app" || mode === "connect" || mode === "welcome"
+  const record = input as Record<string, unknown>
+  if (!isMainWindowRole(record.role)) return false
+  return validRendererPathname(record.pathname)
+}
+
+function validRendererPathname(value: unknown) {
+  if (value === undefined) return true
+  return (
+    typeof value === "string" && value.startsWith("/") && value.length <= 2048
+  )
 }
 
 function showSystemNotification(input: unknown) {

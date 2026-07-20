@@ -49,8 +49,9 @@ export function SiteHeader({ title }: { title: string }) {
 
 export function WindowControls({
   className,
+  showMaximize = true,
   ...props
-}: React.ComponentProps<"div">) {
+}: React.ComponentProps<"div"> & { showMaximize?: boolean }) {
   const platform = usePlatform()
 
   if (!platform.windowControls) return null
@@ -59,6 +60,7 @@ export function WindowControls({
     <WindowControlsButtons
       className={className}
       controls={platform.windowControls}
+      showMaximize={showMaximize}
       {...props}
     />
   )
@@ -67,10 +69,12 @@ export function WindowControls({
 function WindowControlsButtons({
   className,
   controls,
+  showMaximize,
   ...props
 }: {
   className?: string
   controls: WindowControlsClient
+  showMaximize: boolean
 } & React.ComponentProps<"div">) {
   const [maximized, setMaximized] = React.useState(false)
 
@@ -98,16 +102,18 @@ function WindowControlsButtons({
       >
         <MinusIcon />
       </Button>
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon-sm"
-        title={maximized ? "Restore" : "Maximize"}
-        aria-label={maximized ? "Restore" : "Maximize"}
-        onClick={() => void controls.toggleMaximize()}
-      >
-        {maximized ? <CopyIcon /> : <SquareIcon />}
-      </Button>
+      {showMaximize ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          title={maximized ? "Restore" : "Maximize"}
+          aria-label={maximized ? "Restore" : "Maximize"}
+          onClick={() => void controls.toggleMaximize()}
+        >
+          {maximized ? <CopyIcon /> : <SquareIcon />}
+        </Button>
+      ) : null}
       <Button
         type="button"
         variant="ghost"

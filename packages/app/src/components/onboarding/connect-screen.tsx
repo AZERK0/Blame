@@ -1,6 +1,7 @@
 import * as React from "react"
 import { LoaderCircleIcon } from "lucide-react"
 
+import { CompactWindowChrome } from "@/components/layout/compact-window-chrome"
 import { Button } from "@/components/ui/button"
 import {
   Field,
@@ -13,7 +14,6 @@ import { Input } from "@/components/ui/input"
 import { LegalLink } from "@/components/legal/legal-link"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { publicAssetUrl } from "@/lib/public-asset-url"
-import { SettingsDialog, SettingsDialogButton } from "@/pages/settings/page"
 
 type AuthMode = "login" | "signup"
 type AuthFieldProps = {
@@ -28,44 +28,37 @@ type AuthFieldProps = {
 
 export function ConnectScreen() {
   const [mode, setMode] = React.useState<AuthMode>("login")
-  const [settingsOpen, setSettingsOpen] = React.useState(false)
   const introReady = useIntroReady()
 
   return (
-    <>
-      <main className="light relative h-svh overflow-hidden bg-background/10 text-foreground backdrop-blur-md">
-        <SettingsDialogButton
-          className="absolute top-4 right-4 z-10"
-          onClick={() => setSettingsOpen(true)}
-        />
-        <section className="flex h-full flex-col gap-4 bg-background/50 p-6 md:p-8">
-          <AppLogo />
-          <div className="flex flex-1 items-center justify-center">
-            <div
-              key={mode}
-              className={`w-full max-w-xs transform-gpu transition-all delay-150 duration-700 ease-out motion-reduce:transform-none motion-reduce:transition-none ${
-                introReady
-                  ? "blur-0 translate-y-0 scale-100 opacity-100"
-                  : "translate-y-5 scale-[0.98] opacity-0 blur-md"
-              }`}
-            >
-              {mode === "login" ? (
-                <LoginForm onModeChange={setMode} />
-              ) : (
-                <SignupForm onModeChange={setMode} />
-              )}
-            </div>
+    <main className="light relative h-svh overflow-hidden bg-background/10 text-foreground backdrop-blur-md">
+      <CompactWindowChrome />
+      <section className="flex h-full flex-col gap-4 bg-background/50 p-6 pb-16 md:p-8 md:pb-16">
+        <AppLogo />
+        <div className="flex flex-1 items-center justify-center">
+          <div
+            key={mode}
+            className={`w-full max-w-xs transform-gpu [zoom:.86] transition-all delay-150 duration-700 ease-out motion-reduce:transform-none motion-reduce:transition-none ${
+              introReady
+                ? "blur-0 translate-y-0 scale-100 opacity-100"
+                : "translate-y-5 scale-[0.98] opacity-0 blur-md"
+            }`}
+          >
+            {mode === "login" ? (
+              <LoginForm onModeChange={setMode} />
+            ) : (
+              <SignupForm onModeChange={setMode} />
+            )}
           </div>
-        </section>
-      </main>
-      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
-    </>
+        </div>
+      </section>
+    </main>
   )
 }
 
 function AppLogo() {
   return (
-    <div className="flex items-center gap-3" aria-label="Blame">
+    <div className="flex [zoom:.86] items-center gap-3" aria-label="Blame">
       <span className="grid h-10 w-10 place-items-center">
         <img
           alt=""
@@ -100,7 +93,7 @@ function LoginForm({ onModeChange }: { onModeChange(mode: AuthMode): void }) {
       className="flex flex-col gap-6"
       onSubmit={form.submit(() => auth.login({ email, password }))}
     >
-      <FieldGroup>
+      <FieldGroup className="gap-4">
         <FormTitle title="Login to your account" description="" />
         <LoginFields
           email={email}
@@ -143,7 +136,7 @@ function SignupForm({ onModeChange }: { onModeChange(mode: AuthMode): void }) {
         })
       )}
     >
-      <FieldGroup>
+      <FieldGroup className="gap-4">
         <FormTitle title="Create your account" description="" />
         <SignupFields
           email={email}

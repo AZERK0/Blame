@@ -8,6 +8,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 
+import { CompactWindowChrome } from "@/components/layout/compact-window-chrome"
 import { Button } from "@/components/ui/button"
 import { useCloudAuth } from "@/context/cloud-auth"
 import {
@@ -28,7 +29,8 @@ export function AccountClosureReceiptPage({
   const statusCheck = useClosureStatusCheck(receipt)
 
   return (
-    <main className="light min-h-svh bg-background p-6 text-foreground">
+    <main className="light relative h-svh overflow-y-auto bg-background px-6 pt-14 pb-16 text-foreground">
+      <CompactWindowChrome />
       <section className="mx-auto w-full max-w-2xl rounded-2xl border bg-card p-6 shadow-sm md:p-8">
         <ReceiptHeader receipt={receipt} />
         <ReceiptDetails receipt={receipt} />

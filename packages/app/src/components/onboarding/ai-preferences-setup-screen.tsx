@@ -6,10 +6,10 @@ import {
   LoaderCircleIcon,
   PlusIcon,
   RefreshCwIcon,
-  UserRoundIcon,
 } from "lucide-react"
 import { toast } from "sonner"
 
+import { CompactWindowChrome } from "@/components/layout/compact-window-chrome"
 import {
   ConnectProviderDialog,
   ProviderSelectDialog,
@@ -41,7 +41,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useCloudAuth } from "@/context/cloud-auth"
-import { navigate } from "@/components/navigation/navigation"
 import { cn } from "@/lib/utils"
 
 type SetupDialog =
@@ -96,15 +95,8 @@ export function AiPreferencesSetupScreen() {
   }
 
   return (
-    <main className="light relative flex min-h-screen items-center justify-center bg-background px-4 py-20 text-foreground sm:p-8">
-      <Button
-        type="button"
-        variant="ghost"
-        className="absolute top-4 right-4"
-        onClick={() => navigate("/account/privacy")}
-      >
-        <UserRoundIcon /> Account
-      </Button>
+    <main className="light relative flex h-svh items-center justify-center overflow-y-auto bg-background px-4 pt-14 pb-16 text-foreground sm:px-8">
+      <CompactWindowChrome />
       <section className="grid w-full max-w-3xl gap-6">
         <div>
           <h1 className="font-heading text-3xl font-semibold tracking-tight">

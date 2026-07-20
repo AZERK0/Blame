@@ -40,8 +40,11 @@ export function subscribeToNavigation(callback: () => void) {
 }
 
 function initialPathname() {
-  const view = new URLSearchParams(window.location.search).get("view")
+  const parameters = new URLSearchParams(window.location.search)
+  const view = parameters.get("view")
   if (view === "backlog-status-pip") return "/backlog-status-pip"
+  const route = parameters.get("route")
+  if (route) return normalizedPathname(route)
   return normalizedPathname(window.location.pathname)
 }
 

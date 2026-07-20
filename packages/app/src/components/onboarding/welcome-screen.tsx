@@ -9,6 +9,7 @@ import {
 } from "lucide-react"
 import * as React from "react"
 
+import { CompactWindowChrome } from "@/components/layout/compact-window-chrome"
 import { NewProjectDialog } from "@/components/new-project/new-project-dialog"
 import { Button } from "@/components/ui/button"
 import { useCloudAuth } from "@/context/cloud-auth"
@@ -18,20 +19,15 @@ import { useProjects } from "@/context/projects"
 import { createCloudApi } from "@/lib/cloud-api"
 import type { Project } from "@/lib/projects"
 import { HostDependenciesDialog } from "@/pages/backlog/host-dependencies-dialog"
-import { SettingsDialog, SettingsDialogButton } from "@/pages/settings/page"
 
 export function WelcomeScreen() {
   const projectOpening = useProjectOpening()
   const [newProjectOpen, setNewProjectOpen] = React.useState(false)
-  const [settingsOpen, setSettingsOpen] = React.useState(false)
 
   return (
     <>
-      <main className="relative flex h-svh items-center justify-center overflow-hidden bg-background px-6 py-8 text-foreground">
-        <SettingsDialogButton
-          className="absolute top-4 right-4"
-          onClick={() => setSettingsOpen(true)}
-        />
+      <main className="relative flex h-svh items-center justify-center overflow-hidden bg-background px-6 pt-8 pb-16 text-foreground">
+        <CompactWindowChrome />
         <section className="grid w-full max-w-3xl gap-7">
           <WelcomeHeader />
           <WelcomeActions
@@ -52,7 +48,6 @@ export function WelcomeScreen() {
         onOpenChange={setNewProjectOpen}
       />
       <HostDependenciesDialog {...projectOpening.hostDependenciesDialog} />
-      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
     </>
   )
 }

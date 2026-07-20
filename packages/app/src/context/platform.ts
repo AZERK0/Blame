@@ -201,7 +201,8 @@ export type WindowControlsClient = {
 }
 
 export type WindowPresentationInput = {
-  mode: "app" | "connect" | "welcome"
+  pathname: string
+  role: "compact" | "workspace"
 }
 
 export type DesktopUpdatePhase =

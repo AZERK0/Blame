@@ -82,7 +82,7 @@ function useProjectState(
       setOpening(true)
       try {
         const project = await resolveProject(path, auth, platform)
-        setState((current) => openProjectState(current, project))
+        setState((current) => persistedProjectState(current, project))
         return project
       } finally {
         setOpening(false)
@@ -101,7 +101,7 @@ function useProjectState(
           project.id,
           initialization
         )
-        setState((current) => openProjectState(current, project))
+        setState((current) => persistedProjectState(current, project))
       } finally {
         setOpening(false)
       }
@@ -192,6 +192,12 @@ function openProjectState(
       ...current.recent.filter((item) => item.path !== project.path),
     ].slice(0, recentLimit),
   }
+}
+
+function persistedProjectState(current: ProjectState, project: Project) {
+  const next = openProjectState(current, project)
+  writeProjectState(next)
+  return next
 }
 
 function removeRecentProjectState(

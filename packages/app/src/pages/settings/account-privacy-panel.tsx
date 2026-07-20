@@ -1,7 +1,18 @@
 import * as React from "react"
-import { DownloadIcon, LoaderCircleIcon, Trash2Icon } from "lucide-react"
+import {
+  DownloadIcon,
+  LoaderCircleIcon,
+  Trash2Icon,
+  TriangleAlertIcon,
+} from "lucide-react"
 import { toast } from "sonner"
 
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -73,8 +84,31 @@ function PrivacyActions({
   return (
     <div>
       <ExportPrivacyAction onClick={() => onAction("export")} />
-      <ClosurePrivacyAction onClick={() => onAction("closure")} />
+      <AccountClosureAccordion onClose={() => onAction("closure")} />
     </div>
+  )
+}
+
+function AccountClosureAccordion({ onClose }: { onClose(): void }) {
+  return (
+    <Accordion type="single" collapsible>
+      <AccordionItem value="account-closure" className="border-b-0">
+        <AccordionTrigger className="py-4 hover:no-underline">
+          <span className="flex items-start gap-3">
+            <TriangleAlertIcon className="mt-0.5 size-4 shrink-0 text-destructive" />
+            <span className="grid gap-1">
+              <span>Danger zone</span>
+              <span className="font-normal text-muted-foreground">
+                Reveal irreversible account actions.
+              </span>
+            </span>
+          </span>
+        </AccordionTrigger>
+        <AccordionContent className="pb-0">
+          <ClosurePrivacyAction onClick={onClose} />
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
   )
 }
 

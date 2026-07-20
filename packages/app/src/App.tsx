@@ -34,6 +34,7 @@ import {
   getAccountClosureReceipt,
   subscribeToAccountClosureReceipt,
 } from "@/lib/account-closure-receipt-storage"
+import { appWindowRole } from "@/lib/app-window-role"
 
 const settingsPath = "/settings"
 const accountPrivacyPath = "/account/privacy"
@@ -116,20 +117,22 @@ export function App() {
   const statusPipOpen = pathname === backlogStatusPipPath
   const previousRoute = resolvePreviousRoute(previousPathname)
   const activeRoute = settingsOpen ? previousRoute : route
-  const windowPresentation = windowPresentationMode({
+  const windowRole = appWindowRole({
     activeProject: projects.activeProject,
     accountPrivacyOpen,
     aiPreferences: auth.aiPreferences,
     authStatus: auth.status,
+    licensed: auth.license?.licensed ?? false,
     statusPipOpen,
   })
 
   React.useEffect(() => {
-    if (!windowPresentation) return
+    if (!windowRole) return
     void platform.windowControls?.setPresentation({
-      mode: windowPresentation,
+      pathname,
+      role: windowRole,
     })
-  }, [platform.windowControls, windowPresentation])
+  }, [pathname, platform.windowControls, windowRole])
 
   function closeSettings(open: boolean) {
     if (!open) navigate(activeRoute.path)
@@ -193,20 +196,6 @@ export function App() {
 function resolvePreviousRoute(pathname: string) {
   if (pathname === settingsPath) return routes[0]
   return resolveRoute(pathname)
-}
-
-function windowPresentationMode(input: {
-  accountPrivacyOpen: boolean
-  activeProject: unknown
-  aiPreferences: unknown
-  authStatus: ReturnType<typeof useCloudAuth>["status"]
-  statusPipOpen: boolean
-}) {
-  if (input.statusPipOpen || input.authStatus === "loading") return undefined
-  if (input.authStatus === "unauthenticated") return "connect"
-  if (input.accountPrivacyOpen) return "app"
-  if (input.aiPreferences !== null && !input.activeProject) return "welcome"
-  return "app"
 }
 
 export default App

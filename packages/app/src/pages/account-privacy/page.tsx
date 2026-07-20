@@ -1,5 +1,6 @@
 import { ArrowLeftIcon, LogOutIcon } from "lucide-react"
 
+import { CompactWindowChrome } from "@/components/layout/compact-window-chrome"
 import { navigate } from "@/components/navigation/navigation"
 import { Button } from "@/components/ui/button"
 import { useCloudAuth } from "@/context/cloud-auth"
@@ -9,7 +10,8 @@ export function AccountPrivacyPage() {
   const auth = useCloudAuth()
 
   return (
-    <main className="light min-h-svh bg-background p-6 text-foreground">
+    <main className="light relative h-svh overflow-y-auto bg-background px-6 pt-14 pb-16 text-foreground">
+      <CompactWindowChrome />
       <section className="mx-auto w-full max-w-3xl rounded-2xl border bg-card p-6 shadow-sm md:p-8">
         <AccountPrivacyHeader email={auth.user?.email} />
         <div className="py-4">
