@@ -56,6 +56,26 @@ test("marks a failed quick chat agent run", () => {
   assert.ok(runUpdate.completedAt)
 })
 
+test("marks a stopped quick chat agent run without recording an error", () => {
+  const event = agentEvent("done", {
+    reason: "aborted",
+    text: "Agent stopped.",
+  })
+  const update = quickChatAgentEventUpdate(chat(), event)
+  const runUpdate = quickChatAgentRunEventUpdate(
+    update,
+    event,
+    "Agent stopped."
+  )
+
+  assert.equal(update.agentLastError, null)
+  assert.equal(update.agentLastEvent, "Agent stopped.")
+  assert.equal(update.agentStatus, null)
+  assert.equal(runUpdate.finalResponse, "Agent stopped.")
+  assert.equal(runUpdate.status, "failed")
+  assert.ok(runUpdate.completedAt)
+})
+
 test("accumulates queued quick chat activity updates", () => {
   const first = pendingQuickChatAgentUpdate(
     undefined,

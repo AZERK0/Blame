@@ -80,6 +80,10 @@ import { generateAgentTitle } from "@/lib/agent-title-generation"
 
 const agentEventPersistDelayMs = 1_500
 const agentCompletionRecoveryIntervalMs = 10_000
+const stoppedAgentEvent = {
+  payload: { reason: "aborted", text: "Agent stopped." },
+  type: "done",
+} satisfies AgentEvent
 const bottomBlurMask = {
   maskImage: "linear-gradient(to top, black 0%, black 60%, transparent 100%)",
   WebkitMaskImage:
@@ -141,6 +145,9 @@ function QuickChatProjectPage() {
   const pendingAgentUpdates = React.useRef(
     new Map<string, PendingQuickChatAgentUpdate>()
   )
+  const agentEventUnsubscribers = React.useRef(
+    new Map<string, () => void>()
+  )
   const recoveringAgentRunIds = React.useRef(new Set<string>())
   const recoverAgentEventRef = React.useRef<
     (
@@ -182,7 +189,12 @@ function QuickChatProjectPage() {
 
   React.useEffect(() => {
     const updates = pendingAgentUpdates.current
-    return () => clearPendingQuickChatAgentUpdates(updates)
+    const unsubscribers = agentEventUnsubscribers.current
+    return () => {
+      clearPendingQuickChatAgentUpdates(updates)
+      unsubscribers.forEach((unsubscribe) => unsubscribe())
+      unsubscribers.clear()
+    }
   }, [])
 
   React.useEffect(() => {
@@ -458,14 +470,30 @@ function QuickChatProjectPage() {
   }
 
   async function cancelAgent() {
-    const sessionId = activeConversation?.clineSessionId
-    if (!agentRunning || !sessionId || !platform.agent || cancelingAgent) return
+    const conversation = activeConversation
+      ? currentChat(activeConversation)
+      : undefined
+    const run = conversation?.agentRuns?.findLast(
+      (currentRun) => currentRun.status === "running"
+    )
+    const sessionId = run?.clineSessionId ?? conversation?.clineSessionId
+    if (
+      !conversation ||
+      !agentRunning ||
+      !sessionId ||
+      !platform.agent ||
+      cancelingAgent
+    )
+      return
     setCancelingAgent(true)
     try {
       await platform.agent.sessions.abort(sessionId)
-      toast.success("Agent cancellation requested.", {
+      unsubscribeQuickChatAgentEvents(sessionId)
+      const persisted = persistAgentEvent(conversation, run, stoppedAgentEvent)
+      toast.success("Agent stopped.", {
         position: "bottom-right",
       })
+      await Promise.resolve(persisted).catch(reportAgentPersistenceError)
     } catch (error) {
       showQuickChatError("Unable to cancel agent", errorMessage(error))
     } finally {
@@ -639,6 +667,7 @@ function QuickChatProjectPage() {
     sessionId: string
   ) {
     let authenticationFailed = false
+    unsubscribeQuickChatAgentEvents(sessionId)
     const unsubscribe = subscribeAgentEvents(platform, sessionId, (event) => {
       if (authenticationFailed) return
       const text = agentEventText(event)
@@ -646,10 +675,24 @@ function QuickChatProjectPage() {
       if (authenticationFailed) showExpiredAuthenticationToast(text)
       const persisted = persistAgentEvent(chat, run, event)
       if (authenticationFailed || immediateQuickChatAgentEvent(event)) {
-        void Promise.resolve(persisted).then(unsubscribe, unsubscribe)
+        void Promise.resolve(persisted).then(
+          () => unsubscribeQuickChatAgentEvents(sessionId, unsubscribe),
+          () => unsubscribeQuickChatAgentEvents(sessionId, unsubscribe)
+        )
       }
     })
+    agentEventUnsubscribers.current.set(sessionId, unsubscribe)
     return unsubscribe
+  }
+
+  function unsubscribeQuickChatAgentEvents(
+    sessionId: string,
+    expected?: () => void
+  ) {
+    const unsubscribe = agentEventUnsubscribers.current.get(sessionId)
+    if (!unsubscribe || (expected && unsubscribe !== expected)) return
+    agentEventUnsubscribers.current.delete(sessionId)
+    unsubscribe()
   }
 
   async function sendQuickChatPrompt(input: QuickChatPromptInput) {
