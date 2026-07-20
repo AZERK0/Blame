@@ -1,7 +1,15 @@
 import { randomUUID } from "node:crypto";
 import { execFile } from "node:child_process";
 import { access, appendFile, mkdir, rm, writeFile } from "node:fs/promises";
-import { basename, dirname, join } from "node:path";
+import {
+  basename,
+  dirname,
+  isAbsolute,
+  join,
+  relative,
+  resolve,
+  sep,
+} from "node:path";
 import { promisify } from "node:util";
 
 import type {
@@ -361,6 +369,8 @@ export class BlameAgentRuntime {
   private alwaysAllowedTools = new Set<string>();
   private autoApprovedWriteToolSessions = new Set<string>();
   private sessionLogFiles = new Map<string, string>();
+  private sessionLogWrites = new Map<string, Promise<void>>();
+  private sessionReleases = new Map<string, Promise<void>>();
   private sessionContexts = new Map<string, ProductionSessionContext>();
   private sessionStartInputs = new Map<string, ClineCoreStartInput>();
   private sessionQualityBaselines = new Map<string, string>();
@@ -413,6 +423,8 @@ export class BlameAgentRuntime {
       this.restoreCheckpoint(input),
     usage: (sessionId: string) => this.readUsage(sessionId),
     unsubscribe: (sessionId: string) => this.unsubscribeSession(sessionId),
+    releaseWorkspace: (workspace: string) =>
+      this.releaseWorkspaceSessions(workspace),
   };
 
   approvals = {
@@ -457,9 +469,13 @@ export class BlameAgentRuntime {
     await Promise.allSettled(
       sessionIds.map((sessionId) => this.abortSession(sessionId, false)),
     );
-    sessionIds.forEach((sessionId) => this.unsubscribeSession(sessionId));
+    await Promise.all(
+      sessionIds.map((sessionId) => this.unsubscribeSession(sessionId)),
+    );
     this.resolvePendingApprovals();
     this.sessionLogFiles.clear();
+    this.sessionLogWrites.clear();
+    this.sessionReleases.clear();
     this.sessionContexts.clear();
     this.sessionEventSignatures.clear();
     await this.disposeCore();
@@ -873,6 +889,16 @@ export class BlameAgentRuntime {
     } finally {
       this.agentTelemetry.cancel(sessionId);
     }
+  }
+
+  private async releaseWorkspaceSessions(workspace: string) {
+    const sessionIds = workspaceSessionIds(this.sessionLogFiles, workspace);
+    await Promise.allSettled(
+      sessionIds.map((sessionId) => this.abortSession(sessionId, false)),
+    );
+    await Promise.all(
+      sessionIds.map((sessionId) => this.unsubscribeSession(sessionId)),
+    );
   }
 
   private async compareCheckpoint(
@@ -1412,7 +1438,7 @@ export class BlameAgentRuntime {
         sessionId,
       };
     } finally {
-      this.unsubscribeSession(sessionId);
+      await this.unsubscribeSession(sessionId);
     }
   }
 
@@ -1755,7 +1781,8 @@ export class BlameAgentRuntime {
   }
 
   private async subscribeCoreSession(sessionId: string, cline: ClineCore) {
-    this.unsubscribeSession(sessionId, true);
+    await this.unsubscribeSession(sessionId, true);
+    this.sessionReleases.delete(sessionId);
     const unsubscribe = await cline.subscribe(
       (payload: CoreSessionEvent) => {
         this.agentTelemetry.observeCoreEvent(sessionId, payload);
@@ -1904,8 +1931,38 @@ export class BlameAgentRuntime {
   }
 
   private unsubscribeSession(sessionId: string, preserveTelemetry = false) {
-    this.unsubscribers.get(sessionId)?.();
+    const current = this.sessionReleases.get(sessionId);
+    if (current) return current;
+    const release = this.releaseSession(sessionId, preserveTelemetry);
+    this.sessionReleases.set(sessionId, release);
+    void release.then(
+      () => this.deleteSessionRelease(sessionId, release),
+      () => this.deleteSessionRelease(sessionId, release),
+    );
+    return release;
+  }
+
+  private deleteSessionRelease(sessionId: string, release: Promise<void>) {
+    if (this.sessionReleases.get(sessionId) === release)
+      this.sessionReleases.delete(sessionId);
+  }
+
+  private async releaseSession(sessionId: string, preserveTelemetry: boolean) {
+    const unsubscribe = this.unsubscribers.get(sessionId);
     this.unsubscribers.delete(sessionId);
+    try {
+      unsubscribe?.();
+    } catch {}
+    this.clearSessionState(sessionId, preserveTelemetry);
+    const logFile = this.sessionLogFiles.get(sessionId);
+    this.sessionLogFiles.delete(sessionId);
+    await this.sessionLogWrites.get(sessionId)?.catch(() => undefined);
+    if (logFile)
+      await appendLog(logFile, "session unsubscribed").catch(() => undefined);
+    this.sessionLogWrites.delete(sessionId);
+  }
+
+  private clearSessionState(sessionId: string, preserveTelemetry: boolean) {
     this.autoApprovedWriteToolSessions.delete(sessionId);
     this.sessionContexts.delete(sessionId);
     this.sessionEventSignatures.delete(sessionId);
@@ -1921,7 +1978,6 @@ export class BlameAgentRuntime {
     this.sessionStartInputs.delete(sessionId);
     this.structuredEventSessions.delete(sessionId);
     if (!preserveTelemetry) this.agentTelemetry.remove(sessionId);
-    void this.logSession(sessionId, "session unsubscribed");
   }
 
   private async recordSessionQuality(
@@ -2236,7 +2292,12 @@ export class BlameAgentRuntime {
   ) {
     const file = this.sessionLogFiles.get(sessionId);
     if (!file) return;
-    await appendLog(file, message, payload, activeContext);
+    const precedingWrite = this.sessionLogWrites.get(sessionId);
+    const write = (precedingWrite ?? Promise.resolve())
+      .catch(() => undefined)
+      .then(() => appendLog(file, message, payload, activeContext));
+    this.sessionLogWrites.set(sessionId, write);
+    await write;
   }
 
   private async ensureHeadroomSidecar(
@@ -4175,6 +4236,25 @@ function startLogPath(cwd: string) {
 
 function sessionLogPath(cwd: string, sessionId: string) {
   return join(cwd, ".blame", "logs", `cline-${sessionId}.log`);
+}
+
+export function workspaceSessionIds(
+  sessionLogFiles: ReadonlyMap<string, string>,
+  workspace: string,
+) {
+  return Array.from(sessionLogFiles)
+    .filter(([, file]) => pathInsideWorkspace(file, workspace))
+    .map(([sessionId]) => sessionId);
+}
+
+function pathInsideWorkspace(path: string, workspace: string) {
+  const relativePath = relative(resolve(workspace), resolve(path));
+  return (
+    relativePath !== "" &&
+    relativePath !== ".." &&
+    !relativePath.startsWith(`..${sep}`) &&
+    !isAbsolute(relativePath)
+  );
 }
 
 function headroomProxyLogPath(cwd: string) {

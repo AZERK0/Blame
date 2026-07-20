@@ -130,6 +130,10 @@ export function generateNewProjectWithAgent(
   return agentWorkspaceInput(input).then((resolved) => runtime.newProjects.generate(resolved))
 }
 
+export function releaseAgentWorkspaceSessions(worktree: string) {
+  return runtime.sessions.releaseWorkspace(worktree)
+}
+
 export async function shutdownAgentRuntime() {
   shutdownAgentEventServer()
   await Promise.allSettled([runtime.shutdown(), shutdownCodeReviewGraph()])

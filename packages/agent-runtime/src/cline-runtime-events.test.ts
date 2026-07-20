@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
+import { access, mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -9,12 +9,47 @@ import type { AgentEvent } from "./types.js";
 
 import {
   buildDevelopmentSystemPrompt,
+  BlameAgentRuntime,
   developmentUserInput,
   duplicateEventSignature,
   initializationToolPolicies,
   nextSpawnAgentActiveCount,
   shouldDisplayClineSessionEvent,
+  workspaceSessionIds,
 } from "./cline-runtime.js";
+
+test("finds only sessions writing inside a workspace", () => {
+  const workspace = join(tmpdir(), "story-42");
+  const sessions = new Map([
+    ["inside", join(workspace, ".blame", "logs", "cline-inside.log")],
+    ["sibling", join(`${workspace}-copy`, ".blame", "logs", "cline.log")],
+    ["parent", join(tmpdir(), ".blame", "logs", "cline.log")],
+  ]);
+
+  assert.deepEqual(workspaceSessionIds(sessions, workspace), ["inside"]);
+});
+
+test("drains session logs before workspace cleanup", async () => {
+  const workspace = await mkdtemp(join(tmpdir(), "blame-worktree-cleanup-"));
+  const logFile = join(workspace, ".blame", "logs", "cline-session.log");
+  const runtime = new BlameAgentRuntime();
+  const internals = runtime as unknown as {
+    abortSession(sessionId: string, humanInitiated: boolean): Promise<void>;
+    sessionLogFiles: Map<string, string>;
+  };
+  internals.abortSession = async () => undefined;
+  internals.sessionLogFiles.set("session", logFile);
+
+  try {
+    await runtime.sessions.releaseWorkspace(workspace);
+    assert.match(await readFile(logFile, "utf8"), /session_unsubscribed/);
+    await rm(workspace, { force: true, recursive: true });
+    await runtime.sessions.unsubscribe("session");
+    await assert.rejects(access(workspace));
+  } finally {
+    await rm(workspace, { force: true, recursive: true });
+  }
+});
 
 test("limits initialization fallback tools to project reads and search", () => {
   const policies = initializationToolPolicies();

@@ -49,7 +49,10 @@ import {
   type TelemetryOutcome,
 } from "@blame/telemetry";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
-import { generateNewProjectWithAgent } from "./agent-ipc";
+import {
+  generateNewProjectWithAgent,
+  releaseAgentWorkspaceSessions,
+} from "./agent-ipc";
 import {
   optimizeAttachmentForAiContext,
   type OptimizeAttachmentForAiContextInput,
@@ -2751,6 +2754,7 @@ async function removeWorktree(input: RemoveWorktreeInput) {
   try {
     await stopSetupRunsForWorktree(worktree);
     await stopProjectLogStream(worktree);
+    await releaseAgentWorkspaceSessions(worktree);
     previewRecoveries.delete(worktree);
     await cleanupCodeReviewGraphWorktree(worktree);
     await stopProjectSetup({ worktree });
