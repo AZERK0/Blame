@@ -41,6 +41,7 @@ import {
   type MainWindowPresentation,
   type MainWindowRole,
 } from "./main-window-presentation"
+import { createMainWindowNavigationGuard } from "./main-window-navigation"
 
 contextMenu({
   showInspectElement: true,
@@ -157,6 +158,7 @@ function createMainWindow(
   )
 
   registerMainWindowEvents(window)
+  protectMainWindowNavigation(window)
   preventRendererTitleChanges(window)
   hidePlatformWindowButtons(window)
   state?.manage(window)
@@ -165,6 +167,17 @@ function createMainWindow(
   loadRenderer(window, role, pathname)
   scheduleInitialWindowShow(window, role, fittedPresentation, replacedWindow)
   return window
+}
+
+function protectMainWindowNavigation(window: BrowserWindow) {
+  const guard = createMainWindowNavigationGuard({
+    openExternal: (url) => void shell.openExternal(url),
+    rendererFile: desktopResources.renderer,
+    rendererUrl: process.env.ELECTRON_RENDERER_URL,
+  })
+  window.webContents.on("will-navigate", guard.handleNavigation)
+  window.webContents.on("will-redirect", guard.handleRedirect)
+  window.webContents.setWindowOpenHandler(guard.handleWindowOpen)
 }
 
 function mainWindowOptions(
