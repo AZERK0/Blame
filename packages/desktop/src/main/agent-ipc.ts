@@ -1,7 +1,7 @@
 import { BlameAgentRuntime, type AgentEvent } from "@blame/agent-runtime"
 import { withoutTelemetryEnvironment } from "@blame/telemetry"
 import { BrowserWindow, ipcMain, shell } from "electron"
-import { createServer, type ServerResponse } from "node:http"
+import { createServer } from "node:http"
 import type { AddressInfo } from "node:net"
 import { execFile } from "node:child_process"
 import { promisify } from "node:util"
@@ -12,6 +12,7 @@ import {
 import { optimizeDevelopmentAttachments } from "./attachment-ai-context"
 import { resolveAgentWorkspaceInput } from "./cline-backend-resolver"
 import { getPreviewDevtoolsTarget } from "./preview-browser-ipc"
+import { AgentEventStream } from "./agent-event-stream"
 import {
   run as runRuntime,
   runtimeManagedPath,
@@ -69,18 +70,26 @@ export function registerAgentIpcHandlers() {
     runtime.providers.deleteCredential(connection, id)
   )
   ipcMain.handle("agent:providers:login-oauth", (_event, input) => runtime.providers.loginOAuth(input))
-  ipcMain.handle("agent:sessions:start", async (_event, input) =>
-    runtime.sessions.start(await agentWorkspaceInput(input))
-  )
-  ipcMain.handle("agent:sessions:start-development", async (_event, input) =>
-    runtime.sessions.startDevelopment(
+  ipcMain.handle("agent:sessions:start", async (_event, input) => {
+    const session = await runtime.sessions.start(await agentWorkspaceInput(input))
+    eventStream.beginSession(session.sessionId)
+    return session
+  })
+  ipcMain.handle("agent:sessions:start-development", async (_event, input) => {
+    const session = await runtime.sessions.startDevelopment(
       await optimizeDevelopmentAttachments(await agentWorkspaceInput(input))
     )
+    eventStream.beginSession(session.sessionId)
+    return session
+  })
+  ipcMain.handle("agent:sessions:send", (_event, input) =>
+    runtime.sessions.send(input)
   )
-  ipcMain.handle("agent:sessions:send", (_event, input) => runtime.sessions.send(input))
-  ipcMain.handle("agent:sessions:send-development", async (_event, input) =>
-    runtime.sessions.sendDevelopment(await optimizeDevelopmentAttachments(input))
-  )
+  ipcMain.handle("agent:sessions:send-development", async (_event, input) => {
+    return runtime.sessions.sendDevelopment(
+      await optimizeDevelopmentAttachments(input)
+    )
+  })
   ipcMain.handle("agent:sessions:abort", (_event, sessionId) => runtime.sessions.abort(sessionId))
   ipcMain.handle("agent:sessions:compare-checkpoint", (_event, input) =>
     runtime.sessions.compareCheckpoint(input)
@@ -92,7 +101,13 @@ export function registerAgentIpcHandlers() {
   )
   ipcMain.handle("agent:sessions:usage", (_event, sessionId) => runtime.sessions.usage(sessionId))
   ipcMain.handle("agent:sessions:event-stream-url", (_event, sessionId) => agentEventStreamUrl(sessionId))
-  ipcMain.handle("agent:sessions:unsubscribe", (_event, sessionId) => runtime.sessions.unsubscribe(sessionId))
+  ipcMain.on("agent:sessions:listen", (event, sessionId: string) => {
+    registerRendererAgentEventCleanup(event.sender)
+    setRendererAgentEventSubscription(event.sender.id, sessionId, true)
+  })
+  ipcMain.on("agent:sessions:unlisten", (event, sessionId: string) =>
+    setRendererAgentEventSubscription(event.sender.id, sessionId, false)
+  )
   ipcMain.handle("agent:approvals:resolve", (_event, input) => runtime.approvals.resolve(input))
   ipcMain.handle("agent:initializations:run", (_event, input) =>
     agentWorkspaceInput(input).then((resolved) => runtime.initializations.run(resolved))
@@ -141,9 +156,14 @@ export async function shutdownAgentRuntime() {
 
 function emitAgentEvent(event: AgentEvent) {
   const transportEvent = agentTransportEvent(event)
-  writeAgentEvent(transportEvent)
+  eventStream.publish(transportEvent)
   BrowserWindow.getAllWindows().forEach((window) => {
-    if (transportEvent.sessionId) {
+    if (
+      transportEvent.sessionId &&
+      rendererAgentEventSubscriptions
+        .get(window.webContents.id)
+        ?.has(transportEvent.sessionId)
+    ) {
       window.webContents.send(
         `agent:sessions:event:${transportEvent.sessionId}`,
         transportEvent
@@ -176,22 +196,22 @@ export function agentWorkspaceInput<T extends Record<string, unknown>>(input: T)
 }
 
 
-const streamClients = new Map<string, Set<ServerResponse>>()
+const eventStream = new AgentEventStream()
+const rendererAgentEventSubscriptions = new Map<number, Map<string, number>>()
+const rendererAgentEventCleanupRegistered = new Set<number>()
 let streamServer: ReturnType<typeof createServer> | undefined
 let streamServerUrl: string | undefined
 
 async function agentEventStreamUrl(sessionId: string) {
   const url = await ensureAgentEventServer()
-  return `${url}/agent/sessions/${encodeURIComponent(sessionId)}/events`
+  return eventStream.url(sessionId, url)
 }
 
 function ensureAgentEventServer() {
   if (streamServerUrl) return Promise.resolve(streamServerUrl)
   if (streamServer) return waitForAgentEventServer()
   streamServer = createServer((request, response) => {
-    const sessionId = eventStreamSessionId(request.url)
-    if (!sessionId) return notFound(response)
-    registerStreamClient(sessionId, response)
+    if (!eventStream.handle(request, response)) notFound(response)
   })
   streamServer.listen(0, "127.0.0.1")
   return waitForAgentEventServer()
@@ -210,45 +230,42 @@ function waitForAgentEventServer() {
   })
 }
 
-function eventStreamSessionId(url: string | undefined) {
-  const match = url?.match(/^\/agent\/sessions\/([^/]+)\/events(?:\?.*)?$/)
-  return match ? decodeURIComponent(match[1]) : undefined
-}
-
-function registerStreamClient(sessionId: string, response: ServerResponse) {
-  response.writeHead(200, {
-    "Access-Control-Allow-Origin": "*",
-    "Cache-Control": "no-cache",
-    Connection: "keep-alive",
-    "Content-Type": "text/event-stream",
-  })
-  response.write("\n")
-  const clients = streamClients.get(sessionId) ?? new Set<ServerResponse>()
-  clients.add(response)
-  streamClients.set(sessionId, clients)
-  response.on("close", () => {
-    clients.delete(response)
-    if (clients.size === 0) streamClients.delete(sessionId)
-  })
-}
-
-function writeAgentEvent(event: AgentEvent) {
-  if (!event.sessionId) return
-  const clients = streamClients.get(event.sessionId)
-  if (!clients) return
-  const data = `data: ${JSON.stringify(event)}\n\n`
-  clients.forEach((client) => client.write(data))
-}
-
-function notFound(response: ServerResponse) {
+function notFound(response: import("node:http").ServerResponse) {
   response.writeHead(404)
   response.end()
 }
 
 function shutdownAgentEventServer() {
-  streamClients.forEach((clients) => clients.forEach((client) => client.end()))
-  streamClients.clear()
+  eventStream.close()
+  rendererAgentEventSubscriptions.clear()
+  rendererAgentEventCleanupRegistered.clear()
   streamServer?.close()
   streamServer = undefined
   streamServerUrl = undefined
+}
+
+function registerRendererAgentEventCleanup(
+  renderer: import("electron").WebContents
+) {
+  if (rendererAgentEventCleanupRegistered.has(renderer.id)) return
+  rendererAgentEventCleanupRegistered.add(renderer.id)
+  renderer.once("destroyed", () => {
+    rendererAgentEventSubscriptions.delete(renderer.id)
+    rendererAgentEventCleanupRegistered.delete(renderer.id)
+  })
+}
+
+function setRendererAgentEventSubscription(
+  rendererId: number,
+  sessionId: string,
+  listening: boolean
+) {
+  const sessions =
+    rendererAgentEventSubscriptions.get(rendererId) ?? new Map<string, number>()
+  const count = sessions.get(sessionId) ?? 0
+  if (listening) sessions.set(sessionId, count + 1)
+  else if (count > 1) sessions.set(sessionId, count - 1)
+  else sessions.delete(sessionId)
+  if (sessions.size) rendererAgentEventSubscriptions.set(rendererId, sessions)
+  else rendererAgentEventSubscriptions.delete(rendererId)
 }

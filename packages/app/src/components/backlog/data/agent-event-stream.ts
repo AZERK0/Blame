@@ -1,6 +1,7 @@
 import type { AgentEvent } from "@blame/agent-runtime"
 
 import type { Platform } from "@/context/platform"
+import { createAgentEventCoalescer } from "./agent-event-coalescer"
 
 export function subscribeAgentEvents(
   platform: Platform,
@@ -10,40 +11,41 @@ export function subscribeAgentEvents(
   let closed = false
   let fallback: (() => void) | undefined
   let source: EventSource | undefined
+  const coalescer = createAgentEventCoalescer(callback)
+  const handleEvent = (event: AgentEvent) => coalescer.push(event)
 
   void platform.agent?.sessions
     .eventStreamUrl?.(sessionId)
     .then((url) => {
       if (closed) return
       if (!url) {
-        fallback = subscribeIpcAgentEvents(platform, sessionId, callback)
+        fallback = subscribeIpcAgentEvents(platform, sessionId, handleEvent)
         return
       }
-      source = createAgentEventSource(url, callback, () => {
-        if (closed || fallback) return
-        source?.close()
-        fallback = subscribeIpcAgentEvents(platform, sessionId, callback)
-      })
+      source = createAgentEventSource(url, handleEvent)
     })
     .catch(() => {
-      if (!closed) fallback = subscribeIpcAgentEvents(platform, sessionId, callback)
+      if (!closed) fallback = subscribeIpcAgentEvents(platform, sessionId, handleEvent)
     })
 
   return () => {
     closed = true
     source?.close()
     fallback?.()
+    coalescer.close()
   }
 }
 
 function createAgentEventSource(
   url: string,
-  callback: (event: AgentEvent) => void,
-  fallback: () => void
+  callback: (event: AgentEvent) => void
 ) {
   const source = new EventSource(url)
-  source.onmessage = (message) => callback(JSON.parse(message.data))
-  source.onerror = fallback
+  source.onmessage = (message) => {
+    try {
+      callback(JSON.parse(message.data))
+    } catch {}
+  }
   return source
 }
 

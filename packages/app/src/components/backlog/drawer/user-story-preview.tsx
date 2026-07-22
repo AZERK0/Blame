@@ -66,6 +66,7 @@ type NativePreviewPanelProps = {
   reloadKey: number
   sessionKey: string
   source: string
+  storageKey: string
   visible: boolean
 }
 type PreviewUrlWarmupProps = {
@@ -127,6 +128,7 @@ type NativePreviewSession = {
   releaseAt: number
   source?: string
   state?: NativePreviewStateInput
+  storageKey: string
   timeout?: number
 }
 
@@ -148,6 +150,7 @@ export function PreviewUrlWarmup({
   const previewBrowser = platform.previewBrowser
   const source = previewUrl ? previewSource(previewUrl) : undefined
   const sessionKey = nativePreviewKeyFor(previewKey, source)
+  const storageKey = nativePreviewStorageKeyFor(previewKey, source)
   const ready = usePreviewWarmupReady(
     source,
     Boolean(enabled && previewBrowser),
@@ -174,6 +177,7 @@ export function PreviewUrlWarmup({
       onState={handleState}
       sessionKey={sessionKey}
       source={source}
+      storageKey={storageKey}
     />
   )
 }
@@ -201,6 +205,7 @@ export function UserStoryPreviewWarmup({
         devtoolsScope={previewScope}
         sessionKey={nativePreviewKeyFor(previewScope, source)}
         source={source}
+        storageKey={nativePreviewStorageKeyFor(previewScope, source)}
       />
     )
   })
@@ -257,6 +262,10 @@ export function UserStoryPreview({
     : (recoveredPreviewUrl ?? configuredPreviewUrl)
   const baseSource = previewUrl ? previewSource(previewUrl) : undefined
   const nativePreviewSessionKey = nativePreviewKeyFor(
+    previewIdentity,
+    baseSource
+  )
+  const nativePreviewStorageKey = nativePreviewStorageKeyFor(
     previewIdentity,
     baseSource
   )
@@ -526,6 +535,7 @@ export function UserStoryPreview({
                   reloadKey={reloadKey}
                   sessionKey={nativePreviewSessionKey}
                   source={source}
+                  storageKey={nativePreviewStorageKey}
                   visible={
                     visible && activeTab === "preview" && !runnerMenuOpen
                   }
@@ -650,12 +660,14 @@ function NativePreviewWarmup({
   onState,
   sessionKey,
   source,
+  storageKey,
 }: {
   client: PreviewBrowserClient
   devtoolsScope?: string
   onState?: (state: NativePreviewStateInput) => void
   sessionKey: string
   source: string
+  storageKey: string
 }) {
   const handleState = React.useCallback(
     (state: NativePreviewStateInput) => {
@@ -664,7 +676,12 @@ function NativePreviewWarmup({
     },
     [onState, sessionKey]
   )
-  const browserId = useNativePreviewId(client, sessionKey, handleState)
+  const browserId = useNativePreviewId(
+    client,
+    sessionKey,
+    storageKey,
+    handleState
+  )
 
   useNativePreviewLoad(client, browserId, sessionKey, source, handleState)
   useNativePreviewDevtoolsScope(client, browserId, devtoolsScope)
@@ -682,6 +699,7 @@ function NativePreviewPanel({
   reloadKey,
   sessionKey,
   source,
+  storageKey,
   visible,
 }: NativePreviewPanelProps) {
   const surfaceRef = React.useRef<HTMLDivElement>(null)
@@ -692,7 +710,12 @@ function NativePreviewPanel({
     },
     [onState, sessionKey]
   )
-  const browserId = useNativePreviewId(client, sessionKey, handleState)
+  const browserId = useNativePreviewId(
+    client,
+    sessionKey,
+    storageKey,
+    handleState
+  )
   const ambilightColor = useNativePreviewAmbilightColor(
     client,
     browserId,
@@ -770,9 +793,10 @@ function NativePreviewFrame({
 
 async function acquireNativePreviewSession(
   client: PreviewBrowserClient,
-  key: string
+  key: string,
+  storageKey: string
 ) {
-  const session = nativePreviewSession(client, key)
+  const session = nativePreviewSession(client, key, storageKey)
   session.references += 1
   clearNativePreviewRetention(session)
   if (!session.browserId) {
@@ -782,13 +806,18 @@ async function acquireNativePreviewSession(
   return session
 }
 
-function nativePreviewSession(client: PreviewBrowserClient, key: string) {
+function nativePreviewSession(
+  client: PreviewBrowserClient,
+  key: string,
+  storageKey: string
+) {
   const current = nativePreviewSessions.get(key)
   if (current) return current
   const session = {
     client,
     references: 0,
     releaseAt: 0,
+    storageKey,
   } satisfies NativePreviewSession
   nativePreviewSessions.set(key, session)
   return session
@@ -796,7 +825,11 @@ function nativePreviewSession(client: PreviewBrowserClient, key: string) {
 
 async function createNativePreviewSession(session: NativePreviewSession) {
   try {
-    const { id } = await session.client.create()
+    const key = Array.from(nativePreviewSessions.entries()).find(
+      ([, candidate]) => candidate === session
+    )?.[0]
+    if (!key) throw new Error("Preview session key is unavailable")
+    const { id } = await session.client.create({ storageKey: session.storageKey })
     session.browserId = id
     return id
   } finally {
@@ -862,13 +895,14 @@ function trimNativePreviewSessions() {
 function useNativePreviewId(
   client: PreviewBrowserClient,
   sessionKey: string,
+  storageKey: string,
   onState: (state: NativePreviewStateInput) => void
 ) {
   const [browserId, setBrowserId] = React.useState<string>()
 
   React.useEffect(() => {
     let cancelled = false
-    void acquireNativePreviewSession(client, sessionKey)
+    void acquireNativePreviewSession(client, sessionKey, storageKey)
       .then((session) => {
         if (cancelled) {
           return
@@ -892,7 +926,7 @@ function useNativePreviewId(
       setBrowserId(undefined)
       releaseNativePreviewSession(sessionKey)
     }
-  }, [client, onState, sessionKey])
+  }, [client, onState, sessionKey, storageKey])
 
   return browserId
 }
@@ -1086,16 +1120,18 @@ function useNativePreviewBounds(
         stabilityRef
       )
     updateBounds()
-    const stopFrameSync = syncNativePreviewBoundsOnFrames(updateBounds, visible)
+    const stopFrameSync = syncNativePreviewBoundsDuringLayout(updateBounds, visible)
     const observer = new ResizeObserver(updateBounds)
     if (surfaceRef.current) observer.observe(surfaceRef.current)
     window.addEventListener("resize", updateBounds)
-    window.addEventListener("scroll", updateBounds, true)
+    const updateBoundsOnScroll = animationFrameThrottle(updateBounds)
+    window.addEventListener("scroll", updateBoundsOnScroll, true)
     return () => {
       stopFrameSync()
       observer.disconnect()
       window.removeEventListener("resize", updateBounds)
-      window.removeEventListener("scroll", updateBounds, true)
+      window.removeEventListener("scroll", updateBoundsOnScroll, true)
+      updateBoundsOnScroll.cancel()
       void client.setBounds({
         bounds: hiddenPreviewBrowserBounds(),
         id: browserId,
@@ -1106,18 +1142,36 @@ function useNativePreviewBounds(
   }, [browserId, client, surfaceRef, visible])
 }
 
-function syncNativePreviewBoundsOnFrames(
+function syncNativePreviewBoundsDuringLayout(
   updateBounds: () => void,
   enabled: boolean
 ) {
   if (!enabled) return () => undefined
   let frame = 0
+  let remainingFrames = 45
   const updateFrame = () => {
     updateBounds()
-    frame = window.requestAnimationFrame(updateFrame)
+    remainingFrames -= 1
+    if (remainingFrames > 0) frame = window.requestAnimationFrame(updateFrame)
   }
   frame = window.requestAnimationFrame(updateFrame)
   return () => window.cancelAnimationFrame(frame)
+}
+
+function animationFrameThrottle(callback: () => void) {
+  let frame = 0
+  const throttled = () => {
+    if (frame) return
+    frame = window.requestAnimationFrame(() => {
+      frame = 0
+      callback()
+    })
+  }
+  throttled.cancel = () => {
+    if (frame) window.cancelAnimationFrame(frame)
+    frame = 0
+  }
+  return throttled
 }
 
 function syncNativePreviewBounds(
@@ -1179,12 +1233,10 @@ function useNativePreviewAmbilightColor(
           : { color, key: previewKey }
       )
     }
-    const timeout = window.setTimeout(sampleFrame, 300)
-    const interval = window.setInterval(sampleFrame, 1800)
+    const timeout = window.setTimeout(sampleFrame, 350)
     return () => {
       cancelled = true
       window.clearTimeout(timeout)
-      window.clearInterval(interval)
     }
   }, [browserId, client, previewKey, visible])
 
@@ -1880,6 +1932,10 @@ function nativePreviewWarmupTime(story: UserStory) {
 
 function nativePreviewKeyFor(key: string | undefined, source?: string) {
   return [key ?? "preview", source ?? ""].join(":")
+}
+
+function nativePreviewStorageKeyFor(key: string | undefined, source?: string) {
+  return key ?? previewAddressOrigin(source ?? "preview")
 }
 
 function previewPathUrl(source: string, path: string) {

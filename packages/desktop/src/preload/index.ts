@@ -93,7 +93,7 @@ const api: BlameDesktopApi = {
   },
   previewBrowser: {
     capture: (input) => ipcRenderer.invoke("preview-browser:capture", input),
-    create: () => ipcRenderer.invoke("preview-browser:create"),
+    create: (input) => ipcRenderer.invoke("preview-browser:create", input),
     destroy: (input) => ipcRenderer.invoke("preview-browser:destroy", input),
     load: (input) => ipcRenderer.invoke("preview-browser:load", input),
     onState: (input, callback) => {
@@ -276,9 +276,10 @@ const api: BlameDesktopApi = {
         const channel = `agent:sessions:event:${sessionId}`;
         const handler = (_event: unknown, event: AgentEvent) => callback(event);
         ipcRenderer.on(channel, handler);
+        ipcRenderer.send("agent:sessions:listen", sessionId);
         return () => {
           ipcRenderer.removeListener(channel, handler);
-          void ipcRenderer.invoke("agent:sessions:unsubscribe", sessionId);
+          ipcRenderer.send("agent:sessions:unlisten", sessionId);
         };
       },
     },

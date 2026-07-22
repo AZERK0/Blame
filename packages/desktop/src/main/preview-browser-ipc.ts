@@ -8,6 +8,7 @@ import {
   WebContentsView,
 } from "electron";
 import { getBlameTelemetry } from "@blame/telemetry";
+import { previewPartition } from "./preview-browser-partition";
 
 type PreviewBrowserRecord = {
   devtoolsScope?: string;
@@ -16,6 +17,7 @@ type PreviewBrowserRecord = {
   state?: PreviewBrowserState;
   view: WebContentsView;
   visible: boolean;
+  loadTimeout?: NodeJS.Timeout;
 };
 
 type PreviewBrowserBounds = {
@@ -39,6 +41,7 @@ type PreviewDevtoolsTargetInput = {
 };
 
 const previews = new Map<string, PreviewBrowserRecord>();
+const previewLoadTimeoutMs = 30_000;
 const previewDevtoolsPort =
   Number(process.env.BLAME_PREVIEW_DEVTOOLS_PORT) || 9222;
 const previewDevtoolsBrowserUrl = `http://127.0.0.1:${previewDevtoolsPort}`;
@@ -131,8 +134,8 @@ function normalizedPreviewDevtoolsTimeout(value: number | undefined) {
 }
 
 export function registerPreviewBrowserIpcHandlers() {
-  ipcMain.handle("preview-browser:create", (event) =>
-    createPreviewBrowser(event),
+  ipcMain.handle("preview-browser:create", (event, input: { storageKey: string }) =>
+    createPreviewBrowser(event, input),
   );
   ipcMain.handle(
     "preview-browser:load",
@@ -167,11 +170,16 @@ export function registerPreviewBrowserIpcHandlers() {
   );
 }
 
-function createPreviewBrowser(event: IpcMainInvokeEvent) {
+function createPreviewBrowser(
+  event: IpcMainInvokeEvent,
+  input: { storageKey: string },
+) {
   const owner = BrowserWindow.fromWebContents(event.sender);
   if (!owner) throw new Error("Preview owner window not found");
+  if (!input.storageKey?.trim() || input.storageKey.length > 2_048)
+    throw new Error("Preview storage key is invalid");
   const id = randomUUID();
-  const view = createPreviewBrowserView(id);
+  const view = createPreviewBrowserView(input.storageKey);
   const record = { id, owner, view, visible: false };
   previews.set(id, record);
   owner.contentView.addChildView(view);
@@ -188,12 +196,12 @@ function createPreviewBrowser(event: IpcMainInvokeEvent) {
   return { id };
 }
 
-function createPreviewBrowserView(id: string) {
+function createPreviewBrowserView(storageKey: string) {
   return new WebContentsView({
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
-      partition: `blame-preview-${id}`,
+      partition: previewPartition(storageKey),
       sandbox: true,
     },
   });
@@ -229,7 +237,12 @@ function previewResourceType(value: string) {
 async function loadPreviewBrowser(input: { id: string; url: string }) {
   const record = previews.get(input.id);
   if (!record) return false;
-  await record.view.webContents.loadURL(input.url);
+  startPreviewLoadTimeout(record, input.url);
+  try {
+    await record.view.webContents.loadURL(input.url);
+  } finally {
+    clearPreviewLoadTimeout(record);
+  }
   return true;
 }
 
@@ -245,6 +258,7 @@ function setPreviewBrowserBounds(input: {
   record.visible = visible;
   record.view.setBounds(bounds);
   record.view.setVisible(visible);
+  record.view.webContents.setAudioMuted(!visible);
   syncPreviewDevtoolsTargets(record, previewBrowserState(record));
   return true;
 }
@@ -266,6 +280,7 @@ function setPreviewBrowserDevtoolsScope(input: {
 function reloadPreviewBrowser(input: { id: string }) {
   const record = previews.get(input.id);
   if (!record) return false;
+  startPreviewLoadTimeout(record, record.view.webContents.getURL());
   record.view.webContents.reload();
   return true;
 }
@@ -274,6 +289,7 @@ function destroyPreviewBrowser(id: string) {
   const record = previews.get(id);
   if (!record) return false;
   previews.delete(id);
+  clearPreviewLoadTimeout(record);
   clearPreviewDevtoolsTargets(record);
   if (!record.owner.isDestroyed())
     record.owner.contentView.removeChildView(record.view);
@@ -291,23 +307,40 @@ async function capturePreviewBrowser(
 ) {
   const record = previews.get(id);
   if (!record || !record.view.getVisible()) return null;
-  const image = await record.view.webContents.capturePage();
+  const image = await record.view.webContents.capturePage(
+    size === "thumbnail" ? previewThumbnailBounds(record) : undefined,
+  );
   if (image.isEmpty()) return null;
   if (size === "thumbnail")
     return image.resize({ height: 24, quality: "good", width: 24 }).toDataURL();
   return image.toDataURL();
 }
 
+function previewThumbnailBounds(record: PreviewBrowserRecord) {
+  const bounds = record.view.getBounds();
+  const width = Math.max(1, Math.min(96, bounds.width));
+  const height = Math.max(1, Math.min(96, bounds.height));
+  return {
+    height,
+    width,
+    x: Math.max(0, Math.round((bounds.width - width) / 2)),
+    y: Math.max(0, Math.round((bounds.height - height) / 2)),
+  };
+}
+
 function attachPreviewBrowserEvents(record: PreviewBrowserRecord) {
-  record.view.webContents.on("did-start-loading", () =>
-    sendPreviewBrowserState(record, { loading: true }),
-  );
-  record.view.webContents.on("did-stop-loading", () =>
-    sendPreviewBrowserState(record, { loading: false }),
-  );
-  record.view.webContents.on("did-finish-load", () =>
-    sendPreviewBrowserState(record, { loading: false }),
-  );
+  record.view.webContents.on("did-start-loading", () => {
+    startPreviewLoadTimeout(record, record.view.webContents.getURL());
+    sendPreviewBrowserState(record, { loading: true });
+  });
+  record.view.webContents.on("did-stop-loading", () => {
+    clearPreviewLoadTimeout(record);
+    sendPreviewBrowserState(record, { loading: false });
+  });
+  record.view.webContents.on("did-finish-load", () => {
+    clearPreviewLoadTimeout(record);
+    sendPreviewBrowserState(record, { loading: false });
+  });
   record.view.webContents.on("did-navigate", (_event, url) =>
     sendPreviewBrowserState(record, { loading: false, url }),
   );
@@ -318,6 +351,7 @@ function attachPreviewBrowserEvents(record: PreviewBrowserRecord) {
     "did-fail-load",
     (_event, _code, description, validatedUrl, isMainFrame) => {
       if (!isMainFrame) return;
+      clearPreviewLoadTimeout(record);
       sendPreviewBrowserState(record, {
         error: description,
         loading: false,
@@ -325,6 +359,36 @@ function attachPreviewBrowserEvents(record: PreviewBrowserRecord) {
       });
     },
   );
+  record.view.webContents.on("render-process-gone", (_event, details) => {
+    clearPreviewLoadTimeout(record);
+    sendPreviewBrowserState(record, {
+      error: `Preview renderer stopped (${details.reason}). Reload to recover.`,
+      loading: false,
+    });
+  });
+  record.view.webContents.on("unresponsive", () => {
+    sendPreviewBrowserState(record, {
+      error: "Preview renderer is not responding. Reload to recover.",
+      loading: false,
+    });
+  });
+}
+
+function startPreviewLoadTimeout(record: PreviewBrowserRecord, url: string) {
+  clearPreviewLoadTimeout(record);
+  record.loadTimeout = setTimeout(() => {
+    record.view.webContents.stop();
+    sendPreviewBrowserState(record, {
+      error: "Preview loading timed out. Reload to try again.",
+      loading: false,
+      url,
+    });
+  }, previewLoadTimeoutMs);
+}
+
+function clearPreviewLoadTimeout(record: PreviewBrowserRecord) {
+  if (record.loadTimeout) clearTimeout(record.loadTimeout);
+  record.loadTimeout = undefined;
 }
 
 function sendPreviewBrowserState(

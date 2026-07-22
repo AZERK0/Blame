@@ -429,7 +429,7 @@ export type PreviewBrowserClient = {
     id: string
     size?: "full" | "thumbnail"
   }): Promise<string | null>
-  create(): Promise<{ id: string }>
+  create(input: { storageKey: string }): Promise<{ id: string }>
   destroy(input: { id: string }): Promise<boolean>
   load(input: { id: string; url: string }): Promise<boolean>
   onState(
