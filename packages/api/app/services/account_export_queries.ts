@@ -100,6 +100,8 @@ const agentRunColumns = [
   'id',
   'kind',
   'cline_session_id',
+  'checkpoint_run_count',
+  'diff_end_ref',
   'status',
   'activities',
   'final_response',

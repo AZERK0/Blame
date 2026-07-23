@@ -2,6 +2,8 @@ import * as React from "react"
 import type { AgentEvent, ProjectRunConfiguration } from "@blame/agent-runtime"
 import { toast } from "sonner"
 
+import { captureAgentRunDiffEndRef } from "@/components/chat/agent-run-diffs"
+import { nextCheckpointRunCount } from "@/components/chat/agent-run-checkpoints"
 import {
   backlogColumns,
   userStoryDisplayId,
@@ -398,7 +400,7 @@ export function BacklogPage() {
     [backlog, flushAgentUpdate, queueAgentUpdate, updateStoryLocal]
   )
   const persistAgentEvent = React.useCallback(
-    (
+    async (
       story: UserStory,
       run: UserStoryAgentRun | undefined,
       event: AgentEvent
@@ -408,6 +410,13 @@ export function BacklogPage() {
       if (!shouldPersistAgentEvent(event, update)) return
       const text = agentEventText(event)
       const runInput = agentRunEventUpdate(update, event, text)
+      if (run && terminalAgentRunEvent(event) && !run.diffEndRef) {
+        runInput.diffEndRef = await captureAgentRunDiffEndRef({
+          id: run.id,
+          platform,
+          root: currentStory.worktree,
+        })
+      }
       if (completedAgentRun(event))
         notifyCommentResponseCompleted(currentStory, run, platform)
       persistAgentUpdate(
@@ -585,6 +594,7 @@ export function BacklogPage() {
         return currentStory
       }
       const run = await backlog.createAgentRun(currentStory, {
+        checkpointRunCount: nextCheckpointRunCount(currentStory.agentRuns ?? []),
         clineSessionId: session.sessionId,
         kind: "resume",
       })
@@ -687,6 +697,7 @@ export function BacklogPage() {
       }
       const sessionId = session.sessionId
       const run = await backlog.createAgentRun(story, {
+        checkpointRunCount: nextCheckpointRunCount(story.agentRuns ?? []),
         commentId,
         clineSessionId: sessionId,
         kind: "change-request",
@@ -735,6 +746,11 @@ export function BacklogPage() {
         activeStory(story, storiesRef.current),
         backlog
       )
+      await backlog.validateCommentUndo(
+        currentStory,
+        target.comment.id,
+        target.run.id
+      )
       const restored = await restoreStoryCheckpoint(
         platform,
         currentStory,
@@ -744,7 +760,7 @@ export function BacklogPage() {
       const nextStory = await backlog.undoComment(
         currentStory,
         target.comment.id,
-        { clineSessionId: restored.sessionId }
+        { clineSessionId: restored.sessionId, runId: target.run.id }
       )
       replaceStoryAfterUndo(nextStory, storiesRef, setDrawerTarget)
       toast.success("Message restored to editor.", { position: "bottom-right" })
@@ -1633,7 +1649,7 @@ async function restoreStoryCheckpoint(
     restore: {
       messages: true,
       omitCheckpointMessageFromSession: true,
-      workspace: false,
+      workspace: true,
     },
     sessionId,
   })
@@ -1707,7 +1723,10 @@ async function replayTerminalAgentUpdate(
     return acknowledgeTerminalAgentUpdate(storage, update)
   if (run && run.status !== "running")
     return acknowledgeTerminalAgentUpdate(storage, update)
-  await persist(detailedStory, replayableAgentUpdate(detailedStory, run, update))
+  await persist(
+    detailedStory,
+    replayableAgentUpdate(detailedStory, run, update)
+  )
   acknowledgeTerminalAgentUpdate(storage, update)
 }
 

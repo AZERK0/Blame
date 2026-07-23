@@ -34,6 +34,11 @@ import {
   useDevelopmentWorkspace,
   type VcsFileDiff,
 } from "@/components/backlog/development/development-workspace"
+import {
+  loadAgentRunDiffs,
+  loadAgentRunDiffSummary,
+} from "@/components/chat/agent-run-diffs"
+import { usePlatform } from "@/context/platform"
 import type { UserStoryDiffStats } from "@/components/backlog/development/user-story-diff-stats"
 import { DrawerActions } from "@/components/backlog/drawer/user-story-drawer-actions"
 import {
@@ -214,14 +219,47 @@ export function UserStoryDrawerPanel({
   >(mode === "create" ? [] : (storedDraft?.fileAttachments ?? []))
   const [commentEditorKey, setCommentEditorKey] = React.useState(0)
   const [developmentFileTarget, setDevelopmentFileTarget] = React.useState<{
+    diffs?: VcsFileDiff[]
     id: string
     path: string
   }>()
-  const [changedFiles, setChangedFiles] = React.useState<VcsFileDiff[]>([])
   const developmentWorkspace = useDevelopmentWorkspace(userStory)
-  const developmentWorkspaceAvailable = developmentWorkspace.available
-  const loadDevelopmentDiffs = developmentWorkspace.loadDiffs
-  const developmentWorkspaceReloadKey = developmentWorkspace.reloadKey
+  const developmentWorkspaceRoot = developmentWorkspace.root
+  const platform = usePlatform()
+  const loadChangedFiles = React.useCallback(
+    (
+      sessionId: string,
+      checkpointRunCount: number,
+      diffEndRef: string
+    ) => {
+      if (!developmentWorkspaceRoot) return Promise.resolve([])
+      return loadAgentRunDiffSummary({
+        checkpointRunCount,
+        diffEndRef,
+        platform,
+        root: developmentWorkspaceRoot,
+        sessionId,
+      })
+    },
+    [developmentWorkspaceRoot, platform]
+  )
+  const loadChangedFileDiffs = React.useCallback(
+    (
+      sessionId: string,
+      checkpointRunCount: number,
+      diffEndRef: string
+    ) => {
+      if (!developmentWorkspaceRoot) return Promise.resolve([])
+      return loadAgentRunDiffs({
+        checkpointRunCount,
+        diffEndRef,
+        platform,
+        root: developmentWorkspaceRoot,
+        sessionId,
+      })
+    },
+    [developmentWorkspaceRoot, platform]
+  )
   const [pendingAction, setPendingAction] = React.useState<DrawerAction>()
   const [sidebarOpen, setSidebarOpen] = React.useState(readSidebarOpen)
   const [title, setTitle] = React.useState(
@@ -291,26 +329,6 @@ export function UserStoryDrawerPanel({
     })
     return () => cancelAnimationFrame(frame)
   }, [mode, userStory?.codeSelectionAttachments, userStory?.fileAttachments])
-
-  React.useEffect(() => {
-    if (!developmentWorkspaceAvailable || mode === "create") return
-    let cancelled = false
-    loadDevelopmentDiffs()
-      .then((diffs) => {
-        if (!cancelled) setChangedFiles(diffs)
-      })
-      .catch(() => {
-        if (!cancelled) setChangedFiles([])
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [
-    developmentWorkspaceAvailable,
-    developmentWorkspaceReloadKey,
-    loadDevelopmentDiffs,
-    mode,
-  ])
 
   React.useEffect(() => {
     const sendToDevAgentAvailable = drawerActions(mode, status).includes(
@@ -509,7 +527,8 @@ export function UserStoryDrawerPanel({
             sidebarOpen={sidebarAvailable && sidebarOpen}
           >
             <UserStoryContent
-              changedFiles={changedFiles}
+              loadChangedFileDiffs={loadChangedFileDiffs}
+              loadChangedFiles={loadChangedFiles}
               mode={mode}
               onCommentUndo={undoCommentMessage}
               onSummaryCodeSelectionAttachmentRemove={(id) =>
@@ -597,6 +616,7 @@ export function UserStoryDrawerPanel({
                   : undefined
               }
               initialFilePath={developmentFileTarget?.path}
+              selectedDiffs={developmentFileTarget?.diffs}
               status={status}
               tab={developmentTab}
               userStory={userStory}
@@ -680,8 +700,8 @@ export function UserStoryDrawerPanel({
     setTab("development")
   }
 
-  function openDevelopmentDiff(path: string) {
-    setDevelopmentFileTarget({ id: crypto.randomUUID(), path })
+  function openDevelopmentDiff(path: string, diffs: VcsFileDiff[]) {
+    setDevelopmentFileTarget({ diffs, id: crypto.randomUUID(), path })
     setDevelopmentTab("diff")
     setTab("development")
   }

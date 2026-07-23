@@ -539,12 +539,24 @@ export interface Registry {
     methods: ["POST"]
     pattern: '/api/v1/projects/quick-chats/:id/messages/:messageId/undo'
     types: {
-      body: {}
+      body: ExtractBody<InferInput<(typeof import('#validators/quick_chat').undoQuickChatMessageValidator)>>
       paramsTuple: [ParamValue, ParamValue]
       params: { id: ParamValue; messageId: ParamValue }
-      query: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/quick_chat').undoQuickChatMessageValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/quick_chat_messages_controller').default['undo']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/quick_chat_messages_controller').default['undo']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/quick_chat_messages_controller').default['undo']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'projects.quick_chats.quick_chat_messages.validate_undo': {
+    methods: ["POST"]
+    pattern: '/api/v1/projects/quick-chats/:id/messages/:messageId/undo-validation'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/quick_chat').undoQuickChatMessageValidator)>>
+      paramsTuple: [ParamValue, ParamValue]
+      params: { id: ParamValue; messageId: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/quick_chat').undoQuickChatMessageValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/quick_chat_messages_controller').default['validateUndo']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/quick_chat_messages_controller').default['validateUndo']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
   'projects.quick_chats.quick_chat_agent_runs.store': {
@@ -707,12 +719,24 @@ export interface Registry {
     methods: ["POST"]
     pattern: '/api/v1/projects/user-stories/:id/comments/:commentId/undo'
     types: {
-      body: {}
+      body: ExtractBody<InferInput<(typeof import('#validators/user_story_comment').undoUserStoryCommentValidator)>>
       paramsTuple: [ParamValue, ParamValue]
       params: { id: ParamValue; commentId: ParamValue }
-      query: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/user_story_comment').undoUserStoryCommentValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/user_story_comments_controller').default['undo']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/user_story_comments_controller').default['undo']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/user_story_comments_controller').default['undo']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'projects.user_stories.user_story_comments.validate_undo': {
+    methods: ["POST"]
+    pattern: '/api/v1/projects/user-stories/:id/comments/:commentId/undo-validation'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/user_story_comment').undoUserStoryCommentValidator)>>
+      paramsTuple: [ParamValue, ParamValue]
+      params: { id: ParamValue; commentId: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/user_story_comment').undoUserStoryCommentValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/user_story_comments_controller').default['validateUndo']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/user_story_comments_controller').default['validateUndo']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
 }

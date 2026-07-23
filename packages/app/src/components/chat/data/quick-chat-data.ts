@@ -24,7 +24,9 @@ export type QuickChatMessage = {
 
 export type QuickChatAgentRun = {
   activities?: UserStoryAgentActivity[] | null
+  checkpointRunCount?: number | null
   clineSessionId?: string | null
+  diffEndRef?: string | null
   completedAt?: string | null
   createdAt: string
   finalResponse?: string | null
@@ -93,6 +95,7 @@ export type QuickChatMessageDraft = Pick<
 >
 
 export type QuickChatAgentRunDraft = {
+  checkpointRunCount?: number | null
   clineSessionId?: string | null
   kind: UserStoryAgentRunKind
   messageId?: string | null
@@ -103,8 +106,10 @@ export type QuickChatAgentRunUpdate = Partial<
   Pick<
     QuickChatAgentRun,
     | "activities"
+    | "checkpointRunCount"
     | "clineSessionId"
     | "completedAt"
+    | "diffEndRef"
     | "finalResponse"
     | "sessionSummary"
     | "status"

@@ -1,5 +1,7 @@
 import { execFile } from "node:child_process";
-import { basename, posix, resolve } from "node:path";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { basename, join, posix, resolve } from "node:path";
 import { promisify } from "node:util";
 import { withoutTelemetryEnvironment } from "@blame/telemetry";
 import { pLimit } from "./concurrency.ts";
@@ -23,6 +25,70 @@ export type GitDiffInput = {
   root: string;
   to: string;
 };
+
+export type GitDiffFromInput = Omit<GitDiffInput, "to">;
+
+export type GitSnapshotInput = {
+  id: string;
+  root: string;
+};
+
+export async function gitSnapshot(input: GitSnapshotInput) {
+  if (!/^[0-9a-z._-]+$/i.test(input.id)) throw new Error("Invalid snapshot id");
+  const directory = await mkdtemp(join(tmpdir(), "blame-git-snapshot-"));
+  const index = join(directory, "index");
+  const env = { GIT_INDEX_FILE: index };
+  try {
+    await runGit(input.root, ["read-tree", "HEAD"], env);
+    const trackedEnvFiles = await trackedRuntimeEnvPaths(input.root, env);
+    if (trackedEnvFiles.length) {
+      await runGit(
+        input.root,
+        ["rm", "--cached", "--ignore-unmatch", "--", ...trackedEnvFiles],
+        env,
+      );
+    }
+    const excludedEnvFiles = await changedRuntimeEnvPathspecs(input.root);
+    await runGit(
+      input.root,
+      ["add", "-A", "--", ".", ...excludedEnvFiles],
+      env,
+    );
+    const { stdout } = await runGit(input.root, ["write-tree"], env);
+    const ref = stdout.trim();
+    await runGit(input.root, [
+      "update-ref",
+      `refs/blame/agent-runs/${input.id}`,
+      ref,
+    ]);
+    return ref;
+  } finally {
+    await rm(directory, { force: true, recursive: true });
+  }
+}
+
+export async function gitDiffFrom(input: GitDiffFromInput) {
+  const from = revision(input.from);
+  const [committedEnvFiles, changedEnvFiles] = await Promise.all([
+    committedRuntimeEnvPathspecs(input.root, from, "HEAD"),
+    changedRuntimeEnvPathspecs(input.root),
+  ]);
+  const excludedEnvFiles = [
+    ...new Set([...committedEnvFiles, ...changedEnvFiles]),
+  ];
+  const [{ stdout }, untracked] = await Promise.all([
+    runGit(input.root, [
+      "diff",
+      "--no-ext-diff",
+      from,
+      "--",
+      ".",
+      ...excludedEnvFiles,
+    ]),
+    untrackedGitDiffs(input.root),
+  ]);
+  return [stdout, ...untracked].filter(Boolean).join("\n");
+}
 
 export async function gitDiffBetween(input: GitDiffInput) {
   const from = revision(input.from);
@@ -128,7 +194,7 @@ function treeEntry(line: string, parent: string): GitTreeEntry {
 }
 
 function revision(value: string) {
-  if (!/^[0-9a-f]{40}(?:\^)?$/i.test(value)) {
+  if (!/^(?:[0-9a-f]{40}|[0-9a-f]{64})(?:\^)?$/i.test(value)) {
     throw new Error("Invalid Git revision");
   }
   return value;
@@ -165,6 +231,71 @@ async function committedRuntimeEnvPathspecs(
     .map(excludedGitPathspec);
 }
 
+async function changedRuntimeEnvPathspecs(root: string) {
+  const [{ stdout: worktree }, { stdout: staged }] = await Promise.all([
+    runGit(root, [
+      "ls-files",
+      "--modified",
+      "--deleted",
+      "--others",
+      "--exclude-standard",
+      "-z",
+    ]),
+    runGit(root, ["diff", "--cached", "--name-only", "-z", "--"]),
+  ]);
+  return [...new Set(`${worktree}${staged}`.split("\0"))]
+    .filter(Boolean)
+    .filter(runtimeEnvPath)
+    .map(excludedGitPathspec);
+}
+
+async function trackedRuntimeEnvPaths(
+  root: string,
+  environment: Record<string, string>,
+) {
+  const { stdout } = await runGit(root, ["ls-files", "-z"], environment);
+  return stdout.split("\0").filter(Boolean).filter(runtimeEnvPath);
+}
+
+async function untrackedGitDiffs(root: string) {
+  const { stdout } = await runGit(root, [
+    "ls-files",
+    "--others",
+    "--exclude-standard",
+    "-z",
+  ]);
+  const paths = stdout
+    .split("\0")
+    .filter(Boolean)
+    .filter((path) => !runtimeEnvPath(path));
+  return Promise.all(
+    paths.map((path) => gitReadLimit(() => untrackedGitDiff(root, path))),
+  );
+}
+
+async function untrackedGitDiff(root: string, path: string) {
+  try {
+    return (
+      await runGit(root, [
+        "diff",
+        "--no-ext-diff",
+        "--no-index",
+        "--",
+        "/dev/null",
+        gitPath(path),
+      ])
+    ).stdout;
+  } catch (error) {
+    if (gitDiffOutput(error)) return gitDiffOutput(error);
+    throw error;
+  }
+}
+
+function gitDiffOutput(error: unknown) {
+  if (!error || typeof error !== "object" || !("stdout" in error)) return "";
+  return typeof error.stdout === "string" ? error.stdout : "";
+}
+
 function gitPath(value?: string) {
   const normalized = posix.normalize((value ?? "").replaceAll("\\", "/"));
   if (!normalized || normalized === ".") return "";
@@ -178,10 +309,14 @@ function gitPath(value?: string) {
   return normalized.replace(/\/$/, "");
 }
 
-function runGit(root: string, args: string[]) {
+function runGit(
+  root: string,
+  args: string[],
+  environment?: Record<string, string>,
+) {
   return execFileAsync("git", args, {
     cwd: root,
-    env: withoutTelemetryEnvironment(process.env),
+    env: { ...withoutTelemetryEnvironment(process.env), ...environment },
     maxBuffer,
   });
 }

@@ -19,12 +19,14 @@ export function DevelopmentCodePanel({
   initialDiffPath,
   initialFilePath,
   mode,
+  selectedDiffs,
   userStory,
 }: {
   fallbackToProjectRoot?: boolean
   initialDiffPath?: string
   initialFilePath?: string
   mode: "files" | "diff"
+  selectedDiffs?: VcsFileDiff[]
   userStory?: UserStory
 }) {
   const workspace = useDevelopmentWorkspace(userStory, fallbackToProjectRoot)
@@ -32,8 +34,10 @@ export function DevelopmentCodePanel({
   const workspaceLoadDiffs = workspace.loadDiffs
   const workspaceReloadKey = workspace.reloadKey
   const workspaceRoot = workspace.root
-  const [diffs, setDiffs] = React.useState<VcsFileDiff[]>([])
-  const [diffLoading, setDiffLoading] = React.useState(mode === "diff")
+  const [diffs, setDiffs] = React.useState<VcsFileDiff[]>(selectedDiffs ?? [])
+  const [diffLoading, setDiffLoading] = React.useState(
+    mode === "diff" && !selectedDiffs
+  )
   const [diffError, setDiffError] = React.useState<string>()
   const [tabs, setTabs] = React.useState<DevelopmentFileTab[]>(
     initialFilePath ? [{ path: initialFilePath }] : []
@@ -48,7 +52,7 @@ export function DevelopmentCodePanel({
   }, [workspaceRoot])
 
   React.useEffect(() => {
-    if (!workspaceAvailable || fallbackToProjectRoot) return
+    if (!workspaceAvailable || fallbackToProjectRoot || selectedDiffs) return
     let cancelled = false
     Promise.resolve()
       .then(() => {
@@ -79,6 +83,7 @@ export function DevelopmentCodePanel({
     workspaceAvailable,
     workspaceLoadDiffs,
     workspaceReloadKey,
+    selectedDiffs,
   ])
 
   const diffByPath = React.useMemo(

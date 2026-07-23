@@ -18,10 +18,6 @@ import {
 } from "@/components/backlog/shared/comment-attachment-events"
 import { pendingFileAttachments } from "@/components/backlog/drawer/user-story-attachment-files"
 import {
-  useDevelopmentWorkspace,
-  type VcsFileDiff,
-} from "@/components/backlog/development/development-workspace"
-import {
   projectPreviewConfiguration,
   projectRunConfigurationPreviewKey,
 } from "@/components/backlog/board/project-run-configuration"
@@ -31,6 +27,12 @@ import {
   AgentConversationTimeline,
   type AgentConversationUserMessageUndo,
 } from "@/components/chat/agent-conversation"
+import {
+  captureAgentRunDiffEndRef,
+  loadAgentRunDiffs,
+  loadAgentRunDiffSummary,
+} from "@/components/chat/agent-run-diffs"
+import { nextCheckpointRunCount } from "@/components/chat/agent-run-checkpoints"
 import {
   clearPendingQuickChatAgentUpdates,
   completedQuickChatClineLog,
@@ -50,7 +52,6 @@ import {
 } from "@/components/chat/data/quick-chat-agent-flow"
 import {
   type QuickChat,
-  type QuickChatAgentRun,
   type QuickChatAgentRunUpdate,
   type QuickChatMessage,
   type QuickChatUpdate,
@@ -132,10 +133,6 @@ function QuickChatProjectPage() {
   const quickChats = useQuickChatStore()
   const selection = useModelSelection({ role: "agent" })
   const project = projects.activeProject
-  const developmentWorkspace = useDevelopmentWorkspace(undefined, true)
-  const developmentWorkspaceAvailable = developmentWorkspace.available
-  const loadDevelopmentDiffs = developmentWorkspace.loadDiffs
-  const developmentWorkspaceReloadKey = developmentWorkspace.reloadKey
   const previewConfiguration = projectPreviewConfiguration(
     projectInitialization?.initialization?.runConfigurations ?? []
   )
@@ -149,7 +146,6 @@ function QuickChatProjectPage() {
   >([])
   const [sending, setSending] = React.useState(false)
   const [cancelingAgent, setCancelingAgent] = React.useState(false)
-  const [changedFiles, setChangedFiles] = React.useState<VcsFileDiff[]>([])
   const chatsRef = React.useRef(quickChats.chats)
   const pendingAgentUpdates = React.useRef(
     new Map<string, PendingQuickChatAgentUpdate>()
@@ -180,30 +176,45 @@ function QuickChatProjectPage() {
       selection.currentModel?.provider.id,
     providers: selection.allProviders,
   })
+  const loadChangedFiles = React.useCallback(
+    (
+      sessionId: string,
+      checkpointRunCount: number,
+      diffEndRef: string
+    ) => {
+      if (!activeConversation?.workspace) return Promise.resolve([])
+      return loadAgentRunDiffSummary({
+        checkpointRunCount,
+        diffEndRef,
+        platform,
+        root: activeConversation.workspace,
+        sessionId,
+      })
+    },
+    [activeConversation?.workspace, platform]
+  )
+  const loadChangedFileDiffs = React.useCallback(
+    (
+      sessionId: string,
+      checkpointRunCount: number,
+      diffEndRef: string
+    ) => {
+      if (!activeConversation?.workspace) return Promise.resolve([])
+      return loadAgentRunDiffs({
+        checkpointRunCount,
+        diffEndRef,
+        platform,
+        root: activeConversation.workspace,
+        sessionId,
+      })
+    },
+    [activeConversation?.workspace, platform]
+  )
   const mentionDirectory = project?.path
   const agentRunning = activeConversation?.agentStatus === "Running"
   React.useEffect(() => {
     chatsRef.current = quickChats.chats
   }, [quickChats.chats])
-
-  React.useEffect(() => {
-    if (!developmentWorkspaceAvailable) return
-    let cancelled = false
-    loadDevelopmentDiffs()
-      .then((diffs) => {
-        if (!cancelled) setChangedFiles(diffs)
-      })
-      .catch(() => {
-        if (!cancelled) setChangedFiles([])
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [
-    developmentWorkspaceAvailable,
-    developmentWorkspaceReloadKey,
-    loadDevelopmentDiffs,
-  ])
 
   React.useEffect(() => {
     if (!activeConversation || quickChats.chatDetailsLoaded(activeConversation))
@@ -398,7 +409,7 @@ function QuickChatProjectPage() {
     return Promise.resolve(nextChat)
   }
 
-  function persistAgentEvent(
+  async function persistAgentEvent(
     chat: QuickChat,
     run: QuickChatAgentRun | undefined,
     event: AgentEvent
@@ -408,6 +419,13 @@ function QuickChatProjectPage() {
     if (!shouldPersistAgentEvent(event, update)) return
     const text = agentEventText(event)
     const runInput = quickChatAgentRunEventUpdate(update, event, text)
+    if (run && terminalAgentRunEvent(event) && !run.diffEndRef) {
+      runInput.diffEndRef = await captureAgentRunDiffEndRef({
+        id: run.id,
+        platform,
+        root: current.workspace,
+      })
+    }
     if (completedAgentRun(event)) notifyQuickChatResponseCompleted(current)
     return persistAgentUpdate(
       current,
@@ -434,6 +452,11 @@ function QuickChatProjectPage() {
   ) {
     if (!activeConversation) return
     const current = await detailedConversation(activeConversation)
+    await quickChats.validateMessageUndo(
+      current,
+      target.comment.id,
+      target.run.id
+    )
     const restored = await restoreQuickChatCheckpoint(
       platform,
       current,
@@ -443,7 +466,7 @@ function QuickChatProjectPage() {
     const nextConversation = await quickChats.undoMessage(
       current,
       target.comment.id,
-      { clineSessionId: restored.sessionId }
+      { clineSessionId: restored.sessionId, runId: target.run.id }
     )
     replaceChatRef(nextConversation)
     setDraft(target.comment.body)
@@ -584,6 +607,7 @@ function QuickChatProjectPage() {
     fileAttachments: UserStoryFileAttachment[]
   ) {
     const run = await quickChats.createAgentRun(chat, {
+      checkpointRunCount: nextCheckpointRunCount(chat.agentRuns ?? []),
       kind: chat.clineSessionId ? "change-request" : "resume",
       messageId: message.id,
     })
@@ -793,8 +817,9 @@ function QuickChatProjectPage() {
                     {activeConversationLoaded &&
                     activeConversation?.agentRuns?.length ? (
                       <AgentConversationTimeline
-                        changedFiles={changedFiles}
                         comments={activeConversation.messages ?? []}
+                        loadChangedFileDiffs={loadChangedFileDiffs}
+                        loadChangedFiles={loadChangedFiles}
                         onChangedFileClick={(path) =>
                           openProjectPath(
                             project?.path,
@@ -964,7 +989,7 @@ async function restoreQuickChatCheckpoint(
     restore: {
       messages: true,
       omitCheckpointMessageFromSession: true,
-      workspace: false,
+      workspace: true,
     },
     sessionId,
   })

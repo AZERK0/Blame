@@ -24,6 +24,7 @@ import {
 import { toast } from "sonner"
 
 import { agentErrorText } from "@/components/backlog/data/agent-flow"
+import { checkpointRunTargets } from "@/components/chat/agent-run-checkpoints"
 import type {
   UserStoryAgentActivity,
   UserStoryAgentRunKind,
@@ -109,9 +110,11 @@ export type AgentConversationComment = {
 
 export type AgentConversationRun = {
   activities?: UserStoryAgentActivity[] | null
+  checkpointRunCount?: number | null
   clineSessionId?: string | null
   commentId?: string | null
   completedAt?: string | null
+  diffEndRef?: string | null
   createdAt: string
   finalResponse?: string | null
   id: string
@@ -134,8 +137,9 @@ type AgentConversationVisibleMessage =
   | { type: "comment"; runId: string }
 
 export function AgentConversationTimeline({
-  changedFiles,
   comments,
+  loadChangedFiles,
+  loadChangedFileDiffs,
   onChangedFileClick,
   onUserMessageUndo,
   onFileLinkClick,
@@ -143,9 +147,18 @@ export function AgentConversationTimeline({
   responseHeader,
   runs,
 }: {
-  changedFiles?: VcsFileDiff[]
   comments: AgentConversationComment[]
-  onChangedFileClick?: (path: string) => void
+  loadChangedFiles?: (
+    sessionId: string,
+    checkpointRunCount: number,
+    diffEndRef: string
+  ) => Promise<VcsFileDiff[]>
+  loadChangedFileDiffs?: (
+    sessionId: string,
+    checkpointRunCount: number,
+    diffEndRef: string
+  ) => Promise<VcsFileDiff[]>
+  onChangedFileClick?: (path: string, diffs: VcsFileDiff[]) => void
   onUserMessageUndo?: (
     target: AgentConversationUserMessageUndo
   ) => Promise<void> | void
@@ -175,6 +188,10 @@ export function AgentConversationTimeline({
     () => lastFinalResponseRunId(runs),
     [runs]
   )
+  const checkpointTargets = React.useMemo(
+    () => checkpointRunTargets(runs),
+    [runs]
+  )
 
   if (runs.length === 0) return null
 
@@ -186,10 +203,9 @@ export function AgentConversationTimeline({
       {runs.map((run, index) => (
         <AgentConversationTurn
           key={run.id}
-          checkpointRunCount={index + 1}
-          changedFiles={
-            run.id === highlightedFinalResponseRunId ? changedFiles : undefined
-          }
+          checkpointRunCount={checkpointTargets[index]?.checkpointRunCount}
+          loadChangedFiles={loadChangedFiles}
+          loadChangedFileDiffs={loadChangedFileDiffs}
           comment={runComment(run, commentsById)}
           highlightFinalResponse={run.id === highlightedFinalResponseRunId}
           lastVisibleMessage={lastVisibleMessage}
@@ -207,7 +223,6 @@ export function AgentConversationTimeline({
 
 function AgentConversationTurn({
   checkpointRunCount,
-  changedFiles,
   comment,
   highlightFinalResponse,
   lastVisibleMessage,
@@ -215,16 +230,27 @@ function AgentConversationTurn({
   onChangedFileClick,
   onLoadActivityDetail,
   onUserMessageUndo,
+  loadChangedFiles,
+  loadChangedFileDiffs,
   responseHeader,
   run,
 }: {
-  checkpointRunCount: number
-  changedFiles?: VcsFileDiff[]
+  checkpointRunCount?: number
   comment?: AgentConversationComment
   highlightFinalResponse: boolean
   lastVisibleMessage?: AgentConversationVisibleMessage
   onFileLinkClick?: (path: string) => void
-  onChangedFileClick?: (path: string) => void
+  loadChangedFiles?: (
+    sessionId: string,
+    checkpointRunCount: number,
+    diffEndRef: string
+  ) => Promise<VcsFileDiff[]>
+  loadChangedFileDiffs?: (
+    sessionId: string,
+    checkpointRunCount: number,
+    diffEndRef: string
+  ) => Promise<VcsFileDiff[]>
+  onChangedFileClick?: (path: string, diffs: VcsFileDiff[]) => void
   onLoadActivityDetail: (activity: UserStoryAgentActivity) => Promise<string>
   onUserMessageUndo?: (
     target: AgentConversationUserMessageUndo
@@ -250,6 +276,63 @@ function AgentConversationTurn({
   const workActivities = visibleResponse
     ? activities.filter((activity) => activity.id !== visibleResponse.id)
     : activities
+  const [changedFiles, setChangedFiles] = React.useState<VcsFileDiff[]>([])
+  const [changedFilesTarget, setChangedFilesTarget] =
+    React.useState<HTMLDivElement | null>(null)
+  const [changedFilesNearViewport, setChangedFilesNearViewport] =
+    React.useState(() => typeof IntersectionObserver === "undefined")
+  const shouldLoadChangedFiles =
+    highlightFinalResponse || changedFilesNearViewport
+  const finalMessageId = finalMessage?.id
+  const sessionId = run.clineSessionId
+
+  React.useEffect(() => {
+    if (!changedFilesTarget || shouldLoadChangedFiles) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return
+        setChangedFilesNearViewport(true)
+        observer.disconnect()
+      },
+      { rootMargin: "600px 0px" }
+    )
+    observer.observe(changedFilesTarget)
+    return () => observer.disconnect()
+  }, [changedFilesTarget, shouldLoadChangedFiles])
+
+  React.useEffect(() => {
+    if (
+      !shouldLoadChangedFiles ||
+      !finalMessageId ||
+      !loadChangedFiles ||
+      !checkpointRunCount ||
+      !sessionId ||
+      !run.diffEndRef
+    )
+      return
+    let cancelled = false
+    loadChangedFiles(
+      sessionId,
+      checkpointRunCount,
+      run.diffEndRef
+    )
+      .then((diffs) => {
+        if (!cancelled) setChangedFiles(diffs)
+      })
+      .catch(() => {
+        if (!cancelled) setChangedFiles([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [
+    checkpointRunCount,
+    finalMessageId,
+    loadChangedFiles,
+    run.diffEndRef,
+    sessionId,
+    shouldLoadChangedFiles,
+  ])
 
   return (
     <section className="grid gap-5" aria-label="Conversation turn">
@@ -262,7 +345,7 @@ function AgentConversationTurn({
         run={run}
         onFileLinkClick={onFileLinkClick}
         onUndo={
-          comment && onUserMessageUndo
+          comment && onUserMessageUndo && checkpointRunCount
             ? () => onUserMessageUndo({ checkpointRunCount, comment, run })
             : undefined
         }
@@ -303,11 +386,33 @@ function AgentConversationTurn({
             showFeedback={Boolean(finalMessage)}
           />
         ) : null}
-        {finalMessage && changedFiles?.length ? (
-          <AgentChangedFilesSummary
-            diffs={changedFiles}
-            onFileClick={onChangedFileClick ?? onFileLinkClick}
-          />
+        {finalMessage && run.diffEndRef ? (
+          <div ref={setChangedFilesTarget}>
+            {changedFiles.length ? (
+              <AgentChangedFilesSummary
+                diffs={changedFiles}
+                onFileClick={(path) => {
+                  if (
+                    !onChangedFileClick ||
+                    !loadChangedFileDiffs ||
+                    !checkpointRunCount ||
+                    !sessionId ||
+                    !run.diffEndRef
+                  ) {
+                    onFileLinkClick?.(path)
+                    return
+                  }
+                  void loadChangedFileDiffs(
+                    sessionId,
+                    checkpointRunCount,
+                    run.diffEndRef
+                  )
+                    .then((diffs) => onChangedFileClick(path, diffs))
+                    .catch((error) => toast.error(errorMessage(error)))
+                }}
+              />
+            ) : null}
+          </div>
         ) : null}
       </div>
     </section>
@@ -376,7 +481,8 @@ function AgentChangedFilesSummary({
 }
 
 function ChangedFilePath({ path }: { path: string }) {
-  const filenameStart = Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\")) + 1
+  const filenameStart =
+    Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\")) + 1
 
   return (
     <>

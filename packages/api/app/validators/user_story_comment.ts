@@ -21,3 +21,8 @@ export const createUserStoryCommentValidator = vine.create({
   codeSelectionAttachments: vine.array(codeSelectionAttachment).nullable().optional(),
   fileAttachments: vine.array(fileAttachment).nullable().optional(),
 })
+
+export const undoUserStoryCommentValidator = vine.create({
+  clineSessionId: vine.string().trim().maxLength(255).optional(),
+  runId: vine.string().trim().uuid(),
+})

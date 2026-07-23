@@ -9,6 +9,7 @@ import { DevelopmentCodePanel } from "@/components/backlog/development/developme
 import { DiffStats } from "@/components/backlog/development/development-diff-stats"
 import { DevelopmentTerminal } from "@/components/backlog/development/development-terminal"
 import type { UserStoryDiffStats } from "@/components/backlog/development/user-story-diff-stats"
+import type { VcsFileDiff } from "@/components/backlog/development/development-workspace"
 import type { UserStoryDevelopmentTab } from "@/components/backlog/shared/backlog-types"
 import {
   Sidebar,
@@ -40,6 +41,7 @@ export function DevelopmentContent({
   initialDiffPath,
   initialFilePath,
   onTabChange,
+  selectedDiffs,
   status,
   tab,
   userStory,
@@ -48,6 +50,7 @@ export function DevelopmentContent({
   initialDiffPath?: string
   initialFilePath?: string
   onTabChange: (tab: UserStoryDevelopmentTab) => void
+  selectedDiffs?: VcsFileDiff[]
   status: BacklogColumnId
   tab: UserStoryDevelopmentTab
   userStory?: UserStory
@@ -112,6 +115,7 @@ export function DevelopmentContent({
           <DevelopmentCodePanel
             initialDiffPath={initialDiffPath}
             mode="diff"
+            selectedDiffs={selectedDiffs}
             userStory={userStory}
           />
         )}

@@ -66,6 +66,9 @@ export default class UserStoryAgentRun extends BaseModel {
   declare clineSessionId: string | null
 
   @column()
+  declare checkpointRunCount: number | null
+
+  @column()
   declare status: UserStoryAgentRunStatus
 
   @column({
@@ -76,6 +79,9 @@ export default class UserStoryAgentRun extends BaseModel {
 
   @column()
   declare finalResponse: string | null
+
+  @column()
+  declare diffEndRef: string | null
 
   @column({
     consume: consumeUsage,

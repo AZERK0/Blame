@@ -181,12 +181,17 @@ function useQuickChatStoreValue() {
     async (
       chat: QuickChat,
       messageId: string,
-      input?: { clineSessionId?: string }
+      input: { clineSessionId?: string; runId: string }
     ) => {
       const nextChat = await api.undoMessage(chat.id, messageId, input)
       replaceChat(nextChat, setState)
       return nextChat
     },
+    [api]
+  )
+  const validateMessageUndo = React.useCallback(
+    (chat: QuickChat, messageId: string, runId: string) =>
+      api.validateMessageUndo(chat.id, messageId, runId),
     [api]
   )
 
@@ -365,6 +370,7 @@ function useQuickChatStoreValue() {
     remove,
     setActiveId,
     undoMessage,
+    validateMessageUndo,
     update,
     updateAgentRun,
     updateAgentRunLocal,

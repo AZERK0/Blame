@@ -129,11 +129,15 @@ import {
   ensureGitRepository,
   excludedGitPathspec,
   gitDiffBetween,
+  gitDiffFrom,
+  gitSnapshot,
   isGitRepository,
   listGitDirectory,
   readGitFile,
   runtimeEnvPath,
   type GitDiffInput,
+  type GitDiffFromInput,
+  type GitSnapshotInput,
   type GitDirectoryInput,
   type GitFileInput,
 } from "./workspace-git";
@@ -505,6 +509,12 @@ export function registerWorkspaceIpcHandlers() {
   );
   ipcMain.handle("workspace:git-diff-between", (_event, input: GitDiffInput) =>
     gitDiffBetween(input),
+  );
+  ipcMain.handle("workspace:git-diff-from", (_event, input: GitDiffFromInput) =>
+    gitDiffFrom(input),
+  );
+  ipcMain.handle("workspace:git-snapshot", (_event, input: GitSnapshotInput) =>
+    gitSnapshot(input),
   );
   ipcMain.handle("workspace:git-status", (_event, input: { root: string }) =>
     gitStatus(input.root),

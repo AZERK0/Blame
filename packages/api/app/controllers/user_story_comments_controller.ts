@@ -1,8 +1,10 @@
-import { optionalClineSessionId } from '#lib/optional_cline_session_id'
 import UserStoriesService from '#services/user_stories_service'
 import UserStoryCommentTransformer from '#transformers/user_story_comment_transformer'
 import UserStoryTransformer from '#transformers/user_story_transformer'
-import { createUserStoryCommentValidator } from '#validators/user_story_comment'
+import {
+  createUserStoryCommentValidator,
+  undoUserStoryCommentValidator,
+} from '#validators/user_story_comment'
 import type { HttpContext } from '@adonisjs/core/http'
 
 export default class UserStoryCommentsController {
@@ -19,15 +21,28 @@ export default class UserStoryCommentsController {
   }
 
   async undo({ auth, params, request, serialize }: HttpContext) {
+    const input = await request.validateUsing(undoUserStoryCommentValidator)
     return serialize(
       UserStoryTransformer.transform(
         await new UserStoriesService().undoComment(
           auth.getUserOrFail().id,
           params.id,
           params.commentId,
-          optionalClineSessionId(request.input('clineSessionId'))
+          input.runId,
+          input.clineSessionId
         )
       )
     )
+  }
+
+  async validateUndo({ auth, params, request, response }: HttpContext) {
+    const input = await request.validateUsing(undoUserStoryCommentValidator)
+    await new UserStoriesService().validateCommentUndo(
+      auth.getUserOrFail().id,
+      params.id,
+      params.commentId,
+      input.runId
+    )
+    return response.noContent()
   }
 }

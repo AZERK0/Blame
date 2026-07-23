@@ -7,7 +7,6 @@ import type {
   UserStoryFileAttachment,
 } from "@/components/backlog/data/backlog-data"
 import { createBacklogApi } from "@/components/backlog/data/backlog-api"
-import type { VcsFileDiff } from "@/components/backlog/development/development-workspace"
 import type { PendingCodeSelectionAttachment } from "@/components/backlog/shared/comment-attachment-events"
 import type { UserStoryDrawerMode } from "@/components/backlog/shared/backlog-types"
 import {
@@ -69,7 +68,8 @@ export function UserStoryContent({
   onSummaryOptimize,
   onFileLinkClick,
   onChangedFileClick,
-  changedFiles,
+  loadChangedFileDiffs,
+  loadChangedFiles,
   status,
   summary,
   summaryCodeSelectionAttachments,
@@ -77,7 +77,12 @@ export function UserStoryContent({
   summaryRef,
   userStory,
 }: {
-  changedFiles?: VcsFileDiff[]
+  loadChangedFiles?: Parameters<
+    typeof AgentConversationTimeline
+  >[0]["loadChangedFiles"]
+  loadChangedFileDiffs?: Parameters<
+    typeof AgentConversationTimeline
+  >[0]["loadChangedFileDiffs"]
   mode: UserStoryDrawerMode
   onCommentUndo?: (target: AgentConversationUserMessageUndo) => Promise<void>
   onSummaryChange?: (summary: string) => void
@@ -135,7 +140,8 @@ export function UserStoryContent({
       </div>
       <div className="mx-auto w-full max-w-4xl">
         <AgentRunTimeline
-          changedFiles={changedFiles}
+          loadChangedFileDiffs={loadChangedFileDiffs}
+          loadChangedFiles={loadChangedFiles}
           connectSummaryActions={Boolean(summary.trim())}
           userStory={userStory}
           onFileLinkClick={onFileLinkClick}
@@ -236,15 +242,21 @@ function useFileMentionDirectory(
 }
 
 function AgentRunTimeline({
-  changedFiles,
   connectSummaryActions,
+  loadChangedFileDiffs,
+  loadChangedFiles,
   onCommentUndo,
   onFileLinkClick,
   onChangedFileClick,
   userStory,
 }: {
-  changedFiles?: VcsFileDiff[]
   connectSummaryActions?: boolean
+  loadChangedFiles?: Parameters<
+    typeof AgentConversationTimeline
+  >[0]["loadChangedFiles"]
+  loadChangedFileDiffs?: Parameters<
+    typeof AgentConversationTimeline
+  >[0]["loadChangedFileDiffs"]
   onCommentUndo?: (target: AgentConversationUserMessageUndo) => Promise<void>
   onFileLinkClick?: (path: string) => void
   onChangedFileClick?: (path: string) => void
@@ -273,8 +285,9 @@ function AgentRunTimeline({
 
   return (
     <AgentConversationTimeline
-      changedFiles={changedFiles}
       comments={userStory?.comments ?? []}
+      loadChangedFileDiffs={loadChangedFileDiffs}
+      loadChangedFiles={loadChangedFiles}
       onFileLinkClick={onFileLinkClick}
       onChangedFileClick={onChangedFileClick}
       onLoadActivityDetail={loadActivityDetail}

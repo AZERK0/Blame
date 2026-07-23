@@ -243,6 +243,8 @@ export type BlameDesktopApi = {
       root: string;
       to: string;
     }): Promise<string>;
+    gitDiffFrom(input: { from: string; root: string }): Promise<string>;
+    gitSnapshot(input: { id: string; root: string }): Promise<string>;
     gitStatus(input: { root: string }): Promise<GitStatusResult>;
     gitCommitCount(input: { root: string }): Promise<number>;
     gitLog(input: {

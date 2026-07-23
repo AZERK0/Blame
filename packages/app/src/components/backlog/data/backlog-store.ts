@@ -183,12 +183,17 @@ function useBacklogStoreValue() {
     async (
       story: UserStory,
       commentId: string,
-      input?: { clineSessionId?: string }
+      input: { clineSessionId?: string; runId: string }
     ) => {
       const nextStory = await api.undoComment(story.id, commentId, input)
       replaceStory(nextStory, setState)
       return nextStory
     },
+    [api]
+  )
+  const validateCommentUndo = React.useCallback(
+    (story: UserStory, commentId: string, runId: string) =>
+      api.validateCommentUndo(story.id, commentId, runId),
     [api]
   )
   const createComment = React.useCallback(
@@ -402,6 +407,7 @@ function useBacklogStoreValue() {
     storySetupInitializing,
     storiesForColumn,
     undoComment,
+    validateCommentUndo,
     update,
     updateAgentRun,
     updateAgentRunLocal,

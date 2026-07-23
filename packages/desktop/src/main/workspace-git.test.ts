@@ -8,6 +8,8 @@ import { promisify } from "node:util";
 import {
   ensureGitRepository,
   gitDiffBetween,
+  gitDiffFrom,
+  gitSnapshot,
   isGitRepository,
   listGitDirectory,
   readGitFile,
@@ -78,6 +80,142 @@ test("excludes runtime env files from Git history diffs", async () => {
     });
 
     assert.doesNotMatch(diff, /\.env\.test/);
+    assert.match(diff, /\.env\.example/);
+  } finally {
+    await rm(repository, { force: true, recursive: true });
+  }
+});
+
+test("compares a checkpoint revision with the current worktree", async () => {
+  const repository = await createRepository();
+  try {
+    const checkpoint = await revision(repository);
+    await writeFile(join(repository, "removed.txt"), "changed\n");
+    await writeFile(join(repository, "untracked.txt"), "untracked\n");
+
+    const diff = await gitDiffFrom({ from: checkpoint, root: repository });
+
+    assert.match(diff, /removed\.txt/);
+    assert.match(diff, /-removed/);
+    assert.match(diff, /\+changed/);
+    assert.match(diff, /untracked\.txt/);
+  } finally {
+    await rm(repository, { force: true, recursive: true });
+  }
+});
+
+test("captures an immutable worktree snapshot including untracked files", async () => {
+  const repository = await createRepository();
+  try {
+    const base = await revision(repository);
+    await writeFile(join(repository, "removed.txt"), "first snapshot\n");
+    await writeFile(join(repository, "untracked.txt"), "captured\n");
+    const snapshot = await gitSnapshot({ id: "run-1", root: repository });
+    await writeFile(join(repository, "removed.txt"), "later change\n");
+    await writeFile(join(repository, "later.txt"), "not captured\n");
+
+    const diff = await gitDiffBetween({
+      from: base,
+      root: repository,
+      to: snapshot,
+    });
+
+    assert.match(diff, /first snapshot/);
+    assert.match(diff, /untracked\.txt/);
+    assert.doesNotMatch(diff, /later change/);
+    assert.doesNotMatch(diff, /later\.txt/);
+  } finally {
+    await rm(repository, { force: true, recursive: true });
+  }
+});
+
+test("captures staged changes and unstaged deletions from the final worktree state", async () => {
+  const repository = await createRepository();
+  try {
+    await writeFile(join(repository, "staged.txt"), "base\n");
+    await writeFile(join(repository, "unstaged.txt"), "base\n");
+    await commit(repository, "snapshot fixture");
+    const base = await revision(repository);
+    await writeFile(join(repository, "staged.txt"), "staged version\n");
+    await git(repository, ["add", "staged.txt"]);
+    await writeFile(join(repository, "staged.txt"), "worktree version\n");
+    await unlink(join(repository, "unstaged.txt"));
+
+    const snapshot = await gitSnapshot({ id: "run-states", root: repository });
+    const diff = await gitDiffBetween({
+      from: base,
+      root: repository,
+      to: snapshot,
+    });
+
+    assert.match(diff, /worktree version/);
+    assert.doesNotMatch(diff, /staged version/);
+    assert.match(diff, /unstaged\.txt/);
+    assert.match(diff, /deleted file mode/);
+  } finally {
+    await rm(repository, { force: true, recursive: true });
+  }
+});
+
+test("excludes runtime env files from captured snapshots", async () => {
+  const repository = await createRepository();
+  try {
+    const base = await revision(repository);
+    await writeFile(join(repository, ".env.local"), "TOKEN=secret\n");
+    await writeFile(join(repository, ".env.example"), "TOKEN=\n");
+
+    const snapshot = await gitSnapshot({ id: "run-2", root: repository });
+    const diff = await gitDiffBetween({
+      from: base,
+      root: repository,
+      to: snapshot,
+    });
+    const { stdout: snapshotFiles } = await git(repository, [
+      "ls-tree",
+      "-r",
+      "--name-only",
+      snapshot,
+    ]);
+
+    assert.doesNotMatch(diff, /TOKEN=secret/);
+    assert.doesNotMatch(diff, /\.env\.local/);
+    assert.match(diff, /\.env\.example/);
+    assert.doesNotMatch(snapshotFiles, /\.env\.local/);
+    assert.match(snapshotFiles, /\.env\.example/);
+  } finally {
+    await rm(repository, { force: true, recursive: true });
+  }
+});
+
+test("excludes runtime env files from checkpoint worktree diffs", async () => {
+  const repository = await createRepository();
+  try {
+    const checkpoint = await revision(repository);
+    await writeFile(join(repository, ".env.local"), "TOKEN=secret\n");
+    await writeFile(join(repository, ".env.example"), "TOKEN=\n");
+
+    const diff = await gitDiffFrom({ from: checkpoint, root: repository });
+
+    assert.doesNotMatch(diff, /TOKEN=secret/);
+    assert.doesNotMatch(diff, /\.env\.local/);
+    assert.match(diff, /\.env\.example/);
+  } finally {
+    await rm(repository, { force: true, recursive: true });
+  }
+});
+
+test("excludes staged runtime env files from checkpoint worktree diffs", async () => {
+  const repository = await createRepository();
+  try {
+    const checkpoint = await revision(repository);
+    await writeFile(join(repository, ".env.local"), "TOKEN=secret\n");
+    await writeFile(join(repository, ".env.example"), "TOKEN=\n");
+    await git(repository, ["add", ".env.local", ".env.example"]);
+
+    const diff = await gitDiffFrom({ from: checkpoint, root: repository });
+
+    assert.doesNotMatch(diff, /TOKEN=secret/);
+    assert.doesNotMatch(diff, /\.env\.local/);
     assert.match(diff, /\.env\.example/);
   } finally {
     await rm(repository, { force: true, recursive: true });

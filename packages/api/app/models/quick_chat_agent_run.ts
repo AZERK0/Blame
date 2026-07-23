@@ -40,6 +40,9 @@ export default class QuickChatAgentRun extends BaseModel {
   declare clineSessionId: string | null
 
   @column()
+  declare checkpointRunCount: number | null
+
+  @column()
   declare status: QuickChatAgentRunStatus
 
   @column({
@@ -50,6 +53,9 @@ export default class QuickChatAgentRun extends BaseModel {
 
   @column()
   declare finalResponse: string | null
+
+  @column()
+  declare diffEndRef: string | null
 
   @column({
     consume: consumeAgentUsage,

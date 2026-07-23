@@ -15,6 +15,8 @@ import type {
   UserStoryUpdate,
 } from "@/components/backlog/data/backlog-data"
 import { userStoryDisplayId } from "@/components/backlog/data/backlog-data"
+import { captureAgentRunDiffEndRef } from "@/components/chat/agent-run-diffs"
+import { nextCheckpointRunCount } from "@/components/chat/agent-run-checkpoints"
 import {
   agentEventText,
   agentFlowUpdate,
@@ -220,6 +222,7 @@ export function useBacklogRotation(
       storyId,
     })
     const run = await backlog.createAgentRun(detailedStory, {
+      checkpointRunCount: nextCheckpointRunCount(detailedStory.agentRuns ?? []),
       clineSessionId: session.sessionId,
       kind: "initial",
     })
@@ -725,7 +728,7 @@ export function useBacklogRotation(
     return () => window.clearInterval(timer)
   }, [backlog.loading, platform.workspace])
 
-  function persistAgentEvent(
+  async function persistAgentEvent(
     story: UserStory,
     run: UserStoryAgentRun | undefined,
     event: AgentEvent
@@ -734,6 +737,13 @@ export function useBacklogRotation(
     const flowUpdate = agentFlowUpdate(currentStory, event)
     const text = agentEventText(event)
     const runInput = agentRunEventUpdate(flowUpdate, event, text)
+    if (run && terminalAgentRunEvent(event) && !run.diffEndRef) {
+      runInput.diffEndRef = await captureAgentRunDiffEndRef({
+        id: run.id,
+        platform,
+        root: currentStory.worktree,
+      })
+    }
     if (!shouldPersistAgentEvent(event, flowUpdate)) return
     if (reportedAgentErrors.current.has(agentAuthenticationErrorKey(story)))
       return

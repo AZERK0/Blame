@@ -17,6 +17,8 @@ import type {
 } from '#validators/quick_chat'
 import { DateTime } from 'luxon'
 import type { Infer } from '@vinejs/vine/types'
+import db from '@adonisjs/lucid/services/db'
+import { Exception } from '@adonisjs/core/exceptions'
 
 type ListQuickChatsInput = Infer<typeof listQuickChatsValidator>
 type CreateQuickChatInput = Infer<typeof createQuickChatValidator>
@@ -93,23 +95,39 @@ export default class QuickChatsService {
     userId: string,
     id: string,
     messageId: string,
+    runId: string,
     clineSessionId?: string
   ) {
-    const quickChat = await this.find(userId, id)
-    const message = quickChat.messages.find((item) => item.id === messageId)
-    if (!message) throw new Error('Quick chat message not found.')
-    const deletedMessageIds = new Set(
-      quickChat.messages.filter((item) => sameOrAfter(item, message)).map((item) => item.id)
-    )
-    const deletedRunIds = new Set(
-      quickChatRunIdsFromMessages(quickChat.agentRuns, messageId, deletedMessageIds)
-    )
-    await deleteQuickChatRuns(quickChat.id, [...deletedRunIds])
-    await deleteQuickChatMessages(quickChat.id, [...deletedMessageIds])
-    const remainingRuns = quickChat.agentRuns.filter((run) => !deletedRunIds.has(run.id))
-    quickChat.merge(quickChatUndoUpdate(remainingRuns, clineSessionId))
-    await quickChat.save()
+    await db.transaction(async (transaction) => {
+      const quickChat = await QuickChat.query({ client: transaction })
+        .whereIn(
+          'projectId',
+          Project.query({ client: transaction }).select('id').where('userId', userId)
+        )
+        .where('id', id)
+        .preload('messages', orderMessages)
+        .preload('agentRuns', orderAgentRuns)
+        .forUpdate()
+        .firstOrFail()
+      const { message, targetRun } = assertQuickChatUndoTarget(quickChat, messageId, runId)
+      const deletedMessageIds = new Set(
+        quickChat.messages.filter((item) => sameOrAfter(item, message)).map((item) => item.id)
+      )
+      const deletedRunIds = new Set(
+        quickChat.agentRuns.slice(quickChat.agentRuns.indexOf(targetRun)).map((run) => run.id)
+      )
+      await deleteQuickChatRuns(quickChat.id, [...deletedRunIds], transaction)
+      await deleteQuickChatMessages(quickChat.id, [...deletedMessageIds], transaction)
+      const remainingRuns = quickChat.agentRuns.filter((run) => !deletedRunIds.has(run.id))
+      quickChat.useTransaction(transaction)
+      quickChat.merge(quickChatUndoUpdate(remainingRuns, clineSessionId))
+      await quickChat.save()
+    })
     return this.find(userId, id)
+  }
+
+  async validateMessageUndo(userId: string, id: string, messageId: string, runId: string) {
+    assertQuickChatUndoTarget(await this.find(userId, id), messageId, runId)
   }
 
   async createAgentRun(userId: string, id: string, input: CreateQuickChatAgentRunInput) {
@@ -119,7 +137,9 @@ export default class QuickChatsService {
     }
     return QuickChatAgentRun.create({
       activities: [],
+      checkpointRunCount: input.checkpointRunCount ?? null,
       clineSessionId: input.clineSessionId ?? null,
+      diffEndRef: null,
       finalResponse: null,
       kind: input.kind,
       messageId: input.messageId ?? null,
@@ -209,6 +229,19 @@ export default class QuickChatsService {
   }
 }
 
+function assertQuickChatUndoTarget(quickChat: QuickChat, messageId: string, runId: string) {
+  const message = quickChat.messages.find((item) => item.id === messageId)
+  if (!message) throw new Error('Quick chat message not found.')
+  const targetRun = quickChat.agentRuns.find((run) => run.id === runId)
+  if (!targetRun || targetRun.messageId !== message.id) {
+    throw new Exception('Agent run does not belong to this quick chat message.', {
+      code: 'E_QUICK_CHAT_UNDO_RUN_MISMATCH',
+      status: 409,
+    })
+  }
+  return { message, targetRun }
+}
+
 function upsertActivity(activities: UserStoryAgentActivity[], input: UserStoryAgentActivity) {
   const exists = activities.some((activity) => activity.id === input.id)
   const next = exists
@@ -235,26 +268,22 @@ function orderAgentRuns(query: ReturnType<typeof QuickChatAgentRun.query>) {
   query.orderBy('quickChatId', 'asc').orderBy('createdAt', 'asc').orderBy('id', 'asc')
 }
 
-function quickChatRunIdsFromMessages(
-  runs: QuickChatAgentRun[],
-  messageId: string,
-  deletedMessageIds: Set<string>
+async function deleteQuickChatRuns(
+  quickChatId: string,
+  ids: string[],
+  client?: Parameters<QuickChatAgentRun['useTransaction']>[0]
 ) {
-  const index = runs.findIndex((run) => run.messageId === messageId)
-  if (index >= 0) return runs.slice(index).map((run) => run.id)
-  return runs
-    .filter((run) => run.messageId && deletedMessageIds.has(run.messageId))
-    .map((run) => run.id)
+  if (!ids.length) return
+  await QuickChatAgentRun.query({ client }).where('quickChatId', quickChatId).whereIn('id', ids).delete()
 }
 
-async function deleteQuickChatRuns(quickChatId: string, ids: string[]) {
+async function deleteQuickChatMessages(
+  quickChatId: string,
+  ids: string[],
+  client?: Parameters<QuickChatMessage['useTransaction']>[0]
+) {
   if (!ids.length) return
-  await QuickChatAgentRun.query().where('quickChatId', quickChatId).whereIn('id', ids).delete()
-}
-
-async function deleteQuickChatMessages(quickChatId: string, ids: string[]) {
-  if (!ids.length) return
-  await QuickChatMessage.query().where('quickChatId', quickChatId).whereIn('id', ids).delete()
+  await QuickChatMessage.query({ client }).where('quickChatId', quickChatId).whereIn('id', ids).delete()
 }
 
 function quickChatUndoUpdate(

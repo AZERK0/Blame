@@ -217,16 +217,20 @@ export class ProviderCredentialSchema extends BaseModel {
 }
 
 export class QuickChatAgentRunSchema extends BaseModel {
-  static $columns = ['activities', 'clineSessionId', 'completedAt', 'createdAt', 'finalResponse', 'id', 'kind', 'messageId', 'quickChatId', 'sessionSummary', 'status', 'updatedAt', 'usage'] as const
+  static $columns = ['activities', 'checkpointRunCount', 'clineSessionId', 'completedAt', 'createdAt', 'diffEndRef', 'finalResponse', 'id', 'kind', 'messageId', 'quickChatId', 'sessionSummary', 'status', 'updatedAt', 'usage'] as const
   $columns = QuickChatAgentRunSchema.$columns
   @column()
   declare activities: any | null
+  @column()
+  declare checkpointRunCount: number | null
   @column()
   declare clineSessionId: string | null
   @column.dateTime()
   declare completedAt: DateTime | null
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
+  @column()
+  declare diffEndRef: string | null
   @column()
   declare finalResponse: string | null
   @column({ isPrimary: true })
@@ -422,10 +426,12 @@ export class UserStorySchema extends BaseModel {
 }
 
 export class UserStoryAgentRunSchema extends BaseModel {
-  static $columns = ['activities', 'clineSessionId', 'commentId', 'completedAt', 'createdAt', 'finalResponse', 'id', 'kind', 'sessionSummary', 'status', 'updatedAt', 'usage', 'userStoryId'] as const
+  static $columns = ['activities', 'checkpointRunCount', 'clineSessionId', 'commentId', 'completedAt', 'createdAt', 'diffEndRef', 'finalResponse', 'id', 'kind', 'sessionSummary', 'status', 'updatedAt', 'usage', 'userStoryId'] as const
   $columns = UserStoryAgentRunSchema.$columns
   @column()
   declare activities: any | null
+  @column()
+  declare checkpointRunCount: number | null
   @column()
   declare clineSessionId: string | null
   @column()
@@ -434,6 +440,8 @@ export class UserStoryAgentRunSchema extends BaseModel {
   declare completedAt: DateTime | null
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
+  @column()
+  declare diffEndRef: string | null
   @column()
   declare finalResponse: string | null
   @column({ isPrimary: true })

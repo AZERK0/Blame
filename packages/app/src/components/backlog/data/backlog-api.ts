@@ -60,7 +60,7 @@ export function createBacklogApi(connection: ApiConnection) {
     async undoComment(
       id: string,
       commentId: string,
-      input?: { clineSessionId?: string }
+      input: { clineSessionId?: string; runId: string }
     ) {
       return userStory(
         await request<unknown>(
@@ -72,6 +72,14 @@ export function createBacklogApi(connection: ApiConnection) {
             method: "POST",
           }
         )
+      )
+    },
+    async validateCommentUndo(id: string, commentId: string, runId: string) {
+      await request<unknown>(
+        connection,
+        baseUrl,
+        `/projects/user-stories/${id}/comments/${commentId}/undo-validation`,
+        { body: JSON.stringify({ runId }), method: "POST" }
       )
     },
     async activityDetail(id: string, activityId: string) {

@@ -63,7 +63,7 @@ export function createQuickChatApi(connection: ApiConnection) {
     async undoMessage(
       id: string,
       messageId: string,
-      input?: { clineSessionId?: string }
+      input: { clineSessionId?: string; runId: string }
     ) {
       return quickChat(
         await request<unknown>(
@@ -75,6 +75,14 @@ export function createQuickChatApi(connection: ApiConnection) {
             method: "POST",
           }
         )
+      )
+    },
+    async validateMessageUndo(id: string, messageId: string, runId: string) {
+      await request<unknown>(
+        connection,
+        baseUrl,
+        `/projects/quick-chats/${id}/messages/${messageId}/undo-validation`,
+        { body: JSON.stringify({ runId }), method: "POST" }
       )
     },
     async createMessage(id: string, input: QuickChatMessageDraft) {

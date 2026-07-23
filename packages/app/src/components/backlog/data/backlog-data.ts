@@ -89,6 +89,8 @@ export type UserStoryAgentRun = {
   commentId?: string | null
   kind: UserStoryAgentRunKind
   clineSessionId?: string | null
+  checkpointRunCount?: number | null
+  diffEndRef?: string | null
   status: UserStoryAgentRunStatus
   activities?: UserStoryAgentActivity[] | null
   finalResponse?: string | null
@@ -197,6 +199,7 @@ export type UserStoryActivityDetail = {
 }
 
 export type UserStoryAgentRunDraft = {
+  checkpointRunCount?: number | null
   commentId?: string | null
   kind: UserStoryAgentRunKind
   clineSessionId?: string | null
@@ -207,8 +210,10 @@ export type UserStoryAgentRunUpdate = Partial<
   Pick<
     UserStoryAgentRun,
     | "activities"
+    | "checkpointRunCount"
     | "clineSessionId"
     | "completedAt"
+    | "diffEndRef"
     | "finalResponse"
     | "sessionSummary"
     | "status"

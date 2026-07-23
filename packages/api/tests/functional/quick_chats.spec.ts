@@ -27,6 +27,8 @@ type QuickChatMessageBody = {
 
 type QuickChatAgentRunBody = {
   data: {
+    checkpointRunCount?: number | null
+    diffEndRef?: string | null
     id: string
     kind: string
     quickChatId: string
@@ -78,6 +80,60 @@ test.group('quick chats', (group) => {
     const detail = detailResponse.body() as unknown as QuickChatBody
     assert.lengthOf(detail.data.messages ?? [], 1)
     assert.lengthOf(detail.data.agentRuns ?? [], 1)
+  })
+
+  test('persists run boundaries and undoes the exact message run', async ({ client, assert }) => {
+    const user = await createUser()
+    const project = await createProject(user.id, 'Alpha')
+    const chatResponse = await client.post('/api/v1/projects/quick-chats').loginAs(user).json({
+      projectId: project.id,
+      title: 'History',
+    })
+    const chat = chatResponse.body() as unknown as QuickChatBody
+    const firstMessageResponse = await client
+      .post(`/api/v1/projects/quick-chats/${chat.data.id}/messages`)
+      .loginAs(user)
+      .json({ body: 'First' })
+    const firstMessage = firstMessageResponse.body() as unknown as QuickChatMessageBody
+    const firstRunResponse = await client
+      .post(`/api/v1/projects/quick-chats/${chat.data.id}/agent-runs`)
+      .loginAs(user)
+      .json({ checkpointRunCount: 4, kind: 'resume', messageId: firstMessage.data.id })
+    const firstRun = firstRunResponse.body() as unknown as QuickChatAgentRunBody
+    const ref = 'a'.repeat(40)
+    const updatedRunResponse = await client
+      .patch(`/api/v1/projects/quick-chats/${chat.data.id}/agent-runs/${firstRun.data.id}`)
+      .loginAs(user)
+      .json({ diffEndRef: ref, status: 'completed' })
+    const updatedRun = updatedRunResponse.body() as unknown as QuickChatAgentRunBody
+    assert.equal(updatedRun.data.checkpointRunCount, 4)
+    assert.equal(updatedRun.data.diffEndRef, ref)
+
+    const secondMessageResponse = await client
+      .post(`/api/v1/projects/quick-chats/${chat.data.id}/messages`)
+      .loginAs(user)
+      .json({ body: 'Second' })
+    const secondMessage = secondMessageResponse.body() as unknown as QuickChatMessageBody
+    const secondRunResponse = await client
+      .post(`/api/v1/projects/quick-chats/${chat.data.id}/agent-runs`)
+      .loginAs(user)
+      .json({ checkpointRunCount: 5, kind: 'resume', messageId: secondMessage.data.id })
+    const secondRun = secondRunResponse.body() as unknown as QuickChatAgentRunBody
+
+    const invalidUndo = await client
+      .post(`/api/v1/projects/quick-chats/${chat.data.id}/messages/${firstMessage.data.id}/undo`)
+      .loginAs(user)
+      .json({ runId: secondRun.data.id })
+    invalidUndo.assertStatus(409)
+
+    const undoResponse = await client
+      .post(`/api/v1/projects/quick-chats/${chat.data.id}/messages/${secondMessage.data.id}/undo`)
+      .loginAs(user)
+      .json({ runId: secondRun.data.id })
+    undoResponse.assertStatus(200)
+    const undone = undoResponse.body() as unknown as QuickChatBody
+    assert.deepEqual((undone.data.messages ?? []).map((message) => message.id), [firstMessage.data.id])
+    assert.deepEqual((undone.data.agentRuns ?? []).map((run) => run.id), [firstRun.data.id])
   })
 })
 

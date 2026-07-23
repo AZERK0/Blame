@@ -16,6 +16,8 @@ import type {
   updateUserStoryValidator,
 } from '#validators/user_story'
 import type { createUserStoryCommentValidator } from '#validators/user_story_comment'
+import db from '@adonisjs/lucid/services/db'
+import { Exception } from '@adonisjs/core/exceptions'
 
 type ListUserStoriesInput = Infer<typeof listUserStoriesValidator>
 type CreateUserStoryInput = Infer<typeof createUserStoryValidator>
@@ -116,22 +118,44 @@ export default class UserStoriesService {
     })
   }
 
-  async undoComment(userId: string, id: string, commentId: string, clineSessionId?: string) {
-    const story = await this.find(userId, id)
-    const comment = story.comments.find((item) => item.id === commentId)
-    if (!comment) throw new Error('User story comment not found.')
-    const deletedCommentIds = new Set(
-      story.comments.filter((item) => sameOrAfter(item, comment)).map((item) => item.id)
-    )
-    const deletedRunIds = new Set(
-      storyRunIdsFromComments(story.agentRuns, commentId, deletedCommentIds)
-    )
-    await deleteStoryRuns(story.id, [...deletedRunIds])
-    await deleteStoryComments(story.id, [...deletedCommentIds])
-    const remainingRuns = story.agentRuns.filter((run) => !deletedRunIds.has(run.id))
-    story.merge(storyUndoUpdate(remainingRuns, story.status, clineSessionId))
-    await story.save()
+  async undoComment(
+    userId: string,
+    id: string,
+    commentId: string,
+    runId: string,
+    clineSessionId?: string
+  ) {
+    await db.transaction(async (transaction) => {
+      const story = await UserStory.query({ client: transaction })
+        .whereIn(
+          'projectId',
+          Project.query({ client: transaction }).select('id').where('userId', userId)
+        )
+        .where('id', id)
+        .preload('comments')
+        .preload('agentRuns', orderAgentRuns)
+        .forUpdate()
+        .firstOrFail()
+      sortStoryComments(story)
+      const { comment, targetRun } = assertStoryUndoTarget(story, commentId, runId)
+      const deletedCommentIds = new Set(
+        story.comments.filter((item) => sameOrAfter(item, comment)).map((item) => item.id)
+      )
+      const deletedRunIds = new Set(
+        story.agentRuns.slice(story.agentRuns.indexOf(targetRun)).map((run) => run.id)
+      )
+      await deleteStoryRuns(story.id, [...deletedRunIds], transaction)
+      await deleteStoryComments(story.id, [...deletedCommentIds], transaction)
+      const remainingRuns = story.agentRuns.filter((run) => !deletedRunIds.has(run.id))
+      story.useTransaction(transaction)
+      story.merge(storyUndoUpdate(remainingRuns, story.status, clineSessionId))
+      await story.save()
+    })
     return this.find(userId, id)
+  }
+
+  async validateCommentUndo(userId: string, id: string, commentId: string, runId: string) {
+    assertStoryUndoTarget(await this.find(userId, id), commentId, runId)
   }
 
   async activityDetail(userId: string, id: string, activityId: string) {
@@ -149,8 +173,10 @@ export default class UserStoriesService {
     }
     return UserStoryAgentRun.create({
       activities: [],
+      checkpointRunCount: input.checkpointRunCount ?? null,
       clineSessionId: input.clineSessionId ?? null,
       commentId: input.commentId ?? null,
+      diffEndRef: null,
       finalResponse: null,
       kind: input.kind,
       sessionSummary: null,
@@ -240,6 +266,19 @@ export default class UserStoriesService {
   }
 }
 
+function assertStoryUndoTarget(story: UserStory, commentId: string, runId: string) {
+  const comment = story.comments.find((item) => item.id === commentId)
+  if (!comment) throw new Error('User story comment not found.')
+  const targetRun = story.agentRuns.find((run) => run.id === runId)
+  if (!targetRun || targetRun.commentId !== comment.id) {
+    throw new Exception('Agent run does not belong to this user story comment.', {
+      code: 'E_USER_STORY_UNDO_RUN_MISMATCH',
+      status: 409,
+    })
+  }
+  return { comment, targetRun }
+}
+
 function upsertActivity(activities: UserStoryAgentActivity[], input: UserStoryAgentActivity) {
   const exists = activities.some((activity) => activity.id === input.id)
   const next = exists
@@ -272,26 +311,22 @@ function compareComments(left: UserStoryComment, right: UserStoryComment) {
   return createdAtDelta || left.id.localeCompare(right.id)
 }
 
-function storyRunIdsFromComments(
-  runs: UserStoryAgentRun[],
-  commentId: string,
-  deletedCommentIds: Set<string>
+async function deleteStoryRuns(
+  storyId: string,
+  ids: string[],
+  client?: Parameters<UserStoryAgentRun['useTransaction']>[0]
 ) {
-  const index = runs.findIndex((run) => run.commentId === commentId)
-  if (index >= 0) return runs.slice(index).map((run) => run.id)
-  return runs
-    .filter((run) => run.commentId && deletedCommentIds.has(run.commentId))
-    .map((run) => run.id)
+  if (!ids.length) return
+  await UserStoryAgentRun.query({ client }).where('userStoryId', storyId).whereIn('id', ids).delete()
 }
 
-async function deleteStoryRuns(storyId: string, ids: string[]) {
+async function deleteStoryComments(
+  storyId: string,
+  ids: string[],
+  client?: Parameters<UserStoryComment['useTransaction']>[0]
+) {
   if (!ids.length) return
-  await UserStoryAgentRun.query().where('userStoryId', storyId).whereIn('id', ids).delete()
-}
-
-async function deleteStoryComments(storyId: string, ids: string[]) {
-  if (!ids.length) return
-  await UserStoryComment.query().where('userStoryId', storyId).whereIn('id', ids).delete()
+  await UserStoryComment.query({ client }).where('userStoryId', storyId).whereIn('id', ids).delete()
 }
 
 function storyUndoUpdate(
