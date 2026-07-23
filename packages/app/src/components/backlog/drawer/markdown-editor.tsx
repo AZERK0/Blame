@@ -1663,7 +1663,7 @@ export const MarkdownEditor = React.forwardRef<
     if (!selection) return
     event.preventDefault()
     const listResult =
-      !event.shiftKey && selection.start === selection.end
+      selection.start === selection.end
         ? markdownListEnterResult(value, selection.start)
         : undefined
     if (listResult) {
