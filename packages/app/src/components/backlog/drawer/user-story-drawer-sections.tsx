@@ -7,6 +7,7 @@ import type {
   UserStoryFileAttachment,
 } from "@/components/backlog/data/backlog-data"
 import { createBacklogApi } from "@/components/backlog/data/backlog-api"
+import type { VcsFileDiff } from "@/components/backlog/development/development-workspace"
 import type { PendingCodeSelectionAttachment } from "@/components/backlog/shared/comment-attachment-events"
 import type { UserStoryDrawerMode } from "@/components/backlog/shared/backlog-types"
 import {
@@ -67,6 +68,8 @@ export function UserStoryContent({
   onSummaryFileAttachmentsAdd,
   onSummaryOptimize,
   onFileLinkClick,
+  onChangedFileClick,
+  changedFiles,
   status,
   summary,
   summaryCodeSelectionAttachments,
@@ -74,6 +77,7 @@ export function UserStoryContent({
   summaryRef,
   userStory,
 }: {
+  changedFiles?: VcsFileDiff[]
   mode: UserStoryDrawerMode
   onCommentUndo?: (target: AgentConversationUserMessageUndo) => Promise<void>
   onSummaryChange?: (summary: string) => void
@@ -82,6 +86,7 @@ export function UserStoryContent({
   onSummaryFileAttachmentsAdd: (attachments: UserStoryFileAttachment[]) => void
   onSummaryOptimize?: (summary: string) => Promise<string>
   onFileLinkClick?: (path: string) => void
+  onChangedFileClick?: (path: string) => void
   status: BacklogColumnId
   summary: string
   summaryCodeSelectionAttachments: PendingCodeSelectionAttachment[]
@@ -130,9 +135,11 @@ export function UserStoryContent({
       </div>
       <div className="mx-auto w-full max-w-4xl">
         <AgentRunTimeline
+          changedFiles={changedFiles}
           connectSummaryActions={Boolean(summary.trim())}
           userStory={userStory}
           onFileLinkClick={onFileLinkClick}
+          onChangedFileClick={onChangedFileClick}
           onCommentUndo={status === "in-review" ? onCommentUndo : undefined}
         />
       </div>
@@ -229,14 +236,18 @@ function useFileMentionDirectory(
 }
 
 function AgentRunTimeline({
+  changedFiles,
   connectSummaryActions,
   onCommentUndo,
   onFileLinkClick,
+  onChangedFileClick,
   userStory,
 }: {
+  changedFiles?: VcsFileDiff[]
   connectSummaryActions?: boolean
   onCommentUndo?: (target: AgentConversationUserMessageUndo) => Promise<void>
   onFileLinkClick?: (path: string) => void
+  onChangedFileClick?: (path: string) => void
   userStory?: UserStory
 }) {
   const auth = useCloudAuth()
@@ -262,8 +273,10 @@ function AgentRunTimeline({
 
   return (
     <AgentConversationTimeline
+      changedFiles={changedFiles}
       comments={userStory?.comments ?? []}
       onFileLinkClick={onFileLinkClick}
+      onChangedFileClick={onChangedFileClick}
       onLoadActivityDetail={loadActivityDetail}
       onUserMessageUndo={onCommentUndo}
       responseHeader={responseHeader}

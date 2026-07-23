@@ -18,6 +18,10 @@ import {
 } from "@/components/backlog/shared/comment-attachment-events"
 import { pendingFileAttachments } from "@/components/backlog/drawer/user-story-attachment-files"
 import {
+  useDevelopmentWorkspace,
+  type VcsFileDiff,
+} from "@/components/backlog/development/development-workspace"
+import {
   projectPreviewConfiguration,
   projectRunConfigurationPreviewKey,
 } from "@/components/backlog/board/project-run-configuration"
@@ -128,6 +132,10 @@ function QuickChatProjectPage() {
   const quickChats = useQuickChatStore()
   const selection = useModelSelection({ role: "agent" })
   const project = projects.activeProject
+  const developmentWorkspace = useDevelopmentWorkspace(undefined, true)
+  const developmentWorkspaceAvailable = developmentWorkspace.available
+  const loadDevelopmentDiffs = developmentWorkspace.loadDiffs
+  const developmentWorkspaceReloadKey = developmentWorkspace.reloadKey
   const previewConfiguration = projectPreviewConfiguration(
     projectInitialization?.initialization?.runConfigurations ?? []
   )
@@ -141,13 +149,12 @@ function QuickChatProjectPage() {
   >([])
   const [sending, setSending] = React.useState(false)
   const [cancelingAgent, setCancelingAgent] = React.useState(false)
+  const [changedFiles, setChangedFiles] = React.useState<VcsFileDiff[]>([])
   const chatsRef = React.useRef(quickChats.chats)
   const pendingAgentUpdates = React.useRef(
     new Map<string, PendingQuickChatAgentUpdate>()
   )
-  const agentEventUnsubscribers = React.useRef(
-    new Map<string, () => void>()
-  )
+  const agentEventUnsubscribers = React.useRef(new Map<string, () => void>())
   const recoveringAgentRunIds = React.useRef(new Set<string>())
   const recoverAgentEventRef = React.useRef<
     (
@@ -178,6 +185,25 @@ function QuickChatProjectPage() {
   React.useEffect(() => {
     chatsRef.current = quickChats.chats
   }, [quickChats.chats])
+
+  React.useEffect(() => {
+    if (!developmentWorkspaceAvailable) return
+    let cancelled = false
+    loadDevelopmentDiffs()
+      .then((diffs) => {
+        if (!cancelled) setChangedFiles(diffs)
+      })
+      .catch(() => {
+        if (!cancelled) setChangedFiles([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [
+    developmentWorkspaceAvailable,
+    developmentWorkspaceReloadKey,
+    loadDevelopmentDiffs,
+  ])
 
   React.useEffect(() => {
     if (!activeConversation || quickChats.chatDetailsLoaded(activeConversation))
@@ -767,7 +793,15 @@ function QuickChatProjectPage() {
                     {activeConversationLoaded &&
                     activeConversation?.agentRuns?.length ? (
                       <AgentConversationTimeline
+                        changedFiles={changedFiles}
                         comments={activeConversation.messages ?? []}
+                        onChangedFileClick={(path) =>
+                          openProjectPath(
+                            project?.path,
+                            path,
+                            platform.openPath
+                          )
+                        }
                         onFileLinkClick={(path) =>
                           openProjectPath(
                             project?.path,

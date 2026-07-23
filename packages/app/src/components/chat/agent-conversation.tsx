@@ -9,6 +9,7 @@ import {
   CopyIcon,
   ChevronDownIcon,
   ChevronUpIcon,
+  FilesIcon,
   FileSearchIcon,
   ListChecksIcon,
   MessageSquareIcon,
@@ -32,6 +33,9 @@ import type {
   UserStoryFileAttachment,
 } from "@/components/backlog/data/backlog-data"
 import type { AgentConversationResponseHeader } from "@/components/chat/agent-conversation-header"
+import type { VcsFileDiff } from "@/components/backlog/development/development-workspace"
+import { DiffStats } from "@/components/backlog/development/development-diff-stats"
+import { totalDiffStats } from "@/components/backlog/development/development-diff-stats-data"
 import type { PendingCodeSelectionAttachment } from "@/components/backlog/shared/comment-attachment-events"
 import {
   MarkdownEditor,
@@ -130,14 +134,18 @@ type AgentConversationVisibleMessage =
   | { type: "comment"; runId: string }
 
 export function AgentConversationTimeline({
+  changedFiles,
   comments,
+  onChangedFileClick,
   onUserMessageUndo,
   onFileLinkClick,
   onLoadActivityDetail,
   responseHeader,
   runs,
 }: {
+  changedFiles?: VcsFileDiff[]
   comments: AgentConversationComment[]
+  onChangedFileClick?: (path: string) => void
   onUserMessageUndo?: (
     target: AgentConversationUserMessageUndo
   ) => Promise<void> | void
@@ -179,10 +187,14 @@ export function AgentConversationTimeline({
         <AgentConversationTurn
           key={run.id}
           checkpointRunCount={index + 1}
+          changedFiles={
+            run.id === highlightedFinalResponseRunId ? changedFiles : undefined
+          }
           comment={runComment(run, commentsById)}
           highlightFinalResponse={run.id === highlightedFinalResponseRunId}
           lastVisibleMessage={lastVisibleMessage}
           onFileLinkClick={onFileLinkClick}
+          onChangedFileClick={onChangedFileClick}
           onLoadActivityDetail={(activity) => loadActivityDetail(run, activity)}
           onUserMessageUndo={onUserMessageUndo}
           responseHeader={responseHeader}
@@ -195,20 +207,24 @@ export function AgentConversationTimeline({
 
 function AgentConversationTurn({
   checkpointRunCount,
+  changedFiles,
   comment,
   highlightFinalResponse,
   lastVisibleMessage,
   onFileLinkClick,
+  onChangedFileClick,
   onLoadActivityDetail,
   onUserMessageUndo,
   responseHeader,
   run,
 }: {
   checkpointRunCount: number
+  changedFiles?: VcsFileDiff[]
   comment?: AgentConversationComment
   highlightFinalResponse: boolean
   lastVisibleMessage?: AgentConversationVisibleMessage
   onFileLinkClick?: (path: string) => void
+  onChangedFileClick?: (path: string) => void
   onLoadActivityDetail: (activity: UserStoryAgentActivity) => Promise<string>
   onUserMessageUndo?: (
     target: AgentConversationUserMessageUndo
@@ -287,8 +303,88 @@ function AgentConversationTurn({
             showFeedback={Boolean(finalMessage)}
           />
         ) : null}
+        {finalMessage && changedFiles?.length ? (
+          <AgentChangedFilesSummary
+            diffs={changedFiles}
+            onFileClick={onChangedFileClick ?? onFileLinkClick}
+          />
+        ) : null}
       </div>
     </section>
+  )
+}
+
+function AgentChangedFilesSummary({
+  diffs,
+  onFileClick,
+}: {
+  diffs: VcsFileDiff[]
+  onFileClick?: (path: string) => void
+}) {
+  const [expanded, setExpanded] = React.useState(false)
+  const stats = totalDiffStats(diffs)
+  const visibleDiffs = expanded ? diffs : diffs.slice(0, 3)
+  const hiddenCount = diffs.length - visibleDiffs.length
+
+  return (
+    <div className="min-w-0 overflow-hidden rounded-xl border bg-background/30">
+      <div className="flex items-center gap-3 bg-muted/55 px-3 py-3">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-background shadow-sm">
+          <FilesIcon className="size-4 text-muted-foreground" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium">
+            Modified {stats.files} {stats.files === 1 ? "file" : "files"}
+          </p>
+          <DiffStats compact className="ml-0 justify-start" diff={stats} />
+        </div>
+      </div>
+      <div className="grid gap-0.5 bg-muted/25 p-1.5">
+        {visibleDiffs.map((diff) => (
+          <button
+            className="flex w-full min-w-0 items-center gap-3 rounded-md px-2 py-2 text-left text-sm transition-colors hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-inset"
+            key={diff.file}
+            onClick={() => onFileClick?.(diff.file)}
+            type="button"
+          >
+            <span
+              className="min-w-0 flex-1 truncate font-mono text-xs"
+              title={diff.file}
+            >
+              <ChangedFilePath path={diff.file} />
+            </span>
+            <DiffStats compact diff={diff} />
+          </button>
+        ))}
+      </div>
+      {diffs.length > 3 ? (
+        <button
+          className="flex w-full items-center gap-2 bg-muted/55 px-3 py-2.5 text-left text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/75 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-inset"
+          onClick={() => setExpanded((current) => !current)}
+          type="button"
+        >
+          {expanded ? "Show fewer files" : `Show ${hiddenCount} more files`}
+          {expanded ? (
+            <ChevronUpIcon className="size-3.5" />
+          ) : (
+            <ChevronDownIcon className="size-3.5" />
+          )}
+        </button>
+      ) : null}
+    </div>
+  )
+}
+
+function ChangedFilePath({ path }: { path: string }) {
+  const filenameStart = Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\")) + 1
+
+  return (
+    <>
+      {path.slice(0, filenameStart)}
+      <span className="font-bold text-black dark:text-white">
+        {path.slice(filenameStart)}
+      </span>
+    </>
   )
 }
 
@@ -983,7 +1079,9 @@ function ToolRows({
           className="min-w-0 rounded-md bg-background/70 px-3 py-2 font-mono text-xs leading-relaxed text-foreground/85"
           key={`${value}-${index}`}
         >
-          <div className="overflow-x-auto whitespace-pre-wrap break-words">{value}</div>
+          <div className="overflow-x-auto break-words whitespace-pre-wrap">
+            {value}
+          </div>
         </div>
       ))}
     </div>
@@ -1013,12 +1111,13 @@ function ResultCards({ value }: { value: unknown }) {
           </div>
           {entry.result ? (
             <div>
-              <pre className="max-h-72 overflow-auto whitespace-pre-wrap break-words font-mono text-xs leading-relaxed text-muted-foreground">
+              <pre className="max-h-72 overflow-auto font-mono text-xs leading-relaxed break-words whitespace-pre-wrap text-muted-foreground">
                 {entry.result.text}
               </pre>
               {entry.result.truncated ? (
                 <p className="mt-2 text-[11px] text-amber-700 dark:text-amber-400">
-                  Showing a compact preview. Load full detail for the complete result.
+                  Showing a compact preview. Load full detail for the complete
+                  result.
                 </p>
               ) : null}
             </div>
@@ -1041,7 +1140,9 @@ function toolDetailContent(details: ActivityDetail): React.ReactNode {
           emptyLabel="No search pattern provided"
           values={stringArray(input.queries)}
         />
-        {details.output !== undefined ? <ResultCards value={details.output} /> : null}
+        {details.output !== undefined ? (
+          <ResultCards value={details.output} />
+        ) : null}
       </ToolSurface>
     )
   }
@@ -1053,7 +1154,9 @@ function toolDetailContent(details: ActivityDetail): React.ReactNode {
           emptyLabel="No command provided"
           values={stringArray(input.commands)}
         />
-        {details.output !== undefined ? <ResultCards value={details.output} /> : null}
+        {details.output !== undefined ? (
+          <ResultCards value={details.output} />
+        ) : null}
       </ToolSurface>
     )
   }
@@ -1068,7 +1171,9 @@ function toolDetailContent(details: ActivityDetail): React.ReactNode {
     return (
       <ToolSurface durationMs={details.durationMs} label="Web content">
         <ToolRows emptyLabel="No URL provided" values={requests} />
-        {details.output !== undefined ? <ResultCards value={details.output} /> : null}
+        {details.output !== undefined ? (
+          <ResultCards value={details.output} />
+        ) : null}
       </ToolSurface>
     )
   }
@@ -1082,7 +1187,9 @@ function toolDetailContent(details: ActivityDetail): React.ReactNode {
           emptyLabel="No skill specified"
           values={skill ? [`/${skill}${args ? ` ${args}` : ""}`] : []}
         />
-        {details.output !== undefined ? <ResultCards value={details.output} /> : null}
+        {details.output !== undefined ? (
+          <ResultCards value={details.output} />
+        ) : null}
       </ToolSurface>
     )
   }
@@ -1106,7 +1213,10 @@ function toolDetailContent(details: ActivityDetail): React.ReactNode {
     )
   }
 
-  if (toolName === "get_preview_devtools" || toolName === "get_preview_container_logs") {
+  if (
+    toolName === "get_preview_devtools" ||
+    toolName === "get_preview_container_logs"
+  ) {
     return (
       <ToolSurface durationMs={details.durationMs} label="Preview diagnostics">
         <StructuredValue label="Request" value={details.input} />
@@ -1128,9 +1238,15 @@ function StructuredValue({ label, value }: { label: string; value: unknown }) {
   if (Array.isArray(value)) {
     return (
       <div className="grid gap-1.5">
-        <span className="px-1 text-xs font-medium text-muted-foreground">{label}</span>
+        <span className="px-1 text-xs font-medium text-muted-foreground">
+          {label}
+        </span>
         {value.map((entry, index) => (
-          <StructuredValue key={index} label={`Item ${index + 1}`} value={entry} />
+          <StructuredValue
+            key={index}
+            label={`Item ${index + 1}`}
+            value={entry}
+          />
         ))}
       </div>
     )
@@ -1141,18 +1257,29 @@ function StructuredValue({ label, value }: { label: string; value: unknown }) {
     )
     return (
       <div className="grid gap-1.5 rounded-md bg-background/70 p-3">
-        <span className="text-xs font-medium text-muted-foreground">{label}</span>
+        <span className="text-xs font-medium text-muted-foreground">
+          {label}
+        </span>
         <dl className="grid gap-2">
           {entries.map(([key, entry]) => (
-            <div className="grid min-w-0 gap-0.5 sm:grid-cols-[9rem_1fr]" key={key}>
-              <dt className="truncate text-xs text-muted-foreground" title={key}>
+            <div
+              className="grid min-w-0 gap-0.5 sm:grid-cols-[9rem_1fr]"
+              key={key}
+            >
+              <dt
+                className="truncate text-xs text-muted-foreground"
+                title={key}
+              >
                 {humanizeToolName(key)}
               </dt>
               <dd className="min-w-0">
                 {typeof entry === "object" ? (
-                  <StructuredValue label={humanizeToolName(key)} value={entry} />
+                  <StructuredValue
+                    label={humanizeToolName(key)}
+                    value={entry}
+                  />
                 ) : (
-                  <span className="block overflow-x-auto whitespace-pre-wrap break-words font-mono text-xs leading-relaxed text-foreground/85">
+                  <span className="block overflow-x-auto font-mono text-xs leading-relaxed break-words whitespace-pre-wrap text-foreground/85">
                     {displayScalar(entry)}
                   </span>
                 )}
@@ -1165,8 +1292,10 @@ function StructuredValue({ label, value }: { label: string; value: unknown }) {
   }
   return (
     <div className="rounded-md bg-background/70 p-3">
-      <div className="mb-1 text-xs font-medium text-muted-foreground">{label}</div>
-      <pre className="max-h-72 overflow-auto whitespace-pre-wrap break-words font-mono text-xs leading-relaxed">
+      <div className="mb-1 text-xs font-medium text-muted-foreground">
+        {label}
+      </div>
+      <pre className="max-h-72 overflow-auto font-mono text-xs leading-relaxed break-words whitespace-pre-wrap">
         {displayScalar(value)}
       </pre>
     </div>

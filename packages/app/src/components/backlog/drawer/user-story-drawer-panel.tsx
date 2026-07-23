@@ -30,6 +30,10 @@ import type {
   UserStoryDrawerTab,
 } from "@/components/backlog/shared/backlog-types"
 import { DevelopmentContent } from "@/components/backlog/drawer/user-story-development"
+import {
+  useDevelopmentWorkspace,
+  type VcsFileDiff,
+} from "@/components/backlog/development/development-workspace"
 import type { UserStoryDiffStats } from "@/components/backlog/development/user-story-diff-stats"
 import { DrawerActions } from "@/components/backlog/drawer/user-story-drawer-actions"
 import {
@@ -213,6 +217,11 @@ export function UserStoryDrawerPanel({
     id: string
     path: string
   }>()
+  const [changedFiles, setChangedFiles] = React.useState<VcsFileDiff[]>([])
+  const developmentWorkspace = useDevelopmentWorkspace(userStory)
+  const developmentWorkspaceAvailable = developmentWorkspace.available
+  const loadDevelopmentDiffs = developmentWorkspace.loadDiffs
+  const developmentWorkspaceReloadKey = developmentWorkspace.reloadKey
   const [pendingAction, setPendingAction] = React.useState<DrawerAction>()
   const [sidebarOpen, setSidebarOpen] = React.useState(readSidebarOpen)
   const [title, setTitle] = React.useState(
@@ -282,6 +291,26 @@ export function UserStoryDrawerPanel({
     })
     return () => cancelAnimationFrame(frame)
   }, [mode, userStory?.codeSelectionAttachments, userStory?.fileAttachments])
+
+  React.useEffect(() => {
+    if (!developmentWorkspaceAvailable || mode === "create") return
+    let cancelled = false
+    loadDevelopmentDiffs()
+      .then((diffs) => {
+        if (!cancelled) setChangedFiles(diffs)
+      })
+      .catch(() => {
+        if (!cancelled) setChangedFiles([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [
+    developmentWorkspaceAvailable,
+    developmentWorkspaceReloadKey,
+    loadDevelopmentDiffs,
+    mode,
+  ])
 
   React.useEffect(() => {
     const sendToDevAgentAvailable = drawerActions(mode, status).includes(
@@ -480,6 +509,7 @@ export function UserStoryDrawerPanel({
             sidebarOpen={sidebarAvailable && sidebarOpen}
           >
             <UserStoryContent
+              changedFiles={changedFiles}
               mode={mode}
               onCommentUndo={undoCommentMessage}
               onSummaryCodeSelectionAttachmentRemove={(id) =>
@@ -506,6 +536,7 @@ export function UserStoryDrawerPanel({
                   : undefined
               }
               onFileLinkClick={openDevelopmentFile}
+              onChangedFileClick={openDevelopmentDiff}
               status={status}
               summary={summary}
               summaryCodeSelectionAttachments={summaryCodeSelectionAttachments}
@@ -560,6 +591,11 @@ export function UserStoryDrawerPanel({
             <DevelopmentContent
               key={developmentFileTarget?.id ?? "development"}
               diffStats={diffStats}
+              initialDiffPath={
+                developmentTab === "diff"
+                  ? developmentFileTarget?.path
+                  : undefined
+              }
               initialFilePath={developmentFileTarget?.path}
               status={status}
               tab={developmentTab}
@@ -641,6 +677,12 @@ export function UserStoryDrawerPanel({
   function openDevelopmentFile(path: string) {
     setDevelopmentFileTarget({ id: crypto.randomUUID(), path })
     setDevelopmentTab("files")
+    setTab("development")
+  }
+
+  function openDevelopmentDiff(path: string) {
+    setDevelopmentFileTarget({ id: crypto.randomUUID(), path })
+    setDevelopmentTab("diff")
     setTab("development")
   }
 

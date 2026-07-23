@@ -37,6 +37,7 @@ const rootDevelopmentStatuses = new Set<BacklogColumnId>(["backlog", "ready"])
 
 export function DevelopmentContent({
   diffStats,
+  initialDiffPath,
   initialFilePath,
   onTabChange,
   status,
@@ -44,6 +45,7 @@ export function DevelopmentContent({
   userStory,
 }: {
   diffStats?: UserStoryDiffStats
+  initialDiffPath?: string
   initialFilePath?: string
   onTabChange: (tab: UserStoryDevelopmentTab) => void
   status: BacklogColumnId
@@ -107,7 +109,11 @@ export function DevelopmentContent({
           />
         )}
         {activeTab === "diff" && (
-          <DevelopmentCodePanel mode="diff" userStory={userStory} />
+          <DevelopmentCodePanel
+            initialDiffPath={initialDiffPath}
+            mode="diff"
+            userStory={userStory}
+          />
         )}
         {activeTab === "terminal" && (
           <DevelopmentTerminal userStory={userStory} />

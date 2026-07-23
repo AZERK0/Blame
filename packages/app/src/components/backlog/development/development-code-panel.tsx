@@ -16,11 +16,13 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 export function DevelopmentCodePanel({
   fallbackToProjectRoot,
+  initialDiffPath,
   initialFilePath,
   mode,
   userStory,
 }: {
   fallbackToProjectRoot?: boolean
+  initialDiffPath?: string
   initialFilePath?: string
   mode: "files" | "diff"
   userStory?: UserStory
@@ -167,6 +169,7 @@ export function DevelopmentCodePanel({
           diffByPath={diffByPath}
           diffs={diffs}
           mode={mode}
+          initialReviewFilePath={initialDiffPath}
           readFile={workspace.readFile}
           reloadKey={workspace.reloadKey}
           reviewLoading={diffLoading}

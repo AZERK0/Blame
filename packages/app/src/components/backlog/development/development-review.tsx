@@ -1,6 +1,11 @@
 import * as React from "react"
 import type { VcsFileDiff } from "@/components/backlog/development/development-workspace"
-import { ChevronDownIcon, ChevronRightIcon, FileDiffIcon, FileIcon } from "lucide-react"
+import {
+  ChevronDownIcon,
+  ChevronRightIcon,
+  FileDiffIcon,
+  FileIcon,
+} from "lucide-react"
 import { Collapsible } from "radix-ui"
 
 import { DiffStats } from "@/components/backlog/development/development-diff-stats"
@@ -25,10 +30,12 @@ import { cn } from "@/lib/utils"
 
 export function DevelopmentReview({
   diffs,
+  initialOpenFilePath,
   loading,
   onOpenFile,
 }: {
   diffs: VcsFileDiff[]
+  initialOpenFilePath?: string
   loading: boolean
   onOpenFile: (path: string) => void
 }) {
@@ -39,7 +46,9 @@ export function DevelopmentReview({
       <div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
         <FileDiffIcon className="size-8 text-muted-foreground" />
         <div>
-          <h3 className="font-heading text-lg font-semibold">No local changes</h3>
+          <h3 className="font-heading text-lg font-semibold">
+            No local changes
+          </h3>
           <p className="text-sm text-muted-foreground">
             The worktree matches its local HEAD.
           </p>
@@ -52,7 +61,12 @@ export function DevelopmentReview({
     <DevelopmentScrollArea className="h-full">
       <div className="flex min-w-0 flex-col gap-3 p-3">
         {diffs.map((diff) => (
-          <ReviewDiffCard diff={diff} key={diff.file} onOpenFile={onOpenFile} />
+          <ReviewDiffCard
+            defaultOpen={diff.file === initialOpenFilePath}
+            diff={diff}
+            key={diff.file}
+            onOpenFile={onOpenFile}
+          />
         ))}
       </div>
     </DevelopmentScrollArea>
@@ -60,18 +74,27 @@ export function DevelopmentReview({
 }
 
 function ReviewDiffCard({
+  defaultOpen,
   diff,
   onOpenFile,
 }: {
+  defaultOpen: boolean
   diff: VcsFileDiff
   onOpenFile: (path: string) => void
 }) {
-  const [open, setOpen] = React.useState(false)
-  const kind = diff.status === "added" ? "add" : diff.status === "deleted" ? "del" : "mix"
+  const [open, setOpen] = React.useState(defaultOpen)
+  const cardRef = React.useRef<HTMLDivElement>(null)
+  const kind =
+    diff.status === "added" ? "add" : diff.status === "deleted" ? "del" : "mix"
+
+  React.useEffect(() => {
+    if (!defaultOpen) return
+    cardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+  }, [defaultOpen])
 
   return (
     <Collapsible.Root open={open} onOpenChange={setOpen}>
-      <Card className="min-w-0 gap-0 py-0" size="sm">
+      <Card className="min-w-0 scroll-mt-3 gap-0 py-0" ref={cardRef} size="sm">
         <CardHeader className="min-w-0 px-0">
           <Collapsible.Trigger asChild>
             <button
@@ -86,14 +109,19 @@ function ReviewDiffCard({
                 )}
                 <FileIcon className="size-4 shrink-0 text-muted-foreground" />
                 <div className="min-w-0">
-                  <CardTitle className="truncate">{filename(diff.file)}</CardTitle>
+                  <CardTitle className="truncate">
+                    {filename(diff.file)}
+                  </CardTitle>
                   <CardDescription className="truncate text-xs">
                     {diff.file}
                   </CardDescription>
                 </div>
               </div>
               <CardAction className="static row-auto flex items-center gap-2 self-center justify-self-end">
-                <Badge className={cn("shrink-0", diffKindClassName(kind))} variant="outline">
+                <Badge
+                  className={cn("shrink-0", diffKindClassName(kind))}
+                  variant="outline"
+                >
                   {diff.status ?? "modified"}
                 </Badge>
                 <DiffStats diff={diff} />
@@ -113,7 +141,7 @@ function ReviewDiffCard({
         </CardHeader>
         <Collapsible.Content>
           <CardContent className="min-w-0 overflow-hidden border-t p-4">
-            <DevelopmentScrollArea className="max-h-[60vh] w-full min-w-0 max-w-full">
+            <DevelopmentScrollArea className="max-h-[60vh] w-full max-w-full min-w-0">
               <div className="w-max min-w-full">
                 <DevelopmentDiffView diff={diff} scroll={false} />
               </div>

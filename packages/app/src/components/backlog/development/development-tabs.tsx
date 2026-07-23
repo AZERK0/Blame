@@ -1,4 +1,7 @@
-import type { FileContent, VcsFileDiff } from "@/components/backlog/development/development-workspace"
+import type {
+  FileContent,
+  VcsFileDiff,
+} from "@/components/backlog/development/development-workspace"
 import { FileIcon, GitPullRequestIcon, XIcon } from "lucide-react"
 
 import { DevelopmentFileView } from "@/components/backlog/development/development-file-view"
@@ -8,17 +11,13 @@ import {
   type DevelopmentFileTab,
 } from "@/components/backlog/development/development-workspace"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export function DevelopmentTabs({
   activeTab,
   diffByPath,
   diffs,
+  initialReviewFilePath,
   mode,
   onActiveTabChange,
   onCloseTab,
@@ -31,6 +30,7 @@ export function DevelopmentTabs({
   activeTab: string
   diffByPath: Map<string, VcsFileDiff>
   diffs: VcsFileDiff[]
+  initialReviewFilePath?: string
   mode: "files" | "diff"
   onActiveTabChange: (tab: string) => void
   onCloseTab: (path: string) => void
@@ -55,7 +55,9 @@ export function DevelopmentTabs({
               <TabsTrigger value="review">
                 <GitPullRequestIcon className="size-4" />
                 Review
-                {diffs.length > 0 && <span className="text-xs">{diffs.length}</span>}
+                {diffs.length > 0 && (
+                  <span className="text-xs">{diffs.length}</span>
+                )}
               </TabsTrigger>
             )}
             {tabs.map((tab) => (
@@ -89,6 +91,7 @@ export function DevelopmentTabs({
         <TabsContent className="min-h-0" value="review">
           <DevelopmentReview
             diffs={diffs}
+            initialOpenFilePath={initialReviewFilePath}
             loading={reviewLoading}
             onOpenFile={onOpenFile}
           />
