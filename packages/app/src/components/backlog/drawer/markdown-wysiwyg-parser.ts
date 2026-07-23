@@ -53,11 +53,11 @@ export function markdownWysiwygLines(markdown: string): MarkdownWysiwygLine[] {
         heading[2]
       )
     }
-    const task = sourceLine.match(/^(- \[[ xX]\] )(.*)$/)
+    const task = sourceLine.match(/^(\s*- \[[ xX]\] )(.*)$/)
     if (task) return wysiwygLine("task", task[1], task[2])
-    const ordered = sourceLine.match(/^(\d+\.\s)(.*)$/)
+    const ordered = sourceLine.match(/^(\s*\d+\.\s)(.*)$/)
     if (ordered) return wysiwygLine("ordered-list", ordered[1], ordered[2])
-    const unordered = sourceLine.match(/^(-\s)(.*)$/)
+    const unordered = sourceLine.match(/^(\s*-\s)(.*)$/)
     if (unordered)
       return wysiwygLine("unordered-list", unordered[1], unordered[2])
     const quote = sourceLine.match(/^(>\s)(.*)$/)
@@ -84,6 +84,28 @@ export function markdownListEnterResult(value: string, cursor: number) {
   return {
     cursor: cursor + prefix.length + 1,
     value: `${value.slice(0, cursor)}\n${prefix}${value.slice(cursor)}`,
+  }
+}
+
+export function markdownListIndentResult(
+  value: string,
+  cursor: number,
+  outdent: boolean
+) {
+  const bounds = lineBounds(value, cursor)
+  const line = value.slice(bounds.start, bounds.end)
+  if (!/^\s*(?:- \[[ xX]\]\s|-\s|\d+\.\s)/.test(line)) return
+  const indentation = line.match(/^\s*/)?.[0] ?? ""
+  const nextIndentation = outdent
+    ? indentation.slice(0, Math.max(0, indentation.length - 2))
+    : `${indentation}  `
+  const nextLine = `${nextIndentation}${line.slice(indentation.length)}`
+  return {
+    cursor: Math.max(
+      bounds.start,
+      cursor + nextIndentation.length - indentation.length
+    ),
+    value: `${value.slice(0, bounds.start)}${nextLine}${value.slice(bounds.end)}`,
   }
 }
 

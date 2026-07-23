@@ -60,6 +60,7 @@ import {
   markdownEmptyListDeletionResult,
   markdownExpandedDeletionSelection,
   markdownInlineActionResult,
+  markdownListIndentResult,
   markdownListEnterResult,
   markdownWysiwygLines,
   type MarkdownWysiwygLine,
@@ -628,6 +629,9 @@ function MarkdownWysiwygEditorLine({
   selection: MarkdownSelection | null
 }) {
   const listMarker = markdownWysiwygListMarker(line)
+  const listDepth = listMarker
+    ? Math.floor(markdownLineIndent(line.prefix) / 2)
+    : 0
   const className = cn(
     "relative min-h-6 break-words whitespace-pre-wrap",
     line.kind === "heading-1" && "text-xl font-semibold",
@@ -646,6 +650,9 @@ function MarkdownWysiwygEditorLine({
       className={className}
       data-list-marker={listMarker || undefined}
       data-markdown-line="true"
+      style={
+        listDepth ? { marginInlineStart: `${listDepth * 1.25}rem` } : undefined
+      }
     >
       {line.prefix && <MarkdownSourceMarker source={line.prefix} />}
       {line.segments.map((segment, index) => {
@@ -692,8 +699,12 @@ function markdownSelectionInsideSource(
 function markdownWysiwygListMarker(line: MarkdownWysiwygLine) {
   if (line.kind === "unordered-list") return "•"
   if (line.kind === "ordered-list") return line.prefix.trim()
-  if (line.kind === "task") return /^- \[[xX]\]/.test(line.prefix) ? "☑" : "☐"
+  if (line.kind === "task") return /- \[[xX]\]/.test(line.prefix) ? "☑" : "☐"
   return ""
+}
+
+function markdownLineIndent(prefix: string) {
+  return prefix.match(/^\s*/)?.[0].length ?? 0
 }
 
 function MarkdownWysiwygEditorSegment({
@@ -1588,6 +1599,25 @@ export const MarkdownEditor = React.forwardRef<
   }
 
   function handleEditorKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+    if (
+      event.key === "Tab" &&
+      !event.metaKey &&
+      !event.ctrlKey &&
+      !event.altKey &&
+      !event.nativeEvent.isComposing
+    ) {
+      const selection = markdownEditorSelection(event.currentTarget)
+      if (!selection || selection.start !== selection.end) return
+      const result = markdownListIndentResult(
+        value,
+        selection.start,
+        event.shiftKey
+      )
+      if (!result) return
+      event.preventDefault()
+      emitMarkdown(result.value, result.cursor)
+      return
+    }
     if (
       (event.key === "ArrowLeft" || event.key === "ArrowRight") &&
       !event.shiftKey &&

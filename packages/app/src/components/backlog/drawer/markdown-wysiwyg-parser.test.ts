@@ -6,6 +6,7 @@ import {
   markdownEmptyListDeletionResult,
   markdownExpandedDeletionSelection,
   markdownInlineActionResult,
+  markdownListIndentResult,
   markdownListEnterResult,
   markdownWysiwygLines,
 } from "./markdown-wysiwyg-parser.ts"
@@ -69,6 +70,41 @@ test("continues unordered, ordered, and task lists on Enter", () => {
     cursor: 17,
     value: "- [x] item\n- [ ] ",
   })
+})
+
+test("parses and continues nested lists while preserving indentation", () => {
+  const lines = markdownWysiwygLines(
+    "- item\n  - child\n    1. ordered\n      - [ ] task"
+  )
+  assert.deepEqual(
+    lines.map((line) => ({ kind: line.kind, prefix: line.prefix })),
+    [
+      { kind: "unordered-list", prefix: "- " },
+      { kind: "unordered-list", prefix: "  - " },
+      { kind: "ordered-list", prefix: "    1. " },
+      { kind: "task", prefix: "      - [ ] " },
+    ]
+  )
+  assert.deepEqual(markdownListEnterResult("- item\n  - child", 16), {
+    cursor: 21,
+    value: "- item\n  - child\n  - ",
+  })
+})
+
+test("indents and outdents every supported list type with Tab", () => {
+  assert.deepEqual(markdownListIndentResult("- item", 6, false), {
+    cursor: 8,
+    value: "  - item",
+  })
+  assert.deepEqual(markdownListIndentResult("  1. item", 9, true), {
+    cursor: 7,
+    value: "1. item",
+  })
+  assert.deepEqual(markdownListIndentResult("  - [ ] task", 12, false), {
+    cursor: 14,
+    value: "    - [ ] task",
+  })
+  assert.equal(markdownListIndentResult("paragraph", 4, false), undefined)
 })
 
 test("exits a list when Enter is pressed on an empty list item", () => {
