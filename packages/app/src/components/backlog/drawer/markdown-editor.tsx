@@ -37,8 +37,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Textarea } from "@/components/ui/textarea"
 import {
   Tooltip,
   TooltipContent,
@@ -56,6 +54,17 @@ import {
   markdownPreviewBlocks,
   type MarkdownPreviewBlock,
 } from "@/components/backlog/drawer/markdown-preview-parser"
+import {
+  markdownArrowNavigationResult,
+  markdownAtomicLinkDeletionResult,
+  markdownEmptyListDeletionResult,
+  markdownExpandedDeletionSelection,
+  markdownInlineActionResult,
+  markdownListEnterResult,
+  markdownWysiwygLines,
+  type MarkdownWysiwygLine,
+  type MarkdownWysiwygSegment,
+} from "@/components/backlog/drawer/markdown-wysiwyg-parser"
 import {
   Command,
   CommandEmpty,
@@ -160,10 +169,9 @@ function markdownWithWrappedSelection(
   start: number,
   end: number,
   before: string,
-  after = before,
-  fallback = "text"
+  after = before
 ) {
-  const selected = value.slice(start, end) || fallback
+  const selected = value.slice(start, end)
   return {
     cursor: start + before.length + selected.length,
     value: markdownWithReplacement(
@@ -217,48 +225,6 @@ function markdownWithTaskPrefix(value: string, cursor: number) {
   }
 }
 
-function isPlainEnter(event: React.KeyboardEvent<HTMLElement>) {
-  return (
-    event.key === "Enter" &&
-    !event.shiftKey &&
-    !event.metaKey &&
-    !event.ctrlKey &&
-    !event.altKey &&
-    !event.nativeEvent.isComposing
-  )
-}
-
-function markdownListEnterResult(value: string, cursor: number) {
-  const bounds = lineBounds(value, cursor)
-  const line = value.slice(bounds.start, bounds.end)
-  const task = line.match(/^(\s*)- \[[ xX]\]\s(.*)$/)
-  const ordered = line.match(/^(\s*)(\d+)\.\s(.*)$/)
-  const unordered = line.match(/^(\s*)-\s(.*)$/)
-  const prefix = listContinuationPrefix(task, ordered, unordered)
-  if (!prefix) return
-  const content = (task?.[2] ?? ordered?.[3] ?? unordered?.[2] ?? "").trim()
-  if (!content) {
-    return {
-      cursor: bounds.start,
-      value: markdownWithReplacement(value, bounds.start, bounds.end, ""),
-    }
-  }
-  return {
-    cursor: cursor + prefix.length + 1,
-    value: markdownWithReplacement(value, cursor, cursor, `\n${prefix}`),
-  }
-}
-
-function listContinuationPrefix(
-  task: RegExpMatchArray | null,
-  ordered: RegExpMatchArray | null,
-  unordered: RegExpMatchArray | null
-) {
-  if (task) return `${task[1]}- [ ] `
-  if (ordered) return `${ordered[1]}${Number(ordered[2]) + 1}. `
-  if (unordered) return `${unordered[1]}- `
-}
-
 function markdownActionResult(
   value: string,
   start: number,
@@ -270,21 +236,15 @@ function markdownActionResult(
   if (action === "unordered") return markdownWithLinePrefix(value, start, "- ")
   if (action === "ordered") return markdownWithLinePrefix(value, start, "1. ")
   if (action === "task") return markdownWithTaskPrefix(value, start)
-  if (action === "bold")
-    return markdownWithWrappedSelection(value, start, end, "**")
-  if (action === "italic")
-    return markdownWithWrappedSelection(value, start, end, "*")
-  if (action === "strike")
-    return markdownWithWrappedSelection(value, start, end, "~~")
+  if (["bold", "italic", "link", "strike"].includes(action))
+    return markdownInlineActionResult(
+      value,
+      start,
+      end,
+      action as "bold" | "italic" | "link" | "strike"
+    )
   if (action === "code") return markdownWithCodeSelection(value, start, end)
-  return markdownWithWrappedSelection(
-    value,
-    start,
-    end,
-    "[",
-    "](https://)",
-    "link"
-  )
+  return markdownInlineActionResult(value, start, end, "link")
 }
 
 function filename(path: string) {
@@ -418,8 +378,6 @@ type MarkdownAction =
   | "task"
   | "unordered"
 
-type MarkdownMode = "preview" | "write"
-
 const markdownActions: {
   action: MarkdownAction
   icon: React.ComponentType<{ className?: string }>
@@ -448,11 +406,13 @@ const additionalMarkdownActions = markdownActions.filter(
 function MarkdownToolbar({
   disabled,
   onAction,
+  onActionIntent,
   onRedo,
   onUndo,
 }: {
   disabled?: boolean
   onAction: (action: MarkdownAction) => void
+  onActionIntent: () => void
   onRedo: () => void
   onUndo: () => void
 }) {
@@ -476,7 +436,11 @@ function MarkdownToolbar({
             <Icon className="size-3.5" />
           </ToolbarIconButton>
         ))}
-        <AdditionalMarkdownActions disabled={disabled} onAction={onAction} />
+        <AdditionalMarkdownActions
+          disabled={disabled}
+          onAction={onAction}
+          onActionIntent={onActionIntent}
+        />
       </div>
     </TooltipProvider>
   )
@@ -520,9 +484,11 @@ function MarkdownOptimizeButton({
 
 function AdditionalMarkdownActions({
   disabled,
+  onActionIntent,
   onAction,
 }: {
   disabled?: boolean
+  onActionIntent: () => void
   onAction: (action: MarkdownAction) => void
 }) {
   return (
@@ -535,11 +501,16 @@ function AdditionalMarkdownActions({
           disabled={disabled}
           size="icon-sm"
           variant="ghost"
+          onPointerDown={onActionIntent}
         >
           <EllipsisIcon className="size-3.5" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-44">
+      <DropdownMenuContent
+        align="start"
+        className="w-44"
+        onCloseAutoFocus={(event) => event.preventDefault()}
+      >
         {additionalMarkdownActions.map(({ action, icon: Icon, label }) => (
           <DropdownMenuItem key={action} onSelect={() => onAction(action)}>
             <Icon className="size-3.5 text-muted-foreground" />
@@ -579,6 +550,7 @@ function ToolbarIconButton({
           size="icon-sm"
           variant="ghost"
           onClick={onClick}
+          onPointerDown={(event) => event.preventDefault()}
         >
           {children}
         </Button>
@@ -586,6 +558,359 @@ function ToolbarIconButton({
       <TooltipContent sideOffset={6}>{label}</TooltipContent>
     </Tooltip>
   )
+}
+
+type MarkdownSelection = { end: number; start: number }
+
+function MarkdownWysiwygEditor({
+  activeSelection,
+  className,
+  editorRef,
+  markdown,
+  onInput,
+  onKeyDown,
+  onSelectionChange,
+  placeholder,
+}: {
+  activeSelection: MarkdownSelection | null
+  className?: string
+  editorRef: React.RefObject<HTMLDivElement | null>
+  markdown: string
+  onInput: (event: React.FormEvent<HTMLDivElement>) => void
+  onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => void
+  onSelectionChange: () => void
+  placeholder: string
+}) {
+  return (
+    <div className="relative">
+      {!markdown && (
+        <div className="pointer-events-none absolute inset-x-4 top-3.5 text-[0.9375rem] text-muted-foreground/55 dark:text-muted-foreground/50">
+          {placeholder}
+        </div>
+      )}
+      <div
+        key={markdown}
+        ref={editorRef}
+        aria-label={placeholder}
+        className={cn(
+          "max-w-full min-w-0 space-y-2 overflow-x-hidden text-[0.9375rem] leading-6 outline-none",
+          className
+        )}
+        contentEditable
+        data-markdown-editor-input="true"
+        role="textbox"
+        suppressContentEditableWarning
+        onClick={onSelectionChange}
+        onInput={onInput}
+        onKeyDown={onKeyDown}
+        onKeyUp={onSelectionChange}
+      >
+        {markdownWysiwygLines(markdown).map((line, index) => (
+          <MarkdownWysiwygEditorLine
+            key={index}
+            line={line}
+            lineStart={markdownLineStart(markdown, index)}
+            selection={activeSelection}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function MarkdownWysiwygEditorLine({
+  line,
+  lineStart,
+  selection,
+}: {
+  line: MarkdownWysiwygLine
+  lineStart: number
+  selection: MarkdownSelection | null
+}) {
+  const listMarker = markdownWysiwygListMarker(line)
+  const className = cn(
+    "relative min-h-6 break-words whitespace-pre-wrap",
+    line.kind === "heading-1" && "text-xl font-semibold",
+    line.kind === "heading-2" && "text-lg font-semibold",
+    line.kind.startsWith("heading-") &&
+      !["heading-1", "heading-2"].includes(line.kind) &&
+      "font-semibold",
+    line.kind === "quote" && "border-l-2 pl-3 text-muted-foreground",
+    listMarker &&
+      "pl-5 before:absolute before:left-1 before:text-muted-foreground before:content-[attr(data-list-marker)]",
+    line.kind === "code" && "bg-muted/50 font-mono text-xs",
+    line.kind === "fence" && "font-mono text-xs text-muted-foreground"
+  )
+  return (
+    <div
+      className={className}
+      data-list-marker={listMarker || undefined}
+      data-markdown-line="true"
+    >
+      {line.prefix && <MarkdownSourceMarker source={line.prefix} />}
+      {line.segments.map((segment, index) => {
+        const segmentStart =
+          lineStart +
+          line.prefix.length +
+          line.segments
+            .slice(0, index)
+            .reduce((length, item) => length + item.source.length, 0)
+        return (
+          <MarkdownWysiwygEditorSegment
+            key={index}
+            active={markdownSelectionInsideSource(
+              selection,
+              segmentStart,
+              segment.source.length
+            )}
+            segment={segment}
+          />
+        )
+      })}
+      {line.segments.every((segment) => !segment.source) && <br />}
+    </div>
+  )
+}
+
+function markdownLineStart(markdown: string, lineIndex: number) {
+  return markdown
+    .split("\n")
+    .slice(0, lineIndex)
+    .reduce((offset, line) => offset + line.length + 1, 0)
+}
+
+function markdownSelectionInsideSource(
+  selection: MarkdownSelection | null,
+  start: number,
+  length: number
+) {
+  if (!selection || selection.start !== selection.end || length === 0)
+    return false
+  return selection.start > start && selection.start < start + length
+}
+
+function markdownWysiwygListMarker(line: MarkdownWysiwygLine) {
+  if (line.kind === "unordered-list") return "•"
+  if (line.kind === "ordered-list") return line.prefix.trim()
+  if (line.kind === "task") return /^- \[[xX]\]/.test(line.prefix) ? "☑" : "☐"
+  return ""
+}
+
+function MarkdownWysiwygEditorSegment({
+  active,
+  segment,
+}: {
+  active: boolean
+  segment: MarkdownWysiwygSegment
+}) {
+  if (segment.type === "text" || active) return segment.source
+  const content = (
+    <>
+      <MarkdownSourceMarker source={openingMarkdownMarker(segment)} />
+      {segment.content}
+      <MarkdownSourceMarker closing source={closingMarkdownMarker(segment)} />
+    </>
+  )
+  if (segment.type === "bold") return <strong>{content}</strong>
+  if (segment.type === "italic") return <em>{content}</em>
+  if (segment.type === "strike") return <s>{content}</s>
+  if (segment.type === "code")
+    return (
+      <code className="rounded bg-muted px-1 py-0.5 text-xs">{content}</code>
+    )
+  return (
+    <span className="text-blue-600 underline underline-offset-2 dark:text-blue-400">
+      {content}
+    </span>
+  )
+}
+
+function MarkdownSourceMarker({
+  closing,
+  source,
+}: {
+  closing?: boolean
+  source: string
+}) {
+  return (
+    <span
+      className="absolute h-0 w-0 overflow-hidden text-[0px] leading-none"
+      data-markdown-closing={closing || undefined}
+      data-markdown-source="true"
+    >
+      {source}
+    </span>
+  )
+}
+
+function openingMarkdownMarker(
+  segment: Exclude<MarkdownWysiwygSegment, { type: "text" }>
+) {
+  if (segment.type === "bold") return "**"
+  if (segment.type === "italic") return "*"
+  if (segment.type === "strike") return "~~"
+  if (segment.type === "code") return "`"
+  return "["
+}
+
+function closingMarkdownMarker(
+  segment: Exclude<MarkdownWysiwygSegment, { type: "text" }>
+) {
+  if (segment.type === "bold") return "**"
+  if (segment.type === "italic") return "*"
+  if (segment.type === "strike") return "~~"
+  if (segment.type === "code") return "`"
+  return `](${segment.href})`
+}
+
+function markdownEditorValue(editor: HTMLDivElement) {
+  return Array.from(editor.children)
+    .map((line) => line.textContent ?? "")
+    .join("\n")
+}
+
+function markdownEditorSelection(
+  editor: HTMLDivElement
+): MarkdownSelection | undefined {
+  const selection = window.getSelection()
+  if (!selection?.rangeCount) return
+  const range = selection.getRangeAt(0)
+  if (
+    !editor.contains(range.startContainer) ||
+    !editor.contains(range.endContainer)
+  )
+    return
+  return {
+    start: markdownEditorOffset(
+      editor,
+      range.startContainer,
+      range.startOffset
+    ),
+    end: markdownEditorOffset(editor, range.endContainer, range.endOffset),
+  }
+}
+
+function markdownEditorOffset(
+  editor: HTMLDivElement,
+  node: Node,
+  offset: number
+) {
+  const lines = Array.from(editor.children)
+  if (node === editor) {
+    return lines
+      .slice(0, offset)
+      .reduce(
+        (length, line, index) =>
+          length + (line.textContent?.length ?? 0) + (index > 0 ? 1 : 0),
+        0
+      )
+  }
+  const lineIndex = lines.findIndex(
+    (line) => line === node || line.contains(node)
+  )
+  if (lineIndex === -1) return 0
+  return (
+    lines
+      .slice(0, lineIndex)
+      .reduce(
+        (length, line) => length + (line.textContent?.length ?? 0) + 1,
+        0
+      ) + markdownOffsetWithinLine(lines[lineIndex], node, offset)
+  )
+}
+
+function markdownOffsetWithinLine(
+  line: Element,
+  target: Node,
+  targetOffset: number
+) {
+  const maximum =
+    target.nodeType === Node.TEXT_NODE
+      ? (target.textContent?.length ?? 0)
+      : target.childNodes.length
+  const range = document.createRange()
+  range.setStart(line, 0)
+  range.setEnd(target, Math.max(0, Math.min(targetOffset, maximum)))
+  return range.toString().length
+}
+
+function restoreMarkdownEditorSelection(
+  editor: HTMLDivElement,
+  selection: MarkdownSelection
+) {
+  const start = markdownEditorDomPoint(editor, selection.start)
+  const end = markdownEditorDomPoint(editor, selection.end)
+  const range = document.createRange()
+  setMarkdownRangeBoundary(range, "start", start)
+  setMarkdownRangeBoundary(range, "end", end)
+  const browserSelection = window.getSelection()
+  browserSelection?.removeAllRanges()
+  browserSelection?.addRange(range)
+  editor.focus()
+}
+
+function setMarkdownRangeBoundary(
+  range: Range,
+  boundary: "end" | "start",
+  point: { node: Node; offset: number }
+) {
+  const maximum =
+    point.node.nodeType === Node.TEXT_NODE
+      ? (point.node.textContent?.length ?? 0)
+      : point.node.childNodes.length
+  const offset = Math.max(0, Math.min(point.offset, maximum))
+  if (boundary === "start") range.setStart(point.node, offset)
+  else range.setEnd(point.node, offset)
+}
+
+function markdownEditorDomPoint(editor: HTMLDivElement, target: number) {
+  const lines = Array.from(editor.children)
+  let remaining = target
+  let lastNode: Node = editor
+  let lastVisibleNode: Node | undefined
+  for (const [lineIndex, line] of lines.entries()) {
+    const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT)
+    let node = walker.nextNode()
+    if (!node && remaining === 0) return { node: line, offset: 0 }
+    while (node) {
+      const length = node.textContent?.length ?? 0
+      if (node.parentElement?.dataset.markdownSource === "true") {
+        if (remaining < length)
+          return markdownEditorPointAfter(node.parentElement)
+        if (remaining === length) {
+          return node.parentElement.dataset.markdownClosing === "true"
+            ? markdownEditorPointAfter(
+                node.parentElement.parentElement ?? node.parentElement
+              )
+            : markdownEditorPointAfter(node.parentElement)
+        }
+        remaining -= length
+        lastNode = node
+        node = walker.nextNode()
+        continue
+      }
+      if (remaining <= length) return { node, offset: remaining }
+      remaining -= length
+      lastNode = node
+      lastVisibleNode = node
+      node = walker.nextNode()
+    }
+    if (lineIndex < lines.length - 1) {
+      if (remaining === 0) return { node: line, offset: line.childNodes.length }
+      remaining -= 1
+    }
+  }
+  const fallbackNode = lastVisibleNode ?? lastNode
+  return { node: fallbackNode, offset: fallbackNode.textContent?.length ?? 0 }
+}
+
+function markdownEditorPointAfter(node: Node) {
+  const parent = node.parentNode
+  if (!parent) return { node, offset: node.textContent?.length ?? 0 }
+  return {
+    node: parent,
+    offset: Array.prototype.indexOf.call(parent.childNodes, node) + 1,
+  }
 }
 
 function MarkdownPreview({
@@ -968,17 +1293,26 @@ export const MarkdownEditor = React.forwardRef<
   const handledCodeSelectionIdsRef = React.useRef(new Set<string>())
   const handledFileAttachmentIdsRef = React.useRef(new Set<string>())
   const mentionSearchRef = React.useRef(0)
-  const pendingSelectionRef = React.useRef<number | null>(null)
+  const lastSelectionRef = React.useRef<MarkdownSelection | null>(null)
+  const pendingSelectionRef = React.useRef<MarkdownSelection | null>(null)
   const rootRef = React.useRef<HTMLDivElement>(null)
-  const textareaRef = React.useRef<HTMLTextAreaElement>(null)
-  const [draftMarkdown, setDraftMarkdown] = React.useState(markdown)
+  const editorRef = React.useRef<HTMLDivElement>(null)
+  const [draft, setDraft] = React.useState({
+    external: markdown,
+    value: markdown,
+  })
+  const [activeSelection, setActiveSelection] =
+    React.useState<MarkdownSelection | null>(null)
   const [optimizing, setOptimizing] = React.useState(false)
   const [optimizingAttachments, setOptimizingAttachments] =
     React.useState(false)
   const [optimizeAttachmentsForAiContext, setOptimizeAttachmentsForAiContext] =
     React.useState(true)
-  const [mode, setMode] = React.useState<MarkdownMode>("write")
-  const value = readOnly || onMarkdownChange ? markdown : draftMarkdown
+  const value = readOnly
+    ? markdown
+    : draft.external === markdown
+      ? draft.value
+      : markdown
   const mentionOpen =
     mention.active && Boolean(mentionDirectory && platform.workspace)
   const optimizableAttachmentsVisible = attachments.some(
@@ -1032,17 +1366,19 @@ export const MarkdownEditor = React.forwardRef<
   )
 
   React.useLayoutEffect(() => {
-    const cursor = pendingSelectionRef.current
-    if (cursor === null) return
+    const selection = pendingSelectionRef.current
+    if (selection === null || !editorRef.current) return
     pendingSelectionRef.current = null
-    textareaRef.current?.setSelectionRange(cursor, cursor)
-    textareaRef.current?.focus()
-  }, [value])
+    restoreMarkdownEditorSelection(editorRef.current, selection)
+    lastSelectionRef.current = selection
+    setActiveSelection(selection)
+  }, [activeSelection, value])
 
   const updateMention = React.useCallback(
     (nextValue = value) => {
-      const textarea = textareaRef.current
-      if (!textarea || readOnly || !mentionDirectory) {
+      const editor = editorRef.current
+      const selection = editor && markdownEditorSelection(editor)
+      if (!editor || !selection || readOnly || !mentionDirectory) {
         setMention((current) =>
           current.active
             ? { active: false, query: "", start: 0, end: 0 }
@@ -1050,19 +1386,20 @@ export const MarkdownEditor = React.forwardRef<
         )
         return
       }
-      setMention(fileMentionState(nextValue, textarea.selectionStart))
+      setMention(fileMentionState(nextValue, selection.start))
     },
     [mentionDirectory, readOnly, value]
   )
 
   const emitMarkdown = React.useCallback(
     (nextMarkdown: string, cursor?: number) => {
-      if (!onMarkdownChange) setDraftMarkdown(nextMarkdown)
+      setDraft({ external: markdown, value: nextMarkdown })
       onMarkdownChange?.(nextMarkdown)
-      if (cursor !== undefined) pendingSelectionRef.current = cursor
+      if (cursor !== undefined)
+        pendingSelectionRef.current = { end: cursor, start: cursor }
       requestAnimationFrame(() => updateMention(nextMarkdown))
     },
-    [onMarkdownChange, updateMention]
+    [markdown, onMarkdownChange, updateMention]
   )
 
   React.useEffect(() => {
@@ -1149,8 +1486,27 @@ export const MarkdownEditor = React.forwardRef<
   function handlePaste(event: React.ClipboardEvent<HTMLDivElement>) {
     if (readOnly) return
     const nextAttachments = pastedAttachments(event)
-    if (nextAttachments.length === 0) return
-    void addFileAttachments(nextAttachments)
+    if (nextAttachments.length > 0) {
+      event.preventDefault()
+      void addFileAttachments(nextAttachments)
+      return
+    }
+    const editor = editorRef.current
+    const selection = editor && markdownEditorSelection(editor)
+    if (!editor || !selection) return
+    const pastedMarkdown = event.clipboardData.getData("text/plain")
+    if (!pastedMarkdown) return
+    event.preventDefault()
+    const normalizedMarkdown = pastedMarkdown.replace(/\r\n?/g, "\n")
+    emitMarkdown(
+      markdownWithReplacement(
+        value,
+        selection.start,
+        selection.end,
+        normalizedMarkdown
+      ),
+      selection.start + normalizedMarkdown.length
+    )
   }
 
   function handleFileSelection(event: React.ChangeEvent<HTMLInputElement>) {
@@ -1209,34 +1565,129 @@ export const MarkdownEditor = React.forwardRef<
     )
   }
 
-  function handleMarkdownChange(event: React.ChangeEvent<HTMLTextAreaElement>) {
-    emitMarkdown(event.currentTarget.value)
+  function handleMarkdownInput(event: React.FormEvent<HTMLDivElement>) {
+    if (event.nativeEvent.isComposing) return
+    const selection = markdownEditorSelection(event.currentTarget)
+    const nextMarkdown = markdownEditorValue(event.currentTarget)
+    if (selection) {
+      lastSelectionRef.current = selection
+      pendingSelectionRef.current = selection
+      setActiveSelection(selection)
+    }
+    emitMarkdown(nextMarkdown)
   }
 
-  function handleTextareaKeyDown(
-    event: React.KeyboardEvent<HTMLTextAreaElement>
-  ) {
-    if (!isPlainEnter(event)) return
-    if (onSubmitShortcut) {
+  function rememberEditorSelection() {
+    const editor = editorRef.current
+    const selection = editor && markdownEditorSelection(editor)
+    if (selection) {
+      lastSelectionRef.current = selection
+      pendingSelectionRef.current = selection
+      setActiveSelection(selection)
+    }
+  }
+
+  function handleEditorKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+    if (
+      (event.key === "ArrowLeft" || event.key === "ArrowRight") &&
+      !event.shiftKey &&
+      !event.metaKey &&
+      !event.ctrlKey &&
+      !event.altKey
+    ) {
+      const selection = markdownEditorSelection(event.currentTarget)
+      if (!selection || selection.start !== selection.end) return
+      event.preventDefault()
+      const cursor = markdownArrowNavigationResult(
+        value,
+        selection.start,
+        event.key
+      )
+      const nextSelection = { end: cursor, start: cursor }
+      lastSelectionRef.current = nextSelection
+      pendingSelectionRef.current = nextSelection
+      setActiveSelection(nextSelection)
+      return
+    }
+    if (event.key === "Backspace" || event.key === "Delete") {
+      const currentSelection = markdownEditorSelection(event.currentTarget)
+      if (!currentSelection) return
+      const selection =
+        currentSelection.start === currentSelection.end
+          ? currentSelection
+          : markdownExpandedDeletionSelection(
+              value,
+              currentSelection.start,
+              currentSelection.end
+            )
+      const emptyListResult =
+        event.key === "Backspace" && selection.start === selection.end
+          ? markdownEmptyListDeletionResult(value, selection.start)
+          : undefined
+      if (emptyListResult) {
+        event.preventDefault()
+        emitMarkdown(emptyListResult.value, emptyListResult.cursor)
+        return
+      }
+      const result = markdownAtomicLinkDeletionResult(
+        value,
+        selection.start,
+        selection.end,
+        event.key
+      )
+      if (!result && selection === currentSelection) return
+      event.preventDefault()
+      if (result) emitMarkdown(result.value, result.cursor)
+      else {
+        emitMarkdown(
+          markdownWithReplacement(value, selection.start, selection.end, ""),
+          selection.start
+        )
+      }
+      return
+    }
+    if (
+      event.key !== "Enter" ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.altKey ||
+      event.nativeEvent.isComposing
+    )
+      return
+    if (!event.shiftKey && onSubmitShortcut) {
       event.preventDefault()
       if (!event.repeat) onSubmitShortcut()
       return
     }
-    const textarea = event.currentTarget
-    if (textarea.selectionStart !== textarea.selectionEnd) return
-    const result = markdownListEnterResult(value, textarea.selectionStart)
-    if (!result) return
+    const selection = markdownEditorSelection(event.currentTarget)
+    if (!selection) return
     event.preventDefault()
-    emitMarkdown(result.value, result.cursor)
+    const listResult =
+      !event.shiftKey && selection.start === selection.end
+        ? markdownListEnterResult(value, selection.start)
+        : undefined
+    if (listResult) {
+      emitMarkdown(listResult.value, listResult.cursor)
+      return
+    }
+    const nextValue = markdownWithReplacement(
+      value,
+      selection.start,
+      selection.end,
+      "\n"
+    )
+    emitMarkdown(nextValue, selection.start + 1)
   }
 
   function applyMarkdownAction(action: MarkdownAction) {
-    const textarea = textareaRef.current
-    if (!textarea || readOnly) return
+    const editor = editorRef.current
+    const selection =
+      (editor && markdownEditorSelection(editor)) ?? lastSelectionRef.current
+    if (!editor || !selection || readOnly) return
     const result = markdownActionResult(
       value,
-      textarea.selectionStart,
-      textarea.selectionEnd,
+      selection.start,
+      selection.end,
       action
     )
     emitMarkdown(result.value, result.cursor)
@@ -1254,7 +1705,7 @@ export const MarkdownEditor = React.forwardRef<
   }
 
   function runHistoryCommand(command: "redo" | "undo") {
-    textareaRef.current?.focus()
+    editorRef.current?.focus()
     document.execCommand(command)
   }
 
@@ -1291,48 +1742,31 @@ export const MarkdownEditor = React.forwardRef<
               placeholder={placeholder}
             />
           ) : (
-            <Tabs
-              className="gap-0"
-              value={mode}
-              onValueChange={(nextMode) => setMode(nextMode as MarkdownMode)}
-            >
-              <TabsContent className="relative" value="write">
-                {onOptimize && (
-                  <MarkdownOptimizeButton
-                    disabled={optimizing}
-                    onOptimize={handleOptimize}
-                    optimizing={optimizing}
-                  />
+            <div>
+              {onOptimize && (
+                <MarkdownOptimizeButton
+                  disabled={optimizing}
+                  onOptimize={handleOptimize}
+                  optimizing={optimizing}
+                />
+              )}
+              <MarkdownWysiwygEditor
+                activeSelection={activeSelection}
+                editorRef={editorRef}
+                className={cn(
+                  minHeight,
+                  maxHeight,
+                  "overflow-y-auto rounded-3xl bg-input/40 px-4 py-3.5 pr-40 dark:bg-muted"
                 )}
-                <Textarea
-                  ref={textareaRef}
-                  data-markdown-editor-input="true"
-                  className={cn(
-                    minHeight,
-                    maxHeight,
-                    "resize-none overflow-y-auto rounded-3xl border-0 bg-input/40 px-4 py-3.5 pr-40 text-[0.9375rem] shadow-none placeholder:text-muted-foreground/55 focus-visible:border-0 focus-visible:ring-0 md:text-[0.9375rem] dark:bg-muted dark:placeholder:text-muted-foreground/50"
-                  )}
-                  placeholder={placeholder}
-                  value={value}
-                  onChange={handleMarkdownChange}
-                  onClick={() => updateMention()}
-                  onKeyDown={handleTextareaKeyDown}
-                  onKeyUp={() => updateMention()}
-                  onSelect={() => updateMention()}
-                />
-              </TabsContent>
-              <TabsContent className="mt-0" value="preview">
-                <MarkdownPreview
-                  className={cn(
-                    minHeight,
-                    "rounded-3xl bg-input/60 px-4 py-3.5 dark:bg-muted"
-                  )}
-                  markdown={value}
-                  onFileLinkClick={onFileLinkClick}
-                  onTaskToggle={toggleTaskLine}
-                  placeholder={placeholder}
-                />
-              </TabsContent>
+                markdown={value}
+                placeholder={placeholder}
+                onInput={handleMarkdownInput}
+                onKeyDown={handleEditorKeyDown}
+                onSelectionChange={() => {
+                  rememberEditorSelection()
+                  updateMention()
+                }}
+              />
               {attachments.length > 0 && (
                 <div className="mx-1 flex flex-wrap items-center gap-3 px-3 py-3">
                   {attachments.map((attachment) => (
@@ -1411,25 +1845,18 @@ export const MarkdownEditor = React.forwardRef<
                   </Button>
                   <ToolbarSeparator />
                   <MarkdownToolbar
-                    disabled={mode === "preview" || optimizing}
+                    disabled={optimizing}
                     onAction={applyMarkdownAction}
+                    onActionIntent={rememberEditorSelection}
                     onRedo={() => runHistoryCommand("redo")}
                     onUndo={() => runHistoryCommand("undo")}
                   />
-                  <TabsList className="h-8 rounded-lg bg-muted/70 p-0.5">
-                    <TabsTrigger className="h-7 px-3 text-xs" value="write">
-                      Write
-                    </TabsTrigger>
-                    <TabsTrigger className="h-7 px-3 text-xs" value="preview">
-                      Preview
-                    </TabsTrigger>
-                  </TabsList>
                 </div>
                 <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
                   {toolbarEnd}
                 </div>
               </div>
-            </Tabs>
+            </div>
           )}
 
           {readOnly && attachments.length > 0 && (
