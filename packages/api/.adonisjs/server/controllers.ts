@@ -6,8 +6,10 @@
 export const controllers = {
   AccessTokens: () => import('#controllers/access_tokens_controller'),
   AccountPrivacy: () => import('#controllers/account_privacy_controller'),
+  BetterAuth: () => import('#controllers/better_auth_controller'),
   Billing: () => import('#controllers/billing_controller'),
   ConsumerContracts: () => import('#controllers/consumer_contracts_controller'),
+  DesktopAuth: () => import('#controllers/desktop_auth_controller'),
   NewAccount: () => import('#controllers/new_account_controller'),
   Profile: () => import('#controllers/profile_controller'),
   ProjectCodePracticeAnalyses: () => import('#controllers/project_code_practice_analyses_controller'),

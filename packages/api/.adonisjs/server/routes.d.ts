@@ -12,8 +12,12 @@ export type ScannedRoutes = {
     'billing.billing.show': { paramsTuple?: []; params?: {} }
     'billing.billing.checkout': { paramsTuple?: []; params?: {} }
     'billing.billing.portal': { paramsTuple?: []; params?: {} }
-    'auth.new_account.store': { paramsTuple?: []; params?: {} }
-    'auth.access_tokens.store': { paramsTuple?: []; params?: {} }
+    'desktop_auth.complete': { paramsTuple?: []; params?: {} }
+    'desktop_auth.passkey': { paramsTuple?: []; params?: {} }
+    'desktop_auth.reset_password': { paramsTuple?: []; params?: {} }
+    'desktop_auth.verified': { paramsTuple?: []; params?: {} }
+    'desktop_auth.exchange': { paramsTuple?: []; params?: {} }
+    'auth.better': { paramsTuple: [...ParamValue[]]; params: {'*': ParamValue[]} }
     'profile.profile.show': { paramsTuple?: []; params?: {} }
     'profile.user_ai_preferences.show': { paramsTuple?: []; params?: {} }
     'profile.user_ai_preferences.update': { paramsTuple?: []; params?: {} }
@@ -69,6 +73,11 @@ export type ScannedRoutes = {
   GET: {
     'telemetry_sessions.show': { paramsTuple?: []; params?: {} }
     'billing.billing.show': { paramsTuple?: []; params?: {} }
+    'desktop_auth.complete': { paramsTuple?: []; params?: {} }
+    'desktop_auth.passkey': { paramsTuple?: []; params?: {} }
+    'desktop_auth.reset_password': { paramsTuple?: []; params?: {} }
+    'desktop_auth.verified': { paramsTuple?: []; params?: {} }
+    'auth.better': { paramsTuple: [...ParamValue[]]; params: {'*': ParamValue[]} }
     'profile.profile.show': { paramsTuple?: []; params?: {} }
     'profile.user_ai_preferences.show': { paramsTuple?: []; params?: {} }
     'profile.user_mcp_configurations.show': { paramsTuple?: []; params?: {} }
@@ -89,6 +98,11 @@ export type ScannedRoutes = {
   HEAD: {
     'telemetry_sessions.show': { paramsTuple?: []; params?: {} }
     'billing.billing.show': { paramsTuple?: []; params?: {} }
+    'desktop_auth.complete': { paramsTuple?: []; params?: {} }
+    'desktop_auth.passkey': { paramsTuple?: []; params?: {} }
+    'desktop_auth.reset_password': { paramsTuple?: []; params?: {} }
+    'desktop_auth.verified': { paramsTuple?: []; params?: {} }
+    'auth.better': { paramsTuple: [...ParamValue[]]; params: {'*': ParamValue[]} }
     'profile.profile.show': { paramsTuple?: []; params?: {} }
     'profile.user_ai_preferences.show': { paramsTuple?: []; params?: {} }
     'profile.user_mcp_configurations.show': { paramsTuple?: []; params?: {} }
@@ -113,8 +127,8 @@ export type ScannedRoutes = {
     'telemetry_ingestion.store': { paramsTuple: [ParamValue]; params: {'signal': ParamValue} }
     'billing.billing.checkout': { paramsTuple?: []; params?: {} }
     'billing.billing.portal': { paramsTuple?: []; params?: {} }
-    'auth.new_account.store': { paramsTuple?: []; params?: {} }
-    'auth.access_tokens.store': { paramsTuple?: []; params?: {} }
+    'desktop_auth.exchange': { paramsTuple?: []; params?: {} }
+    'auth.better': { paramsTuple: [...ParamValue[]]; params: {'*': ParamValue[]} }
     'profile.account_privacy.download': { paramsTuple?: []; params?: {} }
     'profile.account_privacy.close': { paramsTuple?: []; params?: {} }
     'profile.access_tokens.destroy': { paramsTuple?: []; params?: {} }
@@ -141,11 +155,16 @@ export type ScannedRoutes = {
     'projects.user_stories.user_story_comments.undo': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'commentId': ParamValue} }
     'projects.user_stories.user_story_comments.validate_undo': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'commentId': ParamValue} }
   }
+  OPTIONS: {
+    'auth.better': { paramsTuple: [...ParamValue[]]; params: {'*': ParamValue[]} }
+  }
   PUT: {
+    'auth.better': { paramsTuple: [...ParamValue[]]; params: {'*': ParamValue[]} }
     'profile.user_ai_preferences.update': { paramsTuple?: []; params?: {} }
     'profile.user_mcp_configurations.update': { paramsTuple?: []; params?: {} }
   }
   PATCH: {
+    'auth.better': { paramsTuple: [...ParamValue[]]; params: {'*': ParamValue[]} }
     'projects.project_code_practices.update': { paramsTuple: [ParamValue,ParamValue]; params: {'projectId': ParamValue,'practice': ParamValue} }
     'projects.quick_chats.quick_chats.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.quick_chats.quick_chat_agent_runs.update': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'runId': ParamValue} }
@@ -153,6 +172,7 @@ export type ScannedRoutes = {
     'projects.user_stories.user_story_agent_runs.update': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'runId': ParamValue} }
   }
   DELETE: {
+    'auth.better': { paramsTuple: [...ParamValue[]]; params: {'*': ParamValue[]} }
     'providers.provider_credentials.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.quick_chats.quick_chats.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.user_stories.user_stories.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }

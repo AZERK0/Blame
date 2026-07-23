@@ -383,25 +383,6 @@ export function createCloudApi(connection: ApiConnection) {
   }
 }
 
-async function betterAuthSessionRequest(
-  connection: ApiConnection,
-  baseUrl: string,
-  path: string,
-  init: RequestInit
-) {
-  const response = await fetch(`${baseUrl}${path}`, {
-    ...init,
-    headers: { "Content-Type": "application/json", ...init.headers },
-  })
-  if (!response.ok)
-    throw new CloudApiError(await responseMessage(response), response.status)
-  const token = response.headers.get("set-auth-token")
-  const body = responseData(await response.json()) as { user?: CloudUser }
-  if (!token || !body.user)
-    throw new CloudApiError("Sign-in could not be completed.", 401)
-  return { token, user: body.user } satisfies CloudSession
-}
-
 function cloudProjects(value: unknown) {
   const projects = transformerValue(value)
   if (!Array.isArray(projects)) throw new Error("Unable to read projects.")

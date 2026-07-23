@@ -103,28 +103,76 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/billing_controller').default['portal']>>>
     }
   }
-  'auth.new_account.store': {
-    methods: ["POST"]
-    pattern: '/api/v1/auth/signup'
+  'desktop_auth.complete': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/auth/desktop-complete'
     types: {
-      body: ExtractBody<InferInput<(typeof import('#validators/user').signupValidator)>>
+      body: {}
       paramsTuple: []
       params: {}
-      query: ExtractQuery<InferInput<(typeof import('#validators/user').signupValidator)>>
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/new_account_controller').default['store']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/new_account_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/desktop_auth_controller').default['complete']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/desktop_auth_controller').default['complete']>>>
     }
   }
-  'auth.access_tokens.store': {
-    methods: ["POST"]
-    pattern: '/api/v1/auth/login'
+  'desktop_auth.passkey': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/auth/desktop'
     types: {
-      body: ExtractBody<InferInput<(typeof import('#validators/user').loginValidator)>>
+      body: {}
       paramsTuple: []
       params: {}
-      query: ExtractQuery<InferInput<(typeof import('#validators/user').loginValidator)>>
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/access_tokens_controller').default['store']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/access_tokens_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/desktop_auth_controller').default['passkey']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/desktop_auth_controller').default['passkey']>>>
+    }
+  }
+  'desktop_auth.reset_password': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/auth/reset-password-page'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/desktop_auth_controller').default['resetPassword']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/desktop_auth_controller').default['resetPassword']>>>
+    }
+  }
+  'desktop_auth.verified': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/auth/verified'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/desktop_auth_controller').default['verified']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/desktop_auth_controller').default['verified']>>>
+    }
+  }
+  'desktop_auth.exchange': {
+    methods: ["POST"]
+    pattern: '/api/v1/auth/desktop-exchange'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/desktop_auth_controller').default['exchange']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/desktop_auth_controller').default['exchange']>>>
+    }
+  }
+  'auth.better': {
+    methods: ["HEAD","OPTIONS","GET","POST","PUT","PATCH","DELETE"]
+    pattern: '/api/v1/auth/*'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { '*': ParamValue[] }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/better_auth_controller').default['handle']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/better_auth_controller').default['handle']>>>
     }
   }
   'profile.profile.show': {

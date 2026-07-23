@@ -54,17 +54,41 @@ const routes = {
     tokens: [{"old":"/api/v1/billing/portal","type":0,"val":"api","end":""},{"old":"/api/v1/billing/portal","type":0,"val":"v1","end":""},{"old":"/api/v1/billing/portal","type":0,"val":"billing","end":""},{"old":"/api/v1/billing/portal","type":0,"val":"portal","end":""}],
     types: placeholder as Registry['billing.billing.portal']['types'],
   },
-  'auth.new_account.store': {
-    methods: ["POST"],
-    pattern: '/api/v1/auth/signup',
-    tokens: [{"old":"/api/v1/auth/signup","type":0,"val":"api","end":""},{"old":"/api/v1/auth/signup","type":0,"val":"v1","end":""},{"old":"/api/v1/auth/signup","type":0,"val":"auth","end":""},{"old":"/api/v1/auth/signup","type":0,"val":"signup","end":""}],
-    types: placeholder as Registry['auth.new_account.store']['types'],
+  'desktop_auth.complete': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/auth/desktop-complete',
+    tokens: [{"old":"/api/v1/auth/desktop-complete","type":0,"val":"api","end":""},{"old":"/api/v1/auth/desktop-complete","type":0,"val":"v1","end":""},{"old":"/api/v1/auth/desktop-complete","type":0,"val":"auth","end":""},{"old":"/api/v1/auth/desktop-complete","type":0,"val":"desktop-complete","end":""}],
+    types: placeholder as Registry['desktop_auth.complete']['types'],
   },
-  'auth.access_tokens.store': {
+  'desktop_auth.passkey': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/auth/desktop',
+    tokens: [{"old":"/api/v1/auth/desktop","type":0,"val":"api","end":""},{"old":"/api/v1/auth/desktop","type":0,"val":"v1","end":""},{"old":"/api/v1/auth/desktop","type":0,"val":"auth","end":""},{"old":"/api/v1/auth/desktop","type":0,"val":"desktop","end":""}],
+    types: placeholder as Registry['desktop_auth.passkey']['types'],
+  },
+  'desktop_auth.reset_password': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/auth/reset-password-page',
+    tokens: [{"old":"/api/v1/auth/reset-password-page","type":0,"val":"api","end":""},{"old":"/api/v1/auth/reset-password-page","type":0,"val":"v1","end":""},{"old":"/api/v1/auth/reset-password-page","type":0,"val":"auth","end":""},{"old":"/api/v1/auth/reset-password-page","type":0,"val":"reset-password-page","end":""}],
+    types: placeholder as Registry['desktop_auth.reset_password']['types'],
+  },
+  'desktop_auth.verified': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/auth/verified',
+    tokens: [{"old":"/api/v1/auth/verified","type":0,"val":"api","end":""},{"old":"/api/v1/auth/verified","type":0,"val":"v1","end":""},{"old":"/api/v1/auth/verified","type":0,"val":"auth","end":""},{"old":"/api/v1/auth/verified","type":0,"val":"verified","end":""}],
+    types: placeholder as Registry['desktop_auth.verified']['types'],
+  },
+  'desktop_auth.exchange': {
     methods: ["POST"],
-    pattern: '/api/v1/auth/login',
-    tokens: [{"old":"/api/v1/auth/login","type":0,"val":"api","end":""},{"old":"/api/v1/auth/login","type":0,"val":"v1","end":""},{"old":"/api/v1/auth/login","type":0,"val":"auth","end":""},{"old":"/api/v1/auth/login","type":0,"val":"login","end":""}],
-    types: placeholder as Registry['auth.access_tokens.store']['types'],
+    pattern: '/api/v1/auth/desktop-exchange',
+    tokens: [{"old":"/api/v1/auth/desktop-exchange","type":0,"val":"api","end":""},{"old":"/api/v1/auth/desktop-exchange","type":0,"val":"v1","end":""},{"old":"/api/v1/auth/desktop-exchange","type":0,"val":"auth","end":""},{"old":"/api/v1/auth/desktop-exchange","type":0,"val":"desktop-exchange","end":""}],
+    types: placeholder as Registry['desktop_auth.exchange']['types'],
+  },
+  'auth.better': {
+    methods: ["HEAD","OPTIONS","GET","POST","PUT","PATCH","DELETE"],
+    pattern: '/api/v1/auth/*',
+    tokens: [{"old":"/api/v1/auth/*","type":0,"val":"api","end":""},{"old":"/api/v1/auth/*","type":0,"val":"v1","end":""},{"old":"/api/v1/auth/*","type":0,"val":"auth","end":""},{"old":"/api/v1/auth/*","type":2,"val":"*","end":""}],
+    types: placeholder as Registry['auth.better']['types'],
   },
   'profile.profile.show': {
     methods: ["GET","HEAD"],

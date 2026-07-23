@@ -22,13 +22,15 @@ export interface ApiDefinition {
       portal: typeof routes['billing.billing.portal']
     }
   }
+  desktopAuth: {
+    complete: typeof routes['desktop_auth.complete']
+    passkey: typeof routes['desktop_auth.passkey']
+    resetPassword: typeof routes['desktop_auth.reset_password']
+    verified: typeof routes['desktop_auth.verified']
+    exchange: typeof routes['desktop_auth.exchange']
+  }
   auth: {
-    newAccount: {
-      store: typeof routes['auth.new_account.store']
-    }
-    accessTokens: {
-      store: typeof routes['auth.access_tokens.store']
-    }
+    better: typeof routes['auth.better']
   }
   profile: {
     profile: {
