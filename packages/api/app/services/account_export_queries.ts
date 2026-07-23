@@ -183,6 +183,30 @@ export default class AccountExportQueries {
       .orderBy('created_at', 'asc')
   }
 
+  authSessions(userId: string) {
+    return this.client
+      .from('auth_sessions')
+      .select(['id', 'ip_address', 'user_agent', 'expires_at', 'created_at', 'updated_at'])
+      .where('user_id', userId)
+      .orderBy('created_at', 'asc')
+  }
+
+  authAccounts(userId: string) {
+    return this.client
+      .from('auth_accounts')
+      .select(['id', 'provider_id', 'account_id', 'created_at', 'updated_at'])
+      .where('user_id', userId)
+      .orderBy('created_at', 'asc')
+  }
+
+  passkeys(userId: string) {
+    return this.client
+      .from('passkey')
+      .select(['id', 'name', 'deviceType', 'backedUp', 'transports', 'createdAt', 'aaguid'])
+      .where('userId', userId)
+      .orderBy('createdAt', 'asc')
+  }
+
   projects(userId: string) {
     return this.client
       .from('projects')

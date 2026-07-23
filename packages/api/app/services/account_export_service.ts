@@ -80,6 +80,9 @@ const additionalRecords = {
 async function securityExport(queries: AccountExportQueries, userId: string) {
   return {
     accessTokens: normalizeRows(await queries.accessTokens(userId), ['abilities']),
+    sessions: await queries.authSessions(userId),
+    signInMethods: await queries.authAccounts(userId),
+    passkeys: await queries.passkeys(userId),
     dedicatedAuthenticationSecretsIncluded: false,
     exclusions: authenticationFieldExclusions,
     contentWarning:

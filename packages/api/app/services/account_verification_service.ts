@@ -24,7 +24,14 @@ export default class AccountVerificationService {
 
   private async verify(user: User, password: string, confirmationMatches: boolean) {
     if (await this.isBlocked(user.id)) return 'blocked'
-    const passwordMatches = await hash.verify(user.password, password)
+    const credential = await db
+      .from('auth_accounts')
+      .select('password')
+      .where('user_id', user.id)
+      .where('provider_id', 'credential')
+      .first()
+    const passwordHash = credential?.password ?? user.password
+    const passwordMatches = Boolean(passwordHash && (await hash.verify(passwordHash, password)))
     if (passwordMatches && confirmationMatches) {
       await this.resetFailures(user.id)
       return 'verified'

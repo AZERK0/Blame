@@ -80,6 +80,25 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [apiUrl, platform.mcp])
 
+  React.useEffect(() => {
+    if (!platform.auth) return
+    const unsubscribe = platform.auth.onCallback((result) => {
+      if (!result.code) return
+      void createCloudApi({ url: apiUrl })
+        .exchangeDesktopCode(result.code)
+        .then(async (session) => {
+          const authenticatedState = await hydrateSession(
+            createCloudApi({ url: apiUrl, token: session.token }),
+            session
+          )
+          writeCloudSession(session)
+          setState(authenticatedState)
+        })
+    })
+    platform.auth.ready()
+    return unsubscribe
+  }, [apiUrl, platform.auth])
+
   const login = React.useCallback(
     async (input: LoginInput) => {
       const session = await createCloudApi({ url: apiUrl }).login(input)
@@ -96,17 +115,37 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
 
   const signup = React.useCallback(
     async (input: SignupInput) => {
-      const session = await createCloudApi({ url: apiUrl }).signup(input)
-      const api = createCloudApi({
-        url: apiUrl,
-        token: session.token,
-      })
-      const authenticatedState = await hydrateSession(api, session)
-      writeCloudSession(session)
-      setState(authenticatedState)
+      await createCloudApi({ url: apiUrl }).signup(input)
     },
     [apiUrl]
   )
+
+  const requestPasswordReset = React.useCallback(
+    (email: string) => createCloudApi({ url: apiUrl }).requestPasswordReset(email),
+    [apiUrl]
+  )
+  const resetPassword = React.useCallback(
+    (resetToken: string, password: string) =>
+      createCloudApi({ url: apiUrl }).resetPassword(resetToken, password),
+    [apiUrl]
+  )
+  const resendVerification = React.useCallback(
+    (email: string) => createCloudApi({ url: apiUrl }).resendVerification(email),
+    [apiUrl]
+  )
+  const socialLogin = React.useCallback(
+    async (provider: "github" | "google" | "microsoft") => {
+      const url = await createCloudApi({ url: apiUrl }).socialLogin(provider)
+      if (platform.openExternalLink) platform.openExternalLink(url)
+      else window.open(url, "_blank", "noopener,noreferrer")
+    },
+    [apiUrl, platform]
+  )
+  const passkeyLogin = React.useCallback(async () => {
+    const url = createCloudApi({ url: apiUrl }).passkeyLoginUrl()
+    if (platform.openExternalLink) platform.openExternalLink(url)
+    else window.open(url, "_blank", "noopener,noreferrer")
+  }, [apiUrl, platform])
 
   const refreshAiPreferences = React.useCallback(async () => {
     if (!token) return
@@ -210,13 +249,18 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
           state.status === "authenticated" ? state.mcpConfiguration : undefined,
         license: state.status === "authenticated" ? state.license : undefined,
         login,
+        passkeyLogin,
         logout,
         openBillingPortal,
         refreshAiPreferences,
         refreshLicense,
+        requestPasswordReset,
+        resendVerification,
+        resetPassword,
         saveAiPreferences,
         saveMcpConfiguration,
         signup,
+        socialLogin,
         startCheckout,
         status: state.status,
         token,

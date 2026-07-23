@@ -32,6 +32,8 @@ const AccountPrivacyController = () => import('#controllers/account_privacy_cont
 const TelemetryIngestionController = () => import('#controllers/telemetry_ingestion_controller')
 const TelemetrySessionsController = () => import('#controllers/telemetry_sessions_controller')
 const ConsumerContractsController = () => import('#controllers/consumer_contracts_controller')
+const BetterAuthController = () => import('#controllers/better_auth_controller')
+const DesktopAuthController = () => import('#controllers/desktop_auth_controller')
 
 router.get('/', () => {
   return { hello: 'world' }
@@ -56,13 +58,12 @@ router
       .as('billing')
       .use(middleware.auth())
 
-    router
-      .group(() => {
-        router.post('signup', [controllers.NewAccount, 'store'])
-        router.post('login', [controllers.AccessTokens, 'store'])
-      })
-      .prefix('auth')
-      .as('auth')
+    router.get('auth/desktop-complete', [DesktopAuthController, 'complete'])
+    router.get('auth/desktop', [DesktopAuthController, 'passkey'])
+    router.get('auth/reset-password-page', [DesktopAuthController, 'resetPassword'])
+    router.get('auth/verified', [DesktopAuthController, 'verified'])
+    router.post('auth/desktop-exchange', [DesktopAuthController, 'exchange'])
+    router.any('auth/*', [BetterAuthController, 'handle']).as('auth.better')
 
     router
       .group(() => {

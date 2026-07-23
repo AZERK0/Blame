@@ -8,6 +8,7 @@ if (!(root instanceof HTMLElement)) throw new Error("Root element not found")
 
 mountApp(root, {
   platform: {
+    auth: window.blame.auth,
     agent: window.blame.agent,
     billing: window.blame.billing,
     mcp: window.blame.mcp,

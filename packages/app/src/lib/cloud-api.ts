@@ -11,6 +11,7 @@ import type {
   SaveAiPreferencesInput,
   LoginInput,
   SignupInput,
+  SocialAuthProvider,
 } from "@/context/cloud-auth"
 import type {
   ApiConnection,
@@ -60,16 +61,92 @@ export function createCloudApi(connection: ApiConnection) {
 
   return {
     login(input: LoginInput) {
-      return request<CloudSession>(connection, baseUrl, "/auth/login", {
-        body: JSON.stringify(input),
+      return betterAuthSessionRequest(
+        connection,
+        baseUrl,
+        "/auth/sign-in/email",
+        {
+          body: JSON.stringify(input),
+          method: "POST",
+        }
+      )
+    },
+    async signup(input: SignupInput) {
+      await request<unknown>(connection, baseUrl, "/auth/sign-up/email", {
+        body: JSON.stringify({
+          email: input.email,
+          name: input.fullName ?? input.email.split("@")[0],
+          password: input.password,
+        }),
         method: "POST",
       })
     },
-    signup(input: SignupInput) {
-      return request<CloudSession>(connection, baseUrl, "/auth/signup", {
-        body: JSON.stringify(input),
+    requestPasswordReset(email: string) {
+      return request<unknown>(
+        connection,
+        baseUrl,
+        "/auth/request-password-reset",
+        {
+          body: JSON.stringify({
+            email,
+            redirectTo: `${baseUrl}/auth/reset-password-page`,
+          }),
+          method: "POST",
+        }
+      ).then(() => undefined)
+    },
+    resetPassword(token: string, newPassword: string) {
+      return request<unknown>(connection, baseUrl, "/auth/reset-password", {
+        body: JSON.stringify({ token, newPassword }),
         method: "POST",
-      })
+      }).then(() => undefined)
+    },
+    resendVerification(email: string) {
+      return request<unknown>(
+        connection,
+        baseUrl,
+        "/auth/send-verification-email",
+        {
+          body: JSON.stringify({
+            email,
+            callbackURL: `${baseUrl}/auth/verified`,
+          }),
+          method: "POST",
+        }
+      ).then(() => undefined)
+    },
+    async socialLogin(provider: SocialAuthProvider) {
+      const result = await request<{ url?: string }>(
+        connection,
+        baseUrl,
+        "/auth/sign-in/social",
+        {
+          body: JSON.stringify({
+            provider,
+            callbackURL: `${baseUrl}/auth/desktop-complete`,
+            errorCallbackURL: `${baseUrl}/auth/desktop-complete?error=oauth_failed`,
+            disableRedirect: true,
+          }),
+          method: "POST",
+        }
+      )
+      if (!result.url)
+        throw new CloudApiError("This provider is not configured.", 503)
+      return result.url
+    },
+    passkeyLoginUrl() {
+      return `${baseUrl}/auth/desktop?method=passkey`
+    },
+    exchangeDesktopCode(code: string) {
+      return request<CloudSession>(
+        connection,
+        baseUrl,
+        "/auth/desktop-exchange",
+        {
+          body: JSON.stringify({ code }),
+          method: "POST",
+        }
+      )
     },
     profile() {
       return request<CloudUser>(connection, baseUrl, "/account/profile")
@@ -166,7 +243,10 @@ export function createCloudApi(connection: ApiConnection) {
         {
           method: "POST",
         }
-      )
+      ).catch(() => undefined)
+      await request<unknown>(connection, baseUrl, "/auth/sign-out", {
+        method: "POST",
+      }).catch(() => undefined)
     },
     ensureProject(input: {
       name: string
@@ -301,6 +381,25 @@ export function createCloudApi(connection: ApiConnection) {
       ).then(cloudProjectInitializationSnapshot)
     },
   }
+}
+
+async function betterAuthSessionRequest(
+  connection: ApiConnection,
+  baseUrl: string,
+  path: string,
+  init: RequestInit
+) {
+  const response = await fetch(`${baseUrl}${path}`, {
+    ...init,
+    headers: { "Content-Type": "application/json", ...init.headers },
+  })
+  if (!response.ok)
+    throw new CloudApiError(await responseMessage(response), response.status)
+  const token = response.headers.get("set-auth-token")
+  const body = responseData(await response.json()) as { user?: CloudUser }
+  if (!token || !body.user)
+    throw new CloudApiError("Sign-in could not be completed.", 401)
+  return { token, user: body.user } satisfies CloudSession
 }
 
 function cloudProjects(value: unknown) {
@@ -439,6 +538,48 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function responseData(value: unknown) {
   if (!isRecord(value) || !("data" in value)) return value
   return value.data
+}
+
+async function betterAuthSessionRequest(
+  connection: ApiConnection,
+  baseUrl: string,
+  path: string,
+  init: RequestInit
+) {
+  const response = await fetch(`${baseUrl}${path}`, {
+    ...init,
+    headers: { "Content-Type": "application/json", ...init.headers },
+  })
+  if (!response.ok)
+    throw new CloudApiError(await responseMessage(response), response.status)
+  const token = response.headers.get("set-auth-token")
+  const body = responseData(await response.json()) as {
+    user?: {
+      id: string
+      name: string
+      email: string
+      createdAt: string
+      updatedAt: string
+    }
+  }
+  if (!token || !body.user)
+    throw new CloudApiError("Sign-in could not be completed.", 401)
+  const names = body.user.name.trim().split(/\s+/)
+  const initials =
+    names.length > 1
+      ? `${names[0]?.[0] ?? ""}${names.at(-1)?.[0] ?? ""}`.toUpperCase()
+      : body.user.email.slice(0, 2).toUpperCase()
+  return {
+    token,
+    user: {
+      id: body.user.id,
+      fullName: body.user.name || null,
+      email: body.user.email,
+      createdAt: body.user.createdAt,
+      updatedAt: body.user.updatedAt,
+      initials,
+    },
+  } satisfies CloudSession
 }
 
 async function responseMessage(response: Response) {

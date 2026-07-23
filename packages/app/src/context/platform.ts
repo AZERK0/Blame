@@ -57,6 +57,10 @@ export type Platform = {
     onRefreshLicense(callback: () => void): () => void
     ready(): void
   }
+  auth?: {
+    onCallback(callback: (result: { code?: string; error?: string }) => void): () => void
+    ready(): void
+  }
   agent?: AgentClient
   api?: ApiConnection
   backlogStatusPip?: BacklogStatusPipClient

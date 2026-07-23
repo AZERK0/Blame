@@ -147,6 +147,11 @@ export type CloudAuthContextValue = {
   token?: string
   login(input: LoginInput): Promise<void>
   signup(input: SignupInput): Promise<void>
+  requestPasswordReset(email: string): Promise<void>
+  resetPassword(token: string, password: string): Promise<void>
+  resendVerification(email: string): Promise<void>
+  socialLogin(provider: SocialAuthProvider): Promise<void>
+  passkeyLogin(): Promise<void>
   saveAiPreferences(input: SaveAiPreferencesInput): Promise<void>
   saveMcpConfiguration(servers: CloudMcpServer[]): Promise<void>
   refreshAiPreferences(): Promise<void>
@@ -155,6 +160,8 @@ export type CloudAuthContextValue = {
   openBillingPortal(): Promise<void>
   logout(): Promise<void>
 }
+
+export type SocialAuthProvider = "github" | "google" | "microsoft"
 
 export type SaveAiPreferencesInput = {
   alternativeModel: CloudAiModelPreference

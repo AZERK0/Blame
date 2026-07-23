@@ -64,14 +64,17 @@
     "@adonisjs/lucid": "^22.4.2",
     "@adonisjs/session": "^8.1.0",
     "@adonisjs/shield": "^9.0.0",
-    "@blame/telemetry": "workspace:*",
+    "@better-auth/passkey": "1.6.24",
     "@blame/preview-contract": "workspace:*",
+    "@blame/telemetry": "workspace:*",
     "@japa/api-client": "^3.2.1",
     "@tuyau/core": "^1.2.2",
     "@vinejs/vine": "^4.3.1",
+    "better-auth": "1.6.24",
     "luxon": "^3.7.2",
     "mysql2": "^3.15.3",
     "reflect-metadata": "^0.2.2",
+    "resend": "6.9.2",
     "stripe": "^18.5.0"
   },
   "hotHook": {

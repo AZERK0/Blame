@@ -177,6 +177,10 @@ export type BacklogStatusPip = {
 };
 
 export type BlameDesktopApi = {
+  auth: {
+    onCallback(callback: (result: { code?: string; error?: string }) => void): () => void;
+    ready(): void;
+  };
   billing: {
     onRefreshLicense(callback: () => void): () => void;
     ready(): void;

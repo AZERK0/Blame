@@ -1,5 +1,5 @@
 import * as React from "react"
-import { LoaderCircleIcon } from "lucide-react"
+import { KeyRoundIcon, LoaderCircleIcon } from "lucide-react"
 
 import { CompactWindowChrome } from "@/components/layout/compact-window-chrome"
 import { Button } from "@/components/ui/button"
@@ -15,7 +15,7 @@ import { LegalLink } from "@/components/legal/legal-link"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { publicAssetUrl } from "@/lib/public-asset-url"
 
-type AuthMode = "login" | "signup"
+type AuthMode = "login" | "signup" | "forgot" | "verify"
 type AuthFieldProps = {
   description?: string
   id: string
@@ -24,6 +24,8 @@ type AuthFieldProps = {
   required?: boolean
   type?: React.HTMLInputTypeAttribute
   value: string
+  minLength?: number
+  maxLength?: number
 }
 
 export function ConnectScreen() {
@@ -46,8 +48,12 @@ export function ConnectScreen() {
           >
             {mode === "login" ? (
               <LoginForm onModeChange={setMode} />
-            ) : (
+            ) : mode === "signup" ? (
               <SignupForm onModeChange={setMode} />
+            ) : mode === "forgot" ? (
+              <ForgotPasswordForm onModeChange={setMode} />
+            ) : (
+              <VerificationForm onModeChange={setMode} />
             )}
           </div>
         </div>
@@ -103,9 +109,17 @@ function LoginForm({ onModeChange }: { onModeChange(mode: AuthMode): void }) {
         />
         <AuthError error={form.error} />
         <SubmitButton loading={form.loading}>Login</SubmitButton>
-        <SocialAuthButton
-          action="Sign in with GitHub"
-          onClick={() => form.fail("GitHub authentication is not available.")}
+        <button
+          className="text-sm font-medium text-foreground/70 underline-offset-4 hover:text-foreground hover:underline"
+          type="button"
+          onClick={() => onModeChange("forgot")}
+        >
+          Forgot your password?
+        </button>
+        <AlternativeAuth
+          loading={form.loading}
+          onPasskey={() => form.run(() => auth.passkeyLogin())}
+          onSocial={(provider) => form.run(() => auth.socialLogin(provider))}
         />
         <AuthLegalNotice mode="login" />
         <ModePrompt action="Sign up" onClick={() => onModeChange("signup")}>
@@ -127,14 +141,16 @@ function SignupForm({ onModeChange }: { onModeChange(mode: AuthMode): void }) {
   return (
     <form
       className="flex flex-col gap-6"
-      onSubmit={form.submit(() =>
-        auth.signup({
+      onSubmit={form.submit(async () => {
+        if (password !== passwordConfirmation) throw new Error("Passwords do not match.")
+        await auth.signup({
           email,
           fullName: fullName.trim() || null,
           password,
           passwordConfirmation,
         })
-      )}
+        onModeChange("verify")
+      })}
     >
       <FieldGroup className="gap-4">
         <FormTitle title="Create your account" description="" />
@@ -151,13 +167,61 @@ function SignupForm({ onModeChange }: { onModeChange(mode: AuthMode): void }) {
         <AuthError error={form.error} />
         <AuthLegalNotice mode="signup" />
         <SubmitButton loading={form.loading}>Create account</SubmitButton>
-        <SocialAuthButton
-          action="Sign up with GitHub"
-          onClick={() => form.fail("GitHub authentication is not available.")}
+        <AlternativeAuth
+          loading={form.loading}
+          onPasskey={() => form.fail("Create an account first, then add a passkey securely.")}
+          onSocial={(provider) => form.run(() => auth.socialLogin(provider))}
         />
         <ModePrompt action="Sign in" onClick={() => onModeChange("login")}>
           Already have an account?
         </ModePrompt>
+      </FieldGroup>
+    </form>
+  )
+}
+
+function ForgotPasswordForm({ onModeChange }: { onModeChange(mode: AuthMode): void }) {
+  const auth = useCloudAuth()
+  const [email, setEmail] = React.useState("")
+  const [sent, setSent] = React.useState(false)
+  const form = useAuthForm()
+  return (
+    <form className="flex flex-col gap-6" onSubmit={form.submit(async () => {
+      await auth.requestPasswordReset(email)
+      setSent(true)
+    })}>
+      <FieldGroup className="gap-4">
+        <FormTitle title="Reset your password" description="We’ll email a secure link if an account exists for this address." />
+        {sent ? (
+          <FieldDescription className="rounded-md border border-emerald-600/20 bg-emerald-500/10 p-3 text-emerald-800">
+            Check your inbox. The reset link expires in 30 minutes.
+          </FieldDescription>
+        ) : <AuthField id="reset-email" label="Email" type="email" value={email} onChange={setEmail} />}
+        <AuthError error={form.error} />
+        {!sent ? <SubmitButton loading={form.loading}>Send reset link</SubmitButton> : null}
+        <ModePrompt action="Back to login" onClick={() => onModeChange("login")}>Remembered your password?</ModePrompt>
+      </FieldGroup>
+    </form>
+  )
+}
+
+function VerificationForm({ onModeChange }: { onModeChange(mode: AuthMode): void }) {
+  const auth = useCloudAuth()
+  const [email, setEmail] = React.useState("")
+  const [sent, setSent] = React.useState(false)
+  const form = useAuthForm()
+  return (
+    <form className="flex flex-col gap-6" onSubmit={form.submit(async () => {
+      await auth.resendVerification(email)
+      setSent(true)
+    })}>
+      <FieldGroup className="gap-4">
+        <FormTitle title="Verify your email" description="Open the verification link we sent before signing in with a password." />
+        <AuthField id="verify-email" label="Email" type="email" value={email} onChange={setEmail} />
+        {sent ? <FieldDescription>A fresh verification link was sent.</FieldDescription> : null}
+        <AuthError error={form.error} />
+        <SubmitButton loading={form.loading}>Resend verification email</SubmitButton>
+        <ModePrompt action="Back to login" onClick={() => onModeChange("login")}>Already verified?</ModePrompt>
       </FieldGroup>
     </form>
   )
@@ -291,7 +355,9 @@ function SignupPasswordField({
       type="password"
       value={value}
       onChange={onChange}
-      description="Must be at least 8 characters long."
+      description="12–128 characters. Use a unique passphrase; password managers are recommended."
+      minLength={12}
+      maxLength={128}
     />
   )
 }
@@ -337,6 +403,8 @@ function AuthField({
   required = true,
   type = "text",
   value,
+  minLength,
+  maxLength,
 }: AuthFieldProps) {
   return (
     <Field>
@@ -344,6 +412,8 @@ function AuthField({
       <Input
         className="bg-background"
         id={id}
+        minLength={minLength}
+        maxLength={maxLength}
         required={required}
         type={type}
         value={value}
@@ -380,22 +450,24 @@ function SubmitButton({
   )
 }
 
-function SocialAuthButton({
-  action,
-  onClick,
-}: {
-  action: string
-  onClick(): void
+function AlternativeAuth({ loading, onPasskey, onSocial }: {
+  loading: boolean
+  onPasskey(): void
+  onSocial(provider: "github" | "google" | "microsoft"): void
 }) {
   return (
     <>
       <AuthSeparator>Or continue with</AuthSeparator>
-      <Field>
-        <Button variant="outline" type="button" onClick={onClick}>
+      <Field className="grid grid-cols-3 gap-2">
+        <Button aria-label="Continue with GitHub" disabled={loading} variant="outline" type="button" onClick={() => onSocial("github")}>
           <GitHubIcon />
-          {action}
         </Button>
+        <Button aria-label="Continue with Google" disabled={loading} variant="outline" type="button" onClick={() => onSocial("google")}>G</Button>
+        <Button aria-label="Continue with Microsoft" disabled={loading} variant="outline" type="button" onClick={() => onSocial("microsoft")}>M</Button>
       </Field>
+      <Button disabled={loading} variant="outline" type="button" onClick={onPasskey}>
+        <KeyRoundIcon /> Sign in with a passkey
+      </Button>
     </>
   )
 }
@@ -455,6 +527,15 @@ function useAuthForm() {
     error,
     fail: setError,
     loading,
+    run(handler: () => Promise<void>) {
+      setError(undefined)
+      setLoading(true)
+      void handler()
+        .catch((error) =>
+          setError(error instanceof Error ? friendlyAuthError(error.message) : "Request failed")
+        )
+        .finally(() => setLoading(false))
+    },
     submit:
       (handler: () => Promise<void>) =>
       (event: React.FormEvent<HTMLFormElement>) => {
@@ -463,9 +544,18 @@ function useAuthForm() {
         setLoading(true)
         void handler()
           .catch((error) =>
-            setError(error instanceof Error ? error.message : "Request failed")
+            setError(error instanceof Error ? friendlyAuthError(error.message) : "Request failed")
           )
           .finally(() => setLoading(false))
       },
   }
+}
+
+function friendlyAuthError(message: string) {
+  const normalized = message.toLowerCase()
+  if (normalized.includes("email not verified")) return "Verify your email before signing in. You can request a new link below."
+  if (normalized.includes("invalid email or password") || normalized.includes("invalid password")) return "The email or password is incorrect."
+  if (normalized.includes("too many")) return "Too many attempts. Wait a minute, then try again."
+  if (normalized.includes("account not linked")) return "This email already has an account. Sign in first, then link this provider from settings."
+  return message
 }

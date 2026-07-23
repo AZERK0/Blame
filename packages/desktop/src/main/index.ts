@@ -79,6 +79,8 @@ let shutdownPromise: Promise<void> | undefined
 let shutdownRequested = false
 let readyToQuit = false
 let pendingBillingRefresh = process.argv.some((argument) => argument === billingDeepLink)
+let pendingAuthCallback = authCallback(process.argv.find((argument) => argument.startsWith("blame://auth/")))
+let authRendererReady = false
 
 void app.whenReady().then(() => {
   registerIpcHandlers()
@@ -292,12 +294,35 @@ function clamp(value: number, min: number, max: number) {
 }
 
 function handleDeepLink(url: string | undefined) {
-  if (url !== billingDeepLink) return
-  pendingBillingRefresh = true
+  if (url === billingDeepLink) pendingBillingRefresh = true
+  else {
+    const callback = authCallback(url)
+    if (!callback) return
+    pendingAuthCallback = callback
+  }
   showMainWindow()
   if (!mainWindow || mainWindow.webContents.isLoading()) return
-  pendingBillingRefresh = false
-  mainWindow.webContents.send("billing:refresh-license")
+  if (pendingBillingRefresh) {
+    pendingBillingRefresh = false
+    mainWindow.webContents.send("billing:refresh-license")
+  }
+  if (pendingAuthCallback && authRendererReady) {
+    mainWindow.webContents.send("auth:callback", pendingAuthCallback)
+    pendingAuthCallback = undefined
+  }
+}
+
+function authCallback(value: string | undefined) {
+  if (!value) return undefined
+  try {
+    const url = new URL(value)
+    if (url.protocol !== "blame:" || url.hostname !== "auth" || url.pathname !== "/callback") return undefined
+    const code = url.searchParams.get("code") ?? undefined
+    const error = url.searchParams.get("error") ?? undefined
+    if (code && /^[A-Za-z0-9_-]{32,128}$/.test(code) && url.searchParams.size === 1) return { code }
+    if (error && /^[a-z_]{1,64}$/.test(error) && url.searchParams.size === 1) return { error }
+  } catch {}
+  return undefined
 }
 
 function showMainWindow() {
@@ -397,6 +422,13 @@ function registerIpcHandlers() {
     event.sender.send("billing:refresh-license")
   })
 
+  ipcMain.on("auth:renderer-ready", (event) => {
+    authRendererReady = true
+    if (!pendingAuthCallback) return
+    event.sender.send("auth:callback", pendingAuthCallback)
+    pendingAuthCallback = undefined
+  })
+
   ipcMain.handle("shell:open-path", (_event, path: string) => {
     return shell.openPath(path)
   })
@@ -412,6 +444,7 @@ function setWindowPresentation(window: BrowserWindow | null, input: unknown) {
 }
 
 function replaceMainWindow(role: MainWindowRole, pathname?: string) {
+  authRendererReady = false
   const replacedWindow = mainWindow
   mainWindow = createMainWindow(role, pathname, replacedWindow)
   mainWindowRole = role
