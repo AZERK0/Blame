@@ -459,21 +459,11 @@
     transition: height 180ms ease;
   }
 
-  #root[data-compact-window-drag] {
+  [data-compact-window-drag] {
     -webkit-app-region: drag;
   }
 
-  #root[data-compact-window-drag]
-    :is(
-      a,
-      button,
-      input,
-      label,
-      select,
-      textarea,
-      [contenteditable="true"],
-      [role="button"]
-    ) {
+  [data-compact-window-drag] button {
     -webkit-app-region: no-drag;
   }
 

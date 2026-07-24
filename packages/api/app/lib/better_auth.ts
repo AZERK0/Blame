@@ -8,13 +8,14 @@ import { bearer } from 'better-auth/plugins'
 import { createPool } from 'mysql2/promise'
 
 const baseURL = env.get('BETTER_AUTH_URL', env.get('APP_URL')).replace(/\/$/, '')
+const betterAuthSecret = env.get('BETTER_AUTH_SECRET')?.release() ?? env.get('APP_KEY').release()
 const socialProviders = configuredSocialProviders()
 
 export const auth = betterAuth({
   appName: 'Blame',
   baseURL,
   basePath: '/api/v1/auth',
-  secret: env.get('BETTER_AUTH_SECRET', env.get('APP_KEY').release()),
+  secret: betterAuthSecret,
   database: createPool({
     host: env.get('DB_HOST'),
     port: env.get('DB_PORT'),

@@ -91,6 +91,119 @@ export class AuthAccessTokenSchema extends BaseModel {
   declare updatedAt: DateTime | null
 }
 
+export class AuthAccountSchema extends BaseModel {
+  static $columns = ['accessToken', 'accessTokenExpiresAt', 'accountId', 'createdAt', 'id', 'idToken', 'password', 'providerId', 'refreshToken', 'refreshTokenExpiresAt', 'scope', 'updatedAt', 'userId'] as const
+  $columns = AuthAccountSchema.$columns
+  @column()
+  declare accessToken: string | null
+  @column.dateTime()
+  declare accessTokenExpiresAt: DateTime | null
+  @column()
+  declare accountId: string
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare idToken: string | null
+  @column({ serializeAs: null })
+  declare password: string | null
+  @column()
+  declare providerId: string
+  @column()
+  declare refreshToken: string | null
+  @column.dateTime()
+  declare refreshTokenExpiresAt: DateTime | null
+  @column()
+  declare scope: string | null
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+  @column()
+  declare userId: string
+}
+
+export class AuthDesktopHandoffSchema extends BaseModel {
+  static $columns = ['codeHash', 'consumedAt', 'createdAt', 'expiresAt', 'id', 'userId'] as const
+  $columns = AuthDesktopHandoffSchema.$columns
+  @column()
+  declare codeHash: string
+  @column.dateTime()
+  declare consumedAt: DateTime | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column.dateTime()
+  declare expiresAt: DateTime
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare userId: string
+}
+
+export class AuthSessionSchema extends BaseModel {
+  static $columns = ['createdAt', 'expiresAt', 'id', 'ipAddress', 'token', 'updatedAt', 'userAgent', 'userId'] as const
+  $columns = AuthSessionSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column.dateTime()
+  declare expiresAt: DateTime
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare ipAddress: string | null
+  @column()
+  declare token: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+  @column()
+  declare userAgent: string | null
+  @column()
+  declare userId: string
+}
+
+export class AuthVerificationSchema extends BaseModel {
+  static $columns = ['createdAt', 'expiresAt', 'id', 'identifier', 'updatedAt', 'value'] as const
+  $columns = AuthVerificationSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column.dateTime()
+  declare expiresAt: DateTime
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare identifier: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+  @column()
+  declare value: string
+}
+
+export class PasskeySchema extends BaseModel {
+  static $columns = ['aaguid', 'backedUp', 'counter', 'createdAt', 'credentialId', 'deviceType', 'id', 'name', 'publicKey', 'transports', 'userId'] as const
+  $columns = PasskeySchema.$columns
+  @column()
+  declare aaguid: string | null
+  @column()
+  declare backedUp: boolean
+  @column()
+  declare counter: bigint | number
+  @column.dateTime()
+  declare createdAt: DateTime | null
+  @column()
+  declare credentialId: string
+  @column()
+  declare deviceType: string
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare name: string | null
+  @column()
+  declare publicKey: string
+  @column()
+  declare transports: string | null
+  @column()
+  declare userId: string
+}
+
 export class ProjectCodePracticeAnalysisSchema extends BaseModel {
   static $columns = ['agentModelId', 'agentProviderId', 'clineSessionId', 'createdAt', 'error', 'projectId', 'status', 'updatedAt', 'viewedAt'] as const
   $columns = ProjectCodePracticeAnalysisSchema.$columns
@@ -509,7 +622,7 @@ export class UserSubscriptionSchema extends BaseModel {
 }
 
 export class UserSchema extends BaseModel {
-  static $columns = ['activeDeletionDeadline', 'closureRequestedAt', 'createdAt', 'email', 'fullName', 'id', 'password', 'privacyVerificationBlockedUntil', 'privacyVerificationFailureCount', 'privacyVerificationWindowStartedAt', 'updatedAt'] as const
+  static $columns = ['activeDeletionDeadline', 'closureRequestedAt', 'createdAt', 'email', 'emailVerified', 'fullName', 'id', 'image', 'password', 'privacyVerificationBlockedUntil', 'privacyVerificationFailureCount', 'privacyVerificationWindowStartedAt', 'updatedAt'] as const
   $columns = UserSchema.$columns
   @column.dateTime()
   declare activeDeletionDeadline: DateTime | null
@@ -520,11 +633,15 @@ export class UserSchema extends BaseModel {
   @column()
   declare email: string
   @column()
+  declare emailVerified: boolean
+  @column()
   declare fullName: string | null
   @column({ isPrimary: true })
   declare id: string
+  @column()
+  declare image: string | null
   @column({ serializeAs: null })
-  declare password: string
+  declare password: string | null
   @column.dateTime()
   declare privacyVerificationBlockedUntil: DateTime | null
   @column()

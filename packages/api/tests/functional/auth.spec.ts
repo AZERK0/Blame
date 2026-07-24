@@ -13,6 +13,18 @@ type SignupBody = {
 
 const uuidV7Pattern = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
 
+test.group('Better Auth response forwarding', () => {
+  test('forwards empty redirects', async ({ client, assert }) => {
+    const response = await client
+      .get('/api/v1/auth/callback/google?error=access_denied')
+      .redirects(0)
+
+    response.assertStatus(302)
+    assert.match(response.header('location') ?? '', /\/api\/v1\/auth\/error\?error=/)
+    assert.equal(response.text(), '')
+  })
+})
+
 test.group('auth', (group) => {
   group.setup(() => testUtils.db().migrate())
   group.each.setup(() => testUtils.db().truncate())

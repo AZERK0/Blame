@@ -16,12 +16,6 @@ export default class BetterAuthController {
       new Request(request.completeUrl(true), { method, headers, body })
     )
 
-    response.status(authResponse.status)
-    authResponse.headers.forEach((value, name) => response.append(name, value))
-    const contentType = authResponse.headers.get('content-type') ?? ''
-    if (contentType.includes('application/json')) {
-      return response.send(await authResponse.json())
-    }
-    return response.send(await authResponse.text())
+    return response.send(authResponse)
   }
 }
