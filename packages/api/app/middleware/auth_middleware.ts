@@ -2,9 +2,7 @@ import type { HttpContext } from '@adonisjs/core/http'
 import type { NextFn } from '@adonisjs/core/types/http'
 import type { Authenticators } from '@adonisjs/auth/types'
 import AccountClosureLedgerService from '#services/account_closure_ledger_service'
-import { auth as betterAuth } from '#lib/better_auth'
-import { fromNodeHeaders } from 'better-auth/node'
-import User from '#models/user'
+import { authenticateBetterAuthSession } from '#lib/authenticate_better_auth_session'
 
 /**
  * Auth middleware is used authenticate HTTP requests and deny
@@ -18,16 +16,15 @@ export default class AuthMiddleware {
       guards?: (keyof Authenticators)[]
     } = {}
   ) {
-    try {
-      await ctx.auth.authenticateUsing(options.guards)
-    } catch {
-      const session = await betterAuth.api.getSession({
-        headers: fromNodeHeaders(ctx.request.request.headers),
-      })
-      if (!session) return ctx.response.unauthorized({ message: 'Authentication required' })
-      const user = await User.find(session.user.id)
-      if (!user) return ctx.response.unauthorized({ message: 'Authentication required' })
-      await ctx.auth.use('web').login(user)
+    if (!ctx.auth.isAuthenticated) {
+      try {
+        await ctx.auth.authenticateUsing(options.guards)
+      } catch {
+        const authenticated = await authenticateBetterAuthSession(ctx)
+        if (!authenticated) {
+          return ctx.response.unauthorized({ message: 'Authentication required' })
+        }
+      }
     }
     const user = ctx.auth.getUserOrFail()
     const closureLedger = new AccountClosureLedgerService()

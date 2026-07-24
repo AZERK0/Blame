@@ -9,6 +9,7 @@ import {
   agentEventText,
   completedAgentRun,
   shouldPersistAgentEvent,
+  terminalAgentRunEvent,
 } from "@/components/backlog/data/agent-flow"
 import { subscribeAgentEvents } from "@/components/backlog/data/agent-event-stream"
 import {
@@ -52,6 +53,7 @@ import {
 } from "@/components/chat/data/quick-chat-agent-flow"
 import {
   type QuickChat,
+  type QuickChatAgentRun,
   type QuickChatAgentRunUpdate,
   type QuickChatMessage,
   type QuickChatUpdate,

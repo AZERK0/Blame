@@ -29,6 +29,30 @@ test.group('auth', (group) => {
   group.setup(() => testUtils.db().migrate())
   group.each.setup(() => testUtils.db().truncate())
 
+  test('accepts Better Auth bearer tokens on protected routes', async ({ client, assert }) => {
+    const email = `${crypto.randomUUID()}@example.com`
+    const password = 'password123!'
+    await client.post('/api/v1/auth/sign-up/email').json({
+      email,
+      name: 'Ada Lovelace',
+      password,
+    })
+    const user = await User.findByOrFail('email', email)
+    user.emailVerified = true
+    await user.save()
+
+    const signIn = await client.post('/api/v1/auth/sign-in/email').json({ email, password })
+    signIn.assertStatus(200)
+    const token = signIn.header('set-auth-token')
+    assert.isString(token)
+
+    const profile = await client
+      .get('/api/v1/account/profile')
+      .header('Authorization', `Bearer ${token}`)
+
+    profile.assertStatus(200)
+  })
+
   test('creates users with uuid v7 ids', async ({ client, assert }) => {
     const response = await client.post('/api/v1/auth/signup').json({
       fullName: 'Ada Lovelace',
