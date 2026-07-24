@@ -176,9 +176,25 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
   )
   const socialLogin = React.useCallback(
     async (provider: "github" | "google" | "microsoft") => {
-      const url = await createCloudApi({ url: apiUrl }).socialLogin(provider)
-      if (platform.openExternalLink) platform.openExternalLink(url)
-      else window.open(url, "_blank", "noopener,noreferrer")
+      const api = createCloudApi({ url: apiUrl })
+      const authorization = await api.socialLogin(provider)
+      if (platform.openExternalLink)
+        platform.openExternalLink(authorization.verificationUrl)
+      else
+        window.open(
+          authorization.verificationUrl,
+          "_blank",
+          "noopener,noreferrer"
+        )
+      const deviceToken = await waitForDesktopAuthorization(api, authorization)
+      const session = await api.exchangeDesktopDeviceToken(deviceToken)
+      const authenticatedApi = createCloudApi({
+        url: apiUrl,
+        token: session.token,
+      })
+      const authenticatedState = await hydrateSession(authenticatedApi, session)
+      writeCloudSession(session)
+      setState(authenticatedState)
     },
     [apiUrl, platform]
   )
@@ -323,6 +339,29 @@ async function exchangeDesktopAuthentication(apiUrl: string, code: string) {
     session
   )
   return { authenticatedState, session }
+}
+
+async function waitForDesktopAuthorization(
+  api: ReturnType<typeof createCloudApi>,
+  authorization: {
+    deviceCode: string
+    expiresIn: number
+    interval: number
+  }
+) {
+  const expiresAt = Date.now() + authorization.expiresIn * 1_000
+  let interval = Math.max(authorization.interval, 1) * 1_000
+  while (Date.now() < expiresAt) {
+    await wait(interval)
+    const result = await api.pollSocialLogin(authorization.deviceCode)
+    if (result.status === "authenticated") return result.accessToken
+    if (result.status === "slow-down") interval += 5_000
+  }
+  throw new Error("This sign-in request expired. Try again.")
+}
+
+function wait(duration: number) {
+  return new Promise((resolve) => window.setTimeout(resolve, duration))
 }
 
 const unavailableLicense: CloudLicense = {

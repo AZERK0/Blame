@@ -139,6 +139,31 @@ export class AuthDesktopHandoffSchema extends BaseModel {
   declare userId: string
 }
 
+export class AuthDeviceCodeSchema extends BaseModel {
+  static $columns = ['clientId', 'deviceCode', 'expiresAt', 'id', 'lastPolledAt', 'pollingInterval', 'scope', 'status', 'userCode', 'userId'] as const
+  $columns = AuthDeviceCodeSchema.$columns
+  @column()
+  declare clientId: string | null
+  @column()
+  declare deviceCode: string
+  @column.dateTime()
+  declare expiresAt: DateTime
+  @column({ isPrimary: true })
+  declare id: string
+  @column.dateTime()
+  declare lastPolledAt: DateTime | null
+  @column()
+  declare pollingInterval: number | null
+  @column()
+  declare scope: string | null
+  @column()
+  declare status: string
+  @column()
+  declare userCode: string
+  @column()
+  declare userId: string | null
+}
+
 export class AuthSessionSchema extends BaseModel {
   static $columns = ['createdAt', 'expiresAt', 'id', 'ipAddress', 'token', 'updatedAt', 'userAgent', 'userId'] as const
   $columns = AuthSessionSchema.$columns

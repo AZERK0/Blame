@@ -81,16 +81,49 @@ export default class DesktopAuthController {
     if (!handoff || !safeHashMatch(handoff.code_hash, code)) {
       return response.unauthorized({ message: 'The sign-in request is invalid or expired.' })
     }
-    const user = await User.findOrFail(handoff.user_id)
-    const closureLedger = new AccountClosureLedgerService()
-    if (user.closureRequestedAt || (await closureLedger.hasUser(user.id))) {
-      return response.forbidden({
-        message: 'This account is closed and no longer accepts sign-ins.',
-      })
-    }
-    const token = await User.accessTokens.create(user)
-    return serialize({ user: UserTransformer.transform(user), token: token.value!.release() })
+    return issueCloudSession(handoff.user_id, response, serialize)
   }
+
+  async exchangeDeviceToken({ request, response, serialize }: HttpContext) {
+    const token = typeof request.input('token') === 'string' ? request.input('token') : ''
+    if (token.length < 20 || token.length > 512) {
+      return response.unauthorized({ message: 'The sign-in request is invalid or expired.' })
+    }
+    const userId = await consumeDeviceSession(token)
+    if (!userId) {
+      return response.unauthorized({ message: 'The sign-in request is invalid or expired.' })
+    }
+    return issueCloudSession(userId, response, serialize)
+  }
+}
+
+async function consumeDeviceSession(token: string) {
+  return db.transaction(async (transaction) => {
+    const session = await transaction
+      .from('auth_sessions')
+      .where('token', token)
+      .forUpdate()
+      .first()
+    if (!session || DateTime.fromJSDate(session.expires_at) <= DateTime.utc()) return null
+    await transaction.from('auth_sessions').where('id', session.id).delete()
+    return session.user_id as string
+  })
+}
+
+async function issueCloudSession(
+  userId: string,
+  response: HttpContext['response'],
+  serialize: HttpContext['serialize']
+) {
+  const user = await User.findOrFail(userId)
+  const closureLedger = new AccountClosureLedgerService()
+  if (user.closureRequestedAt || (await closureLedger.hasUser(user.id))) {
+    return response.forbidden({
+      message: 'This account is closed and no longer accepts sign-ins.',
+    })
+  }
+  const token = await User.accessTokens.create(user)
+  return serialize({ user: UserTransformer.transform(user), token: token.value!.release() })
 }
 
 function codeHash(code: string) {

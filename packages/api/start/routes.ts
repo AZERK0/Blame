@@ -63,6 +63,7 @@ router
     router.get('auth/reset-password-page', [DesktopAuthController, 'resetPassword'])
     router.get('auth/verified', [DesktopAuthController, 'verified'])
     router.post('auth/desktop-exchange', [DesktopAuthController, 'exchange'])
+    router.post('auth/desktop-device-exchange', [DesktopAuthController, 'exchangeDeviceToken'])
     router.any('auth/*', [BetterAuthController, 'handle']).as('auth.better')
 
     router

@@ -64,6 +64,69 @@ test.group('auth', (group) => {
     profile.assertStatus(200)
   })
 
+  test('completes desktop device authorization without a deep link', async ({ client, assert }) => {
+    const email = `${crypto.randomUUID()}@example.com`
+    await client.post('/api/v1/auth/sign-up/email').json({
+      email,
+      name: 'Ada Lovelace',
+      password: 'password123!',
+    })
+    const user = await User.findByOrFail('email', email)
+    const authorization = await client.post('/api/v1/auth/device/code').json({
+      client_id: 'blame-desktop',
+      scope: 'openid profile email',
+    })
+
+    authorization.assertStatus(200)
+    assert.match(
+      authorization.body().verification_uri_complete,
+      /^https:\/\/blame\.so\/auth\/desktop\?user_code=/
+    )
+    assert.equal(authorization.body().interval, 5)
+
+    await db
+      .from('auth_device_codes')
+      .where('device_code', authorization.body().device_code)
+      .update({ status: 'approved', user_id: user.id })
+
+    const tokenResponse = await client.post('/api/v1/auth/device/token').json({
+      grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
+      device_code: authorization.body().device_code,
+      client_id: 'blame-desktop',
+    })
+
+    tokenResponse.assertStatus(200)
+    assert.isString(tokenResponse.body().access_token)
+
+    const exchangeResponse = await client
+      .post('/api/v1/auth/desktop-device-exchange')
+      .json({ token: tokenResponse.body().access_token })
+
+    exchangeResponse.assertStatus(200)
+    const bearerToken = exchangeResponse.body().data.token
+    assert.isString(bearerToken)
+    const temporarySessions = await db
+      .from('auth_sessions')
+      .where('token', tokenResponse.body().access_token)
+      .count('* as total')
+      .first()
+    assert.equal(Number(temporarySessions.total), 0)
+
+    const profile = await client
+      .get('/api/v1/account/profile')
+      .header('Authorization', `Bearer ${bearerToken}`)
+
+    profile.assertStatus(200)
+  })
+
+  test('rejects unknown desktop authorization clients', async ({ client }) => {
+    const response = await client.post('/api/v1/auth/device/code').json({
+      client_id: 'unknown-client',
+    })
+
+    response.assertStatus(400)
+  })
+
   test('requires an email OTP after a valid password', async ({ client, assert }) => {
     const email = `${crypto.randomUUID()}@example.com`
     const password = 'password123!'

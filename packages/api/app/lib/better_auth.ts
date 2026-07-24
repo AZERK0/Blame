@@ -5,11 +5,12 @@ import hash from '@adonisjs/core/services/hash'
 import { passkey } from '@better-auth/passkey'
 import db from '@adonisjs/lucid/services/db'
 import { betterAuth } from 'better-auth'
-import { bearer, twoFactor } from 'better-auth/plugins'
+import { bearer, deviceAuthorization, twoFactor } from 'better-auth/plugins'
 import { createPool } from 'mysql2/promise'
 import { randomBytes } from 'node:crypto'
 
 const baseURL = env.get('BETTER_AUTH_URL', env.get('APP_URL')).replace(/\/$/, '')
+const siteURL = env.get('BLAME_SITE_URL', 'https://blame.so').replace(/\/$/, '')
 const betterAuthSecret = env.get('BETTER_AUTH_SECRET')?.release() ?? env.get('APP_KEY').release()
 const socialProviders = configuredSocialProviders()
 
@@ -138,6 +139,28 @@ export const auth = betterAuth({
   socialProviders,
   plugins: [
     bearer({ requireSignature: true }),
+    deviceAuthorization({
+      expiresIn: '10m',
+      interval: '5s',
+      verificationUri: `${siteURL}/auth/desktop`,
+      validateClient: (clientId) => clientId === 'blame-desktop',
+      schema: {
+        deviceCode: {
+          modelName: 'auth_device_codes',
+          fields: {
+            deviceCode: 'device_code',
+            userCode: 'user_code',
+            userId: 'user_id',
+            expiresAt: 'expires_at',
+            status: 'status',
+            lastPolledAt: 'last_polled_at',
+            pollingInterval: 'polling_interval',
+            clientId: 'client_id',
+            scope: 'scope',
+          },
+        },
+      },
+    }),
     twoFactor({
       twoFactorTable: 'auth_two_factors',
       totpOptions: { disable: true },
@@ -183,11 +206,17 @@ export const auth = betterAuth({
 })
 
 function trustedOrigins() {
-  return env
-    .get('BETTER_AUTH_TRUSTED_ORIGINS', new URL(baseURL).origin)
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean)
+  return Array.from(
+    new Set([
+      new URL(baseURL).origin,
+      new URL(siteURL).origin,
+      ...env
+        .get('BETTER_AUTH_TRUSTED_ORIGINS', '')
+        .split(',')
+        .map((origin) => origin.trim())
+        .filter(Boolean),
+    ])
+  )
 }
 
 function configuredSocialProviders() {

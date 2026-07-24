@@ -58,9 +58,70 @@ test("creates a cloud session after email OTP verification", async () => {
   assert.equal(session.user.initials, "AL")
 })
 
-function jsonResponse(body: unknown) {
+test("starts social sign-in with a device authorization URL", async () => {
+  let request: { init?: RequestInit; url: string } | undefined
+  globalThis.fetch = async (input, init) => {
+    request = { init, url: String(input) }
+    return jsonResponse({
+      device_code: "secure-device-code",
+      expires_in: 600,
+      interval: 5,
+      user_code: "ABCD2345",
+      verification_uri: "https://blame.so/auth/desktop",
+      verification_uri_complete:
+        "https://blame.so/auth/desktop?user_code=ABCD2345",
+    })
+  }
+
+  const authorization = await createCloudApi({
+    url: "https://api.blame.test",
+  }).socialLogin("google")
+
+  assert.equal(request?.url, "https://api.blame.test/auth/device/code")
+  assert.deepEqual(JSON.parse(String(request?.init?.body)), {
+    client_id: "blame-desktop",
+    scope: "openid profile email",
+  })
+  assert.equal(
+    authorization.verificationUrl,
+    "https://blame.so/auth/desktop?user_code=ABCD2345&provider=google"
+  )
+})
+
+test("polls device authorization until its one-time token is ready", async () => {
+  let requestCount = 0
+  globalThis.fetch = async () => {
+    requestCount += 1
+    if (requestCount === 1) {
+      return jsonResponse(
+        {
+          error: "authorization_pending",
+          error_description: "Authorization is pending",
+        },
+        { status: 400 }
+      )
+    }
+    return jsonResponse({ access_token: "raw-session-token" })
+  }
+  const api = createCloudApi({ url: "https://api.blame.test" })
+
+  assert.deepEqual(await api.pollSocialLogin("secure-device-code"), {
+    status: "pending",
+  })
+  assert.deepEqual(await api.pollSocialLogin("secure-device-code"), {
+    accessToken: "raw-session-token",
+    status: "authenticated",
+  })
+})
+
+function jsonResponse(
+  body: unknown,
+  init?: { headers?: HeadersInit; status?: number }
+) {
+  const headers = new Headers(init?.headers)
+  headers.set("content-type", "application/json")
   return new Response(JSON.stringify(body), {
-    headers: { "content-type": "application/json" },
-    status: 200,
+    headers,
+    status: init?.status ?? 200,
   })
 }

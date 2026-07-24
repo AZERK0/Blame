@@ -31,6 +31,20 @@ export class CloudApiError extends Error {
   }
 }
 
+type DesktopAuthorization = {
+  deviceCode: string
+  expiresIn: number
+  interval: number
+  verificationUrl: string
+}
+
+type DesktopAuthorizationPoll =
+  | { accessToken: string; status: "authenticated" }
+  | { status: "pending" }
+  | { status: "slow-down" }
+
+const desktopAuthClientId = "blame-desktop"
+
 export type CloudAccountExport = {
   format: "blame-account-export"
   version: number
@@ -149,23 +163,33 @@ export function createCloudApi(connection: ApiConnection) {
       ).then(() => undefined)
     },
     async socialLogin(provider: SocialAuthProvider) {
-      const result = await request<{ url?: string }>(
+      const result = await request<unknown>(
         connection,
         baseUrl,
-        "/auth/sign-in/social",
+        "/auth/device/code",
         {
           body: JSON.stringify({
-            provider,
-            callbackURL: `${baseUrl}/auth/desktop-complete`,
-            errorCallbackURL: `${baseUrl}/auth/desktop-complete?error=oauth_failed`,
-            disableRedirect: true,
+            client_id: desktopAuthClientId,
+            scope: "openid profile email",
           }),
           method: "POST",
         }
       )
-      if (!result.url)
-        throw new CloudApiError("This provider is not configured.", 503)
-      return result.url
+      return desktopAuthorization(result, provider)
+    },
+    pollSocialLogin(deviceCode: string) {
+      return pollDesktopAuthorization(baseUrl, deviceCode)
+    },
+    exchangeDesktopDeviceToken(token: string) {
+      return request<CloudSession>(
+        connection,
+        baseUrl,
+        "/auth/desktop-device-exchange",
+        {
+          body: JSON.stringify({ token }),
+          method: "POST",
+        }
+      )
     },
     passkeyLoginUrl() {
       return `${baseUrl}/auth/desktop?method=passkey`
@@ -514,6 +538,85 @@ function cloudTelemetrySession(value: unknown): TelemetryExportSession {
   return session as TelemetryExportSession
 }
 
+function desktopAuthorization(
+  value: unknown,
+  provider: SocialAuthProvider
+): DesktopAuthorization {
+  if (!isRecord(value)) return invalidDesktopAuthorization()
+  const deviceCode = value.device_code
+  const verificationUrl = value.verification_uri_complete
+  const expiresIn = value.expires_in
+  const interval = value.interval
+  if (
+    typeof deviceCode !== "string" ||
+    typeof verificationUrl !== "string" ||
+    typeof expiresIn !== "number" ||
+    typeof interval !== "number"
+  ) {
+    return invalidDesktopAuthorization()
+  }
+  const url = new URL(verificationUrl)
+  url.searchParams.set("provider", provider)
+  return {
+    deviceCode,
+    expiresIn,
+    interval,
+    verificationUrl: url.toString(),
+  }
+}
+
+function invalidDesktopAuthorization(): never {
+  throw new CloudApiError("Sign-in could not be started.", 503)
+}
+
+async function pollDesktopAuthorization(
+  baseUrl: string,
+  deviceCode: string
+): Promise<DesktopAuthorizationPoll> {
+  const response = await fetch(`${baseUrl}/auth/device/token`, {
+    body: JSON.stringify({
+      client_id: desktopAuthClientId,
+      device_code: deviceCode,
+      grant_type: "urn:ietf:params:oauth:grant-type:device_code",
+    }),
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+  })
+  const body = await response.json().catch(() => null)
+  if (response.ok) return authenticatedDesktopAuthorization(body)
+  const error = deviceAuthorizationError(body)
+  if (error === "authorization_pending") return { status: "pending" }
+  if (error === "slow_down") return { status: "slow-down" }
+  throw new CloudApiError(deviceAuthorizationMessage(error, body), response.status)
+}
+
+function authenticatedDesktopAuthorization(
+  value: unknown
+): DesktopAuthorizationPoll {
+  const body = responseData(value)
+  if (!isRecord(body) || typeof body.access_token !== "string") {
+    throw new CloudApiError("Sign-in could not be completed.", 401)
+  }
+  return { accessToken: body.access_token, status: "authenticated" }
+}
+
+function deviceAuthorizationError(value: unknown) {
+  const body = responseData(value)
+  if (!isRecord(body) || typeof body.error !== "string") return "unknown"
+  return body.error
+}
+
+function deviceAuthorizationMessage(error: string, value: unknown) {
+  if (error === "expired_token") return "This sign-in request expired. Try again."
+  if (error === "access_denied") return "This sign-in request was denied."
+  if (error === "invalid_grant") return "This sign-in request is no longer valid."
+  const body = responseData(value)
+  if (isRecord(body) && typeof body.error_description === "string") {
+    return body.error_description
+  }
+  return "External sign-in could not be completed."
+}
+
 function transformerValue(value: unknown): unknown {
   if (!isRecord(value)) return value
   if ("data" in value) return transformerValue(value.data)
@@ -625,6 +728,8 @@ function twoFactorRequired(value: unknown) {
 async function responseMessage(response: Response) {
   try {
     const body = await response.json()
+    if (typeof body.error_description === "string")
+      return body.error_description
     if (typeof body.message === "string") return body.message
     if (typeof body.error === "string") return body.error
   } catch {

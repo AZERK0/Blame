@@ -2,11 +2,17 @@ import app from '@adonisjs/core/services/app'
 import { defineConfig } from '@adonisjs/cors'
 import env from '#start/env'
 
-const allowedOrigins = env
-  .get('CORS_ORIGIN', '')
-  .split(',')
-  .map((origin) => origin.trim())
-  .filter(Boolean)
+const siteOrigin = new URL(env.get('BLAME_SITE_URL', 'https://blame.so')).origin
+const allowedOrigins = Array.from(
+  new Set([
+    siteOrigin,
+    ...env
+      .get('CORS_ORIGIN', '')
+      .split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean),
+  ])
+)
 
 /**
  * Configuration options to tweak the CORS policy. The following

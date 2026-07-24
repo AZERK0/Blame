@@ -26,6 +26,7 @@ export default await Env.create(new URL('../', import.meta.url), {
   BETTER_AUTH_URL: Env.schema.string.optional({ format: 'url', tld: false }),
   BETTER_AUTH_SECRET: Env.schema.secret.optional(),
   BETTER_AUTH_TRUSTED_ORIGINS: Env.schema.string.optional(),
+  BLAME_SITE_URL: Env.schema.string.optional({ format: 'url', tld: false }),
   AUTH_EMAIL_FROM: Env.schema.string.optional(),
   RESEND_API_KEY: Env.schema.secret.optional(),
   GITHUB_CLIENT_ID: Env.schema.string.optional(),
