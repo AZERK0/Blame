@@ -5,9 +5,9 @@ import type {
   CloudSession,
   CloudUser,
   CloudLicense,
-  type CloudAiPreferences,
-  type CloudMcpConfiguration,
-  type CloudMcpServer,
+  CloudAiPreferences,
+  CloudMcpConfiguration,
+  CloudMcpServer,
   SaveAiPreferencesInput,
   LoginInput,
   SignupInput,
@@ -22,12 +22,12 @@ import type {
 import type { TelemetryExportSession } from "@/context/platform"
 
 export class CloudApiError extends Error {
-  constructor(
-    message: string,
-    readonly status: number
-  ) {
+  readonly status: number
+
+  constructor(message: string, status: number) {
     super(message)
     this.name = "CloudApiError"
+    this.status = status
   }
 }
 
@@ -60,8 +60,8 @@ export function createCloudApi(connection: ApiConnection) {
   const baseUrl = connection.url.replace(/\/$/, "")
 
   return {
-    login(input: LoginInput) {
-      return betterAuthSessionRequest(
+    async login(input: LoginInput): Promise<CloudSession | "two-factor"> {
+      const response = await betterAuthRequest(
         connection,
         baseUrl,
         "/auth/sign-in/email",
@@ -70,6 +70,39 @@ export function createCloudApi(connection: ApiConnection) {
           method: "POST",
         }
       )
+      if (!twoFactorRequired(response.body)) return cloudSession(response)
+      await betterAuthRequest(
+        connection,
+        baseUrl,
+        "/auth/two-factor/send-otp",
+        {
+          body: JSON.stringify({ trustDevice: false }),
+          method: "POST",
+        }
+      )
+      return "two-factor"
+    },
+    verifyEmailTwoFactor(code: string) {
+      return betterAuthSessionRequest(
+        connection,
+        baseUrl,
+        "/auth/two-factor/verify-otp",
+        {
+          body: JSON.stringify({ code, trustDevice: false }),
+          method: "POST",
+        }
+      )
+    },
+    resendEmailTwoFactor() {
+      return betterAuthRequest(
+        connection,
+        baseUrl,
+        "/auth/two-factor/send-otp",
+        {
+          body: JSON.stringify({ trustDevice: false }),
+          method: "POST",
+        }
+      ).then(() => undefined)
     },
     async signup(input: SignupInput) {
       await request<unknown>(connection, baseUrl, "/auth/sign-up/email", {
@@ -527,14 +560,31 @@ async function betterAuthSessionRequest(
   path: string,
   init: RequestInit
 ) {
+  return cloudSession(await betterAuthRequest(connection, baseUrl, path, init))
+}
+
+async function betterAuthRequest(
+  connection: ApiConnection,
+  baseUrl: string,
+  path: string,
+  init: RequestInit
+) {
   const response = await fetch(`${baseUrl}${path}`, {
     ...init,
+    credentials: "include",
     headers: { "Content-Type": "application/json", ...init.headers },
   })
   if (!response.ok)
     throw new CloudApiError(await responseMessage(response), response.status)
-  const token = response.headers.get("set-auth-token")
-  const body = responseData(await response.json()) as {
+  return {
+    token: response.headers.get("set-auth-token"),
+    body: responseData(await response.json()),
+  }
+}
+
+function cloudSession(response: { body: unknown; token: string | null }) {
+  const body = response.body as {
+    token?: string
     user?: {
       id: string
       name: string
@@ -543,6 +593,7 @@ async function betterAuthSessionRequest(
       updatedAt: string
     }
   }
+  const token = response.token ?? body.token
   if (!token || !body.user)
     throw new CloudApiError("Sign-in could not be completed.", 401)
   const names = body.user.name.trim().split(/\s+/)
@@ -561,6 +612,14 @@ async function betterAuthSessionRequest(
       initials,
     },
   } satisfies CloudSession
+}
+
+function twoFactorRequired(value: unknown) {
+  if (!isRecord(value) || value.twoFactorRedirect !== true) return false
+  return (
+    Array.isArray(value.twoFactorMethods) &&
+    value.twoFactorMethods.includes("otp")
+  )
 }
 
 async function responseMessage(response: Response) {

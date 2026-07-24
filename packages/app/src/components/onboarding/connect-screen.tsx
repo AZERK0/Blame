@@ -15,7 +15,7 @@ import { LegalLink } from "@/components/legal/legal-link"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { publicAssetUrl } from "@/lib/public-asset-url"
 
-type AuthMode = "login" | "signup" | "forgot" | "verify"
+type AuthMode = "login" | "signup" | "forgot" | "verify" | "two-factor"
 type AuthFieldProps = {
   description?: string
   id: string
@@ -52,8 +52,10 @@ export function ConnectScreen() {
               <SignupForm onModeChange={setMode} />
             ) : mode === "forgot" ? (
               <ForgotPasswordForm onModeChange={setMode} />
-            ) : (
+            ) : mode === "verify" ? (
               <VerificationForm onModeChange={setMode} />
+            ) : (
+              <EmailTwoFactorForm onModeChange={setMode} />
             )}
           </div>
         </div>
@@ -97,7 +99,10 @@ function LoginForm({ onModeChange }: { onModeChange(mode: AuthMode): void }) {
   return (
     <form
       className="flex flex-col gap-6"
-      onSubmit={form.submit(() => auth.login({ email, password }))}
+      onSubmit={form.submit(async () => {
+        const result = await auth.login({ email, password })
+        if (result === "two-factor") onModeChange("two-factor")
+      })}
     >
       <FieldGroup className="gap-4">
         <FormTitle title="Login to your account" description="" />
@@ -107,7 +112,7 @@ function LoginForm({ onModeChange }: { onModeChange(mode: AuthMode): void }) {
           setEmail={setEmail}
           setPassword={setPassword}
         />
-        <AuthError error={form.error} />
+        <AuthError error={form.error ?? auth.error} />
         <SubmitButton loading={form.loading}>Login</SubmitButton>
         <button
           className="text-sm font-medium text-foreground/70 underline-offset-4 hover:text-foreground hover:underline"
@@ -127,6 +132,84 @@ function LoginForm({ onModeChange }: { onModeChange(mode: AuthMode): void }) {
         </ModePrompt>
       </FieldGroup>
     </form>
+  )
+}
+
+function EmailTwoFactorForm({ onModeChange }: { onModeChange(mode: AuthMode): void }) {
+  const auth = useCloudAuth()
+  const [code, setCode] = React.useState("")
+  const [sent, setSent] = React.useState(false)
+  const form = useAuthForm()
+  const resend = async () => {
+    await auth.resendEmailTwoFactor()
+    setSent(true)
+  }
+
+  return (
+    <form
+      className="flex flex-col gap-6"
+      onSubmit={form.submit(() => auth.verifyEmailTwoFactor(code.trim()))}
+    >
+      <FieldGroup className="gap-4">
+        <EmailTwoFactorFields code={code} sent={sent} setCode={setCode} />
+        <AuthError error={form.error} />
+        <SubmitButton loading={form.loading}>Verify code</SubmitButton>
+        <EmailTwoFactorActions
+          loading={form.loading}
+          onBack={() => onModeChange("login")}
+          onResend={() => form.run(resend)}
+        />
+      </FieldGroup>
+    </form>
+  )
+}
+
+function EmailTwoFactorFields({
+  code,
+  sent,
+  setCode,
+}: {
+  code: string
+  sent: boolean
+  setCode(value: string): void
+}) {
+  return (
+    <>
+      <FormTitle
+        title="Check your email"
+        description="Enter the 6-digit sign-in code we sent you."
+      />
+      <AuthField
+        id="email-two-factor-code"
+        label="Sign-in code"
+        value={code}
+        onChange={setCode}
+        minLength={6}
+        maxLength={6}
+      />
+      {sent ? <FieldDescription>A new code was sent.</FieldDescription> : null}
+    </>
+  )
+}
+
+function EmailTwoFactorActions({
+  loading,
+  onBack,
+  onResend,
+}: {
+  loading: boolean
+  onBack(): void
+  onResend(): void
+}) {
+  return (
+    <>
+      <Button disabled={loading} type="button" variant="link" onClick={onResend}>
+        Send a new code
+      </Button>
+      <ModePrompt action="Back to login" onClick={onBack}>
+        Use another account?
+      </ModePrompt>
+    </>
   )
 }
 

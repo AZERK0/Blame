@@ -3,9 +3,11 @@ import { sendAuthEmail } from '#services/auth_email_service'
 import env from '#start/env'
 import hash from '@adonisjs/core/services/hash'
 import { passkey } from '@better-auth/passkey'
+import db from '@adonisjs/lucid/services/db'
 import { betterAuth } from 'better-auth'
-import { bearer } from 'better-auth/plugins'
+import { bearer, twoFactor } from 'better-auth/plugins'
 import { createPool } from 'mysql2/promise'
+import { randomBytes } from 'node:crypto'
 
 const baseURL = env.get('BETTER_AUTH_URL', env.get('APP_URL')).replace(/\/$/, '')
 const betterAuthSecret = env.get('BETTER_AUTH_SECRET')?.release() ?? env.get('APP_KEY').release()
@@ -28,6 +30,13 @@ export const auth = betterAuth({
   advanced: {
     database: { generateId: () => uuidV7() },
     useSecureCookies: baseURL.startsWith('https://'),
+    cookies: {
+      two_factor: {
+        attributes: baseURL.startsWith('https://')
+          ? { sameSite: 'none', secure: true }
+          : { sameSite: 'lax' },
+      },
+    },
   },
   trustedOrigins: trustedOrigins(),
   user: {
@@ -118,9 +127,46 @@ export const auth = betterAuth({
       })
     },
   },
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (user) => ({ data: { ...user, twoFactorEnabled: true } }),
+        after: async (user) => createEmailTwoFactor(user.id),
+      },
+    },
+  },
   socialProviders,
   plugins: [
     bearer({ requireSignature: true }),
+    twoFactor({
+      twoFactorTable: 'auth_two_factors',
+      totpOptions: { disable: true },
+      backupCodeOptions: { storeBackupCodes: 'plain' },
+      otpOptions: {
+        period: 5,
+        digits: 6,
+        allowedAttempts: 5,
+        storeOTP: 'hashed',
+        sendOTP: async ({ user, otp }) => {
+          await sendAuthEmail({
+            to: user.email,
+            subject: 'Your Blame sign-in code',
+            text: `Your Blame sign-in code is ${otp}. It expires in 5 minutes.`,
+          })
+        },
+      },
+      schema: {
+        user: { fields: { twoFactorEnabled: 'two_factor_enabled' } },
+        twoFactor: {
+          fields: {
+            backupCodes: 'backup_codes',
+            userId: 'user_id',
+            failedVerificationCount: 'failed_verification_count',
+            lockedUntil: 'locked_until',
+          },
+        },
+      },
+    }),
     passkey({
       rpName: 'Blame',
       rpID: new URL(baseURL).hostname,
@@ -167,4 +213,15 @@ function providerCredentials(prefix: 'GITHUB' | 'GOOGLE' | 'MICROSOFT') {
   const clientId = env.get(`${prefix}_CLIENT_ID`)?.trim()
   const clientSecret = env.get(`${prefix}_CLIENT_SECRET`)?.release().trim()
   return clientId && clientSecret ? { clientId, clientSecret } : undefined
+}
+
+async function createEmailTwoFactor(userId: string) {
+  await db.table('auth_two_factors').insert({
+    id: uuidV7(),
+    secret: randomBytes(32).toString('base64url'),
+    backup_codes: '[]',
+    user_id: userId,
+    verified: true,
+    failed_verification_count: 0,
+  })
 }

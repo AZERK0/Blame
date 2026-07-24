@@ -8,6 +8,7 @@ import {
   type CloudMcpServer,
   type CloudLicense,
   type LoginInput,
+  type LoginResult,
   type SaveAiPreferencesInput,
   type SignupInput,
 } from "@/context/cloud-auth"
@@ -26,7 +27,7 @@ const defaultApiUrl =
 
 type CloudAuthState =
   | { status: "loading" }
-  | { status: "unauthenticated" }
+  | { status: "unauthenticated"; error?: string }
   | {
       status: "authenticated"
       session: CloudSession
@@ -83,16 +84,33 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     if (!platform.auth) return
     const unsubscribe = platform.auth.onCallback((result) => {
+      if (result.error) {
+        setState({
+          status: "unauthenticated",
+          ...(result.error === "email_verified"
+            ? {}
+            : {
+                error:
+                  "External sign-in was not completed. Please try again.",
+              }),
+        })
+        return
+      }
       if (!result.code) return
-      void createCloudApi({ url: apiUrl })
-        .exchangeDesktopCode(result.code)
-        .then(async (session) => {
-          const authenticatedState = await hydrateSession(
-            createCloudApi({ url: apiUrl, token: session.token }),
-            session
-          )
+      setState({ status: "loading" })
+      void exchangeDesktopAuthentication(apiUrl, result.code)
+        .then(({ authenticatedState, session }) => {
           writeCloudSession(session)
           setState(authenticatedState)
+        })
+        .catch((error) => {
+          setState({
+            status: "unauthenticated",
+            error:
+              error instanceof Error
+                ? error.message
+                : "External sign-in could not be completed.",
+          })
         })
     })
     platform.auth.ready()
@@ -100,8 +118,10 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
   }, [apiUrl, platform.auth])
 
   const login = React.useCallback(
-    async (input: LoginInput) => {
-      const session = await createCloudApi({ url: apiUrl }).login(input)
+    async (input: LoginInput): Promise<LoginResult> => {
+      const result = await createCloudApi({ url: apiUrl }).login(input)
+      if (result === "two-factor") return result
+      const session = result
       const api = createCloudApi({
         url: apiUrl,
         token: session.token,
@@ -109,7 +129,28 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
       const authenticatedState = await hydrateSession(api, session)
       writeCloudSession(session)
       setState(authenticatedState)
+      return "authenticated"
     },
+    [apiUrl]
+  )
+
+  const verifyEmailTwoFactor = React.useCallback(
+    async (code: string) => {
+      const session = await createCloudApi({
+        url: apiUrl,
+      }).verifyEmailTwoFactor(code)
+      const authenticatedState = await hydrateSession(
+        createCloudApi({ url: apiUrl, token: session.token }),
+        session
+      )
+      writeCloudSession(session)
+      setState(authenticatedState)
+    },
+    [apiUrl]
+  )
+
+  const resendEmailTwoFactor = React.useCallback(
+    () => createCloudApi({ url: apiUrl }).resendEmailTwoFactor(),
     [apiUrl]
   )
 
@@ -248,6 +289,7 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
         mcpConfiguration:
           state.status === "authenticated" ? state.mcpConfiguration : undefined,
         license: state.status === "authenticated" ? state.license : undefined,
+        error: state.status === "unauthenticated" ? state.error : undefined,
         login,
         passkeyLogin,
         logout,
@@ -255,6 +297,7 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
         refreshAiPreferences,
         refreshLicense,
         requestPasswordReset,
+        resendEmailTwoFactor,
         resendVerification,
         resetPassword,
         saveAiPreferences,
@@ -265,11 +308,21 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
         status: state.status,
         token,
         user: state.status === "authenticated" ? state.session.user : undefined,
+        verifyEmailTwoFactor,
       }}
     >
       {children}
     </CloudAuthContext.Provider>
   )
+}
+
+async function exchangeDesktopAuthentication(apiUrl: string, code: string) {
+  const session = await createCloudApi({ url: apiUrl }).exchangeDesktopCode(code)
+  const authenticatedState = await hydrateSession(
+    createCloudApi({ url: apiUrl, token: session.token }),
+    session
+  )
+  return { authenticatedState, session }
 }
 
 const unavailableLicense: CloudLicense = {

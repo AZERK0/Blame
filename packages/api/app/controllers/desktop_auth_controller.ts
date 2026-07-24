@@ -104,7 +104,7 @@ function safeHashMatch(expected: string, code: string) {
   )
 }
 
-function passkeyPage() {
+export function passkeyPage() {
   return authPage(
     'Sign in with a passkey',
     'Use your device biometrics, PIN, or security key.',
@@ -112,7 +112,7 @@ function passkeyPage() {
     <button id="continue">Continue with passkey</button><p id="status" role="alert"></p>
     <script>
       const bytes = value => Uint8Array.from(atob(value.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
-      const encoded = value => btoa(String.fromCharCode(...new Uint8Array(value))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      const encoded = value => btoa(String.fromCharCode(...new Uint8Array(value))).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '');
       const status = document.getElementById('status');
       document.getElementById('continue').addEventListener('click', async () => {
         status.textContent = 'Waiting for your passkey…';

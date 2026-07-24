@@ -22,6 +22,15 @@ test.group('auth security configuration', () => {
     assert.include(source, 'requireEmailVerification: true')
   })
 
+  test('requires a hashed email OTP after password authentication', async ({ assert }) => {
+    const source = await readFile(new URL('../../app/lib/better_auth.ts', import.meta.url), 'utf8')
+
+    assert.include(source, "twoFactorTable: 'auth_two_factors'")
+    assert.include(source, "storeOTP: 'hashed'")
+    assert.include(source, "twoFactorEnabled: 'two_factor_enabled'")
+    assert.include(source, 'Your Blame sign-in code is ${otp}')
+  })
+
   test('never puts a reusable session token in the desktop deep link', async ({ assert }) => {
     const source = await readFile(
       new URL('../../app/controllers/desktop_auth_controller.ts', import.meta.url),

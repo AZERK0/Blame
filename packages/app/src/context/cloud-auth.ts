@@ -132,6 +132,8 @@ export type LoginInput = {
   password: string
 }
 
+export type LoginResult = "authenticated" | "two-factor"
+
 export type SignupInput = LoginInput & {
   fullName: string | null
   passwordConfirmation: string
@@ -145,7 +147,10 @@ export type CloudAuthContextValue = {
   license?: CloudLicense
   user?: CloudUser
   token?: string
-  login(input: LoginInput): Promise<void>
+  error?: string
+  login(input: LoginInput): Promise<LoginResult>
+  verifyEmailTwoFactor(code: string): Promise<void>
+  resendEmailTwoFactor(): Promise<void>
   signup(input: SignupInput): Promise<void>
   requestPasswordReset(email: string): Promise<void>
   resetPassword(token: string, password: string): Promise<void>

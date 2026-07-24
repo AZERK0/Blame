@@ -18,6 +18,10 @@ import {
 import { registerAgentIpcHandlers, shutdownAgentRuntime } from "./agent-ipc"
 import { registerBacklogStatusPipIpcHandlers } from "./backlog-status-pip-ipc"
 import { desktopAppIdentity } from "./desktop-app-identity"
+import {
+  desktopAuthCallback,
+  desktopProtocolClientArguments,
+} from "./desktop-auth-deep-link"
 import { desktopResourcePaths } from "./desktop-resource-paths"
 import {
   attachLiveLogWindow,
@@ -55,6 +59,11 @@ const runtimeShutdownTimeoutMs = 4_000
 const telemetryShutdownTimeoutMs = 4_000
 const initialWindowShowFallbackMs = 8_000
 type WindowBounds = { height: number; width: number; x: number; y: number }
+const protocolClientArguments = desktopProtocolClientArguments(
+  app.isPackaged,
+  process.execPath,
+  process.argv
+)
 
 try {
   process.chdir(homedir())
@@ -65,7 +74,15 @@ const billingDeepLink = "blame://billing/refresh"
 app.setName(appIdentity.name)
 app.setAppUserModelId(appIdentity.appId)
 app.setPath("userData", join(app.getPath("appData"), appIdentity.appId))
-app.setAsDefaultProtocolClient("blame")
+if (protocolClientArguments.length === 0) {
+  app.setAsDefaultProtocolClient("blame")
+} else {
+  app.setAsDefaultProtocolClient(
+    "blame",
+    protocolClientArguments[0],
+    protocolClientArguments[1]
+  )
+}
 enablePreviewDevtools()
 registerLiveLogCapture()
 
@@ -79,7 +96,9 @@ let shutdownPromise: Promise<void> | undefined
 let shutdownRequested = false
 let readyToQuit = false
 let pendingBillingRefresh = process.argv.some((argument) => argument === billingDeepLink)
-let pendingAuthCallback = authCallback(process.argv.find((argument) => argument.startsWith("blame://auth/")))
+let pendingAuthCallback = desktopAuthCallback(
+  process.argv.find((argument) => argument.startsWith("blame://auth/"))
+)
 let authRendererReady = false
 
 void app.whenReady().then(() => {
@@ -296,7 +315,7 @@ function clamp(value: number, min: number, max: number) {
 function handleDeepLink(url: string | undefined) {
   if (url === billingDeepLink) pendingBillingRefresh = true
   else {
-    const callback = authCallback(url)
+    const callback = desktopAuthCallback(url)
     if (!callback) return
     pendingAuthCallback = callback
   }
@@ -310,19 +329,6 @@ function handleDeepLink(url: string | undefined) {
     mainWindow.webContents.send("auth:callback", pendingAuthCallback)
     pendingAuthCallback = undefined
   }
-}
-
-function authCallback(value: string | undefined) {
-  if (!value) return undefined
-  try {
-    const url = new URL(value)
-    if (url.protocol !== "blame:" || url.hostname !== "auth" || url.pathname !== "/callback") return undefined
-    const code = url.searchParams.get("code") ?? undefined
-    const error = url.searchParams.get("error") ?? undefined
-    if (code && /^[A-Za-z0-9_-]{32,128}$/.test(code) && url.searchParams.size === 1) return { code }
-    if (error && /^[a-z_]{1,64}$/.test(error) && url.searchParams.size === 1) return { error }
-  } catch {}
-  return undefined
 }
 
 function showMainWindow() {

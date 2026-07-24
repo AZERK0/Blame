@@ -1,5 +1,6 @@
 import User from '#models/user'
 import testUtils from '@adonisjs/core/services/test_utils'
+import db from '@adonisjs/lucid/services/db'
 import { test } from '@japa/runner'
 
 type SignupBody = {
@@ -23,6 +24,15 @@ test.group('Better Auth response forwarding', () => {
     assert.match(response.header('location') ?? '', /\/api\/v1\/auth\/error\?error=/)
     assert.equal(response.text(), '')
   })
+
+  test('serves an executable passkey script', async ({ client, assert }) => {
+    const response = await client.get('/api/v1/auth/desktop')
+
+    response.assertStatus(200)
+    const script = response.text().match(/<script>([\s\S]*?)<\/script>/)?.[1]
+    assert.isString(script)
+    assert.doesNotThrow(() => Function(script!))
+  })
 })
 
 test.group('auth', (group) => {
@@ -40,6 +50,7 @@ test.group('auth', (group) => {
     const user = await User.findByOrFail('email', email)
     user.emailVerified = true
     await user.save()
+    await db.from('users').where('id', user.id).update({ two_factor_enabled: false })
 
     const signIn = await client.post('/api/v1/auth/sign-in/email').json({ email, password })
     signIn.assertStatus(200)
@@ -51,6 +62,26 @@ test.group('auth', (group) => {
       .header('Authorization', `Bearer ${token}`)
 
     profile.assertStatus(200)
+  })
+
+  test('requires an email OTP after a valid password', async ({ client, assert }) => {
+    const email = `${crypto.randomUUID()}@example.com`
+    const password = 'password123!'
+    await client.post('/api/v1/auth/sign-up/email').json({
+      email,
+      name: 'Ada Lovelace',
+      password,
+    })
+    const user = await User.findByOrFail('email', email)
+    user.emailVerified = true
+    await user.save()
+
+    const signIn = await client.post('/api/v1/auth/sign-in/email').json({ email, password })
+
+    signIn.assertStatus(200)
+    assert.isTrue(signIn.body().twoFactorRedirect)
+    assert.deepEqual(signIn.body().twoFactorMethods, ['otp'])
+    assert.isUndefined(signIn.header('set-auth-token'))
   })
 
   test('creates users with uuid v7 ids', async ({ client, assert }) => {
