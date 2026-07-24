@@ -1,11 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import {
-  CircleAlert,
-  LoaderCircle,
-  ShieldCheck,
-} from "lucide-react";
+import { LoaderCircle } from "lucide-react";
 import * as React from "react";
 
 import { HeroScene } from "@/app/scene/hero-scene";
@@ -81,15 +77,16 @@ function AuthorizationContent({
   retryUrl: string;
 }) {
   const content = authorizationContent(phase);
-  const Icon = content.icon;
+  const loading =
+    phase === "checking" ||
+    phase === "redirecting" ||
+    phase === "approving";
 
   return (
     <div className="w-full">
-      <div className="landing-reveal mx-auto mb-7 grid size-16 place-items-center rounded-2xl border border-white/14 bg-white/[0.08] shadow-2xl shadow-black/30 backdrop-blur-xl">
-        <Icon
-          className={`size-7 ${phase === "checking" || phase === "redirecting" || phase === "approving" ? "animate-spin" : ""}`}
-        />
-      </div>
+      {loading ? (
+        <LoaderCircle className="landing-reveal mx-auto mb-7 size-7 animate-spin text-white/80" />
+      ) : null}
       <h1
         id="desktop-auth-title"
         className="landing-reveal landing-reveal-title mx-auto max-w-4xl text-balance text-[clamp(3rem,8vw,7rem)] font-semibold leading-[0.9] tracking-tighter text-white drop-shadow-[0_20px_70px_rgba(0,0,0,0.55)] sm:leading-32"
@@ -121,34 +118,29 @@ function authorizationContent(phase: AuthorizationPhase) {
     return {
       description:
         "Blame is finishing sign-in automatically. You can close this tab.",
-      icon: ShieldCheck,
       title: "You’re connected.",
     };
   }
   if (phase === "failed") {
     return {
       description: "The sign-in request could not be completed.",
-      icon: CircleAlert,
       title: "Connection failed.",
     };
   }
   if (phase === "redirecting") {
     return {
       description: "You’re being redirected to your identity provider.",
-      icon: LoaderCircle,
       title: "Continue securely.",
     };
   }
   if (phase === "approving") {
     return {
       description: "The browser session is verified. Blame is being connected.",
-      icon: LoaderCircle,
       title: "Almost there.",
     };
   }
   return {
     description: "Checking the secure connection request.",
-    icon: LoaderCircle,
     title: "Connect Blame.",
   };
 }
