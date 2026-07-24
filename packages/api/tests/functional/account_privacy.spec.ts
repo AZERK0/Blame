@@ -59,6 +59,10 @@ test.group('account privacy', (group) => {
     response.assertStatus(200)
     const body = response.body() as unknown as AccountExportBody
     const serialized = JSON.stringify(body)
+    const passwordHash = user.password
+    if (!passwordHash) {
+      throw new Error('Expected the password user to have a password hash')
+    }
 
     assert.equal(body.format, 'blame-account-export')
     assert.equal(body.account.email, user.email)
@@ -67,7 +71,7 @@ test.group('account privacy', (group) => {
     assert.include(serialized, 'Owned story')
     assert.include(serialized, 'Owned quick chat')
     assert.notInclude(serialized, 'Private stranger project')
-    assert.notInclude(serialized, user.password)
+    assert.notInclude(serialized, passwordHash)
     assert.notInclude(serialized, encryptedApiKey)
     assert.notInclude(serialized, encryptedOauthCredentials)
     assert.equal(response.headers()['cache-control'], 'private, no-store')
