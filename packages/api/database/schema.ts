@@ -160,6 +160,25 @@ export class AuthSessionSchema extends BaseModel {
   declare userId: string
 }
 
+export class AuthTwoFactorSchema extends BaseModel {
+  static $columns = ['backupCodes', 'failedVerificationCount', 'id', 'lockedUntil', 'secret', 'userId', 'verified'] as const
+  $columns = AuthTwoFactorSchema.$columns
+  @column()
+  declare backupCodes: string
+  @column()
+  declare failedVerificationCount: number
+  @column({ isPrimary: true })
+  declare id: string
+  @column.dateTime()
+  declare lockedUntil: DateTime | null
+  @column()
+  declare secret: string
+  @column()
+  declare userId: string
+  @column()
+  declare verified: boolean
+}
+
 export class AuthVerificationSchema extends BaseModel {
   static $columns = ['createdAt', 'expiresAt', 'id', 'identifier', 'updatedAt', 'value'] as const
   $columns = AuthVerificationSchema.$columns
@@ -622,7 +641,7 @@ export class UserSubscriptionSchema extends BaseModel {
 }
 
 export class UserSchema extends BaseModel {
-  static $columns = ['activeDeletionDeadline', 'closureRequestedAt', 'createdAt', 'email', 'emailVerified', 'fullName', 'id', 'image', 'password', 'privacyVerificationBlockedUntil', 'privacyVerificationFailureCount', 'privacyVerificationWindowStartedAt', 'updatedAt'] as const
+  static $columns = ['activeDeletionDeadline', 'closureRequestedAt', 'createdAt', 'email', 'emailVerified', 'fullName', 'id', 'image', 'password', 'privacyVerificationBlockedUntil', 'privacyVerificationFailureCount', 'privacyVerificationWindowStartedAt', 'twoFactorEnabled', 'updatedAt'] as const
   $columns = UserSchema.$columns
   @column.dateTime()
   declare activeDeletionDeadline: DateTime | null
@@ -648,6 +667,8 @@ export class UserSchema extends BaseModel {
   declare privacyVerificationFailureCount: number
   @column.dateTime()
   declare privacyVerificationWindowStartedAt: DateTime | null
+  @column()
+  declare twoFactorEnabled: boolean
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
 }
