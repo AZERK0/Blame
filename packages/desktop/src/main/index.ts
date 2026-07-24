@@ -14,12 +14,15 @@ import {
   type BrowserWindowConstructorOptions,
   type IpcMainEvent,
   type IpcMainInvokeEvent,
+  type WebContents,
 } from "electron"
 import { registerAgentIpcHandlers, shutdownAgentRuntime } from "./agent-ipc"
 import { registerBacklogStatusPipIpcHandlers } from "./backlog-status-pip-ipc"
 import { desktopAppIdentity } from "./desktop-app-identity"
+import { DesktopAuthCallbackDeliveryQueue } from "./desktop-auth-callback-delivery"
 import {
   desktopAuthCallback,
+  desktopDeepLink,
   desktopProtocolClientArguments,
 } from "./desktop-auth-deep-link"
 import { desktopResourcePaths } from "./desktop-resource-paths"
@@ -95,10 +98,11 @@ let mainWindowRole: MainWindowRole | undefined
 let shutdownPromise: Promise<void> | undefined
 let shutdownRequested = false
 let readyToQuit = false
-let pendingBillingRefresh = process.argv.some((argument) => argument === billingDeepLink)
-let pendingAuthCallback = desktopAuthCallback(
-  process.argv.find((argument) => argument.startsWith("blame://auth/"))
-)
+const initialDeepLink = desktopDeepLink(process.argv)
+let pendingBillingRefresh = initialDeepLink === billingDeepLink
+const authCallbackQueue = new DesktopAuthCallbackDeliveryQueue()
+const initialAuthCallback = desktopAuthCallback(initialDeepLink)
+if (initialAuthCallback) authCallbackQueue.enqueue(initialAuthCallback)
 let authRendererReady = false
 
 void app.whenReady().then(() => {
@@ -134,7 +138,7 @@ app.on("activate", () => {
 app.on("second-instance", (_event, commandLine) => {
   if (shutdownRequested) return
   showMainWindow()
-  handleDeepLink(commandLine.find((argument) => argument.startsWith("blame://")))
+  handleDeepLink(desktopDeepLink(commandLine))
 })
 
 app.on("open-url", (event, url) => {
@@ -317,7 +321,7 @@ function handleDeepLink(url: string | undefined) {
   else {
     const callback = desktopAuthCallback(url)
     if (!callback) return
-    pendingAuthCallback = callback
+    authCallbackQueue.enqueue(callback)
   }
   showMainWindow()
   if (!mainWindow || mainWindow.webContents.isLoading()) return
@@ -325,10 +329,14 @@ function handleDeepLink(url: string | undefined) {
     pendingBillingRefresh = false
     mainWindow.webContents.send("billing:refresh-license")
   }
-  if (pendingAuthCallback && authRendererReady) {
-    mainWindow.webContents.send("auth:callback", pendingAuthCallback)
-    pendingAuthCallback = undefined
-  }
+  deliverPendingAuthCallback(mainWindow.webContents)
+}
+
+function deliverPendingAuthCallback(webContents: WebContents) {
+  if (!authRendererReady || webContents.isDestroyed()) return
+  const delivery = authCallbackQueue.pending()
+  if (!delivery) return
+  webContents.send("auth:callback", delivery)
 }
 
 function showMainWindow() {
@@ -428,11 +436,20 @@ function registerIpcHandlers() {
     event.sender.send("billing:refresh-license")
   })
 
-  ipcMain.on("auth:renderer-ready", (event) => {
+  ipcMain.handle("auth:renderer-ready", (event) => {
+    if (event.sender !== mainWindow?.webContents) return undefined
     authRendererReady = true
-    if (!pendingAuthCallback) return
-    event.sender.send("auth:callback", pendingAuthCallback)
-    pendingAuthCallback = undefined
+    return authCallbackQueue.pending()
+  })
+
+  ipcMain.on("auth:callback-received", (event, deliveryId: unknown) => {
+    if (
+      event.sender !== mainWindow?.webContents ||
+      typeof deliveryId !== "number"
+    ) {
+      return
+    }
+    authCallbackQueue.acknowledge(deliveryId)
   })
 
   ipcMain.handle("shell:open-path", (_event, path: string) => {

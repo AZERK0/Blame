@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import test from "node:test"
 import {
   desktopAuthCallback,
+  desktopDeepLink,
   desktopProtocolClientArguments,
 } from "./desktop-auth-deep-link.ts"
 
@@ -23,6 +24,16 @@ test("uses packaged protocol registration without development arguments", () => 
     desktopProtocolClientArguments(true, "/opt/blame", ["/opt/blame"]),
     []
   )
+})
+
+test("extracts the callback from packaged launch arguments", () => {
+  const callback = `blame://auth/callback?code=${"a".repeat(32)}`
+
+  assert.equal(desktopDeepLink(["/opt/blame", `--url="${callback}"`]), callback)
+})
+
+test("ignores arguments without a Blame protocol URL", () => {
+  assert.equal(desktopDeepLink(["/opt/blame", "--disable-gpu"]), undefined)
 })
 
 test("accepts a single valid authentication code", () => {

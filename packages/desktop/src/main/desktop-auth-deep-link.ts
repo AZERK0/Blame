@@ -2,6 +2,18 @@ import { resolve } from "node:path"
 
 export type DesktopAuthCallback = { code?: string; error?: string }
 
+export function desktopDeepLink(processArguments: string[]) {
+  for (const argument of processArguments) {
+    const match = argument.match(/blame:\/\/[^\s"'<>]+/i)
+    if (!match) continue
+    try {
+      const url = new URL(match[0])
+      if (url.protocol === "blame:") return url.toString()
+    } catch {}
+  }
+  return undefined
+}
+
 export function desktopProtocolClientArguments(
   isPackaged: boolean,
   executablePath: string,

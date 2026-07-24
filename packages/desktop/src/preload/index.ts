@@ -2,13 +2,51 @@ import { contextBridge, ipcRenderer } from "electron";
 import type { AgentEvent } from "@blame/agent-runtime";
 import type { BlameDesktopApi } from "./types";
 
+type AuthCallback = Parameters<BlameDesktopApi["auth"]["onCallback"]>[0];
+type AuthCallbackResult = Parameters<AuthCallback>[0];
+type AuthCallbackDelivery = {
+  id: number;
+  result: AuthCallbackResult;
+};
+
+const authCallbacks = new Set<AuthCallback>();
+const deliveredAuthCallbackIds = new Set<number>();
+
+function deliverAuthCallback(value: unknown) {
+  if (!isAuthCallbackDelivery(value) || authCallbacks.size === 0) return;
+  if (deliveredAuthCallbackIds.has(value.id)) {
+    ipcRenderer.send("auth:callback-received", value.id);
+    return;
+  }
+  deliveredAuthCallbackIds.add(value.id);
+  try {
+    for (const callback of authCallbacks) callback(value.result);
+  } finally {
+    ipcRenderer.send("auth:callback-received", value.id);
+  }
+}
+
+function isAuthCallbackDelivery(value: unknown): value is AuthCallbackDelivery {
+  if (!value || typeof value !== "object") return false;
+  const delivery = value as Partial<AuthCallbackDelivery>;
+  return Number.isSafeInteger(delivery.id) && Boolean(delivery.result);
+}
+
+ipcRenderer.on("auth:callback", (_event, delivery) => {
+  deliverAuthCallback(delivery);
+});
+
 const api: BlameDesktopApi = {
   auth: {
-    ready: () => ipcRenderer.send("auth:renderer-ready"),
+    ready: () => {
+      void ipcRenderer
+        .invoke("auth:renderer-ready")
+        .then(deliverAuthCallback)
+        .catch(() => undefined);
+    },
     onCallback: (callback) => {
-      const handler = (_event: unknown, result: Parameters<typeof callback>[0]) => callback(result);
-      ipcRenderer.on("auth:callback", handler);
-      return () => ipcRenderer.removeListener("auth:callback", handler);
+      authCallbacks.add(callback);
+      return () => authCallbacks.delete(callback);
     },
   },
   billing: {
