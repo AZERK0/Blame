@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { LoaderCircle } from "lucide-react";
+import { ArrowRight, LoaderCircle } from "lucide-react";
 import * as React from "react";
 
 import { HeroScene } from "@/app/scene/hero-scene";
@@ -96,6 +96,14 @@ function AuthorizationContent({
       <p className="landing-reveal landing-reveal-copy mx-auto mt-7 max-w-2xl text-balance text-base leading-7 text-white/76 sm:text-lg md:text-xl">
         {error ?? content.description}
       </p>
+      {phase === "approved" ? (
+        <div className="landing-reveal landing-reveal-actions mt-9 flex items-center justify-center">
+          <a href="blame://billing/refresh" className={buttonVariants()}>
+            Open Blame
+            <ArrowRight className="size-4" />
+          </a>
+        </div>
+      ) : null}
       {phase === "failed" ? (
         <div className="landing-reveal landing-reveal-actions mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <a href={retryUrl} className={buttonVariants()}>
