@@ -187,6 +187,40 @@ test.group('file attachments', (group) => {
     assert.equal(sha256(storedContent), sha256(largeContent))
   })
 
+  test('persists attachment upload state without changing the story status', async ({
+    assert,
+    client,
+  }) => {
+    const user = await createUser()
+    const project = await createProject(user.id)
+    const createResponse = await client.post('/api/v1/projects/user-stories').loginAs(user).json({
+      fileAttachmentUploadPending: true,
+      projectId: project.id,
+      status: 'ready',
+      summary: 'Use the local attachment while persistence continues',
+      title: 'Local attachment source',
+    })
+    createResponse.assertStatus(200)
+    const createdStory = createResponse.body() as unknown as {
+      data: { fileAttachmentUploadPending: boolean; id: string; status: string }
+    }
+    assert.isTrue(createdStory.data.fileAttachmentUploadPending)
+    assert.equal(createdStory.data.status, 'ready')
+
+    const updateResponse = await client
+      .patch(`/api/v1/projects/user-stories/${createdStory.data.id}`)
+      .loginAs(user)
+      .json({ fileAttachmentUploadPending: false })
+    updateResponse.assertStatus(200)
+    assert.isFalse(
+      (
+        updateResponse.body() as unknown as {
+          data: { fileAttachmentUploadPending: boolean }
+        }
+      ).data.fileAttachmentUploadPending
+    )
+  })
+
   test('purges detached attachment objects after the grace period', async ({ assert, client }) => {
     const user = await createUser()
     const project = await createProject(user.id)

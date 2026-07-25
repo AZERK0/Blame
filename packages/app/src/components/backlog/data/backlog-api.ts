@@ -6,6 +6,7 @@ import type {
   UserStoryAgentRunUpdate,
   UserStoryComment,
   UserStoryDraft,
+  UserStoryFileAttachment,
   UserStoryUpdate,
 } from "@/components/backlog/data/backlog-data"
 import type { ApiConnection } from "@blame/agent-runtime"
@@ -13,7 +14,7 @@ import { boundedAgentUpdate } from "./agent-update-limits.ts"
 import {
   isFileAttachmentReference,
   uploadFileAttachments,
-} from "@/lib/file-attachment-api"
+} from "../../../lib/file-attachment-api.ts"
 
 export function createBacklogApi(connection: ApiConnection) {
   const baseUrl = connection.url.replace(/\/$/, "")
@@ -42,16 +43,7 @@ export function createBacklogApi(connection: ApiConnection) {
       )
     },
     async create(input: UserStoryDraft) {
-      const fileAttachments = await uploadFileAttachments(
-        connection,
-        input.fileAttachments
-      )
-      return userStory(
-        await request<unknown>(connection, baseUrl, "/projects/user-stories", {
-          body: JSON.stringify({ ...input, fileAttachments }),
-          method: "POST",
-        })
-      )
+      return createUserStory(connection, baseUrl, input)
     },
     async update(id: string, input: UserStoryUpdate) {
       const fileAttachments =
@@ -192,6 +184,99 @@ export class BacklogApiError extends Error {
 
 export function retryableBacklogError(error: unknown) {
   return !(error instanceof BacklogApiError) || error.retryable
+}
+
+async function createUserStory(
+  connection: ApiConnection,
+  baseUrl: string,
+  input: UserStoryDraft
+) {
+  const uploadsPending = input.fileAttachments?.some(hasInlineContent) ?? false
+  const story = await createInitialUserStory(
+    connection,
+    baseUrl,
+    input,
+    uploadsPending
+  )
+  if (!uploadsPending) return { story }
+  return pendingAttachmentCreation(connection, baseUrl, input, story)
+}
+
+function pendingAttachmentCreation(
+  connection: ApiConnection,
+  baseUrl: string,
+  input: UserStoryDraft,
+  story: UserStory
+) {
+  return {
+    completeAttachmentUpload: () =>
+      defer(() =>
+        completeCreatedStoryUpload(connection, baseUrl, story.id, input)
+      ),
+    story: {
+      ...story,
+      fileAttachments: input.fileAttachments,
+      fileAttachmentUploadStatus: "uploading" as const,
+    },
+  }
+}
+
+async function createInitialUserStory(
+  connection: ApiConnection,
+  baseUrl: string,
+  input: UserStoryDraft,
+  uploadsPending: boolean
+) {
+  return userStory(
+    await request<unknown>(connection, baseUrl, "/projects/user-stories", {
+      body: JSON.stringify({
+        ...input,
+        fileAttachments: storedFileAttachments(input.fileAttachments),
+        fileAttachmentUploadPending: uploadsPending,
+      }),
+      method: "POST",
+    })
+  )
+}
+
+async function completeCreatedStoryUpload(
+  connection: ApiConnection,
+  baseUrl: string,
+  storyId: string,
+  input: UserStoryDraft
+) {
+  const fileAttachments = await uploadFileAttachments(
+    connection,
+    input.fileAttachments
+  )
+  return userStory(
+    await request<unknown>(
+      connection,
+      baseUrl,
+      `/projects/user-stories/${storyId}`,
+      {
+        body: JSON.stringify({
+          fileAttachments,
+          fileAttachmentUploadPending: false,
+        }),
+        method: "PATCH",
+      }
+    )
+  )
+}
+
+function storedFileAttachments(attachments: UserStoryDraft["fileAttachments"]) {
+  return attachments?.filter((attachment) => !hasInlineContent(attachment))
+}
+
+function hasInlineContent(attachment: UserStoryFileAttachment) {
+  return attachment.content !== undefined
+}
+
+function defer<T>(task: () => Promise<T>) {
+  return new Promise<T>((resolve, reject) => {
+    setTimeout(() => void task().then(resolve, reject), 0)
+  })
 }
 
 function apiUpdate(input: UserStoryUpdate) {

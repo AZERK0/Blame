@@ -2,6 +2,7 @@ import type {
   UserStory,
   UserStoryAgentRun,
   UserStoryComment,
+  UserStoryFileAttachment,
 } from "./backlog-data.ts"
 import { mergeAgentActivities } from "./agent-activity-merge.ts"
 
@@ -51,11 +52,40 @@ export function mergeUserStory(
       currentStory.comments ?? [],
       serverStory.comments ?? []
     ),
-    fileAttachments: providedValue(
-      newestStory.fileAttachments,
-      currentStory.fileAttachments
+    fileAttachments: preserveLocalAttachmentContent(
+      currentStory.fileAttachments,
+      providedValue(
+        newestStory.fileAttachments,
+        currentStory.fileAttachments
+      )
     ),
+    ...localAttachmentUpload(currentStory),
   }
+}
+
+function localAttachmentUpload(story: UserStory): Partial<UserStory> {
+  if (!story.fileAttachmentUploadStatus) return {}
+  return {
+    fileAttachments: story.fileAttachments,
+    fileAttachmentUploadError: story.fileAttachmentUploadError,
+    fileAttachmentUploadStatus: story.fileAttachmentUploadStatus,
+  }
+}
+
+function preserveLocalAttachmentContent(
+  currentAttachments: UserStoryFileAttachment[] | null | undefined,
+  nextAttachments: UserStoryFileAttachment[] | null | undefined
+) {
+  if (!currentAttachments || !nextAttachments) return nextAttachments
+  const localContentById = new Map(
+    currentAttachments
+      .filter((attachment) => attachment.content !== undefined)
+      .map((attachment) => [attachment.id, attachment.content])
+  )
+  return nextAttachments.map((attachment) => {
+    const content = localContentById.get(attachment.id)
+    return content === undefined ? attachment : { ...attachment, content }
+  })
 }
 
 export function mergeStoryAgentRun(

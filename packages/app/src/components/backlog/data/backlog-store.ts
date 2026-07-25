@@ -1,4 +1,5 @@
 import * as React from "react"
+import { toast } from "sonner"
 
 import { createBacklogApi } from "@/components/backlog/data/backlog-api"
 import {
@@ -128,7 +129,8 @@ function useBacklogStoreValue() {
     async (input: Omit<UserStoryDraft, "projectId">) => {
       if (!projectId)
         throw new Error("Open a project before creating a user story.")
-      const story = await api.create({ ...input, projectId })
+      const creation = await api.create({ ...input, projectId })
+      const story = creation.story
       setState((current) => ({
         ...current,
         detailedStoryIds: storyStateIds(
@@ -138,6 +140,13 @@ function useBacklogStoreValue() {
         ),
         stories: [...current.stories, story],
       }))
+      if (creation.completeAttachmentUpload) {
+        runCreatedStoryAttachmentUpload(
+          story,
+          creation.completeAttachmentUpload,
+          setState
+        )
+      }
       return story
     },
     [api, projectId]
@@ -286,9 +295,13 @@ function useBacklogStoreValue() {
     [api]
   )
   const loadDetail = React.useCallback(
-    async (story: Pick<UserStory, "id">) => {
+    async (story: UserStory) => {
       const existingRequest = detailRequests.current.get(story.id)
-      if (existingRequest) return existingRequest
+      if (existingRequest) {
+        return existingRequest.then((loadedStory) =>
+          mergeUserStory(story, loadedStory)
+        )
+      }
       const request = api
         .get(story.id)
         .then((loadedStory) => {
@@ -311,7 +324,7 @@ function useBacklogStoreValue() {
           detailRequests.current.delete(story.id)
         })
       detailRequests.current.set(story.id, request)
-      return request
+      return request.then((loadedStory) => mergeUserStory(story, loadedStory))
     },
     [api]
   )
@@ -516,6 +529,96 @@ function replaceStory(
     detailedStoryIds: storyStateIds(current.detailedStoryIds, story.id, true),
     stories: current.stories.map((currentStory) =>
       currentStory.id === story.id ? story : currentStory
+    ),
+  }))
+}
+
+function runCreatedStoryAttachmentUpload(
+  story: UserStory,
+  completeUpload: () => Promise<UserStory>,
+  setState: React.Dispatch<React.SetStateAction<BacklogState>>
+) {
+  void completeUpload()
+    .then((uploadedStory) =>
+      setAttachmentUploadCompleted(story, uploadedStory, setState)
+    )
+    .catch((error) => {
+      const message =
+        error instanceof Error ? error.message : "Unknown upload error"
+      setAttachmentUploadFailed(story.id, message, setState)
+      toast.error("Attachment upload failed", {
+        action: {
+          label: "Retry",
+          onClick: () => {
+            setAttachmentUploading(story.id, setState)
+            runCreatedStoryAttachmentUpload(story, completeUpload, setState)
+          },
+        },
+        description: "The agent keeps the local copy. Retry to persist it.",
+      })
+    })
+}
+
+function setAttachmentUploadCompleted(
+  sourceStory: UserStory,
+  uploadedStory: UserStory,
+  setState: React.Dispatch<React.SetStateAction<BacklogState>>
+) {
+  setState((current) => ({
+    ...current,
+    stories: current.stories.map((story) =>
+      story.id === sourceStory.id
+        ? {
+            ...story,
+            fileAttachments: sourceStory.fileAttachments,
+            fileAttachmentUploadError: undefined,
+            fileAttachmentUploadPending:
+              uploadedStory.fileAttachmentUploadPending,
+            fileAttachmentUploadStatus: undefined,
+          }
+        : story
+    ),
+  }))
+}
+
+function setAttachmentUploading(
+  storyId: string,
+  setState: React.Dispatch<React.SetStateAction<BacklogState>>
+) {
+  updateAttachmentUploadState(
+    storyId,
+    {
+      fileAttachmentUploadError: undefined,
+      fileAttachmentUploadStatus: "uploading",
+    },
+    setState
+  )
+}
+
+function setAttachmentUploadFailed(
+  storyId: string,
+  message: string,
+  setState: React.Dispatch<React.SetStateAction<BacklogState>>
+) {
+  updateAttachmentUploadState(
+    storyId,
+    {
+      fileAttachmentUploadError: message,
+      fileAttachmentUploadStatus: "failed",
+    },
+    setState
+  )
+}
+
+function updateAttachmentUploadState(
+  storyId: string,
+  update: Partial<UserStory>,
+  setState: React.Dispatch<React.SetStateAction<BacklogState>>
+) {
+  setState((current) => ({
+    ...current,
+    stories: current.stories.map((story) =>
+      story.id === storyId ? { ...story, ...update } : story
     ),
   }))
 }

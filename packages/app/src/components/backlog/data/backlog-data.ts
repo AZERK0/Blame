@@ -121,6 +121,9 @@ export type UserStory = {
   summary: string
   codeSelectionAttachments?: UserStoryCodeSelectionAttachment[] | null
   fileAttachments?: UserStoryFileAttachment[] | null
+  fileAttachmentUploadPending?: boolean
+  fileAttachmentUploadError?: string
+  fileAttachmentUploadStatus?: "uploading" | "failed"
   status: BacklogColumnId
   priority: UserStoryPriority
   owner: string
@@ -155,6 +158,7 @@ export type UserStoryDraft = {
   summary: string
   codeSelectionAttachments?: UserStoryCodeSelectionAttachment[] | null
   fileAttachments?: UserStoryFileAttachment[] | null
+  fileAttachmentUploadPending?: boolean
   status?: BacklogColumnId
   priority?: UserStoryPriority
   owner?: string
@@ -168,6 +172,7 @@ export type UserStoryUpdate = Partial<
     | "summary"
     | "codeSelectionAttachments"
     | "fileAttachments"
+    | "fileAttachmentUploadPending"
     | "status"
     | "priority"
     | "owner"
@@ -260,6 +265,21 @@ export const backlogColumns = [
 
 export function userStoryDisplayId(story: Pick<UserStory, "storyNumber">) {
   return `US-${String(story.storyNumber).padStart(3, "0")}`
+}
+
+export function userStoryReadyForAgent(
+  story: Pick<
+    UserStory,
+    "fileAttachments" | "fileAttachmentUploadPending" | "status"
+  >
+) {
+  if (story.status !== "ready") return false
+  if (!story.fileAttachmentUploadPending) return true
+  return (
+    story.fileAttachments?.some(
+      (attachment) => attachment.content !== undefined
+    ) ?? false
+  )
 }
 
 export function userStoryActions(story: UserStory): BacklogAction[] {

@@ -1,7 +1,7 @@
 {
   "CORSRules": [
     {
-      "AllowedHeaders": ["content-type"],
+      "AllowedHeaders": ["content-type", "x-amz-meta-checksum-sha256"],
       "AllowedMethods": ["GET", "HEAD", "PUT"],
       "AllowedOrigins": ["*"],
       "ExposeHeaders": ["ETag"],

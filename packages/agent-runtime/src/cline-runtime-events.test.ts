@@ -158,7 +158,11 @@ test("formats failed agent results without a provider label", () => {
 test("hides untagged sub-agent text while spawn agent is active", () => {
   assert.equal(
     shouldDisplayClineSessionEvent(
-      agentEvent({ type: "content_start", contentType: "text", text: "hidden" }),
+      agentEvent({
+        type: "content_start",
+        contentType: "text",
+        text: "hidden",
+      }),
       true,
     ),
     false,
@@ -261,6 +265,35 @@ test("keeps development feedback attachments out of the prompt", async () => {
   }
 });
 
+test("uses local attachment content without downloading its stored copy", async () => {
+  const attachmentDirectory = await mkdtemp(join(tmpdir(), "blame-test-"));
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => {
+    throw new Error("Stored attachment should not be downloaded");
+  };
+
+  try {
+    const input = await developmentUserInput(
+      {
+        fileAttachments: [
+          {
+            ...fileAttachment("screenshot.png", "image/png"),
+            downloadUrl: "https://storage.example/screenshot",
+          },
+        ],
+        summary: "Summary",
+        title: "Title",
+      },
+      attachmentDirectory,
+    );
+
+    assert.deepEqual(input.userImages, ["data:image/png;base64,aGVsbG8="]);
+  } finally {
+    globalThis.fetch = originalFetch;
+    await rm(attachmentDirectory, { force: true, recursive: true });
+  }
+});
+
 test("renews an expired attachment download URL", async () => {
   const attachmentDirectory = await mkdtemp(join(tmpdir(), "blame-test-"));
   const originalFetch = globalThis.fetch;
@@ -357,8 +390,14 @@ test("renders the Blame development system prompt without Cline placeholders", a
   assert.match(prompt, /## Unit Tests: Professional TDD/);
   assert.match(prompt, /A passing test suite is not proof/);
   assert.match(prompt, /Do not run full workspace lint/);
-  assert.match(prompt, /Blame Preview, container logs, DevTools console\/network checks/);
-  assert.match(prompt, new RegExp(process.cwd().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  assert.match(
+    prompt,
+    /Blame Preview, container logs, DevTools console\/network checks/,
+  );
+  assert.match(
+    prompt,
+    new RegExp(process.cwd().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")),
+  );
   assert.doesNotMatch(prompt, /\{\{[A-Z_]+\}\}/);
   assert.doesNotMatch(prompt, /You are Cline/);
   assert.doesNotMatch(prompt, /CLINE_RULES|CLINE_METADATA/);

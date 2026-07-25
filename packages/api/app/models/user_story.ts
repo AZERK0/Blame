@@ -180,6 +180,9 @@ export default class UserStory extends BaseModel {
   }
 
   @column()
+  declare fileAttachmentUploadPending: boolean
+
+  @column()
   declare status: UserStoryStatus
 
   @column()

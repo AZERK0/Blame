@@ -342,13 +342,14 @@ function uniqueAttachments(attachments: FileAttachment[]) {
 }
 
 function userStoryCreateAttributes(input: CreateUserStoryInput, storyNumber: number) {
-  const { agentActivity, fileAttachments, ...attributes } = input
+  const { agentActivity, fileAttachments, fileAttachmentUploadPending, ...attributes } = input
   void agentActivity
   void fileAttachments
   return {
     ...attributes,
     ...nullableStoryAttributes(input),
     codeSelectionAttachments: input.codeSelectionAttachments ?? null,
+    fileAttachmentUploadPending: fileAttachmentUploadPending ?? false,
     legacyFileAttachments: null,
     owner: input.owner ?? 'Product',
     priority: input.priority ?? 'Medium',

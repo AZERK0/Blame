@@ -10,16 +10,23 @@ test.afterEach(() => {
 })
 
 test("uploads file bytes directly and returns a storage reference", async () => {
-  const requests: Array<{ body: BodyInit | null | undefined; url: string }> = []
+  const requests: Array<{
+    body: BodyInit | null | undefined
+    headers: HeadersInit | undefined
+    url: string
+  }> = []
   globalThis.fetch = async (input, init) => {
     const url = String(input)
-    requests.push({ body: init?.body, url })
+    requests.push({ body: init?.body, headers: init?.headers, url })
     if (url.endsWith("/attachments/uploads")) {
       return Response.json({
         attachment: attachmentReference(),
         upload: {
           expiresAt: "2026-07-25T12:15:00.000Z",
-          headers: { "Content-Type": "text/plain" },
+          headers: {
+            "Content-Type": "text/plain",
+            "x-amz-meta-checksum-sha256": "checksum",
+          },
           url: "https://storage.example/upload",
         },
       })
@@ -47,6 +54,10 @@ test("uploads file bytes directly and returns a storage reference", async () => 
     ]
   )
   assert.equal(await (requests[1]?.body as Blob).text(), "Hello")
+  assert.deepEqual(requests[1]?.headers, {
+    "Content-Type": "text/plain",
+    "x-amz-meta-checksum-sha256": "checksum",
+  })
   assert.equal("content" in JSON.parse(String(requests[0]?.body)), false)
 })
 

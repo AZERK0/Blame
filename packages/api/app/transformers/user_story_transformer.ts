@@ -11,6 +11,7 @@ export default class UserStoryTransformer extends BaseTransformer<UserStory> {
       storyNumber: story.storyNumber,
       title: story.title,
       summary: story.summary,
+      fileAttachmentUploadPending: Boolean(story.fileAttachmentUploadPending),
       status: story.status,
       priority: story.priority,
       owner: story.owner,
@@ -70,6 +71,7 @@ export default class UserStoryTransformer extends BaseTransformer<UserStory> {
         'createdAt',
         'updatedAt',
       ]),
+      fileAttachmentUploadPending: Boolean(this.resource.fileAttachmentUploadPending),
       comments: (this.resource.comments ?? []).map((comment) =>
         UserStoryCommentTransformer.transform(comment)
       ),

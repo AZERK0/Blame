@@ -45,9 +45,19 @@ test("ignores high-frequency agent fields that cards do not render", () => {
 test("detects fields that change card content or actions", () => {
   const previous = story()
 
-  assert.equal(equalUserStoryCardStory(previous, story({ title: "Next" })), false)
+  assert.equal(
+    equalUserStoryCardStory(previous, story({ title: "Next" })),
+    false
+  )
   assert.equal(
     equalUserStoryCardStory(previous, story({ agentStatus: "Paused" })),
+    false
+  )
+  assert.equal(
+    equalUserStoryCardStory(
+      previous,
+      story({ fileAttachmentUploadStatus: "uploading" })
+    ),
     false
   )
 })

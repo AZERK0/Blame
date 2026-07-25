@@ -8,6 +8,8 @@ import {
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 
+const checksumMetadataHeader = 'x-amz-meta-checksum-sha256'
+
 export type AttachmentObjectMetadata = {
   checksumSha256: string
   contentType: string
@@ -102,6 +104,8 @@ class S3AttachmentObjectStorage implements AttachmentObjectStorage {
     })
     const url = await getSignedUrl(this.client, command, {
       expiresIn: this.config.uploadUrlTtlSeconds,
+      signableHeaders: new Set(['content-type']),
+      unhoistableHeaders: new Set([checksumMetadataHeader]),
     })
     return {
       expiresAt: expiresAt(this.config.uploadUrlTtlSeconds),
@@ -193,5 +197,6 @@ function expiresAt(seconds: number) {
 function uploadHeaders(metadata: AttachmentObjectMetadata) {
   return {
     'Content-Type': metadata.contentType,
+    [checksumMetadataHeader]: metadata.checksumSha256,
   }
 }

@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import test from "node:test"
 
 import { BacklogApiError, createBacklogApi } from "./backlog-api.ts"
+import { type UserStoryDraft, userStoryReadyForAgent } from "./backlog-data.ts"
 import { agentStoryTextLimit } from "./agent-update-limits.ts"
 
 test("bounds agent text before sending a story update", async () => {
@@ -48,6 +49,129 @@ test("surfaces structured validation errors as non-retryable", async () => {
         !error.retryable &&
         error.message.includes("agentLastEvent")
     )
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test("creates a queued story before uploading its attachments", async () => {
+  const originalFetch = globalThis.fetch
+  const requests: Array<{ body?: string; method: string; url: string }> = []
+  const attachment = {
+    content: "SGVsbG8=",
+    id: "attachment-id",
+    name: "attachment.txt",
+    size: 5,
+    type: "text/plain",
+  }
+  globalThis.fetch = async (input, init) => {
+    const url = String(input)
+    requests.push({
+      body: typeof init?.body === "string" ? init.body : undefined,
+      method: init?.method ?? "GET",
+      url,
+    })
+    if (url.endsWith("/projects/user-stories") && init?.method === "POST") {
+      return Response.json({
+        data: {
+          ...story,
+          fileAttachmentUploadPending: true,
+          status: "ready",
+        },
+      })
+    }
+    if (url.endsWith("/attachments/uploads")) {
+      return Response.json({
+        attachment: { ...attachment, content: undefined },
+        upload: {
+          expiresAt: "2026-07-25T12:15:00.000Z",
+          headers: { "Content-Type": "text/plain" },
+          url: "https://storage.example/upload",
+        },
+      })
+    }
+    if (url === "https://storage.example/upload") return new Response(null)
+    if (url.endsWith("/attachments/attachment-id/complete")) {
+      return Response.json({ ...attachment, content: undefined })
+    }
+    return Response.json({
+      data: {
+        ...story,
+        fileAttachments: [{ ...attachment, content: undefined }],
+        fileAttachmentUploadPending: false,
+        status: "ready",
+      },
+    })
+  }
+
+  try {
+    const api = createBacklogApi({ url: "http://localhost:3333/api/v1" })
+    const input: UserStoryDraft = {
+      fileAttachments: [attachment],
+      projectId: "project-1",
+      status: "ready",
+      summary: "Summary",
+      title: "Title",
+    }
+    const creation = await api.create(input)
+
+    assert.equal(requests.length, 1)
+    assert.equal(JSON.parse(requests[0]?.body ?? "{}").status, "ready")
+    assert.equal(
+      JSON.parse(requests[0]?.body ?? "{}").fileAttachmentUploadPending,
+      true
+    )
+    assert.deepEqual(JSON.parse(requests[0]?.body ?? "{}").fileAttachments, [])
+    assert.equal(creation.story.status, "ready")
+    assert.equal(creation.story.fileAttachmentUploadStatus, "uploading")
+    assert.equal(userStoryReadyForAgent(creation.story), true)
+    assert.equal(
+      userStoryReadyForAgent({
+        ...creation.story,
+        fileAttachments: [],
+        fileAttachmentUploadStatus: undefined,
+      }),
+      false
+    )
+    assert.ok(creation.completeAttachmentUpload)
+
+    const uploadedStory = await creation.completeAttachmentUpload()
+
+    assert.deepEqual(
+      requests.map(({ method, url }) => ({ method, url })),
+      [
+        {
+          method: "POST",
+          url: "http://localhost:3333/api/v1/projects/user-stories",
+        },
+        {
+          method: "POST",
+          url: "http://localhost:3333/api/v1/attachments/uploads",
+        },
+        { method: "PUT", url: "https://storage.example/upload" },
+        {
+          method: "POST",
+          url: "http://localhost:3333/api/v1/attachments/attachment-id/complete",
+        },
+        {
+          method: "PATCH",
+          url: "http://localhost:3333/api/v1/projects/user-stories/story-1",
+        },
+      ]
+    )
+    assert.equal(userStoryReadyForAgent(uploadedStory), true)
+    assert.equal(uploadedStory.fileAttachmentUploadPending, false)
+    assert.deepEqual(JSON.parse(requests[4]?.body ?? "{}"), {
+      fileAttachments: [
+        {
+          id: attachment.id,
+          name: attachment.name,
+          size: attachment.size,
+          type: attachment.type,
+        },
+      ],
+      fileAttachmentUploadPending: false,
+    })
   } finally {
     globalThis.fetch = originalFetch
   }

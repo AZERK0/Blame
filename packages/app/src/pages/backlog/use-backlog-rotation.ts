@@ -14,7 +14,10 @@ import type {
   UserStoryAgentRunUpdate,
   UserStoryUpdate,
 } from "@/components/backlog/data/backlog-data"
-import { userStoryDisplayId } from "@/components/backlog/data/backlog-data"
+import {
+  userStoryDisplayId,
+  userStoryReadyForAgent,
+} from "@/components/backlog/data/backlog-data"
 import { captureAgentRunDiffEndRef } from "@/components/chat/agent-run-diffs"
 import { nextCheckpointRunCount } from "@/components/chat/agent-run-checkpoints"
 import {
@@ -1203,7 +1206,7 @@ function queuedStories(
   return stories
     .filter(
       (story) =>
-        story.status === "ready" &&
+        userStoryReadyForAgent(story) &&
         !startingStoryIds.has(story.id) &&
         !blocked(story.id, blockedStories, now)
     )
