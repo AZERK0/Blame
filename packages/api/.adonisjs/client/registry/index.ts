@@ -84,6 +84,12 @@ const routes = {
     tokens: [{"old":"/api/v1/auth/desktop-exchange","type":0,"val":"api","end":""},{"old":"/api/v1/auth/desktop-exchange","type":0,"val":"v1","end":""},{"old":"/api/v1/auth/desktop-exchange","type":0,"val":"auth","end":""},{"old":"/api/v1/auth/desktop-exchange","type":0,"val":"desktop-exchange","end":""}],
     types: placeholder as Registry['desktop_auth.exchange']['types'],
   },
+  'desktop_auth.exchange_device_token': {
+    methods: ["POST"],
+    pattern: '/api/v1/auth/desktop-device-exchange',
+    tokens: [{"old":"/api/v1/auth/desktop-device-exchange","type":0,"val":"api","end":""},{"old":"/api/v1/auth/desktop-device-exchange","type":0,"val":"v1","end":""},{"old":"/api/v1/auth/desktop-device-exchange","type":0,"val":"auth","end":""},{"old":"/api/v1/auth/desktop-device-exchange","type":0,"val":"desktop-device-exchange","end":""}],
+    types: placeholder as Registry['desktop_auth.exchange_device_token']['types'],
+  },
   'auth.better': {
     methods: ["HEAD","OPTIONS","GET","POST","PUT","PATCH","DELETE"],
     pattern: '/api/v1/auth/*',

@@ -163,6 +163,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/desktop_auth_controller').default['exchange']>>>
     }
   }
+  'desktop_auth.exchange_device_token': {
+    methods: ["POST"]
+    pattern: '/api/v1/auth/desktop-device-exchange'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/desktop_auth_controller').default['exchangeDeviceToken']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/desktop_auth_controller').default['exchangeDeviceToken']>>>
+    }
+  }
   'auth.better': {
     methods: ["HEAD","OPTIONS","GET","POST","PUT","PATCH","DELETE"]
     pattern: '/api/v1/auth/*'

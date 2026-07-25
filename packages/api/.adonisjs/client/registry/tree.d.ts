@@ -28,6 +28,7 @@ export interface ApiDefinition {
     resetPassword: typeof routes['desktop_auth.reset_password']
     verified: typeof routes['desktop_auth.verified']
     exchange: typeof routes['desktop_auth.exchange']
+    exchangeDeviceToken: typeof routes['desktop_auth.exchange_device_token']
   }
   auth: {
     better: typeof routes['auth.better']

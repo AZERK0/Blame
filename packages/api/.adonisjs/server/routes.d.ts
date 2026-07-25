@@ -17,6 +17,7 @@ export type ScannedRoutes = {
     'desktop_auth.reset_password': { paramsTuple?: []; params?: {} }
     'desktop_auth.verified': { paramsTuple?: []; params?: {} }
     'desktop_auth.exchange': { paramsTuple?: []; params?: {} }
+    'desktop_auth.exchange_device_token': { paramsTuple?: []; params?: {} }
     'auth.better': { paramsTuple: [...ParamValue[]]; params: {'*': ParamValue[]} }
     'profile.profile.show': { paramsTuple?: []; params?: {} }
     'profile.user_ai_preferences.show': { paramsTuple?: []; params?: {} }
@@ -128,6 +129,7 @@ export type ScannedRoutes = {
     'billing.billing.checkout': { paramsTuple?: []; params?: {} }
     'billing.billing.portal': { paramsTuple?: []; params?: {} }
     'desktop_auth.exchange': { paramsTuple?: []; params?: {} }
+    'desktop_auth.exchange_device_token': { paramsTuple?: []; params?: {} }
     'auth.better': { paramsTuple: [...ParamValue[]]; params: {'*': ParamValue[]} }
     'profile.account_privacy.download': { paramsTuple?: []; params?: {} }
     'profile.account_privacy.close': { paramsTuple?: []; params?: {} }
