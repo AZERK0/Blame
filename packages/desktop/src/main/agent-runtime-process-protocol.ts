@@ -1,0 +1,130 @@
+import { randomUUID } from "node:crypto";
+
+export const agentRuntimeMethods = [
+  "providers.list",
+  "providers.saveCredential",
+  "providers.deleteCredential",
+  "providers.loginOAuth",
+  "sessions.start",
+  "sessions.startDevelopment",
+  "sessions.send",
+  "sessions.sendDevelopment",
+  "sessions.abort",
+  "sessions.compareCheckpoint",
+  "sessions.list",
+  "sessions.messages",
+  "sessions.restoreCheckpoint",
+  "sessions.usage",
+  "sessions.releaseWorkspace",
+  "approvals.resolve",
+  "initializations.run",
+  "initializations.repair",
+  "initializations.assessImpact",
+  "codePractices.run",
+  "newProjects.generate",
+  "promptOptimizer.optimizeUserStory",
+  "promptOptimizer.generateTitle",
+  "approveAndMerge",
+  "generateCommitMessage",
+  "resolveMergeConflicts",
+  "telemetry.configure",
+  "telemetry.disable",
+  "shutdown",
+] as const;
+
+export const agentHostMethods = [
+  "git",
+  "openExternalUrl",
+  "previewDevtools",
+  "previewContainerLogs",
+  "codeReviewGraph.architectureOverview",
+  "codeReviewGraph.impactRadius",
+  "codeReviewGraph.minimalContext",
+  "codeReviewGraph.reviewContext",
+  "codeReviewGraph.status",
+  "codeReviewGraph.update",
+] as const;
+
+export type AgentRuntimeMethod = (typeof agentRuntimeMethods)[number];
+export type AgentHostMethod = (typeof agentHostMethods)[number];
+export type AgentRpcTarget = "host" | "runtime";
+
+export type AgentRpcError = {
+  message: string;
+  name: string;
+};
+
+export type AgentRpcRequest = {
+  id: string;
+  input?: unknown;
+  kind: "request";
+  method: AgentHostMethod | AgentRuntimeMethod;
+  target: AgentRpcTarget;
+};
+
+export type AgentRpcResponse = {
+  error?: AgentRpcError;
+  id: string;
+  kind: "response";
+  result?: unknown;
+  target: AgentRpcTarget;
+};
+
+export type AgentRpcCancel = {
+  id: string;
+  kind: "cancel";
+  target: AgentRpcTarget;
+};
+
+export type AgentRuntimeEventMessage = {
+  event: unknown;
+  kind: "event";
+};
+
+export type AgentRuntimeReadyMessage = {
+  kind: "ready";
+};
+
+export type AgentProcessMessage =
+  | AgentRpcCancel
+  | AgentRpcRequest
+  | AgentRpcResponse
+  | AgentRuntimeEventMessage
+  | AgentRuntimeReadyMessage;
+
+export function agentRpcRequest(
+  target: AgentRpcTarget,
+  method: AgentHostMethod | AgentRuntimeMethod,
+  input?: unknown,
+): AgentRpcRequest {
+  return {
+    id: randomUUID(),
+    input,
+    kind: "request",
+    method,
+    target,
+  };
+}
+
+export function agentRpcError(error: unknown): AgentRpcError {
+  return {
+    message: error instanceof Error ? error.message : String(error),
+    name: error instanceof Error ? error.name : "Error",
+  };
+}
+
+export function agentRpcResponseError(error: AgentRpcError) {
+  const next = new Error(error.message);
+  next.name = error.name;
+  return next;
+}
+
+export function isAgentProcessMessage(
+  value: unknown,
+): value is AgentProcessMessage {
+  if (!value || typeof value !== "object") return false;
+  const kind = (value as { kind?: unknown }).kind;
+  return ["cancel", "event", "ready", "request", "response"].includes(
+    String(kind),
+  );
+}

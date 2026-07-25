@@ -1,106 +1,119 @@
-import { BlameAgentRuntime, type AgentEvent } from "@blame/agent-runtime"
-import { withoutTelemetryEnvironment } from "@blame/telemetry"
-import { BrowserWindow, ipcMain, shell } from "electron"
+import type {
+  AgentEvent,
+  NewProjectGenerationResult,
+  StartNewProjectGenerationInput,
+} from "@blame/agent-runtime"
+import { BrowserWindow, ipcMain } from "electron"
 import { createServer } from "node:http"
 import type { AddressInfo } from "node:net"
-import { execFile } from "node:child_process"
-import { promisify } from "node:util"
-import {
-  codeReviewGraphProvider,
-  shutdownCodeReviewGraph,
-} from "./code-review-graph"
+import { shutdownCodeReviewGraph } from "./code-review-graph"
 import { optimizeDevelopmentAttachments } from "./attachment-ai-context"
 import { resolveAgentWorkspaceInput } from "./cline-backend-resolver"
-import { getPreviewDevtoolsTarget } from "./preview-browser-ipc"
 import { AgentEventStream } from "./agent-event-stream"
+import { AgentRuntimePool } from "./agent-runtime-pool"
 import {
-  run as runRuntime,
-  runtimeManagedPath,
-  ensureRuntimeGitUserIdentity,
-  getRuntimeGitIdentity,
-} from "./workspace-runtime"
+  AgentRuntimeProcessClient,
+  type AgentRuntimeProcessCallbacks,
+} from "./agent-runtime-process-client"
+import { handleAgentHostRequest } from "./agent-runtime-main-host"
 
-const execFileAsync = promisify(execFile)
+type AgentRuntimeRegistration = {
+  modulePath: string
+  packaged: boolean
+  serviceVersion: string
+}
 
-const runtime = new BlameAgentRuntime({
-  emit(event) {
-    emitAgentEvent(event)
-  },
-}, {
-  codeReviewGraph: codeReviewGraphProvider,
-  openExternalUrl(url) {
-    void shell.openExternal(url)
-  },
-  async git(cwd, args) {
-    if (runtimeManagedPath(cwd)) {
-      await ensureRuntimeGitUserIdentity();
-      const { name, email } = getRuntimeGitIdentity();
-      const gitEnv = {
-        ...withoutTelemetryEnvironment(process.env),
-        GIT_TERMINAL_PROMPT: "0",
-        GIT_SSH_COMMAND: process.platform === "win32"
-          ? "ssh.exe -o BatchMode=yes -o StrictHostKeyChecking=no"
-          : "ssh -o BatchMode=yes -o StrictHostKeyChecking=no",
-        ...(name ? { GIT_AUTHOR_NAME: name, GIT_COMMITTER_NAME: name } : {}),
-        ...(email ? { GIT_AUTHOR_EMAIL: email, GIT_COMMITTER_EMAIL: email } : {}),
-      };
-      const { stdout } = await runRuntime("git", args, { cwd, env: gitEnv });
-      return stdout;
-    }
-    const { stdout } = await execFileAsync("git", args, {
-      cwd,
-      env: withoutTelemetryEnvironment(process.env),
-      maxBuffer: 20 * 1024 * 1024,
-    });
-    return stdout;
-  },
-  previewDevtools: getPreviewDevtoolsTarget,
-  previewContainerLogs: async (input) => {
-    const { readProjectServiceLogs } = await import("./workspace-ipc")
-    return readProjectServiceLogs(input)
-  },
-})
+let runtime: AgentRuntimePool | undefined
 
-export function registerAgentIpcHandlers() {
-  ipcMain.handle("agent:providers:list", (_event, connection) => runtime.providers.list(connection))
+export function registerAgentIpcHandlers(input: AgentRuntimeRegistration) {
+  runtime ??= createAgentRuntimePool(input)
+  registerProviderIpcHandlers()
+  registerSessionStartIpcHandlers()
+  registerSessionControlIpcHandlers()
+  registerSessionDataIpcHandlers()
+  registerSessionEventIpcHandlers()
+  registerAnalysisWorkflowIpcHandlers()
+  registerDeliveryWorkflowIpcHandlers()
+}
+
+function registerProviderIpcHandlers() {
+  ipcMain.handle("agent:providers:list", (_event, connection) =>
+    agentRuntime().run("providers.list", connection)
+  )
   ipcMain.handle("agent:providers:save-credential", (_event, connection, input) =>
-    runtime.providers.saveCredential(connection, input)
+    agentRuntime().run("providers.saveCredential", [connection, input])
   )
   ipcMain.handle("agent:providers:delete-credential", (_event, connection, id) =>
-    runtime.providers.deleteCredential(connection, id)
+    agentRuntime().run("providers.deleteCredential", [connection, id])
   )
-  ipcMain.handle("agent:providers:login-oauth", (_event, input) => runtime.providers.loginOAuth(input))
+  ipcMain.handle("agent:providers:login-oauth", (_event, input) =>
+    agentRuntime().run("providers.loginOAuth", input)
+  )
+}
+
+function registerSessionStartIpcHandlers() {
   ipcMain.handle("agent:sessions:start", async (_event, input) => {
-    const session = await runtime.sessions.start(await agentWorkspaceInput(input))
+    const session = await agentRuntime().startSession(
+      "sessions.start",
+      await agentWorkspaceInput(input)
+    )
     eventStream.beginSession(session.sessionId)
     return session
   })
   ipcMain.handle("agent:sessions:start-development", async (_event, input) => {
-    const session = await runtime.sessions.startDevelopment(
-      await optimizeDevelopmentAttachments(await agentWorkspaceInput(input))
+    const session = await agentRuntime().startSession(
+      "sessions.startDevelopment",
+      await optimizeDevelopmentAttachments(await agentWorkspaceInput(input)),
     )
     eventStream.beginSession(session.sessionId)
     return session
   })
+}
+
+function registerSessionControlIpcHandlers() {
   ipcMain.handle("agent:sessions:send", (_event, input) =>
-    runtime.sessions.send(input)
+    agentRuntime().runSession("sessions.send", input.sessionId, input)
   )
   ipcMain.handle("agent:sessions:send-development", async (_event, input) => {
-    return runtime.sessions.sendDevelopment(
-      await optimizeDevelopmentAttachments(input)
+    return agentRuntime().runSession(
+      "sessions.sendDevelopment",
+      input.sessionId,
+      await optimizeDevelopmentAttachments(input),
     )
   })
-  ipcMain.handle("agent:sessions:abort", (_event, sessionId) => runtime.sessions.abort(sessionId))
+  ipcMain.handle("agent:sessions:abort", (_event, sessionId) =>
+    agentRuntime().abortSession(sessionId)
+  )
+}
+
+function registerSessionDataIpcHandlers() {
   ipcMain.handle("agent:sessions:compare-checkpoint", (_event, input) =>
-    runtime.sessions.compareCheckpoint(input)
+    agentRuntime().runSession(
+      "sessions.compareCheckpoint",
+      input.sessionId,
+      input,
+    )
   )
-  ipcMain.handle("agent:sessions:list", () => runtime.sessions.list())
-  ipcMain.handle("agent:sessions:messages", (_event, sessionId) => runtime.sessions.messages(sessionId))
+  ipcMain.handle("agent:sessions:list", () => agentRuntime().listSessions())
+  ipcMain.handle("agent:sessions:messages", (_event, sessionId) =>
+    agentRuntime().runSession("sessions.messages", sessionId, sessionId)
+  )
   ipcMain.handle("agent:sessions:restore-checkpoint", (_event, input) =>
-    runtime.sessions.restoreCheckpoint(input)
+    agentRuntime().runSession(
+      "sessions.restoreCheckpoint",
+      input.sessionId,
+      input,
+    )
   )
-  ipcMain.handle("agent:sessions:usage", (_event, sessionId) => runtime.sessions.usage(sessionId))
-  ipcMain.handle("agent:sessions:event-stream-url", (_event, sessionId) => agentEventStreamUrl(sessionId))
+  ipcMain.handle("agent:sessions:usage", (_event, sessionId) =>
+    agentRuntime().runSession("sessions.usage", sessionId, sessionId)
+  )
+  ipcMain.handle("agent:sessions:event-stream-url", (_event, sessionId) =>
+    agentEventStreamUrl(sessionId)
+  )
+}
+
+function registerSessionEventIpcHandlers() {
   ipcMain.on("agent:sessions:listen", (event, sessionId: string) => {
     registerRendererAgentEventCleanup(event.sender)
     setRendererAgentEventSubscription(event.sender.id, sessionId, true)
@@ -108,50 +121,127 @@ export function registerAgentIpcHandlers() {
   ipcMain.on("agent:sessions:unlisten", (event, sessionId: string) =>
     setRendererAgentEventSubscription(event.sender.id, sessionId, false)
   )
-  ipcMain.handle("agent:approvals:resolve", (_event, input) => runtime.approvals.resolve(input))
+  ipcMain.handle("agent:approvals:resolve", (_event, input) =>
+    agentRuntime().resolveApproval(input)
+  )
+}
+
+function registerAnalysisWorkflowIpcHandlers() {
   ipcMain.handle("agent:initializations:run", (_event, input) =>
-    agentWorkspaceInput(input).then((resolved) => runtime.initializations.run(resolved))
+    agentWorkspaceInput(input).then((resolved) =>
+      agentRuntime().run("initializations.run", resolved)
+    )
   )
   ipcMain.handle("agent:initializations:repair", (_event, input) =>
-    agentWorkspaceInput(input).then((resolved) => runtime.initializations.repair(resolved))
+    agentWorkspaceInput(input).then((resolved) =>
+      agentRuntime().run("initializations.repair", resolved)
+    )
   )
   ipcMain.handle("agent:initializations:assess-impact", (_event, input) =>
-    agentWorkspaceInput(input).then((resolved) => runtime.initializations.assessImpact(resolved))
+    agentWorkspaceInput(input).then((resolved) =>
+      agentRuntime().run("initializations.assessImpact", resolved)
+    )
   )
   ipcMain.handle("agent:code-practices:run", (_event, input) =>
-    agentWorkspaceInput(input).then((resolved) => runtime.codePractices.run(resolved))
+    agentWorkspaceInput(input).then((resolved) =>
+      agentRuntime().run("codePractices.run", resolved)
+    )
   )
-  ipcMain.handle("agent:new-projects:generate", (_event, input) => runtime.newProjects.generate(input))
+}
+
+function registerDeliveryWorkflowIpcHandlers() {
+  ipcMain.handle("agent:new-projects:generate", (_event, input) =>
+    agentRuntime().run("newProjects.generate", input)
+  )
   ipcMain.handle("agent:prompt-optimizer:optimize-user-story", (_event, input) =>
-    agentWorkspaceInput(input).then((resolved) => runtime.promptOptimizer.optimizeUserStory(resolved))
+    agentWorkspaceInput(input).then((resolved) =>
+      agentRuntime().run("promptOptimizer.optimizeUserStory", resolved)
+    )
   )
   ipcMain.handle("agent:prompt-optimizer:generate-title", (_event, input) =>
-    agentWorkspaceInput(input).then((resolved) => runtime.promptOptimizer.generateTitle(resolved))
+    agentWorkspaceInput(input).then((resolved) =>
+      agentRuntime().run("promptOptimizer.generateTitle", resolved)
+    )
   )
   ipcMain.handle("agent:approve-and-merge", (_event, input) =>
-    agentWorkspaceInput(input).then((resolved) => runtime.approveAndMerge(resolved))
+    agentWorkspaceInput(input).then((resolved) =>
+      agentRuntime().run("approveAndMerge", resolved)
+    )
   )
   ipcMain.handle("agent:generate-commit-message", (_event, input) =>
-    agentWorkspaceInput(input).then((resolved) => runtime.generateCommitMessage(resolved))
+    agentWorkspaceInput(input).then((resolved) =>
+      agentRuntime().run("generateCommitMessage", resolved)
+    )
   )
   ipcMain.handle("agent:resolve-merge-conflicts", (_event, input) =>
-    agentWorkspaceInput(input).then((resolved) => runtime.resolveMergeConflicts(resolved))
+    agentWorkspaceInput(input).then((resolved) =>
+      agentRuntime().run("resolveMergeConflicts", resolved)
+    )
   )
 }
 
 export function generateNewProjectWithAgent(
-  input: Parameters<typeof runtime.newProjects.generate>[0]
+  input: StartNewProjectGenerationInput
 ) {
-  return agentWorkspaceInput(input).then((resolved) => runtime.newProjects.generate(resolved))
+  return agentWorkspaceInput(input).then((resolved) =>
+    agentRuntime().run<NewProjectGenerationResult>(
+      "newProjects.generate",
+      resolved
+    )
+  )
 }
 
 export function releaseAgentWorkspaceSessions(worktree: string) {
-  return runtime.sessions.releaseWorkspace(worktree)
+  return agentRuntime().releaseWorkspace(worktree)
 }
 
 export async function shutdownAgentRuntime() {
   shutdownAgentEventServer()
-  await Promise.allSettled([runtime.shutdown(), shutdownCodeReviewGraph()])
+  const currentRuntime = runtime
+  runtime = undefined
+  await Promise.allSettled([
+    currentRuntime?.shutdown(),
+    shutdownCodeReviewGraph(),
+  ])
+}
+
+export function configureAgentRuntimeTelemetry(session: unknown) {
+  return runtime?.configureTelemetry(session)
+}
+
+export function disableAgentRuntimeTelemetry() {
+  return runtime?.disableTelemetry()
+}
+
+function createAgentRuntimePool(input: AgentRuntimeRegistration) {
+  const environment = {
+    ...process.env,
+    BLAME_AGENT_PACKAGED: String(input.packaged),
+    BLAME_AGENT_SERVICE_VERSION: input.serviceVersion,
+  }
+  return new AgentRuntimePool({
+    createProcess: (callbacks) =>
+      createAgentRuntimeProcess(input.modulePath, environment, callbacks),
+    handleHostRequest: handleAgentHostRequest,
+    onEvent: emitAgentEvent,
+  })
+}
+
+function createAgentRuntimeProcess(
+  modulePath: string,
+  environment: NodeJS.ProcessEnv,
+  callbacks: AgentRuntimeProcessCallbacks,
+) {
+  return new AgentRuntimeProcessClient({
+    ...callbacks,
+    environment,
+    modulePath,
+  })
+}
+
+function agentRuntime() {
+  if (!runtime) throw new Error("Agent runtime is not initialized")
+  return runtime
 }
 
 function emitAgentEvent(event: AgentEvent) {

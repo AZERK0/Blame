@@ -22,7 +22,8 @@ const authorization: TelemetryExportAuthorization = {
 
 export function initializeDesktopTelemetry(
   serviceVersion: string,
-  packaged: boolean
+  packaged: boolean,
+  serviceName = "blame-desktop"
 ) {
   const gatewayEndpoint = process.env.BLAME_TELEMETRY_ENDPOINT?.trim()
   const directEndpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT?.trim()
@@ -32,7 +33,7 @@ export function initializeDesktopTelemetry(
   const config = initializeBlameTelemetry({
     authorization: gatewayMode ? authorization : undefined,
     endpoint: expectedEndpoint,
-    serviceName: "blame-desktop",
+    serviceName,
     serviceVersion,
   })
   telemetryEnabled = config.enabled

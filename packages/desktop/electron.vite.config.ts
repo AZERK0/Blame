@@ -8,7 +8,13 @@ export default defineConfig({
         exclude: ["electron-context-menu", "electron-window-state"],
       },
       rollupOptions: {
-        input: { index: "src/main/bootstrap.ts" },
+        input: {
+          "agent-runtime-process": "src/main/agent-runtime-process.ts",
+          index: "src/main/bootstrap.ts",
+        },
+        output: {
+          entryFileNames: "[name].js",
+        },
       },
     },
   },

@@ -1,0 +1,226 @@
+import {
+  BlameAgentRuntime,
+  type AgentEvent,
+  type CodeReviewGraphProvider,
+} from "@blame/agent-runtime";
+import {
+  configureDesktopTelemetry,
+  disableDesktopTelemetry,
+} from "./desktop-telemetry.ts";
+import { AgentRuntimeHostClient } from "./agent-runtime-host-client.ts";
+import {
+  agentRpcError,
+  isAgentProcessMessage,
+  type AgentHostMethod,
+  type AgentRpcRequest,
+  type AgentRuntimeMethod,
+} from "./agent-runtime-process-protocol.ts";
+
+type RuntimeHandler = (input: unknown) => Promise<unknown> | unknown;
+
+type PreviewDevtoolsTarget = {
+  available: boolean;
+  browserUrl: string;
+  currentUrl?: string;
+  id?: string;
+  scope?: string;
+  mcpServer: {
+    args: string[];
+    command: string;
+    name: string;
+  };
+};
+
+const parentPort = process.parentPort;
+if (!parentPort) throw new Error("Agent runtime parent port is unavailable");
+
+const host = new AgentRuntimeHostClient(parentPort);
+const runtime = createAgentRuntime(host);
+const handlers = runtimeHandlers(runtime);
+
+parentPort.on("message", ({ data }) => {
+  if (!isAgentProcessMessage(data)) return;
+  if (data.kind === "response" && data.target === "host") {
+    host.resolve(data);
+    return;
+  }
+  if (data.kind === "request" && data.target === "runtime") {
+    void handleRuntimeRequest(data);
+  }
+});
+
+parentPort.postMessage({ kind: "ready" });
+
+function createAgentRuntime(hostClient: AgentRuntimeHostClient) {
+  return new BlameAgentRuntime(
+    {
+      emit: (event) =>
+        parentPort.postMessage({
+          event: serializableAgentEvent(event),
+          kind: "event",
+        }),
+    },
+    {
+      codeReviewGraph: codeReviewGraphProvider(hostClient),
+      git: (cwd, args) => hostClient.request<string>("git", { args, cwd }),
+      openExternalUrl: (url) => {
+        void hostClient
+          .request("openExternalUrl", { url })
+          .catch(() => undefined);
+      },
+      previewContainerLogs: (input) =>
+        hostRequest(hostClient, "previewContainerLogs", input),
+      previewDevtools: (input) =>
+        hostClient.request<PreviewDevtoolsTarget | undefined>(
+          "previewDevtools",
+          input,
+        ),
+    },
+  );
+}
+
+function serializableAgentEvent(event: AgentEvent): AgentEvent {
+  const payload = event.payload;
+  if (!payload || typeof payload !== "object" || !("raw" in payload)) {
+    return event;
+  }
+  const { raw, ...serializablePayload } = payload as Record<string, unknown>;
+  void raw;
+  return { ...event, payload: serializablePayload };
+}
+
+function codeReviewGraphProvider(
+  hostClient: AgentRuntimeHostClient,
+): CodeReviewGraphProvider {
+  return {
+    architectureOverview: (input) =>
+      hostRequest(hostClient, "codeReviewGraph.architectureOverview", input),
+    impactRadius: (input) =>
+      hostRequest(hostClient, "codeReviewGraph.impactRadius", input),
+    minimalContext: (input) =>
+      hostRequest(hostClient, "codeReviewGraph.minimalContext", input),
+    reviewContext: (input) =>
+      hostRequest(hostClient, "codeReviewGraph.reviewContext", input),
+    status: (input) => hostRequest(hostClient, "codeReviewGraph.status", input),
+    update: (input) => hostRequest(hostClient, "codeReviewGraph.update", input),
+  };
+}
+
+function hostRequest<Result>(
+  hostClient: AgentRuntimeHostClient,
+  method: AgentHostMethod,
+  input: { signal?: AbortSignal },
+) {
+  return hostClient.request<Result>(
+    method,
+    serializableHostInput(input),
+    input.signal,
+  );
+}
+
+function serializableHostInput(input: { signal?: AbortSignal }) {
+  const { signal, ...serializable } = input;
+  void signal;
+  return serializable;
+}
+
+async function handleRuntimeRequest(request: AgentRpcRequest) {
+  const handler = handlers[request.method as AgentRuntimeMethod];
+  if (!handler) {
+    respond(request, undefined, new Error("Unknown agent runtime method"));
+    return;
+  }
+  try {
+    respond(request, await handler(request.input));
+  } catch (error) {
+    respond(request, undefined, error);
+  }
+}
+
+function respond(request: AgentRpcRequest, result?: unknown, error?: unknown) {
+  parentPort.postMessage({
+    ...(error ? { error: agentRpcError(error) } : { result }),
+    id: request.id,
+    kind: "response",
+    target: "runtime",
+  });
+}
+
+function runtimeHandlers(runtime: BlameAgentRuntime) {
+  return {
+    ...providerHandlers(runtime),
+    ...sessionHandlers(runtime),
+    ...workflowHandlers(runtime),
+    "approvals.resolve": (input) => runtime.approvals.resolve(input as never),
+    "telemetry.configure": (input) => configureDesktopTelemetry(input),
+    "telemetry.disable": () => disableDesktopTelemetry(),
+    shutdown: () => runtime.shutdown(),
+  } satisfies Record<AgentRuntimeMethod, RuntimeHandler>;
+}
+
+function providerHandlers(runtime: BlameAgentRuntime) {
+  return {
+    "providers.list": (input: unknown) =>
+      runtime.providers.list(input as never),
+    "providers.saveCredential": (input: unknown) => {
+      const [connection, credential] = input as [never, never];
+      return runtime.providers.saveCredential(connection, credential);
+    },
+    "providers.deleteCredential": (input: unknown) => {
+      const [connection, id] = input as [never, string];
+      return runtime.providers.deleteCredential(connection, id);
+    },
+    "providers.loginOAuth": (input: unknown) =>
+      runtime.providers.loginOAuth(input as never),
+  };
+}
+
+function sessionHandlers(runtime: BlameAgentRuntime) {
+  return {
+    "sessions.start": (input: unknown) =>
+      runtime.sessions.start(input as never),
+    "sessions.startDevelopment": (input: unknown) =>
+      runtime.sessions.startDevelopment(input as never),
+    "sessions.send": (input: unknown) => runtime.sessions.send(input as never),
+    "sessions.sendDevelopment": (input: unknown) =>
+      runtime.sessions.sendDevelopment(input as never),
+    "sessions.abort": (input: unknown) =>
+      runtime.sessions.abort(input as string),
+    "sessions.compareCheckpoint": (input: unknown) =>
+      runtime.sessions.compareCheckpoint(input as never),
+    "sessions.list": () => runtime.sessions.list(),
+    "sessions.messages": (input: unknown) =>
+      runtime.sessions.messages(input as string),
+    "sessions.restoreCheckpoint": (input: unknown) =>
+      runtime.sessions.restoreCheckpoint(input as never),
+    "sessions.usage": (input: unknown) =>
+      runtime.sessions.usage(input as string),
+    "sessions.releaseWorkspace": (input: unknown) =>
+      runtime.sessions.releaseWorkspace(input as string),
+  };
+}
+
+function workflowHandlers(runtime: BlameAgentRuntime) {
+  return {
+    "initializations.run": (input: unknown) =>
+      runtime.initializations.run(input as never),
+    "initializations.repair": (input: unknown) =>
+      runtime.initializations.repair(input as never),
+    "initializations.assessImpact": (input: unknown) =>
+      runtime.initializations.assessImpact(input as never),
+    "codePractices.run": (input: unknown) =>
+      runtime.codePractices.run(input as never),
+    "newProjects.generate": (input: unknown) =>
+      runtime.newProjects.generate(input as never),
+    "promptOptimizer.optimizeUserStory": (input: unknown) =>
+      runtime.promptOptimizer.optimizeUserStory(input as never),
+    "promptOptimizer.generateTitle": (input: unknown) =>
+      runtime.promptOptimizer.generateTitle(input as never),
+    approveAndMerge: (input: unknown) =>
+      runtime.approveAndMerge(input as never),
+    generateCommitMessage: (input: unknown) =>
+      runtime.generateCommitMessage(input as never),
+    resolveMergeConflicts: (input: unknown) =>
+      runtime.resolveMergeConflicts(input as never),
+  };
+}

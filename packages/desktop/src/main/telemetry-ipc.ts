@@ -5,11 +5,24 @@ import {
 } from "./desktop-telemetry"
 import { sendRuntimeDiagnostic } from "./runtime-diagnostic"
 
-export function registerTelemetryIpcHandlers() {
-  ipcMain.handle("telemetry:configure", (_event, session) =>
-    configureDesktopTelemetry(session)
-  )
-  ipcMain.handle("telemetry:disable", () => disableDesktopTelemetry())
+type TelemetryIpcCallbacks = {
+  configure?(session: unknown): void
+  disable?(): void
+}
+
+export function registerTelemetryIpcHandlers(
+  callbacks: TelemetryIpcCallbacks = {}
+) {
+  ipcMain.handle("telemetry:configure", (_event, session) => {
+    const configured = configureDesktopTelemetry(session)
+    if (configured) callbacks.configure?.(session)
+    return configured
+  })
+  ipcMain.handle("telemetry:disable", () => {
+    const disabled = disableDesktopTelemetry()
+    callbacks.disable?.()
+    return disabled
+  })
   ipcMain.handle("telemetry:send-runtime-diagnostic", (_event, input) =>
     sendRuntimeDiagnostic(input)
   )

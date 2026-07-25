@@ -16,7 +16,12 @@ import {
   type IpcMainInvokeEvent,
   type WebContents,
 } from "electron"
-import { registerAgentIpcHandlers, shutdownAgentRuntime } from "./agent-ipc"
+import {
+  configureAgentRuntimeTelemetry,
+  disableAgentRuntimeTelemetry,
+  registerAgentIpcHandlers,
+  shutdownAgentRuntime,
+} from "./agent-ipc"
 import { registerBacklogStatusPipIpcHandlers } from "./backlog-status-pip-ipc"
 import { desktopAppIdentity } from "./desktop-app-identity"
 import { DesktopAuthCallbackDeliveryQueue } from "./desktop-auth-callback-delivery"
@@ -113,11 +118,18 @@ void app.whenReady().then(() => {
     rendererFile: desktopResources.renderer,
     rendererUrl: process.env.ELECTRON_RENDERER_URL,
   })
-  registerAgentIpcHandlers()
+  registerAgentIpcHandlers({
+    modulePath: desktopResources.agentRuntime,
+    packaged: app.isPackaged,
+    serviceVersion: app.getVersion(),
+  })
   registerPreviewBrowserIpcHandlers()
   registerMcpIpcHandlers()
   registerTerminalIpcHandlers()
-  registerTelemetryIpcHandlers()
+  registerTelemetryIpcHandlers({
+    configure: configureAgentRuntimeTelemetry,
+    disable: disableAgentRuntimeTelemetry,
+  })
   registerDesktopUpdateIpcHandlers({
     async beforeInstall() {
       shutdownRequested = true
