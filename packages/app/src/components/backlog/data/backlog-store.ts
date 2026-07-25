@@ -19,6 +19,7 @@ import type {
 } from "@/components/backlog/data/backlog-data"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { useProjects } from "@/context/projects"
+import { recordPerformanceCount } from "@/lib/performance-diagnostics"
 
 type BacklogState = {
   cleanupStoryIds: Set<string>
@@ -264,6 +265,7 @@ function useBacklogStoreValue() {
       run: UserStoryAgentRun,
       input: UserStoryAgentRunUpdate
     ) => {
+      recordPerformanceCount("backlog.store.update_agent_run_local")
       let nextRun = agentRunWithUpdate(run, input)
       setState((current) => ({
         ...current,
@@ -316,6 +318,7 @@ function useBacklogStoreValue() {
   )
   const updateLocal = React.useCallback(
     (story: UserStory, input: UserStoryUpdate) => {
+      recordPerformanceCount("backlog.store.update_local")
       setState((current) => ({
         ...current,
         stories: current.stories.map((currentStory) =>

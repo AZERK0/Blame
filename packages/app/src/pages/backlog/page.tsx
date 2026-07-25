@@ -75,12 +75,14 @@ import {
   projectInitializing,
   useProjectInitialization,
 } from "@/components/project-initialization/use-project-initialization"
+import { recordPerformanceCount } from "@/lib/performance-diagnostics"
 
 const agentEventPersistDelayMs = 1_500
 const terminalAgentRetryIntervalMs = 10_000
 const untitledUserStoryTitle = "Untitled user story"
 
 export function BacklogPage() {
+  recordPerformanceCount("backlog.render")
   const backlog = useBacklogStore()
   const auth = useCloudAuth()
   const platform = usePlatform()

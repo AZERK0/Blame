@@ -1,6 +1,7 @@
 import type { AgentEvent } from "@blame/agent-runtime"
 
 import type { Platform } from "@/context/platform"
+import { recordPerformanceCount } from "@/lib/performance-diagnostics"
 import { createAgentEventCoalescer } from "./agent-event-coalescer"
 
 export function subscribeAgentEvents(
@@ -11,8 +12,14 @@ export function subscribeAgentEvents(
   let closed = false
   let fallback: (() => void) | undefined
   let source: EventSource | undefined
-  const coalescer = createAgentEventCoalescer(callback)
-  const handleEvent = (event: AgentEvent) => coalescer.push(event)
+  const coalescer = createAgentEventCoalescer((event) => {
+    recordPerformanceCount(`agent.event.delivered.${event.type}`)
+    callback(event)
+  })
+  const handleEvent = (event: AgentEvent) => {
+    recordPerformanceCount(`agent.event.received.${event.type}`)
+    coalescer.push(event)
+  }
 
   void platform.agent?.sessions
     .eventStreamUrl?.(sessionId)

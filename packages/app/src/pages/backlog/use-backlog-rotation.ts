@@ -45,6 +45,12 @@ import { useProjects } from "@/context/projects"
 import { createCloudApi } from "@/lib/cloud-api"
 import { effectiveProjectCodePractices } from "@/lib/project-code-practice-preferences"
 import { showSystemNotification } from "@/lib/system-notifications"
+import {
+  measurePerformanceOperation,
+  recordPerformanceCount,
+  recordPerformanceEvent,
+  recordPerformanceMetric,
+} from "@/lib/performance-diagnostics"
 import { diagnoseAndRepairProjectInitialization } from "./project-initialization-repair"
 
 const maxConcurrentDevelopmentStories = 3
@@ -589,9 +595,15 @@ export function useBacklogRotation(
   ])
 
   function recoverCompletedAgentRuns(stories: UserStory[]) {
+    recordPerformanceCount("agent.recovery.poll")
+    recordPerformanceMetric("agent.recovery.story_count", stories.length)
     stories.forEach((story) => {
       const run = recoverableAgentRun(story)
       if (!run || agentCompletionRecoveryStoryIds.current.has(story.id)) return
+      recordPerformanceCount("agent.recovery.candidate")
+      recordPerformanceEvent("agent.recovery.started", {
+        runAgeMs: staleAgentRunAge(run),
+      })
       agentCompletionRecoveryStoryIds.current.add(story.id)
       void recoverCompletedAgentRun(story, run).finally(() =>
         agentCompletionRecoveryStoryIds.current.delete(story.id)
@@ -637,10 +649,25 @@ export function useBacklogRotation(
     story: UserStory,
     run: UserStoryAgentRun
   ) {
-    const detailedStory = await backlog.loadDetail(story)
+    return measurePerformanceOperation("agent.recovery.total", async () => {
+      return inspectCompletedAgentRun(story, run)
+    })
+  }
+
+  async function inspectCompletedAgentRun(
+    story: UserStory,
+    run: UserStoryAgentRun
+  ) {
+    const detailedStory = await measurePerformanceOperation(
+      "agent.recovery.detail",
+      () => backlog.loadDetail(story)
+    )
     const currentStory = detailedStory
     const currentRun = activeAgentRun(currentStory, run) ?? run
-    if (currentRun.status !== "running") return true
+    if (currentRun.status !== "running") {
+      recordPerformanceCount("agent.recovery.already_terminal")
+      return true
+    }
     const log = await clineLog(currentStory, currentRun)
     const response = await recoveredFinalResponse(currentStory, currentRun)
     const nextRun = nextAgentRun(currentStory, currentRun)
@@ -648,6 +675,10 @@ export function useBacklogRotation(
       !completedClineLog(log, currentRun.createdAt, nextRun?.createdAt) &&
       !nextRun
     ) {
+      recordPerformanceCount("agent.recovery.incomplete")
+      recordPerformanceEvent("agent.recovery.incomplete", {
+        logBytes: log.length,
+      })
       return false
     }
     const event: AgentEvent = {
@@ -663,6 +694,7 @@ export function useBacklogRotation(
         status: "completed",
       })
       notifyCommentResponseCompleted(currentStory, currentRun, platform)
+      recordPerformanceCount("agent.recovery.completed")
       return true
     }
     persistAgentUpdate(
@@ -679,6 +711,7 @@ export function useBacklogRotation(
       true
     )
     notifyCommentResponseCompleted(currentStory, currentRun, platform)
+    recordPerformanceCount("agent.recovery.completed")
     return true
   }
 
@@ -688,9 +721,14 @@ export function useBacklogRotation(
   ) {
     const sessionId = run.clineSessionId ?? story.clineSessionId
     if (!sessionId || !platform.agent) return undefined
-    const messages = await platform.agent.sessions
-      .messages(sessionId)
-      .catch(() => undefined)
+    const messages = await measurePerformanceOperation(
+      "agent.recovery.messages",
+      () => platform.agent!.sessions.messages(sessionId)
+    ).catch(() => undefined)
+    recordPerformanceMetric(
+      "agent.recovery.message_count",
+      recoveredMessageCount(messages)
+    )
     return finalAssistantResponse(
       messages,
       run.createdAt,
@@ -702,12 +740,14 @@ export function useBacklogRotation(
     const workspace = platform.workspace
     const sessionId = run.clineSessionId ?? story.clineSessionId
     if (!workspace || !story.worktree || !sessionId) return ""
-    return workspace
-      .readFile({
-        root: story.worktree,
+    const log = await measurePerformanceOperation("agent.recovery.log", () =>
+      workspace.readFile({
+        root: story.worktree!,
         path: clineLogRelativePath(sessionId),
       })
-      .catch(() => "")
+    ).catch(() => "")
+    recordPerformanceMetric("agent.recovery.log_bytes", log.length)
+    return log
   }
 
   React.useEffect(() => {
@@ -1199,10 +1239,19 @@ function activelyRunningStory(story: UserStory) {
 }
 
 function staleAgentRun(run: UserStoryAgentRun) {
+  return staleAgentRunAge(run) >= agentCompletionRecoveryGraceMs
+}
+
+function staleAgentRunAge(run: UserStoryAgentRun) {
   const updatedAt = run.updatedAt ?? run.createdAt
-  return (
-    Date.now() - new Date(updatedAt).getTime() >= agentCompletionRecoveryGraceMs
-  )
+  return Math.max(0, Date.now() - new Date(updatedAt).getTime())
+}
+
+function recoveredMessageCount(value: unknown) {
+  if (Array.isArray(value)) return value.length
+  if (!value || typeof value !== "object") return 0
+  const messages = (value as Record<string, unknown>).messages
+  return Array.isArray(messages) ? messages.length : 0
 }
 
 function storyTaskComplexity(story: UserStory) {
