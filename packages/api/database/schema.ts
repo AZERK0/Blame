@@ -221,6 +221,37 @@ export class AuthVerificationSchema extends BaseModel {
   declare value: string
 }
 
+export class FileAttachmentSchema extends BaseModel {
+  static $columns = ['aiContextMarkdown', 'checksumSha256', 'createdAt', 'detachedAt', 'id', 'mimeType', 'name', 'objectKey', 'size', 'status', 'updatedAt', 'uploadedAt', 'userId'] as const
+  $columns = FileAttachmentSchema.$columns
+  @column()
+  declare aiContextMarkdown: string | null
+  @column()
+  declare checksumSha256: string
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column.dateTime()
+  declare detachedAt: DateTime | null
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare mimeType: string
+  @column()
+  declare name: string
+  @column()
+  declare objectKey: string
+  @column()
+  declare size: number
+  @column()
+  declare status: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+  @column.dateTime()
+  declare uploadedAt: DateTime | null
+  @column()
+  declare userId: string
+}
+
 export class PasskeySchema extends BaseModel {
   static $columns = ['aaguid', 'backedUp', 'counter', 'createdAt', 'credentialId', 'deviceType', 'id', 'name', 'publicKey', 'transports', 'userId'] as const
   $columns = PasskeySchema.$columns
@@ -406,6 +437,17 @@ export class QuickChatAgentRunSchema extends BaseModel {
   declare updatedAt: DateTime | null
   @column()
   declare usage: any | null
+}
+
+export class QuickChatMessageFileAttachmentSchema extends BaseModel {
+  static $columns = ['fileAttachmentId', 'position', 'quickChatMessageId'] as const
+  $columns = QuickChatMessageFileAttachmentSchema.$columns
+  @column()
+  declare fileAttachmentId: string
+  @column()
+  declare position: number
+  @column({ isPrimary: true })
+  declare quickChatMessageId: string
 }
 
 export class QuickChatMessageSchema extends BaseModel {
@@ -617,6 +659,17 @@ export class UserStoryAgentRunSchema extends BaseModel {
   declare userStoryId: string
 }
 
+export class UserStoryCommentFileAttachmentSchema extends BaseModel {
+  static $columns = ['fileAttachmentId', 'position', 'userStoryCommentId'] as const
+  $columns = UserStoryCommentFileAttachmentSchema.$columns
+  @column()
+  declare fileAttachmentId: string
+  @column()
+  declare position: number
+  @column({ isPrimary: true })
+  declare userStoryCommentId: string
+}
+
 export class UserStoryCommentSchema extends BaseModel {
   static $columns = ['author', 'body', 'codeSelectionAttachments', 'createdAt', 'fileAttachments', 'id', 'updatedAt', 'userStoryId'] as const
   $columns = UserStoryCommentSchema.$columns
@@ -635,6 +688,17 @@ export class UserStoryCommentSchema extends BaseModel {
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
   @column()
+  declare userStoryId: string
+}
+
+export class UserStoryFileAttachmentSchema extends BaseModel {
+  static $columns = ['fileAttachmentId', 'position', 'userStoryId'] as const
+  $columns = UserStoryFileAttachmentSchema.$columns
+  @column()
+  declare fileAttachmentId: string
+  @column()
+  declare position: number
+  @column({ isPrimary: true })
   declare userStoryId: string
 }
 

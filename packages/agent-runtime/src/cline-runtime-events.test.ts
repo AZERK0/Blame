@@ -261,6 +261,64 @@ test("keeps development feedback attachments out of the prompt", async () => {
   }
 });
 
+test("renews an expired attachment download URL", async () => {
+  const attachmentDirectory = await mkdtemp(join(tmpdir(), "blame-test-"));
+  const originalFetch = globalThis.fetch;
+  const requests: Array<{ authorization?: string; url: string }> = [];
+  globalThis.fetch = async (input, init) => {
+    const url = String(input);
+    requests.push({
+      authorization:
+        new Headers(init?.headers).get("authorization") ?? undefined,
+      url,
+    });
+    if (url === "https://storage.example/expired") {
+      return new Response(null, { status: 403 });
+    }
+    if (url.endsWith("/attachments/attachment-id")) {
+      return Response.json({
+        downloadUrl: "https://storage.example/current",
+      });
+    }
+    return new Response("hello");
+  };
+
+  try {
+    const input = await developmentUserInput(
+      {
+        apiConnection: { token: "token", url: "https://api.example/api/v1" },
+        feedbackFileAttachments: [
+          {
+            downloadUrl: "https://storage.example/expired",
+            id: "attachment-id",
+            name: "notes.txt",
+            size: 5,
+            type: "text/plain",
+          },
+        ],
+        feedbackOnly: true,
+        summary: "Summary",
+        title: "Title",
+      },
+      attachmentDirectory,
+    );
+
+    assert.equal(await readFile(input.userFiles[0]!, "utf8"), "hello");
+    assert.equal(requests[1]?.authorization, "Bearer token");
+    assert.deepEqual(
+      requests.map((request) => request.url),
+      [
+        "https://storage.example/expired",
+        "https://api.example/api/v1/attachments/attachment-id",
+        "https://storage.example/current",
+      ],
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+    await rm(attachmentDirectory, { force: true, recursive: true });
+  }
+});
+
 test("renders the Blame development system prompt without Cline placeholders", async () => {
   const prompt = await buildDevelopmentSystemPrompt({
     apiConnection: { token: "token", url: "https://example.com" },

@@ -18,6 +18,9 @@ import type {
 import type { createUserStoryCommentValidator } from '#validators/user_story_comment'
 import db from '@adonisjs/lucid/services/db'
 import { Exception } from '@adonisjs/core/exceptions'
+import FileAttachmentsService from '#services/file_attachments_service'
+import type FileAttachment from '#models/file_attachment'
+import type { TransactionClientContract } from '@adonisjs/lucid/types/database'
 
 type ListUserStoriesInput = Infer<typeof listUserStoriesValidator>
 type CreateUserStoryInput = Infer<typeof createUserStoryValidator>
@@ -29,6 +32,8 @@ type UpdateUserStoryAgentRunInput = Infer<typeof updateUserStoryAgentRunValidato
 const maxAgentActivities = 80
 
 export default class UserStoriesService {
+  private fileAttachments = new FileAttachmentsService()
+
   async list(userId: string, input: ListUserStoriesInput) {
     await new ProjectsService().findForUser(userId, input.projectId)
     const query = UserStory.query().where('projectId', input.projectId).orderBy('createdAt', 'asc')
@@ -37,17 +42,25 @@ export default class UserStoriesService {
         runs.where('status', 'running').orderBy('createdAt', 'asc')
       )
     }
-    const stories = await query.preload('comments').preload('agentRuns', orderAgentRuns)
-    return stories.map(sortStoryComments)
+    const stories = await query
+      .preload('storedFileAttachments')
+      .preload('comments', (comments) => comments.preload('storedFileAttachments'))
+      .preload('agentRuns', orderAgentRuns)
+    stories.map(sortStoryComments)
+    await this.prepareDownloads(stories)
+    return stories
   }
 
   async find(userId: string, id: string) {
     const story = await this.userStoryQuery(userId)
       .where('id', id)
-      .preload('comments')
+      .preload('storedFileAttachments')
+      .preload('comments', (comments) => comments.preload('storedFileAttachments'))
       .preload('agentRuns', orderAgentRuns)
       .firstOrFail()
-    return sortStoryComments(story)
+    sortStoryComments(story)
+    await this.prepareDownloads([story])
+    return story
   }
 
   async create(userId: string, input: CreateUserStoryInput) {
@@ -55,38 +68,12 @@ export default class UserStoriesService {
       await new ProjectsService().findForUser(userId, input.projectId)
     }
 
-    const userStory = await UserStory.create({
-      projectId: input.projectId,
-      storyNumber: await this.nextStoryNumber(input.projectId),
-      title: input.title,
-      summary: input.summary,
-      codeSelectionAttachments: input.codeSelectionAttachments ?? null,
-      fileAttachments: input.fileAttachments ?? null,
-      status: input.status ?? 'backlog',
-      priority: input.priority ?? 'Medium',
-      owner: input.owner ?? 'Product',
-      branch: input.branch ?? null,
-      previewUrl: input.previewUrl ?? null,
-      runConfigurationId: input.runConfigurationId ?? null,
-      worktree: input.worktree ?? null,
-      agentStatus: input.agentStatus ?? null,
-      clineSessionId: input.clineSessionId ?? null,
-      agentProviderId: input.agentProviderId ?? null,
-      agentModelId: input.agentModelId ?? null,
-      agentLastEvent: input.agentLastEvent ?? null,
-      agentLastError: input.agentLastError ?? null,
-      agentActivities: input.agentActivities ?? null,
-      agentFinalResponse: input.agentFinalResponse ?? null,
-      agentUsage: input.agentUsage ?? null,
-      agentSessionSummary: input.agentSessionSummary ?? null,
-      mergedAt: input.mergedAt ?? null,
-      mergeCommit: input.mergeCommit ?? null,
-      baseCommit: input.baseCommit ?? null,
-      discardedReason: input.discardedReason ?? null,
-    })
-    await userStory.load('comments')
-    await userStory.load('agentRuns')
-    return userStory
+    const attachments = await this.fileAttachments.resolveInputs(userId, input.fileAttachments)
+    const storyNumber = await this.nextStoryNumber(input.projectId)
+    const storyId = await db.transaction((transaction) =>
+      this.createRecord(userId, input, storyNumber, attachments, transaction)
+    )
+    return this.find(userId, storyId)
   }
 
   async update(userId: string, id: string, input: UpdateUserStoryInput) {
@@ -94,28 +81,56 @@ export default class UserStoriesService {
       await new ProjectsService().findForUser(userId, input.projectId)
     }
 
-    const userStory = await this.find(userId, id)
-    const update = await this.updateInput(userStory, input)
-    userStory.merge({
-      ...update,
-      mergedAt: input.mergedAt === undefined ? userStory.mergedAt : input.mergedAt,
+    const attachments =
+      input.fileAttachments === undefined
+        ? undefined
+        : await this.fileAttachments.resolveInputs(userId, input.fileAttachments)
+    await db.transaction(async (transaction) => {
+      const userStory = await this.userStoryQuery(userId, transaction).where('id', id).firstOrFail()
+      const update = await this.updateInput(userStory, input)
+      userStory.useTransaction(transaction)
+      userStory.merge({
+        ...update,
+        mergedAt: input.mergedAt === undefined ? userStory.mergedAt : input.mergedAt,
+      })
+      await userStory.save()
+      if (attachments !== undefined) {
+        await this.fileAttachments.syncOwner(
+          userId,
+          'userStory',
+          userStory.id,
+          attachments,
+          transaction
+        )
+      }
     })
-    await userStory.save()
-    await userStory.load('comments')
-    sortStoryComments(userStory)
-    await userStory.load('agentRuns', orderAgentRuns)
-    return userStory
+    return this.find(userId, id)
   }
 
   async createComment(userId: string, id: string, input: CreateUserStoryCommentInput) {
     await this.find(userId, id)
-    return UserStoryComment.create({
-      author: 'Product',
-      body: input.body,
-      codeSelectionAttachments: input.codeSelectionAttachments ?? null,
-      fileAttachments: input.fileAttachments ?? null,
-      userStoryId: id,
+    const attachments = await this.fileAttachments.resolveInputs(userId, input.fileAttachments)
+    const commentId = await db.transaction(async (transaction) => {
+      const comment = await UserStoryComment.create(
+        {
+          author: 'Product',
+          body: input.body,
+          codeSelectionAttachments: input.codeSelectionAttachments ?? null,
+          legacyFileAttachments: null,
+          userStoryId: id,
+        },
+        { client: transaction }
+      )
+      await this.fileAttachments.syncOwner(
+        userId,
+        'userStoryComment',
+        comment.id,
+        attachments,
+        transaction
+      )
+      return comment.id
     })
+    return this.commentForDelivery(commentId)
   }
 
   async undoComment(
@@ -143,6 +158,11 @@ export default class UserStoriesService {
       )
       const deletedRunIds = new Set(
         story.agentRuns.slice(story.agentRuns.indexOf(targetRun)).map((run) => run.id)
+      )
+      await this.fileAttachments.markOwnersDetached(
+        'userStoryComment',
+        [...deletedCommentIds],
+        transaction
       )
       await deleteStoryRuns(story.id, [...deletedRunIds], transaction)
       await deleteStoryComments(story.id, [...deletedCommentIds], transaction)
@@ -211,18 +231,28 @@ export default class UserStoriesService {
 
   async delete(userId: string, id: string) {
     const userStory = await this.find(userId, id)
-    await userStory.delete()
+    await db.transaction(async (transaction) => {
+      await this.fileAttachments.markOwnersDetached('userStory', [userStory.id], transaction)
+      await this.fileAttachments.markOwnersDetached(
+        'userStoryComment',
+        userStory.comments.map((comment) => comment.id),
+        transaction
+      )
+      userStory.useTransaction(transaction)
+      await userStory.delete()
+    })
   }
 
-  private userStoryQuery(userId: string) {
-    return UserStory.query().whereIn(
+  private userStoryQuery(userId: string, client?: Parameters<UserStory['useTransaction']>[0]) {
+    return UserStory.query({ client }).whereIn(
       'projectId',
-      Project.query().select('id').where('userId', userId)
+      Project.query({ client }).select('id').where('userId', userId)
     )
   }
 
   private async updateInput(userStory: UserStory, input: UpdateUserStoryInput) {
-    const { agentActivity, ...update } = input
+    const { agentActivity, fileAttachments, ...update } = input
+    void fileAttachments
     if (!agentActivity) return update
     const activity = await activityWithArtifact(
       userStory.worktree,
@@ -241,6 +271,43 @@ export default class UserStoriesService {
       .orderBy('storyNumber', 'desc')
       .first()
     return (latest?.storyNumber ?? 0) + 1
+  }
+
+  private async createRecord(
+    userId: string,
+    input: CreateUserStoryInput,
+    storyNumber: number,
+    attachments: FileAttachment[],
+    transaction: TransactionClientContract
+  ) {
+    const userStory = await UserStory.create(userStoryCreateAttributes(input, storyNumber), {
+      client: transaction,
+    })
+    await this.fileAttachments.syncOwner(
+      userId,
+      'userStory',
+      userStory.id,
+      attachments,
+      transaction
+    )
+    return userStory.id
+  }
+
+  private async commentForDelivery(id: string) {
+    const comment = await UserStoryComment.query()
+      .where('id', id)
+      .preload('storedFileAttachments')
+      .firstOrFail()
+    await this.fileAttachments.prepareDownloads(storedAttachments(comment))
+    return comment
+  }
+
+  private async prepareDownloads(stories: UserStory[]) {
+    const attachments = stories.flatMap((story) => [
+      ...storedAttachments(story),
+      ...story.comments.flatMap(storedAttachments),
+    ])
+    await this.fileAttachments.prepareDownloads(uniqueAttachments(attachments))
   }
 
   private agentRunQuery(story: UserStory, runId: string) {
@@ -263,6 +330,53 @@ export default class UserStoriesService {
       ...nextUpdate,
       activities: upsertActivity(run.activities ?? [], activity),
     }
+  }
+}
+
+function storedAttachments(owner: UserStory | UserStoryComment): FileAttachment[] {
+  return (owner.$preloaded.storedFileAttachments as FileAttachment[] | undefined) ?? []
+}
+
+function uniqueAttachments(attachments: FileAttachment[]) {
+  return [...new Map(attachments.map((attachment) => [attachment.id, attachment])).values()]
+}
+
+function userStoryCreateAttributes(input: CreateUserStoryInput, storyNumber: number) {
+  const { agentActivity, fileAttachments, ...attributes } = input
+  void agentActivity
+  void fileAttachments
+  return {
+    ...attributes,
+    ...nullableStoryAttributes(input),
+    codeSelectionAttachments: input.codeSelectionAttachments ?? null,
+    legacyFileAttachments: null,
+    owner: input.owner ?? 'Product',
+    priority: input.priority ?? 'Medium',
+    status: input.status ?? 'backlog',
+    storyNumber,
+  }
+}
+
+function nullableStoryAttributes(input: CreateUserStoryInput) {
+  return {
+    agentActivities: input.agentActivities ?? null,
+    agentFinalResponse: input.agentFinalResponse ?? null,
+    agentLastError: input.agentLastError ?? null,
+    agentLastEvent: input.agentLastEvent ?? null,
+    agentModelId: input.agentModelId ?? null,
+    agentProviderId: input.agentProviderId ?? null,
+    agentSessionSummary: input.agentSessionSummary ?? null,
+    agentStatus: input.agentStatus ?? null,
+    agentUsage: input.agentUsage ?? null,
+    baseCommit: input.baseCommit ?? null,
+    branch: input.branch ?? null,
+    clineSessionId: input.clineSessionId ?? null,
+    discardedReason: input.discardedReason ?? null,
+    mergeCommit: input.mergeCommit ?? null,
+    mergedAt: input.mergedAt ?? null,
+    previewUrl: input.previewUrl ?? null,
+    runConfigurationId: input.runConfigurationId ?? null,
+    worktree: input.worktree ?? null,
   }
 }
 
@@ -317,7 +431,10 @@ async function deleteStoryRuns(
   client?: Parameters<UserStoryAgentRun['useTransaction']>[0]
 ) {
   if (!ids.length) return
-  await UserStoryAgentRun.query({ client }).where('userStoryId', storyId).whereIn('id', ids).delete()
+  await UserStoryAgentRun.query({ client })
+    .where('userStoryId', storyId)
+    .whereIn('id', ids)
+    .delete()
 }
 
 async function deleteStoryComments(

@@ -45,18 +45,25 @@ export async function optimizeDevelopmentAttachments<T extends AttachmentInput>(
 }
 
 type AttachmentInput = {
-  feedbackFileAttachments?: OptimizeAttachmentForAiContextInput[];
-  fileAttachments?: OptimizeAttachmentForAiContextInput[];
+  feedbackFileAttachments?: OptimizableAttachment[];
+  fileAttachments?: OptimizableAttachment[];
 };
 
-async function optimizedAttachments<
-  T extends OptimizeAttachmentForAiContextInput,
->(attachments?: T[]) {
+type OptimizableAttachment = Omit<
+  OptimizeAttachmentForAiContextInput,
+  "content"
+> & {
+  content?: string;
+};
+
+async function optimizedAttachments<T extends OptimizableAttachment>(
+  attachments?: T[],
+) {
   if (!attachments?.length) return attachments;
   return Promise.all(attachments.map(optimizedAttachment));
 }
 
-async function optimizedAttachment<T extends OptimizeAttachmentForAiContextInput>(
+async function optimizedAttachment<T extends OptimizableAttachment>(
   attachment: T,
 ) {
   if (
@@ -66,9 +73,14 @@ async function optimizedAttachment<T extends OptimizeAttachmentForAiContextInput
   ) {
     return attachment;
   }
+  if (!attachment.content) return attachment;
   if (!supportedAiContextAttachment(attachment)) return attachment;
   try {
-    const result = await optimizeAttachmentForAiContext(attachment);
+    const result = await optimizeAttachmentForAiContext({
+      content: attachment.content,
+      name: attachment.name,
+      type: attachment.type,
+    });
     if (!result.markdown.trim()) return attachment;
     return { ...attachment, aiContextMarkdown: result.markdown };
   } catch {
@@ -76,7 +88,9 @@ async function optimizedAttachment<T extends OptimizeAttachmentForAiContextInput
   }
 }
 
-function supportedAiContextAttachment(input: OptimizeAttachmentForAiContextInput) {
+function supportedAiContextAttachment(
+  input: Pick<OptimizeAttachmentForAiContextInput, "name">,
+) {
   return supportedAiContextExtensions().some((extension) =>
     input.name.toLowerCase().endsWith(extension),
   );

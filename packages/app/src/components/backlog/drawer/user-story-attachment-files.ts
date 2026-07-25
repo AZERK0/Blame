@@ -3,7 +3,7 @@ import type { UserStoryFileAttachment } from "@/components/backlog/data/backlog-
 export async function fileAttachment(
   file: File,
   aiContextMarkdown?: string
-): Promise<UserStoryFileAttachment> {
+): Promise<UserStoryFileAttachment & { content: string }> {
   return {
     ...(aiContextMarkdown ? { aiContextMarkdown } : {}),
     content: await fileContent(file),
@@ -19,10 +19,15 @@ export function pendingFileAttachments(attachments: UserStoryFileAttachment[]) {
     aiContextMarkdown: attachment.aiContextMarkdown,
     file: fileFromAttachment(attachment),
     id: attachment.id,
+    previewUrl: attachment.downloadUrl,
+    storedAttachment: attachment.content === undefined ? attachment : undefined,
   }))
 }
 
 function fileFromAttachment(attachment: UserStoryFileAttachment) {
+  if (attachment.content === undefined) {
+    return new File([], attachment.name, { type: attachment.type })
+  }
   const binary = atob(attachment.content)
   const bytes = new Uint8Array(binary.length)
   for (let index = 0; index < binary.length; index += 1) {

@@ -19,6 +19,8 @@ import { DateTime } from 'luxon'
 import type { Infer } from '@vinejs/vine/types'
 import db from '@adonisjs/lucid/services/db'
 import { Exception } from '@adonisjs/core/exceptions'
+import FileAttachmentsService from '#services/file_attachments_service'
+import type FileAttachment from '#models/file_attachment'
 
 type ListQuickChatsInput = Infer<typeof listQuickChatsValidator>
 type CreateQuickChatInput = Infer<typeof createQuickChatValidator>
@@ -30,6 +32,8 @@ type UpdateQuickChatAgentRunInput = Infer<typeof updateQuickChatAgentRunValidato
 const maxAgentActivities = 80
 
 export default class QuickChatsService {
+  private fileAttachments = new FileAttachmentsService()
+
   async list(userId: string, input: ListQuickChatsInput) {
     await new ProjectsService().findForUser(userId, input.projectId)
     const query = QuickChat.query()
@@ -37,15 +41,27 @@ export default class QuickChatsService {
       .orderBy('updatedAt', 'desc')
       .orderBy('createdAt', 'desc')
     if (input.view === 'summary') return query
-    return query.preload('messages', orderMessages).preload('agentRuns', orderAgentRuns)
+    const quickChats = await query
+      .preload('messages', (messages) => {
+        orderMessages(messages)
+        messages.preload('storedFileAttachments')
+      })
+      .preload('agentRuns', orderAgentRuns)
+    await this.prepareDownloads(quickChats)
+    return quickChats
   }
 
   async find(userId: string, id: string) {
-    return this.quickChatQuery(userId)
+    const quickChat = await this.quickChatQuery(userId)
       .where('id', id)
-      .preload('messages', orderMessages)
+      .preload('messages', (messages) => {
+        orderMessages(messages)
+        messages.preload('storedFileAttachments')
+      })
       .preload('agentRuns', orderAgentRuns)
       .firstOrFail()
+    await this.prepareDownloads([quickChat])
+    return quickChat
   }
 
   async create(userId: string, input: CreateQuickChatInput) {
@@ -82,13 +98,28 @@ export default class QuickChatsService {
 
   async createMessage(userId: string, id: string, input: CreateQuickChatMessageInput) {
     await this.find(userId, id)
-    return QuickChatMessage.create({
-      author: 'You',
-      body: input.body,
-      codeSelectionAttachments: input.codeSelectionAttachments ?? null,
-      fileAttachments: input.fileAttachments ?? null,
-      quickChatId: id,
+    const attachments = await this.fileAttachments.resolveInputs(userId, input.fileAttachments)
+    const messageId = await db.transaction(async (transaction) => {
+      const message = await QuickChatMessage.create(
+        {
+          author: 'You',
+          body: input.body,
+          codeSelectionAttachments: input.codeSelectionAttachments ?? null,
+          legacyFileAttachments: null,
+          quickChatId: id,
+        },
+        { client: transaction }
+      )
+      await this.fileAttachments.syncOwner(
+        userId,
+        'quickChatMessage',
+        message.id,
+        attachments,
+        transaction
+      )
+      return message.id
     })
+    return this.messageForDelivery(messageId)
   }
 
   async undoMessage(
@@ -115,6 +146,11 @@ export default class QuickChatsService {
       )
       const deletedRunIds = new Set(
         quickChat.agentRuns.slice(quickChat.agentRuns.indexOf(targetRun)).map((run) => run.id)
+      )
+      await this.fileAttachments.markOwnersDetached(
+        'quickChatMessage',
+        [...deletedMessageIds],
+        transaction
       )
       await deleteQuickChatRuns(quickChat.id, [...deletedRunIds], transaction)
       await deleteQuickChatMessages(quickChat.id, [...deletedMessageIds], transaction)
@@ -175,7 +211,15 @@ export default class QuickChatsService {
 
   async delete(userId: string, id: string) {
     const quickChat = await this.find(userId, id)
-    await quickChat.delete()
+    await db.transaction(async (transaction) => {
+      await this.fileAttachments.markOwnersDetached(
+        'quickChatMessage',
+        quickChat.messages.map((message) => message.id),
+        transaction
+      )
+      quickChat.useTransaction(transaction)
+      await quickChat.delete()
+    })
   }
 
   private quickChatQuery(userId: string) {
@@ -204,6 +248,22 @@ export default class QuickChatsService {
       .where('quickChatId', quickChat.id)
       .where('id', runId)
       .firstOrFail()
+  }
+
+  private async messageForDelivery(id: string) {
+    const message = await QuickChatMessage.query()
+      .where('id', id)
+      .preload('storedFileAttachments')
+      .firstOrFail()
+    await this.fileAttachments.prepareDownloads(storedAttachments(message))
+    return message
+  }
+
+  private async prepareDownloads(quickChats: QuickChat[]) {
+    const attachments = quickChats.flatMap((quickChat) =>
+      quickChat.messages.flatMap(storedAttachments)
+    )
+    await this.fileAttachments.prepareDownloads(uniqueAttachments(attachments))
   }
 
   private async agentRunUpdateInput(
@@ -274,7 +334,10 @@ async function deleteQuickChatRuns(
   client?: Parameters<QuickChatAgentRun['useTransaction']>[0]
 ) {
   if (!ids.length) return
-  await QuickChatAgentRun.query({ client }).where('quickChatId', quickChatId).whereIn('id', ids).delete()
+  await QuickChatAgentRun.query({ client })
+    .where('quickChatId', quickChatId)
+    .whereIn('id', ids)
+    .delete()
 }
 
 async function deleteQuickChatMessages(
@@ -283,7 +346,10 @@ async function deleteQuickChatMessages(
   client?: Parameters<QuickChatMessage['useTransaction']>[0]
 ) {
   if (!ids.length) return
-  await QuickChatMessage.query({ client }).where('quickChatId', quickChatId).whereIn('id', ids).delete()
+  await QuickChatMessage.query({ client })
+    .where('quickChatId', quickChatId)
+    .whereIn('id', ids)
+    .delete()
 }
 
 function quickChatUndoUpdate(
@@ -301,6 +367,14 @@ function quickChatUndoUpdate(
     agentUsage: lastRun?.usage ?? null,
     clineSessionId: clineSessionId ?? lastRun?.clineSessionId ?? null,
   }
+}
+
+function storedAttachments(message: QuickChatMessage): FileAttachment[] {
+  return (message.$preloaded.storedFileAttachments as FileAttachment[] | undefined) ?? []
+}
+
+function uniqueAttachments(attachments: FileAttachment[]) {
+  return [...new Map(attachments.map((attachment) => [attachment.id, attachment])).values()]
 }
 
 function agentRunLastEvent(run: QuickChatAgentRun) {

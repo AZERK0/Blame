@@ -34,6 +34,7 @@ const TelemetrySessionsController = () => import('#controllers/telemetry_session
 const ConsumerContractsController = () => import('#controllers/consumer_contracts_controller')
 const BetterAuthController = () => import('#controllers/better_auth_controller')
 const DesktopAuthController = () => import('#controllers/desktop_auth_controller')
+const FileAttachmentsController = () => import('#controllers/file_attachments_controller')
 
 router.get('/', () => {
   return { hello: 'world' }
@@ -137,6 +138,16 @@ router
       })
       .prefix('providers')
       .as('providers')
+      .use([middleware.auth(), middleware.license()])
+
+    router
+      .group(() => {
+        router.post('/uploads', [FileAttachmentsController, 'createUpload'])
+        router.post('/:id/complete', [FileAttachmentsController, 'complete'])
+        router.get('/:id', [FileAttachmentsController, 'show'])
+      })
+      .prefix('attachments')
+      .as('attachments')
       .use([middleware.auth(), middleware.license()])
 
     router

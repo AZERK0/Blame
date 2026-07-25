@@ -8,8 +8,12 @@ import type {
   UserStoryDraft,
   UserStoryUpdate,
 } from "@/components/backlog/data/backlog-data"
-import type { ApiConnection } from "@/context/platform"
+import type { ApiConnection } from "@blame/agent-runtime"
 import { boundedAgentUpdate } from "./agent-update-limits.ts"
+import {
+  isFileAttachmentReference,
+  uploadFileAttachments,
+} from "@/lib/file-attachment-api"
 
 export function createBacklogApi(connection: ApiConnection) {
   const baseUrl = connection.url.replace(/\/$/, "")
@@ -38,21 +42,29 @@ export function createBacklogApi(connection: ApiConnection) {
       )
     },
     async create(input: UserStoryDraft) {
+      const fileAttachments = await uploadFileAttachments(
+        connection,
+        input.fileAttachments
+      )
       return userStory(
         await request<unknown>(connection, baseUrl, "/projects/user-stories", {
-          body: JSON.stringify(input),
+          body: JSON.stringify({ ...input, fileAttachments }),
           method: "POST",
         })
       )
     },
     async update(id: string, input: UserStoryUpdate) {
+      const fileAttachments =
+        input.fileAttachments === undefined
+          ? undefined
+          : await uploadFileAttachments(connection, input.fileAttachments)
       return userStory(
         await request<unknown>(
           connection,
           baseUrl,
           `/projects/user-stories/${id}`,
           {
-            body: JSON.stringify(apiUpdate(input)),
+            body: JSON.stringify(apiUpdate({ ...input, fileAttachments })),
             method: "PATCH",
           }
         )
@@ -137,15 +149,22 @@ export function createBacklogApi(connection: ApiConnection) {
     },
     async createComment(
       id: string,
-      input: Pick<UserStoryComment, "body" | "codeSelectionAttachments">
+      input: Pick<
+        UserStoryComment,
+        "body" | "codeSelectionAttachments" | "fileAttachments"
+      >
     ) {
+      const fileAttachments = await uploadFileAttachments(
+        connection,
+        input.fileAttachments
+      )
       return userStoryComment(
         await request<unknown>(
           connection,
           baseUrl,
           `/projects/user-stories/${id}/comments`,
           {
-            body: JSON.stringify(input),
+            body: JSON.stringify({ ...input, fileAttachments }),
             method: "POST",
           }
         )
@@ -317,16 +336,7 @@ function fileAttachments(value: unknown) {
 }
 
 function fileAttachment(value: unknown) {
-  if (!isRecord(value)) return false
-  return (
-    typeof value.id === "string" &&
-    (!("aiContextMarkdown" in value) ||
-      typeof value.aiContextMarkdown === "string") &&
-    typeof value.content === "string" &&
-    typeof value.name === "string" &&
-    typeof value.size === "number" &&
-    typeof value.type === "string"
-  )
+  return isFileAttachmentReference(value)
 }
 
 function transformerValue(value: unknown): unknown {

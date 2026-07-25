@@ -523,6 +523,42 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/provider_credentials_controller').default['destroy']>>>
     }
   }
+  'attachments.file_attachments.create_upload': {
+    methods: ["POST"]
+    pattern: '/api/v1/attachments/uploads'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/file_attachment').createFileAttachmentUploadValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/file_attachment').createFileAttachmentUploadValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/file_attachments_controller').default['createUpload']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/file_attachments_controller').default['createUpload']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'attachments.file_attachments.complete': {
+    methods: ["POST"]
+    pattern: '/api/v1/attachments/:id/complete'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/file_attachments_controller').default['complete']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/file_attachments_controller').default['complete']>>>
+    }
+  }
+  'attachments.file_attachments.show': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/attachments/:id'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/file_attachments_controller').default['show']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/file_attachments_controller').default['show']>>>
+    }
+  }
   'projects.quick_chats.quick_chats.index': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/projects/quick-chats'

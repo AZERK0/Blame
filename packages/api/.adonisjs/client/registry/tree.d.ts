@@ -126,4 +126,11 @@ export interface ApiDefinition {
       destroy: typeof routes['providers.provider_credentials.destroy']
     }
   }
+  attachments: {
+    fileAttachments: {
+      createUpload: typeof routes['attachments.file_attachments.create_upload']
+      complete: typeof routes['attachments.file_attachments.complete']
+      show: typeof routes['attachments.file_attachments.show']
+    }
+  }
 }

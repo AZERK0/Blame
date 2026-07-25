@@ -318,6 +318,7 @@ type DevelopmentPromptInput = Pick<
   | "summary"
   | "title"
 > &
+  Partial<Pick<StartDevelopmentSessionInput, "apiConnection">> &
   Pick<SendDevelopmentSessionInput, "feedbackOnly">;
 
 type RuntimeOptions = {
@@ -372,6 +373,7 @@ export class BlameAgentRuntime {
   private sessionLogWrites = new Map<string, Promise<void>>();
   private sessionReleases = new Map<string, Promise<void>>();
   private sessionContexts = new Map<string, ProductionSessionContext>();
+  private sessionApiConnections = new Map<string, ApiConnection>();
   private sessionStartInputs = new Map<string, ClineCoreStartInput>();
   private sessionQualityBaselines = new Map<string, string>();
   private sessionEventSignatures = new Map<string, Map<string, number>>();
@@ -478,6 +480,7 @@ export class BlameAgentRuntime {
     this.sessionReleases.clear();
     this.sessionContexts.clear();
     this.sessionEventSignatures.clear();
+    this.sessionApiConnections.clear();
     await this.disposeCore();
     await this.headroomSidecar.dispose();
     this.agentTelemetry.shutdown();
@@ -866,7 +869,10 @@ export class BlameAgentRuntime {
 
   private async sendDevelopmentSession(input: SendDevelopmentSessionInput) {
     const developmentInput = await developmentUserInput(
-      input,
+      {
+        ...input,
+        apiConnection: this.sessionApiConnections.get(input.sessionId),
+      },
       this.attachmentDirectory(input.sessionId),
     );
     return this.sendSession(
@@ -992,6 +998,10 @@ export class BlameAgentRuntime {
       });
     }
     this.sessionStartInputs.set(restoredSessionId, start);
+    const apiConnection = this.sessionApiConnections.get(sourceSessionId);
+    if (apiConnection) {
+      this.sessionApiConnections.set(restoredSessionId, apiConnection);
+    }
     await this.captureSessionQualityBaseline(restoredSessionId);
     if (this.autoApprovedWriteToolSessions.has(sourceSessionId)) {
       this.autoApprovedWriteToolSessions.add(restoredSessionId);
@@ -1978,6 +1988,7 @@ export class BlameAgentRuntime {
     }
     this.sessionUsageSignatures.delete(sessionId);
     this.sessionBackendKeys.delete(sessionId);
+    this.sessionApiConnections.delete(sessionId);
     this.sessionQualityBaselines.delete(sessionId);
     this.sessionStartInputs.delete(sessionId);
     this.structuredEventSessions.delete(sessionId);
@@ -2337,6 +2348,10 @@ export class BlameAgentRuntime {
   private async startDevelopmentSession(input: StartDevelopmentSessionInput) {
     const attachedSession = this.attachedSession(input.resumeSessionId);
     if (attachedSession) {
+      this.sessionApiConnections.set(
+        attachedSession.sessionId,
+        input.apiConnection,
+      );
       await this.logSession(
         attachedSession.sessionId,
         "development session reused",
@@ -2352,7 +2367,7 @@ export class BlameAgentRuntime {
       input,
       newAttachmentDirectory(input.cwd),
     );
-    return this.startSession({
+    const session = await this.startSession({
       apiConnection: input.apiConnection,
       providerId: input.providerId,
       modelId: input.modelId,
@@ -2382,6 +2397,8 @@ export class BlameAgentRuntime {
       executionId: input.executionId,
       storyId: input.storyId,
     });
+    this.sessionApiConnections.set(session.sessionId, input.apiConnection);
+    return session;
   }
 
   private attachmentDirectory(sessionId: string) {
@@ -3158,6 +3175,7 @@ export async function developmentUserInput(
       ...(input.feedbackFileAttachments ?? []),
     ],
     attachmentDirectory,
+    input.apiConnection,
   );
   if (input.feedbackOnly) {
     return {
@@ -3330,17 +3348,21 @@ function fileAttachmentReference(
 async function fileAttachmentInputs(
   attachments: NonNullable<StartDevelopmentSessionInput["fileAttachments"]>,
   attachmentDirectory: string,
+  apiConnection?: ApiConnection,
 ) {
   const userImages: string[] = [];
   const userFiles: string[] = [];
   await Promise.all(
     attachments.map(async (attachment) => {
+      const content = await fileAttachmentContent(attachment, apiConnection);
       if (attachment.type.startsWith("image/")) {
-        userImages.push(`data:${attachment.type};base64,${attachment.content}`);
+        userImages.push(
+          `data:${attachment.type};base64,${content.toString("base64")}`,
+        );
         return;
       }
       userFiles.push(
-        await writeFileAttachment(attachment, attachmentDirectory),
+        await writeFileAttachment(attachment, attachmentDirectory, content),
       );
     }),
   );
@@ -3352,11 +3374,86 @@ async function writeFileAttachment(
     StartDevelopmentSessionInput["fileAttachments"]
   >[number],
   attachmentDirectory: string,
+  content: Buffer,
 ) {
   await mkdir(attachmentDirectory, { recursive: true });
   const path = join(attachmentDirectory, attachmentFileName(attachment.name));
-  await writeFile(path, Buffer.from(attachment.content, "base64"));
+  await writeFile(path, content);
   return path;
+}
+
+async function fileAttachmentContent(
+  attachment: NonNullable<
+    StartDevelopmentSessionInput["fileAttachments"]
+  >[number],
+  apiConnection?: ApiConnection,
+) {
+  if (attachment.content !== undefined) {
+    return Buffer.from(attachment.content, "base64");
+  }
+  const response = await attachmentDownloadResponse(attachment, apiConnection);
+  if (!response.ok) {
+    throw new Error(`Unable to download attachment ${attachment.name}`);
+  }
+  const content = Buffer.from(await response.arrayBuffer());
+  if (content.byteLength !== attachment.size) {
+    throw new Error(
+      `Downloaded attachment ${attachment.name} has an invalid size`,
+    );
+  }
+  return content;
+}
+
+async function attachmentDownloadResponse(
+  attachment: NonNullable<
+    StartDevelopmentSessionInput["fileAttachments"]
+  >[number],
+  apiConnection?: ApiConnection,
+) {
+  if (attachment.downloadUrl) {
+    const response = await fetch(attachment.downloadUrl);
+    if (response.ok || !attachment.id || !apiConnection) return response;
+  }
+  return fetch(
+    await authorizedAttachmentDownloadUrl(attachment, apiConnection),
+  );
+}
+
+async function authorizedAttachmentDownloadUrl(
+  attachment: NonNullable<
+    StartDevelopmentSessionInput["fileAttachments"]
+  >[number],
+  apiConnection?: ApiConnection,
+) {
+  if (!attachment.id || !apiConnection) {
+    throw new Error(`Attachment ${attachment.name} has no content source`);
+  }
+  const response = await fetch(
+    `${apiConnection.url.replace(/\/$/, "")}/attachments/${encodeURIComponent(attachment.id)}`,
+    {
+      headers: apiConnection.token
+        ? { Authorization: `Bearer ${apiConnection.token}` }
+        : undefined,
+    },
+  );
+  if (!response.ok) {
+    throw new Error(`Unable to authorize attachment ${attachment.name}`);
+  }
+  const payload = (await response.json()) as { data?: unknown };
+  const value = attachmentResponseValue(payload);
+  if (!value || typeof value.downloadUrl !== "string") {
+    throw new Error(`Attachment ${attachment.name} has no download URL`);
+  }
+  return value.downloadUrl;
+}
+
+function attachmentResponseValue(value: unknown) {
+  if (!value || typeof value !== "object") return undefined;
+  const record = value as Record<string, unknown>;
+  const data = record.data;
+  return data && typeof data === "object"
+    ? (data as Record<string, unknown>)
+    : record;
 }
 
 function attachmentFileName(name: string) {

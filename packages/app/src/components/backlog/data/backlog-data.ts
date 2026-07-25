@@ -75,7 +75,8 @@ export type UserStoryCodeSelectionAttachment = {
 export type UserStoryFileAttachment = {
   id: string
   aiContextMarkdown?: string
-  content: string
+  content?: string
+  downloadUrl?: string
   name: string
   size: number
   type: string

@@ -10,6 +10,10 @@ import type {
   QuickChatUpdate,
 } from "@/components/chat/data/quick-chat-data"
 import type { useCloudAuth } from "@/context/cloud-auth"
+import {
+  isFileAttachmentReference,
+  uploadFileAttachments,
+} from "@/lib/file-attachment-api"
 
 type ApiConnection = ReturnType<typeof useCloudAuth>["apiConnection"]
 
@@ -86,13 +90,17 @@ export function createQuickChatApi(connection: ApiConnection) {
       )
     },
     async createMessage(id: string, input: QuickChatMessageDraft) {
+      const fileAttachments = await uploadFileAttachments(
+        connection,
+        input.fileAttachments
+      )
       return quickChatMessage(
         await request<unknown>(
           connection,
           baseUrl,
           `/projects/quick-chats/${id}/messages`,
           {
-            body: JSON.stringify(input),
+            body: JSON.stringify({ ...input, fileAttachments }),
             method: "POST",
           }
         )
@@ -226,6 +234,9 @@ function quickChatMessage(value: unknown) {
         ? message.createdAt
         : new Date().toISOString(),
     id,
+    fileAttachments: Array.isArray(message.fileAttachments)
+      ? message.fileAttachments.filter(isFileAttachmentReference)
+      : [],
     quickChatId,
   } as QuickChatMessage
 }

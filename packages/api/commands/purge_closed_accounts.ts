@@ -1,5 +1,6 @@
 import AccountClosureRequest from '#models/account_closure_request'
 import AccountClosureService from '#services/account_closure_service'
+import FileAttachmentsService from '#services/file_attachments_service'
 import { BaseCommand } from '@adonisjs/core/ace'
 import type { CommandOptions } from '@adonisjs/core/types/ace'
 import { DateTime } from 'luxon'
@@ -14,6 +15,7 @@ export default class PurgeClosedAccounts extends BaseCommand {
     const reconciled = await service.reconcileLedger()
     const retried = await service.retryAllPending()
     const deletedArchives = await service.deleteExpiredArchives()
+    const deletedAttachmentOrphans = await new FileAttachmentsService().cleanupOrphans()
     const deadlineBreaches = await AccountClosureRequest.query()
       .where((query) =>
         query
@@ -30,6 +32,7 @@ export default class PurgeClosedAccounts extends BaseCommand {
     this.logger.info(`Reconciled ${reconciled} restored account closures`)
     this.logger.info(`Retried ${retried} account closures`)
     this.logger.info(`Deleted ${deletedArchives} expired closure archives`)
+    this.logger.info(`Deleted ${deletedAttachmentOrphans} orphaned attachments`)
     if (breachCount === 0) return
     this.logger.error(`${breachCount} account closures breached the active-deletion deadline`)
     this.exitCode = 1

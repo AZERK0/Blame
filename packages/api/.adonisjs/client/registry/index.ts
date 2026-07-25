@@ -264,6 +264,24 @@ const routes = {
     tokens: [{"old":"/api/v1/providers/credentials/:id","type":0,"val":"api","end":""},{"old":"/api/v1/providers/credentials/:id","type":0,"val":"v1","end":""},{"old":"/api/v1/providers/credentials/:id","type":0,"val":"providers","end":""},{"old":"/api/v1/providers/credentials/:id","type":0,"val":"credentials","end":""},{"old":"/api/v1/providers/credentials/:id","type":1,"val":"id","end":""}],
     types: placeholder as Registry['providers.provider_credentials.destroy']['types'],
   },
+  'attachments.file_attachments.create_upload': {
+    methods: ["POST"],
+    pattern: '/api/v1/attachments/uploads',
+    tokens: [{"old":"/api/v1/attachments/uploads","type":0,"val":"api","end":""},{"old":"/api/v1/attachments/uploads","type":0,"val":"v1","end":""},{"old":"/api/v1/attachments/uploads","type":0,"val":"attachments","end":""},{"old":"/api/v1/attachments/uploads","type":0,"val":"uploads","end":""}],
+    types: placeholder as Registry['attachments.file_attachments.create_upload']['types'],
+  },
+  'attachments.file_attachments.complete': {
+    methods: ["POST"],
+    pattern: '/api/v1/attachments/:id/complete',
+    tokens: [{"old":"/api/v1/attachments/:id/complete","type":0,"val":"api","end":""},{"old":"/api/v1/attachments/:id/complete","type":0,"val":"v1","end":""},{"old":"/api/v1/attachments/:id/complete","type":0,"val":"attachments","end":""},{"old":"/api/v1/attachments/:id/complete","type":1,"val":"id","end":""},{"old":"/api/v1/attachments/:id/complete","type":0,"val":"complete","end":""}],
+    types: placeholder as Registry['attachments.file_attachments.complete']['types'],
+  },
+  'attachments.file_attachments.show': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/attachments/:id',
+    tokens: [{"old":"/api/v1/attachments/:id","type":0,"val":"api","end":""},{"old":"/api/v1/attachments/:id","type":0,"val":"v1","end":""},{"old":"/api/v1/attachments/:id","type":0,"val":"attachments","end":""},{"old":"/api/v1/attachments/:id","type":1,"val":"id","end":""}],
+    types: placeholder as Registry['attachments.file_attachments.show']['types'],
+  },
   'projects.quick_chats.quick_chats.index': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/projects/quick-chats',

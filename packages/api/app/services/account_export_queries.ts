@@ -167,6 +167,17 @@ const subscriptionColumns = [
   'created_at',
   'updated_at',
 ]
+const fileAttachmentColumns = [
+  'id',
+  'object_key',
+  'name',
+  'mime_type',
+  'size',
+  'checksum_sha256',
+  'ai_context_markdown',
+  'created_at',
+  'updated_at',
+]
 
 export default class AccountExportQueries {
   constructor(private client: QueryClientContract) {}
@@ -316,6 +327,45 @@ export default class AccountExportQueries {
       .select(subscriptionColumns)
       .where('user_id', userId)
       .first()
+  }
+
+  fileAttachments(userId: string) {
+    return this.client
+      .from('file_attachments')
+      .select(fileAttachmentColumns)
+      .where('user_id', userId)
+      .where('status', 'ready')
+      .orderBy('created_at', 'asc')
+  }
+
+  userStoryFileAttachmentLinks(storyIds: string[]) {
+    return this.attachmentLinks('user_story_file_attachments', 'user_story_id', storyIds)
+  }
+
+  userStoryCommentFileAttachmentLinks(commentIds: string[]) {
+    return this.attachmentLinks(
+      'user_story_comment_file_attachments',
+      'user_story_comment_id',
+      commentIds
+    )
+  }
+
+  quickChatMessageFileAttachmentLinks(messageIds: string[]) {
+    return this.attachmentLinks(
+      'quick_chat_message_file_attachments',
+      'quick_chat_message_id',
+      messageIds
+    )
+  }
+
+  private attachmentLinks(table: string, ownerColumn: string, ownerIds: string[]) {
+    if (!ownerIds.length) return Promise.resolve([])
+    return this.client
+      .from(table)
+      .select([ownerColumn, 'file_attachment_id', 'position'])
+      .whereIn(ownerColumn, ownerIds)
+      .orderBy(ownerColumn, 'asc')
+      .orderBy('position', 'asc')
   }
 
   private ownedRows(table: string, columns: string[], owner: string, ids: string[]) {

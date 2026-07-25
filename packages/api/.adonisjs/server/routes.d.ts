@@ -47,6 +47,9 @@ export type ScannedRoutes = {
     'providers.provider_credentials.store_o_auth': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.resolve': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'attachments.file_attachments.create_upload': { paramsTuple?: []; params?: {} }
+    'attachments.file_attachments.complete': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'attachments.file_attachments.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.quick_chats.quick_chats.index': { paramsTuple?: []; params?: {} }
     'projects.quick_chats.quick_chats.store': { paramsTuple?: []; params?: {} }
     'projects.quick_chats.quick_chats.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -88,6 +91,7 @@ export type ScannedRoutes = {
     'projects.project_initializations.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'providers.provider_credentials.catalog': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.index': { paramsTuple?: []; params?: {} }
+    'attachments.file_attachments.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.quick_chats.quick_chats.index': { paramsTuple?: []; params?: {} }
     'projects.quick_chats.quick_chats.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.quick_chats.quick_chat_agent_runs.activity_detail': { paramsTuple: [ParamValue,ParamValue,ParamValue]; params: {'id': ParamValue,'runId': ParamValue,'activityId': ParamValue} }
@@ -113,6 +117,7 @@ export type ScannedRoutes = {
     'projects.project_initializations.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'providers.provider_credentials.catalog': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.index': { paramsTuple?: []; params?: {} }
+    'attachments.file_attachments.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.quick_chats.quick_chats.index': { paramsTuple?: []; params?: {} }
     'projects.quick_chats.quick_chats.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.quick_chats.quick_chat_agent_runs.activity_detail': { paramsTuple: [ParamValue,ParamValue,ParamValue]; params: {'id': ParamValue,'runId': ParamValue,'activityId': ParamValue} }
@@ -146,6 +151,8 @@ export type ScannedRoutes = {
     'providers.provider_credentials.store': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.store_o_auth': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.resolve': { paramsTuple?: []; params?: {} }
+    'attachments.file_attachments.create_upload': { paramsTuple?: []; params?: {} }
+    'attachments.file_attachments.complete': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.quick_chats.quick_chats.store': { paramsTuple?: []; params?: {} }
     'projects.quick_chats.quick_chat_messages.store': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.quick_chats.quick_chat_messages.undo': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'messageId': ParamValue} }

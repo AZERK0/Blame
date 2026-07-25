@@ -41,11 +41,11 @@ export const codeSelectionAttachment = vine.object({
   startLine: vine.number(),
 })
 export const fileAttachment = vine.object({
-  id: vine.string().trim().minLength(1).maxLength(255),
+  id: vine.string().trim().minLength(1).maxLength(36),
   aiContextMarkdown: vine.string().maxLength(262144).optional(),
-  content: vine.string().maxLength(10485760),
+  content: vine.string().maxLength(13981016).optional(),
   name: vine.string().trim().minLength(1).maxLength(255),
-  size: vine.number(),
+  size: vine.number().nonNegative().withoutDecimals(),
   type: vine.string().trim().maxLength(255),
 })
 export const agentUsage = vine.object({

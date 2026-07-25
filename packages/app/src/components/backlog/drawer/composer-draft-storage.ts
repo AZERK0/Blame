@@ -2,6 +2,7 @@ import type {
   UserStoryCodeSelectionAttachment,
   UserStoryFileAttachment,
 } from "@/components/backlog/data/backlog-data"
+import { isFileAttachmentReference } from "@/lib/file-attachment-api"
 
 export type ComposerDraft = {
   codeSelectionAttachments: UserStoryCodeSelectionAttachment[]
@@ -79,15 +80,5 @@ function isCodeSelectionAttachment(value: unknown) {
 }
 
 function isFileAttachment(value: unknown) {
-  if (!value || typeof value !== "object") return false
-  const attachment = value as Record<string, unknown>
-  return (
-    typeof attachment.id === "string" &&
-    typeof attachment.content === "string" &&
-    typeof attachment.name === "string" &&
-    typeof attachment.size === "number" &&
-    typeof attachment.type === "string" &&
-    (attachment.aiContextMarkdown === undefined ||
-      typeof attachment.aiContextMarkdown === "string")
-  )
+  return isFileAttachmentReference(value)
 }

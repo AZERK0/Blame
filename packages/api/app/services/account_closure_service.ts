@@ -4,6 +4,7 @@ import UserSubscription from '#models/user_subscription'
 import AccountClosureLedgerService from '#services/account_closure_ledger_service'
 import type { AccountClosureLedgerRecord } from '#services/account_closure_ledger_service'
 import BillingService from '#services/billing_service'
+import FileAttachmentsService from '#services/file_attachments_service'
 import env from '#start/env'
 import logger from '@adonisjs/core/services/logger'
 import db from '@adonisjs/lucid/services/db'
@@ -263,7 +264,10 @@ export default class AccountClosureService {
 
   private async markFailure(closure: AccountClosureRequest, error: unknown) {
     const failureCode = errorCode(error)
-    logger.error({ closureRequestId: closure.id, failureCode }, 'Account closure cleanup failed')
+    logger.error(
+      { closureRequestId: closure.id, err: error, failureCode },
+      'Account closure cleanup failed'
+    )
     closure.status = closureStatus(closure)
     closure.retryCount += 1
     closure.lastError = failureCode
@@ -348,6 +352,7 @@ function ledgerBillingRecord(record: AccountClosureLedgerRecord) {
 }
 
 async function deleteActiveUser(userId: string) {
+  await new FileAttachmentsService().deleteAllForUser(userId)
   await db.transaction(async (transaction) => {
     const user = await User.query({ client: transaction }).where('id', userId).forUpdate().first()
     if (!user) return

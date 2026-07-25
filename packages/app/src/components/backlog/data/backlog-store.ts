@@ -199,7 +199,10 @@ function useBacklogStoreValue() {
   const createComment = React.useCallback(
     async (
       story: UserStory,
-      input: Pick<UserStoryComment, "body" | "codeSelectionAttachments">
+      input: Pick<
+        UserStoryComment,
+        "body" | "codeSelectionAttachments" | "fileAttachments"
+      >
     ) => {
       const comment = await api.createComment(story.id, input)
       setState((current) => ({

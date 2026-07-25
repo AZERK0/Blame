@@ -96,6 +96,7 @@ type PastedAttachment = {
   file: File
   previewUrl?: string
   source: "code" | "file"
+  storedAttachment?: UserStoryFileAttachment
   subtitle?: string
   title?: string
 }
@@ -104,6 +105,8 @@ export type PendingFileAttachment = {
   aiContextMarkdown?: string
   file: File
   id: string
+  previewUrl?: string
+  storedAttachment?: UserStoryFileAttachment
 }
 
 type FileMentionState = {
@@ -2344,10 +2347,13 @@ function pendingFileAttachment(
     aiContextMarkdown: attachment.aiContextMarkdown,
     id: attachment.id,
     file: attachment.file,
-    previewUrl: attachment.file.type.startsWith("image/")
-      ? URL.createObjectURL(attachment.file)
-      : undefined,
+    previewUrl:
+      attachment.previewUrl ??
+      (attachment.file.type.startsWith("image/")
+        ? URL.createObjectURL(attachment.file)
+        : undefined),
     source: "file",
+    storedAttachment: attachment.storedAttachment,
   }
 }
 
@@ -2358,6 +2364,7 @@ async function persistentFileAttachment(
     workspace: ReturnType<typeof usePlatform>["workspace"]
   }
 ): Promise<UserStoryFileAttachment> {
+  if (attachment.storedAttachment) return attachment.storedAttachment
   const persistedAttachment = {
     ...(await fileAttachment(attachment.file, attachment.aiContextMarkdown)),
     id: attachment.id,

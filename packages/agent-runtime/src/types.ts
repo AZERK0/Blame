@@ -151,7 +151,8 @@ export type CodeSelectionAttachment = {
 export type FileAttachment = {
   id?: string;
   aiContextMarkdown?: string;
-  content: string;
+  content?: string;
+  downloadUrl?: string;
   name: string;
   size: number;
   type: string;

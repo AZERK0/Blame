@@ -1,9 +1,11 @@
 import { assignUuidV7Id } from '#lib/uuid_v7_model'
-import { BaseModel, beforeCreate, column, hasMany } from '@adonisjs/lucid/orm'
+import { orderedFileAttachments, type FileAttachmentReference } from '#lib/file_attachment'
+import FileAttachment from '#models/file_attachment'
+import { BaseModel, beforeCreate, column, computed, hasMany, manyToMany } from '@adonisjs/lucid/orm'
 import { DateTime } from 'luxon'
 import UserStoryAgentRun from '#models/user_story_agent_run'
 import UserStoryComment from '#models/user_story_comment'
-import type { HasMany } from '@adonisjs/lucid/types/relations'
+import type { HasMany, ManyToMany } from '@adonisjs/lucid/types/relations'
 
 export type UserStoryStatus =
   | 'backlog'
@@ -43,14 +45,7 @@ export type UserStoryCodeSelectionAttachment = {
   startLine: number
 }
 
-export type UserStoryFileAttachment = {
-  id: string
-  aiContextMarkdown?: string
-  content: string
-  name: string
-  size: number
-  type: string
-}
+export type UserStoryFileAttachment = FileAttachmentReference
 
 export type UserStoryAgentUsage = {
   cacheReadTokens?: number
@@ -162,10 +157,27 @@ export default class UserStory extends BaseModel {
   declare codeSelectionAttachments: UserStoryCodeSelectionAttachment[] | null
 
   @column({
+    columnName: 'file_attachments',
     consume: consumeFileAttachments,
     prepare: prepareFileAttachments,
+    serializeAs: null,
   })
-  declare fileAttachments: UserStoryFileAttachment[] | null
+  declare legacyFileAttachments: UserStoryFileAttachment[] | null
+
+  @manyToMany(() => FileAttachment, {
+    pivotColumns: ['position'],
+    pivotForeignKey: 'user_story_id',
+    pivotRelatedForeignKey: 'file_attachment_id',
+    pivotTable: 'user_story_file_attachments',
+    serializeAs: null,
+  })
+  declare storedFileAttachments: ManyToMany<typeof FileAttachment>
+
+  @computed()
+  get fileAttachments(): UserStoryFileAttachment[] | null {
+    const stored = this.$preloaded.storedFileAttachments as FileAttachment[] | undefined
+    return stored?.length ? orderedFileAttachments(stored) : this.legacyFileAttachments
+  }
 
   @column()
   declare status: UserStoryStatus

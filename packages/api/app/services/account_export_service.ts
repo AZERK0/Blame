@@ -1,6 +1,7 @@
 import AccountExportQueries from '#services/account_export_queries'
 import db from '@adonisjs/lucid/services/db'
 import { DateTime } from 'luxon'
+import FileAttachmentsService from '#services/file_attachments_service'
 
 const authenticationFieldExclusions = [
   'Account password hashes',
@@ -27,7 +28,7 @@ export default class AccountExportService {
   ) {
     return {
       format: 'blame-account-export',
-      version: 1,
+      version: 2,
       generatedAt: DateTime.utc().toISO(),
       account,
       security: await securityExport(queries, userId),
@@ -53,11 +54,23 @@ export default class AccountExportService {
     const projectIds = identifiers(projects)
     const userStories = await queries.userStories(projectIds)
     const quickChats = await queries.quickChats(projectIds)
+    const userStoryComments = await queries.userStoryComments(identifiers(userStories))
+    const quickChatMessages = await queries.quickChatMessages(identifiers(quickChats))
     return {
       projects,
       ...(await projectExport(queries, projectIds)),
-      ...(await storyExport(queries, userStories)),
-      ...(await chatExport(queries, quickChats)),
+      ...(await storyExport(queries, userStories, userStoryComments)),
+      ...(await chatExport(queries, quickChats, quickChatMessages)),
+      fileAttachments: await fileAttachmentExport(queries, userId),
+      fileAttachmentLinks: {
+        userStories: await queries.userStoryFileAttachmentLinks(identifiers(userStories)),
+        userStoryComments: await queries.userStoryCommentFileAttachmentLinks(
+          identifiers(userStoryComments)
+        ),
+        quickChatMessages: await queries.quickChatMessageFileAttachmentLinks(
+          identifiers(quickChatMessages)
+        ),
+      },
     }
   }
 }
@@ -108,11 +121,15 @@ async function projectExport(queries: AccountExportQueries, projectIds: string[]
   }
 }
 
-async function storyExport(queries: AccountExportQueries, userStories: ExportRow[]) {
+async function storyExport(
+  queries: AccountExportQueries,
+  userStories: ExportRow[],
+  userStoryComments: ExportRow[]
+) {
   const storyIds = identifiers(userStories)
   return {
     userStories: normalizeRows(userStories, storyJsonColumns),
-    userStoryComments: normalizeRows(await queries.userStoryComments(storyIds), messageJsonColumns),
+    userStoryComments: normalizeRows(userStoryComments, messageJsonColumns),
     userStoryAgentRuns: normalizeRows(
       await queries.userStoryAgentRuns(storyIds),
       agentRunJsonColumns
@@ -120,16 +137,34 @@ async function storyExport(queries: AccountExportQueries, userStories: ExportRow
   }
 }
 
-async function chatExport(queries: AccountExportQueries, quickChats: ExportRow[]) {
+async function chatExport(
+  queries: AccountExportQueries,
+  quickChats: ExportRow[],
+  quickChatMessages: ExportRow[]
+) {
   const chatIds = identifiers(quickChats)
   return {
     quickChats: normalizeRows(quickChats, chatJsonColumns),
-    quickChatMessages: normalizeRows(await queries.quickChatMessages(chatIds), messageJsonColumns),
+    quickChatMessages: normalizeRows(quickChatMessages, messageJsonColumns),
     quickChatAgentRuns: normalizeRows(
       await queries.quickChatAgentRuns(chatIds),
       agentRunJsonColumns
     ),
   }
+}
+
+async function fileAttachmentExport(queries: AccountExportQueries, userId: string) {
+  const service = new FileAttachmentsService()
+  const rows = await queries.fileAttachments(userId)
+  return Promise.all(
+    rows.map(async (row) => {
+      const { object_key: objectKey, ...metadata } = row
+      return {
+        ...metadata,
+        content: await service.contentByObjectKey(String(objectKey)),
+      }
+    })
+  )
 }
 
 function identifiers(rows: ExportRow[]) {

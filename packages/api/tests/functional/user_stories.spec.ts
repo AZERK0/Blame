@@ -60,7 +60,7 @@ type CodeSelectionAttachment = {
 
 type FileAttachment = {
   id: string
-  content: string
+  downloadUrl?: string
   name: string
   size: number
   type: string
@@ -235,15 +235,14 @@ test.group('user stories', (group) => {
         startLine: 10,
       },
     ])
-    assert.deepEqual(created.data.fileAttachments, [
-      {
-        id: 'file-1',
-        content: 'SGVsbG8=',
-        name: 'hello.txt',
-        size: 5,
-        type: 'text/plain',
-      },
-    ])
+    assert.deepInclude(created.data.fileAttachments?.[0], {
+      id: 'file-1',
+      name: 'hello.txt',
+      size: 5,
+      type: 'text/plain',
+    })
+    assert.match(created.data.fileAttachments?.[0]?.downloadUrl ?? '', /^memory:/)
+    assert.notProperty(created.data.fileAttachments?.[0] ?? {}, 'content')
 
     const updateResponse = await client
       .patch(`/api/v1/projects/user-stories/${created.data.id}`)
@@ -292,15 +291,14 @@ test.group('user stories', (group) => {
         startLine: 20,
       },
     ])
-    assert.deepEqual(updated.data.fileAttachments, [
-      {
-        id: 'file-2',
-        content: 'VXBkYXRlZA==',
-        name: 'updated.txt',
-        size: 7,
-        type: 'text/plain',
-      },
-    ])
+    assert.deepInclude(updated.data.fileAttachments?.[0], {
+      id: 'file-2',
+      name: 'updated.txt',
+      size: 7,
+      type: 'text/plain',
+    })
+    assert.match(updated.data.fileAttachments?.[0]?.downloadUrl ?? '', /^memory:/)
+    assert.notProperty(updated.data.fileAttachments?.[0] ?? {}, 'content')
 
     const showResponse = await client
       .get(`/api/v1/projects/user-stories/${created.data.id}`)
@@ -371,15 +369,14 @@ test.group('user stories', (group) => {
         startLine: 4,
       },
     ])
-    assert.deepEqual(first.data.fileAttachments, [
-      {
-        id: 'comment-file-1',
-        content: 'Y29tbWVudA==',
-        name: 'comment.txt',
-        size: 7,
-        type: 'text/plain',
-      },
-    ])
+    assert.deepInclude(first.data.fileAttachments?.[0], {
+      id: 'comment-file-1',
+      name: 'comment.txt',
+      size: 7,
+      type: 'text/plain',
+    })
+    assert.match(first.data.fileAttachments?.[0]?.downloadUrl ?? '', /^memory:/)
+    assert.notProperty(first.data.fileAttachments?.[0] ?? {}, 'content')
 
     await client
       .post(`/api/v1/projects/user-stories/${story.data.id}/comments`)
