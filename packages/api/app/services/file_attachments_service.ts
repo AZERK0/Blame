@@ -386,10 +386,30 @@ export default class FileAttachmentsService {
 }
 
 function decodeBase64(content: string) {
-  if (!/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(content)) {
+  if (!isBase64(content)) {
     throw invalidAttachment('Attachment content is not valid base64')
   }
   return Buffer.from(content, 'base64')
+}
+
+function isBase64(content: string) {
+  if (content.length % 4 !== 0) return false
+  const paddingLength = content.endsWith('==') ? 2 : content.endsWith('=') ? 1 : 0
+  const dataLength = content.length - paddingLength
+  for (let index = 0; index < dataLength; index++) {
+    if (!isBase64Character(content.charCodeAt(index))) return false
+  }
+  return true
+}
+
+function isBase64Character(character: number) {
+  return (
+    (character >= 65 && character <= 90) ||
+    (character >= 97 && character <= 122) ||
+    (character >= 48 && character <= 57) ||
+    character === 43 ||
+    character === 47
+  )
 }
 
 function invalidAttachment(message: string, status = 422) {

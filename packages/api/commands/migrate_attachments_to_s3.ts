@@ -5,7 +5,6 @@ import FileAttachmentsService, {
 import { BaseCommand } from '@adonisjs/core/ace'
 import type { CommandOptions } from '@adonisjs/core/types/ace'
 import db from '@adonisjs/lucid/services/db'
-import type { DatabaseQueryBuilderContract } from '@adonisjs/lucid/types/querybuilder'
 
 type LegacyOwner = {
   file_attachments: unknown
@@ -14,8 +13,8 @@ type LegacyOwner = {
 }
 
 type LegacySource = {
+  owners: (ownerIds: string[]) => Promise<LegacyOwner[]>
   ownerType: AttachmentOwnerType
-  rows: (afterId: string | undefined, limit: number) => Promise<LegacyOwner[]>
   table: string
 }
 
@@ -45,11 +44,12 @@ async function migrateSource(service: FileAttachmentsService, source: LegacySour
   let afterId: string | undefined
   let migratedOwners = 0
   while (true) {
-    const owners = await source.rows(afterId, migrationBatchSize)
-    if (!owners.length) return migratedOwners
+    const ownerIds = await legacyOwnerIds(source.table, afterId, migrationBatchSize)
+    if (!ownerIds.length) return migratedOwners
+    const owners = orderOwners(await source.owners(ownerIds), ownerIds, source.table)
     for (const owner of owners) await migrateOwner(service, source, owner)
     migratedOwners += owners.length
-    afterId = owners.at(-1)!.id
+    afterId = ownerIds.at(-1)!
   }
 }
 
@@ -69,59 +69,63 @@ async function migrateOwner(
 function sources(): LegacySource[] {
   return [
     {
+      owners: userStories,
       ownerType: 'userStory',
-      rows: userStories,
       table: 'user_stories',
     },
     {
+      owners: userStoryComments,
       ownerType: 'userStoryComment',
-      rows: userStoryComments,
       table: 'user_story_comments',
     },
     {
+      owners: quickChatMessages,
       ownerType: 'quickChatMessage',
-      rows: quickChatMessages,
       table: 'quick_chat_messages',
     },
   ]
 }
 
-function userStories(afterId: string | undefined, limit: number) {
-  const query = db
+async function userStories(ownerIds: string[]) {
+  return db
     .from('user_stories as owner')
     .innerJoin('projects as project', 'project.id', 'owner.project_id')
     .select(['owner.id', 'owner.file_attachments', 'project.user_id'])
-    .whereNotNull('owner.file_attachments')
-  return legacyPage(query, afterId, limit)
+    .whereIn('owner.id', ownerIds)
 }
 
-function userStoryComments(afterId: string | undefined, limit: number) {
-  const query = db
+async function userStoryComments(ownerIds: string[]) {
+  return db
     .from('user_story_comments as owner')
     .innerJoin('user_stories as story', 'story.id', 'owner.user_story_id')
     .innerJoin('projects as project', 'project.id', 'story.project_id')
     .select(['owner.id', 'owner.file_attachments', 'project.user_id'])
-    .whereNotNull('owner.file_attachments')
-  return legacyPage(query, afterId, limit)
+    .whereIn('owner.id', ownerIds)
 }
 
-function quickChatMessages(afterId: string | undefined, limit: number) {
-  const query = db
+async function quickChatMessages(ownerIds: string[]) {
+  return db
     .from('quick_chat_messages as owner')
     .innerJoin('quick_chats as chat', 'chat.id', 'owner.quick_chat_id')
     .innerJoin('projects as project', 'project.id', 'chat.project_id')
     .select(['owner.id', 'owner.file_attachments', 'project.user_id'])
-    .whereNotNull('owner.file_attachments')
-  return legacyPage(query, afterId, limit)
+    .whereIn('owner.id', ownerIds)
 }
 
-async function legacyPage(
-  query: DatabaseQueryBuilderContract<LegacyOwner>,
-  afterId: string | undefined,
-  limit: number
-) {
-  if (afterId) query.where('owner.id', '>', afterId)
-  return query.orderBy('owner.id', 'asc').limit(limit)
+async function legacyOwnerIds(table: string, afterId: string | undefined, limit: number) {
+  const query = db.from(table).select('id').whereNotNull('file_attachments')
+  if (afterId) query.where('id', '>', afterId)
+  const rows = await query.orderBy('id', 'asc').limit(limit)
+  return rows.map((row) => row.id as string)
+}
+
+function orderOwners(owners: LegacyOwner[], ownerIds: string[], table: string) {
+  const ownersById = new Map(owners.map((owner) => [owner.id, owner]))
+  return ownerIds.map((ownerId) => {
+    const owner = ownersById.get(ownerId)
+    if (!owner) throw new Error(`Unable to resolve attachment owner ${table}.${ownerId}`)
+    return owner
+  })
 }
 
 function legacyAttachments(value: unknown): FileAttachmentReference[] {

@@ -157,6 +157,36 @@ test.group('file attachments', (group) => {
     )
   })
 
+  test('migrates a large legacy attachment without overflowing the stack', async ({ assert }) => {
+    const user = await createUser()
+    const project = await createProject(user.id)
+    const largeContent = Buffer.alloc(5 * 1024 * 1024, 65)
+    const story = await UserStory.create({
+      legacyFileAttachments: [
+        {
+          content: largeContent.toString('base64'),
+          id: 'large-legacy-file',
+          name: 'large-legacy-file.bin',
+          size: largeContent.byteLength,
+          type: 'application/octet-stream',
+        },
+      ],
+      owner: 'Product',
+      priority: 'Medium',
+      projectId: project.id,
+      status: 'backlog',
+      storyNumber: 1,
+      summary: 'Migrate a large attachment',
+      title: 'Large legacy attachment',
+    })
+
+    assert.equal(await migrateLegacyAttachments(), 1)
+    await story.refresh()
+    assert.isNull(story.legacyFileAttachments)
+    const storedContent = await attachmentObjectStorage().content(`${user.id}/large-legacy-file`)
+    assert.equal(sha256(storedContent), sha256(largeContent))
+  })
+
   test('purges detached attachment objects after the grace period', async ({ assert, client }) => {
     const user = await createUser()
     const project = await createProject(user.id)
@@ -275,6 +305,10 @@ function assertStoredReference(value: unknown, id: string, assert: Assert) {
 async function attachmentLinkCount(table: string) {
   const rows = await db.from(table).count('* as total')
   return Number(rows[0]?.total ?? 0)
+}
+
+function sha256(value: Uint8Array) {
+  return createHash('sha256').update(value).digest('hex')
 }
 
 function createProject(userId: string) {
