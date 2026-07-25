@@ -214,7 +214,7 @@ export const UserStoryPreviewWarmup = React.memo(
   equalUserStoryPreviewWarmupProps
 )
 
-export function UserStoryPreview({
+export const UserStoryPreview = React.memo(function UserStoryPreview({
   onCapture,
   onRunConfigurationChange,
   previewSessionKey,
@@ -587,7 +587,7 @@ export function UserStoryPreview({
       </div>
     </div>
   )
-}
+})
 
 function PreviewPanel({
   frameRef,

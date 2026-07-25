@@ -9,6 +9,7 @@ import {
   markdownListIndentResult,
   markdownListEnterResult,
   markdownWysiwygLines,
+  markdownWysiwygStructureChanged,
   markdownWysiwygStructureKey,
 } from "./markdown-wysiwyg-parser.ts"
 
@@ -52,6 +53,41 @@ test("changes the editor key only when rendered markdown structure changes", () 
   assert.notEqual(
     markdownWysiwygStructureKey("one line"),
     markdownWysiwygStructureKey("one line\nsecond line")
+  )
+})
+
+test("detects structure changes without treating plain text edits as structural", () => {
+  assert.equal(
+    markdownWysiwygStructureChanged("ordinary text", "ordinary texts"),
+    false
+  )
+  assert.equal(
+    markdownWysiwygStructureChanged("first\nordinary", "first\nupdated"),
+    false
+  )
+  assert.equal(markdownWysiwygStructureChanged("", "a"), false)
+  assert.equal(
+    markdownWysiwygStructureChanged("ordinary text", "**ordinary text**"),
+    true
+  )
+  assert.equal(
+    markdownWysiwygStructureChanged("**ordinary**", "**updated**"),
+    false
+  )
+  assert.equal(
+    markdownWysiwygStructureChanged("one line", "one line\nsecond line"),
+    true
+  )
+  assert.equal(
+    markdownWysiwygStructureChanged("```\nplain", "```\nplain\n```"),
+    true
+  )
+  assert.equal(
+    markdownWysiwygStructureChanged(
+      "```\nplain\n```",
+      "```\n**still code**\n```"
+    ),
+    false
   )
 })
 

@@ -88,6 +88,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
+import { useLatestCallback } from "@/lib/use-latest-callback"
 
 const drawerSidebarStorageKey = "blame.app.user-story-drawer-sidebar-open.v1"
 const composerDraftPersistDelayMs = 500
@@ -101,6 +102,11 @@ const drawerHeaderStrongBlurMask = {
   maskImage: "linear-gradient(to bottom, black 0%, transparent 72%)",
   WebkitMaskImage: "linear-gradient(to bottom, black 0%, transparent 72%)",
 } satisfies React.CSSProperties
+
+type PendingComposerDraft = {
+  draft: ComposerDraft
+  key: string
+}
 
 export function UserStoryDrawerPanel({
   diffStats,
@@ -271,12 +277,13 @@ export function UserStoryDrawerPanel({
   const [comment, setComment] = React.useState(
     mode === "create" ? "" : (storedDraft?.markdown ?? "")
   )
+  const summaryValueRef = React.useRef(summary)
+  const commentValueRef = React.useRef(comment)
   const summaryRef = React.useRef<HTMLDivElement>(null)
   const commentRef = React.useRef<HTMLDivElement>(null)
-  const pendingComposerDraftRef = React.useRef<{
-    draft: ComposerDraft
-    key: string
-  }>()
+  const pendingComposerDraftRef = React.useRef<
+    PendingComposerDraft | undefined
+  >(undefined)
   const composerDraftRemovedRef = React.useRef(false)
 
   React.useEffect(() => {
@@ -397,21 +404,135 @@ export function UserStoryDrawerPanel({
     }
   }, [status])
 
-  const drawerActionButtons = (
-    <DrawerActions
-      loadingAction={pendingAction}
-      mode={mode}
-      status={status}
-      onAction={(action) => {
-        void handleAction(action)
-      }}
-      onDeleteUserStory={onDeleteUserStory}
-      onOpenDrawer={onOpenDrawer}
-      onReject={onReject}
-      reviewDiffEmpty={reviewDiffEmpty}
-      onStopAgent={onStopAgent}
-      story={userStory}
-    />
+  const pendingSummaryFileAttachments = React.useMemo(
+    () => pendingFileAttachments(summaryFileAttachments),
+    [summaryFileAttachments]
+  )
+  const pendingCommentFileAttachments = React.useMemo(
+    () => pendingFileAttachments(commentFileAttachments),
+    [commentFileAttachments]
+  )
+  const removeSummaryCodeSelectionAttachment = React.useCallback(
+    (id: string) =>
+      setSummaryCodeSelectionAttachments((current) =>
+        current.filter((attachment) => attachment.id !== id)
+      ),
+    []
+  )
+  const removeSummaryFileAttachment = React.useCallback(
+    (id: string) =>
+      setSummaryFileAttachments((current) =>
+        current.filter((attachment) => attachment.id !== id)
+      ),
+    []
+  )
+  const addSummaryFileAttachments = React.useCallback(
+    (attachments: UserStoryFileAttachment[]) =>
+      setSummaryFileAttachments((current) => [...current, ...attachments]),
+    []
+  )
+  const removeCommentCodeSelectionAttachment = React.useCallback(
+    (id: string) =>
+      setCommentCodeSelectionAttachments((current) =>
+        current.filter((attachment) => attachment.id !== id)
+      ),
+    []
+  )
+  const removeCommentFileAttachment = React.useCallback(
+    (id: string) =>
+      setCommentFileAttachments((current) =>
+        current.filter((attachment) => attachment.id !== id)
+      ),
+    []
+  )
+  const addCommentFileAttachments = React.useCallback(
+    (attachments: UserStoryFileAttachment[]) =>
+      setCommentFileAttachments((current) => [...current, ...attachments]),
+    []
+  )
+  const handleSummaryChange = React.useCallback(
+    (nextSummary: string) => {
+      summaryValueRef.current = nextSummary
+      updatePendingDraftMarkdown(
+        pendingComposerDraftRef,
+        mode === "create",
+        nextSummary
+      )
+      setSummary(nextSummary)
+    },
+    [mode]
+  )
+  const handleCommentChange = React.useCallback(
+    (nextComment: string) => {
+      commentValueRef.current = nextComment
+      updatePendingDraftMarkdown(
+        pendingComposerDraftRef,
+        mode !== "create",
+        nextComment
+      )
+      setComment(nextComment)
+    },
+    [mode]
+  )
+  const handleDrawerAction = useLatestCallback((action: DrawerAction) => {
+    void handleAction(action)
+  })
+  const handleCommentSubmit = useLatestCallback(() => {
+    void submitComment()
+  })
+  const handleCommentUndo = useLatestCallback(undoCommentMessage)
+  const handleOpenDevelopmentFile = useLatestCallback(openDevelopmentFile)
+  const handleOpenDevelopmentDiff = useLatestCallback(openDevelopmentDiff)
+  const handlePreviewRunConfigurationChange = useLatestCallback(
+    (runConfigurationId: string, previewUrl?: string) => {
+      if (!userStory) return
+      void onUpdateUserStory(userStory, {
+        previewUrl: previewUrl ?? null,
+        runConfigurationId,
+      })
+    }
+  )
+  const handlePreviewCapture = useLatestCallback((file: File) => {
+    void addPreviewCaptureAttachment(file)
+    setTab("user-story")
+    requestAnimationFrame(() => {
+      commentRef.current
+        ?.querySelector<HTMLElement>("[data-markdown-editor-input='true']")
+        ?.focus()
+    })
+  })
+  const handleSummaryOptimize = useLatestCallback((nextSummary: string) =>
+    onOptimizeUserStory
+      ? onOptimizeUserStory({ summary: nextSummary, title })
+      : Promise.resolve(nextSummary)
+  )
+  const drawerActionButtons = React.useMemo(
+    () => (
+      <DrawerActions
+        loadingAction={pendingAction}
+        mode={mode}
+        status={status}
+        onAction={handleDrawerAction}
+        onDeleteUserStory={onDeleteUserStory}
+        onOpenDrawer={onOpenDrawer}
+        onReject={onReject}
+        reviewDiffEmpty={reviewDiffEmpty}
+        onStopAgent={onStopAgent}
+        story={userStory}
+      />
+    ),
+    [
+      handleDrawerAction,
+      mode,
+      onDeleteUserStory,
+      onOpenDrawer,
+      onReject,
+      onStopAgent,
+      pendingAction,
+      reviewDiffEmpty,
+      status,
+      userStory,
+    ]
   )
 
   return (
@@ -509,34 +630,19 @@ export function UserStoryDrawerPanel({
                 commentCodeSelectionAttachments={
                   commentCodeSelectionAttachments
                 }
-                commentFileAttachments={pendingFileAttachments(
-                  commentFileAttachments
-                )}
+                commentFileAttachments={pendingCommentFileAttachments}
                 comment={comment}
                 commentEditorKey={commentEditorKey}
                 commentRef={commentRef}
                 mode={mode}
-                onCommentChange={setComment}
-                onCommentCodeSelectionAttachmentRemove={(id) =>
-                  setCommentCodeSelectionAttachments((current) =>
-                    current.filter((attachment) => attachment.id !== id)
-                  )
+                onCommentChange={handleCommentChange}
+                onCommentCodeSelectionAttachmentRemove={
+                  removeCommentCodeSelectionAttachment
                 }
-                onCommentFileAttachmentRemove={(id) =>
-                  setCommentFileAttachments((current) =>
-                    current.filter((attachment) => attachment.id !== id)
-                  )
-                }
-                onCommentFileAttachmentsAdd={(attachments) =>
-                  setCommentFileAttachments((current) => [
-                    ...current,
-                    ...attachments,
-                  ])
-                }
-                onCommentSubmit={() => {
-                  void submitComment()
-                }}
-                onFileLinkClick={openDevelopmentFile}
+                onCommentFileAttachmentRemove={removeCommentFileAttachment}
+                onCommentFileAttachmentsAdd={addCommentFileAttachments}
+                onCommentSubmit={handleCommentSubmit}
+                onFileLinkClick={handleOpenDevelopmentFile}
                 status={status}
                 userStory={userStory}
               />
@@ -548,38 +654,22 @@ export function UserStoryDrawerPanel({
               loadChangedFileDiffs={loadChangedFileDiffs}
               loadChangedFiles={loadChangedFiles}
               mode={mode}
-              onCommentUndo={undoCommentMessage}
-              onSummaryCodeSelectionAttachmentRemove={(id) =>
-                setSummaryCodeSelectionAttachments((current) =>
-                  current.filter((attachment) => attachment.id !== id)
-                )
+              onCommentUndo={handleCommentUndo}
+              onSummaryCodeSelectionAttachmentRemove={
+                removeSummaryCodeSelectionAttachment
               }
-              onSummaryFileAttachmentRemove={(id) =>
-                setSummaryFileAttachments((current) =>
-                  current.filter((attachment) => attachment.id !== id)
-                )
-              }
-              onSummaryFileAttachmentsAdd={(attachments) =>
-                setSummaryFileAttachments((current) => [
-                  ...current,
-                  ...attachments,
-                ])
-              }
-              onSummaryChange={setSummary}
+              onSummaryFileAttachmentRemove={removeSummaryFileAttachment}
+              onSummaryFileAttachmentsAdd={addSummaryFileAttachments}
+              onSummaryChange={handleSummaryChange}
               onSummaryOptimize={
-                onOptimizeUserStory
-                  ? (nextSummary) =>
-                      onOptimizeUserStory({ summary: nextSummary, title })
-                  : undefined
+                onOptimizeUserStory ? handleSummaryOptimize : undefined
               }
-              onFileLinkClick={openDevelopmentFile}
-              onChangedFileClick={openDevelopmentDiff}
+              onFileLinkClick={handleOpenDevelopmentFile}
+              onChangedFileClick={handleOpenDevelopmentDiff}
               status={status}
               summary={summary}
               summaryCodeSelectionAttachments={summaryCodeSelectionAttachments}
-              summaryFileAttachments={pendingFileAttachments(
-                summaryFileAttachments
-              )}
+              summaryFileAttachments={pendingSummaryFileAttachments}
               summaryRef={summaryRef}
               userStory={userStory}
             />
@@ -599,24 +689,8 @@ export function UserStoryDrawerPanel({
               setupInitializing={setupInitializing}
               userStory={userStory}
               visible={tab === "preview"}
-              onRunConfigurationChange={(runConfigurationId, previewUrl) => {
-                if (!userStory) return
-                void onUpdateUserStory(userStory, {
-                  previewUrl: previewUrl ?? null,
-                  runConfigurationId,
-                })
-              }}
-              onCapture={(file) => {
-                void addPreviewCaptureAttachment(file)
-                setTab("user-story")
-                requestAnimationFrame(() => {
-                  commentRef.current
-                    ?.querySelector<HTMLElement>(
-                      "[data-markdown-editor-input='true']"
-                    )
-                    ?.focus()
-                })
-              }}
+              onRunConfigurationChange={handlePreviewRunConfigurationChange}
+              onCapture={handlePreviewCapture}
             />
           </TabsContent>
         )}
@@ -669,7 +743,7 @@ export function UserStoryDrawerPanel({
           createInput(
             action,
             title,
-            summary,
+            summaryValueRef.current,
             summaryCodeSelectionAttachments,
             summaryFileAttachments
           )
@@ -688,7 +762,7 @@ export function UserStoryDrawerPanel({
             actionInput(
               action,
               title,
-              summary,
+              summaryValueRef.current,
               summaryCodeSelectionAttachments,
               summaryFileAttachments
             )
@@ -734,8 +808,9 @@ export function UserStoryDrawerPanel({
     const hasCommentAttachments =
       commentCodeSelectionAttachments.length > 0 ||
       commentFileAttachments.length > 0
+    const currentComment = commentValueRef.current
     const body =
-      comment.trim() || (hasCommentAttachments ? "Attached files." : "")
+      currentComment.trim() || (hasCommentAttachments ? "Attached files." : "")
     if (!body && !hasCommentAttachments) return
     setPendingAction("Request Changes")
     try {
@@ -745,6 +820,7 @@ export function UserStoryDrawerPanel({
         fileAttachments: commentFileAttachments,
       })
       clearComposerDraft()
+      commentValueRef.current = ""
       setComment("")
       setCommentCodeSelectionAttachments([])
       setCommentFileAttachments([])
@@ -773,6 +849,7 @@ export function UserStoryDrawerPanel({
     if (!userStory) return
     const comment = target.comment
     await onUndoUserStoryComment(userStory, target)
+    commentValueRef.current = comment.body
     setComment(comment.body)
     setCommentCodeSelectionAttachments(comment.codeSelectionAttachments ?? [])
     setCommentFileAttachments(comment.fileAttachments ?? [])
@@ -916,6 +993,16 @@ function drawerComposerDraft(input: {
       ? input.summaryFileAttachments
       : input.commentFileAttachments,
   }
+}
+
+function updatePendingDraftMarkdown(
+  pendingDraftRef: React.RefObject<PendingComposerDraft | undefined>,
+  enabled: boolean,
+  markdown: string
+) {
+  const pendingDraft = pendingDraftRef.current
+  if (!enabled || !pendingDraft) return
+  pendingDraft.draft = { ...pendingDraft.draft, markdown }
 }
 
 function createInput(

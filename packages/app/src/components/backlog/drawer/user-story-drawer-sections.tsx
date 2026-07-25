@@ -9,6 +9,7 @@ import type {
 import { createBacklogApi } from "@/components/backlog/data/backlog-api"
 import type { PendingCodeSelectionAttachment } from "@/components/backlog/shared/comment-attachment-events"
 import type { UserStoryDrawerMode } from "@/components/backlog/shared/backlog-types"
+import type { VcsFileDiff } from "@/components/backlog/development/development-workspace"
 import {
   MarkdownEditor,
   type PendingFileAttachment,
@@ -30,6 +31,7 @@ import {
 } from "@/components/model/model-selector"
 import { useProjects } from "@/context/projects"
 import { useCloudAuth } from "@/context/cloud-auth"
+import { useLatestCallback } from "@/lib/use-latest-callback"
 
 const commentComposerBlurMask = {
   maskImage: "linear-gradient(to top, black 0%, black 60%, transparent 100%)",
@@ -58,7 +60,7 @@ type UserStoryFixedSectionProps = UserStoryCommentComposerProps & {
   mode: UserStoryDrawerMode
 }
 
-export function UserStoryContent({
+export const UserStoryContent = React.memo(function UserStoryContent({
   mode,
   onCommentUndo,
   onSummaryChange,
@@ -91,7 +93,7 @@ export function UserStoryContent({
   onSummaryFileAttachmentsAdd: (attachments: UserStoryFileAttachment[]) => void
   onSummaryOptimize?: (summary: string) => Promise<string>
   onFileLinkClick?: (path: string) => void
-  onChangedFileClick?: (path: string) => void
+  onChangedFileClick?: (path: string, diffs: VcsFileDiff[]) => void
   status: BacklogColumnId
   summary: string
   summaryCodeSelectionAttachments: PendingCodeSelectionAttachment[]
@@ -101,6 +103,29 @@ export function UserStoryContent({
 }) {
   const mentionDirectory = useFileMentionDirectory(status, userStory)
   const editable = isEditable(mode, status)
+  const stableLoadChangedFiles = useLatestCallback(
+    (sessionId: string, checkpointRunCount: number, diffEndRef: string) =>
+      loadChangedFiles?.(sessionId, checkpointRunCount, diffEndRef) ??
+      Promise.resolve([])
+  )
+  const stableLoadChangedFileDiffs = useLatestCallback(
+    (sessionId: string, checkpointRunCount: number, diffEndRef: string) =>
+      loadChangedFileDiffs?.(sessionId, checkpointRunCount, diffEndRef) ??
+      Promise.resolve([])
+  )
+  const stableOnCommentUndo = useLatestCallback(
+    async (target: AgentConversationUserMessageUndo) => {
+      await onCommentUndo?.(target)
+    }
+  )
+  const stableOnFileLinkClick = useLatestCallback((path: string) => {
+    onFileLinkClick?.(path)
+  })
+  const stableOnChangedFileClick = useLatestCallback(
+    (path: string, diffs: VcsFileDiff[]) => {
+      onChangedFileClick?.(path, diffs)
+    }
+  )
   return (
     <>
       <div className="group/message grid gap-3">
@@ -122,7 +147,7 @@ export function UserStoryContent({
           toolbarEnd={
             editable ? (
               <div className="w-[28rem] max-w-full min-w-0">
-                <ModelSelector />
+                <MarkdownEditorModelSelector />
               </div>
             ) : undefined
           }
@@ -140,21 +165,31 @@ export function UserStoryContent({
       </div>
       <div className="mx-auto w-full max-w-4xl">
         <AgentRunTimeline
-          loadChangedFileDiffs={loadChangedFileDiffs}
-          loadChangedFiles={loadChangedFiles}
+          loadChangedFileDiffs={
+            loadChangedFileDiffs ? stableLoadChangedFileDiffs : undefined
+          }
+          loadChangedFiles={
+            loadChangedFiles ? stableLoadChangedFiles : undefined
+          }
           connectSummaryActions={Boolean(summary.trim())}
           userStory={userStory}
-          onFileLinkClick={onFileLinkClick}
-          onChangedFileClick={onChangedFileClick}
-          onCommentUndo={status === "in-review" ? onCommentUndo : undefined}
+          onFileLinkClick={onFileLinkClick ? stableOnFileLinkClick : undefined}
+          onChangedFileClick={
+            onChangedFileClick ? stableOnChangedFileClick : undefined
+          }
+          onCommentUndo={
+            status === "in-review" && onCommentUndo
+              ? stableOnCommentUndo
+              : undefined
+          }
         />
       </div>
       <div className={mode === "create" ? "h-8" : "h-16"} />
     </>
   )
-}
+})
 
-export function UserStoryFixedSection({
+export const UserStoryFixedSection = React.memo(function UserStoryFixedSection({
   actions,
   mode,
   ...commentComposerProps
@@ -181,7 +216,7 @@ export function UserStoryFixedSection({
       </div>
     </div>
   )
-}
+})
 
 function UserStoryCommentComposer({
   commentCodeSelectionAttachments,
@@ -241,7 +276,7 @@ function useFileMentionDirectory(
   return fileMentionDirectory(status, userStory, projects.activeProject?.path)
 }
 
-function AgentRunTimeline({
+const AgentRunTimeline = React.memo(function AgentRunTimeline({
   connectSummaryActions,
   loadChangedFileDiffs,
   loadChangedFiles,
@@ -249,19 +284,7 @@ function AgentRunTimeline({
   onFileLinkClick,
   onChangedFileClick,
   userStory,
-}: {
-  connectSummaryActions?: boolean
-  loadChangedFiles?: Parameters<
-    typeof AgentConversationTimeline
-  >[0]["loadChangedFiles"]
-  loadChangedFileDiffs?: Parameters<
-    typeof AgentConversationTimeline
-  >[0]["loadChangedFileDiffs"]
-  onCommentUndo?: (target: AgentConversationUserMessageUndo) => Promise<void>
-  onFileLinkClick?: (path: string) => void
-  onChangedFileClick?: (path: string) => void
-  userStory?: UserStory
-}) {
+}: AgentRunTimelineProps) {
   const auth = useCloudAuth()
   const api = React.useMemo(
     () => createBacklogApi(auth.apiConnection),
@@ -297,7 +320,27 @@ function AgentRunTimeline({
       topOffset={connectSummaryActions ? "message-actions" : "default"}
     />
   )
+})
+
+type AgentRunTimelineProps = {
+  connectSummaryActions?: boolean
+  loadChangedFiles?: Parameters<
+    typeof AgentConversationTimeline
+  >[0]["loadChangedFiles"]
+  loadChangedFileDiffs?: Parameters<
+    typeof AgentConversationTimeline
+  >[0]["loadChangedFileDiffs"]
+  onCommentUndo?: (target: AgentConversationUserMessageUndo) => Promise<void>
+  onFileLinkClick?: (path: string) => void
+  onChangedFileClick?: (path: string, diffs: VcsFileDiff[]) => void
+  userStory?: UserStory
 }
+
+const MarkdownEditorModelSelector = React.memo(
+  function ModelSelectorBoundary() {
+    return <ModelSelector />
+  }
+)
 
 function summaryActionsAlwaysVisible(userStory: UserStory | undefined) {
   const runs = userStory?.agentRuns ?? []

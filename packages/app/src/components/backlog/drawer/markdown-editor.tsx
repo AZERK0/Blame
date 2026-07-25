@@ -63,7 +63,7 @@ import {
   markdownListIndentResult,
   markdownListEnterResult,
   markdownWysiwygLines,
-  markdownWysiwygStructureKey,
+  markdownWysiwygStructureChanged,
   type MarkdownWysiwygLine,
   type MarkdownWysiwygSegment,
 } from "@/components/backlog/drawer/markdown-wysiwyg-parser"
@@ -77,8 +77,12 @@ import {
 import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover"
 import { usePlatform } from "@/context/platform"
 import { runWorkerTask, workerTaskAborted } from "@/lib/worker-task"
-import { recordPerformanceCount } from "@/lib/performance-diagnostics"
+import {
+  recordPerformanceCount,
+  recordPerformanceMetric,
+} from "@/lib/performance-diagnostics"
 import { cn } from "@/lib/utils"
+import { useLatestCallback } from "@/lib/use-latest-callback"
 
 type PastedAttachment = {
   aiContextMarkdown?: string
@@ -107,6 +111,8 @@ type FileMentionResult = {
   path: string
   type: "directory" | "file"
 }
+
+const markdownStructureRenderDelayMs = 120
 
 function fileAttachments(files: File[]) {
   return files.map((file) => ({
@@ -406,7 +412,7 @@ const additionalMarkdownActions = markdownActions.filter(
   ({ action }) => !visibleMarkdownActions.some((item) => item.action === action)
 )
 
-function MarkdownToolbar({
+const MarkdownToolbar = React.memo(function MarkdownToolbar({
   disabled,
   onAction,
   onActionIntent,
@@ -447,9 +453,9 @@ function MarkdownToolbar({
       </div>
     </TooltipProvider>
   )
-}
+})
 
-function MarkdownOptimizeButton({
+const MarkdownOptimizeButton = React.memo(function MarkdownOptimizeButton({
   disabled,
   onOptimize,
   optimizing,
@@ -483,7 +489,7 @@ function MarkdownOptimizeButton({
       </Tooltip>
     </TooltipProvider>
   )
-}
+})
 
 function AdditionalMarkdownActions({
   disabled,
@@ -586,10 +592,7 @@ function MarkdownWysiwygEditor({
   placeholder: string
   renderKey: string
 }) {
-  const activeSegmentKey = markdownActiveSegmentKey(
-    markdown,
-    activeSelection
-  )
+  const activeSegmentKey = markdownActiveSegmentKey(markdown, activeSelection)
   return (
     <div className="relative">
       {!markdown && (
@@ -837,18 +840,42 @@ function closingMarkdownMarker(
   if (segment.type === "italic") return "*"
   if (segment.type === "strike") return "~~"
   if (segment.type === "code") return "`"
-  return `](${segment.href})`
-}
-
-function markdownEditorValue(editor: HTMLDivElement) {
-  return Array.from(editor.children)
-    .map((line) => line.textContent ?? "")
-    .join("\n")
+  return `](${"href" in segment ? segment.href : ""})`
 }
 
 function markdownEditorSelection(
   editor: HTMLDivElement
 ): MarkdownSelection | undefined {
+  return markdownSelectionFromSnapshot(
+    editor,
+    markdownEditorDomSnapshot(editor)
+  )
+}
+
+function markdownEditorSnapshot(editor: HTMLDivElement) {
+  const dom = markdownEditorDomSnapshot(editor)
+  return {
+    selection: markdownSelectionFromSnapshot(editor, dom),
+    value: dom.lineValues.join("\n"),
+  }
+}
+
+function markdownEditorDomSnapshot(editor: HTMLDivElement) {
+  const lines = Array.from(editor.children)
+  const lineValues = lines.map((line) => line.textContent ?? "")
+  const lineStarts: number[] = []
+  let start = 0
+  lineValues.forEach((value) => {
+    lineStarts.push(start)
+    start += value.length + 1
+  })
+  return { lines, lineStarts, lineValues }
+}
+
+function markdownSelectionFromSnapshot(
+  editor: HTMLDivElement,
+  dom: ReturnType<typeof markdownEditorDomSnapshot>
+) {
   const selection = window.getSelection()
   if (!selection?.rangeCount) return
   const range = selection.getRangeAt(0)
@@ -857,43 +884,45 @@ function markdownEditorSelection(
     !editor.contains(range.endContainer)
   )
     return
+  const start = markdownEditorOffset(
+    editor,
+    dom,
+    range.startContainer,
+    range.startOffset
+  )
+  if (range.collapsed) return { start, end: start }
   return {
-    start: markdownEditorOffset(
-      editor,
-      range.startContainer,
-      range.startOffset
-    ),
-    end: markdownEditorOffset(editor, range.endContainer, range.endOffset),
+    start,
+    end: markdownEditorOffset(editor, dom, range.endContainer, range.endOffset),
   }
 }
 
 function markdownEditorOffset(
   editor: HTMLDivElement,
+  dom: ReturnType<typeof markdownEditorDomSnapshot>,
   node: Node,
   offset: number
 ) {
-  const lines = Array.from(editor.children)
   if (node === editor) {
-    return lines
-      .slice(0, offset)
-      .reduce(
-        (length, line, index) =>
-          length + (line.textContent?.length ?? 0) + (index > 0 ? 1 : 0),
-        0
-      )
+    return editorBoundaryOffset(dom.lineValues, offset)
   }
-  const lineIndex = lines.findIndex(
+  const lineIndex = dom.lines.findIndex(
     (line) => line === node || line.contains(node)
   )
   if (lineIndex === -1) return 0
   return (
-    lines
-      .slice(0, lineIndex)
-      .reduce(
-        (length, line) => length + (line.textContent?.length ?? 0) + 1,
-        0
-      ) + markdownOffsetWithinLine(lines[lineIndex], node, offset)
+    dom.lineStarts[lineIndex] +
+    markdownOffsetWithinLine(dom.lines[lineIndex], node, offset)
   )
+}
+
+function editorBoundaryOffset(lineValues: string[], offset: number) {
+  return lineValues
+    .slice(0, offset)
+    .reduce(
+      (length, value, index) => length + value.length + (index > 0 ? 1 : 0),
+      0
+    )
 }
 
 function markdownOffsetWithinLine(
@@ -1053,10 +1082,7 @@ function useMarkdownPreviewBlocks(markdown: string) {
   )
 
   React.useEffect(() => {
-    if (!markdown.trim()) {
-      setBlocks([])
-      return
-    }
+    if (!markdown.trim()) return
     let active = true
     const controller = new AbortController()
     runWorkerTask<{ markdown: string }, MarkdownPreviewBlock[]>(
@@ -1077,7 +1103,7 @@ function useMarkdownPreviewBlocks(markdown: string) {
     }
   }, [markdown])
 
-  return blocks
+  return markdown.trim() ? blocks : []
 }
 
 function MarkdownPreviewTable({
@@ -1374,7 +1400,11 @@ export const MarkdownEditor = React.forwardRef<
   const pendingSelectionRef = React.useRef<MarkdownSelection | null>(null)
   const lastEmittedMarkdownRef = React.useRef(markdown)
   const markdownPropRef = React.useRef(markdown)
+  const currentValueRef = React.useRef(markdown)
+  const activeSegmentKeyRef = React.useRef("")
   const editorRenderVersionRef = React.useRef(0)
+  const structureRenderTimerRef = React.useRef<number | undefined>(undefined)
+  const structureRenderPendingRef = React.useRef(false)
   const rootRef = React.useRef<HTMLDivElement>(null)
   const editorRef = React.useRef<HTMLDivElement>(null)
   const [draft, setDraft] = React.useState({
@@ -1393,16 +1423,14 @@ export const MarkdownEditor = React.forwardRef<
     : draft.external === markdown
       ? draft.value
       : markdown
-  const editorStructureKey = React.useMemo(
-    () => markdownWysiwygStructureKey(value),
-    [value]
-  )
   if (markdownPropRef.current !== markdown) {
     if (lastEmittedMarkdownRef.current !== markdown)
       editorRenderVersionRef.current += 1
     markdownPropRef.current = markdown
+    currentValueRef.current = markdown
   }
-  const editorRenderKey = `${editorRenderVersionRef.current}:${editorStructureKey}`
+  currentValueRef.current = value
+  const editorRenderKey = String(editorRenderVersionRef.current)
   const mentionOpen =
     mention.active && Boolean(mentionDirectory && platform.workspace)
   const optimizableAttachmentsVisible = attachments.some(
@@ -1461,23 +1489,31 @@ export const MarkdownEditor = React.forwardRef<
     pendingSelectionRef.current = null
     restoreMarkdownEditorSelection(editorRef.current, selection)
     lastSelectionRef.current = selection
+    activeSegmentKeyRef.current = markdownActiveSegmentKey(
+      currentValueRef.current,
+      selection
+    )
     setActiveSelection((current) =>
       equalMarkdownSelection(current, selection) ? current : selection
     )
-  }, [activeSelection, value])
+  }, [activeSelection, editorRenderKey, value])
 
-  function updateActiveSelection(selection: MarkdownSelection) {
-    if (
-      markdownActiveSegmentKey(value, activeSelection) ===
-      markdownActiveSegmentKey(value, selection)
-    )
-      return
+  function updateActiveSelection(
+    selection: MarkdownSelection,
+    nextValue = currentValueRef.current
+  ) {
+    const nextKey = markdownActiveSegmentKey(nextValue, selection)
+    if (activeSegmentKeyRef.current === nextKey) return
+    activeSegmentKeyRef.current = nextKey
     pendingSelectionRef.current = selection
     setActiveSelection(selection)
   }
 
   const updateMention = React.useCallback(
-    (nextValue = value, nextSelection?: MarkdownSelection) => {
+    (
+      nextValue = currentValueRef.current,
+      nextSelection?: MarkdownSelection
+    ) => {
       const editor = editorRef.current
       const selection =
         nextSelection ?? (editor && markdownEditorSelection(editor))
@@ -1494,30 +1530,68 @@ export const MarkdownEditor = React.forwardRef<
         equalFileMentionState(current, nextMention) ? current : nextMention
       )
     },
-    [mentionDirectory, readOnly, value]
+    [mentionDirectory, readOnly]
   )
+
+  const scheduleMarkdownStructureRender = React.useCallback(() => {
+    structureRenderPendingRef.current = true
+    window.clearTimeout(structureRenderTimerRef.current)
+    structureRenderTimerRef.current = window.setTimeout(() => {
+      structureRenderPendingRef.current = false
+      editorRenderVersionRef.current += 1
+      pendingSelectionRef.current = lastSelectionRef.current
+      setDraft((current) => ({ ...current }))
+    }, markdownStructureRenderDelayMs)
+  }, [])
+
+  const cancelMarkdownStructureRender = React.useCallback(() => {
+    structureRenderPendingRef.current = false
+    window.clearTimeout(structureRenderTimerRef.current)
+  }, [])
 
   const emitMarkdown = React.useCallback(
     (nextMarkdown: string, cursor?: number, selection?: MarkdownSelection) => {
+      const structureStartedAt = performance.now()
+      const structureChanged =
+        !selection ||
+        markdownWysiwygStructureChanged(currentValueRef.current, nextMarkdown)
+      recordPerformanceMetric(
+        "markdown.input.structure_duration_ms",
+        performance.now() - structureStartedAt
+      )
       lastEmittedMarkdownRef.current = nextMarkdown
-      if (!selection) editorRenderVersionRef.current += 1
-      setDraft({ external: markdown, value: nextMarkdown })
+      currentValueRef.current = nextMarkdown
+      if (selection) {
+        if (structureChanged || structureRenderPendingRef.current)
+          scheduleMarkdownStructureRender()
+      } else {
+        cancelMarkdownStructureRender()
+        if (structureChanged) editorRenderVersionRef.current += 1
+      }
+      setDraft({
+        external: markdownPropRef.current,
+        value: nextMarkdown,
+      })
       onMarkdownChange?.(nextMarkdown)
       if (cursor !== undefined)
         pendingSelectionRef.current = { end: cursor, start: cursor }
-      if (
-        selection &&
-        editorStructureKey !== markdownWysiwygStructureKey(nextMarkdown)
-      ) {
-        pendingSelectionRef.current = selection
-      }
       if (selection) {
         updateMention(nextMarkdown, selection)
         return
       }
       requestAnimationFrame(() => updateMention(nextMarkdown))
     },
-    [editorStructureKey, markdown, onMarkdownChange, updateMention]
+    [
+      cancelMarkdownStructureRender,
+      onMarkdownChange,
+      scheduleMarkdownStructureRender,
+      updateMention,
+    ]
+  )
+
+  React.useEffect(
+    () => () => window.clearTimeout(structureRenderTimerRef.current),
+    []
   )
 
   React.useEffect(() => {
@@ -1684,15 +1758,33 @@ export const MarkdownEditor = React.forwardRef<
   }
 
   function handleMarkdownInput(event: React.FormEvent<HTMLDivElement>) {
-    if (event.nativeEvent.isComposing) return
+    if (
+      event.nativeEvent instanceof InputEvent &&
+      event.nativeEvent.isComposing
+    )
+      return
+    const startedAt = performance.now()
     recordPerformanceCount("markdown.input")
-    const selection = markdownEditorSelection(event.currentTarget)
-    const nextMarkdown = markdownEditorValue(event.currentTarget)
+    const captureStartedAt = performance.now()
+    const snapshot = markdownEditorSnapshot(event.currentTarget)
+    recordPerformanceMetric(
+      "markdown.input.capture_duration_ms",
+      performance.now() - captureStartedAt
+    )
+    const { selection, value: nextMarkdown } = snapshot
+    recordPerformanceMetric(
+      "markdown.input.document_length",
+      nextMarkdown.length
+    )
     if (selection) {
       lastSelectionRef.current = selection
-      updateActiveSelection(selection)
+      updateActiveSelection(selection, nextMarkdown)
     }
     emitMarkdown(nextMarkdown, undefined, selection)
+    recordPerformanceMetric(
+      "markdown.input.handler_duration_ms",
+      performance.now() - startedAt
+    )
   }
 
   function rememberEditorSelection() {
@@ -1860,6 +1952,14 @@ export const MarkdownEditor = React.forwardRef<
     }
   }
 
+  const stableApplyMarkdownAction = useLatestCallback(applyMarkdownAction)
+  const stableRememberEditorSelection = useLatestCallback(
+    rememberEditorSelection
+  )
+  const stableRedo = useLatestCallback(() => runHistoryCommand("redo"))
+  const stableUndo = useLatestCallback(() => runHistoryCommand("undo"))
+  const stableOptimize = useLatestCallback(handleOptimize)
+
   return (
     <Popover open={mentionOpen}>
       <PopoverAnchor asChild>
@@ -1887,7 +1987,7 @@ export const MarkdownEditor = React.forwardRef<
               {onOptimize && (
                 <MarkdownOptimizeButton
                   disabled={optimizing}
-                  onOptimize={handleOptimize}
+                  onOptimize={stableOptimize}
                   optimizing={optimizing}
                 />
               )}
@@ -1985,10 +2085,10 @@ export const MarkdownEditor = React.forwardRef<
                   <ToolbarSeparator />
                   <MarkdownToolbar
                     disabled={optimizing}
-                    onAction={applyMarkdownAction}
-                    onActionIntent={rememberEditorSelection}
-                    onRedo={() => runHistoryCommand("redo")}
-                    onUndo={() => runHistoryCommand("undo")}
+                    onAction={stableApplyMarkdownAction}
+                    onActionIntent={stableRememberEditorSelection}
+                    onRedo={stableRedo}
+                    onUndo={stableUndo}
                   />
                 </div>
                 <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">

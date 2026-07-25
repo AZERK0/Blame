@@ -68,17 +68,27 @@ export function markdownWysiwygLines(markdown: string): MarkdownWysiwygLine[] {
 
 export function markdownWysiwygStructureKey(markdown: string) {
   return markdownWysiwygLines(markdown)
-    .map((line) =>
-      [
-        line.kind,
-        line.prefix ? "prefix" : "plain",
-        line.segments.every((segment) => !segment.source)
-          ? "empty"
-          : "content",
-        line.segments.map((segment) => segment.type).join(","),
-      ].join(":")
-    )
+    .map(markdownWysiwygLineStructureKey)
     .join("|")
+}
+
+export function markdownWysiwygStructureChanged(current: string, next: string) {
+  if (current === next) return false
+  const currentLines = current.split("\n")
+  const nextLines = next.split("\n")
+  if (currentLines.length !== nextLines.length) return true
+  const currentFenceStates = markdownFenceStates(currentLines)
+  const nextFenceStates = markdownFenceStates(nextLines)
+  return currentLines.some(
+    (line, index) =>
+      line !== nextLines[index] &&
+      markdownChangedLineStructureChanged(
+        line,
+        nextLines[index],
+        currentFenceStates[index],
+        nextFenceStates[index]
+      )
+  )
 }
 
 export function markdownListEnterResult(value: string, cursor: number) {
@@ -256,6 +266,58 @@ function wysiwygLine(
         ? [{ source: content, type: "text" }]
         : inlineSegments(content),
   }
+}
+
+function markdownChangedLineStructureChanged(
+  current: string,
+  next: string,
+  currentInsideFence: boolean,
+  nextInsideFence: boolean
+) {
+  if (isFenceLine(current) || isFenceLine(next)) {
+    return (
+      markdownWysiwygStructureKey(current) !== markdownWysiwygStructureKey(next)
+    )
+  }
+  return (
+    markdownSourceLineInputStructureKey(current, currentInsideFence) !==
+    markdownSourceLineInputStructureKey(next, nextInsideFence)
+  )
+}
+
+function markdownSourceLineInputStructureKey(
+  source: string,
+  insideFence: boolean
+) {
+  if (insideFence) return "code"
+  const line = markdownWysiwygLines(source)[0]
+  return [
+    line.kind,
+    line.prefix ? "prefix" : "plain",
+    line.segments.map((segment) => segment.type).join(","),
+  ].join(":")
+}
+
+function markdownFenceStates(lines: string[]) {
+  let insideFence = false
+  return lines.map((line) => {
+    const state = insideFence
+    if (isFenceLine(line)) insideFence = !insideFence
+    return state
+  })
+}
+
+function isFenceLine(line: string) {
+  return line.trim().startsWith("```")
+}
+
+function markdownWysiwygLineStructureKey(line: MarkdownWysiwygLine) {
+  return [
+    line.kind,
+    line.prefix ? "prefix" : "plain",
+    line.segments.every((segment) => !segment.source) ? "empty" : "content",
+    line.segments.map((segment) => segment.type).join(","),
+  ].join(":")
 }
 
 function inlineSegments(value: string): MarkdownWysiwygSegment[] {
