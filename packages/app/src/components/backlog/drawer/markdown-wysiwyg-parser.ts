@@ -1,30 +1,16 @@
-export type MarkdownWysiwygSegment =
-  | { source: string; type: "text" }
-  | {
-      content: string
-      source: string
-      type: "bold" | "code" | "italic" | "strike"
-    }
-  | { content: string; href: string; source: string; type: "link" }
+import {
+  markdownFenceLine,
+  markdownInlineSegments,
+  markdownLine,
+  markdownLinkMatches,
+  markdownLines,
+  type MarkdownInlineSegment,
+  type MarkdownLine,
+} from "./markdown-parser.ts"
 
-export type MarkdownWysiwygLine = {
-  kind:
-    | "code"
-    | "fence"
-    | "heading-1"
-    | "heading-2"
-    | "heading-3"
-    | "heading-4"
-    | "heading-5"
-    | "heading-6"
-    | "ordered-list"
-    | "paragraph"
-    | "quote"
-    | "task"
-    | "unordered-list"
-  prefix: string
-  segments: MarkdownWysiwygSegment[]
-}
+export type MarkdownWysiwygSegment = MarkdownInlineSegment
+
+export type MarkdownWysiwygLine = MarkdownLine
 
 export type MarkdownInlineAction =
   | "bold"
@@ -33,37 +19,8 @@ export type MarkdownInlineAction =
   | "link"
   | "strike"
 
-const inlineMarkdownPattern =
-  /(`[^`\n]+`|\*\*[^*\n]+\*\*|\*[^*\n]+\*|~~[^~\n]+~~|\[[^\]\n]+\]\([^)\n]+\))/g
-
 export function markdownWysiwygLines(markdown: string): MarkdownWysiwygLine[] {
-  let inCodeFence = false
-  return markdown.split("\n").map((sourceLine) => {
-    if (sourceLine.startsWith("```")) {
-      inCodeFence = !inCodeFence
-      return wysiwygLine("fence", sourceLine, "")
-    }
-    if (inCodeFence) return wysiwygLine("code", "", sourceLine)
-
-    const heading = sourceLine.match(/^(#{1,6})\s(.*)$/)
-    if (heading) {
-      return wysiwygLine(
-        `heading-${heading[1].length}` as MarkdownWysiwygLine["kind"],
-        `${heading[1]} `,
-        heading[2]
-      )
-    }
-    const task = sourceLine.match(/^(\s*- \[[ xX]\] )(.*)$/)
-    if (task) return wysiwygLine("task", task[1], task[2])
-    const ordered = sourceLine.match(/^(\s*\d+\.\s)(.*)$/)
-    if (ordered) return wysiwygLine("ordered-list", ordered[1], ordered[2])
-    const unordered = sourceLine.match(/^(\s*-\s)(.*)$/)
-    if (unordered)
-      return wysiwygLine("unordered-list", unordered[1], unordered[2])
-    const quote = sourceLine.match(/^(>\s)(.*)$/)
-    if (quote) return wysiwygLine("quote", quote[1], quote[2])
-    return wysiwygLine("paragraph", "", sourceLine)
-  })
+  return markdownLines(markdown)
 }
 
 export function markdownWysiwygStructureKey(markdown: string) {
@@ -154,7 +111,7 @@ export function markdownAtomicLinkDeletionResult(
   end: number,
   key: "Backspace" | "Delete"
 ) {
-  for (const match of value.matchAll(/\[[^\]\n]+\]\([^)\n]+\)/g)) {
+  for (const match of markdownLinkMatches(value)) {
     const linkStart = match.index
     const linkEnd = linkStart + match[0].length
     const touchesLink =
@@ -187,7 +144,7 @@ export function markdownArrowNavigationResult(
   cursor: number,
   key: "ArrowLeft" | "ArrowRight"
 ) {
-  for (const match of value.matchAll(/\[[^\]\n]+\]\([^)\n]+\)/g)) {
+  for (const match of markdownLinkMatches(value)) {
     const start = match.index
     const end = start + match[0].length
     if (key === "ArrowRight" && cursor === start) return end
@@ -205,13 +162,11 @@ export function markdownExpandedDeletionSelection(
 ) {
   let expandedStart = start
   let expandedEnd = end
-  for (const match of value.matchAll(
-    /(`[^`\n]+`|\*\*[^*\n]+\*\*|\*[^*\n]+\*|~~[^~\n]+~~|\[[^\]\n]+\]\([^)\n]+\))/g
-  )) {
-    const source = match[0]
-    const sourceStart = match.index
-    const sourceEnd = sourceStart + source.length
-    const [openingLength, closingLength] = inlineBoundaryLengths(source)
+  for (const entry of markdownInlineSegmentsWithStarts(value)) {
+    if (entry.segment.type === "text") continue
+    const sourceStart = entry.start
+    const sourceEnd = sourceStart + entry.segment.source.length
+    const [openingLength, closingLength] = inlineBoundaryLengths(entry.segment)
     const contentStart = sourceStart + openingLength
     const contentEnd = sourceEnd - closingLength
     if (expandedStart <= contentStart && expandedEnd >= contentEnd) {
@@ -222,11 +177,13 @@ export function markdownExpandedDeletionSelection(
   return { end: expandedEnd, start: expandedStart }
 }
 
-function inlineBoundaryLengths(source: string): [number, number] {
-  if (source.startsWith("**") || source.startsWith("~~")) return [2, 2]
-  if (source.startsWith("*") || source.startsWith("`")) return [1, 1]
-  const closingStart = source.indexOf("](")
-  return [1, source.length - closingStart - 1]
+function inlineBoundaryLengths(
+  segment: Exclude<MarkdownInlineSegment, { type: "text" }>
+): [number, number] {
+  if (segment.type === "bold" || segment.type === "strike") return [2, 2]
+  if (segment.type === "italic" || segment.type === "code") return [1, 1]
+  const closingStart = segment.source.indexOf("](")
+  return [1, segment.source.length - closingStart - 1]
 }
 
 function inlineActionMarkers(action: MarkdownInlineAction): [string, string] {
@@ -253,28 +210,13 @@ function listContinuationPrefix(
   if (unordered) return `${unordered[1]}- `
 }
 
-function wysiwygLine(
-  kind: MarkdownWysiwygLine["kind"],
-  prefix: string,
-  content: string
-): MarkdownWysiwygLine {
-  return {
-    kind,
-    prefix,
-    segments:
-      kind === "code"
-        ? [{ source: content, type: "text" }]
-        : inlineSegments(content),
-  }
-}
-
 function markdownChangedLineStructureChanged(
   current: string,
   next: string,
   currentInsideFence: boolean,
   nextInsideFence: boolean
 ) {
-  if (isFenceLine(current) || isFenceLine(next)) {
+  if (markdownFenceLine(current) || markdownFenceLine(next)) {
     return (
       markdownWysiwygStructureKey(current) !== markdownWysiwygStructureKey(next)
     )
@@ -290,7 +232,7 @@ function markdownSourceLineInputStructureKey(
   insideFence: boolean
 ) {
   if (insideFence) return "code"
-  const line = markdownWysiwygLines(source)[0]
+  const line = markdownLine(source)
   return [
     line.kind,
     line.prefix ? "prefix" : "plain",
@@ -302,13 +244,9 @@ function markdownFenceStates(lines: string[]) {
   let insideFence = false
   return lines.map((line) => {
     const state = insideFence
-    if (isFenceLine(line)) insideFence = !insideFence
+    if (markdownFenceLine(line)) insideFence = !insideFence
     return state
   })
-}
-
-function isFenceLine(line: string) {
-  return line.trim().startsWith("```")
 }
 
 function markdownWysiwygLineStructureKey(line: MarkdownWysiwygLine) {
@@ -320,33 +258,11 @@ function markdownWysiwygLineStructureKey(line: MarkdownWysiwygLine) {
   ].join(":")
 }
 
-function inlineSegments(value: string): MarkdownWysiwygSegment[] {
-  const segments: MarkdownWysiwygSegment[] = []
+function markdownInlineSegmentsWithStarts(value: string) {
   let offset = 0
-
-  for (const match of value.matchAll(inlineMarkdownPattern)) {
-    const index = match.index
-    if (index > offset)
-      segments.push({ source: value.slice(offset, index), type: "text" })
-    segments.push(inlineSegment(match[0]))
-    offset = index + match[0].length
-  }
-  if (offset < value.length || segments.length === 0) {
-    segments.push({ source: value.slice(offset), type: "text" })
-  }
-  return segments
-}
-
-function inlineSegment(source: string): MarkdownWysiwygSegment {
-  if (source.startsWith("**"))
-    return { content: source.slice(2, -2), source, type: "bold" }
-  if (source.startsWith("*"))
-    return { content: source.slice(1, -1), source, type: "italic" }
-  if (source.startsWith("~~"))
-    return { content: source.slice(2, -2), source, type: "strike" }
-  if (source.startsWith("`"))
-    return { content: source.slice(1, -1), source, type: "code" }
-  const link = source.match(/^\[([^\]]+)\]\(([^)]+)\)$/)
-  if (link) return { content: link[1], href: link[2], source, type: "link" }
-  return { source, type: "text" }
+  return markdownInlineSegments(value).map((segment) => {
+    const entry = { segment, start: offset }
+    offset += segment.source.length
+    return entry
+  })
 }

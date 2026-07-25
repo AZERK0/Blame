@@ -55,6 +55,12 @@ import {
   type MarkdownPreviewBlock,
 } from "@/components/backlog/drawer/markdown-preview-parser"
 import {
+  markdownHasInlineFormatting,
+  type MarkdownInlineSegment,
+  type MarkdownLine,
+  type MarkdownTableCell,
+} from "@/components/backlog/drawer/markdown-parser"
+import {
   markdownArrowNavigationResult,
   markdownAtomicLinkDeletionResult,
   markdownEmptyListDeletionResult,
@@ -576,6 +582,7 @@ function MarkdownWysiwygEditor({
   className,
   editorRef,
   markdown,
+  onFileLinkClick,
   onInput,
   onKeyDown,
   onSelectionChange,
@@ -586,6 +593,7 @@ function MarkdownWysiwygEditor({
   className?: string
   editorRef: React.RefObject<HTMLDivElement | null>
   markdown: string
+  onFileLinkClick?: (path: string) => void
   onInput: (event: React.FormEvent<HTMLDivElement>) => void
   onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => void
   onSelectionChange: () => void
@@ -621,6 +629,7 @@ function MarkdownWysiwygEditor({
           activeSegmentKey={activeSegmentKey}
           activeSelection={activeSelection}
           markdown={markdown}
+          onFileLinkClick={onFileLinkClick}
         />
       </div>
     </div>
@@ -632,14 +641,16 @@ const MarkdownWysiwygEditorContent = React.memo(
     activeSegmentKey: string
     activeSelection: MarkdownSelection | null
     markdown: string
+    onFileLinkClick?: (path: string) => void
   }) {
-    const { activeSelection, markdown } = properties
+    const { activeSelection, markdown, onFileLinkClick } = properties
     return markdownWysiwygLinesWithStarts(markdown).map(
       ({ line, start }, index) => (
         <MarkdownWysiwygEditorLine
           key={index}
           line={line}
           lineStart={start}
+          onFileLinkClick={onFileLinkClick}
           selection={activeSelection}
         />
       )
@@ -651,10 +662,12 @@ const MarkdownWysiwygEditorContent = React.memo(
 function MarkdownWysiwygEditorLine({
   line,
   lineStart,
+  onFileLinkClick,
   selection,
 }: {
   line: MarkdownWysiwygLine
   lineStart: number
+  onFileLinkClick?: (path: string) => void
   selection: MarkdownSelection | null
 }) {
   const segments = markdownSegmentsWithStarts(line, lineStart)
@@ -694,6 +707,7 @@ function MarkdownWysiwygEditorLine({
               start,
               segment.source.length
             )}
+            onFileLinkClick={onFileLinkClick}
             segment={segment}
           />
         )
@@ -737,7 +751,7 @@ function markdownActiveSegmentKey(
   if (!selection || selection.start !== selection.end) return ""
   const bounds = lineBounds(markdown, selection.start)
   const sourceLine = markdown.slice(bounds.start, bounds.end)
-  if (!completeInlineMarkdownPattern.test(sourceLine)) return ""
+  if (!markdownHasInlineFormatting(sourceLine)) return ""
   const line = markdownWysiwygLines(sourceLine)[0]
   for (const { segment, start } of markdownSegmentsWithStarts(
     line,
@@ -751,9 +765,6 @@ function markdownActiveSegmentKey(
   }
   return ""
 }
-
-const completeInlineMarkdownPattern =
-  /`[^`\n]+`|\*\*[^*\n]+\*\*|\*[^*\n]+\*|~~[^~\n]+~~|\[[^\]\n]+\]\([^)\n]+\)/
 
 function markdownSelectionInsideSource(
   selection: MarkdownSelection | null,
@@ -778,9 +789,11 @@ function markdownLineIndent(prefix: string) {
 
 function MarkdownWysiwygEditorSegment({
   active,
+  onFileLinkClick,
   segment,
 }: {
   active: boolean
+  onFileLinkClick?: (path: string) => void
   segment: MarkdownWysiwygSegment
 }) {
   if (segment.type === "text" || active) return segment.source
@@ -799,9 +812,58 @@ function MarkdownWysiwygEditorSegment({
       <code className="rounded bg-muted px-1 py-0.5 text-xs">{content}</code>
     )
   return (
+    <MarkdownWysiwygLinkSegment
+      content={content}
+      onFileLinkClick={onFileLinkClick}
+      segment={segment}
+    />
+  )
+}
+
+function MarkdownWysiwygLinkSegment({
+  content,
+  onFileLinkClick,
+  segment,
+}: {
+  content: React.ReactNode
+  onFileLinkClick?: (path: string) => void
+  segment: Extract<MarkdownWysiwygSegment, { type: "link" }>
+}) {
+  return (
     <span className="text-blue-600 underline underline-offset-2 dark:text-blue-400">
+      {isFileLink(segment.href) && (
+        <MarkdownWysiwygFileLinkButton
+          href={segment.href}
+          onFileLinkClick={onFileLinkClick}
+        />
+      )}
       {content}
     </span>
+  )
+}
+
+function MarkdownWysiwygFileLinkButton({
+  href,
+  onFileLinkClick,
+}: {
+  href: string
+  onFileLinkClick?: (path: string) => void
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={`Open ${filename(href)}`}
+      className="mr-1 inline-flex align-text-bottom"
+      contentEditable={false}
+      onClick={() => onFileLinkClick?.(href)}
+      onPointerDown={(event) => event.preventDefault()}
+    >
+      <DevelopmentFileIcon
+        className="size-3.5 shrink-0 text-blue-600 dark:text-blue-400"
+        mono
+        node={{ path: href, type: "file" }}
+      />
+    </button>
   )
 }
 
@@ -1111,9 +1173,9 @@ function MarkdownPreviewTable({
   onFileLinkClick,
   rows,
 }: {
-  header: string[]
+  header: MarkdownTableCell[]
   onFileLinkClick?: (path: string) => void
-  rows: string[][]
+  rows: MarkdownTableCell[][]
 }) {
   return (
     <div className="max-w-full overflow-x-auto">
@@ -1140,7 +1202,7 @@ function MarkdownPreviewTableHeader({
   cells,
   onFileLinkClick,
 }: {
-  cells: string[]
+  cells: MarkdownTableCell[]
   onFileLinkClick?: (path: string) => void
 }) {
   return (
@@ -1151,7 +1213,7 @@ function MarkdownPreviewTableHeader({
             key={index}
             className="border border-border bg-muted/50 px-2.5 py-1.5 font-semibold"
           >
-            {inlineMarkdown(cell, onFileLinkClick)}
+            {inlineMarkdown(cell.segments, onFileLinkClick)}
           </th>
         ))}
       </tr>
@@ -1163,14 +1225,14 @@ function MarkdownPreviewTableRow({
   cells,
   onFileLinkClick,
 }: {
-  cells: string[]
+  cells: MarkdownTableCell[]
   onFileLinkClick?: (path: string) => void
 }) {
   return (
     <tr>
       {cells.map((cell, index) => (
         <td key={index} className="border border-border px-2.5 py-1.5">
-          {inlineMarkdown(cell, onFileLinkClick)}
+          {inlineMarkdown(cell.segments, onFileLinkClick)}
         </td>
       ))}
     </tr>
@@ -1185,117 +1247,163 @@ function MarkdownPreviewCode({ code }: { code: string }) {
   )
 }
 
+type MarkdownPreviewLineProperties = {
+  line: MarkdownLine
+  lineIndex: number
+  onFileLinkClick?: (path: string) => void
+  onTaskToggle?: (lineIndex: number, checked: boolean) => void
+}
+
 function MarkdownPreviewLine({
   line,
   lineIndex,
   onFileLinkClick,
   onTaskToggle,
-}: {
-  line: string
-  lineIndex: number
-  onFileLinkClick?: (path: string) => void
-  onTaskToggle?: (lineIndex: number, checked: boolean) => void
-}) {
-  if (!line.trim()) return <div className="h-3" />
-  if (/^\s*---+\s*$/.test(line)) return <hr className="border-border" />
-  const task = line.match(/^- \[([ xX])\] (.*)$/)
-  if (task) {
-    const checked = task[1].toLowerCase() === "x"
+}: MarkdownPreviewLineProperties) {
+  if (!markdownLineSource(line).trim()) return <div className="h-3" />
+  if (line.kind === "horizontal-rule") return <hr className="border-border" />
+  if (line.kind === "task")
     return (
-      <label className="flex items-start gap-2 pl-1">
-        <Checkbox
-          checked={checked}
-          className="mt-1"
-          disabled={!onTaskToggle}
-          onCheckedChange={(nextChecked) =>
-            onTaskToggle?.(lineIndex, nextChecked === true)
-          }
-        />
-        <span className={cn(checked && "line-through")}>
-          {inlineMarkdown(task[2], onFileLinkClick)}
-        </span>
-      </label>
+      <MarkdownPreviewTaskLine
+        line={line}
+        lineIndex={lineIndex}
+        onFileLinkClick={onFileLinkClick}
+        onTaskToggle={onTaskToggle}
+      />
     )
-  }
-  const heading = line.match(/^(#{1,6})\s(.+)$/)
-  if (heading)
+  if (line.kind.startsWith("heading-"))
     return (
       <MarkdownPreviewHeading
-        level={heading[1].length}
-        text={heading[2]}
+        level={Number(line.kind.slice("heading-".length))}
+        segments={line.segments}
         onFileLinkClick={onFileLinkClick}
       />
     )
-  if (line.startsWith("> ")) {
+  if (line.kind === "quote") {
     return (
       <blockquote className="border-l-2 pl-3 text-muted-foreground">
-        {inlineMarkdown(line.slice(2), onFileLinkClick)}
+        {inlineMarkdown(line.segments, onFileLinkClick)}
       </blockquote>
     )
   }
-  if (/^\d+\.\s/.test(line))
-    return <p className="pl-4">{inlineMarkdown(line, onFileLinkClick)}</p>
-  if (line.startsWith("- "))
+  if (line.kind === "ordered-list" || line.kind === "unordered-list")
     return (
-      <p className="pl-4">
-        {inlineMarkdown(`• ${line.slice(2)}`, onFileLinkClick)}
-      </p>
+      <MarkdownPreviewListLine line={line} onFileLinkClick={onFileLinkClick} />
     )
-  return <p>{inlineMarkdown(line, onFileLinkClick)}</p>
+  return <p>{inlineMarkdown(line.segments, onFileLinkClick)}</p>
+}
+
+function MarkdownPreviewTaskLine({
+  line,
+  lineIndex,
+  onFileLinkClick,
+  onTaskToggle,
+}: MarkdownPreviewLineProperties) {
+  const checked = /- \[[xX]\]/.test(line.prefix)
+  return (
+    <label
+      className="flex items-start gap-2 pl-1"
+      style={markdownPreviewListIndentStyle(line)}
+    >
+      <Checkbox
+        checked={checked}
+        className="mt-1"
+        disabled={!onTaskToggle}
+        onCheckedChange={(value) => onTaskToggle?.(lineIndex, value === true)}
+      />
+      <span className={cn(checked && "line-through")}>
+        {inlineMarkdown(line.segments, onFileLinkClick)}
+      </span>
+    </label>
+  )
 }
 
 function MarkdownPreviewHeading({
   level,
   onFileLinkClick,
-  text,
+  segments,
 }: {
   level: number
   onFileLinkClick?: (path: string) => void
-  text: string
+  segments: MarkdownInlineSegment[]
 }) {
-  const content = inlineMarkdown(text, onFileLinkClick)
+  const content = inlineMarkdown(segments, onFileLinkClick)
   if (level === 1) return <h1 className="text-xl font-semibold">{content}</h1>
   if (level === 2) return <h2 className="text-lg font-semibold">{content}</h2>
   if (level === 3) return <h3 className="text-base font-semibold">{content}</h3>
   return <h4 className="font-semibold">{content}</h4>
 }
 
-function inlineMarkdown(
-  value: string,
+function MarkdownPreviewListLine({
+  line,
+  onFileLinkClick,
+}: {
+  line: MarkdownLine
   onFileLinkClick?: (path: string) => void
-) {
-  const tokens = value.split(
-    /(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*|~~[^~]+~~|\[[^\]]+\]\([^)]+\))/g
-  )
-  return tokens.map((token, index) =>
-    inlineMarkdownToken(token, index, onFileLinkClick)
+}) {
+  const marker = line.kind === "unordered-list" ? "•" : line.prefix.trim()
+  return (
+    <p
+      className="relative pl-5 before:absolute before:left-1 before:text-muted-foreground before:content-[attr(data-list-marker)]"
+      data-list-marker={marker}
+      style={markdownPreviewListIndentStyle(line)}
+    >
+      {inlineMarkdown(line.segments, onFileLinkClick)}
+    </p>
   )
 }
 
-function inlineMarkdownToken(
-  token: string,
+function markdownPreviewListIndentStyle(line: MarkdownLine) {
+  const depth = Math.floor(markdownLineIndent(line.prefix) / 2)
+  return depth ? { marginInlineStart: `${depth * 1.25}rem` } : undefined
+}
+
+function markdownLineSource(line: MarkdownLine) {
+  return `${line.prefix}${line.segments
+    .map((segment) => segment.source)
+    .join("")}`
+}
+
+function inlineMarkdown(
+  segments: MarkdownInlineSegment[],
+  onFileLinkClick?: (path: string) => void
+) {
+  return segments.map((segment, index) =>
+    inlineMarkdownSegment(segment, index, onFileLinkClick)
+  )
+}
+
+function inlineMarkdownSegment(
+  segment: MarkdownInlineSegment,
   index: number,
   onFileLinkClick?: (path: string) => void
 ) {
-  if (token.startsWith("**") && token.endsWith("**"))
-    return <strong key={index}>{token.slice(2, -2)}</strong>
-  if (token.startsWith("*") && token.endsWith("*"))
-    return <em key={index}>{token.slice(1, -1)}</em>
-  if (token.startsWith("~~") && token.endsWith("~~"))
-    return <s key={index}>{token.slice(2, -2)}</s>
-  if (token.startsWith("`") && token.endsWith("`")) {
+  if (segment.type === "text")
+    return (
+      <React.Fragment key={index}>
+        {markdownArrowText(segment.source)}
+      </React.Fragment>
+    )
+  if (segment.type === "bold")
+    return <strong key={index}>{segment.content}</strong>
+  if (segment.type === "italic") return <em key={index}>{segment.content}</em>
+  if (segment.type === "strike") return <s key={index}>{segment.content}</s>
+  if (segment.type === "code") {
     return (
       <code
         key={index}
         className="rounded bg-muted px-1 py-0.5 text-xs break-all"
       >
-        {token.slice(1, -1)}
+        {segment.content}
       </code>
     )
   }
-  const link = token.match(/^\[([^\]]+)\]\(([^)]+)\)$/)
-  if (link) return markdownLinkToken(link[1], link[2], index, onFileLinkClick)
-  return <React.Fragment key={index}>{markdownArrowText(token)}</React.Fragment>
+  return markdownLinkToken(
+    segment.content,
+    segment.href,
+    index,
+    onFileLinkClick
+  )
 }
 
 function markdownArrowText(value: string) {
@@ -1324,7 +1432,7 @@ function markdownLinkToken(
         <DevelopmentFileIcon
           className="size-3.5 shrink-0 text-blue-600 dark:text-blue-400"
           mono
-          node={{ name: filename(href), path: href, type: "file" }}
+          node={{ path: href, type: "file" }}
         />
       )}
       {label}
@@ -1342,7 +1450,7 @@ export const MarkdownEditor = React.forwardRef<
   HTMLDivElement,
   {
     markdown: string
-    maxHeight: string
+    maxHeight?: string
     minHeight: string
     placeholder: string
     codeSelectionAttachments?: PendingCodeSelectionAttachment[]
@@ -1956,6 +2064,9 @@ export const MarkdownEditor = React.forwardRef<
   const stableRememberEditorSelection = useLatestCallback(
     rememberEditorSelection
   )
+  const stableFileLinkClick = useLatestCallback((path: string) =>
+    onFileLinkClick?.(path)
+  )
   const stableRedo = useLatestCallback(() => runHistoryCommand("redo"))
   const stableUndo = useLatestCallback(() => runHistoryCommand("undo"))
   const stableOptimize = useLatestCallback(handleOptimize)
@@ -2000,6 +2111,7 @@ export const MarkdownEditor = React.forwardRef<
                   "overflow-y-auto rounded-3xl bg-input/40 px-4 py-3.5 pr-40 dark:bg-muted"
                 )}
                 markdown={value}
+                onFileLinkClick={stableFileLinkClick}
                 placeholder={placeholder}
                 onInput={handleMarkdownInput}
                 onKeyDown={handleEditorKeyDown}
