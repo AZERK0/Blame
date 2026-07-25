@@ -340,6 +340,7 @@ export type BlameDesktopApi = {
     }): Promise<ProjectInitializationDiagnostics>;
     stopProjectSetup(input: { worktree: string }): Promise<boolean>;
     removeWorktree(input: {
+      projectSetupStopped?: boolean;
       repositoryRoot: string;
       worktree: string;
     }): Promise<boolean>;

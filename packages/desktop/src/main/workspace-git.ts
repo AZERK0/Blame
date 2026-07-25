@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
 import { mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { constants as osConstants, setPriority, tmpdir } from "node:os";
 import { basename, join, posix, resolve } from "node:path";
 import { promisify } from "node:util";
 import { withoutTelemetryEnvironment } from "@blame/telemetry";
@@ -10,6 +10,12 @@ import { workspaceDiffStats } from "./workspace-diff-stats.ts";
 const execFileAsync = promisify(execFile);
 const maxBuffer = 50 * 1024 * 1024;
 const gitReadLimit = pLimit(6);
+
+type GitRunner = (
+  root: string,
+  args: string[],
+  environment?: Record<string, string>,
+) => Promise<{ stderr: string; stdout: string }>;
 
 export type GitDirectoryInput = {
   path?: string;
@@ -38,34 +44,49 @@ export async function gitSnapshot(input: GitSnapshotInput) {
   if (!/^[0-9a-z._-]+$/i.test(input.id)) throw new Error("Invalid snapshot id");
   const directory = await mkdtemp(join(tmpdir(), "blame-git-snapshot-"));
   const index = join(directory, "index");
-  const env = { GIT_INDEX_FILE: index };
   try {
-    await runGit(input.root, ["read-tree", "HEAD"], env);
-    const trackedEnvFiles = await trackedRuntimeEnvPaths(input.root, env);
-    if (trackedEnvFiles.length) {
-      await runGit(
-        input.root,
-        ["rm", "--cached", "--ignore-unmatch", "--", ...trackedEnvFiles],
-        env,
-      );
-    }
-    const excludedEnvFiles = await changedRuntimeEnvPathspecs(input.root);
-    await runGit(
-      input.root,
-      ["add", "-A", "--", ".", ...excludedEnvFiles],
-      env,
-    );
-    const { stdout } = await runGit(input.root, ["write-tree"], env);
-    const ref = stdout.trim();
-    await runGit(input.root, [
-      "update-ref",
-      `refs/blame/agent-runs/${input.id}`,
-      ref,
-    ]);
+    const ref = await createSnapshotTree(input.root, index);
+    await updateSnapshotRef(input.root, input.id, ref);
     return ref;
   } finally {
     await rm(directory, { force: true, recursive: true });
   }
+}
+
+async function createSnapshotTree(root: string, index: string) {
+  const environment = { GIT_INDEX_FILE: index };
+  await runBackgroundGit(root, ["read-tree", "HEAD"], environment);
+  const trackedEnvFiles = await trackedRuntimeEnvPaths(
+    root,
+    environment,
+    runBackgroundGit,
+  );
+  if (trackedEnvFiles.length) {
+    await runBackgroundGit(
+      root,
+      ["rm", "--cached", "--ignore-unmatch", "--", ...trackedEnvFiles],
+      environment,
+    );
+  }
+  const excludedEnvFiles = await changedRuntimeEnvPathspecs(
+    root,
+    runBackgroundGit,
+  );
+  await runBackgroundGit(
+    root,
+    ["add", "-A", "--", ".", ...excludedEnvFiles],
+    environment,
+  );
+  const { stdout } = await runBackgroundGit(root, ["write-tree"], environment);
+  return stdout.trim();
+}
+
+async function updateSnapshotRef(root: string, id: string, ref: string) {
+  await runBackgroundGit(root, [
+    "update-ref",
+    `refs/blame/agent-runs/${id}`,
+    ref,
+  ]);
 }
 
 export async function gitDiffFrom(input: GitDiffFromInput) {
@@ -253,9 +274,12 @@ async function committedRuntimeEnvPathspecs(
     .map(excludedGitPathspec);
 }
 
-async function changedRuntimeEnvPathspecs(root: string) {
+async function changedRuntimeEnvPathspecs(
+  root: string,
+  gitRunner: GitRunner = runGit,
+) {
   const [{ stdout: worktree }, { stdout: staged }] = await Promise.all([
-    runGit(root, [
+    gitRunner(root, [
       "ls-files",
       "--modified",
       "--deleted",
@@ -263,7 +287,7 @@ async function changedRuntimeEnvPathspecs(root: string) {
       "--exclude-standard",
       "-z",
     ]),
-    runGit(root, ["diff", "--cached", "--name-only", "-z", "--"]),
+    gitRunner(root, ["diff", "--cached", "--name-only", "-z", "--"]),
   ]);
   return [...new Set(`${worktree}${staged}`.split("\0"))]
     .filter(Boolean)
@@ -274,8 +298,9 @@ async function changedRuntimeEnvPathspecs(root: string) {
 async function trackedRuntimeEnvPaths(
   root: string,
   environment: Record<string, string>,
+  gitRunner: GitRunner = runGit,
 ) {
-  const { stdout } = await runGit(root, ["ls-files", "-z"], environment);
+  const { stdout } = await gitRunner(root, ["ls-files", "-z"], environment);
   return stdout.split("\0").filter(Boolean).filter(runtimeEnvPath);
 }
 
@@ -341,6 +366,44 @@ function runGit(
     env: { ...withoutTelemetryEnvironment(process.env), ...environment },
     maxBuffer,
   });
+}
+
+function runBackgroundGit(
+  root: string,
+  args: string[],
+  environment?: Record<string, string>,
+) {
+  return new Promise<{ stderr: string; stdout: string }>((resolve, reject) => {
+    const child = execFile(
+      "git",
+      args,
+      {
+        cwd: root,
+        encoding: "utf8",
+        env: { ...withoutTelemetryEnvironment(process.env), ...environment },
+        maxBuffer,
+      },
+      (error, stdout, stderr) => {
+        if (error) reject(error);
+        else resolve({ stderr, stdout });
+      },
+    );
+    deprioritizeProcess(child.pid);
+  });
+}
+
+function deprioritizeProcess(pid: number | undefined) {
+  if (!pid) return;
+  try {
+    setPriority(pid, osConstants.priority.PRIORITY_BELOW_NORMAL);
+  } catch {}
+  if (process.platform !== "linux") return;
+  const ionice = execFile(
+    "ionice",
+    ["-c", "3", "-p", String(pid)],
+    () => undefined,
+  );
+  ionice.unref();
 }
 
 async function hasGitHead(cwd: string) {

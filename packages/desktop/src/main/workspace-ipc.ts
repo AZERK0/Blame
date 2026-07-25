@@ -323,6 +323,7 @@ type ProjectServiceLogsInput = {
 };
 
 type RemoveWorktreeInput = {
+  projectSetupStopped?: boolean;
   repositoryRoot: string;
   worktree: string;
 };
@@ -2801,7 +2802,7 @@ async function removeWorktree(input: RemoveWorktreeInput) {
     await releaseAgentWorkspaceSessions(worktree);
     previewRecoveries.delete(worktree);
     await cleanupCodeReviewGraphWorktree(worktree);
-    await stopProjectSetup({ worktree });
+    if (!input.projectSetupStopped) await stopProjectSetup({ worktree });
     const env = await setupEnvironment(worktree);
     await removeBlamePreviewProjectResources(env.COMPOSE_PROJECT_NAME);
     if (registered) await removeGitWorktree(repositoryRoot, worktree);

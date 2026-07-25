@@ -862,21 +862,26 @@ export function BacklogPage() {
       })
       try {
         const codePractices = await projectCodePractices(auth, projects)
-        const result = await platform.agent!.approveAndMerge({
-          apiConnection: auth.apiConnection,
-          executionId: crypto.randomUUID(),
-          providerId: alternativeSelection.currentModel!.provider.id,
-          modelId: alternativeSelection.currentModel!.id,
-          credentialLabel: alternativeSelection.currentModel!.credentialLabel,
-          reasoningEffort: alternativeSelection.currentVariant,
-          repositoryRoot: projects.activeProject!.path,
-          worktree: story.worktree!,
-          storyBranch: story.branch!,
-          title: story.title,
-          summary: story.summary,
-          storyId: story.id,
-          codePractices,
-        })
+        const result = await measurePerformanceOperation(
+          "agent.transition.approve_merge",
+          () =>
+            platform.agent!.approveAndMerge({
+              apiConnection: auth.apiConnection,
+              executionId: crypto.randomUUID(),
+              providerId: alternativeSelection.currentModel!.provider.id,
+              modelId: alternativeSelection.currentModel!.id,
+              credentialLabel:
+                alternativeSelection.currentModel!.credentialLabel,
+              reasoningEffort: alternativeSelection.currentVariant,
+              repositoryRoot: projects.activeProject!.path,
+              worktree: story.worktree!,
+              storyBranch: story.branch!,
+              title: story.title,
+              summary: story.summary,
+              storyId: story.id,
+              codePractices,
+            })
+        )
         toast.success("Story approved and merged", {
           description: `Merged into ${result.targetBranch}.`,
           position: "bottom-right",
@@ -894,22 +899,22 @@ export function BacklogPage() {
           },
           { cleanup: false }
         )
-        void checkProjectInitializationImpact({
-          auth,
-          baseCommit: result.baseCommit,
-          mergeCommit: result.mergeCommit,
-          modelId: alternativeSelection.currentModel!.id,
-          credentialLabel: alternativeSelection.currentModel!.credentialLabel,
-          platform,
-          projectId: projects.activeProject!.id,
-          providerId: alternativeSelection.currentModel!.provider.id,
-          reasoningEffort: alternativeSelection.currentVariant,
-          repositoryRoot: projects.activeProject!.path,
-        })
-        void cleanupMergedStory(
+        void runPostMergeTasks(
           runningStory,
           platform,
-          projects.activeProject?.path
+          projects.activeProject!.path,
+          {
+            auth,
+            baseCommit: result.baseCommit,
+            mergeCommit: result.mergeCommit,
+            modelId: alternativeSelection.currentModel!.id,
+            credentialLabel: alternativeSelection.currentModel!.credentialLabel,
+            platform,
+            projectId: projects.activeProject!.id,
+            providerId: alternativeSelection.currentModel!.provider.id,
+            reasoningEffort: alternativeSelection.currentVariant,
+            repositoryRoot: projects.activeProject!.path,
+          }
         )
         return mergedStory
       } catch (error) {
@@ -1661,27 +1666,43 @@ async function stopStoryRuntime(
   platform: ReturnType<typeof usePlatform>
 ) {
   await Promise.all([
-    story.clineSessionId
-      ? platform.agent?.sessions
-          .abort(story.clineSessionId)
-          .catch(() => undefined)
-      : Promise.resolve(),
-    story.worktree
-      ? platform.workspace
-          ?.stopProjectSetup({ worktree: story.worktree })
-          .catch(() => false)
-      : Promise.resolve(),
+    abortStoryAgent(story, platform),
+    stopStoryProjectSetup(story, platform),
   ])
+}
+
+async function abortStoryAgent(
+  story: UserStory,
+  platform: ReturnType<typeof usePlatform>
+) {
+  if (!story.clineSessionId) return
+  await platform.agent?.sessions
+    .abort(story.clineSessionId)
+    .catch(() => undefined)
+}
+
+async function stopStoryProjectSetup(
+  story: UserStory,
+  platform: ReturnType<typeof usePlatform>
+) {
+  if (!story.worktree) return false
+  return (
+    (await platform.workspace
+      ?.stopProjectSetup({ worktree: story.worktree })
+      .catch(() => false)) ?? false
+  )
 }
 
 async function removeStoryWorktree(
   story: UserStory,
   platform: ReturnType<typeof usePlatform>,
-  repositoryRoot: string | undefined
+  repositoryRoot: string | undefined,
+  projectSetupStopped = false
 ) {
   if (!story.worktree) return
   if (!repositoryRoot) throw new Error("Unable to resolve repository root.")
   const removed = await platform.workspace?.removeWorktree({
+    projectSetupStopped,
     repositoryRoot,
     worktree: story.worktree,
   })
@@ -1694,14 +1715,44 @@ async function cleanupMergedStory(
   repositoryRoot: string | undefined
 ) {
   try {
-    await stopStoryRuntime(story, platform)
-    await removeStoryWorktree(story, platform, repositoryRoot)
+    const [, projectSetupStopped] = await Promise.all([
+      measurePerformanceOperation("agent.transition.cleanup.agent_abort", () =>
+        abortStoryAgent(story, platform)
+      ),
+      measurePerformanceOperation("agent.transition.cleanup.runtime_stop", () =>
+        stopStoryProjectSetup(story, platform)
+      ),
+    ])
+    await measurePerformanceOperation(
+      "agent.transition.cleanup.worktree_remove",
+      () =>
+        removeStoryWorktree(
+          story,
+          platform,
+          repositoryRoot,
+          projectSetupStopped
+        )
+    )
   } catch (error) {
     toast.error("Merged story cleanup failed", {
       description: errorMessage(error),
       position: "bottom-right",
     })
   }
+}
+
+async function runPostMergeTasks(
+  story: UserStory,
+  platform: ReturnType<typeof usePlatform>,
+  repositoryRoot: string,
+  initializationImpactInput: CheckInitializationImpactInput
+) {
+  await cleanupMergedStory(story, platform, repositoryRoot)
+  await afterRendererPaint()
+  await measurePerformanceOperation(
+    "agent.transition.initialization_impact",
+    () => checkProjectInitializationImpact(initializationImpactInput)
+  )
 }
 
 function inactiveStoryFields(): UserStoryUpdate {
