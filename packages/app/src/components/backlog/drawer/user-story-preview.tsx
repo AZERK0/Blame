@@ -182,34 +182,37 @@ export function PreviewUrlWarmup({
   )
 }
 
-export function UserStoryPreviewWarmup({
-  userStories,
-}: {
-  userStories: UserStory[]
-}) {
-  const platform = usePlatform()
-  const previewBrowser = platform.previewBrowser
-  const stories = React.useMemo(
-    () => nativePreviewWarmupStories(userStories),
-    [userStories]
-  )
-
-  if (!previewBrowser) return null
-  return stories.map((story) => {
-    const source = previewSource(story.previewUrl ?? "")
-    const previewScope = storyPreviewDevtoolsScope(story.id)
-    return (
-      <NativePreviewWarmup
-        key={nativePreviewKeyFor(previewScope, source)}
-        client={previewBrowser}
-        devtoolsScope={previewScope}
-        sessionKey={nativePreviewKeyFor(previewScope, source)}
-        source={source}
-        storageKey={nativePreviewStorageKeyFor(previewScope, source)}
-      />
+export const UserStoryPreviewWarmup = React.memo(
+  function UserStoryPreviewWarmup({
+    userStories,
+  }: {
+    userStories: UserStory[]
+  }) {
+    const platform = usePlatform()
+    const previewBrowser = platform.previewBrowser
+    const stories = React.useMemo(
+      () => nativePreviewWarmupStories(userStories),
+      [userStories]
     )
-  })
-}
+
+    if (!previewBrowser) return null
+    return stories.map((story) => {
+      const source = previewSource(story.previewUrl ?? "")
+      const previewScope = storyPreviewDevtoolsScope(story.id)
+      return (
+        <NativePreviewWarmup
+          key={nativePreviewKeyFor(previewScope, source)}
+          client={previewBrowser}
+          devtoolsScope={previewScope}
+          sessionKey={nativePreviewKeyFor(previewScope, source)}
+          source={source}
+          storageKey={nativePreviewStorageKeyFor(previewScope, source)}
+        />
+      )
+    })
+  },
+  equalUserStoryPreviewWarmupProps
+)
 
 export function UserStoryPreview({
   onCapture,
@@ -1907,6 +1910,27 @@ function nativePreviewWarmupStories(userStories: UserStory[]) {
     .filter(nativePreviewWarmupStory)
     .sort(nativePreviewWarmupStorySort)
     .slice(0, nativePreviewRetainedSessionLimit)
+}
+
+function equalUserStoryPreviewWarmupProps(
+  previous: { userStories: UserStory[] },
+  next: { userStories: UserStory[] }
+) {
+  const previousKeys = nativePreviewWarmupKeys(previous.userStories)
+  const nextKeys = nativePreviewWarmupKeys(next.userStories)
+  return (
+    previousKeys.length === nextKeys.length &&
+    previousKeys.every((key, index) => key === nextKeys[index])
+  )
+}
+
+function nativePreviewWarmupKeys(userStories: UserStory[]) {
+  return nativePreviewWarmupStories(userStories)
+    .map((story) => {
+      const source = previewSource(story.previewUrl ?? "")
+      return nativePreviewKeyFor(storyPreviewDevtoolsScope(story.id), source)
+    })
+    .sort()
 }
 
 function nativePreviewWarmupStory(story: UserStory) {

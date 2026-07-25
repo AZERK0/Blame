@@ -12,6 +12,12 @@ import {
   recordPerformanceCount,
   recordPerformanceMetric,
 } from "@/lib/performance-diagnostics"
+import {
+  initialUserStoryDiffTargets,
+  suspendedUserStoryDiffTargetCount,
+  userStoryDiffTargetKey,
+  type UserStoryDiffTarget,
+} from "@/components/backlog/development/user-story-diff-target-selection"
 
 const diffStatsRefreshDelayMs = 15_000
 const maximumConcurrentDiffStats = 2
@@ -21,21 +27,6 @@ const historicalDiffStatsRequests = new Map<
 >()
 
 export type { UserStoryDiffStats } from "@/components/backlog/development/development-diff-stats-data"
-
-type UserStoryDiffTarget =
-  | {
-      id: string
-      mode: "working"
-      refresh: boolean
-      root: string
-    }
-  | {
-      from: string
-      id: string
-      mode: "historical"
-      root: string
-      to: string
-    }
 
 type UserStoryDiffResult = {
   id: string
@@ -54,6 +45,7 @@ export function useUserStoryDiffStats(
   const [stats, setStats] = React.useState(
     () => new Map<string, UserStoryDiffStats>()
   )
+  const loadedTargetKeys = React.useRef(new Set<string>())
   const serializedTargets = serializedUserStoryDiffTargets(
     stories,
     repositoryRoot
@@ -64,7 +56,12 @@ export function useUserStoryDiffStats(
   )
 
   React.useEffect(() => {
-    return subscribeUserStoryDiffStats(targets, workspace, setStats)
+    return subscribeUserStoryDiffStats(
+      targets,
+      workspace,
+      setStats,
+      loadedTargetKeys.current
+    )
   }, [targets, workspace])
 
   return stats
@@ -77,7 +74,8 @@ export function diffStatsFromPatch(patch: string): UserStoryDiffStats {
 function subscribeUserStoryDiffStats(
   targets: UserStoryDiffTarget[],
   workspace: Platform["workspace"],
-  setStats: UserStoryDiffStatsSetter
+  setStats: UserStoryDiffStatsSetter,
+  loadedTargetKeys: Set<string>
 ) {
   let cancelled = false
   let loading = false
@@ -91,6 +89,7 @@ function subscribeUserStoryDiffStats(
         targets,
         workspace,
         setStats,
+        loadedTargetKeys,
         () => cancelled
       )
     } finally {
@@ -104,13 +103,19 @@ function subscribeUserStoryDiffStats(
       void load(selectedTargets)
     })
   }
-  const initialTargets = targets.filter(refreshableDiffTarget)
+  const initialTargets = initialUserStoryDiffTargets(targets, loadedTargetKeys)
   const workingTargets = targets.filter(
     (target) => target.mode === "working" && target.refresh
   )
   recordPerformanceMetric(
     "backlog.diff_stats.suspended_target_count",
-    targets.length - initialTargets.length
+    suspendedUserStoryDiffTargetCount(targets)
+  )
+  recordPerformanceMetric(
+    "backlog.diff_stats.reused_target_count",
+    targets.length -
+      suspendedUserStoryDiffTargetCount(targets) -
+      initialTargets.length
   )
   schedule(initialTargets)
   const timer = setInterval(() => {
@@ -123,15 +128,12 @@ function subscribeUserStoryDiffStats(
   }
 }
 
-function refreshableDiffTarget(target: UserStoryDiffTarget) {
-  return target.mode === "historical" || target.refresh
-}
-
 async function loadUserStoryDiffStats(
   selectedTargets: UserStoryDiffTarget[],
   retainedTargets: UserStoryDiffTarget[],
   workspace: Platform["workspace"],
   setStats: UserStoryDiffStatsSetter,
+  loadedTargetKeys: Set<string>,
   cancelled: () => boolean
 ) {
   if (!workspace || !retainedTargets.length) {
@@ -149,6 +151,10 @@ async function loadUserStoryDiffStats(
     () => loadUserStoryDiffStatsConcurrently(selectedTargets, workspace)
   )
   if (cancelled()) return
+  selectedTargets.forEach((target, index) => {
+    if (results[index]?.stats)
+      loadedTargetKeys.add(userStoryDiffTargetKey(target))
+  })
   setStats((current) =>
     mergeUserStoryDiffStats(current, retainedTargets, results)
   )

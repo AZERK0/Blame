@@ -31,6 +31,7 @@ import {
 } from "@/components/backlog/data/agent-event-stream"
 import { persistTerminalAgentUpdate } from "@/components/backlog/data/agent-terminal-outbox"
 import { boundedAgentMessage } from "@/components/backlog/data/agent-update-limits"
+import { afterRendererPaint } from "@/components/backlog/data/agent-transition-scheduling"
 import {
   completedClineLog,
   finalAssistantResponse,
@@ -780,13 +781,6 @@ export function useBacklogRotation(
     const flowUpdate = agentFlowUpdate(currentStory, event)
     const text = agentEventText(event)
     const runInput = agentRunEventUpdate(flowUpdate, event, text)
-    if (run && terminalAgentRunEvent(event) && !run.diffEndRef) {
-      runInput.diffEndRef = await captureAgentRunDiffEndRef({
-        id: run.id,
-        platform,
-        root: currentStory.worktree,
-      })
-    }
     if (!shouldPersistAgentEvent(event, flowUpdate)) return
     if (reportedAgentErrors.current.has(agentAuthenticationErrorKey(story)))
       return
@@ -807,14 +801,13 @@ export function useBacklogRotation(
           agentStatus: "Paused",
         },
         run,
-        runInput,
-        true
+        runInput
       )
       return
     }
     if (completedAgentRun(event)) {
       notifyCommentResponseCompleted(currentStory, run, platform)
-      persistAgentUpdate(
+      await persistTerminalAgentTransition(
         currentStory,
         {
           ...flowUpdate,
@@ -824,13 +817,12 @@ export function useBacklogRotation(
           status: "in-review",
         },
         run,
-        runInput,
-        true
+        runInput
       )
       return
     }
     if (failedAgentRun(event)) {
-      persistAgentUpdate(
+      await persistTerminalAgentTransition(
         currentStory,
         {
           ...flowUpdate,
@@ -876,6 +868,35 @@ export function useBacklogRotation(
       return
     }
     queueAgentUpdate(nextStory, run, input, runInput)
+  }
+
+  async function persistTerminalAgentTransition(
+    story: UserStory,
+    input: UserStoryUpdate,
+    run: UserStoryAgentRun | undefined,
+    runInput: UserStoryAgentRunUpdate
+  ) {
+    const nextStory = updateLocalStory(story, input, run, runInput)
+    const pending = pendingAgentUpdates.current.get(story.id)
+    if (pending) window.clearTimeout(pending.timer)
+    recordPerformanceEvent("agent.transition.local_terminal_update", {
+      eventType: runInput.status ?? "terminal",
+    })
+    await afterRendererPaint()
+    if (run && !run.diffEndRef) {
+      runInput.diffEndRef = await measurePerformanceOperation(
+        "agent.transition.diff_snapshot",
+        () =>
+          captureAgentRunDiffEndRef({
+            id: run.id,
+            platform,
+            root: story.worktree,
+          })
+      )
+    }
+    void flushAgentUpdate(nextStory, run, input, runInput).catch(
+      reportAgentPersistenceError
+    )
   }
 
   function updateLocalStory(

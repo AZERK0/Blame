@@ -25,6 +25,7 @@ import {
 } from "@/components/backlog/data/agent-terminal-outbox"
 import { retryableBacklogError } from "@/components/backlog/data/backlog-api"
 import { boundedAgentMessage } from "@/components/backlog/data/agent-update-limits"
+import { afterRendererPaint } from "@/components/backlog/data/agent-transition-scheduling"
 import {
   changedFilesFromDiff,
   completedStoryContextAttachment,
@@ -64,6 +65,7 @@ import { UserStoryPreviewWarmup } from "@/components/backlog/drawer/user-story-p
 import { HostDependenciesDialog } from "@/pages/backlog/host-dependencies-dialog"
 import { useBacklogRotation } from "@/pages/backlog/use-backlog-rotation"
 import { assessAndRepairProjectInitializationImpact } from "@/pages/backlog/project-initialization-impact"
+import { backlogStatusPipStories } from "@/pages/backlog/backlog-status-pip-snapshot"
 import { useCloudAuth } from "@/context/cloud-auth"
 import {
   usePlatform,
@@ -78,7 +80,12 @@ import {
   projectInitializing,
   useProjectInitialization,
 } from "@/components/project-initialization/use-project-initialization"
-import { recordPerformanceCount } from "@/lib/performance-diagnostics"
+import {
+  measurePerformanceOperation,
+  recordPerformanceCount,
+  recordPerformanceEvent,
+  recordPerformanceMetric,
+} from "@/lib/performance-diagnostics"
 
 const agentEventPersistDelayMs = 1_500
 const terminalAgentRetryIntervalMs = 60_000
@@ -104,6 +111,13 @@ export function BacklogPage() {
     backlog.stories,
     platform.workspace,
     projects.activeProject?.path
+  )
+  const serializedStatusPipStories = JSON.stringify(
+    backlogStatusPipStories(backlog.stories)
+  )
+  const statusPipStories = React.useMemo(
+    () => JSON.parse(serializedStatusPipStories) as UserStory[],
+    [serializedStatusPipStories]
   )
   const storiesRef = React.useRef(backlog.stories)
   const openDrawerRef = React.useRef<(target: DrawerTarget) => void>(() => {})
@@ -136,18 +150,24 @@ export function BacklogPage() {
   }, [backlog.stories, platform])
 
   React.useEffect(() => {
-    platform.backlogStatusPip?.publish({
+    if (!platform.backlogStatusPip) return
+    recordPerformanceCount("backlog.status_pip.publish")
+    recordPerformanceMetric(
+      "backlog.status_pip.story_count",
+      statusPipStories.length
+    )
+    platform.backlogStatusPip.publish({
       authStatus: auth.status,
       hasActiveProject: Boolean(projects.activeProject),
       loading: backlog.loading,
-      stories: backlog.stories,
+      stories: statusPipStories,
     })
   }, [
     auth.status,
     backlog.loading,
-    backlog.stories,
     platform.backlogStatusPip,
     projects.activeProject,
+    statusPipStories,
   ])
 
   React.useEffect(
@@ -403,6 +423,24 @@ export function BacklogPage() {
     },
     [persistQueuedAgentUpdate]
   )
+  const persistPreparedAgentUpdate = React.useCallback(
+    (
+      story: UserStory,
+      run: UserStoryAgentRun | undefined,
+      input: UserStoryUpdate,
+      runInput: UserStoryAgentRunUpdate,
+      immediate: boolean
+    ) => {
+      if (immediate) {
+        void flushAgentUpdate(story, run, input, runInput).catch(
+          reportAgentPersistenceError
+        )
+        return
+      }
+      queueAgentUpdate(story, run, input, runInput)
+    },
+    [flushAgentUpdate, queueAgentUpdate]
+  )
   const persistAgentUpdate = React.useCallback(
     (
       story: UserStory,
@@ -412,15 +450,9 @@ export function BacklogPage() {
       immediate: boolean
     ) => {
       const nextStory = updateStoryLocal(story, input, run, runInput)
-      if (immediate) {
-        void flushAgentUpdate(nextStory, run, input, runInput).catch(
-          reportAgentPersistenceError
-        )
-        return
-      }
-      queueAgentUpdate(nextStory, run, input, runInput)
+      persistPreparedAgentUpdate(nextStory, run, input, runInput, immediate)
     },
-    [flushAgentUpdate, queueAgentUpdate, updateStoryLocal]
+    [persistPreparedAgentUpdate, updateStoryLocal]
   )
   const persistAgentEvent = React.useCallback(
     async (
@@ -433,15 +465,28 @@ export function BacklogPage() {
       if (!shouldPersistAgentEvent(event, update)) return
       const text = agentEventText(event)
       const runInput = agentRunEventUpdate(update, event, text)
-      if (run && terminalAgentRunEvent(event) && !run.diffEndRef) {
-        runInput.diffEndRef = await captureAgentRunDiffEndRef({
-          id: run.id,
-          platform,
-          root: currentStory.worktree,
-        })
-      }
       if (completedAgentRun(event))
         notifyCommentResponseCompleted(currentStory, run, platform)
+      if (run && terminalAgentRunEvent(event) && !run.diffEndRef) {
+        const nextStory = updateStoryLocal(currentStory, update, run, runInput)
+        const pending = pendingAgentUpdates.current.get(currentStory.id)
+        if (pending) window.clearTimeout(pending.timer)
+        recordPerformanceEvent("agent.transition.local_terminal_update", {
+          eventType: event.type,
+        })
+        await afterRendererPaint()
+        runInput.diffEndRef = await measurePerformanceOperation(
+          "agent.transition.diff_snapshot",
+          () =>
+            captureAgentRunDiffEndRef({
+              id: run.id,
+              platform,
+              root: currentStory.worktree,
+            })
+        )
+        persistPreparedAgentUpdate(nextStory, run, update, runInput, true)
+        return
+      }
       persistAgentUpdate(
         currentStory,
         run,
@@ -450,7 +495,7 @@ export function BacklogPage() {
         immediateAgentEvent(event)
       )
     },
-    [persistAgentUpdate, platform]
+    [persistAgentUpdate, persistPreparedAgentUpdate, platform, updateStoryLocal]
   )
   const rejectStory = React.useCallback(
     async (story: UserStory, choice: RejectChoice) => {
