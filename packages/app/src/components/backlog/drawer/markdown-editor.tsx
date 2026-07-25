@@ -609,7 +609,7 @@ function MarkdownWysiwygEditor({
         </div>
       )}
       <div
-        key={renderKey}
+        key={`${renderKey}:${activeSegmentKey}`}
         ref={editorRef}
         aria-label={placeholder}
         className={cn(
@@ -992,14 +992,32 @@ function markdownOffsetWithinLine(
   target: Node,
   targetOffset: number
 ) {
-  const maximum =
-    target.nodeType === Node.TEXT_NODE
-      ? (target.textContent?.length ?? 0)
-      : target.childNodes.length
-  const range = document.createRange()
-  range.setStart(line, 0)
-  range.setEnd(target, Math.max(0, Math.min(targetOffset, maximum)))
-  return range.toString().length
+  let offset = markdownNodeBoundaryLength(target, targetOffset)
+  let node = target
+  while (node !== line) {
+    const parent = node.parentNode
+    if (!parent) return 0
+    for (const sibling of parent.childNodes) {
+      if (sibling === node) break
+      offset += markdownNodeSourceLength(sibling)
+    }
+    node = parent
+  }
+  return offset
+}
+
+function markdownNodeBoundaryLength(node: Node, offset: number) {
+  if (node.nodeType === Node.TEXT_NODE) {
+    return Math.max(0, Math.min(offset, markdownNodeSourceLength(node)))
+  }
+  return Array.from(node.childNodes)
+    .slice(0, Math.max(0, Math.min(offset, node.childNodes.length)))
+    .reduce((length, child) => length + markdownNodeSourceLength(child), 0)
+}
+
+function markdownNodeSourceLength(node: Node) {
+  if (node instanceof HTMLElement && node.contentEditable === "false") return 0
+  return node.textContent?.length ?? 0
 }
 
 function restoreMarkdownEditorSelection(
@@ -1043,6 +1061,14 @@ function markdownEditorDomPoint(editor: HTMLDivElement, target: number) {
     while (node) {
       const length = node.textContent?.length ?? 0
       if (node.parentElement?.dataset.markdownSource === "true") {
+        if (
+          remaining === 0 &&
+          node.parentElement.dataset.markdownClosing !== "true"
+        ) {
+          return markdownEditorPointBefore(
+            node.parentElement.parentElement ?? node.parentElement
+          )
+        }
         if (remaining < length)
           return markdownEditorPointAfter(node.parentElement)
         if (remaining === length) {
@@ -1070,6 +1096,15 @@ function markdownEditorDomPoint(editor: HTMLDivElement, target: number) {
   }
   const fallbackNode = lastVisibleNode ?? lastNode
   return { node: fallbackNode, offset: fallbackNode.textContent?.length ?? 0 }
+}
+
+function markdownEditorPointBefore(node: Node) {
+  const parent = node.parentNode
+  if (!parent) return { node, offset: 0 }
+  return {
+    node: parent,
+    offset: Array.prototype.indexOf.call(parent.childNodes, node),
+  }
 }
 
 function markdownEditorPointAfter(node: Node) {
@@ -1951,6 +1986,10 @@ export const MarkdownEditor = React.forwardRef<
       return
     }
     if (event.key === "Backspace" || event.key === "Delete") {
+      if (!value) {
+        event.preventDefault()
+        return
+      }
       const currentSelection = markdownEditorSelection(event.currentTarget)
       if (!currentSelection) return
       const selection =

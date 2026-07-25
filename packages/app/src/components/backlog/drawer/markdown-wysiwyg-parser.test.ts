@@ -264,6 +264,7 @@ test("moves through styles one source character at a time but skips links", () =
 })
 
 test("expands deletion of visible styled content to its hidden markers", () => {
+  const multipleSegments = "before **bold** middle *italics* after"
   assert.deepEqual(markdownExpandedDeletionSelection("**test**", 2, 6), {
     start: 0,
     end: 8,
@@ -284,4 +285,15 @@ test("expands deletion of visible styled content to its hidden markers", () => {
     start: 0,
     end: 5,
   })
+  assert.deepEqual(
+    markdownExpandedDeletionSelection(
+      multipleSegments,
+      0,
+      multipleSegments.length
+    ),
+    {
+      start: 0,
+      end: multipleSegments.length,
+    }
+  )
 })

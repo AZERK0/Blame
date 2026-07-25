@@ -170,8 +170,8 @@ export function markdownExpandedDeletionSelection(
     const contentStart = sourceStart + openingLength
     const contentEnd = sourceEnd - closingLength
     if (expandedStart <= contentStart && expandedEnd >= contentEnd) {
-      expandedStart = sourceStart
-      expandedEnd = sourceEnd
+      expandedStart = Math.min(expandedStart, sourceStart)
+      expandedEnd = Math.max(expandedEnd, sourceEnd)
     }
   }
   return { end: expandedEnd, start: expandedStart }
