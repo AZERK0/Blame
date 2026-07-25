@@ -7,8 +7,18 @@ import {
 } from "@/components/backlog/development/development-diff-stats-data"
 import { parseGitDiff } from "@/components/backlog/development/development-workspace"
 import type { Platform } from "@/context/platform"
+import {
+  measurePerformanceOperation,
+  recordPerformanceCount,
+  recordPerformanceMetric,
+} from "@/lib/performance-diagnostics"
 
-const diffStatsRefreshDelayMs = 1_500
+const diffStatsRefreshDelayMs = 15_000
+const maximumConcurrentDiffStats = 2
+const historicalDiffStatsRequests = new Map<
+  string,
+  Promise<UserStoryDiffStats>
+>()
 
 export type { UserStoryDiffStats } from "@/components/backlog/development/development-diff-stats-data"
 
@@ -16,6 +26,7 @@ type UserStoryDiffTarget =
   | {
       id: string
       mode: "working"
+      refresh: boolean
       root: string
     }
   | {
@@ -43,9 +54,13 @@ export function useUserStoryDiffStats(
   const [stats, setStats] = React.useState(
     () => new Map<string, UserStoryDiffStats>()
   )
+  const serializedTargets = serializedUserStoryDiffTargets(
+    stories,
+    repositoryRoot
+  )
   const targets = React.useMemo(
-    () => userStoryDiffTargets(stories, repositoryRoot),
-    [repositoryRoot, stories]
+    () => JSON.parse(serializedTargets) as UserStoryDiffTarget[],
+    [serializedTargets]
   )
 
   React.useEffect(() => {
@@ -65,26 +80,54 @@ function subscribeUserStoryDiffStats(
   setStats: UserStoryDiffStatsSetter
 ) {
   let cancelled = false
-  const load = (selectedTargets: UserStoryDiffTarget[]) =>
-    loadUserStoryDiffStats(
-      selectedTargets,
-      targets,
-      workspace,
-      setStats,
-      () => cancelled
-    )
-  load(targets)
-  const workingTargets = targets.filter((target) => target.mode === "working")
+  let loading = false
+  let idleCallback: number | undefined
+  const load = async (selectedTargets: UserStoryDiffTarget[]) => {
+    if (loading) return
+    loading = true
+    try {
+      await loadUserStoryDiffStats(
+        selectedTargets,
+        targets,
+        workspace,
+        setStats,
+        () => cancelled
+      )
+    } finally {
+      loading = false
+    }
+  }
+  const schedule = (selectedTargets: UserStoryDiffTarget[]) => {
+    if (!selectedTargets.length || idleCallback !== undefined) return
+    idleCallback = window.requestIdleCallback(() => {
+      idleCallback = undefined
+      void load(selectedTargets)
+    })
+  }
+  const initialTargets = targets.filter(refreshableDiffTarget)
+  const workingTargets = targets.filter(
+    (target) => target.mode === "working" && target.refresh
+  )
+  recordPerformanceMetric(
+    "backlog.diff_stats.suspended_target_count",
+    targets.length - initialTargets.length
+  )
+  schedule(initialTargets)
   const timer = setInterval(() => {
-    if (document.visibilityState === "visible") load(workingTargets)
+    if (document.visibilityState === "visible") schedule(workingTargets)
   }, diffStatsRefreshDelayMs)
   return () => {
     cancelled = true
     clearInterval(timer)
+    if (idleCallback !== undefined) window.cancelIdleCallback(idleCallback)
   }
 }
 
-function loadUserStoryDiffStats(
+function refreshableDiffTarget(target: UserStoryDiffTarget) {
+  return target.mode === "historical" || target.refresh
+}
+
+async function loadUserStoryDiffStats(
   selectedTargets: UserStoryDiffTarget[],
   retainedTargets: UserStoryDiffTarget[],
   workspace: Platform["workspace"],
@@ -96,40 +139,72 @@ function loadUserStoryDiffStats(
     return
   }
   if (!selectedTargets.length) return
-  void Promise.all(
-    selectedTargets.map((target) => loadUserStoryDiffStat(target, workspace))
-  ).then((results) => {
-    if (cancelled()) return
-    setStats((current) =>
-      mergeUserStoryDiffStats(current, retainedTargets, results)
-    )
-  })
+  recordPerformanceCount("backlog.diff_stats.refresh")
+  recordPerformanceMetric(
+    "backlog.diff_stats.target_count",
+    selectedTargets.length
+  )
+  const results = await measurePerformanceOperation(
+    "backlog.diff_stats.refresh",
+    () => loadUserStoryDiffStatsConcurrently(selectedTargets, workspace)
+  )
+  if (cancelled()) return
+  setStats((current) =>
+    mergeUserStoryDiffStats(current, retainedTargets, results)
+  )
 }
 
-function userStoryDiffTargets(
+function serializedUserStoryDiffTargets(
   stories: UserStory[],
   repositoryRoot?: string
-): UserStoryDiffTarget[] {
-  return stories.flatMap<UserStoryDiffTarget>((story) => {
-    if (
-      (story.status === "in-progress" || story.status === "in-review") &&
-      story.worktree
-    ) {
-      return [{ id: story.id, mode: "working", root: story.worktree }]
+): string {
+  return JSON.stringify(
+    stories.flatMap<UserStoryDiffTarget>((story) => {
+      if (
+        (story.status === "in-progress" || story.status === "in-review") &&
+        story.worktree
+      ) {
+        return [
+          {
+            id: story.id,
+            mode: "working",
+            refresh: story.agentStatus !== "Running",
+            root: story.worktree,
+          },
+        ]
+      }
+      if (story.status !== "done" || !story.mergeCommit || !repositoryRoot) {
+        return []
+      }
+      return [
+        {
+          from: story.baseCommit ?? `${story.mergeCommit}^`,
+          id: story.id,
+          mode: "historical",
+          root: repositoryRoot,
+          to: story.mergeCommit,
+        },
+      ]
+    })
+  )
+}
+
+async function loadUserStoryDiffStatsConcurrently(
+  targets: UserStoryDiffTarget[],
+  workspace: NonNullable<Platform["workspace"]>
+) {
+  const results = new Array<UserStoryDiffResult>(targets.length)
+  let nextIndex = 0
+  const loadNext = async () => {
+    while (nextIndex < targets.length) {
+      const index = nextIndex
+      nextIndex += 1
+      results[index] = await loadUserStoryDiffStat(targets[index], workspace)
     }
-    if (story.status !== "done" || !story.mergeCommit || !repositoryRoot) {
-      return []
-    }
-    return [
-      {
-        from: story.baseCommit ?? `${story.mergeCommit}^`,
-        id: story.id,
-        mode: "historical",
-        root: repositoryRoot,
-        to: story.mergeCommit,
-      },
-    ]
-  })
+  }
+  const workerCount = Math.min(maximumConcurrentDiffStats, targets.length)
+  await Promise.all(Array.from({ length: workerCount }, loadNext))
+  return results
 }
 
 async function loadUserStoryDiffStat(
@@ -137,14 +212,54 @@ async function loadUserStoryDiffStat(
   workspace: NonNullable<Platform["workspace"]>
 ): Promise<UserStoryDiffResult> {
   try {
-    const patch =
-      target.mode === "working"
-        ? await workspace.gitDiff({ root: target.root })
-        : await workspace.gitDiffBetween(target)
-    return { id: target.id, stats: diffStatsFromPatch(patch) }
+    const stats =
+      target.mode === "historical"
+        ? await cachedHistoricalDiffStats(target, workspace)
+        : await loadUserStoryDiffStatValue(target, workspace)
+    return { id: target.id, stats }
   } catch {
     return { id: target.id }
   }
+}
+
+function cachedHistoricalDiffStats(
+  target: Extract<UserStoryDiffTarget, { mode: "historical" }>,
+  workspace: NonNullable<Platform["workspace"]>
+) {
+  const key = `${target.root}:${target.from}:${target.to}`
+  const current = historicalDiffStatsRequests.get(key)
+  if (current) return current
+  const request = loadUserStoryDiffStatValue(target, workspace).catch(
+    (error) => {
+      if (historicalDiffStatsRequests.get(key) === request)
+        historicalDiffStatsRequests.delete(key)
+      throw error
+    }
+  )
+  historicalDiffStatsRequests.set(key, request)
+  return request
+}
+
+async function loadUserStoryDiffStatValue(
+  target: UserStoryDiffTarget,
+  workspace: NonNullable<Platform["workspace"]>
+) {
+  if (workspace.gitDiffStats) {
+    return workspace.gitDiffStats(
+      target.mode === "working"
+        ? { root: target.root }
+        : {
+            from: target.from,
+            root: target.root,
+            to: target.to,
+          }
+    )
+  }
+  const patch =
+    target.mode === "working"
+      ? await workspace.gitDiff({ root: target.root })
+      : await workspace.gitDiffBetween(target)
+  return diffStatsFromPatch(patch)
 }
 
 function mergeUserStoryDiffStats(

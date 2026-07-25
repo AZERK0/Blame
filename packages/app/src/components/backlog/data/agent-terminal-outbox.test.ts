@@ -6,10 +6,8 @@ import {
   pendingTerminalAgentUpdates,
   persistTerminalAgentUpdate,
 } from "./agent-terminal-outbox.ts"
-import type {
-  UserStory,
-  UserStoryAgentRun,
-} from "./backlog-data.ts"
+import { BacklogApiError } from "./backlog-api.ts"
+import type { UserStory, UserStoryAgentRun } from "./backlog-data.ts"
 
 test("keeps a failed terminal persistence durable for retry", async () => {
   const storage = memoryStorage()
@@ -28,7 +26,12 @@ test("keeps a failed terminal persistence durable for retry", async () => {
 
 test("acknowledges only the persisted outbox revision", async () => {
   const storage = memoryStorage()
-  await persistTerminalAgentUpdate(storage, story, update, async () => undefined)
+  await persistTerminalAgentUpdate(
+    storage,
+    story,
+    update,
+    async () => undefined
+  )
   assert.equal(pendingTerminalAgentUpdates(storage, story.projectId).length, 0)
 
   await assert.rejects(
@@ -42,6 +45,19 @@ test("acknowledges only the persisted outbox revision", async () => {
     revision: "older-revision",
   })
   assert.equal(pendingTerminalAgentUpdates(storage, story.projectId).length, 1)
+})
+
+test("drops a terminal update rejected by a non-retryable response", async () => {
+  const storage = memoryStorage()
+
+  await assert.rejects(
+    persistTerminalAgentUpdate(storage, story, update, async () => {
+      throw new BacklogApiError(422, "Invalid terminal update")
+    }),
+    /Invalid terminal update/
+  )
+
+  assert.equal(pendingTerminalAgentUpdates(storage, story.projectId).length, 0)
 })
 
 const story = {

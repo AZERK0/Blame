@@ -1,3 +1,5 @@
+import * as React from "react"
+
 import type {
   UserStory,
   UserStoryComment,
@@ -74,7 +76,7 @@ export type UserStoryDrawerProps = {
   titleGenerating?: boolean
 }
 
-export function UserStoryDrawer({
+export const UserStoryDrawer = React.memo(function UserStoryDrawer({
   diffStats,
   open,
   onOpenChange,
@@ -112,6 +114,7 @@ export function UserStoryDrawer({
 
   return (
     <Drawer
+      autoFocus
       direction="right"
       open={open}
       onOpenChange={onOpenChange}
@@ -146,7 +149,7 @@ export function UserStoryDrawer({
       />
     </Drawer>
   )
-}
+})
 
 function initialDraftKey(
   initialDraft: Partial<Omit<UserStoryDraft, "projectId">> | undefined

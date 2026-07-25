@@ -63,6 +63,7 @@ import {
   markdownListIndentResult,
   markdownListEnterResult,
   markdownWysiwygLines,
+  markdownWysiwygStructureKey,
   type MarkdownWysiwygLine,
   type MarkdownWysiwygSegment,
 } from "@/components/backlog/drawer/markdown-wysiwyg-parser"
@@ -76,6 +77,7 @@ import {
 import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover"
 import { usePlatform } from "@/context/platform"
 import { runWorkerTask, workerTaskAborted } from "@/lib/worker-task"
+import { recordPerformanceCount } from "@/lib/performance-diagnostics"
 import { cn } from "@/lib/utils"
 
 type PastedAttachment = {
@@ -572,6 +574,7 @@ function MarkdownWysiwygEditor({
   onKeyDown,
   onSelectionChange,
   placeholder,
+  renderKey,
 }: {
   activeSelection: MarkdownSelection | null
   className?: string
@@ -581,7 +584,12 @@ function MarkdownWysiwygEditor({
   onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => void
   onSelectionChange: () => void
   placeholder: string
+  renderKey: string
 }) {
+  const activeSegmentKey = markdownActiveSegmentKey(
+    markdown,
+    activeSelection
+  )
   return (
     <div className="relative">
       {!markdown && (
@@ -590,7 +598,7 @@ function MarkdownWysiwygEditor({
         </div>
       )}
       <div
-        key={markdown}
+        key={renderKey}
         ref={editorRef}
         aria-label={placeholder}
         className={cn(
@@ -606,18 +614,36 @@ function MarkdownWysiwygEditor({
         onKeyDown={onKeyDown}
         onKeyUp={onSelectionChange}
       >
-        {markdownWysiwygLines(markdown).map((line, index) => (
-          <MarkdownWysiwygEditorLine
-            key={index}
-            line={line}
-            lineStart={markdownLineStart(markdown, index)}
-            selection={activeSelection}
-          />
-        ))}
+        <MarkdownWysiwygEditorContent
+          activeSegmentKey={activeSegmentKey}
+          activeSelection={activeSelection}
+          markdown={markdown}
+        />
       </div>
     </div>
   )
 }
+
+const MarkdownWysiwygEditorContent = React.memo(
+  function MarkdownWysiwygEditorContent(properties: {
+    activeSegmentKey: string
+    activeSelection: MarkdownSelection | null
+    markdown: string
+  }) {
+    const { activeSelection, markdown } = properties
+    return markdownWysiwygLinesWithStarts(markdown).map(
+      ({ line, start }, index) => (
+        <MarkdownWysiwygEditorLine
+          key={index}
+          line={line}
+          lineStart={start}
+          selection={activeSelection}
+        />
+      )
+    )
+  },
+  (current, next) => current.activeSegmentKey === next.activeSegmentKey
+)
 
 function MarkdownWysiwygEditorLine({
   line,
@@ -628,6 +654,7 @@ function MarkdownWysiwygEditorLine({
   lineStart: number
   selection: MarkdownSelection | null
 }) {
+  const segments = markdownSegmentsWithStarts(line, lineStart)
   const listMarker = markdownWysiwygListMarker(line)
   const listDepth = listMarker
     ? Math.floor(markdownLineIndent(line.prefix) / 2)
@@ -655,19 +682,13 @@ function MarkdownWysiwygEditorLine({
       }
     >
       {line.prefix && <MarkdownSourceMarker source={line.prefix} />}
-      {line.segments.map((segment, index) => {
-        const segmentStart =
-          lineStart +
-          line.prefix.length +
-          line.segments
-            .slice(0, index)
-            .reduce((length, item) => length + item.source.length, 0)
+      {segments.map(({ segment, start }, index) => {
         return (
           <MarkdownWysiwygEditorSegment
             key={index}
             active={markdownSelectionInsideSource(
               selection,
-              segmentStart,
+              start,
               segment.source.length
             )}
             segment={segment}
@@ -679,12 +700,57 @@ function MarkdownWysiwygEditorLine({
   )
 }
 
-function markdownLineStart(markdown: string, lineIndex: number) {
-  return markdown
-    .split("\n")
-    .slice(0, lineIndex)
-    .reduce((offset, line) => offset + line.length + 1, 0)
+function markdownSegmentsWithStarts(
+  line: MarkdownWysiwygLine,
+  lineStart: number
+) {
+  let start = lineStart + line.prefix.length
+  return line.segments.map((segment) => {
+    const entry = { segment, start }
+    start += segment.source.length
+    return entry
+  })
 }
+
+function markdownWysiwygLinesWithStarts(markdown: string) {
+  let start = 0
+  return markdownWysiwygLines(markdown).map((line) => {
+    const entry = { line, start }
+    start +=
+      line.prefix.length +
+      line.segments.reduce(
+        (length, segment) => length + segment.source.length,
+        0
+      ) +
+      1
+    return entry
+  })
+}
+
+function markdownActiveSegmentKey(
+  markdown: string,
+  selection: MarkdownSelection | null
+) {
+  if (!selection || selection.start !== selection.end) return ""
+  const bounds = lineBounds(markdown, selection.start)
+  const sourceLine = markdown.slice(bounds.start, bounds.end)
+  if (!completeInlineMarkdownPattern.test(sourceLine)) return ""
+  const line = markdownWysiwygLines(sourceLine)[0]
+  for (const { segment, start } of markdownSegmentsWithStarts(
+    line,
+    bounds.start
+  )) {
+    if (
+      segment.type !== "text" &&
+      markdownSelectionInsideSource(selection, start, segment.source.length)
+    )
+      return `${start}:${segment.type}`
+  }
+  return ""
+}
+
+const completeInlineMarkdownPattern =
+  /`[^`\n]+`|\*\*[^*\n]+\*\*|\*[^*\n]+\*|~~[^~\n]+~~|\[[^\]\n]+\]\([^)\n]+\)/
 
 function markdownSelectionInsideSource(
   selection: MarkdownSelection | null,
@@ -1306,6 +1372,9 @@ export const MarkdownEditor = React.forwardRef<
   const mentionSearchRef = React.useRef(0)
   const lastSelectionRef = React.useRef<MarkdownSelection | null>(null)
   const pendingSelectionRef = React.useRef<MarkdownSelection | null>(null)
+  const lastEmittedMarkdownRef = React.useRef(markdown)
+  const markdownPropRef = React.useRef(markdown)
+  const editorRenderVersionRef = React.useRef(0)
   const rootRef = React.useRef<HTMLDivElement>(null)
   const editorRef = React.useRef<HTMLDivElement>(null)
   const [draft, setDraft] = React.useState({
@@ -1324,6 +1393,16 @@ export const MarkdownEditor = React.forwardRef<
     : draft.external === markdown
       ? draft.value
       : markdown
+  const editorStructureKey = React.useMemo(
+    () => markdownWysiwygStructureKey(value),
+    [value]
+  )
+  if (markdownPropRef.current !== markdown) {
+    if (lastEmittedMarkdownRef.current !== markdown)
+      editorRenderVersionRef.current += 1
+    markdownPropRef.current = markdown
+  }
+  const editorRenderKey = `${editorRenderVersionRef.current}:${editorStructureKey}`
   const mentionOpen =
     mention.active && Boolean(mentionDirectory && platform.workspace)
   const optimizableAttachmentsVisible = attachments.some(
@@ -1382,13 +1461,26 @@ export const MarkdownEditor = React.forwardRef<
     pendingSelectionRef.current = null
     restoreMarkdownEditorSelection(editorRef.current, selection)
     lastSelectionRef.current = selection
-    setActiveSelection(selection)
+    setActiveSelection((current) =>
+      equalMarkdownSelection(current, selection) ? current : selection
+    )
   }, [activeSelection, value])
 
+  function updateActiveSelection(selection: MarkdownSelection) {
+    if (
+      markdownActiveSegmentKey(value, activeSelection) ===
+      markdownActiveSegmentKey(value, selection)
+    )
+      return
+    pendingSelectionRef.current = selection
+    setActiveSelection(selection)
+  }
+
   const updateMention = React.useCallback(
-    (nextValue = value) => {
+    (nextValue = value, nextSelection?: MarkdownSelection) => {
       const editor = editorRef.current
-      const selection = editor && markdownEditorSelection(editor)
+      const selection =
+        nextSelection ?? (editor && markdownEditorSelection(editor))
       if (!editor || !selection || readOnly || !mentionDirectory) {
         setMention((current) =>
           current.active
@@ -1397,20 +1489,35 @@ export const MarkdownEditor = React.forwardRef<
         )
         return
       }
-      setMention(fileMentionState(nextValue, selection.start))
+      const nextMention = fileMentionState(nextValue, selection.start)
+      setMention((current) =>
+        equalFileMentionState(current, nextMention) ? current : nextMention
+      )
     },
     [mentionDirectory, readOnly, value]
   )
 
   const emitMarkdown = React.useCallback(
-    (nextMarkdown: string, cursor?: number) => {
+    (nextMarkdown: string, cursor?: number, selection?: MarkdownSelection) => {
+      lastEmittedMarkdownRef.current = nextMarkdown
+      if (!selection) editorRenderVersionRef.current += 1
       setDraft({ external: markdown, value: nextMarkdown })
       onMarkdownChange?.(nextMarkdown)
       if (cursor !== undefined)
         pendingSelectionRef.current = { end: cursor, start: cursor }
+      if (
+        selection &&
+        editorStructureKey !== markdownWysiwygStructureKey(nextMarkdown)
+      ) {
+        pendingSelectionRef.current = selection
+      }
+      if (selection) {
+        updateMention(nextMarkdown, selection)
+        return
+      }
       requestAnimationFrame(() => updateMention(nextMarkdown))
     },
-    [markdown, onMarkdownChange, updateMention]
+    [editorStructureKey, markdown, onMarkdownChange, updateMention]
   )
 
   React.useEffect(() => {
@@ -1578,14 +1685,14 @@ export const MarkdownEditor = React.forwardRef<
 
   function handleMarkdownInput(event: React.FormEvent<HTMLDivElement>) {
     if (event.nativeEvent.isComposing) return
+    recordPerformanceCount("markdown.input")
     const selection = markdownEditorSelection(event.currentTarget)
     const nextMarkdown = markdownEditorValue(event.currentTarget)
     if (selection) {
       lastSelectionRef.current = selection
-      pendingSelectionRef.current = selection
-      setActiveSelection(selection)
+      updateActiveSelection(selection)
     }
-    emitMarkdown(nextMarkdown)
+    emitMarkdown(nextMarkdown, undefined, selection)
   }
 
   function rememberEditorSelection() {
@@ -1593,9 +1700,13 @@ export const MarkdownEditor = React.forwardRef<
     const selection = editor && markdownEditorSelection(editor)
     if (selection) {
       lastSelectionRef.current = selection
-      pendingSelectionRef.current = selection
-      setActiveSelection(selection)
+      updateActiveSelection(selection)
     }
+  }
+
+  function handleSelectionChange() {
+    rememberEditorSelection()
+    updateMention()
   }
 
   function handleEditorKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
@@ -1635,8 +1746,8 @@ export const MarkdownEditor = React.forwardRef<
       )
       const nextSelection = { end: cursor, start: cursor }
       lastSelectionRef.current = nextSelection
-      pendingSelectionRef.current = nextSelection
-      setActiveSelection(nextSelection)
+      restoreMarkdownEditorSelection(event.currentTarget, nextSelection)
+      updateActiveSelection(nextSelection)
       return
     }
     if (event.key === "Backspace" || event.key === "Delete") {
@@ -1792,10 +1903,8 @@ export const MarkdownEditor = React.forwardRef<
                 placeholder={placeholder}
                 onInput={handleMarkdownInput}
                 onKeyDown={handleEditorKeyDown}
-                onSelectionChange={() => {
-                  rememberEditorSelection()
-                  updateMention()
-                }}
+                onSelectionChange={handleSelectionChange}
+                renderKey={editorRenderKey}
               />
               {attachments.length > 0 && (
                 <div className="mx-1 flex flex-wrap items-center gap-3 px-3 py-3">
@@ -1943,6 +2052,25 @@ export const MarkdownEditor = React.forwardRef<
     </Popover>
   )
 })
+
+function equalMarkdownSelection(
+  current: MarkdownSelection | null,
+  next: MarkdownSelection
+) {
+  return current?.start === next.start && current.end === next.end
+}
+
+function equalFileMentionState(
+  current: FileMentionState,
+  next: FileMentionState
+) {
+  return (
+    current.active === next.active &&
+    current.end === next.end &&
+    current.query === next.query &&
+    current.start === next.start
+  )
+}
 
 function codeSelectionAttachment(
   attachment: PendingCodeSelectionAttachment

@@ -37,7 +37,9 @@ test("authenticates streams and replays events after the last event id", () => {
   const stream = new AgentEventStream()
   const url = stream.url("session", "http://127.0.0.1:1234")
   stream.publish(event("session", "one"))
+  stream.flush()
   stream.publish(event("session", "two"))
+  stream.flush()
 
   const rejected = new Response()
   assert.equal(
@@ -59,7 +61,9 @@ test("queues events for a slow client and resumes on drain", () => {
   stream.handle(request(url) as never, response as never)
 
   stream.publish(event("session", "one"))
+  stream.flush()
   stream.publish(event("session", "two"))
+  stream.flush()
   assert.doesNotMatch(response.chunks.join(""), /two/)
 
   response.writable = true
@@ -72,14 +76,12 @@ test("starts a fresh history for a reused runtime session", () => {
   const stream = new AgentEventStream()
   const firstUrl = stream.url("session", "http://127.0.0.1:1234")
   stream.publish(event("session", "old execution"))
+  stream.flush()
   stream.beginSession("session")
   const nextUrl = stream.url("session", "http://127.0.0.1:1234")
 
   const staleResponse = new Response()
-  assert.equal(
-    stream.handle(request(firstUrl) as never, staleResponse as never),
-    false
-  )
+  assert.equal(stream.handle(request(firstUrl) as never, staleResponse as never), false)
   const response = new Response()
   stream.handle(request(nextUrl) as never, response as never)
   assert.doesNotMatch(response.chunks.join(""), /old execution/)
@@ -89,6 +91,7 @@ test("keeps events published before the stream URL is requested", () => {
   const stream = new AgentEventStream()
   stream.beginSession("session")
   stream.publish(event("session", "early event"))
+  stream.flush()
   const url = stream.url("session", "http://127.0.0.1:1234")
   const response = new Response()
   stream.handle(request(url) as never, response as never)
@@ -99,10 +102,26 @@ test("does not reset history when multiple consumers request a URL", () => {
   const stream = new AgentEventStream()
   stream.beginSession("session")
   stream.publish(event("session", "shared event"))
+  stream.flush()
   const firstUrl = stream.url("session", "http://127.0.0.1:1234")
   const secondUrl = stream.url("session", "http://127.0.0.1:1234")
   assert.equal(firstUrl, secondUrl)
   const response = new Response()
   stream.handle(request(secondUrl) as never, response as never)
   assert.match(response.chunks.join(""), /shared event/)
+})
+
+test("coalesces adjacent streaming deltas before serialization", () => {
+  const stream = new AgentEventStream()
+  const url = stream.url("session", "http://127.0.0.1:1234")
+  const response = new Response()
+  stream.handle(request(url) as never, response as never)
+
+  stream.publish(event("session", "one"))
+  stream.publish(event("session", "two"))
+  stream.flush()
+
+  const payload = response.chunks.join("")
+  assert.equal(payload.match(/^data:/gm)?.length, 1)
+  assert.match(payload, /onetwo/)
 })

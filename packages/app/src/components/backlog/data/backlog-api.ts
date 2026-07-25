@@ -9,6 +9,7 @@ import type {
   UserStoryUpdate,
 } from "@/components/backlog/data/backlog-data"
 import type { ApiConnection } from "@/context/platform"
+import { boundedAgentUpdate } from "./agent-update-limits.ts"
 
 export function createBacklogApi(connection: ApiConnection) {
   const baseUrl = connection.url.replace(/\/$/, "")
@@ -158,9 +159,27 @@ export function createBacklogApi(connection: ApiConnection) {
   }
 }
 
+export class BacklogApiError extends Error {
+  readonly retryable: boolean
+  readonly status: number
+
+  constructor(status: number, message: string) {
+    super(message)
+    this.name = "BacklogApiError"
+    this.retryable = status === 408 || status === 429 || status >= 500
+    this.status = status
+  }
+}
+
+export function retryableBacklogError(error: unknown) {
+  return !(error instanceof BacklogApiError) || error.retryable
+}
+
 function apiUpdate(input: UserStoryUpdate) {
-  if (!input.agentActivity && !input.agentActivityUpdates) return input
-  const { agentActivities, agentActivityUpdates, ...update } = input
+  const boundedInput = boundedAgentUpdate(input)
+  if (!boundedInput.agentActivity && !boundedInput.agentActivityUpdates)
+    return boundedInput
+  const { agentActivities, agentActivityUpdates, ...update } = boundedInput
   void agentActivities
   void agentActivityUpdates
   return update
@@ -334,7 +353,8 @@ async function request<T>(
     headers,
   })
 
-  if (!response.ok) throw new Error(await responseMessage(response))
+  if (!response.ok)
+    throw new BacklogApiError(response.status, await responseMessage(response))
   if (response.status === 204) return undefined as T
   return unwrapResponse<T>(await response.json())
 }
@@ -361,6 +381,13 @@ async function responseMessage(response: Response) {
   try {
     const body = await response.json()
     if (typeof body.message === "string") return body.message
+    if (Array.isArray(body.errors)) {
+      const error = body.errors.find(
+        (value: unknown) => isRecord(value) && typeof value.message === "string"
+      )
+      if (isRecord(error) && typeof error.message === "string")
+        return error.message
+    }
   } catch {
     return `Request failed with status ${response.status}`
   }

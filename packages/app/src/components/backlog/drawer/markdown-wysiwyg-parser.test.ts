@@ -9,6 +9,7 @@ import {
   markdownListIndentResult,
   markdownListEnterResult,
   markdownWysiwygLines,
+  markdownWysiwygStructureKey,
 } from "./markdown-wysiwyg-parser.ts"
 
 test("formats complete inline markdown while preserving its raw source", () => {
@@ -33,6 +34,25 @@ test("returns incomplete inline markdown as visible plain text after a marker is
       segments: [{ source: "*test", type: "text" }],
     },
   ])
+})
+
+test("changes the editor key only when rendered markdown structure changes", () => {
+  assert.equal(
+    markdownWysiwygStructureKey("a"),
+    markdownWysiwygStructureKey("ordinary text")
+  )
+  assert.notEqual(
+    markdownWysiwygStructureKey(""),
+    markdownWysiwygStructureKey("a")
+  )
+  assert.notEqual(
+    markdownWysiwygStructureKey("ordinary text"),
+    markdownWysiwygStructureKey("**bold text**")
+  )
+  assert.notEqual(
+    markdownWysiwygStructureKey("one line"),
+    markdownWysiwygStructureKey("one line\nsecond line")
+  )
 })
 
 test("preserves heading and list prefixes in the raw source", () => {

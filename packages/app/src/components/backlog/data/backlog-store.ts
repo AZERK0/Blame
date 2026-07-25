@@ -161,8 +161,7 @@ function useBacklogStoreValue() {
             stories: current.stories.map((currentStory) =>
               currentStory.id === story.id
                 ? mergeUserStory(currentStory, nextStory, {
-                    replaceAgentActivities:
-                      input.agentActivities !== undefined,
+                    replaceAgentActivities: input.agentActivities !== undefined,
                   })
                 : currentStory
             ),
@@ -259,25 +258,22 @@ function useBacklogStoreValue() {
     },
     [api]
   )
-  const updateAgentRunLocal = React.useCallback(
+  const updateAgentLocal = React.useCallback(
     (
       story: UserStory,
-      run: UserStoryAgentRun,
-      input: UserStoryAgentRunUpdate
+      input: UserStoryUpdate,
+      run?: UserStoryAgentRun,
+      runInput?: UserStoryAgentRunUpdate
     ) => {
-      recordPerformanceCount("backlog.store.update_agent_run_local")
-      let nextRun = agentRunWithUpdate(run, input)
-      setState((current) => ({
-        ...current,
-        stories: current.stories.map((currentStory) =>
-          storyWithLocallyUpdatedAgentRun(currentStory, story, run, input, {
-            onNextRun(run) {
-              nextRun = run
-            },
-          })
-        ),
-      }))
-      return nextRun
+      recordPerformanceCount("backlog.store.update_agent_local")
+      React.startTransition(() => {
+        setState((current) => ({
+          ...current,
+          stories: current.stories.map((currentStory) =>
+            storyWithLocalAgentUpdate(currentStory, story, input, run, runInput)
+          ),
+        }))
+      })
     },
     []
   )
@@ -412,8 +408,8 @@ function useBacklogStoreValue() {
     undoComment,
     validateCommentUndo,
     update,
+    updateAgentLocal,
     updateAgentRun,
-    updateAgentRunLocal,
     updateLocal,
   }
 }
@@ -423,7 +419,11 @@ function agentRunWithUpdate(
   input: UserStoryAgentRunUpdate
 ) {
   const { agentActivity, agentActivityUpdates, ...metadata } = input
-  const nextRun = { ...run, ...definedUpdate(metadata) }
+  const nextRun = {
+    ...run,
+    ...definedUpdate(metadata),
+    updatedAt: new Date().toISOString(),
+  }
   const activities = agentActivityUpdates ?? activityUpdateList(agentActivity)
   if (!activities.length) return nextRun
   return {
@@ -462,20 +462,19 @@ function storyWithComment(story: UserStory, comment: UserStoryComment) {
   }
 }
 
-function storyWithLocallyUpdatedAgentRun(
+function storyWithLocalAgentUpdate(
   currentStory: UserStory,
   targetStory: UserStory,
-  run: UserStoryAgentRun,
-  input: UserStoryAgentRunUpdate,
-  result: { onNextRun(run: UserStoryAgentRun): void }
+  input: UserStoryUpdate,
+  run?: UserStoryAgentRun,
+  runInput?: UserStoryAgentRunUpdate
 ) {
   if (currentStory.id !== targetStory.id) return currentStory
+  const nextStory = { ...currentStory, ...definedUpdate(input) }
+  if (!run || !runInput) return nextStory
   const currentRun =
-    currentStory.agentRuns?.find((currentRun) => currentRun.id === run.id) ??
-    run
-  const nextRun = agentRunWithUpdate(currentRun, input)
-  result.onNextRun(nextRun)
-  return mergeStoryAgentRun(currentStory, nextRun)
+    nextStory.agentRuns?.find((currentRun) => currentRun.id === run.id) ?? run
+  return mergeStoryAgentRun(nextStory, agentRunWithUpdate(currentRun, runInput))
 }
 
 function definedUpdate(input: UserStoryUpdate | UserStoryAgentRunUpdate) {

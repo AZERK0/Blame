@@ -5,6 +5,7 @@ import { basename, join, posix, resolve } from "node:path";
 import { promisify } from "node:util";
 import { withoutTelemetryEnvironment } from "@blame/telemetry";
 import { pLimit } from "./concurrency.ts";
+import { workspaceDiffStats } from "./workspace-diff-stats.ts";
 
 const execFileAsync = promisify(execFile);
 const maxBuffer = 50 * 1024 * 1024;
@@ -108,6 +109,27 @@ export async function gitDiffBetween(input: GitDiffInput) {
     ...excludedEnvFiles,
   ]);
   return stdout;
+}
+
+export async function gitDiffStatsBetween(input: GitDiffInput) {
+  const from = revision(input.from);
+  const to = revision(input.to);
+  const excludedEnvFiles = await committedRuntimeEnvPathspecs(
+    input.root,
+    from,
+    to,
+  );
+  const { stdout } = await runGit(input.root, [
+    "diff",
+    "--numstat",
+    "--no-ext-diff",
+    from,
+    to,
+    "--",
+    ".",
+    ...excludedEnvFiles,
+  ]);
+  return workspaceDiffStats(stdout);
 }
 
 export async function listGitDirectory(input: GitDirectoryInput) {

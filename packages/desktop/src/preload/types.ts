@@ -242,6 +242,11 @@ export type BlameDesktopApi = {
       limit?: number;
     }): Promise<WorkspaceEntry[]>;
     gitDiff(input: { root: string }): Promise<string>;
+    gitDiffStats(input: {
+      from?: string;
+      root: string;
+      to?: string;
+    }): Promise<{ additions: number; deletions: number; files: number }>;
     gitDiffBetween(input: {
       from: string;
       root: string;

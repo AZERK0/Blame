@@ -1862,6 +1862,10 @@ export class BlameAgentRuntime {
   }
 
   private async handleSessionEvent(sessionId: string, event: AgentEvent) {
+    if (streamingAgentEvent(event)) {
+      this.agentTelemetry.observeEvent(sessionId, event);
+      return;
+    }
     const activeContext = this.agentTelemetry.context(sessionId);
     const eventUsage = eventUsageSummary(event);
     const usage = await this.usageForEvent(sessionId, event, eventUsage);
@@ -2522,6 +2526,10 @@ export class BlameAgentRuntime {
   }
 }
 
+function streamingAgentEvent(event: AgentEvent) {
+  return event.type === "text" || event.type === "reasoning";
+}
+
 function normalizeEvent(
   sessionId: string,
   event: CoreSessionEvent,
@@ -2639,16 +2647,18 @@ function toolPolicies(autoApproveWriteTools: boolean) {
   ]);
 }
 
-function backendKey(backend?: AgentBackendConfig) {
+export function backendKey(backend?: AgentBackendConfig) {
   if (backend?.key) return backend.key;
-  if (!backend) return "auto";
+  if (!backend) return "local";
   if (backend.mode === "remote") return `remote:${backend.endpoint ?? ""}`;
   if (backend.mode === "hub") return `hub:${backend.endpoint ?? "default"}`;
   return backend.mode;
 }
 
-function coreBackendOptions(backend?: AgentBackendConfig): ClineCoreOptions {
-  if (!backend) return { backendMode: "auto" };
+export function coreBackendOptions(
+  backend?: AgentBackendConfig,
+): ClineCoreOptions {
+  if (!backend) return { backendMode: "local" };
   if (backend.mode === "remote") {
     if (!backend.endpoint)
       throw new Error("Remote Cline backend endpoint is required.");

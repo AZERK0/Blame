@@ -8,14 +8,23 @@ import { promisify } from "node:util";
 import {
   ensureGitRepository,
   gitDiffBetween,
+  gitDiffStatsBetween,
   gitDiffFrom,
   gitSnapshot,
   isGitRepository,
   listGitDirectory,
   readGitFile,
 } from "./workspace-git.ts";
+import { workspaceDiffStats } from "./workspace-diff-stats.ts";
 
 const execFileAsync = promisify(execFile);
+
+test("totals textual and binary numstat changes", () => {
+  assert.deepEqual(
+    workspaceDiffStats("12\t4\tsrc/app.ts\n-\t-\tassets/logo.png\n"),
+    { additions: 12, deletions: 4, files: 2 },
+  );
+});
 
 test("reads a merged story from Git history", async () => {
   const repository = await createRepository();
@@ -29,6 +38,11 @@ test("reads a merged story from Git history", async () => {
     const merge = await revision(repository);
 
     const diff = await gitDiffBetween({
+      from: base,
+      root: repository,
+      to: merge,
+    });
+    const stats = await gitDiffStatsBetween({
       from: base,
       root: repository,
       to: merge,
@@ -50,6 +64,7 @@ test("reads a merged story from Git history", async () => {
 
     assert.match(diff, /removed\.txt/);
     assert.match(diff, /src\/added\.txt/);
+    assert.equal(stats.files, 3);
     assert.deepEqual(
       entries.map((entry) => entry.name),
       ["removed", "src", "removed.txt"],

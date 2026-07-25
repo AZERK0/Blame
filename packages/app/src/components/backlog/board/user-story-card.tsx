@@ -1,3 +1,4 @@
+import * as React from "react"
 import { LoaderCircleIcon } from "lucide-react"
 
 import {
@@ -17,8 +18,10 @@ import type { UserStoryDiffStats } from "@/components/backlog/development/user-s
 import { StoryStatusBadge } from "@/components/backlog/shared/backlog-status-badge"
 import { UserStoryTitleCloud } from "@/components/backlog/shared/user-story-title-cloud"
 import type { OpenDrawer } from "@/components/backlog/shared/backlog-types"
+import { equalUserStoryCardStory } from "@/components/backlog/board/user-story-card-equality"
 import { StoryActions } from "@/components/backlog/actions/story-actions"
 import { Button } from "@/components/ui/button"
+import { recordPerformanceCount } from "@/lib/performance-diagnostics"
 import {
   Card,
   CardAction,
@@ -37,7 +40,26 @@ type UserStoryCardBodyProps = {
   titleGenerating?: boolean
 }
 
-export function UserStoryCard({
+type UserStoryCardProps = {
+  cleanup?: boolean
+  diffStats?: UserStoryDiffStats
+  onAction: (
+    story: UserStory,
+    action: BacklogAction
+  ) => Promise<UserStory | void>
+  onDeleteUserStory: (story: UserStory) => Promise<void>
+  onOpenDrawer: OpenDrawer
+  onOpenWorktree: (story: UserStory) => Promise<void>
+  onReject: (story: UserStory, choice: RejectChoice) => Promise<UserStory>
+  onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
+  onUnpauseAgent: (story: UserStory) => Promise<UserStory>
+  reviewDiffEmpty?: boolean
+  setupInitializing?: boolean
+  story: UserStory
+  titleGenerating?: boolean
+}
+
+export const UserStoryCard = React.memo(function UserStoryCard({
   diffStats,
   onAction,
   onDeleteUserStory,
@@ -51,24 +73,8 @@ export function UserStoryCard({
   setupInitializing,
   story,
   titleGenerating,
-}: {
-  diffStats?: UserStoryDiffStats
-  onAction: (
-    story: UserStory,
-    action: BacklogAction
-  ) => Promise<UserStory | void>
-  onDeleteUserStory: (story: UserStory) => Promise<void>
-  onOpenDrawer: OpenDrawer
-  onOpenWorktree: (story: UserStory) => Promise<void>
-  onReject: (story: UserStory, choice: RejectChoice) => Promise<UserStory>
-  reviewDiffEmpty?: boolean
-  onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
-  onUnpauseAgent: (story: UserStory) => Promise<UserStory>
-  cleanup?: boolean
-  setupInitializing?: boolean
-  story: UserStory
-  titleGenerating?: boolean
-}) {
+}: UserStoryCardProps) {
+  recordPerformanceCount("backlog.card.render")
   return (
     <div className="user-story-state-effect" data-story-state={story.status}>
       <Card
@@ -99,6 +105,18 @@ export function UserStoryCard({
       </Card>
     </div>
   )
+}, equalUserStoryCardProps)
+
+function equalUserStoryCardProps(
+  previous: UserStoryCardProps,
+  next: UserStoryCardProps
+) {
+  const keys = Object.keys(next) as (keyof UserStoryCardProps)[]
+  return keys.every((key) => {
+    if (key === "story")
+      return equalUserStoryCardStory(previous.story, next.story)
+    return previous[key] === next[key]
+  })
 }
 
 export function ReadOnlyUserStoryCard({ story }: { story: UserStory }) {
@@ -144,9 +162,7 @@ function UserStoryCardBody({
                 active={titleGenerating}
                 className="block w-full"
               >
-                <span className="block break-words">
-                  {story.title}
-                </span>
+                <span className="block break-words">{story.title}</span>
               </UserStoryTitleCloud>
             </Button>
           ) : (

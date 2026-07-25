@@ -166,6 +166,8 @@ const api: BlameDesktopApi = {
     readFile: (input) => ipcRenderer.invoke("workspace:read-file", input),
     searchFiles: (input) => ipcRenderer.invoke("workspace:search-files", input),
     gitDiff: (input) => ipcRenderer.invoke("workspace:git-diff", input),
+    gitDiffStats: (input) =>
+      ipcRenderer.invoke("workspace:git-diff-stats", input),
     gitDiffBetween: (input) =>
       ipcRenderer.invoke("workspace:git-diff-between", input),
     gitDiffFrom: (input) =>

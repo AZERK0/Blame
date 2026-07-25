@@ -33,7 +33,8 @@ export type VcsFileDiff = {
 
 export function useDevelopmentWorkspace(
   userStory?: UserStory,
-  fallbackToProjectRoot?: boolean
+  fallbackToProjectRoot?: boolean,
+  refreshEnabled = true
 ) {
   const platform = usePlatform()
   const projects = useProjects()
@@ -95,13 +96,13 @@ export function useDevelopmentWorkspace(
   }, [directory, historical, historicalRefs, platform.workspace])
 
   React.useEffect(() => {
-    if (!directory || historical) return
+    if (!directory || historical || !refreshEnabled) return
     const timer = setInterval(() => {
       if (document.visibilityState !== "visible") return
       setReloadKey((current) => current + 1)
     }, 1_500)
     return () => clearInterval(timer)
-  }, [directory, historical])
+  }, [directory, historical, refreshEnabled])
 
   return {
     available: Boolean(directory && platform.workspace),

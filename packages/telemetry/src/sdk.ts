@@ -172,7 +172,7 @@ function createInstrumentations(serviceName: string) {
       redactedQueryParams: sensitiveQueryParameters,
     }),
     new UndiciInstrumentation({ requireParentforSpans: true }),
-    new RuntimeNodeInstrumentation({ monitoringPrecision: 10_000 }),
+    new RuntimeNodeInstrumentation({ monitoringPrecision: 60_000 }),
     new MySQL2Instrumentation({
       enabled: serviceName === "blame-api",
       maskStatement: true,

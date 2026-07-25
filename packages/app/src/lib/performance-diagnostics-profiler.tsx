@@ -1,7 +1,7 @@
 import * as React from "react"
 
 import {
-  performanceDiagnosticsEnabled,
+  performanceDiagnosticsProfilerEnabled,
   recordProfilerRender,
 } from "@/lib/performance-diagnostics"
 
@@ -12,7 +12,7 @@ export function PerformanceDiagnosticsProfiler({
   children: React.ReactNode
   id: string
 }) {
-  if (!performanceDiagnosticsEnabled()) return children
+  if (!performanceDiagnosticsProfilerEnabled()) return children
   return (
     <React.Profiler id={id} onRender={recordProfilerRender}>
       {children}

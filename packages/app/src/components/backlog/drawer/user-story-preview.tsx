@@ -829,7 +829,9 @@ async function createNativePreviewSession(session: NativePreviewSession) {
       ([, candidate]) => candidate === session
     )?.[0]
     if (!key) throw new Error("Preview session key is unavailable")
-    const { id } = await session.client.create({ storageKey: session.storageKey })
+    const { id } = await session.client.create({
+      storageKey: session.storageKey,
+    })
     session.browserId = id
     return id
   } finally {
@@ -1120,7 +1122,10 @@ function useNativePreviewBounds(
         stabilityRef
       )
     updateBounds()
-    const stopFrameSync = syncNativePreviewBoundsDuringLayout(updateBounds, visible)
+    const stopFrameSync = syncNativePreviewBoundsDuringLayout(
+      updateBounds,
+      visible
+    )
     const observer = new ResizeObserver(updateBounds)
     if (surfaceRef.current) observer.observe(surfaceRef.current)
     window.addEventListener("resize", updateBounds)

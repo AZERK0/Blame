@@ -1,3 +1,4 @@
+import * as React from "react"
 import { InfoIcon, LoaderCircleIcon, PlusIcon } from "lucide-react"
 
 import {
@@ -7,7 +8,10 @@ import {
   type UserStory,
 } from "@/components/backlog/data/backlog-data"
 import type { OpenDrawer } from "@/components/backlog/shared/backlog-types"
-import { UserStoryCard } from "@/components/backlog/board/user-story-card"
+import {
+  UserStoryCard,
+} from "@/components/backlog/board/user-story-card"
+import { equalUserStoryCardStory } from "@/components/backlog/board/user-story-card-equality"
 import type { UserStoryDiffStats } from "@/components/backlog/development/user-story-diff-stats"
 import type {
   RejectChoice,
@@ -22,6 +26,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
+import { recordPerformanceCount } from "@/lib/performance-diagnostics"
 
 const columnColors = {
   backlog: "border-emerald-500",
@@ -32,24 +37,7 @@ const columnColors = {
   discarded: "border-rose-500",
 } satisfies Record<BacklogColumnId, string>
 
-export function BacklogColumn({
-  column,
-  diffStats,
-  onAction,
-  onCreateUserStory,
-  onDeleteUserStory,
-  onOpenDrawer,
-  onOpenWorktree,
-  onReject,
-  reviewDiffEmpty,
-  onStopAgent,
-  onUnpauseAgent,
-  queueInitializing,
-  storyCleanup,
-  storySetupInitializing,
-  storyTitleGenerating,
-  stories,
-}: {
+type BacklogColumnProps = {
   column: (typeof backlogColumns)[number]
   diffStats?: (story: UserStory) => UserStoryDiffStats | undefined
   onAction: (
@@ -69,7 +57,27 @@ export function BacklogColumn({
   storySetupInitializing?: (story: UserStory) => boolean
   storyTitleGenerating?: (story: UserStory) => boolean
   stories: UserStory[]
-}) {
+}
+
+export const BacklogColumn = React.memo(function BacklogColumn({
+  column,
+  diffStats,
+  onAction,
+  onCreateUserStory,
+  onDeleteUserStory,
+  onOpenDrawer,
+  onOpenWorktree,
+  onReject,
+  reviewDiffEmpty,
+  onStopAgent,
+  onUnpauseAgent,
+  queueInitializing,
+  storyCleanup,
+  storySetupInitializing,
+  storyTitleGenerating,
+  stories,
+}: BacklogColumnProps) {
+  recordPerformanceCount("backlog.column.render")
   return (
     <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-lg border bg-muted/30 shadow-xl ring-1 shadow-black/10 ring-foreground/15">
       <BacklogColumnHeader
@@ -113,6 +121,28 @@ export function BacklogColumn({
         </div>
       </ScrollArea>
     </section>
+  )
+}, equalBacklogColumnProps)
+
+function equalBacklogColumnProps(
+  previous: BacklogColumnProps,
+  next: BacklogColumnProps
+) {
+  const keys = Object.keys(next) as (keyof BacklogColumnProps)[]
+  return keys.every((key) => {
+    if (key === "stories")
+      return equalStoryReferences(previous.stories, next.stories)
+    return previous[key] === next[key]
+  })
+}
+
+function equalStoryReferences(previous: UserStory[], next: UserStory[]) {
+  return (
+    previous.length === next.length &&
+    previous.every((story, index) => {
+      const nextStory = next[index]
+      return Boolean(nextStory && equalUserStoryCardStory(story, nextStory))
+    })
   )
 }
 

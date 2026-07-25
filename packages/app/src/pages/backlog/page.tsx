@@ -23,6 +23,8 @@ import {
   persistTerminalAgentUpdate,
   type TerminalAgentUpdate,
 } from "@/components/backlog/data/agent-terminal-outbox"
+import { retryableBacklogError } from "@/components/backlog/data/backlog-api"
+import { boundedAgentMessage } from "@/components/backlog/data/agent-update-limits"
 import {
   changedFilesFromDiff,
   completedStoryContextAttachment,
@@ -41,6 +43,7 @@ import type {
   UserStoryAgentRun,
   UserStoryAgentRunUpdate,
   UserStoryCodeSelectionAttachment,
+  UserStoryDraft,
   UserStoryFileAttachment,
   UserStoryUpdate,
 } from "@/components/backlog/data/backlog-data"
@@ -78,7 +81,7 @@ import {
 import { recordPerformanceCount } from "@/lib/performance-diagnostics"
 
 const agentEventPersistDelayMs = 1_500
-const terminalAgentRetryIntervalMs = 10_000
+const terminalAgentRetryIntervalMs = 60_000
 const untitledUserStoryTitle = "Untitled user story"
 
 export function BacklogPage() {
@@ -110,6 +113,14 @@ export function BacklogPage() {
     new Map<string, PendingAgentUpdate>()
   )
   const retryingTerminalAgentUpdates = React.useRef(false)
+  const backlogRef = React.useRef(backlog)
+  const persistQueuedAgentUpdateRef = React.useRef<
+    (story: UserStory, update: QueuedAgentUpdate) => Promise<unknown>
+  >(async () => undefined)
+
+  React.useEffect(() => {
+    backlogRef.current = backlog
+  }, [backlog])
 
   React.useEffect(() => {
     storiesRef.current = backlog.stories
@@ -210,18 +221,25 @@ export function BacklogPage() {
     }
   }, [])
   const updateStoryLocal = React.useCallback(
-    (story: UserStory, input: UserStoryUpdate) => {
+    (
+      story: UserStory,
+      input: UserStoryUpdate,
+      run?: UserStoryAgentRun,
+      runInput?: UserStoryAgentRunUpdate
+    ) => {
       const currentStory = activeStory(story, storiesRef.current)
       const nextStory = { ...currentStory, ...definedUpdate(input) }
       storiesRef.current = storiesRef.current.map((current) =>
         current.id === story.id ? nextStory : current
       )
-      backlog.updateLocal(currentStory, input)
-      setDrawerTarget((current) =>
-        current?.userStory?.id === story.id
-          ? { ...current, userStory: nextStory }
-          : current
-      )
+      backlog.updateAgentLocal(currentStory, input, run, runInput)
+      React.startTransition(() => {
+        setDrawerTarget((current) =>
+          current?.userStory?.id === story.id
+            ? { ...current, userStory: nextStory }
+            : current
+        )
+      })
       return nextStory
     },
     [backlog]
@@ -312,22 +330,26 @@ export function BacklogPage() {
     },
     [backlog, updateStory]
   )
+  React.useEffect(() => {
+    persistQueuedAgentUpdateRef.current = persistQueuedAgentUpdate
+  }, [persistQueuedAgentUpdate])
   const retryTerminalAgentUpdates = React.useCallback(async () => {
-    const projectId = backlog.projectId
+    const currentBacklog = backlogRef.current
+    const projectId = currentBacklog.projectId
     if (!projectId || retryingTerminalAgentUpdates.current) return
     retryingTerminalAgentUpdates.current = true
     try {
       await replayTerminalAgentUpdates(
         window.localStorage,
-        backlog,
-        persistQueuedAgentUpdate
+        currentBacklog,
+        persistQueuedAgentUpdateRef.current
       )
     } catch (error) {
       reportAgentPersistenceError(error)
     } finally {
       retryingTerminalAgentUpdates.current = false
     }
-  }, [backlog, persistQueuedAgentUpdate])
+  }, [])
 
   React.useEffect(() => {
     if (backlog.loading || !backlog.projectId) return
@@ -389,8 +411,7 @@ export function BacklogPage() {
       runInput: UserStoryAgentRunUpdate,
       immediate: boolean
     ) => {
-      const nextStory = updateStoryLocal(story, input)
-      if (run) backlog.updateAgentRunLocal(nextStory, run, runInput)
+      const nextStory = updateStoryLocal(story, input, run, runInput)
       if (immediate) {
         void flushAgentUpdate(nextStory, run, input, runInput).catch(
           reportAgentPersistenceError
@@ -399,7 +420,7 @@ export function BacklogPage() {
       }
       queueAgentUpdate(nextStory, run, input, runInput)
     },
-    [backlog, flushAgentUpdate, queueAgentUpdate, updateStoryLocal]
+    [flushAgentUpdate, queueAgentUpdate, updateStoryLocal]
   )
   const persistAgentEvent = React.useCallback(
     async (
@@ -596,7 +617,9 @@ export function BacklogPage() {
         return currentStory
       }
       const run = await backlog.createAgentRun(currentStory, {
-        checkpointRunCount: nextCheckpointRunCount(currentStory.agentRuns ?? []),
+        checkpointRunCount: nextCheckpointRunCount(
+          currentStory.agentRuns ?? []
+        ),
         clineSessionId: session.sessionId,
         kind: "resume",
       })
@@ -1076,6 +1099,43 @@ export function BacklogPage() {
       )
     })
   }, [platform.backlogStatusPip])
+  const columnAction = useLatestCallback(runStoryAction)
+  const columnDeleteStory = useLatestCallback(backlog.remove)
+  const columnOpenDrawer = useLatestCallback(openDrawer)
+  const columnOpenWorktree = useLatestCallback(openWorktree)
+  const columnRejectStory = useLatestCallback(rejectStory)
+  const columnStopAgent = useLatestCallback(stopAgent)
+  const columnUnpauseAgent = useLatestCallback(unpauseAgent)
+  const closeDrawer = useLatestCallback((open: boolean) => {
+    if (open) return
+    drawerLoadRequestId.current += 1
+    setDrawerTarget(undefined)
+    selectBacklogStory(undefined)
+  })
+  const createDrawerStory = useLatestCallback(
+    async (input: Omit<UserStoryDraft, "projectId">) => {
+      const story = await backlog.create(input)
+      void generateQueuedStoryTitle(story)
+      setDrawerTarget({ userStory: story, mode: "edit" })
+      return story
+    }
+  )
+  const createDrawerComment = useLatestCallback(backlog.createComment)
+  const deleteDrawerStory = useLatestCallback(backlog.remove)
+  const updateDrawerStory = useLatestCallback(
+    async (story: UserStory, input: UserStoryUpdate) => {
+      const nextStory = await updateStory(story, input)
+      void generateQueuedStoryTitle(nextStory)
+      return nextStory
+    }
+  )
+  const drawerOpenDrawer = useLatestCallback(openDrawer)
+  const drawerOptimizeStory = useLatestCallback(optimizeUserStory)
+  const drawerApproveStory = useLatestCallback(completeReviewStory)
+  const drawerRequestChanges = useLatestCallback(requestChanges)
+  const drawerRejectStory = useLatestCallback(rejectStory)
+  const drawerStopAgent = useLatestCallback(stopAgent)
+  const drawerUndoComment = useLatestCallback(undoUserStoryComment)
 
   return (
     <div className="flex h-svh min-h-0 min-w-0 flex-col gap-4 overflow-hidden px-4 pt-[calc(var(--header-height)+1rem)] pb-4 md:h-[calc(100svh_-_1rem)] lg:px-6 lg:pt-[calc(var(--header-height)+1.5rem)] lg:pb-6">
@@ -1107,15 +1167,15 @@ export function BacklogPage() {
               key={column.id}
               column={column}
               diffStats={storyDiffStats}
-              onAction={runStoryAction}
+              onAction={columnAction}
               onCreateUserStory={openCreateDrawer}
-              onDeleteUserStory={backlog.remove}
-              onOpenDrawer={openDrawer}
-              onOpenWorktree={openWorktree}
-              onReject={rejectStory}
+              onDeleteUserStory={columnDeleteStory}
+              onOpenDrawer={columnOpenDrawer}
+              onOpenWorktree={columnOpenWorktree}
+              onReject={columnRejectStory}
               reviewDiffEmpty={reviewDiffEmpty}
-              onStopAgent={stopAgent}
-              onUnpauseAgent={unpauseAgent}
+              onStopAgent={columnStopAgent}
+              onUnpauseAgent={columnUnpauseAgent}
               queueInitializing={column.id === "ready" && queueInitializing}
               storyCleanup={backlog.storyCleanup}
               storySetupInitializing={backlog.storySetupInitializing}
@@ -1130,44 +1190,27 @@ export function BacklogPage() {
           drawerUserStory ? storyDiffStats(drawerUserStory) : undefined
         }
         open={Boolean(drawerTarget)}
-        onOpenChange={(open) => {
-          if (!open) {
-            drawerLoadRequestId.current += 1
-            setDrawerTarget(undefined)
-            selectBacklogStory(undefined)
-          }
-        }}
+        onOpenChange={closeDrawer}
         userStory={drawerUserStory}
         mode={drawerTarget?.mode ?? "view"}
         initialDraft={drawerTarget?.initialDraft}
         initialTab={drawerTarget?.initialTab}
         initialDevelopmentTab={drawerTarget?.initialDevelopmentTab}
         focusComment={drawerTarget?.focusComment}
-        onCreateUserStory={async (input) => {
-          const story = await backlog.create(input)
-          void generateQueuedStoryTitle(story)
-          setDrawerTarget({ userStory: story, mode: "edit" })
-          return story
-        }}
-        onCreateUserStoryComment={(story, input) =>
-          backlog.createComment(story, input)
-        }
-        onDeleteUserStory={(story) => backlog.remove(story)}
-        onUpdateUserStory={async (story, input) => {
-          const nextStory = await updateStory(story, input)
-          void generateQueuedStoryTitle(nextStory)
-          return nextStory
-        }}
-        onOpenDrawer={openDrawer}
-        onOptimizeUserStory={optimizeUserStory}
-        onApproveAndMerge={completeReviewStory}
-        onRequestChanges={requestChanges}
-        onReject={rejectStory}
+        onCreateUserStory={createDrawerStory}
+        onCreateUserStoryComment={createDrawerComment}
+        onDeleteUserStory={deleteDrawerStory}
+        onUpdateUserStory={updateDrawerStory}
+        onOpenDrawer={drawerOpenDrawer}
+        onOptimizeUserStory={drawerOptimizeStory}
+        onApproveAndMerge={drawerApproveStory}
+        onRequestChanges={drawerRequestChanges}
+        onReject={drawerRejectStory}
         reviewDiffEmpty={
           drawerUserStory ? reviewDiffEmpty(drawerUserStory) : false
         }
-        onStopAgent={stopAgent}
-        onUndoUserStoryComment={undoUserStoryComment}
+        onStopAgent={drawerStopAgent}
+        onUndoUserStoryComment={drawerUndoComment}
         setupInitializing={backlog.storySetupInitializing(drawerUserStory)}
         titleGenerating={
           drawerUserStory ? storyTitleGenerating(drawerUserStory) : false
@@ -1176,6 +1219,19 @@ export function BacklogPage() {
       <UserStoryPreviewWarmup userStories={backlog.stories} />
       <HostDependenciesDialog {...rotation.hostDependenciesDialog} />
     </div>
+  )
+}
+
+function useLatestCallback<Arguments extends unknown[], Result>(
+  callback: (...arguments_: Arguments) => Result
+) {
+  const callbackRef = React.useRef(callback)
+  React.useEffect(() => {
+    callbackRef.current = callback
+  }, [callback])
+  return React.useCallback(
+    (...arguments_: Arguments) => callbackRef.current(...arguments_),
+    []
   )
 }
 
@@ -1725,11 +1781,17 @@ async function replayTerminalAgentUpdate(
     return acknowledgeTerminalAgentUpdate(storage, update)
   if (run && run.status !== "running")
     return acknowledgeTerminalAgentUpdate(storage, update)
-  await persist(
-    detailedStory,
-    replayableAgentUpdate(detailedStory, run, update)
-  )
-  acknowledgeTerminalAgentUpdate(storage, update)
+  try {
+    await persist(
+      detailedStory,
+      replayableAgentUpdate(detailedStory, run, update)
+    )
+    acknowledgeTerminalAgentUpdate(storage, update)
+  } catch (error) {
+    if (!retryableBacklogError(error))
+      acknowledgeTerminalAgentUpdate(storage, update)
+    throw error
+  }
 }
 
 function replayableAgentUpdate(
@@ -1899,8 +1961,8 @@ function agentEventUpdate(
     })
     return {
       ...flowUpdate,
-      agentLastError: text,
-      agentLastEvent: text,
+      agentLastError: boundedAgentMessage(text, "Agent authentication failed"),
+      agentLastEvent: boundedAgentMessage(text, "Agent authentication failed"),
       agentStatus: "Paused",
     }
   }
@@ -1908,7 +1970,7 @@ function agentEventUpdate(
     return {
       ...flowUpdate,
       agentLastError: null,
-      agentLastEvent: text || "Agent completed. Ready for review.",
+      agentLastEvent: "Agent completed. Ready for review.",
       agentStatus: null,
       status: "in-review",
     }
@@ -1916,8 +1978,8 @@ function agentEventUpdate(
   if (failedAgentRun(event)) {
     return {
       ...flowUpdate,
-      agentLastError: text || "Agent session failed",
-      agentLastEvent: text || "Agent session failed",
+      agentLastError: boundedAgentMessage(text, "Agent session failed"),
+      agentLastEvent: boundedAgentMessage(text, "Agent session failed"),
       agentStatus: null,
       status: "in-review",
     }
@@ -1925,8 +1987,10 @@ function agentEventUpdate(
   return {
     ...flowUpdate,
     agentLastError:
-      event.type === "error" ? text || "Agent session failed" : undefined,
-    agentLastEvent: text || event.type,
+      event.type === "error"
+        ? boundedAgentMessage(text, "Agent session failed")
+        : undefined,
+    agentLastEvent: boundedAgentMessage(text, event.type),
   }
 }
 

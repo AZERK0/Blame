@@ -25,8 +25,12 @@ import {
   shouldPersistAgentEvent,
   terminalAgentRunEvent,
 } from "@/components/backlog/data/agent-flow"
-import { subscribeAgentEvents } from "@/components/backlog/data/agent-event-stream"
+import {
+  activeAgentEventSubscription,
+  subscribeAgentEvents,
+} from "@/components/backlog/data/agent-event-stream"
 import { persistTerminalAgentUpdate } from "@/components/backlog/data/agent-terminal-outbox"
+import { boundedAgentMessage } from "@/components/backlog/data/agent-update-limits"
 import {
   completedClineLog,
   finalAssistantResponse,
@@ -56,8 +60,8 @@ import { diagnoseAndRepairProjectInitialization } from "./project-initialization
 const maxConcurrentDevelopmentStories = 3
 const blockerRetryDelay = 30_000
 const previewRecoveryIntervalMs = 30_000
-const agentCompletionRecoveryIntervalMs = 10_000
-const agentCompletionRecoveryGraceMs = 15_000
+const agentCompletionRecoveryIntervalMs = 60_000
+const agentCompletionRecoveryGraceMs = 60_000
 const agentEventPersistDelayMs = 1_500
 const interruptedAgentMessage =
   "Agent interrupted while Blame was offline. Resume when ready."
@@ -658,21 +662,10 @@ export function useBacklogRotation(
     story: UserStory,
     run: UserStoryAgentRun
   ) {
-    const detailedStory = await measurePerformanceOperation(
-      "agent.recovery.detail",
-      () => backlog.loadDetail(story)
-    )
-    const currentStory = detailedStory
-    const currentRun = activeAgentRun(currentStory, run) ?? run
-    if (currentRun.status !== "running") {
-      recordPerformanceCount("agent.recovery.already_terminal")
-      return true
-    }
-    const log = await clineLog(currentStory, currentRun)
-    const response = await recoveredFinalResponse(currentStory, currentRun)
-    const nextRun = nextAgentRun(currentStory, currentRun)
+    const log = await clineLog(story, run)
+    const nextRun = nextAgentRun(story, run)
     if (
-      !completedClineLog(log, currentRun.createdAt, nextRun?.createdAt) &&
+      !completedClineLog(log, run.createdAt, nextRun?.createdAt) &&
       !nextRun
     ) {
       recordPerformanceCount("agent.recovery.incomplete")
@@ -681,6 +674,16 @@ export function useBacklogRotation(
       })
       return false
     }
+    const currentStory = await measurePerformanceOperation(
+      "agent.recovery.detail",
+      () => backlog.loadDetail(story)
+    )
+    const currentRun = activeAgentRun(currentStory, run) ?? run
+    if (currentRun.status !== "running") {
+      recordPerformanceCount("agent.recovery.already_terminal")
+      return true
+    }
+    const response = await recoveredFinalResponse(currentStory, currentRun)
     const event: AgentEvent = {
       payload: response ? { text: response } : {},
       type: "done",
@@ -793,8 +796,14 @@ export function useBacklogRotation(
         currentStory,
         {
           ...flowUpdate,
-          agentLastError: text,
-          agentLastEvent: text,
+          agentLastError: boundedAgentMessage(
+            text,
+            "Agent authentication failed"
+          ),
+          agentLastEvent: boundedAgentMessage(
+            text,
+            "Agent authentication failed"
+          ),
           agentStatus: "Paused",
         },
         run,
@@ -810,7 +819,7 @@ export function useBacklogRotation(
         {
           ...flowUpdate,
           agentLastError: null,
-          agentLastEvent: text || "Agent completed. Ready for review.",
+          agentLastEvent: "Agent completed. Ready for review.",
           agentStatus: null,
           status: "in-review",
         },
@@ -825,8 +834,8 @@ export function useBacklogRotation(
         currentStory,
         {
           ...flowUpdate,
-          agentLastError: text || "Agent session failed",
-          agentLastEvent: text || "Agent session failed",
+          agentLastError: boundedAgentMessage(text, "Agent session failed"),
+          agentLastEvent: boundedAgentMessage(text, "Agent session failed"),
           agentStatus: null,
           status: "in-review",
         },
@@ -841,8 +850,10 @@ export function useBacklogRotation(
       {
         ...flowUpdate,
         agentLastError:
-          event.type === "error" ? text || "Agent session failed" : undefined,
-        agentLastEvent: text || event.type,
+          event.type === "error"
+            ? boundedAgentMessage(text, "Agent session failed")
+            : undefined,
+        agentLastEvent: boundedAgentMessage(text, event.type),
       },
       run,
       runInput,
@@ -857,8 +868,7 @@ export function useBacklogRotation(
     runInput: UserStoryAgentRunUpdate,
     immediate: boolean
   ) {
-    const nextStory = updateLocalStory(story, input)
-    if (run) backlog.updateAgentRunLocal(nextStory, run, runInput)
+    const nextStory = updateLocalStory(story, input, run, runInput)
     if (immediate) {
       void flushAgentUpdate(nextStory, run, input, runInput).catch(
         reportAgentPersistenceError
@@ -868,13 +878,18 @@ export function useBacklogRotation(
     queueAgentUpdate(nextStory, run, input, runInput)
   }
 
-  function updateLocalStory(story: UserStory, input: UserStoryUpdate) {
+  function updateLocalStory(
+    story: UserStory,
+    input: UserStoryUpdate,
+    run?: UserStoryAgentRun,
+    runInput?: UserStoryAgentRunUpdate
+  ) {
     const currentStory = activeStory(story, storiesRef.current)
     const nextStory = { ...currentStory, ...definedUpdate(input) }
     storiesRef.current = storiesRef.current.map((current) =>
       current.id === story.id ? nextStory : current
     )
-    backlog.updateLocal(currentStory, input)
+    backlog.updateAgentLocal(currentStory, input, run, runInput)
     return nextStory
   }
 
@@ -1222,7 +1237,8 @@ function recoverableAgentRun(story: UserStory) {
       run.status === "running" &&
       !run.finalResponse &&
       staleAgentRun(run) &&
-      Boolean(run.clineSessionId ?? story.clineSessionId)
+      Boolean(run.clineSessionId ?? story.clineSessionId) &&
+      !activeAgentEventSubscription(run.clineSessionId ?? story.clineSessionId)
   )
 }
 

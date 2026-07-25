@@ -11,6 +11,10 @@
     "./telemetry-cohorts": {
       "types": "./src/telemetry-cohorts.ts",
       "default": "./dist/telemetry-cohorts.js"
+    },
+    "./agent-event-coalescer": {
+      "types": "./src/agent-event-coalescer.ts",
+      "default": "./dist/agent-event-coalescer.js"
     }
   },
   "scripts": {

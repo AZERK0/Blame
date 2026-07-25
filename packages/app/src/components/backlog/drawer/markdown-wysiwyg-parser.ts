@@ -66,6 +66,21 @@ export function markdownWysiwygLines(markdown: string): MarkdownWysiwygLine[] {
   })
 }
 
+export function markdownWysiwygStructureKey(markdown: string) {
+  return markdownWysiwygLines(markdown)
+    .map((line) =>
+      [
+        line.kind,
+        line.prefix ? "prefix" : "plain",
+        line.segments.every((segment) => !segment.source)
+          ? "empty"
+          : "content",
+        line.segments.map((segment) => segment.type).join(","),
+      ].join(":")
+    )
+    .join("|")
+}
+
 export function markdownListEnterResult(value: string, cursor: number) {
   const bounds = lineBounds(value, cursor)
   const line = value.slice(bounds.start, bounds.end)

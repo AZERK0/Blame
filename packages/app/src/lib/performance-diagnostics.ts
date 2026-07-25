@@ -29,6 +29,7 @@ type DiagnosticsWindow = Window & {
 }
 
 const diagnosticsStorageKey = "blame:performance-diagnostics:v1"
+const diagnosticsProfilerStorageKey = "blame:performance-profiler:v1"
 const snapshotIntervalMs = 5_000
 const eventLoopSampleIntervalMs = 100
 const maximumSnapshots = 360
@@ -144,6 +145,19 @@ export async function measurePerformanceOperation<T>(
 
 export function performanceDiagnosticsEnabled() {
   return Boolean(diagnostics)
+}
+
+export function performanceDiagnosticsProfilerEnabled() {
+  if (!diagnostics) return false
+  try {
+    const query = new URLSearchParams(window.location.search)
+    return (
+      window.localStorage.getItem(diagnosticsProfilerStorageKey) === "true" ||
+      query.get("performanceProfiler") === "true"
+    )
+  } catch {
+    return false
+  }
 }
 
 export const recordProfilerRender: ProfilerOnRenderCallback = (

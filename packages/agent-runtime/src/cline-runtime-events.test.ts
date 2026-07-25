@@ -10,6 +10,8 @@ import type { AgentEvent } from "./types.js";
 import {
   buildDevelopmentSystemPrompt,
   BlameAgentRuntime,
+  backendKey,
+  coreBackendOptions,
   developmentUserInput,
   duplicateEventSignature,
   initializationToolPolicies,
@@ -19,6 +21,11 @@ import {
   shouldDisplayClineSessionEvent,
   workspaceSessionIds,
 } from "./cline-runtime.js";
+
+test("uses the local backend when no workspace backend is provided", () => {
+  assert.equal(backendKey(), "local");
+  assert.deepEqual(coreBackendOptions(), { backendMode: "local" });
+});
 
 test("finds only sessions writing inside a workspace", () => {
   const workspace = join(tmpdir(), "story-42");
@@ -48,6 +55,28 @@ test("drains session logs before workspace cleanup", async () => {
     await rm(workspace, { force: true, recursive: true });
     await runtime.sessions.unsubscribe("session");
     await assert.rejects(access(workspace));
+  } finally {
+    await rm(workspace, { force: true, recursive: true });
+  }
+});
+
+test("does not write high-frequency streaming events to the session log", async () => {
+  const workspace = await mkdtemp(join(tmpdir(), "blame-stream-log-"));
+  const logFile = join(workspace, "cline-session.log");
+  const runtime = new BlameAgentRuntime();
+  const internals = runtime as unknown as {
+    handleSessionEvent(sessionId: string, event: AgentEvent): Promise<void>;
+    sessionLogFiles: Map<string, string>;
+  };
+  internals.sessionLogFiles.set("session", logFile);
+
+  try {
+    await internals.handleSessionEvent("session", {
+      payload: { text: "streamed chunk" },
+      sessionId: "session",
+      type: "text",
+    });
+    await assert.rejects(access(logFile));
   } finally {
     await rm(workspace, { force: true, recursive: true });
   }

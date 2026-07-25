@@ -129,6 +129,7 @@ import {
   ensureGitRepository,
   excludedGitPathspec,
   gitDiffBetween,
+  gitDiffStatsBetween,
   gitDiffFrom,
   gitSnapshot,
   isGitRepository,
@@ -141,6 +142,7 @@ import {
   type GitDirectoryInput,
   type GitFileInput,
 } from "./workspace-git";
+import { workspaceDiffStats } from "./workspace-diff-stats";
 import {
   appendFile as appendRuntimeFile,
   chmod as chmodRuntime,
@@ -507,6 +509,13 @@ export function registerWorkspaceIpcHandlers() {
   ipcMain.handle("workspace:git-diff", (_event, input: { root: string }) =>
     gitDiff(input.root),
   );
+  ipcMain.handle(
+    "workspace:git-diff-stats",
+    (
+      _event,
+      input: { from?: string; root: string; to?: string },
+    ) => gitDiffStats(input),
+  );
   ipcMain.handle("workspace:git-diff-between", (_event, input: GitDiffInput) =>
     gitDiffBetween(input),
   );
@@ -761,6 +770,31 @@ async function gitDiff(root: string) {
     ...excludedEnvFiles,
   ]);
   return stdout;
+}
+
+async function gitDiffStats(input: {
+  from?: string;
+  root: string;
+  to?: string;
+}) {
+  if (input.from && input.to) {
+    return gitDiffStatsBetween({
+      from: input.from,
+      root: input.root,
+      to: input.to,
+    });
+  }
+  const cwd = resolveRuntimePath(input.root);
+  const excludedEnvFiles = await changedRuntimeEnvPathspecs(cwd);
+  const { stdout } = await runRuntimeGit(cwd, [
+    "diff",
+    "--numstat",
+    "--no-ext-diff",
+    "--",
+    ".",
+    ...excludedEnvFiles,
+  ]);
+  return workspaceDiffStats(stdout);
 }
 
 async function changedRuntimeEnvPathspecs(cwd: string) {

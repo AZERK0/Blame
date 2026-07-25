@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto"
 import type { IncomingMessage, ServerResponse } from "node:http"
 
 import type { AgentEvent } from "@blame/agent-runtime"
+import { createAgentEventCoalescer } from "@blame/agent-runtime/agent-event-coalescer"
 
 type StreamEvent = {
   bytes: number
@@ -31,8 +32,14 @@ const completedSessionRetentionMs = 5 * 60_000
 
 export class AgentEventStream {
   private readonly sessions = new Map<string, StreamSession>()
+  private readonly coalescers = new Map<
+    string,
+    ReturnType<typeof createAgentEventCoalescer>
+  >()
 
   beginSession(sessionId: string) {
+    this.coalescers.get(sessionId)?.close()
+    this.coalescers.delete(sessionId)
     this.resetSession(sessionId)
   }
 
@@ -48,7 +55,17 @@ export class AgentEventStream {
 
   publish(event: AgentEvent) {
     if (!event.sessionId) return
-    const session = this.session(event.sessionId)
+    this.coalescer(event.sessionId).push(event)
+  }
+
+  flush() {
+    this.coalescers.forEach((coalescer) => coalescer.flush())
+  }
+
+  private publishEvent(event: AgentEvent) {
+    const sessionId = event.sessionId
+    if (!sessionId) return
+    const session = this.session(sessionId)
     const data = JSON.stringify(event)
     const streamEvent = {
       bytes: Buffer.byteLength(data),
@@ -61,7 +78,9 @@ export class AgentEventStream {
     trimSessionEvents(session)
     session.clients.forEach((client) => this.write(client, streamEvent))
     if (event.type === "done" || event.type === "error")
-      scheduleSessionCleanup(this.sessions, event.sessionId, session)
+      scheduleSessionCleanup(this.sessions, sessionId, session, () => {
+        this.coalescers.delete(sessionId)
+      })
   }
 
   handle(request: IncomingMessage, response: ServerResponse) {
@@ -73,9 +92,7 @@ export class AgentEventStream {
 
     const origin = allowedEventStreamOrigin(request.headers.origin)
     response.writeHead(200, {
-      ...(origin
-        ? { "Access-Control-Allow-Origin": origin, Vary: "Origin" }
-        : {}),
+      ...(origin ? { "Access-Control-Allow-Origin": origin, Vary: "Origin" } : {}),
       "Cache-Control": "no-cache, no-transform",
       Connection: "keep-alive",
       "Content-Type": "text/event-stream",
@@ -95,6 +112,8 @@ export class AgentEventStream {
   }
 
   close() {
+    this.coalescers.forEach((coalescer) => coalescer.close())
+    this.coalescers.clear()
     this.sessions.forEach((session) => {
       if (session.cleanupTimer) clearTimeout(session.cleanupTimer)
       session.clients.forEach((client) => client.response.end())
@@ -114,6 +133,16 @@ export class AgentEventStream {
     }
     this.sessions.set(sessionId, session)
     return session
+  }
+
+  private coalescer(sessionId: string) {
+    const current = this.coalescers.get(sessionId)
+    if (current) return current
+    const coalescer = createAgentEventCoalescer((event) =>
+      this.publishEvent(event)
+    )
+    this.coalescers.set(sessionId, coalescer)
+    return coalescer
   }
 
   private resetSession(sessionId: string) {
@@ -176,13 +205,15 @@ function trimSessionEvents(session: StreamSession) {
 function scheduleSessionCleanup(
   sessions: Map<string, StreamSession>,
   sessionId: string,
-  session: StreamSession
+  session: StreamSession,
+  cleanup: () => void
 ) {
   if (session.cleanupTimer) clearTimeout(session.cleanupTimer)
   session.cleanupTimer = setTimeout(() => {
     if (sessions.get(sessionId) !== session) return
     session.clients.forEach((client) => client.response.end())
     sessions.delete(sessionId)
+    cleanup()
   }, completedSessionRetentionMs)
   session.cleanupTimer.unref()
 }

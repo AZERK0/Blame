@@ -5,6 +5,7 @@ import type {
   UserStoryAgentRunUpdate,
   UserStoryUpdate,
 } from "./backlog-data.ts"
+import { retryableBacklogError } from "./backlog-api.ts"
 
 const storageKey = "blame:agent-terminal-updates:v1"
 
@@ -33,9 +34,15 @@ export async function persistTerminalAgentUpdate(
   const terminalUpdate = createTerminalAgentUpdate(story, update)
   if (!terminalUpdate) return persist()
   enqueueTerminalAgentUpdate(storage, terminalUpdate)
-  const result = await persist()
-  acknowledgeTerminalAgentUpdate(storage, terminalUpdate)
-  return result
+  try {
+    const result = await persist()
+    acknowledgeTerminalAgentUpdate(storage, terminalUpdate)
+    return result
+  } catch (error) {
+    if (!retryableBacklogError(error))
+      acknowledgeTerminalAgentUpdate(storage, terminalUpdate)
+    throw error
+  }
 }
 
 export function pendingTerminalAgentUpdates(

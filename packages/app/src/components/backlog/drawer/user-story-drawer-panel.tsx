@@ -61,6 +61,7 @@ import {
   composerDraftStorageKey,
   readComposerDraft,
   removeComposerDraft,
+  type ComposerDraft,
   writeComposerDraft,
 } from "@/components/backlog/drawer/composer-draft-storage"
 import {
@@ -89,6 +90,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
 
 const drawerSidebarStorageKey = "blame.app.user-story-drawer-sidebar-open.v1"
+const composerDraftPersistDelayMs = 500
 const drawerHeaderSoftBlurMask = {
   maskImage:
     "linear-gradient(to bottom, black 0%, black 60%, transparent 100%)",
@@ -223,15 +225,15 @@ export function UserStoryDrawerPanel({
     id: string
     path: string
   }>()
-  const developmentWorkspace = useDevelopmentWorkspace(userStory)
+  const developmentWorkspace = useDevelopmentWorkspace(
+    userStory,
+    false,
+    tab === "development"
+  )
   const developmentWorkspaceRoot = developmentWorkspace.root
   const platform = usePlatform()
   const loadChangedFiles = React.useCallback(
-    (
-      sessionId: string,
-      checkpointRunCount: number,
-      diffEndRef: string
-    ) => {
+    (sessionId: string, checkpointRunCount: number, diffEndRef: string) => {
       if (!developmentWorkspaceRoot) return Promise.resolve([])
       return loadAgentRunDiffSummary({
         checkpointRunCount,
@@ -244,11 +246,7 @@ export function UserStoryDrawerPanel({
     [developmentWorkspaceRoot, platform]
   )
   const loadChangedFileDiffs = React.useCallback(
-    (
-      sessionId: string,
-      checkpointRunCount: number,
-      diffEndRef: string
-    ) => {
+    (sessionId: string, checkpointRunCount: number, diffEndRef: string) => {
       if (!developmentWorkspaceRoot) return Promise.resolve([])
       return loadAgentRunDiffs({
         checkpointRunCount,
@@ -275,21 +273,32 @@ export function UserStoryDrawerPanel({
   )
   const summaryRef = React.useRef<HTMLDivElement>(null)
   const commentRef = React.useRef<HTMLDivElement>(null)
+  const pendingComposerDraftRef = React.useRef<{
+    draft: ComposerDraft
+    key: string
+  }>()
+  const composerDraftRemovedRef = React.useRef(false)
 
   React.useEffect(() => {
     localStorage.setItem(drawerSidebarStorageKey, JSON.stringify(sidebarOpen))
   }, [sidebarOpen])
 
   React.useEffect(() => {
-    writeComposerDraft(localStorage, draftStorageKey, {
-      markdown: mode === "create" ? summary : comment,
-      codeSelectionAttachments:
-        mode === "create"
-          ? summaryCodeSelectionAttachments
-          : commentCodeSelectionAttachments,
-      fileAttachments:
-        mode === "create" ? summaryFileAttachments : commentFileAttachments,
+    const draft = drawerComposerDraft({
+      comment,
+      commentCodeSelectionAttachments,
+      commentFileAttachments,
+      mode,
+      summary,
+      summaryCodeSelectionAttachments,
+      summaryFileAttachments,
     })
+    pendingComposerDraftRef.current = { draft, key: draftStorageKey }
+    composerDraftRemovedRef.current = false
+    const timer = window.setTimeout(() => {
+      writeComposerDraft(localStorage, draftStorageKey, draft)
+    }, composerDraftPersistDelayMs)
+    return () => window.clearTimeout(timer)
   }, [
     comment,
     commentCodeSelectionAttachments,
@@ -300,6 +309,15 @@ export function UserStoryDrawerPanel({
     summaryCodeSelectionAttachments,
     summaryFileAttachments,
   ])
+
+  React.useEffect(
+    () => () => {
+      const pending = pendingComposerDraftRef.current
+      if (!pending || composerDraftRemovedRef.current) return
+      writeComposerDraft(localStorage, pending.key, pending.draft)
+    },
+    []
+  )
 
   React.useEffect(() => {
     if (!focusComment) return
@@ -656,7 +674,7 @@ export function UserStoryDrawerPanel({
             summaryFileAttachments
           )
         )
-        removeComposerDraft(localStorage, draftStorageKey)
+        clearComposerDraft()
       }
       if (mode !== "create" && userStory) {
         if (action === "Approve & Merge") {
@@ -726,7 +744,7 @@ export function UserStoryDrawerPanel({
         codeSelectionAttachments: commentCodeSelectionAttachments,
         fileAttachments: commentFileAttachments,
       })
-      removeComposerDraft(localStorage, draftStorageKey)
+      clearComposerDraft()
       setComment("")
       setCommentCodeSelectionAttachments([])
       setCommentFileAttachments([])
@@ -744,6 +762,11 @@ export function UserStoryDrawerPanel({
     } finally {
       setPendingAction(undefined)
     }
+  }
+
+  function clearComposerDraft() {
+    composerDraftRemovedRef.current = true
+    removeComposerDraft(localStorage, draftStorageKey)
   }
 
   async function undoCommentMessage(target: AgentConversationUserMessageUndo) {
@@ -872,6 +895,27 @@ function DrawerSidebarIsland({
       </ScrollArea>
     </div>
   )
+}
+
+function drawerComposerDraft(input: {
+  comment: string
+  commentCodeSelectionAttachments: ComposerDraft["codeSelectionAttachments"]
+  commentFileAttachments: ComposerDraft["fileAttachments"]
+  mode: UserStoryDrawerMode
+  summary: string
+  summaryCodeSelectionAttachments: ComposerDraft["codeSelectionAttachments"]
+  summaryFileAttachments: ComposerDraft["fileAttachments"]
+}): ComposerDraft {
+  const createMode = input.mode === "create"
+  return {
+    markdown: createMode ? input.summary : input.comment,
+    codeSelectionAttachments: createMode
+      ? input.summaryCodeSelectionAttachments
+      : input.commentCodeSelectionAttachments,
+    fileAttachments: createMode
+      ? input.summaryFileAttachments
+      : input.commentFileAttachments,
+  }
 }
 
 function createInput(
