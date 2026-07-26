@@ -31,7 +31,13 @@ type AuthFieldProps = {
 
 export function ConnectScreen() {
   const [mode, setMode] = React.useState<AuthMode>("login")
+  const [verificationEmail, setVerificationEmail] = React.useState("")
   const introReady = useIntroReady()
+
+  function showVerification(email: string) {
+    setVerificationEmail(email.trim())
+    setMode("verify")
+  }
 
   return (
     <main className="light relative h-svh overflow-hidden bg-background/10 text-foreground backdrop-blur-md">
@@ -49,13 +55,22 @@ export function ConnectScreen() {
             }`}
           >
             {mode === "login" ? (
-              <LoginForm onModeChange={setMode} />
+              <LoginForm
+                onModeChange={setMode}
+                onVerificationRequired={showVerification}
+              />
             ) : mode === "signup" ? (
-              <SignupForm onModeChange={setMode} />
+              <SignupForm
+                onModeChange={setMode}
+                onVerificationRequired={showVerification}
+              />
             ) : mode === "forgot" ? (
               <ForgotPasswordForm onModeChange={setMode} />
             ) : mode === "verify" ? (
-              <VerificationForm onModeChange={setMode} />
+              <VerificationForm
+                email={verificationEmail}
+                onModeChange={setMode}
+              />
             ) : (
               <EmailTwoFactorForm onModeChange={setMode} />
             )}
@@ -92,7 +107,13 @@ function useIntroReady() {
   return ready
 }
 
-function LoginForm({ onModeChange }: { onModeChange(mode: AuthMode): void }) {
+function LoginForm({
+  onModeChange,
+  onVerificationRequired,
+}: {
+  onModeChange(mode: AuthMode): void
+  onVerificationRequired(email: string): void
+}) {
   const auth = useCloudAuth()
   const [email, setEmail] = React.useState("")
   const [password, setPassword] = React.useState("")
@@ -104,7 +125,7 @@ function LoginForm({ onModeChange }: { onModeChange(mode: AuthMode): void }) {
       onSubmit={form.submit(async () => {
         const result = await auth.login({ email, password })
         if (result === "two-factor") onModeChange("two-factor")
-        if (result === "email-verification") onModeChange("verify")
+        if (result === "email-verification") onVerificationRequired(email)
       })}
     >
       <FieldGroup className="gap-4">
@@ -216,7 +237,13 @@ function EmailTwoFactorActions({
   )
 }
 
-function SignupForm({ onModeChange }: { onModeChange(mode: AuthMode): void }) {
+function SignupForm({
+  onModeChange,
+  onVerificationRequired,
+}: {
+  onModeChange(mode: AuthMode): void
+  onVerificationRequired(email: string): void
+}) {
   const auth = useCloudAuth()
   const [fullName, setFullName] = React.useState("")
   const [email, setEmail] = React.useState("")
@@ -235,7 +262,7 @@ function SignupForm({ onModeChange }: { onModeChange(mode: AuthMode): void }) {
           password,
           passwordConfirmation,
         })
-        onModeChange("verify")
+        onVerificationRequired(email)
       })}
     >
       <FieldGroup className="gap-4">
@@ -291,9 +318,14 @@ function ForgotPasswordForm({ onModeChange }: { onModeChange(mode: AuthMode): vo
   )
 }
 
-function VerificationForm({ onModeChange }: { onModeChange(mode: AuthMode): void }) {
+function VerificationForm({
+  email,
+  onModeChange,
+}: {
+  email: string
+  onModeChange(mode: AuthMode): void
+}) {
   const auth = useCloudAuth()
-  const [email, setEmail] = React.useState("")
   const [sent, setSent] = React.useState(false)
   const form = useAuthForm()
   return (
@@ -302,8 +334,7 @@ function VerificationForm({ onModeChange }: { onModeChange(mode: AuthMode): void
       setSent(true)
     })}>
       <FieldGroup className="gap-4">
-        <FormTitle title="Verify your email" description="Open the verification link we sent before signing in with a password." />
-        <AuthField id="verify-email" label="Email" type="email" value={email} onChange={setEmail} />
+        <FormTitle title="Verify your email" description={`Open the verification link sent to ${email}.`} />
         {sent ? <FieldDescription>A fresh verification link was sent.</FieldDescription> : null}
         <AuthErrorToast error={form.error ?? auth.error} />
         <SubmitButton loading={form.loading}>Resend verification email</SubmitButton>
