@@ -23,6 +23,7 @@ import {
   shutdownAgentRuntime,
 } from "./agent-ipc"
 import { registerBacklogStatusPipIpcHandlers } from "./backlog-status-pip-ipc"
+import { registerCloudAuthIpcHandlers } from "./cloud-auth-ipc"
 import { desktopAppIdentity } from "./desktop-app-identity"
 import { DesktopAuthCallbackDeliveryQueue } from "./desktop-auth-callback-delivery"
 import {
@@ -112,6 +113,10 @@ let authRendererReady = false
 
 void app.whenReady().then(() => {
   registerIpcHandlers()
+  registerCloudAuthIpcHandlers({
+    mainWindow: () => mainWindow,
+    packaged: app.isPackaged,
+  })
   registerBacklogStatusPipIpcHandlers({
     mainWindow: () => mainWindow,
     preloadPath: desktopResources.preload,

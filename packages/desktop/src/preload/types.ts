@@ -43,6 +43,7 @@ import type {
 import type {
   BacklogStatusPipRequest,
   BacklogStatusPipSnapshot,
+  CloudAuthRequestClient,
   GitCommandResult,
   GitLogCommit,
   GitStatusResult,
@@ -179,6 +180,7 @@ export type BacklogStatusPip = {
 export type BlameDesktopApi = {
   auth: {
     onCallback(callback: (result: { code?: string; error?: string }) => void): () => void;
+    request: CloudAuthRequestClient["request"];
     ready(): void;
   };
   billing: {

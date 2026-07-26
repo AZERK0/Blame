@@ -6,6 +6,9 @@ export declare const App: ComponentType
 export type {
   BacklogStatusPipRequest,
   BacklogStatusPipSnapshot,
+  CloudAuthRequestClient,
+  CloudAuthRequestInput,
+  CloudAuthRequestResponse,
   CloudMcpServerConfig,
   GitBranchStatus,
   GitCommandResult,

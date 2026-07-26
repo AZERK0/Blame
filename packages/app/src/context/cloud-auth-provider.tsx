@@ -48,6 +48,16 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
     () => ({ url: apiUrl, token }),
     [apiUrl, token]
   )
+  const apiForToken = React.useCallback(
+    (sessionToken?: string) =>
+      createCloudApi({
+        authRequest: platform.auth?.request,
+        token: sessionToken,
+        url: apiUrl,
+      }),
+    [apiUrl, platform.auth]
+  )
+  const cloudApi = React.useMemo(() => apiForToken(token), [apiForToken, token])
   useCloudTelemetry(platform.telemetry, apiConnection, Boolean(token))
 
   React.useEffect(() => {
@@ -62,7 +72,7 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    const api = createCloudApi({ url: apiUrl, token: session.token })
+    const api = apiForToken(session.token)
     void hydrateSession(api, session, true)
       .then((authenticatedState) => {
         if (!alive) return
@@ -79,7 +89,7 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       alive = false
     }
-  }, [apiUrl, platform.mcp])
+  }, [apiForToken, platform.mcp])
 
   React.useEffect(() => {
     if (!platform.auth) return
@@ -98,7 +108,7 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
       }
       if (!result.code) return
       setState({ status: "loading" })
-      void exchangeDesktopAuthentication(apiUrl, result.code)
+      void exchangeDesktopAuthentication(apiForToken, result.code)
         .then(({ authenticatedState, session }) => {
           writeCloudSession(session)
           setState(authenticatedState)
@@ -115,21 +125,23 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
     })
     platform.auth.ready()
     return unsubscribe
-  }, [apiUrl, platform.auth])
+  }, [apiForToken, platform.auth])
 
   const completeDesktopAuthorization = React.useCallback(
     async (authorization: DesktopAuthorization) => {
-      const api = createCloudApi({ url: apiUrl })
-      const deviceToken = await waitForDesktopAuthorization(api, authorization)
-      const session = await api.exchangeDesktopDeviceToken(deviceToken)
+      const deviceToken = await waitForDesktopAuthorization(
+        cloudApi,
+        authorization
+      )
+      const session = await cloudApi.exchangeDesktopDeviceToken(deviceToken)
       const authenticatedState = await hydrateSession(
-        createCloudApi({ url: apiUrl, token: session.token }),
+        apiForToken(session.token),
         session
       )
       writeCloudSession(session)
       setState(authenticatedState)
     },
-    [apiUrl]
+    [apiForToken, cloudApi]
   )
 
   const reportDesktopAuthorizationError = React.useCallback((error: unknown) => {
@@ -157,69 +169,63 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = React.useCallback(
     async (input: LoginInput): Promise<LoginResult> => {
-      const result = await createCloudApi({ url: apiUrl }).login(input)
+      const result = await cloudApi.login(input)
       if (result === "two-factor") return result
       if ("authorization" in result) {
         watchEmailVerification(result.authorization)
         return "email-verification"
       }
       const session = result
-      const api = createCloudApi({
-        url: apiUrl,
-        token: session.token,
-      })
+      const api = apiForToken(session.token)
       const authenticatedState = await hydrateSession(api, session)
       writeCloudSession(session)
       setState(authenticatedState)
       return "authenticated"
     },
-    [apiUrl, watchEmailVerification]
+    [apiForToken, cloudApi, watchEmailVerification]
   )
 
   const verifyEmailTwoFactor = React.useCallback(
     async (code: string) => {
-      const session = await createCloudApi({
-        url: apiUrl,
-      }).verifyEmailTwoFactor(code)
+      const session = await cloudApi.verifyEmailTwoFactor(code)
       const authenticatedState = await hydrateSession(
-        createCloudApi({ url: apiUrl, token: session.token }),
+        apiForToken(session.token),
         session
       )
       writeCloudSession(session)
       setState(authenticatedState)
     },
-    [apiUrl]
+    [apiForToken, cloudApi]
   )
 
   const resendEmailTwoFactor = React.useCallback(
-    () => createCloudApi({ url: apiUrl }).resendEmailTwoFactor(),
-    [apiUrl]
+    () => cloudApi.resendEmailTwoFactor(),
+    [cloudApi]
   )
 
   const signup = React.useCallback(
     async (input: SignupInput) => {
-      const authorization = await createCloudApi({ url: apiUrl }).signup(input)
+      const authorization = await cloudApi.signup(input)
       watchEmailVerification(authorization)
     },
-    [apiUrl, watchEmailVerification]
+    [cloudApi, watchEmailVerification]
   )
 
   const requestPasswordReset = React.useCallback(
-    (email: string) => createCloudApi({ url: apiUrl }).requestPasswordReset(email),
-    [apiUrl]
+    (email: string) => cloudApi.requestPasswordReset(email),
+    [cloudApi]
   )
   const resetPassword = React.useCallback(
     (resetToken: string, password: string) =>
-      createCloudApi({ url: apiUrl }).resetPassword(resetToken, password),
-    [apiUrl]
+      cloudApi.resetPassword(resetToken, password),
+    [cloudApi]
   )
   const resendVerification = React.useCallback(
     async (email: string) => {
-      const authorization =
-        await createCloudApi({ url: apiUrl }).resendVerification(email)
+      const authorization = await cloudApi.resendVerification(email)
       watchEmailVerification(authorization)
     },
-    [apiUrl, watchEmailVerification]
+    [cloudApi, watchEmailVerification]
   )
 
   const openExternalUrl = React.useCallback(
@@ -232,51 +238,49 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
 
   const socialLogin = React.useCallback(
     async (provider: "github" | "google" | "microsoft") => {
-      const api = createCloudApi({ url: apiUrl })
-      const authorization = await api.socialLogin(provider)
+      const authorization = await cloudApi.socialLogin(provider)
       openExternalUrl(authorization.verificationUrl)
       await completeDesktopAuthorization(authorization)
     },
-    [apiUrl, completeDesktopAuthorization, openExternalUrl]
+    [cloudApi, completeDesktopAuthorization, openExternalUrl]
   )
   const passkeyLogin = React.useCallback(async () => {
-    const authorization = await createCloudApi({ url: apiUrl }).passkeyLogin()
+    const authorization = await cloudApi.passkeyLogin()
     openExternalUrl(authorization.verificationUrl)
     await completeDesktopAuthorization(authorization)
-  }, [apiUrl, completeDesktopAuthorization, openExternalUrl])
+  }, [cloudApi, completeDesktopAuthorization, openExternalUrl])
 
   const refreshAiPreferences = React.useCallback(async () => {
     if (!token) return
-    const aiPreferences = await createCloudApi(apiConnection).aiPreferences()
+    const aiPreferences = await cloudApi.aiPreferences()
     setState((current) =>
       current.status === "authenticated"
         ? { ...current, aiPreferences }
         : current
     )
-  }, [apiConnection, token])
+  }, [cloudApi, token])
 
   const saveAiPreferences = React.useCallback(
     async (input: SaveAiPreferencesInput) => {
       if (!token) return
-      const aiPreferences =
-        await createCloudApi(apiConnection).saveAiPreferences(input)
+      const aiPreferences = await cloudApi.saveAiPreferences(input)
       setState((current) =>
         current.status === "authenticated"
           ? { ...current, aiPreferences }
           : current
       )
     },
-    [apiConnection, token]
+    [cloudApi, token]
   )
 
   const refreshLicense = React.useCallback(async () => {
     if (!token) return
-    const license = await createCloudApi(apiConnection).license()
+    const license = await cloudApi.license()
     setState((current) =>
       current.status === "authenticated" ? { ...current, license } : current
     )
     return license
-  }, [apiConnection, token])
+  }, [cloudApi, token])
 
   React.useEffect(() => {
     if (!platform.billing || !token) return
@@ -289,35 +293,32 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
 
   const startCheckout = React.useCallback(
     async (cycle: "monthly" | "yearly") => {
-      openExternalUrl((await createCloudApi(apiConnection).checkout(cycle)).url)
+      openExternalUrl((await cloudApi.checkout(cycle)).url)
     },
-    [apiConnection, openExternalUrl]
+    [cloudApi, openExternalUrl]
   )
 
   const openBillingPortal = React.useCallback(async () => {
-    openExternalUrl((await createCloudApi(apiConnection).billingPortal()).url)
-  }, [apiConnection, openExternalUrl])
+    openExternalUrl((await cloudApi.billingPortal()).url)
+  }, [cloudApi, openExternalUrl])
 
   const saveMcpConfiguration = React.useCallback(
     async (servers: CloudMcpServer[]) => {
       if (!token) return
-      const mcpConfiguration =
-        await createCloudApi(apiConnection).saveMcpConfiguration(servers)
+      const mcpConfiguration = await cloudApi.saveMcpConfiguration(servers)
       setState((current) =>
         current.status === "authenticated"
           ? { ...current, mcpConfiguration }
           : current
       )
     },
-    [apiConnection, token]
+    [cloudApi, token]
   )
 
   const logout = React.useCallback(async () => {
     try {
       if (token) {
-        await createCloudApi(apiConnection)
-          .logout()
-          .catch(() => undefined)
+        await cloudApi.logout().catch(() => undefined)
       }
       if (state.status === "authenticated") {
         await platform.mcp?.detachCloud(state.session.user.id)
@@ -328,7 +329,7 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
       removeCloudSession()
       setState({ status: "unauthenticated" })
     }
-  }, [apiConnection, platform.mcp, state, token])
+  }, [cloudApi, platform.mcp, state, token])
 
   return (
     <CloudAuthContext.Provider
@@ -366,10 +367,13 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
   )
 }
 
-async function exchangeDesktopAuthentication(apiUrl: string, code: string) {
-  const session = await createCloudApi({ url: apiUrl }).exchangeDesktopCode(code)
+async function exchangeDesktopAuthentication(
+  apiForToken: (token?: string) => ReturnType<typeof createCloudApi>,
+  code: string
+) {
+  const session = await apiForToken().exchangeDesktopCode(code)
   const authenticatedState = await hydrateSession(
-    createCloudApi({ url: apiUrl, token: session.token }),
+    apiForToken(session.token),
     session
   )
   return { authenticatedState, session }

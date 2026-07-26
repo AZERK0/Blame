@@ -47,6 +47,23 @@ import type { UserStory } from "../components/backlog/data/backlog-data"
 
 type PickerPaths = string | string[] | null
 
+export type CloudAuthRequestInput = {
+  body?: string
+  headers: Record<string, string>
+  method: string
+  url: string
+}
+
+export type CloudAuthRequestResponse = {
+  body: string
+  headers: Record<string, string>
+  status: number
+}
+
+export type CloudAuthRequestClient = {
+  request(input: CloudAuthRequestInput): Promise<CloudAuthRequestResponse>
+}
+
 export type OpenDirectoryPickerOptions = {
   title?: string
   multiple?: boolean
@@ -59,6 +76,7 @@ export type Platform = {
   }
   auth?: {
     onCallback(callback: (result: { code?: string; error?: string }) => void): () => void
+    request: CloudAuthRequestClient["request"]
     ready(): void
   }
   agent?: AgentClient

@@ -19,7 +19,15 @@ import type {
   ProjectCodePracticeResult,
   ProjectRunConfiguration,
 } from "@blame/agent-runtime"
-import type { TelemetryExportSession } from "@/context/platform"
+import type {
+  CloudAuthRequestClient,
+  CloudAuthRequestResponse,
+  TelemetryExportSession,
+} from "@/context/platform"
+
+type CloudApiConnection = ApiConnection & {
+  authRequest?: CloudAuthRequestClient["request"]
+}
 
 export class CloudApiError extends Error {
   readonly status: number
@@ -78,7 +86,7 @@ export type CloudAccountClosureReceipt = {
   supportContact: string
 }
 
-export function createCloudApi(connection: ApiConnection) {
+export function createCloudApi(connection: CloudApiConnection) {
   const baseUrl = connection.url.replace(/\/$/, "")
 
   return {
@@ -189,7 +197,7 @@ export function createCloudApi(connection: ApiConnection) {
       )
     },
     pollDesktopLogin(deviceCode: string) {
-      return pollDesktopAuthorization(baseUrl, deviceCode)
+      return pollDesktopAuthorization(connection, baseUrl, deviceCode)
     },
     exchangeDesktopDeviceToken(token: string) {
       return request<CloudSession>(
@@ -496,7 +504,7 @@ function cloudProjectCodePracticeAnalysis(value: unknown) {
 }
 
 function projectCodePracticeAnalysisRequest(
-  connection: ApiConnection,
+  connection: CloudApiConnection,
   baseUrl: string,
   projectId: string,
   action: "start" | "complete" | "fail" | "viewed",
@@ -554,7 +562,7 @@ function cloudTelemetrySession(value: unknown): TelemetryExportSession {
 }
 
 async function requestDesktopAuthorization(
-  connection: ApiConnection,
+  connection: CloudApiConnection,
   baseUrl: string,
   pathname: string,
   parameters?: Record<string, string>
@@ -575,7 +583,7 @@ async function requestDesktopAuthorization(
 }
 
 async function requestEmailVerification(
-  connection: ApiConnection,
+  connection: CloudApiConnection,
   baseUrl: string,
   email: string
 ) {
@@ -637,10 +645,11 @@ function invalidDesktopAuthorization(): never {
 }
 
 async function pollDesktopAuthorization(
+  connection: CloudApiConnection,
   baseUrl: string,
   deviceCode: string
 ): Promise<DesktopAuthorizationPoll> {
-  const response = await fetch(`${baseUrl}/auth/device/token`, {
+  const response = await cloudFetch(connection, `${baseUrl}/auth/device/token`, {
     body: JSON.stringify({
       client_id: desktopAuthClientId,
       device_code: deviceCode,
@@ -692,7 +701,7 @@ function transformerValue(value: unknown): unknown {
 }
 
 async function request<T>(
-  connection: ApiConnection,
+  connection: CloudApiConnection,
   baseUrl: string,
   path: string,
   init?: RequestInit
@@ -703,7 +712,7 @@ async function request<T>(
   if (connection.token)
     headers.set("Authorization", `Bearer ${connection.token}`)
 
-  const response = await fetch(`${baseUrl}${path}`, {
+  const response = await cloudFetch(connection, `${baseUrl}${path}`, {
     ...init,
     headers,
   })
@@ -725,7 +734,7 @@ function responseData(value: unknown) {
 }
 
 async function betterAuthSessionRequest(
-  connection: ApiConnection,
+  connection: CloudApiConnection,
   baseUrl: string,
   path: string,
   init: RequestInit
@@ -734,12 +743,12 @@ async function betterAuthSessionRequest(
 }
 
 async function betterAuthRequest(
-  connection: ApiConnection,
+  connection: CloudApiConnection,
   baseUrl: string,
   path: string,
   init: RequestInit
 ) {
-  const response = await fetch(`${baseUrl}${path}`, {
+  const response = await cloudFetch(connection, `${baseUrl}${path}`, {
     ...init,
     credentials: "include",
     headers: { "Content-Type": "application/json", ...init.headers },
@@ -750,6 +759,39 @@ async function betterAuthRequest(
     token: response.headers.get("set-auth-token"),
     body: responseData(await response.json()),
   }
+}
+
+async function cloudFetch(
+  connection: CloudApiConnection,
+  url: string,
+  init?: RequestInit
+) {
+  if (!connection.authRequest || !isCloudAuthUrl(url)) return fetch(url, init)
+  if (init?.body !== undefined && typeof init.body !== "string") {
+    throw new Error("Unsupported cloud authentication request body.")
+  }
+  const result = await connection.authRequest({
+    ...(typeof init?.body === "string" ? { body: init.body } : {}),
+    headers: Object.fromEntries(new Headers(init?.headers)),
+    method: init?.method ?? "GET",
+    url,
+  })
+  return cloudAuthResponse(result)
+}
+
+function isCloudAuthUrl(value: string) {
+  try {
+    return /\/auth(?:\/|$)/.test(new URL(value).pathname)
+  } catch {
+    return false
+  }
+}
+
+function cloudAuthResponse(result: CloudAuthRequestResponse) {
+  return new Response(result.body || null, {
+    headers: result.headers,
+    status: result.status,
+  })
 }
 
 function cloudSession(response: { body: unknown; token: string | null }) {

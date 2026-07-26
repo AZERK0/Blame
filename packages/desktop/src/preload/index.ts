@@ -38,6 +38,7 @@ ipcRenderer.on("auth:callback", (_event, delivery) => {
 
 const api: BlameDesktopApi = {
   auth: {
+    request: (input) => ipcRenderer.invoke("cloud-auth:request", input),
     ready: () => {
       void ipcRenderer
         .invoke("auth:renderer-ready")

@@ -37,6 +37,44 @@ test("starts an email OTP challenge after a valid password", async () => {
   assert.ok(requests.every((request) => request.init?.credentials === "include"))
 })
 
+test("uses the desktop transport for authentication requests", async () => {
+  const requests: Array<{ body?: string; url: string }> = []
+  globalThis.fetch = async () => {
+    throw new Error(
+      "Browser fetch should not be used for desktop authentication."
+    )
+  }
+  const authRequest = async (input: { body?: string; url: string }) => {
+    requests.push(input)
+    return {
+      body: JSON.stringify(
+        requests.length === 1
+          ? { twoFactorRedirect: true, twoFactorMethods: ["otp"] }
+          : { status: true }
+      ),
+      headers: { "content-type": "application/json" },
+      status: 200,
+    }
+  }
+
+  const result = await createCloudApi({
+    authRequest,
+    url: "https://api.blame.test",
+  }).login({
+    email: "ada@example.com",
+    password: "correct horse battery staple",
+  })
+
+  assert.equal(result, "two-factor")
+  assert.deepEqual(
+    requests.map((request) => request.url),
+    [
+      "https://api.blame.test/auth/sign-in/email",
+      "https://api.blame.test/auth/two-factor/send-otp",
+    ]
+  )
+})
+
 test("creates a cloud session after email OTP verification", async () => {
   globalThis.fetch = async () =>
     jsonResponse({
