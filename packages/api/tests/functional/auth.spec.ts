@@ -25,13 +25,31 @@ test.group('Better Auth response forwarding', () => {
     assert.equal(response.text(), '')
   })
 
-  test('serves an executable passkey script', async ({ client, assert }) => {
-    const response = await client.get('/api/v1/auth/desktop')
+  test('redirects legacy authentication pages to the website', async ({ client, assert }) => {
+    const passkey = await client.get('/api/v1/auth/desktop?user_code=ABCD2345').redirects(0)
+    const reset = await client
+      .get('/api/v1/auth/reset-password-page?token=reset-token')
+      .redirects(0)
+    const verified = await client.get('/api/v1/auth/verified').redirects(0)
 
-    response.assertStatus(200)
-    const script = response.text().match(/<script>([\s\S]*?)<\/script>/)?.[1]
-    assert.isString(script)
-    assert.doesNotThrow(() => Function(script!))
+    passkey.assertStatus(302)
+    reset.assertStatus(302)
+    verified.assertStatus(302)
+    assert.equal(passkey.header('location'), 'https://blame.so/auth/passkey?user_code=ABCD2345')
+    assert.equal(reset.header('location'), 'https://blame.so/auth/reset-password?token=reset-token')
+    assert.equal(verified.header('location'), 'https://blame.so/auth/verify-email?verified=true')
+  })
+
+  test('returns email verification links to the website', async ({ client, assert }) => {
+    const response = await client
+      .get('/api/v1/auth/verify-email?token=invalid&callbackURL=/')
+      .redirects(0)
+
+    response.assertStatus(302)
+    assert.equal(
+      response.header('location'),
+      'https://blame.so/auth/verify-email?verified=true&error=INVALID_TOKEN'
+    )
   })
 })
 

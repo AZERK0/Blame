@@ -43,6 +43,14 @@ type DesktopAuthorizationPoll =
   | { status: "pending" }
   | { status: "slow-down" }
 
+type CloudLoginResult =
+  | CloudSession
+  | "two-factor"
+  | {
+      authorization: DesktopAuthorization
+      status: "email-verification"
+    }
+
 const desktopAuthClientId = "blame-desktop"
 
 export type CloudAccountExport = {
@@ -74,16 +82,29 @@ export function createCloudApi(connection: ApiConnection) {
   const baseUrl = connection.url.replace(/\/$/, "")
 
   return {
-    async login(input: LoginInput): Promise<CloudSession | "two-factor"> {
-      const response = await betterAuthRequest(
-        connection,
-        baseUrl,
-        "/auth/sign-in/email",
-        {
-          body: JSON.stringify(input),
-          method: "POST",
+    async login(input: LoginInput): Promise<CloudLoginResult> {
+      let response
+      try {
+        response = await betterAuthRequest(
+          connection,
+          baseUrl,
+          "/auth/sign-in/email",
+          {
+            body: JSON.stringify(input),
+            method: "POST",
+          }
+        )
+      } catch (error) {
+        if (!requiresEmailVerification(error)) throw error
+        return {
+          authorization: await requestEmailVerification(
+            connection,
+            baseUrl,
+            input.email
+          ),
+          status: "email-verification" as const,
         }
-      )
+      }
       if (!twoFactorRequired(response.body)) return cloudSession(response)
       await betterAuthRequest(
         connection,
@@ -119,14 +140,21 @@ export function createCloudApi(connection: ApiConnection) {
       ).then(() => undefined)
     },
     async signup(input: SignupInput) {
+      const authorization = await requestDesktopAuthorization(
+        connection,
+        baseUrl,
+        "/auth/verify-email"
+      )
       await request<unknown>(connection, baseUrl, "/auth/sign-up/email", {
         body: JSON.stringify({
+          callbackURL: authorization.verificationUrl,
           email: input.email,
           name: input.fullName ?? input.email.split("@")[0],
           password: input.password,
         }),
         method: "POST",
       })
+      return authorization
     },
     requestPasswordReset(email: string) {
       return request<unknown>(
@@ -134,10 +162,7 @@ export function createCloudApi(connection: ApiConnection) {
         baseUrl,
         "/auth/request-password-reset",
         {
-          body: JSON.stringify({
-            email,
-            redirectTo: `${baseUrl}/auth/reset-password-page`,
-          }),
+          body: JSON.stringify({ email }),
           method: "POST",
         }
       ).then(() => undefined)
@@ -148,36 +173,22 @@ export function createCloudApi(connection: ApiConnection) {
         method: "POST",
       }).then(() => undefined)
     },
-    resendVerification(email: string) {
-      return request<unknown>(
+    async resendVerification(email: string) {
+      return requestEmailVerification(
         connection,
         baseUrl,
-        "/auth/send-verification-email",
-        {
-          body: JSON.stringify({
-            email,
-            callbackURL: `${baseUrl}/auth/verified`,
-          }),
-          method: "POST",
-        }
-      ).then(() => undefined)
+        email
+      )
     },
     async socialLogin(provider: SocialAuthProvider) {
-      const result = await request<unknown>(
+      return requestDesktopAuthorization(
         connection,
         baseUrl,
-        "/auth/device/code",
-        {
-          body: JSON.stringify({
-            client_id: desktopAuthClientId,
-            scope: "openid profile email",
-          }),
-          method: "POST",
-        }
+        "/auth/desktop",
+        { provider }
       )
-      return desktopAuthorization(result, provider)
     },
-    pollSocialLogin(deviceCode: string) {
+    pollDesktopLogin(deviceCode: string) {
       return pollDesktopAuthorization(baseUrl, deviceCode)
     },
     exchangeDesktopDeviceToken(token: string) {
@@ -191,8 +202,12 @@ export function createCloudApi(connection: ApiConnection) {
         }
       )
     },
-    passkeyLoginUrl() {
-      return `${baseUrl}/auth/desktop?method=passkey`
+    passkeyLogin() {
+      return requestDesktopAuthorization(
+        connection,
+        baseUrl,
+        "/auth/passkey"
+      )
     },
     exchangeDesktopCode(code: string) {
       return request<CloudSession>(
@@ -538,9 +553,58 @@ function cloudTelemetrySession(value: unknown): TelemetryExportSession {
   return session as TelemetryExportSession
 }
 
+async function requestDesktopAuthorization(
+  connection: ApiConnection,
+  baseUrl: string,
+  pathname: string,
+  parameters?: Record<string, string>
+) {
+  const result = await request<unknown>(
+    connection,
+    baseUrl,
+    "/auth/device/code",
+    {
+      body: JSON.stringify({
+        client_id: desktopAuthClientId,
+        scope: "openid profile email",
+      }),
+      method: "POST",
+    }
+  )
+  return desktopAuthorization(result, pathname, parameters)
+}
+
+async function requestEmailVerification(
+  connection: ApiConnection,
+  baseUrl: string,
+  email: string
+) {
+  const authorization = await requestDesktopAuthorization(
+    connection,
+    baseUrl,
+    "/auth/verify-email"
+  )
+  await request<unknown>(connection, baseUrl, "/auth/send-verification-email", {
+    body: JSON.stringify({
+      callbackURL: authorization.verificationUrl,
+      email,
+    }),
+    method: "POST",
+  })
+  return authorization
+}
+
+function requiresEmailVerification(error: unknown) {
+  return (
+    error instanceof CloudApiError &&
+    error.message.toLowerCase().includes("email not verified")
+  )
+}
+
 function desktopAuthorization(
   value: unknown,
-  provider: SocialAuthProvider
+  pathname: string,
+  parameters?: Record<string, string>
 ): DesktopAuthorization {
   if (!isRecord(value)) return invalidDesktopAuthorization()
   const deviceCode = value.device_code
@@ -556,7 +620,10 @@ function desktopAuthorization(
     return invalidDesktopAuthorization()
   }
   const url = new URL(verificationUrl)
-  url.searchParams.set("provider", provider)
+  url.pathname = pathname
+  Object.entries(parameters ?? {}).forEach(([name, parameter]) =>
+    url.searchParams.set(name, parameter)
+  )
   return {
     deviceCode,
     expiresIn,

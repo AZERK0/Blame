@@ -1,4 +1,5 @@
 import { uuidV7 } from '#lib/uuid_v7'
+import { sitePageUrl, siteUrl } from '#lib/site_url'
 import { sendAuthEmail } from '#services/auth_email_service'
 import env from '#start/env'
 import hash from '@adonisjs/core/services/hash'
@@ -10,7 +11,6 @@ import { createPool } from 'mysql2/promise'
 import { randomBytes } from 'node:crypto'
 
 const baseURL = env.get('BETTER_AUTH_URL', env.get('APP_URL')).replace(/\/$/, '')
-const siteURL = env.get('BLAME_SITE_URL', 'https://blame.so').replace(/\/$/, '')
 const betterAuthSecret = env.get('BETTER_AUTH_SECRET')?.release() ?? env.get('APP_KEY').release()
 const socialProviders = configuredSocialProviders()
 
@@ -111,20 +111,20 @@ export const auth = betterAuth({
       await sendAuthEmail({
         to: user.email,
         subject: 'Reset your Blame password',
-        text: `Reset your password using this secure link (valid for 30 minutes): ${url}`,
+        text: `Reset your password using this secure link (valid for 30 minutes): ${passwordResetUrl(url)}`,
       })
     },
   },
   emailVerification: {
     sendOnSignUp: true,
-    sendOnSignIn: true,
-    autoSignInAfterVerification: false,
+    sendOnSignIn: false,
+    autoSignInAfterVerification: true,
     expiresIn: 60 * 60,
     sendVerificationEmail: async ({ user, url }) => {
       await sendAuthEmail({
         to: user.email,
         subject: 'Verify your Blame email address',
-        text: `Verify your email address using this secure link (valid for one hour): ${url}`,
+        text: `Verify your email address using this secure link (valid for one hour): ${verificationRedirectUrl(url)}`,
       })
     },
   },
@@ -142,7 +142,7 @@ export const auth = betterAuth({
     deviceAuthorization({
       expiresIn: '10m',
       interval: '5s',
-      verificationUri: `${siteURL}/auth/desktop`,
+      verificationUri: `${siteUrl}/auth/desktop`,
       validateClient: (clientId) => clientId === 'blame-desktop',
       schema: {
         deviceCode: {
@@ -192,8 +192,8 @@ export const auth = betterAuth({
     }),
     passkey({
       rpName: 'Blame',
-      rpID: new URL(baseURL).hostname,
-      origin: new URL(baseURL).origin,
+      rpID: new URL(siteUrl).hostname,
+      origin: [new URL(siteUrl).origin, new URL(baseURL).origin],
       authenticatorSelection: { userVerification: 'required', residentKey: 'preferred' },
     }),
   ],
@@ -209,7 +209,7 @@ function trustedOrigins() {
   return Array.from(
     new Set([
       new URL(baseURL).origin,
-      new URL(siteURL).origin,
+      new URL(siteUrl).origin,
       ...env
         .get('BETTER_AUTH_TRUSTED_ORIGINS', '')
         .split(',')
@@ -217,6 +217,33 @@ function trustedOrigins() {
         .filter(Boolean),
     ])
   )
+}
+
+function verificationRedirectUrl(generatedUrl: string) {
+  const verificationUrl = new URL(generatedUrl)
+  const callbackUrl = verificationUrl.searchParams.get('callbackURL')
+  const destination = trustedVerificationPage(callbackUrl)
+  if (!destination.searchParams.has('user_code')) {
+    destination.searchParams.set('verified', 'true')
+  }
+  verificationUrl.searchParams.set('callbackURL', destination.toString())
+  return verificationUrl.toString()
+}
+
+function passwordResetUrl(generatedUrl: string) {
+  const resetUrl = new URL(generatedUrl)
+  resetUrl.searchParams.set('callbackURL', sitePageUrl('/auth/reset-password'))
+  return resetUrl.toString()
+}
+
+function trustedVerificationPage(value: string | null) {
+  const fallback = new URL('/auth/verify-email', siteUrl)
+  if (!value) return fallback
+  const candidate = new URL(value, siteUrl)
+  if (candidate.origin !== fallback.origin || candidate.pathname !== fallback.pathname) {
+    return fallback
+  }
+  return candidate
 }
 
 function configuredSocialProviders() {

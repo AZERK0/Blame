@@ -117,10 +117,52 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
     return unsubscribe
   }, [apiUrl, platform.auth])
 
+  const completeDesktopAuthorization = React.useCallback(
+    async (authorization: DesktopAuthorization) => {
+      const api = createCloudApi({ url: apiUrl })
+      const deviceToken = await waitForDesktopAuthorization(api, authorization)
+      const session = await api.exchangeDesktopDeviceToken(deviceToken)
+      const authenticatedState = await hydrateSession(
+        createCloudApi({ url: apiUrl, token: session.token }),
+        session
+      )
+      writeCloudSession(session)
+      setState(authenticatedState)
+    },
+    [apiUrl]
+  )
+
+  const reportDesktopAuthorizationError = React.useCallback((error: unknown) => {
+    setState((current) =>
+      current.status === "authenticated"
+        ? current
+        : {
+            status: "unauthenticated",
+            error:
+              error instanceof Error
+                ? error.message
+                : "External sign-in could not be completed.",
+          }
+    )
+  }, [])
+
+  const watchEmailVerification = React.useCallback(
+    (authorization: DesktopAuthorization) => {
+      void completeDesktopAuthorization(authorization).catch(
+        reportDesktopAuthorizationError
+      )
+    },
+    [completeDesktopAuthorization, reportDesktopAuthorizationError]
+  )
+
   const login = React.useCallback(
     async (input: LoginInput): Promise<LoginResult> => {
       const result = await createCloudApi({ url: apiUrl }).login(input)
       if (result === "two-factor") return result
+      if ("authorization" in result) {
+        watchEmailVerification(result.authorization)
+        return "email-verification"
+      }
       const session = result
       const api = createCloudApi({
         url: apiUrl,
@@ -131,7 +173,7 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
       setState(authenticatedState)
       return "authenticated"
     },
-    [apiUrl]
+    [apiUrl, watchEmailVerification]
   )
 
   const verifyEmailTwoFactor = React.useCallback(
@@ -156,9 +198,10 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
 
   const signup = React.useCallback(
     async (input: SignupInput) => {
-      await createCloudApi({ url: apiUrl }).signup(input)
+      const authorization = await createCloudApi({ url: apiUrl }).signup(input)
+      watchEmailVerification(authorization)
     },
-    [apiUrl]
+    [apiUrl, watchEmailVerification]
   )
 
   const requestPasswordReset = React.useCallback(
@@ -171,38 +214,36 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
     [apiUrl]
   )
   const resendVerification = React.useCallback(
-    (email: string) => createCloudApi({ url: apiUrl }).resendVerification(email),
-    [apiUrl]
+    async (email: string) => {
+      const authorization =
+        await createCloudApi({ url: apiUrl }).resendVerification(email)
+      watchEmailVerification(authorization)
+    },
+    [apiUrl, watchEmailVerification]
   )
+
+  const openExternalUrl = React.useCallback(
+    (url: string) => {
+      if (platform.openExternalLink) platform.openExternalLink(url)
+      else window.open(url, "_blank", "noopener,noreferrer")
+    },
+    [platform]
+  )
+
   const socialLogin = React.useCallback(
     async (provider: "github" | "google" | "microsoft") => {
       const api = createCloudApi({ url: apiUrl })
       const authorization = await api.socialLogin(provider)
-      if (platform.openExternalLink)
-        platform.openExternalLink(authorization.verificationUrl)
-      else
-        window.open(
-          authorization.verificationUrl,
-          "_blank",
-          "noopener,noreferrer"
-        )
-      const deviceToken = await waitForDesktopAuthorization(api, authorization)
-      const session = await api.exchangeDesktopDeviceToken(deviceToken)
-      const authenticatedApi = createCloudApi({
-        url: apiUrl,
-        token: session.token,
-      })
-      const authenticatedState = await hydrateSession(authenticatedApi, session)
-      writeCloudSession(session)
-      setState(authenticatedState)
+      openExternalUrl(authorization.verificationUrl)
+      await completeDesktopAuthorization(authorization)
     },
-    [apiUrl, platform]
+    [apiUrl, completeDesktopAuthorization, openExternalUrl]
   )
   const passkeyLogin = React.useCallback(async () => {
-    const url = createCloudApi({ url: apiUrl }).passkeyLoginUrl()
-    if (platform.openExternalLink) platform.openExternalLink(url)
-    else window.open(url, "_blank", "noopener,noreferrer")
-  }, [apiUrl, platform])
+    const authorization = await createCloudApi({ url: apiUrl }).passkeyLogin()
+    openExternalUrl(authorization.verificationUrl)
+    await completeDesktopAuthorization(authorization)
+  }, [apiUrl, completeDesktopAuthorization, openExternalUrl])
 
   const refreshAiPreferences = React.useCallback(async () => {
     if (!token) return
@@ -246,24 +287,16 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
     return unsubscribe
   }, [platform.billing, refreshLicense, token])
 
-  const openBillingUrl = React.useCallback(
-    (url: string) => {
-      if (platform.openExternalLink) platform.openExternalLink(url)
-      else window.open(url, "_blank", "noopener,noreferrer")
-    },
-    [platform]
-  )
-
   const startCheckout = React.useCallback(
     async (cycle: "monthly" | "yearly") => {
-      openBillingUrl((await createCloudApi(apiConnection).checkout(cycle)).url)
+      openExternalUrl((await createCloudApi(apiConnection).checkout(cycle)).url)
     },
-    [apiConnection, openBillingUrl]
+    [apiConnection, openExternalUrl]
   )
 
   const openBillingPortal = React.useCallback(async () => {
-    openBillingUrl((await createCloudApi(apiConnection).billingPortal()).url)
-  }, [apiConnection, openBillingUrl])
+    openExternalUrl((await createCloudApi(apiConnection).billingPortal()).url)
+  }, [apiConnection, openExternalUrl])
 
   const saveMcpConfiguration = React.useCallback(
     async (servers: CloudMcpServer[]) => {
@@ -354,11 +387,18 @@ async function waitForDesktopAuthorization(
   let interval = Math.max(authorization.interval, 1) * 1_000
   while (Date.now() < expiresAt) {
     await wait(interval)
-    const result = await api.pollSocialLogin(authorization.deviceCode)
+    const result = await api.pollDesktopLogin(authorization.deviceCode)
     if (result.status === "authenticated") return result.accessToken
     if (result.status === "slow-down") interval += 5_000
   }
   throw new Error("This sign-in request expired. Try again.")
+}
+
+type DesktopAuthorization = {
+  deviceCode: string
+  expiresIn: number
+  interval: number
+  verificationUrl: string
 }
 
 function wait(duration: number) {

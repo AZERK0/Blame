@@ -1,16 +1,17 @@
 import * as React from "react"
 import { KeyRoundIcon, LoaderCircleIcon } from "lucide-react"
+import { toast } from "sonner"
 
 import { CompactWindowChrome } from "@/components/layout/compact-window-chrome"
 import { Button } from "@/components/ui/button"
 import {
   Field,
   FieldDescription,
-  FieldError,
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { Toaster } from "@/components/ui/sonner"
 import { LegalLink } from "@/components/legal/legal-link"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { publicAssetUrl } from "@/lib/public-asset-url"
@@ -35,6 +36,7 @@ export function ConnectScreen() {
   return (
     <main className="light relative h-svh overflow-hidden bg-background/10 text-foreground backdrop-blur-md">
       <CompactWindowChrome />
+      <Toaster />
       <section className="flex h-full flex-col gap-4 bg-background/50 p-6 pb-16 md:p-8 md:pb-16">
         <AppLogo />
         <div className="flex flex-1 items-center justify-center">
@@ -102,6 +104,7 @@ function LoginForm({ onModeChange }: { onModeChange(mode: AuthMode): void }) {
       onSubmit={form.submit(async () => {
         const result = await auth.login({ email, password })
         if (result === "two-factor") onModeChange("two-factor")
+        if (result === "email-verification") onModeChange("verify")
       })}
     >
       <FieldGroup className="gap-4">
@@ -112,7 +115,7 @@ function LoginForm({ onModeChange }: { onModeChange(mode: AuthMode): void }) {
           setEmail={setEmail}
           setPassword={setPassword}
         />
-        <AuthError error={form.error ?? auth.error} />
+        <AuthErrorToast error={form.error ?? auth.error} />
         <SubmitButton loading={form.loading}>Login</SubmitButton>
         <button
           className="text-sm font-medium text-foreground/70 underline-offset-4 hover:text-foreground hover:underline"
@@ -152,7 +155,7 @@ function EmailTwoFactorForm({ onModeChange }: { onModeChange(mode: AuthMode): vo
     >
       <FieldGroup className="gap-4">
         <EmailTwoFactorFields code={code} sent={sent} setCode={setCode} />
-        <AuthError error={form.error} />
+        <AuthErrorToast error={form.error} />
         <SubmitButton loading={form.loading}>Verify code</SubmitButton>
         <EmailTwoFactorActions
           loading={form.loading}
@@ -247,7 +250,7 @@ function SignupForm({ onModeChange }: { onModeChange(mode: AuthMode): void }) {
           setPassword={setPassword}
           setPasswordConfirmation={setPasswordConfirmation}
         />
-        <AuthError error={form.error} />
+        <AuthErrorToast error={form.error} />
         <AuthLegalNotice mode="signup" />
         <SubmitButton loading={form.loading}>Create account</SubmitButton>
         <AlternativeAuth
@@ -280,7 +283,7 @@ function ForgotPasswordForm({ onModeChange }: { onModeChange(mode: AuthMode): vo
             Check your inbox. The reset link expires in 30 minutes.
           </FieldDescription>
         ) : <AuthField id="reset-email" label="Email" type="email" value={email} onChange={setEmail} />}
-        <AuthError error={form.error} />
+        <AuthErrorToast error={form.error} />
         {!sent ? <SubmitButton loading={form.loading}>Send reset link</SubmitButton> : null}
         <ModePrompt action="Back to login" onClick={() => onModeChange("login")}>Remembered your password?</ModePrompt>
       </FieldGroup>
@@ -302,7 +305,7 @@ function VerificationForm({ onModeChange }: { onModeChange(mode: AuthMode): void
         <FormTitle title="Verify your email" description="Open the verification link we sent before signing in with a password." />
         <AuthField id="verify-email" label="Email" type="email" value={email} onChange={setEmail} />
         {sent ? <FieldDescription>A fresh verification link was sent.</FieldDescription> : null}
-        <AuthError error={form.error} />
+        <AuthErrorToast error={form.error ?? auth.error} />
         <SubmitButton loading={form.loading}>Resend verification email</SubmitButton>
         <ModePrompt action="Back to login" onClick={() => onModeChange("login")}>Already verified?</ModePrompt>
       </FieldGroup>
@@ -510,9 +513,12 @@ function AuthField({
   )
 }
 
-function AuthError({ error }: { error: string | undefined }) {
-  if (!error) return null
-  return <FieldError>{error}</FieldError>
+function AuthErrorToast({ error }: { error: string | undefined }) {
+  React.useEffect(() => {
+    if (error) toast.error(error, { position: "bottom-right" })
+  }, [error])
+
+  return null
 }
 
 function SubmitButton({

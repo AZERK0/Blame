@@ -58,19 +58,46 @@ test("creates a cloud session after email OTP verification", async () => {
   assert.equal(session.user.initials, "AL")
 })
 
+test("pairs an unverified password sign-in with the desktop device", async () => {
+  const requests: Array<{ init?: RequestInit; url: string }> = []
+  globalThis.fetch = async (input, init) => {
+    requests.push({ init, url: String(input) })
+    if (requests.length === 1) {
+      return jsonResponse(
+        { message: "Email not verified" },
+        { status: 403 }
+      )
+    }
+    return requests.length === 2
+      ? jsonResponse(deviceAuthorizationResponse())
+      : jsonResponse({ status: true })
+  }
+
+  const result = await createCloudApi({
+    url: "https://api.blame.test",
+  }).login({
+    email: "ada@example.com",
+    password: "correct horse battery staple",
+  })
+
+  assert.equal(typeof result, "object")
+  if (typeof result !== "object" || !("status" in result)) return
+  assert.equal(result.status, "email-verification")
+  assert.equal(
+    result.authorization.verificationUrl,
+    "https://blame.so/auth/verify-email?user_code=ABCD2345"
+  )
+  assert.equal(
+    JSON.parse(String(requests[2]?.init?.body)).callbackURL,
+    result.authorization.verificationUrl
+  )
+})
+
 test("starts social sign-in with a device authorization URL", async () => {
   let request: { init?: RequestInit; url: string } | undefined
   globalThis.fetch = async (input, init) => {
     request = { init, url: String(input) }
-    return jsonResponse({
-      device_code: "secure-device-code",
-      expires_in: 600,
-      interval: 5,
-      user_code: "ABCD2345",
-      verification_uri: "https://blame.so/auth/desktop",
-      verification_uri_complete:
-        "https://blame.so/auth/desktop?user_code=ABCD2345",
-    })
+    return jsonResponse(deviceAuthorizationResponse())
   }
 
   const authorization = await createCloudApi({
@@ -85,6 +112,48 @@ test("starts social sign-in with a device authorization URL", async () => {
   assert.equal(
     authorization.verificationUrl,
     "https://blame.so/auth/desktop?user_code=ABCD2345&provider=google"
+  )
+})
+
+test("starts passkey sign-in with a device authorization URL", async () => {
+  globalThis.fetch = async () => jsonResponse(deviceAuthorizationResponse())
+
+  const authorization = await createCloudApi({
+    url: "https://api.blame.test",
+  }).passkeyLogin()
+
+  assert.equal(
+    authorization.verificationUrl,
+    "https://blame.so/auth/passkey?user_code=ABCD2345"
+  )
+})
+
+test("pairs signup verification with the desktop device", async () => {
+  const requests: Array<{ init?: RequestInit; url: string }> = []
+  globalThis.fetch = async (input, init) => {
+    requests.push({ init, url: String(input) })
+    return requests.length === 1
+      ? jsonResponse(deviceAuthorizationResponse())
+      : jsonResponse({ status: true })
+  }
+
+  const authorization = await createCloudApi({
+    url: "https://api.blame.test",
+  }).signup({
+    email: "ada@example.com",
+    fullName: "Ada Lovelace",
+    password: "correct horse battery staple",
+    passwordConfirmation: "correct horse battery staple",
+  })
+
+  assert.equal(
+    authorization.verificationUrl,
+    "https://blame.so/auth/verify-email?user_code=ABCD2345"
+  )
+  assert.equal(requests[1]?.url, "https://api.blame.test/auth/sign-up/email")
+  assert.equal(
+    JSON.parse(String(requests[1]?.init?.body)).callbackURL,
+    authorization.verificationUrl
   )
 })
 
@@ -105,14 +174,26 @@ test("polls device authorization until its one-time token is ready", async () =>
   }
   const api = createCloudApi({ url: "https://api.blame.test" })
 
-  assert.deepEqual(await api.pollSocialLogin("secure-device-code"), {
+  assert.deepEqual(await api.pollDesktopLogin("secure-device-code"), {
     status: "pending",
   })
-  assert.deepEqual(await api.pollSocialLogin("secure-device-code"), {
+  assert.deepEqual(await api.pollDesktopLogin("secure-device-code"), {
     accessToken: "raw-session-token",
     status: "authenticated",
   })
 })
+
+function deviceAuthorizationResponse() {
+  return {
+    device_code: "secure-device-code",
+    expires_in: 600,
+    interval: 5,
+    user_code: "ABCD2345",
+    verification_uri: "https://blame.so/auth/desktop",
+    verification_uri_complete:
+      "https://blame.so/auth/desktop?user_code=ABCD2345",
+  }
+}
 
 function jsonResponse(
   body: unknown,

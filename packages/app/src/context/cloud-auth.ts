@@ -132,7 +132,10 @@ export type LoginInput = {
   password: string
 }
 
-export type LoginResult = "authenticated" | "two-factor"
+export type LoginResult =
+  | "authenticated"
+  | "email-verification"
+  | "two-factor"
 
 export type SignupInput = LoginInput & {
   fullName: string | null
