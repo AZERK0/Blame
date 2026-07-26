@@ -160,7 +160,7 @@ export type CloudAuthContextValue = {
   saveAiPreferences(input: SaveAiPreferencesInput): Promise<void>
   saveMcpConfiguration(servers: CloudMcpServer[]): Promise<void>
   refreshAiPreferences(): Promise<void>
-  refreshLicense(): Promise<void>
+  refreshLicense(): Promise<CloudLicense | undefined>
   startCheckout(cycle: "monthly" | "yearly"): Promise<void>
   openBillingPortal(): Promise<void>
   logout(): Promise<void>

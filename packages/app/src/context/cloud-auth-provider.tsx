@@ -234,6 +234,7 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
     setState((current) =>
       current.status === "authenticated" ? { ...current, license } : current
     )
+    return license
   }, [apiConnection, token])
 
   React.useEffect(() => {

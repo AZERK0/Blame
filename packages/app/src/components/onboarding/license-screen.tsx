@@ -1,10 +1,12 @@
 import * as React from "react"
 import { ArrowRightIcon, CheckIcon, LoaderCircleIcon } from "lucide-react"
+import { toast } from "sonner"
 
 import blameDarkAppIconUrl from "../../../../vitrine/public/icons/blame-dark-app-icon.png?url"
 import { CompactWindowChrome } from "@/components/layout/compact-window-chrome"
 import { LegalLink } from "@/components/legal/legal-link"
 import { Button } from "@/components/ui/button"
+import { Toaster } from "@/components/ui/sonner"
 import { useCloudAuth } from "@/context/cloud-auth"
 
 const billingOptions = {
@@ -31,6 +33,7 @@ export function LicenseScreen() {
   return (
     <main className="light relative min-h-svh overflow-y-auto bg-[#ededf0] text-[#111]">
       <CompactWindowChrome />
+      <Toaster />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_-10%,rgba(255,255,255,0.95),transparent_42%),radial-gradient(circle_at_15%_85%,rgba(179,172,243,0.18),transparent_34%)]" />
       <section className="relative mx-auto grid min-h-svh w-full max-w-6xl items-start gap-8 px-6 pt-12 pb-6 md:grid-cols-[minmax(0,1fr)_430px] md:gap-10 md:px-8 lg:gap-16">
         <div className="max-w-md md:pt-10">
@@ -279,7 +282,17 @@ function useLicenseActions(): LicenseActionState {
     error,
     pending,
     checkout: (cycle) => void run(cycle, () => auth.startCheckout(cycle)),
-    refresh: () => void run("refresh", auth.refreshLicense),
+    refresh: () =>
+      void run("refresh", async () => {
+        const license = await auth.refreshLicense()
+        if (license?.licensed !== false) return
+        toast.info("No active subscription found", {
+          id: "license-not-found",
+          description:
+            "If you just completed payment, wait a few seconds and try again.",
+          position: "bottom-right",
+        })
+      }),
   }
 }
 
