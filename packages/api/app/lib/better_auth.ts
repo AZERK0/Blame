@@ -1,6 +1,10 @@
 import { uuidV7 } from '#lib/uuid_v7'
 import { sitePageUrl, siteUrl } from '#lib/site_url'
-import { sendAuthEmail } from '#services/auth_email_service'
+import {
+  sendEmailVerificationEmail,
+  sendPasswordResetEmail,
+  sendSignInCodeEmail,
+} from '#services/auth_email_service'
 import env from '#start/env'
 import hash from '@adonisjs/core/services/hash'
 import { passkey } from '@better-auth/passkey'
@@ -108,10 +112,10 @@ export const auth = betterAuth({
       verify: ({ hash: passwordHash, password }) => hash.verify(passwordHash, password),
     },
     sendResetPassword: async ({ user, url }) => {
-      await sendAuthEmail({
+      await sendPasswordResetEmail({
+        name: user.name,
         to: user.email,
-        subject: 'Reset your Blame password',
-        text: `Reset your password using this secure link (valid for 30 minutes): ${passwordResetUrl(url)}`,
+        resetUrl: passwordResetUrl(url),
       })
     },
   },
@@ -121,10 +125,10 @@ export const auth = betterAuth({
     autoSignInAfterVerification: true,
     expiresIn: 60 * 60,
     sendVerificationEmail: async ({ user, url }) => {
-      await sendAuthEmail({
+      await sendEmailVerificationEmail({
+        name: user.name,
         to: user.email,
-        subject: 'Verify your Blame email address',
-        text: `Verify your email address using this secure link (valid for one hour): ${verificationRedirectUrl(url)}`,
+        verificationUrl: verificationRedirectUrl(url),
       })
     },
   },
@@ -171,11 +175,7 @@ export const auth = betterAuth({
         allowedAttempts: 5,
         storeOTP: 'hashed',
         sendOTP: async ({ user, otp }) => {
-          await sendAuthEmail({
-            to: user.email,
-            subject: 'Your Blame sign-in code',
-            text: `Your Blame sign-in code is ${otp}. It expires in 5 minutes.`,
-          })
+          await sendSignInCodeEmail({ code: otp, name: user.name, to: user.email })
         },
       },
       schema: {

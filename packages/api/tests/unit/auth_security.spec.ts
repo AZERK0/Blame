@@ -28,7 +28,7 @@ test.group('auth security configuration', () => {
     assert.include(source, "twoFactorTable: 'auth_two_factors'")
     assert.include(source, "storeOTP: 'hashed'")
     assert.include(source, "twoFactorEnabled: 'two_factor_enabled'")
-    assert.include(source, 'Your Blame sign-in code is ${otp}')
+    assert.include(source, 'sendSignInCodeEmail({ code: otp, name: user.name, to: user.email })')
   })
 
   test('never puts a reusable session token in the desktop deep link', async ({ assert }) => {
