@@ -3,6 +3,7 @@ import env from '#start/env'
 import User from '#models/user'
 import UserSubscription from '#models/user_subscription'
 import StripeWebhookEvent from '#models/stripe_webhook_event'
+import { reuseCheckoutUrlForPrice } from '#services/checkout_session_reuse'
 import db from '@adonisjs/lucid/services/db'
 import { DateTime } from 'luxon'
 
@@ -144,10 +145,12 @@ export default class BillingService {
         .forUpdate()
         .firstOrFail()
       if (subscription.stripeCheckoutSessionId) {
-        const existing = await this.stripeClient().checkout.sessions.retrieve(
-          subscription.stripeCheckoutSessionId
+        const existingUrl = await reuseCheckoutUrlForPrice(
+          this.stripeClient().checkout.sessions,
+          subscription.stripeCheckoutSessionId,
+          price
         )
-        if (existing.status === 'open' && existing.url) return existing.url
+        if (existingUrl) return existingUrl
       }
 
       const session = await this.createStripeCheckoutSession(subscription, userId, price)

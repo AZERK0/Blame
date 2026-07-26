@@ -32,8 +32,12 @@ export function LicenseScreen() {
     <main className="light relative min-h-svh overflow-y-auto bg-[#ededf0] text-[#111]">
       <CompactWindowChrome />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_-10%,rgba(255,255,255,0.95),transparent_42%),radial-gradient(circle_at_15%_85%,rgba(179,172,243,0.18),transparent_34%)]" />
-      <section className="relative mx-auto flex min-h-svh w-full max-w-xl flex-col items-center justify-center px-6 pt-10 pb-16 sm:pt-14 sm:pb-16">
-        <div className="flex w-full [zoom:.8] flex-col items-center">
+      <section className="relative mx-auto grid min-h-svh w-full max-w-6xl items-start gap-8 px-6 pt-12 pb-6 md:grid-cols-[minmax(0,1fr)_430px] md:gap-10 md:px-8 lg:gap-16">
+        <div className="max-w-md md:pt-10">
+          <LicensePageHeader />
+          <LicenseActions actions={actions} />
+        </div>
+        <div className="flex w-full [zoom:.8] flex-col items-center justify-self-end">
           <PricingCard
             billingCycle={billingCycle}
             loading={actions.pending === billingCycle}
@@ -42,10 +46,23 @@ export function LicenseScreen() {
             onCheckout={actions.checkout}
           />
           <LicenseError error={actions.error} />
-          <LicenseActions actions={actions} />
         </div>
       </section>
     </main>
+  )
+}
+
+function LicensePageHeader() {
+  return (
+    <header className="animate-in text-left duration-700 ease-out fade-in-0 fill-mode-both slide-in-from-bottom-4 motion-reduce:animate-none">
+      <h1 className="font-heading text-4xl leading-tight font-bold tracking-[-0.04em] sm:text-5xl">
+        Welcome to Blame
+      </h1>
+      <p className="mt-4 max-w-sm text-base leading-7 text-[#111]/60">
+        Choose the billing cycle that works for you and unlock the full desktop
+        experience.
+      </p>
+    </header>
   )
 }
 
@@ -57,7 +74,7 @@ function PricingCard({
   onCheckout,
 }: PricingCardProps) {
   return (
-    <article className="relative w-full max-w-[430px] overflow-hidden rounded-[2rem] border border-white/70 bg-white/30 p-2 shadow-[0_34px_100px_rgba(29,29,35,0.18)] backdrop-blur-2xl">
+    <article className="relative w-full max-w-[430px] animate-in overflow-hidden rounded-[2rem] border border-white/70 bg-white/30 p-2 shadow-[0_34px_100px_rgba(29,29,35,0.18)] backdrop-blur-2xl delay-100 duration-700 ease-out fade-in-0 fill-mode-both slide-in-from-bottom-5 zoom-in-95 motion-reduce:animate-none">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(255,255,255,0.85),transparent_32%),radial-gradient(circle_at_80%_18%,rgba(179,172,243,0.24),transparent_38%)]" />
       <div className="relative rounded-[1.55rem] border border-white/80 bg-[#f7f7f8]/95 p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_18px_60px_rgba(29,29,35,0.12)] sm:p-7">
         <PricingCardHeader />
@@ -210,10 +227,10 @@ function LicenseFactList() {
 
 function LicenseActions({ actions }: { actions: LicenseActionState }) {
   return (
-    <div className="mt-8 flex justify-center">
+    <div className="mt-3 flex animate-in justify-start delay-300 duration-500 ease-out fade-in-0 fill-mode-both slide-in-from-bottom-3 motion-reduce:animate-none">
       <Button
         variant="link"
-        className="h-11 w-fit rounded-full px-5 text-base"
+        className="h-11 w-fit rounded-full px-0 text-base"
         disabled={actions.pending !== null}
         onClick={actions.refresh}
       >
