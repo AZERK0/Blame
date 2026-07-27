@@ -1,4 +1,6 @@
-import { readdir, readFile } from "node:fs/promises"
+import { cp, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises"
+import { tmpdir } from "node:os"
+import { createRequire } from "node:module"
 import { dirname, extname, join, resolve } from "node:path"
 import { spawn } from "node:child_process"
 import { fileURLToPath } from "node:url"
@@ -7,6 +9,8 @@ import { loadEnvFiles, requiredEnv } from "./env-files.mjs"
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const desktopDir = join(rootDir, "packages/desktop")
 const distDir = join(desktopDir, "dist")
+const requireDesktop = createRequire(join(desktopDir, "package.json"))
+const YAML = requireDesktop("yaml")
 const command = process.argv[2] ?? "help"
 const args = process.argv.slice(3)
 
@@ -25,15 +29,99 @@ else if (command === "release") {
 async function build(platformArgs) {
   const packageArgs = platformArgs.length ? platformArgs : ["--linux", "--x64"]
   await run("pnpm", ["--filter", "@blame/desktop", "build"], rootDir)
-  await run("pnpm", [
-    "--filter",
-    "@blame/desktop",
-    "package",
-    "--",
-    ...packageArgs,
-    "--publish",
-    "never",
-  ], rootDir)
+  if (isDualArchitectureMacosBuild(packageArgs)) {
+    await buildMacosArchitectures(packageArgs)
+    return
+  }
+  await packageDesktop(packageArgs)
+}
+
+async function packageDesktop(packageArgs) {
+  await run(
+    "pnpm",
+    [
+      "--filter",
+      "@blame/desktop",
+      "package",
+      "--",
+      ...packageArgs,
+      "--publish",
+      "never",
+    ],
+    rootDir,
+  )
+}
+
+async function buildMacosArchitectures(packageArgs) {
+  const commonArgs = packageArgs.filter(
+    (argument) => argument !== "--x64" && argument !== "--arm64",
+  )
+  const firstDist = await mkdtemp(join(tmpdir(), "blame-desktop-x64-"))
+
+  try {
+    await packageDesktop([...commonArgs, "--x64"])
+    await cp(distDir, firstDist, {
+      recursive: true,
+      verbatimSymlinks: true,
+    })
+    const x64Update = await readMacosUpdateMetadata(firstDist)
+
+    await packageDesktop([...commonArgs, "--arm64"])
+    const arm64Update = await readMacosUpdateMetadata(distDir)
+    await restoreUniqueReleaseFiles(firstDist)
+    await writeMacosUpdateMetadata(mergeMacosUpdates(x64Update, arm64Update))
+  } finally {
+    await rm(firstDist, { force: true, recursive: true })
+  }
+}
+
+function isDualArchitectureMacosBuild(packageArgs) {
+  return (
+    packageArgs.some(
+      (argument) => argument === "--mac" || argument === "mac",
+    ) &&
+    packageArgs.includes("--x64") &&
+    packageArgs.includes("--arm64")
+  )
+}
+
+async function readMacosUpdateMetadata(directory) {
+  return YAML.parse(await readFile(join(directory, "latest-mac.yml"), "utf8"))
+}
+
+async function restoreUniqueReleaseFiles(sourceDirectory) {
+  for (const entry of await readdir(sourceDirectory, { withFileTypes: true })) {
+    if (!entry.isFile() || entry.name === "latest-mac.yml") continue
+    const destination = join(distDir, entry.name)
+    try {
+      await readFile(destination)
+    } catch {
+      await cp(join(sourceDirectory, entry.name), destination)
+    }
+  }
+}
+
+function mergeMacosUpdates(x64Update, arm64Update) {
+  const files = new Map()
+  for (const file of [
+    ...(x64Update.files ?? []),
+    ...(arm64Update.files ?? []),
+  ]) {
+    files.set(file.url, file)
+  }
+  return {
+    ...x64Update,
+    files: [...files.values()],
+    releaseDate: arm64Update.releaseDate ?? x64Update.releaseDate,
+  }
+}
+
+async function writeMacosUpdateMetadata(metadata) {
+  await writeFile(
+    join(distDir, "latest-mac.yml"),
+    YAML.stringify(metadata),
+    "utf8",
+  )
 }
 
 async function deploy() {
@@ -51,27 +139,39 @@ async function deploy() {
   const sshArgs = sshCommand(port)
   const destination = `${user}@${host}`
 
-  await run("ssh", [
-    ...sshArgs,
-    destination,
-    `mkdir -p '${targetPath}/latest' '${targetPath}/releases/${version}'`,
-  ], rootDir)
+  await run(
+    "ssh",
+    [
+      ...sshArgs,
+      destination,
+      `mkdir -p '${targetPath}/latest' '${targetPath}/releases/${version}'`,
+    ],
+    rootDir,
+  )
 
-  await run("rsync", [
-    "-az",
-    "-e",
-    ["ssh", ...sshArgs].join(" "),
-    ...files,
-    `${destination}:${targetPath}/latest/`,
-  ], distDir)
+  await run(
+    "rsync",
+    [
+      "-az",
+      "-e",
+      ["ssh", ...sshArgs].join(" "),
+      ...files,
+      `${destination}:${targetPath}/latest/`,
+    ],
+    distDir,
+  )
 
-  await run("rsync", [
-    "-az",
-    "-e",
-    ["ssh", ...sshArgs].join(" "),
-    ...files,
-    `${destination}:${targetPath}/releases/${version}/`,
-  ], distDir)
+  await run(
+    "rsync",
+    [
+      "-az",
+      "-e",
+      ["ssh", ...sshArgs].join(" "),
+      ...files,
+      `${destination}:${targetPath}/releases/${version}/`,
+    ],
+    distDir,
+  )
 }
 
 async function releaseFiles() {
@@ -82,14 +182,18 @@ async function releaseFiles() {
 function isReleaseFile(file) {
   if (file.startsWith("latest") && file.endsWith(".yml")) return true
   if (file.endsWith(".blockmap")) return true
-  return [".AppImage", ".deb", ".dmg", ".exe", ".rpm", ".zip"].includes(extname(file))
+  return [".AppImage", ".deb", ".dmg", ".exe", ".rpm", ".zip"].includes(
+    extname(file),
+  )
 }
 
 async function releaseVersion() {
   const envVersion = process.env.BLAME_VERSION?.trim()
   if (envVersion) return envVersion
 
-  const packageJson = JSON.parse(await readFile(join(desktopDir, "package.json"), "utf8"))
+  const packageJson = JSON.parse(
+    await readFile(join(desktopDir, "package.json"), "utf8"),
+  )
   return packageJson.version
 }
 
@@ -111,11 +215,14 @@ function run(command, args, cwd) {
     child.once("error", rejectRun)
     child.once("exit", (code) => {
       if (code === 0) resolveRun()
-      else rejectRun(new Error(`${command} ${args.join(" ")} exited with ${code}`))
+      else
+        rejectRun(new Error(`${command} ${args.join(" ")} exited with ${code}`))
     })
   })
 }
 
 function printHelp() {
-  console.log("Usage: node scripts/desktop-release.mjs <build|deploy|release> [electron-builder args]")
+  console.log(
+    "Usage: node scripts/desktop-release.mjs <build|deploy|release> [electron-builder args]",
+  )
 }

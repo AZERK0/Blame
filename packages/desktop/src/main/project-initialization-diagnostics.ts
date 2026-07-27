@@ -1,5 +1,8 @@
 import type { ProjectInitializationDiagnostics } from "@blame/agent-runtime";
-import { createContainerRuntime } from "./container-runtime.ts";
+import {
+  createContainerRuntime,
+  type ContainerRuntime,
+} from "./container-runtime.ts";
 import {
   joinWorkspacePath,
   readFile as readWorkspaceFile,
@@ -7,6 +10,7 @@ import {
 } from "./workspace-runtime.ts";
 
 const maxDiagnosticLength = 32_000;
+const diagnosticCommandTimeoutMs = 15_000;
 const containerRuntime = createContainerRuntime();
 
 export type CollectProjectInitializationDiagnosticsInput = {
@@ -14,11 +18,17 @@ export type CollectProjectInitializationDiagnosticsInput = {
   launchError: string;
 };
 
+type CollectProjectInitializationDiagnosticsOptions = {
+  containerRuntime?: ContainerRuntime;
+};
+
 export async function collectProjectInitializationDiagnostics(
   input: CollectProjectInitializationDiagnosticsInput,
   env: NodeJS.ProcessEnv,
+  options: CollectProjectInitializationDiagnosticsOptions = {},
 ): Promise<ProjectInitializationDiagnostics> {
   const worktree = resolveWorkspacePath(input.worktree);
+  const runtime = options.containerRuntime ?? containerRuntime;
   const composeArgs = [
     "-f",
     joinWorkspacePath(
@@ -30,7 +40,7 @@ export async function collectProjectInitializationDiagnostics(
     "--project-directory",
     worktree,
   ];
-  const services = await commandOutput(worktree, env, [
+  const services = await commandOutput(runtime, worktree, env, [
     ...composeArgs,
     "config",
     "--services",
@@ -38,12 +48,17 @@ export async function collectProjectInitializationDiagnostics(
   return {
     setupLog: await setupLog(worktree),
     launchError: sanitizeProjectDiagnostic(input.launchError),
-    composeConfig: await commandOutput(worktree, env, [
+    composeConfig: await commandOutput(runtime, worktree, env, [
       ...composeArgs,
       "config",
     ]),
-    composePs: await commandOutput(worktree, env, [...composeArgs, "ps", "-a"]),
+    composePs: await commandOutput(runtime, worktree, env, [
+      ...composeArgs,
+      "ps",
+      "-a",
+    ]),
     serviceLogs: await serviceLogOutputs(
+      runtime,
       worktree,
       env,
       composeArgs,
@@ -53,6 +68,7 @@ export async function collectProjectInitializationDiagnostics(
 }
 
 async function serviceLogOutputs(
+  runtime: ContainerRuntime,
   worktree: string,
   env: NodeJS.ProcessEnv,
   composeArgs: string[],
@@ -63,7 +79,7 @@ async function serviceLogOutputs(
       async (service) =>
         [
           service,
-          await commandOutput(worktree, env, [
+          await commandOutput(runtime, worktree, env, [
             ...composeArgs,
             "logs",
             "--tail",
@@ -91,12 +107,17 @@ async function setupLog(worktree: string) {
 }
 
 async function commandOutput(
+  runtime: ContainerRuntime,
   worktree: string,
   env: NodeJS.ProcessEnv,
   args: string[],
 ) {
   try {
-    const result = await containerRuntime.compose(args, { cwd: worktree, env });
+    const result = await runtime.compose(args, {
+      cwd: worktree,
+      env,
+      timeoutMs: diagnosticCommandTimeoutMs,
+    });
     return truncate(
       sanitizeProjectDiagnostic(
         [result.stdout, result.stderr].filter(Boolean).join("\n"),

@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdtemp, mkdir, rm, unlink, writeFile } from "node:fs/promises";
+import {
+  mkdtemp,
+  mkdir,
+  realpath,
+  rm,
+  unlink,
+  writeFile,
+} from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import test from "node:test";
@@ -271,7 +278,7 @@ test("initializes an opened folder that only belongs to a parent repository", as
       "rev-parse",
       "--show-toplevel",
     ]);
-    assert.equal(stdout.trim(), openedFolder);
+    assert.equal(stdout.trim(), await realpath(openedFolder));
     assert.equal(await isGitRepository(openedFolder), true);
   } finally {
     await rm(parentRepository, { force: true, recursive: true });

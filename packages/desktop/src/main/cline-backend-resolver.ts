@@ -113,8 +113,7 @@ async function ensureRuntimeClineHub(
     if (!hub.url) throw new Error("Runtime Cline hub did not return a URL.")
     if ((platform === "win32" || platform === "darwin") && hub.url) {
       try {
-        const httpUrl = hub.url.replace(/^ws:\/\//i, "http://").replace(/\/hub\?.*$/, "/health")
-        await preWarmRoute(httpUrl, platform)
+        await preWarmRoute(runtimeHubHealthUrl(hub.url), platform)
       } catch (error) {
         // Ignore pre-warm errors
       }
@@ -123,6 +122,15 @@ async function ensureRuntimeClineHub(
   } catch (error) {
     throw runtimeBackendUnavailable(error)
   }
+}
+
+export function runtimeHubHealthUrl(url: string) {
+  const parsed = new URL(url)
+  parsed.protocol = parsed.protocol === "wss:" ? "https:" : "http:"
+  parsed.pathname = parsed.pathname.replace(/\/hub\/?$/, "/health")
+  parsed.search = ""
+  parsed.hash = ""
+  return parsed.toString()
 }
 
 function preWarmRoute(url: string, platform: NodeJS.Platform): Promise<void> {
@@ -134,18 +142,28 @@ function preWarmRoute(url: string, platform: NodeJS.Platform): Promise<void> {
   // spawn with stdio:'ignore' sets bInheritHandles=FALSE so curl.exe never
   // acquires any of the parent's pipe handles.
   const bin = platform === "win32" ? "curl.exe" : "curl"
+  const maxTimeSeconds = platform === "win32" ? "35" : "2"
+  const connectTimeoutSeconds = platform === "win32" ? "35" : "1"
+  const killTimeoutMs = platform === "win32" ? 40_000 : 3_000
   return new Promise<void>((resolve) => {
     try {
       const child = spawn(
         bin,
-        ["--silent", "--max-time", "35", "--connect-timeout", "35", url],
+        [
+          "--silent",
+          "--max-time",
+          maxTimeSeconds,
+          "--connect-timeout",
+          connectTimeoutSeconds,
+          url,
+        ],
         {
           env: withoutTelemetryEnvironment(process.env),
           stdio: "ignore",
           windowsHide: true,
         }
       )
-      const timer = setTimeout(() => { child.kill(); resolve() }, 40_000)
+      const timer = setTimeout(() => { child.kill(); resolve() }, killTimeoutMs)
       child.on("close", () => { clearTimeout(timer); resolve() })
       child.on("error", () => { clearTimeout(timer); resolve() })
     } catch {

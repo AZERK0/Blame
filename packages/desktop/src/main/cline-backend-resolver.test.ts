@@ -3,7 +3,19 @@ import test from "node:test"
 import {
   localWorkspaceInput,
   resolveAgentWorkspaceInput,
+  runtimeHubHealthUrl,
 } from "./cline-backend-resolver.ts"
+
+test("builds the Cline health URL with or without an auth query", () => {
+  assert.equal(
+    runtimeHubHealthUrl("ws://127.0.0.1:25463/hub"),
+    "http://127.0.0.1:25463/health",
+  )
+  assert.equal(
+    runtimeHubHealthUrl("wss://runtime.test/hub?authToken=secret"),
+    "https://runtime.test/health",
+  )
+})
 
 test("resolves Windows runtime worktrees to a remote Cline backend", async () => {
   const input = {
@@ -40,6 +52,30 @@ test("resolves Windows runtime worktrees to a remote Cline backend", async () =>
 })
 
 test("resolves macOS runtime worktrees to a remote Cline backend", async () => {
+  const cwd =
+    "/home/blame/.local/share/blame/runtime/worktrees/repo/story"
+
+  const resolved = await resolveAgentWorkspaceInput(
+    { cwd, workspaceRoot: cwd },
+    {
+      agentClient: {
+        clineHubEnsure: async () => ({ url: "ws://127.0.0.1:25463/hub" }),
+      },
+      ensureReady: async () => ({
+        issues: [],
+        platform: "darwin",
+        runtime: "BlameRuntime",
+        status: "ready",
+      }),
+      platform: "darwin",
+    },
+  )
+
+  assert.equal(resolved.cwd, cwd)
+  assert.equal(resolved.backend.mode, "remote")
+})
+
+test("keeps legacy macOS shared worktrees connected to the remote backend", async () => {
   const cwd =
     "/Users/dev/Library/Application Support/Blame/runtime/worktrees/repo/story"
 

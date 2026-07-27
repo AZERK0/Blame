@@ -8,6 +8,7 @@ import {
   collectProjectInitializationDiagnostics,
   sanitizeProjectDiagnostic,
 } from "./project-initialization-diagnostics.ts";
+import { createContainerRuntime } from "./container-runtime.ts";
 
 test("collects compose configuration, status, and every service log", async () => {
   const root = await mkdtemp(join(tmpdir(), "blame-diagnostics-"));
@@ -36,6 +37,7 @@ exit 1
   const result = await collectProjectInitializationDiagnostics(
     { worktree, launchError: "preview failed" },
     { ...process.env, PATH: `${bin}:${process.env.PATH}` },
+    { containerRuntime: createContainerRuntime("linux") },
   );
 
   assert.equal(result.setupLog, "setup failed");

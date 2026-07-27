@@ -191,6 +191,7 @@ import json
 import multiprocessing
 import os
 import pwd
+import signal
 import subprocess
 import sys
 import threading
@@ -206,6 +207,7 @@ json_worker_count = max(1, min(2, os.cpu_count() or 1))
 large_json_threshold = 64 * 1024
 ignored_env_directories = {".git", ".blame", "build", "coverage", "dist", "node_modules", "out"}
 env_template_suffixes = (".example", ".sample", ".template")
+runtime_agent_version = "2"
 
 def serialize_json_line(value):
     return json.dumps(value, separators=(",", ":")) + "\n"
@@ -359,6 +361,37 @@ def wait_process(process_id, process):
         processes.pop(process_id, None)
     write({"event": "spawn", "processId": process_id, "type": "exit", "code": code})
 
+def terminate_process(process):
+    if process.poll() is not None:
+        return
+    try:
+        os.killpg(process.pid, signal.SIGTERM)
+    except ProcessLookupError:
+        return
+    except Exception:
+        process.terminate()
+    try:
+        process.wait(timeout=2)
+        return
+    except subprocess.TimeoutExpired:
+        pass
+    try:
+        os.killpg(process.pid, signal.SIGKILL)
+    except ProcessLookupError:
+        return
+    except Exception:
+        process.kill()
+    try:
+        process.wait(timeout=2)
+    except subprocess.TimeoutExpired:
+        pass
+
+def cleanup_processes():
+    with processes_lock:
+        active = list(processes.values())
+    for process in active:
+        terminate_process(process)
+
 def run_spawn(params):
     command, args = prepare_command(params)
     account = target_user(command_user(params))
@@ -371,6 +404,7 @@ def run_spawn(params):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         preexec_fn=demote(account),
+        start_new_session=True,
     )
     process_id = uuid.uuid4().hex
     with processes_lock:
@@ -385,7 +419,7 @@ def run_kill(params):
     with processes_lock:
         process = processes.get(process_id)
     if process and process.poll() is None:
-        process.terminate()
+        terminate_process(process)
     return {"stopped": bool(process)}
 
 def runtime_env_file(name):
@@ -661,17 +695,22 @@ def handle(request):
         write({"id": request_id, "ok": False, "error": {"message": str(error)}})
 
 def serve():
-    for line in sys.stdin:
-        try:
-            req = json.loads(line)
-            threading.Thread(target=handle, args=(req,), daemon=True).start()
-        except Exception as error:
-            write({"id": 0, "ok": False, "error": {"message": str(error)}})
+    try:
+        for line in sys.stdin:
+            try:
+                req = json.loads(line)
+                threading.Thread(target=handle, args=(req,), daemon=True).start()
+            except Exception as error:
+                write({"id": 0, "ok": False, "error": {"message": str(error)}})
+    finally:
+        cleanup_processes()
 
 def main():
     command = sys.argv[1] if len(sys.argv) > 1 else "status"
     if command == "status":
         print("ready")
+    elif command == "agent-version":
+        print(runtime_agent_version)
     elif command == "version":
         print(version())
     elif command == "serve":

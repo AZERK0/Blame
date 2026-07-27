@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdir, mkdtemp, readFile, stat, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, realpath, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -98,7 +98,7 @@ test("creates an empty target directory and delegates generation to the AI agent
     assert.equal(receivedConfiguration, baseConfiguration);
     assert.equal(result.path, join(parent, "agent-app"));
     const gitRoot = await runGit(result.path, ["rev-parse", "--show-toplevel"]);
-    assert.equal(gitRoot.stdout.trim(), result.path);
+    assert.equal(gitRoot.stdout.trim(), await realpath(result.path));
   } finally {
     setNewProjectAgentRuntime(undefined);
   }
@@ -116,7 +116,7 @@ test("initializes generated projects as independent git repositories", async () 
   await initializeGeneratedRepository(target);
 
   const { stdout } = await runGit(target, ["rev-parse", "--show-toplevel"]);
-  assert.equal(stdout.trim(), target);
+  assert.equal(stdout.trim(), await realpath(target));
 });
 
 test("initial repository commit excludes generated runtime artifacts", async () => {

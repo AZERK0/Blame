@@ -5,6 +5,11 @@ $RuntimeHome = Split-Path -Parent $PSScriptRoot
 $ManifestPath = Join-Path $RuntimeHome "manifest.json"
 $Manifest = Get-Content $ManifestPath -Raw | ConvertFrom-Json
 $RuntimeVersion = [string]$Manifest.runtimeVersion
+$RuntimeAgentVersion = if ($Manifest.PSObject.Properties["runtimeAgentVersion"]) {
+  [string]$Manifest.runtimeAgentVersion
+} else {
+  "1"
+}
 $ClineSdkVersion = if ($env:BLAME_CLINE_SDK_VERSION) {
   [string]$env:BLAME_CLINE_SDK_VERSION
 } elseif ($Manifest.PSObject.Properties["clineSdkVersion"]) {
@@ -171,6 +176,7 @@ process.exit(sdk.version === version && core.version === version && fs.existsSyn
 NODE
 }
 check agent test -x /usr/local/bin/blame-runtime-agent
+check agent-version sh -lc 'test "$(blame-runtime-agent agent-version 2>/dev/null)" = "__RUNTIME_AGENT_VERSION__"'
 check runtime-version sh -lc 'test "$(cat /etc/blame-runtime-version 2>/dev/null)" = "__RUNTIME_VERSION__"'
 check containerd sh -lc 'command -v containerd >/dev/null 2>&1 && pgrep -x containerd >/dev/null 2>&1 && test -S /run/containerd/containerd.sock'
 check nerdctl sh -lc 'command -v nerdctl >/dev/null 2>&1'
@@ -179,10 +185,11 @@ check git sh -lc 'command -v git >/dev/null 2>&1'
 check cline-sdk valid_cline_sdk_install
 '@
   $command = $command -replace "__CLINE_SDK_VERSION__", $ClineSdkVersion
+  $command = $command -replace "__RUNTIME_AGENT_VERSION__", $RuntimeAgentVersion
   $command = $command -replace "__RUNTIME_VERSION__", $RuntimeVersion
   $result = Invoke-Distro $command
   if ($result.Code -ne 0) {
-    foreach ($name in @("agent", "runtime-version", "containerd", "nerdctl", "nerdctl-compose", "git", "cline-sdk")) {
+    foreach ($name in @("agent", "agent-version", "runtime-version", "containerd", "nerdctl", "nerdctl-compose", "git", "cline-sdk")) {
       $Checks.Add((New-Check $name "missing" "Repair BlameRuntime from Blame runtime setup."))
     }
     return
@@ -363,6 +370,9 @@ function Test-ImportedRuntimeReady {
 version_ok() {
   test "$(cat /etc/blame-runtime-version 2>/dev/null)" = "__RUNTIME_VERSION__"
 }
+agent_version_ok() {
+  test "$(blame-runtime-agent agent-version 2>/dev/null)" = "__RUNTIME_AGENT_VERSION__"
+}
 node_major_ok() {
   node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= 22 ? 0 : 1)'
 }
@@ -389,6 +399,7 @@ process.exit(sdk.version === version && core.version === version && fs.existsSyn
 NODE
 }
 version_ok &&
+  agent_version_ok &&
   id blame >/dev/null 2>&1 &&
   command -v node >/dev/null 2>&1 &&
   node_major_ok &&
@@ -398,6 +409,7 @@ version_ok &&
   valid_cline_sdk_install
 '@
   $command = $command -replace "__CLINE_SDK_VERSION__", $ClineSdkVersion
+  $command = $command -replace "__RUNTIME_AGENT_VERSION__", $RuntimeAgentVersion
   $command = $command -replace "__RUNTIME_VERSION__", $RuntimeVersion
   $result = Invoke-Distro $command
   $result.Code -eq 0

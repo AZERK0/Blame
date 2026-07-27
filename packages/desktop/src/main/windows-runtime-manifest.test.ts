@@ -26,6 +26,7 @@ type RootfsSpec = {
 type WindowsRuntimeManifest = {
   clineSdkVersion?: string;
   rootfs?: Record<string, RootfsSpec>;
+  runtimeAgentVersion?: string;
 };
 
 type MacosRuntimeManifest = WindowsRuntimeManifest & {
@@ -71,6 +72,15 @@ test("keeps managed runtime Cline SDK versions aligned with agent runtime", asyn
   }
 });
 
+test("keeps managed runtime agent revisions aligned", async () => {
+  for (const path of managedManifestPaths) {
+    const manifest = JSON.parse(
+      await readFile(path, "utf8"),
+    ) as WindowsRuntimeManifest;
+    assert.equal(manifest.runtimeAgentVersion, "2");
+  }
+});
+
 test("pins every macOS runtime build input with a SHA-256", async () => {
   const manifest = JSON.parse(
     await readFile(managedManifestPaths[0], "utf8"),
@@ -98,7 +108,12 @@ test("keeps the Lima template while embedding its verified bundle", async () => 
     await prepareMacosRuntimeManifest(runtimeRoot, {
       macosBundleArchitecture: "x86_64",
     });
-    await access(path.join(runtimeRoot, "macos/lima/blame-runtime.yaml"));
+    const templatePath = path.join(
+      runtimeRoot,
+      "macos/lima/blame-runtime.yaml",
+    );
+    await access(templatePath);
+    assert.match(await readFile(templatePath, "utf8"), /location: "~"/);
     await access(path.join(runtimeRoot, "macos/lima/bundle/bin/limactl"));
     await access(
       path.join(runtimeRoot, "macos/lima/bundle/share/lima/templates"),

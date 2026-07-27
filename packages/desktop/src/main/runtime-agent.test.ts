@@ -63,12 +63,17 @@ test("runtime agent client sends exec requests over one WSL process", async () =
     spawnProcess,
   });
 
-  const result = await client.exec({ args: ["status"], command: "git" });
+  const result = await client.exec({
+    args: ["status"],
+    command: "git",
+    timeoutMs: 1_000,
+  });
 
   assert.equal(result.stdout, "done");
   assert.equal(processes.length, 1);
   assert.equal(processes[0].requests[0].method, "exec");
   assert.equal(processes[0].requests[0].params.command, "git");
+  assert.equal(processes[0].requests[0].params.timeoutMs, 1_000);
 });
 
 test("runtime agent client rejects failed exec responses with output", async () => {

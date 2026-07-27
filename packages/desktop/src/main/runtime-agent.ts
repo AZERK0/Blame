@@ -105,7 +105,11 @@ export class RuntimeAgentClient {
   }
 
   async exec(input: AgentExecInput): Promise<AgentExecResult> {
-    const result = await this.request("exec", input, input.timeoutMs);
+    const result = await this.request(
+      "exec",
+      input,
+      input.timeoutMs ? input.timeoutMs + 2_000 : undefined,
+    );
     return result as AgentExecResult;
   }
 

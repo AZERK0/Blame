@@ -8,7 +8,7 @@ images:
     digest: "sha256:ffe6203da54deeb6db5d2a98a83f9ec8e55f149d3f7ba622e1abe5fa966ee3d6"
 disk: "80GiB"
 mounts:
-  - location: "~/Library/Application Support/Blame"
+  - location: "~"
     writable: true
 containerd:
   system: false

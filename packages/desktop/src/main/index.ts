@@ -46,6 +46,7 @@ import {
 import { registerTerminalIpcHandlers, shutdownTerminalSessions } from "./terminal-ipc"
 import { registerTelemetryIpcHandlers } from "./telemetry-ipc"
 import { registerWorkspaceIpcHandlers, shutdownWorkspaceProcesses } from "./workspace-ipc"
+import { runtimeHostPath, runtimeVmInternalPath } from "./workspace-runtime"
 import { registerMcpIpcHandlers } from "./mcp-ipc"
 import { configureHyprlandWindow } from "./hyprland-window"
 import {
@@ -470,7 +471,13 @@ function registerIpcHandlers() {
   })
 
   ipcMain.handle("shell:open-path", (_event, path: string) => {
-    return shell.openPath(path)
+    if (
+      process.platform === "darwin" &&
+      runtimeVmInternalPath(path, "darwin")
+    ) {
+      return "This worktree is stored inside BlameRuntime for performance. Open it from Blame's Files or Terminal view."
+    }
+    return shell.openPath(runtimeHostPath(path))
   })
 }
 
