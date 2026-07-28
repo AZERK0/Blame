@@ -189,7 +189,7 @@ export function useBacklogRotation(
       status: "in-progress",
       worktree: worktree.worktree,
     })
-    const setup = await workspace.runProjectSetup({
+    const setupPromise = workspace.runProjectSetup({
       executionId,
       storyId,
       telemetryCohorts,
@@ -202,19 +202,7 @@ export function useBacklogRotation(
       runConfigurationId: detailedStory.runConfigurationId ?? undefined,
       hostDependenciesChecked: true,
     })
-    backlog.setStorySetupInitializing(detailedStory, true)
-    const unsubscribeSetup = workspace.onSetupEvent(setup.runId, (event) => {
-      void handleSetupEvent(
-        detailedStory,
-        setup.runId,
-        event,
-        worktree.worktree,
-        initialization,
-        executionId
-      )
-      if (event.type === "exit") unsubscribeSetup()
-    })
-    const session = await agent.sessions.startDevelopment({
+    const sessionPromise = agent.sessions.startDevelopment({
       apiConnection: auth.apiConnection,
       providerId: selection.currentModel.provider.id,
       modelId: selection.currentModel.id,
@@ -235,6 +223,21 @@ export function useBacklogRotation(
       executionId,
       storyId,
     })
+    void sessionPromise.catch(() => undefined)
+    const setup = await setupPromise
+    backlog.setStorySetupInitializing(detailedStory, true)
+    const unsubscribeSetup = workspace.onSetupEvent(setup.runId, (event) => {
+      void handleSetupEvent(
+        detailedStory,
+        setup.runId,
+        event,
+        worktree.worktree,
+        initialization,
+        executionId
+      )
+      if (event.type === "exit") unsubscribeSetup()
+    })
+    const session = await sessionPromise
     const run = await backlog.createAgentRun(detailedStory, {
       checkpointRunCount: nextCheckpointRunCount(detailedStory.agentRuns ?? []),
       clineSessionId: session.sessionId,

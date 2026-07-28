@@ -19,6 +19,7 @@ import {
 import {
   configureAgentRuntimeTelemetry,
   disableAgentRuntimeTelemetry,
+  prewarmAgentRuntime,
   registerAgentIpcHandlers,
   shutdownAgentRuntime,
 } from "./agent-ipc"
@@ -143,8 +144,11 @@ void app.whenReady().then(() => {
       readyToQuit = true
     },
   })
-  registerWorkspaceIpcHandlers()
+  registerWorkspaceIpcHandlers({
+    onRuntimeReady: () => void prewarmAgentRuntime(true),
+  })
   replaceMainWindow("compact")
+  void prewarmAgentRuntime()
   checkForUpdatesOnStartup()
 })
 

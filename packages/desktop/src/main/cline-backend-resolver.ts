@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process"
+import { createHash, randomUUID } from "node:crypto"
 import { withoutTelemetryEnvironment } from "@blame/telemetry"
 import type { AgentBackendConfig } from "@blame/agent-runtime"
 import { setupPath } from "./host-tool-path.ts"
@@ -37,15 +38,16 @@ export async function resolveAgentWorkspaceInput<T extends Record<string, unknow
     runtimeEnvironment(options, platform)
   )
   const hub = await ensureRuntimeClineHub(options, platform)
+  const identity = runtimeHubBackendIdentity(platform, hub)
   return {
     ...runtimeNativeWorkspaceInput(input),
     backend: {
       mode: "remote",
-      endpoint: hub.url,
-      authToken: hub.authToken,
+      endpoint: identity.endpoint,
+      authToken: identity.authToken,
       cwd: stringField(input.cwd),
       workspaceRoot: stringField(input.workspaceRoot),
-      key: `runtime:${platform}:${hub.url}`,
+      key: identity.key,
     },
   }
 }
@@ -131,6 +133,67 @@ export function runtimeHubHealthUrl(url: string) {
   parsed.search = ""
   parsed.hash = ""
   return parsed.toString()
+}
+
+export function runtimeHubBackendIdentity(
+  platform: NodeJS.Platform,
+  hub: { authToken?: string; url?: string },
+) {
+  if (!hub.url) throw new Error("Runtime Cline hub did not return a URL.")
+  const endpoint = new URL(hub.url)
+  const authToken =
+    hub.authToken ?? endpoint.searchParams.get("authToken") ?? undefined
+  endpoint.searchParams.delete("authToken")
+  endpoint.hash = ""
+  const normalizedEndpoint = endpoint.toString()
+  const authFingerprint = createHash("sha256")
+    .update(authToken ?? "")
+    .digest("hex")
+    .slice(0, 16)
+  return {
+    authToken,
+    endpoint: normalizedEndpoint,
+    key: `runtime:${platform}:${normalizedEndpoint}:auth:${authFingerprint}`,
+  }
+}
+
+export function retryableHubTransportError(error: unknown) {
+  const name =
+    error instanceof Error
+      ? error.name
+      : typeof error === "object" && error && "name" in error
+        ? String(error.name)
+        : ""
+  const message = errorMessage(error)
+  return (
+    name === "HubTransportError" &&
+    (/hub connection closed/i.test(message) ||
+      /hub_connection_closed/i.test(message) ||
+      /\bcode=1006\b/i.test(message))
+  )
+}
+
+export function refreshRuntimeBackendConnection<
+  T extends Record<string, unknown>,
+>(input: T, connectionId = randomUUID()) {
+  const backend = input.backend
+  if (
+    !backend ||
+    typeof backend !== "object" ||
+    !("mode" in backend) ||
+    backend.mode !== "remote" ||
+    !("key" in backend) ||
+    typeof backend.key !== "string"
+  ) {
+    return input
+  }
+  return {
+    ...input,
+    backend: {
+      ...backend,
+      key: `${backend.key}:connection:${connectionId}`,
+    },
+  }
 }
 
 function preWarmRoute(url: string, platform: NodeJS.Platform): Promise<void> {

@@ -27,6 +27,59 @@ test("uses the local backend when no workspace backend is provided", () => {
   assert.deepEqual(coreBackendOptions(), { backendMode: "local" });
 });
 
+test("prewarms and removes the reserved remote runtime session", async () => {
+  const calls: string[] = [];
+  const core = {
+    abort: async (sessionId: string) => {
+      calls.push(`abort:${sessionId}`);
+    },
+    delete: async (sessionId: string) => {
+      calls.push(`delete:${sessionId}`);
+      return true;
+    },
+    start: async (input: { config: { sessionId?: string } }) => {
+      calls.push(`start:${input.config.sessionId}`);
+      return { sessionId: input.config.sessionId! };
+    },
+  };
+  const runtime = new BlameAgentRuntime(undefined, {
+    createCore: async () => core as never,
+  });
+
+  await runtime.prewarm({
+    backend: {
+      endpoint: "ws://127.0.0.1:25463/hub",
+      mode: "remote",
+    },
+    cwd: "/tmp/blame-prewarm",
+    workspaceRoot: "/tmp/blame-prewarm",
+  });
+
+  assert.deepEqual(calls, [
+    "start:blame-runtime-prewarm",
+    "abort:blame-runtime-prewarm",
+    "delete:blame-runtime-prewarm",
+  ]);
+});
+
+test("does not prewarm a local Cline backend", async () => {
+  let created = false;
+  const runtime = new BlameAgentRuntime(undefined, {
+    createCore: async () => {
+      created = true;
+      return {} as never;
+    },
+  });
+
+  await runtime.prewarm({
+    backend: { mode: "local" },
+    cwd: "/tmp/blame-prewarm",
+    workspaceRoot: "/tmp/blame-prewarm",
+  });
+
+  assert.equal(created, false);
+});
+
 test("finds only sessions writing inside a workspace", () => {
   const workspace = join(tmpdir(), "story-42");
   const sessions = new Map([

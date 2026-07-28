@@ -486,7 +486,9 @@ const removedWorktrees = new Set<string>();
 const workspaceProcesses = new Set<ChildProcessWithoutNullStreams>();
 const containerRuntime = createContainerRuntime();
 
-export function registerWorkspaceIpcHandlers() {
+export function registerWorkspaceIpcHandlers(
+  input: { onRuntimeReady?(): void } = {},
+) {
   setProjectCreationWindowsProvider(() => BrowserWindow.getAllWindows());
   setNewProjectAgentRuntime({ generate: generateNewProjectWithAgent });
   ipcMain.handle("workspace:path-exists", (_event, input: { path: string }) =>
@@ -636,15 +638,23 @@ export function registerWorkspaceIpcHandlers() {
   );
   ipcMain.handle("workspace:ensure-runtime-ready", async () => {
     resetRuntimeGitIdentityConfigured();
-    return ensureRuntimeReady({ env: runtimeManagerEnvironment() });
+    const report = await ensureRuntimeReady({
+      env: runtimeManagerEnvironment(),
+    });
+    if (report.status === "ready") input.onRuntimeReady?.();
+    return report;
   });
   ipcMain.handle("workspace:repair-runtime", async () => {
     resetRuntimeGitIdentityConfigured();
-    return repairRuntime({ env: runtimeManagerEnvironment() });
+    const report = await repairRuntime({ env: runtimeManagerEnvironment() });
+    if (report.status === "ready") input.onRuntimeReady?.();
+    return report;
   });
   ipcMain.handle("workspace:reset-runtime", async () => {
     resetRuntimeGitIdentityConfigured();
-    return resetRuntime({ env: runtimeManagerEnvironment() });
+    const report = await resetRuntime({ env: runtimeManagerEnvironment() });
+    if (report.status === "ready") input.onRuntimeReady?.();
+    return report;
   });
   ipcMain.handle("workspace:uninstall-runtime", async () => {
     resetRuntimeGitIdentityConfigured();

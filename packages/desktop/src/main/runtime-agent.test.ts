@@ -194,6 +194,38 @@ test("runtime agent client requests Cline hub ensure", async () => {
   assert.equal(result.authToken, "secret");
 });
 
+test("runtime agent client retries Cline hub ensure after a clean transport exit", async () => {
+  const processes: FakeAgentProcess[] = [];
+  let attempts = 0;
+  const spawnProcess = fakeSpawn(processes, (request, process) => {
+    attempts += 1;
+    if (attempts === 1) {
+      process.exitCode = 0;
+      setImmediate(() => process.emit("exit", 0, null));
+      return;
+    }
+    process.stdout.write(
+      `${JSON.stringify({
+        id: request.id,
+        ok: true,
+        result: {
+          authToken: "secret",
+          status: "ready",
+          url: "ws://127.0.0.1:25463/hub",
+        },
+      })}\n`,
+    );
+  });
+  const client = new RuntimeAgentClient({ platform: "darwin", spawnProcess });
+
+  const result = await client.clineHubEnsure();
+
+  assert.equal(result.status, "ready");
+  assert.equal(processes.length, 2);
+  assert.equal(processes[0].requests[0].method, "clineHubEnsure");
+  assert.equal(processes[1].requests[0].method, "clineHubEnsure");
+});
+
 test("runtime agent client batches existing file reads", async () => {
   const processes: FakeAgentProcess[] = [];
   const spawnProcess = fakeSpawn(processes, (request, process) => {

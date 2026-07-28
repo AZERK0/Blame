@@ -2,7 +2,10 @@ import assert from "node:assert/strict"
 import test from "node:test"
 import {
   localWorkspaceInput,
+  refreshRuntimeBackendConnection,
   resolveAgentWorkspaceInput,
+  retryableHubTransportError,
+  runtimeHubBackendIdentity,
   runtimeHubHealthUrl,
 } from "./cline-backend-resolver.ts"
 
@@ -45,10 +48,14 @@ test("resolves Windows runtime worktrees to a remote Cline backend", async () =>
     authToken: "secret",
     cwd: input.cwd,
     endpoint: "ws://127.0.0.1:25463/hub",
-    key: "runtime:win32:ws://127.0.0.1:25463/hub",
+    key: runtimeHubBackendIdentity("win32", {
+      authToken: "secret",
+      url: "ws://127.0.0.1:25463/hub",
+    }).key,
     mode: "remote",
     workspaceRoot: input.workspaceRoot,
   })
+  assert.equal(resolved.backend.key.includes("secret"), false)
 })
 
 test("resolves macOS runtime worktrees to a remote Cline backend", async () => {
@@ -110,4 +117,57 @@ test("resolves Linux and unmanaged paths to local Cline backend", async () => {
     ...input,
     backend: { mode: "local", key: "local" },
   })
+})
+
+test("normalizes runtime hub auth while changing identity after a hub restart", () => {
+  const separateAuth = runtimeHubBackendIdentity("darwin", {
+    authToken: "first-token",
+    url: "ws://127.0.0.1:25463/hub",
+  })
+  const queryAuth = runtimeHubBackendIdentity("darwin", {
+    url: "ws://127.0.0.1:25463/hub?authToken=first-token",
+  })
+  const restartedHub = runtimeHubBackendIdentity("darwin", {
+    authToken: "second-token",
+    url: "ws://127.0.0.1:25463/hub",
+  })
+
+  assert.deepEqual(queryAuth, separateAuth)
+  assert.equal(separateAuth.endpoint, "ws://127.0.0.1:25463/hub")
+  assert.equal(separateAuth.key.includes("first-token"), false)
+  assert.notEqual(restartedHub.key, separateAuth.key)
+})
+
+test("retries only abnormal Cline hub connection closures", () => {
+  const closed = new Error("Hub connection closed (code=1006)")
+  closed.name = "HubTransportError"
+  assert.equal(retryableHubTransportError(closed), true)
+
+  const provider = new Error("Provider returned 429")
+  provider.name = "HubTransportError"
+  assert.equal(retryableHubTransportError(provider), false)
+  assert.equal(
+    retryableHubTransportError(new Error("Hub connection closed (code=1006)")),
+    false,
+  )
+})
+
+test("forces a fresh Cline core only for a retried remote connection", () => {
+  const remote = {
+    backend: {
+      key: "runtime:darwin:hub",
+      mode: "remote",
+    },
+    cwd: "/worktree",
+  }
+  assert.deepEqual(refreshRuntimeBackendConnection(remote, "retry-1"), {
+    ...remote,
+    backend: {
+      ...remote.backend,
+      key: "runtime:darwin:hub:connection:retry-1",
+    },
+  })
+
+  const local = { backend: { key: "local", mode: "local" }, cwd: "/project" }
+  assert.equal(refreshRuntimeBackendConnection(local, "retry-1"), local)
 })

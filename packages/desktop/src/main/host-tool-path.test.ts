@@ -56,3 +56,23 @@ test("adds macOS packaged runtime shim path", () => {
     true,
   );
 });
+
+test("adds the explicit macOS development runtime shim path", () => {
+  const path = setupPath({
+    env: {
+      BLAME_RUNTIME_BIN_DIR:
+        "/workspace/Blame/packages/desktop/resources/runtime/macos/bin",
+      HOME: "/Users/dev",
+      PATH: "/usr/bin",
+    },
+    execPath:
+      "/workspace/Blame/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron",
+    platform: "darwin",
+  });
+  const entries = path.split(":");
+
+  assert.equal(
+    entries[1],
+    "/workspace/Blame/packages/desktop/resources/runtime/macos/bin",
+  );
+});
