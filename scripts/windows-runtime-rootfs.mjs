@@ -5,6 +5,7 @@ import { pipeline } from "node:stream/promises";
 import { createGzip } from "node:zlib";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createDownloadObjectStorage } from "./download-object-storage.mjs";
 import {
   loadEnvFiles,
   requiredEnv,
@@ -160,10 +161,8 @@ async function deployRootfs() {
     throw new Error(`No runtime rootfs files found in ${outputDir}`);
 
   const runtimeVersion = requiredRuntimeVersion();
-  const remote = remoteSpec();
   const relativeTarget = `runtime/v${runtimeVersion}/windows`;
-  await createRemoteDirectory(remote, relativeTarget);
-  await uploadFiles(files, remote, relativeTarget);
+  await createDownloadObjectStorage().uploadVersioned(files, relativeTarget);
   await writeRuntimeEnv(files, runtimeVersion);
 }
 
@@ -204,24 +203,6 @@ async function writeRuntimeEnv(files, runtimeVersion) {
   await upsertEnvValues(envFile, values);
 }
 
-async function createRemoteDirectory(remote, relativeTarget) {
-  await run("ssh", [
-    ...sshCommand(),
-    remote.destination,
-    `mkdir -p '${remote.path}/${relativeTarget}'`,
-  ]);
-}
-
-async function uploadFiles(files, remote, relativeTarget) {
-  await run("rsync", [
-    "-az",
-    "-e",
-    ["ssh", ...sshCommand()].join(" "),
-    ...files,
-    `${remote.destination}:${remote.path}/${relativeTarget}/`,
-  ]);
-}
-
 function selectedArchitectures() {
   if (args.includes("--all-architectures")) return architectures;
   const explicit = valueArg("--arch");
@@ -252,20 +233,6 @@ function requiredNerdctlVersion() {
 
 function requiredNodeVersion() {
   return text(process.env.BLAME_NODE_VERSION) ?? "22.23.1";
-}
-
-function remoteSpec() {
-  return {
-    destination: `${requiredEnv("BLAME_DOWNLOAD_USER")}@${requiredEnv("BLAME_DOWNLOAD_HOST")}`,
-    path: requiredEnv("BLAME_DOWNLOAD_PATH"),
-  };
-}
-
-function sshCommand() {
-  const values = ["-p", text(process.env.BLAME_DOWNLOAD_SSH_PORT) ?? "22"];
-  const keyPath = text(process.env.BLAME_DOWNLOAD_SSH_KEY_PATH);
-  if (keyPath) values.push("-i", keyPath);
-  return values;
 }
 
 function valueArg(name) {

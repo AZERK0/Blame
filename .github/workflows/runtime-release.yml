@@ -42,7 +42,10 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
+          cache: pnpm
           node-version: 22
+
+      - run: pnpm install --frozen-lockfile
 
       - name: Install image build dependencies
         run: |
@@ -83,7 +86,10 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
+          cache: pnpm
           node-version: 22
+
+      - run: pnpm install --frozen-lockfile
 
       - uses: actions/download-artifact@v4
         with:
@@ -91,26 +97,15 @@ jobs:
           path: packages/desktop/dist/runtime
           pattern: blame-runtime-*
 
-      - name: Configure SSH
-        env:
-          BLAME_DOWNLOAD_SSH_KEY: ${{ secrets.BLAME_DOWNLOAD_SSH_KEY }}
-          BLAME_DOWNLOAD_HOST: ${{ secrets.BLAME_DOWNLOAD_HOST }}
-          BLAME_DOWNLOAD_SSH_PORT: ${{ secrets.BLAME_DOWNLOAD_SSH_PORT || 22 }}
-        run: |
-          mkdir -p ~/.ssh
-          key_path="$RUNNER_TEMP/blame-runtime-id_ed25519"
-          printf '%s\n' "$BLAME_DOWNLOAD_SSH_KEY" > "$key_path"
-          chmod 600 "$key_path"
-          ssh-keyscan -p "$BLAME_DOWNLOAD_SSH_PORT" "$BLAME_DOWNLOAD_HOST" > ~/.ssh/known_hosts
-          echo "BLAME_RUNTIME_SSH_KEY=$key_path" >> "$GITHUB_ENV"
-
-      - name: Upload runtime artifacts
+      - name: Upload runtime artifacts to OVH Object Storage
         run: pnpm deploy:runtime
         env:
           BLAME_DOWNLOAD_BASE_URL: ${{ secrets.BLAME_DOWNLOAD_BASE_URL }}
-          BLAME_DOWNLOAD_HOST: ${{ secrets.BLAME_DOWNLOAD_HOST }}
-          BLAME_DOWNLOAD_PATH: ${{ secrets.BLAME_DOWNLOAD_PATH }}
-          BLAME_DOWNLOAD_SSH_KEY_PATH: ${{ env.BLAME_RUNTIME_SSH_KEY }}
-          BLAME_DOWNLOAD_SSH_PORT: ${{ secrets.BLAME_DOWNLOAD_SSH_PORT || 22 }}
-          BLAME_DOWNLOAD_USER: ${{ secrets.BLAME_DOWNLOAD_USER }}
+          BLAME_DOWNLOAD_S3_ACCESS_KEY_ID: ${{ secrets.BLAME_DOWNLOAD_S3_ACCESS_KEY_ID }}
+          BLAME_DOWNLOAD_S3_BUCKET: ${{ vars.BLAME_DOWNLOAD_S3_BUCKET }}
+          BLAME_DOWNLOAD_S3_ENDPOINT: ${{ vars.BLAME_DOWNLOAD_S3_ENDPOINT }}
+          BLAME_DOWNLOAD_S3_FORCE_PATH_STYLE: ${{ vars.BLAME_DOWNLOAD_S3_FORCE_PATH_STYLE }}
+          BLAME_DOWNLOAD_S3_REGION: ${{ vars.BLAME_DOWNLOAD_S3_REGION }}
+          BLAME_DOWNLOAD_S3_SECRET_ACCESS_KEY: ${{ secrets.BLAME_DOWNLOAD_S3_SECRET_ACCESS_KEY }}
+          BLAME_DOWNLOAD_STORAGE_DRIVER: s3
           BLAME_RUNTIME_VERSION: ${{ inputs.runtime_version }}

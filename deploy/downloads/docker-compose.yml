@@ -3,8 +3,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    environment:
+      BLAME_DOWNLOAD_REDIRECT_BASE_URL: ${BLAME_DOWNLOAD_REDIRECT_BASE_URL:-https://blame-prod-downloads-gra.s3.gra.io.cloud.ovh.net}
     restart: unless-stopped
-    volumes:
-      - ${BLAME_DOWNLOADS_PATH:-/var/www/blame-downloads}:/usr/share/nginx/html:ro
     expose:
       - "80"

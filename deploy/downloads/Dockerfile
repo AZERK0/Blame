@@ -1,5 +1,6 @@
 FROM nginx:1.27-alpine
 
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+ENV BLAME_DOWNLOAD_REDIRECT_BASE_URL=https://blame-prod-downloads-gra.s3.gra.io.cloud.ovh.net
+ENV NGINX_ENVSUBST_FILTER=^BLAME_DOWNLOAD_REDIRECT_BASE_URL$
 
-RUN mkdir -p /usr/share/nginx/html/latest /usr/share/nginx/html/releases
+COPY nginx.conf /etc/nginx/templates/default.conf.template

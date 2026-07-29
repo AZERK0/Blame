@@ -93,14 +93,26 @@ jobs:
           if-no-files-found: error
 
   deploy:
-    name: Deploy installers
+    name: Publish installers to S3
     needs: build
     if: github.event_name == 'push' || inputs.deploy
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.2
+
+      - uses: actions/setup-node@v4
+        with:
+          cache: pnpm
+          node-version: 22
+
+      - run: pnpm install --frozen-lockfile
+
       - uses: actions/download-artifact@v4
         with:
-          merge-multiple: true
           path: release-files
           pattern: blame-desktop-*
 
@@ -113,22 +125,13 @@ jobs:
             echo "BLAME_VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
           fi
 
-      - name: Configure SSH
-        shell: bash
-        run: |
-          mkdir -p ~/.ssh
-          printf '%s\n' "${{ secrets.BLAME_DOWNLOAD_SSH_KEY }}" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -p "${{ secrets.BLAME_DOWNLOAD_SSH_PORT || 22 }}" "${{ secrets.BLAME_DOWNLOAD_HOST }}" >> ~/.ssh/known_hosts
-
-      - name: Upload to VPS
-        shell: bash
+      - name: Upload to OVH Object Storage
         env:
-          DOWNLOAD_HOST: ${{ secrets.BLAME_DOWNLOAD_HOST }}
-          DOWNLOAD_PATH: ${{ secrets.BLAME_DOWNLOAD_PATH }}
-          DOWNLOAD_PORT: ${{ secrets.BLAME_DOWNLOAD_SSH_PORT || 22 }}
-          DOWNLOAD_USER: ${{ secrets.BLAME_DOWNLOAD_USER }}
-        run: |
-          ssh -p "$DOWNLOAD_PORT" "$DOWNLOAD_USER@$DOWNLOAD_HOST" "mkdir -p '$DOWNLOAD_PATH/releases/$BLAME_VERSION' '$DOWNLOAD_PATH/latest'"
-          rsync -az --delete -e "ssh -p $DOWNLOAD_PORT" release-files/ "$DOWNLOAD_USER@$DOWNLOAD_HOST:$DOWNLOAD_PATH/releases/$BLAME_VERSION/"
-          rsync -az --delete -e "ssh -p $DOWNLOAD_PORT" release-files/ "$DOWNLOAD_USER@$DOWNLOAD_HOST:$DOWNLOAD_PATH/latest/"
+          BLAME_DOWNLOAD_S3_ACCESS_KEY_ID: ${{ secrets.BLAME_DOWNLOAD_S3_ACCESS_KEY_ID }}
+          BLAME_DOWNLOAD_S3_BUCKET: ${{ vars.BLAME_DOWNLOAD_S3_BUCKET }}
+          BLAME_DOWNLOAD_S3_ENDPOINT: ${{ vars.BLAME_DOWNLOAD_S3_ENDPOINT }}
+          BLAME_DOWNLOAD_S3_FORCE_PATH_STYLE: ${{ vars.BLAME_DOWNLOAD_S3_FORCE_PATH_STYLE }}
+          BLAME_DOWNLOAD_S3_REGION: ${{ vars.BLAME_DOWNLOAD_S3_REGION }}
+          BLAME_DOWNLOAD_S3_SECRET_ACCESS_KEY: ${{ secrets.BLAME_DOWNLOAD_S3_SECRET_ACCESS_KEY }}
+          BLAME_DOWNLOAD_STORAGE_DRIVER: s3
+        run: node scripts/desktop-release.mjs deploy --source release-files --prune-latest

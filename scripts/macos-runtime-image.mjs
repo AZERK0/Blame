@@ -11,6 +11,7 @@ import {
 import { dirname, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
+import { createDownloadObjectStorage } from "./download-object-storage.mjs";
 import {
   loadEnvFiles,
   requiredEnv,
@@ -322,10 +323,8 @@ async function deployImages() {
     throw new Error(`No Lima runtime images found in ${outputDir}`);
 
   const runtimeVersion = requiredRuntimeVersion();
-  const remote = remoteSpec();
   const relativeTarget = `runtime/v${runtimeVersion}/macos`;
-  await createRemoteDirectory(remote, relativeTarget);
-  await uploadFiles(files, remote, relativeTarget);
+  await createDownloadObjectStorage().uploadVersioned(files, relativeTarget);
   await writeRuntimeEnv(files, runtimeVersion);
 }
 
@@ -481,38 +480,6 @@ async function bestEffortLimactl(bundle, commandArgs, environment) {
   } catch {
     return;
   }
-}
-
-function remoteSpec() {
-  return {
-    destination: `${requiredEnv("BLAME_DOWNLOAD_USER")}@${requiredEnv("BLAME_DOWNLOAD_HOST")}`,
-    path: requiredEnv("BLAME_DOWNLOAD_PATH"),
-  };
-}
-
-async function createRemoteDirectory(remote, relativeTarget) {
-  await run("ssh", [
-    ...sshCommand(),
-    remote.destination,
-    `mkdir -p '${remote.path}/${relativeTarget}'`,
-  ]);
-}
-
-async function uploadFiles(files, remote, relativeTarget) {
-  await run("rsync", [
-    "-az",
-    "-e",
-    ["ssh", ...sshCommand()].join(" "),
-    ...files,
-    `${remote.destination}:${remote.path}/${relativeTarget}/`,
-  ]);
-}
-
-function sshCommand() {
-  const values = ["-p", text(process.env.BLAME_DOWNLOAD_SSH_PORT) ?? "22"];
-  const keyPath = text(process.env.BLAME_DOWNLOAD_SSH_KEY_PATH);
-  if (keyPath) values.push("-i", keyPath);
-  return values;
 }
 
 async function assertExecutable(executable, message) {

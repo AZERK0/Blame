@@ -28,22 +28,23 @@ The installers are written to `packages/desktop/dist`.
 
 ## Release Hosting
 
-The desktop release workflow builds macOS, Windows, and Linux installers, then uploads them to a VPS over SSH when deployment is enabled.
+The desktop release workflow builds macOS, Windows, and Linux installers, then uploads them directly to OVH Object Storage through its S3-compatible API. The VPS never stores release files.
 
 Required GitHub secrets:
 
 ```txt
-BLAME_DOWNLOAD_HOST
-BLAME_DOWNLOAD_USER
-BLAME_DOWNLOAD_SSH_KEY
-BLAME_DOWNLOAD_PATH
 BLAME_DOWNLOAD_BASE_URL
+BLAME_DOWNLOAD_S3_ACCESS_KEY_ID
+BLAME_DOWNLOAD_S3_SECRET_ACCESS_KEY
 ```
 
-Optional GitHub secret:
+Required GitHub variables:
 
 ```txt
-BLAME_DOWNLOAD_SSH_PORT
+BLAME_DOWNLOAD_S3_BUCKET
+BLAME_DOWNLOAD_S3_ENDPOINT
+BLAME_DOWNLOAD_S3_FORCE_PATH_STYLE
+BLAME_DOWNLOAD_S3_REGION
 ```
 
 Optional GitHub variables:
@@ -55,19 +56,23 @@ BLAME_MAINTAINER_NAME
 BLAME_RUNTIME_VERSION
 ```
 
-A typical Dokploy or static server path can look like this:
+The production bucket uses this object layout:
 
 ```txt
-/var/www/blame-downloads
-  latest
-  releases
+latest/
+releases/<BLAME_VERSION>/
+runtime/v<BLAME_RUNTIME_VERSION>/
 ```
 
-Use `BLAME_DOWNLOAD_BASE_URL` for the public URL serving the `latest` folder, for example `https://download.example.com/latest`.
+Versioned objects are published first with immutable caching. Latest artifacts are uploaded next, update metadata is uploaded last, and stale latest objects are removed only after the new metadata is available.
 
-The repository includes a Dokploy-ready Dockerfile at `deploy/downloads/Dockerfile`. Use `deploy/downloads` as the Docker context path. Mount `/var/www/blame-downloads` to `/usr/share/nginx/html` in Dokploy so uploaded release files are served by the container.
+Keep `BLAME_DOWNLOAD_BASE_URL=https://download.blame.so/latest`. The Dokploy-ready image in `deploy/downloads` only redirects requests to the public S3 object URL and has no volume mount. Configure it with:
 
-If you prefer Docker Compose, `deploy/downloads/docker-compose.yml` uses the same image and serves `/var/www/blame-downloads` by default. Override the host path with `BLAME_DOWNLOADS_PATH` if needed.
+```txt
+BLAME_DOWNLOAD_REDIRECT_BASE_URL=https://blame-prod-downloads-gra.s3.gra.io.cloud.ovh.net
+```
+
+See `deploy/operations/downloads/README.md` for bucket creation, migration, and verification.
 
 ## Prebuilt Desktop Runtimes
 
@@ -101,47 +106,3 @@ pnpm deploy:runtime
 ```
 
 `pnpm release:runtime` combines the all-architecture build and deployment. Files are published under `runtime/v<BLAME_RUNTIME_VERSION>`, and desktop release packaging refuses an unverified or missing target runtime. The manual `Runtime release` GitHub Actions workflow is the native x86-64/ARM64 fallback when local cross-emulation is not available.
-
-## VPS Linux Builds
-
-GitHub Actions can stay as the full cross-platform release backup. For Linux-only builds directly on the VPS, create a second Dokploy app with:
-
-```txt
-Build Type: Dockerfile
-Docker File: deploy/desktop-builder/Dockerfile
-Docker Context Path: /
-```
-
-Add this bind mount to the builder app:
-
-```txt
-Host Path: /var/www/blame-downloads
-Mount Path: /downloads
-```
-
-Set these build arguments in Dokploy:
-
-```txt
-BLAME_DOWNLOAD_BASE_URL=https://download.example.com/latest
-BLAME_VERSION=0.1.0
-```
-
-Optional build arguments:
-
-```txt
-BLAME_HOMEPAGE=https://blame.dev
-BLAME_LINUX_TARGETS=AppImage
-BLAME_MAINTAINER_EMAIL=hello@blame.dev
-BLAME_MAINTAINER_NAME=Blame
-```
-
-When you click rebuild or deploy in Dokploy, Docker builds the Linux installers, then the container copies them to:
-
-```txt
-/var/www/blame-downloads/latest
-/var/www/blame-downloads/releases/<BLAME_VERSION>
-```
-
-This VPS builder produces Linux artifacts only. Keep GitHub Actions for macOS and Windows releases.
-
-Use `BLAME_LINUX_TARGETS="AppImage deb rpm"` if you want all Linux package formats from the VPS builder. The default is only `AppImage` because it is much faster on small VPS instances.

@@ -2,7 +2,8 @@ import { spawn } from "node:child_process";
 import { mkdir, readdir, stat, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadEnvFiles, requiredEnv, text } from "./env-files.mjs";
+import { createDownloadObjectStorage } from "./download-object-storage.mjs";
+import { loadEnvFiles, requiredEnv } from "./env-files.mjs";
 import { sha256File } from "./file-sha256.mjs";
 import {
   macosImagePublicBaseUrl,
@@ -135,23 +136,10 @@ function assertCompleteManifest(manifest) {
 }
 
 async function uploadManifest(manifestPath, runtimeVersion) {
-  const destination = `${requiredEnv("BLAME_DOWNLOAD_USER")}@${requiredEnv("BLAME_DOWNLOAD_HOST")}`;
-  const remotePath = `${requiredEnv("BLAME_DOWNLOAD_PATH")}/runtime/v${runtimeVersion}`;
-  await run("ssh", [...sshCommand(), destination, `mkdir -p '${remotePath}'`]);
-  await run("rsync", [
-    "-az",
-    "-e",
-    ["ssh", ...sshCommand()].join(" "),
-    manifestPath,
-    `${destination}:${remotePath}/manifest.json`,
-  ]);
-}
-
-function sshCommand() {
-  const values = ["-p", text(process.env.BLAME_DOWNLOAD_SSH_PORT) ?? "22"];
-  const keyPath = text(process.env.BLAME_DOWNLOAD_SSH_KEY_PATH);
-  if (keyPath) values.push("-i", keyPath);
-  return values;
+  await createDownloadObjectStorage().uploadVersioned(
+    [manifestPath],
+    `runtime/v${runtimeVersion}`,
+  );
 }
 
 function valueArg(name) {
