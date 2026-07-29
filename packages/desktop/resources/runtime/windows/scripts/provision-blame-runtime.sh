@@ -5,7 +5,7 @@ runtime_root="/home/blame/.local/share/blame/runtime"
 cline_sdk_version="${BLAME_CLINE_SDK_VERSION:-${2:-0.0.55}}"
 nerdctl_version="${BLAME_NERDCTL_VERSION:-2.1.6}"
 node_version="${BLAME_NODE_VERSION:-22.23.1}"
-runtime_packages="ca-certificates curl dbus-user-session git gzip iptables procps python3 slirp4netns tar uidmap xz-utils"
+runtime_packages="ca-certificates curl dbus-user-session git gzip iptables procps python3 tar xz-utils"
 
 ensure_user() {
   if id blame >/dev/null 2>&1; then
@@ -76,7 +76,7 @@ ensure_cline_sdk() {
   if node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= 22 ? 0 : 1)' >/dev/null 2>&1 && npm root -g >/dev/null 2>&1 && valid_cline_sdk_install; then
     return
   fi
-  npm install -g "@cline/sdk@$cline_sdk_version" "@cline/core@$cline_sdk_version"
+  npm install -g --omit=optional "@cline/sdk@$cline_sdk_version" "@cline/core@$cline_sdk_version"
   valid_cline_sdk_install
 }
 
@@ -113,7 +113,15 @@ runtime_architecture() {
   esac
 }
 
-ensure_nerdctl_full() {
+remove_external_cli_payloads() {
+  global_node_root="$(npm root -g)"
+  find "$global_node_root" -type d \
+    \( -path "*/node_modules/@openai/codex-linux-*" \
+    -o -path "*/node_modules/@anthropic-ai/claude-agent-sdk-linux-*" \) \
+    -prune -exec rm -rf {} +
+}
+
+ensure_container_stack() {
   if nerdctl --version 2>/dev/null | grep -q "nerdctl version ${nerdctl_version}" && command -v buildkitd >/dev/null 2>&1 && [ -x /usr/local/libexec/cni/bridge ]; then
     return
   fi
@@ -123,7 +131,20 @@ ensure_nerdctl_full() {
   temp_dir="$(mktemp -d)"
   curl -fsSL "$url" -o "$temp_dir/$archive"
   printf '%s  %s\n' "$(nerdctl_archive_sha256 "$arch")" "$temp_dir/$archive" | sha256sum -c - >/dev/null
-  tar -C /usr/local -xzf "$temp_dir/$archive"
+  tar -C /usr/local -xzf "$temp_dir/$archive" \
+    bin/buildctl \
+    bin/buildkitd \
+    bin/containerd \
+    bin/containerd-shim-runc-v2 \
+    bin/nerdctl \
+    bin/runc \
+    bin/tini \
+    libexec/cni/bridge \
+    libexec/cni/firewall \
+    libexec/cni/host-local \
+    libexec/cni/loopback \
+    libexec/cni/portmap \
+    libexec/cni/tuning
   rm -rf "$temp_dir"
 }
 
@@ -790,7 +811,8 @@ ensure_user
 ensure_packages
 ensure_node
 ensure_cline_sdk
-ensure_nerdctl_full
+remove_external_cli_payloads
+ensure_container_stack
 ensure_runtime_paths
 ensure_containerd_config
 ensure_containerd_running

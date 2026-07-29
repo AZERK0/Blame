@@ -17,9 +17,15 @@ RUN BLAME_RUNTIME_BAKE=1 \
     && blame-runtime-agent version | grep -qx "${BLAME_RUNTIME_VERSION}" \
     && node -e 'process.exit(process.versions.node === process.argv[1] ? 0 : 1)' "${BLAME_NODE_VERSION}" \
     && npm list --global --depth=0 "@cline/sdk@${BLAME_CLINE_SDK_VERSION}" "@cline/core@${BLAME_CLINE_SDK_VERSION}" >/dev/null \
+    && test -z "$(find "$(npm root -g)" -type d \( -path "*/node_modules/@openai/codex-linux-*" -o -path "*/node_modules/@anthropic-ai/claude-agent-sdk-linux-*" \) -print -quit)" \
     && nerdctl --version \
     && buildkitd --version \
     && test -x /usr/local/libexec/cni/bridge \
+    && test -x /usr/local/libexec/cni/firewall \
+    && test -x /usr/local/libexec/cni/host-local \
+    && test -x /usr/local/libexec/cni/loopback \
+    && test -x /usr/local/libexec/cni/portmap \
+    && test -x /usr/local/libexec/cni/tuning \
     && id blame \
     && rm -f /tmp/provision-blame-runtime.sh \
     && apt-get clean \

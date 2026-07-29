@@ -1,20 +1,30 @@
-import { getAllProviders, getModelsForProvider } from "@cline/llms"
-import type { ModelInfo, ProviderInfo } from "@cline/llms"
+import { getAllProviders, getModelsForProvider } from "@cline/llms";
+import type { ModelInfo, ProviderInfo } from "@cline/llms";
 
-import { openAICodexPreviewModels } from "./openai-codex-preview-models.js"
-import type { BlameModel, BlameProvider } from "./types.js"
+import { openAICodexPreviewModels } from "./openai-codex-preview-models.js";
+import type { BlameModel, BlameProvider } from "./types.js";
+
+const externalCliProviderIds = new Set(["claude-code", "openai-codex-cli"]);
 
 export async function listClineProviders() {
-  const providers: ProviderInfo[] = await getAllProviders()
+  const providers: ProviderInfo[] = await getAllProviders();
   const withModels: BlameProvider[] = await Promise.all(
-    providers.map((provider) => toBlameProvider(provider))
-  )
-  return withModels.filter((provider: BlameProvider) => Object.keys(provider.models).length > 0)
+    providers
+      .filter((provider) => isBaseRuntimeProvider(provider.id))
+      .map((provider) => toBlameProvider(provider)),
+  );
+  return withModels.filter(
+    (provider: BlameProvider) => Object.keys(provider.models).length > 0,
+  );
+}
+
+export function isBaseRuntimeProvider(providerId: string) {
+  return !externalCliProviderIds.has(providerId);
 }
 
 async function toBlameProvider(provider: ProviderInfo): Promise<BlameProvider> {
-  const models = await getModelsForProvider(provider.id)
-  const providerModels = providerModelsWithPreview(provider.id, models)
+  const models = await getModelsForProvider(provider.id);
+  const providerModels = providerModelsWithPreview(provider.id, models);
 
   return {
     id: provider.id,
@@ -27,20 +37,20 @@ async function toBlameProvider(provider: ProviderInfo): Promise<BlameProvider> {
       Object.entries(providerModels).map(([modelId, model]) => [
         modelId,
         toBlameModel(modelId, model),
-      ])
+      ]),
     ),
-  }
+  };
 }
 
 function providerModelsWithPreview(
   providerId: string,
-  models: Record<string, ModelInfo>
+  models: Record<string, ModelInfo>,
 ) {
-  if (providerId !== "openai-codex") return models
+  if (providerId !== "openai-codex") return models;
   return {
     ...openAICodexPreviewModels,
     ...models,
-  }
+  };
 }
 
 function toBlameModel(modelId: string, model: ModelInfo): BlameModel {
@@ -51,7 +61,7 @@ function toBlameModel(modelId: string, model: ModelInfo): BlameModel {
         high: { reasoningEffort: "high" },
         xhigh: { reasoningEffort: "xhigh" },
       }
-    : undefined
+    : undefined;
 
   return {
     id: model.id ?? modelId,
@@ -66,5 +76,5 @@ function toBlameModel(modelId: string, model: ModelInfo): BlameModel {
       output: model.pricing?.output ?? 0,
     },
     variants,
-  }
+  };
 }

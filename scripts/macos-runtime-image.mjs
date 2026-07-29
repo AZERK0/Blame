@@ -185,9 +185,15 @@ async function verifyRuntime(bundle, instanceName, environment) {
     `blame-runtime-agent version | grep -qx ${JSON.stringify(runtimeVersion)}`,
     `node -e 'process.exit(process.versions.node === process.argv[1] ? 0 : 1)' ${JSON.stringify(nodeVersion)}`,
     `npm list --global --depth=0 @cline/sdk@${clineSdkVersion} @cline/core@${clineSdkVersion}`,
+    `test -z "$(find "$(npm root -g)" -type d \\( -path "*/node_modules/@openai/codex-linux-*" -o -path "*/node_modules/@anthropic-ai/claude-agent-sdk-linux-*" \\) -print -quit)"`,
     "nerdctl --version",
     "buildkitd --version",
     "test -x /usr/local/libexec/cni/bridge",
+    "test -x /usr/local/libexec/cni/firewall",
+    "test -x /usr/local/libexec/cni/host-local",
+    "test -x /usr/local/libexec/cni/loopback",
+    "test -x /usr/local/libexec/cni/portmap",
+    "test -x /usr/local/libexec/cni/tuning",
     "id blame",
     "! id blamebuilder >/dev/null 2>&1",
   ].join("\n");
@@ -264,6 +270,7 @@ async function finalizeImage(bundle, instanceName, environment) {
     "find /var/log -type f -exec truncate -s 0 {} \\; >/dev/null 2>&1 || true",
     "userdel --force --remove blamebuilder >/dev/null 2>&1 || true",
     "sync",
+    "fstrim -av >/dev/null 2>&1 || true",
     "nohup sh -c 'sleep 1; poweroff' >/dev/null 2>&1 &",
   ].join("\n");
   await runLimactl(
@@ -296,7 +303,16 @@ async function instanceState(bundle, instanceName, environment) {
 async function flattenImage(source, destination) {
   await access(source);
   await rm(destination, { force: true });
-  await run("qemu-img", ["convert", "-O", "qcow2", "-c", source, destination]);
+  await run("qemu-img", [
+    "convert",
+    "-S",
+    "4k",
+    "-O",
+    "qcow2",
+    "-c",
+    source,
+    destination,
+  ]);
   await run("qemu-img", ["check", destination]);
 }
 

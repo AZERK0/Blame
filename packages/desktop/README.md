@@ -73,6 +73,8 @@ If you prefer Docker Compose, `deploy/downloads/docker-compose.yml` uses the sam
 
 Windows and macOS installers use versioned runtime images so first setup only imports an image instead of installing Node, the Cline SDK, containerd, BuildKit, and nerdctl.
 
+The base images keep Cline's cloud providers, including OpenAI Codex OAuth and the Anthropic API. They exclude the native Codex and Claude CLI payloads because those binaries are only required by the dedicated local CLI providers. Enabling either local CLI provider later must include its authentication and executable-path setup.
+
 On Arch Linux, start Docker and install `qemu-img` plus `qemu-system-x86_64`. Then set `BLAME_RUNTIME_VERSION` in `.env.local` and build both runtimes for the host architecture:
 
 ```bash
