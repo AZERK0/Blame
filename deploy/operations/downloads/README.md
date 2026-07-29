@@ -35,6 +35,8 @@ The `download.blame.so` Dokploy application contains no release volume. It redir
 https://blame-prod-downloads-gra.s3.gra.io.cloud.ovh.net
 ```
 
+The root URL and the bare `/latest` paths redirect to `https://blame.so/download` because the private bucket does not expose directory listings.
+
 Verify both the redirect and anonymous object access after each infrastructure change:
 
 ```sh

@@ -4,6 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
+      BLAME_DOWNLOAD_LANDING_URL: ${BLAME_DOWNLOAD_LANDING_URL:-https://blame.so/download}
       BLAME_DOWNLOAD_REDIRECT_BASE_URL: ${BLAME_DOWNLOAD_REDIRECT_BASE_URL:-https://blame-prod-downloads-gra.s3.gra.io.cloud.ovh.net}
     restart: unless-stopped
     expose:

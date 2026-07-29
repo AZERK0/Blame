@@ -68,6 +68,7 @@ Desktop releases only keep the current installers under `latest/`. Artifacts are
 Keep `BLAME_DOWNLOAD_BASE_URL=https://download.blame.so/latest`. The Dokploy-ready image in `deploy/downloads` only redirects requests to the public S3 object URL and has no volume mount. Configure it with:
 
 ```txt
+BLAME_DOWNLOAD_LANDING_URL=https://blame.so/download
 BLAME_DOWNLOAD_REDIRECT_BASE_URL=https://blame-prod-downloads-gra.s3.gra.io.cloud.ovh.net
 ```
 
