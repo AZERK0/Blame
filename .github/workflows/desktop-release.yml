@@ -116,15 +116,6 @@ jobs:
           path: release-files
           pattern: blame-desktop-*
 
-      - name: Resolve version
-        shell: bash
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "BLAME_VERSION=${{ inputs.version }}" >> "$GITHUB_ENV"
-          else
-            echo "BLAME_VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
-          fi
-
       - name: Upload to OVH Object Storage
         env:
           BLAME_DOWNLOAD_S3_ACCESS_KEY_ID: ${{ secrets.BLAME_DOWNLOAD_S3_ACCESS_KEY_ID }}

@@ -8,7 +8,7 @@ import {
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { createRequire } from "node:module";
-import { dirname, extname, join, resolve } from "node:path";
+import { basename, dirname, extname, join, resolve } from "node:path";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { createDownloadObjectStorage } from "./download-object-storage.mjs";
@@ -133,7 +133,6 @@ async function writeMacosUpdateMetadata(metadata) {
 }
 
 async function deploy() {
-  const version = await releaseVersion();
   const sourceDirectory = releaseSourceDirectory();
   const stagingDirectory = await mkdtemp(
     join(tmpdir(), "blame-desktop-release-"),
@@ -145,7 +144,6 @@ async function deploy() {
       throw new Error(`No release files found in ${sourceDirectory}`);
     }
     const storage = createDownloadObjectStorage();
-    await storage.uploadVersioned(files, `releases/${version}`);
     const pruneLatest = args.includes("--prune-latest");
     if (pruneLatest) assertCompleteRelease(files);
     await storage.publishLatest(files, { prune: pruneLatest });
@@ -209,16 +207,6 @@ function assertCompleteRelease(files) {
   if (missing.length) {
     throw new Error(`Cannot prune latest without ${missing.join(", ")}`);
   }
-}
-
-async function releaseVersion() {
-  const envVersion = process.env.BLAME_VERSION?.trim();
-  if (envVersion) return envVersion;
-
-  const packageJson = JSON.parse(
-    await readFile(join(desktopDir, "package.json"), "utf8"),
-  );
-  return packageJson.version;
 }
 
 function releaseSourceDirectory() {

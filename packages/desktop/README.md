@@ -60,11 +60,10 @@ The production bucket uses this object layout:
 
 ```txt
 latest/
-releases/<BLAME_VERSION>/
 runtime/v<BLAME_RUNTIME_VERSION>/
 ```
 
-Versioned objects are published first with immutable caching. Latest artifacts are uploaded next, update metadata is uploaded last, and stale latest objects are removed only after the new metadata is available.
+Desktop releases only keep the current installers under `latest/`. Artifacts are uploaded first, update metadata is uploaded last, and stale objects are removed only after the new metadata is available. Runtime images remain versioned and immutable because installed desktop versions may need to download their matching runtime again.
 
 Keep `BLAME_DOWNLOAD_BASE_URL=https://download.blame.so/latest`. The Dokploy-ready image in `deploy/downloads` only redirects requests to the public S3 object URL and has no volume mount. Configure it with:
 
