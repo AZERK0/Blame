@@ -142,7 +142,14 @@ async function deploy() {
   );
 
   try {
-    const files = await releaseFiles(sourceDirectory, stagingDirectory);
+    const findFiles = args.includes("--source")
+      ? recursiveReleaseFiles
+      : directReleaseFiles;
+    const files = await releaseFiles(
+      sourceDirectory,
+      stagingDirectory,
+      findFiles,
+    );
     if (!files.length) {
       throw new Error(`No release files found in ${sourceDirectory}`);
     }
@@ -162,7 +169,11 @@ async function stage() {
   );
 
   try {
-    const files = await releaseFiles(sourceDirectory, stagingDirectory);
+    const files = await releaseFiles(
+      sourceDirectory,
+      stagingDirectory,
+      directReleaseFiles,
+    );
     if (!files.length) {
       throw new Error(`No release files found in ${sourceDirectory}`);
     }
@@ -188,8 +199,12 @@ async function cleanupStaged() {
   await createDownloadObjectStorage().deletePrefix(requiredOption("--prefix"));
 }
 
-async function releaseFiles(directory, stagingDirectory) {
-  const files = await recursiveReleaseFiles(directory);
+async function releaseFiles(
+  directory,
+  stagingDirectory,
+  findFiles = recursiveReleaseFiles,
+) {
+  const files = await findFiles(directory);
   const grouped = Map.groupBy(files, (file) => file.name);
   const resolved = [];
   for (const [name, matches] of grouped) {
@@ -203,6 +218,14 @@ async function releaseFiles(directory, stagingDirectory) {
     resolved.push(await mergeMacosMetadata(matches, stagingDirectory));
   }
   return resolved;
+}
+
+async function directReleaseFiles(directory) {
+  const entries = await readdir(directory, { withFileTypes: true });
+  return entries.flatMap((entry) => {
+    if (!entry.isFile() || !isReleaseFile(entry.name)) return [];
+    return [{ name: entry.name, path: join(directory, entry.name) }];
+  });
 }
 
 async function recursiveReleaseFiles(directory) {
