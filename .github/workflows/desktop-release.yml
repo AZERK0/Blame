@@ -78,24 +78,22 @@ jobs:
           BLAME_REQUIRE_PREBUILT_RUNTIME: true
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: blame-desktop-${{ matrix.name }}
-          path: |
-            packages/desktop/dist/*.AppImage
-            packages/desktop/dist/*.blockmap
-            packages/desktop/dist/*.deb
-            packages/desktop/dist/*.dmg
-            packages/desktop/dist/*.exe
-            packages/desktop/dist/*.rpm
-            packages/desktop/dist/*.yml
-            packages/desktop/dist/*.zip
-          if-no-files-found: error
+      - name: Stage installers in S3
+        if: github.event_name == 'push' || inputs.deploy
+        env:
+          BLAME_DOWNLOAD_S3_ACCESS_KEY_ID: ${{ secrets.BLAME_DOWNLOAD_S3_ACCESS_KEY_ID }}
+          BLAME_DOWNLOAD_S3_BUCKET: ${{ vars.BLAME_DOWNLOAD_S3_BUCKET }}
+          BLAME_DOWNLOAD_S3_ENDPOINT: ${{ vars.BLAME_DOWNLOAD_S3_ENDPOINT }}
+          BLAME_DOWNLOAD_S3_FORCE_PATH_STYLE: ${{ vars.BLAME_DOWNLOAD_S3_FORCE_PATH_STYLE }}
+          BLAME_DOWNLOAD_S3_REGION: ${{ vars.BLAME_DOWNLOAD_S3_REGION }}
+          BLAME_DOWNLOAD_S3_SECRET_ACCESS_KEY: ${{ secrets.BLAME_DOWNLOAD_S3_SECRET_ACCESS_KEY }}
+          BLAME_DOWNLOAD_STORAGE_DRIVER: s3
+        run: node scripts/desktop-release.mjs stage --source packages/desktop/dist --prefix "_staging/${{ github.run_id }}/${{ github.run_attempt }}/${{ matrix.name }}"
 
   deploy:
     name: Publish installers to S3
     needs: build
-    if: github.event_name == 'push' || inputs.deploy
+    if: always() && (github.event_name == 'push' || inputs.deploy)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -111,12 +109,8 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - uses: actions/download-artifact@v4
-        with:
-          path: release-files
-          pattern: blame-desktop-*
-
-      - name: Upload to OVH Object Storage
+      - name: Promote staged installers
+        if: needs.build.result == 'success'
         env:
           BLAME_DOWNLOAD_S3_ACCESS_KEY_ID: ${{ secrets.BLAME_DOWNLOAD_S3_ACCESS_KEY_ID }}
           BLAME_DOWNLOAD_S3_BUCKET: ${{ vars.BLAME_DOWNLOAD_S3_BUCKET }}
@@ -125,4 +119,16 @@ jobs:
           BLAME_DOWNLOAD_S3_REGION: ${{ vars.BLAME_DOWNLOAD_S3_REGION }}
           BLAME_DOWNLOAD_S3_SECRET_ACCESS_KEY: ${{ secrets.BLAME_DOWNLOAD_S3_SECRET_ACCESS_KEY }}
           BLAME_DOWNLOAD_STORAGE_DRIVER: s3
-        run: node scripts/desktop-release.mjs deploy --source release-files --prune-latest
+        run: node scripts/desktop-release.mjs deploy-staged --prefix "_staging/${{ github.run_id }}/${{ github.run_attempt }}" --prune-latest
+
+      - name: Remove staged installers
+        if: always()
+        env:
+          BLAME_DOWNLOAD_S3_ACCESS_KEY_ID: ${{ secrets.BLAME_DOWNLOAD_S3_ACCESS_KEY_ID }}
+          BLAME_DOWNLOAD_S3_BUCKET: ${{ vars.BLAME_DOWNLOAD_S3_BUCKET }}
+          BLAME_DOWNLOAD_S3_ENDPOINT: ${{ vars.BLAME_DOWNLOAD_S3_ENDPOINT }}
+          BLAME_DOWNLOAD_S3_FORCE_PATH_STYLE: ${{ vars.BLAME_DOWNLOAD_S3_FORCE_PATH_STYLE }}
+          BLAME_DOWNLOAD_S3_REGION: ${{ vars.BLAME_DOWNLOAD_S3_REGION }}
+          BLAME_DOWNLOAD_S3_SECRET_ACCESS_KEY: ${{ secrets.BLAME_DOWNLOAD_S3_SECRET_ACCESS_KEY }}
+          BLAME_DOWNLOAD_STORAGE_DRIVER: s3
+        run: node scripts/desktop-release.mjs cleanup-staged --prefix "_staging/${{ github.run_id }}/${{ github.run_attempt }}"

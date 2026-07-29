@@ -26,6 +26,9 @@ await loadEnvFiles(rootDir);
 
 if (command === "build") await build(args);
 else if (command === "deploy") await deploy();
+else if (command === "stage") await stage();
+else if (command === "deploy-staged") await deployStaged();
+else if (command === "cleanup-staged") await cleanupStaged();
 else if (command === "release") {
   await build(args);
   await deploy();
@@ -152,6 +155,39 @@ async function deploy() {
   }
 }
 
+async function stage() {
+  const sourceDirectory = releaseSourceDirectory();
+  const stagingDirectory = await mkdtemp(
+    join(tmpdir(), "blame-desktop-stage-"),
+  );
+
+  try {
+    const files = await releaseFiles(sourceDirectory, stagingDirectory);
+    if (!files.length) {
+      throw new Error(`No release files found in ${sourceDirectory}`);
+    }
+    await createDownloadObjectStorage().uploadStaged(
+      files,
+      requiredOption("--prefix"),
+    );
+  } finally {
+    await rm(stagingDirectory, { force: true, recursive: true });
+  }
+}
+
+async function deployStaged() {
+  const storage = createDownloadObjectStorage();
+  await storage.publishStagedLatest(requiredOption("--prefix"), {
+    mergeMetadata: mergeStagedMetadata,
+    prune: args.includes("--prune-latest"),
+    validate: assertCompleteReleaseNames,
+  });
+}
+
+async function cleanupStaged() {
+  await createDownloadObjectStorage().deletePrefix(requiredOption("--prefix"));
+}
+
 async function releaseFiles(directory, stagingDirectory) {
   const files = await recursiveReleaseFiles(directory);
   const grouped = Map.groupBy(files, (file) => file.name);
@@ -201,7 +237,11 @@ function isReleaseFile(file) {
 }
 
 function assertCompleteRelease(files) {
-  const fileNames = new Set(files.map((file) => basename(file)));
+  assertCompleteReleaseNames(files.map((file) => basename(file)));
+}
+
+function assertCompleteReleaseNames(names) {
+  const fileNames = new Set(names);
   const requiredMetadata = ["latest.yml", "latest-mac.yml", "latest-linux.yml"];
   const missing = requiredMetadata.filter((name) => !fileNames.has(name));
   if (missing.length) {
@@ -209,10 +249,26 @@ function assertCompleteRelease(files) {
   }
 }
 
+function mergeStagedMetadata(name, values) {
+  if (name !== "latest-mac.yml") {
+    throw new Error(`Duplicate staged release metadata: ${name}`);
+  }
+  const metadata = values.map((value) => YAML.parse(value));
+  const merged = metadata.slice(1).reduce(mergeMacosUpdates, metadata[0]);
+  return YAML.stringify(merged);
+}
+
 function releaseSourceDirectory() {
   const sourceIndex = args.indexOf("--source");
   const source = sourceIndex < 0 ? undefined : args[sourceIndex + 1];
   return source ? resolve(rootDir, source) : distDir;
+}
+
+function requiredOption(name) {
+  const optionIndex = args.indexOf(name);
+  const value = optionIndex < 0 ? undefined : args[optionIndex + 1]?.trim();
+  if (!value) throw new Error(`${name} is required`);
+  return value;
 }
 
 function run(command, args, cwd) {
@@ -236,6 +292,6 @@ function run(command, args, cwd) {
 
 function printHelp() {
   console.log(
-    "Usage: node scripts/desktop-release.mjs <build|deploy|release> [--source path] [--prune-latest] [electron-builder args]",
+    "Usage: node scripts/desktop-release.mjs <build|deploy|stage|deploy-staged|cleanup-staged|release> [--source path] [--prefix path] [--prune-latest] [electron-builder args]",
   );
 }

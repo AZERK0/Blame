@@ -29,6 +29,7 @@ The installers are written to `packages/desktop/dist`.
 ## Release Hosting
 
 The desktop release workflow builds macOS, Windows, and Linux installers, then uploads them directly to OVH Object Storage through its S3-compatible API. The VPS never stores release files.
+Each platform stages its files under a run-specific `_staging/` prefix. Once every build succeeds, S3 promotes the complete set to `latest/`, publishes update metadata last, and removes the staging objects. GitHub Actions artifact storage is not used.
 
 Required GitHub secrets:
 

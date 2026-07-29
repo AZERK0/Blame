@@ -1,5 +1,7 @@
 import {
+  CopyObjectCommand,
   DeleteObjectsCommand,
+  GetObjectCommand,
   ListObjectsV2Command,
   PutObjectCommand,
 } from "@aws-sdk/client-s3";
@@ -15,6 +17,7 @@ import {
   immutableCacheControl,
   latestArtifactCacheControl,
   latestMetadataCacheControl,
+  stagingCacheControl,
 } from "./download-object-storage.mjs";
 
 const config = {
@@ -59,6 +62,21 @@ test("uploads versioned artifacts as immutable public objects", async () => {
   });
 });
 
+test("uploads temporary release files without public access", async () => {
+  await withReleaseFiles(async ({ artifact }) => {
+    const client = new RecordingS3Client();
+    const storage = new DownloadObjectStorage(config, client);
+
+    await storage.uploadStaged([artifact], "_staging/run/windows");
+
+    const command = client.commands[0];
+    assert.ok(command instanceof PutObjectCommand);
+    assert.equal(command.input.ACL, undefined);
+    assert.equal(command.input.CacheControl, stagingCacheControl);
+    assert.equal(command.input.Key, "_staging/run/windows/blame.exe");
+  });
+});
+
 test("publishes latest metadata last and removes stale objects", async () => {
   await withReleaseFiles(async ({ artifact, metadata }) => {
     const client = new RecordingS3Client(["latest/obsolete.exe"]);
@@ -75,6 +93,76 @@ test("publishes latest metadata last and removes stale objects", async () => {
     assert.ok(client.commands[2] instanceof ListObjectsV2Command);
     assert.ok(client.commands[3] instanceof DeleteObjectsCommand);
   });
+});
+
+test("promotes staged releases and merges macOS metadata", async () => {
+  const client = new RecordingS3Client(
+    [
+      "_staging/run/windows/blame.exe",
+      "_staging/run/windows/latest.yml",
+      "_staging/run/macos-x64/latest-mac.yml",
+      "_staging/run/macos-arm64/latest-mac.yml",
+      "_staging/run/linux/latest-linux.yml",
+      "latest/obsolete.exe",
+    ],
+    {
+      "_staging/run/macos-x64/latest-mac.yml": "x64",
+      "_staging/run/macos-arm64/latest-mac.yml": "arm64",
+    },
+  );
+  const storage = new DownloadObjectStorage(config, client);
+  let validatedNames;
+
+  await storage.publishStagedLatest("_staging/run", {
+    mergeMetadata: (name, values) => `${name}:${values.sort().join(",")}`,
+    prune: true,
+    validate: (names) => {
+      validatedNames = names;
+    },
+  });
+
+  assert.ok(validatedNames.includes("latest.yml"));
+  const commands = client.commands;
+  const artifactCopy = commands.find(
+    (command) =>
+      command instanceof CopyObjectCommand &&
+      command.input.Key === "latest/blame.exe",
+  );
+  const mergedMetadata = commands.find(
+    (command) =>
+      command instanceof PutObjectCommand &&
+      command.input.Key === "latest/latest-mac.yml",
+  );
+  const staleDeletion = commands.find(
+    (command) =>
+      command instanceof DeleteObjectsCommand &&
+      command.input.Delete.Objects.some(
+        ({ Key }) => Key === "latest/obsolete.exe",
+      ),
+  );
+  assert.equal(
+    artifactCopy.input.CopySource,
+    "downloads/_staging/run/windows/blame.exe",
+  );
+  assert.equal(mergedMetadata.input.Body, "latest-mac.yml:arm64,x64");
+  assert.ok(staleDeletion);
+});
+
+test("deletes every object under a staging prefix", async () => {
+  const client = new RecordingS3Client([
+    "_staging/run/windows/blame.exe",
+    "_staging/other/windows/blame.exe",
+  ]);
+  const storage = new DownloadObjectStorage(config, client);
+
+  await storage.deletePrefix("_staging/run");
+
+  const deletion = client.commands.find(
+    (command) => command instanceof DeleteObjectsCommand,
+  );
+  assert.deepEqual(deletion.input.Delete.Objects, [
+    { Key: "_staging/run/windows/blame.exe" },
+  ]);
 });
 
 test("does not prune latest objects for a partial platform release", async () => {
@@ -96,18 +184,25 @@ test("does not prune latest objects for a partial platform release", async () =>
 });
 
 class RecordingS3Client {
-  constructor(existingKeys = []) {
+  constructor(existingKeys = [], objectValues = {}) {
     this.commands = [];
     this.existingKeys = existingKeys;
+    this.objectValues = objectValues;
   }
 
   async send(command) {
     this.commands.push(command);
     if (command instanceof ListObjectsV2Command) {
       return {
-        Contents: this.existingKeys.map((Key) => ({ Key })),
+        Contents: this.existingKeys
+          .filter((key) => key.startsWith(command.input.Prefix))
+          .map((Key) => ({ Key })),
         IsTruncated: false,
       };
+    }
+    if (command instanceof GetObjectCommand) {
+      const value = this.objectValues[command.input.Key];
+      return { Body: { transformToString: async () => value } };
     }
     return {};
   }

@@ -1,5 +1,7 @@
 import {
+  CopyObjectCommand,
   DeleteObjectsCommand,
+  GetObjectCommand,
   ListObjectsV2Command,
   PutObjectCommand,
   S3Client,
@@ -11,6 +13,7 @@ import { basename, extname } from "node:path";
 export const immutableCacheControl = "public, max-age=31536000, immutable";
 export const latestArtifactCacheControl = "public, max-age=300";
 export const latestMetadataCacheControl = "public, max-age=60, must-revalidate";
+export const stagingCacheControl = "no-store";
 
 export function createDownloadObjectStorage(environment = process.env) {
   const config = downloadObjectStorageConfig(environment);
@@ -59,6 +62,17 @@ export class DownloadObjectStorage {
     );
   }
 
+  async uploadStaged(files, prefix) {
+    await uploadConcurrently(files, (file) =>
+      this.upload(
+        file,
+        objectKey(prefix, basename(file)),
+        stagingCacheControl,
+        false,
+      ),
+    );
+  }
+
   async publishLatest(files, options = {}) {
     const metadata = files.filter(isUpdateMetadata);
     const artifacts = files.filter((file) => !isUpdateMetadata(file));
@@ -67,17 +81,110 @@ export class DownloadObjectStorage {
     if (options.prune) await this.deleteUnexpectedLatest(files);
   }
 
-  async upload(file, key, cacheControl) {
+  async publishStagedLatest(prefix, options = {}) {
+    const stagedFiles = await this.stagedFiles(prefix);
+    if (!stagedFiles.length) {
+      throw new Error(`No staged release files found under ${prefix}`);
+    }
+    await options.validate?.(stagedFiles.map(({ name }) => name));
+    const groupedFiles = Map.groupBy(stagedFiles, ({ name }) => name);
+    await this.publishStagedGroups(groupedFiles, false, options.mergeMetadata);
+    await this.publishStagedGroups(groupedFiles, true, options.mergeMetadata);
+    if (options.prune) {
+      await this.deleteUnexpectedLatestNames([...groupedFiles.keys()]);
+    }
+  }
+
+  async deletePrefix(prefix) {
+    const keys = await this.objectKeys(`${normalizedPrefix(prefix)}/`);
+    for (const keyBatch of batches(keys, 1000)) {
+      await this.deleteObjects(keyBatch);
+    }
+  }
+
+  async upload(file, key, cacheControl, publicRead = true) {
     const fileStat = await stat(file);
+    const accessControl = publicRead ? { ACL: "public-read" } : {};
     await this.client.send(
       new PutObjectCommand({
-        ACL: "public-read",
+        ...accessControl,
         Body: createReadStream(file),
         Bucket: this.config.bucket,
         CacheControl: cacheControl,
         ContentLength: fileStat.size,
         ContentType: contentType(file),
         Key: key,
+      }),
+    );
+  }
+
+  async stagedFiles(prefix) {
+    const keys = await this.objectKeys(`${normalizedPrefix(prefix)}/`);
+    return keys.map((key) => ({ key, name: basename(key) }));
+  }
+
+  async publishStagedGroups(groupedFiles, metadata, mergeMetadata) {
+    const groups = [...groupedFiles].filter(
+      ([name]) => isUpdateMetadata(name) === metadata,
+    );
+    const cacheControl = metadata
+      ? latestMetadataCacheControl
+      : latestArtifactCacheControl;
+    await uploadConcurrently(groups, (group) =>
+      this.publishStagedGroup(group, cacheControl, mergeMetadata),
+    );
+  }
+
+  async publishStagedGroup([name, files], cacheControl, mergeMetadata) {
+    if (files.length === 1) {
+      await this.copyToLatest(files[0].key, name, cacheControl);
+      return;
+    }
+    if (!isUpdateMetadata(name) || !mergeMetadata) {
+      throw new Error(`Duplicate staged release file: ${name}`);
+    }
+    const values = await Promise.all(
+      files.map(({ key }) => this.objectText(key)),
+    );
+    await this.uploadLatestText(
+      name,
+      await mergeMetadata(name, values),
+      cacheControl,
+    );
+  }
+
+  async copyToLatest(sourceKey, name, cacheControl) {
+    await this.client.send(
+      new CopyObjectCommand({
+        ACL: "public-read",
+        Bucket: this.config.bucket,
+        CacheControl: cacheControl,
+        ContentType: contentType(name),
+        CopySource: copySource(this.config.bucket, sourceKey),
+        Key: objectKey("latest", name),
+        MetadataDirective: "REPLACE",
+      }),
+    );
+  }
+
+  async objectText(key) {
+    const response = await this.client.send(
+      new GetObjectCommand({ Bucket: this.config.bucket, Key: key }),
+    );
+    if (!response.Body) throw new Error(`Empty S3 object: ${key}`);
+    return response.Body.transformToString();
+  }
+
+  async uploadLatestText(name, value, cacheControl) {
+    await this.client.send(
+      new PutObjectCommand({
+        ACL: "public-read",
+        Body: value,
+        Bucket: this.config.bucket,
+        CacheControl: cacheControl,
+        ContentLength: Buffer.byteLength(value),
+        ContentType: contentType(name),
+        Key: objectKey("latest", name),
       }),
     );
   }
@@ -92,6 +199,15 @@ export class DownloadObjectStorage {
     const expected = new Set(
       files.map((file) => objectKey("latest", basename(file))),
     );
+    await this.deleteUnexpectedLatestKeys(expected);
+  }
+
+  async deleteUnexpectedLatestNames(names) {
+    const expected = new Set(names.map((name) => objectKey("latest", name)));
+    await this.deleteUnexpectedLatestKeys(expected);
+  }
+
+  async deleteUnexpectedLatestKeys(expected) {
     const existing = await this.objectKeys("latest/");
     const stale = existing.filter((key) => !expected.has(key));
     for (const keys of batches(stale, 1000)) await this.deleteObjects(keys);
@@ -178,8 +294,19 @@ function isUpdateMetadata(file) {
   return name.startsWith("latest") && name.endsWith(".yml");
 }
 
+function copySource(bucket, key) {
+  return `${bucket}/${key}`
+    .split("/")
+    .map((part) => encodeURIComponent(part))
+    .join("/");
+}
+
 function objectKey(prefix, name) {
-  return `${prefix.replace(/^\/+|\/+$/g, "")}/${name}`;
+  return `${normalizedPrefix(prefix)}/${name}`;
+}
+
+function normalizedPrefix(prefix) {
+  return prefix.replace(/^\/+|\/+$/g, "");
 }
 
 function requiredValue(environment, name) {
