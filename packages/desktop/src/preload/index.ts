@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { contextBridge, ipcRenderer } from "electron";
 import type { AgentEvent } from "@blame/agent-runtime";
 import type { RuntimeProgress } from "@blame/app";
@@ -18,16 +17,14 @@ function invokeRuntimeOperation(
   channel: string,
   onProgress?: (progress: RuntimeProgress) => void,
 ) {
-  const operationId = randomUUID();
+  const operationId = globalThis.crypto.randomUUID();
   const progressChannel = `workspace:runtime-progress:${operationId}`;
   const handler = (_event: unknown, progress: RuntimeProgress) =>
     onProgress?.(progress);
   if (onProgress) ipcRenderer.on(progressChannel, handler);
-  return ipcRenderer
-    .invoke(channel, { operationId })
-    .finally(() => {
-      if (onProgress) ipcRenderer.removeListener(progressChannel, handler);
-    });
+  return ipcRenderer.invoke(channel, { operationId }).finally(() => {
+    if (onProgress) ipcRenderer.removeListener(progressChannel, handler);
+  });
 }
 
 function deliverAuthCallback(value: unknown) {
