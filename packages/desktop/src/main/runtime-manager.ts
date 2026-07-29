@@ -200,6 +200,7 @@ export function uninstallRuntime(input: RuntimeManagerInput = {}) {
 }
 
 async function ensureRuntimeOperation(context: RuntimeManagerContext) {
+  context.onProgress?.({ phase: "checking" });
   const report = await checkRuntimeStatus(context);
   context.observation?.initial(report);
   if (report.status === "ready") {

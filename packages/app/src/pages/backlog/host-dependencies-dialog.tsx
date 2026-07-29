@@ -209,17 +209,17 @@ function createRuntimeAction(
 }
 
 function runtimeProgressLabel(progress: RuntimeProgress | null) {
-  if (!progress) return "Preparing"
+  if (!progress) return "Checking runtime"
   if (progress.phase === "downloading") {
     return progress.percent === undefined
-      ? "Downloading"
-      : `Downloading ${progress.percent}%`
+      ? "Downloading runtime"
+      : `Downloading runtime ${progress.percent}%`
   }
-  if (progress.phase === "verifying") return "Verifying"
-  if (progress.phase === "installing") return "Installing"
-  if (progress.phase === "configuring") return "Configuring"
-  if (progress.phase === "starting") return "Starting"
-  return "Checking"
+  if (progress.phase === "verifying") return "Verifying runtime"
+  if (progress.phase === "installing") return "Installing runtime"
+  if (progress.phase === "configuring") return "Configuring runtime"
+  if (progress.phase === "starting") return "Starting runtime"
+  return "Checking runtime"
 }
 
 function resetRuntimeIssue(issue: HostDependencyIssue) {

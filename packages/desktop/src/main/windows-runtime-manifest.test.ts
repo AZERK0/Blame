@@ -59,6 +59,19 @@ test("accepts Windows runtime rootfs specs with optional prebaked metadata", asy
   assertRootfsSpec(manifest.rootfs?.arm64);
 });
 
+test("pipes multiline Windows runtime probes through WSL standard input", async () => {
+  const source = await readFile(
+    path.resolve("resources/runtime/windows/scripts/blame-wsl2-runtime.ps1"),
+    "utf8",
+  );
+
+  assert.match(source, /function Invoke-DistroScript/);
+  assert.match(source, /function ConvertTo-UnixLineEndings/);
+  assert.match(source, /RedirectStandardInput = \$true/);
+  assert.match(source, /Write-Host "BLAME_RUNTIME_PROGRESS /);
+  assert.doesNotMatch(source, /\$result = Invoke-Distro \$command/);
+});
+
 test("keeps managed runtime Cline SDK versions aligned with agent runtime", async () => {
   const packageJson = JSON.parse(
     await readFile(agentRuntimePackagePath, "utf8"),

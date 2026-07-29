@@ -32,9 +32,34 @@ function Invoke-WslHost {
   }
 }
 
-function Invoke-Distro {
-  param([string]$Command)
-  Invoke-WslHost -WslArgs @("-d", $DistroName, "-u", "root", "--", "sh", "-lc", $Command)
+function Invoke-DistroScript {
+  param([string]$Content)
+  $process = [System.Diagnostics.Process]::new()
+  $process.StartInfo.FileName = "wsl.exe"
+  $process.StartInfo.Arguments = Join-Arguments @("-d", $DistroName, "-u", "root", "--", "sh", "-s")
+  $process.StartInfo.RedirectStandardInput = $true
+  $process.StartInfo.RedirectStandardOutput = $true
+  $process.StartInfo.RedirectStandardError = $true
+  $process.StartInfo.UseShellExecute = $false
+  $process.Start() | Out-Null
+  $standardOutputTask = $process.StandardOutput.ReadToEndAsync()
+  $standardErrorTask = $process.StandardError.ReadToEndAsync()
+  $process.StandardInput.Write((ConvertTo-UnixLineEndings $Content))
+  $process.StandardInput.Close()
+  $process.WaitForExit()
+  $outputParts = @(
+    $standardOutputTask.GetAwaiter().GetResult()
+    $standardErrorTask.GetAwaiter().GetResult()
+  ) | Where-Object { $_ }
+  [pscustomobject]@{
+    Code = $process.ExitCode
+    Output = ($outputParts -join "`n").TrimEnd()
+  }
+}
+
+function ConvertTo-UnixLineEndings {
+  param([string]$Content)
+  $Content -replace "`r`n?", "`n"
 }
 
 function Write-Status {
@@ -59,7 +84,7 @@ function Write-RuntimeProgress {
     $progress.totalBytes = $TotalBytes
     $progress.percent = [math]::Min(100, [math]::Floor(($CompletedBytes * 100) / $TotalBytes))
   }
-  "BLAME_RUNTIME_PROGRESS $($progress | ConvertTo-Json -Compress)"
+  Write-Host "BLAME_RUNTIME_PROGRESS $($progress | ConvertTo-Json -Compress)"
 }
 
 function New-Check {
@@ -124,7 +149,7 @@ function Test-ContainerRuntimeCommand {
 
 function Ensure-ContainerdRunning {
   $command = "if ! pgrep -x containerd >/dev/null 2>&1; then mkdir -p /run/containerd /var/log/blame-runtime; nohup containerd >/var/log/blame-runtime/containerd.log 2>&1 & sleep 2; fi; test -S /run/containerd/containerd.sock"
-  $result = Invoke-Distro $command
+  $result = Invoke-DistroScript $command
   if ($result.Code -ne 0) {
     throw $result.Output
   }
@@ -201,7 +226,7 @@ check cline-sdk valid_cline_sdk_install
   $command = $command -replace "__CLINE_SDK_VERSION__", $ClineSdkVersion
   $command = $command -replace "__RUNTIME_AGENT_VERSION__", $RuntimeAgentVersion
   $command = $command -replace "__RUNTIME_VERSION__", $RuntimeVersion
-  $result = Invoke-Distro $command
+  $result = Invoke-DistroScript $command
   if ($result.Code -ne 0) {
     foreach ($name in @("agent", "agent-version", "runtime-version", "containerd", "nerdctl", "nerdctl-compose", "git", "cline-sdk")) {
       $Checks.Add((New-Check $name "missing" "Repair BlameRuntime from Blame runtime setup."))
@@ -252,17 +277,17 @@ function Assert-WslReady {
 function Get-RootfsPath {
   $spec = Get-RootfsSpec
   if ($env:BLAME_WSL2_ROOTFS -and (Test-Path $env:BLAME_WSL2_ROOTFS)) {
-    Assert-RootfsChecksum $env:BLAME_WSL2_ROOTFS $spec
+    Confirm-RootfsChecksum $env:BLAME_WSL2_ROOTFS $spec
     return $env:BLAME_WSL2_ROOTFS
   }
   $packagedRootfs = Join-Path $RuntimeHome "rootfs\BlameRuntime-rootfs.tar"
   if (Test-Path $packagedRootfs) {
-    Assert-RootfsChecksum $packagedRootfs $spec
+    Confirm-RootfsChecksum $packagedRootfs $spec
     return $packagedRootfs
   }
   $packagedCompressedRootfs = Join-Path $RuntimeHome "rootfs\BlameRuntime-rootfs.tar.gz"
   if (Test-Path $packagedCompressedRootfs) {
-    Assert-RootfsChecksum $packagedCompressedRootfs $spec
+    Confirm-RootfsChecksum $packagedCompressedRootfs $spec
     return $packagedCompressedRootfs
   }
   Get-CachedRootfsPath $spec
@@ -275,7 +300,7 @@ function Get-CachedRootfsPath {
   $rootfs = Join-Path $cacheRoot $fileName
   if (Test-Path $rootfs) {
     try {
-      Assert-RootfsChecksum $rootfs $Spec
+      Confirm-RootfsChecksum $rootfs $Spec
       return $rootfs
     } catch {
       Remove-Item -Force $rootfs
@@ -288,8 +313,7 @@ function Get-CachedRootfsPath {
   }
   try {
     Invoke-RootfsDownload $Spec.url $download
-    Write-RuntimeProgress "verifying"
-    Assert-RootfsChecksum $download $Spec
+    Confirm-RootfsChecksum $download $Spec
     Move-Item -Force $download $rootfs
     return $rootfs
   } catch {
@@ -355,6 +379,12 @@ function Assert-RootfsChecksum {
   }
 }
 
+function Confirm-RootfsChecksum {
+  param([string]$Path, [object]$Spec)
+  Write-RuntimeProgress "verifying"
+  Assert-RootfsChecksum $Path $Spec
+}
+
 function Get-RootfsSpec {
   $architecture = Get-RuntimeArchitecture
   $spec = $Manifest.rootfs.$architecture
@@ -417,7 +447,7 @@ function Invoke-Provisioner {
   $process.StartInfo.RedirectStandardError = $false
   $process.StartInfo.UseShellExecute = $false
   $process.Start() | Out-Null
-  $process.StandardInput.Write($content)
+  $process.StandardInput.Write((ConvertTo-UnixLineEndings $content))
   $process.StandardInput.Close()
   $process.WaitForExit()
   if ($process.ExitCode -ne 0) {
@@ -471,7 +501,7 @@ version_ok &&
   $command = $command -replace "__CLINE_SDK_VERSION__", $ClineSdkVersion
   $command = $command -replace "__RUNTIME_AGENT_VERSION__", $RuntimeAgentVersion
   $command = $command -replace "__RUNTIME_VERSION__", $RuntimeVersion
-  $result = Invoke-Distro $command
+  $result = Invoke-DistroScript $command
   $result.Code -eq 0
 }
 

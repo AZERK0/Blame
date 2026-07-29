@@ -366,6 +366,7 @@ test("streams valid runtime lifecycle progress", async () => {
 
   assert.equal(report.status, "ready");
   assert.deepEqual(progress, [
+    { phase: "checking" },
     {
       completedBytes: 50,
       percent: 50,
