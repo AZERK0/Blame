@@ -1,5 +1,7 @@
+import { randomUUID } from "node:crypto";
 import { contextBridge, ipcRenderer } from "electron";
 import type { AgentEvent } from "@blame/agent-runtime";
+import type { RuntimeProgress } from "@blame/app";
 import type { BlameDesktopApi } from "./types";
 
 type AuthCallback = Parameters<BlameDesktopApi["auth"]["onCallback"]>[0];
@@ -11,6 +13,22 @@ type AuthCallbackDelivery = {
 
 const authCallbacks = new Set<AuthCallback>();
 const deliveredAuthCallbackIds = new Set<number>();
+
+function invokeRuntimeOperation(
+  channel: string,
+  onProgress?: (progress: RuntimeProgress) => void,
+) {
+  const operationId = randomUUID();
+  const progressChannel = `workspace:runtime-progress:${operationId}`;
+  const handler = (_event: unknown, progress: RuntimeProgress) =>
+    onProgress?.(progress);
+  if (onProgress) ipcRenderer.on(progressChannel, handler);
+  return ipcRenderer
+    .invoke(channel, { operationId })
+    .finally(() => {
+      if (onProgress) ipcRenderer.removeListener(progressChannel, handler);
+    });
+}
 
 function deliverAuthCallback(value: unknown) {
   if (!isAuthCallbackDelivery(value) || authCallbacks.size === 0) return;
@@ -231,10 +249,12 @@ const api: BlameDesktopApi = {
       ipcRenderer.invoke("workspace:resolve-project-preview-url", input),
     ensureProjectPreviewUrl: (input) =>
       ipcRenderer.invoke("workspace:ensure-project-preview-url", input),
-    ensureRuntimeReady: () =>
-      ipcRenderer.invoke("workspace:ensure-runtime-ready"),
-    repairRuntime: () => ipcRenderer.invoke("workspace:repair-runtime"),
-    resetRuntime: () => ipcRenderer.invoke("workspace:reset-runtime"),
+    ensureRuntimeReady: (onProgress) =>
+      invokeRuntimeOperation("workspace:ensure-runtime-ready", onProgress),
+    repairRuntime: (onProgress) =>
+      invokeRuntimeOperation("workspace:repair-runtime", onProgress),
+    resetRuntime: (onProgress) =>
+      invokeRuntimeOperation("workspace:reset-runtime", onProgress),
     projectRuntimeHealthy: (input) =>
       ipcRenderer.invoke("workspace:project-runtime-healthy", input),
     projectPreviewRuntimeState: (input) =>

@@ -21,6 +21,7 @@ export type {
   McpServersClient,
   Platform,
   RuntimeDiagnosticInput,
+  RuntimeProgress,
   TelemetryExportSession,
 } from "./context/platform"
 

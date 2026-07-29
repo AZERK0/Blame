@@ -49,7 +49,7 @@ import type {
   GitStatusResult,
 } from "@blame/app";
 import type { McpServersClient } from "@blame/app";
-import type { RuntimeDiagnosticInput } from "@blame/app";
+import type { RuntimeDiagnosticInput, RuntimeProgress } from "@blame/app";
 import type { TelemetryExportSession } from "@blame/app";
 import type { HostDependencyReport } from "../main/host-dependencies";
 import type { CreateProjectInput } from "../main/project-creation";
@@ -355,9 +355,15 @@ export type BlameDesktopApi = {
       telemetryCohorts?: ExecutionTelemetryCohorts;
       worktree: string;
     }): Promise<string | null>;
-    ensureRuntimeReady(): Promise<HostDependencyReport>;
-    repairRuntime(): Promise<HostDependencyReport>;
-    resetRuntime(): Promise<HostDependencyReport>;
+    ensureRuntimeReady(
+      onProgress?: (progress: RuntimeProgress) => void,
+    ): Promise<HostDependencyReport>;
+    repairRuntime(
+      onProgress?: (progress: RuntimeProgress) => void,
+    ): Promise<HostDependencyReport>;
+    resetRuntime(
+      onProgress?: (progress: RuntimeProgress) => void,
+    ): Promise<HostDependencyReport>;
     projectRuntimeHealthy(input: { worktree: string }): Promise<boolean>;
     projectPreviewRuntimeState(input: {
       worktree: string;

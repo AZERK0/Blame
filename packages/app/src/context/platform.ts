@@ -109,6 +109,19 @@ export type RuntimeDiagnosticInput = {
   operation: "ensure" | "repair" | "reset"
 }
 
+export type RuntimeProgress = {
+  completedBytes?: number
+  percent?: number
+  phase:
+    | "checking"
+    | "configuring"
+    | "downloading"
+    | "installing"
+    | "starting"
+    | "verifying"
+  totalBytes?: number
+}
+
 export type TelemetryClient = {
   configure(session: TelemetryExportSession): Promise<boolean>
   disable(): Promise<boolean>
@@ -610,9 +623,15 @@ export type WorkspaceClient = {
     configurationId?: string
     worktree: string
   }): Promise<ProjectPreviewRuntimeState>
-  ensureRuntimeReady?(): Promise<unknown>
-  repairRuntime?(): Promise<unknown>
-  resetRuntime?(): Promise<unknown>
+  ensureRuntimeReady?(
+    onProgress?: (progress: RuntimeProgress) => void
+  ): Promise<unknown>
+  repairRuntime?(
+    onProgress?: (progress: RuntimeProgress) => void
+  ): Promise<unknown>
+  resetRuntime?(
+    onProgress?: (progress: RuntimeProgress) => void
+  ): Promise<unknown>
   listProjectServices?(input: { worktree: string }): Promise<string[]>
   startProjectServiceLogs?(input: {
     service: string

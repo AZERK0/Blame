@@ -3,7 +3,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { readdir, readFile, stat } from "node:fs/promises";
 import { createConnection } from "node:net";
 import { dirname, join, posix, relative, resolve, sep } from "node:path";
-import { BrowserWindow, ipcMain } from "electron";
+import { BrowserWindow, ipcMain, type IpcMainInvokeEvent } from "electron";
 import {
   commandWithNextWebpackFallback,
   generatePreviewArtifacts,
@@ -76,6 +76,7 @@ import {
   getRuntimeStatus,
   repairRuntime,
   resetRuntime,
+  type RuntimeProgress,
   uninstallRuntime,
 } from "./runtime-manager";
 import { setupPath } from "./host-tool-path";
@@ -314,6 +315,10 @@ type CheckHostDependenciesInput = {
   worktree?: string;
 };
 
+type RuntimeOperationInput = {
+  operationId?: string;
+};
+
 type StopProjectSetupInput = {
   worktree: string;
 };
@@ -486,6 +491,38 @@ const removedWorktrees = new Set<string>();
 const workspaceProcesses = new Set<ChildProcessWithoutNullStreams>();
 const containerRuntime = createContainerRuntime();
 
+function runtimeProgressReporter(
+  event: IpcMainInvokeEvent,
+  operationId?: string,
+) {
+  if (!operationId || !/^[a-f0-9-]{36}$/.test(operationId)) return undefined;
+  const channel = `workspace:runtime-progress:${operationId}`;
+  return (progress: RuntimeProgress) => {
+    if (event.sender.isDestroyed()) return;
+    try {
+      event.sender.send(channel, progress);
+    } catch {
+      return;
+    }
+  };
+}
+
+function registerRuntimeOperationHandler(
+  channel: string,
+  operation: typeof ensureRuntimeReady,
+  onRuntimeReady?: () => void,
+) {
+  ipcMain.handle(channel, async (event, input: RuntimeOperationInput = {}) => {
+    resetRuntimeGitIdentityConfigured();
+    const report = await operation({
+      env: runtimeManagerEnvironment(),
+      onProgress: runtimeProgressReporter(event, input.operationId),
+    });
+    if (report.status === "ready") onRuntimeReady?.();
+    return report;
+  });
+}
+
 export function registerWorkspaceIpcHandlers(
   input: { onRuntimeReady?(): void } = {},
 ) {
@@ -636,26 +673,21 @@ export function registerWorkspaceIpcHandlers(
   ipcMain.handle("workspace:get-runtime-status", () =>
     getRuntimeStatus({ env: runtimeManagerEnvironment() }),
   );
-  ipcMain.handle("workspace:ensure-runtime-ready", async () => {
-    resetRuntimeGitIdentityConfigured();
-    const report = await ensureRuntimeReady({
-      env: runtimeManagerEnvironment(),
-    });
-    if (report.status === "ready") input.onRuntimeReady?.();
-    return report;
-  });
-  ipcMain.handle("workspace:repair-runtime", async () => {
-    resetRuntimeGitIdentityConfigured();
-    const report = await repairRuntime({ env: runtimeManagerEnvironment() });
-    if (report.status === "ready") input.onRuntimeReady?.();
-    return report;
-  });
-  ipcMain.handle("workspace:reset-runtime", async () => {
-    resetRuntimeGitIdentityConfigured();
-    const report = await resetRuntime({ env: runtimeManagerEnvironment() });
-    if (report.status === "ready") input.onRuntimeReady?.();
-    return report;
-  });
+  registerRuntimeOperationHandler(
+    "workspace:ensure-runtime-ready",
+    ensureRuntimeReady,
+    input.onRuntimeReady,
+  );
+  registerRuntimeOperationHandler(
+    "workspace:repair-runtime",
+    repairRuntime,
+    input.onRuntimeReady,
+  );
+  registerRuntimeOperationHandler(
+    "workspace:reset-runtime",
+    resetRuntime,
+    input.onRuntimeReady,
+  );
   ipcMain.handle("workspace:uninstall-runtime", async () => {
     resetRuntimeGitIdentityConfigured();
     return uninstallRuntime({ env: runtimeManagerEnvironment() });

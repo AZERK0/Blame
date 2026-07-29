@@ -51,6 +51,22 @@ write_status() {
   fi
 }
 
+write_runtime_progress() {
+  phase="$1"
+  completed_bytes="${2:-0}"
+  total_bytes="${3:-0}"
+  if [ "$total_bytes" -gt 0 ]; then
+    percent=$((completed_bytes * 100 / total_bytes))
+    if [ "$percent" -gt 100 ]; then
+      percent=100
+    fi
+    printf 'BLAME_RUNTIME_PROGRESS {"phase":"%s","completedBytes":%s,"totalBytes":%s,"percent":%s}\n' \
+      "$phase" "$completed_bytes" "$total_bytes" "$percent"
+    return
+  fi
+  printf 'BLAME_RUNTIME_PROGRESS {"phase":"%s"}\n' "$phase"
+}
+
 limactl_path() {
   for candidate in \
     "${BLAME_LIMA_BIN:-}" \
@@ -232,26 +248,159 @@ assert_lima_available() {
   exit 1
 }
 
+runtime_image_url() {
+  architecture="$(uname -m)"
+  case "$architecture" in
+    arm64 | aarch64) architecture="aarch64" ;;
+    amd64 | x86_64) architecture="x86_64" ;;
+  esac
+  awk -v architecture="$architecture" '
+    $1 == "-" && $2 == "location:" {
+      location = $3
+      gsub(/"/, "", location)
+    }
+    $1 == "arch:" {
+      image_architecture = $2
+      gsub(/"/, "", image_architecture)
+      if (image_architecture == architecture) {
+        print location
+        exit
+      }
+    }
+  ' "$runtime_home/lima/blame-runtime.yaml"
+}
+
+remote_content_length() {
+  url="$1"
+  curl -fsSIL --connect-timeout 3 --max-time 5 "$url" 2>/dev/null |
+    tr -d '\r' |
+    awk 'tolower($1) == "content-length:" { content_length = $2 } END {
+      if (content_length ~ /^[0-9]+$/) print content_length
+    }'
+}
+
+lima_download_cache_directory() {
+  url="$1"
+  cache_key="$(printf '%s' "$url" | shasum -a 256 | awk '{ print $1 }')"
+  printf '%s/Library/Caches/lima/download/by-url-sha256/%s' "$HOME" "$cache_key"
+}
+
+file_size() {
+  if file_bytes="$(stat -f '%z' "$1" 2>/dev/null)"; then
+    printf '%s' "$file_bytes"
+    return
+  fi
+  if file_bytes="$(stat -c '%s' "$1" 2>/dev/null)"; then
+    printf '%s' "$file_bytes"
+    return
+  fi
+  printf '0'
+}
+
+downloaded_cache_bytes() {
+  cache_directory="$1"
+  largest_size=0
+  for candidate in "$cache_directory"/data.tmp.* "$cache_directory"/data; do
+    if [ ! -f "$candidate" ]; then
+      continue
+    fi
+    candidate_size="$(file_size "$candidate")"
+    if [ "$candidate_size" -gt "$largest_size" ]; then
+      largest_size="$candidate_size"
+    fi
+  done
+  printf '%s' "$largest_size"
+}
+
+monitor_lima_download() {
+  process_id="$1"
+  image_url="$(runtime_image_url)"
+  if [ -z "$image_url" ] ||
+    ! command -v curl >/dev/null 2>&1 ||
+    ! command -v shasum >/dev/null 2>&1; then
+    wait_for_process "$process_id"
+    return
+  fi
+  cache_directory="$(lima_download_cache_directory "$image_url")"
+  if [ -f "$cache_directory/data" ]; then
+    total_bytes="$(file_size "$cache_directory/data")"
+  else
+    total_bytes="$(remote_content_length "$image_url")"
+  fi
+  previous_bytes=-1
+  while kill -0 "$process_id" 2>/dev/null; do
+    completed_bytes="$(downloaded_cache_bytes "$cache_directory")"
+    if [ "$completed_bytes" != "$previous_bytes" ]; then
+      write_download_progress "$cache_directory" "$completed_bytes" "${total_bytes:-0}"
+      previous_bytes="$completed_bytes"
+    fi
+    sleep 1
+  done
+  completed_bytes="$(downloaded_cache_bytes "$cache_directory")"
+  write_download_progress "$cache_directory" "$completed_bytes" "${total_bytes:-0}"
+}
+
+write_download_progress() {
+  cache_directory="$1"
+  completed_bytes="$2"
+  total_bytes="$3"
+  if [ -f "$cache_directory/data" ]; then
+    write_runtime_progress "installing" "$completed_bytes" "$total_bytes"
+    return
+  fi
+  if [ "$total_bytes" -gt 0 ] && [ "$completed_bytes" -ge "$total_bytes" ]; then
+    write_runtime_progress "verifying" "$completed_bytes" "$total_bytes"
+    return
+  fi
+  write_runtime_progress "downloading" "$completed_bytes" "$total_bytes"
+}
+
+wait_for_process() {
+  process_id="$1"
+  while kill -0 "$process_id" 2>/dev/null; do
+    sleep 1
+  done
+}
+
+create_vm() {
+  write_runtime_progress "downloading"
+  with_lima_environment create \
+    --name "$vm_name" \
+    --tty=false \
+    "$runtime_home/lima/blame-runtime.yaml" &
+  create_process_id=$!
+  monitor_lima_download "$create_process_id"
+  if wait "$create_process_id"; then
+    write_runtime_progress "installing"
+    return
+  fi
+  create_exit_code=$?
+  return "$create_exit_code"
+}
+
 ensure_vm() {
   install_lima_bundle
   assert_lima_available
   mkdir -p "$lima_state_home"
   if ! test_vm_present; then
-    with_lima_environment create --name "$vm_name" --tty=false "$runtime_home/lima/blame-runtime.yaml"
+    create_vm
   fi
   if ! test_vm_running; then
+    write_runtime_progress "starting"
     with_lima_environment start "$vm_name"
   fi
 }
 
 invoke_provisioner() {
   provisioner="$runtime_home/scripts/provision-blame-runtime.sh"
+  write_runtime_progress "configuring"
   with_lima_environment shell "$vm_name" sudo -n sh -s -- "$runtime_version" "$cline_sdk_version" <"$provisioner"
 }
 
 ensure_runtime() {
   ensure_vm
   invoke_provisioner
+  write_runtime_progress "checking"
   runtime_status
 }
 

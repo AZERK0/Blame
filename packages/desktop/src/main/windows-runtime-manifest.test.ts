@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { execFile } from "node:child_process";
 import {
   access,
   cp,
@@ -12,10 +13,13 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
+import { promisify } from "node:util";
 import {
   prepareMacosRuntimeManifest,
   prepareWindowsRuntimeManifest,
 } from "../../../../scripts/runtime-manifest.mjs";
+
+const execFileAsync = promisify(execFile);
 
 type RootfsSpec = {
   kind?: string;
@@ -133,6 +137,37 @@ test("keeps the Lima template while embedding its verified bundle", async () => 
   }
 });
 
+test("reports Lima setup progress while creating the runtime", async () => {
+  const testRoot = await mkdtemp(path.join(tmpdir(), "blame-lima-progress-"));
+  const toolsRoot = path.join(testRoot, "tools");
+  const stateRoot = path.join(testRoot, "state");
+  const cacheKey = "a".repeat(64);
+
+  try {
+    const stdout = await runFakeMacosRuntimeSetup(
+      testRoot,
+      toolsRoot,
+      stateRoot,
+      cacheKey,
+    );
+    const progress = runtimeProgressFromOutput(stdout);
+    assert.deepEqual(uniquePhases(progress), [
+      "downloading",
+      "verifying",
+      "installing",
+      "starting",
+      "configuring",
+      "checking",
+    ]);
+    assert.ok(
+      progress.some((event) => Number(event.percent) > 0),
+      stdout,
+    );
+  } finally {
+    await rm(testRoot, { force: true, recursive: true });
+  }
+});
+
 test("uses published immutable artifacts for release packaging", async () => {
   const testRoot = await mkdtemp(path.join(tmpdir(), "blame-runtime-test-"));
   const runtimeRoot = path.join(testRoot, "runtime");
@@ -197,6 +232,95 @@ async function createFakeLimaBundle(bundleRoot: string) {
     "../../lima/templates",
     path.join(documentationRoot, "templates"),
   );
+}
+
+async function createFakeMacosRuntimeTools(toolsRoot: string) {
+  await mkdir(toolsRoot, { recursive: true });
+  await writeFile(path.join(toolsRoot, "limactl"), fakeLimactlSource, {
+    mode: 0o755,
+  });
+  await writeFile(
+    path.join(toolsRoot, "curl"),
+    "#!/bin/sh\nprintf 'HTTP/2 200\\r\\ncontent-length: 100\\r\\n\\r\\n'\n",
+    { mode: 0o755 },
+  );
+  await writeFile(
+    path.join(toolsRoot, "shasum"),
+    "#!/bin/sh\nprintf '%s  -\\n' \"$BLAME_TEST_CACHE_KEY\"\n",
+    { mode: 0o755 },
+  );
+}
+
+async function runFakeMacosRuntimeSetup(
+  testRoot: string,
+  toolsRoot: string,
+  stateRoot: string,
+  cacheKey: string,
+) {
+  await createFakeMacosRuntimeTools(toolsRoot);
+  const { stdout } = await execFileAsync(
+    path.resolve("resources/runtime/macos/scripts/blame-lima-runtime.sh"),
+    ["ensure"],
+    {
+      env: {
+        ...process.env,
+        BLAME_LIMA_BIN: path.join(toolsRoot, "limactl"),
+        BLAME_TEST_CACHE_KEY: cacheKey,
+        BLAME_TEST_LIMA_STATE: stateRoot,
+        HOME: testRoot,
+        PATH: `${toolsRoot}:${process.env.PATH}`,
+      },
+      timeout: 10_000,
+    },
+  );
+  return stdout;
+}
+
+const fakeLimactlSource = `#!/bin/sh
+set -eu
+state="$BLAME_TEST_LIMA_STATE"
+case "$1" in
+  --version) printf 'limactl version 2.1.2\\n' ;;
+  list)
+    if [ -f "$state/running" ]; then
+      printf '{"status":"Running"}\\n'
+    elif [ -f "$state/present" ]; then
+      printf '{"status":"Stopped"}\\n'
+    fi
+    ;;
+  create)
+    cache="$HOME/Library/Caches/lima/download/by-url-sha256/$BLAME_TEST_CACHE_KEY"
+    mkdir -p "$state" "$cache"
+    head -c 50 /dev/zero >"$cache/data.tmp.1.1"
+    sleep 1
+    head -c 100 /dev/zero >"$cache/data.tmp.1.1"
+    sleep 2
+    mv "$cache/data.tmp.1.1" "$cache/data"
+    touch "$state/present"
+    ;;
+  start) touch "$state/running" ;;
+  shell)
+    cat >/dev/null
+    for name in host-home agent agent-version runtime-version containerd nerdctl nerdctl-compose git cline-sdk; do
+      printf '%s\\tavailable\\n' "$name"
+    done
+    ;;
+esac
+`;
+
+function runtimeProgressFromOutput(output: string) {
+  const prefix = "BLAME_RUNTIME_PROGRESS ";
+  return output
+    .split(/\r?\n/)
+    .filter((line) => line.startsWith(prefix))
+    .map(
+      (line) =>
+        JSON.parse(line.slice(prefix.length)) as Record<string, unknown>,
+    );
+}
+
+function uniquePhases(progress: Record<string, unknown>[]) {
+  return [...new Set(progress.map((event) => event.phase))];
 }
 
 async function readRuntimeManifest(runtimeRoot: string, platform: string) {

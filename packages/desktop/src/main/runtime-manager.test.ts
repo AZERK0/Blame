@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createRuntimeManager } from "./runtime-manager.ts";
+import { createRuntimeManager, type RuntimeProgress } from "./runtime-manager.ts";
 
 test("checks Linux runtime with native nerdctl probes", async () => {
   const calls: string[] = [];
@@ -337,6 +337,42 @@ test("runs ensure when managed runtime is not ready", async () => {
     "blame-wsl2-runtime --version",
     "blame-wsl2-runtime status",
     "blame-wsl2-runtime agent status",
+  ]);
+});
+
+test("streams valid runtime lifecycle progress", async () => {
+  const progress: RuntimeProgress[] = [];
+  let ready = false;
+  const manager = createRuntimeManager(
+    { onProgress: (event) => progress.push(event), platform: "win32" },
+    async (_command, args, _env, _timeoutMs, onOutput) => {
+      if (args[0] === "status") {
+        return JSON.stringify({
+          checks: ready ? [] : [{ name: "distro", status: "missing" }],
+          status: ready ? "ready" : "missing",
+        });
+      }
+      if (args[0] === "ensure") {
+        onOutput?.('ignored\nBLAME_RUNTIME_PROGRESS {"phase":"down');
+        onOutput?.('loading","completedBytes":50,"totalBytes":100,"percent":50}\r\n');
+        onOutput?.('BLAME_RUNTIME_PROGRESS {"phase":"verifying"}\n');
+        ready = true;
+      }
+      return "ready";
+    },
+  );
+
+  const report = await manager.ensureRuntimeReady();
+
+  assert.equal(report.status, "ready");
+  assert.deepEqual(progress, [
+    {
+      completedBytes: 50,
+      percent: 50,
+      phase: "downloading",
+      totalBytes: 100,
+    },
+    { phase: "verifying" },
   ]);
 });
 

@@ -21,6 +21,7 @@ $WslRequiredAction = "Enable WSL2 in Windows, restart if prompted, then run Blam
 $RootfsAction = "Blame could not download the BlameRuntime WSL2 rootfs. Check the internet connection, then run Blame runtime setup again."
 
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+Add-Type -AssemblyName System.Net.Http
 
 function Invoke-WslHost {
   param([string[]]$WslArgs)
@@ -46,6 +47,19 @@ function Write-Status {
     $report.action = $Action
   }
   $report | ConvertTo-Json -Depth 4 -Compress
+}
+
+function Write-RuntimeProgress {
+  param([string]$Phase, [long]$CompletedBytes = 0, [long]$TotalBytes = 0)
+  $progress = [ordered]@{
+    phase = $Phase
+  }
+  if ($TotalBytes -gt 0) {
+    $progress.completedBytes = $CompletedBytes
+    $progress.totalBytes = $TotalBytes
+    $progress.percent = [math]::Min(100, [math]::Floor(($CompletedBytes * 100) / $TotalBytes))
+  }
+  "BLAME_RUNTIME_PROGRESS $($progress | ConvertTo-Json -Compress)"
 }
 
 function New-Check {
@@ -273,7 +287,8 @@ function Get-CachedRootfsPath {
     Remove-Item -Force $download
   }
   try {
-    Invoke-WebRequest -UseBasicParsing -Uri $Spec.url -OutFile $download
+    Invoke-RootfsDownload $Spec.url $download
+    Write-RuntimeProgress "verifying"
     Assert-RootfsChecksum $download $Spec
     Move-Item -Force $download $rootfs
     return $rootfs
@@ -282,6 +297,49 @@ function Get-CachedRootfsPath {
       Remove-Item -Force $download
     }
     throw $RootfsAction
+  }
+}
+
+function Invoke-RootfsDownload {
+  param([string]$Uri, [string]$Path)
+  $client = [System.Net.Http.HttpClient]::new()
+  $client.Timeout = [System.Threading.Timeout]::InfiniteTimeSpan
+  $response = $null
+  $inputStream = $null
+  try {
+    $response = $client.GetAsync($Uri, [System.Net.Http.HttpCompletionOption]::ResponseHeadersRead).GetAwaiter().GetResult()
+    $response.EnsureSuccessStatusCode() | Out-Null
+    $inputStream = $response.Content.ReadAsStreamAsync().GetAwaiter().GetResult()
+    Copy-DownloadStream $inputStream $Path $response.Content.Headers.ContentLength
+  } finally {
+    if ($inputStream) {
+      $inputStream.Dispose()
+    }
+    if ($response) {
+      $response.Dispose()
+    }
+    $client.Dispose()
+  }
+}
+
+function Copy-DownloadStream {
+  param([System.IO.Stream]$InputStream, [string]$Path, [long]$TotalBytes)
+  $outputStream = [System.IO.File]::Open($Path, [System.IO.FileMode]::Create, [System.IO.FileAccess]::Write, [System.IO.FileShare]::None)
+  $buffer = New-Object byte[] (1024 * 1024)
+  $completedBytes = 0L
+  $lastPercent = -1
+  try {
+    while (($read = $InputStream.Read($buffer, 0, $buffer.Length)) -gt 0) {
+      $outputStream.Write($buffer, 0, $read)
+      $completedBytes += $read
+      $percent = if ($TotalBytes -gt 0) { [math]::Floor(($completedBytes * 100) / $TotalBytes) } else { 0 }
+      if ($percent -ne $lastPercent) {
+        Write-RuntimeProgress "downloading" $completedBytes $TotalBytes
+        $lastPercent = $percent
+      }
+    }
+  } finally {
+    $outputStream.Dispose()
   }
 }
 
@@ -339,6 +397,7 @@ function Ensure-Distro {
   }
   $installRoot = Join-Path $env:LOCALAPPDATA "Blame\runtime\wsl\$DistroName"
   New-Item -ItemType Directory -Force -Path $installRoot | Out-Null
+  Write-RuntimeProgress "installing"
   $result = Invoke-WslHost -WslArgs @("--import", $DistroName, $installRoot, $rootfs, "--version", "2")
   if ($result.Code -ne 0) {
     throw $result.Output
@@ -347,6 +406,7 @@ function Ensure-Distro {
 }
 
 function Invoke-Provisioner {
+  Write-RuntimeProgress "configuring"
   $script = Join-Path $PSScriptRoot "provision-blame-runtime.sh"
   $content = Get-Content $script -Raw
   $process = [System.Diagnostics.Process]::new()
@@ -433,23 +493,27 @@ function Ensure-Runtime {
   if ($created -and (Test-RootfsSpecPrebaked) -and (Test-ImportedRuntimeReady)) {
     $containerdReady = $false
     try {
+      Write-RuntimeProgress "starting"
       Ensure-ContainerdRunning
       $containerdReady = $true
     } catch {
       $containerdReady = $false
     }
     if ($containerdReady) {
+      Write-RuntimeProgress "checking"
       Get-RuntimeStatus
       return
     }
   }
   Invoke-Provisioner
+  Write-RuntimeProgress "checking"
   Get-RuntimeStatus
 }
 
 function Repair-Runtime {
   Ensure-Distro | Out-Null
   Invoke-Provisioner
+  Write-RuntimeProgress "checking"
   Get-RuntimeStatus
 }
 

@@ -15,6 +15,7 @@ import type {
   HostDependencyIssue,
   HostDependencyReport,
   RuntimeDiagnosticInput,
+  RuntimeProgress,
 } from "@/context/platform"
 import { usePlatform } from "@/context/platform"
 import { cn } from "@/lib/utils"
@@ -46,14 +47,17 @@ export function HostDependenciesDialog({
   const platform = usePlatform()
   const issues = report?.issues ?? []
   const [runningAction, setRunningAction] = React.useState<string | null>(null)
+  const [runtimeProgress, setRuntimeProgress] =
+    React.useState<RuntimeProgress | null>(null)
   const busy = checking || Boolean(runningAction)
 
   async function runDependencyAction(issue: HostDependencyIssue) {
     const runtimeAction = dependencyRuntimeAction(issue, platform)
     if (runtimeAction) {
       setRunningAction(`${issue.name}-${issue.status}`)
+      setRuntimeProgress(null)
       try {
-        const result = await runtimeAction.run()
+        const result = await runtimeAction.run(setRuntimeProgress)
         const reportFailure = runtimeReportFailure(result)
         if (reportFailure) {
           showRuntimeFailureToast(
@@ -68,6 +72,7 @@ export function HostDependenciesDialog({
         showRuntimeFailureToast(error, runtimeAction.operation, platform)
       } finally {
         setRunningAction(null)
+        setRuntimeProgress(null)
       }
       return
     }
@@ -94,6 +99,7 @@ export function HostDependenciesDialog({
               issue={issue}
               disabled={busy}
               loading={runningAction === `${issue.name}-${issue.status}`}
+              progress={runtimeProgress}
               platform={platform}
               onAction={runDependencyAction}
             />
@@ -121,12 +127,14 @@ function DependencyIssueRow({
   loading,
   onAction,
   platform,
+  progress,
 }: {
   disabled: boolean
   issue: HostDependencyIssue
   loading: boolean
   onAction(issue: HostDependencyIssue): Promise<void>
   platform: ReturnType<typeof usePlatform>
+  progress: RuntimeProgress | null
 }) {
   return (
     <div className="grid gap-3 rounded-lg border bg-muted/20 p-3 sm:grid-cols-[1fr_auto] sm:items-center">
@@ -147,7 +155,9 @@ function DependencyIssueRow({
           loading={loading}
           platform={platform}
         />
-        {loading ? "Preparing" : dependencyButtonLabel(issue, platform)}
+        {loading
+          ? runtimeProgressLabel(progress)
+          : dependencyButtonLabel(issue, platform)}
       </Button>
     </div>
   )
@@ -191,9 +201,25 @@ function blameRuntimeAction(
 
 function createRuntimeAction(
   operation: RuntimeDiagnosticInput["operation"],
-  run: (() => Promise<unknown>) | undefined
+  run:
+    | ((onProgress?: (progress: RuntimeProgress) => void) => Promise<unknown>)
+    | undefined
 ) {
   return run ? { operation, run } : null
+}
+
+function runtimeProgressLabel(progress: RuntimeProgress | null) {
+  if (!progress) return "Preparing"
+  if (progress.phase === "downloading") {
+    return progress.percent === undefined
+      ? "Downloading"
+      : `Downloading ${progress.percent}%`
+  }
+  if (progress.phase === "verifying") return "Verifying"
+  if (progress.phase === "installing") return "Installing"
+  if (progress.phase === "configuring") return "Configuring"
+  if (progress.phase === "starting") return "Starting"
+  return "Checking"
 }
 
 function resetRuntimeIssue(issue: HostDependencyIssue) {

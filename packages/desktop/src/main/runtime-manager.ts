@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { promisify } from "node:util";
+import type { RuntimeProgress } from "@blame/app";
 import { withoutTelemetryEnvironment } from "@blame/telemetry";
 import {
   runtimeCommand,
@@ -15,7 +15,6 @@ import {
   type RuntimeTelemetryRecorder,
 } from "./runtime-telemetry.ts";
 
-const execFileAsync = promisify(execFile);
 const commandTimeoutMs = 15_000;
 const lifecycleCommandTimeoutMs = 30 * 60_000;
 const readinessTimeoutMs = 90_000;
@@ -85,19 +84,26 @@ export type RuntimeStatusReport = {
 
 export type RuntimeManagerInput = {
   env?: NodeJS.ProcessEnv;
+  onProgress?: RuntimeProgressHandler;
   platform?: NodeJS.Platform;
 };
+
+export type { RuntimeProgress } from "@blame/app";
+
+export type RuntimeProgressHandler = (progress: RuntimeProgress) => void;
 
 export type RuntimeCommandRunner = (
   command: string,
   args: string[],
   env?: NodeJS.ProcessEnv,
   timeoutMs?: number,
+  onOutput?: (output: string) => void,
 ) => Promise<string>;
 
 type RuntimeManagerContext = {
   env?: NodeJS.ProcessEnv;
   observation?: RuntimeTelemetryOperation;
+  onProgress?: RuntimeProgressHandler;
   platform: NodeJS.Platform;
   probesEnabled?: boolean;
   run: RuntimeCommandRunner;
@@ -118,6 +124,7 @@ export class RuntimeManager {
   ) {
     this.context = {
       env: input.env,
+      onProgress: input.onProgress,
       platform: input.platform ?? process.platform,
       run,
     };
@@ -396,11 +403,48 @@ function runRuntimeLifecycleCommand(
   if (!managedRuntimePlatform(context.platform)) {
     throw new Error(`Unsupported runtime platform: ${context.platform}`);
   }
+  const onOutput = createRuntimeProgressParser(context.onProgress);
   return context.run(
     runtimeBinary(context.platform),
     [command],
     context.env,
     lifecycleCommandTimeoutMs,
+    onOutput,
+  );
+}
+
+function createRuntimeProgressParser(onProgress?: RuntimeProgressHandler) {
+  if (!onProgress) return undefined;
+  let pendingOutput = "";
+  return (output: string) => {
+    const lines = `${pendingOutput}${output}`.split(/\r?\n/);
+    pendingOutput = lines.pop() ?? "";
+    for (const line of lines) emitRuntimeProgress(line, onProgress);
+  };
+}
+
+function emitRuntimeProgress(line: string, onProgress: RuntimeProgressHandler) {
+  const prefix = "BLAME_RUNTIME_PROGRESS ";
+  if (!line.startsWith(prefix)) return;
+  try {
+    const progress = JSON.parse(line.slice(prefix.length)) as RuntimeProgress;
+    if (runtimeProgressValid(progress)) onProgress(progress);
+  } catch {
+    return;
+  }
+}
+
+function runtimeProgressValid(value: RuntimeProgress) {
+  return (
+    value &&
+    [
+      "checking",
+      "configuring",
+      "downloading",
+      "installing",
+      "starting",
+      "verifying",
+    ].includes(value.phase)
   );
 }
 
@@ -617,19 +661,61 @@ async function runCommand(
   args: string[],
   env?: NodeJS.ProcessEnv,
   timeoutMs = commandTimeoutMs,
+  onOutput?: (output: string) => void,
 ) {
   const environment = withoutTelemetryEnvironment(env ?? process.env);
   const commandSpec = executableRuntimeCommand(command, args, environment);
-  const { stdout } = await execFileAsync(
-    commandSpec.command,
-    commandSpec.args,
-    {
-      env: environment,
-      shell: false,
-      timeout: timeoutMs,
-    },
-  );
-  return stdout;
+  return executeCommand(commandSpec, environment, timeoutMs, onOutput);
+}
+
+function executeCommand(
+  commandSpec: { args: string[]; command: string },
+  environment: NodeJS.ProcessEnv,
+  timeoutMs: number,
+  onOutput?: (output: string) => void,
+) {
+  return new Promise<string>((resolve, reject) => {
+    const child = execFile(
+      commandSpec.command,
+      commandSpec.args,
+      {
+        encoding: "utf8",
+        env: environment,
+        shell: false,
+        timeout: timeoutMs,
+      },
+      (error, stdout) => completeCommand(error, stdout, resolve, reject),
+    );
+    if (onOutput) {
+      child.stdout?.on("data", (output: string | Buffer) =>
+        emitCommandOutput(onOutput, output),
+      );
+    }
+  });
+}
+
+function completeCommand(
+  error: Error | null,
+  stdout: string,
+  resolve: (output: string) => void,
+  reject: (error: Error) => void,
+) {
+  if (error) {
+    reject(error);
+    return;
+  }
+  resolve(stdout);
+}
+
+function emitCommandOutput(
+  onOutput: (output: string) => void,
+  output: string | Buffer,
+) {
+  try {
+    onOutput(output.toString());
+  } catch {
+    return;
+  }
 }
 
 function executableRuntimeCommand(
