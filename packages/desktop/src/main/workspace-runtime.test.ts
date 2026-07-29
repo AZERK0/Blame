@@ -8,6 +8,7 @@ import {
   runtimeAccessiblePath,
   runtimeHostPath,
   runtimeManagedPath,
+  runtimeVmInternalPath,
   storyBranch,
   worktreePath,
   worktreeRoot,
@@ -32,14 +33,14 @@ test("replaces runtime state files atomically", async () => {
   }
 });
 
-test("uses the shared runtime worktree root", () => {
+test("uses the VM-native worktree root on virtualized platforms", () => {
   assert.equal(
     worktreeRoot("win32"),
     "/home/blame/.local/share/blame/runtime/worktrees",
   );
   assert.equal(
     worktreeRoot("darwin", { HOME: "/Users/dev" }),
-    "/Users/dev/Library/Application Support/Blame/runtime/worktrees",
+    "/home/blame/.local/share/blame/runtime/worktrees",
   );
   assert.equal(
     worktreeRoot("linux", { HOME: "/home/dev" }),
@@ -69,7 +70,7 @@ test("builds stable worktree paths for every desktop platform", () => {
       storyId: "42",
       title: "Add login",
     }),
-    "/Users/blame/Library/Application Support/Blame/runtime/worktrees/Blame/story-42-add-login",
+    expectedRuntime,
   );
   assert.equal(
     worktreePath({
@@ -230,6 +231,23 @@ test("detects runtime-managed paths only on Windows and macOS", () => {
       "darwin",
     ),
     true,
+  );
+});
+
+test("distinguishes VM-internal worktrees from legacy macOS shared worktrees", () => {
+  assert.equal(
+    runtimeVmInternalPath(
+      "/home/blame/.local/share/blame/runtime/worktrees/repo/story",
+      "darwin",
+    ),
+    true,
+  );
+  assert.equal(
+    runtimeVmInternalPath(
+      "/Users/dev/Library/Application Support/Blame/runtime/worktrees/repo/story",
+      "darwin",
+    ),
+    false,
   );
 });
 

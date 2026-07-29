@@ -183,6 +183,7 @@ const previewDiscoveryGraceMs = 15_000;
 const previewResponseTimeoutMs = 120_000;
 const previewRequestTimeoutMs = 5_000;
 const previewStopTimeoutSeconds = 3;
+const containerMetadataTimeoutMs = 15_000;
 const repositoryLanguageCohorts = new Set([
   "c",
   "cpp",
@@ -485,7 +486,9 @@ const removedWorktrees = new Set<string>();
 const workspaceProcesses = new Set<ChildProcessWithoutNullStreams>();
 const containerRuntime = createContainerRuntime();
 
-export function registerWorkspaceIpcHandlers() {
+export function registerWorkspaceIpcHandlers(
+  input: { onRuntimeReady?(): void } = {},
+) {
   setProjectCreationWindowsProvider(() => BrowserWindow.getAllWindows());
   setNewProjectAgentRuntime({ generate: generateNewProjectWithAgent });
   ipcMain.handle("workspace:path-exists", (_event, input: { path: string }) =>
@@ -635,15 +638,23 @@ export function registerWorkspaceIpcHandlers() {
   );
   ipcMain.handle("workspace:ensure-runtime-ready", async () => {
     resetRuntimeGitIdentityConfigured();
-    return ensureRuntimeReady({ env: runtimeManagerEnvironment() });
+    const report = await ensureRuntimeReady({
+      env: runtimeManagerEnvironment(),
+    });
+    if (report.status === "ready") input.onRuntimeReady?.();
+    return report;
   });
   ipcMain.handle("workspace:repair-runtime", async () => {
     resetRuntimeGitIdentityConfigured();
-    return repairRuntime({ env: runtimeManagerEnvironment() });
+    const report = await repairRuntime({ env: runtimeManagerEnvironment() });
+    if (report.status === "ready") input.onRuntimeReady?.();
+    return report;
   });
   ipcMain.handle("workspace:reset-runtime", async () => {
     resetRuntimeGitIdentityConfigured();
-    return resetRuntime({ env: runtimeManagerEnvironment() });
+    const report = await resetRuntime({ env: runtimeManagerEnvironment() });
+    if (report.status === "ready") input.onRuntimeReady?.();
+    return report;
   });
   ipcMain.handle("workspace:uninstall-runtime", async () => {
     resetRuntimeGitIdentityConfigured();
@@ -3495,7 +3506,11 @@ async function projectServiceLogSnapshot(
   try {
     const { stdout, stderr } = await containerRuntime.compose(
       [...composeArgs(worktree), "logs", "--tail", String(lineCount), service],
-      { cwd: worktree, env: await setupEnvironment(worktree) },
+      {
+        cwd: worktree,
+        env: await setupEnvironment(worktree),
+        timeoutMs: containerMetadataTimeoutMs,
+      },
     );
     if (stdout || stderr) return { source: "container", stderr, stdout };
   } catch (error) {
@@ -4445,7 +4460,11 @@ async function appendComposeOutput(worktree: string, args: string[]) {
   try {
     const { stdout, stderr } = await containerRuntime.compose(
       [...composeArgs(worktree), ...args],
-      { cwd: worktree, env: await setupEnvironment(worktree) },
+      {
+        cwd: worktree,
+        env: await setupEnvironment(worktree),
+        timeoutMs: containerMetadataTimeoutMs,
+      },
     );
     if (stdout) await appendRecoveryLog(worktree, stdout.trimEnd());
     if (stderr) await appendRecoveryLog(worktree, stderr.trimEnd());
@@ -4519,14 +4538,20 @@ async function previewContainers(includeStopped: boolean, worktree: string) {
         "--format",
         "{{.ID}}",
       ],
-      { cwd: worktree, env: await setupEnvironment(worktree) },
+      {
+        cwd: worktree,
+        env: await setupEnvironment(worktree),
+        timeoutMs: containerMetadataTimeoutMs,
+      },
     );
     const ids = stdout
       .split("\n")
       .map((line) => line.trim())
       .filter(Boolean);
     if (ids.length === 0) return [];
-    return containerRuntime.inspect<RuntimeContainer>(ids);
+    return containerRuntime.inspect<RuntimeContainer>(ids, {
+      timeoutMs: containerMetadataTimeoutMs,
+    });
   } catch {
     return [];
   }
@@ -4906,11 +4931,17 @@ async function loadComposeProjectContainers(worktree: string) {
   try {
     const { stdout } = await containerRuntime.compose(
       [...composeArgs(worktree), "ps", "-a", "--format", "json"],
-      { cwd: worktree, env: await setupEnvironment(worktree) },
+      {
+        cwd: worktree,
+        env: await setupEnvironment(worktree),
+        timeoutMs: containerMetadataTimeoutMs,
+      },
     );
     const ids = composePsContainerIds(stdout);
     if (ids.length === 0) return [];
-    return containerRuntime.inspect<RuntimeContainer>(ids);
+    return containerRuntime.inspect<RuntimeContainer>(ids, {
+      timeoutMs: containerMetadataTimeoutMs,
+    });
   } catch {
     return [];
   }
@@ -5031,6 +5062,8 @@ function numberValue(value: unknown) {
 }
 
 function errorMessage(error: unknown) {
+  if (error instanceof PreviewRuntimeError)
+    return `[${error.code}] ${error.message}\n`;
   return error instanceof Error
     ? `${error.message}\n`
     : "Project setup failed.\n";

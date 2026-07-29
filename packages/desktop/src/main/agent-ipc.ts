@@ -4,11 +4,17 @@ import type {
   StartNewProjectGenerationInput,
 } from "@blame/agent-runtime"
 import { BrowserWindow, ipcMain } from "electron"
+import { randomUUID } from "node:crypto"
 import { createServer } from "node:http"
 import type { AddressInfo } from "node:net"
+import log from "electron-log"
 import { shutdownCodeReviewGraph } from "./code-review-graph"
 import { optimizeDevelopmentAttachments } from "./attachment-ai-context"
-import { resolveAgentWorkspaceInput } from "./cline-backend-resolver"
+import {
+  refreshRuntimeBackendConnection,
+  resolveAgentWorkspaceInput,
+  retryableHubTransportError,
+} from "./cline-backend-resolver"
 import { AgentEventStream } from "./agent-event-stream"
 import { AgentRuntimePool } from "./agent-runtime-pool"
 import {
@@ -16,6 +22,8 @@ import {
   type AgentRuntimeProcessCallbacks,
 } from "./agent-runtime-process-client"
 import { handleAgentHostRequest } from "./agent-runtime-main-host"
+import { getRuntimeStatus } from "./runtime-manager"
+import { runtimeAgentClient } from "./runtime-agent"
 
 type AgentRuntimeRegistration = {
   modulePath: string
@@ -24,6 +32,9 @@ type AgentRuntimeRegistration = {
 }
 
 let runtime: AgentRuntimePool | undefined
+let runtimePrewarmPromise: Promise<boolean> | undefined
+const runtimePrewarmWorkspace =
+  "/home/blame/.local/share/blame/runtime/worktrees/.prewarm"
 
 export function registerAgentIpcHandlers(input: AgentRuntimeRegistration) {
   runtime ??= createAgentRuntimePool(input)
@@ -34,6 +45,62 @@ export function registerAgentIpcHandlers(input: AgentRuntimeRegistration) {
   registerSessionEventIpcHandlers()
   registerAnalysisWorkflowIpcHandlers()
   registerDeliveryWorkflowIpcHandlers()
+}
+
+export function prewarmAgentRuntime(runtimeAlreadyReady = false) {
+  if (process.platform !== "darwin") return Promise.resolve(false)
+  if (runtimePrewarmPromise) return runtimePrewarmPromise
+  const startedAt = Date.now()
+  const prewarm = prewarmMacosAgentRuntime(runtimeAlreadyReady)
+    .then((ready) => {
+      if (ready) {
+        log.info(
+          `Agent runtime prewarm completed in ${Date.now() - startedAt}ms`
+        )
+      }
+      return ready
+    })
+    .catch((error) => {
+      log.warn("Agent runtime prewarm failed", error)
+      return false
+    })
+  runtimePrewarmPromise = prewarm
+  void prewarm.then((ready) => {
+    if (!ready && runtimePrewarmPromise === prewarm) {
+      runtimePrewarmPromise = undefined
+    }
+  })
+  return prewarm
+}
+
+async function prewarmMacosAgentRuntime(runtimeAlreadyReady: boolean) {
+  const report = runtimeAlreadyReady ? undefined : await getRuntimeStatus()
+  if (report && report.status !== "ready") return false
+  const client = runtimeAgentClient()
+  await client.exec({
+    args: ["-p", runtimePrewarmWorkspace],
+    command: "mkdir",
+    user: "blame",
+  })
+  const workspace = await resolveAgentWorkspaceInput(
+    {
+      cwd: runtimePrewarmWorkspace,
+      workspaceRoot: runtimePrewarmWorkspace,
+    },
+    {
+      agentClient: client,
+      ensureReady: async () =>
+        report ?? {
+          issues: [],
+          platform: "darwin",
+          runtime: "BlameRuntime",
+          status: "ready",
+        },
+      platform: "darwin",
+    }
+  )
+  await agentRuntime().run("runtime.prewarm", workspace)
+  return true
 }
 
 function registerProviderIpcHandlers() {
@@ -61,10 +128,31 @@ function registerSessionStartIpcHandlers() {
     return session
   })
   ipcMain.handle("agent:sessions:start-development", async (_event, input) => {
-    const session = await agentRuntime().startSession(
-      "sessions.startDevelopment",
-      await optimizeDevelopmentAttachments(await agentWorkspaceInput(input)),
+    const prepared = await optimizeDevelopmentAttachments(
+      await agentWorkspaceInput({
+        ...input,
+        sessionId:
+          typeof input.sessionId === "string" && input.sessionId.trim()
+            ? input.sessionId
+            : `${Date.now()}_${randomUUID().replaceAll("-", "").slice(0, 5)}`,
+      }),
     )
+    let session
+    try {
+      session = await agentRuntime().startSession(
+        "sessions.startDevelopment",
+        prepared,
+      )
+    } catch (error) {
+      if (!retryableHubTransportError(error)) throw error
+      log.warn(
+        "Cline hub connection closed during session start; refreshing the runtime backend and retrying once",
+      )
+      session = await agentRuntime().startSession(
+        "sessions.startDevelopment",
+        refreshRuntimeBackendConnection(await agentWorkspaceInput(prepared)),
+      )
+    }
     eventStream.beginSession(session.sessionId)
     return session
   })

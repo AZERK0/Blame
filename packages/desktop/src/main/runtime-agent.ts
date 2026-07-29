@@ -33,6 +33,8 @@ type PendingRequest = {
   timer?: NodeJS.Timeout;
 };
 
+class RuntimeAgentTransportError extends Error {}
+
 type AgentExecInput = {
   args: string[];
   command: string;
@@ -105,7 +107,11 @@ export class RuntimeAgentClient {
   }
 
   async exec(input: AgentExecInput): Promise<AgentExecResult> {
-    const result = await this.request("exec", input, input.timeoutMs);
+    const result = await this.request(
+      "exec",
+      input,
+      input.timeoutMs ? input.timeoutMs + 2_000 : undefined,
+    );
     return result as AgentExecResult;
   }
 
@@ -137,7 +143,11 @@ export class RuntimeAgentClient {
   }
 
   async clineHubEnsure(): Promise<AgentClineHubResult> {
-    const result = await this.request("clineHubEnsure", {}, 90_000);
+    const result = await this.requestWithTransportRetry(
+      "clineHubEnsure",
+      {},
+      90_000,
+    );
     return result as AgentClineHubResult;
   }
 
@@ -153,6 +163,20 @@ export class RuntimeAgentClient {
 
   async kill(processId: string) {
     await this.request("kill", { processId }, 5_000);
+  }
+
+  private async requestWithTransportRetry(
+    method: string,
+    params: Record<string, unknown>,
+    timeoutMs: number,
+  ) {
+    try {
+      return await this.request(method, params, timeoutMs);
+    } catch (error) {
+      if (!(error instanceof RuntimeAgentTransportError)) throw error;
+      log.warn(`Runtime agent transport interrupted during ${method}; retrying`);
+      return this.request(method, params, timeoutMs);
+    }
   }
 
   private request(
@@ -200,14 +224,20 @@ export class RuntimeAgentClient {
       log.error(`Runtime agent stderr: ${data.toString()}`);
     });
     child.once("exit", (code, signal) => {
+      if (this.process !== child) return;
       log.error(
         `Runtime agent process exited with code: ${code}, signal: ${signal}`,
       );
-      this.rejectPending("Runtime agent exited");
+      this.process = undefined;
+      this.rejectPending(
+        new RuntimeAgentTransportError("Runtime agent exited"),
+      );
     });
     child.once("error", (error) => {
+      if (this.process !== child) return;
       log.error(`Runtime agent process error: ${error.message}`);
-      this.rejectPending(error.message);
+      this.process = undefined;
+      this.rejectPending(new RuntimeAgentTransportError(error.message));
     });
     return child;
   }
@@ -264,17 +294,16 @@ export class RuntimeAgentClient {
     }
   }
 
-  private rejectPending(message: string) {
+  private rejectPending(error: Error) {
     for (const [id, pending] of this.pending) {
       this.pending.delete(id);
       if (pending.timer) clearTimeout(pending.timer);
-      pending.reject(new Error(message));
+      pending.reject(error);
     }
     for (const [id, child] of this.streams) {
       this.streams.delete(id);
       child.finish(1);
     }
-    this.process = undefined;
   }
 }
 

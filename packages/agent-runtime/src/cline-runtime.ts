@@ -117,6 +117,7 @@ import type {
   AgentBackendConfig,
   AgentContextCompressionMode,
   AgentEvent,
+  AgentRuntimePrewarmInput,
   AgentRuntimeEvents,
   AgentUsageSummary,
   AnalyzeProjectCodePracticesInput,
@@ -190,6 +191,7 @@ const runtimeArtifactPathspecs = runtimeArtifactPaths.map(
 const productionLogger = createProductionLogger();
 const blameTelemetry = getBlameTelemetry();
 const openAICompatibleProviderID = "openai-compatible";
+const runtimePrewarmSessionId = "blame-runtime-prewarm";
 
 type MergeConflictRuntimeInput =
   | ApproveAndMergeInput
@@ -323,6 +325,7 @@ type DevelopmentPromptInput = Pick<
 
 type RuntimeOptions = {
   codeReviewGraph?: CodeReviewGraphProvider;
+  createCore?(backend?: AgentBackendConfig): Promise<ClineCore>;
   openExternalUrl?(url: string): void;
   git?(cwd: string, args: string[]): Promise<string>;
   previewDevtools?(
@@ -408,6 +411,9 @@ export class BlameAgentRuntime {
       deleteProviderCredential(connection, { id }),
     loginOAuth: (input: LoginOAuthProviderInput) => this.loginOAuth(input),
   };
+
+  prewarm = (input: AgentRuntimePrewarmInput) =>
+    this.prewarmRuntimeBackend(input);
 
   sessions = {
     start: (input: StartSessionInput) => this.startSession(input),
@@ -496,6 +502,7 @@ export class BlameAgentRuntime {
   }
 
   private async createCore(backend?: AgentBackendConfig) {
+    if (this.options.createCore) return this.options.createCore(backend);
     const module = await import("@cline/sdk");
     return module.ClineCore.create({
       ...coreBackendOptions(backend),
@@ -508,6 +515,39 @@ export class BlameAgentRuntime {
       fetch: createProviderCompatibleFetch(),
       logger: productionLogger,
     });
+  }
+
+  private async prewarmRuntimeBackend(input: AgentRuntimePrewarmInput) {
+    if (input.backend.mode !== "remote") return;
+    const cline = await this.core(input.backend);
+    try {
+      await cline.start({
+        config: {
+          apiKey: "blame-runtime-prewarm",
+          checkpoint: { enabled: false },
+          cwd: input.cwd,
+          enableAgentTeams: false,
+          enableSpawnAgent: true,
+          enableTools: true,
+          maxIterations: 1,
+          mode: "act",
+          modelId: "gpt-4.1",
+          providerId: "openai-native",
+          sessionId: runtimePrewarmSessionId,
+          systemPrompt:
+            "Initialize the Cline runtime without sending a prompt.",
+          workspaceRoot: input.workspaceRoot,
+        },
+        interactive: true,
+        source: "blame-runtime-prewarm",
+        toolPolicies: toolPolicies(true),
+      });
+    } finally {
+      await cline
+        .abort(runtimePrewarmSessionId, "Blame runtime prewarm complete")
+        .catch(() => undefined);
+      await cline.delete(runtimePrewarmSessionId).catch(() => undefined);
+    }
   }
 
   private async sessionCore(sessionId: string) {
@@ -2379,7 +2419,7 @@ export class BlameAgentRuntime {
       disableMcpSettingsTools: input.disableMcpSettingsTools,
       autoApproveWriteTools: true,
       autoSendPrompt: input.autoSendPrompt !== false,
-      sessionId: initialMessages?.length ? resumeSessionId : undefined,
+      sessionId: initialMessages?.length ? resumeSessionId : input.sessionId,
       initialMessages,
       mode: "act",
       maxIterations: input.maxIterations ?? developmentMaxIterations(),

@@ -113,6 +113,18 @@ export function runtimeManagedPath(
   );
 }
 
+export function runtimeVmInternalPath(
+  path: string,
+  platform: NodeJS.Platform = process.platform,
+) {
+  if (platform !== "darwin" && platform !== "win32") return false;
+  const normalized = normalizedRuntimePath(path);
+  return (
+    normalized === vmRuntimeWorktreeRoot ||
+    normalized.startsWith(`${vmRuntimeWorktreeRoot}/`)
+  );
+}
+
 export function resolveWorkspacePath(path: string) {
   if (runtimePathLike(path)) return normalizedRuntimePath(path);
   return resolve(path);
@@ -574,26 +586,14 @@ function platformWorktreeRoot(
   platform: NodeJS.Platform = process.platform,
   env: NodeJS.ProcessEnv = process.env,
 ) {
-  if (platform === "win32") return vmRuntimeWorktreeRoot;
-  if (platform === "darwin") return macosHostWorktreeRoot(env);
+  if (platform === "darwin" || platform === "win32")
+    return vmRuntimeWorktreeRoot;
   const home = env.HOME || homedir() || "/home/blame";
   return posix.join(
     home.replace(/\\/g, "/"),
     ".local",
     "share",
     "blame",
-    "runtime",
-    "worktrees",
-  );
-}
-
-function macosHostWorktreeRoot(env: NodeJS.ProcessEnv = process.env) {
-  const home = env.HOME || homedir() || "/Users/blame";
-  return posix.join(
-    home.replace(/\\/g, "/"),
-    "Library",
-    "Application Support",
-    "Blame",
     "runtime",
     "worktrees",
   );

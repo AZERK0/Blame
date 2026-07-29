@@ -44,6 +44,12 @@ export type AgentBackendConfig = {
   workspaceRoot?: string;
 };
 
+export type AgentRuntimePrewarmInput = {
+  backend: AgentBackendConfig;
+  cwd: string;
+  workspaceRoot: string;
+};
+
 export type BlameProvider = {
   id: string;
   name: string;
@@ -179,6 +185,7 @@ export type StartDevelopmentSessionInput = {
   feedbackCodeSelectionAttachments?: CodeSelectionAttachment[];
   feedbackFileAttachments?: FileAttachment[];
   resumeSessionId?: string | null;
+  sessionId?: string;
   cwd: string;
   workspaceRoot: string;
   previewDevtoolsScope?: string;

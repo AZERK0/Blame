@@ -191,6 +191,7 @@ import json
 import multiprocessing
 import os
 import pwd
+import signal
 import subprocess
 import sys
 import threading
@@ -218,6 +219,7 @@ json_worker_count = max(1, min(2, os.cpu_count() or 1))
 large_json_threshold = 64 * 1024
 ignored_env_directories = {".git", ".blame", "build", "coverage", "dist", "node_modules", "out"}
 env_template_suffixes = (".example", ".sample", ".template")
+runtime_agent_version = "4"
 
 def serialize_json_line(value):
     return json.dumps(value, separators=(",", ":")) + "\n"
@@ -371,6 +373,37 @@ def wait_process(process_id, process):
         processes.pop(process_id, None)
     write({"event": "spawn", "processId": process_id, "type": "exit", "code": code})
 
+def terminate_process(process):
+    if process.poll() is not None:
+        return
+    try:
+        os.killpg(process.pid, signal.SIGTERM)
+    except ProcessLookupError:
+        return
+    except Exception:
+        process.terminate()
+    try:
+        process.wait(timeout=2)
+        return
+    except subprocess.TimeoutExpired:
+        pass
+    try:
+        os.killpg(process.pid, signal.SIGKILL)
+    except ProcessLookupError:
+        return
+    except Exception:
+        process.kill()
+    try:
+        process.wait(timeout=2)
+    except subprocess.TimeoutExpired:
+        pass
+
+def cleanup_processes():
+    with processes_lock:
+        active = list(processes.values())
+    for process in active:
+        terminate_process(process)
+
 def run_spawn(params):
     command, args = prepare_command(params)
     account = target_user(command_user(params))
@@ -383,6 +416,7 @@ def run_spawn(params):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         preexec_fn=demote(account),
+        start_new_session=True,
     )
     process_id = uuid.uuid4().hex
     with processes_lock:
@@ -397,7 +431,7 @@ def run_kill(params):
     with processes_lock:
         process = processes.get(process_id)
     if process and process.poll() is None:
-        process.terminate()
+        terminate_process(process)
     return {"stopped": bool(process)}
 
 def runtime_env_file(name):
@@ -512,21 +546,27 @@ def run_cline_hub_ensure(params):
         hub_host = "127.0.0.1"
 
     # Try to reuse an existing healthy hub running inside WSL2
-    discovery_dir = None
+    discovery_root = None
     try:
         blame_account = pwd.getpwnam("blame")
-        discovery_dir = os.path.join(blame_account.pw_dir, ".cline", "data", "locks", "hub", "owners")
+        discovery_root = os.path.join(blame_account.pw_dir, ".cline", "data", "locks", "hub")
     except Exception:
         pass
 
     import time
 
     reused = False
-    if discovery_dir and os.path.exists(discovery_dir):
-        try:
-            files = [f for f in os.listdir(discovery_dir) if f.endswith(".json")]
-            for filename in files:
-                filepath = os.path.join(discovery_dir, filename)
+    if discovery_root:
+        discovery_files = [os.path.join(discovery_root, "production.json")]
+        owners_dir = os.path.join(discovery_root, "owners")
+        if os.path.isdir(owners_dir):
+            discovery_files.extend(
+                os.path.join(owners_dir, filename)
+                for filename in os.listdir(owners_dir)
+                if filename.endswith(".json")
+            )
+        for filepath in discovery_files:
+            try:
                 with open(filepath, "r", encoding="utf-8") as f:
                     data = json.load(f)
                 pid = data.get("pid")
@@ -551,8 +591,8 @@ def run_cline_hub_ensure(params):
                         }
                         reused = True
                         break
-        except Exception:
-            pass
+            except Exception:
+                continue
 
     if reused:
         return hub_result_cache
@@ -562,11 +602,16 @@ def run_cline_hub_ensure(params):
         subprocess.run(["fuser", "-k", "25463/tcp"], stdin=subprocess.DEVNULL, capture_output=True)
     except Exception:
         pass
-    if discovery_dir and os.path.exists(discovery_dir):
+    if discovery_root:
         try:
-            for f in os.listdir(discovery_dir):
-                if f.endswith(".json"):
-                    os.remove(os.path.join(discovery_dir, f))
+            production_file = os.path.join(discovery_root, "production.json")
+            if os.path.exists(production_file):
+                os.remove(production_file)
+            owners_dir = os.path.join(discovery_root, "owners")
+            if os.path.isdir(owners_dir):
+                for filename in os.listdir(owners_dir):
+                    if filename.endswith(".json"):
+                        os.remove(os.path.join(owners_dir, filename))
         except Exception:
             pass
 
@@ -614,6 +659,7 @@ process.stdout.write(JSON.stringify({{
         stderr=log_file if log_file is not None else subprocess.DEVNULL,
         text=True,
         preexec_fn=demote(target_user("blame")),
+        start_new_session=True,
     )
     if log_file is not None:
         log_file.close()
@@ -703,18 +749,23 @@ def handle(request):
         write({"id": request_id, "ok": False, "error": {"message": str(error)}})
 
 def serve():
-    for line in sys.stdin:
-        try:
-            req = json.loads(line)
-            threading.Thread(target=handle, args=(req,), daemon=True).start()
-        except Exception as error:
-            write({"id": 0, "ok": False, "error": {"message": str(error)}})
+    try:
+        for line in sys.stdin:
+            try:
+                req = json.loads(line)
+                threading.Thread(target=handle, args=(req,), daemon=True).start()
+            except Exception as error:
+                write({"id": 0, "ok": False, "error": {"message": str(error)}})
+    finally:
+        cleanup_processes()
 
 def main():
     try:
         command = sys.argv[1] if len(sys.argv) > 1 else "status"
         if command == "status":
             print("ready")
+        elif command == "agent-version":
+            print(runtime_agent_version)
         elif command == "version":
             print(version())
         elif command == "serve":

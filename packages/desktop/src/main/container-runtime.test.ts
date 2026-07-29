@@ -4,6 +4,7 @@ import {
   containerRuntimeEnvironment,
   parseInspectOutput,
   runtimeCommand,
+  runtimeName,
 } from "./container-runtime.ts";
 
 test("routes Linux runtime commands to native nerdctl", () => {
@@ -40,7 +41,10 @@ test("preserves runtime environment values", () => {
   });
 
   assert.equal(environment.CONTAINERD_NAMESPACE, "blame");
-  assert.equal(environment.BLAME_CONTAINER_RUNTIME, "blame-native");
+  assert.equal(
+    environment.BLAME_CONTAINER_RUNTIME,
+    runtimeName(process.platform),
+  );
 });
 
 test("parses inspect arrays and single objects", () => {

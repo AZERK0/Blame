@@ -22,6 +22,7 @@ export type ContainerRuntimeCommand =
 export type ContainerRuntimeExecOptions = {
   cwd?: string;
   env?: NodeJS.ProcessEnv;
+  timeoutMs?: number;
 };
 
 export type ContainerRuntimeResult = {
@@ -152,6 +153,7 @@ async function runRuntimeCommand(
         command: "nerdctl",
         cwd: options.cwd ? runtimeCwdPath(options.cwd, platform) : undefined,
         env,
+        timeoutMs: options.timeoutMs,
         user: "root",
       });
     } catch (error) {
@@ -164,6 +166,7 @@ async function runRuntimeCommand(
   const result = await execFileAsync(executableSpec.command, executableSpec.args, {
     cwd: commandSpec.cwd,
     env,
+    timeout: options.timeoutMs,
   });
   return {
     stdout: String(result.stdout),

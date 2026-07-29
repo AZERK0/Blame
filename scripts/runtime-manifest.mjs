@@ -287,7 +287,7 @@ async function writeMacosTemplate(targetRuntimeRoot, manifest) {
   }
   lines.push('disk: "80GiB"');
   lines.push("mounts:");
-  lines.push('  - location: "~/Library/Application Support/Blame"');
+  lines.push('  - location: "~"');
   lines.push("    writable: true");
   lines.push("containerd:");
   lines.push("  system: false");

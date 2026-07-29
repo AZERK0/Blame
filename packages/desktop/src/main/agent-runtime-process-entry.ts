@@ -151,6 +151,7 @@ function runtimeHandlers(runtime: BlameAgentRuntime) {
     ...providerHandlers(runtime),
     ...sessionHandlers(runtime),
     ...workflowHandlers(runtime),
+    "runtime.prewarm": (input: unknown) => runtime.prewarm(input as never),
     "approvals.resolve": (input) => runtime.approvals.resolve(input as never),
     "telemetry.configure": (input) => configureDesktopTelemetry(input),
     "telemetry.disable": () => disableDesktopTelemetry(),

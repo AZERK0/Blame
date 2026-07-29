@@ -14,7 +14,7 @@ export function setupPath(input: SetupPathInput = {}) {
   const execDir = dirnameForPlatform(execPath, platform);
   return uniquePaths([
     execDir,
-    ...runtimeToolPaths(execDir, platform),
+    ...runtimeToolPaths(env, execDir, platform),
     ...windowsRuntimeToolPaths(env, execDir, platform),
     ...windowsPackageManagerPaths(env, platform),
     ...nodeVersionManagerPaths(env),
@@ -50,9 +50,14 @@ export function runtimeToolScript(command: string, input: SetupPathInput = {}) {
     .find((path) => existsSync(path));
 }
 
-function runtimeToolPaths(execDir: string, platform: NodeJS.Platform) {
+function runtimeToolPaths(
+  env: NodeJS.ProcessEnv,
+  execDir: string,
+  platform: NodeJS.Platform,
+) {
   if (platform !== "darwin") return [];
   return [
+    env.BLAME_RUNTIME_BIN_DIR,
     join(dirname(execDir), "Resources", "runtime", "macos", "bin"),
     join(execDir, "resources", "runtime", "macos", "bin"),
     join(execDir, "runtime", "macos", "bin"),

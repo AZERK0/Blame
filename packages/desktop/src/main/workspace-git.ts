@@ -1,11 +1,12 @@
 import { execFile } from "node:child_process";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, realpath, rm } from "node:fs/promises";
 import { constants as osConstants, setPriority, tmpdir } from "node:os";
 import { basename, join, posix, resolve } from "node:path";
 import { promisify } from "node:util";
 import { withoutTelemetryEnvironment } from "@blame/telemetry";
 import { pLimit } from "./concurrency.ts";
 import { workspaceDiffStats } from "./workspace-diff-stats.ts";
+import { runtimeManagedPath } from "./workspace-runtime.ts";
 
 const execFileAsync = promisify(execFile);
 const maxBuffer = 50 * 1024 * 1024;
@@ -207,9 +208,23 @@ export async function isGitRepository(root: string) {
   const cwd = resolve(root);
   try {
     const { stdout } = await runGit(cwd, ["rev-parse", "--show-toplevel"]);
-    return resolve(stdout.trim()) === cwd;
+    const [gitRoot, workspaceRoot] = await Promise.all([
+      canonicalWorkspacePath(stdout.trim()),
+      canonicalWorkspacePath(cwd),
+    ]);
+    return gitRoot === workspaceRoot;
   } catch {
     return false;
+  }
+}
+
+async function canonicalWorkspacePath(path: string) {
+  const resolved = resolve(path);
+  if (runtimeManagedPath(resolved)) return resolved;
+  try {
+    return await realpath(resolved);
+  } catch {
+    return resolved;
   }
 }
 

@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process"
+import { createHash, randomUUID } from "node:crypto"
 import { withoutTelemetryEnvironment } from "@blame/telemetry"
 import type { AgentBackendConfig } from "@blame/agent-runtime"
 import { setupPath } from "./host-tool-path.ts"
@@ -37,15 +38,16 @@ export async function resolveAgentWorkspaceInput<T extends Record<string, unknow
     runtimeEnvironment(options, platform)
   )
   const hub = await ensureRuntimeClineHub(options, platform)
+  const identity = runtimeHubBackendIdentity(platform, hub)
   return {
     ...runtimeNativeWorkspaceInput(input),
     backend: {
       mode: "remote",
-      endpoint: hub.url,
-      authToken: hub.authToken,
+      endpoint: identity.endpoint,
+      authToken: identity.authToken,
       cwd: stringField(input.cwd),
       workspaceRoot: stringField(input.workspaceRoot),
-      key: `runtime:${platform}:${hub.url}`,
+      key: identity.key,
     },
   }
 }
@@ -113,8 +115,7 @@ async function ensureRuntimeClineHub(
     if (!hub.url) throw new Error("Runtime Cline hub did not return a URL.")
     if ((platform === "win32" || platform === "darwin") && hub.url) {
       try {
-        const httpUrl = hub.url.replace(/^ws:\/\//i, "http://").replace(/\/hub\?.*$/, "/health")
-        await preWarmRoute(httpUrl, platform)
+        await preWarmRoute(runtimeHubHealthUrl(hub.url), platform)
       } catch (error) {
         // Ignore pre-warm errors
       }
@@ -122,6 +123,76 @@ async function ensureRuntimeClineHub(
     return hub
   } catch (error) {
     throw runtimeBackendUnavailable(error)
+  }
+}
+
+export function runtimeHubHealthUrl(url: string) {
+  const parsed = new URL(url)
+  parsed.protocol = parsed.protocol === "wss:" ? "https:" : "http:"
+  parsed.pathname = parsed.pathname.replace(/\/hub\/?$/, "/health")
+  parsed.search = ""
+  parsed.hash = ""
+  return parsed.toString()
+}
+
+export function runtimeHubBackendIdentity(
+  platform: NodeJS.Platform,
+  hub: { authToken?: string; url?: string },
+) {
+  if (!hub.url) throw new Error("Runtime Cline hub did not return a URL.")
+  const endpoint = new URL(hub.url)
+  const authToken =
+    hub.authToken ?? endpoint.searchParams.get("authToken") ?? undefined
+  endpoint.searchParams.delete("authToken")
+  endpoint.hash = ""
+  const normalizedEndpoint = endpoint.toString()
+  const authFingerprint = createHash("sha256")
+    .update(authToken ?? "")
+    .digest("hex")
+    .slice(0, 16)
+  return {
+    authToken,
+    endpoint: normalizedEndpoint,
+    key: `runtime:${platform}:${normalizedEndpoint}:auth:${authFingerprint}`,
+  }
+}
+
+export function retryableHubTransportError(error: unknown) {
+  const name =
+    error instanceof Error
+      ? error.name
+      : typeof error === "object" && error && "name" in error
+        ? String(error.name)
+        : ""
+  const message = errorMessage(error)
+  return (
+    name === "HubTransportError" &&
+    (/hub connection closed/i.test(message) ||
+      /hub_connection_closed/i.test(message) ||
+      /\bcode=1006\b/i.test(message))
+  )
+}
+
+export function refreshRuntimeBackendConnection<
+  T extends Record<string, unknown>,
+>(input: T, connectionId = randomUUID()) {
+  const backend = input.backend
+  if (
+    !backend ||
+    typeof backend !== "object" ||
+    !("mode" in backend) ||
+    backend.mode !== "remote" ||
+    !("key" in backend) ||
+    typeof backend.key !== "string"
+  ) {
+    return input
+  }
+  return {
+    ...input,
+    backend: {
+      ...backend,
+      key: `${backend.key}:connection:${connectionId}`,
+    },
   }
 }
 
@@ -134,18 +205,28 @@ function preWarmRoute(url: string, platform: NodeJS.Platform): Promise<void> {
   // spawn with stdio:'ignore' sets bInheritHandles=FALSE so curl.exe never
   // acquires any of the parent's pipe handles.
   const bin = platform === "win32" ? "curl.exe" : "curl"
+  const maxTimeSeconds = platform === "win32" ? "35" : "2"
+  const connectTimeoutSeconds = platform === "win32" ? "35" : "1"
+  const killTimeoutMs = platform === "win32" ? 40_000 : 3_000
   return new Promise<void>((resolve) => {
     try {
       const child = spawn(
         bin,
-        ["--silent", "--max-time", "35", "--connect-timeout", "35", url],
+        [
+          "--silent",
+          "--max-time",
+          maxTimeSeconds,
+          "--connect-timeout",
+          connectTimeoutSeconds,
+          url,
+        ],
         {
           env: withoutTelemetryEnvironment(process.env),
           stdio: "ignore",
           windowsHide: true,
         }
       )
-      const timer = setTimeout(() => { child.kill(); resolve() }, 40_000)
+      const timer = setTimeout(() => { child.kill(); resolve() }, killTimeoutMs)
       child.on("close", () => { clearTimeout(timer); resolve() })
       child.on("error", () => { clearTimeout(timer); resolve() })
     } catch {

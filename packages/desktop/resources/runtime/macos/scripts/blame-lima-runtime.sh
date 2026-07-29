@@ -8,6 +8,8 @@ runtime_version="$(sed -n 's/.*"runtimeVersion"[[:space:]]*:[[:space:]]*"\([^"]*
 runtime_version="${runtime_version:-1}"
 manifest_cline_sdk_version="$(sed -n 's/.*"clineSdkVersion"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$manifest_path" | head -n 1)"
 cline_sdk_version="${BLAME_CLINE_SDK_VERSION:-${manifest_cline_sdk_version:-0.0.55}}"
+runtime_agent_version="$(sed -n 's/.*"runtimeAgentVersion"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$manifest_path" | head -n 1)"
+runtime_agent_version="${runtime_agent_version:-1}"
 lima_state_home="${LIMA_HOME:-$HOME/Library/Application Support/Blame/runtime/lima}"
 lima_install_home="${BLAME_LIMA_INSTALL_DIR:-$HOME/Library/Application Support/Blame/runtime/tools/lima}"
 lima_action="Install Blame again with its verified Lima runtime bundle, then run Blame runtime setup again."
@@ -50,29 +52,32 @@ write_status() {
 }
 
 limactl_path() {
-  if [ -n "${BLAME_LIMA_BIN:-}" ] && [ -x "$BLAME_LIMA_BIN" ]; then
-    printf '%s' "$BLAME_LIMA_BIN"
-    return
+  for candidate in \
+    "${BLAME_LIMA_BIN:-}" \
+    "${BLAME_LIMA_BIN_DIR:-}/limactl" \
+    "${BLAME_LIMA_BUNDLE_DIR:-}/bin/limactl" \
+    "$runtime_home/lima/bundle/bin/limactl" \
+    "$lima_install_home/bin/limactl" \
+    "$runtime_home/lima/bin/limactl"
+  do
+    if usable_lima_bin "$candidate"; then
+      printf '%s' "$candidate"
+      return
+    fi
+  done
+}
+
+usable_lima_bin() {
+  candidate="$1"
+  if [ -z "$candidate" ] || [ ! -x "$candidate" ]; then
+    return 1
   fi
-  if [ -n "${BLAME_LIMA_BIN_DIR:-}" ] && [ -x "$BLAME_LIMA_BIN_DIR/limactl" ]; then
-    printf '%s' "$BLAME_LIMA_BIN_DIR/limactl"
-    return
-  fi
-  if [ -n "${BLAME_LIMA_BUNDLE_DIR:-}" ] && [ -x "$BLAME_LIMA_BUNDLE_DIR/bin/limactl" ]; then
-    printf '%s' "$BLAME_LIMA_BUNDLE_DIR/bin/limactl"
-    return
-  fi
-  if [ -x "$runtime_home/lima/bundle/bin/limactl" ]; then
-    printf '%s' "$runtime_home/lima/bundle/bin/limactl"
-    return
-  fi
-  if [ -x "$lima_install_home/bin/limactl" ]; then
-    printf '%s' "$lima_install_home/bin/limactl"
-    return
-  fi
-  if [ -x "$runtime_home/lima/bin/limactl" ]; then
-    printf '%s' "$runtime_home/lima/bin/limactl"
-  fi
+  LIMA_HOME="$lima_state_home" \
+    PATH="$(dirname "$candidate"):$PATH" \
+    "$candidate" --version >/dev/null 2>&1 &&
+    LIMA_HOME="$lima_state_home" \
+      PATH="$(dirname "$candidate"):$PATH" \
+      "$candidate" list --json >/dev/null 2>&1
 }
 
 with_lima_environment() {
@@ -114,10 +119,11 @@ test_vm_running() {
 }
 
 add_vm_checks() {
-  output="$(with_lima_environment shell "$vm_name" sudo -n sh -s -- "$HOME/Library/Application Support/Blame" "$cline_sdk_version" "$runtime_version" <<'EOF' 2>/dev/null || true
+  output="$(with_lima_environment shell "$vm_name" sudo -n sh -s -- "$HOME/Library/Application Support/Blame" "$cline_sdk_version" "$runtime_version" "$runtime_agent_version" <<'EOF' 2>/dev/null || true
 host_mount="$1"
 cline_sdk_version="$2"
 runtime_version="$3"
+runtime_agent_version="$4"
 check() {
   name="$1"
   shift
@@ -153,6 +159,7 @@ NODE
 }
 check host-home test -d "$host_mount"
 check agent test -x /usr/local/bin/blame-runtime-agent
+check agent-version sh -lc 'test "$(blame-runtime-agent agent-version 2>/dev/null)" = "$1"' sh "$runtime_agent_version"
 check runtime-version sh -lc 'test "$(cat /etc/blame-runtime-version 2>/dev/null)" = "$1"' sh "$runtime_version"
 check containerd sh -lc 'command -v containerd >/dev/null 2>&1 && (pgrep -x containerd >/dev/null 2>&1 || containerd --version >/dev/null 2>&1)'
 check nerdctl sh -lc 'command -v nerdctl >/dev/null 2>&1'
@@ -162,7 +169,7 @@ check cline-sdk valid_cline_sdk_install
 EOF
 )"
   if [ -z "$output" ]; then
-    for name in agent runtime-version containerd nerdctl nerdctl-compose git cline-sdk; do
+    for name in agent agent-version runtime-version containerd nerdctl nerdctl-compose git cline-sdk; do
       append_check "$(new_check "$name" "missing" "$repair_action")"
     done
     return

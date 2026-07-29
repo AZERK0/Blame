@@ -22,6 +22,7 @@ export type {
   AgentApprovalRequest,
   AgentBackendConfig,
   AgentBackendMode,
+  AgentRuntimePrewarmInput,
   AgentRuntimeEvents,
   AgentSessionRecord,
   AgentUsageSummary,

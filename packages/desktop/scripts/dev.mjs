@@ -1,9 +1,30 @@
 #!/usr/bin/env node
 import { spawn } from "node:child_process"
+import { dirname, join } from "node:path"
+import { fileURLToPath } from "node:url"
 
 const forceKillDelayMs = 2_000
+const desktopDir = dirname(dirname(fileURLToPath(import.meta.url)))
+const runtimeEnvironment =
+  process.platform === "darwin"
+    ? {
+        BLAME_RUNTIME_BIN_DIR:
+          process.env.BLAME_RUNTIME_BIN_DIR ??
+          join(desktopDir, "resources", "runtime", "macos", "bin"),
+      }
+    : process.platform === "win32"
+      ? {
+          BLAME_RUNTIME_BIN_DIR:
+            process.env.BLAME_RUNTIME_BIN_DIR ??
+            join(desktopDir, "resources", "runtime", "windows", "bin"),
+          BLAME_RUNTIME_SCRIPT_DIR:
+            process.env.BLAME_RUNTIME_SCRIPT_DIR ??
+            join(desktopDir, "resources", "runtime", "windows", "scripts"),
+        }
+      : {}
 const child = spawn("pnpm", ["exec", "electron-vite", "dev"], {
   detached: process.platform !== "win32",
+  env: { ...process.env, ...runtimeEnvironment },
   stdio: "inherit",
 })
 
