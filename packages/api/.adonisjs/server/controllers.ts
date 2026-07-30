@@ -11,6 +11,7 @@ export const controllers = {
   ConsumerContracts: () => import('#controllers/consumer_contracts_controller'),
   DesktopAuth: () => import('#controllers/desktop_auth_controller'),
   FileAttachments: () => import('#controllers/file_attachments_controller'),
+  ModelCatalog: () => import('#controllers/model_catalog_controller'),
   NewAccount: () => import('#controllers/new_account_controller'),
   Profile: () => import('#controllers/profile_controller'),
   ProjectCodePracticeAnalyses: () => import('#controllers/project_code_practice_analyses_controller'),

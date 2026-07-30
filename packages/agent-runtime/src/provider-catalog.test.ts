@@ -19,4 +19,6 @@ test("excludes providers that require external CLI authentication", async () => 
   assert.equal(providerIds.has("claude-code"), false);
   assert.equal(providerIds.has("openai-codex"), true);
   assert.equal(providerIds.has("anthropic"), true);
+  const codex = providers.find((provider) => provider.id === "openai-codex");
+  assert.equal(codex?.models["gpt-5.6-sol"]?.name, "GPT-5.6 Sol");
 });

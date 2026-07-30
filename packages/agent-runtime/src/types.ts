@@ -18,11 +18,49 @@ export type BlameModel = {
   contextWindow?: number;
   maxTokens?: number;
   capabilities?: string[];
+  releaseDate?: string;
+  canonicalModelId?: string;
+  matchConfidence?: number;
+  benchmark?: ModelBenchmark;
   cost: {
-    input: number;
-    output: number;
+    input: number | null;
+    output: number | null;
+    cacheRead?: number | null;
+    cacheWrite?: number | null;
   };
   variants?: Record<string, unknown>;
+};
+
+export type ModelBenchmark = {
+  smartScore: number;
+  codingIndex?: number;
+  agenticIndex?: number;
+  intelligenceIndex?: number;
+  designArenaScore?: number;
+};
+
+export type ModelRecommendation = {
+  providerId: string;
+  modelId: string;
+  position: number;
+  segment: "benchmarked" | "unbenchmarked";
+  estimatedCost: number | null;
+  smartScore?: number;
+};
+
+export type ModelRecommendationProfile = {
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  sampleCount: number;
+};
+
+export type ModelRecommendations = {
+  generatedAt: string;
+  benchmarkBoundary: number;
+  all: ModelRecommendation[];
+  byProvider: Record<string, ModelRecommendation[]>;
+  profile: ModelRecommendationProfile;
 };
 
 export type ReasoningEffort = "low" | "medium" | "high" | "xhigh";
@@ -79,6 +117,7 @@ export type ProviderListResponse = {
   connected: string[];
   default: Record<string, string>;
   credentials: ProviderCredentialSummary[];
+  recommendations: ModelRecommendations;
 };
 
 export type SaveProviderCredentialInput = {

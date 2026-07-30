@@ -152,7 +152,7 @@ function serializeModelIds(modelIds: string[] | undefined) {
   return normalized.length ? JSON.stringify(normalized) : null
 }
 
-function credentialModelIds(credential: ProviderCredential) {
+export function credentialModelIds(credential: ProviderCredential) {
   const parsed = parseModelIds(credential.modelIds)
   if (parsed.length) return parsed
   if (credential.providerId === 'openai-compatible' && credential.label !== defaultLabel) {

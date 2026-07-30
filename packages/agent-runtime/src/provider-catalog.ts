@@ -1,7 +1,7 @@
+import { openAICodexPreviewModels } from "@blame/model-catalog";
 import { getAllProviders, getModelsForProvider } from "@cline/llms";
 import type { ModelInfo, ProviderInfo } from "@cline/llms";
 
-import { openAICodexPreviewModels } from "./openai-codex-preview-models.js";
 import type { BlameModel, BlameProvider } from "./types.js";
 
 const externalCliProviderIds = new Set(["claude-code", "openai-codex-cli"]);
@@ -71,9 +71,12 @@ function toBlameModel(modelId: string, model: ModelInfo): BlameModel {
     contextWindow: model.contextWindow,
     maxTokens: model.maxTokens,
     capabilities: model.capabilities,
+    releaseDate: model.releaseDate,
     cost: {
-      input: model.pricing?.input ?? 0,
-      output: model.pricing?.output ?? 0,
+      input: model.pricing?.input ?? null,
+      output: model.pricing?.output ?? null,
+      cacheRead: model.pricing?.cacheRead ?? null,
+      cacheWrite: model.pricing?.cacheWrite ?? null,
     },
     variants,
   };

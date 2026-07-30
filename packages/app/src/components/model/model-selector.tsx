@@ -7,6 +7,7 @@ import * as React from "react"
 import type {
   BlameModel as Model,
   BlameProvider as Provider,
+  ModelRecommendation,
   ProviderCredentialSummary,
   ProviderListResponse,
   ReasoningEffort,
@@ -17,19 +18,8 @@ import {
   ProviderSelectDialog,
 } from "@/components/model/connect-provider-dialog"
 import { ManageModelsDialog } from "@/components/model/manage-models-dialog"
-import {
-  iconNames,
-  type IconName,
-} from "@/components/provider-icons/types"
+import { iconNames, type IconName } from "@/components/provider-icons/types"
 import { Button } from "@/components/ui/button"
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command"
 import {
   Popover,
   PopoverContent,
@@ -38,7 +28,10 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
@@ -62,6 +55,7 @@ const defaultVariant = "default"
 const defaultContextCompressionMode = "cline"
 const defaultCredentialLabel = "default"
 const openAICompatibleProviderID = "openai-compatible"
+const allProvidersValue = "all"
 const providerIconSprite = new URL(
   "../provider-icons/sprite.svg",
   import.meta.url
@@ -92,7 +86,6 @@ export type SelectableModel = Omit<Model, "providerID"> & {
   provider: Provider
   credentialLabel?: string
   credentialDisplayName?: string
-  showCredentialLabel?: boolean
   latest: boolean
 }
 
@@ -105,6 +98,11 @@ export type ModelGroup = {
 type ModelSelectionState = {
   recent: ModelKey[]
   hidden: ModelKey[]
+  accounts: Record<string, string>
+}
+
+export type RecommendedSelectableModel = ModelRecommendation & {
+  model: SelectableModel
 }
 
 export type ModelSelection = ReturnType<typeof useModelSelection>
@@ -164,94 +162,529 @@ function ModelPicker({
   setDialog: (dialog: ModelDialog) => void
 }) {
   const [open, setOpen] = React.useState(false)
+  const [advanced, setAdvanced] = React.useState(false)
+  const [providerID, setProviderID] = React.useState(allProvidersValue)
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className="w-0 min-w-0 flex-1 justify-start"
-              disabled={!selection.serverReady || selection.loading}
-            >
-              <ModelSummary model={selection.currentModel} />
-              <ChevronsUpDownIcon className="shrink-0 text-muted-foreground" />
-            </Button>
-          </PopoverTrigger>
-        </TooltipTrigger>
-        <TooltipContent side="left">Choose model</TooltipContent>
-      </Tooltip>
-      <PopoverContent
-        align="start"
-        side="left"
-        className="h-80 w-80 overflow-hidden p-0"
-        onWheel={(event) => event.stopPropagation()}
-      >
-        <Command className="h-full min-h-0">
-          <CommandInput placeholder="Search models" />
-          <CommandList
-            className="h-[14.75rem] max-h-[14.75rem] min-h-0 overscroll-contain"
-            onWheel={(event) => event.stopPropagation()}
-          >
-            <CommandEmpty>{selection.emptyMessage}</CommandEmpty>
-            {selection.providerGroups.map((group) => (
-              <CommandGroup
-                key={group.provider.id}
-                heading={group.provider.name}
-              >
-                {group.models.map((model) => (
-                  <ModelCommandItem
-                    key={modelReactKey(model)}
-                    model={model}
-                    selected={isModelSelected(selection.currentModel, model)}
-                    onSelect={() => {
-                      void selection.setModel(model)
-                      setOpen(false)
-                    }}
-                  />
-                ))}
-              </CommandGroup>
-            ))}
-          </CommandList>
-          <div className="flex items-center justify-end gap-1 border-t p-1">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="icon-sm"
-                  variant="ghost"
-                  onClick={() => {
-                    setOpen(false)
-                    setDialog({ type: "providers" })
-                  }}
-                >
-                  <PlusIcon />
-                  <span className="sr-only">Connect provider</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Connect provider</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="icon-sm"
-                  variant="ghost"
-                  onClick={() => {
-                    setOpen(false)
-                    setDialog({ type: "manage" })
-                  }}
-                >
-                  <SlidersHorizontalIcon />
-                  <span className="sr-only">Manage models</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Manage models</TooltipContent>
-            </Tooltip>
-          </div>
-        </Command>
-      </PopoverContent>
+      <ModelPickerTrigger selection={selection} />
+      <ModelPickerContent
+        advanced={advanced}
+        providerID={providerID}
+        selection={selection}
+        setAdvanced={setAdvanced}
+        setDialog={setDialog}
+        setOpen={setOpen}
+        setProviderID={setProviderID}
+      />
     </Popover>
   )
+}
+
+function ModelPickerTrigger({ selection }: { selection: ModelSelection }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            className="w-0 min-w-0 flex-1 justify-start"
+            disabled={!selection.serverReady || selection.loading}
+          >
+            <ModelSummary model={selection.currentModel} />
+            <ChevronsUpDownIcon className="shrink-0 text-muted-foreground" />
+          </Button>
+        </PopoverTrigger>
+      </TooltipTrigger>
+      <TooltipContent side="left">Choose model</TooltipContent>
+    </Tooltip>
+  )
+}
+
+type ModelPickerContentProps = {
+  advanced: boolean
+  providerID: string
+  selection: ModelSelection
+  setAdvanced: (value: boolean) => void
+  setDialog: (dialog: ModelDialog) => void
+  setOpen: (value: boolean) => void
+  setProviderID: (value: string) => void
+}
+
+function ModelPickerContent(props: ModelPickerContentProps) {
+  const openDialog = (type: "providers" | "manage") => {
+    props.setOpen(false)
+    props.setDialog({ type })
+  }
+  return (
+    <PopoverContent
+      align="start"
+      side="left"
+      className="w-88 overflow-hidden p-0"
+      onWheel={(event) => event.stopPropagation()}
+    >
+      <ModelPickerPanel {...props} />
+      <ModelPickerFooter
+        onConnect={() => openDialog("providers")}
+        onManage={() => openDialog("manage")}
+      />
+    </PopoverContent>
+  )
+}
+
+type ModelPickerPanelProps = {
+  advanced: boolean
+  providerID: string
+  selection: ModelSelection
+  setAdvanced: (value: boolean) => void
+  setProviderID: (value: string) => void
+}
+
+function ModelPickerPanel({
+  advanced,
+  providerID,
+  selection,
+  setAdvanced,
+  setProviderID,
+}: ModelPickerPanelProps) {
+  return (
+    <div className="space-y-4 p-4">
+      <ProviderFilter
+        providerID={providerID}
+        providers={selection.connectedProviders}
+        onChange={(value) => changeProvider(selection, value, setProviderID)}
+      />
+      {advanced ? (
+        <AdvancedModelPicker providerID={providerID} selection={selection} />
+      ) : (
+        <SmartModelSlider
+          key={`${providerID}:${selection.currentModel?.provider.id}:${selection.currentModel?.id}`}
+          providerID={providerID}
+          selection={selection}
+        />
+      )}
+      <ModelPickerModeToggle advanced={advanced} onChange={setAdvanced} />
+    </div>
+  )
+}
+
+function changeProvider(
+  selection: ModelSelection,
+  providerID: string,
+  setProviderID: (value: string) => void
+) {
+  setProviderID(providerID)
+  selectProviderRecommendation(selection, providerID)
+}
+
+function ModelPickerModeToggle({
+  advanced,
+  onChange,
+}: {
+  advanced: boolean
+  onChange: (value: boolean) => void
+}) {
+  return (
+    <button
+      className="ml-auto block text-xs text-muted-foreground transition-colors hover:text-foreground"
+      type="button"
+      onClick={() => onChange(!advanced)}
+    >
+      {advanced ? "Smart selection" : "Advanced"}
+    </button>
+  )
+}
+
+type ProviderFilterProps = {
+  providerID: string
+  providers: Provider[]
+  onChange: (value: string) => void
+}
+
+function ProviderFilter({
+  providerID,
+  providers,
+  onChange,
+}: ProviderFilterProps) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-sm font-medium">Provider</span>
+      <Select value={providerID} onValueChange={onChange}>
+        <SelectTrigger
+          aria-label="Filter model provider"
+          className="h-7 max-w-48 border-0 bg-transparent px-1.5 shadow-none"
+        >
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent align="start">
+          <SelectItem value={allProvidersValue}>All</SelectItem>
+          {providers.map((provider) => (
+            <SelectItem key={provider.id} value={provider.id}>
+              {provider.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  )
+}
+
+type SmartModelSliderProps = {
+  providerID: string
+  selection: ModelSelection
+}
+
+function SmartModelSlider({ providerID, selection }: SmartModelSliderProps) {
+  const recommendations = selection.recommendedModels(providerID)
+  const [position, setPosition] = React.useState(() =>
+    recommendationPosition(recommendations, selection.currentModel)
+  )
+  const selected = nearestRecommendation(recommendations, position)
+  const boundary = selection.recommendations?.benchmarkBoundary ?? 0.74
+
+  if (!recommendations.length) {
+    return <EmptySmartModelSlider />
+  }
+
+  return (
+    <div className="space-y-3">
+      <SliderLabels
+        boundary={boundary}
+        hasUnbenchmarked={recommendations.some(isUnbenchmarked)}
+      />
+      <SmartSliderInput
+        boundary={boundary}
+        position={position}
+        recommendations={recommendations}
+        select={() => selectRecommendation(selection, selected)}
+        setPosition={setPosition}
+      />
+      <SmartModelSelection selected={selected} selection={selection} />
+    </div>
+  )
+}
+
+function SmartModelSelection({
+  selected,
+  selection,
+}: {
+  selected: RecommendedSelectableModel | undefined
+  selection: ModelSelection
+}) {
+  return (
+    <ModelAccountSelector
+      providerID={selected?.providerId}
+      selection={selection}
+    />
+  )
+}
+
+function EmptySmartModelSlider() {
+  return (
+    <div className="py-8 text-center text-sm text-muted-foreground">
+      No ranked models
+    </div>
+  )
+}
+
+type SmartSliderInputProps = {
+  boundary: number
+  position: number
+  recommendations: RecommendedSelectableModel[]
+  select: () => void
+  setPosition: (position: number) => void
+}
+
+function SmartSliderInput(props: SmartSliderInputProps) {
+  return (
+    <div className="relative">
+      <input
+        aria-label="Model cost and intelligence"
+        className="h-3 w-full cursor-pointer appearance-none rounded-full accent-primary [&::-moz-range-thumb]:size-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-foreground [&::-webkit-slider-thumb]:size-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-foreground"
+        max={1000}
+        min={0}
+        style={{ background: sliderBackground(props.position) }}
+        type="range"
+        value={Math.round(props.position * 1000)}
+        onBlur={props.select}
+        onChange={(event) =>
+          props.setPosition(Number(event.currentTarget.value) / 1000)
+        }
+        onKeyUp={props.select}
+        onPointerUp={props.select}
+      />
+      <SliderMarkers {...props} />
+      <SliderBoundary position={props.boundary} />
+    </div>
+  )
+}
+
+function SliderBoundary({ position }: { position: number }) {
+  return (
+    <span
+      className="pointer-events-none absolute top-1/2 h-5 w-px -translate-y-1/2 bg-background/80"
+      style={{ left: `${position * 100}%` }}
+    />
+  )
+}
+
+function SliderLabels({
+  boundary,
+  hasUnbenchmarked,
+}: {
+  boundary: number
+  hasUnbenchmarked: boolean
+}) {
+  return (
+    <div className="relative h-7 text-xs text-muted-foreground">
+      <span className="absolute bottom-0 left-0">Cheaper</span>
+      <span
+        className="absolute bottom-0"
+        style={{ right: `calc(${(1 - boundary) * 100}% + 0.5rem)` }}
+      >
+        Smarter
+      </span>
+      {hasUnbenchmarked ? (
+        <span className="absolute -top-1 right-0 flex flex-col text-right leading-3">
+          <span>New</span>
+          <span>No benchmark</span>
+        </span>
+      ) : null}
+    </div>
+  )
+}
+
+function SliderMarkers({
+  position,
+  recommendations,
+}: {
+  position: number
+  recommendations: RecommendedSelectableModel[]
+}) {
+  return recommendations.map((recommendation) =>
+    Math.abs(recommendation.position - position) < 0.025 ? null : (
+      <span
+        key={`${recommendation.providerId}:${recommendation.modelId}`}
+        className="pointer-events-none absolute top-1/2 size-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground/25"
+        style={{ left: `${recommendation.position * 100}%` }}
+      />
+    )
+  )
+}
+
+function sliderBackground(position: number) {
+  const progress = `${position * 100}%`
+  return `linear-gradient(to right, var(--primary) 0 ${progress}, var(--muted) ${progress} 100%)`
+}
+
+function AdvancedModelPicker({
+  providerID,
+  selection,
+}: {
+  providerID: string
+  selection: ModelSelection
+}) {
+  const groups = selection.providerGroups.filter(
+    (group) =>
+      providerID === allProvidersValue || group.provider.id === providerID
+  )
+  const accountProviderID =
+    providerID === allProvidersValue
+      ? selection.currentModel?.provider.id
+      : providerID
+
+  return (
+    <div className="space-y-3">
+      <ModelAccountSelector
+        providerID={accountProviderID}
+        selection={selection}
+        alwaysVisible
+      />
+      <AdvancedModelSelect groups={groups} selection={selection} />
+    </div>
+  )
+}
+
+function AdvancedModelSelect({
+  groups,
+  selection,
+}: {
+  groups: ModelGroup[]
+  selection: ModelSelection
+}) {
+  const value = selection.currentModel
+    ? modelOptionValue(selection.currentModel)
+    : undefined
+  return (
+    <Select
+      value={value}
+      onValueChange={(next) => selectAdvancedModel(selection, next)}
+    >
+      <SelectTrigger className="w-full">
+        <SelectValue placeholder="Select model" />
+      </SelectTrigger>
+      <SelectContent>
+        {groups.map((group, index) => (
+          <AdvancedModelGroup
+            group={group}
+            key={group.provider.id}
+            separated={index > 0}
+          />
+        ))}
+      </SelectContent>
+    </Select>
+  )
+}
+
+function AdvancedModelGroup({
+  group,
+  separated,
+}: {
+  group: ModelGroup
+  separated: boolean
+}) {
+  return (
+    <>
+      {separated ? <SelectSeparator /> : null}
+      <SelectGroup>
+        <SelectLabel>{group.provider.name}</SelectLabel>
+        {group.models.map((model) => (
+          <SelectItem
+            key={modelReactKey(model)}
+            value={modelOptionValue(model)}
+          >
+            {model.name}
+          </SelectItem>
+        ))}
+      </SelectGroup>
+    </>
+  )
+}
+
+type ModelAccountSelectorProps = {
+  alwaysVisible?: boolean
+  providerID: string | undefined
+  selection: ModelSelection
+}
+
+function ModelAccountSelector({
+  alwaysVisible = false,
+  providerID,
+  selection,
+}: ModelAccountSelectorProps) {
+  if (!providerID) return null
+  const accounts = selection.accountsForProvider(providerID)
+  if (!accounts.length || (!alwaysVisible && accounts.length < 2)) return null
+  return (
+    <div className="grid grid-cols-[4.5rem_1fr] items-center gap-2">
+      <span className="text-xs text-muted-foreground">Account</span>
+      <Select
+        value={selection.selectedAccountLabel(providerID)}
+        onValueChange={(label) => void selection.setAccount(providerID, label)}
+      >
+        <SelectTrigger className="w-full" disabled={accounts.length === 1}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {accounts.map((account) => (
+            <SelectItem key={account.id} value={account.label}>
+              {credentialLabel(account)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  )
+}
+
+function ModelPickerFooter({
+  onConnect,
+  onManage,
+}: {
+  onConnect: () => void
+  onManage: () => void
+}) {
+  return (
+    <div className="flex items-center justify-end border-t p-1">
+      <Button size="icon-sm" variant="ghost" onClick={onConnect}>
+        <PlusIcon />
+        <span className="sr-only">Connect provider</span>
+      </Button>
+      <Button size="icon-sm" variant="ghost" onClick={onManage}>
+        <SlidersHorizontalIcon />
+        <span className="sr-only">Manage models</span>
+      </Button>
+    </div>
+  )
+}
+
+function recommendationPosition(
+  recommendations: RecommendedSelectableModel[],
+  currentModel: SelectableModel | undefined
+) {
+  const current = recommendations.find(
+    (recommendation) =>
+      recommendation.providerId === currentModel?.provider.id &&
+      recommendation.modelId === currentModel?.id
+  )
+  return current?.position ?? recommendations[0]?.position ?? 0
+}
+
+function nearestRecommendation(
+  recommendations: RecommendedSelectableModel[],
+  position: number
+) {
+  return recommendations.reduce<RecommendedSelectableModel | undefined>(
+    (nearest, candidate) => {
+      if (!nearest) return candidate
+      const currentDistance = Math.abs(nearest.position - position)
+      return Math.abs(candidate.position - position) < currentDistance
+        ? candidate
+        : nearest
+    },
+    undefined
+  )
+}
+
+function selectRecommendation(
+  selection: ModelSelection,
+  recommendation: RecommendedSelectableModel | undefined
+) {
+  if (!recommendation) return
+  if (isModelSelected(selection.currentModel, recommendation.model)) return
+  void selection.setModel(recommendation.model)
+}
+
+function selectProviderRecommendation(
+  selection: ModelSelection,
+  providerID: string
+) {
+  const currentPosition = recommendationPosition(
+    selection.recommendedModels(allProvidersValue),
+    selection.currentModel
+  )
+  selectRecommendation(
+    selection,
+    nearestRecommendation(
+      selection.recommendedModels(providerID),
+      currentPosition
+    )
+  )
+}
+
+function isUnbenchmarked(recommendation: RecommendedSelectableModel) {
+  return recommendation.segment === "unbenchmarked"
+}
+
+function modelOptionValue(model: SelectableModel) {
+  return `${model.provider.id}\u0001${model.id}`
+}
+
+function selectAdvancedModel(selection: ModelSelection, value: string) {
+  const model = selection.models.find(
+    (candidate) => modelOptionValue(candidate) === value
+  )
+  if (model) void selection.setModel(model)
 }
 
 function ModelVariantSelector({ selection }: { selection: ModelSelection }) {
@@ -283,28 +716,6 @@ function ModelVariantSelector({ selection }: { selection: ModelSelection }) {
   )
 }
 
-function ModelCommandItem({
-  model,
-  onSelect,
-  selected,
-}: {
-  model: SelectableModel
-  onSelect: () => void
-  selected: boolean
-}) {
-  return (
-    <CommandItem
-      value={`${model.provider.name} ${model.name} ${model.id} ${model.credentialDisplayName ?? ""}`}
-      data-checked={selected}
-      onSelect={onSelect}
-    >
-      <ProviderMark provider={model.provider} />
-      <span className="min-w-0 flex-1 truncate">{modelDisplayName(model)}</span>
-      <ModelTags model={model} />
-    </CommandItem>
-  )
-}
-
 function ModelSummary({ model }: { model: SelectableModel | undefined }) {
   if (!model) {
     return (
@@ -325,9 +736,7 @@ function ModelSummary({ model }: { model: SelectableModel | undefined }) {
 }
 
 export function modelDisplayName(model: SelectableModel) {
-  if (!model.showCredentialLabel || !model.credentialDisplayName)
-    return model.name
-  return `${model.name} · ${model.credentialDisplayName}`
+  return model.name
 }
 
 export function modelReactKey(model: SelectableModel) {
@@ -403,15 +812,19 @@ export function useModelSelection(options: ModelSelectionOptions = {}) {
     }
   }, [providerState.directory])
 
+  const preference = modelPreference(providerState.aiPreferences, role)
+  const accountLabels = React.useMemo(
+    () => selectedAccountLabels(state, preference),
+    [preference, state]
+  )
   const models = React.useMemo(
-    () => getModels(providerState.providers),
-    [providerState.providers]
+    () => getModels(providerState.providers, accountLabels),
+    [providerState.providers, accountLabels]
   )
   const visibleModels = React.useMemo(
     () => models.filter((model) => modelVisible(state, model)),
     [models, state]
   )
-  const preference = modelPreference(providerState.aiPreferences, role)
   const currentModel =
     findModel(visibleModels, preferenceModelKey(preference)) ??
     getDefaultModel(visibleModels, providerState.providers)
@@ -427,6 +840,7 @@ export function useModelSelection(options: ModelSelectionOptions = {}) {
     loading: providerState.loading,
     allProviderGroups: groupModels(models),
     allProviders: providerState.providers?.all ?? [],
+    connectedProviders: connectedProviders(providerState.providers),
     credentials: providerState.providers?.credentials ?? [],
     connectedProviderIDs: getConnectedProviderIDs(providerState.providers),
     contextCompressionMode: defaultContextCompressionMode,
@@ -435,6 +849,8 @@ export function useModelSelection(options: ModelSelectionOptions = {}) {
     directory: providerState.directory,
     emptyMessage: getEmptyMessage(providerState),
     providerGroups: groupModels(visibleModels),
+    models: visibleModels,
+    recommendations: providerState.providers?.recommendations,
     refreshProviders: providerState.refresh,
     serverReady: providerState.serverReady,
     variantOptions: getVariantOptions(currentModel),
@@ -443,13 +859,42 @@ export function useModelSelection(options: ModelSelectionOptions = {}) {
     setModel: async (model: SelectableModel) => {
       setModelState(providerState.directory, setState, {
         ...state,
+        accounts: model.credentialLabel
+          ? { ...state.accounts, [model.provider.id]: model.credentialLabel }
+          : state.accounts,
         recent: pushRecent(state.recent, model),
         hidden: state.hidden.filter(
-          (item) => !sameModelKey(item, modelKey(model))
+          (item) => !sameCatalogModelKey(item, modelKey(model))
         ),
       })
-      await saveRolePreference(providerState, role, modelPreferenceInput(model))
+      await saveRolePreference(
+        providerState,
+        role,
+        modelPreferenceInput(model, preference?.reasoningEffort)
+      )
     },
+    accountsForProvider: (providerID: string) =>
+      providerAccounts(providerState.providers, providerID),
+    selectedAccountLabel: (providerID: string) =>
+      selectedAccountLabel(providerState.providers, accountLabels, providerID),
+    setAccount: async (providerID: string, label: string) => {
+      const nextAccounts = { ...accountLabels, [providerID]: label }
+      const nextModels = getModels(providerState.providers, nextAccounts)
+      const target = accountTargetModel(nextModels, currentModel, providerID)
+      setModelState(providerState.directory, setState, {
+        ...state,
+        accounts: nextAccounts,
+      })
+      if (target) {
+        await saveRolePreference(
+          providerState,
+          role,
+          modelPreferenceInput(target, preference?.reasoningEffort)
+        )
+      }
+    },
+    recommendedModels: (providerID: string) =>
+      recommendedModels(providerState.providers, visibleModels, providerID),
     modelVisible: (model: SelectableModel) => modelVisible(state, model),
     providerVisible: (providerID: string) =>
       models
@@ -470,7 +915,7 @@ export function useModelSelection(options: ModelSelectionOptions = {}) {
         providerId: currentModel?.provider.id ?? "",
         modelId: currentModel?.id ?? "",
         credentialLabel: currentModel?.credentialLabel ?? null,
-        reasoningEffort: isReasoningEffort(variant ?? "") ? variant : null,
+        reasoningEffort: reasoningEffortValue(variant),
       }),
   }
 }
@@ -571,13 +1016,28 @@ function preferenceModelKey(
   }
 }
 
-function modelPreferenceInput(model: SelectableModel): CloudAiModelPreference {
+function modelPreferenceInput(
+  model: SelectableModel,
+  reasoningEffort: string | null | undefined
+): CloudAiModelPreference {
   return {
     providerId: model.provider.id,
     modelId: model.id,
     credentialLabel: model.credentialLabel ?? null,
-    reasoningEffort: null,
+    reasoningEffort: supportedReasoningEffort(model, reasoningEffort),
   }
+}
+
+function supportedReasoningEffort(
+  model: SelectableModel,
+  value: string | null | undefined
+) {
+  const effort = reasoningEffortValue(value)
+  return effort && model.variants?.[effort] ? effort : null
+}
+
+function reasoningEffortValue(value: string | null | undefined) {
+  return value && isReasoningEffort(value) ? value : null
 }
 
 async function saveRolePreference(
@@ -598,75 +1058,82 @@ async function saveRolePreference(
   })
 }
 
-function getModels(providers: ProviderListResponse | undefined) {
+function getModels(
+  providers: ProviderListResponse | undefined,
+  accountLabels: Record<string, string>
+) {
   const connected = getConnectedProviderIDs(providers)
   return (
     providers?.all
       .filter((provider) => connected.has(provider.id))
       .flatMap((provider) =>
-        getProviderModels(provider, providers.credentials).map((model) => ({
-          ...model,
-          name: model.name.replace("(latest)", "").trim(),
+        getProviderModels(
           provider,
-          latest: model.name.includes("(latest)"),
-        }))
+          providers.credentials,
+          accountLabels[provider.id]
+        ).map((model) => selectableModel(provider, model))
       ) ?? []
   )
 }
 
 function getProviderModels(
   provider: Provider,
-  credentials: ProviderCredentialSummary[]
+  credentials: ProviderCredentialSummary[],
+  accountLabel: string | undefined
 ) {
-  if (provider.id !== openAICompatibleProviderID)
-    return providerCredentialModels(provider, credentials)
-
-  const compatibleCredentials = credentials.filter(
-    (credential) => credential.providerId === openAICompatibleProviderID
+  const credential = selectedProviderCredential(
+    credentials,
+    provider.id,
+    accountLabel
   )
-  if (!compatibleCredentials.length) return Object.values(provider.models)
-
-  return compatibleCredentials
-    .map((credential) =>
-      openAICompatibleModels(provider, credential, compatibleCredentials)
-    )
-    .flat()
+  if (provider.id === openAICompatibleProviderID && credential) {
+    return openAICompatibleModels(provider, credential)
+  }
+  return Object.values(provider.models).map((model) =>
+    credential ? credentialModel(model, credential) : model
+  )
 }
 
-function providerCredentialModels(
+function selectedProviderCredential(
+  credentials: ProviderCredentialSummary[],
+  providerID: string,
+  accountLabel: string | undefined
+) {
+  const accounts = credentials.filter(
+    (credential) => credential.providerId === providerID
+  )
+  return (
+    accounts.find((credential) => credential.label === accountLabel) ??
+    accounts[0]
+  )
+}
+
+function selectableModel(
   provider: Provider,
-  credentials: ProviderCredentialSummary[]
+  model: Model & {
+    credentialLabel?: string
+    credentialDisplayName?: string
+  }
 ) {
-  const providerCredentials = credentials.filter(
-    (credential) => credential.providerId === provider.id
-  )
-  const models = Object.values(provider.models)
-  if (!providerCredentials.length) return models
-
-  return providerCredentials.flatMap((credential) =>
-    models.map((model) =>
-      credentialModel(model, credential, providerCredentials)
-    )
-  )
+  return {
+    ...model,
+    name: model.name.replace("(latest)", "").trim(),
+    provider,
+    latest: model.name.includes("(latest)"),
+  }
 }
 
-function credentialModel(
-  model: Model,
-  credential: ProviderCredentialSummary,
-  credentials: ProviderCredentialSummary[]
-) {
+function credentialModel(model: Model, credential: ProviderCredentialSummary) {
   return {
     ...model,
     credentialLabel: credential.label,
     credentialDisplayName: credentialLabel(credential),
-    showCredentialLabel: credentials.length > 1,
   }
 }
 
 function openAICompatibleModels(
   provider: Provider,
-  credential: ProviderCredentialSummary,
-  credentials: ProviderCredentialSummary[]
+  credential: ProviderCredentialSummary
 ) {
   const fallback = provider.models.custom ?? Object.values(provider.models)[0]
   const modelIds = credential.modelIds?.length
@@ -682,19 +1149,7 @@ function openAICompatibleModels(
     name: modelId,
     credentialLabel: credential.label,
     credentialDisplayName: credentialLabel(credential),
-    showCredentialLabel: duplicateModelId(credentials, modelId),
   }))
-}
-
-function duplicateModelId(
-  credentials: ProviderCredentialSummary[],
-  modelId: string
-) {
-  return (
-    credentials.filter((credential) =>
-      credentialModelIds(credential).includes(modelId)
-    ).length > 1
-  )
 }
 
 function credentialLabel(credential: ProviderCredentialSummary) {
@@ -702,15 +1157,52 @@ function credentialLabel(credential: ProviderCredentialSummary) {
   return credential.accountId ?? defaultCredentialLabel
 }
 
-function credentialModelIds(credential: ProviderCredentialSummary) {
-  if (credential.modelIds?.length) return credential.modelIds
-  if (
-    credential.providerId === openAICompatibleProviderID &&
-    credential.label !== defaultCredentialLabel
-  ) {
-    return [credential.label]
+function selectedAccountLabels(
+  state: ModelSelectionState,
+  preference: CloudAiModelPreference | undefined
+) {
+  const labels = { ...state.accounts }
+  if (preference?.credentialLabel) {
+    labels[preference.providerId] ??= preference.credentialLabel
   }
-  return []
+  return labels
+}
+
+function selectedAccountLabel(
+  providers: ProviderListResponse | undefined,
+  accountLabels: Record<string, string>,
+  providerID: string
+) {
+  const accounts = providerAccounts(providers, providerID)
+  return (
+    accounts.find((account) => account.label === accountLabels[providerID])
+      ?.label ??
+    accounts[0]?.label ??
+    defaultCredentialLabel
+  )
+}
+
+function providerAccounts(
+  providers: ProviderListResponse | undefined,
+  providerID: string
+) {
+  return (providers?.credentials ?? []).filter(
+    (credential) => credential.providerId === providerID
+  )
+}
+
+function accountTargetModel(
+  models: SelectableModel[],
+  currentModel: SelectableModel | undefined,
+  providerID: string
+) {
+  const providerModels = models.filter(
+    (model) => model.provider.id === providerID
+  )
+  return (
+    providerModels.find((model) => model.id === currentModel?.id) ??
+    providerModels[0]
+  )
 }
 
 function getConnectedProviderIDs(providers: ProviderListResponse | undefined) {
@@ -719,6 +1211,37 @@ function getConnectedProviderIDs(providers: ProviderListResponse | undefined) {
     connected.add(credential.providerId)
   }
   return connected
+}
+
+function connectedProviders(providers: ProviderListResponse | undefined) {
+  const connected = getConnectedProviderIDs(providers)
+  return (providers?.all ?? []).filter((provider) => connected.has(provider.id))
+}
+
+function recommendedModels(
+  providers: ProviderListResponse | undefined,
+  models: SelectableModel[],
+  providerID: string
+) {
+  const recommendations =
+    providerID === allProvidersValue
+      ? providers?.recommendations.all
+      : providers?.recommendations.byProvider[providerID]
+  return (recommendations ?? [])
+    .map((recommendation) => ({
+      ...recommendation,
+      model: models.find(
+        (model) =>
+          model.provider.id === recommendation.providerId &&
+          model.id === recommendation.modelId
+      ),
+    }))
+    .filter(
+      (
+        recommendation
+      ): recommendation is ModelRecommendation & { model: SelectableModel } =>
+        recommendation.model !== undefined
+    )
 }
 
 function groupModels(models: SelectableModel[]) {
@@ -731,7 +1254,9 @@ function groupModels(models: SelectableModel[]) {
 }
 
 function modelVisible(state: ModelSelectionState, model: SelectableModel) {
-  return !state.hidden.some((item) => sameModelKey(item, modelKey(model)))
+  return !state.hidden.some((item) =>
+    sameCatalogModelKey(item, modelKey(model))
+  )
 }
 
 function setHiddenModel(
@@ -740,9 +1265,9 @@ function setHiddenModel(
   visible: boolean
 ) {
   if (!visible) {
-    return [...hidden, modelKey(model)].filter(uniqueModelKey)
+    return [...hidden, modelKey(model)].filter(uniqueCatalogModelKey)
   }
-  return hidden.filter((item) => !sameModelKey(item, modelKey(model)))
+  return hidden.filter((item) => !sameCatalogModelKey(item, modelKey(model)))
 }
 
 function setHiddenProvider(
@@ -755,11 +1280,15 @@ function setHiddenProvider(
   return [
     ...hidden,
     ...models.filter((model) => model.provider.id === providerID).map(modelKey),
-  ].filter(uniqueModelKey)
+  ].filter(uniqueCatalogModelKey)
 }
 
-function uniqueModelKey(value: ModelKey, index: number, list: ModelKey[]) {
-  return list.findIndex((item) => sameModelKey(item, value)) === index
+function uniqueCatalogModelKey(
+  value: ModelKey,
+  index: number,
+  list: ModelKey[]
+) {
+  return list.findIndex((item) => sameCatalogModelKey(item, value)) === index
 }
 
 function groupModelsByProvider(models: SelectableModel[]) {
@@ -881,13 +1410,21 @@ function sameModelKey(left: ModelKey, right: ModelKey) {
   )
 }
 
+function sameCatalogModelKey(left: ModelKey, right: ModelKey) {
+  return left.providerID === right.providerID && left.modelID === right.modelID
+}
+
 function readModelState(directory: string | undefined): ModelSelectionState {
-  if (!directory) return { recent: [], hidden: [] }
+  if (!directory) return { recent: [], hidden: [], accounts: {} }
 
   const parsed = readStoredStates()
   return isModelState(parsed[directory])
-    ? { ...parsed[directory], hidden: parsed[directory].hidden ?? [] }
-    : { recent: [], hidden: [] }
+    ? {
+        ...parsed[directory],
+        hidden: parsed[directory].hidden ?? [],
+        accounts: parsed[directory].accounts ?? {},
+      }
+    : { recent: [], hidden: [], accounts: {} }
 }
 
 function writeState(directory: string | undefined, state: ModelSelectionState) {
@@ -927,7 +1464,18 @@ function isModelState(value: unknown): value is ModelSelectionState {
   if (!value || typeof value !== "object") return false
   if (!("recent" in value) || !Array.isArray(value.recent)) return false
   if ("hidden" in value && !Array.isArray(value.hidden)) return false
-  const state = value as { recent: unknown[]; hidden?: unknown[] }
+  if (
+    "accounts" in value &&
+    (!value.accounts ||
+      typeof value.accounts !== "object" ||
+      !Object.values(value.accounts).every((item) => typeof item === "string"))
+  )
+    return false
+  const state = value as {
+    recent: unknown[]
+    hidden?: unknown[]
+    accounts?: Record<string, string>
+  }
   return (
     state.recent.every(isModelKey) && (state.hidden ?? []).every(isModelKey)
   )

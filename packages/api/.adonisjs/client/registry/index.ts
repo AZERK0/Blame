@@ -228,11 +228,11 @@ const routes = {
     tokens: [{"old":"/api/v1/projects/:projectId/initialization/repair","type":0,"val":"api","end":""},{"old":"/api/v1/projects/:projectId/initialization/repair","type":0,"val":"v1","end":""},{"old":"/api/v1/projects/:projectId/initialization/repair","type":0,"val":"projects","end":""},{"old":"/api/v1/projects/:projectId/initialization/repair","type":1,"val":"projectId","end":""},{"old":"/api/v1/projects/:projectId/initialization/repair","type":0,"val":"initialization","end":""},{"old":"/api/v1/projects/:projectId/initialization/repair","type":0,"val":"repair","end":""}],
     types: placeholder as Registry['projects.project_initializations.repair']['types'],
   },
-  'providers.provider_credentials.catalog': {
+  'providers.model_catalog.show': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/providers/catalog',
     tokens: [{"old":"/api/v1/providers/catalog","type":0,"val":"api","end":""},{"old":"/api/v1/providers/catalog","type":0,"val":"v1","end":""},{"old":"/api/v1/providers/catalog","type":0,"val":"providers","end":""},{"old":"/api/v1/providers/catalog","type":0,"val":"catalog","end":""}],
-    types: placeholder as Registry['providers.provider_credentials.catalog']['types'],
+    types: placeholder as Registry['providers.model_catalog.show']['types'],
   },
   'providers.provider_credentials.index': {
     methods: ["GET","HEAD"],

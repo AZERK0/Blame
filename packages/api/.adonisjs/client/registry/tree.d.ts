@@ -117,8 +117,10 @@ export interface ApiDefinition {
     }
   }
   providers: {
+    modelCatalog: {
+      show: typeof routes['providers.model_catalog.show']
+    }
     providerCredentials: {
-      catalog: typeof routes['providers.provider_credentials.catalog']
       index: typeof routes['providers.provider_credentials.index']
       store: typeof routes['providers.provider_credentials.store']
       storeOAuth: typeof routes['providers.provider_credentials.store_o_auth']

@@ -41,7 +41,7 @@ export type ScannedRoutes = {
     'projects.project_initializations.complete': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.fail': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.repair': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
-    'providers.provider_credentials.catalog': { paramsTuple?: []; params?: {} }
+    'providers.model_catalog.show': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.index': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.store': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.store_o_auth': { paramsTuple?: []; params?: {} }
@@ -89,7 +89,7 @@ export type ScannedRoutes = {
     'projects.project_code_practices.index': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_code_practice_analyses.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
-    'providers.provider_credentials.catalog': { paramsTuple?: []; params?: {} }
+    'providers.model_catalog.show': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.index': { paramsTuple?: []; params?: {} }
     'attachments.file_attachments.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.quick_chats.quick_chats.index': { paramsTuple?: []; params?: {} }
@@ -115,7 +115,7 @@ export type ScannedRoutes = {
     'projects.project_code_practices.index': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_code_practice_analyses.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
-    'providers.provider_credentials.catalog': { paramsTuple?: []; params?: {} }
+    'providers.model_catalog.show': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.index': { paramsTuple?: []; params?: {} }
     'attachments.file_attachments.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.quick_chats.quick_chats.index': { paramsTuple?: []; params?: {} }

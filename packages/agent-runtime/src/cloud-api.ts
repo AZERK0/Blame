@@ -1,6 +1,5 @@
 import type {
   ApiConnection,
-  BlameProvider,
   DeleteProviderCredentialInput,
   OAuthCredentials,
   ProviderCredentialSummary,
@@ -8,7 +7,6 @@ import type {
   SaveOAuthCredentialInput,
   SaveProviderCredentialInput,
 } from "./types.js"
-import { listClineProviders } from "./provider-catalog.js"
 
 type ApiResponse<T> = {
   data: T
@@ -26,8 +24,8 @@ type ResolvedCredential = {
 }
 
 export async function listProviders(connection: ApiConnection) {
-  const [clineProviders, credentials] = await Promise.all([
-    listClineProviders(),
+  const [catalog, credentials] = await Promise.all([
+    request<Pick<ProviderListResponse, "all" | "default" | "recommendations">>(connection, "/providers/catalog"),
     request<unknown>(connection, "/providers/credentials"),
   ])
   const credentialList = normalizeCredentials(credentials)
@@ -35,15 +33,9 @@ export async function listProviders(connection: ApiConnection) {
     new Set(credentialList.map((credential) => credential.providerId))
   )
   return {
-    all: clineProviders,
+    ...catalog,
     connected,
     credentials: credentialList,
-    default: Object.fromEntries(
-      clineProviders.map((provider: BlameProvider) => [
-        provider.id,
-        provider.defaultModelId ?? Object.keys(provider.models)[0] ?? "",
-      ])
-    ),
   } satisfies ProviderListResponse
 }
 

@@ -451,7 +451,7 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_initializations_controller').default['repair']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
-  'providers.provider_credentials.catalog': {
+  'providers.model_catalog.show': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/providers/catalog'
     types: {
@@ -459,8 +459,8 @@ export interface Registry {
       paramsTuple: []
       params: {}
       query: {}
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/provider_credentials_controller').default['catalog']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/provider_credentials_controller').default['catalog']>>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/model_catalog_controller').default['show']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/model_catalog_controller').default['show']>>>
     }
   }
   'providers.provider_credentials.index': {

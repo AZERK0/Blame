@@ -12,6 +12,7 @@ import router from '@adonisjs/core/services/router'
 import { controllers } from '#generated/controllers'
 
 const ProviderCredentialsController = () => import('#controllers/provider_credentials_controller')
+const ModelCatalogController = () => import('#controllers/model_catalog_controller')
 const ProjectCodePracticesController = () =>
   import('#controllers/project_code_practices_controller')
 const ProjectCodePracticeAnalysesController = () =>
@@ -129,7 +130,7 @@ router
 
     router
       .group(() => {
-        router.get('catalog', [ProviderCredentialsController, 'catalog'])
+        router.get('catalog', [ModelCatalogController, 'show'])
         router.get('credentials', [ProviderCredentialsController, 'index'])
         router.post('credentials', [ProviderCredentialsController, 'store'])
         router.post('credentials/oauth', [ProviderCredentialsController, 'storeOAuth'])
