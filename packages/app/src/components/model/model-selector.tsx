@@ -25,6 +25,7 @@ import { iconNames, type IconName } from "@/components/provider-icons/types"
 import { Button } from "@/components/ui/button"
 import {
   Popover,
+  PopoverAnchor,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
@@ -107,6 +108,7 @@ type ModelDialog =
   | { type: "connect"; providerID: string }
   | { type: "manage" }
   | undefined
+type WheelDirection = -1 | 1
 
 export function ModelSelector({ role }: { role?: ModelPreferenceRole }) {
   const selection = useModelSelection({ role })
@@ -114,10 +116,7 @@ export function ModelSelector({ role }: { role?: ModelPreferenceRole }) {
 
   return (
     <>
-      <div className="flex w-full min-w-0 items-center justify-end gap-3">
-        <ModelPicker selection={selection} setDialog={setDialog} />
-        <ModelVariantSelector selection={selection} />
-      </div>
+      <ModelPicker selection={selection} setDialog={setDialog} />
       <ProviderSelectDialog
         open={dialog?.type === "providers"}
         selection={selection}
@@ -156,10 +155,25 @@ function ModelPicker({
   const [open, setOpen] = React.useState(false)
   const [advanced, setAdvanced] = React.useState(false)
   const [providerID, setProviderID] = React.useState(allProvidersValue)
+  const onWheel = useWheelStep((direction) => {
+    const model = advanced
+      ? adjacentManualModel(selection, providerID, direction)
+      : adjacentSmartModel(selection, providerID, -direction)
+    if (model) selectModelWithoutWaiting(selection, model)
+  })
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <ModelPickerTrigger open={open} selection={selection} />
+      <PopoverAnchor asChild>
+        <div className="flex w-full min-w-0 items-center justify-end gap-2">
+          <ModelPickerTrigger
+            open={open}
+            selection={selection}
+            onWheel={onWheel}
+          />
+          <ModelVariantSelector selection={selection} />
+        </div>
+      </PopoverAnchor>
       <ModelPickerContent
         advanced={advanced}
         providerID={providerID}
@@ -173,10 +187,29 @@ function ModelPicker({
   )
 }
 
+function useWheelStep<Element extends HTMLElement = HTMLButtonElement>(
+  onStep: (direction: WheelDirection) => void
+): React.WheelEventHandler<Element> {
+  const lastStepAt = React.useRef(-Infinity)
+  return React.useCallback(
+    (event) => {
+      if (event.deltaY === 0) return
+      event.preventDefault()
+      event.stopPropagation()
+      if (event.timeStamp - lastStepAt.current < 80) return
+      lastStepAt.current = event.timeStamp
+      onStep(event.deltaY > 0 ? 1 : -1)
+    },
+    [onStep]
+  )
+}
+
 function ModelPickerTrigger({
+  onWheel,
   open,
   selection,
 }: {
+  onWheel: React.WheelEventHandler<HTMLButtonElement>
   open: boolean
   selection: ModelSelection
 }) {
@@ -186,8 +219,9 @@ function ModelPickerTrigger({
         <PopoverTrigger asChild>
           <Button
             variant="ghost"
-            className="h-10 w-0 max-w-64 min-w-0 flex-1 justify-center rounded-xl border-0 bg-muted/70 px-3 shadow-none hover:bg-muted aria-expanded:bg-muted"
+            className="h-8 w-0 max-w-52 min-w-0 flex-1 justify-center rounded-xl border-0 bg-muted/70 px-3 shadow-none hover:bg-muted aria-expanded:bg-muted"
             disabled={!selection.serverReady || selection.loading}
+            onWheel={onWheel}
           >
             <ModelSummary model={selection.currentModel} />
             {open ? (
@@ -216,11 +250,11 @@ type ModelPickerContentProps = {
 function ModelPickerContent(props: ModelPickerContentProps) {
   return (
     <PopoverContent
-      align="start"
+      align="end"
       side="top"
       sideOffset={10}
       collisionPadding={12}
-      className="w-[var(--radix-popover-trigger-width)] min-w-96 overflow-hidden rounded-2xl p-0 shadow-xl ring-foreground/8"
+      className="w-96 overflow-hidden rounded-2xl p-0 shadow-xl ring-foreground/8"
       onWheel={(event) => event.stopPropagation()}
     >
       <ModelPickerPanel {...props} />
@@ -520,6 +554,74 @@ function selectProviderChoice(
   selectProviderRecommendation(selection, providerID)
 }
 
+function providerModelGroups(selection: ModelSelection, providerID: string) {
+  return selection.providerGroups.filter(
+    (group) =>
+      providerID === allProvidersValue || group.provider.id === providerID
+  )
+}
+
+function adjacentManualModel(
+  selection: ModelSelection,
+  providerID: string,
+  direction: WheelDirection
+) {
+  return adjacentGroupedModel(
+    providerModelGroups(selection, providerID),
+    selection.currentModel,
+    direction
+  )
+}
+
+function adjacentGroupedModel(
+  groups: ModelGroup[],
+  currentModel: SelectableModel | undefined,
+  direction: WheelDirection
+) {
+  const models = groups.flatMap((group) => group.models)
+  const currentIndex = models.findIndex((model) =>
+    isModelSelected(currentModel, model)
+  )
+  return adjacentItem(models, currentIndex, direction)
+}
+
+function adjacentSmartModel(
+  selection: ModelSelection,
+  providerID: string,
+  direction: WheelDirection
+) {
+  const recommendations = [...selection.recommendedModels(providerID)].sort(
+    (left, right) => left.position - right.position
+  )
+  const currentIndex = recommendations.findIndex((recommendation) =>
+    isModelSelected(selection.currentModel, recommendation.model)
+  )
+  return adjacentItem(recommendations, currentIndex, direction)?.model
+}
+
+function adjacentItem<T>(
+  items: T[],
+  currentIndex: number,
+  direction: WheelDirection
+) {
+  const fallbackIndex = direction > 0 ? -1 : items.length
+  const startIndex = currentIndex < 0 ? fallbackIndex : currentIndex
+  const nextIndex = Math.min(
+    items.length - 1,
+    Math.max(0, startIndex + direction)
+  )
+  return nextIndex === currentIndex ? undefined : items[nextIndex]
+}
+
+function selectModelWithoutWaiting(
+  selection: ModelSelection,
+  model: SelectableModel
+) {
+  void selection
+    .setModel(model)
+    .catch((error) => console.error("Unable to select model", error))
+}
+
 type SmartModelSliderProps = {
   providerID: string
   selection: ModelSelection
@@ -534,9 +636,42 @@ function SmartModelSlider({ providerID, selection }: SmartModelSliderProps) {
     boundary,
     hasUnbenchmarked
   )
-  const [position, setPosition] = React.useState(() =>
-    recommendationPosition(recommendations, selection.currentModel)
+  const selectedPosition = recommendationPosition(
+    recommendations,
+    selection.currentModel
   )
+  const selectionIdentity = `${selection.currentModel ? modelReactKey(selection.currentModel) : ""}:${selectedPosition}`
+  const [sliderState, setSliderState] = React.useState(() => ({
+    inputRevision: 0,
+    position: selectedPosition,
+    selectionIdentity,
+  }))
+  const selectionChanged = sliderState.selectionIdentity !== selectionIdentity
+  const resolvedSliderState = selectionChanged
+    ? {
+        inputRevision:
+          sliderState.inputRevision +
+          Number(sliderState.position !== selectedPosition),
+        position: selectedPosition,
+        selectionIdentity,
+      }
+    : sliderState
+  if (selectionChanged) {
+    setSliderState(resolvedSliderState)
+  }
+  const position = resolvedSliderState.position
+  const setPosition = (nextPosition: number) =>
+    setSliderState({ ...resolvedSliderState, position: nextPosition })
+  const onWheel = useWheelStep<HTMLDivElement>((direction) => {
+    const recommendation = adjacentSliderRecommendation(
+      recommendations,
+      position,
+      -direction
+    )
+    if (!recommendation) return
+    setPosition(recommendation.position)
+    selectModelWithoutWaiting(selection, recommendation.model)
+  })
 
   if (!recommendations.length) {
     return <EmptySmartModelSlider />
@@ -546,12 +681,14 @@ function SmartModelSlider({ providerID, selection }: SmartModelSliderProps) {
     <div className="space-y-3">
       <SliderLabels boundary={boundary} hasUnbenchmarked={hasUnbenchmarked} />
       <SmartSliderInput
+        key={resolvedSliderState.inputRevision}
         position={position}
         recommendations={recommendations}
         select={(recommendation) =>
           selectRecommendation(selection, recommendation)
         }
         setPosition={setPosition}
+        onWheel={onWheel}
       />
     </div>
   )
@@ -566,6 +703,7 @@ function EmptySmartModelSlider() {
 }
 
 type SmartSliderInputProps = {
+  onWheel: React.WheelEventHandler<HTMLDivElement>
   position: number
   recommendations: RecommendedSelectableModel[]
   select: (recommendation: RecommendedSelectableModel) => Promise<void>
@@ -575,7 +713,7 @@ type SmartSliderInputProps = {
 function SmartSliderInput(props: SmartSliderInputProps) {
   const control = useSmartSliderControl(props)
   return (
-    <div className="relative h-8">
+    <div className="relative h-8" onWheel={props.onWheel}>
       <SliderTrack position={props.position} />
       <SliderMarkers {...props} />
       <SliderRangeInput control={control} />
@@ -584,9 +722,23 @@ function SmartSliderInput(props: SmartSliderInputProps) {
   )
 }
 
+function adjacentSliderRecommendation(
+  recommendations: RecommendedSelectableModel[],
+  position: number,
+  direction: WheelDirection
+) {
+  const ordered = [...recommendations].sort(
+    (left, right) => left.position - right.position
+  )
+  const current = nearestRecommendation(ordered, position)
+  const currentIndex = ordered.findIndex(
+    (recommendation) => recommendation === current
+  )
+  return adjacentItem(ordered, currentIndex, direction)
+}
+
 function useSmartSliderControl(props: SmartSliderInputProps) {
   const [inputPosition, setInputPosition] = React.useState(props.position)
-  const enqueue = useRecommendationQueue(props.select)
   const selectedPosition = React.useRef(props.position)
   const selectedKey = React.useRef(
     recommendationIdentity(
@@ -605,33 +757,12 @@ function useSmartSliderControl(props: SmartSliderInputProps) {
     const nextKey = recommendationIdentity(recommendation)
     if (selectedKey.current === nextKey) return
     selectedKey.current = nextKey
-    enqueue(recommendation)
+    void props
+      .select(recommendation)
+      .catch((error) => console.error("Unable to select model", error))
   }
   const settle = () => setInputPosition(selectedPosition.current)
   return { change, inputPosition, settle }
-}
-
-function useRecommendationQueue(
-  select: (recommendation: RecommendedSelectableModel) => Promise<void>
-) {
-  const queued = React.useRef<RecommendedSelectableModel>()
-  const selecting = React.useRef(false)
-  const flush = async () => {
-    if (selecting.current) return
-    selecting.current = true
-    while (queued.current) {
-      const recommendation = queued.current
-      queued.current = undefined
-      await select(recommendation).catch((error) =>
-        console.error("Unable to select model", error)
-      )
-    }
-    selecting.current = false
-  }
-  return (recommendation: RecommendedSelectableModel) => {
-    queued.current = recommendation
-    void flush()
-  }
 }
 
 function SliderRangeInput({
@@ -671,7 +802,7 @@ function SliderTrack({ position }: { position: number }) {
 function SliderThumb({ position }: { position: number }) {
   return (
     <span
-      className="pointer-events-none absolute top-1/2 z-2 size-6 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground shadow-md ring-2 ring-background transition-[left,transform,box-shadow] duration-200 ease-out peer-hover:scale-125 peer-hover:shadow-lg peer-focus-visible:scale-125 peer-active:scale-125 peer-active:shadow-xl motion-reduce:transition-none"
+      className="pointer-events-none absolute top-1/2 z-2 size-6 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground shadow-md ring-2 ring-background transition-[left,scale,box-shadow] duration-200 ease-out peer-hover:scale-125 peer-hover:shadow-lg peer-focus-visible:scale-125 peer-active:scale-125 peer-active:shadow-xl motion-reduce:transition-none"
       style={{ left: sliderPoint(position) }}
     />
   )
@@ -796,12 +927,12 @@ function AdvancedModelPicker({
   providerID: string
   selection: ModelSelection
 }) {
-  const groups = selection.providerGroups.filter(
-    (group) =>
-      providerID === allProvidersValue || group.provider.id === providerID
+  return (
+    <AdvancedModelSelect
+      groups={providerModelGroups(selection, providerID)}
+      selection={selection}
+    />
   )
-
-  return <AdvancedModelSelect groups={groups} selection={selection} />
 }
 
 function AdvancedModelSelect({
@@ -812,13 +943,25 @@ function AdvancedModelSelect({
   selection: ModelSelection
 }) {
   const [open, setOpen] = React.useState(false)
+  const onWheel = useWheelStep((direction) => {
+    const model = adjacentGroupedModel(
+      groups,
+      selection.currentModel,
+      direction
+    )
+    if (model) selectModelWithoutWaiting(selection, model)
+  })
   const selectModel = (model: SelectableModel) => {
     void selection.setModel(model)
     setOpen(false)
   }
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <AdvancedModelSelectTrigger model={selection.currentModel} open={open} />
+      <AdvancedModelSelectTrigger
+        model={selection.currentModel}
+        open={open}
+        onWheel={onWheel}
+      />
       <AdvancedModelSelectContent
         groups={groups}
         selected={selection.currentModel}
@@ -830,9 +973,11 @@ function AdvancedModelSelect({
 
 function AdvancedModelSelectTrigger({
   model,
+  onWheel,
   open,
 }: {
   model: SelectableModel | undefined
+  onWheel: React.WheelEventHandler<HTMLButtonElement>
   open: boolean
 }) {
   return (
@@ -840,6 +985,7 @@ function AdvancedModelSelectTrigger({
       <button
         className="flex h-10 w-full items-center justify-between gap-3 rounded-xl bg-muted/70 px-4 text-sm transition-colors hover:bg-muted"
         type="button"
+        onWheel={onWheel}
       >
         <span className="flex min-w-0 items-center gap-2 truncate">
           {model ? <ProviderMark provider={model.provider} /> : null}
@@ -1040,16 +1186,26 @@ function recommendationIdentity(
 
 function ModelVariantSelector({ selection }: { selection: ModelSelection }) {
   const [open, setOpen] = React.useState(false)
-  if (selection.variantOptions.length <= 2) return null
   const selected = selection.currentVariant ?? defaultVariant
+  const onWheel = useWheelStep((direction) => {
+    const currentIndex = selection.variantOptions.indexOf(selected)
+    const variant = adjacentItem(
+      selection.variantOptions,
+      currentIndex,
+      -direction
+    )
+    if (variant) selectModelVariant(selection, variant)
+  })
+  if (selection.variantOptions.length <= 2) return null
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <Tooltip>
         <TooltipTrigger asChild>
           <PopoverTrigger asChild>
             <button
-              className="flex h-10 w-32 max-w-[38%] items-center justify-between gap-2 rounded-xl bg-muted/70 px-4 text-sm capitalize transition-colors hover:bg-muted"
+              className="flex h-8 w-32 max-w-[38%] items-center justify-between gap-2 rounded-xl bg-muted/70 px-4 text-sm capitalize transition-colors hover:bg-muted"
               type="button"
+              onWheel={onWheel}
             >
               <span className="truncate">{getVariantLabel(selected)}</span>
               <PickerChevron open={open} />
@@ -1063,13 +1219,17 @@ function ModelVariantSelector({ selection }: { selection: ModelSelection }) {
         selected={selected}
         onSelect={(variant) => {
           setOpen(false)
-          void selection.setVariant(
-            variant === defaultVariant ? undefined : variant
-          )
+          selectModelVariant(selection, variant)
         }}
       />
     </Popover>
   )
+}
+
+function selectModelVariant(selection: ModelSelection, variant: string) {
+  void selection
+    .setVariant(variant === defaultVariant ? undefined : variant)
+    .catch((error) => console.error("Unable to select thinking mode", error))
 }
 
 function ModelVariantContent({
@@ -1194,6 +1354,9 @@ export function useModelSelection(options: ModelSelectionOptions = {}) {
   const [state, setState] = React.useState(() =>
     readModelState(providerState.directory)
   )
+  const [optimisticPreference, setOptimisticPreference] =
+    React.useState<CloudAiModelPreference>()
+  const preferenceSaveQueue = React.useRef<Promise<void>>(Promise.resolve())
 
   React.useEffect(() => {
     const refreshState = () => setState(readModelState(providerState.directory))
@@ -1213,7 +1376,20 @@ export function useModelSelection(options: ModelSelectionOptions = {}) {
     }
   }, [providerState.directory])
 
-  const preference = modelPreference(providerState.aiPreferences, role)
+  const persistedPreference = modelPreference(providerState.aiPreferences, role)
+  const preference = optimisticPreference ?? persistedPreference
+  const savePreference = (nextPreference: CloudAiModelPreference) => {
+    setOptimisticPreference(nextPreference)
+    const request = preferenceSaveQueue.current.then(() =>
+      saveRolePreference(providerState, role, nextPreference)
+    )
+    preferenceSaveQueue.current = request.catch(() => undefined)
+    return request.finally(() => {
+      setOptimisticPreference((current) =>
+        sameModelPreference(current, nextPreference) ? undefined : current
+      )
+    })
+  }
   const accountLabels = React.useMemo(
     () => selectedAccountLabels(state, preference),
     [preference, state]
@@ -1257,7 +1433,7 @@ export function useModelSelection(options: ModelSelectionOptions = {}) {
     variantOptions: getVariantOptions(currentModel),
     role,
     saveAiPreferences: providerState.saveAiPreferences,
-    setModel: async (model: SelectableModel) => {
+    setModel: (model: SelectableModel) => {
       setModelState(providerState.directory, setState, {
         ...state,
         accounts: model.credentialLabel
@@ -1268,9 +1444,7 @@ export function useModelSelection(options: ModelSelectionOptions = {}) {
           (item) => !sameCatalogModelKey(item, modelKey(model))
         ),
       })
-      await saveRolePreference(
-        providerState,
-        role,
+      return savePreference(
         modelPreferenceInput(model, preference?.reasoningEffort)
       )
     },
@@ -1287,9 +1461,7 @@ export function useModelSelection(options: ModelSelectionOptions = {}) {
         accounts: nextAccounts,
       })
       if (target) {
-        await saveRolePreference(
-          providerState,
-          role,
+        await savePreference(
           modelPreferenceInput(target, preference?.reasoningEffort)
         )
       }
@@ -1312,7 +1484,7 @@ export function useModelSelection(options: ModelSelectionOptions = {}) {
         hidden: setHiddenProvider(state.hidden, models, providerID, visible),
       }),
     setVariant: (variant: string | undefined) =>
-      saveRolePreference(providerState, role, {
+      savePreference({
         providerId: currentModel?.provider.id ?? "",
         modelId: currentModel?.id ?? "",
         credentialLabel: currentModel?.credentialLabel ?? null,
@@ -1427,6 +1599,18 @@ function modelPreferenceInput(
     credentialLabel: model.credentialLabel ?? null,
     reasoningEffort: supportedReasoningEffort(model, reasoningEffort),
   }
+}
+
+function sameModelPreference(
+  left: CloudAiModelPreference | undefined,
+  right: CloudAiModelPreference
+) {
+  return (
+    left?.providerId === right.providerId &&
+    left.modelId === right.modelId &&
+    left.credentialLabel === right.credentialLabel &&
+    left.reasoningEffort === right.reasoningEffort
+  )
 }
 
 function supportedReasoningEffort(
