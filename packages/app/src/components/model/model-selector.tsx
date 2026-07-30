@@ -2,6 +2,7 @@ import {
   CheckIcon,
   ChevronDownIcon,
   ChevronUpIcon,
+  InfoIcon,
   PlusIcon,
   SlidersHorizontalIcon,
 } from "lucide-react"
@@ -338,7 +339,7 @@ function ModelPickerModeToggle({
       type="button"
       onClick={() => onChange(!advanced)}
     >
-      {advanced ? "Smart selection" : "Advanced"}
+      {advanced ? "Smart selection" : "Manual selection"}
     </button>
   )
 }
@@ -710,7 +711,28 @@ function SliderLabels({
 }) {
   return (
     <div className="relative h-7 text-sm text-muted-foreground">
-      <span className="absolute bottom-0 left-0">Cheaper</span>
+      <span className="absolute bottom-0 left-0 flex items-center gap-1">
+        <span>Cheaper</span>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              aria-label="How smart model selection works"
+              className="rounded-full text-muted-foreground/70 transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:outline-none"
+            >
+              <InfoIcon className="size-3.5" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent
+            side="top"
+            sideOffset={6}
+            className="max-w-64 text-pretty"
+          >
+            Models that cost more while scoring lower than another model are
+            omitted. They remain available in Manual selection.
+          </TooltipContent>
+        </Tooltip>
+      </span>
       <span
         className="absolute bottom-0"
         style={{
