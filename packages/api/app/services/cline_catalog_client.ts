@@ -2,6 +2,7 @@ import type { ModelInfo, ProviderInfo } from '@cline/llms'
 import { Worker } from 'node:worker_threads'
 
 export type ClineProviderCatalog = {
+  authoritativeModels: boolean
   provider: ProviderInfo
   models: Record<string, ModelInfo>
 }

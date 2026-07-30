@@ -1,5 +1,7 @@
 import {
-  ChevronsUpDownIcon,
+  CheckIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
   PlusIcon,
   SlidersHorizontalIcon,
 } from "lucide-react"
@@ -26,23 +28,12 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectSeparator,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { usePlatform } from "@/context/platform"
-import { ButtonGroup } from "@/components/ui/button-group.tsx"
 import type {
   CloudAiModelPreference,
   SaveAiPreferencesInput,
@@ -122,10 +113,10 @@ export function ModelSelector({ role }: { role?: ModelPreferenceRole }) {
 
   return (
     <>
-      <ButtonGroup className="w-full min-w-0">
+      <div className="flex w-full min-w-0 items-center justify-end gap-3">
         <ModelPicker selection={selection} setDialog={setDialog} />
         <ModelVariantSelector selection={selection} />
-      </ButtonGroup>
+      </div>
       <ProviderSelectDialog
         open={dialog?.type === "providers"}
         selection={selection}
@@ -167,7 +158,7 @@ function ModelPicker({
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <ModelPickerTrigger selection={selection} />
+      <ModelPickerTrigger open={open} selection={selection} />
       <ModelPickerContent
         advanced={advanced}
         providerID={providerID}
@@ -181,18 +172,28 @@ function ModelPicker({
   )
 }
 
-function ModelPickerTrigger({ selection }: { selection: ModelSelection }) {
+function ModelPickerTrigger({
+  open,
+  selection,
+}: {
+  open: boolean
+  selection: ModelSelection
+}) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <PopoverTrigger asChild>
           <Button
-            variant="outline"
-            className="w-0 min-w-0 flex-1 justify-start"
+            variant="ghost"
+            className="h-10 w-0 max-w-64 min-w-0 flex-1 justify-center rounded-xl border-0 bg-muted/70 px-3 shadow-none hover:bg-muted aria-expanded:bg-muted"
             disabled={!selection.serverReady || selection.loading}
           >
             <ModelSummary model={selection.currentModel} />
-            <ChevronsUpDownIcon className="shrink-0 text-muted-foreground" />
+            {open ? (
+              <ChevronUpIcon className="size-4 shrink-0 text-muted-foreground" />
+            ) : (
+              <ChevronDownIcon className="size-4 shrink-0 text-muted-foreground" />
+            )}
           </Button>
         </PopoverTrigger>
       </TooltipTrigger>
@@ -212,22 +213,16 @@ type ModelPickerContentProps = {
 }
 
 function ModelPickerContent(props: ModelPickerContentProps) {
-  const openDialog = (type: "providers" | "manage") => {
-    props.setOpen(false)
-    props.setDialog({ type })
-  }
   return (
     <PopoverContent
       align="start"
-      side="left"
-      className="w-88 overflow-hidden p-0"
+      side="top"
+      sideOffset={10}
+      collisionPadding={12}
+      className="w-[var(--radix-popover-trigger-width)] min-w-96 overflow-hidden rounded-2xl p-0 shadow-xl ring-foreground/8"
       onWheel={(event) => event.stopPropagation()}
     >
       <ModelPickerPanel {...props} />
-      <ModelPickerFooter
-        onConnect={() => openDialog("providers")}
-        onManage={() => openDialog("manage")}
-      />
     </PopoverContent>
   )
 }
@@ -237,6 +232,8 @@ type ModelPickerPanelProps = {
   providerID: string
   selection: ModelSelection
   setAdvanced: (value: boolean) => void
+  setDialog: (dialog: ModelDialog) => void
+  setOpen: (value: boolean) => void
   setProviderID: (value: string) => void
 }
 
@@ -245,36 +242,87 @@ function ModelPickerPanel({
   providerID,
   selection,
   setAdvanced,
+  setDialog,
+  setOpen,
   setProviderID,
 }: ModelPickerPanelProps) {
+  const openDialog = (type: "providers" | "manage") => {
+    setOpen(false)
+    setDialog({ type })
+  }
   return (
-    <div className="space-y-4 p-4">
-      <ProviderFilter
+    <div className="space-y-4 p-5">
+      <ModelPickerHeader
         providerID={providerID}
-        providers={selection.connectedProviders}
-        onChange={(value) => changeProvider(selection, value, setProviderID)}
+        selection={selection}
+        setProviderID={setProviderID}
+        onConnect={() => openDialog("providers")}
+        onManage={() => openDialog("manage")}
       />
-      {advanced ? (
-        <AdvancedModelPicker providerID={providerID} selection={selection} />
-      ) : (
-        <SmartModelSlider
-          key={`${providerID}:${selection.currentModel?.provider.id}:${selection.currentModel?.id}`}
-          providerID={providerID}
-          selection={selection}
-        />
-      )}
-      <ModelPickerModeToggle advanced={advanced} onChange={setAdvanced} />
+      <ModelPickerMode
+        advanced={advanced}
+        providerID={providerID}
+        selection={selection}
+      />
+      <ModelPickerBottomBar advanced={advanced} onChange={setAdvanced} />
     </div>
   )
 }
 
-function changeProvider(
-  selection: ModelSelection,
-  providerID: string,
+function ModelPickerHeader({
+  onConnect,
+  onManage,
+  providerID,
+  selection,
+  setProviderID,
+}: {
+  onConnect: () => void
+  onManage: () => void
+  providerID: string
+  selection: ModelSelection
   setProviderID: (value: string) => void
-) {
-  setProviderID(providerID)
-  selectProviderRecommendation(selection, providerID)
+}) {
+  return (
+    <div className="group/provider-header flex min-h-9 items-center justify-between gap-2">
+      <ProviderFilter
+        providerID={providerID}
+        selection={selection}
+        setProviderID={setProviderID}
+      />
+      <ModelPickerActions onConnect={onConnect} onManage={onManage} />
+    </div>
+  )
+}
+
+function ModelPickerMode({
+  advanced,
+  providerID,
+  selection,
+}: Pick<ModelPickerPanelProps, "advanced" | "providerID" | "selection">) {
+  if (advanced) {
+    return <AdvancedModelPicker providerID={providerID} selection={selection} />
+  }
+  return (
+    <SmartModelSlider
+      key={providerID}
+      providerID={providerID}
+      selection={selection}
+    />
+  )
+}
+
+function ModelPickerBottomBar({
+  advanced,
+  onChange,
+}: {
+  advanced: boolean
+  onChange: (value: boolean) => void
+}) {
+  return (
+    <div className="flex items-center justify-end">
+      <ModelPickerModeToggle advanced={advanced} onChange={onChange} />
+    </div>
+  )
 }
 
 function ModelPickerModeToggle({
@@ -286,7 +334,7 @@ function ModelPickerModeToggle({
 }) {
   return (
     <button
-      className="ml-auto block text-xs text-muted-foreground transition-colors hover:text-foreground"
+      className="block text-sm text-muted-foreground transition-colors hover:text-foreground"
       type="button"
       onClick={() => onChange(!advanced)}
     >
@@ -297,36 +345,178 @@ function ModelPickerModeToggle({
 
 type ProviderFilterProps = {
   providerID: string
-  providers: Provider[]
-  onChange: (value: string) => void
+  selection: ModelSelection
+  setProviderID: (value: string) => void
 }
 
 function ProviderFilter({
   providerID,
-  providers,
-  onChange,
+  selection,
+  setProviderID,
 }: ProviderFilterProps) {
+  const [open, setOpen] = React.useState(false)
+  const choices = providerChoices(selection)
+  const selected = selectedProviderChoice(choices, providerID, selection)
+  const select = (choice: ProviderChoice) => {
+    setOpen(false)
+    selectProviderChoice(choice, selection, setProviderID)
+  }
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-sm font-medium">Provider</span>
-      <Select value={providerID} onValueChange={onChange}>
-        <SelectTrigger
-          aria-label="Filter model provider"
-          className="h-7 max-w-48 border-0 bg-transparent px-1.5 shadow-none"
-        >
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent align="start">
-          <SelectItem value={allProvidersValue}>All</SelectItem>
-          {providers.map((provider) => (
-            <SelectItem key={provider.id} value={provider.id}>
-              {provider.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
+    <Popover open={open} onOpenChange={setOpen}>
+      <ProviderFilterTrigger choice={selected} open={open} />
+      <ProviderFilterContent
+        choices={choices}
+        selected={selected}
+        onSelect={select}
+      />
+    </Popover>
   )
+}
+
+type ProviderChoice = {
+  account?: ProviderCredentialSummary
+  label: string
+  provider?: Provider
+  value: string
+}
+
+function ProviderFilterTrigger({
+  choice,
+  open,
+}: {
+  choice: ProviderChoice
+  open: boolean
+}) {
+  return (
+    <PopoverTrigger asChild>
+      <button
+        aria-label="Filter model provider"
+        className="flex min-w-0 items-center gap-2 py-1 text-base font-medium text-foreground transition-opacity hover:opacity-75"
+        type="button"
+      >
+        {choice.provider ? <ProviderMark provider={choice.provider} /> : null}
+        <span className="min-w-0 truncate">{choice.label}</span>
+        <PickerChevron open={open} />
+      </button>
+    </PopoverTrigger>
+  )
+}
+
+function ProviderFilterContent({
+  choices,
+  onSelect,
+  selected,
+}: {
+  choices: ProviderChoice[]
+  onSelect: (choice: ProviderChoice) => void
+  selected: ProviderChoice
+}) {
+  return (
+    <PopoverContent
+      align="start"
+      side="bottom"
+      sideOffset={6}
+      className="w-80 rounded-xl p-2"
+    >
+      <div className="max-h-72 space-y-0.5 overflow-y-auto">
+        {choices.map((choice) => (
+          <ProviderChoiceItem
+            choice={choice}
+            key={choice.value}
+            selected={choice.value === selected.value}
+            onSelect={onSelect}
+          />
+        ))}
+      </div>
+    </PopoverContent>
+  )
+}
+
+function ProviderChoiceItem({
+  choice,
+  onSelect,
+  selected,
+}: {
+  choice: ProviderChoice
+  onSelect: (choice: ProviderChoice) => void
+  selected: boolean
+}) {
+  return (
+    <button
+      className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm transition-colors hover:bg-foreground/10"
+      type="button"
+      onClick={() => onSelect(choice)}
+    >
+      {choice.provider ? <ProviderMark provider={choice.provider} /> : null}
+      <span className="min-w-0 flex-1 truncate">{choice.label}</span>
+      {selected ? <CheckIcon className="size-4 shrink-0 text-primary" /> : null}
+    </button>
+  )
+}
+
+function providerChoices(selection: ModelSelection) {
+  return [
+    { label: "All", value: allProvidersValue },
+    ...selection.connectedProviders.flatMap((provider) =>
+      providerAccountChoices(
+        provider,
+        selection.accountsForProvider(provider.id)
+      )
+    ),
+  ] satisfies ProviderChoice[]
+}
+
+function providerAccountChoices(
+  provider: Provider,
+  accounts: ProviderCredentialSummary[]
+) {
+  if (!accounts.length) {
+    return [{ label: provider.name, provider, value: provider.id }]
+  }
+  return accounts.map((account) => ({
+    account,
+    label:
+      accounts.length > 1
+        ? `${credentialLabel(account)} - ${provider.name}`
+        : provider.name,
+    provider,
+    value: `${provider.id}\u0001${account.label}`,
+  }))
+}
+
+function selectedProviderChoice(
+  choices: ProviderChoice[],
+  providerID: string,
+  selection: ModelSelection
+) {
+  const fallback = choices[0] ?? {
+    label: "All",
+    value: allProvidersValue,
+  }
+  if (providerID === allProvidersValue) return fallback
+  const account = selection.selectedAccountLabel(providerID)
+  return (
+    choices.find(
+      (choice) =>
+        choice.provider?.id === providerID && choice.account?.label === account
+    ) ??
+    choices.find((choice) => choice.provider?.id === providerID) ??
+    fallback
+  )
+}
+
+function selectProviderChoice(
+  choice: ProviderChoice,
+  selection: ModelSelection,
+  setProviderID: (value: string) => void
+) {
+  const providerID = choice.provider?.id ?? allProvidersValue
+  setProviderID(providerID)
+  if (choice.account && choice.provider) {
+    void selection.setAccount(choice.provider.id, choice.account.label)
+    return
+  }
+  selectProviderRecommendation(selection, providerID)
 }
 
 type SmartModelSliderProps = {
@@ -335,12 +525,17 @@ type SmartModelSliderProps = {
 }
 
 function SmartModelSlider({ providerID, selection }: SmartModelSliderProps) {
-  const recommendations = selection.recommendedModels(providerID)
+  const source = selection.recommendedModels(providerID)
+  const boundary = selection.recommendations?.benchmarkBoundary ?? 0.74
+  const hasUnbenchmarked = source.some(isUnbenchmarked)
+  const recommendations = sliderRecommendations(
+    source,
+    boundary,
+    hasUnbenchmarked
+  )
   const [position, setPosition] = React.useState(() =>
     recommendationPosition(recommendations, selection.currentModel)
   )
-  const selected = nearestRecommendation(recommendations, position)
-  const boundary = selection.recommendations?.benchmarkBoundary ?? 0.74
 
   if (!recommendations.length) {
     return <EmptySmartModelSlider />
@@ -348,34 +543,16 @@ function SmartModelSlider({ providerID, selection }: SmartModelSliderProps) {
 
   return (
     <div className="space-y-3">
-      <SliderLabels
-        boundary={boundary}
-        hasUnbenchmarked={recommendations.some(isUnbenchmarked)}
-      />
+      <SliderLabels boundary={boundary} hasUnbenchmarked={hasUnbenchmarked} />
       <SmartSliderInput
-        boundary={boundary}
         position={position}
         recommendations={recommendations}
-        select={() => selectRecommendation(selection, selected)}
+        select={(recommendation) =>
+          selectRecommendation(selection, recommendation)
+        }
         setPosition={setPosition}
       />
-      <SmartModelSelection selected={selected} selection={selection} />
     </div>
-  )
-}
-
-function SmartModelSelection({
-  selected,
-  selection,
-}: {
-  selected: RecommendedSelectableModel | undefined
-  selection: ModelSelection
-}) {
-  return (
-    <ModelAccountSelector
-      providerID={selected?.providerId}
-      selection={selection}
-    />
   )
 }
 
@@ -388,42 +565,113 @@ function EmptySmartModelSlider() {
 }
 
 type SmartSliderInputProps = {
-  boundary: number
   position: number
   recommendations: RecommendedSelectableModel[]
-  select: () => void
+  select: (recommendation: RecommendedSelectableModel) => Promise<void>
   setPosition: (position: number) => void
 }
 
 function SmartSliderInput(props: SmartSliderInputProps) {
+  const control = useSmartSliderControl(props)
   return (
-    <div className="relative">
-      <input
-        aria-label="Model cost and intelligence"
-        className="h-3 w-full cursor-pointer appearance-none rounded-full accent-primary [&::-moz-range-thumb]:size-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-foreground [&::-webkit-slider-thumb]:size-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-foreground"
-        max={1000}
-        min={0}
-        style={{ background: sliderBackground(props.position) }}
-        type="range"
-        value={Math.round(props.position * 1000)}
-        onBlur={props.select}
-        onChange={(event) =>
-          props.setPosition(Number(event.currentTarget.value) / 1000)
-        }
-        onKeyUp={props.select}
-        onPointerUp={props.select}
-      />
+    <div className="relative h-8">
+      <SliderTrack position={props.position} />
       <SliderMarkers {...props} />
-      <SliderBoundary position={props.boundary} />
+      <SliderThumb position={props.position} />
+      <SliderRangeInput control={control} />
     </div>
   )
 }
 
-function SliderBoundary({ position }: { position: number }) {
+function useSmartSliderControl(props: SmartSliderInputProps) {
+  const [inputPosition, setInputPosition] = React.useState(props.position)
+  const enqueue = useRecommendationQueue(props.select)
+  const selectedPosition = React.useRef(props.position)
+  const selectedKey = React.useRef(
+    recommendationIdentity(
+      nearestRecommendation(props.recommendations, props.position)
+    )
+  )
+  const change = (rawPosition: number) => {
+    setInputPosition(rawPosition)
+    const recommendation = nearestRecommendation(
+      props.recommendations,
+      rawPosition
+    )
+    if (!recommendation) return
+    selectedPosition.current = recommendation.position
+    props.setPosition(recommendation.position)
+    const nextKey = recommendationIdentity(recommendation)
+    if (selectedKey.current === nextKey) return
+    selectedKey.current = nextKey
+    enqueue(recommendation)
+  }
+  const settle = () => setInputPosition(selectedPosition.current)
+  return { change, inputPosition, settle }
+}
+
+function useRecommendationQueue(
+  select: (recommendation: RecommendedSelectableModel) => Promise<void>
+) {
+  const queued = React.useRef<RecommendedSelectableModel>()
+  const selecting = React.useRef(false)
+  const flush = async () => {
+    if (selecting.current) return
+    selecting.current = true
+    while (queued.current) {
+      const recommendation = queued.current
+      queued.current = undefined
+      await select(recommendation).catch((error) =>
+        console.error("Unable to select model", error)
+      )
+    }
+    selecting.current = false
+  }
+  return (recommendation: RecommendedSelectableModel) => {
+    queued.current = recommendation
+    void flush()
+  }
+}
+
+function SliderRangeInput({
+  control,
+}: {
+  control: ReturnType<typeof useSmartSliderControl>
+}) {
+  return (
+    <input
+      aria-label="Model cost and intelligence"
+      className="absolute inset-0 z-10 h-full w-full cursor-grab opacity-0 active:cursor-grabbing"
+      max={1000}
+      min={0}
+      type="range"
+      value={Math.round(control.inputPosition * 1000)}
+      onBlur={control.settle}
+      onChange={(event) =>
+        control.change(Number(event.currentTarget.value) / 1000)
+      }
+      onKeyUp={control.settle}
+      onPointerUp={control.settle}
+    />
+  )
+}
+
+function SliderTrack({ position }: { position: number }) {
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-full bg-muted">
+      <span
+        className="absolute inset-y-0 left-0 bg-primary transition-[width] duration-200 ease-out motion-reduce:transition-none"
+        style={{ width: sliderPoint(position) }}
+      />
+    </div>
+  )
+}
+
+function SliderThumb({ position }: { position: number }) {
   return (
     <span
-      className="pointer-events-none absolute top-1/2 h-5 w-px -translate-y-1/2 bg-background/80"
-      style={{ left: `${position * 100}%` }}
+      className="pointer-events-none absolute top-1/2 z-2 size-8 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground shadow-md transition-[left] duration-200 ease-out motion-reduce:transition-none"
+      style={{ left: sliderPoint(position) }}
     />
   )
 }
@@ -436,16 +684,20 @@ function SliderLabels({
   hasUnbenchmarked: boolean
 }) {
   return (
-    <div className="relative h-7 text-xs text-muted-foreground">
+    <div className="relative h-7 text-sm text-muted-foreground">
       <span className="absolute bottom-0 left-0">Cheaper</span>
       <span
         className="absolute bottom-0"
-        style={{ right: `calc(${(1 - boundary) * 100}% + 0.5rem)` }}
+        style={{
+          right: hasUnbenchmarked
+            ? `calc(${(1 - boundary) * 100}% + 0.75rem)`
+            : 0,
+        }}
       >
         Smarter
       </span>
       {hasUnbenchmarked ? (
-        <span className="absolute -top-1 right-0 flex flex-col text-right leading-3">
+        <span className="absolute -top-1 right-0 flex flex-col text-right leading-4">
           <span>New</span>
           <span>No benchmark</span>
         </span>
@@ -465,16 +717,29 @@ function SliderMarkers({
     Math.abs(recommendation.position - position) < 0.025 ? null : (
       <span
         key={`${recommendation.providerId}:${recommendation.modelId}`}
-        className="pointer-events-none absolute top-1/2 size-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground/25"
-        style={{ left: `${recommendation.position * 100}%` }}
+        className="pointer-events-none absolute top-1/2 z-1 size-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground/30"
+        style={{ left: sliderPoint(recommendation.position) }}
       />
     )
   )
 }
 
-function sliderBackground(position: number) {
-  const progress = `${position * 100}%`
-  return `linear-gradient(to right, var(--primary) 0 ${progress}, var(--muted) ${progress} 100%)`
+function sliderPoint(position: number) {
+  const percent = position * 100
+  const offset = 16 * (1 - 2 * position)
+  return `calc(${percent}% + ${offset}px)`
+}
+
+function sliderRecommendations(
+  recommendations: RecommendedSelectableModel[],
+  boundary: number,
+  hasUnbenchmarked: boolean
+) {
+  if (hasUnbenchmarked || boundary <= 0) return recommendations
+  return recommendations.map((recommendation) => ({
+    ...recommendation,
+    position: Math.min(1, recommendation.position / boundary),
+  }))
 }
 
 function AdvancedModelPicker({
@@ -488,21 +753,8 @@ function AdvancedModelPicker({
     (group) =>
       providerID === allProvidersValue || group.provider.id === providerID
   )
-  const accountProviderID =
-    providerID === allProvidersValue
-      ? selection.currentModel?.provider.id
-      : providerID
 
-  return (
-    <div className="space-y-3">
-      <ModelAccountSelector
-        providerID={accountProviderID}
-        selection={selection}
-        alwaysVisible
-      />
-      <AdvancedModelSelect groups={groups} selection={selection} />
-    </div>
-  )
+  return <AdvancedModelSelect groups={groups} selection={selection} />
 }
 
 function AdvancedModelSelect({
@@ -512,92 +764,148 @@ function AdvancedModelSelect({
   groups: ModelGroup[]
   selection: ModelSelection
 }) {
-  const value = selection.currentModel
-    ? modelOptionValue(selection.currentModel)
-    : undefined
+  const [open, setOpen] = React.useState(false)
+  const selectModel = (model: SelectableModel) => {
+    void selection.setModel(model)
+    setOpen(false)
+  }
   return (
-    <Select
-      value={value}
-      onValueChange={(next) => selectAdvancedModel(selection, next)}
+    <Popover open={open} onOpenChange={setOpen}>
+      <AdvancedModelSelectTrigger model={selection.currentModel} open={open} />
+      <AdvancedModelSelectContent
+        groups={groups}
+        selected={selection.currentModel}
+        onSelect={selectModel}
+      />
+    </Popover>
+  )
+}
+
+function AdvancedModelSelectTrigger({
+  model,
+  open,
+}: {
+  model: SelectableModel | undefined
+  open: boolean
+}) {
+  return (
+    <PopoverTrigger asChild>
+      <button
+        className="flex h-10 w-full items-center justify-between gap-3 rounded-xl bg-muted/70 px-4 text-sm transition-colors hover:bg-muted"
+        type="button"
+      >
+        <span className="flex min-w-0 items-center gap-2 truncate">
+          {model ? <ProviderMark provider={model.provider} /> : null}
+          <span className="truncate">{model?.name ?? "Select model"}</span>
+        </span>
+        <PickerChevron open={open} />
+      </button>
+    </PopoverTrigger>
+  )
+}
+
+function AdvancedModelSelectContent({
+  groups,
+  onSelect,
+  selected,
+}: {
+  groups: ModelGroup[]
+  onSelect: (model: SelectableModel) => void
+  selected: SelectableModel | undefined
+}) {
+  return (
+    <PopoverContent
+      align="start"
+      side="bottom"
+      sideOffset={6}
+      className="w-[var(--radix-popover-trigger-width)] gap-2 rounded-xl p-2"
     >
-      <SelectTrigger className="w-full">
-        <SelectValue placeholder="Select model" />
-      </SelectTrigger>
-      <SelectContent>
-        {groups.map((group, index) => (
-          <AdvancedModelGroup
-            group={group}
-            key={group.provider.id}
-            separated={index > 0}
-          />
-        ))}
-      </SelectContent>
-    </Select>
+      <AdvancedModelGroups
+        groups={groups}
+        selected={selected}
+        onSelect={onSelect}
+      />
+    </PopoverContent>
+  )
+}
+
+function AdvancedModelGroups({
+  groups,
+  onSelect,
+  selected,
+}: {
+  groups: ModelGroup[]
+  onSelect: (model: SelectableModel) => void
+  selected: SelectableModel | undefined
+}) {
+  return (
+    <div className="max-h-64 overflow-y-auto">
+      {groups.map((group, index) => (
+        <AdvancedModelGroup
+          group={group}
+          key={group.provider.id}
+          selected={selected}
+          separated={index > 0}
+          onSelect={onSelect}
+        />
+      ))}
+    </div>
   )
 }
 
 function AdvancedModelGroup({
   group,
+  onSelect,
+  selected,
   separated,
 }: {
   group: ModelGroup
+  onSelect: (model: SelectableModel) => void
+  selected: SelectableModel | undefined
   separated: boolean
 }) {
   return (
-    <>
-      {separated ? <SelectSeparator /> : null}
-      <SelectGroup>
-        <SelectLabel>{group.provider.name}</SelectLabel>
+    <div className={separated ? "mt-2 border-t border-foreground/5 pt-2" : ""}>
+      <div className="flex items-center gap-2 px-2 py-1 text-xs text-muted-foreground">
+        <ProviderMark provider={group.provider} />
+        {group.provider.name}
+      </div>
+      <div className="space-y-0.5">
         {group.models.map((model) => (
-          <SelectItem
+          <AdvancedModelItem
             key={modelReactKey(model)}
-            value={modelOptionValue(model)}
-          >
-            {model.name}
-          </SelectItem>
+            model={model}
+            selected={isModelSelected(selected, model)}
+            onSelect={onSelect}
+          />
         ))}
-      </SelectGroup>
-    </>
-  )
-}
-
-type ModelAccountSelectorProps = {
-  alwaysVisible?: boolean
-  providerID: string | undefined
-  selection: ModelSelection
-}
-
-function ModelAccountSelector({
-  alwaysVisible = false,
-  providerID,
-  selection,
-}: ModelAccountSelectorProps) {
-  if (!providerID) return null
-  const accounts = selection.accountsForProvider(providerID)
-  if (!accounts.length || (!alwaysVisible && accounts.length < 2)) return null
-  return (
-    <div className="grid grid-cols-[4.5rem_1fr] items-center gap-2">
-      <span className="text-xs text-muted-foreground">Account</span>
-      <Select
-        value={selection.selectedAccountLabel(providerID)}
-        onValueChange={(label) => void selection.setAccount(providerID, label)}
-      >
-        <SelectTrigger className="w-full" disabled={accounts.length === 1}>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {accounts.map((account) => (
-            <SelectItem key={account.id} value={account.label}>
-              {credentialLabel(account)}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      </div>
     </div>
   )
 }
 
-function ModelPickerFooter({
+function AdvancedModelItem({
+  model,
+  onSelect,
+  selected,
+}: {
+  model: SelectableModel
+  onSelect: (model: SelectableModel) => void
+  selected: boolean
+}) {
+  return (
+    <button
+      className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors hover:bg-foreground/10"
+      type="button"
+      onClick={() => onSelect(model)}
+    >
+      <span className="min-w-0 flex-1 truncate">{model.name}</span>
+      {selected ? <CheckIcon className="size-4 shrink-0 text-primary" /> : null}
+    </button>
+  )
+}
+
+function ModelPickerActions({
   onConnect,
   onManage,
 }: {
@@ -605,7 +913,7 @@ function ModelPickerFooter({
   onManage: () => void
 }) {
   return (
-    <div className="flex items-center justify-end border-t p-1">
+    <div className="flex items-center opacity-0 transition-opacity group-focus-within/provider-header:opacity-100 group-hover/provider-header:opacity-100">
       <Button size="icon-sm" variant="ghost" onClick={onConnect}>
         <PlusIcon />
         <span className="sr-only">Connect provider</span>
@@ -646,13 +954,12 @@ function nearestRecommendation(
   )
 }
 
-function selectRecommendation(
+async function selectRecommendation(
   selection: ModelSelection,
   recommendation: RecommendedSelectableModel | undefined
 ) {
   if (!recommendation) return
-  if (isModelSelected(selection.currentModel, recommendation.model)) return
-  void selection.setModel(recommendation.model)
+  await selection.setModel(recommendation.model)
 }
 
 function selectProviderRecommendation(
@@ -663,7 +970,7 @@ function selectProviderRecommendation(
     selection.recommendedModels(allProvidersValue),
     selection.currentModel
   )
-  selectRecommendation(
+  void selectRecommendation(
     selection,
     nearestRecommendation(
       selection.recommendedModels(providerID),
@@ -676,63 +983,110 @@ function isUnbenchmarked(recommendation: RecommendedSelectableModel) {
   return recommendation.segment === "unbenchmarked"
 }
 
-function modelOptionValue(model: SelectableModel) {
-  return `${model.provider.id}\u0001${model.id}`
-}
-
-function selectAdvancedModel(selection: ModelSelection, value: string) {
-  const model = selection.models.find(
-    (candidate) => modelOptionValue(candidate) === value
-  )
-  if (model) void selection.setModel(model)
+function recommendationIdentity(
+  recommendation: RecommendedSelectableModel | undefined
+) {
+  return recommendation
+    ? `${recommendation.providerId}:${recommendation.modelId}`
+    : undefined
 }
 
 function ModelVariantSelector({ selection }: { selection: ModelSelection }) {
+  const [open, setOpen] = React.useState(false)
   if (selection.variantOptions.length <= 2) return null
-
+  const selected = selection.currentVariant ?? defaultVariant
   return (
-    <Select
-      value={selection.currentVariant ?? defaultVariant}
-      onValueChange={(value) => {
-        void selection.setVariant(value === defaultVariant ? undefined : value)
-      }}
-    >
+    <Popover open={open} onOpenChange={setOpen}>
       <Tooltip>
         <TooltipTrigger asChild>
-          <SelectTrigger className="w-28 max-w-[45%] capitalize">
-            <SelectValue />
-          </SelectTrigger>
+          <PopoverTrigger asChild>
+            <button
+              className="flex h-10 w-32 max-w-[38%] items-center justify-between gap-2 rounded-xl bg-muted/70 px-4 text-sm capitalize transition-colors hover:bg-muted"
+              type="button"
+            >
+              <span className="truncate">{getVariantLabel(selected)}</span>
+              <PickerChevron open={open} />
+            </button>
+          </PopoverTrigger>
         </TooltipTrigger>
         <TooltipContent side="left">Choose thinking mode</TooltipContent>
       </Tooltip>
-      <SelectContent>
-        {selection.variantOptions.map((variant) => (
-          <SelectItem key={variant} value={variant} className="capitalize">
-            {getVariantLabel(variant)}
-          </SelectItem>
+      <ModelVariantContent
+        options={selection.variantOptions}
+        selected={selected}
+        onSelect={(variant) => {
+          setOpen(false)
+          void selection.setVariant(
+            variant === defaultVariant ? undefined : variant
+          )
+        }}
+      />
+    </Popover>
+  )
+}
+
+function ModelVariantContent({
+  onSelect,
+  options,
+  selected,
+}: {
+  onSelect: (variant: string) => void
+  options: string[]
+  selected: string
+}) {
+  return (
+    <PopoverContent
+      align="start"
+      side="top"
+      sideOffset={6}
+      className="w-[var(--radix-popover-trigger-width)] rounded-xl p-2"
+    >
+      <div className="space-y-0.5">
+        {options.map((variant) => (
+          <button
+            className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm capitalize transition-colors hover:bg-foreground/10"
+            key={variant}
+            type="button"
+            onClick={() => onSelect(variant)}
+          >
+            <span className="flex-1">{getVariantLabel(variant)}</span>
+            {variant === selected ? (
+              <CheckIcon className="size-4 text-primary" />
+            ) : null}
+          </button>
         ))}
-      </SelectContent>
-    </Select>
+      </div>
+    </PopoverContent>
+  )
+}
+
+function PickerChevron({ open }: { open: boolean }) {
+  return open ? (
+    <ChevronUpIcon className="size-4 shrink-0 text-muted-foreground" />
+  ) : (
+    <ChevronDownIcon className="size-4 shrink-0 text-muted-foreground" />
   )
 }
 
 function ModelSummary({ model }: { model: SelectableModel | undefined }) {
   if (!model) {
     return (
-      <span className="min-w-0 truncate text-muted-foreground">
+      <span className="min-w-0 flex-1 truncate text-center text-muted-foreground">
         Select model
       </span>
     )
   }
 
   return (
-    <span className="flex min-w-0 flex-1 items-center gap-2">
+    <span className="flex min-w-0 flex-1 items-center justify-center gap-2">
       <ProviderMark provider={model.provider} />
-      <span className="min-w-0 flex-1 truncate">
-        {model.provider.name} · {modelDisplayName(model)}
-      </span>
+      <span className="min-w-0 truncate">{modelTriggerDisplayName(model)}</span>
     </span>
   )
+}
+
+function modelTriggerDisplayName(model: SelectableModel) {
+  return modelDisplayName(model).replace(/^GPT-/i, "")
 }
 
 export function modelDisplayName(model: SelectableModel) {

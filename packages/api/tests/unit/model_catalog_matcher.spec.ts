@@ -37,6 +37,18 @@ test.group('model catalog matcher', () => {
     assert.equal(match?.confidence, 0.94)
   })
 
+  test('matches unique providerless custom model identifiers', ({ assert }) => {
+    const matcher = new ModelCatalogMatcher([
+      openRouterModel('z-ai/glm-5.1', 'GLM 5.1'),
+      openRouterModel('moonshotai/kimi-k2.6', 'Kimi K2.6'),
+    ])
+
+    const match = matcher.match('openai-compatible', catalogModel('glm-5.1', 'glm-5.1'))
+
+    assert.equal(match?.model.id, 'z-ai/glm-5.1')
+    assert.equal(match?.confidence, 1)
+  })
+
   test('does not confuse different numeric model versions', ({ assert }) => {
     const matcher = new ModelCatalogMatcher([
       openRouterModel('openai/gpt-5.5-codex', 'GPT-5.5 Codex'),

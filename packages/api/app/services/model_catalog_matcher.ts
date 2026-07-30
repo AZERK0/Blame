@@ -24,6 +24,7 @@ const providerAuthors: Record<string, string[]> = {
 export class ModelCatalogMatcher {
   private readonly byId = new Map<string, OpenRouterModel>()
   private readonly byName = new Map<string, OpenRouterModel[]>()
+  private readonly byShortId = new Map<string, OpenRouterModel | null>()
 
   constructor(private readonly models: OpenRouterModel[]) {
     for (const model of models) this.index(model)
@@ -40,8 +41,20 @@ export class ModelCatalogMatcher {
   private index(model: OpenRouterModel) {
     this.byId.set(model.id.toLowerCase(), model)
     this.byId.set(model.canonicalSlug.toLowerCase(), model)
+    this.indexShortId(stripProviderPrefix(model.id), model)
+    this.indexShortId(stripProviderPrefix(model.canonicalSlug), model)
     const key = normalizeModelText(model.name)
     this.byName.set(key, [...(this.byName.get(key) ?? []), model])
+  }
+
+  private indexShortId(id: string, model: OpenRouterModel) {
+    const key = id.toLowerCase()
+    const current = this.byShortId.get(key)
+    if (current && current.id !== model.id) {
+      this.byShortId.set(key, null)
+      return
+    }
+    if (current === undefined) this.byShortId.set(key, model)
   }
 
   private exactMatch(providerId: string, model: CatalogModel) {
@@ -49,6 +62,7 @@ export class ModelCatalogMatcher {
       const match = this.byId.get(id.toLowerCase())
       if (match) return match
     }
+    return this.byShortId.get(stripProviderPrefix(model.id).toLowerCase()) ?? undefined
   }
 
   private nameMatch(providerId: string, model: CatalogModel) {

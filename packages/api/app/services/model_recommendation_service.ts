@@ -14,6 +14,7 @@ type RecommendationCandidate = {
 
 const benchmarkBoundary = 0.74
 const unbenchmarkedStart = 0.8
+const newModelWindowDays = 90
 
 export function buildModelRecommendations(
   providers: CatalogProvider[],
@@ -28,13 +29,16 @@ export function buildModelRecommendations(
   const byProvider = Object.fromEntries(
     connectedProviderIds.map((providerId) => [
       providerId,
-      recommendationEntries(candidates.filter((entry) => entry.providerId === providerId)),
+      recommendationEntries(
+        candidates.filter((entry) => entry.providerId === providerId),
+        generatedAt
+      ),
     ])
   )
   return {
     generatedAt,
     benchmarkBoundary,
-    all: recommendationEntries(deduplicateCanonicalModels(candidates)),
+    all: recommendationEntries(deduplicateCanonicalModels(candidates), generatedAt),
     byProvider,
     profile,
   }
@@ -50,15 +54,24 @@ function providerCandidates(provider: CatalogProvider, profile: ModelRecommendat
     }))
 }
 
-function recommendationEntries(candidates: RecommendationCandidate[]) {
+function recommendationEntries(candidates: RecommendationCandidate[], generatedAt: string) {
   const benchmarked = paretoFrontier(candidates.filter(hasBenchmark))
-  const unbenchmarked = candidates.filter((candidate) => !candidate.model.benchmark)
+  const unbenchmarked = candidates.filter(
+    (candidate) => !candidate.model.benchmark && recentlyReleased(candidate.model, generatedAt)
+  )
   const ranked = benchmarked.sort(compareBenchmarked)
   const unrated = unbenchmarked.sort(compareCost)
   return [
     ...positionedEntries(ranked, 0, benchmarkBoundary, 'benchmarked'),
     ...positionedEntries(unrated, unbenchmarkedStart, 1, 'unbenchmarked'),
   ]
+}
+
+function recentlyReleased(model: CatalogModel, generatedAt: string) {
+  const release = releaseTime(model.releaseDate)
+  const generated = releaseTime(generatedAt)
+  if (!release || !generated) return false
+  return release >= generated - newModelWindowDays * 24 * 60 * 60 * 1000
 }
 
 function paretoFrontier(candidates: RecommendationCandidate[]) {

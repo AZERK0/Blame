@@ -36,10 +36,12 @@ test.group('model recommendation service', () => {
     assert.isTrue(recommendations.all.every((entry) => entry.position <= 0.74))
   })
 
-  test('puts every unbenchmarked model in the final segment sorted by price', ({ assert }) => {
+  test('puts recent unbenchmarked models in the final segment sorted by price', ({ assert }) => {
     const provider = catalogProvider('anthropic', [
       model('rated', 2, 50),
       model('new-expensive', 9, undefined, '2026-07-30'),
+      model('old-unrated', 1, undefined, '2025-06-01'),
+      model('unknown-release', 1),
       model('new-cheap-old', 3, undefined, '2026-06-01'),
       model('new-cheap-recent', 3, undefined, '2026-07-29'),
     ])

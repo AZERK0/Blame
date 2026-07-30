@@ -17,6 +17,7 @@ async function loadProviderCatalog() {
   const providers = await getAllProviders()
   return Promise.all(
     providers.map(async (provider: ProviderInfo) => ({
+      authoritativeModels: provider.metadata?.usageCostDisplay === 'subscription',
       provider,
       models: await getModelsForProvider(provider.id),
     }))

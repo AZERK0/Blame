@@ -18,6 +18,7 @@ test.group('OpenRouter catalog client', () => {
     assert.equal(models[0].inputPrice, 2)
     assert.equal(models[0].outputPrice, 8)
     assert.equal(models[0].cacheReadPrice, 0.2)
+    assert.equal(models[0].releaseDate, '2026-07-29T12:00:00.000Z')
     assert.equal(models[0].benchmark?.smartScore, 76)
     assert.equal(models[0].benchmark?.codingIndex, 82)
     assert.equal(models[0].benchmark?.agenticIndex, 62)
@@ -31,6 +32,7 @@ const modelsPayload = {
       id: 'openai/gpt-test',
       canonical_slug: 'openai/gpt-test',
       name: 'GPT Test',
+      created: '2026-07-29T12:00:00.000Z',
       context_length: 200_000,
       pricing: {
         prompt: '0.000002',

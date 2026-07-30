@@ -41,6 +41,7 @@ export type CatalogProvider = {
 
 export type CatalogSnapshotPayload = {
   generatedAt: string
+  openRouterModels?: OpenRouterModel[]
   providers: CatalogProvider[]
 }
 
@@ -54,6 +55,7 @@ export type OpenRouterModel = {
   outputPrice: number | null
   cacheReadPrice: number | null
   cacheWritePrice: number | null
+  releaseDate?: string
   benchmark?: CatalogBenchmark
 }
 

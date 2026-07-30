@@ -47,6 +47,7 @@ function openRouterModel(
     outputPrice: tokenPrice(value.pricing, 'completion'),
     cacheReadPrice: tokenPrice(value.pricing, 'input_cache_read'),
     cacheWritePrice: tokenPrice(value.pricing, 'input_cache_write'),
+    releaseDate: releaseDate(value.created),
     benchmark: benchmarks.get(value.id) ?? benchmarks.get(canonicalSlug) ?? inlineBenchmark,
   }
 }
@@ -136,6 +137,13 @@ function nestedNumber(value: unknown, key: string) {
 
 function stringValue(value: unknown) {
   return typeof value === 'string' ? value : undefined
+}
+
+function releaseDate(value: unknown) {
+  if (typeof value === 'number') return new Date(value * 1000).toISOString()
+  if (typeof value !== 'string' || !value.trim()) return undefined
+  const parsed = Date.parse(value)
+  return Number.isFinite(parsed) ? new Date(parsed).toISOString() : undefined
 }
 
 function numberValue(value: unknown) {
