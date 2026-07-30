@@ -6,6 +6,10 @@ import {
   type CatalogSnapshotPayload,
   type OpenRouterModel,
 } from '#services/model_catalog_contract'
+import {
+  fetchClineLiveProviderModels,
+  loadClineProviderCatalog,
+} from '#services/cline_catalog_client'
 import { ModelCatalogMatcher } from '#services/model_catalog_matcher'
 import { buildModelRecommendations } from '#services/model_recommendation_service'
 import ModelUsageProfileService from '#services/model_usage_profile_service'
@@ -14,14 +18,7 @@ import { credentialModelIds } from '#services/provider_credentials_service'
 import env from '#start/env'
 import logger from '@adonisjs/core/services/logger'
 import { openAICodexPreviewModels } from '@blame/model-catalog'
-import {
-  fetchLiveProviderModels,
-  getAllProviders,
-  getModelsForProvider,
-  resolveProviderModelCatalogKeys,
-  type ModelInfo,
-  type ProviderInfo,
-} from '@cline/llms'
+import type { ModelInfo, ProviderInfo } from '@cline/llms'
 import { createHash } from 'node:crypto'
 import { DateTime } from 'luxon'
 
@@ -67,15 +64,11 @@ function loadStaticCatalog() {
 }
 
 async function buildStaticCatalog() {
-  const providers = ((await getAllProviders()) as ProviderInfo[]).filter(
-    (provider) => !externalCliProviderIds.has(provider.id)
+  const catalog = await loadClineProviderCatalog()
+  const providers = catalog.filter(({ provider }) => !externalCliProviderIds.has(provider.id))
+  return providers.map(({ provider, models }) =>
+    catalogProvider(provider, withPreviewModels(provider.id, models))
   )
-  return Promise.all(providers.map(async (provider) => providerCatalog(provider)))
-}
-
-async function providerCatalog(provider: ProviderInfo) {
-  const models = await getModelsForProvider(provider.id)
-  return catalogProvider(provider, withPreviewModels(provider.id, models))
 }
 
 function withPreviewModels(providerId: string, models: Record<string, ModelInfo>) {
@@ -161,7 +154,10 @@ async function refreshedProviders(staticCatalog: CatalogProvider[]) {
   if (env.get('BLAME_MODEL_CATALOG_LIVE_REFRESH') === false) return staticCatalog
   try {
     const url = env.get('BLAME_MODELS_DEV_URL') ?? 'https://models.dev/api.json'
-    const live = await fetchLiveProviderModels(url)
+    const live = await fetchClineLiveProviderModels(
+      url,
+      staticCatalog.map((provider) => provider.id)
+    )
     return staticCatalog.map((provider) => mergeLiveProvider(provider, live))
   } catch (error) {
     logger.warn({ err: error }, 'Unable to refresh the live Cline model catalog')
@@ -173,10 +169,7 @@ function mergeLiveProvider(
   provider: CatalogProvider,
   live: Record<string, Record<string, ModelInfo>>
 ) {
-  const liveModels = Object.assign(
-    {},
-    ...resolveProviderModelCatalogKeys(provider.id).map((key: string) => live[key] ?? {})
-  )
+  const liveModels = live[provider.id] ?? {}
   const normalized = Object.fromEntries(
     Object.entries(liveModels).map(([modelId, model]) => [modelId, catalogModel(modelId, model)])
   )
