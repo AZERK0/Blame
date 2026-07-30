@@ -577,8 +577,8 @@ function SmartSliderInput(props: SmartSliderInputProps) {
     <div className="relative h-8">
       <SliderTrack position={props.position} />
       <SliderMarkers {...props} />
-      <SliderThumb position={props.position} />
       <SliderRangeInput control={control} />
+      <SliderThumb position={props.position} />
     </div>
   )
 }
@@ -641,7 +641,7 @@ function SliderRangeInput({
   return (
     <input
       aria-label="Model cost and intelligence"
-      className="absolute inset-0 z-10 h-full w-full cursor-grab opacity-0 active:cursor-grabbing"
+      className="peer absolute inset-0 z-10 h-full w-full cursor-grab opacity-0 active:cursor-grabbing"
       max={1000}
       min={0}
       type="range"
@@ -658,10 +658,10 @@ function SliderRangeInput({
 
 function SliderTrack({ position }: { position: number }) {
   return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-full bg-muted">
+    <div className="pointer-events-none absolute inset-x-0 top-1/2 h-[18px] -translate-y-1/2 overflow-hidden rounded-full bg-muted">
       <span
-        className="absolute inset-y-0 left-0 bg-primary transition-[width] duration-200 ease-out motion-reduce:transition-none"
-        style={{ width: sliderPoint(position) }}
+        className="smart-model-slider-fill absolute inset-y-0 left-0 overflow-hidden rounded-full transition-[width] duration-200 ease-out motion-reduce:transition-none"
+        style={sliderFillStyle(position)}
       />
     </div>
   )
@@ -670,10 +670,35 @@ function SliderTrack({ position }: { position: number }) {
 function SliderThumb({ position }: { position: number }) {
   return (
     <span
-      className="pointer-events-none absolute top-1/2 z-2 size-8 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground shadow-md transition-[left] duration-200 ease-out motion-reduce:transition-none"
+      className="pointer-events-none absolute top-1/2 z-2 size-6 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground shadow-md ring-2 ring-background transition-[left,transform,box-shadow] duration-200 ease-out peer-hover:scale-125 peer-hover:shadow-lg peer-focus-visible:scale-125 peer-active:scale-125 peer-active:shadow-xl motion-reduce:transition-none"
       style={{ left: sliderPoint(position) }}
     />
   )
+}
+
+type SliderFillStyle = React.CSSProperties & {
+  "--smart-model-slider-accent-opacity": number
+  "--smart-model-slider-accent-duration": string
+  "--smart-model-slider-brightness": number
+  "--smart-model-slider-duration": string
+  "--smart-model-slider-glow-opacity": number
+  "--smart-model-slider-grayscale": number
+  "--smart-model-slider-saturation": number
+}
+
+function sliderFillStyle(position: number): SliderFillStyle {
+  const duration = 3.6 - position * 1.2
+  const cheaperIntensity = Math.pow(1 - position, 2)
+  return {
+    "--smart-model-slider-accent-duration": `${duration * 1.45}s`,
+    "--smart-model-slider-accent-opacity": 0.08 + position * 0.2,
+    "--smart-model-slider-brightness": 1.04 - cheaperIntensity * 0.26,
+    "--smart-model-slider-duration": `${duration}s`,
+    "--smart-model-slider-glow-opacity": 0.16 + position * 0.2,
+    "--smart-model-slider-grayscale": cheaperIntensity * 0.9,
+    "--smart-model-slider-saturation": 0.88 + position * 0.24,
+    width: sliderPoint(position),
+  }
 }
 
 function SliderLabels({
