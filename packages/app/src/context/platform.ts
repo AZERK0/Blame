@@ -40,7 +40,7 @@ import type {
   StartDevelopmentSessionInput,
   StartNewProjectGenerationInput,
   StartSessionInput,
-  ReasoningEffort,
+  ReasoningSelection,
 } from "@blame/agent-runtime"
 import type { NewProjectConfiguration } from "../components/new-project/new-project-options"
 import type { UserStory } from "../components/backlog/data/backlog-data"
@@ -75,7 +75,9 @@ export type Platform = {
     ready(): void
   }
   auth?: {
-    onCallback(callback: (result: { code?: string; error?: string }) => void): () => void
+    onCallback(
+      callback: (result: { code?: string; error?: string }) => void
+    ): () => void
     request: CloudAuthRequestClient["request"]
     ready(): void
   }
@@ -145,6 +147,7 @@ export type McpServerConfig = {
     supported: boolean
   }
   requiresLocalSetup: boolean
+  timeout?: number
   transport: McpTransport
   url?: string
 }
@@ -169,7 +172,7 @@ export type McpServersClient = {
 
 export type CloudMcpServerConfig = Pick<
   McpServerConfig,
-  "command" | "disabled" | "name" | "transport" | "url"
+  "command" | "disabled" | "name" | "timeout" | "transport" | "url"
 >
 
 export type BacklogStatusPipClient = {
@@ -568,7 +571,7 @@ export type WorkspaceClient = {
     parentPath: string
     projectName: string
     providerId: string
-    reasoningEffort?: ReasoningEffort
+    reasoningEffort?: ReasoningSelection
     runId: string
   }): Promise<{
     path: string

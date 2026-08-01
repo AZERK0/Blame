@@ -1,5 +1,9 @@
 import * as React from "react"
-import type { AgentEvent, ProjectRunConfiguration } from "@blame/agent-runtime"
+import type {
+  AgentEvent,
+  ProjectRunConfiguration,
+  ReasoningSelection,
+} from "@blame/agent-runtime"
 import { toast } from "sonner"
 
 import { captureAgentRunDiffEndRef } from "@/components/chat/agent-run-diffs"
@@ -591,7 +595,6 @@ export function BacklogPage() {
         modelId,
         credentialLabel: agentSelection.currentModel?.credentialLabel,
         reasoningEffort: agentSelection.currentVariant,
-        contextCompressionMode: agentSelection.contextCompressionMode,
         autoSendPrompt: false,
         title: story.title,
         summary: story.summary,
@@ -613,7 +616,6 @@ export function BacklogPage() {
     },
     [
       auth,
-      agentSelection.contextCompressionMode,
       agentSelection.currentModel,
       agentSelection.currentVariant,
       platform.agent,
@@ -1512,7 +1514,7 @@ type CheckInitializationImpactInput = {
   providerId: string
   modelId: string
   credentialLabel?: string
-  reasoningEffort?: "low" | "medium" | "high" | "xhigh"
+  reasoningEffort?: ReasoningSelection
   repositoryRoot: string
   baseCommit: string
   mergeCommit: string

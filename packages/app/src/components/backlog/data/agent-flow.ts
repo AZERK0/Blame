@@ -199,10 +199,39 @@ function errorActivities(
       kind: "error",
       title: "Agent error",
       detail,
+      actionUrl: safeErrorActionUrl(stringValue(payload.actionUrl)),
+      errorCode: agentErrorCode(payload.code),
+      resetAt: stringValue(payload.resetAt),
       status: "failed",
       iteration,
     },
   ])
+}
+
+function agentErrorCode(value: unknown) {
+  if (
+    value === "cline_not_subscribed" ||
+    value === "cline_org_subscription_unsupported" ||
+    value === "cline_pass_limit" ||
+    value === "cline_free_model_limit" ||
+    value === "cline_model_not_found"
+  ) {
+    return value
+  }
+  return undefined
+}
+
+function safeErrorActionUrl(value: string | undefined) {
+  if (!value) return undefined
+  try {
+    const url = new URL(value)
+    if (url.protocol !== "https:" || url.username || url.password) {
+      return undefined
+    }
+    return url.toString()
+  } catch {
+    return undefined
+  }
 }
 
 function nextErrorActivityId(
@@ -766,7 +795,10 @@ function spawnAgentMessageActivityInput(
   const text = spawnAgentResponseText(payload.output)
   if (!text) return undefined
   const agent =
-    spawnAgentInfo(recordValue(recordValue(payload.toolCall).input), toolInput) ??
+    spawnAgentInfo(
+      recordValue(recordValue(payload.toolCall).input),
+      toolInput
+    ) ??
     spawnAgentInfoFromResponse(text) ??
     fallbackSpawnAgentInfo
   return {
@@ -1099,21 +1131,6 @@ function usageTurnFields(
       doneAggregate
     ),
     cost: usageTurnValue(current.cost, usage.cost, doneAggregate),
-    headroomCompressionCount:
-      numberValue(usage.headroomCompressionCount) ??
-      current.headroomCompressionCount,
-    headroomCompressionRatio:
-      numberValue(usage.headroomCompressionRatio) ??
-      current.headroomCompressionRatio,
-    headroomLastTokensSaved:
-      numberValue(usage.headroomLastTokensSaved) ??
-      current.headroomLastTokensSaved,
-    headroomTokensAfter:
-      numberValue(usage.headroomTokensAfter) ?? current.headroomTokensAfter,
-    headroomTokensBefore:
-      numberValue(usage.headroomTokensBefore) ?? current.headroomTokensBefore,
-    headroomTokensSaved:
-      numberValue(usage.headroomTokensSaved) ?? current.headroomTokensSaved,
     inputTokens: usageTurnValue(
       current.inputTokens,
       usage.inputTokens,
@@ -1193,12 +1210,6 @@ function usageChanged(current: UserStoryAgentUsage, next: UserStoryAgentUsage) {
     current.cacheReadTokens !== next.cacheReadTokens ||
     current.cacheWriteTokens !== next.cacheWriteTokens ||
     current.cost !== next.cost ||
-    current.headroomCompressionCount !== next.headroomCompressionCount ||
-    current.headroomCompressionRatio !== next.headroomCompressionRatio ||
-    current.headroomLastTokensSaved !== next.headroomLastTokensSaved ||
-    current.headroomTokensAfter !== next.headroomTokensAfter ||
-    current.headroomTokensBefore !== next.headroomTokensBefore ||
-    current.headroomTokensSaved !== next.headroomTokensSaved ||
     current.inputTokens !== next.inputTokens ||
     current.outputTokens !== next.outputTokens ||
     current.totalCacheReadTokens !== next.totalCacheReadTokens ||

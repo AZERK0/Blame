@@ -15,7 +15,7 @@ $ClineSdkVersion = if ($env:BLAME_CLINE_SDK_VERSION) {
 } elseif ($Manifest.PSObject.Properties["clineSdkVersion"]) {
   [string]$Manifest.clineSdkVersion
 } else {
-  "0.0.55"
+  "0.0.68"
 }
 $WslRequiredAction = "Enable WSL2 in Windows, restart if prompted, then run Blame runtime setup again."
 $RootfsAction = "Blame could not download the BlameRuntime WSL2 rootfs. Check the internet connection, then run Blame runtime setup again."

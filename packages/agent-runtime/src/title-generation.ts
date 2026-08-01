@@ -2,6 +2,7 @@ import type { ClineCore } from "@cline/sdk";
 
 import { loadPrompt } from "./prompt-loader.js";
 import { appendProductionConfig } from "./production.js";
+import { reasoningConfig } from "./reasoning.js";
 import type { GenerateTitleInput, GenerateTitleResult } from "./types.js";
 
 type TitleGenerationCredential = {
@@ -35,8 +36,7 @@ function titleGenerationConfig(
     modelId: input.modelId,
     apiKey: credential.apiKey,
     baseUrl: credential.baseUrl ?? undefined,
-    thinking: !!input.reasoningEffort,
-    reasoningEffort: input.reasoningEffort,
+    ...reasoningConfig(input.reasoningEffort),
     systemPrompt: loadPrompt("title-generator-system"),
     cwd: input.cwd,
     workspaceRoot: input.workspaceRoot,

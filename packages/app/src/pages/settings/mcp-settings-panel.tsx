@@ -35,6 +35,7 @@ type FormState = {
   cwd: string
   entries: Entry[]
   name: string
+  timeout: string
   transport: McpTransport
   url: string
 }
@@ -45,6 +46,7 @@ const formState = (server?: McpServerConfig): FormState => ({
   cwd: server?.cwd ?? "",
   entries: localEntries(server),
   name: server?.name ?? "",
+  timeout: server?.timeout ? String(server.timeout) : "",
   transport: server?.transport ?? "stdio",
   url: server?.url ?? "",
 })
@@ -224,6 +226,7 @@ function toCloudServers(servers: McpServerConfig[]): CloudMcpServer[] {
     command: server.transport === "stdio" ? server.command : undefined,
     disabled: server.disabled,
     name: server.name,
+    timeout: server.timeout,
     transport: server.transport,
     url: server.transport === "stdio" ? undefined : safeCloudUrl(server.url),
   }))
@@ -521,6 +524,23 @@ function McpServerForm({
       </Button>
       {advanced && (
         <div className="mt-2 grid gap-4 border-t pt-4">
+          <Field
+            label="Timeout"
+            hint="Optional connection timeout in seconds (1–3600)."
+          >
+            <Input
+              inputMode="numeric"
+              min={1}
+              max={3600}
+              placeholder="60"
+              step={1}
+              type="number"
+              value={form.timeout}
+              onChange={(event) =>
+                setForm({ ...form, timeout: event.target.value })
+              }
+            />
+          </Field>
           {form.transport === "stdio" && (
             <>
               <Field
@@ -716,6 +736,7 @@ function serverFromForm(form: FormState, disabled: boolean): McpServerConfig {
     disabled,
     name: form.name,
     requiresLocalSetup: false,
+    timeout: timeoutSeconds(form.timeout),
   }
   return form.transport === "stdio"
     ? {
@@ -734,6 +755,17 @@ function serverFromForm(form: FormState, disabled: boolean): McpServerConfig {
         transport: form.transport,
         url: form.url,
       }
+}
+
+function timeoutSeconds(value: string) {
+  if (!value.trim()) return undefined
+  const parsed = Number(value)
+  if (!Number.isInteger(parsed) || parsed < 1 || parsed > 3600) {
+    throw new Error(
+      "Timeout must be a whole number between 1 and 3600 seconds."
+    )
+  }
+  return parsed
 }
 
 function entryValues(entries: Entry[]) {

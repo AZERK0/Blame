@@ -101,6 +101,7 @@ export type {
   ProviderCredentialSummary,
   ProviderListResponse,
   ReasoningEffort,
+  ReasoningSelection,
   RepairProjectInitializationInput,
   RepairProjectInitializationResult,
   ResolveMergeConflictsInput,

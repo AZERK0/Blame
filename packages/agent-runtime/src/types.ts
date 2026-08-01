@@ -63,10 +63,16 @@ export type ModelRecommendations = {
   profile: ModelRecommendationProfile;
 };
 
-export type ReasoningEffort = "low" | "medium" | "high" | "xhigh";
+export type ReasoningEffort =
+  | "minimal"
+  | "low"
+  | "medium"
+  | "high"
+  | "xhigh"
+  | "max";
+export type ReasoningSelection = "none" | "enabled" | ReasoningEffort;
 export type AgentMode = "act" | "plan" | "yolo";
 export type AgentBackendMode = "auto" | "local" | "hub" | "remote";
-export type AgentContextCompressionMode = "cline" | "headroom" | "off";
 export type AgentRuntimeConfigExtension =
   | "plugins"
   | "rules"
@@ -160,8 +166,7 @@ export type StartSessionInput = {
   apiConnection: ApiConnection;
   providerId: string;
   modelId: string;
-  reasoningEffort?: ReasoningEffort;
-  contextCompressionMode?: AgentContextCompressionMode;
+  reasoningEffort?: ReasoningSelection;
   autoApproveWriteTools?: boolean;
   autoSendPrompt?: boolean;
   checkpointEnabled?: boolean;
@@ -208,8 +213,7 @@ export type StartDevelopmentSessionInput = {
   providerId: string;
   modelId: string;
   credentialLabel?: string;
-  reasoningEffort?: ReasoningEffort;
-  contextCompressionMode?: AgentContextCompressionMode;
+  reasoningEffort?: ReasoningSelection;
   autoSendPrompt?: boolean;
   checkpointEnabled?: boolean;
   configExtensions?: AgentRuntimeConfigExtension[];
@@ -239,7 +243,7 @@ export type ApproveAndMergeInput = {
   providerId: string;
   modelId: string;
   credentialLabel?: string;
-  reasoningEffort?: ReasoningEffort;
+  reasoningEffort?: ReasoningSelection;
   repositoryRoot: string;
   worktree: string;
   storyBranch: string;
@@ -262,7 +266,7 @@ export type GenerateCommitMessageInput = {
   providerId: string;
   modelId: string;
   credentialLabel?: string;
-  reasoningEffort?: ReasoningEffort;
+  reasoningEffort?: ReasoningSelection;
   repositoryRoot: string;
   worktree: string;
   title?: string;
@@ -286,7 +290,7 @@ export type GenerateTitleInput = {
   prompt: string;
   cwd: string;
   workspaceRoot: string;
-  reasoningEffort?: ReasoningEffort;
+  reasoningEffort?: ReasoningSelection;
   credentialLabel?: string;
   backend?: AgentBackendConfig;
   executionId?: string;
@@ -305,7 +309,7 @@ export type ResolveMergeConflictsInput = {
   providerId: string;
   modelId: string;
   credentialLabel?: string;
-  reasoningEffort?: ReasoningEffort;
+  reasoningEffort?: ReasoningSelection;
   repositoryRoot: string;
   worktree: string;
   title?: string;
@@ -449,7 +453,7 @@ export type InitializeProjectInput = {
   apiConnection: ApiConnection;
   providerId: string;
   modelId: string;
-  reasoningEffort?: ReasoningEffort;
+  reasoningEffort?: ReasoningSelection;
   cwd: string;
   workspaceRoot: string;
   credentialLabel?: string;
@@ -519,7 +523,7 @@ export type AssessProjectInitializationImpactInput = {
   apiConnection: ApiConnection;
   providerId: string;
   modelId: string;
-  reasoningEffort?: ReasoningEffort;
+  reasoningEffort?: ReasoningSelection;
   cwd: string;
   workspaceRoot: string;
   credentialLabel?: string;
@@ -546,7 +550,7 @@ export type RepairProjectInitializationInput = {
   apiConnection: ApiConnection;
   providerId: string;
   modelId: string;
-  reasoningEffort?: ReasoningEffort;
+  reasoningEffort?: ReasoningSelection;
   cwd: string;
   workspaceRoot: string;
   credentialLabel?: string;
@@ -589,7 +593,7 @@ export type StartNewProjectGenerationInput = {
   apiConnection: ApiConnection;
   providerId: string;
   modelId: string;
-  reasoningEffort?: ReasoningEffort;
+  reasoningEffort?: ReasoningSelection;
   credentialLabel?: string;
   configuration: NewProjectGenerationConfiguration;
   cwd: string;
@@ -613,7 +617,7 @@ export type OptimizeUserStoryPromptInput = {
   prompt: string;
   cwd: string;
   workspaceRoot: string;
-  reasoningEffort?: ReasoningEffort;
+  reasoningEffort?: ReasoningSelection;
   credentialLabel?: string;
   title?: string;
   backend?: AgentBackendConfig;
@@ -637,12 +641,6 @@ export type AgentUsageTotals = {
   cacheReadTokens?: number;
   cacheWriteTokens?: number;
   cost?: number;
-  headroomCompressionCount?: number;
-  headroomCompressionRatio?: number;
-  headroomLastTokensSaved?: number;
-  headroomTokensAfter?: number;
-  headroomTokensBefore?: number;
-  headroomTokensSaved?: number;
   inputTokens: number;
   outputTokens: number;
   totalCacheReadTokens?: number;

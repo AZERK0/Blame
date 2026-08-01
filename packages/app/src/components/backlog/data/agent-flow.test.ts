@@ -25,12 +25,17 @@ test("completes a running tool when a fallback result has no tool call id", () =
 })
 
 test("preserves tool input when the completion event only contains output", () => {
-  const patch = "*** Begin Patch\n*** Update File: example.ts\n+changed\n*** End Patch"
+  const patch =
+    "*** Begin Patch\n*** Update File: example.ts\n+changed\n*** End Patch"
   const started = updateStory(story(), {
     type: "tool",
     payload: {
       phase: "started",
-      toolCall: { id: "call-1", name: "apply_patch", input: { excerpt: patch } },
+      toolCall: {
+        id: "call-1",
+        name: "apply_patch",
+        input: { excerpt: patch },
+      },
     },
   })
   const completed = updateStory(started, {
@@ -38,7 +43,8 @@ test("preserves tool input when the completion event only contains output", () =
     payload: {
       output: {
         query: "apply_patch",
-        result: "Successfully applied patch to the following files:\nexample.ts",
+        result:
+          "Successfully applied patch to the following files:\nexample.ts",
         success: true,
       },
       phase: "finished",
@@ -199,6 +205,8 @@ test("records agent errors as dedicated failed activities", () => {
   const streaming = updateStory(story(), textEvent({ text: "Working." }))
   const failed = updateStory(streaming, {
     payload: {
+      actionUrl: "https://app.cline.bot/dashboard/subscription?personal=true",
+      code: "cline_not_subscribed",
       error: { message: "Cline: Provider unavailable" },
       iteration: 2,
     },
@@ -214,6 +222,11 @@ test("records agent errors as dedicated failed activities", () => {
   assert.equal(activities[1]?.detail, "Provider unavailable")
   assert.equal(activities[1]?.status, "failed")
   assert.equal(activities[1]?.title, "Agent error")
+  assert.equal(activities[1]?.errorCode, "cline_not_subscribed")
+  assert.equal(
+    activities[1]?.actionUrl,
+    "https://app.cline.bot/dashboard/subscription?personal=true"
+  )
 })
 
 test("removes provider labels from legacy agent errors", () => {
@@ -706,38 +719,6 @@ test("keeps last turn usage when done sends aggregate usage", () => {
   assert.equal(completed.agentUsage?.totalOutputTokens, 320)
   assert.equal(completed.agentUsage?.totalCacheReadTokens, 4096)
   assert.equal(completed.agentUsage?.totalCost, 0.15)
-})
-
-test("keeps Headroom savings in usage updates", () => {
-  const updated = updateStory(
-    story(),
-    usageEvent({
-      headroomCompressionCount: 2,
-      headroomCompressionRatio: 0.24,
-      headroomLastTokensSaved: 15402,
-      headroomTokensAfter: 7810,
-      headroomTokensBefore: 33680,
-      headroomTokensSaved: 25870,
-    })
-  )
-  const next = updateStory(
-    updated,
-    usageEvent({
-      inputTokens: 1200,
-      outputTokens: 80,
-      totalInputTokens: 4200,
-      totalOutputTokens: 210,
-    })
-  )
-
-  assert.equal(next.agentUsage?.headroomCompressionCount, 2)
-  assert.equal(next.agentUsage?.headroomCompressionRatio, 0.24)
-  assert.equal(next.agentUsage?.headroomLastTokensSaved, 15402)
-  assert.equal(next.agentUsage?.headroomTokensAfter, 7810)
-  assert.equal(next.agentUsage?.headroomTokensBefore, 33680)
-  assert.equal(next.agentUsage?.headroomTokensSaved, 25870)
-  assert.equal(next.agentUsage?.inputTokens, 1200)
-  assert.equal(next.agentUsage?.totalInputTokens, 4200)
 })
 
 function updateStory(story: UserStory, event: AgentEvent) {

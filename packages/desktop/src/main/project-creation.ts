@@ -10,7 +10,7 @@ import {
 } from "node:fs/promises";
 import { basename, join, relative, resolve } from "node:path";
 import { promisify } from "node:util";
-import type { ApiConnection, ReasoningEffort } from "@blame/agent-runtime";
+import type { ApiConnection, ReasoningSelection } from "@blame/agent-runtime";
 import { withoutTelemetryEnvironment } from "@blame/telemetry";
 import { setupPath } from "./host-tool-path.ts";
 import { sanitizeWorkspaceConfigFiles } from "./workspace-runtime.ts";
@@ -147,7 +147,7 @@ export type CreateProjectInput = {
   parentPath: string;
   projectName: string;
   providerId: string;
-  reasoningEffort?: ReasoningEffort;
+  reasoningEffort?: ReasoningSelection;
   runId: string;
 };
 
@@ -160,7 +160,7 @@ export type NewProjectAgentRuntime = {
     modelId: string;
     projectName: string;
     providerId: string;
-    reasoningEffort?: ReasoningEffort;
+    reasoningEffort?: ReasoningSelection;
     sessionId?: string;
     workspaceRoot: string;
   }): Promise<{

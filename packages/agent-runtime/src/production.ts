@@ -20,11 +20,8 @@ import type {
 export type ProductionConfig = {
   checkpointEnabled?: boolean
   compactionEnabled?: boolean
-  compactionMaxInputTokens?: number
   compactionPreserveRecentTokens?: number
-  compactionReserveTokens?: number
   compactionStrategy?: "agentic" | "basic"
-  compactionThresholdRatio?: number
   configExtensions?: AgentRuntimeConfigExtension[]
   disableMcpSettingsTools?: boolean
   maxInputTokens?: number
@@ -41,7 +38,6 @@ export type ProductionConfig = {
 export type ProductionSessionContext = {
   checkpointEnabled?: boolean
   configExtensions?: string
-  contextCompressionMode?: string
   disableMcpSettingsTools?: boolean
   durationMs?: number
   finishReason?: string
@@ -77,20 +73,11 @@ const allowedLogKeys = new Set([
   "compressionRatio",
   "configExtensions",
   "cost",
-  "contextCompressionMode",
   "disableMcpSettingsTools",
   "durationMs",
   "errorType",
   "estimatedInputTokens",
   "fallback",
-  "headroomCompressionCount",
-  "headroomCompressionRatio",
-  "headroomLastTokensSaved",
-  "headroomPort",
-  "headroomSource",
-  "headroomTokensAfter",
-  "headroomTokensBefore",
-  "headroomTokensSaved",
   "inputTokens",
   "maxIterations",
   "maxInputTokens",
@@ -127,9 +114,7 @@ const allowedLogKeys = new Set([
 ])
 
 const stableStringLogKeys = new Set([
-  "contextCompressionMode",
   "errorType",
-  "headroomSource",
   "mode",
   "modelId",
   "providerId",
@@ -145,11 +130,8 @@ export function loadProductionConfig(env: NodeJS.ProcessEnv = process.env): Prod
   return {
     checkpointEnabled: booleanValue(env.BLAME_AGENT_CHECKPOINTS_ENABLED, true),
     compactionEnabled: booleanValue(env.BLAME_AGENT_COMPACTION_ENABLED, true),
-    compactionMaxInputTokens: positiveNumber(env.BLAME_AGENT_COMPACTION_MAX_INPUT_TOKENS),
     compactionPreserveRecentTokens: positiveNumber(env.BLAME_AGENT_COMPACTION_PRESERVE_RECENT_TOKENS),
-    compactionReserveTokens: positiveNumber(env.BLAME_AGENT_COMPACTION_RESERVE_TOKENS),
     compactionStrategy: compactionStrategy(env.BLAME_AGENT_COMPACTION_STRATEGY),
-    compactionThresholdRatio: ratioNumber(env.BLAME_AGENT_COMPACTION_THRESHOLD_RATIO),
     configExtensions: configExtensions(env.BLAME_AGENT_CONFIG_EXTENSIONS),
     disableMcpSettingsTools: !booleanValue(env.BLAME_AGENT_MCP_SETTINGS_TOOLS_ENABLED, true),
     maxInputTokens: positiveNumber(env.BLAME_AGENT_MAX_INPUT_TOKENS),
@@ -235,11 +217,8 @@ export function blameCheckpointConfig(config: ProductionConfig): CoreCheckpointC
 export function blameCompactionConfig(config: ProductionConfig): CoreCompactionConfig {
   return {
     enabled: config.compactionEnabled ?? true,
-    ...(config.compactionMaxInputTokens ? { maxInputTokens: config.compactionMaxInputTokens } : {}),
     ...(config.compactionPreserveRecentTokens ? { preserveRecentTokens: config.compactionPreserveRecentTokens } : {}),
-    ...(config.compactionReserveTokens ? { reserveTokens: config.compactionReserveTokens } : {}),
-    strategy: config.compactionStrategy ?? "basic",
-    ...(config.compactionThresholdRatio ? { thresholdRatio: config.compactionThresholdRatio } : {}),
+    strategy: config.compactionStrategy ?? "agentic",
   }
 }
 
@@ -273,12 +252,6 @@ export function summarizeUsage(summary: UsageSummary | undefined) {
     cacheReadTokens: usage.cacheReadTokens,
     cacheWriteTokens: usage.cacheWriteTokens,
     cost: usageCost(usage),
-    headroomCompressionCount: usageHeadroomField(usage, "headroomCompressionCount"),
-    headroomCompressionRatio: usageHeadroomField(usage, "headroomCompressionRatio"),
-    headroomLastTokensSaved: usageHeadroomField(usage, "headroomLastTokensSaved"),
-    headroomTokensAfter: usageHeadroomField(usage, "headroomTokensAfter"),
-    headroomTokensBefore: usageHeadroomField(usage, "headroomTokensBefore"),
-    headroomTokensSaved: usageHeadroomField(usage, "headroomTokensSaved"),
     inputTokens: usage.inputTokens,
     outputTokens: usage.outputTokens,
     totalCacheReadTokens: usageTotalCacheReadTokens(usage),
@@ -347,19 +320,13 @@ function positiveNumber(value: string | undefined, fallback?: number) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback
 }
 
-function ratioNumber(value: string | undefined, fallback?: number) {
-  const parsed = positiveNumber(value)
-  if (parsed === undefined) return fallback
-  return parsed > 0 && parsed < 1 ? parsed : fallback
-}
-
 function booleanValue(value: string | undefined, fallback: boolean) {
   if (value === undefined) return fallback
   return value !== "false"
 }
 
 function compactionStrategy(value: string | undefined) {
-  return value === "agentic" ? "agentic" : "basic"
+  return value === "basic" ? "basic" : "agentic"
 }
 
 function configExtensions(value: string | undefined) {
@@ -404,10 +371,6 @@ function totalCost(usage: UsageTotals) {
 
 function usageCost(usage: UsageTotals) {
   return "cost" in usage ? usage.cost : undefined
-}
-
-function usageHeadroomField(usage: UsageTotals, key: keyof AgentUsageTotals) {
-  return (usage as Partial<AgentUsageTotals>)[key]
 }
 
 function usageTotalCost(usage: UsageTotals) {

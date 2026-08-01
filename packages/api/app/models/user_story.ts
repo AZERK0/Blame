@@ -17,11 +17,20 @@ export type UserStoryStatus =
 
 export type UserStoryPriority = 'Low' | 'Medium' | 'High'
 export type UserStoryAgentStatus = 'Running' | 'Paused'
+export type UserStoryAgentErrorCode =
+  | 'cline_not_subscribed'
+  | 'cline_org_subscription_unsupported'
+  | 'cline_pass_limit'
+  | 'cline_free_model_limit'
+  | 'cline_model_not_found'
 export type UserStoryAgentActivity = {
   id: string
   kind: 'reasoning' | 'message' | 'tool' | 'approval' | 'notice' | 'error'
   title: string
   detail: string
+  actionUrl?: string
+  errorCode?: UserStoryAgentErrorCode
+  resetAt?: string
   status?: 'running' | 'completed' | 'failed'
   iteration?: number
   messageKind?: 'intermediate' | 'final'
@@ -51,12 +60,6 @@ export type UserStoryAgentUsage = {
   cacheReadTokens?: number
   cacheWriteTokens?: number
   cost?: number
-  headroomCompressionCount?: number
-  headroomCompressionRatio?: number
-  headroomLastTokensSaved?: number
-  headroomTokensAfter?: number
-  headroomTokensBefore?: number
-  headroomTokensSaved?: number
   inputTokens: number
   outputTokens: number
   totalCacheReadTokens?: number

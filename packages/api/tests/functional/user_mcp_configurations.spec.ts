@@ -20,6 +20,7 @@ test.group('user MCP configurations', (group) => {
           {
             disabled: false,
             name: 'Stripe',
+            timeout: 45,
             transport: 'streamableHttp',
             url: 'https://mcp.stripe.com/',
           },
@@ -33,6 +34,7 @@ test.group('user MCP configurations', (group) => {
       {
         disabled: false,
         name: 'Stripe',
+        timeout: 45,
         transport: 'streamableHttp',
         url: 'https://mcp.stripe.com/',
       },

@@ -26,6 +26,7 @@ test("disables a cloud server until its local setup is completed", () => {
   assert.equal(localSetupRequired(server), true);
   assert.equal(cloudDisabled(server), false);
   assert.equal(cloudOwner(server), userId);
+  assert.equal(server.timeout, 45);
 });
 
 test("keeps a cloud placeholder incomplete across repeated merges", () => {
@@ -115,6 +116,7 @@ function cloudServer(disabled: boolean) {
     command: "npx",
     disabled,
     name: "Dokploy",
+    timeout: 45,
     transport: "stdio" as const,
   };
 }

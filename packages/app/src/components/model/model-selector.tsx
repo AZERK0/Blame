@@ -13,7 +13,7 @@ import type {
   ModelRecommendation,
   ProviderCredentialSummary,
   ProviderListResponse,
-  ReasoningEffort,
+  ReasoningSelection,
 } from "@blame/agent-runtime"
 
 import {
@@ -45,7 +45,6 @@ const storageKey = "blame.app.drawer-model-selection.v1"
 const globalModelSelectionKey = "__global__"
 const recentLimit = 5
 const defaultVariant = "default"
-const defaultContextCompressionMode = "cline"
 const defaultCredentialLabel = "default"
 const openAICompatibleProviderID = "openai-compatible"
 const allProvidersValue = "all"
@@ -1420,7 +1419,6 @@ export function useModelSelection(options: ModelSelectionOptions = {}) {
     connectedProviders: connectedProviders(providerState.providers),
     credentials: providerState.providers?.credentials ?? [],
     connectedProviderIDs: getConnectedProviderIDs(providerState.providers),
-    contextCompressionMode: defaultContextCompressionMode,
     currentModel,
     currentVariant,
     directory: providerState.directory,
@@ -1935,15 +1933,19 @@ function getVariantOptions(model: SelectableModel | undefined) {
 function getVariantLabel(variant: string) {
   if (variant === defaultVariant) return "Default"
   if (variant === "xhigh") return "X High"
-  return variant
+  return variant.charAt(0).toUpperCase() + variant.slice(1)
 }
 
-function isReasoningEffort(value: string): value is ReasoningEffort {
+function isReasoningEffort(value: string): value is ReasoningSelection {
   return (
+    value === "none" ||
+    value === "enabled" ||
+    value === "minimal" ||
     value === "low" ||
     value === "medium" ||
     value === "high" ||
-    value === "xhigh"
+    value === "xhigh" ||
+    value === "max"
   )
 }
 

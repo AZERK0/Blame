@@ -1,4 +1,3 @@
-import { openAICodexPreviewModels } from "@blame/model-catalog";
 import { getAllProviders, getModelsForProvider } from "@cline/llms";
 import type { ModelInfo, ProviderInfo } from "@cline/llms";
 
@@ -24,7 +23,6 @@ export function isBaseRuntimeProvider(providerId: string) {
 
 async function toBlameProvider(provider: ProviderInfo): Promise<BlameProvider> {
   const models = await getModelsForProvider(provider.id);
-  const providerModels = providerModelsWithPreview(provider.id, models);
 
   return {
     id: provider.id,
@@ -34,7 +32,7 @@ async function toBlameProvider(provider: ProviderInfo): Promise<BlameProvider> {
     defaultModelId: provider.defaultModelId,
     capabilities: provider.capabilities,
     models: Object.fromEntries(
-      Object.entries(providerModels).map(([modelId, model]) => [
+      Object.entries(models).map(([modelId, model]) => [
         modelId,
         toBlameModel(modelId, model),
       ]),
@@ -42,27 +40,7 @@ async function toBlameProvider(provider: ProviderInfo): Promise<BlameProvider> {
   };
 }
 
-function providerModelsWithPreview(
-  providerId: string,
-  models: Record<string, ModelInfo>,
-) {
-  if (providerId !== "openai-codex") return models;
-  return {
-    ...openAICodexPreviewModels,
-    ...models,
-  };
-}
-
 function toBlameModel(modelId: string, model: ModelInfo): BlameModel {
-  const variants = model.capabilities?.includes("reasoning")
-    ? {
-        low: { reasoningEffort: "low" },
-        medium: { reasoningEffort: "medium" },
-        high: { reasoningEffort: "high" },
-        xhigh: { reasoningEffort: "xhigh" },
-      }
-    : undefined;
-
   return {
     id: model.id ?? modelId,
     name: model.name ?? modelId,
@@ -78,6 +56,64 @@ function toBlameModel(modelId: string, model: ModelInfo): BlameModel {
       cacheRead: model.pricing?.cacheRead ?? null,
       cacheWrite: model.pricing?.cacheWrite ?? null,
     },
-    variants,
+    variants: reasoningVariants(model),
   };
+}
+
+function reasoningVariants(model: ModelInfo) {
+  const effortOption = reasoningOptions(model).find(
+    (option) => option.type === "effort",
+  );
+  if (effortOption?.values) {
+    const variants = Object.fromEntries(
+      effortOption.values.flatMap((value) =>
+        isSelectableReasoningEffort(value)
+          ? [
+              [
+                value,
+                value === "none"
+                  ? { thinking: false }
+                  : { reasoningEffort: value, thinking: true },
+              ],
+            ]
+          : [],
+      ),
+    );
+    if (Object.keys(variants).length) return variants;
+  }
+  if (
+    reasoningOptions(model).some(
+      (option) => option.type === "toggle" || option.type === "budget_tokens",
+    )
+  ) {
+    return { enabled: { thinking: true } };
+  }
+  if (!model.capabilities?.includes("reasoning")) return undefined;
+  return fallbackReasoningVariants;
+}
+
+function reasoningOptions(model: ModelInfo) {
+  return (model.reasoningOptions ?? []) as Array<{
+    type: string;
+    values?: unknown[];
+  }>;
+}
+
+const fallbackReasoningVariants = {
+  low: { reasoningEffort: "low", thinking: true },
+  medium: { reasoningEffort: "medium", thinking: true },
+  high: { reasoningEffort: "high", thinking: true },
+  xhigh: { reasoningEffort: "xhigh", thinking: true },
+};
+
+function isSelectableReasoningEffort(value: unknown): value is string {
+  return (
+    value === "none" ||
+    value === "minimal" ||
+    value === "low" ||
+    value === "medium" ||
+    value === "high" ||
+    value === "xhigh" ||
+    value === "max"
+  );
 }

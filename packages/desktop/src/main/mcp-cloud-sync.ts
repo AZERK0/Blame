@@ -92,7 +92,10 @@ function serializeCloudServer(
   server: CloudMcpServerConfig,
   requiresSetup: boolean,
 ): McpSettingsServer {
-  const common = { disabled: requiresSetup || server.disabled };
+  const common = {
+    disabled: requiresSetup || server.disabled,
+    timeout: server.timeout,
+  };
   return server.transport === "stdio"
     ? { ...common, command: server.command, type: "stdio" }
     : { ...common, type: server.transport, url: server.url };

@@ -7,6 +7,7 @@ export const saveUserMcpConfigurationValidator = vine.create({
         command: vine.string().trim().minLength(1).maxLength(500).optional(),
         disabled: vine.boolean(),
         name: vine.string().trim().minLength(1).maxLength(80),
+        timeout: vine.number().min(1).max(3600).withoutDecimals().optional(),
         transport: vine.enum(['stdio', 'streamableHttp', 'sse']),
         url: vine
           .string()

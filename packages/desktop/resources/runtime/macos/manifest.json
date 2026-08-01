@@ -1,7 +1,7 @@
 {
   "vm": "BlameRuntime",
-  "runtimeVersion": "5",
-  "clineSdkVersion": "0.0.55",
+  "runtimeVersion": "6",
+  "clineSdkVersion": "0.0.68",
   "runtimeAgentVersion": "4",
   "runtimeMarker": "/etc/blame-runtime-version",
   "runtimeRoot": "/home/blame/.local/share/blame/runtime",

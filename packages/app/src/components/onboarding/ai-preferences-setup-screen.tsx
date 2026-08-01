@@ -1,4 +1,5 @@
 import * as React from "react"
+import type { ReasoningSelection } from "@blame/agent-runtime"
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
@@ -409,12 +410,16 @@ function preferencePayload(value: RoleSelection) {
   }
 }
 
-function reasoningEffort(value: string | undefined) {
+function reasoningEffort(value: string | undefined): ReasoningSelection | null {
   if (
+    value === "none" ||
+    value === "enabled" ||
+    value === "minimal" ||
     value === "low" ||
     value === "medium" ||
     value === "high" ||
-    value === "xhigh"
+    value === "xhigh" ||
+    value === "max"
   ) {
     return value
   }
@@ -424,5 +429,5 @@ function reasoningEffort(value: string | undefined) {
 function variantLabel(variant: string) {
   if (variant === defaultVariant) return "Default"
   if (variant === "xhigh") return "X High"
-  return variant
+  return variant.charAt(0).toUpperCase() + variant.slice(1)
 }

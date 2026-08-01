@@ -5,12 +5,14 @@ import { join } from "node:path";
 import test from "node:test";
 
 import type { CoreSessionEvent } from "@cline/sdk";
+import { ClineFreeModelLimitError, ClineNotSubscribedError } from "@cline/llms";
 import type { AgentEvent } from "./types.js";
 
 import {
   buildDevelopmentSystemPrompt,
   BlameAgentRuntime,
   backendKey,
+  clineErrorMetadata,
   coreBackendOptions,
   developmentUserInput,
   duplicateEventSignature,
@@ -21,6 +23,22 @@ import {
   shouldDisplayClineSessionEvent,
   workspaceSessionIds,
 } from "./cline-runtime.js";
+
+test("exposes actionable metadata for typed Cline account errors", () => {
+  assert.deepEqual(clineErrorMetadata(new ClineNotSubscribedError("cline")), {
+    actionUrl: "https://app.cline.bot/dashboard/subscription?personal=true",
+    code: "cline_not_subscribed",
+  });
+  assert.deepEqual(
+    clineErrorMetadata(
+      new ClineFreeModelLimitError("Free model limit reached", "cline"),
+    ),
+    {
+      code: "cline_free_model_limit",
+      resetAt: undefined,
+    },
+  );
+});
 
 test("uses the local backend when no workspace backend is provided", () => {
   assert.equal(backendKey(), "local");

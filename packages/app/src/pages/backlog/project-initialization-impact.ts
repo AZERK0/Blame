@@ -2,6 +2,7 @@ import type {
   AssessProjectInitializationImpactResult,
   PreviewManifest,
   ProjectRunConfiguration,
+  ReasoningSelection,
   RepairProjectInitializationResult,
 } from "@blame/agent-runtime"
 
@@ -17,7 +18,7 @@ type ImpactInput = {
   providerId: string
   modelId: string
   credentialLabel?: string
-  reasoningEffort?: "low" | "medium" | "high" | "xhigh"
+  reasoningEffort?: ReasoningSelection
   repositoryRoot: string
   baseCommit: string
   mergeCommit: string

@@ -6,11 +6,26 @@ const status = vine.enum(['running', 'completed', 'failed'])
 const agentActivityKind = vine.enum(['reasoning', 'message', 'tool', 'approval', 'notice', 'error'])
 const agentActivityMessageKind = vine.enum(['intermediate', 'final'])
 const agentActivityStatus = vine.enum(['running', 'completed', 'failed'])
+const agentErrorCode = vine.enum([
+  'cline_not_subscribed',
+  'cline_org_subscription_unsupported',
+  'cline_pass_limit',
+  'cline_free_model_limit',
+  'cline_model_not_found',
+])
 const agentActivity = vine.object({
   id: vine.string().trim().minLength(1).maxLength(255),
   kind: agentActivityKind,
   title: vine.string().trim().minLength(1).maxLength(255),
   detail: vine.string().maxLength(262144),
+  actionUrl: vine
+    .string()
+    .trim()
+    .url({ protocols: ['https'] })
+    .maxLength(2048)
+    .optional(),
+  errorCode: agentErrorCode.optional(),
+  resetAt: vine.string().trim().maxLength(255).optional(),
   status: agentActivityStatus.optional(),
   iteration: vine.number().optional(),
   messageKind: agentActivityMessageKind.optional(),
@@ -29,12 +44,6 @@ const agentUsage = vine.object({
   cacheReadTokens: vine.number().optional(),
   cacheWriteTokens: vine.number().optional(),
   cost: vine.number().optional(),
-  headroomCompressionCount: vine.number().optional(),
-  headroomCompressionRatio: vine.number().optional(),
-  headroomLastTokensSaved: vine.number().optional(),
-  headroomTokensAfter: vine.number().optional(),
-  headroomTokensBefore: vine.number().optional(),
-  headroomTokensSaved: vine.number().optional(),
   inputTokens: vine.number(),
   outputTokens: vine.number(),
   totalCacheReadTokens: vine.number().optional(),

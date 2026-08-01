@@ -4,7 +4,7 @@ import type {
   ApiConnection,
   ProjectRunConfiguration,
 } from "@blame/agent-runtime"
-import type { ReasoningEffort } from "@blame/agent-runtime"
+import type { ReasoningSelection } from "@blame/agent-runtime"
 
 export type CloudUser = {
   id: string
@@ -31,7 +31,7 @@ export type CloudAiModelPreference = {
   providerId: string
   modelId: string
   credentialLabel: string | null
-  reasoningEffort: ReasoningEffort | null
+  reasoningEffort: ReasoningSelection | null
 }
 
 export type CloudAiPreferences = {
@@ -45,6 +45,7 @@ export type CloudMcpServer = {
   command?: string
   disabled: boolean
   name: string
+  timeout?: number
   transport: "stdio" | "streamableHttp" | "sse"
   url?: string
 }
@@ -132,10 +133,7 @@ export type LoginInput = {
   password: string
 }
 
-export type LoginResult =
-  | "authenticated"
-  | "email-verification"
-  | "two-factor"
+export type LoginResult = "authenticated" | "email-verification" | "two-factor"
 
 export type SignupInput = LoginInput & {
   fullName: string | null

@@ -240,12 +240,13 @@ function deserializeServer(
     name,
     oauth: oauth ?? { configured: false, supported: transport !== "stdio" },
     requiresLocalSetup: localSetupRequired(value),
+    timeout: value.timeout ?? nested.timeout,
     transport,
   });
 }
 
 function serializeServer(server: McpServerConfig): Record<string, unknown> {
-  const common = { disabled: server.disabled };
+  const common = { disabled: server.disabled, timeout: server.timeout };
   if (server.transport === "stdio") {
     return {
       ...common,
@@ -275,16 +276,29 @@ function validateCloudServers(input: unknown): CloudMcpServerConfig[] {
       throw new Error("Cloud MCP server names must be unique");
     names.add(name.toLocaleLowerCase());
     const transport = value.transport;
+    const timeout = optionalTimeout(value.timeout);
     if (transport === "stdio") {
       const command = requiredString(value.command, "Command");
       if (/\s/.test(command))
         throw new Error("Cloud MCP commands cannot contain arguments");
-      return { command, disabled: value.disabled === true, name, transport };
+      return {
+        command,
+        disabled: value.disabled === true,
+        name,
+        timeout,
+        transport,
+      };
     }
     if (transport !== "streamableHttp" && transport !== "sse")
       throw new Error("Invalid cloud MCP transport");
     const url = safeCloudUrl(requiredString(value.url, "URL"));
-    return { disabled: value.disabled === true, name, transport, url };
+    return {
+      disabled: value.disabled === true,
+      name,
+      timeout,
+      transport,
+      url,
+    };
   });
 }
 
@@ -321,12 +335,14 @@ function validateServer(input: unknown): McpServerConfig {
   const disabled = input.disabled === true;
   const oauth = validateOAuthStatus(input.oauth, transport !== "stdio");
   const requiresLocalSetup = input.requiresLocalSetup === true;
+  const timeout = optionalTimeout(input.timeout);
   if (transport === "stdio") {
     const command = requiredString(input.command, "Command");
     return {
       name,
       oauth,
       requiresLocalSetup,
+      timeout,
       transport,
       disabled,
       command,
@@ -345,6 +361,7 @@ function validateServer(input: unknown): McpServerConfig {
     name,
     oauth,
     requiresLocalSetup,
+    timeout,
     transport,
     disabled,
     url,
@@ -401,6 +418,20 @@ function requiredString(value: unknown, label: string) {
 }
 function optionalString(value: unknown) {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+function optionalTimeout(value: unknown) {
+  if (value === undefined || value === null || value === "") return undefined;
+  if (
+    typeof value !== "number" ||
+    !Number.isInteger(value) ||
+    value < 1 ||
+    value > 3600
+  ) {
+    throw new Error(
+      "MCP timeout must be a whole number between 1 and 3600 seconds",
+    );
+  }
+  return value;
 }
 function stringArray(value: unknown) {
   return Array.isArray(value) && value.every((item) => typeof item === "string")

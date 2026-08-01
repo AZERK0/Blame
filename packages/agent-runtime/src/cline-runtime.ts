@@ -31,25 +31,30 @@ import {
   getClineDefaultSystemPrompt,
   mergeRulesForSystemPrompt,
 } from "@cline/sdk";
+import {
+  extractClineFreeModelLimitResetTime,
+  getClinePassSubscriptionUrl,
+  isClineFreeModelLimitError,
+  isClineFreeModelLimitMessage,
+  isClineModelNotFoundMessage,
+  isClineNotSubscribedError,
+  isClineNotSubscribedMessage,
+  isClineOrgIndividualInferenceSubscriptionError,
+  isClineOrgIndividualInferenceSubscriptionMessage,
+  isClinePassLimitError,
+  isClinePassLimitMessage,
+} from "@cline/llms";
 
 import {
   getBlameTelemetry,
   type Context,
   withoutTelemetryEnvironment,
 } from "@blame/telemetry";
-import { knownOpenAICodexPreviewModels } from "@blame/model-catalog";
 
 import {
   codeReviewGraphToolNames,
   codeReviewGraphTools,
 } from "./code-review-graph-tools.js";
-import {
-  contextCompressionConfig,
-  contextCompressionExtensions,
-  effectiveContextCompressionMode,
-} from "./context-compression.js";
-import type { HeadroomCompressionUsage } from "./context-compression.js";
-import { HeadroomSidecar } from "./headroom-sidecar.js";
 import { blameSpecialistAgentsSystemPrompt } from "./specialist-agents.js";
 import {
   deleteProviderCredential,
@@ -112,10 +117,10 @@ import {
 } from "./production.js";
 import type { ProjectInitializationScan } from "./project-initialization.js";
 import type { ProductionSessionContext } from "./production.js";
+import { reasoningConfig } from "./reasoning.js";
 import type {
   AgentApprovalRequest,
   AgentBackendConfig,
-  AgentContextCompressionMode,
   AgentEvent,
   AgentRuntimePrewarmInput,
   AgentRuntimeEvents,
@@ -352,14 +357,6 @@ type PreviewContainerLogsInput = {
 type PreviewContainerLogsProvider = (
   input: PreviewContainerLogsInput,
 ) => Promise<unknown> | unknown;
-type HeadroomSavingsTotals = {
-  compressionCount: number;
-  lastTokensSaved: number;
-  tokensAfter: number;
-  tokensBefore: number;
-  tokensSaved: number;
-};
-
 let customGitRunner:
   | ((cwd: string, args: string[]) => Promise<string>)
   | undefined;
@@ -380,13 +377,11 @@ export class BlameAgentRuntime {
   private sessionStartInputs = new Map<string, ClineCoreStartInput>();
   private sessionQualityBaselines = new Map<string, string>();
   private sessionEventSignatures = new Map<string, Map<string, number>>();
-  private sessionHeadroomSavings = new Map<string, HeadroomSavingsTotals>();
   private sessionToolInputs = new Map<string, unknown>();
   private sessionIterations = new Map<string, number>();
   private sessionSpawnAgentActiveCounts = new Map<string, number>();
   private sessionUsageSignatures = new Map<string, string>();
   private structuredEventSessions = new Set<string>();
-  private readonly headroomSidecar = new HeadroomSidecar();
   private readonly productionConfig = loadProductionConfig();
   private readonly events?: AgentRuntimeEvents;
   private readonly options: RuntimeOptions;
@@ -488,7 +483,6 @@ export class BlameAgentRuntime {
     this.sessionEventSignatures.clear();
     this.sessionApiConnections.clear();
     await this.disposeCore();
-    await this.headroomSidecar.dispose();
     this.agentTelemetry.shutdown();
   }
 
@@ -644,9 +638,6 @@ export class BlameAgentRuntime {
         telemetryContext,
       );
       const sessionLogFile = sessionLogPath(input.cwd, sessionId);
-      const contextCompressionMode = effectiveContextCompressionMode(
-        input.contextCompressionMode,
-      );
       await this.subscribeSession(sessionId, input.backend);
       this.sessionBackendKeys.set(sessionId, backendKey(input.backend));
       this.sessionLogFiles.set(sessionId, sessionLogFile);
@@ -655,11 +646,6 @@ export class BlameAgentRuntime {
         this.autoApprovedWriteToolSessions.add(sessionId);
       }
       await waitForTelemetryCohorts(codeGraphPreparation);
-      const headroomBaseUrl = await this.ensureHeadroomSidecar(
-        sessionId,
-        input,
-        contextCompressionMode,
-      );
       const autoSendPrompt = input.autoSendPrompt !== false;
       const pluginPaths = runtimePluginPaths(
         this.productionConfig,
@@ -686,12 +672,7 @@ export class BlameAgentRuntime {
             modelId: input.modelId,
             apiKey: resolvedCredential.apiKey,
             baseUrl: resolvedCredential.baseUrl ?? undefined,
-            knownModels: knownOpenAICodexPreviewModels(
-              input.providerId,
-              input.modelId,
-            ),
-            thinking: !!input.reasoningEffort,
-            reasoningEffort: input.reasoningEffort,
+            ...reasoningConfig(input.reasoningEffort),
             systemPrompt:
               input.systemPrompt ?? loadPrompt("default-agent-system"),
             cwd: input.cwd,
@@ -707,25 +688,10 @@ export class BlameAgentRuntime {
               input.disableMcpSettingsTools ??
               this.productionConfig.disableMcpSettingsTools,
             ...(pluginPaths ? { pluginPaths } : {}),
-            compaction: contextCompressionConfig(
-              this.productionConfig,
-              contextCompressionMode,
-            ),
+            compaction: blameCompactionConfig(this.productionConfig),
             enableTools: true,
             enableSpawnAgent: input.enableSpawnAgent ?? false,
             enableAgentTeams: input.enableAgentTeams ?? false,
-            extensions: contextCompressionExtensions(
-              this.productionConfig,
-              contextCompressionMode,
-              {
-                logger: (message, payload) =>
-                  this.logSession(sessionId, message, payload),
-                headroomBaseUrl,
-                modelId: input.modelId,
-                onCompression: (usage) =>
-                  this.recordHeadroomCompression(sessionId, usage),
-              },
-            ),
             extensionContext: extensionContext(input),
             extraTools: runtimeTools(
               this.options,
@@ -877,7 +843,7 @@ export class BlameAgentRuntime {
       },
       activeContext,
     );
-    this.emitSessionError(sessionId, message);
+    this.emitSessionError(sessionId, message, error);
     this.agentTelemetry.fail(sessionId, error);
   }
 
@@ -1065,7 +1031,7 @@ export class BlameAgentRuntime {
 
   private async readMessages(sessionId: string) {
     const cline = await this.sessionCore(sessionId);
-    return cline.readMessages(sessionId);
+    return cline.readLiveMessages(sessionId);
   }
 
   private async resumeMessages(
@@ -1077,7 +1043,7 @@ export class BlameAgentRuntime {
     try {
       const messages = await (
         await this.core(backend)
-      ).readMessages(normalizedSessionId);
+      ).readLiveMessages(normalizedSessionId);
       return messages.length ? messages : undefined;
     } catch {
       return undefined;
@@ -2020,7 +1986,6 @@ export class BlameAgentRuntime {
     this.autoApprovedWriteToolSessions.delete(sessionId);
     this.sessionContexts.delete(sessionId);
     this.sessionEventSignatures.delete(sessionId);
-    this.sessionHeadroomSavings.delete(sessionId);
     this.sessionIterations.delete(sessionId);
     this.sessionSpawnAgentActiveCounts.delete(sessionId);
     for (const key of this.sessionToolInputs.keys()) {
@@ -2316,27 +2281,17 @@ export class BlameAgentRuntime {
     this.events?.emit({ type: "notice", sessionId, payload: { message } });
   }
 
-  private emitSessionError(sessionId: string, message: string) {
-    void this.logSession(sessionId, "error", { message });
-    this.events?.emit({ type: "error", sessionId, payload: { message } });
-  }
-
-  private recordHeadroomCompression(
+  private emitSessionError(
     sessionId: string,
-    usage: HeadroomCompressionUsage,
+    message: string,
+    error: unknown = message,
   ) {
-    const totals = nextHeadroomSavings(
-      this.sessionHeadroomSavings.get(sessionId),
-      usage,
-    );
-    this.sessionHeadroomSavings.set(sessionId, totals);
-    const event: AgentEvent = {
-      type: "usage",
+    void this.logSession(sessionId, "error", { message });
+    this.events?.emit({
+      type: "error",
       sessionId,
-      payload: { usage: headroomUsagePayload(totals) },
-    };
-    void this.handleSessionEvent(sessionId, event);
-    this.events?.emit(event);
+      payload: { message, ...clineErrorMetadata(error) },
+    });
   }
 
   private async logSession(
@@ -2353,25 +2308,6 @@ export class BlameAgentRuntime {
       .then(() => appendLog(file, message, payload, activeContext));
     this.sessionLogWrites.set(sessionId, write);
     await write;
-  }
-
-  private async ensureHeadroomSidecar(
-    sessionId: string,
-    input: StartSessionInput,
-    mode: AgentContextCompressionMode,
-  ) {
-    if (mode !== "headroom") return undefined;
-    const result = await this.headroomSidecar.ensure({
-      logger: (message, payload) =>
-        this.logSession(sessionId, message, payload),
-      logFile: headroomProxyLogPath(input.cwd),
-      requestLogFile: headroomRequestLogPath(input.cwd),
-    });
-    await this.logSession(sessionId, "headroom sidecar selected", {
-      headroomBaseUrl: result.baseUrl,
-      headroomSource: result.source,
-    });
-    return result.baseUrl;
   }
 
   private async disposeCore() {
@@ -2413,7 +2349,6 @@ export class BlameAgentRuntime {
       modelId: input.modelId,
       credentialLabel: input.credentialLabel,
       reasoningEffort: input.reasoningEffort,
-      contextCompressionMode: input.contextCompressionMode,
       checkpointEnabled: input.checkpointEnabled,
       configExtensions: input.configExtensions,
       disableMcpSettingsTools: input.disableMcpSettingsTools,
@@ -2507,7 +2442,7 @@ export class BlameAgentRuntime {
           },
           activeContext,
         );
-        this.emitSessionError(sessionId, message);
+        this.emitSessionError(sessionId, message, error);
         throw error;
       });
     void this.logSession(
@@ -2771,9 +2706,7 @@ function initializationConfig(
     modelId: input.modelId,
     apiKey: credential.apiKey,
     baseUrl: credential.baseUrl ?? undefined,
-    knownModels: knownOpenAICodexPreviewModels(input.providerId, input.modelId),
-    thinking: !!input.reasoningEffort,
-    reasoningEffort: input.reasoningEffort,
+    ...reasoningConfig(input.reasoningEffort),
     systemPrompt: loadPrompt("project-initialization-system"),
     cwd: input.cwd,
     workspaceRoot: input.workspaceRoot,
@@ -2795,9 +2728,7 @@ function codePracticesConfig(
     modelId: input.modelId,
     apiKey: credential.apiKey,
     baseUrl: credential.baseUrl ?? undefined,
-    knownModels: knownOpenAICodexPreviewModels(input.providerId, input.modelId),
-    thinking: !!input.reasoningEffort,
-    reasoningEffort: input.reasoningEffort,
+    ...reasoningConfig(input.reasoningEffort),
     systemPrompt: loadPrompt("project-code-practices-system"),
     cwd: input.cwd,
     workspaceRoot: input.workspaceRoot,
@@ -3054,7 +2985,7 @@ async function projectInitializationInputFromMessages(
 ) {
   try {
     return projectInitializationInputFromMessageList(
-      await cline.readMessages(sessionId),
+      await cline.readLiveMessages(sessionId),
     );
   } catch {
     return undefined;
@@ -3107,9 +3038,7 @@ function initializationRepairConfig(
     modelId: input.modelId,
     apiKey: credential.apiKey,
     baseUrl: credential.baseUrl ?? undefined,
-    knownModels: knownOpenAICodexPreviewModels(input.providerId, input.modelId),
-    thinking: !!input.reasoningEffort,
-    reasoningEffort: input.reasoningEffort,
+    ...reasoningConfig(input.reasoningEffort),
     systemPrompt: loadPrompt("project-initialization-repair-system"),
     cwd: input.cwd,
     workspaceRoot: input.workspaceRoot,
@@ -3129,9 +3058,7 @@ function initializationImpactConfig(
     modelId: input.modelId,
     apiKey: credential.apiKey,
     baseUrl: credential.baseUrl ?? undefined,
-    knownModels: knownOpenAICodexPreviewModels(input.providerId, input.modelId),
-    thinking: !!input.reasoningEffort,
-    reasoningEffort: input.reasoningEffort,
+    ...reasoningConfig(input.reasoningEffort),
     systemPrompt: loadPrompt("project-initialization-impact-system"),
     cwd: input.cwd,
     workspaceRoot: input.workspaceRoot,
@@ -3151,9 +3078,7 @@ function commitMessageConfig(
     modelId: input.modelId,
     apiKey: credential.apiKey,
     baseUrl: credential.baseUrl ?? undefined,
-    knownModels: knownOpenAICodexPreviewModels(input.providerId, input.modelId),
-    thinking: !!input.reasoningEffort,
-    reasoningEffort: input.reasoningEffort,
+    ...reasoningConfig(input.reasoningEffort),
     systemPrompt: developmentPracticePrompt(
       input.codePractices ?? [],
       "commit_message_convention",
@@ -3176,9 +3101,7 @@ function mergeConflictConfig(
     modelId: input.modelId,
     apiKey: credential.apiKey,
     baseUrl: credential.baseUrl ?? undefined,
-    knownModels: knownOpenAICodexPreviewModels(input.providerId, input.modelId),
-    thinking: !!input.reasoningEffort,
-    reasoningEffort: input.reasoningEffort,
+    ...reasoningConfig(input.reasoningEffort),
     systemPrompt: loadPrompt("merge-conflict-resolution"),
     cwd: input.worktree,
     workspaceRoot: input.worktree,
@@ -3552,9 +3475,7 @@ async function newProjectGenerationConfig(
     modelId: input.modelId,
     apiKey: credential.apiKey,
     baseUrl: credential.baseUrl ?? undefined,
-    knownModels: knownOpenAICodexPreviewModels(input.providerId, input.modelId),
-    thinking: !!input.reasoningEffort,
-    reasoningEffort: input.reasoningEffort,
+    ...reasoningConfig(input.reasoningEffort),
     systemPrompt: getClineDefaultSystemPrompt({
       ide: "Blame",
       metadata,
@@ -4257,6 +4178,44 @@ function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error);
 }
 
+export function clineErrorMetadata(error: unknown) {
+  const message = errorMessage(error);
+  if (
+    isClineNotSubscribedError(error) ||
+    isClineNotSubscribedMessage(message)
+  ) {
+    return {
+      code: "cline_not_subscribed",
+      actionUrl: getClinePassSubscriptionUrl(),
+    };
+  }
+  if (
+    isClineOrgIndividualInferenceSubscriptionError(error) ||
+    isClineOrgIndividualInferenceSubscriptionMessage(message)
+  ) {
+    return { code: "cline_org_subscription_unsupported" };
+  }
+  if (isClinePassLimitError(error) || isClinePassLimitMessage(message)) {
+    return {
+      code: "cline_pass_limit",
+      actionUrl: getClinePassSubscriptionUrl(),
+    };
+  }
+  if (
+    isClineFreeModelLimitError(error) ||
+    isClineFreeModelLimitMessage(message)
+  ) {
+    return {
+      code: "cline_free_model_limit",
+      resetAt: extractClineFreeModelLimitResetTime(message),
+    };
+  }
+  if (isClineModelNotFoundMessage(message)) {
+    return { code: "cline_model_not_found" };
+  }
+  return {};
+}
+
 function forceOAuthRefresh(providerId: string) {
   return providerId === "openai-codex";
 }
@@ -4330,16 +4289,11 @@ function credentialLabel(input: RuntimeCredentialInput) {
 }
 
 function startContext(input: StartSessionInput) {
-  const contextCompressionMode = effectiveContextCompressionMode(
-    input.contextCompressionMode,
-  );
-
   return {
     providerId: input.providerId,
     modelId: input.modelId,
     checkpointEnabled: input.checkpointEnabled,
     configExtensions: input.configExtensions?.join(","),
-    contextCompressionMode,
     disableMcpSettingsTools: input.disableMcpSettingsTools,
     mode: input.mode ?? "act",
     maxIterations: input.maxIterations ?? defaultSessionMaxIterations,
@@ -4352,16 +4306,11 @@ function sessionContext(
   input: StartSessionInput,
   sessionId: string,
 ): ProductionSessionContext {
-  const contextCompressionMode = effectiveContextCompressionMode(
-    input.contextCompressionMode,
-  );
-
   return {
     maxIterations: input.maxIterations ?? defaultSessionMaxIterations,
     mode: input.mode ?? "act",
     modelId: input.modelId,
     providerId: input.providerId,
-    contextCompressionMode,
     checkpointEnabled: input.checkpointEnabled,
     configExtensions: input.configExtensions?.join(","),
     disableMcpSettingsTools: input.disableMcpSettingsTools,
@@ -4402,14 +4351,6 @@ function pathInsideWorkspace(path: string, workspace: string) {
     !relativePath.startsWith(`..${sep}`) &&
     !isAbsolute(relativePath)
   );
-}
-
-function headroomProxyLogPath(cwd: string) {
-  return join(cwd, ".blame", "logs", "headroom-proxy.log");
-}
-
-function headroomRequestLogPath(cwd: string) {
-  return join(cwd, ".blame", "logs", "headroom-requests.jsonl");
 }
 
 async function appendLog(
@@ -4786,35 +4727,6 @@ function eventUsageSummary(event: AgentEvent): AgentUsageSummary | undefined {
   const usage = asRecord(payload.usage);
   if (!Object.keys(usage).length) return undefined;
   return { aggregateUsage: usage as never };
-}
-
-function nextHeadroomSavings(
-  current: HeadroomSavingsTotals | undefined,
-  usage: HeadroomCompressionUsage,
-): HeadroomSavingsTotals {
-  return {
-    compressionCount: (current?.compressionCount ?? 0) + 1,
-    lastTokensSaved: usage.tokensSaved,
-    tokensAfter: (current?.tokensAfter ?? 0) + usage.tokensAfter,
-    tokensBefore: (current?.tokensBefore ?? 0) + usage.tokensBefore,
-    tokensSaved: (current?.tokensSaved ?? 0) + usage.tokensSaved,
-  };
-}
-
-function headroomUsagePayload(totals: HeadroomSavingsTotals) {
-  return {
-    headroomCompressionCount: totals.compressionCount,
-    headroomCompressionRatio: headroomCompressionRatio(totals),
-    headroomLastTokensSaved: totals.lastTokensSaved,
-    headroomTokensAfter: totals.tokensAfter,
-    headroomTokensBefore: totals.tokensBefore,
-    headroomTokensSaved: totals.tokensSaved,
-  };
-}
-
-function headroomCompressionRatio(totals: HeadroomSavingsTotals) {
-  if (!totals.tokensBefore) return undefined;
-  return totals.tokensAfter / totals.tokensBefore;
 }
 
 function doneUsagePayload(value: unknown) {

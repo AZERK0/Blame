@@ -5,6 +5,7 @@ export type CloudMcpServer = {
   command?: string
   disabled: boolean
   name: string
+  timeout?: number
   transport: 'stdio' | 'streamableHttp' | 'sse'
   url?: string
 }

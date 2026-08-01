@@ -2,6 +2,7 @@ import type { ClineCore } from "@cline/sdk"
 
 import { loadPrompt } from "./prompt-loader.js"
 import { appendProductionConfig } from "./production.js"
+import { reasoningConfig } from "./reasoning.js"
 import type {
   OptimizeUserStoryPromptInput,
   OptimizeUserStoryPromptResult,
@@ -38,8 +39,7 @@ function promptOptimizationConfig(
     modelId: input.modelId,
     apiKey: credential.apiKey,
     baseUrl: credential.baseUrl ?? undefined,
-    thinking: !!input.reasoningEffort,
-    reasoningEffort: input.reasoningEffort,
+    ...reasoningConfig(input.reasoningEffort),
     systemPrompt: loadPrompt("prompt-optimizer-agent-system"),
     cwd: input.cwd,
     workspaceRoot: input.workspaceRoot,

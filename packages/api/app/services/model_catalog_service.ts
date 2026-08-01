@@ -17,13 +17,12 @@ import { fetchOpenRouterCatalog } from '#services/openrouter_catalog_client'
 import { credentialModelIds } from '#services/provider_credentials_service'
 import env from '#start/env'
 import logger from '@adonisjs/core/services/logger'
-import { openAICodexPreviewModels } from '@blame/model-catalog'
 import type { ModelInfo, ProviderInfo } from '@cline/llms'
 import { createHash } from 'node:crypto'
 import { DateTime } from 'luxon'
 
 const snapshotId = 'global'
-const catalogPolicyVersion = 3
+const catalogPolicyVersion = 4
 const externalCliProviderIds = new Set(['claude-code', 'openai-codex-cli'])
 let authoritativeProviderIds = new Set<string>()
 let staticCatalogPromise: Promise<CatalogProvider[]> | undefined
@@ -77,14 +76,7 @@ async function buildStaticCatalog() {
       .filter(({ authoritativeModels }) => authoritativeModels)
       .map(({ provider }) => provider.id)
   )
-  return providers.map(({ provider, models }) =>
-    catalogProvider(provider, withPreviewModels(provider.id, models))
-  )
-}
-
-function withPreviewModels(providerId: string, models: Record<string, ModelInfo>) {
-  if (providerId !== 'openai-codex') return models
-  return { ...openAICodexPreviewModels, ...models }
+  return providers.map(({ provider, models }) => catalogProvider(provider, models))
 }
 
 function catalogProvider(provider: ProviderInfo, models: Record<string, ModelInfo>) {
@@ -122,13 +114,54 @@ function catalogModel(modelId: string, model: ModelInfo): CatalogModel {
 }
 
 function reasoningVariants(model: ModelInfo) {
-  if (!model.capabilities?.includes('reasoning')) return undefined
-  return {
-    low: { reasoningEffort: 'low' },
-    medium: { reasoningEffort: 'medium' },
-    high: { reasoningEffort: 'high' },
-    xhigh: { reasoningEffort: 'xhigh' },
+  const effortOption = reasoningOptions(model).find((option) => option.type === 'effort')
+  if (effortOption?.values) {
+    const variants = Object.fromEntries(
+      effortOption.values.flatMap((value) =>
+        isSelectableReasoningEffort(value)
+          ? [
+              [
+                value,
+                value === 'none' ? { thinking: false } : { reasoningEffort: value, thinking: true },
+              ],
+            ]
+          : []
+      )
+    )
+    if (Object.keys(variants).length) return variants
   }
+  if (
+    reasoningOptions(model).some(
+      (option) => option.type === 'toggle' || option.type === 'budget_tokens'
+    )
+  ) {
+    return { enabled: { thinking: true } }
+  }
+  if (!model.capabilities?.includes('reasoning')) return undefined
+  return fallbackReasoningVariants
+}
+
+function reasoningOptions(model: ModelInfo) {
+  return (model.reasoningOptions ?? []) as Array<{ type: string; values?: unknown[] }>
+}
+
+const fallbackReasoningVariants = {
+  low: { reasoningEffort: 'low', thinking: true },
+  medium: { reasoningEffort: 'medium', thinking: true },
+  high: { reasoningEffort: 'high', thinking: true },
+  xhigh: { reasoningEffort: 'xhigh', thinking: true },
+}
+
+function isSelectableReasoningEffort(value: unknown): value is string {
+  return (
+    value === 'none' ||
+    value === 'minimal' ||
+    value === 'low' ||
+    value === 'medium' ||
+    value === 'high' ||
+    value === 'xhigh' ||
+    value === 'max'
+  )
 }
 
 function refreshCatalog(

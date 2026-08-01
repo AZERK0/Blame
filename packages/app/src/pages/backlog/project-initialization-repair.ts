@@ -1,6 +1,7 @@
 import type {
   PreviewManifest,
   ProjectRunConfiguration,
+  ReasoningSelection,
   RepairProjectInitializationResult,
 } from "@blame/agent-runtime"
 
@@ -17,7 +18,7 @@ type RepairInput = {
   providerId: string
   modelId: string
   credentialLabel?: string
-  reasoningEffort?: "low" | "medium" | "high" | "xhigh"
+  reasoningEffort?: ReasoningSelection
   worktree: string
   previewManifest?: PreviewManifest | null
   setupScript: string
