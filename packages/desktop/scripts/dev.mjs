@@ -1,17 +1,15 @@
 #!/usr/bin/env node
 import { spawn } from "node:child_process"
+import { readFile } from "node:fs/promises"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
+import { resolveLimaBundle } from "../../../scripts/lima-runtime-bundle.mjs"
 
 const forceKillDelayMs = 2_000
 const desktopDir = dirname(dirname(fileURLToPath(import.meta.url)))
 const runtimeEnvironment =
   process.platform === "darwin"
-    ? {
-        BLAME_RUNTIME_BIN_DIR:
-          process.env.BLAME_RUNTIME_BIN_DIR ??
-          join(desktopDir, "resources", "runtime", "macos", "bin"),
-      }
+    ? await macosRuntimeEnvironment()
     : process.platform === "win32"
       ? {
           BLAME_RUNTIME_BIN_DIR:
@@ -27,6 +25,23 @@ const child = spawn("pnpm", ["exec", "electron-vite", "dev"], {
   env: { ...process.env, ...runtimeEnvironment },
   stdio: "inherit",
 })
+
+async function macosRuntimeEnvironment() {
+  const manifest = JSON.parse(
+    await readFile(
+      join(desktopDir, "resources", "runtime", "macos", "manifest.json"),
+      "utf8",
+    ),
+  )
+  const architecture = process.arch === "arm64" ? "arm64" : "x86_64"
+  const bundleDir = await resolveLimaBundle(manifest, "darwin", architecture)
+  return {
+    BLAME_LIMA_BUNDLE_DIR: bundleDir,
+    BLAME_RUNTIME_BIN_DIR:
+      process.env.BLAME_RUNTIME_BIN_DIR ??
+      join(desktopDir, "resources", "runtime", "macos", "bin"),
+  }
+}
 
 let stopping = false
 let childExited = false
