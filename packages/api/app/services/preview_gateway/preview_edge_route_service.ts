@@ -131,12 +131,11 @@ export default class PreviewEdgeRouteService {
   }
 }
 
-function opaqueRouteId(sessionId: string, endpointId: string) {
+export function opaqueRouteId(sessionId: string, endpointId: string) {
   return createHmac('sha256', appKey.release())
     .update(`${sessionId}\0${endpointId}`)
-    .digest('base64url')
-    .slice(0, 26)
-    .toLowerCase()
+    .digest('hex')
+    .slice(0, 40)
 }
 
 function canonicalHostname(value: string) {

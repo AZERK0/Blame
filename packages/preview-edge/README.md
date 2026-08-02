@@ -41,19 +41,54 @@ For Dokploy, create an **Application** using the Dockerfile build type and set:
 - Dockerfile path: `packages/preview-edge/Dockerfile`
 - Docker context path: `.`
 - Docker build stage: `production`
-- Domain host: `*.preview.example.com`
+- Initial domain host: `preview.example.com`
 - Domain path: `/`
 - Container port: `8080`
-- HTTPS: enabled with a certificate valid for `*.preview.example.com`
+- HTTPS: disabled during the initial domain creation; add the secure router only
+  after a wildcard certificate source is configured
+
+Dokploy's normal Domain form rejects `*`. Create the valid initial domain first,
+then open **Application > Advanced > Traefik > Modify**. In both the HTTP and
+HTTPS routers, replace:
+
+```yaml
+rule: Host(`preview.example.com`)
+```
+
+with:
+
+```yaml
+rule: HostRegexp(`[a-z0-9-]+\.preview\.example\.com`)
+```
+
+`Host()` only accepts literal hostnames in Traefik 3.6; use `HostRegexp()` for
+the single opaque route label. On the HTTPS router, either select a DNS-01 ACME
+resolver and request both names:
+
+```yaml
+tls:
+  certResolver: dns-provider
+  domains:
+    - main: preview.example.com
+      sans:
+        - "*.preview.example.com"
+```
+
+or use `tls: {}` after importing a certificate that already covers both
+`preview.example.com` and `*.preview.example.com` in Dokploy. The HTTP router
+should use the existing `redirect-to-https` middleware after TLS is available.
+
+Keep the generated service and router names unchanged. Updating the domain again
+through the normal Domain form regenerates these router entries, so reapply the
+wildcard rule after any such change.
 
 Do not publish port 8080 through Dokploy's Advanced Ports panel. The domain must
 reach it only through Traefik. Do not enable Basic Auth or Forward Auth: Preview
 Edge already performs ticket exchange and endpoint-scoped session authorization.
 
-Traefik v3 accepts ``Host(`*.preview.example.com`)`` for a single-label wildcard,
-preserves the original host, supports WebSocket upgrades without extra headers,
-and flushes recognized streaming responses immediately. Do not attach a
-buffering middleware. A wildcard TLS certificate requires an ACME DNS-01
+Traefik preserves the original host, supports WebSocket upgrades without extra
+headers, and flushes recognized streaming responses immediately. Do not attach
+a buffering middleware. A wildcard TLS certificate requires an ACME DNS-01
 resolver or an imported custom certificate; HTTP-01 cannot issue it.
 
 The DNS zone must resolve both the suffix and its wildcard to the Dokploy ingress:
