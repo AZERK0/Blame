@@ -1,0 +1,32 @@
+{
+  "name": "@blame/sandbox-runner",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "blame-sandbox-runner": "dist/blame-sandbox-runner.js",
+    "blame-runnerctl": "dist/blame-sandbox-runner.js"
+  },
+  "exports": {
+    "./contract": {
+      "types": "./src/protocol/runner-contract.ts",
+      "default": "./dist/protocol/runner-contract.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc && esbuild src/bootstrap.ts --bundle --platform=node --format=esm --target=node24 --outfile=dist/blame-sandbox-runner.js",
+    "typecheck": "tsc --noEmit",
+    "test": "pnpm build && node --test dist/**/*.test.js"
+  },
+  "dependencies": {
+    "@blame/preview-runtime": "workspace:*",
+    "tar-stream": "3.1.7",
+    "yaml": "2.9.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.12.0",
+    "@types/tar-stream": "3.1.4",
+    "esbuild": "0.25.12",
+    "typescript": "~5.9.3"
+  }
+}

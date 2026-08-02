@@ -115,6 +115,7 @@ import {
   dockerComposeForPreview,
   dockerComposeWithPortableWindowsPaths,
 } from "./workspace-compose";
+import { LocalPreviewService } from "./preview-runtime/local/local-preview-service";
 import {
   cleanupAbandonedBlamePreviews,
   removeBlamePreviewProjectResources,
@@ -490,7 +491,7 @@ const removingWorktrees = new Set<string>();
 const removedWorktrees = new Set<string>();
 const workspaceProcesses = new Set<ChildProcessWithoutNullStreams>();
 const containerRuntime = createContainerRuntime();
-
+const localPreviewService = new LocalPreviewService();
 function runtimeProgressReporter(
   event: IpcMainInvokeEvent,
   operationId?: string,
@@ -523,9 +524,10 @@ function registerRuntimeOperationHandler(
   });
 }
 
-export function registerWorkspaceIpcHandlers(
-  input: { onRuntimeReady?(): void } = {},
-) {
+export function registerWorkspaceIpcHandlers(input: {
+  beforeGitWrite?(worktree: string): Promise<void>;
+  onRuntimeReady?(): void;
+} = {}) {
   setProjectCreationWindowsProvider(() => BrowserWindow.getAllWindows());
   setNewProjectAgentRuntime({ generate: generateNewProjectWithAgent });
   ipcMain.handle("workspace:path-exists", (_event, input: { path: string }) =>
@@ -618,11 +620,11 @@ export function registerWorkspaceIpcHandlers(
   ipcMain.handle("workspace:git-delete-files", (_event, input: GitFilesInput) =>
     gitDeleteFiles(input),
   );
-  ipcMain.handle("workspace:git-commit", (_event, input: GitCommitInput) =>
-    gitCommit(input),
+  ipcMain.handle("workspace:git-commit", (_event, value: GitCommitInput) =>
+    Promise.resolve(input.beforeGitWrite?.(value.root)).then(() => gitCommit(value)),
   );
-  ipcMain.handle("workspace:git-push", (_event, input: { root: string }) =>
-    gitPush(input.root),
+  ipcMain.handle("workspace:git-push", (_event, value: { root: string }) =>
+    Promise.resolve(input.beforeGitWrite?.(value.root)).then(() => gitPush(value.root)),
   );
   ipcMain.handle(
     "workspace:list-git-directory",
@@ -720,10 +722,8 @@ export function registerWorkspaceIpcHandlers(
     (_event, input: { worktree: string }) =>
       projectPreviewRuntimeState(input.worktree),
   );
-  ipcMain.handle(
-    "workspace:control-project-preview",
-    (_event, input: ControlProjectPreviewInput) => controlProjectPreview(input),
-  );
+  ipcMain.handle("workspace:control-project-preview", (_event, input: ControlProjectPreviewInput) =>
+    localPreviewService.control(input));
   ipcMain.handle(
     "workspace:list-project-services",
     (_event, input: { worktree: string }) =>
@@ -739,7 +739,6 @@ export function registerWorkspaceIpcHandlers(
       stopProjectServiceLogs(input.streamId),
   );
 }
-
 async function listDirectory(input: WorkspacePathInput) {
   const directory = resolveWorkspacePath(input);
   const entries = runtimeManagedPath(directory)
@@ -2930,7 +2929,7 @@ async function ensureProjectPreviewUrl(input: EnsureProjectPreviewUrlInput) {
   return nextRecovery;
 }
 
-async function projectPreviewRuntimeState(
+export async function projectPreviewRuntimeState(
   worktreeInput: string,
 ): Promise<ProjectPreviewRuntimeState> {
   const worktree = resolveRuntimePath(worktreeInput);
@@ -2994,7 +2993,7 @@ function previewStatusConfiguration(
   };
 }
 
-async function controlProjectPreview(input: ControlProjectPreviewInput) {
+export async function controlProjectPreview(input: ControlProjectPreviewInput) {
   const selection = await previewControlSelection(input);
   await appendRecoveryLog(
     selection.worktree,

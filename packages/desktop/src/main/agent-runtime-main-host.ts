@@ -5,6 +5,7 @@ import { promisify } from "node:util";
 import { codeReviewGraphProvider } from "./code-review-graph.ts";
 import type { AgentHostMethod } from "./agent-runtime-process-protocol.ts";
 import { getPreviewDevtoolsTarget } from "./preview-browser-ipc.ts";
+import { previewLogService } from "./preview-runtime/preview-log-service.ts";
 import {
   ensureRuntimeGitUserIdentity,
   getRuntimeGitIdentity,
@@ -25,8 +26,7 @@ export async function handleAgentHostRequest(
     return getPreviewDevtoolsTarget(input as never);
   }
   if (method === "previewContainerLogs") {
-    const { readProjectServiceLogs } = await import("./workspace-ipc.ts");
-    return readProjectServiceLogs(input as never);
+    return previewLogService.read(input as never);
   }
   return handleCodeReviewGraphRequest(method, input, signal);
 }
@@ -101,9 +101,13 @@ function gitSshCommand() {
 }
 
 function openAgentExternalUrl(input: unknown) {
-  const url = recordInput(input).url;
-  if (typeof url !== "string") throw new Error("Invalid external URL");
-  void shell.openExternal(url);
+  const value = recordInput(input).url;
+  if (typeof value !== "string") throw new Error("Invalid external URL");
+  const url = new URL(value);
+  if (!["http:", "https:"].includes(url.protocol) || url.username || url.password) {
+    throw new Error("Invalid external URL");
+  }
+  void shell.openExternal(url.toString());
   return true;
 }
 

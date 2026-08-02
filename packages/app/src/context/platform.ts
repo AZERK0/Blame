@@ -44,6 +44,11 @@ import type {
 } from "@blame/agent-runtime"
 import type { NewProjectConfiguration } from "../components/new-project/new-project-options"
 import type { UserStory } from "../components/backlog/data/backlog-data"
+import type {
+  PreviewSessionCommand,
+  PreviewSessionEvent,
+  PreviewSessionView,
+} from "@blame/preview-runtime"
 
 type PickerPaths = string | string[] | null
 
@@ -86,6 +91,7 @@ export type Platform = {
   backlogStatusPip?: BacklogStatusPipClient
   platform?: string
   previewBrowser?: PreviewBrowserClient
+  previewRuntime?: PreviewRuntimeClient
   systemNotifications?: SystemNotificationsClient
   terminal?: TerminalClient
   telemetry?: TelemetryClient
@@ -467,7 +473,10 @@ export type PreviewBrowserClient = {
     id: string
     size?: "full" | "thumbnail"
   }): Promise<string | null>
-  create(input: { storageKey: string }): Promise<{ id: string }>
+  create(input: {
+    storageKey: string
+    previewSessionId?: string
+  }): Promise<{ id: string }>
   destroy(input: { id: string }): Promise<boolean>
   load(input: { id: string; url: string }): Promise<boolean>
   onState(
@@ -484,6 +493,45 @@ export type PreviewBrowserClient = {
     id: string
     visible: boolean
   }): Promise<boolean>
+}
+
+export type PreviewRuntimeClient = {
+  configure(connection: ApiConnection): Promise<boolean>
+  disconnect(): Promise<boolean>
+  create(input: {
+    userStoryId: string
+    profile: "vercel-compose" | "vercel-process"
+    previewManifest: PreviewManifest
+    cloudUploadConsentAt: string
+    operationId: string
+    sourceRevision?: string
+    resourceSize?: { vcpus: number; memoryGb: number }
+  }): Promise<PreviewSessionView>
+  get(input: { sessionId: string }): Promise<PreviewSessionView>
+  openExternal(input: {
+    sessionId: string
+    endpointId?: string
+  }): Promise<boolean>
+  command(input: {
+    sessionId: string
+    command: PreviewSessionCommand
+    operationId: string
+  }): Promise<PreviewSessionView>
+  syncIn(input: { sessionId: string; localPath: string }): Promise<{
+    session: PreviewSessionView
+    sourceRevision: string
+    workspaceHash: string
+  }>
+  syncOut(input: { sessionId: string; localPath?: string }): Promise<{
+    session: PreviewSessionView
+    revision: string
+    finalHash: string
+  }>
+  onEvent(
+    input: { sessionId: string; cursor?: string },
+    callback: (event: PreviewSessionEvent) => void,
+    onError?: (message: string) => void
+  ): () => void
 }
 
 export type WorkspaceClient = {

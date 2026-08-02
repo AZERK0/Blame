@@ -36,6 +36,8 @@ const ConsumerContractsController = () => import('#controllers/consumer_contract
 const BetterAuthController = () => import('#controllers/better_auth_controller')
 const DesktopAuthController = () => import('#controllers/desktop_auth_controller')
 const FileAttachmentsController = () => import('#controllers/file_attachments_controller')
+const PreviewSessionsController = () => import('#controllers/preview_sessions_controller')
+const PreviewEdgeInternalController = () => import('#controllers/preview_edge_internal_controller')
 
 router.get('/', () => {
   return { hello: 'world' }
@@ -49,6 +51,22 @@ router
     router.post('telemetry/otlp/v1/:signal', [TelemetryIngestionController, 'store'])
 
     router.get('telemetry/session', [TelemetrySessionsController, 'show']).use(middleware.auth())
+
+    router
+      .group(() => {
+        router.post('/', [PreviewSessionsController, 'store'])
+        router.get('/:id', [PreviewSessionsController, 'show'])
+        router.post('/:id/actions', [PreviewSessionsController, 'action'])
+        router.post('/:id/source/import', [PreviewSessionsController, 'sourceImport'])
+        router.post('/:id/source/export', [PreviewSessionsController, 'sourceExport'])
+        router.get('/:id/logs', [PreviewSessionsController, 'logs'])
+        router.get('/:id/events', [PreviewSessionsController, 'events'])
+        router.post('/:id/access-ticket', [PreviewSessionsController, 'accessTicket'])
+        router.post('/:id/bridge-grant', [PreviewSessionsController, 'bridgeGrant'])
+      })
+      .prefix('preview-sessions')
+      .as('preview_sessions')
+      .use([middleware.auth(), middleware.license()])
 
     router
       .group(() => {
@@ -201,3 +219,10 @@ router
       .use([middleware.auth(), middleware.license()])
   })
   .prefix('/api/v1')
+
+router
+  .group(() => {
+    router.post('/resolve', [PreviewEdgeInternalController, 'resolve'])
+    router.post('/consume-ticket', [PreviewEdgeInternalController, 'consumeTicket'])
+  })
+  .prefix('/internal/preview-edge')

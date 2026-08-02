@@ -1,0 +1,19 @@
+{
+  "name": "@blame/preview-edge",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "blame-preview-edge": "dist/server.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit",
+    "test": "pnpm build && node --test dist/**/*.test.js"
+  },
+  "devDependencies": {
+    "@types/node": "^24.12.0",
+    "typescript": "~5.9.3"
+  }
+}

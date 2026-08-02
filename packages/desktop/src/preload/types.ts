@@ -53,6 +53,11 @@ import type { RuntimeDiagnosticInput, RuntimeProgress } from "@blame/app";
 import type { TelemetryExportSession } from "@blame/app";
 import type { HostDependencyReport } from "../main/host-dependencies";
 import type { CreateProjectInput } from "../main/project-creation";
+import type {
+  PreviewSessionCommand,
+  PreviewSessionEvent,
+  PreviewSessionView,
+} from "@blame/preview-runtime";
 
 export type OpenDirectoryPickerOptions = {
   title?: string;
@@ -208,7 +213,7 @@ export type BlameDesktopApi = {
       id: string;
       size?: "full" | "thumbnail";
     }): Promise<string | null>;
-    create(input: { storageKey: string }): Promise<{ id: string }>;
+    create(input: { storageKey: string; previewSessionId?: string }): Promise<{ id: string }>;
     destroy(input: { id: string }): Promise<boolean>;
     load(input: { id: string; url: string }): Promise<boolean>;
     onState(
@@ -225,6 +230,41 @@ export type BlameDesktopApi = {
       id: string;
       visible: boolean;
     }): Promise<boolean>;
+  };
+  previewRuntime: {
+    configure(connection: ApiConnection): Promise<boolean>;
+    disconnect(): Promise<boolean>;
+    create(input: {
+      userStoryId: string;
+      profile: "vercel-compose" | "vercel-process";
+      previewManifest: PreviewManifest;
+      cloudUploadConsentAt: string;
+      operationId: string;
+      sourceRevision?: string;
+      resourceSize?: { vcpus: number; memoryGb: number };
+    }): Promise<PreviewSessionView>;
+    get(input: { sessionId: string }): Promise<PreviewSessionView>;
+    openExternal(input: { sessionId: string; endpointId?: string }): Promise<boolean>;
+    command(input: {
+      sessionId: string;
+      command: PreviewSessionCommand;
+      operationId: string;
+    }): Promise<PreviewSessionView>;
+    syncIn(input: { sessionId: string; localPath: string }): Promise<{
+      session: PreviewSessionView;
+      sourceRevision: string;
+      workspaceHash: string;
+    }>;
+    syncOut(input: { sessionId: string; localPath?: string }): Promise<{
+      session: PreviewSessionView;
+      revision: string;
+      finalHash: string;
+    }>;
+    onEvent(
+      input: { sessionId: string; cursor?: string },
+      callback: (event: PreviewSessionEvent) => void,
+      onError?: (message: string) => void,
+    ): () => void;
   };
   workspace: {
     pathExists(input: { path: string }): Promise<boolean>;

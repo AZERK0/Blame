@@ -1,0 +1,39 @@
+export type RuntimeCapabilities = {
+  dockerCompose: boolean;
+  nativeProcesses: boolean;
+  sharedLoopback: boolean;
+  snapshots: boolean;
+  persistentFilesystem: boolean;
+  publicHttpIngress: boolean;
+  webSockets: boolean;
+  networkPolicy: boolean;
+  credentialBroker: boolean;
+  bidirectionalSync: boolean;
+  maxPublishedPorts?: number;
+};
+
+export type CapabilityRequirement = keyof Omit<
+  RuntimeCapabilities,
+  "maxPublishedPorts"
+>;
+
+export type CapabilityIncompatibility = {
+  code:
+    | "CAPABILITY_REQUIRED"
+    | "PORT_LIMIT_EXCEEDED"
+    | "DUPLICATE_LOGICAL_PORT"
+    | "PROCESS_SOURCE_UNSUPPORTED"
+    | "PROCESS_TOOLCHAIN_UNAVAILABLE"
+    | "CONTAINER_SOURCE_REQUIRED"
+    | "COMPOSE_LOOPBACK_UNSUPPORTED"
+    | "EXTERNAL_PREVIEW_UNSUPPORTED";
+  capability?: CapabilityRequirement;
+  message: string;
+  serviceIds?: string[];
+};
+
+export type CapabilityReport = {
+  compatible: boolean;
+  capabilities: RuntimeCapabilities;
+  incompatibilities: CapabilityIncompatibility[];
+};

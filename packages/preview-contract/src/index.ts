@@ -8,6 +8,7 @@ export type {
   PreviewManifestConfidence,
   PreviewManifestEndpoint,
   PreviewManifestEndpointHealthcheck,
+  PreviewManifestExecutionSource,
   PreviewManifestEnvironment,
   PreviewManifestHealthcheck,
   PreviewManifestPreview,

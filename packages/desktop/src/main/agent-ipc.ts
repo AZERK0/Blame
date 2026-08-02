@@ -24,27 +24,31 @@ import {
 import { handleAgentHostRequest } from "./agent-runtime-main-host"
 import { getRuntimeStatus } from "./runtime-manager"
 import { runtimeAgentClient } from "./runtime-agent"
+import { WorkspaceWriterRegistry } from "./workspaces/workspace-writer-registry"
 
 type AgentRuntimeRegistration = {
   modulePath: string
   packaged: boolean
   serviceVersion: string
+  beforeDelivery?(worktree: string): Promise<void>
+  beforeWorkspaceWrite?(worktree: string): Promise<void>
 }
 
 let runtime: AgentRuntimePool | undefined
 let runtimePrewarmPromise: Promise<boolean> | undefined
 const runtimePrewarmWorkspace =
   "/home/blame/.local/share/blame/runtime/worktrees/.prewarm"
+const agentWorkspaceWriters = new WorkspaceWriterRegistry()
 
 export function registerAgentIpcHandlers(input: AgentRuntimeRegistration) {
   runtime ??= createAgentRuntimePool(input)
   registerProviderIpcHandlers()
-  registerSessionStartIpcHandlers()
-  registerSessionControlIpcHandlers()
-  registerSessionDataIpcHandlers()
+  registerSessionStartIpcHandlers(input.beforeWorkspaceWrite)
+  registerSessionControlIpcHandlers(input.beforeWorkspaceWrite)
+  registerSessionDataIpcHandlers(input.beforeWorkspaceWrite)
   registerSessionEventIpcHandlers()
-  registerAnalysisWorkflowIpcHandlers()
-  registerDeliveryWorkflowIpcHandlers()
+  registerAnalysisWorkflowIpcHandlers(input.beforeWorkspaceWrite)
+  registerDeliveryWorkflowIpcHandlers(input.beforeDelivery)
 }
 
 export function prewarmAgentRuntime(runtimeAlreadyReady = false) {
@@ -118,14 +122,14 @@ function registerProviderIpcHandlers() {
   )
 }
 
-function registerSessionStartIpcHandlers() {
+function registerSessionStartIpcHandlers(
+  beforeWorkspaceWrite?: (worktree: string) => Promise<void>,
+) {
   ipcMain.handle("agent:sessions:start", async (_event, input) => {
-    const session = await agentRuntime().startSession(
-      "sessions.start",
-      await agentWorkspaceInput(input)
-    )
-    eventStream.beginSession(session.sessionId)
-    return session
+    const prepared = await agentWorkspaceInput(input)
+    const workspace = agentWorkspacePath(prepared)
+    if (workspace && beforeWorkspaceWrite) await beforeWorkspaceWrite(workspace)
+    return startWorkspaceSession("sessions.start", prepared, workspace)
   })
   ipcMain.handle("agent:sessions:start-development", async (_event, input) => {
     const prepared = await optimizeDevelopmentAttachments(
@@ -137,7 +141,12 @@ function registerSessionStartIpcHandlers() {
             : `${Date.now()}_${randomUUID().replaceAll("-", "").slice(0, 5)}`,
       }),
     )
+    const workspace = agentWorkspacePath(prepared)
+    if (workspace && beforeWorkspaceWrite) await beforeWorkspaceWrite(workspace)
     let session
+    const pendingSessionId = workspace ? `pending:${randomUUID()}` : undefined
+    if (workspace && pendingSessionId)
+      agentWorkspaceWriters.begin(pendingSessionId, workspace)
     try {
       session = await agentRuntime().startSession(
         "sessions.startDevelopment",
@@ -152,29 +161,44 @@ function registerSessionStartIpcHandlers() {
         "sessions.startDevelopment",
         refreshRuntimeBackendConnection(await agentWorkspaceInput(prepared)),
       )
+    } finally {
+      if (pendingSessionId && !session)
+        agentWorkspaceWriters.forget(pendingSessionId)
     }
+    if (pendingSessionId)
+      agentWorkspaceWriters.rebind(pendingSessionId, session.sessionId)
     eventStream.beginSession(session.sessionId)
     return session
   })
 }
 
-function registerSessionControlIpcHandlers() {
-  ipcMain.handle("agent:sessions:send", (_event, input) =>
-    agentRuntime().runSession("sessions.send", input.sessionId, input)
-  )
+function registerSessionControlIpcHandlers(
+  beforeWorkspaceWrite?: (worktree: string) => Promise<void>,
+) {
+  ipcMain.handle("agent:sessions:send", async (_event, input) => {
+    await beforeAgentSessionWrite(input.sessionId, beforeWorkspaceWrite)
+    return runWorkspaceSession("sessions.send", input.sessionId, input)
+  })
   ipcMain.handle("agent:sessions:send-development", async (_event, input) => {
-    return agentRuntime().runSession(
+    await beforeAgentSessionWrite(input.sessionId, beforeWorkspaceWrite)
+    return runWorkspaceSession(
       "sessions.sendDevelopment",
       input.sessionId,
       await optimizeDevelopmentAttachments(input),
     )
   })
-  ipcMain.handle("agent:sessions:abort", (_event, sessionId) =>
-    agentRuntime().abortSession(sessionId)
-  )
+  ipcMain.handle("agent:sessions:abort", async (_event, sessionId) => {
+    try {
+      return await agentRuntime().abortSession(sessionId)
+    } finally {
+      agentWorkspaceWriters.end(sessionId)
+    }
+  })
 }
 
-function registerSessionDataIpcHandlers() {
+function registerSessionDataIpcHandlers(
+  beforeWorkspaceWrite?: (worktree: string) => Promise<void>,
+) {
   ipcMain.handle("agent:sessions:compare-checkpoint", (_event, input) =>
     agentRuntime().runSession(
       "sessions.compareCheckpoint",
@@ -186,13 +210,14 @@ function registerSessionDataIpcHandlers() {
   ipcMain.handle("agent:sessions:messages", (_event, sessionId) =>
     agentRuntime().runSession("sessions.messages", sessionId, sessionId)
   )
-  ipcMain.handle("agent:sessions:restore-checkpoint", (_event, input) =>
-    agentRuntime().runSession(
+  ipcMain.handle("agent:sessions:restore-checkpoint", async (_event, input) => {
+    await beforeAgentSessionWrite(input.sessionId, beforeWorkspaceWrite)
+    return runWorkspaceSession(
       "sessions.restoreCheckpoint",
       input.sessionId,
       input,
     )
-  )
+  })
   ipcMain.handle("agent:sessions:usage", (_event, sessionId) =>
     agentRuntime().runSession("sessions.usage", sessionId, sessionId)
   )
@@ -214,17 +239,25 @@ function registerSessionEventIpcHandlers() {
   )
 }
 
-function registerAnalysisWorkflowIpcHandlers() {
-  ipcMain.handle("agent:initializations:run", (_event, input) =>
-    agentWorkspaceInput(input).then((resolved) =>
-      agentRuntime().run("initializations.run", resolved)
+function registerAnalysisWorkflowIpcHandlers(
+  beforeWorkspaceWrite?: (worktree: string) => Promise<void>,
+) {
+  ipcMain.handle("agent:initializations:run", async (_event, input) => {
+    const resolved = await agentWorkspaceInput(input)
+    const workspace = agentWorkspacePath(resolved)
+    if (workspace && beforeWorkspaceWrite) await beforeWorkspaceWrite(workspace)
+    return runWorkspaceTask(workspace, () =>
+      agentRuntime().run("initializations.run", resolved),
     )
-  )
-  ipcMain.handle("agent:initializations:repair", (_event, input) =>
-    agentWorkspaceInput(input).then((resolved) =>
-      agentRuntime().run("initializations.repair", resolved)
+  })
+  ipcMain.handle("agent:initializations:repair", async (_event, input) => {
+    const resolved = await agentWorkspaceInput(input)
+    const workspace = agentWorkspacePath(resolved)
+    if (workspace && beforeWorkspaceWrite) await beforeWorkspaceWrite(workspace)
+    return runWorkspaceTask(workspace, () =>
+      agentRuntime().run("initializations.repair", resolved),
     )
-  )
+  })
   ipcMain.handle("agent:initializations:assess-impact", (_event, input) =>
     agentWorkspaceInput(input).then((resolved) =>
       agentRuntime().run("initializations.assessImpact", resolved)
@@ -237,7 +270,9 @@ function registerAnalysisWorkflowIpcHandlers() {
   )
 }
 
-function registerDeliveryWorkflowIpcHandlers() {
+function registerDeliveryWorkflowIpcHandlers(
+  beforeDelivery?: (worktree: string) => Promise<void>,
+) {
   ipcMain.handle("agent:new-projects:generate", (_event, input) =>
     agentRuntime().run("newProjects.generate", input)
   )
@@ -251,21 +286,100 @@ function registerDeliveryWorkflowIpcHandlers() {
       agentRuntime().run("promptOptimizer.generateTitle", resolved)
     )
   )
-  ipcMain.handle("agent:approve-and-merge", (_event, input) =>
-    agentWorkspaceInput(input).then((resolved) =>
-      agentRuntime().run("approveAndMerge", resolved)
+  ipcMain.handle("agent:approve-and-merge", async (_event, input) => {
+    const resolved = await agentWorkspaceInput(input)
+    if (typeof resolved.worktree !== "string" || !resolved.worktree) {
+      throw new Error("Agent delivery worktree is invalid")
+    }
+    if (beforeDelivery) await beforeDelivery(resolved.worktree)
+    return runWorkspaceTask(resolved.worktree, () =>
+      agentRuntime().run("approveAndMerge", resolved),
     )
-  )
+  })
   ipcMain.handle("agent:generate-commit-message", (_event, input) =>
     agentWorkspaceInput(input).then((resolved) =>
       agentRuntime().run("generateCommitMessage", resolved)
     )
   )
-  ipcMain.handle("agent:resolve-merge-conflicts", (_event, input) =>
-    agentWorkspaceInput(input).then((resolved) =>
-      agentRuntime().run("resolveMergeConflicts", resolved)
+  ipcMain.handle("agent:resolve-merge-conflicts", async (_event, input) => {
+    const resolved = await agentWorkspaceInput(input)
+    if (typeof resolved.worktree !== "string" || !resolved.worktree) {
+      throw new Error("Agent merge-conflict worktree is invalid")
+    }
+    if (beforeDelivery) await beforeDelivery(resolved.worktree)
+    return runWorkspaceTask(resolved.worktree, () =>
+      agentRuntime().run("resolveMergeConflicts", resolved),
     )
-  )
+  })
+}
+
+function agentWorkspacePath(input: unknown) {
+  if (!input || typeof input !== "object") return undefined
+  const value = input as Record<string, unknown>
+  for (const key of ["workspaceRoot", "worktree", "cwd"]) {
+    if (typeof value[key] === "string" && value[key]) return value[key]
+  }
+  return undefined
+}
+
+async function beforeAgentSessionWrite(
+  sessionId: string,
+  callback?: (worktree: string) => Promise<void>,
+) {
+  const workspace = agentWorkspaceWriters.workspaceForSession(sessionId)
+  if (workspace && callback) await callback(workspace)
+}
+
+async function startWorkspaceSession(
+  method: "sessions.start",
+  input: Record<string, unknown>,
+  workspace: string | undefined,
+) {
+  const pendingSessionId = workspace ? `pending:${randomUUID()}` : undefined
+  if (workspace && pendingSessionId)
+    agentWorkspaceWriters.begin(pendingSessionId, workspace)
+  try {
+    const session = await agentRuntime().startSession(method, input)
+    if (pendingSessionId)
+      agentWorkspaceWriters.rebind(pendingSessionId, session.sessionId)
+    eventStream.beginSession(session.sessionId)
+    return session
+  } catch (error) {
+    if (pendingSessionId) agentWorkspaceWriters.forget(pendingSessionId)
+    throw error
+  }
+}
+
+async function runWorkspaceSession(
+  method:
+    | "sessions.send"
+    | "sessions.sendDevelopment"
+    | "sessions.restoreCheckpoint",
+  sessionId: string,
+  input: unknown,
+) {
+  const workspace = agentWorkspaceWriters.workspaceForSession(sessionId)
+  if (workspace) agentWorkspaceWriters.begin(sessionId, workspace)
+  try {
+    return await agentRuntime().runSession(method, sessionId, input)
+  } catch (error) {
+    agentWorkspaceWriters.end(sessionId)
+    throw error
+  }
+}
+
+async function runWorkspaceTask<T>(
+  workspace: string | undefined,
+  task: () => Promise<T>,
+) {
+  if (!workspace) return task()
+  const operationId = `operation:${randomUUID()}`
+  agentWorkspaceWriters.begin(operationId, workspace)
+  try {
+    return await task()
+  } finally {
+    agentWorkspaceWriters.forget(operationId)
+  }
 }
 
 export function generateNewProjectWithAgent(
@@ -280,11 +394,17 @@ export function generateNewProjectWithAgent(
 }
 
 export function releaseAgentWorkspaceSessions(worktree: string) {
+  agentWorkspaceWriters.releaseWorkspace(worktree)
   return agentRuntime().releaseWorkspace(worktree)
+}
+
+export function localAgentOwnsWorkspace(worktree: string) {
+  return agentWorkspaceWriters.hasActiveWriter(worktree)
 }
 
 export async function shutdownAgentRuntime() {
   shutdownAgentEventServer()
+  agentWorkspaceWriters.clear()
   const currentRuntime = runtime
   runtime = undefined
   await Promise.allSettled([
@@ -333,6 +453,12 @@ function agentRuntime() {
 }
 
 function emitAgentEvent(event: AgentEvent) {
+  if (
+    event.sessionId &&
+    (event.type === "done" || event.type === "error")
+  ) {
+    agentWorkspaceWriters.end(event.sessionId)
+  }
   const transportEvent = agentTransportEvent(event)
   eventStream.publish(transportEvent)
   BrowserWindow.getAllWindows().forEach((window) => {

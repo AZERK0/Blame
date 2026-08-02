@@ -2,7 +2,7 @@ import type {
   UserStoryCodeSelectionAttachment,
   UserStoryFileAttachment,
 } from "@/components/backlog/data/backlog-data"
-import { isFileAttachmentReference } from "@/lib/file-attachment-api"
+import { isFileAttachmentReference } from "../../../lib/file-attachment-api.ts"
 
 export type ComposerDraft = {
   codeSelectionAttachments: UserStoryCodeSelectionAttachment[]

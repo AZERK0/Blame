@@ -94,6 +94,40 @@ test("rejects dependency cycles", () => {
   assert.throws(() => parsePreviewManifest(value), /must not contain cycles/);
 });
 
+test("rejects collisions and cycles across setup tasks and services", () => {
+  const collision = manifest();
+  collision.setup = [
+    {
+      id: "backend",
+      image: "node:22-bookworm",
+      command: "npm install",
+    },
+  ] as typeof collision.setup;
+  assert.throws(
+    () => parsePreviewManifest(collision),
+    /runtime item ids must be unique/,
+  );
+
+  const cycle = manifest();
+  cycle.setup = [
+    {
+      id: "prepare",
+      image: "node:22-bookworm",
+      command: "npm install",
+      dependsOn: ["web"],
+    },
+  ] as typeof cycle.setup;
+  cycle.services[1].dependsOn = ["prepare"];
+  assert.throws(() => parsePreviewManifest(cycle), /must not contain cycles/);
+});
+
+test("treats server bindings as dependency edges", () => {
+  const value = manifest();
+  value.services[1].dependsOn = [];
+  value.services[0].dependsOn = ["web"];
+  assert.throws(() => parsePreviewManifest(value), /must not contain cycles/);
+});
+
 test("requires version two endpoint and probe declarations", () => {
   const withoutProbes = manifest() as Record<string, any>;
   delete withoutProbes.probes;
@@ -129,4 +163,18 @@ test("keeps version one manifests compatible", () => {
   delete value.probes;
   const parsed = parsePreviewManifest(value);
   assert.equal(parsed.version, 1);
+});
+
+test("accepts version three native process sources without legacy images", () => {
+  const value = manifest() as unknown as Record<string, unknown>;
+  value.version = 3;
+  const setup = value.setup as Array<Record<string, unknown>>;
+  const services = value.services as Array<Record<string, unknown>>;
+  for (const item of [...setup, ...services]) {
+    delete item.image;
+    item.source = { kind: "process", toolchain: "node24" };
+  }
+  const parsed = parsePreviewManifest(value);
+  assert.equal(parsed.services[0]?.source?.kind, "process");
+  assert.equal(parsed.services[0]?.image, "runtime");
 });

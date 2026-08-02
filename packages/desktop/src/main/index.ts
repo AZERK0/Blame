@@ -20,11 +20,8 @@ import {
   configureAgentRuntimeTelemetry,
   disableAgentRuntimeTelemetry,
   prewarmAgentRuntime,
-  registerAgentIpcHandlers,
   shutdownAgentRuntime,
 } from "./agent-ipc"
-import { registerBacklogStatusPipIpcHandlers } from "./backlog-status-pip-ipc"
-import { registerCloudAuthIpcHandlers } from "./cloud-auth-ipc"
 import { desktopAppIdentity } from "./desktop-app-identity"
 import { DesktopAuthCallbackDeliveryQueue } from "./desktop-auth-callback-delivery"
 import {
@@ -38,17 +35,15 @@ import {
   flushLiveLogs,
   registerLiveLogCapture,
 } from "./desktop-live-log"
-import { checkForUpdatesOnStartup, registerDesktopUpdateIpcHandlers } from "./desktop-update-ipc"
+import { checkForUpdatesOnStartup } from "./desktop-update-ipc"
 import {
   destroyAllPreviewBrowsers,
   enablePreviewDevtools,
-  registerPreviewBrowserIpcHandlers,
 } from "./preview-browser-ipc"
-import { registerTerminalIpcHandlers, shutdownTerminalSessions } from "./terminal-ipc"
-import { registerTelemetryIpcHandlers } from "./telemetry-ipc"
-import { registerWorkspaceIpcHandlers, shutdownWorkspaceProcesses } from "./workspace-ipc"
+import { shutdownTerminalSessions } from "./terminal-ipc"
+import { shutdownWorkspaceProcesses } from "./workspace-ipc"
 import { runtimeHostPath, runtimeVmInternalPath } from "./workspace-runtime"
-import { registerMcpIpcHandlers } from "./mcp-ipc"
+import { registerDesktopIpcHandlers } from "./ipc"
 import { configureHyprlandWindow } from "./hyprland-window"
 import {
   isMainWindowRole,
@@ -114,37 +109,28 @@ if (initialAuthCallback) authCallbackQueue.enqueue(initialAuthCallback)
 let authRendererReady = false
 
 void app.whenReady().then(() => {
-  registerIpcHandlers()
-  registerCloudAuthIpcHandlers({
+  registerDesktopIpcHandlers({
     mainWindow: () => mainWindow,
     packaged: app.isPackaged,
-  })
-  registerBacklogStatusPipIpcHandlers({
-    mainWindow: () => mainWindow,
-    preloadPath: desktopResources.preload,
-    rendererFile: desktopResources.renderer,
-    rendererUrl: process.env.ELECTRON_RENDERER_URL,
-  })
-  registerAgentIpcHandlers({
-    modulePath: desktopResources.agentRuntime,
-    packaged: app.isPackaged,
-    serviceVersion: app.getVersion(),
-  })
-  registerPreviewBrowserIpcHandlers()
-  registerMcpIpcHandlers()
-  registerTerminalIpcHandlers()
-  registerTelemetryIpcHandlers({
-    configure: configureAgentRuntimeTelemetry,
-    disable: disableAgentRuntimeTelemetry,
-  })
-  registerDesktopUpdateIpcHandlers({
+    registerCoreHandlers: registerIpcHandlers,
+    backlogStatusPip: {
+      preloadPath: desktopResources.preload,
+      rendererFile: desktopResources.renderer,
+      rendererUrl: process.env.ELECTRON_RENDERER_URL,
+    },
+    agentRuntime: {
+      modulePath: desktopResources.agentRuntime,
+      serviceVersion: app.getVersion(),
+    },
+    telemetry: {
+      configure: configureAgentRuntimeTelemetry,
+      disable: disableAgentRuntimeTelemetry,
+    },
     async beforeInstall() {
       shutdownRequested = true
       await shutdownApplication()
       readyToQuit = true
     },
-  })
-  registerWorkspaceIpcHandlers({
     onRuntimeReady: () => void prewarmAgentRuntime(true),
   })
   replaceMainWindow("compact")

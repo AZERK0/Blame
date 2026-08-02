@@ -1,4 +1,9 @@
-export type PreviewManifestVersion = 1 | 2;
+export type PreviewManifestVersion = 1 | 2 | 3;
+
+export type PreviewManifestExecutionSource =
+  | { kind: "container"; image: string }
+  | { kind: "process"; toolchain?: string }
+  | { kind: "auto"; image?: string; toolchain?: string };
 
 export type PreviewManifestConfidence = "low" | "medium" | "high";
 
@@ -13,6 +18,7 @@ export type PreviewManifestProject = {
 export type PreviewManifestSetupTask = {
   id: string;
   image: string;
+  source?: PreviewManifestExecutionSource;
   workingDir?: string;
   command: string;
   runAs?: "host" | "root";
@@ -69,6 +75,7 @@ export type PreviewManifestService = {
   id: string;
   kind: PreviewManifestServiceKind;
   image: string;
+  source?: PreviewManifestExecutionSource;
   workingDir?: string;
   command?: string;
   environment?: PreviewManifestEnvironment;

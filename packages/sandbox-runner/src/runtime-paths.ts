@@ -1,0 +1,14 @@
+export const runtimePaths = {
+  workspace: "/workspace",
+  controlRoot: "/var/lib/blame",
+  runtimeState: "/var/lib/blame/runtime/state.json",
+  plan: "/var/lib/blame/runtime/plan.json",
+  journal: "/var/lib/blame/journal/state.json",
+  journalLock: "/var/lib/blame/journal/lock",
+  exports: "/var/lib/blame/exports",
+  logs: "/var/log/blame/services",
+  gatewayConfig: "/var/lib/blame/runtime/gateway.json",
+  capabilityPublicKey: "/var/lib/blame/runtime/preview-capability-public.pem",
+  requestDirectory: "/run/blame/control/requests",
+  composeFile: "/var/lib/blame/runtime/compose.yaml",
+} as const;

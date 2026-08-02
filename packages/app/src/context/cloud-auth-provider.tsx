@@ -61,6 +61,15 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
   useCloudTelemetry(platform.telemetry, apiConnection, Boolean(token))
 
   React.useEffect(() => {
+    if (!platform.previewRuntime) return
+    if (token) void platform.previewRuntime.configure({ url: apiUrl, token })
+    else void platform.previewRuntime.disconnect()
+    return () => {
+      if (token) void platform.previewRuntime?.disconnect()
+    }
+  }, [apiUrl, platform.previewRuntime, token])
+
+  React.useEffect(() => {
     let alive = true
     const session = readCloudSession()
     if (!session) {

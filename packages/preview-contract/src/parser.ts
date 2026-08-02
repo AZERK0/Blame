@@ -4,6 +4,7 @@ import type {
   PreviewManifestCache,
   PreviewManifestEndpoint,
   PreviewManifestEndpointHealthcheck,
+  PreviewManifestExecutionSource,
   PreviewManifestEnvironment,
   PreviewManifestHealthcheck,
   PreviewManifestProbe,
@@ -43,12 +44,13 @@ const unsafeCommandPatterns = [
 
 export function parsePreviewManifest(value: unknown): PreviewManifest {
   if (!isRecord(value)) throw new Error("previewManifest must be an object");
+  const version = parseVersion(value.version);
   const manifest: PreviewManifest = {
-    version: parseVersion(value.version),
+    version,
     confidence: parseConfidence(value.confidence),
     project: parseProject(value.project),
-    setup: parseSetupTasks(value.setup),
-    services: parseServices(value.services),
+    setup: parseSetupTasks(value.setup, version),
+    services: parseServices(value.services, version),
     caches: parseCaches(value.caches),
     risks: parseRisks(value.risks),
     probes: parseProbes(value.probes),
@@ -66,6 +68,10 @@ export function validatePreviewManifest(manifest: PreviewManifest) {
     "service",
     manifest.services.map(({ id }) => id),
   );
+  uniqueIds("runtime item", [
+    ...manifest.setup.map(({ id }) => id),
+    ...manifest.services.map(({ id }) => id),
+  ]);
   uniqueIds(
     "cache",
     manifest.caches.map(({ name }) => name),
@@ -86,7 +92,7 @@ export function validatePreviewManifest(manifest: PreviewManifest) {
 }
 
 function validateVersionTwoContract(manifest: PreviewManifest) {
-  if (manifest.version !== 2) return;
+  if (manifest.version < 2) return;
   if (!manifest.probes) {
     throw new Error("previewManifest version 2 must define probes");
   }
@@ -115,8 +121,8 @@ function previewEndpointMatches(service: PreviewManifestService) {
 }
 
 function parseVersion(value: unknown): PreviewManifestVersion {
-  if (value !== 1 && value !== 2) {
-    throw new Error("previewManifest version must be 1 or 2");
+  if (value !== 1 && value !== 2 && value !== 3) {
+    throw new Error("previewManifest version must be 1, 2, or 3");
   }
   return value;
 }
@@ -145,17 +151,22 @@ function parseProject(value: unknown): PreviewManifestProject {
   };
 }
 
-function parseSetupTasks(value: unknown) {
+function parseSetupTasks(value: unknown, version: PreviewManifestVersion) {
   limitedArray(value, "setup", 50);
-  return value.map(parseSetupTask);
+  return value.map((task) => parseSetupTask(task, version));
 }
 
-function parseSetupTask(value: unknown): PreviewManifestSetupTask {
+function parseSetupTask(
+  value: unknown,
+  version: PreviewManifestVersion,
+): PreviewManifestSetupTask {
   if (!isRecord(value))
     throw new Error("previewManifest setup task must be an object");
+  const source = parseExecutionSource(value, version, "setup");
   return {
     id: requiredString(value.id, "setup.id"),
-    image: requiredString(value.image, "setup.image"),
+    image: parsedExecutionImage(source, value.image, "setup.image"),
+    source,
     workingDir: optionalString(value.workingDir),
     command: requiredString(value.command, "setup.command"),
     runAs: parseRunAs(value.runAs),
@@ -164,18 +175,23 @@ function parseSetupTask(value: unknown): PreviewManifestSetupTask {
   };
 }
 
-function parseServices(value: unknown) {
+function parseServices(value: unknown, version: PreviewManifestVersion) {
   limitedArray(value, "services", 50);
-  return value.map(parseService);
+  return value.map((service) => parseService(service, version));
 }
 
-function parseService(value: unknown): PreviewManifestService {
+function parseService(
+  value: unknown,
+  version: PreviewManifestVersion,
+): PreviewManifestService {
   if (!isRecord(value))
     throw new Error("previewManifest service must be an object");
+  const source = parseExecutionSource(value, version, "service");
   return {
     id: requiredString(value.id, "service.id"),
     kind: serviceKind(value.kind),
-    image: requiredString(value.image, "service.image"),
+    image: parsedExecutionImage(source, value.image, "service.image"),
+    source,
     workingDir: optionalString(value.workingDir),
     command: optionalString(value.command),
     environment: parseEnvironment(value.environment, "service.environment"),
@@ -189,6 +205,47 @@ function parseService(value: unknown): PreviewManifestService {
     endpoints: parseEndpoints(value.endpoints),
     bindings: parseBindings(value.bindings),
   };
+}
+
+function parseExecutionSource(
+  value: Record<string, unknown>,
+  version: PreviewManifestVersion,
+  context: string,
+): PreviewManifestExecutionSource | undefined {
+  if (version < 3) return undefined;
+  if (!isRecord(value.source))
+    throw new Error(
+      `previewManifest ${context}.source is required in version 3`,
+    );
+  const kind = value.source.kind;
+  if (kind === "container") {
+    return {
+      kind,
+      image: requiredString(value.source.image, `${context}.source.image`),
+    };
+  }
+  if (kind === "process") {
+    return { kind, toolchain: optionalString(value.source.toolchain) };
+  }
+  if (kind === "auto") {
+    return {
+      kind,
+      image: optionalString(value.source.image),
+      toolchain: optionalString(value.source.toolchain),
+    };
+  }
+  throw new Error(`previewManifest ${context}.source kind is invalid`);
+}
+
+function parsedExecutionImage(
+  source: PreviewManifestExecutionSource | undefined,
+  legacyImage: unknown,
+  field: string,
+) {
+  if (!source) return requiredString(legacyImage, field);
+  if (source.kind === "container") return source.image;
+  if (source.kind === "auto" && source.image) return source.image;
+  return "runtime";
 }
 
 function parsePreview(value: unknown): PreviewManifestService["preview"] {
@@ -399,7 +456,7 @@ function validateTopology(manifest: PreviewManifest) {
   for (const service of manifest.services)
     validateServiceTopology(service, services);
   for (const probe of manifest.probes ?? []) validateProbe(probe, services);
-  validateDependencyCycles(manifest.services);
+  validateDependencyCycles(manifest);
 }
 
 function validateServiceTopology(
@@ -486,14 +543,16 @@ function serviceEndpoint(service: PreviewManifestService, id: string) {
   } satisfies PreviewManifestEndpoint;
 }
 
-function validateDependencyCycles(services: PreviewManifestService[]) {
-  const graph = new Map(
-    services.map((service) => [service.id, serviceDependencyIds(service)]),
-  );
+function validateDependencyCycles(manifest: PreviewManifest) {
+  const graph = new Map<string, string[]>([
+    ...manifest.setup.map((task) => [task.id, task.dependsOn ?? []] as const),
+    ...manifest.services.map(
+      (service) => [service.id, serviceDependencyIds(service)] as const,
+    ),
+  ]);
   const visiting = new Set<string>();
   const visited = new Set<string>();
-  for (const service of services)
-    visitDependency(service.id, graph, visiting, visited);
+  for (const id of graph.keys()) visitDependency(id, graph, visiting, visited);
 }
 
 function serviceDependencyIds(service: PreviewManifestService) {
@@ -532,7 +591,12 @@ function validateSetupTask(
   knownIds: Set<string>,
 ) {
   validateId(task.id, "setup task");
-  validateImage(task.image, `setup task ${task.id}`);
+  if (
+    task.source?.kind !== "process" &&
+    (task.source?.kind !== "auto" || task.source.image)
+  ) {
+    validateImage(task.source?.image ?? task.image, `setup task ${task.id}`);
+  }
   validateWorkingDir(task.workingDir, `setup task ${task.id}`);
   validateCommand(task.command, `setup task ${task.id}`);
   validateSetupRunAs(task);
@@ -544,7 +608,15 @@ function validateService(
   knownIds: Set<string>,
 ) {
   validateId(service.id, "service");
-  validateImage(service.image, `service ${service.id}`);
+  if (
+    service.source?.kind !== "process" &&
+    (service.source?.kind !== "auto" || service.source.image)
+  ) {
+    validateImage(
+      service.source?.image ?? service.image,
+      `service ${service.id}`,
+    );
+  }
   validateWorkingDir(service.workingDir, `service ${service.id}`);
   if (service.kind !== "dependency" && !service.command) {
     throw new Error(
@@ -589,7 +661,16 @@ function validateCache(cache: PreviewManifestCache) {
 
 function unsafeCacheTarget(target: string) {
   return (
-    ["/", "/root", "/home", "/var/run/docker.sock"].includes(target) ||
+    [
+      "/",
+      "/root",
+      "/home",
+      "/workspace",
+      "/workspace/.git",
+      "/var/run/docker.sock",
+      "/etc/pki/ca-trust/source/anchors/vercel-proxy-ca.pem",
+    ].includes(target.replace(/\/$/, "")) ||
+    target.startsWith("/workspace/.git/") ||
     target.includes("..") ||
     target.startsWith("/home/") ||
     target.includes("docker.sock")
