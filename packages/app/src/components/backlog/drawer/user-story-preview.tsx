@@ -32,6 +32,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { type PreviewBrowserClient, usePlatform } from "@/context/platform"
+import { useRuntimePreference } from "@/lib/runtime-preference"
 import { cn } from "@/lib/utils"
 
 type PreviewState = "loading" | "loaded" | "error"
@@ -202,11 +203,21 @@ export const UserStoryPreviewWarmup = React.memo(
     userStories: UserStory[]
   }) {
     const platform = usePlatform()
+    const preference = useRuntimePreference()
     const previewBrowser = platform.previewBrowser
     const stories = React.useMemo(
-      () => nativePreviewWarmupStories(userStories),
-      [userStories]
+      () =>
+        preference.profile === "local-container"
+          ? nativePreviewWarmupStories(userStories)
+          : [],
+      [preference.profile, userStories]
     )
+
+    React.useEffect(() => {
+      if (preference.profile === "local-container") return
+      const timeout = window.setTimeout(destroyReleasedNativePreviewSessions)
+      return () => window.clearTimeout(timeout)
+    }, [preference.profile])
 
     if (!previewBrowser) return null
     return stories.map((story) => {
@@ -272,14 +283,23 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
   const previewIdentity = previewScope ?? previewLabel
   const setupLogWorktree = userStory?.worktree ?? worktree
   const configuredPreviewUrl = userStory?.previewUrl ?? previewUrlInput
-  const previewRunner = useUserStoryPreviewRunner(setupLogWorktree, visible, userStory?.id)
+  const previewRunner = useUserStoryPreviewRunner(
+    setupLogWorktree,
+    visible,
+    userStory?.id
+  )
+  const managedPreview = previewRunner.profile !== "local-container"
   const previewUrl = previewRunner.runtime
     ? previewRunner.runtime.previewUrl
-    : (recoveredPreviewUrl ?? configuredPreviewUrl)
+    : managedPreview
+      ? undefined
+      : (recoveredPreviewUrl ?? configuredPreviewUrl)
   const baseSource = previewUrl ? previewSource(previewUrl) : undefined
   const nativePreviewSessionKey = nativePreviewKeyFor(
     previewIdentity,
-    previewRunner.previewSessionId ? `${baseSource}:${previewRunner.previewSessionId}` : baseSource,
+    previewRunner.previewSessionId
+      ? `${baseSource}:${previewRunner.previewSessionId}`
+      : baseSource
   )
   const nativePreviewStorageKey = nativePreviewStorageKeyFor(
     previewIdentity,
@@ -317,9 +337,15 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
     undefined
   )
   const activeTab = activePreviewTab(tab, Boolean(source), hasSetupLog)
-  const services = useProjectServices(
-    visible && activeTab === "setup-log" ? setupLogWorktree : undefined
+  const localServices = useProjectServices(
+    visible && activeTab === "setup-log" && !managedPreview
+      ? setupLogWorktree
+      : undefined
   )
+  const managedServices = previewRunner.runtime?.configurations.find(
+    ({ id }) => id === previewRunner.selectedId
+  )?.services
+  const services = managedPreview ? (managedServices ?? []) : localServices
   const [nativePreviewState, setNativePreviewState] =
     React.useState<NativePreviewState>()
   const [previewCapture, setPreviewCapture] =
@@ -418,6 +444,10 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
   ])
 
   const reloadPreview = () => {
+    if (managedPreview && previewRunner.selectedId) {
+      void previewRunner.control("restart", previewRunner.selectedId)
+      return
+    }
     setReloadKey((current) => current + 1)
     recoverPreview()
   }
@@ -458,7 +488,9 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
   const openPreview = () => {
     if (previewRunner.integratedPreviewRequired) return
     if (previewRunner.previewSessionId && platform.previewRuntime) {
-      void platform.previewRuntime.openExternal({ sessionId: previewRunner.previewSessionId })
+      void platform.previewRuntime.openExternal({
+        sessionId: previewRunner.previewSessionId,
+      })
       return
     }
     const target = displayedPreviewLocation ?? source
@@ -577,6 +609,9 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
               className="h-full min-h-0 overflow-hidden"
             >
               <SetupLogPanel
+                managed={managedPreview}
+                managedError={previewRunner.error}
+                previewSessionId={previewRunner.previewSessionId}
                 service={selectedLogService}
                 serviceCount={services.length}
                 worktree={visible ? setupLogWorktree : undefined}
@@ -733,7 +768,7 @@ function NativePreviewPanel({
     sessionKey,
     storageKey,
     handleState,
-    previewSessionId,
+    previewSessionId
   )
   const ambilightColor = useNativePreviewAmbilightColor(
     client,
@@ -814,9 +849,14 @@ async function acquireNativePreviewSession(
   client: PreviewBrowserClient,
   key: string,
   storageKey: string,
-  previewSessionId?: string,
+  previewSessionId?: string
 ) {
-  const session = nativePreviewSession(client, key, storageKey, previewSessionId)
+  const session = nativePreviewSession(
+    client,
+    key,
+    storageKey,
+    previewSessionId
+  )
   session.references += 1
   clearNativePreviewRetention(session)
   if (!session.browserId) {
@@ -830,7 +870,7 @@ function nativePreviewSession(
   client: PreviewBrowserClient,
   key: string,
   storageKey: string,
-  previewSessionId?: string,
+  previewSessionId?: string
 ): NativePreviewSession {
   const current = nativePreviewSessions.get(key)
   if (current) return current
@@ -917,18 +957,29 @@ function trimNativePreviewSessions() {
   }
 }
 
+function destroyReleasedNativePreviewSessions() {
+  Array.from(nativePreviewSessions.entries()).forEach(([key, session]) => {
+    if (session.references === 0) destroyNativePreviewSession(key)
+  })
+}
+
 function useNativePreviewId(
   client: PreviewBrowserClient,
   sessionKey: string,
   storageKey: string,
   onState: (state: NativePreviewStateInput) => void,
-  previewSessionId?: string,
+  previewSessionId?: string
 ) {
   const [browserId, setBrowserId] = React.useState<string>()
 
   React.useEffect(() => {
     let cancelled = false
-    void acquireNativePreviewSession(client, sessionKey, storageKey, previewSessionId)
+    void acquireNativePreviewSession(
+      client,
+      sessionKey,
+      storageKey,
+      previewSessionId
+    )
       .then((session) => {
         if (cancelled) {
           return
@@ -1415,9 +1466,11 @@ function PreviewAddress({
         className="ml-2 size-7 rounded-full"
         size="icon"
         disabled={externalOpenDisabled}
-        title={externalOpenDisabled
-          ? "This preview uses localhost compatibility and is available only inside Blame."
-          : "Open preview in browser"}
+        title={
+          externalOpenDisabled
+            ? "This preview uses localhost compatibility and is available only inside Blame."
+            : "Open preview in browser"
+        }
         type="button"
         variant="ghost"
         onClick={onOpen}
@@ -1466,15 +1519,29 @@ function BlockedLocationBadge() {
 }
 
 function SetupLogPanel({
+  managed,
+  managedError,
+  previewSessionId,
   service,
   serviceCount,
   worktree,
 }: {
+  managed: boolean
+  managedError?: string
+  previewSessionId?: string
   service: string
   serviceCount: number
   worktree?: string | null
 }) {
-  const { content, error, loading } = useProjectServiceLog(worktree, service)
+  const local = useProjectServiceLog(
+    managed ? undefined : worktree,
+    service
+  )
+  const managedLog = useManagedPreviewLog(previewSessionId, service)
+  const runtimeLog = managed ? managedLog : local
+  const content = runtimeLog.content
+  const error = managedError ?? runtimeLog.error
+  const loading = managed ? Boolean(previewSessionId && runtimeLog.loading) : runtimeLog.loading
   const logRef = React.useRef<HTMLPreElement>(null)
 
   React.useEffect(() => {
@@ -1488,10 +1555,48 @@ function SetupLogPanel({
         ref={logRef}
         className="min-h-0 flex-1 overflow-auto rounded-lg border bg-zinc-950 p-4 font-mono text-xs whitespace-pre-wrap text-zinc-100 select-text"
       >
-        {serviceLogContent(content, error, loading, serviceCount)}
+        {managed && !previewSessionId && !error
+          ? "Managed preview is stopped. Start the selected run configuration to create it."
+          : serviceLogContent(content, error, loading, serviceCount)}
       </pre>
     </div>
   )
+}
+
+function useManagedPreviewLog(sessionId?: string, service?: string) {
+  const platform = usePlatform()
+  const [state, setState] = React.useState({
+    content: "",
+    error: "",
+    loading: Boolean(sessionId),
+    service,
+    sessionId,
+  })
+
+  React.useEffect(() => {
+    if (!sessionId || !platform.previewRuntime?.onLog) return
+    setState({ content: "", error: "", loading: true, service, sessionId })
+    return platform.previewRuntime.onLog(
+      { sessionId },
+      (event) => {
+        if (service && event.serviceId && event.serviceId !== service) return
+        const prefix = event.serviceId ? `${event.serviceId} | ` : ""
+        setState((current) => ({
+          ...current,
+          content: `${current.content}${prefix}${event.message}\n`.slice(
+            -250_000
+          ),
+          error: "",
+          loading: false,
+        }))
+      },
+      (error) => setState((current) => ({ ...current, error, loading: false }))
+    )
+  }, [platform.previewRuntime, service, sessionId])
+
+  return state.sessionId === sessionId && state.service === service
+    ? state
+    : { content: "", error: "", loading: Boolean(sessionId) }
 }
 
 function useProjectServices(worktree?: string | null) {

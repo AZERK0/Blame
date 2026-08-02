@@ -19,6 +19,7 @@ import {
   type PreviewManifestProbe,
   type PreviewManifestService,
 } from "@blame/preview-contract";
+import type { RuntimeProfileId } from "@blame/preview-runtime";
 import {
   ATTR_BLAME_AGENT_ROLE,
   ATTR_BLAME_AGENT_STRATEGY,
@@ -157,7 +158,6 @@ import {
   readExistingFiles as readExistingRuntimeFiles,
   readDirectory as readRuntimeDirectory,
   readFile as readRuntimeFile,
-  runtimeAccessiblePath,
   runtimeManagedPath,
   resolveWorkspacePath as resolveRuntimePath,
   rm as rmRuntime,
@@ -167,10 +167,20 @@ import {
   worktreePath,
   writeFile as writeRuntimeFile,
   writeFileAtomic as writeRuntimeFileAtomic,
-  ensureRuntimeGitUserIdentity,
   findProjectFilesByName,
   resetRuntimeGitIdentityConfigured,
 } from "./workspace-runtime";
+import {
+  workspaceExecution,
+  workspaceMode,
+  type WorkspaceMode,
+} from "./workspace-mode.ts";
+import {
+  branchExists,
+  ensureRuntimeGitSafeDirectory,
+  runRuntimeGit,
+  worktreeRegistered,
+} from "./workspace-runtime-git.ts";
 import {
   detectedStackUsesNext,
   packageJsonUsesNext,
@@ -295,6 +305,7 @@ type ExecutionContextInput = {
 
 type CreateWorktreeInput = ExecutionContextInput & {
   repositoryRoot: string;
+  runtimeProfile: RuntimeProfileId;
   storyId: string;
   storyReference: string;
   title: string;
@@ -309,9 +320,11 @@ type RunProjectSetupInput = ExecutionContextInput & {
   runConfigurations?: ProjectRunConfiguration[];
   runConfigurationId?: string;
   hostDependenciesChecked?: boolean;
+  runtimeProfile: RuntimeProfileId;
 };
 
 type CheckHostDependenciesInput = {
+  runtimeProfile?: RuntimeProfileId;
   setupScript: string;
   worktree?: string;
 };
@@ -321,6 +334,7 @@ type RuntimeOperationInput = {
 };
 
 type StopProjectSetupInput = {
+  workspaceMode?: WorkspaceMode;
   worktree: string;
 };
 
@@ -332,6 +346,7 @@ type ProjectServiceLogsInput = {
 type RemoveWorktreeInput = {
   projectSetupStopped?: boolean;
   repositoryRoot: string;
+  workspaceMode?: WorkspaceMode;
   worktree: string;
 };
 
@@ -394,6 +409,7 @@ type SetupRun = {
   process: ChildProcessWithoutNullStreams;
   processSpan: BlameSpan;
   startedAt: number;
+  startLocalPreview: boolean;
   telemetry: ExecutionOperation;
   worktree: string;
 };
@@ -435,6 +451,7 @@ type PreviewControlSelection = {
 
 type WorktreeCreationContext = {
   branch: string;
+  mode: WorkspaceMode;
   repositoryRoot: string;
   startedAt: number;
   timings: Array<{ duration: number; label: string }>;
@@ -524,10 +541,12 @@ function registerRuntimeOperationHandler(
   });
 }
 
-export function registerWorkspaceIpcHandlers(input: {
-  beforeGitWrite?(worktree: string): Promise<void>;
-  onRuntimeReady?(): void;
-} = {}) {
+export function registerWorkspaceIpcHandlers(
+  input: {
+    beforeGitWrite?(worktree: string): Promise<void>;
+    onRuntimeReady?(): void;
+  } = {},
+) {
   setProjectCreationWindowsProvider(() => BrowserWindow.getAllWindows());
   setNewProjectAgentRuntime({ generate: generateNewProjectWithAgent });
   ipcMain.handle("workspace:path-exists", (_event, input: { path: string }) =>
@@ -554,10 +573,8 @@ export function registerWorkspaceIpcHandlers(input: {
   );
   ipcMain.handle(
     "workspace:git-diff-stats",
-    (
-      _event,
-      input: { from?: string; root: string; to?: string },
-    ) => gitDiffStats(input),
+    (_event, input: { from?: string; root: string; to?: string }) =>
+      gitDiffStats(input),
   );
   ipcMain.handle("workspace:git-diff-between", (_event, input: GitDiffInput) =>
     gitDiffBetween(input),
@@ -621,10 +638,14 @@ export function registerWorkspaceIpcHandlers(input: {
     gitDeleteFiles(input),
   );
   ipcMain.handle("workspace:git-commit", (_event, value: GitCommitInput) =>
-    Promise.resolve(input.beforeGitWrite?.(value.root)).then(() => gitCommit(value)),
+    Promise.resolve(input.beforeGitWrite?.(value.root)).then(() =>
+      gitCommit(value),
+    ),
   );
   ipcMain.handle("workspace:git-push", (_event, value: { root: string }) =>
-    Promise.resolve(input.beforeGitWrite?.(value.root)).then(() => gitPush(value.root)),
+    Promise.resolve(input.beforeGitWrite?.(value.root)).then(() =>
+      gitPush(value.root),
+    ),
   );
   ipcMain.handle(
     "workspace:list-git-directory",
@@ -669,6 +690,7 @@ export function registerWorkspaceIpcHandlers(input: {
         env: await setupEnvironment(
           input.worktree ? resolveRuntimePath(input.worktree) : "",
         ),
+        runtimeProfile: input.runtimeProfile,
         setupScript: input.setupScript,
       }),
   );
@@ -719,11 +741,14 @@ export function registerWorkspaceIpcHandlers(input: {
   );
   ipcMain.handle(
     "workspace:project-preview-runtime-state",
-    (_event, input: { worktree: string }) =>
-      projectPreviewRuntimeState(input.worktree),
+    (_event, input: { worktree: string; workspaceMode?: WorkspaceMode }) =>
+      projectPreviewRuntimeState(input.worktree, input.workspaceMode),
   );
-  ipcMain.handle("workspace:control-project-preview", (_event, input: ControlProjectPreviewInput) =>
-    localPreviewService.control(input));
+  ipcMain.handle(
+    "workspace:control-project-preview",
+    (_event, input: ControlProjectPreviewInput) =>
+      localPreviewService.control(input),
+  );
   ipcMain.handle(
     "workspace:list-project-services",
     (_event, input: { worktree: string }) =>
@@ -1334,8 +1359,10 @@ async function createWorktreeOperation(input: CreateWorktreeInput) {
 function worktreeCreationContext(
   input: CreateWorktreeInput,
 ): WorktreeCreationContext {
+  const mode = workspaceMode(input.runtimeProfile);
   return {
     branch: storyBranch(input.storyReference, input.title),
+    mode,
     repositoryRoot: resolveRuntimePath(input.repositoryRoot),
     startedAt: Date.now(),
     timings: [],
@@ -1344,10 +1371,12 @@ function worktreeCreationContext(
 }
 
 async function prepareWorktreeCreation(context: WorktreeCreationContext) {
-  const { repositoryRoot, timings, worktree } = context;
-  await timedWorktreeCreateStep(timings, "git safe directory", () =>
-    ensureRuntimeGitSafeDirectory(repositoryRoot),
-  );
+  const { mode, repositoryRoot, timings, worktree } = context;
+  if (mode === "local-container") {
+    await timedWorktreeCreateStep(timings, "git safe directory", () =>
+      ensureRuntimeGitSafeDirectory(repositoryRoot),
+    );
+  }
   await timedWorktreeCreateStep(timings, "git repository ensure", () =>
     ensureWorkspaceGitRepository(repositoryRoot),
   );
@@ -1357,11 +1386,11 @@ async function prepareWorktreeCreation(context: WorktreeCreationContext) {
 }
 
 async function reuseRegisteredWorktree(context: WorktreeCreationContext) {
-  const { repositoryRoot, timings, worktree } = context;
+  const { mode, repositoryRoot, timings, worktree } = context;
   const registered = await timedWorktreeCreateStep(
     timings,
     "worktree registered check",
-    () => worktreeRegistered(repositoryRoot, worktree),
+    () => worktreeRegistered(repositoryRoot, worktree, mode),
   );
   if (!registered) return false;
   await completeWorktreeCreation(context);
@@ -1379,11 +1408,11 @@ async function assertWorktreePathAvailable(context: WorktreeCreationContext) {
 }
 
 async function addStoryWorktree(context: WorktreeCreationContext) {
-  const { branch, repositoryRoot, timings, worktree } = context;
+  const { branch, mode, repositoryRoot, timings, worktree } = context;
   const existing = await timedWorktreeCreateStep(
     timings,
     "branch exists check",
-    () => branchExists(repositoryRoot, branch),
+    () => branchExists(repositoryRoot, branch, mode),
   );
   const label = existing
     ? "git worktree add existing branch"
@@ -1392,7 +1421,7 @@ async function addStoryWorktree(context: WorktreeCreationContext) {
     ? ["worktree", "add", worktree, branch]
     : ["worktree", "add", "-b", branch, worktree, "HEAD"];
   await timedWorktreeCreateStep(timings, label, () =>
-    runRuntimeGit(repositoryRoot, args),
+    runRuntimeGit(repositoryRoot, args, workspaceExecution(mode)),
   );
 }
 
@@ -1407,11 +1436,16 @@ async function completeWorktreeCreation(context: WorktreeCreationContext) {
 }
 
 function worktreeResult(context: WorktreeCreationContext) {
-  return { branch: context.branch, worktree: context.worktree };
+  return {
+    branch: context.branch,
+    workspaceMode: context.mode,
+    worktree: context.worktree,
+  };
 }
 
 function createWorktreePath(input: CreateWorktreeInput) {
   return worktreePath({
+    mode: workspaceMode(input.runtimeProfile),
     repositoryRoot: input.repositoryRoot,
     storyId: input.storyReference,
     title: input.title,
@@ -1653,6 +1687,7 @@ async function runProjectSetupOperation(
     setupScript,
     env,
     input.hostDependenciesChecked,
+    input.runtimeProfile,
   );
   const scriptPath = await prepareProjectSetupFiles(
     worktree,
@@ -1663,7 +1698,13 @@ async function runProjectSetupOperation(
     input.runConfigurationId,
   );
   return timedRecoveryStep(worktree, "setup process spawn", () =>
-    startProjectSetupProcess(worktree, scriptPath, env, operation),
+    startProjectSetupProcess(
+      worktree,
+      scriptPath,
+      env,
+      operation,
+      input.runtimeProfile === "local-container",
+    ),
   );
 }
 
@@ -1672,10 +1713,11 @@ async function validateProjectSetup(
   setupScript: string,
   env: NodeJS.ProcessEnv,
   hostDependenciesChecked?: boolean,
+  runtimeProfile?: RuntimeProfileId,
 ) {
   if (!hostDependenciesChecked) {
     await timedRecoveryStep(worktree, "host dependencies", () =>
-      assertHostDependencies({ env, setupScript }),
+      assertHostDependencies({ env, runtimeProfile, setupScript }),
     );
   }
   await timedRecoveryStep(worktree, "git repository check", () =>
@@ -1983,6 +2025,7 @@ function startProjectSetupProcess(
   scriptPath: string,
   env: NodeJS.ProcessEnv,
   telemetry: ExecutionOperation,
+  startLocalPreview: boolean,
 ) {
   const runId = randomUUID();
   const child = spawnRuntime("bash", [scriptPath], {
@@ -1999,6 +2042,7 @@ function startProjectSetupProcess(
     process: child,
     processSpan,
     startedAt: Date.now(),
+    startLocalPreview,
     telemetry,
     worktree,
   });
@@ -2072,9 +2116,9 @@ function finishSetupProcessSpan(run: SetupRun, code: number | null) {
 async function completeSuccessfulProjectSetup(run: SetupRun) {
   const { id: runId, worktree } = run;
   try {
-    const previewUrl = await traceSetupPreview(run, () =>
-      completeSetupPreview(worktree),
-    );
+    const previewUrl = run.startLocalPreview
+      ? await traceSetupPreview(run, () => completeSetupPreview(worktree))
+      : null;
     finishSetupRun(run, "succeeded");
     emitSetupOutput(
       runId,
@@ -2804,6 +2848,8 @@ async function waitForPreviewUrl(worktree: string) {
 
 async function stopProjectSetup(input: StopProjectSetupInput) {
   const worktree = resolveRuntimePath(input.worktree);
+  await stopSetupRunsForWorktree(worktree);
+  if (input.workspaceMode === "cloud-mirror") return true;
   const composePath = joinWorkspacePath(
     worktree,
     ".blame",
@@ -2833,9 +2879,11 @@ async function stopProjectSetup(input: StopProjectSetupInput) {
 async function removeWorktree(input: RemoveWorktreeInput) {
   const repositoryRoot = resolveRuntimePath(input.repositoryRoot);
   const worktree = resolveRuntimePath(input.worktree);
-  await ensureRuntimeGitSafeDirectory(repositoryRoot);
+  const mode = input.workspaceMode ?? "local-container";
+  if (mode === "local-container")
+    await ensureRuntimeGitSafeDirectory(repositoryRoot);
   await assertGitRepository(repositoryRoot);
-  const registered = await worktreeRegistered(repositoryRoot, worktree);
+  const registered = await worktreeRegistered(repositoryRoot, worktree, mode);
   if (!registered && !(await runtimePathExists(worktree))) return false;
   removingWorktrees.add(worktree);
   try {
@@ -2844,10 +2892,13 @@ async function removeWorktree(input: RemoveWorktreeInput) {
     await releaseAgentWorkspaceSessions(worktree);
     previewRecoveries.delete(worktree);
     await cleanupCodeReviewGraphWorktree(worktree);
-    if (!input.projectSetupStopped) await stopProjectSetup({ worktree });
-    const env = await setupEnvironment(worktree);
-    await removeBlamePreviewProjectResources(env.COMPOSE_PROJECT_NAME);
-    if (registered) await removeGitWorktree(repositoryRoot, worktree);
+    if (!input.projectSetupStopped)
+      await stopProjectSetup({ workspaceMode: mode, worktree });
+    if (mode === "local-container") {
+      const env = await setupEnvironment(worktree);
+      await removeBlamePreviewProjectResources(env.COMPOSE_PROJECT_NAME);
+    }
+    if (registered) await removeGitWorktree(repositoryRoot, worktree, mode);
     else await rmRuntime(worktree);
     removedWorktrees.add(worktree);
     return true;
@@ -2931,8 +2982,12 @@ async function ensureProjectPreviewUrl(input: EnsureProjectPreviewUrlInput) {
 
 export async function projectPreviewRuntimeState(
   worktreeInput: string,
+  workspaceMode: WorkspaceMode = "local-container",
 ): Promise<ProjectPreviewRuntimeState> {
   const worktree = resolveRuntimePath(worktreeInput);
+  if (workspaceMode === "cloud-mirror") {
+    return cloudMirrorPreviewRuntimeState(worktree);
+  }
   const [configurations, runtimeState, containers, manifest] =
     await Promise.all([
       readProjectRunConfigurations(worktree),
@@ -2961,6 +3016,27 @@ export async function projectPreviewRuntimeState(
     ...(previewUrl ? { previewUrl } : {}),
     ...(selected ? { selectedConfigurationId: selected.id } : {}),
     statuses,
+  };
+}
+
+async function cloudMirrorPreviewRuntimeState(
+  worktree: string,
+): Promise<ProjectPreviewRuntimeState> {
+  const [configurations, runtimeState] = await Promise.all([
+    readProjectRunConfigurations(worktree),
+    readPreviewRuntimeFileState(worktree),
+  ]);
+  const selected = selectedPreviewRunConfiguration(
+    configurations,
+    runtimeState,
+  );
+  return {
+    configurations,
+    desiredStatus: "stopped",
+    ...(selected ? { selectedConfigurationId: selected.id } : {}),
+    statuses: Object.fromEntries(
+      configurations.map(({ id }) => [id, "stopped"]),
+    ),
   };
 }
 
@@ -3810,22 +3886,26 @@ async function isWorkspaceGitRepository(root: string) {
   }
 }
 
-async function removeGitWorktree(repositoryRoot: string, worktree: string) {
-  await ensureRuntimeGitSafeDirectory(repositoryRoot);
+async function removeGitWorktree(
+  repositoryRoot: string,
+  worktree: string,
+  mode: WorkspaceMode,
+) {
+  if (mode === "local-container")
+    await ensureRuntimeGitSafeDirectory(repositoryRoot);
   try {
-    await runRuntimeGit(repositoryRoot, [
-      "worktree",
-      "remove",
-      "--force",
-      worktree,
-    ]);
+    await runRuntimeGit(
+      repositoryRoot,
+      ["worktree", "remove", "--force", worktree],
+      workspaceExecution(mode),
+    );
   } catch (error) {
     if (isPermissionDeniedError(error)) {
-      await removeStaleGitWorktree(repositoryRoot, worktree);
+      await removeStaleGitWorktree(repositoryRoot, worktree, mode);
       return;
     }
     if (!isDirectoryNotEmptyError(error)) throw error;
-    if (await worktreeRegistered(repositoryRoot, worktree)) throw error;
+    if (await worktreeRegistered(repositoryRoot, worktree, mode)) throw error;
   }
 
   await rmRuntime(worktree);
@@ -3834,10 +3914,15 @@ async function removeGitWorktree(repositoryRoot: string, worktree: string) {
 async function removeStaleGitWorktree(
   repositoryRoot: string,
   worktree: string,
+  mode: WorkspaceMode,
 ) {
   await rmRuntime(worktree);
-  await runRuntimeGit(repositoryRoot, ["worktree", "prune"]);
-  if (await worktreeRegistered(repositoryRoot, worktree))
+  await runRuntimeGit(
+    repositoryRoot,
+    ["worktree", "prune"],
+    workspaceExecution(mode),
+  );
+  if (await worktreeRegistered(repositoryRoot, worktree, mode))
     throw new Error("Unable to unregister worktree.");
 }
 
@@ -3871,102 +3956,6 @@ function commandText(error: unknown, key: "stdout" | "stderr") {
   if (!error || typeof error !== "object") return "";
   const value = (error as Record<string, unknown>)[key];
   return typeof value === "string" ? value : "";
-}
-
-async function branchExists(cwd: string, branch: string) {
-  try {
-    await runRuntimeGit(cwd, [
-      "show-ref",
-      "--verify",
-      "--quiet",
-      `refs/heads/${branch}`,
-    ]);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function worktreeRegistered(cwd: string, worktree: string) {
-  const { stdout } = await runRuntimeGit(cwd, [
-    "worktree",
-    "list",
-    "--porcelain",
-  ]);
-  return stdout.split("\n").some((line) => worktreeLineMatches(line, worktree));
-}
-
-async function ensureRuntimeGitSafeDirectory(cwd: string) {
-  if (process.platform !== "win32") return;
-  const safeDirectory = runtimeGitSafeDirectory(cwd);
-  const stdout = await configuredSafeDirectories();
-  if (safeDirectoryConfigured(stdout, safeDirectory)) return;
-  await addRuntimeGitSafeDirectory(cwd);
-}
-
-async function runRuntimeGit(cwd: string, args: string[]) {
-  await ensureRuntimeGitSafeDirectory(cwd);
-  await ensureRuntimeGitUserIdentity();
-  try {
-    return await runRuntime("git", args, { cwd });
-  } catch (error) {
-    if (!dubiousOwnershipError(error)) throw error;
-    await addRuntimeGitSafeDirectory(cwd);
-    return runRuntime("git", args, { cwd });
-  }
-}
-
-async function addRuntimeGitSafeDirectory(cwd: string) {
-  const safeDirectory = runtimeGitSafeDirectory(cwd);
-  await runRuntime("git", [
-    "config",
-    "--global",
-    "--add",
-    "safe.directory",
-    safeDirectory,
-  ]);
-}
-
-function runtimeGitSafeDirectory(cwd: string) {
-  if (process.platform === "win32") return runtimeAccessiblePath(cwd, "win32");
-  return cwd;
-}
-
-function dubiousOwnershipError(error: unknown) {
-  return commandErrorText(error).includes("detected dubious ownership");
-}
-
-async function configuredSafeDirectories() {
-  try {
-    const { stdout } = await runRuntime("git", [
-      "config",
-      "--global",
-      "--get-all",
-      "safe.directory",
-    ]);
-    return stdout;
-  } catch {
-    return "";
-  }
-}
-
-function safeDirectoryConfigured(stdout: string, safeDirectory: string) {
-  return stdout
-    .split("\n")
-    .map((line) => normalizedPath(line.trim()))
-    .includes(normalizedPath(safeDirectory));
-}
-
-function worktreeLineMatches(line: string, worktree: string) {
-  if (!line.startsWith("worktree ")) return false;
-  return (
-    normalizedPath(line.slice("worktree ".length).trim()) ===
-    normalizedPath(worktree)
-  );
-}
-
-function normalizedPath(path: string) {
-  return path.replace(/\\/g, "/").replace(/\/+$/g, "").toLowerCase();
 }
 
 async function setupEnvironment(worktree: string) {

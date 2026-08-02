@@ -4,6 +4,7 @@ import * as React from "react"
 import { toast } from "sonner"
 
 import type { ProjectRunnerPendingOperation } from "@/components/backlog/board/project-runner-types"
+import { managedEmbeddedPreviewUrl } from "@/components/backlog/drawer/managed-preview-url"
 import { usePlatform } from "@/context/platform"
 import {
   recordRuntimeSessionState,
@@ -32,7 +33,15 @@ export function useUserStoryPreviewRunner(
     (configurationId: string) => setSelection({ configurationId, worktree }),
     [worktree]
   )
-  usePreviewRuntimePolling(workspace, worktree, enabled, setRuntime)
+  usePreviewRuntimePolling(
+    workspace,
+    worktree,
+    enabled,
+    preference.profile === "local-container"
+      ? "local-container"
+      : "cloud-mirror",
+    setRuntime
+  )
   const cloud = useCloudPreviewRuntime({
     enabled,
     localRuntime: runtime,
@@ -54,13 +63,12 @@ export function useUserStoryPreviewRunner(
   React.useEffect(() => {
     if (!userStoryId) return
     const effectiveProfile = cloud.session?.profile ?? preference.profile
-    const stoppedAndSynced =
+    const stopped =
       effectiveProfile === "local-container"
         ? effectiveRuntime?.desiredStatus !== "running"
         : !cloud.session ||
-          (["idle", "stopped"].includes(cloud.session.state.engine) &&
-            cloud.session.state.sync === "clean")
-    recordRuntimeSessionState(userStoryId, effectiveProfile, stoppedAndSynced)
+          ["idle", "stopped"].includes(cloud.session.state.engine)
+    recordRuntimeSessionState(userStoryId, effectiveProfile, stopped)
   }, [
     cloud.session,
     effectiveRuntime?.desiredStatus,
@@ -74,6 +82,7 @@ export function useUserStoryPreviewRunner(
   const selectedId = selectedConfigurationId(effectiveRuntime, selectedOverride)
   return {
     control,
+    error: cloud.error,
     pendingOperation,
     runtime: effectiveRuntime,
     previewSessionId: cloud.session?.id,
@@ -95,13 +104,13 @@ function useCloudPreviewRuntime(input: {
   worktree?: string | null
 }) {
   const [session, setSession] = React.useState<PreviewSessionView>()
+  const [error, setError] = React.useState<string>()
   const [pendingOperation, setPendingOperation] =
     React.useState<ProjectRunnerPendingOperation>()
-  const recoveredDelta = React.useRef<string | undefined>(undefined)
   const client = input.platform.previewRuntime
   const profile = input.preference.profile
   const storageId = input.userStoryId
-    ? cloudSessionStorageId(input.userStoryId)
+    ? cloudSessionStorageId(input.userStoryId, profile)
     : undefined
   const sessionId = session?.id
 
@@ -146,32 +155,6 @@ function useCloudPreviewRuntime(input: {
   }, [client, input.enabled, sessionId])
 
   React.useEffect(() => {
-    if (
-      !session ||
-      !client ||
-      !input.enabled ||
-      !input.worktree ||
-      session.state.sync !== "pending_local_sync" ||
-      !["idle", "stopped", "failed"].includes(session.state.engine) ||
-      session.state.agent !== "idle" ||
-      !session.pendingDeltaArtifactId
-    )
-      return
-    const key = `${session.id}:${session.pendingDeltaArtifactId}`
-    if (recoveredDelta.current === key) return
-    recoveredDelta.current = key
-    void client
-      .syncOut({ sessionId: session.id, localPath: input.worktree })
-      .then(({ session: recovered }) => setSession(recovered))
-      .catch((error) =>
-        toast.error("Managed preview changes need attention", {
-          description: errorText(error),
-          position: "bottom-right",
-        })
-      )
-  }, [client, input.enabled, input.worktree, session])
-
-  React.useEffect(() => {
     if (!sessionId || !client || !input.enabled) return
     const interval = window.setInterval(() => {
       void client
@@ -195,6 +178,7 @@ function useCloudPreviewRuntime(input: {
       )
         return undefined
       setPendingOperation({ action, configurationId })
+      setError(undefined)
       try {
         let active = session
         let importedCurrentWorkspace = false
@@ -217,10 +201,12 @@ function useCloudPreviewRuntime(input: {
             operationId,
           })
           localStorage.setItem(
-            cloudSessionStorageId(input.userStoryId),
+            cloudSessionStorageId(input.userStoryId, profile),
             active.id
           )
-          localStorage.removeItem(cloudCreateOperationStorageId(input.userStoryId))
+          localStorage.removeItem(
+            cloudCreateOperationStorageId(input.userStoryId)
+          )
           setSession(active)
         }
         if (!active.sourceRevision) {
@@ -232,26 +218,12 @@ function useCloudPreviewRuntime(input: {
           ).session
           importedCurrentWorkspace = true
         }
-        if (action === "start" && active.state.sync === "pending_local_sync") {
-          active = (
-            await client.syncOut({
-              sessionId: active.id,
-              localPath: input.worktree,
-            })
-          ).session
-        }
         if (action === "stop" || action === "restart") {
           active = await client.command({
             sessionId: active.id,
             command: { type: "stop-services" },
             operationId: crypto.randomUUID(),
           })
-          active = (
-            await client.syncOut({
-              sessionId: active.id,
-              localPath: input.worktree,
-            })
-          ).session
         }
         if (action === "start" || action === "restart") {
           if (
@@ -280,8 +252,10 @@ function useCloudPreviewRuntime(input: {
         setSession(active)
         return cloudRuntimeState(active, input.localRuntime)
       } catch (error) {
+        const message = errorText(error)
+        setError(message)
         toast.error("Unable to control managed preview", {
-          description: errorText(error),
+          description: message,
           position: "bottom-right",
         })
         return undefined
@@ -304,6 +278,7 @@ function useCloudPreviewRuntime(input: {
 
   return {
     control,
+    error,
     pendingOperation,
     runtime: session
       ? cloudRuntimeState(session, input.localRuntime)
@@ -333,13 +308,7 @@ function cloudRuntimeState(
   const selected =
     session.selection?.configurationId ?? local?.selectedConfigurationId
   const running = session.state.engine === "running"
-  const route = session.endpointMap?.routes.find(
-    ({ endpointId }) => endpointId === session.endpointMap?.primaryEndpointId
-  )
-  const previewUrl =
-    session.endpointMap?.integratedPreviewRequired && route
-      ? `http://localhost:${route.logicalPort}`
-      : session.endpointMap?.primaryPublicUrl
+  const previewUrl = managedEmbeddedPreviewUrl(session.endpointMap)
   return {
     configurations: local?.configurations ?? [],
     desiredStatus:
@@ -355,8 +324,8 @@ function cloudRuntimeState(
   }
 }
 
-function cloudSessionStorageId(userStoryId: string) {
-  return `blame.preview-session.${userStoryId}`
+function cloudSessionStorageId(userStoryId: string, profile: string) {
+  return `blame.preview-session.${profile}.${userStoryId}`
 }
 
 function cloudCreateOperationStorageId(userStoryId: string) {
@@ -399,6 +368,7 @@ function usePreviewRuntimePolling(
   workspace: ReturnType<typeof usePlatform>["workspace"],
   worktree: string | null | undefined,
   enabled: boolean,
+  workspaceMode: "local-container" | "cloud-mirror",
   setRuntime: PreviewRuntimeSetter
 ) {
   React.useEffect(() => {
@@ -409,6 +379,7 @@ function usePreviewRuntimePolling(
       void refreshPreviewRuntime(
         workspace,
         worktree,
+        workspaceMode,
         () => cancelled,
         setRuntime
       )
@@ -419,17 +390,21 @@ function usePreviewRuntimePolling(
       cancelled = true
       if (interval) window.clearInterval(interval)
     }
-  }, [enabled, setRuntime, workspace, worktree])
+  }, [enabled, setRuntime, workspace, workspaceMode, worktree])
 }
 
 async function refreshPreviewRuntime(
   workspace: ReturnType<typeof usePlatform>["workspace"],
   worktree: string,
+  workspaceMode: "local-container" | "cloud-mirror",
   cancelled: () => boolean,
   setRuntime: PreviewRuntimeSetter
 ) {
   try {
-    const next = await workspace?.projectPreviewRuntimeState?.({ worktree })
+    const next = await workspace?.projectPreviewRuntimeState?.({
+      workspaceMode,
+      worktree,
+    })
     if (!cancelled() && next?.configurations.length) setRuntime(next)
   } catch {
     return

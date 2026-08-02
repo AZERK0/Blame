@@ -103,8 +103,8 @@ export interface ExecutionHost {
   writeFiles(files: RuntimeFile[]): Promise<void>;
   readFiles(paths: string[]): Promise<RuntimeFile[]>;
 }
-
 export type EngineContext = { host: ExecutionHost; sessionId: string };
+export type RuntimeInspectOptions = { probeServices?: boolean };
 
 export interface PreviewExecutionEngine {
   prepare(context: EngineContext, plan: PreviewExecutionPlan): Promise<void>;
@@ -123,7 +123,10 @@ export interface PreviewRuntimeDriver {
   startServices(handle: RuntimeHandle, selection: RuntimeSelection): Promise<void>;
   stopServices(handle: RuntimeHandle): Promise<void>;
   exec(handle: RuntimeHandle, input: ExecInput): Promise<ExecResult>;
-  inspect(handle: RuntimeHandle): Promise<RuntimeObservation>;
+  inspect(
+    handle: RuntimeHandle,
+    options?: RuntimeInspectOptions,
+  ): Promise<RuntimeObservation>;
   endpoints(handle: RuntimeHandle): Promise<EndpointMap>;
   logs(input: LogRequest): AsyncIterable<PreviewLogEvent>;
   exportDelta(handle: RuntimeHandle, revision: string): Promise<DurableDeltaReceipt>;

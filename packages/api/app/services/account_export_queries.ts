@@ -70,6 +70,7 @@ const userStoryColumns = [
   'branch',
   'preview_url',
   'worktree',
+  'workspace_mode',
   'agent_status',
   'cline_session_id',
   'agent_provider_id',

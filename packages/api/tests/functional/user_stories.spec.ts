@@ -31,6 +31,7 @@ type UserStoryBody = {
     baseCommit?: string | null
     mergeCommit?: string | null
     runConfigurationId?: string | null
+    workspaceMode?: 'local-container' | 'cloud-mirror' | null
     title: string
   }
 }
@@ -199,6 +200,7 @@ test.group('user stories', (group) => {
       .json({
         projectId: project.id,
         runConfigurationId: 'web-app',
+        workspaceMode: 'local-container',
         title: 'Persist draft',
         summary: 'Initial summary',
         codeSelectionAttachments: [
@@ -226,6 +228,7 @@ test.group('user stories', (group) => {
     assert.equal(created.data.status, 'backlog')
     assert.equal(created.data.priority, 'Medium')
     assert.equal(created.data.runConfigurationId, 'web-app')
+    assert.equal(created.data.workspaceMode, 'local-container')
     assert.deepEqual(created.data.codeSelectionAttachments, [
       {
         id: 'selection-1',
@@ -252,6 +255,7 @@ test.group('user stories', (group) => {
         status: 'ready',
         priority: 'High',
         runConfigurationId: 'admin-app',
+        workspaceMode: 'cloud-mirror',
         baseCommit: '1111111111111111111111111111111111111111',
         mergeCommit: '2222222222222222222222222222222222222222',
         codeSelectionAttachments: [
@@ -280,6 +284,7 @@ test.group('user stories', (group) => {
     assert.equal(updated.data.status, 'ready')
     assert.equal(updated.data.priority, 'High')
     assert.equal(updated.data.runConfigurationId, 'admin-app')
+    assert.equal(updated.data.workspaceMode, 'cloud-mirror')
     assert.equal(updated.data.baseCommit, '1111111111111111111111111111111111111111')
     assert.equal(updated.data.mergeCommit, '2222222222222222222222222222222222222222')
     assert.deepEqual(updated.data.codeSelectionAttachments, [
@@ -308,6 +313,7 @@ test.group('user stories', (group) => {
     const shown = showResponse.body() as UserStoryBody
     assert.equal(shown.data.id, created.data.id)
     assert.equal(shown.data.runConfigurationId, 'admin-app')
+    assert.equal(shown.data.workspaceMode, 'cloud-mirror')
 
     const deleteResponse = await client
       .delete(`/api/v1/projects/user-stories/${created.data.id}`)

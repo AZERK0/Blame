@@ -48,7 +48,7 @@ export default class PreviewQuotaService {
       PreviewSession.query()
         .where('ownerUserId', ownerUserId)
         .whereRaw("JSON_UNQUOTE(JSON_EXTRACT(state, '$.host')) NOT IN ('destroyed', 'suspended')")
-        .sum('resourceVcpus as total'),
+        .sum('resource_vcpus as total'),
       PreviewSession.query()
         .where('ownerUserId', ownerUserId)
         .where('createdAt', '>=', now.minus({ minutes: 1 }).toSQL())
@@ -86,8 +86,8 @@ export default class PreviewQuotaService {
       PreviewUsageSample.query()
         .whereIn('sessionId', PreviewSession.query().select('id').where('ownerUserId', ownerUserId))
         .where('observedAt', '>=', start)
-        .sum('estimatedCostUsd as total'),
-      PreviewUsageSample.query().where('observedAt', '>=', start).sum('estimatedCostUsd as total'),
+        .sum('estimated_cost_usd as total'),
+      PreviewUsageSample.query().where('observedAt', '>=', start).sum('estimated_cost_usd as total'),
     ])
     if (numericAggregate(tenantUsage) >= this.config.monthlyBudgetUsd) {
       throw new PreviewRuntimeError({

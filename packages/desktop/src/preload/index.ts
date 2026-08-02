@@ -174,11 +174,13 @@ const api: BlameDesktopApi = {
       ipcRenderer.invoke("preview-browser:set-bounds", input),
   },
   previewRuntime: {
-    configure: (connection) => ipcRenderer.invoke("preview-runtime:configure", connection),
+    configure: (connection) =>
+      ipcRenderer.invoke("preview-runtime:configure", connection),
     disconnect: () => ipcRenderer.invoke("preview-runtime:disconnect"),
     create: (input) => ipcRenderer.invoke("preview-runtime:create", input),
     get: (input) => ipcRenderer.invoke("preview-runtime:get", input),
-    openExternal: (input) => ipcRenderer.invoke("preview-runtime:open-external", input),
+    openExternal: (input) =>
+      ipcRenderer.invoke("preview-runtime:open-external", input),
     command: (input) => ipcRenderer.invoke("preview-runtime:command", input),
     syncIn: (input) => ipcRenderer.invoke("preview-runtime:sync-in", input),
     syncOut: (input) => ipcRenderer.invoke("preview-runtime:sync-out", input),
@@ -186,15 +188,48 @@ const api: BlameDesktopApi = {
       const subscriptionId = globalThis.crypto.randomUUID();
       const eventChannel = `preview-runtime:event:${subscriptionId}`;
       const errorChannel = `preview-runtime:error:${subscriptionId}`;
-      const eventHandler = (_event: unknown, value: Parameters<typeof callback>[0]) => callback(value);
-      const errorHandler = (_event: unknown, message: string) => onError?.(message);
+      const eventHandler = (
+        _event: unknown,
+        value: Parameters<typeof callback>[0],
+      ) => callback(value);
+      const errorHandler = (_event: unknown, message: string) =>
+        onError?.(message);
       ipcRenderer.on(eventChannel, eventHandler);
       ipcRenderer.on(errorChannel, errorHandler);
-      void ipcRenderer.invoke("preview-runtime:subscribe", { ...input, subscriptionId });
+      void ipcRenderer.invoke("preview-runtime:subscribe", {
+        ...input,
+        subscriptionId,
+      });
       return () => {
         ipcRenderer.removeListener(eventChannel, eventHandler);
         ipcRenderer.removeListener(errorChannel, errorHandler);
-        void ipcRenderer.invoke("preview-runtime:unsubscribe", { subscriptionId });
+        void ipcRenderer.invoke("preview-runtime:unsubscribe", {
+          subscriptionId,
+        });
+      };
+    },
+    onLog: (input, callback, onError) => {
+      const subscriptionId = globalThis.crypto.randomUUID();
+      const eventChannel = `preview-runtime:log:${subscriptionId}`;
+      const errorChannel = `preview-runtime:error:${subscriptionId}`;
+      const eventHandler = (
+        _event: unknown,
+        value: Parameters<typeof callback>[0],
+      ) => callback(value);
+      const errorHandler = (_event: unknown, message: string) =>
+        onError?.(message);
+      ipcRenderer.on(eventChannel, eventHandler);
+      ipcRenderer.on(errorChannel, errorHandler);
+      void ipcRenderer.invoke("preview-runtime:subscribe-logs", {
+        ...input,
+        subscriptionId,
+      });
+      return () => {
+        ipcRenderer.removeListener(eventChannel, eventHandler);
+        ipcRenderer.removeListener(errorChannel, errorHandler);
+        void ipcRenderer.invoke("preview-runtime:unsubscribe", {
+          subscriptionId,
+        });
       };
     },
   },

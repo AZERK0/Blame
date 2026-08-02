@@ -91,6 +91,25 @@ export function registerPreviewRuntimeIpcHandlers(input: {
     void pumpEvents(input.service, event.sender, sessionId, subscriptionId, cursor, controller)
     return true
   })
+  ipcMain.handle("preview-runtime:subscribe-logs", (event, value) => {
+    owner(event)
+    const body = record(value)
+    const sessionId = requiredSessionId(body.sessionId)
+    const subscriptionId = requiredString(body.subscriptionId, "subscriptionId", 128)
+    const cursor = optionalString(body.cursor, "cursor", 128)
+    subscriptions.get(subscriptionId)?.abort()
+    const controller = new AbortController()
+    subscriptions.set(subscriptionId, controller)
+    void pumpLogs(
+      input.service,
+      event.sender,
+      sessionId,
+      subscriptionId,
+      cursor,
+      controller,
+    )
+    return true
+  })
   ipcMain.handle("preview-runtime:unsubscribe", (event, value) => {
     owner(event)
     const subscriptionId = requiredString(record(value).subscriptionId, "subscriptionId", 128)
@@ -98,6 +117,25 @@ export function registerPreviewRuntimeIpcHandlers(input: {
     subscriptions.delete(subscriptionId)
     return true
   })
+}
+async function pumpLogs(
+  service: PreviewService,
+  sender: Electron.WebContents,
+  sessionId: string,
+  subscriptionId: string,
+  cursor: string | undefined,
+  controller: AbortController,
+) {
+  try {
+    for await (const event of service.logs(sessionId, cursor)) {
+      if (controller.signal.aborted || sender.isDestroyed()) break
+      sender.send(`preview-runtime:log:${subscriptionId}`, event)
+    }
+  } catch (error) {
+    if (!controller.signal.aborted && !sender.isDestroyed()) {
+      sender.send(`preview-runtime:error:${subscriptionId}`, safeError(error))
+    }
+  }
 }
 
 async function pumpEvents(

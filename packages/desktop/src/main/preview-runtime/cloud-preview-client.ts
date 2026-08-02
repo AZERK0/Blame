@@ -1,4 +1,5 @@
 import type {
+  PreviewLogEvent,
   PreviewSessionBackend,
   PreviewSessionCommand,
   PreviewSessionEvent,
@@ -17,7 +18,6 @@ export type CloudManagedPreviewCreateInput = {
   sourceRevision?: string
   resourceSize?: { vcpus: number; memoryGb: number }
 }
-
 export class CloudPreviewClient implements PreviewSessionBackend<CloudManagedPreviewCreateInput> {
   private readonly connection: CloudApiConnection
 
@@ -71,6 +71,23 @@ export class CloudPreviewClient implements PreviewSessionBackend<CloudManagedPre
       for await (const event of parseEventStream(response.body)) {
         const value = JSON.parse(event.data) as PreviewSessionEvent
         nextCursor = event.id || value.cursor
+        yield value
+      }
+    }
+  }
+
+  async *logs(sessionId: string, cursor?: string): AsyncIterable<PreviewLogEvent> {
+    let nextCursor = cursor
+    while (true) {
+      const query = nextCursor ? `?cursor=${encodeURIComponent(nextCursor)}` : ""
+      const response = await this.fetch(
+        `/preview-sessions/${encoded(sessionId)}/logs${query}`,
+        { headers: { Accept: "text/event-stream" } },
+      )
+      if (!response.ok || !response.body) throw await cloudError(response)
+      for await (const event of parseEventStream(response.body)) {
+        const value = JSON.parse(event.data) as PreviewLogEvent
+        nextCursor = event.id || String(value.sequence)
         yield value
       }
     }

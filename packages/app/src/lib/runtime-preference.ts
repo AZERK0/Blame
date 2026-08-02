@@ -45,10 +45,10 @@ export function saveRuntimePreference(preference: RuntimePreference) {
 export function recordRuntimeSessionState(
   storyId: string,
   profile: RuntimeProfileId,
-  stoppedAndSynced: boolean,
+  stopped: boolean,
 ) {
   const entries = activeRuntimeSessions()
-  if (stoppedAndSynced) delete entries[storyId]
+  if (stopped) delete entries[storyId]
   else entries[storyId] = { profile, updatedAt: Date.now() }
   localStorage.setItem(activeSessionsKey, JSON.stringify(entries))
 }
@@ -56,7 +56,7 @@ export function recordRuntimeSessionState(
 export function runtimeProfileSwitchBlockReason(profile: RuntimeProfileId) {
   const active = Object.values(activeRuntimeSessions()).find((entry) => entry.profile !== profile)
   return active
-    ? "Stop the active preview and complete its local synchronization before changing runtime profile."
+    ? "Stop the active preview before changing runtime profile."
     : undefined
 }
 

@@ -20,6 +20,15 @@ Blame doit prendre en charge plusieurs profils d’exécution explicites :
 
 Le choix ne doit pas devenir un booléen `useVercel`. Il doit être représenté par un profil extensible et par des capacités déclarées.
 
+La localisation du worktree, de Cline et de la preview est un contrat explicite du profil :
+
+| Profil | Linux | macOS | Windows | Preview |
+| --- | --- | --- | --- | --- |
+| `local-container` | worktree et Cline natifs Linux | worktree et Cline dans Lima | worktree et Cline dans WSL2 | conteneurs locaux isolés |
+| `vercel-compose` / `vercel-process` | worktree et Cline natifs Linux | worktree et Cline natifs macOS, sans Lima | worktree et Cline natifs Windows, sans WSL2 | Vercel Sandbox uniquement |
+
+Le profil cloud ne démarre, ne préchauffe et ne sonde donc jamais Lima, WSL2, nerdctl ou un Compose local. Le backend Cline reste sur le host et Vercel ne reçoit qu’une réplique d’exécution du worktree natif.
+
 Une story cloud possède une microVM Vercel distincte. Les ports internes peuvent donc rester fixes : deux stories peuvent toutes les deux utiliser `localhost:3000` et `localhost:3333` sans collision entre elles. Un proxy n’a pas à modifier le port sur lequel un processus écoute ; il publie un autre point d’entrée vers ce port.
 
 La solution Vercel ne remplace pas le mode local. Les projets existants restent en local et aucun code ne doit être envoyé dans le cloud sans consentement explicite.
@@ -34,7 +43,7 @@ La solution Vercel ne remplace pas le mode local. Les projets existants restent 
    - SSR et appels serveur-à-serveur : réseau partagé ou relay dans la sandbox ;
    - appels navigateur client-side : forward proxy isolé dans la partition Electron de la story.
 6. Une URL `sandbox.domain(port)` est considérée publique. Tous les ports exposés passent par un gateway Blame authentifié.
-7. Le worktree local reste l’autorité Git aux checkpoints ; le journal distant est provisoirement autoritaire pendant le lease. Toute livraison Git est précédée d’une barrière de synchronisation.
+7. Le worktree natif et Cline restent l’autorité du code en profil cloud. La sandbox est une réplique d’exécution rafraîchie avant chaque démarrage ou redémarrage de preview ; ses écritures générées ne sont jamais appliquées automatiquement au worktree.
 8. Aucun nouveau fichier de production ne dépasse 1 000 lignes ; la cible est de 300 à 600 lignes. Les deux monolithes actuels sont découpés pendant la migration.
 
 ---
@@ -117,7 +126,7 @@ Le produit doit distinguer :
 - Préserver les références client-side hardcodées à `localhost` dans la preview Electron.
 - Garder l’ouverture dans un navigateur externe pour les projets compatibles.
 - Conserver intégralement Linux natif, Lima et WSL2.
-- Synchroniser sans perte les modifications cloud vers le worktree local.
+- Synchroniser sans perte chaque révision du worktree natif vers sa réplique cloud, sans jamais écraser automatiquement le worktree depuis la sandbox.
 - Suspendre, reprendre et supprimer une session de façon idempotente.
 - Appliquer sécurité, quotas, anti-abus, expiration et plafonds de coût côté serveur.
 - Donner à l’utilisateur, à terme, le choix du profil globalement, par projet et par story.
@@ -420,11 +429,9 @@ Ne sont pas de confiance :
 - les conteneurs Compose ;
 - tout processus de projet dans la sandbox.
 
-Le code projet, les shells, les tests et les previews s’exécutent à distance. La boucle de décision de l’agent peut rester dans le desktop ou l’API, à condition que tous ses outils de fichiers et de commandes passent par un `WorkspaceExecutor` distant.
+Dans les profils Vercel V1, seuls les services de preview, leurs dépendances et leurs commandes de démarrage s’exécutent à distance. Cline, ses outils shell/fichier et les tests qu’il lance restent sur le host dans le worktree natif. Cette décision conserve le modèle de confiance actuel de l’agent local ; elle ne prétend pas isoler du poste les commandes de Cline.
 
-Même si son binaire est de confiance, une décision d’agent influencée par le dépôt ne l’est pas. Ses capabilities sont limitées à une seule story et à son `WorkspaceExecutor`. Elle ne donne accès ni au filesystem desktop, ni au provider, ni aux autres stories, ni à un outil externe non autorisé.
-
-La cible propre ne place pas une clé LLM longue durée dans la sandbox. Si le backend Cline distant actuel est réutilisé pendant la migration, il ne reçoit qu’un token de session court ; les credentials HTTP sont brokered hors VM et ce mode reste derrière un feature flag.
+La sandbox ne reçoit ni credential modèle ni backend Cline. Ses capabilities sont limitées au démarrage des services, au gateway, aux logs et à l’import de la réplique de workspace. Un futur profil d’agent distant devra définir un `WorkspaceExecutor` et un modèle de confiance séparés.
 
 ---
 
@@ -599,7 +606,7 @@ type SyncState =
   | "discarded";
 ```
 
-Ces axes sont orthogonaux : l’agent peut être idle alors que la preview tourne, et le host peut être suspendu avec un delta en attente d’application locale. Une `phase` lisible par l’UI peut être dérivée, mais ne constitue pas la source de vérité.
+Ces axes sont orthogonaux : l’agent natif peut travailler alors que la preview distante tourne, et le host peut être suspendu avec un artefact d’audit distant en attente de diagnostic ou de suppression. Cet artefact n’est jamais appliqué automatiquement au worktree. Une `phase` lisible par l’UI peut être dérivée, mais ne constitue pas la source de vérité.
 
 Les commandes modifient seulement l’axe désiré concerné. Un reconciler converge vers cet état. Les opérations sont nommées sans ambiguïté :
 
@@ -1049,7 +1056,7 @@ Les tests hostiles couvrent au minimum une page `evil.example` dans la même par
 
 ### 12.1 Source de vérité
 
-Le worktree local est la source durable canonique aux checkpoints acquittés et l’unique autorité pour commit/merge. Pendant un lease distant, le working tree et le journal distants sont l’autorité provisoire jusqu’à leur export durable puis leur application locale.
+Le worktree local est en permanence la source durable canonique, l’espace de travail de Cline et l’unique autorité pour commit/merge. Le working tree distant n’est qu’une réplique d’exécution de la révision locale importée.
 
 La sandbox reste une réplique d’exécution. Les snapshots Vercel accélèrent une reprise mais ne constituent pas une sauvegarde canonique.
 
@@ -1117,33 +1124,20 @@ Les sous-modules, Git LFS, gros fichiers et dépôts sans remote doivent avoir d
 
 En V1, le `HEAD`, les refs et l’index distants sont immuables. Le `.git` reconstruit est lisible pour `status` et `diff`, mais non modifiable par le projet. Commit, checkout, reset, rebase, merge et stage restent locaux. Une mutation détectée de l’état Git passe la session en conflit au lieu d’essayer de synchroniser un historique divergent.
 
-### 12.5 Synchronisation retour
+### 12.5 Synchronisation et politique d’écriture
 
-Synchroniser :
+En V1, la synchronisation normale est unidirectionnelle, du worktree natif vers `/workspace` :
 
-- journaliser chaque mutation d’outil et changement filesystem observé ;
-- exporter après chaque checkpoint agent ;
-- exporter au plus tard après l’intervalle RPO configuré ;
-- avant suspension, snapshot, arrêt des services et destruction ;
-- avant commit ou merge ;
-- à la fin d’un run.
+- construire et importer un snapshot cohérent avant le premier démarrage ;
+- réimporter l’état local avant chaque démarrage ou redémarrage demandé ;
+- refuser un artefact si le worktree change pendant sa construction ;
+- conserver `HEAD`, les refs et l’index distants immuables ;
+- exclure secrets, caches, sorties de build et dépendances installées ;
+- ne jamais appliquer automatiquement une mutation distante au worktree local.
 
-La cible V1 est un RPO distant maximal mesuré de 10 secondes. Une mutation d’outil n’est acquittée qu’après écriture fsync du journal local à la VM ; son export hors sandbox est surveillé séparément.
+Les services de preview peuvent écrire des caches et sorties générées dans la sandbox, mais ces écritures ne deviennent pas du code source. Le checkpoint distant sert à détecter une mutation inattendue, à l’auditer et à empêcher une destruction non diagnostiquée ; il ne transforme pas la sandbox en source de vérité.
 
-Le journal vit hors `/workspace`, appartient au runner et n’est pas modifiable par l’utilisateur projet. Un watcher non fiable n’est jamais l’unique preuve d’un delta : l’export recalcule les hashes du workspace.
-
-Chaque delta contient une génération, un hash de base et un hash final. Il est chiffré et durablement stocké hors sandbox avant suspension automatique. L’application locale est atomique. Si le fichier local a changé depuis le hash de base, passer en `sync_conflict` et ne rien écraser.
-
-V1 utilise un lease single-writer :
-
-- le writer distant possède le lease pendant le run ;
-- l’édition locale concurrente est détectée et suspend la sync ;
-- la reprise exige une résolution ou une réinitialisation explicite ;
-- aucune livraison Git n’est possible tant que la barrière `sync clean` n’est pas satisfaite.
-
-Si Electron est fermé, le reaper exporte le dernier delta, passe la session en `pending_local_sync`, puis suspend le compute. Au prochain lancement, le desktop télécharge et applique ce delta avant de déclarer la session clean.
-
-La sandbox et ses snapshots ne sont jamais détruits tant que le dernier delta n’est ni durablement acquitté, ni explicitement abandonné par l’utilisateur. En `sync_conflict`, Blame conserve le delta, suspend le compute pour arrêter le coût et attend la résolution sans écraser le local.
+Un rafraîchissement automatique en place ne peut être annoncé que lorsqu’un mécanisme de delta host-vers-sandbox préserve les watchers HMR de façon démontrée. En V1, le bouton de rechargement d’une preview cloud effectue un cycle `stopServices -> syncIn -> startServices` explicite.
 
 À gérer et tester :
 
@@ -1156,14 +1150,11 @@ La sandbox et ses snapshots ne sont jamais détruits tant que le dernier delta n
 - boucles de watcher ;
 - changements locaux et distants concurrents.
 
-### 12.6 Agent distant
+### 12.6 Agent natif et preview distante
 
-Le code projet et les outils de shell/fichier s’exécutent dans la sandbox. Deux migrations sont possibles :
+Dans les profils Vercel V1, le backend Cline et ses outils shell/fichier s’exécutent nativement sur le host, dans le même worktree natif que Git. Lima et WSL2 ne participent jamais à ce chemin cloud. Les services seuls s’exécutent dans la réplique `/workspace` de Vercel Sandbox.
 
-1. cible recommandée : agent de confiance hors sandbox + `WorkspaceExecutor` distant ;
-2. transition : backend Cline distant dans la sandbox avec token court et credentials brokered.
-
-Dans les deux cas, l’agent et les services travaillent sur le même `/workspace` distant, et une barrière de sync est obligatoire avant toute opération Git locale.
+La cohérence attendue est une cohérence de révision : la preview exécute le dernier snapshot local explicitement importé. Une évolution future avec `WorkspaceExecutor` distant devra être un profil/capability distinct et ne pourra pas modifier implicitement ce contrat.
 
 ### 12.7 Suppression et rétention
 
@@ -1171,9 +1162,9 @@ Dans les deux cas, l’agent et les services travaillent sur le même `/workspac
 
 La suppression est interdite avant :
 
-- application locale du dernier delta ;
-- ou export durable suivi d’un abandon explicite ;
-- ou politique de récupération exceptionnelle documentée.
+- arrêt des services et révocation des tickets ;
+- enregistrement de toute mutation distante inattendue ;
+- suppression ou expiration réconciliée des artefacts et snapshots.
 
 La déconnexion ou fermeture d’un compte déclenche le même workflow côté serveur ; elle ne dépend pas du desktop.
 
@@ -1193,14 +1184,14 @@ Avant snapshot/stop :
 2. attendre ou annuler proprement les opérations en cours ;
 3. arrêter les serveurs ;
 4. flusher/checkpointer les bases ;
-5. exporter un delta durable hors sandbox et l’appliquer au worktree local s’il est connecté ;
+5. enregistrer et auditer toute mutation inattendue de la réplique sans l’appliquer au worktree local ;
 6. supprimer credentials temporaires et fichiers auth ;
 7. arrêter Compose et `dockerd` ;
 8. créer le snapshot ou appeler `stop()` ;
 9. enregistrer receipt d’usage et snapshot ;
 10. révoquer les tickets de preview.
 
-Si l’export échoue, le reaper suspend le compute en conservant le snapshot et réessaie depuis un worker serveur ; il ne détruit pas le host. Si un hard budget impose un arrêt immédiat, l’arrêt du compute prime sur la sync locale, mais une alerte de récupération est créée et toute ressource durable encore disponible est conservée.
+Si l’audit de la réplique échoue, le reaper suspend le compute et conserve les diagnostics utiles. Si un hard budget impose un arrêt immédiat, l’arrêt du compute prime.
 
 ### Reprise
 
@@ -1563,8 +1554,8 @@ Livrer des prototypes jetables et un rapport :
 6. HMR Vite et Next/webpack ;
 7. gateway authentifié, rejet sans ticket et tentative de contournement depuis un conteneur projet ;
 8. snapshot/restauration Postgres ;
-9. sync aller-retour avec binaire, conflit et destruction brutale avant `exportDelta` ;
-10. reaper offline exportant un delta `pending_local_sync` après crash Electron ;
+9. sync host-vers-sandbox cohérente avec binaire et mutation locale concurrente ;
+10. reaper offline suspendant et nettoyant la sandbox après crash Electron sans modifier le worktree ;
 11. canal runner inaccessible au projet et à une autre story.
 
 Les refactors indépendants du cloud peuvent continuer. Aucun code de production `vercel-compose`, bridge Electron ou canary utilisateur ne commence tant que chaque spike P0 n’est pas passé, ou que la réduction de scope correspondante de la section 22 n’a pas été explicitement adoptée.
@@ -1593,10 +1584,10 @@ Les refactors indépendants du cloud peuvent continuer. Aucun code de production
 - artefact initial Git + overlay ;
 - transfert signé et validation ;
 - runner workspace ;
-- journal de changements et sync retour ;
-- lease single-writer et `sync_conflict` ;
+- journal de changements distant utilisé comme détecteur de violation ;
+- réimport host-vers-sandbox avant start/restart ;
 - `EnvironmentPlan`/`SecretPlan` et canal d’injection séparé ;
-- barrière avant commit/merge.
+- commit/merge locaux indépendants de la sandbox, sans import cloud préalable.
 
 ### Phase 4 — `vercel-compose`
 
@@ -1697,13 +1688,13 @@ La même suite doit s’exécuter contre :
 - symlinks ;
 - Git LFS et sous-modules, succès ou erreur explicite ;
 - interruption upload/download ;
-- destruction brutale avant export et RPO mesuré inférieur ou égal à 10 secondes ;
-- reaper offline puis reprise `pending_local_sync` ;
-- edit local concurrent ;
+- destruction brutale sans perte locale, le worktree host restant canonique ;
+- reaper offline sans écriture locale ;
+- edit local concurrent détecté pendant la construction d’un artefact ;
 - mutation de `HEAD`, refs ou index distant refusée ;
 - aucune fuite `.env` ;
 - aucun fichier hors worktree modifié ;
-- hash final local égal à l’état validé distant.
+- hash importé distant égal au snapshot local validé.
 
 ### 20.5 Lifecycle
 
@@ -1760,9 +1751,9 @@ La feature est terminée seulement si :
 - la preview standard fonctionne aussi dans un navigateur externe ;
 - le mode client localhost explique qu’il impose la preview intégrée ;
 - HMR, WebSocket, SSE, POST, cookies et CORS passent les tests ;
-- l’agent et les services utilisent le même workspace distant ;
-- sync finale obligatoire avant commit/merge ;
-- delta durable disponible après arrêt automatique desktop éteint ;
+- Cline et Git utilisent le même worktree natif, et les services Vercel exécutent sa dernière révision importée ;
+- commit/merge effectués uniquement dans le worktree natif ;
+- aucune écriture sandbox appliquée au worktree lorsque le desktop est éteint ;
 - startServices, stopServices, suspendHost, resumeHost et destroyHost sont idempotents ;
 - le reaper fonctionne desktop éteint ;
 - chaque route ingress est authentifiée ;
@@ -1787,7 +1778,7 @@ La feature est terminée seulement si :
 - absence de reaper indépendant du desktop ;
 - sync pouvant écraser silencieusement le worktree ;
 - isolation runner/gateway non démontrée et domaine provider direct contournable ;
-- dernier delta impossible à rendre durable avant destruction.
+- import distant susceptible d’utiliser un snapshot local incohérent.
 
 ### Réduction de scope
 
@@ -1795,7 +1786,7 @@ La feature est terminée seulement si :
 - proxy Electron sans WebSocket/HMR : ne pas annoncer la compatibilité localhost client ;
 - Preview Edge sans WebSocket : limiter le navigateur externe aux previews sans HMR/WS ;
 - données Docker incohérentes après snapshot : rendre les bases éphémères ;
-- sync bidirectionnelle trop risquée : imposer strictement un writer unique ;
+- sync en place incompatible avec HMR : conserver le cycle explicite stop, import, restart ;
 - custom images instables : utiliser runtime standard + bootstrap/snapshot ;
 - latence `iad1` excessive : garder le cloud en bêta et privilégier local pour l’Europe.
 

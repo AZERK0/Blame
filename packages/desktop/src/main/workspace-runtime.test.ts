@@ -48,6 +48,25 @@ test("uses the VM-native worktree root on virtualized platforms", () => {
   );
 });
 
+test("uses native host worktree roots for managed cloud previews", () => {
+  assert.equal(
+    worktreeRoot("darwin", { HOME: "/Users/dev" }, "cloud-mirror"),
+    "/Users/dev/Library/Application Support/Blame/cloud/worktrees",
+  );
+  assert.equal(
+    worktreeRoot(
+      "win32",
+      { LOCALAPPDATA: String.raw`C:\Users\dev\AppData\Local` },
+      "cloud-mirror",
+    ),
+    String.raw`C:\Users\dev\AppData\Local\Blame\cloud\worktrees`,
+  );
+  assert.equal(
+    worktreeRoot("linux", { HOME: "/home/dev" }, "cloud-mirror"),
+    "/home/dev/.local/share/blame/cloud/worktrees",
+  );
+});
+
 test("builds stable worktree paths for every desktop platform", () => {
   const expectedRuntime =
     "/home/blame/.local/share/blame/runtime/worktrees/Blame/story-42-add-login";
@@ -80,6 +99,31 @@ test("builds stable worktree paths for every desktop platform", () => {
       title: "Add login",
     }),
     expectedRuntime,
+  );
+});
+
+test("builds native cloud worktree paths on macOS and Windows", () => {
+  assert.equal(
+    worktreePath({
+      env: { HOME: "/Users/dev" },
+      mode: "cloud-mirror",
+      platform: "darwin",
+      repositoryRoot: "/Users/dev/Blame",
+      storyId: "42",
+      title: "Add login",
+    }),
+    "/Users/dev/Library/Application Support/Blame/cloud/worktrees/Blame/story-42-add-login",
+  );
+  assert.equal(
+    worktreePath({
+      env: { LOCALAPPDATA: String.raw`C:\Users\dev\AppData\Local` },
+      mode: "cloud-mirror",
+      platform: "win32",
+      repositoryRoot: String.raw`C:\Users\dev\Blame`,
+      storyId: "42",
+      title: "Add login",
+    }),
+    String.raw`C:\Users\dev\AppData\Local\Blame\cloud\worktrees\Blame\story-42-add-login`,
   );
 });
 
@@ -122,6 +166,14 @@ test("routes commands through the platform runtime", () => {
     args: ["git", "status"],
     command: "blame-wsl2-runtime",
   });
+  assert.deepEqual(
+    runtimeCommand("git", ["status"], {
+      cwd: "/Users/dev/Blame",
+      execution: "native",
+      platform: "darwin",
+    }),
+    { args: ["status"], command: "git", cwd: "/Users/dev/Blame" },
+  );
 });
 
 test("runs runtime cwd commands inside WSL2 or Lima", () => {
@@ -231,6 +283,20 @@ test("detects runtime-managed paths only on Windows and macOS", () => {
       "darwin",
     ),
     true,
+  );
+  assert.equal(
+    runtimeManagedPath(
+      "/Users/dev/Library/Application Support/Blame/cloud/worktrees/repo/story",
+      "darwin",
+    ),
+    false,
+  );
+  assert.equal(
+    runtimeManagedPath(
+      String.raw`C:\Users\dev\AppData\Local\Blame\cloud\worktrees\repo\story`,
+      "win32",
+    ),
+    false,
   );
 });
 

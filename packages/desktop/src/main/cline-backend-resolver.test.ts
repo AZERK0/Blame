@@ -19,7 +19,6 @@ test("builds the Cline health URL with or without an auth query", () => {
     "https://runtime.test/health",
   )
 })
-
 test("resolves Windows runtime worktrees to a remote Cline backend", async () => {
   const input = {
     cwd: "/home/blame/.local/share/blame/runtime/worktrees/repo/story",
@@ -117,6 +116,35 @@ test("resolves Linux and unmanaged paths to local Cline backend", async () => {
     ...input,
     backend: { mode: "local", key: "local" },
   })
+})
+
+test("keeps an explicit cloud mirror on the native Cline backend", async () => {
+  const input = {
+    cwd: "/Users/dev/Library/Application Support/Blame/cloud/worktrees/repo/story",
+    workspaceMode: "cloud-mirror" as const,
+    workspaceRoot:
+      "/Users/dev/Library/Application Support/Blame/cloud/worktrees/repo/story",
+  }
+
+  assert.deepEqual(
+    await resolveAgentWorkspaceInput(input, { platform: "darwin" }),
+    { ...input, backend: { mode: "local", key: "local" } },
+  )
+})
+
+test("rejects a cloud mirror that still points inside Lima or WSL", async () => {
+  await assert.rejects(
+    resolveAgentWorkspaceInput(
+      {
+        cwd: "/home/blame/.local/share/blame/runtime/worktrees/repo/story",
+        workspaceMode: "cloud-mirror",
+        workspaceRoot:
+          "/home/blame/.local/share/blame/runtime/worktrees/repo/story",
+      },
+      { platform: "darwin" },
+    ),
+    /Stop and requeue the story/,
+  )
 })
 
 test("normalizes runtime hub auth while changing identity after a hub restart", () => {

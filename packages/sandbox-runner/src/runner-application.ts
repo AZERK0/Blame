@@ -47,7 +47,7 @@ export class RunnerApplication {
       case "stop-services":
         return this.stop();
       case "inspect":
-        return this.inspect();
+        return this.inspect(request.probeServices);
       case "endpoints":
         return this.endpoints();
       case "logs":
@@ -172,7 +172,7 @@ export class RunnerApplication {
     return { running: false };
   }
 
-  private async inspect(): Promise<RuntimeObservation> {
+  private async inspect(shouldProbeServices = true): Promise<RuntimeObservation> {
     const state = await readRuntimeState();
     let services: RuntimeObservation["services"] = [];
     if (state.plan && state.running) {
@@ -181,11 +181,15 @@ export class RunnerApplication {
         state.engine === "vercel-compose"
           ? await compose.inspect(state.plan)
           : processes.inspect(state.plan, state.servicePids);
-      const probes = await probeServices(state.plan, targets);
+      const probes = shouldProbeServices
+        ? await probeServices(state.plan, targets)
+        : [];
       services = processState.map((service) => ({
         ...service,
         healthy:
-          service.running && probes.find(({ id }) => id === service.id)?.healthy !== false,
+          service.running &&
+          (!shouldProbeServices ||
+            probes.find(({ id }) => id === service.id)?.healthy !== false),
       }));
     }
     const journalRevision = await readChangeJournal()
@@ -303,7 +307,6 @@ export class RunnerApplication {
     });
   }
 }
-
 function selectedGatewayListeners(state: Awaited<ReturnType<typeof requiredPreparedState>>) {
   const selected = state.selection?.serviceIds;
   return selected?.length

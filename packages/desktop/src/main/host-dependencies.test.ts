@@ -42,6 +42,33 @@ test("passes when required host dependencies are available", async () => {
   assert.equal(calls.includes("node --version"), false);
 });
 
+test("does not require Lima, WSL, or a container runtime for cloud previews", async () => {
+  const calls: string[] = [];
+  const report = await checkHostDependencies(
+    {
+      platform: "darwin",
+      runtimeProfile: "vercel-process",
+      setupScript: "corepack pnpm install",
+    },
+    async (command, args) => {
+      calls.push([command, ...args].join(" "));
+      if (command === "node") return "v22.12.0";
+      return "ok";
+    },
+  );
+
+  assert.equal(report.ok, true);
+  assert.equal(
+    calls.some((call) => call.includes("blame-lima-runtime")),
+    false,
+  );
+  assert.equal(
+    calls.some((call) => call.startsWith("nerdctl")),
+    false,
+  );
+  assert.equal(calls.includes("git --version"), true);
+});
+
 test("reports missing git before setup execution", async () => {
   const report = await checkHostDependencies(
     { platform: "darwin", setupScript: "echo ready" },
@@ -214,7 +241,10 @@ test("checks node and corepack when setup script needs package tooling", async (
 test("checks bare project creation package managers", async () => {
   const calls: string[] = [];
   const report = await checkHostDependencies(
-    { platform: "linux", setupScript: "pnpm create vite\ncorepack pnpm install" },
+    {
+      platform: "linux",
+      setupScript: "pnpm create vite\ncorepack pnpm install",
+    },
     async (command, args) => {
       calls.push([command, ...args].join(" "));
       if (command === "node") return "v22.12.0";

@@ -37,7 +37,7 @@ export class PreviewService {
   }
 
   async command(sessionId: string, command: PreviewSessionCommand, operationId: string) {
-    if (command.type === "start-services" || command.type === "start-agent") {
+    if (command.type === "start-agent") {
       const workspace = await this.sync.workspaceForSession(sessionId)
       if (workspace) this.assertLocalWriterIdle(workspace)
     }
@@ -52,6 +52,10 @@ export class PreviewService {
     return this.cloudClient().events(sessionId, cursor)
   }
 
+  logs(sessionId: string, cursor?: string) {
+    return this.cloudClient().logs(sessionId, cursor)
+  }
+
   bridgeGrant(sessionId: string) {
     return this.cloudClient().bridgeGrant(sessionId)
   }
@@ -62,12 +66,7 @@ export class PreviewService {
   }
 
   syncInitial(sessionId: string, localPath: string) {
-    return this.sync.syncInitial(
-      this.cloudClient(),
-      sessionId,
-      localPath,
-      (root) => this.assertLocalWriterIdle(root),
-    )
+    return this.sync.syncInitial(this.cloudClient(), sessionId, localPath)
   }
 
   syncBack(sessionId: string, localPath?: string) {
@@ -79,9 +78,12 @@ export class PreviewService {
     )
   }
 
-  syncBarrier(localPath: string) {
-    if (!this.cloud) return Promise.resolve()
-    return this.sync.barrier(this.cloud, localPath)
+  syncBarrier(_localPath: string) {
+    // The native worktree is authoritative in managed-preview profiles.
+    // Local Cline and Git writes must not stop the preview or import sandbox
+    // changes back into the host. The next explicit preview start/restart
+    // creates a fresh, coherent host-to-sandbox artifact instead.
+    return Promise.resolve()
   }
 
   private cloudClient() {

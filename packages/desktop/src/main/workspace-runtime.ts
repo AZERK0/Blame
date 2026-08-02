@@ -16,11 +16,16 @@ import {
   rm as rmHost,
   writeFile as writeHostFile,
 } from "node:fs/promises";
-import { homedir } from "node:os";
 import { basename, dirname, join, posix, resolve, win32 } from "node:path";
 import { promisify } from "node:util";
 import { runtimeToolScript, setupPath } from "./host-tool-path.ts";
 import { runtimeAgentClient, runtimeAgentSupported } from "./runtime-agent.ts";
+import {
+  platformWorktreeRoot,
+  runtimeExecution,
+  type WorkspaceExecution,
+  type WorkspaceMode,
+} from "./workspace-mode.ts";
 import log from "electron-log";
 
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
@@ -52,6 +57,7 @@ const maxProjectFileSearchResults = 30_000;
 type RuntimeOptions = {
   cwd?: string;
   env?: NodeJS.ProcessEnv;
+  execution?: WorkspaceExecution;
   platform?: NodeJS.Platform;
   user?: "blame" | "root";
 };
@@ -65,8 +71,9 @@ type RuntimeCommandSpec = {
 export function worktreeRoot(
   platform: NodeJS.Platform = process.platform,
   env: NodeJS.ProcessEnv = process.env,
+  mode: WorkspaceMode = "local-container",
 ) {
-  return platformWorktreeRoot(platform, env);
+  return platformWorktreeRoot(platform, env, mode);
 }
 
 export function worktreePath(input: {
@@ -75,17 +82,20 @@ export function worktreePath(input: {
   repositoryRoot: string;
   storyId: string;
   title: string;
+  mode?: WorkspaceMode;
 }) {
-  const repositoryName = repositoryBasename(
-    input.repositoryRoot,
-    input.platform ?? process.platform,
-  );
+  const platform = input.platform ?? process.platform;
+  const repositoryName = repositoryBasename(input.repositoryRoot, platform);
   const slug = storySlug(input.storyId, input.title);
-  return posix.join(
-    platformWorktreeRoot(input.platform, input.env),
-    repositoryName,
-    `story-${input.storyId}-${slug}`,
+  const root = platformWorktreeRoot(
+    platform,
+    input.env ?? process.env,
+    input.mode ?? "local-container",
   );
+  const parts = [root, repositoryName, `story-${input.storyId}-${slug}`];
+  return platform === "win32" && input.mode === "cloud-mirror"
+    ? win32.join(...parts)
+    : posix.join(...parts);
 }
 
 export function storyBranch(storyId: string, title: string) {
@@ -163,6 +173,7 @@ export function runtimeCommand(
   input: RuntimeOptions = {},
 ): RuntimeCommandSpec {
   const platform = input.platform ?? process.platform;
+  if (input.execution === "native") return { args, command, cwd: input.cwd };
   if (platform === "darwin")
     return runtimeWrappedCommand(
       "blame-lima-runtime",
@@ -190,8 +201,10 @@ export async function run(
   input: RuntimeOptions = {},
 ) {
   const platform = input.platform ?? process.platform;
+  const execution = runtimeExecution(input, platform, runtimeManagedPath);
   let env = runtimeEnvironment(input, platform);
-  const useAgent = useRuntimeAgent(platform, env);
+  const useAgent =
+    execution === "virtualized" && useRuntimeAgent(platform, env);
   if (command === "git" && useAgent) {
     const { name, email } = getRuntimeGitIdentity();
     env = {
@@ -218,7 +231,7 @@ export async function run(
       if (runtimeAgentCommandFailed(error)) throw error;
     }
   }
-  const spec = runtimeCommand(command, args, input);
+  const spec = runtimeCommand(command, args, { ...input, execution });
   const commandSpec = runtimeExecutableCommand(spec, platform, env);
   const result = await execFileAsync(commandSpec.command, commandSpec.args, {
     cwd: spec.cwd,
@@ -237,8 +250,9 @@ export function spawnRuntime(
   input: RuntimeOptions = {},
 ): ChildProcessWithoutNullStreams {
   const platform = input.platform ?? process.platform;
+  const execution = runtimeExecution(input, platform, runtimeManagedPath);
   const env = runtimeEnvironment(input, platform);
-  if (useRuntimeAgent(platform, env)) {
+  if (execution === "virtualized" && useRuntimeAgent(platform, env)) {
     return runtimeAgentClient({ env, platform }).spawn({
       args,
       command,
@@ -247,7 +261,7 @@ export function spawnRuntime(
       user: input.user ?? "blame",
     });
   }
-  const spec = runtimeCommand(command, args, input);
+  const spec = runtimeCommand(command, args, { ...input, execution });
   const commandSpec = runtimeExecutableCommand(spec, platform, env);
   return spawn(commandSpec.command, commandSpec.args, {
     cwd: spec.cwd,
@@ -580,23 +594,6 @@ function repositoryBasename(path: string, platform: NodeJS.Platform) {
 
 function joinHostPath(root: string, ...paths: string[]) {
   return join(root, ...paths);
-}
-
-function platformWorktreeRoot(
-  platform: NodeJS.Platform = process.platform,
-  env: NodeJS.ProcessEnv = process.env,
-) {
-  if (platform === "darwin" || platform === "win32")
-    return vmRuntimeWorktreeRoot;
-  const home = env.HOME || homedir() || "/home/blame";
-  return posix.join(
-    home.replace(/\\/g, "/"),
-    ".local",
-    "share",
-    "blame",
-    "runtime",
-    "worktrees",
-  );
 }
 
 function macosRuntimeManagedPath(path: string) {

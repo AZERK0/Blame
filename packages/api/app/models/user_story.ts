@@ -16,6 +16,7 @@ export type UserStoryStatus =
   | 'discarded'
 
 export type UserStoryPriority = 'Low' | 'Medium' | 'High'
+export type UserStoryWorkspaceMode = 'local-container' | 'cloud-mirror'
 export type UserStoryAgentStatus = 'Running' | 'Paused'
 export type UserStoryAgentErrorCode =
   | 'cline_not_subscribed'
@@ -205,6 +206,9 @@ export default class UserStory extends BaseModel {
 
   @column()
   declare worktree: string | null
+
+  @column()
+  declare workspaceMode: UserStoryWorkspaceMode | null
 
   @column()
   declare agentStatus: UserStoryAgentStatus | null

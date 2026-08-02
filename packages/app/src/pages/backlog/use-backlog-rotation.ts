@@ -52,6 +52,7 @@ import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import { createCloudApi } from "@/lib/cloud-api"
 import { effectiveProjectCodePractices } from "@/lib/project-code-practice-preferences"
+import { useRuntimePreference } from "@/lib/runtime-preference"
 import { showSystemNotification } from "@/lib/system-notifications"
 import {
   measurePerformanceOperation,
@@ -60,6 +61,7 @@ import {
   recordPerformanceMetric,
 } from "@/lib/performance-diagnostics"
 import { diagnoseAndRepairProjectInitialization } from "./project-initialization-repair"
+import * as projectSetup from "./project-setup-event"
 
 const maxConcurrentDevelopmentStories = 3
 const blockerRetryDelay = 30_000
@@ -83,6 +85,7 @@ export function useBacklogRotation(
   const projects = useProjects()
   const selection = useModelSelection({ role: "agent" })
   const alternativeSelection = useModelSelection({ role: "alternative" })
+  const runtimePreference = useRuntimePreference()
   const ensureProjectPreviewUrl = platform.workspace?.ensureProjectPreviewUrl
   const startingStoryIds = React.useRef(new Set<string>())
   const blockedStories = React.useRef(new Map<string, number>())
@@ -157,13 +160,15 @@ export function useBacklogRotation(
     if (!workspace || !agent) return
 
     const dependencies = await workspace.checkHostDependencies({
+      runtimeProfile: runtimePreference.profile,
       setupScript: initialization.setupScript,
     })
     if (!dependencies.ok) {
       reportHostDependencyBlocker(
         detailedStory,
         dependencies,
-        initialization.setupScript
+        initialization.setupScript,
+        runtimePreference.profile
       )
       return
     }
@@ -178,6 +183,7 @@ export function useBacklogRotation(
     const worktree = await workspace.createWorktree({
       executionId,
       repositoryRoot: projects.activeProject.path,
+      runtimeProfile: runtimePreference.profile,
       storyId,
       storyReference: userStoryDisplayId(detailedStory),
       telemetryCohorts,
@@ -187,6 +193,7 @@ export function useBacklogRotation(
       agentLastEvent: "Project preview setup starting.",
       branch: worktree.branch,
       status: "in-progress",
+      workspaceMode: worktree.workspaceMode,
       worktree: worktree.worktree,
     })
     const setupPromise = workspace.runProjectSetup({
@@ -201,6 +208,7 @@ export function useBacklogRotation(
       runConfigurations: initialization.runConfigurations,
       runConfigurationId: detailedStory.runConfigurationId ?? undefined,
       hostDependenciesChecked: true,
+      runtimeProfile: runtimePreference.profile,
     })
     const sessionPromise = agent.sessions.startDevelopment({
       apiConnection: auth.apiConnection,
@@ -215,6 +223,7 @@ export function useBacklogRotation(
       fileAttachments: detailedStory.fileAttachments ?? [],
       cwd: worktree.worktree,
       workspaceRoot: worktree.worktree,
+      workspaceMode: worktree.workspaceMode,
       previewDevtoolsScope: storyPreviewDevtoolsScope(detailedStory.id),
       codePractices: effectiveProjectCodePractices(
         projectInitialization.practices
@@ -231,6 +240,7 @@ export function useBacklogRotation(
         setup.runId,
         event,
         worktree.worktree,
+        worktree.workspaceMode,
         initialization,
         executionId
       )
@@ -287,12 +297,14 @@ export function useBacklogRotation(
   function reportHostDependencyBlocker(
     story: UserStory,
     report: HostDependencyReport,
-    setupScript: string
+    setupScript: string,
+    runtimeProfile: ReturnType<typeof useRuntimePreference>["profile"]
   ) {
     retryStory(story, blockerRetryDelay)
     setHostDependenciesDialog({
       checking: false,
       report,
+      runtimeProfile,
       setupScript,
       storyId: story.id,
       storyTitle: story.title,
@@ -305,6 +317,7 @@ export function useBacklogRotation(
     setHostDependenciesDialog({ ...current, checking: true })
     try {
       const report = await platform.workspace.checkHostDependencies({
+        runtimeProfile: current.runtimeProfile,
         setupScript: current.setupScript,
       })
       if (report.ok) {
@@ -334,16 +347,26 @@ export function useBacklogRotation(
   async function persistSetupEvent(
     story: UserStory,
     event: ProjectSetupEvent,
-    worktree: string
+    worktree: string,
+    workspaceMode = story.workspaceMode ?? "local-container"
   ) {
-    const text = eventText(event)
-    const previewUrl = await setupPreviewUrl(event, worktree)
+    const text = projectSetup.projectSetupEventText(event)
+    const previewUrl = await projectSetup.projectSetupPreviewUrl(
+      event,
+      worktree,
+      workspaceMode,
+      projectPreviewUrl
+    )
     const recovered = Boolean(
-      previewUrl && setupError(event) && (await projectRuntimeHealthy(worktree))
+      workspaceMode === "local-container" &&
+      previewUrl &&
+      projectSetup.projectSetupError(event) &&
+      (await projectRuntimeHealthy(worktree))
     )
     if (event.type === "exit") backlog.setStorySetupInitializing(story, false)
     await backlog.update(story, {
-      agentLastError: setupError(event) && !recovered ? text : undefined,
+      agentLastError:
+        projectSetup.projectSetupError(event) && !recovered ? text : undefined,
       agentLastEvent: recovered
         ? "Project preview containers are running."
         : text,
@@ -352,25 +375,26 @@ export function useBacklogRotation(
     return { recovered }
   }
 
-  async function setupPreviewUrl(event: ProjectSetupEvent, worktree: string) {
-    if (!setupFinished(event)) return undefined
-    try {
-      return (await projectPreviewUrl(worktree)) ?? undefined
-    } catch {
-      return undefined
-    }
-  }
-
   async function handleSetupEvent(
     story: UserStory,
     runId: string,
     event: ProjectSetupEvent,
     worktree: string,
+    workspaceMode: NonNullable<UserStory["workspaceMode"]>,
     initialization: CloudProjectInitialization,
     executionId: string
   ) {
-    const result = await persistSetupEvent(story, event, worktree)
-    if (setupError(event) && event.type === "exit" && !result.recovered) {
+    const result = await persistSetupEvent(
+      story,
+      event,
+      worktree,
+      workspaceMode
+    )
+    if (
+      projectSetup.projectSetupError(event) &&
+      event.type === "exit" &&
+      !result.recovered
+    ) {
       await repairFailedSetup(
         story,
         runId,
@@ -445,10 +469,10 @@ export function useBacklogRotation(
       storyId: story.id,
       dockerCompose: initialization.dockerCompose!,
       runConfigurations: initialization.runConfigurations,
-      launchError: eventText(event),
+      launchError: projectSetup.projectSetupEventText(event),
     })
     await persistInitializationDiagnosis(story, result)
-    if (!repairArtifacts(result)) {
+    if (!projectSetup.repairArtifacts(result)) {
       toast.error("Initialization could not be repaired automatically", {
         description: result.reason,
         duration: initializationRepairFinalToastDuration,
@@ -512,6 +536,7 @@ export function useBacklogRotation(
       runConfigurations,
       runConfigurationId,
       hostDependenciesChecked: true,
+      runtimeProfile: runtimePreference.profile,
     })
     const unsubscribe = workspace.onSetupEvent(setup.runId, (event) => {
       void handleRepairedSetupEvent(story, event, worktree, unsubscribe)
@@ -526,7 +551,8 @@ export function useBacklogRotation(
   ) {
     const result = await persistSetupEvent(story, event, worktree)
     if (event.type !== "exit") return
-    const completed = setupCompleted(event) || result.recovered
+    const completed =
+      projectSetup.projectSetupCompleted(event) || result.recovered
     toast[completed ? "success" : "error"](
       completed
         ? "Preview recovered after initialization repair"
@@ -1077,6 +1103,7 @@ type PendingAgentUpdate = QueuedAgentUpdate & {
 type HostDependenciesDialogState = {
   checking: boolean
   report: HostDependencyReport
+  runtimeProfile: ReturnType<typeof useRuntimePreference>["profile"]
   setupScript: string
   storyId: string
   storyTitle: string
@@ -1324,38 +1351,6 @@ function clineLogPath(worktree: string, sessionId: string) {
 
 function clineLogRelativePath(sessionId: string) {
   return `.blame/logs/cline-${sessionId}.log`
-}
-
-function eventText(event: ProjectSetupEvent) {
-  if (event.type === "exit") return `Setup exited with code ${event.data}`
-  return event.data.trim()
-}
-
-function setupError(event: ProjectSetupEvent) {
-  return (
-    event.type === "stderr" || (event.type === "exit" && event.data !== "0")
-  )
-}
-
-function setupCompleted(event: ProjectSetupEvent) {
-  return event.type === "exit" && event.data === "0"
-}
-
-function setupFinished(event: ProjectSetupEvent) {
-  return event.type === "exit"
-}
-
-function repairArtifacts(
-  result: RepairProjectInitializationResult
-): result is RepairProjectInitializationResult & {
-  setupScript: string
-  dockerCompose: string
-} {
-  return (
-    result.classification === "repairable_initialization" &&
-    Boolean(result.setupScript) &&
-    Boolean(result.dockerCompose)
-  )
 }
 
 function activePreviewStory(

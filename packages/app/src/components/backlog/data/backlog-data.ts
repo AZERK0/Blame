@@ -134,6 +134,7 @@ export type UserStory = {
   previewUrl?: string | null
   runConfigurationId?: string | null
   worktree?: string | null
+  workspaceMode?: "local-container" | "cloud-mirror" | null
   agentStatus?: UserStoryAgentStatus | null
   clineSessionId?: string | null
   agentProviderId?: string | null
@@ -183,6 +184,7 @@ export type UserStoryUpdate = Partial<
     | "previewUrl"
     | "runConfigurationId"
     | "worktree"
+    | "workspaceMode"
     | "agentStatus"
     | "clineSessionId"
     | "agentProviderId"

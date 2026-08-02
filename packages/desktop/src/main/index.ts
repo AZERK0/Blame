@@ -134,7 +134,6 @@ void app.whenReady().then(() => {
     onRuntimeReady: () => void prewarmAgentRuntime(true),
   })
   replaceMainWindow("compact")
-  void prewarmAgentRuntime()
   checkForUpdatesOnStartup()
 })
 

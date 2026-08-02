@@ -378,6 +378,7 @@ function nullableStoryAttributes(input: CreateUserStoryInput) {
     previewUrl: input.previewUrl ?? null,
     runConfigurationId: input.runConfigurationId ?? null,
     worktree: input.worktree ?? null,
+    workspaceMode: input.workspaceMode ?? null,
   }
 }
 

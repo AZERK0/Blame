@@ -54,9 +54,11 @@ import type { TelemetryExportSession } from "@blame/app";
 import type { HostDependencyReport } from "../main/host-dependencies";
 import type { CreateProjectInput } from "../main/project-creation";
 import type {
+  PreviewLogEvent,
   PreviewSessionCommand,
   PreviewSessionEvent,
   PreviewSessionView,
+  RuntimeProfileId,
 } from "@blame/preview-runtime";
 
 export type OpenDirectoryPickerOptions = {
@@ -73,6 +75,7 @@ export type WorkspaceEntry = {
 export type WorktreeResult = {
   worktree: string;
   branch: string;
+  workspaceMode: "local-container" | "cloud-mirror";
 };
 
 export type ProjectSetupEvent = {
@@ -184,7 +187,9 @@ export type BacklogStatusPip = {
 
 export type BlameDesktopApi = {
   auth: {
-    onCallback(callback: (result: { code?: string; error?: string }) => void): () => void;
+    onCallback(
+      callback: (result: { code?: string; error?: string }) => void,
+    ): () => void;
     request: CloudAuthRequestClient["request"];
     ready(): void;
   };
@@ -213,7 +218,10 @@ export type BlameDesktopApi = {
       id: string;
       size?: "full" | "thumbnail";
     }): Promise<string | null>;
-    create(input: { storageKey: string; previewSessionId?: string }): Promise<{ id: string }>;
+    create(input: {
+      storageKey: string;
+      previewSessionId?: string;
+    }): Promise<{ id: string }>;
     destroy(input: { id: string }): Promise<boolean>;
     load(input: { id: string; url: string }): Promise<boolean>;
     onState(
@@ -244,7 +252,10 @@ export type BlameDesktopApi = {
       resourceSize?: { vcpus: number; memoryGb: number };
     }): Promise<PreviewSessionView>;
     get(input: { sessionId: string }): Promise<PreviewSessionView>;
-    openExternal(input: { sessionId: string; endpointId?: string }): Promise<boolean>;
+    openExternal(input: {
+      sessionId: string;
+      endpointId?: string;
+    }): Promise<boolean>;
     command(input: {
       sessionId: string;
       command: PreviewSessionCommand;
@@ -263,6 +274,11 @@ export type BlameDesktopApi = {
     onEvent(
       input: { sessionId: string; cursor?: string },
       callback: (event: PreviewSessionEvent) => void,
+      onError?: (message: string) => void,
+    ): () => void;
+    onLog(
+      input: { sessionId: string; cursor?: string },
+      callback: (event: PreviewLogEvent) => void,
       onError?: (message: string) => void,
     ): () => void;
   };
@@ -355,12 +371,14 @@ export type BlameDesktopApi = {
     createWorktree(input: {
       executionId: string;
       repositoryRoot: string;
+      runtimeProfile: RuntimeProfileId;
       storyId: string;
       storyReference: string;
       telemetryCohorts?: ExecutionTelemetryCohorts;
       title: string;
     }): Promise<WorktreeResult>;
     checkHostDependencies(input: {
+      runtimeProfile?: RuntimeProfileId;
       setupScript: string;
       worktree?: string;
     }): Promise<HostDependencyReport>;
@@ -375,15 +393,20 @@ export type BlameDesktopApi = {
       runConfigurations?: ProjectRunConfiguration[];
       runConfigurationId?: string;
       hostDependenciesChecked?: boolean;
+      runtimeProfile: RuntimeProfileId;
     }): Promise<{ runId: string }>;
     collectProjectInitializationDiagnostics(input: {
       worktree: string;
       launchError: string;
     }): Promise<ProjectInitializationDiagnostics>;
-    stopProjectSetup(input: { worktree: string }): Promise<boolean>;
+    stopProjectSetup(input: {
+      workspaceMode?: "local-container" | "cloud-mirror";
+      worktree: string;
+    }): Promise<boolean>;
     removeWorktree(input: {
       projectSetupStopped?: boolean;
       repositoryRoot: string;
+      workspaceMode?: "local-container" | "cloud-mirror";
       worktree: string;
     }): Promise<boolean>;
     resolveProjectPreviewUrl(input: {
@@ -406,6 +429,7 @@ export type BlameDesktopApi = {
     ): Promise<HostDependencyReport>;
     projectRuntimeHealthy(input: { worktree: string }): Promise<boolean>;
     projectPreviewRuntimeState(input: {
+      workspaceMode?: "local-container" | "cloud-mirror";
       worktree: string;
     }): Promise<ProjectPreviewRuntimeState>;
     controlProjectPreview(input: {

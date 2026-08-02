@@ -197,7 +197,10 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
     })
   }
 
-  async inspect(handle: RuntimeHandle): Promise<RuntimeObservation> {
+  async inspect(
+    handle: RuntimeHandle,
+    options: { probeServices?: boolean } = {}
+  ): Promise<RuntimeObservation> {
     const payload = vercelHandle(handle)
     const sandbox = await this.findSandbox(payload, false)
     if (!sandbox) return inactiveObservation(payload.generation, 'missing', 'idle')
@@ -208,7 +211,10 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
       return inactiveObservation(payload.generation, 'failed', 'failed')
     if (sandbox.status !== 'running')
       return inactiveObservation(payload.generation, 'running', 'idle')
-    const observation = await this.runnerCall<RuntimeObservation>(handle, { operation: 'inspect' })
+    const observation = await this.runnerCall<RuntimeObservation>(handle, {
+      operation: 'inspect',
+      probeServices: options.probeServices,
+    })
     observation.generation ??= payload.generation
     if (observation.handshake) {
       observation.handshake.imageDigest =

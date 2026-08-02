@@ -70,6 +70,7 @@ import { HostDependenciesDialog } from "@/pages/backlog/host-dependencies-dialog
 import { useBacklogRotation } from "@/pages/backlog/use-backlog-rotation"
 import { assessAndRepairProjectInitializationImpact } from "@/pages/backlog/project-initialization-impact"
 import { backlogStatusPipStories } from "@/pages/backlog/backlog-status-pip-snapshot"
+import { activeStory, inactiveStoryFields } from "./story-runtime-state"
 import { useCloudAuth } from "@/context/cloud-auth"
 import {
   usePlatform,
@@ -78,6 +79,7 @@ import {
 } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import { projectCodePractices } from "@/lib/project-code-practices"
+import { useRuntimePreference } from "@/lib/runtime-preference"
 import { showSystemNotification } from "@/lib/system-notifications"
 import { generateAgentTitleSelection } from "@/lib/agent-title-generation"
 import {
@@ -101,6 +103,7 @@ export function BacklogPage() {
   const auth = useCloudAuth()
   const platform = usePlatform()
   const projects = useProjects()
+  const runtimePreference = useRuntimePreference()
   const agentSelection = useModelSelection({ role: "agent" })
   const alternativeSelection = useModelSelection({ role: "alternative" })
   const rotation = useBacklogRotation(backlog)
@@ -607,6 +610,11 @@ export function BacklogPage() {
         resumeSessionId: input.resumeSessionId,
         cwd: input.worktree,
         workspaceRoot: input.worktree,
+        workspaceMode:
+          story.workspaceMode ??
+          (runtimePreference.profile === "local-container"
+            ? "local-container"
+            : "cloud-mirror"),
         previewDevtoolsScope: storyPreviewDevtoolsScope(story.id),
         codePractices: await projectCodePractices(auth, projects),
         executionId,
@@ -620,6 +628,7 @@ export function BacklogPage() {
       agentSelection.currentVariant,
       platform.agent,
       projects,
+      runtimePreference.profile,
     ]
   )
   const unpauseAgent = React.useCallback(
@@ -1690,7 +1699,10 @@ async function stopStoryProjectSetup(
   if (!story.worktree) return false
   return (
     (await platform.workspace
-      ?.stopProjectSetup({ worktree: story.worktree })
+      ?.stopProjectSetup({
+        workspaceMode: story.workspaceMode ?? undefined,
+        worktree: story.worktree,
+      })
       .catch(() => false)) ?? false
   )
 }
@@ -1706,6 +1718,7 @@ async function removeStoryWorktree(
   const removed = await platform.workspace?.removeWorktree({
     projectSetupStopped,
     repositoryRoot,
+    workspaceMode: story.workspaceMode ?? undefined,
     worktree: story.worktree,
   })
   if (!removed) throw new Error("Unable to remove worktree.")
@@ -1755,20 +1768,6 @@ async function runPostMergeTasks(
     "agent.transition.initialization_impact",
     () => checkProjectInitializationImpact(initializationImpactInput)
   )
-}
-
-function inactiveStoryFields(): UserStoryUpdate {
-  return {
-    agentStatus: null,
-    branch: null,
-    clineSessionId: null,
-    previewUrl: null,
-    worktree: null,
-  }
-}
-
-function activeStory(story: UserStory, stories: UserStory[]) {
-  return stories.find((currentStory) => currentStory.id === story.id) ?? story
 }
 
 function replaceStoryAfterUndo(

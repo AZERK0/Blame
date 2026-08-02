@@ -45,9 +45,11 @@ import type {
 import type { NewProjectConfiguration } from "../components/new-project/new-project-options"
 import type { UserStory } from "../components/backlog/data/backlog-data"
 import type {
+  PreviewLogEvent,
   PreviewSessionCommand,
   PreviewSessionEvent,
   PreviewSessionView,
+  RuntimeProfileId,
 } from "@blame/preview-runtime"
 
 type PickerPaths = string | string[] | null
@@ -358,6 +360,7 @@ export type WorkspaceEntry = {
 export type WorktreeResult = {
   worktree: string
   branch: string
+  workspaceMode: "local-container" | "cloud-mirror"
 }
 
 export type GitBranchStatus = {
@@ -532,6 +535,11 @@ export type PreviewRuntimeClient = {
     callback: (event: PreviewSessionEvent) => void,
     onError?: (message: string) => void
   ): () => void
+  onLog(
+    input: { sessionId: string; cursor?: string },
+    callback: (event: PreviewLogEvent) => void,
+    onError?: (message: string) => void
+  ): () => void
 }
 
 export type WorkspaceClient = {
@@ -627,12 +635,14 @@ export type WorkspaceClient = {
   createWorktree(input: {
     executionId: string
     repositoryRoot: string
+    runtimeProfile: RuntimeProfileId
     storyId: string
     storyReference: string
     telemetryCohorts?: ExecutionTelemetryCohorts
     title: string
   }): Promise<WorktreeResult>
   checkHostDependencies(input: {
+    runtimeProfile?: RuntimeProfileId
     setupScript: string
     worktree?: string
   }): Promise<HostDependencyReport>
@@ -647,15 +657,20 @@ export type WorkspaceClient = {
     runConfigurations?: ProjectRunConfiguration[]
     runConfigurationId?: string
     hostDependenciesChecked?: boolean
+    runtimeProfile: RuntimeProfileId
   }): Promise<{ runId: string }>
   collectProjectInitializationDiagnostics(input: {
     worktree: string
     launchError: string
   }): Promise<ProjectInitializationDiagnostics>
-  stopProjectSetup(input: { worktree: string }): Promise<boolean>
+  stopProjectSetup(input: {
+    workspaceMode?: "local-container" | "cloud-mirror"
+    worktree: string
+  }): Promise<boolean>
   removeWorktree(input: {
     projectSetupStopped?: boolean
     repositoryRoot: string
+    workspaceMode?: "local-container" | "cloud-mirror"
     worktree: string
   }): Promise<boolean>
   resolveProjectPreviewUrl(input: { worktree: string }): Promise<string | null>
@@ -667,6 +682,7 @@ export type WorkspaceClient = {
   }): Promise<string | null>
   projectRuntimeHealthy?(input: { worktree: string }): Promise<boolean>
   projectPreviewRuntimeState?(input: {
+    workspaceMode?: "local-container" | "cloud-mirror"
     worktree: string
   }): Promise<ProjectPreviewRuntimeState>
   controlProjectPreview?(input: {

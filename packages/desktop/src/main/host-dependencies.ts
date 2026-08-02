@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { withoutTelemetryEnvironment } from "@blame/telemetry";
+import type { RuntimeProfileId } from "@blame/preview-runtime";
 import {
   createRuntimeManager,
   type RuntimeDependencyIssue,
@@ -42,6 +43,7 @@ export type HostDependencyReport = {
 export type HostDependencyCheckInput = {
   env?: NodeJS.ProcessEnv;
   platform?: NodeJS.Platform;
+  runtimeProfile?: RuntimeProfileId;
   setupScript: string;
 };
 
@@ -54,6 +56,7 @@ type CommandRunner = (
 type CheckContext = {
   env?: NodeJS.ProcessEnv;
   platform: NodeJS.Platform;
+  runtimeProfile?: RuntimeProfileId;
   run: CommandRunner;
 };
 
@@ -80,6 +83,7 @@ export async function checkHostDependencies(
   const context = {
     env: input.env,
     platform: input.platform ?? process.platform,
+    runtimeProfile: input.runtimeProfile,
     run,
   };
   const issues = await hostDependencyIssues(input.setupScript, context);
@@ -110,7 +114,9 @@ async function hostDependencyIssues(
   context: CheckContext,
 ) {
   const issues: HostDependencyIssue[] = [];
-  issues.push(...(await containerRuntimeIssues(context)));
+  if (contextRequiresContainerRuntime(context)) {
+    issues.push(...(await containerRuntimeIssues(context)));
+  }
   const checks = [checkGit(context)];
   if (requiresNodeTooling(setupScript)) {
     checks.push(checkNode(context), checkCorepack(context));
@@ -124,10 +130,13 @@ async function hostDependencyIssues(
   return issues;
 }
 
-function barePackageManagerChecks(
-  setupScript: string,
-  context: CheckContext,
-) {
+function contextRequiresContainerRuntime(context: CheckContext) {
+  return (
+    !context.runtimeProfile || context.runtimeProfile === "local-container"
+  );
+}
+
+function barePackageManagerChecks(setupScript: string, context: CheckContext) {
   return [
     ...bareCommandCheck(setupScript, context, "npm"),
     ...bareCommandCheck(setupScript, context, "pnpm"),
@@ -304,7 +313,8 @@ function macHostDependencyAction(
     return "Install Yarn or enable it through Corepack before creating the project.";
   if (name === "bun")
     return "Install Bun from https://bun.sh before creating the project.";
-  if (name === "pip") return "Install Python with pip before creating the project.";
+  if (name === "pip")
+    return "Install Python with pip before creating the project.";
   return status === "unsupported"
     ? "Upgrade Node.js with nvm, fnm, or the official installer."
     : "Install Node.js 22 or newer with nvm, fnm, or the official installer.";
@@ -330,7 +340,8 @@ function windowsHostDependencyAction(
     return "Install Yarn or run corepack enable before creating the project.";
   if (name === "bun")
     return "Install Bun from https://bun.sh before creating the project.";
-  if (name === "pip") return "Install Python with pip before creating the project.";
+  if (name === "pip")
+    return "Install Python with pip before creating the project.";
   return status === "unsupported"
     ? "Upgrade Node.js with winget install OpenJS.NodeJS.LTS."
     : "Install Node.js with winget install OpenJS.NodeJS.LTS.";

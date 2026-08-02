@@ -20,10 +20,12 @@ import {
 } from "@/context/cloud-auth-storage"
 import { createCloudApi } from "@/lib/cloud-api"
 import { useCloudTelemetry } from "@/context/cloud-telemetry"
+import { defaultCloudApiUrl } from "@/context/cloud-api-origin"
 
-const configuredApiUrl = import.meta.env.VITE_CLOUD_API_URL?.trim()
-const defaultApiUrl =
-  configuredApiUrl || "https://api.blame.so/api/v1"
+const defaultApiUrl = defaultCloudApiUrl(
+  import.meta.env.VITE_CLOUD_API_URL,
+  import.meta.env.DEV
+)
 
 type CloudAuthState =
   | { status: "loading" }

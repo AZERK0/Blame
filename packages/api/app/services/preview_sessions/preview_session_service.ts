@@ -388,7 +388,7 @@ export default class PreviewSessionService {
           const handle = await this.fencedHandle(candidate.id, fencingToken)
           const driver = record && this.drivers.get(record.profile)
           if (!record || !handle || !driver || record.state.host !== 'running') return 'unchanged'
-          const observation = await driver.inspect(handle)
+          const observation = await driver.inspect(handle, { probeServices: false })
           await this.sampleUsage(record.id, record.profile)
           const revision = observation.journalRevision
           if (!revision || revision === record.lastExportedJournalRevision) return 'unchanged'

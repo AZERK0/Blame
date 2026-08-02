@@ -57,6 +57,9 @@ test.group('object storage', () => {
       size: 1,
     })
 
-    await assert.rejects(() => workspaceArtifactObjectStorage().content(key), /not found/)
+    await assert.rejects(
+      () => workspaceArtifactObjectStorage().content(key),
+      /not found|does not exist/i
+    )
   })
 })

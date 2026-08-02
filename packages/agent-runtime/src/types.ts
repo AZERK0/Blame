@@ -92,6 +92,7 @@ export type AgentRuntimePrewarmInput = {
   backend: AgentBackendConfig;
   cwd: string;
   workspaceRoot: string;
+  workspaceMode?: "local-container" | "cloud-mirror";
 };
 
 export type BlameProvider = {

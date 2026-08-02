@@ -27,7 +27,7 @@ export type RunnerRequest = (
     }
   | { operation: "start-services"; selection: RuntimeSelection }
   | { operation: "stop-services" }
-  | { operation: "inspect" }
+  | { operation: "inspect"; probeServices?: boolean }
   | { operation: "endpoints" }
   | { operation: "logs"; cursor?: string; serviceId?: string }
   | { operation: "source-import"; source: SourceArtifact }

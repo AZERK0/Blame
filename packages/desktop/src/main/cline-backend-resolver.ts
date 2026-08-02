@@ -14,7 +14,6 @@ export type AgentWorkspaceResolution = {
   backend: AgentBackendConfig
   input: Record<string, unknown>
 }
-
 type ResolverInput = {
   agentClient?: {
     clineHubEnsure(): Promise<{ authToken?: string; url?: string }>
@@ -32,7 +31,19 @@ export async function resolveAgentWorkspaceInput<T extends Record<string, unknow
   options: ResolverInput = {},
 ) {
   const platform = options.platform ?? process.platform
+  const workspaceMode = explicitWorkspaceMode(input)
   const runtimeField = runtimeManagedWorkspaceField(input, platform)
+  if (workspaceMode === "cloud-mirror") {
+    if (runtimeField) {
+      throw new Error(
+        "This managed preview still uses a Lima/WSL worktree. Stop and requeue the story to create its native host worktree."
+      )
+    }
+    return localWorkspaceInput(input, platform)
+  }
+  if (workspaceMode === "local-container" && !runtimeField) {
+    return localWorkspaceInput(input, platform)
+  }
   if (!runtimeField) return localWorkspaceInput(input, platform)
   await (options.ensureReady ?? ensureRuntimeReady)(
     runtimeEnvironment(options, platform)
@@ -50,6 +61,13 @@ export async function resolveAgentWorkspaceInput<T extends Record<string, unknow
       key: identity.key,
     },
   }
+}
+
+function explicitWorkspaceMode(input: Record<string, unknown>) {
+  return input.workspaceMode === "local-container" ||
+    input.workspaceMode === "cloud-mirror"
+    ? input.workspaceMode
+    : undefined
 }
 
 export function localWorkspaceInput<T extends Record<string, unknown>>(
