@@ -38,6 +38,7 @@ export function previewRuntimeConfig() {
       bootstrapSha256: env.get('BLAME_SANDBOX_BOOTSTRAP_SHA256'),
       runnerVersion: env.get('BLAME_SANDBOX_RUNNER_VERSION') ?? '0.1.0',
       protocolVersion: positiveInteger(env.get('BLAME_SANDBOX_PROTOCOL_VERSION'), 1),
+      vercelPlan: env.get('BLAME_SANDBOX_VERCEL_PLAN') ?? 'hobby',
       timeoutMinutes: positiveInteger(env.get('BLAME_SANDBOX_TIMEOUT_MINUTES'), 60),
       snapshotRetentionDays: positiveInteger(env.get('BLAME_SANDBOX_SNAPSHOT_RETENTION_DAYS'), 7),
       deploymentId: env.get('BLAME_SANDBOX_DEPLOYMENT_ID'),

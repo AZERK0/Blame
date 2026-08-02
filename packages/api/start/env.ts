@@ -95,6 +95,7 @@ export default await Env.create(new URL('../', import.meta.url), {
   BLAME_SANDBOX_BOOTSTRAP_SHA256: Env.schema.string.optional(),
   BLAME_SANDBOX_RUNNER_VERSION: Env.schema.string.optional(),
   BLAME_SANDBOX_PROTOCOL_VERSION: Env.schema.number.optional(),
+  BLAME_SANDBOX_VERCEL_PLAN: Env.schema.enum.optional(['hobby', 'pro', 'enterprise'] as const),
   BLAME_SANDBOX_TIMEOUT_MINUTES: Env.schema.number.optional(),
   BLAME_SANDBOX_SNAPSHOT_RETENTION_DAYS: Env.schema.number.optional(),
   BLAME_SANDBOX_DEPLOYMENT_ID: Env.schema.string.optional(),

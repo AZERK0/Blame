@@ -27,6 +27,7 @@ import {
   capabilityKeysMatch,
   delay,
   desiredPorts,
+  effectiveSandboxTimeoutMinutes,
   inactiveObservation,
   providerFailure,
   providerResourceMissing,
@@ -35,6 +36,7 @@ import {
   sandboxNameFor,
   shortTag,
   trustedBootstrapUrl,
+  vercelPlanLimits,
   vercelHandle,
   type VercelRuntimeHandle,
 } from '#services/sandboxes/vercel_sandbox_support'
@@ -59,11 +61,12 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
   }
 
   limits() {
+    const planLimits = vercelPlanLimits(this.config.sandbox.vercelPlan)
     return {
       observedAt: new Date().toISOString(),
-      maxDurationHours: 24,
+      maxDurationHours: planLimits.maxDurationMinutes / 60,
       maxPublishedPorts: 15,
-      maxVcpus: 8,
+      maxVcpus: planLimits.maxVcpus,
       memoryGbPerVcpu: 2,
       region: 'iad1',
       source: '@vercel/sandbox@2.9.2',
@@ -87,6 +90,11 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
     this.assertResourceSize(input.resourceSize)
     const gatewayPorts = desiredPorts(input.plan)
     const sandboxName = sandboxNameFor(input.sessionId)
+    const timeout =
+      effectiveSandboxTimeoutMinutes(
+        this.config.sandbox.timeoutMinutes,
+        this.config.sandbox.vercelPlan
+      ) * 60_000
     const sandbox = await this.providerCall('create', () =>
       Sandbox.getOrCreate({
         ...this.credentials(),
@@ -95,7 +103,7 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
         persistent: true,
         ports: gatewayPorts,
         resources: { vcpus: input.resourceSize.vcpus },
-        timeout: this.config.sandbox.timeoutMinutes * 60_000,
+        timeout,
         snapshotExpiration: this.config.sandbox.snapshotRetentionDays * 86_400_000,
         keepLastSnapshots: { count: 1, deleteEvicted: true },
         networkPolicy: this.networkPolicy(),
@@ -111,7 +119,7 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
         persistent: true,
         ports: gatewayPorts,
         resources: { vcpus: input.resourceSize.vcpus },
-        timeout: this.config.sandbox.timeoutMinutes * 60_000,
+        timeout,
         snapshotExpiration: this.config.sandbox.snapshotRetentionDays * 86_400_000,
         keepLastSnapshots: { count: 1, deleteEvicted: true },
         networkPolicy: this.networkPolicy(),

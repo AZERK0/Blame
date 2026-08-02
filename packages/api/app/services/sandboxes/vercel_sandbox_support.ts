@@ -15,6 +15,20 @@ export type VercelRuntimeHandle = {
   gatewayPorts: number[]
 }
 
+export type VercelPlan = 'hobby' | 'pro' | 'enterprise'
+
+export function vercelPlanLimits(plan: VercelPlan) {
+  return plan === 'hobby'
+    ? { maxDurationMinutes: 45, maxVcpus: 4 }
+    : plan === 'pro'
+      ? { maxDurationMinutes: 24 * 60, maxVcpus: 8 }
+      : { maxDurationMinutes: 24 * 60, maxVcpus: 32 }
+}
+
+export function effectiveSandboxTimeoutMinutes(requestedMinutes: number, plan: VercelPlan) {
+  return Math.min(requestedMinutes, vercelPlanLimits(plan).maxDurationMinutes)
+}
+
 export function vercelHandle(handle: RuntimeHandle): VercelRuntimeHandle {
   const value = handle as unknown as Partial<VercelRuntimeHandle>
   if (
@@ -71,6 +85,7 @@ export function runnerFailure(code: string, message: string) {
 export function providerFailure(operation: string, error: unknown) {
   const status = providerStatus(error)
   const code = status === 404 ? 'SANDBOX_NOT_FOUND' : providerCode(error)
+  const reason = providerMessage(error)
   return new PreviewRuntimeError({
     code:
       status === 401 || status === 403
@@ -78,7 +93,7 @@ export function providerFailure(operation: string, error: unknown) {
         : status === 429
           ? 'PROVIDER_QUOTA'
           : 'PROVIDER_UNAVAILABLE',
-    message: `Vercel Sandbox ${operation} failed.`,
+    message: `Vercel Sandbox ${operation} failed${reason ? `: ${reason}` : '.'}`,
     providerCode: code.slice(0, 80),
     correlationId: providerRequestId(error)?.slice(0, 120),
     retryable: status === 429 || status >= 500 || status === 0,
@@ -126,6 +141,25 @@ function providerRequestId(error: unknown) {
   const header = headers?.get?.('x-vercel-id') ?? headers?.get?.('x-request-id')
   const value = bodyError?.requestId ?? json?.requestId ?? details?.requestId ?? header
   return typeof value === 'string' ? value : undefined
+}
+
+function providerMessage(error: unknown) {
+  const details = objectValue(error)
+  const json = objectValue(details?.json)
+  const bodyError = objectValue(json?.error)
+  const value = bodyError?.message ?? json?.message ?? details?.text
+  if (typeof value !== 'string') return undefined
+  const sanitized = value
+    .replace(/https?:\/\/[^\s"']+/gi, '[redacted-url]')
+    .replace(/\bBearer\s+[A-Za-z0-9._~+/=-]+/gi, 'Bearer [redacted]')
+    .replace(/\bvcp_[A-Za-z0-9._-]+\b/g, '[redacted-token]')
+    .replace(
+      /\b(access[_-]?token|api[_-]?key|password|secret)\s*[:=]\s*[^\s,;]+/gi,
+      '$1=[redacted]'
+    )
+    .replace(/\s+/g, ' ')
+    .trim()
+  return sanitized ? sanitized.slice(0, 240) : undefined
 }
 
 function objectValue(value: unknown) {

@@ -22,9 +22,9 @@ Le choix ne doit pas devenir un booléen `useVercel`. Il doit être représenté
 
 La localisation du worktree, de Cline et de la preview est un contrat explicite du profil :
 
-| Profil | Linux | macOS | Windows | Preview |
-| --- | --- | --- | --- | --- |
-| `local-container` | worktree et Cline natifs Linux | worktree et Cline dans Lima | worktree et Cline dans WSL2 | conteneurs locaux isolés |
+| Profil                              | Linux                          | macOS                                     | Windows                                     | Preview                   |
+| ----------------------------------- | ------------------------------ | ----------------------------------------- | ------------------------------------------- | ------------------------- |
+| `local-container`                   | worktree et Cline natifs Linux | worktree et Cline dans Lima               | worktree et Cline dans WSL2                 | conteneurs locaux isolés  |
 | `vercel-compose` / `vercel-process` | worktree et Cline natifs Linux | worktree et Cline natifs macOS, sans Lima | worktree et Cline natifs Windows, sans WSL2 | Vercel Sandbox uniquement |
 
 Le profil cloud ne démarre, ne préchauffe et ne sonde donc jamais Lima, WSL2, nerdctl ou un Compose local. Le backend Cline reste sur le host et Vercel ne reçoit qu’une réplique d’exécution du worktree natif.
@@ -674,22 +674,27 @@ Une erreur peut conserver un `providerCode` et un `correlationId` non sensibles 
 
 Valeurs documentées au 2 août 2026 :
 
-| Contrainte Vercel Sandbox Pro  |                              Valeur |
-| ------------------------------ | ----------------------------------: |
-| durée par défaut               |                           5 minutes |
-| durée maximale d’une session   |                           24 heures |
-| ports publiés                  |                          15 maximum |
-| ressources par défaut          |                       2 vCPU / 4 Go |
-| ressources maximales Pro       |                      8 vCPU / 16 Go |
-| ratio mémoire                  |                       2 Go par vCPU |
-| filesystem snapshotable        |                       jusqu’à 32 Go |
-| sandboxes concurrentes Pro     |                2 000 par équipe Pro |
-| région disponible              |                  `iad1`, États-Unis |
-| expiration snapshot par défaut | 30 jours après dernière utilisation |
+| Contrainte Vercel Sandbox       |                              Valeur |
+| ------------------------------- | ----------------------------------: |
+| durée par défaut                |                           5 minutes |
+| durée maximale Hobby            |                          45 minutes |
+| durée maximale Pro/Enterprise   |                           24 heures |
+| ports publiés                   |                          15 maximum |
+| ressources par défaut           |                       2 vCPU / 4 Go |
+| ressources maximales Hobby      |                       4 vCPU / 8 Go |
+| ressources maximales Pro        |                      8 vCPU / 16 Go |
+| ressources maximales Enterprise |                     32 vCPU / 64 Go |
+| ratio mémoire                   |                       2 Go par vCPU |
+| filesystem snapshotable         |                       jusqu’à 32 Go |
+| sandboxes concurrentes Pro      |                2 000 par équipe Pro |
+| région disponible               |                  `iad1`, États-Unis |
+| expiration snapshot par défaut  | 30 jours après dernière utilisation |
 
 Les quotas du compte Vercel ne remplacent pas les quotas Blame par tenant. Le driver doit aussi respecter les rate limits du control plane Vercel et appliquer un backoff avec jitter.
 
 Ces valeurs datées ne deviennent pas des constantes du cœur. L’adapter épingle sa version du SDK, produit un `ProviderLimitsSnapshot` observable et échoue proprement si ressources, durée ou ports disponibles ne correspondent plus au plan.
+
+Le plan est déclaré côté serveur avec `BLAME_SANDBOX_VERCEL_PLAN=hobby|pro|enterprise` (défaut sûr : `hobby`). L’adapter borne la durée demandée à la limite du plan afin qu’une valeur telle que 60 minutes ne provoque pas un rejet `422` sur Hobby. Le passage à Pro ou Enterprise doit mettre cette variable à jour pour exposer les limites supérieures.
 
 Le driver mesure l’espace réellement libre et garde une marge avant pull, build et snapshot ; « jusqu’à 32 Go » ne signifie pas 32 Go disponibles pour Docker.
 
