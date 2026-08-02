@@ -13,7 +13,8 @@ test.group('preview runtime security', () => {
     )
     assert.deepEqual(Object.keys(policy.allow), ['registry.npmjs.org', 'api.example.com'])
     assert.include(policy.subnets.deny, '169.254.0.0/16')
-    assert.include(policy.subnets.deny, 'fc00::/7')
+    assert.notInclude(policy.subnets.deny, '::1/128')
+    assert.isFalse(policy.subnets.deny.some((cidr) => cidr.includes(':')))
     assert.throws(
       () => vercelNetworkPolicy(['https://example.com']),
       /Invalid sandbox egress domain/

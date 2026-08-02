@@ -12,7 +12,7 @@ ARG BLAME_RUNNER_VERSION=0.1.0
 ARG BLAME_RUNNER_IMAGE_DIGEST=sha256:development
 
 RUN dnf install -y \
-      ca-certificates findutils git gzip iproute procps-ng shadow-utils tar util-linux wget xz \
+      ca-certificates findutils git gzip iproute procps-ng shadow-utils sudo tar util-linux wget xz \
     && dnf clean all \
     && curl --fail --silent --show-error --location \
       "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz" \
@@ -48,11 +48,11 @@ RUN groupadd --system blame-runtime \
 
 WORKDIR /opt/blame
 COPY packages/sandbox-runner/package.json ./package.json
-COPY packages/sandbox-runner/dist/blame-sandbox-runner.js ./dist/blame-sandbox-runner.js
+COPY packages/sandbox-runner/dist/blame-sandbox-runner.cjs ./dist/blame-sandbox-runner.cjs
 RUN mkdir -p /opt/blame/bin \
-    && ln -sf /opt/blame/dist/blame-sandbox-runner.js /opt/blame/bin/blame-sandbox-runner \
-    && ln -sf /opt/blame/dist/blame-sandbox-runner.js /opt/blame/bin/blame-runnerctl \
-    && chmod 0755 /opt/blame/dist/blame-sandbox-runner.js
+    && ln -sf /opt/blame/dist/blame-sandbox-runner.cjs /opt/blame/bin/blame-sandbox-runner \
+    && ln -sf /opt/blame/dist/blame-sandbox-runner.cjs /opt/blame/bin/blame-runnerctl \
+    && chmod 0755 /opt/blame/dist/blame-sandbox-runner.cjs
 
 ENV BLAME_RUNNER_VERSION=${BLAME_RUNNER_VERSION}
 ENV BLAME_RUNNER_IMAGE_DIGEST=${BLAME_RUNNER_IMAGE_DIGEST}

@@ -9,6 +9,8 @@ export type SandboxNetworkRule = {
 }
 
 const protectedCidrs = [
+  // Vercel Sandbox currently accepts IPv4 CIDRs only. The domain allowlist remains
+  // default-deny for IPv6 literals as well; adding IPv6 ranges makes create() fail.
   '0.0.0.0/8',
   '10.0.0.0/8',
   '100.64.0.0/10',
@@ -17,9 +19,6 @@ const protectedCidrs = [
   '172.16.0.0/12',
   '192.168.0.0/16',
   '224.0.0.0/4',
-  '::1/128',
-  'fc00::/7',
-  'fe80::/10',
 ]
 
 export function vercelNetworkPolicy(domains: string[], rules: SandboxNetworkRule[] = []) {

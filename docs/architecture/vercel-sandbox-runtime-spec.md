@@ -698,6 +698,8 @@ Le plan est déclaré côté serveur avec `BLAME_SANDBOX_VERCEL_PLAN=hobby|pro|e
 
 Le driver mesure l’espace réellement libre et garde une marge avant pull, build et snapshot ; « jusqu’à 32 Go » ne signifie pas 32 Go disponibles pour Docker.
 
+La policy réseau envoyée à Vercel reste une allowlist de domaines fermée par défaut et bloque explicitement les plages IPv4 privées, loopback, link-local et metadata. L’API Sandbox 2026 rejette les CIDR IPv6 (`::1/128`, `fc00::/7`, `fe80::/10`) avec `400 bad_request`; ils ne doivent donc pas être inclus dans `subnets.deny`. Les littéraux IPv6 demeurent hors allowlist.
+
 `ports` est une liste déclarée à la création ou mise à jour. Une mise à jour remplace la liste complète ; l’adapter doit donc recalculer et envoyer l’ensemble voulu atomiquement. `sandbox.domain(port)` n’est appelé que pour un port déclaré.
 
 Un sandbox arrêté ne doit pas être supposé auto-réveillé par une requête HTTP. Ouvrir une preview appelle d’abord le control plane Blame, qui reprend la session, attend runner et healthchecks, puis rend la nouvelle route.
@@ -736,11 +738,14 @@ L’image contient des versions épinglées de :
 - Git et outils d’archive ;
 - Node et runtimes nécessaires au runner ;
 - Docker Engine et plugin Compose pour `vercel-compose` ;
+- `sudo`, requis par les contextes `asUser()` et `sudo: true` du SDK Vercel ;
 - gateway et relay Blame ;
 - certificats et scripts de trust store ;
 - outils de diagnostic minimaux.
 
 L’image est publiée dans Vercel Container Registry, épinglée par digest et construite en `linux/amd64`.
+
+Le binaire monolithique du runner est produit en CommonJS (`.cjs`) : ses dépendances CommonJS, notamment `yaml`, ne doivent pas être emballées dans un bundle ESM qui échoue au démarrage sur un `require()` dynamique.
 
 Une custom image Vercel devient le filesystem de la microVM. Son `ENTRYPOINT` et son `CMD` ne sont pas exécutés ; le control plane doit lancer explicitement le runner et, pour Compose, `dockerd`.
 
