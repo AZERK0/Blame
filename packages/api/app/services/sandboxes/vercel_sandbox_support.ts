@@ -69,14 +69,8 @@ export function runnerFailure(code: string, message: string) {
 }
 
 export function providerFailure(operation: string, error: unknown) {
-  const details = error as {
-    code?: string
-    status?: number
-    statusCode?: number
-    requestId?: string
-  }
-  const status = Number(details?.status ?? details?.statusCode ?? 0)
-  const code = status === 404 ? 'SANDBOX_NOT_FOUND' : String(details?.code ?? 'VERCEL_UNKNOWN')
+  const status = providerStatus(error)
+  const code = status === 404 ? 'SANDBOX_NOT_FOUND' : providerCode(error)
   return new PreviewRuntimeError({
     code:
       status === 401 || status === 403
@@ -86,26 +80,56 @@ export function providerFailure(operation: string, error: unknown) {
           : 'PROVIDER_UNAVAILABLE',
     message: `Vercel Sandbox ${operation} failed.`,
     providerCode: code.slice(0, 80),
-    correlationId: details?.requestId?.slice(0, 120),
+    correlationId: providerRequestId(error)?.slice(0, 120),
     retryable: status === 429 || status >= 500 || status === 0,
   })
 }
 
 export function retryableProviderError(error: unknown) {
-  const details = error as { status?: number; statusCode?: number; code?: string }
-  const status = Number(details?.status ?? details?.statusCode ?? 0)
-  return status === 0 || status === 429 || status >= 500 || details?.code === 'SANDBOX_SNAPSHOTTING'
+  const status = providerStatus(error)
+  return (
+    status === 0 ||
+    status === 429 ||
+    status >= 500 ||
+    providerCode(error) === 'SANDBOX_SNAPSHOTTING'
+  )
 }
 
 export function providerResourceMissing(error: unknown) {
   if (error instanceof PreviewRuntimeError) {
     return error.failure.providerCode === 'SANDBOX_NOT_FOUND'
   }
-  const details = error as { code?: string; status?: number; statusCode?: number }
-  return (
-    Number(details?.status ?? details?.statusCode ?? 0) === 404 ||
-    String(details?.code ?? '').includes('NOT_FOUND')
-  )
+  return providerStatus(error) === 404 || providerCode(error).includes('NOT_FOUND')
+}
+
+function providerStatus(error: unknown) {
+  const details = objectValue(error)
+  const response = objectValue(details?.response)
+  return Number(response?.status ?? details?.status ?? details?.statusCode ?? 0)
+}
+
+function providerCode(error: unknown) {
+  const details = objectValue(error)
+  const json = objectValue(details?.json)
+  const bodyError = objectValue(json?.error)
+  const cause = objectValue(details?.cause)
+  return String(bodyError?.code ?? json?.code ?? details?.code ?? cause?.code ?? 'VERCEL_UNKNOWN')
+}
+
+function providerRequestId(error: unknown) {
+  const details = objectValue(error)
+  const json = objectValue(details?.json)
+  const bodyError = objectValue(json?.error)
+  const headers = objectValue(objectValue(details?.response)?.headers) as
+    | { get?: (name: string) => string | null }
+    | undefined
+  const header = headers?.get?.('x-vercel-id') ?? headers?.get?.('x-request-id')
+  const value = bodyError?.requestId ?? json?.requestId ?? details?.requestId ?? header
+  return typeof value === 'string' ? value : undefined
+}
+
+function objectValue(value: unknown) {
+  return value && typeof value === 'object' ? (value as Record<string, unknown>) : undefined
 }
 
 export function delay(milliseconds: number) {
