@@ -60,7 +60,17 @@ export default await Env.create(new URL('../', import.meta.url), {
   ATTACHMENTS_S3_ACCESS_KEY_ID: Env.schema.secret.optional(),
   ATTACHMENTS_S3_SECRET_ACCESS_KEY: Env.schema.secret.optional(),
   ATTACHMENTS_S3_FORCE_PATH_STYLE: Env.schema.boolean.optional(),
-  ATTACHMENTS_S3_KMS_KEY_ID: Env.schema.string.optional(),
+
+  // Managed preview workspace artifacts (server-only, separate from conversation attachments)
+  BLAME_WORKSPACE_STORAGE_DRIVER: Env.schema.enum.optional(['s3', 'memory'] as const),
+  BLAME_WORKSPACE_DOWNLOAD_URL_TTL_SECONDS: Env.schema.number.optional(),
+  BLAME_WORKSPACE_UPLOAD_URL_TTL_SECONDS: Env.schema.number.optional(),
+  BLAME_WORKSPACE_S3_ENDPOINT: Env.schema.string.optional({ format: 'url', tld: false }),
+  BLAME_WORKSPACE_S3_REGION: Env.schema.string.optional(),
+  BLAME_WORKSPACE_S3_BUCKET: Env.schema.string.optional(),
+  BLAME_WORKSPACE_S3_ACCESS_KEY_ID: Env.schema.secret.optional(),
+  BLAME_WORKSPACE_S3_SECRET_ACCESS_KEY: Env.schema.secret.optional(),
+  BLAME_WORKSPACE_S3_FORCE_PATH_STYLE: Env.schema.boolean.optional(),
 
   // Managed preview runtime (server-only)
   BLAME_CLOUD_RUNTIME_ENABLED: Env.schema.boolean.optional(),

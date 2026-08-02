@@ -5,9 +5,39 @@ Vercel credentials, the Preview Edge control token, and the capability signing
 private key belong only in the server secret manager. They must never be added to
 the desktop build or runner image.
 
-`ATTACHMENTS_S3_KMS_KEY_ID` is mandatory outside tests. Workspace uploads and
-deltas use SSE-KMS with the preview session ID as encryption context; the bucket
-CORS policy must allow the signed checksum and SSE-KMS request headers.
+Workspace sources and deltas use their own private OVH Object Storage bucket.
+They must never be stored in the conversation attachment bucket. Create
+`blame-prod-workspace-gra`, choose **Server-side encryption with keys managed by
+OVHcloud (SSE-OMK)**, disable public access, and create credentials restricted to
+read, write, inspect, and delete objects in this bucket only.
+
+Configure the API with the dedicated `BLAME_WORKSPACE_*` variables documented in
+`packages/api/.env.example`. The application requests `AES256` on every upload,
+which is OVH's S3-compatible SSE-OMK mode, and refuses to accept an uploaded
+workspace object when `HeadObject` does not report `AES256`. The preview session
+ID is also signed into the object's private metadata and object-key prefix so an
+upload target cannot be reused across sessions.
+
+Confirm that default bucket encryption is enabled before deploying the API:
+
+```sh
+aws --endpoint-url "$BLAME_WORKSPACE_S3_ENDPOINT" s3api get-bucket-encryption \
+  --bucket "$BLAME_WORKSPACE_S3_BUCKET"
+```
+
+The returned default `SSEAlgorithm` must be `AES256`.
+
+Apply the dedicated CORS policy before enabling previews:
+
+```sh
+aws --endpoint-url "$BLAME_WORKSPACE_S3_ENDPOINT" s3api put-bucket-cors \
+  --bucket "$BLAME_WORKSPACE_S3_BUCKET" \
+  --cors-configuration "file://$PWD/deploy/operations/preview-runtime/ovh-s3-cors.json"
+```
+
+The API and sandbox receive only short-lived, object-specific signed URLs. S3
+credentials remain in the API secret manager and never enter Electron, Preview
+Edge, the runner image, or a sandbox.
 
 `BLAME_SANDBOX_DEPLOYMENT_ID` must be a stable, environment-specific identifier.
 The provider sweeper only deletes `blame-` sandboxes carrying the matching

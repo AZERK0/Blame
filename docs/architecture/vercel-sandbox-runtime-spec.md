@@ -1100,7 +1100,7 @@ Construire un artefact reproductible :
 
 Chaque URL signée est courte, à usage unique, limitée à un objet et une opération, avec taille et hash imposés. Aucun credential du bucket n’entre dans la sandbox.
 
-Les artefacts sont chiffrés en transit et au repos avec une clé ou enveloppe scoped à la session, et suivent une rétention courte réconciliée par le reaper.
+Les artefacts utilisent un bucket privé dédié, distinct des pièces jointes de conversation. Sur OVH Object Storage, chaque écriture impose SSE-OMK (`AES256`) et la finalisation refuse un objet dont `HeadObject` ne confirme pas ce chiffrement. Le scope de session est signé dans les métadonnées privées et dans la clé objet ; OVH gère une clé propre au bucket et dérive une clé distincte par objet. Les artefacts suivent une rétention courte réconciliée par le reaper.
 
 Ne pas transférer par défaut :
 

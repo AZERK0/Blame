@@ -1,11 +1,12 @@
 import env from '#start/env'
+import {
+  workspaceArtifactsReady,
+  workspaceArtifactTransferHosts,
+} from '#config/workspace_artifacts'
 
 export type PreviewRuntimeConfig = ReturnType<typeof previewRuntimeConfig>
 
 export function previewRuntimeConfig() {
-  const attachmentEndpoint = env.get('ATTACHMENTS_S3_ENDPOINT')
-  const attachmentBucket = env.get('ATTACHMENTS_S3_BUCKET')
-  const attachmentForcePathStyle = env.get('ATTACHMENTS_S3_FORCE_PATH_STYLE') ?? false
   return {
     enabled: env.get('BLAME_CLOUD_RUNTIME_ENABLED') ?? false,
     maxActivePerUser: positiveInteger(env.get('BLAME_PREVIEW_MAX_ACTIVE_PER_USER'), 2),
@@ -29,13 +30,8 @@ export function previewRuntimeConfig() {
     ticketTtlSeconds: positiveInteger(env.get('BLAME_PREVIEW_TICKET_TTL_SECONDS'), 60),
     capabilityPublicKey: normalizePem(env.get('BLAME_PREVIEW_CAPABILITY_PUBLIC_KEY')),
     capabilityPrivateKey: normalizePem(env.get('BLAME_PREVIEW_CAPABILITY_PRIVATE_KEY')?.release()),
-    workspaceEncryptionReady:
-      env.get('ATTACHMENTS_STORAGE_DRIVER') === 'memory' ||
-      (Boolean(env.get('ATTACHMENTS_S3_KMS_KEY_ID')?.trim()) && secureUrl(attachmentEndpoint)),
-    artifactTransferHosts: [
-      ...objectStorageHosts(attachmentEndpoint, attachmentBucket, attachmentForcePathStyle),
-      ...urlHosts([env.get('APP_URL')]),
-    ],
+    workspaceEncryptionReady: workspaceArtifactsReady(),
+    artifactTransferHosts: [...workspaceArtifactTransferHosts(), ...urlHosts([env.get('APP_URL')])],
     sandbox: {
       image: env.get('BLAME_SANDBOX_RUNNER_IMAGE'),
       bootstrapUrl: env.get('BLAME_SANDBOX_BOOTSTRAP_URL'),
@@ -78,33 +74,6 @@ function urlHosts(values: Array<string | undefined>) {
       return []
     }
   })
-}
-
-function objectStorageHosts(
-  endpoint: string | undefined,
-  bucket: string | undefined,
-  forcePathStyle: boolean
-) {
-  try {
-    if (!endpoint) return []
-    const host = new URL(endpoint).hostname
-    const virtualHost =
-      !forcePathStyle && bucket && /^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/.test(bucket)
-        ? `${bucket}.${host}`
-        : undefined
-    return [...new Set([host, virtualHost].filter((value): value is string => Boolean(value)))]
-  } catch {
-    return []
-  }
-}
-
-function secureUrl(value: string | undefined) {
-  try {
-    const url = new URL(value ?? '')
-    return url.protocol === 'https:' && !url.username && !url.password && !url.hash
-  } catch {
-    return false
-  }
 }
 
 function secureOrigin(value: string) {

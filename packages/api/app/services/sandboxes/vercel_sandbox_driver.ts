@@ -568,7 +568,7 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
       return 'A stable sandbox deployment ID is required.'
     }
     if (!this.config.workspaceEncryptionReady) {
-      return 'Session-scoped KMS encryption is required for workspace artifacts.'
+      return 'Dedicated OVH SSE-OMK storage is required for workspace artifacts.'
     }
     if (image && !/@sha256:[a-f0-9]{64}$/i.test(image))
       return 'The runner image must be pinned by digest.'

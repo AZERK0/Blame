@@ -21,7 +21,6 @@ function s3Config() {
     bucket: stringValue('ATTACHMENTS_S3_BUCKET'),
     endpoint: stringValue('ATTACHMENTS_S3_ENDPOINT'),
     forcePathStyle: env.get('ATTACHMENTS_S3_FORCE_PATH_STYLE') ?? false,
-    kmsKeyId: env.get('ATTACHMENTS_S3_KMS_KEY_ID')?.trim() || undefined,
     region: stringValue('ATTACHMENTS_S3_REGION'),
     secretAccessKey: secretValue('ATTACHMENTS_S3_SECRET_ACCESS_KEY'),
   }

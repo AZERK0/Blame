@@ -1,4 +1,4 @@
-import { attachmentObjectStorage } from '#services/attachment_object_storage'
+import { workspaceArtifactObjectStorage } from '#services/workspace_artifacts/workspace_artifact_object_storage'
 import PreviewSession from '#models/preview_session'
 import PreviewWorkspaceArtifact from '#models/preview_workspace_artifact'
 import { validateSourceArtifact } from '#services/workspace_artifacts/source_artifact_validator'
@@ -38,7 +38,7 @@ export default class WorkspaceArtifactService {
     })
     artifact.objectKey = artifactObjectKey(input.sessionId, artifact.id, 'source')
     await artifact.save()
-    const upload = await attachmentObjectStorage().presignUpload(artifact.objectKey, {
+    const upload = await workspaceArtifactObjectStorage().presignUpload(artifact.objectKey, {
       checksumSha256: artifact.sha256,
       contentType: 'application/gzip',
       encryptionScope: input.sessionId,
@@ -51,7 +51,7 @@ export default class WorkspaceArtifactService {
     const artifact = await sourceArtifact(artifactId, ownerUserId)
     if (artifact.status === 'durable') return this.sourceArtifact(artifact)
     if (artifact.status !== 'uploading') throw new Error('Source artifact cannot be completed.')
-    const metadata = await attachmentObjectStorage().head(artifact.objectKey)
+    const metadata = await workspaceArtifactObjectStorage().head(artifact.objectKey)
     if (
       metadata.size !== artifact.size ||
       metadata.checksumSha256 !== artifact.sha256 ||
@@ -61,10 +61,13 @@ export default class WorkspaceArtifactService {
       throw new Error('Uploaded source artifact metadata does not match its declaration.')
     }
     try {
-      await validateSourceArtifact(await attachmentObjectStorage().content(artifact.objectKey), {
-        sha256: artifact.sha256,
-        size: artifact.size,
-      })
+      await validateSourceArtifact(
+        await workspaceArtifactObjectStorage().content(artifact.objectKey),
+        {
+          sha256: artifact.sha256,
+          size: artifact.size,
+        }
+      )
     } catch (error) {
       await markInvalid(artifact)
       throw error
@@ -116,7 +119,7 @@ export default class WorkspaceArtifactService {
       .firstOrFail()
     artifact.merge({ sha256, size })
     await artifact.save()
-    return attachmentObjectStorage().presignUpload(artifact.objectKey, {
+    return workspaceArtifactObjectStorage().presignUpload(artifact.objectKey, {
       checksumSha256: sha256,
       contentType: 'application/gzip',
       encryptionScope: artifact.sessionId,
@@ -129,7 +132,7 @@ export default class WorkspaceArtifactService {
       .where('id', receipt.artifactId)
       .where('kind', 'delta')
       .firstOrFail()
-    const metadata = await attachmentObjectStorage().head(artifact.objectKey)
+    const metadata = await workspaceArtifactObjectStorage().head(artifact.objectKey)
     if (
       metadata.size !== receipt.size ||
       metadata.checksumSha256 !== receipt.sha256 ||
@@ -167,7 +170,7 @@ export default class WorkspaceArtifactService {
       generation: artifact.generation,
       revision: artifact.sourceRevision,
       discardConfirmationId: discardConfirmationId(artifact.id),
-      url: await attachmentObjectStorage().presignDownload(
+      url: await workspaceArtifactObjectStorage().presignDownload(
         artifact.objectKey,
         `${artifact.id}.tar.gz`
       ),
@@ -200,7 +203,7 @@ export default class WorkspaceArtifactService {
       await artifact.save()
     }
     try {
-      await attachmentObjectStorage().delete(artifacts.map(({ objectKey }) => objectKey))
+      await workspaceArtifactObjectStorage().delete(artifacts.map(({ objectKey }) => objectKey))
       await PreviewWorkspaceArtifact.query().where('sessionId', sessionId).delete()
     } catch {
       // The reaper retries every expired object; lifecycle completion remains durable.
@@ -214,7 +217,7 @@ export default class WorkspaceArtifactService {
       .limit(limit)
     for (const artifact of artifacts) {
       try {
-        await attachmentObjectStorage().delete([artifact.objectKey])
+        await workspaceArtifactObjectStorage().delete([artifact.objectKey])
         await artifact.delete()
       } catch {}
     }
@@ -224,7 +227,7 @@ export default class WorkspaceArtifactService {
     return {
       id: artifact.id,
       revision: artifact.sourceRevision!,
-      downloadUrl: await attachmentObjectStorage().presignDownload(
+      downloadUrl: await workspaceArtifactObjectStorage().presignDownload(
         artifact.objectKey,
         `${artifact.id}.tar.gz`
       ),
@@ -268,7 +271,7 @@ function validateMetadata(sha256: string, size: number) {
 async function markInvalid(artifact: PreviewWorkspaceArtifact) {
   artifact.status = 'invalid'
   await artifact.save()
-  await attachmentObjectStorage().delete([artifact.objectKey])
+  await workspaceArtifactObjectStorage().delete([artifact.objectKey])
 }
 
 function pendingObjectKey(sessionId: string) {

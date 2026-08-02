@@ -1,6 +1,6 @@
 # Production attachment storage
 
-Use the private `blame-prod-attachments-gra` bucket in Gravelines. Keep it separate from the backup bucket because attachment retention follows message, project, and account deletion instead of the backup rotation policy.
+Use the private `blame-prod-attachments-gra` bucket in Gravelines. Keep it separate from both the backup bucket and `blame-prod-workspace-gra`: conversation attachments follow message, project, and account deletion, while managed preview workspaces have their own short retention and security policy.
 
 Configure the API with the `ATTACHMENTS_*` variables documented in `packages/api/.env.example`. The S3 credentials require permission to read, write, inspect, and delete objects only inside this bucket. Do not expose these credentials to the desktop application.
 
