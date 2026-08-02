@@ -4,6 +4,7 @@ import {
   CodeIcon,
   EllipsisIcon,
   ExternalLinkIcon,
+  FilePenLineIcon,
   Heading2Icon,
   InfoIcon,
   ItalicIcon,
@@ -15,7 +16,6 @@ import {
   PaperclipIcon,
   QuoteIcon,
   Redo2Icon,
-  SparklesIcon,
   StrikethroughIcon,
   Trash2Icon,
   Undo2Icon,
@@ -479,7 +479,7 @@ const MarkdownOptimizeButton = React.memo(function MarkdownOptimizeButton({
         <TooltipTrigger asChild>
           <Button
             type="button"
-            aria-label="Optimize with AI"
+            aria-label="Enhance with AI"
             className="absolute top-3 right-3 z-10 h-7 gap-1.5 rounded-lg border-primary/20 bg-gradient-to-r from-primary/90 to-sky-600 px-2.5 text-xs text-primary-foreground shadow-sm shadow-primary/15 hover:from-primary hover:to-sky-600/90"
             disabled={disabled}
             onClick={onOptimize}
@@ -487,13 +487,13 @@ const MarkdownOptimizeButton = React.memo(function MarkdownOptimizeButton({
             {optimizing ? (
               <LoaderCircleIcon className="size-3.5 animate-spin" />
             ) : (
-              <SparklesIcon className="size-3.5" />
+              <FilePenLineIcon className="size-3.5" />
             )}
-            Optimize with AI
+            Enhance with AI
           </Button>
         </TooltipTrigger>
         <TooltipContent sideOffset={6}>
-          Rewrite this user story into a clearer, structured prompt.
+          Transform this user story into a clearer, structured prompt.
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
@@ -594,7 +594,7 @@ function MarkdownWysiwygEditor({
 }: {
   activeSelection: MarkdownSelection | null
   className?: string
-  editorRef: React.RefObject<HTMLDivElement | null>
+  editorRef: React.RefCallback<HTMLDivElement>
   markdown: string
   onFileLinkClick?: (path: string) => void
   onInput: (event: React.FormEvent<HTMLDivElement>) => void
@@ -616,7 +616,7 @@ function MarkdownWysiwygEditor({
         ref={editorRef}
         aria-label={placeholder}
         className={cn(
-          "max-w-full min-w-0 space-y-2 overflow-x-hidden text-[0.9375rem] leading-6 outline-none",
+          "max-w-full min-w-0 space-y-2 overflow-x-hidden text-[0.9375rem] leading-6 [overflow-wrap:anywhere] outline-none",
           className
         )}
         contentEditable
@@ -679,7 +679,7 @@ function MarkdownWysiwygEditorLine({
     ? Math.floor(markdownLineIndent(line.prefix) / 2)
     : 0
   const className = cn(
-    "relative min-h-6 break-words whitespace-pre-wrap",
+    "relative min-h-6 whitespace-pre-wrap",
     line.kind === "heading-1" && "text-xl font-semibold",
     line.kind === "heading-2" && "text-lg font-semibold",
     line.kind.startsWith("heading-") &&
@@ -1035,7 +1035,7 @@ function restoreMarkdownEditorSelection(
   const browserSelection = window.getSelection()
   browserSelection?.removeAllRanges()
   browserSelection?.addRange(range)
-  editor.focus()
+  editor.focus({ preventScroll: true })
 }
 
 function setMarkdownRangeBoundary(
@@ -1148,7 +1148,7 @@ function MarkdownPreview({
   return (
     <div
       className={cn(
-        "max-w-full min-w-0 space-y-2 overflow-x-hidden text-[0.9375rem] leading-6 select-text",
+        "max-w-full min-w-0 space-y-2 overflow-x-hidden text-[0.9375rem] leading-6 [overflow-wrap:anywhere] select-text",
         className
       )}
     >
@@ -1553,6 +1553,7 @@ export const MarkdownEditor = React.forwardRef<
   const structureRenderPendingRef = React.useRef(false)
   const rootRef = React.useRef<HTMLDivElement>(null)
   const editorRef = React.useRef<HTMLDivElement>(null)
+  const editorScrollTopRef = React.useRef(0)
   const [draft, setDraft] = React.useState({
     external: markdown,
     value: markdown,
@@ -1564,6 +1565,16 @@ export const MarkdownEditor = React.forwardRef<
     React.useState(false)
   const [optimizeAttachmentsForAiContext, setOptimizeAttachmentsForAiContext] =
     React.useState(true)
+  const setEditorElement = React.useCallback(
+    (element: HTMLDivElement | null) => {
+      const currentEditor = editorRef.current
+      if (currentEditor && currentEditor !== element)
+        editorScrollTopRef.current = currentEditor.scrollTop
+      editorRef.current = element
+      if (element) element.scrollTop = editorScrollTopRef.current
+    },
+    []
+  )
   const value = readOnly
     ? markdown
     : draft.external === markdown
@@ -1631,9 +1642,11 @@ export const MarkdownEditor = React.forwardRef<
 
   React.useLayoutEffect(() => {
     const selection = pendingSelectionRef.current
-    if (selection === null || !editorRef.current) return
+    const editor = editorRef.current
+    if (selection === null || !editor) return
     pendingSelectionRef.current = null
-    restoreMarkdownEditorSelection(editorRef.current, selection)
+    restoreMarkdownEditorSelection(editor, selection)
+    editor.scrollTop = editorScrollTopRef.current
     lastSelectionRef.current = selection
     activeSegmentKeyRef.current = markdownActiveSegmentKey(
       currentValueRef.current,
@@ -2136,7 +2149,7 @@ export const MarkdownEditor = React.forwardRef<
               placeholder={placeholder}
             />
           ) : (
-            <div>
+            <div className="relative">
               {onOptimize && (
                 <MarkdownOptimizeButton
                   disabled={optimizing}
@@ -2146,7 +2159,7 @@ export const MarkdownEditor = React.forwardRef<
               )}
               <MarkdownWysiwygEditor
                 activeSelection={activeSelection}
-                editorRef={editorRef}
+                editorRef={setEditorElement}
                 className={cn(
                   minHeight,
                   maxHeight,

@@ -620,9 +620,6 @@ export function UserStoryDrawerPanel({
         </DrawerHeader>
         <TabsContent value="user-story" className="min-h-0 overflow-hidden">
           <DrawerBody
-            messageButtonClassName={
-              mode === "create" ? "bottom-32" : "bottom-72"
-            }
             resetKey={userStory?.id ?? mode}
             fixedSection={
               <UserStoryFixedSection
@@ -908,45 +905,68 @@ function DrawerBody({
   children,
   fixedSection,
   headerTabsVisible,
-  messageButtonClassName,
   resetKey,
   sidebarOpen,
 }: {
   children: React.ReactNode
   fixedSection?: React.ReactNode
   headerTabsVisible: boolean
-  messageButtonClassName: string
   resetKey: string
   sidebarOpen: boolean
 }) {
+  const fixedSectionRef = React.useRef<HTMLDivElement>(null)
+  const [fixedSectionHeight, setFixedSectionHeight] = React.useState(0)
+  const fixedSectionVisible = Boolean(fixedSection)
   const topPaddingClassName = headerTabsVisible ? "pt-36" : "pt-28"
   const contentClassName = sidebarOpen
     ? cn(
-        "mx-auto flex max-w-5xl flex-col gap-6 px-6 pb-28 lg:mx-0 lg:mr-[26rem]",
+        "mx-auto flex max-w-5xl flex-col gap-6 px-6 lg:mx-0 lg:mr-[26rem]",
         topPaddingClassName
       )
-    : cn("flex w-full flex-col gap-6 px-6 pb-28", topPaddingClassName)
+    : cn("flex w-full flex-col gap-6 px-6", topPaddingClassName)
   const fixedSectionClassName = sidebarOpen
     ? "pointer-events-none absolute right-0 bottom-0 left-0 z-20 lg:right-[26rem]"
     : "pointer-events-none absolute right-0 bottom-0 left-0 z-20"
   const fixedSectionContentClassName = "w-full px-6"
+  const bottomInset = Math.max(fixedSectionHeight, 24)
+
+  React.useLayoutEffect(() => {
+    const section = fixedSectionRef.current
+    if (!section || !fixedSectionVisible) return
+
+    const updateHeight = () => {
+      const nextHeight = Math.ceil(section.getBoundingClientRect().height)
+      setFixedSectionHeight((currentHeight) =>
+        currentHeight === nextHeight ? currentHeight : nextHeight
+      )
+    }
+    updateHeight()
+    const observer = new ResizeObserver(updateHeight)
+    observer.observe(section)
+    return () => observer.disconnect()
+  }, [fixedSectionVisible])
 
   return (
     <div className="relative h-full min-h-0 overflow-hidden">
       <MessageScrollerProvider key={resetKey}>
         <MessageScroller className="h-full">
           <MessageScrollerViewport aria-label="User story details">
-            <MessageScrollerContent className={contentClassName} role="group">
+            <MessageScrollerContent
+              className={contentClassName}
+              role="group"
+              style={{ paddingBottom: bottomInset }}
+            >
               {children}
             </MessageScrollerContent>
           </MessageScrollerViewport>
           <MessageScrollerButton
-            className={cn("right-6 z-30", messageButtonClassName)}
+            className="right-6 z-30"
+            style={{ bottom: bottomInset + 16 }}
           />
         </MessageScroller>
       </MessageScrollerProvider>
       {fixedSection ? (
-        <div className={fixedSectionClassName}>
+        <div ref={fixedSectionRef} className={fixedSectionClassName}>
           <div className={fixedSectionContentClassName}>{fixedSection}</div>
         </div>
       ) : null}

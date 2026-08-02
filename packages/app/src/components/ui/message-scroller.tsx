@@ -142,7 +142,13 @@ function MessageScrollerContent({
   )
 }
 
-function MessageScrollerButton({ className }: { className?: string }) {
+function MessageScrollerButton({
+  className,
+  style,
+}: {
+  className?: string
+  style?: React.CSSProperties
+}) {
   const { atBottom, scrollToLatest } = useMessageScroller()
 
   return (
@@ -156,6 +162,7 @@ function MessageScrollerButton({ className }: { className?: string }) {
       inert={atBottom ? true : undefined}
       onClick={scrollToLatest}
       size="icon-sm"
+      style={style}
       tabIndex={atBottom ? -1 : 0}
       type="button"
       variant="outline"

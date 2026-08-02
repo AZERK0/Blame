@@ -184,7 +184,6 @@ export const UserStoryContent = React.memo(function UserStoryContent({
           }
         />
       </div>
-      <div className={mode === "create" ? "h-8" : "h-16"} />
     </>
   )
 })
