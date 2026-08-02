@@ -296,6 +296,239 @@ export class PasskeySchema extends BaseModel {
   declare userId: string
 }
 
+export class PreviewAccessTicketSchema extends BaseModel {
+  static $columns = ['createdAt', 'endpointId', 'expiresAt', 'id', 'ownerUserId', 'sessionId', 'ticketHash', 'usedAt'] as const
+  $columns = PreviewAccessTicketSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare endpointId: string
+  @column.dateTime()
+  declare expiresAt: DateTime
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare ownerUserId: string
+  @column()
+  declare sessionId: string
+  @column()
+  declare ticketHash: string
+  @column.dateTime()
+  declare usedAt: DateTime | null
+}
+
+export class PreviewEndpointRouteSchema extends BaseModel {
+  static $columns = ['createdAt', 'endpointId', 'generation', 'id', 'logicalPort', 'publicHostname', 'revoked', 'serviceId', 'sessionId', 'updatedAt', 'upstreamUrlEncrypted'] as const
+  $columns = PreviewEndpointRouteSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare endpointId: string
+  @column()
+  declare generation: number
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare logicalPort: number
+  @column()
+  declare publicHostname: string
+  @column()
+  declare revoked: boolean
+  @column()
+  declare serviceId: string
+  @column()
+  declare sessionId: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+  @column()
+  declare upstreamUrlEncrypted: string
+}
+
+export class PreviewEventSchema extends BaseModel {
+  static $columns = ['createdAt', 'generation', 'id', 'message', 'sequence', 'serviceId', 'sessionId', 'state', 'stream', 'type'] as const
+  $columns = PreviewEventSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare generation: bigint | number
+  @column({ isPrimary: true })
+  declare id: bigint | number
+  @column()
+  declare message: string
+  @column()
+  declare sequence: number
+  @column()
+  declare serviceId: string | null
+  @column()
+  declare sessionId: string
+  @column()
+  declare state: string
+  @column()
+  declare stream: string | null
+  @column()
+  declare type: string
+}
+
+export class PreviewOperationSchema extends BaseModel {
+  static $columns = ['commandType', 'completedAt', 'createdAt', 'errorCode', 'id', 'operationId', 'resultRevision', 'sessionId', 'status'] as const
+  $columns = PreviewOperationSchema.$columns
+  @column()
+  declare commandType: string
+  @column.dateTime()
+  declare completedAt: DateTime | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare errorCode: string | null
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare operationId: string
+  @column()
+  declare resultRevision: number | null
+  @column()
+  declare sessionId: string
+  @column()
+  declare status: string
+}
+
+export class PreviewSessionSchema extends BaseModel {
+  static $columns = ['createdAt', 'desired', 'endpointMapEncrypted', 'failure', 'fencingToken', 'generation', 'id', 'idleDeadlineAt', 'imageDigest', 'lastAcknowledgedRemoteRevision', 'lastActivityAt', 'lastAppliedLocalRevision', 'lastExportedJournalRevision', 'leaseExpiresAt', 'ownerUserId', 'pendingDeltaArtifactId', 'plan', 'planHash', 'planVersion', 'profile', 'protocolVersion', 'providerHandleEncrypted', 'resourceMemoryGb', 'resourceVcpus', 'revision', 'runnerVersion', 'selection', 'sourceArtifactId', 'sourceRevision', 'state', 'stoppedAt', 'updatedAt', 'userStoryId'] as const
+  $columns = PreviewSessionSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare desired: string
+  @column()
+  declare endpointMapEncrypted: string | null
+  @column()
+  declare failure: string | null
+  @column()
+  declare fencingToken: bigint | number
+  @column()
+  declare generation: bigint | number
+  @column({ isPrimary: true })
+  declare id: string
+  @column.dateTime()
+  declare idleDeadlineAt: DateTime | null
+  @column()
+  declare imageDigest: string | null
+  @column()
+  declare lastAcknowledgedRemoteRevision: string | null
+  @column.dateTime()
+  declare lastActivityAt: DateTime
+  @column()
+  declare lastAppliedLocalRevision: string | null
+  @column()
+  declare lastExportedJournalRevision: string | null
+  @column.dateTime()
+  declare leaseExpiresAt: DateTime | null
+  @column()
+  declare ownerUserId: string
+  @column()
+  declare pendingDeltaArtifactId: string | null
+  @column()
+  declare plan: string
+  @column()
+  declare planHash: string
+  @column()
+  declare planVersion: number
+  @column()
+  declare profile: string
+  @column()
+  declare protocolVersion: number | null
+  @column()
+  declare providerHandleEncrypted: string | null
+  @column()
+  declare resourceMemoryGb: number
+  @column()
+  declare resourceVcpus: number
+  @column()
+  declare revision: number
+  @column()
+  declare runnerVersion: string | null
+  @column()
+  declare selection: string | null
+  @column()
+  declare sourceArtifactId: string | null
+  @column()
+  declare sourceRevision: string | null
+  @column()
+  declare state: string
+  @column.dateTime()
+  declare stoppedAt: DateTime | null
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+  @column()
+  declare userStoryId: string
+}
+
+export class PreviewUsageSampleSchema extends BaseModel {
+  static $columns = ['activeCpuSeconds', 'cumulativeEstimatedCostUsd', 'egressBytes', 'estimatedCostUsd', 'generation', 'id', 'ingressBytes', 'memoryGbSeconds', 'observedAt', 'sessionId', 'snapshotBytes'] as const
+  $columns = PreviewUsageSampleSchema.$columns
+  @column()
+  declare activeCpuSeconds: bigint | number
+  @column()
+  declare cumulativeEstimatedCostUsd: string
+  @column()
+  declare egressBytes: bigint | number
+  @column()
+  declare estimatedCostUsd: string
+  @column()
+  declare generation: number
+  @column({ isPrimary: true })
+  declare id: bigint | number
+  @column()
+  declare ingressBytes: bigint | number
+  @column()
+  declare memoryGbSeconds: bigint | number
+  @column.dateTime()
+  declare observedAt: DateTime
+  @column()
+  declare sessionId: string
+  @column()
+  declare snapshotBytes: bigint | number
+}
+
+export class PreviewWorkspaceArtifactSchema extends BaseModel {
+  static $columns = ['appliedAt', 'baseHash', 'createdAt', 'discardedAt', 'durableAt', 'expiresAt', 'finalHash', 'generation', 'id', 'kind', 'objectKey', 'sessionId', 'sha256', 'size', 'sourceRevision', 'status', 'updatedAt'] as const
+  $columns = PreviewWorkspaceArtifactSchema.$columns
+  @column.dateTime()
+  declare appliedAt: DateTime | null
+  @column()
+  declare baseHash: string | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column.dateTime()
+  declare discardedAt: DateTime | null
+  @column.dateTime()
+  declare durableAt: DateTime | null
+  @column.dateTime()
+  declare expiresAt: DateTime
+  @column()
+  declare finalHash: string | null
+  @column()
+  declare generation: number | null
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare kind: string
+  @column()
+  declare objectKey: string
+  @column()
+  declare sessionId: string
+  @column()
+  declare sha256: string
+  @column()
+  declare size: bigint | number
+  @column()
+  declare sourceRevision: string | null
+  @column()
+  declare status: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+}
+
 export class ProjectCodePracticeAnalysisSchema extends BaseModel {
   static $columns = ['agentModelId', 'agentProviderId', 'clineSessionId', 'createdAt', 'error', 'projectId', 'status', 'updatedAt', 'viewedAt'] as const
   $columns = ProjectCodePracticeAnalysisSchema.$columns

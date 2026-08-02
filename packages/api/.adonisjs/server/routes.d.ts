@@ -9,6 +9,15 @@ export type ScannedRoutes = {
     'consumer_contracts.withdraw': { paramsTuple?: []; params?: {} }
     'telemetry_ingestion.store': { paramsTuple: [ParamValue]; params: {'signal': ParamValue} }
     'telemetry_sessions.show': { paramsTuple?: []; params?: {} }
+    'preview_sessions.preview_sessions.store': { paramsTuple?: []; params?: {} }
+    'preview_sessions.preview_sessions.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'preview_sessions.preview_sessions.action': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'preview_sessions.preview_sessions.source_import': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'preview_sessions.preview_sessions.source_export': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'preview_sessions.preview_sessions.logs': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'preview_sessions.preview_sessions.events': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'preview_sessions.preview_sessions.access_ticket': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'preview_sessions.preview_sessions.bridge_grant': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'billing.billing.show': { paramsTuple?: []; params?: {} }
     'billing.billing.checkout': { paramsTuple?: []; params?: {} }
     'billing.billing.portal': { paramsTuple?: []; params?: {} }
@@ -73,9 +82,14 @@ export type ScannedRoutes = {
     'projects.user_stories.user_story_comments.store': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.user_stories.user_story_comments.undo': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'commentId': ParamValue} }
     'projects.user_stories.user_story_comments.validate_undo': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'commentId': ParamValue} }
+    'preview_edge_internal.resolve': { paramsTuple?: []; params?: {} }
+    'preview_edge_internal.consume_ticket': { paramsTuple?: []; params?: {} }
   }
   GET: {
     'telemetry_sessions.show': { paramsTuple?: []; params?: {} }
+    'preview_sessions.preview_sessions.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'preview_sessions.preview_sessions.logs': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'preview_sessions.preview_sessions.events': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'billing.billing.show': { paramsTuple?: []; params?: {} }
     'desktop_auth.complete': { paramsTuple?: []; params?: {} }
     'desktop_auth.passkey': { paramsTuple?: []; params?: {} }
@@ -102,6 +116,9 @@ export type ScannedRoutes = {
   }
   HEAD: {
     'telemetry_sessions.show': { paramsTuple?: []; params?: {} }
+    'preview_sessions.preview_sessions.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'preview_sessions.preview_sessions.logs': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'preview_sessions.preview_sessions.events': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'billing.billing.show': { paramsTuple?: []; params?: {} }
     'desktop_auth.complete': { paramsTuple?: []; params?: {} }
     'desktop_auth.passkey': { paramsTuple?: []; params?: {} }
@@ -131,6 +148,12 @@ export type ScannedRoutes = {
     'account_privacy.status': { paramsTuple?: []; params?: {} }
     'consumer_contracts.withdraw': { paramsTuple?: []; params?: {} }
     'telemetry_ingestion.store': { paramsTuple: [ParamValue]; params: {'signal': ParamValue} }
+    'preview_sessions.preview_sessions.store': { paramsTuple?: []; params?: {} }
+    'preview_sessions.preview_sessions.action': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'preview_sessions.preview_sessions.source_import': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'preview_sessions.preview_sessions.source_export': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'preview_sessions.preview_sessions.access_ticket': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'preview_sessions.preview_sessions.bridge_grant': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'billing.billing.checkout': { paramsTuple?: []; params?: {} }
     'billing.billing.portal': { paramsTuple?: []; params?: {} }
     'desktop_auth.exchange': { paramsTuple?: []; params?: {} }
@@ -163,6 +186,8 @@ export type ScannedRoutes = {
     'projects.user_stories.user_story_comments.store': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.user_stories.user_story_comments.undo': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'commentId': ParamValue} }
     'projects.user_stories.user_story_comments.validate_undo': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'commentId': ParamValue} }
+    'preview_edge_internal.resolve': { paramsTuple?: []; params?: {} }
+    'preview_edge_internal.consume_ticket': { paramsTuple?: []; params?: {} }
   }
   OPTIONS: {
     'auth.better': { paramsTuple: [...ParamValue[]]; params: {'*': ParamValue[]} }

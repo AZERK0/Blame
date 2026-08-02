@@ -15,6 +15,19 @@ export interface ApiDefinition {
   telemetrySessions: {
     show: typeof routes['telemetry_sessions.show']
   }
+  previewSessions: {
+    previewSessions: {
+      store: typeof routes['preview_sessions.preview_sessions.store']
+      show: typeof routes['preview_sessions.preview_sessions.show']
+      action: typeof routes['preview_sessions.preview_sessions.action']
+      sourceImport: typeof routes['preview_sessions.preview_sessions.source_import']
+      sourceExport: typeof routes['preview_sessions.preview_sessions.source_export']
+      logs: typeof routes['preview_sessions.preview_sessions.logs']
+      events: typeof routes['preview_sessions.preview_sessions.events']
+      accessTicket: typeof routes['preview_sessions.preview_sessions.access_ticket']
+      bridgeGrant: typeof routes['preview_sessions.preview_sessions.bridge_grant']
+    }
+  }
   billing: {
     billing: {
       show: typeof routes['billing.billing.show']
@@ -134,5 +147,9 @@ export interface ApiDefinition {
       complete: typeof routes['attachments.file_attachments.complete']
       show: typeof routes['attachments.file_attachments.show']
     }
+  }
+  previewEdgeInternal: {
+    resolve: typeof routes['preview_edge_internal.resolve']
+    consumeTicket: typeof routes['preview_edge_internal.consume_ticket']
   }
 }

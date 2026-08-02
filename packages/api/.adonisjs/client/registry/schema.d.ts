@@ -67,6 +67,114 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/telemetry_sessions_controller').default['show']>>>
     }
   }
+  'preview_sessions.preview_sessions.store': {
+    methods: ["POST"]
+    pattern: '/api/v1/preview-sessions'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/preview_sessions_controller').default['store']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/preview_sessions_controller').default['store']>>>
+    }
+  }
+  'preview_sessions.preview_sessions.show': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/preview-sessions/:id'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/preview_sessions_controller').default['show']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/preview_sessions_controller').default['show']>>>
+    }
+  }
+  'preview_sessions.preview_sessions.action': {
+    methods: ["POST"]
+    pattern: '/api/v1/preview-sessions/:id/actions'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/preview_sessions_controller').default['action']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/preview_sessions_controller').default['action']>>>
+    }
+  }
+  'preview_sessions.preview_sessions.source_import': {
+    methods: ["POST"]
+    pattern: '/api/v1/preview-sessions/:id/source/import'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/preview_sessions_controller').default['sourceImport']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/preview_sessions_controller').default['sourceImport']>>>
+    }
+  }
+  'preview_sessions.preview_sessions.source_export': {
+    methods: ["POST"]
+    pattern: '/api/v1/preview-sessions/:id/source/export'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/preview_sessions_controller').default['sourceExport']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/preview_sessions_controller').default['sourceExport']>>>
+    }
+  }
+  'preview_sessions.preview_sessions.logs': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/preview-sessions/:id/logs'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/preview_sessions_controller').default['logs']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/preview_sessions_controller').default['logs']>>>
+    }
+  }
+  'preview_sessions.preview_sessions.events': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/preview-sessions/:id/events'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/preview_sessions_controller').default['events']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/preview_sessions_controller').default['events']>>>
+    }
+  }
+  'preview_sessions.preview_sessions.access_ticket': {
+    methods: ["POST"]
+    pattern: '/api/v1/preview-sessions/:id/access-ticket'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/preview_sessions_controller').default['accessTicket']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/preview_sessions_controller').default['accessTicket']>>>
+    }
+  }
+  'preview_sessions.preview_sessions.bridge_grant': {
+    methods: ["POST"]
+    pattern: '/api/v1/preview-sessions/:id/bridge-grant'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/preview_sessions_controller').default['bridgeGrant']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/preview_sessions_controller').default['bridgeGrant']>>>
+    }
+  }
   'billing.billing.show': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/billing'
@@ -833,6 +941,30 @@ export interface Registry {
       query: ExtractQuery<InferInput<(typeof import('#validators/user_story_comment').undoUserStoryCommentValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/user_story_comments_controller').default['validateUndo']>>>
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/user_story_comments_controller').default['validateUndo']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'preview_edge_internal.resolve': {
+    methods: ["POST"]
+    pattern: '/internal/preview-edge/resolve'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/preview_edge_internal_controller').default['resolve']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/preview_edge_internal_controller').default['resolve']>>>
+    }
+  }
+  'preview_edge_internal.consume_ticket': {
+    methods: ["POST"]
+    pattern: '/internal/preview-edge/consume-ticket'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/preview_edge_internal_controller').default['consumeTicket']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/preview_edge_internal_controller').default['consumeTicket']>>>
     }
   }
 }

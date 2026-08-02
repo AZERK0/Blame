@@ -36,6 +36,60 @@ const routes = {
     tokens: [{"old":"/api/v1/telemetry/session","type":0,"val":"api","end":""},{"old":"/api/v1/telemetry/session","type":0,"val":"v1","end":""},{"old":"/api/v1/telemetry/session","type":0,"val":"telemetry","end":""},{"old":"/api/v1/telemetry/session","type":0,"val":"session","end":""}],
     types: placeholder as Registry['telemetry_sessions.show']['types'],
   },
+  'preview_sessions.preview_sessions.store': {
+    methods: ["POST"],
+    pattern: '/api/v1/preview-sessions',
+    tokens: [{"old":"/api/v1/preview-sessions","type":0,"val":"api","end":""},{"old":"/api/v1/preview-sessions","type":0,"val":"v1","end":""},{"old":"/api/v1/preview-sessions","type":0,"val":"preview-sessions","end":""}],
+    types: placeholder as Registry['preview_sessions.preview_sessions.store']['types'],
+  },
+  'preview_sessions.preview_sessions.show': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/preview-sessions/:id',
+    tokens: [{"old":"/api/v1/preview-sessions/:id","type":0,"val":"api","end":""},{"old":"/api/v1/preview-sessions/:id","type":0,"val":"v1","end":""},{"old":"/api/v1/preview-sessions/:id","type":0,"val":"preview-sessions","end":""},{"old":"/api/v1/preview-sessions/:id","type":1,"val":"id","end":""}],
+    types: placeholder as Registry['preview_sessions.preview_sessions.show']['types'],
+  },
+  'preview_sessions.preview_sessions.action': {
+    methods: ["POST"],
+    pattern: '/api/v1/preview-sessions/:id/actions',
+    tokens: [{"old":"/api/v1/preview-sessions/:id/actions","type":0,"val":"api","end":""},{"old":"/api/v1/preview-sessions/:id/actions","type":0,"val":"v1","end":""},{"old":"/api/v1/preview-sessions/:id/actions","type":0,"val":"preview-sessions","end":""},{"old":"/api/v1/preview-sessions/:id/actions","type":1,"val":"id","end":""},{"old":"/api/v1/preview-sessions/:id/actions","type":0,"val":"actions","end":""}],
+    types: placeholder as Registry['preview_sessions.preview_sessions.action']['types'],
+  },
+  'preview_sessions.preview_sessions.source_import': {
+    methods: ["POST"],
+    pattern: '/api/v1/preview-sessions/:id/source/import',
+    tokens: [{"old":"/api/v1/preview-sessions/:id/source/import","type":0,"val":"api","end":""},{"old":"/api/v1/preview-sessions/:id/source/import","type":0,"val":"v1","end":""},{"old":"/api/v1/preview-sessions/:id/source/import","type":0,"val":"preview-sessions","end":""},{"old":"/api/v1/preview-sessions/:id/source/import","type":1,"val":"id","end":""},{"old":"/api/v1/preview-sessions/:id/source/import","type":0,"val":"source","end":""},{"old":"/api/v1/preview-sessions/:id/source/import","type":0,"val":"import","end":""}],
+    types: placeholder as Registry['preview_sessions.preview_sessions.source_import']['types'],
+  },
+  'preview_sessions.preview_sessions.source_export': {
+    methods: ["POST"],
+    pattern: '/api/v1/preview-sessions/:id/source/export',
+    tokens: [{"old":"/api/v1/preview-sessions/:id/source/export","type":0,"val":"api","end":""},{"old":"/api/v1/preview-sessions/:id/source/export","type":0,"val":"v1","end":""},{"old":"/api/v1/preview-sessions/:id/source/export","type":0,"val":"preview-sessions","end":""},{"old":"/api/v1/preview-sessions/:id/source/export","type":1,"val":"id","end":""},{"old":"/api/v1/preview-sessions/:id/source/export","type":0,"val":"source","end":""},{"old":"/api/v1/preview-sessions/:id/source/export","type":0,"val":"export","end":""}],
+    types: placeholder as Registry['preview_sessions.preview_sessions.source_export']['types'],
+  },
+  'preview_sessions.preview_sessions.logs': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/preview-sessions/:id/logs',
+    tokens: [{"old":"/api/v1/preview-sessions/:id/logs","type":0,"val":"api","end":""},{"old":"/api/v1/preview-sessions/:id/logs","type":0,"val":"v1","end":""},{"old":"/api/v1/preview-sessions/:id/logs","type":0,"val":"preview-sessions","end":""},{"old":"/api/v1/preview-sessions/:id/logs","type":1,"val":"id","end":""},{"old":"/api/v1/preview-sessions/:id/logs","type":0,"val":"logs","end":""}],
+    types: placeholder as Registry['preview_sessions.preview_sessions.logs']['types'],
+  },
+  'preview_sessions.preview_sessions.events': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/preview-sessions/:id/events',
+    tokens: [{"old":"/api/v1/preview-sessions/:id/events","type":0,"val":"api","end":""},{"old":"/api/v1/preview-sessions/:id/events","type":0,"val":"v1","end":""},{"old":"/api/v1/preview-sessions/:id/events","type":0,"val":"preview-sessions","end":""},{"old":"/api/v1/preview-sessions/:id/events","type":1,"val":"id","end":""},{"old":"/api/v1/preview-sessions/:id/events","type":0,"val":"events","end":""}],
+    types: placeholder as Registry['preview_sessions.preview_sessions.events']['types'],
+  },
+  'preview_sessions.preview_sessions.access_ticket': {
+    methods: ["POST"],
+    pattern: '/api/v1/preview-sessions/:id/access-ticket',
+    tokens: [{"old":"/api/v1/preview-sessions/:id/access-ticket","type":0,"val":"api","end":""},{"old":"/api/v1/preview-sessions/:id/access-ticket","type":0,"val":"v1","end":""},{"old":"/api/v1/preview-sessions/:id/access-ticket","type":0,"val":"preview-sessions","end":""},{"old":"/api/v1/preview-sessions/:id/access-ticket","type":1,"val":"id","end":""},{"old":"/api/v1/preview-sessions/:id/access-ticket","type":0,"val":"access-ticket","end":""}],
+    types: placeholder as Registry['preview_sessions.preview_sessions.access_ticket']['types'],
+  },
+  'preview_sessions.preview_sessions.bridge_grant': {
+    methods: ["POST"],
+    pattern: '/api/v1/preview-sessions/:id/bridge-grant',
+    tokens: [{"old":"/api/v1/preview-sessions/:id/bridge-grant","type":0,"val":"api","end":""},{"old":"/api/v1/preview-sessions/:id/bridge-grant","type":0,"val":"v1","end":""},{"old":"/api/v1/preview-sessions/:id/bridge-grant","type":0,"val":"preview-sessions","end":""},{"old":"/api/v1/preview-sessions/:id/bridge-grant","type":1,"val":"id","end":""},{"old":"/api/v1/preview-sessions/:id/bridge-grant","type":0,"val":"bridge-grant","end":""}],
+    types: placeholder as Registry['preview_sessions.preview_sessions.bridge_grant']['types'],
+  },
   'billing.billing.show': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/billing',
@@ -419,6 +473,18 @@ const routes = {
     pattern: '/api/v1/projects/user-stories/:id/comments/:commentId/undo-validation',
     tokens: [{"old":"/api/v1/projects/user-stories/:id/comments/:commentId/undo-validation","type":0,"val":"api","end":""},{"old":"/api/v1/projects/user-stories/:id/comments/:commentId/undo-validation","type":0,"val":"v1","end":""},{"old":"/api/v1/projects/user-stories/:id/comments/:commentId/undo-validation","type":0,"val":"projects","end":""},{"old":"/api/v1/projects/user-stories/:id/comments/:commentId/undo-validation","type":0,"val":"user-stories","end":""},{"old":"/api/v1/projects/user-stories/:id/comments/:commentId/undo-validation","type":1,"val":"id","end":""},{"old":"/api/v1/projects/user-stories/:id/comments/:commentId/undo-validation","type":0,"val":"comments","end":""},{"old":"/api/v1/projects/user-stories/:id/comments/:commentId/undo-validation","type":1,"val":"commentId","end":""},{"old":"/api/v1/projects/user-stories/:id/comments/:commentId/undo-validation","type":0,"val":"undo-validation","end":""}],
     types: placeholder as Registry['projects.user_stories.user_story_comments.validate_undo']['types'],
+  },
+  'preview_edge_internal.resolve': {
+    methods: ["POST"],
+    pattern: '/internal/preview-edge/resolve',
+    tokens: [{"old":"/internal/preview-edge/resolve","type":0,"val":"internal","end":""},{"old":"/internal/preview-edge/resolve","type":0,"val":"preview-edge","end":""},{"old":"/internal/preview-edge/resolve","type":0,"val":"resolve","end":""}],
+    types: placeholder as Registry['preview_edge_internal.resolve']['types'],
+  },
+  'preview_edge_internal.consume_ticket': {
+    methods: ["POST"],
+    pattern: '/internal/preview-edge/consume-ticket',
+    tokens: [{"old":"/internal/preview-edge/consume-ticket","type":0,"val":"internal","end":""},{"old":"/internal/preview-edge/consume-ticket","type":0,"val":"preview-edge","end":""},{"old":"/internal/preview-edge/consume-ticket","type":0,"val":"consume-ticket","end":""}],
+    types: placeholder as Registry['preview_edge_internal.consume_ticket']['types'],
   },
 } as const satisfies Record<string, AdonisEndpoint>
 
