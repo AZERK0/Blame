@@ -17,7 +17,7 @@ export default class PreviewWorkspaceArtifact extends BaseModel {
   declare status: 'uploading' | 'durable' | 'applied' | 'discarded' | 'invalid'
   @column({ serializeAs: null })
   declare objectKey: string
-  @column()
+  @column({ columnName: 'sha256' })
   declare sha256: string
   @column()
   declare size: number
