@@ -1,5 +1,9 @@
 import UserStoriesService from '#services/user_stories_service'
 import PreviewSessionRepository from '#services/preview_sessions/preview_session_repository'
+import {
+  cumulativePeakDelta,
+  summarizeCumulativeUsage,
+} from '#services/preview_sessions/preview_usage_accounting'
 import PreviewDistributedLock from '#services/preview_sessions/preview_distributed_lock'
 import DatabasePreviewEventSink from '#services/preview_sessions/preview_event_sink'
 import PreviewQuotaService from '#services/preview_sessions/preview_quota_service'
@@ -440,9 +444,10 @@ export default class PreviewSessionService {
     if (!handle || !session || !driver) return
     try {
       const usage = await driver.usage(handle)
-      const previous = await PreviewUsageSample.query()
+      const previousPeak = await PreviewUsageSample.query()
         .where('sessionId', sessionId)
-        .orderBy('observedAt', 'desc')
+        .where('generation', session.generation)
+        .orderBy('cumulative_estimated_cost_usd', 'desc')
         .first()
       await PreviewUsageSample.create({
         sessionId,
@@ -452,12 +457,9 @@ export default class PreviewSessionService {
         ingressBytes: Math.round(usage.ingressBytes),
         egressBytes: Math.round(usage.egressBytes),
         snapshotBytes: Math.round(usage.snapshotBytes),
-        estimatedCostUsd: Math.max(
-          0,
-          cumulativeCounterDelta(
-            usage.estimatedCostUsd,
-            Number(previous?.cumulativeEstimatedCostUsd ?? 0)
-          )
+        estimatedCostUsd: cumulativePeakDelta(
+          usage.estimatedCostUsd,
+          Number(previousPeak?.cumulativeEstimatedCostUsd ?? 0)
         ),
         cumulativeEstimatedCostUsd: usage.estimatedCostUsd,
         observedAt: DateTime.fromISO(usage.observedAt),
@@ -493,29 +495,19 @@ export default class PreviewSessionService {
     const samples = await PreviewUsageSample.query()
       .where('sessionId', sessionId)
       .orderBy('observedAt', 'asc')
-    let memoryGbSeconds = 0
-    let previousMemoryGbSeconds = 0
-    let estimatedCostUsd = 0
-    for (const sample of samples) {
-      memoryGbSeconds += cumulativeCounterDelta(
-        Number(sample.memoryGbSeconds),
-        previousMemoryGbSeconds
-      )
-      previousMemoryGbSeconds = Number(sample.memoryGbSeconds)
-      estimatedCostUsd += Number(sample.estimatedCostUsd)
-    }
+    const usage = summarizeCumulativeUsage(
+      samples.map((sample) => ({
+        generation: Number(sample.generation),
+        memoryGbSeconds: Number(sample.memoryGbSeconds),
+        cumulativeEstimatedCostUsd: Number(sample.cumulativeEstimatedCostUsd),
+      })),
+      memoryGb
+    )
     return {
-      activeSeconds: Math.round(memoryGbSeconds / Math.max(1, memoryGb)),
-      estimatedCostUsd,
+      ...usage,
       observedAt: samples.at(-1)?.observedAt.toUTC().toISO() ?? DateTime.utc().toISO()!,
     }
   }
-}
-
-function cumulativeCounterDelta(current: number, previous: number) {
-  if (!Number.isFinite(current) || current < 0) return 0
-  if (!Number.isFinite(previous) || previous < 0 || current < previous) return current
-  return current - previous
 }
 
 function remoteWritersActive(state: { engine: string; agent: string }) {
