@@ -12,7 +12,7 @@ ARG BLAME_RUNNER_VERSION=0.1.0
 ARG BLAME_RUNNER_IMAGE_DIGEST=sha256:development
 
 RUN dnf install -y \
-      ca-certificates findutils git gzip iproute procps-ng shadow-utils sudo tar util-linux wget xz \
+      ca-certificates findutils git gzip iproute iptables-nft nftables procps-ng shadow-utils sudo tar util-linux wget xz \
     && dnf clean all \
     && curl --fail --silent --show-error --location \
       "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz" \
