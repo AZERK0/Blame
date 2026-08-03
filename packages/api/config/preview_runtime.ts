@@ -44,7 +44,15 @@ export function previewRuntimeConfig() {
       deploymentId: env.get('BLAME_SANDBOX_DEPLOYMENT_ID'),
       egressAllowlist: csv(env.get('BLAME_SANDBOX_EGRESS_ALLOWLIST')).length
         ? csv(env.get('BLAME_SANDBOX_EGRESS_ALLOWLIST'))
-        : ['registry.npmjs.org', '*.npmjs.org', 'github.com', '*.githubusercontent.com'],
+        : [
+            'registry.npmjs.org',
+            '*.npmjs.org',
+            'github.com',
+            '*.githubusercontent.com',
+            'auth.docker.io',
+            'registry-1.docker.io',
+            'production.cloudfront.docker.com',
+          ],
       accessToken: env.get('VERCEL_ACCESS_TOKEN')?.release(),
       projectId: env.get('VERCEL_PROJECT_ID'),
       teamId: env.get('VERCEL_TEAM_ID'),
