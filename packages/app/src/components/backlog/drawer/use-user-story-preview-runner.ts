@@ -209,6 +209,13 @@ function useCloudPreviewRuntime(input: {
           )
           setSession(active)
         }
+        if (action === "start" || action === "restart") {
+          active = await client.command({
+            sessionId: active.id,
+            command: { type: "resume-host" },
+            operationId: crypto.randomUUID(),
+          })
+        }
         if (!active.sourceRevision) {
           active = (
             await client.syncIn({
