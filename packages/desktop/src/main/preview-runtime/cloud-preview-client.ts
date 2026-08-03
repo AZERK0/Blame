@@ -113,7 +113,12 @@ export class CloudPreviewClient implements PreviewSessionBackend<CloudManagedPre
   ) {
     return this.request<UploadTarget>(`/preview-sessions/${encoded(sessionId)}/source/import`, {
       method: "POST",
-      body: { action: "prepare", ...artifact },
+      body: {
+        action: "prepare",
+        sha256: artifact.sha256,
+        size: artifact.size,
+        sourceRevision: artifact.sourceRevision,
+      },
     })
   }
 
