@@ -10,6 +10,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 const checksumMetadataHeader = 'x-amz-meta-checksum-sha256'
 const checksumHeader = 'x-amz-checksum-sha256'
 const encryptionHeader = 'x-amz-server-side-encryption'
+const encryptionScopeMetadataHeader = 'x-amz-meta-encryption-scope'
 
 export type StoredObjectMetadata = {
   checksumSha256: string
@@ -114,7 +115,12 @@ export class S3EncryptedObjectStorage implements BlameObjectStorage {
     const url = await getSignedUrl(this.client, command, {
       expiresIn: this.config.uploadUrlTtlSeconds,
       signableHeaders: new Set(['content-type']),
-      unhoistableHeaders: new Set([checksumHeader, checksumMetadataHeader, encryptionHeader]),
+      unhoistableHeaders: new Set([
+        checksumHeader,
+        checksumMetadataHeader,
+        encryptionHeader,
+        encryptionScopeMetadataHeader,
+      ]),
     })
     return {
       expiresAt: expiresAt(this.config.uploadUrlTtlSeconds),
@@ -213,6 +219,9 @@ function uploadHeaders(metadata: StoredObjectMetadata) {
     [checksumHeader]: encodedChecksum(metadata.checksumSha256),
     [checksumMetadataHeader]: metadata.checksumSha256,
     [encryptionHeader]: 'AES256',
+    ...(metadata.encryptionScope
+      ? { [encryptionScopeMetadataHeader]: metadata.encryptionScope }
+      : {}),
   }
 }
 

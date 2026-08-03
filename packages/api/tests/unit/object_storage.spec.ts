@@ -29,6 +29,7 @@ test.group('object storage', () => {
 
     assert.equal(upload.headers['x-amz-server-side-encryption'], 'AES256')
     assert.equal(upload.headers['x-amz-meta-checksum-sha256'], checksumSha256)
+    assert.equal(upload.headers['x-amz-meta-encryption-scope'], 'session')
     assert.equal(upload.headers['Content-Type'], 'application/gzip')
     assert.equal(new URL(upload.url).hostname, 'blame-prod-workspace-gra.s3.gra.io.cloud.ovh.net')
   })
