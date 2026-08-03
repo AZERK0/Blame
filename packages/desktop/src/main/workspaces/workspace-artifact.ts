@@ -1,15 +1,15 @@
 import { execFile } from "node:child_process"
 import { createHash } from "node:crypto"
 import { createReadStream } from "node:fs"
-import { lstat, mkdtemp, readFile, readlink, rm } from "node:fs/promises"
+import { lstat, mkdir, mkdtemp, readFile, readlink, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
-import { join } from "node:path"
+import { dirname, join } from "node:path"
 import { Transform } from "node:stream"
 import { promisify } from "node:util"
 import { createGzip } from "node:zlib"
 import { pack } from "tar-stream"
 import { pipeline } from "node:stream/promises"
-import { snapshotWorkspace } from "./workspace-snapshot.ts"
+import { forbiddenWorkspacePath, snapshotWorkspace } from "./workspace-snapshot.ts"
 
 const execFileAsync = promisify(execFile)
 const archiveTimestamp = new Date(0)
@@ -33,7 +33,7 @@ export async function buildWorkspaceArtifact(
     await assertPortableRepository(root)
     const snapshot = await snapshotWorkspace(root)
     const bundlePath = join(temporary, "repository.bundle")
-    await git(root, ["bundle", "create", bundlePath, "HEAD"])
+    await createSanitizedBundle(root, temporary, bundlePath)
     const archive = pack()
     const chunks: Buffer[] = []
     const gzip = createGzip({ level: 6 })
@@ -134,18 +134,81 @@ async function appendDiskFile(
 async function assertPortableRepository(root: string) {
   const submodules = await git(root, ["ls-files", "--stage", "--", ".gitmodules"])
   if (submodules) throw new Error("Cloud preview does not support Git submodules yet")
-  const forbiddenHistory = await git(root, [
-    "log", "--all", "--format=", "--name-only", "--", ".env", ".env.*", ".npmrc", ".ssh", ".docker/config.json",
-  ])
-  if (forbiddenHistory) throw new Error("Repository history contains credential-bearing paths that cannot be uploaded")
   const attributes = await readFile(join(root, ".gitattributes"), "utf8").catch(() => "")
   if (/filter\s*=\s*lfs/i.test(attributes)) throw new Error("Cloud preview does not support Git LFS yet")
 }
 
-async function git(root: string, args: string[]) {
+async function createSanitizedBundle(root: string, temporary: string, bundlePath: string) {
+  const repository = join(temporary, "repository")
+  await mkdir(repository, { recursive: true })
+  await git(repository, ["init", "--quiet", "--initial-branch=main"])
+  const entries = (await gitOutput(root, ["ls-tree", "-rz", "HEAD"])).split("\0").filter(Boolean)
+  for (const entry of entries) {
+    const separator = entry.indexOf("\t")
+    const [mode, type, hash] = entry.slice(0, separator).split(" ")
+    const path = entry.slice(separator + 1)
+    if (separator < 1 || !mode || !type || !hash || !path) {
+      throw new Error("Repository tree contains an invalid entry")
+    }
+    if (type === "commit") throw new Error("Cloud preview does not support Git submodules yet")
+    if (type !== "blob" || !["100644", "100755", "120000"].includes(mode)) {
+      throw new Error("Repository tree contains an unsupported entry")
+    }
+    if (forbiddenWorkspacePath(path)) continue
+    const content = await gitBuffer(root, ["cat-file", "blob", hash])
+    const destination = safeTemporaryPath(repository, path)
+    await mkdir(dirname(destination), { recursive: true })
+    await writeFile(destination, content, {
+      mode: mode === "100755" ? 0o755 : 0o600,
+    })
+    const importedHash = await git(repository, ["hash-object", "-w", "--", path])
+    if (importedHash !== hash) throw new Error("Repository object changed during sanitization")
+    await git(repository, ["update-index", "--add", "--cacheinfo", mode, hash, path])
+  }
+  const tree = await git(repository, ["write-tree"])
+  const identity = {
+    GIT_AUTHOR_NAME: "Blame",
+    GIT_AUTHOR_EMAIL: "preview@blame.local",
+    GIT_AUTHOR_DATE: "2000-01-01T00:00:00Z",
+    GIT_COMMITTER_NAME: "Blame",
+    GIT_COMMITTER_EMAIL: "preview@blame.local",
+    GIT_COMMITTER_DATE: "2000-01-01T00:00:00Z",
+  }
+  const commit = await git(
+    repository,
+    ["commit-tree", tree, "-m", "Blame managed preview snapshot"],
+    identity,
+  )
+  await git(repository, ["update-ref", "refs/heads/main", commit])
+  await git(repository, ["bundle", "create", bundlePath, "refs/heads/main"])
+}
+
+function safeTemporaryPath(root: string, path: string) {
+  const normalized = path.replaceAll("\\", "/")
+  const destination = join(root, normalized)
+  if (normalized !== path || !path || path.startsWith("/") || !destination.startsWith(`${root}/`)) {
+    throw new Error("Repository tree contains a non-portable path")
+  }
+  return destination
+}
+
+async function git(root: string, args: string[], environment?: Record<string, string>) {
+  return (await gitOutput(root, args, environment)).trim()
+}
+
+async function gitOutput(root: string, args: string[], environment?: Record<string, string>) {
   const { stdout } = await execFileAsync("git", ["-C", root, ...args], {
     encoding: "utf8",
+    env: { ...process.env, ...environment },
     maxBuffer: 64 * 1024 * 1024,
   })
-  return stdout.trim()
+  return stdout
+}
+
+async function gitBuffer(root: string, args: string[]) {
+  const { stdout } = await execFileAsync("git", ["-C", root, ...args], {
+    encoding: "buffer",
+    maxBuffer: maximumArtifactBytes,
+  })
+  return Buffer.from(stdout)
 }

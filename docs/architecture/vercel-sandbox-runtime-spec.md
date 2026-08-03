@@ -1130,6 +1130,8 @@ Ne pas transférer par défaut :
 - pointeur `.git` d’un worktree ;
 - fichiers hors workspace.
 
+Le bundle Git de transport ne doit pas embarquer l’historique complet sans filtrage : un ancien `.env`, même supprimé du `HEAD`, resterait récupérable dans les objets Git. En V1, le Desktop construit un commit de transport déterministe à partir du seul arbre `HEAD`, après exclusion des chemins interdits, puis applique l’état courant autorisé comme overlay. Le `sourceRevision` conserve séparément le commit local canonique pour la détection de concurrence.
+
 Les sous-modules, Git LFS, gros fichiers et dépôts sans remote doivent avoir des erreurs explicites ou une stratégie dédiée.
 
 En V1, le `HEAD`, les refs et l’index distants sont immuables. Le `.git` reconstruit est lisible pour `status` et `diff`, mais non modifiable par le projet. Commit, checkout, reset, rebase, merge et stage restent locaux. Une mutation détectée de l’état Git passe la session en conflit au lieu d’essayer de synchroniser un historique divergent.
