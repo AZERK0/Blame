@@ -238,7 +238,8 @@ function requiredSha256(value: unknown) {
   return sha256
 }
 
-function runtimeErrorResponse({ response }: HttpContext, error: unknown) {
+function runtimeErrorResponse(context: HttpContext, error: unknown) {
+  const { response } = context
   if (error instanceof InvalidPreviewRequestError) {
     return response.badRequest({
       failure: { code: 'INVALID_MANIFEST', message: error.message, retryable: false },
@@ -255,6 +256,7 @@ function runtimeErrorResponse({ response }: HttpContext, error: unknown) {
         },
       })
     }
+    context.logger.error({ err: error }, 'Unexpected preview runtime request failure')
     return response.internalServerError({
       failure: { code: 'INTERNAL', message: 'Preview runtime request failed.', retryable: true },
     })
