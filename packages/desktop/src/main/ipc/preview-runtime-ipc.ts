@@ -2,6 +2,7 @@ import { ipcMain, type BrowserWindow } from "electron"
 import type { PreviewSessionCommand } from "@blame/preview-runtime"
 import { isRuntimeProfileId } from "@blame/preview-runtime"
 import type { PreviewService } from "../preview-runtime/preview-service"
+import { isCloudPreviewSessionId } from "../preview-runtime/cloud-preview-client"
 
 export function registerPreviewRuntimeIpcHandlers(input: {
   mainWindow(): BrowserWindow | undefined
@@ -200,9 +201,8 @@ function optionalResourceSize(value: unknown) {
 }
 
 function requiredSessionId(value: unknown) {
-  const id = requiredString(value, "sessionId", 128)
-  if (!/^[a-zA-Z0-9-]+$/.test(id)) throw new Error("Preview session ID is invalid")
-  return id
+  if (!isCloudPreviewSessionId(value)) throw new Error("Preview session ID is invalid")
+  return value
 }
 
 function requiredIsoDate(value: unknown) {

@@ -220,8 +220,12 @@ function apiPath(value: string) {
 }
 
 function encoded(value: string) {
-  if (!/^[a-zA-Z0-9-]{1,128}$/.test(value)) throw new Error("Preview session ID is invalid")
+  if (!isCloudPreviewSessionId(value)) throw new Error("Preview session ID is invalid")
   return encodeURIComponent(value)
+}
+
+export function isCloudPreviewSessionId(value: unknown): value is string {
+  return typeof value === "string" && /^preview_[a-f0-9]{32}$/.test(value)
 }
 
 async function cloudError(response: Response) {

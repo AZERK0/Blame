@@ -1,6 +1,9 @@
 import assert from "node:assert/strict"
 import test from "node:test"
-import { CloudPreviewClient } from "./cloud-preview-client.ts"
+import {
+  CloudPreviewClient,
+  isCloudPreviewSessionId,
+} from "./cloud-preview-client.ts"
 
 test("restricts packaged cloud credentials to the official API", () => {
   assert.doesNotThrow(
@@ -36,4 +39,13 @@ test("allows loopback development APIs without allowing arbitrary hosts", () => 
       ),
     /invalid/,
   )
+})
+
+test("accepts only server-issued managed preview session IDs", () => {
+  assert.equal(
+    isCloudPreviewSessionId("preview_bbcb1626c004cdec3aad60175f1f0cae"),
+    true,
+  )
+  assert.equal(isCloudPreviewSessionId("preview/../../credentials"), false)
+  assert.equal(isCloudPreviewSessionId("preview-not-a-server-id"), false)
 })
