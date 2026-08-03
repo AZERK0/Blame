@@ -66,9 +66,6 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
     if (!platform.previewRuntime) return
     if (token) void platform.previewRuntime.configure({ url: apiUrl, token })
     else void platform.previewRuntime.disconnect()
-    return () => {
-      if (token) void platform.previewRuntime?.disconnect()
-    }
   }, [apiUrl, platform.previewRuntime, token])
 
   React.useEffect(() => {

@@ -45,6 +45,8 @@ type PreviewDevtoolsTargetInput = {
 
 const previews = new Map<string, PreviewBrowserRecord>();
 const previewLoadTimeoutMs = 30_000;
+const hiddenPreviewFrameRate = 1;
+const visiblePreviewFrameRate = 30;
 const previewDevtoolsPort =
   Number(process.env.BLAME_PREVIEW_DEVTOOLS_PORT) || 9222;
 const previewDevtoolsBrowserUrl = `http://127.0.0.1:${previewDevtoolsPort}`;
@@ -147,6 +149,7 @@ export async function createPreviewBrowser(
     throw new Error("Preview storage key is invalid");
   const id = randomUUID();
   const view = createPreviewBrowserView(input.storageKey);
+  view.webContents.setFrameRate(hiddenPreviewFrameRate);
   const bridge = input.previewSessionId && options.bridgeGrant
     ? new PreviewNetworkBridge(
         view.webContents.session,
@@ -205,6 +208,9 @@ export function setPreviewBrowserBounds(input: {
   record.visible = visible;
   record.view.setBounds(bounds);
   record.view.setVisible(visible);
+  record.view.webContents.setFrameRate(
+    visible ? visiblePreviewFrameRate : hiddenPreviewFrameRate,
+  );
   record.view.webContents.setAudioMuted(!visible);
   syncPreviewDevtoolsTargets(record, previewBrowserState(record));
   return true;

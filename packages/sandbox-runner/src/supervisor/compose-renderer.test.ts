@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { parse } from "yaml";
 import type { PreviewExecutionPlan } from "@blame/preview-runtime";
-import { renderCloudCompose } from "./compose-renderer.js";
+import { composeCacheVolumeName, renderCloudCompose } from "./compose-renderer.js";
 
 test("renders hardened Compose with a shared application loopback", async () => {
   const directory = await mkdtemp(join(tmpdir(), "blame-compose-"));
@@ -21,12 +21,27 @@ test("renders hardened Compose with a shared application loopback", async () => 
   assert.deepEqual(compose.services.frontend.cap_drop, ["ALL"]);
   assert.deepEqual(compose.services.backend.security_opt, ["no-new-privileges:true"]);
   assert.equal(compose.services.frontend.user, "1234:1234");
+  assert.equal(
+    (compose.services.frontend.environment as Record<string, string>).HOME,
+    "/tmp/blame-home",
+  );
+  assert.equal(
+    (compose.services.frontend.environment as Record<string, string>).XDG_CACHE_HOME,
+    "/tmp/blame-home/.cache",
+  );
   assert.ok((compose.services.frontend.volumes as string[]).includes("/workspace/.git:/workspace/.git:ro"));
   assert.equal(
     (compose.services.frontend.environment as Record<string, string>).API_URL,
     "http://localhost:3333",
   );
   assert.equal(rendered.targets["backend:api"]?.host, "127.0.0.1");
+});
+
+test("uses the Compose project namespace for cache volumes", () => {
+  assert.equal(
+    composeCacheVolumeName("blame_corepack_cache"),
+    "blame-preview_cache-blame_corepack_cache",
+  );
 });
 
 function plan(): PreviewExecutionPlan {

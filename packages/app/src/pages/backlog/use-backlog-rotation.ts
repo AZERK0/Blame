@@ -601,6 +601,11 @@ export function useBacklogRotation(
               story.agentModelId,
               story.agentProviderId
             ),
+            workspaceMode:
+              story.workspaceMode ??
+              (runtimePreference.profile === "local-container"
+                ? "local-container"
+                : "cloud-mirror"),
             worktree: story.worktree,
           })
             .then((previewUrl) => persistRecoveredPreviewUrl(story, previewUrl))
@@ -612,6 +617,7 @@ export function useBacklogRotation(
       backlog.setupInitializingStoryIds,
       ensureProjectPreviewUrl,
       persistRecoveredPreviewUrl,
+      runtimePreference.profile,
     ]
   )
 

@@ -10,6 +10,7 @@ import { runnerError } from "../protocol/runner-server.js";
 
 const defaultProxyCertificate = "/etc/pki/ca-trust/source/anchors/vercel-proxy-ca.pem";
 const relayPortStart = 44_000;
+const runtimeHome = "/tmp/blame-home";
 
 export type ComposeRenderResult = {
   yaml: string;
@@ -52,7 +53,7 @@ export function renderCloudCompose(
         image: containerImage(task.source, task.id),
         command: ["/bin/sh", "-lc", task.command],
         working_dir: task.workingDir,
-        environment: task.environment,
+        environment: containerEnvironment(task.environment),
         volumes: workspaceAndCaches(plan, proxyCertificate),
         user: task.runAs === "root" ? "0:0" : projectUser,
         restart: "no",
@@ -135,7 +136,7 @@ function compiledEnvironment(
   browserBindingUrls: Record<string, string>,
   proxyCertificate: string,
 ) {
-  const environment = { ...service.environment };
+  const environment = containerEnvironment(service.environment);
   for (const binding of service.bindings) {
     const source = plan.services.find(({ id }) => id === binding.sourceServiceId);
     const endpoint = source?.endpoints.find(({ id }) => id === binding.sourceEndpointId);
@@ -151,6 +152,14 @@ function compiledEnvironment(
   }
   environment.NODE_EXTRA_CA_CERTS = proxyCertificate;
   return environment;
+}
+
+function containerEnvironment(environment: Record<string, string>): Record<string, string> {
+  return {
+    HOME: runtimeHome,
+    XDG_CACHE_HOME: `${runtimeHome}/.cache`,
+    ...environment,
+  };
 }
 
 function bindingValue(
@@ -246,6 +255,10 @@ function endpointKey(serviceId: string, endpointId: string) {
 
 function safeId(value: string) {
   return value.replace(/[^a-zA-Z0-9_.-]/g, "-");
+}
+
+export function composeCacheVolumeName(value: string) {
+  return `blame-preview_cache-${safeId(value)}`;
 }
 
 function defaultPort(protocol: string) {

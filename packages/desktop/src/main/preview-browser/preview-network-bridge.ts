@@ -52,7 +52,15 @@ export class PreviewNetworkBridge {
     })
     this.port = (this.server.address() as AddressInfo).port
     this.installRequestGuards()
-    await this.partition.setProxy({ pacScript: pacDataUrl(this.port) })
+    await this.partition.setProxy({
+      mode: "fixed_servers",
+      // Chromium cannot subtract its implicit loopback bypass while using a
+      // PAC file. A manual HTTP proxy plus the subtractive rule is therefore
+      // required to retain the logical localhost origin. HTTPS remains direct;
+      // V1 only guarantees HTTP/WS logical preview origins.
+      proxyRules: `http=127.0.0.1:${this.port};https=direct://`,
+      proxyBypassRules: "<-loopback>",
+    })
     await this.partition.forceReloadProxyConfig()
     const resolved = await this.partition.resolveProxy("http://localhost:65534/__blame_probe")
     if (!resolved.includes(`127.0.0.1:${this.port}`)) {
@@ -93,12 +101,17 @@ export class PreviewNetworkBridge {
     this.partition.webRequest.onBeforeRequest(
       { urls: LOOPBACK_REQUEST_PATTERNS },
       (details, callback) => {
-        const initiator = "initiator" in details && typeof details.initiator === "string"
-          ? details.initiator
-          : undefined
-        const allowed = initiator
-          ? this.routes.isExpectedOrigin(initiator)
-          : details.resourceType === "mainFrame"
+        // Electron does not expose Chromium's `initiator` on this event. The
+        // requesting WebFrameMain URL is the authoritative source for normal
+        // subresources, with referrer covering workers and early navigations.
+        const requestOrigin =
+          details.frame?.url ||
+          details.referrer ||
+          details.webContents?.getURL()
+        const allowed = this.routes.isExpectedOrigin(details.url) && (
+          details.resourceType === "mainFrame" ||
+          this.routes.isExpectedOrigin(requestOrigin)
+        )
         callback({ cancel: !allowed })
       },
     )
@@ -224,9 +237,4 @@ function responseHeaders(source: IncomingHttpHeaders, rewriteLocation: (value: s
     if (name === "location" && typeof value === "string") return [[name, rewriteLocation(value)]]
     return [[name, value]]
   })) as Record<string, string | string[]>
-}
-
-function pacDataUrl(port: number) {
-  const script = `function FindProxyForURL(url, host) { var h=host.toLowerCase(); if (h==='localhost'||h==='127.0.0.1'||h==='[::1]'||h==='::1'||h==='0.0.0.0') return 'PROXY 127.0.0.1:${port}'; return 'DIRECT'; }`
-  return `data:application/x-ns-proxy-autoconfig;base64,${Buffer.from(script).toString("base64")}`
 }

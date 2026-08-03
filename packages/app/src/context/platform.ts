@@ -678,6 +678,7 @@ export type WorkspaceClient = {
     executionId: string
     storyId?: string
     telemetryCohorts?: ExecutionTelemetryCohorts
+    workspaceMode?: "local-container" | "cloud-mirror"
     worktree: string
   }): Promise<string | null>
   projectRuntimeHealthy?(input: { worktree: string }): Promise<boolean>

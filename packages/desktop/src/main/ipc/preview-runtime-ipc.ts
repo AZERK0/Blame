@@ -1,4 +1,4 @@
-import { ipcMain, type BrowserWindow } from "electron"
+import { BrowserWindow, ipcMain } from "electron"
 import type { PreviewSessionCommand } from "@blame/preview-runtime"
 import { isRuntimeProfileId } from "@blame/preview-runtime"
 import type { PreviewService } from "../preview-runtime/preview-service"
@@ -12,9 +12,19 @@ export function registerPreviewRuntimeIpcHandlers(input: {
   const owner = (event: Electron.IpcMainInvokeEvent) => {
     if (event.sender !== input.mainWindow()?.webContents) throw new Error("Preview request was rejected")
   }
+  const connectionOwner = (event: Electron.IpcMainInvokeEvent) => {
+    if (event.sender === input.mainWindow()?.webContents) return
+    const senderWindow = BrowserWindow.fromWebContents(event.sender)
+    if (!senderWindow || event.senderFrame !== event.sender.mainFrame) {
+      throw new Error("Preview request was rejected")
+    }
+  }
 
   ipcMain.handle("preview-runtime:configure", (event, value) => {
-    owner(event)
+    // Window presentation replaces the compact window with the workspace
+    // window. An in-flight, idempotent connection setup from that trusted
+    // outgoing top-level window may finish after the replacement starts.
+    connectionOwner(event)
     const body = record(value)
     input.service.configureCloud({
       token: requiredString(body.token, "token", 16_384),

@@ -138,7 +138,15 @@ export default class PreviewSessionService {
   async get(ownerUserId: string, sessionId: string) {
     const session = await this.orchestrator.get(sessionId)
     assertOwner(session.ownerUserId, ownerUserId)
-    return { ...session, usage: await this.usageSummary(sessionId, session.resourceSize.memoryGb) }
+    const leaseExpiresAt =
+      session.state.host === 'running' && session.desired.host === 'active'
+        ? await this.lease.renew(sessionId, ownerUserId)
+        : session.leaseExpiresAt
+    return {
+      ...session,
+      leaseExpiresAt,
+      usage: await this.usageSummary(sessionId, session.resourceSize.memoryGb),
+    }
   }
 
   async command(

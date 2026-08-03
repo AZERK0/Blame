@@ -1,12 +1,19 @@
 import { spawn } from "node:child_process";
-import { mkdir, open, readFile, writeFile } from "node:fs/promises";
+import { chown, mkdir, open, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
-import { renderCloudCompose, type ComposeRenderResult } from "./compose-renderer.js";
+import {
+  composeCacheVolumeName,
+  renderCloudCompose,
+  type ComposeRenderResult,
+} from "./compose-renderer.js";
 import { runtimePaths } from "../runtime-paths.js";
 import type { PreviewExecutionPlan, RuntimeSelection } from "@blame/preview-runtime";
 import { runnerError } from "../protocol/runner-server.js";
 
 const dockerSocket = "/run/blame/docker.sock";
+const dockerPidPath = "/run/blame/dockerd.pid";
+const dockerDataRoot = "/var/lib/blame/docker";
+const dockerVolumeRoot = `${dockerDataRoot}/volumes/`;
 const dockerEnvironment = { DOCKER_HOST: `unix://${dockerSocket}` };
 
 export class ComposeSupervisor {
@@ -23,6 +30,7 @@ export class ComposeSupervisor {
       flush: true,
     });
     await this.ensureDocker();
+    await this.prepareCaches(plan, identity);
     await this.runSetup(plan);
   }
 
@@ -101,14 +109,15 @@ export class ComposeSupervisor {
 
   private async ensureDocker() {
     if (await dockerReady()) return;
+    await resetStaleDocker();
     await mkdir(dirname(dockerSocket), { recursive: true, mode: 0o710 });
     const log = await open("/var/log/blame/dockerd.log", "a", 0o600);
     const child = spawn(
       "dockerd",
       [
         `--host=unix://${dockerSocket}`,
-        "--data-root=/var/lib/blame/docker",
-        "--pidfile=/run/blame/dockerd.pid",
+        `--data-root=${dockerDataRoot}`,
+        `--pidfile=${dockerPidPath}`,
         "--iptables=true",
         "--log-driver=local",
         "--log-opt=max-size=10m",
@@ -122,6 +131,28 @@ export class ComposeSupervisor {
       await delay(500);
     }
     throw runnerError("DOCKERD_NOT_READY", "Docker Engine did not become ready.");
+  }
+
+  private async prepareCaches(
+    plan: PreviewExecutionPlan,
+    identity: { uid: number; gid: number },
+  ) {
+    for (const cache of plan.caches) {
+      const volumeName = composeCacheVolumeName(cache.name);
+      await command("docker", ["volume", "create", volumeName]);
+      const inspected = await command("docker", [
+        "volume",
+        "inspect",
+        "--format",
+        "{{.Mountpoint}}",
+        volumeName,
+      ]);
+      const mountpoint = await realpath(inspected.stdout.trim());
+      if (!mountpoint.startsWith(dockerVolumeRoot) || !mountpoint.endsWith("/_data")) {
+        throw runnerError("INVALID_CACHE_VOLUME", "Docker returned an invalid cache volume path.");
+      }
+      await chown(mountpoint, identity.uid, identity.gid);
+    }
   }
 
   private async runSetup(plan: PreviewExecutionPlan) {
@@ -147,6 +178,16 @@ export class ComposeSupervisor {
       ]);
     }
   }
+}
+
+async function resetStaleDocker() {
+  await command("pkill", ["-TERM", "-x", "dockerd"], true);
+  await command("pkill", ["-TERM", "-x", "containerd"], true);
+  await delay(500);
+  await command("pkill", ["-KILL", "-x", "dockerd"], true);
+  await command("pkill", ["-KILL", "-x", "containerd"], true);
+  await rm(dockerSocket, { force: true });
+  await rm(dockerPidPath, { force: true });
 }
 
 function validateComposePlan(plan: PreviewExecutionPlan) {
@@ -188,7 +229,12 @@ async function command(executable: string, args: string[], allowFailure = false)
     child.once("exit", (code) => resolve({ exitCode: code ?? 1, stdout, stderr }));
   });
   if (!allowFailure && result.exitCode !== 0) {
-    throw runnerError("COMPOSE_COMMAND_FAILED", `Compose command failed: ${result.stderr.slice(0, 500)}`);
+    const detail = [result.stderr, result.stdout]
+      .map((value) => value.trim())
+      .filter(Boolean)
+      .join("\n")
+      .slice(0, 1_000);
+    throw runnerError("COMPOSE_COMMAND_FAILED", `Compose command failed: ${detail}`);
   }
   return result;
 }

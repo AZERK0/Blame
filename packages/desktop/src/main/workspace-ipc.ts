@@ -355,7 +355,9 @@ type ResolveProjectPreviewUrlInput = {
 };
 
 type EnsureProjectPreviewUrlInput = ExecutionContextInput &
-  ResolveProjectPreviewUrlInput;
+  ResolveProjectPreviewUrlInput & {
+    workspaceMode?: WorkspaceMode;
+  };
 
 type ComposeService = {
   command?: string | string[];
@@ -2944,6 +2946,7 @@ async function safeComposePreviewTarget(worktree: string, composePath: string) {
 }
 
 async function ensureProjectPreviewUrl(input: EnsureProjectPreviewUrlInput) {
+  if (input.workspaceMode === "cloud-mirror") return null;
   const worktree = resolveRuntimePath(input.worktree);
   if (removedWorktrees.has(worktree)) return null;
   if (removingWorktrees.has(worktree)) return null;

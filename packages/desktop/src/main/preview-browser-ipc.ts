@@ -12,7 +12,10 @@ import {
 } from "./preview-browser/preview-browser-manager"
 
 export { getPreviewDevtoolsTarget }
-export { destroyAllPreviewBrowsers, enablePreviewDevtools } from "./preview-browser/preview-browser-manager"
+export {
+  destroyAllPreviewBrowsers,
+  enablePreviewDevtools,
+} from "./preview-browser/preview-browser-manager"
 export type { PreviewDevtoolsTarget } from "./preview-browser/preview-browser-manager"
 
 export function registerPreviewBrowserIpcHandlers(options: {

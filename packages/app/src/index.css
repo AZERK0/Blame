@@ -510,7 +510,9 @@
 
   .user-story-state-effect[data-story-state="in-review"] {
     background: oklch(0.7 0.18 250 / 35%);
-    animation: user-story-review-breathing 2.8s ease-in-out infinite;
+    box-shadow:
+      0 0 0 1px oklch(0.75 0.16 245 / 45%),
+      0 0 8px oklch(0.67 0.2 250 / 32%);
   }
 
   [data-window-shell-bar] {
@@ -736,22 +738,6 @@
 
   to {
     transform: translateX(-50%);
-  }
-}
-
-@keyframes user-story-review-breathing {
-  0%,
-  100% {
-    box-shadow:
-      0 0 0 1px oklch(0.7 0.17 250 / 12%),
-      0 0 4px oklch(0.65 0.2 250 / 10%);
-  }
-
-  50% {
-    box-shadow:
-      0 0 0 2px oklch(0.8 0.16 240 / 70%),
-      0 0 8px oklch(0.7 0.21 245 / 70%),
-      0 0 13px oklch(0.62 0.22 255 / 55%);
   }
 }
 
