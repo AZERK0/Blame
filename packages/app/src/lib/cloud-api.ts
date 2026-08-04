@@ -835,14 +835,29 @@ function twoFactorRequired(value: unknown) {
 }
 
 async function responseMessage(response: Response) {
+  let body: unknown
   try {
-    const body = await response.json()
-    if (typeof body.error_description === "string")
-      return body.error_description
-    if (typeof body.message === "string") return body.message
-    if (typeof body.error === "string") return body.error
+    body = await response.json()
   } catch {
     return `Request failed with status ${response.status}`
   }
+  const message = errorResponseMessage(body)
+  if (message) return message
   return `Request failed with status ${response.status}`
+}
+
+function errorResponseMessage(value: unknown): string | undefined {
+  if (!isRecord(value)) return undefined
+  if (typeof value.error_description === "string")
+    return value.error_description
+  if (typeof value.message === "string") return value.message
+  if (typeof value.error === "string") return value.error
+  if (!Array.isArray(value.errors)) return undefined
+  for (const error of value.errors) {
+    if (typeof error === "string") return error
+    if (isRecord(error) && typeof error.message === "string") {
+      return error.message
+    }
+  }
+  return undefined
 }

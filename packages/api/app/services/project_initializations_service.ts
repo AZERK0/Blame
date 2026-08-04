@@ -158,7 +158,8 @@ function invalidRunConfigurationTopology(
   manifest: PreviewManifest | null | undefined
 ) {
   const services = configuration.services ?? []
-  if (configuration.category && (!services.length || !configuration.scopes?.length)) return true
+  if (requiresContainerServices(configuration.category) && !services.length) return true
+  if (configuration.category && !configuration.scopes?.length) return true
   if (configuration.category === 'web' && !configuration.previewService) return true
   if (configuration.category && configuration.category !== 'web' && configuration.previewService)
     return true
@@ -175,6 +176,12 @@ function invalidRunConfigurationTopology(
   }
   const preview = manifest.services.find(({ id }) => id === configuration.previewService)
   return Boolean(configuration.previewService && preview?.kind !== 'preview')
+}
+
+function requiresContainerServices(
+  category: NonNullable<CompleteInput['runConfigurations']>[number]['category']
+) {
+  return category === 'web' || category === 'service'
 }
 
 function invalidPreviewUrl(previewUrl: string | null | undefined) {

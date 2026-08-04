@@ -1,6 +1,6 @@
 import assert from "node:assert/strict"
 import test from "node:test"
-import { createCloudApi } from "./cloud-api.ts"
+import { CloudApiError, createCloudApi } from "./cloud-api.ts"
 
 const originalFetch = globalThis.fetch
 
@@ -219,6 +219,36 @@ test("polls device authorization until its one-time token is ready", async () =>
     accessToken: "raw-session-token",
     status: "authenticated",
   })
+})
+
+test("reports structured API validation errors", async () => {
+  globalThis.fetch = async () =>
+    jsonResponse(
+      {
+        errors: [
+          {
+            code: "E_RUN_CONFIGURATION_INVALID",
+            message: "Run configuration is invalid",
+          },
+        ],
+      },
+      { status: 422 }
+    )
+
+  await assert.rejects(
+    createCloudApi({
+      token: "session-token",
+      url: "https://api.blame.test",
+    }).completeProjectInitialization("project-id", {
+      dockerCompose: "services: {}",
+      runConfigurations: [],
+      setupScript: "pnpm install",
+    }),
+    (error: unknown) =>
+      error instanceof CloudApiError &&
+      error.status === 422 &&
+      error.message === "Run configuration is invalid"
+  )
 })
 
 function deviceAuthorizationResponse() {

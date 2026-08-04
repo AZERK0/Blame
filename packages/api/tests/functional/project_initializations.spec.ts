@@ -225,6 +225,78 @@ test.group('project initializations', (group) => {
 
     response.assertStatus(422)
   })
+
+  test('accepts host-only desktop run configurations without container services', async ({
+    client,
+    assert,
+  }) => {
+    const user = await createUser()
+    const project = await createProject(user.id, 'Alpha')
+    const response = await client
+      .post(`/api/v1/projects/${project.id}/initialization/complete`)
+      .loginAs(user)
+      .json({
+        previewManifest: previewManifest('high'),
+        setupScript: 'pnpm install',
+        dockerCompose: 'services:\n  web:\n    image: node',
+        runConfigurations: [
+          {
+            id: 'desktop-dev',
+            name: 'Desktop development',
+            command: 'pnpm dev',
+            cwd: '.',
+            default: true,
+            category: 'desktop',
+            services: [],
+            scopes: ['desktop', 'backend'],
+          },
+          {
+            id: 'web',
+            name: 'Web application',
+            command: 'pnpm dev:web',
+            cwd: '.',
+            default: false,
+            category: 'web',
+            services: ['web'],
+            previewService: 'web',
+            scopes: ['frontend'],
+          },
+        ],
+      })
+
+    response.assertStatus(200)
+    const body = response.body() as InitializationBody
+    assert.deepEqual(body.data.initialization?.runConfigurations[0]?.services, [])
+    assert.equal(body.data.initialization?.runConfigurations[0]?.category, 'desktop')
+  })
+
+  test('still rejects container run configurations without services', async ({ client }) => {
+    const user = await createUser()
+    const project = await createProject(user.id, 'Alpha')
+    const response = await client
+      .post(`/api/v1/projects/${project.id}/initialization/complete`)
+      .loginAs(user)
+      .json({
+        previewManifest: previewManifest('high'),
+        setupScript: 'pnpm install',
+        dockerCompose: 'services:\n  web:\n    image: node',
+        runConfigurations: [
+          {
+            id: 'web',
+            name: 'Web application',
+            command: 'pnpm dev',
+            cwd: '.',
+            default: true,
+            category: 'web',
+            services: [],
+            previewService: 'web',
+            scopes: ['frontend'],
+          },
+        ],
+      })
+
+    response.assertStatus(422)
+  })
 })
 
 function previewManifest(confidence: 'low' | 'medium' | 'high') {

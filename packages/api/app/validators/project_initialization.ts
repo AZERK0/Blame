@@ -11,11 +11,7 @@ const runConfiguration = vine.object({
   cwd: vine.string().trim().minLength(1).maxLength(500),
   default: vine.boolean(),
   category: vine.enum(['web', 'mobile', 'desktop', 'terminal', 'service', 'other']).optional(),
-  services: vine
-    .array(vine.string().trim().minLength(1).maxLength(80))
-    .minLength(1)
-    .maxLength(20)
-    .optional(),
+  services: vine.array(vine.string().trim().minLength(1).maxLength(80)).maxLength(20).optional(),
   previewService: vine.string().trim().minLength(1).maxLength(80).nullable().optional(),
   scopes: vine
     .array(vine.string().trim().minLength(1).maxLength(500))
