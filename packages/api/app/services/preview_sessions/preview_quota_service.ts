@@ -40,13 +40,17 @@ export default class PreviewQuotaService {
   async assertCanCreate(ownerUserId: string, requestedVcpus: number) {
     this.assertRuntimeEnabled(ownerUserId)
     const now = DateTime.utc()
+    // A provider handle is the durable signal that Vercel allocated a sandbox. Failed or
+    // unprovisioned records without one must not consume active-session or concurrent-vCPU quota.
     const [active, activeVcpus, createdMinute, createdToday, createdMonth] = await Promise.all([
       PreviewSession.query()
         .where('ownerUserId', ownerUserId)
+        .whereNotNull('providerHandleEncrypted')
         .whereRaw("JSON_UNQUOTE(JSON_EXTRACT(state, '$.host')) NOT IN ('destroyed', 'suspended')")
         .count('* as total'),
       PreviewSession.query()
         .where('ownerUserId', ownerUserId)
+        .whereNotNull('providerHandleEncrypted')
         .whereRaw("JSON_UNQUOTE(JSON_EXTRACT(state, '$.host')) NOT IN ('destroyed', 'suspended')")
         .sum('resource_vcpus as total'),
       PreviewSession.query()
@@ -87,7 +91,9 @@ export default class PreviewQuotaService {
         .whereIn('sessionId', PreviewSession.query().select('id').where('ownerUserId', ownerUserId))
         .where('observedAt', '>=', start)
         .sum('estimated_cost_usd as total'),
-      PreviewUsageSample.query().where('observedAt', '>=', start).sum('estimated_cost_usd as total'),
+      PreviewUsageSample.query()
+        .where('observedAt', '>=', start)
+        .sum('estimated_cost_usd as total'),
     ])
     if (numericAggregate(tenantUsage) >= this.config.monthlyBudgetUsd) {
       throw new PreviewRuntimeError({
