@@ -1,10 +1,16 @@
-import type { ProjectPreviewRuntimeState } from "@blame/agent-runtime"
+import type {
+  PreviewManifest,
+  ProjectPreviewRuntimeState,
+} from "@blame/agent-runtime"
 import type { PreviewSessionView } from "@blame/preview-runtime"
 import * as React from "react"
 import { toast } from "sonner"
 
 import type { ProjectRunnerPendingOperation } from "@/components/backlog/board/project-runner-types"
-import { managedEmbeddedPreviewUrl } from "@/components/backlog/drawer/managed-preview-url"
+import {
+  managedEmbeddedPreviewUrl,
+  primaryPreviewRoute,
+} from "@/components/backlog/drawer/managed-preview-url"
 import { usePlatform } from "@/context/platform"
 import {
   recordRuntimeSessionState,
@@ -177,26 +183,36 @@ function useCloudPreviewRuntime(input: {
         pendingOperation
       )
         return undefined
+      const configuration = input.localRuntime?.configurations.find(
+        ({ id }) => id === configurationId
+      )
+      if (!configuration) return undefined
       setPendingOperation({ action, configurationId })
       setError(undefined)
       try {
         let active = session
         let importedCurrentWorkspace = false
+        if (!active && action === "stop") return undefined
+        const manifestText =
+          action === "start" || action === "restart"
+            ? await input.platform.workspace?.readFile({
+                root: input.worktree,
+                path: ".blame/initialization/preview-manifest.json",
+              })
+            : undefined
+        if ((action === "start" || action === "restart") && !manifestText) {
+          throw new Error("Preview manifest is unavailable")
+        }
         if (!active) {
-          const manifestText = await input.platform.workspace?.readFile({
-            root: input.worktree,
-            path: ".blame/initialization/preview-manifest.json",
-          })
-          if (!manifestText) throw new Error("Preview manifest is unavailable")
           const operationId = await pendingCloudCreateOperation(
             input.userStoryId,
             profile,
-            manifestText
+            manifestText!
           )
           active = await client.create({
             userStoryId: input.userStoryId,
             profile,
-            previewManifest: JSON.parse(manifestText),
+            previewManifest: JSON.parse(manifestText!),
             cloudUploadConsentAt: input.preference.confirmedCloudUploadAt,
             operationId,
           })
@@ -249,9 +265,11 @@ function useCloudPreviewRuntime(input: {
             command: {
               type: "start-services",
               configurationId,
-              serviceIds: input.localRuntime?.configurations.find(
-                ({ id }) => id === configurationId
-              )?.services,
+              serviceIds: configuration.services,
+              primaryRoute: primaryPreviewRoute(
+                JSON.parse(manifestText!) as PreviewManifest,
+                configuration
+              ),
             },
             operationId: crypto.randomUUID(),
           })

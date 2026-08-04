@@ -32,7 +32,7 @@ import type { PreviewManifest } from '@blame/preview-contract'
 
 export type CreateManagedPreviewInput = {
   userStoryId: string
-  profile: Exclude<RuntimeProfileId, 'local-container'>
+  profile: 'vercel-compose'
   previewManifest: PreviewManifest
   cloudUploadConsentAt: string
   sourceRevision?: string
@@ -70,10 +70,7 @@ export default class PreviewSessionService {
     this.lease = dependencies.lease ?? new PreviewLeaseService()
     this.tickets = dependencies.tickets ?? new PreviewAccessTicketService()
     this.artifacts = new WorkspaceArtifactService()
-    const drivers = dependencies.drivers ?? [
-      new VercelSandboxDriver('vercel-compose'),
-      new VercelSandboxDriver('vercel-process'),
-    ]
+    const drivers = dependencies.drivers ?? [new VercelSandboxDriver()]
     this.drivers = new Map(drivers.map((driver) => [driver.profile, driver]))
     this.orchestrator = new PreviewOrchestrator(
       this.repository,
@@ -120,8 +117,7 @@ export default class PreviewSessionService {
         if (recovered.state.host === 'running') await this.lease.renew(sessionId, ownerUserId)
         return recovered
       }
-      const requestedVcpus =
-        input.resourceSize?.vcpus ?? (input.profile === 'vercel-process' ? 1 : 2)
+      const requestedVcpus = input.resourceSize?.vcpus ?? 2
       await this.quota.assertCanCreate(ownerUserId, requestedVcpus)
       const session = await this.orchestrator.create({
         id: sessionId,
@@ -190,7 +186,7 @@ export default class PreviewSessionService {
     return this.get(ownerUserId, sessionId)
   }
 
-  async issueAccessTicket(ownerUserId: string, sessionId: string, endpointId?: string) {
+  async issueAccessTicket(ownerUserId: string, sessionId: string, routeId?: string) {
     this.quota.assertRuntimeEnabled(ownerUserId)
     const session = await this.get(ownerUserId, sessionId)
     if (session.state.preview !== 'ready' || !session.endpointMap) {
@@ -200,8 +196,8 @@ export default class PreviewSessionService {
         retryable: true,
       })
     }
-    const selected = endpointId ?? session.endpointMap.primaryEndpointId
-    if (!session.endpointMap.routes.some((route) => route.endpointId === selected)) {
+    const selected = routeId ?? session.endpointMap.primaryRouteId
+    if (!session.endpointMap.routes.some((route) => route.routeId === selected)) {
       throw new PreviewRuntimeError({
         code: 'PREVIEW_ACCESS_DENIED',
         message: 'The preview endpoint does not belong to this session.',
@@ -224,17 +220,19 @@ export default class PreviewSessionService {
     }
     await this.lease.renew(sessionId, ownerUserId)
     const providerRoutes = await this.edgeRoutes.resolveForDesktop(sessionId, ownerUserId)
-    const routeByEndpoint = new Map(providerRoutes.map((route) => [route.endpointId, route]))
+    const routeById = new Map(providerRoutes.map((route) => [route.routeId, route]))
     return {
       sessionId,
       endpointRevision: session.endpointMap.revision,
       integratedPreviewRequired: session.endpointMap.integratedPreviewRequired,
-      primaryEndpointId: session.endpointMap.primaryEndpointId,
+      primaryRouteId: session.endpointMap.primaryRouteId,
       routes: session.endpointMap.routes.map((logical) => {
-        const provider = routeByEndpoint.get(logical.endpointId)
+        const provider = routeById.get(logical.routeId)
         if (!provider) throw new Error('Provider route is unavailable.')
         const capability = this.capabilities.issue(provider)
         return {
+          routeId: logical.routeId,
+          serviceId: logical.serviceId,
           endpointId: logical.endpointId,
           logicalHost: logical.logicalHost,
           logicalPort: logical.logicalPort,
@@ -482,7 +480,7 @@ export default class PreviewSessionService {
     const sweeper = [...this.drivers.values()].find((driver) => driver.sweepOrphans)
     if (!sweeper?.sweepOrphans) return
     const active = await PreviewSession.query()
-      .whereIn('profile', ['vercel-compose', 'vercel-process'])
+      .where('profile', 'vercel-compose')
       .whereRaw("JSON_UNQUOTE(JSON_EXTRACT(state, '$.host')) <> 'destroyed'")
       .select('id')
     await sweeper.sweepOrphans(

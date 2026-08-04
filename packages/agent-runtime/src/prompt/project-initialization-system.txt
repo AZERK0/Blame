@@ -18,7 +18,7 @@ Call the tool with exactly this top-level shape:
 
 The Node example below illustrates the schema only. It is not a stack, package manager, directory-layout, or service recommendation.
 
-{"previewManifest":{"version":2,"confidence":"high","project":{"root":".","detectedStack":["node"],"confidence":"high"},"setup":[{"id":"deps","image":"node:22-bookworm","workingDir":"/workspace","command":"corepack prepare pnpm@10.33.2 --activate && corepack pnpm install"}],"services":[{"id":"backend","kind":"worker","image":"node:22-bookworm","workingDir":"/workspace","command":"node server.js","endpoints":[{"id":"http","protocol":"http","port":3333,"healthcheck":{"type":"tcp","timeoutMs":30000}}]},{"id":"web","kind":"preview","image":"node:22-bookworm","workingDir":"/workspace","command":"corepack prepare pnpm@10.33.2 --activate && corepack pnpm dev","preview":{"internalPort":3000,"protocol":"http","path":"/"},"healthcheck":{"type":"http","path":"/","timeoutMs":30000},"endpoints":[{"id":"http","protocol":"http","port":3000}],"bindings":[{"target":{"type":"environment","key":"SERVER_API_URL"},"source":{"service":"backend","endpoint":"http"},"exposure":"server","format":"url"}]}],"caches":[{"name":"blame_node_modules","target":"/workspace/node_modules"}],"risks":[],"probes":[{"id":"backend-through-web","from":"host","target":{"service":"web","endpoint":"http","path":"/api/health"},"type":"http","acceptedStatuses":[200,401,403,404],"required":true}]},"runConfigurations":[{"id":"web","name":"Web application","command":"pnpm dev","cwd":".","default":true,"category":"web","services":["web"],"previewService":"web","scopes":["frontend","backend","web-ui"],"previewUrl":"http://localhost:3000"}]}
+{"previewManifest":{"confidence":"high","project":{"root":".","detectedStack":["node"],"confidence":"high"},"setup":[{"id":"deps","container":{"image":"node:22-bookworm"},"workingDir":"/workspace","command":"corepack prepare pnpm@10.33.2 --activate && corepack pnpm install"}],"services":[{"id":"backend","kind":"worker","container":{"image":"node:22-bookworm"},"workingDir":"/workspace","command":"node server.js","endpoints":[{"id":"http","protocol":"http","port":3333,"healthcheck":{"type":"tcp","timeoutMs":30000}}]},{"id":"web","kind":"preview","container":{"image":"node:22-bookworm"},"workingDir":"/workspace","command":"corepack prepare pnpm@10.33.2 --activate && corepack pnpm dev","endpoints":[{"id":"http","protocol":"http","port":3000,"healthcheck":{"type":"http","path":"/","timeoutMs":30000}}],"bindings":[{"target":{"type":"environment","key":"SERVER_API_URL"},"source":{"service":"backend","endpoint":"http"},"exposure":"server","format":"url"}]}],"caches":[{"name":"blame_node_modules","target":"/workspace/node_modules"}],"risks":[],"probes":[{"id":"backend-through-web","from":"host","target":{"service":"web","endpoint":"http","path":"/api/health"},"type":"http","acceptedStatuses":[200,401,403,404],"required":true}]},"runConfigurations":[{"id":"web","name":"Web application","command":"pnpm dev","cwd":".","default":true,"category":"web","services":["web"],"previewService":"web","scopes":["frontend","backend","web-ui"],"previewUrl":"http://localhost:3000"}]}
 
 A native or otherwise host-only launch surface is valid with `services: []`, for example `{"id":"desktop","name":"Desktop development","command":"pnpm dev","cwd":".","default":true,"category":"desktop","services":[],"scopes":["desktop","backend"]}`. This shape complements containerized web or service configurations; it does not replace them.
 
@@ -31,7 +31,7 @@ A native or otherwise host-only launch surface is valid with `services: []`, for
 - Prefer explicit scripts, config files, lockfiles, env examples, framework conventions, and scan evidence over guesses.
 - Use lockfile and manifest paths as evidence even when their contents are intentionally omitted. Never request or infer secrets from real environment files.
 - Discovery counts may exceed the bounded path and content samples. Treat omitted files as uncertainty, and use the two fallback tools only when a missing fact changes the runtime result.
-- Treat generated `setupScript` and `dockerCompose` as legacy artifacts derived from `previewManifest` when present. The manifest is the source of truth.
+- Treat generated `setupScript` and `dockerCompose` as derived artifacts. The canonical `previewManifest` is the only source of truth.
 - Be conservative with confidence. Use `low` or `medium` when scan evidence is partial.
 - Include non-blocking concerns in `previewManifest.risks[]`; do not require manual user steps.
 - A browser preview is optional. Never invent an HTTP server, port, long-running command, or preview surface for a library, CLI, batch, worker, or project without explicit browser-facing evidence.
@@ -66,7 +66,7 @@ A native or otherwise host-only launch surface is valid with `services: []`, for
 <manifest_contract>
 `previewManifest` must:
 
-- use `version: 2`
+- be unversioned; never include `version` or per-item `source`
 - set `confidence` to `low`, `medium`, or `high`
 - describe the detected project under `project`
 - describe setup work under `setup[]`
@@ -81,7 +81,7 @@ A native or otherwise host-only launch surface is valid with `services: []`, for
 Every setup task must have:
 
 - `id`
-- `image`
+- `container`, with exactly one source: either `{"image":"<literal OCI image>"}` or `{"build":{"context":"<relative path>","dockerfile":"<relative path>","target":"<optional stage>"}}`
 - `workingDir`
 - `command`
 
@@ -93,19 +93,17 @@ Every service must have:
 
 - `id`
 - `kind`: exactly `preview`, `dependency`, or `worker`
-- `image`
+- `container`, with exactly one source: a literal OCI `image` or a controlled project `build`
 - `workingDir` when it executes project code
 - `command` unless the image has a safe built-in default, such as a database image
 - `endpoints[]` for every port consumed by another service, exposed to the browser, or checked for readiness
 
 Every preview service must also have:
 
-- `preview.internalPort`
-- `preview.protocol` set to `http`
-- `preview.path`
-- `healthcheck.type` set to `http`
-- `healthcheck.path`
-- `healthcheck.timeoutMs`
+- at least one `http` or `https` endpoint
+- a healthcheck on at least one browser-facing endpoint
+
+Endpoint identity is scoped by service. Reusing a conventional endpoint id such as `http` is expected: `api:http`, `web:http`, and `vitrine:http` are distinct routes. Bindings and probes always identify both `service` and `endpoint`.
 </service_contract>
 
 <container_run_configuration_contract>
@@ -145,11 +143,13 @@ Use `probes[]` to prove that required service paths work after startup.
 </probe_contract>
 
 <manifest_rules>
-- Use base images and bind-mounted source assumptions, not project Dockerfiles.
+- Prefer a pinned OCI image plus bind-mounted source when it faithfully matches the project. Use a controlled project Dockerfile build when the repository already defines the required runtime image or needs build-time system dependencies.
+- A build context and Dockerfile must be relative paths inside the project. Do not include build arguments, secrets, additional contexts, SSH forwarding, cache exporters, or remote/Git contexts.
 - Choose images, dependency installation, and launch commands that match the detected ecosystem. Do not introduce Node tooling into a non-Node project.
 - Prefer `node:22-bookworm` for Node services unless the scan proves another Node major is required.
 - Keep setup logic in `setup[]`, not host scripts.
 - Install Node dependencies in exactly one setup task when Node dependencies are detected.
+- Declare named caches for the detected package manager or build tool (pnpm, npm, yarn, bun, pip, or Cargo) without placing credentials in cached paths.
 - Bootstrap package managers inside container commands.
 - For pnpm, use `corepack prepare pnpm@<version> --activate` and `corepack pnpm <command>`.
 - For npm dependency installs, use `npm install --no-package-lock`.
@@ -167,7 +167,7 @@ The manifest must never:
 - include YAML Compose
 - include Bash setup scripts
 - use fixed host ports
-- use project Dockerfile builds as the runtime path
+- include both `container.image` and `container.build`, or omit both
 - include privileged containers, host networking, docker socket mounts, `$HOME` mounts, or root filesystem mounts
 - include destructive commands such as `git reset --hard`, `git clean -fdx`, `git push`, `rm -rf /`, `sudo`, or `curl | sh`
 - use `corepack enable`, bare `pnpm`, `npm ci`, or `su` with numeric `${BLAME_HOST_UID}` users

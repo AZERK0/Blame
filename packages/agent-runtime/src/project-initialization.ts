@@ -30,6 +30,26 @@ type ProjectInitializationCorrection = {
   previousResult: string;
 };
 
+const previewManifestContainerSchema = {
+  type: "object",
+  additionalProperties: false,
+  minProperties: 1,
+  maxProperties: 1,
+  properties: {
+    image: { type: "string" },
+    build: {
+      type: "object",
+      additionalProperties: false,
+      required: ["context", "dockerfile"],
+      properties: {
+        context: { type: "string" },
+        dockerfile: { type: "string" },
+        target: { type: "string" },
+      },
+    },
+  },
+} as const;
+
 export const projectInitializationResultSchema = {
   type: "object",
   additionalProperties: false,
@@ -39,7 +59,6 @@ export const projectInitializationResultSchema = {
       type: "object",
       additionalProperties: false,
       required: [
-        "version",
         "confidence",
         "project",
         "setup",
@@ -49,7 +68,6 @@ export const projectInitializationResultSchema = {
         "probes",
       ],
       properties: {
-        version: { const: 2 },
         confidence: { enum: ["low", "medium", "high"] },
         project: {
           type: "object",
@@ -65,12 +83,13 @@ export const projectInitializationResultSchema = {
           items: {
             type: "object",
             additionalProperties: false,
-            required: ["id", "image", "workingDir", "command"],
+            required: ["id", "container", "workingDir", "command"],
             properties: {
               id: { type: "string" },
-              image: { type: "string" },
+              container: previewManifestContainerSchema,
               workingDir: { type: "string" },
               command: { type: "string" },
+              entrypoint: { type: "array", items: { type: "string" } },
               runAs: { enum: ["host", "root"] },
               environment: {
                 type: "object",
@@ -85,44 +104,23 @@ export const projectInitializationResultSchema = {
           items: {
             type: "object",
             additionalProperties: false,
-            required: ["id", "kind", "image", "endpoints"],
+            required: ["id", "kind", "container", "endpoints"],
             properties: {
               id: { type: "string" },
               kind: { enum: ["preview", "dependency", "worker"] },
-              image: { type: "string" },
+              container: previewManifestContainerSchema,
               workingDir: { type: "string" },
               command: { type: "string" },
+              entrypoint: { type: "array", items: { type: "string" } },
+              user: { type: "string" },
               environment: {
                 type: "object",
                 additionalProperties: { type: "string" },
               },
               dependsOn: { type: "array", items: { type: "string" } },
-              preview: {
-                type: "object",
-                additionalProperties: false,
-                required: ["internalPort", "protocol", "path"],
-                properties: {
-                  internalPort: { type: "integer", minimum: 1, maximum: 65535 },
-                  protocol: { const: "http" },
-                  path: { type: "string" },
-                },
-              },
-              healthcheck: {
-                type: "object",
-                additionalProperties: false,
-                required: ["type", "path", "timeoutMs"],
-                properties: {
-                  type: { const: "http" },
-                  path: { type: "string" },
-                  timeoutMs: {
-                    type: "integer",
-                    minimum: 1000,
-                    maximum: 300000,
-                  },
-                },
-              },
               endpoints: {
                 type: "array",
+                minItems: 1,
                 maxItems: 20,
                 items: {
                   type: "object",
@@ -326,22 +324,17 @@ export function parseProjectInitializationPayload(
 ): ParsedProjectInitialization {
   if (!isRecord(parsed))
     throw new Error("Initialization result must be an object");
-  const parsedManifest = parsed.previewManifest
-    ? parsePreviewManifest(parsed.previewManifest)
-    : undefined;
-  const manifest = parsedManifest
-    ? normalizePreviewManifestWithPreferences(parsedManifest, preferences)
-    : undefined;
-  const generated = manifest ? generatePreviewArtifacts(manifest) : undefined;
-  const setupScript = generated?.setupScript ?? stringValue(parsed.setupScript);
-  const dockerCompose =
-    generated?.dockerCompose ?? stringValue(parsed.dockerCompose);
-  if (!setupScript) {
+  if (!parsed.previewManifest) {
     throw new Error("Initialization result is missing previewManifest");
   }
-  if (!dockerCompose) {
-    throw new Error("Initialization result is missing generated dockerCompose");
-  }
+  const parsedManifest = parsePreviewManifest(parsed.previewManifest);
+  const manifest = normalizePreviewManifestWithPreferences(
+    parsedManifest,
+    preferences,
+  );
+  const generated = generatePreviewArtifacts(manifest);
+  const setupScript = generated.setupScript;
+  const dockerCompose = generated.dockerCompose;
   const runConfigurations = parseRunConfigurations(parsed.runConfigurations);
   validateProjectInitializationOutput(
     setupScript,
@@ -622,11 +615,6 @@ function validateDockerCompose(
       "Initialization result dockerCompose must expose runtime-allocated host ports",
     );
   }
-  if (usesProjectDockerfileBuild(compose)) {
-    throw new Error(
-      "Initialization result dockerCompose must not build from project Dockerfiles",
-    );
-  }
   if (forcesHostUidUser(compose)) {
     throw new Error(
       "Initialization result dockerCompose must not force BLAME_HOST_UID as the container user",
@@ -737,10 +725,6 @@ function usesManualHostPort(compose: string) {
 
 function hasRuntimeAllocatedPortMapping(compose: string) {
   return includesOneOf(compose, ["127.0.0.1::", "localhost::"]);
-}
-
-function usesProjectDockerfileBuild(compose: string) {
-  return /\bbuild\s*:/.test(compose) || /\bdockerfile\s*:/.test(compose);
 }
 
 function forcesHostUidUser(compose: string) {

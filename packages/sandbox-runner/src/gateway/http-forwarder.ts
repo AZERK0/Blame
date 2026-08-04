@@ -5,6 +5,8 @@ const maximumBodyBytes = 50 * 1024 * 1024;
 
 export type GatewayRoute = {
   sessionId: string;
+  routeId: string;
+  serviceId: string;
   endpointId: string;
   generation: number;
   logicalPort: number;
@@ -41,13 +43,16 @@ export async function forwardHttpRequest(
         reject(error);
       }
     });
-    upstream.once("timeout", () => upstream.destroy(new Error("Upstream request timed out.")));
+    upstream.once("timeout", () =>
+      upstream.destroy(new Error("Upstream request timed out.")),
+    );
     upstream.once("error", reject);
   });
   let bytes = 0;
   request.on("data", (chunk: Buffer) => {
     bytes += chunk.byteLength;
-    if (bytes > maximumBodyBytes) upstream.destroy(new Error("Request body limit exceeded."));
+    if (bytes > maximumBodyBytes)
+      upstream.destroy(new Error("Request body limit exceeded."));
   });
   await Promise.all([pipeline(request, upstream), completed]);
 }
@@ -79,7 +84,12 @@ export function forwardedRequestHeaders(
     if (
       value === undefined ||
       name.startsWith("x-blame-") ||
-      ["connection", "proxy-authorization", "proxy-authenticate", "upgrade"].includes(name)
+      [
+        "connection",
+        "proxy-authorization",
+        "proxy-authenticate",
+        "upgrade",
+      ].includes(name)
     ) {
       continue;
     }
@@ -99,7 +109,11 @@ function forwardedResponseHeaders(
 ) {
   const headers: Record<string, string | string[]> = {};
   for (const [name, value] of Object.entries(source)) {
-    if (value === undefined || name.startsWith("x-blame-") || ["connection", "upgrade"].includes(name)) {
+    if (
+      value === undefined ||
+      name.startsWith("x-blame-") ||
+      ["connection", "upgrade"].includes(name)
+    ) {
       continue;
     }
     if (name === "location" && typeof value === "string") {
@@ -111,8 +125,15 @@ function forwardedResponseHeaders(
 
 function rewriteLocation(value: string, route: GatewayRoute) {
   try {
-    const url = new URL(value, `http://${route.targetHost}:${route.targetPort}`);
-    if (url.hostname !== route.targetHost || Number(url.port || 80) !== route.targetPort) return value;
+    const url = new URL(
+      value,
+      `http://${route.targetHost}:${route.targetPort}`,
+    );
+    if (
+      url.hostname !== route.targetHost ||
+      Number(url.port || 80) !== route.targetPort
+    )
+      return value;
     url.hostname = "localhost";
     url.port = String(route.logicalPort);
     return url.toString();

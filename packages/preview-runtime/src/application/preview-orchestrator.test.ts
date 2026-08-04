@@ -13,7 +13,6 @@ import { PreviewReconciler } from "./preview-reconciler.js";
 
 function fixture() {
   const plan = compilePreviewManifest({
-    version: 2,
     confidence: "high",
     project: {},
     setup: [],
@@ -21,10 +20,16 @@ function fixture() {
       {
         id: "web",
         kind: "preview",
-        image: "node:24",
+        container: { image: "node:24" },
         command: "pnpm dev",
-        preview: { internalPort: 3000, protocol: "http", path: "/" },
-        endpoints: [{ id: "web", protocol: "http", port: 3000, healthcheck: { type: "http", path: "/", timeoutMs: 30000 } }],
+        endpoints: [
+          {
+            id: "http",
+            protocol: "http",
+            port: 3000,
+            healthcheck: { type: "http", path: "/", timeoutMs: 30000 },
+          },
+        ],
       },
     ],
     caches: [],
@@ -61,7 +66,8 @@ test("requires cloud upload consent", async () => {
         planHash: "hash",
       }),
     (error) =>
-      error instanceof PreviewRuntimeError && error.failure.code === "PREVIEW_ACCESS_DENIED",
+      error instanceof PreviewRuntimeError &&
+      error.failure.code === "PREVIEW_ACCESS_DENIED",
   );
 });
 
@@ -92,7 +98,10 @@ test("runs commands idempotently and keeps state axes independent", async () => 
   assert.equal(second.revision, first.revision);
   assert.equal("fencingToken" in first, false);
   assert.ok((await repository.get("session"))!.fencingToken >= 2);
-  assert.equal(driver.calls.filter((call) => call === "startServices").length, 1);
+  assert.equal(
+    driver.calls.filter((call) => call === "startServices").length,
+    1,
+  );
 });
 
 test("does not claim that a managed agent is running without a remote executor", async () => {
@@ -107,7 +116,8 @@ test("does not claim that a managed agent is running without a remote executor",
     cloudUploadConsentAt: new Date().toISOString(),
   });
   await assert.rejects(
-    () => orchestrator.command("session", { type: "start-agent" }, "start-agent"),
+    () =>
+      orchestrator.command("session", { type: "start-agent" }, "start-agent"),
     (error) =>
       error instanceof PreviewRuntimeError &&
       error.failure.code === "UNSUPPORTED_CAPABILITY",
@@ -135,21 +145,43 @@ test("exports before suspension and defers runner ack until resume", async () =>
   assert.equal(suspended.state.sync, "pending_local_sync");
   await assert.rejects(
     () => orchestrator.command("session", { type: "destroy-host" }, "destroy"),
-    (error) => error instanceof PreviewRuntimeError && error.failure.code === "SYNC_CONFLICT",
+    (error) =>
+      error instanceof PreviewRuntimeError &&
+      error.failure.code === "SYNC_CONFLICT",
   );
   const pending = await orchestrator.get("session");
   const acknowledged = await orchestrator.command(
     "session",
-    { type: "ack-local-sync", deltaRevision: pending.lastExportedJournalRevision! },
+    {
+      type: "ack-local-sync",
+      deltaRevision: pending.lastExportedJournalRevision!,
+    },
     "ack",
   );
   assert.equal(acknowledged.state.sync, "clean");
-  assert.equal(driver.calls.filter((call) => call === "acknowledgeDelta").length, 0);
-  const resumed = await orchestrator.command("session", { type: "resume-host" }, "resume");
+  assert.equal(
+    driver.calls.filter((call) => call === "acknowledgeDelta").length,
+    0,
+  );
+  const resumed = await orchestrator.command(
+    "session",
+    { type: "resume-host" },
+    "resume",
+  );
   assert.equal(resumed.generation, suspended.generation + 1);
-  assert.equal(resumed.lastAcknowledgedRemoteRevision, pending.lastExportedJournalRevision);
-  assert.equal(driver.calls.filter((call) => call === "acknowledgeDelta").length, 1);
-  const destroyed = await orchestrator.command("session", { type: "destroy-host" }, "destroy-2");
+  assert.equal(
+    resumed.lastAcknowledgedRemoteRevision,
+    pending.lastExportedJournalRevision,
+  );
+  assert.equal(
+    driver.calls.filter((call) => call === "acknowledgeDelta").length,
+    1,
+  );
+  const destroyed = await orchestrator.command(
+    "session",
+    { type: "destroy-host" },
+    "destroy-2",
+  );
   assert.equal(destroyed.state.host, "destroyed");
 });
 
@@ -199,7 +231,11 @@ test("rejects an acknowledgement older than the latest durable delta", async () 
     planHash: "hash",
     cloudUploadConsentAt: new Date().toISOString(),
   });
-  const first = await orchestrator.command("session", { type: "suspend-host" }, "suspend-1");
+  const first = await orchestrator.command(
+    "session",
+    { type: "suspend-host" },
+    "suspend-1",
+  );
   const firstRevision = first.lastExportedJournalRevision!;
   await orchestrator.command(
     "session",
@@ -208,7 +244,11 @@ test("rejects an acknowledgement older than the latest durable delta", async () 
   );
   await orchestrator.command("session", { type: "resume-host" }, "resume");
   driver.mutate((await repository.getRuntimeHandle("session"))!);
-  const second = await orchestrator.command("session", { type: "suspend-host" }, "suspend-2");
+  const second = await orchestrator.command(
+    "session",
+    { type: "suspend-host" },
+    "suspend-2",
+  );
   assert.notEqual(second.lastExportedJournalRevision, firstRevision);
   await assert.rejects(
     () =>
@@ -217,7 +257,9 @@ test("rejects an acknowledgement older than the latest durable delta", async () 
         { type: "ack-local-sync", deltaRevision: firstRevision },
         "stale-ack",
       ),
-    (error) => error instanceof PreviewRuntimeError && error.failure.code === "SYNC_CONFLICT",
+    (error) =>
+      error instanceof PreviewRuntimeError &&
+      error.failure.code === "SYNC_CONFLICT",
   );
   assert.equal(
     (await orchestrator.get("session")).pendingDeltaArtifactId,
@@ -268,13 +310,15 @@ test("does not report a preview ready when a selected service exited", async () 
   driver.unavailableServiceIds.add("web");
 
   await assert.rejects(
-    () => orchestrator.command(
-      "session",
-      { type: "start-services", configurationId: "dev", serviceIds: ["web"] },
-      "start",
-    ),
+    () =>
+      orchestrator.command(
+        "session",
+        { type: "start-services", configurationId: "dev", serviceIds: ["web"] },
+        "start",
+      ),
     (error) =>
-      error instanceof PreviewRuntimeError && error.failure.code === "ENGINE_START_FAILED",
+      error instanceof PreviewRuntimeError &&
+      error.failure.code === "ENGINE_START_FAILED",
   );
   assert.equal((await orchestrator.get("session")).state.preview, "closed");
 });

@@ -1,6 +1,12 @@
 import type { EndpointMap } from "../domain/endpoint-map.js";
-import type { PreviewExecutionPlan, RuntimeSelection } from "../domain/execution-plan.js";
-import type { PreviewSessionEvent, PreviewSessionRecord } from "../domain/preview-session.js";
+import type {
+  PreviewExecutionPlan,
+  RuntimeSelection,
+} from "../domain/execution-plan.js";
+import type {
+  PreviewSessionEvent,
+  PreviewSessionRecord,
+} from "../domain/preview-session.js";
 import { resolveCapabilities } from "../compilation/capability-resolver.js";
 import type { DistributedLock, LockLease } from "../ports/distributed-lock.js";
 import type { PreviewEventSink } from "../ports/preview-event-sink.js";
@@ -28,7 +34,8 @@ export class InMemorySessionRepository implements SessionRepository {
   private operations = new Map<string, PreviewOperationRecord>();
 
   async create(record: PreviewSessionRecord) {
-    if (this.records.has(record.id)) throw new Error("Preview session already exists.");
+    if (this.records.has(record.id))
+      throw new Error("Preview session already exists.");
     this.records.set(record.id, structuredClone(record));
   }
 
@@ -39,15 +46,17 @@ export class InMemorySessionRepository implements SessionRepository {
 
   async save(record: PreviewSessionRecord, expectedRevision: number) {
     const current = this.records.get(record.id);
-    if (!current || current.revision !== expectedRevision) throw new OptimisticRevisionError();
+    if (!current || current.revision !== expectedRevision)
+      throw new OptimisticRevisionError();
     this.records.set(record.id, structuredClone(record));
   }
 
   async listReconcileCandidates(now: string, limit: number) {
     return [...this.records.values()]
-      .filter((record) =>
-        record.state.host !== "destroyed" &&
-        (!record.leaseExpiresAt || record.leaseExpiresAt <= now),
+      .filter(
+        (record) =>
+          record.state.host !== "destroyed" &&
+          (!record.leaseExpiresAt || record.leaseExpiresAt <= now),
       )
       .slice(0, limit)
       .map((record) => structuredClone(record));
@@ -72,7 +81,10 @@ export class InMemorySessionRepository implements SessionRepository {
   }
 
   async saveOperation(operation: PreviewOperationRecord) {
-    this.operations.set(`${operation.sessionId}:${operation.operationId}`, structuredClone(operation));
+    this.operations.set(
+      `${operation.sessionId}:${operation.operationId}`,
+      structuredClone(operation),
+    );
   }
 }
 
@@ -84,7 +96,10 @@ export class InMemoryDistributedLock implements DistributedLock {
     const previous = this.tails.get(key) ?? Promise.resolve();
     let release!: () => void;
     const tail = new Promise<void>((resolve) => (release = resolve));
-    this.tails.set(key, previous.then(() => tail));
+    this.tails.set(
+      key,
+      previous.then(() => tail),
+    );
     await previous;
     const fencingToken = (this.fencingTokens.get(key) ?? 0) + 1;
     this.fencingTokens.set(key, fencingToken);
@@ -101,8 +116,14 @@ export class InMemoryPreviewEventSink implements PreviewEventSink {
   private values: PreviewSessionEvent[] = [];
 
   async append(event: Omit<PreviewSessionEvent, "cursor" | "sequence">) {
-    const sequence = this.values.filter(({ sessionId }) => sessionId === event.sessionId).length + 1;
-    const value = { ...structuredClone(event), sequence, cursor: String(sequence) };
+    const sequence =
+      this.values.filter(({ sessionId }) => sessionId === event.sessionId)
+        .length + 1;
+    const value = {
+      ...structuredClone(event),
+      sequence,
+      cursor: String(sequence),
+    };
     this.values.push(value);
     return structuredClone(value);
   }
@@ -110,7 +131,8 @@ export class InMemoryPreviewEventSink implements PreviewEventSink {
   async *events(sessionId: string, cursor?: string) {
     const after = Number(cursor ?? 0);
     for (const event of this.values) {
-      if (event.sessionId === sessionId && event.sequence > after) yield structuredClone(event);
+      if (event.sessionId === sessionId && event.sequence > after)
+        yield structuredClone(event);
     }
   }
 }
@@ -189,7 +211,11 @@ export class FakePreviewRuntimeDriver implements PreviewRuntimeDriver {
     this.calls.push("inspect");
     const host = this.host(handle);
     return {
-      host: host.destroyed ? "destroyed" : host.suspended ? "suspended" : "running",
+      host: host.destroyed
+        ? "destroyed"
+        : host.suspended
+          ? "suspended"
+          : "running",
       engine: host.running ? "running" : "stopped",
       services: host.plan.services.map(({ id }) => ({
         id,
@@ -205,6 +231,7 @@ export class FakePreviewRuntimeDriver implements PreviewRuntimeDriver {
     const host = this.host(handle);
     const routes = host.plan.networking.gatewayListeners.map((route) => ({
       ...route,
+      routeId: `${host.id}:${route.routeKey}`,
       protocol: "http" as const,
       logicalHost: "localhost" as const,
       publicUrl: `https://${host.id}-${route.endpointId}.preview.example`,
@@ -213,7 +240,7 @@ export class FakePreviewRuntimeDriver implements PreviewRuntimeDriver {
     const primary = routes[0];
     return {
       revision: host.endpointsRevision,
-      primaryEndpointId: primary?.endpointId ?? "",
+      primaryRouteId: primary?.routeId ?? "",
       primaryPublicUrl: primary?.publicUrl ?? "",
       routes,
       supportsWebSocket: true,

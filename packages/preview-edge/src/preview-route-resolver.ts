@@ -11,13 +11,18 @@ export type ResolvedPreviewRoute = {
 
 export type ConsumedAccessTicket = {
   sessionId: string;
+  routeId: string;
+  serviceId: string;
   endpointId: string;
   ownerUserId: string;
 };
 
 export interface PreviewRouteResolver {
   resolve(hostname: string): Promise<ResolvedPreviewRoute>;
-  consumeTicket(ticket: string, hostname: string): Promise<ConsumedAccessTicket>;
+  consumeTicket(
+    ticket: string,
+    hostname: string,
+  ): Promise<ConsumedAccessTicket>;
 }
 
 export class ApiPreviewRouteResolver implements PreviewRouteResolver {
@@ -37,7 +42,10 @@ export class ApiPreviewRouteResolver implements PreviewRouteResolver {
   }
 
   consumeTicket(ticket: string, hostname: string) {
-    return this.request<ConsumedAccessTicket>("consume-ticket", { ticket, hostname });
+    return this.request<ConsumedAccessTicket>("consume-ticket", {
+      ticket,
+      hostname,
+    });
   }
 
   private async request<T>(path: string, body: Record<string, string>) {

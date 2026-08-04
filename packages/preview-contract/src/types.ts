@@ -1,10 +1,3 @@
-export type PreviewManifestVersion = 1 | 2 | 3;
-
-export type PreviewManifestExecutionSource =
-  | { kind: "container"; image: string }
-  | { kind: "process"; toolchain?: string }
-  | { kind: "auto"; image?: string; toolchain?: string };
-
 export type PreviewManifestConfidence = "low" | "medium" | "high";
 
 export type PreviewManifestEnvironment = Record<string, string>;
@@ -15,30 +8,30 @@ export type PreviewManifestProject = {
   confidence?: PreviewManifestConfidence;
 };
 
+export type PreviewManifestContainerBuild = {
+  context: string;
+  dockerfile: string;
+  target?: string;
+};
+
+/** Exactly one of image or build is accepted by the parser. */
+export type PreviewManifestContainer = {
+  image?: string;
+  build?: PreviewManifestContainerBuild;
+};
+
 export type PreviewManifestSetupTask = {
   id: string;
-  image: string;
-  source?: PreviewManifestExecutionSource;
+  container: PreviewManifestContainer;
   workingDir?: string;
   command: string;
+  entrypoint?: string[];
   runAs?: "host" | "root";
   environment?: PreviewManifestEnvironment;
   dependsOn?: string[];
 };
 
 export type PreviewManifestServiceKind = "preview" | "dependency" | "worker";
-
-export type PreviewManifestPreview = {
-  internalPort: number;
-  protocol: "http";
-  path: string;
-};
-
-export type PreviewManifestHealthcheck = {
-  type: "http";
-  path: string;
-  timeoutMs: number;
-};
 
 export type PreviewManifestEndpointHealthcheck = {
   type: "http" | "tcp";
@@ -74,15 +67,14 @@ export type PreviewManifestBinding = {
 export type PreviewManifestService = {
   id: string;
   kind: PreviewManifestServiceKind;
-  image: string;
-  source?: PreviewManifestExecutionSource;
+  container: PreviewManifestContainer;
   workingDir?: string;
   command?: string;
+  entrypoint?: string[];
+  user?: string;
   environment?: PreviewManifestEnvironment;
   dependsOn?: string[];
-  preview?: PreviewManifestPreview;
-  healthcheck?: PreviewManifestHealthcheck;
-  endpoints?: PreviewManifestEndpoint[];
+  endpoints: PreviewManifestEndpoint[];
   bindings?: PreviewManifestBinding[];
 };
 
@@ -112,13 +104,13 @@ export type PreviewManifestRisk = {
   message: string;
 };
 
+/** Canonical, unversioned, container-only preview manifest. */
 export type PreviewManifest = {
-  version: PreviewManifestVersion;
   confidence: PreviewManifestConfidence;
   project: PreviewManifestProject;
   setup: PreviewManifestSetupTask[];
   services: PreviewManifestService[];
   caches: PreviewManifestCache[];
   risks: PreviewManifestRisk[];
-  probes?: PreviewManifestProbe[];
+  probes: PreviewManifestProbe[];
 };

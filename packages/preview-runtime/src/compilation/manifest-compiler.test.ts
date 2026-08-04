@@ -4,7 +4,6 @@ import { compilePreviewManifest } from "./manifest-compiler.js";
 import { resolveCapabilities } from "./capability-resolver.js";
 
 const manifest = {
-  version: 2,
   confidence: "high",
   project: {},
   setup: [],
@@ -12,12 +11,11 @@ const manifest = {
     {
       id: "frontend",
       kind: "preview",
-      image: "node:24",
+      container: { image: "node:24" },
       command: "pnpm dev",
-      preview: { internalPort: 3000, protocol: "http", path: "/" },
       endpoints: [
         {
-          id: "web",
+          id: "http",
           protocol: "http",
           port: 3000,
           healthcheck: { type: "http", path: "/", timeoutMs: 30000 },
@@ -26,7 +24,7 @@ const manifest = {
       bindings: [
         {
           target: { type: "environment", key: "API_URL" },
-          source: { service: "backend", endpoint: "api" },
+          source: { service: "backend", endpoint: "http" },
           exposure: "browser",
         },
       ],
@@ -34,12 +32,13 @@ const manifest = {
     {
       id: "backend",
       kind: "preview",
-      image: "node:24",
+      container: {
+        build: { context: ".", dockerfile: "Dockerfile", target: "api" },
+      },
       command: "pnpm api",
-      preview: { internalPort: 3333, protocol: "http", path: "/" },
       endpoints: [
         {
-          id: "api",
+          id: "http",
           protocol: "http",
           port: 3333,
           healthcheck: { type: "http", path: "/health", timeoutMs: 30000 },
@@ -106,18 +105,7 @@ test("rejects secret plans until a credential broker is available", () => {
   );
 });
 
-test("keeps V1/V2 container sources incompatible with process mode", () => {
-  const plan = compilePreviewManifest(manifest);
-  const report = resolveCapabilities("vercel-process", plan);
-  assert.equal(report.compatible, false);
-  assert.ok(
-    report.incompatibilities.some(
-      ({ code }) => code === "PROCESS_SOURCE_UNSUPPORTED",
-    ),
-  );
-});
-
-test("rejects ambiguous browser endpoint ids and logical ports", () => {
+test("allows service-scoped endpoint ids", () => {
   const duplicate = {
     ...manifest,
     services: [
@@ -125,23 +113,24 @@ test("rejects ambiguous browser endpoint ids and logical ports", () => {
       {
         id: "admin",
         kind: "preview",
-        image: "node:24",
+        container: { image: "node:24" },
         command: "pnpm admin",
-        preview: { internalPort: 3000, protocol: "http", path: "/" },
         endpoints: [
           {
-            id: "web",
+            id: "http",
             protocol: "http",
-            port: 3000,
+            port: 3001,
             healthcheck: { type: "http", path: "/", timeoutMs: 30000 },
           },
         ],
       },
     ],
   };
-  assert.throws(
-    () => compilePreviewManifest(duplicate),
-    /ambiguous across services/,
+  assert.deepEqual(
+    compilePreviewManifest(duplicate).networking.gatewayListeners.map(
+      ({ routeKey }) => routeKey,
+    ),
+    ["frontend:http", "backend:http", "admin:http"],
   );
 });
 
@@ -158,7 +147,7 @@ test("records explicit environment scopes and rejects raw secrets", () => {
   const unsafe = {
     ...manifest,
     services: [
-      { ...manifest.services[0], environment: { API_TOKEN: "secret" } },
+      { ...manifest.services[0], environment: { API_TOKEN: "literal" } },
       manifest.services[1],
     ],
   };
@@ -168,38 +157,21 @@ test("records explicit environment scopes and rejects raw secrets", () => {
   );
 });
 
-test("compiles version three native sources for the process runtime", () => {
-  const processManifest = JSON.parse(JSON.stringify(manifest)) as Record<
-    string,
-    unknown
-  >;
-  processManifest.version = 3;
-  for (const item of processManifest.services as Array<
-    Record<string, unknown>
-  >) {
-    delete item.image;
-    item.source = { kind: "process", toolchain: "node24" };
-  }
-  const plan = compilePreviewManifest(processManifest);
-  assert.equal(resolveCapabilities("vercel-process", plan).compatible, true);
-  assert.equal(resolveCapabilities("vercel-compose", plan).compatible, false);
-  assert.equal(
-    plan.detectedCompatibility.some(({ type }) => type === "container-engine"),
-    false,
-  );
-});
-
 test("orders setup dependencies and keeps them out of the service graph", () => {
   const withSetup = {
     ...manifest,
     setup: [
       {
         id: "generate",
-        image: "node:24",
+        container: { image: "node:24" },
         command: "pnpm generate",
         dependsOn: ["install"],
       },
-      { id: "install", image: "node:24", command: "pnpm install" },
+      {
+        id: "install",
+        container: { image: "node:24" },
+        command: "pnpm install",
+      },
     ],
     services: [
       { ...manifest.services[0], dependsOn: ["generate"] },
@@ -263,26 +235,24 @@ test("merges transitive localhost requirements into one loopback group", () => {
 
 function manifestWithServices(ids: string[]) {
   return {
-    version: 2,
     confidence: "high",
     project: {},
     setup: [],
     services: ids.map((id, index) => ({
       id,
       kind: id === "web" ? "preview" : "worker",
-      image: "node:24",
+      container: { image: "node:24" },
       command: `node ${id}.js`,
-      ...(id === "web"
-        ? { preview: { internalPort: 3000, protocol: "http", path: "/" } }
-        : {}),
-      endpoints: [{
-        id: `${id}-http`,
-        protocol: "http",
-        port: 3000 + index,
-        ...(id === "web"
-          ? { healthcheck: { type: "http", path: "/", timeoutMs: 30_000 } }
-          : {}),
-      }],
+      endpoints: [
+        {
+          id: "http",
+          protocol: "http",
+          port: 3000 + index,
+          ...(id === "web"
+            ? { healthcheck: { type: "http", path: "/", timeoutMs: 30_000 } }
+            : {}),
+        },
+      ],
     })),
     caches: [],
     risks: [],

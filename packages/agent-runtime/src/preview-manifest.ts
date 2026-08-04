@@ -6,6 +6,7 @@ import type {
   PreviewManifest,
   PreviewManifestBinding,
   PreviewManifestCache,
+  PreviewManifestContainer,
   PreviewManifestEndpoint,
   PreviewManifestEnvironment,
   PreviewManifestProject,
@@ -155,16 +156,17 @@ function serviceEndpoint(
   service: PreviewManifestService,
   endpointId: string,
 ): PreviewManifestEndpoint | undefined {
-  const endpoint = (service.endpoints ?? []).find(
-    ({ id }) => id === endpointId,
-  );
-  if (endpoint) return endpoint;
-  if (endpointId !== "preview" || !service.preview) return undefined;
-  return {
-    id: "preview",
-    protocol: service.preview.protocol,
-    port: service.preview.internalPort,
-  };
+  return service.endpoints.find(({ id }) => id === endpointId);
+}
+
+function previewEndpoint(service: PreviewManifestService) {
+  return service.kind === "preview"
+    ? service.endpoints.find(({ protocol }) => protocol !== "tcp")
+    : undefined;
+}
+
+function containerImage(container: PreviewManifestContainer) {
+  return container.image ?? "";
 }
 
 function previewManifestWithNextWebpackFallback(manifest: PreviewManifest) {
@@ -250,7 +252,10 @@ function withoutComposeDatabaseBindings(
 }
 
 function databaseService(service: PreviewManifestService) {
-  return service.kind === "dependency" && databaseImage(service.image);
+  return (
+    service.kind === "dependency" &&
+    databaseImage(containerImage(service.container))
+  );
 }
 
 function databaseImage(image: string) {
@@ -301,13 +306,13 @@ function normalizeService(
   service: PreviewManifestService,
   caches: PreviewManifestCache[],
 ): PreviewManifestService {
-  const previewEnvironment: PreviewManifestEnvironment =
-    service.kind === "preview" && service.preview
-      ? {
-          HOST: "0.0.0.0",
-          PORT: String(service.preview.internalPort),
-        }
-      : {};
+  const endpoint = previewEndpoint(service);
+  const previewEnvironment: PreviewManifestEnvironment = endpoint
+    ? {
+        HOST: "0.0.0.0",
+        PORT: String(endpoint.port),
+      }
+    : {};
   return {
     ...service,
     workingDir: service.workingDir || "/workspace",
@@ -324,7 +329,10 @@ function normalizeService(
 
 function normalizedServiceEnvironment(service: PreviewManifestService) {
   const environment = service.environment ?? {};
-  if (service.kind !== "dependency" || !mysqlImage(service.image)) {
+  if (
+    service.kind !== "dependency" ||
+    !mysqlImage(containerImage(service.container))
+  ) {
     return normalizedAppEnvironment(environment);
   }
   return normalizedMysqlEnvironment(normalizedAppEnvironment(environment));
@@ -395,6 +403,30 @@ function normalizedCaches(manifest: PreviewManifest) {
       target: "/npm/cache",
     });
   }
+  if (/\b(?:corepack\s+)?yarn\s+(?:install|run|exec)\b/.test(commands)) {
+    cacheByName.set("blame_yarn_cache", {
+      name: "blame_yarn_cache",
+      target: "/cache/yarn",
+    });
+  }
+  if (/\bbun\s+(?:install|run|x)\b/.test(commands)) {
+    cacheByName.set("blame_bun_cache", {
+      name: "blame_bun_cache",
+      target: "/cache/bun",
+    });
+  }
+  if (/\b(?:python\s+-m\s+)?pip3?\s+install\b/.test(commands)) {
+    cacheByName.set("blame_pip_cache", {
+      name: "blame_pip_cache",
+      target: "/cache/pip",
+    });
+  }
+  if (/\bcargo\s+(?:fetch|build|run|test)\b/.test(commands)) {
+    cacheByName.set("blame_cargo_cache", {
+      name: "blame_cargo_cache",
+      target: "/cache/cargo",
+    });
+  }
   return Array.from(cacheByName.values()).sort((left, right) =>
     left.name.localeCompare(right.name),
   );
@@ -420,6 +452,14 @@ function cacheEnvironment(caches: PreviewManifestCache[]) {
       ? { npm_config_store_dir: "/pnpm/store" }
       : {}),
     ...(byTarget.has("/npm/cache") ? { NPM_CONFIG_CACHE: "/npm/cache" } : {}),
+    ...(byTarget.has("/cache/yarn")
+      ? { YARN_CACHE_FOLDER: "/cache/yarn" }
+      : {}),
+    ...(byTarget.has("/cache/bun")
+      ? { BUN_INSTALL_CACHE_DIR: "/cache/bun" }
+      : {}),
+    ...(byTarget.has("/cache/pip") ? { PIP_CACHE_DIR: "/cache/pip" } : {}),
+    ...(byTarget.has("/cache/cargo") ? { CARGO_HOME: "/cache/cargo" } : {}),
   };
 }
 
@@ -467,13 +507,39 @@ function volumeInitService(caches: PreviewManifestCache[]) {
   ];
 }
 
+function containerYaml(container: PreviewManifestContainer) {
+  if (container.image) return [`    image: ${yamlString(container.image)}`];
+  if (!container.build) {
+    throw new Error("previewManifest container source is missing");
+  }
+  const context =
+    container.build.context === "."
+      ? "${BLAME_PROJECT_ROOT}"
+      : `\${BLAME_PROJECT_ROOT}/${container.build.context}`;
+  return [
+    "    build:",
+    `      context: ${yamlString(context)}`,
+    `      dockerfile: ${yamlString(container.build.dockerfile)}`,
+    ...(container.build.target
+      ? [`      target: ${yamlString(container.build.target)}`]
+      : []),
+  ];
+}
+
+function entrypointYaml(entrypoint: string[] | undefined) {
+  return entrypoint?.length
+    ? [`    entrypoint: ${JSON.stringify(entrypoint)}`]
+    : [];
+}
+
 function setupTaskYaml(
   task: PreviewManifestSetupTask,
   caches: PreviewManifestCache[],
 ) {
   return [
     `  ${task.id}:`,
-    `    image: ${yamlString(task.image)}`,
+    ...containerYaml(task.container),
+    ...entrypointYaml(task.entrypoint),
     `    working_dir: ${yamlString(task.workingDir ?? "/workspace")}`,
     `    command: ${yamlString(`sh -lc ${shellQuote(setupTaskCommand(task))}`)}`,
     "    labels:",
@@ -504,7 +570,9 @@ function serviceYaml(
 ) {
   return [
     `  ${service.id}:`,
-    `    image: ${yamlString(service.image)}`,
+    ...containerYaml(service.container),
+    ...entrypointYaml(service.entrypoint),
+    ...(service.user ? [`    user: ${yamlString(service.user)}`] : []),
     ...(service.kind === "dependency" && !service.command
       ? []
       : [`    working_dir: ${yamlString(service.workingDir ?? "/workspace")}`]),
@@ -545,12 +613,13 @@ function labelsYaml(service: PreviewManifestService) {
 }
 
 function previewLabels(service: PreviewManifestService) {
-  if (service.kind !== "preview" || !service.preview) return [];
+  const endpoint = previewEndpoint(service);
+  if (!endpoint) return [];
   return [
     ["blame.preview", "true"],
-    ["blame.preview.port", String(service.preview.internalPort)],
-    ["blame.preview.protocol", service.preview.protocol],
-    ["blame.preview.path", service.preview.path],
+    ["blame.preview.port", String(endpoint.port)],
+    ["blame.preview.protocol", endpoint.protocol],
+    ["blame.preview.path", endpoint.healthcheck?.path ?? "/"],
   ];
 }
 
@@ -592,7 +661,7 @@ function dependencyWaitCommands(
   service: PreviewManifestService,
   services: PreviewManifestService[],
 ) {
-  if (!nodeImage(service.image)) return [];
+  if (!nodeImage(containerImage(service.container))) return [];
   return (service.dependsOn ?? [])
     .map((id) => services.find((candidate) => candidate.id === id))
     .map((dependency) => dependencyWaitTarget(dependency))
@@ -604,7 +673,9 @@ function dependencyWaitTarget(service: PreviewManifestService | undefined) {
   if (!service) return undefined;
   const endpoint = (service.endpoints ?? [])[0];
   if (endpoint) return { host: service.id, port: endpoint.port };
-  if (mysqlImage(service.image)) return { host: service.id, port: 3306 };
+  if (mysqlImage(containerImage(service.container))) {
+    return { host: service.id, port: 3306 };
+  }
   return undefined;
 }
 
@@ -644,7 +715,7 @@ function publishedServicePorts(
   });
   return Array.from(
     new Set([
-      ...(service.preview ? [service.preview.internalPort] : []),
+      ...(previewEndpoint(service) ? [previewEndpoint(service)!.port] : []),
       ...endpointPorts,
     ]),
   );
@@ -682,7 +753,10 @@ function serviceHealthcheckYaml(service: PreviewManifestService) {
 function declaredHealthcheckYaml(service: PreviewManifestService) {
   const endpoint = healthcheckEndpoint(service);
   if (!endpoint) return [];
-  const command = endpointHealthcheckCommand(service.image, endpoint);
+  const command = endpointHealthcheckCommand(
+    containerImage(service.container),
+    endpoint,
+  );
   if (!command) return [];
   const healthcheck = endpoint.healthcheck;
   if (!healthcheck) return [];
@@ -699,17 +773,7 @@ function declaredHealthcheckYaml(service: PreviewManifestService) {
 }
 
 function healthcheckEndpoint(service: PreviewManifestService) {
-  const explicit = (service.endpoints ?? []).find(
-    ({ healthcheck }) => healthcheck,
-  );
-  if (explicit) return explicit;
-  if (!service.healthcheck || !service.preview) return undefined;
-  return {
-    id: "preview",
-    protocol: service.preview.protocol,
-    port: service.preview.internalPort,
-    healthcheck: service.healthcheck,
-  } satisfies PreviewManifestEndpoint;
+  return service.endpoints.find(({ healthcheck }) => healthcheck);
 }
 
 function endpointHealthcheckCommand(
@@ -749,7 +813,7 @@ function pythonHealthcheckCommand(endpoint: PreviewManifestEndpoint) {
 
 function knownDependencyHealthcheckYaml(service: PreviewManifestService) {
   if (service.kind !== "dependency") return undefined;
-  if (!mysqlImage(service.image)) return undefined;
+  if (!mysqlImage(containerImage(service.container))) return undefined;
   return [
     "    healthcheck:",
     "      test:",

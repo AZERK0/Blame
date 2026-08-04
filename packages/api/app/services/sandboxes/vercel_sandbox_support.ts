@@ -185,12 +185,3 @@ export function capabilityKeysMatch(publicPem: string | undefined, privatePem: s
     return false
   }
 }
-
-export function trustedBootstrapUrl(value: string) {
-  try {
-    const url = new URL(value)
-    return url.protocol === 'https:' && !url.username && !url.password && !url.hash
-  } catch {
-    return false
-  }
-}

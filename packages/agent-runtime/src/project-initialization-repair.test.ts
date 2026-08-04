@@ -1,275 +1,136 @@
-import assert from "node:assert/strict"
-import test from "node:test"
+import assert from "node:assert/strict";
+import test from "node:test";
 
 import {
   parseProjectInitializationRepairResult,
   projectInitializationRepairPrompt,
-} from "./project-initialization-repair.js"
+} from "./project-initialization-repair.js";
 
-const validCompose = `services:
-  web:
-    image: node:22
-    ports:
-      - "127.0.0.1::3000"`
-
-test("parses and validates repairable initialization artifacts", () => {
-  const result = parseProjectInitializationRepairResult(
-    JSON.stringify({
-      classification: "repairable_initialization",
-      reason: "The preview command is invalid.",
-      setupScript: "#!/usr/bin/env bash\nnpm install",
-      dockerCompose: validCompose,
-      runConfigurations: [
+function canonicalRepair() {
+  return {
+    classification: "repairable_initialization",
+    reason: "The preview command changed.",
+    previewManifest: {
+      confidence: "high",
+      project: { root: ".", detectedStack: ["node"], confidence: "high" },
+      setup: [
         {
-          id: "web",
-          name: "Web application",
-          command: "npm run dev",
-          cwd: ".",
-          default: true,
+          id: "deps",
+          container: { image: "node:22-bookworm" },
+          workingDir: "/workspace",
+          command:
+            "corepack prepare pnpm@10.33.2 --activate && corepack pnpm install",
         },
       ],
-    }),
-  )
-
-  assert.equal(result.classification, "repairable_initialization")
-  assert.equal(result.dockerCompose, validCompose)
-  assert.equal(result.runConfigurations?.[0]?.command, "npm run dev")
-})
-
-test("parses repairable preview manifests and generates artifacts", () => {
-  const result = parseProjectInitializationRepairResult(
-    JSON.stringify({
-      classification: "repairable_initialization",
-      reason: "The preview command is invalid.",
-      previewManifest: {
-        version: 1,
-        confidence: "high",
-        project: { root: ".", detectedStack: ["node"], confidence: "high" },
-        setup: [
-          {
-            id: "deps",
-            image: "node:22-bookworm",
-            workingDir: "/workspace",
-            command:
-              "corepack prepare pnpm@10.33.2 --activate && corepack pnpm install",
-          },
-        ],
-        services: [
-          {
-            id: "web",
-            kind: "preview",
-            image: "node:22-bookworm",
-            workingDir: "/workspace",
-            command:
-              "corepack prepare pnpm@10.33.2 --activate && corepack pnpm dev",
-            preview: { internalPort: 3000, protocol: "http", path: "/" },
-            healthcheck: { type: "http", path: "/", timeoutMs: 30_000 },
-          },
-        ],
-        caches: [],
-        risks: [],
+      services: [
+        {
+          id: "web",
+          kind: "preview",
+          container: { image: "node:22-bookworm" },
+          workingDir: "/workspace",
+          command:
+            "corepack prepare pnpm@10.33.2 --activate && corepack pnpm dev",
+          endpoints: [
+            {
+              id: "http",
+              protocol: "http",
+              port: 3000,
+              healthcheck: { type: "http", path: "/", timeoutMs: 30_000 },
+            },
+          ],
+        },
+      ],
+      caches: [],
+      risks: [],
+      probes: [],
+    },
+    runConfigurations: [
+      {
+        id: "web",
+        name: "Web application",
+        command: "npm run dev",
+        cwd: ".",
+        default: true,
+        category: "web",
+        services: ["web"],
+        previewService: "web",
+        scopes: ["web"],
       },
-      runConfigurations: [],
-    }),
-  )
+    ],
+  };
+}
 
-  assert.equal(result.classification, "repairable_initialization")
-  assert.equal(result.previewManifest?.services[0]?.kind, "preview")
-  assert.match(result.dockerCompose ?? "", /blame\.setup: "true"/)
-})
+test("generates repaired artifacts from a canonical manifest", () => {
+  const result = parseProjectInitializationRepairResult(
+    JSON.stringify(canonicalRepair()),
+  );
 
-test("omits artifacts for project code failures", () => {
+  assert.equal(result.classification, "repairable_initialization");
+  assert.equal(result.previewManifest?.services[0]?.kind, "preview");
+  assert.match(result.dockerCompose ?? "", /blame\.setup: "true"/);
+  assert.match(result.dockerCompose ?? "", /"127\.0\.0\.1::3000"/);
+});
+
+test("does not accept derived artifacts as a compatibility fallback", () => {
+  assert.throws(
+    () =>
+      parseProjectInitializationRepairResult(
+        JSON.stringify({
+          classification: "repairable_initialization",
+          reason: "Old artifacts changed.",
+          setupScript: "npm install",
+          dockerCompose: "services: {}",
+          runConfigurations: [],
+        }),
+      ),
+    /canonical previewManifest/,
+  );
+});
+
+test("rejects historical manifest and unknown service references", () => {
+  const historical = canonicalRepair();
+  assert.throws(
+    () =>
+      parseProjectInitializationRepairResult(
+        JSON.stringify({
+          ...historical,
+          previewManifest: { ...historical.previewManifest, version: 2 },
+        }),
+      ),
+    /version is no longer supported/,
+  );
+
+  const invalid = canonicalRepair();
+  invalid.runConfigurations[0]!.services = ["missing"];
+  invalid.runConfigurations[0]!.previewService = "missing";
+  assert.throws(
+    () => parseProjectInitializationRepairResult(JSON.stringify(invalid)),
+    /previewService must be a configured service|references unknown service missing/,
+  );
+});
+
+test("omits artifacts for non-initialization failures", () => {
   const result = parseProjectInitializationRepairResult(
     JSON.stringify({
       classification: "project_code_failure",
       reason: "The application fails during startup.",
-      setupScript: "ignored",
-      dockerCompose: "ignored",
+      previewManifest: canonicalRepair().previewManifest,
     }),
-  )
-
+  );
   assert.deepEqual(result, {
     classification: "project_code_failure",
     reason: "The application fails during startup.",
-  })
-})
+  });
+});
 
-test("omits artifacts for external failures", () => {
-  const result = parseProjectInitializationRepairResult(
-    JSON.stringify({
-      classification: "external_failure",
-      reason: "The container registry is unavailable.",
-    }),
-  )
-
-  assert.deepEqual(result, {
-    classification: "external_failure",
-    reason: "The container registry is unavailable.",
-  })
-})
-
-test("rejects invalid repaired artifacts", () => {
+test("requires complete run configurations for a repair", () => {
+  const value = canonicalRepair() as Record<string, unknown>;
+  delete value.runConfigurations;
   assert.throws(
-    () =>
-      parseProjectInitializationRepairResult(
-        JSON.stringify({
-          classification: "repairable_initialization",
-          reason: "Compose is invalid.",
-          setupScript: "npm install",
-          dockerCompose: "services:\n  web:\n    image: node",
-          runConfigurations: [],
-        }),
-      ),
-    /runtime-allocated host ports/,
-  )
-})
-
-test("rejects repaired configurations that reference unknown services", () => {
-  assert.throws(
-    () =>
-      parseProjectInitializationRepairResult(
-        JSON.stringify({
-          classification: "repairable_initialization",
-          reason: "The service selection changed.",
-          previewManifest: {
-            version: 2,
-            confidence: "high",
-            project: { root: ".", detectedStack: ["node"] },
-            setup: [],
-            services: [],
-            caches: [],
-            risks: [],
-            probes: [],
-          },
-          runConfigurations: [
-            {
-              id: "worker",
-              name: "Worker",
-              command: "node worker.js",
-              cwd: ".",
-              default: true,
-              category: "service",
-              services: ["missing"],
-              scopes: ["backend"],
-            },
-          ],
-        }),
-      ),
-    /references unknown service missing/,
-  )
-})
-
-test("accepts local public origin placeholders in repaired artifacts", () => {
-  const result = parseProjectInitializationRepairResult(
-    JSON.stringify({
-      classification: "repairable_initialization",
-      reason: "The auth origin is materialized by Blame before runtime launch.",
-      setupScript: "npm install",
-      dockerCompose: `${validCompose}
-    environment:
-      APP_URL: "http://127.0.0.1:3000"`,
-      runConfigurations: [],
-    }),
-  )
-
-  assert.equal(result.classification, "repairable_initialization")
-})
-
-test("requires complete run configurations for repairable initialization", () => {
-  assert.throws(
-    () =>
-      parseProjectInitializationRepairResult(
-        JSON.stringify({
-          classification: "repairable_initialization",
-          reason: "The preview command is invalid.",
-          setupScript: "npm install",
-          dockerCompose: validCompose,
-        }),
-      ),
+    () => parseProjectInitializationRepairResult(JSON.stringify(value)),
     /missing runConfigurations/,
-  )
-})
-
-test("rejects preview services without a project source mount", () => {
-  assert.throws(
-    () =>
-      parseProjectInitializationRepairResult(
-        JSON.stringify({
-          classification: "repairable_initialization",
-          reason: "The preview service is obsolete.",
-          setupScript: "npm install",
-          dockerCompose: `${validCompose}
-    working_dir: /workspace
-    labels:
-      blame.preview: "true"`,
-          runConfigurations: [],
-        }),
-      ),
-    /must mount the project source at \/workspace/,
-  )
-})
-
-test("rejects unescaped container home references", () => {
-  assert.throws(
-    () =>
-      parseProjectInitializationRepairResult(
-        JSON.stringify({
-          classification: "repairable_initialization",
-          reason: "The preview command is obsolete.",
-          setupScript: "npm install",
-          dockerCompose: `${validCompose}
-    command: sh -lc 'mkdir -p "$HOME"'`,
-          runConfigurations: [],
-        }),
-      ),
-    /escape container HOME references/,
-  )
-})
-
-test("rejects Node preview services without a dependency install", () => {
-  assert.throws(
-    () =>
-      parseProjectInitializationRepairResult(
-        JSON.stringify({
-          classification: "repairable_initialization",
-          reason: "The preview command is obsolete.",
-          setupScript: "echo ready",
-          dockerCompose: validCompose,
-          runConfigurations: [],
-        }),
-        {
-          rootName: "project",
-          topLevelEntries: [],
-          files: { "package.json": '{"dependencies":{"nuxt":"^3.16.2"}}' },
-          gitLog: [],
-        },
-      ),
-    /must install detected Node dependencies/,
-  )
-})
-
-test("rejects Nuxt preview commands without a build step", () => {
-  assert.throws(
-    () =>
-      parseProjectInitializationRepairResult(
-        JSON.stringify({
-          classification: "repairable_initialization",
-          reason: "The preview command is obsolete.",
-          setupScript: "echo ready",
-          dockerCompose: `${validCompose}
-    command: sh -lc 'npm install && npm run preview'`,
-          runConfigurations: [],
-        }),
-        {
-          rootName: "project",
-          topLevelEntries: [],
-          files: { "package.json": '{"dependencies":{"nuxt":"^3.16.2"}}' },
-          gitLog: [],
-        },
-      ),
-    /must build Nuxt before running its preview script/,
-  )
-})
+  );
+});
 
 test("includes validation feedback in repair correction prompts", () => {
   const input = {
@@ -278,8 +139,8 @@ test("includes validation feedback in repair correction prompts", () => {
     modelId: "model",
     cwd: "/project",
     workspaceRoot: "/project",
-    setupScript: "npm install",
-    dockerCompose: validCompose,
+    setupScript: "",
+    dockerCompose: "",
     runConfigurations: [],
     diagnostics: {
       setupLog: "",
@@ -288,17 +149,16 @@ test("includes validation feedback in repair correction prompts", () => {
       composePs: "",
       serviceLogs: {},
     },
-  }
+  };
   const prompt = projectInitializationRepairPrompt(
     input,
     { rootName: "project", topLevelEntries: [], files: {}, gitLog: [] },
     {
-      validationError: "Compose is invalid.",
+      validationError: "Manifest is invalid.",
       previousResult: '{"classification":"repairable_initialization"}',
     },
-  )
+  );
 
-  assert.match(prompt, /Your previous response was rejected by validation/)
-  assert.match(prompt, /Validation error: Compose is invalid\./)
-  assert.match(prompt, /Previous rejected response: \{"classification":"repairable_initialization"\}/)
-})
+  assert.match(prompt, /Your previous response was rejected by validation/);
+  assert.match(prompt, /Validation error: Manifest is invalid\./);
+});

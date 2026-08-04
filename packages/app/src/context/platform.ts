@@ -503,7 +503,7 @@ export type PreviewRuntimeClient = {
   disconnect(): Promise<boolean>
   create(input: {
     userStoryId: string
-    profile: "vercel-compose" | "vercel-process"
+    profile: "vercel-compose"
     previewManifest: PreviewManifest
     cloudUploadConsentAt: string
     operationId: string
@@ -511,10 +511,7 @@ export type PreviewRuntimeClient = {
     resourceSize?: { vcpus: number; memoryGb: number }
   }): Promise<PreviewSessionView>
   get(input: { sessionId: string }): Promise<PreviewSessionView>
-  openExternal(input: {
-    sessionId: string
-    endpointId?: string
-  }): Promise<boolean>
+  openExternal(input: { sessionId: string; routeId?: string }): Promise<boolean>
   command(input: {
     sessionId: string
     command: PreviewSessionCommand

@@ -18,13 +18,19 @@ export class UpstreamCapabilitySigner {
       iss: "blame-preview-edge",
       aud: "blame-sandbox-gateway",
       sessionId: route.sessionId,
+      routeId: route.routeId,
+      serviceId: route.serviceId,
       endpointId: route.endpointId,
       generation: route.generation,
       iat: now,
       exp: now + ttlSeconds,
       nonce: randomBytes(16).toString("base64url"),
     });
-    const signature = sign(null, Buffer.from(`${header}.${payload}`), this.key).toString("base64url");
+    const signature = sign(
+      null,
+      Buffer.from(`${header}.${payload}`),
+      this.key,
+    ).toString("base64url");
     return `${header}.${payload}.${signature}`;
   }
 }

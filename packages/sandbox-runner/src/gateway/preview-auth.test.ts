@@ -11,13 +11,19 @@ test("accepts only short endpoint-scoped Ed25519 capabilities", () => {
     iss: "blame-preview-edge",
     aud: "blame-sandbox-gateway",
     sessionId: "session-a",
+    routeId: "route-a-web-http",
+    serviceId: "web",
     endpointId: "frontend",
     generation: 3,
     iat: now,
     exp: now + 30,
     nonce: "abcdefghijklmnop",
   });
-  const signature = sign(null, Buffer.from(`${header}.${payload}`), privateKey).toString("base64url");
+  const signature = sign(
+    null,
+    Buffer.from(`${header}.${payload}`),
+    privateKey,
+  ).toString("base64url");
   const token = `${header}.${payload}.${signature}`;
   const key = publicKey.export({ type: "spki", format: "pem" }).toString();
   assert.equal(
@@ -25,6 +31,8 @@ test("accepts only short endpoint-scoped Ed25519 capabilities", () => {
       token,
       publicKeyPem: key,
       sessionId: "session-a",
+      routeId: "route-a-web-http",
+      serviceId: "web",
       endpointId: "frontend",
       generation: 3,
       now,
@@ -36,8 +44,36 @@ test("accepts only short endpoint-scoped Ed25519 capabilities", () => {
       token,
       publicKeyPem: key,
       sessionId: "session-b",
+      routeId: "route-a-web-http",
+      serviceId: "web",
       endpointId: "frontend",
       generation: 3,
+      now,
+    }),
+    null,
+  );
+  assert.equal(
+    verifyPreviewCapability({
+      token,
+      publicKeyPem: key,
+      sessionId: "session-a",
+      routeId: "route-a-web-http",
+      serviceId: "api",
+      endpointId: "frontend",
+      generation: 3,
+      now,
+    }),
+    null,
+  );
+  assert.equal(
+    verifyPreviewCapability({
+      token,
+      publicKeyPem: key,
+      sessionId: "session-a",
+      routeId: "route-a-web-http",
+      serviceId: "web",
+      endpointId: "frontend",
+      generation: 4,
       now,
     }),
     null,

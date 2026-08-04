@@ -85,7 +85,7 @@ test.group('project initializations', (group) => {
     const completed = completeResponse.body() as InitializationBody
     assert.equal(completed.data.initialization?.status, 'done')
     assert.equal(completed.data.initialization?.clineSessionId, 'session-1')
-    assert.equal(completed.data.initialization?.previewManifest?.version, 1)
+    assert.notProperty(completed.data.initialization?.previewManifest ?? {}, 'version')
     assert.equal(completed.data.initialization?.runConfigurations[0]?.command, 'pnpm dev')
     assert.equal(completed.data.initialization?.runConfigurations[0]?.category, 'web')
     assert.deepEqual(completed.data.initialization?.runConfigurations[0]?.services, ['web'])
@@ -297,11 +297,23 @@ test.group('project initializations', (group) => {
 
     response.assertStatus(422)
   })
+
+  test('explicitly rejects the removed Vercel process profile', async ({ client }) => {
+    const user = await createUser()
+    const response = await client
+      .post('/api/v1/preview-sessions')
+      .loginAs(user)
+      .json({ profile: 'vercel-process' })
+
+    response.assertStatus(400)
+    response.assertBodyContains({
+      failure: { code: 'INVALID_MANIFEST', retryable: false },
+    })
+  })
 })
 
 function previewManifest(confidence: 'low' | 'medium' | 'high') {
   return {
-    version: 1,
     confidence,
     project: { root: '.' },
     setup: [],
@@ -309,14 +321,21 @@ function previewManifest(confidence: 'low' | 'medium' | 'high') {
       {
         id: 'web',
         kind: 'preview',
-        image: 'node:22-bookworm',
+        container: { image: 'node:22-bookworm' },
         command: 'pnpm dev',
-        preview: { internalPort: 3000, protocol: 'http', path: '/' },
-        healthcheck: { type: 'http', path: '/', timeoutMs: 30_000 },
+        endpoints: [
+          {
+            id: 'http',
+            protocol: 'http',
+            port: 3000,
+            healthcheck: { type: 'http', path: '/', timeoutMs: 30_000 },
+          },
+        ],
       },
     ],
     caches: [],
     risks: [],
+    probes: [],
   }
 }
 

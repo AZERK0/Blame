@@ -49,10 +49,7 @@ export function shouldStartBrowserPreview(
   manifest: PreviewManifest | undefined,
 ) {
   const selected = selectedPreviewRunConfiguration(configurations, state);
-  if (!manifest) {
-    return configurations.length === 0 || Boolean(selected?.previewService);
-  }
-  if (!selected) return manifest.services.some(browserPreviewService);
+  if (!manifest || !selected) return false;
   if (selected.category && selected.category !== "web") return false;
   return manifest.services.some(
     (service) =>
@@ -66,12 +63,13 @@ export function selectedPreviewRuntimeServiceIds(
   runtimeServiceIds: string[],
 ) {
   const selected = selectedPreviewRunConfiguration(configurations, state);
+  if (!selected) return [];
   const runtimeServices = new Set(runtimeServiceIds);
   const selectedServices = (selected?.services ?? []).filter((service) =>
     runtimeServices.has(service),
   );
   if (selected && hostOnlyRunConfiguration(selected)) return [];
-  return selectedServices.length ? selectedServices : runtimeServiceIds;
+  return selectedServices;
 }
 
 export function normalizeStoredRunConfigurations(
@@ -153,7 +151,10 @@ function previewServiceDependencies(service: PreviewManifestService) {
 }
 
 function browserPreviewService(service: PreviewManifestService) {
-  return service.kind === "preview" && Boolean(service.preview);
+  return (
+    service.kind === "preview" &&
+    service.endpoints.some(({ protocol }) => protocol !== "tcp")
+  );
 }
 
 function normalizeStoredRunConfiguration(

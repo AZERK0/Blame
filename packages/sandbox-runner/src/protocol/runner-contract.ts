@@ -18,9 +18,9 @@ export type RunnerRequest = (
   | { operation: "resume-host"; sessionId: string; generation: number }
   | {
       operation: "prepare-engine";
-      engine: "vercel-compose" | "vercel-process";
       plan: PreviewExecutionPlan;
       browserBindingUrls?: Record<string, string>;
+      routeIds?: Record<string, string>;
       capabilityPublicKey?: string;
       sessionId?: string;
       generation?: number;

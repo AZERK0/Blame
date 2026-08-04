@@ -2,18 +2,16 @@ import type {
   PreviewManifest,
   PreviewManifestBinding,
   PreviewManifestCache,
+  PreviewManifestContainer,
   PreviewManifestEndpoint,
   PreviewManifestEndpointHealthcheck,
-  PreviewManifestExecutionSource,
   PreviewManifestEnvironment,
-  PreviewManifestHealthcheck,
   PreviewManifestProbe,
   PreviewManifestProject,
   PreviewManifestRisk,
   PreviewManifestService,
   PreviewManifestServiceKind,
   PreviewManifestSetupTask,
-  PreviewManifestVersion,
 } from "./types.js";
 
 const serviceKinds = new Set<PreviewManifestServiceKind>([
@@ -44,13 +42,21 @@ const unsafeCommandPatterns = [
 
 export function parsePreviewManifest(value: unknown): PreviewManifest {
   if (!isRecord(value)) throw new Error("previewManifest must be an object");
-  const version = parseVersion(value.version);
+  rejectHistoricalFields(value, "previewManifest");
+  assertOnlyKeys(value, "previewManifest", [
+    "confidence",
+    "project",
+    "setup",
+    "services",
+    "caches",
+    "risks",
+    "probes",
+  ]);
   const manifest: PreviewManifest = {
-    version,
     confidence: parseConfidence(value.confidence),
     project: parseProject(value.project),
-    setup: parseSetupTasks(value.setup, version),
-    services: parseServices(value.services, version),
+    setup: parseSetupTasks(value.setup),
+    services: parseServices(value.services),
     caches: parseCaches(value.caches),
     risks: parseRisks(value.risks),
     probes: parseProbes(value.probes),
@@ -88,43 +94,6 @@ export function validatePreviewManifest(manifest: PreviewManifest) {
   for (const service of manifest.services) validateService(service, knownIds);
   for (const cache of manifest.caches) validateCache(cache);
   validateTopology(manifest);
-  validateVersionTwoContract(manifest);
-}
-
-function validateVersionTwoContract(manifest: PreviewManifest) {
-  if (manifest.version < 2) return;
-  if (!manifest.probes) {
-    throw new Error("previewManifest version 2 must define probes");
-  }
-  for (const service of manifest.services) {
-    if (!service.endpoints) {
-      throw new Error(
-        `previewManifest service ${service.id} must define endpoints`,
-      );
-    }
-    if (service.kind === "preview" && !previewEndpointMatches(service)) {
-      throw new Error(
-        `previewManifest service ${service.id} must expose its preview endpoint`,
-      );
-    }
-  }
-}
-
-function previewEndpointMatches(service: PreviewManifestService) {
-  const preview = service.preview;
-  if (!preview) return false;
-  return (service.endpoints ?? []).some(
-    (endpoint) =>
-      endpoint.port === preview.internalPort &&
-      endpoint.protocol === preview.protocol,
-  );
-}
-
-function parseVersion(value: unknown): PreviewManifestVersion {
-  if (value !== 1 && value !== 2 && value !== 3) {
-    throw new Error("previewManifest version must be 1, 2, or 3");
-  }
-  return value;
 }
 
 function parseConfidence(value: unknown) {
@@ -138,6 +107,7 @@ function parseProject(value: unknown): PreviewManifestProject {
   if (value === undefined) return {};
   if (!isRecord(value))
     throw new Error("previewManifest project must be an object");
+  assertOnlyKeys(value, "project", ["root", "detectedStack", "confidence"]);
   return {
     root: optionalString(value.root),
     detectedStack: parseOptionalStrings(
@@ -151,128 +121,110 @@ function parseProject(value: unknown): PreviewManifestProject {
   };
 }
 
-function parseSetupTasks(value: unknown, version: PreviewManifestVersion) {
+function parseSetupTasks(value: unknown) {
   limitedArray(value, "setup", 50);
-  return value.map((task) => parseSetupTask(task, version));
+  return value.map(parseSetupTask);
 }
 
-function parseSetupTask(
-  value: unknown,
-  version: PreviewManifestVersion,
-): PreviewManifestSetupTask {
+function parseSetupTask(value: unknown): PreviewManifestSetupTask {
   if (!isRecord(value))
     throw new Error("previewManifest setup task must be an object");
-  const source = parseExecutionSource(value, version, "setup");
+  rejectHistoricalFields(value, "setup task");
+  assertOnlyKeys(value, "setup task", [
+    "id",
+    "container",
+    "workingDir",
+    "command",
+    "entrypoint",
+    "runAs",
+    "environment",
+    "dependsOn",
+  ]);
   return {
     id: requiredString(value.id, "setup.id"),
-    image: parsedExecutionImage(source, value.image, "setup.image"),
-    source,
+    container: parseContainer(value.container, "setup.container"),
     workingDir: optionalString(value.workingDir),
     command: requiredString(value.command, "setup.command"),
+    entrypoint: parseOptionalCommand(value.entrypoint, "setup.entrypoint"),
     runAs: parseRunAs(value.runAs),
     environment: parseEnvironment(value.environment, "setup.environment"),
     dependsOn: parseOptionalStrings(value.dependsOn, "setup.dependsOn"),
   };
 }
 
-function parseServices(value: unknown, version: PreviewManifestVersion) {
+function parseServices(value: unknown) {
   limitedArray(value, "services", 50);
-  return value.map((service) => parseService(service, version));
+  return value.map(parseService);
 }
 
-function parseService(
-  value: unknown,
-  version: PreviewManifestVersion,
-): PreviewManifestService {
+function parseService(value: unknown): PreviewManifestService {
   if (!isRecord(value))
     throw new Error("previewManifest service must be an object");
-  const source = parseExecutionSource(value, version, "service");
+  rejectHistoricalFields(value, "service");
+  assertOnlyKeys(value, "service", [
+    "id",
+    "kind",
+    "container",
+    "workingDir",
+    "command",
+    "entrypoint",
+    "user",
+    "environment",
+    "dependsOn",
+    "endpoints",
+    "bindings",
+  ]);
   return {
     id: requiredString(value.id, "service.id"),
     kind: serviceKind(value.kind),
-    image: parsedExecutionImage(source, value.image, "service.image"),
-    source,
+    container: parseContainer(value.container, "service.container"),
     workingDir: optionalString(value.workingDir),
     command: optionalString(value.command),
+    entrypoint: parseOptionalCommand(value.entrypoint, "service.entrypoint"),
+    user: optionalString(value.user),
     environment: parseEnvironment(value.environment, "service.environment"),
     dependsOn: parseOptionalStrings(value.dependsOn, "service.dependsOn"),
-    preview:
-      value.preview === undefined ? undefined : parsePreview(value.preview),
-    healthcheck:
-      value.healthcheck === undefined
-        ? undefined
-        : parseHealthcheck(value.healthcheck),
     endpoints: parseEndpoints(value.endpoints),
     bindings: parseBindings(value.bindings),
   };
 }
 
-function parseExecutionSource(
-  value: Record<string, unknown>,
-  version: PreviewManifestVersion,
-  context: string,
-): PreviewManifestExecutionSource | undefined {
-  if (version < 3) return undefined;
-  if (!isRecord(value.source))
-    throw new Error(
-      `previewManifest ${context}.source is required in version 3`,
-    );
-  const kind = value.source.kind;
-  if (kind === "container") {
-    return {
-      kind,
-      image: requiredString(value.source.image, `${context}.source.image`),
-    };
-  }
-  if (kind === "process") {
-    return { kind, toolchain: optionalString(value.source.toolchain) };
-  }
-  if (kind === "auto") {
-    return {
-      kind,
-      image: optionalString(value.source.image),
-      toolchain: optionalString(value.source.toolchain),
-    };
-  }
-  throw new Error(`previewManifest ${context}.source kind is invalid`);
-}
-
-function parsedExecutionImage(
-  source: PreviewManifestExecutionSource | undefined,
-  legacyImage: unknown,
+function parseContainer(
+  value: unknown,
   field: string,
-) {
-  if (!source) return requiredString(legacyImage, field);
-  if (source.kind === "container") return source.image;
-  if (source.kind === "auto" && source.image) return source.image;
-  return "runtime";
-}
-
-function parsePreview(value: unknown): PreviewManifestService["preview"] {
+): PreviewManifestContainer {
   if (!isRecord(value))
-    throw new Error("previewManifest preview must be an object");
-  return {
-    internalPort: portValue(value.internalPort, "preview.internalPort"),
-    protocol: protocolValue(value.protocol),
-    path: pathValue(value.path, "preview.path"),
-  };
-}
-
-function parseHealthcheck(value: unknown): PreviewManifestHealthcheck {
-  if (!isRecord(value))
-    throw new Error("previewManifest healthcheck must be an object");
-  if (value.type !== "http") {
-    throw new Error("previewManifest healthcheck type must be http");
+    throw new Error(`previewManifest ${field} must be an object`);
+  assertOnlyKeys(value, field, ["image", "build"]);
+  const image = optionalString(value.image);
+  const build =
+    value.build === undefined
+      ? undefined
+      : parseBuild(value.build, `${field}.build`);
+  if (Boolean(image) === Boolean(build)) {
+    throw new Error(
+      `previewManifest ${field} must define exactly one of image or build`,
+    );
   }
+  if (image) validateImage(image, field);
+  return image ? { image } : { build: build! };
+}
+
+function parseBuild(value: unknown, field: string) {
+  if (!isRecord(value))
+    throw new Error(`previewManifest ${field} must be an object`);
+  assertOnlyKeys(value, field, ["context", "dockerfile", "target"]);
   return {
-    type: "http",
-    path: pathValue(value.path, "healthcheck.path"),
-    timeoutMs: timeoutValue(value.timeoutMs, "healthcheck.timeoutMs"),
+    context: workspaceRelativePath(value.context, `${field}.context`),
+    dockerfile: workspaceRelativePath(value.dockerfile, `${field}.dockerfile`),
+    target:
+      value.target === undefined
+        ? undefined
+        : safeBuildTarget(value.target, `${field}.target`),
   };
 }
 
-function parseEndpoints(value: unknown): PreviewManifestEndpoint[] | undefined {
-  if (value === undefined) return undefined;
+function parseEndpoints(value: unknown): PreviewManifestEndpoint[] {
   limitedArray(value, "endpoints", 20);
   return value.map(parseEndpoint);
 }
@@ -280,6 +232,7 @@ function parseEndpoints(value: unknown): PreviewManifestEndpoint[] | undefined {
 function parseEndpoint(value: unknown): PreviewManifestEndpoint {
   if (!isRecord(value))
     throw new Error("previewManifest endpoint must be an object");
+  assertOnlyKeys(value, "endpoint", ["id", "protocol", "port", "healthcheck"]);
   const protocol = requiredString(value.protocol, "endpoint.protocol");
   if (!endpointProtocols.has(protocol)) {
     throw new Error("previewManifest endpoint protocol is invalid");
@@ -298,6 +251,7 @@ function parseEndpointHealthcheck(
   if (value === undefined) return undefined;
   if (!isRecord(value))
     throw new Error("previewManifest endpoint healthcheck must be an object");
+  assertOnlyKeys(value, "endpoint.healthcheck", ["type", "path", "timeoutMs"]);
   if (value.type !== "http" && value.type !== "tcp") {
     throw new Error("previewManifest endpoint healthcheck type is invalid");
   }
@@ -320,6 +274,13 @@ function parseBindings(value: unknown): PreviewManifestBinding[] | undefined {
 function parseBinding(value: unknown): PreviewManifestBinding {
   if (!isRecord(value))
     throw new Error("previewManifest binding must be an object");
+  assertOnlyKeys(value, "binding", [
+    "target",
+    "source",
+    "exposure",
+    "format",
+    "path",
+  ]);
   const exposure = requiredString(value.exposure, "binding.exposure");
   const format = optionalString(value.format) ?? "url";
   if (!bindingExposures.has(exposure))
@@ -344,6 +305,7 @@ function parseBindingTarget(value: unknown) {
       "previewManifest binding target must be an environment variable",
     );
   }
+  assertOnlyKeys(value, "binding.target", ["type", "key"]);
   const key = requiredString(value.key, "binding.target.key");
   if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) {
     throw new Error("previewManifest binding environment key is invalid");
@@ -354,14 +316,14 @@ function parseBindingTarget(value: unknown) {
 function parseBindingSource(value: unknown) {
   if (!isRecord(value))
     throw new Error("previewManifest binding source must be an object");
+  assertOnlyKeys(value, "binding.source", ["service", "endpoint"]);
   return {
     service: requiredString(value.service, "binding.source.service"),
     endpoint: requiredString(value.endpoint, "binding.source.endpoint"),
   };
 }
 
-function parseProbes(value: unknown): PreviewManifestProbe[] | undefined {
-  if (value === undefined) return undefined;
+function parseProbes(value: unknown): PreviewManifestProbe[] {
   limitedArray(value, "probes", 50);
   return value.map(parseProbe);
 }
@@ -369,6 +331,15 @@ function parseProbes(value: unknown): PreviewManifestProbe[] | undefined {
 function parseProbe(value: unknown): PreviewManifestProbe {
   if (!isRecord(value))
     throw new Error("previewManifest probe must be an object");
+  assertOnlyKeys(value, "probe", [
+    "id",
+    "from",
+    "target",
+    "type",
+    "acceptedStatuses",
+    "timeoutMs",
+    "required",
+  ]);
   if (value.type !== "http" && value.type !== "tcp") {
     throw new Error("previewManifest probe type is invalid");
   }
@@ -392,6 +363,7 @@ function parseProbe(value: unknown): PreviewManifestProbe {
 function parseProbeTarget(value: unknown) {
   if (!isRecord(value))
     throw new Error("previewManifest probe target must be an object");
+  assertOnlyKeys(value, "probe.target", ["service", "endpoint", "path"]);
   return {
     service: requiredString(value.service, "probe.target.service"),
     endpoint: requiredString(value.endpoint, "probe.target.endpoint"),
@@ -425,6 +397,7 @@ function parseCaches(value: unknown) {
 function parseCache(value: unknown): PreviewManifestCache {
   if (!isRecord(value))
     throw new Error("previewManifest cache must be an object");
+  assertOnlyKeys(value, "cache", ["name", "target"]);
   return {
     name: requiredString(value.name, "cache.name"),
     target: requiredString(value.target, "cache.target"),
@@ -440,6 +413,7 @@ function parseRisks(value: unknown) {
 function parseRisk(value: unknown): PreviewManifestRisk {
   if (!isRecord(value))
     throw new Error("previewManifest risk must be an object");
+  assertOnlyKeys(value, "risk", ["level", "message"]);
   if (typeof value.level !== "string" || !riskLevels.has(value.level)) {
     throw new Error("previewManifest risk level is invalid");
   }
@@ -455,7 +429,7 @@ function validateTopology(manifest: PreviewManifest) {
   );
   for (const service of manifest.services)
     validateServiceTopology(service, services);
-  for (const probe of manifest.probes ?? []) validateProbe(probe, services);
+  for (const probe of manifest.probes) validateProbe(probe, services);
   validateDependencyCycles(manifest);
 }
 
@@ -465,13 +439,13 @@ function validateServiceTopology(
 ) {
   uniqueIds(
     `endpoint in service ${service.id}`,
-    (service.endpoints ?? []).map(({ id }) => id),
+    service.endpoints.map(({ id }) => id),
   );
   uniqueIds(
     `binding in service ${service.id}`,
     (service.bindings ?? []).map(({ target }) => target.key),
   );
-  for (const endpoint of service.endpoints ?? []) validateEndpoint(endpoint);
+  for (const endpoint of service.endpoints) validateEndpoint(endpoint);
   for (const binding of service.bindings ?? [])
     validateBinding(binding, service, services);
 }
@@ -531,16 +505,7 @@ function validateProbe(
 }
 
 function serviceEndpoint(service: PreviewManifestService, id: string) {
-  const explicit = (service.endpoints ?? []).find(
-    (endpoint) => endpoint.id === id,
-  );
-  if (explicit) return explicit;
-  if (id !== "preview" || !service.preview) return undefined;
-  return {
-    id: "preview",
-    protocol: service.preview.protocol,
-    port: service.preview.internalPort,
-  } satisfies PreviewManifestEndpoint;
+  return service.endpoints.find((endpoint) => endpoint.id === id);
 }
 
 function validateDependencyCycles(manifest: PreviewManifest) {
@@ -591,14 +556,10 @@ function validateSetupTask(
   knownIds: Set<string>,
 ) {
   validateId(task.id, "setup task");
-  if (
-    task.source?.kind !== "process" &&
-    (task.source?.kind !== "auto" || task.source.image)
-  ) {
-    validateImage(task.source?.image ?? task.image, `setup task ${task.id}`);
-  }
+  validateContainer(task.container, `setup task ${task.id}`);
   validateWorkingDir(task.workingDir, `setup task ${task.id}`);
   validateCommand(task.command, `setup task ${task.id}`);
+  validateEntrypoint(task.entrypoint, `setup task ${task.id}`);
   validateSetupRunAs(task);
   validateDependencies(task.dependsOn, knownIds, `setup task ${task.id}`);
 }
@@ -608,16 +569,10 @@ function validateService(
   knownIds: Set<string>,
 ) {
   validateId(service.id, "service");
-  if (
-    service.source?.kind !== "process" &&
-    (service.source?.kind !== "auto" || service.source.image)
-  ) {
-    validateImage(
-      service.source?.image ?? service.image,
-      `service ${service.id}`,
-    );
-  }
+  validateContainer(service.container, `service ${service.id}`);
   validateWorkingDir(service.workingDir, `service ${service.id}`);
+  validateEntrypoint(service.entrypoint, `service ${service.id}`);
+  validateContainerUser(service.user, `service ${service.id}`);
   if (service.kind !== "dependency" && !service.command) {
     throw new Error(
       `previewManifest service ${service.id} command is required`,
@@ -631,23 +586,30 @@ function validateService(
 
 function validatePreviewService(service: PreviewManifestService) {
   if (service.kind === "preview") {
-    if (!service.preview)
+    const published = service.endpoints.filter(
+      ({ protocol }) => protocol !== "tcp",
+    );
+    if (!published.length) {
       throw new Error(
-        `previewManifest service ${service.id} preview is required`,
+        `previewManifest service ${service.id} must define an HTTP endpoint`,
       );
-    if (
-      !service.healthcheck &&
-      !(service.endpoints ?? []).some(({ healthcheck }) => healthcheck)
-    ) {
+    }
+    if (!published.some(({ healthcheck }) => healthcheck)) {
       throw new Error(
         `previewManifest service ${service.id} healthcheck is required`,
       );
     }
-  } else if (service.preview) {
-    throw new Error(
-      `previewManifest service ${service.id} preview is only allowed on preview services`,
-    );
   }
+}
+
+function validateContainer(
+  container: PreviewManifestContainer,
+  context: string,
+) {
+  if (container.image) validateImage(container.image, context);
+  if (!container.build) return;
+  validateWorkspacePath(container.build.context, `${context} build context`);
+  validateWorkspacePath(container.build.dockerfile, `${context} Dockerfile`);
 }
 
 function validateCache(cache: PreviewManifestCache) {
@@ -716,8 +678,23 @@ function unsafeWorkspaceOwnershipCommand(command: string) {
 }
 
 function validateImage(image: string, context: string) {
-  if (/\$|\n|\r/.test(image))
+  if (/\$|\n|\r|:\/\/|@[^/]+@/.test(image) || image.includes(".."))
     throw new Error(`previewManifest ${context} image must be literal`);
+}
+
+function validateEntrypoint(value: string[] | undefined, context: string) {
+  if (value?.some((entry) => /[\0\r\n]/.test(entry))) {
+    throw new Error(`previewManifest ${context} entrypoint is invalid`);
+  }
+}
+
+function validateContainerUser(value: string | undefined, context: string) {
+  if (!value) return;
+  if (
+    !/^[a-zA-Z_][a-zA-Z0-9_.-]*$|^[1-9][0-9]*(?::[1-9][0-9]*)?$/.test(value)
+  ) {
+    throw new Error(`previewManifest ${context} user must be non-root`);
+  }
 }
 
 function validateWorkingDir(value: string | undefined, context: string) {
@@ -759,12 +736,6 @@ function serviceKind(value: unknown): PreviewManifestServiceKind {
     throw new Error("previewManifest service kind is invalid");
   }
   return value as PreviewManifestServiceKind;
-}
-
-function protocolValue(value: unknown): "http" {
-  if (value !== "http")
-    throw new Error("previewManifest protocol must be http");
-  return "http";
 }
 
 function portValue(value: unknown, field: string) {
@@ -820,9 +791,27 @@ function parseEnvironment(
     ) {
       throw new Error(`previewManifest ${field} is invalid`);
     }
+    if (secretEnvironmentKey(key) || literalSecretValue(entry)) {
+      throw new Error(
+        `previewManifest ${field}.${key} requires the explicit secret delivery channel`,
+      );
+    }
     environment[key] = entry;
   }
   return environment;
+}
+
+function secretEnvironmentKey(key: string) {
+  return /(?:TOKEN|SECRET|PASSWORD|PASSWD|PRIVATE_KEY|API_KEY|ACCESS_KEY|CREDENTIAL|AUTH|SESSION_KEY)$/i.test(
+    key,
+  );
+}
+
+function literalSecretValue(value: string) {
+  return (
+    /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/.test(value) ||
+    /^[a-z][a-z0-9+.-]*:\/\/[^\s/:]+:[^\s/@]+@/i.test(value)
+  );
 }
 
 function parseRunAs(value: unknown) {
@@ -843,6 +832,49 @@ function parseOptionalStrings(value: unknown, field: string) {
     throw new Error(`previewManifest ${field} must be a string array`);
   }
   return value as string[];
+}
+
+function parseOptionalCommand(value: unknown, field: string) {
+  if (value === undefined) return undefined;
+  if (
+    !Array.isArray(value) ||
+    value.length === 0 ||
+    value.length > 100 ||
+    value.some(
+      (entry) => typeof entry !== "string" || !entry || entry.length > 4_000,
+    )
+  ) {
+    throw new Error(`previewManifest ${field} must be a bounded string array`);
+  }
+  return value as string[];
+}
+
+function workspaceRelativePath(value: unknown, field: string) {
+  const path = requiredString(value, field);
+  validateWorkspacePath(path, field);
+  return path;
+}
+
+function validateWorkspacePath(path: string, field: string) {
+  const parts = path.replace(/\\/g, "/").split("/");
+  if (
+    path.startsWith("/") ||
+    path.startsWith("\\") ||
+    /^[a-zA-Z]:/.test(path) ||
+    parts.includes("..") ||
+    parts.includes("") ||
+    /[\0\r\n]/.test(path)
+  ) {
+    throw new Error(`previewManifest ${field} must stay inside the workspace`);
+  }
+}
+
+function safeBuildTarget(value: unknown, field: string) {
+  const target = requiredString(value, field);
+  if (!/^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$/.test(target)) {
+    throw new Error(`previewManifest ${field} is invalid`);
+  }
+  return target;
 }
 
 function limitedArray(
@@ -874,4 +906,33 @@ function booleanValue(value: unknown, field: string) {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+function rejectHistoricalFields(
+  value: Record<string, unknown>,
+  context: string,
+) {
+  if (Object.hasOwn(value, "version")) {
+    throw new Error(
+      `previewManifest ${context} field version is no longer supported`,
+    );
+  }
+  if (Object.hasOwn(value, "source")) {
+    throw new Error(
+      `previewManifest ${context} field source is no longer supported`,
+    );
+  }
+}
+
+function assertOnlyKeys(
+  value: Record<string, unknown>,
+  context: string,
+  allowed: readonly string[],
+) {
+  const unknown = Object.keys(value).filter((key) => !allowed.includes(key));
+  if (unknown.length) {
+    throw new Error(
+      `previewManifest ${context} contains unsupported field ${unknown[0]}`,
+    );
+  }
 }

@@ -244,7 +244,7 @@ export type BlameDesktopApi = {
     disconnect(): Promise<boolean>;
     create(input: {
       userStoryId: string;
-      profile: "vercel-compose" | "vercel-process";
+      profile: "vercel-compose";
       previewManifest: PreviewManifest;
       cloudUploadConsentAt: string;
       operationId: string;
@@ -254,7 +254,7 @@ export type BlameDesktopApi = {
     get(input: { sessionId: string }): Promise<PreviewSessionView>;
     openExternal(input: {
       sessionId: string;
-      endpointId?: string;
+      routeId?: string;
     }): Promise<boolean>;
     command(input: {
       sessionId: string;

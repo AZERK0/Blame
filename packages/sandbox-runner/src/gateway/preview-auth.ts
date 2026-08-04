@@ -4,6 +4,8 @@ export type PreviewCapabilityClaims = {
   iss: "blame-preview-edge";
   aud: "blame-sandbox-gateway";
   sessionId: string;
+  routeId: string;
+  serviceId: string;
   endpointId: string;
   generation: number;
   exp: number;
@@ -15,15 +17,21 @@ export function verifyPreviewCapability(input: {
   token: string | undefined;
   publicKeyPem: string;
   sessionId: string;
+  routeId: string;
+  serviceId: string;
   endpointId: string;
   generation: number;
   now?: number;
 }): PreviewCapabilityClaims | null {
   try {
     if (!input.token || input.token.length > 4096) return null;
-    const [encodedHeader, encodedPayload, encodedSignature, extra] = input.token.split(".");
-    if (!encodedHeader || !encodedPayload || !encodedSignature || extra) return null;
-    const header = JSON.parse(Buffer.from(encodedHeader, "base64url").toString("utf8"));
+    const [encodedHeader, encodedPayload, encodedSignature, extra] =
+      input.token.split(".");
+    if (!encodedHeader || !encodedPayload || !encodedSignature || extra)
+      return null;
+    const header = JSON.parse(
+      Buffer.from(encodedHeader, "base64url").toString("utf8"),
+    );
     if (header.alg !== "EdDSA" || header.typ !== "JWT") return null;
     const claims = JSON.parse(
       Buffer.from(encodedPayload, "base64url").toString("utf8"),
@@ -41,6 +49,8 @@ export function verifyPreviewCapability(input: {
       claims.iss !== "blame-preview-edge" ||
       claims.aud !== "blame-sandbox-gateway" ||
       claims.sessionId !== input.sessionId ||
+      claims.routeId !== input.routeId ||
+      claims.serviceId !== input.serviceId ||
       claims.endpointId !== input.endpointId ||
       claims.generation !== input.generation ||
       !Number.isSafeInteger(claims.exp) ||

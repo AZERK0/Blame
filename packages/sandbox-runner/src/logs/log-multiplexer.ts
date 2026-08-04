@@ -1,6 +1,9 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import type { PreviewLogEvent, PreviewSessionState } from "@blame/preview-runtime";
+import type {
+  PreviewLogEvent,
+  PreviewSessionState,
+} from "@blame/preview-runtime";
 import { runtimePaths } from "../runtime-paths.js";
 
 export async function processLogEvents(input: {
@@ -13,7 +16,7 @@ export async function processLogEvents(input: {
 }): Promise<PreviewLogEvent[]> {
   const after = safeCursor(input.cursor);
   const ids = input.serviceId ? [input.serviceId] : input.serviceIds;
-  const values = input.messages ?? await fileLogMessages(ids);
+  const values = input.messages ?? (await fileLogMessages(ids));
   return values.slice(after, after + 1000).map((value, index) => ({
     sessionId: input.sessionId,
     sequence: after + index + 1,
@@ -29,7 +32,12 @@ async function fileLogMessages(ids: string[]) {
   const values: Array<{ serviceId: string; message: string }> = [];
   for (const serviceId of ids) {
     try {
-      const lines = (await readFile(join(runtimePaths.logs, `${safeId(serviceId)}.log`), "utf8"))
+      const lines = (
+        await readFile(
+          join(runtimePaths.logs, `${safeId(serviceId)}.log`),
+          "utf8",
+        )
+      )
         .slice(-4 * 1024 * 1024)
         .split("\n")
         .filter(Boolean);
@@ -42,7 +50,10 @@ async function fileLogMessages(ids: string[]) {
 export function redact(message: string) {
   return message
     .replace(/https?:\/\/[^\s]+/gi, "[redacted-url]")
-    .replace(/(authorization|token|secret|password|api[_-]?key)[=: ]+[^\s]+/gi, "$1=[redacted]")
+    .replace(
+      /(authorization|auth|token|secret|password|passwd|private[_-]?key|api[_-]?key|access[_-]?key|credential|session[_-]?key)[=: ]+[^\s]+/gi,
+      "$1=[redacted]",
+    )
     .slice(0, 16_384);
 }
 

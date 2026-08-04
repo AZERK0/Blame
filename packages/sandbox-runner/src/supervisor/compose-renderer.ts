@@ -1,4 +1,5 @@
 import { existsSync } from "node:fs";
+import { posix } from "node:path";
 import { stringify } from "yaml";
 import type {
   PreviewExecutionPlan,
@@ -8,7 +9,8 @@ import type {
 } from "@blame/preview-runtime";
 import { runnerError } from "../protocol/runner-server.js";
 
-const defaultProxyCertificate = "/etc/pki/ca-trust/source/anchors/vercel-proxy-ca.pem";
+const defaultProxyCertificate =
+  "/etc/pki/ca-trust/source/anchors/vercel-proxy-ca.pem";
 const relayPortStart = 44_000;
 const runtimeHome = "/tmp/blame-home";
 
@@ -22,7 +24,8 @@ export function renderCloudCompose(
   browserBindingUrls: Record<string, string>,
   options: { projectUser?: string; proxyCertificatePath?: string } = {},
 ): ComposeRenderResult {
-  const proxyCertificate = options.proxyCertificatePath ?? defaultProxyCertificate;
+  const proxyCertificate =
+    options.proxyCertificatePath ?? defaultProxyCertificate;
   if (!existsSync(proxyCertificate)) {
     throw runnerError(
       "VERCEL_PROXY_CA_MISSING",
@@ -50,7 +53,8 @@ export function renderCloudCompose(
     plan.setup.map((task) => [
       `setup-${task.id}`,
       secureContainer({
-        image: containerImage(task.source, task.id),
+        ...containerDefinition(task.container, task.id),
+        entrypoint: task.entrypoint,
         command: ["/bin/sh", "-lc", task.command],
         working_dir: task.workingDir,
         environment: containerEnvironment(task.environment),
@@ -63,12 +67,17 @@ export function renderCloudCompose(
   const document = {
     name: "blame-preview",
     services: { ...setupServices, ...services },
-    volumes: Object.fromEntries(plan.caches.map(({ name }) => [`cache-${safeId(name)}`, {}])),
+    volumes: Object.fromEntries(
+      plan.caches.map(({ name }) => [`cache-${safeId(name)}`, {}]),
+    ),
   };
   return {
     yaml: stringify(document, { lineWidth: 0 }),
     targets: Object.fromEntries(
-      [...endpointTargets.entries()].map(([key, port]) => [key, { host: "127.0.0.1" as const, port }]),
+      [...endpointTargets.entries()].map(([key, port]) => [
+        key,
+        { host: "127.0.0.1" as const, port },
+      ]),
     ),
   };
 }
@@ -86,10 +95,14 @@ function composeService(
   const isAnchor = !anchor || anchor === service.id;
   const ports = isAnchor
     ? plan.services
-        .filter((candidate) => (anchors.get(candidate.id) ?? candidate.id) === service.id)
+        .filter(
+          (candidate) =>
+            (anchors.get(candidate.id) ?? candidate.id) === service.id,
+        )
         .flatMap((candidate) =>
-          candidate.endpoints.map((endpoint) =>
-            `127.0.0.1:${targets.get(endpointKey(candidate.id, endpoint.id))}:${endpoint.port}`,
+          candidate.endpoints.map(
+            (endpoint) =>
+              `127.0.0.1:${targets.get(endpointKey(candidate.id, endpoint.id))}:${endpoint.port}`,
           ),
         )
     : undefined;
@@ -101,7 +114,8 @@ function composeService(
     proxyCertificate,
   );
   return secureContainer({
-    image: containerImage(service.source, service.id),
+    ...containerDefinition(service.container, service.id),
+    entrypoint: service.entrypoint,
     command: service.command ? ["/bin/sh", "-lc", service.command] : undefined,
     working_dir: service.workingDir,
     environment,
@@ -109,10 +123,11 @@ function composeService(
       ...service.dependsOn,
       ...(anchor && anchor !== service.id ? [anchor] : []),
     ]),
-    network_mode: anchor && anchor !== service.id ? `service:${anchor}` : undefined,
+    network_mode:
+      anchor && anchor !== service.id ? `service:${anchor}` : undefined,
     ports,
     volumes: workspaceAndCaches(plan, proxyCertificate),
-    user: projectUser,
+    user: service.user ?? projectUser,
     healthcheck: healthcheck(service.endpoints),
     restart: "unless-stopped",
   });
@@ -138,9 +153,14 @@ function compiledEnvironment(
 ) {
   const environment = containerEnvironment(service.environment);
   for (const binding of service.bindings) {
-    const source = plan.services.find(({ id }) => id === binding.sourceServiceId);
-    const endpoint = source?.endpoints.find(({ id }) => id === binding.sourceEndpointId);
-    if (!source || !endpoint) throw runnerError("INVALID_PLAN", "Binding source is missing.");
+    const source = plan.services.find(
+      ({ id }) => id === binding.sourceServiceId,
+    );
+    const endpoint = source?.endpoints.find(
+      ({ id }) => id === binding.sourceEndpointId,
+    );
+    if (!source || !endpoint)
+      throw runnerError("INVALID_PLAN", "Binding source is missing.");
     environment[binding.targetKey] = bindingValue(
       binding,
       service,
@@ -154,7 +174,9 @@ function compiledEnvironment(
   return environment;
 }
 
-function containerEnvironment(environment: Record<string, string>): Record<string, string> {
+function containerEnvironment(
+  environment: Record<string, string>,
+): Record<string, string> {
   return {
     HOME: runtimeHome,
     XDG_CACHE_HOME: `${runtimeHome}/.cache`,
@@ -172,17 +194,33 @@ function bindingValue(
 ) {
   if (binding.exposure === "browser") {
     const publicUrl = browserBindingUrls[endpointKey(source.id, endpoint.id)];
-    if (!publicUrl) throw runnerError("BROWSER_BINDING_UNAVAILABLE", "Browser endpoint URL is unavailable.");
+    if (!publicUrl)
+      throw runnerError(
+        "BROWSER_BINDING_UNAVAILABLE",
+        "Browser endpoint URL is unavailable.",
+      );
     const url = new URL(publicUrl);
-    return formattedBinding(binding, url.hostname, url.port || defaultPort(url.protocol), publicUrl);
+    return formattedBinding(
+      binding,
+      url.hostname,
+      url.port || defaultPort(url.protocol),
+      publicUrl,
+    );
   }
-  const sharedLoopback = anchors.get(consumer.id) && anchors.get(consumer.id) === anchors.get(source.id);
+  const sharedLoopback =
+    anchors.get(consumer.id) &&
+    anchors.get(consumer.id) === anchors.get(source.id);
   const host = sharedLoopback ? "localhost" : source.id;
   const url = `${endpoint.protocol}://${host}:${endpoint.port}${binding.path}`;
   return formattedBinding(binding, host, String(endpoint.port), url);
 }
 
-function formattedBinding(binding: ServiceBindingPlan, host: string, port: string, url: string) {
+function formattedBinding(
+  binding: ServiceBindingPlan,
+  host: string,
+  port: string,
+  url: string,
+) {
   if (binding.format === "host") return host;
   if (binding.format === "port") return port;
   if (binding.format === "host-port") return `${host}:${port}`;
@@ -190,25 +228,45 @@ function formattedBinding(binding: ServiceBindingPlan, host: string, port: strin
 }
 
 function healthcheck(endpoints: ServiceEndpointPlan[]) {
-  const endpoint = endpoints.find(({ healthcheck }) => healthcheck)?.healthcheck;
+  const endpoint = endpoints.find(
+    ({ healthcheck }) => healthcheck,
+  )?.healthcheck;
   const owner = endpoints.find(({ healthcheck }) => healthcheck);
   if (!endpoint || !owner) return undefined;
   const test =
     endpoint.type === "tcp"
       ? ["CMD-SHELL", `exec 3<>/dev/tcp/127.0.0.1/${owner.port}`]
-      : ["CMD", "wget", "-q", "-O", "/dev/null", `http://127.0.0.1:${owner.port}${safeHealthPath(endpoint.path)}`];
-  return { test, interval: "2s", timeout: `${Math.ceil(endpoint.timeoutMs / 1000)}s`, retries: 15 };
+      : [
+          "CMD",
+          "wget",
+          "-q",
+          "-O",
+          "/dev/null",
+          `http://127.0.0.1:${owner.port}${safeHealthPath(endpoint.path)}`,
+        ];
+  return {
+    test,
+    interval: "2s",
+    timeout: `${Math.ceil(endpoint.timeoutMs / 1000)}s`,
+    retries: 15,
+  };
 }
 
 function safeHealthPath(value: string | undefined) {
   const path = value ?? "/";
   if (!path.startsWith("/") || /[\0\r\n]/.test(path)) {
-    throw runnerError("INVALID_HEALTHCHECK", "HTTP healthcheck path is invalid.");
+    throw runnerError(
+      "INVALID_HEALTHCHECK",
+      "HTTP healthcheck path is invalid.",
+    );
   }
   return path;
 }
 
-function workspaceAndCaches(plan: PreviewExecutionPlan, proxyCertificate: string) {
+function workspaceAndCaches(
+  plan: PreviewExecutionPlan,
+  proxyCertificate: string,
+) {
   return [
     "/workspace:/workspace:rw",
     "/workspace/.git:/workspace/.git:ro",
@@ -221,7 +279,8 @@ function targetPorts(plan: PreviewExecutionPlan) {
   const targets = new Map<string, number>();
   let port = relayPortStart;
   for (const service of plan.services) {
-    for (const endpoint of service.endpoints) targets.set(endpointKey(service.id, endpoint.id), port++);
+    for (const endpoint of service.endpoints)
+      targets.set(endpointKey(service.id, endpoint.id), port++);
   }
   return targets;
 }
@@ -234,7 +293,10 @@ function loopbackAnchors(plan: PreviewExecutionPlan) {
     for (const serviceId of group.serviceIds) {
       const existing = anchors.get(serviceId);
       if (existing && existing !== anchor) {
-        throw runnerError("AMBIGUOUS_LOOPBACK_GROUP", "Overlapping loopback groups are unsupported.");
+        throw runnerError(
+          "AMBIGUOUS_LOOPBACK_GROUP",
+          "Overlapping loopback groups are unsupported.",
+        );
       }
       anchors.set(serviceId, anchor);
     }
@@ -242,11 +304,36 @@ function loopbackAnchors(plan: PreviewExecutionPlan) {
   return anchors;
 }
 
-function containerImage(source: ServiceLaunchPlan["source"], id: string) {
-  if (source.kind === "process" || (source.kind === "auto" && !source.image)) {
-    throw runnerError("CONTAINER_IMAGE_REQUIRED", `Compose service ${id} requires an image.`);
+function containerDefinition(
+  container: ServiceLaunchPlan["container"],
+  id: string,
+) {
+  if (container.image) return { image: container.image };
+  if (!container.build) {
+    throw runnerError(
+      "CONTAINER_SOURCE_REQUIRED",
+      `Compose service ${id} requires an image or build.`,
+    );
   }
-  return source.image;
+  const context = posix.join("/workspace", container.build.context);
+  const dockerfile = container.build.dockerfile;
+  if (
+    (!context.startsWith("/workspace/") && context !== "/workspace") ||
+    dockerfile.startsWith("/") ||
+    dockerfile.split("/").includes("..")
+  ) {
+    throw runnerError(
+      "INVALID_BUILD_CONTEXT",
+      `Compose build ${id} escapes the workspace.`,
+    );
+  }
+  return {
+    build: withoutUndefined({
+      context,
+      dockerfile,
+      target: container.build.target,
+    }),
+  };
 }
 
 function endpointKey(serviceId: string, endpointId: string) {
@@ -270,5 +357,7 @@ function unique(values: string[]) {
 }
 
 function withoutUndefined(value: Record<string, unknown>) {
-  return Object.fromEntries(Object.entries(value).filter(([, item]) => item !== undefined));
+  return Object.fromEntries(
+    Object.entries(value).filter(([, item]) => item !== undefined),
+  );
 }

@@ -12,18 +12,32 @@ export type EndpointGatewayConfig = {
 };
 
 export async function startEndpointGateway(configPath: string) {
-  const config = JSON.parse(await readFile(configPath, "utf8")) as EndpointGatewayConfig;
+  const config = JSON.parse(
+    await readFile(configPath, "utf8"),
+  ) as EndpointGatewayConfig;
   const publicKeyPem = await readFile(config.capabilityPublicKeyPath, "utf8");
   validateConfig(config);
   await Promise.all(
-    config.routes.map((route) => listenRoute(route, publicKeyPem, config.maxConnections ?? 128)),
+    config.routes.map((route) =>
+      listenRoute(route, publicKeyPem, config.maxConnections ?? 128),
+    ),
   );
 }
 
-function listenRoute(route: GatewayRoute, publicKeyPem: string, maxConnections: number) {
+function listenRoute(
+  route: GatewayRoute,
+  publicKeyPem: string,
+  maxConnections: number,
+) {
   let connections = 0;
   const server = createServer(async (request, response) => {
-    if (!authorized(request.headers["x-blame-preview-capability"], route, publicKeyPem)) {
+    if (
+      !authorized(
+        request.headers["x-blame-preview-capability"],
+        route,
+        publicKeyPem,
+      )
+    ) {
       response.writeHead(401, { "cache-control": "no-store" });
       response.end("Unauthorized");
       return;
@@ -44,7 +58,13 @@ function listenRoute(route: GatewayRoute, publicKeyPem: string, maxConnections: 
     }
   });
   server.on("upgrade", (request, socket: Socket, head) => {
-    if (!authorized(request.headers["x-blame-preview-capability"], route, publicKeyPem)) {
+    if (
+      !authorized(
+        request.headers["x-blame-preview-capability"],
+        route,
+        publicKeyPem,
+      )
+    ) {
       socket.end("HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n");
       return;
     }
@@ -80,6 +100,8 @@ function authorized(
       token,
       publicKeyPem,
       sessionId: route.sessionId,
+      routeId: route.routeId,
+      serviceId: route.serviceId,
       endpointId: route.endpointId,
       generation: route.generation,
     }),
@@ -91,6 +113,8 @@ function validateConfig(config: EndpointGatewayConfig) {
   for (const route of config.routes) {
     if (
       !route.sessionId ||
+      !route.routeId ||
+      !route.serviceId ||
       !route.endpointId ||
       !Number.isSafeInteger(route.sandboxPort) ||
       !Number.isSafeInteger(route.targetPort) ||

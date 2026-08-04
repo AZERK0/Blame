@@ -34,8 +34,6 @@ export function previewRuntimeConfig() {
     artifactTransferHosts: [...workspaceArtifactTransferHosts(), ...urlHosts([env.get('APP_URL')])],
     sandbox: {
       image: env.get('BLAME_SANDBOX_RUNNER_IMAGE'),
-      bootstrapUrl: env.get('BLAME_SANDBOX_BOOTSTRAP_URL'),
-      bootstrapSha256: env.get('BLAME_SANDBOX_BOOTSTRAP_SHA256'),
       runnerVersion: env.get('BLAME_SANDBOX_RUNNER_VERSION') ?? '0.1.0',
       protocolVersion: positiveInteger(env.get('BLAME_SANDBOX_PROTOCOL_VERSION'), 1),
       vercelPlan: env.get('BLAME_SANDBOX_VERCEL_PLAN') ?? 'hobby',

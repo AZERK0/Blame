@@ -21,17 +21,24 @@ export function readRuntimePreference(): RuntimePreference {
   cachedRaw = raw
   try {
     const value = JSON.parse(raw ?? "null") as Partial<RuntimePreference> | null
-    if (value && ["local-container", "vercel-compose", "vercel-process"].includes(value.profile ?? "")) {
+    if (
+      value &&
+      ["local-container", "vercel-compose"].includes(value.profile ?? "")
+    ) {
       cachedPreference = {
         profile: value.profile as RuntimeProfileId,
         source: "account-default",
-        ...(value.confirmedCloudUploadAt ? { confirmedCloudUploadAt: value.confirmedCloudUploadAt } : {}),
+        ...(value.confirmedCloudUploadAt
+          ? { confirmedCloudUploadAt: value.confirmedCloudUploadAt }
+          : {}),
       }
       return cachedPreference
     }
   } catch {
     cachedRaw = undefined
   }
+  if (raw !== null) localStorage.removeItem(storageKey)
+  cachedRaw = null
   cachedPreference = resolveRuntimePreference({})
   return cachedPreference
 }
@@ -45,7 +52,7 @@ export function saveRuntimePreference(preference: RuntimePreference) {
 export function recordRuntimeSessionState(
   storyId: string,
   profile: RuntimeProfileId,
-  stopped: boolean,
+  stopped: boolean
 ) {
   const entries = activeRuntimeSessions()
   if (stopped) delete entries[storyId]
@@ -54,7 +61,9 @@ export function recordRuntimeSessionState(
 }
 
 export function runtimeProfileSwitchBlockReason(profile: RuntimeProfileId) {
-  const active = Object.values(activeRuntimeSessions()).find((entry) => entry.profile !== profile)
+  const active = Object.values(activeRuntimeSessions()).find(
+    (entry) => entry.profile !== profile
+  )
   return active
     ? "Stop the active preview before changing runtime profile."
     : undefined
@@ -71,25 +80,45 @@ export function useRuntimePreference(): RuntimePreference {
       }
     },
     readRuntimePreference,
-    () => defaultRuntimePreference,
+    () => defaultRuntimePreference
   )
 }
 
 function activeRuntimeSessions() {
   const maximumAgeMs = 24 * 60 * 60_000
   try {
-    const value = JSON.parse(localStorage.getItem(activeSessionsKey) ?? "{}") as Record<
-      string,
-      { profile?: unknown; updatedAt?: unknown }
-    >
-    return Object.fromEntries(Object.entries(value).flatMap(([storyId, entry]) =>
-      typeof entry.profile === "string" &&
-      ["local-container", "vercel-compose", "vercel-process"].includes(entry.profile) &&
-      typeof entry.updatedAt === "number" && Date.now() - entry.updatedAt <= maximumAgeMs
-        ? [[storyId, { profile: entry.profile as RuntimeProfileId, updatedAt: entry.updatedAt }]]
-        : [],
-    ))
+    const value = JSON.parse(
+      localStorage.getItem(activeSessionsKey) ?? "{}"
+    ) as Record<string, { profile?: unknown; updatedAt?: unknown }>
+    const active = Object.fromEntries(
+      Object.entries(value).flatMap(([storyId, entry]) =>
+        typeof entry.profile === "string" &&
+        ["local-container", "vercel-compose"].includes(entry.profile) &&
+        typeof entry.updatedAt === "number" &&
+        Date.now() - entry.updatedAt <= maximumAgeMs
+          ? [
+              [
+                storyId,
+                {
+                  profile: entry.profile as RuntimeProfileId,
+                  updatedAt: entry.updatedAt,
+                },
+              ],
+            ]
+          : []
+      )
+    )
+    if (Object.keys(active).length) {
+      localStorage.setItem(activeSessionsKey, JSON.stringify(active))
+    } else {
+      localStorage.removeItem(activeSessionsKey)
+    }
+    return active
   } catch {
-    return {} as Record<string, { profile: RuntimeProfileId; updatedAt: number }>
+    localStorage.removeItem(activeSessionsKey)
+    return {} as Record<
+      string,
+      { profile: RuntimeProfileId; updatedAt: number }
+    >
   }
 }

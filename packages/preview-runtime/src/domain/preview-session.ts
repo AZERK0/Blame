@@ -32,7 +32,12 @@ export type PreviewSessionDesired = {
 };
 
 export type PreviewSessionCommand =
-  | { type: "start-services"; configurationId: string; serviceIds?: string[] }
+  | {
+      type: "start-services";
+      configurationId: string;
+      serviceIds?: string[];
+      primaryRoute?: { serviceId: string; endpointId: string };
+    }
   | { type: "stop-services" }
   | { type: "start-agent" }
   | { type: "stop-agent" }

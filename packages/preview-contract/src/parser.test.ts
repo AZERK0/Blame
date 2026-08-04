@@ -2,179 +2,182 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { parsePreviewManifest } from "./parser.js";
 
-function manifest() {
+function manifest(): Record<string, any> {
   return {
-    version: 2,
     confidence: "high",
-    project: { root: ".", detectedStack: ["nuxt"] },
-    setup: [],
+    project: { root: ".", detectedStack: ["node"] },
+    setup: [
+      {
+        id: "deps",
+        container: { image: "node:24-bookworm" },
+        workingDir: "/workspace",
+        command: "corepack pnpm install",
+      },
+    ],
     services: [
       {
-        id: "backend",
+        id: "api",
         kind: "worker",
-        image: "node:22-bookworm",
+        container: {
+          build: { context: ".", dockerfile: "Dockerfile", target: "api" },
+        },
         command: "node server.js",
         endpoints: [
           {
             id: "http",
             protocol: "http",
             port: 3333,
-            healthcheck: { type: "tcp", timeoutMs: 60_000 },
+            healthcheck: { type: "tcp", timeoutMs: 30_000 },
           },
         ],
       },
       {
-        id: "web",
+        id: "app",
         kind: "preview",
-        image: "node:22-bookworm",
-        command: "npm run dev",
-        dependsOn: ["backend"],
-        preview: { internalPort: 3000, protocol: "http", path: "/" },
-        healthcheck: { type: "http", path: "/", timeoutMs: 60_000 },
-        endpoints: [{ id: "http", protocol: "http", port: 3000 }],
+        container: { image: "node:24-bookworm" },
+        command: "pnpm dev",
+        endpoints: [
+          {
+            id: "http",
+            protocol: "http",
+            port: 3000,
+            healthcheck: { type: "http", path: "/", timeoutMs: 30_000 },
+          },
+        ],
         bindings: [
           {
             target: { type: "environment", key: "API_URL" },
-            source: { service: "backend", endpoint: "http" },
+            source: { service: "api", endpoint: "http" },
             exposure: "server",
+          },
+        ],
+      },
+      {
+        id: "vitrine",
+        kind: "preview",
+        container: {
+          image:
+            "node:24-bookworm@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        },
+        command: "pnpm showcase",
+        endpoints: [
+          {
+            id: "http",
+            protocol: "http",
+            port: 3001,
+            healthcheck: { type: "http", path: "/", timeoutMs: 30_000 },
           },
         ],
       },
     ],
     probes: [
       {
-        id: "api-proxy",
+        id: "api-through-app",
         from: "host",
-        target: { service: "web", endpoint: "http", path: "/api/health" },
+        target: { service: "app", endpoint: "http", path: "/api/health" },
         type: "http",
         acceptedStatuses: [200, 401],
       },
     ],
-    caches: [],
+    caches: [{ name: "pnpm", target: "/pnpm/store" }],
     risks: [],
   };
 }
 
-test("accepts typed service bindings and probes", () => {
+test("accepts only the canonical unversioned container manifest", () => {
   const parsed = parsePreviewManifest(manifest());
-  assert.equal(parsed.services[1]?.bindings?.[0]?.source.service, "backend");
-  assert.deepEqual(parsed.probes?.[0]?.acceptedStatuses, [200, 401]);
+  assert.equal(parsed.services[0]?.container.build?.dockerfile, "Dockerfile");
+  assert.equal(parsed.services[1]?.bindings?.[0]?.source.service, "api");
+  assert.deepEqual(parsed.probes[0]?.acceptedStatuses, [200, 401]);
 });
 
-test("accepts worker-only projects without a browser preview", () => {
-  const value = manifest();
-  value.services = [value.services[0]];
-  value.probes = [];
-
-  const parsed = parsePreviewManifest(value);
-
-  assert.equal(parsed.services[0]?.kind, "worker");
-});
-
-test("accepts libraries without runtime services", () => {
-  const value = manifest();
-  value.services = [];
-  value.probes = [];
-
-  assert.deepEqual(parsePreviewManifest(value).services, []);
-});
-
-test("allows explicit browser bindings to backend services", () => {
-  const value = manifest();
-  value.services[1].bindings![0].exposure = "browser";
-  assert.equal(
-    parsePreviewManifest(value).services[1]?.bindings?.[0]?.exposure,
-    "browser",
+test("allows endpoint ids to repeat in different services", () => {
+  const parsed = parsePreviewManifest(manifest());
+  assert.deepEqual(
+    parsed.services.map(({ id, endpoints }) => `${id}:${endpoints[0]?.id}`),
+    ["api:http", "app:http", "vitrine:http"],
   );
 });
 
-test("rejects dependency cycles", () => {
-  const value = manifest();
-  value.services[0].dependsOn = ["web"];
-  assert.throws(() => parsePreviewManifest(value), /must not contain cycles/);
-});
-
-test("rejects collisions and cycles across setup tasks and services", () => {
-  const collision = manifest();
-  collision.setup = [
-    {
-      id: "backend",
-      image: "node:22-bookworm",
-      command: "npm install",
-    },
-  ] as typeof collision.setup;
+test("rejects version and historical execution sources explicitly", () => {
+  const versioned = manifest();
+  versioned.version = 3;
   assert.throws(
-    () => parsePreviewManifest(collision),
-    /runtime item ids must be unique/,
+    () => parsePreviewManifest(versioned),
+    /version is no longer supported/,
   );
 
+  for (const kind of ["process", "auto"]) {
+    const sourced = manifest();
+    sourced.services[0].source = { kind };
+    assert.throws(
+      () => parsePreviewManifest(sourced),
+      /source is no longer supported/,
+    );
+  }
+});
+
+test("requires exactly one image or controlled build", () => {
+  const both = manifest();
+  both.services[0].container.image = "node:24";
+  assert.throws(() => parsePreviewManifest(both), /exactly one/);
+
+  const absolute = manifest();
+  absolute.services[0].container = {
+    build: { context: "/tmp/project", dockerfile: "Dockerfile" },
+  };
+  assert.throws(() => parsePreviewManifest(absolute), /inside the workspace/);
+
+  const secretArgs = manifest();
+  secretArgs.services[0].container.build.args = { API_TOKEN: "literal" };
+  assert.throws(
+    () => parsePreviewManifest(secretArgs),
+    /unsupported field args/,
+  );
+});
+
+test("rejects dangerous Compose topology escape hatches", () => {
+  for (const [field, value] of [
+    ["privileged", true],
+    ["network_mode", "host"],
+    ["pid", "host"],
+    ["ipc", "host"],
+    ["devices", ["/dev/kvm"]],
+    ["cap_add", ["SYS_ADMIN"]],
+    ["volumes", ["/var/run/docker.sock:/var/run/docker.sock"]],
+  ] as const) {
+    const unsafe = manifest();
+    unsafe.services[0][field] = value;
+    assert.throws(() => parsePreviewManifest(unsafe), /unsupported field/);
+  }
+});
+
+test("rejects Docker socket commands and literal secret environments", () => {
+  const socket = manifest();
+  socket.setup[0].command = "docker -H unix:///var/run/docker.sock info";
+  assert.throws(() => parsePreviewManifest(socket), /command is unsafe/);
+
+  const secret = manifest();
+  secret.services[0].environment = { API_TOKEN: "literal" };
+  assert.throws(() => parsePreviewManifest(secret), /secret delivery channel/);
+});
+
+test("rejects dependency cycles and invalid probes", () => {
   const cycle = manifest();
-  cycle.setup = [
-    {
-      id: "prepare",
-      image: "node:22-bookworm",
-      command: "npm install",
-      dependsOn: ["web"],
-    },
-  ] as typeof cycle.setup;
-  cycle.services[1].dependsOn = ["prepare"];
+  cycle.services[0].dependsOn = ["app"];
   assert.throws(() => parsePreviewManifest(cycle), /must not contain cycles/);
-});
 
-test("treats server bindings as dependency edges", () => {
-  const value = manifest();
-  value.services[1].dependsOn = [];
-  value.services[0].dependsOn = ["web"];
-  assert.throws(() => parsePreviewManifest(value), /must not contain cycles/);
-});
-
-test("requires version two endpoint and probe declarations", () => {
-  const withoutProbes = manifest() as Record<string, any>;
-  delete withoutProbes.probes;
+  const status = manifest();
+  status.probes[0].acceptedStatuses = [200, 502];
   assert.throws(
-    () => parsePreviewManifest(withoutProbes),
-    /version 2 must define probes/,
-  );
-
-  const withoutEndpoints = manifest() as Record<string, any>;
-  delete withoutEndpoints.services[0].endpoints;
-  delete withoutEndpoints.services[1].bindings;
-  assert.throws(
-    () => parsePreviewManifest(withoutEndpoints),
-    /must define endpoints/,
-  );
-});
-
-test("never allows functional probes to accept server errors", () => {
-  const value = manifest();
-  value.probes[0].acceptedStatuses = [200, 502];
-  assert.throws(
-    () => parsePreviewManifest(value),
+    () => parsePreviewManifest(status),
     /acceptedStatuses is invalid/,
   );
 });
 
-test("keeps version one manifests compatible", () => {
-  const value = manifest() as Record<string, any>;
-  value.version = 1;
-  delete value.services[0].endpoints;
-  delete value.services[1].endpoints;
-  delete value.services[1].bindings;
-  delete value.probes;
-  const parsed = parsePreviewManifest(value);
-  assert.equal(parsed.version, 1);
-});
-
-test("accepts version three native process sources without legacy images", () => {
-  const value = manifest() as unknown as Record<string, unknown>;
-  value.version = 3;
-  const setup = value.setup as Array<Record<string, unknown>>;
-  const services = value.services as Array<Record<string, unknown>>;
-  for (const item of [...setup, ...services]) {
-    delete item.image;
-    item.source = { kind: "process", toolchain: "node24" };
-  }
-  const parsed = parsePreviewManifest(value);
-  assert.equal(parsed.services[0]?.source?.kind, "process");
-  assert.equal(parsed.services[0]?.image, "runtime");
+test("accepts projects without persistent services", () => {
+  const value = manifest();
+  value.services = [];
+  value.probes = [];
+  assert.deepEqual(parsePreviewManifest(value).services, []);
 });

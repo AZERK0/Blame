@@ -14,6 +14,10 @@ export default class PreviewAccessTicket extends BaseModel {
   @column()
   declare ownerUserId: string
   @column()
+  declare routeId: string
+  @column()
+  declare serviceId: string
+  @column()
   declare endpointId: string
   @column({ serializeAs: null })
   declare ticketHash: string

@@ -1,6 +1,5 @@
 export type RuntimeCapabilities = {
   dockerCompose: boolean;
-  nativeProcesses: boolean;
   sharedLoopback: boolean;
   snapshots: boolean;
   persistentFilesystem: boolean;
@@ -22,9 +21,6 @@ export type CapabilityIncompatibility = {
     | "CAPABILITY_REQUIRED"
     | "PORT_LIMIT_EXCEEDED"
     | "DUPLICATE_LOGICAL_PORT"
-    | "PROCESS_SOURCE_UNSUPPORTED"
-    | "PROCESS_TOOLCHAIN_UNAVAILABLE"
-    | "CONTAINER_SOURCE_REQUIRED"
     | "COMPOSE_LOOPBACK_UNSUPPORTED"
     | "EXTERNAL_PREVIEW_UNSUPPORTED";
   capability?: CapabilityRequirement;

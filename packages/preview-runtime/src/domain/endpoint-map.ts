@@ -1,6 +1,7 @@
 export type PreviewEndpointProtocol = "http" | "https" | "ws" | "wss";
 
 export type PreviewEndpointRoute = {
+  routeId: string;
   serviceId: string;
   endpointId: string;
   protocol: PreviewEndpointProtocol;
@@ -16,13 +17,19 @@ export type PreviewEndpointRoute = {
 
 export type EndpointMap = {
   revision: number;
-  primaryEndpointId: string;
+  primaryRouteId: string;
   primaryPublicUrl: string;
   routes: PreviewEndpointRoute[];
   supportsWebSocket: boolean;
   integratedPreviewRequired: boolean;
   incompatibilityReasons: string[];
 };
+
+export type PreviewEndpointRef = { serviceId: string; endpointId: string };
+
+export function endpointRouteKey(serviceId: string, endpointId: string) {
+  return `${serviceId}:${endpointId}`;
+}
 
 export function publicEndpointMap(map: EndpointMap): EndpointMap {
   return {

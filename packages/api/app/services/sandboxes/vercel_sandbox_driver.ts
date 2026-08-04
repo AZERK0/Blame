@@ -3,6 +3,12 @@ import PreviewEdgeRouteService from '#services/preview_gateway/preview_edge_rout
 import { vercelNetworkPolicy } from '#services/sandboxes/vercel_network_policy'
 import WorkspaceArtifactService from '#services/workspace_artifacts/workspace_artifact_service'
 import { Sandbox, type NetworkPolicy } from '@vercel/sandbox'
+import {
+  ATTR_BLAME_OPERATION_STATUS,
+  ATTR_BLAME_RUNTIME_NAME,
+  ATTR_BLAME_RUNTIME_PHASE,
+  getBlameTelemetry,
+} from '@blame/telemetry'
 import { randomUUID } from 'node:crypto'
 import {
   PreviewRuntimeError,
@@ -35,7 +41,6 @@ import {
   runnerFailure,
   sandboxNameFor,
   shortTag,
-  trustedBootstrapUrl,
   vercelPlanLimits,
   vercelHandle,
   type VercelRuntimeHandle,
@@ -47,18 +52,16 @@ type RunnerResponse<T> =
 const runnerBinary = '/opt/blame/bin/blame-sandbox-runner'
 const runnerControlBinary = '/opt/blame/bin/blame-runnerctl'
 const runnerRequestDirectory = '/run/blame/control/requests'
+const telemetry = getBlameTelemetry()
 
 export default class VercelSandboxDriver implements PreviewRuntimeDriver {
-  readonly profile: 'vercel-compose' | 'vercel-process'
+  readonly profile = 'vercel-compose' as const
 
   constructor(
-    profile: 'vercel-compose' | 'vercel-process' = 'vercel-compose',
     private readonly config: PreviewRuntimeConfig = previewRuntimeConfig(),
     private readonly routes: PreviewEdgeRouteService = new PreviewEdgeRouteService(config),
     private readonly artifacts: WorkspaceArtifactService = new WorkspaceArtifactService()
-  ) {
-    this.profile = profile
-  }
+  ) {}
 
   limits() {
     const planLimits = vercelPlanLimits(this.config.sandbox.vercelPlan)
@@ -87,6 +90,14 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
   }
 
   async provisionHost(input: ProvisionInput) {
+    const configurationFailure = this.configurationFailure()
+    if (configurationFailure) {
+      throw new PreviewRuntimeError({
+        code: 'UNSUPPORTED_CAPABILITY',
+        message: configurationFailure,
+        retryable: false,
+      })
+    }
     this.assertResourceSize(input.resourceSize)
     const gatewayPorts = desiredPorts(input.plan)
     const sandboxName = sandboxNameFor(input.sessionId)
@@ -95,24 +106,26 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
         this.config.sandbox.timeoutMinutes,
         this.config.sandbox.vercelPlan
       ) * 60_000
-    const sandbox = await this.providerCall('create', () =>
-      Sandbox.getOrCreate({
-        ...this.credentials(),
-        name: sandboxName,
-        ...this.imageOrRuntime(),
-        persistent: true,
-        ports: gatewayPorts,
-        resources: { vcpus: input.resourceSize.vcpus },
-        timeout,
-        snapshotExpiration: this.config.sandbox.snapshotRetentionDays * 86_400_000,
-        keepLastSnapshots: { count: 1, deleteEvicted: true },
-        networkPolicy: this.networkPolicy(),
-        tags: {
-          application: 'blame',
-          deployment: shortTag(this.config.sandbox.deploymentId!),
-          session: shortTag(input.sessionId),
-        },
-      })
+    const sandbox = await measureRuntimePhase('sandbox.create', () =>
+      this.providerCall('create', () =>
+        Sandbox.getOrCreate({
+          ...this.credentials(),
+          name: sandboxName,
+          image: this.config.sandbox.image!,
+          persistent: true,
+          ports: gatewayPorts,
+          resources: { vcpus: input.resourceSize.vcpus },
+          timeout,
+          snapshotExpiration: this.config.sandbox.snapshotRetentionDays * 86_400_000,
+          keepLastSnapshots: { count: 1, deleteEvicted: true },
+          networkPolicy: this.networkPolicy(),
+          tags: {
+            application: 'blame',
+            deployment: shortTag(this.config.sandbox.deploymentId!),
+            session: shortTag(input.sessionId),
+          },
+        })
+      )
     )
     try {
       await sandbox.update({
@@ -157,28 +170,34 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
   }
 
   async syncIn(handle: RuntimeHandle, source: SourceArtifact) {
-    return this.runnerCall<{ sourceRevision: string; workspaceHash: string }>(handle, {
-      operation: 'source-import',
-      source,
-    })
+    return measureRuntimePhase('workspace.sync', () =>
+      this.runnerCall<{ sourceRevision: string; workspaceHash: string }>(handle, {
+        operation: 'source-import',
+        source,
+      })
+    )
   }
 
   async prepareEngine(handle: RuntimeHandle, plan: PreviewExecutionPlan) {
     const payload = vercelHandle(handle)
-    const browserBindingUrls = await this.publishPlannedRoutes(payload, plan)
-    await this.runnerCall(handle, {
-      operation: 'prepare-engine',
-      engine: this.profile,
-      plan,
-      browserBindingUrls,
-      capabilityPublicKey: this.config.capabilityPublicKey,
-      sessionId: payload.sessionId,
-      generation: payload.generation,
-    })
+    const { browserBindingUrls, routeIds } = await this.publishPlannedRoutes(payload, plan)
+    await measureRuntimePhase('compose.prepare', () =>
+      this.runnerCall(handle, {
+        operation: 'prepare-engine',
+        plan,
+        browserBindingUrls,
+        routeIds,
+        capabilityPublicKey: this.config.capabilityPublicKey,
+        sessionId: payload.sessionId,
+        generation: payload.generation,
+      })
+    )
   }
 
   async startServices(handle: RuntimeHandle, selection: RuntimeSelection) {
-    await this.runnerCall(handle, { operation: 'start-services', selection })
+    await measureRuntimePhase('services.start', () =>
+      this.runnerCall(handle, { operation: 'start-services', selection })
+    )
   }
 
   async stopServices(handle: RuntimeHandle) {
@@ -236,8 +255,9 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
     const sandbox = await this.sandbox(payload, true)
     const internal = await this.runnerCall<{
       revision: number
-      primaryEndpointId: string
+      primaryRouteId: string
       routes: Array<{
+        routeId: string
         serviceId: string
         endpointId: string
         protocol: 'http' | 'https' | 'ws' | 'wss'
@@ -269,13 +289,16 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
           generation: payload.generation,
           upstreamUrl: providerUrl,
         })
+        if (published.id !== route.routeId) {
+          throw runnerFailure('ROUTE_ID_MISMATCH', 'Runner route identity is invalid.')
+        }
         return { ...route, logicalHost: 'localhost' as const, publicUrl: published.publicUrl }
       })
     )
-    const primary = routes.find(({ endpointId }) => endpointId === internal.primaryEndpointId)
+    const primary = routes.find(({ routeId }) => routeId === internal.primaryRouteId)
     return {
       revision: internal.revision,
-      primaryEndpointId: internal.primaryEndpointId,
+      primaryRouteId: internal.primaryRouteId,
       primaryPublicUrl: primary?.publicUrl ?? '',
       routes,
       supportsWebSocket: internal.supportsWebSocket,
@@ -452,63 +475,36 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
     return response.result
   }
 
-  private async publishPlannedRoutes(handle: VercelRuntimeHandle, plan: PreviewExecutionPlan) {
-    const sandbox = await this.sandbox(handle, true)
-    const entries = await Promise.all(
-      plan.networking.gatewayListeners.map(async (listener) => {
-        if (!handle.gatewayPorts.includes(listener.sandboxPort)) {
-          throw runnerFailure(
-            'UNDECLARED_GATEWAY_PORT',
-            'Plan contains an undeclared gateway port.'
-          )
-        }
-        const published = await this.routes.publish({
-          sessionId: handle.sessionId,
-          endpointId: listener.endpointId,
-          serviceId: listener.serviceId,
-          logicalPort: listener.logicalPort,
-          generation: handle.generation,
-          upstreamUrl: sandbox.domain(listener.sandboxPort),
-        })
-        return [`${listener.serviceId}:${listener.endpointId}`, published.publicUrl] as const
-      })
-    )
-    return Object.fromEntries(entries)
+  private publishPlannedRoutes(handle: VercelRuntimeHandle, plan: PreviewExecutionPlan) {
+    const routes = plan.networking.gatewayListeners.map((listener) => {
+      if (!handle.gatewayPorts.includes(listener.sandboxPort)) {
+        throw runnerFailure('UNDECLARED_GATEWAY_PORT', 'Plan contains an undeclared gateway port.')
+      }
+      const published = this.routes.identity(
+        handle.sessionId,
+        listener.serviceId,
+        listener.endpointId
+      )
+      return {
+        routeKey: listener.routeKey,
+        routeId: published.id,
+        publicUrl: published.publicUrl,
+      }
+    })
+    return {
+      browserBindingUrls: Object.fromEntries(
+        routes.map((route) => [route.routeKey, route.publicUrl])
+      ),
+      routeIds: Object.fromEntries(routes.map((route) => [route.routeKey, route.routeId])),
+    }
   }
 
   private async bootstrap(sandbox: Sandbox) {
-    if (!this.config.sandbox.image) await this.bootstrapStandardRuntime(sandbox)
     const result = await this.providerCall('runner-bootstrap', () =>
       sandbox.runCommand({ cmd: runnerBinary, args: ['bootstrap'], sudo: true, timeoutMs: 120_000 })
     )
     if (result.exitCode !== 0)
       throw runnerFailure('RUNNER_BOOTSTRAP_FAILED', 'Sandbox runner bootstrap failed.')
-  }
-
-  private async bootstrapStandardRuntime(sandbox: Sandbox) {
-    const url = this.config.sandbox.bootstrapUrl!
-    const sha256 = this.config.sandbox.bootstrapSha256!
-    const archive = '/tmp/blame-runner.tar.gz'
-    await sandbox.runCommand('curl', [
-      '--fail',
-      '--silent',
-      '--show-error',
-      '--location',
-      '--output',
-      archive,
-      url,
-    ])
-    const checksum = await sandbox.runCommand('sha256sum', [archive])
-    const checksumOutput = await checksum.stdout()
-    if (checksum.exitCode !== 0 || !checksumOutput.startsWith(`${sha256} `)) {
-      throw runnerFailure('RUNNER_CHECKSUM_MISMATCH', 'Sandbox runner archive checksum mismatch.')
-    }
-    await sandbox.runCommand({
-      cmd: 'tar',
-      args: ['-xzf', archive, '-C', '/opt/blame'],
-      sudo: true,
-      timeoutMs: 120_000,
-    })
   }
 
   private async assertHandshake(sandbox: Sandbox, handle: RuntimeHandle) {
@@ -560,42 +556,28 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
     return token && projectId && teamId ? { token, projectId, teamId } : {}
   }
 
-  private imageOrRuntime(): { image: string } | { runtime: 'node24' } {
-    return this.config.sandbox.image ? { image: this.config.sandbox.image } : { runtime: 'node24' }
-  }
-
   private networkPolicy(): NetworkPolicy {
-    const bootstrapHost = this.config.sandbox.bootstrapUrl
-      ? [new URL(this.config.sandbox.bootstrapUrl).hostname]
-      : []
     return vercelNetworkPolicy([
       ...this.config.sandbox.egressAllowlist,
-      ...bootstrapHost,
       ...this.config.artifactTransferHosts,
     ]) as NetworkPolicy
   }
 
   private configurationFailure() {
-    const { image, bootstrapUrl, bootstrapSha256, accessToken, projectId, teamId, deploymentId } =
-      this.config.sandbox
+    const { image, accessToken, projectId, teamId, deploymentId } = this.config.sandbox
     if (!deploymentId || !/^[A-Za-z0-9_.-]{1,80}$/.test(deploymentId)) {
       return 'A stable sandbox deployment ID is required.'
     }
     if (!this.config.workspaceEncryptionReady) {
       return 'Dedicated OVH SSE-OMK storage is required for workspace artifacts.'
     }
-    if (image && !/@sha256:[a-f0-9]{64}$/i.test(image))
+    if (!image || !/@sha256:[a-f0-9]{64}$/i.test(image))
       return 'The runner image must be pinned by digest.'
-    if (!image && (!bootstrapUrl || !/^[a-f0-9]{64}$/i.test(bootstrapSha256 ?? ''))) {
-      return 'A digest-pinned runner image or checksum-pinned bootstrap archive is required.'
-    }
     if (accessToken && (!projectId || !teamId)) {
       return 'Vercel access-token authentication requires project and team IDs.'
     }
     if (!capabilityKeysMatch(this.config.capabilityPublicKey, this.config.capabilityPrivateKey))
       return 'A matching Ed25519 preview capability keypair is required.'
-    if (bootstrapUrl && !trustedBootstrapUrl(bootstrapUrl))
-      return 'The runner bootstrap archive must use an HTTPS URL without credentials.'
     return undefined
   }
 
@@ -622,5 +604,28 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
       }
     }
     throw providerFailure(operation, lastError)
+  }
+}
+
+async function measureRuntimePhase<T>(phase: string, operation: () => Promise<T>) {
+  const startedAt = performance.now()
+  let outcome = 'succeeded'
+  try {
+    return await operation()
+  } catch (error) {
+    outcome = 'failed'
+    throw error
+  } finally {
+    const attributes = {
+      [ATTR_BLAME_RUNTIME_NAME]: 'vercel-compose',
+      [ATTR_BLAME_RUNTIME_PHASE]: phase,
+      [ATTR_BLAME_OPERATION_STATUS]: outcome,
+    }
+    telemetry.count('blame.runtime.phase.count', 1, attributes)
+    telemetry.record(
+      'blame.runtime.phase.duration',
+      Math.max(0, performance.now() - startedAt) / 1_000,
+      attributes
+    )
   }
 }

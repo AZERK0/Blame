@@ -1666,21 +1666,20 @@ async function runProjectSetupOperation(
 ) {
   const worktree = resolveRuntimePath(input.worktree);
   const env = await setupEnvironment(worktree);
-  const manifest = input.previewManifest
-    ? parsePreviewManifest(input.previewManifest)
-    : undefined;
-  const generated = manifest ? generatePreviewArtifacts(manifest) : undefined;
-  const dockerCompose = generated?.dockerCompose ?? input.dockerCompose;
+  if (!input.previewManifest) {
+    throw new PreviewRuntimeError(
+      "preview_manifest_invalid",
+      "A canonical preview manifest is required",
+    );
+  }
+  const manifest = parsePreviewManifest(input.previewManifest);
+  const generated = generatePreviewArtifacts(manifest);
+  const dockerCompose = generated.dockerCompose;
   const runConfigurations = containerizedRunConfigurations(
     parseRunConfigurations(input.runConfigurations ?? []),
     manifest,
-    dockerCompose,
   );
-  validateContainerizedRunConfigurations(
-    runConfigurations,
-    manifest,
-    dockerCompose,
-  );
+  validateContainerizedRunConfigurations(runConfigurations, manifest);
   const setupScript = setupScriptWithoutDockerRuntimeChecks(
     generated?.setupScript ?? input.setupScript,
   );
@@ -1780,18 +1779,16 @@ async function prepareProjectSetupFiles(
 
 function containerizedRunConfigurations(
   configurations: ProjectRunConfiguration[],
-  manifest: PreviewManifest | undefined,
-  dockerCompose: string,
+  manifest: PreviewManifest,
 ) {
-  const previews = manifest
-    ? manifest.services.filter(
-        (service) => service.kind === "preview" && service.preview,
-      )
-    : legacyComposePreviewServices(configurations, dockerCompose);
+  const previews = manifest.services.filter(
+    (service) =>
+      service.kind === "preview" &&
+      service.endpoints.some(({ protocol }) => protocol !== "tcp"),
+  );
   const normalized = configurations.map((configuration) =>
     containerizedRunConfiguration(configuration, previews),
   );
-  if (!manifest) return normalized;
   const represented = new Set(
     normalized.flatMap(({ services }) => services ?? []),
   );
@@ -1808,73 +1805,11 @@ function containerizedRunConfigurations(
   return [...normalized, ...generated];
 }
 
-function legacyComposePreviewServices(
-  configurations: ProjectRunConfiguration[],
-  dockerCompose: string,
-) {
-  const document = parseYaml(dockerCompose) as {
-    services?: Record<
-      string,
-      {
-        command?: string | string[];
-        image?: string;
-        ports?: Array<string | { target?: number | string }>;
-        working_dir?: string;
-      }
-    >;
-  };
-  const requestedPorts = new Set(
-    configurations.flatMap((configuration) => {
-      const port = runConfigurationPreviewPort(configuration.previewUrl);
-      return port ? [port] : [];
-    }),
-  );
-  return Object.entries(document.services ?? {}).flatMap(([id, service]) => {
-    const port = (service.ports ?? [])
-      .flatMap(rawComposeTargetPort)
-      .find((candidate) => requestedPorts.has(candidate));
-    if (!port) return [];
-    return [
-      {
-        id,
-        kind: "preview" as const,
-        image: service.image ?? "runtime",
-        workingDir: service.working_dir,
-        command: Array.isArray(service.command)
-          ? service.command.join(" ")
-          : service.command,
-        preview: { internalPort: port, protocol: "http" as const, path: "/" },
-      },
-    ];
-  });
-}
-
-function rawComposeTargetPort(value: string | { target?: number | string }) {
-  if (typeof value !== "string") {
-    const port = Number(value.target);
-    return validPreviewPort(port) ? [port] : [];
-  }
-  const target = Number(
-    value
-      .replace(/\/\w+$/, "")
-      .split(":")
-      .at(-1),
-  );
-  return validPreviewPort(target) ? [target] : [];
-}
-
-function validPreviewPort(port: number) {
-  return Number.isInteger(port) && port > 0 && port <= 65_535;
-}
-
 function validateContainerizedRunConfigurations(
   configurations: ProjectRunConfiguration[],
-  manifest: PreviewManifest | undefined,
-  dockerCompose: string,
+  manifest: PreviewManifest,
 ) {
-  const serviceIds = manifest
-    ? new Set(manifest.services.map(({ id }) => id))
-    : composeServiceIds(dockerCompose);
+  const serviceIds = new Set(manifest.services.map(({ id }) => id));
   for (const configuration of configurations) {
     for (const service of configuration.services ?? []) {
       if (!serviceIds.has(service)) {
@@ -1885,11 +1820,6 @@ function validateContainerizedRunConfigurations(
       }
     }
   }
-}
-
-function composeServiceIds(dockerCompose: string) {
-  const document = parseYaml(dockerCompose) as ComposeConfig;
-  return new Set(Object.keys(document.services ?? {}));
 }
 
 function containerizedRunConfiguration(
@@ -1920,7 +1850,9 @@ function matchingPreviewService(
   const explicit =
     previews.find(({ id }) => id === configuration.previewService) ??
     previews.find(({ id }) => configuration.services?.includes(id)) ??
-    previews.find(({ preview }) => preview?.internalPort === port);
+    previews.find((service) =>
+      service.endpoints.some((endpoint) => endpoint.port === port),
+    );
   if (explicit || configuration.category === "web") return explicit;
   return previews.length === 1 ? previews[0] : undefined;
 }
@@ -1939,6 +1871,7 @@ function previewServiceRunConfiguration(
   isDefault: boolean,
 ) {
   const id = uniqueRunConfigurationId(service.id, usedIds);
+  const endpoint = service.endpoints.find(({ protocol }) => protocol !== "tcp");
   usedIds.add(id);
   return {
     id,
@@ -1950,7 +1883,7 @@ function previewServiceRunConfiguration(
     services: [service.id],
     previewService: service.id,
     scopes: [service.id, workspaceRunConfigurationCwd(service.workingDir)],
-    previewUrl: `http://localhost:${service.preview?.internalPort ?? 80}`,
+    previewUrl: `${endpoint?.protocol ?? "http"}://localhost:${endpoint?.port ?? 80}`,
   };
 }
 
@@ -4728,16 +4661,7 @@ function manifestServiceEndpoint(
   service: PreviewManifestService,
   endpointId: string,
 ): PreviewManifestEndpoint | undefined {
-  const endpoint = (service.endpoints ?? []).find(
-    ({ id }) => id === endpointId,
-  );
-  if (endpoint) return endpoint;
-  if (endpointId !== "preview" || !service.preview) return undefined;
-  return {
-    id: "preview",
-    protocol: service.preview.protocol,
-    port: service.preview.internalPort,
-  };
+  return service.endpoints.find(({ id }) => id === endpointId);
 }
 
 async function executeHostPreviewProbe(
@@ -4835,14 +4759,15 @@ function serviceProbeCommand(
 }
 
 function serviceJavascriptRuntime(service: PreviewManifestService) {
+  const image = service.container.image ?? "";
   if (
-    /(?:^|\/)bun(?::|$)/.test(service.image) ||
+    /(?:^|\/)bun(?::|$)/.test(image) ||
     /\bbun\b/.test(service.command ?? "")
   ) {
     return "bun";
   }
   if (
-    /(?:^|\/)node(?::|$)/.test(service.image) ||
+    /(?:^|\/)node(?::|$)/.test(image) ||
     /\b(?:node|npm|pnpm|yarn)\b/.test(service.command ?? "")
   ) {
     return "node";
@@ -4851,8 +4776,9 @@ function serviceJavascriptRuntime(service: PreviewManifestService) {
 }
 
 function serviceUsesPython(service: PreviewManifestService) {
+  const image = service.container.image ?? "";
   return (
-    /(?:^|\/)python(?::|$)/.test(service.image) ||
+    /(?:^|\/)python(?::|$)/.test(image) ||
     /\bpython\b/.test(service.command ?? "")
   );
 }

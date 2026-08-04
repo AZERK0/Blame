@@ -11,6 +11,7 @@ import type {
   ServiceLaunchPlan,
 } from "../domain/execution-plan.js";
 import { PreviewRuntimeError } from "../domain/preview-errors.js";
+import { endpointRouteKey } from "../domain/endpoint-map.js";
 import {
   mergeEnvironmentPlan,
   type EnvironmentPlanEntry,
@@ -55,11 +56,11 @@ export function compilePreviewManifest(
   const hints = options.compatibilityHints ?? [];
   assertCompatibilityHints(hints, services);
   const publishedEndpoints = browserEndpoints(manifest.services);
-  assertPublishedEndpointsUnambiguous(publishedEndpoints);
   const environmentPlan = compileEnvironmentPlan(manifest);
   const gatewayStart = options.gatewayPortStart ?? 43_000;
   const gatewayListeners = publishedEndpoints.map(
     ({ service, endpoint }, index) => ({
+      routeKey: endpointRouteKey(service.id, endpoint.id),
       serviceId: service.id,
       endpointId: endpoint.id,
       logicalPort: endpoint.port,
@@ -68,10 +69,6 @@ export function compilePreviewManifest(
       targetPort: endpoint.port,
       basePathMode: "root" as const,
     }),
-  );
-  assertNetworkPortsAvailable(
-    services,
-    gatewayListeners.map(({ sandboxPort }) => sandboxPort),
   );
   const serverLocalhostHints = hints.filter(
     (
@@ -100,17 +97,7 @@ export function compilePreviewManifest(
   const requiresWebSockets = hints.some((hint) => hint.type === "websocket");
   const detectedCompatibility: CompatibilityRequirement[] = [
     { type: "bidirectional-sync" },
-    ...(services.some(({ source }) =>
-      source.kind === "container" ||
-      (source.kind === "auto" && Boolean(source.image)),
-    ) || manifest.setup.some((task) =>
-      task.source
-        ? task.source.kind === "container" ||
-          (task.source.kind === "auto" && Boolean(task.source.image))
-        : Boolean(task.image),
-    )
-      ? [{ type: "container-engine" as const }]
-      : []),
+    { type: "container-engine" },
     ...loopbackGroups.map(({ serviceIds }) => ({
       type: "shared-loopback" as const,
       serviceIds,
@@ -122,22 +109,21 @@ export function compilePreviewManifest(
     })),
   ];
   return {
-    version: 1,
+    version: 2,
     workspaceRoot: "/workspace",
     setup: orderedSetupTasks(manifest).map((task) => ({
       id: task.id,
-      source: task.source
-        ? { ...task.source }
-        : { kind: "container", image: task.image },
+      container: structuredClone(task.container),
       workingDir: task.workingDir || "/workspace",
       command: task.command,
+      entrypoint: task.entrypoint ? [...task.entrypoint] : undefined,
       runAs: task.runAs ?? "host",
       environment: { ...(task.environment ?? {}) },
       dependsOn: [...(task.dependsOn ?? [])],
     })),
     services,
     caches: manifest.caches.map((cache) => ({ ...cache })),
-    probes: (manifest.probes ?? []).map((probe) => ({
+    probes: manifest.probes.map((probe) => ({
       id: probe.id,
       from: probe.from,
       target: {
@@ -222,40 +208,16 @@ function environmentEntry(
 }
 
 function assertLiteralEnvironmentKey(key: string) {
-  if (/(?:TOKEN|SECRET|PASSWORD|PRIVATE_KEY|API_KEY)$/i.test(key)) {
+  if (
+    /(?:TOKEN|SECRET|PASSWORD|PASSWD|PRIVATE_KEY|API_KEY|ACCESS_KEY|CREDENTIAL|AUTH|SESSION_KEY)$/i.test(
+      key,
+    )
+  ) {
     throw new PreviewRuntimeError({
       code: "INVALID_MANIFEST",
       message: `Environment key ${key} requires the explicit secret delivery channel.`,
       retryable: false,
     });
-  }
-}
-
-function assertPublishedEndpointsUnambiguous(
-  endpoints: Array<{
-    service: PreviewManifestService;
-    endpoint: PreviewManifestEndpoint;
-  }>,
-) {
-  const ids = new Set<string>();
-  const ports = new Set<number>();
-  for (const { service, endpoint } of endpoints) {
-    if (ids.has(endpoint.id)) {
-      throw new PreviewRuntimeError({
-        code: "INVALID_MANIFEST",
-        message: `Published endpoint ID ${endpoint.id} on ${service.id} is ambiguous across services.`,
-        retryable: false,
-      });
-    }
-    if (ports.has(endpoint.port)) {
-      throw new PreviewRuntimeError({
-        code: "INVALID_MANIFEST",
-        message: `Published localhost port ${endpoint.port} on ${service.id} is ambiguous across services.`,
-        retryable: false,
-      });
-    }
-    ids.add(endpoint.id);
-    ports.add(endpoint.port);
   }
 }
 
@@ -266,11 +228,11 @@ function compileService(
   return {
     id: service.id,
     kind: service.kind,
-    source: service.source
-      ? { ...service.source }
-      : { kind: "container", image: service.image },
+    container: structuredClone(service.container),
     workingDir: service.workingDir || "/workspace",
     command: service.command,
+    entrypoint: service.entrypoint ? [...service.entrypoint] : undefined,
+    user: service.user,
     environment: { ...(service.environment ?? {}) },
     dependsOn: [
       ...new Set([
@@ -331,16 +293,7 @@ function compileEndpoint(
 function serviceEndpoints(
   service: PreviewManifestService,
 ): PreviewManifestEndpoint[] {
-  if (service.endpoints?.length) return service.endpoints;
-  if (!service.preview) return [];
-  return [
-    {
-      id: "preview",
-      protocol: service.preview.protocol,
-      port: service.preview.internalPort,
-      healthcheck: service.healthcheck,
-    },
-  ];
+  return service.endpoints;
 }
 
 function browserEndpoints(services: PreviewManifestService[]) {
@@ -367,23 +320,6 @@ function browserEndpoints(services: PreviewManifestService[]) {
       )
       .map((endpoint) => ({ service, endpoint })),
   );
-}
-
-function assertNetworkPortsAvailable(
-  services: ServiceLaunchPlan[],
-  gatewayPorts: number[],
-) {
-  const logical = new Set(
-    services.flatMap((service) => service.endpoints.map(({ port }) => port)),
-  );
-  const collision = gatewayPorts.find((port) => logical.has(port));
-  if (collision !== undefined) {
-    throw new PreviewRuntimeError({
-      code: "UNSUPPORTED_CAPABILITY",
-      message: `Gateway port ${collision} collides with a project endpoint.`,
-      retryable: false,
-    });
-  }
 }
 
 function compileLoopbackGroups(
@@ -418,7 +354,9 @@ function compileLoopbackGroups(
       visited.add(id);
       serviceIds.push(id);
       portsByService.get(id)?.forEach((port) => logicalPorts.add(port));
-      pending.push(...[...(adjacency.get(id) ?? [])].filter((item) => !visited.has(item)));
+      pending.push(
+        ...[...(adjacency.get(id) ?? [])].filter((item) => !visited.has(item)),
+      );
     }
     serviceIds.sort();
     groups.push({
@@ -457,7 +395,11 @@ function assertCompatibilityHints(
   }
 }
 
-function connect(adjacency: Map<string, Set<string>>, source: string, target: string) {
+function connect(
+  adjacency: Map<string, Set<string>>,
+  source: string,
+  target: string,
+) {
   const targets = adjacency.get(source) ?? new Set<string>();
   targets.add(target);
   adjacency.set(source, targets);

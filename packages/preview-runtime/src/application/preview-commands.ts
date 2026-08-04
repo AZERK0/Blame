@@ -25,6 +25,7 @@ export function applyPreviewCommand(
       next.selection = {
         configurationId: command.configurationId,
         serviceIds: command.serviceIds ? [...new Set(command.serviceIds)] : undefined,
+        ...(command.primaryRoute ? { primaryRoute: { ...command.primaryRoute } } : {}),
       };
       break;
     case "stop-services":

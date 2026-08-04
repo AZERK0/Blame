@@ -10,14 +10,14 @@ import { PreviewRuntimeError } from '@blame/preview-runtime'
 export default class PreviewAccessTicketService {
   constructor(private readonly config: PreviewRuntimeConfig = previewRuntimeConfig()) {}
 
-  async issue(sessionId: string, endpointId: string, ownerUserId: string) {
+  async issue(sessionId: string, routeId: string, ownerUserId: string) {
     await PreviewSession.query()
       .where('id', sessionId)
       .where('ownerUserId', ownerUserId)
       .firstOrFail()
     const route = await PreviewEndpointRoute.query()
       .where('sessionId', sessionId)
-      .where('endpointId', endpointId)
+      .where('id', routeId)
       .where('revoked', false)
       .firstOrFail()
     const ticket = randomBytes(32).toString('base64url')
@@ -25,7 +25,9 @@ export default class PreviewAccessTicketService {
     await PreviewAccessTicket.create({
       sessionId,
       ownerUserId,
-      endpointId,
+      routeId: route.id,
+      serviceId: route.serviceId,
+      endpointId: route.endpointId,
       ticketHash: ticketHash(ticket),
       expiresAt,
       usedAt: null,
@@ -47,33 +49,7 @@ export default class PreviewAccessTicketService {
         .where('ticketHash', ticketHash(ticket))
         .where('ownerUserId', ownerUserId)
         .where('sessionId', route.sessionId)
-        .where('endpointId', route.endpointId)
-        .forUpdate()
-        .firstOrFail()
-      if (record.usedAt || record.expiresAt <= DateTime.utc()) {
-        throw new PreviewRuntimeError({
-          code: 'PREVIEW_ACCESS_DENIED',
-          message: 'The preview access ticket is expired or already used.',
-          retryable: false,
-        })
-      }
-      record.useTransaction(transaction)
-      record.usedAt = DateTime.utc()
-      await record.save()
-      return { sessionId: record.sessionId, endpointId: record.endpointId }
-    })
-  }
-
-  async consumeForEdge(ticket: string, publicHostname: string) {
-    return db.transaction(async (transaction) => {
-      const route = await PreviewEndpointRoute.query({ client: transaction })
-        .where('publicHostname', publicHostname.toLowerCase())
-        .where('revoked', false)
-        .firstOrFail()
-      const record = await PreviewAccessTicket.query({ client: transaction })
-        .where('ticketHash', ticketHash(ticket))
-        .where('sessionId', route.sessionId)
-        .where('endpointId', route.endpointId)
+        .where('routeId', route.id)
         .forUpdate()
         .firstOrFail()
       if (record.usedAt || record.expiresAt <= DateTime.utc()) {
@@ -88,6 +64,39 @@ export default class PreviewAccessTicketService {
       await record.save()
       return {
         sessionId: record.sessionId,
+        routeId: record.routeId,
+        serviceId: record.serviceId,
+        endpointId: record.endpointId,
+      }
+    })
+  }
+
+  async consumeForEdge(ticket: string, publicHostname: string) {
+    return db.transaction(async (transaction) => {
+      const route = await PreviewEndpointRoute.query({ client: transaction })
+        .where('publicHostname', publicHostname.toLowerCase())
+        .where('revoked', false)
+        .firstOrFail()
+      const record = await PreviewAccessTicket.query({ client: transaction })
+        .where('ticketHash', ticketHash(ticket))
+        .where('sessionId', route.sessionId)
+        .where('routeId', route.id)
+        .forUpdate()
+        .firstOrFail()
+      if (record.usedAt || record.expiresAt <= DateTime.utc()) {
+        throw new PreviewRuntimeError({
+          code: 'PREVIEW_ACCESS_DENIED',
+          message: 'The preview access ticket is expired or already used.',
+          retryable: false,
+        })
+      }
+      record.useTransaction(transaction)
+      record.usedAt = DateTime.utc()
+      await record.save()
+      return {
+        sessionId: record.sessionId,
+        routeId: record.routeId,
+        serviceId: record.serviceId,
         endpointId: record.endpointId,
         ownerUserId: record.ownerUserId,
       }

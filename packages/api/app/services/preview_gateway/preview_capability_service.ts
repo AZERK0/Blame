@@ -3,6 +3,8 @@ import { createPrivateKey, randomBytes, sign } from 'node:crypto'
 
 export type PreviewCapabilityRoute = {
   sessionId: string
+  routeId: string
+  serviceId: string
   endpointId: string
   generation: number
 }
@@ -22,6 +24,8 @@ export default class PreviewCapabilityService {
       iss: 'blame-preview-edge',
       aud: 'blame-sandbox-gateway',
       sessionId: route.sessionId,
+      routeId: route.routeId,
+      serviceId: route.serviceId,
       endpointId: route.endpointId,
       generation: route.generation,
       iat: now,

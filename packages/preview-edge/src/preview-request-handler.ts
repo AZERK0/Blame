@@ -52,6 +52,8 @@ export class PreviewRequestHandler {
     if (
       !session ||
       session.sessionId !== route.sessionId ||
+      session.routeId !== route.routeId ||
+      session.serviceId !== route.serviceId ||
       session.endpointId !== route.endpointId ||
       session.ownerUserId !== route.ownerUserId
     ) {

@@ -31,25 +31,29 @@ test("retries health checks during the declared readiness window", async () => {
 
 function plan(): PreviewExecutionPlan {
   return {
-    version: 1,
+    version: 2,
     workspaceRoot: "/workspace",
     setup: [],
-    services: [{
-      id: "web",
-      kind: "preview",
-      source: { kind: "process" },
-      workingDir: ".",
-      command: "start-web",
-      environment: {},
-      dependsOn: [],
-      bindings: [],
-      endpoints: [{
-        id: "http",
-        protocol: "http",
-        port: 3_000,
-        healthcheck: { type: "http", path: "/health", timeoutMs: 1_000 },
-      }],
-    }],
+    services: [
+      {
+        id: "web",
+        kind: "preview",
+        container: { image: "node:24" },
+        workingDir: ".",
+        command: "start-web",
+        environment: {},
+        dependsOn: [],
+        bindings: [],
+        endpoints: [
+          {
+            id: "http",
+            protocol: "http",
+            port: 3_000,
+            healthcheck: { type: "http", path: "/health", timeoutMs: 1_000 },
+          },
+        ],
+      },
+    ],
     caches: [],
     probes: [],
     environmentPlan: { entries: [], cleanupRequired: true },

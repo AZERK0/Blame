@@ -297,7 +297,7 @@ export class PasskeySchema extends BaseModel {
 }
 
 export class PreviewAccessTicketSchema extends BaseModel {
-  static $columns = ['createdAt', 'endpointId', 'expiresAt', 'id', 'ownerUserId', 'sessionId', 'ticketHash', 'usedAt'] as const
+  static $columns = ['createdAt', 'endpointId', 'expiresAt', 'id', 'ownerUserId', 'routeId', 'serviceId', 'sessionId', 'ticketHash', 'usedAt'] as const
   $columns = PreviewAccessTicketSchema.$columns
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
@@ -309,6 +309,10 @@ export class PreviewAccessTicketSchema extends BaseModel {
   declare id: string
   @column()
   declare ownerUserId: string
+  @column()
+  declare routeId: string
+  @column()
+  declare serviceId: string
   @column()
   declare sessionId: string
   @column()

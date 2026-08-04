@@ -1,15 +1,22 @@
-export type ServiceExecutionSource =
-  | { kind: "container"; image: string }
-  | { kind: "process"; toolchain?: string }
-  | { kind: "auto"; image?: string; toolchain?: string };
+export type ContainerBuildPlan = {
+  context: string;
+  dockerfile: string;
+  target?: string;
+};
+
+export type ContainerPlan = {
+  image?: string;
+  build?: ContainerBuildPlan;
+};
 
 export type RuntimeEnvironment = Record<string, string>;
 
 export type SetupTaskPlan = {
   id: string;
-  source: ServiceExecutionSource;
+  container: ContainerPlan;
   workingDir: string;
   command: string;
+  entrypoint?: string[];
   runAs: "host" | "root";
   environment: RuntimeEnvironment;
   dependsOn: string[];
@@ -38,9 +45,11 @@ export type ServiceBindingPlan = {
 export type ServiceLaunchPlan = {
   id: string;
   kind: "preview" | "dependency" | "worker";
-  source: ServiceExecutionSource;
+  container: ContainerPlan;
   workingDir: string;
   command?: string;
+  entrypoint?: string[];
+  user?: string;
   environment: RuntimeEnvironment;
   dependsOn: string[];
   endpoints: ServiceEndpointPlan[];
@@ -60,6 +69,7 @@ export type ProbePlan = {
 };
 
 export type GatewayListenerPlan = {
+  routeKey: string;
   serviceId: string;
   endpointId: string;
   logicalPort: number;
@@ -94,7 +104,7 @@ export type CompatibilityRequirement =
   | { type: "container-engine" };
 
 export type PreviewExecutionPlan = {
-  version: 1;
+  version: 2;
   workspaceRoot: "/workspace";
   setup: SetupTaskPlan[];
   services: ServiceLaunchPlan[];
@@ -108,4 +118,8 @@ export type PreviewExecutionPlan = {
 export type RuntimeSelection = {
   configurationId: string;
   serviceIds?: string[];
+  primaryRoute?: {
+    serviceId: string;
+    endpointId: string;
+  };
 };

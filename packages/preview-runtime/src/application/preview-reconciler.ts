@@ -176,6 +176,7 @@ export class PreviewReconciler {
       await driver.startServices(handle, {
         configurationId: record.selection?.configurationId ?? "default",
         serviceIds: record.selection?.serviceIds,
+        primaryRoute: record.selection?.primaryRoute,
       });
     }
     const observation = await driver.inspect(handle);
@@ -282,7 +283,7 @@ export class PreviewReconciler {
 
 function expectedServiceIds(record: PreviewSessionRecord) {
   const expected = new Set(
-    record.selection?.serviceIds?.length
+    record.selection?.serviceIds !== undefined
       ? record.selection.serviceIds
       : record.plan.services.map(({ id }) => id),
   );

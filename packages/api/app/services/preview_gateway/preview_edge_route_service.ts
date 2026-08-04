@@ -18,10 +18,23 @@ export type PublishPreviewRouteInput = {
 export default class PreviewEdgeRouteService {
   constructor(private readonly config: PreviewRuntimeConfig = previewRuntimeConfig()) {}
 
+  identity(sessionId: string, serviceId: string, endpointId: string) {
+    const id = opaqueRouteId(sessionId, serviceId, endpointId)
+    const publicHostname = `${id}.${new URL(this.config.edgeOrigin).hostname}`
+    return {
+      id,
+      publicHostname,
+      publicUrl: `${new URL(this.config.edgeOrigin).protocol}//${publicHostname}`,
+    }
+  }
+
   async publish(input: PublishPreviewRouteInput) {
     assertProviderUpstream(input.upstreamUrl)
-    const id = opaqueRouteId(input.sessionId, input.endpointId)
-    const publicHostname = `${id}.${new URL(this.config.edgeOrigin).hostname}`
+    const { id, publicHostname, publicUrl } = this.identity(
+      input.sessionId,
+      input.serviceId,
+      input.endpointId
+    )
     const upstreamUrlEncrypted = await encryption.encrypt(input.upstreamUrl)
     const route = await PreviewEndpointRoute.find(id)
     if (route) {
@@ -47,7 +60,7 @@ export default class PreviewEdgeRouteService {
     }
     return {
       id,
-      publicUrl: `${new URL(this.config.edgeOrigin).protocol}//${publicHostname}`,
+      publicUrl,
     }
   }
 
@@ -131,9 +144,9 @@ export default class PreviewEdgeRouteService {
   }
 }
 
-export function opaqueRouteId(sessionId: string, endpointId: string) {
+export function opaqueRouteId(sessionId: string, serviceId: string, endpointId: string) {
   return createHmac('sha256', appKey.release())
-    .update(`${sessionId}\0${endpointId}`)
+    .update(`${sessionId}\0${serviceId}\0${endpointId}`)
     .digest('hex')
     .slice(0, 40)
 }

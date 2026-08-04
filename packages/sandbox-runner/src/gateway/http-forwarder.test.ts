@@ -1,12 +1,24 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { forwardedRequestHeaders, gatewayRequestTarget } from "./http-forwarder.js";
+import {
+  forwardedRequestHeaders,
+  gatewayRequestTarget,
+} from "./http-forwarder.js";
 
 test("keeps gateway requests on their declared upstream", () => {
   assert.equal(gatewayRequestTarget("/api/items?q=1"), "/api/items?q=1");
-  assert.throws(() => gatewayRequestTarget("http://169.254.169.254/latest"), /Invalid/);
-  assert.throws(() => gatewayRequestTarget("//169.254.169.254/latest"), /Invalid/);
-  assert.throws(() => gatewayRequestTarget("/\\169.254.169.254/latest"), /Invalid/);
+  assert.throws(
+    () => gatewayRequestTarget("http://169.254.169.254/latest"),
+    /Invalid/,
+  );
+  assert.throws(
+    () => gatewayRequestTarget("//169.254.169.254/latest"),
+    /Invalid/,
+  );
+  assert.throws(
+    () => gatewayRequestTarget("/\\169.254.169.254/latest"),
+    /Invalid/,
+  );
 });
 
 test("preserves logical cross-origin CORS headers", () => {
@@ -19,6 +31,8 @@ test("preserves logical cross-origin CORS headers", () => {
     },
     {
       sessionId: "session",
+      routeId: "route",
+      serviceId: "api",
       endpointId: "api",
       generation: 1,
       logicalPort: 3333,

@@ -57,7 +57,7 @@ export class PreviewOrchestrator implements PreviewSessionBackend {
       planHash: input.planHash,
       planVersion: input.plan.version,
       sourceRevision: input.sourceRevision,
-      resourceSize: input.resourceSize ?? defaultResourceSize(input.profile),
+      resourceSize: input.resourceSize ?? defaultResourceSize(),
       lastActivityAt: now,
       createdAt: now,
     };
@@ -67,9 +67,16 @@ export class PreviewOrchestrator implements PreviewSessionBackend {
     );
   }
 
-  command(sessionId: string, command: PreviewSessionCommand, operationId: string) {
+  command(
+    sessionId: string,
+    command: PreviewSessionCommand,
+    operationId: string,
+  ) {
     return this.lock.withLock(sessionId, async ({ fencingToken }) => {
-      const existingOperation = await this.repository.getOperation(sessionId, operationId);
+      const existingOperation = await this.repository.getOperation(
+        sessionId,
+        operationId,
+      );
       if (existingOperation?.status === "succeeded") return this.get(sessionId);
       const record = await this.requiredRecord(sessionId);
       if (existingOperation && existingOperation.commandType !== command.type) {
@@ -90,7 +97,10 @@ export class PreviewOrchestrator implements PreviewSessionBackend {
         const desired = applyPreviewCommand(record, command);
         desired.revision = record.revision + 1;
         await this.repository.save(desired, record.revision);
-        const reconciled = await this.reconciler.reconcile(desired, fencingToken);
+        const reconciled = await this.reconciler.reconcile(
+          desired,
+          fencingToken,
+        );
         await this.repository.saveOperation({
           sessionId,
           operationId,
@@ -107,7 +117,10 @@ export class PreviewOrchestrator implements PreviewSessionBackend {
           operationId,
           commandType: command.type,
           status: "failed",
-          errorCode: error instanceof PreviewRuntimeError ? error.failure.code : "INTERNAL",
+          errorCode:
+            error instanceof PreviewRuntimeError
+              ? error.failure.code
+              : "INTERNAL",
           createdAt: existingOperation?.createdAt ?? new Date().toISOString(),
           completedAt: new Date().toISOString(),
         });
@@ -120,7 +133,10 @@ export class PreviewOrchestrator implements PreviewSessionBackend {
     return previewSessionView(await this.requiredRecord(sessionId));
   }
 
-  events(sessionId: string, cursor?: string): AsyncIterable<PreviewSessionEvent> {
+  events(
+    sessionId: string,
+    cursor?: string,
+  ): AsyncIterable<PreviewSessionEvent> {
     return this.eventSink.events(sessionId, cursor);
   }
 
@@ -137,8 +153,6 @@ export class PreviewOrchestrator implements PreviewSessionBackend {
   }
 }
 
-function defaultResourceSize(profile: CreatePreviewSessionInput["profile"]) {
-  return profile === "vercel-process"
-    ? { vcpus: 1, memoryGb: 2 }
-    : { vcpus: 2, memoryGb: 4 };
+function defaultResourceSize() {
+  return { vcpus: 2, memoryGb: 4 };
 }

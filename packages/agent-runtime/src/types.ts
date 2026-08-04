@@ -427,11 +427,11 @@ export type {
   PreviewManifestBindingTarget,
   PreviewManifestCache,
   PreviewManifestConfidence,
+  PreviewManifestContainer,
+  PreviewManifestContainerBuild,
   PreviewManifestEndpoint,
   PreviewManifestEndpointHealthcheck,
   PreviewManifestEnvironment,
-  PreviewManifestHealthcheck,
-  PreviewManifestPreview,
   PreviewManifestProbe,
   PreviewManifestProbeTarget,
   PreviewManifestProject,
@@ -439,7 +439,6 @@ export type {
   PreviewManifestService,
   PreviewManifestServiceKind,
   PreviewManifestSetupTask,
-  PreviewManifestVersion,
 } from "@blame/preview-contract";
 
 export type ProjectInitializationDatabaseMode = "existing" | "compose";

@@ -1,7 +1,4 @@
-export type RuntimeProfileId =
-  | "local-container"
-  | "vercel-compose"
-  | "vercel-process";
+export type RuntimeProfileId = "local-container" | "vercel-compose";
 
 export type LocalRuntimeBackend = "linux-native" | "lima" | "wsl2";
 
@@ -14,7 +11,6 @@ export type RuntimePreference = {
 export const runtimeProfiles = [
   "local-container",
   "vercel-compose",
-  "vercel-process",
 ] as const satisfies readonly RuntimeProfileId[];
 
 export function isRuntimeProfileId(value: unknown): value is RuntimeProfileId {
@@ -41,7 +37,10 @@ export function resolveRuntimePreference(input: {
 }
 
 export function assertCloudUploadConsent(preference: RuntimePreference) {
-  if (isCloudRuntimeProfile(preference.profile) && !preference.confirmedCloudUploadAt) {
+  if (
+    isCloudRuntimeProfile(preference.profile) &&
+    !preference.confirmedCloudUploadAt
+  ) {
     throw new Error("Cloud runtime requires explicit upload consent.");
   }
 }

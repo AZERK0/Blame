@@ -42,31 +42,32 @@ test("passes when required host dependencies are available", async () => {
   assert.equal(calls.includes("node --version"), false);
 });
 
-test("does not require Lima, WSL, or a container runtime for cloud previews", async () => {
-  const calls: string[] = [];
-  const report = await checkHostDependencies(
-    {
-      platform: "darwin",
-      runtimeProfile: "vercel-process",
-      setupScript: "corepack pnpm install",
-    },
-    async (command, args) => {
-      calls.push([command, ...args].join(" "));
-      if (command === "node") return "v22.12.0";
-      return "ok";
-    },
-  );
+test("keeps cloud worktrees native on Linux, macOS, and Windows", async () => {
+  for (const platform of ["linux", "darwin", "win32"] as const) {
+    const calls: string[] = [];
+    const report = await checkHostDependencies(
+      {
+        platform,
+        runtimeProfile: "vercel-compose",
+        setupScript: "corepack pnpm install",
+      },
+      async (command, args) => {
+        calls.push([command, ...args].join(" "));
+        if (command === "node") return "v22.12.0";
+        return "ok";
+      },
+    );
 
-  assert.equal(report.ok, true);
-  assert.equal(
-    calls.some((call) => call.includes("blame-lima-runtime")),
-    false,
-  );
-  assert.equal(
-    calls.some((call) => call.startsWith("nerdctl")),
-    false,
-  );
-  assert.equal(calls.includes("git --version"), true);
+    assert.equal(report.ok, true, platform);
+    assert.equal(
+      calls.some((call) =>
+        /blame-lima-runtime|blame-wsl2-runtime|nerdctl|docker/.test(call),
+      ),
+      false,
+      platform,
+    );
+    assert.equal(calls.includes("git --version"), true, platform);
+  }
 });
 
 test("reports missing git before setup execution", async () => {

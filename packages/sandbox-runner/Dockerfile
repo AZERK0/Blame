@@ -6,6 +6,8 @@ ARG NPM_VERSION=12.0.2
 ARG NPM_SHA512=b885e890b9418fa1693544d05f53e64f9a73ec194837d4258b15fecdd692347b1dd2a517b1b0cbaf9d31cd8e92c3b70956bd2ecc72833a57b4b3098f5bfa7943
 ARG DOCKER_VERSION=29.7.1
 ARG DOCKER_SHA256=0fcea2a8b4d1b54ccc9010e3451b78504a369d414f37eb3bb79300e1b5c22ce6
+ARG BUILDX_VERSION=0.34.1
+ARG BUILDX_SHA256=f1332ddb9010bd0b72628266c3a906d9a6979848033df4c8d9bd2cd113bae12b
 ARG COMPOSE_VERSION=5.3.1
 ARG COMPOSE_SHA256=f9ebc6ebdb19d769b793c245a736caaeb198c62587f13b25c660c13b4987f959
 ARG BLAME_RUNNER_VERSION=0.1.0
@@ -32,10 +34,14 @@ RUN dnf install -y \
     && install -m 0755 /tmp/docker/docker /tmp/docker/docker-proxy /tmp/docker/dockerd /tmp/docker/containerd /tmp/docker/containerd-shim-runc-v2 /tmp/docker/runc /usr/local/bin/ \
     && mkdir -p /usr/local/lib/docker/cli-plugins \
     && curl --fail --silent --show-error --location \
+      "https://github.com/docker/buildx/releases/download/v${BUILDX_VERSION}/buildx-v${BUILDX_VERSION}.linux-amd64" \
+      --output /usr/local/lib/docker/cli-plugins/docker-buildx \
+    && echo "${BUILDX_SHA256}  /usr/local/lib/docker/cli-plugins/docker-buildx" | sha256sum --check --strict \
+    && curl --fail --silent --show-error --location \
       "https://github.com/docker/compose/releases/download/v${COMPOSE_VERSION}/docker-compose-linux-x86_64" \
       --output /usr/local/lib/docker/cli-plugins/docker-compose \
     && echo "${COMPOSE_SHA256}  /usr/local/lib/docker/cli-plugins/docker-compose" | sha256sum --check --strict \
-    && chmod 0755 /usr/local/lib/docker/cli-plugins/docker-compose \
+    && chmod 0755 /usr/local/lib/docker/cli-plugins/docker-buildx /usr/local/lib/docker/cli-plugins/docker-compose \
     && rm -rf /tmp/node.tar.xz /tmp/npm.tgz /tmp/docker /tmp/docker.tar.gz
 
 RUN groupadd --system blame-runtime \
@@ -58,9 +64,8 @@ ENV BLAME_RUNNER_VERSION=${BLAME_RUNNER_VERSION}
 ENV BLAME_RUNNER_IMAGE_DIGEST=${BLAME_RUNNER_IMAGE_DIGEST}
 ENV PATH="/opt/blame/bin:${PATH}"
 
-# The trusted supervisor must own dockerd, the control-plane state and the
-# privilege drop performed for native project processes. Project code never
-# runs as this user: ProcessSupervisor sets uid/gid to blame-project and
-# Compose pins every project container to the same unprivileged identity.
+# The trusted supervisor owns dockerd and the control-plane state. Compose
+# pins every project container to an unprivileged identity and never exposes
+# the daemon socket to project services.
 USER root
 WORKDIR /workspace

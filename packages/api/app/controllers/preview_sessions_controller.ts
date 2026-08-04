@@ -14,6 +14,9 @@ export default class PreviewSessionsController {
     try {
       const body = objectBody(context.request.all())
       const profile = body.profile
+      if (profile === 'vercel-process') {
+        throw invalidRequest('vercel-process is no longer supported; use vercel-compose.')
+      }
       if (!isRuntimeProfileId(profile) || profile === 'local-container') {
         throw invalidRequest('A managed cloud runtime profile is required.')
       }
@@ -62,7 +65,7 @@ export default class PreviewSessionsController {
       return await service.issueAccessTicket(
         context.auth.getUserOrFail().id,
         context.params.id,
-        optionalString(body.endpointId, 'endpointId')
+        optionalString(body.routeId, 'routeId')
       )
     } catch (error) {
       return runtimeErrorResponse(context, error)
@@ -163,6 +166,7 @@ function previewCommand(value: unknown): PreviewSessionCommand {
         type: command.type,
         configurationId: requiredString(command.configurationId, 'configurationId'),
         serviceIds: optionalServiceIds(command.serviceIds),
+        primaryRoute: optionalPrimaryRoute(command.primaryRoute),
       }
     case 'stop-services':
     case 'start-agent':
@@ -200,6 +204,15 @@ function optionalServiceIds(value: unknown) {
   if (value === undefined) return undefined
   if (!Array.isArray(value) || value.length > 50) throw invalidRequest('serviceIds is invalid.')
   return [...new Set(value.map((entry) => requiredString(entry, 'serviceId')))]
+}
+
+function optionalPrimaryRoute(value: unknown) {
+  if (value === undefined) return undefined
+  const route = objectBody(value)
+  return {
+    serviceId: requiredString(route.serviceId, 'primaryRoute.serviceId'),
+    endpointId: requiredString(route.endpointId, 'primaryRoute.endpointId'),
+  }
 }
 
 function resourceSize(value: unknown) {

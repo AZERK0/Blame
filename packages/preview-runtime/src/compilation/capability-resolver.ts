@@ -9,7 +9,6 @@ import type { RuntimeProfileId } from "../domain/runtime-profile.js";
 const profileCapabilities: Record<RuntimeProfileId, RuntimeCapabilities> = {
   "local-container": {
     dockerCompose: true,
-    nativeProcesses: false,
     sharedLoopback: false,
     snapshots: false,
     persistentFilesystem: true,
@@ -21,20 +20,6 @@ const profileCapabilities: Record<RuntimeProfileId, RuntimeCapabilities> = {
   },
   "vercel-compose": {
     dockerCompose: true,
-    nativeProcesses: false,
-    sharedLoopback: true,
-    snapshots: true,
-    persistentFilesystem: true,
-    publicHttpIngress: true,
-    webSockets: true,
-    networkPolicy: true,
-    credentialBroker: false,
-    bidirectionalSync: true,
-    maxPublishedPorts: 15,
-  },
-  "vercel-process": {
-    dockerCompose: false,
-    nativeProcesses: true,
     sharedLoopback: true,
     snapshots: true,
     persistentFilesystem: true,
@@ -47,7 +32,9 @@ const profileCapabilities: Record<RuntimeProfileId, RuntimeCapabilities> = {
   },
 };
 
-export function runtimeCapabilities(profile: RuntimeProfileId): RuntimeCapabilities {
+export function runtimeCapabilities(
+  profile: RuntimeProfileId,
+): RuntimeCapabilities {
   return { ...profileCapabilities[profile] };
 }
 
@@ -57,58 +44,62 @@ export function resolveCapabilities(
   capabilities: RuntimeCapabilities = runtimeCapabilities(profile),
 ): CapabilityReport {
   const incompatibilities: CapabilityIncompatibility[] = [];
-  requireCapability(incompatibilities, capabilities, "persistentFilesystem", "A persistent workspace is required.");
+  requireCapability(
+    incompatibilities,
+    capabilities,
+    "persistentFilesystem",
+    "A persistent workspace is required.",
+  );
   if (profile !== "local-container") {
-    requireCapability(incompatibilities, capabilities, "publicHttpIngress", "Cloud preview ingress is unavailable.");
-    requireCapability(incompatibilities, capabilities, "bidirectionalSync", "Durable cloud synchronization is unavailable.");
-    requireCapability(incompatibilities, capabilities, "networkPolicy", "An explicit egress policy is required.");
-  }
-  if (profile.endsWith("compose")) {
-    requireCapability(incompatibilities, capabilities, "dockerCompose", "The plan requires Docker Compose.");
-    const processOnly = [...plan.setup, ...plan.services].filter(({ source }) =>
-      source.kind === "process" || (source.kind === "auto" && !source.image),
+    requireCapability(
+      incompatibilities,
+      capabilities,
+      "publicHttpIngress",
+      "Cloud preview ingress is unavailable.",
     );
-    if (processOnly.length) {
-      incompatibilities.push({
-        code: "CONTAINER_SOURCE_REQUIRED",
-        message: "Native-process-only tasks cannot run with vercel-compose.",
-        serviceIds: processOnly.map(({ id }) => id),
-      });
-    }
-  }
-  if (profile.endsWith("process")) {
-    requireCapability(incompatibilities, capabilities, "nativeProcesses", "The plan requires native process execution.");
-    const containerOnly = [...plan.setup, ...plan.services].filter(({ source }) => source.kind === "container");
-    if (containerOnly.length) {
-      incompatibilities.push({
-        code: "PROCESS_SOURCE_UNSUPPORTED",
-        message: "Container-only tasks cannot run with vercel-process.",
-        serviceIds: containerOnly.map(({ id }) => id),
-      });
-    }
-    const unsupportedToolchains = [...plan.setup, ...plan.services].filter(({ source }) =>
-      source.kind !== "container" && source.toolchain && source.toolchain !== "node24",
+    requireCapability(
+      incompatibilities,
+      capabilities,
+      "bidirectionalSync",
+      "Durable cloud synchronization is unavailable.",
     );
-    if (unsupportedToolchains.length) {
-      incompatibilities.push({
-        code: "PROCESS_TOOLCHAIN_UNAVAILABLE",
-        message: "The requested native process toolchain is unavailable in this runner image.",
-        serviceIds: unsupportedToolchains.map(({ id }) => id),
-      });
-    }
+    requireCapability(
+      incompatibilities,
+      capabilities,
+      "networkPolicy",
+      "An explicit egress policy is required.",
+    );
   }
+  requireCapability(
+    incompatibilities,
+    capabilities,
+    "dockerCompose",
+    "The plan requires Docker Compose.",
+  );
   if (plan.networking.requiresSharedLoopback && !capabilities.sharedLoopback) {
     incompatibilities.push({
       code: "COMPOSE_LOOPBACK_UNSUPPORTED",
       capability: "sharedLoopback",
-      message: "The selected runtime cannot preserve required server-side localhost routes.",
-      serviceIds: plan.networking.loopbackGroups.flatMap(({ serviceIds }) => serviceIds),
+      message:
+        "The selected runtime cannot preserve required server-side localhost routes.",
+      serviceIds: plan.networking.loopbackGroups.flatMap(
+        ({ serviceIds }) => serviceIds,
+      ),
     });
   }
   if (plan.networking.requiresWebSockets) {
-    requireCapability(incompatibilities, capabilities, "webSockets", "The preview requires WebSocket forwarding.");
+    requireCapability(
+      incompatibilities,
+      capabilities,
+      "webSockets",
+      "The preview requires WebSocket forwarding.",
+    );
   }
-  if (plan.environmentPlan.entries.some(({ classification }) => classification === "secret")) {
+  if (
+    plan.environmentPlan.entries.some(
+      ({ classification }) => classification === "secret",
+    )
+  ) {
     requireCapability(
       incompatibilities,
       capabilities,
@@ -126,7 +117,11 @@ export function resolveCapabilities(
     });
   }
   duplicateLoopbackPorts(plan, incompatibilities);
-  return { compatible: incompatibilities.length === 0, capabilities: { ...capabilities }, incompatibilities };
+  return {
+    compatible: incompatibilities.length === 0,
+    capabilities: { ...capabilities },
+    incompatibilities,
+  };
 }
 
 function requireCapability(
@@ -145,9 +140,14 @@ function duplicateLoopbackPorts(
 ) {
   for (const group of plan.networking.loopbackGroups) {
     const owners = new Map<number, string[]>();
-    for (const service of plan.services.filter(({ id }) => group.serviceIds.includes(id))) {
+    for (const service of plan.services.filter(({ id }) =>
+      group.serviceIds.includes(id),
+    )) {
       for (const endpoint of service.endpoints) {
-        owners.set(endpoint.port, [...(owners.get(endpoint.port) ?? []), service.id]);
+        owners.set(endpoint.port, [
+          ...(owners.get(endpoint.port) ?? []),
+          service.id,
+        ]);
       }
     }
     for (const [port, serviceIds] of owners) {

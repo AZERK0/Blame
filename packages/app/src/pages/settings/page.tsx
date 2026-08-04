@@ -692,9 +692,13 @@ function RuntimeSettingsPanel() {
   const platform = usePlatform()
   const auth = useCloudAuth()
   const preference = useRuntimePreference()
-  const cloudAvailable = Boolean(platform.previewRuntime && auth.status === "authenticated")
+  const cloudAvailable = Boolean(
+    platform.previewRuntime && auth.status === "authenticated"
+  )
   const selectProfile = (profile: string) => {
-    const switchBlocked = runtimeProfileSwitchBlockReason(profile as typeof preference.profile)
+    const switchBlocked = runtimeProfileSwitchBlockReason(
+      profile as typeof preference.profile
+    )
     if (switchBlocked) {
       window.alert(switchBlocked)
       return
@@ -705,11 +709,11 @@ function RuntimeSettingsPanel() {
     }
     if (!cloudAvailable) return
     const confirmed = window.confirm(
-      "Cloud preview uploads this story worktree to an isolated managed sandbox. Compute is billed while active; the selected region and encrypted recovery artifacts are retained for the periods shown below. Continue?",
+      "Cloud preview uploads this story worktree to an isolated managed sandbox. Compute is billed while active; the selected region and encrypted recovery artifacts are retained for the periods shown below. Continue?"
     )
     if (!confirmed) return
     saveRuntimePreference({
-      profile: profile as "vercel-compose" | "vercel-process",
+      profile: "vercel-compose",
       source: "account-default",
       confirmedCloudUploadAt: new Date().toISOString(),
     })
@@ -722,28 +726,54 @@ function RuntimeSettingsPanel() {
       >
         <SettingsRow
           title="Runtime profile"
-          description={cloudAvailable ? "Story and project overrides can take precedence." : "Sign in from the desktop app to enable managed cloud profiles."}
+          description={
+            cloudAvailable
+              ? "Story and project overrides can take precedence."
+              : "Sign in from the desktop app to enable managed cloud profiles."
+          }
         >
           <Select value={preference.profile} onValueChange={selectProfile}>
-            <SelectTrigger className="w-56" aria-label="Default preview runtime">
+            <SelectTrigger
+              className="w-56"
+              aria-label="Default preview runtime"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="local-container">Local container</SelectItem>
-              <SelectItem value="vercel-compose" disabled={!cloudAvailable}>Vercel Compose</SelectItem>
-              <SelectItem value="vercel-process" disabled={!cloudAvailable}>Vercel processes</SelectItem>
+              <SelectItem value="vercel-compose" disabled={!cloudAvailable}>
+                Vercel Sandbox
+              </SelectItem>
             </SelectContent>
           </Select>
         </SettingsRow>
-        <CapabilityRow label="Explicit cloud upload consent" enabled={Boolean(preference.confirmedCloudUploadAt)} />
+        <CapabilityRow
+          label="Explicit cloud upload consent"
+          enabled={Boolean(preference.confirmedCloudUploadAt)}
+        />
       </SettingsGroup>
       <SettingsGroup
         title="Managed runtime policy"
         description="Cloud sessions are isolated per story and never fall back to local automatically."
       >
-        <SettingsRow title="Region" description="Managed provider region selected by the Blame control plane."><Badge variant="secondary">iad1</Badge></SettingsRow>
-        <SettingsRow title="Idle suspension" description="Compute suspends after 15 minutes without an active lease."><Badge variant="secondary">15 min</Badge></SettingsRow>
-        <SettingsRow title="Recovery retention" description="Encrypted source and delta artifacts are retained for up to 72 hours."><Badge variant="secondary">72 h</Badge></SettingsRow>
+        <SettingsRow
+          title="Region"
+          description="Managed provider region selected by the Blame control plane."
+        >
+          <Badge variant="secondary">iad1</Badge>
+        </SettingsRow>
+        <SettingsRow
+          title="Idle suspension"
+          description="Compute suspends after 15 minutes without an active lease."
+        >
+          <Badge variant="secondary">15 min</Badge>
+        </SettingsRow>
+        <SettingsRow
+          title="Recovery retention"
+          description="Encrypted source and delta artifacts are retained for up to 72 hours."
+        >
+          <Badge variant="secondary">72 h</Badge>
+        </SettingsRow>
       </SettingsGroup>
     </SettingsPanel>
   )
