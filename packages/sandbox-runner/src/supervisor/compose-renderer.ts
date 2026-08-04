@@ -55,7 +55,7 @@ export function renderCloudCompose(
       secureContainer({
         ...containerDefinition(task.container, task.id),
         entrypoint: task.entrypoint,
-        command: ["/bin/sh", "-lc", task.command],
+        command: ["/bin/sh", "-lc", composeLiteral(task.command)],
         working_dir: task.workingDir,
         environment: containerEnvironment(task.environment),
         volumes: workspaceAndCaches(plan, proxyCertificate),
@@ -116,7 +116,9 @@ function composeService(
   return secureContainer({
     ...containerDefinition(service.container, service.id),
     entrypoint: service.entrypoint,
-    command: service.command ? ["/bin/sh", "-lc", service.command] : undefined,
+    command: service.command
+      ? ["/bin/sh", "-lc", composeLiteral(service.command)]
+      : undefined,
     working_dir: service.workingDir,
     environment,
     depends_on: unique([
@@ -177,11 +179,17 @@ function compiledEnvironment(
 function containerEnvironment(
   environment: Record<string, string>,
 ): Record<string, string> {
-  return {
-    HOME: runtimeHome,
-    XDG_CACHE_HOME: `${runtimeHome}/.cache`,
-    ...environment,
-  };
+  return Object.fromEntries(
+    Object.entries({
+      HOME: runtimeHome,
+      XDG_CACHE_HOME: `${runtimeHome}/.cache`,
+      ...environment,
+    }).map(([key, value]) => [key, composeLiteral(value)]),
+  );
+}
+
+function composeLiteral(value: string) {
+  return value.replace(/(?<!\$)\$(?!\$)/g, () => "$$");
 }
 
 function bindingValue(

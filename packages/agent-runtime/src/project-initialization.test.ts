@@ -119,11 +119,15 @@ test("generates artifacts only from the canonical unversioned manifest", () => {
   assert.match(result.setupScript, /COMPOSE_PROJECT_NAME/);
   assert.match(
     result.previewManifest?.setup[0]?.command ?? "",
-    /corepack enable --install-directory "\$COREPACK_HOME\/bin"/,
+    /corepack enable --install-directory "\$\$COREPACK_HOME\/bin"/,
   );
   assert.match(
     result.previewManifest?.services[1]?.command ?? "",
-    /export PATH="\$COREPACK_HOME\/bin:\$\$PATH"/,
+    /export PATH="\$\$COREPACK_HOME\/bin:\$\$PATH"/,
+  );
+  assert.match(
+    result.dockerCompose,
+    /corepack enable --install-directory \\\"\$\$COREPACK_HOME\/bin\\\"/,
   );
   assert.match(result.dockerCompose, /blame\.preview: "true"/);
   assert.match(result.dockerCompose, /"127\.0\.0\.1::3000"/);
@@ -136,6 +140,21 @@ test("generates artifacts only from the canonical unversioned manifest", () => {
     result.dockerCompose,
     /app:[\s\S]*api:\n\s+condition: service_healthy/,
   );
+});
+
+test("normalizes pnpm serve options and browser-only dependencies", () => {
+  const input = canonicalResult();
+  const app = input.previewManifest.services[1]!;
+  app.command =
+    "corepack prepare pnpm@10.33.2 --activate && corepack pnpm --filter @blame/app dev -- --hostname 0.0.0.0";
+  app.bindings = app.bindings?.filter(({ exposure }) => exposure === "browser");
+
+  const result = parseProjectInitializationPayload(input);
+  const normalizedApp = result.previewManifest?.services[1];
+
+  assert.match(normalizedApp?.command ?? "", /dev --hostname 0\.0\.0\.0/);
+  assert.doesNotMatch(normalizedApp?.command ?? "", /dev -- --hostname/);
+  assert.deepEqual(normalizedApp?.dependsOn, []);
 });
 
 test("requires the canonical manifest and rejects old manifest fields", () => {

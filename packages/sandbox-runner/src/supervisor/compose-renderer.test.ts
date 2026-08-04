@@ -54,6 +54,15 @@ test("renders hardened Compose with a shared application loopback", async () => 
     "http://localhost:3333",
   );
   assert.equal(rendered.targets["backend:api"]?.host, "127.0.0.1");
+  assert.deepEqual(compose.services.frontend.command, [
+    "/bin/sh",
+    "-lc",
+    'printf "%s" "$$COREPACK_HOME:$${TOKEN}:$$PATH"',
+  ]);
+  assert.equal(
+    (compose.services.frontend.environment as Record<string, string>).TOKEN,
+    "price-$$5",
+  );
   assert.doesNotMatch(
     rendered.yaml,
     /docker\.sock|privileged:|pid:\s*host|ipc:\s*host/,
@@ -78,8 +87,8 @@ function plan(): PreviewExecutionPlan {
         kind: "preview",
         container: { image: "node:24" },
         workingDir: "/workspace",
-        command: "node frontend.js",
-        environment: {},
+        command: 'printf "%s" "$COREPACK_HOME:${TOKEN}:$$PATH"',
+        environment: { TOKEN: "price-$5" },
         dependsOn: [],
         endpoints: [{ id: "web", protocol: "http", port: 3000 }],
         bindings: [

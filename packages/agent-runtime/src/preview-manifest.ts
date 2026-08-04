@@ -93,6 +93,18 @@ function normalizeServiceBindings(
   services: PreviewManifestService[],
 ) {
   const bindings = service.bindings ?? [];
+  const serverDependencies = new Set(
+    serverBindingDependencies(service, bindings),
+  );
+  const browserOnlyDependencies = new Set(
+    bindings
+      .filter(
+        (binding) =>
+          binding.exposure === "browser" &&
+          !serverDependencies.has(binding.source.service),
+      )
+      .map((binding) => binding.source.service),
+  );
   const environment = { ...service.environment };
   for (const binding of bindings) {
     environment[binding.target.key] = compiledBindingValue(binding, services);
@@ -101,8 +113,10 @@ function normalizeServiceBindings(
     ...service,
     environment,
     dependsOn: uniqueStrings([
-      ...(service.dependsOn ?? []),
-      ...serverBindingDependencies(service, bindings),
+      ...(service.dependsOn ?? []).filter(
+        (dependency) => !browserOnlyDependencies.has(dependency),
+      ),
+      ...serverDependencies,
     ]),
   };
 }
@@ -332,18 +346,37 @@ function normalizeService(
 }
 
 function commandWithLocalCorepackShims(command: string) {
+  const composeSafeCommand = escapeCorepackHomeForCompose(
+    normalizePnpmScriptOptionSeparator(command),
+  );
   if (
-    !/\bcorepack\s+(?:pnpm|yarn)\b/.test(command) ||
-    command.includes('corepack enable --install-directory "$COREPACK_HOME/bin"')
+    !/\bcorepack\s+(?:pnpm|yarn)\b/.test(composeSafeCommand) ||
+    composeSafeCommand.includes(
+      'corepack enable --install-directory "$$COREPACK_HOME/bin"',
+    )
   ) {
-    return command;
+    return composeSafeCommand;
   }
   return [
-    'mkdir -p "$COREPACK_HOME/bin"',
-    'corepack enable --install-directory "$COREPACK_HOME/bin"',
-    'export PATH="$COREPACK_HOME/bin:$$PATH"',
-    command,
+    'mkdir -p "$$COREPACK_HOME/bin"',
+    'corepack enable --install-directory "$$COREPACK_HOME/bin"',
+    'export PATH="$$COREPACK_HOME/bin:$$PATH"',
+    composeSafeCommand,
   ].join(" && ");
+}
+
+function normalizePnpmScriptOptionSeparator(command: string) {
+  return command.replace(
+    /(\b(?:corepack\s+)?pnpm\b(?:(?!&&|\|\||;).)*?\b(?:dev|start|preview|serve))\s+--\s+(?=--(?:host(?:name)?|port)\b)/g,
+    "$1 ",
+  );
+}
+
+function escapeCorepackHomeForCompose(command: string) {
+  return command.replace(
+    /(?<!\$)\$(?:COREPACK_HOME\b|\{COREPACK_HOME\})/g,
+    (match) => `$${match}`,
+  );
 }
 
 function normalizedServiceEnvironment(service: PreviewManifestService) {

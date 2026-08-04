@@ -5,6 +5,7 @@ import type {
   PreviewSessionEvent,
   PreviewSessionView,
 } from "@blame/preview-runtime";
+import { parsePreviewManifest } from "@blame/agent-runtime";
 
 export type CloudApiConnection = { token: string; url: string };
 type CloudPreviewClientOptions = { packaged?: boolean };
@@ -39,7 +40,7 @@ export class CloudPreviewClient implements PreviewSessionBackend<CloudManagedPre
       body: {
         userStoryId: input.userStoryId,
         profile: input.profile,
-        previewManifest: input.previewManifest,
+        previewManifest: parsePreviewManifest(input.previewManifest),
         cloudUploadConsentAt: input.cloudUploadConsentAt,
         operationId: input.operationId,
         sourceRevision: input.sourceRevision,
