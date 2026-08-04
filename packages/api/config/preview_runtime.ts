@@ -34,25 +34,26 @@ export function previewRuntimeConfig() {
     artifactTransferHosts: [...workspaceArtifactTransferHosts(), ...urlHosts([env.get('APP_URL')])],
     sandbox: {
       image: env.get('BLAME_SANDBOX_RUNNER_IMAGE'),
-      runnerVersion: env.get('BLAME_SANDBOX_RUNNER_VERSION') ?? '0.1.0',
-      protocolVersion: positiveInteger(env.get('BLAME_SANDBOX_PROTOCOL_VERSION'), 1),
+      runnerVersion: env.get('BLAME_SANDBOX_RUNNER_VERSION') ?? '0.2.2',
+      protocolVersion: positiveInteger(env.get('BLAME_SANDBOX_PROTOCOL_VERSION'), 2),
       vercelPlan: env.get('BLAME_SANDBOX_VERCEL_PLAN') ?? 'hobby',
       timeoutMinutes: positiveInteger(env.get('BLAME_SANDBOX_TIMEOUT_MINUTES'), 60),
       snapshotRetentionDays: positiveInteger(env.get('BLAME_SANDBOX_SNAPSHOT_RETENTION_DAYS'), 7),
       deploymentId: env.get('BLAME_SANDBOX_DEPLOYMENT_ID'),
-      egressAllowlist: csv(env.get('BLAME_SANDBOX_EGRESS_ALLOWLIST')).length
-        ? csv(env.get('BLAME_SANDBOX_EGRESS_ALLOWLIST'))
-        : [
-            'registry.npmjs.org',
-            '*.npmjs.org',
-            'github.com',
-            'codeload.github.com',
-            '*.githubusercontent.com',
-            'auth.docker.io',
-            'registry-1.docker.io',
-            'production.cloudfront.docker.com',
-            'docker-images-prod.s3.dualstack.us-east-1.amazonaws.com',
-          ],
+      egressAllowlist: Array.from(
+        new Set([
+          'registry.npmjs.org',
+          '*.npmjs.org',
+          'github.com',
+          'codeload.github.com',
+          '*.githubusercontent.com',
+          'auth.docker.io',
+          'registry-1.docker.io',
+          'production.cloudfront.docker.com',
+          'docker-images-prod.s3.dualstack.us-east-1.amazonaws.com',
+          ...csv(env.get('BLAME_SANDBOX_EGRESS_ALLOWLIST')),
+        ])
+      ),
       accessToken: env.get('VERCEL_ACCESS_TOKEN')?.release(),
       projectId: env.get('VERCEL_PROJECT_ID'),
       teamId: env.get('VERCEL_TEAM_ID'),

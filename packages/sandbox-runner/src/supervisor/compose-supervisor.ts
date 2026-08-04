@@ -229,7 +229,6 @@ export class ComposeSupervisor {
           runtimePaths.composeFile,
           "run",
           "--rm",
-          "--no-build",
           `setup-${task.id}`,
         ]),
       );

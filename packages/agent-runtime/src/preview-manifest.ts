@@ -68,6 +68,7 @@ export function normalizePreviewManifestWithPreferences(
     setup: manifest.setup.map((task) => ({
       ...task,
       workingDir: task.workingDir || "/workspace",
+      command: commandWithLocalCorepackShims(task.command),
       runAs: task.runAs ?? defaultSetupRunAs(task.command),
       environment: normalizedEnvironment(
         normalizedAppEnvironment(task.environment ?? {}),
@@ -316,6 +317,9 @@ function normalizeService(
   return {
     ...service,
     workingDir: service.workingDir || "/workspace",
+    command: service.command
+      ? commandWithLocalCorepackShims(service.command)
+      : undefined,
     environment: normalizedEnvironment(
       {
         ...normalizedServiceEnvironment(service),
@@ -325,6 +329,21 @@ function normalizeService(
     ),
     dependsOn: uniqueStrings(service.dependsOn ?? []),
   };
+}
+
+function commandWithLocalCorepackShims(command: string) {
+  if (
+    !/\bcorepack\s+(?:pnpm|yarn)\b/.test(command) ||
+    command.includes('corepack enable --install-directory "$COREPACK_HOME/bin"')
+  ) {
+    return command;
+  }
+  return [
+    'mkdir -p "$COREPACK_HOME/bin"',
+    'corepack enable --install-directory "$COREPACK_HOME/bin"',
+    'export PATH="$COREPACK_HOME/bin:$$PATH"',
+    command,
+  ].join(" && ");
 }
 
 function normalizedServiceEnvironment(service: PreviewManifestService) {

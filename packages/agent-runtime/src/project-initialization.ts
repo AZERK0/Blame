@@ -635,11 +635,6 @@ function validateDockerCompose(
       "Initialization result dockerCompose must build Nuxt before running its preview script or use the development script",
     );
   }
-  if (compose.includes("corepack enable")) {
-    throw new Error(
-      "Initialization result dockerCompose must not run corepack enable",
-    );
-  }
   if (usesUnescapedContainerHome(compose)) {
     throw new Error(
       "Initialization result dockerCompose must escape container HOME references as $$HOME or $${HOME}",

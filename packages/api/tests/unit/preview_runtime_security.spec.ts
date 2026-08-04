@@ -6,15 +6,13 @@ import { pack } from 'tar-stream'
 import { test } from '@japa/runner'
 
 test.group('preview runtime security', () => {
-  test('denies private and metadata subnets while canonicalizing egress domains', ({ assert }) => {
+  test('uses a default-deny domain allowlist without blocking sandbox DNS', ({ assert }) => {
     const policy = vercelNetworkPolicy(
       [' Registry.NPMJS.org ', 'registry.npmjs.org'],
       [{ domain: 'api.example.com', method: ['GET'], pathPrefix: '/broker/' }]
     )
     assert.deepEqual(Object.keys(policy.allow), ['registry.npmjs.org', 'api.example.com'])
-    assert.include(policy.subnets.deny, '169.254.0.0/16')
-    assert.notInclude(policy.subnets.deny, '::1/128')
-    assert.isFalse(policy.subnets.deny.some((cidr) => cidr.includes(':')))
+    assert.notProperty(policy, 'subnets')
     assert.throws(
       () => vercelNetworkPolicy(['https://example.com']),
       /Invalid sandbox egress domain/

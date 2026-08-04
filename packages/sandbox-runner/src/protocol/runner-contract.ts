@@ -5,7 +5,7 @@ import type {
   SourceArtifact,
 } from "@blame/preview-runtime";
 
-export const runnerProtocolVersion = 1;
+export const runnerProtocolVersion = 2;
 
 export type RunnerUploadTarget = {
   expiresAt: string;

@@ -1,3 +1,5 @@
+FROM docker/buildx-bin:master@sha256:31c73b175b33853bc9b131f295d8a20dea9ba487d9f5e703483c24a7b1a1615a AS buildx
+
 FROM amazonlinux:2023.12.20260710.0@sha256:2d3d063f7fc9fed492a1a7286a88f9852e9b391aa7a6fe91dedbb8381e0bb5b0
 
 ARG NODE_VERSION=24.18.1
@@ -6,14 +8,13 @@ ARG NPM_VERSION=12.0.2
 ARG NPM_SHA512=b885e890b9418fa1693544d05f53e64f9a73ec194837d4258b15fecdd692347b1dd2a517b1b0cbaf9d31cd8e92c3b70956bd2ecc72833a57b4b3098f5bfa7943
 ARG DOCKER_VERSION=29.7.1
 ARG DOCKER_SHA256=0fcea2a8b4d1b54ccc9010e3451b78504a369d414f37eb3bb79300e1b5c22ce6
-ARG BUILDX_VERSION=0.34.1
-ARG BUILDX_SHA256=f1332ddb9010bd0b72628266c3a906d9a6979848033df4c8d9bd2cd113bae12b
 ARG COMPOSE_VERSION=5.3.1
 ARG COMPOSE_SHA256=f9ebc6ebdb19d769b793c245a736caaeb198c62587f13b25c660c13b4987f959
-ARG BLAME_RUNNER_VERSION=0.1.0
+ARG BLAME_RUNNER_VERSION=0.2.2
 ARG BLAME_RUNNER_IMAGE_DIGEST=sha256:development
 
-RUN dnf install -y \
+RUN dnf upgrade -y \
+    && dnf install -y \
       ca-certificates findutils git gzip iproute iptables-nft nftables procps-ng shadow-utils sudo tar util-linux wget xz \
     && dnf clean all \
     && curl --fail --silent --show-error --location \
@@ -34,15 +35,13 @@ RUN dnf install -y \
     && install -m 0755 /tmp/docker/docker /tmp/docker/docker-proxy /tmp/docker/dockerd /tmp/docker/containerd /tmp/docker/containerd-shim-runc-v2 /tmp/docker/runc /usr/local/bin/ \
     && mkdir -p /usr/local/lib/docker/cli-plugins \
     && curl --fail --silent --show-error --location \
-      "https://github.com/docker/buildx/releases/download/v${BUILDX_VERSION}/buildx-v${BUILDX_VERSION}.linux-amd64" \
-      --output /usr/local/lib/docker/cli-plugins/docker-buildx \
-    && echo "${BUILDX_SHA256}  /usr/local/lib/docker/cli-plugins/docker-buildx" | sha256sum --check --strict \
-    && curl --fail --silent --show-error --location \
       "https://github.com/docker/compose/releases/download/v${COMPOSE_VERSION}/docker-compose-linux-x86_64" \
       --output /usr/local/lib/docker/cli-plugins/docker-compose \
     && echo "${COMPOSE_SHA256}  /usr/local/lib/docker/cli-plugins/docker-compose" | sha256sum --check --strict \
-    && chmod 0755 /usr/local/lib/docker/cli-plugins/docker-buildx /usr/local/lib/docker/cli-plugins/docker-compose \
+    && chmod 0755 /usr/local/lib/docker/cli-plugins/docker-compose \
     && rm -rf /tmp/node.tar.xz /tmp/npm.tgz /tmp/docker /tmp/docker.tar.gz
+
+COPY --chmod=0755 --from=buildx /buildx /usr/local/lib/docker/cli-plugins/docker-buildx
 
 RUN groupadd --system blame-runtime \
     && useradd --system --create-home --gid blame-runtime --shell /usr/sbin/nologin blame-control \

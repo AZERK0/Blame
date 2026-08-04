@@ -8,19 +8,6 @@ export type SandboxNetworkRule = {
   forwardUrl?: string
 }
 
-const protectedCidrs = [
-  // Vercel Sandbox currently accepts IPv4 CIDRs only. The domain allowlist remains
-  // default-deny for IPv6 literals as well; adding IPv6 ranges makes create() fail.
-  '0.0.0.0/8',
-  '10.0.0.0/8',
-  '100.64.0.0/10',
-  '127.0.0.0/8',
-  '169.254.0.0/16',
-  '172.16.0.0/12',
-  '192.168.0.0/16',
-  '224.0.0.0/4',
-]
-
 export function vercelNetworkPolicy(domains: string[], rules: SandboxNetworkRule[] = []) {
   const allow: Record<string, Array<Record<string, unknown>>> = Object.fromEntries(
     uniqueDomains(domains).map((domain) => [domain, []])
@@ -37,10 +24,10 @@ export function vercelNetworkPolicy(domains: string[], rules: SandboxNetworkRule
     if (rule.forwardUrl) entry.forwardURL = rule.forwardUrl
     allow[canonicalDomain(rule.domain)] = [...(allow[canonicalDomain(rule.domain)] ?? []), entry]
   }
-  return {
-    allow,
-    subnets: { deny: protectedCidrs },
-  }
+  // A custom Vercel domain allowlist is already default-deny for every unlisted
+  // domain and IP literal. Adding broad private CIDR denies also blocks the
+  // sandbox's own DNS resolver and Docker bridge traffic before SNI filtering.
+  return { allow }
 }
 
 function uniqueDomains(values: string[]) {

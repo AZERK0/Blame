@@ -9,6 +9,12 @@ export default class extends BaseSchema {
     await this.db.from('preview_access_tickets').delete()
     await this.db.from('preview_endpoint_routes').delete()
 
+    // MySQL may use the old composite unique index to enforce the
+    // preview_endpoint_routes.session_id foreign key. Give that foreign key
+    // an explicit supporting index before replacing the unique constraint.
+    this.schema.alterTable('preview_endpoint_routes', (table) => {
+      table.index(['session_id'])
+    })
     this.schema.alterTable('preview_endpoint_routes', (table) => {
       table.dropUnique(['session_id', 'endpoint_id'])
       table.unique(['session_id', 'service_id', 'endpoint_id'])
@@ -30,6 +36,9 @@ export default class extends BaseSchema {
     this.schema.alterTable('preview_endpoint_routes', (table) => {
       table.dropUnique(['session_id', 'service_id', 'endpoint_id'])
       table.unique(['session_id', 'endpoint_id'])
+    })
+    this.schema.alterTable('preview_endpoint_routes', (table) => {
+      table.dropIndex(['session_id'])
     })
   }
 }

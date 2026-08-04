@@ -117,6 +117,14 @@ test("generates artifacts only from the canonical unversioned manifest", () => {
 
   assert.equal(result.previewManifest?.services[1]?.kind, "preview");
   assert.match(result.setupScript, /COMPOSE_PROJECT_NAME/);
+  assert.match(
+    result.previewManifest?.setup[0]?.command ?? "",
+    /corepack enable --install-directory "\$COREPACK_HOME\/bin"/,
+  );
+  assert.match(
+    result.previewManifest?.services[1]?.command ?? "",
+    /export PATH="\$COREPACK_HOME\/bin:\$\$PATH"/,
+  );
   assert.match(result.dockerCompose, /blame\.preview: "true"/);
   assert.match(result.dockerCompose, /"127\.0\.0\.1::3000"/);
   assert.match(result.dockerCompose, /SERVER_API_URL: "http:\/\/api:3333"/);
