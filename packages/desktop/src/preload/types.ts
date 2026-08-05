@@ -459,6 +459,7 @@ export type BlameDesktopApi = {
   terminal: {
     start(input: { cwd: string }): Promise<{ id: string; cwd: string }>;
     write(input: { id: string; data: string }): Promise<boolean>;
+    resize(input: { cols: number; id: string; rows: number }): Promise<boolean>;
     stop(id: string): Promise<boolean>;
     onEvent(id: string, callback: (event: TerminalEvent) => void): () => void;
   };

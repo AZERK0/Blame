@@ -355,6 +355,7 @@ const api: BlameDesktopApi = {
   terminal: {
     start: (input) => ipcRenderer.invoke("terminal:start", input),
     write: (input) => ipcRenderer.invoke("terminal:write", input),
+    resize: (input) => ipcRenderer.invoke("terminal:resize", input),
     stop: (id) => ipcRenderer.invoke("terminal:stop", id),
     onEvent: (id, callback) => {
       const channel = `terminal:event:${id}`;
