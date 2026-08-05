@@ -6,7 +6,6 @@ import { FolderTreeIcon, MousePointerClickIcon } from "lucide-react"
 import type { VcsFileDiff } from "@/components/backlog/development/development-workspace"
 import {
   buildDevelopmentGraphElements,
-  type DevelopmentGraphDiff,
   type DevelopmentGraphNodeData,
 } from "@/components/backlog/development/development-graph-elements"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -92,7 +91,7 @@ export function DevelopmentGraph({
     const graph = cytoscape({
       autoungrabify: true,
       container,
-      elements: buildDevelopmentGraphElements(diffs as DevelopmentGraphDiff[]),
+      elements: buildDevelopmentGraphElements(diffs),
       layout: {
         name: "fcose",
         animate: false,

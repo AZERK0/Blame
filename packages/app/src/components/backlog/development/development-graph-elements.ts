@@ -1,9 +1,9 @@
-export type DevelopmentGraphDiff = {
-  additions?: number
-  deletions?: number
-  file: string
-  status: string
-}
+import type { VcsFileDiff } from "@/components/backlog/development/development-workspace"
+
+export type DevelopmentGraphDiff = Pick<
+  VcsFileDiff,
+  "additions" | "deletions" | "file" | "status"
+>
 
 export type DevelopmentGraphNodeData = {
   additions?: number
