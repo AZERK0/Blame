@@ -103,6 +103,9 @@ export function DevelopmentFileView({
 
 function FileSource({ path, source }: { path: string; source: string }) {
   const sourceLines = React.useMemo(() => source.split("\n"), [source])
+  const selectedRange = React.useRef<
+    { end: number; start: number } | undefined
+  >(undefined)
   const commentSelection = React.useCallback(
     (range: { end: number; start: number }) => {
       const start = Math.max(1, range.start)
@@ -116,18 +119,24 @@ function FileSource({ path, source }: { path: string; source: string }) {
     },
     [path, sourceLines]
   )
+  const rememberSelectedRange = React.useCallback(
+    (range: { end: number; start: number } | null) => {
+      selectedRange.current = range ?? undefined
+    },
+    []
+  )
   const options = React.useMemo(
     () => ({
       disableFileHeader: true,
       enableGutterUtility: true,
       enableLineSelection: true,
       lineHoverHighlight: "line" as const,
-      onGutterUtilityClick: commentSelection,
+      onLineSelectionEnd: rememberSelectedRange,
       overflow: "scroll" as const,
       theme: { dark: "github-dark" as const, light: "github-light" as const },
       themeType: "system" as const,
     }),
-    [commentSelection]
+    [rememberSelectedRange]
   )
 
   return (
@@ -138,9 +147,21 @@ function FileSource({ path, source }: { path: string; source: string }) {
           className="blame-pierre-file"
           file={{ contents: source, name: path }}
           options={options}
-          renderGutterUtility={() => (
+          renderGutterUtility={(getHoveredLine) => (
             <button
               aria-label={`Comment ${path} source selection`}
+              onClick={() => {
+                const hoveredLine = getHoveredLine()
+                const range =
+                  selectedRange.current ??
+                  (hoveredLine
+                    ? {
+                        end: hoveredLine.lineNumber,
+                        start: hoveredLine.lineNumber,
+                      }
+                    : undefined)
+                if (range) commentSelection(range)
+              }}
               style={{
                 alignItems: "center",
                 background: "var(--color-primary, #2563eb)",
