@@ -49,6 +49,7 @@ import {
 } from "@/components/backlog/shared/comment-attachment-events"
 import type { UserStoryFileAttachment } from "@/components/backlog/data/backlog-data"
 import { fileAttachment } from "@/components/backlog/drawer/user-story-attachment-files"
+import { MermaidDiagram } from "@/components/backlog/drawer/mermaid-diagram"
 import { DevelopmentFileIcon } from "@/components/backlog/development/development-file-icon"
 import {
   markdownPreviewBlocks,
@@ -1154,7 +1155,11 @@ function MarkdownPreview({
     >
       {blocks.map((block) =>
         block.type === "code" ? (
-          <MarkdownPreviewCode key={block.key} code={block.code} />
+          block.language === "mermaid" ? (
+            <MermaidDiagram chart={block.code} key={block.key} />
+          ) : (
+            <MarkdownPreviewCode key={block.key} code={block.code} />
+          )
         ) : block.type === "table" ? (
           <MarkdownPreviewTable
             key={block.key}

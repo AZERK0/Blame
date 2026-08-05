@@ -31,6 +31,7 @@ test("splits parsed markdown into lines and fenced code blocks", () => {
   assert.deepEqual(blocks[2], {
     code: "const value = 1",
     key: "code-2",
+    language: "ts",
     type: "code",
   })
   assert.deepEqual(blocks[3], {
@@ -98,6 +99,7 @@ test("keeps an unclosed code fence as a code block", () => {
     {
       code: "const value = 1",
       key: "code-0",
+      language: "ts",
       type: "code",
     },
   ])

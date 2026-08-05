@@ -44,6 +44,7 @@ export type MarkdownBlock =
   | {
       code: string
       key: string
+      language?: string
       type: "code"
     }
   | {
@@ -185,6 +186,7 @@ function markdownInlineSegment(source: string): MarkdownInlineSegment {
 
 function markdownCodeBlock(lines: string[], start: number) {
   if (!markdownFenceLine(lines[start])) return
+  const language = lines[start].slice(3).trim().split(/\s+/)[0]?.toLowerCase()
   const codeLines: string[] = []
   for (let index = start + 1; index < lines.length; index += 1) {
     if (markdownFenceLine(lines[index]))
@@ -192,6 +194,7 @@ function markdownCodeBlock(lines: string[], start: number) {
         block: {
           code: codeLines.join("\n"),
           key: `code-${start}`,
+          ...(language ? { language } : {}),
           type: "code" as const,
         },
         end: index,
@@ -202,6 +205,7 @@ function markdownCodeBlock(lines: string[], start: number) {
     block: {
       code: codeLines.join("\n"),
       key: `code-${start}`,
+      ...(language ? { language } : {}),
       type: "code" as const,
     },
     end: lines.length - 1,
