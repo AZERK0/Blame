@@ -6,6 +6,7 @@ import {
 } from "@/components/backlog/development/development-diff-parser"
 import type { VcsFileDiff } from "@/components/backlog/development/development-workspace"
 import { MessageSquareIcon } from "lucide-react"
+import { PatchDiff } from "@pierre/diffs/react"
 
 import { DiffStats } from "@/components/backlog/development/development-diff-stats"
 import {
@@ -53,10 +54,87 @@ export function DevelopmentDiffView({
         </div>
       )}
       {scroll ? (
-        <DiffCode patch={diff.patch} path={diff.file} scroll />
+        <PierreDiff patch={diff.patch} path={diff.file} scroll />
       ) : (
-        <DiffCode patch={diff.patch} path={diff.file} />
+        <PierreDiff patch={diff.patch} path={diff.file} />
       )}
+    </div>
+  )
+}
+
+function PierreDiff({
+  patch,
+  path,
+  scroll = false,
+}: {
+  patch: string
+  path: string
+  scroll?: boolean
+}) {
+  const lines = React.useMemo(() => diffLines(patch), [patch])
+  const commentSelection = React.useCallback(
+    (range: { end: number; start: number }) => {
+      const start = Math.max(1, range.start)
+      const end = Math.min(lines.length, Math.max(start, range.end))
+      dispatchCodeSelectionAttachment({
+        content: lines
+          .slice(start - 1, end)
+          .map((line) => line.content)
+          .join("\n"),
+        endLine: end,
+        path,
+        startLine: start,
+      })
+    },
+    [lines, path]
+  )
+  const options = React.useMemo(
+    () => ({
+      diffIndicators: "bars" as const,
+      diffStyle: "unified" as const,
+      disableFileHeader: true,
+      enableGutterUtility: true,
+      enableLineSelection: true,
+      lineHoverHighlight: "line" as const,
+      onGutterUtilityClick: commentSelection,
+      overflow: scroll ? ("scroll" as const) : ("wrap" as const),
+      theme: { dark: "github-dark" as const, light: "github-light" as const },
+      themeType: "system" as const,
+    }),
+    [commentSelection, scroll]
+  )
+
+  if (!patch.includes("@@")) {
+    return <DiffCode patch={patch} path={path} scroll={scroll} />
+  }
+
+  return (
+    <div className={cn("min-h-0 max-w-full min-w-0", scroll && "h-full")}>
+      <PatchDiff
+        className="blame-pierre-diff"
+        options={options}
+        patch={patch}
+        renderGutterUtility={() => (
+          <button
+            aria-label={`Comment ${path} diff selection`}
+            style={{
+              alignItems: "center",
+              background: "var(--color-primary, #2563eb)",
+              border: 0,
+              borderRadius: "0.375rem",
+              color: "white",
+              cursor: "pointer",
+              display: "flex",
+              height: "1.5rem",
+              justifyContent: "center",
+              width: "1.5rem",
+            }}
+            type="button"
+          >
+            <MessageSquareIcon size={13} />
+          </button>
+        )}
+      />
     </div>
   )
 }
