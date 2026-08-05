@@ -15,6 +15,9 @@ import PreviewUsageSample from '#models/preview_usage_sample'
 import WorkspaceArtifactService from '#services/workspace_artifacts/workspace_artifact_service'
 import PreviewEdgeRouteService from '#services/preview_gateway/preview_edge_route_service'
 import PreviewCapabilityService from '#services/preview_gateway/preview_capability_service'
+import PreviewProjectBaselineService, {
+  type PreviewBaselineSourceMetadata,
+} from '#services/preview_baselines/preview_project_baseline_service'
 import { previewRuntimeConfig } from '#config/preview_runtime'
 import { DateTime } from 'luxon'
 import { createHash } from 'node:crypto'
@@ -47,6 +50,7 @@ export type PreviewSessionServiceDependencies = {
   lease?: PreviewLeaseService
   tickets?: PreviewAccessTicketService
   drivers?: PreviewRuntimeDriver[]
+  baselines?: PreviewProjectBaselineService
 }
 
 export default class PreviewSessionService {
@@ -60,6 +64,7 @@ export default class PreviewSessionService {
   private readonly edgeRoutes = new PreviewEdgeRouteService()
   private readonly capabilities = new PreviewCapabilityService()
   private readonly drivers: Map<string, PreviewRuntimeDriver>
+  private readonly baselines: PreviewProjectBaselineService
   private readonly orchestrator: PreviewOrchestrator
 
   constructor(dependencies: PreviewSessionServiceDependencies = {}) {
@@ -70,6 +75,7 @@ export default class PreviewSessionService {
     this.lease = dependencies.lease ?? new PreviewLeaseService()
     this.tickets = dependencies.tickets ?? new PreviewAccessTicketService()
     this.artifacts = new WorkspaceArtifactService()
+    this.baselines = dependencies.baselines ?? new PreviewProjectBaselineService()
     const drivers = dependencies.drivers ?? [new VercelSandboxDriver()]
     this.drivers = new Map(drivers.map((driver) => [driver.profile, driver]))
     this.orchestrator = new PreviewOrchestrator(
@@ -177,6 +183,7 @@ export default class PreviewSessionService {
       await this.artifacts.markApplied(before.pendingDeltaArtifactId, ownerUserId)
     }
     if (session.state.host === 'running') await this.lease.renew(sessionId, ownerUserId)
+    else if (session.state.host === 'suspended') await this.lease.neutralize(sessionId, ownerUserId)
     else await this.lease.release(sessionId, ownerUserId)
     if (session.state.host === 'destroyed') {
       await this.tickets.revokeSession(sessionId)
@@ -261,23 +268,96 @@ export default class PreviewSessionService {
   prepareSourceUpload(
     ownerUserId: string,
     sessionId: string,
-    input: { sha256: string; size: number; sourceRevision: string }
+    input: {
+      sha256: string
+      size: number
+      sourceRevision: string
+      baseline?: PreviewBaselineSourceMetadata
+      sanitizedTreeHash?: string
+      lockfileHash?: string
+      workspaceHash?: string
+      mode?: 'full' | 'delta'
+    }
   ) {
-    return this.artifacts.prepareSourceUpload({
-      sessionId,
-      ownerUserId,
-      ...input,
-    })
+    return this.artifacts
+      .prepareSourceUpload({
+        sessionId,
+        ownerUserId,
+        ...input,
+      })
+      .then(async (upload) => ({
+        ...upload,
+        baseline: input.baseline
+          ? await this.baselines.lookupForSession(sessionId, input.baseline)
+          : undefined,
+      }))
   }
 
-  async importSource(ownerUserId: string, sessionId: string, artifactId: string) {
+  async negotiateSource(
+    ownerUserId: string,
+    sessionId: string,
+    metadata: PreviewBaselineSourceMetadata
+  ) {
+    await this.get(ownerUserId, sessionId)
+    return { baseline: await this.baselines.lookupForSession(sessionId, metadata) }
+  }
+
+  async importSource(
+    ownerUserId: string,
+    sessionId: string,
+    artifactId: string,
+    baselineId?: string
+  ) {
     await this.get(ownerUserId, sessionId)
     const source = await this.artifacts.completeSourceUpload(artifactId, ownerUserId)
+    const existing = await this.repository.get(sessionId)
+    if (existing?.sourceArtifactId === source.id && existing.state.sync === 'clean') {
+      return this.get(ownerUserId, sessionId)
+    }
+    if (
+      source.mode === 'delta' &&
+      existing &&
+      ['running', 'starting', 'preparing'].includes(existing.state.engine)
+    ) {
+      throw new PreviewRuntimeError({
+        code: 'SYNC_CONFLICT',
+        message: 'Stop preview services before applying a workspace delta.',
+        retryable: true,
+      })
+    }
+    const baseline =
+      source.mode === 'delta' && baselineId
+        ? await this.baselines.getReady(baselineId, sessionId, {
+            baseRevision: source.revision,
+            sanitizedTreeHash: source.sanitizedTreeHash ?? '',
+            lockfileHash: source.lockfileHash ?? '',
+            workspaceHash: source.workspaceHash,
+          })
+        : await this.baselines.ensure({
+            sessionId,
+            source,
+            sourceMetadata: {
+              baseRevision: source.revision,
+              sanitizedTreeHash: source.sanitizedTreeHash ?? source.revision,
+              lockfileHash: source.lockfileHash ?? 'unknown',
+              workspaceHash: source.workspaceHash,
+            },
+          })
     return this.lock.withLock(sessionId, async ({ fencingToken }) => {
       const record = await this.repository.get(sessionId)
       const handle = await this.fencedHandle(sessionId, fencingToken)
       const driver = record && this.drivers.get(record.profile)
       if (!record || !handle || !driver) throw new Error('Preview runtime is not provisioned.')
+      if (
+        source.mode === 'delta' &&
+        ['running', 'starting', 'preparing'].includes(record.state.engine)
+      ) {
+        throw new PreviewRuntimeError({
+          code: 'SYNC_CONFLICT',
+          message: 'Stop preview services before applying a workspace delta.',
+          retryable: true,
+        })
+      }
       if (record.sourceArtifactId === source.id && record.state.sync === 'clean') {
         return this.get(ownerUserId, sessionId)
       }
@@ -286,11 +366,29 @@ export default class PreviewSessionService {
       importing.revision += 1
       await this.repository.save(importing, record.revision)
       try {
-        const receipt = await driver.syncIn(handle, source)
+        let syncHandle = handle
+        if (source.mode === 'delta') {
+          if (!baseline?.providerSnapshotId || !driver.restoreBaseline) {
+            throw new PreviewRuntimeError({
+              code: 'UNSUPPORTED_CAPABILITY',
+              message: 'The preview baseline cannot be restored by the active runtime.',
+              retryable: true,
+            })
+          }
+          syncHandle = await driver.restoreBaseline(handle, baseline.providerSnapshotId)
+          await this.repository.setRuntimeHandle(sessionId, syncHandle)
+        }
+        const receipt = await driver.syncIn(syncHandle, source)
         const current = (await this.repository.get(sessionId))!
+        if (source.mode === 'delta') {
+          current.state.engine = 'stopped'
+          current.state.preview = 'closed'
+          current.endpointMap = undefined
+        }
         current.state.sync = 'clean'
         current.sourceRevision = receipt.sourceRevision
         current.sourceArtifactId = source.id
+        current.baselineId = baseline?.id
         current.lastExportedJournalRevision = '0'
         current.lastAppliedLocalRevision = '0'
         current.lastAcknowledgedRemoteRevision = '0'
@@ -376,6 +474,7 @@ export default class PreviewSessionService {
     await Promise.all([
       this.artifacts.cleanupExpired(limit * 5),
       this.tickets.cleanupExpired(limit * 10),
+      this.baselines.gc(limit),
     ])
     try {
       await this.sweepProviderOrphans()

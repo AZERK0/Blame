@@ -344,3 +344,27 @@ La livraison vérifie au minimum :
 - worktree cloud natif sur Linux, macOS et Windows ;
 - build et inspection du Dockerfile runner ;
 - canary Vercel réel uniquement lorsque les credentials nécessaires sont déjà disponibles.
+
+## 15. Baselines immuables et démarrage rapide
+
+Le chemin rapide de création est basé sur une baseline de projet, indexée par un fingerprint SHA-256 canonique :
+
+`projectId + baseRevision + sanitizedTreeHash + planHash + lockfileHash + runnerImageDigest + runnerVersion + protocolVersion + cachePolicyVersion`.
+
+Une baseline est une ligne `preview_project_baselines` et un snapshot Vercel Sandbox. Le snapshot est construit dans une Sandbox persistante dédiée, avec l’image runner épinglée par digest. Le runner importe le bundle Git nettoyé, prépare Compose, installe les dépendances, pull/build les images nécessaires, puis arrête Compose, dockerd, le gateway, les exports et les journaux avant `snapshot()`.
+
+Les URL de bindings du warm-up sont des placeholders non signés (`baseline.invalid`). Aucune URL Preview Edge, capability, clé publique, requête de contrôle ou delta ne peut donc entrer dans la baseline. La source, les fichiers `.env`, credentials, journaux et métadonnées Git sensibles restent exclus par les validateurs existants.
+
+À l’attachement d’un worktree, le desktop envoie d’abord les métadonnées de source. En cas de hit, il transfère un delta gzip limité aux chemins `files/*` ; sinon il transfère l’archive complète. Le delta vérifie le `baseHash` après restauration du snapshot, contrôle chaque checksum et applique les changements avec sauvegarde et rollback. Un delta n’est accepté que lorsque les services sont arrêtés.
+
+Le plan de repli est explicite : image complète, runtime froid, synchronisation complète, puis warm-up normal. Un cache invalide, une baseline expirée ou un snapshot absent ne contourne jamais les contrôles de propriété, de digest, d’URL, de taille ou de génération.
+
+## 16. Cycle de vie des baselines, quotas et mesure
+
+Les états `building`, `ready`, `failed`, `expired` et `deleting` sont persistés. La construction est dédupliquée par verrou MySQL au niveau du fingerprint et limitée par des slots `BLAME_PREVIEW_BASELINE_MAX_BUILDERS`. Une baseline référencée par une session n’est jamais collectée. Le GC traite les échecs, les expirations et les baselines non référencées au-delà de `BLAME_PREVIEW_BASELINE_MAX_UNREFERENCED`, supprime d’abord le snapshot provider puis la Sandbox propriétaire, et laisse l’état `expired` en cas d’échec pour permettre une nouvelle tentative.
+
+La reaper ne sélectionne que les sessions avec handle provider, deadline échue et état hôte non suspendu/détruit. La transition suspendue est idempotente : une seconde observation ne crée ni opération, ni événement, ni appel provider. Les sessions sans allocation provider ne consomment pas les quotas actifs et les vCPU ; les coûts restent calculés à partir des compteurs provider persistés.
+
+Les phases `baseline.lookup`, `baseline.build`, `baseline.restore`, `baseline.delete`, `baseline.gc`, `workspace.sync`, `dockerd.start`, `compose.prepare`, `compose.pull`, `compose.build`, `dependencies.install`, `services.start` et `preview.readiness` sont mesurées avec durée et statut uniquement. Les attributs de télémétrie sont bornés et ne contiennent ni fingerprint complet, URL signée, contenu de fichier, commande, environnement ou secret.
+
+Le benchmark reproductible local est `pnpm benchmark:preview-runtime`. Il crée un dépôt temporaire, mesure archive complète et delta, compare taille et durée, puis détruit son répertoire temporaire. Il ne contacte pas Vercel et ne lit aucun fichier `.env`.

@@ -13,6 +13,7 @@ export type VercelRuntimeHandle = {
   generation: number
   fencingToken: number
   gatewayPorts: number[]
+  resourceVcpus?: number
 }
 
 export type VercelPlan = 'hobby' | 'pro' | 'enterprise'

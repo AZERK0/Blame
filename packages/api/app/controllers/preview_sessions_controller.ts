@@ -87,18 +87,31 @@ export default class PreviewSessionsController {
     try {
       const body = objectBody(context.request.all())
       const ownerUserId = context.auth.getUserOrFail().id
+      if (body.action === 'negotiate') {
+        return await service.negotiateSource(ownerUserId, context.params.id, {
+          baseRevision: requiredString(body.sourceRevision, 'sourceRevision'),
+          sanitizedTreeHash: requiredHash(body.sanitizedTreeHash, 'sanitizedTreeHash'),
+          lockfileHash: requiredHash(body.lockfileHash, 'lockfileHash'),
+          workspaceHash: requiredHash(body.workspaceHash, 'workspaceHash'),
+        })
+      }
       if (body.action === 'prepare') {
         return await service.prepareSourceUpload(ownerUserId, context.params.id, {
           sha256: requiredSha256(body.sha256),
           size: positiveInteger(body.size, 'size'),
           sourceRevision: requiredString(body.sourceRevision, 'sourceRevision'),
+          sanitizedTreeHash: optionalHash(body.sanitizedTreeHash, 'sanitizedTreeHash'),
+          lockfileHash: optionalHash(body.lockfileHash, 'lockfileHash'),
+          workspaceHash: optionalHash(body.workspaceHash, 'workspaceHash'),
+          mode: body.mode === undefined ? undefined : body.mode === 'delta' ? 'delta' : 'full',
         })
       }
       if (body.action === 'apply') {
         return await service.importSource(
           ownerUserId,
           context.params.id,
-          requiredString(body.artifactId, 'artifactId')
+          requiredString(body.artifactId, 'artifactId'),
+          optionalString(body.baselineId, 'baselineId')
         )
       }
       throw invalidRequest('Unsupported source import action.')
@@ -238,6 +251,19 @@ function requiredString(value: unknown, name: string) {
 
 function optionalString(value: unknown, name: string) {
   return value === undefined ? undefined : requiredString(value, name)
+}
+
+function optionalHash(value: unknown, name: string) {
+  if (value === undefined) return undefined
+  const result = requiredString(value, name)
+  if (!/^[a-f0-9]{64}$/i.test(result)) throw invalidRequest(`${name} is invalid.`)
+  return result
+}
+
+function requiredHash(value: unknown, name: string) {
+  const result = requiredString(value, name)
+  if (!/^[a-f0-9]{64}$/i.test(result)) throw invalidRequest(`${name} is invalid.`)
+  return result
 }
 
 function positiveInteger(value: unknown, name: string) {

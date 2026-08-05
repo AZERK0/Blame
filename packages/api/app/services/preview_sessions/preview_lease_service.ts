@@ -30,4 +30,14 @@ export default class PreviewLeaseService {
     session.idleDeadlineAt = DateTime.utc().plus({ minutes: this.config.idleTimeoutMinutes })
     await session.save()
   }
+
+  async neutralize(sessionId: string, ownerUserId: string) {
+    const session = await PreviewSession.query()
+      .where('id', sessionId)
+      .where('ownerUserId', ownerUserId)
+      .firstOrFail()
+    session.leaseExpiresAt = null
+    session.idleDeadlineAt = null
+    await session.save()
+  }
 }

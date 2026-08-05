@@ -145,6 +145,7 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
         generation: input.generation,
         fencingToken: input.fencingToken,
         gatewayPorts,
+        resourceVcpus: input.resourceSize.vcpus,
       }
       const runtime = runtimeHandle(handle)
       await this.assertHandshake(sandbox, runtime)
@@ -176,6 +177,50 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
         source,
       })
     )
+  }
+
+  async restoreBaseline(handle: RuntimeHandle, snapshotId: string) {
+    return measureRuntimePhase('baseline.restore', async () => {
+      const payload = vercelHandle(handle)
+      if (!/^snap_[a-zA-Z0-9_-]+$/.test(snapshotId)) {
+        throw runnerFailure('BASELINE_SNAPSHOT_INVALID', 'Baseline snapshot identity is invalid.')
+      }
+      const previous = await this.findSandbox(payload, false)
+      await previous?.delete().catch(() => undefined)
+      const timeout =
+        effectiveSandboxTimeoutMinutes(
+          this.config.sandbox.timeoutMinutes,
+          this.config.sandbox.vercelPlan
+        ) * 60_000
+      const sandbox = await this.providerCall('baseline-restore', () =>
+        Sandbox.create({
+          ...this.credentials(),
+          name: payload.sandboxName,
+          source: { type: 'snapshot', snapshotId },
+          persistent: true,
+          ports: payload.gatewayPorts,
+          resources: { vcpus: payload.resourceVcpus ?? 2 },
+          timeout,
+          snapshotExpiration: this.config.sandbox.snapshotRetentionDays * 86_400_000,
+          keepLastSnapshots: { count: 1, deleteEvicted: true },
+          networkPolicy: this.networkPolicy(),
+          tags: {
+            application: 'blame',
+            deployment: shortTag(this.config.sandbox.deploymentId!),
+            session: shortTag(payload.sessionId),
+          },
+        })
+      )
+      await this.bootstrap(sandbox)
+      const restored = runtimeHandle({ ...payload })
+      await this.assertHandshake(sandbox, restored)
+      await this.runnerCall(restored, {
+        operation: 'resume-host',
+        sessionId: payload.sessionId,
+        generation: payload.generation,
+      })
+      return restored
+    })
   }
 
   async prepareEngine(handle: RuntimeHandle, plan: PreviewExecutionPlan) {

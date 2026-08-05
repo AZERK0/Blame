@@ -23,7 +23,6 @@ export async function serveRunnerRequest(requestPath: string): Promise<RunnerRes
     };
   }
 }
-
 function validatedRequestPath(value: string) {
   if (!value.startsWith(requestRoot) || !/^\/run\/blame\/control\/requests\/[a-f0-9-]+\.json$/.test(value)) {
     throw runnerError("RUNNER_ACCESS_DENIED", "Runner request path is invalid.");
@@ -43,6 +42,8 @@ function parseRunnerRequest(value: unknown): RunnerRequest {
     "handshake",
     "resume-host",
     "prepare-engine",
+    "warm-baseline",
+    "sanitize-snapshot",
     "start-services",
     "stop-services",
     "inspect",

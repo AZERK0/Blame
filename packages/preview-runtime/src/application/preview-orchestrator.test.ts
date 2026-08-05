@@ -220,6 +220,36 @@ test("still suspends compute when a durable delta export fails", async () => {
   assert.equal(driver.calls.filter((call) => call === "resumeHost").length, 1);
 });
 
+test("does not repeat a successful suspension or emit another operation", async () => {
+  const { driver, orchestrator, plan, repository } = fixture();
+  await orchestrator.create({
+    id: "session",
+    userStoryId: "story",
+    ownerUserId: "owner",
+    profile: "vercel-compose",
+    plan,
+    planHash: "hash",
+    cloudUploadConsentAt: new Date().toISOString(),
+  });
+  const first = await orchestrator.command(
+    "session",
+    { type: "suspend-host" },
+    "reap-1",
+  );
+  const calls = driver.calls.filter((call) => call === "suspendHost").length;
+  const second = await orchestrator.command(
+    "session",
+    { type: "suspend-host" },
+    "reap-2",
+  );
+  assert.equal(second.revision, first.revision);
+  assert.equal(
+    driver.calls.filter((call) => call === "suspendHost").length,
+    calls,
+  );
+  assert.equal(await repository.getOperation("session", "reap-2"), undefined);
+});
+
 test("rejects an acknowledgement older than the latest durable delta", async () => {
   const { driver, orchestrator, plan, repository } = fixture();
   await orchestrator.create({

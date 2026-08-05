@@ -61,6 +61,56 @@ export async function validateSourceArtifact(
   return { entries, expandedBytes, archiveSha256 }
 }
 
+export async function validateSourceDeltaArtifact(
+  content: Uint8Array,
+  expected: { sha256: string; size: number }
+): Promise<ValidatedSourceArtifact> {
+  if (content.byteLength !== expected.size) throw new Error('Source delta size mismatch.')
+  const archiveSha256 = createHash('sha256').update(content).digest('hex')
+  if (archiveSha256 !== expected.sha256) throw new Error('Source delta checksum mismatch.')
+  const parser = extract()
+  let entries = 0
+  let expandedBytes = 0
+  let manifestFound = false
+  const completion = new Promise<void>((resolve, reject) => {
+    parser.on('entry', (header, stream, next) => {
+      try {
+        entries += 1
+        if (entries > maxEntries) throw new Error('Source delta contains too many entries.')
+        const path = safeArchivePath(header.name)
+        if (path !== '.blame/delta-manifest.json' && !path.startsWith('files/')) {
+          throw new Error('Source delta contains an unexpected path.')
+        }
+        if (path.startsWith('files/')) assertAllowedPath(path.slice('files/'.length))
+        if (header.type === 'symlink' || header.type === 'link')
+          safeSymlink(path, header.linkname ?? '')
+        if (!['file', 'directory', 'symlink', 'link'].includes(header.type ?? 'file')) {
+          throw new Error('Source delta contains an unsupported entry type.')
+        }
+        expandedBytes += header.size ?? 0
+        if (expandedBytes > maxExpandedBytes)
+          throw new Error('Source delta expands beyond its limit.')
+        if (path === '.blame/delta-manifest.json') manifestFound = true
+        stream.on('error', reject)
+        stream.on('end', next)
+        stream.resume()
+      } catch (error) {
+        stream.resume()
+        reject(error)
+      }
+    })
+    parser.once('finish', () =>
+      manifestFound ? resolve() : reject(new Error('Source delta manifest is missing.'))
+    )
+    parser.once('error', reject)
+  })
+  const source = Readable.from(Buffer.from(content))
+  if (gzip(content)) source.pipe(createGunzip()).pipe(parser)
+  else source.pipe(parser)
+  await completion
+  return { entries, expandedBytes, archiveSha256 }
+}
+
 function safeArchivePath(value: string) {
   const normalized = value.replaceAll('\\', '/')
   if (

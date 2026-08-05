@@ -55,8 +55,9 @@ export class InMemorySessionRepository implements SessionRepository {
     return [...this.records.values()]
       .filter(
         (record) =>
-          record.state.host !== "destroyed" &&
-          (!record.leaseExpiresAt || record.leaseExpiresAt <= now),
+          ["suspended", "suspending", "destroyed", "destroying", "unprovisioned"].includes(record.state.host) === false &&
+          Boolean(record.providerHandleEncrypted) &&
+          Boolean(record.idleDeadlineAt && record.idleDeadlineAt <= now),
       )
       .slice(0, limit)
       .map((record) => structuredClone(record));
@@ -87,7 +88,6 @@ export class InMemorySessionRepository implements SessionRepository {
     );
   }
 }
-
 export class InMemoryDistributedLock implements DistributedLock {
   private tails = new Map<string, Promise<void>>();
   private fencingTokens = new Map<string, number>();

@@ -77,14 +77,21 @@ export class PreviewOrchestrator implements PreviewSessionBackend {
         sessionId,
         operationId,
       );
-      if (existingOperation?.status === "succeeded") return this.get(sessionId);
-      const record = await this.requiredRecord(sessionId);
       if (existingOperation && existingOperation.commandType !== command.type) {
         throw new PreviewRuntimeError({
           code: "INTERNAL",
           message: "An idempotency key cannot be reused for another command.",
           retryable: false,
         });
+      }
+      if (existingOperation?.status === "succeeded") return this.get(sessionId);
+      const record = await this.requiredRecord(sessionId);
+      if (
+        command.type === "suspend-host" &&
+        record.state.host === "suspended" &&
+        record.state.sync !== "failed"
+      ) {
+        return this.get(sessionId);
       }
       await this.repository.saveOperation({
         sessionId,

@@ -25,6 +25,13 @@ export type RunnerRequest = (
       sessionId?: string;
       generation?: number;
     }
+  | {
+      operation: "warm-baseline";
+      plan: PreviewExecutionPlan;
+      sessionId: string;
+      generation: number;
+    }
+  | { operation: "sanitize-snapshot" }
   | { operation: "start-services"; selection: RuntimeSelection }
   | { operation: "stop-services" }
   | { operation: "inspect"; probeServices?: boolean }

@@ -10,6 +10,7 @@ import {
   mkdir,
   mkdtemp,
   readFile,
+  readlink,
   rename,
   rm,
   symlink,
@@ -22,18 +23,23 @@ import type { SourceArtifact } from "@blame/preview-runtime";
 import { runtimePaths } from "../runtime-paths.js";
 import { initializeChangeJournal } from "./change-journal.js";
 import { runnerError } from "../protocol/runner-server.js";
+import { snapshotWorkspace } from "./workspace-snapshot.js";
 
 type SourceManifest = {
   version: 1;
   baseCommit: string;
   workspaceHash: string;
-  files: Record<string, {
-    type: "file" | "symlink";
-    sha256: string;
-    mode: number;
-    size: number;
-    target?: string;
-  }>;
+  cleanWorkspaceHash?: string;
+  files: Record<
+    string,
+    {
+      type: "file" | "symlink";
+      sha256: string;
+      mode: number;
+      size: number;
+      target?: string;
+    }
+  >;
 };
 
 export async function importSourceArtifact(source: SourceArtifact) {
@@ -53,19 +59,22 @@ export async function importSourceArtifact(source: SourceArtifact) {
   if (createHash("sha256").update(content).digest("hex") !== source.sha256) {
     throw runnerError("SOURCE_HASH_MISMATCH", "Source checksum mismatch.");
   }
+  if (source.mode === "delta") return applySourceDelta(content, source.revision);
   const staging = await mkdtemp(join(tmpdir(), "blame-source-"));
   try {
     await extractArchive(content, staging);
-    const manifest = JSON.parse(
-      await readFile(join(staging, ".blame/source-manifest.json"), "utf8"),
-    ) as SourceManifest;
-    validateManifest(manifest);
-    await reconstructWorkspace(staging, manifest);
+    const manifest = JSON.parse(await readFile(join(staging, ".blame/source-manifest.json"), "utf8")) as SourceManifest;
+    validateManifest(manifest, source.mode === "baseline");
+    await reconstructWorkspace(staging, manifest, source.mode === "baseline");
     const journal = await initializeChangeJournal();
-    if (journal.current.hash !== manifest.workspaceHash) {
+    const expectedWorkspaceHash = source.mode === "baseline" ? manifest.cleanWorkspaceHash : manifest.workspaceHash;
+    if (!expectedWorkspaceHash || journal.current.hash !== expectedWorkspaceHash) {
       throw runnerError("SOURCE_RECONSTRUCTION_MISMATCH", "Reconstructed workspace hash mismatch.");
     }
-    return { sourceRevision: source.revision, workspaceHash: journal.current.hash };
+    return {
+      sourceRevision: source.revision,
+      workspaceHash: journal.current.hash,
+    };
   } finally {
     await rm(staging, { recursive: true, force: true });
   }
@@ -101,7 +110,96 @@ async function readBoundedResponse(stream: ReadableStream<Uint8Array>, expectedS
   return content;
 }
 
-async function extractArchive(content: Uint8Array, root: string) {
+async function applySourceDelta(content: Uint8Array, sourceRevision: string) {
+  const staging = await mkdtemp(join(tmpdir(), "blame-source-delta-"));
+  try {
+    await extractArchive(content, staging, true);
+    const manifest = JSON.parse(await readFile(join(staging, ".blame/delta-manifest.json"), "utf8")) as {
+      version: number;
+      baseHash: string;
+      finalHash: string;
+      changed: string[];
+      deleted: string[];
+      files: Record<string, SourceManifest["files"][string]>;
+    };
+    if (
+      manifest.version !== 1 ||
+      !/^[a-f0-9]{64}$/i.test(manifest.baseHash) ||
+      !/^[a-f0-9]{64}$/i.test(manifest.finalHash) ||
+      !Array.isArray(manifest.changed) ||
+      !Array.isArray(manifest.deleted) ||
+      new Set([...manifest.changed, ...manifest.deleted]).size !== manifest.changed.length + manifest.deleted.length
+    ) {
+      throw runnerError("SOURCE_DELTA_INVALID", "Source delta manifest is invalid.");
+    }
+    validateDeltaManifest(manifest);
+    const current = await snapshotWorkspace();
+    if (current.hash !== manifest.baseHash) {
+      throw runnerError("SOURCE_BASELINE_MISMATCH", "Source delta base does not match the restored baseline.");
+    }
+    for (const path of manifest.changed) {
+      const metadata = manifest.files[path];
+      const staged = safePath(staging, `files/${path}`);
+      if (!metadata || !staged) throw runnerError("SOURCE_DELTA_INVALID", "Source delta file metadata is invalid.");
+      const stat = await lstat(staged);
+      if (metadata.type === "symlink") {
+        const target = await readlink(staged);
+        assertSymlink("/workspace", join("/workspace", path), target);
+        if (target !== metadata.target || createHash("sha256").update(target).digest("hex") !== metadata.sha256) {
+          throw runnerError("SOURCE_DELTA_INVALID", "Source delta symlink checksum mismatch.");
+        }
+      } else {
+        const file = await readFile(staged);
+        if (stat.size !== metadata.size || createHash("sha256").update(file).digest("hex") !== metadata.sha256) {
+          throw runnerError("SOURCE_DELTA_INVALID", "Source delta file checksum mismatch.");
+        }
+      }
+    }
+    const transaction = await mkdtemp(join(tmpdir(), "blame-source-apply-"));
+    const backup = join(transaction, "backup");
+    const paths = [...new Set([...manifest.changed, ...manifest.deleted])].sort();
+    const replaced = new Set<string>();
+    try {
+      for (const path of paths) {
+        await assertSafeDestination(runtimePaths.workspace, path);
+        const target = join(runtimePaths.workspace, path);
+        const previous = join(backup, path);
+        if (await exists(target)) {
+          await mkdir(dirname(previous), { recursive: true, mode: 0o700 });
+          await rename(target, previous);
+          replaced.add(path);
+        }
+        if (manifest.changed.includes(path)) {
+          await mkdir(dirname(target), { recursive: true, mode: 0o700 });
+          await rename(safePath(staging, `files/${path}`), target);
+          await chmod(target, manifest.files[path]!.mode);
+        }
+      }
+      const final = await snapshotWorkspace();
+      if (final.hash !== manifest.finalHash)
+        throw runnerError("SOURCE_DELTA_INVALID", "Source delta final hash mismatch.");
+    } catch (error) {
+      for (const path of paths.reverse()) {
+        const target = join(runtimePaths.workspace, path);
+        await rm(target, { recursive: true, force: true });
+        if (replaced.has(path)) {
+          await mkdir(dirname(target), { recursive: true, mode: 0o700 });
+          await rename(join(backup, path), target);
+        }
+      }
+      throw error;
+    } finally {
+      await rm(transaction, { recursive: true, force: true });
+    }
+    await initializeChangeJournal();
+    const final = await snapshotWorkspace();
+    return { sourceRevision, workspaceHash: final.hash };
+  } finally {
+    await rm(staging, { recursive: true, force: true });
+  }
+}
+
+async function extractArchive(content: Uint8Array, root: string, delta = false) {
   const parser = extract();
   let entries = 0;
   let expandedBytes = 0;
@@ -113,7 +211,8 @@ async function extractArchive(content: Uint8Array, root: string) {
         entries += 1;
         if (entries > 25_000) throw new Error("Archive entry limit exceeded.");
         const portablePath = safePortablePath(header.name);
-        assertAllowedArchivePath(portablePath);
+        if (delta) assertAllowedDeltaArchivePath(portablePath);
+        else assertAllowedArchivePath(portablePath);
         const path = safePath(root, portablePath);
         if (header.type === "directory") await mkdir(path, { recursive: true, mode: 0o700 });
         else if (header.type === "file") {
@@ -129,7 +228,9 @@ async function extractArchive(content: Uint8Array, root: string) {
             }
             chunks.push(Buffer.from(chunk));
           }
-          await writeFile(path, Buffer.concat(chunks), { mode: (header.mode ?? 0o600) & 0o777 });
+          await writeFile(path, Buffer.concat(chunks), {
+            mode: (header.mode ?? 0o600) & 0o777,
+          });
           next();
           return;
         } else if (header.type === "symlink") {
@@ -153,18 +254,25 @@ async function extractArchive(content: Uint8Array, root: string) {
   await completion;
 }
 
-async function reconstructWorkspace(staging: string, manifest: SourceManifest) {
+async function reconstructWorkspace(staging: string, manifest: SourceManifest, baseline = false) {
   const bundle = join(staging, ".blame/repository.bundle");
   const next = `${runtimePaths.workspace}.next-${process.pid}`;
   const backup = `${runtimePaths.workspace}.previous-${process.pid}`;
   await rm(next, { recursive: true, force: true });
   await git(["clone", "--no-hardlinks", bundle, next]);
   await pruneClone(next, new Set(Object.keys(manifest.files)));
-  const overlay = join(staging, "workspace");
-  try {
-    if ((await lstat(overlay)).isDirectory()) await cp(overlay, next, { recursive: true, force: true, dereference: false });
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+  if (!baseline) {
+    const overlay = join(staging, "workspace");
+    try {
+      if ((await lstat(overlay)).isDirectory())
+        await cp(overlay, next, {
+          recursive: true,
+          force: true,
+          dereference: false,
+        });
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    }
   }
   await makeGitReadonly(join(next, ".git"));
   const identity = await projectIdentity();
@@ -193,9 +301,7 @@ async function pruneClone(root: string, allowed: Set<string>, directory = root) 
 }
 
 async function makeGitReadonly(path: string) {
-  for (const entry of await import("node:fs/promises").then(({ readdir }) =>
-    readdir(path, { withFileTypes: true }),
-  )) {
+  for (const entry of await import("node:fs/promises").then(({ readdir }) => readdir(path, { withFileTypes: true }))) {
     const child = join(path, entry.name);
     if (entry.isDirectory()) await makeGitReadonly(child);
     else await chmod(child, 0o444);
@@ -240,6 +346,29 @@ function assertAllowedArchivePath(path: string) {
   assertAllowedWorkspacePath(path.slice("workspace/".length));
 }
 
+function assertAllowedDeltaArchivePath(path: string) {
+  if (path === ".blame/delta-manifest.json") return;
+  if (!path.startsWith("files/")) throw new Error("Unexpected source delta namespace.");
+  assertAllowedWorkspacePath(path.slice("files/".length));
+}
+
+async function assertSafeDestination(root: string, path: string) {
+  const segments = path.split("/").slice(0, -1);
+  let current = root;
+  for (const segment of segments) {
+    current = join(current, segment);
+    const stat = await lstat(current).catch(() => undefined);
+    if (stat?.isSymbolicLink()) throw runnerError("SOURCE_DELTA_INVALID", "Source delta crosses a symlink.");
+  }
+}
+
+async function exists(path: string) {
+  return lstat(path).then(
+    () => true,
+    () => false
+  );
+}
+
 function assertAllowedWorkspacePath(path: string) {
   const segments = path.toLowerCase().split("/");
   const basename = segments.at(-1) ?? "";
@@ -247,11 +376,73 @@ function assertAllowedWorkspacePath(path: string) {
     segments.includes(".git") ||
     segments.includes(".ssh") ||
     segments.includes("node_modules") ||
+    segments.includes(".next") ||
+    segments.includes("dist") ||
+    segments.includes("coverage") ||
     (basename.startsWith(".env") && basename !== ".env.example") ||
     [".npmrc", "id_rsa", "id_ed25519", "known_hosts"].includes(basename) ||
-    path.toLowerCase() === ".docker/config.json"
+    path.toLowerCase() === ".docker/config.json" ||
+    basename.endsWith(".log")
   ) {
     throw new Error("Source archive contains a forbidden path.");
+  }
+}
+
+function validateDeltaManifest(manifest: {
+  changed: string[];
+  deleted: string[];
+  files: Record<string, SourceManifest["files"][string]>;
+}) {
+  const changed = new Set(manifest.changed);
+  const deleted = new Set(manifest.deleted);
+  const folded = new Map<string, string>();
+  for (const path of [...changed, ...deleted]) {
+    safePortablePath(path);
+    assertAllowedWorkspacePath(path);
+    const key = path.normalize("NFC").toLocaleLowerCase("en-US");
+    if (folded.has(key) && folded.get(key) !== path) {
+      throw runnerError("SOURCE_DELTA_INVALID", "Source delta paths collide by case.");
+    }
+    folded.set(key, path);
+  }
+  for (const path of changed) {
+    const metadata = manifest.files[path];
+    if (!metadata) throw runnerError("SOURCE_DELTA_INVALID", "Source delta metadata is incomplete.");
+    validateSourceFileMetadata(path, metadata);
+  }
+  for (const path of deleted) {
+    if (manifest.files[path] !== undefined) {
+      throw runnerError("SOURCE_DELTA_INVALID", "Source delta deletion metadata is inconsistent.");
+    }
+  }
+  for (const path of Object.keys(manifest.files)) {
+    if (!changed.has(path)) {
+      throw runnerError("SOURCE_DELTA_INVALID", "Source delta contains an unexpected file metadata entry.");
+    }
+  }
+}
+
+function validateSourceFileMetadata(path: string, metadata: SourceManifest["files"][string]) {
+  if (
+    !metadata ||
+    !["file", "symlink"].includes(metadata.type) ||
+    !/^[a-f0-9]{64}$/i.test(metadata.sha256) ||
+    !Number.isSafeInteger(metadata.mode) ||
+    metadata.mode < 0 ||
+    metadata.mode > 0o777 ||
+    !Number.isSafeInteger(metadata.size) ||
+    metadata.size < 0 ||
+    metadata.size > 256 * 1024 * 1024
+  ) {
+    throw runnerError("SOURCE_DELTA_INVALID", "Source delta metadata is invalid.");
+  }
+  if (metadata.type === "symlink") {
+    if (metadata.target === undefined) {
+      throw runnerError("SOURCE_DELTA_INVALID", "Source delta symlink metadata is incomplete.");
+    }
+    assertSymlink("/workspace", join("/workspace", path), metadata.target);
+  } else if (metadata.target !== undefined) {
+    throw runnerError("SOURCE_DELTA_INVALID", "Source delta file metadata is inconsistent.");
   }
 }
 
@@ -261,14 +452,19 @@ function assertSymlink(root: string, path: string, target: string) {
   if (!resolved.startsWith(`${root}/`)) throw new Error("Source symlink escapes staging.");
 }
 
-function validateManifest(value: SourceManifest) {
+function validateManifest(value: SourceManifest, baseline = false) {
   if (
     value.version !== 1 ||
     !/^[a-f0-9]{40,64}$/i.test(value.baseCommit) ||
     !/^[a-f0-9]{64}$/i.test(value.workspaceHash) ||
-    !value.files || typeof value.files !== "object"
+    (value.cleanWorkspaceHash !== undefined && !/^[a-f0-9]{64}$/i.test(value.cleanWorkspaceHash)) ||
+    !value.files ||
+    typeof value.files !== "object"
   ) {
     throw runnerError("SOURCE_MANIFEST_INVALID", "Source manifest is invalid.");
+  }
+  if (baseline && !value.cleanWorkspaceHash) {
+    throw runnerError("SOURCE_MANIFEST_INVALID", "Baseline source manifest is missing its clean tree hash.");
   }
   if (Object.keys(value.files).length > 25_000) {
     throw runnerError("SOURCE_MANIFEST_INVALID", "Source manifest contains too many files.");
@@ -287,9 +483,11 @@ function validateManifest(value: SourceManifest) {
       !["file", "symlink"].includes(metadata.type) ||
       !/^[a-f0-9]{64}$/i.test(metadata.sha256) ||
       !Number.isSafeInteger(metadata.mode) ||
-      metadata.mode < 0 || metadata.mode > 0o777 ||
+      metadata.mode < 0 ||
+      metadata.mode > 0o777 ||
       !Number.isSafeInteger(metadata.size) ||
-      metadata.size < 0 || metadata.size > 256 * 1024 * 1024
+      metadata.size < 0 ||
+      metadata.size > 256 * 1024 * 1024
     ) {
       throw runnerError("SOURCE_MANIFEST_INVALID", "Source file metadata is invalid.");
     }
@@ -319,7 +517,7 @@ function git(args: string[]) {
     child.stderr.setEncoding("utf8").on("data", (chunk) => (stderr += chunk));
     child.once("error", reject);
     child.once("exit", (code) =>
-      code === 0 ? resolve() : reject(new Error(`Git reconstruction failed: ${stderr.slice(0, 500)}`)),
+      code === 0 ? resolve() : reject(new Error(`Git reconstruction failed: ${stderr.slice(0, 500)}`))
     );
   });
 }
@@ -330,7 +528,9 @@ async function projectIdentity() {
 
 function idValue(flag: string) {
   return new Promise<number>((resolve, reject) => {
-    const child = spawn("id", [flag, "blame-project"], { stdio: ["ignore", "pipe", "ignore"] });
+    const child = spawn("id", [flag, "blame-project"], {
+      stdio: ["ignore", "pipe", "ignore"],
+    });
     let stdout = "";
     child.stdout.setEncoding("utf8").on("data", (chunk) => (stdout += chunk));
     child.once("error", reject);

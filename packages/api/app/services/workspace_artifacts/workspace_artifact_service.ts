@@ -1,7 +1,10 @@
 import { workspaceArtifactObjectStorage } from '#services/workspace_artifacts/workspace_artifact_object_storage'
 import PreviewSession from '#models/preview_session'
 import PreviewWorkspaceArtifact from '#models/preview_workspace_artifact'
-import { validateSourceArtifact } from '#services/workspace_artifacts/source_artifact_validator'
+import {
+  validateSourceArtifact,
+  validateSourceDeltaArtifact,
+} from '#services/workspace_artifacts/source_artifact_validator'
 import { DateTime } from 'luxon'
 import { appKey } from '#config/app'
 import { createHmac, timingSafeEqual } from 'node:crypto'
@@ -17,17 +20,25 @@ export default class WorkspaceArtifactService {
     sha256: string
     size: number
     sourceRevision: string
+    sanitizedTreeHash?: string
+    lockfileHash?: string
+    workspaceHash?: string
+    mode?: 'full' | 'delta'
   }) {
     await ownedSession(input.sessionId, input.ownerUserId)
     validateMetadata(input.sha256, input.size)
     const artifact = await PreviewWorkspaceArtifact.create({
       sessionId: input.sessionId,
       kind: 'source',
+      mode: input.mode ?? 'full',
       status: 'uploading',
       objectKey: pendingObjectKey(input.sessionId),
       sha256: input.sha256,
       size: input.size,
       sourceRevision: input.sourceRevision,
+      sanitizedTreeHash: input.sanitizedTreeHash ?? null,
+      lockfileHash: input.lockfileHash ?? null,
+      workspaceHash: input.workspaceHash ?? null,
       baseHash: null,
       finalHash: null,
       generation: null,
@@ -61,8 +72,9 @@ export default class WorkspaceArtifactService {
       throw new Error('Uploaded source artifact metadata does not match its declaration.')
     }
     try {
-      await validateSourceArtifact(
-        await workspaceArtifactObjectStorage().content(artifact.objectKey),
+      const content = await workspaceArtifactObjectStorage().content(artifact.objectKey)
+      await (artifact.mode === 'delta' ? validateSourceDeltaArtifact : validateSourceArtifact)(
+        content,
         {
           sha256: artifact.sha256,
           size: artifact.size,
@@ -93,6 +105,9 @@ export default class WorkspaceArtifactService {
       sha256: '0'.repeat(64),
       size: 0,
       sourceRevision: null,
+      sanitizedTreeHash: null,
+      lockfileHash: null,
+      workspaceHash: null,
       baseHash: null,
       finalHash: null,
       generation,
@@ -165,6 +180,7 @@ export default class WorkspaceArtifactService {
       artifactId: artifact.id,
       sha256: artifact.sha256,
       size: artifact.size,
+      mode: artifact.mode ?? 'full',
       baseHash: artifact.baseHash,
       finalHash: artifact.finalHash,
       generation: artifact.generation,
@@ -227,12 +243,16 @@ export default class WorkspaceArtifactService {
     return {
       id: artifact.id,
       revision: artifact.sourceRevision!,
+      mode: artifact.mode ?? 'full',
       downloadUrl: await workspaceArtifactObjectStorage().presignDownload(
         artifact.objectKey,
         `${artifact.id}.tar.gz`
       ),
       sha256: artifact.sha256,
       size: artifact.size,
+      sanitizedTreeHash: artifact.sanitizedTreeHash ?? undefined,
+      lockfileHash: artifact.lockfileHash ?? undefined,
+      workspaceHash: artifact.workspaceHash ?? undefined,
     }
   }
 }

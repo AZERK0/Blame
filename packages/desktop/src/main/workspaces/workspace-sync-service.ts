@@ -2,7 +2,11 @@ import { randomUUID } from "node:crypto"
 import { mkdir, readFile, realpath, rename, writeFile } from "node:fs/promises"
 import { dirname } from "node:path"
 import type { CloudPreviewClient } from "../preview-runtime/cloud-preview-client"
-import { buildWorkspaceArtifact } from "./workspace-artifact"
+import {
+  buildWorkspaceArtifact,
+  buildWorkspaceDeltaArtifact,
+  workspaceSourceMetadata,
+} from "./workspace-artifact"
 import { applyWorkspaceDelta } from "./workspace-delta"
 import { WorkspaceSyncConflict } from "./workspace-sync-conflict"
 
@@ -24,10 +28,21 @@ export class WorkspaceSyncService {
   ) {
     const root = await realpath(localPath)
     await beforeTransfer?.(root)
-    const artifact = await buildWorkspaceArtifact(root)
-    const target = await client.prepareSourceUpload(sessionId, artifact)
+    const metadata = await workspaceSourceMetadata(root)
+    const negotiation = await client.negotiateSource(sessionId, metadata)
+    const artifact = negotiation.baseline
+      ? await buildWorkspaceDeltaArtifact(root)
+      : await buildWorkspaceArtifact(root)
+    const target = await client.prepareSourceUpload(sessionId, {
+      ...artifact,
+      mode: negotiation.baseline ? "delta" : "full",
+    })
     await upload(target, artifact.content)
-    const session = await client.applySourceUpload(sessionId, target.artifactId)
+    const session = await client.applySourceUpload(
+      sessionId,
+      target.artifactId,
+      negotiation.baseline?.id,
+    )
     await this.remember(sessionId, root)
     return { session, sourceRevision: artifact.sourceRevision, workspaceHash: artifact.workspaceHash }
   }
@@ -148,7 +163,6 @@ export class WorkspaceSyncService {
     await rename(temporary, this.indexPath)
   }
 }
-
 async function upload(
   target: { url: string; headers: Record<string, string>; expiresAt: string },
   content: Uint8Array,

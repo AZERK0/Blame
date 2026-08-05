@@ -14,6 +14,8 @@ export default class PreviewWorkspaceArtifact extends BaseModel {
   @column()
   declare kind: 'source' | 'delta'
   @column()
+  declare mode: 'full' | 'delta' | null
+  @column()
   declare status: 'uploading' | 'durable' | 'applied' | 'discarded' | 'invalid'
   @column({ serializeAs: null })
   declare objectKey: string
@@ -23,6 +25,12 @@ export default class PreviewWorkspaceArtifact extends BaseModel {
   declare size: number
   @column()
   declare sourceRevision: string | null
+  @column()
+  declare sanitizedTreeHash: string | null
+  @column()
+  declare lockfileHash: string | null
+  @column()
+  declare workspaceHash: string | null
   @column()
   declare baseHash: string | null
   @column()

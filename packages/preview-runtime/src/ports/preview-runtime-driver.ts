@@ -53,6 +53,10 @@ export type SourceArtifact = {
   downloadUrl?: string;
   sha256: string;
   size: number;
+  mode?: "full" | "delta" | "baseline";
+  sanitizedTreeHash?: string;
+  lockfileHash?: string;
+  workspaceHash?: string;
 };
 
 export type SyncReceipt = { sourceRevision: string; workspaceHash: string };
@@ -112,13 +116,13 @@ export interface PreviewExecutionEngine {
   stopServices(context: EngineContext): Promise<void>;
   inspect(context: EngineContext): Promise<RuntimeObservation>;
 }
-
 export interface PreviewRuntimeDriver {
   readonly profile: RuntimeProfileId;
   capabilities(plan: PreviewExecutionPlan): Promise<CapabilityReport>;
   provisionHost(input: ProvisionInput): Promise<RuntimeHandle>;
   resumeHost(handle: RuntimeHandle): Promise<void>;
   syncIn(handle: RuntimeHandle, source: SourceArtifact): Promise<SyncReceipt>;
+  restoreBaseline?(handle: RuntimeHandle, snapshotId: string): Promise<RuntimeHandle>;
   prepareEngine(handle: RuntimeHandle, plan: PreviewExecutionPlan): Promise<void>;
   startServices(handle: RuntimeHandle, selection: RuntimeSelection): Promise<void>;
   stopServices(handle: RuntimeHandle): Promise<void>;

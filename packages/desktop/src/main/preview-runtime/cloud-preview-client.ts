@@ -137,7 +137,15 @@ export class CloudPreviewClient implements PreviewSessionBackend<CloudManagedPre
 
   prepareSourceUpload(
     sessionId: string,
-    artifact: { sha256: string; size: number; sourceRevision: string },
+    artifact: {
+      sha256: string;
+      size: number;
+      sourceRevision: string;
+      sanitizedTreeHash?: string;
+      lockfileHash?: string;
+      workspaceHash?: string;
+      mode?: "full" | "delta";
+    },
   ) {
     return this.request<UploadTarget>(
       `/preview-sessions/${encoded(sessionId)}/source/import`,
@@ -148,17 +156,38 @@ export class CloudPreviewClient implements PreviewSessionBackend<CloudManagedPre
           sha256: artifact.sha256,
           size: artifact.size,
           sourceRevision: artifact.sourceRevision,
+          sanitizedTreeHash: artifact.sanitizedTreeHash,
+          lockfileHash: artifact.lockfileHash,
+          workspaceHash: artifact.workspaceHash,
+          mode: artifact.mode,
         },
       },
     );
   }
 
-  applySourceUpload(sessionId: string, artifactId: string) {
+  negotiateSource(
+    sessionId: string,
+    metadata: {
+      sourceRevision: string;
+      sanitizedTreeHash: string;
+      lockfileHash: string;
+      workspaceHash: string;
+    },
+  ) {
+    return this.request<{
+      baseline?: UploadTarget["baseline"];
+    }>(`/preview-sessions/${encoded(sessionId)}/source/import`, {
+      method: "POST",
+      body: { action: "negotiate", ...metadata },
+    });
+  }
+
+  applySourceUpload(sessionId: string, artifactId: string, baselineId?: string) {
     return this.request<PreviewSessionView>(
       `/preview-sessions/${encoded(sessionId)}/source/import`,
       {
         method: "POST",
-        body: { action: "apply", artifactId },
+        body: { action: "apply", artifactId, baselineId },
       },
     );
   }
@@ -198,7 +227,6 @@ export class CloudPreviewClient implements PreviewSessionBackend<CloudManagedPre
     );
   }
 }
-
 export function allowedCloudApiBaseUrl(value: string, packaged: boolean) {
   try {
     const url = new URL(value);
@@ -241,6 +269,13 @@ export type UploadTarget = {
   expiresAt: string;
   headers: Record<string, string>;
   url: string;
+  baseline?: {
+    id: string;
+    fingerprint: string;
+    status: "building" | "ready" | "failed" | "expired" | "deleting";
+    baseRevision: string;
+    providerSnapshotId?: string;
+  };
 };
 
 export type DeltaDownload = {

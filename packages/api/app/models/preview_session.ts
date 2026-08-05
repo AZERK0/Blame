@@ -39,6 +39,8 @@ export default class PreviewSession extends BaseModel {
   @column()
   declare sourceArtifactId: string | null
   @column()
+  declare baselineId: string | null
+  @column()
   declare lastExportedJournalRevision: string | null
   @column()
   declare lastAppliedLocalRevision: string | null

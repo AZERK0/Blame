@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { spawn } from "node:child_process";
-import { mkdir, open, readFile, realpath, writeFile } from "node:fs/promises";
+import { mkdir, open, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import type {
   PreviewExecutionPlan,
   PreviewSessionState,
@@ -45,6 +45,10 @@ export class RunnerApplication {
         return this.resumeHost(request.sessionId, request.generation);
       case "prepare-engine":
         return this.prepare(request);
+      case "warm-baseline":
+        return this.warmBaseline(request);
+      case "sanitize-snapshot":
+        return this.sanitizeSnapshot();
       case "start-services":
         return this.start(request.selection);
       case "stop-services":
@@ -157,6 +161,54 @@ export class RunnerApplication {
     state.endpointRevision += 1;
     await writeRuntimeState(state);
     return { running: true };
+  }
+
+  private async warmBaseline(
+    request: Extract<RunnerRequest, { operation: "warm-baseline" }>,
+  ) {
+    assertExecutionPlan(request.plan);
+    const state = await readRuntimeState();
+    if (state.running)
+      throw runnerError("ENGINE_RUNNING", "Baseline engine is running.");
+    await compose.prepare(request.plan, baselineBindingUrls(request.plan));
+    await compose.warm(request.plan);
+    await writeFile(runtimePaths.plan, JSON.stringify(request.plan), {
+      mode: 0o600,
+      flush: true,
+    });
+    await writeRuntimeState({
+      ...state,
+      plan: request.plan,
+      prepared: true,
+      running: false,
+      browserBindingUrls: baselineBindingUrls(request.plan),
+      routeIds: {},
+      sessionId: request.sessionId,
+      generation: request.generation,
+    });
+    return { prepared: true };
+  }
+
+  private async sanitizeSnapshot() {
+    const state = await readRuntimeState();
+    await gateway.stop().catch(() => undefined);
+    await compose.stop().catch(() => undefined);
+    await compose.shutdownEngine();
+    await Promise.all([
+      rm(runtimePaths.capabilityPublicKey, { force: true }),
+      rm(runtimePaths.gatewayConfig, { force: true }),
+      rm(runtimePaths.requestDirectory, { recursive: true, force: true }),
+      rm("/var/log/blame", { recursive: true, force: true }),
+      rm(runtimePaths.exports, { recursive: true, force: true }),
+    ]);
+    await writeRuntimeState({
+      ...state,
+      running: false,
+      browserBindingUrls: {},
+      routeIds: {},
+      selection: undefined,
+    });
+    return { sanitized: true };
   }
 
   private async stop() {
@@ -361,7 +413,6 @@ export class RunnerApplication {
     });
   }
 }
-
 export function resumeRuntimeState(
   state: RunnerRuntimeState,
   sessionId: string,
@@ -439,6 +490,18 @@ async function requiredPreparedState() {
     throw runnerError("ENGINE_NOT_PREPARED", "Preview engine is not prepared.");
   }
   return state;
+}
+
+function baselineBindingUrls(plan: PreviewExecutionPlan) {
+  const urls: Record<string, string> = {};
+  for (const service of plan.services) {
+    for (const binding of service.bindings) {
+      if (binding.exposure !== "browser") continue;
+      urls[`${binding.sourceServiceId}:${binding.sourceEndpointId}`] =
+        `https://baseline.invalid/${binding.sourceServiceId}/${binding.sourceEndpointId}`;
+    }
+  }
+  return urls;
 }
 
 function assertExecutionPlan(value: PreviewExecutionPlan) {

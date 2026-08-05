@@ -39,11 +39,13 @@ export default class PreviewSessionRepository implements SessionRepository {
 
   async listReconcileCandidates(now: string, limit: number) {
     const models = await PreviewSession.query()
-      .whereRaw("JSON_UNQUOTE(JSON_EXTRACT(state, '$.host')) <> 'destroyed'")
+      .whereNotNull('providerHandleEncrypted')
+      .whereRaw(
+        "JSON_UNQUOTE(JSON_EXTRACT(state, '$.host')) NOT IN ('suspended', 'suspending', 'destroyed', 'destroying', 'unprovisioned')"
+      )
+      .whereNotNull('idleDeadlineAt')
       .where((query) => {
-        query
-          .whereNull('leaseExpiresAt')
-          .orWhere('leaseExpiresAt', '<=', DateTime.fromISO(now).toJSDate())
+        query.where('idleDeadlineAt', '<=', DateTime.fromISO(now).toJSDate())
       })
       .orderBy('lastActivityAt', 'asc')
       .limit(limit)
@@ -131,6 +133,7 @@ export default class PreviewSessionRepository implements SessionRepository {
       imageDigest: model.imageDigest ?? undefined,
       sourceRevision: model.sourceRevision ?? undefined,
       sourceArtifactId: model.sourceArtifactId ?? undefined,
+      baselineId: model.baselineId ?? undefined,
       lastExportedJournalRevision: model.lastExportedJournalRevision ?? undefined,
       lastAppliedLocalRevision: model.lastAppliedLocalRevision ?? undefined,
       lastAcknowledgedRemoteRevision: model.lastAcknowledgedRemoteRevision ?? undefined,
@@ -173,6 +176,7 @@ function modelPayload(record: PreviewSessionRecord) {
     imageDigest: record.imageDigest ?? null,
     sourceRevision: record.sourceRevision ?? null,
     sourceArtifactId: record.sourceArtifactId ?? null,
+    baselineId: record.baselineId ?? null,
     lastExportedJournalRevision: record.lastExportedJournalRevision ?? null,
     lastAppliedLocalRevision: record.lastAppliedLocalRevision ?? null,
     lastAcknowledgedRemoteRevision: record.lastAcknowledgedRemoteRevision ?? null,
@@ -205,6 +209,7 @@ async function mutableModelPayload(record: PreviewSessionRecord) {
     imageDigest: record.imageDigest ?? null,
     sourceRevision: record.sourceRevision ?? null,
     sourceArtifactId: record.sourceArtifactId ?? null,
+    baselineId: record.baselineId ?? null,
     lastExportedJournalRevision: record.lastExportedJournalRevision ?? null,
     lastAppliedLocalRevision: record.lastAppliedLocalRevision ?? null,
     lastAcknowledgedRemoteRevision: record.lastAcknowledgedRemoteRevision ?? null,

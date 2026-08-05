@@ -8,7 +8,7 @@ import { promisify } from "node:util"
 import { gunzipSync } from "node:zlib"
 import test from "node:test"
 import { extract } from "tar-stream"
-import { buildWorkspaceArtifact } from "./workspace-artifact.ts"
+import { buildWorkspaceArtifact, buildWorkspaceDeltaArtifact } from "./workspace-artifact.ts"
 
 const exec = promisify(execFile)
 
@@ -70,6 +70,39 @@ test("builds a reproducible source artifact without runtime secrets", async () =
     await exec("git", ["clone", "--quiet", bundle, clone])
     const { stdout: history } = await exec("git", ["-C", clone, "log", "--all", "-p"])
     assert.equal(history.includes("HISTORICAL_SECRET=never-upload-history"), false)
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+test("builds a delta against the committed tree and includes new files", async () => {
+  const root = await mkdtemp(join(tmpdir(), "blame-source-delta-test-"))
+  try {
+    await exec("git", ["init", root])
+    await writeFile(join(root, "index.js"), "console.log('base')\n")
+    await exec("git", ["-C", root, "add", "index.js"])
+    await exec("git", [
+      "-C",
+      root,
+      "-c",
+      "user.name=Blame Test",
+      "-c",
+      "user.email=test@blame.so",
+      "commit",
+      "-m",
+      "base",
+    ])
+    await writeFile(join(root, "index.js"), "console.log('changed')\n")
+    await writeFile(join(root, "new.txt"), "new\n")
+    const delta = await buildWorkspaceDeltaArtifact(root)
+    assert.ok(delta.baseHash.match(/^[a-f0-9]{64}$/))
+    const entries = await archiveEntries(delta.content)
+    const manifest = JSON.parse(entries.get(".blame/delta-manifest.json")!.toString("utf8"))
+    assert.ok(manifest.finalHash.match(/^[a-f0-9]{64}$/))
+    assert.deepEqual(manifest.changed.sort(), ["index.js", "new.txt"])
+    assert.deepEqual(manifest.deleted, [])
+    assert.equal(entries.has("files/index.js"), true)
+    assert.equal(entries.has("files/new.txt"), true)
   } finally {
     await rm(root, { recursive: true, force: true })
   }

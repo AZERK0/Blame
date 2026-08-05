@@ -26,6 +26,8 @@ import {
   stopComposeLogCollectors,
 } from "../logs/compose-log-collector.js";
 import { selectedSetupTasks } from "./runtime-selection.js";
+import { createHash } from "node:crypto";
+import { snapshotWorkspace } from "../workspace/workspace-snapshot.js";
 
 const dockerSocket = "/run/blame/docker.sock";
 const dockerPidPath = "/run/blame/dockerd.pid";
@@ -74,7 +76,7 @@ export class ComposeSupervisor {
       }
       await this.ensureDocker();
       await this.runSetup(plan, services);
-      await this.prepareImages(services);
+      await this.prepareImages(plan, services);
       await command("docker", [
         "compose",
         "-f",
@@ -86,6 +88,17 @@ export class ComposeSupervisor {
         ...services,
       ]);
       await startComposeLogCollectors(services);
+    });
+  }
+
+  async warm(plan: PreviewExecutionPlan) {
+    return measureRunnerPhase("compose.build", async () => {
+      const serviceIds = plan.services.map(({ id }) => id);
+      await this.runSetup(plan, serviceIds);
+      await this.prepareImages(plan, [
+        ...plan.setup.map(({ id }) => `setup-${id}`),
+        ...serviceIds,
+      ]);
     });
   }
 
@@ -101,6 +114,16 @@ export class ComposeSupervisor {
       "--timeout",
       "15",
     ]);
+  }
+
+  async shutdownEngine() {
+    await command("pkill", ["-TERM", "-x", "dockerd"], true);
+    await command("pkill", ["-TERM", "-x", "containerd"], true);
+    await delay(500);
+    await command("pkill", ["-KILL", "-x", "dockerd"], true);
+    await command("pkill", ["-KILL", "-x", "containerd"], true);
+    await rm(dockerSocket, { force: true });
+    await rm(dockerPidPath, { force: true });
   }
 
   async inspect(plan: PreviewExecutionPlan) {
@@ -206,11 +229,19 @@ export class ComposeSupervisor {
     plan: PreviewExecutionPlan,
     selectedServices: string[],
   ) {
+    const stamps = await readSetupStamps();
+    const lockfileHash = await relevantLockfileHash();
     for (const task of selectedSetupTasks(plan, selectedServices)) {
+      const fingerprint = createHash("sha256")
+        .update(JSON.stringify(task))
+        .update("\0")
+        .update(lockfileHash)
+        .digest("hex");
+      if (stamps[task.id] === fingerprint) continue;
       const dependencies = task.dependsOn.filter((id) =>
         plan.services.some((service) => service.id === id),
       );
-      await this.prepareImages([`setup-${task.id}`, ...dependencies]);
+      await this.prepareImages(plan, [`setup-${task.id}`, ...dependencies]);
       if (dependencies.length) {
         await command("docker", [
           "compose",
@@ -232,11 +263,20 @@ export class ComposeSupervisor {
           `setup-${task.id}`,
         ]),
       );
+      stamps[task.id] = fingerprint;
+      await writeSetupStamps(stamps);
     }
   }
 
-  private async prepareImages(serviceIds: string[]) {
+  private async prepareImages(plan: PreviewExecutionPlan, serviceIds: string[]) {
     if (!serviceIds.length) return;
+    const snapshot = await snapshotWorkspace();
+    const stamps = await readImageStamps();
+    const pending = serviceIds.filter((id) => {
+      const fingerprint = imageFingerprint(plan, id, snapshot.files);
+      return stamps[id] !== fingerprint;
+    });
+    if (!pending.length) return;
     await measureRunnerPhase("compose.pull", () =>
       command("docker", [
         "compose",
@@ -246,19 +286,96 @@ export class ComposeSupervisor {
         "--policy",
         "missing",
         "--ignore-buildable",
-        ...serviceIds,
+        ...pending,
       ]),
     );
-    await measureRunnerPhase("compose.build", () =>
-      command("docker", [
-        "compose",
-        "-f",
-        runtimePaths.composeFile,
-        "build",
-        ...serviceIds,
-      ]),
-    );
+    const buildable = pending.filter((id) => {
+      const item = imageItem(plan, id);
+      return Boolean(item?.container && "build" in item.container);
+    });
+    if (buildable.length) {
+      await measureRunnerPhase("compose.build", () =>
+        command("docker", [
+          "compose",
+          "-f",
+          runtimePaths.composeFile,
+          "build",
+          ...buildable,
+        ]),
+      );
+    }
+    for (const id of pending) stamps[id] = imageFingerprint(plan, id, snapshot.files);
+    await writeImageStamps(stamps);
   }
+}
+
+const setupStampPath = "/var/lib/blame/runtime/setup-fingerprints.json";
+const imageStampPath = "/var/lib/blame/runtime/image-fingerprints.json";
+
+async function readSetupStamps() {
+  try {
+    return JSON.parse(await readFile(setupStampPath, "utf8")) as Record<string, string>;
+  } catch {
+    return {};
+  }
+}
+
+async function writeSetupStamps(stamps: Record<string, string>) {
+  await mkdir(dirname(setupStampPath), { recursive: true, mode: 0o700 });
+  await writeFile(setupStampPath, JSON.stringify(stamps), { mode: 0o600, flush: true });
+}
+
+async function relevantLockfileHash() {
+  const snapshot = await snapshotWorkspace();
+  const entries = Object.entries(snapshot.files)
+    .filter(([path]) =>
+      /(^|\/)(pnpm-lock\.yaml|package-lock\.json|yarn\.lock|bun\.lockb|poetry\.lock|Cargo\.lock|uv\.lock)$/.test(path),
+    )
+    .sort(([left], [right]) => left.localeCompare(right));
+  return createHash("sha256").update(JSON.stringify(entries)).digest("hex");
+}
+
+async function readImageStamps() {
+  try {
+    return JSON.parse(await readFile(imageStampPath, "utf8")) as Record<string, string>;
+  } catch {
+    return {};
+  }
+}
+
+async function writeImageStamps(stamps: Record<string, string>) {
+  await mkdir(dirname(imageStampPath), { recursive: true, mode: 0o700 });
+  await writeFile(imageStampPath, JSON.stringify(stamps), { mode: 0o600, flush: true });
+}
+
+function imageFingerprint(
+  plan: PreviewExecutionPlan,
+  id: string,
+  files: Record<string, { sha256: string }>,
+) {
+  const item = imageItem(plan, id);
+  if (!item) return "missing";
+  const context = "build" in item.container && item.container.build?.context;
+  const contextPrefix = context
+    ? `${context.replace(/^\.?\//, "").replace(/\\/g, "/")}/`
+    : undefined;
+  const contextFiles = contextPrefix
+    ? Object.entries(files)
+        .filter(([path]) => path === contextPrefix.slice(0, -1) || path.startsWith(contextPrefix))
+        .sort(([left], [right]) => left.localeCompare(right))
+    : [];
+  return createHash("sha256")
+    .update(JSON.stringify(item))
+    .update("\0")
+    .update(JSON.stringify(contextFiles))
+    .digest("hex");
+}
+
+function imageItem(plan: PreviewExecutionPlan, id: string) {
+  const setupId = id.startsWith("setup-") ? id.slice("setup-".length) : undefined;
+  return setupId
+    ? plan.setup.find(({ id: candidate }) => candidate === setupId)
+    : plan.services.find(({ id: candidate }) => candidate === id);
 }
 
 async function resetStaleDocker() {

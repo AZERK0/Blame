@@ -21,17 +21,64 @@ export type BuiltWorkspaceArtifact = {
   size: number
   sourceRevision: string
   workspaceHash: string
+  sanitizedTreeHash: string
+  lockfileHash: string
+}
+
+export type WorkspaceSourceMetadata = {
+  sourceRevision: string
+  workspaceHash: string
+  sanitizedTreeHash: string
+  lockfileHash: string
+}
+
+export type BuiltWorkspaceDeltaArtifact = {
+  content: Buffer
+  sha256: string
+  size: number
+  sourceRevision: string
+  workspaceHash: string
+  sanitizedTreeHash: string
+  lockfileHash: string
+  baseHash: string
+}
+
+type SnapshotFile = {
+  type: "file" | "symlink"
+  sha256: string
+  mode: number
+  size: number
+  target?: string
+}
+
+export async function workspaceSourceMetadata(root: string): Promise<WorkspaceSourceMetadata> {
+  const sourceRevision = await git(root, ["rev-parse", "HEAD"])
+  const snapshot = await snapshotWorkspace(root)
+  const baseFiles = await canonicalFiles(root)
+  return {
+    sourceRevision,
+    workspaceHash: snapshot.hash,
+    sanitizedTreeHash: await sanitizedTreeHash(root),
+    lockfileHash: await lockfileHash(root, baseFiles),
+  }
 }
 
 export async function buildWorkspaceArtifact(
   root: string,
-  attempt = 0,
+  attempt = 0
 ): Promise<BuiltWorkspaceArtifact> {
   const temporary = await mkdtemp(join(tmpdir(), "blame-workspace-artifact-"))
   try {
     const sourceRevision = await git(root, ["rev-parse", "HEAD"])
     await assertPortableRepository(root)
     const snapshot = await snapshotWorkspace(root)
+    const baseFiles = await canonicalFiles(root)
+    const sourceMetadata = {
+      sourceRevision,
+      workspaceHash: snapshot.hash,
+      sanitizedTreeHash: await sanitizedTreeHash(root),
+      lockfileHash: await lockfileHash(root, baseFiles),
+    }
     const bundlePath = join(temporary, "repository.bundle")
     await createSanitizedBundle(root, temporary, bundlePath)
     const archive = pack()
@@ -41,13 +88,18 @@ export async function buildWorkspaceArtifact(
     const writing = pipeline(archive, gzip)
     try {
       archive.entry(
-        { name: ".blame/source-manifest.json", mode: 0o600, mtime: archiveTimestamp },
+        {
+          name: ".blame/source-manifest.json",
+          mode: 0o600,
+          mtime: archiveTimestamp,
+        },
         JSON.stringify({
           version: 1,
           baseCommit: sourceRevision,
           workspaceHash: snapshot.hash,
+          cleanWorkspaceHash: snapshotHash(baseFiles),
           files: snapshot.files,
-        }),
+        })
       )
       await appendDiskFile(archive, bundlePath, ".blame/repository.bundle", 0o600)
       for (const [path, metadata] of Object.entries(snapshot.files)) {
@@ -63,13 +115,7 @@ export async function buildWorkspaceArtifact(
             mtime: archiveTimestamp,
           })
         } else {
-          await appendDiskFile(
-            archive,
-            absolute,
-            `workspace/${path}`,
-            metadata.mode,
-            metadata,
-          )
+          await appendDiskFile(archive, absolute, `workspace/${path}`, metadata.mode, metadata)
         }
       }
       archive.finalize()
@@ -78,7 +124,9 @@ export async function buildWorkspaceArtifact(
       archive.destroy(error as Error)
       await writing.catch(() => undefined)
       if (attempt < 2) return buildWorkspaceArtifact(root, attempt + 1)
-      throw new Error("Workspace kept changing while its cloud artifact was built", { cause: error })
+      throw new Error("Workspace kept changing while its cloud artifact was built", {
+        cause: error,
+      })
     }
     const verified = await snapshotWorkspace(root)
     const verifiedRevision = await git(root, ["rev-parse", "HEAD"])
@@ -96,10 +144,191 @@ export async function buildWorkspaceArtifact(
       size: content.byteLength,
       sourceRevision,
       workspaceHash: snapshot.hash,
+      sanitizedTreeHash: sourceMetadata.sanitizedTreeHash,
+      lockfileHash: sourceMetadata.lockfileHash,
     }
   } finally {
     await rm(temporary, { recursive: true, force: true })
   }
+}
+
+export async function buildWorkspaceDeltaArtifact(
+  root: string,
+  attempt = 0
+): Promise<BuiltWorkspaceDeltaArtifact> {
+  const temporary = await mkdtemp(join(tmpdir(), "blame-workspace-delta-"))
+  try {
+    const metadata = await workspaceSourceMetadata(root)
+    const current = await snapshotWorkspace(root)
+    const baseFiles = await canonicalFiles(root)
+    const changed = Object.keys(current.files).filter(
+      (path) => !sameSnapshotFile(baseFiles[path], current.files[path])
+    )
+    const deleted = Object.keys(baseFiles).filter((path) => !current.files[path])
+    const archive = pack()
+    const chunks: Buffer[] = []
+    const gzip = createGzip({ level: 6 })
+    gzip.on("data", (chunk) => chunks.push(Buffer.from(chunk)))
+    const writing = pipeline(archive, gzip)
+    try {
+      archive.entry(
+        {
+          name: ".blame/delta-manifest.json",
+          mode: 0o600,
+          mtime: archiveTimestamp,
+        },
+        JSON.stringify({
+          version: 1,
+          generation: 0,
+          revision: "0",
+          baseHash: snapshotHash(baseFiles),
+          finalHash: current.hash,
+          changed,
+          deleted,
+          files: Object.fromEntries(changed.map((path) => [path, current.files[path]])),
+          baseFiles: Object.fromEntries(
+            [...changed, ...deleted].map((path) => [path, baseFiles[path] ?? null])
+          ),
+        })
+      )
+      for (const path of changed) {
+        const file = current.files[path]!
+        const absolute = join(root, path)
+        if (file.type === "symlink") {
+          const target = await readlink(absolute)
+          if (target !== file.target)
+            throw new Error("Workspace symlink changed during delta build")
+          archive.entry({
+            name: `files/${path}`,
+            type: "symlink",
+            linkname: target,
+            mode: file.mode,
+            mtime: archiveTimestamp,
+          })
+        } else {
+          await appendDiskFile(archive, absolute, `files/${path}`, file.mode, file)
+        }
+      }
+      archive.finalize()
+      await writing
+    } catch (error) {
+      archive.destroy(error as Error)
+      await writing.catch(() => undefined)
+      if (attempt < 2) return buildWorkspaceDeltaArtifact(root, attempt + 1)
+      throw new Error("Workspace kept changing while its delta was built", {
+        cause: error,
+      })
+    }
+    const verified = await workspaceSourceMetadata(root)
+    if (
+      verified.workspaceHash !== metadata.workspaceHash ||
+      verified.sourceRevision !== metadata.sourceRevision
+    ) {
+      if (attempt < 2) return buildWorkspaceDeltaArtifact(root, attempt + 1)
+      throw new Error("Workspace kept changing while its delta was built")
+    }
+    const content = Buffer.concat(chunks)
+    if (content.byteLength < 1 || content.byteLength > maximumArtifactBytes) {
+      throw new Error("Workspace delta exceeds the managed transfer limit")
+    }
+    return {
+      content,
+      sha256: createHash("sha256").update(content).digest("hex"),
+      size: content.byteLength,
+      sourceRevision: metadata.sourceRevision,
+      workspaceHash: metadata.workspaceHash,
+      sanitizedTreeHash: metadata.sanitizedTreeHash,
+      lockfileHash: metadata.lockfileHash,
+      baseHash: snapshotHash(baseFiles),
+    }
+  } finally {
+    await rm(temporary, { recursive: true, force: true })
+  }
+}
+
+async function canonicalFiles(root: string): Promise<Record<string, SnapshotFile>> {
+  const entries = (await gitOutput(root, ["ls-tree", "-rz", "-r", "HEAD"]))
+    .split("\0")
+    .filter(Boolean)
+  const files: Record<string, SnapshotFile> = {}
+  for (const entry of entries) {
+    const separator = entry.indexOf("\t")
+    const [mode, type, object] = entry.slice(0, separator).split(" ")
+    const path = entry.slice(separator + 1)
+    if (type !== "blob" || !object || forbiddenWorkspacePath(path)) continue
+    const content = await gitBuffer(root, ["cat-file", "blob", object])
+    if (mode === "120000") {
+      const target = content.toString("utf8")
+      files[path] = {
+        type: "symlink",
+        sha256: createHash("sha256").update(target).digest("hex"),
+        mode: 0o777,
+        size: Buffer.byteLength(target),
+        target,
+      }
+    } else {
+      files[path] = {
+        type: "file",
+        sha256: createHash("sha256").update(content).digest("hex"),
+        mode: mode === "100755" ? 0o755 : 0o644,
+        size: content.byteLength,
+      }
+    }
+  }
+  return files
+}
+
+function sameSnapshotFile(left: SnapshotFile | undefined, right: SnapshotFile | undefined) {
+  return Boolean(
+    left &&
+    right &&
+    left.type === right.type &&
+    left.sha256 === right.sha256 &&
+    left.mode === right.mode &&
+    left.size === right.size &&
+    left.target === right.target
+  )
+}
+
+function snapshotHash(files: Record<string, SnapshotFile>) {
+  const hash = createHash("sha256")
+  for (const [path, metadata] of Object.entries(files).sort(([left], [right]) =>
+    left.localeCompare(right)
+  )) {
+    hash.update(path).update("\0").update(JSON.stringify(metadata)).update("\0")
+  }
+  return hash.digest("hex")
+}
+
+async function sanitizedTreeHash(root: string) {
+  const entries = (await gitOutput(root, ["ls-tree", "-rz", "-r", "HEAD"]))
+    .split("\0")
+    .filter(Boolean)
+    .map((entry) => {
+      const separator = entry.indexOf("\t")
+      const [mode, type, object] = entry.slice(0, separator).split(" ")
+      const path = entry.slice(separator + 1)
+      return { mode, type, object, path }
+    })
+    .filter((entry) => !forbiddenWorkspacePath(entry.path))
+    .sort((left, right) => left.path.localeCompare(right.path))
+  return createHash("sha256").update(JSON.stringify(entries)).digest("hex")
+}
+
+async function lockfileHash(root: string, files: Record<string, { sha256: string }>) {
+  const lockfiles = Object.entries(files)
+    .filter(([path]) =>
+      /(^|\/)(pnpm-lock\.yaml|package-lock\.json|yarn\.lock|bun\.lockb|poetry\.lock|Cargo\.lock|uv\.lock)$/.test(
+        path
+      )
+    )
+    .sort(([left], [right]) => left.localeCompare(right))
+  const hash = createHash("sha256")
+  for (const [path, metadata] of lockfiles) {
+    hash.update(path).update("\0").update(metadata.sha256).update("\0")
+    await readFile(join(root, path))
+  }
+  return hash.digest("hex")
 }
 
 async function appendDiskFile(
@@ -107,7 +336,7 @@ async function appendDiskFile(
   path: string,
   name: string,
   mode: number,
-  expected?: { sha256: string; size: number },
+  expected?: { sha256: string; size: number }
 ) {
   const stat = await lstat(path)
   const size = expected?.size ?? stat.size
@@ -135,14 +364,17 @@ async function assertPortableRepository(root: string) {
   const submodules = await git(root, ["ls-files", "--stage", "--", ".gitmodules"])
   if (submodules) throw new Error("Cloud preview does not support Git submodules yet")
   const attributes = await readFile(join(root, ".gitattributes"), "utf8").catch(() => "")
-  if (/filter\s*=\s*lfs/i.test(attributes)) throw new Error("Cloud preview does not support Git LFS yet")
+  if (/filter\s*=\s*lfs/i.test(attributes))
+    throw new Error("Cloud preview does not support Git LFS yet")
 }
 
 async function createSanitizedBundle(root: string, temporary: string, bundlePath: string) {
   const repository = join(temporary, "repository")
   await mkdir(repository, { recursive: true })
   await git(repository, ["init", "--quiet", "--initial-branch=main"])
-  const entries = (await gitOutput(root, ["ls-tree", "-rz", "HEAD"])).split("\0").filter(Boolean)
+  const entries = (await gitOutput(root, ["ls-tree", "-rz", "-r", "HEAD"]))
+    .split("\0")
+    .filter(Boolean)
   for (const entry of entries) {
     const separator = entry.indexOf("\t")
     const [mode, type, hash] = entry.slice(0, separator).split(" ")
@@ -177,7 +409,7 @@ async function createSanitizedBundle(root: string, temporary: string, bundlePath
   const commit = await git(
     repository,
     ["commit-tree", tree, "-m", "Blame managed preview snapshot"],
-    identity,
+    identity
   )
   await git(repository, ["update-ref", "refs/heads/main", commit])
   await git(repository, ["bundle", "create", bundlePath, "refs/heads/main"])

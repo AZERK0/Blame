@@ -26,6 +26,16 @@ export function previewRuntimeConfig() {
     idleTimeoutMinutes: positiveInteger(env.get('BLAME_PREVIEW_IDLE_TIMEOUT_MINUTES'), 15),
     leaseSeconds: positiveInteger(env.get('BLAME_PREVIEW_LEASE_SECONDS'), 90),
     rpoSeconds: Math.min(10, positiveInteger(env.get('BLAME_PREVIEW_RPO_SECONDS'), 10)),
+    baselines: {
+      enabled:
+        env.get('BLAME_PREVIEW_BASELINES_ENABLED') ??
+        Boolean(env.get('BLAME_SANDBOX_RUNNER_IMAGE')),
+      retentionDays: positiveInteger(env.get('BLAME_PREVIEW_BASELINE_RETENTION_DAYS'), 7),
+      maxUnreferenced: positiveInteger(env.get('BLAME_PREVIEW_BASELINE_MAX_UNREFERENCED'), 1),
+      waitSeconds: positiveInteger(env.get('BLAME_PREVIEW_BASELINE_WAIT_SECONDS'), 20),
+      maxBuilders: positiveInteger(env.get('BLAME_PREVIEW_BASELINE_MAX_BUILDERS'), 1),
+      cachePolicyVersion: '1',
+    },
     edgeOrigin: secureOrigin(env.get('BLAME_PREVIEW_EDGE_ORIGIN') ?? 'https://preview.blame.dev'),
     ticketTtlSeconds: positiveInteger(env.get('BLAME_PREVIEW_TICKET_TTL_SECONDS'), 60),
     capabilityPublicKey: normalizePem(env.get('BLAME_PREVIEW_CAPABILITY_PUBLIC_KEY')),

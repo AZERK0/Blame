@@ -85,6 +85,7 @@ export type PreviewSessionRecord = {
   imageDigest?: string;
   sourceRevision?: string;
   sourceArtifactId?: string;
+  baselineId?: string;
   lastExportedJournalRevision?: string;
   lastAppliedLocalRevision?: string;
   lastAcknowledgedRemoteRevision?: string;
@@ -135,7 +136,6 @@ export interface PreviewSessionBackend<CreateInput = CreatePreviewSessionInput> 
   get(sessionId: string): Promise<PreviewSessionView>;
   events(sessionId: string, cursor?: string): AsyncIterable<PreviewSessionEvent>;
 }
-
 export function initialPreviewSessionState(): PreviewSessionState {
   return { host: "unprovisioned", engine: "idle", preview: "closed", agent: "idle", sync: "clean" };
 }
