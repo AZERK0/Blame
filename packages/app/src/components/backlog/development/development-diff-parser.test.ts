@@ -1,6 +1,6 @@
 import assert from "node:assert/strict"
 import test from "node:test"
-import { diffLines } from "./development-diff-parser.ts"
+import { diffLines, parseGitDiff } from "./development-diff-parser.ts"
 
 test("maps unified diff lines to old and new line numbers", () => {
   assert.deepEqual(
@@ -25,4 +25,28 @@ test("maps unified diff lines to old and new line numbers", () => {
       { content: " tail", oldLineNumber: 5, newLineNumber: 6 },
     ]
   )
+})
+
+test("uses Pierre metadata when parsing Git diff files", () => {
+  const patch = [
+    "diff --git a/src/app.ts b/src/app.ts",
+    "index 123..456 100644",
+    "--- a/src/app.ts",
+    "+++ b/src/app.ts",
+    "@@ -3,2 +3,3 @@",
+    " context",
+    "-removed",
+    "+added",
+    "+extra",
+  ].join("\n")
+
+  assert.deepEqual(parseGitDiff(patch), [
+    {
+      additions: 2,
+      deletions: 1,
+      file: "src/app.ts",
+      patch,
+      status: "modified",
+    },
+  ])
 })

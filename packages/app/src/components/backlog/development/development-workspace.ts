@@ -1,8 +1,14 @@
 import * as React from "react"
 
 import type { UserStory } from "@/components/backlog/data/backlog-data"
+import {
+  parseGitDiff,
+  type ParsedVcsFileDiff,
+} from "@/components/backlog/development/development-diff-parser"
 import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
+
+export { parseGitDiff } from "@/components/backlog/development/development-diff-parser"
 
 export type DevelopmentDiffKind = "add" | "del" | "mix"
 export type DevelopmentFileTab = {
@@ -22,14 +28,7 @@ export type FileContent = {
   mimeType?: string
   type?: string
 }
-export type VcsFileDiff = {
-  file: string
-  status: "added" | "deleted" | "modified" | string
-  additions?: number
-  deletions?: number
-  patch?: string
-  hunks?: unknown[]
-}
+export type VcsFileDiff = ParsedVcsFileDiff
 
 export function useDevelopmentWorkspace(
   userStory?: UserStory,
@@ -187,37 +186,6 @@ function parents(path: string) {
     .slice(0, -1)
     .map((_, index, parts) => parts.slice(0, index + 1).join("/"))
     .filter(Boolean)
-}
-
-export function parseGitDiff(diff: string): VcsFileDiff[] {
-  return diff
-    .split(/\ndiff --git /)
-    .map((part, index) => (index === 0 ? part : `diff --git ${part}`))
-    .filter((part) => part.startsWith("diff --git "))
-    .map(parseGitDiffFile)
-    .filter((file): file is VcsFileDiff => Boolean(file))
-}
-
-function parseGitDiffFile(patch: string): VcsFileDiff | undefined {
-  const file = patch.match(/^diff --git a\/(.+?) b\/(.+)$/m)
-  if (!file) return undefined
-  const deleted = /^deleted file mode /m.test(patch)
-  const added = /^new file mode /m.test(patch)
-  return {
-    file: deleted ? file[1] : file[2],
-    status: added ? "added" : deleted ? "deleted" : "modified",
-    additions: countDiffLines(patch, "+"),
-    deletions: countDiffLines(patch, "-"),
-    patch,
-  }
-}
-
-function countDiffLines(patch: string, marker: "+" | "-") {
-  const forbidden = marker === "+" ? "+++" : "---"
-  return patch
-    .split("\n")
-    .filter((line) => line.startsWith(marker) && !line.startsWith(forbidden))
-    .length
 }
 
 export type DevelopmentFileContent = FileContent | undefined
