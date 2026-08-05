@@ -10,6 +10,7 @@ import {
   parseGitDiff,
 } from "@/components/backlog/development/development-workspace"
 import { dispatchCodeSelectionAttachment } from "@/components/backlog/shared/comment-attachment-events"
+import { usePierreSyntaxHighlighting } from "@/components/backlog/development/pierre-syntax-highlighting"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useTheme } from "@/components/providers/theme-provider"
 
@@ -103,6 +104,7 @@ export function DevelopmentFileView({
 }
 
 function FileSource({ path, source }: { path: string; source: string }) {
+  const syntaxHighlightingReady = usePierreSyntaxHighlighting(path)
   const { theme } = useTheme()
   const sourceLines = React.useMemo(() => source.split("\n"), [source])
   const selectedRange = React.useRef<
@@ -146,6 +148,8 @@ function FileSource({ path, source }: { path: string; source: string }) {
     }),
     [rememberSelectedRange, themeType]
   )
+
+  if (!syntaxHighlightingReady) return <FileSkeleton />
 
   return (
     <div className="flex h-full min-h-0 min-w-0 max-w-full flex-col overflow-hidden">

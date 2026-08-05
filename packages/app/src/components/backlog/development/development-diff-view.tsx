@@ -14,6 +14,7 @@ import {
   filename,
 } from "@/components/backlog/development/development-workspace"
 import { dispatchCodeSelectionAttachment } from "@/components/backlog/shared/comment-attachment-events"
+import { usePierreSyntaxHighlighting } from "@/components/backlog/development/pierre-syntax-highlighting"
 import { Badge } from "@/components/ui/badge"
 import { runWorkerTask, workerTaskAborted } from "@/lib/worker-task"
 import { cn } from "@/lib/utils"
@@ -71,6 +72,7 @@ function PierreDiff({
   path: string
   scroll?: boolean
 }) {
+  const syntaxHighlightingReady = usePierreSyntaxHighlighting(path)
   const lines = React.useMemo(() => diffLines(patch), [patch])
   const commentSelection = React.useCallback(
     (range: { end: number; start: number }) => {
@@ -106,6 +108,12 @@ function PierreDiff({
 
   if (!patch.includes("@@")) {
     return <DiffCode patch={patch} path={path} scroll={scroll} />
+  }
+
+  if (!syntaxHighlightingReady) {
+    return (
+      <div className={cn("min-h-0 max-w-full min-w-0", scroll && "h-full")} />
+    )
   }
 
   return (
