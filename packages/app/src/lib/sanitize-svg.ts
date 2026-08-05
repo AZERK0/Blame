@@ -1,12 +1,5 @@
 import DOMPurify from "dompurify"
 
-export function sanitizeHtml(value: string) {
-  if (!DOMPurify.isSupported) return value
-  return DOMPurify.sanitize(value, {
-    USE_PROFILES: { html: true },
-  })
-}
-
 export function sanitizeSvg(value: string) {
   if (!DOMPurify.isSupported) return value
   return DOMPurify.sanitize(value, {

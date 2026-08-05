@@ -1,7 +1,7 @@
 import * as React from "react"
 
 import { Skeleton } from "@/components/ui/skeleton"
-import { sanitizeSvg } from "@/lib/sanitize-html"
+import { sanitizeSvg } from "@/lib/sanitize-svg"
 
 type MermaidRenderState = {
   bindFunctions?: (element: Element) => void

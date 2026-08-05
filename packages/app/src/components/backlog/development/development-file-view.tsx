@@ -1,15 +1,19 @@
 import * as React from "react"
-import type { FileContent, VcsFileDiff } from "@/components/backlog/development/development-workspace"
-import { FileIcon } from "lucide-react"
+import { File as PierreFile } from "@pierre/diffs/react"
+import { FileIcon, MessageSquareIcon } from "lucide-react"
 
 import { DevelopmentDiffView } from "@/components/backlog/development/development-diff-view"
-import { DevelopmentSelectableCode } from "@/components/backlog/development/development-selectable-code"
 import { DevelopmentScrollArea } from "@/components/backlog/development/development-scroll-area"
-import { filename } from "@/components/backlog/development/development-workspace"
+import type { FileContent, VcsFileDiff } from "@/components/backlog/development/development-workspace"
+import {
+  filename,
+  parseGitDiff,
+} from "@/components/backlog/development/development-workspace"
+import { dispatchCodeSelectionAttachment } from "@/components/backlog/shared/comment-attachment-events"
 import { Skeleton } from "@/components/ui/skeleton"
 
 type FileState = {
-  loading: boolean
+  path: string
   content?: FileContent
   error?: string
 }
@@ -25,20 +29,19 @@ export function DevelopmentFileView({
   readFile: (path: string) => Promise<FileContent | undefined>
   reloadKey: number
 }) {
-  const [state, setState] = React.useState<FileState>({ loading: true })
+  const [state, setState] = React.useState<FileState>()
 
   React.useEffect(() => {
     let cancelled = false
-    setState((current) => current.content ? { ...current, error: undefined } : { loading: true })
     readFile(path)
       .then((content) => {
-        if (!cancelled) setState({ loading: false, content })
+        if (!cancelled) setState({ content, path })
       })
       .catch((error) => {
         if (!cancelled) {
           setState({
-            loading: false,
             error: error instanceof Error ? error.message : "Unable to read file",
+            path,
           })
         }
       })
@@ -47,7 +50,7 @@ export function DevelopmentFileView({
     }
   }, [path, readFile, reloadKey])
 
-  if (state.loading) return <FileSkeleton />
+  if (!state || state.path !== path) return <FileSkeleton />
 
   if (state.error) {
     return (
@@ -99,11 +102,63 @@ export function DevelopmentFileView({
 }
 
 function FileSource({ path, source }: { path: string; source: string }) {
+  const sourceLines = React.useMemo(() => source.split("\n"), [source])
+  const commentSelection = React.useCallback(
+    (range: { end: number; start: number }) => {
+      const start = Math.max(1, range.start)
+      const end = Math.min(sourceLines.length, Math.max(start, range.end))
+      dispatchCodeSelectionAttachment({
+        content: sourceLines.slice(start - 1, end).join("\n"),
+        endLine: end,
+        path,
+        startLine: start,
+      })
+    },
+    [path, sourceLines]
+  )
+  const options = React.useMemo(
+    () => ({
+      disableFileHeader: true,
+      enableGutterUtility: true,
+      enableLineSelection: true,
+      lineHoverHighlight: "line" as const,
+      onGutterUtilityClick: commentSelection,
+      overflow: "scroll" as const,
+      theme: { dark: "github-dark" as const, light: "github-light" as const },
+      themeType: "system" as const,
+    }),
+    [commentSelection]
+  )
+
   return (
     <div className="flex h-full min-h-0 min-w-0 max-w-full flex-col overflow-hidden">
       <FileHeader path={path} />
       <DevelopmentScrollArea className="min-h-0 w-full max-w-full flex-1">
-        <DevelopmentSelectableCode code={source} path={path} />
+        <PierreFile
+          className="blame-pierre-file"
+          file={{ contents: source, name: path }}
+          options={options}
+          renderGutterUtility={() => (
+            <button
+              aria-label={`Comment ${path} source selection`}
+              style={{
+                alignItems: "center",
+                background: "var(--color-primary, #2563eb)",
+                border: 0,
+                borderRadius: "0.375rem",
+                color: "white",
+                cursor: "pointer",
+                display: "flex",
+                height: "1.5rem",
+                justifyContent: "center",
+                width: "1.5rem",
+              }}
+              type="button"
+            >
+              <MessageSquareIcon size={13} />
+            </button>
+          )}
+        />
       </DevelopmentScrollArea>
     </div>
   )
@@ -180,18 +235,8 @@ function isImageContent(content: FileContent) {
 
 function contentDiff(path: string, content: FileContent): VcsFileDiff | undefined {
   if (!content.diff) return undefined
-  return {
-    additions: countLines(content.diff, "+"),
-    deletions: countLines(content.diff, "-"),
-    file: path,
-    patch: content.diff,
-    status: "modified",
-  }
-}
-
-function countLines(diff: string, prefix: "+" | "-") {
-  return diff
-    .split("\n")
-    .filter((line) => line.startsWith(prefix) && !line.startsWith(`${prefix}${prefix}${prefix}`))
-    .length
+  const parsed = parseGitDiff(content.diff)[0]
+  return parsed
+    ? { ...parsed, file: path }
+    : { file: path, patch: content.diff, status: "modified" }
 }

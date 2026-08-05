@@ -564,39 +564,6 @@
     margin-top: calc(var(--spacing) * 12) !important;
   }
 
-  .development-code-highlight .shiki {
-    min-width: 100%;
-    width: max-content;
-    margin: 0;
-    padding: 1rem;
-    background: transparent !important;
-    font-family: var(--font-mono);
-    font-size: 0.75rem;
-    line-height: 1.25rem;
-    color: var(--shiki-light);
-  }
-
-  .development-code-highlight--diff .shiki {
-    padding: 0;
-  }
-
-  .development-code-highlight .shiki span {
-    color: var(--shiki-light);
-  }
-
-  .dark .development-code-highlight .shiki,
-  .dark .development-code-highlight .shiki span {
-    color: var(--shiki-dark);
-  }
-
-  .development-code-selection span {
-    color: var(--shiki-light);
-  }
-
-  .dark .development-code-selection span {
-    color: var(--shiki-dark);
-  }
-
   [data-component="development-terminal"] textarea,
   [data-component="development-terminal"] input {
     position: absolute !important;
