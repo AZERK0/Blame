@@ -14,6 +14,11 @@ export type ParsedVcsFileDiff = {
   status: "added" | "deleted" | "modified" | string
 }
 
+export function isIgnoredDiffPath(path: string) {
+  const normalized = path.replaceAll("\\", "/").replace(/^\.\/+/, "")
+  return normalized === ".blame" || normalized.startsWith(".blame/")
+}
+
 export function diffLineKind(line: string) {
   if (line.startsWith("@@")) return "hunk"
   if (line.startsWith("+++") || line.startsWith("---")) return "meta"
@@ -67,7 +72,7 @@ export function parseGitDiff(diff: string): ParsedVcsFileDiff[] {
   return splitGitDiffFiles(diff)
     .map((patch) => {
       const file = parsePatchFiles(patch)[0]?.files[0]
-      if (!file) return undefined
+      if (!file || isIgnoredDiffPath(file.name)) return undefined
 
       return {
         additions: file.hunks.reduce(

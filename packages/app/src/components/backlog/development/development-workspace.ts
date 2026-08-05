@@ -2,6 +2,7 @@ import * as React from "react"
 
 import type { UserStory } from "@/components/backlog/data/backlog-data"
 import {
+  isIgnoredDiffPath,
   parseGitDiff,
   type ParsedVcsFileDiff,
 } from "@/components/backlog/development/development-diff-parser"
@@ -171,6 +172,7 @@ export function normalizeNodes(nodes: FileNode[]) {
 
 export function normalizeDiffs(diffs: VcsFileDiff[]) {
   return diffs
+    .filter((diff) => !isIgnoredDiffPath(diff.file))
     .map((diff) => ({ ...diff, file: normalizePath(diff.file) }))
     .sort((a, b) => a.file.localeCompare(b.file))
 }

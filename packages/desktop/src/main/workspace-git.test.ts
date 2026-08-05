@@ -28,7 +28,9 @@ const execFileAsync = promisify(execFile);
 
 test("totals textual and binary numstat changes", () => {
   assert.deepEqual(
-    workspaceDiffStats("12\t4\tsrc/app.ts\n-\t-\tassets/logo.png\n"),
+    workspaceDiffStats(
+      "12\t4\tsrc/app.ts\n-\t-\tassets/logo.png\n3\t2\t.blame/log.txt\n",
+    ),
     { additions: 12, deletions: 4, files: 2 },
   );
 });
@@ -86,6 +88,38 @@ test("reads a merged story from Git history", async () => {
   }
 });
 
+test("excludes Blame-managed files from historical diffs and stats", async () => {
+  const repository = await createRepository();
+  try {
+    await mkdir(join(repository, ".blame"));
+    await writeFile(join(repository, ".blame", "log.txt"), "base\n");
+    await commit(repository, "Blame state");
+    const base = await revision(repository);
+
+    await writeFile(join(repository, ".blame", "log.txt"), "changed\n");
+    await writeFile(join(repository, "visible.txt"), "visible\n");
+    await commit(repository, "visible change");
+    const change = await revision(repository);
+
+    const diff = await gitDiffBetween({
+      from: base,
+      root: repository,
+      to: change,
+    });
+    const stats = await gitDiffStatsBetween({
+      from: base,
+      root: repository,
+      to: change,
+    });
+
+    assert.doesNotMatch(diff, /\.blame/);
+    assert.match(diff, /visible\.txt/);
+    assert.deepEqual(stats, { additions: 1, deletions: 0, files: 1 });
+  } finally {
+    await rm(repository, { force: true, recursive: true });
+  }
+});
+
 test("excludes runtime env files from Git history diffs", async () => {
   const repository = await createRepository();
   try {
@@ -114,6 +148,8 @@ test("compares a checkpoint revision with the current worktree", async () => {
     const checkpoint = await revision(repository);
     await writeFile(join(repository, "removed.txt"), "changed\n");
     await writeFile(join(repository, "untracked.txt"), "untracked\n");
+    await mkdir(join(repository, ".blame"));
+    await writeFile(join(repository, ".blame", "log.txt"), "internal\n");
 
     const diff = await gitDiffFrom({ from: checkpoint, root: repository });
 
@@ -121,6 +157,7 @@ test("compares a checkpoint revision with the current worktree", async () => {
     assert.match(diff, /-removed/);
     assert.match(diff, /\+changed/);
     assert.match(diff, /untracked\.txt/);
+    assert.doesNotMatch(diff, /\.blame/);
   } finally {
     await rm(repository, { force: true, recursive: true });
   }

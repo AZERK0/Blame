@@ -50,3 +50,24 @@ test("uses Pierre metadata when parsing Git diff files", () => {
     },
   ])
 })
+
+test("ignores Blame-managed files when parsing Git diff files", () => {
+  const patch = [
+    "diff --git a/.blame/log.txt b/.blame/log.txt",
+    "index 123..456 100644",
+    "--- a/.blame/log.txt",
+    "+++ b/.blame/log.txt",
+    "@@ -1 +1 @@",
+    "-old",
+    "+new",
+    "diff --git a/src/app.ts b/src/app.ts",
+    "index 123..456 100644",
+    "--- a/src/app.ts",
+    "+++ b/src/app.ts",
+    "@@ -1 +1 @@",
+    "-old",
+    "+new",
+  ].join("\n")
+
+  assert.deepEqual(parseGitDiff(patch).map((diff) => diff.file), ["src/app.ts"])
+})

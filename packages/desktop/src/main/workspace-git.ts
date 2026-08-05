@@ -6,6 +6,10 @@ import { promisify } from "node:util";
 import { withoutTelemetryEnvironment } from "@blame/telemetry";
 import { pLimit } from "./concurrency.ts";
 import { workspaceDiffStats } from "./workspace-diff-stats.ts";
+import {
+  ignoredGitDiffPathspecs,
+  isIgnoredWorkspaceDiffPath,
+} from "./workspace-diff-policy.ts";
 import { runtimeManagedPath } from "./workspace-runtime.ts";
 
 const execFileAsync = promisify(execFile);
@@ -107,6 +111,7 @@ export async function gitDiffFrom(input: GitDiffFromInput) {
       "--",
       ".",
       ...excludedEnvFiles,
+      ...ignoredGitDiffPathspecs,
     ]),
     untrackedGitDiffs(input.root),
   ]);
@@ -129,6 +134,7 @@ export async function gitDiffBetween(input: GitDiffInput) {
     "--",
     ".",
     ...excludedEnvFiles,
+    ...ignoredGitDiffPathspecs,
   ]);
   return stdout;
 }
@@ -150,6 +156,7 @@ export async function gitDiffStatsBetween(input: GitDiffInput) {
     "--",
     ".",
     ...excludedEnvFiles,
+    ...ignoredGitDiffPathspecs,
   ]);
   return workspaceDiffStats(stdout);
 }
@@ -329,6 +336,7 @@ async function untrackedGitDiffs(root: string) {
   const paths = stdout
     .split("\0")
     .filter(Boolean)
+    .filter((path) => !isIgnoredWorkspaceDiffPath(path))
     .filter((path) => !runtimeEnvPath(path));
   return Promise.all(
     paths.map((path) => gitReadLimit(() => untrackedGitDiff(root, path))),

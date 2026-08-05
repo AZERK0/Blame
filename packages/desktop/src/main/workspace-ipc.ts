@@ -147,6 +147,10 @@ import {
 } from "./workspace-git";
 import { workspaceDiffStats } from "./workspace-diff-stats";
 import {
+  ignoredGitDiffPathspecs,
+  isIgnoredWorkspaceDiffPath,
+} from "./workspace-diff-policy";
+import {
   appendFile as appendRuntimeFile,
   chmod as chmodRuntime,
   dirnameWorkspacePath,
@@ -838,6 +842,7 @@ async function gitDiff(root: string) {
     "--",
     ".",
     ...excludedEnvFiles,
+    ...ignoredGitDiffPathspecs,
   ]);
   return stdout;
 }
@@ -863,6 +868,7 @@ async function gitDiffStats(input: {
     "--",
     ".",
     ...excludedEnvFiles,
+    ...ignoredGitDiffPathspecs,
   ]);
   return workspaceDiffStats(stdout);
 }
@@ -934,9 +940,17 @@ async function gitCommitCount(root: string) {
 async function gitFileDiff(input: GitPathInput) {
   const cwd = resolveRuntimePath(input.root);
   const path = gitWorkspacePath(input.path);
+  if (isIgnoredWorkspaceDiffPath(path)) return "";
   const args = input.staged
-    ? ["diff", "--cached", "--no-ext-diff", "--", path]
-    : ["diff", "--no-ext-diff", "--", path];
+    ? [
+        "diff",
+        "--cached",
+        "--no-ext-diff",
+        "--",
+        path,
+        ...ignoredGitDiffPathspecs,
+      ]
+    : ["diff", "--no-ext-diff", "--", path, ...ignoredGitDiffPathspecs];
   const { stdout } = await runRuntimeGit(cwd, args);
   if (stdout || input.staged || !(await gitPathIsUntracked(cwd, path)))
     return stdout;
@@ -953,6 +967,7 @@ async function gitCommitDiff(input: GitCommitDiffInput) {
       `${hash}^`,
       hash,
       "--",
+      ...ignoredGitDiffPathspecs,
     ]);
     return stdout;
   } catch {
@@ -962,6 +977,7 @@ async function gitCommitDiff(input: GitCommitDiffInput) {
       "--no-ext-diff",
       hash,
       "--",
+      ...ignoredGitDiffPathspecs,
     ]);
     return stdout;
   }
@@ -1168,7 +1184,7 @@ function parseGitStatusFiles(output: string) {
       gitStatusFile(record.slice(3), originalPath, indexStatus, worktreeStatus),
     );
   }
-  return files;
+  return files.filter((file) => !isIgnoredWorkspaceDiffPath(file.path));
 }
 
 function gitStatusFile(

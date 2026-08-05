@@ -1,3 +1,5 @@
+import { isIgnoredWorkspaceDiffPath } from "./workspace-diff-policy.ts";
+
 export type WorkspaceDiffStats = {
   additions: number;
   deletions: number;
@@ -8,6 +10,7 @@ export function workspaceDiffStats(numstat: string): WorkspaceDiffStats {
   return numstat
     .split("\n")
     .filter(Boolean)
+    .filter((line) => !isIgnoredWorkspaceDiffPath(line.split("\t")[2] ?? ""))
     .reduce(
       (stats, line) => {
         const [additions, deletions] = line.split("\t");

@@ -16,6 +16,7 @@ import {
   normalizeDiffs,
   parseGitDiff,
 } from "@/components/backlog/development/development-workspace"
+import { totalDiffStats } from "@/components/backlog/development/development-diff-stats-data"
 import { DiffStats } from "@/components/backlog/development/development-diff-stats"
 import { DevelopmentDiffView } from "@/components/backlog/development/development-diff-view"
 import { DevelopmentScrollArea } from "@/components/backlog/development/development-scroll-area"
@@ -317,10 +318,9 @@ function DiffSummary({
 
 function diffSummary(diffs: ReturnType<typeof parseGitDiff>) {
   if (diffs.length === 0) return undefined
-  const additions = diffs.reduce((sum, diff) => sum + (diff.additions ?? 0), 0)
-  const deletions = diffs.reduce((sum, diff) => sum + (diff.deletions ?? 0), 0)
+  const { additions, deletions, files: fileCount } = totalDiffStats(diffs)
   const files =
-    diffs.length === 1 ? "1 file changed" : `${diffs.length} files changed`
+    fileCount === 1 ? "1 file changed" : `${fileCount} files changed`
   return { additions, deletions, files }
 }
 
