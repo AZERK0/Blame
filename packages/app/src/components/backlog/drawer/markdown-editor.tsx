@@ -1556,6 +1556,7 @@ export const MarkdownEditor = React.forwardRef<
   const editorRenderVersionRef = React.useRef(0)
   const structureRenderTimerRef = React.useRef<number | undefined>(undefined)
   const structureRenderPendingRef = React.useRef(false)
+  const activeMentionItemRef = React.useRef<HTMLDivElement>(null)
   const rootRef = React.useRef<HTMLDivElement>(null)
   const editorRef = React.useRef<HTMLDivElement>(null)
   const editorScrollTopRef = React.useRef(0)
@@ -1616,7 +1617,7 @@ export const MarkdownEditor = React.forwardRef<
         const results = await platform.workspace.searchFiles({
           root: mentionDirectory,
           query: mention.query,
-          limit: 20,
+          limit: 100,
         })
         if (search !== mentionSearchRef.current) return
         setMentionResults(results)
@@ -1635,6 +1636,10 @@ export const MarkdownEditor = React.forwardRef<
     if (mentionOpen) return
     mentionSearchRef.current += 1
   }, [mentionOpen])
+
+  React.useEffect(() => {
+    activeMentionItemRef.current?.scrollIntoView({ block: "nearest" })
+  }, [activeMentionIndex, mentionResults.length])
 
   React.useEffect(
     () => () => {
@@ -2302,6 +2307,11 @@ export const MarkdownEditor = React.forwardRef<
                   key={result.path}
                   value={result.path}
                   className={`gap-2 ${index === activeMentionIndex ? "bg-muted text-foreground" : ""}`}
+                  ref={
+                    index === activeMentionIndex
+                      ? activeMentionItemRef
+                      : undefined
+                  }
                   onMouseEnter={() => setActiveMentionIndex(index)}
                   onSelect={() => selectMention(result)}
                 >

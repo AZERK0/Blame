@@ -18,7 +18,12 @@ import {
   normalizePath,
   type DevelopmentDiffKind,
 } from "@/components/backlog/development/development-workspace"
-import { Input } from "@/components/ui/input"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/components/ui/input-group"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 
@@ -39,6 +44,7 @@ export function DevelopmentFileTree({
   modified,
   onFileClick,
   reloadKey,
+  searchFiles,
 }: {
   active?: string
   allowed?: string[]
@@ -48,13 +54,19 @@ export function DevelopmentFileTree({
   modified?: string[]
   onFileClick: (path: string) => void
   reloadKey?: number
+  searchFiles?: (query: string) => Promise<FileNode[] | undefined>
 }) {
   const [expanded, setExpanded] = React.useState(() => new Set([""]))
   const [directories, setDirectories] = React.useState<
     Record<string, DirectoryState>
   >({})
   const [query, setQuery] = React.useState("")
+  const [remoteSearchMatches, setRemoteSearchMatches] = React.useState<
+    string[] | null
+  >(null)
+  const [searchLoading, setSearchLoading] = React.useState(false)
   const refreshedKeyRef = React.useRef(reloadKey)
+  const searchRequestRef = React.useRef(0)
   const normalizedAllowed = React.useMemo(
     () => allowed?.map(normalizePath).filter(Boolean),
     [allowed]
@@ -73,11 +85,47 @@ export function DevelopmentFileTree({
         )
     return uniqueSearchItems(items)
   }, [directories, normalizedAllowed])
-  const searchMatches = React.useMemo(
+  const localSearchMatches = React.useMemo(
     () => searchDevelopmentFiles(searchItems, query).map((item) => item.path),
     [query, searchItems]
   )
   const searching = query.trim().length > 0
+  const searchMatches = remoteSearchMatches ?? localSearchMatches
+
+  React.useEffect(() => {
+    if (!searching || normalizedAllowed || !searchFiles) {
+      setRemoteSearchMatches(null)
+      setSearchLoading(false)
+      return
+    }
+
+    const request = ++searchRequestRef.current
+    setRemoteSearchMatches([])
+    setSearchLoading(true)
+    const timer = window.setTimeout(() => {
+      void searchFiles(query.trim())
+        .then((nodes) => {
+          if (request !== searchRequestRef.current) return
+          setRemoteSearchMatches(
+            nodes
+              ?.filter((node) => node.type === "file")
+              .map((node) => node.path) ?? null
+          )
+        })
+        .catch(() => {
+          if (request !== searchRequestRef.current) return
+          setRemoteSearchMatches([])
+        })
+        .finally(() => {
+          if (request === searchRequestRef.current) setSearchLoading(false)
+        })
+    }, 80)
+
+    return () => {
+      window.clearTimeout(timer)
+      searchRequestRef.current += 1
+    }
+  }, [normalizedAllowed, query, searchFiles, searching])
 
   const load = React.useCallback(
     async (path: string) => {
@@ -179,28 +227,42 @@ export function DevelopmentFileTree({
         className
       )}
     >
-      <div className="relative px-2 pb-1">
-        <SearchIcon className="pointer-events-none absolute top-1/2 left-4 size-3.5 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          aria-label="Search files"
-          className="h-7 pr-7 pl-7 text-xs"
-          placeholder="Search files"
-          type="search"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-        />
-        {query && (
-          <button
-            aria-label="Clear file search"
-            className="absolute top-1/2 right-3 flex size-5 -translate-y-1/2 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
-            type="button"
-            onClick={() => setQuery("")}
-          >
-            <XIcon className="size-3" />
-          </button>
-        )}
+      <div className="px-2 pb-1">
+        <InputGroup className="h-8! bg-background/60">
+          <InputGroupAddon className="pl-2">
+            <SearchIcon className="size-3.5" />
+          </InputGroupAddon>
+          <InputGroupInput
+            aria-label="Search files"
+            className="h-7 text-xs"
+            placeholder="Search files"
+            type="text"
+            value={query}
+            onChange={(event) => {
+              setRemoteSearchMatches(null)
+              setQuery(event.target.value)
+            }}
+          />
+          {query && (
+            <InputGroupAddon align="inline-end" className="pr-1">
+              <InputGroupButton
+                aria-label="Clear file search"
+                className="text-muted-foreground hover:text-foreground"
+                size="icon-xs"
+                onClick={() => {
+                  setRemoteSearchMatches(null)
+                  setQuery("")
+                }}
+              >
+                <XIcon className="size-3" />
+              </InputGroupButton>
+            </InputGroupAddon>
+          )}
+        </InputGroup>
       </div>
-      {searching && searchMatches.length === 0 ? (
+      {searchLoading ? (
+        <TreeSkeleton />
+      ) : searching && searchMatches.length === 0 ? (
         <div className="px-3 py-4 text-center text-xs text-muted-foreground">
           No matching files
         </div>

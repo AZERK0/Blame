@@ -11,6 +11,7 @@ import {
 } from "@/components/backlog/development/development-workspace"
 import { dispatchCodeSelectionAttachment } from "@/components/backlog/shared/comment-attachment-events"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useTheme } from "@/components/providers/theme-provider"
 
 type FileState = {
   path: string
@@ -102,6 +103,7 @@ export function DevelopmentFileView({
 }
 
 function FileSource({ path, source }: { path: string; source: string }) {
+  const { theme } = useTheme()
   const sourceLines = React.useMemo(() => source.split("\n"), [source])
   const selectedRange = React.useRef<
     { end: number; start: number } | undefined
@@ -125,6 +127,12 @@ function FileSource({ path, source }: { path: string; source: string }) {
     },
     []
   )
+  const themeType =
+    theme === "system"
+      ? document.documentElement.classList.contains("dark")
+        ? "dark"
+        : "light"
+      : theme
   const options = React.useMemo(
     () => ({
       disableFileHeader: true,
@@ -134,9 +142,9 @@ function FileSource({ path, source }: { path: string; source: string }) {
       onLineSelectionEnd: rememberSelectedRange,
       overflow: "scroll" as const,
       theme: { dark: "github-dark" as const, light: "github-light" as const },
-      themeType: "system" as const,
+      themeType,
     }),
-    [rememberSelectedRange]
+    [rememberSelectedRange, themeType]
   )
 
   return (
@@ -150,6 +158,8 @@ function FileSource({ path, source }: { path: string; source: string }) {
           renderGutterUtility={(getHoveredLine) => (
             <button
               aria-label={`Comment ${path} source selection`}
+              className="blame-pierre-gutter-button"
+              data-utility-button=""
               onClick={() => {
                 const hoveredLine = getHoveredLine()
                 const range =
@@ -161,18 +171,6 @@ function FileSource({ path, source }: { path: string; source: string }) {
                       }
                     : undefined)
                 if (range) commentSelection(range)
-              }}
-              style={{
-                alignItems: "center",
-                background: "var(--color-primary, #2563eb)",
-                border: 0,
-                borderRadius: "0.375rem",
-                color: "white",
-                cursor: "pointer",
-                display: "flex",
-                height: "1.5rem",
-                justifyContent: "center",
-                width: "1.5rem",
               }}
               type="button"
             >

@@ -824,13 +824,17 @@ async function searchRuntimeFiles(root: string, query: string, limit: number) {
     .split("\n")
     .filter(Boolean)
     .map((path) => ({ name: posix.basename(path), path }))
-    .filter((entry) => entry.name.toLowerCase().includes(query))
-    .slice(0, limit)
     .map((entry) => ({
       name: entry.name,
       path: toWorkspacePath(root, entry.path),
       type: "file" as const,
-    }));
+    }))
+    .filter(
+      (entry) =>
+        entry.name.toLowerCase().includes(query) ||
+        entry.path.toLowerCase().includes(query),
+    )
+    .slice(0, limit);
 }
 
 async function gitDiff(root: string) {
@@ -3769,10 +3773,15 @@ async function walk(
       await walk(root, entryPath, query, limit, matches);
       continue;
     }
-    if (entry.isFile() && entry.name.toLowerCase().includes(query)) {
+    const relativePath = toWorkspacePath(root, entryPath);
+    if (
+      entry.isFile() &&
+      (entry.name.toLowerCase().includes(query) ||
+        relativePath.toLowerCase().includes(query))
+    ) {
       matches.push({
         name: entry.name,
-        path: toWorkspacePath(root, entryPath),
+        path: relativePath,
         type: "file",
       });
     }

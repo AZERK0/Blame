@@ -66,6 +66,20 @@ export function useDevelopmentWorkspace(
     [directory, historical, historicalRefs, platform.workspace]
   )
 
+  const searchFiles = React.useCallback(
+    async (query: string) => {
+      if (!directory || !platform.workspace || historicalRefs) return undefined
+      return normalizeNodes(
+        await platform.workspace.searchFiles({
+          limit: 100,
+          query,
+          root: directory,
+        })
+      )
+    },
+    [directory, historicalRefs, platform.workspace]
+  )
+
   const readFile = React.useCallback(
     async (path: string) => {
       if (!directory || !platform.workspace) return undefined
@@ -109,6 +123,7 @@ export function useDevelopmentWorkspace(
     hasServer: Boolean(platform.workspace),
     root: directory,
     listDirectory,
+    searchFiles,
     readFile,
     loadDiffs,
     reloadKey,

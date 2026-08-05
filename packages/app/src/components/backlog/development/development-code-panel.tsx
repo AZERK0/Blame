@@ -163,6 +163,7 @@ export function DevelopmentCodePanel({
               listDirectory={workspace.listDirectory}
               modified={diffs.map((diff) => diff.file)}
               reloadKey={workspace.reloadKey}
+              searchFiles={workspace.searchFiles}
               onFileClick={openFile}
             />
           )}
