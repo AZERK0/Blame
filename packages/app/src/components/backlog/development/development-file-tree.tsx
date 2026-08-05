@@ -3,15 +3,22 @@ import type { FileNode } from "@/components/backlog/development/development-work
 import {
   ChevronDownIcon,
   ChevronRightIcon,
+  SearchIcon,
+  XIcon,
 } from "lucide-react"
 
 import { DevelopmentFileIcon } from "@/components/backlog/development/development-file-icon"
+import {
+  searchDevelopmentFiles,
+  type DevelopmentFileSearchItem,
+} from "@/components/backlog/development/development-file-search"
 import {
   diffKindLabel,
   filename,
   normalizePath,
   type DevelopmentDiffKind,
 } from "@/components/backlog/development/development-workspace"
+import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 
@@ -43,7 +50,10 @@ export function DevelopmentFileTree({
   reloadKey?: number
 }) {
   const [expanded, setExpanded] = React.useState(() => new Set([""]))
-  const [directories, setDirectories] = React.useState<Record<string, DirectoryState>>({})
+  const [directories, setDirectories] = React.useState<
+    Record<string, DirectoryState>
+  >({})
+  const [query, setQuery] = React.useState("")
   const refreshedKeyRef = React.useRef(reloadKey)
   const normalizedAllowed = React.useMemo(
     () => allowed?.map(normalizePath).filter(Boolean),
@@ -53,6 +63,21 @@ export function DevelopmentFileTree({
     () => new Set(modified?.map(normalizePath) ?? []),
     [modified]
   )
+  const searchItems = React.useMemo(() => {
+    const items = normalizedAllowed
+      ? normalizedAllowed.map((path) => ({ name: filename(path), path }))
+      : Object.values(directories).flatMap((state) =>
+          state.nodes
+            .filter((node) => node.type === "file")
+            .map(({ name, path }) => ({ name, path }))
+        )
+    return uniqueSearchItems(items)
+  }, [directories, normalizedAllowed])
+  const searchMatches = React.useMemo(
+    () => searchDevelopmentFiles(searchItems, query).map((item) => item.path),
+    [query, searchItems]
+  )
+  const searching = query.trim().length > 0
 
   const load = React.useCallback(
     async (path: string) => {
@@ -74,7 +99,8 @@ export function DevelopmentFileTree({
           [path]: {
             loading: false,
             nodes: [],
-            error: error instanceof Error ? error.message : "Unable to list files",
+            error:
+              error instanceof Error ? error.message : "Unable to list files",
           },
         }))
       }
@@ -96,7 +122,8 @@ export function DevelopmentFileTree({
           [path]: {
             loading: false,
             nodes: current[path]?.nodes ?? [],
-            error: error instanceof Error ? error.message : "Unable to list files",
+            error:
+              error instanceof Error ? error.message : "Unable to list files",
           },
         }))
       }
@@ -123,6 +150,11 @@ export function DevelopmentFileTree({
     setExpanded(new Set(["", ...normalizedAllowed.flatMap(parentPaths)]))
   }, [normalizedAllowed])
 
+  React.useEffect(() => {
+    if (!searching) return
+    setExpanded(new Set(["", ...searchMatches.flatMap(parentPaths)]))
+  }, [searchMatches, searching])
+
   const toggle = React.useCallback((path: string) => {
     setExpanded((current) => {
       const next = new Set(current)
@@ -136,26 +168,62 @@ export function DevelopmentFileTree({
     (path: string) =>
       normalizedAllowed
         ? syntheticNodes(path, normalizedAllowed)
-        : directories[path]?.nodes ?? [],
+        : (directories[path]?.nodes ?? []),
     [directories, normalizedAllowed]
   )
 
   return (
-    <div className={cn("group/filetree flex min-h-0 flex-col gap-0.5 py-2", className)}>
-      <TreeLevel
-        active={active}
-        chain={[""]}
-        directoryState={directories}
-        expanded={expanded}
-        kinds={kinds}
-        level={0}
-        load={load}
-        modified={modifiedSet}
-        nodesForPath={nodesForPath}
-        onFileClick={onFileClick}
-        path=""
-        toggle={toggle}
-      />
+    <div
+      className={cn(
+        "group/filetree flex min-h-0 flex-col gap-0.5 py-2",
+        className
+      )}
+    >
+      <div className="relative px-2 pb-1">
+        <SearchIcon className="pointer-events-none absolute top-1/2 left-4 size-3.5 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          aria-label="Search files"
+          className="h-7 pr-7 pl-7 text-xs"
+          placeholder="Search files"
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+        />
+        {query && (
+          <button
+            aria-label="Clear file search"
+            className="absolute top-1/2 right-3 flex size-5 -translate-y-1/2 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+            type="button"
+            onClick={() => setQuery("")}
+          >
+            <XIcon className="size-3" />
+          </button>
+        )}
+      </div>
+      {searching && searchMatches.length === 0 ? (
+        <div className="px-3 py-4 text-center text-xs text-muted-foreground">
+          No matching files
+        </div>
+      ) : (
+        <TreeLevel
+          active={active}
+          chain={[""]}
+          directoryState={directories}
+          expanded={expanded}
+          kinds={kinds}
+          level={0}
+          load={load}
+          modified={modifiedSet}
+          nodesForPath={
+            searching
+              ? (path) => syntheticNodes(path, searchMatches)
+              : nodesForPath
+          }
+          onFileClick={onFileClick}
+          path=""
+          toggle={toggle}
+        />
+      )}
     </div>
   )
 }
@@ -191,7 +259,11 @@ function TreeLevel({
 
   if (state?.loading) return <TreeSkeleton />
   if (state?.error) {
-    return <div className="px-2 py-1 text-xs text-muted-foreground">{state.error}</div>
+    return (
+      <div className="px-2 py-1 text-xs text-muted-foreground">
+        {state.error}
+      </div>
+    )
   }
 
   return nodesForPath(path).map((node) => (
@@ -264,30 +336,31 @@ function TreeNode({
           type="directory"
           open={open}
         />
-        {open && (tooDeep ? (
-          <div className="px-2 py-1 text-xs text-muted-foreground">...</div>
-        ) : (
-          <div className="relative pt-0.5">
-            <span
-              className="pointer-events-none absolute top-0 bottom-0 w-px bg-border opacity-0 transition-opacity group-hover/filetree:opacity-60"
-              style={{ left: `${Math.max(0, 8 + level * 12 - 4) + 8}px` }}
-            />
-            <TreeLevel
-              active={active}
-              chain={nextChain}
-              directoryState={directoryState}
-              expanded={expanded}
-              kinds={kinds}
-              level={level + 1}
-              load={load}
-              modified={modified}
-              nodesForPath={nodesForPath}
-              onFileClick={onFileClick}
-              path={node.path}
-              toggle={toggle}
-            />
-          </div>
-        ))}
+        {open &&
+          (tooDeep ? (
+            <div className="px-2 py-1 text-xs text-muted-foreground">...</div>
+          ) : (
+            <div className="relative pt-0.5">
+              <span
+                className="pointer-events-none absolute top-0 bottom-0 w-px bg-border opacity-0 transition-opacity group-hover/filetree:opacity-60"
+                style={{ left: `${Math.max(0, 8 + level * 12 - 4) + 8}px` }}
+              />
+              <TreeLevel
+                active={active}
+                chain={nextChain}
+                directoryState={directoryState}
+                expanded={expanded}
+                kinds={kinds}
+                level={level + 1}
+                load={load}
+                modified={modified}
+                nodesForPath={nodesForPath}
+                onFileClick={onFileClick}
+                path={node.path}
+                toggle={toggle}
+              />
+            </div>
+          ))}
       </div>
     )
   }
@@ -339,7 +412,10 @@ function TreeRow({
       onDragStart={(event) => {
         if (type !== "file") return
         event.dataTransfer.setData("text/plain", `file:${node.path}`)
-        event.dataTransfer.setData("text/uri-list", `file://${encodeURI(node.path)}`)
+        event.dataTransfer.setData(
+          "text/uri-list",
+          `file://${encodeURI(node.path)}`
+        )
         event.dataTransfer.effectAllowed = "copy"
       }}
       onClick={onClick}
@@ -362,7 +438,7 @@ function TreeRow({
       />
       <span
         className={cn(
-          "min-w-0 flex-1 truncate whitespace-nowrap font-medium",
+          "min-w-0 flex-1 truncate font-medium whitespace-nowrap",
           node.ignored && "text-muted-foreground/60",
           marked && kindColor
         )}
@@ -370,12 +446,19 @@ function TreeRow({
         {node.name}
       </span>
       {kind && type === "file" && (
-        <span className={cn("w-4 shrink-0 text-center text-xs font-medium", kindColor)}>
+        <span
+          className={cn(
+            "w-4 shrink-0 text-center text-xs font-medium",
+            kindColor
+          )}
+        >
           {diffKindLabel(kind)}
         </span>
       )}
       {kind && type === "directory" && (
-        <span className={cn("mr-1.5 size-1.5 shrink-0 rounded-full", kindDotColor)} />
+        <span
+          className={cn("mr-1.5 size-1.5 shrink-0 rounded-full", kindDotColor)}
+        />
       )}
     </button>
   )
@@ -397,7 +480,11 @@ function TreeIcon({
   if (node.ignored || marked) {
     return (
       <DevelopmentFileIcon
-        className={cn("shrink-0", node.ignored && "text-muted-foreground/60", marked && kindColor)}
+        className={cn(
+          "shrink-0",
+          node.ignored && "text-muted-foreground/60",
+          marked && kindColor
+        )}
         expanded={open}
         mono
         node={node}
@@ -406,7 +493,9 @@ function TreeIcon({
   }
 
   if (type === "directory") {
-    return <DevelopmentFileIcon className="shrink-0" expanded={open} node={node} />
+    return (
+      <DevelopmentFileIcon className="shrink-0" expanded={open} node={node} />
+    )
   }
 
   return (
@@ -466,7 +555,11 @@ function syntheticNodes(path: string, files: string[]) {
   return [...nodes.values()].sort(sortNodes)
 }
 
-function addSyntheticNode(nodes: Map<string, FileNode>, path: string, file: string) {
+function addSyntheticNode(
+  nodes: Map<string, FileNode>,
+  path: string,
+  file: string
+) {
   const prefix = path ? `${path}/` : ""
   if (path && !file.startsWith(prefix)) return
   const rest = path ? file.slice(prefix.length) : file
@@ -486,4 +579,8 @@ function addSyntheticNode(nodes: Map<string, FileNode>, path: string, file: stri
 function sortNodes(a: FileNode, b: FileNode) {
   if (a.type !== b.type) return a.type === "directory" ? -1 : 1
   return a.name.localeCompare(b.name)
+}
+
+function uniqueSearchItems(items: DevelopmentFileSearchItem[]) {
+  return [...new Map(items.map((item) => [item.path, item])).values()]
 }
