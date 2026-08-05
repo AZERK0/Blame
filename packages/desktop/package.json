@@ -24,6 +24,7 @@
     "@blame/preview-contract": "workspace:*",
     "@blame/preview-runtime": "workspace:*",
     "@blame/telemetry": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "electron-context-menu": "4.1.2",
     "electron-log": "^5",
     "electron-store": "^10",

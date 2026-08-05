@@ -10,8 +10,9 @@ import type {
   CodeReviewGraphProvider,
 } from "@blame/agent-runtime";
 import { withoutTelemetryEnvironment } from "@blame/telemetry";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
-import { createInterface } from "node:readline";
 import { setupPath } from "./host-tool-path.ts";
 import {
   joinWorkspacePath,
@@ -55,23 +56,6 @@ type Availability = {
   command: string;
   message?: string;
   version?: string;
-};
-
-type PendingRequest = {
-  cleanup(): void;
-  reject(error: Error): void;
-  resolve(value: unknown): void;
-  timer: NodeJS.Timeout;
-};
-
-type McpRequestInput = {
-  id: number;
-  method: string;
-  params: Record<string, unknown>;
-  reject(error: Error): void;
-  resolve(value: unknown): void;
-  signal?: AbortSignal;
-  timeoutMs: number;
 };
 
 type WorkspaceCommandState = {
@@ -532,10 +516,9 @@ export function cleanupCodeReviewGraphWorktree(worktree: string) {
 }
 
 class CodeReviewGraphMcpClient implements GraphMcpClient {
-  private child?: ChildProcessWithoutNullStreams;
+  private client?: Client;
   private connected?: Promise<void>;
-  private nextId = 1;
-  private readonly pending = new Map<number, PendingRequest>();
+  private transport?: StdioClientTransport;
   private readonly worktree: string;
   private readonly command: CommandSpec;
 
@@ -551,171 +534,75 @@ class CodeReviewGraphMcpClient implements GraphMcpClient {
     signal?: AbortSignal,
   ) {
     await this.connect(signal);
-    const result = await this.request(
-      "tools/call",
+    const result = await this.client!.callTool(
       { arguments: args, name },
-      timeoutMs,
-      signal,
+      undefined,
+      { signal, timeout: timeoutMs },
     );
     return parseMcpToolResult(result);
   }
 
   async close() {
-    const child = this.child;
-    this.child = undefined;
+    const client = this.client;
+    const transport = this.transport;
+    this.client = undefined;
+    this.transport = undefined;
     this.connected = undefined;
-    this.rejectPending("Code graph MCP client closed");
-    if (!child) return;
-    child.stdin.end();
-    await stopChild(child);
+    if (client) {
+      await client.close();
+    } else if (transport) {
+      await transport.close();
+    }
   }
 
   private connect(signal?: AbortSignal) {
     if (this.connected) return this.connected;
-    this.connected = this.open(signal);
+    this.connected = this.open(signal).catch((error) => {
+      this.connected = undefined;
+      this.client = undefined;
+      this.transport = undefined;
+      throw error;
+    });
     return this.connected;
   }
 
   private async open(signal?: AbortSignal) {
-    this.child = spawnCodeReviewGraph(
-      this.command,
-      ["serve", "--repo", this.worktree, "--tools", mcpTools.join(",")],
-      this.worktree,
-    );
-    this.bindChild(this.child);
-    await this.request(
-      "initialize",
-      {
-        capabilities: {},
-        clientInfo: { name: "blame", version: "0.0.0" },
-        protocolVersion: "2025-06-18",
-      },
-      queryTimeoutMs,
-      signal,
-    );
-    await this.notify("notifications/initialized", {});
-  }
-
-  private bindChild(child: ChildProcessWithoutNullStreams) {
-    const lines = createInterface({ input: child.stdout, terminal: false });
-    lines.on("line", (line) => this.handleLine(line));
-    child.once("exit", () =>
-      this.rejectPending("Code graph MCP server exited"),
-    );
-    child.once("error", (error) => this.rejectPending(error.message));
-  }
-
-  private handleLine(line: string) {
-    const message = parseJson(line);
-    if (!isRecord(message) || typeof message.id !== "number") return;
-    if (message.error) {
-      this.rejectRequest(message.id, new Error(errorMessage(message.error)));
-      return;
-    }
-    this.resolveRequest(message.id, message.result);
-  }
-
-  private request(
-    method: string,
-    params: Record<string, unknown>,
-    timeoutMs: number,
-    signal?: AbortSignal,
-  ) {
-    const id = this.nextId;
-    this.nextId += 1;
-    if (signal?.aborted)
-      return Promise.reject(new Error("Code graph request aborted"));
-    return new Promise<unknown>((resolve, reject) => {
-      this.registerRequest({
-        id,
-        method,
-        params,
-        reject,
-        resolve,
-        signal,
-        timeoutMs,
-      });
+    const args = [
+      ...this.command.args,
+      ...codeReviewGraphMcpArgs(this.worktree),
+    ];
+    const spec = runtimeCommand(this.command.command, args, {
+      cwd: this.worktree,
     });
-  }
-
-  private registerRequest(input: McpRequestInput) {
-    this.pending.set(input.id, this.pendingRequest(input));
-    this.send(
-      {
-        id: input.id,
-        jsonrpc: "2.0",
-        method: input.method,
-        params: input.params,
-      },
-      (error) => this.rejectRequest(input.id, error),
+    const executable = runtimeExecutableCommand(
+      spec,
+      process.platform,
+      commandEnvironment(),
     );
-  }
-
-  private pendingRequest(input: McpRequestInput): PendingRequest {
-    const timeout = new Error(
-      `Code graph MCP request timed out: ${input.method}`,
-    );
-    const timer = setTimeout(
-      () => this.rejectRequest(input.id, timeout),
-      input.timeoutMs,
-    );
-    timer.unref();
-    return {
-      cleanup: addAbortHandler(input.signal, () =>
-        this.rejectRequest(input.id, new Error("Code graph request aborted")),
-      ),
-      reject: input.reject,
-      resolve: input.resolve,
-      timer,
-    };
-  }
-
-  private rejectRequest(id: number, error: Error) {
-    this.settleRequest(id, (pending) => pending.reject(error));
-  }
-
-  private resolveRequest(id: number, value: unknown) {
-    this.settleRequest(id, (pending) => pending.resolve(value));
-  }
-
-  private settleRequest(id: number, settle: (pending: PendingRequest) => void) {
-    const pending = this.pending.get(id);
-    if (!pending) return;
-    this.pending.delete(id);
-    clearTimeout(pending.timer);
-    pending.cleanup();
-    settle(pending);
-  }
-
-  private notify(method: string, params: Record<string, unknown>) {
-    return new Promise<void>((resolve, reject) => {
-      this.send({ jsonrpc: "2.0", method, params }, reject, resolve);
+    const transport = new StdioClientTransport({
+      args: executable.args,
+      command: executable.command,
+      cwd: spec.cwd,
+      env: commandEnvironment(),
+      stderr: "pipe",
     });
-  }
-
-  private send(
-    message: Record<string, unknown>,
-    reject: (error: Error) => void,
-    resolve?: () => void,
-  ) {
-    if (!this.child?.stdin) {
-      reject(new Error("Code graph MCP server is not connected"));
-      return;
-    }
-    this.child.stdin.write(`${JSON.stringify(message)}\n`, (error) => {
-      if (error) reject(error);
-      else resolve?.();
-    });
-  }
-
-  private rejectPending(message: string) {
-    for (const [id, pending] of this.pending) {
-      this.pending.delete(id);
-      clearTimeout(pending.timer);
-      pending.cleanup();
-      pending.reject(new Error(message));
+    const client = new Client(
+      { name: "blame", version: "0.0.0" },
+      { capabilities: {} },
+    );
+    this.transport = transport;
+    this.client = client;
+    try {
+      await client.connect(transport, { signal, timeout: queryTimeoutMs });
+    } catch (error) {
+      await transport.close().catch(() => undefined);
+      throw error;
     }
   }
+}
+
+export function codeReviewGraphMcpArgs(worktree: string) {
+  return ["serve", "--repo", worktree, "--tools", mcpTools.join(",")];
 }
 
 export function resolveCodeReviewGraphCommand(
@@ -836,7 +723,10 @@ function workspaceCommandState(
   };
 }
 
-function workspaceCommandTimer(state: WorkspaceCommandState, timeoutMs: number) {
+function workspaceCommandTimer(
+  state: WorkspaceCommandState,
+  timeoutMs: number,
+) {
   const timer = setTimeout(() => timeoutWorkspaceCommand(state), timeoutMs);
   timer.unref();
   return timer;
@@ -907,18 +797,6 @@ function commandResult(stdout: Buffer[], stderr: Buffer[]) {
     stderr: Buffer.concat(stderr).toString(),
     stdout: Buffer.concat(stdout).toString(),
   };
-}
-
-function spawnCodeReviewGraph(
-  command: CommandSpec,
-  args: string[],
-  cwd: string,
-) {
-  return spawnWorkspaceCommand(
-    command.command,
-    [...command.args, ...args],
-    cwd,
-  );
 }
 
 function spawnWorkspaceCommand(command: string, args: string[], cwd: string) {

@@ -1,11 +1,22 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  codeReviewGraphMcpArgs,
   CodeReviewGraphService,
   parseCodeReviewGraphStatus,
   parseDetectChangesOutput,
   resolveCodeReviewGraphCommand,
 } from "./code-review-graph.ts";
+
+test("builds the code-review-graph MCP command arguments", () => {
+  assert.deepEqual(codeReviewGraphMcpArgs("/repo"), [
+    "serve",
+    "--repo",
+    "/repo",
+    "--tools",
+    "get_minimal_context_tool,get_impact_radius_tool,get_review_context_tool,get_architecture_overview_tool,list_graph_stats_tool",
+  ]);
+});
 
 type ServiceFixtureInput = {
   commands?: string[][];
