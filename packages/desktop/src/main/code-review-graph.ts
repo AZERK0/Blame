@@ -12,6 +12,10 @@ import type {
 import { withoutTelemetryEnvironment } from "@blame/telemetry";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import {
+  CallToolResultSchema,
+  type CallToolResult,
+} from "@modelcontextprotocol/sdk/types.js";
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { setupPath } from "./host-tool-path.ts";
 import {
@@ -76,7 +80,7 @@ type GraphMcpClient = {
     args: Record<string, unknown>,
     timeoutMs: number,
     signal?: AbortSignal,
-  ): Promise<unknown>;
+  ): Promise<CallToolResult>;
   close(): Promise<void>;
 };
 
@@ -417,10 +421,10 @@ export class CodeReviewGraphService {
   ): Promise<CodeGraphQueryResult> {
     try {
       const client = this.mcpClient(status.worktree);
-      const data = await client.callTool(tool, args, queryTimeoutMs, signal);
+      const result = await client.callTool(tool, args, queryTimeoutMs, signal);
       return {
         ...status,
-        data: compactGraphPayload(data),
+        data: compactGraphPayload(parseMcpToolResult(result)),
         source: "mcp",
       };
     } catch (error) {
@@ -536,10 +540,12 @@ class CodeReviewGraphMcpClient implements GraphMcpClient {
     await this.connect(signal);
     const result = await this.client!.callTool(
       { arguments: args, name },
-      undefined,
+      CallToolResultSchema,
       { signal, timeout: timeoutMs },
     );
-    return parseMcpToolResult(result);
+    if (!("content" in result) || !Array.isArray(result.content))
+      throw new Error("MCP tool returned an unsupported task result");
+    return result as CallToolResult;
   }
 
   async close() {
@@ -1022,11 +1028,12 @@ function limitStrings(value: unknown, limit: number) {
     .slice(0, limit);
 }
 
-function parseMcpToolResult(value: unknown) {
-  const content = asArray(isRecord(value) ? value.content : undefined);
-  const text = content
-    .map((item) => (isRecord(item) ? item.text : undefined))
-    .find((item): item is string => typeof item === "string");
+function parseMcpToolResult(value: CallToolResult) {
+  if (value.structuredContent) return value.structuredContent
+  const text = value.content.find(
+    (item): item is Extract<typeof item, { type: "text" }> =>
+      item.type === "text"
+  )?.text;
   if (!text) return value;
   return parseJson(text) ?? { text: truncate(text, 4_000) };
 }
@@ -1129,10 +1136,6 @@ function definedEntries<T extends Record<string, unknown>>(value: T) {
   return Object.fromEntries(
     Object.entries(value).filter(([, entry]) => entry !== undefined),
   );
-}
-
-function asArray(value: unknown) {
-  return Array.isArray(value) ? value : [];
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

@@ -212,7 +212,10 @@ function fixtureSnapshot(input: ServiceFixtureInput) {
 function mcpClient() {
   return {
     async callTool() {
-      return { status: "ok", summary: "ok" };
+      return {
+        content: [],
+        structuredContent: { status: "ok", summary: "ok" },
+      };
     },
     async close() {},
   };
