@@ -386,6 +386,7 @@ export type GitStatusFile = {
 export type GitStatusResult = {
   branch: GitBranchStatus
   files: GitStatusFile[]
+  remote?: string
 }
 
 export type GitLogCommitRef = {

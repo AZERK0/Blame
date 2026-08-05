@@ -884,14 +884,17 @@ async function changedRuntimeEnvPathspecs(cwd: string) {
 
 async function gitStatus(root: string) {
   const cwd = resolveRuntimePath(root);
-  const branch = await gitBranchStatus(cwd);
+  const [branch, remotes] = await Promise.all([
+    gitBranchStatus(cwd),
+    gitRemoteUrls(cwd),
+  ]);
   const { stdout } = await runRuntimeGit(cwd, [
     "status",
     "--porcelain=v1",
     "-z",
     "--untracked-files=all",
   ]);
-  return { branch, files: parseGitStatusFiles(stdout) };
+  return { branch, files: parseGitStatusFiles(stdout), remote: remotes[0] };
 }
 
 async function gitLog(input: GitLogInput) {

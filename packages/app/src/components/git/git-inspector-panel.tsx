@@ -19,6 +19,7 @@ import {
 import { DiffStats } from "@/components/backlog/development/development-diff-stats"
 import { DevelopmentDiffView } from "@/components/backlog/development/development-diff-view"
 import { DevelopmentScrollArea } from "@/components/backlog/development/development-scroll-area"
+import { GitHubRepositoryCard } from "@/components/git/git-github-repository-card"
 import { GitBranchIcon, GitCommitIcon, GitPullRequestIcon } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -229,6 +230,7 @@ function RepositoryOverview({ status }: { status?: GitStatusResult }) {
 
   return (
     <div className="grid gap-3 p-3">
+      <GitHubRepositoryCard remote={status?.remote} />
       <OverviewMetric label="Staged files" value={staged} />
       <OverviewMetric label="Workspace changes" value={changed} />
       <OverviewMetric label="Ahead" value={status?.branch.ahead ?? 0} />
@@ -273,7 +275,7 @@ function DiffCard({ diff }: { diff: ReturnType<typeof parseGitDiff>[number] }) {
         <span className="truncate font-medium">{diff.file}</span>
         <DiffStats diff={diff} />
       </div>
-      <DevelopmentScrollArea className="max-h-[32rem] w-full min-w-0 max-w-full">
+      <DevelopmentScrollArea className="max-h-[32rem] w-full max-w-full min-w-0">
         <div className="w-max min-w-full">
           <DevelopmentDiffView diff={diff} scroll={false} />
         </div>
