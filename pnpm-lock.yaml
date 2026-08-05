@@ -274,6 +274,9 @@ importers:
       cytoscape-fcose:
         specifier: ^2.2.0
         version: 2.2.0(cytoscape@3.34.0)
+      dompurify:
+        specifier: ^3.4.13
+        version: 3.4.13
       fuse.js:
         specifier: ^7.5.0
         version: 7.5.0

@@ -1,6 +1,7 @@
 import * as React from "react"
 
 import { Skeleton } from "@/components/ui/skeleton"
+import { sanitizeSvg } from "@/lib/sanitize-html"
 
 type MermaidRenderState = {
   bindFunctions?: (element: Element) => void
@@ -56,7 +57,7 @@ export function MermaidDiagram({ chart }: { chart: string }) {
   React.useEffect(() => {
     const container = diagramRef.current
     if (!container || !current?.svg) return
-    container.innerHTML = current.svg
+    container.innerHTML = sanitizeSvg(current.svg)
     current.bindFunctions?.(container)
     return () => container.replaceChildren()
   }, [current])

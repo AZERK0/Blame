@@ -4,8 +4,9 @@ import { MessageSquareIcon } from "lucide-react"
 import {
   sourceCodeLines,
   useHighlightedCodeLines,
-} from "@/components/backlog/development/development-highlighted-code"
+} from "@/components/backlog/development/development-code-highlighting"
 import { dispatchCodeSelectionAttachment } from "@/components/backlog/shared/comment-attachment-events"
+import { sanitizeHtml } from "@/lib/sanitize-html"
 import { cn } from "@/lib/utils"
 
 type LineSelection = {
@@ -139,7 +140,7 @@ function CodeLine({
       {html ? (
         <code
           className="whitespace-pre pr-4"
-          dangerouslySetInnerHTML={{ __html: html || " " }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(html || " ") }}
         />
       ) : (
         <code className="whitespace-pre pr-4">{line || " "}</code>
