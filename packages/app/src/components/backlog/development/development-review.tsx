@@ -10,6 +10,7 @@ import { Collapsible } from "radix-ui"
 
 import { DiffStats } from "@/components/backlog/development/development-diff-stats"
 import { DevelopmentDiffView } from "@/components/backlog/development/development-diff-view"
+import { DevelopmentGraph } from "@/components/backlog/development/development-graph"
 import { DevelopmentScrollArea } from "@/components/backlog/development/development-scroll-area"
 import {
   diffKindClassName,
@@ -60,6 +61,7 @@ export function DevelopmentReview({
   return (
     <DevelopmentScrollArea className="h-full">
       <div className="flex min-w-0 flex-col gap-3 p-3">
+        <DevelopmentGraph diffs={diffs} onOpenFile={onOpenFile} />
         {diffs.map((diff) => (
           <ReviewDiffCard
             defaultOpen={diff.file === initialOpenFilePath}
