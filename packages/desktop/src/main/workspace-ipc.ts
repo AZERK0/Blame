@@ -809,7 +809,7 @@ async function readWorkspaceFile(input: WorkspacePathInput) {
 
 async function searchFiles(input: WorkspaceSearchInput) {
   const root = resolveRuntimePath(input.root);
-  const query = input.query.trim().toLowerCase();
+  const query = normalizeWorkspaceSearchText(input.query);
   if (!query) return [];
   const limit = Math.min(input.limit ?? 30, 100);
   if (runtimeManagedPath(root)) return searchRuntimeFiles(root, query, limit);
@@ -831,8 +831,8 @@ async function searchRuntimeFiles(root: string, query: string, limit: number) {
     }))
     .filter(
       (entry) =>
-        entry.name.toLowerCase().includes(query) ||
-        entry.path.toLowerCase().includes(query),
+        normalizeWorkspaceSearchText(entry.name).includes(query) ||
+        normalizeWorkspaceSearchText(entry.path).includes(query),
     )
     .slice(0, limit);
 }
@@ -3776,8 +3776,8 @@ async function walk(
     const relativePath = toWorkspacePath(root, entryPath);
     if (
       entry.isFile() &&
-      (entry.name.toLowerCase().includes(query) ||
-        relativePath.toLowerCase().includes(query))
+      (normalizeWorkspaceSearchText(entry.name).includes(query) ||
+        normalizeWorkspaceSearchText(relativePath).includes(query))
     ) {
       matches.push({
         name: entry.name,
@@ -3786,6 +3786,14 @@ async function walk(
       });
     }
   }
+}
+
+function normalizeWorkspaceSearchText(value: string) {
+  return value
+    .normalize("NFKD")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase()
+    .replace(/[^\p{Letter}\p{Number}]+/gu, "");
 }
 
 function resolveWorkspacePath(input: WorkspacePathInput) {

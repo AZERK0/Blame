@@ -1,7 +1,15 @@
 import * as React from "react"
 import { getFiletypeFromFileName, preloadHighlighter } from "@pierre/diffs"
 
-const pierreThemes = ["github-dark", "github-light"] as const
+export const pierreSyntaxThemes = {
+  dark: "catppuccin-mocha",
+  light: "catppuccin-latte",
+} as const
+
+const pierreThemes = [
+  pierreSyntaxThemes.dark,
+  pierreSyntaxThemes.light,
+] as const
 const loadedLanguages = new Set<string>()
 const pendingLanguages = new Map<string, Promise<void>>()
 

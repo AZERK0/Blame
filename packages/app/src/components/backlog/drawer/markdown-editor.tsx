@@ -2297,7 +2297,22 @@ export const MarkdownEditor = React.forwardRef<
         sideOffset={8}
       >
         <Command shouldFilter={false}>
-          <CommandList className="max-h-72">
+          <CommandList
+            className="max-h-72 overscroll-contain"
+            onWheel={(event) => {
+              const list = event.currentTarget
+              if (list.scrollHeight <= list.clientHeight) return
+              const multiplier =
+                event.deltaMode === 1
+                  ? 16
+                  : event.deltaMode === 2
+                    ? list.clientHeight
+                    : 1
+              event.preventDefault()
+              event.stopPropagation()
+              list.scrollTop += event.deltaY * multiplier
+            }}
+          >
             <CommandEmpty className="py-3 text-muted-foreground">
               No matching files.
             </CommandEmpty>

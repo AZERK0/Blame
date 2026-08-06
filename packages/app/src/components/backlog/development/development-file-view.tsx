@@ -1,6 +1,6 @@
 import * as React from "react"
 import { File as PierreFile } from "@pierre/diffs/react"
-import { FileIcon, MessageSquareIcon } from "lucide-react"
+import { FileIcon } from "lucide-react"
 
 import { DevelopmentDiffView } from "@/components/backlog/development/development-diff-view"
 import { DevelopmentScrollArea } from "@/components/backlog/development/development-scroll-area"
@@ -10,7 +10,14 @@ import {
   parseGitDiff,
 } from "@/components/backlog/development/development-workspace"
 import { dispatchCodeSelectionAttachment } from "@/components/backlog/shared/comment-attachment-events"
-import { usePierreSyntaxHighlighting } from "@/components/backlog/development/pierre-syntax-highlighting"
+import {
+  pierreSyntaxThemes,
+  usePierreSyntaxHighlighting,
+} from "@/components/backlog/development/pierre-syntax-highlighting"
+import {
+  labelPierreGutterUtility,
+  pierreGutterUtilityCSS,
+} from "@/components/backlog/development/pierre-gutter-utility"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useTheme } from "@/components/providers/theme-provider"
 
@@ -107,9 +114,6 @@ function FileSource({ path, source }: { path: string; source: string }) {
   const syntaxHighlightingReady = usePierreSyntaxHighlighting(path)
   const { theme } = useTheme()
   const sourceLines = React.useMemo(() => source.split("\n"), [source])
-  const selectedRange = React.useRef<
-    { end: number; start: number } | undefined
-  >(undefined)
   const commentSelection = React.useCallback(
     (range: { end: number; start: number }) => {
       const start = Math.max(1, range.start)
@@ -123,12 +127,6 @@ function FileSource({ path, source }: { path: string; source: string }) {
     },
     [path, sourceLines]
   )
-  const rememberSelectedRange = React.useCallback(
-    (range: { end: number; start: number } | null) => {
-      selectedRange.current = range ?? undefined
-    },
-    []
-  )
   const themeType =
     theme === "system"
       ? document.documentElement.classList.contains("dark")
@@ -141,12 +139,15 @@ function FileSource({ path, source }: { path: string; source: string }) {
       enableGutterUtility: true,
       enableLineSelection: true,
       lineHoverHighlight: "line" as const,
-      onLineSelectionEnd: rememberSelectedRange,
+      onGutterUtilityClick: commentSelection,
+      onPostRender: (node: HTMLElement) =>
+        labelPierreGutterUtility(node, `Comment ${path} source selection`),
       overflow: "scroll" as const,
-      theme: { dark: "github-dark" as const, light: "github-light" as const },
+      theme: pierreSyntaxThemes,
       themeType,
+      unsafeCSS: pierreGutterUtilityCSS,
     }),
-    [rememberSelectedRange, themeType]
+    [commentSelection, path, themeType]
   )
 
   if (!syntaxHighlightingReady) return <FileSkeleton />
@@ -159,28 +160,6 @@ function FileSource({ path, source }: { path: string; source: string }) {
           className="blame-pierre-file"
           file={{ contents: source, name: path }}
           options={options}
-          renderGutterUtility={(getHoveredLine) => (
-            <button
-              aria-label={`Comment ${path} source selection`}
-              className="blame-pierre-gutter-button"
-              data-utility-button=""
-              onClick={() => {
-                const hoveredLine = getHoveredLine()
-                const range =
-                  selectedRange.current ??
-                  (hoveredLine
-                    ? {
-                        end: hoveredLine.lineNumber,
-                        start: hoveredLine.lineNumber,
-                      }
-                    : undefined)
-                if (range) commentSelection(range)
-              }}
-              type="button"
-            >
-              <MessageSquareIcon size={13} />
-            </button>
-          )}
         />
       </DevelopmentScrollArea>
     </div>

@@ -5,7 +5,6 @@ import {
   type DiffCodeLine,
 } from "@/components/backlog/development/development-diff-parser"
 import type { VcsFileDiff } from "@/components/backlog/development/development-workspace"
-import { MessageSquareIcon } from "lucide-react"
 import { PatchDiff } from "@pierre/diffs/react"
 
 import { DiffStats } from "@/components/backlog/development/development-diff-stats"
@@ -13,8 +12,15 @@ import {
   diffKindClassName,
   filename,
 } from "@/components/backlog/development/development-workspace"
+import {
+  pierreSyntaxThemes,
+  usePierreSyntaxHighlighting,
+} from "@/components/backlog/development/pierre-syntax-highlighting"
+import {
+  labelPierreGutterUtility,
+  pierreGutterUtilityCSS,
+} from "@/components/backlog/development/pierre-gutter-utility"
 import { dispatchCodeSelectionAttachment } from "@/components/backlog/shared/comment-attachment-events"
-import { usePierreSyntaxHighlighting } from "@/components/backlog/development/pierre-syntax-highlighting"
 import { Badge } from "@/components/ui/badge"
 import { runWorkerTask, workerTaskAborted } from "@/lib/worker-task"
 import { cn } from "@/lib/utils"
@@ -99,11 +105,14 @@ function PierreDiff({
       enableLineSelection: true,
       lineHoverHighlight: "line" as const,
       onGutterUtilityClick: commentSelection,
+      onPostRender: (node: HTMLElement) =>
+        labelPierreGutterUtility(node, `Comment ${path} diff selection`),
       overflow: scroll ? ("scroll" as const) : ("wrap" as const),
-      theme: { dark: "github-dark" as const, light: "github-light" as const },
+      theme: pierreSyntaxThemes,
       themeType: "system" as const,
+      unsafeCSS: pierreGutterUtilityCSS,
     }),
-    [commentSelection, scroll]
+    [commentSelection, path, scroll]
   )
 
   if (!patch.includes("@@")) {
@@ -122,26 +131,6 @@ function PierreDiff({
         className="blame-pierre-diff"
         options={options}
         patch={patch}
-        renderGutterUtility={() => (
-          <button
-            aria-label={`Comment ${path} diff selection`}
-            style={{
-              alignItems: "center",
-              background: "var(--color-primary, #2563eb)",
-              border: 0,
-              borderRadius: "0.375rem",
-              color: "white",
-              cursor: "pointer",
-              display: "flex",
-              height: "1.5rem",
-              justifyContent: "center",
-              width: "1.5rem",
-            }}
-            type="button"
-          >
-            <MessageSquareIcon size={13} />
-          </button>
-        )}
       />
     </div>
   )

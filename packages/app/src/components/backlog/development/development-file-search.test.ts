@@ -26,3 +26,8 @@ test("matches paths and keeps an empty query unfiltered", () => {
   assert.deepEqual(searchDevelopmentFiles(files, "main/terminal"), [files[2]])
   assert.deepEqual(searchDevelopmentFiles(files, "  "), files)
 })
+
+test("ignores case and punctuation in file queries", () => {
+  assert.deepEqual(searchDevelopmentFiles(files, "FILE.TREE.TSX"), [files[0]])
+  assert.deepEqual(searchDevelopmentFiles(files, "MAIN-terminal"), [files[2]])
+})

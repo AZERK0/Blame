@@ -5,6 +5,14 @@ export type DevelopmentFileSearchItem = {
   path: string
 }
 
+export function normalizeDevelopmentFileSearchText(value: string) {
+  return value
+    .normalize("NFKD")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase()
+    .replace(/[^\p{Letter}\p{Number}]+/gu, "")
+}
+
 const searchOptions: Fuse.IFuseOptions<DevelopmentFileSearchItem> = {
   ignoreLocation: true,
   keys: [
@@ -18,10 +26,16 @@ export function searchDevelopmentFiles(
   items: DevelopmentFileSearchItem[],
   query: string
 ) {
-  const normalizedQuery = query.trim()
+  const normalizedQuery = normalizeDevelopmentFileSearchText(query)
   if (!normalizedQuery) return items
 
-  return new Fuse(items, searchOptions)
+  const normalizedItems = items.map((item) => ({
+    name: normalizeDevelopmentFileSearchText(item.name),
+    path: normalizeDevelopmentFileSearchText(item.path),
+  }))
+
+  return new Fuse(normalizedItems, searchOptions)
     .search(normalizedQuery)
-    .map((result) => result.item)
+    .map((result) => items[result.refIndex])
+    .filter((item): item is DevelopmentFileSearchItem => Boolean(item))
 }
