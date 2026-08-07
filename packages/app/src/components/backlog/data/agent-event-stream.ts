@@ -9,7 +9,7 @@ type AgentEventSubscriptionState = {
   subscriptions: number
 }
 
-const rendererEventCoalescingDelayMs = 250
+const rendererEventCoalescingDelayMs = 100
 const activeSubscriptions = new Map<string, AgentEventSubscriptionState>()
 
 export function activeAgentEventSubscription(sessionId: string | undefined) {

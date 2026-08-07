@@ -390,6 +390,9 @@ function AgentConversationTurn({
             markdown={visibleResponse.detail}
             onFileLinkClick={onFileLinkClick}
             showFeedback={Boolean(finalMessage)}
+            streaming={
+              run.status === "running" && visibleResponse.status === "running"
+            }
           />
         ) : null}
         {finalMessage && run.diffEndRef ? (
@@ -950,6 +953,7 @@ function AgentActivityLeafItem({
         markdown={activity.detail}
         onFileLinkClick={onFileLinkClick}
         showFeedback={activity.messageKind === "final"}
+        streaming={runActive && activity.status === "running"}
       />
     )
   }
@@ -1499,6 +1503,7 @@ function AgentMarkdownTimelineItem({
   markdown,
   onFileLinkClick,
   showFeedback,
+  streaming,
 }: {
   alwaysVisible: boolean
   avatar?: React.ReactNode
@@ -1509,6 +1514,7 @@ function AgentMarkdownTimelineItem({
   markdown: string
   onFileLinkClick?: (path: string) => void
   showFeedback?: boolean
+  streaming?: boolean
 }) {
   const responseRef = useAnimatedBorderEffect(
     highlight ? "agent-response" : undefined,
@@ -1577,6 +1583,7 @@ function AgentMarkdownTimelineItem({
             }
           >
             <MarkdownEditor
+              animateAppend={streaming}
               markdown={markdown}
               readOnly
               onFileLinkClick={onFileLinkClick}

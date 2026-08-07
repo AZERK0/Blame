@@ -45,11 +45,13 @@ export type MarkdownBlock =
       code: string
       key: string
       language?: string
+      lineIndex: number
       type: "code"
     }
   | {
       header: MarkdownTableCell[]
       key: string
+      lineIndex: number
       rows: MarkdownTableCell[][]
       type: "table"
     }
@@ -142,7 +144,7 @@ export function markdownBlocks(markdown: string) {
       continue
     }
     blocks.push({
-      key: `line-${index}-${sourceLines[index]}`,
+      key: `line-${index}`,
       line: parsedLines[index],
       lineIndex: index,
       type: "line",
@@ -195,6 +197,7 @@ function markdownCodeBlock(lines: string[], start: number) {
           code: codeLines.join("\n"),
           key: `code-${start}`,
           ...(language ? { language } : {}),
+          lineIndex: start,
           type: "code" as const,
         },
         end: index,
@@ -206,6 +209,7 @@ function markdownCodeBlock(lines: string[], start: number) {
       code: codeLines.join("\n"),
       key: `code-${start}`,
       ...(language ? { language } : {}),
+      lineIndex: start,
       type: "code" as const,
     },
     end: lines.length - 1,
@@ -227,6 +231,7 @@ function markdownTableBlock(lines: string[], start: number) {
     block: {
       header,
       key: `table-${start}`,
+      lineIndex: start,
       rows,
       type: "table" as const,
     },

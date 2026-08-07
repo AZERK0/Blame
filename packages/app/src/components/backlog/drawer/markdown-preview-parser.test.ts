@@ -19,7 +19,7 @@ test("splits parsed markdown into lines and fenced code blocks", () => {
     ["line", "line", "code", "line"]
   )
   assert.deepEqual(blocks[0], {
-    key: "line-0-# Title",
+    key: "line-0",
     line: {
       kind: "heading-1",
       prefix: "# ",
@@ -32,10 +32,11 @@ test("splits parsed markdown into lines and fenced code blocks", () => {
     code: "const value = 1",
     key: "code-2",
     language: "ts",
+    lineIndex: 2,
     type: "code",
   })
   assert.deepEqual(blocks[3], {
-    key: "line-5-- item",
+    key: "line-5",
     line: markdownWysiwygLines(markdown)[5],
     lineIndex: 5,
     type: "line",
@@ -100,6 +101,7 @@ test("keeps an unclosed code fence as a code block", () => {
       code: "const value = 1",
       key: "code-0",
       language: "ts",
+      lineIndex: 0,
       type: "code",
     },
   ])
