@@ -6,7 +6,7 @@ import {
   fileIdFor,
 } from "./development-graph-elements.ts"
 
-test("builds compound directory nodes for changed files", () => {
+test("builds linked directory nodes for changed files", () => {
   assert.deepEqual(
     buildDevelopmentGraphElements([
       {
@@ -32,10 +32,17 @@ test("builds compound directory nodes for changed files", () => {
           id: "directory:src/components",
           label: "components",
           nodeType: "directory",
-          parent: "directory:src",
           path: "src/components",
         },
         group: "nodes",
+      },
+      {
+        data: {
+          id: "edge:directory:src->directory:src/components",
+          source: "directory:src",
+          target: "directory:src/components",
+        },
+        group: "edges",
       },
       {
         data: {
@@ -44,7 +51,6 @@ test("builds compound directory nodes for changed files", () => {
           id: "file:src/components/card.tsx",
           label: "card.tsx",
           nodeType: "file",
-          parent: "directory:src/components",
           path: "src/components/card.tsx",
           status: "modified",
         },
@@ -52,15 +58,30 @@ test("builds compound directory nodes for changed files", () => {
       },
       {
         data: {
+          id: "edge:directory:src/components->file:src/components/card.tsx",
+          source: "directory:src/components",
+          target: "file:src/components/card.tsx",
+        },
+        group: "edges",
+      },
+      {
+        data: {
           additions: 8,
           id: "file:src/index.ts",
           label: "index.ts",
           nodeType: "file",
-          parent: "directory:src",
           path: "src/index.ts",
           status: "added",
         },
         group: "nodes",
+      },
+      {
+        data: {
+          id: "edge:directory:src->file:src/index.ts",
+          source: "directory:src",
+          target: "file:src/index.ts",
+        },
+        group: "edges",
       },
     ]
   )

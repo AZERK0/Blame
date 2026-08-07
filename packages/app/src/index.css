@@ -181,7 +181,8 @@
 }
 
 @layer components {
-  .blame-pierre-file {
+  .blame-pierre-file,
+  .blame-pierre-diff {
     --diffs-light-bg: var(--background);
     --diffs-dark-bg: var(--background);
     --diffs-light: var(--foreground);

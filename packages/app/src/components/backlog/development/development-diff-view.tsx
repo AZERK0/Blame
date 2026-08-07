@@ -1,4 +1,5 @@
 import * as React from "react"
+import { MessageSquareIcon } from "lucide-react"
 import {
   diffLineKind,
   diffLines,
@@ -22,6 +23,7 @@ import {
 } from "@/components/backlog/development/pierre-gutter-utility"
 import { dispatchCodeSelectionAttachment } from "@/components/backlog/shared/comment-attachment-events"
 import { Badge } from "@/components/ui/badge"
+import { useTheme } from "@/components/providers/theme-provider"
 import { runWorkerTask, workerTaskAborted } from "@/lib/worker-task"
 import { cn } from "@/lib/utils"
 
@@ -79,6 +81,13 @@ function PierreDiff({
   scroll?: boolean
 }) {
   const syntaxHighlightingReady = usePierreSyntaxHighlighting(path)
+  const { theme } = useTheme()
+  const themeType =
+    theme === "system"
+      ? document.documentElement.classList.contains("dark")
+        ? "dark"
+        : "light"
+      : theme
   const lines = React.useMemo(() => diffLines(patch), [patch])
   const commentSelection = React.useCallback(
     (range: { end: number; start: number }) => {
@@ -109,10 +118,10 @@ function PierreDiff({
         labelPierreGutterUtility(node, `Comment ${path} diff selection`),
       overflow: scroll ? ("scroll" as const) : ("wrap" as const),
       theme: pierreSyntaxThemes,
-      themeType: "system" as const,
+      themeType,
       unsafeCSS: pierreGutterUtilityCSS,
     }),
-    [commentSelection, path, scroll]
+    [commentSelection, path, scroll, themeType]
   )
 
   if (!patch.includes("@@")) {
@@ -458,12 +467,14 @@ function visibleDiffWindow(
 }
 
 function useDiffLines(patch: string) {
-  const [lines, setLines] = React.useState<DiffCodeLine[]>([])
+  const [result, setResult] = React.useState<{
+    lines: DiffCodeLine[]
+    patch: string
+  }>({ lines: [], patch: "" })
 
   React.useEffect(() => {
     let active = true
     const controller = new AbortController()
-    setLines([])
     runWorkerTask<{ patch: string }, DiffCodeLine[]>(
       new URL("./development-diff.worker.ts", import.meta.url),
       { patch },
@@ -474,7 +485,7 @@ function useDiffLines(patch: string) {
         return diffLines(patch)
       })
       .then((nextLines) => {
-        if (active) setLines(nextLines)
+        if (active) setResult({ lines: nextLines, patch })
       })
     return () => {
       active = false
@@ -482,7 +493,7 @@ function useDiffLines(patch: string) {
     }
   }, [patch])
 
-  return lines
+  return result.patch === patch ? result.lines : []
 }
 
 function showCommentButton(

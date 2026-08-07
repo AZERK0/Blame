@@ -2,8 +2,8 @@ import * as React from "react"
 import { getFiletypeFromFileName, preloadHighlighter } from "@pierre/diffs"
 
 export const pierreSyntaxThemes = {
-  dark: "catppuccin-mocha",
-  light: "catppuccin-latte",
+  dark: "dark-plus",
+  light: "light-plus",
 } as const
 
 const pierreThemes = [

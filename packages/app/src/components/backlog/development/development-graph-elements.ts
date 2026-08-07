@@ -11,7 +11,6 @@ export type DevelopmentGraphNodeData = {
   id: string
   label: string
   nodeType: "directory" | "file"
-  parent?: string
   path: string
   status?: string
 }
@@ -51,10 +50,21 @@ export function buildDevelopmentGraphElements(diffs: DevelopmentGraphDiff[]) {
         label: lastPathSegment(path),
         nodeType: "directory",
         path,
-        ...(parentDirectory(path) ? { parent: parentDirectory(path) } : {}),
       },
       group: "nodes",
     })
+
+    const parent = parentDirectory(path)
+    if (parent) {
+      elements.push({
+        data: {
+          id: edgeId(parent, directoryId(path)),
+          source: parent,
+          target: directoryId(path),
+        },
+        group: "edges",
+      })
+    }
   }
 
   for (const diff of diffs) {
@@ -70,10 +80,21 @@ export function buildDevelopmentGraphElements(diffs: DevelopmentGraphDiff[]) {
         status: diff.status,
         ...(diff.additions === undefined ? {} : { additions: diff.additions }),
         ...(diff.deletions === undefined ? {} : { deletions: diff.deletions }),
-        ...(parentDirectory(path) ? { parent: parentDirectory(path) } : {}),
       },
       group: "nodes",
     })
+
+    const parent = parentDirectory(path)
+    if (parent) {
+      elements.push({
+        data: {
+          id: edgeId(parent, fileIdFor(path)),
+          source: parent,
+          target: fileIdFor(path),
+        },
+        group: "edges",
+      })
+    }
   }
 
   return elements
@@ -85,6 +106,10 @@ export function fileIdFor(path: string) {
 
 function directoryId(path: string) {
   return `directory:${path}`
+}
+
+function edgeId(source: string, target: string) {
+  return `edge:${source}->${target}`
 }
 
 function lastPathSegment(path: string) {

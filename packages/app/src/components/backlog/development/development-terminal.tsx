@@ -19,7 +19,6 @@ export function DevelopmentTerminal({ userStory }: { userStory?: UserStory }) {
   const platform = usePlatform()
   const terminalElement = React.useRef<HTMLDivElement>(null)
   const terminalSession = React.useRef<string | undefined>(undefined)
-  const [error, setError] = React.useState<string>()
   const [sessionId, setSessionId] = React.useState<string>()
 
   React.useEffect(() => {
@@ -35,8 +34,11 @@ export function DevelopmentTerminal({ userStory }: { userStory?: UserStory }) {
       convertEol: true,
       cursorBlink: true,
       fontFamily:
-        "var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace)",
+        "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace",
       fontSize: 12,
+      fontWeight: 400,
+      letterSpacing: 0,
+      lineHeight: 1.1,
       scrollback: 10_000,
       theme: terminalTheme,
     })
@@ -71,7 +73,6 @@ export function DevelopmentTerminal({ userStory }: { userStory?: UserStory }) {
         }
         sessionId = session.id
         terminalSession.current = session.id
-        setError(undefined)
         setSessionId(session.id)
         resize()
         unsubscribe = terminalApi.onEvent(session.id, (event) => {
@@ -86,13 +87,8 @@ export function DevelopmentTerminal({ userStory }: { userStory?: UserStory }) {
           terminal.write(event.data)
         })
       })
-      .catch((startError) => {
+      .catch(() => {
         if (cancelled) return
-        setError(
-          startError instanceof Error
-            ? startError.message
-            : "Unable to start terminal"
-        )
         terminal.write("\r\n\x1b[31mUnable to start terminal.\x1b[0m\r\n")
       })
 
@@ -128,29 +124,26 @@ export function DevelopmentTerminal({ userStory }: { userStory?: UserStory }) {
   }
 
   return (
-    <div className="grid h-full min-h-96 grid-rows-[minmax(0,1fr)_auto] bg-background">
+    <div className="relative h-full min-h-96 bg-background">
       <div
         aria-label="Development terminal"
         className="min-h-0 overflow-hidden bg-zinc-950 p-3"
         ref={terminalElement}
         role="application"
       />
-      <div className="flex items-center gap-3 border-t p-3">
-        <span className="min-w-0 flex-1 truncate font-mono text-xs text-muted-foreground">
-          {error ??
-            (sessionId ? "Interactive shell connected" : "Starting terminal…")}
-        </span>
-        {sessionId ? (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => void platform.terminal?.stop(sessionId)}
-          >
-            <SquareIcon />
-            Stop
-          </Button>
-        ) : null}
-      </div>
+      {sessionId ? (
+        <Button
+          aria-label="Stop terminal"
+          className="absolute top-3 right-3 size-7 bg-zinc-800/80 text-zinc-100 hover:bg-zinc-700"
+          size="icon"
+          title="Stop terminal"
+          type="button"
+          variant="secondary"
+          onClick={() => void platform.terminal?.stop(sessionId)}
+        >
+          <SquareIcon />
+        </Button>
+      ) : null}
     </div>
   )
 }

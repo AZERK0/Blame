@@ -8,71 +8,101 @@ import {
   buildDevelopmentGraphElements,
   type DevelopmentGraphNodeData,
 } from "@/components/backlog/development/development-graph-elements"
+import { useTheme } from "@/components/providers/theme-provider"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
 cytoscape.use(fcose)
 
-const graphStyle: cytoscape.StylesheetJson = [
-  {
-    selector: "node",
-    style: {
-      "background-color": "hsl(var(--muted-foreground))",
-      color: "hsl(var(--foreground))",
-      height: 28,
-      label: "data(label)",
-      "min-zoomed-font-size": 8,
-      "font-family": "var(--font-sans)",
-      "font-size": 11,
-      "text-max-width": 120,
-      "text-overflow-wrap": "ellipsis",
-      "text-valign": "center",
-      "text-wrap": "ellipsis",
-      width: 28,
+function graphStyleForTheme(isDark: boolean): cytoscape.StylesheetJson {
+  const palette = isDark
+    ? {
+        background: "#18181b",
+        border: "#3f3f46",
+        foreground: "#f4f4f5",
+        muted: "#27272a",
+        ring: "#3b82f6",
+      }
+    : {
+        background: "#fafafa",
+        border: "#e4e4e7",
+        foreground: "#18181b",
+        muted: "#f4f4f5",
+        ring: "#2563eb",
+      }
+
+  return [
+    {
+      selector: "node",
+      style: {
+        "background-color": palette.muted,
+        color: palette.foreground,
+        height: "28px",
+        label: "data(label)",
+        "min-zoomed-font-size": 8,
+        "font-family": "Source Sans 3 Variable, sans-serif",
+        "font-size": "11px",
+        "text-max-width": "120px",
+        "text-overflow-wrap": "whitespace",
+        "text-valign": "center",
+        "text-wrap": "ellipsis",
+        width: "28px",
+      },
     },
-  },
-  {
-    selector: 'node[nodeType = "directory"]',
-    style: {
-      "background-color": "hsl(var(--muted))",
-      "border-color": "hsl(var(--border))",
-      "border-width": 1,
-      "font-weight": 600,
-      padding: 14,
-      shape: "round-rectangle",
-      "text-valign": "top",
-      "text-halign": "center",
-      "text-margin-y": -6,
+    {
+      selector: 'node[nodeType = "directory"]',
+      style: {
+        "background-color": palette.muted,
+        "border-color": palette.border,
+        "border-width": 1,
+        "font-weight": 600,
+        padding: "14px",
+        shape: "round-rectangle",
+        "text-valign": "top",
+        "text-halign": "center",
+        "text-margin-y": -6,
+      },
     },
-  },
-  {
-    selector: 'node[nodeType = "file"]',
-    style: {
-      "border-color": "hsl(var(--background))",
-      "border-width": 2,
-      shape: "ellipse",
+    {
+      selector: 'node[nodeType = "file"]',
+      style: {
+        "border-color": palette.background,
+        "border-width": 2,
+        shape: "ellipse",
+      },
     },
-  },
-  {
-    selector: 'node[nodeType = "file"][status = "added"]',
-    style: { "background-color": "hsl(142 71% 45%)" },
-  },
-  {
-    selector: 'node[nodeType = "file"][status = "deleted"]',
-    style: { "background-color": "hsl(0 72% 51%)" },
-  },
-  {
-    selector: 'node[nodeType = "file"][status = "modified"]',
-    style: { "background-color": "hsl(38 92% 50%)" },
-  },
-  {
-    selector: "node:selected",
-    style: {
-      "border-color": "hsl(var(--ring))",
-      "border-width": 3,
+    {
+      selector: 'node[nodeType = "file"][status = "added"]',
+      style: { "background-color": "#10b981" },
     },
-  },
-]
+    {
+      selector: 'node[nodeType = "file"][status = "deleted"]',
+      style: { "background-color": "#ef4444" },
+    },
+    {
+      selector: 'node[nodeType = "file"][status = "modified"]',
+      style: { "background-color": "#f59e0b" },
+    },
+    {
+      selector: "edge",
+      style: {
+        "curve-style": "bezier",
+        "line-color": palette.border,
+        "target-arrow-color": palette.border,
+        "target-arrow-shape": "triangle",
+        opacity: 0.7,
+        width: 1.5,
+      },
+    },
+    {
+      selector: "node:selected",
+      style: {
+        "border-color": palette.ring,
+        "border-width": 3,
+      },
+    },
+  ]
+}
 
 export function DevelopmentGraph({
   diffs,
@@ -83,6 +113,10 @@ export function DevelopmentGraph({
 }) {
   const containerRef = React.useRef<HTMLDivElement>(null)
   const [selected, setSelected] = React.useState<DevelopmentGraphNodeData>()
+  const { theme } = useTheme()
+  const isDark =
+    theme === "dark" ||
+    (theme === "system" && document.documentElement.classList.contains("dark"))
 
   React.useEffect(() => {
     const container = containerRef.current
@@ -99,7 +133,7 @@ export function DevelopmentGraph({
         padding: 32,
       } as cytoscape.LayoutOptions,
       minZoom: 0.45,
-      style: graphStyle,
+      style: graphStyleForTheme(isDark),
     })
 
     const handleTap = (event: cytoscape.EventObject) => {
@@ -118,7 +152,7 @@ export function DevelopmentGraph({
       graph.removeListener("tap", "node", handleTap)
       graph.destroy()
     }
-  }, [diffs, onOpenFile])
+  }, [diffs, isDark, onOpenFile])
 
   return (
     <Card className="gap-0 py-0" size="sm">
