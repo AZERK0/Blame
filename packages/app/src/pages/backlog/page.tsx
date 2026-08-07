@@ -1225,7 +1225,7 @@ export function BacklogPage() {
         <div className="grid h-full min-w-500 auto-rows-[minmax(0,1fr)] grid-cols-6 gap-3 pb-3">
           {backlogColumns.map((column) => (
             <BacklogColumn
-              key={column.id}
+              key={`${backlog.projectId ?? "no-project"}:${column.id}`}
               column={column}
               diffStats={storyDiffStats}
               onAction={columnAction}

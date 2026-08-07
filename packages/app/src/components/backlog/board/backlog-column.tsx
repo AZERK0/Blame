@@ -8,9 +8,7 @@ import {
   type UserStory,
 } from "@/components/backlog/data/backlog-data"
 import type { OpenDrawer } from "@/components/backlog/shared/backlog-types"
-import {
-  UserStoryCard,
-} from "@/components/backlog/board/user-story-card"
+import { UserStoryCard } from "@/components/backlog/board/user-story-card"
 import { equalUserStoryCardStory } from "@/components/backlog/board/user-story-card-equality"
 import type { UserStoryDiffStats } from "@/components/backlog/development/user-story-diff-stats"
 import type {
@@ -27,6 +25,9 @@ import {
 } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import { recordPerformanceCount } from "@/lib/performance-diagnostics"
+
+const storiesPageSize = 20
+const storiesLoadAheadPx = 240
 
 const columnColors = {
   backlog: "border-emerald-500",
@@ -78,6 +79,43 @@ export const BacklogColumn = React.memo(function BacklogColumn({
   stories,
 }: BacklogColumnProps) {
   recordPerformanceCount("backlog.column.render")
+  const viewportRef = React.useRef<HTMLDivElement>(null)
+  const loadMoreRef = React.useRef<HTMLDivElement>(null)
+  const [visibleStoryCount, setVisibleStoryCount] =
+    React.useState(storiesPageSize)
+  const sortedStories = React.useMemo(
+    () => [...stories].sort(compareStoriesByRecency),
+    [stories]
+  )
+  const visibleStories = React.useMemo(
+    () => sortedStories.slice(0, visibleStoryCount),
+    [sortedStories, visibleStoryCount]
+  )
+  const hasMoreStories = visibleStoryCount < sortedStories.length
+  const loadMoreStories = React.useCallback(() => {
+    setVisibleStoryCount((current) =>
+      Math.min(current + storiesPageSize, sortedStories.length)
+    )
+  }, [sortedStories.length])
+
+  React.useEffect(() => {
+    if (!hasMoreStories) return
+    const viewport = viewportRef.current
+    const sentinel = loadMoreRef.current
+    if (!viewport || !sentinel) return
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) loadMoreStories()
+      },
+      {
+        root: viewport,
+        rootMargin: `0px 0px ${storiesLoadAheadPx}px`,
+      }
+    )
+    observer.observe(sentinel)
+    return () => observer.disconnect()
+  }, [hasMoreStories, loadMoreStories])
+
   return (
     <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-lg border bg-muted/30 shadow-xl ring-1 shadow-black/10 ring-foreground/15">
       <BacklogColumnHeader
@@ -85,9 +123,12 @@ export const BacklogColumn = React.memo(function BacklogColumn({
         count={stories.length}
         queueInitializing={queueInitializing}
       />
-      <ScrollArea className="min-h-0 flex-1 bg-foreground/5 dark:bg-background">
+      <ScrollArea
+        className="min-h-0 flex-1 bg-foreground/5 dark:bg-background"
+        viewportRef={viewportRef}
+      >
         <div className="flex flex-col gap-3 p-3">
-          {stories.map((story) => (
+          {visibleStories.map((story) => (
             <UserStoryCard
               key={story.id}
               cleanup={storyCleanup?.(story)}
@@ -107,6 +148,7 @@ export const BacklogColumn = React.memo(function BacklogColumn({
               titleGenerating={storyTitleGenerating?.(story)}
             />
           ))}
+          {hasMoreStories && <div ref={loadMoreRef} className="h-px" />}
           {column.id === "backlog" && (
             <Button
               type="button"
@@ -123,6 +165,16 @@ export const BacklogColumn = React.memo(function BacklogColumn({
     </section>
   )
 }, equalBacklogColumnProps)
+
+function compareStoriesByRecency(left: UserStory, right: UserStory) {
+  const createdAtDifference =
+    Date.parse(right.createdAt) - Date.parse(left.createdAt)
+  if (Number.isFinite(createdAtDifference) && createdAtDifference !== 0)
+    return createdAtDifference
+  if (right.storyNumber !== left.storyNumber)
+    return right.storyNumber - left.storyNumber
+  return right.id.localeCompare(left.id)
+}
 
 function equalBacklogColumnProps(
   previous: BacklogColumnProps,
