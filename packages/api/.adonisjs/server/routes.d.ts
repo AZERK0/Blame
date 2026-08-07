@@ -56,6 +56,7 @@ export type ScannedRoutes = {
     'providers.provider_credentials.store_o_auth': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.resolve': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'speech.speech_transcription.store': { paramsTuple?: []; params?: {} }
     'attachments.file_attachments.create_upload': { paramsTuple?: []; params?: {} }
     'attachments.file_attachments.complete': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'attachments.file_attachments.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -174,6 +175,7 @@ export type ScannedRoutes = {
     'providers.provider_credentials.store': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.store_o_auth': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.resolve': { paramsTuple?: []; params?: {} }
+    'speech.speech_transcription.store': { paramsTuple?: []; params?: {} }
     'attachments.file_attachments.create_upload': { paramsTuple?: []; params?: {} }
     'attachments.file_attachments.complete': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.quick_chats.quick_chats.store': { paramsTuple?: []; params?: {} }

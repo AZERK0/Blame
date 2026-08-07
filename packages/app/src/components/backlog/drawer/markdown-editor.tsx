@@ -74,6 +74,7 @@ import {
   type MarkdownWysiwygLine,
   type MarkdownWysiwygSegment,
 } from "@/components/backlog/drawer/markdown-wysiwyg-parser"
+import { SpeechToTextControl } from "@/components/backlog/drawer/speech-to-text-control"
 import {
   Command,
   CommandEmpty,
@@ -1843,6 +1844,9 @@ export const MarkdownEditor = React.forwardRef<
   const lastEmittedMarkdownRef = React.useRef(markdown)
   const markdownPropRef = React.useRef(markdown)
   const currentValueRef = React.useRef(markdown)
+  const speechInsertionSelectionRef = React.useRef<MarkdownSelection | null>(
+    null
+  )
   const activeSegmentKeyRef = React.useRef("")
   const editorRenderVersionRef = React.useRef(0)
   const structureRenderTimerRef = React.useRef<number | undefined>(undefined)
@@ -2256,6 +2260,33 @@ export const MarkdownEditor = React.forwardRef<
     }
   }
 
+  function rememberSpeechSelection() {
+    rememberEditorSelection()
+    speechInsertionSelectionRef.current = lastSelectionRef.current ?? {
+      end: value.length,
+      start: value.length,
+    }
+  }
+
+  function insertSpeechTranscription(transcription: string) {
+    const text = transcription.trim()
+    if (!text) return
+    const selection = speechInsertionSelectionRef.current ?? {
+      end: value.length,
+      start: value.length,
+    }
+    const start = Math.max(0, Math.min(selection.start, value.length))
+    const end = Math.max(start, Math.min(selection.end, value.length))
+    const prefix = start > 0 && !/\s/.test(value[start - 1] ?? "") ? " " : ""
+    const suffix = end < value.length && !/\s/.test(value[end] ?? "") ? " " : ""
+    const inserted = `${prefix}${text}${suffix}`
+    emitMarkdown(
+      markdownWithReplacement(value, start, end, inserted),
+      start + inserted.length
+    )
+    speechInsertionSelectionRef.current = null
+  }
+
   function handleSelectionChange() {
     rememberEditorSelection()
     updateMention()
@@ -2551,6 +2582,12 @@ export const MarkdownEditor = React.forwardRef<
                   >
                     <PaperclipIcon className="size-3.5" />
                   </Button>
+                  <ToolbarSeparator />
+                  <SpeechToTextControl
+                    disabled={optimizing || optimizingAttachments}
+                    onStartRecording={rememberSpeechSelection}
+                    onTranscription={insertSpeechTranscription}
+                  />
                   <ToolbarSeparator />
                   <MarkdownToolbar
                     disabled={optimizing}

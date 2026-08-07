@@ -24,6 +24,7 @@ export const controllers = {
   QuickChatAgentRuns: () => import('#controllers/quick_chat_agent_runs_controller'),
   QuickChatMessages: () => import('#controllers/quick_chat_messages_controller'),
   QuickChats: () => import('#controllers/quick_chats_controller'),
+  SpeechTranscription: () => import('#controllers/speech_transcription_controller'),
   StripeWebhooks: () => import('#controllers/stripe_webhooks_controller'),
   TelemetryIngestion: () => import('#controllers/telemetry_ingestion_controller'),
   TelemetrySessions: () => import('#controllers/telemetry_sessions_controller'),

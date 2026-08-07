@@ -1,0 +1,81 @@
+import SpeechTranscriptionRateLimiter from '#services/speech_transcription_rate_limiter'
+import SpeechTranscriptionService, {
+  SpeechTranscriptionError,
+} from '#services/speech_transcription_service'
+import type { SpeechTranscriptionConfig } from '#config/speech_transcription'
+import { test } from '@japa/runner'
+
+test.group('speech transcription', () => {
+  test('limits bursts while allowing concurrent requests below the configured limit', ({
+    assert,
+  }) => {
+    let now = 0
+    const limiter = new SpeechTranscriptionRateLimiter(2, 1, () => now)
+
+    const first = limiter.acquire('user-1')
+    assert.isNotNull(first)
+    assert.isNull(limiter.acquire('user-1'))
+    limiter.release(first!)
+    assert.isNotNull(limiter.acquire('user-2'))
+
+    now = 60_000
+    assert.isNotNull(limiter.acquire('user-1'))
+  })
+
+  test('sends base64 audio to OpenRouter and returns its transcription', async ({ assert }) => {
+    let requestBody: Record<string, unknown> | undefined
+    const fetcher = async (_input: string | URL | Request, init?: RequestInit) => {
+      requestBody = JSON.parse(String(init?.body)) as Record<string, unknown>
+      return jsonResponse({ text: '  Create a story from my voice.  ' })
+    }
+    const service = new SpeechTranscriptionService(testConfig(), fetcher as typeof fetch)
+
+    const result = await service.transcribe({
+      data: Buffer.from('voice').toString('base64'),
+      format: 'webm',
+    })
+
+    assert.equal(result.text, 'Create a story from my voice.')
+    assert.deepEqual(requestBody, {
+      input_audio: { data: Buffer.from('voice').toString('base64'), format: 'webm' },
+      model: 'openai/test-transcribe',
+      temperature: 0,
+    })
+  })
+
+  test('rejects malformed audio before calling OpenRouter', async ({ assert }) => {
+    let called = false
+    const fetcher = async () => {
+      called = true
+      return jsonResponse({ text: 'unexpected' })
+    }
+    const service = new SpeechTranscriptionService(testConfig(), fetcher as typeof fetch)
+
+    let error: unknown
+    try {
+      await service.transcribe({ data: 'not-base64', format: 'webm' })
+    } catch (caught) {
+      error = caught
+    }
+    assert.instanceOf(error, SpeechTranscriptionError)
+    assert.equal((error as SpeechTranscriptionError).status, 422)
+    assert.isFalse(called)
+  })
+})
+
+function testConfig(): SpeechTranscriptionConfig {
+  return {
+    apiKey: 'test-key',
+    maxConcurrentPerUser: 2,
+    model: 'openai/test-transcribe',
+    requestsPerMinute: 20,
+    timeoutMs: 1_000,
+  }
+}
+
+function jsonResponse(value: unknown) {
+  return new Response(JSON.stringify(value), {
+    headers: { 'Content-Type': 'application/json' },
+    status: 200,
+  })
+}

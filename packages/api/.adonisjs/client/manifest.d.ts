@@ -9,4 +9,5 @@
 /// <reference path="../../config/hash.ts" />
 /// <reference path="../../config/logger.ts" />
 /// <reference path="../../config/preview_runtime.ts" />
+/// <reference path="../../config/speech_transcription.ts" />
 /// <reference path="../../config/workspace_artifacts.ts" />

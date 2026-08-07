@@ -631,6 +631,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/provider_credentials_controller').default['destroy']>>>
     }
   }
+  'speech.speech_transcription.store': {
+    methods: ["POST"]
+    pattern: '/api/v1/speech/transcriptions'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/speech_transcription').transcribeSpeechValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/speech_transcription').transcribeSpeechValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/speech_transcription_controller').default['store']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/speech_transcription_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
   'attachments.file_attachments.create_upload': {
     methods: ["POST"]
     pattern: '/api/v1/attachments/uploads'

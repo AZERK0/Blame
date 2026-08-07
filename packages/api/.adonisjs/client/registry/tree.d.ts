@@ -141,6 +141,11 @@ export interface ApiDefinition {
       destroy: typeof routes['providers.provider_credentials.destroy']
     }
   }
+  speech: {
+    speechTranscription: {
+      store: typeof routes['speech.speech_transcription.store']
+    }
+  }
   attachments: {
     fileAttachments: {
       createUpload: typeof routes['attachments.file_attachments.create_upload']

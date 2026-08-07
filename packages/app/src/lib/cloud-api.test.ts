@@ -251,6 +251,30 @@ test("reports structured API validation errors", async () => {
   )
 })
 
+test("transcribes audio through the authenticated speech endpoint", async () => {
+  let request: { init?: RequestInit; url: string } | undefined
+  globalThis.fetch = async (input, init) => {
+    request = { init, url: String(input) }
+    return jsonResponse({ text: "Voice prompt" })
+  }
+
+  const result = await createCloudApi({
+    token: "session-token",
+    url: "https://api.blame.test",
+  }).transcribeAudio({ data: "dm9pY2U=", format: "webm" })
+
+  assert.equal(result.text, "Voice prompt")
+  assert.equal(request?.url, "https://api.blame.test/speech/transcriptions")
+  assert.deepEqual(JSON.parse(String(request?.init?.body)), {
+    data: "dm9pY2U=",
+    format: "webm",
+  })
+  assert.equal(
+    new Headers(request?.init?.headers).get("Authorization"),
+    "Bearer session-token"
+  )
+})
+
 function deviceAuthorizationResponse() {
   return {
     device_code: "secure-device-code",

@@ -318,6 +318,12 @@ const routes = {
     tokens: [{"old":"/api/v1/providers/credentials/:id","type":0,"val":"api","end":""},{"old":"/api/v1/providers/credentials/:id","type":0,"val":"v1","end":""},{"old":"/api/v1/providers/credentials/:id","type":0,"val":"providers","end":""},{"old":"/api/v1/providers/credentials/:id","type":0,"val":"credentials","end":""},{"old":"/api/v1/providers/credentials/:id","type":1,"val":"id","end":""}],
     types: placeholder as Registry['providers.provider_credentials.destroy']['types'],
   },
+  'speech.speech_transcription.store': {
+    methods: ["POST"],
+    pattern: '/api/v1/speech/transcriptions',
+    tokens: [{"old":"/api/v1/speech/transcriptions","type":0,"val":"api","end":""},{"old":"/api/v1/speech/transcriptions","type":0,"val":"v1","end":""},{"old":"/api/v1/speech/transcriptions","type":0,"val":"speech","end":""},{"old":"/api/v1/speech/transcriptions","type":0,"val":"transcriptions","end":""}],
+    types: placeholder as Registry['speech.speech_transcription.store']['types'],
+  },
   'attachments.file_attachments.create_upload': {
     methods: ["POST"],
     pattern: '/api/v1/attachments/uploads',

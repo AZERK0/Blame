@@ -310,6 +310,12 @@ export function createCloudApi(connection: CloudApiConnection) {
         }
       ).then(cloudMcpConfigurationRequired)
     },
+    transcribeAudio(input: { data: string; format: string }) {
+      return request<unknown>(connection, baseUrl, "/speech/transcriptions", {
+        body: JSON.stringify(input),
+        method: "POST",
+      }).then(cloudSpeechTranscription)
+    },
     projects() {
       return request<unknown>(connection, baseUrl, "/projects").then(
         cloudProjects
@@ -547,6 +553,14 @@ function cloudMcpConfigurationRequired(value: unknown) {
   if (!isRecord(configuration) || !Array.isArray(configuration.servers))
     throw new Error("Unable to read MCP configuration.")
   return configuration as CloudMcpConfiguration
+}
+
+function cloudSpeechTranscription(value: unknown) {
+  const transcription = transformerValue(value)
+  if (!isRecord(transcription) || typeof transcription.text !== "string") {
+    throw new Error("Unable to read speech transcription.")
+  }
+  return { text: transcription.text }
 }
 
 function cloudTelemetrySession(value: unknown): TelemetryExportSession {
