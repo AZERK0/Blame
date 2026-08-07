@@ -1509,6 +1509,7 @@ function AgentMarkdownTimelineItem({
   onFileLinkClick?: (path: string) => void
   showFeedback?: boolean
 }) {
+  const responseRef = React.useRef<HTMLDivElement>(null)
   const contentRef = React.useRef<HTMLDivElement>(null)
   const [expanded, setExpanded] = React.useState(false)
   const [contentOverflows, setContentOverflows] = React.useState(false)
@@ -1521,6 +1522,24 @@ function AgentMarkdownTimelineItem({
           "--agent-response-glow-color": effectGlowColor,
         } as React.CSSProperties)
       : undefined
+
+  React.useLayoutEffect(() => {
+    const response = responseRef.current
+    if (!highlight || !response) return
+
+    const updateEffectSize = () => {
+      const { width, height } = response.getBoundingClientRect()
+      const size = Math.ceil(Math.hypot(width, height) + 2)
+      response.style.setProperty("--agent-response-effect-size", `${size}px`)
+    }
+    updateEffectSize()
+    const observer = new ResizeObserver(updateEffectSize)
+    observer.observe(response)
+    return () => {
+      observer.disconnect()
+      response.style.removeProperty("--agent-response-effect-size")
+    }
+  }, [highlight])
 
   React.useEffect(() => {
     const content = contentRef.current
@@ -1545,6 +1564,7 @@ function AgentMarkdownTimelineItem({
       {avatar ? <div className="absolute top-0 -left-10">{avatar}</div> : null}
       <div className="grid min-w-0 gap-2">
         <div
+          ref={responseRef}
           className={cn(
             "min-w-0 [&>div]:bg-transparent [&>div]:p-0 [&>div]:shadow-none [&>div]:ring-0",
             highlight && "agent-response-effect",
