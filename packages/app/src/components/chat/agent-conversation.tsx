@@ -63,6 +63,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { usePlatform } from "@/context/platform"
+import { useAnimatedBorderEffect } from "@/hooks/use-animated-border-effect"
 import { cn } from "@/lib/utils"
 import { publicAssetUrl } from "@/lib/public-asset-url"
 
@@ -1509,7 +1510,10 @@ function AgentMarkdownTimelineItem({
   onFileLinkClick?: (path: string) => void
   showFeedback?: boolean
 }) {
-  const responseRef = React.useRef<HTMLDivElement>(null)
+  const responseRef = useAnimatedBorderEffect(
+    highlight ? "agent-response" : undefined,
+    effectColor
+  )
   const contentRef = React.useRef<HTMLDivElement>(null)
   const [expanded, setExpanded] = React.useState(false)
   const [contentOverflows, setContentOverflows] = React.useState(false)
@@ -1522,24 +1526,6 @@ function AgentMarkdownTimelineItem({
           "--agent-response-glow-color": effectGlowColor,
         } as React.CSSProperties)
       : undefined
-
-  React.useLayoutEffect(() => {
-    const response = responseRef.current
-    if (!highlight || !response) return
-
-    const updateEffectSize = () => {
-      const { width, height } = response.getBoundingClientRect()
-      const size = Math.ceil(Math.hypot(width, height) + 2)
-      response.style.setProperty("--agent-response-effect-size", `${size}px`)
-    }
-    updateEffectSize()
-    const observer = new ResizeObserver(updateEffectSize)
-    observer.observe(response)
-    return () => {
-      observer.disconnect()
-      response.style.removeProperty("--agent-response-effect-size")
-    }
-  }, [highlight])
 
   React.useEffect(() => {
     const content = contentRef.current

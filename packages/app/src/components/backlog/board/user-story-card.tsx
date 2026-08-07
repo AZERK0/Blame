@@ -21,6 +21,7 @@ import type { OpenDrawer } from "@/components/backlog/shared/backlog-types"
 import { equalUserStoryCardStory } from "@/components/backlog/board/user-story-card-equality"
 import { StoryActions } from "@/components/backlog/actions/story-actions"
 import { Button } from "@/components/ui/button"
+import { useAnimatedBorderEffect } from "@/hooks/use-animated-border-effect"
 import { recordPerformanceCount } from "@/lib/performance-diagnostics"
 import {
   Card,
@@ -75,8 +76,13 @@ export const UserStoryCard = React.memo(function UserStoryCard({
   titleGenerating,
 }: UserStoryCardProps) {
   recordPerformanceCount("backlog.card.render")
+  const stateEffectRef = useUserStoryStateEffect(story.status)
   return (
-    <div className="user-story-state-effect" data-story-state={story.status}>
+    <div
+      ref={stateEffectRef}
+      className="user-story-state-effect"
+      data-story-state={story.status}
+    >
       <Card
         size="sm"
         className="group/user-story relative z-1 rounded-lg bg-white! dark:bg-neutral-900!"
@@ -120,8 +126,13 @@ function equalUserStoryCardProps(
 }
 
 export function ReadOnlyUserStoryCard({ story }: { story: UserStory }) {
+  const stateEffectRef = useUserStoryStateEffect(story.status)
   return (
-    <div className="user-story-state-effect" data-story-state={story.status}>
+    <div
+      ref={stateEffectRef}
+      className="user-story-state-effect"
+      data-story-state={story.status}
+    >
       <Card
         size="sm"
         className="group/user-story relative z-1 rounded-lg bg-white! dark:bg-neutral-900!"
@@ -130,6 +141,16 @@ export function ReadOnlyUserStoryCard({ story }: { story: UserStory }) {
       </Card>
     </div>
   )
+}
+
+function useUserStoryStateEffect(status: UserStory["status"]) {
+  const effect =
+    status === "in-progress"
+      ? "story-progress"
+      : status === "in-review"
+        ? "story-review"
+        : undefined
+  return useAnimatedBorderEffect(effect)
 }
 
 function UserStoryCardBody({
