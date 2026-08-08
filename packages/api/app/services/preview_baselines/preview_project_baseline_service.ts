@@ -147,7 +147,7 @@ export default class PreviewProjectBaselineService {
           })
         })
         .whereNotIn('id', referenced)
-        .orderBy('updatedAt', 'asc')
+        .orderBy('createdAt', 'asc')
         .limit(limit)
       const freshRows = await PreviewProjectBaseline.query()
         .where('status', 'ready')

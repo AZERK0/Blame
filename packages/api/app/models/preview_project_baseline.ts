@@ -43,7 +43,7 @@ export default class PreviewProjectBaseline extends BaseModel {
   declare error: string | null
   @column()
   declare snapshotBytes: number | null
-  @column.dateTime()
+  @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
   @column.dateTime()
   declare lastUsedAt: DateTime | null
