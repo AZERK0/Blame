@@ -4,7 +4,6 @@ import {
   CodeIcon,
   EllipsisIcon,
   ExternalLinkIcon,
-  FilePenLineIcon,
   Heading2Icon,
   InfoIcon,
   ItalicIcon,
@@ -16,6 +15,7 @@ import {
   PaperclipIcon,
   QuoteIcon,
   Redo2Icon,
+  SparkleIcon,
   StrikethroughIcon,
   Trash2Icon,
   Undo2Icon,
@@ -489,16 +489,21 @@ const MarkdownOptimizeButton = React.memo(function MarkdownOptimizeButton({
           <Button
             type="button"
             aria-label="Enhance with AI"
-            className="absolute top-3 right-3 z-10 h-7 gap-1.5 rounded-lg border-primary/20 bg-gradient-to-r from-primary/90 to-sky-600 px-2.5 text-xs text-primary-foreground shadow-sm shadow-primary/15 hover:from-primary hover:to-sky-600/90"
+            className="h-8 gap-1.5 rounded-xl border-transparent bg-transparent px-2.5 text-[11px] font-semibold text-foreground shadow-[0_0_0_1px_oklch(0.7_0.17_250_/_0.12),0_0_8px_oklch(0.65_0.2_250_/_0.12)] ring-1 ring-foreground/20 transition-[filter] duration-150 hover:brightness-105 active:translate-y-0 focus-visible:ring-2 focus-visible:ring-sky-300/80"
             disabled={disabled}
             onClick={onOptimize}
+            style={{
+              background:
+                "linear-gradient(color-mix(in oklch, var(--muted) 68%, var(--background)), color-mix(in oklch, var(--muted) 68%, var(--background))) padding-box, linear-gradient(135deg, oklch(0.8 0.16 240 / 52%), oklch(0.7 0.21 245 / 52%), oklch(0.62 0.22 255 / 42%)) border-box",
+              backgroundClip: "padding-box, border-box",
+            }}
           >
             {optimizing ? (
               <LoaderCircleIcon className="size-3.5 animate-spin" />
             ) : (
-              <FilePenLineIcon className="size-3.5" />
+              <SparkleIcon className="size-3.5" />
             )}
-            Enhance with AI
+            Enhance
           </Button>
         </TooltipTrigger>
         <TooltipContent sideOffset={6}>
@@ -1797,6 +1802,7 @@ export const MarkdownEditor = React.forwardRef<
     onMarkdownChange?: (markdown: string) => void
     onOptimize?: (markdown: string) => Promise<string>
     onSubmitShortcut?: () => void
+    primaryAction?: React.ReactNode
     readOnly?: boolean
     toolbarEnd?: React.ReactNode
   }
@@ -1816,6 +1822,7 @@ export const MarkdownEditor = React.forwardRef<
     onMarkdownChange,
     onOptimize,
     onSubmitShortcut,
+    primaryAction,
     placeholder,
     readOnly,
     toolbarEnd,
@@ -2483,20 +2490,36 @@ export const MarkdownEditor = React.forwardRef<
             />
           ) : (
             <div className="relative">
-              {onOptimize && (
-                <MarkdownOptimizeButton
-                  disabled={optimizing}
-                  onOptimize={stableOptimize}
-                  optimizing={optimizing}
-                />
-              )}
+              <div className="pointer-events-none absolute top-3 right-3 z-10 flex max-w-[calc(100%-1.5rem)] items-center gap-1.5 rounded-2xl border border-border/70 bg-background/85 p-1 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/65">
+                {onOptimize && (
+                  <div className="pointer-events-auto shrink-0">
+                    <MarkdownOptimizeButton
+                      disabled={optimizing}
+                      onOptimize={stableOptimize}
+                      optimizing={optimizing}
+                    />
+                  </div>
+                )}
+                <div className="pointer-events-auto shrink-0">
+                  <SpeechToTextControl
+                    disabled={optimizing || optimizingAttachments}
+                    onStartRecording={rememberSpeechSelection}
+                    onTranscription={insertSpeechTranscription}
+                  />
+                </div>
+                {primaryAction ? (
+                  <div className="pointer-events-auto shrink-0">
+                    {primaryAction}
+                  </div>
+                ) : null}
+              </div>
               <MarkdownWysiwygEditor
                 activeSelection={activeSelection}
                 editorRef={setEditorElement}
                 className={cn(
                   minHeight,
                   maxHeight,
-                  "overflow-y-auto rounded-3xl bg-input/40 px-4 py-3.5 pr-40 dark:bg-muted"
+                  "overflow-y-auto rounded-3xl bg-input/40 px-4 py-3.5 pr-56 dark:bg-muted"
                 )}
                 markdown={value}
                 onFileLinkClick={stableFileLinkClick}
@@ -2582,12 +2605,6 @@ export const MarkdownEditor = React.forwardRef<
                   >
                     <PaperclipIcon className="size-3.5" />
                   </Button>
-                  <ToolbarSeparator />
-                  <SpeechToTextControl
-                    disabled={optimizing || optimizingAttachments}
-                    onStartRecording={rememberSpeechSelection}
-                    onTranscription={insertSpeechTranscription}
-                  />
                   <ToolbarSeparator />
                   <MarkdownToolbar
                     disabled={optimizing}

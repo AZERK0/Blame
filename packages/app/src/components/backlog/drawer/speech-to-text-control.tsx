@@ -213,7 +213,7 @@ export function SpeechToTextControl({
     return (
       <Button
         aria-label="Start voice input"
-        className="text-muted-foreground hover:text-foreground"
+        className="rounded-xl border-transparent text-muted-foreground hover:!border-transparent hover:!bg-transparent hover:text-foreground"
         disabled={!canStart}
         size="icon-sm"
         title="Start voice input"
@@ -231,7 +231,7 @@ export function SpeechToTextControl({
     return (
       <Button
         aria-label="Starting voice input"
-        className="text-muted-foreground"
+        className="rounded-xl text-muted-foreground"
         disabled
         size="icon-sm"
         title="Starting voice input"
@@ -269,7 +269,7 @@ export function SpeechToTextControl({
       </span>
       <Button
         aria-label="Cancel voice input"
-        className="text-muted-foreground hover:text-foreground"
+        className="rounded-xl text-muted-foreground hover:text-foreground"
         size="icon-sm"
         title="Cancel voice input"
         type="button"
@@ -281,7 +281,7 @@ export function SpeechToTextControl({
       </Button>
       <Button
         aria-label="Transcribe voice input"
-        className="text-emerald-600 hover:bg-emerald-500/10 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
+        className="rounded-xl text-emerald-600 hover:bg-emerald-500/10 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
         size="icon-sm"
         title="Transcribe voice input"
         type="button"

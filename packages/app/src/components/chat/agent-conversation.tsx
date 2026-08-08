@@ -597,31 +597,33 @@ export function AgentConversationComposer({
           minHeight="min-h-24"
           maxHeight="max-h-80"
           onSubmitShortcut={submitMessage}
+          primaryAction={
+            <Button
+              aria-label={primaryActionLabel}
+              className={cn(
+                "size-9 rounded-xl border p-0 text-white shadow-md disabled:border-muted disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none",
+                agentRunning
+                  ? "border-destructive bg-destructive shadow-destructive/25 hover:bg-destructive/90 hover:text-white"
+                  : "border-blue-500 bg-blue-500 shadow-blue-500/25 hover:bg-blue-600 hover:text-white"
+              )}
+              disabled={
+                agentRunning
+                  ? cancelingAgent || !onAgentCancel
+                  : disabled || !hasMessageBody
+              }
+              size="icon-sm"
+              type="button"
+              onClick={handlePrimaryAction}
+            >
+              {agentRunning ? (
+                <SquareIcon className="size-3.5 fill-current" />
+              ) : (
+                <ArrowUpIcon className="size-4" />
+              )}
+            </Button>
+          }
           toolbarEnd={toolbarEnd}
         />
-        <Button
-          aria-label={primaryActionLabel}
-          className={cn(
-            "absolute top-3 right-3 z-10 size-9 rounded-full p-0 text-white shadow-lg disabled:border-muted disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none",
-            agentRunning
-              ? "border-destructive bg-destructive shadow-destructive/25 hover:bg-destructive/90 hover:text-white"
-              : "border-blue-500 bg-blue-500 shadow-blue-500/25 hover:bg-blue-600 hover:text-white"
-          )}
-          disabled={
-            agentRunning
-              ? cancelingAgent || !onAgentCancel
-              : disabled || !hasMessageBody
-          }
-          size="icon-sm"
-          type="button"
-          onClick={handlePrimaryAction}
-        >
-          {agentRunning ? (
-            <SquareIcon className="size-3.5 fill-current" />
-          ) : (
-            <ArrowUpIcon className="size-4" />
-          )}
-        </Button>
       </div>
     </section>
   )
