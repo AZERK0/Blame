@@ -226,6 +226,18 @@ function useCloudPreviewRuntime(input: {
           setSession(active)
         }
         if (action === "start" || action === "restart") {
+          if (
+            active.pendingDeltaArtifactId &&
+            ["pending_local_sync", "conflict"].includes(active.state.sync)
+          ) {
+            active = (
+              await client.syncOut({
+                sessionId: active.id,
+                localPath: input.worktree,
+              })
+            ).session
+            setSession(active)
+          }
           active = await client.command({
             sessionId: active.id,
             command: { type: "resume-host" },

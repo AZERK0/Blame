@@ -87,6 +87,8 @@ export default await Env.create(new URL('../', import.meta.url), {
   BLAME_PREVIEW_GLOBAL_MONTHLY_BUDGET_USD: Env.schema.number.optional(),
   BLAME_PREVIEW_DISABLED_TENANT_IDS: Env.schema.string.optional(),
   BLAME_PREVIEW_IDLE_TIMEOUT_MINUTES: Env.schema.number.optional(),
+  BLAME_PREVIEW_SUSPENDED_RETENTION_MINUTES: Env.schema.number.optional(),
+  BLAME_PREVIEW_MAX_RETAINED_SUSPENDED: Env.schema.number.optional(),
   BLAME_PREVIEW_LEASE_SECONDS: Env.schema.number.optional(),
   BLAME_PREVIEW_RPO_SECONDS: Env.schema.number.optional(),
   BLAME_PREVIEW_EDGE_ORIGIN: Env.schema.string.optional({ format: 'url', tld: false }),

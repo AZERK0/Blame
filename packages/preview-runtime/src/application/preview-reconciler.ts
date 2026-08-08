@@ -46,7 +46,7 @@ export class PreviewReconciler {
         } else applyObservation(next, observation);
       }
       handle = await this.reconcileHost(driver, next, handle);
-      if (handle) await this.acknowledgeRemoteDelta(driver, next, handle);
+      await this.acknowledgeRemoteDelta(driver, next, handle);
       if (handle && next.desired.host === "active") {
         applyHandshake(next, (await driver.inspect(handle)).handshake);
         await this.reconcileEngine(driver, next, handle);
@@ -248,10 +248,18 @@ export class PreviewReconciler {
   private async acknowledgeRemoteDelta(
     driver: PreviewRuntimeDriver,
     record: PreviewSessionRecord,
-    handle: RuntimeHandle,
+    handle: RuntimeHandle | undefined,
   ) {
     const revision = record.lastAppliedLocalRevision;
     if (!revision) return;
+    if (!handle) {
+      if (record.state.sync === "applying") {
+        record.lastAcknowledgedRemoteRevision = revision;
+        record.pendingDeltaArtifactId = undefined;
+        record.state.sync = "clean";
+      }
+      return;
+    }
     if (
       record.lastAcknowledgedRemoteRevision !== revision &&
       record.state.host === "running"

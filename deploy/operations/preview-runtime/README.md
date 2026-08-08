@@ -50,6 +50,20 @@ per minute:
 node ace.js previews:reap --limit=50
 ```
 
+The same invocation releases the provider sandbox and its private snapshot once
+a suspended preview exceeds `BLAME_PREVIEW_SUSPENDED_RETENTION_MINUTES`, or when
+more than `BLAME_PREVIEW_MAX_RETAINED_SUSPENDED` private suspended sandboxes are
+retained globally. The logical preview session and any durable delta remain
+available; a later start recreates the sandbox and synchronizes the local
+workspace. The defaults (`60` minutes and `4` retained sandboxes) bound snapshot
+growth on a Hobby project while preserving short warm resumes.
+
+To run only this storage cleanup manually:
+
+```sh
+node ace.js previews:gc-snapshots --limit=50
+```
+
 Alert on a non-zero exit and retry. The command is idempotent: each reaper action
 uses the durable session revision and generation as its operation key. A failed
 delta export keeps the host recoverable and is retried; it does not delete the

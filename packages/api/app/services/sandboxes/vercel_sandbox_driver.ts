@@ -2,7 +2,7 @@ import { previewRuntimeConfig, type PreviewRuntimeConfig } from '#config/preview
 import PreviewEdgeRouteService from '#services/preview_gateway/preview_edge_route_service'
 import { vercelNetworkPolicy } from '#services/sandboxes/vercel_network_policy'
 import WorkspaceArtifactService from '#services/workspace_artifacts/workspace_artifact_service'
-import { Sandbox, type NetworkPolicy } from '@vercel/sandbox'
+import { Sandbox, Snapshot, type NetworkPolicy } from '@vercel/sandbox'
 import {
   ATTR_BLAME_OPERATION_STATUS,
   ATTR_BLAME_RUNTIME_NAME,
@@ -35,6 +35,7 @@ import {
   desiredPorts,
   effectiveSandboxTimeoutMinutes,
   inactiveObservation,
+  ownedSnapshotIdForDeletion,
   providerFailure,
   providerResourceMissing,
   retryableProviderError,
@@ -186,7 +187,7 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
         throw runnerFailure('BASELINE_SNAPSHOT_INVALID', 'Baseline snapshot identity is invalid.')
       }
       const previous = await this.findSandbox(payload, false)
-      await previous?.delete().catch(() => undefined)
+      if (previous) await this.deleteSandbox(previous, 'replace-baseline-sandbox')
       const timeout =
         effectiveSandboxTimeoutMinutes(
           this.config.sandbox.timeoutMinutes,
@@ -421,12 +422,20 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
     await this.routes.revokeSession(payload.sessionId)
     const sandbox = await this.findSandbox(payload, false)
     if (!sandbox) return { destroyedAt: new Date().toISOString(), pendingCleanupIds: [] }
-    await this.providerCall('delete', () => sandbox.delete())
+    await this.deleteSandbox(sandbox, 'delete')
     return { destroyedAt: new Date().toISOString(), pendingCleanupIds: [] }
   }
 
   async usage(handle: RuntimeHandle): Promise<RuntimeUsage> {
     const sandbox = await this.sandbox(vercelHandle(handle), false)
+    const snapshotBytes = sandbox.currentSnapshotId
+      ? await this.providerCall('snapshot-usage', () =>
+          Snapshot.get({
+            ...this.credentials(),
+            snapshotId: sandbox.currentSnapshotId!,
+          }).then((snapshot) => snapshot.sizeBytes)
+        )
+      : 0
     const activeCpuSeconds = (sandbox.totalActiveCpuDurationMs ?? 0) / 1000
     const durationSeconds = Math.max(60, (sandbox.totalDurationMs ?? 0) / 1000)
     const memoryGb = sandbox.memory ? sandbox.memory / 1024 : (sandbox.vcpus ?? 2) * 2
@@ -436,7 +445,7 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
       memoryGbSeconds,
       ingressBytes: sandbox.totalIngressBytes ?? 0,
       egressBytes: sandbox.totalEgressBytes ?? 0,
-      snapshotBytes: 0,
+      snapshotBytes,
       estimatedCostUsd:
         (activeCpuSeconds / 3600) * 0.128 +
         (memoryGbSeconds / 3600) * 0.0212 +
@@ -463,17 +472,35 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
       const createdAt =
         sandbox.createdAt < 10_000_000_000 ? sandbox.createdAt * 1000 : sandbox.createdAt
       if (activeNames.has(sandbox.name) || createdAt >= cutoff) continue
-      await this.providerCall('delete-orphan', async () => {
-        const resource = await Sandbox.get({
+      const resource = await this.providerCall('get-orphan', () =>
+        Sandbox.get({
           ...this.credentials(),
           name: sandbox.name,
           resume: false,
         })
-        await resource.delete()
-      })
+      )
+      await this.deleteSandbox(resource, 'delete-orphan')
       deleted += 1
     }
     return { deleted }
+  }
+
+  private async deleteSandbox(sandbox: Sandbox, operation: string) {
+    const snapshotId = ownedSnapshotIdForDeletion(sandbox.status, sandbox.currentSnapshotId)
+    if (snapshotId) {
+      await this.providerCall(`${operation}-snapshot`, async () => {
+        try {
+          const snapshot = await Snapshot.get({
+            ...this.credentials(),
+            snapshotId,
+          })
+          if (snapshot.status !== 'deleted') await snapshot.delete()
+        } catch (error) {
+          if (!providerResourceMissing(error)) throw error
+        }
+      })
+    }
+    await this.providerCall(operation, () => sandbox.delete())
   }
 
   private async runnerCall<T>(handle: RuntimeHandle, request: Record<string, unknown>) {

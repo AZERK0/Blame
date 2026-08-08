@@ -74,6 +74,13 @@ export function shortTag(value: string) {
   return createHash('sha256').update(value).digest('hex').slice(0, 24)
 }
 
+export function ownedSnapshotIdForDeletion(
+  status: 'pending' | 'running' | 'stopping' | 'stopped' | 'failed' | 'aborted' | 'snapshotting',
+  currentSnapshotId?: string
+) {
+  return ['stopped', 'aborted', 'failed'].includes(status) ? currentSnapshotId : undefined
+}
+
 export function runnerFailure(code: string, message: string) {
   return new PreviewRuntimeError({
     code: code.includes('HEALTH') ? 'HEALTHCHECK_FAILED' : 'ENGINE_START_FAILED',

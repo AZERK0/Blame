@@ -61,6 +61,28 @@ export default class PreviewSessionRepository implements SessionRepository {
     return Promise.all(models.map((model) => this.record(model)))
   }
 
+  async listSuspendedSnapshotCandidates(cutoff: string, maxRetained: number, limit: number) {
+    const suspended = () =>
+      PreviewSession.query()
+        .whereNotNull('providerHandleEncrypted')
+        .whereRaw("JSON_UNQUOTE(JSON_EXTRACT(state, '$.host')) = 'suspended'")
+    const expired = await suspended()
+      .where('lastActivityAt', '<=', DateTime.fromISO(cutoff).toJSDate())
+      .orderBy('lastActivityAt', 'asc')
+      .limit(limit)
+    const newest = await suspended()
+      .orderBy('lastActivityAt', 'desc')
+      .orderBy('id', 'desc')
+      .limit(maxRetained + limit)
+    const overflow = newest.slice(maxRetained)
+    const candidates = [
+      ...new Map([...expired, ...overflow].map((model) => [model.id, model])).values(),
+    ]
+      .sort((left, right) => left.lastActivityAt.toMillis() - right.lastActivityAt.toMillis())
+      .slice(0, limit)
+    return Promise.all(candidates.map((model) => this.record(model)))
+  }
+
   async getRuntimeHandle(sessionId: string) {
     const model = await PreviewSession.query().where('id', sessionId).first()
     if (!model?.providerHandleEncrypted) return undefined

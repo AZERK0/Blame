@@ -1,5 +1,6 @@
 import {
   effectiveSandboxTimeoutMinutes,
+  ownedSnapshotIdForDeletion,
   providerFailure,
   providerResourceMissing,
   retryableProviderError,
@@ -42,6 +43,13 @@ test.group('Vercel sandbox provider errors', () => {
       maxDurationMinutes: 24 * 60,
       maxVcpus: 32,
     })
+  })
+
+  test('only deletes a snapshot owned by an inactive sandbox', ({ assert }) => {
+    assert.equal(ownedSnapshotIdForDeletion('stopped', 'snap_private'), 'snap_private')
+    assert.equal(ownedSnapshotIdForDeletion('failed', 'snap_private'), 'snap_private')
+    assert.isUndefined(ownedSnapshotIdForDeletion('running', 'snap_shared_baseline'))
+    assert.isUndefined(ownedSnapshotIdForDeletion('snapshotting', 'snap_private'))
   })
 })
 

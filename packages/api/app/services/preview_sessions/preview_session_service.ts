@@ -18,7 +18,7 @@ import PreviewCapabilityService from '#services/preview_gateway/preview_capabili
 import PreviewProjectBaselineService, {
   type PreviewBaselineSourceMetadata,
 } from '#services/preview_baselines/preview_project_baseline_service'
-import { previewRuntimeConfig } from '#config/preview_runtime'
+import { previewRuntimeConfig, type PreviewRuntimeConfig } from '#config/preview_runtime'
 import { DateTime } from 'luxon'
 import { createHash } from 'node:crypto'
 import {
@@ -43,6 +43,7 @@ export type CreateManagedPreviewInput = {
 }
 
 export type PreviewSessionServiceDependencies = {
+  config?: PreviewRuntimeConfig
   repository?: PreviewSessionRepository
   lock?: PreviewDistributedLock
   eventSink?: DatabasePreviewEventSink
@@ -54,6 +55,7 @@ export type PreviewSessionServiceDependencies = {
 }
 
 export default class PreviewSessionService {
+  private readonly config: PreviewRuntimeConfig
   private readonly repository: PreviewSessionRepository
   private readonly lock: PreviewDistributedLock
   private readonly eventSink: DatabasePreviewEventSink
@@ -68,6 +70,7 @@ export default class PreviewSessionService {
   private readonly orchestrator: PreviewOrchestrator
 
   constructor(dependencies: PreviewSessionServiceDependencies = {}) {
+    this.config = dependencies.config ?? previewRuntimeConfig()
     this.repository = dependencies.repository ?? new PreviewSessionRepository()
     this.lock = dependencies.lock ?? new PreviewDistributedLock()
     this.eventSink = dependencies.eventSink ?? new DatabasePreviewEventSink()
@@ -123,6 +126,9 @@ export default class PreviewSessionService {
         if (recovered.state.host === 'running') await this.lease.renew(sessionId, ownerUserId)
         return recovered
       }
+      await this.releaseSuspendedSnapshots(
+        Math.max(10, this.config.maxRetainedSuspended + 1)
+      ).catch(() => undefined)
       const requestedVcpus = input.resourceSize?.vcpus ?? 2
       await this.quota.assertCanCreate(ownerUserId, requestedVcpus)
       const session = await this.orchestrator.create({
@@ -418,9 +424,13 @@ export default class PreviewSessionService {
     }
     return this.lock.withLock(sessionId, async ({ fencingToken }) => {
       const record = await this.repository.get(sessionId)
+      if (!record) throw new Error('Preview runtime is not provisioned.')
       const handle = await this.fencedHandle(sessionId, fencingToken)
-      const driver = record && this.drivers.get(record.profile)
-      if (!record || !handle || !driver) throw new Error('Preview runtime is not provisioned.')
+      if (!handle && record.pendingDeltaArtifactId) {
+        return this.artifacts.download(record.pendingDeltaArtifactId, ownerUserId)
+      }
+      const driver = this.drivers.get(record.profile)
+      if (!handle || !driver) throw new Error('Preview runtime is not provisioned.')
       if (remoteWritersActive(record.state)) {
         throw new PreviewRuntimeError({
           code: 'SYNC_CONFLICT',
@@ -471,15 +481,66 @@ export default class PreviewSessionService {
         results.push({ id: session.id, status: 'failed' })
       }
     }
-    await Promise.all([
+    const [, , , released] = await Promise.all([
       this.artifacts.cleanupExpired(limit * 5),
       this.tickets.cleanupExpired(limit * 10),
       this.baselines.gc(limit),
+      this.releaseSuspendedSnapshots(limit),
     ])
+    for (const result of released) {
+      if (result.status === 'failed') results.push({ id: result.id, status: 'failed' })
+    }
     try {
       await this.sweepProviderOrphans()
     } catch {
       results.push({ id: 'provider-orphan-sweep', status: 'failed' })
+    }
+    return results
+  }
+
+  async releaseSuspendedSnapshots(limit = 50) {
+    const cutoff = DateTime.utc().minus({ minutes: this.config.suspendedRetentionMinutes }).toISO()!
+    const candidates = await this.repository.listSuspendedSnapshotCandidates(
+      cutoff,
+      this.config.maxRetainedSuspended,
+      limit
+    )
+    const results: Array<{ id: string; status: 'released' | 'skipped' | 'failed' }> = []
+    for (const candidate of candidates) {
+      try {
+        const status = await this.lock.withLock(candidate.id, async ({ fencingToken }) => {
+          const record = await this.repository.get(candidate.id)
+          if (!record || record.state.host !== 'suspended') return 'skipped' as const
+          const handle = await this.fencedHandle(candidate.id, fencingToken)
+          const driver = this.drivers.get(record.profile)
+          if (!handle || !driver) return 'skipped' as const
+          await driver.destroyHost(handle)
+          await this.repository.setRuntimeHandle(record.id, undefined, fencingToken)
+          record.state.host = 'suspended'
+          record.state.engine = 'stopped'
+          record.state.preview = 'closed'
+          record.endpointMap = undefined
+          record.leaseExpiresAt = undefined
+          record.idleDeadlineAt = undefined
+          record.revision += 1
+          await this.repository.save(record, record.revision - 1)
+          await this.tickets.revokeSession(record.id)
+          await this.eventSink
+            .append({
+              sessionId: record.id,
+              timestamp: DateTime.utc().toISO()!,
+              type: 'state',
+              state: structuredClone(record.state),
+              stream: 'system',
+              message: 'Suspended preview snapshot released by retention policy.',
+            })
+            .catch(() => undefined)
+          return 'released' as const
+        })
+        results.push({ id: candidate.id, status })
+      } catch {
+        results.push({ id: candidate.id, status: 'failed' })
+      }
     }
     return results
   }

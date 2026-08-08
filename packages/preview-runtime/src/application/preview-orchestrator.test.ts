@@ -185,6 +185,57 @@ test("exports before suspension and defers runner ack until resume", async () =>
   assert.equal(destroyed.state.host, "destroyed");
 });
 
+test("acknowledges a durable delta after the retained sandbox was released", async () => {
+  const { driver, orchestrator, plan, repository } = fixture();
+  await orchestrator.create({
+    id: "session",
+    userStoryId: "story",
+    ownerUserId: "owner",
+    profile: "vercel-compose",
+    plan,
+    planHash: "hash",
+    cloudUploadConsentAt: new Date().toISOString(),
+  });
+  const suspended = await orchestrator.command(
+    "session",
+    { type: "suspend-host" },
+    "suspend",
+  );
+  await repository.setRuntimeHandle("session", undefined);
+
+  const acknowledged = await orchestrator.command(
+    "session",
+    {
+      type: "ack-local-sync",
+      deltaRevision: suspended.lastExportedJournalRevision!,
+    },
+    "ack",
+  );
+
+  assert.equal(acknowledged.state.host, "suspended");
+  assert.equal(acknowledged.state.sync, "clean");
+  assert.equal(acknowledged.pendingDeltaArtifactId, undefined);
+  assert.equal(
+    acknowledged.lastAcknowledgedRemoteRevision,
+    suspended.lastExportedJournalRevision,
+  );
+  assert.equal(
+    driver.calls.filter((call) => call === "acknowledgeDelta").length,
+    0,
+  );
+
+  const resumed = await orchestrator.command(
+    "session",
+    { type: "resume-host" },
+    "resume",
+  );
+  assert.equal(resumed.state.host, "running");
+  assert.equal(
+    driver.calls.filter((call) => call === "provisionHost").length,
+    2,
+  );
+});
+
 test("still suspends compute when a durable delta export fails", async () => {
   const { driver, orchestrator, plan } = fixture();
   await orchestrator.create({
