@@ -13,7 +13,7 @@ const rateLimiter = new SpeechTranscriptionRateLimiter(
 )
 
 export default class SpeechTranscriptionController {
-  async store({ auth, request, response }: HttpContext) {
+  async store({ auth, request, response, logger }: HttpContext) {
     const reservation = rateLimiter.acquire(auth.getUserOrFail().id)
     if (!reservation) {
       response.header('Retry-After', '60')
@@ -27,6 +27,15 @@ export default class SpeechTranscriptionController {
       return await new SpeechTranscriptionService().transcribe(input)
     } catch (error) {
       if (error instanceof SpeechTranscriptionError) {
+        if (error.diagnostics) {
+          logger.warn(
+            {
+              event_name: 'blame.speech_transcription.upstream_failure',
+              ...error.diagnostics,
+            },
+            'Speech transcription upstream request failed'
+          )
+        }
         return response.status(error.status).send({ message: error.message })
       }
       throw error

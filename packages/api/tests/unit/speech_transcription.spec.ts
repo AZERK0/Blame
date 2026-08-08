@@ -24,8 +24,10 @@ test.group('speech transcription', () => {
 
   test('sends base64 audio to OpenRouter and returns its transcription', async ({ assert }) => {
     let requestBody: Record<string, unknown> | undefined
+    let requestMethod: string | undefined
     const fetcher = async (_input: string | URL | Request, init?: RequestInit) => {
       requestBody = JSON.parse(String(init?.body)) as Record<string, unknown>
+      requestMethod = init?.method
       return jsonResponse({ text: '  Create a story from my voice.  ' })
     }
     const service = new SpeechTranscriptionService(testConfig(), fetcher as typeof fetch)
@@ -36,6 +38,7 @@ test.group('speech transcription', () => {
     })
 
     assert.equal(result.text, 'Create a story from my voice.')
+    assert.equal(requestMethod, 'POST')
     assert.deepEqual(requestBody, {
       input_audio: { data: Buffer.from('voice').toString('base64'), format: 'webm' },
       model: 'openai/test-transcribe',
@@ -61,6 +64,39 @@ test.group('speech transcription', () => {
     assert.equal((error as SpeechTranscriptionError).status, 422)
     assert.isFalse(called)
   })
+
+  test('keeps safe upstream diagnostics when OpenRouter rejects the audio', async ({ assert }) => {
+    const fetcher = async () =>
+      jsonResponse(
+        { error: { code: 'invalid_request_error', message: 'unsupported audio format' } },
+        400,
+        { 'x-request-id': 'openrouter-request-123' }
+      )
+    const service = new SpeechTranscriptionService(testConfig(), fetcher as typeof fetch)
+
+    let error: unknown
+    try {
+      await service.transcribe({
+        data: Buffer.from('voice').toString('base64'),
+        format: 'webm',
+      })
+    } catch (caught) {
+      error = caught
+    }
+
+    assert.instanceOf(error, SpeechTranscriptionError)
+    assert.equal((error as SpeechTranscriptionError).status, 502)
+    assert.deepEqual((error as SpeechTranscriptionError).diagnostics, {
+      audioBytes: 5,
+      format: 'webm',
+      model: 'openai/test-transcribe',
+      phase: 'response',
+      upstreamError: 'unsupported audio format',
+      upstreamGenerationId: undefined,
+      upstreamRequestId: 'openrouter-request-123',
+      upstreamStatus: 400,
+    })
+  })
 })
 
 function testConfig(): SpeechTranscriptionConfig {
@@ -73,9 +109,9 @@ function testConfig(): SpeechTranscriptionConfig {
   }
 }
 
-function jsonResponse(value: unknown) {
+function jsonResponse(value: unknown, status = 200, headers?: Record<string, string>) {
   return new Response(JSON.stringify(value), {
-    headers: { 'Content-Type': 'application/json' },
-    status: 200,
+    headers: { 'Content-Type': 'application/json', ...headers },
+    status,
   })
 }

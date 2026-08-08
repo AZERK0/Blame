@@ -10,10 +10,23 @@ type SpeechTranscriptionInput = {
   format: SpeechTranscriptionFormat
 }
 
+export type SpeechTranscriptionDiagnostics = {
+  audioBytes: number
+  cause?: string
+  format: SpeechTranscriptionFormat
+  model: string
+  phase: 'request' | 'response'
+  upstreamError?: string
+  upstreamGenerationId?: string
+  upstreamRequestId?: string
+  upstreamStatus?: number
+}
+
 export class SpeechTranscriptionError extends Error {
   constructor(
     message: string,
-    readonly status: number
+    readonly status: number,
+    readonly diagnostics?: SpeechTranscriptionDiagnostics
   ) {
     super(message)
     this.name = 'SpeechTranscriptionError'
@@ -36,6 +49,12 @@ export default class SpeechTranscriptionService {
       throw new SpeechTranscriptionError('Audio recording is too large.', 413)
     }
 
+    const diagnostics = {
+      audioBytes: audio.byteLength,
+      format: input.format,
+      model: this.config.model,
+    }
+
     let response: Response
     try {
       response = await this.fetcher('https://openrouter.ai/api/v1/audio/transcriptions', {
@@ -51,10 +70,15 @@ export default class SpeechTranscriptionService {
           'HTTP-Referer': envSiteUrl(),
           'X-OpenRouter-Title': 'Blame',
         },
+        method: 'POST',
         signal: AbortSignal.timeout(this.config.timeoutMs),
       })
-    } catch {
-      throw new SpeechTranscriptionError('Speech transcription is temporarily unavailable.', 503)
+    } catch (error) {
+      throw new SpeechTranscriptionError('Speech transcription is temporarily unavailable.', 503, {
+        ...diagnostics,
+        cause: errorMessage(error),
+        phase: 'request',
+      })
     }
 
     const body = await response.json().catch(() => null)
@@ -63,16 +87,59 @@ export default class SpeechTranscriptionService {
         response.status === 429
           ? 'Speech transcription is temporarily busy.'
           : 'Speech transcription is temporarily unavailable.',
-        response.status === 429 ? 503 : 502
+        response.status === 429 ? 503 : 502,
+        {
+          ...diagnostics,
+          phase: 'response',
+          upstreamError: upstreamError(body),
+          upstreamGenerationId: response.headers.get('x-generation-id') ?? undefined,
+          upstreamRequestId: response.headers.get('x-request-id') ?? undefined,
+          upstreamStatus: response.status,
+        }
       )
     }
 
     const text = transcriptionText(body)
     if (text === undefined) {
-      throw new SpeechTranscriptionError('Speech transcription returned an invalid response.', 502)
+      throw new SpeechTranscriptionError(
+        'Speech transcription returned an invalid response.',
+        502,
+        {
+          ...diagnostics,
+          phase: 'response',
+          upstreamGenerationId: response.headers.get('x-generation-id') ?? undefined,
+          upstreamRequestId: response.headers.get('x-request-id') ?? undefined,
+          upstreamStatus: response.status,
+        }
+      )
     }
     return { text }
   }
+}
+
+function errorMessage(error: unknown) {
+  if (error instanceof Error) return `${error.name}: ${error.message}`
+  return String(error)
+}
+
+function upstreamError(value: unknown) {
+  if (!value || typeof value !== 'object') return undefined
+  const error = 'error' in value ? value.error : undefined
+  if (typeof error === 'string') return truncate(error)
+  if (
+    error &&
+    typeof error === 'object' &&
+    'message' in error &&
+    typeof error.message === 'string'
+  ) {
+    return truncate(error.message)
+  }
+  if ('message' in value && typeof value.message === 'string') return truncate(value.message)
+  return undefined
+}
+
+function truncate(value: string) {
+  return value.length > 500 ? `${value.slice(0, 500)}…` : value
 }
 
 function decodeAudio(data: string) {
