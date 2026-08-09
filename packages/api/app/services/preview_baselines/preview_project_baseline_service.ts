@@ -47,6 +47,7 @@ type EnsureInput = {
 
 const inFlight = new Map<string, Promise<PreviewProjectBaseline | undefined>>()
 const telemetry = getBlameTelemetry()
+const failedBaselineRetentionHours = 24
 
 export default class PreviewProjectBaselineService {
   constructor(
@@ -139,12 +140,22 @@ export default class PreviewProjectBaselineService {
       const expiredRows = await PreviewProjectBaseline.query()
         .whereNotIn('status', ['deleting'])
         .where((query) => {
-          query.where('status', 'failed').orWhere((expired) => {
-            expired
-              .where('status', 'ready')
-              .whereNotNull('expiresAt')
-              .where('expiresAt', '<=', DateTime.utc().toJSDate())
-          })
+          query
+            .where((failed) => {
+              failed
+                .where('status', 'failed')
+                .where(
+                  'createdAt',
+                  '<=',
+                  DateTime.utc().minus({ hours: failedBaselineRetentionHours }).toJSDate()
+                )
+            })
+            .orWhere((expired) => {
+              expired
+                .where('status', 'ready')
+                .whereNotNull('expiresAt')
+                .where('expiresAt', '<=', DateTime.utc().toJSDate())
+            })
         })
         .whereNotIn('id', referenced)
         .orderBy('createdAt', 'asc')
