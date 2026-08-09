@@ -10,6 +10,7 @@ export async function measureRunnerPhase<T>(
     | "compose.build"
     | "dependencies.install"
     | "services.start"
+    | "baseline.readiness"
     | "preview.readiness",
   operation: () => Promise<T>,
 ) {

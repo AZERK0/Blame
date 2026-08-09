@@ -31,6 +31,7 @@ import { normalizeRuntimeSelection } from "./supervisor/runtime-selection.js";
 import { probeServices } from "./supervisor/service-probes.js";
 import { GatewaySupervisor } from "./gateway/gateway-supervisor.js";
 import { importSourceArtifact } from "./workspace/source-importer.js";
+import { refreshWorkspacePreservingWarmCaches } from "./workspace/warm-cache.js";
 import {
   acknowledgeSourceDelta,
   prepareSourceDelta,
@@ -195,6 +196,29 @@ export class RunnerApplication {
       throw runnerError("ENGINE_RUNNING", "Baseline engine is running.");
     await compose.prepare(request.plan, baselineBindingUrls(request.plan));
     await compose.warm(request.plan);
+    let serviceCachesWarmed = false;
+    try {
+      await compose.start(request.plan, {
+        configurationId: "baseline-warmup",
+        serviceIds: request.plan.services.map(({ id }) => id),
+      });
+      const targets = await compose.targets();
+      const probes = await measureRunnerPhase("baseline.readiness", () =>
+        probeServices(request.plan, targets),
+      );
+      serviceCachesWarmed = probes.every(
+        ({ running, healthy }) => running && healthy !== false,
+      );
+    } catch {
+      serviceCachesWarmed = false;
+    } finally {
+      await compose.stop();
+    }
+    const warmCachePaths = await refreshWorkspacePreservingWarmCaches(
+      async () => {
+        await importSourceArtifact(request.source);
+      },
+    );
     await writeFile(runtimePaths.plan, JSON.stringify(request.plan), {
       mode: 0o600,
       flush: true,
@@ -209,7 +233,7 @@ export class RunnerApplication {
       sessionId: request.sessionId,
       generation: request.generation,
     });
-    return { prepared: true };
+    return { prepared: true, serviceCachesWarmed, warmCachePaths };
   }
 
   private async sanitizeSnapshot() {

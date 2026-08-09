@@ -71,6 +71,7 @@ export default class VercelSandboxBaselineProvider implements PreviewBaselinePro
         sessionId: `baseline-${input.fingerprint.slice(0, 24)}`,
         generation: 1,
         plan: input.plan,
+        source: input.source,
       })
       await runnerCall(sandbox, { operation: 'sanitize-snapshot' })
       const snapshot = await sandbox.snapshot({

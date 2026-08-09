@@ -64,6 +64,7 @@ export type RunnerRequest = (
   | {
       operation: "warm-baseline";
       plan: PreviewExecutionPlan;
+      source: SourceArtifact;
       sessionId: string;
       generation: number;
     }
