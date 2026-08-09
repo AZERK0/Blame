@@ -274,6 +274,7 @@ export type UploadTarget = {
     fingerprint: string;
     status: "building" | "ready" | "failed" | "expired" | "deleting";
     baseRevision: string;
+    match?: "exact" | "cache";
     providerSnapshotId?: string;
   };
 };

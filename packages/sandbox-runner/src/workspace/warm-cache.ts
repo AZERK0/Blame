@@ -19,14 +19,13 @@ const skippedDirectoryNames = new Set([
   "out",
 ]);
 
-export async function refreshWorkspacePreservingWarmCaches(
-  refresh: () => Promise<void>,
+export async function refreshWorkspacePreservingWarmCaches<T>(
+  refresh: () => Promise<T>,
   root: string = runtimePaths.workspace,
 ) {
   const cachePaths = await warmCacheDirectories(root);
   if (!cachePaths.length) {
-    await refresh();
-    return [];
+    return { cachePaths, result: await refresh() };
   }
   const storage = await mkdtemp(join(tmpdir(), "blame-warm-cache-"));
   try {
@@ -36,7 +35,7 @@ export async function refreshWorkspacePreservingWarmCaches(
       await mkdir(dirname(target), { recursive: true, mode: 0o700 });
       await rename(source, target);
     }
-    await refresh();
+    const result = await refresh();
     for (const path of cachePaths) {
       await assertSafeCacheDestination(root, path);
       const source = join(storage, path);
@@ -45,7 +44,7 @@ export async function refreshWorkspacePreservingWarmCaches(
       await rm(target, { recursive: true, force: true });
       await rename(source, target);
     }
-    return cachePaths;
+    return { cachePaths, result };
   } finally {
     await rm(storage, { recursive: true, force: true });
   }
@@ -64,6 +63,19 @@ async function visit(root: string, directory: string, paths: string[]) {
     if (!entry.isDirectory() || entry.isSymbolicLink()) continue;
     const absolute = join(directory, entry.name);
     const path = relative(root, absolute).split(sep).join("/");
+    if (entry.name === ".next") {
+      const nextCache = join(absolute, "cache");
+      const cache = await lstat(nextCache).catch(
+        (error: NodeJS.ErrnoException) => {
+          if (error.code === "ENOENT") return undefined;
+          throw error;
+        },
+      );
+      if (cache?.isDirectory() && !cache.isSymbolicLink()) {
+        paths.push(`${path}/cache`);
+      }
+      continue;
+    }
     if (cacheDirectoryNames.has(entry.name)) {
       paths.push(path);
       continue;

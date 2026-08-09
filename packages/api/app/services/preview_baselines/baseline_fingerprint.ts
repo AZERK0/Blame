@@ -14,11 +14,29 @@ export type PreviewBaselineFingerprintInput = {
   cachePolicyVersion: string
 }
 
+export type PreviewBaselineCacheKeyInput = Omit<
+  PreviewBaselineFingerprintInput,
+  'baseRevision' | 'sanitizedTreeHash'
+>
+
 export function previewBaselineFingerprint(input: PreviewBaselineFingerprintInput) {
   const canonical = [
     input.projectId,
     input.baseRevision,
     input.sanitizedTreeHash,
+    input.planHash,
+    input.lockfileHash,
+    input.runnerImageDigest,
+    input.runnerVersion,
+    String(input.protocolVersion),
+    input.cachePolicyVersion,
+  ].join('\0')
+  return createHash('sha256').update(canonical).digest('hex')
+}
+
+export function previewBaselineCacheKey(input: PreviewBaselineCacheKeyInput) {
+  const canonical = [
+    input.projectId,
     input.planHash,
     input.lockfileHash,
     input.runnerImageDigest,

@@ -29,6 +29,7 @@ import {
   type RuntimeSelection,
   type RuntimeUsage,
   type SourceArtifact,
+  type SyncInOptions,
 } from '@blame/preview-runtime'
 import {
   capabilityKeysMatch,
@@ -192,11 +193,12 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
     })
   }
 
-  async syncIn(handle: RuntimeHandle, source: SourceArtifact) {
+  async syncIn(handle: RuntimeHandle, source: SourceArtifact, options: SyncInOptions = {}) {
     return measureRuntimePhase('workspace.sync', () =>
       this.runnerCall<{ sourceRevision: string; workspaceHash: string }>(handle, {
         operation: 'source-import',
         source,
+        preserveWarmCaches: options.preserveWarmCaches,
       })
     )
   }

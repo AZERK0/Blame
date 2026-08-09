@@ -60,6 +60,7 @@ export type SourceArtifact = {
 };
 
 export type SyncReceipt = { sourceRevision: string; workspaceHash: string };
+export type SyncInOptions = { preserveWarmCaches?: boolean };
 export type DurableDeltaReceipt = {
   artifactId: string;
   baseHash: string;
@@ -136,7 +137,11 @@ export interface PreviewRuntimeDriver {
   capabilities(plan: PreviewExecutionPlan): Promise<CapabilityReport>;
   provisionHost(input: ProvisionInput): Promise<RuntimeHandle>;
   resumeHost(handle: RuntimeHandle): Promise<void>;
-  syncIn(handle: RuntimeHandle, source: SourceArtifact): Promise<SyncReceipt>;
+  syncIn(
+    handle: RuntimeHandle,
+    source: SourceArtifact,
+    options?: SyncInOptions,
+  ): Promise<SyncReceipt>;
   restoreBaseline?(
     handle: RuntimeHandle,
     snapshotId: string,

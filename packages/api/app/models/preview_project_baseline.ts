@@ -18,6 +18,8 @@ export default class PreviewProjectBaseline extends BaseModel {
   @column()
   declare fingerprint: string
   @column()
+  declare cacheKey: string | null
+  @column()
   declare baseRevision: string
   @column()
   declare sanitizedTreeHash: string

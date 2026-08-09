@@ -50,7 +50,7 @@ export function previewRuntimeConfig() {
         vercelPlan === 'hobby' ? Math.min(maxUnreferencedBaselines, 1) : maxUnreferencedBaselines,
       waitSeconds: positiveInteger(env.get('BLAME_PREVIEW_BASELINE_WAIT_SECONDS'), 90),
       maxBuilders: positiveInteger(env.get('BLAME_PREVIEW_BASELINE_MAX_BUILDERS'), 1),
-      cachePolicyVersion: '1',
+      cachePolicyVersion: '2',
     },
     edgeOrigin: secureOrigin(env.get('BLAME_PREVIEW_EDGE_ORIGIN') ?? 'https://preview.blame.dev'),
     ticketTtlSeconds: positiveInteger(env.get('BLAME_PREVIEW_TICKET_TTL_SECONDS'), 60),

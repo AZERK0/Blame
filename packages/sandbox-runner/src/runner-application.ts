@@ -73,7 +73,7 @@ export class RunnerApplication {
       case "logs":
         return this.logs(request.cursor, request.serviceId);
       case "source-import":
-        return this.importSource(request.source);
+        return this.importSource(request);
       case "source-export-prepare":
         return prepareSourceDelta(request.artifactId, request.revision);
       case "source-export-upload":
@@ -214,11 +214,10 @@ export class RunnerApplication {
     } finally {
       await compose.stop();
     }
-    const warmCachePaths = await refreshWorkspacePreservingWarmCaches(
-      async () => {
+    const { cachePaths: warmCachePaths } =
+      await refreshWorkspacePreservingWarmCaches(async () => {
         await importSourceArtifact(request.source);
-      },
-    );
+      });
     await writeFile(runtimePaths.plan, JSON.stringify(request.plan), {
       mode: 0o600,
       flush: true,
@@ -380,7 +379,7 @@ export class RunnerApplication {
   }
 
   private async importSource(
-    source: Parameters<typeof importSourceArtifact>[0],
+    request: Extract<RunnerRequest, { operation: "source-import" }>,
   ) {
     const state = await readRuntimeState();
     if (state.running)
@@ -388,7 +387,14 @@ export class RunnerApplication {
         "ENGINE_RUNNING",
         "Stop services before importing source.",
       );
-    return importSourceArtifact(source);
+    if (request.preserveWarmCaches && request.source.mode !== "delta") {
+      return (
+        await refreshWorkspacePreservingWarmCaches(() =>
+          importSourceArtifact(request.source),
+        )
+      ).result;
+    }
+    return importSourceArtifact(request.source);
   }
 
   private async exec(request: Extract<RunnerRequest, { operation: "exec" }>) {

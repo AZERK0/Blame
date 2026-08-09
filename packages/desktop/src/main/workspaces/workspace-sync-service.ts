@@ -15,6 +15,7 @@ import {
 } from "./workspace-artifact"
 import { applyWorkspaceDelta } from "./workspace-delta"
 import { WorkspaceSyncConflict } from "./workspace-sync-conflict"
+import { workspaceSourceMode } from "./baseline-transfer"
 
 const maximumArtifactBytes = 256 * 1024 * 1024
 
@@ -36,16 +37,17 @@ export class WorkspaceSyncService {
     await beforeTransfer?.(root)
     const prepared = await measureWorkspacePhase("workspace.capture", () => prepareWorkspaceSource(root))
     const negotiation = await client.negotiateSource(sessionId, prepared.metadata)
+    const sourceMode = workspaceSourceMode(negotiation.baseline)
     const artifact = await measureWorkspacePhase(
-      negotiation.baseline ? "workspace.delta.build" : "workspace.full.build",
+      sourceMode === "delta" ? "workspace.delta.build" : "workspace.full.build",
       () =>
-        negotiation.baseline
+        sourceMode === "delta"
           ? buildWorkspaceDeltaArtifact(root, prepared)
           : buildWorkspaceArtifact(root, prepared),
     )
     const target = await client.prepareSourceUpload(sessionId, {
       ...artifact,
-      mode: negotiation.baseline ? "delta" : "full",
+      mode: sourceMode,
     })
     await measureWorkspacePhase("workspace.upload", () => upload(target, artifact.content))
     const session = await measureWorkspacePhase("workspace.apply", () =>
@@ -175,6 +177,7 @@ export class WorkspaceSyncService {
     await rename(temporary, this.indexPath)
   }
 }
+
 async function upload(
   target: { url: string; headers: Record<string, string>; expiresAt: string },
   content: Uint8Array,

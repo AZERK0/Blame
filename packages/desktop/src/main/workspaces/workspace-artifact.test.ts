@@ -9,8 +9,16 @@ import { gunzipSync } from "node:zlib"
 import test from "node:test"
 import { extract } from "tar-stream"
 import { buildWorkspaceArtifact, buildWorkspaceDeltaArtifact } from "./workspace-artifact.ts"
+import { workspaceSourceMode } from "./baseline-transfer.ts"
 
 const exec = promisify(execFile)
+
+test("uses deltas only for exact baselines", () => {
+  assert.equal(workspaceSourceMode(undefined), "full")
+  assert.equal(workspaceSourceMode({ match: "cache" }), "full")
+  assert.equal(workspaceSourceMode({ match: "exact" }), "delta")
+  assert.equal(workspaceSourceMode({}), "delta")
+})
 
 test("builds a reproducible source artifact without runtime secrets", async () => {
   const root = await mkdtemp(join(tmpdir(), "blame-source-test-"))

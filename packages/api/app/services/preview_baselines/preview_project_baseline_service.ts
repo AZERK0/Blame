@@ -5,6 +5,7 @@ import PreviewProjectBaseline, {
 import PreviewSession from '#models/preview_session'
 import UserStory from '#models/user_story'
 import {
+  previewBaselineCacheKey,
   previewBaselineFingerprint,
   sanitizedFingerprintPart,
 } from '#services/preview_baselines/baseline_fingerprint'
@@ -37,6 +38,7 @@ export type PreviewBaselineLookup = {
   sourceRevision?: string
   sanitizedTreeHash?: string
   lockfileHash?: string
+  match: 'exact' | 'cache'
 }
 
 type EnsureInput = {
@@ -65,10 +67,20 @@ export default class PreviewProjectBaselineService {
       } catch {
         return undefined
       }
-      const ready = await this.readyOrWait(identity.fingerprint)
-      if (!ready) return undefined
-      await ready.merge({ lastUsedAt: DateTime.utc() }).save()
-      return publicBaseline(ready)
+      const exact = await this.ready(identity.fingerprint)
+      if (exact) {
+        await exact.merge({ lastUsedAt: DateTime.utc() }).save()
+        return publicBaseline(exact, 'exact')
+      }
+      const compatible = await this.compatibleReady(identity.cacheKey)
+      if (compatible) {
+        await compatible.merge({ lastUsedAt: DateTime.utc() }).save()
+        return publicBaseline(compatible, 'cache')
+      }
+      const waited = await this.readyOrWait(identity.fingerprint)
+      if (!waited) return undefined
+      await waited.merge({ lastUsedAt: DateTime.utc() }).save()
+      return publicBaseline(waited, 'exact')
     })
   }
 
@@ -196,25 +208,40 @@ export default class PreviewProjectBaselineService {
     })
   }
 
-  async getReady(id: string, sessionId: string, metadata?: PreviewBaselineSourceMetadata) {
+  async getReady(
+    id: string,
+    sessionId: string,
+    metadata: PreviewBaselineSourceMetadata,
+    requirement: 'exact' | 'compatible' = 'exact'
+  ) {
     const session = await PreviewSession.findOrFail(sessionId)
     const story = await UserStory.findOrFail(session.userStoryId)
+    let identity: ReturnType<PreviewProjectBaselineService['identity']>
+    try {
+      identity = this.identity(story.projectId, session.planHash, metadata)
+    } catch {
+      return undefined
+    }
     const row = await PreviewProjectBaseline.query()
       .where('id', id)
       .where('projectId', story.projectId)
       .where('status', 'ready')
       .first()
+    const match =
+      row?.fingerprint === identity.fingerprint
+        ? 'exact'
+        : row?.cacheKey === identity.cacheKey
+          ? 'cache'
+          : undefined
     if (
       !row ||
       (row.expiresAt && row.expiresAt <= DateTime.utc()) ||
-      (metadata &&
-        (row.baseRevision !== metadata.baseRevision ||
-          row.sanitizedTreeHash !== metadata.sanitizedTreeHash ||
-          row.lockfileHash !== metadata.lockfileHash))
+      !match ||
+      (requirement === 'exact' && match !== 'exact')
     )
       return undefined
     await row.merge({ lastUsedAt: DateTime.utc() }).save()
-    return publicBaseline(row)
+    return publicBaseline(row, match)
   }
 
   private identity(projectId: string, planHash: string, metadata: PreviewBaselineSourceMetadata) {
@@ -243,8 +270,18 @@ export default class PreviewProjectBaselineService {
       protocolVersion: this.config.sandbox.protocolVersion,
       cachePolicyVersion: this.config.baselines.cachePolicyVersion,
     })
+    const cacheKey = previewBaselineCacheKey({
+      projectId,
+      planHash,
+      lockfileHash,
+      runnerImageDigest,
+      runnerVersion: this.config.sandbox.runnerVersion,
+      protocolVersion: this.config.sandbox.protocolVersion,
+      cachePolicyVersion: this.config.baselines.cachePolicyVersion,
+    })
     return {
       fingerprint,
+      cacheKey,
       projectId,
       baseRevision,
       sanitizedTreeHash,
@@ -306,6 +343,18 @@ export default class PreviewProjectBaselineService {
       .first()
   }
 
+  private async compatibleReady(cacheKey: string) {
+    return PreviewProjectBaseline.query()
+      .where('cacheKey', cacheKey)
+      .where('status', 'ready')
+      .where((query) =>
+        query.whereNull('expiresAt').orWhere('expiresAt', '>', DateTime.utc().toJSDate())
+      )
+      .orderBy('lastUsedAt', 'desc')
+      .orderBy('createdAt', 'desc')
+      .first()
+  }
+
   private async readyOrWait(fingerprint: string) {
     const ready = await this.ready(fingerprint)
     if (ready) return ready
@@ -342,6 +391,7 @@ export default class PreviewProjectBaselineService {
     return PreviewProjectBaseline.create({
       projectId: identity.projectId,
       fingerprint: identity.fingerprint,
+      cacheKey: identity.cacheKey,
       baseRevision: identity.baseRevision,
       sanitizedTreeHash: identity.sanitizedTreeHash,
       planHash: identity.planHash,
@@ -372,13 +422,15 @@ async function sessionContext(sessionId: string) {
 }
 
 function publicBaseline(
-  row: PreviewProjectBaseline | undefined
+  row: PreviewProjectBaseline | undefined,
+  match: PreviewBaselineLookup['match'] = 'exact'
 ): PreviewBaselineLookup | undefined {
   if (!row) return undefined
   return {
     id: row.id,
     fingerprint: row.fingerprint,
     status: row.status,
+    match,
     baseRevision: row.baseRevision,
     providerSnapshotId: row.providerSnapshotId ?? undefined,
   }

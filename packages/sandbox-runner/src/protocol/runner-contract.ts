@@ -74,7 +74,11 @@ export type RunnerRequest = (
   | { operation: "inspect"; probeServices?: boolean }
   | { operation: "endpoints" }
   | { operation: "logs"; cursor?: string; serviceId?: string }
-  | { operation: "source-import"; source: SourceArtifact }
+  | {
+      operation: "source-import";
+      source: SourceArtifact;
+      preserveWarmCaches?: boolean;
+    }
   | {
       operation: "source-export-prepare";
       revision: string;

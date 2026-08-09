@@ -30,13 +30,17 @@ test("restores only recognized compiler caches after a canonical refresh", async
     await writeFile(join(root, "packages/app/.vite/deps.json"), "vite-cache");
     await writeFile(join(root, "packages/api/dist/server.js"), "generated");
 
-    const restored = await refreshWorkspacePreservingWarmCaches(async () => {
+    const refreshed = await refreshWorkspacePreservingWarmCaches(async () => {
       await rm(root, { recursive: true, force: true });
       await mkdir(root, { recursive: true });
       await writeFile(join(root, "tracked.ts"), "canonical");
+      return "refreshed";
     }, root);
 
-    assert.deepEqual(restored, ["packages/app/.vite", "packages/web/.next"]);
+    assert.deepEqual(refreshed, {
+      cachePaths: ["packages/app/.vite", "packages/web/.next/cache"],
+      result: "refreshed",
+    });
     assert.equal(await readFile(join(root, "tracked.ts"), "utf8"), "canonical");
     assert.equal(
       await readFile(

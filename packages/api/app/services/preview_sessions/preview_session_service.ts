@@ -370,16 +370,20 @@ export default class PreviewSessionService {
       lockfileHash: source.lockfileHash ?? 'unknown',
       workspaceHash: source.workspaceHash,
     }
-    const baseline =
-      source.mode === 'delta' && baselineId
-        ? await this.baselines.getReady(baselineId, sessionId, {
+    const baseline = baselineId
+      ? await this.baselines.getReady(
+          baselineId,
+          sessionId,
+          {
             baseRevision: source.revision,
             sanitizedTreeHash: source.sanitizedTreeHash ?? '',
             lockfileHash: source.lockfileHash ?? '',
             workspaceHash: source.workspaceHash,
-          })
-        : await this.baselines.lookupForSession(sessionId, baselineMetadata)
-    if (source.mode !== 'delta' && !baseline) {
+          },
+          source.mode === 'delta' ? 'exact' : 'compatible'
+        )
+      : await this.baselines.lookupForSession(sessionId, baselineMetadata)
+    if (source.mode !== 'delta' && baseline?.match !== 'exact') {
       void this.baselines
         .ensure({ sessionId, source, sourceMetadata: baselineMetadata })
         .catch(() => undefined)
@@ -409,7 +413,7 @@ export default class PreviewSessionService {
       let runtimeLostDuringBaselineRestore = false
       try {
         let syncHandle = handle
-        if (source.mode === 'delta') {
+        if (baseline) {
           if (!baseline?.providerSnapshotId || !driver.restoreBaseline) {
             throw new PreviewRuntimeError({
               code: 'UNSUPPORTED_CAPABILITY',
@@ -428,10 +432,18 @@ export default class PreviewSessionService {
             throw error
           }
           await this.repository.setRuntimeHandle(sessionId, syncHandle)
+        } else if (source.mode === 'delta') {
+          throw new PreviewRuntimeError({
+            code: 'UNSUPPORTED_CAPABILITY',
+            message: 'The exact preview baseline is unavailable.',
+            retryable: true,
+          })
         }
-        const receipt = await driver.syncIn(syncHandle, source)
+        const receipt = await driver.syncIn(syncHandle, source, {
+          preserveWarmCaches: source.mode !== 'delta' && Boolean(baseline),
+        })
         const current = (await this.repository.get(sessionId))!
-        if (source.mode === 'delta') {
+        if (baseline) {
           current.state.engine = 'stopped'
           current.state.preview = 'closed'
           current.endpointMap = undefined
