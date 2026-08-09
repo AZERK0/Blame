@@ -193,34 +193,40 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
           this.config.sandbox.timeoutMinutes,
           this.config.sandbox.vercelPlan
         ) * 60_000
-      const sandbox = await this.providerCall('baseline-restore', () =>
-        Sandbox.create({
-          ...this.credentials(),
-          name: payload.sandboxName,
-          source: { type: 'snapshot', snapshotId },
-          persistent: true,
-          ports: payload.gatewayPorts,
-          resources: { vcpus: payload.resourceVcpus ?? 2 },
-          timeout,
-          snapshotExpiration: this.config.sandbox.snapshotRetentionDays * 86_400_000,
-          keepLastSnapshots: { count: 1, deleteEvicted: true },
-          networkPolicy: this.networkPolicy(),
-          tags: {
-            application: 'blame',
-            deployment: shortTag(this.config.sandbox.deploymentId!),
-            session: shortTag(payload.sessionId),
-          },
+      let sandbox: Sandbox | undefined
+      try {
+        sandbox = await this.providerCall('baseline-restore', () =>
+          Sandbox.create({
+            ...this.credentials(),
+            name: payload.sandboxName,
+            source: { type: 'snapshot', snapshotId },
+            persistent: true,
+            ports: payload.gatewayPorts,
+            resources: { vcpus: payload.resourceVcpus ?? 2 },
+            timeout,
+            snapshotExpiration: this.config.sandbox.snapshotRetentionDays * 86_400_000,
+            keepLastSnapshots: { count: 1, deleteEvicted: true },
+            networkPolicy: this.networkPolicy(),
+            tags: {
+              application: 'blame',
+              deployment: shortTag(this.config.sandbox.deploymentId!),
+              session: shortTag(payload.sessionId),
+            },
+          })
+        )
+        await this.bootstrap(sandbox)
+        const restored = runtimeHandle({ ...payload })
+        await this.assertHandshake(sandbox, restored)
+        await this.runnerCall(restored, {
+          operation: 'resume-host',
+          sessionId: payload.sessionId,
+          generation: payload.generation,
         })
-      )
-      await this.bootstrap(sandbox)
-      const restored = runtimeHandle({ ...payload })
-      await this.assertHandshake(sandbox, restored)
-      await this.runnerCall(restored, {
-        operation: 'resume-host',
-        sessionId: payload.sessionId,
-        generation: payload.generation,
-      })
-      return restored
+        return restored
+      } catch (error) {
+        await sandbox?.delete().catch(() => undefined)
+        throw error
+      }
     })
   }
 

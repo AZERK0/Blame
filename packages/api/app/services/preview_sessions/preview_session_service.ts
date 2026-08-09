@@ -406,6 +406,7 @@ export default class PreviewSessionService {
       importing.state.sync = 'importing'
       importing.revision += 1
       await this.repository.save(importing, record.revision)
+      let runtimeLostDuringBaselineRestore = false
       try {
         let syncHandle = handle
         if (source.mode === 'delta') {
@@ -416,7 +417,16 @@ export default class PreviewSessionService {
               retryable: true,
             })
           }
-          syncHandle = await driver.restoreBaseline(handle, baseline.providerSnapshotId)
+          try {
+            syncHandle = await driver.restoreBaseline(handle, baseline.providerSnapshotId)
+          } catch (error) {
+            runtimeLostDuringBaselineRestore = true
+            await driver.destroyHost(handle).catch(() => undefined)
+            await this.repository
+              .setRuntimeHandle(sessionId, undefined, fencingToken)
+              .catch(() => undefined)
+            throw error
+          }
           await this.repository.setRuntimeHandle(sessionId, syncHandle)
         }
         const receipt = await driver.syncIn(syncHandle, source)
@@ -440,6 +450,12 @@ export default class PreviewSessionService {
         const current = await this.repository.get(sessionId)
         if (current) {
           current.state.sync = 'failed'
+          if (runtimeLostDuringBaselineRestore) {
+            current.state.host = 'failed'
+            current.state.engine = 'stopped'
+            current.state.preview = 'closed'
+            current.endpointMap = undefined
+          }
           current.revision += 1
           await this.repository.save(current, current.revision - 1)
         }

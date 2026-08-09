@@ -1,6 +1,13 @@
 import { createHash } from "node:crypto";
 import { spawn } from "node:child_process";
-import { mkdir, open, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import {
+  mkdir,
+  open,
+  readFile,
+  realpath,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import type {
   PreviewExecutionPlan,
   PreviewSessionState,
@@ -201,13 +208,7 @@ export class RunnerApplication {
       rm("/var/log/blame", { recursive: true, force: true }),
       rm(runtimePaths.exports, { recursive: true, force: true }),
     ]);
-    await writeRuntimeState({
-      ...state,
-      running: false,
-      browserBindingUrls: {},
-      routeIds: {},
-      selection: undefined,
-    });
+    await writeRuntimeState(sanitizeRuntimeStateForSnapshot(state));
     return { sanitized: true };
   }
 
@@ -413,15 +414,32 @@ export class RunnerApplication {
     });
   }
 }
+
+export function sanitizeRuntimeStateForSnapshot(
+  state: RunnerRuntimeState,
+): RunnerRuntimeState {
+  return {
+    ...state,
+    running: false,
+    endpointRevision: 0,
+    browserBindingUrls: {},
+    routeIds: {},
+    sessionId: "",
+    generation: 0,
+    selection: undefined,
+  };
+}
+
 export function resumeRuntimeState(
   state: RunnerRuntimeState,
   sessionId: string,
   generation: number,
 ) {
+  const adoptsSanitizedSnapshot = !state.sessionId && state.generation === 0;
   if (
     !sessionId ||
     !Number.isSafeInteger(generation) ||
-    generation < 1 ||
+    generation < (adoptsSanitizedSnapshot ? 0 : 1) ||
     (state.sessionId && state.sessionId !== sessionId) ||
     generation < state.generation
   ) {
@@ -467,7 +485,7 @@ function requiredRouteId(
 
 function handshake() {
   return runnerHandshake({
-    runnerVersion: process.env.BLAME_RUNNER_VERSION ?? "0.2.6",
+    runnerVersion: process.env.BLAME_RUNNER_VERSION ?? "0.2.8",
     imageDigest: process.env.BLAME_RUNNER_IMAGE_DIGEST ?? "unconfigured",
     capabilities: {
       dockerCompose: true,
