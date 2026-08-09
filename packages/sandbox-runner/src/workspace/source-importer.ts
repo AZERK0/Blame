@@ -22,7 +22,7 @@ import { spawn } from "node:child_process";
 import type { SourceArtifact } from "@blame/preview-runtime";
 import { runtimePaths } from "../runtime-paths.js";
 import { initializeChangeJournal } from "./change-journal.js";
-import { runnerError } from "../protocol/runner-server.js";
+import { runnerError } from "../protocol/runner-errors.js";
 import { snapshotWorkspace } from "./workspace-snapshot.js";
 
 type SourceManifest = {

@@ -7,7 +7,7 @@ import type {
   ServiceEndpointPlan,
   ServiceLaunchPlan,
 } from "@blame/preview-runtime";
-import { runnerError } from "../protocol/runner-server.js";
+import { runnerError } from "../protocol/runner-errors.js";
 
 const defaultProxyCertificate =
   "/etc/pki/ca-trust/source/anchors/vercel-proxy-ca.pem";

@@ -2,7 +2,7 @@ import type {
   PreviewExecutionPlan,
   RuntimeSelection,
 } from "@blame/preview-runtime";
-import { runnerError } from "../protocol/runner-server.js";
+import { runnerError } from "../protocol/runner-errors.js";
 
 export function normalizeRuntimeSelection(
   plan: PreviewExecutionPlan,

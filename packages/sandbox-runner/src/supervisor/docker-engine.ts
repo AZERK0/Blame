@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
 import { mkdir, open, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
-import { runnerError } from "../protocol/runner-server.js";
+import { runnerError } from "../protocol/runner-errors.js";
 import { measureRunnerPhase } from "../performance-measure.js";
 
 const dockerSocket = "/run/blame/docker.sock";

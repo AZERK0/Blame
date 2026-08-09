@@ -7,7 +7,7 @@ import { createGzip } from "node:zlib";
 import { pack } from "tar-stream";
 import { pipeline } from "node:stream/promises";
 import type { RunnerUploadTarget } from "../protocol/runner-contract.js";
-import { runnerError } from "../protocol/runner-server.js";
+import { runnerError } from "../protocol/runner-errors.js";
 import { runtimePaths } from "../runtime-paths.js";
 import { readRuntimeState } from "../runtime-state.js";
 import { checkpointChangeJournal } from "./change-journal.js";

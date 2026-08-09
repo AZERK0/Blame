@@ -19,7 +19,7 @@ import type {
   RunnerRequest,
 } from "./protocol/runner-contract.js";
 import { runnerHandshake } from "./protocol/runner-contract.js";
-import { runnerError } from "./protocol/runner-server.js";
+import { runnerError } from "./protocol/runner-errors.js";
 import {
   readRuntimeState,
   writeRuntimeState,
@@ -531,7 +531,7 @@ function requiredRouteId(
 
 function handshake() {
   return runnerHandshake({
-    runnerVersion: process.env.BLAME_RUNNER_VERSION ?? "0.2.12",
+    runnerVersion: process.env.BLAME_RUNNER_VERSION ?? "0.2.13",
     imageDigest: process.env.BLAME_RUNNER_IMAGE_DIGEST ?? "unconfigured",
     capabilities: {
       dockerCompose: true,

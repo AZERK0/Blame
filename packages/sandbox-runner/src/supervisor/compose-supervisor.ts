@@ -11,7 +11,7 @@ import type {
   PreviewExecutionPlan,
   RuntimeSelection,
 } from "@blame/preview-runtime";
-import { runnerError } from "../protocol/runner-server.js";
+import { runnerError } from "../protocol/runner-errors.js";
 import { measureRunnerPhase } from "../performance-measure.js";
 import {
   startComposeLogCollectors,
@@ -39,7 +39,6 @@ import {
   resolveCacheVolumeMountpoint,
 } from "./cache-volume.js";
 
-const dockerVolumeRoot = `${dockerDataRoot}/volumes/`;
 const composeFingerprintPath = "/var/lib/blame/runtime/compose-fingerprint";
 
 export class ComposeSupervisor {
@@ -434,8 +433,12 @@ async function cacheVolumeMountpoint(volumeName: string) {
   return resolveCacheVolumeMountpoint(
     volumeName,
     inspected.stdout.trim(),
-    dockerVolumeRoot,
+    dockerVolumeRoot(),
   );
+}
+
+function dockerVolumeRoot() {
+  return `${dockerDataRoot}/volumes/`;
 }
 
 function validateComposePlan(plan: PreviewExecutionPlan) {

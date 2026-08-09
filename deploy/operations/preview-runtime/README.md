@@ -121,5 +121,5 @@ Before enabling a runner digest:
 3. archive the Grype result and verify the Cosign signature in the deployment policy;
 4. run the runtime contract and canary suites;
 5. configure the immutable `@sha256:` reference;
-6. set `BLAME_SANDBOX_RUNNER_VERSION=0.2.12`;
+6. set `BLAME_SANDBOX_RUNNER_VERSION=0.2.13`;
 7. keep the previous digest available for rollback.

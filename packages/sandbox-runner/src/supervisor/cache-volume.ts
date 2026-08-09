@@ -1,6 +1,6 @@
 import { realpath } from "node:fs/promises";
 import { isAbsolute, relative, sep } from "node:path";
-import { runnerError } from "../protocol/runner-server.js";
+import { runnerError, runnerErrorCode } from "../protocol/runner-errors.js";
 
 export type CacheVolumeOperations = {
   create(volumeName: string): Promise<void>;
@@ -68,9 +68,4 @@ function invalidCacheVolumeError(
     "INVALID_CACHE_VOLUME",
     `Docker cache volume "${volumeName}" returned mountpoint "${mountpoint}"; expected a direct child of "${expectedRoot}" ending in "/_data".`,
   );
-}
-
-function runnerErrorCode(error: unknown) {
-  const code = (error as { runnerCode?: unknown })?.runnerCode;
-  return typeof code === "string" ? code : undefined;
 }

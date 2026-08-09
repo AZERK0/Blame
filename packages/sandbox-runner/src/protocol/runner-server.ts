@@ -1,6 +1,7 @@
 import { readFile, rename, rm, writeFile } from "node:fs/promises";
 import type { RunnerRequest, RunnerResponse } from "./runner-contract.js";
 import { RunnerApplication } from "../runner-application.js";
+import { runnerError, runnerErrorCode } from "./runner-errors.js";
 
 const requestRoot = "/run/blame/control/requests/";
 const fencingTokenPath = "/var/lib/blame/runtime/fencing-token";
@@ -109,13 +110,4 @@ export function assertFreshFencingToken(current: number, incoming: number) {
       "Runner request belongs to a stale control worker.",
     );
   }
-}
-
-export function runnerError(code: string, message: string) {
-  return Object.assign(new Error(message), { runnerCode: code });
-}
-
-function runnerErrorCode(error: unknown) {
-  const code = (error as { runnerCode?: unknown })?.runnerCode;
-  return typeof code === "string" ? code : "RUNNER_INTERNAL";
 }
