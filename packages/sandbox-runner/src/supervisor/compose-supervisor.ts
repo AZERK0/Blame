@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { chown, mkdir, readFile, realpath, writeFile } from "node:fs/promises";
+import { chown, mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import {
   composeCacheVolumeName,
@@ -34,6 +34,10 @@ import {
   ensureDockerEngine,
   shutdownDockerEngine,
 } from "./docker-engine.js";
+import {
+  ensureCacheVolume,
+  resolveCacheVolumeMountpoint,
+} from "./cache-volume.js";
 
 const dockerVolumeRoot = `${dockerDataRoot}/volumes/`;
 const composeFingerprintPath = "/var/lib/blame/runtime/compose-fingerprint";
@@ -57,6 +61,7 @@ export class ComposeSupervisor {
           async () => undefined,
         );
         await engine;
+        await this.prepareCaches(plan, identity);
         return;
       }
       await mkdir(dirname(runtimePaths.composeFile), {
@@ -192,8 +197,15 @@ export class ComposeSupervisor {
   ) {
     for (const cache of plan.caches) {
       const volumeName = composeCacheVolumeName(cache.name);
-      await command("docker", ["volume", "create", volumeName]);
-      const mountpoint = await cacheVolumeMountpoint(volumeName);
+      const mountpoint = await ensureCacheVolume(volumeName, {
+        create: async (name) => {
+          await command("docker", ["volume", "create", name]);
+        },
+        remove: async (name) => {
+          await command("docker", ["volume", "rm", "--force", name]);
+        },
+        mountpoint: cacheVolumeMountpoint,
+      });
       await chown(mountpoint, identity.uid, identity.gid);
     }
   }
@@ -419,17 +431,11 @@ async function cacheVolumeMountpoint(volumeName: string) {
     "{{.Mountpoint}}",
     volumeName,
   ]);
-  const mountpoint = await realpath(inspected.stdout.trim());
-  if (
-    !mountpoint.startsWith(dockerVolumeRoot) ||
-    !mountpoint.endsWith("/_data")
-  ) {
-    throw runnerError(
-      "INVALID_CACHE_VOLUME",
-      "Docker returned an invalid cache volume path.",
-    );
-  }
-  return mountpoint;
+  return resolveCacheVolumeMountpoint(
+    volumeName,
+    inspected.stdout.trim(),
+    dockerVolumeRoot,
+  );
 }
 
 function validateComposePlan(plan: PreviewExecutionPlan) {
