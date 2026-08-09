@@ -13,10 +13,13 @@ export default class ReapPreviewSessions extends BaseCommand {
   async run() {
     const results = await new PreviewReaper().run(this.limit)
     const suspended = results.filter(({ status }) => status === 'suspended').length
-    const failed = results.filter(({ status }) => status === 'failed').length
+    const failed = results.filter(({ status }) => status === 'failed')
     this.logger.info(`Reconciled ${results.length} preview sessions; suspended ${suspended}`)
-    if (failed) {
-      this.logger.error(`${failed} preview sessions require another reconciliation attempt`)
+    for (const result of failed) {
+      this.logger.error(`${result.id}: ${result.failure ?? 'reconciliation failed'}`)
+    }
+    if (failed.length) {
+      this.logger.error(`${failed.length} preview sessions require another reconciliation attempt`)
       this.exitCode = 1
     }
   }

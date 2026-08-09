@@ -1,6 +1,8 @@
 import Project from '#models/project'
+import PreviewSession from '#models/preview_session'
 import User from '#models/user'
 import testUtils from '@adonisjs/core/services/test_utils'
+import { DateTime } from 'luxon'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -315,11 +317,60 @@ test.group('user stories', (group) => {
     assert.equal(shown.data.runConfigurationId, 'admin-app')
     assert.equal(shown.data.workspaceMode, 'cloud-mirror')
 
+    const previewSessionId = 'preview_delete_cleanup'
+    await PreviewSession.create({
+      id: previewSessionId,
+      userStoryId: created.data.id,
+      ownerUserId: user.id,
+      profile: 'vercel-compose',
+      desired: JSON.stringify({
+        host: 'suspended',
+        services: 'stopped',
+        preview: 'closed',
+        agent: 'idle',
+      }),
+      state: JSON.stringify({
+        host: 'suspended',
+        engine: 'stopped',
+        preview: 'closed',
+        agent: 'idle',
+        sync: 'clean',
+      }),
+      revision: 0,
+      generation: 0,
+      fencingToken: 0,
+      providerHandleEncrypted: null,
+      plan: '{}',
+      planHash: '0'.repeat(64),
+      planVersion: 1,
+      protocolVersion: null,
+      runnerVersion: null,
+      imageDigest: null,
+      sourceRevision: null,
+      sourceArtifactId: null,
+      baselineId: null,
+      lastExportedJournalRevision: null,
+      lastAppliedLocalRevision: null,
+      lastAcknowledgedRemoteRevision: null,
+      pendingDeltaArtifactId: null,
+      endpointMapEncrypted: null,
+      resourceVcpus: 2,
+      resourceMemoryGb: 4,
+      failure: null,
+      selection: null,
+      lastActivityAt: DateTime.utc(),
+      leaseExpiresAt: null,
+      idleDeadlineAt: null,
+      stoppedAt: DateTime.utc(),
+      createdAt: DateTime.utc(),
+    })
+
     const deleteResponse = await client
       .delete(`/api/v1/projects/user-stories/${created.data.id}`)
       .loginAs(user)
 
     deleteResponse.assertStatus(204)
+    assert.isNull(await PreviewSession.find(previewSessionId))
 
     const listResponse = await client
       .get('/api/v1/projects/user-stories')

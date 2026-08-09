@@ -21,6 +21,7 @@ import { Exception } from '@adonisjs/core/exceptions'
 import FileAttachmentsService from '#services/file_attachments_service'
 import type FileAttachment from '#models/file_attachment'
 import type { TransactionClientContract } from '@adonisjs/lucid/types/database'
+import PreviewSessionService from '#services/preview_sessions/preview_session_service'
 
 type ListUserStoriesInput = Infer<typeof listUserStoriesValidator>
 type CreateUserStoryInput = Infer<typeof createUserStoryValidator>
@@ -231,6 +232,7 @@ export default class UserStoriesService {
 
   async delete(userId: string, id: string) {
     const userStory = await this.find(userId, id)
+    await new PreviewSessionService().destroyForUserStory(userId, userStory.id)
     await db.transaction(async (transaction) => {
       await this.fileAttachments.markOwnersDetached('userStory', [userStory.id], transaction)
       await this.fileAttachments.markOwnersDetached(

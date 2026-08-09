@@ -464,11 +464,13 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
       Sandbox.list({
         ...this.credentials(),
         namePrefix: 'blame-',
-        tags: { application: 'blame', deployment: shortTag(deploymentId) },
+        sortBy: 'name',
+        tags: { application: 'blame' },
       }).then((result) => result.toArray())
     )
     let deleted = 0
     for (const sandbox of sandboxes) {
+      if (sandbox.tags?.deployment !== shortTag(deploymentId)) continue
       const createdAt =
         sandbox.createdAt < 10_000_000_000 ? sandbox.createdAt * 1000 : sandbox.createdAt
       if (activeNames.has(sandbox.name) || createdAt >= cutoff) continue

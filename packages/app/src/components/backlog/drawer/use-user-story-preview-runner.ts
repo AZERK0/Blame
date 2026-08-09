@@ -11,6 +11,7 @@ import {
   managedEmbeddedPreviewUrl,
   primaryPreviewRoute,
 } from "@/components/backlog/drawer/managed-preview-url"
+import { managedPreviewStopCommand } from "@/components/backlog/drawer/managed-preview-control"
 import { usePlatform } from "@/context/platform"
 import {
   recordRuntimeSessionState,
@@ -256,7 +257,7 @@ function useCloudPreviewRuntime(input: {
         if (action === "stop" || action === "restart") {
           active = await client.command({
             sessionId: active.id,
-            command: { type: "stop-services" },
+            command: managedPreviewStopCommand(action),
             operationId: crypto.randomUUID(),
           })
         }

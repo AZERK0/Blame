@@ -1,4 +1,5 @@
-import UserStoriesService from '#services/user_stories_service'
+import Project from '#models/project'
+import UserStory from '#models/user_story'
 import PreviewSessionRepository from '#services/preview_sessions/preview_session_repository'
 import {
   cumulativePeakDelta,
@@ -95,7 +96,10 @@ export default class PreviewSessionService {
 
   async create(ownerUserId: string, input: CreateManagedPreviewInput, operationId: string) {
     validateOperationId(operationId)
-    await new UserStoriesService().find(ownerUserId, input.userStoryId)
+    await UserStory.query()
+      .where('id', input.userStoryId)
+      .whereIn('projectId', Project.query().select('id').where('userId', ownerUserId))
+      .firstOrFail()
     const consentAt = validRecentConsent(input.cloudUploadConsentAt)
     const plan = compilePreviewManifest(input.previewManifest)
     const planHash = stableHash(plan)
@@ -197,6 +201,35 @@ export default class PreviewSessionService {
     }
     await this.sampleUsage(sessionId, session.profile)
     return this.get(ownerUserId, sessionId)
+  }
+
+  async destroyForUserStory(ownerUserId: string, userStoryId: string) {
+    const sessions = await PreviewSession.query()
+      .where('ownerUserId', ownerUserId)
+      .where('userStoryId', userStoryId)
+      .select('id')
+    for (const session of sessions) {
+      await this.lock.withLock(session.id, async ({ fencingToken }) => {
+        const record = await this.repository.get(session.id)
+        if (!record || record.ownerUserId !== ownerUserId || record.userStoryId !== userStoryId) {
+          return
+        }
+        const handle = await this.fencedHandle(session.id, fencingToken)
+        const driver = this.drivers.get(record.profile)
+        if (handle) {
+          if (!driver) throw new Error(`No preview driver is registered for ${record.profile}.`)
+          await driver.destroyHost(handle)
+          await this.repository.setRuntimeHandle(session.id, undefined, fencingToken)
+        }
+        await this.tickets.revokeSession(session.id)
+        await this.artifacts.scheduleSessionDeletion(session.id)
+        await PreviewSession.query()
+          .where('id', session.id)
+          .where('ownerUserId', ownerUserId)
+          .where('userStoryId', userStoryId)
+          .delete()
+      })
+    }
   }
 
   async issueAccessTicket(ownerUserId: string, sessionId: string, routeId?: string) {
@@ -465,7 +498,11 @@ export default class PreviewSessionService {
   async reconcileExpired(limit = 50) {
     const now = DateTime.utc()
     const candidates = await this.repository.listReconcileCandidates(now.toISO()!, limit)
-    const results: Array<{ id: string; status: 'suspended' | 'skipped' | 'failed' }> = []
+    const results: Array<{
+      id: string
+      status: 'suspended' | 'skipped' | 'failed'
+      failure?: string
+    }> = []
     for (const session of candidates) {
       if (!session.idleDeadlineAt || DateTime.fromISO(session.idleDeadlineAt) > now) {
         results.push({ id: session.id, status: 'skipped' })
@@ -479,8 +516,8 @@ export default class PreviewSessionService {
         )
         await this.sampleUsage(session.id, session.profile)
         results.push({ id: session.id, status: 'suspended' })
-      } catch {
-        results.push({ id: session.id, status: 'failed' })
+      } catch (error) {
+        results.push({ id: session.id, status: 'failed', failure: errorMessage(error) })
       }
     }
     const [, , , released] = await Promise.all([
@@ -490,12 +527,18 @@ export default class PreviewSessionService {
       this.releaseSuspendedSnapshots(limit),
     ])
     for (const result of released) {
-      if (result.status === 'failed') results.push({ id: result.id, status: 'failed' })
+      if (result.status === 'failed') {
+        results.push({ id: result.id, status: 'failed', failure: result.failure })
+      }
     }
     try {
       await this.sweepProviderOrphans()
-    } catch {
-      results.push({ id: 'provider-orphan-sweep', status: 'failed' })
+    } catch (error) {
+      results.push({
+        id: 'provider-orphan-sweep',
+        status: 'failed',
+        failure: errorMessage(error),
+      })
     }
     return results
   }
@@ -507,7 +550,11 @@ export default class PreviewSessionService {
       this.config.maxRetainedSuspended,
       limit
     )
-    const results: Array<{ id: string; status: 'released' | 'skipped' | 'failed' }> = []
+    const results: Array<{
+      id: string
+      status: 'released' | 'skipped' | 'failed'
+      failure?: string
+    }> = []
     for (const candidate of candidates) {
       try {
         const status = await this.lock.withLock(candidate.id, async ({ fencingToken }) => {
@@ -540,8 +587,8 @@ export default class PreviewSessionService {
           return 'released' as const
         })
         results.push({ id: candidate.id, status })
-      } catch {
-        results.push({ id: candidate.id, status: 'failed' })
+      } catch (error) {
+        results.push({ id: candidate.id, status: 'failed', failure: errorMessage(error) })
       }
     }
     return results
@@ -721,4 +768,8 @@ function assertOwner(actual: string, expected: string) {
       retryable: false,
     })
   }
+}
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error)
 }
