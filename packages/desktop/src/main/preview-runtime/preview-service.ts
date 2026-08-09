@@ -35,8 +35,10 @@ export class PreviewService {
     this.cloud = undefined;
   }
 
-  create(input: ManagedPreviewCreateInput) {
-    return this.cloudClient().create(input);
+  async create(input: ManagedPreviewCreateInput) {
+    const sourceMetadata = await this.sync.prepareInitial(input.localPath);
+    const { localPath: _localPath, ...cloudInput } = input;
+    return this.cloudClient().create({ ...cloudInput, sourceMetadata });
   }
 
   async command(
@@ -112,4 +114,6 @@ export class PreviewService {
   }
 }
 
-export type ManagedPreviewCreateInput = CloudManagedPreviewCreateInput;
+export type ManagedPreviewCreateInput = CloudManagedPreviewCreateInput & {
+  localPath: string;
+};

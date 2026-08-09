@@ -53,6 +53,7 @@ export function registerPreviewRuntimeIpcHandlers(input: {
       previewManifest: record(body.previewManifest),
       cloudUploadConsentAt: requiredIsoDate(body.cloudUploadConsentAt),
       operationId: requiredString(body.operationId, "operationId", 80),
+      localPath: requiredString(body.localPath, "localPath", 8_192),
       sourceRevision: optionalString(
         body.sourceRevision,
         "sourceRevision",
@@ -221,6 +222,7 @@ function previewCommand(value: unknown): PreviewSessionCommand {
       return {
         type: body.type,
         deltaRevision: requiredString(body.deltaRevision, "deltaRevision", 128),
+        workspaceHash: requiredHash(body.workspaceHash, "workspaceHash"),
       };
     case "destroy-host": {
       const discard =
@@ -306,6 +308,12 @@ function requiredString(value: unknown, name: string, maximum: number) {
 
 function optionalString(value: unknown, name: string, maximum: number) {
   return value === undefined ? undefined : requiredString(value, name, maximum);
+}
+
+function requiredHash(value: unknown, name: string) {
+  const result = requiredString(value, name, 64);
+  if (!/^[a-f0-9]{64}$/i.test(result)) throw new Error(`${name} is invalid`);
+  return result;
 }
 
 function safeError(error: unknown) {

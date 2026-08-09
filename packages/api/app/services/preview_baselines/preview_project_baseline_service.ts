@@ -61,27 +61,16 @@ export default class PreviewProjectBaselineService {
     return measureBaselinePhase('baseline.lookup', async () => {
       if (!this.config.baselines.enabled) return undefined
       const context = await sessionContext(sessionId)
-      let identity: ReturnType<PreviewProjectBaselineService['identity']>
-      try {
-        identity = this.identity(context.projectId, context.planHash, metadata)
-      } catch {
-        return undefined
-      }
-      const exact = await this.ready(identity.fingerprint)
-      if (exact) {
-        await exact.merge({ lastUsedAt: DateTime.utc() }).save()
-        return publicBaseline(exact, 'exact')
-      }
-      const compatible = await this.compatibleReady(identity.cacheKey)
-      if (compatible) {
-        await compatible.merge({ lastUsedAt: DateTime.utc() }).save()
-        return publicBaseline(compatible, 'cache')
-      }
-      const waited = await this.readyOrWait(identity.fingerprint)
-      if (!waited) return undefined
-      await waited.merge({ lastUsedAt: DateTime.utc() }).save()
-      return publicBaseline(waited, 'exact')
+      return this.lookup(context.projectId, context.planHash, metadata)
     })
+  }
+
+  async lookupForProject(
+    projectId: string,
+    planHash: string,
+    metadata: PreviewBaselineSourceMetadata
+  ) {
+    return measureBaselinePhase('baseline.lookup', () => this.lookup(projectId, planHash, metadata))
   }
 
   async ensure(input: EnsureInput) {
@@ -291,6 +280,34 @@ export default class PreviewProjectBaselineService {
       runnerVersion: this.config.sandbox.runnerVersion,
       protocolVersion: this.config.sandbox.protocolVersion,
     }
+  }
+
+  private async lookup(
+    projectId: string,
+    planHash: string,
+    metadata: PreviewBaselineSourceMetadata
+  ) {
+    if (!this.config.baselines.enabled) return undefined
+    let identity: ReturnType<PreviewProjectBaselineService['identity']>
+    try {
+      identity = this.identity(projectId, planHash, metadata)
+    } catch {
+      return undefined
+    }
+    const exact = await this.ready(identity.fingerprint)
+    if (exact) {
+      await exact.merge({ lastUsedAt: DateTime.utc() }).save()
+      return publicBaseline(exact, 'exact')
+    }
+    const compatible = await this.compatibleReady(identity.cacheKey)
+    if (compatible) {
+      await compatible.merge({ lastUsedAt: DateTime.utc() }).save()
+      return publicBaseline(compatible, 'cache')
+    }
+    const waited = await this.readyOrWait(identity.fingerprint)
+    if (!waited) return undefined
+    await waited.merge({ lastUsedAt: DateTime.utc() }).save()
+    return publicBaseline(waited, 'exact')
   }
 
   private async ensureExclusive(

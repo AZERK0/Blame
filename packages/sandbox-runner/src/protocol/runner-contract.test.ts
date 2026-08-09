@@ -6,7 +6,7 @@ test("advertises the atomic preview startup runner protocol", () => {
   assert.equal(runnerProtocolVersion, 3);
   assert.deepEqual(
     runnerHandshake({
-      runnerVersion: "0.2.10",
+      runnerVersion: "0.2.11",
       imageDigest: "sha256:test",
       capabilities: {
         dockerCompose: true,
@@ -23,7 +23,7 @@ test("advertises the atomic preview startup runner protocol", () => {
     }),
     {
       protocolVersion: 3,
-      runnerVersion: "0.2.10",
+      runnerVersion: "0.2.11",
       imageDigest: "sha256:test",
       capabilities: {
         dockerCompose: true,

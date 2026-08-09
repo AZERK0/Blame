@@ -47,7 +47,7 @@ test("adapts the existing local runtime to the provider-neutral driver contract"
   };
   try {
     const driver = new LocalPreviewDriver(async () => worktree, adapter);
-    const handle = await driver.provisionHost({
+    const { handle } = await driver.provisionHost({
       sessionId: "session-local",
       userStoryId: "story-local",
       generation: 1,

@@ -508,6 +508,7 @@ export type PreviewRuntimeClient = {
     previewManifest: PreviewManifest
     cloudUploadConsentAt: string
     operationId: string
+    localPath: string
     sourceRevision?: string
     resourceSize?: { vcpus: number; memoryGb: number }
   }): Promise<PreviewSessionView>

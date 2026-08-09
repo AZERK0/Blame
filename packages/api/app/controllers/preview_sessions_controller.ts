@@ -28,6 +28,10 @@ export default class PreviewSessionsController {
           previewManifest: objectBody(body.previewManifest) as PreviewManifest,
           cloudUploadConsentAt: requiredString(body.cloudUploadConsentAt, 'cloudUploadConsentAt'),
           sourceRevision: optionalString(body.sourceRevision, 'sourceRevision'),
+          sourceMetadata:
+            body.sourceMetadata === undefined
+              ? undefined
+              : previewSourceMetadata(body.sourceMetadata),
           resourceSize: resourceSize(body.resourceSize),
         },
         requiredString(body.operationId ?? context.request.header('idempotency-key'), 'operationId')
@@ -207,6 +211,7 @@ function previewCommand(value: unknown): PreviewSessionCommand {
       return {
         type: command.type,
         deltaRevision: requiredString(command.deltaRevision, 'deltaRevision'),
+        workspaceHash: optionalHash(command.workspaceHash, 'workspaceHash'),
       }
     default:
       throw invalidRequest('Unsupported preview command.')
@@ -234,6 +239,16 @@ function resourceSize(value: unknown) {
   const vcpus = positiveInteger(input.vcpus, 'resourceSize.vcpus')
   const memoryGb = positiveInteger(input.memoryGb, 'resourceSize.memoryGb')
   return { vcpus, memoryGb }
+}
+
+function previewSourceMetadata(value: unknown) {
+  const input = objectBody(value)
+  return {
+    baseRevision: requiredString(input.sourceRevision, 'sourceMetadata.sourceRevision'),
+    sanitizedTreeHash: requiredHash(input.sanitizedTreeHash, 'sourceMetadata.sanitizedTreeHash'),
+    lockfileHash: requiredHash(input.lockfileHash, 'sourceMetadata.lockfileHash'),
+    workspaceHash: requiredHash(input.workspaceHash, 'sourceMetadata.workspaceHash'),
+  }
 }
 
 function objectBody(value: unknown): Record<string, unknown> {

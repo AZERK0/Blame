@@ -6,6 +6,7 @@ export async function measureRunnerPhase<T>(
   phase:
     | "dockerd.start"
     | "compose.prepare"
+    | "compose.prepare.cached"
     | "compose.pull"
     | "compose.build"
     | "dependencies.install"

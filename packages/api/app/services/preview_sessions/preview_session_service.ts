@@ -40,6 +40,7 @@ export type CreateManagedPreviewInput = {
   previewManifest: PreviewManifest
   cloudUploadConsentAt: string
   sourceRevision?: string
+  sourceMetadata?: PreviewBaselineSourceMetadata
   resourceSize?: { vcpus: number; memoryGb: number }
 }
 
@@ -96,7 +97,7 @@ export default class PreviewSessionService {
 
   async create(ownerUserId: string, input: CreateManagedPreviewInput, operationId: string) {
     validateOperationId(operationId)
-    await UserStory.query()
+    const story = await UserStory.query()
       .where('id', input.userStoryId)
       .whereIn('projectId', Project.query().select('id').where('userId', ownerUserId))
       .firstOrFail()
@@ -135,6 +136,9 @@ export default class PreviewSessionService {
       ).catch(() => undefined)
       const requestedVcpus = input.resourceSize?.vcpus ?? 2
       await this.quota.assertCanCreate(ownerUserId, requestedVcpus)
+      const baseline = input.sourceMetadata
+        ? await this.baselines.lookupForProject(story.projectId, planHash, input.sourceMetadata)
+        : undefined
       const session = await this.orchestrator.create({
         id: sessionId,
         userStoryId: input.userStoryId,
@@ -143,6 +147,10 @@ export default class PreviewSessionService {
         plan,
         planHash,
         sourceRevision: input.sourceRevision,
+        baselineId: baseline?.id,
+        provisionSource: baseline?.providerSnapshotId
+          ? { type: 'snapshot', snapshotId: baseline.providerSnapshotId }
+          : undefined,
         resourceSize: input.resourceSize,
         cloudUploadConsentAt: consentAt,
       })
@@ -337,8 +345,13 @@ export default class PreviewSessionService {
     sessionId: string,
     metadata: PreviewBaselineSourceMetadata
   ) {
-    await this.get(ownerUserId, sessionId)
-    return { baseline: await this.baselines.lookupForSession(sessionId, metadata) }
+    const session = await this.get(ownerUserId, sessionId)
+    const unchanged = sourceImportUnchanged(session, metadata)
+    return {
+      unchanged,
+      session,
+      baseline: unchanged ? undefined : await this.baselines.lookupForSession(sessionId, metadata),
+    }
   }
 
   async importSource(
@@ -413,7 +426,9 @@ export default class PreviewSessionService {
       let runtimeLostDuringBaselineRestore = false
       try {
         let syncHandle = handle
-        if (baseline) {
+        const baselineAlreadyProvisioned =
+          Boolean(baseline) && record.baselineId === baseline?.id && !record.sourceArtifactId
+        if (baseline && !baselineAlreadyProvisioned) {
           if (!baseline?.providerSnapshotId || !driver.restoreBaseline) {
             throw new PreviewRuntimeError({
               code: 'UNSUPPORTED_CAPABILITY',
@@ -450,6 +465,7 @@ export default class PreviewSessionService {
         }
         current.state.sync = 'clean'
         current.sourceRevision = receipt.sourceRevision
+        current.workspaceHash = receipt.workspaceHash
         current.sourceArtifactId = source.id
         current.baselineId = baseline?.id
         current.lastExportedJournalRevision = '0'
@@ -782,6 +798,22 @@ function validRecentConsent(value: string) {
     })
   }
   return consent.toUTC().toISO()!
+}
+
+export function sourceImportUnchanged(
+  session: Pick<
+    import('@blame/preview-runtime').PreviewSessionView,
+    'state' | 'pendingDeltaArtifactId' | 'workspaceHash' | 'sourceRevision'
+  >,
+  metadata: PreviewBaselineSourceMetadata
+) {
+  return (
+    session.state.sync === 'clean' &&
+    !session.pendingDeltaArtifactId &&
+    session.workspaceHash === metadata.workspaceHash &&
+    session.sourceRevision === metadata.baseRevision &&
+    ['running', 'suspended'].includes(session.state.host)
+  )
 }
 
 function validateOperationId(value: string) {

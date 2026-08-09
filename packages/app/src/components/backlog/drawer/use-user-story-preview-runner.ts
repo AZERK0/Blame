@@ -216,6 +216,7 @@ function useCloudPreviewRuntime(input: {
             previewManifest: JSON.parse(manifestText!),
             cloudUploadConsentAt: input.preference.confirmedCloudUploadAt,
             operationId,
+            localPath: input.worktree,
           })
           localStorage.setItem(
             cloudSessionStorageId(input.userStoryId, profile),
@@ -239,11 +240,16 @@ function useCloudPreviewRuntime(input: {
             ).session
             setSession(active)
           }
-          active = await client.command({
-            sessionId: active.id,
-            command: { type: "resume-host" },
-            operationId: crypto.randomUUID(),
-          })
+          if (
+            active.state.host !== "running" ||
+            active.desired.host !== "active"
+          ) {
+            active = await client.command({
+              sessionId: active.id,
+              command: { type: "resume-host" },
+              operationId: crypto.randomUUID(),
+            })
+          }
         }
         if (!active.sourceRevision) {
           active = (

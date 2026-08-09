@@ -32,7 +32,7 @@ test.group('preview baseline fingerprints', () => {
       planHash: 'd'.repeat(64),
       lockfileHash: 'c'.repeat(64),
       runnerImageDigest: `sha256:${'e'.repeat(64)}`,
-      runnerVersion: '0.2.10',
+      runnerVersion: '0.2.11',
       protocolVersion: 3,
       cachePolicyVersion: '2',
     }

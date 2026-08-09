@@ -68,12 +68,14 @@ export class PreviewReconciler {
             observedHandshake = observation.handshake;
         }
       }
-      handle = await this.reconcileHost(driver, next, handle);
+      const host = await this.reconcileHost(driver, next, handle);
+      handle = host.handle;
       await this.acknowledgeRemoteDelta(driver, next, handle);
       if (handle && next.desired.host === "active") {
         applyHandshake(
           next,
           observedHandshake ??
+            host.observation?.handshake ??
             (await driver.inspect(handle, { probeServices: false })).handshake,
         );
         await this.reconcileEngine(driver, next, handle);
@@ -100,7 +102,10 @@ export class PreviewReconciler {
     driver: PreviewRuntimeDriver,
     record: PreviewSessionRecord,
     handle: RuntimeHandle | undefined,
-  ) {
+  ): Promise<{
+    handle: RuntimeHandle | undefined;
+    observation?: RuntimeObservation;
+  }> {
     if (record.desired.host === "destroyed") {
       if (handle) {
         if (record.state.engine === "running") {
@@ -130,15 +135,15 @@ export class PreviewReconciler {
       record.state.engine = "stopped";
       record.state.preview = "closed";
       record.stoppedAt = new Date().toISOString();
-      return undefined;
+      return { handle: undefined };
     }
     if (record.desired.host === "suspended") {
       if (!handle || record.state.host === "unprovisioned") {
         record.state.host = "suspended";
-        return handle;
+        return { handle };
       }
       if (record.state.host === "suspended" && record.state.sync !== "failed") {
-        return handle;
+        return { handle };
       }
       if (record.state.host === "suspended") {
         record.state.host = "resuming";
@@ -162,7 +167,7 @@ export class PreviewReconciler {
       await driver.suspendHost(handle);
       record.state.host = "suspended";
       if (exportError) throw exportError;
-      return handle;
+      return { handle };
     }
     if (!handle || ["unprovisioned", "destroyed"].includes(record.state.host)) {
       record.state.host = "provisioning";
@@ -173,21 +178,23 @@ export class PreviewReconciler {
         fencingToken: record.fencingToken,
         plan: record.plan,
         resourceSize: record.resourceSize,
+        source: record.provisionSource,
       });
-      fenceRuntimeHandle(created, record.fencingToken);
-      await this.options.repository.setRuntimeHandle(record.id, created);
+      fenceRuntimeHandle(created.handle, record.fencingToken);
+      await this.options.repository.setRuntimeHandle(record.id, created.handle);
       record.state.host = "running";
       return created;
     }
     if (["suspended", "failed"].includes(record.state.host)) {
       record.state.host = "resuming";
-      await driver.resumeHost(handle);
+      const observation = await driver.resumeHost(handle);
       await this.options.repository.setRuntimeHandle(record.id, handle);
       record.state.host = "running";
       record.generation += 1;
       record.endpointMap = undefined;
+      return { handle, observation: observation || undefined };
     }
-    return handle;
+    return { handle };
   }
 
   private async reconcileEngine(

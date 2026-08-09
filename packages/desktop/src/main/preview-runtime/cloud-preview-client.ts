@@ -17,6 +17,12 @@ export type CloudManagedPreviewCreateInput = {
   cloudUploadConsentAt: string;
   operationId: string;
   sourceRevision?: string;
+  sourceMetadata?: {
+    sourceRevision: string;
+    sanitizedTreeHash: string;
+    lockfileHash: string;
+    workspaceHash: string;
+  };
   resourceSize?: { vcpus: number; memoryGb: number };
 };
 export class CloudPreviewClient implements PreviewSessionBackend<CloudManagedPreviewCreateInput> {
@@ -44,6 +50,7 @@ export class CloudPreviewClient implements PreviewSessionBackend<CloudManagedPre
         cloudUploadConsentAt: input.cloudUploadConsentAt,
         operationId: input.operationId,
         sourceRevision: input.sourceRevision,
+        sourceMetadata: input.sourceMetadata,
         resourceSize: input.resourceSize,
       },
     });
@@ -176,13 +183,19 @@ export class CloudPreviewClient implements PreviewSessionBackend<CloudManagedPre
   ) {
     return this.request<{
       baseline?: UploadTarget["baseline"];
+      unchanged: boolean;
+      session: PreviewSessionView;
     }>(`/preview-sessions/${encoded(sessionId)}/source/import`, {
       method: "POST",
       body: { action: "negotiate", ...metadata },
     });
   }
 
-  applySourceUpload(sessionId: string, artifactId: string, baselineId?: string) {
+  applySourceUpload(
+    sessionId: string,
+    artifactId: string,
+    baselineId?: string,
+  ) {
     return this.request<PreviewSessionView>(
       `/preview-sessions/${encoded(sessionId)}/source/import`,
       {

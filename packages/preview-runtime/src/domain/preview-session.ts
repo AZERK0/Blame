@@ -5,16 +5,44 @@ import type { RuntimeCapabilities } from "./runtime-capabilities.js";
 import type { RuntimeProfileId } from "./runtime-profile.js";
 
 export type HostState =
-  | "unprovisioned" | "provisioning" | "running" | "suspending"
-  | "suspended" | "resuming" | "destroying" | "destroyed" | "failed";
+  | "unprovisioned"
+  | "provisioning"
+  | "running"
+  | "suspending"
+  | "suspended"
+  | "resuming"
+  | "destroying"
+  | "destroyed"
+  | "failed";
 export type EngineState =
-  | "idle" | "preparing" | "starting" | "running" | "stopping"
-  | "stopped" | "failed";
-export type PreviewState = "closed" | "opening" | "ready" | "degraded" | "closing";
-export type AgentState = "idle" | "starting" | "running" | "stopping" | "failed";
+  | "idle"
+  | "preparing"
+  | "starting"
+  | "running"
+  | "stopping"
+  | "stopped"
+  | "failed";
+export type PreviewState =
+  | "closed"
+  | "opening"
+  | "ready"
+  | "degraded"
+  | "closing";
+export type AgentState =
+  | "idle"
+  | "starting"
+  | "running"
+  | "stopping"
+  | "failed";
 export type SyncState =
-  | "clean" | "importing" | "exporting" | "pending_local_sync"
-  | "applying" | "conflict" | "failed" | "discarded";
+  | "clean"
+  | "importing"
+  | "exporting"
+  | "pending_local_sync"
+  | "applying"
+  | "conflict"
+  | "failed"
+  | "discarded";
 
 export type PreviewSessionState = {
   host: HostState;
@@ -45,7 +73,11 @@ export type PreviewSessionCommand =
   | { type: "resume-host" }
   | { type: "report-sync-conflict" }
   | { type: "destroy-host"; discardPendingDelta?: { confirmationId: string } }
-  | { type: "ack-local-sync"; deltaRevision: string };
+  | {
+      type: "ack-local-sync";
+      deltaRevision: string;
+      workspaceHash?: string;
+    };
 
 export type CreatePreviewSessionInput = {
   id?: string;
@@ -55,6 +87,9 @@ export type CreatePreviewSessionInput = {
   plan: PreviewExecutionPlan;
   planHash: string;
   sourceRevision?: string;
+  workspaceHash?: string;
+  baselineId?: string;
+  provisionSource?: import("../ports/preview-runtime-driver.js").RuntimeProvisionSource;
   resourceSize?: { vcpus: number; memoryGb: number };
   cloudUploadConsentAt?: string;
 };
@@ -84,8 +119,10 @@ export type PreviewSessionRecord = {
   runnerVersion?: string;
   imageDigest?: string;
   sourceRevision?: string;
+  workspaceHash?: string;
   sourceArtifactId?: string;
   baselineId?: string;
+  provisionSource?: import("../ports/preview-runtime-driver.js").RuntimeProvisionSource;
   lastExportedJournalRevision?: string;
   lastAppliedLocalRevision?: string;
   lastAcknowledgedRemoteRevision?: string;
@@ -104,7 +141,11 @@ export type PreviewSessionRecord = {
 
 export type PreviewSessionView = Omit<
   PreviewSessionRecord,
-  "providerHandleEncrypted" | "endpointMapEncrypted" | "fencingToken" | "plan"
+  | "providerHandleEncrypted"
+  | "endpointMapEncrypted"
+  | "fencingToken"
+  | "plan"
+  | "provisionSource"
 > & {
   capabilities?: RuntimeCapabilities;
   usage?: {
@@ -126,7 +167,9 @@ export type PreviewSessionEvent = {
   message: string;
 };
 
-export interface PreviewSessionBackend<CreateInput = CreatePreviewSessionInput> {
+export interface PreviewSessionBackend<
+  CreateInput = CreatePreviewSessionInput,
+> {
   create(input: CreateInput): Promise<PreviewSessionView>;
   command(
     sessionId: string,
@@ -134,22 +177,39 @@ export interface PreviewSessionBackend<CreateInput = CreatePreviewSessionInput> 
     operationId: string,
   ): Promise<PreviewSessionView>;
   get(sessionId: string): Promise<PreviewSessionView>;
-  events(sessionId: string, cursor?: string): AsyncIterable<PreviewSessionEvent>;
+  events(
+    sessionId: string,
+    cursor?: string,
+  ): AsyncIterable<PreviewSessionEvent>;
 }
 export function initialPreviewSessionState(): PreviewSessionState {
-  return { host: "unprovisioned", engine: "idle", preview: "closed", agent: "idle", sync: "clean" };
+  return {
+    host: "unprovisioned",
+    engine: "idle",
+    preview: "closed",
+    agent: "idle",
+    sync: "clean",
+  };
 }
 
 export function initialPreviewSessionDesired(): PreviewSessionDesired {
-  return { host: "active", services: "stopped", preview: "closed", agent: "idle" };
+  return {
+    host: "active",
+    services: "stopped",
+    preview: "closed",
+    agent: "idle",
+  };
 }
 
-export function previewSessionView(record: PreviewSessionRecord): PreviewSessionView {
+export function previewSessionView(
+  record: PreviewSessionRecord,
+): PreviewSessionView {
   const {
     providerHandleEncrypted: _handle,
     endpointMapEncrypted: _map,
     fencingToken: _fencingToken,
     plan: _plan,
+    provisionSource: _provisionSource,
     ...view
   } = record;
   return structuredClone(view);

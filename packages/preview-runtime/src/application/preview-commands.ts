@@ -24,8 +24,12 @@ export function applyPreviewCommand(
       next.desired.preview = "open";
       next.selection = {
         configurationId: command.configurationId,
-        serviceIds: command.serviceIds ? [...new Set(command.serviceIds)] : undefined,
-        ...(command.primaryRoute ? { primaryRoute: { ...command.primaryRoute } } : {}),
+        serviceIds: command.serviceIds
+          ? [...new Set(command.serviceIds)]
+          : undefined,
+        ...(command.primaryRoute
+          ? { primaryRoute: { ...command.primaryRoute } }
+          : {}),
       };
       break;
     case "stop-services":
@@ -59,7 +63,8 @@ export function applyPreviewCommand(
       if (pendingSync(next) && !command.discardPendingDelta) {
         throw new PreviewRuntimeError({
           code: "SYNC_CONFLICT",
-          message: "The durable remote delta must be applied or explicitly discarded before destruction.",
+          message:
+            "The durable remote delta must be applied or explicitly discarded before destruction.",
           retryable: false,
         });
       }
@@ -73,11 +78,13 @@ export function applyPreviewCommand(
       if (next.lastExportedJournalRevision !== command.deltaRevision) {
         throw new PreviewRuntimeError({
           code: "SYNC_CONFLICT",
-          message: "The acknowledged delta does not match the latest durable export.",
+          message:
+            "The acknowledged delta does not match the latest durable export.",
           retryable: false,
         });
       }
       next.lastAppliedLocalRevision = command.deltaRevision;
+      if (command.workspaceHash) next.workspaceHash = command.workspaceHash;
       next.state.sync = "applying";
       break;
   }
@@ -87,8 +94,12 @@ export function applyPreviewCommand(
 function pendingSync(record: PreviewSessionRecord) {
   return (
     Boolean(record.pendingDeltaArtifactId) ||
-    ["exporting", "pending_local_sync", "applying", "conflict", "failed"].includes(
-      record.state.sync,
-    )
+    [
+      "exporting",
+      "pending_local_sync",
+      "applying",
+      "conflict",
+      "failed",
+    ].includes(record.state.sync)
   );
 }

@@ -155,6 +155,7 @@ type FakeHost = {
 
 export class FakePreviewRuntimeDriver implements PreviewRuntimeDriver {
   readonly calls: string[] = [];
+  readonly provisionInputs: ProvisionInput[] = [];
   exportDeltaFailure?: Error;
   readonly unavailableServiceIds = new Set<string>();
   private hosts = new Map<RuntimeHandle, FakeHost>();
@@ -167,6 +168,7 @@ export class FakePreviewRuntimeDriver implements PreviewRuntimeDriver {
 
   async provisionHost(input: ProvisionInput) {
     this.calls.push("provisionHost");
+    this.provisionInputs.push(structuredClone(input));
     const handle = runtimeHandle({ id: input.sessionId });
     this.hosts.set(handle, {
       id: input.sessionId,
@@ -177,7 +179,7 @@ export class FakePreviewRuntimeDriver implements PreviewRuntimeDriver {
       journalRevision: 0,
       endpointsRevision: 1,
     });
-    return handle;
+    return { handle, observation: this.observation(this.host(handle)) };
   }
 
   async resumeHost(handle: RuntimeHandle) {
@@ -185,6 +187,7 @@ export class FakePreviewRuntimeDriver implements PreviewRuntimeDriver {
     const host = this.host(handle);
     host.suspended = false;
     host.endpointsRevision += 1;
+    return this.observation(host);
   }
 
   async syncIn(handle: RuntimeHandle, source: SourceArtifact) {
@@ -252,6 +255,12 @@ export class FakePreviewRuntimeDriver implements PreviewRuntimeDriver {
         healthy: true,
       })),
       journalRevision: String(host.journalRevision),
+      handshake: {
+        protocolVersion: 3,
+        runnerVersion: "test",
+        imageDigest: "sha256:test",
+        capabilities: resolveCapabilities(this.profile, host.plan).capabilities,
+      },
     };
   }
 

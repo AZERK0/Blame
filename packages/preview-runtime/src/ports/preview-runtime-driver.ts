@@ -45,6 +45,17 @@ export type ProvisionInput = {
   fencingToken: number;
   plan: PreviewExecutionPlan;
   resourceSize: { vcpus: number; memoryGb: number };
+  source?: RuntimeProvisionSource;
+};
+
+export type RuntimeProvisionSource = {
+  type: "snapshot";
+  snapshotId: string;
+};
+
+export type ProvisionReceipt = {
+  handle: RuntimeHandle;
+  observation?: RuntimeObservation;
 };
 
 export type SourceArtifact = {
@@ -135,8 +146,8 @@ export interface PreviewExecutionEngine {
 export interface PreviewRuntimeDriver {
   readonly profile: RuntimeProfileId;
   capabilities(plan: PreviewExecutionPlan): Promise<CapabilityReport>;
-  provisionHost(input: ProvisionInput): Promise<RuntimeHandle>;
-  resumeHost(handle: RuntimeHandle): Promise<void>;
+  provisionHost(input: ProvisionInput): Promise<ProvisionReceipt>;
+  resumeHost(handle: RuntimeHandle): Promise<RuntimeObservation | void>;
   syncIn(
     handle: RuntimeHandle,
     source: SourceArtifact,

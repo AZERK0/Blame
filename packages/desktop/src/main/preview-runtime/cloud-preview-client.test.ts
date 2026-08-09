@@ -87,6 +87,10 @@ test("prepares an upload without serializing workspace bytes", async (context) =
 
 test("normalizes stored manifests before creating a cloud session", async (context) => {
   let requestBody: {
+    sourceMetadata?: {
+      sourceRevision?: string;
+      workspaceHash?: string;
+    };
     previewManifest?: {
       services?: Array<{ id?: string; command?: string; dependsOn?: string[] }>;
     };
@@ -105,6 +109,12 @@ test("normalizes stored manifests before creating a cloud session", async (conte
     profile: "vercel-compose",
     cloudUploadConsentAt: new Date().toISOString(),
     operationId: "operation-id",
+    sourceMetadata: {
+      sourceRevision: "a".repeat(40),
+      sanitizedTreeHash: "b".repeat(64),
+      lockfileHash: "c".repeat(64),
+      workspaceHash: "d".repeat(64),
+    },
     previewManifest: {
       confidence: "high",
       project: {
@@ -157,4 +167,5 @@ test("normalizes stored manifests before creating a cloud session", async (conte
   );
   assert.match(vitrine?.command ?? "", /dev --hostname 0\.0\.0\.0/);
   assert.deepEqual(vitrine?.dependsOn, []);
+  assert.equal(requestBody.sourceMetadata?.workspaceHash, "d".repeat(64));
 });

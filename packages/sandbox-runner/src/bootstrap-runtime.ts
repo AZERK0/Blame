@@ -1,6 +1,14 @@
 import { spawn } from "node:child_process";
-import { chmod, chown, mkdir, open, readFile, writeFile } from "node:fs/promises";
+import {
+  chmod,
+  chown,
+  mkdir,
+  open,
+  readFile,
+  writeFile,
+} from "node:fs/promises";
 import { runtimePaths } from "./runtime-paths.js";
+import { kickstartDockerEngine } from "./supervisor/docker-engine.js";
 
 const watcherPidPath = "/run/blame/journal-watcher.pid";
 
@@ -32,6 +40,7 @@ export async function bootstrapRuntime() {
   await mkdir(runtimePaths.requestDirectory, { recursive: true, mode: 0o700 });
   await chmod(runtimePaths.requestDirectory, 0o700);
   await ensureJournalWatcher();
+  await kickstartDockerEngine();
 }
 
 async function ensureJournalWatcher() {
@@ -51,13 +60,23 @@ async function ensureJournalWatcher() {
   });
   child.unref();
   if (!child.pid) throw new Error("Unable to start workspace journal.");
-  await writeFile(watcherPidPath, String(child.pid), { mode: 0o600, flush: true });
+  await writeFile(watcherPidPath, String(child.pid), {
+    mode: 0o600,
+    flush: true,
+  });
 }
 
 async function ensureIdentity(name: string, group: boolean) {
   if (await commandOk("getent", [group ? "group" : "passwd", name])) return;
   if (group) await requiredCommand("groupadd", ["--system", name]);
-  else await requiredCommand("useradd", ["--system", "--create-home", "--shell", "/usr/sbin/nologin", name]);
+  else
+    await requiredCommand("useradd", [
+      "--system",
+      "--create-home",
+      "--shell",
+      "/usr/sbin/nologin",
+      name,
+    ]);
 }
 
 async function addToGroup(user: string, group: string) {
@@ -73,7 +92,9 @@ async function identity(user: string) {
 }
 
 function idValue(flag: string, user: string) {
-  return commandOutput("id", [flag, user]).then((value) => Number(value.trim()));
+  return commandOutput("id", [flag, user]).then((value) =>
+    Number(value.trim()),
+  );
 }
 
 function commandOk(command: string, args: string[]) {

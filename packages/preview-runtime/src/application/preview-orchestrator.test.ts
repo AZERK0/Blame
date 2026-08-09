@@ -71,6 +71,29 @@ test("requires cloud upload consent", async () => {
   );
 });
 
+test("provisions directly from a selected snapshot without a redundant inspect", async () => {
+  const { driver, orchestrator, plan } = fixture();
+  const created = await orchestrator.create({
+    id: "session",
+    userStoryId: "story",
+    ownerUserId: "owner",
+    profile: "vercel-compose",
+    plan,
+    planHash: "hash",
+    baselineId: "baseline",
+    provisionSource: { type: "snapshot", snapshotId: "snap_ready" },
+    cloudUploadConsentAt: new Date().toISOString(),
+  });
+
+  assert.equal(created.baselineId, "baseline");
+  assert.deepEqual(driver.provisionInputs[0]?.source, {
+    type: "snapshot",
+    snapshotId: "snap_ready",
+  });
+  assert.equal(driver.calls.filter((call) => call === "inspect").length, 0);
+  assert.equal("provisionSource" in created, false);
+});
+
 test("runs commands idempotently and keeps state axes independent", async () => {
   const { driver, orchestrator, plan, repository } = fixture();
   await orchestrator.create({
@@ -164,6 +187,7 @@ test("exports before suspension and defers runner ack until resume", async () =>
     {
       type: "ack-local-sync",
       deltaRevision: pending.lastExportedJournalRevision!,
+      workspaceHash: "a".repeat(64),
     },
     "ack",
   );
@@ -217,6 +241,7 @@ test("acknowledges a durable delta after the retained sandbox was released", asy
     {
       type: "ack-local-sync",
       deltaRevision: suspended.lastExportedJournalRevision!,
+      workspaceHash: "b".repeat(64),
     },
     "ack",
   );
@@ -329,7 +354,11 @@ test("rejects an acknowledgement older than the latest durable delta", async () 
   const firstRevision = first.lastExportedJournalRevision!;
   await orchestrator.command(
     "session",
-    { type: "ack-local-sync", deltaRevision: firstRevision },
+    {
+      type: "ack-local-sync",
+      deltaRevision: firstRevision,
+      workspaceHash: "c".repeat(64),
+    },
     "ack-1",
   );
   await orchestrator.command("session", { type: "resume-host" }, "resume");
@@ -344,7 +373,11 @@ test("rejects an acknowledgement older than the latest durable delta", async () 
     () =>
       orchestrator.command(
         "session",
-        { type: "ack-local-sync", deltaRevision: firstRevision },
+        {
+          type: "ack-local-sync",
+          deltaRevision: firstRevision,
+          workspaceHash: "d".repeat(64),
+        },
         "stale-ack",
       ),
     (error) =>

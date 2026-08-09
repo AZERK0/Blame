@@ -282,6 +282,12 @@ La performance ne change pas la fidélité du runtime :
 - les pulls utilisent la politique `missing` et réutilisent les layers persistés ;
 - les builds sont limités aux services sélectionnés et à leurs dépendances ;
 - les services indépendants sont lancés par un seul `compose up` ;
+- le bootstrap lance `dockerd` sans attendre sa readiness afin de recouvrir son
+  initialisation avec l’import source et le handshake ;
+- un fingerprint du Compose rendu évite de réécrire sa configuration et de
+  recréer ses volumes lorsqu’ils correspondent déjà exactement ;
+- un seul snapshot du workspace alimente les fingerprints de setup et d’images
+  pendant un démarrage ;
 - les fenêtres de healthcheck sont bornées ;
 - les logs sont paginés par curseur et bornés ;
 - les arrêts sont gracieux et suppriment les orphelins.
@@ -298,6 +304,7 @@ Phases obligatoires :
 - `workspace.sync` ;
 - `dockerd.start` ;
 - `compose.prepare` ;
+- `compose.prepare.cached` ;
 - `compose.pull` ;
 - `compose.build` ;
 - `dependencies.install` ;
@@ -355,7 +362,18 @@ Une baseline est une ligne `preview_project_baselines` et un snapshot Vercel San
 
 Les URL de bindings du warm-up sont des placeholders non signés (`baseline.invalid`). Aucune URL Preview Edge, capability, clé publique, requête de contrôle ou delta ne peut donc entrer dans la baseline. La source, les fichiers `.env`, credentials, journaux et métadonnées Git sensibles restent exclus par les validateurs existants.
 
-À l’attachement d’un worktree, le desktop envoie d’abord les métadonnées de source. En cas de hit, il transfère un delta gzip limité aux chemins `files/*` ; sinon il transfère l’archive complète. Le delta vérifie le `baseHash` après restauration du snapshot, contrôle chaque checksum et applique les changements avec sauvegarde et rollback. Un delta n’est accepté que lorsque les services sont arrêtés.
+À l’attachement d’un worktree, le desktop calcule et envoie les métadonnées de source avant la création provider. L’API sélectionne alors la baseline et provisionne directement la Sandbox US depuis son snapshot ; elle ne crée pas une Sandbox vide destinée à être immédiatement remplacée. En cas de hit, le desktop transfère un delta gzip limité aux chemins `files/*` ; sinon il transfère l’archive complète. Le delta vérifie le `baseHash` après restauration du snapshot, contrôle chaque checksum et applique les changements avec sauvegarde et rollback. Un delta n’est accepté que lorsque les services sont arrêtés.
+
+Après la capture des métadonnées, le desktop construit spéculativement le delta
+pendant que l’API provisionne la Sandbox. Ce résultat n’est utilisé que si la
+négociation confirme une baseline exacte ; un miss ou une baseline seulement
+compatible conserve le chemin archive complète.
+
+La session persiste le `workspaceHash` effectivement importé. Après reprise du
+même sandbox, une négociation dont la révision et le hash sont identiques, sans
+delta durable en attente, court-circuite construction, upload, restauration et
+import. Toute divergence reprend le chemin vérifié normal ; le hash n’est jamais
+utilisé pour ignorer un conflit ou un writer distant.
 
 Le plan de repli est explicite : image complète, runtime froid, synchronisation complète, puis warm-up normal. Un cache invalide, une baseline expirée ou un snapshot absent ne contourne jamais les contrôles de propriété, de digest, d’URL, de taille ou de génération.
 
@@ -365,6 +383,6 @@ Les états `building`, `ready`, `failed`, `expired` et `deleting` sont persisté
 
 La reaper ne sélectionne que les sessions avec handle provider, deadline échue et état hôte non suspendu/détruit. La transition suspendue est idempotente : une seconde observation ne crée ni opération, ni événement, ni appel provider. Les sessions sans allocation provider ne consomment pas les quotas actifs et les vCPU ; les coûts restent calculés à partir des compteurs provider persistés.
 
-Les phases `baseline.lookup`, `baseline.build`, `baseline.restore`, `baseline.delete`, `baseline.gc`, `workspace.sync`, `dockerd.start`, `compose.prepare`, `compose.pull`, `compose.build`, `dependencies.install`, `services.start` et `preview.readiness` sont mesurées avec durée et statut uniquement. Les attributs de télémétrie sont bornés et ne contiennent ni fingerprint complet, URL signée, contenu de fichier, commande, environnement ou secret.
+Les phases `baseline.lookup`, `baseline.build`, `baseline.restore`, `baseline.delete`, `baseline.gc`, `workspace.sync`, `workspace.sync.skip`, `dockerd.start`, `compose.prepare`, `compose.prepare.cached`, `compose.pull`, `compose.build`, `dependencies.install`, `services.start` et `preview.readiness` sont mesurées avec durée et statut uniquement. Les attributs de télémétrie sont bornés et ne contiennent ni fingerprint complet, URL signée, contenu de fichier, commande, environnement ou secret.
 
 Le benchmark reproductible local est `pnpm benchmark:preview-runtime`. Il crée un dépôt temporaire, mesure archive complète et delta, compare taille et durée, puis détruit son répertoire temporaire. Il ne contacte pas Vercel et ne lit aucun fichier `.env`.

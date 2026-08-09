@@ -1,13 +1,5 @@
 import { spawn } from "node:child_process";
-import {
-  chown,
-  mkdir,
-  open,
-  readFile,
-  realpath,
-  rm,
-  writeFile,
-} from "node:fs/promises";
+import { chown, mkdir, readFile, realpath, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import {
   composeCacheVolumeName,
@@ -27,17 +19,24 @@ import {
 } from "../logs/compose-log-collector.js";
 import { selectedSetupTasks } from "./runtime-selection.js";
 import { createHash } from "node:crypto";
-import { snapshotWorkspace } from "../workspace/workspace-snapshot.js";
+import {
+  snapshotWorkspace,
+  type WorkspaceSnapshot,
+} from "../workspace/workspace-snapshot.js";
 import {
   setupCacheFingerprintMatches,
   writeSetupCacheFingerprint,
 } from "./setup-cache-fingerprints.js";
+import {
+  dockerDataRoot,
+  dockerEnvironment,
+  dockerReady,
+  ensureDockerEngine,
+  shutdownDockerEngine,
+} from "./docker-engine.js";
 
-const dockerSocket = "/run/blame/docker.sock";
-const dockerPidPath = "/run/blame/dockerd.pid";
-const dockerDataRoot = "/var/lib/blame/docker";
 const dockerVolumeRoot = `${dockerDataRoot}/volumes/`;
-const dockerEnvironment = { DOCKER_HOST: `unix://${dockerSocket}` };
+const composeFingerprintPath = "/var/lib/blame/runtime/compose-fingerprint";
 
 export class ComposeSupervisor {
   async prepare(
@@ -50,24 +49,40 @@ export class ComposeSupervisor {
       const rendered = renderCloudCompose(plan, browserBindingUrls, {
         projectUser: `${identity.uid}:${identity.gid}`,
       });
+      const fingerprint = composeFingerprint(rendered);
+      const engine = this.ensureDocker();
+      if (await preparedComposeMatches(fingerprint)) {
+        await measureRunnerPhase(
+          "compose.prepare.cached",
+          async () => undefined,
+        );
+        await engine;
+        return;
+      }
       await mkdir(dirname(runtimePaths.composeFile), {
         recursive: true,
         mode: 0o700,
       });
-      await writeFile(runtimePaths.composeFile, rendered.yaml, {
+      await Promise.all([
+        engine,
+        writeFile(runtimePaths.composeFile, rendered.yaml, {
+          mode: 0o600,
+          flush: true,
+        }),
+        writeFile(
+          `${runtimePaths.composeFile}.targets.json`,
+          JSON.stringify(rendered.targets),
+          {
+            mode: 0o600,
+            flush: true,
+          },
+        ),
+      ]);
+      await this.prepareCaches(plan, identity);
+      await writeFile(composeFingerprintPath, fingerprint, {
         mode: 0o600,
         flush: true,
       });
-      await writeFile(
-        `${runtimePaths.composeFile}.targets.json`,
-        JSON.stringify(rendered.targets),
-        {
-          mode: 0o600,
-          flush: true,
-        },
-      );
-      await this.ensureDocker();
-      await this.prepareCaches(plan, identity);
     });
   }
 
@@ -79,8 +94,9 @@ export class ComposeSupervisor {
         return;
       }
       await this.ensureDocker();
-      await this.runSetup(plan, services);
-      await this.prepareImages(plan, services);
+      const snapshot = await snapshotWorkspace();
+      await this.runSetup(plan, services, snapshot);
+      await this.prepareImages(plan, services, snapshot);
       await command("docker", [
         "compose",
         "-f",
@@ -98,11 +114,13 @@ export class ComposeSupervisor {
   async warm(plan: PreviewExecutionPlan) {
     return measureRunnerPhase("compose.build", async () => {
       const serviceIds = plan.services.map(({ id }) => id);
-      await this.runSetup(plan, serviceIds);
-      await this.prepareImages(plan, [
-        ...plan.setup.map(({ id }) => `setup-${id}`),
-        ...serviceIds,
-      ]);
+      const snapshot = await snapshotWorkspace();
+      await this.runSetup(plan, serviceIds, snapshot);
+      await this.prepareImages(
+        plan,
+        [...plan.setup.map(({ id }) => `setup-${id}`), ...serviceIds],
+        snapshot,
+      );
     });
   }
 
@@ -121,13 +139,7 @@ export class ComposeSupervisor {
   }
 
   async shutdownEngine() {
-    await command("pkill", ["-TERM", "-x", "dockerd"], true);
-    await command("pkill", ["-TERM", "-x", "containerd"], true);
-    await delay(500);
-    await command("pkill", ["-KILL", "-x", "dockerd"], true);
-    await command("pkill", ["-KILL", "-x", "containerd"], true);
-    await rm(dockerSocket, { force: true });
-    await rm(dockerPidPath, { force: true });
+    await shutdownDockerEngine();
   }
 
   async inspect(plan: PreviewExecutionPlan) {
@@ -171,34 +183,7 @@ export class ComposeSupervisor {
   }
 
   private async ensureDocker() {
-    if (await dockerReady()) return;
-    return measureRunnerPhase("dockerd.start", async () => {
-      await resetStaleDocker();
-      await mkdir(dirname(dockerSocket), { recursive: true, mode: 0o710 });
-      const log = await open("/var/log/blame/dockerd.log", "a", 0o600);
-      const child = spawn(
-        "dockerd",
-        [
-          `--host=unix://${dockerSocket}`,
-          `--data-root=${dockerDataRoot}`,
-          `--pidfile=${dockerPidPath}`,
-          "--iptables=true",
-          "--log-driver=local",
-          "--log-opt=max-size=10m",
-          "--log-opt=max-file=3",
-        ],
-        { detached: true, stdio: ["ignore", log.fd, log.fd] },
-      );
-      child.unref();
-      for (let attempt = 0; attempt < 60; attempt += 1) {
-        if (await dockerReady()) return;
-        await delay(500);
-      }
-      throw runnerError(
-        "DOCKERD_NOT_READY",
-        "Docker Engine did not become ready.",
-      );
-    });
+    return ensureDockerEngine();
   }
 
   private async prepareCaches(
@@ -216,9 +201,10 @@ export class ComposeSupervisor {
   private async runSetup(
     plan: PreviewExecutionPlan,
     selectedServices: string[],
+    snapshot: WorkspaceSnapshot,
   ) {
     const stamps = await readSetupStamps();
-    const lockfileHash = await relevantLockfileHash();
+    const lockfileHash = relevantLockfileHash(snapshot.files);
     const cacheMountpoints = await Promise.all(
       plan.caches.map(({ name }) =>
         cacheVolumeMountpoint(composeCacheVolumeName(name)),
@@ -243,7 +229,11 @@ export class ComposeSupervisor {
       const dependencies = task.dependsOn.filter((id) =>
         plan.services.some((service) => service.id === id),
       );
-      await this.prepareImages(plan, [`setup-${task.id}`, ...dependencies]);
+      await this.prepareImages(
+        plan,
+        [`setup-${task.id}`, ...dependencies],
+        snapshot,
+      );
       if (dependencies.length) {
         await command("docker", [
           "compose",
@@ -274,9 +264,9 @@ export class ComposeSupervisor {
   private async prepareImages(
     plan: PreviewExecutionPlan,
     serviceIds: string[],
+    snapshot: WorkspaceSnapshot,
   ) {
     if (!serviceIds.length) return;
-    const snapshot = await snapshotWorkspace();
     const stamps = await readImageStamps();
     const pending = serviceIds.filter((id) => {
       const fingerprint = imageFingerprint(plan, id, snapshot.files);
@@ -338,9 +328,8 @@ async function writeSetupStamps(stamps: Record<string, string>) {
   });
 }
 
-async function relevantLockfileHash() {
-  const snapshot = await snapshotWorkspace();
-  const entries = Object.entries(snapshot.files)
+function relevantLockfileHash(files: WorkspaceSnapshot["files"]) {
+  const entries = Object.entries(files)
     .filter(([path]) =>
       /(^|\/)(pnpm-lock\.yaml|package-lock\.json|yarn\.lock|bun\.lockb|poetry\.lock|Cargo\.lock|uv\.lock)$/.test(
         path,
@@ -348,6 +337,23 @@ async function relevantLockfileHash() {
     )
     .sort(([left], [right]) => left.localeCompare(right));
   return createHash("sha256").update(JSON.stringify(entries)).digest("hex");
+}
+
+function composeFingerprint(rendered: ComposeRenderResult) {
+  return createHash("sha256")
+    .update(rendered.yaml)
+    .update("\0")
+    .update(JSON.stringify(rendered.targets))
+    .digest("hex");
+}
+
+async function preparedComposeMatches(fingerprint: string) {
+  const [stored, composeFile, targets] = await Promise.all([
+    readFile(composeFingerprintPath, "utf8").catch(() => ""),
+    readFile(runtimePaths.composeFile).catch(() => undefined),
+    readFile(`${runtimePaths.composeFile}.targets.json`).catch(() => undefined),
+  ]);
+  return stored === fingerprint && Boolean(composeFile) && Boolean(targets);
 }
 
 async function readImageStamps() {
@@ -405,16 +411,6 @@ function imageItem(plan: PreviewExecutionPlan, id: string) {
     : plan.services.find(({ id: candidate }) => candidate === id);
 }
 
-async function resetStaleDocker() {
-  await command("pkill", ["-TERM", "-x", "dockerd"], true);
-  await command("pkill", ["-TERM", "-x", "containerd"], true);
-  await delay(500);
-  await command("pkill", ["-KILL", "-x", "dockerd"], true);
-  await command("pkill", ["-KILL", "-x", "containerd"], true);
-  await rm(dockerSocket, { force: true });
-  await rm(dockerPidPath, { force: true });
-}
-
 async function cacheVolumeMountpoint(volumeName: string) {
   const inspected = await command("docker", [
     "volume",
@@ -469,11 +465,6 @@ async function projectIdentity() {
   return { uid, gid };
 }
 
-async function dockerReady() {
-  const result = await command("docker", ["info"], true);
-  return result.exitCode === 0;
-}
-
 async function command(
   executable: string,
   args: string[],
@@ -522,8 +513,4 @@ async function command(
     );
   }
   return result;
-}
-
-function delay(milliseconds: number) {
-  return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }

@@ -26,6 +26,7 @@ import {
   type ProvisionInput,
   type RuntimeHandle,
   type RuntimeObservation,
+  type RuntimeProtocolHandshake,
   type RuntimeSelection,
   type RuntimeUsage,
   type SourceArtifact,
@@ -129,26 +130,42 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
         this.config.sandbox.timeoutMinutes,
         this.config.sandbox.vercelPlan
       ) * 60_000
-    const sandbox = await measureRuntimePhase('sandbox.create', () =>
-      this.providerCall('create', () =>
-        Sandbox.getOrCreate({
-          ...this.credentials(),
-          name: sandboxName,
-          image: this.config.sandbox.image!,
-          persistent: true,
-          ports: gatewayPorts,
-          resources: { vcpus: input.resourceSize.vcpus },
-          timeout,
-          snapshotExpiration: this.config.sandbox.snapshotRetentionDays * 86_400_000,
-          keepLastSnapshots: { count: 1, deleteEvicted: true },
-          networkPolicy: this.networkPolicy(),
-          tags: {
-            application: 'blame',
-            deployment: shortTag(this.config.sandbox.deploymentId!),
-            session: shortTag(input.sessionId),
-          },
-        })
-      )
+    const sandboxOptions = {
+      ...this.credentials(),
+      name: sandboxName,
+      persistent: true,
+      ports: gatewayPorts,
+      resources: { vcpus: input.resourceSize.vcpus },
+      timeout,
+      snapshotExpiration: this.config.sandbox.snapshotRetentionDays * 86_400_000,
+      keepLastSnapshots: { count: 1, deleteEvicted: true },
+      networkPolicy: this.networkPolicy(),
+      tags: {
+        application: 'blame',
+        deployment: shortTag(this.config.sandbox.deploymentId!),
+        session: shortTag(input.sessionId),
+      },
+    }
+    const sandbox = await measureRuntimePhase(
+      input.source ? 'baseline.restore' : 'sandbox.create',
+      async () => {
+        if (!input.source) {
+          return this.providerCall('create', () =>
+            Sandbox.getOrCreate({ ...sandboxOptions, image: this.config.sandbox.image! })
+          )
+        }
+        if (!/^snap_[a-zA-Z0-9_-]+$/.test(input.source.snapshotId)) {
+          throw runnerFailure('BASELINE_SNAPSHOT_INVALID', 'Baseline snapshot identity is invalid.')
+        }
+        const existing = await this.findSandboxByName(sandboxName, true)
+        if (existing) return existing
+        return this.providerCall('baseline-restore', () =>
+          Sandbox.create({
+            ...sandboxOptions,
+            source: { type: 'snapshot', snapshotId: input.source!.snapshotId },
+          })
+        )
+      }
     )
     try {
       await sandbox.update({
@@ -171,8 +188,24 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
         resourceVcpus: input.resourceSize.vcpus,
       }
       const runtime = runtimeHandle(handle)
-      await this.assertHandshake(sandbox, runtime)
-      return runtime
+      const handshake = await this.assertHandshake(sandbox, runtime)
+      if (input.source) {
+        await this.runnerCallWithSandbox(sandbox, runtime, {
+          operation: 'resume-host',
+          sessionId: input.sessionId,
+          generation: input.generation,
+        })
+      }
+      return {
+        handle: runtime,
+        observation: {
+          host: 'running' as const,
+          engine: input.source ? ('stopped' as const) : ('idle' as const),
+          generation: input.generation,
+          services: [],
+          handshake,
+        },
+      }
     } catch (error) {
       await sandbox.delete().catch(() => undefined)
       throw error
@@ -185,12 +218,19 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
     const sandbox = await this.sandbox(payload, true)
     await sandbox.update({ ports: payload.gatewayPorts, networkPolicy: this.networkPolicy() })
     await this.bootstrap(sandbox)
-    await this.assertHandshake(sandbox, handle)
+    const handshake = await this.assertHandshake(sandbox, handle)
     await this.runnerCallWithSandbox(sandbox, handle, {
       operation: 'resume-host',
       sessionId: payload.sessionId,
       generation: payload.generation,
     })
+    return {
+      host: 'running' as const,
+      engine: 'stopped' as const,
+      generation: payload.generation,
+      services: [],
+      handshake,
+    }
   }
 
   async syncIn(handle: RuntimeHandle, source: SourceArtifact, options: SyncInOptions = {}) {
@@ -646,11 +686,9 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
   }
 
   private async assertHandshake(sandbox: Sandbox, handle: RuntimeHandle) {
-    const response = await this.runnerCallWithSandbox<{
-      protocolVersion: number
-      runnerVersion: string
-      imageDigest: string
-    }>(sandbox, handle, { operation: 'handshake' })
+    const response = await this.runnerCallWithSandbox<RuntimeProtocolHandshake>(sandbox, handle, {
+      operation: 'handshake',
+    })
     if (response.protocolVersion !== this.config.sandbox.protocolVersion) {
       throw runnerFailure(
         'RUNNER_PROTOCOL_INCOMPATIBLE',
@@ -672,6 +710,7 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
         'Runner image digest does not match the pinned image.'
       )
     }
+    return response
   }
 
   private sandbox(handle: VercelRuntimeHandle, resume: boolean) {
@@ -683,6 +722,17 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
   private async findSandbox(handle: VercelRuntimeHandle, resume: boolean) {
     try {
       return await this.sandbox(handle, resume)
+    } catch (error) {
+      if (providerResourceMissing(error)) return undefined
+      throw error
+    }
+  }
+
+  private async findSandboxByName(name: string, resume: boolean) {
+    try {
+      return await this.providerCall('get', () =>
+        Sandbox.get({ ...this.credentials(), name, resume })
+      )
     } catch (error) {
       if (providerResourceMissing(error)) return undefined
       throw error

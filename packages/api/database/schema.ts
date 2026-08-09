@@ -397,7 +397,7 @@ export class PreviewOperationSchema extends BaseModel {
 }
 
 export class PreviewSessionSchema extends BaseModel {
-  static $columns = ['baselineId', 'createdAt', 'desired', 'endpointMapEncrypted', 'failure', 'fencingToken', 'generation', 'id', 'idleDeadlineAt', 'imageDigest', 'lastAcknowledgedRemoteRevision', 'lastActivityAt', 'lastAppliedLocalRevision', 'lastExportedJournalRevision', 'leaseExpiresAt', 'ownerUserId', 'pendingDeltaArtifactId', 'plan', 'planHash', 'planVersion', 'profile', 'protocolVersion', 'providerHandleEncrypted', 'resourceMemoryGb', 'resourceVcpus', 'revision', 'runnerVersion', 'selection', 'sourceArtifactId', 'sourceRevision', 'state', 'stoppedAt', 'updatedAt', 'userStoryId'] as const
+  static $columns = ['baselineId', 'createdAt', 'desired', 'endpointMapEncrypted', 'failure', 'fencingToken', 'generation', 'id', 'idleDeadlineAt', 'imageDigest', 'lastAcknowledgedRemoteRevision', 'lastActivityAt', 'lastAppliedLocalRevision', 'lastExportedJournalRevision', 'leaseExpiresAt', 'ownerUserId', 'pendingDeltaArtifactId', 'plan', 'planHash', 'planVersion', 'profile', 'protocolVersion', 'providerHandleEncrypted', 'provisionSource', 'resourceMemoryGb', 'resourceVcpus', 'revision', 'runnerVersion', 'selection', 'sourceArtifactId', 'sourceRevision', 'state', 'stoppedAt', 'updatedAt', 'userStoryId', 'workspaceHash'] as const
   $columns = PreviewSessionSchema.$columns
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
@@ -446,6 +446,8 @@ export class PreviewSessionSchema extends BaseModel {
   @column()
   declare providerHandleEncrypted: string | null
   @column()
+  declare provisionSource: string | null
+  @column()
   declare resourceMemoryGb: number
   @column()
   declare resourceVcpus: number
@@ -467,6 +469,8 @@ export class PreviewSessionSchema extends BaseModel {
   declare updatedAt: DateTime | null
   @column()
   declare userStoryId: string
+  @column()
+  declare workspaceHash: string | null
 }
 
 export class PreviewProjectBaselineSchema extends BaseModel {

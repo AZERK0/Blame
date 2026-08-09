@@ -45,6 +45,24 @@ while a single background builder warms the immutable snapshot. Later User
 Stories with the same canonical tree, plan, lockfiles, runner digest, and
 protocol upload only their worktree delta.
 
+Set `BLAME_SANDBOX_VERCEL_PLAN=pro` (or `enterprise`) when the linked Vercel
+project has been upgraded. Leaving it at `hobby` keeps the stricter runtime
+duration and retention guards even though the provider account accepts more.
+
+Apply API migrations before enabling runner `0.2.11`. The source-identity
+migration persists the selected immutable snapshot and the last imported
+workspace hash, allowing direct baseline provisioning and unchanged warm
+resumes:
+
+```sh
+node ace.js migration:run --force
+```
+
+For a baseline hit, `baseline.restore` must replace `sandbox.create` in the
+phase metrics; both phases in the same new-session critical path indicate an
+old API worker. On an unchanged resumed worktree, `workspace.sync.skip` must be
+present and no source upload or baseline restore should follow it.
+
 `BLAME_SANDBOX_DEPLOYMENT_ID` must be a stable, environment-specific identifier.
 The provider sweeper only deletes `blame-` sandboxes carrying the matching
 deployment tag and older than its one-hour anti-race grace period.
@@ -103,4 +121,5 @@ Before enabling a runner digest:
 3. archive the Grype result and verify the Cosign signature in the deployment policy;
 4. run the runtime contract and canary suites;
 5. configure the immutable `@sha256:` reference;
-6. keep the previous digest available for rollback.
+6. set `BLAME_SANDBOX_RUNNER_VERSION=0.2.11`;
+7. keep the previous digest available for rollback.

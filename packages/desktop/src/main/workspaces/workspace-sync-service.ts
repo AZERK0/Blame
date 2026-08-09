@@ -12,20 +12,40 @@ import {
   buildWorkspaceArtifact,
   buildWorkspaceDeltaArtifact,
   prepareWorkspaceSource,
-} from "./workspace-artifact"
-import { applyWorkspaceDelta } from "./workspace-delta"
-import { WorkspaceSyncConflict } from "./workspace-sync-conflict"
-import { workspaceSourceMode } from "./baseline-transfer"
+  type BuiltWorkspaceDeltaArtifact,
+  type PreparedWorkspaceSource,
+} from "./workspace-artifact.ts"
+import { applyWorkspaceDelta } from "./workspace-delta.ts"
+import { WorkspaceSyncConflict } from "./workspace-sync-conflict.ts"
+import { workspaceSourceMode } from "./baseline-transfer.ts"
 
 const maximumArtifactBytes = 256 * 1024 * 1024
 
 export class WorkspaceSyncService {
   private readonly workspaces = new Map<string, string>()
   private readonly sessionsByWorkspace = new Map<string, string>()
-  private readonly syncingBack = new Map<string, Promise<Awaited<ReturnType<WorkspaceSyncService["performSyncBack"]>>>>()
+  private readonly syncingBack = new Map<
+    string,
+    Promise<Awaited<ReturnType<WorkspaceSyncService["performSyncBack"]>>>
+  >()
+  private readonly preparedSources = new Map<string, PreparedWorkspaceSource>()
+  private readonly preparedDeltas = new Map<string, Promise<BuiltWorkspaceDeltaArtifact>>()
+  private readonly indexPath?: string
   private loaded = false
 
-  constructor(private readonly indexPath?: string) {}
+  constructor(indexPath?: string) {
+    this.indexPath = indexPath
+  }
+
+  async prepareInitial(localPath: string) {
+    const root = await realpath(localPath)
+    const prepared = await measureWorkspacePhase("workspace.capture", () => prepareWorkspaceSource(root))
+    this.preparedSources.set(root, prepared)
+    const delta = buildWorkspaceDeltaArtifact(root, prepared)
+    this.preparedDeltas.set(root, delta)
+    void delta.catch(() => undefined)
+    return prepared.metadata
+  }
 
   async syncInitial(
     client: CloudPreviewClient,
@@ -35,14 +55,28 @@ export class WorkspaceSyncService {
   ) {
     const root = await realpath(localPath)
     await beforeTransfer?.(root)
-    const prepared = await measureWorkspacePhase("workspace.capture", () => prepareWorkspaceSource(root))
+    const prepared =
+      this.preparedSources.get(root) ??
+      (await measureWorkspacePhase("workspace.capture", () => prepareWorkspaceSource(root)))
+    const preparedDelta = this.preparedDeltas.get(root)
+    this.preparedSources.delete(root)
+    this.preparedDeltas.delete(root)
     const negotiation = await client.negotiateSource(sessionId, prepared.metadata)
+    if (negotiation.unchanged) {
+      await measureWorkspacePhase("workspace.sync.skip", async () => undefined)
+      await this.remember(sessionId, root)
+      return {
+        session: negotiation.session,
+        sourceRevision: prepared.metadata.sourceRevision,
+        workspaceHash: prepared.metadata.workspaceHash,
+      }
+    }
     const sourceMode = workspaceSourceMode(negotiation.baseline)
     const artifact = await measureWorkspacePhase(
       sourceMode === "delta" ? "workspace.delta.build" : "workspace.full.build",
       () =>
         sourceMode === "delta"
-          ? buildWorkspaceDeltaArtifact(root, prepared)
+          ? (preparedDelta ?? buildWorkspaceDeltaArtifact(root, prepared))
           : buildWorkspaceArtifact(root, prepared),
     )
     const target = await client.prepareSourceUpload(sessionId, {
@@ -107,17 +141,17 @@ export class WorkspaceSyncService {
       })
     } catch (error) {
       if (error instanceof WorkspaceSyncConflict) {
-        await client.command(
-          sessionId,
-          { type: "report-sync-conflict" },
-          randomUUID(),
-        ).catch(() => undefined)
+        await client.command(sessionId, { type: "report-sync-conflict" }, randomUUID()).catch(() => undefined)
       }
       throw error
     }
     const session = await client.command(
       sessionId,
-      { type: "ack-local-sync", deltaRevision: delta.revision ?? applied.revision },
+      {
+        type: "ack-local-sync",
+        deltaRevision: delta.revision ?? applied.revision,
+        workspaceHash: applied.finalHash,
+      },
       randomUUID(),
     )
     return { session, ...applied }
@@ -173,7 +207,9 @@ export class WorkspaceSyncService {
     if (!this.indexPath) return
     await mkdir(dirname(this.indexPath), { recursive: true, mode: 0o700 })
     const temporary = `${this.indexPath}.tmp`
-    await writeFile(temporary, JSON.stringify([...this.workspaces]), { mode: 0o600 })
+    await writeFile(temporary, JSON.stringify([...this.workspaces]), {
+      mode: 0o600,
+    })
     await rename(temporary, this.indexPath)
   }
 }
@@ -196,7 +232,9 @@ async function download(value: string, expectedSize: number) {
   if (!Number.isSafeInteger(expectedSize) || expectedSize < 1 || expectedSize > maximumArtifactBytes) {
     throw new Error("Workspace delta size is invalid")
   }
-  const response = await fetch(validatedArtifactUrl(value), { redirect: "error" })
+  const response = await fetch(validatedArtifactUrl(value), {
+    redirect: "error",
+  })
   if (!response.ok || !response.body) throw new Error("Workspace delta download failed")
   const reader = response.body.getReader()
   const chunks: Uint8Array[] = []
@@ -228,8 +266,12 @@ async function download(value: string, expectedSize: number) {
 function validatedArtifactUrl(value: string) {
   const url = new URL(value)
   const loopback = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)
-  if ((url.protocol !== "https:" && !(url.protocol === "http:" && loopback)) ||
-    url.username || url.password || url.hash) {
+  if (
+    (url.protocol !== "https:" && !(url.protocol === "http:" && loopback)) ||
+    url.username ||
+    url.password ||
+    url.hash
+  ) {
     throw new Error("Workspace artifact URL is invalid")
   }
   return url
@@ -251,10 +293,6 @@ async function measureWorkspacePhase<T>(phase: string, operation: () => Promise<
     }
     const telemetry = getBlameTelemetry()
     telemetry.count("blame.runtime.phase.count", 1, attributes)
-    telemetry.record(
-      "blame.runtime.phase.duration",
-      Math.max(0, performance.now() - startedAt) / 1_000,
-      attributes,
-    )
+    telemetry.record("blame.runtime.phase.duration", Math.max(0, performance.now() - startedAt) / 1_000, attributes)
   }
 }

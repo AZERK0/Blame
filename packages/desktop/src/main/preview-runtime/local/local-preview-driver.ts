@@ -78,11 +78,13 @@ export class LocalPreviewDriver implements PreviewRuntimeDriver {
     const worktree = await realpath(
       await this.worktreeForStory(input.userStoryId),
     );
-    return runtimeHandle({
-      kind: "local-container",
-      sessionId: input.sessionId,
-      worktree,
-    } satisfies LocalHandle);
+    return {
+      handle: runtimeHandle({
+        kind: "local-container",
+        sessionId: input.sessionId,
+        worktree,
+      } satisfies LocalHandle),
+    };
   }
 
   async connect(worktree: string, sessionId = worktree) {
