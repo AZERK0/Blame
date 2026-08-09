@@ -1,4 +1,7 @@
-import { sourceImportUnchanged } from '#services/preview_sessions/preview_session_service'
+import {
+  baselineImportAction,
+  sourceImportUnchanged,
+} from '#services/preview_sessions/preview_session_service'
 import type { PreviewSessionState } from '@blame/preview-runtime'
 import { test } from '@japa/runner'
 
@@ -23,6 +26,42 @@ test.group('preview source negotiation', () => {
   test('never skips a dirty sync state or a non-reusable host', ({ assert }) => {
     assert.isFalse(sourceImportUnchanged(session({ sync: 'conflict' }), metadata))
     assert.isFalse(sourceImportUnchanged(session({ host: 'failed' }), metadata))
+  })
+
+  test('reuses an exact baseline already provisioned on the host', ({ assert }) => {
+    assert.equal(
+      baselineImportAction({
+        sourceMode: 'delta',
+        baselineId: 'baseline-1',
+        provisionedBaselineId: 'baseline-1',
+      }),
+      'reuse'
+    )
+  })
+
+  test('restores a baseline only when the host does not already contain it', ({ assert }) => {
+    assert.equal(
+      baselineImportAction({
+        sourceMode: 'delta',
+        baselineId: 'baseline-1',
+        provisionedBaselineId: 'baseline-2',
+      }),
+      'restore'
+    )
+    assert.equal(
+      baselineImportAction({
+        sourceMode: 'delta',
+        baselineId: 'baseline-1',
+        provisionedBaselineId: 'baseline-1',
+        sourceArtifactId: 'artifact-1',
+      }),
+      'restore'
+    )
+  })
+
+  test('rejects a delta only when no exact baseline exists', ({ assert }) => {
+    assert.equal(baselineImportAction({ sourceMode: 'delta' }), 'unavailable')
+    assert.equal(baselineImportAction({ sourceMode: 'full' }), 'none')
   })
 })
 

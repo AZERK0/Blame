@@ -426,9 +426,20 @@ export default class PreviewSessionService {
       let runtimeLostDuringBaselineRestore = false
       try {
         let syncHandle = handle
-        const baselineAlreadyProvisioned =
-          Boolean(baseline) && record.baselineId === baseline?.id && !record.sourceArtifactId
-        if (baseline && !baselineAlreadyProvisioned) {
+        const baselineAction = baselineImportAction({
+          sourceMode: source.mode,
+          baselineId: baseline?.id,
+          provisionedBaselineId: record.baselineId,
+          sourceArtifactId: record.sourceArtifactId,
+        })
+        if (baselineAction === 'unavailable') {
+          throw new PreviewRuntimeError({
+            code: 'UNSUPPORTED_CAPABILITY',
+            message: 'The exact preview baseline is unavailable.',
+            retryable: true,
+          })
+        }
+        if (baselineAction === 'restore') {
           if (!baseline?.providerSnapshotId || !driver.restoreBaseline) {
             throw new PreviewRuntimeError({
               code: 'UNSUPPORTED_CAPABILITY',
@@ -447,12 +458,6 @@ export default class PreviewSessionService {
             throw error
           }
           await this.repository.setRuntimeHandle(sessionId, syncHandle)
-        } else if (source.mode === 'delta') {
-          throw new PreviewRuntimeError({
-            code: 'UNSUPPORTED_CAPABILITY',
-            message: 'The exact preview baseline is unavailable.',
-            retryable: true,
-          })
         }
         const receipt = await driver.syncIn(syncHandle, source, {
           preserveWarmCaches: source.mode !== 'delta' && Boolean(baseline),
@@ -814,6 +819,19 @@ export function sourceImportUnchanged(
     session.sourceRevision === metadata.baseRevision &&
     ['running', 'suspended'].includes(session.state.host)
   )
+}
+
+export function baselineImportAction(input: {
+  sourceMode?: 'full' | 'delta' | 'baseline'
+  baselineId?: string
+  provisionedBaselineId?: string
+  sourceArtifactId?: string
+}) {
+  if (!input.baselineId) return input.sourceMode === 'delta' ? 'unavailable' : 'none'
+  if (input.provisionedBaselineId === input.baselineId && !input.sourceArtifactId) {
+    return 'reuse'
+  }
+  return 'restore'
 }
 
 function validateOperationId(value: string) {
