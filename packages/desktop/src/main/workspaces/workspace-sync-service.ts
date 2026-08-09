@@ -1,11 +1,17 @@
 import { randomUUID } from "node:crypto"
 import { mkdir, readFile, realpath, rename, writeFile } from "node:fs/promises"
 import { dirname } from "node:path"
+import {
+  ATTR_BLAME_OPERATION_STATUS,
+  ATTR_BLAME_RUNTIME_NAME,
+  ATTR_BLAME_RUNTIME_PHASE,
+  getBlameTelemetry,
+} from "@blame/telemetry"
 import type { CloudPreviewClient } from "../preview-runtime/cloud-preview-client"
 import {
   buildWorkspaceArtifact,
   buildWorkspaceDeltaArtifact,
-  workspaceSourceMetadata,
+  prepareWorkspaceSource,
 } from "./workspace-artifact"
 import { applyWorkspaceDelta } from "./workspace-delta"
 import { WorkspaceSyncConflict } from "./workspace-sync-conflict"
@@ -28,23 +34,29 @@ export class WorkspaceSyncService {
   ) {
     const root = await realpath(localPath)
     await beforeTransfer?.(root)
-    const metadata = await workspaceSourceMetadata(root)
-    const negotiation = await client.negotiateSource(sessionId, metadata)
-    const artifact = negotiation.baseline
-      ? await buildWorkspaceDeltaArtifact(root)
-      : await buildWorkspaceArtifact(root)
+    const prepared = await measureWorkspacePhase("workspace.capture", () => prepareWorkspaceSource(root))
+    const negotiation = await client.negotiateSource(sessionId, prepared.metadata)
+    const artifact = await measureWorkspacePhase(
+      negotiation.baseline ? "workspace.delta.build" : "workspace.full.build",
+      () =>
+        negotiation.baseline
+          ? buildWorkspaceDeltaArtifact(root, prepared)
+          : buildWorkspaceArtifact(root, prepared),
+    )
     const target = await client.prepareSourceUpload(sessionId, {
       ...artifact,
       mode: negotiation.baseline ? "delta" : "full",
     })
-    await upload(target, artifact.content)
-    const session = await client.applySourceUpload(
-      sessionId,
-      target.artifactId,
-      negotiation.baseline?.id,
+    await measureWorkspacePhase("workspace.upload", () => upload(target, artifact.content))
+    const session = await measureWorkspacePhase("workspace.apply", () =>
+      client.applySourceUpload(sessionId, target.artifactId, negotiation.baseline?.id),
     )
     await this.remember(sessionId, root)
-    return { session, sourceRevision: artifact.sourceRevision, workspaceHash: artifact.workspaceHash }
+    return {
+      session,
+      sourceRevision: artifact.sourceRevision,
+      workspaceHash: artifact.workspaceHash,
+    }
   }
 
   syncBack(
@@ -218,4 +230,28 @@ function validatedArtifactUrl(value: string) {
     throw new Error("Workspace artifact URL is invalid")
   }
   return url
+}
+
+async function measureWorkspacePhase<T>(phase: string, operation: () => Promise<T>) {
+  const startedAt = performance.now()
+  let outcome = "succeeded"
+  try {
+    return await operation()
+  } catch (error) {
+    outcome = "failed"
+    throw error
+  } finally {
+    const attributes = {
+      [ATTR_BLAME_RUNTIME_NAME]: "vercel-compose",
+      [ATTR_BLAME_RUNTIME_PHASE]: phase,
+      [ATTR_BLAME_OPERATION_STATUS]: outcome,
+    }
+    const telemetry = getBlameTelemetry()
+    telemetry.count("blame.runtime.phase.count", 1, attributes)
+    telemetry.record(
+      "blame.runtime.phase.duration",
+      Math.max(0, performance.now() - startedAt) / 1_000,
+      attributes,
+    )
+  }
 }

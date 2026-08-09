@@ -64,7 +64,7 @@ export default class PreviewProjectBaselineService {
       } catch {
         return undefined
       }
-      const ready = await this.ready(identity.fingerprint)
+      const ready = await this.readyOrWait(identity.fingerprint)
       if (!ready) return undefined
       await ready.merge({ lastUsedAt: DateTime.utc() }).save()
       return publicBaseline(ready)
@@ -295,6 +295,28 @@ export default class PreviewProjectBaselineService {
       .first()
   }
 
+  private async readyOrWait(fingerprint: string) {
+    const ready = await this.ready(fingerprint)
+    if (ready) return ready
+    const building = await PreviewProjectBaseline.query()
+      .where('fingerprint', fingerprint)
+      .where('status', 'building')
+      .first()
+    if (!building) return undefined
+    const deadline = Date.now() + this.config.baselines.waitSeconds * 1_000
+    while (Date.now() < deadline) {
+      await delay(Math.min(500, Math.max(1, deadline - Date.now())))
+      const completed = await this.ready(fingerprint)
+      if (completed) return completed
+      const current = await PreviewProjectBaseline.query()
+        .where('fingerprint', fingerprint)
+        .select('status')
+        .first()
+      if (!current || current.status !== 'building') return undefined
+    }
+    return undefined
+  }
+
   private async reserve(identity: ReturnType<PreviewProjectBaselineService['identity']>) {
     const existing = await PreviewProjectBaseline.query()
       .where('fingerprint', identity.fingerprint)
@@ -366,6 +388,10 @@ function mysqlBoolean(result: unknown, key: string) {
   return Boolean(
     row && typeof row === 'object' && Number((row as Record<string, unknown>)[key]) === 1
   )
+}
+
+function delay(milliseconds: number) {
+  return new Promise<void>((resolve) => setTimeout(resolve, milliseconds))
 }
 
 async function measureBaselinePhase<T>(phase: string, operation: () => Promise<T>) {

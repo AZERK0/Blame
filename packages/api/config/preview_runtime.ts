@@ -60,7 +60,7 @@ export function previewRuntimeConfig() {
     artifactTransferHosts: [...workspaceArtifactTransferHosts(), ...urlHosts([env.get('APP_URL')])],
     sandbox: {
       image: env.get('BLAME_SANDBOX_RUNNER_IMAGE'),
-      runnerVersion: env.get('BLAME_SANDBOX_RUNNER_VERSION') ?? '0.2.3',
+      runnerVersion: env.get('BLAME_SANDBOX_RUNNER_VERSION') ?? '0.2.4',
       protocolVersion: positiveInteger(env.get('BLAME_SANDBOX_PROTOCOL_VERSION'), 2),
       vercelPlan,
       timeoutMinutes: positiveInteger(env.get('BLAME_SANDBOX_TIMEOUT_MINUTES'), 60),

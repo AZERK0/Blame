@@ -1,7 +1,7 @@
 {
   "name": "@blame/sandbox-runner",
   "private": true,
-  "version": "0.2.3",
+  "version": "0.2.4",
   "type": "module",
   "bin": {
     "blame-sandbox-runner": "dist/blame-sandbox-runner.cjs",

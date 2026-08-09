@@ -16,13 +16,21 @@ export type WorkspaceSnapshot = {
   files: Record<string, WorkspaceFileSnapshot>;
 };
 
-export async function snapshotWorkspace(root = runtimePaths.workspace): Promise<WorkspaceSnapshot> {
+export async function snapshotWorkspace(
+  root = runtimePaths.workspace,
+): Promise<WorkspaceSnapshot> {
   const files: Record<string, WorkspaceFileSnapshot> = {};
   const casePaths = new Map<string, string>();
   await visit(root, root, files, casePaths);
   const hash = createHash("sha256");
-  for (const [path, metadata] of Object.entries(files).sort(([left], [right]) => left.localeCompare(right))) {
-    hash.update(path).update("\0").update(JSON.stringify(metadata)).update("\0");
+  for (const [path, metadata] of Object.entries(files).sort(([left], [right]) =>
+    left.localeCompare(right),
+  )) {
+    hash
+      .update(path)
+      .update("\0")
+      .update(JSON.stringify(metadata))
+      .update("\0");
   }
   return { hash: hash.digest("hex"), files };
 }
@@ -40,7 +48,9 @@ async function visit(
     const folded = path.normalize("NFC").toLocaleLowerCase("en-US");
     const collision = casePaths.get(folded);
     if (collision && collision !== path) {
-      throw new Error(`Workspace paths collide by case: ${collision} and ${path}.`);
+      throw new Error(
+        `Workspace paths collide by case: ${collision} and ${path}.`,
+      );
     }
     casePaths.set(folded, path);
     const stat = await lstat(absolute);
@@ -76,8 +86,14 @@ export function forbiddenWorkspacePath(path: string) {
     segments.includes(".ssh") ||
     segments.includes("node_modules") ||
     segments.includes(".next") ||
+    segments.includes(".turbo") ||
+    segments.includes(".cache") ||
+    segments.includes(".vite") ||
+    segments.includes(".parcel-cache") ||
     segments.includes("dist") ||
+    segments.includes("out") ||
     segments.includes("coverage") ||
+    (segments.includes(".blame") && segments.includes("runtime-tools")) ||
     (basename.startsWith(".env") && basename !== ".env.example") ||
     [".npmrc", "id_rsa", "id_ed25519", "known_hosts"].includes(basename) ||
     normalized === ".docker/config.json" ||
@@ -97,7 +113,8 @@ export function assertSafeSymlink(path: string, target: string) {
   for (const segment of target.replaceAll("\\", "/").split("/")) {
     if (!segment || segment === ".") continue;
     if (segment === "..") {
-      if (!stack.length) throw new Error(`Workspace symlink escapes workspace: ${path}.`);
+      if (!stack.length)
+        throw new Error(`Workspace symlink escapes workspace: ${path}.`);
       stack.pop();
     } else stack.push(segment);
   }

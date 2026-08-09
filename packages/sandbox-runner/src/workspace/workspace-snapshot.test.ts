@@ -13,7 +13,14 @@ test("remote snapshots exclude credential-bearing and generated paths", () => {
     ".ssh/id_ed25519",
     ".docker/config.json",
     "node_modules/pkg/index.js",
+    ".next/server.js",
+    ".turbo/cache/state.bin",
+    ".cache/tool/result",
+    ".vite/deps/index.js",
+    ".parcel-cache/data.bin",
     "dist/bundle.js",
+    "packages/desktop/out/main/index.js",
+    ".blame/runtime-tools/lima/bin/limactl",
     "server.log",
   ]) {
     assert.equal(forbiddenWorkspacePath(path), true, path);
@@ -23,7 +30,12 @@ test("remote snapshots exclude credential-bearing and generated paths", () => {
 });
 
 test("remote snapshots reject symlinks escaping the workspace", () => {
-  assert.doesNotThrow(() => assertSafeSymlink("packages/app/link", "../shared"));
-  assert.throws(() => assertSafeSymlink("link", "../outside"), /escapes workspace/);
+  assert.doesNotThrow(() =>
+    assertSafeSymlink("packages/app/link", "../shared"),
+  );
+  assert.throws(
+    () => assertSafeSymlink("link", "../outside"),
+    /escapes workspace/,
+  );
   assert.throws(() => assertSafeSymlink("link", "/etc/passwd"), /Unsafe/);
 });

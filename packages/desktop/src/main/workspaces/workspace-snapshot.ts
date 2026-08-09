@@ -34,11 +34,22 @@ export function forbiddenWorkspacePath(path: string) {
   const segments = normalized.split("/")
   const basename = segments.at(-1) ?? ""
   return (
-    segments.includes(".git") || segments.includes(".ssh") || segments.includes("node_modules") ||
-    segments.includes(".next") || segments.includes("dist") || segments.includes("coverage") ||
+    segments.includes(".git") ||
+    segments.includes(".ssh") ||
+    segments.includes("node_modules") ||
+    segments.includes(".next") ||
+    segments.includes(".turbo") ||
+    segments.includes(".cache") ||
+    segments.includes(".vite") ||
+    segments.includes(".parcel-cache") ||
+    segments.includes("dist") ||
+    segments.includes("out") ||
+    segments.includes("coverage") ||
+    (segments.includes(".blame") && segments.includes("runtime-tools")) ||
     (basename.startsWith(".env") && basename !== ".env.example") ||
     [".npmrc", "id_rsa", "id_ed25519", "known_hosts"].includes(basename) ||
-    normalized === ".docker/config.json" || normalized.endsWith(".log")
+    normalized === ".docker/config.json" ||
+    normalized.endsWith(".log")
   )
 }
 

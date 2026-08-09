@@ -1,6 +1,6 @@
 import assert from "node:assert/strict"
 import { execFile } from "node:child_process"
-import { mkdtemp, rm, unlink, writeFile } from "node:fs/promises"
+import { mkdir, mkdtemp, rm, unlink, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { Readable } from "node:stream"
@@ -94,6 +94,10 @@ test("builds a delta against the committed tree and includes new files", async (
     ])
     await writeFile(join(root, "index.js"), "console.log('changed')\n")
     await writeFile(join(root, "new.txt"), "new\n")
+    await mkdir(join(root, ".blame/runtime-tools/lima"), { recursive: true })
+    await mkdir(join(root, "packages/desktop/out/main"), { recursive: true })
+    await writeFile(join(root, ".blame/runtime-tools/lima/limactl"), "generated\n")
+    await writeFile(join(root, "packages/desktop/out/main/index.js"), "generated\n")
     const delta = await buildWorkspaceDeltaArtifact(root)
     assert.ok(delta.baseHash.match(/^[a-f0-9]{64}$/))
     const entries = await archiveEntries(delta.content)
@@ -103,6 +107,8 @@ test("builds a delta against the committed tree and includes new files", async (
     assert.deepEqual(manifest.deleted, [])
     assert.equal(entries.has("files/index.js"), true)
     assert.equal(entries.has("files/new.txt"), true)
+    assert.equal(entries.has("files/.blame/runtime-tools/lima/limactl"), false)
+    assert.equal(entries.has("files/packages/desktop/out/main/index.js"), false)
   } finally {
     await rm(root, { recursive: true, force: true })
   }

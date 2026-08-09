@@ -39,6 +39,12 @@ The API and sandbox receive only short-lived, object-specific signed URLs. S3
 credentials remain in the API secret manager and never enter Electron, Preview
 Edge, the runner image, or a sandbox.
 
+Set `BLAME_PREVIEW_BASELINES_ENABLED=true` and restart or redeploy every API
+worker after changing the environment. A baseline miss stays on the cold path
+while a single background builder warms the immutable snapshot. Later User
+Stories with the same canonical tree, plan, lockfiles, runner digest, and
+protocol upload only their worktree delta.
+
 `BLAME_SANDBOX_DEPLOYMENT_ID` must be a stable, environment-specific identifier.
 The provider sweeper only deletes `blame-` sandboxes carrying the matching
 deployment tag and older than its one-hour anti-race grace period.

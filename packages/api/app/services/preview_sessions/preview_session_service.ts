@@ -78,7 +78,7 @@ export default class PreviewSessionService {
     this.lease = dependencies.lease ?? new PreviewLeaseService()
     this.tickets = dependencies.tickets ?? new PreviewAccessTicketService()
     this.artifacts = new WorkspaceArtifactService()
-    this.baselines = dependencies.baselines ?? new PreviewProjectBaselineService()
+    this.baselines = dependencies.baselines ?? new PreviewProjectBaselineService(this.config)
     const drivers = dependencies.drivers ?? [new VercelSandboxDriver()]
     this.drivers = new Map(drivers.map((driver) => [driver.profile, driver]))
     this.orchestrator = new PreviewOrchestrator(
@@ -331,6 +331,12 @@ export default class PreviewSessionService {
         retryable: true,
       })
     }
+    const baselineMetadata = {
+      baseRevision: source.revision,
+      sanitizedTreeHash: source.sanitizedTreeHash ?? source.revision,
+      lockfileHash: source.lockfileHash ?? 'unknown',
+      workspaceHash: source.workspaceHash,
+    }
     const baseline =
       source.mode === 'delta' && baselineId
         ? await this.baselines.getReady(baselineId, sessionId, {
@@ -339,16 +345,7 @@ export default class PreviewSessionService {
             lockfileHash: source.lockfileHash ?? '',
             workspaceHash: source.workspaceHash,
           })
-        : await this.baselines.ensure({
-            sessionId,
-            source,
-            sourceMetadata: {
-              baseRevision: source.revision,
-              sanitizedTreeHash: source.sanitizedTreeHash ?? source.revision,
-              lockfileHash: source.lockfileHash ?? 'unknown',
-              workspaceHash: source.workspaceHash,
-            },
-          })
+        : await this.baselines.lookupForSession(sessionId, baselineMetadata)
     return this.lock.withLock(sessionId, async ({ fencingToken }) => {
       const record = await this.repository.get(sessionId)
       const handle = await this.fencedHandle(sessionId, fencingToken)
@@ -400,6 +397,11 @@ export default class PreviewSessionService {
         current.lastAcknowledgedRemoteRevision = '0'
         current.revision += 1
         await this.repository.save(current, current.revision - 1)
+        if (source.mode !== 'delta' && !baseline) {
+          void this.baselines
+            .ensure({ sessionId, source, sourceMetadata: baselineMetadata })
+            .catch(() => undefined)
+        }
         return this.get(ownerUserId, sessionId)
       } catch (error) {
         const current = await this.repository.get(sessionId)
