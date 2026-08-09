@@ -39,7 +39,20 @@ test("drops unknown run configuration selections", () => {
       JSON.stringify({ title: "Improve API", runConfigurationId: "unknown" }),
       { runConfigurations: configurations },
     ),
-    { title: "Improve API" },
+    { title: "Improve API", runConfigurationId: null },
+  );
+});
+
+test("preserves an explicit no-preview decision", () => {
+  assert.deepEqual(
+    generatedTitle(
+      JSON.stringify({
+        title: "Update documentation",
+        runConfigurationId: null,
+      }),
+      { runConfigurations: configurations },
+    ),
+    { title: "Update documentation", runConfigurationId: null },
   );
 });
 

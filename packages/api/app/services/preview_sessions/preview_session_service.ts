@@ -166,6 +166,9 @@ export default class PreviewSessionService {
       session.state.host === 'running' && session.desired.host === 'active'
         ? await this.lease.renew(sessionId, ownerUserId)
         : session.leaseExpiresAt
+    if (session.state.host === 'running') {
+      await this.sampleUsage(sessionId, session.profile)
+    }
     return {
       ...session,
       leaseExpiresAt,
@@ -699,6 +702,14 @@ export default class PreviewSessionService {
     const driver = this.drivers.get(profile)
     if (!handle || !session || !driver) return
     try {
+      const latest = await PreviewUsageSample.query()
+        .where('sessionId', sessionId)
+        .where('generation', session.generation)
+        .orderBy('observedAt', 'desc')
+        .first()
+      if (latest && DateTime.utc().diff(latest.observedAt, 'milliseconds').milliseconds < 2_000) {
+        return
+      }
       const usage = await driver.usage(handle)
       const previousPeak = await PreviewUsageSample.query()
         .where('sessionId', sessionId)

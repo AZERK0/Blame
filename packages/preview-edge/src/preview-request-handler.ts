@@ -50,12 +50,12 @@ export class PreviewRequestHandler {
       Promise.resolve(this.auth.authenticate(request.headers)),
     ]);
     if (
-      !session ||
-      session.sessionId !== route.sessionId ||
-      session.routeId !== route.routeId ||
-      session.serviceId !== route.serviceId ||
-      session.endpointId !== route.endpointId ||
-      session.ownerUserId !== route.ownerUserId
+      session &&
+      (session.sessionId !== route.sessionId ||
+        session.routeId !== route.routeId ||
+        session.serviceId !== route.serviceId ||
+        session.endpointId !== route.endpointId ||
+        session.ownerUserId !== route.ownerUserId)
     ) {
       throw new Error("Preview session is unauthorized.");
     }

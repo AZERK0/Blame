@@ -66,6 +66,7 @@ import { useUserStoryDiffStats } from "@/components/backlog/development/user-sto
 import { UserStoryDrawer } from "@/components/backlog/drawer/user-story-drawer"
 import type { AgentConversationUserMessageUndo } from "@/components/chat/agent-conversation"
 import { UserStoryPreviewWarmup } from "@/components/backlog/drawer/user-story-preview"
+import { stopManagedCloudPreview } from "@/components/backlog/drawer/use-user-story-preview-runner"
 import { HostDependenciesDialog } from "@/pages/backlog/host-dependencies-dialog"
 import { useBacklogRotation } from "@/pages/backlog/use-backlog-rotation"
 import { assessAndRepairProjectInitializationImpact } from "@/pages/backlog/project-initialization-impact"
@@ -1460,7 +1461,7 @@ async function generatedQueuedStoryTitle(request: QueuedUserStoryTitleRequest) {
 
 async function persistGeneratedQueuedStoryTitle(
   request: QueuedUserStoryTitleRequest,
-  generated: { title: string; runConfigurationId?: string }
+  generated: { title: string; runConfigurationId?: string | null }
 ) {
   return request.updateStory(
     request.story,
@@ -1679,6 +1680,7 @@ async function stopStoryRuntime(
   await Promise.all([
     abortStoryAgent(story, platform),
     stopStoryProjectSetup(story, platform),
+    stopManagedCloudPreview(platform, story.id),
   ])
 }
 
@@ -1736,6 +1738,10 @@ async function cleanupMergedStory(
       ),
       measurePerformanceOperation("agent.transition.cleanup.runtime_stop", () =>
         stopStoryProjectSetup(story, platform)
+      ),
+      measurePerformanceOperation(
+        "agent.transition.cleanup.cloud_preview_stop",
+        () => stopManagedCloudPreview(platform, story.id)
       ),
     ])
     await measurePerformanceOperation(

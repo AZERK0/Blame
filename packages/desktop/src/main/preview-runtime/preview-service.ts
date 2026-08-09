@@ -9,9 +9,8 @@ import {
   type CloudManagedPreviewCreateInput,
 } from "./cloud-preview-client";
 import { WorkspaceSyncService } from "../workspaces/workspace-sync-service";
-import { app } from "electron";
+import { app, shell } from "electron";
 import { join } from "node:path";
-import { launchExternalPreview } from "./external-preview-launcher";
 
 export class PreviewService {
   private cloud?: CloudPreviewClient;
@@ -73,9 +72,17 @@ export class PreviewService {
   }
 
   async openExternal(sessionId: string, routeId?: string) {
-    await launchExternalPreview(
-      await this.cloudClient().accessTicket(sessionId, routeId),
+    const session = await this.cloudClient().get(sessionId);
+    const route = session.endpointMap?.routes.find(
+      ({ routeId: currentRouteId }) =>
+        currentRouteId === (routeId ?? session.endpointMap?.primaryRouteId),
     );
+    if (!route?.publicUrl)
+      throw new Error("Managed preview route is unavailable");
+    const url = new URL(route.publicUrl);
+    if (url.protocol !== "https:" || url.username || url.password || url.hash)
+      throw new Error("Managed preview route is invalid");
+    await shell.openExternal(url.toString());
     return true;
   }
 

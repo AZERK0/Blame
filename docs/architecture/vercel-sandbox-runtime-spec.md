@@ -193,7 +193,7 @@ sessionId + NUL + serviceId + NUL + endpointId
 
 Le `routeId` est stable entre les générations d’une même session. La génération reste une claim séparée afin qu’une capability d’une génération précédente ne soit jamais acceptée après reprise.
 
-`EndpointMap` expose `primaryRouteId`; il n’expose aucune identité primaire basée sur le seul endpoint local. Les tickets, cookies Preview Edge, bridge grants Electron et capabilities gateway contiennent tous `routeId`, `serviceId` et `endpointId`.
+`EndpointMap` expose `primaryRouteId`; il n’expose aucune identité primaire basée sur le seul endpoint local. Chaque route publiée possède une URL HTTPS opaque et imprévisible qui sert de lien de partage bearer : Preview Edge résout cette URL sans proxy local, tout en vérifiant une capability courte liée à `routeId`, `serviceId`, `endpointId` et à la génération. Les tickets, cookies Preview Edge et bridge grants Electron restent disponibles pour les flux privés ou les topologies intégrées, et contiennent tous ces mêmes identifiants.
 
 La base SQL applique l’unicité :
 
@@ -251,7 +251,7 @@ Tant qu’un credential broker explicite n’est pas disponible, un plan nécess
 7. Le runner génère le Compose, démarre `dockerd`, attend `docker info`, crée les caches et exécute le setup.
 8. Le runner pull/build uniquement les services sélectionnés et démarre leur fermeture de dépendances.
 9. Les healthchecks et probes bornés déterminent la readiness.
-10. Preview Edge publie les routes et Electron ouvre la route primaire via son bridge sécurisé.
+10. Preview Edge publie les routes. L’interface embarquée utilise directement l’URL publique lorsque la topologie est compatible ; les topologies intégrées passent par le bridge sécurisé. L’ouverture externe utilise la même URL publique, sans dépendre d’un serveur localhost du desktop.
 
 ### 9.2 Arrêt et destruction
 
@@ -291,6 +291,10 @@ La performance ne change pas la fidélité du runtime :
 - les fenêtres de healthcheck sont bornées ;
 - les logs sont paginés par curseur et bornés ;
 - les arrêts sont gracieux et suppriment les orphelins.
+- les métriques provider sont échantillonnées avec une fenêtre minimale de deux
+  secondes afin de garder le compteur réactif sans multiplier les appels Vercel ;
+  la durée et le coût proviennent des compteurs réels de la Sandbox, sans
+  plancher artificiel d’une minute.
 
 Les images communes ne sont préchargées dans l’image Sandbox qu’après mesure d’un gain supérieur à leur coût de stockage et de transfert.
 
@@ -347,6 +351,8 @@ La livraison vérifie au minimum :
 - absence de sélection de moteur dans l’interface ;
 - reprise de Sandbox, rotation de génération et refus d’un plan périmé ;
 - validité des routes Preview Edge après republication ;
+- ouverture directe d’une URL publique opaque dans un navigateur externe et
+  depuis un autre poste ;
 - portée exacte de la migration destructive ;
 - worktree cloud natif sur Linux, macOS et Windows ;
 - build et inspection du Dockerfile runner ;

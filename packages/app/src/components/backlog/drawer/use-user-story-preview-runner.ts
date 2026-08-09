@@ -19,14 +19,21 @@ import {
 } from "@/lib/runtime-preference"
 
 export type PreviewRunnerAction = "start" | "stop" | "restart"
+type PreviewRunnerOptions = {
+  autoStart?: boolean
+  autoStartConfigurationId?: string | null
+}
 type PreviewRuntimeSetter = React.Dispatch<
   React.SetStateAction<ProjectPreviewRuntimeState | undefined>
 >
 
+const cloudControlOperations = new Map<string, Promise<void>>()
+
 export function useUserStoryPreviewRunner(
   worktree: string | null | undefined,
   enabled: boolean,
-  userStoryId?: string
+  userStoryId?: string,
+  options: PreviewRunnerOptions = {}
 ) {
   const platform = usePlatform()
   const workspace = platform.workspace
@@ -47,6 +54,8 @@ export function useUserStoryPreviewRunner(
     preference.profile === "local-container"
       ? "local-container"
       : "cloud-mirror",
+    Boolean(options.autoStart),
+    runtime?.configurations.length,
     setRuntime
   )
   const cloud = useCloudPreviewRuntime({
@@ -56,7 +65,46 @@ export function useUserStoryPreviewRunner(
     preference,
     userStoryId,
     worktree,
+    autoStart: options.autoStart,
   })
+  const cloudControl = cloud.control
+  const cloudPendingOperation = cloud.pendingOperation
+  const cloudRuntime = cloud.runtime
+  const cloudSession = cloud.session
+  React.useEffect(() => {
+    if (
+      !options.autoStart ||
+      !enabled ||
+      !userStoryId ||
+      !worktree ||
+      options.autoStartConfigurationId === null ||
+      cloudPendingOperation ||
+      cloudSession?.desired.services === "running" ||
+      isCloudPreviewAutoStartDisabled(userStoryId)
+    )
+      return
+    const configuration = options.autoStartConfigurationId
+      ? cloudRuntime?.configurations.find(
+          ({ id }) => id === options.autoStartConfigurationId
+        )
+      : (cloudRuntime?.configurations.find(
+          ({ default: isDefault }) => isDefault
+        ) ?? cloudRuntime?.configurations[0])
+    if (!configuration?.services?.length || !configuration.previewService) return
+    void cloudControl("start", configuration.id).then((next) => {
+      if (!next) markCloudPreviewAutoStartDisabled(userStoryId)
+    })
+  }, [
+    cloudControl,
+    cloudPendingOperation,
+    cloudRuntime?.configurations,
+    cloudSession?.desired.services,
+    enabled,
+    options.autoStart,
+    options.autoStartConfigurationId,
+    userStoryId,
+    worktree,
+  ])
   const local = usePreviewRuntimeControl(
     preference.profile === "local-container" ? workspace : undefined,
     worktree,
@@ -109,11 +157,13 @@ function useCloudPreviewRuntime(input: {
   preference: ReturnType<typeof useRuntimePreference>
   userStoryId?: string
   worktree?: string | null
+  autoStart?: boolean
 }) {
   const [session, setSession] = React.useState<PreviewSessionView>()
   const [error, setError] = React.useState<string>()
   const [pendingOperation, setPendingOperation] =
     React.useState<ProjectRunnerPendingOperation>()
+  const stoppingSessionIdRef = React.useRef<string>()
   const client = input.platform.previewRuntime
   const profile = input.preference.profile
   const storageId = input.userStoryId
@@ -156,7 +206,9 @@ function useCloudPreviewRuntime(input: {
     return client.onEvent({ sessionId }, () => {
       void client
         .get({ sessionId })
-        .then(setSession)
+        .then((value) => {
+          if (stoppingSessionIdRef.current !== sessionId) setSession(value)
+        })
         .catch(() => undefined)
     })
   }, [client, input.enabled, sessionId])
@@ -166,9 +218,11 @@ function useCloudPreviewRuntime(input: {
     const interval = window.setInterval(() => {
       void client
         .get({ sessionId })
-        .then(setSession)
+        .then((value) => {
+          if (stoppingSessionIdRef.current !== sessionId) setSession(value)
+        })
         .catch(() => undefined)
-    }, 10_000)
+    }, 2_000)
     return () => window.clearInterval(interval)
   }, [client, input.enabled, sessionId])
 
@@ -190,9 +244,29 @@ function useCloudPreviewRuntime(input: {
       if (!configuration) return undefined
       setPendingOperation({ action, configurationId })
       setError(undefined)
+      let releaseTrackedOperation!: () => void
+      const trackedOperation = new Promise<void>((resolve) => {
+        releaseTrackedOperation = resolve
+      })
+      cloudControlOperations.set(input.userStoryId, trackedOperation)
       try {
         let active = session
         let importedCurrentWorkspace = false
+        const cancelAutoStartIfRequested = async () => {
+          if (
+            !input.autoStart ||
+            !isCloudPreviewAutoStartDisabled(input.userStoryId!)
+          ) {
+            return false
+          }
+          active = await client.command({
+            sessionId: active!.id,
+            command: managedPreviewStopCommand("stop"),
+            operationId: crypto.randomUUID(),
+          })
+          setSession(active)
+          return true
+        }
         if (!active && action === "stop") return undefined
         const manifestText =
           action === "start" || action === "restart"
@@ -227,6 +301,15 @@ function useCloudPreviewRuntime(input: {
           )
           setSession(active)
         }
+        if ((action === "start" || action === "restart") && !input.autoStart) {
+          clearCloudPreviewAutoStartDisabled(input.userStoryId)
+        }
+        if (
+          (action === "start" || action === "restart") &&
+          (await cancelAutoStartIfRequested())
+        ) {
+          return cloudRuntimeState(active!, input.localRuntime)
+        }
         if (action === "start" || action === "restart") {
           if (
             active.pendingDeltaArtifactId &&
@@ -251,6 +334,22 @@ function useCloudPreviewRuntime(input: {
             })
           }
         }
+        if (action === "stop") {
+          const optimistic = stoppedCloudPreviewSession(active)
+          stoppingSessionIdRef.current = active.id
+          setSession(optimistic)
+          void settleCloudPreviewStop(
+            client,
+            active.id,
+            input.userStoryId,
+            setSession
+          ).finally(() => {
+            if (stoppingSessionIdRef.current === active?.id) {
+              stoppingSessionIdRef.current = undefined
+            }
+          })
+          return cloudRuntimeState(optimistic, input.localRuntime)
+        }
         if (!active.sourceRevision) {
           active = (
             await client.syncIn({
@@ -260,7 +359,7 @@ function useCloudPreviewRuntime(input: {
           ).session
           importedCurrentWorkspace = true
         }
-        if (action === "stop" || action === "restart") {
+        if (action === "restart") {
           active = await client.command({
             sessionId: active.id,
             command: managedPreviewStopCommand(action),
@@ -268,6 +367,9 @@ function useCloudPreviewRuntime(input: {
           })
         }
         if (action === "start" || action === "restart") {
+          if (await cancelAutoStartIfRequested()) {
+            return cloudRuntimeState(active!, input.localRuntime)
+          }
           if (
             !importedCurrentWorkspace &&
             ["idle", "stopped", "failed"].includes(active.state.engine)
@@ -304,6 +406,12 @@ function useCloudPreviewRuntime(input: {
         })
         return undefined
       } finally {
+        releaseTrackedOperation()
+        if (
+          cloudControlOperations.get(input.userStoryId) === trackedOperation
+        ) {
+          cloudControlOperations.delete(input.userStoryId)
+        }
         setPendingOperation(undefined)
       }
     },
@@ -311,6 +419,7 @@ function useCloudPreviewRuntime(input: {
       client,
       input.localRuntime,
       input.platform.workspace,
+      input.autoStart,
       input.preference.confirmedCloudUploadAt,
       input.userStoryId,
       input.worktree,
@@ -351,7 +460,8 @@ function cloudRuntimeState(
 ): ProjectPreviewRuntimeState {
   const selected =
     session.selection?.configurationId ?? local?.selectedConfigurationId
-  const running = session.state.engine === "running"
+  const running =
+    session.desired.services === "running" && session.state.engine === "running"
   const previewUrl = managedEmbeddedPreviewUrl(session.endpointMap)
   return {
     configurations: local?.configurations ?? [],
@@ -368,8 +478,100 @@ function cloudRuntimeState(
   }
 }
 
+function stoppedCloudPreviewSession(session: PreviewSessionView) {
+  return {
+    ...session,
+    desired: {
+      ...session.desired,
+      host: "suspended" as const,
+      services: "stopped" as const,
+      preview: "closed" as const,
+      agent: "idle" as const,
+    },
+    state: {
+      ...session.state,
+      engine: "stopping" as const,
+      preview: "closing" as const,
+      agent: "idle" as const,
+    },
+    endpointMap: undefined,
+  } satisfies PreviewSessionView
+}
+
+async function settleCloudPreviewStop(
+  client: NonNullable<ReturnType<typeof usePlatform>["previewRuntime"]>,
+  sessionId: string,
+  userStoryId: string,
+  setSession: React.Dispatch<
+    React.SetStateAction<PreviewSessionView | undefined>
+  >
+) {
+  markCloudPreviewAutoStartDisabled(userStoryId)
+  try {
+    const next = await client.command({
+      sessionId,
+      command: managedPreviewStopCommand("stop"),
+      operationId: crypto.randomUUID(),
+    })
+    setSession(next)
+  } catch (error) {
+    toast.error("Unable to stop managed preview", {
+      description: errorText(error),
+      position: "bottom-right",
+    })
+    try {
+      setSession(await client.get({ sessionId }))
+    } catch {
+      // Keep the optimistic stopped state when the follow-up read is unavailable.
+    }
+  }
+}
+
+export async function stopManagedCloudPreview(
+  platform: ReturnType<typeof usePlatform>,
+  userStoryId: string
+) {
+  await cloudControlOperations.get(userStoryId)
+  markCloudPreviewAutoStartDisabled(userStoryId)
+  const client = platform.previewRuntime
+  const sessionId = localStorage.getItem(
+    cloudSessionStorageId(userStoryId, "vercel-compose")
+  )
+  if (!client || !sessionId) return false
+  try {
+    await client.command({
+      sessionId,
+      command: managedPreviewStopCommand("stop"),
+      operationId: crypto.randomUUID(),
+    })
+    return true
+  } catch {
+    return false
+  }
+}
+
+export function clearCloudPreviewAutoStartDisabled(userStoryId: string) {
+  localStorage.removeItem(cloudPreviewAutoStartDisabledStorageId(userStoryId))
+}
+
+function markCloudPreviewAutoStartDisabled(userStoryId: string) {
+  localStorage.setItem(cloudPreviewAutoStartDisabledStorageId(userStoryId), "1")
+}
+
+function isCloudPreviewAutoStartDisabled(userStoryId: string) {
+  return (
+    localStorage.getItem(
+      cloudPreviewAutoStartDisabledStorageId(userStoryId)
+    ) === "1"
+  )
+}
+
 function cloudSessionStorageId(userStoryId: string, profile: string) {
   return `blame.preview-session.${profile}.${userStoryId}`
+}
+
+function cloudPreviewAutoStartDisabledStorageId(userStoryId: string) {
+  return `blame.preview-auto-start-disabled.${userStoryId}`
 }
 
 function cloudCreateOperationStorageId(userStoryId: string) {
@@ -413,10 +615,15 @@ function usePreviewRuntimePolling(
   worktree: string | null | undefined,
   enabled: boolean,
   workspaceMode: "local-container" | "cloud-mirror",
+  stopAfterConfigured: boolean,
+  configuredCount: number | undefined,
   setRuntime: PreviewRuntimeSetter
 ) {
   React.useEffect(() => {
     setRuntime(undefined)
+  }, [enabled, setRuntime, workspace, workspaceMode, worktree])
+
+  React.useEffect(() => {
     if (!worktree || !workspace?.projectPreviewRuntimeState) return
     let cancelled = false
     const refresh = () => {
@@ -429,12 +636,23 @@ function usePreviewRuntimePolling(
       )
     }
     if (enabled) refresh()
-    const interval = enabled ? window.setInterval(refresh, 2_000) : undefined
+    const interval =
+      enabled && !(stopAfterConfigured && configuredCount)
+        ? window.setInterval(refresh, 2_000)
+        : undefined
     return () => {
       cancelled = true
       if (interval) window.clearInterval(interval)
     }
-  }, [enabled, setRuntime, workspace, workspaceMode, worktree])
+  }, [
+    configuredCount,
+    enabled,
+    setRuntime,
+    stopAfterConfigured,
+    workspace,
+    workspaceMode,
+    worktree,
+  ])
 }
 
 async function refreshPreviewRuntime(

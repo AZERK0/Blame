@@ -322,7 +322,7 @@ type RunProjectSetupInput = ExecutionContextInput & {
   dockerCompose: string;
   previewManifest?: PreviewManifest;
   runConfigurations?: ProjectRunConfiguration[];
-  runConfigurationId?: string;
+  runConfigurationId?: string | null;
   hostDependenciesChecked?: boolean;
   runtimeProfile: RuntimeProfileId;
 };
@@ -1755,7 +1755,7 @@ async function prepareProjectSetupFiles(
   dockerCompose: string,
   previewManifest?: PreviewManifest,
   runConfigurations: ProjectRunConfiguration[] = [],
-  runConfigurationId?: string,
+  runConfigurationId?: string | null,
 ) {
   const directory = joinWorkspacePath(worktree, ".blame", "initialization");
   const scriptPath = joinWorkspacePath(directory, "setup.sh");

@@ -392,7 +392,7 @@ export type BlameDesktopApi = {
       dockerCompose: string;
       previewManifest?: PreviewManifest;
       runConfigurations?: ProjectRunConfiguration[];
-      runConfigurationId?: string;
+      runConfigurationId?: string | null;
       hostDependenciesChecked?: boolean;
       runtimeProfile: RuntimeProfileId;
     }): Promise<{ runId: string }>;

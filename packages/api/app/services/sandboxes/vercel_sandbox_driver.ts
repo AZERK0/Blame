@@ -532,7 +532,7 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
         )
       : 0
     const activeCpuSeconds = (sandbox.totalActiveCpuDurationMs ?? 0) / 1000
-    const durationSeconds = Math.max(60, (sandbox.totalDurationMs ?? 0) / 1000)
+    const durationSeconds = Math.max(0, (sandbox.totalDurationMs ?? 0) / 1000)
     const memoryGb = sandbox.memory ? sandbox.memory / 1024 : (sandbox.vcpus ?? 2) * 2
     const memoryGbSeconds = durationSeconds * memoryGb
     return {

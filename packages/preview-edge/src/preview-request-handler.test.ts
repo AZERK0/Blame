@@ -1,11 +1,15 @@
 import assert from "node:assert/strict";
+import type { IncomingMessage } from "node:http";
 import test from "node:test";
 import {
+  PreviewRequestHandler,
   isHealthCheckRequest,
   previewRequestTarget,
   rewritePreviewLocation,
   withoutPreviewAuthCookie,
 } from "./preview-request-handler.js";
+import { PreviewSessionAuth } from "./preview-session-auth.js";
+import type { UpstreamCapabilitySigner } from "./upstream-capability-signer.js";
 
 const route = {
   routeId: "route",
@@ -25,6 +29,24 @@ test("preserves application cookies while removing only the edge auth cookie", (
     ),
     "theme=dark; session=application",
   );
+});
+
+test("allows a direct request with only the opaque public route", async () => {
+  const handler = new PreviewRequestHandler(
+    {
+      resolve: async () => route,
+      consumeTicket: async () => {
+        throw new Error("ticket flow is not used by public routes");
+      },
+    },
+    new PreviewSessionAuth("a-secure-cookie-secret-with-more-than-32-bytes"),
+    {} as UpstreamCapabilitySigner,
+    "preview.blame.dev",
+  );
+  const resolved = await handler.authorizedRoute({
+    headers: { host: "route.preview.blame.dev" },
+  } as IncomingMessage);
+  assert.equal(resolved.routeId, route.routeId);
 });
 
 test("rewrites provider and declared localhost redirects to the public endpoint", () => {

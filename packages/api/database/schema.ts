@@ -396,13 +396,58 @@ export class PreviewOperationSchema extends BaseModel {
   declare status: string
 }
 
-export class PreviewSessionSchema extends BaseModel {
-  static $columns = ['baselineId', 'createdAt', 'desired', 'endpointMapEncrypted', 'failure', 'fencingToken', 'generation', 'id', 'idleDeadlineAt', 'imageDigest', 'lastAcknowledgedRemoteRevision', 'lastActivityAt', 'lastAppliedLocalRevision', 'lastExportedJournalRevision', 'leaseExpiresAt', 'ownerUserId', 'pendingDeltaArtifactId', 'plan', 'planHash', 'planVersion', 'profile', 'protocolVersion', 'providerHandleEncrypted', 'provisionSource', 'resourceMemoryGb', 'resourceVcpus', 'revision', 'runnerVersion', 'selection', 'sourceArtifactId', 'sourceRevision', 'state', 'stoppedAt', 'updatedAt', 'userStoryId', 'workspaceHash'] as const
-  $columns = PreviewSessionSchema.$columns
+export class PreviewProjectBaselineSchema extends BaseModel {
+  static $columns = ['baseRevision', 'cacheKey', 'createdAt', 'error', 'expiresAt', 'fingerprint', 'id', 'lastUsedAt', 'lockfileHash', 'ownerSandboxName', 'planHash', 'projectId', 'protocolVersion', 'provider', 'providerSnapshotId', 'runnerImageDigest', 'runnerVersion', 'sanitizedTreeHash', 'snapshotBytes', 'status'] as const
+  $columns = PreviewProjectBaselineSchema.$columns
+  @column()
+  declare baseRevision: string
+  @column()
+  declare cacheKey: string | null
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
   @column()
+  declare error: string | null
+  @column.dateTime()
+  declare expiresAt: DateTime | null
+  @column()
+  declare fingerprint: string
+  @column({ isPrimary: true })
+  declare id: string
+  @column.dateTime()
+  declare lastUsedAt: DateTime | null
+  @column()
+  declare lockfileHash: string
+  @column()
+  declare ownerSandboxName: string | null
+  @column()
+  declare planHash: string
+  @column()
+  declare projectId: string
+  @column()
+  declare protocolVersion: number
+  @column()
+  declare provider: string
+  @column()
+  declare providerSnapshotId: string | null
+  @column()
+  declare runnerImageDigest: string
+  @column()
+  declare runnerVersion: string
+  @column()
+  declare sanitizedTreeHash: string
+  @column()
+  declare snapshotBytes: bigint | number | null
+  @column()
+  declare status: string
+}
+
+export class PreviewSessionSchema extends BaseModel {
+  static $columns = ['baselineId', 'createdAt', 'desired', 'endpointMapEncrypted', 'failure', 'fencingToken', 'generation', 'id', 'idleDeadlineAt', 'imageDigest', 'lastAcknowledgedRemoteRevision', 'lastActivityAt', 'lastAppliedLocalRevision', 'lastExportedJournalRevision', 'leaseExpiresAt', 'ownerUserId', 'pendingDeltaArtifactId', 'plan', 'planHash', 'planVersion', 'profile', 'protocolVersion', 'providerHandleEncrypted', 'provisionSource', 'resourceMemoryGb', 'resourceVcpus', 'revision', 'runnerVersion', 'selection', 'sourceArtifactId', 'sourceRevision', 'state', 'stoppedAt', 'updatedAt', 'userStoryId', 'workspaceHash'] as const
+  $columns = PreviewSessionSchema.$columns
+  @column()
   declare baselineId: string | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
   @column()
   declare desired: string
   @column()
@@ -471,49 +516,6 @@ export class PreviewSessionSchema extends BaseModel {
   declare userStoryId: string
   @column()
   declare workspaceHash: string | null
-}
-
-export class PreviewProjectBaselineSchema extends BaseModel {
-  static $columns = ['baseRevision', 'createdAt', 'error', 'expiresAt', 'fingerprint', 'id', 'lastUsedAt', 'lockfileHash', 'ownerSandboxName', 'planHash', 'projectId', 'protocolVersion', 'provider', 'providerSnapshotId', 'runnerImageDigest', 'runnerVersion', 'sanitizedTreeHash', 'snapshotBytes', 'status'] as const
-  $columns = PreviewProjectBaselineSchema.$columns
-  @column()
-  declare baseRevision: string
-  @column.dateTime({ autoCreate: true })
-  declare createdAt: DateTime
-  @column()
-  declare error: string | null
-  @column.dateTime()
-  declare expiresAt: DateTime | null
-  @column()
-  declare fingerprint: string
-  @column({ isPrimary: true })
-  declare id: string
-  @column.dateTime()
-  declare lastUsedAt: DateTime | null
-  @column()
-  declare lockfileHash: string
-  @column()
-  declare ownerSandboxName: string | null
-  @column()
-  declare planHash: string
-  @column()
-  declare projectId: string
-  @column()
-  declare protocolVersion: number
-  @column()
-  declare provider: string
-  @column()
-  declare providerSnapshotId: string | null
-  @column()
-  declare runnerImageDigest: string
-  @column()
-  declare runnerVersion: string
-  @column()
-  declare sanitizedTreeHash: string
-  @column()
-  declare snapshotBytes: bigint | number | null
-  @column()
-  declare status: string
 }
 
 export class PreviewUsageSampleSchema extends BaseModel {
@@ -871,7 +873,7 @@ export class UserMcpConfigurationSchema extends BaseModel {
 }
 
 export class UserStorySchema extends BaseModel {
-  static $columns = ['agentActivities', 'agentFinalResponse', 'agentLastError', 'agentLastEvent', 'agentModelId', 'agentProviderId', 'agentSessionSummary', 'agentStatus', 'agentUsage', 'baseCommit', 'branch', 'clineSessionId', 'codeSelectionAttachments', 'createdAt', 'discardedReason', 'fileAttachmentUploadPending', 'fileAttachments', 'id', 'mergeCommit', 'mergedAt', 'owner', 'previewUrl', 'priority', 'projectId', 'runConfigurationId', 'status', 'storyNumber', 'summary', 'title', 'updatedAt', 'worktree'] as const
+  static $columns = ['agentActivities', 'agentFinalResponse', 'agentLastError', 'agentLastEvent', 'agentModelId', 'agentProviderId', 'agentSessionSummary', 'agentStatus', 'agentUsage', 'baseCommit', 'branch', 'clineSessionId', 'codeSelectionAttachments', 'createdAt', 'discardedReason', 'fileAttachmentUploadPending', 'fileAttachments', 'id', 'mergeCommit', 'mergedAt', 'owner', 'previewUrl', 'priority', 'projectId', 'runConfigurationId', 'status', 'storyNumber', 'summary', 'title', 'updatedAt', 'workspaceMode', 'worktree'] as const
   $columns = UserStorySchema.$columns
   @column()
   declare agentActivities: any | null
@@ -933,6 +935,8 @@ export class UserStorySchema extends BaseModel {
   declare title: string
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
+  @column()
+  declare workspaceMode: string | null
   @column()
   declare worktree: string | null
 }

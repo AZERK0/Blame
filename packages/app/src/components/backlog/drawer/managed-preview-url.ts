@@ -8,7 +8,18 @@ export function managedEmbeddedPreviewUrl(map: EndpointMap | undefined) {
   const route = map?.routes.find(
     ({ routeId }) => routeId === map.primaryRouteId
   )
-  return route ? `http://localhost:${route.logicalPort}` : undefined
+  if (!route) return undefined
+  if (map?.integratedPreviewRequired || !route.externallyCompatible) {
+    return `http://localhost:${route.logicalPort}`
+  }
+  return route.publicUrl
+}
+
+export function managedPublicPreviewUrl(map: EndpointMap | undefined) {
+  const route = map?.routes.find(
+    ({ routeId }) => routeId === map.primaryRouteId
+  )
+  return route?.publicUrl
 }
 
 export function primaryPreviewRoute(

@@ -206,6 +206,23 @@ test("starts a browser for the selected web preview", () => {
   );
 });
 
+test("does not start a browser when the agent selected no preview", () => {
+  const configuration = {
+    ...configurations[0],
+    category: "web" as const,
+    previewService: "web",
+    services: ["web"],
+  };
+  assert.equal(
+    shouldStartBrowserPreview(
+      [configuration],
+      { desiredStatus: "stopped" },
+      browserPreviewManifest,
+    ),
+    false,
+  );
+});
+
 test("does not infer a browser launch without a selected configuration", () => {
   assert.equal(
     shouldStartBrowserPreview(

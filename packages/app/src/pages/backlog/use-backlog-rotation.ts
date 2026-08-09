@@ -206,7 +206,7 @@ export function useBacklogRotation(
       previewManifest:
         (initialization.previewManifest as PreviewManifest | null) ?? undefined,
       runConfigurations: initialization.runConfigurations,
-      runConfigurationId: detailedStory.runConfigurationId ?? undefined,
+      runConfigurationId: detailedStory.runConfigurationId,
       hostDependenciesChecked: true,
       runtimeProfile: runtimePreference.profile,
     })
@@ -493,7 +493,7 @@ export function useBacklogRotation(
       result.dockerCompose,
       result.previewManifest,
       result.runConfigurations,
-      story.runConfigurationId ?? undefined,
+      story.runConfigurationId,
       executionId
     )
   }
@@ -520,7 +520,7 @@ export function useBacklogRotation(
     runConfigurations:
       | CloudProjectInitialization["runConfigurations"]
       | undefined,
-    runConfigurationId: string | undefined,
+    runConfigurationId: string | null | undefined,
     executionId: string
   ) {
     const workspace = platform.workspace

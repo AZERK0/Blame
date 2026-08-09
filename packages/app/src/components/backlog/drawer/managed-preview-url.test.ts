@@ -2,10 +2,11 @@ import assert from "node:assert/strict"
 import test from "node:test"
 import {
   managedEmbeddedPreviewUrl,
+  managedPublicPreviewUrl,
   primaryPreviewRoute,
 } from "./managed-preview-url.ts"
 
-test("uses the logical localhost route for every embedded managed preview", () => {
+test("uses the public Preview Edge route for compatible managed previews", () => {
   assert.equal(
     managedEmbeddedPreviewUrl({
       revision: 1,
@@ -31,7 +32,67 @@ test("uses the logical localhost route for every embedded managed preview", () =
       integratedPreviewRequired: false,
       incompatibilityReasons: [],
     }),
+    "https://preview.example.test"
+  )
+})
+
+test("keeps localhost for previews that require integrated compatibility", () => {
+  assert.equal(
+    managedEmbeddedPreviewUrl({
+      revision: 1,
+      primaryRouteId: "session:web:http",
+      primaryPublicUrl: "https://preview.example.test",
+      routes: [
+        {
+          basePathMode: "root",
+          routeId: "session:web:http",
+          serviceId: "web",
+          endpointId: "http",
+          externallyCompatible: false,
+          logicalHost: "localhost",
+          logicalPort: 3000,
+          protocol: "http",
+          publicUrl: "https://preview.example.test",
+          sandboxPort: 41000,
+          targetHost: "127.0.0.1",
+          targetPort: 3000,
+        },
+      ],
+      supportsWebSocket: true,
+      integratedPreviewRequired: true,
+      incompatibilityReasons: ["requires localhost"],
+    }),
     "http://localhost:3000"
+  )
+})
+
+test("exposes the public route separately for sharing", () => {
+  assert.equal(
+    managedPublicPreviewUrl({
+      revision: 1,
+      primaryRouteId: "session:web:http",
+      primaryPublicUrl: "https://preview.example.test",
+      routes: [
+        {
+          basePathMode: "root",
+          routeId: "session:web:http",
+          serviceId: "web",
+          endpointId: "http",
+          externallyCompatible: true,
+          logicalHost: "localhost",
+          logicalPort: 3000,
+          protocol: "http",
+          publicUrl: "https://preview.example.test",
+          sandboxPort: 41000,
+          targetHost: "127.0.0.1",
+          targetPort: 3000,
+        },
+      ],
+      supportsWebSocket: true,
+      integratedPreviewRequired: false,
+      incompatibilityReasons: [],
+    }),
+    "https://preview.example.test"
   )
 })
 

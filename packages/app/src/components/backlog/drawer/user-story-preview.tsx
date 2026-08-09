@@ -26,6 +26,7 @@ import {
 import { storyPreviewDevtoolsScope } from "@/components/backlog/shared/preview-devtools-scope"
 import { UserStoryPreviewRunnerControls } from "@/components/backlog/drawer/user-story-preview-runner"
 import {
+  clearCloudPreviewAutoStartDisabled,
   useUserStoryPreviewRunner,
   type UserStoryPreviewRunner,
 } from "@/components/backlog/drawer/use-user-story-preview-runner"
@@ -212,6 +213,31 @@ export const UserStoryPreviewWarmup = React.memo(
           : [],
       [preference.profile, userStories]
     )
+    const cloudStories = React.useMemo(
+      () =>
+        preference.profile === "vercel-compose"
+          ? cloudPreviewWarmupStories(userStories)
+          : [],
+      [preference.profile, userStories]
+    )
+    const previousStatusesRef = React.useRef(
+      new Map<string, UserStory["status"]>()
+    )
+
+    React.useEffect(() => {
+      const previous = previousStatusesRef.current
+      const next = new Map(userStories.map((story) => [story.id, story.status]))
+      userStories.forEach((story) => {
+        if (
+          isActivePreviewStatus(story.status) &&
+          previous.has(story.id) &&
+          !isActivePreviewStatus(previous.get(story.id))
+        ) {
+          clearCloudPreviewAutoStartDisabled(story.id)
+        }
+      })
+      previousStatusesRef.current = next
+    }, [userStories])
 
     React.useEffect(() => {
       if (preference.profile === "local-container") return
@@ -219,24 +245,38 @@ export const UserStoryPreviewWarmup = React.memo(
       return () => window.clearTimeout(timeout)
     }, [preference.profile])
 
-    if (!previewBrowser) return null
-    return stories.map((story) => {
-      const source = previewSource(story.previewUrl ?? "")
-      const previewScope = storyPreviewDevtoolsScope(story.id)
-      return (
-        <NativePreviewWarmup
-          key={nativePreviewKeyFor(previewScope, source)}
-          client={previewBrowser}
-          devtoolsScope={previewScope}
-          sessionKey={nativePreviewKeyFor(previewScope, source)}
-          source={source}
-          storageKey={nativePreviewStorageKeyFor(previewScope, source)}
-        />
-      )
-    })
+    return [
+      ...cloudStories.map((story) => (
+        <CloudPreviewAutoStart key={`cloud:${story.id}`} story={story} />
+      )),
+      ...(previewBrowser
+        ? stories.map((story) => {
+            const source = previewSource(story.previewUrl ?? "")
+            const previewScope = storyPreviewDevtoolsScope(story.id)
+            return (
+              <NativePreviewWarmup
+                key={nativePreviewKeyFor(previewScope, source)}
+                client={previewBrowser}
+                devtoolsScope={previewScope}
+                sessionKey={nativePreviewKeyFor(previewScope, source)}
+                source={source}
+                storageKey={nativePreviewStorageKeyFor(previewScope, source)}
+              />
+            )
+          })
+        : []),
+    ]
   },
   equalUserStoryPreviewWarmupProps
 )
+
+function CloudPreviewAutoStart({ story }: { story: UserStory }) {
+  useUserStoryPreviewRunner(story.worktree, true, story.id, {
+    autoStart: true,
+    autoStartConfigurationId: story.runConfigurationId,
+  })
+  return null
+}
 
 export const UserStoryPreview = React.memo(function UserStoryPreview({
   onCapture,
@@ -444,12 +484,8 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
   ])
 
   const reloadPreview = () => {
-    if (managedPreview && previewRunner.selectedId) {
-      void previewRunner.control("restart", previewRunner.selectedId)
-      return
-    }
     setReloadKey((current) => current + 1)
-    recoverPreview()
+    if (!managedPreview) recoverPreview()
   }
 
   const recoverPreview = () => {
@@ -1538,15 +1574,14 @@ function SetupLogPanel({
   serviceCount: number
   worktree?: string | null
 }) {
-  const local = useProjectServiceLog(
-    managed ? undefined : worktree,
-    service
-  )
+  const local = useProjectServiceLog(managed ? undefined : worktree, service)
   const managedLog = useManagedPreviewLog(previewSessionId, service)
   const runtimeLog = managed ? managedLog : local
   const content = runtimeLog.content
   const error = managedError ?? runtimeLog.error
-  const loading = managed ? Boolean(previewSessionId && runtimeLog.loading) : runtimeLog.loading
+  const loading = managed
+    ? Boolean(previewSessionId && runtimeLog.loading)
+    : runtimeLog.loading
   const logRef = React.useRef<HTMLPreElement>(null)
 
   React.useEffect(() => {
@@ -1965,16 +2000,43 @@ function nativePreviewWarmupStories(userStories: UserStory[]) {
     .slice(0, nativePreviewRetainedSessionLimit)
 }
 
+function cloudPreviewWarmupStories(userStories: UserStory[]) {
+  return userStories.filter(
+    (story) =>
+      isActivePreviewStatus(story.status) &&
+      story.workspaceMode !== "local-container" &&
+      Boolean(story.worktree) &&
+      story.runConfigurationId !== null
+  )
+}
+
+function isActivePreviewStatus(status: UserStory["status"] | undefined) {
+  return status === "in-progress" || status === "in-review"
+}
+
 function equalUserStoryPreviewWarmupProps(
   previous: { userStories: UserStory[] },
   next: { userStories: UserStory[] }
 ) {
   const previousKeys = nativePreviewWarmupKeys(previous.userStories)
   const nextKeys = nativePreviewWarmupKeys(next.userStories)
+  const previousCloudKeys = cloudPreviewWarmupKeys(previous.userStories)
+  const nextCloudKeys = cloudPreviewWarmupKeys(next.userStories)
   return (
     previousKeys.length === nextKeys.length &&
-    previousKeys.every((key, index) => key === nextKeys[index])
+    previousKeys.every((key, index) => key === nextKeys[index]) &&
+    previousCloudKeys.length === nextCloudKeys.length &&
+    previousCloudKeys.every((key, index) => key === nextCloudKeys[index])
   )
+}
+
+function cloudPreviewWarmupKeys(userStories: UserStory[]) {
+  return cloudPreviewWarmupStories(userStories)
+    .map(
+      (story) =>
+        `${story.id}:${story.worktree}:${story.runConfigurationId}:${story.status}`
+    )
+    .sort()
 }
 
 function nativePreviewWarmupKeys(userStories: UserStory[]) {

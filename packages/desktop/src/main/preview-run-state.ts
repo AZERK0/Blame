@@ -19,8 +19,9 @@ export type PreviewRuntimeContainerState = {
 
 export function initialPreviewRuntimeSelection(
   configurations: ProjectRunConfiguration[],
-  requestedId: string | undefined,
+  requestedId: string | null | undefined,
 ): PreviewRuntimeSelectionState {
+  if (requestedId === null) return { desiredStatus: "stopped" };
   const requested = configurations.find(({ id }) => id === requestedId);
   const selected =
     requested ??
@@ -48,6 +49,7 @@ export function shouldStartBrowserPreview(
   state: PreviewRuntimeSelectionState,
   manifest: PreviewManifest | undefined,
 ) {
+  if (state.desiredStatus !== "running") return false;
   const selected = selectedPreviewRunConfiguration(configurations, state);
   if (!manifest || !selected) return false;
   if (selected.category && selected.category !== "web") return false;

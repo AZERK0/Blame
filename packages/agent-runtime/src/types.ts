@@ -302,7 +302,7 @@ export type GenerateTitleInput = {
 export type GenerateTitleResult = {
   sessionId: string;
   title: string;
-  runConfigurationId?: string;
+  runConfigurationId?: string | null;
 };
 
 export type ResolveMergeConflictsInput = {

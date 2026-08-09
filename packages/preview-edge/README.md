@@ -1,11 +1,13 @@
 # Blame Preview Edge
 
 Preview Edge is the only public entrypoint to managed preview listeners. It
-exchanges one-use opening tickets for short `HttpOnly` cookies, resolves opaque
-routes through the authenticated control-plane API, and signs a short Ed25519
-capability for the exact session, endpoint, and generation. HTTP streaming, SSE,
-cookies, redirects, and WebSocket upgrades are proxied without exposing the raw
-Vercel URL.
+resolves opaque public routes through the authenticated control-plane API, and
+signs a short Ed25519 capability for the exact session, endpoint, and generation.
+The route hostname is an unguessable share link, so a preview can be opened in
+any browser without a desktop-local proxy. One-use opening tickets and short
+`HttpOnly` cookies remain supported for private desktop launch flows. HTTP
+streaming, SSE, cookies, redirects, and WebSocket upgrades are proxied without
+exposing the raw Vercel URL.
 
 The private signing key and control token are server-only. The matching public
 key is written to the trusted gateway area in each sandbox; it is not a secret.
@@ -84,7 +86,8 @@ wildcard rule after any such change.
 
 Do not publish port 8080 through Dokploy's Advanced Ports panel. The domain must
 reach it only through Traefik. Do not enable Basic Auth or Forward Auth: Preview
-Edge already performs ticket exchange and endpoint-scoped session authorization.
+Edge already performs endpoint-scoped capability authorization for every route
+request.
 
 Traefik preserves the original host, supports WebSocket upgrades without extra
 headers, and flushes recognized streaming responses immediately. Do not attach

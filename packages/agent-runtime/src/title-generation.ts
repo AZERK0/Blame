@@ -88,7 +88,11 @@ export function generatedTitle(
   );
   return {
     title: candidate.split(/\s+/).slice(0, 6).join(" "),
-    ...(runConfigurationId ? { runConfigurationId } : {}),
+    ...(input.runConfigurations
+      ? { runConfigurationId: runConfigurationId ?? null }
+      : runConfigurationId
+        ? { runConfigurationId }
+        : {}),
   };
 }
 
