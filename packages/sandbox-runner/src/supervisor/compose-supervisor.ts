@@ -28,6 +28,10 @@ import {
 import { selectedSetupTasks } from "./runtime-selection.js";
 import { createHash } from "node:crypto";
 import { snapshotWorkspace } from "../workspace/workspace-snapshot.js";
+import {
+  setupCacheFingerprintMatches,
+  writeSetupCacheFingerprint,
+} from "./setup-cache-fingerprints.js";
 
 const dockerSocket = "/run/blame/docker.sock";
 const dockerPidPath = "/run/blame/dockerd.pid";
@@ -204,23 +208,7 @@ export class ComposeSupervisor {
     for (const cache of plan.caches) {
       const volumeName = composeCacheVolumeName(cache.name);
       await command("docker", ["volume", "create", volumeName]);
-      const inspected = await command("docker", [
-        "volume",
-        "inspect",
-        "--format",
-        "{{.Mountpoint}}",
-        volumeName,
-      ]);
-      const mountpoint = await realpath(inspected.stdout.trim());
-      if (
-        !mountpoint.startsWith(dockerVolumeRoot) ||
-        !mountpoint.endsWith("/_data")
-      ) {
-        throw runnerError(
-          "INVALID_CACHE_VOLUME",
-          "Docker returned an invalid cache volume path.",
-        );
-      }
+      const mountpoint = await cacheVolumeMountpoint(volumeName);
       await chown(mountpoint, identity.uid, identity.gid);
     }
   }
@@ -231,13 +219,27 @@ export class ComposeSupervisor {
   ) {
     const stamps = await readSetupStamps();
     const lockfileHash = await relevantLockfileHash();
+    const cacheMountpoints = await Promise.all(
+      plan.caches.map(({ name }) =>
+        cacheVolumeMountpoint(composeCacheVolumeName(name)),
+      ),
+    );
     for (const task of selectedSetupTasks(plan, selectedServices)) {
       const fingerprint = createHash("sha256")
         .update(JSON.stringify(task))
         .update("\0")
         .update(lockfileHash)
         .digest("hex");
-      if (stamps[task.id] === fingerprint) continue;
+      if (
+        stamps[task.id] === fingerprint &&
+        (await setupCacheFingerprintMatches(
+          cacheMountpoints,
+          task.id,
+          fingerprint,
+        ))
+      ) {
+        continue;
+      }
       const dependencies = task.dependsOn.filter((id) =>
         plan.services.some((service) => service.id === id),
       );
@@ -263,12 +265,16 @@ export class ComposeSupervisor {
           `setup-${task.id}`,
         ]),
       );
+      await writeSetupCacheFingerprint(cacheMountpoints, task.id, fingerprint);
       stamps[task.id] = fingerprint;
       await writeSetupStamps(stamps);
     }
   }
 
-  private async prepareImages(plan: PreviewExecutionPlan, serviceIds: string[]) {
+  private async prepareImages(
+    plan: PreviewExecutionPlan,
+    serviceIds: string[],
+  ) {
     if (!serviceIds.length) return;
     const snapshot = await snapshotWorkspace();
     const stamps = await readImageStamps();
@@ -304,7 +310,8 @@ export class ComposeSupervisor {
         ]),
       );
     }
-    for (const id of pending) stamps[id] = imageFingerprint(plan, id, snapshot.files);
+    for (const id of pending)
+      stamps[id] = imageFingerprint(plan, id, snapshot.files);
     await writeImageStamps(stamps);
   }
 }
@@ -314,7 +321,10 @@ const imageStampPath = "/var/lib/blame/runtime/image-fingerprints.json";
 
 async function readSetupStamps() {
   try {
-    return JSON.parse(await readFile(setupStampPath, "utf8")) as Record<string, string>;
+    return JSON.parse(await readFile(setupStampPath, "utf8")) as Record<
+      string,
+      string
+    >;
   } catch {
     return {};
   }
@@ -322,14 +332,19 @@ async function readSetupStamps() {
 
 async function writeSetupStamps(stamps: Record<string, string>) {
   await mkdir(dirname(setupStampPath), { recursive: true, mode: 0o700 });
-  await writeFile(setupStampPath, JSON.stringify(stamps), { mode: 0o600, flush: true });
+  await writeFile(setupStampPath, JSON.stringify(stamps), {
+    mode: 0o600,
+    flush: true,
+  });
 }
 
 async function relevantLockfileHash() {
   const snapshot = await snapshotWorkspace();
   const entries = Object.entries(snapshot.files)
     .filter(([path]) =>
-      /(^|\/)(pnpm-lock\.yaml|package-lock\.json|yarn\.lock|bun\.lockb|poetry\.lock|Cargo\.lock|uv\.lock)$/.test(path),
+      /(^|\/)(pnpm-lock\.yaml|package-lock\.json|yarn\.lock|bun\.lockb|poetry\.lock|Cargo\.lock|uv\.lock)$/.test(
+        path,
+      ),
     )
     .sort(([left], [right]) => left.localeCompare(right));
   return createHash("sha256").update(JSON.stringify(entries)).digest("hex");
@@ -337,7 +352,10 @@ async function relevantLockfileHash() {
 
 async function readImageStamps() {
   try {
-    return JSON.parse(await readFile(imageStampPath, "utf8")) as Record<string, string>;
+    return JSON.parse(await readFile(imageStampPath, "utf8")) as Record<
+      string,
+      string
+    >;
   } catch {
     return {};
   }
@@ -345,7 +363,10 @@ async function readImageStamps() {
 
 async function writeImageStamps(stamps: Record<string, string>) {
   await mkdir(dirname(imageStampPath), { recursive: true, mode: 0o700 });
-  await writeFile(imageStampPath, JSON.stringify(stamps), { mode: 0o600, flush: true });
+  await writeFile(imageStampPath, JSON.stringify(stamps), {
+    mode: 0o600,
+    flush: true,
+  });
 }
 
 function imageFingerprint(
@@ -361,7 +382,11 @@ function imageFingerprint(
     : undefined;
   const contextFiles = contextPrefix
     ? Object.entries(files)
-        .filter(([path]) => path === contextPrefix.slice(0, -1) || path.startsWith(contextPrefix))
+        .filter(
+          ([path]) =>
+            path === contextPrefix.slice(0, -1) ||
+            path.startsWith(contextPrefix),
+        )
         .sort(([left], [right]) => left.localeCompare(right))
     : [];
   return createHash("sha256")
@@ -372,7 +397,9 @@ function imageFingerprint(
 }
 
 function imageItem(plan: PreviewExecutionPlan, id: string) {
-  const setupId = id.startsWith("setup-") ? id.slice("setup-".length) : undefined;
+  const setupId = id.startsWith("setup-")
+    ? id.slice("setup-".length)
+    : undefined;
   return setupId
     ? plan.setup.find(({ id: candidate }) => candidate === setupId)
     : plan.services.find(({ id: candidate }) => candidate === id);
@@ -386,6 +413,27 @@ async function resetStaleDocker() {
   await command("pkill", ["-KILL", "-x", "containerd"], true);
   await rm(dockerSocket, { force: true });
   await rm(dockerPidPath, { force: true });
+}
+
+async function cacheVolumeMountpoint(volumeName: string) {
+  const inspected = await command("docker", [
+    "volume",
+    "inspect",
+    "--format",
+    "{{.Mountpoint}}",
+    volumeName,
+  ]);
+  const mountpoint = await realpath(inspected.stdout.trim());
+  if (
+    !mountpoint.startsWith(dockerVolumeRoot) ||
+    !mountpoint.endsWith("/_data")
+  ) {
+    throw runnerError(
+      "INVALID_CACHE_VOLUME",
+      "Docker returned an invalid cache volume path.",
+    );
+  }
+  return mountpoint;
 }
 
 function validateComposePlan(plan: PreviewExecutionPlan) {

@@ -21,6 +21,8 @@ test("restores only recognized compiler caches after a canonical refresh", async
   try {
     await mkdir(join(root, "packages/web/.next/cache"), { recursive: true });
     await mkdir(join(root, "packages/app/.vite"), { recursive: true });
+    await mkdir(join(root, "node_modules/.bin"), { recursive: true });
+    await mkdir(join(root, "packages/web/node_modules"), { recursive: true });
     await mkdir(join(root, "packages/api/dist"), { recursive: true });
     await writeFile(join(root, "tracked.ts"), "mutated");
     await writeFile(
@@ -28,6 +30,11 @@ test("restores only recognized compiler caches after a canonical refresh", async
       "next-cache",
     );
     await writeFile(join(root, "packages/app/.vite/deps.json"), "vite-cache");
+    await writeFile(join(root, "node_modules/.bin/next"), "next-binary");
+    await writeFile(
+      join(root, "packages/web/node_modules/workspace-package"),
+      "workspace-link",
+    );
     await writeFile(join(root, "packages/api/dist/server.js"), "generated");
 
     const refreshed = await refreshWorkspacePreservingWarmCaches(async () => {
@@ -38,7 +45,12 @@ test("restores only recognized compiler caches after a canonical refresh", async
     }, root);
 
     assert.deepEqual(refreshed, {
-      cachePaths: ["packages/app/.vite", "packages/web/.next/cache"],
+      cachePaths: [
+        "node_modules",
+        "packages/app/.vite",
+        "packages/web/.next/cache",
+        "packages/web/node_modules",
+      ],
       result: "refreshed",
     });
     assert.equal(await readFile(join(root, "tracked.ts"), "utf8"), "canonical");
@@ -52,6 +64,17 @@ test("restores only recognized compiler caches after a canonical refresh", async
     assert.equal(
       await readFile(join(root, "packages/app/.vite/deps.json"), "utf8"),
       "vite-cache",
+    );
+    assert.equal(
+      await readFile(join(root, "node_modules/.bin/next"), "utf8"),
+      "next-binary",
+    );
+    assert.equal(
+      await readFile(
+        join(root, "packages/web/node_modules/workspace-package"),
+        "utf8",
+      ),
+      "workspace-link",
     );
     await assert.rejects(() =>
       readFile(join(root, "packages/api/dist/server.js")),
@@ -74,6 +97,28 @@ test("does not traverse symlinked cache directories", async () => {
       join(root, "packages/web/.next"),
     );
     assert.deepEqual(await warmCacheDirectories(root), []);
+  } finally {
+    await rm(parent, { recursive: true, force: true });
+  }
+});
+
+test("restores dependencies when the canonical refresh fails", async () => {
+  const parent = await mkdtemp(join(tmpdir(), "blame-warm-cache-failure-"));
+  const root = join(parent, "workspace");
+  try {
+    await mkdir(join(root, "node_modules/.bin"), { recursive: true });
+    await writeFile(join(root, "node_modules/.bin/next"), "next-binary");
+
+    await assert.rejects(
+      refreshWorkspacePreservingWarmCaches(async () => {
+        throw new Error("refresh failed");
+      }, root),
+      /refresh failed/,
+    );
+    assert.equal(
+      await readFile(join(root, "node_modules/.bin/next"), "utf8"),
+      "next-binary",
+    );
   } finally {
     await rm(parent, { recursive: true, force: true });
   }

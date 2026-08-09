@@ -66,13 +66,16 @@ export default class VercelSandboxBaselineProvider implements PreviewBaselinePro
         operation: 'source-import',
         source: input.source,
       })
-      await runnerCall(sandbox, {
+      const warm = await runnerCall<{ serviceCachesWarmed: boolean }>(sandbox, {
         operation: 'warm-baseline',
         sessionId: `baseline-${input.fingerprint.slice(0, 24)}`,
         generation: 1,
         plan: input.plan,
         source: input.source,
       })
+      if (!warm.serviceCachesWarmed) {
+        throw new Error('Baseline service cache warmup failed.')
+      }
       await runnerCall(sandbox, { operation: 'sanitize-snapshot' })
       const snapshot = await sandbox.snapshot({
         expiration: this.config.sandbox.snapshotRetentionDays * 86_400_000,
