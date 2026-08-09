@@ -2,11 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { runnerHandshake, runnerProtocolVersion } from "./runner-contract.js";
 
-test("advertises the execution plan V2 runner protocol", () => {
-  assert.equal(runnerProtocolVersion, 2);
+test("advertises the atomic preview startup runner protocol", () => {
+  assert.equal(runnerProtocolVersion, 3);
   assert.deepEqual(
     runnerHandshake({
-      runnerVersion: "0.2.8",
+      runnerVersion: "0.2.9",
       imageDigest: "sha256:test",
       capabilities: {
         dockerCompose: true,
@@ -22,8 +22,8 @@ test("advertises the execution plan V2 runner protocol", () => {
       },
     }),
     {
-      protocolVersion: 2,
-      runnerVersion: "0.2.8",
+      protocolVersion: 3,
+      runnerVersion: "0.2.9",
       imageDigest: "sha256:test",
       capabilities: {
         dockerCompose: true,

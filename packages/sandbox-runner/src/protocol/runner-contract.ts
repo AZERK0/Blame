@@ -1,16 +1,42 @@
 import type {
   PreviewExecutionPlan,
+  RuntimeObservation,
   RuntimeProtocolHandshake,
   RuntimeSelection,
   SourceArtifact,
 } from "@blame/preview-runtime";
 
-export const runnerProtocolVersion = 2;
+export const runnerProtocolVersion = 3;
 
 export type RunnerUploadTarget = {
   expiresAt: string;
   headers: Record<string, string>;
   url: string;
+};
+
+export type RunnerEndpointMap = {
+  revision: number;
+  primaryRouteId: string;
+  routes: Array<{
+    routeId: string;
+    serviceId: string;
+    endpointId: string;
+    protocol: "http" | "https" | "ws" | "wss";
+    logicalPort: number;
+    targetHost: string;
+    targetPort: number;
+    sandboxPort: number;
+    basePathMode: "root" | "explicit-prefix";
+    externallyCompatible: boolean;
+  }>;
+  supportsWebSocket: boolean;
+  integratedPreviewRequired: boolean;
+  incompatibilityReasons: string[];
+};
+
+export type RunnerPreviewStartResult = {
+  observation: RuntimeObservation;
+  endpoints: RunnerEndpointMap;
 };
 
 export type RunnerRequest = (
@@ -24,6 +50,16 @@ export type RunnerRequest = (
       capabilityPublicKey?: string;
       sessionId?: string;
       generation?: number;
+    }
+  | {
+      operation: "start-preview";
+      plan: PreviewExecutionPlan;
+      selection: RuntimeSelection;
+      browserBindingUrls?: Record<string, string>;
+      routeIds?: Record<string, string>;
+      capabilityPublicKey?: string;
+      sessionId: string;
+      generation: number;
     }
   | {
       operation: "warm-baseline";

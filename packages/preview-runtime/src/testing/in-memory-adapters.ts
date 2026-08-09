@@ -55,7 +55,13 @@ export class InMemorySessionRepository implements SessionRepository {
     return [...this.records.values()]
       .filter(
         (record) =>
-          ["suspended", "suspending", "destroyed", "destroying", "unprovisioned"].includes(record.state.host) === false &&
+          [
+            "suspended",
+            "suspending",
+            "destroyed",
+            "destroying",
+            "unprovisioned",
+          ].includes(record.state.host) === false &&
           Boolean(record.providerHandleEncrypted) &&
           Boolean(record.idleDeadlineAt && record.idleDeadlineAt <= now),
       )
@@ -197,6 +203,21 @@ export class FakePreviewRuntimeDriver implements PreviewRuntimeDriver {
     this.host(handle).running = true;
   }
 
+  async startPreview(
+    handle: RuntimeHandle,
+    plan: PreviewExecutionPlan,
+    _selection: RuntimeSelection,
+  ) {
+    this.calls.push("startPreview");
+    const host = this.host(handle);
+    host.plan = structuredClone(plan);
+    host.running = true;
+    return {
+      observation: this.observation(host),
+      endpointMap: this.endpointMap(host),
+    };
+  }
+
   async stopServices(handle: RuntimeHandle) {
     this.calls.push("stopServices");
     this.host(handle).running = false;
@@ -209,7 +230,15 @@ export class FakePreviewRuntimeDriver implements PreviewRuntimeDriver {
 
   async inspect(handle: RuntimeHandle): Promise<RuntimeObservation> {
     this.calls.push("inspect");
-    const host = this.host(handle);
+    return this.observation(this.host(handle));
+  }
+
+  async endpoints(handle: RuntimeHandle): Promise<EndpointMap> {
+    this.calls.push("endpoints");
+    return this.endpointMap(this.host(handle));
+  }
+
+  private observation(host: FakeHost): RuntimeObservation {
     return {
       host: host.destroyed
         ? "destroyed"
@@ -226,9 +255,7 @@ export class FakePreviewRuntimeDriver implements PreviewRuntimeDriver {
     };
   }
 
-  async endpoints(handle: RuntimeHandle): Promise<EndpointMap> {
-    this.calls.push("endpoints");
-    const host = this.host(handle);
+  private endpointMap(host: FakeHost): EndpointMap {
     const routes = host.plan.networking.gatewayListeners.map((route) => ({
       ...route,
       routeId: `${host.id}:${route.routeKey}`,

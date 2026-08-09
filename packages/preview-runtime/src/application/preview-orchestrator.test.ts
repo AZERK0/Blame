@@ -99,9 +99,18 @@ test("runs commands idempotently and keeps state axes independent", async () => 
   assert.equal("fencingToken" in first, false);
   assert.ok((await repository.get("session"))!.fencingToken >= 2);
   assert.equal(
-    driver.calls.filter((call) => call === "startServices").length,
+    driver.calls.filter((call) => call === "startPreview").length,
     1,
   );
+  assert.equal(
+    driver.calls.filter((call) => call === "prepareEngine").length,
+    0,
+  );
+  assert.equal(
+    driver.calls.filter((call) => call === "startServices").length,
+    0,
+  );
+  assert.equal(driver.calls.filter((call) => call === "endpoints").length, 0);
 });
 
 test("does not claim that a managed agent is running without a remote executor", async () => {

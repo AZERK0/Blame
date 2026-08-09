@@ -14,7 +14,10 @@ import type {
   RuntimeObservation,
   RuntimeSelection,
 } from "@blame/preview-runtime";
-import type { RunnerRequest } from "./protocol/runner-contract.js";
+import type {
+  RunnerPreviewStartResult,
+  RunnerRequest,
+} from "./protocol/runner-contract.js";
 import { runnerHandshake } from "./protocol/runner-contract.js";
 import { runnerError } from "./protocol/runner-server.js";
 import {
@@ -52,6 +55,8 @@ export class RunnerApplication {
         return this.resumeHost(request.sessionId, request.generation);
       case "prepare-engine":
         return this.prepare(request);
+      case "start-preview":
+        return this.startPreview(request);
       case "warm-baseline":
         return this.warmBaseline(request);
       case "sanitize-snapshot":
@@ -137,6 +142,17 @@ export class RunnerApplication {
       generation: request.generation!,
     });
     return { prepared: true };
+  }
+
+  private async startPreview(
+    request: Extract<RunnerRequest, { operation: "start-preview" }>,
+  ): Promise<RunnerPreviewStartResult> {
+    await this.prepare({ ...request, operation: "prepare-engine" });
+    await this.start(request.selection);
+    return {
+      observation: await this.inspect(true),
+      endpoints: await this.endpoints(),
+    };
   }
 
   private async start(requestedSelection: RuntimeSelection) {
@@ -485,7 +501,7 @@ function requiredRouteId(
 
 function handshake() {
   return runnerHandshake({
-    runnerVersion: process.env.BLAME_RUNNER_VERSION ?? "0.2.8",
+    runnerVersion: process.env.BLAME_RUNNER_VERSION ?? "0.2.9",
     imageDigest: process.env.BLAME_RUNNER_IMAGE_DIGEST ?? "unconfigured",
     capabilities: {
       dockerCompose: true,

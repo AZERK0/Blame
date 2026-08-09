@@ -69,7 +69,10 @@ export type DurableDeltaReceipt = {
   durableAt: string;
 };
 export type SuspendReceipt = { snapshotId?: string; suspendedAt: string };
-export type DestroyReceipt = { destroyedAt: string; pendingCleanupIds: string[] };
+export type DestroyReceipt = {
+  destroyedAt: string;
+  pendingCleanupIds: string[];
+};
 export type RuntimeUsage = {
   /** Provider-lifetime cumulative counters. Consumers derive deltas between samples. */
   activeCpuSeconds: number;
@@ -91,7 +94,16 @@ export type RuntimeObservation = {
   state?: Partial<PreviewSessionState>;
 };
 
-export type LogRequest = { handle: RuntimeHandle; cursor?: string; serviceId?: string };
+export type PreviewStartReceipt = {
+  observation: RuntimeObservation;
+  endpointMap: EndpointMap;
+};
+
+export type LogRequest = {
+  handle: RuntimeHandle;
+  cursor?: string;
+  serviceId?: string;
+};
 export type PreviewLogEvent = {
   sessionId: string;
   sequence: number;
@@ -112,7 +124,10 @@ export type RuntimeInspectOptions = { probeServices?: boolean };
 
 export interface PreviewExecutionEngine {
   prepare(context: EngineContext, plan: PreviewExecutionPlan): Promise<void>;
-  startServices(context: EngineContext, selection: RuntimeSelection): Promise<void>;
+  startServices(
+    context: EngineContext,
+    selection: RuntimeSelection,
+  ): Promise<void>;
   stopServices(context: EngineContext): Promise<void>;
   inspect(context: EngineContext): Promise<RuntimeObservation>;
 }
@@ -122,9 +137,23 @@ export interface PreviewRuntimeDriver {
   provisionHost(input: ProvisionInput): Promise<RuntimeHandle>;
   resumeHost(handle: RuntimeHandle): Promise<void>;
   syncIn(handle: RuntimeHandle, source: SourceArtifact): Promise<SyncReceipt>;
-  restoreBaseline?(handle: RuntimeHandle, snapshotId: string): Promise<RuntimeHandle>;
-  prepareEngine(handle: RuntimeHandle, plan: PreviewExecutionPlan): Promise<void>;
-  startServices(handle: RuntimeHandle, selection: RuntimeSelection): Promise<void>;
+  restoreBaseline?(
+    handle: RuntimeHandle,
+    snapshotId: string,
+  ): Promise<RuntimeHandle>;
+  prepareEngine(
+    handle: RuntimeHandle,
+    plan: PreviewExecutionPlan,
+  ): Promise<void>;
+  startServices(
+    handle: RuntimeHandle,
+    selection: RuntimeSelection,
+  ): Promise<void>;
+  startPreview?(
+    handle: RuntimeHandle,
+    plan: PreviewExecutionPlan,
+    selection: RuntimeSelection,
+  ): Promise<PreviewStartReceipt>;
   stopServices(handle: RuntimeHandle): Promise<void>;
   exec(handle: RuntimeHandle, input: ExecInput): Promise<ExecResult>;
   inspect(
@@ -133,7 +162,10 @@ export interface PreviewRuntimeDriver {
   ): Promise<RuntimeObservation>;
   endpoints(handle: RuntimeHandle): Promise<EndpointMap>;
   logs(input: LogRequest): AsyncIterable<PreviewLogEvent>;
-  exportDelta(handle: RuntimeHandle, revision: string): Promise<DurableDeltaReceipt>;
+  exportDelta(
+    handle: RuntimeHandle,
+    revision: string,
+  ): Promise<DurableDeltaReceipt>;
   acknowledgeDelta?(handle: RuntimeHandle, revision: string): Promise<void>;
   suspendHost(handle: RuntimeHandle): Promise<SuspendReceipt>;
   destroyHost(handle: RuntimeHandle): Promise<DestroyReceipt>;
@@ -148,7 +180,10 @@ export function runtimeHandle(value: object): RuntimeHandle {
   return value as RuntimeHandle;
 }
 
-export function fenceRuntimeHandle(handle: RuntimeHandle, fencingToken: number) {
+export function fenceRuntimeHandle(
+  handle: RuntimeHandle,
+  fencingToken: number,
+) {
   if (!Number.isSafeInteger(fencingToken) || fencingToken < 1) {
     throw new Error("Runtime fencing token is invalid.");
   }

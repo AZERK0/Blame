@@ -1,9 +1,13 @@
 import type { PreviewSessionRecord } from "../domain/preview-session.js";
-import { PreviewRuntimeError, previewFailure } from "../domain/preview-errors.js";
+import {
+  PreviewRuntimeError,
+  previewFailure,
+} from "../domain/preview-errors.js";
 import {
   fenceRuntimeHandle,
   type PreviewRuntimeDriver,
   type RuntimeHandle,
+  type RuntimeObservation,
 } from "../ports/preview-runtime-driver.js";
 import type { SessionRepository } from "../ports/session-repository.js";
 import type { PreviewEventSink } from "../ports/preview-event-sink.js";
@@ -23,32 +27,55 @@ export class PreviewReconciler {
 
   async reconcile(record: PreviewSessionRecord, fencingToken: number) {
     const driver = this.options.drivers.get(record.profile);
-    if (!driver) throw unsupported(`No driver is registered for ${record.profile}.`);
+    if (!driver)
+      throw unsupported(`No driver is registered for ${record.profile}.`);
     const expectedRevision = record.revision;
     const next = structuredClone(record);
     next.fencingToken = fencingToken;
     try {
       const capabilityReport = await driver.capabilities(next.plan);
       if (!capabilityReport.compatible) {
-        throw unsupported(capabilityReport.incompatibilities.map(({ message }) => message).join(" "));
+        throw unsupported(
+          capabilityReport.incompatibilities
+            .map(({ message }) => message)
+            .join(" "),
+        );
       }
       let handle = await this.options.repository.getRuntimeHandle(next.id);
+      let observedHandshake: RuntimeObservation["handshake"];
       if (handle) {
         fenceRuntimeHandle(handle, fencingToken);
         await this.options.repository.setRuntimeHandle(next.id, handle);
-        const observation = await driver.inspect(handle);
-        if (observation.host === "missing" || observation.host === "destroyed") {
-          await this.options.repository.setRuntimeHandle(next.id, undefined, fencingToken);
+        const observation = await driver.inspect(handle, {
+          probeServices: false,
+        });
+        if (
+          observation.host === "missing" ||
+          observation.host === "destroyed"
+        ) {
+          await this.options.repository.setRuntimeHandle(
+            next.id,
+            undefined,
+            fencingToken,
+          );
           handle = undefined;
           next.state.host = "unprovisioned";
           next.state.engine = "idle";
           next.state.preview = "closed";
-        } else applyObservation(next, observation);
+        } else {
+          applyObservation(next, observation);
+          if (observation.host === "running")
+            observedHandshake = observation.handshake;
+        }
       }
       handle = await this.reconcileHost(driver, next, handle);
       await this.acknowledgeRemoteDelta(driver, next, handle);
       if (handle && next.desired.host === "active") {
-        applyHandshake(next, (await driver.inspect(handle)).handshake);
+        applyHandshake(
+          next,
+          observedHandshake ??
+            (await driver.inspect(handle, { probeServices: false })).handshake,
+        );
         await this.reconcileEngine(driver, next, handle);
         await this.reconcileAgent(next);
       }
@@ -60,7 +87,11 @@ export class PreviewReconciler {
     } catch (error) {
       const failed = failedRecord(next, error, expectedRevision + 1);
       await this.options.repository.save(failed, expectedRevision);
-      await this.emitState(failed, failed.failure?.message ?? "Preview session failed.", "failure");
+      await this.emitState(
+        failed,
+        failed.failure?.message ?? "Preview session failed.",
+        "failure",
+      );
       throw error;
     }
   }
@@ -82,13 +113,18 @@ export class PreviewReconciler {
         if (record.state.sync === "pending_local_sync") {
           throw new PreviewRuntimeError({
             code: "SYNC_CONFLICT",
-            message: "The latest durable delta must be applied locally before host destruction.",
+            message:
+              "The latest durable delta must be applied locally before host destruction.",
             retryable: false,
           });
         }
         record.state.host = "destroying";
         await driver.destroyHost(handle);
-        await this.options.repository.setRuntimeHandle(record.id, undefined, record.fencingToken);
+        await this.options.repository.setRuntimeHandle(
+          record.id,
+          undefined,
+          record.fencingToken,
+        );
       }
       record.state.host = "destroyed";
       record.state.engine = "stopped";
@@ -171,34 +207,29 @@ export class PreviewReconciler {
     }
     if (record.state.engine !== "running") {
       record.state.engine = "preparing";
-      await driver.prepareEngine(handle, record.plan);
-      record.state.engine = "starting";
-      await driver.startServices(handle, {
+      const selection = {
         configurationId: record.selection?.configurationId ?? "default",
         serviceIds: record.selection?.serviceIds,
         primaryRoute: record.selection?.primaryRoute,
-      });
+      };
+      if (record.desired.preview === "open" && driver.startPreview) {
+        const started = await driver.startPreview(
+          handle,
+          record.plan,
+          selection,
+        );
+        assertServicesReady(record, started.observation);
+        record.state.engine = "running";
+        record.state.preview = "ready";
+        record.endpointMap = started.endpointMap;
+        return;
+      }
+      await driver.prepareEngine(handle, record.plan);
+      record.state.engine = "starting";
+      await driver.startServices(handle, selection);
     }
     const observation = await driver.inspect(handle);
-    const expectedServices = expectedServiceIds(record);
-    const stopped = observation.services.filter(
-      ({ id, running }) => expectedServices.has(id) && !running,
-    );
-    if (stopped.length) {
-      throw new PreviewRuntimeError({
-        code: "ENGINE_START_FAILED",
-        message: `Services did not remain running: ${stopped.map(({ id }) => id).join(", ")}.`,
-        retryable: true,
-      });
-    }
-    const unhealthy = observation.services.filter((service) => service.running && service.healthy === false);
-    if (unhealthy.length) {
-      throw new PreviewRuntimeError({
-        code: "HEALTHCHECK_FAILED",
-        message: `Healthcheck failed for ${unhealthy.map(({ id }) => id).join(", ")}.`,
-        retryable: true,
-      });
-    }
+    assertServicesReady(record, observation);
     record.state.engine = "running";
     if (record.desired.preview === "open") {
       record.state.preview = "opening";
@@ -223,11 +254,16 @@ export class PreviewReconciler {
     record: PreviewSessionRecord,
     handle: RuntimeHandle,
   ) {
-    if (record.profile === "local-container" || record.state.sync === "discarded") return;
+    if (
+      record.profile === "local-container" ||
+      record.state.sync === "discarded"
+    )
+      return;
     const preserveConflict = record.state.sync === "conflict";
     record.state.sync = "exporting";
     const observation = await driver.inspect(handle);
-    const revision = observation.journalRevision ?? record.lastExportedJournalRevision ?? "0";
+    const revision =
+      observation.journalRevision ?? record.lastExportedJournalRevision ?? "0";
     if (
       record.lastExportedJournalRevision === revision &&
       record.pendingDeltaArtifactId
@@ -264,7 +300,8 @@ export class PreviewReconciler {
       record.lastAcknowledgedRemoteRevision !== revision &&
       record.state.host === "running"
     ) {
-      if (driver.acknowledgeDelta) await driver.acknowledgeDelta(handle, revision);
+      if (driver.acknowledgeDelta)
+        await driver.acknowledgeDelta(handle, revision);
       record.lastAcknowledgedRemoteRevision = revision;
     }
     if (record.state.sync === "applying") {
@@ -285,6 +322,33 @@ export class PreviewReconciler {
       state: structuredClone(record.state),
       stream: "system",
       message,
+    });
+  }
+}
+
+function assertServicesReady(
+  record: PreviewSessionRecord,
+  observation: Awaited<ReturnType<PreviewRuntimeDriver["inspect"]>>,
+) {
+  const expectedServices = expectedServiceIds(record);
+  const stopped = observation.services.filter(
+    ({ id, running }) => expectedServices.has(id) && !running,
+  );
+  if (stopped.length) {
+    throw new PreviewRuntimeError({
+      code: "ENGINE_START_FAILED",
+      message: `Services did not remain running: ${stopped.map(({ id }) => id).join(", ")}.`,
+      retryable: true,
+    });
+  }
+  const unhealthy = observation.services.filter(
+    (service) => service.running && service.healthy === false,
+  );
+  if (unhealthy.length) {
+    throw new PreviewRuntimeError({
+      code: "HEALTHCHECK_FAILED",
+      message: `Healthcheck failed for ${unhealthy.map(({ id }) => id).join(", ")}.`,
+      retryable: true,
     });
   }
 }
@@ -331,7 +395,9 @@ function applyObservation(
 
 function applyHandshake(
   record: PreviewSessionRecord,
-  handshake: import("../domain/preview-session.js").RuntimeProtocolHandshake | undefined,
+  handshake:
+    | import("../domain/preview-session.js").RuntimeProtocolHandshake
+    | undefined,
 ) {
   if (!handshake) return;
   record.protocolVersion = handshake.protocolVersion;
@@ -347,18 +413,29 @@ function unsupported(message: string) {
   });
 }
 
-function failedRecord(record: PreviewSessionRecord, error: unknown, revision: number) {
+function failedRecord(
+  record: PreviewSessionRecord,
+  error: unknown,
+  revision: number,
+) {
   const failed = structuredClone(record);
   failed.revision = revision;
   failed.failure = previewFailure(error);
-  if (["provisioning", "resuming", "suspending", "destroying"].includes(failed.state.host)) {
+  if (
+    ["provisioning", "resuming", "suspending", "destroying"].includes(
+      failed.state.host,
+    )
+  ) {
     failed.state.host = "failed";
   }
   if (["preparing", "starting", "stopping"].includes(failed.state.engine)) {
     failed.state.engine = "failed";
   }
-  if (["opening", "closing"].includes(failed.state.preview)) failed.state.preview = "degraded";
-  if (["starting", "stopping"].includes(failed.state.agent)) failed.state.agent = "failed";
-  if (["importing", "exporting", "applying"].includes(failed.state.sync)) failed.state.sync = "failed";
+  if (["opening", "closing"].includes(failed.state.preview))
+    failed.state.preview = "degraded";
+  if (["starting", "stopping"].includes(failed.state.agent))
+    failed.state.agent = "failed";
+  if (["importing", "exporting", "applying"].includes(failed.state.sync))
+    failed.state.sync = "failed";
   return failed;
 }

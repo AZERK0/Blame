@@ -22,6 +22,7 @@ import {
   type PreviewExecutionPlan,
   type PreviewLogEvent,
   type PreviewRuntimeDriver,
+  type PreviewStartReceipt,
   type ProvisionInput,
   type RuntimeHandle,
   type RuntimeObservation,
@@ -49,6 +50,26 @@ import {
 type RunnerResponse<T> =
   | { ok: true; result: T }
   | { ok: false; error: { code: string; message: string } }
+
+type RunnerEndpointMap = {
+  revision: number
+  primaryRouteId: string
+  routes: Array<{
+    routeId: string
+    serviceId: string
+    endpointId: string
+    protocol: 'http' | 'https' | 'ws' | 'wss'
+    logicalPort: number
+    targetHost: string
+    targetPort: number
+    sandboxPort: number
+    basePathMode: 'root' | 'explicit-prefix'
+    externallyCompatible: boolean
+  }>
+  supportsWebSocket: boolean
+  integratedPreviewRequired: boolean
+  incompatibilityReasons: string[]
+}
 
 const runnerBinary = '/opt/blame/bin/blame-sandbox-runner'
 const runnerControlBinary = '/opt/blame/bin/blame-runnerctl'
@@ -164,7 +185,7 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
     await sandbox.update({ ports: payload.gatewayPorts, networkPolicy: this.networkPolicy() })
     await this.bootstrap(sandbox)
     await this.assertHandshake(sandbox, handle)
-    await this.runnerCall(handle, {
+    await this.runnerCallWithSandbox(sandbox, handle, {
       operation: 'resume-host',
       sessionId: payload.sessionId,
       generation: payload.generation,
@@ -217,7 +238,7 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
         await this.bootstrap(sandbox)
         const restored = runtimeHandle({ ...payload })
         await this.assertHandshake(sandbox, restored)
-        await this.runnerCall(restored, {
+        await this.runnerCallWithSandbox(sandbox, restored, {
           operation: 'resume-host',
           sessionId: payload.sessionId,
           generation: payload.generation,
@@ -250,6 +271,40 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
     await measureRuntimePhase('services.start', () =>
       this.runnerCall(handle, { operation: 'start-services', selection })
     )
+  }
+
+  async startPreview(
+    handle: RuntimeHandle,
+    plan: PreviewExecutionPlan,
+    selection: RuntimeSelection
+  ): Promise<PreviewStartReceipt> {
+    const payload = vercelHandle(handle)
+    const { browserBindingUrls, routeIds } = await this.publishPlannedRoutes(payload, plan)
+    const sandbox = await this.sandbox(payload, true)
+    const started = await measureRuntimePhase('preview.start', () =>
+      this.runnerCallWithSandbox<{
+        observation: RuntimeObservation
+        endpoints: RunnerEndpointMap
+      }>(sandbox, handle, {
+        operation: 'start-preview',
+        plan,
+        selection,
+        browserBindingUrls,
+        routeIds,
+        capabilityPublicKey: this.config.capabilityPublicKey,
+        sessionId: payload.sessionId,
+        generation: payload.generation,
+      })
+    )
+    started.observation.generation ??= payload.generation
+    if (started.observation.handshake) {
+      started.observation.handshake.imageDigest =
+        sandbox.image?.split('@').at(-1) ?? started.observation.handshake.imageDigest
+    }
+    return {
+      observation: started.observation,
+      endpointMap: await this.publishEndpointMap(payload, sandbox, started.endpoints),
+    }
   }
 
   async stopServices(handle: RuntimeHandle) {
@@ -305,25 +360,17 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
   async endpoints(handle: RuntimeHandle): Promise<EndpointMap> {
     const payload = vercelHandle(handle)
     const sandbox = await this.sandbox(payload, true)
-    const internal = await this.runnerCall<{
-      revision: number
-      primaryRouteId: string
-      routes: Array<{
-        routeId: string
-        serviceId: string
-        endpointId: string
-        protocol: 'http' | 'https' | 'ws' | 'wss'
-        logicalPort: number
-        targetHost: string
-        targetPort: number
-        sandboxPort: number
-        basePathMode: 'root' | 'explicit-prefix'
-        externallyCompatible: boolean
-      }>
-      supportsWebSocket: boolean
-      integratedPreviewRequired: boolean
-      incompatibilityReasons: string[]
-    }>(handle, { operation: 'endpoints' })
+    const internal = await this.runnerCallWithSandbox<RunnerEndpointMap>(sandbox, handle, {
+      operation: 'endpoints',
+    })
+    return this.publishEndpointMap(payload, sandbox, internal)
+  }
+
+  private async publishEndpointMap(
+    payload: VercelRuntimeHandle,
+    sandbox: Sandbox,
+    internal: RunnerEndpointMap
+  ): Promise<EndpointMap> {
     const routes = await Promise.all(
       internal.routes.map(async (route) => {
         if (!payload.gatewayPorts.includes(route.sandboxPort)) {
@@ -514,6 +561,15 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
   private async runnerCall<T>(handle: RuntimeHandle, request: Record<string, unknown>) {
     const payload = vercelHandle(handle)
     const sandbox = await this.sandbox(payload, true)
+    return this.runnerCallWithSandbox<T>(sandbox, handle, request)
+  }
+
+  private async runnerCallWithSandbox<T>(
+    sandbox: Sandbox,
+    handle: RuntimeHandle,
+    request: Record<string, unknown>
+  ) {
+    const payload = vercelHandle(handle)
     const requestPath = `${runnerRequestDirectory}/${randomUUID()}.json`
     await sandbox.asUser('root').writeFiles([
       {
@@ -588,11 +644,11 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
   }
 
   private async assertHandshake(sandbox: Sandbox, handle: RuntimeHandle) {
-    const response = await this.runnerCall<{
+    const response = await this.runnerCallWithSandbox<{
       protocolVersion: number
       runnerVersion: string
       imageDigest: string
-    }>(handle, { operation: 'handshake' })
+    }>(sandbox, handle, { operation: 'handshake' })
     if (response.protocolVersion !== this.config.sandbox.protocolVersion) {
       throw runnerFailure(
         'RUNNER_PROTOCOL_INCOMPATIBLE',
