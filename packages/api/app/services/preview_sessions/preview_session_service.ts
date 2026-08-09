@@ -346,6 +346,11 @@ export default class PreviewSessionService {
             workspaceHash: source.workspaceHash,
           })
         : await this.baselines.lookupForSession(sessionId, baselineMetadata)
+    if (source.mode !== 'delta' && !baseline) {
+      void this.baselines
+        .ensure({ sessionId, source, sourceMetadata: baselineMetadata })
+        .catch(() => undefined)
+    }
     return this.lock.withLock(sessionId, async ({ fencingToken }) => {
       const record = await this.repository.get(sessionId)
       const handle = await this.fencedHandle(sessionId, fencingToken)
@@ -397,11 +402,6 @@ export default class PreviewSessionService {
         current.lastAcknowledgedRemoteRevision = '0'
         current.revision += 1
         await this.repository.save(current, current.revision - 1)
-        if (source.mode !== 'delta' && !baseline) {
-          void this.baselines
-            .ensure({ sessionId, source, sourceMetadata: baselineMetadata })
-            .catch(() => undefined)
-        }
         return this.get(ownerUserId, sessionId)
       } catch (error) {
         const current = await this.repository.get(sessionId)

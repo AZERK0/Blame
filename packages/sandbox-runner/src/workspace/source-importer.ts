@@ -260,7 +260,7 @@ async function reconstructWorkspace(staging: string, manifest: SourceManifest, b
   const backup = `${runtimePaths.workspace}.previous-${process.pid}`;
   await rm(next, { recursive: true, force: true });
   await git(["clone", "--no-hardlinks", bundle, next]);
-  await pruneClone(next, new Set(Object.keys(manifest.files)));
+  await pruneReconstructedClone(next, Object.keys(manifest.files), baseline);
   if (!baseline) {
     const overlay = join(staging, "workspace");
     try {
@@ -285,6 +285,15 @@ async function reconstructWorkspace(staging: string, manifest: SourceManifest, b
   }
   await rename(next, runtimePaths.workspace);
   await rm(backup, { recursive: true, force: true });
+}
+
+export async function pruneReconstructedClone(
+  root: string,
+  allowedPaths: string[],
+  baseline: boolean,
+) {
+  if (baseline) return;
+  await pruneClone(root, new Set(allowedPaths));
 }
 
 async function pruneClone(root: string, allowed: Set<string>, directory = root) {

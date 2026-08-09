@@ -48,7 +48,7 @@ export function previewRuntimeConfig() {
       retentionDays: positiveInteger(env.get('BLAME_PREVIEW_BASELINE_RETENTION_DAYS'), 7),
       maxUnreferenced:
         vercelPlan === 'hobby' ? Math.min(maxUnreferencedBaselines, 1) : maxUnreferencedBaselines,
-      waitSeconds: positiveInteger(env.get('BLAME_PREVIEW_BASELINE_WAIT_SECONDS'), 20),
+      waitSeconds: positiveInteger(env.get('BLAME_PREVIEW_BASELINE_WAIT_SECONDS'), 90),
       maxBuilders: positiveInteger(env.get('BLAME_PREVIEW_BASELINE_MAX_BUILDERS'), 1),
       cachePolicyVersion: '1',
     },
@@ -57,10 +57,10 @@ export function previewRuntimeConfig() {
     capabilityPublicKey: normalizePem(env.get('BLAME_PREVIEW_CAPABILITY_PUBLIC_KEY')),
     capabilityPrivateKey: normalizePem(env.get('BLAME_PREVIEW_CAPABILITY_PRIVATE_KEY')?.release()),
     workspaceEncryptionReady: workspaceArtifactsReady(),
-    artifactTransferHosts: [...workspaceArtifactTransferHosts(), ...urlHosts([env.get('APP_URL')])],
+    artifactTransferHosts: workspaceArtifactTransferHosts(),
     sandbox: {
       image: env.get('BLAME_SANDBOX_RUNNER_IMAGE'),
-      runnerVersion: env.get('BLAME_SANDBOX_RUNNER_VERSION') ?? '0.2.4',
+      runnerVersion: env.get('BLAME_SANDBOX_RUNNER_VERSION') ?? '0.2.5',
       protocolVersion: positiveInteger(env.get('BLAME_SANDBOX_PROTOCOL_VERSION'), 2),
       vercelPlan,
       timeoutMinutes: positiveInteger(env.get('BLAME_SANDBOX_TIMEOUT_MINUTES'), 60),
@@ -104,16 +104,6 @@ function csv(value: string | undefined) {
     .split(',')
     .map((item) => item.trim())
     .filter(Boolean)
-}
-
-function urlHosts(values: Array<string | undefined>) {
-  return values.flatMap((value) => {
-    try {
-      return value ? [new URL(value).hostname] : []
-    } catch {
-      return []
-    }
-  })
 }
 
 function secureOrigin(value: string) {
