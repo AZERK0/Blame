@@ -18,6 +18,24 @@ export type VercelRuntimeHandle = {
 
 export type VercelPlan = 'hobby' | 'pro' | 'enterprise'
 
+export type RunnerCallOptions = {
+  busyProviderCode?: string
+  lockWaitSeconds?: number
+  timeoutMs?: number
+}
+
+export const backgroundRunnerBusyProviderCode = 'BACKGROUND_RUNNER_BUSY'
+
+export function backgroundRunnerCallOptions(background: boolean) {
+  return background
+    ? {
+        busyProviderCode: backgroundRunnerBusyProviderCode,
+        lockWaitSeconds: 1,
+        timeoutMs: 5_000,
+      }
+    : undefined
+}
+
 export function vercelPlanLimits(plan: VercelPlan) {
   return plan === 'hobby'
     ? { maxDurationMinutes: 45, maxVcpus: 4 }

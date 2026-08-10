@@ -1,4 +1,6 @@
 import {
+  backgroundRunnerBusyProviderCode,
+  backgroundRunnerCallOptions,
   effectiveSandboxTimeoutMinutes,
   ownedSnapshotIdForDeletion,
   providerFailure,
@@ -63,6 +65,17 @@ test.group('Vercel sandbox provider errors', () => {
       maxDurationMinutes: 24 * 60,
       maxVcpus: 32,
     })
+  })
+
+  test('bounds background runner inspection without delaying interactive commands', ({
+    assert,
+  }) => {
+    assert.deepEqual(backgroundRunnerCallOptions(true), {
+      busyProviderCode: backgroundRunnerBusyProviderCode,
+      lockWaitSeconds: 1,
+      timeoutMs: 5_000,
+    })
+    assert.isUndefined(backgroundRunnerCallOptions(false))
   })
 
   test('only deletes a snapshot owned by an inactive sandbox', ({ assert }) => {

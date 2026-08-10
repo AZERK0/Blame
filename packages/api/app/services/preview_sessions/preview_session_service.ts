@@ -11,7 +11,10 @@ import PreviewQuotaService from '#services/preview_sessions/preview_quota_servic
 import PreviewLeaseService from '#services/preview_sessions/preview_lease_service'
 import PreviewAccessTicketService from '#services/preview_gateway/preview_access_ticket_service'
 import VercelSandboxDriver from '#services/sandboxes/vercel_sandbox_driver'
-import { providerSnapshotMissing } from '#services/sandboxes/vercel_sandbox_support'
+import {
+  backgroundRunnerBusyProviderCode,
+  providerSnapshotMissing,
+} from '#services/sandboxes/vercel_sandbox_support'
 import PreviewSession from '#models/preview_session'
 import PreviewUsageSample from '#models/preview_usage_sample'
 import WorkspaceArtifactService from '#services/workspace_artifacts/workspace_artifact_service'
@@ -684,7 +687,10 @@ export default class PreviewSessionService {
           const handle = await this.fencedHandle(candidate.id, fencingToken)
           const driver = record && this.drivers.get(record.profile)
           if (!record || !handle || !driver || record.state.host !== 'running') return 'unchanged'
-          const observation = await driver.inspect(handle, { probeServices: false })
+          const observation = await driver.inspect(handle, {
+            background: true,
+            probeServices: false,
+          })
           await this.sampleUsage(record.id, record.profile)
           const revision = observation.journalRevision
           if (!revision || revision === record.lastExportedJournalRevision) return 'unchanged'
@@ -714,7 +720,14 @@ export default class PreviewSessionService {
           )
           results.push({ id: candidate.id, status: 'suspended' })
         }
-      } catch {
+      } catch (error) {
+        if (
+          error instanceof PreviewRuntimeError &&
+          error.failure.providerCode === backgroundRunnerBusyProviderCode
+        ) {
+          results.push({ id: candidate.id, status: 'unchanged' })
+          continue
+        }
         results.push({ id: candidate.id, status: 'failed' })
       }
     }

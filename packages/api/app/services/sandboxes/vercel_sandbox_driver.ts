@@ -25,6 +25,7 @@ import {
   type PreviewStartReceipt,
   type ProvisionInput,
   type RuntimeHandle,
+  type RuntimeInspectOptions,
   type RuntimeObservation,
   type RuntimeProtocolHandshake,
   type RuntimeSelection,
@@ -34,6 +35,7 @@ import {
 } from '@blame/preview-runtime'
 import {
   capabilityKeysMatch,
+  backgroundRunnerCallOptions,
   delay,
   desiredPorts,
   effectiveSandboxTimeoutMinutes,
@@ -48,6 +50,7 @@ import {
   vercelPlanLimits,
   vercelHandle,
   type VercelRuntimeHandle,
+  type RunnerCallOptions,
 } from '#services/sandboxes/vercel_sandbox_support'
 type RunnerResponse<T> =
   | { ok: true; result: T }
@@ -375,7 +378,7 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
 
   async inspect(
     handle: RuntimeHandle,
-    options: { probeServices?: boolean } = {}
+    options: RuntimeInspectOptions = {}
   ): Promise<RuntimeObservation> {
     const payload = vercelHandle(handle)
     const sandbox = await this.findSandbox(payload, false)
@@ -387,10 +390,14 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
       return inactiveObservation(payload.generation, 'failed', 'failed')
     if (sandbox.status !== 'running')
       return inactiveObservation(payload.generation, 'running', 'idle')
-    const observation = await this.runnerCall<RuntimeObservation>(handle, {
-      operation: 'inspect',
-      probeServices: options.probeServices,
-    })
+    const observation = await this.runnerCall<RuntimeObservation>(
+      handle,
+      {
+        operation: 'inspect',
+        probeServices: options.probeServices,
+      },
+      backgroundRunnerCallOptions(Boolean(options.background))
+    )
     observation.generation ??= payload.generation
     if (observation.handshake) {
       observation.handshake.imageDigest =
@@ -600,16 +607,21 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
     await this.providerCall(operation, () => sandbox.delete())
   }
 
-  private async runnerCall<T>(handle: RuntimeHandle, request: Record<string, unknown>) {
+  private async runnerCall<T>(
+    handle: RuntimeHandle,
+    request: Record<string, unknown>,
+    options?: RunnerCallOptions
+  ) {
     const payload = vercelHandle(handle)
     const sandbox = await this.sandbox(payload, true)
-    return this.runnerCallWithSandbox<T>(sandbox, handle, request)
+    return this.runnerCallWithSandbox<T>(sandbox, handle, request, options)
   }
 
   private async runnerCallWithSandbox<T>(
     sandbox: Sandbox,
     handle: RuntimeHandle,
-    request: Record<string, unknown>
+    request: Record<string, unknown>,
+    options: RunnerCallOptions = {}
   ) {
     const payload = vercelHandle(handle)
     const requestPath = `${runnerRequestDirectory}/${randomUUID()}.json`
@@ -625,17 +637,27 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
         cmd: 'flock',
         args: [
           '--exclusive',
+          '--conflict-exit-code',
+          '75',
           '--wait',
-          '120',
+          String(options.lockWaitSeconds ?? 120),
           '/run/blame/control/runner.lock',
           runnerControlBinary,
           '--request',
           requestPath,
         ],
         sudo: true,
-        timeoutMs: 120_000,
+        timeoutMs: options.timeoutMs ?? 120_000,
       })
     )
+    if (command.exitCode === 75 && options.busyProviderCode) {
+      throw new PreviewRuntimeError({
+        code: 'PROVIDER_UNAVAILABLE',
+        message: 'The preview runner is busy with an interactive operation.',
+        providerCode: options.busyProviderCode,
+        retryable: true,
+      })
+    }
     const output = await command.stdout()
     let response: RunnerResponse<T>
     try {

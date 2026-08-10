@@ -132,7 +132,10 @@ export interface ExecutionHost {
   readFiles(paths: string[]): Promise<RuntimeFile[]>;
 }
 export type EngineContext = { host: ExecutionHost; sessionId: string };
-export type RuntimeInspectOptions = { probeServices?: boolean };
+export type RuntimeInspectOptions = {
+  background?: boolean;
+  probeServices?: boolean;
+};
 
 export interface PreviewExecutionEngine {
   prepare(context: EngineContext, plan: PreviewExecutionPlan): Promise<void>;
