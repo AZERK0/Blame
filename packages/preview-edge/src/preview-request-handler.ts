@@ -4,6 +4,7 @@ import type {
   PreviewRouteResolver,
   ResolvedPreviewRoute,
 } from "./preview-route-resolver.js";
+import { PreviewControlRequestError } from "./preview-route-resolver.js";
 import { PreviewSessionAuth } from "./preview-session-auth.js";
 import { UpstreamCapabilitySigner } from "./upstream-capability-signer.js";
 
@@ -34,9 +35,17 @@ export class PreviewRequestHandler {
       }
       const route = await this.authorizedRoute(request, hostname);
       await this.forward(request, response, route);
-    } catch {
+    } catch (error) {
+      const failure = previewEdgeFailure(error);
+      console.error("Preview Edge request failed", {
+        failure,
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
       if (!response.headersSent)
-        response.writeHead(401, { "cache-control": "no-store" });
+        response.writeHead(401, {
+          "cache-control": "no-store",
+          "x-blame-preview-error": failure,
+        });
       response.end("Unauthorized");
     }
   }
@@ -109,6 +118,9 @@ export class PreviewRequestHandler {
       route,
       request.headers.host ?? "",
     );
+    if (result.status === 401) {
+      responseHeaders["x-blame-preview-error"] = "upstream-unauthorized";
+    }
     response.writeHead(result.status, responseHeaders);
     if (result.body)
       await import("node:stream/promises").then(({ pipeline }) =>
@@ -131,6 +143,16 @@ export class PreviewRequestHandler {
     }
     return host;
   }
+}
+
+export function previewEdgeFailure(error: unknown) {
+  if (error instanceof PreviewControlRequestError) {
+    if (error.status === 401 || error.status === 403)
+      return "control-unauthorized";
+    if (error.status === 404) return "route-unavailable";
+    return "control-unavailable";
+  }
+  return "request-failed";
 }
 
 export function isHealthCheckRequest(

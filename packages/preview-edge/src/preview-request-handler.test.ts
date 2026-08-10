@@ -4,10 +4,12 @@ import test from "node:test";
 import {
   PreviewRequestHandler,
   isHealthCheckRequest,
+  previewEdgeFailure,
   previewRequestTarget,
   rewritePreviewLocation,
   withoutPreviewAuthCookie,
 } from "./preview-request-handler.js";
+import { PreviewControlRequestError } from "./preview-route-resolver.js";
 import { PreviewSessionAuth } from "./preview-session-auth.js";
 import type { UpstreamCapabilitySigner } from "./upstream-capability-signer.js";
 
@@ -91,4 +93,19 @@ test("exposes only the exact health endpoint without preview authentication", ()
   assert.equal(isHealthCheckRequest("HEAD", "/healthz"), true);
   assert.equal(isHealthCheckRequest("POST", "/healthz"), false);
   assert.equal(isHealthCheckRequest("GET", "/healthz/extended"), false);
+});
+
+test("classifies control-plane authorization and route failures", () => {
+  assert.equal(
+    previewEdgeFailure(new PreviewControlRequestError(401)),
+    "control-unauthorized",
+  );
+  assert.equal(
+    previewEdgeFailure(new PreviewControlRequestError(404)),
+    "route-unavailable",
+  );
+  assert.equal(
+    previewEdgeFailure(new PreviewControlRequestError(503)),
+    "control-unavailable",
+  );
 });

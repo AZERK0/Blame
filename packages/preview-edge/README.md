@@ -37,6 +37,20 @@ HOST=0.0.0.0
 PORT=8080
 ```
 
+`BLAME_PREVIEW_EDGE_CONTROL_TOKEN` must be byte-for-byte identical to the
+variable with the same name on the API. `BLAME_PREVIEW_CAPABILITY_PRIVATE_KEY`
+must be the private half of the Ed25519 keypair configured on the API through
+`BLAME_PREVIEW_CAPABILITY_PUBLIC_KEY` (using the same private key for the API
+signer is recommended). After rotating that keypair, restart active previews so
+their sandbox gateways receive the new public key.
+
+Failed preview requests include a non-sensitive `x-blame-preview-error` header.
+`control-unauthorized` means the shared API/Edge token does not match;
+`route-unavailable` means the route is no longer active; and
+`upstream-unauthorized` means the request reached the sandbox gateway but its
+capability was rejected (usually because the Edge private key does not match the
+API public key injected into the sandbox).
+
 For Dokploy, create an **Application** using the Dockerfile build type and set:
 
 - Build path: `/`

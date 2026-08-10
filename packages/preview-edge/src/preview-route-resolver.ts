@@ -25,6 +25,13 @@ export interface PreviewRouteResolver {
   ): Promise<ConsumedAccessTicket>;
 }
 
+export class PreviewControlRequestError extends Error {
+  constructor(readonly status: number) {
+    super(`Preview control request failed with status ${status}.`);
+    this.name = "PreviewControlRequestError";
+  }
+}
+
 export class ApiPreviewRouteResolver implements PreviewRouteResolver {
   constructor(
     private readonly controlOrigin: string,
@@ -62,7 +69,7 @@ export class ApiPreviewRouteResolver implements PreviewRouteResolver {
         signal: AbortSignal.timeout(5_000),
       },
     );
-    if (!response.ok) throw new Error("Preview route is unavailable.");
+    if (!response.ok) throw new PreviewControlRequestError(response.status);
     return (await response.json()) as T;
   }
 }
