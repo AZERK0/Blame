@@ -7,7 +7,7 @@ import {
   ATTR_BLAME_RUNTIME_PHASE,
   getBlameTelemetry,
 } from "@blame/telemetry"
-import type { CloudPreviewClient } from "../preview-runtime/cloud-preview-client"
+import { isBaselineSnapshotUnavailable, type CloudPreviewClient } from "../preview-runtime/cloud-preview-client.ts"
 import {
   buildWorkspaceArtifact,
   buildWorkspaceDeltaArtifact,
@@ -61,37 +61,53 @@ export class WorkspaceSyncService {
     const preparedDelta = this.preparedDeltas.get(root)
     this.preparedSources.delete(root)
     this.preparedDeltas.delete(root)
-    const negotiation = await client.negotiateSource(sessionId, prepared.metadata)
-    if (negotiation.unchanged) {
-      await measureWorkspacePhase("workspace.sync.skip", async () => undefined)
-      await this.remember(sessionId, root)
-      return {
-        session: negotiation.session,
-        sourceRevision: prepared.metadata.sourceRevision,
-        workspaceHash: prepared.metadata.workspaceHash,
-      }
+    let negotiation = await client.negotiateSource(sessionId, prepared.metadata)
+    if (negotiation.session.state.host === "failed") {
+      await client.command(sessionId, { type: "resume-host" }, randomUUID())
+      negotiation = await client.negotiateSource(sessionId, prepared.metadata)
     }
-    const sourceMode = workspaceSourceMode(negotiation.baseline)
-    const artifact = await measureWorkspacePhase(
-      sourceMode === "delta" ? "workspace.delta.build" : "workspace.full.build",
-      () =>
-        sourceMode === "delta"
-          ? (preparedDelta ?? buildWorkspaceDeltaArtifact(root, prepared))
-          : buildWorkspaceArtifact(root, prepared),
-    )
-    const target = await client.prepareSourceUpload(sessionId, {
-      ...artifact,
-      mode: sourceMode,
-    })
-    await measureWorkspacePhase("workspace.upload", () => upload(target, artifact.content))
-    const session = await measureWorkspacePhase("workspace.apply", () =>
-      client.applySourceUpload(sessionId, target.artifactId, negotiation.baseline?.id),
-    )
-    await this.remember(sessionId, root)
-    return {
-      session,
-      sourceRevision: artifact.sourceRevision,
-      workspaceHash: artifact.workspaceHash,
+    let recoveredExpiredBaseline = false
+    while (true) {
+      if (negotiation.unchanged) {
+        await measureWorkspacePhase("workspace.sync.skip", async () => undefined)
+        await this.remember(sessionId, root)
+        return {
+          session: negotiation.session,
+          sourceRevision: prepared.metadata.sourceRevision,
+          workspaceHash: prepared.metadata.workspaceHash,
+        }
+      }
+      const sourceMode = workspaceSourceMode(negotiation.baseline)
+      const artifact = await measureWorkspacePhase(
+        sourceMode === "delta" ? "workspace.delta.build" : "workspace.full.build",
+        () =>
+          sourceMode === "delta"
+            ? (preparedDelta ?? buildWorkspaceDeltaArtifact(root, prepared))
+            : buildWorkspaceArtifact(root, prepared),
+      )
+      const target = await client.prepareSourceUpload(sessionId, {
+        ...artifact,
+        mode: sourceMode,
+      })
+      await measureWorkspacePhase("workspace.upload", () => upload(target, artifact.content))
+      try {
+        const session = await measureWorkspacePhase("workspace.apply", () =>
+          client.applySourceUpload(sessionId, target.artifactId, negotiation.baseline?.id),
+        )
+        await this.remember(sessionId, root)
+        return {
+          session,
+          sourceRevision: artifact.sourceRevision,
+          workspaceHash: artifact.workspaceHash,
+        }
+      } catch (error) {
+        if (recoveredExpiredBaseline || sourceMode !== "delta" || !isBaselineSnapshotUnavailable(error)) {
+          throw error
+        }
+        recoveredExpiredBaseline = true
+        await client.command(sessionId, { type: "resume-host" }, randomUUID())
+        negotiation = await client.negotiateSource(sessionId, prepared.metadata)
+      }
     }
   }
 

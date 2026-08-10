@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  CloudPreviewRequestError,
   CloudPreviewClient,
+  isBaselineSnapshotUnavailable,
   isCloudPreviewSessionId,
 } from "./cloud-preview-client.ts";
 
@@ -51,6 +53,38 @@ test("accepts only server-issued managed preview session IDs", () => {
   );
   assert.equal(isCloudPreviewSessionId("preview/../../credentials"), false);
   assert.equal(isCloudPreviewSessionId("preview-not-a-server-id"), false);
+});
+
+test("preserves structured provider failures for workspace recovery", async (context) => {
+  context.mock.method(
+    globalThis,
+    "fetch",
+    async () =>
+      new Response(
+        JSON.stringify({
+          failure: {
+            code: "SOURCE_SYNC_FAILED",
+            message:
+              "The preview baseline expired before source synchronization.",
+            providerCode: "BASELINE_SNAPSHOT_NOT_FOUND",
+            retryable: true,
+          },
+        }),
+        { status: 503 },
+      ),
+  );
+  const client = new CloudPreviewClient({
+    token: "a".repeat(32),
+    url: "http://127.0.0.1:3333/api/v1",
+  });
+
+  await assert.rejects(
+    () => client.get("preview_bbcb1626c004cdec3aad60175f1f0cae"),
+    (error) =>
+      error instanceof CloudPreviewRequestError &&
+      error.status === 503 &&
+      isBaselineSnapshotUnavailable(error),
+  );
 });
 
 test("prepares an upload without serializing workspace bytes", async (context) => {

@@ -17,5 +17,6 @@ export type PreviewBaselineBuildReceipt = {
 
 export interface PreviewBaselineProvider {
   build(input: PreviewBaselineBuildInput): Promise<PreviewBaselineBuildReceipt>
+  exists(providerSnapshotId: string): Promise<boolean>
   delete(receipt: { providerSnapshotId: string; ownerSandboxName?: string | null }): Promise<void>
 }

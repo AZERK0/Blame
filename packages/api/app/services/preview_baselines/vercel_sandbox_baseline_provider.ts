@@ -121,6 +121,16 @@ export default class VercelSandboxBaselineProvider implements PreviewBaselinePro
     }
   }
 
+  async exists(providerSnapshotId: string) {
+    try {
+      await Snapshot.get({ ...this.credentials(), snapshotId: providerSnapshotId })
+      return true
+    } catch (error) {
+      if (providerSnapshotMissing(error)) return false
+      throw cleanProviderError(error)
+    }
+  }
+
   private credentials() {
     const { accessToken: token, projectId, teamId } = this.config.sandbox
     return token && projectId && teamId ? { token, projectId, teamId } : {}

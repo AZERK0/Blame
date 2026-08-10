@@ -10,6 +10,38 @@ import { parsePreviewManifest } from "@blame/agent-runtime";
 export type CloudApiConnection = { token: string; url: string };
 type CloudPreviewClientOptions = { packaged?: boolean };
 
+export type CloudPreviewFailure = {
+  code?: string;
+  message?: string;
+  providerCode?: string;
+  retryable?: boolean;
+};
+
+export class CloudPreviewRequestError extends Error {
+  readonly status: number;
+  readonly failure: CloudPreviewFailure | undefined;
+
+  constructor(
+    status: number,
+    failure: CloudPreviewFailure | undefined,
+    responseBody: string,
+  ) {
+    super(
+      `Cloud preview request failed (${status}): ${responseBody.slice(0, 500)}`,
+    );
+    this.name = "CloudPreviewRequestError";
+    this.status = status;
+    this.failure = failure;
+  }
+}
+
+export function isBaselineSnapshotUnavailable(error: unknown) {
+  return (
+    error instanceof CloudPreviewRequestError &&
+    error.failure?.providerCode === "BASELINE_SNAPSHOT_NOT_FOUND"
+  );
+}
+
 export type CloudManagedPreviewCreateInput = {
   userStoryId: string;
   profile: "vercel-compose";
@@ -331,10 +363,15 @@ export function isCloudPreviewSessionId(value: unknown): value is string {
 }
 
 async function cloudError(response: Response) {
-  const message = await response.text().catch(() => "");
-  return new Error(
-    `Cloud preview request failed (${response.status}): ${message.slice(0, 500)}`,
-  );
+  const body = await response.text().catch(() => "");
+  let failure: CloudPreviewFailure | undefined;
+  try {
+    const parsed = JSON.parse(body) as { failure?: unknown };
+    if (parsed.failure && typeof parsed.failure === "object") {
+      failure = parsed.failure as CloudPreviewFailure;
+    }
+  } catch {}
+  return new CloudPreviewRequestError(response.status, failure, body);
 }
 
 async function* parseEventStream(stream: ReadableStream<Uint8Array>) {

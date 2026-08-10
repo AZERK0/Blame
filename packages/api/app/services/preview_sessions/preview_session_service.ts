@@ -11,6 +11,7 @@ import PreviewQuotaService from '#services/preview_sessions/preview_quota_servic
 import PreviewLeaseService from '#services/preview_sessions/preview_lease_service'
 import PreviewAccessTicketService from '#services/preview_gateway/preview_access_ticket_service'
 import VercelSandboxDriver from '#services/sandboxes/vercel_sandbox_driver'
+import { providerSnapshotMissing } from '#services/sandboxes/vercel_sandbox_support'
 import PreviewSession from '#models/preview_session'
 import PreviewUsageSample from '#models/preview_usage_sample'
 import WorkspaceArtifactService from '#services/workspace_artifacts/workspace_artifact_service'
@@ -432,6 +433,7 @@ export default class PreviewSessionService {
       importing.revision += 1
       await this.repository.save(importing, record.revision)
       let runtimeLostDuringBaselineRestore = false
+      let unavailableBaselineSnapshotId: string | undefined
       try {
         let syncHandle = handle
         const baselineAction = baselineImportAction({
@@ -459,10 +461,27 @@ export default class PreviewSessionService {
             syncHandle = await driver.restoreBaseline(handle, baseline.providerSnapshotId)
           } catch (error) {
             runtimeLostDuringBaselineRestore = true
+            if (providerSnapshotMissing(error)) {
+              unavailableBaselineSnapshotId = baseline.providerSnapshotId
+              await this.baselines
+                .markSnapshotUnavailable(baseline.id, baseline.providerSnapshotId)
+                .catch(() => undefined)
+            }
             await driver.destroyHost(handle).catch(() => undefined)
             await this.repository
               .setRuntimeHandle(sessionId, undefined, fencingToken)
               .catch(() => undefined)
+            if (unavailableBaselineSnapshotId) {
+              throw new PreviewRuntimeError(
+                {
+                  code: 'SOURCE_SYNC_FAILED',
+                  message: 'The preview baseline expired before source synchronization.',
+                  providerCode: 'BASELINE_SNAPSHOT_NOT_FOUND',
+                  retryable: true,
+                },
+                { cause: error }
+              )
+            }
             throw error
           }
           await this.repository.setRuntimeHandle(sessionId, syncHandle)
@@ -496,6 +515,12 @@ export default class PreviewSessionService {
             current.state.engine = 'stopped'
             current.state.preview = 'closed'
             current.endpointMap = undefined
+          }
+          if (unavailableBaselineSnapshotId) {
+            if (current.baselineId === baseline?.id) current.baselineId = undefined
+            if (current.provisionSource?.snapshotId === unavailableBaselineSnapshotId) {
+              current.provisionSource = undefined
+            }
           }
           current.revision += 1
           await this.repository.save(current, current.revision - 1)

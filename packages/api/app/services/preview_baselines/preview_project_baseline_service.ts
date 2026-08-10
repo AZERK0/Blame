@@ -48,8 +48,10 @@ type EnsureInput = {
 }
 
 const inFlight = new Map<string, Promise<PreviewProjectBaseline | undefined>>()
+const validatedSnapshots = new Map<string, number>()
 const telemetry = getBlameTelemetry()
 const failedBaselineRetentionHours = 24
+const snapshotValidationTtlMs = 30_000
 
 export default class PreviewProjectBaselineService {
   constructor(
@@ -82,7 +84,7 @@ export default class PreviewProjectBaselineService {
     } catch {
       return undefined
     }
-    const existing = await this.ready(identity.fingerprint)
+    const existing = await this.usable(await this.ready(identity.fingerprint))
     if (existing) {
       await existing.merge({ lastUsedAt: DateTime.utc() }).save()
       return publicBaseline(existing)
@@ -91,10 +93,10 @@ export default class PreviewProjectBaselineService {
     const active = inFlight.get(identity.fingerprint)
     if (active) return publicBaseline(await active)
     const build = this.ensureExclusive(identity.fingerprint, async () => {
-      const current = await this.ready(identity.fingerprint)
+      const current = await this.usable(await this.ready(identity.fingerprint))
       if (current) return current
       const row = await this.reserve(identity)
-      if (row.status === 'ready') return row
+      if (row.status === 'ready') return this.usable(row)
       try {
         const receipt = await measureBaselinePhase('baseline.build', () =>
           this.provider.build({
@@ -116,6 +118,7 @@ export default class PreviewProjectBaselineService {
           expiresAt: DateTime.utc().plus({ days: this.config.baselines.retentionDays }),
         })
         await row.save()
+        validatedSnapshots.set(receipt.providerSnapshotId, Date.now() + snapshotValidationTtlMs)
         return row
       } catch (error) {
         row.merge({ status: 'failed', error: cleanBaselineError(error) })
@@ -132,6 +135,7 @@ export default class PreviewProjectBaselineService {
   }
 
   async markSnapshotUnavailable(id: string, providerSnapshotId: string) {
+    validatedSnapshots.delete(providerSnapshotId)
     const row = await PreviewProjectBaseline.query()
       .where('id', id)
       .where('status', 'ready')
@@ -245,6 +249,7 @@ export default class PreviewProjectBaselineService {
       (requirement === 'exact' && match !== 'exact')
     )
       return undefined
+    if (!(await this.usable(row))) return undefined
     await row.merge({ lastUsedAt: DateTime.utc() }).save()
     return publicBaseline(row, match)
   }
@@ -310,12 +315,12 @@ export default class PreviewProjectBaselineService {
     } catch {
       return undefined
     }
-    const exact = await this.ready(identity.fingerprint)
+    const exact = await this.usable(await this.ready(identity.fingerprint))
     if (exact) {
       await exact.merge({ lastUsedAt: DateTime.utc() }).save()
       return publicBaseline(exact, 'exact')
     }
-    const compatible = await this.compatibleReady(identity.cacheKey)
+    const compatible = await this.usable(await this.compatibleReady(identity.cacheKey))
     if (compatible) {
       await compatible.merge({ lastUsedAt: DateTime.utc() }).save()
       return publicBaseline(compatible, 'cache')
@@ -389,7 +394,7 @@ export default class PreviewProjectBaselineService {
   }
 
   private async readyOrWait(fingerprint: string) {
-    const ready = await this.ready(fingerprint)
+    const ready = await this.usable(await this.ready(fingerprint))
     if (ready) return ready
     const building = await PreviewProjectBaseline.query()
       .where('fingerprint', fingerprint)
@@ -399,13 +404,29 @@ export default class PreviewProjectBaselineService {
     const deadline = Date.now() + this.config.baselines.waitSeconds * 1_000
     while (Date.now() < deadline) {
       await delay(Math.min(500, Math.max(1, deadline - Date.now())))
-      const completed = await this.ready(fingerprint)
+      const completed = await this.usable(await this.ready(fingerprint))
       if (completed) return completed
       const current = await PreviewProjectBaseline.query()
         .where('fingerprint', fingerprint)
         .select('status')
         .first()
       if (!current || current.status !== 'building') return undefined
+    }
+    return undefined
+  }
+
+  private async usable(row: PreviewProjectBaseline | null) {
+    const snapshotId = row?.providerSnapshotId
+    if (!row || !snapshotId) return undefined
+    if ((validatedSnapshots.get(snapshotId) ?? 0) > Date.now()) return row
+    try {
+      if (await this.provider.exists(snapshotId)) {
+        validatedSnapshots.set(snapshotId, Date.now() + snapshotValidationTtlMs)
+        return row
+      }
+      await this.markSnapshotUnavailable(row.id, snapshotId)
+    } catch {
+      // A transient validation failure must not block a full workspace upload.
     }
     return undefined
   }
