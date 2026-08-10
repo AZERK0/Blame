@@ -1,5 +1,11 @@
-import type { IncomingMessage, ServerResponse } from "node:http";
-import { Readable } from "node:stream";
+import {
+  request as httpRequest,
+  type IncomingHttpHeaders,
+  type IncomingMessage,
+  type ServerResponse,
+} from "node:http";
+import { request as httpsRequest } from "node:https";
+import { pipeline } from "node:stream/promises";
 import type {
   PreviewRouteResolver,
   ResolvedPreviewRoute,
@@ -103,30 +109,7 @@ export class PreviewRequestHandler {
       route.upstreamUrl,
     );
     const headers = forwardedHeaders(request, route, this.signer.sign(route));
-    const result = await fetch(upstream, {
-      method: request.method,
-      headers,
-      body: ["GET", "HEAD"].includes(request.method ?? "GET")
-        ? undefined
-        : (Readable.toWeb(request) as BodyInit),
-      duplex: "half",
-      redirect: "manual",
-      signal: AbortSignal.timeout(10 * 60_000),
-    } as RequestInit & { duplex: "half" });
-    const responseHeaders = forwardedResponseHeaders(
-      result.headers,
-      route,
-      request.headers.host ?? "",
-    );
-    if (result.status === 401) {
-      responseHeaders["x-blame-preview-error"] = "upstream-unauthorized";
-    }
-    response.writeHead(result.status, responseHeaders);
-    if (result.body)
-      await import("node:stream/promises").then(({ pipeline }) =>
-        pipeline(Readable.fromWeb(result.body as never), response),
-      );
-    else response.end();
+    await forwardRawHttpResponse(request, response, upstream, headers, route);
   }
 
   private hostname(request: IncomingMessage) {
@@ -201,34 +184,86 @@ export function withoutPreviewAuthCookie(value: string) {
     .join("; ");
 }
 
-function forwardedResponseHeaders(
-  headers: Headers,
+export function forwardedResponseHeaders(
+  headers: IncomingHttpHeaders,
   route: ResolvedPreviewRoute,
   publicHost: string,
 ) {
   const result: Record<string, string | string[]> = {};
-  headers.forEach((value, name) => {
+  for (const [name, value] of Object.entries(headers)) {
     if (
+      value === undefined ||
       name.startsWith("x-blame-") ||
       ["connection", "transfer-encoding"].includes(name)
     )
-      return;
+      continue;
     if (name === "location")
-      result[name] = rewritePreviewLocation(value, route, publicHost);
-    else if (name === "set-cookie") result[name] = safeSetCookie(headers);
+      result[name] = rewritePreviewLocation(
+        Array.isArray(value) ? (value[0] ?? "") : value,
+        route,
+        publicHost,
+      );
+    else if (name === "set-cookie") result[name] = safeSetCookie(value);
     else result[name] = value;
-  });
+  }
   return result;
 }
 
-function safeSetCookie(headers: Headers) {
-  const values =
-    typeof headers.getSetCookie === "function"
-      ? headers.getSetCookie()
-      : [headers.get("set-cookie")!];
+function safeSetCookie(value: string | string[]) {
+  const values = Array.isArray(value) ? value : [value];
   return values.map((value) =>
     value.replace(/;\s*Domain=[^;]+/gi, "").replace(/;\s*Secure/gi, "; Secure"),
   );
+}
+
+async function forwardRawHttpResponse(
+  incoming: IncomingMessage,
+  outgoing: ServerResponse,
+  upstream: URL,
+  headers: Headers,
+  route: ResolvedPreviewRoute,
+) {
+  const request =
+    upstream.protocol === "https:"
+      ? httpsRequest
+      : upstream.protocol === "http:"
+        ? httpRequest
+        : null;
+  if (!request) throw new Error("Preview upstream protocol is unsupported.");
+
+  await new Promise<void>((resolve, reject) => {
+    const upstreamRequest = request(
+      upstream,
+      {
+        method: incoming.method,
+        headers: Object.fromEntries(headers.entries()),
+      },
+      (upstreamResponse) => {
+        const responseHeaders = forwardedResponseHeaders(
+          upstreamResponse.headers,
+          route,
+          incoming.headers.host ?? "",
+        );
+        if (upstreamResponse.statusCode === 401) {
+          responseHeaders["x-blame-preview-error"] = "upstream-unauthorized";
+        }
+        outgoing.writeHead(upstreamResponse.statusCode ?? 502, responseHeaders);
+        pipeline(upstreamResponse, outgoing).then(resolve, reject);
+      },
+    );
+    upstreamRequest.setTimeout(10 * 60_000, () => {
+      upstreamRequest.destroy(new Error("Preview upstream request timed out."));
+    });
+    upstreamRequest.once("error", reject);
+    incoming.once("aborted", () => {
+      upstreamRequest.destroy(new Error("Preview client request was aborted."));
+    });
+    if (["GET", "HEAD"].includes(incoming.method ?? "GET")) {
+      upstreamRequest.end();
+    } else {
+      pipeline(incoming, upstreamRequest).catch(reject);
+    }
+  });
 }
 
 export function rewritePreviewLocation(

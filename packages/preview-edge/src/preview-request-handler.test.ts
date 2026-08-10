@@ -1,8 +1,16 @@
 import assert from "node:assert/strict";
-import type { IncomingMessage } from "node:http";
+import {
+  createServer,
+  get,
+  type IncomingHttpHeaders,
+  type IncomingMessage,
+} from "node:http";
+import type { AddressInfo } from "node:net";
 import test from "node:test";
+import { gzipSync } from "node:zlib";
 import {
   PreviewRequestHandler,
+  forwardedResponseHeaders,
   isHealthCheckRequest,
   previewEdgeFailure,
   previewRequestTarget,
@@ -31,6 +39,75 @@ test("preserves application cookies while removing only the edge auth cookie", (
     ),
     "theme=dark; session=application",
   );
+});
+
+test("preserves upstream content encoding for raw compressed responses", () => {
+  assert.deepEqual(
+    forwardedResponseHeaders(
+      {
+        connection: "keep-alive",
+        "content-encoding": "gzip",
+        "content-length": "123",
+        "content-type": "text/html; charset=utf-8",
+        "transfer-encoding": "chunked",
+      },
+      route,
+      "route.preview.blame.dev",
+    ),
+    {
+      "content-encoding": "gzip",
+      "content-length": "123",
+      "content-type": "text/html; charset=utf-8",
+    },
+  );
+});
+
+test("forwards compressed upstream bodies without decoding them", async () => {
+  const body = gzipSync(Buffer.from("<html>compressed preview</html>"));
+  const upstream = createServer((request, response) => {
+    assert.equal(request.headers["x-blame-preview-capability"], "capability");
+    response.writeHead(200, {
+      "content-encoding": "gzip",
+      "content-length": body.length,
+      "content-type": "text/html; charset=utf-8",
+    });
+    response.end(body);
+  });
+  await listen(upstream);
+  const upstreamAddress = upstream.address() as AddressInfo;
+  const handler = new PreviewRequestHandler(
+    {
+      resolve: async () => ({
+        ...route,
+        upstreamUrl: `http://127.0.0.1:${upstreamAddress.port}`,
+      }),
+      consumeTicket: async () => {
+        throw new Error("ticket flow is not used by public routes");
+      },
+    },
+    new PreviewSessionAuth("a-secure-cookie-secret-with-more-than-32-bytes"),
+    { sign: () => "capability" } as unknown as UpstreamCapabilitySigner,
+    "preview.blame.dev",
+  );
+  const edge = createServer((request, response) => {
+    void handler.handle(request, response);
+  });
+  await listen(edge);
+
+  try {
+    const edgeAddress = edge.address() as AddressInfo;
+    const result = await request({
+      host: "127.0.0.1",
+      port: edgeAddress.port,
+      headers: { host: "route.preview.blame.dev" },
+    });
+    assert.equal(result.statusCode, 200);
+    assert.equal(result.headers["content-encoding"], "gzip");
+    assert.equal(result.headers["content-length"], String(body.length));
+    assert.deepEqual(result.body, body);
+  } finally {
+    await Promise.all([close(edge), close(upstream)]);
+  }
 });
 
 test("allows a direct request with only the opaque public route", async () => {
@@ -109,3 +186,40 @@ test("classifies control-plane authorization and route failures", () => {
     "control-unavailable",
   );
 });
+
+function listen(server: ReturnType<typeof createServer>) {
+  return new Promise<void>((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", resolve);
+  });
+}
+
+function close(server: ReturnType<typeof createServer>) {
+  return new Promise<void>((resolve, reject) => {
+    server.close((error) => (error ? reject(error) : resolve()));
+  });
+}
+
+function request(options: {
+  host: string;
+  port: number;
+  headers: IncomingHttpHeaders;
+}) {
+  return new Promise<{
+    statusCode: number | undefined;
+    headers: IncomingHttpHeaders;
+    body: Buffer;
+  }>((resolve, reject) => {
+    get(options, (response) => {
+      const chunks: Buffer[] = [];
+      response.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
+      response.on("end", () =>
+        resolve({
+          statusCode: response.statusCode,
+          headers: response.headers,
+          body: Buffer.concat(chunks),
+        }),
+      );
+    }).once("error", reject);
+  });
+}
