@@ -146,6 +146,37 @@ test("replays an ambiguous command with the same idempotency key", async (contex
   );
 });
 
+test("recovers a command that collided with another session operation", async (context) => {
+  const methods: string[] = [];
+  context.mock.method(globalThis, "fetch", async (_url, init) => {
+    methods.push(init?.method ?? "GET");
+    if (methods.length === 1) {
+      return new Response(
+        JSON.stringify({
+          failure: {
+            code: "PROVIDER_UNAVAILABLE",
+            message: "Another preview operation is still finishing.",
+            providerCode: "SESSION_LOCK_TIMEOUT",
+            retryable: true,
+          },
+        }),
+        { status: 503 },
+      );
+    }
+    return jsonResponse(runningPreviewSession());
+  });
+  const client = cloudClientWithImmediateRecovery();
+
+  const session = await client.command(
+    "preview_bbcb1626c004cdec3aad60175f1f0cae",
+    { type: "start-services", configurationId: "web" },
+    "start-operation",
+  );
+
+  assert.equal(session.state.preview, "ready");
+  assert.deepEqual(methods, ["POST", "GET"]);
+});
+
 test("prepares an upload without serializing workspace bytes", async (context) => {
   let requestBody: unknown;
   context.mock.method(globalThis, "fetch", async (_url, init) => {

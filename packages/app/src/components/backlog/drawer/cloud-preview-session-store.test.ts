@@ -5,6 +5,8 @@ import type { PreviewSessionView } from "@blame/preview-runtime"
 import type { ProjectRunnerPendingOperation } from "../board/project-runner-types.ts"
 
 import {
+  activeCloudPreviewControl,
+  beginCloudPreviewControl,
   cachedCloudPreviewPendingOperation,
   cachedCloudPreviewSession,
   cloudPreviewSessionStorageId,
@@ -13,6 +15,24 @@ import {
   subscribeCloudPreviewPendingOperation,
   subscribeCloudPreviewSession,
 } from "./cloud-preview-session-store.ts"
+
+test("serializes cloud controls across concurrently mounted runners", async () => {
+  const first = beginCloudPreviewControl("story-control")
+  const duplicate = beginCloudPreviewControl("story-control")
+
+  assert.equal(first.acquired, true)
+  assert.equal(duplicate.acquired, false)
+  assert.equal(activeCloudPreviewControl("story-control"), first.completed)
+
+  if (!first.acquired) throw new Error("Expected the first control lease")
+  first.release()
+  await duplicate.completed
+
+  assert.equal(activeCloudPreviewControl("story-control"), undefined)
+  const next = beginCloudPreviewControl("story-control")
+  assert.equal(next.acquired, true)
+  if (next.acquired) next.release()
+})
 
 test("notifies an already-mounted preview when auto-start creates its session", () => {
   const storage = new Map<string, string>()

@@ -14,6 +14,37 @@ const pendingOperationListeners = new Map<
   string,
   Set<PendingOperationListener>
 >()
+const controlOperations = new Map<string, Promise<void>>()
+
+export type CloudPreviewControlLease =
+  | { acquired: false; completed: Promise<void> }
+  | { acquired: true; completed: Promise<void>; release: () => void }
+
+export function beginCloudPreviewControl(
+  userStoryId: string
+): CloudPreviewControlLease {
+  const active = controlOperations.get(userStoryId)
+  if (active) return { acquired: false, completed: active }
+  let settle!: () => void
+  const completed = new Promise<void>((resolve) => {
+    settle = resolve
+  })
+  let released = false
+  const release = () => {
+    if (released) return
+    released = true
+    settle()
+    if (controlOperations.get(userStoryId) === completed) {
+      controlOperations.delete(userStoryId)
+    }
+  }
+  controlOperations.set(userStoryId, completed)
+  return { acquired: true, completed, release }
+}
+
+export function activeCloudPreviewControl(userStoryId: string) {
+  return controlOperations.get(userStoryId)
+}
 
 export function cloudPreviewSessionStorageId(
   userStoryId: string,

@@ -116,13 +116,13 @@ export class CloudPreviewClient implements PreviewSessionBackend<CloudManagedPre
     try {
       return await request();
     } catch (error) {
-      if (!ambiguousGatewayFailure(error)) throw error;
+      if (!recoverableCommandFailure(error)) throw error;
       const recovered = await this.recoverAmbiguousCommand(sessionId, command);
       if (recovered) return recovered;
       try {
         return await request();
       } catch (retryError) {
-        if (!ambiguousGatewayFailure(retryError)) throw retryError;
+        if (!recoverableCommandFailure(retryError)) throw retryError;
         const retried = await this.recoverAmbiguousCommand(sessionId, command);
         if (retried) return retried;
         throw retryError;
@@ -421,11 +421,13 @@ async function cloudError(response: Response) {
   return new CloudPreviewRequestError(response.status, failure, body);
 }
 
-function ambiguousGatewayFailure(error: unknown) {
+function recoverableCommandFailure(error: unknown) {
   return (
     error instanceof CloudPreviewRequestError &&
-    [502, 504].includes(error.status) &&
-    !error.failure
+    (([502, 504].includes(error.status) && !error.failure) ||
+      (error.status === 503 &&
+        error.failure?.providerCode === "SESSION_LOCK_TIMEOUT" &&
+        error.failure.retryable !== false))
   );
 }
 

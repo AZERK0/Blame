@@ -1,6 +1,6 @@
 import PreviewSession from '#models/preview_session'
 import db from '@adonisjs/lucid/services/db'
-import type { DistributedLock, LockLease } from '@blame/preview-runtime'
+import { PreviewRuntimeError, type DistributedLock, type LockLease } from '@blame/preview-runtime'
 
 export default class PreviewDistributedLock implements DistributedLock {
   async withLock<T>(key: string, operation: (lease: LockLease) => Promise<T>) {
@@ -11,7 +11,14 @@ export default class PreviewDistributedLock implements DistributedLock {
       const result = await knex
         .raw('SELECT GET_LOCK(?, 15) AS acquired', [lockName])
         .connection(connection)
-      if (!mysqlBoolean(result, 'acquired')) throw new Error('Preview session lock timed out.')
+      if (!mysqlBoolean(result, 'acquired')) {
+        throw new PreviewRuntimeError({
+          code: 'PROVIDER_UNAVAILABLE',
+          message: 'Another preview operation is still finishing. Retry shortly.',
+          providerCode: 'SESSION_LOCK_TIMEOUT',
+          retryable: true,
+        })
+      }
       try {
         await PreviewSession.query().where('id', key).increment('fencingToken', 1)
         const session = await PreviewSession.query().where('id', key).firstOrFail()
