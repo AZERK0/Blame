@@ -87,6 +87,65 @@ test("preserves structured provider failures for workspace recovery", async (con
   );
 });
 
+test("recovers a command whose gateway response was lost after completion", async (context) => {
+  const methods: string[] = [];
+  context.mock.method(globalThis, "fetch", async (_url, init) => {
+    methods.push(init?.method ?? "GET");
+    if (methods.length === 1)
+      return new Response("Bad Gateway", { status: 502 });
+    return jsonResponse(runningPreviewSession());
+  });
+  const client = cloudClientWithImmediateRecovery();
+
+  const session = await client.command(
+    "preview_bbcb1626c004cdec3aad60175f1f0cae",
+    { type: "start-services", configurationId: "web" },
+    "start-operation",
+  );
+
+  assert.equal(session.state.preview, "ready");
+  assert.deepEqual(methods, ["POST", "GET"]);
+});
+
+test("replays an ambiguous command with the same idempotency key", async (context) => {
+  const requests: Array<{ body?: string; method: string }> = [];
+  context.mock.method(globalThis, "fetch", async (_url, init) => {
+    requests.push({
+      body: String(init?.body ?? ""),
+      method: init?.method ?? "GET",
+    });
+    if (requests.length === 1)
+      return new Response("Bad Gateway", { status: 502 });
+    if (requests.length === 2) {
+      return jsonResponse({
+        ...runningPreviewSession(),
+        state: {
+          ...runningPreviewSession().state,
+          engine: "starting",
+          preview: "opening",
+        },
+      });
+    }
+    return jsonResponse(runningPreviewSession());
+  });
+  const client = cloudClientWithImmediateRecovery();
+
+  await client.command(
+    "preview_bbcb1626c004cdec3aad60175f1f0cae",
+    { type: "start-services", configurationId: "web" },
+    "start-operation",
+  );
+
+  assert.deepEqual(
+    requests.map(({ method }) => method),
+    ["POST", "GET", "POST"],
+  );
+  assert.equal(
+    JSON.parse(requests[0]!.body!).operationId,
+    JSON.parse(requests[2]!.body!).operationId,
+  );
+});
+
 test("prepares an upload without serializing workspace bytes", async (context) => {
   let requestBody: unknown;
   context.mock.method(globalThis, "fetch", async (_url, init) => {
@@ -203,3 +262,48 @@ test("normalizes stored manifests before creating a cloud session", async (conte
   assert.deepEqual(vitrine?.dependsOn, []);
   assert.equal(requestBody.sourceMetadata?.workspaceHash, "d".repeat(64));
 });
+
+function cloudClientWithImmediateRecovery() {
+  return new CloudPreviewClient(
+    {
+      token: "a".repeat(32),
+      url: "http://127.0.0.1:3333/api/v1",
+    },
+    { commandRecovery: { pollAttempts: 1, pollIntervalMs: 0 } },
+  );
+}
+
+function runningPreviewSession() {
+  return {
+    id: "preview_bbcb1626c004cdec3aad60175f1f0cae",
+    desired: {
+      host: "active",
+      services: "running",
+      preview: "open",
+      agent: "idle",
+    },
+    state: {
+      host: "running",
+      engine: "running",
+      preview: "ready",
+      agent: "idle",
+      sync: "clean",
+    },
+    endpointMap: {
+      revision: 1,
+      primaryRouteId: "route",
+      primaryPublicUrl: "https://preview.example.test",
+      routes: [],
+      supportsWebSocket: true,
+      integratedPreviewRequired: false,
+      incompatibilityReasons: [],
+    },
+  };
+}
+
+function jsonResponse(value: unknown) {
+  return new Response(JSON.stringify(value), {
+    status: 200,
+    headers: { "content-type": "application/json" },
+  });
+}

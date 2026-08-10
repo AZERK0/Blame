@@ -8,17 +8,17 @@ export function ManagedRuntimeSummary({
 }) {
   const [now, setNow] = React.useState(() => Date.now())
   React.useEffect(() => {
-    if (runner.runtime?.desiredStatus !== "running") return
+    if (!runner.usageActive) return
     const interval = window.setInterval(() => setNow(Date.now()), 1000)
     return () => window.clearInterval(interval)
-  }, [runner.runtime?.desiredStatus])
+  }, [runner.usageActive])
   if (runner.profile === "local-container") return null
   const sampledSeconds = runner.usage?.activeSeconds ?? 0
   const observedAt = runner.usage?.observedAt
     ? Date.parse(runner.usage.observedAt)
     : Number.NaN
   const liveSeconds =
-    runner.runtime?.desiredStatus === "running" && Number.isFinite(observedAt)
+    runner.usageActive && Number.isFinite(observedAt)
       ? Math.max(0, Math.floor((now - observedAt) / 1000))
       : 0
   const seconds = sampledSeconds + liveSeconds
@@ -29,11 +29,11 @@ export function ManagedRuntimeSummary({
   const cost = runner.usage?.estimatedCostUsd ?? 0
   return (
     <div
-      className="pointer-events-auto rounded-full border bg-background/95 px-2.5 py-1.5 text-xs whitespace-nowrap text-muted-foreground shadow-sm backdrop-blur"
+      className="pointer-events-auto shrink-0 rounded-full border bg-background/95 px-2.5 py-1.5 text-xs whitespace-nowrap text-muted-foreground shadow-sm backdrop-blur"
       title="Managed preview profile, provisioned time, and estimated infrastructure cost"
     >
-      Cloud preview
-      {` · ${duration} · $${cost.toFixed(6)}`}
+      <span className="preview-runtime-summary-label">Cloud preview · </span>
+      {`${duration} · $${cost.toFixed(6)}`}
     </div>
   )
 }

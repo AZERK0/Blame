@@ -17,7 +17,7 @@ export function UserStoryPreviewRunnerControls({
   if (!runner.runtime) return null
   const control = previewRunnerControl(runner, onConfigurationChange)
   return (
-    <div className="pointer-events-auto">
+    <div className="pointer-events-auto shrink-0">
       <ProjectRunnerControls
         configurations={runner.runtime.configurations}
         pending={runner.pendingOperation}

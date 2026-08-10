@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import test from "node:test"
 import {
   managedEmbeddedPreviewUrl,
+  managedPresentedPreviewUrl,
   managedPublicPreviewUrl,
   primaryPreviewRoute,
 } from "./managed-preview-url.ts"
@@ -93,6 +94,33 @@ test("exposes the public route separately for sharing", () => {
       incompatibilityReasons: [],
     }),
     "https://preview.example.test"
+  )
+})
+
+test("presents a proxied logical location on the public preview origin", () => {
+  assert.equal(
+    managedPresentedPreviewUrl(
+      "https://preview.example.test",
+      "http://localhost:3000/account?tab=billing#payment"
+    ),
+    "https://preview.example.test/account?tab=billing#payment"
+  )
+})
+
+test("keeps the public preview URL when the logical location is unavailable", () => {
+  assert.equal(
+    managedPresentedPreviewUrl("https://preview.example.test", undefined),
+    "https://preview.example.test"
+  )
+})
+
+test("does not disguise an external navigation as a preview URL", () => {
+  assert.equal(
+    managedPresentedPreviewUrl(
+      "https://preview.example.test",
+      "https://accounts.example.test/oauth?client=preview"
+    ),
+    "https://accounts.example.test/oauth?client=preview"
   )
 })
 

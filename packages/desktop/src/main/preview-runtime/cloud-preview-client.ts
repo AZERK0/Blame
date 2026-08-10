@@ -9,6 +9,10 @@ import { parsePreviewManifest } from "@blame/agent-runtime";
 
 export type CloudApiConnection = { token: string; url: string };
 type CloudPreviewClientOptions = { packaged?: boolean };
+type CloudCommandRecoveryOptions = {
+  pollAttempts?: number;
+  pollIntervalMs?: number;
+};
 
 export type CloudPreviewFailure = {
   code?: string;
@@ -59,16 +63,23 @@ export type CloudManagedPreviewCreateInput = {
 };
 export class CloudPreviewClient implements PreviewSessionBackend<CloudManagedPreviewCreateInput> {
   private readonly connection: CloudApiConnection;
+  private readonly commandRecovery: Required<CloudCommandRecoveryOptions>;
 
   constructor(
     connection: CloudApiConnection,
-    options: CloudPreviewClientOptions = {},
+    options: CloudPreviewClientOptions & {
+      commandRecovery?: CloudCommandRecoveryOptions;
+    } = {},
   ) {
     if (!allowedCloudApiBaseUrl(connection.url, options.packaged ?? false))
       throw new Error("Cloud API connection is invalid");
     if (!connection.token || connection.token.length > 16_384)
       throw new Error("Cloud API token is invalid");
     this.connection = connection;
+    this.commandRecovery = {
+      pollAttempts: options.commandRecovery?.pollAttempts ?? 6,
+      pollIntervalMs: options.commandRecovery?.pollIntervalMs ?? 1_000,
+    };
   }
 
   create(input: CloudManagedPreviewCreateInput) {
@@ -88,19 +99,55 @@ export class CloudPreviewClient implements PreviewSessionBackend<CloudManagedPre
     });
   }
 
-  command(
+  async command(
     sessionId: string,
     command: PreviewSessionCommand,
     operationId: string,
   ) {
-    return this.request<PreviewSessionView>(
-      `/preview-sessions/${encoded(sessionId)}/actions`,
-      {
-        method: "POST",
-        headers: { "idempotency-key": operationId },
-        body: { command, operationId },
-      },
-    );
+    const request = () =>
+      this.request<PreviewSessionView>(
+        `/preview-sessions/${encoded(sessionId)}/actions`,
+        {
+          method: "POST",
+          headers: { "idempotency-key": operationId },
+          body: { command, operationId },
+        },
+      );
+    try {
+      return await request();
+    } catch (error) {
+      if (!ambiguousGatewayFailure(error)) throw error;
+      const recovered = await this.recoverAmbiguousCommand(sessionId, command);
+      if (recovered) return recovered;
+      try {
+        return await request();
+      } catch (retryError) {
+        if (!ambiguousGatewayFailure(retryError)) throw retryError;
+        const retried = await this.recoverAmbiguousCommand(sessionId, command);
+        if (retried) return retried;
+        throw retryError;
+      }
+    }
+  }
+
+  private async recoverAmbiguousCommand(
+    sessionId: string,
+    command: PreviewSessionCommand,
+  ) {
+    for (
+      let attempt = 0;
+      attempt < this.commandRecovery.pollAttempts;
+      attempt += 1
+    ) {
+      if (attempt > 0) await delay(this.commandRecovery.pollIntervalMs);
+      try {
+        const session = await this.get(sessionId);
+        if (commandReachedState(session, command)) return session;
+      } catch {
+        // The API gateway can still be recovering from the ambiguous request.
+      }
+    }
+    return undefined;
   }
 
   get(sessionId: string) {
@@ -372,6 +419,54 @@ async function cloudError(response: Response) {
     }
   } catch {}
   return new CloudPreviewRequestError(response.status, failure, body);
+}
+
+function ambiguousGatewayFailure(error: unknown) {
+  return (
+    error instanceof CloudPreviewRequestError &&
+    [502, 504].includes(error.status) &&
+    !error.failure
+  );
+}
+
+function commandReachedState(
+  session: PreviewSessionView,
+  command: PreviewSessionCommand,
+) {
+  switch (command.type) {
+    case "start-services":
+      return (
+        session.desired.services === "running" &&
+        session.state.engine === "running" &&
+        session.state.preview === "ready" &&
+        Boolean(session.endpointMap)
+      );
+    case "stop-services":
+      return (
+        session.desired.services === "stopped" &&
+        ["idle", "stopped"].includes(session.state.engine)
+      );
+    case "resume-host":
+      return (
+        session.desired.host === "active" && session.state.host === "running"
+      );
+    case "suspend-host":
+      return session.state.host === "suspended";
+    case "destroy-host":
+      return session.state.host === "destroyed";
+    case "start-agent":
+      return session.state.agent === "running";
+    case "stop-agent":
+      return session.state.agent === "idle";
+    case "report-sync-conflict":
+      return session.state.sync === "conflict";
+    case "ack-local-sync":
+      return session.lastAppliedLocalRevision === command.deltaRevision;
+  }
+}
+
+function delay(milliseconds: number) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
 async function* parseEventStream(stream: ReadableStream<Uint8Array>) {

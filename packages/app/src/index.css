@@ -181,6 +181,45 @@
 }
 
 @layer components {
+  .preview-toolbar-container {
+    container-type: inline-size;
+  }
+
+  .preview-cloud-origin-gradient {
+    color: transparent;
+    background: linear-gradient(
+      105deg,
+      color-mix(in oklab, oklch(0.62 0.22 255) 70%, var(--muted-foreground)) 0%,
+      color-mix(in oklab, oklch(0.78 0.16 230) 62%, var(--muted-foreground)) 48%,
+      color-mix(in oklab, oklch(0.72 0.2 285) 58%, var(--muted-foreground)) 100%
+    );
+    background-size: 220% 100%;
+    background-clip: text;
+    -webkit-background-clip: text;
+  }
+
+  .preview-cloud-origin-gradient-protocol {
+    background-position: left center;
+  }
+
+  .preview-cloud-origin-gradient-domain {
+    background-position: right center;
+  }
+
+  @container (max-width: 72rem) {
+    .preview-toolbar-spacer,
+    .preview-runtime-summary-label,
+    .preview-tab-label {
+      display: none;
+    }
+  }
+
+  @container (max-width: 58rem) {
+    .preview-proxy-label {
+      display: none;
+    }
+  }
+
   .blame-pierre-file,
   .blame-pierre-diff {
     --diffs-light-bg: var(--background);

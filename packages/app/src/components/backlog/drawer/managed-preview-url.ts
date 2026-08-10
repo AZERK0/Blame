@@ -22,6 +22,30 @@ export function managedPublicPreviewUrl(map: EndpointMap | undefined) {
   return route?.publicUrl
 }
 
+export function managedPresentedPreviewUrl(
+  publicUrl: string | undefined,
+  logicalUrl: string | undefined
+) {
+  if (!publicUrl) return logicalUrl
+  if (!logicalUrl) return publicUrl
+  try {
+    const presented = new URL(publicUrl)
+    const logical = new URL(logicalUrl)
+    if (logical.origin === presented.origin) return logical.toString()
+    if (!isLoopbackHostname(logical.hostname)) return logical.toString()
+    presented.pathname = logical.pathname
+    presented.search = logical.search
+    presented.hash = logical.hash
+    return presented.toString()
+  } catch {
+    return publicUrl
+  }
+}
+
+function isLoopbackHostname(hostname: string) {
+  return ["localhost", "127.0.0.1", "[::1]"].includes(hostname)
+}
+
 export function primaryPreviewRoute(
   manifest: PreviewManifest,
   configuration: ProjectRunConfiguration

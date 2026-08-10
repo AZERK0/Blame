@@ -8,10 +8,24 @@ import { toast } from "sonner"
 
 import type { ProjectRunnerPendingOperation } from "@/components/backlog/board/project-runner-types"
 import {
-  managedEmbeddedPreviewUrl,
+  managedPublicPreviewUrl,
   primaryPreviewRoute,
 } from "@/components/backlog/drawer/managed-preview-url"
 import { managedPreviewStopCommand } from "@/components/backlog/drawer/managed-preview-control"
+import {
+  idleManagedPreviewRuntime,
+  managedPreviewReady,
+  managedPreviewRuntimeState,
+} from "@/components/backlog/drawer/managed-preview-runtime-state"
+import {
+  cachedCloudPreviewPendingOperation,
+  cachedCloudPreviewSession,
+  cloudPreviewSessionStorageId,
+  publishCloudPreviewPendingOperation,
+  publishCloudPreviewSession,
+  subscribeCloudPreviewPendingOperation,
+  subscribeCloudPreviewSession,
+} from "@/components/backlog/drawer/cloud-preview-session-store"
 import { usePlatform } from "@/context/platform"
 import {
   recordRuntimeSessionState,
@@ -71,15 +85,20 @@ export function useUserStoryPreviewRunner(
   const cloudPendingOperation = cloud.pendingOperation
   const cloudRuntime = cloud.runtime
   const cloudSession = cloud.session
+  const cloudPreviewIsReady = managedPreviewReady(cloudSession)
+  const autoStartAttemptRef = React.useRef<string>()
   React.useEffect(() => {
     if (
       !options.autoStart ||
       !enabled ||
       !userStoryId ||
       !worktree ||
+      !workspace ||
+      !platform.previewRuntime ||
+      !preference.confirmedCloudUploadAt ||
       options.autoStartConfigurationId === null ||
       cloudPendingOperation ||
-      cloudSession?.desired.services === "running" ||
+      cloudPreviewIsReady ||
       isCloudPreviewAutoStartDisabled(userStoryId)
     )
       return
@@ -90,19 +109,24 @@ export function useUserStoryPreviewRunner(
       : (cloudRuntime?.configurations.find(
           ({ default: isDefault }) => isDefault
         ) ?? cloudRuntime?.configurations[0])
-    if (!configuration?.services?.length || !configuration.previewService) return
-    void cloudControl("start", configuration.id).then((next) => {
-      if (!next) markCloudPreviewAutoStartDisabled(userStoryId)
-    })
+    if (!configuration?.services?.length || !configuration.previewService)
+      return
+    const attemptKey = `${userStoryId}:${worktree}:${configuration.id}`
+    if (autoStartAttemptRef.current === attemptKey) return
+    autoStartAttemptRef.current = attemptKey
+    void cloudControl("start", configuration.id)
   }, [
     cloudControl,
     cloudPendingOperation,
     cloudRuntime?.configurations,
-    cloudSession?.desired.services,
+    cloudPreviewIsReady,
     enabled,
     options.autoStart,
     options.autoStartConfigurationId,
+    platform.previewRuntime,
+    preference.confirmedCloudUploadAt,
     userStoryId,
+    workspace,
     worktree,
   ])
   const local = usePreviewRuntimeControl(
@@ -134,7 +158,9 @@ export function useUserStoryPreviewRunner(
     selection && selection.worktree === worktree
       ? selection.configurationId
       : undefined
-  const selectedId = selectedConfigurationId(effectiveRuntime, selectedOverride)
+  const selectedId =
+    pendingOperation?.configurationId ??
+    selectedConfigurationId(effectiveRuntime, selectedOverride)
   return {
     control,
     error: cloud.error,
@@ -143,8 +169,12 @@ export function useUserStoryPreviewRunner(
     previewSessionId: cloud.session?.id,
     integratedPreviewRequired:
       cloud.session?.endpointMap?.integratedPreviewRequired ?? false,
+    previewProxyReasons:
+      cloud.session?.endpointMap?.incompatibilityReasons ?? [],
+    publicPreviewUrl: managedPublicPreviewUrl(cloud.session?.endpointMap),
     profile: cloud.session?.profile ?? preference.profile,
     usage: cloud.session?.usage,
+    usageActive: cloud.session?.state.host === "running",
     selectedId,
     select,
   }
@@ -167,37 +197,109 @@ function useCloudPreviewRuntime(input: {
   const client = input.platform.previewRuntime
   const profile = input.preference.profile
   const storageId = input.userStoryId
-    ? cloudSessionStorageId(input.userStoryId, profile)
+    ? cloudPreviewSessionStorageId(input.userStoryId, profile)
     : undefined
   const sessionId = session?.id
+  const updateSession = React.useCallback(
+    (value: PreviewSessionView) => {
+      const current = storageId
+        ? publishCloudPreviewSession(localStorage, storageId, value)
+        : value
+      setSession(current)
+      return current
+    },
+    [storageId]
+  )
+  const updatePendingOperation = React.useCallback(
+    (operation: ProjectRunnerPendingOperation | undefined) => {
+      setPendingOperation(operation)
+      if (storageId) {
+        publishCloudPreviewPendingOperation(storageId, operation)
+      }
+    },
+    [storageId]
+  )
 
   React.useEffect(() => {
     let cancelled = false
-    queueMicrotask(() => {
-      if (!cancelled) setSession(undefined)
-    })
+    let retryInterval: number | undefined
     if (
       !input.enabled ||
       profile === "local-container" ||
       !client ||
       !storageId
-    )
-      return () => {
-        cancelled = true
-      }
-    const sessionId = localStorage.getItem(storageId)
-    if (!sessionId)
-      return () => {
-        cancelled = true
-      }
-    void client
-      .get({ sessionId })
-      .then((value) => {
-        if (!cancelled) setSession(value)
+    ) {
+      queueMicrotask(() => {
+        if (!cancelled) setSession(undefined)
       })
-      .catch(() => localStorage.removeItem(storageId))
+      return () => {
+        cancelled = true
+      }
+    }
+    const storedSessionId = localStorage.getItem(storageId)
+    const cached = cachedCloudPreviewSession(storageId)
+    queueMicrotask(() => {
+      if (cancelled) return
+      const latestStoredSessionId = localStorage.getItem(storageId)
+      const latest = cachedCloudPreviewSession(storageId)
+      setSession(latest?.id === latestStoredSessionId ? latest : undefined)
+    })
+    const accept = (value: PreviewSessionView) => {
+      if (cancelled) return
+      if (retryInterval) window.clearInterval(retryInterval)
+      retryInterval = undefined
+      setSession(value)
+    }
+    const unsubscribe = subscribeCloudPreviewSession(storageId, accept)
+    if (storedSessionId) {
+      const refresh = () => {
+        void client
+          .get({ sessionId: storedSessionId })
+          .then((value) => {
+            if (cancelled) return
+            updateSession(value)
+          })
+          .catch(() => undefined)
+      }
+      refresh()
+      if (cached?.id !== storedSessionId) {
+        retryInterval = window.setInterval(refresh, 2_000)
+      }
+    }
     return () => {
       cancelled = true
+      unsubscribe()
+      if (retryInterval) window.clearInterval(retryInterval)
+    }
+  }, [client, input.enabled, profile, storageId, updateSession])
+
+  React.useEffect(() => {
+    let cancelled = false
+    if (
+      !input.enabled ||
+      profile === "local-container" ||
+      !client ||
+      !storageId
+    ) {
+      queueMicrotask(() => {
+        if (!cancelled) setPendingOperation(undefined)
+      })
+      return () => {
+        cancelled = true
+      }
+    }
+    const accept = (operation: ProjectRunnerPendingOperation | undefined) => {
+      if (!cancelled) setPendingOperation(operation)
+    }
+    const unsubscribe = subscribeCloudPreviewPendingOperation(storageId, accept)
+    queueMicrotask(() => {
+      if (!cancelled) {
+        setPendingOperation(cachedCloudPreviewPendingOperation(storageId))
+      }
+    })
+    return () => {
+      cancelled = true
+      unsubscribe()
     }
   }, [client, input.enabled, profile, storageId])
 
@@ -207,11 +309,13 @@ function useCloudPreviewRuntime(input: {
       void client
         .get({ sessionId })
         .then((value) => {
-          if (stoppingSessionIdRef.current !== sessionId) setSession(value)
+          if (stoppingSessionIdRef.current !== sessionId) {
+            updateSession(value)
+          }
         })
         .catch(() => undefined)
     })
-  }, [client, input.enabled, sessionId])
+  }, [client, input.enabled, sessionId, updateSession])
 
   React.useEffect(() => {
     if (!sessionId || !client || !input.enabled) return
@@ -219,12 +323,14 @@ function useCloudPreviewRuntime(input: {
       void client
         .get({ sessionId })
         .then((value) => {
-          if (stoppingSessionIdRef.current !== sessionId) setSession(value)
+          if (stoppingSessionIdRef.current !== sessionId) {
+            updateSession(value)
+          }
         })
         .catch(() => undefined)
     }, 2_000)
     return () => window.clearInterval(interval)
-  }, [client, input.enabled, sessionId])
+  }, [client, input.enabled, sessionId, updateSession])
 
   const control = React.useCallback(
     async (action: PreviewRunnerAction, configurationId?: string) => {
@@ -242,7 +348,7 @@ function useCloudPreviewRuntime(input: {
         ({ id }) => id === configurationId
       )
       if (!configuration) return undefined
-      setPendingOperation({ action, configurationId })
+      updatePendingOperation({ action, configurationId })
       setError(undefined)
       let releaseTrackedOperation!: () => void
       const trackedOperation = new Promise<void>((resolve) => {
@@ -264,7 +370,7 @@ function useCloudPreviewRuntime(input: {
             command: managedPreviewStopCommand("stop"),
             operationId: crypto.randomUUID(),
           })
-          setSession(active)
+          active = updateSession(active)
           return true
         }
         if (!active && action === "stop") return undefined
@@ -292,14 +398,10 @@ function useCloudPreviewRuntime(input: {
             operationId,
             localPath: input.worktree,
           })
-          localStorage.setItem(
-            cloudSessionStorageId(input.userStoryId, profile),
-            active.id
-          )
+          active = updateSession(active)
           localStorage.removeItem(
             cloudCreateOperationStorageId(input.userStoryId)
           )
-          setSession(active)
         }
         if ((action === "start" || action === "restart") && !input.autoStart) {
           clearCloudPreviewAutoStartDisabled(input.userStoryId)
@@ -308,7 +410,7 @@ function useCloudPreviewRuntime(input: {
           (action === "start" || action === "restart") &&
           (await cancelAutoStartIfRequested())
         ) {
-          return cloudRuntimeState(active!, input.localRuntime)
+          return managedPreviewRuntimeState(active!, input.localRuntime)
         }
         if (action === "start" || action === "restart") {
           if (
@@ -321,7 +423,7 @@ function useCloudPreviewRuntime(input: {
                 localPath: input.worktree,
               })
             ).session
-            setSession(active)
+            active = updateSession(active)
           }
           if (
             active.state.host !== "running" ||
@@ -337,18 +439,18 @@ function useCloudPreviewRuntime(input: {
         if (action === "stop") {
           const optimistic = stoppedCloudPreviewSession(active)
           stoppingSessionIdRef.current = active.id
-          setSession(optimistic)
+          updateSession(optimistic)
           void settleCloudPreviewStop(
             client,
             active.id,
             input.userStoryId,
-            setSession
+            updateSession
           ).finally(() => {
             if (stoppingSessionIdRef.current === active?.id) {
               stoppingSessionIdRef.current = undefined
             }
           })
-          return cloudRuntimeState(optimistic, input.localRuntime)
+          return managedPreviewRuntimeState(optimistic, input.localRuntime)
         }
         if (!active.sourceRevision) {
           active = (
@@ -368,7 +470,7 @@ function useCloudPreviewRuntime(input: {
         }
         if (action === "start" || action === "restart") {
           if (await cancelAutoStartIfRequested()) {
-            return cloudRuntimeState(active!, input.localRuntime)
+            return managedPreviewRuntimeState(active!, input.localRuntime)
           }
           if (
             !importedCurrentWorkspace &&
@@ -395,8 +497,8 @@ function useCloudPreviewRuntime(input: {
             operationId: crypto.randomUUID(),
           })
         }
-        setSession(active)
-        return cloudRuntimeState(active, input.localRuntime)
+        active = updateSession(active)
+        return managedPreviewRuntimeState(active, input.localRuntime)
       } catch (error) {
         const message = errorText(error)
         setError(message)
@@ -412,7 +514,7 @@ function useCloudPreviewRuntime(input: {
         ) {
           cloudControlOperations.delete(input.userStoryId)
         }
-        setPendingOperation(undefined)
+        updatePendingOperation(undefined)
       }
     },
     [
@@ -426,6 +528,8 @@ function useCloudPreviewRuntime(input: {
       pendingOperation,
       profile,
       session,
+      updatePendingOperation,
+      updateSession,
     ]
   )
 
@@ -434,47 +538,9 @@ function useCloudPreviewRuntime(input: {
     error,
     pendingOperation,
     runtime: session
-      ? cloudRuntimeState(session, input.localRuntime)
-      : cloudIdleRuntime(input.localRuntime),
+      ? managedPreviewRuntimeState(session, input.localRuntime)
+      : idleManagedPreviewRuntime(input.localRuntime),
     session,
-  }
-}
-
-function cloudIdleRuntime(
-  local?: ProjectPreviewRuntimeState
-): ProjectPreviewRuntimeState | undefined {
-  if (!local) return undefined
-  return {
-    ...local,
-    desiredStatus: "stopped",
-    previewUrl: undefined,
-    statuses: Object.fromEntries(
-      local.configurations.map(({ id }) => [id, "stopped"])
-    ),
-  }
-}
-
-function cloudRuntimeState(
-  session: PreviewSessionView,
-  local?: ProjectPreviewRuntimeState
-): ProjectPreviewRuntimeState {
-  const selected =
-    session.selection?.configurationId ?? local?.selectedConfigurationId
-  const running =
-    session.desired.services === "running" && session.state.engine === "running"
-  const previewUrl = managedEmbeddedPreviewUrl(session.endpointMap)
-  return {
-    configurations: local?.configurations ?? [],
-    desiredStatus:
-      session.desired.services === "running" ? "running" : "stopped",
-    previewUrl,
-    selectedConfigurationId: selected,
-    statuses: Object.fromEntries(
-      (local?.configurations ?? []).map(({ id }) => [
-        id,
-        id === selected ? (running ? "running" : "stopped") : "stopped",
-      ])
-    ),
   }
 }
 
@@ -502,9 +568,7 @@ async function settleCloudPreviewStop(
   client: NonNullable<ReturnType<typeof usePlatform>["previewRuntime"]>,
   sessionId: string,
   userStoryId: string,
-  setSession: React.Dispatch<
-    React.SetStateAction<PreviewSessionView | undefined>
-  >
+  updateSession: (session: PreviewSessionView) => PreviewSessionView
 ) {
   markCloudPreviewAutoStartDisabled(userStoryId)
   try {
@@ -513,14 +577,14 @@ async function settleCloudPreviewStop(
       command: managedPreviewStopCommand("stop"),
       operationId: crypto.randomUUID(),
     })
-    setSession(next)
+    updateSession(next)
   } catch (error) {
     toast.error("Unable to stop managed preview", {
       description: errorText(error),
       position: "bottom-right",
     })
     try {
-      setSession(await client.get({ sessionId }))
+      updateSession(await client.get({ sessionId }))
     } catch {
       // Keep the optimistic stopped state when the follow-up read is unavailable.
     }
@@ -535,7 +599,7 @@ export async function stopManagedCloudPreview(
   markCloudPreviewAutoStartDisabled(userStoryId)
   const client = platform.previewRuntime
   const sessionId = localStorage.getItem(
-    cloudSessionStorageId(userStoryId, "vercel-compose")
+    cloudPreviewSessionStorageId(userStoryId, "vercel-compose")
   )
   if (!client || !sessionId) return false
   try {
@@ -564,10 +628,6 @@ function isCloudPreviewAutoStartDisabled(userStoryId: string) {
       cloudPreviewAutoStartDisabledStorageId(userStoryId)
     ) === "1"
   )
-}
-
-function cloudSessionStorageId(userStoryId: string, profile: string) {
-  return `blame.preview-session.${profile}.${userStoryId}`
 }
 
 function cloudPreviewAutoStartDisabledStorageId(userStoryId: string) {

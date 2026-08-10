@@ -1,19 +1,24 @@
 import * as React from "react"
 import {
   AlertTriangleIcon,
+  CopyIcon,
   FocusIcon,
   ExternalLinkIcon,
   LockIcon,
   LoaderCircleIcon,
   MonitorIcon,
+  NetworkIcon,
   PlayIcon,
   RefreshCwIcon,
 } from "lucide-react"
+import { toast } from "sonner"
 
 import type { UserStory } from "@/components/backlog/data/backlog-data"
 import { ProjectRunnerLogTabs } from "@/components/backlog/board/project-runner-controls"
 import { ManagedRuntimeSummary } from "@/components/backlog/drawer/managed-runtime-summary"
+import { managedPresentedPreviewUrl } from "@/components/backlog/drawer/managed-preview-url"
 import {
+  blameCloudPreviewOrigin,
   normalizePreviewPath,
   previewAddressOrigin,
   previewAddressPath,
@@ -32,6 +37,12 @@ import {
 } from "@/components/backlog/drawer/use-user-story-preview-runner"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { type PreviewBrowserClient, usePlatform } from "@/context/platform"
 import { useRuntimePreference } from "@/lib/runtime-preference"
 import { cn } from "@/lib/utils"
@@ -98,7 +109,6 @@ type PreviewIslandProps = {
   logService?: string
   logServices: string[]
   locationBlocked: boolean
-  externalOpenDisabled?: boolean
   onCapture?: () => void
   onLogServiceChange: (service: string) => void
   onNavigatePath: (path: string) => void
@@ -106,12 +116,17 @@ type PreviewIslandProps = {
   onReload: () => void
   onRunnerMenuOpenChange: (open: boolean) => void
   previewLocation?: string
+  previewProxy?: ManagedPreviewProxyInfo
   source?: string
   previewRunner?: UserStoryPreviewRunner
   onRunConfigurationChange?: (
     configurationId: string,
     previewUrl?: string
   ) => void
+}
+type ManagedPreviewProxyInfo = {
+  logicalUrl: string
+  reasons: string[]
 }
 type PreviewLogToolbarProps = {
   hasPreview: boolean
@@ -409,6 +424,27 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
   const displayedPreviewLocation = hasNativePreview
     ? activeNativePreviewState?.url
     : previewLocation
+  const logicalPreviewLocation = displayedPreviewLocation ?? source
+  const presentedSource = managedPreview
+    ? managedPresentedPreviewUrl(previewRunner.publicPreviewUrl, source)
+    : source
+  const presentedPreviewLocation = managedPreview
+    ? managedPresentedPreviewUrl(
+        previewRunner.publicPreviewUrl,
+        logicalPreviewLocation
+      )
+    : displayedPreviewLocation
+  const previewProxy =
+    previewRunner.integratedPreviewRequired &&
+    previewRunner.publicPreviewUrl &&
+    source &&
+    logicalPreviewLocation &&
+    presentedPreviewLocation !== logicalPreviewLocation
+      ? {
+          logicalUrl: logicalPreviewLocation,
+          reasons: previewRunner.previewProxyReasons,
+        }
+      : undefined
   const displayedLocationBlocked = hasNativePreview
     ? false
     : Boolean(locationBlocked)
@@ -527,7 +563,6 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
   }
 
   const openPreview = () => {
-    if (previewRunner.integratedPreviewRequired) return
     if (previewRunner.previewSessionId && platform.previewRuntime) {
       void platform.previewRuntime.openExternal({
         sessionId: previewRunner.previewSessionId,
@@ -580,7 +615,7 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
         <Tabs
           value={activeTab}
           onValueChange={setTab}
-          className="relative h-full min-h-0 gap-0 bg-muted/20"
+          className="preview-toolbar-container relative h-full min-h-0 gap-0 bg-muted/20"
         >
           <PreviewIsland
             activeTab={activeTab}
@@ -590,7 +625,6 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
             logService={selectedLogService}
             logServices={services}
             locationBlocked={displayedLocationBlocked}
-            externalOpenDisabled={previewRunner.integratedPreviewRequired}
             onCapture={capturePreview}
             onLogServiceChange={setSelectedLogService}
             onNavigatePath={navigatePreviewPath}
@@ -599,8 +633,9 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
             onRunnerMenuOpenChange={setRunnerMenuOpen}
             onRunConfigurationChange={onRunConfigurationChange}
             previewRunner={previewRunner}
-            previewLocation={displayedPreviewLocation}
-            source={source}
+            previewLocation={presentedPreviewLocation}
+            previewProxy={previewProxy}
+            source={presentedSource}
           />
           {source && (
             <TabsContent
@@ -1297,7 +1332,6 @@ function PreviewIsland({
   logService,
   logServices,
   locationBlocked,
-  externalOpenDisabled,
   onCapture,
   onLogServiceChange,
   onNavigatePath,
@@ -1307,6 +1341,7 @@ function PreviewIsland({
   onRunnerMenuOpenChange,
   previewRunner,
   previewLocation,
+  previewProxy,
   source,
 }: PreviewIslandProps) {
   if (activeTab === "setup-log") {
@@ -1324,14 +1359,14 @@ function PreviewIsland({
     )
   }
   return (
-    <div className="pointer-events-none absolute inset-x-4 top-4 z-20 flex items-center gap-1.5">
+    <div className="preview-toolbar pointer-events-none absolute inset-x-4 top-4 z-20 flex min-w-0 items-center gap-1.5">
       {source ? (
         <PreviewAddress
-          externalOpenDisabled={externalOpenDisabled}
           locationBlocked={locationBlocked}
           onNavigatePath={onNavigatePath}
           onOpen={onOpen}
           previewLocation={previewLocation}
+          previewProxy={previewProxy}
           source={source}
         />
       ) : (
@@ -1352,7 +1387,7 @@ function PreviewIsland({
         />
       )}
       {previewRunner && <ManagedRuntimeSummary runner={previewRunner} />}
-      <div className="min-w-2 flex-1" />
+      <div className="preview-toolbar-spacer min-w-2 flex-1" />
       <PreviewTabSelector hasPreview={hasPreview} hasSetupLog={hasSetupLog} />
     </div>
   )
@@ -1427,7 +1462,7 @@ function PreviewActions({
     <>
       <Button
         aria-label="Refresh preview"
-        className="pointer-events-auto size-9 rounded-full border bg-background/95 shadow-sm backdrop-blur"
+        className="pointer-events-auto size-9 shrink-0 rounded-full border bg-background/95 shadow-sm backdrop-blur"
         size="icon"
         title="Refresh preview"
         type="button"
@@ -1438,7 +1473,7 @@ function PreviewActions({
       </Button>
       <Button
         aria-label="Capture preview"
-        className="pointer-events-auto size-9 rounded-full border bg-background/95 shadow-sm backdrop-blur"
+        className="pointer-events-auto size-9 shrink-0 rounded-full border bg-background/95 shadow-sm backdrop-blur"
         disabled={captureDisabled}
         size="icon"
         title="Capture preview"
@@ -1453,22 +1488,21 @@ function PreviewActions({
 }
 
 function PreviewAddress({
-  externalOpenDisabled,
   locationBlocked,
   onNavigatePath,
   onOpen,
   previewLocation,
+  previewProxy,
   source,
 }: {
-  externalOpenDisabled?: boolean
   locationBlocked: boolean
   onNavigatePath: (path: string) => void
   onOpen: () => void
   previewLocation?: string
+  previewProxy?: ManagedPreviewProxyInfo
   source: string
 }) {
   const address = previewLocation ?? source
-  const origin = previewAddressOrigin(source)
   const path = previewAddressPath(address)
   const [draft, setDraft] = React.useState({ path, value: path })
   const draftPath = draft.path === path ? draft.value : path
@@ -1479,46 +1513,144 @@ function PreviewAddress({
     if (nextPath !== path) onNavigatePath(nextPath)
   }
 
+  const copyAddress = () => {
+    const clipboard = navigator.clipboard
+    if (!clipboard) {
+      toast.error("Unable to copy preview URL", { position: "bottom-right" })
+      return
+    }
+    void clipboard
+      .writeText(address)
+      .then(() =>
+        toast.success("Preview URL copied", { position: "bottom-right" })
+      )
+      .catch(() =>
+        toast.error("Unable to copy preview URL", {
+          position: "bottom-right",
+        })
+      )
+  }
+
   return (
-    <div className="pointer-events-auto flex h-10 min-w-0 flex-1 items-center rounded-full border bg-background/95 py-1 pr-1.5 pl-4 shadow-sm backdrop-blur">
-      <span className="shrink-0 text-sm text-muted-foreground/70">
+    <TooltipProvider>
+      <div className="preview-address pointer-events-auto flex h-10 min-w-0 flex-1 items-center overflow-hidden rounded-full border bg-background/95 py-1 pr-1.5 pl-4 shadow-sm backdrop-blur">
+        <PreviewAddressOrigin source={source} />
+        <input
+          aria-label="Preview path"
+          className="w-8 min-w-0 flex-1 bg-transparent text-sm text-muted-foreground outline-none"
+          spellCheck={false}
+          value={draftPath}
+          onBlur={commitPath}
+          onChange={(event) =>
+            setDraft({ path, value: event.currentTarget.value })
+          }
+          onKeyDown={(event) => {
+            if (event.key === "Enter") event.currentTarget.blur()
+            if (event.key === "Escape") {
+              setDraft({ path, value: path })
+              event.currentTarget.blur()
+            }
+          }}
+        />
+        {previewProxy && <PreviewProxyBadge proxy={previewProxy} />}
+        {locationBlocked && <BlockedLocationBadge />}
+        <Button
+          aria-label="Copy preview URL"
+          className="ml-1 size-7 shrink-0 rounded-full"
+          size="icon"
+          title={previewProxy ? "Copy public preview URL" : "Copy preview URL"}
+          type="button"
+          variant="ghost"
+          onClick={copyAddress}
+        >
+          <CopyIcon />
+        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              aria-label="Open preview in browser"
+              className="size-7 shrink-0 rounded-full"
+              size="icon"
+              type="button"
+              variant="ghost"
+              onClick={onOpen}
+            >
+              <ExternalLinkIcon />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-72 text-pretty" sideOffset={6}>
+            {previewProxy
+              ? "Open the public URL. Browser bindings proxied by Blame may not work outside the app."
+              : "Open preview in browser"}
+          </TooltipContent>
+        </Tooltip>
+      </div>
+    </TooltipProvider>
+  )
+}
+
+function PreviewAddressOrigin({ source }: { source: string }) {
+  const origin = previewAddressOrigin(source)
+  const cloud = blameCloudPreviewOrigin(source)
+  if (!cloud) {
+    return (
+      <span
+        className="max-w-2/3 shrink truncate text-sm text-muted-foreground/70"
+        title={origin}
+      >
         {origin}
       </span>
-      <input
-        aria-label="Preview path"
-        className="min-w-0 flex-1 bg-transparent text-sm text-muted-foreground outline-none"
-        spellCheck={false}
-        value={draftPath}
-        onBlur={commitPath}
-        onChange={(event) =>
-          setDraft({ path, value: event.currentTarget.value })
-        }
-        onKeyDown={(event) => {
-          if (event.key === "Enter") event.currentTarget.blur()
-          if (event.key === "Escape") {
-            setDraft({ path, value: path })
-            event.currentTarget.blur()
-          }
-        }}
-      />
-      {locationBlocked && <BlockedLocationBadge />}
-      <Button
-        aria-label="Open preview in browser"
-        className="ml-2 size-7 rounded-full"
-        size="icon"
-        disabled={externalOpenDisabled}
-        title={
-          externalOpenDisabled
-            ? "This preview uses localhost compatibility and is available only inside Blame."
-            : "Open preview in browser"
-        }
-        type="button"
-        variant="ghost"
-        onClick={onOpen}
+    )
+  }
+  return (
+    <span
+      aria-label={origin}
+      className="flex shrink-0 items-center text-sm whitespace-nowrap"
+      title={origin}
+    >
+      <span className="preview-cloud-origin-gradient preview-cloud-origin-gradient-protocol">
+        {cloud.protocol}
+      </span>
+      <span className="text-muted-foreground/70">
+        {cloud.compactIdentifier}
+      </span>
+      <span className="preview-cloud-origin-gradient preview-cloud-origin-gradient-domain">
+        {cloud.suffix}
+      </span>
+    </span>
+  )
+}
+
+function PreviewProxyBadge({ proxy }: { proxy: ManagedPreviewProxyInfo }) {
+  const logicalOrigin = previewAddressOrigin(proxy.logicalUrl)
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          aria-label="Preview uses Blame proxy"
+          className="inline-flex shrink-0 cursor-help items-center gap-1 rounded-full border bg-muted/60 px-2 py-0.5 text-xs font-medium text-muted-foreground"
+          tabIndex={0}
+        >
+          <NetworkIcon className="size-3" />
+          <span className="preview-proxy-label">Proxy</span>
+        </span>
+      </TooltipTrigger>
+      <TooltipContent
+        className="max-w-80 flex-col items-start gap-1.5 text-pretty"
+        sideOffset={6}
       >
-        <ExternalLinkIcon />
-      </Button>
-    </div>
+        <span>
+          Blame loads {logicalOrigin} through its local browser-binding proxy.
+          The address shown is the public cloud URL.
+        </span>
+        <span className="opacity-80">
+          Outside Blame, some cross-service requests may not work.
+        </span>
+        {proxy.reasons.length > 0 && (
+          <span className="opacity-70">{proxy.reasons.join(" ")}</span>
+        )}
+      </TooltipContent>
+    </Tooltip>
   )
 }
 
@@ -1534,13 +1666,13 @@ function PreviewTabSelector({
       {hasPreview && (
         <TabsTrigger className="rounded-full px-3" value="preview">
           <MonitorIcon />
-          Preview
+          <span className="preview-tab-label">Preview</span>
         </TabsTrigger>
       )}
       {hasSetupLog && (
         <TabsTrigger className="rounded-full px-3" value="setup-log">
           <PlayIcon />
-          Run logs
+          <span className="preview-tab-label">Run logs</span>
         </TabsTrigger>
       )}
     </TabsList>

@@ -1,0 +1,133 @@
+import type { PreviewSessionView } from "@blame/preview-runtime"
+
+import type { ProjectRunnerPendingOperation } from "@/components/backlog/board/project-runner-types"
+
+type SessionListener = (session: PreviewSessionView) => void
+type PendingOperationListener = (
+  operation: ProjectRunnerPendingOperation | undefined
+) => void
+
+const sessions = new Map<string, PreviewSessionView>()
+const listeners = new Map<string, Set<SessionListener>>()
+const pendingOperations = new Map<string, ProjectRunnerPendingOperation>()
+const pendingOperationListeners = new Map<
+  string,
+  Set<PendingOperationListener>
+>()
+
+export function cloudPreviewSessionStorageId(
+  userStoryId: string,
+  profile: string
+) {
+  return `blame.preview-session.${profile}.${userStoryId}`
+}
+
+export function cachedCloudPreviewSession(storageId: string | undefined) {
+  return storageId ? sessions.get(storageId) : undefined
+}
+
+export function publishCloudPreviewSession(
+  storage: Pick<Storage, "setItem">,
+  storageId: string,
+  session: PreviewSessionView
+) {
+  const previous = sessions.get(storageId)
+  const current = mergeCloudPreviewUsage(previous, session)
+  sessions.set(storageId, current)
+  if (previous?.id !== current.id) storage.setItem(storageId, current.id)
+  listeners.get(storageId)?.forEach((listener) => listener(current))
+  return current
+}
+
+export function subscribeCloudPreviewSession(
+  storageId: string,
+  listener: SessionListener
+) {
+  const current = listeners.get(storageId) ?? new Set<SessionListener>()
+  current.add(listener)
+  listeners.set(storageId, current)
+  return () => {
+    current.delete(listener)
+    if (!current.size) {
+      listeners.delete(storageId)
+      sessions.delete(storageId)
+    }
+  }
+}
+
+export function cachedCloudPreviewPendingOperation(
+  storageId: string | undefined
+) {
+  return storageId ? pendingOperations.get(storageId) : undefined
+}
+
+export function publishCloudPreviewPendingOperation(
+  storageId: string,
+  operation: ProjectRunnerPendingOperation | undefined
+) {
+  if (operation) pendingOperations.set(storageId, operation)
+  else pendingOperations.delete(storageId)
+  pendingOperationListeners
+    .get(storageId)
+    ?.forEach((listener) => listener(operation))
+}
+
+export function subscribeCloudPreviewPendingOperation(
+  storageId: string,
+  listener: PendingOperationListener
+) {
+  const current =
+    pendingOperationListeners.get(storageId) ??
+    new Set<PendingOperationListener>()
+  current.add(listener)
+  pendingOperationListeners.set(storageId, current)
+  return () => {
+    current.delete(listener)
+    if (!current.size) pendingOperationListeners.delete(storageId)
+  }
+}
+
+function mergeCloudPreviewUsage(
+  previous: PreviewSessionView | undefined,
+  current: PreviewSessionView
+) {
+  if (previous?.id !== current.id || !previous.usage || !current.usage) {
+    return current
+  }
+  const previousObservedAt = Date.parse(previous.usage.observedAt)
+  const currentObservedAt = Date.parse(current.usage.observedAt)
+  const observedAt = Math.max(previousObservedAt, currentObservedAt)
+  const elapsedSeconds =
+    previous.state.host === "running" &&
+    current.state.host === "running" &&
+    Number.isFinite(previousObservedAt) &&
+    Number.isFinite(currentObservedAt) &&
+    currentObservedAt > previousObservedAt
+      ? Math.floor((currentObservedAt - previousObservedAt) / 1000)
+      : 0
+  const activeSeconds = Math.max(
+    current.usage.activeSeconds,
+    previous.usage.activeSeconds + elapsedSeconds
+  )
+  const estimatedCostUsd = Math.max(
+    current.usage.estimatedCostUsd,
+    previous.usage.estimatedCostUsd
+  )
+  if (
+    activeSeconds === current.usage.activeSeconds &&
+    estimatedCostUsd === current.usage.estimatedCostUsd &&
+    observedAt === currentObservedAt
+  ) {
+    return current
+  }
+  return {
+    ...current,
+    usage: {
+      activeSeconds,
+      estimatedCostUsd,
+      observedAt: Number.isFinite(observedAt)
+        ? new Date(observedAt).toISOString()
+        : current.usage.observedAt,
+    },
+  }
+}
