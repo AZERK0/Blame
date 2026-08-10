@@ -154,6 +154,11 @@ export default class PreviewSessionService {
         resourceSize: input.resourceSize,
         cloudUploadConsentAt: consentAt,
       })
+      if (baseline?.providerSnapshotId && !session.baselineId) {
+        await this.baselines
+          .markSnapshotUnavailable(baseline.id, baseline.providerSnapshotId)
+          .catch(() => undefined)
+      }
       await this.lease.renew(session.id, ownerUserId)
       return this.get(ownerUserId, session.id)
     })

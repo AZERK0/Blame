@@ -171,15 +171,15 @@ export class PreviewReconciler {
     }
     if (!handle || ["unprovisioned", "destroyed"].includes(record.state.host)) {
       record.state.host = "provisioning";
-      const created = await driver.provisionHost({
-        sessionId: record.id,
-        userStoryId: record.userStoryId,
-        generation: record.generation,
-        fencingToken: record.fencingToken,
-        plan: record.plan,
-        resourceSize: record.resourceSize,
-        source: record.provisionSource,
-      });
+      let created;
+      try {
+        created = await driver.provisionHost(provisionInput(record));
+      } catch (error) {
+        if (!missingProvisionSnapshot(record, error)) throw error;
+        record.baselineId = undefined;
+        record.provisionSource = undefined;
+        created = await driver.provisionHost(provisionInput(record));
+      }
       fenceRuntimeHandle(created.handle, record.fencingToken);
       await this.options.repository.setRuntimeHandle(record.id, created.handle);
       record.state.host = "running";
@@ -331,6 +331,29 @@ export class PreviewReconciler {
       message,
     });
   }
+}
+
+function provisionInput(record: PreviewSessionRecord) {
+  return {
+    sessionId: record.id,
+    userStoryId: record.userStoryId,
+    generation: record.generation,
+    fencingToken: record.fencingToken,
+    plan: record.plan,
+    resourceSize: record.resourceSize,
+    source: record.provisionSource,
+  };
+}
+
+function missingProvisionSnapshot(
+  record: PreviewSessionRecord,
+  error: unknown,
+) {
+  return (
+    Boolean(record.provisionSource) &&
+    error instanceof PreviewRuntimeError &&
+    error.failure.providerCode === "BASELINE_SNAPSHOT_NOT_FOUND"
+  );
 }
 
 function assertServicesReady(

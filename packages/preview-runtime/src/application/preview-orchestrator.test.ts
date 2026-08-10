@@ -94,6 +94,44 @@ test("provisions directly from a selected snapshot without a redundant inspect",
   assert.equal("provisionSource" in created, false);
 });
 
+test("falls back to a fresh host when the selected baseline snapshot expired", async () => {
+  const { driver, orchestrator, plan, repository } = fixture();
+  const provisionHost = driver.provisionHost.bind(driver);
+  driver.provisionHost = async (input) => {
+    if (input.source) {
+      driver.calls.push("provisionHost");
+      driver.provisionInputs.push(structuredClone(input));
+      throw new PreviewRuntimeError({
+        code: "PROVIDER_UNAVAILABLE",
+        message: "Vercel Sandbox baseline-restore failed: Snapshot expired or deleted.",
+        providerCode: "BASELINE_SNAPSHOT_NOT_FOUND",
+        retryable: false,
+      });
+    }
+    return provisionHost(input);
+  };
+
+  const created = await orchestrator.create({
+    id: "session",
+    userStoryId: "story",
+    ownerUserId: "owner",
+    profile: "vercel-compose",
+    plan,
+    planHash: "hash",
+    baselineId: "baseline",
+    provisionSource: { type: "snapshot", snapshotId: "snap_expired" },
+    cloudUploadConsentAt: new Date().toISOString(),
+  });
+
+  assert.equal(created.state.host, "running");
+  assert.equal(created.baselineId, undefined);
+  assert.deepEqual(driver.provisionInputs.map(({ source }) => source), [
+    { type: "snapshot", snapshotId: "snap_expired" },
+    undefined,
+  ]);
+  assert.equal((await repository.get("session"))?.provisionSource, undefined);
+});
+
 test("runs commands idempotently and keeps state axes independent", async () => {
   const { driver, orchestrator, plan, repository } = fixture();
   await orchestrator.create({

@@ -3,6 +3,7 @@ import { vercelNetworkPolicy } from '#services/sandboxes/vercel_network_policy'
 import {
   desiredPorts,
   effectiveSandboxTimeoutMinutes,
+  providerSnapshotMissing,
   shortTag,
   type VercelPlan,
 } from '#services/sandboxes/vercel_sandbox_support'
@@ -103,7 +104,7 @@ export default class VercelSandboxBaselineProvider implements PreviewBaselinePro
       await snapshot.delete()
       snapshotGone = true
     } catch (error) {
-      if (providerNotFound(error)) snapshotGone = true
+      if (providerSnapshotMissing(error)) snapshotGone = true
       else throw cleanProviderError(error)
     }
     if (snapshotGone && input.ownerSandboxName) {

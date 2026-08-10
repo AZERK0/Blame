@@ -3,6 +3,7 @@ import {
   ownedSnapshotIdForDeletion,
   providerFailure,
   providerResourceMissing,
+  providerSnapshotMissing,
   retryableProviderError,
   vercelPlanLimits,
 } from '#services/sandboxes/vercel_sandbox_support'
@@ -34,6 +35,20 @@ test.group('Vercel sandbox provider errors', () => {
   test('recognizes nested retry and not-found statuses', ({ assert }) => {
     assert.isTrue(retryableProviderError(apiError(429, 'rate_limited')))
     assert.isTrue(providerResourceMissing(apiError(404, 'not_found')))
+  })
+
+  test('normalizes an expired baseline snapshot returned as a bad request', ({ assert }) => {
+    const error = apiError(400, 'bad_request', undefined, 'Snapshot expired or deleted.')
+    const result = providerFailure('baseline-restore', error)
+
+    assert.equal(result.failure.code, 'PROVIDER_UNAVAILABLE')
+    assert.equal(result.failure.providerCode, 'BASELINE_SNAPSHOT_NOT_FOUND')
+    assert.isFalse(result.failure.retryable)
+    assert.isTrue(providerSnapshotMissing(error))
+    assert.isTrue(providerSnapshotMissing(result))
+    assert.isFalse(
+      providerSnapshotMissing(apiError(400, 'bad_request', undefined, 'Snapshot is malformed.'))
+    )
   })
 
   test('caps requested session duration to the configured Vercel plan', ({ assert }) => {

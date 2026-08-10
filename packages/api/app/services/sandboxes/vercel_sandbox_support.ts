@@ -92,7 +92,12 @@ export function runnerFailure(code: string, message: string) {
 
 export function providerFailure(operation: string, error: unknown) {
   const status = providerStatus(error)
-  const code = status === 404 ? 'SANDBOX_NOT_FOUND' : providerCode(error)
+  const code =
+    operation === 'baseline-restore' && providerSnapshotMissing(error)
+      ? 'BASELINE_SNAPSHOT_NOT_FOUND'
+      : status === 404
+        ? 'SANDBOX_NOT_FOUND'
+        : providerCode(error)
   const reason = providerMessage(error)
   return new PreviewRuntimeError({
     code:
@@ -123,6 +128,21 @@ export function providerResourceMissing(error: unknown) {
     return error.failure.providerCode === 'SANDBOX_NOT_FOUND'
   }
   return providerStatus(error) === 404 || providerCode(error).includes('NOT_FOUND')
+}
+
+export function providerSnapshotMissing(error: unknown) {
+  if (error instanceof PreviewRuntimeError) {
+    return error.failure.providerCode === 'BASELINE_SNAPSHOT_NOT_FOUND'
+  }
+  const status = providerStatus(error)
+  const code = providerCode(error).toUpperCase()
+  if (status === 404 || code.includes('SNAPSHOT_NOT_FOUND')) return true
+  if (status !== 400) return false
+  const message = providerMessage(error)?.toLowerCase() ?? ''
+  return (
+    message.includes('snapshot') &&
+    ['expired', 'deleted', 'not found', 'does not exist'].some((reason) => message.includes(reason))
+  )
 }
 
 function providerStatus(error: unknown) {

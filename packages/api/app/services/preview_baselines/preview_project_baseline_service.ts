@@ -131,6 +131,22 @@ export default class PreviewProjectBaselineService {
     }
   }
 
+  async markSnapshotUnavailable(id: string, providerSnapshotId: string) {
+    const row = await PreviewProjectBaseline.query()
+      .where('id', id)
+      .where('status', 'ready')
+      .where('providerSnapshotId', providerSnapshotId)
+      .first()
+    if (!row) return false
+    row.merge({
+      status: 'expired',
+      expiresAt: DateTime.utc(),
+      error: 'Provider snapshot expired or was deleted.',
+    })
+    await row.save()
+    return true
+  }
+
   async gc(limit = 25) {
     return measureBaselinePhase('baseline.gc', async () => {
       if (!this.config.baselines.enabled) return { deleted: 0, failed: 0 }
