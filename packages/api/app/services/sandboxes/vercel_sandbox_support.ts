@@ -137,7 +137,7 @@ export function providerSnapshotMissing(error: unknown) {
   const status = providerStatus(error)
   const code = providerCode(error).toUpperCase()
   if (status === 404 || code.includes('SNAPSHOT_NOT_FOUND')) return true
-  if (status !== 400) return false
+  if (status < 400 || status >= 500) return false
   const message = providerMessage(error)?.toLowerCase() ?? ''
   return (
     message.includes('snapshot') &&

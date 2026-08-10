@@ -38,7 +38,7 @@ test.group('Vercel sandbox provider errors', () => {
   })
 
   test('normalizes an expired baseline snapshot returned as a bad request', ({ assert }) => {
-    const error = apiError(400, 'bad_request', undefined, 'Snapshot expired or deleted.')
+    const error = apiError(422, 'bad_request', undefined, 'Snapshot expired or deleted.')
     const result = providerFailure('baseline-restore', error)
 
     assert.equal(result.failure.code, 'PROVIDER_UNAVAILABLE')
@@ -48,6 +48,11 @@ test.group('Vercel sandbox provider errors', () => {
     assert.isTrue(providerSnapshotMissing(result))
     assert.isFalse(
       providerSnapshotMissing(apiError(400, 'bad_request', undefined, 'Snapshot is malformed.'))
+    )
+    assert.isFalse(
+      providerSnapshotMissing(
+        apiError(500, 'internal_error', undefined, 'Snapshot temporarily unavailable.')
+      )
     )
   })
 
