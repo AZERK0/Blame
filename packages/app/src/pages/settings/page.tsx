@@ -3,7 +3,6 @@ import {
   AlertCircleIcon,
   BrainCircuitIcon,
   CheckCircle2Icon,
-  CloudIcon,
   DownloadIcon,
   LoaderCircleIcon,
   LogOutIcon,
@@ -56,11 +55,6 @@ import {
 } from "@/context/platform"
 import { useSystemNotificationsEnabled } from "@/lib/system-notifications"
 import { cn } from "@/lib/utils"
-import {
-  runtimeProfileSwitchBlockReason,
-  saveRuntimePreference,
-  useRuntimePreference,
-} from "@/lib/runtime-preference"
 import { McpSettingsPanel } from "./mcp-settings-panel"
 import { AccountPrivacyPanel } from "./account-privacy-panel"
 
@@ -68,7 +62,6 @@ type SettingsSectionId =
   | "general"
   | "models"
   | "providers"
-  | "runtime"
   | "mcp"
   | "desktop"
   | "account"
@@ -89,12 +82,6 @@ type ProviderDialog =
   | undefined
 
 const settingsSections: SettingsSection[] = [
-  {
-    description: "Choose where new preview sessions run.",
-    icon: CloudIcon,
-    id: "runtime",
-    title: "Preview Runtime",
-  },
   {
     description: "Appearance and interface preferences.",
     icon: Settings2Icon,
@@ -281,7 +268,6 @@ function SettingsSectionHeader({ section }: { section: SettingsSection }) {
 function SettingsSectionContent({ section }: { section: SettingsSectionId }) {
   if (section === "general") return <GeneralSettingsPanel />
   if (section === "providers") return <ProvidersSettingsPanel />
-  if (section === "runtime") return <RuntimeSettingsPanel />
   if (section === "mcp") return <McpSettingsPanel />
   if (section === "desktop") return <DesktopSettingsPanel />
   if (section === "account") return <AccountSettingsPanel />
@@ -684,97 +670,6 @@ function DesktopSettingsPanel() {
     <SettingsPanel>
       <DesktopUpdatesGroup platform={platform} updates={updates} />
       <DesktopIntegrationGroup platform={platform} />
-    </SettingsPanel>
-  )
-}
-
-function RuntimeSettingsPanel() {
-  const platform = usePlatform()
-  const auth = useCloudAuth()
-  const preference = useRuntimePreference()
-  const cloudAvailable = Boolean(
-    platform.previewRuntime && auth.status === "authenticated"
-  )
-  const selectProfile = (profile: string) => {
-    const switchBlocked = runtimeProfileSwitchBlockReason(
-      profile as typeof preference.profile
-    )
-    if (switchBlocked) {
-      window.alert(switchBlocked)
-      return
-    }
-    if (profile === "local-container") {
-      saveRuntimePreference({ profile, source: "account-default" })
-      return
-    }
-    if (!cloudAvailable) return
-    const confirmed = window.confirm(
-      "Cloud preview uploads this story worktree to an isolated managed sandbox. Compute is billed while active; the selected region and encrypted recovery artifacts are retained for the periods shown below. Continue?"
-    )
-    if (!confirmed) return
-    saveRuntimePreference({
-      profile: "vercel-compose",
-      source: "account-default",
-      confirmedCloudUploadAt: new Date().toISOString(),
-    })
-  }
-  return (
-    <SettingsPanel>
-      <SettingsGroup
-        title="Default preview runtime"
-        description="Existing projects remain local. This preference applies only when a new stopped preview session is created."
-      >
-        <SettingsRow
-          title="Runtime profile"
-          description={
-            cloudAvailable
-              ? "Story and project overrides can take precedence."
-              : "Sign in from the desktop app to enable managed cloud profiles."
-          }
-        >
-          <Select value={preference.profile} onValueChange={selectProfile}>
-            <SelectTrigger
-              className="w-56"
-              aria-label="Default preview runtime"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="local-container">Local container</SelectItem>
-              <SelectItem value="vercel-compose" disabled={!cloudAvailable}>
-                Vercel Sandbox
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </SettingsRow>
-        <CapabilityRow
-          label="Explicit cloud upload consent"
-          enabled={Boolean(preference.confirmedCloudUploadAt)}
-        />
-      </SettingsGroup>
-      <SettingsGroup
-        title="Managed runtime policy"
-        description="Cloud sessions are isolated per story and never fall back to local automatically."
-      >
-        <SettingsRow
-          title="Region"
-          description="Managed provider region selected by the Blame control plane."
-        >
-          <Badge variant="secondary">iad1</Badge>
-        </SettingsRow>
-        <SettingsRow
-          title="Idle suspension"
-          description="Compute suspends after 15 minutes without an active lease."
-        >
-          <Badge variant="secondary">15 min</Badge>
-        </SettingsRow>
-        <SettingsRow
-          title="Recovery retention"
-          description="Encrypted source and delta artifacts are retained for up to 72 hours."
-        >
-          <Badge variant="secondary">72 h</Badge>
-        </SettingsRow>
-      </SettingsGroup>
     </SettingsPanel>
   )
 }
