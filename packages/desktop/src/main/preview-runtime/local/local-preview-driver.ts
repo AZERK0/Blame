@@ -1,5 +1,4 @@
 import { spawn } from "node:child_process";
-import { realpath } from "node:fs/promises";
 import { resolve } from "node:path";
 import {
   resolveCapabilities,
@@ -17,6 +16,7 @@ import {
   type RuntimeSelection,
 } from "@blame/preview-runtime";
 import type { ProjectPreviewRuntimeState } from "@blame/agent-runtime";
+import { resolveWorkspacePath } from "../../workspace-runtime.ts";
 
 type LocalHandle = {
   kind: "local-container";
@@ -75,7 +75,7 @@ export class LocalPreviewDriver implements PreviewRuntimeDriver {
   }
 
   async provisionHost(input: ProvisionInput) {
-    const worktree = await realpath(
+    const worktree = resolveWorkspacePath(
       await this.worktreeForStory(input.userStoryId),
     );
     return {
@@ -91,7 +91,7 @@ export class LocalPreviewDriver implements PreviewRuntimeDriver {
     return runtimeHandle({
       kind: "local-container",
       sessionId,
-      worktree: await realpath(worktree),
+      worktree: resolveWorkspacePath(worktree),
     } satisfies LocalHandle);
   }
 

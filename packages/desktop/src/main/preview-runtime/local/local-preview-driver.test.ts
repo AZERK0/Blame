@@ -68,6 +68,47 @@ test("adapts the existing local runtime to the provider-neutral driver contract"
   }
 });
 
+test("connects VM-internal worktrees without resolving them on the desktop host", async () => {
+  const worktree =
+    "/home/blame/.local/share/blame/runtime/worktrees/Blame/story-US-174-say-hello";
+  const observedWorktrees: string[] = [];
+  const runtime = (): ProjectPreviewRuntimeState => ({
+    configurations: [
+      {
+        id: "web",
+        name: "Web",
+        command: "dev",
+        cwd: ".",
+        default: true,
+        previewService: "web",
+      },
+    ],
+    desiredStatus: "stopped",
+    selectedConfigurationId: "web",
+    statuses: { web: "stopped" },
+  });
+  const adapter: LocalRuntimeAdapter = {
+    async control(input) {
+      observedWorktrees.push(input.worktree);
+      return runtime();
+    },
+    async state(input) {
+      observedWorktrees.push(input);
+      return runtime();
+    },
+    async logs() {
+      return { available: false, services: [] };
+    },
+  };
+
+  const driver = new LocalPreviewDriver(async () => worktree, adapter);
+  const handle = await driver.connect(`${worktree}/`);
+  await driver.runtimeState(handle);
+  await driver.startServices(handle, { configurationId: "web" });
+
+  assert.deepEqual(observedWorktrees, [worktree, worktree]);
+});
+
 function plan() {
   return {
     version: 2 as const,
