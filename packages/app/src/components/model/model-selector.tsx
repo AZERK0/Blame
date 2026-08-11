@@ -40,6 +40,7 @@ import type {
   CloudAiModelPreference,
   SaveAiPreferencesInput,
 } from "@/context/cloud-auth"
+import { cn } from "@/lib/utils"
 
 const storageKey = "blame.app.drawer-model-selection.v1"
 const globalModelSelectionKey = "__global__"
@@ -109,13 +110,23 @@ type ModelDialog =
   | undefined
 type WheelDirection = -1 | 1
 
-export function ModelSelector({ role }: { role?: ModelPreferenceRole }) {
+export function ModelSelector({
+  modelTriggerClassName,
+  role,
+}: {
+  modelTriggerClassName?: string
+  role?: ModelPreferenceRole
+}) {
   const selection = useModelSelection({ role })
   const [dialog, setDialog] = React.useState<ModelDialog>()
 
   return (
     <>
-      <ModelPicker selection={selection} setDialog={setDialog} />
+      <ModelPicker
+        modelTriggerClassName={modelTriggerClassName}
+        selection={selection}
+        setDialog={setDialog}
+      />
       <ProviderSelectDialog
         open={dialog?.type === "providers"}
         selection={selection}
@@ -145,9 +156,11 @@ export function ModelSelector({ role }: { role?: ModelPreferenceRole }) {
 }
 
 function ModelPicker({
+  modelTriggerClassName,
   selection,
   setDialog,
 }: {
+  modelTriggerClassName?: string
   selection: ModelSelection
   setDialog: (dialog: ModelDialog) => void
 }) {
@@ -166,6 +179,7 @@ function ModelPicker({
       <PopoverAnchor asChild>
         <div className="flex w-full min-w-0 items-center justify-end gap-2">
           <ModelPickerTrigger
+            className={modelTriggerClassName}
             open={open}
             selection={selection}
             onWheel={onWheel}
@@ -204,10 +218,12 @@ function useWheelStep<Element extends HTMLElement = HTMLButtonElement>(
 }
 
 function ModelPickerTrigger({
+  className,
   onWheel,
   open,
   selection,
 }: {
+  className?: string
   onWheel: React.WheelEventHandler<HTMLButtonElement>
   open: boolean
   selection: ModelSelection
@@ -218,7 +234,10 @@ function ModelPickerTrigger({
         <PopoverTrigger asChild>
           <Button
             variant="ghost"
-            className="h-8 w-0 max-w-52 min-w-0 flex-1 justify-center rounded-xl border-0 bg-muted/70 px-3 shadow-none hover:bg-muted aria-expanded:bg-muted"
+            className={cn(
+              "h-8 w-0 max-w-52 min-w-0 flex-1 justify-center rounded-xl border-0 bg-muted/70 px-3 shadow-none hover:bg-muted aria-expanded:bg-muted",
+              className
+            )}
             disabled={!selection.serverReady || selection.loading}
             onWheel={onWheel}
           >

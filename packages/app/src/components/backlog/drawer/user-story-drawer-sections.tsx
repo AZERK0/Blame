@@ -14,6 +14,7 @@ import {
   MarkdownEditor,
   type PendingFileAttachment,
 } from "@/components/backlog/drawer/markdown-editor"
+import { RuntimeProfileSelector } from "@/components/backlog/drawer/runtime-profile-selector"
 import {
   commentButtonLabel,
   isEditable,
@@ -146,8 +147,11 @@ export const UserStoryContent = React.memo(function UserStoryContent({
           readOnly={!editable}
           toolbarEnd={
             editable ? (
-              <div className="w-[28rem] max-w-full min-w-0">
-                <MarkdownEditorModelSelector />
+              <div className="flex max-w-full min-w-0 flex-wrap items-center justify-end gap-2">
+                <RuntimeProfileSelector />
+                <div className="w-96 shrink-0">
+                  <MarkdownEditorModelSelector />
+                </div>
               </div>
             ) : undefined
           }
@@ -337,7 +341,7 @@ type AgentRunTimelineProps = {
 
 const MarkdownEditorModelSelector = React.memo(
   function ModelSelectorBoundary() {
-    return <ModelSelector />
+    return <ModelSelector modelTriggerClassName="max-w-none" />
   }
 )
 
