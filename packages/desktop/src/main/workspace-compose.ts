@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { createServer } from "node:net";
+import { parse as parseYaml } from "yaml";
 
 export function dockerComposeForPreview(
   compose: string,
@@ -121,7 +122,7 @@ export async function composeWithAllocatedHostPorts(compose: string) {
     result.push(line);
   }
   const unambiguousPorts = unambiguousPortMappings(portMappings);
-  return composeWithBindingPlaceholders(
+  const materialized = composeWithBindingPlaceholders(
     composeWithPreviewPublicOrigins(
       result.join("\n"),
       portMappings,
@@ -130,6 +131,7 @@ export async function composeWithAllocatedHostPorts(compose: string) {
     portMappings,
     unambiguousPorts,
   );
+  return composeWithDeclaredBrowserBindings(materialized, portMappings);
 }
 
 type ComposePortMapping = {
@@ -254,6 +256,142 @@ function composeWithBindingPlaceholders(
     .replace(/__BLAME_PREVIEW_PORT_(\d+)__/g, (match, port: string) =>
       legacyPreviewPortPlaceholder(match, port, unambiguousPorts),
     );
+}
+
+type BindingComposeService = {
+  environment?: Record<string, unknown> | string[];
+  labels?: Record<string, unknown> | string[];
+};
+
+function composeWithDeclaredBrowserBindings(
+  compose: string,
+  portMappings: ComposePortMapping[],
+) {
+  const document = parseYaml(compose) as {
+    services?: Record<string, BindingComposeService>;
+  };
+  const services = document.services ?? {};
+  const replacements = new Map<string, Record<string, string>>();
+  for (const [serviceId, service] of Object.entries(services)) {
+    const labels = normalizedComposeEntries(service.labels);
+    const environment = normalizedComposeEntries(service.environment);
+    const values: Record<string, string> = {};
+    for (const binding of declaredBrowserBindings(labels)) {
+      const endpoint = declaredServiceEndpoint(
+        services[binding.sourceService],
+        binding.sourceEndpoint,
+      );
+      if (!endpoint) continue;
+      const hostPort = servicePort(
+        portMappings,
+        binding.sourceService,
+        endpoint.port,
+      );
+      const current = environment[binding.key];
+      if (!hostPort || !current) continue;
+      values[binding.key] = materializedBrowserBindingValue(
+        binding.format,
+        endpoint.protocol,
+        hostPort,
+        current,
+      );
+    }
+    if (Object.keys(values).length) replacements.set(serviceId, values);
+  }
+  if (!replacements.size) return compose;
+  const lines = compose.split("\n");
+  const servicesLine = serviceSectionLine(lines);
+  if (servicesLine === -1) return compose;
+  return mapServiceBlocks(lines, servicesLine, (block) =>
+    serviceBlockWithEnvironmentReplacements(
+      block.lines,
+      replacements.get(serviceName(block.lines[0])) ?? {},
+    ),
+  ).join("\n");
+}
+
+function declaredBrowserBindings(labels: Record<string, string>) {
+  return Object.keys(labels).flatMap((key) => {
+    const match = /^blame\.binding\.(\d+)\.key$/.exec(key);
+    if (!match) return [];
+    const index = match[1];
+    if (labels[`blame.binding.${index}.exposure`] !== "browser") return [];
+    return [
+      {
+        key: labels[key],
+        sourceService: labels[`blame.binding.${index}.source.service`] ?? "",
+        sourceEndpoint: labels[`blame.binding.${index}.source.endpoint`] ?? "",
+        format: labels[`blame.binding.${index}.format`] ?? "url",
+      },
+    ];
+  });
+}
+
+function declaredServiceEndpoint(
+  service: BindingComposeService | undefined,
+  endpointId: string,
+) {
+  const labels = normalizedComposeEntries(service?.labels);
+  for (const key of Object.keys(labels)) {
+    const match = /^blame\.endpoint\.(\d+)\.id$/.exec(key);
+    if (!match || labels[key] !== endpointId) continue;
+    const port = Number(labels[`blame.endpoint.${match[1]}.port`]);
+    if (!Number.isInteger(port) || port <= 0) return undefined;
+    return {
+      port,
+      protocol: labels[`blame.endpoint.${match[1]}.protocol`] || "http",
+    };
+  }
+  return undefined;
+}
+
+function materializedBrowserBindingValue(
+  format: string,
+  protocol: string,
+  hostPort: number,
+  current: string,
+) {
+  if (format === "host") return "localhost";
+  if (format === "port") return String(hostPort);
+  if (format === "host-port") return `localhost:${hostPort}`;
+  const suffix = /^[a-z]+:\/\/[^/]+(.*)$/i.exec(current)?.[1] ?? "";
+  return `${protocol}://localhost:${hostPort}${suffix}`;
+}
+
+function normalizedComposeEntries(
+  value: Record<string, unknown> | string[] | undefined,
+) {
+  if (!value) return {};
+  if (!Array.isArray(value)) {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, entry]) => [key, String(entry)]),
+    );
+  }
+  return Object.fromEntries(
+    value.map((entry) => {
+      const [key, ...parts] = entry.split("=");
+      return [key, parts.join("=")];
+    }),
+  );
+}
+
+function serviceBlockWithEnvironmentReplacements(
+  lines: string[],
+  replacements: Record<string, string>,
+) {
+  if (!Object.keys(replacements).length) return lines;
+  return lines.map((line) => {
+    for (const [key, value] of Object.entries(replacements)) {
+      const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      if (new RegExp(`^\\s{6}${escapedKey}:`).test(line)) {
+        return `      ${key}: ${JSON.stringify(value)}`;
+      }
+      if (new RegExp(`^\\s{6}-\\s*${escapedKey}=`).test(line)) {
+        return `      - ${key}=${value}`;
+      }
+    }
+    return line;
+  });
 }
 
 function previewOriginPlaceholder(

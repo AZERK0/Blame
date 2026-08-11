@@ -79,6 +79,38 @@ test("materializes typed browser binding placeholders", async () => {
   assert.doesNotMatch(result, /__BLAME_PREVIEW_PORT/);
 });
 
+test("refreshes declared browser bindings when host ports are reallocated", async () => {
+  const compose = [
+    "services:",
+    "  frontend:",
+    "    environment:",
+    '      PUBLIC_API_URL: "http://localhost:41000/api"',
+    "    labels:",
+    '      blame.binding.0.key: "PUBLIC_API_URL"',
+    '      blame.binding.0.source.service: "backend"',
+    '      blame.binding.0.source.endpoint: "http"',
+    '      blame.binding.0.exposure: "browser"',
+    '      blame.binding.0.format: "url"',
+    "  backend:",
+    "    labels:",
+    '      blame.endpoint.0.id: "http"',
+    '      blame.endpoint.0.protocol: "http"',
+    '      blame.endpoint.0.port: "3333"',
+    "    ports:",
+    '      - "127.0.0.1::3333"',
+  ].join("\n");
+
+  const result = await composeWithAllocatedHostPorts(compose);
+  const hostPort = /127\.0\.0\.1:(\d+):3333/.exec(result)?.[1];
+
+  assert.ok(hostPort);
+  assert.match(
+    result,
+    new RegExp(`PUBLIC_API_URL: "http://localhost:${hostPort}/api"`),
+  );
+  assert.doesNotMatch(result, /localhost:41000/);
+});
+
 test("keeps ambiguous legacy browser placeholders unresolved", async () => {
   const compose = [
     "services:",

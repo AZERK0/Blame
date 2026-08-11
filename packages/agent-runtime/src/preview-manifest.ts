@@ -58,6 +58,9 @@ export function normalizePreviewManifestWithPreferences(
   const services = manifest.services.map((service) =>
     normalizeService(service, caches),
   );
+  const normalizedServices = services.map((service) =>
+    normalizeServiceBindings(service, services),
+  );
   const normalized = {
     ...manifest,
     project: {
@@ -71,14 +74,15 @@ export function normalizePreviewManifestWithPreferences(
       command: commandWithLocalCorepackShims(task.command),
       runAs: task.runAs ?? defaultSetupRunAs(task.command),
       environment: normalizedEnvironment(
-        normalizedAppEnvironment(task.environment ?? {}),
+        normalizedAppEnvironment({
+          ...inheritedSetupTaskDatabaseEnvironment(task, normalizedServices),
+          ...(task.environment ?? {}),
+        }),
         caches,
       ),
       dependsOn: uniqueStrings(task.dependsOn ?? []),
     })),
-    services: services.map((service) =>
-      normalizeServiceBindings(service, services),
-    ),
+    services: normalizedServices,
     caches,
     risks: manifest.risks,
   };
@@ -288,6 +292,38 @@ function databaseImage(image: string) {
 
 function setupTaskTouchesDatabase(task: PreviewManifestSetupTask) {
   return /\bmigrat(?:e|ion|ions)\b/i.test(task.command);
+}
+
+function inheritedSetupTaskDatabaseEnvironment(
+  task: PreviewManifestSetupTask,
+  services: PreviewManifestService[],
+) {
+  if (!setupTaskTouchesDatabase(task)) return {};
+  const workingDir = task.workingDir || "/workspace";
+  const dependencyIds = new Set(task.dependsOn ?? []);
+  const candidates = services
+    .filter(
+      (service) =>
+        service.workingDir === workingDir &&
+        Object.keys(service.environment ?? {}).some(databaseEnvironmentKey),
+    )
+    .sort(
+      (left, right) =>
+        sharedDependencyCount(right, dependencyIds) -
+        sharedDependencyCount(left, dependencyIds),
+    );
+  return Object.fromEntries(
+    Object.entries(candidates[0]?.environment ?? {}).filter(([key]) =>
+      databaseEnvironmentKey(key),
+    ),
+  );
+}
+
+function sharedDependencyCount(
+  service: PreviewManifestService,
+  dependencyIds: Set<string>,
+) {
+  return (service.dependsOn ?? []).filter((id) => dependencyIds.has(id)).length;
 }
 
 function withoutDatabaseEnvironment(
@@ -533,7 +569,7 @@ function composeYaml(manifest: PreviewManifest) {
   );
   const services = [
     ...volumeInitService(manifest.caches),
-    ...manifest.setup.flatMap((task) => setupTaskYaml(task, manifest.caches)),
+    ...manifest.setup.flatMap((task) => setupTaskYaml(task, manifest)),
     ...manifest.services.flatMap((service) =>
       serviceYaml(service, manifest, manifest.caches, runtimeServiceIds),
     ),
@@ -586,14 +622,17 @@ function entrypointYaml(entrypoint: string[] | undefined) {
 
 function setupTaskYaml(
   task: PreviewManifestSetupTask,
-  caches: PreviewManifestCache[],
+  manifest: PreviewManifest,
 ) {
+  const caches = manifest.caches;
   return [
     `  ${task.id}:`,
     ...containerYaml(task.container),
     ...entrypointYaml(task.entrypoint),
     `    working_dir: ${yamlString(task.workingDir ?? "/workspace")}`,
-    `    command: ${yamlString(`sh -lc ${shellQuote(setupTaskCommand(task))}`)}`,
+    `    command: ${yamlString(
+      `sh -lc ${shellQuote(setupTaskCommand(task, manifest.services))}`,
+    )}`,
     "    labels:",
     `      blame.setup: "true"`,
     ...environmentYaml(task.environment ?? {}),
@@ -607,7 +646,7 @@ function setupTaskYaml(
           ]
         : []),
       ...(task.dependsOn ?? []).map((id) =>
-        dependsOnEntry(id, "service_completed_successfully"),
+        dependsOnEntry(id, setupDependencyCondition(id, manifest)),
       ),
     ]),
     ...volumeYaml(caches, true),
@@ -886,6 +925,13 @@ function serviceDependencyCondition(
   return serviceHasHealthcheck(dependency) ? "service_healthy" : undefined;
 }
 
+function setupDependencyCondition(id: string, manifest: PreviewManifest) {
+  if (manifest.setup.some((task) => task.id === id)) {
+    return "service_completed_successfully";
+  }
+  return serviceDependencyCondition(id, manifest.services);
+}
+
 function serviceHasHealthcheck(service: PreviewManifestService) {
   return !!serviceHealthcheckYaml(service).length;
 }
@@ -968,12 +1014,32 @@ function setupTaskRunsAsRoot(task: PreviewManifestSetupTask) {
   return task.runAs === "root";
 }
 
-function setupTaskCommand(task: PreviewManifestSetupTask) {
-  if (!setupTaskRunsAsRoot(task)) return task.command;
-  return [
+function setupTaskCommand(
+  task: PreviewManifestSetupTask,
+  services: PreviewManifestService[],
+) {
+  const commands = [
+    ...setupDependencyWaitCommands(task, services),
     task.command,
-    "find /workspace -maxdepth 1 \\( -name .nuxt -o -name .next -o -name .vite -o -name node_modules \\) -exec chown -R 0:0 {} +",
-  ].join(" && ");
+  ];
+  if (setupTaskRunsAsRoot(task)) {
+    commands.push(
+      "find /workspace -maxdepth 1 \\( -name .nuxt -o -name .next -o -name .vite -o -name node_modules \\) -exec chown -R 0:0 {} +",
+    );
+  }
+  return commands.join(" && ");
+}
+
+function setupDependencyWaitCommands(
+  task: PreviewManifestSetupTask,
+  services: PreviewManifestService[],
+) {
+  if (!nodeImage(containerImage(task.container))) return [];
+  return (task.dependsOn ?? [])
+    .map((id) => services.find((service) => service.id === id))
+    .map(dependencyWaitTarget)
+    .filter((target): target is { host: string; port: number } => !!target)
+    .map((target) => waitForTcpCommand(target.host, target.port));
 }
 
 function workspacePermissionRepairCommand(command: string) {

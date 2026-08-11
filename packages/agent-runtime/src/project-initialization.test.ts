@@ -143,6 +143,55 @@ test("generates artifacts only from the canonical unversioned manifest", () => {
   );
 });
 
+test("waits for long-running setup dependencies without treating them as one-shot tasks", () => {
+  const input = canonicalResult();
+  input.previewManifest.services.unshift({
+    id: "db",
+    kind: "dependency",
+    container: { image: "mysql:8.0" },
+    environment: {
+      MYSQL_DATABASE: "app",
+      MYSQL_ROOT_PASSWORD: "secret",
+    },
+    endpoints: [{ id: "mysql", protocol: "tcp", port: 3306 }],
+  });
+  const api = input.previewManifest.services.find(({ id }) => id === "api")!;
+  api.dependsOn = ["db"];
+  api.environment = {
+    DB_DATABASE: "app",
+    DB_HOST: "db",
+    DB_PASSWORD: "secret",
+    DB_PORT: "3306",
+    DB_USER: "app",
+  };
+  input.previewManifest.setup.push({
+    id: "migrations",
+    container: { image: "node:22-bookworm" },
+    workingDir: "/workspace",
+    command: "node migrate.js",
+    dependsOn: ["deps", "db"],
+  });
+
+  const result = parseProjectInitializationPayload(input, undefined, {
+    database: { mode: "compose" },
+  });
+
+  assert.match(
+    result.dockerCompose,
+    /migrations:[\s\S]*deps:\n\s+condition: service_completed_successfully/,
+  );
+  assert.match(
+    result.dockerCompose,
+    /migrations:[\s\S]*db:\n\s+condition: service_healthy/,
+  );
+  assert.match(
+    result.dockerCompose,
+    /migrations:[\s\S]*const host=\\?"db\\?"[\s\S]*const port=3306/,
+  );
+  assert.match(result.dockerCompose, /migrations:[\s\S]*DB_HOST: "db"/);
+  assert.match(result.dockerCompose, /migrations:[\s\S]*DB_PORT: "3306"/);
+});
+
 test("normalizes pnpm serve options and browser-only dependencies", () => {
   const input = canonicalResult();
   const app = input.previewManifest.services[1]!;

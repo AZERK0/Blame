@@ -97,6 +97,14 @@ import {
 } from "./preview-compose-validation";
 import { previewContainerFailure } from "./preview-readiness";
 import {
+  composeRuntimeServiceClosure,
+  composeServiceHealthcheckCommand,
+  composeSetupTaskEnvironment,
+  previewComposePlan,
+  type PreviewComposeConfig as ComposeConfig,
+  type PreviewComposeService as ComposeService,
+} from "./preview-compose-plan";
+import {
   initialPreviewRuntimeSelection,
   normalizeStoredRunConfigurations,
   previewRunConfigurationStatus,
@@ -207,6 +215,9 @@ const previewResponseTimeoutMs = 120_000;
 const previewRequestTimeoutMs = 5_000;
 const previewStopTimeoutSeconds = 3;
 const containerMetadataTimeoutMs = 15_000;
+const composeStartTimeoutMs = 10 * 60_000;
+const composeSetupTimeoutMs = 15 * 60_000;
+const setupDependencyReadinessTimeoutMs = 90_000;
 const repositoryLanguageCohorts = new Set([
   "c",
   "cpp",
@@ -373,31 +384,6 @@ type EnsureProjectPreviewUrlInput = ExecutionContextInput &
     workspaceMode?: WorkspaceMode;
   };
 
-type ComposeService = {
-  command?: string | string[];
-  depends_on?: Record<string, { condition?: string } | string> | string[];
-  image?: string;
-  labels?: Record<string, string> | string[];
-  ports?: Array<{
-    mode?: string;
-    protocol?: string;
-    published?: string | number;
-    target?: string | number;
-  }>;
-  volumes?: Array<
-    | string
-    | {
-        source?: string;
-        target?: string;
-        type?: string;
-      }
-  >;
-};
-
-type ComposeConfig = {
-  services?: Record<string, ComposeService>;
-};
-
 type RuntimeContainer = {
   Config?: {
     Env?: string[];
@@ -496,6 +482,7 @@ type SetupEnvironment = NodeJS.ProcessEnv & {
 type PreviewRuntimeErrorCode =
   | "preview_container_missing"
   | "preview_container_stopped"
+  | "preview_dependency_timeout"
   | "preview_manifest_invalid"
   | "preview_probe_failed"
   | "preview_probe_unsupported"
@@ -2405,23 +2392,33 @@ async function runProjectComposeUp(worktree: string) {
   const config = await timedRecoveryStep(worktree, "compose config", () =>
     composeConfig(worktree, projectComposePath(worktree)),
   );
-  const setupServices = await timedRecoveryStep(
-    worktree,
-    "compose setup services",
-    () => runSetupTaskServices(worktree, config),
-  );
-  const completedServices = await timedRecoveryStep(
-    worktree,
-    "compose completed dependencies",
-    () => runCompletedDependencyServices(worktree, config, setupServices),
-  );
-  const services = runtimeServices(
-    config,
-    new Set([...setupServices, ...completedServices]),
-  );
+  const plan = previewComposePlan(config);
   const selectedServices = await selectedComposeRuntimeServices(
     worktree,
-    services,
+    plan.runtimeServices,
+  );
+  const runtimeContainers = composeRuntimeServiceClosure(
+    config,
+    uniqueStrings([...plan.setupRuntimeDependencies, ...selectedServices]),
+  );
+  await timedRecoveryStep(worktree, "compose reset runtime containers", () =>
+    resetProjectComposeRuntimeContainers(worktree, runtimeContainers),
+  );
+  await timedRecoveryStep(worktree, "compose one-shot dependencies", () =>
+    runCompletedDependencyServices(worktree, config, plan.oneShotDependencies),
+  );
+  await timedRecoveryStep(worktree, "compose runtime containers", () =>
+    createProjectComposeRuntimeContainers(worktree, runtimeContainers),
+  );
+  await timedRecoveryStep(worktree, "compose setup dependencies", () =>
+    startSetupRuntimeDependencies(
+      worktree,
+      config,
+      plan.setupRuntimeDependencies,
+    ),
+  );
+  await timedRecoveryStep(worktree, "compose setup services", () =>
+    runSetupTaskServices(worktree, config, plan.setupTasks),
   );
   if (!selectedServices.length) return;
   await timedRecoveryStep(worktree, "compose log stream", () =>
@@ -2430,18 +2427,10 @@ async function runProjectComposeUp(worktree: string) {
   await timedRecoveryStep(worktree, "compose runtime services", () =>
     runComposeWithRetry(
       worktree,
-      [
-        ...args,
-        "up",
-        "-d",
-        "--pull",
-        "missing",
-        "--force-recreate",
-        "--remove-orphans",
-        ...selectedServices,
-      ],
+      [...args, "start", ...runtimeContainers],
       composeUpRetryDelaysMs,
       "compose start",
+      composeStartTimeoutMs,
     ),
   );
 }
@@ -2461,8 +2450,11 @@ async function selectedComposeRuntimeServices(
   );
 }
 
-async function runSetupTaskServices(worktree: string, config: ComposeConfig) {
-  const services = setupTaskServices(config);
+async function runSetupTaskServices(
+  worktree: string,
+  config: ComposeConfig,
+  services = setupTaskServices(config),
+) {
   for (const service of services) {
     const serviceConfig = config.services?.[service];
     if (
@@ -2477,7 +2469,7 @@ async function runSetupTaskServices(worktree: string, config: ComposeConfig) {
       continue;
     }
     await timedRecoveryStep(worktree, `compose setup service ${service}`, () =>
-      runProjectComposeSetupService(worktree, service),
+      runProjectComposeSetupService(worktree, service, config),
     );
     if (serviceConfig)
       await timedRecoveryStep(
@@ -2492,11 +2484,8 @@ async function runSetupTaskServices(worktree: string, config: ComposeConfig) {
 async function runCompletedDependencyServices(
   worktree: string,
   config: ComposeConfig,
-  skippedServices = new Set<string>(),
+  services: string[],
 ) {
-  const services = completedDependencyServices(config).filter(
-    (service) => !skippedServices.has(service),
-  );
   for (const service of services) {
     if (
       skippableDependencyInitService(service) &&
@@ -2515,10 +2504,105 @@ async function runCompletedDependencyServices(
     await timedRecoveryStep(
       worktree,
       `compose dependency service ${service}`,
-      () => runProjectComposeService(worktree, service),
+      () => runProjectComposeOneShotService(worktree, service),
     );
   }
   return new Set(services);
+}
+
+async function startSetupRuntimeDependencies(
+  worktree: string,
+  config: ComposeConfig,
+  services: string[],
+) {
+  if (!services.length) return;
+  await runComposeWithRetry(
+    worktree,
+    [...composeArgs(worktree), "start", ...services],
+    composeUpRetryDelaysMs,
+    "compose setup dependencies",
+    composeStartTimeoutMs,
+  );
+  for (const service of services) {
+    await waitForComposeServiceReadiness(
+      worktree,
+      service,
+      config.services?.[service],
+    );
+  }
+}
+
+async function createProjectComposeRuntimeContainers(
+  worktree: string,
+  services: string[],
+) {
+  if (!services.length) return;
+  await runComposeWithRetry(
+    worktree,
+    [...composeArgs(worktree), "create", "--pull", "missing", ...services],
+    composeUpRetryDelaysMs,
+    "compose create",
+    composeStartTimeoutMs,
+  );
+}
+
+async function resetProjectComposeRuntimeContainers(
+  worktree: string,
+  services: string[],
+) {
+  if (!services.length) return;
+  await containerRuntime.compose(
+    [
+      ...composeArgs(worktree),
+      "rm",
+      "--force",
+      "--stop",
+      "--volumes",
+      ...services,
+    ],
+    {
+      cwd: worktree,
+      env: await setupEnvironment(worktree),
+      timeoutMs: composeStartTimeoutMs,
+    },
+  );
+}
+
+async function waitForComposeServiceReadiness(
+  worktree: string,
+  service: string,
+  config: ComposeService | undefined,
+) {
+  const healthcheck = composeServiceHealthcheckCommand(config);
+  if (!healthcheck) return;
+  const deadline = Date.now() + setupDependencyReadinessTimeoutMs;
+  let attempts = 0;
+  while (Date.now() < deadline) {
+    attempts += 1;
+    try {
+      await containerRuntime.compose(
+        [...composeArgs(worktree), "exec", "-T", service, ...healthcheck],
+        {
+          cwd: worktree,
+          env: await setupEnvironment(worktree),
+          timeoutMs: containerMetadataTimeoutMs,
+        },
+      );
+      await appendRecoveryLog(
+        worktree,
+        `dependency ${service} ready after ${attempts} attempt${attempts === 1 ? "" : "s"}`,
+      );
+      return;
+    } catch {
+      if (await previewRuntimeStopped(worktree)) return;
+      await delay(previewStartupIntervalMs);
+    }
+  }
+  await appendComposeDiagnostics(worktree);
+  throw new PreviewRuntimeError(
+    "preview_dependency_timeout",
+    `Preview dependency ${service} did not become ready within ${setupDependencyReadinessTimeoutMs / 1_000} seconds`,
+  );
 }
 
 function skippableDependencyInitService(service: string) {
@@ -2643,116 +2727,103 @@ function composeVolume(volume: NonNullable<ComposeService["volumes"]>[number]) {
   return { source, target };
 }
 
-async function runProjectComposeService(worktree: string, service: string) {
+async function runProjectComposeOneShotService(
+  worktree: string,
+  service: string,
+) {
   const result = await containerRuntime.compose(
     [...composeArgs(worktree), "up", service],
-    { cwd: worktree, env: await setupEnvironment(worktree) },
+    {
+      cwd: worktree,
+      env: await setupEnvironment(worktree),
+      timeoutMs: composeSetupTimeoutMs,
+    },
   );
   if (result.stdout) await appendRecoveryLog(worktree, result.stdout.trimEnd());
   if (result.stderr) await appendRecoveryLog(worktree, result.stderr.trimEnd());
+  const container = (await composeProjectContainers(worktree)).find(
+    (candidate) => runtimeContainerService(candidate) === service,
+  );
+  const exitCode = container?.State?.ExitCode;
+  if (exitCode !== 0) {
+    throw new Error(
+      `Preview dependency task ${service} exited with code ${exitCode ?? "unknown"}`,
+    );
+  }
 }
 
 async function runProjectComposeSetupService(
   worktree: string,
   service: string,
+  config: ComposeConfig,
 ) {
-  const result = await containerRuntime.compose(
-    [
-      ...composeArgs(worktree),
-      "run",
-      "--rm",
-      "--no-deps",
-      "--interactive=false",
-      service,
-    ],
-    { cwd: worktree, env: await setupEnvironment(worktree) },
-  );
-  if (result.stdout) await appendRecoveryLog(worktree, result.stdout.trimEnd());
-  if (result.stderr) await appendRecoveryLog(worktree, result.stderr.trimEnd());
+  const environment = composeSetupTaskEnvironment(config, service);
+  const containerName = setupTaskContainerName(service);
+  try {
+    const result = await containerRuntime.compose(
+      [
+        ...composeArgs(worktree),
+        "run",
+        "--name",
+        containerName,
+        "--no-deps",
+        "--interactive=false",
+        ...Object.entries(environment).flatMap(([key, value]) => [
+          "--env",
+          `${key}=${value}`,
+        ]),
+        service,
+      ],
+      {
+        cwd: worktree,
+        env: await setupEnvironment(worktree),
+        timeoutMs: composeSetupTimeoutMs,
+      },
+    );
+    if (result.stdout)
+      await appendRecoveryLog(worktree, result.stdout.trimEnd());
+    if (result.stderr)
+      await appendRecoveryLog(worktree, result.stderr.trimEnd());
+    const [container] = await containerRuntime.inspect<RuntimeContainer>(
+      [containerName],
+      { timeoutMs: containerMetadataTimeoutMs },
+    );
+    const exitCode = container?.State?.ExitCode;
+    if (exitCode !== 0) {
+      throw new Error(
+        `Preview setup task ${service} exited with code ${exitCode ?? "unknown"}`,
+      );
+    }
+  } finally {
+    await removeSetupTaskContainer(worktree, containerName);
+  }
+}
+
+function setupTaskContainerName(service: string) {
+  const id = service.replace(/[^a-zA-Z0-9_.-]/g, "-").slice(0, 24);
+  return `blame-setup-${id}-${randomUUID().slice(0, 8)}`;
+}
+
+async function removeSetupTaskContainer(
+  worktree: string,
+  containerName: string,
+) {
+  try {
+    await containerRuntime.container(["rm", "--force", containerName], {
+      cwd: worktree,
+      env: await setupEnvironment(worktree),
+      timeoutMs: containerMetadataTimeoutMs,
+    });
+  } catch (error) {
+    await appendRecoveryLog(
+      worktree,
+      `setup container cleanup failed: ${errorMessage(error).trim()}`,
+    );
+  }
 }
 
 function setupTaskServices(config: ComposeConfig) {
-  const services = Object.entries(config.services ?? {})
-    .filter(([, service]) => serviceLabels(service)["blame.setup"] === "true")
-    .map(([service]) => service);
-  return sortServicesByCompletedDependencies(services, config);
-}
-
-function sortServicesByCompletedDependencies(
-  services: string[],
-  config: ComposeConfig,
-) {
-  const serviceSet = new Set(services);
-  const sorted: string[] = [];
-  const visiting = new Set<string>();
-  const visited = new Set<string>();
-  for (const service of services) {
-    visitCompletedDependencyService(
-      service,
-      config,
-      serviceSet,
-      sorted,
-      visiting,
-      visited,
-    );
-  }
-  return sorted;
-}
-
-function visitCompletedDependencyService(
-  service: string,
-  config: ComposeConfig,
-  serviceSet: Set<string>,
-  sorted: string[],
-  visiting: Set<string>,
-  visited: Set<string>,
-) {
-  if (visited.has(service) || visiting.has(service)) return;
-  visiting.add(service);
-  const dependencies = serviceDependsOnCompletedServices(
-    config.services?.[service] ?? {},
-  );
-  for (const dependency of dependencies) {
-    if (serviceSet.has(dependency)) {
-      visitCompletedDependencyService(
-        dependency,
-        config,
-        serviceSet,
-        sorted,
-        visiting,
-        visited,
-      );
-    }
-  }
-  visiting.delete(service);
-  visited.add(service);
-  sorted.push(service);
-}
-
-function runtimeServices(config: ComposeConfig, setupServices: Set<string>) {
-  return Object.keys(config.services ?? {}).filter(
-    (service) => !setupServices.has(service),
-  );
-}
-
-function completedDependencyServices(config: ComposeConfig) {
-  return uniqueStrings(
-    Object.values(config.services ?? {}).flatMap((service) =>
-      serviceDependsOnCompletedServices(service),
-    ),
-  );
-}
-
-function serviceDependsOnCompletedServices(service: ComposeService) {
-  const dependsOn = service.depends_on;
-  if (!dependsOn || Array.isArray(dependsOn)) return [];
-  return Object.entries(dependsOn)
-    .filter(
-      ([, value]) =>
-        typeof value === "object" &&
-        value?.condition === "service_completed_successfully",
-    )
-    .map(([service]) => service);
+  return previewComposePlan(config).setupTasks;
 }
 
 function uniqueStrings(values: string[]) {
@@ -2782,6 +2853,7 @@ async function runComposeWithRetry(
   args: string[],
   retryDelays: number[],
   label: string,
+  timeoutMs = composeStartTimeoutMs,
 ) {
   let cleanupAttempted = false;
   for (let attempt = 0; ; attempt += 1) {
@@ -2790,6 +2862,7 @@ async function runComposeWithRetry(
       await containerRuntime.compose(args, {
         cwd: worktree,
         env: await setupEnvironment(worktree),
+        timeoutMs,
       });
       await appendTimingLog(
         worktree,
@@ -3243,11 +3316,7 @@ async function composeRunConfigurationServiceIds(
 }
 
 function composeRuntimeServices(config: ComposeConfig) {
-  const completed = new Set([
-    ...setupTaskServices(config),
-    ...completedDependencyServices(config),
-  ]);
-  return runtimeServices(config, completed);
+  return previewComposePlan(config).runtimeServices;
 }
 
 function composeServiceDependencies(service: ComposeService | undefined) {
