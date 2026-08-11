@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { createServer } from "node:net";
-import { parse as parseYaml } from "yaml";
+import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 
 export function dockerComposeForPreview(
   compose: string,
@@ -259,9 +259,127 @@ function composeWithBindingPlaceholders(
 }
 
 type BindingComposeService = {
+  depends_on?: Record<string, { condition?: string } | string> | string[];
   environment?: Record<string, unknown> | string[];
+  healthcheck?: unknown;
   labels?: Record<string, unknown> | string[];
 };
+
+const frameworkServerBindingPairs = [
+  {
+    browserKey: "NUXT_PUBLIC_API_BASE_URL",
+    serverKey: "NUXT_API_BASE_URL",
+  },
+] as const;
+
+/**
+ * Migrates generated Compose artifacts whose framework server consumes the
+ * same backend as browser code. Older initialization results sometimes kept
+ * only the public binding, which leaves SSR/proxy requests targeting an
+ * unreachable host and excludes the backend from the runtime closure.
+ */
+export function composeWithFrameworkServerBindings(compose: string) {
+  const document = parseYaml(compose) as {
+    services?: Record<string, BindingComposeService>;
+  };
+  const services = document.services ?? {};
+  let changed = false;
+  for (const [serviceId, service] of Object.entries(services)) {
+    const labels = normalizedComposeEntries(service.labels);
+    const environment = normalizedComposeEntries(service.environment);
+    for (const pair of frameworkServerBindingPairs) {
+      const browserBinding = declaredBrowserBindings(labels).find(
+        ({ key }) => key === pair.browserKey,
+      );
+      if (!browserBinding || browserBinding.sourceService === serviceId) {
+        continue;
+      }
+      if (declaredBindingKeys(labels).has(pair.serverKey)) continue;
+      const endpoint = declaredServiceEndpoint(
+        services[browserBinding.sourceService],
+        browserBinding.sourceEndpoint,
+      );
+      if (!endpoint || endpoint.protocol === "tcp") continue;
+      const current = environment[browserBinding.key];
+      if (!current) continue;
+      const value = materializedServerBindingValue(
+        browserBinding.format,
+        endpoint.protocol,
+        browserBinding.sourceService,
+        endpoint.port,
+        current,
+      );
+      service.environment = composeEntriesWithValues(service.environment, {
+        [pair.serverKey]: value,
+      });
+      const index = nextBindingIndex(labels);
+      service.labels = composeEntriesWithValues(service.labels, {
+        [`blame.binding.${index}.key`]: pair.serverKey,
+        [`blame.binding.${index}.source.service`]: browserBinding.sourceService,
+        [`blame.binding.${index}.source.endpoint`]:
+          browserBinding.sourceEndpoint,
+        [`blame.binding.${index}.exposure`]: "server",
+        [`blame.binding.${index}.format`]: browserBinding.format,
+      });
+      service.depends_on = composeDependenciesWithService(
+        service.depends_on,
+        browserBinding.sourceService,
+        Boolean(services[browserBinding.sourceService]?.healthcheck),
+      );
+      changed = true;
+    }
+  }
+  return changed ? stringifyYaml(document, { lineWidth: 0 }) : compose;
+}
+
+function declaredBindingKeys(labels: Record<string, string>) {
+  return new Set(
+    Object.entries(labels).flatMap(([key, value]) =>
+      /^blame\.binding\.\d+\.key$/.test(key) ? [value] : [],
+    ),
+  );
+}
+
+function nextBindingIndex(labels: Record<string, string>) {
+  const indices = Object.keys(labels).flatMap((key) => {
+    const match = /^blame\.binding\.(\d+)\.key$/.exec(key);
+    return match ? [Number(match[1])] : [];
+  });
+  return indices.length ? Math.max(...indices) + 1 : 0;
+}
+
+function composeEntriesWithValues(
+  entries: Record<string, unknown> | string[] | undefined,
+  values: Record<string, string>,
+) {
+  if (!Array.isArray(entries)) return { ...(entries ?? {}), ...values };
+  const keys = new Set(Object.keys(values));
+  return [
+    ...entries.filter((entry) => !keys.has(entry.split("=", 1)[0])),
+    ...Object.entries(values).map(([key, value]) => `${key}=${value}`),
+  ];
+}
+
+function composeDependenciesWithService(
+  dependencies:
+    | Record<string, { condition?: string } | string>
+    | string[]
+    | undefined,
+  service: string,
+  healthy: boolean,
+) {
+  if (Array.isArray(dependencies)) {
+    return dependencies.includes(service)
+      ? dependencies
+      : [...dependencies, service];
+  }
+  return {
+    ...(dependencies ?? {}),
+    [service]: dependencies?.[service] ?? {
+      condition: healthy ? "service_healthy" : "service_started",
+    },
+  };
+}
 
 function composeWithDeclaredBrowserBindings(
   compose: string,
@@ -356,6 +474,20 @@ function materializedBrowserBindingValue(
   if (format === "host-port") return `localhost:${hostPort}`;
   const suffix = /^[a-z]+:\/\/[^/]+(.*)$/i.exec(current)?.[1] ?? "";
   return `${protocol}://localhost:${hostPort}${suffix}`;
+}
+
+function materializedServerBindingValue(
+  format: string,
+  protocol: string,
+  host: string,
+  port: number,
+  current: string,
+) {
+  if (format === "host") return host;
+  if (format === "port") return String(port);
+  if (format === "host-port") return `${host}:${port}`;
+  const suffix = /^[a-z]+:\/\/[^/]+(.*)$/i.exec(current)?.[1] ?? "";
+  return `${protocol}://${host}:${port}${suffix}`;
 }
 
 function normalizedComposeEntries(

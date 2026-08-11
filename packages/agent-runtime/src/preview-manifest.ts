@@ -56,7 +56,10 @@ export function normalizePreviewManifestWithPreferences(
 ): PreviewManifest {
   const caches = normalizedCaches(manifest);
   const services = manifest.services.map((service) =>
-    normalizeService(service, caches),
+    normalizeService(
+      serviceWithFrameworkServerBindings(service, manifest.project),
+      caches,
+    ),
   );
   const normalizedServices = services.map((service) =>
     normalizeServiceBindings(service, services),
@@ -90,6 +93,44 @@ export function normalizePreviewManifestWithPreferences(
     previewManifestWithNextWebpackFallback(normalized),
     preferences,
   );
+}
+
+const frameworkServerBindingPairs = [
+  {
+    browserKey: "NUXT_PUBLIC_API_BASE_URL",
+    serverKey: "NUXT_API_BASE_URL",
+    stacks: ["nuxt", "nuxtjs", "nuxt.js"],
+  },
+] as const;
+
+function serviceWithFrameworkServerBindings(
+  service: PreviewManifestService,
+  project: PreviewManifestProject,
+) {
+  if (service.kind !== "preview") return service;
+  const bindings = [...(service.bindings ?? [])];
+  const stacks = new Set(
+    (project.detectedStack ?? []).map((stack) => stack.toLowerCase()),
+  );
+  for (const pair of frameworkServerBindingPairs) {
+    if (!pair.stacks.some((stack) => stacks.has(stack))) continue;
+    if (bindings.some(({ target }) => target.key === pair.serverKey)) {
+      continue;
+    }
+    const browserBinding = bindings.find(
+      ({ exposure, target }) =>
+        exposure === "browser" && target.key === pair.browserKey,
+    );
+    if (!browserBinding) continue;
+    bindings.push({
+      ...browserBinding,
+      target: { type: "environment", key: pair.serverKey },
+      exposure: "server",
+    });
+  }
+  return bindings.length === (service.bindings ?? []).length
+    ? service
+    : { ...service, bindings };
 }
 
 function normalizeServiceBindings(

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   composeWithNonMutatingNpmInstalls,
+  composeWithFrameworkServerBindings,
   composeWithoutNumericSuUser,
   composeWithAllocatedHostPorts,
   dockerComposeForPreview,
@@ -10,6 +11,39 @@ import {
   dockerComposeWithDependencyVolumes,
   dockerComposeWithHostFileMounts,
 } from "./workspace-compose.ts";
+
+test("restores Nuxt server proxy bindings in persisted Compose artifacts", () => {
+  const compose = [
+    "services:",
+    "  frontend:",
+    "    environment:",
+    '      NUXT_PUBLIC_API_BASE_URL: "http://localhost:41000"',
+    "    labels:",
+    '      blame.binding.0.key: "NUXT_PUBLIC_API_BASE_URL"',
+    '      blame.binding.0.source.service: "backend"',
+    '      blame.binding.0.source.endpoint: "http"',
+    '      blame.binding.0.exposure: "browser"',
+    '      blame.binding.0.format: "url"',
+    "  backend:",
+    "    healthcheck:",
+    '      test: ["CMD", "node", "healthcheck.js"]',
+    "    labels:",
+    '      blame.endpoint.0.id: "http"',
+    '      blame.endpoint.0.protocol: "http"',
+    '      blame.endpoint.0.port: "3333"',
+  ].join("\n");
+
+  const result = composeWithFrameworkServerBindings(compose);
+
+  assert.match(result, /NUXT_API_BASE_URL: http:\/\/backend:3333/);
+  assert.match(result, /blame\.binding\.1\.key: NUXT_API_BASE_URL/);
+  assert.match(result, /blame\.binding\.1\.exposure: server/);
+  assert.match(
+    result,
+    /depends_on:\n\s+backend:\n\s+condition: service_healthy/,
+  );
+  assert.equal(composeWithFrameworkServerBindings(result), result);
+});
 
 test("allocates explicit localhost ports for runtime previews", async () => {
   const compose = [

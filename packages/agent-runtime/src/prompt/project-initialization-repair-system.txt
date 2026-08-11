@@ -41,6 +41,7 @@ For `repairable_initialization`:
 - preview services must include an `http` or `https` endpoint with a healthcheck on that endpoint
 - endpoint identity is scoped by service; every binding and probe must name both the source service and endpoint
 - declare typed endpoints and bindings for every topology-derived runtime address
+- preserve or restore server bindings used by SSR and framework proxy routes; a public browser binding alone cannot connect a Nuxt/Nitro server to its backend
 - add a required functional probe for each evidenced frontend-to-backend proxy boundary
 - setup work must live in `previewManifest.setup[]`
 - setup tasks may include `runAs: "root"` only for targeted cleanup or ownership repair of generated workspace artifacts such as `/workspace/.nuxt`, `/workspace/.next`, `/workspace/.vite`, or `/workspace/node_modules`

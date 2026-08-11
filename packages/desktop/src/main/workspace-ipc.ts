@@ -7,13 +7,13 @@ import { BrowserWindow, ipcMain, type IpcMainInvokeEvent } from "electron";
 import {
   commandWithNextWebpackFallback,
   generatePreviewArtifacts,
+  parsePreviewManifest,
   parseRunConfigurations,
   type ExecutionTelemetryCohorts,
   type ProjectPreviewRuntimeState,
   type ProjectRunConfiguration,
 } from "@blame/agent-runtime";
 import {
-  parsePreviewManifest,
   type PreviewManifest,
   type PreviewManifestEndpoint,
   type PreviewManifestProbe,
@@ -123,6 +123,7 @@ import {
 } from "./preview-runtime/local/local-preview-lifecycle.js";
 import {
   composeWithNonMutatingNpmInstalls,
+  composeWithFrameworkServerBindings,
   composeWithRuntimePortPlaceholders,
   composeWithoutNumericSuUser,
   composeWithAllocatedHostPorts,
@@ -4434,7 +4435,9 @@ async function repairComposeFile(
     composeWithNonMutatingNpmInstalls(
       composeWithoutNumericSuUser(
         composeWithRuntimePortPlaceholders(
-          dockerComposeWithPortableWindowsPaths(nextCompose),
+          composeWithFrameworkServerBindings(
+            dockerComposeWithPortableWindowsPaths(nextCompose),
+          ),
           options.reallocatePorts,
         ),
       ),
@@ -4494,7 +4497,9 @@ async function prepareProjectCompose(
     () =>
       composeWithNonMutatingNpmInstalls(
         composeWithoutNumericSuUser(
-          dockerComposeForPreview(compose, worktree, dependencyKey),
+          composeWithFrameworkServerBindings(
+            dockerComposeForPreview(compose, worktree, dependencyKey),
+          ),
         ),
       ),
   );

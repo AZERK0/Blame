@@ -129,6 +129,7 @@ Use `bindings[]` on a consuming service for every runtime address derived from a
 - `source.service` and `source.endpoint` must reference a declared service endpoint.
 - Use `exposure: "server"` for values read inside a container. Blame compiles these to internal service DNS.
 - Use `exposure: "browser"` only for values embedded in browser code. Blame publishes that source endpoint on loopback and compiles the value after allocating the host port.
+- Treat framework server routes, SSR code, and server-side proxies as container consumers. For example, a Nuxt frontend that proxies relative `/api` requests needs a server binding such as `NUXT_API_BASE_URL` even when it also exposes `NUXT_PUBLIC_API_BASE_URL` to browser code.
 - Use `format` to request `url`, `host`, `port`, or `host-port`; default to `url`.
 - Never encode a topology-derived address directly in `environment` when it can be represented as a binding.
 </binding_contract>
