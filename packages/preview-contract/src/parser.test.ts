@@ -162,6 +162,50 @@ test("rejects Docker socket commands and literal secret environments", () => {
   assert.throws(() => parsePreviewManifest(secret), /secret delivery channel/);
 });
 
+test("accepts only public throwaway credentials for isolated databases", () => {
+  const isolated = manifest();
+  isolated.setup[0].environment = {
+    DATABASE_URL: "mysql://blame:blame@database:3306/app",
+    DB_PASSWORD: "blame",
+  };
+  isolated.services.push({
+    id: "database",
+    kind: "dependency",
+    container: { image: "mysql:9" },
+    environment: {
+      MYSQL_DATABASE: "app",
+      MYSQL_PASSWORD: "blame",
+      MYSQL_ROOT_PASSWORD: "blame",
+      MYSQL_USER: "blame",
+    },
+    endpoints: [{ id: "mysql", protocol: "tcp", port: 3306 }],
+  });
+
+  const parsed = parsePreviewManifest(isolated);
+  assert.equal(parsed.setup[0]?.environment?.DB_PASSWORD, "blame");
+
+  for (const value of [
+    "mysql://blame:production-secret@database:3306/app",
+    "mysql://blame:blame@database.example.com:3306/app",
+  ]) {
+    const unsafeUrl = manifest();
+    unsafeUrl.setup[0].environment = { DATABASE_URL: value };
+    assert.throws(
+      () => parsePreviewManifest(unsafeUrl),
+      /secret delivery channel/,
+    );
+  }
+
+  const unsafePassword = manifest();
+  unsafePassword.setup[0].environment = {
+    DB_PASSWORD: "production-secret",
+  };
+  assert.throws(
+    () => parsePreviewManifest(unsafePassword),
+    /secret delivery channel/,
+  );
+});
+
 test("rejects dependency cycles and invalid probes", () => {
   const cycle = manifest();
   cycle.services[0].dependsOn = ["app"];

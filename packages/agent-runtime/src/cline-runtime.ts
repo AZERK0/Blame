@@ -1247,7 +1247,7 @@ export class BlameAgentRuntime {
       "project_initialization",
       () =>
         cline.start({
-          prompt: initializationPrompt(scan, correction),
+          prompt: initializationPrompt(scan, correction, input.preferences),
           config: initializationConfig(input, credential, submitTool),
           interactive: false,
           source: "blame-project-initialization",
@@ -3114,10 +3114,10 @@ function mergeConflictConfig(
 
 function initializationPrompt(
   scan: ProjectInitializationScan,
-  correction?: InitializationCorrection,
+  correction?: InitializationCorrection, preferences?: InitializeProjectInput["preferences"],
 ) {
-  if (!correction) return projectInitializationPrompt(scan);
-  return projectInitializationCorrectionPrompt(scan, correction);
+  if (!correction) return projectInitializationPrompt(scan, preferences);
+  return projectInitializationCorrectionPrompt(scan, correction, preferences);
 }
 
 function codePracticesPrompt(

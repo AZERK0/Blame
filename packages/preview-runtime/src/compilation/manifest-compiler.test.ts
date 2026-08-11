@@ -157,6 +157,31 @@ test("records explicit environment scopes and rejects raw secrets", () => {
   );
 });
 
+test("compiles public throwaway isolated database credentials as literals", () => {
+  const isolated = {
+    ...manifest,
+    setup: [
+      {
+        id: "migrate",
+        container: { image: "node:24" },
+        command: "pnpm migrate",
+        environment: { DB_PASSWORD: "blame" },
+      },
+    ],
+  };
+  const plan = compilePreviewManifest(isolated);
+
+  assert.equal(plan.setup[0]?.environment.DB_PASSWORD, "blame");
+  assert.ok(
+    plan.environmentPlan.entries.some(
+      (entry) =>
+        entry.key === "DB_PASSWORD" &&
+        entry.classification === "non-secret" &&
+        entry.delivery === "literal",
+    ),
+  );
+});
+
 test("orders setup dependencies and keeps them out of the service graph", () => {
   const withSetup = {
     ...manifest,

@@ -11,6 +11,7 @@ import type {
   PreviewExecutionPlan,
   RuntimeSelection,
 } from "@blame/preview-runtime";
+import { isLocalPreviewDatabaseEnvironmentValue } from "@blame/preview-runtime";
 import { runnerError } from "../protocol/runner-errors.js";
 import { measureRunnerPhase } from "../performance-measure.js";
 import {
@@ -444,10 +445,11 @@ function dockerVolumeRoot() {
 function validateComposePlan(plan: PreviewExecutionPlan) {
   for (const item of [...plan.setup, ...plan.services]) {
     if (
-      Object.keys(item.environment).some((key) =>
-        /(TOKEN|SECRET|PASSWORD|PASSWD|PRIVATE_KEY|API_KEY|ACCESS_KEY|CREDENTIAL|AUTH|SESSION_KEY)$/i.test(
-          key,
-        ),
+      Object.entries(item.environment).some(
+        ([key, value]) =>
+          /(?:TOKEN|SECRET|PASSWORD|PASSWD|PRIVATE_KEY|API_KEY|ACCESS_KEY|CREDENTIAL|AUTH|SESSION_KEY)$/i.test(
+            key,
+          ) && !isLocalPreviewDatabaseEnvironmentValue(key, value),
       )
     ) {
       throw runnerError(

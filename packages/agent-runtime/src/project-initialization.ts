@@ -4,6 +4,10 @@ import type {
   ProjectRunConfiguration,
 } from "./types.js";
 import {
+  isDatabaseEnvironmentKey,
+  normalizeLocalPreviewDatabaseEnvironmentValue,
+} from "@blame/preview-contract";
+import {
   generatePreviewArtifacts,
   parsePreviewManifest,
   normalizePreviewManifestWithPreferences,
@@ -284,12 +288,16 @@ export const projectInitializationResultSchema = {
   },
 } as const;
 
-export function projectInitializationPrompt(scan: ProjectInitializationScan) {
+export function projectInitializationPrompt(
+  scan: ProjectInitializationScan,
+  preferences?: ProjectInitializationPreferences,
+) {
   return [
     "Analyze this project scan according to your system instructions.",
     "Call submit_project_initialization exactly once with the complete result.",
     "Do not answer with JSON text.",
     "Use read_files or search_codebase only when a required runtime fact is absent from this evidence.",
+    ...databasePreferencePrompt(preferences),
     `Project evidence: ${JSON.stringify(scan)}`,
   ].join("\n");
 }
@@ -297,9 +305,10 @@ export function projectInitializationPrompt(scan: ProjectInitializationScan) {
 export function projectInitializationCorrectionPrompt(
   scan: ProjectInitializationScan,
   correction: ProjectInitializationCorrection,
+  preferences?: ProjectInitializationPreferences,
 ) {
   return [
-    projectInitializationPrompt(scan),
+    projectInitializationPrompt(scan, preferences),
     "Your previous tool input was rejected by validation.",
     "Call submit_project_initialization again with a complete corrected input.",
     "Do not broaden the analysis and do not read more files.",
@@ -327,7 +336,9 @@ export function parseProjectInitializationPayload(
   if (!parsed.previewManifest) {
     throw new Error("Initialization result is missing previewManifest");
   }
-  const parsedManifest = parsePreviewManifest(parsed.previewManifest);
+  const parsedManifest = parsePreviewManifest(
+    previewManifestWithDatabasePreference(parsed.previewManifest, preferences),
+  );
   const manifest = normalizePreviewManifestWithPreferences(
     parsedManifest,
     preferences,
@@ -904,6 +915,66 @@ function yamlMappingKey(line: string) {
 function truncateCorrectionPayload(value: string) {
   if (value.length <= maxCorrectionPayloadLength) return value;
   return value.slice(0, maxCorrectionPayloadLength);
+}
+
+function databasePreferencePrompt(
+  preferences: ProjectInitializationPreferences | undefined,
+) {
+  if (preferences?.database?.mode === "compose") {
+    return [
+      "Database preference: create an isolated Compose database compatible with the detected project.",
+      'Use the fixed public throwaway value "blame" for every database password variable and embedded database URL password. Never copy credentials from project environment files.',
+    ];
+  }
+  if (preferences?.database?.mode === "existing") {
+    return [
+      "Database preference: use the project's configured database. Do not declare a database dependency service or copy database credentials into the manifest.",
+    ];
+  }
+  return [];
+}
+
+function previewManifestWithDatabasePreference(
+  value: unknown,
+  preferences: ProjectInitializationPreferences | undefined,
+) {
+  const mode = preferences?.database?.mode;
+  if (!mode || !isRecord(value)) return value;
+  return {
+    ...value,
+    setup: adjustedManifestItems(value.setup, mode),
+    services: adjustedManifestItems(value.services, mode),
+  };
+}
+
+function adjustedManifestItems(
+  value: unknown,
+  mode: NonNullable<ProjectInitializationPreferences["database"]>["mode"],
+) {
+  if (!Array.isArray(value)) return value;
+  return value.map((item) => {
+    if (!isRecord(item)) return item;
+    return {
+      ...item,
+      environment: adjustedDatabaseEnvironment(item.environment, mode),
+    };
+  });
+}
+
+function adjustedDatabaseEnvironment(
+  value: unknown,
+  mode: NonNullable<ProjectInitializationPreferences["database"]>["mode"],
+) {
+  if (!isRecord(value) || Array.isArray(value)) return value;
+  const environment: Record<string, unknown> = {};
+  for (const [key, entry] of Object.entries(value)) {
+    if (mode === "existing" && isDatabaseEnvironmentKey(key)) continue;
+    environment[key] =
+      mode === "compose" && typeof entry === "string"
+        ? normalizeLocalPreviewDatabaseEnvironmentValue(key, entry)
+        : entry;
+  }
+  return environment;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

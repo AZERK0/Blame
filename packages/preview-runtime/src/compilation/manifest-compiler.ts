@@ -1,4 +1,5 @@
 import {
+  isLocalPreviewDatabaseEnvironmentValue,
   parsePreviewManifest,
   type PreviewManifest,
   type PreviewManifestEndpoint,
@@ -163,14 +164,14 @@ export function compilePreviewManifest(
 function compileEnvironmentPlan(manifest: PreviewManifest) {
   const entries: EnvironmentPlanEntry[] = [];
   for (const task of manifest.setup) {
-    for (const key of Object.keys(task.environment ?? {})) {
-      assertLiteralEnvironmentKey(key);
+    for (const [key, value] of Object.entries(task.environment ?? {})) {
+      assertLiteralEnvironmentKey(key, value);
       entries.push(environmentEntry(key, "setup", "manifest"));
     }
   }
   for (const service of manifest.services) {
-    for (const key of Object.keys(service.environment ?? {})) {
-      assertLiteralEnvironmentKey(key);
+    for (const [key, value] of Object.entries(service.environment ?? {})) {
+      assertLiteralEnvironmentKey(key, value);
       entries.push({
         ...environmentEntry(key, "service", "manifest"),
         serviceId: service.id,
@@ -207,11 +208,12 @@ function environmentEntry(
   };
 }
 
-function assertLiteralEnvironmentKey(key: string) {
+function assertLiteralEnvironmentKey(key: string, value: string) {
   if (
     /(?:TOKEN|SECRET|PASSWORD|PASSWD|PRIVATE_KEY|API_KEY|ACCESS_KEY|CREDENTIAL|AUTH|SESSION_KEY)$/i.test(
       key,
-    )
+    ) &&
+    !isLocalPreviewDatabaseEnvironmentValue(key, value)
   ) {
     throw new PreviewRuntimeError({
       code: "INVALID_MANIFEST",
