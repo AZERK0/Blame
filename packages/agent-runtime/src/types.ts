@@ -3,7 +3,10 @@ import type {
   Message,
   RestoreResult as ClineRestoreResult,
 } from "@cline/sdk";
-import type { PreviewManifest } from "@blame/preview-contract";
+import type {
+  PreviewLifecycleState,
+  PreviewManifest,
+} from "@blame/preview-contract";
 
 export type ApiConnection = {
   url: string;
@@ -415,12 +418,16 @@ export type ProjectRunConfigurationStatus =
 export type ProjectPreviewRuntimeState = {
   configurations: ProjectRunConfiguration[];
   desiredStatus: "running" | "stopped";
+  lifecycle?: PreviewLifecycleState;
   previewUrl?: string;
   selectedConfigurationId?: string;
   statuses: Record<string, ProjectRunConfigurationStatus>;
 };
 
 export type {
+  PreviewLifecyclePhase,
+  PreviewLifecycleState,
+  PreviewLifecycleStatus,
   PreviewManifest,
   PreviewManifestBinding,
   PreviewManifestBindingSource,

@@ -72,6 +72,12 @@ import { useBacklogRotation } from "@/pages/backlog/use-backlog-rotation"
 import { assessAndRepairProjectInitializationImpact } from "@/pages/backlog/project-initialization-impact"
 import { backlogStatusPipStories } from "@/pages/backlog/backlog-status-pip-snapshot"
 import { activeStory, inactiveStoryFields } from "./story-runtime-state"
+import {
+  abortStoryAgent,
+  deleteUserStoryWithRuntime,
+  removeStoryWorktree,
+  stopStoryProjectSetup,
+} from "./story-runtime-cleanup"
 import { useCloudAuth } from "@/context/cloud-auth"
 import {
   usePlatform,
@@ -1041,6 +1047,13 @@ export function BacklogPage() {
   const runStoryAction = React.useCallback(
     async (story: UserStory, action: BacklogAction) => {
       const currentStory = await detailedStoryForAction(story, action, backlog)
+      if (action === "Delete Permanently")
+        return deleteUserStoryWithRuntime(
+          currentStory,
+          platform,
+          projects.activeProject?.path,
+          backlog.remove
+        )
       if (action === "Send to Dev Agent") {
         const generatedStory = await generateQueuedStoryTitle(
           currentStory,
@@ -1162,7 +1175,15 @@ export function BacklogPage() {
     })
   }, [platform.backlogStatusPip])
   const columnAction = useLatestCallback(runStoryAction)
-  const columnDeleteStory = useLatestCallback(backlog.remove)
+  const deleteStory = useLatestCallback(async (story: UserStory) =>
+    deleteUserStoryWithRuntime(
+      await detailedStory(story, backlog),
+      platform,
+      projects.activeProject?.path,
+      backlog.remove
+    )
+  )
+  const columnDeleteStory = deleteStory
   const columnOpenDrawer = useLatestCallback(openDrawer)
   const columnOpenWorktree = useLatestCallback(openWorktree)
   const columnRejectStory = useLatestCallback(rejectStory)
@@ -1183,7 +1204,7 @@ export function BacklogPage() {
     }
   )
   const createDrawerComment = useLatestCallback(backlog.createComment)
-  const deleteDrawerStory = useLatestCallback(backlog.remove)
+  const deleteDrawerStory = deleteStory
   const updateDrawerStory = useLatestCallback(
     async (story: UserStory, input: UserStoryUpdate) => {
       const nextStory = await updateStory(story, input)
@@ -1684,48 +1705,6 @@ async function stopStoryRuntime(
   ])
 }
 
-async function abortStoryAgent(
-  story: UserStory,
-  platform: ReturnType<typeof usePlatform>
-) {
-  if (!story.clineSessionId) return
-  await platform.agent?.sessions
-    .abort(story.clineSessionId)
-    .catch(() => undefined)
-}
-
-async function stopStoryProjectSetup(
-  story: UserStory,
-  platform: ReturnType<typeof usePlatform>
-) {
-  if (!story.worktree) return false
-  return (
-    (await platform.workspace
-      ?.stopProjectSetup({
-        workspaceMode: story.workspaceMode ?? undefined,
-        worktree: story.worktree,
-      })
-      .catch(() => false)) ?? false
-  )
-}
-
-async function removeStoryWorktree(
-  story: UserStory,
-  platform: ReturnType<typeof usePlatform>,
-  repositoryRoot: string | undefined,
-  projectSetupStopped = false
-) {
-  if (!story.worktree) return
-  if (!repositoryRoot) throw new Error("Unable to resolve repository root.")
-  const removed = await platform.workspace?.removeWorktree({
-    projectSetupStopped,
-    repositoryRoot,
-    workspaceMode: story.workspaceMode ?? undefined,
-    worktree: story.worktree,
-  })
-  if (!removed) throw new Error("Unable to remove worktree.")
-}
-
 async function cleanupMergedStory(
   story: UserStory,
   platform: ReturnType<typeof usePlatform>,
@@ -1834,7 +1813,11 @@ function detailedStoryForAction(
 }
 
 function storyActionRequiresDetail(action: BacklogAction) {
-  return action === "Approve & Merge" || action === "Use Context"
+  return (
+    action === "Approve & Merge" ||
+    action === "Use Context" ||
+    action === "Delete Permanently"
+  )
 }
 
 function statusPipDrawerTarget(

@@ -131,6 +131,7 @@ export type PreviewSessionRecord = {
   endpointMap?: EndpointMap;
   resourceSize: { vcpus: number; memoryGb: number };
   lastActivityAt: string;
+  stateChangedAt: string;
   leaseExpiresAt?: string;
   idleDeadlineAt?: string;
   createdAt: string;

@@ -36,6 +36,12 @@ const routes = {
     tokens: [{"old":"/api/v1/telemetry/session","type":0,"val":"api","end":""},{"old":"/api/v1/telemetry/session","type":0,"val":"v1","end":""},{"old":"/api/v1/telemetry/session","type":0,"val":"telemetry","end":""},{"old":"/api/v1/telemetry/session","type":0,"val":"session","end":""}],
     types: placeholder as Registry['telemetry_sessions.show']['types'],
   },
+  'preview_sessions.preview_sessions.index': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/preview-sessions',
+    tokens: [{"old":"/api/v1/preview-sessions","type":0,"val":"api","end":""},{"old":"/api/v1/preview-sessions","type":0,"val":"v1","end":""},{"old":"/api/v1/preview-sessions","type":0,"val":"preview-sessions","end":""}],
+    types: placeholder as Registry['preview_sessions.preview_sessions.index']['types'],
+  },
   'preview_sessions.preview_sessions.store': {
     methods: ["POST"],
     pattern: '/api/v1/preview-sessions',

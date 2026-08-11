@@ -271,6 +271,65 @@ Avant suspension, Blame exporte un delta durable, révoque les routes actives et
 6. les anciennes capabilities sont invalides ;
 7. les services sélectionnés sont relancés et reprobés.
 
+### 9.4 Traçabilité durable et projection commune
+
+Les axes détaillés `host`, `engine`, `preview`, `agent` et `sync` restent la
+source de vérité du runtime cloud. Chaque transition qui précède ou suit un
+effet provider est enregistrée avant de poursuivre : provisionnement, reprise,
+synchronisation, préparation, démarrage, publication des endpoints, arrêt,
+suspension et destruction. Chaque checkpoint incrémente la révision, actualise
+`stateChangedAt` et produit un événement. Un appel Vercel long ou interrompu ne
+laisse donc plus la session dans son ancien état apparent.
+
+Le desktop et l’interface consomment une projection runtime-neutre :
+
+```text
+idle → provisioning/resuming → synchronizing → preparing → starting
+     → loading → ready → stopping/suspending/destroying → idle/suspended/destroyed
+     ↘ failed
+```
+
+En `local-container`, cette projection est persistée dans l’état runtime du
+worktree avant les effets Compose, puis réconciliée avec les conteneurs et la
+readiness réelle de l’URL. En `vercel-compose`, elle est calculée depuis les
+axes durables de la session. L’interface affiche ainsi les mêmes notions de
+chargement, readiness, arrêt et erreur dans les deux modes sans masquer leur
+différence d’hébergement.
+
+### 9.5 Identité canonique d’une preview de story
+
+L’identité fonctionnelle est `(ownerUserId, userStoryId, profile)`. Le backend
+est la source canonique de la session active ; l’identifiant conservé par le
+desktop n’est qu’un cache. Une reconnexion ou la perte du stockage local résout
+la session par cette identité au lieu de créer une nouvelle Sandbox.
+
+Le service maintient au plus une session non détruite par story et profil. Un
+plan identique réutilise et, si nécessaire, reprend la session existante. Un
+plan différent détruit complètement l’ancienne session avant d’en créer une
+nouvelle. Les clés d’idempotence protègent toujours les reprises de requêtes
+dont la réponse a été perdue.
+
+### 9.6 Suppression d’une user story
+
+La suppression réussit uniquement lorsque toutes les ressources de preview
+sont nettoyées :
+
+1. le desktop marque la story en suppression, désactive l’auto-start et attend
+   toute commande de preview déjà en cours ;
+2. il arrête l’agent et le setup locaux, puis supprime le worktree et ses
+   conteneurs, volumes et réseaux Compose ;
+3. l’API verrouille chaque session et persiste l’état `destroying` ;
+4. elle révoque tickets et routes même si le handle provider a déjà disparu ;
+5. elle détruit la Sandbox et refuse un reçu signalant des ressources encore
+   en attente de nettoyage ;
+6. elle supprime les objets workspace puis leurs lignes d’artefact ;
+7. elle supprime la session, puis seulement la user story.
+
+Si une étape distante échoue, la suppression de la story échoue aussi. La
+session et les lignes d’artefact restent durables avec un échec explicite afin
+qu’une nouvelle tentative puisse terminer le nettoyage ; elles ne sont jamais
+effacées en laissant silencieusement un objet ou une Sandbox orpheline.
+
 ## 10. Caches et performance
 
 La performance ne change pas la fidélité du runtime :

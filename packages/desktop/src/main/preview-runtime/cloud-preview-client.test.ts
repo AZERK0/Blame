@@ -55,6 +55,26 @@ test("accepts only server-issued managed preview session IDs", () => {
   assert.equal(isCloudPreviewSessionId("preview-not-a-server-id"), false);
 });
 
+test("resolves the canonical cloud session by user story", async (context) => {
+  let requestedUrl = "";
+  context.mock.method(globalThis, "fetch", async (url) => {
+    requestedUrl = String(url);
+    return jsonResponse({ session: runningPreviewSession() });
+  });
+  const client = new CloudPreviewClient({
+    token: "a".repeat(32),
+    url: "http://127.0.0.1:3333/api/v1",
+  });
+
+  const result = await client.findForUserStory("story-id", "vercel-compose");
+
+  assert.equal(result.session?.id, runningPreviewSession().id);
+  assert.match(
+    requestedUrl,
+    /preview-sessions\?userStoryId=story-id&profile=vercel-compose$/,
+  );
+});
+
 test("preserves structured provider failures for workspace recovery", async (context) => {
   context.mock.method(
     globalThis,

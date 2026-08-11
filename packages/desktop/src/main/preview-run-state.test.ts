@@ -63,6 +63,18 @@ test("selects the story recommendation before the project default", () => {
   );
 });
 
+test("keeps preview stopped when no run configuration was requested", () => {
+  for (const requestedId of [null, undefined]) {
+    assert.deepEqual(
+      initialPreviewRuntimeSelection(configurations, requestedId),
+      {
+        desiredStatus: "stopped",
+        selectedConfigurationId: "marketing",
+      },
+    );
+  }
+});
+
 test("reports a selected configuration as running from its target service", () => {
   const state = initialPreviewRuntimeSelection(configurations, "app");
   assert.equal(
@@ -199,7 +211,7 @@ test("starts a browser for the selected web preview", () => {
   assert.equal(
     shouldStartBrowserPreview(
       [configuration],
-      initialPreviewRuntimeSelection([configuration], undefined),
+      initialPreviewRuntimeSelection([configuration], configuration.id),
       browserPreviewManifest,
     ),
     true,

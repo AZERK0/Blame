@@ -66,6 +66,16 @@ export function registerPreviewRuntimeIpcHandlers(input: {
     owner(event);
     return input.service.get(requiredSessionId(record(value).sessionId));
   });
+  ipcMain.handle("preview-runtime:find-for-story", (event, value) => {
+    owner(event);
+    const body = record(value);
+    if (body.profile !== "vercel-compose")
+      throw new Error("Managed preview profile is invalid");
+    return input.service.findForUserStory(
+      requiredString(body.userStoryId, "userStoryId", 128),
+      body.profile,
+    );
+  });
   ipcMain.handle("preview-runtime:open-external", (event, value) => {
     owner(event);
     const body = record(value);

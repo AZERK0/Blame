@@ -2,7 +2,7 @@ import type { PreviewSessionView } from "@blame/preview-runtime"
 
 import type { ProjectRunnerPendingOperation } from "@/components/backlog/board/project-runner-types"
 
-type SessionListener = (session: PreviewSessionView) => void
+type SessionListener = (session: PreviewSessionView | undefined) => void
 type PendingOperationListener = (
   operation: ProjectRunnerPendingOperation | undefined
 ) => void
@@ -68,6 +68,19 @@ export function publishCloudPreviewSession(
   if (previous?.id !== current.id) storage.setItem(storageId, current.id)
   listeners.get(storageId)?.forEach((listener) => listener(current))
   return current
+}
+
+export function clearCloudPreviewSession(
+  storage: Pick<Storage, "removeItem">,
+  storageId: string
+) {
+  sessions.delete(storageId)
+  pendingOperations.delete(storageId)
+  storage.removeItem(storageId)
+  listeners.get(storageId)?.forEach((listener) => listener(undefined))
+  pendingOperationListeners
+    .get(storageId)
+    ?.forEach((listener) => listener(undefined))
 }
 
 export function subscribeCloudPreviewSession(

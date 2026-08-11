@@ -65,6 +65,8 @@ export default class PreviewSession extends BaseModel {
   @column.dateTime()
   declare lastActivityAt: DateTime
   @column.dateTime()
+  declare stateChangedAt: DateTime
+  @column.dateTime()
   declare leaseExpiresAt: DateTime | null
   @column.dateTime()
   declare idleDeadlineAt: DateTime | null

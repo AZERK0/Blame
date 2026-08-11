@@ -1,11 +1,7 @@
 import * as React from "react"
 import { toast } from "sonner"
 import { taskComplexityBucket } from "@blame/agent-runtime/telemetry-cohorts"
-import type {
-  AgentEvent,
-  PreviewManifest,
-  RepairProjectInitializationResult,
-} from "@blame/agent-runtime"
+import type { AgentEvent, PreviewManifest } from "@blame/agent-runtime"
 
 import type {
   UserStory,
@@ -43,11 +39,7 @@ import type { useBacklogStore } from "@/components/backlog/data/backlog-store"
 import { storyPreviewDevtoolsScope } from "@/components/backlog/shared/preview-devtools-scope"
 import { useModelSelection } from "@/components/model/model-selector"
 import { useCloudAuth } from "@/context/cloud-auth"
-import type { CloudProjectInitialization } from "@/context/cloud-auth"
-import type {
-  HostDependencyReport,
-  ProjectSetupEvent,
-} from "@/context/platform"
+import type { HostDependencyReport } from "@/context/platform"
 import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import { createCloudApi } from "@/lib/cloud-api"
@@ -60,8 +52,6 @@ import {
   recordPerformanceEvent,
   recordPerformanceMetric,
 } from "@/lib/performance-diagnostics"
-import { diagnoseAndRepairProjectInitialization } from "./project-initialization-repair"
-import * as projectSetup from "./project-setup-event"
 
 const maxConcurrentDevelopmentStories = 3
 const blockerRetryDelay = 30_000
@@ -73,8 +63,6 @@ const interruptedAgentMessage =
   "Agent interrupted while Blame was offline. Resume when ready."
 const setupToastId = "backlog-rotation-setup"
 const authToastId = "backlog-agent-auth"
-const initializationRepairToastId = "backlog-initialization-repair"
-const initializationRepairFinalToastDuration = 15_000
 const initializationRetryDelay = 5_000
 
 export function useBacklogRotation(
@@ -84,7 +72,6 @@ export function useBacklogRotation(
   const platform = usePlatform()
   const projects = useProjects()
   const selection = useModelSelection({ role: "agent" })
-  const alternativeSelection = useModelSelection({ role: "alternative" })
   const runtimePreference = useRuntimePreference()
   const ensureProjectPreviewUrl = platform.workspace?.ensureProjectPreviewUrl
   const startingStoryIds = React.useRef(new Set<string>())
@@ -99,7 +86,6 @@ export function useBacklogRotation(
   const agentCompletionRecoveryStoryIds = React.useRef(new Set<string>())
   const interruptedAgentRecoveryProjectIds = React.useRef(new Set<string>())
   const interruptedAgentRecoveryStoryIds = React.useRef(new Set<string>())
-  const initializationRepairRunIds = React.useRef(new Set<string>())
   const storiesRef = React.useRef(backlog.stories)
   const [hostDependenciesDialog, setHostDependenciesDialog] =
     React.useState<HostDependenciesDialogState>()
@@ -118,7 +104,6 @@ export function useBacklogRotation(
     previewRecoveryStoryIds.current.clear()
     agentCompletionRecoveryStoryIds.current.clear()
     interruptedAgentRecoveryStoryIds.current.clear()
-    initializationRepairRunIds.current.clear()
   }, [projects.activeProject?.id, selection.currentModel?.id])
 
   React.useEffect(
@@ -190,13 +175,13 @@ export function useBacklogRotation(
       title: detailedStory.title,
     })
     await backlog.update(detailedStory, {
-      agentLastEvent: "Project preview setup starting.",
+      agentLastEvent: "Worktree ready.",
       branch: worktree.branch,
       status: "in-progress",
       workspaceMode: worktree.workspaceMode,
       worktree: worktree.worktree,
     })
-    const setupPromise = workspace.runProjectSetup({
+    const preparationPromise = workspace.prepareProjectPreview({
       executionId,
       storyId,
       telemetryCohorts,
@@ -232,20 +217,27 @@ export function useBacklogRotation(
       storyId,
     })
     void sessionPromise.catch(() => undefined)
-    const setup = await setupPromise
-    backlog.setStorySetupInitializing(detailedStory, true)
-    const unsubscribeSetup = workspace.onSetupEvent(setup.runId, (event) => {
-      void handleSetupEvent(
-        detailedStory,
-        setup.runId,
-        event,
-        worktree.worktree,
-        worktree.workspaceMode,
-        initialization,
-        executionId
-      )
-      if (event.type === "exit") unsubscribeSetup()
-    })
+    await preparationPromise
+    if (
+      worktree.workspaceMode === "local-container" &&
+      typeof detailedStory.runConfigurationId === "string" &&
+      workspace.controlProjectPreview
+    ) {
+      void workspace
+        .controlProjectPreview({
+          action: "start",
+          configurationId: detailedStory.runConfigurationId,
+          worktree: worktree.worktree,
+        })
+        .then((runtime) => {
+          if (runtime.previewUrl) {
+            return backlog.update(detailedStory, {
+              previewUrl: runtime.previewUrl,
+            })
+          }
+        })
+        .catch(() => undefined)
+    }
     const session = await sessionPromise
     const run = await backlog.createAgentRun(detailedStory, {
       checkpointRunCount: nextCheckpointRunCount(detailedStory.agentRuns ?? []),
@@ -344,236 +336,6 @@ export function useBacklogRotation(
     }, delay)
   }
 
-  async function persistSetupEvent(
-    story: UserStory,
-    event: ProjectSetupEvent,
-    worktree: string,
-    workspaceMode = story.workspaceMode ?? "local-container"
-  ) {
-    const text = projectSetup.projectSetupEventText(event)
-    const previewUrl = await projectSetup.projectSetupPreviewUrl(
-      event,
-      worktree,
-      workspaceMode,
-      projectPreviewUrl
-    )
-    const recovered = Boolean(
-      workspaceMode === "local-container" &&
-      previewUrl &&
-      projectSetup.projectSetupError(event) &&
-      (await projectRuntimeHealthy(worktree))
-    )
-    if (event.type === "exit") backlog.setStorySetupInitializing(story, false)
-    await backlog.update(story, {
-      agentLastError:
-        projectSetup.projectSetupError(event) && !recovered ? text : undefined,
-      agentLastEvent: recovered
-        ? "Project preview containers are running."
-        : text,
-      previewUrl,
-    })
-    return { recovered }
-  }
-
-  async function handleSetupEvent(
-    story: UserStory,
-    runId: string,
-    event: ProjectSetupEvent,
-    worktree: string,
-    workspaceMode: NonNullable<UserStory["workspaceMode"]>,
-    initialization: CloudProjectInitialization,
-    executionId: string
-  ) {
-    const result = await persistSetupEvent(
-      story,
-      event,
-      worktree,
-      workspaceMode
-    )
-    if (
-      projectSetup.projectSetupError(event) &&
-      event.type === "exit" &&
-      !result.recovered
-    ) {
-      await repairFailedSetup(
-        story,
-        runId,
-        event,
-        worktree,
-        initialization,
-        executionId
-      )
-    }
-  }
-
-  async function repairFailedSetup(
-    story: UserStory,
-    runId: string,
-    event: ProjectSetupEvent,
-    worktree: string,
-    initialization: CloudProjectInitialization,
-    executionId: string
-  ) {
-    if (initializationRepairRunIds.current.has(runId)) return
-    initializationRepairRunIds.current.add(runId)
-    try {
-      toast.loading("Diagnosing failed project initialization", {
-        description: story.title,
-        id: initializationRepairToast(story),
-        position: "bottom-right",
-      })
-      await backlog.update(story, {
-        agentLastEvent: "Diagnosing failed project initialization.",
-      })
-      await diagnoseAndRetryFailedSetup(
-        story,
-        event,
-        worktree,
-        initialization,
-        executionId
-      )
-    } catch (error) {
-      const message = `Initialization diagnosis failed: ${errorMessage(error)}`
-      toast.error("Initialization diagnosis failed", {
-        description: errorMessage(error),
-        duration: initializationRepairFinalToastDuration,
-        id: initializationRepairToast(story),
-        position: "bottom-right",
-      })
-      await backlog.update(story, {
-        agentLastError: message,
-        agentLastEvent: message,
-      })
-    }
-  }
-
-  async function diagnoseAndRetryFailedSetup(
-    story: UserStory,
-    event: ProjectSetupEvent,
-    worktree: string,
-    initialization: CloudProjectInitialization,
-    executionId: string
-  ) {
-    const result = await diagnoseAndRepairProjectInitialization({
-      apiConnection: auth.apiConnection,
-      executionId,
-      platform,
-      projectId: initialization.projectId,
-      providerId: alternativeSelection.currentModel!.provider.id,
-      modelId: alternativeSelection.currentModel!.id,
-      credentialLabel: alternativeSelection.currentModel!.credentialLabel,
-      reasoningEffort: alternativeSelection.currentVariant,
-      worktree,
-      previewManifest: initialization.previewManifest as PreviewManifest | null,
-      setupScript: initialization.setupScript!,
-      storyId: story.id,
-      dockerCompose: initialization.dockerCompose!,
-      runConfigurations: initialization.runConfigurations,
-      launchError: projectSetup.projectSetupEventText(event),
-    })
-    await persistInitializationDiagnosis(story, result)
-    if (!projectSetup.repairArtifacts(result)) {
-      toast.error("Initialization could not be repaired automatically", {
-        description: result.reason,
-        duration: initializationRepairFinalToastDuration,
-        id: initializationRepairToast(story),
-        position: "bottom-right",
-      })
-      return
-    }
-    toast.success("Initialization repaired, retrying preview", {
-      description: result.reason,
-      id: initializationRepairToast(story),
-      position: "bottom-right",
-    })
-    await runRepairedSetup(
-      story,
-      worktree,
-      result.setupScript,
-      result.dockerCompose,
-      result.previewManifest,
-      result.runConfigurations,
-      story.runConfigurationId,
-      executionId
-    )
-  }
-
-  function persistInitializationDiagnosis(
-    story: UserStory,
-    result: RepairProjectInitializationResult
-  ) {
-    return backlog.update(story, {
-      agentLastError:
-        result.classification === "repairable_initialization"
-          ? null
-          : result.reason,
-      agentLastEvent: `Initialization diagnosis: ${result.reason}`,
-    })
-  }
-
-  async function runRepairedSetup(
-    story: UserStory,
-    worktree: string,
-    setupScript: string,
-    dockerCompose: string,
-    previewManifest: PreviewManifest | undefined,
-    runConfigurations:
-      | CloudProjectInitialization["runConfigurations"]
-      | undefined,
-    runConfigurationId: string | null | undefined,
-    executionId: string
-  ) {
-    const workspace = platform.workspace
-    if (!workspace) return
-    backlog.setStorySetupInitializing(story, true)
-    const setup = await workspace.runProjectSetup({
-      executionId,
-      storyId: story.id,
-      worktree,
-      setupScript,
-      dockerCompose,
-      previewManifest,
-      runConfigurations,
-      runConfigurationId,
-      hostDependenciesChecked: true,
-      runtimeProfile: runtimePreference.profile,
-    })
-    const unsubscribe = workspace.onSetupEvent(setup.runId, (event) => {
-      void handleRepairedSetupEvent(story, event, worktree, unsubscribe)
-    })
-  }
-
-  async function handleRepairedSetupEvent(
-    story: UserStory,
-    event: ProjectSetupEvent,
-    worktree: string,
-    unsubscribe: () => void
-  ) {
-    const result = await persistSetupEvent(story, event, worktree)
-    if (event.type !== "exit") return
-    const completed =
-      projectSetup.projectSetupCompleted(event) || result.recovered
-    toast[completed ? "success" : "error"](
-      completed
-        ? "Preview recovered after initialization repair"
-        : "Preview still fails after initialization repair",
-      {
-        duration: initializationRepairFinalToastDuration,
-        id: initializationRepairToast(story),
-        position: "bottom-right",
-      }
-    )
-    unsubscribe()
-  }
-
-  async function projectPreviewUrl(worktree: string) {
-    return platform.workspace?.resolveProjectPreviewUrl?.({ worktree })
-  }
-
-  async function projectRuntimeHealthy(worktree: string) {
-    return platform.workspace?.projectRuntimeHealthy?.({ worktree }) ?? false
-  }
-
   const persistRecoveredPreviewUrl = React.useCallback(
     async (story: UserStory, previewUrl: string | null) => {
       if (!previewUrl || previewUrl === story.previewUrl) return
@@ -585,36 +347,31 @@ export function useBacklogRotation(
   const recoverActivePreviews = React.useCallback(
     (stories: UserStory[]) => {
       if (!ensureProjectPreviewUrl) return
-      stories
-        .filter((story) =>
-          activePreviewStory(story, backlog.setupInitializingStoryIds)
-        )
-        .forEach((story) => {
-          if (!story.worktree || previewRecoveryStoryIds.current.has(story.id))
-            return
-          previewRecoveryStoryIds.current.add(story.id)
-          void ensureProjectPreviewUrl({
-            executionId: crypto.randomUUID(),
-            storyId: story.id,
-            telemetryCohorts: storyTelemetryCohorts(
-              story,
-              story.agentModelId,
-              story.agentProviderId
-            ),
-            workspaceMode:
-              story.workspaceMode ??
-              (runtimePreference.profile === "local-container"
-                ? "local-container"
-                : "cloud-mirror"),
-            worktree: story.worktree,
-          })
-            .then((previewUrl) => persistRecoveredPreviewUrl(story, previewUrl))
-            .catch(() => undefined)
-            .finally(() => previewRecoveryStoryIds.current.delete(story.id))
+      stories.filter(activePreviewStory).forEach((story) => {
+        if (!story.worktree || previewRecoveryStoryIds.current.has(story.id))
+          return
+        previewRecoveryStoryIds.current.add(story.id)
+        void ensureProjectPreviewUrl({
+          executionId: crypto.randomUUID(),
+          storyId: story.id,
+          telemetryCohorts: storyTelemetryCohorts(
+            story,
+            story.agentModelId,
+            story.agentProviderId
+          ),
+          workspaceMode:
+            story.workspaceMode ??
+            (runtimePreference.profile === "local-container"
+              ? "local-container"
+              : "cloud-mirror"),
+          worktree: story.worktree,
         })
+          .then((previewUrl) => persistRecoveredPreviewUrl(story, previewUrl))
+          .catch(() => undefined)
+          .finally(() => previewRecoveryStoryIds.current.delete(story.id))
+      })
     },
     [
-      backlog.setupInitializingStoryIds,
       ensureProjectPreviewUrl,
       persistRecoveredPreviewUrl,
       runtimePreference.profile,
@@ -1278,10 +1035,8 @@ function rotationBlocker(
     return "Desktop worktree runtime is not available."
   if (!platform.workspace.checkHostDependencies)
     return "Desktop host dependency checks are not available."
-  if (!platform.workspace.runProjectSetup)
-    return "Desktop setup runtime is not available."
-  if (!platform.workspace.onSetupEvent)
-    return "Desktop setup events are not available."
+  if (!platform.workspace.prepareProjectPreview)
+    return "Desktop preview preparation is not available."
   if (!model) return "Choose a model before starting queued user stories."
   return undefined
 }
@@ -1359,14 +1114,11 @@ function clineLogRelativePath(sessionId: string) {
   return `.blame/logs/cline-${sessionId}.log`
 }
 
-function activePreviewStory(
-  story: UserStory,
-  setupInitializingStoryIds: Set<string>
-) {
+function activePreviewStory(story: UserStory) {
   return (
     (story.status === "in-progress" || story.status === "in-review") &&
     Boolean(story.worktree) &&
-    !setupInitializingStoryIds.has(story.id)
+    Boolean(story.previewUrl || story.runConfigurationId)
   )
 }
 
@@ -1386,8 +1138,4 @@ function expiredAuthenticationToken(message: string) {
 
 function agentAuthenticationErrorKey(story: UserStory) {
   return `${story.id}:expired-authentication-token`
-}
-
-function initializationRepairToast(story: UserStory) {
-  return `${initializationRepairToastId}-${story.id}`
 }

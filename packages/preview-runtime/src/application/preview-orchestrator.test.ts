@@ -50,7 +50,7 @@ function fixture() {
     eventSink,
     reconciler,
   );
-  return { driver, orchestrator, plan, repository };
+  return { driver, eventSink, orchestrator, plan, repository };
 }
 
 test("requires cloud upload consent", async () => {
@@ -103,7 +103,8 @@ test("falls back to a fresh host when the selected baseline snapshot expired", a
       driver.provisionInputs.push(structuredClone(input));
       throw new PreviewRuntimeError({
         code: "PROVIDER_UNAVAILABLE",
-        message: "Vercel Sandbox baseline-restore failed: Snapshot expired or deleted.",
+        message:
+          "Vercel Sandbox baseline-restore failed: Snapshot expired or deleted.",
         providerCode: "BASELINE_SNAPSHOT_NOT_FOUND",
         retryable: false,
       });
@@ -125,10 +126,10 @@ test("falls back to a fresh host when the selected baseline snapshot expired", a
 
   assert.equal(created.state.host, "running");
   assert.equal(created.baselineId, undefined);
-  assert.deepEqual(driver.provisionInputs.map(({ source }) => source), [
-    { type: "snapshot", snapshotId: "snap_expired" },
-    undefined,
-  ]);
+  assert.deepEqual(
+    driver.provisionInputs.map(({ source }) => source),
+    [{ type: "snapshot", snapshotId: "snap_expired" }, undefined],
+  );
   assert.equal((await repository.get("session"))?.provisionSource, undefined);
 });
 
@@ -172,6 +173,50 @@ test("runs commands idempotently and keeps state axes independent", async () => 
     0,
   );
   assert.equal(driver.calls.filter((call) => call === "endpoints").length, 0);
+});
+
+test("persists long-running preview transitions before provider work completes", async () => {
+  const { driver, eventSink, orchestrator, plan } = fixture();
+  await orchestrator.create({
+    id: "session",
+    userStoryId: "story",
+    ownerUserId: "owner",
+    profile: "vercel-compose",
+    plan,
+    planHash: "hash",
+    cloudUploadConsentAt: new Date().toISOString(),
+  });
+  const startPreview = driver.startPreview.bind(driver);
+  let entered!: () => void;
+  let release!: () => void;
+  const started = new Promise<void>((resolve) => (entered = resolve));
+  const blocked = new Promise<void>((resolve) => (release = resolve));
+  driver.startPreview = async (...input) => {
+    entered();
+    await blocked;
+    return startPreview(...input);
+  };
+
+  const command = orchestrator.command(
+    "session",
+    { type: "start-services", configurationId: "dev" },
+    "start-with-progress",
+  );
+  await started;
+  const preparing = await orchestrator.get("session");
+  assert.equal(preparing.state.engine, "preparing");
+  assert.equal(preparing.state.preview, "opening");
+  assert.ok(Date.parse(preparing.stateChangedAt) > 0);
+
+  release();
+  const ready = await command;
+  assert.equal(ready.state.preview, "ready");
+  const messages: string[] = [];
+  for await (const event of eventSink.events("session")) {
+    messages.push(event.message);
+  }
+  assert.ok(messages.includes("Preparing preview services."));
+  assert.ok(messages.includes("Preview is ready."));
 });
 
 test("does not claim that a managed agent is running without a remote executor", async () => {

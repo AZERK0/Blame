@@ -57,6 +57,10 @@ export class PreviewService {
     return this.cloudClient().get(sessionId);
   }
 
+  findForUserStory(userStoryId: string, profile: "vercel-compose") {
+    return this.cloudClient().findForUserStory(userStoryId, profile);
+  }
+
   events(
     sessionId: string,
     cursor?: string,

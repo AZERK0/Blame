@@ -17,6 +17,7 @@ export function applyPreviewCommand(
   }
   const next = structuredClone(record);
   next.lastActivityAt = new Date().toISOString();
+  next.stateChangedAt = next.lastActivityAt;
   switch (command.type) {
     case "start-services":
       next.desired.host = "active";

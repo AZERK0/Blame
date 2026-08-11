@@ -1,5 +1,7 @@
 import Project from '#models/project'
 import PreviewSession from '#models/preview_session'
+import PreviewWorkspaceArtifact from '#models/preview_workspace_artifact'
+import { workspaceArtifactObjectStorage } from '#services/workspace_artifacts/workspace_artifact_object_storage'
 import User from '#models/user'
 import testUtils from '@adonisjs/core/services/test_utils'
 import { DateTime } from 'luxon'
@@ -359,11 +361,52 @@ test.group('user stories', (group) => {
       failure: null,
       selection: null,
       lastActivityAt: DateTime.utc(),
+      stateChangedAt: DateTime.utc(),
       leaseExpiresAt: null,
       idleDeadlineAt: null,
       stoppedAt: DateTime.utc(),
       createdAt: DateTime.utc(),
     })
+    const artifactObjectKey = `${previewSessionId}/delete-cleanup.tar.gz`
+    const artifact = await PreviewWorkspaceArtifact.create({
+      sessionId: previewSessionId,
+      kind: 'source',
+      mode: 'full',
+      status: 'durable',
+      objectKey: artifactObjectKey,
+      sha256: 'a'.repeat(64),
+      size: 1,
+      sourceRevision: 'source',
+      sanitizedTreeHash: null,
+      lockfileHash: null,
+      workspaceHash: null,
+      baseHash: null,
+      finalHash: null,
+      generation: null,
+      durableAt: DateTime.utc(),
+      appliedAt: null,
+      discardedAt: null,
+      expiresAt: DateTime.utc().plus({ hours: 1 }),
+    })
+    const artifactStorage = workspaceArtifactObjectStorage()
+    await artifactStorage.put(artifactObjectKey, new Uint8Array([1]), {
+      checksumSha256: 'a'.repeat(64),
+      contentType: 'application/gzip',
+      encryptionScope: previewSessionId,
+      serverSideEncryption: 'AES256',
+      size: 1,
+    })
+
+    const previewLookup = await client
+      .get('/api/v1/preview-sessions')
+      .qs({ userStoryId: created.data.id, profile: 'vercel-compose' })
+      .loginAs(user)
+
+    previewLookup.assertStatus(200)
+    assert.equal(
+      (previewLookup.body() as unknown as { session: { id: string } }).session.id,
+      previewSessionId
+    )
 
     const deleteResponse = await client
       .delete(`/api/v1/projects/user-stories/${created.data.id}`)
@@ -371,6 +414,8 @@ test.group('user stories', (group) => {
 
     deleteResponse.assertStatus(204)
     assert.isNull(await PreviewSession.find(previewSessionId))
+    assert.isNull(await PreviewWorkspaceArtifact.find(artifact.id))
+    await assert.rejects(() => artifactStorage.content(artifactObjectKey))
 
     const listResponse = await client
       .get('/api/v1/projects/user-stories')

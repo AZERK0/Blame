@@ -10,6 +10,25 @@ import type { HttpContext } from '@adonisjs/core/http'
 const service = new PreviewSessionService()
 
 export default class PreviewSessionsController {
+  async index(context: HttpContext) {
+    try {
+      const query = objectBody(context.request.qs())
+      const profile = query.profile
+      if (!isRuntimeProfileId(profile) || profile === 'local-container') {
+        throw invalidRequest('A managed cloud runtime profile is required.')
+      }
+      return {
+        session: await service.findForUserStory(
+          context.auth.getUserOrFail().id,
+          requiredString(query.userStoryId, 'userStoryId'),
+          profile
+        ),
+      }
+    } catch (error) {
+      return runtimeErrorResponse(context, error)
+    }
+  }
+
   async store(context: HttpContext) {
     try {
       const body = objectBody(context.request.all())

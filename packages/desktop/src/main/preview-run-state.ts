@@ -1,12 +1,14 @@
 import type {
   PreviewManifest,
   PreviewManifestService,
+  PreviewLifecycleState,
   ProjectRunConfiguration,
   ProjectRunConfigurationStatus,
 } from "@blame/agent-runtime";
 
 export type PreviewRuntimeSelectionState = {
   desiredStatus: "running" | "stopped";
+  lifecycle?: PreviewLifecycleState;
   selectedConfigurationId?: string;
 };
 
@@ -21,14 +23,13 @@ export function initialPreviewRuntimeSelection(
   configurations: ProjectRunConfiguration[],
   requestedId: string | null | undefined,
 ): PreviewRuntimeSelectionState {
-  if (requestedId === null) return { desiredStatus: "stopped" };
   const requested = configurations.find(({ id }) => id === requestedId);
   const selected =
     requested ??
     configurations.find(({ default: isDefault }) => isDefault) ??
     configurations[0];
   return {
-    desiredStatus: "running",
+    desiredStatus: requested ? "running" : "stopped",
     ...(selected ? { selectedConfigurationId: selected.id } : {}),
   };
 }

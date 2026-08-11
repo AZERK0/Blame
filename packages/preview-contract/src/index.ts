@@ -6,6 +6,11 @@ export {
   normalizeLocalPreviewDatabaseEnvironmentValue,
 } from "./environment-security.js";
 export type {
+  PreviewLifecyclePhase,
+  PreviewLifecycleState,
+  PreviewLifecycleStatus,
+} from "./lifecycle.js";
+export type {
   PreviewManifest,
   PreviewManifestBinding,
   PreviewManifestBindingSource,

@@ -156,6 +156,13 @@ export class CloudPreviewClient implements PreviewSessionBackend<CloudManagedPre
     );
   }
 
+  findForUserStory(userStoryId: string, profile: "vercel-compose") {
+    const query = new URLSearchParams({ userStoryId, profile });
+    return this.request<{ session: PreviewSessionView | null }>(
+      `/preview-sessions?${query.toString()}`,
+    );
+  }
+
   async *events(
     sessionId: string,
     cursor?: string,

@@ -179,6 +179,8 @@ const api: BlameDesktopApi = {
     disconnect: () => ipcRenderer.invoke("preview-runtime:disconnect"),
     create: (input) => ipcRenderer.invoke("preview-runtime:create", input),
     get: (input) => ipcRenderer.invoke("preview-runtime:get", input),
+    findForUserStory: (input) =>
+      ipcRenderer.invoke("preview-runtime:find-for-story", input),
     openExternal: (input) =>
       ipcRenderer.invoke("preview-runtime:open-external", input),
     command: (input) => ipcRenderer.invoke("preview-runtime:command", input),
@@ -291,6 +293,8 @@ const api: BlameDesktopApi = {
       ipcRenderer.invoke("workspace:create-worktree", input),
     checkHostDependencies: (input) =>
       ipcRenderer.invoke("workspace:check-host-dependencies", input),
+    prepareProjectPreview: (input) =>
+      ipcRenderer.invoke("workspace:prepare-project-preview", input),
     runProjectSetup: (input) =>
       ipcRenderer.invoke("workspace:run-project-setup", input),
     collectProjectInitializationDiagnostics: (input) =>

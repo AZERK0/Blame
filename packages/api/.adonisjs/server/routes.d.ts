@@ -9,6 +9,7 @@ export type ScannedRoutes = {
     'consumer_contracts.withdraw': { paramsTuple?: []; params?: {} }
     'telemetry_ingestion.store': { paramsTuple: [ParamValue]; params: {'signal': ParamValue} }
     'telemetry_sessions.show': { paramsTuple?: []; params?: {} }
+    'preview_sessions.preview_sessions.index': { paramsTuple?: []; params?: {} }
     'preview_sessions.preview_sessions.store': { paramsTuple?: []; params?: {} }
     'preview_sessions.preview_sessions.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'preview_sessions.preview_sessions.action': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -88,6 +89,7 @@ export type ScannedRoutes = {
   }
   GET: {
     'telemetry_sessions.show': { paramsTuple?: []; params?: {} }
+    'preview_sessions.preview_sessions.index': { paramsTuple?: []; params?: {} }
     'preview_sessions.preview_sessions.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'preview_sessions.preview_sessions.logs': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'preview_sessions.preview_sessions.events': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -117,6 +119,7 @@ export type ScannedRoutes = {
   }
   HEAD: {
     'telemetry_sessions.show': { paramsTuple?: []; params?: {} }
+    'preview_sessions.preview_sessions.index': { paramsTuple?: []; params?: {} }
     'preview_sessions.preview_sessions.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'preview_sessions.preview_sessions.logs': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'preview_sessions.preview_sessions.events': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }

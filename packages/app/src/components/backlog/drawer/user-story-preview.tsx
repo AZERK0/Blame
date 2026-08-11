@@ -1,4 +1,5 @@
 import * as React from "react"
+import type { PreviewLifecycleState } from "@blame/agent-runtime"
 import {
   AlertTriangleIcon,
   CopyIcon,
@@ -16,6 +17,7 @@ import { toast } from "sonner"
 import type { UserStory } from "@/components/backlog/data/backlog-data"
 import { ProjectRunnerLogTabs } from "@/components/backlog/board/project-runner-controls"
 import { ManagedRuntimeSummary } from "@/components/backlog/drawer/managed-runtime-summary"
+import { PreviewInitializationState } from "@/components/backlog/drawer/preview-initialization-state"
 import { managedPresentedPreviewUrl } from "@/components/backlog/drawer/managed-preview-url"
 import {
   blameCloudPreviewOrigin,
@@ -112,6 +114,7 @@ type PreviewIslandProps = {
   logService?: string
   logServices: string[]
   locationBlocked: boolean
+  navigationDisabled?: boolean
   onCapture?: () => void
   onLogServiceChange: (service: string) => void
   onNavigatePath: (path: string) => void
@@ -353,6 +356,11 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
     visible,
     userStory?.id
   )
+  const runtimeLifecycle = previewRunner.lifecycle
+  const runtimeStarting = Boolean(
+    runtimeLifecycle?.status === "pending" &&
+    !["stopping", "suspending", "destroying"].includes(runtimeLifecycle.phase)
+  )
   const managedPreview = previewRunner.profile !== "local-container"
   const previewUrl = previewRunner.runtime
     ? previewRunner.runtime.previewUrl
@@ -398,10 +406,12 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
   const [selectedLogServiceChoice, setSelectedLogService] = React.useState("")
   const [runnerMenuOpen, setRunnerMenuOpen] = React.useState(false)
   const [tab, setTab] = React.useState(source ? "preview" : "setup-log")
+  const runtimeStartingRef = React.useRef(false)
   const autoSelectedPreviewSourceRef = React.useRef<string | undefined>(
     undefined
   )
-  const activeTab = activePreviewTab(tab, Boolean(source), hasSetupLog)
+  const hasPreviewSurface = Boolean(source) || runtimeStarting
+  const activeTab = activePreviewTab(tab, hasPreviewSurface, hasSetupLog)
   const localServices = useProjectServices(
     visible && activeTab === "setup-log" && !managedPreview
       ? setupLogWorktree
@@ -458,7 +468,6 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
   const displayedLocationBlocked = hasNativePreview
     ? false
     : Boolean(locationBlocked)
-
   const clearPreviewRequest = React.useCallback(() => {
     requestRef.current?.abort()
     requestRef.current = undefined
@@ -617,9 +626,13 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
     setTab("preview")
   }, [setupPreviewWaiting, source])
 
-  if (setupInitializing && !source) return <PreviewInitializationPanel />
+  React.useEffect(() => {
+    const justStarted = runtimeStarting && !runtimeStartingRef.current
+    runtimeStartingRef.current = runtimeStarting
+    if (justStarted) setTab("preview")
+  }, [runtimeStarting])
 
-  if (source || hasSetupLog) {
+  if (hasPreviewSurface || hasSetupLog) {
     return (
       <div className="h-full min-h-0 overflow-hidden">
         <Tabs
@@ -630,11 +643,12 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
           <PreviewIsland
             activeTab={activeTab}
             captureDisabled={setupPreviewWaiting || !previewCapture}
-            hasPreview={Boolean(source)}
+            hasPreview={hasPreviewSurface}
             hasSetupLog={hasSetupLog}
             logService={selectedLogService}
             logServices={services}
             locationBlocked={displayedLocationBlocked}
+            navigationDisabled={runtimeStarting || !source}
             onCapture={capturePreview}
             onLogServiceChange={setSelectedLogService}
             onNavigatePath={navigatePreviewPath}
@@ -647,45 +661,54 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
             previewProxy={previewProxy}
             source={presentedSource}
           />
-          {source && (
+          {hasPreviewSurface && (
             <TabsContent
               forceMount
               value="preview"
               className={cn(
-                "h-full min-h-0 overflow-hidden",
+                "relative h-full min-h-0 overflow-hidden",
                 activeTab !== "preview" && "hidden"
               )}
             >
-              {setupPreviewWaiting ? (
-                <PreviewWaitingPanel />
-              ) : previewBrowser ? (
-                <NativePreviewPanel
-                  client={previewBrowser}
-                  devtoolsScope={previewScope}
-                  onCaptureReady={setPreviewCaptureHandler}
-                  onState={handleNativePreviewState}
-                  previewKey={nativePreviewKey}
-                  previewState={displayedPreviewState}
-                  previewSessionId={previewRunner.previewSessionId}
-                  reloadKey={reloadKey}
-                  sessionKey={nativePreviewSessionKey}
-                  source={source}
-                  storageKey={nativePreviewStorageKey}
-                  visible={
-                    visible && activeTab === "preview" && !runnerMenuOpen
-                  }
-                />
-              ) : (
-                <PreviewPanel
-                  frameRef={frameRef}
-                  onError={showPreviewError}
-                  onLoad={showPreview}
-                  onReload={reloadPreview}
-                  previewKey={previewKey}
-                  previewState={previewState}
-                  source={source}
-                  title={`${previewLabel} preview`}
-                />
+              {source &&
+                (setupPreviewWaiting ? (
+                  <PreviewWaitingPanel />
+                ) : previewBrowser ? (
+                  <NativePreviewPanel
+                    client={previewBrowser}
+                    devtoolsScope={previewScope}
+                    onCaptureReady={setPreviewCaptureHandler}
+                    onState={handleNativePreviewState}
+                    previewKey={nativePreviewKey}
+                    previewState={displayedPreviewState}
+                    previewSessionId={previewRunner.previewSessionId}
+                    reloadKey={reloadKey}
+                    sessionKey={nativePreviewSessionKey}
+                    source={source}
+                    storageKey={nativePreviewStorageKey}
+                    visible={
+                      visible &&
+                      activeTab === "preview" &&
+                      !runnerMenuOpen &&
+                      !runtimeStarting
+                    }
+                  />
+                ) : (
+                  <PreviewPanel
+                    frameRef={frameRef}
+                    onError={showPreviewError}
+                    onLoad={showPreview}
+                    onReload={reloadPreview}
+                    previewKey={previewKey}
+                    previewState={previewState}
+                    source={source}
+                    title={`${previewLabel} preview`}
+                  />
+                ))}
+              {runtimeStarting && (
+                <div className="absolute inset-0 z-10">
+                  <PreviewWaitingPanel lifecycle={runtimeLifecycle} />
+                </div>
               )}
             </TabsContent>
           )}
@@ -756,37 +779,15 @@ function PreviewPanel({
   )
 }
 
-function PreviewWaitingPanel() {
+function PreviewWaitingPanel({
+  lifecycle,
+}: {
+  lifecycle?: PreviewLifecycleState
+} = {}) {
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-muted/20 px-4 pt-[72px] pb-4">
       <div className="relative min-h-0 flex-1 overflow-hidden rounded-lg border bg-background">
-        <PreviewInitializationState />
-      </div>
-    </div>
-  )
-}
-
-function PreviewInitializationPanel() {
-  return (
-    <div className="flex h-full min-h-0 items-center justify-center bg-muted/20 p-6">
-      <PreviewInitializationState />
-    </div>
-  )
-}
-
-function PreviewInitializationState() {
-  return (
-    <div className="flex h-full w-full flex-col items-center justify-center gap-5 bg-background p-8 text-center">
-      <div className="space-y-1">
-        <h3 className="font-heading text-lg font-semibold">
-          Initializing preview
-        </h3>
-        <p className="text-sm text-muted-foreground">
-          Preparing the isolated worktree and its containers.
-        </p>
-      </div>
-      <div className="h-1.5 w-full max-w-sm overflow-hidden rounded-full bg-muted">
-        <div className="h-full w-full animate-pulse rounded-full bg-primary/70" />
+        <PreviewInitializationState lifecycle={lifecycle} />
       </div>
     </div>
   )
@@ -1342,6 +1343,7 @@ function PreviewIsland({
   logService,
   logServices,
   locationBlocked,
+  navigationDisabled,
   onCapture,
   onLogServiceChange,
   onNavigatePath,
@@ -1370,25 +1372,21 @@ function PreviewIsland({
   }
   return (
     <div className="preview-toolbar pointer-events-none absolute inset-x-4 top-4 z-20 flex min-w-0 items-center gap-1.5">
-      {source ? (
-        <PreviewAddress
-          locationBlocked={locationBlocked}
-          onNavigatePath={onNavigatePath}
-          onOpen={onOpen}
-          previewLocation={previewLocation}
-          previewProxy={previewProxy}
-          source={source}
-        />
-      ) : (
-        <div className="min-w-2 flex-1" />
-      )}
-      {source && (
-        <PreviewActions
-          captureDisabled={captureDisabled}
-          onCapture={onCapture}
-          onReload={onReload}
-        />
-      )}
+      <PreviewAddress
+        disabled={navigationDisabled}
+        locationBlocked={locationBlocked}
+        onNavigatePath={onNavigatePath}
+        onOpen={onOpen}
+        previewLocation={previewLocation}
+        previewProxy={previewProxy}
+        source={source}
+      />
+      <PreviewActions
+        captureDisabled={navigationDisabled || captureDisabled}
+        onCapture={onCapture}
+        onReload={onReload}
+        refreshDisabled={navigationDisabled}
+      />
       {previewRunner?.runtime && (
         <UserStoryPreviewRunnerControls
           runner={previewRunner}
@@ -1463,16 +1461,19 @@ function PreviewActions({
   captureDisabled,
   onCapture,
   onReload,
+  refreshDisabled,
 }: {
   captureDisabled?: boolean
   onCapture?: () => void
   onReload: () => void
+  refreshDisabled?: boolean
 }) {
   return (
     <>
       <Button
         aria-label="Refresh preview"
         className="pointer-events-auto size-9 shrink-0 rounded-full border bg-background/95 shadow-sm backdrop-blur"
+        disabled={refreshDisabled}
         size="icon"
         title="Refresh preview"
         type="button"
@@ -1498,6 +1499,7 @@ function PreviewActions({
 }
 
 function PreviewAddress({
+  disabled,
   locationBlocked,
   onNavigatePath,
   onOpen,
@@ -1505,25 +1507,28 @@ function PreviewAddress({
   previewProxy,
   source,
 }: {
+  disabled?: boolean
   locationBlocked: boolean
   onNavigatePath: (path: string) => void
   onOpen: () => void
   previewLocation?: string
   previewProxy?: ManagedPreviewProxyInfo
-  source: string
+  source?: string
 }) {
-  const address = previewLocation ?? source
-  const path = previewAddressPath(address)
+  const address = previewLocation ?? source ?? ""
+  const path = address ? previewAddressPath(address) : ""
   const [draft, setDraft] = React.useState({ path, value: path })
   const draftPath = draft.path === path ? draft.value : path
 
   const commitPath = () => {
+    if (disabled) return
     const nextPath = normalizePreviewPath(draftPath)
     setDraft({ path, value: nextPath })
     if (nextPath !== path) onNavigatePath(nextPath)
   }
 
   const copyAddress = () => {
+    if (disabled || !address) return
     const clipboard = navigator.clipboard
     if (!clipboard) {
       toast.error("Unable to copy preview URL", { position: "bottom-right" })
@@ -1544,10 +1549,17 @@ function PreviewAddress({
   return (
     <TooltipProvider>
       <div className="preview-address pointer-events-auto flex h-10 min-w-0 flex-1 items-center overflow-hidden rounded-full border bg-background/95 py-1 pr-1.5 pl-4 shadow-sm backdrop-blur">
-        <PreviewAddressOrigin source={source} />
+        {source ? (
+          <PreviewAddressOrigin source={source} />
+        ) : (
+          <span className="shrink-0 text-sm text-muted-foreground/50">
+            Preview URL
+          </span>
+        )}
         <input
           aria-label="Preview path"
           className="w-8 min-w-0 flex-1 bg-transparent text-sm text-muted-foreground outline-none"
+          disabled={disabled}
           spellCheck={false}
           value={draftPath}
           onBlur={commitPath}
@@ -1567,6 +1579,7 @@ function PreviewAddress({
         <Button
           aria-label="Copy preview URL"
           className="ml-1 size-7 shrink-0 rounded-full"
+          disabled={disabled}
           size="icon"
           title={previewProxy ? "Copy public preview URL" : "Copy preview URL"}
           type="button"
@@ -1580,6 +1593,7 @@ function PreviewAddress({
             <Button
               aria-label="Open preview in browser"
               className="size-7 shrink-0 rounded-full"
+              disabled={disabled}
               size="icon"
               type="button"
               variant="ghost"
@@ -2148,7 +2162,7 @@ function cloudPreviewWarmupStories(userStories: UserStory[]) {
       isActivePreviewStatus(story.status) &&
       story.workspaceMode !== "local-container" &&
       Boolean(story.worktree) &&
-      story.runConfigurationId !== null
+      typeof story.runConfigurationId === "string"
   )
 }
 

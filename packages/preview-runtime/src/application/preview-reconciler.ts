@@ -29,9 +29,9 @@ export class PreviewReconciler {
     const driver = this.options.drivers.get(record.profile);
     if (!driver)
       throw unsupported(`No driver is registered for ${record.profile}.`);
-    const expectedRevision = record.revision;
     const next = structuredClone(record);
     next.fencingToken = fencingToken;
+    next.failure = undefined;
     try {
       const capabilityReport = await driver.capabilities(next.plan);
       if (!capabilityReport.compatible) {
@@ -81,14 +81,11 @@ export class PreviewReconciler {
         await this.reconcileEngine(driver, next, handle);
         await this.reconcileAgent(next);
       }
-      next.failure = undefined;
-      next.revision = expectedRevision + 1;
-      await this.options.repository.save(next, expectedRevision);
-      await this.emitState(next, "Preview session reconciled.");
+      await this.checkpoint(next, "Preview session reconciled.");
       return next;
     } catch (error) {
-      const failed = failedRecord(next, error, expectedRevision + 1);
-      await this.options.repository.save(failed, expectedRevision);
+      const failed = failedRecord(next, error, next.revision + 1);
+      await this.options.repository.save(failed, next.revision);
       await this.emitState(
         failed,
         failed.failure?.message ?? "Preview session failed.",
@@ -110,9 +107,16 @@ export class PreviewReconciler {
       if (handle) {
         if (record.state.engine === "running") {
           record.state.engine = "stopping";
+          record.state.preview = "closing";
+          await this.checkpoint(
+            record,
+            "Stopping preview services before destruction.",
+          );
           await driver.stopServices(handle);
           record.state.engine = "stopped";
           record.state.preview = "closed";
+          record.endpointMap = undefined;
+          await this.checkpoint(record, "Preview services stopped.");
         }
         await this.ensureDeltaExported(driver, record, handle);
         if (record.state.sync === "pending_local_sync") {
@@ -124,6 +128,7 @@ export class PreviewReconciler {
           });
         }
         record.state.host = "destroying";
+        await this.checkpoint(record, "Destroying preview host.");
         await driver.destroyHost(handle);
         await this.options.repository.setRuntimeHandle(
           record.id,
@@ -134,12 +139,15 @@ export class PreviewReconciler {
       record.state.host = "destroyed";
       record.state.engine = "stopped";
       record.state.preview = "closed";
+      record.endpointMap = undefined;
       record.stoppedAt = new Date().toISOString();
+      await this.checkpoint(record, "Preview host destroyed.");
       return { handle: undefined };
     }
     if (record.desired.host === "suspended") {
       if (!handle || record.state.host === "unprovisioned") {
         record.state.host = "suspended";
+        await this.checkpoint(record, "Preview host is suspended.");
         return { handle };
       }
       if (record.state.host === "suspended" && record.state.sync !== "failed") {
@@ -147,15 +155,33 @@ export class PreviewReconciler {
       }
       if (record.state.host === "suspended") {
         record.state.host = "resuming";
+        await this.checkpoint(
+          record,
+          "Resuming preview host for synchronization.",
+        );
         await driver.resumeHost(handle);
         await this.options.repository.setRuntimeHandle(record.id, handle);
         record.state.host = "running";
         record.generation += 1;
         record.endpointMap = undefined;
+        await this.checkpoint(
+          record,
+          "Preview host resumed for synchronization.",
+        );
       }
-      if (record.state.engine === "running") await driver.stopServices(handle);
+      if (record.state.engine === "running") {
+        record.state.engine = "stopping";
+        record.state.preview = "closing";
+        await this.checkpoint(
+          record,
+          "Stopping preview services before suspension.",
+        );
+        await driver.stopServices(handle);
+      }
       record.state.engine = "stopped";
       record.state.preview = "closed";
+      record.endpointMap = undefined;
+      await this.checkpoint(record, "Preview services stopped.");
       let exportError: unknown;
       try {
         await this.ensureDeltaExported(driver, record, handle);
@@ -164,13 +190,16 @@ export class PreviewReconciler {
         exportError = error;
       }
       record.state.host = "suspending";
+      await this.checkpoint(record, "Suspending preview host.");
       await driver.suspendHost(handle);
       record.state.host = "suspended";
+      await this.checkpoint(record, "Preview host suspended.");
       if (exportError) throw exportError;
       return { handle };
     }
     if (!handle || ["unprovisioned", "destroyed"].includes(record.state.host)) {
       record.state.host = "provisioning";
+      await this.checkpoint(record, "Provisioning preview host.");
       let created;
       try {
         created = await driver.provisionHost(provisionInput(record));
@@ -183,15 +212,18 @@ export class PreviewReconciler {
       fenceRuntimeHandle(created.handle, record.fencingToken);
       await this.options.repository.setRuntimeHandle(record.id, created.handle);
       record.state.host = "running";
+      await this.checkpoint(record, "Preview host provisioned.");
       return created;
     }
     if (["suspended", "failed"].includes(record.state.host)) {
       record.state.host = "resuming";
+      await this.checkpoint(record, "Resuming preview host.");
       const observation = await driver.resumeHost(handle);
       await this.options.repository.setRuntimeHandle(record.id, handle);
       record.state.host = "running";
       record.generation += 1;
       record.endpointMap = undefined;
+      await this.checkpoint(record, "Preview host resumed.");
       return { handle, observation: observation || undefined };
     }
     return { handle };
@@ -205,15 +237,23 @@ export class PreviewReconciler {
     if (record.desired.services === "stopped") {
       if (["running", "starting", "preparing"].includes(record.state.engine)) {
         record.state.engine = "stopping";
+        record.state.preview = "closing";
+        await this.checkpoint(record, "Stopping preview services.");
         await driver.stopServices(handle);
         await this.ensureDeltaExported(driver, record, handle);
       }
       record.state.engine = "stopped";
       record.state.preview = "closed";
+      record.endpointMap = undefined;
+      await this.checkpoint(record, "Preview services stopped.");
       return;
     }
     if (record.state.engine !== "running") {
       record.state.engine = "preparing";
+      record.state.preview =
+        record.desired.preview === "open" ? "opening" : "closed";
+      record.endpointMap = undefined;
+      await this.checkpoint(record, "Preparing preview services.");
       const selection = {
         configurationId: record.selection?.configurationId ?? "default",
         serviceIds: record.selection?.serviceIds,
@@ -229,10 +269,12 @@ export class PreviewReconciler {
         record.state.engine = "running";
         record.state.preview = "ready";
         record.endpointMap = started.endpointMap;
+        await this.checkpoint(record, "Preview is ready.");
         return;
       }
       await driver.prepareEngine(handle, record.plan);
       record.state.engine = "starting";
+      await this.checkpoint(record, "Starting preview services.");
       await driver.startServices(handle, selection);
     }
     const observation = await driver.inspect(handle);
@@ -240,9 +282,16 @@ export class PreviewReconciler {
     record.state.engine = "running";
     if (record.desired.preview === "open") {
       record.state.preview = "opening";
+      await this.checkpoint(record, "Publishing preview endpoints.");
       record.endpointMap = await driver.endpoints(handle);
       record.state.preview = "ready";
     }
+    await this.checkpoint(
+      record,
+      record.state.preview === "ready"
+        ? "Preview is ready."
+        : "Preview services are running.",
+    );
   }
 
   private async reconcileAgent(record: PreviewSessionRecord) {
@@ -268,6 +317,7 @@ export class PreviewReconciler {
       return;
     const preserveConflict = record.state.sync === "conflict";
     record.state.sync = "exporting";
+    await this.checkpoint(record, "Exporting preview workspace changes.");
     const observation = await driver.inspect(handle);
     const revision =
       observation.journalRevision ?? record.lastExportedJournalRevision ?? "0";
@@ -276,16 +326,19 @@ export class PreviewReconciler {
       record.pendingDeltaArtifactId
     ) {
       record.state.sync = preserveConflict ? "conflict" : "pending_local_sync";
+      await this.checkpoint(record, "Preview workspace changes are durable.");
       return;
     }
     if (record.lastAppliedLocalRevision === revision) {
       record.state.sync = "clean";
+      await this.checkpoint(record, "Preview workspace is synchronized.");
       return;
     }
     const receipt = await driver.exportDelta(handle, revision);
     record.lastExportedJournalRevision = receipt.revision;
     record.pendingDeltaArtifactId = receipt.artifactId;
     record.state.sync = preserveConflict ? "conflict" : "pending_local_sync";
+    await this.checkpoint(record, "Preview workspace changes are durable.");
   }
 
   private async acknowledgeRemoteDelta(
@@ -300,6 +353,10 @@ export class PreviewReconciler {
         record.lastAcknowledgedRemoteRevision = revision;
         record.pendingDeltaArtifactId = undefined;
         record.state.sync = "clean";
+        await this.checkpoint(
+          record,
+          "Preview workspace synchronization acknowledged.",
+        );
       }
       return;
     }
@@ -314,6 +371,10 @@ export class PreviewReconciler {
     if (record.state.sync === "applying") {
       record.pendingDeltaArtifactId = undefined;
       record.state.sync = "clean";
+      await this.checkpoint(
+        record,
+        "Preview workspace synchronization acknowledged.",
+      );
     }
   }
 
@@ -330,6 +391,21 @@ export class PreviewReconciler {
       stream: "system",
       message,
     });
+  }
+
+  private async checkpoint(record: PreviewSessionRecord, message: string) {
+    const expectedRevision = record.revision;
+    const previousStateChangedAt = record.stateChangedAt;
+    record.revision = expectedRevision + 1;
+    record.stateChangedAt = new Date().toISOString();
+    try {
+      await this.options.repository.save(record, expectedRevision);
+    } catch (error) {
+      record.revision = expectedRevision;
+      record.stateChangedAt = previousStateChangedAt;
+      throw error;
+    }
+    await this.emitState(record, message);
   }
 }
 
@@ -450,6 +526,7 @@ function failedRecord(
 ) {
   const failed = structuredClone(record);
   failed.revision = revision;
+  failed.stateChangedAt = new Date().toISOString();
   failed.failure = previewFailure(error);
   if (
     ["provisioning", "resuming", "suspending", "destroying"].includes(
@@ -461,8 +538,8 @@ function failedRecord(
   if (["preparing", "starting", "stopping"].includes(failed.state.engine)) {
     failed.state.engine = "failed";
   }
-  if (["opening", "closing"].includes(failed.state.preview))
-    failed.state.preview = "degraded";
+  if (failed.state.preview === "opening") failed.state.preview = "closed";
+  if (failed.state.preview === "closing") failed.state.preview = "degraded";
   if (["starting", "stopping"].includes(failed.state.agent))
     failed.state.agent = "failed";
   if (["importing", "exporting", "applying"].includes(failed.state.sync))

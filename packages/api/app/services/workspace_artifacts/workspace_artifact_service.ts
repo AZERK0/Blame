@@ -210,6 +210,14 @@ export default class WorkspaceArtifactService {
   }
 
   async scheduleSessionDeletion(sessionId: string) {
+    try {
+      await this.deleteSessionArtifacts(sessionId)
+    } catch {
+      // Expired rows remain durable so cleanupExpired can retry object deletion.
+    }
+  }
+
+  async deleteSessionArtifacts(sessionId: string) {
     const artifacts = await PreviewWorkspaceArtifact.query().where('sessionId', sessionId)
     const expiresAt = DateTime.utc()
     for (const artifact of artifacts) {
@@ -218,12 +226,8 @@ export default class WorkspaceArtifactService {
       artifact.discardedAt ??= expiresAt
       await artifact.save()
     }
-    try {
-      await workspaceArtifactObjectStorage().delete(artifacts.map(({ objectKey }) => objectKey))
-      await PreviewWorkspaceArtifact.query().where('sessionId', sessionId).delete()
-    } catch {
-      // The reaper retries every expired object; lifecycle completion remains durable.
-    }
+    await workspaceArtifactObjectStorage().delete(artifacts.map(({ objectKey }) => objectKey))
+    await PreviewWorkspaceArtifact.query().where('sessionId', sessionId).delete()
   }
 
   async cleanupExpired(limit = 250) {

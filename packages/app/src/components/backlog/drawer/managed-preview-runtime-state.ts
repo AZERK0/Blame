@@ -1,5 +1,8 @@
 import type { ProjectPreviewRuntimeState } from "@blame/agent-runtime"
-import type { PreviewSessionView } from "@blame/preview-runtime"
+import {
+  previewSessionLifecycle,
+  type PreviewSessionView,
+} from "@blame/preview-runtime"
 
 import { managedEmbeddedPreviewUrl } from "./managed-preview-url.ts"
 
@@ -10,6 +13,11 @@ export function idleManagedPreviewRuntime(
   return {
     ...local,
     desiredStatus: "stopped",
+    lifecycle: {
+      phase: "idle",
+      status: "idle",
+      since: local.lifecycle?.since ?? new Date().toISOString(),
+    },
     previewUrl: undefined,
     statuses: Object.fromEntries(
       local.configurations.map(({ id }) => [id, "stopped"])
@@ -28,6 +36,7 @@ export function managedPreviewRuntimeState(
     configurations: local?.configurations ?? [],
     desiredStatus:
       session.desired.services === "running" ? "running" : "stopped",
+    lifecycle: previewSessionLifecycle(session),
     previewUrl: managedEmbeddedPreviewUrl(session.endpointMap),
     selectedConfigurationId: selected,
     statuses: Object.fromEntries(

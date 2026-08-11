@@ -27,6 +27,19 @@ export default class PreviewSessionRepository implements SessionRepository {
     return model ? this.record(model) : undefined
   }
 
+  async latestForUserStory(ownerUserId: string, userStoryId: string, profile: RuntimeProfileId) {
+    const models = await PreviewSession.query()
+      .where('ownerUserId', ownerUserId)
+      .where('userStoryId', userStoryId)
+      .where('profile', profile)
+      .orderBy('createdAt', 'desc')
+    for (const model of models) {
+      const record = await this.record(model)
+      if (record.state.host !== 'destroyed') return record
+    }
+    return undefined
+  }
+
   async save(record: PreviewSessionRecord, expectedRevision: number) {
     const payload = await mutableModelPayload(record)
     const updated = await PreviewSession.query()
@@ -174,6 +187,7 @@ export default class PreviewSessionRepository implements SessionRepository {
         ? parseJson<import('@blame/preview-runtime').RuntimeSelection>(model.selection)
         : undefined,
       lastActivityAt: model.lastActivityAt.toUTC().toISO()!,
+      stateChangedAt: model.stateChangedAt.toUTC().toISO()!,
       leaseExpiresAt: model.leaseExpiresAt?.toUTC().toISO() ?? undefined,
       idleDeadlineAt: model.idleDeadlineAt?.toUTC().toISO() ?? undefined,
       createdAt: model.createdAt.toUTC().toISO()!,
@@ -215,6 +229,7 @@ function modelPayload(record: PreviewSessionRecord) {
     failure: record.failure ? JSON.stringify(record.failure) : null,
     selection: record.selection ? JSON.stringify(record.selection) : null,
     lastActivityAt: DateTime.fromISO(record.lastActivityAt),
+    stateChangedAt: DateTime.fromISO(record.stateChangedAt),
     leaseExpiresAt: optionalDate(record.leaseExpiresAt),
     idleDeadlineAt: optionalDate(record.idleDeadlineAt),
     stoppedAt: optionalDate(record.stoppedAt),
@@ -252,6 +267,7 @@ async function mutableModelPayload(record: PreviewSessionRecord) {
     failure: record.failure ? JSON.stringify(record.failure) : null,
     selection: record.selection ? JSON.stringify(record.selection) : null,
     lastActivityAt: DateTime.fromISO(record.lastActivityAt),
+    stateChangedAt: DateTime.fromISO(record.stateChangedAt),
     leaseExpiresAt: optionalDate(record.leaseExpiresAt),
     idleDeadlineAt: optionalDate(record.idleDeadlineAt),
     stoppedAt: optionalDate(record.stoppedAt),

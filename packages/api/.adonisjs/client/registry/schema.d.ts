@@ -67,6 +67,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/telemetry_sessions_controller').default['show']>>>
     }
   }
+  'preview_sessions.preview_sessions.index': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/preview-sessions'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/preview_sessions_controller').default['index']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/preview_sessions_controller').default['index']>>>
+    }
+  }
   'preview_sessions.preview_sessions.store': {
     methods: ["POST"]
     pattern: '/api/v1/preview-sessions'

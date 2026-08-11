@@ -442,7 +442,7 @@ export class PreviewProjectBaselineSchema extends BaseModel {
 }
 
 export class PreviewSessionSchema extends BaseModel {
-  static $columns = ['baselineId', 'createdAt', 'desired', 'endpointMapEncrypted', 'failure', 'fencingToken', 'generation', 'id', 'idleDeadlineAt', 'imageDigest', 'lastAcknowledgedRemoteRevision', 'lastActivityAt', 'lastAppliedLocalRevision', 'lastExportedJournalRevision', 'leaseExpiresAt', 'ownerUserId', 'pendingDeltaArtifactId', 'plan', 'planHash', 'planVersion', 'profile', 'protocolVersion', 'providerHandleEncrypted', 'provisionSource', 'resourceMemoryGb', 'resourceVcpus', 'revision', 'runnerVersion', 'selection', 'sourceArtifactId', 'sourceRevision', 'state', 'stoppedAt', 'updatedAt', 'userStoryId', 'workspaceHash'] as const
+  static $columns = ['baselineId', 'createdAt', 'desired', 'endpointMapEncrypted', 'failure', 'fencingToken', 'generation', 'id', 'idleDeadlineAt', 'imageDigest', 'lastAcknowledgedRemoteRevision', 'lastActivityAt', 'lastAppliedLocalRevision', 'lastExportedJournalRevision', 'leaseExpiresAt', 'ownerUserId', 'pendingDeltaArtifactId', 'plan', 'planHash', 'planVersion', 'profile', 'protocolVersion', 'providerHandleEncrypted', 'provisionSource', 'resourceMemoryGb', 'resourceVcpus', 'revision', 'runnerVersion', 'selection', 'sourceArtifactId', 'sourceRevision', 'state', 'stateChangedAt', 'stoppedAt', 'updatedAt', 'userStoryId', 'workspaceHash'] as const
   $columns = PreviewSessionSchema.$columns
   @column()
   declare baselineId: string | null
@@ -508,6 +508,8 @@ export class PreviewSessionSchema extends BaseModel {
   declare sourceRevision: string | null
   @column()
   declare state: string
+  @column.dateTime()
+  declare stateChangedAt: DateTime
   @column.dateTime()
   declare stoppedAt: DateTime | null
   @column.dateTime({ autoCreate: true, autoUpdate: true })

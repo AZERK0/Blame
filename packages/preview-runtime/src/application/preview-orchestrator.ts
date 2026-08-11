@@ -62,6 +62,7 @@ export class PreviewOrchestrator implements PreviewSessionBackend {
       provisionSource: input.provisionSource,
       resourceSize: input.resourceSize ?? defaultResourceSize(),
       lastActivityAt: now,
+      stateChangedAt: now,
       createdAt: now,
     };
     await this.repository.create(record);

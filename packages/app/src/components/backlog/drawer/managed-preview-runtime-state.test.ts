@@ -34,6 +34,7 @@ test("shows an auto-started managed configuration as starting", () => {
 
   assert.equal(runtime.selectedConfigurationId, "web")
   assert.equal(runtime.statuses.web, "starting")
+  assert.equal(runtime.lifecycle?.phase, "starting")
   assert.equal(runtime.previewUrl, undefined)
 })
 
@@ -66,6 +67,7 @@ test("publishes the managed preview URL once the session is ready", () => {
   const runtime = managedPreviewRuntimeState(value, localRuntime)
 
   assert.equal(runtime.statuses.web, "running")
+  assert.equal(runtime.lifecycle?.phase, "ready")
   assert.equal(runtime.previewUrl, "https://preview.example.test")
   assert.equal(managedPreviewReady(value), true)
 })
@@ -75,6 +77,7 @@ test("reports a failed managed start on the selected configuration", () => {
   const runtime = managedPreviewRuntimeState(value, localRuntime)
 
   assert.equal(runtime.statuses.web, "error")
+  assert.equal(runtime.lifecycle?.phase, "failed")
   assert.equal(managedPreviewActive(value), false)
 })
 
@@ -119,6 +122,7 @@ function session(
     planVersion: 1,
     resourceSize: { vcpus: 2, memoryGb: 4 },
     lastActivityAt: new Date().toISOString(),
+    stateChangedAt: new Date().toISOString(),
     createdAt: new Date().toISOString(),
   } satisfies PreviewSessionView
 }

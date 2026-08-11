@@ -107,6 +107,13 @@ import {
   type PreviewRuntimeSelectionState,
 } from "./preview-run-state";
 import {
+  idleLocalPreviewLifecycle,
+  localPreviewLifecycle,
+  pendingLocalPreviewLifecycle,
+  runLocalPreviewOperation,
+  validPreviewLifecycle,
+} from "./preview-runtime/local/local-preview-lifecycle.js";
+import {
   composeWithNonMutatingNpmInstalls,
   composeWithRuntimePortPlaceholders,
   composeWithoutNumericSuUser,
@@ -238,6 +245,7 @@ const previewResolveTimeoutMs = 45_000;
 const composeUpRetryDelaysMs = [2_000, 5_000, 10_000, 15_000];
 const setupEnvironmentCacheTtlMs = 2_000;
 const worktreeSetupOperationName = "blame.worktree.setup";
+const previewPrepareOperationName = "blame.preview.prepare";
 const projectSetupOperationName = "blame.project.setup";
 const previewStartOperationName = "blame.preview.start";
 const composeCallPromises = new Map<string, Promise<unknown>>();
@@ -326,6 +334,8 @@ type RunProjectSetupInput = ExecutionContextInput & {
   hostDependenciesChecked?: boolean;
   runtimeProfile: RuntimeProfileId;
 };
+
+type PrepareProjectPreviewInput = RunProjectSetupInput;
 
 type CheckHostDependenciesInput = {
   runtimeProfile?: RuntimeProfileId;
@@ -676,6 +686,10 @@ export function registerWorkspaceIpcHandlers(
   ipcMain.handle(
     "workspace:create-worktree",
     (_event, input: CreateWorktreeInput) => createWorktree(input),
+  );
+  ipcMain.handle(
+    "workspace:prepare-project-preview",
+    (_event, input: PrepareProjectPreviewInput) => prepareProjectPreview(input),
   );
   ipcMain.handle(
     "workspace:run-project-setup",
@@ -1683,9 +1697,38 @@ async function runProjectSetup(input: RunProjectSetupInput) {
   }
 }
 
+async function prepareProjectPreview(input: PrepareProjectPreviewInput) {
+  const operation = beginExecutionOperation(
+    input,
+    previewPrepareOperationName,
+    input.worktree,
+  );
+  void enrichExecutionRepositoryCohorts(operation, input.worktree);
+  return runExecutionOperation(operation, async () => {
+    await prepareProjectPreviewArtifacts(input);
+    return { prepared: true };
+  });
+}
+
 async function runProjectSetupOperation(
   input: RunProjectSetupInput,
   operation: ExecutionOperation,
+) {
+  const { env, scriptPath, worktree } =
+    await prepareProjectPreviewArtifacts(input);
+  return timedRecoveryStep(worktree, "setup process spawn", () =>
+    startProjectSetupProcess(
+      worktree,
+      scriptPath,
+      env,
+      operation,
+      input.runtimeProfile === "local-container",
+    ),
+  );
+}
+
+async function prepareProjectPreviewArtifacts(
+  input: PrepareProjectPreviewInput,
 ) {
   const worktree = resolveRuntimePath(input.worktree);
   const env = await setupEnvironment(worktree);
@@ -1721,15 +1764,7 @@ async function runProjectSetupOperation(
     runConfigurations,
     input.runConfigurationId,
   );
-  return timedRecoveryStep(worktree, "setup process spawn", () =>
-    startProjectSetupProcess(
-      worktree,
-      scriptPath,
-      env,
-      operation,
-      input.runtimeProfile === "local-container",
-    ),
-  );
+  return { env, scriptPath, worktree };
 }
 
 async function validateProjectSetup(
@@ -1777,6 +1812,9 @@ async function prepareProjectSetupFiles(
     "env file scan",
     () => envHostFileMounts(worktree),
   );
+  const runtimeState = (await runtimePathExists(runtimeStatePath))
+    ? await readPreviewRuntimeFileState(worktree)
+    : initialPreviewRuntimeSelection(runConfigurations, runConfigurationId);
   await writeProjectSetupFiles({
     composePath,
     directory,
@@ -1787,10 +1825,7 @@ async function prepareProjectSetupFiles(
     manifestPath,
     runConfigurations,
     runConfigurationsPath,
-    runtimeState: initialPreviewRuntimeSelection(
-      runConfigurations,
-      runConfigurationId,
-    ),
+    runtimeState,
     runtimeStatePath,
     scriptPath,
     setupScript,
@@ -2246,13 +2281,30 @@ function operationErrorType(error: unknown) {
   return "Error";
 }
 
-async function startProjectCompose(
+function startProjectCompose(
   worktree: string,
   options: { reallocatePorts?: boolean } = {},
 ) {
+  return dedupeComposeCall(`start:${worktree}`, () =>
+    startProjectComposeOperation(worktree, options),
+  );
+}
+
+async function startProjectComposeOperation(
+  worktree: string,
+  options: { reallocatePorts?: boolean },
+) {
+  if (await stopPreviewStartWhenRequested(worktree)) return undefined;
+  if (!(await projectSetupCompleted(worktree))) {
+    await timedRecoveryStep(worktree, "project setup", () =>
+      runExistingProjectSetup(worktree),
+    );
+  }
+  if (await stopPreviewStartWhenRequested(worktree)) return undefined;
   await timedRecoveryStep(worktree, "compose repair", () =>
     repairProjectCompose(worktree, options),
   );
+  if (await stopPreviewStartWhenRequested(worktree)) return undefined;
   await timedRecoveryStep(worktree, "compose up", () =>
     runProjectComposeUp(worktree),
   );
@@ -2842,7 +2894,15 @@ async function removeWorktree(input: RemoveWorktreeInput) {
     await ensureRuntimeGitSafeDirectory(repositoryRoot);
   await assertGitRepository(repositoryRoot);
   const registered = await worktreeRegistered(repositoryRoot, worktree, mode);
-  if (!registered && !(await runtimePathExists(worktree))) return false;
+  const worktreeExists = await runtimePathExists(worktree);
+  if (!registered && !worktreeExists) {
+    if (mode === "local-container") {
+      const env = await setupEnvironment(worktree);
+      await removeBlamePreviewProjectResources(env.COMPOSE_PROJECT_NAME);
+    }
+    removedWorktrees.add(worktree);
+    return true;
+  }
   removingWorktrees.add(worktree);
   try {
     await stopSetupRunsForWorktree(worktree);
@@ -2927,7 +2987,6 @@ async function ensureProjectPreviewUrl(input: EnsureProjectPreviewUrlInput) {
     );
     if (envMatches && (await previewProbesPass(worktree))) return currentUrl;
   }
-  if (!(await projectSetupCompleted(worktree))) return null;
   const recovery = previewRecoveries.get(worktree);
   if (recovery) return recovery;
   const nextRecovery = runPreviewRecovery(input, worktree, {
@@ -2969,9 +3028,16 @@ export async function projectPreviewRuntimeState(
     runtimeState.desiredStatus === "running" && selected?.previewService
       ? ((await resolveProjectPreviewUrl({ worktree })) ?? undefined)
       : undefined;
+  const lifecycle = localPreviewLifecycle(
+    runtimeState,
+    selected ? statuses[selected.id] : undefined,
+    Boolean(selected?.previewService),
+    previewUrl,
+  );
   return {
     configurations,
     desiredStatus: runtimeState.desiredStatus,
+    lifecycle,
     ...(previewUrl ? { previewUrl } : {}),
     ...(selected ? { selectedConfigurationId: selected.id } : {}),
     statuses,
@@ -2992,6 +3058,7 @@ async function cloudMirrorPreviewRuntimeState(
   return {
     configurations,
     desiredStatus: "stopped",
+    lifecycle: idleLocalPreviewLifecycle(runtimeState.lifecycle?.since),
     ...(selected ? { selectedConfigurationId: selected.id } : {}),
     statuses: Object.fromEntries(
       configurations.map(({ id }) => [id, "stopped"]),
@@ -3048,20 +3115,29 @@ async function previewControlSelection(input: ControlProjectPreviewInput) {
     ? configurations.find(({ id }) => id === input.configurationId)
     : current;
   if (!selected) throw new Error("Preview run configuration not found");
-  return { current, selected, worktree } satisfies PreviewControlSelection;
+  return {
+    current,
+    selected,
+    worktree,
+  } satisfies PreviewControlSelection;
 }
 
 async function stopProjectPreview(selection: PreviewControlSelection) {
   const { current, selected, worktree } = selection;
-  await writePreviewRuntimeState(worktree, {
-    desiredStatus: "stopped",
-    selectedConfigurationId: selected.id,
-  });
-  if (current && current.id !== selected.id) {
-    await stopRunConfigurationServices(worktree, current);
-  }
-  await stopRunConfigurationServices(worktree, selected);
-  return projectPreviewRuntimeState(worktree);
+  return runLocalPreviewOperation(
+    worktree,
+    selected.id,
+    "stopped",
+    "stopping",
+    async () => {
+      if (current && current.id !== selected.id) {
+        await stopRunConfigurationServices(worktree, current);
+      }
+      await stopRunConfigurationServices(worktree, selected);
+      return projectPreviewRuntimeState(worktree);
+    },
+    writePreviewRuntimeState,
+  );
 }
 
 async function startProjectPreview(
@@ -3069,17 +3145,29 @@ async function startProjectPreview(
   restart: boolean,
 ) {
   const { current, selected, worktree } = selection;
-  if (current && current.id !== selected.id) {
-    await stopRunConfigurationServices(worktree, current);
-  }
-  await writePreviewRuntimeState(worktree, {
-    desiredStatus: "running",
-    selectedConfigurationId: selected.id,
-  });
-  if (restart) await stopRunConfigurationServices(worktree, selected);
-  await stopInactiveRunConfigurationServices(worktree, selected);
-  await startProjectCompose(worktree);
-  return projectPreviewRuntimeState(worktree);
+  return runLocalPreviewOperation(
+    worktree,
+    selected.id,
+    "running",
+    restart ? "stopping" : "starting",
+    async () => {
+      if (current && current.id !== selected.id) {
+        await stopRunConfigurationServices(worktree, current);
+      }
+      if (restart) {
+        await stopRunConfigurationServices(worktree, selected);
+        await writePreviewRuntimeState(worktree, {
+          desiredStatus: "running",
+          lifecycle: pendingLocalPreviewLifecycle("starting"),
+          selectedConfigurationId: selected.id,
+        });
+      }
+      await stopInactiveRunConfigurationServices(worktree, selected);
+      await startProjectCompose(worktree);
+      return projectPreviewRuntimeState(worktree);
+    },
+    writePreviewRuntimeState,
+  );
 }
 
 function assertPreviewRunnerAction(action: string) {
@@ -3202,21 +3290,24 @@ async function readPreviewRuntimeFileState(
   worktree: string,
 ): Promise<PreviewRuntimeSelectionState> {
   const path = projectPreviewRuntimeStatePath(worktree);
-  if (!(await runtimePathExists(path))) return { desiredStatus: "running" };
+  if (!(await runtimePathExists(path))) return { desiredStatus: "stopped" };
   try {
     const parsed = JSON.parse(await readRuntimeFile(path)) as unknown;
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-      return { desiredStatus: "running" };
+      return { desiredStatus: "stopped" };
     }
     const record = parsed as Record<string, unknown>;
     return {
       desiredStatus: record.desiredStatus === "stopped" ? "stopped" : "running",
+      ...(validPreviewLifecycle(record.lifecycle)
+        ? { lifecycle: record.lifecycle }
+        : {}),
       ...(typeof record.selectedConfigurationId === "string"
         ? { selectedConfigurationId: record.selectedConfigurationId }
         : {}),
     };
   } catch {
-    return { desiredStatus: "running" };
+    return { desiredStatus: "stopped" };
   }
 }
 
@@ -3293,7 +3384,6 @@ async function recoverProjectPreview(
   options: { reallocatePorts?: boolean } = {},
 ) {
   if (await previewRuntimeStopped(worktree)) return null;
-  await runExistingProjectSetup(worktree);
   if (removedWorktrees.has(worktree)) return null;
   if (removingWorktrees.has(worktree)) return null;
   if (await previewRuntimeStopped(worktree)) return null;

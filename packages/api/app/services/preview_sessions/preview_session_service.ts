@@ -32,8 +32,10 @@ import {
   PreviewReconciler,
   PreviewRuntimeError,
   compilePreviewManifest,
+  previewFailure,
   type PreviewRuntimeDriver,
   type PreviewSessionCommand,
+  type PreviewSessionRecord,
   type RuntimeProfileId,
 } from '@blame/preview-runtime'
 import type { PreviewManifest } from '@blame/preview-contract'
@@ -124,16 +126,48 @@ export default class PreviewSessionService {
             retryable: false,
           })
         }
-        if (['failed', 'provisioning', 'resuming'].includes(existing.state.host)) {
+        if (existing.state.host === 'destroyed') {
+          await this.destroyForUserStory(ownerUserId, input.userStoryId, input.profile)
+        } else {
+          if (
+            ['failed', 'provisioning', 'resuming', 'suspended', 'unprovisioned'].includes(
+              existing.state.host
+            )
+          ) {
+            await this.orchestrator.command(
+              sessionId,
+              { type: 'resume-host' },
+              `create-recovery:${stableHash(operationId).slice(0, 32)}`
+            )
+          }
+          const recovered = await this.get(ownerUserId, sessionId)
+          if (recovered.state.host === 'running') await this.lease.renew(sessionId, ownerUserId)
+          return recovered
+        }
+      }
+      const reusable = await this.repository.latestForUserStory(
+        ownerUserId,
+        input.userStoryId,
+        input.profile
+      )
+      if (reusable?.planHash === planHash) {
+        if (
+          ['failed', 'provisioning', 'resuming', 'suspended', 'unprovisioned'].includes(
+            reusable.state.host
+          )
+        ) {
           await this.orchestrator.command(
-            sessionId,
+            reusable.id,
             { type: 'resume-host' },
-            `create-recovery:${stableHash(operationId).slice(0, 32)}`
+            `story-recovery:${stableHash(operationId).slice(0, 32)}`
           )
         }
-        const recovered = await this.get(ownerUserId, sessionId)
-        if (recovered.state.host === 'running') await this.lease.renew(sessionId, ownerUserId)
+        const recovered = await this.get(ownerUserId, reusable.id)
+        if (recovered.state.host === 'running') await this.lease.renew(reusable.id, ownerUserId)
         return recovered
+      }
+      if (reusable) {
+        await this.destroyForUserStory(ownerUserId, input.userStoryId, input.profile)
       }
       await this.releaseSuspendedSnapshots(
         Math.max(10, this.config.maxRetainedSuspended + 1)
@@ -180,6 +214,15 @@ export default class PreviewSessionService {
     }
   }
 
+  async findForUserStory(ownerUserId: string, userStoryId: string, profile: RuntimeProfileId) {
+    await UserStory.query()
+      .where('id', userStoryId)
+      .whereIn('projectId', Project.query().select('id').where('userId', ownerUserId))
+      .firstOrFail()
+    const session = await this.repository.latestForUserStory(ownerUserId, userStoryId, profile)
+    return session ? this.get(ownerUserId, session.id) : null
+  }
+
   async command(
     ownerUserId: string,
     sessionId: string,
@@ -218,31 +261,64 @@ export default class PreviewSessionService {
     return this.get(ownerUserId, sessionId)
   }
 
-  async destroyForUserStory(ownerUserId: string, userStoryId: string) {
-    const sessions = await PreviewSession.query()
+  async destroyForUserStory(ownerUserId: string, userStoryId: string, profile?: RuntimeProfileId) {
+    const query = PreviewSession.query()
       .where('ownerUserId', ownerUserId)
       .where('userStoryId', userStoryId)
-      .select('id')
+    if (profile) query.where('profile', profile)
+    const sessions = await query.select('id')
     for (const session of sessions) {
       await this.lock.withLock(session.id, async ({ fencingToken }) => {
         const record = await this.repository.get(session.id)
         if (!record || record.ownerUserId !== ownerUserId || record.userStoryId !== userStoryId) {
           return
         }
-        const handle = await this.fencedHandle(session.id, fencingToken)
-        const driver = this.drivers.get(record.profile)
-        if (handle) {
-          if (!driver) throw new Error(`No preview driver is registered for ${record.profile}.`)
-          await driver.destroyHost(handle)
-          await this.repository.setRuntimeHandle(session.id, undefined, fencingToken)
+        record.fencingToken = fencingToken
+        record.desired.host = 'destroyed'
+        record.desired.services = 'stopped'
+        record.desired.preview = 'closed'
+        record.desired.agent = 'idle'
+        record.state.host = 'destroying'
+        record.failure = undefined
+        if (record.state.engine === 'running') record.state.engine = 'stopping'
+        if (record.state.preview !== 'closed') record.state.preview = 'closing'
+        record.endpointMap = undefined
+        try {
+          await this.saveSessionState(record, 'Destroying preview for deleted user story.')
+          const handle = await this.fencedHandle(session.id, fencingToken)
+          const driver = this.drivers.get(record.profile)
+          await Promise.all([
+            this.tickets.revokeSession(session.id),
+            this.edgeRoutes.revokeSession(session.id),
+          ])
+          if (handle) {
+            if (!driver) throw new Error(`No preview driver is registered for ${record.profile}.`)
+            const receipt = await driver.destroyHost(handle)
+            if (receipt.pendingCleanupIds.length) {
+              throw new Error('The preview provider reported pending cleanup resources.')
+            }
+            await this.repository.setRuntimeHandle(session.id, undefined, fencingToken)
+          }
+          await this.artifacts.deleteSessionArtifacts(session.id)
+          record.state.host = 'destroyed'
+          record.state.engine = 'stopped'
+          record.state.preview = 'closed'
+          record.state.agent = 'idle'
+          record.stoppedAt = DateTime.utc().toISO()!
+          record.failure = undefined
+          await this.saveSessionState(record, 'Preview resources destroyed.')
+          await PreviewSession.query()
+            .where('id', session.id)
+            .where('ownerUserId', ownerUserId)
+            .where('userStoryId', userStoryId)
+            .delete()
+        } catch (error) {
+          record.failure = previewFailure(error)
+          await this.saveSessionState(record, record.failure.message, 'failure').catch(
+            () => undefined
+          )
+          throw error
         }
-        await this.tickets.revokeSession(session.id)
-        await this.artifacts.scheduleSessionDeletion(session.id)
-        await PreviewSession.query()
-          .where('id', session.id)
-          .where('ownerUserId', ownerUserId)
-          .where('userStoryId', userStoryId)
-          .delete()
       })
     }
   }
@@ -428,8 +504,8 @@ export default class PreviewSessionService {
       }
       const importing = structuredClone(record)
       importing.state.sync = 'importing'
-      importing.revision += 1
-      await this.repository.save(importing, record.revision)
+      importing.failure = undefined
+      await this.saveSessionState(importing, 'Importing preview workspace source.')
       let runtimeLostDuringBaselineRestore = false
       let unavailableBaselineSnapshotId: string | undefined
       try {
@@ -501,8 +577,8 @@ export default class PreviewSessionService {
         current.lastExportedJournalRevision = '0'
         current.lastAppliedLocalRevision = '0'
         current.lastAcknowledgedRemoteRevision = '0'
-        current.revision += 1
-        await this.repository.save(current, current.revision - 1)
+        current.failure = undefined
+        await this.saveSessionState(current, 'Preview workspace source synchronized.')
         return this.get(ownerUserId, sessionId)
       } catch (error) {
         const current = await this.repository.get(sessionId)
@@ -520,8 +596,8 @@ export default class PreviewSessionService {
               current.provisionSource = undefined
             }
           }
-          current.revision += 1
-          await this.repository.save(current, current.revision - 1)
+          current.failure = previewFailure(error, 'SOURCE_SYNC_FAILED')
+          await this.saveSessionState(current, current.failure.message, 'failure')
         }
         throw error
       }
@@ -569,8 +645,7 @@ export default class PreviewSessionService {
       record.lastExportedJournalRevision = receipt.revision
       record.pendingDeltaArtifactId = receipt.artifactId
       record.state.sync = 'pending_local_sync'
-      record.revision += 1
-      await this.repository.save(record, record.revision - 1)
+      await this.saveSessionState(record, 'Preview workspace changes exported.')
       return this.artifacts.download(receipt.artifactId, ownerUserId)
     })
   }
@@ -651,19 +726,11 @@ export default class PreviewSessionService {
           record.endpointMap = undefined
           record.leaseExpiresAt = undefined
           record.idleDeadlineAt = undefined
-          record.revision += 1
-          await this.repository.save(record, record.revision - 1)
+          await this.saveSessionState(
+            record,
+            'Suspended preview snapshot released by retention policy.'
+          )
           await this.tickets.revokeSession(record.id)
-          await this.eventSink
-            .append({
-              sessionId: record.id,
-              timestamp: DateTime.utc().toISO()!,
-              type: 'state',
-              state: structuredClone(record.state),
-              stream: 'system',
-              message: 'Suspended preview snapshot released by retention policy.',
-            })
-            .catch(() => undefined)
           return 'released' as const
         })
         results.push({ id: candidate.id, status })
@@ -698,8 +765,7 @@ export default class PreviewSessionService {
           record.lastExportedJournalRevision = receipt.revision
           record.pendingDeltaArtifactId = receipt.artifactId
           if (record.state.sync === 'clean') record.state.sync = 'pending_local_sync'
-          record.revision += 1
-          await this.repository.save(record, record.revision - 1)
+          await this.saveSessionState(record, 'Preview workspace checkpoint exported.')
           return 'exported'
         })
         try {
@@ -812,6 +878,25 @@ export default class PreviewSessionService {
       ...usage,
       observedAt: samples.at(-1)?.observedAt.toUTC().toISO() ?? DateTime.utc().toISO()!,
     }
+  }
+
+  private async saveSessionState(
+    record: PreviewSessionRecord,
+    message: string,
+    type: 'state' | 'failure' = 'state'
+  ) {
+    const expectedRevision = record.revision
+    record.revision += 1
+    record.stateChangedAt = DateTime.utc().toISO()!
+    await this.repository.save(record, expectedRevision)
+    await this.eventSink.append({
+      sessionId: record.id,
+      timestamp: record.stateChangedAt,
+      type,
+      state: structuredClone(record.state),
+      stream: 'system',
+      message,
+    })
   }
 }
 

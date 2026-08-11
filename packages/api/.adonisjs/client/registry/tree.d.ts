@@ -17,6 +17,7 @@ export interface ApiDefinition {
   }
   previewSessions: {
     previewSessions: {
+      index: typeof routes['preview_sessions.preview_sessions.index']
       store: typeof routes['preview_sessions.preview_sessions.store']
       show: typeof routes['preview_sessions.preview_sessions.show']
       action: typeof routes['preview_sessions.preview_sessions.action']

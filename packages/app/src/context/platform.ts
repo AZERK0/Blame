@@ -513,6 +513,10 @@ export type PreviewRuntimeClient = {
     resourceSize?: { vcpus: number; memoryGb: number }
   }): Promise<PreviewSessionView>
   get(input: { sessionId: string }): Promise<PreviewSessionView>
+  findForUserStory(input: {
+    userStoryId: string
+    profile: "vercel-compose"
+  }): Promise<{ session: PreviewSessionView | null }>
   openExternal(input: { sessionId: string; routeId?: string }): Promise<boolean>
   command(input: {
     sessionId: string
@@ -645,6 +649,19 @@ export type WorkspaceClient = {
     setupScript: string
     worktree?: string
   }): Promise<HostDependencyReport>
+  prepareProjectPreview(input: {
+    executionId: string
+    storyId: string
+    telemetryCohorts?: ExecutionTelemetryCohorts
+    worktree: string
+    setupScript: string
+    dockerCompose: string
+    previewManifest?: PreviewManifest
+    runConfigurations?: ProjectRunConfiguration[]
+    runConfigurationId?: string | null
+    hostDependenciesChecked?: boolean
+    runtimeProfile: RuntimeProfileId
+  }): Promise<{ prepared: true }>
   runProjectSetup(input: {
     executionId: string
     storyId: string

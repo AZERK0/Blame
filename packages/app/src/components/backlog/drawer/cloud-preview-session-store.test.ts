@@ -9,6 +9,7 @@ import {
   beginCloudPreviewControl,
   cachedCloudPreviewPendingOperation,
   cachedCloudPreviewSession,
+  clearCloudPreviewSession,
   cloudPreviewSessionStorageId,
   publishCloudPreviewPendingOperation,
   publishCloudPreviewSession,
@@ -72,6 +73,33 @@ test("shares an auto-start pending operation with the mounted preview", () => {
 
   assert.deepEqual(received, [operation, undefined])
   assert.equal(cachedCloudPreviewPendingOperation(storageId), undefined)
+  unsubscribe()
+})
+
+test("clears stale persisted and in-memory session state", () => {
+  const storage = new Map<string, string>()
+  const storageId = cloudPreviewSessionStorageId("deleted", "vercel-compose")
+  const received: Array<PreviewSessionView | undefined> = []
+  const unsubscribe = subscribeCloudPreviewSession(storageId, (session) =>
+    received.push(session)
+  )
+  const value = {
+    id: "preview_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  } as PreviewSessionView
+  publishCloudPreviewSession(
+    { setItem: (key, item) => storage.set(key, item) },
+    storageId,
+    value
+  )
+
+  clearCloudPreviewSession(
+    { removeItem: (key) => storage.delete(key) },
+    storageId
+  )
+
+  assert.equal(cachedCloudPreviewSession(storageId), undefined)
+  assert.equal(storage.has(storageId), false)
+  assert.deepEqual(received, [value, undefined])
   unsubscribe()
 })
 

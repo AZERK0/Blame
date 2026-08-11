@@ -55,6 +55,7 @@ router
 
     router
       .group(() => {
+        router.get('/', [PreviewSessionsController, 'index'])
         router.post('/', [PreviewSessionsController, 'store'])
         router.get('/:id', [PreviewSessionsController, 'show'])
         router.post('/:id/actions', [PreviewSessionsController, 'action'])
