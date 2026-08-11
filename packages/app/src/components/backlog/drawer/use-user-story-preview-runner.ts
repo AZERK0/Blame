@@ -14,6 +14,7 @@ import {
 import { managedPreviewStopCommand } from "@/components/backlog/drawer/managed-preview-control"
 import {
   idleManagedPreviewRuntime,
+  managedPreviewActive,
   managedPreviewReady,
   managedPreviewRuntimeState,
 } from "@/components/backlog/drawer/managed-preview-runtime-state"
@@ -145,8 +146,7 @@ export function useUserStoryPreviewRunner(
     const stopped =
       effectiveProfile === "local-container"
         ? effectiveRuntime?.desiredStatus !== "running"
-        : !cloud.session ||
-          ["idle", "stopped"].includes(cloud.session.state.engine)
+        : !managedPreviewActive(cloud.session)
     recordRuntimeSessionState(userStoryId, effectiveProfile, stopped)
   }, [
     cloud.session,
@@ -602,6 +602,7 @@ export async function stopManagedCloudPreview(
     command: managedPreviewStopCommand("stop"),
     operationId: crypto.randomUUID(),
   })
+  recordRuntimeSessionState(userStoryId, "vercel-compose", true)
   return true
 }
 

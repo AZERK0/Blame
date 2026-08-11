@@ -4,6 +4,7 @@ import type { ProjectPreviewRuntimeState } from "@blame/agent-runtime"
 import type { PreviewSessionView } from "@blame/preview-runtime"
 
 import {
+  managedPreviewActive,
   managedPreviewReady,
   managedPreviewRuntimeState,
 } from "./managed-preview-runtime-state.ts"
@@ -70,12 +71,25 @@ test("publishes the managed preview URL once the session is ready", () => {
 })
 
 test("reports a failed managed start on the selected configuration", () => {
-  const runtime = managedPreviewRuntimeState(
-    session({ engine: "failed", preview: "degraded" }),
-    localRuntime
-  )
+  const value = session({ engine: "failed", preview: "degraded" })
+  const runtime = managedPreviewRuntimeState(value, localRuntime)
 
   assert.equal(runtime.statuses.web, "error")
+  assert.equal(managedPreviewActive(value), false)
+})
+
+test("does not keep a managed preview active while it is stopping", () => {
+  const value = session({ engine: "stopping", preview: "closing" })
+  value.desired.services = "stopped"
+
+  assert.equal(managedPreviewActive(value), false)
+})
+
+test("reports a running managed preview as active", () => {
+  assert.equal(
+    managedPreviewActive(session({ engine: "running", preview: "ready" })),
+    true
+  )
 })
 
 function session(

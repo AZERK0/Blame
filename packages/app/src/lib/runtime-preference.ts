@@ -55,9 +55,20 @@ export function recordRuntimeSessionState(
   stopped: boolean
 ) {
   const entries = activeRuntimeSessions()
-  if (stopped) delete entries[storyId]
-  else entries[storyId] = { profile, updatedAt: Date.now() }
-  localStorage.setItem(activeSessionsKey, JSON.stringify(entries))
+  if (stopped) {
+    delete entries[storyId]
+  } else {
+    entries[storyId] = { profile, updatedAt: Date.now() }
+  }
+  saveActiveRuntimeSessions(entries)
+}
+
+export function pruneRuntimeSessionStates(activeStoryIds: Set<string>) {
+  const entries = activeRuntimeSessions()
+  const retained = Object.fromEntries(
+    Object.entries(entries).filter(([storyId]) => activeStoryIds.has(storyId))
+  )
+  saveActiveRuntimeSessions(retained)
 }
 
 export function runtimeProfileSwitchBlockReason(profile: RuntimeProfileId) {
@@ -120,5 +131,15 @@ function activeRuntimeSessions() {
       string,
       { profile: RuntimeProfileId; updatedAt: number }
     >
+  }
+}
+
+function saveActiveRuntimeSessions(
+  entries: Record<string, { profile: RuntimeProfileId; updatedAt: number }>
+) {
+  if (Object.keys(entries).length) {
+    localStorage.setItem(activeSessionsKey, JSON.stringify(entries))
+  } else {
+    localStorage.removeItem(activeSessionsKey)
   }
 }

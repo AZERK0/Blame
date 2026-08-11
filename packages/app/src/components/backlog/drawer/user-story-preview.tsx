@@ -44,7 +44,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { type PreviewBrowserClient, usePlatform } from "@/context/platform"
-import { useRuntimePreference } from "@/lib/runtime-preference"
+import {
+  pruneRuntimeSessionStates,
+  useRuntimePreference,
+} from "@/lib/runtime-preference"
 import { cn } from "@/lib/utils"
 
 type PreviewState = "loading" | "loaded" | "error"
@@ -242,6 +245,13 @@ export const UserStoryPreviewWarmup = React.memo(
     React.useEffect(() => {
       const previous = previousStatusesRef.current
       const next = new Map(userStories.map((story) => [story.id, story.status]))
+      pruneRuntimeSessionStates(
+        new Set(
+          userStories
+            .filter((story) => isActivePreviewStatus(story.status))
+            .map((story) => story.id)
+        )
+      )
       userStories.forEach((story) => {
         if (
           isActivePreviewStatus(story.status) &&

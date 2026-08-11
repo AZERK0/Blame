@@ -49,6 +49,13 @@ export function managedPreviewReady(session: PreviewSessionView | undefined) {
   )
 }
 
+export function managedPreviewActive(session: PreviewSessionView | undefined) {
+  return Boolean(
+    session?.desired.services === "running" &&
+    !["idle", "stopped", "failed"].includes(session.state.engine)
+  )
+}
+
 function managedPreviewConfigurationStatus(
   session: PreviewSessionView
 ): "error" | "running" | "starting" | "stopped" {
