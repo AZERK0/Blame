@@ -13,6 +13,7 @@ import type {
   PreviewManifestServiceKind,
   PreviewManifestSetupTask,
 } from "./types.js";
+import { isLocalPreviewDatabaseEnvironmentValue } from "./environment-security.js";
 
 const serviceKinds = new Set<PreviewManifestServiceKind>([
   "preview",
@@ -791,7 +792,10 @@ function parseEnvironment(
     ) {
       throw new Error(`previewManifest ${field} is invalid`);
     }
-    if (secretEnvironmentKey(key) || literalSecretValue(entry)) {
+    if (
+      (secretEnvironmentKey(key) || literalSecretValue(entry)) &&
+      !isLocalPreviewDatabaseEnvironmentValue(key, entry)
+    ) {
       throw new Error(
         `previewManifest ${field}.${key} requires the explicit secret delivery channel`,
       );

@@ -1,4 +1,10 @@
 export { parsePreviewManifest, validatePreviewManifest } from "./parser.js";
+export {
+  isDatabaseEnvironmentKey,
+  isLocalPreviewDatabaseCredentialKey,
+  isLocalPreviewDatabaseEnvironmentValue,
+  normalizeLocalPreviewDatabaseEnvironmentValue,
+} from "./environment-security.js";
 export type {
   PreviewManifest,
   PreviewManifestBinding,

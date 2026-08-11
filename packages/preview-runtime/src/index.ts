@@ -15,3 +15,4 @@ export * from "./ports/preview-event-sink.js";
 export * from "./ports/preview-runtime-driver.js";
 export * from "./ports/session-repository.js";
 export * from "./ports/source-transport.js";
+export { isLocalPreviewDatabaseEnvironmentValue } from "@blame/preview-contract";

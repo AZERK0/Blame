@@ -155,6 +155,7 @@ Use `probes[]` to prove that required service paths work after startup.
 - For npm dependency installs, use `npm install --no-package-lock`.
 - For Nuxt, use the development command for source-mounted previews unless the setup lifecycle builds first.
 - Use exact environment variable names found in scripts, config, validators, and env examples.
+- Never copy real credentials or placeholder credentials from environment files into the manifest. When the user requests an isolated database, use only the fixed public throwaway value `blame` for database password variables and embedded database URL passwords, consistently across the database, setup tasks, and consumers.
 - Represent inter-service and browser-origin addresses with typed bindings instead of literal localhost or internal DNS values.
 - Distinguish variables read by server-side framework code from variables embedded in browser bundles; declare both when the project uses both.
 - Include database migration setup tasks when migrations are detected and required.

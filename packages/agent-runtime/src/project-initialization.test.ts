@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   parseProjectInitializationPayload,
+  projectInitializationPrompt,
   validateProjectInitializationArtifacts,
 } from "./project-initialization.js";
 import { parsePreviewManifest } from "./preview-manifest.js";
@@ -248,6 +249,85 @@ test("supports persistent workers without browser ports", () => {
 test("uses webpack for Next preview services", () => {
   const result = parseProjectInitializationPayload(canonicalResult());
   assert.match(result.dockerCompose, /corepack pnpm dev --webpack/);
+});
+
+test("normalizes isolated database passwords before manifest validation", () => {
+  const value = canonicalResult();
+  value.previewManifest.setup[0]!.environment = {
+    DATABASE_URL: "mysql://app:copied-password@database:3306/app",
+    DB_PASSWORD: "copied-password",
+  };
+  value.previewManifest.services.push({
+    id: "database",
+    kind: "dependency",
+    container: { image: "mysql:9" },
+    environment: {
+      MYSQL_DATABASE: "app",
+      MYSQL_PASSWORD: "copied-password",
+      MYSQL_ROOT_PASSWORD: "copied-root-password",
+      MYSQL_USER: "app",
+    },
+    endpoints: [{ id: "mysql", protocol: "tcp", port: 3306 }],
+  });
+
+  const result = parseProjectInitializationPayload(value, undefined, {
+    database: { mode: "compose" },
+  });
+
+  assert.deepEqual(result.previewManifest?.setup[0]?.environment, {
+    DATABASE_URL: "mysql://app:blame@database:3306/app",
+    DB_PASSWORD: "blame",
+    COREPACK_HOME: "/tmp/corepack-cache",
+    npm_config_store_dir: "/pnpm/store",
+  });
+  assert.equal(
+    result.previewManifest?.services.at(-1)?.environment?.MYSQL_PASSWORD,
+    "blame",
+  );
+  assert.match(result.dockerCompose, /MYSQL_ROOT_PASSWORD: "blame"/);
+  assert.doesNotMatch(result.dockerCompose, /copied-password/);
+});
+
+test("removes generated database credentials when using the configured database", () => {
+  const value = canonicalResult();
+  value.previewManifest.services[1]!.environment = {
+    DB_HOST: "database",
+    DB_PASSWORD: "copied-password",
+  };
+  value.previewManifest.services.push({
+    id: "database",
+    kind: "dependency",
+    container: { image: "mysql:9" },
+    environment: { MYSQL_ROOT_PASSWORD: "copied-root-password" },
+    endpoints: [{ id: "mysql", protocol: "tcp", port: 3306 }],
+  });
+
+  const result = parseProjectInitializationPayload(value, undefined, {
+    database: { mode: "existing" },
+  });
+
+  assert.equal(
+    result.previewManifest?.services.some(({ id }) => id === "database"),
+    false,
+  );
+  assert.equal(
+    result.previewManifest?.services[1]?.environment?.DB_PASSWORD,
+    undefined,
+  );
+  assert.doesNotMatch(
+    result.dockerCompose,
+    /copied-(?:password|root-password)/,
+  );
+});
+
+test("includes the selected database mode in the initialization prompt", () => {
+  const prompt = projectInitializationPrompt(
+    { rootName: "project", topLevelEntries: [], files: {}, gitLog: [] },
+    { database: { mode: "compose" } },
+  );
+
+  assert.match(prompt, /create an isolated Compose database/);
+  assert.match(prompt, /fixed public throwaway value "blame"/);
 });
 
 test("rejects unsafe commands and invalid run topology", () => {
