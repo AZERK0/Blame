@@ -64,15 +64,16 @@ export function selectedPreviewRuntimeServiceIds(
   configurations: ProjectRunConfiguration[],
   state: PreviewRuntimeSelectionState,
   runtimeServiceIds: string[],
+  manifest?: PreviewManifest,
 ) {
   const selected = selectedPreviewRunConfiguration(configurations, state);
   if (!selected) return [];
   const runtimeServices = new Set(runtimeServiceIds);
-  const selectedServices = (selected?.services ?? []).filter((service) =>
-    runtimeServices.has(service),
-  );
   if (selected && hostOnlyRunConfiguration(selected)) return [];
-  return selectedServices;
+  const selectedServices = manifest
+    ? previewRunConfigurationServiceIds(selected, manifest)
+    : (selected.services ?? []);
+  return selectedServices.filter((service) => runtimeServices.has(service));
 }
 
 export function normalizeStoredRunConfigurations(
@@ -146,9 +147,7 @@ function previewServiceDependencies(service: PreviewManifestService) {
   return Array.from(
     new Set([
       ...(service.dependsOn ?? []),
-      ...(service.bindings ?? [])
-        .filter(({ exposure }) => exposure === "server")
-        .map(({ source }) => source.service),
+      ...(service.bindings ?? []).map(({ source }) => source.service),
     ]),
   );
 }

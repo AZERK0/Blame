@@ -2440,14 +2440,16 @@ async function selectedComposeRuntimeServices(
   worktree: string,
   runtimeServiceIds: string[],
 ) {
-  const [configurations, state] = await Promise.all([
+  const [configurations, state, manifest] = await Promise.all([
     readProjectRunConfigurations(worktree),
     readPreviewRuntimeFileState(worktree),
+    readProjectPreviewManifest(worktree),
   ]);
   return selectedPreviewRuntimeServiceIds(
     configurations,
     state,
     runtimeServiceIds,
+    manifest,
   );
 }
 

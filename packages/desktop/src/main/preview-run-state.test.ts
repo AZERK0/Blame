@@ -144,6 +144,36 @@ test("includes backend dependencies in a web run configuration", () => {
   );
 });
 
+test("starts browser binding sources for a selected web configuration", () => {
+  const manifest = {
+    services: [
+      { id: "database", kind: "dependency" },
+      { id: "backend", kind: "worker", dependsOn: ["database"] },
+      {
+        id: "app",
+        kind: "preview",
+        bindings: [
+          {
+            exposure: "browser",
+            source: { endpoint: "http", service: "backend" },
+            target: { key: "PUBLIC_API_URL", type: "environment" },
+          },
+        ],
+      },
+    ],
+  } as PreviewManifest;
+
+  assert.deepEqual(
+    selectedPreviewRuntimeServiceIds(
+      configurations,
+      { desiredStatus: "running", selectedConfigurationId: "app" },
+      ["database", "backend", "app"],
+      manifest,
+    ),
+    ["app", "backend", "database"],
+  );
+});
+
 test("repairs service configurations widened to the only web preview", () => {
   const manifest = {
     services: [
