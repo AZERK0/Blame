@@ -646,7 +646,7 @@ export type WorkspaceClient = {
   }): Promise<WorktreeResult>
   checkHostDependencies(input: {
     runtimeProfile?: RuntimeProfileId
-    setupScript: string
+    setupScript?: string
     worktree?: string
   }): Promise<HostDependencyReport>
   prepareProjectPreview(input: {
@@ -654,10 +654,8 @@ export type WorkspaceClient = {
     storyId: string
     telemetryCohorts?: ExecutionTelemetryCohorts
     worktree: string
-    setupScript: string
-    dockerCompose: string
-    previewManifest?: PreviewManifest
-    runConfigurations?: ProjectRunConfiguration[]
+    previewManifest: PreviewManifest
+    runConfigurations: ProjectRunConfiguration[]
     runConfigurationId?: string | null
     hostDependenciesChecked?: boolean
     runtimeProfile: RuntimeProfileId
@@ -667,10 +665,8 @@ export type WorkspaceClient = {
     storyId: string
     telemetryCohorts?: ExecutionTelemetryCohorts
     worktree: string
-    setupScript: string
-    dockerCompose: string
-    previewManifest?: PreviewManifest
-    runConfigurations?: ProjectRunConfiguration[]
+    previewManifest: PreviewManifest
+    runConfigurations: ProjectRunConfiguration[]
     runConfigurationId?: string | null
     hostDependenciesChecked?: boolean
     runtimeProfile: RuntimeProfileId

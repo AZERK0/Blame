@@ -106,7 +106,6 @@ import {
 } from "./preview-compose-plan";
 import {
   initialPreviewRuntimeSelection,
-  normalizeStoredRunConfigurations,
   previewRunConfigurationStatus,
   previewRunConfigurationServiceIds,
   selectedPreviewRuntimeServiceIds,
@@ -117,13 +116,12 @@ import {
 import {
   idleLocalPreviewLifecycle,
   localPreviewLifecycle,
+  parseLocalPreviewRuntimeSelectionState,
   pendingLocalPreviewLifecycle,
   runLocalPreviewOperation,
-  validPreviewLifecycle,
 } from "./preview-runtime/local/local-preview-lifecycle.js";
 import {
   composeWithNonMutatingNpmInstalls,
-  composeWithFrameworkServerBindings,
   composeWithRuntimePortPlaceholders,
   composeWithoutNumericSuUser,
   composeWithAllocatedHostPorts,
@@ -338,10 +336,8 @@ type CreateWorktreeInput = ExecutionContextInput & {
 type RunProjectSetupInput = ExecutionContextInput & {
   storyId: string;
   worktree: string;
-  setupScript: string;
-  dockerCompose: string;
-  previewManifest?: PreviewManifest;
-  runConfigurations?: ProjectRunConfiguration[];
+  previewManifest: PreviewManifest;
+  runConfigurations: ProjectRunConfiguration[];
   runConfigurationId?: string | null;
   hostDependenciesChecked?: boolean;
   runtimeProfile: RuntimeProfileId;
@@ -351,7 +347,7 @@ type PrepareProjectPreviewInput = RunProjectSetupInput;
 
 type CheckHostDependenciesInput = {
   runtimeProfile?: RuntimeProfileId;
-  setupScript: string;
+  setupScript?: string;
   worktree?: string;
 };
 
@@ -428,7 +424,7 @@ type ProjectSetupFiles = {
   composePath: string;
   directory: string;
   dockerCompose: string;
-  manifest?: PreviewManifest;
+  manifest: PreviewManifest;
   manifestPath: string;
   runConfigurations: ProjectRunConfiguration[];
   runConfigurationsPath: string;
@@ -699,7 +695,7 @@ export function registerWorkspaceIpcHandlers(
           input.worktree ? resolveRuntimePath(input.worktree) : "",
         ),
         runtimeProfile: input.runtimeProfile,
-        setupScript: input.setupScript,
+        setupScript: input.setupScript ?? "",
       }),
   );
   ipcMain.handle("workspace:get-runtime-status", () =>
@@ -1720,22 +1716,13 @@ async function prepareProjectPreviewArtifacts(
 ) {
   const worktree = resolveRuntimePath(input.worktree);
   const env = await setupEnvironment(worktree);
-  if (!input.previewManifest) {
-    throw new PreviewRuntimeError(
-      "preview_manifest_invalid",
-      "A canonical preview manifest is required",
-    );
-  }
   const manifest = parsePreviewManifest(input.previewManifest);
   const generated = generatePreviewArtifacts(manifest);
   const dockerCompose = generated.dockerCompose;
-  const runConfigurations = containerizedRunConfigurations(
-    parseRunConfigurations(input.runConfigurations ?? []),
-    manifest,
-  );
+  const runConfigurations = parseRunConfigurations(input.runConfigurations);
   validateContainerizedRunConfigurations(runConfigurations, manifest);
   const setupScript = setupScriptWithoutDockerRuntimeChecks(
-    generated?.setupScript ?? input.setupScript,
+    generated.setupScript,
   );
   await validateProjectSetup(
     worktree,
@@ -1776,8 +1763,8 @@ async function prepareProjectSetupFiles(
   worktree: string,
   setupScript: string,
   dockerCompose: string,
-  previewManifest?: PreviewManifest,
-  runConfigurations: ProjectRunConfiguration[] = [],
+  previewManifest: PreviewManifest,
+  runConfigurations: ProjectRunConfiguration[],
   runConfigurationId?: string | null,
 ) {
   const directory = joinWorkspacePath(worktree, ".blame", "initialization");
@@ -1800,16 +1787,15 @@ async function prepareProjectSetupFiles(
     "env file scan",
     () => envHostFileMounts(worktree),
   );
-  const runtimeState = (await runtimePathExists(runtimeStatePath))
-    ? await readPreviewRuntimeFileState(worktree)
-    : initialPreviewRuntimeSelection(runConfigurations, runConfigurationId);
+  const runtimeState = initialPreviewRuntimeSelection(
+    runConfigurations,
+    runConfigurationId,
+  );
   await writeProjectSetupFiles({
     composePath,
     directory,
     dockerCompose,
-    manifest: previewManifest
-      ? parsePreviewManifest(previewManifest)
-      : undefined,
+    manifest: parsePreviewManifest(previewManifest),
     manifestPath,
     runConfigurations,
     runConfigurationsPath,
@@ -1823,41 +1809,13 @@ async function prepareProjectSetupFiles(
   return scriptPath;
 }
 
-function containerizedRunConfigurations(
-  configurations: ProjectRunConfiguration[],
-  manifest: PreviewManifest,
-) {
-  const previews = manifest.services.filter(
-    (service) =>
-      service.kind === "preview" &&
-      service.endpoints.some(({ protocol }) => protocol !== "tcp"),
-  );
-  const normalized = configurations.map((configuration) =>
-    containerizedRunConfiguration(configuration, previews),
-  );
-  const represented = new Set(
-    normalized.flatMap(({ services }) => services ?? []),
-  );
-  const usedIds = new Set(normalized.map(({ id }) => id));
-  const generated = previews
-    .filter(({ id }) => !represented.has(id))
-    .map((service, index) =>
-      previewServiceRunConfiguration(
-        service,
-        usedIds,
-        !normalized.some(({ default: isDefault }) => isDefault) && index === 0,
-      ),
-    );
-  return [...normalized, ...generated];
-}
-
 function validateContainerizedRunConfigurations(
   configurations: ProjectRunConfiguration[],
   manifest: PreviewManifest,
 ) {
   const serviceIds = new Set(manifest.services.map(({ id }) => id));
   for (const configuration of configurations) {
-    for (const service of configuration.services ?? []) {
+    for (const service of configuration.services) {
       if (!serviceIds.has(service)) {
         throw new PreviewRuntimeError(
           "preview_manifest_invalid",
@@ -1866,83 +1824,6 @@ function validateContainerizedRunConfigurations(
       }
     }
   }
-}
-
-function containerizedRunConfiguration(
-  configuration: ProjectRunConfiguration,
-  previews: PreviewManifestService[],
-) {
-  if (configuration.category && configuration.category !== "web") {
-    return configuration;
-  }
-  const preview = matchingPreviewService(configuration, previews);
-  if (!preview) return configuration;
-  return {
-    ...configuration,
-    category: configuration.category ?? "web",
-    previewService: preview.id,
-    scopes: configuration.scopes?.length
-      ? configuration.scopes
-      : [configuration.cwd, preview.id],
-    services: [preview.id],
-  } satisfies ProjectRunConfiguration;
-}
-
-function matchingPreviewService(
-  configuration: ProjectRunConfiguration,
-  previews: PreviewManifestService[],
-) {
-  const port = runConfigurationPreviewPort(configuration.previewUrl);
-  const explicit =
-    previews.find(({ id }) => id === configuration.previewService) ??
-    previews.find(({ id }) => configuration.services?.includes(id)) ??
-    previews.find((service) =>
-      service.endpoints.some((endpoint) => endpoint.port === port),
-    );
-  if (explicit || configuration.category === "web") return explicit;
-  return previews.length === 1 ? previews[0] : undefined;
-}
-
-function runConfigurationPreviewPort(value: string | undefined) {
-  try {
-    return value ? Number(new URL(value).port) : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-function previewServiceRunConfiguration(
-  service: PreviewManifestService,
-  usedIds: Set<string>,
-  isDefault: boolean,
-) {
-  const id = uniqueRunConfigurationId(service.id, usedIds);
-  const endpoint = service.endpoints.find(({ protocol }) => protocol !== "tcp");
-  usedIds.add(id);
-  return {
-    id,
-    name: service.id.replace(/[_.-]+/g, " "),
-    command: service.command ?? "container service",
-    cwd: workspaceRunConfigurationCwd(service.workingDir),
-    default: isDefault,
-    category: "web" as const,
-    services: [service.id],
-    previewService: service.id,
-    scopes: [service.id, workspaceRunConfigurationCwd(service.workingDir)],
-    previewUrl: `${endpoint?.protocol ?? "http"}://localhost:${endpoint?.port ?? 80}`,
-  };
-}
-
-function uniqueRunConfigurationId(serviceId: string, usedIds: Set<string>) {
-  if (!usedIds.has(serviceId)) return serviceId;
-  let index = 2;
-  while (usedIds.has(`${serviceId}-${index}`)) index += 1;
-  return `${serviceId}-${index}`;
-}
-
-function workspaceRunConfigurationCwd(workingDirectory: string | undefined) {
-  if (!workingDirectory || workingDirectory === "/workspace") return ".";
-  return workingDirectory.replace(/^\/workspace\/?/, "") || ".";
 }
 
 async function writeProjectSetupFiles(input: ProjectSetupFiles) {
@@ -1981,10 +1862,6 @@ function writeRuntimeJson(path: string, value: unknown) {
 }
 
 async function writeProjectPreviewManifest(input: ProjectSetupFiles) {
-  if (!input.manifest) {
-    await rmRuntime(input.manifestPath);
-    return;
-  }
   await writeRuntimeFile(
     input.manifestPath,
     `${JSON.stringify(input.manifest, null, 2)}\n`,
@@ -3015,26 +2892,17 @@ async function resolveProjectPreviewUrl(input: ResolveProjectPreviewUrlInput) {
     return null;
   }
   const composePath = projectComposePath(worktree);
-  if (!(await runtimePathExists(composePath)))
-    return labeledContainerPreviewUrl(worktree);
-  const previewTarget = await safeComposePreviewTarget(worktree, composePath);
-  if (!previewTarget) return labeledContainerPreviewUrl(worktree);
+  if (!(await runtimePathExists(composePath))) return null;
+  const previewTarget = await composePreviewTarget(worktree, composePath);
+  if (!previewTarget) return null;
   const address = await composePublishedAddress(
     worktree,
     composePath,
     previewTarget.service,
     previewTarget.port,
   );
-  if (!address) return labeledContainerPreviewUrl(worktree);
+  if (!address) return null;
   return previewUrl(address, previewTarget.protocol, previewTarget.path);
-}
-
-async function safeComposePreviewTarget(worktree: string, composePath: string) {
-  try {
-    return await composePreviewTarget(worktree, composePath);
-  } catch {
-    return undefined;
-  }
 }
 
 async function ensureProjectPreviewUrl(input: EnsureProjectPreviewUrlInput) {
@@ -3278,9 +3146,13 @@ async function runConfigurationServiceIds(
   configuration: ProjectRunConfiguration,
 ) {
   const manifest = await readProjectPreviewManifest(worktree);
-  return manifest
-    ? previewRunConfigurationServiceIds(configuration, manifest)
-    : composeRunConfigurationServiceIds(worktree, configuration);
+  if (!manifest) {
+    throw new PreviewRuntimeError(
+      "preview_manifest_invalid",
+      "A canonical preview manifest is required",
+    );
+  }
+  return previewRunConfigurationServiceIds(configuration, manifest);
 }
 
 async function stopComposeServices(worktree: string, services: string[]) {
@@ -3295,27 +3167,6 @@ async function stopComposeServices(worktree: string, services: string[]) {
     ],
     { cwd: worktree, env: await setupEnvironment(worktree) },
   );
-}
-
-async function composeRunConfigurationServiceIds(
-  worktree: string,
-  configuration: ProjectRunConfiguration,
-) {
-  const config = await composeConfig(worktree, projectComposePath(worktree));
-  const initial = configuration.services?.length
-    ? configuration.services
-    : composeRuntimeServices(config);
-  const active = new Set(initial);
-  const pending = Array.from(active);
-  while (pending.length) {
-    const service = config.services?.[pending.shift() ?? ""];
-    for (const dependency of composeServiceDependencies(service)) {
-      if (!config.services?.[dependency] || active.has(dependency)) continue;
-      active.add(dependency);
-      pending.push(dependency);
-    }
-  }
-  return Array.from(active);
 }
 
 function composeRuntimeServices(config: ComposeConfig) {
@@ -3347,15 +3198,7 @@ async function previewRuntimeStopped(worktree: string) {
 async function readProjectRunConfigurations(worktree: string) {
   const path = projectRunConfigurationsPath(worktree);
   if (!(await runtimePathExists(path))) return [];
-  const configurations = parseRunConfigurations(
-    JSON.parse(await readRuntimeFile(path)),
-  );
-  const manifest = await readProjectPreviewManifest(worktree);
-  const normalized = normalizeStoredRunConfigurations(configurations, manifest);
-  if (JSON.stringify(configurations) !== JSON.stringify(normalized)) {
-    await writeRuntimeJson(path, normalized);
-  }
-  return normalized;
+  return parseRunConfigurations(JSON.parse(await readRuntimeFile(path)));
 }
 
 async function readPreviewRuntimeFileState(
@@ -3364,20 +3207,9 @@ async function readPreviewRuntimeFileState(
   const path = projectPreviewRuntimeStatePath(worktree);
   if (!(await runtimePathExists(path))) return { desiredStatus: "stopped" };
   try {
-    const parsed = JSON.parse(await readRuntimeFile(path)) as unknown;
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-      return { desiredStatus: "stopped" };
-    }
-    const record = parsed as Record<string, unknown>;
-    return {
-      desiredStatus: record.desiredStatus === "stopped" ? "stopped" : "running",
-      ...(validPreviewLifecycle(record.lifecycle)
-        ? { lifecycle: record.lifecycle }
-        : {}),
-      ...(typeof record.selectedConfigurationId === "string"
-        ? { selectedConfigurationId: record.selectedConfigurationId }
-        : {}),
-    };
+    return parseLocalPreviewRuntimeSelectionState(
+      JSON.parse(await readRuntimeFile(path)),
+    );
   } catch {
     return { desiredStatus: "stopped" };
   }
@@ -4437,9 +4269,7 @@ async function repairComposeFile(
     composeWithNonMutatingNpmInstalls(
       composeWithoutNumericSuUser(
         composeWithRuntimePortPlaceholders(
-          composeWithFrameworkServerBindings(
-            dockerComposeWithPortableWindowsPaths(nextCompose),
-          ),
+          dockerComposeWithPortableWindowsPaths(nextCompose),
           options.reallocatePorts,
         ),
       ),
@@ -4499,9 +4329,7 @@ async function prepareProjectCompose(
     () =>
       composeWithNonMutatingNpmInstalls(
         composeWithoutNumericSuUser(
-          composeWithFrameworkServerBindings(
-            dockerComposeForPreview(compose, worktree, dependencyKey),
-          ),
+          dockerComposeForPreview(compose, worktree, dependencyKey),
         ),
       ),
   );
@@ -4535,24 +4363,16 @@ async function prepareProjectCompose(
 
 async function logPreviewEnvOverrides(
   worktree: string,
-  overrides: Array<{
-    localHosts?: Record<string, string>;
-    values: Record<string, string>;
-  }>,
+  overrides: Array<{ values: Record<string, string> }>,
 ) {
   const bindings = overrides.reduce(
     (count, override) => count + Object.keys(override.values).length,
     0,
   );
-  const inferredHosts = overrides.reduce(
-    (count, override) =>
-      count + Object.values(override.localHosts ?? {}).filter(Boolean).length,
-    0,
-  );
-  if (bindings + inferredHosts === 0) return;
+  if (bindings === 0) return;
   await appendRecoveryLog(
     worktree,
-    `preview env overrides prepared: ${bindings} bindings, ${inferredHosts} inferred hosts`,
+    `preview env overrides prepared: ${bindings} bindings`,
   );
 }
 
@@ -4629,60 +4449,6 @@ async function appendComposeOutput(worktree: string, args: string[]) {
   } catch (error) {
     await appendRecoveryLog(worktree, commandErrorText(error).trim());
   }
-}
-
-async function labeledContainerPreviewUrl(worktree: string) {
-  const containers = await previewContainers(false, worktree);
-  const selectedService = await selectedPreviewServiceId(worktree);
-  const matching = containers.filter((container) =>
-    containerMatchesWorktree(container, worktree),
-  );
-  const container =
-    matching.find(
-      (candidate) => runtimeContainerService(candidate) === selectedService,
-    ) ?? matching[0];
-  if (!container) return null;
-  const labels = container.Config?.Labels ?? {};
-  const port = labels["blame.preview.port"];
-  if (!port) return null;
-  const binding = container.NetworkSettings?.Ports?.[`${port}/tcp`]?.[0];
-  if (!binding?.HostPort) return null;
-  const host = binding.HostIp || "127.0.0.1";
-  const url = previewUrl(
-    `${host}:${binding.HostPort}`,
-    labels["blame.preview.protocol"] || "http",
-    labels["blame.preview.path"] || "/",
-  );
-  return containerPublicOriginsMatchPreview(container, url) ? url : null;
-}
-
-function containerPublicOriginsMatchPreview(
-  container: RuntimeContainer,
-  previewUrl: string,
-) {
-  const expectedOrigin = previewOrigin(previewUrl);
-  if (!expectedOrigin) return true;
-  for (const value of container.Config?.Env ?? []) {
-    const [key, ...parts] = value.split("=");
-    if (!publicOriginEnvironmentKey(key)) continue;
-    const origin = previewOrigin(parts.join("="));
-    if (origin && origin !== expectedOrigin) return false;
-  }
-  return true;
-}
-
-function publicOriginEnvironmentKey(key: string) {
-  return [
-    "APP_URL",
-    "APPLICATION_URL",
-    "BETTER_AUTH_URL",
-    "CANONICAL_URL",
-    "NEXT_PUBLIC_APP_URL",
-    "NEXT_PUBLIC_BASE_URL",
-    "NEXTAUTH_URL",
-    "PUBLIC_URL",
-    "SITE_URL",
-  ].includes(key);
 }
 
 async function previewContainers(includeStopped: boolean, worktree: string) {

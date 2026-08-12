@@ -194,9 +194,30 @@ function input(
     workspaceRoot: repository,
     baseCommit,
     mergeCommit,
-    setupScript: "#!/usr/bin/env bash\npnpm install",
-    dockerCompose:
-      'services:\n  web:\n    image: node:22\n    ports:\n      - "127.0.0.1::3000"',
+    previewManifest: {
+      confidence: "high",
+      project: { root: "." },
+      setup: [],
+      services: [
+        {
+          id: "web",
+          kind: "preview",
+          container: { image: "node:22-bookworm" },
+          command: "pnpm dev",
+          endpoints: [
+            {
+              id: "http",
+              protocol: "http",
+              port: 3000,
+              healthcheck: { type: "http", path: "/", timeoutMs: 30_000 },
+            },
+          ],
+        },
+      ],
+      caches: [],
+      risks: [],
+      probes: [],
+    },
     runConfigurations: [],
   };
 }

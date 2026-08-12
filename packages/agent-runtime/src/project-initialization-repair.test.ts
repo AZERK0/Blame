@@ -5,6 +5,8 @@ import {
   parseProjectInitializationRepairResult,
   projectInitializationRepairPrompt,
 } from "./project-initialization-repair.js";
+import { parsePreviewManifest } from "./preview-manifest.js";
+import type { RepairProjectInitializationInput } from "./types.js";
 
 function canonicalRepair() {
   return {
@@ -60,44 +62,48 @@ function canonicalRepair() {
   };
 }
 
-test("generates repaired artifacts from a canonical manifest", () => {
+test("returns only canonical repaired initialization state", () => {
   const result = parseProjectInitializationRepairResult(
     JSON.stringify(canonicalRepair()),
   );
 
   assert.equal(result.classification, "repairable_initialization");
   assert.equal(result.previewManifest?.services[0]?.kind, "preview");
-  assert.match(result.dockerCompose ?? "", /blame\.setup: "true"/);
-  assert.match(result.dockerCompose ?? "", /"127\.0\.0\.1::3000"/);
+  assert.equal(result.runConfigurations?.[0]?.previewService, "web");
+  assert.deepEqual(Object.keys(result).sort(), [
+    "classification",
+    "previewManifest",
+    "reason",
+    "runConfigurations",
+  ]);
 });
 
-test("does not accept derived artifacts as a compatibility fallback", () => {
+test("rejects removed initialization artifact fields", () => {
+  const repair = canonicalRepair();
   assert.throws(
     () =>
       parseProjectInitializationRepairResult(
         JSON.stringify({
-          classification: "repairable_initialization",
-          reason: "Old artifacts changed.",
+          ...repair,
           setupScript: "npm install",
           dockerCompose: "services: {}",
-          runConfigurations: [],
         }),
       ),
-    /canonical previewManifest/,
+    /unsupported field setupScript/,
   );
 });
 
-test("rejects historical manifest and unknown service references", () => {
-  const historical = canonicalRepair();
+test("rejects fields outside the manifest contract and unknown services", () => {
+  const unknownField = canonicalRepair();
   assert.throws(
     () =>
       parseProjectInitializationRepairResult(
         JSON.stringify({
-          ...historical,
-          previewManifest: { ...historical.previewManifest, version: 2 },
+          ...unknownField,
+          previewManifest: { ...unknownField.previewManifest, version: 2 },
         }),
       ),
-    /version is no longer supported/,
+    /unsupported field version/,
   );
 
   const invalid = canonicalRepair();
@@ -114,7 +120,6 @@ test("omits artifacts for non-initialization failures", () => {
     JSON.stringify({
       classification: "project_code_failure",
       reason: "The application fails during startup.",
-      previewManifest: canonicalRepair().previewManifest,
     }),
   );
   assert.deepEqual(result, {
@@ -133,14 +138,13 @@ test("requires complete run configurations for a repair", () => {
 });
 
 test("includes validation feedback in repair correction prompts", () => {
-  const input = {
+  const input: RepairProjectInitializationInput = {
     apiConnection: { url: "https://example.com", token: "token" },
     providerId: "provider",
     modelId: "model",
     cwd: "/project",
     workspaceRoot: "/project",
-    setupScript: "",
-    dockerCompose: "",
+    previewManifest: parsePreviewManifest(canonicalRepair().previewManifest),
     runConfigurations: [],
     diagnostics: {
       setupLog: "",

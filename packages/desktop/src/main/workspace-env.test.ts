@@ -167,25 +167,6 @@ test("materializes typed binding values without framework-specific keys", () => 
   );
 });
 
-test("repairs unambiguous legacy localhost service URLs", () => {
-  assert.equal(
-    materializePreviewEnvValues(
-      [
-        "PRIVATE_BACKEND_ORIGIN=http://localhost:3333/api",
-        'DATABASE_URL="mysql://127.0.0.1:3306/app"',
-      ].join("\n"),
-      undefined,
-      {},
-      { "3333": "backend", "3306": "database" },
-    ),
-    [
-      "PRIVATE_BACKEND_ORIGIN=http://backend:3333/api",
-      'DATABASE_URL="mysql://database:3306/app"',
-      "",
-    ].join("\n"),
-  );
-});
-
 test("detects stale materialized preview env files", async () => {
   const root = await mkdtemp(join(tmpdir(), "blame-env-preview-"));
   try {

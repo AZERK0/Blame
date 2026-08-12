@@ -10,14 +10,10 @@ const runConfiguration = vine.object({
   command: vine.string().trim().minLength(1).maxLength(2000),
   cwd: vine.string().trim().minLength(1).maxLength(500),
   default: vine.boolean(),
-  category: vine.enum(['web', 'mobile', 'desktop', 'terminal', 'service', 'other']).optional(),
-  services: vine.array(vine.string().trim().minLength(1).maxLength(80)).maxLength(20).optional(),
+  category: vine.enum(['web', 'mobile', 'desktop', 'terminal', 'service', 'other']),
+  services: vine.array(vine.string().trim().minLength(1).maxLength(80)).maxLength(20),
   previewService: vine.string().trim().minLength(1).maxLength(80).nullable().optional(),
-  scopes: vine
-    .array(vine.string().trim().minLength(1).maxLength(500))
-    .minLength(1)
-    .maxLength(50)
-    .optional(),
+  scopes: vine.array(vine.string().trim().minLength(1).maxLength(500)).minLength(1).maxLength(50),
   previewUrl: vine.string().trim().minLength(1).maxLength(2048).nullable().optional(),
 })
 
@@ -29,10 +25,8 @@ export const startProjectInitializationValidator = vine.create({
 
 export const completeProjectInitializationValidator = vine.create({
   clineSessionId: vine.string().trim().maxLength(255).nullable().optional(),
-  previewManifest: vine.any().optional(),
-  setupScript: vine.string().minLength(1),
-  dockerCompose: vine.string().minLength(1),
-  runConfigurations: vine.array(runConfiguration).maxLength(20).optional(),
+  previewManifest: vine.any(),
+  runConfigurations: vine.array(runConfiguration).maxLength(20),
 })
 
 export const failProjectInitializationValidator = vine.create({
@@ -42,9 +36,7 @@ export const failProjectInitializationValidator = vine.create({
 
 export const repairProjectInitializationValidator = vine.create({
   clineSessionId: vine.string().trim().maxLength(255).nullable().optional(),
-  previewManifest: vine.any().optional(),
-  setupScript: vine.string().minLength(1),
-  dockerCompose: vine.string().minLength(1),
-  runConfigurations: vine.array(runConfiguration).maxLength(20).optional(),
+  previewManifest: vine.any(),
+  runConfigurations: vine.array(runConfiguration).maxLength(20),
   reason: vine.string().trim().minLength(1).maxLength(4096),
 })

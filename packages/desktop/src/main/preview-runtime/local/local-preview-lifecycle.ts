@@ -148,6 +148,49 @@ export function validPreviewLifecycle(
   );
 }
 
+export function parseLocalPreviewRuntimeSelectionState(
+  value: unknown,
+): PreviewRuntimeSelectionState {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("Preview runtime state must be an object");
+  }
+  const state = value as Record<string, unknown>;
+  const allowed = new Set([
+    "desiredStatus",
+    "lifecycle",
+    "selectedConfigurationId",
+  ]);
+  const unknown = Object.keys(state).find((key) => !allowed.has(key));
+  if (unknown) {
+    throw new Error(
+      `Preview runtime state contains unsupported field ${unknown}`,
+    );
+  }
+  if (state.desiredStatus !== "running" && state.desiredStatus !== "stopped") {
+    throw new Error("Preview runtime state desiredStatus is invalid");
+  }
+  if (
+    state.lifecycle !== undefined &&
+    !validPreviewLifecycle(state.lifecycle)
+  ) {
+    throw new Error("Preview runtime state lifecycle is invalid");
+  }
+  if (
+    state.selectedConfigurationId !== undefined &&
+    (typeof state.selectedConfigurationId !== "string" ||
+      !state.selectedConfigurationId)
+  ) {
+    throw new Error("Preview runtime state selectedConfigurationId is invalid");
+  }
+  return {
+    desiredStatus: state.desiredStatus,
+    ...(state.lifecycle ? { lifecycle: state.lifecycle } : {}),
+    ...(state.selectedConfigurationId
+      ? { selectedConfigurationId: state.selectedConfigurationId }
+      : {}),
+  };
+}
+
 function validFailure(value: unknown) {
   if (value === undefined) return true;
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;

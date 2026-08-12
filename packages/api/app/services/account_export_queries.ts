@@ -26,8 +26,6 @@ const projectInitializationColumns = [
   'cline_session_id',
   'agent_provider_id',
   'agent_model_id',
-  'setup_script',
-  'docker_compose',
   'preview_manifest',
   'run_configurations',
   'error',

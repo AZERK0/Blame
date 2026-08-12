@@ -19,8 +19,6 @@ export default class ProjectInitializationTransformer extends BaseTransformer<Pr
             agentProviderId: this.resource.initialization.agentProviderId,
             agentModelId: this.resource.initialization.agentModelId,
             previewManifest: this.resource.initialization.previewManifest,
-            setupScript: this.resource.initialization.setupScript,
-            dockerCompose: this.resource.initialization.dockerCompose,
             runConfigurations: this.resource.initialization.runConfigurations ?? [],
             error: this.resource.initialization.error,
             repairReason: this.resource.initialization.repairReason,

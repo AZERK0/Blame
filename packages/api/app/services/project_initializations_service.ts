@@ -31,7 +31,10 @@ export default class ProjectInitializationsService {
       clineSessionId: input.clineSessionId ?? null,
       agentProviderId: input.providerId,
       agentModelId: input.modelId,
+      previewManifest: null,
+      runConfigurations: null,
       error: null,
+      repairReason: null,
     })
     await initialization.save()
     return this.snapshot(projectId)
@@ -39,7 +42,7 @@ export default class ProjectInitializationsService {
 
   async complete(userId: string, projectId: string, input: CompleteInput) {
     await new ProjectsService().findForUser(userId, projectId)
-    const runConfigurations = input.runConfigurations ?? []
+    const runConfigurations = input.runConfigurations
     const previewManifest = validatedPreviewManifest(input.previewManifest)
     validateRunConfigurations(runConfigurations, previewManifest)
     const initialization = await this.initialization(projectId)
@@ -47,9 +50,7 @@ export default class ProjectInitializationsService {
       status: 'done',
       step: 'completed',
       clineSessionId: input.clineSessionId ?? initialization.clineSessionId,
-      previewManifest: previewManifest ?? null,
-      setupScript: input.setupScript,
-      dockerCompose: input.dockerCompose,
+      previewManifest,
       runConfigurations,
       error: null,
       repairReason: null,
@@ -74,17 +75,14 @@ export default class ProjectInitializationsService {
   async repair(userId: string, projectId: string, input: RepairInput) {
     await new ProjectsService().findForUser(userId, projectId)
     const initialization = await this.initialization(projectId)
-    const runConfigurations = input.runConfigurations ?? initialization.runConfigurations ?? []
-    const previewManifest =
-      validatedPreviewManifest(input.previewManifest) ?? initialization.previewManifest
+    const runConfigurations = input.runConfigurations
+    const previewManifest = validatedPreviewManifest(input.previewManifest)
     validateRunConfigurations(runConfigurations, previewManifest)
     initialization.merge({
       status: 'done',
       step: 'completed',
       clineSessionId: input.clineSessionId ?? initialization.clineSessionId,
       previewManifest,
-      setupScript: input.setupScript,
-      dockerCompose: input.dockerCompose,
       runConfigurations,
       error: null,
       repairReason: input.reason,
@@ -111,7 +109,6 @@ export default class ProjectInitializationsService {
 }
 
 function validatedPreviewManifest(value: unknown) {
-  if (value === undefined) return undefined
   try {
     return parsePreviewManifest(value)
   } catch (error) {
@@ -125,7 +122,7 @@ function validatedPreviewManifest(value: unknown) {
 
 function validateRunConfigurations(
   configurations: NonNullable<CompleteInput['runConfigurations']>,
-  manifest: PreviewManifest | null | undefined
+  manifest: PreviewManifest
 ) {
   const ids = new Set(configurations.map((configuration) => configuration.id))
   if (ids.size !== configurations.length) {
@@ -155,20 +152,17 @@ function invalidRunConfiguration(message: string): never {
 
 function invalidRunConfigurationTopology(
   configuration: NonNullable<CompleteInput['runConfigurations']>[number],
-  manifest: PreviewManifest | null | undefined
+  manifest: PreviewManifest
 ) {
-  const services = configuration.services ?? []
+  const services = configuration.services
   if (requiresContainerServices(configuration.category) && !services.length) return true
-  if (configuration.category && !configuration.scopes?.length) return true
+  if (!configuration.scopes.length) return true
   if (configuration.category === 'web' && !configuration.previewService) return true
-  if (configuration.category && configuration.category !== 'web' && configuration.previewService)
-    return true
+  if (configuration.category !== 'web' && configuration.previewService) return true
   if (configuration.previewService && !services.includes(configuration.previewService)) return true
-  if (!manifest) return false
   const serviceIds = new Set(manifest.services.map(({ id }) => id))
   if (services.some((service) => !serviceIds.has(service))) return true
   if (
-    configuration.category &&
     configuration.category !== 'web' &&
     manifest.services.some(({ id, kind }) => services.includes(id) && kind === 'preview')
   ) {

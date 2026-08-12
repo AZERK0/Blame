@@ -182,19 +182,12 @@ export function createCloudApi(connection: CloudApiConnection) {
       }).then(() => undefined)
     },
     async resendVerification(email: string) {
-      return requestEmailVerification(
-        connection,
-        baseUrl,
-        email
-      )
+      return requestEmailVerification(connection, baseUrl, email)
     },
     async socialLogin(provider: SocialAuthProvider) {
-      return requestDesktopAuthorization(
-        connection,
-        baseUrl,
-        "/auth/desktop",
-        { provider }
-      )
+      return requestDesktopAuthorization(connection, baseUrl, "/auth/desktop", {
+        provider,
+      })
     },
     pollDesktopLogin(deviceCode: string) {
       return pollDesktopAuthorization(connection, baseUrl, deviceCode)
@@ -211,11 +204,7 @@ export function createCloudApi(connection: CloudApiConnection) {
       )
     },
     passkeyLogin() {
-      return requestDesktopAuthorization(
-        connection,
-        baseUrl,
-        "/auth/passkey"
-      )
+      return requestDesktopAuthorization(connection, baseUrl, "/auth/passkey")
     },
     exchangeDesktopCode(code: string) {
       return request<CloudSession>(
@@ -424,9 +413,7 @@ export function createCloudApi(connection: CloudApiConnection) {
       projectId: string,
       input: {
         clineSessionId?: string | null
-        previewManifest?: PreviewManifest
-        setupScript: string
-        dockerCompose: string
+        previewManifest: PreviewManifest
         runConfigurations: ProjectRunConfiguration[]
       }
     ) {
@@ -452,9 +439,7 @@ export function createCloudApi(connection: CloudApiConnection) {
       projectId: string,
       input: {
         clineSessionId?: string | null
-        previewManifest?: PreviewManifest
-        setupScript: string
-        dockerCompose: string
+        previewManifest: PreviewManifest
         runConfigurations: ProjectRunConfiguration[]
         reason: string
       }
@@ -663,21 +648,28 @@ async function pollDesktopAuthorization(
   baseUrl: string,
   deviceCode: string
 ): Promise<DesktopAuthorizationPoll> {
-  const response = await cloudFetch(connection, `${baseUrl}/auth/device/token`, {
-    body: JSON.stringify({
-      client_id: desktopAuthClientId,
-      device_code: deviceCode,
-      grant_type: "urn:ietf:params:oauth:grant-type:device_code",
-    }),
-    headers: { "Content-Type": "application/json" },
-    method: "POST",
-  })
+  const response = await cloudFetch(
+    connection,
+    `${baseUrl}/auth/device/token`,
+    {
+      body: JSON.stringify({
+        client_id: desktopAuthClientId,
+        device_code: deviceCode,
+        grant_type: "urn:ietf:params:oauth:grant-type:device_code",
+      }),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    }
+  )
   const body = await response.json().catch(() => null)
   if (response.ok) return authenticatedDesktopAuthorization(body)
   const error = deviceAuthorizationError(body)
   if (error === "authorization_pending") return { status: "pending" }
   if (error === "slow_down") return { status: "slow-down" }
-  throw new CloudApiError(deviceAuthorizationMessage(error, body), response.status)
+  throw new CloudApiError(
+    deviceAuthorizationMessage(error, body),
+    response.status
+  )
 }
 
 function authenticatedDesktopAuthorization(
@@ -697,9 +689,11 @@ function deviceAuthorizationError(value: unknown) {
 }
 
 function deviceAuthorizationMessage(error: string, value: unknown) {
-  if (error === "expired_token") return "This sign-in request expired. Try again."
+  if (error === "expired_token")
+    return "This sign-in request expired. Try again."
   if (error === "access_denied") return "This sign-in request was denied."
-  if (error === "invalid_grant") return "This sign-in request is no longer valid."
+  if (error === "invalid_grant")
+    return "This sign-in request is no longer valid."
   const body = responseData(value)
   if (isRecord(body) && typeof body.error_description === "string") {
     return body.error_description

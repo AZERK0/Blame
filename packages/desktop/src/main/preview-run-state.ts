@@ -53,7 +53,7 @@ export function shouldStartBrowserPreview(
   if (state.desiredStatus !== "running") return false;
   const selected = selectedPreviewRunConfiguration(configurations, state);
   if (!manifest || !selected) return false;
-  if (selected.category && selected.category !== "web") return false;
+  if (selected.category !== "web") return false;
   return manifest.services.some(
     (service) =>
       service.id === selected.previewService && browserPreviewService(service),
@@ -72,18 +72,8 @@ export function selectedPreviewRuntimeServiceIds(
   if (selected && hostOnlyRunConfiguration(selected)) return [];
   const selectedServices = manifest
     ? previewRunConfigurationServiceIds(selected, manifest)
-    : (selected.services ?? []);
+    : selected.services;
   return selectedServices.filter((service) => runtimeServices.has(service));
-}
-
-export function normalizeStoredRunConfigurations(
-  configurations: ProjectRunConfiguration[],
-  manifest: PreviewManifest | undefined,
-) {
-  if (!manifest) return configurations;
-  return configurations.map((configuration) =>
-    normalizeStoredRunConfiguration(configuration, manifest),
-  );
 }
 
 export function previewRunConfigurationStatus(
@@ -91,7 +81,7 @@ export function previewRunConfigurationStatus(
   containers: PreviewRuntimeContainerState[],
   runtimeState: PreviewRuntimeSelectionState,
 ): ProjectRunConfigurationStatus {
-  const services = configuration.services ?? [];
+  const services = configuration.services;
   if (hostOnlyRunConfiguration(configuration)) return "stopped";
   const matching = containers.filter(({ service }) =>
     services.includes(service),
@@ -114,7 +104,7 @@ export function previewRunConfigurationStatus(
 }
 
 function hostOnlyRunConfiguration(configuration: ProjectRunConfiguration) {
-  if (configuration.services?.length) return false;
+  if (configuration.services.length) return false;
   return (
     configuration.category === "desktop" ||
     configuration.category === "mobile" ||
@@ -128,7 +118,7 @@ export function previewRunConfigurationServiceIds(
   manifest: PreviewManifest,
 ) {
   const runtimeServices = new Set(manifest.services.map(({ id }) => id));
-  const active = new Set(configuration.services ?? []);
+  const active = new Set(configuration.services);
   const pending = Array.from(active);
   while (pending.length) {
     const serviceId = pending.shift();
@@ -156,50 +146,6 @@ function browserPreviewService(service: PreviewManifestService) {
   return (
     service.kind === "preview" &&
     service.endpoints.some(({ protocol }) => protocol !== "tcp")
-  );
-}
-
-function normalizeStoredRunConfiguration(
-  configuration: ProjectRunConfiguration,
-  manifest: PreviewManifest,
-) {
-  if (
-    !configuration.category ||
-    configuration.category === "web" ||
-    !configuration.previewService
-  ) {
-    return configuration;
-  }
-  const service = matchingNonPreviewService(configuration, manifest.services);
-  if (!service) return configuration;
-  return {
-    ...configuration,
-    previewService: undefined,
-    services: [service.id],
-  };
-}
-
-function matchingNonPreviewService(
-  configuration: ProjectRunConfiguration,
-  services: PreviewManifestService[],
-) {
-  const candidates = services.filter(({ kind }) => kind !== "preview");
-  return (
-    candidates.find(({ id }) => id === configuration.id) ??
-    candidates.find((service) =>
-      configurationMatchesService(configuration, service),
-    )
-  );
-}
-
-function configurationMatchesService(
-  configuration: ProjectRunConfiguration,
-  service: PreviewManifestService,
-) {
-  const servicePath = service.workingDir?.replace(/^\/workspace\/?/, "");
-  return (configuration.scopes ?? []).some(
-    (scope) =>
-      scope === service.id || Boolean(servicePath && scope === servicePath),
   );
 }
 

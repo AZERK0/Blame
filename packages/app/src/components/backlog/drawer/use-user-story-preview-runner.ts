@@ -112,8 +112,7 @@ export function useUserStoryPreviewRunner(
       : (cloudRuntime?.configurations.find(
           ({ default: isDefault }) => isDefault
         ) ?? cloudRuntime?.configurations[0])
-    if (!configuration?.services?.length || !configuration.previewService)
-      return
+    if (!configuration?.services.length || !configuration.previewService) return
     const attemptKey = `${userStoryId}:${worktree}:${configuration.id}`
     if (autoStartAttemptRef.current === attemptKey) return
     autoStartAttemptRef.current = attemptKey

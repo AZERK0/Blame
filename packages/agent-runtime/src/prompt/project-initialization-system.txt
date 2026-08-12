@@ -113,7 +113,7 @@ Every run configuration must classify and group a runnable project surface:
 - `services[]`: the top-level manifest services Compose must start for this configuration; dependencies belong in service `dependsOn` or bindings and are started automatically
 - `previewService`: the browser-facing service for `web` configurations
 - `scopes[]`: evidence-based project areas, package paths, features, and dependency domains that help select the configuration for a user story
-- Keep `command`, `cwd`, and `previewUrl` for compatibility with the existing project runner, but story previews always launch `services[]` inside the worktree Compose project.
+- `command`, `cwd`, and `previewUrl` describe the project surface, but story previews always launch `services[]` inside the worktree Compose project.
 - `web` and `service` configurations must declare at least one service. A host-only `desktop`, `mobile`, `terminal`, or `other` configuration may use `services: []` when no faithful container counterpart exists, and must then omit `previewService` and `previewUrl`.
 - When a native orchestration command also starts or requires container-capable APIs, workers, or dependencies, include those faithful supporting services in `services[]`; use an empty array only when no relevant container counterpart exists.
 - In monorepos, create one configuration per independently useful application surface, such as the root development orchestrator, marketing site, customer app, admin app, mobile app, desktop app, API service, or terminal tool.

@@ -34,7 +34,9 @@ test("starts an email OTP challenge after a valid password", async () => {
       "https://api.blame.test/auth/two-factor/send-otp",
     ]
   )
-  assert.ok(requests.every((request) => request.init?.credentials === "include"))
+  assert.ok(
+    requests.every((request) => request.init?.credentials === "include")
+  )
 })
 
 test("uses the desktop transport for authentication requests", async () => {
@@ -101,10 +103,7 @@ test("pairs an unverified password sign-in with the desktop device", async () =>
   globalThis.fetch = async (input, init) => {
     requests.push({ init, url: String(input) })
     if (requests.length === 1) {
-      return jsonResponse(
-        { message: "Email not verified" },
-        { status: 403 }
-      )
+      return jsonResponse({ message: "Email not verified" }, { status: 403 })
     }
     return requests.length === 2
       ? jsonResponse(deviceAuthorizationResponse())
@@ -240,9 +239,16 @@ test("reports structured API validation errors", async () => {
       token: "session-token",
       url: "https://api.blame.test",
     }).completeProjectInitialization("project-id", {
-      dockerCompose: "services: {}",
+      previewManifest: {
+        confidence: "high",
+        project: { root: "." },
+        setup: [],
+        services: [],
+        caches: [],
+        risks: [],
+        probes: [],
+      },
       runConfigurations: [],
-      setupScript: "pnpm install",
     }),
     (error: unknown) =>
       error instanceof CloudApiError &&

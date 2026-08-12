@@ -55,13 +55,9 @@ async function currentInitialization(input: ImpactInput) {
     input.apiConnection
   ).projectInitialization(input.projectId)
   const initialization = snapshot.initialization
-  if (!initialization?.setupScript || !initialization.dockerCompose) {
-    return undefined
-  }
+  if (!initialization?.previewManifest) return undefined
   return {
-    previewManifest: initialization.previewManifest as PreviewManifest | null,
-    setupScript: initialization.setupScript,
-    dockerCompose: initialization.dockerCompose,
+    previewManifest: initialization.previewManifest,
     runConfigurations: initialization.runConfigurations,
   }
 }
@@ -82,9 +78,7 @@ async function assessProjectInitializationImpact(
     workspaceRoot: input.repositoryRoot,
     baseCommit: input.baseCommit,
     mergeCommit: input.mergeCommit,
-    previewManifest: initialization.previewManifest ?? undefined,
-    setupScript: initialization.setupScript,
-    dockerCompose: initialization.dockerCompose,
+    previewManifest: initialization.previewManifest,
     runConfigurations: initialization.runConfigurations,
   })
 }
@@ -109,9 +103,7 @@ async function repairProjectInitializationImpact(
     reasoningEffort: input.reasoningEffort,
     cwd: input.repositoryRoot,
     workspaceRoot: input.repositoryRoot,
-    previewManifest: initialization.previewManifest ?? undefined,
-    setupScript: initialization.setupScript,
-    dockerCompose: initialization.dockerCompose,
+    previewManifest: initialization.previewManifest,
     runConfigurations: initialization.runConfigurations,
     diagnostics: assessment.diagnostics,
   })
@@ -122,11 +114,7 @@ async function persistProjectInitializationRepair(
   result: RepairProjectInitializationResult
 ) {
   if (result.classification !== "repairable_initialization") return
-  if (
-    !result.setupScript ||
-    !result.dockerCompose ||
-    !result.runConfigurations
-  ) {
+  if (!result.previewManifest || !result.runConfigurations) {
     throw new Error(
       "Initialization repair agent returned incomplete artifacts."
     )
@@ -136,8 +124,6 @@ async function persistProjectInitializationRepair(
     {
       clineSessionId: result.sessionId,
       previewManifest: result.previewManifest,
-      setupScript: result.setupScript,
-      dockerCompose: result.dockerCompose,
       runConfigurations: result.runConfigurations,
       reason: result.reason,
     }
@@ -146,8 +132,6 @@ async function persistProjectInitializationRepair(
 }
 
 type CurrentInitialization = {
-  previewManifest?: PreviewManifest | null
-  setupScript: string
-  dockerCompose: string
+  previewManifest: PreviewManifest
   runConfigurations: ProjectRunConfiguration[]
 }

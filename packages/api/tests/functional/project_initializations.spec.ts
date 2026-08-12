@@ -12,18 +12,16 @@ type InitializationBody = {
       status: string
       clineSessionId: string | null
       previewManifest: Record<string, unknown> | null
-      setupScript: string | null
-      dockerCompose: string | null
       runConfigurations: Array<{
         id: string
         name: string
         command: string
         cwd: string
         default: boolean
-        category?: string
-        services?: string[]
+        category: string
+        services: string[]
         previewService?: string | null
-        scopes?: string[]
+        scopes: string[]
       }>
       error: string | null
       repairReason: string | null
@@ -64,8 +62,6 @@ test.group('project initializations', (group) => {
       .json({
         clineSessionId: 'session-1',
         previewManifest: previewManifest('high'),
-        setupScript: '#!/usr/bin/env bash\npnpm install',
-        dockerCompose: 'services:\n  web:\n    image: node',
         runConfigurations: [
           {
             id: 'web',
@@ -121,9 +117,7 @@ test.group('project initializations', (group) => {
       .post(`/api/v1/projects/${project.id}/initialization/complete`)
       .loginAs(user)
       .json({
-        setupScript: '#!/usr/bin/env bash\npnpm install',
         previewManifest: previewManifest('medium'),
-        dockerCompose: 'services:\n  web:\n    image: node',
         runConfigurations: [],
       })
 
@@ -133,8 +127,6 @@ test.group('project initializations', (group) => {
       .json({
         clineSessionId: 'repair-session',
         previewManifest: previewManifest('high'),
-        setupScript: '#!/usr/bin/env bash\ncorepack pnpm install',
-        dockerCompose: 'services:\n  web:\n    image: node:22',
         runConfigurations: [
           {
             id: 'web',
@@ -142,6 +134,10 @@ test.group('project initializations', (group) => {
             command: 'corepack pnpm dev',
             cwd: 'apps/web',
             default: true,
+            category: 'web',
+            services: ['web'],
+            previewService: 'web',
+            scopes: ['frontend'],
           },
         ],
         reason: 'The previous command forwarded invalid arguments.',
@@ -156,10 +152,8 @@ test.group('project initializations', (group) => {
       'The previous command forwarded invalid arguments.'
     )
     assert.equal(body.data.initialization?.previewManifest?.confidence, 'high')
-    assert.equal(
-      body.data.initialization?.setupScript,
-      '#!/usr/bin/env bash\ncorepack pnpm install'
-    )
+    assert.notProperty(body.data.initialization ?? {}, 'setupScript')
+    assert.notProperty(body.data.initialization ?? {}, 'dockerCompose')
     assert.equal(body.data.initialization?.runConfigurations[0]?.command, 'corepack pnpm dev')
     assert.lengthOf(body.data.practices, 1)
     assert.equal(body.data.practices[0].comment, 'Strict linting and typing are configured.')
@@ -174,8 +168,8 @@ test.group('project initializations', (group) => {
       .post(`/api/v1/projects/${project.id}/initialization/repair`)
       .loginAs(user)
       .json({
-        setupScript: 'pnpm install',
-        dockerCompose: 'services:\n  web:\n    image: node',
+        previewManifest: previewManifest('high'),
+        runConfigurations: [],
         reason: 'Repair',
       })
 
@@ -191,8 +185,7 @@ test.group('project initializations', (group) => {
       .loginAs(user)
       .json({
         previewManifest: { version: 2, confidence: 'high' },
-        setupScript: 'pnpm install',
-        dockerCompose: 'services:\n  web:\n    image: node',
+        runConfigurations: [],
       })
 
     response.assertStatus(422)
@@ -206,8 +199,6 @@ test.group('project initializations', (group) => {
       .loginAs(user)
       .json({
         previewManifest: previewManifest('high'),
-        setupScript: 'pnpm install',
-        dockerCompose: 'services:\n  web:\n    image: node',
         runConfigurations: [
           {
             id: 'admin',
@@ -237,8 +228,6 @@ test.group('project initializations', (group) => {
       .loginAs(user)
       .json({
         previewManifest: previewManifest('high'),
-        setupScript: 'pnpm install',
-        dockerCompose: 'services:\n  web:\n    image: node',
         runConfigurations: [
           {
             id: 'desktop-dev',
@@ -278,8 +267,6 @@ test.group('project initializations', (group) => {
       .loginAs(user)
       .json({
         previewManifest: previewManifest('high'),
-        setupScript: 'pnpm install',
-        dockerCompose: 'services:\n  web:\n    image: node',
         runConfigurations: [
           {
             id: 'web',

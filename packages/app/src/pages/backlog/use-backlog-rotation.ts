@@ -1,7 +1,7 @@
 import * as React from "react"
 import { toast } from "sonner"
 import { taskComplexityBucket } from "@blame/agent-runtime/telemetry-cohorts"
-import type { AgentEvent, PreviewManifest } from "@blame/agent-runtime"
+import type { AgentEvent } from "@blame/agent-runtime"
 
 import type {
   UserStory,
@@ -126,11 +126,7 @@ export function useBacklogRotation(
     ).projectInitialization(projects.activeProject.id)
     const initialization = projectInitialization.initialization
 
-    if (
-      initialization?.status !== "done" ||
-      !initialization.setupScript ||
-      !initialization.dockerCompose
-    ) {
+    if (initialization?.status !== "done" || !initialization.previewManifest) {
       if (projectInitializing(initialization?.status))
         return retryStory(detailedStory)
       reportBlocker(
@@ -146,13 +142,11 @@ export function useBacklogRotation(
 
     const dependencies = await workspace.checkHostDependencies({
       runtimeProfile: runtimePreference.profile,
-      setupScript: initialization.setupScript,
     })
     if (!dependencies.ok) {
       reportHostDependencyBlocker(
         detailedStory,
         dependencies,
-        initialization.setupScript,
         runtimePreference.profile
       )
       return
@@ -186,10 +180,7 @@ export function useBacklogRotation(
       storyId,
       telemetryCohorts,
       worktree: worktree.worktree,
-      setupScript: initialization.setupScript,
-      dockerCompose: initialization.dockerCompose,
-      previewManifest:
-        (initialization.previewManifest as PreviewManifest | null) ?? undefined,
+      previewManifest: initialization.previewManifest,
       runConfigurations: initialization.runConfigurations,
       runConfigurationId: detailedStory.runConfigurationId,
       hostDependenciesChecked: true,
@@ -289,7 +280,6 @@ export function useBacklogRotation(
   function reportHostDependencyBlocker(
     story: UserStory,
     report: HostDependencyReport,
-    setupScript: string,
     runtimeProfile: ReturnType<typeof useRuntimePreference>["profile"]
   ) {
     retryStory(story, blockerRetryDelay)
@@ -297,7 +287,6 @@ export function useBacklogRotation(
       checking: false,
       report,
       runtimeProfile,
-      setupScript,
       storyId: story.id,
       storyTitle: story.title,
     })
@@ -310,7 +299,6 @@ export function useBacklogRotation(
     try {
       const report = await platform.workspace.checkHostDependencies({
         runtimeProfile: current.runtimeProfile,
-        setupScript: current.setupScript,
       })
       if (report.ok) {
         blockedStories.current.delete(current.storyId)
@@ -867,7 +855,6 @@ type HostDependenciesDialogState = {
   checking: boolean
   report: HostDependencyReport
   runtimeProfile: ReturnType<typeof useRuntimePreference>["profile"]
-  setupScript: string
   storyId: string
   storyTitle: string
 }

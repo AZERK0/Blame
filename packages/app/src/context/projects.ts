@@ -7,9 +7,7 @@ import type {
 import type { Project } from "@/lib/projects"
 
 export type GeneratedProjectInitialization = {
-  setupScript: string
-  dockerCompose: string
-  previewManifest?: PreviewManifest
+  previewManifest: PreviewManifest
   runConfigurations: ProjectRunConfiguration[]
   clineSessionId?: string
 }

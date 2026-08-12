@@ -67,10 +67,10 @@ function titleRunConfigurations(input: GenerateTitleInput) {
   return (input.runConfigurations ?? []).map((configuration) => ({
     id: configuration.id,
     name: configuration.name,
-    category: configuration.category ?? "other",
+    category: configuration.category,
     cwd: configuration.cwd,
-    services: configuration.services ?? [],
-    scopes: configuration.scopes ?? [],
+    services: configuration.services,
+    scopes: configuration.scopes,
     previewService: configuration.previewService,
   }));
 }

@@ -1,6 +1,6 @@
 import { BaseModel, column } from '@adonisjs/lucid/orm'
 import { DateTime } from 'luxon'
-import type { PreviewManifest } from '@blame/preview-contract'
+import { parsePreviewManifest, type PreviewManifest } from '@blame/preview-contract'
 
 export type ProjectInitializationStatus = 'pending' | 'running' | 'done' | 'error'
 
@@ -10,10 +10,10 @@ type ProjectRunConfiguration = {
   command: string
   cwd: string
   default: boolean
-  category?: 'web' | 'mobile' | 'desktop' | 'terminal' | 'service' | 'other'
-  services?: string[]
+  category: 'web' | 'mobile' | 'desktop' | 'terminal' | 'service' | 'other'
+  services: string[]
   previewService?: string | null
-  scopes?: string[]
+  scopes: string[]
   previewUrl?: string | null
 }
 
@@ -22,14 +22,12 @@ export function prepareRunConfigurations(value: ProjectRunConfiguration[] | null
 }
 
 export function consumeRunConfigurations(value: unknown) {
+  if (value === null || value === undefined) return null
   if (Array.isArray(value)) return value as ProjectRunConfiguration[]
-  if (typeof value !== 'string') return null
-  try {
-    const parsed = JSON.parse(value)
-    return Array.isArray(parsed) ? (parsed as ProjectRunConfiguration[]) : null
-  } catch {
-    return null
-  }
+  if (typeof value !== 'string') throw new Error('Stored run configurations must be JSON')
+  const parsed = JSON.parse(value)
+  if (!Array.isArray(parsed)) throw new Error('Stored run configurations must be an array')
+  return parsed as ProjectRunConfiguration[]
 }
 
 export function preparePreviewManifest(value: PreviewManifest | null) {
@@ -37,15 +35,8 @@ export function preparePreviewManifest(value: PreviewManifest | null) {
 }
 
 export function consumePreviewManifest(value: unknown) {
-  if (!value) return null
-  if (typeof value === 'object') return value as PreviewManifest
-  if (typeof value !== 'string') return null
-  try {
-    const parsed = JSON.parse(value)
-    return parsed && typeof parsed === 'object' ? (parsed as PreviewManifest) : null
-  } catch {
-    return null
-  }
+  if (value === null || value === undefined) return null
+  return parsePreviewManifest(typeof value === 'string' ? JSON.parse(value) : value)
 }
 
 export default class ProjectInitialization extends BaseModel {
@@ -66,12 +57,6 @@ export default class ProjectInitialization extends BaseModel {
 
   @column()
   declare agentModelId: string | null
-
-  @column()
-  declare setupScript: string | null
-
-  @column()
-  declare dockerCompose: string | null
 
   @column({
     consume: consumePreviewManifest,

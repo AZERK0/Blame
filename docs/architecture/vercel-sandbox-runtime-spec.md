@@ -74,7 +74,7 @@ ou :
 }
 ```
 
-Le schéma n’accepte aucun champ de version de manifeste, aucune source d’exécution historique et aucun fallback. Toute clé inconnue est refusée au niveau où elle apparaît.
+Le schéma n’accepte que les champs canoniques. Toute clé inconnue est refusée au niveau où elle apparaît.
 
 ### 4.1 Exemple complet minimal
 
@@ -376,11 +376,11 @@ Phases obligatoires :
 
 Aucune commande, URL, variable, exception brute, clé, token ou identifiant signé n’est attaché à ces mesures.
 
-## 12. Données et migration destructive
+## 12. Données d’initialisation
 
-La migration canonique supprime uniquement les lignes historiques de `project_initializations`. Elle ne touche pas aux projets, stories, conversations, pièces jointes ni préférences de pratiques de code. Sa migration descendante est volontairement vide : les données supprimées ne sont pas reconstructibles.
+`project_initializations` persiste uniquement le manifeste canonique et les configurations d’exécution. `setup.sh` et `docker-compose.yml` sont des artefacts locaux dérivés, générés et écrasés dans `.blame/initialization` à chaque préparation de story. Aucun ancien format n’est chargé, migré ou réparé silencieusement.
 
-À la préparation suivante d’une story, Blame régénère et écrase `.blame/initialization` depuis le nouveau manifeste.
+La migration de coupure supprime les lignes d’initialisation existantes et les colonnes dérivées `setup_script` et `docker_compose`. Les projets restent intacts et doivent simplement être réinitialisés avec le contrat canonique.
 
 ## 13. Génération agent
 
@@ -400,7 +400,7 @@ Le JSON Schema de `submit_project_initialization` et ses prompts imposent :
 La livraison vérifie au minimum :
 
 - acceptation exclusive du manifeste canonique image/build ;
-- refus explicite des champs historiques ;
+- refus de toute clé hors contrat ;
 - coexistence de `api:http`, `app:http` et `vitrine:http` ;
 - route primaire opaque non ambiguë ;
 - bindings/probes et auth gateway scellés par service + endpoint ;
@@ -412,7 +412,7 @@ La livraison vérifie au minimum :
 - validité des routes Preview Edge après republication ;
 - ouverture directe d’une URL publique opaque dans un navigateur externe et
   depuis un autre poste ;
-- portée exacte de la migration destructive ;
+- persistance exclusive du manifeste et des configurations d’exécution ;
 - worktree cloud natif sur Linux, macOS et Windows ;
 - build et inspection du Dockerfile runner ;
 - canary Vercel réel uniquement lorsque les credentials nécessaires sont déjà disponibles.

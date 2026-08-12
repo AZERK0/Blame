@@ -52,7 +52,6 @@ export type EnvHostFileMount = {
 
 export type EnvFileOverride = {
   directory: string;
-  localHosts?: Record<string, string>;
   values: Record<string, string>;
 };
 
@@ -178,7 +177,6 @@ async function materializedPreviewEnvHostFileMount(
     content,
     previewOrigin,
     override.values,
-    override.localHosts,
   );
   if (materialized === content) return null;
   const relativePath = relativeWorkspacePath(worktree, path);
@@ -207,7 +205,6 @@ async function materializedPreviewEnvFileMatches(
     content,
     previewOrigin,
     override.values,
-    override.localHosts,
   );
   if (materialized === content) return true;
   const relativePath = relativeWorkspacePath(worktree, path);
@@ -228,7 +225,6 @@ export function materializePreviewEnvValues(
   content: string,
   previewOrigin: string | undefined,
   overrides: Record<string, string> = {},
-  localHosts: Record<string, string> = {},
 ) {
   let hasPublicOrigin = false;
   let hasNextPublicAppUrl = false;
@@ -244,13 +240,6 @@ export function materializePreviewEnvValues(
         parsed.value,
         overrides[parsed.key],
       );
-    }
-    const internalServiceValue = materializedInternalServiceValue(
-      parsed.value,
-      localHosts,
-    );
-    if (internalServiceValue !== parsed.value) {
-      return `${parsed.key}=${internalServiceValue}`;
     }
     if (!previewOrigin || !publicOriginEnvironmentKeys.has(parsed.key))
       return line;
@@ -285,26 +274,6 @@ function envFileOverride(
 function materializedEnvLine(key: string, currentValue: string, value: string) {
   const quote = envValueQuote(currentValue);
   return `${key}=${quote}${value}${quote}`;
-}
-
-function materializedInternalServiceValue(
-  value: string,
-  localHosts: Record<string, string>,
-) {
-  const quote = envValueQuote(value);
-  const unquoted = unquoteEnvValue(value.trim());
-  try {
-    const url = new URL(unquoted);
-    const service = localPreviewHost(url.hostname) && localHosts[url.port];
-    if (!service) return value;
-    const nextValue = unquoted.replace(
-      /^([a-z][a-z0-9+.-]*:\/\/)(?:localhost|127\.0\.0\.1|\[::1\])/i,
-      `$1${service}`,
-    );
-    return quote ? `${quote}${nextValue}${quote}` : nextValue;
-  } catch {
-    return value;
-  }
 }
 
 function materializedPreviewEnvValue(value: string, previewOrigin: string) {

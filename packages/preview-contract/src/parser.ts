@@ -43,7 +43,6 @@ const unsafeCommandPatterns = [
 
 export function parsePreviewManifest(value: unknown): PreviewManifest {
   if (!isRecord(value)) throw new Error("previewManifest must be an object");
-  rejectHistoricalFields(value, "previewManifest");
   assertOnlyKeys(value, "previewManifest", [
     "confidence",
     "project",
@@ -130,7 +129,6 @@ function parseSetupTasks(value: unknown) {
 function parseSetupTask(value: unknown): PreviewManifestSetupTask {
   if (!isRecord(value))
     throw new Error("previewManifest setup task must be an object");
-  rejectHistoricalFields(value, "setup task");
   assertOnlyKeys(value, "setup task", [
     "id",
     "container",
@@ -161,7 +159,6 @@ function parseServices(value: unknown) {
 function parseService(value: unknown): PreviewManifestService {
   if (!isRecord(value))
     throw new Error("previewManifest service must be an object");
-  rejectHistoricalFields(value, "service");
   assertOnlyKeys(value, "service", [
     "id",
     "kind",
@@ -910,22 +907,6 @@ function booleanValue(value: unknown, field: string) {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
-}
-
-function rejectHistoricalFields(
-  value: Record<string, unknown>,
-  context: string,
-) {
-  if (Object.hasOwn(value, "version")) {
-    throw new Error(
-      `previewManifest ${context} field version is no longer supported`,
-    );
-  }
-  if (Object.hasOwn(value, "source")) {
-    throw new Error(
-      `previewManifest ${context} field source is no longer supported`,
-    );
-  }
 }
 
 function assertOnlyKeys(

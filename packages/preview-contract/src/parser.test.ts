@@ -99,12 +99,12 @@ test("allows endpoint ids to repeat in different services", () => {
   );
 });
 
-test("rejects version and historical execution sources explicitly", () => {
+test("rejects every field outside the canonical contract", () => {
   const versioned = manifest();
   versioned.version = 3;
   assert.throws(
     () => parsePreviewManifest(versioned),
-    /version is no longer supported/,
+    /unsupported field version/,
   );
 
   for (const kind of ["process", "auto"]) {
@@ -112,7 +112,7 @@ test("rejects version and historical execution sources explicitly", () => {
     sourced.services[0].source = { kind };
     assert.throws(
       () => parsePreviewManifest(sourced),
-      /source is no longer supported/,
+      /unsupported field source/,
     );
   }
 });

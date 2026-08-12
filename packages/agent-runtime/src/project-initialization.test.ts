@@ -207,45 +207,7 @@ test("normalizes pnpm serve options and browser-only dependencies", () => {
   assert.deepEqual(normalizedApp?.dependsOn, []);
 });
 
-test("restores the private Nuxt binding required by Nitro proxy routes", () => {
-  const input = canonicalResult();
-  input.previewManifest.project.detectedStack = ["node", "nuxt", "pnpm"];
-  const app = input.previewManifest.services[1]!;
-  app.bindings = [
-    {
-      target: { type: "environment", key: "NUXT_PUBLIC_API_BASE_URL" },
-      source: { service: "api", endpoint: "http" },
-      exposure: "browser",
-      format: "url",
-    },
-  ];
-
-  const result = parseProjectInitializationPayload(input);
-  const normalizedApp = result.previewManifest?.services[1];
-
-  assert.deepEqual(normalizedApp?.dependsOn, ["api"]);
-  assert.equal(
-    normalizedApp?.environment?.NUXT_API_BASE_URL,
-    "http://api:3333",
-  );
-  assert.deepEqual(
-    normalizedApp?.bindings?.map(({ exposure, target }) => [
-      target.key,
-      exposure,
-    ]),
-    [
-      ["NUXT_PUBLIC_API_BASE_URL", "browser"],
-      ["NUXT_API_BASE_URL", "server"],
-    ],
-  );
-  assert.match(result.dockerCompose, /NUXT_API_BASE_URL: "http:\/\/api:3333"/);
-  assert.match(
-    result.dockerCompose,
-    /app:[\s\S]*api:\n\s+condition: service_healthy/,
-  );
-});
-
-test("requires the canonical manifest and rejects old manifest fields", () => {
+test("requires the canonical manifest and rejects unknown manifest fields", () => {
   assert.throws(
     () => parseProjectInitializationPayload({ runConfigurations: [] }),
     /missing previewManifest/,
@@ -256,7 +218,7 @@ test("requires the canonical manifest and rejects old manifest fields", () => {
         ...canonicalResult(),
         previewManifest: { ...canonicalResult().previewManifest, version: 3 },
       }),
-    /version is no longer supported/,
+    /unsupported field version/,
   );
   assert.throws(
     () =>
@@ -272,7 +234,32 @@ test("requires the canonical manifest and rejects old manifest fields", () => {
           ),
         },
       }),
-    /source is no longer supported/,
+    /unsupported field source/,
+  );
+});
+
+test("rejects removed artifact fields and incomplete run configurations", () => {
+  assert.throws(
+    () =>
+      parseProjectInitializationPayload({
+        ...canonicalResult(),
+        setupScript: "pnpm install",
+      }),
+    /unsupported field setupScript/,
+  );
+  const input = canonicalResult();
+  const configuration = { ...input.runConfigurations[0] } as Record<
+    string,
+    unknown
+  >;
+  delete configuration.services;
+  assert.throws(
+    () =>
+      parseProjectInitializationPayload({
+        ...input,
+        runConfigurations: [configuration],
+      }),
+    /services is invalid/,
   );
 });
 

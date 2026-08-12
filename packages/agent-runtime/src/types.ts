@@ -394,10 +394,10 @@ export type ProjectRunConfiguration = {
   command: string;
   cwd: string;
   default: boolean;
-  category?: ProjectRunConfigurationCategory;
-  services?: string[];
+  category: ProjectRunConfigurationCategory;
+  services: string[];
   previewService?: string;
-  scopes?: string[];
+  scopes: string[];
   previewUrl?: string;
 };
 
@@ -476,9 +476,7 @@ export type InitializeProjectInput = {
 
 export type InitializeProjectResult = {
   sessionId: string;
-  previewManifest?: PreviewManifest;
-  setupScript: string;
-  dockerCompose: string;
+  previewManifest: PreviewManifest;
   runConfigurations: ProjectRunConfiguration[];
 };
 
@@ -518,9 +516,7 @@ export type ProjectInitializationImpactDiagnostics = {
   changedFiles: string[];
   diffSummary: string;
   relevantDiffs: Record<string, string>;
-  currentPreviewManifest?: PreviewManifest;
-  currentSetupScript: string;
-  currentDockerCompose: string;
+  currentPreviewManifest: PreviewManifest;
   currentRunConfigurations: ProjectRunConfiguration[];
   strategicFilesBefore: Record<string, string>;
   strategicFilesAfter: Record<string, string>;
@@ -536,9 +532,7 @@ export type AssessProjectInitializationImpactInput = {
   credentialLabel?: string;
   baseCommit: string;
   mergeCommit: string;
-  previewManifest?: PreviewManifest;
-  setupScript: string;
-  dockerCompose: string;
+  previewManifest: PreviewManifest;
   runConfigurations: ProjectRunConfiguration[];
   backend?: AgentBackendConfig;
   executionId?: string;
@@ -561,9 +555,7 @@ export type RepairProjectInitializationInput = {
   cwd: string;
   workspaceRoot: string;
   credentialLabel?: string;
-  previewManifest?: PreviewManifest;
-  setupScript: string;
-  dockerCompose: string;
+  previewManifest: PreviewManifest;
   runConfigurations: ProjectRunConfiguration[];
   diagnostics:
     | ProjectInitializationDiagnostics
@@ -578,8 +570,6 @@ export type RepairProjectInitializationResult = {
   classification: ProjectInitializationRepairClassification;
   reason: string;
   previewManifest?: PreviewManifest;
-  setupScript?: string;
-  dockerCompose?: string;
   runConfigurations?: ProjectRunConfiguration[];
 };
 

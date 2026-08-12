@@ -52,6 +52,12 @@ export function parseProjectInitializationRepairResult(
   if (!isRecord(parsed))
     throw new Error("Initialization repair result must be an object");
   const classification = classificationValue(parsed.classification);
+  assertOnlyKeys(
+    parsed,
+    classification === "repairable_initialization"
+      ? ["classification", "reason", "previewManifest", "runConfigurations"]
+      : ["classification", "reason"],
+  );
   const reason = stringValue(parsed.reason);
   if (!reason)
     throw new Error("Initialization repair result is missing reason");
@@ -78,8 +84,6 @@ export function parseProjectInitializationRepairResult(
     classification,
     reason,
     previewManifest,
-    setupScript,
-    dockerCompose,
     runConfigurations,
   };
 }
@@ -90,9 +94,7 @@ function repairPrompt(
 ) {
   return [
     "Diagnose these project initialization diagnostics according to your system instructions and return strict JSON only.",
-    `Current previewManifest: ${JSON.stringify(input.previewManifest ?? null)}`,
-    `Current setupScript: ${JSON.stringify(input.setupScript)}`,
-    `Current dockerCompose: ${JSON.stringify(input.dockerCompose)}`,
+    `Current previewManifest: ${JSON.stringify(input.previewManifest)}`,
     `Current runConfigurations: ${JSON.stringify(input.runConfigurations)}`,
     `Initialization diagnostics: ${JSON.stringify(input.diagnostics)}`,
     `Project root entries: ${JSON.stringify(scan.topLevelEntries)}`,
@@ -130,4 +132,14 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function stringValue(value: unknown) {
   return typeof value === "string" && value.trim() ? value : undefined;
+}
+
+function assertOnlyKeys(value: Record<string, unknown>, allowed: string[]) {
+  const keys = new Set(allowed);
+  const unknown = Object.keys(value).find((key) => !keys.has(key));
+  if (unknown) {
+    throw new Error(
+      `Initialization repair result contains unsupported field ${unknown}`,
+    );
+  }
 }

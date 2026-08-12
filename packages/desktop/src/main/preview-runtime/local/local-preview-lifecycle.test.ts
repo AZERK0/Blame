@@ -4,6 +4,7 @@ import type { ProjectPreviewRuntimeState } from "@blame/agent-runtime";
 import type { PreviewRuntimeSelectionState } from "../../preview-run-state.ts";
 import {
   localPreviewLifecycle,
+  parseLocalPreviewRuntimeSelectionState,
   persistLocalPreviewFailure,
   persistLocalPreviewResult,
   validPreviewLifecycle,
@@ -23,6 +24,28 @@ test("projects local container and endpoint observations to the shared lifecycle
     localPreviewLifecycle(starting, "running", true, "http://127.0.0.1:3000")
       .phase,
     "ready",
+  );
+});
+
+test("rejects stale runtime state instead of defaulting it to running", () => {
+  assert.throws(
+    () => parseLocalPreviewRuntimeSelectionState({}),
+    /desiredStatus is invalid/,
+  );
+  assert.throws(
+    () =>
+      parseLocalPreviewRuntimeSelectionState({
+        desiredStatus: "running",
+        legacyPreview: true,
+      }),
+    /unsupported field legacyPreview/,
+  );
+  assert.deepEqual(
+    parseLocalPreviewRuntimeSelectionState({
+      desiredStatus: "stopped",
+      selectedConfigurationId: "web",
+    }),
+    { desiredStatus: "stopped", selectedConfigurationId: "web" },
   );
 });
 

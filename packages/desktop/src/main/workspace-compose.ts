@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { createServer } from "node:net";
-import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
+import { parse as parseYaml } from "yaml";
 
 export function dockerComposeForPreview(
   compose: string,
@@ -121,15 +121,9 @@ export async function composeWithAllocatedHostPorts(compose: string) {
     if (explicit) portMappings.push({ ...explicit, serviceId });
     result.push(line);
   }
-  const unambiguousPorts = unambiguousPortMappings(portMappings);
   const materialized = composeWithBindingPlaceholders(
-    composeWithPreviewPublicOrigins(
-      result.join("\n"),
-      portMappings,
-      unambiguousPorts,
-    ),
+    result.join("\n"),
     portMappings,
-    unambiguousPorts,
   );
   return composeWithDeclaredBrowserBindings(materialized, portMappings);
 }
@@ -145,22 +139,6 @@ function composeServiceId(line: string, current: string | undefined) {
   if (/^\S/.test(line)) return undefined;
   const match = /^  ([A-Za-z0-9][A-Za-z0-9_.-]*):\s*(?:#.*)?$/.exec(line);
   return match?.[1] ?? current;
-}
-
-function unambiguousPortMappings(mappings: ComposePortMapping[]) {
-  const candidates = new Map<number, Set<number>>();
-  for (const mapping of mappings) {
-    const ports = candidates.get(mapping.targetPort) ?? new Set<number>();
-    ports.add(mapping.hostPort);
-    candidates.set(mapping.targetPort, ports);
-  }
-  return new Map(
-    Array.from(candidates).flatMap(([targetPort, hostPorts]) =>
-      hostPorts.size === 1
-        ? [[targetPort, Array.from(hostPorts)[0]] as const]
-        : [],
-    ),
-  );
 }
 
 export function composeWithRuntimePortPlaceholders(
@@ -209,35 +187,9 @@ function explicitPortLine(line: string) {
   };
 }
 
-function composeWithPreviewPublicOrigins(
-  compose: string,
-  portMappings: ComposePortMapping[],
-  unambiguousPorts: Map<number, number>,
-) {
-  if (portMappings.length === 0) return compose;
-  let serviceId: string | undefined;
-  return compose
-    .split("\n")
-    .map((line) => {
-      serviceId = composeServiceId(line, serviceId);
-      return line.replace(
-        publicOriginAssignmentPattern(),
-        (match, prefix: string, port: string) => {
-          const targetPort = Number.parseInt(port, 10);
-          const hostPort =
-            servicePort(portMappings, serviceId, targetPort) ??
-            unambiguousPorts.get(targetPort);
-          return hostPort ? `${prefix}http://localhost:${hostPort}` : match;
-        },
-      );
-    })
-    .join("\n");
-}
-
 function composeWithBindingPlaceholders(
   compose: string,
   portMappings: ComposePortMapping[],
-  unambiguousPorts: Map<number, number>,
 ) {
   return compose
     .replace(
@@ -249,137 +201,13 @@ function composeWithBindingPlaceholders(
       /__BLAME_PREVIEW_PORT_([A-Za-z0-9][A-Za-z0-9_.-]*)_(\d+)__/g,
       (match, serviceId: string, port: string) =>
         previewPortPlaceholder(match, serviceId, port, portMappings),
-    )
-    .replace(/__BLAME_PREVIEW_ORIGIN_(\d+)__/g, (match, port: string) =>
-      legacyPreviewOriginPlaceholder(match, port, unambiguousPorts),
-    )
-    .replace(/__BLAME_PREVIEW_PORT_(\d+)__/g, (match, port: string) =>
-      legacyPreviewPortPlaceholder(match, port, unambiguousPorts),
     );
 }
 
 type BindingComposeService = {
-  depends_on?: Record<string, { condition?: string } | string> | string[];
   environment?: Record<string, unknown> | string[];
-  healthcheck?: unknown;
   labels?: Record<string, unknown> | string[];
 };
-
-const frameworkServerBindingPairs = [
-  {
-    browserKey: "NUXT_PUBLIC_API_BASE_URL",
-    serverKey: "NUXT_API_BASE_URL",
-  },
-] as const;
-
-/**
- * Migrates generated Compose artifacts whose framework server consumes the
- * same backend as browser code. Older initialization results sometimes kept
- * only the public binding, which leaves SSR/proxy requests targeting an
- * unreachable host and excludes the backend from the runtime closure.
- */
-export function composeWithFrameworkServerBindings(compose: string) {
-  const document = parseYaml(compose) as {
-    services?: Record<string, BindingComposeService>;
-  };
-  const services = document.services ?? {};
-  let changed = false;
-  for (const [serviceId, service] of Object.entries(services)) {
-    const labels = normalizedComposeEntries(service.labels);
-    const environment = normalizedComposeEntries(service.environment);
-    for (const pair of frameworkServerBindingPairs) {
-      const browserBinding = declaredBrowserBindings(labels).find(
-        ({ key }) => key === pair.browserKey,
-      );
-      if (!browserBinding || browserBinding.sourceService === serviceId) {
-        continue;
-      }
-      if (declaredBindingKeys(labels).has(pair.serverKey)) continue;
-      const endpoint = declaredServiceEndpoint(
-        services[browserBinding.sourceService],
-        browserBinding.sourceEndpoint,
-      );
-      if (!endpoint || endpoint.protocol === "tcp") continue;
-      const current = environment[browserBinding.key];
-      if (!current) continue;
-      const value = materializedServerBindingValue(
-        browserBinding.format,
-        endpoint.protocol,
-        browserBinding.sourceService,
-        endpoint.port,
-        current,
-      );
-      service.environment = composeEntriesWithValues(service.environment, {
-        [pair.serverKey]: value,
-      });
-      const index = nextBindingIndex(labels);
-      service.labels = composeEntriesWithValues(service.labels, {
-        [`blame.binding.${index}.key`]: pair.serverKey,
-        [`blame.binding.${index}.source.service`]: browserBinding.sourceService,
-        [`blame.binding.${index}.source.endpoint`]:
-          browserBinding.sourceEndpoint,
-        [`blame.binding.${index}.exposure`]: "server",
-        [`blame.binding.${index}.format`]: browserBinding.format,
-      });
-      service.depends_on = composeDependenciesWithService(
-        service.depends_on,
-        browserBinding.sourceService,
-        Boolean(services[browserBinding.sourceService]?.healthcheck),
-      );
-      changed = true;
-    }
-  }
-  return changed ? stringifyYaml(document, { lineWidth: 0 }) : compose;
-}
-
-function declaredBindingKeys(labels: Record<string, string>) {
-  return new Set(
-    Object.entries(labels).flatMap(([key, value]) =>
-      /^blame\.binding\.\d+\.key$/.test(key) ? [value] : [],
-    ),
-  );
-}
-
-function nextBindingIndex(labels: Record<string, string>) {
-  const indices = Object.keys(labels).flatMap((key) => {
-    const match = /^blame\.binding\.(\d+)\.key$/.exec(key);
-    return match ? [Number(match[1])] : [];
-  });
-  return indices.length ? Math.max(...indices) + 1 : 0;
-}
-
-function composeEntriesWithValues(
-  entries: Record<string, unknown> | string[] | undefined,
-  values: Record<string, string>,
-) {
-  if (!Array.isArray(entries)) return { ...(entries ?? {}), ...values };
-  const keys = new Set(Object.keys(values));
-  return [
-    ...entries.filter((entry) => !keys.has(entry.split("=", 1)[0])),
-    ...Object.entries(values).map(([key, value]) => `${key}=${value}`),
-  ];
-}
-
-function composeDependenciesWithService(
-  dependencies:
-    | Record<string, { condition?: string } | string>
-    | string[]
-    | undefined,
-  service: string,
-  healthy: boolean,
-) {
-  if (Array.isArray(dependencies)) {
-    return dependencies.includes(service)
-      ? dependencies
-      : [...dependencies, service];
-  }
-  return {
-    ...(dependencies ?? {}),
-    [service]: dependencies?.[service] ?? {
-      condition: healthy ? "service_healthy" : "service_started",
-    },
-  };
-}
 
 function composeWithDeclaredBrowserBindings(
   compose: string,
@@ -476,20 +304,6 @@ function materializedBrowserBindingValue(
   return `${protocol}://localhost:${hostPort}${suffix}`;
 }
 
-function materializedServerBindingValue(
-  format: string,
-  protocol: string,
-  host: string,
-  port: number,
-  current: string,
-) {
-  if (format === "host") return host;
-  if (format === "port") return String(port);
-  if (format === "host-port") return `${host}:${port}`;
-  const suffix = /^[a-z]+:\/\/[^/]+(.*)$/i.exec(current)?.[1] ?? "";
-  return `${protocol}://${host}:${port}${suffix}`;
-}
-
 function normalizedComposeEntries(
   value: Record<string, unknown> | string[] | undefined,
 ) {
@@ -560,41 +374,6 @@ function servicePort(
     (mapping) =>
       mapping.serviceId === serviceId && mapping.targetPort === targetPort,
   )?.hostPort;
-}
-
-function legacyPreviewOriginPlaceholder(
-  fallback: string,
-  port: string,
-  portMappings: Map<number, number>,
-) {
-  const hostPort = portMappings.get(Number.parseInt(port, 10));
-  return hostPort ? `http://localhost:${hostPort}` : fallback;
-}
-
-function legacyPreviewPortPlaceholder(
-  fallback: string,
-  port: string,
-  portMappings: Map<number, number>,
-) {
-  return String(portMappings.get(Number.parseInt(port, 10)) ?? fallback);
-}
-
-function publicOriginAssignmentPattern() {
-  const names = [
-    "APP_URL",
-    "APPLICATION_URL",
-    "BETTER_AUTH_URL",
-    "CANONICAL_URL",
-    "NEXT_PUBLIC_APP_URL",
-    "NEXT_PUBLIC_BASE_URL",
-    "NEXTAUTH_URL",
-    "PUBLIC_URL",
-    "SITE_URL",
-  ].join("|");
-  return new RegExp(
-    `((?:^|[\\s-])(?:${names})(?:\\s*[:=]\\s*|=)["']?)https?:\\/\\/(?:localhost|127\\.0\\.0\\.1):(\\d+)\\b`,
-    "gm",
-  );
 }
 
 export function dockerComposeWithEscapedCommandVariables(compose: string) {

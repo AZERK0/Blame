@@ -79,15 +79,12 @@ function useProjectOpening() {
     if (!platform.workspace?.checkHostDependencies) return true
     setCheckingOpenDependencies(true)
     try {
-      const report = await platform.workspace.checkHostDependencies({
-        setupScript: "",
-      })
+      const report = await platform.workspace.checkHostDependencies({})
       if (report.ok) return true
       setHostDependenciesDialog({
         checking: false,
         pendingPath: path,
         report,
-        setupScript: "",
       })
       return false
     } finally {
@@ -97,16 +94,14 @@ function useProjectOpening() {
 
   async function checkProjectHostDependencies(project: Project) {
     try {
-      const setupScript = await projectSetupScript(
+      const initialized = await projectInitialized(
         auth.apiConnection,
         project.id
       )
-      if (!setupScript || !platform.workspace?.checkHostDependencies) return
-      const report = await platform.workspace.checkHostDependencies({
-        setupScript,
-      })
+      if (!initialized || !platform.workspace?.checkHostDependencies) return
+      const report = await platform.workspace.checkHostDependencies({})
       if (report.ok) return
-      setHostDependenciesDialog({ checking: false, report, setupScript })
+      setHostDependenciesDialog({ checking: false, report })
     } catch {
       return
     }
@@ -117,9 +112,7 @@ function useProjectOpening() {
     if (!current || !platform.workspace?.checkHostDependencies) return
     setHostDependenciesDialog({ ...current, checking: true })
     try {
-      const report = await platform.workspace.checkHostDependencies({
-        setupScript: current.setupScript,
-      })
+      const report = await platform.workspace.checkHostDependencies({})
       if (report.ok) {
         setHostDependenciesDialog(undefined)
         if (current.pendingPath) await openProject(current.pendingPath)
@@ -152,16 +145,15 @@ type OpenProjectHostDependenciesDialogState = {
   checking: boolean
   pendingPath?: string
   report: HostDependencyReport
-  setupScript: string
 }
 
-async function projectSetupScript(
+async function projectInitialized(
   apiConnection: ReturnType<typeof useCloudAuth>["apiConnection"],
   projectId: string
 ) {
   const snapshot =
     await createCloudApi(apiConnection).projectInitialization(projectId)
-  return snapshot.initialization?.setupScript
+  return snapshot.initialization?.status === "done"
 }
 
 function WelcomeHeader() {

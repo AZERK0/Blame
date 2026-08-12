@@ -4,7 +4,6 @@ import type { PreviewManifest } from "@blame/agent-runtime";
 
 import {
   initialPreviewRuntimeSelection,
-  normalizeStoredRunConfigurations,
   previewRunConfigurationStatus,
   previewRunConfigurationServiceIds,
   selectedPreviewRuntimeServiceIds,
@@ -19,6 +18,9 @@ const configurations = [
     command: "pnpm dev",
     cwd: "apps/marketing",
     default: true,
+    category: "web" as const,
+    previewService: "marketing",
+    scopes: ["apps/marketing"],
     services: ["marketing"],
   },
   {
@@ -27,6 +29,9 @@ const configurations = [
     command: "pnpm dev",
     cwd: "apps/app",
     default: false,
+    category: "web" as const,
+    previewService: "app",
+    scopes: ["apps/app"],
     services: ["app"],
   },
 ];
@@ -172,34 +177,6 @@ test("starts browser binding sources for a selected web configuration", () => {
     ),
     ["app", "backend", "database"],
   );
-});
-
-test("repairs service configurations widened to the only web preview", () => {
-  const manifest = {
-    services: [
-      { id: "backend", kind: "worker", workingDir: "/workspace/apps/backend" },
-      {
-        id: "web",
-        kind: "preview",
-        preview: { internalPort: 3000, path: "/", protocol: "http" },
-      },
-    ],
-  } as PreviewManifest;
-  const repaired = normalizeStoredRunConfigurations(
-    [
-      {
-        ...configurations[1],
-        category: "service",
-        id: "backend",
-        previewService: "web",
-        scopes: ["apps/backend", "api"],
-        services: ["web"],
-      },
-    ],
-    manifest,
-  );
-  assert.deepEqual(repaired[0]?.services, ["backend"]);
-  assert.equal(repaired[0]?.previewService, undefined);
 });
 
 test("does not start a browser for a manifest without a preview service", () => {

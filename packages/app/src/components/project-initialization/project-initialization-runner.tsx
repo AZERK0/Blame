@@ -133,9 +133,12 @@ function initializationController(input: {
 
 function useDatabaseDialogState() {
   const [pendingRun, setPendingRun] = React.useState<InitializationRunInput>()
-  const openDatabaseDialog = React.useCallback((run: InitializationRunInput) => {
-    setPendingRun(run)
-  }, [])
+  const openDatabaseDialog = React.useCallback(
+    (run: InitializationRunInput) => {
+      setPendingRun(run)
+    },
+    []
+  )
   const setOpen = React.useCallback((open: boolean) => {
     if (!open) setPendingRun(undefined)
   }, [])
@@ -397,7 +400,7 @@ async function startInitialization(
 }
 
 function checkInitializationHostDependencies(workspace: WorkspaceClient) {
-  return workspace.checkHostDependencies({ setupScript: "" })
+  return workspace.checkHostDependencies({})
 }
 
 async function persistInitializationResult(
@@ -447,8 +450,6 @@ async function completeProjectInitialization(
   await cloud.completeProjectInitialization(input.project.id, {
     clineSessionId: result.sessionId,
     previewManifest: result.previewManifest,
-    setupScript: result.setupScript,
-    dockerCompose: result.dockerCompose,
     runConfigurations: result.runConfigurations,
   })
   notifyProjectInitializationUpdated(input.project.id)
@@ -472,8 +473,6 @@ function validationFeedback(
     validationError: errorMessage(error),
     previousResult: JSON.stringify({
       previewManifest: result.previewManifest,
-      setupScript: result.setupScript,
-      dockerCompose: result.dockerCompose,
       runConfigurations: result.runConfigurations,
     }),
   }

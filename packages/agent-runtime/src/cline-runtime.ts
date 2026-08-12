@@ -1212,7 +1212,9 @@ export class BlameAgentRuntime {
         );
       }
     }
-    throw new Error("Project initialization agent did not return a valid result");
+    throw new Error(
+      "Project initialization agent did not return a valid result",
+    );
   }
 
   private async startProjectInitializationAttempt(
@@ -1295,7 +1297,9 @@ export class BlameAgentRuntime {
         );
       }
     }
-    throw new Error("Project initialization repair agent did not return a valid result");
+    throw new Error(
+      "Project initialization repair agent did not return a valid result",
+    );
   }
 
   private async startProjectInitializationRepairAttempt(
@@ -1842,7 +1846,8 @@ export class BlameAgentRuntime {
     if (event.type !== "tool") return event;
     const payload = asRecord(event.payload);
     const toolCall = asRecord(payload.toolCall);
-    const toolCallId = stringValue(toolCall.id) ?? stringValue(payload.toolCallId);
+    const toolCallId =
+      stringValue(toolCall.id) ?? stringValue(payload.toolCallId);
     if (!toolCallId) return event;
     const key = `${sessionId}:${toolCallId}`;
     const completed =
@@ -2806,7 +2811,11 @@ function parseProjectInitializationAttempt(
         scan,
         input.preferences,
       );
-  return { sessionId: attempt.sessionId, ...initialization };
+  return {
+    sessionId: attempt.sessionId,
+    previewManifest: initialization.previewManifest,
+    runConfigurations: initialization.runConfigurations,
+  };
 }
 
 function parsedCodePracticesAttempt(
@@ -3114,7 +3123,8 @@ function mergeConflictConfig(
 
 function initializationPrompt(
   scan: ProjectInitializationScan,
-  correction?: InitializationCorrection, preferences?: InitializeProjectInput["preferences"],
+  correction?: InitializationCorrection,
+  preferences?: InitializeProjectInput["preferences"],
 ) {
   if (!correction) return projectInitializationPrompt(scan, preferences);
   return projectInitializationCorrectionPrompt(scan, correction, preferences);

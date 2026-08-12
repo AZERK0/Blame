@@ -77,9 +77,7 @@ type InitializationFeedback = {
 
 type GeneratedProjectInitializationResult = {
   sessionId: string
-  setupScript: string
-  dockerCompose: string
-  previewManifest?: PreviewManifest
+  previewManifest: PreviewManifest
   runConfigurations: ProjectRunConfiguration[]
 }
 
@@ -618,10 +616,8 @@ function openGeneratedProjectWithInitialization(
 ) {
   return input.openGeneratedProject(input.path, {
     clineSessionId: initialization.sessionId,
-    dockerCompose: initialization.dockerCompose,
     previewManifest: initialization.previewManifest,
     runConfigurations: initialization.runConfigurations,
-    setupScript: initialization.setupScript,
   })
 }
 
@@ -648,17 +644,13 @@ function shouldRetryInitializationCompletion(error: unknown, attempt: number) {
 function initializationValidationFeedback(
   error: unknown,
   result: {
-    setupScript: string
-    dockerCompose: string
-    previewManifest?: PreviewManifest
+    previewManifest: PreviewManifest
     runConfigurations: ProjectRunConfiguration[]
   }
 ) {
   return {
     validationError: errorMessage(error),
     previousResult: JSON.stringify({
-      setupScript: result.setupScript,
-      dockerCompose: result.dockerCompose,
       previewManifest: result.previewManifest,
       runConfigurations: result.runConfigurations,
     }),

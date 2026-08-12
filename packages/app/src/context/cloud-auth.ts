@@ -2,6 +2,7 @@ import * as React from "react"
 
 import type {
   ApiConnection,
+  PreviewManifest,
   ProjectRunConfiguration,
 } from "@blame/agent-runtime"
 import type { ReasoningSelection } from "@blame/agent-runtime"
@@ -90,9 +91,7 @@ export type CloudProjectInitialization = {
   clineSessionId: string | null
   agentProviderId: string | null
   agentModelId: string | null
-  previewManifest: Record<string, unknown> | null
-  setupScript: string | null
-  dockerCompose: string | null
+  previewManifest: PreviewManifest | null
   runConfigurations: ProjectRunConfiguration[]
   error: string | null
   repairReason: string | null

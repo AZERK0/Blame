@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   composeWithNonMutatingNpmInstalls,
-  composeWithFrameworkServerBindings,
   composeWithoutNumericSuUser,
   composeWithAllocatedHostPorts,
   dockerComposeForPreview,
@@ -11,39 +10,6 @@ import {
   dockerComposeWithDependencyVolumes,
   dockerComposeWithHostFileMounts,
 } from "./workspace-compose.ts";
-
-test("restores Nuxt server proxy bindings in persisted Compose artifacts", () => {
-  const compose = [
-    "services:",
-    "  frontend:",
-    "    environment:",
-    '      NUXT_PUBLIC_API_BASE_URL: "http://localhost:41000"',
-    "    labels:",
-    '      blame.binding.0.key: "NUXT_PUBLIC_API_BASE_URL"',
-    '      blame.binding.0.source.service: "backend"',
-    '      blame.binding.0.source.endpoint: "http"',
-    '      blame.binding.0.exposure: "browser"',
-    '      blame.binding.0.format: "url"',
-    "  backend:",
-    "    healthcheck:",
-    '      test: ["CMD", "node", "healthcheck.js"]',
-    "    labels:",
-    '      blame.endpoint.0.id: "http"',
-    '      blame.endpoint.0.protocol: "http"',
-    '      blame.endpoint.0.port: "3333"',
-  ].join("\n");
-
-  const result = composeWithFrameworkServerBindings(compose);
-
-  assert.match(result, /NUXT_API_BASE_URL: http:\/\/backend:3333/);
-  assert.match(result, /blame\.binding\.1\.key: NUXT_API_BASE_URL/);
-  assert.match(result, /blame\.binding\.1\.exposure: server/);
-  assert.match(
-    result,
-    /depends_on:\n\s+backend:\n\s+condition: service_healthy/,
-  );
-  assert.equal(composeWithFrameworkServerBindings(result), result);
-});
 
 test("allocates explicit localhost ports for runtime previews", async () => {
   const compose = [
@@ -57,31 +23,6 @@ test("allocates explicit localhost ports for runtime previews", async () => {
 
   assert.match(result, /"127\.0\.0\.1:[0-9]+:3000"/);
   assert.doesNotMatch(result, /127\.0\.0\.1::3000/);
-});
-
-test("materializes preview public origins from allocated ports", async () => {
-  const compose = [
-    "services:",
-    "  web:",
-    "    environment:",
-    '      BETTER_AUTH_URL: "http://localhost:3000"',
-    '      NEXTAUTH_URL: "http://127.0.0.1:3000/api/auth"',
-    "    ports:",
-    '      - "127.0.0.1::3000"',
-  ].join("\n");
-
-  const result = await composeWithAllocatedHostPorts(compose);
-  const hostPort = /127\.0\.0\.1:(\d+):3000/.exec(result)?.[1];
-
-  assert.ok(hostPort);
-  assert.match(
-    result,
-    new RegExp(`BETTER_AUTH_URL: "http://localhost:${hostPort}"`),
-  );
-  assert.match(
-    result,
-    new RegExp(`NEXTAUTH_URL: "http://localhost:${hostPort}/api/auth"`),
-  );
 });
 
 test("materializes typed browser binding placeholders", async () => {
@@ -145,24 +86,6 @@ test("refreshes declared browser bindings when host ports are reallocated", asyn
   assert.doesNotMatch(result, /localhost:41000/);
 });
 
-test("keeps ambiguous legacy browser placeholders unresolved", async () => {
-  const compose = [
-    "services:",
-    "  web:",
-    "    environment:",
-    '      PUBLIC_API_URL: "__BLAME_PREVIEW_ORIGIN_3000__/api"',
-    "    ports:",
-    '      - "127.0.0.1::3000"',
-    "  api:",
-    "    ports:",
-    '      - "127.0.0.1::3000"',
-  ].join("\n");
-
-  const result = await composeWithAllocatedHostPorts(compose);
-
-  assert.match(result, /__BLAME_PREVIEW_ORIGIN_3000__/);
-});
-
 test("keeps explicit localhost ports unchanged", async () => {
   const compose = [
     "services:",
@@ -174,21 +97,6 @@ test("keeps explicit localhost ports unchanged", async () => {
   const result = await composeWithAllocatedHostPorts(compose);
 
   assert.equal(result, compose);
-});
-
-test("uses explicit localhost ports for public origin materialization", async () => {
-  const compose = [
-    "services:",
-    "  web:",
-    "    environment:",
-    "      - APP_URL=http://localhost:3000",
-    "    ports:",
-    '      - "127.0.0.1:4173:3000"',
-  ].join("\n");
-
-  const result = await composeWithAllocatedHostPorts(compose);
-
-  assert.match(result, /APP_URL=http:\/\/localhost:4173/);
 });
 
 test("removes invalid numeric su user commands", () => {

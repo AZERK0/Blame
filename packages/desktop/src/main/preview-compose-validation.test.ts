@@ -50,29 +50,7 @@ test("extracts per-service env file overrides", () => {
   assert.deepEqual(previewComposeEnvOverrides(compose("http://backend:3333")), [
     {
       directory: "apps/web",
-      localHosts: { "3333": "backend" },
       values: { API_URL: "http://backend:3333" },
-    },
-  ]);
-});
-
-test("infers an unambiguous legacy localhost rewrite from internal URLs", () => {
-  const value = [
-    "services:",
-    "  backend:",
-    "    image: node:22",
-    "  web:",
-    "    image: node:22",
-    "    working_dir: /workspace/apps/frontend",
-    "    environment:",
-    "      PUBLIC_API_URL: http://backend:3333",
-  ].join("\n");
-
-  assert.deepEqual(previewComposeEnvOverrides(value), [
-    {
-      directory: "apps/frontend",
-      localHosts: { "3333": "backend" },
-      values: {},
     },
   ]);
 });
