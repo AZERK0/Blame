@@ -14,24 +14,60 @@ on:
         type: boolean
 
 jobs:
-  build:
-    name: Build runtime ${{ matrix.name }}
+  build-windows:
+    name: Build Windows runtime ${{ matrix.name }}
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
         include:
           - name: x86-64
-            firmware_package: ovmf
             runner: ubuntu-latest
-            qemu_package: qemu-system-x86
             windows_arch: amd64
+          - name: arm64
+            runner: ubuntu-24.04-arm
+            windows_arch: arm64
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.2
+
+      - uses: actions/setup-node@v4
+        with:
+          cache: pnpm
+          node-version: 22
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build WSL rootfs
+        run: pnpm build:runtime:windows -- --arch ${{ matrix.windows_arch }}
+        env:
+          BLAME_RUNTIME_VERSION: ${{ inputs.runtime_version }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          compression-level: 0
+          name: blame-runtime-windows-${{ matrix.name }}
+          path: packages/desktop/dist/runtime/windows/*.tar.gz
+          if-no-files-found: error
+          retention-days: 1
+
+  build-macos:
+    name: Build macOS runtime ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: x86-64
+            firmware_package: ovmf
+            qemu_package: qemu-system-x86
             macos_arch: x86_64
           - name: arm64
             firmware_package: qemu-efi-aarch64
-            runner: ubuntu-24.04-arm
             qemu_package: qemu-system-arm
-            windows_arch: arm64
             macos_arch: aarch64
     steps:
       - uses: actions/checkout@v4
@@ -61,11 +97,6 @@ jobs:
             echo "QEMU_SYSTEM_AARCH64=qemu-system-aarch64 -machine virt -cpu max" >> "$GITHUB_ENV"
           fi
 
-      - name: Build WSL rootfs
-        run: pnpm build:runtime:windows -- --arch ${{ matrix.windows_arch }}
-        env:
-          BLAME_RUNTIME_VERSION: ${{ inputs.runtime_version }}
-
       - name: Build Lima image
         run: pnpm build:runtime:macos -- --arch ${{ matrix.macos_arch }}
         env:
@@ -74,16 +105,14 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           compression-level: 0
-          name: blame-runtime-${{ matrix.name }}
-          path: |
-            packages/desktop/dist/runtime/windows/*.tar.gz
-            packages/desktop/dist/runtime/macos/*.qcow2
+          name: blame-runtime-macos-${{ matrix.name }}
+          path: packages/desktop/dist/runtime/macos/*.qcow2
           if-no-files-found: error
           retention-days: 1
 
   deploy:
     name: Deploy runtime
-    needs: build
+    needs: [build-windows, build-macos]
     if: inputs.deploy
     runs-on: ubuntu-latest
     steps:
