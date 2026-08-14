@@ -1,11 +1,11 @@
 vmType: vz
 images:
-  - location: "https://cloud-images.ubuntu.com/releases/24.04/release/ubuntu-24.04-server-cloudimg-arm64.img"
+  - location: "https://cloud-images.ubuntu.com/releases/24.04/release-20260801/ubuntu-24.04-server-cloudimg-arm64.img"
     arch: "aarch64"
-    digest: "sha256:7df0201546f75b8bcc1044594c806c35749421ad3c9bc1be2a3ab806cfae39cc"
-  - location: "https://cloud-images.ubuntu.com/releases/24.04/release/ubuntu-24.04-server-cloudimg-amd64.img"
+    digest: "sha256:aa6da05756e85ea6dde4836b841fecb10cfd1ba3bcea320189d9af945db70476"
+  - location: "https://cloud-images.ubuntu.com/releases/24.04/release-20260801/ubuntu-24.04-server-cloudimg-amd64.img"
     arch: "x86_64"
-    digest: "sha256:ffe6203da54deeb6db5d2a98a83f9ec8e55f149d3f7ba622e1abe5fa966ee3d6"
+    digest: "sha256:0533b0655c32e68b31d792ecd6ccfca95abdbc536c4446874fe0513bd4140ffe"
 disk: "80GiB"
 mounts:
   - location: "~"
