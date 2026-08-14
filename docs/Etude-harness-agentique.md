@@ -1,0 +1,1707 @@
+# Blame — Étude des outils d’un harness agentique de code
+
+**Version 1.0 — 9 août 2026**  
+**Objet :** définir les primitives d’un IDE agentique qui dépassent le paradigme actuel `grep → read_file(lines) → patch → shell`, en s’appuyant sur la littérature scientifique, les systèmes existants et les contraintes propres à Blame.
+
+---
+
+## Résumé décisionnel
+
+L’hypothèse de départ est fortement soutenue dans les configurations évaluées : exposer la structure du programme peut être plus efficace que faire parcourir des plages de lignes. Le papier ACL 2026 **CODESTRUCT** remplace la lecture et l’édition textuelles par des opérations ciblant des entités AST nommées. Sur SWE-bench Verified, il rapporte pour les modèles les plus capables **+1,2 à +5,0 points de Pass@1**, **12 à 38 % de tokens d’entrée en moins** dans la plupart des configurations et **76 à 88 % d’occurrences d’erreurs du tool d’édition en moins** pour les modèles capables. Ces dernières sont des erreurs opérationnelles détectées dans les trajectoires, pas des patches sémantiquement faux. Les résultats ne sont pas uniformes : GPT-5-nano consomme environ 41 % de tokens d’entrée supplémentaires tout en réussissant beaucoup plus, et le système reste limité à des AST par fichier. ([CODESTRUCT](https://aclanthology.org/2026.acl-long.607/))
+
+Mais `get_file_symbols → read_function(name)` ne doit pas être l’architecture finale. Il faut le faire évoluer vers :
+
+> **un espace d’observation et de modification sémantique, versionné comme une base de données, avec le texte brut et le shell comme échappatoires universelles.**
+
+Les décisions les plus importantes sont les suivantes :
+
+1. **Implémenter l’idée symbolique, mais utiliser des handles exacts et versionnés, pas des noms.** Une fonction nommée `load` n’est pas une identité : elle peut être surchargée, imbriquée, déplacée ou dupliquée. `outline_code` doit retourner un `symbol_ref` lié à une source revision ; `inspect_code` doit consommer ce handle.
+2. **Ne pas supprimer `read_file`.** Les fichiers de configuration, imports, décorateurs, macros, initialisations au niveau module, code temporairement invalide et langages non indexés exigent un mode brut. La bonne stratégie est une divulgation progressive : carte → candidats → signatures → corps → voisinage/dépendances → texte brut.
+3. **Construire d’abord le substrat de source revisions et revision vectors.** Toute lecture, édition, exécution et validation doit indiquer les révisions exactes qu’elle observe. Sans cela, un excellent outil symbolique peut appliquer une décision correcte à un état devenu faux.
+4. **Rendre l’édition transactionnelle.** Une modification déclare une source revision de base, des préconditions et des opérations atomiques ; elle produit une proposition immuable à inspecter, puis un commit compare-and-swap crée la nouvelle révision.
+5. **Garder un petit noyau — huit primitives constituent ici une heuristique Blame à tester.** Les capacités spécialisées sont découvertes à la demande. Des dizaines de schémas permanents consomment du contexte et compliquent le routage ; aucun optimum universel n’est établi. OpenAI conseille notamment des namespaces cohérents et moins de dix fonctions par namespace. ([OpenAI Tool Search](https://developers.openai.com/api/docs/guides/tools-tool-search), [Anthropic — Writing tools for agents](https://www.anthropic.com/engineering/writing-tools-for-agents))
+6. **Faire de la validation un workflow de premier rang, pas une convention de prompt.** Il orchestre `run_task`, `inspect_run` et `review_change` pour produire des preuves liées à la source revision : échec avant, succès après, diagnostics différentiels, critères d’acceptation couverts et inconnues restantes.
+7. **Stocker les gros résultats hors du contexte.** Logs, diffs, graphes et captures deviennent des artifacts immuables. Le modèle reçoit un résumé borné, la provenance, la complétude et un handle permettant de rouvrir exactement la preuve.
+8. **Coordonner les agents par contrats et changesets, pas par conversation libre.** Les agents de Blame doivent partager des artifacts, des source revisions et des surfaces d’édition réservées. CooperBench montre que la coopération actuelle peut être nettement inférieure au travail solo lorsque les communications sont vagues, tardives ou que les agents dévient de leurs engagements. ([CooperBench](https://arxiv.org/abs/2601.13295))
+9. **Traiter le dépôt, les issues, les pages web et les sorties de tools comme des données non fiables.** Les protections doivent être appliquées par un policy engine indépendant du modèle. Des évaluations récentes d’IDE agentiques ont observé des taux élevés d’exécution d’actions injectées ; les chiffres précis changeront avec les versions, mais la classe de risque est structurelle. ([AIShellJack](https://arxiv.org/abs/2509.22040), [IssueTrojanBench](https://arxiv.org/abs/2607.20759))
+10. **Mesurer le gain, ne pas le supposer.** L’ablation centrale doit comparer, à modèle et budget identiques : interface textuelle, interface symbolique seule, puis interface hybride versionnée avec dépendances.
+
+### Recommandation en une phrase
+
+Pour Blame, le meilleur investissement n’est pas un nouveau `read_function`, mais un **Semantic Workspace Protocol** : source revisions MVCC, handles de code, retrieval progressif, changements transactionnels et graphe de preuves. Les tools agent-facing ne sont ensuite que des vues sûres et économiques sur ce substrat.
+
+---
+
+## 1. Périmètre et méthode
+
+### 1.1 Ce que l’on appelle « harness »
+
+Le harness est la couche comprise entre le modèle et le monde de développement. Il comprend :
+
+- la boucle de contrôle et le routage des modèles ;
+- les tools et leurs schémas ;
+- la représentation du dépôt, des processus et de l’interface utilisateur ;
+- la gestion du contexte et de la mémoire ;
+- l’isolation, les permissions et les approbations ;
+- les worktrees, checkpoints et mécanismes de reprise ;
+- l’orchestration des sous-agents ;
+- les preuves permettant à l’humain d’accepter ou de refuser une modification.
+
+Un tool n’est donc pas seulement une fonction pratique. Il définit à la fois :
+
+- **l’action possible** : ce que le modèle peut faire ;
+- **l’observation possible** : ce qu’il peut savoir ;
+- **la granularité de raisonnement** : lignes, symboles, dépendances, tests, comportements ;
+- **le risque maximal** d’une erreur ;
+- **le coût en tokens et en latence** pour réduire l’incertitude.
+
+L’Agent-Computer Interface de SWE-agent a précisément montré que la conception de cette interface affecte matériellement la réussite : visualiseur borné, recherche bornée, éditeur avec feedback et rollback ne sont pas de simples détails d’ergonomie. ([SWE-agent](https://arxiv.org/abs/2405.15793), [documentation ACI](https://github.com/SWE-agent/SWE-agent/blob/main/docs/background/aci.md))
+
+### 1.2 Fonction objectif
+
+Il faut optimiser l’ensemble suivant, et non le seul nombre de tokens :
+
+\[
+U = P(\text{tâche correcte})
+ - \lambda_t C_{\text{tokens}}
+ - \lambda_l C_{\text{latence}}
+ - \lambda_r C_{\text{risque}}
+ - \lambda_s C_{\text{staleness}}
+ - \lambda_h C_{\text{correction humaine}}
+\]
+
+Une observation courte mais qui masque une dépendance importante a une mauvaise utilité. Une lecture plus longue, si elle évite un patch faux, peut être optimale. L’objectif pratique devient donc :
+
+> maximiser la quantité de preuve utile par token, sans sacrifier le recall de localisation, la fraîcheur de l’état ni la réversibilité.
+
+### 1.3 Six rôles fondamentaux, au-delà de « lire/écrire »
+
+| Rôle du tool | Question à laquelle il répond | Exemples |
+|---|---|---|
+| capteur | « quel est l’état pertinent ? » | search, inspect, trace, UI observe |
+| effecteur | « comment transformer cet état ? » | apply change, refactor, UI act |
+| oracle | « la transformation satisfait-elle le contrat ? » | reproduce, test, validate acceptance |
+| gestionnaire d’état | « sur quelle version travaille-t-on et comment revenir ? » | source revision, checkpoint, rollback |
+| gouverneur | « cette action et ses effets sont-ils autorisés ? » | capabilities, approval, policy check |
+| coordinateur | « qui fait quoi, avec quelle preuve ? » | delegate, reserve surface, submit changeset |
+
+Les harnesses actuels sont riches en capteurs textuels et effecteurs génériques, mais faibles en oracles, état versionné et coordination vérifiable. Ajouter des tools de lecture sans ces trois rôles augmente la vitesse d’action plus vite que la fiabilité.
+
+### 1.4 Sources et prudence d’interprétation
+
+Cette étude combine :
+
+- articles évalués par les pairs ;
+- prépublications récentes, clairement présentées comme telles ;
+- documentation officielle et code source de harnesses ;
+- benchmarks publics ;
+- exigences de la note de projet Blame : Backlog/User Stories, Code Practices, worktrees, preview locale, analyse spécialisée, validation humaine et merge contrôlé.
+
+Les chiffres de systèmes différents ne sont **pas comparables directement** : modèles, prompts, budgets, versions de benchmark et infrastructures diffèrent. Les résultats quantitatifs sont utilisés pour valider une direction de conception, pas pour fabriquer un classement universel.
+
+---
+
+## 2. Ce que dit réellement la recherche
+
+### 2.1 Résultats les plus directement actionnables
+
+| Travail | Interface étudiée | Résultat utile pour Blame | Limite à conserver |
+|---|---|---|---|
+| [CODESTRUCT, ACL 2026](https://aclanthology.org/2026.acl-long.607/) | `readCode` et `editCode` sur entités AST nommées | Sur SWE-bench Verified : gains de Pass@1 pour 5 modèles sur 6, souvent moins de tokens et moins d’occurrences d’erreurs opérationnelles du tool d’édition ; c’est le test le plus direct de l’idée proposée | AST par fichier ; couverture principale Python pour le bug fixing ; certains modèles consomment davantage ; le raisonnement faible n’est pas réparé par l’interface |
+| [MASAI, 2024](https://arxiv.org/abs/2406.11638) | `READ(file, class, function)` paresseux : signatures pour fichier/classe, corps complet pour fonction | Précédent opérationnel et preuve de faisabilité dans une architecture multi-agent complète | Pas d’ablation isolant `READ` ; résultats historiques, noms comme sélecteurs, identité/fraîcheur non traitées |
+| [CodeAgent, ACL 2024](https://aclanthology.org/2024.acl-long.737/) | navigation de symboles construite avec Tree-sitter | Une recherche de module retourne les symboles ; une recherche de nom retourne la définition : précédent presque exact de `get_file_symbols` | Étudié dans un système de génération et non comme protocole complet d’IDE |
+| [AutoCodeRover, ISSTA 2024](https://arxiv.org/abs/2404.05427) | recherche AST par classes, méthodes et snippets ; localisation itérative | Soutient la recherche structure-aware et l’escalade progressive plutôt qu’une lecture uniforme du dépôt | Majoritairement Python/SWE-bench ; architecture de réparation plutôt que harness généraliste |
+| [Agentless, FSE 2025](https://lingming.cs.illinois.edu/publications/fse2025.pdf) | localisation hiérarchique fichier → classe/fonction → emplacement | Montre qu’un pipeline simple et structuré peut être compétitif sans autonomie illimitée | Pipeline et sélection de candidats spécifiques ; ne couvre pas tout le cycle IDE |
+| [LocAgent, ACL 2025](https://aclanthology.org/2025.acl-long.426/) | graphe fichiers/classes/fonctions avec imports, appels, héritage | Dans son protocole, améliore fortement la localisation et réduit le coût ; justifie une vue graphe multi-fichiers | Résultats dépendants du benchmark et de la construction du graphe |
+| [GraphCoder, 2024](https://arxiv.org/abs/2406.07003) | graphe de contexte au niveau statement avec contrôle et données | Des sous-graphes structurés peuvent fournir des dépendances plus utiles qu’un voisinage séquentiel | Il ne s’agit pas de program slicing ; coût/complexité des graphes globaux ; contexte de génération de code |
+| [DyRetriever/DyCoder, 2026](https://arxiv.org/abs/2608.01927) | graphe de dépendances partiel, dynamique et éphémère | Soutient le calcul à la demande plutôt qu’un graphe global exhaustif | Prépublication très récente ; n’évalue pas la maintenance d’index après chaque edit ; résultats à répliquer |
+| [RepoCoder, EMNLP 2023](https://aclanthology.org/2023.emnlp-main.151/) | récupération et génération itératives | La récupération progressive sur les résultats précédents bat la récupération one-shot dans son cadre | Tâche de complétion, pas agent IDE complet |
+| [Repoformer, ICML 2024](https://proceedings.mlr.press/v235/wu24a.html) | décision de récupérer ou non du contexte | La récupération sélective peut accélérer sans dégrader : « plus de contexte » n’est pas toujours mieux | Modèle entraîné pour la décision ; cadre de complétion |
+| [CodeRAG-Bench, NAACL 2025](https://aclanthology.org/2025.findings-naacl.176/) | comparaison retrievers/modèles sur tâches code | Le bon contexte aide, mais les retrievers échouent encore souvent et les générateurs n’utilisent pas toujours les passages trouvés | Benchmarks RAG, pas trajectoires d’édition longues |
+| [RepoExec, NAACL 2025](https://aclanthology.org/2025.findings-naacl.82/) | complétion avec contexte de dépendances | Les dépendances nécessaires peuvent être plus importantes que le seul corps de la fonction | Complétion fonctionnelle, pas interface interactive |
+| [Lost in the Middle, TACL 2024](https://aclanthology.org/2024.tacl-1.9/) | exploitation d’un long contexte selon la position | Une grande fenêtre ne supprime pas le besoin de sélectionner et ordonner les preuves | Tâches générales de long contexte, pas exclusivement code |
+
+### 2.2 Les conclusions robustes
+
+La littérature ne dit pas simplement « utilisez l’AST ». Elle fait émerger six principes :
+
+1. **La granularité de l’interface change les performances.** Le modèle n’est pas indifférent à la manière dont le même dépôt lui est exposé.
+2. **La localisation bénéficie souvent d’une progression.** Une carte compacte sert à former des hypothèses ; les corps et dépendances peuvent être ouverts ensuite selon le besoin.
+3. **La structure réduit surtout la fragilité d’interface.** Elle ne remplace ni le raisonnement ni les tests. CODESTRUCT trouve ses plus gros gains lorsque le problème dominant est le ciblage/patch textuel, pas lorsque le modèle ne comprend pas la tâche.
+4. **Le contexte pertinent dépasse souvent le symbole cible.** Contrats de type, callsites, configuration, tests et historique doivent être récupérés sous budget.
+5. **La récupération doit être sélective et falsifiable.** Un résultat sémantique est un candidat, pas un fait ; le tool doit exposer les signaux et permettre une vérification exacte.
+6. **Les graphes exhaustifs ne sont pas toujours le bon substrat.** Une indexation syntaxique légère et persistante, complétée par des dépendances calculées à la demande, est l’hypothèse de design retenue ici ; elle devra être comparée à un index global.
+
+Deux résultats historiques donnent des ordres de grandeur utiles :
+
+- Dans les ablations de SWE-agent sur SWE-bench Lite avec le même modèle de l’époque, une fenêtre de 100 lignes atteint 18 % de résolution, contre 12,7 % lorsque le fichier entier est affiché et 14,3 % avec seulement 30 lignes. L’éditeur dédié avec feedback de syntaxe atteint 18 %, contre 10,3 % sans cet éditeur. Cela ne teste pas directement les symboles, mais montre proprement que granularité, bornage et feedback changent le résultat. ([papier SWE-agent](https://proceedings.neurips.cc/paper_files/paper/2024/file/5a7c947568c1b1328ccc5230172e1e7c-Paper-Conference.pdf))
+- AutoCodeRover rapporte environ 37 000 tokens par tâche et 19 % de résolution contre environ 245 000 et 18 % pour SWE-agent dans sa comparaison. Les auteurs attribuent 26 résolutions uniques au contexte AST fin, mais AutoCodeRover perd aussi des tâches faute d’API de recherche adaptées. Ce n’est **pas** une ablation contrôlée du seul tool : modèle de recherche et architecture diffèrent. ([AutoCodeRover](https://arxiv.org/html/2404.05427v3))
+
+La preuve la plus récente et la plus directe reste CODESTRUCT ; la preuve la plus propre que « davantage de texte » peut nuire reste l’ablation SWE-agent. Ensemble, elles justifient le prototype, pas l’abandon des fallbacks.
+
+### 2.3 Tests, reproduction et évolution longue
+
+La réparation ne devrait jamais commencer et finir par « la suite est verte ». Il faut produire une preuve du défaut et de sa disparition.
+
+- SWT-Bench rassemble plus de 1 900 tâches de génération de tests de reproduction qui doivent échouer sur la version fautive et passer sur la version corrigée. ([SWT-Bench](https://proceedings.neurips.cc/paper_files/paper/2024/file/94f093b41fc2666376fb1f667fe282f3-Paper-Conference.pdf))
+- Le BRT Agent de Google a obtenu, dans son étude sur 80 bugs, davantage de tests de reproduction plausibles qu’une baseline antérieure ; l’ajout de ces tests a aussi permis de découvrir des correctifs plausibles supplémentaires. Le périmètre est limité, mais la direction est claire : la reproduction est une phase outillée, pas seulement une instruction. ([Bug Reproduction Test Agent](https://arxiv.org/abs/2502.01821))
+- SWE-EVO montre que les changements de longue durée, comportant plusieurs étapes et évolutions de dépôt, restent nettement plus difficiles que les tâches de correctif isolées. Cela motive — sans en prouver l’efficacité — des snapshots, checkpoints, contrats et validations incrémentales. ([SWE-EVO](https://arxiv.org/abs/2512.18470))
+
+### 2.4 Multi-agent : spécialiser sans créer un téléphone arabe
+
+MASAI répartit la reproduction, la localisation, la correction et le classement entre modules spécialisés. Cette séparation est cohérente avec les rôles déjà envisagés dans Blame. Mais spécialiser ne suffit pas.
+
+CooperBench évalue des tâches qui requièrent une coopération réelle entre agents et observe, dans son protocole, une performance coopérative bien inférieure au solo pour des agents pourtant très capables. Les erreurs décrites sont exactement celles d’un système fondé sur des messages libres : communications vagues ou tardives, informations inexactes et engagements non respectés. ([CooperBench](https://arxiv.org/abs/2601.13295))
+
+L’hypothèse architecturale à tester est la suivante : un sous-agent rend un objet vérifiable — `FindingSet`, `ChangeSet`, `ValidationRun`, `RiskReport` — avec source revision, scope et preuves. Son résumé en langage naturel n’est qu’une vue de cet objet. CooperBench motive cette hypothèse, mais ne compare pas directement ce protocole aux messages libres.
+
+---
+
+## 3. Audit des harnesses actuels
+
+Audit des surfaces publiques vérifiées le 9 août 2026. Les produits fermés évoluent vite ; « absent » signifie ici « aucun tool agent-facing public et documenté trouvé », pas « l’IDE n’utilise jamais cette information en interne ».
+
+### 3.1 Primitives exposées au modèle
+
+| Système | Lecture/recherche dominante | Édition dominante | Sémantique agent-facing | État/rollback notable |
+|---|---|---|---|---|
+| Codex CLI/SDK | inspection de fichiers, recherche et shell ; surface exacte variable selon client/version | patch structuré | aucun contrat public de symbole/LSP natif | sandbox et approbations ; checkpoints Git à orchestrer, pas de checkpoint fichier universel documenté |
+| Claude Code | `Read`/`Glob`/`Grep` + sous-agent Explore | `Edit`/`Write` | LSP agent-facing via plugin : diagnostics, définitions, références et types | checkpoints des modifications faites par les tools fichiers ; Tool Search différé pour MCP |
+| Cursor Agent | lecture, Instant Grep et index sémantique disponibles à l’agent | application d’édition interne | LSP utilisé en arrière-plan, sans schéma public de tool symbolique | checkpoints locaux séparés de Git ; compression par résumé documentée, algorithme opaque |
+| Cline | ClineCore : `read_files`, `search` ; sous-agents expérimentaux : listing de définitions | `editor`/`apply_patch` | plugin TS `goto_definition` limité à SDK/CLI/Kanban | Shadow Git et auto-compaction |
+| Aider | fichiers choisis + repo map Tree-sitter classée par graphe | protocoles de sortie whole file, SEARCH/REPLACE, diff | carte injectée dans le prompt, sans handle/snapshot explicite exposé au modèle | commits Git automatiques et undo |
+| mini-SWE-agent | un unique tool Bash (`cat`, `grep`, `sed`…) | Bash | aucune | environnement local par défaut ; sandboxes optionnelles, timeout/confirmation, aucun rollback natif |
+| SWE-agent historique | viewer/recherche via bundles configurables | éditeurs ligne ou search/replace | aucune navigation LSP native | maintenance uniquement ; le bundle `edit_anthropic` offre linter/undo optionnels |
+| OpenHands SDK | SDK composable : `terminal`, `file_editor` ; délégation optionnelle | `file_editor` | aucun LSP natif documenté | condensers et modes de permission configurables |
+| OpenCode | `read`/`grep`/`glob` | exact-string edit/apply patch | LSP expérimental : symboles, définition, références, implémentations, call hierarchy ; serveur requis | snapshots Git et compaction |
+| Gemini CLI | `read_file`, `read_many_files`, `glob`, `grep_search` | `replace`/`write_file` | aucun tool symbole dans la référence officielle | Shadow Git optionnel et désactivé par défaut ; compression automatique |
+
+Sources primaires :
+
+- Codex : [CLI](https://developers.openai.com/codex/cli), [handlers de tools](https://github.com/openai/codex/tree/main/codex-rs/core/src/tools/handlers), [instructions `apply_patch` du CLI](https://github.com/openai/codex/blob/main/codex-rs/core/prompt_with_apply_patch_instructions.md).
+- Claude Code : [tools](https://code.claude.com/docs/en/tools-reference), [LSP/Tool Search](https://code.claude.com/docs/en/features-overview), [checkpointing](https://code.claude.com/docs/en/checkpointing).
+- Cursor : [recherche](https://cursor.com/docs/agent/tools/search), [tools/checkpoints](https://cursor.com/docs/agent/overview#tools), [contexte et compression](https://cursor.com/docs/agent/prompting).
+- Cline : [ClineCore tools](https://docs.cline.bot/tools-reference/all-cline-tools), [sous-agents](https://docs.cline.bot/features/subagents), [plugins](https://docs.cline.bot/customization/plugins).
+- Aider : [repo map](https://aider.chat/docs/repomap.html), [formats d’édition](https://aider.chat/docs/more/edit-formats.html), [Git/undo](https://aider.chat/docs/git.html).
+- mini-SWE-agent : [CLI](https://mini-swe-agent.com/latest/usage/mini/), [environnements](https://mini-swe-agent.com/latest/advanced/environments/).
+- SWE-agent historique : [statut](https://swe-agent.com/latest/), [bundles](https://github.com/SWE-agent/SWE-agent/blob/main/docs/config/tools.md).
+- OpenHands : [agents/toolsets](https://docs.openhands.dev/sdk/guides/agent-file-based), [condensers](https://docs.openhands.dev/sdk/guides/context-condenser), [sécurité](https://docs.openhands.dev/sdk/guides/security).
+- OpenCode : [tools](https://opencode.ai/docs/tools/), [configuration](https://opencode.ai/docs/config/).
+- Gemini CLI : [tools](https://geminicli.com/docs/reference/tools/), [checkpointing](https://geminicli.com/docs/cli/checkpointing/).
+
+### 3.2 Ce sur quoi le marché converge
+
+Une prépublication qualitative fondée sur le code source de 13 agents à des commits figés observe des catalogues allant de 0 à 37 actions, mais une convergence sur quatre catégories : lire, chercher, éditer et exécuter. Les divergences importantes concernent plutôt l’état, la compaction, le routage et la composition des boucles. ([Inside the Scaffold](https://arxiv.org/abs/2604.03515))
+
+Quatre philosophies sont visibles :
+
+1. **Shell minimaliste.** Universel, peu coûteux à maintenir, mais très mauvais pour l’attribution des effets, les permissions fines et la compression des sorties.
+2. **Carte proactive.** Aider injecte une repo map Tree-sitter, classée par un graphe de références et limitée par un budget de tokens. C’est une excellente amorce, mais la carte reste du texte sans handle ni freshness.
+3. **Petit noyau + délégation.** Des agents spécialisés isolent les recherches et sorties verbeuses, mais leurs résultats restent généralement des résumés libres.
+4. **Large catalogue composable.** Plus explicite, mais coûteux en contexte ; le chargement différé des schémas devient nécessaire.
+
+### 3.3 Les lacunes communes
+
+L’audit fait apparaître les mêmes angles morts dans presque tous les systèmes :
+
+- aucune identité de symbole durable et versionnée utilisable de bout en bout ;
+- éditions encore dominées par les lignes, chaînes exactes ou patches textuels ;
+- lectures sans `content_hash`, `source_revision_id` ou contrat de fraîcheur ;
+- tests invoqués comme commandes shell dans la plupart des harnesses ; Aider orchestre `/lint`/`/test`, mais sans relation typée test-diff ;
+- lorsqu’elle existe, compaction généralement fondée sur un résumé, parfois complétée par une troncature ;
+- rollback généralement limité aux fichiers et parfois à la conversation, jamais aux migrations, processus, réseau, browser ou services externes ;
+- permissions fondées sur le nom du tool/commande, rarement sur les effets réels ;
+- sous-agents qui rendent généralement du texte plutôt qu’un graphe de preuves commun ;
+- index LSP internes rarement transformés en protocole agent-facing stable, hors Claude Code avec plugin et OpenCode expérimental ;
+- shell capable de contourner l’observabilité des tools de plus haut niveau.
+
+Le constat est donc bien celui pressenti : l’orchestration et l’UX ont beaucoup progressé, mais l’unité primitive de manipulation reste souvent le texte.
+
+---
+
+## 4. Analyse détaillée de `get_file_symbols → read_function`
+
+### 4.1 Ce que l’idée améliore
+
+- moins de contenu non pertinent ;
+- ciblage indépendant du déplacement des lignes ;
+- lecture possible d’une signature avant le corps ;
+- navigation naturelle des fichiers très longs ;
+- meilleure réutilisation du code existant ;
+- possibilité de cacher l’implémentation tant qu’elle n’est pas nécessaire ;
+- représentation compatible avec Tree-sitter, LSP, SCIP et les compilateurs.
+
+Elle est suffisamment bonne pour faire partie du MVP.
+
+### 4.2 Pourquoi le nom ne doit pas être l’identifiant
+
+`read_function("load")` échoue conceptuellement dans les cas suivants :
+
+- même nom dans plusieurs modules ou classes ;
+- surcharge de méthodes ;
+- fonction locale/imbriquée ;
+- méthode d’extension ou définition partielle ;
+- symboles anonymes ou générés par macro ;
+- renommage/déplacement entre la découverte et la lecture ;
+- index LSP en retard sur la worktree ;
+- deux branches contenant des versions différentes de la même entité.
+
+Le premier appel doit donc retourner un handle exact :
+
+```json
+{
+  "symbol_ref": "sym://src_a9f/src/auth/service.ts#b7d2",
+  "source_revision_id": "src_a9f",
+  "kind": "method",
+  "qualified_name": "UserService.login",
+  "signature": "login(input: Credentials): Promise<Session>",
+  "definition_digest": "sha256:…",
+  "provenance": "typescript-language-server"
+}
+```
+
+Puis `inspect_code` consomme `symbol_ref`. Les lignes restent présentes pour l’IDE et l’humain ; elles cessent d’être l’identité logique.
+
+### 4.3 Pourquoi le corps seul peut rendre l’agent aveugle
+
+Une fonction est entourée d’un contrat implicite :
+
+- imports et aliases utilisés ;
+- décorateurs/annotations ;
+- constantes ou registries voisins ;
+- classe conteneur et invariants ;
+- interfaces implémentées ;
+- callsites et overrides ;
+- tests et fixtures ;
+- configuration et feature flags ;
+- historique récent qui explique un choix étrange.
+
+Une lecture très précise du mauvais contexte produit une confiance élevée mais fausse. Le noyau offre `signature`, `outline`, `body`, `neighborhood` et `raw` ; les capabilities P1 ajoutent `dependencies`, `callers`, `implementations`, `tests` et `history`.
+
+### 4.4 Pourquoi `read_file` reste indispensable
+
+Le texte brut couvre le long tail : JSON/YAML/TOML, SQL, Dockerfiles, templates, CSS, Markdown, générateurs, initialisation au niveau module, pragmas, code invalide pendant une édition et dialectes non reconnus. CODESTRUCT conserve lui-même la lecture par ligne et la lecture complète des petits fichiers ; ses auteurs signalent qu’un fichier déjà invalide ne peut pas profiter de l’AST. ([CODESTRUCT — limites](https://aclanthology.org/2026.acl-long.607/))
+
+`read_file` doit donc devenir une **vue raw de secours** d’`inspect_code`, avec plage possible, hash, source revision et signal de troncature, plutôt qu’être supprimé.
+
+### 4.5 API recommandée
+
+Le nom `get_file_symbols` est trop étroit : la même primitive doit fonctionner sur un package, module, fichier, classe ou symbole. Je recommande :
+
+```json
+{
+  "tool": "outline_code",
+  "source_revision_id": "src_a9f",
+  "target": { "path": "src/auth/service.ts" },
+  "kinds": ["class", "function", "method"],
+  "depth": 2,
+  "include": ["signature", "doc_head", "visibility"],
+  "budget": { "max_output_tokens": 1200, "max_items": 50 }
+}
+```
+
+Puis :
+
+```json
+{
+  "tool": "inspect_code",
+  "source_revision_id": "src_a9f",
+  "target": { "symbol_ref": "sym://src_a9f/…" },
+  "view": "body",
+  "expand": {
+    "leading_docs": true,
+    "decorators": true,
+    "used_imports": true,
+    "containing_symbol_depth": 1
+  },
+  "budget": { "max_output_tokens": 1800 },
+  "freshness": "require_exact"
+}
+```
+
+`inspect_code` exige un handle exact ; une recherche par nom passe par `search_code`. Le transport peut permettre un batch dépendant `search → inspect` pour éviter une latence réseau inutile, mais il ne doit pas réintroduire une résolution ambiguë silencieuse. La divulgation progressive est un comportement par défaut, pas un rituel coûteux obligatoire.
+
+---
+
+## 5. Le fondement : un Semantic Workspace Protocol versionné
+
+### 5.1 Penser comme une base de données, pas comme un terminal
+
+Git reste l’historique humain et le mécanisme de collaboration externe. Le harness, lui, devrait avoir une sémantique proche de **MVCC** :
+
+- chaque observation de code est faite « à la source revision X » ;
+- chaque modification déclare X comme base et propose Y ;
+- un tool refuse un handle périmé au lieu de le résoudre silencieusement ;
+- les tests indiquent exactement la source revision **et** la spécification d’environnement exécutées ;
+- les index peuvent être en retard, mais ce retard est explicite et mesurable.
+
+Ce choix résout un problème plus profond que les lignes : la **partial observability temporelle**. Un agent peut lire une fonction correcte, un autre agent ou un formatter la modifie, puis le premier applique son raisonnement à une occurrence qui n’existe plus. Sans compare-and-swap, le système transforme une bonne décision en mauvais edit.
+
+Dans l’interface produit, « snapshot » peut rester le terme convivial pour une source revision récupérable. Dans le protocole, les révisions de source, d’index, d’environnement, de runtime et de navigateur doivent rester distinctes.
+
+### 5.2 Références exactes d’abord, lignée plus tard
+
+Le P0 ne doit pas prétendre qu’un identifiant survit exactement à tous les rename, move, split et merge. Il utilise des handles opaques, exacts et limités à une source revision :
+
+```ts
+type SourceRevisionRef = {
+  source_revision_id: string;
+  base_commit?: string;
+  overlay_merkle_root: string;
+};
+
+type FileRef = {
+  ref: string;
+  source_revision_id: string;
+  path: string;
+  blob_hash: string;
+};
+
+type SymbolRef = {
+  ref: string;                   // définition exacte dans cette révision
+  source_revision_id: string;
+  definition_digest: string;
+  kind: string;
+  language: string;
+  qualified_name: string;
+  canonical_symbol?: string;     // SCIP-like si disponible
+};
+
+type SyntaxNodeRef = {
+  ref: string;                   // nœud exact, utile pour l’édition
+  source_revision_id: string;
+  file_blob_hash: string;
+  range_utf8_bytes: [number, number];
+  node_digest: string;
+};
+
+type ArtifactRef = {
+  ref: string;                   // log, diff, graphe, screenshot…
+  content_hash: string;
+  media_type: string;
+  schema_version: string;
+  visibility: "agent_redacted" | "reviewer" | "sealed_raw";
+};
+
+type EvidenceRef = {
+  ref: string;
+  subject_revision: RevisionVector;
+  kind: "deterministic_check" | "runtime_observation" |
+        "agent_inference" | "user_decision" | "source_excerpt";
+  artifact_ref?: ArtifactRef;
+};
+```
+
+- `SymbolRef` désigne une définition exacte dans une source revision.
+- `SyntaxNodeRef` cible un nœud/fragment exact ; `replace_node` ne dépend donc pas de la seule occurrence du nom.
+- `ArtifactRef` permet de sortir le contenu volumineux de la fenêtre de contexte.
+
+La lignée entre révisions reste un P2 expérimental :
+
+```ts
+type EntityLineageId = string;
+
+type ResolvedEntity = {
+  lineage_id?: EntityLineageId;
+  resolution: "exact" | "mapped" | "ambiguous" | "gone";
+  symbol_ref?: SymbolRef;
+  candidates?: SymbolRef[];
+};
+```
+
+Le statut de résolution appartient au **résultat de résolution**, pas à l’identité stable. Un split/merge peut rester ambigu et doit le dire.
+
+SCIP fournit une base utile pour nommer définitions, références et implémentations entre langages. LSP fournit les opérations interactives de définition, référence, rename et diagnostics. Tree-sitter offre une analyse syntaxique incrémentale et largement multi-langage. Aucun des trois ne fournit seul les snapshots, transactions et preuves dont Blame a besoin. ([SCIP](https://github.com/scip-code/scip), [LSP 3.17](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/), [Tree-sitter](https://tree-sitter.github.io/tree-sitter/))
+
+### 5.3 Un vecteur de révisions, pas un snapshot universel
+
+La source, l’environnement, l’index, le runtime et le navigateur n’ont pas la même mutabilité :
+
+```ts
+type RevisionVector = {
+  source_revision_id?: string;            // bytes : base + overlay + buffers
+  environment_spec_revision_id?: string;  // image/toolchain/profil réalisés
+  runtime_instance_id?: string;           // processus ou microVM mutable
+  index_revision_id?: string;             // provenance d’analyse
+  browser_state_revision_id?: string;     // état navigateur/DOM
+};
+
+type ExecutionContextRef = {
+  source_revision_id: string;
+  environment_spec_revision_id: string;
+  runtime_instance_id: string;
+  secret_binding_revision_ids: string[];  // valeurs jamais exposées
+};
+```
+
+Le lockfile appartient à la source revision ; l’environnement réalisé en dépend, mais reste une révision distincte. L’index n’affecte pas l’exécution : il figure seulement dans la provenance des observations. Un processus est une instance mutable, pas un snapshot. Pour dire « les tests passent sur X », l’execution plane doit matérialiser ou verrouiller X pendant le run ; lire une worktree qui continue à changer ne suffit pas.
+
+Les autres objets centraux sont des handles opaques et versionnés : `ChangeProposalRef`, `ChangeSetRef`, `RunRef`, `ProcessRef`, `WorkspaceLeaseRef`, `PreviewSessionRef` et `EvidenceRef`.
+
+### 5.4 Une enveloppe commune à toutes les observations
+
+```ts
+type Provenance = {
+  producer: "compiler" | "lsp" | "parser" | "git" |
+            "runtime" | "embedding" | "lexical";
+  producer_version?: string;
+  revision: RevisionVector;
+  artifact_hash?: string;
+  locations?: string[];
+  trust_domain: "workspace" | "tool" | "external" | "user";
+  authority: "data" | "policy" | "user_decision";
+  observed_at?: string;
+};
+
+type ToolResult<T> =
+  | {
+      status: "success";
+      subject_revision: RevisionVector;
+      data: T;
+      provenance: Provenance[];
+      coverage: {
+        scope: "complete" | "partial" | "unknown";
+        truncated: boolean;
+        analysis: "exact" | "sound_overapproximation" |
+                  "observed_subset" | "heuristic";
+        continuation?: string;
+      };
+      usage: { output_tokens: number; elapsed_ms: number };
+      artifacts?: ArtifactRef[];
+      diagnostics?: unknown[];
+    }
+  | {
+      status: "error";
+      subject_revision?: RevisionVector;
+      error: { code: string; message: string; recovery?: unknown };
+    };
+```
+
+Une analyse peut préciser davantage `must`/`may` dans ses données. `observed_subset` communique mieux la nature d’une trace qu’un score opaque de 0,83. Une similarité embedding ne doit jamais avoir l’apparence d’une résolution de définition par compilateur. Atteindre un budget avec des résultats utiles produit un succès `partial`/`truncated`, pas une erreur.
+
+### 5.5 Erreurs qui aident réellement à récupérer
+
+Les erreurs de tools doivent être courtes, typées et actionnables :
+
+| Erreur | Signification | Réponse attendue |
+|---|---|---|
+| `STALE_REVISION` | la source a changé depuis la lecture | relire/rebaser sur la source revision courante |
+| `AMBIGUOUS_TARGET` | plusieurs entités correspondent | choisir parmi les handles candidats |
+| `TARGET_GONE` | le symbole/nœud n’existe plus | rechercher de nouveaux candidats ou abandonner l’opération |
+| `UNSUPPORTED_STRUCTURE` | parser/index indisponible | utiliser la vue raw/structural search |
+| `PRECONDITION_FAILED` | hash/signature/ancien texte différent | inspecter le diff concurrent avant de réessayer |
+| `POLICY_DENIED` | effets non autorisés | demander une capacité ou choisir une action sûre |
+| `SIDE_EFFECT_OUT_OF_SCOPE` | le processus a touché une ressource inattendue | annuler/isoler et soumettre à revue |
+
+Une écriture ne doit jamais effectuer de rematching flou silencieux après `STALE_REVISION`.
+
+### 5.6 Invariants non négociables
+
+1. Tout résultat indique le vecteur de révisions pertinent à son sujet.
+2. Aucun handle périmé ne se résout silencieusement vers une nouvelle entité.
+3. Toute écriture filesystem agentique s’exécute dans un overlay contrôlé et possède des préconditions.
+4. Seul un `ChangeProposal` accepté avance la source revision de la User Story ; les écritures d’un run sont capturées comme changeset proposé puis acceptées ou jetées.
+5. Aucun résultat tronqué ne peut paraître complet.
+6. Exact, statique, observé au runtime et heuristique sont distingués.
+7. Tout résumé permet de rouvrir l’artifact exact.
+8. Toute validation est liée à la source revision et à l’environnement matérialisés.
+9. Les effets autorisés sont calculés par policy ; les effets attendus et observés sont journalisés.
+10. Les writers concurrents sont isolés.
+11. Le formatage et les fichiers générés apparaissent dans le diff.
+12. Un « succès » doit référencer changeset, diagnostics et runs, pas une affirmation textuelle.
+
+---
+
+## 6. Le noyau de tools recommandé
+
+Le modèle ne devrait voir en permanence qu’un petit noyau. Les opérations spécialisées sont chargées par namespace lorsque la tâche les exige. Huit primitives constituent ici une heuristique Blame à tester :
+
+1. `workspace_state`
+2. `search_code`
+3. `outline_code`
+4. `inspect_code`
+5. `apply_change`
+6. `run_task`
+7. `inspect_run`
+8. `review_change`
+
+`inspect_artifact`, `update_task_plan`, `request_decision` et `checkpoint` sont des opérations génériques du control plane plutôt que des capacités de code. Elles restent disponibles sans gonfler les namespaces métier.
+
+Les workflows `locate_change_surface`, `reproduce_issue`, `validate_change` et `validate_acceptance` orchestrent ces primitives ; ils ne sont pas nécessairement des appels atomiques offerts au modèle. Les capabilities `query_relations`, `get_relation_context`, `slice_dataflow`, `trace_failure`, `search_history`, `ui_*`, `security_*` et `database_*` sont chargées à la demande.
+
+### 6.1 `workspace_state`
+
+But : donner l’état courant sans forcer l’agent à recomposer `pwd`, `git status`, manifestes et capacités.
+
+```json
+{
+  "include": [
+    "source_revision",
+    "task_contract",
+    "capabilities",
+    "tree_summary",
+    "changes",
+    "task_catalog"
+  ],
+  "budget": { "max_output_tokens": 1200 }
+}
+```
+
+Retour attendu : source revision et base Git, User Story/worktree, diff non checkpointé, stacks détectées, commandes projet connues, restrictions réseau/secrets et index disponibles.
+
+### 6.2 `search_code`
+
+But : unifier le routage sans confondre les moteurs.
+
+```ts
+type SearchQuery =
+  | { kind: "text"; pattern: string; regex?: boolean }
+  | { kind: "symbol"; name: string; kinds?: string[] }
+  | { kind: "ast_pattern"; language: string; pattern: string }
+  | { kind: "natural_language"; text: string };
+
+type SearchCodeInput = {
+  source_revision_id: string;
+  query: SearchQuery;
+  scope?: {
+    paths?: string[];
+    languages?: string[];
+    target_ids?: string[];
+    include_generated?: boolean;
+  };
+  max_results?: number;
+  budget: { max_output_tokens: number; deadline_ms?: number };
+};
+```
+
+Chaque résultat contient : handle, chemin, signature/extrait court, raisons du match, provenance et composantes du ranking. Si Blame ajoute plus tard un planificateur fédéré, il doit retourner le query plan et les résultats par canal, sans convertir des scores incompatibles en une fausse probabilité. Relations et historique restent des capabilities séparées.
+
+### 6.3 `outline_code`
+
+But : carte symbolique progressive d’un repository, package, fichier ou container. C’est la généralisation directe de `get_file_symbols`.
+
+Options utiles : `kinds`, `depth`, `visibility`, `include`, pagination, budget. Pour un fichier énorme, la sortie peut elle-même être hiérarchique : classes → signatures de membres → `SymbolRef`. La sortie annonce la qualité de parse et la révision de l’index éventuel.
+
+### 6.4 `inspect_code`
+
+But : ouvrir exactement l’unité nécessaire.
+
+Vues minimales :
+
+- `signature` ;
+- `declaration` ;
+- `body` ;
+- `neighborhood` ;
+- `interface` ;
+- `raw`.
+
+Expansions locales : docs, décorateurs, imports utilisés et container. Callers, implementations, tests et relations inter-fichiers appartiennent à la capability P1 `query_relations`. Le tool doit accepter un budget et rendre la frontière omise.
+
+### 6.5 `apply_change`
+
+But : appliquer une transaction de code avec compare-and-swap.
+
+```ts
+type ChangeOperation =
+  | { kind: "replace_node"; target: SyntaxNodeRef; replacement: string }
+  | { kind: "insert_before"; target: SyntaxNodeRef; source: string }
+  | { kind: "insert_after"; target: SyntaxNodeRef; source: string }
+  | { kind: "rename_symbol"; target: SymbolRef; new_name: string }
+  | { kind: "create_file"; path: string; content: string }
+  | { kind: "move_file"; from_path: string; to_path: string;
+      expected_blob_hash: string }
+  | { kind: "delete_file"; path: string; expected_blob_hash: string }
+  | {
+      kind: "text_replace";
+      path: string;
+      expected_blob_hash: string;
+      range_utf8_bytes: [number, number];
+      expected_old_text: string;
+      replacement: string;
+    };
+
+type ApplyChangeInput =
+  | {
+      action: "propose";
+      base_source_revision_id: string;
+      idempotency_key: string;
+      operations: ChangeOperation[];
+      policies?: {
+        format: "none" | "touched_nodes" | "touched_files";
+        organize_imports?: boolean;
+        max_touched_files?: number;
+        preserve_public_api?: boolean;
+      };
+      checks?: Array<"parse" | "lint_changed" | "typecheck_changed">;
+    }
+  | {
+      action: "commit_proposal";
+      proposal_ref: string;
+      expected_base_source_revision_id: string;
+      idempotency_key: string;
+    };
+```
+
+`propose` produit un `ChangeProposalRef`, un overlay immuable, un diff textuel/structurel simple, des diagnostics et le formatter réellement exécuté. `commit_proposal` vérifie encore la base puis avance la source revision ; il retourne les nouveaux handles. Cette séparation évite une course entre dry-run et commit. Le semantic diff et l’impact inter-fichiers enrichissent le retour en P1. `rename_symbol` exige une résolution exacte.
+
+### 6.6 `run_task`
+
+But : exécuter une tâche connue et bornée avant de tomber au shell brut.
+
+```ts
+type RunTaskInput = {
+  source_revision_id: string;
+  task:
+    | { task_id: string }
+    | { kind: "test" | "lint" | "build" | "typecheck";
+        target?: string };
+  selection?: { tests?: string[]; files?: string[]; symbols?: SymbolRef[] };
+  environment_profile?: string;
+  limits: { timeout_ms: number; cpu?: number; memory_mb?: number;
+            output_bytes?: number };
+  network?: "deny" | "project_allowlist";
+  idempotency_key?: string;
+};
+```
+
+Le run matérialise la source revision dans un overlay copy-on-write. Le résultat donne un `run_ref`, les diagnostics structurés, les échecs groupés, un artifact de logs, la source réellement testée et les effets filesystem. Toute écriture devient un `ChangeProposalRef` avec `disposition: discarded | captured | committed` ; elle ne modifie jamais silencieusement la worktree canonique. Les services longs/preview ont un cycle de vie séparé.
+
+### 6.7 `inspect_run`
+
+But : rouvrir sélectivement les résultats d’un run sans réinjecter tout le terminal.
+
+Vues : failures, diagnostics, stack traces, stdout head/tail, événements, filesystem effects, performance. Les sorties complètes restent dans un artifact.
+
+### 6.8 `review_change`
+
+But : lire un changeset sous plusieurs vues sans relancer implicitement tous les workflows.
+
+Entrées : base, candidate, `ChangeProposalRef` ou `ChangeSetRef`, vues et budget. Sorties P0 :
+
+- diff textuel et structurel simple ;
+- symboles ajoutés/supprimés/modifiés lorsque le parser le permet ;
+- diagnostics avant/après ;
+- formatage/fichiers générés ;
+- runs et artifacts déjà attachés ;
+- checks non exécutés ou incertains.
+
+En P1, `validate_change` orchestre reproduction, tests, semantic diff, impact, Code Practices et critères d’acceptation pour produire l’`EvidenceBundle`. `checkpoint` reste une action du control plane ; il n’a pas besoin d’être immédiatement un commit Git.
+
+### 6.9 `update_task_plan` et `request_decision`
+
+Ces opérations appartiennent au control plane, mais doivent produire du state structuré :
+
+- le plan référence les critères d’acceptation, étapes, dépendances, source revision et artifacts ;
+- un changement d’objectif invalide explicitement les étapes concernées ;
+- une question à l’humain contient le choix réel, 2–3 options, conséquences, recommandation et preuves ;
+- la réponse devient un `DecisionRef` durable, partagé avec les sous-agents ;
+- le harness évite de redemander une décision déjà prise sauf si ses hypothèses sont devenues stale.
+
+Le bon tool n’est pas `ask_user(any_text)`, mais `request_decision` lorsque l’incertitude change matériellement le résultat. Les clarifications mineures restent conversationnelles.
+
+### 6.10 Pourquoi ne pas exposer 40 tools
+
+Une abondance de fonctions proches augmente :
+
+- le coût fixe des schémas dans le prompt ;
+- les erreurs de sélection ;
+- les chevauchements de responsabilité ;
+- les difficultés d’audit et de permissions ;
+- la dépendance à un fournisseur précis.
+
+Les namespaces spécialisés — `debug`, `ui`, `database`, `security`, `git_remote`, `docs` — doivent être **deferred**. OpenAI documente le chargement de définitions à la demande et recommande des namespaces cohérents ; Anthropic insiste également sur des tools clairement nommés, des retours utiles et des évaluations réelles. ([OpenAI Tool Search](https://developers.openai.com/api/docs/guides/tools-tool-search), [Anthropic — Writing tools for agents](https://www.anthropic.com/engineering/writing-tools-for-agents))
+
+### 6.11 Le schéma et la description font partie du tool
+
+Une bonne implémentation derrière une description ambiguë reste un mauvais tool agentique. Pour chaque tool, la description doit préciser :
+
+- quand l’utiliser **et quand ne pas l’utiliser** ;
+- ce qui le distingue des tools voisins ;
+- les handles qui doivent provenir d’un appel amont ;
+- le contenu et les omissions de la sortie ;
+- formats, plages et enums des paramètres ;
+- paramètres mutuellement exclusifs ou obligatoirement associés ;
+- effets, préconditions, fraîcheur et idempotence ;
+- erreurs possibles et chemin de récupération.
+
+Le JSON Schema doit encoder réellement ces contraintes avec `required`, `enum`, `oneOf`, tailles maximales et types stricts, plutôt que les laisser dans une prose lointaine. Les booléens combinables comme `include_body`, `include_outline`, `raw`, `summary_only` créent des états contradictoires ; une union `view` explicite est préférable.
+
+Une prépublication générale sur l’usage de tools à grande échelle identifie cinq informations récurrentes — scope, dépendances entre tools, description de sortie, contraintes de paramètres et dépendances entre paramètres — et observe des gains importants en réécrivant les descriptions. Ce n’est pas une étude spécifique au code, mais elle confirme que le contrat linguistique est une composante mesurable du harness. ([Learning to Rewrite Tool Descriptions, 2026](https://arxiv.org/abs/2602.20426))
+
+Enfin, les schémas doivent eux-mêmes avoir des tests : sélection correcte face à un tool voisin, paramètres invalides, outputs vides, ambiguïtés, staleness, troncature et récupération. L’évaluation du tool commence avant son algorithme.
+
+Une absence de match est un succès structuré (`items: []`, scope couvert, moteur utilisé), jamais une sortie vide dont le modèle doit deviner le sens.
+
+---
+
+## 7. Le moteur de contexte : hybride, progressif et sous budget
+
+### 7.1 Les sept canaux de recherche
+
+Blame ne doit pas choisir entre grep, AST, LSP ou embeddings. Ils résolvent des questions différentes :
+
+| Canal | Très bon pour | Faiblesse principale |
+|---|---|---|
+| lexical (`rg`) | chaînes exactes, erreurs, config, code cassé | synonymes et relations indirectes |
+| syntaxique (Tree-sitter) | outlines, unités complètes, code multi-langage | sémantique inter-fichiers limitée |
+| structurel (ast-grep/CST) | motifs d’AST et rewrites locales | nécessite un motif exprimable |
+| sémantique (LSP/compilateur/SCIP) | définition, références, types, rename | setup, coût, index parfois stale |
+| embeddings | recherche par intention inconnue | plausible mais non exact, scores peu calibrés |
+| historique Git/issues | pourquoi, patterns passés, régressions | bruit et données anciennes |
+| runtime | stack, calls observés, couverture, valeurs | ne couvre que l’exécution observée |
+
+Terminologie : dans ce document, **code intelligence sémantique** désigne LSP/compiler/SCIP ; une recherche par intention est nommée **natural-language/embedding search**. `semantic_diff` décrit les effets logiques d’un changement. Ces trois notions ne partagent pas un score commun.
+
+[`ast-grep`](https://github.com/ast-grep/ast-grep) est une base utile pour la recherche/réécriture structurelle. Pour l’historique, les travaux sur la Repository Memory indiquent que commits, issues et résumés antérieurs peuvent améliorer la localisation dans leur protocole ; c’est un signal complémentaire, non une source de vérité. ([Repository Memory](https://arxiv.org/abs/2510.01003))
+
+### 7.2 Escalade recommandée
+
+```text
+carte du dépôt
+  → recherche multi-canal de candidats
+  → signatures/outlines
+  → corps et voisinage
+  → relations inter-fichiers
+  → slice statique locale/globale
+  → trace runtime
+  → texte brut si la structure échoue
+```
+
+Le harness doit s’arrêter dès que les preuves sont suffisantes pour la prochaine décision. Il ne faut pas construire un gigantesque graphe pour chaque question.
+
+### 7.3 `get_relation_context`
+
+Capability P1 à forte valeur :
+
+```json
+{
+  "source_revision_id": "src_a9f",
+  "roots": [{ "symbol_ref": "sym://src_a9f/auth/refresh" }],
+  "relations": [
+    "calls",
+    "imports",
+    "implements",
+    "reads",
+    "writes",
+    "tested_by",
+    "recently_changed_with"
+  ],
+  "direction": "both",
+  "depth": 2,
+  "budget": {
+    "max_nodes": 80,
+    "max_paths": 20,
+    "max_output_tokens": 2400
+  }
+}
+```
+
+La sortie contient fragments minimaux, chemins, arêtes `must`/`may`/`observed`, dispatch non résolu et frontière omise. Le graphe persistant peut rester léger (fichiers/symboles/imports) ; les edges coûteux sont calculés à la demande. Cette proposition va au-delà de la limite explicitement reconnue par CODESTRUCT : son AST reste par fichier et ne modélise pas héritage/call graph inter-modules.
+
+### 7.4 Workflow `locate_change_surface`
+
+Plutôt que demander seulement « où est ce texte ? », cette primitive répond : « quelles entités faut-il probablement modifier et quelles entités faut-il seulement comprendre ? »
+
+Entrées : intention/User Story, critères d’acceptation, stack ou symptômes, scope. Sortie :
+
+- **edit candidates** classés ;
+- **supporting context** : contrats, callsites, tests, config ;
+- signaux séparés : lexical, type, graphe, historique, runtime ;
+- raisons et contre-indices ;
+- recall/complétude estimés, sans inventer une probabilité exacte.
+
+Agentless, AutoCodeRover et LocAgent soutiennent le principe de localisation hiérarchique/structure-aware ; la contribution de Blame serait d’en faire un workflow général, versionné et explicable au-dessus des primitives.
+
+### 7.5 Budget et réhydratation
+
+Chaque lecture doit accepter au minimum :
+
+```json
+{
+  "budget": {
+    "max_output_tokens": 1800,
+    "max_items": 30,
+    "max_graph_hops": 2,
+    "deadline_ms": 1500
+  }
+}
+```
+
+Et retourner : tokens, complétude, omissions, cursor lié à la source revision et artifacts réouvrables. Une sortie importante peut être compactée ainsi :
+
+```json
+{
+  "summary": "3 tests échouent pour la même cause : TokenExpiredError non interceptée",
+  "evidence_refs": ["diag://run_42/cluster_1"],
+  "complete_log": "artifact://sha256/…",
+  "completeness": "bounded"
+}
+```
+
+Le modèle peut alors demander `inspect_artifact(evidence_ref, view, budget)` au lieu de relancer le test ou d’accepter un résumé irréversible.
+
+---
+
+## 8. Repenser l’édition
+
+### 8.1 Hiérarchie des modes d’édition
+
+Ordre recommandé :
+
+1. refactoring compiler/LSP (`rename`, imports, workspace edit) ;
+2. transformation CST/AST ciblée par handle ;
+3. search/replace exact avec hash et unicité ;
+4. patch structuré ;
+5. réécriture brute de fichier en dernier recours.
+
+Une sérialisation AST naïve peut perdre commentaires et formatage. Le moteur doit modifier les spans d’une CST ou utiliser les refactorings du langage, puis reparsing/formatting limité. Les opérations structurelles à grande échelle ont des précédents solides dans les semantic patches de [Coccinelle](https://coccinelle.gitlabpages.inria.fr/website/) et les refactorings exemple-based de [Refaster](https://research.google/pubs/scalable-example-based-refactorings-with-refaster/).
+
+### 8.2 Le search/replace n’est pas à jeter
+
+Le patch textuel reste un excellent fallback universel s’il est exact, unique et préconditionné. Sur 210 tâches PatchGen artificielles où le fichier était déjà localisé, une étude industrielle de Meta rapporte avec Llama-405B et ses instructions détaillées un **Solve Rate** de 53 % pour search/replace contre 30 % pour unified diff. La métrique est le passage du test oracle, pas une garantie de correction sémantique ; ce n’est pas une loi universelle, mais cela confirme que la syntaxe d’édition est une variable expérimentale importante. ([Agentic Program Repair at Meta](https://arxiv.org/html/2507.18755v1))
+
+L’outil `apply_patch` d’OpenAI formalise également l’intérêt de diffs structurés avec feedback itératif. ([OpenAI apply_patch](https://developers.openai.com/api/docs/guides/tools-apply-patch))
+
+### 8.3 Protections obligatoires
+
+- `base_source_revision_id` et compare-and-swap ;
+- `idempotency_key` sur toute mutation ;
+- hash du blob ou de l’ancien fragment ;
+- unicité obligatoire de la cible ;
+- proposition immuable avec diff, puis commit explicite de cette proposition ;
+- application multi-fichier atomique ;
+- rollback automatique si une opération échoue ;
+- parse immédiat, puis diagnostics différentiels ;
+- aucune relocalisation floue silencieuse ;
+- détection des fichiers générés et de leur source de vérité ;
+- journal des modifications de formatter/import organizer ;
+- seuils de nombre de fichiers et de surface modifiée.
+
+### 8.4 `semantic_diff`
+
+Un diff utile à un agent et à l’humain doit répondre à autre chose que « quelles lignes ont changé ? » :
+
+- symboles ajoutés, supprimés, renommés, déplacés ou modifiés ;
+- signatures/API publiques affectées ;
+- contrats de type et implémentations impactés ;
+- configuration, schémas, dépendances et permissions changés ;
+- tests/callsites touchés ou laissés sans validation ;
+- modifications purement de formatage ;
+- surface comportementale attendue.
+
+CodePlan utilise explicitement dépendances et analyse « may-impact » pour adapter un plan multi-fichier après chaque edit. Cette direction est pertinente pour le `semantic_diff` et l’`impact_analysis` de Blame. ([CodePlan](https://www.microsoft.com/en-us/research/publication/codeplan-repository-level-coding-using-llms-and-planning/))
+
+---
+
+## 9. Repenser l’exécution, le debug et la validation
+
+### 9.1 Le shell : escape hatch, pas chemin heureux
+
+Le shell est irremplaçable pour le long tail, mais il mélange dans une chaîne opaque lecture, écriture, processus, réseau et transformation de sortie. Cela rend difficiles :
+
+- les permissions fines ;
+- la détection des effets ;
+- la compression structurée ;
+- la reproductibilité ;
+- l’association d’un diagnostic à un symbole ;
+- le rollback.
+
+Le chemin normal doit être : découverte des tâches du projet → `run_task(task_id, selection, limits)` → `inspect_run`. Le shell brut reste un namespace différé, avec `cwd`, `argv` ou commande, limites et sandbox. Il s’exécute lui aussi dans un overlay copy-on-write ; ses écritures ne contournent pas `apply_change`.
+
+ExecutionAgent illustre la valeur d’une boucle de setup/exécution explicite : dans son étude, l’agent parvient à lancer correctement les tests de 33 dépôts sur 50 et 14 langages, contre 5/50 sans boucle de feedback. Le temps moyen reste élevé et la tâche n’est pas la réparation, mais le message pour Blame est pertinent : la recette d’environnement doit être découverte une fois, typée, versionnée et réutilisée. ([ExecutionAgent](https://arxiv.org/abs/2412.10133))
+
+### 9.2 Contrat d’un run
+
+Un run doit enregistrer :
+
+- source revision, environment spec et runtime instance ;
+- tâche logique et `argv[]` effectif ;
+- cwd, variables injectées par **référence**, réseau autorisé ;
+- durée, CPU, mémoire, limite de sortie ;
+- process tree et ports ;
+- fichiers créés/modifiés ;
+- exit status et signal ;
+- diagnostics parsés et reliés à des occurrences ;
+- artifact redacted destiné à l’agent et, si la politique le permet, artifact brut chiffré/scellé inaccessible au modèle ;
+- volatilité connue : timestamps, random seeds, ports.
+
+Le run est épinglé à la source revision. Ses écritures — snapshots de tests, code généré, formatter, caches dans la source — sont capturées dans l’overlay avec :
+
+```ts
+type RunFilesystemResult = {
+  tested_source_revision_id: string;
+  resulting_overlay_revision_id?: string;
+  filesystem_effects: unknown[];
+  change_proposal_ref?: string;
+  disposition: "discarded" | "captured" | "committed";
+};
+```
+
+Un test qui met à jour volontairement des golden files produit donc une proposition inspectable ; il ne modifie pas implicitement la worktree.
+
+### 9.2.1 Services et previews
+
+Une preview n’est pas une tâche finie. Un namespace différé doit expliciter son cycle de vie :
+
+- `start_service` : process ref, readiness/health, source revision servie, lease et ports ;
+- `inspect_process` : statut, logs, health, source actuellement servie ;
+- `restart_service` : nouveau runtime ou nouvelle source revision ;
+- `stop_process`/`cancel_process` : arrêt idempotent et expiration du lease.
+
+Avec le hot reload, le process peut rester identique tandis que la source servie change. Chaque observation UI doit donc enregistrer la source revision réellement chargée, pas seulement le `process_ref`.
+
+### 9.3 `trace_failure`
+
+Capability P1 : convertir un échec en un paquet causal navigable.
+
+Entrée : `run_ref`, diagnostic/stack frame, profondeur et budget. Sortie :
+
+- exception/assertion racine ;
+- frames mappées aux `SymbolRef`/`SyntaxNodeRef` ;
+- chemins d’appels observés ;
+- valeurs explicitement collectées et redacted ;
+- écritures/lectures de ressources observées ;
+- slices statiques ou runtime liées ;
+- zones non instrumentées.
+
+Une escalade raisonnable est : stack structurée → fault localization spectrale si couverture disponible → slice locale → trace instrumentée. AutoCodeRover a rapporté un gain de 19 % à 22 % sur SWE-bench Lite après ajout de localisation spectrale dans son cadre ; ce résultat dépend de tests exécutables et informatifs, mais justifie d’exposer le signal au harness. ([AutoCodeRover](https://arxiv.org/html/2404.05427v3))
+
+### 9.4 `slice_dataflow`
+
+Le slicing est un candidat R&D important, à condition de ne pas survendre son exactitude :
+
+```json
+{
+  "source_revision_id": "src_a9f",
+  "criterion": {
+    "syntax_node_ref": "node://src_a9f/…",
+    "variable": "refreshToken"
+  },
+  "direction": "backward",
+  "semantics": "hybrid",
+  "relations": ["data", "control", "calls", "state"],
+  "scope": { "max_hops": 3 },
+  "budget": { "max_nodes": 100, "max_paths": 20, "max_output_tokens": 3000 }
+}
+```
+
+Le résultat indique `must`, `may` ou `observed`, les dispatchs non résolus et la frontière. Les fondements du program slicing remontent aux travaux de Weiser ; une slice minimale et exacte n’est généralement pas une promesse réaliste. ([Program Slicing, Weiser](https://www.computer.org/csdl/journal/ts/1984/04/05010248/24pHSpZ4FZ6))
+
+Des prépublications très récentes comme ARISE rapportent des améliorations de rappel de localisation avec slicing à la demande, mais aussi davantage de tokens et des résultats non universels selon le système hôte. C’est donc un P2 expérimental, pas une dépendance du MVP. ([ARISE](https://arxiv.org/abs/2605.03117))
+
+### 9.5 Trois étages de validation
+
+1. **Reproduction ciblée.** Prouver le défaut sur la base et le succès sur le candidat. Si aucun test n’existe, générer puis minimiser un test de reproduction.
+2. **Tests affectés.** Sélection par dépendances statiques, couverture historique, noms, changements et échecs récents. Chaque sélection expose ses raisons et les zones sans couverture.
+3. **Régression large.** Suite complète ou gate adaptée au risque avant merge. Un test ciblé rapide ne peut pas être présenté comme une preuve globale.
+
+La sélection doit comparer baseline et candidate pour distinguer les échecs préexistants des régressions. Les tests flaky sont répétés/classifiés, pas simplement ignorés.
+
+### 9.6 Les tests verts ne sont pas un oracle suffisant
+
+UTBoost, publié à ACL 2025, a réexaminé des tâches et patches de SWE-bench et identifié dans son protocole 36 tâches aux tests insuffisants et 345 patches erronés auparavant acceptés. Son propre renforcement d’oracle n’est pas parfait, mais il expose un risque réel : optimiser uniquement le test public favorise les correctifs superficiels. ([UTBoost](https://aclanthology.org/2025.acl-long.189/))
+
+Le dossier de preuve de Blame doit donc combiner :
+
+- test de reproduction ;
+- régression existante ;
+- typecheck/lint/static analysis ;
+- propriétés/invariants quand disponibles ;
+- mutation testing ciblé pour les changements à fort risque ;
+- diff sémantique ;
+- revue indépendante par le Risk Review Analyst ;
+- validation humaine pour les critères non automatisables.
+
+### 9.7 Workflow `validate_acceptance`
+
+Chaque critère de la User Story reçoit un statut fondé sur une preuve :
+
+| Critère | Statut | Preuve | Limite |
+|---|---|---|---|
+| « un token expiré est refusé » | `verified_by_deterministic_check` | test R42, fail base/pass candidate | chemin API HTTP testé, pas le worker asynchrone |
+| « aucune session active n’est cassée » | `supported_by_runtime_observation` | suite auth + diff comportemental | absence de scénario multi-device |
+| « respecte la pratique CP-17 » | `verified_by_deterministic_check` | règle déterministe + typecheck | — |
+| « UX claire » | `human_review_required` | preview + capture + a11y tree | jugement qualitatif |
+
+Un critère sans preuve reste `unknown` ou `human_review_required`, jamais implicitement `pass`. Une conclusion seulement proposée par un agent porte `inferred_by_agent`, même si elle cite des sources.
+
+### 9.8 Provisionnement de worktree et création de projet
+
+Le setup différenciant de Blame ne doit pas être une longue commande improvisée par le modèle. Le control plane construit un `EnvironmentPlan` idempotent :
+
+- manifests/lockfiles et commandes détectés avec provenance ;
+- image/toolchain et cache de dépendances ;
+- copie/injection de `.env` par références secrètes, jamais par contenu dans le prompt ;
+- `PortLease` explicite ;
+- étapes install/build/migrate/start séparées par effets et permissions ;
+- health check et preview session ;
+- log et fingerprint de l’environnement réalisé.
+
+Pour la création de projet, l’agent propose d’abord un `ScaffoldPlan` déclaratif : stack, versions, templates, dépendances, licences, commandes et fichiers attendus. Après approbation, l’exécution a lieu dans une source revision vide/isolée, avec réseau allowlisté et audit supply-chain. Cela rend le résultat rejouable et évite qu’une demande de scaffold soit seulement un shell à très fort privilège.
+
+---
+
+## 10. Les Code Practices comme policies exécutables
+
+Dans Blame, les Code Practices ne devraient pas être seulement concaténées au system prompt. Le texte est utile pour les conventions nuancées, mais fragile pour les obligations vérifiables.
+
+### 10.1 Typologie proposée
+
+```ts
+type CodePractice = {
+  id: string;
+  description: string;
+  applies_to: { paths?: string[]; languages?: string[]; change_kinds?: string[] };
+  enforcement:
+    | { kind: "guidance" }
+    | { kind: "static_rule"; rule_id: string }
+    | { kind: "command"; task_id: string }
+    | { kind: "architecture_constraint"; query_id: string }
+    | { kind: "approval_gate"; reviewer_role: string };
+  severity: "info" | "warn" | "block";
+  exceptions?: { policy: string; approval_required: boolean };
+};
+```
+
+Exemples :
+
+- « utiliser le logger commun » → règle structurelle/import ;
+- « ne pas importer l’infrastructure depuis le domaine » → requête de dépendances ;
+- « migration backward-compatible » → validator de schema + approval gate ;
+- « style clair » → guidance, revue humaine, pas faux linter universel.
+
+### 10.2 Compilation contrôlée
+
+Le Story Analyst peut proposer une traduction de la pratique en checks, mais cette traduction devient un artifact revu/versionné. L’agent d’implémentation ne doit pas être juge unique de la règle qu’il applique.
+
+### 10.3 Résultat différentiel
+
+Le validator retourne : violations préexistantes, nouvelles violations, violations corrigées et waivers. Sans delta baseline/candidate, un dépôt déjà imparfait rend le signal inutilisable.
+
+---
+
+## 11. Preview et interface utilisateur : un domaine de premier rang
+
+La preview locale est centrale dans la note de projet Blame. Un screenshot seul ne suffit pas : il est coûteux, partiellement interprétable et aveugle aux erreurs console/réseau/accessibilité.
+
+### 11.1 `ui_observe`
+
+```json
+{
+  "preview_session_id": "preview_123",
+  "source_revision_id": "src_a9f",
+  "environment_spec_revision_id": "env_17",
+  "runtime_instance_id": "proc_42",
+  "browser_state_revision_id": "browser_8",
+  "dom_revision_id": "dom_456",
+  "route": "/settings/profile",
+  "view": [
+    "accessibility_tree",
+    "dom_summary",
+    "screenshot",
+    "console_errors",
+    "network_failures",
+    "layout_boxes"
+  ],
+  "budget": { "max_output_tokens": 2200 }
+}
+```
+
+L’arbre d’accessibilité/DOM compact sert à la navigation ; l’image sert à la perception visuelle ; console et réseau servent d’oracles techniques. Le tool vérifie que la preview sert bien la source demandée ; sinon il retourne l’écart de révision.
+
+### 11.2 `ui_act`
+
+Les actions ciblent un `element_ref` lié à une révision DOM et utilisent une `idempotency_key` lorsqu’elles ont un effet. Après rerender, le tool retourne `STALE_ELEMENT` plutôt que cliquer silencieusement sur un autre élément partageant le même texte ou sélecteur.
+
+### 11.3 `ui_compare`
+
+Comparer base et candidate sur un scénario :
+
+- diff visuel avec régions stables/volatiles ;
+- changements d’accessibilité ;
+- console et réseau ;
+- performance ;
+- effets backend observés.
+
+La direction R&D intéressante est une chaîne causale : interaction → requête réseau → route/handler → symboles backend → données. Elle rendrait une anomalie UI directement navigable dans le graphe de code.
+
+---
+
+## 12. Worktrees et orchestration multi-agent dans Blame
+
+### 12.1 Le control plane possède la worktree
+
+La worktree d’une User Story doit être créée, attribuée et détruite par Blame, pas librement par le modèle. Le modèle reçoit un `WorkspaceLeaseRef` avec : base, source revision, paths, capacités et durée. Merge, push, suppression de branche et effets externes restent des opérations contrôlées.
+
+### 12.2 Artifacts par rôle
+
+| Rôle | Entrée | Livrable vérifiable |
+|---|---|---|
+| Story Analyst | User Story + Code Practices | `TaskContract` : critères, non-goals, contraintes, risques initiaux |
+| Codebase Analyst (read-only) | source revision + contrat | `ChangeSurface` : candidats d’édition, contexte de support, preuves et inconnues |
+| Implementer | contrat + surface + lease | `ChangeSet` transactionnel + décisions + diagnostics immédiats |
+| Test Verification Analyst | base/candidate + contrat | `ValidationBundle` indépendant : reproduction, tests, limites |
+| Risk Review Analyst | semantic diff + bundle | `RiskReport` : API/schema/security/rollback/unknowns |
+| Merge gate | tous les artifacts | `EvidenceBundle` lisible par l’humain et décision de merge |
+
+Chaque artifact indique son vecteur de révisions. Si l’implémentation change, les preuves dépendantes deviennent stale.
+
+### 12.3 Écriture parallèle
+
+- agents de recherche : même source revision immuable ;
+- un seul writer direct par worktree dans le MVP ;
+- si plusieurs writers sont nécessaires : overlays/worktrees distincts ;
+- chaque writer publie un `ChangeSetRef` ;
+- le superviseur réconcilie puis revalide la source revision combinée ;
+- jamais deux writers libres dans la même arborescence.
+
+### 12.4 Deux primitives au-delà de l’état de l’art courant
+
+`reserve_change_surface` réserve temporairement des entités/fichiers ou déclare une intention de modification. La réservation n’empêche pas la lecture et peut être soft, mais elle rend visibles les overlaps avant le conflit.
+
+`merge_simulate` compare deux changesets non seulement par lignes, mais par symboles, API, dépendances, migrations et tests concernés. Deux patches sans conflit Git peuvent avoir un conflit sémantique : deux branches changent le même invariant par des fichiers différents.
+
+### 12.5 Délégation contractuelle
+
+```json
+{
+  "base_source_revision_id": "src_123",
+  "objective": "Identifier les callsites dépendant de TokenPayload",
+  "acceptance": [
+    "Lister les callsites exacts",
+    "Classer les changements potentiellement breaking"
+  ],
+  "scope": { "read": ["src/**", "tests/**"], "write": [] },
+  "capabilities": ["search", "inspect", "relations"],
+  "budget": { "tokens": 24000, "wall_time_ms": 180000, "max_children": 0 },
+  "deliverables": ["findings", "evidence"]
+}
+```
+
+Budget enfant, profondeur, annulation et scope sont hérités. « Terminé » exige un artifact conforme, pas seulement un message.
+
+### 12.6 Quick Chat et Chat Interface
+
+Le Quick Chat devrait recevoir par défaut un lease **read-only** : `workspace_state`, recherche, outline, inspection et lecture d’artifacts. Il ne lance ni shell, ni edit, ni réseau implicitement. S’il identifie une action utile, il peut proposer :
+
+- une décision à enregistrer ;
+- une nouvelle User Story ;
+- une sous-tâche d’analyse ;
+- un passage explicite en mode d’implémentation avec worktree/capacités.
+
+Cette séparation empêche une question exploratoire de devenir silencieusement une mutation du projet, tout en réutilisant exactement le même protocole de preuves.
+
+---
+
+## 13. Sécurité : gouverner les effets, pas seulement les commandes
+
+### 13.1 Modèle de capacités
+
+Chaque tâche reçoit des capacités minimales :
+
+- lecture d’un dépôt/source revision ;
+- écriture dans une worktree précise ;
+- exécution de tâches identifiées ;
+- shell brut ou non ;
+- réseau vers un allowlist ;
+- secret utilisable par référence ;
+- interaction avec la preview localhost ;
+- checkpoint Git local ;
+- aucune publication distante par défaut.
+
+Chaque tool possède un manifest d’effets maximum. L’agent peut déclarer les effets qu’il **attend**, mais cette déclaration n’est jamais la source d’autorité :
+
+```ts
+type Effects = {
+  filesystem_read?: string[];
+  filesystem_write?: string[];
+  process_spawn?: boolean;
+  network?: string[];
+  secret_use?: string[];       // IDs opaques
+  git_mutation?: boolean;
+  external_mutation?: boolean;
+  user_visible_action?: boolean;
+};
+```
+
+Le policy engine calcule :
+
+```text
+manifest du tool
+  ∩ capacités de la tâche
+  ∩ scope concret des arguments résolus
+  → plan d’effets autorisés
+
+effets observés − effets autorisés
+  → deny / kill / quarantine / review
+```
+
+Le retour journalise effets attendus, autorisés et observés. Un modèle compromis ne peut donc pas obtenir davantage de droits en sous-déclarant son action.
+
+### 13.2 Frontières techniques
+
+- canonicalisation des chemins et protection contre les symlinks sortants ;
+- sandbox par worktree ;
+- `argv[]` plutôt qu’une chaîne shell lorsque possible ;
+- réseau désactivé par défaut, domaines et méthodes bornés ;
+- secrets injectés au processus sans être rendus au modèle ;
+- artifact redacted pour l’agent ; artifact brut éventuel chiffré, scellé et réservé à l’audit autorisé ;
+- limites CPU, mémoire, disque, processus et temps ;
+- installation de dépendances séparée d’un build ordinaire ;
+- permissions distinctes pour DB, cloud, Git distant et messages externes ;
+- audit uniforme, y compris quand l’action passe par Bash.
+
+### 13.3 Séparer instructions et données ne suffit pas
+
+Le code, les commentaires, règles importées, issues, PDFs, pages web et sorties MCP sont non fiables. AIShellJack a testé 314 payloads sur des IDE agentiques et observé des taux d’attaque importants dans les versions évaluées. IssueTrojanBench, très récent, conclut aussi que des issues malicieuses traversent souvent les garde-fous des agents testés. Ces taux sont des snapshots de produits rapidement corrigés ; l’enseignement durable est que la décision de sécurité ne peut pas reposer exclusivement sur le jugement du modèle. ([AIShellJack](https://arxiv.org/abs/2509.22040), [IssueTrojanBench](https://arxiv.org/abs/2607.20759))
+
+Le policy engine doit donc vérifier l’autorité de la source, la capacité, les flux secrets/réseau et les effets indépendamment du texte produit par le modèle.
+
+---
+
+## 14. Mémoire, compaction et graphe de preuves
+
+### 14.1 Une compaction ne doit jamais transformer une hypothèse en fait
+
+```ts
+type TaskFact = {
+  fact_id: string;
+  kind: "constraint" | "decision" | "observation" |
+        "hypothesis" | "open_question";
+  text: string;
+  evidence: EvidenceRef[];
+  observed_revision?: RevisionVector;
+  dependencies: Array<{
+    ref: string;
+    digest_or_revision: string;
+    relation: "derived_from" | "assumes" | "validated_by";
+  }>;
+  invalidated_by?: string[];
+  status: "active" | "stale" | "refuted" | "resolved";
+};
+```
+
+La capsule minimale d’une trajectoire contient : objectif, critères d’acceptation, source revision, décisions, faits sourcés, hypothèses ouvertes, changesets, runs, validations et prochaines actions.
+
+### 14.2 Invalidation
+
+Si un handle/digest déclaré dans les dépendances d’un fait change, le fait devient `stale`. Si une exécution a été faite sur un ancien environnement, sa preuve reste historiquement vraie mais non suffisante pour la révision courante.
+
+### 14.3 Ce qui reste hors contexte
+
+- source exacte déjà indexée ;
+- logs complets ;
+- gros diffs ;
+- captures et vidéos ;
+- graphes complets ;
+- sorties de tests répétitives.
+
+Le store content-addressed doit définir dès le P0 : chiffrement/isolation tenant, rétention et garbage collection, ACL, distinction raw/redacted, media type, schema version et politique de réouverture. Les identifiants visibles ne doivent pas créer un side channel de déduplication entre projets.
+
+Le contexte conserve un index de handles, des résumés typés et les éléments nécessaires à la décision suivante. Cette mémoire est réversible : `inspect_artifact` rouvre la preuve exacte autorisée.
+
+### 14.4 Détection de boucle
+
+Le harness peut surveiller sans lire le raisonnement privé :
+
+- même requête répétée sans changement de source revision ;
+- même edit rejeté plusieurs fois ;
+- même test relancé sans modification pertinente ;
+- alternance lecture/compaction qui ne crée aucun nouvel artifact ;
+- budget dépensé sans augmentation de couverture des critères.
+
+La récupération proposée doit être structurée : élargir le scope, changer de canal, demander une clarification, déléguer une enquête ou revenir au checkpoint.
+
+---
+
+## 15. Catalogue priorisé : les tools qui créent le plus de valeur
+
+### 15.1 Classement global
+
+| Rang | Primitive/capacité | Priorité | Pourquoi elle est structurante | Niveau de preuve |
+|---:|---|---|---|---|
+| 1 | revisions + handles + artifacts | P0 fondation | rend les lectures/edits stale détectables et les preuves rejouables si toutes les mutations passent par le protocole | forte inférence systèmes ; peu d’ablation agentique isolée |
+| 2 | `outline_code` + `inspect_code` | P0 | réduit le bruit et cible des unités complètes | très fort : CODESTRUCT, MASAI, CodeAgent, SWE-agent |
+| 3 | `apply_change` transactionnel | P0 | réduit les erreurs de patch et borne le blast radius | très fort pour structure/lint ; transactions versionnées = extension Blame |
+| 4 | `search_code` textuel/symbolique/AST | P0 | maintient un fallback exact et plusieurs unités de recherche ; LSP/embeddings arrivent en P1 | fort : AutoCodeRover, Agentless, RepoCoder, CodeRAG-Bench |
+| 5 | `run_task` + `inspect_run` | P0 | rend setup/tests/processus observables et compressibles | fort : SWE-agent, ExecutionAgent |
+| 6 | workflow `reproduce_issue` + validation différentielle | P1 | vise fail-before/pass-after et sépare préexistant/régression | fort : SWT-Bench, BRT Agent ; qualité de l’oracle à surveiller |
+| 7 | vue `semantic_diff` de `review_change` + `impact_analysis` | P1 | révèle les obligations multi-fichiers et risques invisibles au diff texte | moyen/fort : CodePlan, graphes/dépendances |
+| 8 | `get_relation_context` | P1 | récupère les dépendances sous budget plutôt que le dépôt entier | moyen/fort : LocAgent, GraphCoder, RepoGraph, DyRetriever |
+| 9 | workflow `validate_acceptance` + practices exécutables | P1 | relie directement User Story, Code Practices et preuves | forte logique produit ; peu de benchmark public direct |
+| 10 | `ui_observe`/`ui_compare` | P1 Blame | traite preview, DOM, a11y, console et réseau comme des oracles | pratiques industrielles ; ablation agentique spécifique à construire |
+| 11 | `search_history` | P1 | retrouve raisons, précédents et patterns de régression | signal prometteur de Repository Memory |
+| 12 | `reserve_change_surface`/`merge_simulate` | P2 | rend la collaboration multi-agent explicite et détecte les conflits sémantiques | forte motivation CooperBench ; recherche ouverte |
+| 13 | `trace_failure`/`slice_dataflow` | P2 | rapproche l’observation de la causalité réelle | fondements solides ; bénéfice agentique encore hétérogène |
+| 14 | sélection adaptative de contexte/tools | P2 | optimise la valeur d’information par token et la taille du prompt | Repoformer + tool search ; policy à apprendre/évaluer |
+| 15 | `compare_runs` comportemental | P2 | détecte ce qui change réellement au-delà du statut de test | très utile, mais normalisation difficile |
+
+### 15.2 Où Blame peut réellement aller plus loin
+
+Les briques isolées existent déjà. La différenciation vient de leur composition :
+
+| Déjà bien exploré | Extension propre à Blame |
+|---|---|
+| outline AST / repo map | `SymbolRef` exact lié à une source revision ; lignée inter-révisions expérimentale en P2 |
+| LSP definition/references | protocole inter-provider avec provenance/fraîcheur et fallback multi-moteur |
+| AST edit ou patch | transaction atomique multi-fichier avec CAS, semantic diff et diagnostics delta |
+| tests via shell | run typé, baseline/candidate, test selection expliquée, preuve attachée au critère |
+| checkpoints Git | source revisions récupérables + vecteurs de révisions + evidence ledger pour runtime/artifacts |
+| sous-agents | contrats, leases, changesets et preuve plutôt que messages libres |
+| browser/screenshot | DOM/a11y/console/network versionnés et lien vers symboles source |
+| compaction | mémoire typée, invalidable et réhydratable |
+| permissions par commande | effets autorisés calculés par policy, puis comparés aux effets observés |
+
+### 15.3 Ce qu’il ne faut pas construire en premier
+
+- un `read_function(name)` sans désambiguïsation ni source revision ;
+- un unique `ask_codebase` opaque dont on ne connaît ni recall ni provenance ;
+- un dump de graphe global à plusieurs milliers de nœuds ;
+- un tool par variante de commande shell ;
+- une réapplication fuzzy silencieuse d’un edit stale ;
+- un score de confiance unique mélangeant compiler, embeddings et runtime ;
+- une compaction libre qui jette les artifacts sources ;
+- une équipe d’agents partageant tous le même chat et la même worktree ;
+- un gate « tous les tests passent » sans baseline ni critères ;
+- un rollout multi-langage exhaustif avant d’avoir instrumenté les cas réels.
+
+---
+
+## 16. Architecture d’implémentation pour Blame
+
+### 16.1 Couches
+
+| Couche | Responsabilité | Ne doit pas contenir |
+|---|---|---|
+| Product control plane | User Stories, roles, worktrees, approvals, merge, audit | logique de parsing propre à un langage |
+| Canonical Tool Protocol | schémas, revision vectors, handles, effets, erreurs, artifacts | détails OpenAI/Anthropic |
+| Provider adapters | traduction tool calls/events/contexte pour chaque fournisseur | état canonique du projet |
+| Semantic Workspace | source revisions MVCC, overlays, cache, invalidation ; lineage P2 | décision produit de merge |
+| Code intelligence adapters | `rg`, Tree-sitter, ast-grep, LSP, SCIP, compiler, Git | orchestration multi-agent |
+| Execution plane | sandbox, task catalog, process handles, ports, secrets, logs | texte de prompt métier |
+| Evidence ledger | facts, diagnostics, runs, diffs, acceptance coverage | contenu mutable sans hash |
+
+Le protocole interne doit rester indépendant du modèle. Un appel OpenAI ou Anthropic peut avoir un schéma différent au niveau transport, mais `SourceRevisionRef`, `FileRef`, `SymbolRef`, `SyntaxNodeRef`, `ChangeSetRef`, `RunRef` et `EvidenceBundle` gardent la même sémantique dans Blame.
+
+### 16.2 Indexation par paliers
+
+**Tier 0 — universel :** filesystem, manifestes, `rg`, hashes, Git, raw read.  
+**Tier 1 — syntaxique :** Tree-sitter outlines/spans, structural search, parse quality.  
+**Tier 2 — sémantique :** LSP/compiler/SCIP, types, refs, implementations, rename.  
+**Tier 3 — dynamique :** tests, coverage, stacks, traces, runtime dependencies.  
+**Tier 4 — historique :** commits, blame, issues, changements corrélés.
+
+Chaque langage peut avancer indépendamment. Blame doit commencer par les langages réellement dominants dans ses projets pilotes, mesurés par télémétrie, et toujours conserver Tier 0.
+
+### 16.3 Fraîcheur et invalidation
+
+- changement de bytes → invalider AST du fichier ;
+- changement d’exports/types → invalider dépendants sémantiques ;
+- lockfile modifié → nouvelle source revision ; image/toolchain/profil réalisé modifié → nouvelle environment spec revision ;
+- refactor/move → nouveau `SymbolRef` ; mapping de lignée éventuel et explicitement incertain en P2 ;
+- formatter sans changement sémantique → nouvelle source revision, structural diff marqué format-only ;
+- résultats de runtime → restent attachés à leur revision vector, jamais mutés.
+
+### 16.4 Événements à instrumenter dès le départ
+
+- tool demandé, accepté/refusé, durée, tokens de résultat ;
+- source revision avant/après ;
+- moteur et provenance ;
+- troncature/continuation ;
+- target ambigu/stale ;
+- change proposal créée/commitée/rejetée ;
+- diagnostics delta ;
+- run et effets observés ;
+- artifact ouvert/réouvert ;
+- délégation, résultat et abandon ;
+- intervention humaine et raison ;
+- merge accepté/refusé.
+
+Sans cette instrumentation, Blame ne pourra pas déterminer si un nouveau tool aide réellement ou déplace simplement le coût.
+
+### 16.5 Versionnement, négociation et portabilité
+
+Chaque échange porte `protocol_version` et `tool_schema_version`. `workspace_state` expose un capability manifest par langage/backend : vues disponibles, précision (`syntax`/`semantic`), opérations d’édition, relations, fraîcheur et fallbacks. Une capability absente retourne `UNSUPPORTED_CAPABILITY`, pas un résultat vide ambigu.
+
+Le wire format canonique utilise `snake_case` et des handles opaques. Pour garantir les mêmes refs sous Linux, Windows et macOS, le protocole fixe :
+
+- chemins canoniques séparés par `/`, plus métadonnée de sensibilité à la casse ;
+- ranges en offsets d’octets UTF-8 demi-ouverts ;
+- normalisation Unicode explicitée ;
+- style de newline conservé (`LF`/`CRLF`) ;
+- résolution/canonicalisation des symlinks ;
+- distinction fichier disque, buffer IDE non sauvegardé et fichier virtuel LSP ;
+- digest calculé sur les bytes exacts, pas sur une représentation normalisée implicite.
+
+Les mutations, délégations, démarrages de service, actions UI à effet, opérations Git et appels externes acceptent une `idempotency_key`. Les retries réseau ne doivent pas dupliquer une action.
+
+---
+
+## 17. Roadmap recommandée
+
+### Étape 0 — Baseline et observabilité
+
+- normaliser les événements des providers ;
+- enregistrer tokens, appels, lectures, patches, runs, reprises et interventions ;
+- construire un corpus privé de User Stories Blame anonymisées/consenties ;
+- figer une baseline textuelle reproductible.
+
+**Exit criterion :** une trajectoire peut être rejouée et son coût/failure mode classé.
+
+### P0 — Semantic Workspace minimal
+
+- source revisions content-addressed + fingerprint d’environnement vérifiable ;
+- artifact store content-addressed ;
+- `workspace_state` ;
+- `search_code` lexical + syntaxique ;
+- `outline_code` et `inspect_code` Tree-sitter avec raw fallback ;
+- `SymbolRef` et `SyntaxNodeRef` exacts, limités à une source revision ;
+- `apply_change` CAS : node/span + exact text + create/move/delete ;
+- parse/diagnostics immédiats ;
+- `run_task`, `RunRef`, logs artifacts, cycle de vie service/port lease minimal ;
+- `review_change`, checkpoint et audit des effets.
+
+**Exit criterion :** aucune écriture stale silencieuse dans les chemins contrôlés ; chaque patch et run est rattaché à une source revision ; les écritures shell/run restent dans un overlay ; les tâches supportées restent réalisables si le parser échoue.
+
+### P1 — Compréhension et preuve
+
+- LSP/compiler/SCIP par langages prioritaires ;
+- relations definitions/references/implementations/call hierarchy ;
+- `get_relation_context` et `impact_analysis` bornés ;
+- `reproduce_issue` et tests affectés ;
+- `validate_acceptance` ;
+- Code Practices exécutables ;
+- semantic diff ;
+- historique Git/issues ;
+- UI observe/act/compare ;
+- facts invalidables et rehydration d’artifacts ;
+- contrats multi-agent avec un writer unique par worktree.
+
+**Exit criterion :** chaque critère automatisable d’une User Story peut citer sa preuve ; chaque omission de contexte est visible et extensible.
+
+### P2 — Collaboration et causalité avancées
+
+- lineage avancée rename/move/split/merge ;
+- slicing statique/runtime ;
+- behavioral compare ;
+- test selection calibrée ;
+- retrieval adaptatif par valeur d’information ;
+- `reserve_change_surface` et semantic merge simulation ;
+- lien UI → réseau → backend ;
+- policies d’effets externes et compensating actions.
+
+**Exit criterion :** gains démontrés sur le corpus Blame, pas seulement sur un benchmark public.
+
+### P3 — Écosystème de capability packs
+
+Packs différés pour : sécurité/taint, bases et migrations, OpenAPI/GraphQL/protobuf, infrastructure/IaC, mobile, notebooks/data, documentation de versions, observabilité production, déploiement et Git distant.
+
+---
+
+## 18. Programme expérimental
+
+### 18.1 Hypothèses
+
+| ID | Hypothèse |
+|---|---|
+| H1 | les vues symboliques réduisent les tokens de lecture sans diminuer le recall du bon symbole |
+| H2 | handles + source revision réduisent les edits faux/stale par rapport aux noms/lignes |
+| H3 | corps + dépendances bornées bat le corps seul sur tâches multi-fichiers |
+| H4 | transaction structurelle réduit retries, invalid syntax et patch churn |
+| H5 | reproduction + validation différentielle réduit les faux positifs « tests verts » |
+| H6 | artifact rehydration réduit les relectures après compaction |
+| H7 | contrats/changesets améliorent la coopération par rapport aux messages libres |
+
+### 18.2 Ablation centrale
+
+À modèle, system prompt, budget, sandbox, tâche et température identiques :
+
+- **A — Texte :** `grep + read_file(lines) + patch + shell`.
+- **B — Symboles simples :** `outline + read_symbol(name)`, sans source revision/relations.
+- **C — Hybride versionné :** handles exacts, source revisions, raw fallback, lexical + LSP/AST, transaction.
+- **D — Hybride contextuel :** C + dépendances/slices + validation structurée.
+
+Le contraste B/C est crucial : il dira si le gain vient seulement du raccourci symbolique ou des garanties de fraîcheur et de contexte.
+
+### 18.3 Jeux de tâches
+
+- **Exploration/localisation :** [SWE-Explore](https://arxiv.org/abs/2606.07297), tâches dédiées de recherche dans le corpus Blame.
+- **Réparation :** SWE-bench Verified comme point historique, complété par des suites plus récentes et un corpus privé. OpenAI a expliqué en 2026 ne plus utiliser Verified comme mesure principale en raison de contamination et de défauts de tests ; il ne doit donc pas être l’unique gate. ([Pourquoi OpenAI n’évalue plus sur SWE-bench Verified](https://openai.com/index/why-we-no-longer-evaluate-swe-bench-verified/))
+- **Interaction multi-langage :** CodeAssistBench Verified, utilisé par CODESTRUCT.
+- **Évolution longue :** [SWE-EVO](https://arxiv.org/abs/2512.18470).
+- **Reproduction :** [SWT-Bench](https://proceedings.neurips.cc/paper_files/paper/2024/file/94f093b41fc2666376fb1f667fe282f3-Paper-Conference.pdf).
+- **Coopération :** [CooperBench](https://arxiv.org/abs/2601.13295) et tâches Blame réellement parallélisables.
+- **Sécurité :** [AIShellJack](https://arxiv.org/abs/2509.22040), [IssueTrojanBench](https://arxiv.org/abs/2607.20759) et tests internes de capacités/effets.
+- **Corpus Blame :** bug, feature, refactor, config, UI, migration, code cassé, monorepo, fichiers générés, langages statiques/dynamiques.
+
+Le corpus interne est indispensable : les benchmarks publics sous-représentent précisément les workflows Backlog → worktree → preview → validation humaine qui font la spécificité de Blame.
+
+### 18.4 Métriques
+
+**Compréhension**
+
+- file/symbol/line Recall@k ;
+- supporting-context recall ;
+- précision de la surface d’édition ;
+- temps/tokens jusqu’au premier symbole pertinent ;
+- taux de mauvais symbole et d’ambiguïté ;
+- taux de fallback raw.
+
+**Interaction**
+
+- appels de tool, retries et boucles ;
+- tokens entrants/sortants ;
+- latence et coût ;
+- taux de résultats tronqués puis réouverts ;
+- lectures répétées après compaction.
+
+**Édition**
+
+- apply success ;
+- invalid syntax ;
+- stale/precondition conflicts ;
+- unintended diff et patch churn ;
+- minimalité du diff ;
+- diagnostics nouveaux.
+
+**Validation**
+
+- time-to-first-failing-test ;
+- fail-before/pass-after ;
+- critères couverts par une preuve ;
+- régressions découvertes tard ;
+- flaky rate ;
+- faux positifs de test suite.
+
+**Produit et sécurité**
+
+- interventions/corrections humaines ;
+- acceptation du changeset ;
+- temps de revue ;
+- conflits/merges ratés ;
+- effets hors scope ;
+- approbations inutiles vs nécessaires ;
+- incidents de secret/réseau/host ;
+- capacité de rollback/replay.
+
+### 18.5 Méthode statistique
+
+- design apparié sur les mêmes tâches ;
+- ordre randomisé et plusieurs runs pour la variance du modèle ;
+- modèle/version/prompt/budget gelés dans chaque expérience ;
+- intervalles de confiance bootstrap par dépôt, pas seulement moyenne globale ;
+- stratification langue/type/taille/dynamisme ;
+- analyse des échecs à l’aveugle lorsque possible ;
+- publication des trajectoires et versions de tools dans l’evidence ledger ;
+- power analysis avant de fixer la taille d’échantillon.
+
+### 18.6 Garde-fous de décision
+
+Objectifs produits raisonnables à valider, non prédictions :
+
+- au moins 20 % de tokens de lecture en moins sans baisse statistiquement crédible de réussite ;
+- baisse d’au moins 30 % des erreurs d’application d’edit ;
+- zéro résolution silencieuse d’un handle stale ;
+- supporting-context recall au moins égal à la baseline ;
+- aucune hausse des régressions sur la suite large ;
+- réduction mesurable des corrections humaines et du temps de revue.
+
+Si l’interface symbolique réduit les tokens mais fait baisser le recall, elle échoue. Si elle améliore le succès avec davantage de calcul — comme certaines configurations de CODESTRUCT — elle peut rester valable pour les tâches à haut risque. Le coût doit être une politique par classe de tâche, pas un objectif absolu.
+
+---
+
+## 19. Points de vigilance et questions ouvertes
+
+### 19.1 Le symbole n’est pas toujours l’unité correcte
+
+Les tâches de config, build, CSS, SQL, migrations, documentation ou génération demandent d’autres unités : clés, règles, tables, resources, cellules, routes. Le protocole doit admettre des `ResourceRef` typés au-delà de `SymbolRef`, pas forcer toute chose à devenir une « fonction ».
+
+### 19.2 Syntaxe n’est pas sémantique
+
+Tree-sitter sait où est un nœud ; il ne résout pas forcément overload, types, macros et dispatch. LSP peut être incomplet ou stale. Les moteurs doivent déclarer leur niveau de preuve et Blame doit conserver les fallbacks.
+
+### 19.3 Plus de graphe peut être pire
+
+RepoGraph rapporte dans son étude qu’une représentation 2-hop aplatie peut être moins performante qu’une vue 1-hop. Cela rejoint Lost in the Middle : les dépendances doivent être classées et bornées, pas déversées. ([RepoGraph](https://arxiv.org/abs/2410.14684))
+
+### 19.4 Une couche intelligente peut masquer ses omissions
+
+Un `context_pack` produit par un modèle secondaire est pratique, mais dangereux s’il ne donne pas les fragments exacts, raisons de sélection et frontières. Le résumé doit être une vue réversible, jamais la seule trace.
+
+### 19.5 La transaction filesystem n’annule pas le monde
+
+Un rollback de fichiers n’annule ni migration DB, email, publication Git, ressource cloud, téléchargement de dépendance, ni effet navigateur. Les actions externes exigent idempotency keys, dry-run, environnement éphémère ou compensating action, et souvent validation humaine.
+
+### 19.6 Une meilleure interface ne remplace pas le modèle
+
+CODESTRUCT montre des gains dépendants du failure mode ; les modèles très faibles restent limités par le raisonnement. Le harness doit rendre les erreurs moins probables et plus récupérables, pas promettre de rendre tout modèle compétent.
+
+---
+
+## 20. Décision finale proposée
+
+### À lancer immédiatement
+
+1. instrumenter la baseline actuelle ;
+2. définir `SourceRevisionRef`, `FileRef`, `SymbolRef`, `SyntaxNodeRef`, `ChangeProposalRef`, `ChangeSetRef`, `RunRef`, `ProcessRef`, `EvidenceRef`, `ArtifactRef` et `ToolResult` ;
+3. prototyper `outline_code`/`inspect_code` avec Tree-sitter + raw fallback ;
+4. rendre toute édition CAS/transactionnelle ;
+5. lier runs, diagnostics et diffs aux revision vectors ;
+6. réaliser l’ablation A/B/C sur un corpus Blame restreint mais varié.
+
+### Le pari différenciant
+
+Le pari de Blame devrait être le suivant :
+
+> **un agent ne manipule pas seulement « des lignes actuelles probablement correctes » ; il manipule des entités et des preuves rattachées à un état explicite, et toute transition contrôlée est attribuable et vérifiable.**
+
+Cette architecture reprend ce que les meilleurs travaux soutiennent — divulgation progressive, structure AST, retrieval itératif, feedback d’exécution — puis formule des hypothèses à tester sur les points encore peu couverts par les produits : identité, fraîcheur, transaction, preuve, acceptation métier et coopération.
+
+### Réponse directe à l’exemple initial
+
+Oui, il faut construire cette idée. La forme recommandée est :
+
+```text
+outline_code(scope, kinds, budget)
+  → symbol_ref + signature + provenance + source_revision
+
+inspect_code(symbol_ref, view, expansions, budget)
+  → corps/voisinage locaux exacts et bornés
+
+get_relation_context(symbol_ref, relations, budget)  # capability P1
+  → dépendances classées, provenance et frontière omise
+
+apply_change(base_source_revision, operation, preconditions)
+  → change_proposal ; puis commit CAS → nouvelle source_revision + nouveaux handles
+```
+
+Et non :
+
+```text
+get_file_symbols() → noms
+read_function(nom) → texte supposé
+edit_function(nom) → mutation implicite
+```
+
+Le premier protocole vise à économiser du contexte **et** à augmenter la fiabilité ; l’ablation H2 doit le confirmer. Le second économise potentiellement du contexte, mais conserve l’ambiguïté et crée de nouveaux risques de staleness.
+
+---
+
+## Références complémentaires
+
+- [Aider — Repository map](https://aider.chat/docs/repomap.html)
+- [Agentless](https://arxiv.org/abs/2407.01489)
+- [AutoCodeRover](https://arxiv.org/abs/2404.05427)
+- [CODESTRUCT](https://aclanthology.org/2026.acl-long.607/)
+- [CodeAgent](https://aclanthology.org/2024.acl-long.737/)
+- [CodePlan](https://arxiv.org/abs/2309.12499)
+- [CodeRAG-Bench](https://aclanthology.org/2025.findings-naacl.176/)
+- [CodexGraph](https://aclanthology.org/2025.naacl-long.7/)
+- [CooperBench](https://arxiv.org/abs/2601.13295)
+- [GraphCoder](https://arxiv.org/abs/2406.07003)
+- [LocAgent](https://aclanthology.org/2025.acl-long.426/)
+- [MASAI](https://arxiv.org/abs/2406.11638)
+- [RepoCoder](https://aclanthology.org/2023.emnlp-main.151/)
+- [Repoformer](https://proceedings.mlr.press/v235/wu24a.html)
+- [SWE-agent](https://arxiv.org/abs/2405.15793)
+- [SWT-Bench](https://proceedings.neurips.cc/paper_files/paper/2024/file/94f093b41fc2666376fb1f667fe282f3-Paper-Conference.pdf)

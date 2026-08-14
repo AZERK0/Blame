@@ -1,0 +1,363 @@
+import { readFile } from "node:fs/promises";
+import { parseCode, type CodeSymbol } from "./code-intelligence.js";
+import {
+  decodeHandle,
+  encodeHandle,
+  harnessError,
+  sha256,
+  type HandlePayload,
+  type HarnessToolResult,
+} from "./protocol.js";
+import {
+  languageName,
+  type WorkspaceFiles,
+  type WorkspaceSnapshot,
+} from "./workspace-files.js";
+import type {
+  InspectCodeInput,
+  OutlineCodeInput,
+  ReviewChangeInput,
+  SearchCodeInput,
+  StoredChangeProposal,
+} from "./schemas.js";
+
+export type {
+  InspectCodeInput,
+  OutlineCodeInput,
+  ReviewChangeInput,
+  SearchCodeInput,
+} from "./schemas.js";
+
+export type PublicChangeProposal = {
+  proposal_ref: string;
+  base_source_revision_id: string;
+  created_at: string;
+  changes: Array<{
+    path: string;
+    old_hash: string | null;
+    new_hash: string | null;
+  }>;
+  diff: string;
+};
+
+export type SearchMatch = {
+  path: string;
+  line_range: [number, number];
+  range_utf8_bytes: [number, number];
+  excerpt: string;
+  match_reason: string;
+  node_ref: string;
+  symbol_ref?: CodeSymbol["symbol_ref"];
+};
+
+export function textMatches(
+  content: Buffer,
+  path: string,
+  revision: string,
+  query: Extract<SearchCodeInput["query"], { kind: "text" }>,
+  maximum: number,
+): SearchMatch[] {
+  const source = content.toString("utf8");
+  const flags = `g${query.case_sensitive ? "" : "i"}u`;
+  const expression = query.regex
+    ? new RegExp(query.pattern, flags)
+    : new RegExp(escapeRegExp(query.pattern), flags);
+  const items: SearchMatch[] = [];
+  for (const match of source.matchAll(expression)) {
+    const index = match.index ?? 0;
+    const text = match[0];
+    if (!text.length) continue;
+    const start = Buffer.byteLength(source.slice(0, index));
+    const end = start + Buffer.byteLength(text);
+    const line = source.slice(0, index).split("\n").length;
+    items.push({
+      path,
+      line_range: [line, line + text.split("\n").length - 1],
+      range_utf8_bytes: [start, end],
+      excerpt: lineExcerpt(source, index),
+      match_reason: query.regex ? "lexical_regex" : "lexical_exact",
+      node_ref: nodeRef(revision, path, content, start, end, "text_match"),
+    });
+    if (items.length >= maximum) break;
+  }
+  return items;
+}
+
+export function nodeRef(
+  revision: string,
+  path: string,
+  content: Buffer,
+  start: number,
+  end: number,
+  kind: string,
+) {
+  return encodeHandle("node", {
+    version: 1,
+    revision,
+    path,
+    start,
+    end,
+    digest: sha256(content.subarray(start, end)),
+    kind,
+  });
+}
+
+export function inspectTarget(target: InspectCodeInput["target"]): {
+  path?: string;
+  handle?: HandlePayload;
+} {
+  if ("path" in target) return { path: target.path };
+  const scheme = "symbol_ref" in target ? "sym" : "node";
+  const value = "symbol_ref" in target ? target.symbol_ref : target.node_ref;
+  const handle = decodeHandle(value, scheme);
+  if (!handle)
+    throw new Error(
+      `A valid ${scheme === "sym" ? "symbol_ref" : "node_ref"} is required.`,
+    );
+  return { handle };
+}
+
+export function compareSymbols(
+  change: StoredChangeProposal["changes"][number],
+  beforeContent?: Buffer,
+  afterContent?: Buffer,
+) {
+  const oldSymbols = symbolDigests(change.path, beforeContent);
+  const newSymbols = symbolDigests(change.path, afterContent);
+  return {
+    added: [...newSymbols.keys()].filter((symbol) => !oldSymbols.has(symbol)),
+    removed: [...oldSymbols.keys()].filter((symbol) => !newSymbols.has(symbol)),
+    modified: [...newSymbols.keys()].filter(
+      (symbol) =>
+        oldSymbols.has(symbol) &&
+        oldSymbols.get(symbol) !== newSymbols.get(symbol),
+    ),
+  };
+}
+
+export function publicProposal(
+  proposal: StoredChangeProposal,
+): PublicChangeProposal {
+  return {
+    proposal_ref: proposal.proposal_ref,
+    base_source_revision_id: proposal.base_source_revision_id,
+    created_at: proposal.created_at,
+    changes: proposal.changes.map(({ path, old_hash, new_hash }) => ({
+      path,
+      old_hash,
+      new_hash,
+    })),
+    diff: proposal.diff_summary,
+  };
+}
+
+export async function readTaskCatalog(root: string) {
+  try {
+    const manifest = JSON.parse(
+      await readFile(`${root}/package.json`, "utf8"),
+    ) as {
+      packageManager?: string;
+      scripts?: Record<string, string>;
+    };
+    return Object.entries(manifest.scripts ?? {}).map(([task_id, command]) => ({
+      task_id,
+      kind: taskKind(task_id),
+      command,
+      package_manager: manifest.packageManager?.split("@")[0],
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export function scopedFiles(
+  files: WorkspaceFiles,
+  paths: string[],
+  scope?: SearchCodeInput["scope"],
+) {
+  const scopedPaths = scope?.paths?.map((path) => files.normalizePath(path));
+  return paths.filter((path) => {
+    if (
+      scope?.languages?.length &&
+      !scope.languages.includes(languageName(path))
+    )
+      return false;
+    if (!scopedPaths?.length) return true;
+    return scopedPaths.some(
+      (candidate) =>
+        candidate === "." ||
+        path === candidate ||
+        path.startsWith(`${candidate}/`),
+    );
+  });
+}
+
+export function validateSearchInput(input: SearchCodeInput) {
+  if (!input.source_revision_id?.startsWith("src_"))
+    throw new Error(
+      "source_revision_id is required; call workspace_state first.",
+    );
+  const value =
+    input.query.kind === "symbol" ? input.query.name : input.query.pattern;
+  if (!value?.trim()) throw new Error("Search query cannot be empty.");
+  if (
+    input.query.kind === "text" &&
+    input.query.regex &&
+    (/\\[1-9]/.test(value) || /\([^)]*[+*][^)]*\)[+*{]/.test(value))
+  )
+    throw new Error(
+      "Regex contains a potentially unbounded nested quantifier or backreference.",
+    );
+}
+
+export function validateOutlineInput(input: OutlineCodeInput) {
+  if (!input.source_revision_id?.startsWith("src_"))
+    throw new Error(
+      "source_revision_id is required; call workspace_state first.",
+    );
+  if (!input.target?.path?.trim()) throw new Error("target.path is required.");
+}
+
+export function validateInspectInput(input: InspectCodeInput) {
+  if (!input.source_revision_id?.startsWith("src_"))
+    throw new Error(
+      "source_revision_id is required; call workspace_state first.",
+    );
+  if (!input.target || !input.view)
+    throw new Error("target and view are required.");
+}
+
+export function validRange(
+  value: [number, number],
+  maximum: number,
+): [number, number] {
+  if (
+    value.length !== 2 ||
+    !Number.isSafeInteger(value[0]) ||
+    !Number.isSafeInteger(value[1]) ||
+    value[0] < 0 ||
+    value[1] < value[0] ||
+    value[1] > maximum
+  )
+    throw new Error("range_utf8_bytes is outside the file.");
+  return value;
+}
+
+export function revisionVector(snapshot: WorkspaceSnapshot) {
+  return { source_revision_id: snapshot.revision.source_revision_id };
+}
+
+export function staleRevision(current: string) {
+  return new Error(`STALE_REVISION:${current}`);
+}
+
+export function toolError<T = never>(error: unknown): HarnessToolResult<T> {
+  const message = error instanceof Error ? error.message : String(error);
+  if (message.startsWith("STALE_REVISION:")) {
+    const current = message.slice("STALE_REVISION:".length);
+    return harnessError({
+      code: "STALE_REVISION",
+      message: "The workspace changed after the supplied source revision.",
+      revision: { source_revision_id: current },
+      recovery: {
+        action:
+          "Call workspace_state, then repeat the read or rebuild the proposal.",
+      },
+    });
+  }
+  for (const code of ["TARGET_GONE", "UNSUPPORTED_STRUCTURE"] as const) {
+    if (message.startsWith(`${code}:`))
+      return harnessError({
+        code,
+        message: message.slice(code.length + 1),
+        recovery: {
+          action:
+            code === "TARGET_GONE"
+              ? "Search or outline the current revision for a new handle."
+              : "Use inspect_code with view raw.",
+        },
+      });
+  }
+  if (
+    /outside the workspace|escapes the workspace|metadata paths cannot|policy protects|absolute paths are not allowed|symbolic-link files are not supported/i.test(
+      message,
+    )
+  )
+    return harnessError({
+      code: "POLICY_DENIED",
+      message,
+      recovery: { action: "Choose a regular path inside the workspace." },
+    });
+  const precondition =
+    /precondition|syntax errors|already bound|already exists|overlapping/i.test(
+      message,
+    );
+  return harnessError({
+    code: precondition ? "PRECONDITION_FAILED" : "INVALID_INPUT",
+    message,
+    recovery: precondition
+      ? { action: "Inspect the current revision and create a new proposal." }
+      : undefined,
+  });
+}
+
+export function bounded(
+  value: number | undefined,
+  minimum: number,
+  maximum: number,
+  fallback: number,
+) {
+  return Number.isFinite(value)
+    ? Math.min(maximum, Math.max(minimum, Math.round(value!)))
+    : fallback;
+}
+
+export function countBy(values: string[]) {
+  const counts: Record<string, number> = {};
+  for (const value of values) counts[value] = (counts[value] ?? 0) + 1;
+  return counts;
+}
+
+export function topLevelEntries(paths: string[]) {
+  return [...new Set(paths.map((path) => path.split("/", 1)[0]))].sort();
+}
+
+export function symbolNameMatches(candidate: string, query: string) {
+  return candidate
+    .toLocaleLowerCase()
+    .includes(query.trim().toLocaleLowerCase());
+}
+
+export function approximateTokens(value: unknown) {
+  return Math.ceil(Buffer.byteLength(JSON.stringify(value), "utf8") / 4);
+}
+
+function symbolDigests(path: string, content?: Buffer) {
+  const result = new Map<string, string>();
+  if (!content) return result;
+  for (const symbol of parseCode(path, content).symbols) {
+    const key = `${symbol.kind}:${symbol.qualified_name}`;
+    const [start, end] = symbol.range_utf8_bytes;
+    result.set(key, sha256(content.subarray(start, end)));
+  }
+  return result;
+}
+
+function taskKind(name: string) {
+  if (/test/i.test(name)) return "test";
+  if (/lint/i.test(name)) return "lint";
+  if (/typecheck|check:type/i.test(name)) return "typecheck";
+  if (/build/i.test(name)) return "build";
+  return "custom";
+}
+
+function lineExcerpt(source: string, index: number) {
+  const start = source.lastIndexOf("\n", index - 1) + 1;
+  const end = source.indexOf("\n", index);
+  const line = source.slice(start, end < 0 ? source.length : end).trim();
+  return line.length > 300 ? `${line.slice(0, 299)}…` : line;
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}

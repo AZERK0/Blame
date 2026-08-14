@@ -51,10 +51,14 @@ import {
   withoutTelemetryEnvironment,
 } from "@blame/telemetry";
 
+import { codeReviewGraphTools } from "./code-review-graph-tools.js";
+import { semanticWorkspaceTools } from "./harness/cline-tools.js";
 import {
-  codeReviewGraphToolNames,
-  codeReviewGraphTools,
-} from "./code-review-graph-tools.js";
+  blockedCommandParts,
+  initializationFallbackReadTools,
+  readTools,
+  writeTools,
+} from "./cline-tool-policy.js";
 import { blameSpecialistAgentsSystemPrompt } from "./specialist-agents.js";
 import {
   deleteProviderCredential,
@@ -165,26 +169,6 @@ import type {
 } from "./types.js";
 
 const execFileAsync = promisify(execFile);
-const readTools = [
-  "read_files",
-  "search_codebase",
-  "fetch_web_content",
-  "get_preview_devtools",
-  "get_preview_container_logs",
-  ...codeReviewGraphToolNames,
-];
-const initializationFallbackReadTools = new Set([
-  "read_files",
-  "search_codebase",
-]);
-const writeTools = ["run_commands", "editor", "apply_patch"];
-const blockedCommandParts = [
-  "rm -rf",
-  "sudo",
-  "curl | sh",
-  "wget | sh",
-  "> /dev/",
-];
 const defaultSessionMaxIterations = 32;
 const defaultDevelopmentMaxIterations = 96;
 const maxInitializationAttempts = 3;
@@ -2869,6 +2853,7 @@ function runtimeTools(
   previewDevtoolsScope?: string,
 ) {
   const tools = [
+    ...semanticWorkspaceTools(worktree),
     previewDevtoolsTool(options, previewDevtoolsScope),
     previewContainerLogsTool(options, worktree),
     ...codeReviewGraphTools(options.codeReviewGraph, worktree),

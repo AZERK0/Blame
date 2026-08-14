@@ -84,6 +84,7 @@ async function executableArchitecture(executable: string) {
 const config: Configuration = {
   afterPack: finalizePackage,
   appId: "dev.blame.desktop",
+  asarUnpack: ["**/node_modules/@vscode/ripgrep-*/**/*"],
   productName: "Blame",
   protocols: [{ name: "Blame", schemes: ["blame"] }],
   artifactName: "blame-${os}-${arch}.${ext}",
