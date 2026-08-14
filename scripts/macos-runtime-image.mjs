@@ -35,6 +35,7 @@ const outputDir = join(desktopDir, "dist/runtime/macos");
 const buildRoot = join(tmpdir(), "blame-runtime-macos");
 const envFile = join(rootDir, ".env.local");
 const architectures = ["x86_64", "aarch64"];
+const instanceStartTimeout = "30m";
 const command = process.argv[2] ?? "help";
 const rawArgs = process.argv.slice(3);
 const args = rawArgs[0] === "--" ? rawArgs.slice(1) : rawArgs;
@@ -90,11 +91,7 @@ async function buildImage(architecture) {
   );
 
   try {
-    await runLimactl(
-      bundle,
-      ["start", "--name", instanceName, "--tty=false", templatePath],
-      environment,
-    );
+    await startInstance(bundle, instanceName, templatePath, environment);
     await provisionImage(bundle, instanceName, environment);
     await finalizeImage(bundle, instanceName, environment);
     await waitForStoppedInstance(bundle, instanceName, environment);
@@ -160,11 +157,7 @@ async function verifyImage(bundle, architecture, image, environment) {
     "utf8",
   );
   try {
-    await runLimactl(
-      bundle,
-      ["start", "--name", instanceName, "--tty=false", templatePath],
-      environment,
-    );
+    await startInstance(bundle, instanceName, templatePath, environment);
     await verifyRuntime(bundle, instanceName, environment);
     console.log(`Verified ${image}`);
   } finally {
@@ -201,6 +194,21 @@ async function verifyRuntime(bundle, instanceName, environment) {
   await runLimactl(
     bundle,
     ["shell", instanceName, "sudo", "-n", "sh", "-lc", checks],
+    environment,
+  );
+}
+
+async function startInstance(bundle, instanceName, templatePath, environment) {
+  await runLimactl(
+    bundle,
+    [
+      "start",
+      "--name",
+      instanceName,
+      `--timeout=${instanceStartTimeout}`,
+      "--tty=false",
+      templatePath,
+    ],
     environment,
   );
 }
