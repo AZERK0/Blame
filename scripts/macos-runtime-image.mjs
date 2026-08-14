@@ -327,6 +327,7 @@ async function instanceState(bundle, instanceName, environment) {
 
 async function flattenImage(source, destination) {
   await access(source);
+  await waitForDiskUnlock(source);
   await rm(destination, { force: true });
   await run("qemu-img", [
     "convert",
@@ -339,6 +340,18 @@ async function flattenImage(source, destination) {
     destination,
   ]);
   await run("qemu-img", ["check", destination]);
+}
+
+async function waitForDiskUnlock(image) {
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    try {
+      await output("qemu-img", ["info", "--output=json", image], process.env);
+      return;
+    } catch {
+      await delay(1000);
+    }
+  }
+  throw new Error(`QEMU did not release the image lock for ${image}.`);
 }
 
 async function deployImages() {
