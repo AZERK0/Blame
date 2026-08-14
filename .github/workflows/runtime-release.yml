@@ -56,7 +56,7 @@ jobs:
 
   build-macos:
     name: Build macOS runtime ${{ matrix.name }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
@@ -65,10 +65,12 @@ jobs:
             firmware_package: ovmf
             qemu_package: qemu-system-x86
             macos_arch: x86_64
+            runner: ubuntu-latest
           - name: arm64
             firmware_package: qemu-efi-aarch64
             qemu_package: qemu-system-arm
             macos_arch: aarch64
+            runner: ubuntu-24.04-arm
     steps:
       - uses: actions/checkout@v4
 
