@@ -86,7 +86,7 @@ jobs:
       - name: Install image build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends ${{ matrix.qemu_package }} ${{ matrix.firmware_package }} qemu-utils
+          sudo apt-get install -y --no-install-recommends ${{ matrix.qemu_package }} ${{ matrix.firmware_package }} ipxe-qemu qemu-utils
 
       - name: Configure QEMU acceleration
         run: |
