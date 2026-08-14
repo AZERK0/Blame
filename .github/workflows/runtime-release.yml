@@ -52,6 +52,15 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends ${{ matrix.qemu_package }} ${{ matrix.firmware_package }} qemu-utils
 
+      - name: Configure QEMU acceleration
+        run: |
+          if [ -e /dev/kvm ]; then
+            sudo chmod 0666 /dev/kvm
+          fi
+          if [ "${{ matrix.macos_arch }}" = "aarch64" ]; then
+            echo "QEMU_SYSTEM_AARCH64=qemu-system-aarch64 -machine virt -cpu max" >> "$GITHUB_ENV"
+          fi
+
       - name: Build WSL rootfs
         run: pnpm build:runtime:windows -- --arch ${{ matrix.windows_arch }}
         env:
