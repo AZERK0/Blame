@@ -1,7 +1,6 @@
 export { BlameAgentRuntime } from "./cline-runtime.js";
 export { taskComplexityBucket } from "./telemetry-cohorts.js";
 export type { TaskComplexityBucket } from "./telemetry-cohorts.js";
-export { codeReviewGraphToolNames } from "./code-review-graph-tools.js";
 export { commandWithNextWebpackFallback } from "./next-webpack-fallback.js";
 export { parseRunConfigurations } from "./project-initialization.js";
 export {

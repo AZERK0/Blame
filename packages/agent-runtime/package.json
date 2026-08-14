@@ -21,7 +21,7 @@
     "build": "tsc && node scripts/copy-prompt.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "pnpm build && node --test dist/project-initialization.test.js dist/project-code-practices.test.js dist/project-scanners.test.js dist/project-initialization-repair.test.js dist/next-webpack-fallback.test.js dist/project-initialization-impact.test.js dist/code-review-graph-tools.test.js dist/commit-message.test.js dist/production.test.js dist/reasoning.test.js dist/specialist-agents.test.js dist/cline-runtime-events.test.js dist/agent-telemetry.test.js dist/provider-schema-compatibility.test.js dist/provider-catalog.test.js dist/cloud-api.test.js dist/title-generation.test.js dist/harness/semantic-workspace.test.js"
+    "test": "pnpm build && node --test dist/project-initialization.test.js dist/project-code-practices.test.js dist/project-scanners.test.js dist/project-initialization-repair.test.js dist/next-webpack-fallback.test.js dist/project-initialization-impact.test.js dist/commit-message.test.js dist/production.test.js dist/reasoning.test.js dist/specialist-agents.test.js dist/cline-runtime-events.test.js dist/agent-telemetry.test.js dist/provider-schema-compatibility.test.js dist/provider-catalog.test.js dist/cloud-api.test.js dist/title-generation.test.js dist/harness/semantic-workspace.test.js"
   },
   "dependencies": {
     "@ast-grep/napi": "0.42.2",
@@ -32,8 +32,13 @@
     "@vscode/ripgrep": "1.18.0",
     "cacache": "20.0.4",
     "diff": "9.0.0",
+    "execa": "9.6.1",
+    "fast-glob": "3.3.3",
     "isbinaryfile": "5.0.7",
+    "p-limit": "6.2.0",
+    "prettier": "3.8.3",
     "proper-lockfile": "4.1.2",
+    "strip-ansi": "7.2.0",
     "write-file-atomic": "7.0.1",
     "zod": "4.4.3"
   },

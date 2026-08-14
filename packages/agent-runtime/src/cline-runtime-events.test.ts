@@ -180,8 +180,11 @@ test("does not write high-frequency streaming events to the session log", async 
 test("limits initialization fallback tools to project reads and search", () => {
   const policies = initializationToolPolicies();
 
-  assert.deepEqual(policies.read_files, { autoApprove: true });
-  assert.deepEqual(policies.search_codebase, { autoApprove: true });
+  assert.deepEqual(policies.read_files, { enabled: true, autoApprove: true });
+  assert.deepEqual(policies.search_codebase, {
+    enabled: true,
+    autoApprove: true,
+  });
   assert.deepEqual(policies.fetch_web_content, disabledToolPolicy());
   assert.deepEqual(policies.get_preview_devtools, disabledToolPolicy());
   assert.deepEqual(policies.get_preview_container_logs, disabledToolPolicy());

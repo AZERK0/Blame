@@ -1,4 +1,3 @@
-import { readFile } from "node:fs/promises";
 import { parseCode, type CodeSymbol } from "./code-intelligence.js";
 import {
   decodeHandle,
@@ -38,6 +37,9 @@ export type PublicChangeProposal = {
     new_hash: string | null;
   }>;
   diff: string;
+  diff_truncated: boolean;
+  diff_bytes?: number;
+  formatting?: StoredChangeProposal["formatting"];
 };
 
 export type SearchMatch = {
@@ -148,26 +150,12 @@ export function publicProposal(
       new_hash,
     })),
     diff: proposal.diff_summary,
+    diff_truncated: proposal.diff_summary_truncated ?? false,
+    ...(proposal.diff_bytes !== undefined
+      ? { diff_bytes: proposal.diff_bytes }
+      : {}),
+    ...(proposal.formatting ? { formatting: proposal.formatting } : {}),
   };
-}
-
-export async function readTaskCatalog(root: string) {
-  try {
-    const manifest = JSON.parse(
-      await readFile(`${root}/package.json`, "utf8"),
-    ) as {
-      packageManager?: string;
-      scripts?: Record<string, string>;
-    };
-    return Object.entries(manifest.scripts ?? {}).map(([task_id, command]) => ({
-      task_id,
-      kind: taskKind(task_id),
-      command,
-      package_manager: manifest.packageManager?.split("@")[0],
-    }));
-  } catch {
-    return [];
-  }
 }
 
 export function scopedFiles(
@@ -265,6 +253,14 @@ export function toolError<T = never>(error: unknown): HarnessToolResult<T> {
       },
     });
   }
+  if (message.startsWith("UNSUPPORTED_CAPABILITY:"))
+    return harnessError({
+      code: "UNSUPPORTED_CAPABILITY",
+      message: message.slice("UNSUPPORTED_CAPABILITY:".length),
+      recovery: {
+        action: "Use a capability reported as available by workspace_state.",
+      },
+    });
   for (const code of ["TARGET_GONE", "UNSUPPORTED_STRUCTURE"] as const) {
     if (message.startsWith(`${code}:`))
       return harnessError({
@@ -279,7 +275,7 @@ export function toolError<T = never>(error: unknown): HarnessToolResult<T> {
       });
   }
   if (
-    /outside the workspace|escapes the workspace|metadata paths cannot|policy protects|absolute paths are not allowed|symbolic-link files are not supported/i.test(
+    /outside the workspace|escapes the workspace|metadata paths cannot|policy protects|access policy denies|absolute paths are not allowed|symbolic-link files are not supported/i.test(
       message,
     )
   )
@@ -341,14 +337,6 @@ function symbolDigests(path: string, content?: Buffer) {
     result.set(key, sha256(content.subarray(start, end)));
   }
   return result;
-}
-
-function taskKind(name: string) {
-  if (/test/i.test(name)) return "test";
-  if (/lint/i.test(name)) return "lint";
-  if (/typecheck|check:type/i.test(name)) return "typecheck";
-  if (/build/i.test(name)) return "build";
-  return "custom";
 }
 
 function lineExcerpt(source: string, index: number) {

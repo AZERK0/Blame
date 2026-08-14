@@ -1,4 +1,5 @@
 import { ArtifactStore } from "./artifact-store.js";
+import { environmentSpec } from "./environment-service.js";
 import {
   findExactNode,
   inspectParsedNode,
@@ -28,7 +29,6 @@ import {
   inspectTarget,
   nodeRef,
   publicProposal,
-  readTaskCatalog,
   revisionVector,
   scopedFiles,
   staleRevision,
@@ -47,6 +47,9 @@ import {
   type SearchCodeInput,
   type SearchMatch,
 } from "./semantic-workspace-support.js";
+import { publicRun, RunService } from "./run-service.js";
+import { readTaskCatalog } from "./task-catalog.js";
+import type { TaskExecutor } from "./task-executor.js";
 import {
   languageName,
   WorkspaceFiles,
@@ -56,11 +59,17 @@ import { searchWithRipgrep } from "./lexical-search.js";
 import {
   applyChangeInputSchema,
   inspectCodeInputSchema,
+  inspectArtifactInputSchema,
+  inspectRunInputSchema,
   outlineCodeInputSchema,
   reviewChangeInputSchema,
+  runTaskInputSchema,
   searchCodeInputSchema,
   workspaceStateInputSchema,
   type WorkspaceStateInput,
+  type InspectArtifactInput,
+  type InspectRunInput,
+  type RunTaskInput,
 } from "./schemas.js";
 
 export type {
@@ -71,15 +80,33 @@ export type {
   SearchCodeInput,
 } from "./semantic-workspace-support.js";
 
+export type SemanticWorkspaceOptions = {
+  taskExecutor?: TaskExecutor;
+  taskContract?: {
+    session_id?: string;
+    story_id?: string;
+    objective?: string;
+  };
+};
+
 export class SemanticWorkspace {
   private readonly artifacts: ArtifactStore;
   private readonly changes: ChangeService;
   private readonly files: WorkspaceFiles;
+  private readonly runs: RunService;
+  private readonly taskContract?: SemanticWorkspaceOptions["taskContract"];
 
-  constructor(workspaceRoot: string) {
+  constructor(workspaceRoot: string, options: SemanticWorkspaceOptions = {}) {
     this.files = new WorkspaceFiles(workspaceRoot);
     this.artifacts = new ArtifactStore(this.files.root);
     this.changes = new ChangeService(this.files, this.artifacts);
+    this.runs = new RunService(
+      this.files,
+      this.artifacts,
+      this.changes,
+      options.taskExecutor,
+    );
+    this.taskContract = options.taskContract;
   }
 
   async workspaceState(
@@ -90,6 +117,7 @@ export class SemanticWorkspace {
       const { signal, ...publicInput } = input;
       workspaceStateInputSchema.parse(publicInput);
       const snapshot = await this.files.snapshot(signal);
+      const environment = await environmentSpec(this.files, snapshot);
       const languages = Object.entries(
         countBy(
           snapshot.files.map(languageName).filter((name) => name !== "unknown"),
@@ -98,6 +126,13 @@ export class SemanticWorkspace {
         .sort((left, right) => right[1] - left[1])
         .map(([language, files]) => ({ language, files }));
       const taskCatalog = await readTaskCatalog(this.files.root);
+      const executionIsolation = await this.runs
+        .capability()
+        .then((value) => ({ available: true as const, isolation: value }))
+        .catch((error) => ({
+          available: false as const,
+          reason: error instanceof Error ? error.message : String(error),
+        }));
       const tokenBudget = bounded(
         input.budget?.max_output_tokens,
         200,
@@ -114,15 +149,29 @@ export class SemanticWorkspace {
         topLevel.length > maximumRoots;
       return harnessSuccess({
         startedAt,
-        revision: revisionVector(snapshot),
+        revision: {
+          ...revisionVector(snapshot),
+          environment_spec_revision_id:
+            environment.environment_spec_revision_id,
+        },
         provenance: [
-          provenance(
-            snapshot.git ? "git" : "filesystem",
-            revisionVector(snapshot),
-          ),
+          provenance(snapshot.git ? "git" : "filesystem", {
+            ...revisionVector(snapshot),
+            environment_spec_revision_id:
+              environment.environment_spec_revision_id,
+          }),
         ],
         data: {
           source_revision: snapshot.revision,
+          environment_spec: environment,
+          task_contract: this.taskContract
+            ? {
+                ...this.taskContract,
+                ...(this.taskContract.objective
+                  ? { objective: this.taskContract.objective.slice(0, 1_000) }
+                  : {}),
+              }
+            : null,
           repository: {
             root: this.files.root,
             git: snapshot.git,
@@ -151,9 +200,44 @@ export class SemanticWorkspace {
               precision: "syntax",
               raw_fallback: true,
             },
-            deferred: {
-              run_task: "Requires execution-plane overlay integration.",
-              inspect_run: "Requires execution-plane overlay integration.",
+            execution: {
+              run_task: executionIsolation,
+              inspect_run: true,
+              overlay: "copy_on_write_or_clone",
+              network: "default_deny",
+              inherited_secrets: false,
+              limits: {
+                timeout: true,
+                output_bytes: true,
+                cpu: false,
+                memory: false,
+              },
+              filesystem_effects: "captured_as_change_proposal",
+            },
+            services: {
+              provider: "blame_preview_control_plane",
+              lifecycle: ["start", "inspect", "restart", "stop"],
+              port_allocation: "product_managed",
+              run_task_services: false,
+            },
+            control_plane: {
+              checkpoint: {
+                provider: "cline_session_checkpoint",
+                compare: true,
+                restore: true,
+              },
+              canonical_writer: "desktop_workspace_writer_registry",
+              concurrent_writers: false,
+            },
+            artifacts: {
+              content_addressed: true,
+              encrypted_at_rest: true,
+              agent_visibility: "agent_redacted_only",
+              retention_days: {
+                agent_redacted: 30,
+                reviewer: 30,
+                sealed_raw: 7,
+              },
             },
           },
           tree_summary: {
@@ -539,10 +623,9 @@ export class SemanticWorkspace {
         analysis = parsed.errorCount ? "heuristic" : "exact";
       }
       const bytes = Buffer.from(inspected.content);
-      const truncated = bytes.length > maximumBytes;
-      const returned = truncated
-        ? bytes.subarray(0, maximumBytes).toString("utf8")
-        : inspected.content;
+      const selectedBytes = utf8PrefixLength(bytes, maximumBytes);
+      const truncated = selectedBytes < bytes.length;
+      const returned = bytes.subarray(0, selectedBytes).toString("utf8");
       await this.ensureUnchanged(snapshot, signal);
       return harnessSuccess({
         startedAt,
@@ -560,7 +643,7 @@ export class SemanticWorkspace {
           view: input.view,
           content: returned,
           range_utf8_bytes: inspected.range_utf8_bytes,
-          omitted_bytes: truncated ? bytes.length - maximumBytes : 0,
+          omitted_bytes: bytes.length - selectedBytes,
         },
         coverage: {
           scope: truncated ? "partial" : "complete",
@@ -568,7 +651,7 @@ export class SemanticWorkspace {
           analysis,
           ...(truncated
             ? {
-                continuation: `${inspected.range_utf8_bytes[0] + maximumBytes}`,
+                continuation: `${inspected.range_utf8_bytes[0] + selectedBytes}`,
               }
             : {}),
         },
@@ -608,6 +691,12 @@ export class SemanticWorkspace {
           data: publicProposal(proposal),
           artifacts: [proposal.diff_artifact],
           diagnostics: proposal.diagnostics,
+          coverage: {
+            scope: proposal.diff_summary_truncated ? "partial" : "complete",
+            truncated: proposal.diff_summary_truncated ?? false,
+            analysis: "exact",
+            ...(proposal.diff_summary_truncated ? { continuation: "0" } : {}),
+          },
         });
       }
       const receipt = await this.changes.commit(input);
@@ -625,12 +714,155 @@ export class SemanticWorkspace {
     }
   }
 
+  async runTask(input: RunTaskInput, signal?: AbortSignal) {
+    const startedAt = Date.now();
+    try {
+      runTaskInputSchema.parse(input);
+      const snapshot = await this.exactSnapshot(
+        input.source_revision_id,
+        signal,
+      );
+      const run = await this.runs.run(input, snapshot, signal);
+      const revision = {
+        source_revision_id: run.source_revision.source_revision_id,
+        environment_spec_revision_id: run.environment_spec_revision_id,
+        runtime_instance_id: run.runtime_instance_id,
+      };
+      return harnessSuccess({
+        startedAt,
+        revision,
+        provenance: [provenance("harness", revision)],
+        data: publicRun(run),
+        artifacts: [run.logs.complete, run.filesystem_effects.artifact],
+        diagnostics: run.diagnostics,
+        coverage: {
+          scope: run.logs.output_truncated ? "partial" : "complete",
+          truncated: run.logs.output_truncated,
+          analysis: "observed_subset",
+        },
+      });
+    } catch (error) {
+      return toolError(error);
+    }
+  }
+
+  async inspectRun(input: InspectRunInput, signal?: AbortSignal) {
+    const startedAt = Date.now();
+    try {
+      inspectRunInputSchema.parse(input);
+      signal?.throwIfAborted();
+      const run = await this.runs.read(input.run_ref);
+      const data = await this.runs.inspect(input);
+      const revision = {
+        source_revision_id: run.source_revision.source_revision_id,
+        environment_spec_revision_id: run.environment_spec_revision_id,
+        runtime_instance_id: run.runtime_instance_id,
+      };
+      return harnessSuccess({
+        startedAt,
+        revision,
+        provenance: [provenance("harness", revision)],
+        data,
+        artifacts: [run.logs.complete, run.filesystem_effects.artifact],
+        coverage: {
+          scope: run.logs.output_truncated ? "partial" : "complete",
+          truncated: run.logs.output_truncated,
+          analysis: "observed_subset",
+        },
+      });
+    } catch (error) {
+      return toolError(error);
+    }
+  }
+
+  async inspectArtifact(input: InspectArtifactInput, signal?: AbortSignal) {
+    const startedAt = Date.now();
+    try {
+      inspectArtifactInputSchema.parse(input);
+      signal?.throwIfAborted();
+      const metadata = await this.artifacts.metadata(input.artifact_ref, {
+        audience: "agent",
+      });
+      const tokenBudget = bounded(
+        input.budget?.max_output_tokens,
+        100,
+        20_000,
+        2_500,
+      );
+      const maximumBytes = tokenBudget * (input.view === "bytes" ? 3 : 4);
+      const offset = input.offset_bytes ?? 0;
+      if (input.view === "metadata")
+        return harnessSuccess({
+          startedAt,
+          revision: metadata.subject_revision ?? {},
+          provenance: [provenance("harness", metadata.subject_revision ?? {})],
+          data: { artifact: metadata },
+        });
+      const content = await this.artifacts.get(input.artifact_ref, {
+        audience: "agent",
+      });
+      if (offset > content.byteLength)
+        throw new Error("Artifact offset is outside the content.");
+      if (input.view === "json" && offset !== 0)
+        throw new Error(
+          "JSON artifacts must be inspected from offset 0. Use text view for byte paging.",
+        );
+      if (input.view === "json" && content.byteLength > maximumBytes)
+        throw new Error(
+          "JSON artifact exceeds this output budget. Increase the budget or use text view with continuation offsets.",
+        );
+      if (
+        input.view === "text" &&
+        offset > 0 &&
+        (content[offset]! & 0xc0) === 0x80
+      )
+        throw new Error("Text artifact offset is not a UTF-8 boundary.");
+      const selectedLength =
+        input.view === "text"
+          ? utf8PrefixLength(content.subarray(offset), maximumBytes)
+          : Math.min(maximumBytes, content.byteLength - offset);
+      const selected = content.subarray(offset, offset + selectedLength);
+      const truncated = offset + selected.byteLength < content.byteLength;
+      let value: unknown;
+      if (input.view === "bytes") value = selected.toString("base64");
+      else if (input.view === "json")
+        value = JSON.parse(selected.toString("utf8"));
+      else value = selected.toString("utf8");
+      return harnessSuccess({
+        startedAt,
+        revision: metadata.subject_revision ?? {},
+        provenance: [provenance("harness", metadata.subject_revision ?? {})],
+        data: {
+          artifact: metadata,
+          view: input.view,
+          offset_bytes: offset,
+          content: value,
+          omitted_bytes: Math.max(
+            0,
+            content.byteLength - offset - selected.byteLength,
+          ),
+        },
+        coverage: {
+          scope: truncated ? "partial" : "complete",
+          truncated,
+          analysis: "exact",
+          ...(truncated
+            ? { continuation: String(offset + selected.byteLength) }
+            : {}),
+        },
+      });
+    } catch (error) {
+      return toolError(error);
+    }
+  }
+
   async reviewChange(input: ReviewChangeInput, signal?: AbortSignal) {
     const startedAt = Date.now();
     try {
       reviewChangeInputSchema.parse(input);
       signal?.throwIfAborted();
       const proposal = await this.changes.readProposal(input.proposal_ref);
+      const attachedRuns = await this.runs.runsForProposal(input.proposal_ref);
       const snapshot = await this.files.snapshot(signal);
       const symbolChanges = await Promise.all(
         proposal.changes.map(async (change) => {
@@ -644,12 +876,21 @@ export class SemanticWorkspace {
       const maximumBytes =
         bounded(input.budget?.max_output_tokens, 200, 20_000, 4_000) * 4;
       const diff = Buffer.from(proposal.diff_summary);
-      const truncated = diff.length > maximumBytes;
+      const selectedBytes = utf8PrefixLength(diff, maximumBytes);
+      const truncated =
+        (proposal.diff_summary_truncated ?? false) ||
+        selectedBytes < diff.length;
       return harnessSuccess({
         startedAt,
         revision: revisionVector(snapshot),
         provenance: [provenance("harness", revisionVector(snapshot))],
-        artifacts: [proposal.diff_artifact],
+        artifacts: [
+          proposal.diff_artifact,
+          ...attachedRuns.flatMap((run) => [
+            run.logs.complete,
+            run.filesystem_effects.artifact,
+          ]),
+        ],
         diagnostics: proposal.diagnostics,
         data: {
           proposal_ref: proposal.proposal_ref,
@@ -664,15 +905,42 @@ export class SemanticWorkspace {
             new_hash,
           })),
           symbol_changes: symbolChanges,
-          diff: truncated
-            ? diff.subarray(0, maximumBytes).toString("utf8")
-            : proposal.diff_summary,
-          checks_not_run: ["lint", "typecheck", "tests"],
+          generated_files: proposal.changes
+            .filter(
+              ({ old_hash, new_hash }) =>
+                old_hash === null && new_hash !== null,
+            )
+            .map(({ path }) => path),
+          deleted_files: proposal.changes
+            .filter(
+              ({ old_hash, new_hash }) =>
+                old_hash !== null && new_hash === null,
+            )
+            .map(({ path }) => path),
+          formatting: proposal.formatting ?? {
+            policy: "none",
+            formatted_files: [],
+            skipped_files: [],
+          },
+          attached_runs: attachedRuns.map(publicRun),
+          diff: diff.subarray(0, selectedBytes).toString("utf8"),
+          diff_bytes: proposal.diff_bytes ?? diff.length,
+          diff_artifact_ref: proposal.diff_artifact.ref,
+          checks_not_run: checksNotRun(attachedRuns),
         },
         coverage: {
           scope: truncated ? "partial" : "complete",
           truncated,
           analysis: "exact",
+          ...(truncated
+            ? {
+                continuation: String(
+                  selectedBytes < diff.length
+                    ? selectedBytes
+                    : (proposal.diff_summary_bytes ?? diff.length),
+                ),
+              }
+            : {}),
         },
       });
     } catch (error) {
@@ -698,4 +966,20 @@ export class SemanticWorkspace {
     )
       throw staleRevision(current.revision.source_revision_id);
   }
+}
+
+function utf8PrefixLength(content: Buffer, maximumBytes: number) {
+  if (content.byteLength <= maximumBytes) return content.byteLength;
+  let end = maximumBytes;
+  while (end > 0 && (content[end]! & 0xc0) === 0x80) end -= 1;
+  return end;
+}
+
+function checksNotRun(runs: Array<Awaited<ReturnType<RunService["read"]>>>) {
+  const passed = new Set<string>(
+    runs
+      .filter((run) => run.status === "passed")
+      .map((run) => (run.task.kind === "test" ? "tests" : run.task.kind)),
+  );
+  return ["lint", "typecheck", "tests"].filter((check) => !passed.has(check));
 }

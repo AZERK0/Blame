@@ -58,7 +58,6 @@ import {
   optimizeAttachmentForAiContext,
   type OptimizeAttachmentForAiContextInput,
 } from "./attachment-ai-context";
-import { cleanupCodeReviewGraphWorktree } from "./code-review-graph";
 import { pLimit } from "./concurrency.ts";
 import {
   repositoryTelemetryCohorts,
@@ -2862,7 +2861,6 @@ async function removeWorktree(input: RemoveWorktreeInput) {
     await stopProjectLogStream(worktree);
     await releaseAgentWorkspaceSessions(worktree);
     previewRecoveries.delete(worktree);
-    await cleanupCodeReviewGraphWorktree(worktree);
     if (!input.projectSetupStopped)
       await stopProjectSetup({ workspaceMode: mode, worktree });
     if (mode === "local-container") {

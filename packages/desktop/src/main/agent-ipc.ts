@@ -8,7 +8,6 @@ import { randomUUID } from "node:crypto"
 import { createServer } from "node:http"
 import type { AddressInfo } from "node:net"
 import log from "electron-log"
-import { shutdownCodeReviewGraph } from "./code-review-graph"
 import { optimizeDevelopmentAttachments } from "./attachment-ai-context"
 import {
   refreshRuntimeBackendConnection,
@@ -407,10 +406,7 @@ export async function shutdownAgentRuntime() {
   agentWorkspaceWriters.clear()
   const currentRuntime = runtime
   runtime = undefined
-  await Promise.allSettled([
-    currentRuntime?.shutdown(),
-    shutdownCodeReviewGraph(),
-  ])
+  await currentRuntime?.shutdown()
 }
 
 export function configureAgentRuntimeTelemetry(session: unknown) {

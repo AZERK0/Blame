@@ -77,6 +77,7 @@ export const workspaceStateInputSchema = z
       .array(
         z.enum([
           "source_revision",
+          "task_contract",
           "capabilities",
           "tree_summary",
           "changes",
@@ -259,7 +260,10 @@ export const proposeChangeInputSchema = z
     operations: z.array(changeOperationSchema).min(1).max(50),
     policies: z
       .object({
+        format: z.enum(["none", "touched_files"]).default("none").optional(),
+        organize_imports: z.literal(false).default(false).optional(),
         max_touched_files: z.number().int().min(1).max(50).default(20),
+        preserve_public_api: z.boolean().default(false).optional(),
       })
       .strict()
       .optional(),
@@ -285,6 +289,190 @@ export const reviewChangeInputSchema = z
   .object({
     proposal_ref: z.string().regex(/^change-proposal:\/\/[a-f0-9]{64}$/),
     budget: outputBudget(200, 20_000, 4_000),
+  })
+  .strict();
+
+export const taskKindSchema = z.enum([
+  "build",
+  "custom",
+  "lint",
+  "service",
+  "test",
+  "typecheck",
+]);
+
+export const taskCatalogItemSchema = z
+  .object({
+    task_id: z.string().min(1).max(300),
+    kind: taskKindSchema,
+    command: z.string().min(1).max(2_000),
+    cwd: relativePathSchema,
+    package_manager: z.enum(["bun", "npm", "pnpm", "yarn"]),
+  })
+  .strict();
+
+const taskSelectionSchema = z
+  .object({
+    tests: z.array(z.string().min(1).max(1_000)).max(100).optional(),
+    files: z.array(relativePathSchema).max(100).optional(),
+    symbols: z
+      .array(z.string().regex(/^sym:\/\//))
+      .max(100)
+      .optional(),
+  })
+  .strict()
+  .optional();
+
+export const runTaskInputSchema = z
+  .object({
+    source_revision_id: sourceRevisionIdSchema,
+    task: z.union([
+      z.object({ task_id: z.string().min(1).max(300) }).strict(),
+      z
+        .object({
+          kind: z.enum(["test", "lint", "build", "typecheck"]),
+          target: z.string().min(1).max(300).optional(),
+        })
+        .strict(),
+    ]),
+    selection: taskSelectionSchema,
+    environment_profile: z.literal("default").default("default").optional(),
+    limits: z
+      .object({
+        timeout_ms: z.number().int().min(1_000).max(900_000),
+        cpu: z.number().min(0.1).max(64).optional(),
+        memory_mb: z.number().int().min(64).max(32_768).optional(),
+        output_bytes: z
+          .number()
+          .int()
+          .min(1_024)
+          .max(10 * 1024 * 1024)
+          .default(512 * 1024)
+          .optional(),
+      })
+      .strict(),
+    network: z.enum(["deny", "project_allowlist"]).default("deny").optional(),
+    idempotency_key: idempotencyKeySchema.optional(),
+  })
+  .strict();
+
+export const inspectRunInputSchema = z
+  .object({
+    run_ref: z.string().regex(/^run:\/\/[a-f0-9]{64}$/),
+    view: z.enum([
+      "diagnostics",
+      "events",
+      "failures",
+      "filesystem_effects",
+      "performance",
+      "stderr_tail",
+      "stdout_head",
+      "stdout_tail",
+      "summary",
+    ]),
+    budget: outputBudget(100, 20_000, 2_500),
+  })
+  .strict();
+
+export const inspectArtifactInputSchema = z
+  .object({
+    artifact_ref: z.string().regex(/^artifact:\/\/[a-f0-9]{64}$/),
+    view: z.enum(["bytes", "json", "metadata", "text"]),
+    offset_bytes: z.number().int().nonnegative().default(0).optional(),
+    budget: outputBudget(100, 20_000, 2_500),
+  })
+  .strict();
+
+const runFailureSchema = z
+  .object({
+    message: z.string().min(1).max(2_000),
+    location: z.string().min(1).max(1_000).optional(),
+  })
+  .strict();
+
+const runDiagnosticSchema = z
+  .object({
+    severity: z.enum(["error", "warning", "info"]),
+    message: z.string().min(1).max(2_000),
+    path: relativePathSchema.optional(),
+    line: z.number().int().positive().optional(),
+    column: z.number().int().positive().optional(),
+  })
+  .strict();
+
+const filesystemEffectsSchema = z
+  .object({
+    created: z.array(relativePathSchema).max(500),
+    modified: z.array(relativePathSchema).max(500),
+    deleted: z.array(relativePathSchema).max(500),
+    truncated: z.boolean(),
+    disposition: z.enum(["captured", "discarded", "none"]),
+    artifact: artifactRefSchema,
+    change_proposal_ref: z
+      .string()
+      .regex(/^change-proposal:\/\/[a-f0-9]{64}$/)
+      .optional(),
+    reason: z.string().min(1).max(1_000).optional(),
+  })
+  .strict();
+
+export const storedRunSchema = z
+  .object({
+    schema_version: z.literal("1.0"),
+    run_ref: z.string().regex(/^run:\/\/[a-f0-9]{64}$/),
+    content_hash: digestSchema,
+    source_revision: sourceRevisionRefSchema,
+    environment_spec_revision_id: z.string().regex(/^env_[a-f0-9]{32}$/),
+    runtime_instance_id: z.string().regex(/^runtime_[a-f0-9]{32}$/),
+    task: taskCatalogItemSchema,
+    selection: taskSelectionSchema,
+    execution: z
+      .object({
+        argv: z.array(z.string().max(4_096)).min(1).max(200),
+        cwd: relativePathSchema,
+        environment_profile: z.literal("default"),
+        environment_variables: z.array(z.string().max(200)).max(50),
+        process_tree: z.literal("sandbox_descendants"),
+        observed_ports: z.array(z.number().int().min(1).max(65_535)).max(100),
+        volatility: z
+          .array(z.enum(["timestamps", "runtime_instance_id", "ports"]))
+          .max(3),
+      })
+      .strict(),
+    status: z.enum([
+      "cancelled",
+      "execution_error",
+      "failed",
+      "passed",
+      "timed_out",
+    ]),
+    exit_code: z.number().int().nullable(),
+    signal: z.string().nullable(),
+    started_at: z.string().datetime(),
+    completed_at: z.string().datetime(),
+    duration_ms: z.number().int().nonnegative(),
+    limits: runTaskInputSchema.shape.limits,
+    network: z
+      .object({
+        requested: z.enum(["deny", "project_allowlist"]),
+        enforcement: z.enum(["bubblewrap", "sandbox_exec"]),
+      })
+      .strict(),
+    logs: z
+      .object({
+        complete: artifactRefSchema,
+        sealed_raw: artifactRefSchema,
+        stdout_head: z.string().max(16_000),
+        stdout_tail: z.string().max(16_000),
+        stderr_tail: z.string().max(16_000),
+        output_truncated: z.boolean(),
+      })
+      .strict(),
+    failures: z.array(runFailureSchema).max(100),
+    diagnostics: z.array(runDiagnosticSchema).max(500),
+    filesystem_effects: filesystemEffectsSchema,
+    idempotency_key: idempotencyKeySchema.optional(),
+    input_digest: digestSchema,
   })
   .strict();
 
@@ -322,7 +510,20 @@ export const storedChangeProposalSchema = z
     changes: z.array(proposedFileSchema).min(1).max(50),
     diff_artifact: artifactRefSchema,
     diff_summary: z.string(),
+    diff_summary_truncated: z.boolean().optional(),
+    diff_summary_bytes: z.number().int().nonnegative().optional(),
+    diff_bytes: z.number().int().nonnegative().optional(),
     diagnostics: z.array(parseDiagnosticSchema),
+    formatting: z
+      .object({
+        policy: z.enum(["none", "touched_files"]),
+        formatter: z.literal("prettier").optional(),
+        formatter_version: z.string().min(1).max(50).optional(),
+        formatted_files: z.array(relativePathSchema).max(50),
+        skipped_files: z.array(relativePathSchema).max(50),
+      })
+      .strict()
+      .optional(),
   })
   .strict();
 
@@ -365,6 +566,11 @@ export type ProposeChangeInput = z.infer<typeof proposeChangeInputSchema>;
 export type CommitProposalInput = z.infer<typeof commitProposalInputSchema>;
 export type ApplyChangeInput = z.infer<typeof applyChangeInputSchema>;
 export type ReviewChangeInput = z.infer<typeof reviewChangeInputSchema>;
+export type RunTaskInput = z.infer<typeof runTaskInputSchema>;
+export type InspectRunInput = z.infer<typeof inspectRunInputSchema>;
+export type InspectArtifactInput = z.infer<typeof inspectArtifactInputSchema>;
+export type TaskCatalogItem = z.infer<typeof taskCatalogItemSchema>;
+export type StoredRun = z.infer<typeof storedRunSchema>;
 export type ProposedFile = z.infer<typeof proposedFileSchema>;
 export type ParseDiagnostic = z.infer<typeof parseDiagnosticSchema>;
 export type StoredChangeProposal = z.infer<typeof storedChangeProposalSchema>;
@@ -380,6 +586,10 @@ export function parseStoredChangeProposal(value: unknown) {
 
 export function parseCommitReceipt(value: unknown) {
   return commitReceiptSchema.parse(value);
+}
+
+export function parseStoredRun(value: unknown) {
+  return storedRunSchema.parse(value);
 }
 
 export function formatSchemaError(error: z.ZodError) {

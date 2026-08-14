@@ -20,6 +20,11 @@ import { ArtifactStore } from "./artifact-store.js";
 import { semanticWorkspaceTools } from "./cline-tools.js";
 import { SemanticWorkspace } from "./semantic-workspace.js";
 import type { HarnessToolResult, HarnessToolSuccess } from "./protocol.js";
+import type {
+  TaskExecutionInput,
+  TaskExecutionResult,
+  TaskExecutor,
+} from "./task-executor.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -470,6 +475,52 @@ test("review_change emits multi-hunk diffs and binary summaries", async () => {
   });
 });
 
+test("large diffs expose truncation and an exact artifact continuation", async () => {
+  await withWorkspace(async (root) => {
+    const workspace = new SemanticWorkspace(root);
+    const state = success(await workspace.workspaceState());
+    const content = Array.from(
+      { length: 1_500 },
+      (_, index) => `export const value${index} = ${index};\n`,
+    ).join("");
+    const proposed = success(
+      await workspace.applyChange({
+        action: "propose",
+        base_source_revision_id: state.data.source_revision.source_revision_id,
+        idempotency_key: "large-diff-proposal",
+        operations: [
+          { kind: "create_file", path: "src/generated.ts", content },
+        ],
+      }),
+    );
+    assert.equal(proposed.coverage.truncated, true);
+    assert.equal(proposed.data.diff_truncated, true);
+    assert.ok((proposed.data.diff_bytes ?? 0) > 12_000);
+
+    const review = success(
+      await workspace.reviewChange({
+        proposal_ref: proposed.data.proposal_ref,
+        budget: { max_output_tokens: 200 },
+      }),
+    );
+    assert.equal(review.coverage.truncated, true);
+    const continuation = Number(review.coverage.continuation);
+    assert.ok(Number.isInteger(continuation) && continuation > 0);
+    const remainder = success(
+      await workspace.inspectArtifact({
+        artifact_ref: review.data.diff_artifact_ref,
+        view: "text",
+        offset_bytes: continuation,
+        budget: { max_output_tokens: 200 },
+      }),
+    );
+    assert.ok(
+      String((remainder.data as unknown as { content: unknown }).content)
+        .length > 0,
+    );
+  });
+});
+
 test("artifact reads verify cached content integrity", async () => {
   await withWorkspace(async (root) => {
     const artifacts = new ArtifactStore(root);
@@ -479,6 +530,125 @@ test("artifact reads verify cached content integrity", async () => {
     assert.ok(info?.path);
     await writeFile(info.path, "tampered");
     await assert.rejects(artifacts.get(ref.ref));
+  });
+});
+
+test("run_task isolates writes, captures effects, logs evidence, and is idempotent", async () => {
+  await withWorkspace(async (root) => {
+    const executor = new RecordingTaskExecutor();
+    const workspace = new SemanticWorkspace(root, { taskExecutor: executor });
+    const state = success(await workspace.workspaceState());
+    const revision = state.data.source_revision.source_revision_id;
+    assert.equal(state.data.capabilities.execution.run_task.available, true);
+
+    const input = {
+      source_revision_id: revision,
+      task: { task_id: "test" },
+      limits: { timeout_ms: 10_000 },
+      network: "deny" as const,
+      idempotency_key: "isolated-test-run",
+    };
+    const executed = success(await workspace.runTask(input));
+    assert.match(executed.data.run_ref, /^run:\/\//);
+    assert.equal(executed.data.status, "passed");
+    assert.equal(executed.data.filesystem_effects.disposition, "captured");
+    assert.match(
+      executed.data.filesystem_effects.change_proposal_ref ?? "",
+      /^change-proposal:\/\//,
+    );
+    assert.equal(executed.data.diagnostics[0]?.path, "src/service.ts");
+    assert.doesNotMatch(
+      executed.data.failures.map(({ message }) => message).join("\n"),
+      /supersecretvalue/,
+    );
+    await assert.rejects(readFile(join(root, "generated.txt")));
+
+    const inspected = success(
+      await workspace.inspectRun({
+        run_ref: executed.data.run_ref,
+        view: "filesystem_effects",
+      }),
+    );
+    assert.deepEqual((inspected.data as { created: string[] }).created, [
+      "generated.txt",
+    ]);
+
+    const log = success(
+      await workspace.inspectArtifact({
+        artifact_ref: executed.data.complete_log.ref,
+        view: "text",
+      }),
+    );
+    const logContent = String(
+      (log.data as unknown as { content: unknown }).content,
+    );
+    assert.match(logContent, /fixture passed/);
+    assert.doesNotMatch(logContent, /supersecretvalue/);
+
+    const proposalRef = executed.data.filesystem_effects.change_proposal_ref;
+    assert.ok(proposalRef);
+    const review = success(
+      await workspace.reviewChange({ proposal_ref: proposalRef }),
+    );
+    assert.equal(review.data.attached_runs[0]?.run_ref, executed.data.run_ref);
+    assert.equal(review.data.checks_not_run.includes("tests"), false);
+
+    const retried = success(await workspace.runTask(input));
+    assert.equal(retried.data.run_ref, executed.data.run_ref);
+    assert.equal(executor.executions, 1);
+
+    const stored = JSON.parse(
+      await readFile(
+        join(
+          root,
+          ".blame",
+          "harness",
+          "runs",
+          `${executed.data.run_ref.slice("run://".length)}.json`,
+        ),
+        "utf8",
+      ),
+    ) as { logs: { sealed_raw: { ref: string } } };
+    await assert.rejects(
+      new ArtifactStore(root).get(stored.logs.sealed_raw.ref, {
+        audience: "agent",
+      }),
+      /access policy/i,
+    );
+  });
+});
+
+test("apply_change can format touched files with the pinned Prettier version", async () => {
+  await withWorkspace(async (root) => {
+    const workspace = new SemanticWorkspace(root);
+    const state = success(await workspace.workspaceState());
+    const proposed = success(
+      await workspace.applyChange({
+        action: "propose",
+        base_source_revision_id: state.data.source_revision.source_revision_id,
+        idempotency_key: "format-touched-file",
+        operations: [
+          {
+            kind: "create_file",
+            path: "src/formatted.ts",
+            content: "export const formatted={value:'ok'}",
+          },
+        ],
+        policies: { format: "touched_files", max_touched_files: 1 },
+        checks: ["parse"],
+      }),
+    );
+    const review = success(
+      await workspace.reviewChange({
+        proposal_ref: proposed.data.proposal_ref,
+      }),
+    );
+    assert.equal(review.data.formatting.policy, "touched_files");
+    assert.match(review.data.formatting.formatter_version ?? "", /^3\./);
+    assert.deepEqual(review.data.formatting.formatted_files, [
+      "src/formatted.ts",
+    ]);
+    assert.match(review.data.diff, /formatted = \{ value: "ok" \}/);
   });
 });
 
@@ -493,7 +663,10 @@ test("Cline adapter registers a small read/write harness with strict schemas", a
         "outline_code",
         "inspect_code",
         "apply_change",
+        "run_task",
+        "inspect_run",
         "review_change",
+        "inspect_artifact",
       ],
     );
     assert.equal(
@@ -677,4 +850,26 @@ async function fileDigest(path: string) {
 function success<T>(result: HarnessToolResult<T>): HarnessToolSuccess<T> {
   if (result.status !== "success") assert.fail(JSON.stringify(result));
   return result;
+}
+
+class RecordingTaskExecutor implements TaskExecutor {
+  executions = 0;
+
+  async capability() {
+    return "sandbox_exec" as const;
+  }
+
+  async execute(input: TaskExecutionInput): Promise<TaskExecutionResult> {
+    this.executions += 1;
+    await writeFile(join(input.overlayRoot, "generated.txt"), "generated\n");
+    return {
+      status: "passed",
+      exitCode: 0,
+      signal: null,
+      stdout: `${join(input.overlayRoot, "src", "service.ts")}:2:3 warning fixture passed\nerror token=supersecretvalue\n`,
+      stderr: "",
+      outputTruncated: false,
+      isolation: "sandbox_exec",
+    };
+  }
 }

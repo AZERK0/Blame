@@ -1,8 +1,4 @@
-import {
-  BlameAgentRuntime,
-  type AgentEvent,
-  type CodeReviewGraphProvider,
-} from "@blame/agent-runtime";
+import { BlameAgentRuntime, type AgentEvent } from "@blame/agent-runtime";
 import {
   configureDesktopTelemetry,
   disableDesktopTelemetry,
@@ -61,7 +57,6 @@ function createAgentRuntime(hostClient: AgentRuntimeHostClient) {
         }),
     },
     {
-      codeReviewGraph: codeReviewGraphProvider(hostClient),
       git: (cwd, args) => hostClient.request<string>("git", { args, cwd }),
       openExternalUrl: (url) => {
         void hostClient
@@ -87,23 +82,6 @@ function serializableAgentEvent(event: AgentEvent): AgentEvent {
   const { raw, ...serializablePayload } = payload as Record<string, unknown>;
   void raw;
   return { ...event, payload: serializablePayload };
-}
-
-function codeReviewGraphProvider(
-  hostClient: AgentRuntimeHostClient,
-): CodeReviewGraphProvider {
-  return {
-    architectureOverview: (input) =>
-      hostRequest(hostClient, "codeReviewGraph.architectureOverview", input),
-    impactRadius: (input) =>
-      hostRequest(hostClient, "codeReviewGraph.impactRadius", input),
-    minimalContext: (input) =>
-      hostRequest(hostClient, "codeReviewGraph.minimalContext", input),
-    reviewContext: (input) =>
-      hostRequest(hostClient, "codeReviewGraph.reviewContext", input),
-    status: (input) => hostRequest(hostClient, "codeReviewGraph.status", input),
-    update: (input) => hostRequest(hostClient, "codeReviewGraph.update", input),
-  };
 }
 
 function hostRequest<Result>(

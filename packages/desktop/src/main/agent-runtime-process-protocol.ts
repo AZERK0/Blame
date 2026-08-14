@@ -38,12 +38,6 @@ export const agentHostMethods = [
   "openExternalUrl",
   "previewDevtools",
   "previewContainerLogs",
-  "codeReviewGraph.architectureOverview",
-  "codeReviewGraph.impactRadius",
-  "codeReviewGraph.minimalContext",
-  "codeReviewGraph.reviewContext",
-  "codeReviewGraph.status",
-  "codeReviewGraph.update",
 ] as const;
 
 export type AgentRuntimeMethod = (typeof agentRuntimeMethods)[number];

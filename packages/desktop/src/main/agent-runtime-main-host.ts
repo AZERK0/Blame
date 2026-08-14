@@ -2,7 +2,6 @@ import { withoutTelemetryEnvironment } from "@blame/telemetry";
 import { shell } from "electron";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { codeReviewGraphProvider } from "./code-review-graph.ts";
 import type { AgentHostMethod } from "./agent-runtime-process-protocol.ts";
 import { getPreviewDevtoolsTarget } from "./preview-browser-ipc.ts";
 import { previewLogService } from "./preview-runtime/preview-log-service.ts";
@@ -18,7 +17,7 @@ const execFileAsync = promisify(execFile);
 export async function handleAgentHostRequest(
   method: AgentHostMethod,
   input: unknown,
-  signal: AbortSignal,
+  _signal: AbortSignal,
 ) {
   if (method === "git") return agentGit(input);
   if (method === "openExternalUrl") return openAgentExternalUrl(input);
@@ -28,27 +27,6 @@ export async function handleAgentHostRequest(
   if (method === "previewContainerLogs") {
     return previewLogService.read(input as never);
   }
-  return handleCodeReviewGraphRequest(method, input, signal);
-}
-
-async function handleCodeReviewGraphRequest(
-  method: AgentHostMethod,
-  input: unknown,
-  signal: AbortSignal,
-) {
-  const request = { ...recordInput(input), signal } as never;
-  if (method === "codeReviewGraph.architectureOverview")
-    return codeReviewGraphProvider.architectureOverview(request);
-  if (method === "codeReviewGraph.impactRadius")
-    return codeReviewGraphProvider.impactRadius(request);
-  if (method === "codeReviewGraph.minimalContext")
-    return codeReviewGraphProvider.minimalContext(request);
-  if (method === "codeReviewGraph.reviewContext")
-    return codeReviewGraphProvider.reviewContext(request);
-  if (method === "codeReviewGraph.status")
-    return codeReviewGraphProvider.status(request);
-  if (method === "codeReviewGraph.update")
-    return codeReviewGraphProvider.update(request);
   throw new Error(`Unsupported agent host method: ${method}`);
 }
 
@@ -104,7 +82,11 @@ function openAgentExternalUrl(input: unknown) {
   const value = recordInput(input).url;
   if (typeof value !== "string") throw new Error("Invalid external URL");
   const url = new URL(value);
-  if (!["http:", "https:"].includes(url.protocol) || url.username || url.password) {
+  if (
+    !["http:", "https:"].includes(url.protocol) ||
+    url.username ||
+    url.password
+  ) {
     throw new Error("Invalid external URL");
   }
   void shell.openExternal(url.toString());
@@ -117,5 +99,7 @@ function recordInput(input: unknown) {
 }
 
 function stringArray(value: unknown): value is string[] {
-  return Array.isArray(value) && value.every((item) => typeof item === "string");
+  return (
+    Array.isArray(value) && value.every((item) => typeof item === "string")
+  );
 }

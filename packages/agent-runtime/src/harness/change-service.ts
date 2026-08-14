@@ -9,6 +9,8 @@ import {
   fileDiff,
   parseDiagnostic,
   prepareChanges,
+  type ChangeFormatting,
+  type PreparedFile,
 } from "./change-preparation.js";
 import { ChangeStore, errorCode, stableJson } from "./change-store.js";
 import { sha256 } from "./protocol.js";
@@ -53,22 +55,62 @@ export class ChangeService {
     if (snapshot.revision.source_revision_id !== input.base_source_revision_id)
       throw staleRevision(snapshot.revision.source_revision_id);
     const inputDigest = sha256(stableJson(input));
-    const idempotencyHash = sha256(input.idempotency_key);
-    const existingIdempotency =
-      await this.store.readOptionalIdempotency(idempotencyHash);
-    if (existingIdempotency) {
-      if (existingIdempotency.input_digest !== inputDigest)
-        throw new Error(
-          "Idempotency key is already bound to another proposal.",
-        );
-      return this.store.readProposal(existingIdempotency.proposal_ref);
-    }
+    const existing = await this.existingProposal(
+      input.idempotency_key,
+      inputDigest,
+    );
+    if (existing) return existing;
+    const prepared = await prepareChanges(this.files, input);
+    return this.persistPreparedProposal({
+      baseSourceRevisionId: input.base_source_revision_id,
+      idempotencyKey: input.idempotency_key,
+      inputDigest,
+      preparedFiles: prepared.changes,
+      formatting: prepared.formatting,
+      maximumTouched: input.policies?.max_touched_files ?? 20,
+      enforceParse: input.checks?.includes("parse") ?? false,
+    });
+  }
 
-    const preparedFiles = await prepareChanges(this.files, input);
-    const maximumTouched = input.policies?.max_touched_files ?? 20;
-    if (preparedFiles.length > maximumTouched)
+  async proposeRunEffects(input: {
+    base_source_revision_id: string;
+    idempotency_key: string;
+    input_digest: string;
+    changes: PreparedFile[];
+  }) {
+    const existing = await this.existingProposal(
+      input.idempotency_key,
+      input.input_digest,
+    );
+    if (existing) return existing;
+    return this.persistPreparedProposal({
+      baseSourceRevisionId: input.base_source_revision_id,
+      idempotencyKey: input.idempotency_key,
+      inputDigest: input.input_digest,
+      preparedFiles: input.changes,
+      formatting: {
+        policy: "none",
+        formatted_files: [],
+        skipped_files: [],
+      },
+      maximumTouched: 50,
+      enforceParse: false,
+    });
+  }
+
+  private async persistPreparedProposal(input: {
+    baseSourceRevisionId: string;
+    idempotencyKey: string;
+    inputDigest: string;
+    preparedFiles: PreparedFile[];
+    formatting: ChangeFormatting;
+    maximumTouched: number;
+    enforceParse: boolean;
+  }) {
+    const { preparedFiles } = input;
+    if (preparedFiles.length > input.maximumTouched)
       throw new Error(
-        `Proposal touches ${preparedFiles.length} files; maximum is ${maximumTouched}.`,
+        `Proposal touches ${preparedFiles.length} files; maximum is ${input.maximumTouched}.`,
       );
     const proposalBytes = preparedFiles.reduce(
       (total, change) =>
@@ -81,14 +123,23 @@ export class ChangeService {
       throw new Error("Proposal content exceeds the 10 MiB safety limit.");
     const diagnostics = preparedFiles.map(parseDiagnostic);
     if (
-      input.checks?.includes("parse") &&
+      input.enforceParse &&
       diagnostics.some((item) => item.after_errors > item.before_errors)
     )
       throw new Error(
         "Parse check failed: the proposal introduces syntax errors.",
       );
     const fullDiff = preparedFiles.map(fileDiff).join("\n");
-    const diffArtifact = await this.artifacts.put(fullDiff, "text/x-diff");
+    const subjectRevision = {
+      source_revision_id: input.baseSourceRevisionId,
+    };
+    const diffArtifact = await this.artifacts.put(
+      fullDiff,
+      "text/x-diff",
+      "1.0",
+      "agent_redacted",
+      subjectRevision,
+    );
     const changes = await Promise.all(
       preparedFiles.map(
         async (change): Promise<ProposedFile> => ({
@@ -99,6 +150,7 @@ export class ChangeService {
                 "application/octet-stream",
                 "1.0",
                 "sealed_raw",
+                subjectRevision,
               )
             : null,
           new_artifact: change.newContent
@@ -107,6 +159,7 @@ export class ChangeService {
                 "application/octet-stream",
                 "1.0",
                 "sealed_raw",
+                subjectRevision,
               )
             : null,
           old_hash: change.oldHash,
@@ -117,16 +170,21 @@ export class ChangeService {
         }),
       ),
     );
+    const summary = diffSummary(fullDiff, 12_000);
     const storedContent = {
       schema_version: "1.1" as const,
-      base_source_revision_id: input.base_source_revision_id,
-      idempotency_key: input.idempotency_key,
-      input_digest: inputDigest,
+      base_source_revision_id: input.baseSourceRevisionId,
+      idempotency_key: input.idempotencyKey,
+      input_digest: input.inputDigest,
       created_at: new Date().toISOString(),
       changes,
       diff_artifact: diffArtifact,
-      diff_summary: truncate(fullDiff, 12_000),
+      diff_summary: summary.content,
+      diff_summary_truncated: summary.truncated,
+      diff_summary_bytes: summary.bytes,
+      diff_bytes: summary.totalBytes,
       diagnostics,
+      formatting: input.formatting,
     };
     const contentHash = sha256(stableJson(storedContent));
     const proposalRef = `change-proposal://${contentHash}`;
@@ -140,25 +198,35 @@ export class ChangeService {
     } catch (error) {
       if (errorCode(error) !== "EEXIST") throw error;
       const concurrent = await this.store.readProposal(proposalRef);
-      if (concurrent.input_digest !== inputDigest)
+      if (concurrent.input_digest !== input.inputDigest)
         throw new Error("Concurrent proposal content does not match input.");
     }
+    const idempotencyHash = sha256(input.idempotencyKey);
     try {
       await this.store.writeIdempotency(idempotencyHash, {
         schema_version: "1.0",
-        input_digest: inputDigest,
+        input_digest: input.inputDigest,
         proposal_ref: proposalRef,
       });
     } catch (error) {
       if (errorCode(error) !== "EEXIST") throw error;
       const concurrent = await this.store.readIdempotency(idempotencyHash);
-      if (concurrent.input_digest !== inputDigest)
+      if (concurrent.input_digest !== input.inputDigest)
         throw new Error(
           "Idempotency key is already bound to another proposal.",
         );
       return this.store.readProposal(concurrent.proposal_ref);
     }
     return proposal;
+  }
+
+  private async existingProposal(idempotencyKey: string, inputDigest: string) {
+    const idempotencyHash = sha256(idempotencyKey);
+    const existing = await this.store.readOptionalIdempotency(idempotencyHash);
+    if (!existing) return undefined;
+    if (existing.input_digest !== inputDigest)
+      throw new Error("Idempotency key is already bound to another proposal.");
+    return this.store.readProposal(existing.proposal_ref);
   }
 
   commit(input: CommitProposalInput): Promise<CommitReceipt> {
@@ -324,8 +392,21 @@ function staleRevision(current: string) {
   return new Error(`STALE_REVISION:${current}`);
 }
 
-function truncate(value: string, maximum: number) {
-  return value.length > maximum
-    ? `${value.slice(0, maximum)}\n… truncated`
-    : value;
+function diffSummary(value: string, maximumBytes: number) {
+  const content = Buffer.from(value);
+  if (content.byteLength <= maximumBytes)
+    return {
+      content: value,
+      bytes: content.byteLength,
+      totalBytes: content.byteLength,
+      truncated: false,
+    };
+  let end = maximumBytes;
+  while (end > 0 && (content[end]! & 0xc0) === 0x80) end -= 1;
+  return {
+    content: content.subarray(0, end).toString("utf8"),
+    bytes: end,
+    totalBytes: content.byteLength,
+    truncated: true,
+  };
 }

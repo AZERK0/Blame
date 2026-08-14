@@ -51,11 +51,11 @@ import {
   withoutTelemetryEnvironment,
 } from "@blame/telemetry";
 
-import { codeReviewGraphTools } from "./code-review-graph-tools.js";
 import { semanticWorkspaceTools } from "./harness/cline-tools.js";
 import {
   blockedCommandParts,
   initializationFallbackReadTools,
+  legacyDirectWorkspaceTools,
   readTools,
   writeTools,
 } from "./cline-tool-policy.js";
@@ -136,8 +136,6 @@ import type {
   ApproveAndMergeResult,
   AssessProjectInitializationImpactInput,
   AssessProjectInitializationImpactResult,
-  CodeGraphStatus,
-  CodeReviewGraphProvider,
   CompareCheckpointInput,
   CompareCheckpointResult,
   GenerateCommitMessageInput,
@@ -313,7 +311,6 @@ type DevelopmentPromptInput = Pick<
   Pick<SendDevelopmentSessionInput, "feedbackOnly">;
 
 type RuntimeOptions = {
-  codeReviewGraph?: CodeReviewGraphProvider;
   createCore?(backend?: AgentBackendConfig): Promise<ClineCore>;
   openExternalUrl?(url: string): void;
   git?(cwd: string, args: string[]): Promise<string>;
@@ -551,10 +548,6 @@ export class BlameAgentRuntime {
       taskComplexityBucket: sessionTaskComplexity(input),
     });
     const telemetryContext = this.agentTelemetry.context(sessionId);
-    const codeGraphPreparation = this.prepareSessionCodeGraph(
-      sessionId,
-      input.workspaceRoot,
-    );
     const startLogFile = startLogPath(input.cwd);
     await appendLog(
       startLogFile,
@@ -629,7 +622,6 @@ export class BlameAgentRuntime {
       if (input.autoApproveWriteTools) {
         this.autoApprovedWriteToolSessions.add(sessionId);
       }
-      await waitForTelemetryCohorts(codeGraphPreparation);
       const autoSendPrompt = input.autoSendPrompt !== false;
       const pluginPaths = runtimePluginPaths(
         this.productionConfig,
@@ -681,6 +673,11 @@ export class BlameAgentRuntime {
               this.options,
               input.workspaceRoot,
               input.previewDevtoolsScope,
+              {
+                session_id: sessionId,
+                ...(input.storyId ? { story_id: input.storyId } : {}),
+                objective: input.prompt,
+              },
             ),
           }),
         },
@@ -741,11 +738,6 @@ export class BlameAgentRuntime {
         this.emitSessionNotice(
           session.sessionId,
           "Development session write tools auto-approved.",
-        );
-      }
-      if (session.sessionId !== sessionId) {
-        await waitForTelemetryCohorts(
-          this.prepareSessionCodeGraph(session.sessionId, input.workspaceRoot),
         );
       }
       await this.logSession(session.sessionId, "session subscribed");
@@ -2446,67 +2438,6 @@ export class BlameAgentRuntime {
     );
     return result;
   }
-
-  private async prepareSessionCodeGraph(sessionId: string, worktree: string) {
-    const provider = this.options.codeReviewGraph;
-    if (!provider) return;
-    try {
-      const status = await provider.status({ worktree });
-      this.agentTelemetry.setRepositoryCohorts(
-        sessionId,
-        status.languages,
-        status.files,
-      );
-      this.emitCodeGraphNotice(sessionId, status);
-      if (status.state !== "missing" && status.state !== "stale") return;
-      if (!status.available) return;
-      void this.updateSessionCodeGraph(sessionId, worktree, provider);
-    } catch (error) {
-      this.emitCodeGraphUnavailable(sessionId, error);
-    }
-  }
-
-  private async updateSessionCodeGraph(
-    sessionId: string,
-    worktree: string,
-    provider: CodeReviewGraphProvider,
-  ) {
-    this.emitSessionNotice(sessionId, "Code graph building");
-    try {
-      const updatedStatus = await provider.update({ waitMs: 30_000, worktree });
-      this.agentTelemetry.setRepositoryCohorts(
-        sessionId,
-        updatedStatus.languages,
-        updatedStatus.files,
-      );
-      this.emitCodeGraphNotice(sessionId, updatedStatus);
-    } catch (error) {
-      this.emitCodeGraphUnavailable(sessionId, error);
-    }
-  }
-
-  private emitCodeGraphUnavailable(sessionId: string, error: unknown) {
-    this.emitSessionNotice(
-      sessionId,
-      `Code graph unavailable: ${errorMessage(error)}`,
-    );
-  }
-
-  private emitCodeGraphNotice(sessionId: string, status: CodeGraphStatus) {
-    if (status.state === "ready") {
-      this.emitSessionNotice(sessionId, "Code graph ready");
-      return;
-    }
-    if (status.state === "stale") {
-      this.emitSessionNotice(sessionId, "Code graph stale");
-      return;
-    }
-    if (status.state === "building") {
-      this.emitSessionNotice(sessionId, "Code graph building");
-      return;
-    }
-    this.emitSessionNotice(sessionId, "Code graph unavailable");
-  }
 }
 
 function streamingAgentEvent(event: AgentEvent) {
@@ -2552,15 +2483,6 @@ function normalizeEvent(
   if (event.type === "agent_event")
     return normalizeAgentEvent(event, sessionId);
   return { type: "raw", sessionId, payload: event };
-}
-
-async function waitForTelemetryCohorts(preparation: Promise<void>) {
-  let timeout: NodeJS.Timeout | undefined;
-  const deadline = new Promise<void>((resolve) => {
-    timeout = setTimeout(resolve, 200);
-  });
-  await Promise.race([preparation, deadline]);
-  if (timeout) clearTimeout(timeout);
 }
 
 export function shouldDisplayClineSessionEvent(
@@ -2625,6 +2547,10 @@ export function nextSpawnAgentActiveCount(
 
 function toolPolicies(autoApproveWriteTools: boolean) {
   return Object.fromEntries([
+    ...legacyDirectWorkspaceTools.map((name) => [
+      name,
+      { enabled: false, autoApprove: false },
+    ]),
     ...readTools.map((name) => [name, { autoApprove: true }]),
     ...writeTools.map((name) => [name, { autoApprove: autoApproveWriteTools }]),
   ]);
@@ -2855,12 +2781,16 @@ function runtimeTools(
   options: RuntimeOptions,
   worktree?: string,
   previewDevtoolsScope?: string,
+  taskContract?: {
+    session_id?: string;
+    story_id?: string;
+    objective?: string;
+  },
 ) {
   const tools = [
-    ...semanticWorkspaceTools(worktree),
+    ...semanticWorkspaceTools(worktree, { taskContract }),
     previewDevtoolsTool(options, previewDevtoolsScope),
     previewContainerLogsTool(options, worktree),
-    ...codeReviewGraphTools(options.codeReviewGraph, worktree),
   ].filter((tool): tool is AgentTool => Boolean(tool));
   return tools.length ? tools : undefined;
 }
@@ -4423,12 +4353,13 @@ function resultStatus(payload: Record<string, unknown>) {
 export function initializationToolPolicies() {
   return Object.fromEntries([
     ["submit_project_initialization", { autoApprove: true }],
-    ...readTools.map((name) => [
+    ...legacyDirectWorkspaceTools.map((name) => [
       name,
       initializationFallbackReadTools.has(name)
-        ? { autoApprove: true }
+        ? { enabled: true, autoApprove: true }
         : { enabled: false, autoApprove: false },
     ]),
+    ...readTools.map((name) => [name, { enabled: false, autoApprove: false }]),
     ...writeTools.map((name) => [name, { enabled: false, autoApprove: false }]),
   ]);
 }
@@ -4436,6 +4367,10 @@ export function initializationToolPolicies() {
 function codePracticesToolPolicies() {
   return Object.fromEntries([
     ["submit_project_code_practices", { autoApprove: true }],
+    ...legacyDirectWorkspaceTools.map((name) => [
+      name,
+      { enabled: false, autoApprove: false },
+    ]),
     ...readTools.map((name) => [name, { enabled: false, autoApprove: false }]),
     ...writeTools.map((name) => [name, { enabled: false, autoApprove: false }]),
   ]);

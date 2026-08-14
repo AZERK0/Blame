@@ -40,11 +40,7 @@ test("cancels an aborted host RPC request", async () => {
   const sender = new FakeSender();
   const client = new AgentRuntimeHostClient(sender);
   const controller = new AbortController();
-  const result = client.request(
-    "codeReviewGraph.status",
-    {},
-    controller.signal,
-  );
+  const result = client.request("previewContainerLogs", {}, controller.signal);
   const request = sender.messages[0] as AgentRpcRequest;
 
   controller.abort();

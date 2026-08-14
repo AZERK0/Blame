@@ -4,27 +4,38 @@ import { harnessError } from "./protocol.js";
 import {
   applyChangeInputSchema,
   formatSchemaError,
+  inspectArtifactInputSchema,
   inspectCodeInputSchema,
+  inspectRunInputSchema,
   outlineCodeInputSchema,
   reviewChangeInputSchema,
+  runTaskInputSchema,
   searchCodeInputSchema,
   workspaceStateInputSchema,
 } from "./schemas.js";
-import { SemanticWorkspace } from "./semantic-workspace.js";
+import {
+  SemanticWorkspace,
+  type SemanticWorkspaceOptions,
+} from "./semantic-workspace.js";
 
 export const semanticWorkspaceReadToolNames = [
   "workspace_state",
   "search_code",
   "outline_code",
   "inspect_code",
+  "inspect_run",
+  "inspect_artifact",
   "review_change",
 ];
 
-export const semanticWorkspaceWriteToolNames = ["apply_change"];
+export const semanticWorkspaceWriteToolNames = ["apply_change", "run_task"];
 
-export function semanticWorkspaceTools(workspaceRoot?: string): AgentTool[] {
+export function semanticWorkspaceTools(
+  workspaceRoot?: string,
+  options: SemanticWorkspaceOptions = {},
+): AgentTool[] {
   if (!workspaceRoot) return [];
-  const workspace = new SemanticWorkspace(workspaceRoot);
+  const workspace = new SemanticWorkspace(workspaceRoot, options);
   return [
     createHarnessTool({
       name: "workspace_state",
@@ -64,12 +75,35 @@ export function semanticWorkspaceTools(workspaceRoot?: string): AgentTool[] {
       retryable: false,
     }),
     createHarnessTool({
+      name: "run_task",
+      description:
+        "Run one known workspace task against an exact source revision in an ephemeral filesystem overlay with default-deny networking. Use a task_id from workspace_state, or an unambiguous test/lint/build/typecheck kind. Returns a revision-bound RunRef, structured failures/diagnostics, encrypted log artifacts, and any filesystem effects as a separate immutable ChangeProposal; it never writes the canonical worktree. Do not use it for ad-hoc shell commands, dependency installation, or long-running services.",
+      schema: runTaskInputSchema,
+      execute: (input, context) => workspace.runTask(input, context.signal),
+      retryable: false,
+    }),
+    createHarnessTool({
+      name: "inspect_run",
+      description:
+        "Reopen one bounded view of an exact RunRef returned by run_task. Use it for failures, diagnostics, stdout/stderr head or tail, events, filesystem effects, or performance without rerunning the task. Complete redacted logs remain available through inspect_artifact.",
+      schema: inspectRunInputSchema,
+      execute: (input, context) => workspace.inspectRun(input, context.signal),
+    }),
+    createHarnessTool({
       name: "review_change",
       description:
         "Review an immutable change proposal without mutating source or running checks. Use after apply_change propose and before commit_proposal. Returns textual diff, file hashes, syntax-symbol additions/removals, parse diagnostics, staleness, attached artifact, and checks not yet run.",
       schema: reviewChangeInputSchema,
       execute: (input, context) =>
         workspace.reviewChange(input, context.signal),
+    }),
+    createHarnessTool({
+      name: "inspect_artifact",
+      description:
+        "Reopen an exact agent-visible artifact by ArtifactRef with a byte offset and output budget. Use for complete redacted logs, diffs, filesystem-effect manifests, or JSON evidence returned by another harness tool. Sealed raw and reviewer-only artifacts are policy-denied; omitted bytes and a continuation offset are explicit.",
+      schema: inspectArtifactInputSchema,
+      execute: (input, context) =>
+        workspace.inspectArtifact(input, context.signal),
     }),
   ];
 }

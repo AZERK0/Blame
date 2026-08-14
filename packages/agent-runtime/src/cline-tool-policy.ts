@@ -1,30 +1,33 @@
-import { codeReviewGraphToolNames } from "./code-review-graph-tools.js";
 import {
   semanticWorkspaceReadToolNames,
   semanticWorkspaceWriteToolNames,
 } from "./harness/cline-tools.js";
 
 export const readTools = [
-  "read_files",
-  "search_codebase",
   "fetch_web_content",
   "get_preview_devtools",
   "get_preview_container_logs",
-  ...codeReviewGraphToolNames,
   ...semanticWorkspaceReadToolNames,
+];
+
+export const writeTools = [...semanticWorkspaceWriteToolNames];
+
+// These Cline built-ins bypass source revisions, immutable proposals, and the
+// execution overlay. They remain available only to the dedicated project-
+// initialization workflow, whose migration is independent from the coding
+// harness and whose policy explicitly opts into its read-only fallbacks.
+export const legacyDirectWorkspaceTools = [
+  "read_files",
+  "search_codebase",
+  "run_commands",
+  "editor",
+  "apply_patch",
 ];
 
 export const initializationFallbackReadTools = new Set([
   "read_files",
   "search_codebase",
 ]);
-
-export const writeTools = [
-  "run_commands",
-  "editor",
-  "apply_patch",
-  ...semanticWorkspaceWriteToolNames,
-];
 
 export const blockedCommandParts = [
   "rm -rf",

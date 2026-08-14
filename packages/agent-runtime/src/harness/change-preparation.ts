@@ -1,5 +1,10 @@
 import { createTwoFilesPatch } from "diff";
 import { isBinaryFileSync } from "isbinaryfile";
+import {
+  format as prettierFormat,
+  getFileInfo,
+  version as prettierVersion,
+} from "prettier";
 import { parseCode } from "./code-intelligence.js";
 import { decodeHandle, sha256 } from "./protocol.js";
 import type {
@@ -40,6 +45,14 @@ export type PreparedFile = {
   oldMode: number | null;
   newMode: number | null;
   binary: boolean;
+};
+
+export type ChangeFormatting = {
+  policy: "none" | "touched_files";
+  formatter?: "prettier";
+  formatter_version?: string;
+  formatted_files: string[];
+  skipped_files: string[];
 };
 
 export async function prepareChanges(
@@ -111,7 +124,64 @@ export async function prepareChanges(
   applySpanEdits(edits, virtual);
   for (const operation of fileOperations)
     await applyFileOperation(files, virtual, operation);
-  return changedFiles(virtual);
+  const prepared = changedFiles(virtual);
+  if (input.policies?.preserve_public_api) assertPublicApiPreserved(prepared);
+  return formatPreparedChanges(
+    files.root,
+    prepared,
+    input.policies?.format ?? "none",
+  );
+}
+
+export async function formatPreparedChanges(
+  workspaceRoot: string,
+  changes: PreparedFile[],
+  policy: "none" | "touched_files",
+): Promise<{ changes: PreparedFile[]; formatting: ChangeFormatting }> {
+  if (policy === "none")
+    return {
+      changes,
+      formatting: { policy, formatted_files: [], skipped_files: [] },
+    };
+  const formattedFiles: string[] = [];
+  const skippedFiles: string[] = [];
+  const formatted = await Promise.all(
+    changes.map(async (change): Promise<PreparedFile> => {
+      if (!change.newContent || change.binary) {
+        skippedFiles.push(change.path);
+        return change;
+      }
+      const filepath = `${workspaceRoot}/${change.path}`;
+      const info = await getFileInfo(filepath);
+      if (info.ignored || !info.inferredParser) {
+        skippedFiles.push(change.path);
+        return change;
+      }
+      try {
+        const content = Buffer.from(
+          await prettierFormat(change.newContent.toString("utf8"), {
+            filepath,
+          }),
+        );
+        if (content.equals(change.newContent)) return change;
+        formattedFiles.push(change.path);
+        return { ...change, newContent: content, newHash: sha256(content) };
+      } catch {
+        skippedFiles.push(change.path);
+        return change;
+      }
+    }),
+  );
+  return {
+    changes: formatted,
+    formatting: {
+      policy,
+      formatter: "prettier",
+      formatter_version: prettierVersion,
+      formatted_files: formattedFiles.sort(),
+      skipped_files: skippedFiles.sort(),
+    },
+  };
 }
 
 export function parseDiagnostic(change: PreparedFile): ParseDiagnostic {
@@ -287,6 +357,31 @@ function verifyBlob(file: VirtualFile, expected: string, path: string) {
 function buffersEqual(left: Buffer | null, right: Buffer | null) {
   if (left === null || right === null) return left === right;
   return left.equals(right);
+}
+
+function assertPublicApiPreserved(changes: PreparedFile[]) {
+  for (const change of changes) {
+    if (!change.oldContent || !change.newContent || change.binary) continue;
+    const before = publicApi(change.path, change.oldContent);
+    const after = publicApi(change.path, change.newContent);
+    if (JSON.stringify(before) !== JSON.stringify(after))
+      throw new Error(
+        `Public API precondition failed for ${change.path}; an exported signature changed.`,
+      );
+  }
+}
+
+function publicApi(path: string, content: Buffer) {
+  return parseCode(path, content)
+    .symbols.filter(
+      (symbol) =>
+        !symbol.qualified_name.includes(".") &&
+        symbol.visibility === "exported",
+    )
+    .map(
+      (symbol) => `${symbol.kind}:${symbol.qualified_name}:${symbol.signature}`,
+    )
+    .sort();
 }
 
 function staleRevision(current: string) {

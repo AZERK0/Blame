@@ -183,7 +183,17 @@ function proposalContentHash(proposal: StoredChangeProposal) {
       changes: proposal.changes,
       diff_artifact: proposal.diff_artifact,
       diff_summary: proposal.diff_summary,
+      ...(proposal.diff_summary_truncated !== undefined
+        ? { diff_summary_truncated: proposal.diff_summary_truncated }
+        : {}),
+      ...(proposal.diff_summary_bytes !== undefined
+        ? { diff_summary_bytes: proposal.diff_summary_bytes }
+        : {}),
+      ...(proposal.diff_bytes !== undefined
+        ? { diff_bytes: proposal.diff_bytes }
+        : {}),
       diagnostics: proposal.diagnostics,
+      ...(proposal.formatting ? { formatting: proposal.formatting } : {}),
     }),
   );
 }
