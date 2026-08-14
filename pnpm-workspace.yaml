@@ -7,9 +7,14 @@ allowBuilds:
   es5-ext: true
   esbuild: true
   msw: true
+  node-pty: true
   protobufjs: true
   sharp: true
   unrs-resolver: true
 
 catalog:
   shiki: 3.20.0
+
+overrides:
+  ai: 6.0.197
+  "brace-expansion@>=5.0.0 <5.0.9": 5.0.9

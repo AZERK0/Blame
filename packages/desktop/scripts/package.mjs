@@ -44,10 +44,7 @@ try {
       ...args,
     ],
     rootDir,
-    {
-      ...process.env,
-      JITI_FS_CACHE: "false",
-    },
+    electronBuilderEnvironment(args),
   )
   await preserveRuntimeArtifacts(join(stagingDir, "dist"))
   await rm(join(desktopDir, "dist"), { force: true, recursive: true })
@@ -98,6 +95,15 @@ function builderTargetPlatform(builderArgs) {
   if (builderArgs.some((arg) => arg === "--linux" || arg === "linux"))
     return "linux"
   return process.platform
+}
+
+function electronBuilderEnvironment(builderArgs) {
+  const targetPlatform = builderTargetPlatform(builderArgs)
+  return {
+    ...process.env,
+    BLAME_DESKTOP_NPM_REBUILD: String(targetPlatform === process.platform),
+    JITI_FS_CACHE: "false",
+  }
 }
 
 function assertSingleMacosArchitecture(builderArgs) {

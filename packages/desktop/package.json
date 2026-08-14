@@ -5,9 +5,10 @@
   "type": "module",
   "main": "./out/main/index.js",
   "scripts": {
-    "predev": "node ../../scripts/runtime-sdk-version.mjs && pnpm --filter @blame/preview-contract build && pnpm --filter @blame/telemetry build && pnpm --filter @blame/agent-runtime build",
+    "build:workspace-dependencies": "node ../../scripts/runtime-sdk-version.mjs && pnpm --filter @blame/preview-contract build && pnpm --filter @blame/preview-runtime build && pnpm --filter @blame/telemetry build && pnpm --filter @blame/agent-runtime build",
+    "predev": "pnpm run build:workspace-dependencies",
     "dev": "node scripts/dev.mjs",
-    "prebuild": "node ../../scripts/runtime-sdk-version.mjs && pnpm --filter @blame/preview-contract build && pnpm --filter @blame/telemetry build && pnpm --filter @blame/agent-runtime build",
+    "prebuild": "pnpm run build:workspace-dependencies",
     "build": "electron-vite build",
     "package": "node scripts/package.mjs",
     "package:linux": "node scripts/package.mjs --linux",

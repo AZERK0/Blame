@@ -11,6 +11,8 @@ const maintainerEmail =
   text(process.env.BLAME_MAINTAINER_EMAIL) ?? "hello@blame.dev"
 const maintainerName = text(process.env.BLAME_MAINTAINER_NAME) ?? "Blame"
 const releaseVersion = text(process.env.BLAME_VERSION)
+const rebuildNativeDependencies =
+  text(process.env.BLAME_DESKTOP_NPM_REBUILD) !== "false"
 const projectDir = dirname(fileURLToPath(import.meta.url))
 const macosInheritedEntitlements = join(
   projectDir,
@@ -108,6 +110,7 @@ const config: Configuration = {
     },
   ],
   files: ["out/**/*", "icons/prod/**/*", "package.json"],
+  npmRebuild: rebuildNativeDependencies,
   linux: {
     category: "Development",
     icon: "icons/prod",
