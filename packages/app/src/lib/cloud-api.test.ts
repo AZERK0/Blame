@@ -221,8 +221,10 @@ test("polls device authorization until its one-time token is ready", async () =>
 })
 
 test("reports structured API validation errors", async () => {
-  globalThis.fetch = async () =>
-    jsonResponse(
+  let request: RequestInit | undefined
+  globalThis.fetch = async (_input, init) => {
+    request = init
+    return jsonResponse(
       {
         errors: [
           {
@@ -233,6 +235,7 @@ test("reports structured API validation errors", async () => {
       },
       { status: 422 }
     )
+  }
 
   await assert.rejects(
     createCloudApi({
@@ -248,6 +251,8 @@ test("reports structured API validation errors", async () => {
         risks: [],
         probes: [],
       },
+      setupScript: "echo setup",
+      dockerCompose: "services: {}",
       runConfigurations: [],
     }),
     (error: unknown) =>
@@ -255,6 +260,20 @@ test("reports structured API validation errors", async () => {
       error.status === 422 &&
       error.message === "Run configuration is invalid"
   )
+  assert.deepEqual(JSON.parse(String(request?.body)), {
+    previewManifest: {
+      confidence: "high",
+      project: { root: "." },
+      setup: [],
+      services: [],
+      caches: [],
+      risks: [],
+      probes: [],
+    },
+    setupScript: "echo setup",
+    dockerCompose: "services: {}",
+    runConfigurations: [],
+  })
 })
 
 test("transcribes audio through the authenticated speech endpoint", async () => {

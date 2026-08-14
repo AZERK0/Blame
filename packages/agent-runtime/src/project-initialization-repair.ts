@@ -84,6 +84,8 @@ export function parseProjectInitializationRepairResult(
     classification,
     reason,
     previewManifest,
+    setupScript,
+    dockerCompose,
     runConfigurations,
   };
 }

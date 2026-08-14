@@ -414,6 +414,8 @@ export function createCloudApi(connection: CloudApiConnection) {
       input: {
         clineSessionId?: string | null
         previewManifest: PreviewManifest
+        setupScript: string
+        dockerCompose: string
         runConfigurations: ProjectRunConfiguration[]
       }
     ) {
@@ -440,6 +442,8 @@ export function createCloudApi(connection: CloudApiConnection) {
       input: {
         clineSessionId?: string | null
         previewManifest: PreviewManifest
+        setupScript: string
+        dockerCompose: string
         runConfigurations: ProjectRunConfiguration[]
         reason: string
       }

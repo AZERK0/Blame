@@ -1480,7 +1480,9 @@ export class BlameAgentRuntime {
   }
 
   private async initializationCredential(input: RuntimeCredentialInput) {
-    return this.runtimeCredential(input);
+    const credential = await this.runtimeCredential(input);
+    await this.syncClineOAuthProviderSettings(credential);
+    return credential;
   }
 
   private async runtimeCredential(input: RuntimeCredentialInput) {
@@ -2798,6 +2800,8 @@ function parseProjectInitializationAttempt(
   return {
     sessionId: attempt.sessionId,
     previewManifest: initialization.previewManifest,
+    setupScript: initialization.setupScript,
+    dockerCompose: initialization.dockerCompose,
     runConfigurations: initialization.runConfigurations,
   };
 }

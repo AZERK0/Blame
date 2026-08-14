@@ -114,7 +114,12 @@ async function persistProjectInitializationRepair(
   result: RepairProjectInitializationResult
 ) {
   if (result.classification !== "repairable_initialization") return
-  if (!result.previewManifest || !result.runConfigurations) {
+  if (
+    !result.previewManifest ||
+    !result.setupScript ||
+    !result.dockerCompose ||
+    !result.runConfigurations
+  ) {
     throw new Error(
       "Initialization repair agent returned incomplete artifacts."
     )
@@ -124,6 +129,8 @@ async function persistProjectInitializationRepair(
     {
       clineSessionId: result.sessionId,
       previewManifest: result.previewManifest,
+      setupScript: result.setupScript,
+      dockerCompose: result.dockerCompose,
       runConfigurations: result.runConfigurations,
       reason: result.reason,
     }

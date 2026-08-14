@@ -450,6 +450,8 @@ async function completeProjectInitialization(
   await cloud.completeProjectInitialization(input.project.id, {
     clineSessionId: result.sessionId,
     previewManifest: result.previewManifest,
+    setupScript: result.setupScript,
+    dockerCompose: result.dockerCompose,
     runConfigurations: result.runConfigurations,
   })
   notifyProjectInitializationUpdated(input.project.id)

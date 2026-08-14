@@ -62,6 +62,8 @@ test.group('project initializations', (group) => {
       .json({
         clineSessionId: 'session-1',
         previewManifest: previewManifest('high'),
+        setupScript: 'echo setup',
+        dockerCompose: 'services: {}',
         runConfigurations: [
           {
             id: 'web',
@@ -75,7 +77,7 @@ test.group('project initializations', (group) => {
             scopes: ['frontend', 'backend'],
           },
         ],
-      })
+      } as never)
 
     completeResponse.assertStatus(200)
     const completed = completeResponse.body() as InitializationBody
@@ -85,6 +87,8 @@ test.group('project initializations', (group) => {
     assert.equal(completed.data.initialization?.runConfigurations[0]?.command, 'pnpm dev')
     assert.equal(completed.data.initialization?.runConfigurations[0]?.category, 'web')
     assert.deepEqual(completed.data.initialization?.runConfigurations[0]?.services, ['web'])
+    assert.notProperty(completed.data.initialization ?? {}, 'setupScript')
+    assert.notProperty(completed.data.initialization ?? {}, 'dockerCompose')
     assert.lengthOf(completed.data.practices, 1)
     assert.equal(completed.data.practices[0].comment, 'Strict linting and typing are configured.')
   })

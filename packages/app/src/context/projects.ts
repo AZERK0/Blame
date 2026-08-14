@@ -8,6 +8,8 @@ import type { Project } from "@/lib/projects"
 
 export type GeneratedProjectInitialization = {
   previewManifest: PreviewManifest
+  setupScript: string
+  dockerCompose: string
   runConfigurations: ProjectRunConfiguration[]
   clineSessionId?: string
 }
