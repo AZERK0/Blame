@@ -291,12 +291,28 @@ async function finalizeImage(bundle, instanceName, environment) {
 }
 
 async function waitForStoppedInstance(bundle, instanceName, environment) {
-  for (let attempt = 0; attempt < 60; attempt += 1) {
-    const state = await instanceState(bundle, instanceName, environment);
-    if (state === "Stopped") return;
+  if (await instanceStopsWithin(bundle, instanceName, environment, 60)) return;
+  await runLimactl(
+    bundle,
+    ["stop", "--force", "--tty=false", instanceName],
+    environment,
+  );
+  if (!(await instanceStopsWithin(bundle, instanceName, environment, 10)))
+    throw new Error(`Lima builder instance ${instanceName} did not stop.`);
+}
+
+async function instanceStopsWithin(
+  bundle,
+  instanceName,
+  environment,
+  attempts,
+) {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    if ((await instanceState(bundle, instanceName, environment)) === "Stopped")
+      return true;
     await delay(1000);
   }
-  throw new Error(`Lima builder instance ${instanceName} did not stop.`);
+  return false;
 }
 
 async function instanceState(bundle, instanceName, environment) {
