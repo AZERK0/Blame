@@ -12,10 +12,20 @@ on:
         description: Upload runtime artifacts
         required: true
         type: boolean
+      artifact_run_id:
+        default: ""
+        description: Existing workflow run containing runtime artifacts
+        required: false
+        type: string
+
+permissions:
+  actions: read
+  contents: read
 
 jobs:
   build-windows:
     name: Build Windows runtime ${{ matrix.name }}
+    if: inputs.artifact_run_id == ''
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -56,6 +66,7 @@ jobs:
 
   build-macos:
     name: Build macOS runtime ${{ matrix.name }}
+    if: inputs.artifact_run_id == ''
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -115,7 +126,15 @@ jobs:
   deploy:
     name: Deploy runtime
     needs: [build-windows, build-macos]
-    if: inputs.deploy
+    if: >-
+      ${{
+        always() &&
+        inputs.deploy &&
+        (
+          inputs.artifact_run_id != '' ||
+          (needs.build-windows.result == 'success' && needs.build-macos.result == 'success')
+        )
+      }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -131,11 +150,25 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - uses: actions/download-artifact@v4
+      - name: Download Windows runtime artifacts
+        uses: actions/download-artifact@v4
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           merge-multiple: true
-          path: packages/desktop/dist/runtime
-          pattern: blame-runtime-*
+          path: packages/desktop/dist/runtime/windows
+          pattern: blame-runtime-windows-*
+          repository: ${{ github.repository }}
+          run-id: ${{ inputs.artifact_run_id || github.run_id }}
+
+      - name: Download macOS runtime artifacts
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          merge-multiple: true
+          path: packages/desktop/dist/runtime/macos
+          pattern: blame-runtime-macos-*
+          repository: ${{ github.repository }}
+          run-id: ${{ inputs.artifact_run_id || github.run_id }}
 
       - name: Upload runtime artifacts to OVH Object Storage
         run: pnpm deploy:runtime
