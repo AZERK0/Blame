@@ -492,6 +492,36 @@ export type AnalyzeProjectCodePracticesResult = {
   practices: ProjectCodePracticeResult[];
 };
 
+export type {
+  DiscoverSecurityAuditInput,
+  MapSecurityAuditInput,
+  MapSecurityAuditResult,
+  RunSecurityAuditInput,
+  SecurityAttackPathStep,
+  SecurityAudit,
+  SecurityAuditDiscoveryResult,
+  SecurityAuditMode,
+  SecurityAuditPerspective,
+  SecurityAuditStatus,
+  SecurityCandidate,
+  SecurityConfidence,
+  SecurityCoverage,
+  SecurityCoverageArea,
+  SecurityDeterministicScanResult,
+  SecurityEvidence,
+  SecurityFinding,
+  SecurityFindingStatus,
+  SecurityPriority,
+  SecurityRevision,
+  SecurityScannerCoverage,
+  SecuritySeverity,
+  SecuritySourceLocation,
+  SecuritySurfaceMap,
+  SecurityThreatModel,
+  ValidateSecurityAuditInput,
+  ValidateSecurityAuditResult,
+} from "./security-audit-types.js";
+
 export type ProjectInitializationRepairClassification =
   | "repairable_initialization"
   | "project_code_failure"

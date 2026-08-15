@@ -96,6 +96,39 @@ test("semantic tools expose exact outlines and reject stale observations", async
   });
 });
 
+test("security reads redact credential values while preserving source handles", async () => {
+  await withWorkspace(async (root) => {
+    const secret = `ghp_${"A".repeat(24)}`;
+    await writeFile(
+      join(root, "src", "credentials.ts"),
+      `export const token = "${secret}";\n`,
+    );
+    await execFileAsync("git", ["add", "src/credentials.ts"], { cwd: root });
+    await execFileAsync("git", ["commit", "-m", "add credential fixture"], {
+      cwd: root,
+    });
+    const workspace = new SemanticWorkspace(root);
+    const state = success(await workspace.workspaceState());
+    const revision = state.data.source_revision.source_revision_id;
+    const inspectTool = semanticWorkspaceTools(root, {
+      redactSensitiveContent: true,
+    }).find((tool) => tool.name === "inspect_code");
+    assert.ok(inspectTool);
+    const raw = await inspectTool.execute(
+      {
+        source_revision_id: revision,
+        target: { path: "src/credentials.ts" },
+        view: "raw",
+      },
+      { agentId: "test", iteration: 1 },
+    );
+    const serialized = JSON.stringify(raw);
+    assert.match(serialized, /REDACTED_SECRET/);
+    assert.doesNotMatch(serialized, new RegExp(secret));
+    assert.match(serialized, /[a-f0-9]{64}/);
+  });
+});
+
 test("apply_change proposes, reviews, and atomically commits an exact node edit", async () => {
   await withWorkspace(async (root) => {
     const workspace = new SemanticWorkspace(root);

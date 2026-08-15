@@ -189,6 +189,12 @@ function workflowHandlers(runtime: BlameAgentRuntime) {
       runtime.initializations.assessImpact(input as never),
     "codePractices.run": (input: unknown) =>
       runtime.codePractices.run(input as never),
+    "securityAudits.map": (input: unknown) =>
+      runtime.securityAudits.map(input as never),
+    "securityAudits.discover": (input: unknown) =>
+      runtime.securityAudits.discover(input as never),
+    "securityAudits.validate": (input: unknown) =>
+      runtime.securityAudits.validate(input as never),
     "newProjects.generate": (input: unknown) =>
       runtime.newProjects.generate(input as never),
     "promptOptimizer.optimizeUserStory": (input: unknown) =>

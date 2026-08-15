@@ -47,6 +47,7 @@ import type {
   GitCommandResult,
   GitLogCommit,
   GitStatusResult,
+  SecurityAuditClient,
 } from "@blame/app";
 import type { McpServersClient } from "@blame/app";
 import type { RuntimeDiagnosticInput, RuntimeProgress } from "@blame/app";
@@ -287,6 +288,7 @@ export type BlameDesktopApi = {
       onError?: (message: string) => void,
     ): () => void;
   };
+  securityAudits: SecurityAuditClient;
   workspace: {
     pathExists(input: { path: string }): Promise<boolean>;
     optimizeAttachmentForAiContext(input: {

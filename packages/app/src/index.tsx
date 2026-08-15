@@ -28,6 +28,7 @@ export type {
   Platform,
   RuntimeDiagnosticInput,
   RuntimeProgress,
+  SecurityAuditClient,
   TelemetryExportSession,
 } from "./context/platform"
 

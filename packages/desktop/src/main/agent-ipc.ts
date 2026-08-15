@@ -23,6 +23,7 @@ import {
 import { handleAgentHostRequest } from "./agent-runtime-main-host"
 import { getRuntimeStatus } from "./runtime-manager"
 import { runtimeAgentClient } from "./runtime-agent"
+import { registerSecurityAuditIpcHandlers } from "./security-audit-ipc"
 import { WorkspaceWriterRegistry } from "./workspaces/workspace-writer-registry"
 
 type AgentRuntimeRegistration = {
@@ -47,6 +48,15 @@ export function registerAgentIpcHandlers(input: AgentRuntimeRegistration) {
   registerSessionDataIpcHandlers(input.beforeWorkspaceWrite)
   registerSessionEventIpcHandlers()
   registerAnalysisWorkflowIpcHandlers(input.beforeWorkspaceWrite)
+  registerSecurityAuditIpcHandlers({
+    resolveInput: (securityInput) => agentWorkspaceInput(securityInput),
+    map: (securityInput) =>
+      agentRuntime().run("securityAudits.map", securityInput),
+    discover: (securityInput) =>
+      agentRuntime().run("securityAudits.discover", securityInput),
+    validate: (securityInput) =>
+      agentRuntime().run("securityAudits.validate", securityInput),
+  })
   registerDeliveryWorkflowIpcHandlers(input.beforeDelivery)
 }
 

@@ -5,6 +5,7 @@ import { BacklogStatusPipPage } from "@/pages/backlog/status-pip-page"
 import { ChatPage } from "@/pages/chat/page"
 import { GitPage } from "@/pages/git/page"
 import { PracticesPage } from "@/pages/practices/page"
+import { SecurityPage } from "@/pages/security/page"
 import { BacklogStoreProvider } from "@/components/backlog/data/backlog-store"
 import { QuickChatStoreProvider } from "@/components/chat/data/quick-chat-store"
 import { ConnectScreen } from "@/components/onboarding/connect-screen"
@@ -53,7 +54,7 @@ const routes = [
   {
     path: "/security",
     title: "Security Audit",
-    element: <RoutePage title="Security Audit" />,
+    element: <SecurityPage />,
   },
   { path: "/deploy", title: "Deploy", element: <RoutePage title="Deploy" /> },
   {

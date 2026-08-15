@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/sidebar"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { useCodePracticeAnalysis } from "@/components/practices/data/use-code-practice-analysis"
+import { useSecurityAudits } from "@/components/security/data/use-security-audits"
 import {
   CircleHelpIcon,
   ClipboardCheckIcon,
@@ -87,10 +88,21 @@ export function AppSidebar({
 }: React.ComponentProps<typeof Sidebar> & { pathname: string }) {
   const auth = useCloudAuth()
   const codePracticeAnalysis = useCodePracticeAnalysis()
+  const securityAudits = useSecurityAudits()
   const projectItems = data.project.map((item) =>
     item.url === "/practices"
       ? { ...item, status: codePracticeAnalysisStatus(codePracticeAnalysis) }
-      : item
+      : item.url === "/security" && securityAudits.running
+        ? {
+            ...item,
+            status: (
+              <LoaderCircleIcon
+                aria-label="Security audit in progress"
+                className="size-3.5 animate-spin text-muted-foreground"
+              />
+            ),
+          }
+        : item
   )
 
   return (

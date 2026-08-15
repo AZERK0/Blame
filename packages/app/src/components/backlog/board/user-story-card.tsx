@@ -1,5 +1,5 @@
 import * as React from "react"
-import { LoaderCircleIcon } from "lucide-react"
+import { LoaderCircleIcon, ShieldCheckIcon } from "lucide-react"
 
 import {
   type BacklogAction,
@@ -23,6 +23,7 @@ import { StoryActions } from "@/components/backlog/actions/story-actions"
 import { Button } from "@/components/ui/button"
 import { useAnimatedBorderEffect } from "@/hooks/use-animated-border-effect"
 import { recordPerformanceCount } from "@/lib/performance-diagnostics"
+import { isSecurityStory } from "@/components/security/data/security-remediation"
 import {
   Card,
   CardAction,
@@ -164,8 +165,13 @@ function UserStoryCardBody({
   return (
     <>
       <CardHeader className="gap-0 has-data-[slot=card-action]:grid-cols-[minmax(0,1fr)_auto]">
-        <p className="text-xs font-medium text-muted-foreground">
-          {userStoryLabel(story)}
+        <p className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+          <span>{userStoryLabel(story)}</span>
+          {isSecurityStory(story.summary) ? (
+            <span className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-300">
+              <ShieldCheckIcon className="size-3" /> Security
+            </span>
+          ) : null}
         </p>
         {setupInitializing && (
           <StoryProgressLabel label="Initializing story setup" />

@@ -85,6 +85,11 @@ import {
   scanProjectCodePractices,
   type ProjectCodePracticesScan,
 } from "./project-code-practices-scan.js";
+import { scanSecurityAuditRepository } from "./security-audit-scan.js";
+import {
+  runSecurityDiscovery,
+  runSecurityValidation,
+} from "./security-audit-runtime.js";
 import {
   parseProjectInitializationRepairResult,
   projectInitializationRepairPrompt,
@@ -138,6 +143,7 @@ import type {
   AssessProjectInitializationImpactResult,
   CompareCheckpointInput,
   CompareCheckpointResult,
+  DiscoverSecurityAuditInput,
   GenerateCommitMessageInput,
   GenerateCommitMessageResult,
   GenerateTitleInput,
@@ -145,6 +151,7 @@ import type {
   InitializeProjectInput,
   InitializeProjectResult,
   LoginOAuthProviderInput,
+  MapSecurityAuditInput,
   NewProjectGenerationResult,
   OAuthCredentials,
   OptimizeUserStoryPromptInput,
@@ -164,6 +171,7 @@ import type {
   StartDevelopmentSessionInput,
   StartNewProjectGenerationInput,
   StartSessionInput,
+  ValidateSecurityAuditInput,
 } from "./types.js";
 
 const execFileAsync = promisify(execFile);
@@ -426,6 +434,14 @@ export class BlameAgentRuntime {
   codePractices = {
     run: (input: AnalyzeProjectCodePracticesInput) =>
       this.analyzeProjectCodePractices(input),
+  };
+
+  securityAudits = {
+    map: (input: MapSecurityAuditInput) => this.mapSecurityAudit(input),
+    discover: (input: DiscoverSecurityAuditInput) =>
+      this.discoverSecurityAudit(input),
+    validate: (input: ValidateSecurityAuditInput) =>
+      this.validateSecurityAudit(input),
   };
 
   newProjects = {
@@ -1032,6 +1048,41 @@ export class BlameAgentRuntime {
     const cline = await this.sessionCore(sessionId);
     return normalizeAgentUsageSummary(
       await cline.getAccumulatedUsage(sessionId),
+    );
+  }
+
+  private async mapSecurityAudit(input: MapSecurityAuditInput) {
+    assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd");
+    return scanSecurityAuditRepository(input.workspaceRoot, this.options.git);
+  }
+
+  private async discoverSecurityAudit(input: DiscoverSecurityAuditInput) {
+    return this.agentTelemetry.runBusinessOperation(
+      input,
+      "security_audit_discovery",
+      async () => {
+        assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd");
+        return runSecurityDiscovery(
+          await this.core(input.backend),
+          input,
+          await this.initializationCredential(input),
+        );
+      },
+    );
+  }
+
+  private async validateSecurityAudit(input: ValidateSecurityAuditInput) {
+    return this.agentTelemetry.runBusinessOperation(
+      input,
+      "security_audit_validation",
+      async () => {
+        assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd");
+        return runSecurityValidation(
+          await this.core(input.backend),
+          input,
+          await this.initializationCredential(input),
+        );
+      },
     );
   }
 

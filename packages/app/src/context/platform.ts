@@ -34,7 +34,10 @@ import type {
   ResolveMergeConflictsResult,
   RestoreCheckpointInput,
   RestoreCheckpointResult,
+  RunSecurityAuditInput,
   SaveProviderCredentialInput,
+  SecurityAudit,
+  SecurityFindingStatus,
   SendDevelopmentSessionInput,
   SendSessionInput,
   StartDevelopmentSessionInput,
@@ -94,6 +97,7 @@ export type Platform = {
   platform?: string
   previewBrowser?: PreviewBrowserClient
   previewRuntime?: PreviewRuntimeClient
+  securityAudits?: SecurityAuditClient
   systemNotifications?: SystemNotificationsClient
   terminal?: TerminalClient
   telemetry?: TelemetryClient
@@ -349,6 +353,22 @@ export type AgentClient = {
   resolveMergeConflicts(
     input: ResolveMergeConflictsInput
   ): Promise<ResolveMergeConflictsResult>
+}
+
+export type SecurityAuditClient = {
+  list(input: { root: string }): Promise<SecurityAudit[]>
+  get(input: { root: string; auditId: string }): Promise<SecurityAudit>
+  run(input: RunSecurityAuditInput): Promise<SecurityAudit>
+  updateFinding(input: {
+    root: string
+    auditId: string
+    fingerprint: string
+    status?: SecurityFindingStatus
+    backlogStoryId?: string
+  }): Promise<SecurityAudit>
+  onChanged(
+    callback: (event: { root: string; audit: SecurityAudit }) => void
+  ): () => void
 }
 
 export type WorkspaceEntry = {

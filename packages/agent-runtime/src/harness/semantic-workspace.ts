@@ -81,6 +81,7 @@ export type {
 } from "./semantic-workspace-support.js";
 
 export type SemanticWorkspaceOptions = {
+  redactSensitiveContent?: boolean;
   taskExecutor?: TaskExecutor;
   taskContract?: {
     session_id?: string;

@@ -1,5 +1,6 @@
 import { createTool, type AgentTool, type AgentToolContext } from "@cline/sdk";
 import { z } from "zod";
+import { redactSecurityValue } from "../security-secret-redaction.js";
 import { harnessError } from "./protocol.js";
 import {
   applyChangeInputSchema,
@@ -43,28 +44,43 @@ export function semanticWorkspaceTools(
         "Read the canonical Blame workspace state and obtain the current source_revision_id. Use this before semantic reads or edits, and again after STALE_REVISION. Returns Git/base state, changed paths, a compact tree/language summary, task catalog, and supported harness capabilities. Read-only; do not use it to inspect file contents.",
       schema: workspaceStateInputSchema,
       execute: (input, context) =>
-        workspace.workspaceState({ ...input, signal: context.signal }),
+        visibleResult(
+          workspace.workspaceState({ ...input, signal: context.signal }),
+          options.redactSensitiveContent,
+        ),
     }),
     createHarnessTool({
       name: "search_code",
       description:
         "Search one exact source revision using ripgrep text search, syntax symbols, or an ast-grep pattern. Use for localization and to obtain exact node_ref/symbol_ref handles before inspect_code or apply_change. Returns the engine, bounded matches, byte/line ranges, provenance, and explicit truncation. Do not use stale handles or use this as natural-language semantic search.",
       schema: searchCodeInputSchema,
-      execute: (input, context) => workspace.searchCode(input, context.signal),
+      execute: (input, context) =>
+        visibleResult(
+          workspace.searchCode(input, context.signal),
+          options.redactSensitiveContent,
+        ),
     }),
     createHarnessTool({
       name: "outline_code",
       description:
         "Return a progressive syntax outline for a file or directory at an exact source revision. Use before broad file reads to discover classes, functions, methods, interfaces, types, enums, and function-valued variables. Each item returns an exact revision-bound symbol_ref and node_ref. Unsupported files return parse-quality diagnostics; use inspect_code view raw as the fallback.",
       schema: outlineCodeInputSchema,
-      execute: (input, context) => workspace.outlineCode(input, context.signal),
+      execute: (input, context) =>
+        visibleResult(
+          workspace.outlineCode(input, context.signal),
+          options.redactSensitiveContent,
+        ),
     }),
     createHarnessTool({
       name: "inspect_code",
       description:
         "Inspect one exact revision-bound symbol/node, or read a raw file fallback. Use symbol_ref/node_ref from search_code or outline_code for signature, declaration, body, interface, or neighborhood views. Use target.path only with view raw. Returns byte ranges, file hash/ref, omissions, provenance, and STALE_REVISION instead of silently rematching.",
       schema: inspectCodeInputSchema,
-      execute: (input, context) => workspace.inspectCode(input, context.signal),
+      execute: (input, context) =>
+        visibleResult(
+          workspace.inspectCode(input, context.signal),
+          options.redactSensitiveContent,
+        ),
     }),
     createHarnessTool({
       name: "apply_change",
@@ -87,7 +103,11 @@ export function semanticWorkspaceTools(
       description:
         "Reopen one bounded view of an exact RunRef returned by run_task. Use it for failures, diagnostics, stdout/stderr head or tail, events, filesystem effects, or performance without rerunning the task. Complete redacted logs remain available through inspect_artifact.",
       schema: inspectRunInputSchema,
-      execute: (input, context) => workspace.inspectRun(input, context.signal),
+      execute: (input, context) =>
+        visibleResult(
+          workspace.inspectRun(input, context.signal),
+          options.redactSensitiveContent,
+        ),
     }),
     createHarnessTool({
       name: "review_change",
@@ -95,7 +115,10 @@ export function semanticWorkspaceTools(
         "Review an immutable change proposal without mutating source or running checks. Use after apply_change propose and before commit_proposal. Returns textual diff, file hashes, syntax-symbol additions/removals, parse diagnostics, staleness, attached artifact, and checks not yet run.",
       schema: reviewChangeInputSchema,
       execute: (input, context) =>
-        workspace.reviewChange(input, context.signal),
+        visibleResult(
+          workspace.reviewChange(input, context.signal),
+          options.redactSensitiveContent,
+        ),
     }),
     createHarnessTool({
       name: "inspect_artifact",
@@ -103,9 +126,20 @@ export function semanticWorkspaceTools(
         "Reopen an exact agent-visible artifact by ArtifactRef with a byte offset and output budget. Use for complete redacted logs, diffs, filesystem-effect manifests, or JSON evidence returned by another harness tool. Sealed raw and reviewer-only artifacts are policy-denied; omitted bytes and a continuation offset are explicit.",
       schema: inspectArtifactInputSchema,
       execute: (input, context) =>
-        workspace.inspectArtifact(input, context.signal),
+        visibleResult(
+          workspace.inspectArtifact(input, context.signal),
+          options.redactSensitiveContent,
+        ),
     }),
   ];
+}
+
+async function visibleResult<T>(
+  result: Promise<T>,
+  redactSensitiveContent = false,
+) {
+  const value = await result;
+  return redactSensitiveContent ? redactSecurityValue(value) : value;
 }
 
 function createHarnessTool<TSchema extends z.ZodTypeAny>(input: {

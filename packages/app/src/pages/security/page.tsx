@@ -1,0 +1,240 @@
+import * as React from "react"
+import type { SecurityAuditMode, SecurityFinding } from "@blame/agent-runtime"
+import {
+  AlertTriangleIcon,
+  LoaderCircleIcon,
+  ShieldCheckIcon,
+} from "lucide-react"
+import { toast } from "sonner"
+
+import { useBacklogStore } from "@/components/backlog/data/backlog-store"
+import { useModelSelection } from "@/components/model/model-selector"
+import { SecurityAuditDashboard } from "@/components/security/security-audit-dashboard"
+import { SecurityAuditProgress } from "@/components/security/security-audit-progress"
+import { SecurityFindingDrawer } from "@/components/security/security-finding-drawer"
+import { SecurityLaunchDialog } from "@/components/security/security-launch-dialog"
+import { SecurityRemediationDialog } from "@/components/security/security-remediation-dialog"
+import { securityFindingStory } from "@/components/security/data/security-remediation"
+import { useSecurityAudits } from "@/components/security/data/use-security-audits"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Button } from "@/components/ui/button"
+import { useCloudAuth } from "@/context/cloud-auth"
+
+export function SecurityPage() {
+  const auth = useCloudAuth()
+  const selection = useModelSelection({ role: "alternative" })
+  const security = useSecurityAudits()
+  const backlog = useBacklogStore()
+  const [launchOpen, setLaunchOpen] = React.useState(false)
+  const [remediationOpen, setRemediationOpen] = React.useState(false)
+  const [selectedAuditId, setSelectedAuditId] = React.useState<string>()
+  const [selectedFingerprint, setSelectedFingerprint] = React.useState<string>()
+  const [addingFingerprint, setAddingFingerprint] = React.useState<string>()
+  const [creatingPlan, setCreatingPlan] = React.useState(false)
+  const audit =
+    security.audits.find((item) => item.id === selectedAuditId) ??
+    security.latest
+  const selectedFinding = audit?.findings.find(
+    (finding) => finding.fingerprint === selectedFingerprint
+  )
+  const previousCompletedAudit = security.audits.find(
+    (item) => item.status === "completed"
+  )
+
+  const runAudit = (mode: SecurityAuditMode) => {
+    const model = selection.currentModel
+    if (!model || !security.project) {
+      toast.error("Connect an analysis model before running an audit.")
+      return
+    }
+    setSelectedAuditId(undefined)
+    void security
+      .run({
+        apiConnection: auth.apiConnection,
+        providerId: model.provider.id,
+        modelId: model.id,
+        credentialLabel: model.credentialLabel,
+        reasoningEffort: selection.currentVariant,
+        projectId: security.project.id,
+        mode,
+        scope: { type: "repository" },
+      })
+      .then(() => toast.success("Security audit completed."))
+      .catch((error) =>
+        toast.error("Security audit failed", {
+          description: error instanceof Error ? error.message : undefined,
+        })
+      )
+  }
+
+  const addToBacklog = async (finding: SecurityFinding, quiet = false) => {
+    if (!audit) return
+    setAddingFingerprint(finding.fingerprint)
+    try {
+      const story = await backlog.create(securityFindingStory(finding))
+      await security.updateFinding(audit.id, finding.fingerprint, {
+        backlogStoryId: story.id,
+        status: "fixing",
+      })
+      if (!quiet) toast.success(`${finding.id} added to the backlog.`)
+    } finally {
+      setAddingFingerprint(undefined)
+    }
+  }
+
+  const createPlan = async (findings: SecurityFinding[]) => {
+    setCreatingPlan(true)
+    try {
+      for (const finding of findings) await addToBacklog(finding, true)
+      setRemediationOpen(false)
+      toast.success(
+        `${findings.length} remediation ${findings.length === 1 ? "story" : "stories"} created.`
+      )
+    } catch (error) {
+      toast.error("Unable to create the complete remediation plan", {
+        description: error instanceof Error ? error.message : undefined,
+      })
+    } finally {
+      setCreatingPlan(false)
+    }
+  }
+
+  if (security.loading && !audit) return <SecurityLoading />
+
+  return (
+    <>
+      {!audit ? (
+        <SecurityEmptyState
+          error={security.error}
+          onRun={() => setLaunchOpen(true)}
+        />
+      ) : audit.status === "failed" ? (
+        <SecurityFailedState
+          auditError={audit.error}
+          onRun={() => setLaunchOpen(true)}
+          onViewPrevious={
+            previousCompletedAudit
+              ? () => setSelectedAuditId(previousCompletedAudit.id)
+              : undefined
+          }
+        />
+      ) : audit.status !== "completed" ? (
+        <SecurityAuditProgress audit={audit} />
+      ) : (
+        <SecurityAuditDashboard
+          audit={audit}
+          audits={security.audits}
+          onCreatePlan={() => setRemediationOpen(true)}
+          onRun={() => setLaunchOpen(true)}
+          onSelectAudit={setSelectedAuditId}
+          onSelectFinding={(finding) =>
+            setSelectedFingerprint(finding.fingerprint)
+          }
+        />
+      )}
+      <SecurityLaunchDialog
+        open={launchOpen}
+        onOpenChange={setLaunchOpen}
+        onRun={runAudit}
+      />
+      <SecurityFindingDrawer
+        finding={selectedFinding}
+        open={Boolean(selectedFinding)}
+        adding={addingFingerprint === selectedFinding?.fingerprint}
+        onAddToBacklog={(finding) =>
+          void addToBacklog(finding).catch(showBacklogError)
+        }
+        onOpenChange={(open) => {
+          if (!open) setSelectedFingerprint(undefined)
+        }}
+      />
+      <SecurityRemediationDialog
+        key={`${audit?.id ?? "none"}:${remediationOpen}`}
+        creating={creatingPlan}
+        findings={audit?.findings ?? []}
+        open={remediationOpen}
+        onCreate={(findings) => void createPlan(findings)}
+        onOpenChange={setRemediationOpen}
+      />
+    </>
+  )
+}
+
+function SecurityEmptyState({
+  error,
+  onRun,
+}: {
+  error?: string
+  onRun(): void
+}) {
+  return (
+    <div className="flex flex-1 items-center justify-center px-6 py-12">
+      <div className="flex max-w-md flex-col items-center text-center">
+        <span className="mb-5 flex size-14 items-center justify-center rounded-2xl border bg-card shadow-sm">
+          <ShieldCheckIcon className="size-6 text-blue-500" />
+        </span>
+        <h2 className="font-heading text-2xl font-semibold">Security Audit</h2>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+          Find and validate security issues across your project.
+        </p>
+        {error ? (
+          <Alert variant="destructive" className="mt-5 text-left">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        ) : null}
+        <Button className="mt-6" onClick={onRun} disabled={Boolean(error)}>
+          Run audit
+        </Button>
+        <p className="mt-3 text-xs text-muted-foreground">
+          Entire project · current working revision · read-only
+        </p>
+      </div>
+    </div>
+  )
+}
+
+function SecurityFailedState({
+  auditError,
+  onRun,
+  onViewPrevious,
+}: {
+  auditError?: string
+  onRun(): void
+  onViewPrevious?(): void
+}) {
+  return (
+    <div className="flex flex-1 items-center justify-center px-6 py-12">
+      <div className="w-full max-w-md rounded-xl border bg-card p-6 text-center">
+        <AlertTriangleIcon className="mx-auto size-8 text-destructive" />
+        <h2 className="mt-3 font-heading text-xl font-semibold">
+          Audit interrupted
+        </h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          {auditError ?? "The audit could not be completed."}
+        </p>
+        <div className="mt-5 flex justify-center gap-2">
+          {onViewPrevious ? (
+            <Button variant="outline" onClick={onViewPrevious}>
+              View previous audit
+            </Button>
+          ) : null}
+          <Button onClick={onRun}>Run again</Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function SecurityLoading() {
+  return (
+    <div className="flex flex-1 items-center justify-center">
+      <LoaderCircleIcon className="size-5 animate-spin text-muted-foreground" />
+    </div>
+  )
+}
+
+function showBacklogError(error: unknown) {
+  toast.error("Unable to add the finding to the backlog", {
+    description: error instanceof Error ? error.message : undefined,
+  })
+}
