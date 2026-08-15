@@ -10,6 +10,8 @@ export type {
   CloudAuthRequestInput,
   CloudAuthRequestResponse,
   CloudMcpServerConfig,
+  DeployClient,
+  DeployProgress,
   GitBranchStatus,
   GitCommandResult,
   GitConflictFile,

@@ -25,6 +25,7 @@ import type {
   CloudAuthRequestResponse,
   TelemetryExportSession,
 } from "@/context/platform"
+import { createDeployCloudApi } from "@/lib/deploy-cloud-api"
 
 type CloudApiConnection = ApiConnection & {
   authRequest?: CloudAuthRequestClient["request"]
@@ -89,8 +90,13 @@ export type CloudAccountClosureReceipt = {
 
 export function createCloudApi(connection: CloudApiConnection) {
   const baseUrl = connection.url.replace(/\/$/, "")
+  const deployApi = createDeployCloudApi(
+    <T>(path: string, init?: RequestInit) =>
+      request<T>(connection, baseUrl, path, init)
+  )
 
   return {
+    ...deployApi,
     async login(input: LoginInput): Promise<CloudLoginResult> {
       let response
       try {

@@ -69,6 +69,12 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
   }, [apiUrl, platform.previewRuntime, token])
 
   React.useEffect(() => {
+    if (!platform.deploy) return
+    if (token) void platform.deploy.configure({ url: apiUrl, token })
+    else void platform.deploy.disconnect()
+  }, [apiUrl, platform.deploy, token])
+
+  React.useEffect(() => {
     let alive = true
     const session = readCloudSession()
     if (!session) {

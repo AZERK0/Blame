@@ -44,6 +44,7 @@ import type {
   BacklogStatusPipRequest,
   BacklogStatusPipSnapshot,
   CloudAuthRequestClient,
+  DeployClient,
   GitCommandResult,
   GitLogCommit,
   GitStatusResult,
@@ -198,6 +199,7 @@ export type BlameDesktopApi = {
     onRefreshLicense(callback: () => void): () => void;
     ready(): void;
   };
+  deploy: DeployClient;
   telemetry: {
     configure(session: TelemetryExportSession): Promise<boolean>;
     disable(): Promise<boolean>;

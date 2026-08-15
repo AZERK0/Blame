@@ -1,0 +1,24 @@
+{
+  "name": "@blame/deploy-contract",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "pnpm build && node --test dist/*.test.js"
+  },
+  "dependencies": {
+    "@blame/preview-contract": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.12.0",
+    "typescript": "~5.9.3"
+  }
+}

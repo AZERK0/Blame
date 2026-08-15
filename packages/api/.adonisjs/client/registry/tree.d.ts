@@ -12,8 +12,21 @@ export interface ApiDefinition {
   telemetryIngestion: {
     store: typeof routes['telemetry_ingestion.store']
   }
+  vercelConnections: {
+    callback: typeof routes['vercel_connections.callback']
+  }
   telemetrySessions: {
     show: typeof routes['telemetry_sessions.show']
+  }
+  integrations: {
+    vercel: {
+      vercelConnections: {
+        createIntent: typeof routes['integrations.vercel.vercel_connections.create_intent']
+        index: typeof routes['integrations.vercel.vercel_connections.index']
+        projects: typeof routes['integrations.vercel.vercel_connections.projects']
+        destroy: typeof routes['integrations.vercel.vercel_connections.destroy']
+      }
+    }
   }
   previewSessions: {
     previewSessions: {
@@ -93,6 +106,18 @@ export interface ApiDefinition {
       complete: typeof routes['projects.project_initializations.complete']
       fail: typeof routes['projects.project_initializations.fail']
       repair: typeof routes['projects.project_initializations.repair']
+    }
+    deployTargets: {
+      show: typeof routes['projects.deploy_targets.show']
+      update: typeof routes['projects.deploy_targets.update']
+    }
+    projectDeployments: {
+      index: typeof routes['projects.project_deployments.index']
+      store: typeof routes['projects.project_deployments.store']
+      show: typeof routes['projects.project_deployments.show']
+      completeSource: typeof routes['projects.project_deployments.complete_source']
+      logs: typeof routes['projects.project_deployments.logs']
+      cancel: typeof routes['projects.project_deployments.cancel']
     }
     quickChats: {
       quickChats: {

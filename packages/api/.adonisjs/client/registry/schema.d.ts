@@ -55,6 +55,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/telemetry_ingestion_controller').default['store']>>>
     }
   }
+  'vercel_connections.callback': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/integrations/vercel/callback'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/vercel_connections_controller').default['callback']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/vercel_connections_controller').default['callback']>>>
+    }
+  }
   'telemetry_sessions.show': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/telemetry/session'
@@ -65,6 +77,54 @@ export interface Registry {
       query: {}
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/telemetry_sessions_controller').default['show']>>>
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/telemetry_sessions_controller').default['show']>>>
+    }
+  }
+  'integrations.vercel.vercel_connections.create_intent': {
+    methods: ["POST"]
+    pattern: '/api/v1/integrations/vercel/connect-intents'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/vercel_connections_controller').default['createIntent']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/vercel_connections_controller').default['createIntent']>>>
+    }
+  }
+  'integrations.vercel.vercel_connections.index': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/integrations/vercel/connections'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/vercel_connections_controller').default['index']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/vercel_connections_controller').default['index']>>>
+    }
+  }
+  'integrations.vercel.vercel_connections.projects': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/integrations/vercel/connections/:id/projects'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/vercel_connections_controller').default['projects']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/vercel_connections_controller').default['projects']>>>
+    }
+  }
+  'integrations.vercel.vercel_connections.destroy': {
+    methods: ["DELETE"]
+    pattern: '/api/v1/integrations/vercel/connections/:id/link'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/vercel_connections_controller').default['destroy']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/vercel_connections_controller').default['destroy']>>>
     }
   }
   'preview_sessions.preview_sessions.index': {
@@ -593,6 +653,102 @@ export interface Registry {
       query: ExtractQuery<InferInput<(typeof import('#validators/project_initialization').repairProjectInitializationValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_initializations_controller').default['repair']>>>
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_initializations_controller').default['repair']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'projects.deploy_targets.show': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/projects/:projectId/deploy-target'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { projectId: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/deploy_targets_controller').default['show']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/deploy_targets_controller').default['show']>>>
+    }
+  }
+  'projects.deploy_targets.update': {
+    methods: ["PUT"]
+    pattern: '/api/v1/projects/:projectId/deploy-target'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/deployment').updateDeployTargetValidator)>>
+      paramsTuple: [ParamValue]
+      params: { projectId: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/deployment').updateDeployTargetValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/deploy_targets_controller').default['update']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/deploy_targets_controller').default['update']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'projects.project_deployments.index': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/projects/:projectId/deployments'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { projectId: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['index']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['index']>>>
+    }
+  }
+  'projects.project_deployments.store': {
+    methods: ["POST"]
+    pattern: '/api/v1/projects/:projectId/deployments'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/deployment').createDeploymentValidator)>>
+      paramsTuple: [ParamValue]
+      params: { projectId: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/deployment').createDeploymentValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['store']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'projects.project_deployments.show': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/projects/:projectId/deployments/:id'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue, ParamValue]
+      params: { projectId: ParamValue; id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['show']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['show']>>>
+    }
+  }
+  'projects.project_deployments.complete_source': {
+    methods: ["POST"]
+    pattern: '/api/v1/projects/:projectId/deployments/:id/source/complete'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/deployment').completeDeploymentSourceValidator)>>
+      paramsTuple: [ParamValue, ParamValue]
+      params: { projectId: ParamValue; id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/deployment').completeDeploymentSourceValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['completeSource']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['completeSource']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'projects.project_deployments.logs': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/projects/:projectId/deployments/:id/logs'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue, ParamValue]
+      params: { projectId: ParamValue; id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['logs']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['logs']>>>
+    }
+  }
+  'projects.project_deployments.cancel': {
+    methods: ["POST"]
+    pattern: '/api/v1/projects/:projectId/deployments/:id/cancel'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue, ParamValue]
+      params: { projectId: ParamValue; id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['cancel']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['cancel']>>>
     }
   }
   'providers.model_catalog.show': {

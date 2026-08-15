@@ -53,6 +53,11 @@ import type {
   PreviewSessionView,
   RuntimeProfileId,
 } from "@blame/preview-runtime"
+import type {
+  DeploymentManifest,
+  DeploymentSnapshot,
+  ProjectDeployment,
+} from "@blame/deploy-contract"
 
 type PickerPaths = string | string[] | null
 
@@ -93,6 +98,7 @@ export type Platform = {
   agent?: AgentClient
   api?: ApiConnection
   backlogStatusPip?: BacklogStatusPipClient
+  deploy?: DeployClient
   platform?: string
   previewBrowser?: PreviewBrowserClient
   previewRuntime?: PreviewRuntimeClient
@@ -109,6 +115,36 @@ export type Platform = {
   ): Promise<PickerPaths>
   openExternalLink?(url: string): void
   openPath?(path: string): Promise<string>
+}
+
+export type DeployProgress = {
+  phase: "preparing" | "uploading" | "submitting"
+  percent: number
+}
+
+export type DeploySourceInput = {
+  root: string
+  previewManifest: PreviewManifest
+  runConfigurations: ProjectRunConfiguration[]
+}
+
+export type DeployClient = {
+  configure(connection: ApiConnection): Promise<boolean>
+  disconnect(): Promise<boolean>
+  preflight(input: DeploySourceInput): Promise<{
+    manifest: DeploymentManifest
+    snapshot: DeploymentSnapshot
+    excludedFileCount: number
+  }>
+  start(
+    input: DeploySourceInput & {
+      projectId: string
+      targetId: string
+      operationId: string
+      expectedWorkspaceHash: string
+    },
+    onProgress?: (progress: DeployProgress) => void
+  ): Promise<ProjectDeployment>
 }
 
 export type TelemetryExportSession = {

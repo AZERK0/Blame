@@ -17,6 +17,8 @@ export type {
   BacklogStatusPipRequest,
   BacklogStatusPipSnapshot,
   CloudMcpServerConfig,
+  DeployClient,
+  DeployProgress,
   GitBranchStatus,
   GitCommandResult,
   GitLogCommit,

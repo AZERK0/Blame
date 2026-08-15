@@ -221,6 +221,33 @@ export class AuthVerificationSchema extends BaseModel {
   declare value: string
 }
 
+export class DeploymentSourceArtifactSchema extends BaseModel {
+  static $columns = ['createdAt', 'deletedAt', 'deploymentId', 'durableAt', 'expiresAt', 'id', 'objectKey', 'sha256', 'size', 'status', 'updatedAt'] as const
+  $columns = DeploymentSourceArtifactSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column.dateTime()
+  declare deletedAt: DateTime | null
+  @column()
+  declare deploymentId: string
+  @column.dateTime()
+  declare durableAt: DateTime | null
+  @column.dateTime()
+  declare expiresAt: DateTime
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare objectKey: string
+  @column()
+  declare sha256: string
+  @column()
+  declare size: bigint | number
+  @column()
+  declare status: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+}
+
 export class FileAttachmentSchema extends BaseModel {
   static $columns = ['aiContextMarkdown', 'checksumSha256', 'createdAt', 'detachedAt', 'id', 'mimeType', 'name', 'objectKey', 'size', 'status', 'updatedAt', 'uploadedAt', 'userId'] as const
   $columns = FileAttachmentSchema.$columns
@@ -636,6 +663,86 @@ export class ProjectCodePracticeSchema extends BaseModel {
   declare projectId: string
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
+}
+
+export class ProjectDeployTargetSchema extends BaseModel {
+  static $columns = ['createdAt', 'deploymentManifest', 'framework', 'id', 'productionUrl', 'projectId', 'rootDirectory', 'updatedAt', 'vercelConnectionId', 'vercelProjectId', 'vercelProjectName'] as const
+  $columns = ProjectDeployTargetSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare deploymentManifest: string
+  @column()
+  declare framework: string | null
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare productionUrl: string | null
+  @column()
+  declare projectId: string
+  @column()
+  declare rootDirectory: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+  @column()
+  declare vercelConnectionId: string
+  @column()
+  declare vercelProjectId: string | null
+  @column()
+  declare vercelProjectName: string
+}
+
+export class ProjectDeploymentSchema extends BaseModel {
+  static $columns = ['createdAt', 'deploymentUrl', 'errorCode', 'fileCount', 'id', 'localChangeCount', 'manifestHash', 'operationId', 'productionUrl', 'projectId', 'providerDeploymentId', 'providerRequestId', 'providerState', 'readyAt', 'safeErrorMessage', 'sourceBranch', 'sourceBytes', 'sourceRevision', 'status', 'submittedAt', 'targetId', 'updatedAt', 'vercelConnectionId', 'workspaceHash'] as const
+  $columns = ProjectDeploymentSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare deploymentUrl: string | null
+  @column()
+  declare errorCode: string | null
+  @column()
+  declare fileCount: number
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare localChangeCount: number
+  @column()
+  declare manifestHash: string
+  @column()
+  declare operationId: string
+  @column()
+  declare productionUrl: string | null
+  @column()
+  declare projectId: string
+  @column()
+  declare providerDeploymentId: string | null
+  @column()
+  declare providerRequestId: string | null
+  @column()
+  declare providerState: string | null
+  @column.dateTime()
+  declare readyAt: DateTime | null
+  @column()
+  declare safeErrorMessage: string | null
+  @column()
+  declare sourceBranch: string | null
+  @column()
+  declare sourceBytes: bigint | number
+  @column()
+  declare sourceRevision: string
+  @column()
+  declare status: string
+  @column.dateTime()
+  declare submittedAt: DateTime | null
+  @column()
+  declare targetId: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+  @column()
+  declare vercelConnectionId: string
+  @column()
+  declare workspaceHash: string
 }
 
 export class ProjectInitializationSchema extends BaseModel {
@@ -1096,4 +1203,52 @@ export class UserSchema extends BaseModel {
   declare twoFactorEnabled: boolean
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
+}
+
+export class VercelConnectIntentSchema extends BaseModel {
+  static $columns = ['consumedAt', 'createdAt', 'expiresAt', 'id', 'stateHash', 'userId'] as const
+  $columns = VercelConnectIntentSchema.$columns
+  @column.dateTime()
+  declare consumedAt: DateTime | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column.dateTime()
+  declare expiresAt: DateTime
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare stateHash: string
+  @column()
+  declare userId: string
+}
+
+export class VercelConnectionSchema extends BaseModel {
+  static $columns = ['configurationId', 'createdAt', 'encryptedAccessToken', 'id', 'lastValidatedAt', 'removedAt', 'scopeDisplayName', 'scopeKey', 'scopeType', 'status', 'teamId', 'updatedAt', 'userId'] as const
+  $columns = VercelConnectionSchema.$columns
+  @column()
+  declare configurationId: string
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare encryptedAccessToken: string
+  @column({ isPrimary: true })
+  declare id: string
+  @column.dateTime()
+  declare lastValidatedAt: DateTime | null
+  @column.dateTime()
+  declare removedAt: DateTime | null
+  @column()
+  declare scopeDisplayName: string
+  @column()
+  declare scopeKey: string
+  @column()
+  declare scopeType: string
+  @column()
+  declare status: string
+  @column()
+  declare teamId: string | null
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+  @column()
+  declare userId: string
 }

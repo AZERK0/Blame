@@ -27,6 +27,21 @@ function invokeRuntimeOperation(
   });
 }
 
+function invokeDeploy(
+  input: Parameters<BlameDesktopApi["deploy"]["start"]>[0],
+  onProgress?: Parameters<BlameDesktopApi["deploy"]["start"]>[1],
+) {
+  const progressChannel = `deploy:progress:${input.operationId}`;
+  const handler = (
+    _event: unknown,
+    progress: Parameters<NonNullable<typeof onProgress>>[0],
+  ) => onProgress?.(progress);
+  if (onProgress) ipcRenderer.on(progressChannel, handler);
+  return ipcRenderer.invoke("deploy:start", input).finally(() => {
+    if (onProgress) ipcRenderer.removeListener(progressChannel, handler);
+  });
+}
+
 function deliverAuthCallback(value: unknown) {
   if (!isAuthCallbackDelivery(value) || authCallbacks.size === 0) return;
   if (deliveredAuthCallbackIds.has(value.id)) {
@@ -73,6 +88,13 @@ const api: BlameDesktopApi = {
       return () =>
         ipcRenderer.removeListener("billing:refresh-license", handler);
     },
+  },
+  deploy: {
+    configure: (connection) =>
+      ipcRenderer.invoke("deploy:configure", connection),
+    disconnect: () => ipcRenderer.invoke("deploy:disconnect"),
+    preflight: (input) => ipcRenderer.invoke("deploy:preflight", input),
+    start: (input, onProgress) => invokeDeploy(input, onProgress),
   },
   telemetry: {
     configure: (session) => ipcRenderer.invoke("telemetry:configure", session),

@@ -112,6 +112,10 @@ export default await Env.create(new URL('../', import.meta.url), {
   VERCEL_ACCESS_TOKEN: Env.schema.secret.optional(),
   VERCEL_PROJECT_ID: Env.schema.string.optional(),
   VERCEL_TEAM_ID: Env.schema.string.optional(),
+  VERCEL_INTEGRATION_CLIENT_ID: Env.schema.string.optional(),
+  VERCEL_INTEGRATION_CLIENT_SECRET: Env.schema.secret.optional(),
+  VERCEL_INTEGRATION_SLUG: Env.schema.string.optional(),
+  VERCEL_INTEGRATION_REDIRECT_URI: Env.schema.string.optional({ format: 'url', tld: false }),
 
   DB_HOST: Env.schema.string({ format: 'host' }),
   DB_PORT: Env.schema.number(),

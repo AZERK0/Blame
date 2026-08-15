@@ -40,6 +40,9 @@ const FileAttachmentsController = () => import('#controllers/file_attachments_co
 const SpeechTranscriptionController = () => import('#controllers/speech_transcription_controller')
 const PreviewSessionsController = () => import('#controllers/preview_sessions_controller')
 const PreviewEdgeInternalController = () => import('#controllers/preview_edge_internal_controller')
+const VercelConnectionsController = () => import('#controllers/vercel_connections_controller')
+const DeployTargetsController = () => import('#controllers/deploy_targets_controller')
+const ProjectDeploymentsController = () => import('#controllers/project_deployments_controller')
 
 router.get('/', () => {
   return { hello: 'world' }
@@ -51,8 +54,20 @@ router
     router.post('account/closure-status', [AccountPrivacyController, 'status'])
     router.post('consumer-contract/withdrawal', [ConsumerContractsController, 'withdraw'])
     router.post('telemetry/otlp/v1/:signal', [TelemetryIngestionController, 'store'])
+    router.get('integrations/vercel/callback', [VercelConnectionsController, 'callback'])
 
     router.get('telemetry/session', [TelemetrySessionsController, 'show']).use(middleware.auth())
+
+    router
+      .group(() => {
+        router.post('/connect-intents', [VercelConnectionsController, 'createIntent'])
+        router.get('/connections', [VercelConnectionsController, 'index'])
+        router.get('/connections/:id/projects', [VercelConnectionsController, 'projects'])
+        router.delete('/connections/:id/link', [VercelConnectionsController, 'destroy'])
+      })
+      .prefix('integrations/vercel')
+      .as('integrations.vercel')
+      .use([middleware.auth(), middleware.license()])
 
     router
       .group(() => {
@@ -146,6 +161,17 @@ router
           ProjectInitializationsController,
           'repair',
         ])
+        router.get('/:projectId/deploy-target', [DeployTargetsController, 'show'])
+        router.put('/:projectId/deploy-target', [DeployTargetsController, 'update'])
+        router.get('/:projectId/deployments', [ProjectDeploymentsController, 'index'])
+        router.post('/:projectId/deployments', [ProjectDeploymentsController, 'store'])
+        router.get('/:projectId/deployments/:id', [ProjectDeploymentsController, 'show'])
+        router.post('/:projectId/deployments/:id/source/complete', [
+          ProjectDeploymentsController,
+          'completeSource',
+        ])
+        router.get('/:projectId/deployments/:id/logs', [ProjectDeploymentsController, 'logs'])
+        router.post('/:projectId/deployments/:id/cancel', [ProjectDeploymentsController, 'cancel'])
       })
       .prefix('projects')
       .as('projects')

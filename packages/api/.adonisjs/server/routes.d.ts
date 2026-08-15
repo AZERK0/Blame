@@ -8,7 +8,12 @@ export type ScannedRoutes = {
     'account_privacy.status': { paramsTuple?: []; params?: {} }
     'consumer_contracts.withdraw': { paramsTuple?: []; params?: {} }
     'telemetry_ingestion.store': { paramsTuple: [ParamValue]; params: {'signal': ParamValue} }
+    'vercel_connections.callback': { paramsTuple?: []; params?: {} }
     'telemetry_sessions.show': { paramsTuple?: []; params?: {} }
+    'integrations.vercel.vercel_connections.create_intent': { paramsTuple?: []; params?: {} }
+    'integrations.vercel.vercel_connections.index': { paramsTuple?: []; params?: {} }
+    'integrations.vercel.vercel_connections.projects': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'integrations.vercel.vercel_connections.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'preview_sessions.preview_sessions.index': { paramsTuple?: []; params?: {} }
     'preview_sessions.preview_sessions.store': { paramsTuple?: []; params?: {} }
     'preview_sessions.preview_sessions.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -53,6 +58,14 @@ export type ScannedRoutes = {
     'projects.project_initializations.complete': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.fail': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.repair': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'projects.deploy_targets.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'projects.deploy_targets.update': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'projects.project_deployments.index': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'projects.project_deployments.store': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'projects.project_deployments.show': { paramsTuple: [ParamValue,ParamValue]; params: {'projectId': ParamValue,'id': ParamValue} }
+    'projects.project_deployments.complete_source': { paramsTuple: [ParamValue,ParamValue]; params: {'projectId': ParamValue,'id': ParamValue} }
+    'projects.project_deployments.logs': { paramsTuple: [ParamValue,ParamValue]; params: {'projectId': ParamValue,'id': ParamValue} }
+    'projects.project_deployments.cancel': { paramsTuple: [ParamValue,ParamValue]; params: {'projectId': ParamValue,'id': ParamValue} }
     'providers.model_catalog.show': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.index': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.store': { paramsTuple?: []; params?: {} }
@@ -90,7 +103,10 @@ export type ScannedRoutes = {
     'preview_edge_internal.consume_ticket': { paramsTuple?: []; params?: {} }
   }
   GET: {
+    'vercel_connections.callback': { paramsTuple?: []; params?: {} }
     'telemetry_sessions.show': { paramsTuple?: []; params?: {} }
+    'integrations.vercel.vercel_connections.index': { paramsTuple?: []; params?: {} }
+    'integrations.vercel.vercel_connections.projects': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'preview_sessions.preview_sessions.index': { paramsTuple?: []; params?: {} }
     'preview_sessions.preview_sessions.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'preview_sessions.preview_sessions.logs': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -109,6 +125,10 @@ export type ScannedRoutes = {
     'projects.project_code_practice_analyses.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.security_audits.index': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'projects.deploy_targets.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'projects.project_deployments.index': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'projects.project_deployments.show': { paramsTuple: [ParamValue,ParamValue]; params: {'projectId': ParamValue,'id': ParamValue} }
+    'projects.project_deployments.logs': { paramsTuple: [ParamValue,ParamValue]; params: {'projectId': ParamValue,'id': ParamValue} }
     'providers.model_catalog.show': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.index': { paramsTuple?: []; params?: {} }
     'attachments.file_attachments.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -121,7 +141,10 @@ export type ScannedRoutes = {
     'projects.user_stories.user_story_agent_runs.activity_detail': { paramsTuple: [ParamValue,ParamValue,ParamValue]; params: {'id': ParamValue,'runId': ParamValue,'activityId': ParamValue} }
   }
   HEAD: {
+    'vercel_connections.callback': { paramsTuple?: []; params?: {} }
     'telemetry_sessions.show': { paramsTuple?: []; params?: {} }
+    'integrations.vercel.vercel_connections.index': { paramsTuple?: []; params?: {} }
+    'integrations.vercel.vercel_connections.projects': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'preview_sessions.preview_sessions.index': { paramsTuple?: []; params?: {} }
     'preview_sessions.preview_sessions.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'preview_sessions.preview_sessions.logs': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -140,6 +163,10 @@ export type ScannedRoutes = {
     'projects.project_code_practice_analyses.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.security_audits.index': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'projects.deploy_targets.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'projects.project_deployments.index': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'projects.project_deployments.show': { paramsTuple: [ParamValue,ParamValue]; params: {'projectId': ParamValue,'id': ParamValue} }
+    'projects.project_deployments.logs': { paramsTuple: [ParamValue,ParamValue]; params: {'projectId': ParamValue,'id': ParamValue} }
     'providers.model_catalog.show': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.index': { paramsTuple?: []; params?: {} }
     'attachments.file_attachments.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -156,6 +183,7 @@ export type ScannedRoutes = {
     'account_privacy.status': { paramsTuple?: []; params?: {} }
     'consumer_contracts.withdraw': { paramsTuple?: []; params?: {} }
     'telemetry_ingestion.store': { paramsTuple: [ParamValue]; params: {'signal': ParamValue} }
+    'integrations.vercel.vercel_connections.create_intent': { paramsTuple?: []; params?: {} }
     'preview_sessions.preview_sessions.store': { paramsTuple?: []; params?: {} }
     'preview_sessions.preview_sessions.action': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'preview_sessions.preview_sessions.source_import': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -179,6 +207,9 @@ export type ScannedRoutes = {
     'projects.project_initializations.complete': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.fail': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.repair': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'projects.project_deployments.store': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'projects.project_deployments.complete_source': { paramsTuple: [ParamValue,ParamValue]; params: {'projectId': ParamValue,'id': ParamValue} }
+    'projects.project_deployments.cancel': { paramsTuple: [ParamValue,ParamValue]; params: {'projectId': ParamValue,'id': ParamValue} }
     'providers.provider_credentials.store': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.store_o_auth': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.resolve': { paramsTuple?: []; params?: {} }
@@ -198,6 +229,13 @@ export type ScannedRoutes = {
     'preview_edge_internal.resolve': { paramsTuple?: []; params?: {} }
     'preview_edge_internal.consume_ticket': { paramsTuple?: []; params?: {} }
   }
+  DELETE: {
+    'integrations.vercel.vercel_connections.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'auth.better': { paramsTuple: [...ParamValue[]]; params: {'*': ParamValue[]} }
+    'providers.provider_credentials.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'projects.quick_chats.quick_chats.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'projects.user_stories.user_stories.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+  }
   OPTIONS: {
     'auth.better': { paramsTuple: [...ParamValue[]]; params: {'*': ParamValue[]} }
   }
@@ -206,6 +244,7 @@ export type ScannedRoutes = {
     'profile.user_ai_preferences.update': { paramsTuple?: []; params?: {} }
     'profile.user_mcp_configurations.update': { paramsTuple?: []; params?: {} }
     'projects.security_audits.update': { paramsTuple: [ParamValue,ParamValue]; params: {'projectId': ParamValue,'auditId': ParamValue} }
+    'projects.deploy_targets.update': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
   }
   PATCH: {
     'auth.better': { paramsTuple: [...ParamValue[]]; params: {'*': ParamValue[]} }
@@ -214,12 +253,6 @@ export type ScannedRoutes = {
     'projects.quick_chats.quick_chat_agent_runs.update': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'runId': ParamValue} }
     'projects.user_stories.user_stories.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.user_stories.user_story_agent_runs.update': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'runId': ParamValue} }
-  }
-  DELETE: {
-    'auth.better': { paramsTuple: [...ParamValue[]]; params: {'*': ParamValue[]} }
-    'providers.provider_credentials.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
-    'projects.quick_chats.quick_chats.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
-    'projects.user_stories.user_stories.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
 }
 declare module '@adonisjs/core/types/http' {
