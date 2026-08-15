@@ -352,6 +352,11 @@ let customGitRunner:
 
 export class BlameAgentRuntime {
   private clines = new Map<string, Promise<ClineCore>>();
+  private activeSecurityAuditSessions = new Map<
+    string,
+    Map<string, ClineCore>
+  >();
+  private cancelledSecurityAudits = new Set<string>();
   private sessionBackendKeys = new Map<string, string>();
   private readonly agentTelemetry = new AgentTelemetry();
   private unsubscribers = new Map<string, () => void>();
@@ -442,6 +447,8 @@ export class BlameAgentRuntime {
       this.discoverSecurityAudit(input),
     validate: (input: ValidateSecurityAuditInput) =>
       this.validateSecurityAudit(input),
+    cancel: (auditId: string) => this.cancelSecurityAudit(auditId),
+    finish: (auditId: string) => this.finishSecurityAudit(auditId),
   };
 
   newProjects = {
@@ -1066,6 +1073,7 @@ export class BlameAgentRuntime {
           await this.core(input.backend),
           input,
           await this.initializationCredential(input),
+          this.securityAuditSessionControl(input.auditId),
         );
       },
     );
@@ -1081,9 +1089,54 @@ export class BlameAgentRuntime {
           await this.core(input.backend),
           input,
           await this.initializationCredential(input),
+          this.securityAuditSessionControl(input.auditId),
         );
       },
     );
+  }
+
+  private securityAuditSessionControl(auditId: string) {
+    return {
+      assertActive: () => {
+        if (this.cancelledSecurityAudits.has(auditId)) {
+          throw new Error("Security audit cancelled");
+        }
+      },
+      started: (sessionId: string, cline: ClineCore) => {
+        if (this.cancelledSecurityAudits.has(auditId)) {
+          void cline.abort(sessionId, "Security audit cancelled");
+          throw new Error("Security audit cancelled");
+        }
+        const sessions =
+          this.activeSecurityAuditSessions.get(auditId) ??
+          new Map<string, ClineCore>();
+        sessions.set(sessionId, cline);
+        this.activeSecurityAuditSessions.set(auditId, sessions);
+      },
+      finished: (sessionId: string) => {
+        const sessions = this.activeSecurityAuditSessions.get(auditId);
+        sessions?.delete(sessionId);
+        if (!sessions?.size) this.activeSecurityAuditSessions.delete(auditId);
+      },
+    };
+  }
+
+  private async cancelSecurityAudit(auditId: string) {
+    this.cancelledSecurityAudits.add(auditId);
+    const sessions = this.activeSecurityAuditSessions.get(auditId);
+    if (!sessions?.size) return false;
+    await Promise.allSettled(
+      [...sessions].map(([sessionId, cline]) =>
+        cline.abort(sessionId, "Security audit cancelled by user"),
+      ),
+    );
+    return true;
+  }
+
+  private finishSecurityAudit(auditId: string) {
+    this.cancelledSecurityAudits.delete(auditId);
+    this.activeSecurityAuditSessions.delete(auditId);
+    return true;
   }
 
   private async initializeProject(

@@ -39,7 +39,7 @@ export function SecurityAuditDashboard({
 }) {
   return (
     <div className="flex flex-1 flex-col overflow-hidden px-4 pt-[calc(var(--header-height)+1rem)] pb-4 lg:px-6 lg:pt-[calc(var(--header-height)+1.5rem)] lg:pb-6">
-      <div className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col gap-4">
+      <div className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col gap-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h2 className="font-heading text-2xl font-semibold">Security</h2>
@@ -48,11 +48,15 @@ export function SecurityAuditDashboard({
               {formatDate(audit.completedAt ?? audit.updatedAt)}
             </p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={onCreatePlan}>
+          <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+            <Button
+              className="flex-1 sm:flex-none"
+              variant="outline"
+              onClick={onCreatePlan}
+            >
               <ListChecksIcon /> Create remediation plan
             </Button>
-            <Button onClick={onRun}>
+            <Button className="flex-1 sm:flex-none" onClick={onRun}>
               <RotateCwIcon /> Run audit
             </Button>
           </div>
@@ -133,51 +137,47 @@ function FindingsList({
       </Card>
     )
   }
+  const findings = [...audit.findings].sort(
+    (left, right) =>
+      severityOrder.indexOf(left.severity) -
+      severityOrder.indexOf(right.severity)
+  )
   return (
-    <div className="space-y-5">
-      {severityOrder.map((severity) => {
-        const findings = audit.findings.filter(
-          (finding) => finding.severity === severity
-        )
-        if (!findings.length) return null
-        return (
-          <section key={severity}>
-            <h3 className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-              {severity}
-            </h3>
-            <div className="space-y-2">
-              {findings.map((finding) => (
-                <button
-                  key={finding.fingerprint}
-                  type="button"
-                  className="group flex w-full items-center gap-3 rounded-lg border bg-card px-4 py-3 text-left transition-colors hover:border-foreground/20 hover:bg-muted/35"
-                  onClick={() => onSelect(finding)}
-                >
-                  <SeverityBadge severity={finding.severity} />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-medium">
-                      {finding.title}
-                    </span>
-                    <span className="block truncate text-xs text-muted-foreground">
-                      {finding.affectedLocations[0]?.path ??
-                        finding.rootCause.summary}
-                    </span>
-                  </span>
-                  {finding.backlogStoryId ? (
-                    <Badge variant="outline" className="hidden sm:inline-flex">
-                      In backlog
-                    </Badge>
-                  ) : null}
-                  <span className="text-xs text-muted-foreground capitalize">
-                    {finding.confidence}
-                  </span>
-                  <ChevronRightIcon className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
-                </button>
-              ))}
-            </div>
-          </section>
-        )
-      })}
+    <div className="grid gap-3 md:grid-cols-2">
+      {findings.map((finding) => (
+        <button
+          key={finding.fingerprint}
+          type="button"
+          className="group flex min-h-40 min-w-0 flex-col rounded-xl border bg-card p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-foreground/20 hover:shadow-md"
+          onClick={() => onSelect(finding)}
+        >
+          <span className="flex w-full items-start justify-between gap-3">
+            <span className="flex flex-wrap items-center gap-2">
+              <SeverityBadge severity={finding.severity} />
+              <span className="text-[11px] text-muted-foreground">
+                {finding.confidence} confidence
+              </span>
+            </span>
+            <ChevronRightIcon className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+          </span>
+          <span className="mt-3 line-clamp-2 font-heading leading-snug font-medium">
+            {finding.title}
+          </span>
+          <span className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+            {finding.rootCause.summary}
+          </span>
+          <span className="mt-auto flex w-full min-w-0 items-end justify-between gap-3 pt-4">
+            <span className="min-w-0 truncate font-mono text-[11px] text-muted-foreground">
+              {finding.affectedLocations[0]?.path ?? finding.id}
+            </span>
+            {finding.backlogStoryId ? (
+              <Badge variant="outline" className="shrink-0">
+                In backlog
+              </Badge>
+            ) : null}
+          </span>
+        </button>
+      ))}
     </div>
   )
 }
@@ -186,13 +186,13 @@ function CoverageView({ audit }: { audit: SecurityAudit }) {
   const coverage = audit.coverage
   if (!coverage) return null
   return (
-    <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-      <Card className="gap-0 py-0">
+    <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(19rem,0.8fr)]">
+      <Card className="min-w-0 gap-0 overflow-hidden py-0">
         {coverage.areas.map((area) => (
           <CoverageRow key={area.area} area={area} />
         ))}
       </Card>
-      <div className="space-y-4">
+      <div className="min-w-0 space-y-4">
         <Card className="p-4">
           <p className="text-sm font-medium">Repository review</p>
           <p className="mt-2 font-heading text-3xl font-semibold">
@@ -209,7 +209,7 @@ function CoverageView({ audit }: { audit: SecurityAudit }) {
               <AlertTriangleIcon className="size-4 text-amber-500" />{" "}
               Limitations
             </div>
-            <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+            <ul className="mt-2 space-y-2 text-xs leading-relaxed break-words text-muted-foreground">
               {coverage.limitations.map((limitation) => (
                 <li key={limitation}>• {limitation}</li>
               ))}
@@ -223,16 +223,17 @@ function CoverageView({ audit }: { audit: SecurityAudit }) {
 
 function CoverageRow({ area }: { area: SecurityCoverageArea }) {
   return (
-    <div className="flex items-center gap-3 border-b px-4 py-3 last:border-b-0">
-      <span className="min-w-32 text-sm font-medium capitalize">
+    <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 gap-y-1 border-b px-4 py-3 last:border-b-0 md:grid-cols-[8.5rem_minmax(0,1fr)_auto] md:items-center">
+      <span className="min-w-0 text-sm font-medium capitalize">
         {area.area.replace("_", " ")}
       </span>
-      <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+      <span className="order-3 col-span-2 min-w-0 text-xs leading-relaxed break-words text-muted-foreground md:order-none md:col-span-1">
         {area.detail}
       </span>
       <Badge
         variant="outline"
         className={cn(
+          "justify-self-end whitespace-nowrap",
           area.status === "complete" && "text-emerald-500",
           area.status === "not_scanned" && "text-muted-foreground"
         )}
@@ -253,24 +254,36 @@ function HistoryView({
   onSelect(auditId: string): void
 }) {
   return (
-    <Card className="gap-0 py-0">
+    <Card className="gap-1 overflow-hidden bg-muted/10 p-1">
       {audits.map((item) => (
         <button
           key={item.id}
           type="button"
           className={cn(
-            "flex w-full items-center gap-3 border-b px-4 py-3 text-left last:border-b-0 hover:bg-muted/35",
-            item.id === audit.id && "bg-muted/35"
+            "flex w-full flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-transparent px-4 py-3 text-left transition-colors hover:bg-muted/45 sm:flex-nowrap",
+            item.id === audit.id &&
+              "border-blue-500/40 bg-blue-500/10 shadow-sm ring-1 ring-blue-500/15"
           )}
           onClick={() => onSelect(item.id)}
+          aria-current={item.id === audit.id ? "true" : undefined}
         >
-          <HistoryIcon className="size-4 text-muted-foreground" />
-          <span className="w-32 text-sm">{formatDate(item.startedAt)}</span>
-          <span className="min-w-0 flex-1 truncate font-mono text-xs text-muted-foreground">
+          <HistoryIcon
+            className={cn(
+              "size-4 shrink-0 text-muted-foreground",
+              item.id === audit.id && "text-blue-500"
+            )}
+          />
+          <span className="text-sm sm:w-32">{formatDate(item.startedAt)}</span>
+          <span className="order-3 min-w-0 basis-full truncate font-mono text-xs text-muted-foreground sm:order-none sm:flex-1 sm:basis-auto">
             {revisionLabel(item)}
           </span>
+          {item.id === audit.id ? (
+            <Badge className="ml-auto sm:ml-0" variant="secondary">
+              Selected
+            </Badge>
+          ) : null}
           {item.status === "completed" ? (
-            <span className="text-xs text-muted-foreground">
+            <span className="hidden text-xs text-muted-foreground md:inline">
               {countSeverity(item, "critical")} Critical ·{" "}
               {countSeverity(item, "high")} High
             </span>

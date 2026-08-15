@@ -56,6 +56,8 @@ export function registerAgentIpcHandlers(input: AgentRuntimeRegistration) {
       agentRuntime().run("securityAudits.discover", securityInput),
     validate: (securityInput) =>
       agentRuntime().run("securityAudits.validate", securityInput),
+    cancel: (auditId) => agentRuntime().cancelSecurityAudit(auditId),
+    finish: (auditId) => agentRuntime().finishSecurityAudit(auditId),
   })
   registerDeliveryWorkflowIpcHandlers(input.beforeDelivery)
 }

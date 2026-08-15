@@ -83,6 +83,10 @@ export interface ApiDefinition {
       fail: typeof routes['projects.project_code_practice_analyses.fail']
       viewed: typeof routes['projects.project_code_practice_analyses.viewed']
     }
+    securityAudits: {
+      index: typeof routes['projects.security_audits.index']
+      update: typeof routes['projects.security_audits.update']
+    }
     projectInitializations: {
       show: typeof routes['projects.project_initializations.show']
       start: typeof routes['projects.project_initializations.start']

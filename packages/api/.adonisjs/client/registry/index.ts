@@ -258,6 +258,18 @@ const routes = {
     tokens: [{"old":"/api/v1/projects/:projectId/code-practice-analysis/viewed","type":0,"val":"api","end":""},{"old":"/api/v1/projects/:projectId/code-practice-analysis/viewed","type":0,"val":"v1","end":""},{"old":"/api/v1/projects/:projectId/code-practice-analysis/viewed","type":0,"val":"projects","end":""},{"old":"/api/v1/projects/:projectId/code-practice-analysis/viewed","type":1,"val":"projectId","end":""},{"old":"/api/v1/projects/:projectId/code-practice-analysis/viewed","type":0,"val":"code-practice-analysis","end":""},{"old":"/api/v1/projects/:projectId/code-practice-analysis/viewed","type":0,"val":"viewed","end":""}],
     types: placeholder as Registry['projects.project_code_practice_analyses.viewed']['types'],
   },
+  'projects.security_audits.index': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/projects/:projectId/security-audits',
+    tokens: [{"old":"/api/v1/projects/:projectId/security-audits","type":0,"val":"api","end":""},{"old":"/api/v1/projects/:projectId/security-audits","type":0,"val":"v1","end":""},{"old":"/api/v1/projects/:projectId/security-audits","type":0,"val":"projects","end":""},{"old":"/api/v1/projects/:projectId/security-audits","type":1,"val":"projectId","end":""},{"old":"/api/v1/projects/:projectId/security-audits","type":0,"val":"security-audits","end":""}],
+    types: placeholder as Registry['projects.security_audits.index']['types'],
+  },
+  'projects.security_audits.update': {
+    methods: ["PUT"],
+    pattern: '/api/v1/projects/:projectId/security-audits/:auditId',
+    tokens: [{"old":"/api/v1/projects/:projectId/security-audits/:auditId","type":0,"val":"api","end":""},{"old":"/api/v1/projects/:projectId/security-audits/:auditId","type":0,"val":"v1","end":""},{"old":"/api/v1/projects/:projectId/security-audits/:auditId","type":0,"val":"projects","end":""},{"old":"/api/v1/projects/:projectId/security-audits/:auditId","type":1,"val":"projectId","end":""},{"old":"/api/v1/projects/:projectId/security-audits/:auditId","type":0,"val":"security-audits","end":""},{"old":"/api/v1/projects/:projectId/security-audits/:auditId","type":1,"val":"auditId","end":""}],
+    types: placeholder as Registry['projects.security_audits.update']['types'],
+  },
   'projects.project_initializations.show': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/projects/:projectId/initialization',

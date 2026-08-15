@@ -122,11 +122,9 @@ const api: BlameDesktopApi = {
     request: (input) => ipcRenderer.invoke("backlog-status-pip:request", input),
   },
   securityAudits: {
-    list: (input) => ipcRenderer.invoke("security-audits:list", input),
-    get: (input) => ipcRenderer.invoke("security-audits:get", input),
+    active: (input) => ipcRenderer.invoke("security-audits:active", input),
     run: (input) => ipcRenderer.invoke("security-audits:run", input),
-    updateFinding: (input) =>
-      ipcRenderer.invoke("security-audits:update-finding", input),
+    cancel: (input) => ipcRenderer.invoke("security-audits:cancel", input),
     onChanged: (callback) => {
       const handler = (
         _event: unknown,

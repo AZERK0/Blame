@@ -19,6 +19,7 @@ const ProjectCodePracticeAnalysesController = () =>
   import('#controllers/project_code_practice_analyses_controller')
 const ProjectInitializationsController = () =>
   import('#controllers/project_initializations_controller')
+const SecurityAuditsController = () => import('#controllers/security_audits_controller')
 const QuickChatAgentRunsController = () => import('#controllers/quick_chat_agent_runs_controller')
 const QuickChatMessagesController = () => import('#controllers/quick_chat_messages_controller')
 const QuickChatsController = () => import('#controllers/quick_chats_controller')
@@ -132,6 +133,8 @@ router
           ProjectCodePracticeAnalysesController,
           'viewed',
         ])
+        router.get('/:projectId/security-audits', [SecurityAuditsController, 'index'])
+        router.put('/:projectId/security-audits/:auditId', [SecurityAuditsController, 'update'])
         router.get('/:projectId/initialization', [ProjectInitializationsController, 'show'])
         router.post('/:projectId/initialization/start', [ProjectInitializationsController, 'start'])
         router.post('/:projectId/initialization/complete', [

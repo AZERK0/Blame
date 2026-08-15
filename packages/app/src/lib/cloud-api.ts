@@ -18,6 +18,7 @@ import type {
   PreviewManifest,
   ProjectCodePracticeResult,
   ProjectRunConfiguration,
+  SecurityAudit,
 } from "@blame/agent-runtime"
 import type {
   CloudAuthRequestClient,
@@ -346,6 +347,21 @@ export function createCloudApi(connection: CloudApiConnection) {
         `/projects/${encodeURIComponent(projectId)}/code-practice-analysis`
       ).then(cloudProjectCodePracticeAnalysis)
     },
+    securityAudits(projectId: string) {
+      return request<unknown>(
+        connection,
+        baseUrl,
+        `/projects/${encodeURIComponent(projectId)}/security-audits`
+      ).then(cloudSecurityAudits)
+    },
+    saveSecurityAudit(projectId: string, audit: SecurityAudit) {
+      return request<unknown>(
+        connection,
+        baseUrl,
+        `/projects/${encodeURIComponent(projectId)}/security-audits/${encodeURIComponent(audit.id)}`,
+        { body: JSON.stringify({ audit }), method: "PUT" }
+      ).then(cloudSecurityAudit)
+    },
     startProjectCodePracticeAnalysis(
       projectId: string,
       input: { providerId: string; modelId: string }
@@ -496,6 +512,28 @@ function cloudProjectCodePracticeAnalysis(value: unknown) {
     throw new Error("Unable to read project code practice analysis.")
   }
   return analysis as CloudProjectCodePracticeAnalysis
+}
+
+function cloudSecurityAudits(value: unknown) {
+  const audits = transformerValue(value)
+  if (!Array.isArray(audits)) throw new Error("Unable to read security audits.")
+  return audits.map(cloudSecurityAudit)
+}
+
+function cloudSecurityAudit(value: unknown) {
+  const audit = transformerValue(value)
+  if (
+    !isRecord(audit) ||
+    audit.version !== 1 ||
+    typeof audit.id !== "string" ||
+    typeof audit.projectId !== "string" ||
+    typeof audit.sequence !== "number" ||
+    typeof audit.status !== "string" ||
+    !Array.isArray(audit.findings)
+  ) {
+    throw new Error("Unable to read security audit.")
+  }
+  return audit as SecurityAudit
 }
 
 function projectCodePracticeAnalysisRequest(

@@ -54,6 +54,16 @@ const projectCodePracticeAnalysisColumns = [
   'created_at',
   'updated_at',
 ]
+const securityAuditColumns = [
+  'id',
+  'project_id',
+  'status',
+  'sequence',
+  'payload',
+  'started_at',
+  'created_at',
+  'updated_at',
+]
 const userStoryColumns = [
   'id',
   'project_id',
@@ -250,6 +260,10 @@ export default class AccountExportQueries {
       'project_id',
       projectIds
     )
+  }
+
+  securityAudits(projectIds: string[]) {
+    return this.ownedRows('security_audits', securityAuditColumns, 'project_id', projectIds)
   }
 
   userStories(projectIds: string[]) {

@@ -511,6 +511,30 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_code_practice_analyses_controller').default['viewed']>>>
     }
   }
+  'projects.security_audits.index': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/projects/:projectId/security-audits'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { projectId: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/security_audits_controller').default['index']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/security_audits_controller').default['index']>>>
+    }
+  }
+  'projects.security_audits.update': {
+    methods: ["PUT"]
+    pattern: '/api/v1/projects/:projectId/security-audits/:auditId'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/security_audit').saveSecurityAuditValidator)>>
+      paramsTuple: [ParamValue, ParamValue]
+      params: { projectId: ParamValue; auditId: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/security_audit').saveSecurityAuditValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/security_audits_controller').default['update']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/security_audits_controller').default['update']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
   'projects.project_initializations.show': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/projects/:projectId/initialization'

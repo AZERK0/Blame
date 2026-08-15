@@ -118,6 +118,7 @@ async function projectExport(queries: AccountExportQueries, projectIds: string[]
     ]),
     projectCodePractices: await queries.projectCodePractices(projectIds),
     projectCodePracticeAnalyses: await queries.projectCodePracticeAnalyses(projectIds),
+    securityAudits: normalizeRows(await queries.securityAudits(projectIds), ['payload']),
   }
 }
 

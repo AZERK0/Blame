@@ -46,6 +46,8 @@ export type ScannedRoutes = {
     'projects.project_code_practice_analyses.complete': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_code_practice_analyses.fail': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_code_practice_analyses.viewed': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'projects.security_audits.index': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'projects.security_audits.update': { paramsTuple: [ParamValue,ParamValue]; params: {'projectId': ParamValue,'auditId': ParamValue} }
     'projects.project_initializations.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.start': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.complete': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
@@ -105,6 +107,7 @@ export type ScannedRoutes = {
     'projects.projects.index': { paramsTuple?: []; params?: {} }
     'projects.project_code_practices.index': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_code_practice_analyses.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'projects.security_audits.index': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'providers.model_catalog.show': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.index': { paramsTuple?: []; params?: {} }
@@ -135,6 +138,7 @@ export type ScannedRoutes = {
     'projects.projects.index': { paramsTuple?: []; params?: {} }
     'projects.project_code_practices.index': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_code_practice_analyses.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'projects.security_audits.index': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'providers.model_catalog.show': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.index': { paramsTuple?: []; params?: {} }
@@ -201,6 +205,7 @@ export type ScannedRoutes = {
     'auth.better': { paramsTuple: [...ParamValue[]]; params: {'*': ParamValue[]} }
     'profile.user_ai_preferences.update': { paramsTuple?: []; params?: {} }
     'profile.user_mcp_configurations.update': { paramsTuple?: []; params?: {} }
+    'projects.security_audits.update': { paramsTuple: [ParamValue,ParamValue]; params: {'projectId': ParamValue,'auditId': ParamValue} }
   }
   PATCH: {
     'auth.better': { paramsTuple: [...ParamValue[]]; params: {'*': ParamValue[]} }

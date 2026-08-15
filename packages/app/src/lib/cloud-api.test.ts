@@ -300,6 +300,45 @@ test("transcribes audio through the authenticated speech endpoint", async () => 
   )
 })
 
+test("loads and saves security audit snapshots in the project cloud API", async () => {
+  const requests: Array<{ init?: RequestInit; url: string }> = []
+  const audit = {
+    findings: [],
+    id: "audit-id",
+    projectId: "project-id",
+    sequence: 4,
+    status: "mapping",
+    version: 1,
+  }
+  globalThis.fetch = async (input, init) => {
+    requests.push({ init, url: String(input) })
+    return jsonResponse(requests.length === 1 ? [audit] : audit)
+  }
+  const api = createCloudApi({
+    token: "session-token",
+    url: "https://api.blame.test",
+  })
+
+  assert.deepEqual(await api.securityAudits("project-id"), [audit])
+  assert.deepEqual(
+    await api.saveSecurityAudit("project-id", audit as never),
+    audit
+  )
+  assert.equal(
+    requests[1]?.url,
+    "https://api.blame.test/projects/project-id/security-audits/audit-id"
+  )
+  assert.equal(requests[1]?.init?.method, "PUT")
+  assert.deepEqual(JSON.parse(String(requests[1]?.init?.body)), { audit })
+  assert.ok(
+    requests.every(
+      (request) =>
+        new Headers(request.init?.headers).get("Authorization") ===
+        "Bearer session-token"
+    )
+  )
+})
+
 function deviceAuthorizationResponse() {
   return {
     device_code: "secure-device-code",

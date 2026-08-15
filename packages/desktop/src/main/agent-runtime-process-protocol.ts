@@ -25,6 +25,8 @@ export const agentRuntimeMethods = [
   "securityAudits.map",
   "securityAudits.discover",
   "securityAudits.validate",
+  "securityAudits.cancel",
+  "securityAudits.finish",
   "newProjects.generate",
   "promptOptimizer.optimizeUserStory",
   "promptOptimizer.generateTitle",

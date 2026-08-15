@@ -24,6 +24,25 @@ export type SecurityFindingStatus =
   | "false_positive"
   | "regressed";
 
+export type SecurityAuditProgressStepStatus =
+  | "pending"
+  | "running"
+  | "completed"
+  | "failed"
+  | "cancelled";
+
+export type SecurityAuditProgressStep = {
+  id: string;
+  label: string;
+  status: SecurityAuditProgressStepStatus;
+  detail?: string;
+};
+
+export type SecurityAuditProgress = {
+  phase: Exclude<SecurityAuditStatus, "failed" | "cancelled">;
+  steps: SecurityAuditProgressStep[];
+};
+
 export type SecuritySourceLocation = {
   path: string;
   startLine?: number;
@@ -157,6 +176,7 @@ export type SecurityFinding = {
 export type SecurityAudit = {
   version: 1;
   id: string;
+  sequence: number;
   projectId?: string;
   mode: SecurityAuditMode;
   scope: { type: "repository" | "paths"; paths?: string[] };
@@ -169,6 +189,7 @@ export type SecurityAudit = {
   candidateCount: number;
   rejectedCandidateCount: number;
   sessionIds: string[];
+  progress?: SecurityAuditProgress;
   scannerVersions: Record<string, string>;
   analysisModel?: {
     providerId: string;
@@ -201,6 +222,7 @@ export type SecurityAuditPerspective =
   | "business_logic";
 
 export type DiscoverSecurityAuditInput = AnalyzeProjectCodePracticesInput & {
+  auditId: string;
   mode: SecurityAuditMode;
   perspective: SecurityAuditPerspective;
   repository: MapSecurityAuditResult;
@@ -230,6 +252,7 @@ export type SecurityDeterministicScanResult = {
 };
 
 export type ValidateSecurityAuditInput = AnalyzeProjectCodePracticesInput & {
+  auditId: string;
   mode: SecurityAuditMode;
   repository: MapSecurityAuditResult;
   discoveries: SecurityAuditDiscoveryResult[];
@@ -248,4 +271,10 @@ export type RunSecurityAuditInput = AnalyzeProjectCodePracticesInput & {
   projectId?: string;
   mode: SecurityAuditMode;
   scope?: { type: "repository" | "paths"; paths?: string[] };
+  previousFindings?: SecurityAuditFindingHistory[];
 };
+
+export type SecurityAuditFindingHistory = Pick<
+  SecurityFinding,
+  "backlogStoryId" | "fingerprint" | "firstSeenAuditId" | "status"
+> & { auditId: string };

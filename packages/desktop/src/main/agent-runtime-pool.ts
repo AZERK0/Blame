@@ -146,6 +146,14 @@ export class AgentRuntimePool {
     return this.broadcast("telemetry.disable");
   }
 
+  cancelSecurityAudit(auditId: string) {
+    return this.broadcast("securityAudits.cancel", auditId);
+  }
+
+  finishSecurityAudit(auditId: string) {
+    return this.broadcast("securityAudits.finish", auditId);
+  }
+
   async shutdown() {
     this.stopping = true;
     await Promise.allSettled(

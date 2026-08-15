@@ -2,11 +2,14 @@ import * as React from "react"
 import type {
   RunSecurityAuditInput,
   SecurityAudit,
+  SecurityFinding,
   SecurityFindingStatus,
 } from "@blame/agent-runtime"
 
+import { useCloudAuth } from "@/context/cloud-auth"
 import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
+import { createCloudApi } from "@/lib/cloud-api"
 
 const runningStatuses = new Set<SecurityAudit["status"]>([
   "queued",
@@ -16,26 +19,84 @@ const runningStatuses = new Set<SecurityAudit["status"]>([
   "prioritization",
 ])
 
+type Persistence = { promise: Promise<SecurityAudit>; sequence: number }
+
 export function useSecurityAudits() {
+  const auth = useCloudAuth()
   const platform = usePlatform()
   const project = useProjects().activeProject
   const root = project?.path
-  const client = platform.securityAudits
+  const projectId = project?.id
+  const runner = platform.securityAudits
+  const cloud = React.useMemo(
+    () => createCloudApi(auth.apiConnection),
+    [auth.apiConnection]
+  )
+  const persistence = React.useRef(new Map<string, Persistence>())
+  const auditsRef = React.useRef<SecurityAudit[]>([])
   const [state, setState] = React.useState<{
     audits: SecurityAudit[]
     error?: string
     loading: boolean
+    projectId?: string
     root?: string
   }>({ audits: [], loading: true })
 
+  const applyAudit = React.useCallback(
+    (audit: SecurityAudit) => {
+      setState((current) => {
+        const audits = upsertAudit(
+          current.projectId === projectId ? current.audits : [],
+          audit
+        )
+        auditsRef.current = audits
+        return {
+          ...current,
+          audits,
+          error: undefined,
+          loading: false,
+          projectId,
+          root,
+        }
+      })
+    },
+    [projectId, root]
+  )
+
+  const persist = React.useCallback(
+    (audit: SecurityAudit) => {
+      if (!projectId || audit.projectId !== projectId) {
+        return Promise.reject(
+          new Error("Security audit project identity is invalid.")
+        )
+      }
+      const key = `${projectId}:${audit.id}`
+      const queued = persistence.current.get(key)
+      if (queued && queued.sequence >= audit.sequence) return queued.promise
+      const promise = (queued?.promise ?? Promise.resolve(audit))
+        .catch(() => audit)
+        .then(() => cloud.saveSecurityAudit(projectId, audit))
+        .then((saved) => {
+          applyAudit(saved)
+          return saved
+        })
+      persistence.current.set(key, { promise, sequence: audit.sequence })
+      return promise
+    },
+    [applyAudit, cloud, projectId]
+  )
+
   const load = React.useCallback(async () => {
-    if (!root || !client) {
+    if (!root || !projectId || auth.status !== "authenticated") {
+      auditsRef.current = []
       setState({
         audits: [],
-        error: client
-          ? undefined
-          : "Security Audit is available in the desktop app.",
-        loading: false,
+        error:
+          auth.status === "unauthenticated"
+            ? "Sign in to access cloud security audits."
+            : undefined,
+        loading: auth.status === "loading",
+        projectId,
         root,
       })
       return
@@ -44,15 +105,43 @@ export function useSecurityAudits() {
       ...current,
       error: undefined,
       loading: true,
+      projectId,
       root,
     }))
     try {
-      const audits = await client.list({ root })
-      setState({ audits, loading: false, root })
+      let audits = await cloud.securityAudits(projectId)
+      if (runner) {
+        const active = await runner.active({ root })
+        const interrupted = audits.filter(
+          (audit) =>
+            runningStatuses.has(audit.status) && audit.id !== active?.id
+        )
+        if (interrupted.length) {
+          const replacements = await Promise.all(
+            interrupted.map((audit) =>
+              cloud.saveSecurityAudit(projectId, interruptedAudit(audit))
+            )
+          )
+          const replacementById = new Map(
+            replacements.map((audit) => [audit.id, audit])
+          )
+          audits = audits.map((audit) => replacementById.get(audit.id) ?? audit)
+        }
+        if (active) audits = upsertAudit(audits, active)
+      }
+      auditsRef.current = audits
+      setState({ audits, loading: false, projectId, root })
     } catch (error) {
-      setState({ audits: [], error: errorMessage(error), loading: false, root })
+      auditsRef.current = []
+      setState({
+        audits: [],
+        error: errorMessage(error),
+        loading: false,
+        projectId,
+        root,
+      })
     }
-  }, [client, root])
+  }, [auth.status, cloud, projectId, root, runner])
 
   React.useEffect(() => {
     const timer = window.setTimeout(() => void load(), 0)
@@ -60,53 +149,93 @@ export function useSecurityAudits() {
   }, [load])
 
   React.useEffect(() => {
-    if (!client || !root) return
-    return client.onChanged((event) => {
+    if (!runner || !root) return
+    return runner.onChanged((event) => {
       if (event.root !== root) return
-      setState((current) => ({
-        ...current,
-        error: undefined,
-        loading: false,
-        root,
-        audits: upsertAudit(
-          current.root === root ? current.audits : [],
-          event.audit
-        ),
-      }))
+      applyAudit(event.audit)
+      void persist(event.audit).catch((error) => {
+        setState((current) => ({ ...current, error: errorMessage(error) }))
+      })
     })
-  }, [client, root])
+  }, [applyAudit, persist, root, runner])
 
   const run = React.useCallback(
-    async (input: Omit<RunSecurityAuditInput, "cwd" | "workspaceRoot">) => {
-      if (!client || !root)
+    async (
+      input: Omit<
+        RunSecurityAuditInput,
+        "cwd" | "previousFindings" | "workspaceRoot"
+      >
+    ) => {
+      if (!runner || !root || !projectId)
         throw new Error("Open a desktop project before running an audit.")
       setState((current) => ({ ...current, error: undefined }))
       try {
-        return await client.run({ ...input, cwd: root, workspaceRoot: root })
+        const audit = await runner.run({
+          ...input,
+          cwd: root,
+          projectId,
+          previousFindings: auditFindingHistory(auditsRef.current),
+          workspaceRoot: root,
+        })
+        return await persist(audit)
       } catch (error) {
         setState((current) => ({ ...current, error: errorMessage(error) }))
         throw error
       }
     },
-    [client, root]
+    [persist, projectId, root, runner]
+  )
+
+  const cancel = React.useCallback(
+    async (auditId: string) => {
+      if (!runner || !root) throw new Error("Security Audit is unavailable.")
+      const audit = await runner.cancel({ root, auditId })
+      return audit ? persist(audit) : undefined
+    },
+    [persist, root, runner]
   )
 
   const updateFinding = React.useCallback(
     async (
       auditId: string,
       fingerprint: string,
-      update: { status?: SecurityFindingStatus; backlogStoryId?: string }
+      update: {
+        status?: SecurityFindingStatus
+        backlogStoryId?: string | null
+      }
     ) => {
-      if (!client || !root) throw new Error("Security Audit is unavailable.")
-      return client.updateFinding({ root, auditId, fingerprint, ...update })
+      const audit = auditsRef.current.find((item) => item.id === auditId)
+      if (!audit) throw new Error("Security audit was not found.")
+      let found = false
+      const findings = audit.findings.map((finding) => {
+        if (finding.fingerprint !== fingerprint) return finding
+        found = true
+        const next: SecurityFinding = { ...finding }
+        if (update.status !== undefined) next.status = update.status
+        if (update.backlogStoryId === null) delete next.backlogStoryId
+        else if (update.backlogStoryId !== undefined)
+          next.backlogStoryId = update.backlogStoryId
+        return next
+      })
+      if (!found) throw new Error("Security finding was not found.")
+      const next: SecurityAudit = {
+        ...audit,
+        findings,
+        sequence: audit.sequence + 1,
+        updatedAt: new Date().toISOString(),
+      }
+      auditsRef.current = upsertAudit(auditsRef.current, next)
+      applyAudit(next)
+      return persist(next)
     },
-    [client, root]
+    [applyAudit, persist]
   )
 
-  const audits = state.root === root ? state.audits : []
+  const audits = state.projectId === projectId ? state.audits : []
   return {
     ...state,
     audits,
+    cancel,
     latest: audits[0],
     load,
     project,
@@ -116,8 +245,26 @@ export function useSecurityAudits() {
   }
 }
 
+function auditFindingHistory(audits: SecurityAudit[]) {
+  return audits.flatMap((audit) =>
+    audit.findings.map((finding) => ({
+      auditId: audit.id,
+      fingerprint: finding.fingerprint,
+      status: finding.status,
+      ...(finding.firstSeenAuditId
+        ? { firstSeenAuditId: finding.firstSeenAuditId }
+        : {}),
+      ...(finding.backlogStoryId
+        ? { backlogStoryId: finding.backlogStoryId }
+        : {}),
+    }))
+  )
+}
+
 function upsertAudit(audits: SecurityAudit[], audit: SecurityAudit) {
-  return [audit, ...audits.filter((item) => item.id !== audit.id)].sort(
+  const current = audits.find((item) => item.id === audit.id)
+  const next = current && current.sequence > audit.sequence ? current : audit
+  return [next, ...audits.filter((item) => item.id !== audit.id)].sort(
     (left, right) => right.startedAt.localeCompare(left.startedAt)
   )
 }
@@ -130,4 +277,16 @@ function errorMessage(error: unknown) {
 
 export function securityAuditRunning(audit?: SecurityAudit) {
   return Boolean(audit && runningStatuses.has(audit.status))
+}
+
+function interruptedAudit(audit: SecurityAudit): SecurityAudit {
+  const timestamp = new Date().toISOString()
+  return {
+    ...audit,
+    status: "failed",
+    error: "The desktop audit process ended before this audit completed.",
+    completedAt: timestamp,
+    sequence: audit.sequence + 1,
+    updatedAt: timestamp,
+  }
 }

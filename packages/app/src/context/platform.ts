@@ -37,7 +37,6 @@ import type {
   RunSecurityAuditInput,
   SaveProviderCredentialInput,
   SecurityAudit,
-  SecurityFindingStatus,
   SendDevelopmentSessionInput,
   SendSessionInput,
   StartDevelopmentSessionInput,
@@ -356,16 +355,12 @@ export type AgentClient = {
 }
 
 export type SecurityAuditClient = {
-  list(input: { root: string }): Promise<SecurityAudit[]>
-  get(input: { root: string; auditId: string }): Promise<SecurityAudit>
+  active(input: { root: string }): Promise<SecurityAudit | undefined>
   run(input: RunSecurityAuditInput): Promise<SecurityAudit>
-  updateFinding(input: {
+  cancel(input: {
     root: string
     auditId: string
-    fingerprint: string
-    status?: SecurityFindingStatus
-    backlogStoryId?: string
-  }): Promise<SecurityAudit>
+  }): Promise<SecurityAudit | undefined>
   onChanged(
     callback: (event: { root: string; audit: SecurityAudit }) => void
   ): () => void

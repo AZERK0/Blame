@@ -819,6 +819,27 @@ export class QuickChatSchema extends BaseModel {
   declare workspace: string | null
 }
 
+export class SecurityAuditSchema extends BaseModel {
+  static $columns = ['createdAt', 'id', 'payload', 'projectId', 'sequence', 'startedAt', 'status', 'updatedAt'] as const
+  $columns = SecurityAuditSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare payload: any
+  @column()
+  declare projectId: string
+  @column()
+  declare sequence: number
+  @column.dateTime()
+  declare startedAt: DateTime
+  @column()
+  declare status: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+}
+
 export class StripeWebhookEventSchema extends BaseModel {
   static $columns = ['id', 'processedAt', 'type'] as const
   $columns = StripeWebhookEventSchema.$columns

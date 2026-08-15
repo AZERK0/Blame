@@ -1,4 +1,5 @@
 import type { ClineCore, CoreSessionConfig } from "@cline/sdk";
+import { randomUUID } from "node:crypto";
 
 import {
   legacyDirectWorkspaceTools,
@@ -39,6 +40,12 @@ type Credential = {
 type Correction = { previousResult: string; validationError: string };
 type RuntimeResult = { sessionId: string };
 
+export type SecurityAuditSessionControl = {
+  assertActive(): void;
+  finished(sessionId: string): void;
+  started(sessionId: string, cline: ClineCore): void;
+};
+
 const maxAttempts = 3;
 const securityAuditReadTools = new Set([
   "workspace_state",
@@ -51,9 +58,11 @@ export async function runSecurityDiscovery(
   cline: ClineCore,
   input: DiscoverSecurityAuditInput,
   credential: Credential,
+  control?: SecurityAuditSessionControl,
 ): Promise<SecurityAuditDiscoveryResult> {
   let correction: Correction | undefined;
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    control?.assertActive();
     const submit = submitTool(
       "submit_security_discovery",
       "Submit all security discovery candidates and coverage evidence.",
@@ -68,6 +77,7 @@ export async function runSecurityDiscovery(
       "security-audit-discovery-system",
       "blame-security-discovery",
       input.mode === "deep" ? 40 : 28,
+      control,
     );
     try {
       if (!submit.input)
@@ -89,9 +99,11 @@ export async function runSecurityValidation(
   cline: ClineCore,
   input: ValidateSecurityAuditInput,
   credential: Credential,
+  control?: SecurityAuditSessionControl,
 ): Promise<ValidateSecurityAuditResult> {
   let correction: Correction | undefined;
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    control?.assertActive();
     const submit = submitTool(
       "submit_security_validation",
       "Submit confirmed findings and rejected candidates.",
@@ -110,6 +122,7 @@ export async function runSecurityValidation(
       "security-audit-validation-system",
       "blame-security-validation",
       input.mode === "deep" ? 48 : 32,
+      control,
     );
     try {
       if (!submit.input)
@@ -128,7 +141,7 @@ export async function runSecurityValidation(
   throw new Error("Security validation did not return a valid result");
 }
 
-function startAuditAgent(
+async function startAuditAgent(
   cline: ClineCore,
   input: DiscoverSecurityAuditInput | ValidateSecurityAuditInput,
   credential: Credential,
@@ -137,20 +150,29 @@ function startAuditAgent(
   systemPrompt: string,
   source: string,
   maxIterations: number,
+  control?: SecurityAuditSessionControl,
 ) {
-  return cline.start({
-    prompt,
-    config: auditConfig(
-      input,
-      credential,
-      resultTool,
-      systemPrompt,
-      maxIterations,
-    ),
-    interactive: false,
-    source,
-    toolPolicies: auditToolPolicies(resultTool.name),
-  }) as Promise<RuntimeResult>;
+  control?.assertActive();
+  const sessionId = `security-${randomUUID()}`;
+  control?.started(sessionId, cline);
+  try {
+    return (await cline.start({
+      prompt,
+      config: auditConfig(
+        input,
+        credential,
+        resultTool,
+        systemPrompt,
+        maxIterations,
+        sessionId,
+      ),
+      interactive: false,
+      source,
+      toolPolicies: auditToolPolicies(resultTool.name),
+    })) as RuntimeResult;
+  } finally {
+    control?.finished(sessionId);
+  }
 }
 
 function auditConfig(
@@ -159,6 +181,7 @@ function auditConfig(
   resultTool: AgentTool,
   systemPrompt: string,
   maxIterations: number,
+  sessionId: string,
 ) {
   return appendProductionConfig({
     providerId: input.providerId,
@@ -166,6 +189,7 @@ function auditConfig(
     apiKey: credential.apiKey,
     baseUrl: credential.baseUrl ?? undefined,
     ...reasoningConfig(input.reasoningEffort),
+    sessionId,
     systemPrompt: loadPrompt(systemPrompt),
     cwd: input.cwd,
     workspaceRoot: input.workspaceRoot,
