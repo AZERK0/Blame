@@ -7,8 +7,8 @@
 # -----------------------------------------------------------------------------
 FROM node:22-alpine AS base
 
-# Install pnpm matching project version
-RUN corepack enable && corepack prepare pnpm@10.24.0 --activate
+# Install pnpm matching the version pinned by the workspace.
+RUN corepack enable && corepack prepare pnpm@10.33.2 --activate
 
 WORKDIR /app
 
@@ -26,8 +26,10 @@ COPY packages/ ./packages/
 # Copy the backend source
 COPY packages/api/ ./packages/api/
 
-# Install dependencies
-RUN pnpm install
+# Install only the API and its transitive workspace dependencies. Installing the
+# entire monorepo also builds Electron native modules such as node-pty, which
+# are unrelated to the backend image and require a native build toolchain.
+RUN pnpm install --frozen-lockfile --filter @blame/api...
 
 # Increase memory limit for the build process
 ENV NODE_OPTIONS="--max-old-space-size=4096"
@@ -42,7 +44,7 @@ FROM node:22-alpine AS production
 
 WORKDIR /app
 
-RUN corepack enable && corepack prepare pnpm@10.24.0 --activate
+RUN corepack enable && corepack prepare pnpm@10.33.2 --activate
 RUN apk add --no-cache fontconfig ttf-dejavu ttf-liberation font-noto \
     && fc-cache -f
 
@@ -60,7 +62,7 @@ COPY --from=builder --chown=adonis:nodejs /app/packages ./packages
 COPY --from=builder --chown=adonis:nodejs /app/packages/api/build ./packages/api
 
 # Install production dependencies for the workspace
-RUN pnpm install --prod --filter @blame/api...
+RUN pnpm install --prod --frozen-lockfile --filter @blame/api...
 
 USER adonis
 
