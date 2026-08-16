@@ -132,3 +132,218 @@ test("renegotiates a full upload when an exact baseline expires during sync", as
     await rm(root, { recursive: true, force: true })
   }
 })
+
+test("applies ordinary local edits as a live delta without restarting services", async (context) => {
+  const root = await workspaceFixture()
+  try {
+    context.mock.method(globalThis, "fetch", async () => new Response(null, { status: 200 }))
+    const service = new WorkspaceSyncService()
+    const metadata = await service.prepareInitial(root)
+    const session = runningSession(metadata.workspaceHash)
+    let uploaded: { baseHash?: string; workspaceHash?: string; mode?: string } | undefined
+    const commands: string[] = []
+    const client = {
+      async negotiateSource() {
+        return { unchanged: true, session }
+      },
+      async get() {
+        return session
+      },
+      async prepareSourceUpload(_sessionId: string, artifact: typeof uploaded) {
+        uploaded = artifact
+        return uploadTarget()
+      },
+      async applySourceUpload() {
+        session.workspaceHash = uploaded!.workspaceHash
+        return session
+      },
+      async command(_sessionId: string, command: { type: string }) {
+        commands.push(command.type)
+        return session
+      },
+    } as unknown as CloudPreviewClient
+    await service.syncInitial(client, session.id, root)
+    await writeFile(join(root, "index.js"), "console.log('live')\n")
+
+    const result = await service.syncLive(client, session.id, root)
+
+    assert.equal(result.synchronized, true)
+    assert.equal(uploaded?.mode, "delta")
+    assert.equal(uploaded?.baseHash, metadata.workspaceHash)
+    assert.notEqual(uploaded?.workspaceHash, metadata.workspaceHash)
+    assert.deepEqual(commands, [])
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+test("recovers when the live delta was applied but its response was lost", async (context) => {
+  const root = await workspaceFixture()
+  try {
+    context.mock.method(globalThis, "fetch", async () => new Response(null, { status: 200 }))
+    const service = new WorkspaceSyncService()
+    const metadata = await service.prepareInitial(root)
+    const session = runningSession(metadata.workspaceHash)
+    let uploadedWorkspaceHash: string | undefined
+    const commands: string[] = []
+    const client = {
+      async negotiateSource() {
+        return { unchanged: true, session }
+      },
+      async get() {
+        return session
+      },
+      async prepareSourceUpload(_sessionId: string, artifact: { workspaceHash?: string }) {
+        uploadedWorkspaceHash = artifact.workspaceHash
+        return uploadTarget()
+      },
+      async applySourceUpload() {
+        session.workspaceHash = uploadedWorkspaceHash
+        throw new Error("response lost")
+      },
+      async command(_sessionId: string, command: { type: string }) {
+        commands.push(command.type)
+        return session
+      },
+    } as unknown as CloudPreviewClient
+    await service.syncInitial(client, session.id, root)
+    await writeFile(join(root, "index.js"), "console.log('ambiguous')\n")
+
+    const result = await service.syncLive(client, session.id, root)
+
+    assert.equal(result.synchronized, true)
+    assert.equal(result.session.workspaceHash, uploadedWorkspaceHash)
+    assert.deepEqual(commands, [])
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+test("restarts active services when a dependency input changes", async () => {
+  const root = await workspaceFixture()
+  try {
+    const service = new WorkspaceSyncService()
+    const metadata = await service.prepareInitial(root)
+    const session = runningSession(metadata.workspaceHash)
+    let negotiatedWorkspaceHash = metadata.workspaceHash
+    const commands: string[] = []
+    const client = {
+      async negotiateSource(_sessionId: string, current: { workspaceHash: string }) {
+        negotiatedWorkspaceHash = current.workspaceHash
+        session.workspaceHash = current.workspaceHash
+        return { unchanged: true, session }
+      },
+      async get() {
+        return session
+      },
+      async command(_sessionId: string, command: { type: string }) {
+        commands.push(command.type)
+        if (command.type === "stop-services") session.state.engine = "stopped"
+        if (command.type === "start-services") session.state.engine = "running"
+        return session
+      },
+    } as unknown as CloudPreviewClient
+    await service.syncInitial(client, session.id, root)
+    await writeFile(join(root, "package.json"), '{"name":"fixture","dependencies":{"vite":"latest"}}\n')
+
+    const result = await service.syncLive(client, session.id, root)
+
+    assert.equal(result.synchronized, true)
+    assert.notEqual(negotiatedWorkspaceHash, metadata.workspaceHash)
+    assert.deepEqual(commands, ["stop-services", "start-services"])
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+test("watches the attached worktree and pushes later edits automatically", async (context) => {
+  const root = await workspaceFixture()
+  const service = new WorkspaceSyncService()
+  try {
+    context.mock.method(globalThis, "fetch", async () => new Response(null, { status: 200 }))
+    const metadata = await service.prepareInitial(root)
+    const session = runningSession(metadata.workspaceHash)
+    let uploadedWorkspaceHash: string | undefined
+    let applied!: () => void
+    const application = new Promise<void>((resolve) => {
+      applied = resolve
+    })
+    const client = {
+      async negotiateSource() {
+        return { unchanged: true, session }
+      },
+      async get() {
+        return session
+      },
+      async prepareSourceUpload(_sessionId: string, artifact: { workspaceHash?: string }) {
+        uploadedWorkspaceHash = artifact.workspaceHash
+        return uploadTarget()
+      },
+      async applySourceUpload() {
+        session.workspaceHash = uploadedWorkspaceHash
+        applied()
+        return session
+      },
+    } as unknown as CloudPreviewClient
+    await service.syncInitial(client, session.id, root)
+    await service.attachLive(client, session.id, root)
+
+    await writeFile(join(root, "index.js"), "console.log('watched')\n")
+    let timeout: NodeJS.Timeout | undefined
+    try {
+      await Promise.race([
+        application,
+        new Promise<never>((_resolve, reject) => {
+          timeout = setTimeout(() => reject(new Error("Live workspace edit was not synchronized")), 5_000)
+        }),
+      ])
+    } finally {
+      if (timeout) clearTimeout(timeout)
+    }
+
+    assert.notEqual(uploadedWorkspaceHash, metadata.workspaceHash)
+  } finally {
+    service.closeLive()
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+async function workspaceFixture() {
+  const root = await mkdtemp(join(tmpdir(), "blame-workspace-live-sync-"))
+  await execFileAsync("git", ["-C", root, "init", "--quiet"])
+  await execFileAsync("git", ["-C", root, "config", "user.name", "Blame"])
+  await execFileAsync("git", ["-C", root, "config", "user.email", "preview@blame.local"])
+  await writeFile(join(root, "package.json"), '{"name":"fixture"}\n')
+  await writeFile(join(root, "index.js"), "console.log('base')\n")
+  await execFileAsync("git", ["-C", root, "add", "."])
+  await execFileAsync("git", ["-C", root, "commit", "--quiet", "-m", "fixture"])
+  return root
+}
+
+function runningSession(workspaceHash: string) {
+  return {
+    id: "preview_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    desired: { host: "active", services: "running" },
+    state: {
+      host: "running",
+      engine: "running",
+      preview: "ready",
+      agent: "idle",
+      sync: "clean",
+    },
+    selection: {
+      configurationId: "compose",
+      serviceIds: ["app"],
+    },
+    workspaceHash,
+  } as PreviewSessionView
+}
+
+function uploadTarget() {
+  return {
+    artifactId: "artifact-live",
+    expiresAt: new Date(Date.now() + 60_000).toISOString(),
+    headers: {},
+    url: "https://storage.example/artifact",
+  }
+}

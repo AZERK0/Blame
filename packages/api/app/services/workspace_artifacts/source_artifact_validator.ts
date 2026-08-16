@@ -13,6 +13,11 @@ export type ValidatedSourceArtifact = {
   archiveSha256: string
 }
 
+export type ValidatedSourceDeltaArtifact = ValidatedSourceArtifact & {
+  baseHash: string
+  finalHash: string
+}
+
 export async function validateSourceArtifact(
   content: Uint8Array,
   expected: { sha256: string; size: number }
@@ -64,7 +69,7 @@ export async function validateSourceArtifact(
 export async function validateSourceDeltaArtifact(
   content: Uint8Array,
   expected: { sha256: string; size: number }
-): Promise<ValidatedSourceArtifact> {
+): Promise<ValidatedSourceDeltaArtifact> {
   if (content.byteLength !== expected.size) throw new Error('Source delta size mismatch.')
   const archiveSha256 = createHash('sha256').update(content).digest('hex')
   if (archiveSha256 !== expected.sha256) throw new Error('Source delta checksum mismatch.')
@@ -72,6 +77,8 @@ export async function validateSourceDeltaArtifact(
   let entries = 0
   let expandedBytes = 0
   let manifestFound = false
+  let baseHash = ''
+  let finalHash = ''
   const completion = new Promise<void>((resolve, reject) => {
     parser.on('entry', (header, stream, next) => {
       try {
@@ -90,7 +97,40 @@ export async function validateSourceDeltaArtifact(
         expandedBytes += header.size ?? 0
         if (expandedBytes > maxExpandedBytes)
           throw new Error('Source delta expands beyond its limit.')
-        if (path === '.blame/delta-manifest.json') manifestFound = true
+        if (path === '.blame/delta-manifest.json') {
+          if (manifestFound) throw new Error('Source delta contains multiple manifests.')
+          manifestFound = true
+          if ((header.size ?? 0) > 32 * 1024 * 1024) {
+            throw new Error('Source delta manifest is too large.')
+          }
+          const chunks: Buffer[] = []
+          stream.on('data', (chunk) => chunks.push(Buffer.from(chunk)))
+          stream.on('error', reject)
+          stream.on('end', () => {
+            try {
+              const manifest = JSON.parse(Buffer.concat(chunks).toString('utf8')) as {
+                version?: unknown
+                baseHash?: unknown
+                finalHash?: unknown
+              }
+              if (
+                manifest.version !== 1 ||
+                typeof manifest.baseHash !== 'string' ||
+                typeof manifest.finalHash !== 'string' ||
+                !/^[a-f0-9]{64}$/i.test(manifest.baseHash) ||
+                !/^[a-f0-9]{64}$/i.test(manifest.finalHash)
+              ) {
+                throw new Error('Source delta manifest identity is invalid.')
+              }
+              baseHash = manifest.baseHash
+              finalHash = manifest.finalHash
+              next()
+            } catch (error) {
+              reject(error)
+            }
+          })
+          return
+        }
         stream.on('error', reject)
         stream.on('end', next)
         stream.resume()
@@ -100,7 +140,9 @@ export async function validateSourceDeltaArtifact(
       }
     })
     parser.once('finish', () =>
-      manifestFound ? resolve() : reject(new Error('Source delta manifest is missing.'))
+      manifestFound && baseHash && finalHash
+        ? resolve()
+        : reject(new Error('Source delta manifest is missing.'))
     )
     parser.once('error', reject)
   })
@@ -108,7 +150,7 @@ export async function validateSourceDeltaArtifact(
   if (gzip(content)) source.pipe(createGunzip()).pipe(parser)
   else source.pipe(parser)
   await completion
-  return { entries, expandedBytes, archiveSha256 }
+  return { entries, expandedBytes, archiveSha256, baseHash, finalHash }
 }
 
 function safeArchivePath(value: string) {

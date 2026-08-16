@@ -23,6 +23,7 @@ export default class WorkspaceArtifactService {
     sanitizedTreeHash?: string
     lockfileHash?: string
     workspaceHash?: string
+    baseHash?: string
     mode?: 'full' | 'delta'
   }) {
     await ownedSession(input.sessionId, input.ownerUserId)
@@ -39,7 +40,7 @@ export default class WorkspaceArtifactService {
       sanitizedTreeHash: input.sanitizedTreeHash ?? null,
       lockfileHash: input.lockfileHash ?? null,
       workspaceHash: input.workspaceHash ?? null,
-      baseHash: null,
+      baseHash: input.baseHash ?? null,
       finalHash: null,
       generation: null,
       durableAt: null,
@@ -73,13 +74,21 @@ export default class WorkspaceArtifactService {
     }
     try {
       const content = await workspaceArtifactObjectStorage().content(artifact.objectKey)
-      await (artifact.mode === 'delta' ? validateSourceDeltaArtifact : validateSourceArtifact)(
-        content,
-        {
-          sha256: artifact.sha256,
-          size: artifact.size,
+      const expected = {
+        sha256: artifact.sha256,
+        size: artifact.size,
+      }
+      if (artifact.mode === 'delta') {
+        const validated = await validateSourceDeltaArtifact(content, expected)
+        if (
+          (artifact.baseHash && artifact.baseHash !== validated.baseHash) ||
+          (artifact.workspaceHash && artifact.workspaceHash !== validated.finalHash)
+        ) {
+          throw new Error('Source delta identity does not match its declaration.')
         }
-      )
+      } else {
+        await validateSourceArtifact(content, expected)
+      }
     } catch (error) {
       await markInvalid(artifact)
       throw error
@@ -257,6 +266,7 @@ export default class WorkspaceArtifactService {
       sanitizedTreeHash: artifact.sanitizedTreeHash ?? undefined,
       lockfileHash: artifact.lockfileHash ?? undefined,
       workspaceHash: artifact.workspaceHash ?? undefined,
+      baseHash: artifact.baseHash ?? undefined,
     }
   }
 }

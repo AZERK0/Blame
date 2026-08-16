@@ -126,6 +126,7 @@ export default class PreviewSessionsController {
           sanitizedTreeHash: optionalHash(body.sanitizedTreeHash, 'sanitizedTreeHash'),
           lockfileHash: optionalHash(body.lockfileHash, 'lockfileHash'),
           workspaceHash: optionalHash(body.workspaceHash, 'workspaceHash'),
+          baseHash: optionalHash(body.baseHash, 'baseHash'),
           mode: body.mode === undefined ? undefined : body.mode === 'delta' ? 'delta' : 'full',
         })
       }

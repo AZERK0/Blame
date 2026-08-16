@@ -59,7 +59,8 @@ export async function importSourceArtifact(source: SourceArtifact) {
   if (createHash("sha256").update(content).digest("hex") !== source.sha256) {
     throw runnerError("SOURCE_HASH_MISMATCH", "Source checksum mismatch.");
   }
-  if (source.mode === "delta") return applySourceDelta(content, source.revision);
+  if (source.mode === "delta")
+    return applySourceDelta(content, source.revision, source.baseHash, source.workspaceHash);
   const staging = await mkdtemp(join(tmpdir(), "blame-source-"));
   try {
     await extractArchive(content, staging);
@@ -110,7 +111,12 @@ async function readBoundedResponse(stream: ReadableStream<Uint8Array>, expectedS
   return content;
 }
 
-async function applySourceDelta(content: Uint8Array, sourceRevision: string) {
+async function applySourceDelta(
+  content: Uint8Array,
+  sourceRevision: string,
+  expectedBaseHash?: string,
+  expectedFinalHash?: string,
+) {
   const staging = await mkdtemp(join(tmpdir(), "blame-source-delta-"));
   try {
     await extractArchive(content, staging, true);
@@ -133,6 +139,12 @@ async function applySourceDelta(content: Uint8Array, sourceRevision: string) {
       throw runnerError("SOURCE_DELTA_INVALID", "Source delta manifest is invalid.");
     }
     validateDeltaManifest(manifest);
+    if (expectedBaseHash && manifest.baseHash !== expectedBaseHash) {
+      throw runnerError("SOURCE_DELTA_INVALID", "Source delta base hash metadata does not match its manifest.");
+    }
+    if (expectedFinalHash && manifest.finalHash !== expectedFinalHash) {
+      throw runnerError("SOURCE_DELTA_INVALID", "Source delta final hash metadata does not match its manifest.");
+    }
     const current = await snapshotWorkspace();
     if (current.hash !== manifest.baseHash) {
       throw runnerError("SOURCE_BASELINE_MISMATCH", "Source delta base does not match the restored baseline.");

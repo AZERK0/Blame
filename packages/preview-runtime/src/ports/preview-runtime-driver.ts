@@ -68,6 +68,7 @@ export type SourceArtifact = {
   sanitizedTreeHash?: string;
   lockfileHash?: string;
   workspaceHash?: string;
+  baseHash?: string;
 };
 
 export type SyncReceipt = { sourceRevision: string; workspaceHash: string };

@@ -10,6 +10,7 @@ import {
 } from "./cloud-preview-client";
 import { WorkspaceSyncService } from "../workspaces/workspace-sync-service";
 import { app } from "electron";
+import log from "electron-log";
 import { join } from "node:path";
 import { launchExternalPreview } from "./external-preview-launcher";
 
@@ -17,6 +18,7 @@ export class PreviewService {
   private cloud?: CloudPreviewClient;
   private readonly sync = new WorkspaceSyncService(
     join(app.getPath("userData"), "preview-runtime", "workspace-index.json"),
+    (error) => log.warn("Cloud preview live sync failed; retrying", error),
   );
 
   constructor(
@@ -32,6 +34,7 @@ export class PreviewService {
   }
 
   clearCloud() {
+    this.sync.closeLive();
     this.cloud = undefined;
   }
 
@@ -46,19 +49,40 @@ export class PreviewService {
     command: PreviewSessionCommand,
     operationId: string,
   ) {
+    const client = this.cloudClient();
     if (command.type === "start-agent") {
       const workspace = await this.sync.workspaceForSession(sessionId);
       if (workspace) this.assertLocalWriterIdle(workspace);
     }
-    return this.cloudClient().command(sessionId, command, operationId);
+    if (command.type === "start-agent" || command.type === "start-services") {
+      await this.sync.flushLive(sessionId);
+    }
+    const session = await client.command(sessionId, command, operationId);
+    if (command.type === "destroy-host") this.sync.detachLive(sessionId);
+    if (command.type === "resume-host" || command.type === "start-services") {
+      this.sync.wakeLive(sessionId);
+    }
+    return session;
   }
 
   get(sessionId: string): Promise<PreviewSessionView> {
     return this.cloudClient().get(sessionId);
   }
 
-  findForUserStory(userStoryId: string, profile: "vercel-compose") {
-    return this.cloudClient().findForUserStory(userStoryId, profile);
+  async findForUserStory(userStoryId: string, profile: "vercel-compose") {
+    const client = this.cloudClient();
+    const result = await client.findForUserStory(userStoryId, profile);
+    if (result.session && result.session.desired.host !== "destroyed") {
+      const workspace = await this.sync.workspaceForSession(result.session.id);
+      if (workspace) {
+        await this.sync
+          .attachLive(client, result.session.id, workspace)
+          .catch((error) =>
+            log.warn("Unable to restore cloud preview live sync", error),
+          );
+      }
+    }
+    return result;
   }
 
   events(
@@ -83,8 +107,11 @@ export class PreviewService {
     return true;
   }
 
-  syncInitial(sessionId: string, localPath: string) {
-    return this.sync.syncInitial(this.cloudClient(), sessionId, localPath);
+  async syncInitial(sessionId: string, localPath: string) {
+    const client = this.cloudClient();
+    const result = await this.sync.syncInitial(client, sessionId, localPath);
+    await this.sync.attachLive(client, sessionId, localPath);
+    return result;
   }
 
   syncBack(sessionId: string, localPath?: string) {
@@ -96,12 +123,11 @@ export class PreviewService {
     );
   }
 
-  syncBarrier(_localPath: string) {
-    // The native worktree is authoritative in managed-preview profiles.
-    // Local Cline and Git writes must not stop the preview or import sandbox
-    // changes back into the host. The next explicit preview start/restart
-    // creates a fresh, coherent host-to-sandbox artifact instead.
-    return Promise.resolve();
+  syncBarrier(localPath: string) {
+    // The native worktree remains authoritative. Flush any queued host-to-cloud
+    // edit before delivery or another writer transition without importing
+    // sandbox changes into the host.
+    return this.sync.flushWorkspace(localPath);
   }
 
   private cloudClient() {

@@ -11,15 +11,17 @@ export type ChangeJournalState = {
 };
 
 export async function initializeChangeJournal() {
-  const snapshot = await snapshotWorkspace();
-  const state = {
-    revision: 0,
-    base: snapshot,
-    current: snapshot,
-    updatedAt: new Date().toISOString(),
-  } satisfies ChangeJournalState;
-  await writeJournal(state);
-  return state;
+  return withJournalLock(async () => {
+    const snapshot = await snapshotWorkspace();
+    const state = {
+      revision: 0,
+      base: snapshot,
+      current: snapshot,
+      updatedAt: new Date().toISOString(),
+    } satisfies ChangeJournalState;
+    await writeJournal(state);
+    return state;
+  });
 }
 
 export async function checkpointChangeJournal() {

@@ -31,6 +31,7 @@ import { normalizeRuntimeSelection } from "./supervisor/runtime-selection.js";
 import { probeServices } from "./supervisor/service-probes.js";
 import { GatewaySupervisor } from "./gateway/gateway-supervisor.js";
 import { importSourceArtifact } from "./workspace/source-importer.js";
+import { liveSourceImportAllowed } from "./workspace/source-import-policy.js";
 import { refreshWorkspacePreservingWarmCaches } from "./workspace/warm-cache.js";
 import {
   acknowledgeSourceDelta,
@@ -382,10 +383,10 @@ export class RunnerApplication {
     request: Extract<RunnerRequest, { operation: "source-import" }>,
   ) {
     const state = await readRuntimeState();
-    if (state.running)
+    if (state.running && !liveSourceImportAllowed(request.source))
       throw runnerError(
         "ENGINE_RUNNING",
-        "Stop services before importing source.",
+        "Only an incremental workspace delta can be imported while services are running.",
       );
     if (request.preserveWarmCaches && request.source.mode !== "delta") {
       return (
@@ -531,7 +532,7 @@ function requiredRouteId(
 
 function handshake() {
   return runnerHandshake({
-    runnerVersion: process.env.BLAME_RUNNER_VERSION ?? "0.2.14",
+    runnerVersion: process.env.BLAME_RUNNER_VERSION ?? "0.2.15",
     imageDigest: process.env.BLAME_RUNNER_IMAGE_DIGEST ?? "unconfigured",
     capabilities: {
       dockerCompose: true,

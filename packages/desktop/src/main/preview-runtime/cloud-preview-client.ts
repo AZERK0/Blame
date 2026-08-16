@@ -240,6 +240,7 @@ export class CloudPreviewClient implements PreviewSessionBackend<CloudManagedPre
       sanitizedTreeHash?: string;
       lockfileHash?: string;
       workspaceHash?: string;
+      baseHash?: string;
       mode?: "full" | "delta";
     },
   ) {
@@ -255,6 +256,7 @@ export class CloudPreviewClient implements PreviewSessionBackend<CloudManagedPre
           sanitizedTreeHash: artifact.sanitizedTreeHash,
           lockfileHash: artifact.lockfileHash,
           workspaceHash: artifact.workspaceHash,
+          baseHash: artifact.baseHash,
           mode: artifact.mode,
         },
       },

@@ -23,6 +23,7 @@ export type BuiltWorkspaceArtifact = {
   workspaceHash: string
   sanitizedTreeHash: string
   lockfileHash: string
+  snapshot: WorkspaceSnapshot
 }
 
 export type WorkspaceSourceMetadata = {
@@ -41,6 +42,9 @@ export type BuiltWorkspaceDeltaArtifact = {
   sanitizedTreeHash: string
   lockfileHash: string
   baseHash: string
+  changed: string[]
+  deleted: string[]
+  snapshot: WorkspaceSnapshot
 }
 
 type SnapshotFile = {
@@ -172,6 +176,7 @@ export async function buildWorkspaceArtifact(
       workspaceHash: snapshot.hash,
       sanitizedTreeHash: sourceMetadata.sanitizedTreeHash,
       lockfileHash: sourceMetadata.lockfileHash,
+      snapshot,
     }
   } finally {
     await rm(temporary, { recursive: true, force: true })
@@ -183,12 +188,51 @@ export async function buildWorkspaceDeltaArtifact(
   prepared?: PreparedWorkspaceSource,
   attempt = 0,
 ): Promise<BuiltWorkspaceDeltaArtifact> {
+  const source = matchingPreparedSource(root, prepared) ?? (await prepareWorkspaceSource(root))
+  return buildWorkspaceDeltaFromSnapshot(
+    root,
+    source,
+    {
+      hash: snapshotHash(source.canonical.files),
+      files: source.canonical.files,
+    },
+    attempt,
+    () => buildWorkspaceDeltaArtifact(root, undefined, attempt + 1),
+  )
+}
+
+export async function buildWorkspaceIncrementalDeltaArtifact(
+  root: string,
+  base: WorkspaceSnapshot,
+  attempt = 0,
+): Promise<BuiltWorkspaceDeltaArtifact> {
+  const [sourceRevision, snapshot] = await Promise.all([git(root, ["rev-parse", "HEAD"]), snapshotWorkspace(root)])
+  const source = {
+    metadata: {
+      sourceRevision,
+      workspaceHash: snapshot.hash,
+      sanitizedTreeHash: snapshotHash(snapshot.files),
+      lockfileHash: lockfileHash(snapshot.files),
+    },
+    snapshot,
+  }
+  return buildWorkspaceDeltaFromSnapshot(root, source, base, attempt, () =>
+    buildWorkspaceIncrementalDeltaArtifact(root, base, attempt + 1),
+  )
+}
+
+async function buildWorkspaceDeltaFromSnapshot(
+  root: string,
+  source: Pick<PreparedWorkspaceSource, "metadata" | "snapshot">,
+  base: WorkspaceSnapshot,
+  attempt: number,
+  retry: () => Promise<BuiltWorkspaceDeltaArtifact>,
+): Promise<BuiltWorkspaceDeltaArtifact> {
   const temporary = await mkdtemp(join(tmpdir(), "blame-workspace-delta-"))
   try {
-    const source = matchingPreparedSource(root, prepared) ?? (await prepareWorkspaceSource(root))
     const metadata = source.metadata
     const current = source.snapshot
-    const baseFiles = source.canonical.files
+    const baseFiles = base.files
     const changed = Object.keys(current.files).filter((path) => !sameSnapshotFile(baseFiles[path], current.files[path]))
     const deleted = Object.keys(baseFiles).filter((path) => !current.files[path])
     const archive = pack()
@@ -207,7 +251,7 @@ export async function buildWorkspaceDeltaArtifact(
           version: 1,
           generation: 0,
           revision: "0",
-          baseHash: snapshotHash(baseFiles),
+          baseHash: base.hash,
           finalHash: current.hash,
           changed,
           deleted,
@@ -237,14 +281,14 @@ export async function buildWorkspaceDeltaArtifact(
     } catch (error) {
       archive.destroy(error as Error)
       await writing.catch(() => undefined)
-      if (attempt < 2) return buildWorkspaceDeltaArtifact(root, undefined, attempt + 1)
+      if (attempt < 2) return retry()
       throw new Error("Workspace kept changing while its delta was built", {
         cause: error,
       })
     }
     const [verified, verifiedRevision] = await Promise.all([snapshotWorkspace(root), git(root, ["rev-parse", "HEAD"])])
     if (verified.hash !== metadata.workspaceHash || verifiedRevision !== metadata.sourceRevision) {
-      if (attempt < 2) return buildWorkspaceDeltaArtifact(root, undefined, attempt + 1)
+      if (attempt < 2) return retry()
       throw new Error("Workspace kept changing while its delta was built")
     }
     const content = Buffer.concat(chunks)
@@ -259,7 +303,10 @@ export async function buildWorkspaceDeltaArtifact(
       workspaceHash: metadata.workspaceHash,
       sanitizedTreeHash: metadata.sanitizedTreeHash,
       lockfileHash: metadata.lockfileHash,
-      baseHash: snapshotHash(baseFiles),
+      baseHash: base.hash,
+      changed,
+      deleted,
+      snapshot: current,
     }
   } finally {
     await rm(temporary, { recursive: true, force: true })

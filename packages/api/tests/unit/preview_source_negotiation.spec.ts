@@ -1,7 +1,8 @@
+import { sourceImportUnchanged } from '#services/preview_sessions/preview_session_service'
 import {
   baselineImportAction,
-  sourceImportUnchanged,
-} from '#services/preview_sessions/preview_session_service'
+  liveSourceDeltaMatches,
+} from '#services/preview_sessions/source_import_policy'
 import type { PreviewSessionState } from '@blame/preview-runtime'
 import { test } from '@japa/runner'
 
@@ -61,7 +62,32 @@ test.group('preview source negotiation', () => {
 
   test('rejects a delta only when no exact baseline exists', ({ assert }) => {
     assert.equal(baselineImportAction({ sourceMode: 'delta' }), 'unavailable')
+    assert.equal(baselineImportAction({ sourceMode: 'delta', liveDeltaMatches: true }), 'direct')
     assert.equal(baselineImportAction({ sourceMode: 'full' }), 'none')
+  })
+
+  test('accepts a live delta only from the current clean workspace', ({ assert }) => {
+    const current = session()
+    const source = {
+      id: 'artifact-live',
+      revision: metadata.baseRevision,
+      sha256: 'e'.repeat(64),
+      size: 1,
+      mode: 'delta' as const,
+      baseHash: metadata.workspaceHash,
+      workspaceHash: 'f'.repeat(64),
+    }
+    assert.isTrue(liveSourceDeltaMatches(current, source))
+    assert.isFalse(liveSourceDeltaMatches({ ...current, workspaceHash: '0'.repeat(64) }, source))
+    assert.isFalse(
+      liveSourceDeltaMatches(
+        { ...current, state: { ...current.state, agent: 'running' as const } },
+        source
+      )
+    )
+    assert.isFalse(
+      liveSourceDeltaMatches({ ...current, pendingDeltaArtifactId: 'pending' }, source)
+    )
   })
 })
 

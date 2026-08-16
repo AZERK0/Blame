@@ -8,8 +8,13 @@ import { promisify } from "node:util"
 import { gunzipSync } from "node:zlib"
 import test from "node:test"
 import { extract } from "tar-stream"
-import { buildWorkspaceArtifact, buildWorkspaceDeltaArtifact } from "./workspace-artifact.ts"
+import {
+  buildWorkspaceArtifact,
+  buildWorkspaceDeltaArtifact,
+  buildWorkspaceIncrementalDeltaArtifact,
+} from "./workspace-artifact.ts"
 import { workspaceSourceMode } from "./baseline-transfer.ts"
+import { snapshotWorkspace } from "./workspace-snapshot.ts"
 
 const exec = promisify(execFile)
 
@@ -117,6 +122,44 @@ test("builds a delta against the committed tree and includes new files", async (
     assert.equal(entries.has("files/new.txt"), true)
     assert.equal(entries.has("files/.blame/runtime-tools/lima/limactl"), false)
     assert.equal(entries.has("files/packages/desktop/out/main/index.js"), false)
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+test("builds an incremental delta against the last synchronized workspace", async () => {
+  const root = await mkdtemp(join(tmpdir(), "blame-source-live-delta-test-"))
+  try {
+    await exec("git", ["init", root])
+    await writeFile(join(root, "index.js"), "console.log('base')\n")
+    await writeFile(join(root, "removed.txt"), "remove me\n")
+    await exec("git", ["-C", root, "add", "."])
+    await exec("git", [
+      "-C",
+      root,
+      "-c",
+      "user.name=Blame Test",
+      "-c",
+      "user.email=test@blame.so",
+      "commit",
+      "-m",
+      "base",
+    ])
+    const base = await snapshotWorkspace(root)
+    await writeFile(join(root, "index.js"), "console.log('live')\n")
+    await writeFile(join(root, "new.txt"), "new\n")
+    await unlink(join(root, "removed.txt"))
+
+    const delta = await buildWorkspaceIncrementalDeltaArtifact(root, base)
+    const entries = await archiveEntries(delta.content)
+    const manifest = JSON.parse(entries.get(".blame/delta-manifest.json")!.toString("utf8"))
+
+    assert.equal(delta.baseHash, base.hash)
+    assert.equal(manifest.baseHash, base.hash)
+    assert.equal(manifest.finalHash, delta.workspaceHash)
+    assert.deepEqual(delta.changed.sort(), ["index.js", "new.txt"])
+    assert.deepEqual(delta.deleted, ["removed.txt"])
+    assert.equal(entries.get("files/index.js")?.toString("utf8"), "console.log('live')\n")
   } finally {
     await rm(root, { recursive: true, force: true })
   }

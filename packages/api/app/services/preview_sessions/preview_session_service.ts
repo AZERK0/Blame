@@ -39,6 +39,10 @@ import {
   type RuntimeProfileId,
 } from '@blame/preview-runtime'
 import type { PreviewManifest } from '@blame/preview-contract'
+import {
+  baselineImportAction,
+  liveSourceDeltaMatches,
+} from '#services/preview_sessions/source_import_policy'
 
 export type CreateManagedPreviewInput = {
   userStoryId: string
@@ -406,6 +410,7 @@ export default class PreviewSessionService {
       sanitizedTreeHash?: string
       lockfileHash?: string
       workspaceHash?: string
+      baseHash?: string
       mode?: 'full' | 'delta'
     }
   ) {
@@ -449,10 +454,12 @@ export default class PreviewSessionService {
     if (existing?.sourceArtifactId === source.id && existing.state.sync === 'clean') {
       return this.get(ownerUserId, sessionId)
     }
+    const liveDelta = liveSourceDeltaMatches(existing, source, baselineId)
     if (
       source.mode === 'delta' &&
       existing &&
-      ['running', 'starting', 'preparing'].includes(existing.state.engine)
+      ['running', 'starting', 'preparing'].includes(existing.state.engine) &&
+      !liveDelta
     ) {
       throw new PreviewRuntimeError({
         code: 'SYNC_CONFLICT',
@@ -466,19 +473,21 @@ export default class PreviewSessionService {
       lockfileHash: source.lockfileHash ?? 'unknown',
       workspaceHash: source.workspaceHash,
     }
-    const baseline = baselineId
-      ? await this.baselines.getReady(
-          baselineId,
-          sessionId,
-          {
-            baseRevision: source.revision,
-            sanitizedTreeHash: source.sanitizedTreeHash ?? '',
-            lockfileHash: source.lockfileHash ?? '',
-            workspaceHash: source.workspaceHash,
-          },
-          source.mode === 'delta' ? 'exact' : 'compatible'
-        )
-      : await this.baselines.lookupForSession(sessionId, baselineMetadata)
+    const baseline = liveDelta
+      ? undefined
+      : baselineId
+        ? await this.baselines.getReady(
+            baselineId,
+            sessionId,
+            {
+              baseRevision: source.revision,
+              sanitizedTreeHash: source.sanitizedTreeHash ?? '',
+              lockfileHash: source.lockfileHash ?? '',
+              workspaceHash: source.workspaceHash,
+            },
+            source.mode === 'delta' ? 'exact' : 'compatible'
+          )
+        : await this.baselines.lookupForSession(sessionId, baselineMetadata)
     if (source.mode !== 'delta' && baseline?.match !== 'exact') {
       void this.baselines
         .ensure({ sessionId, source, sourceMetadata: baselineMetadata })
@@ -489,9 +498,11 @@ export default class PreviewSessionService {
       const handle = await this.fencedHandle(sessionId, fencingToken)
       const driver = record && this.drivers.get(record.profile)
       if (!record || !handle || !driver) throw new Error('Preview runtime is not provisioned.')
+      const lockedLiveDelta = liveSourceDeltaMatches(record, source, baselineId)
       if (
         source.mode === 'delta' &&
-        ['running', 'starting', 'preparing'].includes(record.state.engine)
+        ['running', 'starting', 'preparing'].includes(record.state.engine) &&
+        !lockedLiveDelta
       ) {
         throw new PreviewRuntimeError({
           code: 'SYNC_CONFLICT',
@@ -515,6 +526,7 @@ export default class PreviewSessionService {
           baselineId: baseline?.id,
           provisionedBaselineId: record.baselineId,
           sourceArtifactId: record.sourceArtifactId,
+          liveDeltaMatches: lockedLiveDelta,
         })
         if (baselineAction === 'unavailable') {
           throw new PreviewRuntimeError({
@@ -573,7 +585,7 @@ export default class PreviewSessionService {
         current.sourceRevision = receipt.sourceRevision
         current.workspaceHash = receipt.workspaceHash
         current.sourceArtifactId = source.id
-        current.baselineId = baseline?.id
+        if (!lockedLiveDelta) current.baselineId = baseline?.id
         current.lastExportedJournalRevision = '0'
         current.lastAppliedLocalRevision = '0'
         current.lastAcknowledgedRemoteRevision = '0'
@@ -953,19 +965,6 @@ export function sourceImportUnchanged(
     session.sourceRevision === metadata.baseRevision &&
     ['running', 'suspended'].includes(session.state.host)
   )
-}
-
-export function baselineImportAction(input: {
-  sourceMode?: 'full' | 'delta' | 'baseline'
-  baselineId?: string
-  provisionedBaselineId?: string
-  sourceArtifactId?: string
-}) {
-  if (!input.baselineId) return input.sourceMode === 'delta' ? 'unavailable' : 'none'
-  if (input.provisionedBaselineId === input.baselineId && !input.sourceArtifactId) {
-    return 'reuse'
-  }
-  return 'restore'
 }
 
 function validateOperationId(value: string) {
