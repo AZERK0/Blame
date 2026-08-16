@@ -531,7 +531,7 @@ function requiredRouteId(
 
 function handshake() {
   return runnerHandshake({
-    runnerVersion: process.env.BLAME_RUNNER_VERSION ?? "0.2.13",
+    runnerVersion: process.env.BLAME_RUNNER_VERSION ?? "0.2.14",
     imageDigest: process.env.BLAME_RUNNER_IMAGE_DIGEST ?? "unconfigured",
     capabilities: {
       dockerCompose: true,

@@ -23,6 +23,7 @@ test("renders hardened Compose with a shared application loopback", async () => 
   );
   const compose = parse(rendered.yaml) as {
     services: Record<string, Record<string, unknown>>;
+    volumes: Record<string, Record<string, unknown>>;
   };
   assert.equal(compose.services.backend.network_mode, "service:frontend");
   assert.deepEqual(compose.services.frontend.cap_drop, ["ALL"]);
@@ -63,6 +64,10 @@ test("renders hardened Compose with a shared application loopback", async () => 
     (compose.services.frontend.environment as Record<string, string>).TOKEN,
     "price-$$5",
   );
+  assert.deepEqual(compose.volumes["cache-blame_corepack_cache"], {
+    name: "blame-preview_cache-blame_corepack_cache",
+    external: true,
+  });
   assert.doesNotMatch(
     rendered.yaml,
     /docker\.sock|privileged:|pid:\s*host|ipc:\s*host/,
@@ -120,7 +125,12 @@ function plan(): PreviewExecutionPlan {
         bindings: [],
       },
     ],
-    caches: [],
+    caches: [
+      {
+        name: "blame_corepack_cache",
+        target: "/tmp/corepack-cache",
+      },
+    ],
     probes: [],
     environmentPlan: { cleanupRequired: true, entries: [] },
     networking: {

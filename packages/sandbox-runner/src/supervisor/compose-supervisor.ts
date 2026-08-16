@@ -39,6 +39,7 @@ import {
   ensureCacheVolume,
   resolveCacheVolumeMountpoint,
 } from "./cache-volume.js";
+import { composeCommandFailureDetail } from "./compose-command-detail.js";
 
 const composeFingerprintPath = "/var/lib/blame/runtime/compose-fingerprint";
 
@@ -513,11 +514,7 @@ async function command(
     );
   });
   if (!allowFailure && result.exitCode !== 0) {
-    const detail = [result.stderr, result.stdout]
-      .map((value) => value.trim())
-      .filter(Boolean)
-      .join("\n")
-      .slice(0, 1_000);
+    const detail = composeCommandFailureDetail(result.stderr, result.stdout);
     throw runnerError(
       "COMPOSE_COMMAND_FAILED",
       `Compose command failed: ${detail}`,

@@ -68,7 +68,13 @@ export function renderCloudCompose(
     name: "blame-preview",
     services: { ...setupServices, ...services },
     volumes: Object.fromEntries(
-      plan.caches.map(({ name }) => [`cache-${safeId(name)}`, {}]),
+      plan.caches.map(({ name }) => [
+        `cache-${safeId(name)}`,
+        {
+          name: composeCacheVolumeName(name),
+          external: true,
+        },
+      ]),
     ),
   };
   return {
