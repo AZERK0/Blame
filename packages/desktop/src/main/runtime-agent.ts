@@ -1,4 +1,6 @@
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
+import { randomUUID } from "node:crypto";
+import type { SemanticWorkspaceExecutionRequest } from "@blame/agent-runtime";
 import { withoutTelemetryEnvironment } from "@blame/telemetry";
 import { EventEmitter } from "node:events";
 import { PassThrough } from "node:stream";
@@ -161,6 +163,26 @@ export class RuntimeAgentClient {
     return result as AgentClineHubResult;
   }
 
+  async semanticWorkspace(
+    input: SemanticWorkspaceExecutionRequest,
+    signal?: AbortSignal,
+  ) {
+    const operationId = randomUUID();
+    return this.request(
+      "semanticWorkspace",
+      { ...input, operationId },
+      15 * 60_000,
+      signal,
+      () => {
+        void this.request(
+          "semanticWorkspaceCancel",
+          { operationId },
+          5_000,
+        ).catch(() => undefined);
+      },
+    );
+  }
+
   async kill(processId: string) {
     await this.request("kill", { processId }, 5_000);
   }
@@ -174,7 +196,9 @@ export class RuntimeAgentClient {
       return await this.request(method, params, timeoutMs);
     } catch (error) {
       if (!(error instanceof RuntimeAgentTransportError)) throw error;
-      log.warn(`Runtime agent transport interrupted during ${method}; retrying`);
+      log.warn(
+        `Runtime agent transport interrupted during ${method}; retrying`,
+      );
       return this.request(method, params, timeoutMs);
     }
   }
@@ -183,6 +207,8 @@ export class RuntimeAgentClient {
     method: string,
     params: Record<string, unknown>,
     timeoutMs = defaultTimeoutMs,
+    signal?: AbortSignal,
+    onAbort?: () => void,
   ) {
     if (!runtimeAgentSupported(this.platform))
       return Promise.reject(new Error("Runtime agent is not supported"));
@@ -195,15 +221,44 @@ export class RuntimeAgentClient {
       params: agentRequestParams(params),
     };
     return new Promise<unknown>((resolve, reject) => {
+      if (signal?.aborted) {
+        onAbort?.();
+        reject(abortError());
+        return;
+      }
       const timer = setTimeout(() => {
         this.pending.delete(id);
+        signal?.removeEventListener("abort", abort);
+        onAbort?.();
         reject(new Error(`Runtime agent request timed out: ${method}`));
       }, timeoutMs);
-      this.pending.set(id, { reject, resolve, timer });
+      const abort = () => {
+        const pending = this.pending.get(id);
+        if (!pending) return;
+        this.pending.delete(id);
+        clearTimeout(timer);
+        onAbort?.();
+        reject(abortError());
+      };
+      const cleanupResolve = (value: unknown) => {
+        signal?.removeEventListener("abort", abort);
+        resolve(value);
+      };
+      const cleanupReject = (error: Error) => {
+        signal?.removeEventListener("abort", abort);
+        reject(error);
+      };
+      this.pending.set(id, {
+        reject: cleanupReject,
+        resolve: cleanupResolve,
+        timer,
+      });
+      signal?.addEventListener("abort", abort, { once: true });
       process.stdin.write(`${JSON.stringify(request)}\n`, (error) => {
         if (!error) return;
         this.pending.delete(id);
         clearTimeout(timer);
+        signal?.removeEventListener("abort", abort);
         reject(error);
       });
     });
@@ -305,6 +360,13 @@ export class RuntimeAgentClient {
       child.finish(1);
     }
   }
+}
+
+function abortError() {
+  return new DOMException(
+    "Runtime semantic workspace request aborted",
+    "AbortError",
+  );
 }
 
 class AgentChildProcess extends EventEmitter {

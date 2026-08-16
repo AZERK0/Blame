@@ -18,6 +18,10 @@ import cacache from "cacache";
 import test from "node:test";
 import { ArtifactStore } from "./artifact-store.js";
 import { semanticWorkspaceTools } from "./cline-tools.js";
+import {
+  managedSemanticWorkspaceExecutor,
+  type SemanticWorkspaceExecutor,
+} from "./semantic-executor.js";
 import { SemanticWorkspace } from "./semantic-workspace.js";
 import type { HarnessToolResult, HarnessToolSuccess } from "./protocol.js";
 import type {
@@ -724,6 +728,68 @@ test("Cline adapter registers a small read/write harness with strict schemas", a
     );
     assert.equal((error as { isError?: boolean }).isError, true);
   });
+});
+
+test("Cline adapter can delegate semantic execution without changing its tool contract", async () => {
+  const requests: unknown[] = [];
+  const tools = semanticWorkspaceTools(
+    "/home/blame/.local/share/blame/runtime/worktrees/project/story-US-1-test",
+    {
+      taskContract: { session_id: "session-1", story_id: "US-1" },
+      executor: async (request) => {
+        requests.push(request);
+        return { status: "success" } as never;
+      },
+    },
+  );
+  const stateTool = tools.find((tool) => tool.name === "workspace_state");
+  assert.ok(stateTool);
+  await stateTool.execute({}, { agentId: "test", iteration: 1 });
+  assert.deepEqual(requests, [
+    {
+      input: {},
+      taskContract: { session_id: "session-1", story_id: "US-1" },
+      tool: "workspace_state",
+      workspaceRoot:
+        "/home/blame/.local/share/blame/runtime/worktrees/project/story-US-1-test",
+    },
+  ]);
+});
+
+test("managed semantic execution is limited to remote local-container sessions", async () => {
+  const requests: unknown[] = [];
+  const executor: SemanticWorkspaceExecutor = async (request) => {
+    requests.push(request);
+    return { status: "success" } as never;
+  };
+  assert.equal(
+    managedSemanticWorkspaceExecutor(executor, {
+      backendMode: "local",
+      workspaceMode: "cloud-mirror",
+    }),
+    undefined,
+  );
+  const managed = managedSemanticWorkspaceExecutor(executor, {
+    backendMode: "remote",
+    workspaceMode: "local-container",
+  });
+  assert.ok(managed);
+  await managed({
+    input: {},
+    tool: "workspace_state",
+    workspaceRoot: "/home/blame/.local/share/blame/runtime/worktrees/project",
+  });
+  assert.deepEqual(requests, [
+    {
+      execution: {
+        backendMode: "remote",
+        workspaceMode: "local-container",
+      },
+      input: {},
+      tool: "workspace_state",
+      workspaceRoot: "/home/blame/.local/share/blame/runtime/worktrees/project",
+    },
+  ]);
 });
 
 test("commit_proposal refuses an unrelated concurrent workspace change", async () => {

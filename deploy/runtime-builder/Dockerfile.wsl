@@ -7,6 +7,7 @@ ARG BLAME_NERDCTL_VERSION=2.1.6
 ARG BLAME_NODE_VERSION=22.23.1
 
 COPY packages/desktop/resources/runtime/windows/scripts/provision-blame-runtime.sh /tmp/provision-blame-runtime.sh
+COPY deploy/runtime-builder/blame-semantic-harness.tgz /tmp/blame-semantic-harness.tgz
 COPY deploy/runtime-builder/wsl.conf /etc/wsl.conf
 
 RUN BLAME_RUNTIME_BAKE=1 \
@@ -17,6 +18,8 @@ RUN BLAME_RUNTIME_BAKE=1 \
     && blame-runtime-agent version | grep -qx "${BLAME_RUNTIME_VERSION}" \
     && node -e 'process.exit(process.versions.node === process.argv[1] ? 0 : 1)' "${BLAME_NODE_VERSION}" \
     && npm list --global --depth=0 "@cline/sdk@${BLAME_CLINE_SDK_VERSION}" "@cline/core@${BLAME_CLINE_SDK_VERSION}" >/dev/null \
+    && command -v blame-semantic-harness >/dev/null \
+    && test -s /etc/blame-semantic-harness-sha256 \
     && test -z "$(find "$(npm root -g)" -type d \( -path "*/node_modules/@openai/codex-linux-*" -o -path "*/node_modules/@anthropic-ai/claude-agent-sdk-linux-*" \) -print -quit)" \
     && nerdctl --version \
     && buildkitd --version \

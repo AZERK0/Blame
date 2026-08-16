@@ -25,6 +25,7 @@ import {
   runtimeLimaImageFileName,
 } from "./runtime-manifest.mjs";
 import { runtimeClineSdkVersion } from "./runtime-sdk-version.mjs";
+import { prepareSemanticHarnessPayload } from "./semantic-harness-payload.mjs";
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const desktopDir = join(rootDir, "packages/desktop");
@@ -33,6 +34,7 @@ const manifestPath = join(runtimeRoot, "manifest.json");
 const provisionerPath = join(runtimeRoot, "scripts/provision-blame-runtime.sh");
 const outputDir = join(desktopDir, "dist/runtime/macos");
 const buildRoot = join(tmpdir(), "blame-runtime-macos");
+const semanticHarnessPayload = join(buildRoot, "blame-semantic-harness.tgz");
 const envFile = join(rootDir, ".env.local");
 const architectures = ["x86_64", "aarch64"];
 const instanceStartTimeout = "30m";
@@ -61,6 +63,11 @@ async function buildImages() {
     "qemu-img is required to build Lima runtime images.",
   );
   await mkdir(outputDir, { recursive: true });
+  await mkdir(buildRoot, { recursive: true });
+  await prepareSemanticHarnessPayload({
+    runtimeVersion: requiredRuntimeVersion(),
+    outputPaths: [semanticHarnessPayload],
+  });
   for (const architecture of selectedArchitectures()) {
     await buildImage(architecture);
   }
@@ -179,6 +186,8 @@ async function verifyRuntime(bundle, instanceName, environment) {
     `blame-runtime-agent version | grep -qx ${JSON.stringify(runtimeVersion)}`,
     `node -e 'process.exit(process.versions.node === process.argv[1] ? 0 : 1)' ${JSON.stringify(nodeVersion)}`,
     `npm list --global --depth=0 @cline/sdk@${clineSdkVersion} @cline/core@${clineSdkVersion}`,
+    "command -v blame-semantic-harness",
+    "test -s /etc/blame-semantic-harness-sha256",
     `test -z "$(find "$(npm root -g)" -type d \\( -path "*/node_modules/@openai/codex-linux-*" -o -path "*/node_modules/@anthropic-ai/claude-agent-sdk-linux-*" \\) -print -quit)"`,
     "nerdctl --version",
     "buildkitd --version",
@@ -244,6 +253,15 @@ async function provisionImage(bundle, instanceName, environment) {
   const runtimeVersion = requiredRuntimeVersion();
   const clineSdkVersion = await runtimeClineSdkVersion();
   const provisioner = await readFile(provisionerPath, "utf8");
+  await runLimactl(
+    bundle,
+    [
+      "copy",
+      semanticHarnessPayload,
+      `${instanceName}:/tmp/blame-semantic-harness.tgz`,
+    ],
+    environment,
+  );
   await runLimactl(
     bundle,
     [

@@ -3,14 +3,14 @@ import {
   semanticWorkspaceWriteToolNames,
 } from "./harness/cline-tools.js";
 
-export const readTools = [
+export const readTools: string[] = [
   "fetch_web_content",
   "get_preview_devtools",
   "get_preview_container_logs",
   ...semanticWorkspaceReadToolNames,
 ];
 
-export const writeTools = [...semanticWorkspaceWriteToolNames];
+export const writeTools: string[] = [...semanticWorkspaceWriteToolNames];
 
 // These Cline built-ins bypass source revisions, immutable proposals, and the
 // execution overlay. They remain available only to the dedicated project-

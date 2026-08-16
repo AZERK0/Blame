@@ -1,8 +1,8 @@
 {
   "vm": "BlameRuntime",
-  "runtimeVersion": "7",
+  "runtimeVersion": "8",
   "clineSdkVersion": "0.0.68",
-  "runtimeAgentVersion": "4",
+  "runtimeAgentVersion": "5",
   "runtimeMarker": "/etc/blame-runtime-version",
   "runtimeRoot": "/home/blame/.local/share/blame/runtime",
   "nerdctlVersion": "2.1.6",

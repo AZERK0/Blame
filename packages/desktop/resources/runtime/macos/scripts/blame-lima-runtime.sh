@@ -10,6 +10,8 @@ manifest_cline_sdk_version="$(sed -n 's/.*"clineSdkVersion"[[:space:]]*:[[:space
 cline_sdk_version="${BLAME_CLINE_SDK_VERSION:-${manifest_cline_sdk_version:-0.0.68}}"
 runtime_agent_version="$(sed -n 's/.*"runtimeAgentVersion"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$manifest_path" | head -n 1)"
 runtime_agent_version="${runtime_agent_version:-1}"
+semantic_harness_payload="$runtime_home/payloads/blame-semantic-harness.tgz"
+semantic_harness_sha256="$(shasum -a 256 "$semantic_harness_payload" 2>/dev/null | awk '{ print $1 }')"
 lima_state_home="${LIMA_HOME:-$HOME/Library/Application Support/Blame/runtime/lima}"
 lima_install_home="${BLAME_LIMA_INSTALL_DIR:-$HOME/Library/Application Support/Blame/runtime/tools/lima}"
 lima_action="Install Blame again with its verified Lima runtime bundle, then run Blame runtime setup again."
@@ -135,11 +137,12 @@ test_vm_running() {
 }
 
 add_vm_checks() {
-  output="$(with_lima_environment shell "$vm_name" sudo -n sh -s -- "$HOME/Library/Application Support/Blame" "$cline_sdk_version" "$runtime_version" "$runtime_agent_version" <<'EOF' 2>/dev/null || true
+  output="$(with_lima_environment shell "$vm_name" sudo -n sh -s -- "$HOME/Library/Application Support/Blame" "$cline_sdk_version" "$runtime_version" "$runtime_agent_version" "$semantic_harness_sha256" <<'EOF' 2>/dev/null || true
 host_mount="$1"
 cline_sdk_version="$2"
 runtime_version="$3"
 runtime_agent_version="$4"
+semantic_harness_sha256="$5"
 check() {
   name="$1"
   shift
@@ -182,10 +185,11 @@ check nerdctl sh -lc 'command -v nerdctl >/dev/null 2>&1'
 check nerdctl-compose sh -lc 'nerdctl compose version >/dev/null 2>&1'
 check git sh -lc 'command -v git >/dev/null 2>&1'
 check cline-sdk valid_cline_sdk_install
+check semantic-harness sh -lc 'command -v blame-semantic-harness >/dev/null 2>&1 && test "$(cat /etc/blame-semantic-harness-sha256 2>/dev/null)" = "$1"' sh "$semantic_harness_sha256"
 EOF
 )"
   if [ -z "$output" ]; then
-    for name in agent agent-version runtime-version containerd nerdctl nerdctl-compose git cline-sdk; do
+    for name in agent agent-version runtime-version containerd nerdctl nerdctl-compose git cline-sdk semantic-harness; do
       append_check "$(new_check "$name" "missing" "$repair_action")"
     done
     return
@@ -393,7 +397,14 @@ ensure_vm() {
 
 invoke_provisioner() {
   provisioner="$runtime_home/scripts/provision-blame-runtime.sh"
+  if [ ! -f "$semantic_harness_payload" ]; then
+    printf '%s\n' "Blame semantic harness runtime payload is missing." >&2
+    exit 1
+  fi
   write_runtime_progress "configuring"
+  with_lima_environment copy \
+    "$semantic_harness_payload" \
+    "$vm_name:/tmp/blame-semantic-harness.tgz"
   with_lima_environment shell "$vm_name" sudo -n sh -s -- "$runtime_version" "$cline_sdk_version" <"$provisioner"
 }
 

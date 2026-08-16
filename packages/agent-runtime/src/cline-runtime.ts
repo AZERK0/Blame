@@ -53,6 +53,10 @@ import {
 
 import { semanticWorkspaceTools } from "./harness/cline-tools.js";
 import {
+  managedSemanticWorkspaceExecutor,
+  type SemanticWorkspaceExecutor,
+} from "./harness/semantic-executor.js";
+import {
   blockedCommandParts,
   initializationFallbackReadTools,
   legacyDirectWorkspaceTools,
@@ -329,6 +333,7 @@ type RuntimeOptions = {
     | PreviewDevtoolsTarget
     | undefined;
   previewContainerLogs?: PreviewContainerLogsProvider;
+  semanticWorkspace?: SemanticWorkspaceExecutor;
 };
 
 type PreviewDevtoolsTargetInput = {
@@ -701,6 +706,10 @@ export class BlameAgentRuntime {
                 ...(input.storyId ? { story_id: input.storyId } : {}),
                 objective: input.prompt,
               },
+              managedSemanticWorkspaceExecutor(this.options.semanticWorkspace, {
+                backendMode: input.backend?.mode,
+                workspaceMode: input.workspaceMode,
+              }),
             ),
           }),
         },
@@ -2451,6 +2460,7 @@ export class BlameAgentRuntime {
       pluginPaths: input.pluginPaths,
       cwd: input.cwd,
       workspaceRoot: input.workspaceRoot,
+      workspaceMode: input.workspaceMode,
       previewDevtoolsScope: input.previewDevtoolsScope,
       systemPrompt: await buildDevelopmentSystemPrompt(input),
       enableSpawnAgent: true,
@@ -2890,9 +2900,13 @@ function runtimeTools(
     story_id?: string;
     objective?: string;
   },
+  semanticWorkspaceExecutor?: SemanticWorkspaceExecutor,
 ) {
   const tools = [
-    ...semanticWorkspaceTools(worktree, { taskContract }),
+    ...semanticWorkspaceTools(worktree, {
+      taskContract,
+      executor: semanticWorkspaceExecutor,
+    }),
     previewDevtoolsTool(options, previewDevtoolsScope),
     previewContainerLogsTool(options, worktree),
   ].filter((tool): tool is AgentTool => Boolean(tool));

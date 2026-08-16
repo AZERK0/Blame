@@ -17,6 +17,12 @@ $ClineSdkVersion = if ($env:BLAME_CLINE_SDK_VERSION) {
 } else {
   "0.0.68"
 }
+$SemanticHarnessPayload = Join-Path $RuntimeHome "payloads\blame-semantic-harness.tgz"
+$SemanticHarnessSha256 = if (Test-Path $SemanticHarnessPayload) {
+  (Get-FileHash -Algorithm SHA256 -Path $SemanticHarnessPayload).Hash.ToLowerInvariant()
+} else {
+  ""
+}
 $WslRequiredAction = "Enable WSL2 in Windows, restart if prompted, then run Blame runtime setup again."
 $RootfsAction = "Blame could not download the BlameRuntime WSL2 rootfs. Check the internet connection, then run Blame runtime setup again."
 
@@ -222,13 +228,15 @@ check nerdctl sh -lc 'command -v nerdctl >/dev/null 2>&1'
 check nerdctl-compose sh -lc 'nerdctl compose version >/dev/null 2>&1'
 check git sh -lc 'command -v git >/dev/null 2>&1'
 check cline-sdk valid_cline_sdk_install
+check semantic-harness sh -lc 'command -v blame-semantic-harness >/dev/null 2>&1 && test "$(cat /etc/blame-semantic-harness-sha256 2>/dev/null)" = "__SEMANTIC_HARNESS_SHA256__"'
 '@
   $command = $command -replace "__CLINE_SDK_VERSION__", $ClineSdkVersion
   $command = $command -replace "__RUNTIME_AGENT_VERSION__", $RuntimeAgentVersion
   $command = $command -replace "__RUNTIME_VERSION__", $RuntimeVersion
+  $command = $command -replace "__SEMANTIC_HARNESS_SHA256__", $SemanticHarnessSha256
   $result = Invoke-DistroScript $command
   if ($result.Code -ne 0) {
-    foreach ($name in @("agent", "agent-version", "runtime-version", "containerd", "nerdctl", "nerdctl-compose", "git", "cline-sdk")) {
+    foreach ($name in @("agent", "agent-version", "runtime-version", "containerd", "nerdctl", "nerdctl-compose", "git", "cline-sdk", "semantic-harness")) {
       $Checks.Add((New-Check $name "missing" "Repair BlameRuntime from Blame runtime setup."))
     }
     return
@@ -438,6 +446,22 @@ function Ensure-Distro {
 function Invoke-Provisioner {
   Write-RuntimeProgress "configuring"
   $script = Join-Path $PSScriptRoot "provision-blame-runtime.sh"
+  if (-not (Test-Path $SemanticHarnessPayload)) {
+    throw "Blame semantic harness runtime payload is missing."
+  }
+  $resolvedPayload = (Resolve-Path $SemanticHarnessPayload).Path
+  $translated = Invoke-WslHost -WslArgs @("-d", $DistroName, "-u", "root", "--", "wslpath", "-u", $resolvedPayload)
+  if ($translated.Code -ne 0) {
+    throw $translated.Output
+  }
+  $wslPayload = ($translated.Output -join "`n").Trim()
+  if (-not $wslPayload) {
+    throw "Could not translate the Blame semantic harness payload path for WSL2."
+  }
+  $copy = Invoke-WslHost -WslArgs @("-d", $DistroName, "-u", "root", "--", "cp", "--", $wslPayload, "/tmp/blame-semantic-harness.tgz")
+  if ($copy.Code -ne 0) {
+    throw $copy.Output
+  }
   $content = Get-Content $script -Raw
   $process = [System.Diagnostics.Process]::new()
   $process.StartInfo.FileName = "wsl.exe"
@@ -496,11 +520,14 @@ version_ok &&
   command -v nerdctl >/dev/null 2>&1 &&
   command -v containerd >/dev/null 2>&1 &&
   test -x /usr/local/bin/blame-runtime-agent &&
-  valid_cline_sdk_install
+  valid_cline_sdk_install &&
+  command -v blame-semantic-harness >/dev/null 2>&1 &&
+  test "$(cat /etc/blame-semantic-harness-sha256 2>/dev/null)" = "__SEMANTIC_HARNESS_SHA256__"
 '@
   $command = $command -replace "__CLINE_SDK_VERSION__", $ClineSdkVersion
   $command = $command -replace "__RUNTIME_AGENT_VERSION__", $RuntimeAgentVersion
   $command = $command -replace "__RUNTIME_VERSION__", $RuntimeVersion
+  $command = $command -replace "__SEMANTIC_HARNESS_SHA256__", $SemanticHarnessSha256
   $result = Invoke-DistroScript $command
   $result.Code -eq 0
 }

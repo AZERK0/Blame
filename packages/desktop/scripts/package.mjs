@@ -1,37 +1,54 @@
-import { access, cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
-import { tmpdir } from "node:os"
-import { basename, dirname, join, resolve } from "node:path"
-import { fileURLToPath } from "node:url"
-import { spawn } from "node:child_process"
-import YAML from "yaml"
-import { loadEnvFiles } from "../../../scripts/env-files.mjs"
-import { prepareRuntimeManifests } from "../../../scripts/runtime-manifest.mjs"
+import { access, cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { basename, dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { spawn } from "node:child_process";
+import YAML from "yaml";
+import { loadEnvFiles } from "../../../scripts/env-files.mjs";
+import { prepareRuntimeManifests } from "../../../scripts/runtime-manifest.mjs";
+import {
+  buildSemanticHarnessPayload,
+  semanticHarnessPayloadPath,
+} from "../../../scripts/semantic-harness-payload.mjs";
 
-const desktopDir = resolve(dirname(fileURLToPath(import.meta.url)), "..")
-const rootDir = resolve(desktopDir, "../..")
-const workspaceFile = join(rootDir, "pnpm-workspace.yaml")
-const packageArgs = process.argv.slice(2)
-const args = packageArgs[0] === "--" ? packageArgs.slice(1) : packageArgs
+const desktopDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const rootDir = resolve(desktopDir, "../..");
+const workspaceFile = join(rootDir, "pnpm-workspace.yaml");
+const packageArgs = process.argv.slice(2);
+const args = packageArgs[0] === "--" ? packageArgs.slice(1) : packageArgs;
 
-await loadEnvFiles(rootDir)
-assertSingleMacosArchitecture(args)
+await loadEnvFiles(rootDir);
+assertSingleMacosArchitecture(args);
 
 const stagingDir = await mkdtemp(
   join(stagingParentDir(), "blame-desktop-package-"),
-)
+);
 const deployDir =
-  process.platform === "win32" ? basename(stagingDir) : stagingDir
+  process.platform === "win32" ? basename(stagingDir) : stagingDir;
 
 try {
-  await deployPackage(deployDir, args)
-  await prepareRuntimeManifests(
+  await deployPackage(deployDir, args);
+  const runtimeManifests = await prepareRuntimeManifests(
     join(stagingDir, "resources/runtime"),
     runtimePackagingOptions(args),
-  )
-  await rm(join(stagingDir, "out"), { force: true, recursive: true })
+  );
+  await buildSemanticHarnessPayload({
+    runtimeVersion: runtimeManifests.macos.runtimeVersion,
+    outputPaths: [
+      semanticHarnessPayloadPath(
+        join(stagingDir, "resources/runtime"),
+        "macos",
+      ),
+      semanticHarnessPayloadPath(
+        join(stagingDir, "resources/runtime"),
+        "windows",
+      ),
+    ],
+  });
+  await rm(join(stagingDir, "out"), { force: true, recursive: true });
   await cp(join(desktopDir, "out"), join(stagingDir, "out"), {
     recursive: true,
-  })
+  });
   await run(
     "pnpm",
     [
@@ -45,65 +62,65 @@ try {
     ],
     rootDir,
     electronBuilderEnvironment(args),
-  )
-  await preserveRuntimeArtifacts(join(stagingDir, "dist"))
-  await rm(join(desktopDir, "dist"), { force: true, recursive: true })
+  );
+  await preserveRuntimeArtifacts(join(stagingDir, "dist"));
+  await rm(join(desktopDir, "dist"), { force: true, recursive: true });
   await cp(join(stagingDir, "dist"), join(desktopDir, "dist"), {
     recursive: true,
     verbatimSymlinks: true,
-  })
+  });
 } finally {
-  await rm(stagingDir, { force: true, recursive: true })
+  await rm(stagingDir, { force: true, recursive: true });
 }
 
 function runtimePackagingOptions(builderArgs) {
-  const requirePrebuilt = releaseRuntimeRequired()
-  const targetPlatform = builderTargetPlatform(builderArgs)
+  const requirePrebuilt = releaseRuntimeRequired();
+  const targetPlatform = builderTargetPlatform(builderArgs);
   if (targetPlatform === "win32") {
     const architecture =
       builderArgs.includes("--arm64") ||
       (!builderArgs.includes("--x64") && process.arch === "arm64")
         ? "arm64"
-        : "amd64"
+        : "amd64";
     return {
       requireWindowsPrebuiltArchitecture: requirePrebuilt
         ? architecture
         : undefined,
-    }
+    };
   }
   if (targetPlatform === "darwin") {
     const architecture = builderArgs.includes("--x64")
       ? "x86_64"
       : builderArgs.includes("--arm64") || process.arch === "arm64"
         ? "aarch64"
-        : "x86_64"
+        : "x86_64";
     return {
       macosBundleArchitecture: architecture,
       requireMacosPrebuiltArchitecture: requirePrebuilt
         ? architecture
         : undefined,
-    }
+    };
   }
-  return {}
+  return {};
 }
 
 function builderTargetPlatform(builderArgs) {
   if (builderArgs.some((arg) => arg === "--win" || arg === "win"))
-    return "win32"
+    return "win32";
   if (builderArgs.some((arg) => arg === "--mac" || arg === "mac"))
-    return "darwin"
+    return "darwin";
   if (builderArgs.some((arg) => arg === "--linux" || arg === "linux"))
-    return "linux"
-  return process.platform
+    return "linux";
+  return process.platform;
 }
 
 function electronBuilderEnvironment(builderArgs) {
-  const targetPlatform = builderTargetPlatform(builderArgs)
+  const targetPlatform = builderTargetPlatform(builderArgs);
   return {
     ...process.env,
     BLAME_DESKTOP_NPM_REBUILD: String(targetPlatform === process.platform),
     JITI_FS_CACHE: "false",
-  }
+  };
 }
 
 function assertSingleMacosArchitecture(builderArgs) {
@@ -114,58 +131,58 @@ function assertSingleMacosArchitecture(builderArgs) {
   ) {
     throw new Error(
       "macOS x64 and arm64 packages must be staged separately so each app embeds the matching Lima bundle. Use `pnpm build:macos` or `pnpm release:macos`.",
-    )
+    );
   }
 }
 
 function releaseRuntimeRequired() {
-  const explicit = process.env.BLAME_REQUIRE_PREBUILT_RUNTIME?.trim()
-  if (explicit) return explicit === "true"
-  return Boolean(process.env.BLAME_VERSION?.trim())
+  const explicit = process.env.BLAME_REQUIRE_PREBUILT_RUNTIME?.trim();
+  if (explicit) return explicit === "true";
+  return Boolean(process.env.BLAME_VERSION?.trim());
 }
 
 async function preserveRuntimeArtifacts(stagedDist) {
-  const runtimeDist = join(desktopDir, "dist/runtime")
+  const runtimeDist = join(desktopDir, "dist/runtime");
   try {
-    await access(runtimeDist)
+    await access(runtimeDist);
   } catch {
-    return
+    return;
   }
-  await cp(runtimeDist, join(stagedDist, "runtime"), { recursive: true })
+  await cp(runtimeDist, join(stagedDist, "runtime"), { recursive: true });
 }
 
 async function deployPackage(targetDir, builderArgs) {
-  const supportedArchitectures = windowsSupportedArchitectures(builderArgs)
+  const supportedArchitectures = windowsSupportedArchitectures(builderArgs);
   if (!supportedArchitectures) {
-    await runDeploy(targetDir)
-    return
+    await runDeploy(targetDir);
+    return;
   }
 
-  const workspaceConfig = await readFile(workspaceFile, "utf8")
-  const updatedConfig = YAML.parse(workspaceConfig)
-  updatedConfig.supportedArchitectures = supportedArchitectures
+  const workspaceConfig = await readFile(workspaceFile, "utf8");
+  const updatedConfig = YAML.parse(workspaceConfig);
+  updatedConfig.supportedArchitectures = supportedArchitectures;
 
   try {
-    await writeFile(workspaceFile, YAML.stringify(updatedConfig), "utf8")
-    await runDeploy(targetDir)
+    await writeFile(workspaceFile, YAML.stringify(updatedConfig), "utf8");
+    await runDeploy(targetDir);
   } finally {
-    await writeFile(workspaceFile, workspaceConfig, "utf8")
+    await writeFile(workspaceFile, workspaceConfig, "utf8");
   }
 }
 
 function windowsSupportedArchitectures(builderArgs) {
   if (!builderArgs.some((arg) => arg === "--win" || arg === "win"))
-    return undefined
+    return undefined;
 
-  const cpu = []
-  if (builderArgs.includes("--x64")) cpu.push("x64")
-  if (builderArgs.includes("--arm64")) cpu.push("arm64")
-  if (builderArgs.includes("--ia32")) cpu.push("ia32")
+  const cpu = [];
+  if (builderArgs.includes("--x64")) cpu.push("x64");
+  if (builderArgs.includes("--arm64")) cpu.push("arm64");
+  if (builderArgs.includes("--ia32")) cpu.push("ia32");
 
   return {
     cpu: cpu.length ? cpu : ["x64"],
     os: ["win32"],
-  }
+  };
 }
 
 async function runDeploy(targetDir) {
@@ -173,7 +190,7 @@ async function runDeploy(targetDir) {
     "pnpm",
     ["--filter", "@blame/desktop", "deploy", "--prod", "--legacy", targetDir],
     rootDir,
-  )
+  );
 }
 
 function run(command, args, cwd, env = process.env) {
@@ -183,19 +200,21 @@ function run(command, args, cwd, env = process.env) {
       env,
       shell: process.platform === "win32",
       stdio: "inherit",
-    })
-    child.once("error", rejectRun)
+    });
+    child.once("error", rejectRun);
     child.once("exit", (code) => {
-      if (code === 0) resolveRun()
+      if (code === 0) resolveRun();
       else
-        rejectRun(new Error(`${command} ${args.join(" ")} exited with ${code}`))
-    })
-  })
+        rejectRun(
+          new Error(`${command} ${args.join(" ")} exited with ${code}`),
+        );
+    });
+  });
 }
 
 function stagingParentDir() {
-  const customDir = process.env.BLAME_DESKTOP_PACKAGE_DIR?.trim()
-  if (customDir) return resolve(customDir)
-  if (process.platform === "darwin") return tmpdir()
-  return rootDir
+  const customDir = process.env.BLAME_DESKTOP_PACKAGE_DIR?.trim();
+  if (customDir) return resolve(customDir);
+  if (process.platform === "darwin") return tmpdir();
+  return rootDir;
 }

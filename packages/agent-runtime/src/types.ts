@@ -186,6 +186,7 @@ export type StartSessionInput = {
   userFiles?: string[];
   cwd: string;
   workspaceRoot: string;
+  workspaceMode?: "local-container" | "cloud-mirror";
   systemPrompt?: string;
   previewDevtoolsScope?: string;
   credentialLabel?: string;
@@ -235,6 +236,7 @@ export type StartDevelopmentSessionInput = {
   sessionId?: string;
   cwd: string;
   workspaceRoot: string;
+  workspaceMode?: "local-container" | "cloud-mirror";
   previewDevtoolsScope?: string;
   codePractices?: ProjectCodePracticePreference[];
   backend?: AgentBackendConfig;

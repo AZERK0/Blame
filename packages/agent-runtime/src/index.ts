@@ -1,4 +1,9 @@
 export { BlameAgentRuntime } from "./cline-runtime.js";
+export type {
+  SemanticWorkspaceExecutionRequest,
+  SemanticWorkspaceExecutor,
+  SemanticWorkspaceToolName,
+} from "./harness/semantic-executor.js";
 export { taskComplexityBucket } from "./telemetry-cohorts.js";
 export type { TaskComplexityBucket } from "./telemetry-cohorts.js";
 export { commandWithNextWebpackFallback } from "./next-webpack-fallback.js";

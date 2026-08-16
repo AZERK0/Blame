@@ -1,10 +1,13 @@
 import { withoutTelemetryEnvironment } from "@blame/telemetry";
+import type { SemanticWorkspaceExecutionRequest } from "@blame/agent-runtime";
 import { shell } from "electron";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import type { AgentHostMethod } from "./agent-runtime-process-protocol.ts";
 import { getPreviewDevtoolsTarget } from "./preview-browser-ipc.ts";
 import { previewLogService } from "./preview-runtime/preview-log-service.ts";
+import { runtimeAgentClient, runtimeAgentSupported } from "./runtime-agent.ts";
+import { semanticWorkspaceExecutionTarget } from "./semantic-workspace-routing.ts";
 import {
   ensureRuntimeGitUserIdentity,
   getRuntimeGitIdentity,
@@ -17,7 +20,7 @@ const execFileAsync = promisify(execFile);
 export async function handleAgentHostRequest(
   method: AgentHostMethod,
   input: unknown,
-  _signal: AbortSignal,
+  signal: AbortSignal,
 ) {
   if (method === "git") return agentGit(input);
   if (method === "openExternalUrl") return openAgentExternalUrl(input);
@@ -27,7 +30,24 @@ export async function handleAgentHostRequest(
   if (method === "previewContainerLogs") {
     return previewLogService.read(input as never);
   }
+  if (method === "semanticWorkspace") {
+    return agentSemanticWorkspace(input, signal);
+  }
   throw new Error(`Unsupported agent host method: ${method}`);
+}
+
+async function agentSemanticWorkspace(input: unknown, signal: AbortSignal) {
+  const request = input as SemanticWorkspaceExecutionRequest;
+  if (
+    !runtimeAgentSupported() ||
+    !request ||
+    typeof request !== "object" ||
+    typeof request.workspaceRoot !== "string" ||
+    semanticWorkspaceExecutionTarget(request) !== "managed-runtime"
+  ) {
+    throw new Error("Invalid managed semantic workspace request");
+  }
+  return runtimeAgentClient().semanticWorkspace(request, signal);
 }
 
 async function agentGit(input: unknown) {

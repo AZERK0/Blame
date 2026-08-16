@@ -1,4 +1,8 @@
-import { BlameAgentRuntime, type AgentEvent } from "@blame/agent-runtime";
+import {
+  BlameAgentRuntime,
+  type AgentEvent,
+  type SemanticWorkspaceExecutionRequest,
+} from "@blame/agent-runtime";
 import {
   configureDesktopTelemetry,
   disableDesktopTelemetry,
@@ -70,6 +74,18 @@ function createAgentRuntime(hostClient: AgentRuntimeHostClient) {
           "previewDevtools",
           input,
         ),
+      ...(process.platform === "darwin" || process.platform === "win32"
+        ? {
+            semanticWorkspace: (
+              input: SemanticWorkspaceExecutionRequest,
+              signal?: AbortSignal,
+            ) =>
+              hostRequest(hostClient, "semanticWorkspace", {
+                ...input,
+                signal,
+              }),
+          }
+        : {}),
     },
   );
 }

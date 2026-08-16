@@ -3,7 +3,12 @@ import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { EventEmitter } from "node:events";
 import { PassThrough, Writable } from "node:stream";
 import test from "node:test";
+import type { SemanticWorkspaceExecutionRequest } from "@blame/agent-runtime";
 import { RuntimeAgentClient } from "./runtime-agent.ts";
+import { semanticWorkspaceExecutionTarget } from "./semantic-workspace-routing.ts";
+
+const managedSemanticWorkspaceRoot =
+  "/home/blame/.local/share/blame/runtime/worktrees/Blame/story-US-188-test";
 
 type Request = {
   id: number;
@@ -248,6 +253,46 @@ test("runtime agent client batches existing file reads", async () => {
   assert.equal(result.files["/worktree/package.json"], "{}");
 });
 
+test("runtime agent client delegates and cancels semantic workspace execution", async () => {
+  const processes: FakeAgentProcess[] = [];
+  const spawnProcess = fakeSpawn(processes, (request, process) => {
+    if (request.method !== "semanticWorkspaceCancel") return;
+    process.stdout.write(
+      `${JSON.stringify({
+        id: request.id,
+        ok: true,
+        result: { stopped: true },
+      })}\n`,
+    );
+  });
+  const client = new RuntimeAgentClient({ platform: "darwin", spawnProcess });
+  const controller = new AbortController();
+  const execution = client.semanticWorkspace(
+    {
+      execution: {
+        backendMode: "remote",
+        workspaceMode: "local-container",
+      },
+      input: {},
+      tool: "workspace_state",
+      workspaceRoot:
+        "/home/blame/.local/share/blame/runtime/worktrees/project/story-US-1",
+    },
+    controller.signal,
+  );
+
+  controller.abort();
+  await assert.rejects(execution, { name: "AbortError" });
+  await new Promise((resolve) => setImmediate(resolve));
+
+  assert.equal(processes[0].requests[0].method, "semanticWorkspace");
+  assert.equal(processes[0].requests[1].method, "semanticWorkspaceCancel");
+  assert.equal(
+    processes[0].requests[1].params.operationId,
+    processes[0].requests[0].params.operationId,
+  );
+});
+
 test("runtime agent client treats stream kill as best effort", async () => {
   const spawnProcess = fakeSpawn([], (request, process) => {
     if (request.method === "spawn") {
@@ -276,6 +321,73 @@ test("runtime agent client treats stream kill as best effort", async () => {
 
   assert.equal(child.kill(), true);
 });
+
+test("routes local-container semantic tools into Lima and WSL2", () => {
+  const request = semanticRequest(
+    "local-container",
+    "remote",
+    managedSemanticWorkspaceRoot,
+  );
+  assert.equal(
+    semanticWorkspaceExecutionTarget(request, "darwin"),
+    "managed-runtime",
+  );
+  assert.equal(
+    semanticWorkspaceExecutionTarget(request, "win32"),
+    "managed-runtime",
+  );
+});
+
+test("keeps cloud previews and Linux semantic tools native", () => {
+  assert.equal(
+    semanticWorkspaceExecutionTarget(
+      semanticRequest("cloud-mirror", "local", "/tmp/native-worktree"),
+      "darwin",
+    ),
+    "native",
+  );
+  assert.equal(
+    semanticWorkspaceExecutionTarget(
+      semanticRequest("cloud-mirror", "local", "C:\\native-worktree"),
+      "win32",
+    ),
+    "native",
+  );
+  assert.equal(
+    semanticWorkspaceExecutionTarget(
+      semanticRequest(
+        "local-container",
+        "remote",
+        managedSemanticWorkspaceRoot,
+      ),
+      "linux",
+    ),
+    "native",
+  );
+});
+
+test("does not delegate host-native local worktrees", () => {
+  assert.equal(
+    semanticWorkspaceExecutionTarget(
+      semanticRequest("local-container", "local", "/Users/dev/project"),
+      "darwin",
+    ),
+    "native",
+  );
+});
+
+function semanticRequest(
+  workspaceMode: "local-container" | "cloud-mirror",
+  backendMode: "local" | "remote",
+  workspaceRoot: string,
+): SemanticWorkspaceExecutionRequest {
+  return {
+    execution: { backendMode, workspaceMode },
+    input: {},
+    tool: "workspace_state",
+    workspaceRoot,
+  };
+}
 
 function fakeSpawn(
   processes: FakeAgentProcess[],

@@ -43,6 +43,7 @@ export const agentHostMethods = [
   "openExternalUrl",
   "previewDevtools",
   "previewContainerLogs",
+  "semanticWorkspace",
 ] as const;
 
 export type AgentRuntimeMethod = (typeof agentRuntimeMethods)[number];

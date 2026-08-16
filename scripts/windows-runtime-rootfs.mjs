@@ -18,10 +18,15 @@ import {
   runtimeRootfsFileName,
 } from "./windows-runtime-manifest.mjs";
 import { runtimeClineSdkVersion } from "./runtime-sdk-version.mjs";
+import { prepareSemanticHarnessPayload } from "./semantic-harness-payload.mjs";
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const desktopDir = join(rootDir, "packages/desktop");
 const dockerfile = join(rootDir, "deploy/runtime-builder/Dockerfile.wsl");
+const semanticHarnessPayload = join(
+  rootDir,
+  "deploy/runtime-builder/blame-semantic-harness.tgz",
+);
 const outputDir = join(desktopDir, "dist/runtime/windows");
 const envFile = join(rootDir, ".env.local");
 const architectures = ["amd64", "arm64"];
@@ -47,6 +52,10 @@ async function buildRootfs() {
     "Docker is required to build WSL runtime images.",
   );
   await mkdir(outputDir, { recursive: true });
+  await prepareSemanticHarnessPayload({
+    runtimeVersion: requiredRuntimeVersion(),
+    outputPaths: [semanticHarnessPayload],
+  });
   for (const architecture of selectedArchitectures()) {
     await buildArchitecture(architecture);
   }

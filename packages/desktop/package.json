@@ -6,9 +6,10 @@
   "main": "./out/main/index.js",
   "scripts": {
     "build:workspace-dependencies": "node ../../scripts/runtime-sdk-version.mjs && pnpm --filter @blame/deploy-contract build && pnpm --filter @blame/preview-contract build && pnpm --filter @blame/preview-runtime build && pnpm --filter @blame/telemetry build && pnpm --filter @blame/agent-runtime build",
-    "predev": "pnpm run build:workspace-dependencies",
+    "build:semantic-harness-payload": "node ../../scripts/semantic-harness-payload.mjs --runtime-root resources/runtime",
+    "predev": "pnpm run build:workspace-dependencies && pnpm run build:semantic-harness-payload",
     "dev": "node scripts/dev.mjs",
-    "prebuild": "pnpm run build:workspace-dependencies",
+    "prebuild": "pnpm run build:workspace-dependencies && pnpm run build:semantic-harness-payload",
     "build": "electron-vite build",
     "package": "node scripts/package.mjs",
     "package:linux": "node scripts/package.mjs --linux",

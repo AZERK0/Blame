@@ -80,6 +80,35 @@ ensure_cline_sdk() {
   valid_cline_sdk_install
 }
 
+valid_semantic_harness_install() {
+  global_node_root="$(npm root -g)"
+  package_path="$global_node_root/@blame/semantic-harness-runtime/package.json"
+  [ -x /usr/local/bin/blame-semantic-harness ] &&
+    [ -f "$package_path" ] &&
+    node -e '
+const fs = require("fs");
+const manifest = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+process.exit(manifest.version === process.argv[2] ? 0 : 1);
+' "$package_path" "0.0.0-$runtime_version" >/dev/null 2>&1
+}
+
+ensure_semantic_harness() {
+  payload="/tmp/blame-semantic-harness.tgz"
+  if [ ! -f "$payload" ]; then
+    printf '%s\n' "Blame semantic harness runtime payload is missing." >&2
+    return 1
+  fi
+  payload_sha256="$(sha256sum "$payload" | awk '{ print $1 }')"
+  marker="/etc/blame-semantic-harness-sha256"
+  if valid_semantic_harness_install &&
+    [ "$(cat "$marker" 2>/dev/null || true)" = "$payload_sha256" ]; then
+    return
+  fi
+  npm install -g --force "$payload"
+  valid_semantic_harness_install
+  printf '%s\n' "$payload_sha256" >"$marker"
+}
+
 valid_cline_sdk_install() {
   global_node_root="$(npm root -g)"
   node -e '
@@ -220,15 +249,17 @@ import uuid
 import urllib.request
 
 processes = {}
+semantic_processes = {}
 write_lock = threading.Lock()
 processes_lock = threading.Lock()
+semantic_processes_lock = threading.Lock()
 json_pool_lock = threading.Lock()
 json_pool = None
 json_worker_count = max(1, min(2, os.cpu_count() or 1))
 large_json_threshold = 64 * 1024
 ignored_env_directories = {".git", ".blame", "build", "coverage", "dist", "node_modules", "out"}
 env_template_suffixes = (".example", ".sample", ".template")
-runtime_agent_version = "4"
+runtime_agent_version = "5"
 
 def serialize_json_line(value):
     return json.dumps(value, separators=(",", ":")) + "\n"
@@ -410,6 +441,8 @@ def terminate_process(process):
 def cleanup_processes():
     with processes_lock:
         active = list(processes.values())
+    with semantic_processes_lock:
+        active.extend(semantic_processes.values())
     for process in active:
         terminate_process(process)
 
@@ -475,6 +508,46 @@ def run_read_existing_files(params):
         else:
             result[path] = None
     return {"files": result}
+
+def run_semantic_workspace(params):
+    operation_id = str(params.get("operationId") or "")
+    if not operation_id:
+        raise RuntimeError("Semantic workspace operation id is required")
+    account = target_user("blame")
+    request = {
+        "input": params.get("input"),
+        "taskContract": params.get("taskContract"),
+        "tool": params.get("tool"),
+        "workspaceRoot": params.get("workspaceRoot"),
+    }
+    process = subprocess.Popen(
+        ["blame-semantic-harness"],
+        env=clean_env({}, account),
+        stdin=subprocess.PIPE,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        preexec_fn=demote(account),
+        start_new_session=True,
+    )
+    with semantic_processes_lock:
+        semantic_processes[operation_id] = process
+    try:
+        stdout, stderr = process.communicate(json.dumps(request))
+    finally:
+        with semantic_processes_lock:
+            semantic_processes.pop(operation_id, None)
+    if process.returncode != 0:
+        raise CommandError({"stdout": stdout, "stderr": stderr, "code": process.returncode})
+    return json.loads(stdout or "{}")
+
+def run_semantic_workspace_cancel(params):
+    operation_id = str(params.get("operationId") or "")
+    with semantic_processes_lock:
+        process = semantic_processes.get(operation_id)
+    if process is not None:
+        terminate_process(process)
+    return {"stopped": bool(process)}
 
 def npm_root():
     return subprocess.check_output(["npm", "root", "-g"], text=True).strip()
@@ -708,6 +781,8 @@ methods = {
     "kill": run_kill,
     "scanEnvFiles": run_scan_env_files,
     "readExistingFiles": run_read_existing_files,
+    "semanticWorkspace": run_semantic_workspace,
+    "semanticWorkspaceCancel": run_semantic_workspace_cancel,
     "clineHubEnsure": run_cline_hub_ensure,
     "clineHubStatus": run_cline_hub_status,
     "clineHubStop": run_cline_hub_stop,
@@ -765,6 +840,7 @@ cd /
 ensure_user
 ensure_packages
 ensure_node
+ensure_semantic_harness
 ensure_cline_sdk
 remove_external_cli_payloads
 ensure_container_stack

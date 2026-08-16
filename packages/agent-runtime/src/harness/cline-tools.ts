@@ -15,28 +15,43 @@ import {
   workspaceStateInputSchema,
 } from "./schemas.js";
 import {
-  SemanticWorkspace,
-  type SemanticWorkspaceOptions,
-} from "./semantic-workspace.js";
+  localSemanticWorkspaceExecutor,
+  semanticWorkspaceReadToolNames,
+  semanticWorkspaceWriteToolNames,
+  type SemanticWorkspaceExecutionRequest,
+  type SemanticWorkspaceExecutor,
+  type SemanticWorkspaceToolName,
+} from "./semantic-executor.js";
+import type { SemanticWorkspaceOptions } from "./semantic-workspace.js";
 
-export const semanticWorkspaceReadToolNames = [
-  "workspace_state",
-  "search_code",
-  "outline_code",
-  "inspect_code",
-  "inspect_run",
-  "inspect_artifact",
-  "review_change",
-];
+export { semanticWorkspaceReadToolNames, semanticWorkspaceWriteToolNames };
 
-export const semanticWorkspaceWriteToolNames = ["apply_change", "run_task"];
+export type SemanticWorkspaceToolsOptions = SemanticWorkspaceOptions & {
+  executor?: SemanticWorkspaceExecutor;
+};
 
 export function semanticWorkspaceTools(
   workspaceRoot?: string,
-  options: SemanticWorkspaceOptions = {},
+  options: SemanticWorkspaceToolsOptions = {},
 ): AgentTool[] {
   if (!workspaceRoot) return [];
-  const workspace = new SemanticWorkspace(workspaceRoot, options);
+  const executor =
+    options.executor ??
+    localSemanticWorkspaceExecutor(workspaceRoot, options.taskContract);
+  const execute = (
+    tool: SemanticWorkspaceToolName,
+    input: unknown,
+    context: AgentToolContext,
+  ) =>
+    executor(
+      {
+        input,
+        taskContract: options.taskContract,
+        tool,
+        workspaceRoot,
+      } satisfies SemanticWorkspaceExecutionRequest,
+      context.signal,
+    );
   return [
     createHarnessTool({
       name: "workspace_state",
@@ -45,7 +60,7 @@ export function semanticWorkspaceTools(
       schema: workspaceStateInputSchema,
       execute: (input, context) =>
         visibleResult(
-          workspace.workspaceState({ ...input, signal: context.signal }),
+          execute("workspace_state", input, context),
           options.redactSensitiveContent,
         ),
     }),
@@ -56,7 +71,7 @@ export function semanticWorkspaceTools(
       schema: searchCodeInputSchema,
       execute: (input, context) =>
         visibleResult(
-          workspace.searchCode(input, context.signal),
+          execute("search_code", input, context),
           options.redactSensitiveContent,
         ),
     }),
@@ -67,7 +82,7 @@ export function semanticWorkspaceTools(
       schema: outlineCodeInputSchema,
       execute: (input, context) =>
         visibleResult(
-          workspace.outlineCode(input, context.signal),
+          execute("outline_code", input, context),
           options.redactSensitiveContent,
         ),
     }),
@@ -78,7 +93,7 @@ export function semanticWorkspaceTools(
       schema: inspectCodeInputSchema,
       execute: (input, context) =>
         visibleResult(
-          workspace.inspectCode(input, context.signal),
+          execute("inspect_code", input, context),
           options.redactSensitiveContent,
         ),
     }),
@@ -87,7 +102,7 @@ export function semanticWorkspaceTools(
       description:
         "Create or commit a transactional code change with compare-and-swap. First call action propose with the exact base source revision, immutable node/text/file operations, and an idempotency key. Review the immutable result, then call commit_proposal with the same base and a commit idempotency key. Never silently relocates stale targets; writes are locked across processes and crash-recoverable.",
       schema: applyChangeInputSchema,
-      execute: (input, context) => workspace.applyChange(input, context.signal),
+      execute: (input, context) => execute("apply_change", input, context),
       retryable: false,
     }),
     createHarnessTool({
@@ -95,7 +110,7 @@ export function semanticWorkspaceTools(
       description:
         "Run one known workspace task against an exact source revision in an ephemeral filesystem overlay with default-deny networking. Use a task_id from workspace_state, or an unambiguous test/lint/build/typecheck kind. Returns a revision-bound RunRef, structured failures/diagnostics, encrypted log artifacts, and any filesystem effects as a separate immutable ChangeProposal; it never writes the canonical worktree. Do not use it for ad-hoc shell commands, dependency installation, or long-running services.",
       schema: runTaskInputSchema,
-      execute: (input, context) => workspace.runTask(input, context.signal),
+      execute: (input, context) => execute("run_task", input, context),
       retryable: false,
     }),
     createHarnessTool({
@@ -105,7 +120,7 @@ export function semanticWorkspaceTools(
       schema: inspectRunInputSchema,
       execute: (input, context) =>
         visibleResult(
-          workspace.inspectRun(input, context.signal),
+          execute("inspect_run", input, context),
           options.redactSensitiveContent,
         ),
     }),
@@ -116,7 +131,7 @@ export function semanticWorkspaceTools(
       schema: reviewChangeInputSchema,
       execute: (input, context) =>
         visibleResult(
-          workspace.reviewChange(input, context.signal),
+          execute("review_change", input, context),
           options.redactSensitiveContent,
         ),
     }),
@@ -127,7 +142,7 @@ export function semanticWorkspaceTools(
       schema: inspectArtifactInputSchema,
       execute: (input, context) =>
         visibleResult(
-          workspace.inspectArtifact(input, context.signal),
+          execute("inspect_artifact", input, context),
           options.redactSensitiveContent,
         ),
     }),
