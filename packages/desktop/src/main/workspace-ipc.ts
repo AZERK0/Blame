@@ -103,6 +103,7 @@ import {
   type PreviewComposeConfig as ComposeConfig,
   type PreviewComposeService as ComposeService,
 } from "./preview-compose-plan";
+import type { DesktopBridgeGrant } from "./preview-browser/preview-bridge-grant";
 import {
   initialPreviewRuntimeSelection,
   previewRunConfigurationStatus,
@@ -2903,6 +2904,74 @@ async function resolveProjectPreviewUrl(input: ResolveProjectPreviewUrlInput) {
   return previewUrl(address, previewTarget.protocol, previewTarget.path);
 }
 
+export async function localPreviewBridgeGrant(
+  worktreeInput: string,
+): Promise<DesktopBridgeGrant> {
+  const worktree = resolveRuntimePath(worktreeInput);
+  if (removedWorktrees.has(worktree))
+    throw new Error("Local preview worktree was removed");
+  if (!(await isWorkspaceGitRepository(worktree)))
+    throw new Error("Local preview worktree is invalid");
+  const composePath = projectComposePath(worktree);
+  if (!(await runtimePathExists(composePath)))
+    throw new Error("Local preview Compose configuration is missing");
+  const config = await composeConfig(worktree, composePath);
+  const primary = await composePreviewTarget(worktree, composePath);
+  const endpoints = composeBridgeEndpoints(config, primary);
+  const expiresAt = new Date(Date.now() + 60_000).toISOString();
+  const sessionId = `local:${createHash("sha256")
+    .update(worktree)
+    .digest("hex")
+    .slice(0, 24)}`;
+  const routes = (
+    await Promise.all(
+      endpoints.map(async (endpoint) => {
+        const address = await composePublishedAddress(
+          worktree,
+          composePath,
+          endpoint.serviceId,
+          endpoint.port,
+        );
+        if (!address) return undefined;
+        const provider = localPreviewProvider(address, endpoint.protocol);
+        const logicalPort = Number(provider.port);
+        if (!Number.isSafeInteger(logicalPort) || logicalPort < 1) {
+          return undefined;
+        }
+        return {
+          routeId: `${sessionId}:${endpoint.serviceId}:${endpoint.endpointId}`,
+          serviceId: endpoint.serviceId,
+          endpointId: endpoint.endpointId,
+          logicalHost: "localhost" as const,
+          logicalPort,
+          protocol: endpoint.protocol,
+          providerUrl: provider.toString(),
+          provider: "local" as const,
+          capabilityExpiresAt: expiresAt,
+        };
+      }),
+    )
+  ).filter((route) => route !== undefined);
+  const primaryRoute = primary
+    ? routes.find(
+        (route) =>
+          route.serviceId === primary.service &&
+          endpoints.find(
+            (endpoint) =>
+              endpoint.serviceId === route.serviceId &&
+              endpoint.endpointId === route.endpointId,
+          )?.port === primary.port,
+      )
+    : undefined;
+  return {
+    sessionId,
+    endpointRevision: 1,
+    integratedPreviewRequired: true,
+    primaryRouteId: primaryRoute?.routeId ?? routes[0]?.routeId ?? "",
+    routes,
+  };
+}
+
 async function ensureProjectPreviewUrl(input: EnsureProjectPreviewUrlInput) {
   if (input.workspaceMode === "cloud-mirror") return null;
   const worktree = resolveRuntimePath(input.worktree);
@@ -4122,6 +4191,88 @@ async function composePreviewTarget(worktree: string, composePath: string) {
   return services
     .map(([service, config]) => exposedPreviewTarget(service, config))
     .find(Boolean);
+}
+
+type ComposeBridgeEndpoint = {
+  endpointId: string;
+  port: number;
+  protocol: "http" | "https" | "ws" | "wss";
+  serviceId: string;
+};
+
+function composeBridgeEndpoints(
+  config: ComposeConfig,
+  primary: Awaited<ReturnType<typeof composePreviewTarget>>,
+) {
+  const endpoints = Object.entries(config.services ?? {}).flatMap(
+    ([serviceId, service]) =>
+      declaredComposeBridgeEndpoints(serviceId, service),
+  );
+  if (
+    primary &&
+    !endpoints.some(
+      (endpoint) =>
+        endpoint.serviceId === primary.service &&
+        endpoint.port === primary.port,
+    )
+  ) {
+    const protocol = previewBridgeProtocol(primary.protocol);
+    if (protocol) {
+      endpoints.push({
+        endpointId: "preview",
+        port: primary.port,
+        protocol,
+        serviceId: primary.service,
+      });
+    }
+  }
+  return endpoints;
+}
+
+function declaredComposeBridgeEndpoints(
+  serviceId: string,
+  service: ComposeService,
+) {
+  const labels = serviceLabels(service);
+  return Object.keys(labels).flatMap((key) => {
+    const match = /^blame\.endpoint\.(\d+)\.id$/.exec(key);
+    if (!match) return [];
+    const index = match[1];
+    const port = numberValue(labels[`blame.endpoint.${index}.port`]);
+    const protocol = previewBridgeProtocol(
+      labels[`blame.endpoint.${index}.protocol`] ?? "http",
+    );
+    if (!port || !protocol) return [];
+    return [
+      {
+        endpointId: labels[key],
+        port,
+        protocol,
+        serviceId,
+      } satisfies ComposeBridgeEndpoint,
+    ];
+  });
+}
+
+function previewBridgeProtocol(value: string | undefined) {
+  return ["http", "https", "ws", "wss"].includes(value ?? "")
+    ? (value as ComposeBridgeEndpoint["protocol"])
+    : undefined;
+}
+
+function localPreviewProvider(
+  address: string,
+  protocol: ComposeBridgeEndpoint["protocol"],
+) {
+  const provider = new URL(
+    previewUrl(
+      address,
+      protocol === "https" || protocol === "wss" ? "https" : "http",
+      "/",
+    ),
+  );
+  provider.hostname = "127.0.0.1";
+  return provider;
 }
 
 async function selectedPreviewServiceId(worktree: string) {

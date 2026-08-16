@@ -1,17 +1,30 @@
 import { randomBytes, timingSafeEqual } from "node:crypto"
-import { createServer, type IncomingHttpHeaders, type IncomingMessage } from "node:http"
+import {
+  createServer,
+  request as httpRequest,
+  type IncomingHttpHeaders,
+  type IncomingMessage,
+} from "node:http"
+import { request as httpsRequest } from "node:https"
 import type { AddressInfo } from "node:net"
+import net from "node:net"
 import type { Duplex } from "node:stream"
 import tls from "node:tls"
 import type { Session } from "electron"
-import type { DesktopBridgeGrant } from "../preview-runtime/cloud-preview-client"
+import type { DesktopBridgeGrant, PreviewBridgeProvider } from "./preview-bridge-grant"
 import { PreviewRouteTable } from "./preview-route-table"
 
 type GrantProvider = () => Promise<DesktopBridgeGrant>
 
 const LOOPBACK_REQUEST_PATTERNS = [
-  "http://localhost/*", "http://127.0.0.1/*", "http://[::1]/*", "http://0.0.0.0/*",
-  "ws://localhost/*", "ws://127.0.0.1/*", "ws://[::1]/*", "ws://0.0.0.0/*",
+  "http://localhost/*",
+  "http://127.0.0.1/*",
+  "http://[::1]/*",
+  "http://0.0.0.0/*",
+  "ws://localhost/*",
+  "ws://127.0.0.1/*",
+  "ws://[::1]/*",
+  "ws://0.0.0.0/*",
 ]
 
 export class PreviewNetworkBridge {
@@ -31,6 +44,7 @@ export class PreviewNetworkBridge {
   constructor(
     private readonly partition: Session,
     private readonly grantProvider: GrantProvider,
+    private readonly expectedProvider: PreviewBridgeProvider = "cloud",
   ) {
     this.server.on("connection", (socket) => {
       this.sockets.add(socket)
@@ -71,7 +85,9 @@ export class PreviewNetworkBridge {
 
   async close() {
     this.routes.clear()
-    await this.partition.clearStorageData({ storages: ["serviceworkers", "cachestorage"] })
+    await this.partition.clearStorageData({
+      storages: ["serviceworkers", "cachestorage"],
+    })
     await this.partition.setProxy({ mode: "direct" })
     if (this.server.listening) {
       for (const socket of this.sockets) socket.destroy()
@@ -105,13 +121,10 @@ export class PreviewNetworkBridge {
         // requesting WebFrameMain URL is the authoritative source for normal
         // subresources, with referrer covering workers and early navigations.
         const requestOrigin =
-          details.frame?.url ||
-          details.referrer ||
-          details.webContents?.getURL()
-        const allowed = this.routes.isExpectedOrigin(details.url) && (
-          details.resourceType === "mainFrame" ||
-          this.routes.isExpectedOrigin(requestOrigin)
-        )
+          details.frame?.url || details.referrer || details.webContents?.getURL()
+        const allowed =
+          this.routes.isExpectedOrigin(details.url) &&
+          (details.resourceType === "mainFrame" || this.routes.isExpectedOrigin(requestOrigin))
         callback({ cancel: !allowed })
       },
     )
@@ -124,25 +137,31 @@ export class PreviewNetworkBridge {
 
   private refreshRoutes() {
     if (this.refreshing) return this.refreshing
-    this.refreshing = this.grantProvider().then((grant) => {
-      this.routes.replace(grant)
-      this.grantExpiresAt = Math.min(...grant.routes.map((route) => Date.parse(route.capabilityExpiresAt)))
-    }).finally(() => (this.refreshing = undefined))
+    this.refreshing = this.grantProvider()
+      .then((grant) => {
+        this.routes.replace(grant, this.expectedProvider)
+        this.grantExpiresAt = grant.routes.length
+          ? Math.min(...grant.routes.map((route) => Date.parse(route.capabilityExpiresAt)))
+          : 0
+      })
+      .finally(() => (this.refreshing = undefined))
     return this.refreshing
   }
 
-  private async forwardHttp(request: IncomingMessage, response: import("node:http").ServerResponse) {
+  private async forwardHttp(
+    request: IncomingMessage,
+    response: import("node:http").ServerResponse,
+  ) {
     this.authorize(request)
     await this.ensureFreshRoutes()
     const { route, url } = this.routes.resolve(request.url ?? "")
     const provider = providerTarget(route.providerUrl, url)
-    const upstream = await import("node:https").then(({ request: httpsRequest }) =>
-      httpsRequest(provider, {
-        method: request.method,
-        headers: providerHeaders(request.headers, provider, route.capability),
-        timeout: 10 * 60_000,
-      }),
-    )
+    const requestProvider = provider.protocol === "https:" ? httpsRequest : httpRequest
+    const upstream = requestProvider(provider, {
+      method: request.method,
+      headers: providerHeaders(request.headers, provider, route.capability),
+      timeout: 10 * 60_000,
+    })
     const completed = new Promise<void>((resolve, reject) => {
       upstream.once("response", (result) => {
         response.writeHead(
@@ -166,14 +185,20 @@ export class PreviewNetworkBridge {
     await this.ensureFreshRoutes()
     const { route, url } = this.routes.resolve(request.url ?? "")
     const provider = providerTarget(route.providerUrl, url)
-    const upstream = tls.connect({
-      host: provider.hostname,
-      port: Number(provider.port || 443),
-      servername: provider.hostname,
-      ALPNProtocols: ["http/1.1"],
-    })
+    const secure = provider.protocol === "https:"
+    const upstream = secure
+      ? tls.connect({
+          host: provider.hostname,
+          port: Number(provider.port || 443),
+          servername: provider.hostname,
+          ALPNProtocols: ["http/1.1"],
+        })
+      : net.connect({
+          host: provider.hostname,
+          port: Number(provider.port || 80),
+        })
     upstream.setTimeout(10 * 60_000)
-    upstream.once("secureConnect", () => {
+    upstream.once(secure ? "secureConnect" : "connect", () => {
       const headers = providerHeaders(request.headers, provider, route.capability)
       headers.connection = "Upgrade"
       headers.upgrade = request.headers.upgrade ?? "websocket"
@@ -189,7 +214,10 @@ export class PreviewNetworkBridge {
       if (head.length) upstream.write(head)
       client.pipe(upstream).pipe(client)
     })
-    const close = () => { upstream.destroy(); client.destroy() }
+    const close = () => {
+      upstream.destroy()
+      client.destroy()
+    }
     upstream.once("timeout", close)
     upstream.once("error", close)
     client.once("error", close)
@@ -198,7 +226,7 @@ export class PreviewNetworkBridge {
 
   private authorize(request: IncomingMessage) {
     const value = request.headers["x-blame-preview-proxy-auth"]
-    const actual = Buffer.from(Array.isArray(value) ? "" : value ?? "")
+    const actual = Buffer.from(Array.isArray(value) ? "" : (value ?? ""))
     const expected = Buffer.from(this.auth)
     if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) {
       throw new Error("Preview proxy authentication failed")
@@ -213,28 +241,38 @@ function providerTarget(providerUrl: string, logical: URL) {
   return target
 }
 
-function providerHeaders(source: IncomingHttpHeaders, target: URL, capability: string) {
+function providerHeaders(source: IncomingHttpHeaders, target: URL, capability?: string) {
   const headers: Record<string, string | string[]> = {}
   for (const [name, value] of Object.entries(source)) {
     if (
-      value === undefined || name === "host" || name.startsWith("x-blame-") ||
+      value === undefined ||
+      name === "host" ||
+      name.startsWith("x-blame-") ||
       ["connection", "proxy-authorization", "proxy-authenticate", "upgrade"].includes(name)
-    ) continue
+    )
+      continue
     headers[name] = value
   }
   headers.host = target.host
-  headers["x-blame-preview-capability"] = capability
+  if (capability) headers["x-blame-preview-capability"] = capability
   return headers
 }
 
 function responseHeaders(source: IncomingHttpHeaders, rewriteLocation: (value: string) => string) {
-  return Object.fromEntries(Object.entries(source).flatMap(([name, value]) => {
-    if (value === undefined || name.startsWith("x-blame-") || ["connection", "transfer-encoding"].includes(name)) return []
-    if (name === "set-cookie") {
-      const values = Array.isArray(value) ? value : [value]
-      return [[name, values.map((cookie) => cookie.replace(/;\s*Domain=[^;]+/gi, ""))]]
-    }
-    if (name === "location" && typeof value === "string") return [[name, rewriteLocation(value)]]
-    return [[name, value]]
-  })) as Record<string, string | string[]>
+  return Object.fromEntries(
+    Object.entries(source).flatMap(([name, value]) => {
+      if (
+        value === undefined ||
+        name.startsWith("x-blame-") ||
+        ["connection", "transfer-encoding"].includes(name)
+      )
+        return []
+      if (name === "set-cookie") {
+        const values = Array.isArray(value) ? value : [value]
+        return [[name, values.map((cookie) => cookie.replace(/;\s*Domain=[^;]+/gi, ""))]]
+      }
+      if (name === "location" && typeof value === "string") return [[name, rewriteLocation(value)]]
+      return [[name, value]]
+    }),
+  ) as Record<string, string | string[]>
 }

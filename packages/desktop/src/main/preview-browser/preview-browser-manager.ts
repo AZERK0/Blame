@@ -8,7 +8,10 @@ import {
 } from "electron";
 import { previewSessionPartition } from "./preview-session-partition";
 import { PreviewNetworkBridge } from "./preview-network-bridge";
-import type { DesktopBridgeGrant } from "../preview-runtime/cloud-preview-client";
+import type {
+  DesktopBridgeGrant,
+  PreviewBridgeSource,
+} from "./preview-bridge-grant";
 import { attachPreviewRequestTelemetry } from "./preview-request-telemetry";
 import { keepsManagedPreviewBridge } from "./preview-navigation-policy";
 
@@ -140,23 +143,40 @@ function normalizedPreviewDevtoolsTimeout(value: number | undefined) {
 
 export async function createPreviewBrowser(
   event: IpcMainInvokeEvent,
-  input: { storageKey: string; previewSessionId?: string },
-  options: { bridgeGrant?(sessionId: string): Promise<DesktopBridgeGrant> },
+  input: {
+    storageKey: string;
+    previewSessionId?: string;
+    previewWorktree?: string;
+  },
+  options: {
+    bridgeGrant?(source: PreviewBridgeSource): Promise<DesktopBridgeGrant>;
+  },
 ) {
   const owner = BrowserWindow.fromWebContents(event.sender);
   if (!owner) throw new Error("Preview owner window not found");
   if (!input.storageKey?.trim() || input.storageKey.length > 2_048)
     throw new Error("Preview storage key is invalid");
+  const bridgeSource = previewBridgeSource(input);
   const id = randomUUID();
   const view = createPreviewBrowserView(input.storageKey);
   view.webContents.setFrameRate(hiddenPreviewFrameRate);
-  const bridge = input.previewSessionId && options.bridgeGrant
-    ? new PreviewNetworkBridge(
-        view.webContents.session,
-        () => options.bridgeGrant!(input.previewSessionId!),
-      )
-    : undefined;
-  if (bridge) await bridge.start();
+  const bridge =
+    bridgeSource && options.bridgeGrant
+      ? new PreviewNetworkBridge(
+          view.webContents.session,
+          () => options.bridgeGrant!(bridgeSource),
+          bridgeSource.kind,
+        )
+      : undefined;
+  if (bridge) {
+    try {
+      await bridge.start();
+    } catch (error) {
+      await bridge.close().catch(() => undefined);
+      view.webContents.close();
+      throw error;
+    }
+  }
   const record = { id, owner, view, visible: false, bridge };
   previews.set(id, record);
   owner.contentView.addChildView(view);
@@ -171,6 +191,28 @@ export async function createPreviewBrowser(
   attachPreviewRequestTelemetry(record.view.webContents);
   owner.once("closed", () => destroyPreviewBrowser(id));
   return { id };
+}
+
+function previewBridgeSource(input: {
+  previewSessionId?: string;
+  previewWorktree?: string;
+}) {
+  const previewSessionId = input.previewSessionId?.trim();
+  const previewWorktree = input.previewWorktree?.trim();
+  if (previewSessionId && previewWorktree)
+    throw new Error("Preview bridge source is ambiguous");
+  if (previewSessionId) {
+    if (previewSessionId.length > 128)
+      throw new Error("Preview session ID is invalid");
+    return {
+      kind: "cloud" as const,
+      sessionId: previewSessionId,
+    };
+  }
+  if (!previewWorktree) return undefined;
+  if (previewWorktree.length > 8_192)
+    throw new Error("Preview worktree is invalid");
+  return { kind: "local" as const, worktree: previewWorktree };
 }
 
 function createPreviewBrowserView(storageKey: string) {
@@ -423,7 +465,11 @@ function delay(ms: number) {
 function safeExternalUrl(value: string) {
   try {
     const url = new URL(value);
-    return ["http:", "https:"].includes(url.protocol) && !url.username && !url.password;
+    return (
+      ["http:", "https:"].includes(url.protocol) &&
+      !url.username &&
+      !url.password
+    );
   } catch {
     return false;
   }

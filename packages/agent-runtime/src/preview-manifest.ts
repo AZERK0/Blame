@@ -59,7 +59,11 @@ export function normalizePreviewManifestWithPreferences(
     normalizeService(service, caches),
   );
   const normalizedServices = services.map((service) =>
-    normalizeServiceBindings(service, services),
+    normalizeServiceBindings(
+      service,
+      services,
+      isNuxtProject(manifest.project),
+    ),
   );
   const normalized = {
     ...manifest,
@@ -95,8 +99,12 @@ export function normalizePreviewManifestWithPreferences(
 function normalizeServiceBindings(
   service: PreviewManifestService,
   services: PreviewManifestService[],
+  inferNuxtServerBindings: boolean,
 ) {
-  const bindings = service.bindings ?? [];
+  const bindings = normalizedServiceBindings(
+    service.bindings ?? [],
+    inferNuxtServerBindings,
+  );
   const serverDependencies = new Set(
     serverBindingDependencies(service, bindings),
   );
@@ -115,6 +123,7 @@ function normalizeServiceBindings(
   }
   return {
     ...service,
+    bindings,
     environment,
     dependsOn: uniqueStrings([
       ...(service.dependsOn ?? []).filter(
@@ -123,6 +132,29 @@ function normalizeServiceBindings(
       ...serverDependencies,
     ]),
   };
+}
+
+function normalizedServiceBindings(
+  bindings: PreviewManifestBinding[],
+  inferNuxtServerBindings: boolean,
+) {
+  if (!inferNuxtServerBindings) return bindings;
+  const targetKeys = new Set(bindings.map(({ target }) => target.key));
+  const inferred = bindings.flatMap((binding) => {
+    const match = /^NUXT_PUBLIC_(.+)$/.exec(binding.target.key);
+    if (binding.exposure !== "browser" || !match?.[1]) return [];
+    const key = `NUXT_${match[1]}`;
+    if (targetKeys.has(key)) return [];
+    targetKeys.add(key);
+    return [
+      {
+        ...binding,
+        target: { ...binding.target, key },
+        exposure: "server" as const,
+      },
+    ];
+  });
+  return [...bindings, ...inferred];
 }
 
 function serverBindingDependencies(
@@ -205,6 +237,12 @@ function previewManifestWithNextWebpackFallback(manifest: PreviewManifest) {
 function isNextProject(project: PreviewManifestProject) {
   return (project.detectedStack ?? []).some((stack) =>
     ["next", "nextjs", "next.js"].includes(stack.toLowerCase()),
+  );
+}
+
+function isNuxtProject(project: PreviewManifestProject) {
+  return (project.detectedStack ?? []).some((stack) =>
+    ["nuxt", "nuxtjs", "nuxt.js"].includes(stack.toLowerCase()),
   );
 }
 

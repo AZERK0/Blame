@@ -6,6 +6,9 @@ import type {
   PreviewSessionView,
 } from "@blame/preview-runtime";
 import { parsePreviewManifest } from "@blame/agent-runtime";
+import type { DesktopBridgeGrant } from "../preview-browser/preview-bridge-grant";
+
+export type { DesktopBridgeGrant } from "../preview-browser/preview-bridge-grant";
 
 export type CloudApiConnection = { token: string; url: string };
 type CloudPreviewClientOptions = { packaged?: boolean };
@@ -344,24 +347,6 @@ export function allowedCloudApiBaseUrl(value: string, packaged: boolean) {
     return false;
   }
 }
-
-export type DesktopBridgeGrant = {
-  sessionId: string;
-  endpointRevision: number;
-  integratedPreviewRequired: boolean;
-  primaryRouteId: string;
-  routes: Array<{
-    routeId: string;
-    serviceId: string;
-    endpointId: string;
-    logicalHost: "localhost";
-    logicalPort: number;
-    protocol: "http" | "https" | "ws" | "wss";
-    providerUrl: string;
-    capability: string;
-    capabilityExpiresAt: string;
-  }>;
-};
 
 export type UploadTarget = {
   artifactId: string;

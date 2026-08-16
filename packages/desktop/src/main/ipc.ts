@@ -11,7 +11,7 @@ import { PreviewService } from "./preview-runtime/preview-service"
 import { registerPreviewRuntimeIpcHandlers } from "./ipc/preview-runtime-ipc"
 import { registerTelemetryIpcHandlers } from "./telemetry-ipc"
 import { registerTerminalIpcHandlers } from "./terminal-ipc"
-import { registerWorkspaceIpcHandlers } from "./workspace-ipc"
+import { localPreviewBridgeGrant, registerWorkspaceIpcHandlers } from "./workspace-ipc"
 
 export type DesktopIpcOptions = {
   mainWindow(): BrowserWindow | undefined
@@ -38,7 +38,10 @@ export function registerDesktopIpcHandlers(options: DesktopIpcOptions) {
   const previews = new PreviewService(localAgentOwnsWorkspace, options.packaged)
   const deploy = new DeployService(options.packaged)
   options.registerCoreHandlers()
-  registerCloudAuthIpcHandlers({ mainWindow: options.mainWindow, packaged: options.packaged })
+  registerCloudAuthIpcHandlers({
+    mainWindow: options.mainWindow,
+    packaged: options.packaged,
+  })
   registerBacklogStatusPipIpcHandlers({
     mainWindow: options.mainWindow,
     ...options.backlogStatusPip,
@@ -49,9 +52,20 @@ export function registerDesktopIpcHandlers(options: DesktopIpcOptions) {
     beforeDelivery: (worktree) => previews.syncBarrier(worktree),
     beforeWorkspaceWrite: (worktree) => previews.syncBarrier(worktree),
   })
-  registerPreviewRuntimeIpcHandlers({ mainWindow: options.mainWindow, service: previews })
-  registerDeployIpcHandlers({ mainWindow: options.mainWindow, service: deploy })
-  registerPreviewBrowserIpcHandlers({ bridgeGrant: (sessionId) => previews.bridgeGrant(sessionId) })
+  registerPreviewRuntimeIpcHandlers({
+    mainWindow: options.mainWindow,
+    service: previews,
+  })
+  registerDeployIpcHandlers({
+    mainWindow: options.mainWindow,
+    service: deploy,
+  })
+  registerPreviewBrowserIpcHandlers({
+    bridgeGrant: (source) =>
+      source.kind === "cloud"
+        ? previews.bridgeGrant(source.sessionId)
+        : localPreviewBridgeGrant(source.worktree),
+  })
   registerMcpIpcHandlers()
   registerTerminalIpcHandlers()
   registerTelemetryIpcHandlers(options.telemetry)

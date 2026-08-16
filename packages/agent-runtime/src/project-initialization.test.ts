@@ -207,6 +207,41 @@ test("normalizes pnpm serve options and browser-only dependencies", () => {
   assert.deepEqual(normalizedApp?.dependsOn, []);
 });
 
+test("adds the Nuxt server counterpart for a public service binding", () => {
+  const input = canonicalResult();
+  input.previewManifest.project.detectedStack = ["node", "nuxt", "pnpm"];
+  const app = input.previewManifest.services[1]!;
+  app.dependsOn = [];
+  app.bindings = [
+    {
+      target: { type: "environment", key: "NUXT_PUBLIC_API_BASE_URL" },
+      source: { service: "api", endpoint: "http" },
+      exposure: "browser",
+      format: "url",
+    },
+  ];
+
+  const result = parseProjectInitializationPayload(input);
+  const normalizedApp = result.previewManifest.services[1]!;
+
+  assert.deepEqual(
+    normalizedApp.bindings?.map(({ target, exposure }) => ({
+      key: target.key,
+      exposure,
+    })),
+    [
+      { key: "NUXT_PUBLIC_API_BASE_URL", exposure: "browser" },
+      { key: "NUXT_API_BASE_URL", exposure: "server" },
+    ],
+  );
+  assert.equal(
+    normalizedApp.environment?.NUXT_PUBLIC_API_BASE_URL,
+    "http://localhost:__BLAME_PREVIEW_PORT_api_3333__",
+  );
+  assert.equal(normalizedApp.environment?.NUXT_API_BASE_URL, "http://api:3333");
+  assert.deepEqual(normalizedApp.dependsOn, ["api"]);
+});
+
 test("requires the canonical manifest and rejects unknown manifest fields", () => {
   assert.throws(
     () => parseProjectInitializationPayload({ runConfigurations: [] }),

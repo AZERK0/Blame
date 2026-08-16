@@ -1,4 +1,7 @@
-import type { DesktopBridgeGrant } from "../preview-runtime/cloud-preview-client";
+import type {
+  DesktopBridgeGrant,
+  PreviewBridgeProvider,
+} from "./preview-bridge-grant";
 
 export type PreviewBridgeRoute = DesktopBridgeGrant["routes"][number];
 
@@ -7,9 +10,14 @@ const logicalHosts = new Set(["localhost", "127.0.0.1", "[::1]", "0.0.0.0"]);
 export class PreviewRouteTable {
   private routes = new Map<number, PreviewBridgeRoute>();
 
-  replace(grant: DesktopBridgeGrant) {
+  replace(
+    grant: DesktopBridgeGrant,
+    expectedProvider: PreviewBridgeProvider = "cloud",
+  ) {
     const next = new Map<number, PreviewBridgeRoute>();
     for (const route of grant.routes) {
+      if ((route.provider ?? "cloud") !== expectedProvider)
+        throw new Error("Preview route provider does not match its source");
       validateRoute(route);
       if (next.has(route.logicalPort))
         throw new Error("Duplicate logical preview port");
@@ -101,6 +109,27 @@ function validateRoute(route: PreviewBridgeRoute) {
   )
     throw new Error("Preview route is invalid");
   const provider = new URL(route.providerUrl);
+  if (route.provider === "local") validateLocalProvider(provider);
+  else validateCloudProvider(provider, route);
+  if (Date.parse(route.capabilityExpiresAt) <= Date.now())
+    throw new Error("Preview route grant is expired");
+}
+
+function validateLocalProvider(provider: URL) {
+  if (
+    !["http:", "https:"].includes(provider.protocol) ||
+    provider.hostname !== "127.0.0.1" ||
+    provider.username ||
+    provider.password ||
+    provider.hash ||
+    provider.search ||
+    provider.pathname !== "/"
+  ) {
+    throw new Error("Local preview provider route is not trusted");
+  }
+}
+
+function validateCloudProvider(provider: URL, route: PreviewBridgeRoute) {
   if (
     provider.protocol !== "https:" ||
     provider.username ||
@@ -110,10 +139,5 @@ function validateRoute(route: PreviewBridgeRoute) {
       !provider.hostname.endsWith(".vercel.app"))
   )
     throw new Error("Preview provider route is not trusted");
-  if (
-    !route.capability ||
-    Date.parse(route.capabilityExpiresAt) <= Date.now()
-  ) {
-    throw new Error("Preview capability is expired");
-  }
+  if (!route.capability) throw new Error("Preview capability is missing");
 }

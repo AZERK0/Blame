@@ -67,3 +67,73 @@ test("rejects untrusted provider destinations", () => {
     /not trusted/,
   );
 });
+
+test("uses the same logical route table for a loopback local provider", () => {
+  const table = new PreviewRouteTable();
+  table.replace(
+    {
+      ...grant,
+      sessionId: "local:project",
+      routes: [
+        {
+          ...grant.routes[0]!,
+          logicalPort: 43_333,
+          provider: "local",
+          providerUrl: "http://127.0.0.1:43333/",
+          capability: undefined,
+        },
+      ],
+    },
+    "local",
+  );
+
+  assert.equal(
+    table.resolve("http://localhost:43333/api/auth/me").route.provider,
+    "local",
+  );
+  assert.equal(
+    table.rewriteProviderLocation("http://127.0.0.1:43333/login"),
+    "http://localhost:43333/login",
+  );
+});
+
+test("rejects a local provider outside strict loopback", () => {
+  const table = new PreviewRouteTable();
+  assert.throws(
+    () =>
+      table.replace(
+        {
+          ...grant,
+          routes: [
+            {
+              ...grant.routes[0]!,
+              provider: "local",
+              providerUrl: "http://192.168.1.10:3000/",
+              capability: undefined,
+            },
+          ],
+        },
+        "local",
+      ),
+    /not trusted/,
+  );
+});
+
+test("does not let a cloud grant opt into loopback access", () => {
+  const table = new PreviewRouteTable();
+  assert.throws(
+    () =>
+      table.replace({
+        ...grant,
+        routes: [
+          {
+            ...grant.routes[0]!,
+            provider: "local",
+            providerUrl: "http://127.0.0.1:3000/",
+            capability: undefined,
+          },
+        ],
+      }),
+    /does not match/,
+  );
+});

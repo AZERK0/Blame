@@ -20,6 +20,10 @@ import { ManagedRuntimeSummary } from "@/components/backlog/drawer/managed-runti
 import { PreviewInitializationState } from "@/components/backlog/drawer/preview-initialization-state"
 import { managedPresentedPreviewUrl } from "@/components/backlog/drawer/managed-preview-url"
 import {
+  activePreviewProxy,
+  type PreviewProxyInfo,
+} from "@/components/backlog/drawer/preview-proxy"
+import {
   blameCloudPreviewOrigin,
   normalizePreviewPath,
   previewAddressOrigin,
@@ -93,6 +97,7 @@ type NativePreviewPanelProps = {
   previewKey: string
   previewState: PreviewState
   previewSessionId?: string
+  previewWorktree?: string
   reloadKey: number
   sessionKey: string
   source: string
@@ -122,17 +127,13 @@ type PreviewIslandProps = {
   onReload: () => void
   onRunnerMenuOpenChange: (open: boolean) => void
   previewLocation?: string
-  previewProxy?: ManagedPreviewProxyInfo
+  previewProxy?: PreviewProxyInfo
   source?: string
   previewRunner?: UserStoryPreviewRunner
   onRunConfigurationChange?: (
     configurationId: string,
     previewUrl?: string
   ) => void
-}
-type ManagedPreviewProxyInfo = {
-  logicalUrl: string
-  reasons: string[]
 }
 type PreviewLogToolbarProps = {
   hasPreview: boolean
@@ -166,6 +167,7 @@ type NativePreviewSession = {
   state?: NativePreviewStateInput
   storageKey: string
   previewSessionId?: string
+  previewWorktree?: string
   timeout?: number
 }
 
@@ -281,12 +283,14 @@ export const UserStoryPreviewWarmup = React.memo(
         ? stories.map((story) => {
             const source = previewSource(story.previewUrl ?? "")
             const previewScope = storyPreviewDevtoolsScope(story.id)
+            const sessionSource = `${source}:local:${story.worktree}`
             return (
               <NativePreviewWarmup
-                key={nativePreviewKeyFor(previewScope, source)}
+                key={nativePreviewKeyFor(previewScope, sessionSource)}
                 client={previewBrowser}
                 devtoolsScope={previewScope}
-                sessionKey={nativePreviewKeyFor(previewScope, source)}
+                previewWorktree={story.worktree}
+                sessionKey={nativePreviewKeyFor(previewScope, sessionSource)}
                 source={source}
                 storageKey={nativePreviewStorageKeyFor(previewScope, source)}
               />
@@ -356,6 +360,8 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
     visible,
     userStory?.id
   )
+  const previewWorktree =
+    previewRunner.profile === "local-container" ? setupLogWorktree : undefined
   const runtimeLifecycle = previewRunner.lifecycle
   const runtimeStarting = Boolean(
     runtimeLifecycle?.status === "pending" &&
@@ -372,7 +378,9 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
     previewIdentity,
     previewRunner.previewSessionId
       ? `${baseSource}:${previewRunner.previewSessionId}`
-      : baseSource
+      : previewWorktree
+        ? `${baseSource}:local:${previewWorktree}`
+        : baseSource
   )
   const nativePreviewStorageKey = nativePreviewStorageKeyFor(
     previewIdentity,
@@ -454,17 +462,16 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
         logicalPreviewLocation
       )
     : displayedPreviewLocation
-  const previewProxy =
-    previewRunner.integratedPreviewRequired &&
-    previewRunner.publicPreviewUrl &&
-    source &&
-    logicalPreviewLocation &&
-    presentedPreviewLocation !== logicalPreviewLocation
-      ? {
-          logicalUrl: logicalPreviewLocation,
-          reasons: previewRunner.previewProxyReasons,
-        }
-      : undefined
+  const previewProxy = activePreviewProxy({
+    cloudBridgeRequired: Boolean(
+      previewRunner.integratedPreviewRequired && source
+    ),
+    localBridgeActive: Boolean(hasNativePreview && previewWorktree),
+    logicalUrl: logicalPreviewLocation,
+    presentedUrl: presentedPreviewLocation,
+    publicUrl: previewRunner.publicPreviewUrl,
+    reasons: previewRunner.previewProxyReasons,
+  })
   const displayedLocationBlocked = hasNativePreview
     ? false
     : Boolean(locationBlocked)
@@ -682,6 +689,7 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
                     previewKey={nativePreviewKey}
                     previewState={displayedPreviewState}
                     previewSessionId={previewRunner.previewSessionId}
+                    previewWorktree={previewWorktree}
                     reloadKey={reloadKey}
                     sessionKey={nativePreviewSessionKey}
                     source={source}
@@ -797,6 +805,7 @@ function NativePreviewWarmup({
   client,
   devtoolsScope,
   onState,
+  previewWorktree,
   sessionKey,
   source,
   storageKey,
@@ -804,6 +813,7 @@ function NativePreviewWarmup({
   client: PreviewBrowserClient
   devtoolsScope?: string
   onState?: (state: NativePreviewStateInput) => void
+  previewWorktree?: string
   sessionKey: string
   source: string
   storageKey: string
@@ -819,7 +829,9 @@ function NativePreviewWarmup({
     client,
     sessionKey,
     storageKey,
-    handleState
+    handleState,
+    undefined,
+    previewWorktree
   )
 
   useNativePreviewLoad(client, browserId, sessionKey, source, handleState)
@@ -836,6 +848,7 @@ function NativePreviewPanel({
   previewKey,
   previewState,
   previewSessionId,
+  previewWorktree,
   reloadKey,
   sessionKey,
   source,
@@ -855,7 +868,8 @@ function NativePreviewPanel({
     sessionKey,
     storageKey,
     handleState,
-    previewSessionId
+    previewSessionId,
+    previewWorktree
   )
   const ambilightColor = useNativePreviewAmbilightColor(
     client,
@@ -936,13 +950,15 @@ async function acquireNativePreviewSession(
   client: PreviewBrowserClient,
   key: string,
   storageKey: string,
-  previewSessionId?: string
+  previewSessionId?: string,
+  previewWorktree?: string
 ) {
   const session = nativePreviewSession(
     client,
     key,
     storageKey,
-    previewSessionId
+    previewSessionId,
+    previewWorktree
   )
   session.references += 1
   clearNativePreviewRetention(session)
@@ -957,7 +973,8 @@ function nativePreviewSession(
   client: PreviewBrowserClient,
   key: string,
   storageKey: string,
-  previewSessionId?: string
+  previewSessionId?: string,
+  previewWorktree?: string
 ): NativePreviewSession {
   const current = nativePreviewSessions.get(key)
   if (current) return current
@@ -967,6 +984,7 @@ function nativePreviewSession(
     releaseAt: 0,
     storageKey,
     previewSessionId,
+    previewWorktree,
   }
   nativePreviewSessions.set(key, session)
   return session
@@ -981,6 +999,7 @@ async function createNativePreviewSession(session: NativePreviewSession) {
     const { id } = await session.client.create({
       storageKey: session.storageKey,
       previewSessionId: session.previewSessionId,
+      previewWorktree: session.previewWorktree,
     })
     session.browserId = id
     return id
@@ -1055,7 +1074,8 @@ function useNativePreviewId(
   sessionKey: string,
   storageKey: string,
   onState: (state: NativePreviewStateInput) => void,
-  previewSessionId?: string
+  previewSessionId?: string,
+  previewWorktree?: string
 ) {
   const [browserId, setBrowserId] = React.useState<string>()
 
@@ -1065,7 +1085,8 @@ function useNativePreviewId(
       client,
       sessionKey,
       storageKey,
-      previewSessionId
+      previewSessionId,
+      previewWorktree
     )
       .then((session) => {
         if (cancelled) {
@@ -1090,7 +1111,14 @@ function useNativePreviewId(
       setBrowserId(undefined)
       releaseNativePreviewSession(sessionKey)
     }
-  }, [client, onState, previewSessionId, sessionKey, storageKey])
+  }, [
+    client,
+    onState,
+    previewSessionId,
+    previewWorktree,
+    sessionKey,
+    storageKey,
+  ])
 
   return browserId
 }
@@ -1512,7 +1540,7 @@ function PreviewAddress({
   onNavigatePath: (path: string) => void
   onOpen: () => void
   previewLocation?: string
-  previewProxy?: ManagedPreviewProxyInfo
+  previewProxy?: PreviewProxyInfo
   source?: string
 }) {
   const address = previewLocation ?? source ?? ""
@@ -1581,7 +1609,11 @@ function PreviewAddress({
           className="ml-1 size-7 shrink-0 rounded-full"
           disabled={disabled}
           size="icon"
-          title={previewProxy ? "Copy public preview URL" : "Copy preview URL"}
+          title={
+            previewProxy?.kind === "cloud"
+              ? "Copy public preview URL"
+              : "Copy preview URL"
+          }
           type="button"
           variant="ghost"
           onClick={copyAddress}
@@ -1603,9 +1635,11 @@ function PreviewAddress({
             </Button>
           </TooltipTrigger>
           <TooltipContent className="max-w-72 text-pretty" sideOffset={6}>
-            {previewProxy
+            {previewProxy?.kind === "cloud"
               ? "Open the public URL. Browser bindings proxied by Blame may not work outside the app."
-              : "Open preview in browser"}
+              : previewProxy?.kind === "local"
+                ? "Open the direct local preview URL. The isolated proxy is only used inside Blame."
+                : "Open preview in browser"}
           </TooltipContent>
         </Tooltip>
       </div>
@@ -1645,13 +1679,18 @@ function PreviewAddressOrigin({ source }: { source: string }) {
   )
 }
 
-function PreviewProxyBadge({ proxy }: { proxy: ManagedPreviewProxyInfo }) {
+function PreviewProxyBadge({ proxy }: { proxy: PreviewProxyInfo }) {
   const logicalOrigin = previewAddressOrigin(proxy.logicalUrl)
+  const local = proxy.kind === "local"
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <span
-          aria-label="Preview uses Blame proxy"
+          aria-label={
+            local
+              ? "Preview uses Blame Local Container proxy"
+              : "Preview uses Blame proxy"
+          }
           className="inline-flex shrink-0 cursor-help items-center gap-1 rounded-full border bg-muted/60 px-2 py-0.5 text-xs font-medium text-muted-foreground"
           tabIndex={0}
         >
@@ -1663,13 +1702,28 @@ function PreviewProxyBadge({ proxy }: { proxy: ManagedPreviewProxyInfo }) {
         className="max-w-80 flex-col items-start gap-1.5 text-pretty"
         sideOffset={6}
       >
-        <span>
-          Blame loads {logicalOrigin} through its local browser-binding proxy.
-          The address shown is the public cloud URL.
-        </span>
-        <span className="opacity-80">
-          Outside Blame, some cross-service requests may not work.
-        </span>
+        {local ? (
+          <>
+            <span>
+              Blame loads {logicalOrigin} through its isolated Local Container
+              proxy.
+            </span>
+            <span className="opacity-80">
+              Only endpoints declared by the project Compose configuration are
+              reachable from this preview.
+            </span>
+          </>
+        ) : (
+          <>
+            <span>
+              Blame loads {logicalOrigin} through its local browser-binding
+              proxy. The address shown is the public cloud URL.
+            </span>
+            <span className="opacity-80">
+              Outside Blame, some cross-service requests may not work.
+            </span>
+          </>
+        )}
         {proxy.reasons.length > 0 && (
           <span className="opacity-70">{proxy.reasons.join(" ")}</span>
         )}

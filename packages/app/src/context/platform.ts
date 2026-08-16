@@ -531,6 +531,7 @@ export type PreviewBrowserClient = {
   create(input: {
     storageKey: string
     previewSessionId?: string
+    previewWorktree?: string
   }): Promise<{ id: string }>
   destroy(input: { id: string }): Promise<boolean>
   load(input: { id: string; url: string }): Promise<boolean>
