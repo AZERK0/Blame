@@ -39,7 +39,7 @@ export function SiteHeader() {
               priority
             />
           </span>
-          <span className="text-2xl font-extrabold text-white">Blame</span>
+          <span className="font-display text-2xl font-bold tracking-[-0.03em] text-white">Blame</span>
         </Link>
 
         <nav

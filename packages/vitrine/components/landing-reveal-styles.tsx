@@ -48,26 +48,28 @@ export function LandingRevealStyles() {
 
       .story-title {
         text-wrap: balance;
-        font-size: clamp(2.5rem, 5.6vw, 5rem);
+        font-size: clamp(2.5rem, 5.2vw, 4.75rem);
         font-weight: 600;
-        letter-spacing: -0.015em;
-        line-height: 1.05;
+        letter-spacing: -0.025em;
+        line-height: 1.04;
       }
 
       .story-eyebrow {
         color: var(--primary);
-        font-size: clamp(1.0625rem, 1.7vw, 1.5rem);
+        font-family: var(--font-geist-mono), ui-monospace, monospace;
+        font-size: clamp(0.72rem, 0.9vw, 0.82rem);
         font-weight: 600;
-        letter-spacing: 0;
-        line-height: 1.2;
+        letter-spacing: 0.1em;
+        line-height: 1.3;
+        text-transform: uppercase;
       }
 
       .story-copy {
-        color: rgb(134, 134, 139);
-        font-size: clamp(1.0625rem, 1.5vw, 1.3125rem);
-        font-weight: 500;
-        letter-spacing: -0.01em;
-        line-height: 1.4;
+        color: rgb(150, 150, 156);
+        font-size: clamp(1.0625rem, 1.4vw, 1.25rem);
+        font-weight: 400;
+        letter-spacing: 0;
+        line-height: 1.58;
       }
 
       .user-story-state-effect {

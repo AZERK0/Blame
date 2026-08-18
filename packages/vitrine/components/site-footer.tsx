@@ -51,7 +51,7 @@ function PublisherSummary() {
     <div>
       <Link
         href="/"
-        className="inline-flex items-center gap-3 text-2xl font-extrabold tracking-[-0.04em]"
+        className="font-display inline-flex items-center gap-3 text-2xl font-bold tracking-[-0.03em]"
         aria-label="Blame home"
       >
         <span className="grid h-10 w-10 place-items-center">

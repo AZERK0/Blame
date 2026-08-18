@@ -1,7 +1,26 @@
 import type { Metadata } from "next";
+import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google";
 import { SiteFooter } from "@/components/site-footer";
 import { siteUrl } from "@/lib/site";
 import "./globals.css";
+
+const bodyFont = Geist({
+  subsets: ["latin"],
+  variable: "--font-geist-sans",
+  display: "swap",
+});
+
+const displayFont = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-space-grotesk",
+  display: "swap",
+});
+
+const monoFont = Geist_Mono({
+  subsets: ["latin"],
+  variable: "--font-geist-mono",
+  display: "swap",
+});
 
 const googleTagManagerId = "GTM-P4TLSMCV";
 const googleTagManagerScript = `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
@@ -42,7 +61,9 @@ export function RootDocument({ children, language }: RootDocumentProps) {
           }}
         />
       </head>
-      <body>
+      <body
+        className={`${bodyFont.variable} ${displayFont.variable} ${monoFont.variable}`}
+      >
         <noscript>
           <iframe
             src={`https://www.googletagmanager.com/ns.html?id=${googleTagManagerId}`}

@@ -17,7 +17,7 @@ export default function Home() {
   return (
     <>
       <JsonLd id="homepage-structured-data" data={homepageStructuredData} />
-      <main className="min-h-screen overflow-x-hidden bg-[#050505] text-white">
+      <main className="marketing-page min-h-screen overflow-x-hidden bg-[#050505] text-white">
         <SiteHeader />
         <LandingHero />
         <ProductStory />
