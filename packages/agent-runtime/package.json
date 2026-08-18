@@ -21,7 +21,7 @@
     "build": "tsc && node scripts/copy-prompt.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "pnpm build && node --test dist/project-initialization.test.js dist/project-code-practices.test.js dist/project-scanners.test.js dist/security-audit.test.js dist/project-initialization-repair.test.js dist/next-webpack-fallback.test.js dist/project-initialization-impact.test.js dist/commit-message.test.js dist/production.test.js dist/reasoning.test.js dist/specialist-agents.test.js dist/cline-runtime-events.test.js dist/agent-telemetry.test.js dist/provider-schema-compatibility.test.js dist/provider-catalog.test.js dist/cloud-api.test.js dist/title-generation.test.js dist/harness/semantic-workspace.test.js"
+    "test": "pnpm build && node --test dist/project-initialization.test.js dist/project-code-practices.test.js dist/project-scanners.test.js dist/security-audit.test.js dist/project-initialization-repair.test.js dist/next-webpack-fallback.test.js dist/project-initialization-impact.test.js dist/commit-message.test.js dist/production.test.js dist/reasoning.test.js dist/specialist-agents.test.js dist/blame-native-skills.test.js dist/cline-runtime-events.test.js dist/agent-telemetry.test.js dist/provider-schema-compatibility.test.js dist/provider-catalog.test.js dist/cloud-api.test.js dist/title-generation.test.js dist/harness/semantic-workspace.test.js"
   },
   "dependencies": {
     "@ast-grep/napi": "0.42.2",

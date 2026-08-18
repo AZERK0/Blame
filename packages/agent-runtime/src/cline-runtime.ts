@@ -11,6 +11,7 @@ import {
   sep,
 } from "node:path";
 import { promisify } from "node:util";
+import { fileURLToPath } from "node:url";
 
 import type {
   ClineCore,
@@ -28,6 +29,8 @@ import type {
 } from "@cline/sdk";
 import {
   buildWorkspaceMetadata,
+  createDelegatedAgentConfigProvider,
+  createSpawnAgentTool,
   getClineDefaultSystemPrompt,
   mergeRulesForSystemPrompt,
 } from "@cline/sdk";
@@ -51,7 +54,10 @@ import {
   withoutTelemetryEnvironment,
 } from "@blame/telemetry";
 
-import { semanticWorkspaceTools } from "./harness/cline-tools.js";
+import {
+  semanticWorkspaceReadToolNames,
+  semanticWorkspaceTools,
+} from "./harness/cline-tools.js";
 import {
   managedSemanticWorkspaceExecutor,
   type SemanticWorkspaceExecutor,
@@ -63,7 +69,8 @@ import {
   readTools,
   writeTools,
 } from "./cline-tool-policy.js";
-import { blameSpecialistAgentsSystemPrompt } from "./specialist-agents.js";
+import { blameSpecialistRoutingSystemPrompt } from "./specialist-agents.js";
+import { createConsultSpecialistTool } from "./specialist-consult-tool.js";
 import {
   deleteProviderCredential,
   listProviders,
@@ -230,6 +237,8 @@ type PendingApproval = {
 
 type RuntimeStartSessionInput = StartSessionInput & {
   enableAgentTeams?: boolean;
+  enableBuiltInSkills?: boolean;
+  enableSpecialistConsult?: boolean;
   enableSpawnAgent?: boolean;
 };
 
@@ -651,13 +660,53 @@ export class BlameAgentRuntime {
         this.autoApprovedWriteToolSessions.add(sessionId);
       }
       const autoSendPrompt = input.autoSendPrompt !== false;
-      const pluginPaths = runtimePluginPaths(
-        this.productionConfig,
-        input.pluginPaths,
-      );
-      const configExtensions =
+      const pluginPaths = runtimePluginPaths(this.productionConfig, [
+        ...(input.enableBuiltInSkills ? [blameNativePluginPath()] : []),
+        ...(input.pluginPaths ?? []),
+      ]);
+      const requestedConfigExtensions =
         input.configExtensions ??
         runtimeConfigExtensions(this.productionConfig);
+      const configExtensions = input.enableBuiltInSkills
+        ? withConfigExtension(requestedConfigExtensions, "skills")
+        : requestedConfigExtensions;
+      const taskContract = {
+        session_id: sessionId,
+        ...(input.storyId ? { story_id: input.storyId } : {}),
+        objective: input.prompt,
+      };
+      const semanticExecutor = managedSemanticWorkspaceExecutor(
+        this.options.semanticWorkspace,
+        {
+          backendMode: input.backend?.mode,
+          workspaceMode: input.workspaceMode,
+        },
+      );
+      const standardTools = runtimeTools(
+        this.options,
+        input.workspaceRoot,
+        input.previewDevtoolsScope,
+        taskContract,
+        semanticExecutor,
+      );
+      const specialistTool = input.enableSpecialistConsult
+        ? runtimeConsultSpecialistTool({
+            credential: resolvedCredential,
+            input,
+            objective: input.prompt,
+            readOnlyTools: readOnlyRuntimeTools(
+              this.options,
+              input.workspaceRoot,
+              input.previewDevtoolsScope,
+              taskContract,
+              semanticExecutor,
+            ),
+          })
+        : undefined;
+      const extraTools = [
+        ...(standardTools ?? []),
+        ...(specialistTool ? [specialistTool] : []),
+      ];
       const startInput = {
         ...(autoSendPrompt ? { prompt: input.prompt } : {}),
         ...(input.initialMessages?.length
@@ -697,20 +746,7 @@ export class BlameAgentRuntime {
             enableSpawnAgent: input.enableSpawnAgent ?? false,
             enableAgentTeams: input.enableAgentTeams ?? false,
             extensionContext: extensionContext(input),
-            extraTools: runtimeTools(
-              this.options,
-              input.workspaceRoot,
-              input.previewDevtoolsScope,
-              {
-                session_id: sessionId,
-                ...(input.storyId ? { story_id: input.storyId } : {}),
-                objective: input.prompt,
-              },
-              managedSemanticWorkspaceExecutor(this.options.semanticWorkspace, {
-                backendMode: input.backend?.mode,
-                workspaceMode: input.workspaceMode,
-              }),
-            ),
+            ...(extraTools.length ? { extraTools } : {}),
           }),
         },
         localRuntime: {
@@ -2463,7 +2499,9 @@ export class BlameAgentRuntime {
       workspaceMode: input.workspaceMode,
       previewDevtoolsScope: input.previewDevtoolsScope,
       systemPrompt: await buildDevelopmentSystemPrompt(input),
-      enableSpawnAgent: true,
+      enableBuiltInSkills: true,
+      enableSpecialistConsult: true,
+      enableSpawnAgent: false,
       enableAgentTeams: false,
       backend: input.backend,
       executionId: input.executionId,
@@ -2911,6 +2949,70 @@ function runtimeTools(
     previewContainerLogsTool(options, worktree),
   ].filter((tool): tool is AgentTool => Boolean(tool));
   return tools.length ? tools : undefined;
+}
+
+function readOnlyRuntimeTools(
+  options: RuntimeOptions,
+  worktree: string,
+  previewDevtoolsScope: string | undefined,
+  taskContract: {
+    session_id?: string;
+    story_id?: string;
+    objective?: string;
+  },
+  semanticWorkspaceExecutor: SemanticWorkspaceExecutor | undefined,
+) {
+  const allowedTools = new Set([
+    ...semanticWorkspaceReadToolNames,
+    "get_preview_devtools",
+    "get_preview_container_logs",
+  ]);
+  return (
+    runtimeTools(
+      options,
+      worktree,
+      previewDevtoolsScope,
+      taskContract,
+      semanticWorkspaceExecutor,
+    ) ?? []
+  ).filter((tool) => allowedTools.has(tool.name));
+}
+
+function runtimeConsultSpecialistTool(options: {
+  credential: {
+    apiKey: string;
+    baseUrl: string | null;
+  };
+  input: RuntimeStartSessionInput;
+  objective?: string;
+  readOnlyTools: AgentTool[];
+}) {
+  const configProvider = createDelegatedAgentConfigProvider({
+    providerId: options.input.providerId,
+    modelId: options.input.modelId,
+    apiKey: options.credential.apiKey,
+    baseUrl: options.credential.baseUrl ?? undefined,
+    ...reasoningConfig(options.input.reasoningEffort),
+    cwd: options.input.cwd,
+    maxIterations: 16,
+  });
+  const spawnTool = createSpawnAgentTool({
+    configProvider,
+    defaultMaxIterations: 16,
+    subAgentTools: options.readOnlyTools,
+    toolPolicies: Object.fromEntries(
+      options.readOnlyTools.map((tool) => [
+        tool.name,
+        { enabled: true, autoApprove: true },
+      ]),
+    ),
+    logger: productionLogger,
+  });
+  return createConsultSpecialistTool({
+    objective: options.objective,
+    spawnTool,
+    storyId: options.input.storyId,
+  });
 }
 
 function previewDevtoolsTool(
@@ -3482,7 +3584,7 @@ export async function buildDevelopmentSystemPrompt(
   const practices = input.codePractices ?? [];
   return renderPrompt(loadPrompt("code-agent-system"), {
     BLAME_PRACTICES: developmentPracticePrompts(practices),
-    BLAME_SPECIALISTS: blameSpecialistAgentsSystemPrompt(),
+    BLAME_SPECIALISTS: blameSpecialistRoutingSystemPrompt(),
     CURRENT_DATE: new Date().toISOString().slice(0, 10),
     CWD: input.cwd,
     IDE_NAME: "Blame",
@@ -3491,6 +3593,19 @@ export async function buildDevelopmentSystemPrompt(
     WORKSPACE_NAME: basename(input.workspaceRoot),
     WORKSPACE_ROOT: input.workspaceRoot,
   });
+}
+
+export function blameNativePluginPath() {
+  return fileURLToPath(
+    new URL("./plugins/blame-native/index.js", import.meta.url),
+  );
+}
+
+function withConfigExtension(
+  extensions: StartSessionInput["configExtensions"],
+  extension: NonNullable<StartSessionInput["configExtensions"]>[number],
+) {
+  return Array.from(new Set([...(extensions ?? []), extension]));
 }
 
 function developmentPracticePrompts(

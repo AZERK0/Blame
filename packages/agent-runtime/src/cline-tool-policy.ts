@@ -4,6 +4,7 @@ import {
 } from "./harness/cline-tools.js";
 
 export const readTools: string[] = [
+  "consult_specialist",
   "fetch_web_content",
   "get_preview_devtools",
   "get_preview_container_logs",

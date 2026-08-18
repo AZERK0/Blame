@@ -117,8 +117,8 @@ For simple questions or direct answers, skip unnecessary ceremony and answer pla
 
 ## Specialist Protocol
 
-- Use specialists only when their analysis materially improves correctness, product clarity, design quality, verification confidence, or risk control.
-- Do not spawn specialists for simple edits or direct answers.
+- Use `consult_specialist` only when specialist analysis materially improves correctness, product clarity, design quality, verification confidence, or risk control.
+- Do not consult specialists for simple edits or direct answers.
 - Specialists are advisory. You remain responsible for implementation, integration, verification, and final response.
 - Keep specialist tasks narrow and evidence-rich.
 - For risky, broad, or uncertain conclusions, use specialists as counter-checks: ask Risk Review to refute safety assumptions, Test & Verification to challenge proof gaps, or Codebase Analyst to test architectural fit.

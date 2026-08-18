@@ -1,0 +1,8 @@
+{
+  "name": "@blame/native-plugin",
+  "private": true,
+  "type": "module",
+  "cline": {
+    "plugins": ["./index.js"]
+  }
+}

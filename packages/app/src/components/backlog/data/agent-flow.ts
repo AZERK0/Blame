@@ -576,7 +576,7 @@ function toolActivities(
   const payload = eventPayload(event)
   const phase = stringValue(payload.phase) ?? stringValue(payload.hookEventName)
   const input = toolActivityInput(activities, payload, phase)
-  const message = spawnAgentMessageActivityInput(input, payload)
+  const message = specialistMessageActivityInput(input, payload)
   return upsertActivities(activities, [
     ...closeRunningActivityInputs(activities, ["message", "reasoning"]),
     ...toolActivityInputs(activities, phase, input),
@@ -596,10 +596,9 @@ function toolActivityInput(
   const id = toolActivityId(activities, toolName, iteration, phase, toolCallId)
   const existing = activities.find((activity) => activity.id === id)
   const existingDetail = parseDetailRecord(existing?.detail)
-  const agent =
-    toolName === "spawn_agent"
-      ? spawnAgentInfo(recordValue(toolCall.input), existing)
-      : undefined
+  const agent = specialistTool(toolName)
+    ? specialistInfo(toolName, recordValue(toolCall.input), existing)
+    : undefined
   return {
     id,
     kind: "tool",
@@ -786,23 +785,24 @@ function parallelRunningTools(
   )
 }
 
-function spawnAgentMessageActivityInput(
+function specialistMessageActivityInput(
   toolInput: ActivityInput,
   payload: Record<string, unknown>
 ): ActivityInput | undefined {
-  if (toolInput.toolName !== "spawn_agent") return undefined
+  if (!specialistTool(toolInput.toolName)) return undefined
   if (toolInput.status !== "completed") return undefined
-  const text = spawnAgentResponseText(payload.output)
+  const text = specialistResponseText(payload.output)
   if (!text) return undefined
   const agent =
-    spawnAgentInfo(
+    specialistInfo(
+      toolInput.toolName,
       recordValue(recordValue(payload.toolCall).input),
       toolInput
     ) ??
-    spawnAgentInfoFromResponse(text) ??
-    fallbackSpawnAgentInfo
+    specialistInfoFromResponse(text) ??
+    fallbackSpecialistInfo
   return {
-    id: `spawn-agent-response-${toolInput.id}`,
+    id: `specialist-response-${toolInput.id}`,
     kind: "message",
     title: agent.name,
     detail: text,
@@ -815,23 +815,31 @@ function spawnAgentMessageActivityInput(
   }
 }
 
-function spawnAgentResponseText(output: unknown) {
+function specialistResponseText(output: unknown) {
   const outputRecord = recordValue(output)
   const text = stringValue(outputRecord.text)?.trim()
   if (text) return text
   return stringValue(output)?.trim()
 }
 
-function spawnAgentInfoFromResponse(response: string) {
+function specialistInfoFromResponse(response: string) {
   return specialistAgents.find((agent) =>
     agent.responseMatches.some((match) => response.includes(match))
   )
 }
 
-function spawnAgentInfo(
+function specialistInfo(
+  toolName: string | undefined,
   input: Record<string, unknown>,
-  existing?: UserStoryAgentActivity
+  existing?: Pick<UserStoryAgentActivity, "agentAvatar" | "agentName">
 ) {
+  if (toolName === "consult_specialist") {
+    const specialistId = stringValue(input.specialist)
+    const matchedAgent = specialistAgents.find(
+      (agent) => agent.id === specialistId
+    )
+    if (matchedAgent) return matchedAgent
+  }
   const systemPrompt = stringValue(input.systemPrompt) ?? ""
   const matchedAgent = specialistAgents.find((agent) =>
     systemPrompt.includes(agent.promptMatch)
@@ -846,37 +854,47 @@ function spawnAgentInfo(
   }
 }
 
-const fallbackSpawnAgentInfo = {
+function specialistTool(toolName: string | undefined) {
+  return toolName === "consult_specialist" || toolName === "spawn_agent"
+}
+
+const fallbackSpecialistInfo = {
   name: "Agent",
+  avatar: undefined,
   responseMatches: [],
 }
 
 const specialistAgents = [
   {
+    id: "codebase_analyst",
     name: "Codebase Analyst",
     avatar: publicAssetUrl("agents/codebase-analyst.png"),
     promptMatch: "Blame's Codebase Analyst",
     responseMatches: ["## Codebase Analysis"],
   },
   {
+    id: "frontend_design",
     name: "Frontend Design Specialist",
     avatar: publicAssetUrl("agents/frontend-design-specialist.png"),
     promptMatch: "Blame's Frontend Design Specialist",
     responseMatches: ["## Frontend Design Review"],
   },
   {
+    id: "risk_review",
     name: "Risk & Review Analyst",
     avatar: publicAssetUrl("agents/risk-review-analyst.png"),
     promptMatch: "Blame's Risk & Review Analyst",
     responseMatches: ["## Risk Review"],
   },
   {
+    id: "story_analyst",
     name: "Story Analyst",
     avatar: publicAssetUrl("agents/story-analyst.png"),
     promptMatch: "Blame's Story Analyst",
     responseMatches: ["## Story Analysis"],
   },
   {
+    id: "test_verification",
     name: "Test & Verification Analyst",
     avatar: publicAssetUrl("agents/test-verification-analyst.png"),
     promptMatch: "Blame's Test & Verification Analyst",

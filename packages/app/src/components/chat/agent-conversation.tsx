@@ -314,11 +314,7 @@ function AgentConversationTurn({
     )
       return
     let cancelled = false
-    loadChangedFiles(
-      sessionId,
-      checkpointRunCount,
-      run.diffEndRef
-    )
+    loadChangedFiles(sessionId, checkpointRunCount, run.diffEndRef)
       .then((diffs) => {
         if (!cancelled) setChangedFiles(diffs)
       })
@@ -1312,11 +1308,24 @@ function toolDetailContent(details: ActivityDetail): React.ReactNode {
     )
   }
 
-  if (toolName === "spawn_agent") {
+  if (specialistTool(toolName)) {
+    const specialist = stringValue(input.specialist)
     const task = stringValue(input.task)
+    const context = stringValue(input.context)
     return (
       <ToolSurface durationMs={details.durationMs} label={toolLabel(toolName)}>
-        <StructuredValue label="Input" value={task ? { task } : undefined} />
+        <StructuredValue
+          label="Input"
+          value={
+            specialist || task || context
+              ? {
+                  ...(specialist ? { specialist } : {}),
+                  ...(task ? { task } : {}),
+                  ...(context ? { context } : {}),
+                }
+              : undefined
+          }
+        />
         <StructuredValue label="Output" value={details.output} />
       </ToolSurface>
     )
@@ -1908,7 +1917,7 @@ function ActivityToolIcon({
   activity: UserStoryAgentActivity
   toolName: string | undefined
 }) {
-  if (activity.kind === "tool" && toolName === "spawn_agent") {
+  if (activity.kind === "tool" && specialistTool(toolName)) {
     const name = activity.agentName ?? "Agent"
     const avatar =
       activity.agentAvatar ??
@@ -1992,7 +2001,7 @@ function activityTitle(
   if (editedFiles) {
     return `Edited ${editedFiles.length} ${editedFiles.length === 1 ? "file" : "files"}`
   }
-  if (details.toolName === "spawn_agent" && activity.agentName) {
+  if (specialistTool(details.toolName) && activity.agentName) {
     return activity.agentName
   }
   return toolLabel(details.toolName ?? activity.title)
@@ -2195,6 +2204,10 @@ function codeGraphTool(toolName: string) {
   ].includes(toolName)
 }
 
+function specialistTool(toolName: string | undefined) {
+  return toolName === "consult_specialist" || toolName === "spawn_agent"
+}
+
 function parseDetail(value: string) {
   try {
     const parsed = JSON.parse(value)
@@ -2224,6 +2237,8 @@ function toolLabel(toolName: string) {
   if (normalized === "get_code_graph_status") return "Code graph status"
   if (normalized === "update_code_graph") return "Code graph update"
   if (normalized === "skills") return "Skill"
+  if (normalized === "consult_specialist") return "Specialist consultation"
+  if (normalized === "spawn_agent") return "Specialist consultation"
   return humanizeToolName(normalized)
 }
 

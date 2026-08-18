@@ -189,6 +189,34 @@ test("recognizes specialist identity from spawn agent response headings", () => 
   assert.equal(message?.agentAvatar, "/agents/codebase-analyst.png")
 })
 
+test("adds specialist response messages after consult_specialist results", () => {
+  const started = updateStory(
+    story(),
+    consultSpecialistToolEvent("tool_call", "call-1", "frontend_design")
+  )
+  const completed = updateStory(
+    started,
+    consultSpecialistToolEvent("tool_result", "call-1", undefined, {
+      text: "## Frontend Design Review\n\nImprove the hierarchy.",
+    })
+  )
+  const activities = completed.agentActivities ?? []
+
+  assert.equal(activities.length, 2)
+  assert.equal(activities[0]?.toolName, "consult_specialist")
+  assert.equal(activities[0]?.agentName, "Frontend Design Specialist")
+  assert.equal(activities[1]?.kind, "message")
+  assert.equal(activities[1]?.title, "Frontend Design Specialist")
+  assert.equal(
+    activities[1]?.agentAvatar,
+    "/agents/frontend-design-specialist.png"
+  )
+  assert.equal(
+    activities[1]?.detail,
+    "## Frontend Design Review\n\nImprove the hierarchy."
+  )
+})
+
 test("appends reasoning deltas while the agent is running", () => {
   const firstDelta = updateStory(story(), reasoningEvent({ text: "Now" }))
   const secondDelta = updateStory(firstDelta, reasoningEvent({ text: " I" }))
@@ -800,6 +828,28 @@ function spawnAgentToolEvent(
       },
       toolCallId,
       toolName: "spawn_agent",
+    },
+    type: "tool",
+  }
+}
+
+function consultSpecialistToolEvent(
+  hookEventName: "tool_call" | "tool_result",
+  toolCallId: string,
+  specialist?: string,
+  output?: Record<string, unknown> | string
+): AgentEvent {
+  return {
+    payload: {
+      hookEventName,
+      iteration: 1,
+      output,
+      toolCall: {
+        input: specialist ? { specialist, task: "Review the UI." } : undefined,
+        name: "consult_specialist",
+      },
+      toolCallId,
+      toolName: "consult_specialist",
     },
     type: "tool",
   }

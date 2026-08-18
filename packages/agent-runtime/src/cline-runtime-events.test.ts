@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import type { CoreSessionEvent } from "@cline/sdk";
+import type { ClineCoreStartInput, CoreSessionEvent } from "@cline/sdk";
 import { ClineFreeModelLimitError, ClineNotSubscribedError } from "@cline/llms";
 import type { AgentEvent } from "./types.js";
 
@@ -98,6 +98,76 @@ test("does not prewarm a local Cline backend", async () => {
   assert.equal(created, false);
 });
 
+test("starts development sessions with native skills and private specialist consultation", async () => {
+  const workspace = await mkdtemp(join(tmpdir(), "blame-development-runtime-"));
+  const originalFetch = globalThis.fetch;
+  let capturedStart: ClineCoreStartInput | undefined;
+  const core = {
+    async dispose() {},
+    async list() {
+      return [];
+    },
+    async start(input: ClineCoreStartInput) {
+      capturedStart = input;
+      return { sessionId: input.config.sessionId! };
+    },
+    async subscribe() {
+      return () => undefined;
+    },
+  };
+  globalThis.fetch = async () =>
+    new Response(
+      JSON.stringify({
+        data: {
+          apiKey: "provider-key",
+          authMethod: "api-key",
+          baseUrl: null,
+          id: "credential",
+          label: "default",
+          providerId: "provider",
+        },
+      }),
+      { headers: { "content-type": "application/json" }, status: 200 },
+    );
+  const runtime = new BlameAgentRuntime(undefined, {
+    createCore: async () => core as never,
+  });
+
+  try {
+    await runtime.sessions.startDevelopment({
+      apiConnection: { url: "https://api.example" },
+      autoSendPrompt: false,
+      cwd: workspace,
+      modelId: "model",
+      providerId: "provider",
+      summary: "Improve the settings experience",
+      title: "Settings polish",
+      workspaceRoot: workspace,
+    });
+
+    assert.ok(capturedStart);
+    assert.equal(capturedStart.config.enableSpawnAgent, false);
+    assert.ok(capturedStart.localRuntime?.configExtensions?.includes("skills"));
+    assert.ok(
+      capturedStart.localRuntime?.pluginPaths?.some((path: string) =>
+        path.endsWith("/plugins/blame-native/index.js"),
+      ),
+    );
+    const toolNames = capturedStart.config.extraTools?.map(
+      (tool: { name: string }) => tool.name,
+    );
+    assert.ok(toolNames?.includes("consult_specialist"));
+    assert.equal(toolNames?.includes("spawn_agent"), false);
+    assert.deepEqual(capturedStart.toolPolicies?.consult_specialist, {
+      autoApprove: true,
+    });
+  } finally {
+    globalThis.fetch = originalFetch;
+    await runtime.shutdown();
+    await rm(workspace, { force: true, recursive: true });
+  }
+});
+
 test("synchronizes provider OAuth settings for initialization credentials", async () => {
   const calls: string[] = [];
   const credential = { providerId: "openai-codex" };
@@ -105,9 +175,7 @@ test("synchronizes provider OAuth settings for initialization credentials", asyn
   const internals = runtime as unknown as {
     initializationCredential(input: unknown): Promise<typeof credential>;
     runtimeCredential(input: unknown): Promise<typeof credential>;
-    syncClineOAuthProviderSettings(
-      input: typeof credential,
-    ): Promise<void>;
+    syncClineOAuthProviderSettings(input: typeof credential): Promise<void>;
   };
   internals.runtimeCredential = async () => {
     calls.push("resolve");
@@ -482,7 +550,14 @@ test("renders the Blame development system prompt without Cline placeholders", a
   assert.match(prompt, /## Autonomy And Continuity/);
   assert.match(prompt, /## Progress Updates/);
   assert.match(prompt, /counter-checks/);
-  assert.match(prompt, /## Blame Multi-Agent Mode/);
+  assert.match(prompt, /## Blame Specialist Consultations/);
+  assert.match(prompt, /consult_specialist/);
+  assert.match(prompt, /private instructions internally/);
+  assert.doesNotMatch(prompt, /<system_prompt/);
+  assert.doesNotMatch(prompt, /## Specialist knowledge/);
+  assert.doesNotMatch(prompt, /Jobs To Be Done/);
+  assert.doesNotMatch(prompt, /Gestalt grouping/);
+  assert.ok(prompt.length < 30_000);
   assert.match(prompt, /## Coding Style: Standard Industrial Professional/);
   assert.match(prompt, /## Architecture: Match Codebase/);
   assert.match(prompt, /## Unit Tests: Professional TDD/);
