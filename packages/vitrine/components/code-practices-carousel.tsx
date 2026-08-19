@@ -124,10 +124,10 @@ function PracticeCarouselHeader({
   return (
     <div className="mb-4 flex min-h-20 items-center justify-between gap-4">
       <div aria-live="polite" className="min-w-0">
-        <h3 className="text-base font-semibold tracking-[-0.01em] text-[#11131a] sm:text-lg">
+        <h3 className="text-base text-[#11131a] sm:text-lg">
           {activeSlide.title}
         </h3>
-        <p className="mt-1 max-w-xl text-xs font-medium leading-5 text-[#11131a]/48 sm:text-sm">
+        <p className="mt-1 max-w-xl text-xs leading-5 text-[#11131a]/48 sm:text-sm">
           {activeSlide.description}
         </p>
       </div>
@@ -264,7 +264,7 @@ function ComparisonDivider({ position }: { position: number }) {
       className="pointer-events-none absolute inset-y-0 z-10 w-px -translate-x-1/2 bg-white/80 shadow-[0_0_0_1px_rgba(17,19,26,0.12)]"
       style={{ left: `${position}%` }}
     >
-      <span className="absolute left-1/2 top-1/2 grid h-11 w-6 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white text-[9px] font-bold tracking-[-0.12em] text-[#11131a]/45 shadow-lg ring-1 ring-black/10">
+      <span className="absolute left-1/2 top-1/2 grid h-11 w-6 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white text-[9px] tracking-[-0.12em] text-[#11131a]/45 shadow-lg ring-1 ring-black/10">
         ⋮⋮
       </span>
     </div>
@@ -274,10 +274,10 @@ function ComparisonDivider({ position }: { position: number }) {
 function ComparisonLabels() {
   return (
     <div className="pointer-events-none absolute inset-x-4 bottom-4 z-30 flex items-center justify-between">
-      <span className="rounded-full bg-[#8e8e93] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.08em] text-white shadow-sm">
+      <span className="rounded-full bg-[#8e8e93] px-3 py-1.5 text-[10px] uppercase tracking-[0.08em] text-white shadow-sm">
         Other
       </span>
-      <span className="bg-primary text-primary-foreground rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.08em] shadow-sm">
+      <span className="bg-primary text-primary-foreground rounded-full px-3 py-1.5 text-[10px] uppercase tracking-[0.08em] shadow-sm">
         Pro standard
       </span>
     </div>
@@ -368,7 +368,7 @@ function CodeArtifact({ isPro }: { isPro: boolean }) {
 function ArtifactStatus({ isPro }: { isPro: boolean }) {
   return (
     <div
-      className={`mt-5 text-[10px] font-semibold ${isPro ? "text-emerald-700" : "text-red-700"}`}
+      className={`mt-5 text-[10px] ${isPro ? "text-emerald-700" : "text-red-700"}`}
     >
       {isPro ? "✓ Typed · lint clean" : "7 warnings · any used"}
     </div>
@@ -575,7 +575,7 @@ function TreeRow({ entry }: { entry: TreeEntry }) {
   const Icon = entry.kind === "folder" ? Folder : FileCode2;
   return (
     <div
-      className="flex min-w-0 items-center gap-1.5 rounded-md py-1 text-[9px] font-medium text-[#24262e] sm:text-[10px]"
+      className="flex min-w-0 items-center gap-1.5 rounded-md py-1 text-[9px] text-[#24262e] sm:text-[10px]"
       style={{ paddingLeft: `${Math.min(entry.level, 3) * 8}px` }}
     >
       <Icon
@@ -594,7 +594,7 @@ function TreeRow({ entry }: { entry: TreeEntry }) {
 function ArchitectureStatus({ isPro }: { isPro: boolean }) {
   return (
     <div
-      className={`mt-4 text-[10px] font-semibold ${isPro ? "text-emerald-700" : "text-red-700"}`}
+      className={`mt-4 text-[10px] ${isPro ? "text-emerald-700" : "text-red-700"}`}
     >
       {isPro
         ? "Focused modules · clear boundaries"
@@ -654,7 +654,7 @@ function CommitRow({
         className={`relative z-[1] mt-1 size-3 shrink-0 rounded-full border-2 border-white/80 ${isPro ? "bg-primary" : "bg-black/30"}`}
       />
       <div className="min-w-0">
-        <p className="line-clamp-2 text-[9px] font-medium leading-3.5 text-[#11131a]/78 sm:text-[11px]">
+        <p className="line-clamp-2 text-[9px] leading-3.5 text-[#11131a]/78 sm:text-[11px]">
           {commit.message}
         </p>
         <p className="mt-0.5 font-mono text-[8px] text-black/32">
@@ -668,7 +668,7 @@ function CommitRow({
 function CommitStatus({ isPro }: { isPro: boolean }) {
   return (
     <div
-      className={`mt-4 flex items-center gap-1.5 text-[10px] font-semibold ${isPro ? "text-emerald-700" : "text-red-700"}`}
+      className={`mt-4 flex items-center gap-1.5 text-[10px] ${isPro ? "text-emerald-700" : "text-red-700"}`}
     >
       {isPro && <CheckCircle2 className="size-3" />}
       {isPro

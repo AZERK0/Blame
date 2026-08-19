@@ -7,9 +7,9 @@ import { createIndexablePageMetadata } from '@/lib/seo'
 import { homepageStructuredData } from '@/lib/structured-data'
 
 export const metadata = createIndexablePageMetadata({
-  title: 'Blame — Agentic IDE for Controlled AI Coding Workflows',
+  title: 'Blame — The ADE That Sets the Standard',
   description:
-    'Run AI coding agents in isolated Git worktrees, preview every change, review diffs, and merge only when the work is ready.',
+    'Blame is the ADE for verifiable agentic development: Code Practices, isolated smart worktrees, live Cloud Previews, and controlled merges.',
   canonicalPath: '/',
 })
 

@@ -332,14 +332,13 @@ function MiniHero({ path }: { path: string }) {
     <div className={styles.miniHero}>
       <span className={styles.previewPath}>{path}</span>
       <h3>
-        The industrial-grade
-        <br />
-        agentic IDE.
+        <span className="block whitespace-nowrap">The ADE that</span>
+        <span className="block whitespace-nowrap">sets the standard</span>
       </h3>
       <p>
-        Turn every request into an isolated worktree,
+        From story to controlled merge, one verifiable harness
         <br />
-        with live preview, diffs, and controlled merge.
+        unifies agents, Code Practices, smart worktrees, and live Cloud Previews.
       </p>
       <div className={styles.heroButtons}>
         <span>

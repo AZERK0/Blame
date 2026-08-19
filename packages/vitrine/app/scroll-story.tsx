@@ -91,15 +91,14 @@ function HeroCopy({
       <div className="text-center">
         <h1
           id="hero-title"
-          className="text-balance text-[clamp(3.2rem,9vw,8.5rem)] font-semibold leading-[0.9] tracking-tighter text-white drop-shadow-[0_20px_70px_rgba(0,0,0,0.55)] sm:leading-32"
+          className="text-balance font-semibold text-white drop-shadow-[0_20px_70px_rgba(0,0,0,0.55)]"
         >
-          The industrial-grade
-          <br />
-          agentic IDE.
+          <span className="block whitespace-nowrap">The ADE that</span>
+          <span className="block whitespace-nowrap">sets the standard</span>
         </h1>
-        <p className="mx-auto mt-7 max-w-2xl text-balance text-base leading-7 text-white/76 sm:text-lg md:text-xl">
-          Turn every request into an isolated worktree, with live preview,
-          diffs, and controlled merge.
+        <p className="hero-subtitle mx-auto mt-7 max-w-3xl text-balance text-white/76">
+          From story to controlled merge, one verifiable harness unifies
+          agents, Code Practices, smart worktrees, and live Cloud Previews.
         </p>
         <HeroActions />
       </div>
@@ -112,14 +111,14 @@ function HeroActions() {
     <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
       <a
         href="/download"
-        className="group inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-[#080808] shadow-[0_18px_60px_rgba(255,255,255,0.22)] transition duration-200 hover:-translate-y-0.5 hover:bg-[#dfe7ff] focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-[#050505]"
+        className="group inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm text-[#080808] shadow-[0_18px_60px_rgba(255,255,255,0.22)] transition duration-200 hover:-translate-y-0.5 hover:bg-[#dfe7ff] focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-[#050505]"
       >
         Request access
         <ArrowRight className="h-4 w-4 transition duration-200 group-hover:translate-x-0.5" />
       </a>
       <a
         href="#workflow"
-        className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-white/14 bg-white/[0.06] px-5 py-3 text-sm font-semibold text-white/90 backdrop-blur-md transition duration-200 hover:-translate-y-0.5 hover:bg-white/[0.1] focus:outline-none focus:ring-2 focus:ring-white/45 focus:ring-offset-2 focus:ring-offset-[#050505]"
+        className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-white/14 bg-white/[0.06] px-5 py-3 text-sm text-white/90 backdrop-blur-md transition duration-200 hover:-translate-y-0.5 hover:bg-white/[0.1] focus:outline-none focus:ring-2 focus:ring-white/45 focus:ring-offset-2 focus:ring-offset-[#050505]"
       >
         <Play className="h-4 w-4 fill-current" />
         See the workflow
@@ -137,7 +136,7 @@ function HeroMockup({
 }) {
   return (
     <div
-      className="z-20 mx-auto mb-4 w-full max-w-[68rem]"
+      className="z-20 mx-auto mb-4 w-[90%] max-w-[61.2rem]"
       style={heroMockupStyle(progress, reducedMotion)}
     >
       <HeroBacklogMockup />

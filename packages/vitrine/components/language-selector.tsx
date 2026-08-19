@@ -32,7 +32,7 @@ export function LanguageSelector({
   return (
     <div className="mt-8 flex items-center gap-3">
       <Languages className="size-4 text-[#b3acf3]" />
-      <span className="text-sm font-medium text-white/54">{label}</span>
+      <span className="text-sm text-white/54">{label}</span>
       <Select value={language} onValueChange={selectLanguage}>
         <SelectTrigger
           aria-label={label}

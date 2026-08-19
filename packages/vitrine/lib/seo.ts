@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { absoluteSiteUrl } from "@/lib/site";
 
 const socialImageUrl = absoluteSiteUrl("/social/blame-social-card.png");
-const socialImageAlt = "Blame — The industrial-grade agentic IDE.";
+const socialImageAlt = "Blame — The ADE that sets the standard";
 
 type IndexablePageMetadata = {
   canonicalPath: string;

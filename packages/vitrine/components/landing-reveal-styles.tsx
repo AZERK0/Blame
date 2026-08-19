@@ -48,17 +48,16 @@ export function LandingRevealStyles() {
 
       .story-title {
         text-wrap: balance;
-        font-size: clamp(2.5rem, 5.2vw, 4.75rem);
-        font-weight: 600;
-        letter-spacing: -0.025em;
-        line-height: 1.04;
+        font-size: clamp(2.25rem, 4.5vw, 4.25rem);
+        letter-spacing: normal;
+        line-height: 1.08;
       }
 
       .story-eyebrow {
         color: var(--primary);
-        font-family: var(--font-geist-mono), ui-monospace, monospace;
-        font-size: clamp(0.72rem, 0.9vw, 0.82rem);
-        font-weight: 600;
+        font-family: Arial, Helvetica, ui-sans-serif, sans-serif;
+        font-size: clamp(0.875rem, 1.05vw, 1rem);
+        font-weight: 400;
         letter-spacing: 0.1em;
         line-height: 1.3;
         text-transform: uppercase;
@@ -66,7 +65,8 @@ export function LandingRevealStyles() {
 
       .story-copy {
         color: rgb(150, 150, 156);
-        font-size: clamp(1.0625rem, 1.4vw, 1.25rem);
+        font-family: Arial, Helvetica, ui-sans-serif, sans-serif;
+        font-size: clamp(1.125rem, 1.65vw, 1.4375rem);
         font-weight: 400;
         letter-spacing: 0;
         line-height: 1.58;

@@ -135,9 +135,9 @@ function StoryOpening() {
           <p className="story-eyebrow">Beyond the prompt</p>
         </ScrollReveal>
         <ScrollReveal delay={90} distance={36}>
-          <h2 className="mt-7 max-w-5xl text-balance text-[clamp(3rem,7vw,7rem)] font-semibold leading-[0.95] tracking-[-0.045em] text-white">
-            AI can write the code.{" "}
-            <span className="text-[#86868b]">Blame makes it shippable.</span>
+          <h2 className="mt-7 max-w-5xl text-balance text-[clamp(2.625rem,5.5vw,5.625rem)] font-semibold leading-none text-white">
+            <span className="text-[#86868b]">AI can write the code. </span>
+            Blame makes it shippable.
           </h2>
         </ScrollReveal>
         <ScrollReveal delay={180}>
@@ -202,13 +202,13 @@ function WorkspaceSection() {
             <WorkspacePhoto />
             <div className="absolute inset-x-0 bottom-0 z-10 p-8 sm:p-14 lg:p-20">
               <p className="story-eyebrow">Isolated by default</p>
-              <h2 className="mt-5 max-w-5xl text-balance text-[clamp(2.75rem,5.8vw,5.5rem)] font-semibold leading-[0.96] tracking-[-0.04em] text-white">
+              <h2 className="mt-5 max-w-5xl text-balance text-[clamp(2.375rem,4.8vw,4.75rem)] font-semibold leading-[1.02] text-white">
                 One story. Its own{" "}
                 <span className="workspace-smart-sweep">
-                  <strong className="font-bold">smart</strong> workspace.
+                  smart workspace.
                 </span>
               </h2>
-              <p className="mt-8 max-w-3xl text-[1.0625rem] font-medium leading-7 text-white/68 sm:text-[1.3125rem] sm:leading-8">
+              <p className="section-subtitle mt-8 max-w-3xl text-white/68">
                 Blame automatically analyzes your project, determines what the
                 story needs, and prepares a dedicated branch, worktree,
                 environment, port, and local runtime before implementation
@@ -244,7 +244,7 @@ function WorkspaceSignals() {
       {workspaceSignals.map(({ icon: Icon, title }) => (
         <li
           key={title}
-          className="flex items-center gap-3 bg-[#090b0f]/78 px-5 py-4 text-sm font-semibold text-white/78 backdrop-blur-xl"
+          className="flex items-center gap-3 bg-[#090b0f]/78 px-5 py-4 text-sm text-white/78 backdrop-blur-xl"
         >
           <Icon className="h-4 w-4 text-[#9fd7ff]" />
           {title}
@@ -288,7 +288,7 @@ function ReviewStory() {
     <div className="mt-24 grid gap-16 border-t border-white/12 pt-16 sm:mt-32 lg:grid-cols-[1fr_0.85fr] lg:gap-24 lg:pt-20">
       <ScrollReveal>
         <p className="story-eyebrow">Human decision</p>
-        <h3 className="mt-5 max-w-2xl text-balance text-[clamp(2.25rem,4.2vw,4rem)] font-semibold leading-[0.98] tracking-[-0.035em]">
+        <h3 className="mt-5 max-w-2xl text-balance text-[clamp(2.125rem,3.6vw,3.5rem)] font-semibold leading-[1.04]">
           Your call, all the way to merge.
         </h3>
       </ScrollReveal>
@@ -309,7 +309,7 @@ function ReviewActions() {
       {reviewActions.map(({ icon: Icon, label }) => (
         <li key={label} className="flex items-center gap-4 py-4">
           <Icon className="h-5 w-5 text-white/42" />
-          <span className="font-semibold text-white/78">{label}</span>
+          <span className="text-white/78">{label}</span>
         </li>
       ))}
     </ul>
@@ -360,7 +360,7 @@ function ProviderRail() {
         ))}
       </ul>
       <ScrollReveal delay={360}>
-        <p className="mt-14 text-center text-sm font-medium text-white/46 sm:mt-20 sm:text-base">
+        <p className="mt-14 text-center text-sm text-white/46 sm:mt-20 sm:text-base">
           + any OpenAI-compatible API
         </p>
       </ScrollReveal>
@@ -386,13 +386,13 @@ function PracticesSection() {
 function PracticesCopy() {
   return (
     <div>
-      <p className="text-[clamp(1.0625rem,1.7vw,1.5rem)] font-semibold leading-[1.2] text-[#3545ad]">
+      <p className="text-[clamp(1.0625rem,1.7vw,1.5rem)] leading-[1.2] text-[#3545ad]">
         Code practices
       </p>
-      <h2 className="mt-5 text-balance text-[clamp(2.25rem,3.5vw,3.75rem)] font-semibold leading-[0.97] tracking-[-0.04em]">
+      <h2 className="mt-5 text-balance text-[clamp(2.125rem,3.1vw,3.25rem)] font-semibold leading-[1.04]">
         Every agent codes like a pro.
       </h2>
-      <p className="mt-8 max-w-xl text-[1.0625rem] font-medium leading-7 text-[#11131a]/62 sm:text-[1.3125rem] sm:leading-8">
+      <p className="section-subtitle mt-8 max-w-xl text-[#11131a]/62">
         Blame holds every implementation to professional engineering standards:
         clean code, verified changes, sound architecture, and a commit history
         your team can trust.
@@ -524,10 +524,10 @@ function CloudContinuityItem({
   return (
     <li className="border-b border-white/10 p-8 last:border-b-0 sm:border-r sm:p-10 sm:even:border-r-0 sm:[&:nth-last-child(-n+2)]:border-b-0">
       <Icon className="size-6 text-[#9fd7ff]" />
-      <h4 className="mt-6 text-xl font-semibold tracking-[-0.02em] text-white">
+      <h4 className="mt-6 text-xl font-semibold text-white">
         {item.title}
       </h4>
-      <p className="mt-3 text-sm font-medium leading-6 text-white/48">
+      <p className="mt-3 text-sm leading-6 text-white/48">
         {item.description}
       </p>
     </li>
@@ -555,14 +555,14 @@ function ProjectCreationCopy() {
   return (
     <div>
       <p
-        className={`text-[clamp(1.0625rem,1.7vw,1.5rem)] font-semibold leading-[1.2] ${projectCreationAccentClassName}`}
+        className={`text-[clamp(1.0625rem,1.7vw,1.5rem)] leading-[1.2] ${projectCreationAccentClassName}`}
       >
         Project creation
       </p>
-      <h2 className="mt-5 text-balance text-[clamp(2.25rem,3.5vw,3.75rem)] font-semibold leading-[0.95] tracking-[-0.04em]">
+      <h2 className="mt-5 text-balance text-[clamp(2.125rem,3.1vw,3.25rem)] font-semibold leading-[1.04]">
         From empty folder to agent-ready
       </h2>
-      <p className="mt-8 max-w-lg text-[1.0625rem] font-medium leading-7 text-white/62 sm:text-[1.3125rem] sm:leading-8">
+      <p className="section-subtitle mt-8 max-w-lg text-white/62">
         Choose a web stack. Blame generates the structure, tooling, environment
         files, and preview configuration inside the same workflow.
       </p>
@@ -584,7 +584,7 @@ function FinalCtaSection() {
       <FinalCtaBackdrop />
       <ScrollReveal className="relative z-10 mx-auto w-full max-w-7xl text-center">
         <p className="story-eyebrow">Blame early access</p>
-        <h2 className="mx-auto mt-6 max-w-5xl text-balance text-[clamp(3rem,7vw,7rem)] font-semibold leading-[0.95] tracking-[-0.045em] text-white">
+        <h2 className="mx-auto mt-6 max-w-5xl text-balance text-[clamp(2.625rem,5.5vw,5.625rem)] font-semibold leading-none text-white">
           Let agents move fast. Keep the final say.
         </h2>
         <p className="story-copy mx-auto mt-10 max-w-2xl text-white/62">
@@ -611,14 +611,14 @@ function FinalCtaActions() {
     <div className="mt-12 flex flex-col items-center justify-center gap-3 sm:flex-row">
       <Link
         href="/download"
-        className="group inline-flex min-h-14 items-center justify-center gap-2.5 rounded-full bg-white px-7 py-4 text-base font-semibold text-[#080808] shadow-[0_18px_60px_rgba(255,255,255,0.2)] transition duration-200 hover:-translate-y-0.5 hover:bg-[#dfe7ff] focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-[#050505]"
+        className="group inline-flex min-h-14 items-center justify-center gap-2.5 rounded-full bg-white px-7 py-4 text-base text-[#080808] shadow-[0_18px_60px_rgba(255,255,255,0.2)] transition duration-200 hover:-translate-y-0.5 hover:bg-[#dfe7ff] focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-[#050505]"
       >
         Download Blame
         <ArrowRight className="h-5 w-5 transition duration-200 group-hover:translate-x-0.5" />
       </Link>
       <Link
         href="/pricing"
-        className="inline-flex min-h-14 items-center justify-center rounded-full border border-white/14 bg-white/[0.07] px-7 py-4 text-base font-semibold text-white/90 backdrop-blur-md transition duration-200 hover:-translate-y-0.5 hover:bg-white/[0.11] focus:outline-none focus:ring-2 focus:ring-white/45 focus:ring-offset-2 focus:ring-offset-[#050505]"
+        className="inline-flex min-h-14 items-center justify-center rounded-full border border-white/14 bg-white/[0.07] px-7 py-4 text-base text-white/90 backdrop-blur-md transition duration-200 hover:-translate-y-0.5 hover:bg-white/[0.11] focus:outline-none focus:ring-2 focus:ring-white/45 focus:ring-offset-2 focus:ring-offset-[#050505]"
       >
         View pricing
       </Link>

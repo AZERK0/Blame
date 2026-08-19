@@ -51,7 +51,7 @@ function PublisherSummary() {
     <div>
       <Link
         href="/"
-        className="font-display inline-flex items-center gap-3 text-2xl font-bold tracking-[-0.03em]"
+        className="font-display inline-flex items-center gap-3 text-2xl"
         aria-label="Blame home"
       >
         <span className="grid h-10 w-10 place-items-center">
@@ -92,7 +92,7 @@ function FooterNavigation() {
 function FooterGroup({ group }: { group: (typeof footerGroups)[number] }) {
   return (
     <nav aria-label={group.title}>
-      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/38">
+      <p className="text-xs uppercase tracking-[0.24em] text-white/38">
         {group.title}
       </p>
       <ul className="mt-5 space-y-3 text-sm text-white/62">

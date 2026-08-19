@@ -48,7 +48,7 @@ const softwareApplicationStructuredData = {
   "@id": applicationId,
   name: "Blame",
   description:
-    "An agentic IDE for running AI coding agents in isolated Git worktrees with live previews, diff review, and controlled merges.",
+    "Blame is an Agentic Development Environment (ADE) with a verifiable harness for AI coding agents, Code Practices, isolated smart worktrees, live Cloud Previews, and controlled merges.",
   url: absoluteSiteUrl("/"),
   downloadUrl: absoluteSiteUrl("/download"),
   image: absoluteSiteUrl("/social/blame-social-card.png"),

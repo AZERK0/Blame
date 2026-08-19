@@ -1,18 +1,15 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google";
+import { Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import { SiteFooter } from "@/components/site-footer";
 import { siteUrl } from "@/lib/site";
 import "./globals.css";
 
-const bodyFont = Geist({
-  subsets: ["latin"],
-  variable: "--font-geist-sans",
-  display: "swap",
-});
-
-const displayFont = Space_Grotesk({
-  subsets: ["latin"],
-  variable: "--font-space-grotesk",
+const displayFont = localFont({
+  src: "./fonts/test-soehne-dreiviertelfett.woff2",
+  variable: "--font-soehne",
+  weight: "700",
+  style: "normal",
   display: "swap",
 });
 
@@ -32,7 +29,8 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 export const rootMetadata: Metadata = {
   metadataBase: siteUrl,
   title: "Blame",
-  description: "The industrial-grade agentic IDE.",
+  description:
+    "Blame is the ADE for verifiable agentic development: Code Practices, isolated smart worktrees, live Cloud Previews, and controlled merges.",
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },
@@ -62,7 +60,7 @@ export function RootDocument({ children, language }: RootDocumentProps) {
         />
       </head>
       <body
-        className={`${bodyFont.variable} ${displayFont.variable} ${monoFont.variable}`}
+        className={`${displayFont.variable} ${monoFont.variable}`}
       >
         <noscript>
           <iframe

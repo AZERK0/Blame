@@ -201,7 +201,7 @@ function HighlightsHeader({
     <ScrollReveal className="mx-auto flex max-w-7xl items-end justify-between gap-6 px-5 sm:px-8 lg:px-10">
       <h2
         id="highlights-title"
-        className="text-[clamp(1.75rem,4.4vw,3.5rem)] font-semibold leading-[1.07] tracking-[-0.005em] text-[#f5f5f7]"
+        className="text-[clamp(1.75rem,4vw,3.25rem)] font-semibold leading-[1.1] text-[#f5f5f7]"
       >
         Highlights.
       </h2>
@@ -374,23 +374,23 @@ function HighlightCard({ highlight }: { highlight: Highlight }) {
       <HighlightVisual highlight={highlight} />
       <div className="relative z-10 max-w-2xl p-7 sm:p-10 lg:p-12">
         <p
-          className={`text-sm font-semibold sm:text-base ${toneEyebrowStyles[highlight.tone]}`}
+          className={`text-base sm:text-lg ${toneEyebrowStyles[highlight.tone]}`}
         >
           {highlight.eyebrow}
         </p>
-        <h3 className="mt-3 text-balance text-[clamp(1.75rem,2.5vw,2.25rem)] font-semibold leading-[1.08] tracking-[-0.025em]">
+        <h3 className="mt-3 text-balance text-[clamp(1.625rem,2.2vw,2.125rem)] font-semibold leading-[1.12]">
           {highlight.emphasizeWorkspace ? (
             <>
               One story. Its own{" "}
               <span className="workspace-smart-sweep">
-                <strong className="font-bold">smart</strong> workspace.
+                smart workspace.
               </span>
             </>
           ) : (
             highlight.title
           )}
         </h3>
-        <p className="mt-4 max-w-xl text-base font-medium leading-6 opacity-60 sm:text-lg sm:leading-7">
+        <p className="mt-4 max-w-xl text-lg leading-7 opacity-60 sm:text-xl sm:leading-8">
           {highlight.description}
         </p>
       </div>
@@ -452,7 +452,7 @@ function ProviderHighlightVisual() {
           </li>
         ))}
       </ul>
-      <p className="mt-8 text-center text-sm font-medium text-white/46 sm:mt-10 sm:text-base">
+      <p className="mt-8 text-center text-sm text-white/46 sm:mt-10 sm:text-base">
         + any OpenAI-compatible API
       </p>
     </div>

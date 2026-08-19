@@ -39,7 +39,9 @@ export function SiteHeader() {
               priority
             />
           </span>
-          <span className="font-display text-2xl font-bold tracking-[-0.03em] text-white">Blame</span>
+          <span className="font-display inline-block text-2xl text-white">
+            Blame
+          </span>
         </Link>
 
         <nav
@@ -56,7 +58,7 @@ export function SiteHeader() {
                 aria-current={isActive ? 'page' : undefined}
                 className={
                   isActive
-                    ? 'rounded-full bg-white text-[#070a15] px-4 py-2 font-semibold shadow-lg shadow-white/10 transition duration-200 hover:bg-white hover:text-[#070a15] focus:outline-none focus:ring-2 focus:ring-white/40'
+                    ? 'rounded-full bg-white text-[#070a15] px-4 py-2 shadow-lg shadow-white/10 transition duration-200 hover:bg-white hover:text-[#070a15] focus:outline-none focus:ring-2 focus:ring-white/40'
                     : 'rounded-full px-4 py-2 transition duration-200 hover:bg-white/[0.08] hover:text-white focus:outline-none focus:ring-2 focus:ring-white/40'
                 }
               >
@@ -68,7 +70,7 @@ export function SiteHeader() {
 
         <Link
           href="/download"
-          className="inline-flex min-h-10 items-center justify-center rounded-full border border-white/14 bg-white/[0.08] px-4 text-sm font-semibold text-white/90 shadow-2xl shadow-black/20 backdrop-blur-xl transition duration-200 hover:bg-white/[0.14] focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-[#050505]"
+          className="inline-flex min-h-10 items-center justify-center rounded-full border border-white/14 bg-white/[0.08] px-4 text-sm text-white/90 shadow-2xl shadow-black/20 backdrop-blur-xl transition duration-200 hover:bg-white/[0.14] focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-[#050505]"
         >
           Early access
         </Link>
