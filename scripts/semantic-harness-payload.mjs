@@ -85,7 +85,10 @@ export async function buildSemanticHarnessPayload({
     await execFileAsync(
       process.platform === "win32" ? "npm.cmd" : "npm",
       ["pack", "--ignore-scripts", "--pack-destination", packDirectory],
-      { cwd: staging },
+      {
+        cwd: staging,
+        shell: process.platform === "win32",
+      },
     );
     const archive = (await readdir(packDirectory)).find((file) =>
       file.endsWith(".tgz"),
