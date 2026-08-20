@@ -23,7 +23,7 @@
     "test:attachments": "node --test --experimental-strip-types src/components/backlog/drawer/user-story-attachment-files.test.ts src/lib/file-attachment-api.test.ts",
     "test:security": "node --test --experimental-strip-types src/components/security/data/security-remediation.test.ts",
     "test:performance": "node --test --experimental-strip-types src/components/backlog/data/agent-event-coalescer.test.ts",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc -b",
     "preview": "vite preview"
   },
   "dependencies": {

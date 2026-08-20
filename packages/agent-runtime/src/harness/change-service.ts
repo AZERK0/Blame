@@ -20,7 +20,6 @@ import {
   commitReceiptSchema,
   parseStoredChangeProposal,
   proposeChangeInputSchema,
-  type ApplyChangeInput,
   type CommitProposalInput,
   type CommitReceipt,
   type ProposedFile,

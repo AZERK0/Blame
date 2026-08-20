@@ -419,7 +419,7 @@ function cleanOutput(value: string, overlayRoot: string) {
 
 function redactSensitiveOutput(value: string) {
   return value
-    .replace(/\b(Bearer\s+)[A-Za-z0-9._~+\/-]{12,}\b/gi, "$1[REDACTED]")
+    .replace(/\b(Bearer\s+)[A-Za-z0-9._~+/-]{12,}\b/gi, "$1[REDACTED]")
     .replace(
       /\b(api[_-]?key|token|password|secret)\s*[:=]\s*([^\s,;]+)/gi,
       "$1=[REDACTED]",

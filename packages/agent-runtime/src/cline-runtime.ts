@@ -2104,7 +2104,9 @@ export class BlameAgentRuntime {
     this.unsubscribers.delete(sessionId);
     try {
       unsubscribe?.();
-    } catch {}
+    } catch {
+      // Session cleanup must continue even when a provider unsubscribe fails.
+    }
     this.clearSessionState(sessionId, preserveTelemetry);
     const logFile = this.sessionLogFiles.get(sessionId);
     this.sessionLogFiles.delete(sessionId);
@@ -2210,7 +2212,9 @@ export class BlameAgentRuntime {
           sessions.forEach((session) => {
             if (session.sessionId) sessionIds.add(session.sessionId);
           });
-        } catch {}
+        } catch {
+          // A failed provider listing must not prevent the remaining sessions from closing.
+        }
       }),
     );
 

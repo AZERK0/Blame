@@ -168,7 +168,7 @@ function QuickChatProjectPage() {
     "chat",
     activeConversation?.id
   )
-  const loadedDraftStorageKeyRef = React.useRef<string>()
+  const loadedDraftStorageKeyRef = React.useRef<string | undefined>(undefined)
   const activeConversationLoaded =
     !activeConversation || quickChats.chatDetailsLoaded(activeConversation)
   const responseHeader = agentConversationResponseHeader({
@@ -179,11 +179,7 @@ function QuickChatProjectPage() {
     providers: selection.allProviders,
   })
   const loadChangedFiles = React.useCallback(
-    (
-      sessionId: string,
-      checkpointRunCount: number,
-      diffEndRef: string
-    ) => {
+    (sessionId: string, checkpointRunCount: number, diffEndRef: string) => {
       if (!activeConversation?.workspace) return Promise.resolve([])
       return loadAgentRunDiffSummary({
         checkpointRunCount,
@@ -196,11 +192,7 @@ function QuickChatProjectPage() {
     [activeConversation?.workspace, platform]
   )
   const loadChangedFileDiffs = React.useCallback(
-    (
-      sessionId: string,
-      checkpointRunCount: number,
-      diffEndRef: string
-    ) => {
+    (sessionId: string, checkpointRunCount: number, diffEndRef: string) => {
       if (!activeConversation?.workspace) return Promise.resolve([])
       return loadAgentRunDiffs({
         checkpointRunCount,

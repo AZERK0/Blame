@@ -128,7 +128,7 @@ test("generates artifacts only from the canonical unversioned manifest", () => {
   );
   assert.match(
     result.dockerCompose,
-    /corepack enable --install-directory \\\"\$\$COREPACK_HOME\/bin\\\"/,
+    /corepack enable --install-directory \\"\$\$COREPACK_HOME\/bin\\"/,
   );
   assert.match(result.dockerCompose, /blame\.preview: "true"/);
   assert.match(result.dockerCompose, /"127\.0\.0\.1::3000"/);

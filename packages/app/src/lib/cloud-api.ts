@@ -25,7 +25,7 @@ import type {
   CloudAuthRequestResponse,
   TelemetryExportSession,
 } from "@/context/platform"
-import { createDeployCloudApi } from "@/lib/deploy-cloud-api"
+import { createDeployCloudApi } from "./deploy-cloud-api.ts"
 
 type CloudApiConnection = ApiConnection & {
   authRequest?: CloudAuthRequestClient["request"]

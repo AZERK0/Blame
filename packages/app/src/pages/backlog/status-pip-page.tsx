@@ -65,16 +65,20 @@ export function BacklogStatusPipPage() {
             {activeStories.map((story) => (
               <UserStoryCard
                 key={story.id}
-                onAction={(story, action) =>
-                  requestStoryAction(platform, story, action)
-                }
-                onDeleteUserStory={(story) =>
-                  requestStoryAction(platform, story, "Delete Permanently")
-                }
+                onAction={async (story, action) => {
+                  await requestStoryAction(platform, story, action)
+                }}
+                onDeleteUserStory={async (story) => {
+                  await requestStoryAction(
+                    platform,
+                    story,
+                    "Delete Permanently"
+                  )
+                }}
                 onOpenDrawer={(target) => requestStoryDrawer(platform, target)}
-                onOpenWorktree={(story) =>
-                  requestStoryAction(platform, story, "Open Worktree")
-                }
+                onOpenWorktree={async (story) => {
+                  await requestStoryAction(platform, story, "Open Worktree")
+                }}
                 onReject={(story, choice) =>
                   requestRejectChoice(platform, story, choice)
                 }

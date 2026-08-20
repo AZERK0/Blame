@@ -1,4 +1,4 @@
-import Fuse from "fuse.js"
+import Fuse, { type IFuseOptions } from "fuse.js"
 
 export type DevelopmentFileSearchItem = {
   name: string
@@ -13,7 +13,7 @@ export function normalizeDevelopmentFileSearchText(value: string) {
     .replace(/[^\p{Letter}\p{Number}]+/gu, "")
 }
 
-const searchOptions: Fuse.IFuseOptions<DevelopmentFileSearchItem> = {
+const searchOptions: IFuseOptions<DevelopmentFileSearchItem> = {
   ignoreLocation: true,
   keys: [
     { name: "path", weight: 0.8 },

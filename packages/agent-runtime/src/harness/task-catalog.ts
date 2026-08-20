@@ -122,7 +122,9 @@ async function detectPackageManager(
     try {
       await access(join(root, file));
       return manager;
-    } catch {}
+    } catch {
+      // Missing lockfiles are expected while checking alternative package managers.
+    }
   }
   return "npm";
 }

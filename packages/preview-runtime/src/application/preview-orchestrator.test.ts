@@ -175,6 +175,30 @@ test("runs commands idempotently and keeps state axes independent", async () => 
   assert.equal(driver.calls.filter((call) => call === "endpoints").length, 0);
 });
 
+test("checks guarded background commands after acquiring the session lock", async () => {
+  const { driver, orchestrator, plan } = fixture();
+  const created = await orchestrator.create({
+    id: "session",
+    userStoryId: "story",
+    ownerUserId: "owner",
+    profile: "vercel-compose",
+    plan,
+    planHash: "hash",
+    cloudUploadConsentAt: new Date().toISOString(),
+  });
+
+  const skipped = await orchestrator.command(
+    "session",
+    { type: "suspend-host" },
+    "stale-reaper",
+    (current) => current.revision === created.revision - 1,
+  );
+
+  assert.equal(skipped.state.host, "running");
+  assert.equal(skipped.revision, created.revision);
+  assert.equal(driver.calls.includes("suspendHost"), false);
+});
+
 test("persists long-running preview transitions before provider work completes", async () => {
   const { driver, eventSink, orchestrator, plan } = fixture();
   await orchestrator.create({
@@ -347,6 +371,7 @@ test("acknowledges a durable delta after the retained sandbox was released", asy
     "resume",
   );
   assert.equal(resumed.state.host, "running");
+  assert.equal(resumed.generation, suspended.generation + 1);
   assert.equal(
     driver.calls.filter((call) => call === "provisionHost").length,
     2,

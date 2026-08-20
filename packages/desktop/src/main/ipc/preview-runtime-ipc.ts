@@ -35,6 +35,8 @@ export function registerPreviewRuntimeIpcHandlers(input: {
   });
   ipcMain.handle("preview-runtime:disconnect", (event) => {
     owner(event);
+    for (const controller of subscriptions.values()) controller.abort();
+    subscriptions.clear();
     input.service.clearCloud();
     return true;
   });
@@ -122,6 +124,8 @@ export function registerPreviewRuntimeIpcHandlers(input: {
     subscriptions.get(subscriptionId)?.abort();
     const controller = new AbortController();
     subscriptions.set(subscriptionId, controller);
+    const abortWhenSenderCloses = () => controller.abort();
+    event.sender.once("destroyed", abortWhenSenderCloses);
     void pumpEvents(
       input.service,
       event.sender,
@@ -129,7 +133,12 @@ export function registerPreviewRuntimeIpcHandlers(input: {
       subscriptionId,
       cursor,
       controller,
-    );
+    ).finally(() => {
+      event.sender.removeListener("destroyed", abortWhenSenderCloses);
+      if (subscriptions.get(subscriptionId) === controller) {
+        subscriptions.delete(subscriptionId);
+      }
+    });
     return true;
   });
   ipcMain.handle("preview-runtime:subscribe-logs", (event, value) => {
@@ -145,6 +154,8 @@ export function registerPreviewRuntimeIpcHandlers(input: {
     subscriptions.get(subscriptionId)?.abort();
     const controller = new AbortController();
     subscriptions.set(subscriptionId, controller);
+    const abortWhenSenderCloses = () => controller.abort();
+    event.sender.once("destroyed", abortWhenSenderCloses);
     void pumpLogs(
       input.service,
       event.sender,
@@ -152,7 +163,12 @@ export function registerPreviewRuntimeIpcHandlers(input: {
       subscriptionId,
       cursor,
       controller,
-    );
+    ).finally(() => {
+      event.sender.removeListener("destroyed", abortWhenSenderCloses);
+      if (subscriptions.get(subscriptionId) === controller) {
+        subscriptions.delete(subscriptionId);
+      }
+    });
     return true;
   });
   ipcMain.handle("preview-runtime:unsubscribe", (event, value) => {
@@ -176,7 +192,11 @@ async function pumpLogs(
   controller: AbortController,
 ) {
   try {
-    for await (const event of service.logs(sessionId, cursor)) {
+    for await (const event of service.logs(
+      sessionId,
+      cursor,
+      controller.signal,
+    )) {
       if (controller.signal.aborted || sender.isDestroyed()) break;
       sender.send(`preview-runtime:log:${subscriptionId}`, event);
     }
@@ -196,7 +216,11 @@ async function pumpEvents(
   controller: AbortController,
 ) {
   try {
-    for await (const event of service.events(sessionId, cursor)) {
+    for await (const event of service.events(
+      sessionId,
+      cursor,
+      controller.signal,
+    )) {
       if (controller.signal.aborted || sender.isDestroyed()) break;
       sender.send(`preview-runtime:event:${subscriptionId}`, event);
     }

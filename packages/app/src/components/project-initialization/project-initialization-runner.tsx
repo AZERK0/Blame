@@ -325,9 +325,10 @@ function initializationEffect(input: {
 }
 
 async function maybeInitializeProject(
-  input: Required<Parameters<typeof initializationEffect>[0]>,
+  input: Parameters<typeof initializationEffect>[0],
   signal: AbortSignal
 ) {
+  if (!input.activeProject || !input.agent) return
   const cloud = createCloudApi(input.auth.apiConnection)
   const snapshot = await cloud.projectInitialization(input.activeProject.id)
   if (signal.aborted || completed(snapshot.initialization?.status)) return

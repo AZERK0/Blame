@@ -88,12 +88,13 @@ export class PreviewService {
   events(
     sessionId: string,
     cursor?: string,
+    signal?: AbortSignal,
   ): AsyncIterable<PreviewSessionEvent> {
-    return this.cloudClient().events(sessionId, cursor);
+    return this.cloudClient().events(sessionId, cursor, signal);
   }
 
-  logs(sessionId: string, cursor?: string) {
-    return this.cloudClient().logs(sessionId, cursor);
+  logs(sessionId: string, cursor?: string, signal?: AbortSignal) {
+    return this.cloudClient().logs(sessionId, cursor, signal);
   }
 
   bridgeGrant(sessionId: string) {

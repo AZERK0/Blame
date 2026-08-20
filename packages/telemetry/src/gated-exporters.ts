@@ -20,10 +20,13 @@ type SelectableMetricExporter = PushMetricExporter & {
 };
 
 export class GatedSpanExporter implements SpanExporter {
-  constructor(
-    private readonly exporter: SpanExporter,
-    private readonly isReady: () => boolean,
-  ) {}
+  private readonly exporter: SpanExporter;
+  private readonly isReady: () => boolean;
+
+  constructor(exporter: SpanExporter, isReady: () => boolean) {
+    this.exporter = exporter;
+    this.isReady = isReady;
+  }
 
   export(spans: ReadableSpan[], callback: ExportCallback) {
     exportWhenReady(this.isReady, callback, () =>
@@ -41,10 +44,13 @@ export class GatedSpanExporter implements SpanExporter {
 }
 
 export class GatedLogRecordExporter implements LogRecordExporter {
-  constructor(
-    private readonly exporter: LogRecordExporter,
-    private readonly isReady: () => boolean,
-  ) {}
+  private readonly exporter: LogRecordExporter;
+  private readonly isReady: () => boolean;
+
+  constructor(exporter: LogRecordExporter, isReady: () => boolean) {
+    this.exporter = exporter;
+    this.isReady = isReady;
+  }
 
   export(logs: ReadableLogRecord[], callback: ExportCallback) {
     exportWhenReady(this.isReady, callback, () =>
@@ -62,10 +68,13 @@ export class GatedLogRecordExporter implements LogRecordExporter {
 }
 
 export class GatedMetricExporter implements PushMetricExporter {
-  constructor(
-    private readonly exporter: SelectableMetricExporter,
-    private readonly isReady: () => boolean,
-  ) {}
+  private readonly exporter: SelectableMetricExporter;
+  private readonly isReady: () => boolean;
+
+  constructor(exporter: SelectableMetricExporter, isReady: () => boolean) {
+    this.exporter = exporter;
+    this.isReady = isReady;
+  }
 
   export(metrics: ResourceMetrics, callback: ExportCallback) {
     exportWhenReady(this.isReady, callback, () =>

@@ -925,7 +925,6 @@ function AgentActivityLeafItem({
   activity,
   onFileLinkClick,
   onLoadDetail,
-  responseHeader,
   runActive,
   runningToolActivityId,
   value,
@@ -2024,8 +2023,8 @@ function applyPatchInput(details: ActivityDetail): EditedFile[] | undefined {
       continue
     }
     if (!current || line.startsWith("+++ ") || line.startsWith("--- ")) continue
-    if (line.startsWith("+")) current.additions += 1
-    if (line.startsWith("-")) current.deletions += 1
+    if (line.startsWith("+")) current.additions = (current.additions ?? 0) + 1
+    if (line.startsWith("-")) current.deletions = (current.deletions ?? 0) + 1
   }
   return files.length > 0 ? files : undefined
 }
@@ -2315,13 +2314,6 @@ function sameLeadingMarkdown(left: string, right: string) {
 
 function normalizedMarkdown(value: string) {
   return value.trim().replace(/\r\n?/g, "\n")
-}
-
-function truncateMiddle(value: string | undefined, maxLength: number) {
-  if (!value) return ""
-  if (value.length <= maxLength) return value
-  const edgeLength = Math.floor((maxLength - 20) / 2)
-  return `${value.slice(0, edgeLength)}\n...\n${value.slice(-edgeLength)}`
 }
 
 async function writeClipboardText(value: string) {

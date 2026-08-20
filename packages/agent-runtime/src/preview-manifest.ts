@@ -466,7 +466,8 @@ function normalizedServiceEnvironment(service: PreviewManifestService) {
 
 function normalizedMysqlEnvironment(environment: PreviewManifestEnvironment) {
   if (environment.MYSQL_USER !== "root") return environment;
-  const { MYSQL_USER: _user, MYSQL_PASSWORD: password, ...rest } = environment;
+  const { MYSQL_PASSWORD: password, ...rest } = environment;
+  delete rest.MYSQL_USER;
   return {
     ...rest,
     MYSQL_ROOT_PASSWORD: rest.MYSQL_ROOT_PASSWORD ?? password ?? "root",

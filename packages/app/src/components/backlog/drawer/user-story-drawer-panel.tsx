@@ -183,7 +183,7 @@ export function UserStoryDrawerPanel({
   userStory?: UserStory
 }) {
   const draftStorageKey = composerDraftStorageKey(
-    userStory?.projectId ?? initialDraft?.projectId ?? "project",
+    userStory?.projectId ?? "project",
     "backlog",
     userStory?.id
   )
@@ -339,7 +339,8 @@ export function UserStoryDrawerPanel({
   React.useEffect(() => {
     if (mode === "create") return
     if (!titleGenerating) return
-    setTitle(userStory?.title ?? "")
+    const frame = requestAnimationFrame(() => setTitle(userStory?.title ?? ""))
+    return () => cancelAnimationFrame(frame)
   }, [mode, titleGenerating, userStory?.title])
 
   React.useEffect(() => {

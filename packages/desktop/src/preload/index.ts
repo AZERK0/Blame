@@ -223,6 +223,7 @@ const api: BlameDesktopApi = {
     syncIn: (input) => ipcRenderer.invoke("preview-runtime:sync-in", input),
     syncOut: (input) => ipcRenderer.invoke("preview-runtime:sync-out", input),
     onEvent: (input, callback, onError) => {
+      let active = true;
       const subscriptionId = globalThis.crypto.randomUUID();
       const eventChannel = `preview-runtime:event:${subscriptionId}`;
       const errorChannel = `preview-runtime:error:${subscriptionId}`;
@@ -234,19 +235,25 @@ const api: BlameDesktopApi = {
         onError?.(message);
       ipcRenderer.on(eventChannel, eventHandler);
       ipcRenderer.on(errorChannel, errorHandler);
-      void ipcRenderer.invoke("preview-runtime:subscribe", {
-        ...input,
-        subscriptionId,
-      });
+      void ipcRenderer
+        .invoke("preview-runtime:subscribe", {
+          ...input,
+          subscriptionId,
+        })
+        .catch((error) => {
+          if (active) onError?.(preloadErrorMessage(error));
+        });
       return () => {
+        active = false;
         ipcRenderer.removeListener(eventChannel, eventHandler);
         ipcRenderer.removeListener(errorChannel, errorHandler);
-        void ipcRenderer.invoke("preview-runtime:unsubscribe", {
-          subscriptionId,
-        });
+        void ipcRenderer
+          .invoke("preview-runtime:unsubscribe", { subscriptionId })
+          .catch(() => undefined);
       };
     },
     onLog: (input, callback, onError) => {
+      let active = true;
       const subscriptionId = globalThis.crypto.randomUUID();
       const eventChannel = `preview-runtime:log:${subscriptionId}`;
       const errorChannel = `preview-runtime:error:${subscriptionId}`;
@@ -258,16 +265,21 @@ const api: BlameDesktopApi = {
         onError?.(message);
       ipcRenderer.on(eventChannel, eventHandler);
       ipcRenderer.on(errorChannel, errorHandler);
-      void ipcRenderer.invoke("preview-runtime:subscribe-logs", {
-        ...input,
-        subscriptionId,
-      });
+      void ipcRenderer
+        .invoke("preview-runtime:subscribe-logs", {
+          ...input,
+          subscriptionId,
+        })
+        .catch((error) => {
+          if (active) onError?.(preloadErrorMessage(error));
+        });
       return () => {
+        active = false;
         ipcRenderer.removeListener(eventChannel, eventHandler);
         ipcRenderer.removeListener(errorChannel, errorHandler);
-        void ipcRenderer.invoke("preview-runtime:unsubscribe", {
-          subscriptionId,
-        });
+        void ipcRenderer
+          .invoke("preview-runtime:unsubscribe", { subscriptionId })
+          .catch(() => undefined);
       };
     },
   },
@@ -490,5 +502,9 @@ const api: BlameDesktopApi = {
       ipcRenderer.invoke("agent:resolve-merge-conflicts", input),
   },
 };
+
+function preloadErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Preview subscription failed";
+}
 
 contextBridge.exposeInMainWorld("blame", api);

@@ -238,7 +238,9 @@ async function executablePath(name: string, roots: string[]) {
     try {
       await access(candidate, constants.X_OK);
       return await realpath(candidate);
-    } catch {}
+    } catch {
+      // Continue through the remaining executable candidates.
+    }
   }
   return undefined;
 }
@@ -262,7 +264,9 @@ async function executableExists(name: string) {
     try {
       await access(join(path, name), constants.X_OK);
       return true;
-    } catch {}
+    } catch {
+      // Continue through PATH entries that do not contain the executable.
+    }
   }
   return false;
 }

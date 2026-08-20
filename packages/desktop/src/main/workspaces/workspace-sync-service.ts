@@ -322,6 +322,7 @@ export class WorkspaceSyncService {
       registration.timer = undefined
     }
     await registration.syncing
+    if (this.live.get(sessionId) !== registration) return
     if (registration.timer) {
       clearTimeout(registration.timer)
       registration.timer = undefined

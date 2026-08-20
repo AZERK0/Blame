@@ -5,6 +5,7 @@ import type { PreviewSessionView } from "@blame/preview-runtime"
 import type { ProjectRunnerPendingOperation } from "../board/project-runner-types.ts"
 
 import {
+  acquireCloudPreviewControl,
   activeCloudPreviewControl,
   beginCloudPreviewControl,
   cachedCloudPreviewPendingOperation,
@@ -33,6 +34,30 @@ test("serializes cloud controls across concurrently mounted runners", async () =
   const next = beginCloudPreviewControl("story-control")
   assert.equal(next.acquired, true)
   if (next.acquired) next.release()
+})
+
+test("waits for the active cloud control before acquiring the next lease", async () => {
+  const first = beginCloudPreviewControl("story-queued-control")
+  if (!first.acquired) throw new Error("Expected the first control lease")
+
+  let acquired = false
+  const queued = acquireCloudPreviewControl("story-queued-control").then(
+    (lease) => {
+      acquired = true
+      return lease
+    }
+  )
+  await Promise.resolve()
+  assert.equal(acquired, false)
+
+  first.release()
+  const next = await queued
+  assert.equal(acquired, true)
+  assert.equal(
+    activeCloudPreviewControl("story-queued-control"),
+    next.completed
+  )
+  next.release()
 })
 
 test("notifies an already-mounted preview when auto-start creates its session", () => {

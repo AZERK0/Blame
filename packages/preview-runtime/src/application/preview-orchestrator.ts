@@ -75,6 +75,7 @@ export class PreviewOrchestrator implements PreviewSessionBackend {
     sessionId: string,
     command: PreviewSessionCommand,
     operationId: string,
+    condition?: (record: Readonly<PreviewSessionRecord>) => boolean,
   ) {
     return this.lock.withLock(sessionId, async ({ fencingToken }) => {
       const existingOperation = await this.repository.getOperation(
@@ -90,6 +91,7 @@ export class PreviewOrchestrator implements PreviewSessionBackend {
       }
       if (existingOperation?.status === "succeeded") return this.get(sessionId);
       const record = await this.requiredRecord(sessionId);
+      if (condition && !condition(record)) return previewSessionView(record);
       if (
         command.type === "suspend-host" &&
         record.state.host === "suspended" &&

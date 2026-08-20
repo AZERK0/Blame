@@ -10,7 +10,7 @@ export type UserStoryDiffStats = {
 }
 
 export function totalDiffStats(diffs: DiffStatsValue[]): UserStoryDiffStats {
-  return diffs.reduce(
+  return diffs.reduce<UserStoryDiffStats>(
     (stats, diff) => ({
       additions: stats.additions + (diff.additions ?? 0),
       deletions: stats.deletions + (diff.deletions ?? 0),

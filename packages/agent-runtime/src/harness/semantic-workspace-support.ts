@@ -15,7 +15,6 @@ import {
 import type {
   InspectCodeInput,
   OutlineCodeInput,
-  ReviewChangeInput,
   SearchCodeInput,
   StoredChangeProposal,
 } from "./schemas.js";

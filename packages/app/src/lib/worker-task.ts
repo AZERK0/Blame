@@ -40,13 +40,12 @@ function workerClient(url: URL) {
 }
 
 class WorkerClient {
+  private readonly key: string
   private readonly pending = new Map<string, PendingWorkerTask>()
   private readonly worker: Worker
 
-  constructor(
-    private readonly key: string,
-    url: URL
-  ) {
+  constructor(key: string, url: URL) {
+    this.key = key
     this.worker = new Worker(url, { type: "module" })
     this.worker.onmessage = ({ data }: MessageEvent<WorkerResponse<unknown>>) =>
       this.resolve(data)
@@ -61,7 +60,12 @@ class WorkerClient {
         reject(new DOMException("Worker task aborted", "AbortError"))
         return
       }
-      this.pending.set(id, { abort, reject, resolve, signal })
+      this.pending.set(id, {
+        abort,
+        reject,
+        resolve: (value) => resolve(value as Output),
+        signal,
+      })
       signal?.addEventListener("abort", abort, { once: true })
       this.worker.postMessage({ id, input } satisfies WorkerRequest<Input>)
     })

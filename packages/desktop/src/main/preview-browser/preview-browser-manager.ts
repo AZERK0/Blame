@@ -24,6 +24,7 @@ type PreviewBrowserRecord = {
   visible: boolean;
   loadTimeout?: NodeJS.Timeout;
   bridge?: PreviewNetworkBridge;
+  ownerClosed: () => void;
 };
 
 type PreviewBrowserBounds = {
@@ -177,7 +178,22 @@ export async function createPreviewBrowser(
       throw error;
     }
   }
-  const record = { id, owner, view, visible: false, bridge };
+  if (owner.isDestroyed() || event.sender.isDestroyed()) {
+    await bridge?.close().catch(() => undefined);
+    if (!view.webContents.isDestroyed()) view.webContents.close();
+    throw new Error("Preview owner window closed during creation");
+  }
+  const ownerClosed = () => {
+    destroyPreviewBrowser(id);
+  };
+  const record: PreviewBrowserRecord = {
+    id,
+    owner,
+    view,
+    visible: false,
+    bridge,
+    ownerClosed,
+  };
   previews.set(id, record);
   owner.contentView.addChildView(view);
   view.setBounds({ height: 0, width: 0, x: 0, y: 0 });
@@ -189,7 +205,7 @@ export async function createPreviewBrowser(
   });
   attachPreviewBrowserEvents(record);
   attachPreviewRequestTelemetry(record.view.webContents);
-  owner.once("closed", () => destroyPreviewBrowser(id));
+  owner.once("closed", ownerClosed);
   return { id };
 }
 
@@ -284,6 +300,7 @@ export function destroyPreviewBrowser(id: string) {
   const record = previews.get(id);
   if (!record) return false;
   previews.delete(id);
+  record.owner.removeListener("closed", record.ownerClosed);
   clearPreviewLoadTimeout(record);
   clearPreviewDevtoolsTargets(record);
   record.bridge?.disableRoutes();

@@ -166,6 +166,33 @@ test("replays an ambiguous command with the same idempotency key", async (contex
   );
 });
 
+test("does not mistake a ready previous selection for a completed command", async (context) => {
+  const methods: string[] = [];
+  context.mock.method(globalThis, "fetch", async (_url, init) => {
+    methods.push(init?.method ?? "GET");
+    if (methods.length === 1) {
+      return new Response("Bad Gateway", { status: 502 });
+    }
+    if (methods.length === 2) {
+      return jsonResponse({
+        ...runningPreviewSession(),
+        selection: { configurationId: "previous" },
+      });
+    }
+    return jsonResponse(runningPreviewSession());
+  });
+  const client = cloudClientWithImmediateRecovery();
+
+  const session = await client.command(
+    "preview_bbcb1626c004cdec3aad60175f1f0cae",
+    { type: "start-services", configurationId: "web" },
+    "start-operation",
+  );
+
+  assert.equal(session.selection.configurationId, "web");
+  assert.deepEqual(methods, ["POST", "GET", "POST"]);
+});
+
 test("recovers a command that collided with another session operation", async (context) => {
   const methods: string[] = [];
   context.mock.method(globalThis, "fetch", async (_url, init) => {
@@ -195,6 +222,73 @@ test("recovers a command that collided with another session operation", async (c
 
   assert.equal(session.state.preview, "ready");
   assert.deepEqual(methods, ["POST", "GET"]);
+});
+
+test("aborts an in-flight event stream when its subscriber leaves", async (context) => {
+  let observedSignal: AbortSignal | undefined;
+  let markStarted: (() => void) | undefined;
+  const started = new Promise<void>((resolve) => {
+    markStarted = resolve;
+  });
+  context.mock.method(globalThis, "fetch", async (_url, init) => {
+    observedSignal = init?.signal ?? undefined;
+    markStarted?.();
+    return await new Promise<Response>((_resolve, reject) => {
+      observedSignal?.addEventListener(
+        "abort",
+        () => reject(observedSignal?.reason),
+        { once: true },
+      );
+    });
+  });
+  const client = cloudClientWithImmediateRecovery();
+  const controller = new AbortController();
+  const iterator = client
+    .events(
+      "preview_bbcb1626c004cdec3aad60175f1f0cae",
+      undefined,
+      controller.signal,
+    )
+    [Symbol.asyncIterator]();
+
+  const pending = iterator.next();
+  await started;
+  controller.abort();
+
+  await assert.rejects(pending, (error) => error instanceof DOMException);
+  assert.equal(observedSignal, controller.signal);
+});
+
+test("parses CRLF event streams and resumes from their cursor", async (context) => {
+  const requestedUrls: string[] = [];
+  context.mock.method(globalThis, "fetch", async (url) => {
+    requestedUrls.push(String(url));
+    return new Response(
+      `id: cursor-2\r\ndata: ${JSON.stringify({
+        cursor: "cursor-2",
+        type: "session.updated",
+      })}\r\n\r\n`,
+      { headers: { "content-type": "text/event-stream" } },
+    );
+  });
+  const client = cloudClientWithImmediateRecovery();
+  const controller = new AbortController();
+  const iterator = client
+    .events(
+      "preview_bbcb1626c004cdec3aad60175f1f0cae",
+      undefined,
+      controller.signal,
+    )
+    [Symbol.asyncIterator]();
+
+  const first = await iterator.next();
+  assert.equal(first.value?.cursor, "cursor-2");
+  controller.abort();
+  await assert.rejects(
+    iterator.next(),
+    (error) => error instanceof DOMException,
+  );
+  assert.equal(requestedUrls.length, 1);
 });
 
 test("prepares an upload without serializing workspace bytes", async (context) => {
@@ -340,6 +434,7 @@ function runningPreviewSession() {
       agent: "idle",
       sync: "clean",
     },
+    selection: { configurationId: "web" },
     endpointMap: {
       revision: 1,
       primaryRouteId: "route",

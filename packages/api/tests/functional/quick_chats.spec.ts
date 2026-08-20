@@ -132,8 +132,14 @@ test.group('quick chats', (group) => {
       .json({ runId: secondRun.data.id })
     undoResponse.assertStatus(200)
     const undone = undoResponse.body() as unknown as QuickChatBody
-    assert.deepEqual((undone.data.messages ?? []).map((message) => message.id), [firstMessage.data.id])
-    assert.deepEqual((undone.data.agentRuns ?? []).map((run) => run.id), [firstRun.data.id])
+    assert.deepEqual(
+      (undone.data.messages ?? []).map((message) => message.id),
+      [firstMessage.data.id]
+    )
+    assert.deepEqual(
+      (undone.data.agentRuns ?? []).map((run) => run.id),
+      [firstRun.data.id]
+    )
   })
 })
 

@@ -33,7 +33,10 @@ export async function fetchGitHubRepository(remote: string) {
   const repository = parseGitHubRepository(remote)
   if (!repository) return undefined
 
-  const response = await github.request("GET /repos/{owner}/{repo}", repository)
+  const response = await github.request("GET /repos/{owner}/{repo}", {
+    owner: repository.owner,
+    repo: repository.name,
+  })
   const data = response.data
   return {
     defaultBranch: data.default_branch,

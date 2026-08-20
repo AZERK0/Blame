@@ -289,7 +289,7 @@ export const UserStoryPreviewWarmup = React.memo(
                 key={nativePreviewKeyFor(previewScope, sessionSource)}
                 client={previewBrowser}
                 devtoolsScope={previewScope}
-                previewWorktree={story.worktree}
+                previewWorktree={story.worktree ?? undefined}
                 sessionKey={nativePreviewKeyFor(previewScope, sessionSource)}
                 source={source}
                 storageKey={nativePreviewStorageKeyFor(previewScope, source)}
@@ -834,6 +834,7 @@ function NativePreviewWarmup({
     previewWorktree
   )
 
+  useNativePreviewState(client, browserId, handleState)
   useNativePreviewLoad(client, browserId, sessionKey, source, handleState)
   useNativePreviewDevtoolsScope(client, browserId, devtoolsScope)
 
@@ -878,11 +879,7 @@ function NativePreviewPanel({
     visible && previewState === "loaded"
   )
 
-  React.useEffect(() => {
-    if (!browserId) return
-    return client.onState({ id: browserId }, handleState)
-  }, [browserId, client, handleState])
-
+  useNativePreviewState(client, browserId, handleState)
   useNativePreviewLoad(client, browserId, sessionKey, source, handleState)
   useNativePreviewDevtoolsScope(client, browserId, devtoolsScope)
   useNativePreviewReload(client, browserId, reloadKey, source, handleState)
@@ -1001,6 +998,10 @@ async function createNativePreviewSession(session: NativePreviewSession) {
       previewSessionId: session.previewSessionId,
       previewWorktree: session.previewWorktree,
     })
+    if (nativePreviewSessions.get(key) !== session) {
+      await session.client.destroy({ id }).catch(() => false)
+      throw new Error("Preview session was released during creation")
+    }
     session.browserId = id
     return id
   } finally {
@@ -1015,6 +1016,7 @@ function releaseNativePreviewSession(key: string) {
   if (session.references > 0) return
   session.releaseAt = Date.now()
   hideNativePreviewSession(session)
+  clearNativePreviewRetention(session)
   session.timeout = window.setTimeout(
     () => destroyNativePreviewSession(key),
     nativePreviewRetentionMs
@@ -1038,11 +1040,13 @@ function clearNativePreviewRetention(session: NativePreviewSession) {
 
 function hideNativePreviewSession(session: NativePreviewSession) {
   if (!session.browserId) return
-  void session.client.setBounds({
-    bounds: hiddenPreviewBrowserBounds(),
-    id: session.browserId,
-    visible: false,
-  })
+  void session.client
+    .setBounds({
+      bounds: hiddenPreviewBrowserBounds(),
+      id: session.browserId,
+      visible: false,
+    })
+    .catch(() => undefined)
 }
 
 function destroyNativePreviewSession(key: string) {
@@ -1050,7 +1054,9 @@ function destroyNativePreviewSession(key: string) {
   if (!session || session.references > 0) return
   nativePreviewSessions.delete(key)
   clearNativePreviewRetention(session)
-  if (session.browserId) void session.client.destroy({ id: session.browserId })
+  if (session.browserId) {
+    void session.client.destroy({ id: session.browserId }).catch(() => false)
+  }
 }
 
 function trimNativePreviewSessions() {
@@ -1127,7 +1133,18 @@ function reloadNativePreview(
   client: PreviewBrowserClient,
   browserId: string | undefined
 ) {
-  if (browserId) void client.reload({ id: browserId })
+  if (browserId) void client.reload({ id: browserId }).catch(() => false)
+}
+
+function useNativePreviewState(
+  client: PreviewBrowserClient,
+  browserId: string | undefined,
+  onState: (state: NativePreviewStateInput) => void
+) {
+  React.useEffect(() => {
+    if (!browserId) return
+    return client.onState({ id: browserId }, onState)
+  }, [browserId, client, onState])
 }
 
 function useNativePreviewLoad(
@@ -1150,9 +1167,16 @@ function useNativePreviewLoad(
     }
     if (session) session.source = source
     onState({ loading: true, url: source })
-    void client.load({ id: browserId, url: source }).catch((error) => {
-      onState(nativePreviewErrorState(error, "Unable to load preview", source))
-    })
+    void client
+      .load({ id: browserId, url: source })
+      .then((loaded) => {
+        if (!loaded) throw new Error("Preview browser is unavailable")
+      })
+      .catch((error) => {
+        onState(
+          nativePreviewErrorState(error, "Unable to load preview", source)
+        )
+      })
   }, [browserId, client, onState, sessionKey, source])
 }
 
@@ -1163,10 +1187,12 @@ function useNativePreviewDevtoolsScope(
 ) {
   React.useEffect(() => {
     if (!browserId || !devtoolsScope) return
-    void client.setDevtoolsScope({
-      id: browserId,
-      scope: devtoolsScope,
-    })
+    void client
+      .setDevtoolsScope({
+        id: browserId,
+        scope: devtoolsScope,
+      })
+      .catch(() => false)
   }, [browserId, client, devtoolsScope])
 }
 
@@ -1183,11 +1209,16 @@ function useNativePreviewReload(
     if (!browserId || reloadKeyRef.current === reloadKey) return
     reloadKeyRef.current = reloadKey
     onState({ loading: true, url: source })
-    void client.reload({ id: browserId }).catch((error) => {
-      onState(
-        nativePreviewErrorState(error, "Unable to reload preview", source)
-      )
-    })
+    void client
+      .reload({ id: browserId })
+      .then((reloaded) => {
+        if (!reloaded) throw new Error("Preview browser is unavailable")
+      })
+      .catch((error) => {
+        onState(
+          nativePreviewErrorState(error, "Unable to reload preview", source)
+        )
+      })
   }, [browserId, client, onState, reloadKey, source])
 }
 
@@ -1291,7 +1322,16 @@ function syncNativePreviewBounds(
   const key = `${bounds.x}:${bounds.y}:${bounds.width}:${bounds.height}:${shouldShow}`
   if (lastBoundsRef.current === key) return
   lastBoundsRef.current = key
-  void client.setBounds({ bounds, id: browserId, visible: shouldShow })
+  void client
+    .setBounds({ bounds, id: browserId, visible: shouldShow })
+    .then((applied) => {
+      if (!applied && lastBoundsRef.current === key) {
+        lastBoundsRef.current = ""
+      }
+    })
+    .catch(() => {
+      if (lastBoundsRef.current === key) lastBoundsRef.current = ""
+    })
 }
 
 function stableNativePreviewBounds(
@@ -1825,22 +1865,36 @@ function useManagedPreviewLog(sessionId?: string, service?: string) {
 
   React.useEffect(() => {
     if (!sessionId || !platform.previewRuntime?.onLog) return
-    setState({ content: "", error: "", loading: true, service, sessionId })
     return platform.previewRuntime.onLog(
       { sessionId },
       (event) => {
         if (service && event.serviceId && event.serviceId !== service) return
         const prefix = event.serviceId ? `${event.serviceId} | ` : ""
-        setState((current) => ({
-          ...current,
-          content: `${current.content}${prefix}${event.message}\n`.slice(
-            -250_000
-          ),
-          error: "",
-          loading: false,
-        }))
+        setState((current) => {
+          const content =
+            current.sessionId === sessionId && current.service === service
+              ? current.content
+              : ""
+          return {
+            content: `${content}${prefix}${event.message}\n`.slice(-250_000),
+            error: "",
+            loading: false,
+            service,
+            sessionId,
+          }
+        })
       },
-      (error) => setState((current) => ({ ...current, error, loading: false }))
+      (error) =>
+        setState((current) => ({
+          content:
+            current.sessionId === sessionId && current.service === service
+              ? current.content
+              : "",
+          error,
+          loading: false,
+          service,
+          sessionId,
+        }))
     )
   }, [platform.previewRuntime, service, sessionId])
 

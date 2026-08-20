@@ -85,6 +85,9 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
+      '@eslint/js':
+        specifier: ^9.39.4
+        version: 9.39.4
       '@opentelemetry/api':
         specifier: 1.9.1
         version: 1.9.1
@@ -112,9 +115,18 @@ importers:
       '@types/write-file-atomic':
         specifier: 4.0.3
         version: 4.0.3
+      eslint:
+        specifier: ^9.39.4
+        version: 9.39.4(jiti@2.7.0)
+      globals:
+        specifier: ^16.5.0
+        version: 16.5.0
       typescript:
         specifier: ~5.9.3
         version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.57.1
+        version: 8.59.3(eslint@9.39.4(jiti@2.7.0))(typescript@5.9.3)
 
   packages/api:
     dependencies:

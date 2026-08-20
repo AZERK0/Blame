@@ -399,7 +399,7 @@ export default class PreviewSessionService {
     yield* driver.logs({ handle, cursor })
   }
 
-  prepareSourceUpload(
+  async prepareSourceUpload(
     ownerUserId: string,
     sessionId: string,
     input: {
@@ -414,18 +414,18 @@ export default class PreviewSessionService {
       mode?: 'full' | 'delta'
     }
   ) {
-    return this.artifacts
-      .prepareSourceUpload({
-        sessionId,
-        ownerUserId,
-        ...input,
-      })
-      .then(async (upload) => ({
-        ...upload,
-        baseline: input.baseline
-          ? await this.baselines.lookupForSession(sessionId, input.baseline)
-          : undefined,
-      }))
+    await this.get(ownerUserId, sessionId)
+    const upload = await this.artifacts.prepareSourceUpload({
+      sessionId,
+      ownerUserId,
+      ...input,
+    })
+    return {
+      ...upload,
+      baseline: input.baseline
+        ? await this.baselines.lookupForSession(sessionId, input.baseline)
+        : undefined,
+    }
   }
 
   async negotiateSource(
@@ -676,11 +676,22 @@ export default class PreviewSessionService {
         continue
       }
       try {
-        await this.orchestrator.command(
+        const reconciled = await this.orchestrator.command(
           session.id,
           { type: 'suspend-host' },
-          `reaper:${session.revision}:${session.generation}`
+          `reaper:${session.revision}:${session.generation}`,
+          (current) =>
+            current.revision === session.revision &&
+            current.generation === session.generation &&
+            current.idleDeadlineAt === session.idleDeadlineAt &&
+            Boolean(current.idleDeadlineAt) &&
+            DateTime.fromISO(current.idleDeadlineAt!) <= DateTime.utc()
         )
+        if (reconciled.state.host !== 'suspended') {
+          results.push({ id: session.id, status: 'skipped' })
+          continue
+        }
+        await this.lease.neutralize(session.id, session.ownerUserId)
         await this.sampleUsage(session.id, session.profile)
         results.push({ id: session.id, status: 'suspended' })
       } catch (error) {
@@ -796,6 +807,7 @@ export default class PreviewSessionService {
             { type: 'suspend-host' },
             `runtime-guard:${candidate.revision}:${candidate.generation}`
           )
+          await this.lease.neutralize(candidate.id, candidate.ownerUserId)
           results.push({ id: candidate.id, status: 'suspended' })
         }
       } catch (error) {

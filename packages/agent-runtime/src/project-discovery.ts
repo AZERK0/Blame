@@ -304,8 +304,7 @@ export async function discoverProjectFiles(root: string) {
   const key = await canonicalRoot(root);
   const current = activeDiscoveries.get(key);
   if (current) return current;
-  let discovery: Promise<ProjectFileDiscovery>;
-  discovery = scanProjectFiles(root).finally(() => {
+  const discovery = scanProjectFiles(root).finally(() => {
     if (activeDiscoveries.get(key) === discovery) activeDiscoveries.delete(key);
   });
   activeDiscoveries.set(key, discovery);

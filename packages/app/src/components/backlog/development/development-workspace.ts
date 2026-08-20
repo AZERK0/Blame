@@ -41,12 +41,14 @@ export function useDevelopmentWorkspace(
   const [reloadKey, setReloadKey] = React.useState(0)
   const historicalRefs = React.useMemo(
     () => storyHistoricalRefs(userStory),
-    [userStory?.baseCommit, userStory?.mergeCommit, userStory?.status]
+    [userStory]
   )
   const historical = !userStory?.worktree && Boolean(historicalRefs)
   const directory =
     userStory?.worktree ??
-    (historical || fallbackToProjectRoot ? projects.activeProject?.path : undefined)
+    (historical || fallbackToProjectRoot
+      ? projects.activeProject?.path
+      : undefined)
 
   const listDirectory = React.useCallback(
     async (path: string) => {
@@ -60,10 +62,13 @@ export function useDevelopmentWorkspace(
           })
         )
       }
-      const nodes = await platform.workspace.listDirectory({ root: directory, path })
+      const nodes = await platform.workspace.listDirectory({
+        root: directory,
+        path,
+      })
       return normalizeNodes(nodes)
     },
-    [directory, historical, historicalRefs, platform.workspace]
+    [directory, historicalRefs, platform.workspace]
   )
 
   const searchFiles = React.useCallback(
@@ -92,9 +97,11 @@ export function useDevelopmentWorkspace(
           }),
         }
       }
-      return { content: await platform.workspace.readFile({ root: directory, path }) }
+      return {
+        content: await platform.workspace.readFile({ root: directory, path }),
+      }
     },
-    [directory, historical, historicalRefs, platform.workspace]
+    [directory, historicalRefs, platform.workspace]
   )
 
   const loadDiffs = React.useCallback(async () => {
@@ -107,7 +114,7 @@ export function useDevelopmentWorkspace(
         })
       : await platform.workspace.gitDiff({ root: directory })
     return normalizeDiffs(parseGitDiff(diff))
-  }, [directory, historical, historicalRefs, platform.workspace])
+  }, [directory, historicalRefs, platform.workspace])
 
   React.useEffect(() => {
     if (!directory || historical || !refreshEnabled) return
@@ -130,7 +137,9 @@ export function useDevelopmentWorkspace(
   }
 }
 
-function storyHistoricalRefs(userStory?: UserStory): [string, string] | undefined {
+function storyHistoricalRefs(
+  userStory?: UserStory
+): [string, string] | undefined {
   if (userStory?.status !== "done" || !userStory.mergeCommit) return undefined
   return [
     userStory.mergeCommit,
@@ -160,9 +169,16 @@ export function buildDiffKinds(diffs: VcsFileDiff[]) {
 
   return diffs.reduce((items, diff) => {
     const path = normalizePath(diff.file)
-    const kind = diff.status === "added" ? "add" : diff.status === "deleted" ? "del" : "mix"
+    const kind =
+      diff.status === "added"
+        ? "add"
+        : diff.status === "deleted"
+          ? "del"
+          : "mix"
     items.set(path, kind)
-    parents(path).forEach((parent) => items.set(parent, merge(items.get(parent), kind)))
+    parents(path).forEach((parent) =>
+      items.set(parent, merge(items.get(parent), kind))
+    )
     return items
   }, new Map<string, DevelopmentDiffKind>())
 }
@@ -174,8 +190,10 @@ export function diffKindLabel(kind: DevelopmentDiffKind) {
 }
 
 export function diffKindClassName(kind: DevelopmentDiffKind) {
-  if (kind === "add") return "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-  if (kind === "del") return "border-destructive/30 bg-destructive/10 text-destructive"
+  if (kind === "add")
+    return "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+  if (kind === "del")
+    return "border-destructive/30 bg-destructive/10 text-destructive"
   return "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400"
 }
 

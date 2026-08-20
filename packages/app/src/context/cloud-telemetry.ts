@@ -24,12 +24,14 @@ export function useCloudTelemetry(
 
 class CloudTelemetrySessionLoop {
   private active = true
+  private readonly connection: ApiConnection
   private refreshTimer: ReturnType<typeof setTimeout> | undefined
+  private readonly telemetry: TelemetryClient
 
-  constructor(
-    private readonly telemetry: TelemetryClient,
-    private readonly connection: ApiConnection
-  ) {}
+  constructor(telemetry: TelemetryClient, connection: ApiConnection) {
+    this.telemetry = telemetry
+    this.connection = connection
+  }
 
   start() {
     void this.refresh()

@@ -5,11 +5,8 @@ import type { HttpContext } from '@adonisjs/core/http'
 
 export default class ProjectsController {
   async index({ auth, serialize }: HttpContext) {
-    return serialize(
-      (await new ProjectsService().list(auth.getUserOrFail().id)).map((project) =>
-        ProjectTransformer.transform(project)
-      )
-    )
+    const projects = await new ProjectsService().list(auth.getUserOrFail().id)
+    return serialize(projects.map((project) => ProjectTransformer.transform(project)))
   }
 
   async store({ auth, request, serialize }: HttpContext) {

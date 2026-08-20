@@ -136,7 +136,9 @@ export function BacklogPage() {
   const storiesRef = React.useRef(backlog.stories)
   const openDrawerRef = React.useRef<(target: DrawerTarget) => void>(() => {})
   const drawerLoadRequestId = React.useRef(0)
-  const previousStoryStatuses = React.useRef<Map<string, BacklogColumnId>>()
+  const previousStoryStatuses = React.useRef<
+    Map<string, BacklogColumnId> | undefined
+  >(undefined)
   const pendingAgentUpdates = React.useRef(
     new Map<string, PendingAgentUpdate>()
   )

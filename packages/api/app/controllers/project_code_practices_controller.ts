@@ -5,10 +5,12 @@ import type { HttpContext } from '@adonisjs/core/http'
 
 export default class ProjectCodePracticesController {
   async index({ auth, params, serialize }: HttpContext) {
+    const practices = await new ProjectCodePracticesService().list(
+      auth.getUserOrFail().id,
+      params.projectId
+    )
     return serialize(
-      (await new ProjectCodePracticesService().list(auth.getUserOrFail().id, params.projectId)).map(
-        (practice) => ProjectCodePracticeTransformer.transform(practice)
-      )
+      practices.map((practice) => ProjectCodePracticeTransformer.transform(practice))
     )
   }
 

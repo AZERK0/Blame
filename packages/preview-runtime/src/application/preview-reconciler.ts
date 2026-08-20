@@ -42,6 +42,7 @@ export class PreviewReconciler {
         );
       }
       let handle = await this.options.repository.getRuntimeHandle(next.id);
+      let replacementHost = !handle && next.state.host !== "unprovisioned";
       let observedHandshake: RuntimeObservation["handshake"];
       if (handle) {
         fenceRuntimeHandle(handle, fencingToken);
@@ -53,6 +54,7 @@ export class PreviewReconciler {
           observation.host === "missing" ||
           observation.host === "destroyed"
         ) {
+          replacementHost = true;
           await this.options.repository.setRuntimeHandle(
             next.id,
             undefined,
@@ -68,7 +70,12 @@ export class PreviewReconciler {
             observedHandshake = observation.handshake;
         }
       }
-      const host = await this.reconcileHost(driver, next, handle);
+      const host = await this.reconcileHost(
+        driver,
+        next,
+        handle,
+        replacementHost,
+      );
       handle = host.handle;
       await this.acknowledgeRemoteDelta(driver, next, handle);
       if (handle && next.desired.host === "active") {
@@ -99,6 +106,7 @@ export class PreviewReconciler {
     driver: PreviewRuntimeDriver,
     record: PreviewSessionRecord,
     handle: RuntimeHandle | undefined,
+    replacementHost: boolean,
   ): Promise<{
     handle: RuntimeHandle | undefined;
     observation?: RuntimeObservation;
@@ -198,6 +206,10 @@ export class PreviewReconciler {
       return { handle };
     }
     if (!handle || ["unprovisioned", "destroyed"].includes(record.state.host)) {
+      if (replacementHost) {
+        record.generation += 1;
+        record.endpointMap = undefined;
+      }
       record.state.host = "provisioning";
       await this.checkpoint(record, "Provisioning preview host.");
       let created;

@@ -3,7 +3,7 @@ import type {
   CodePracticeKey,
   CodePracticeUpdate,
 } from "@/components/practices/data/code-practices-data"
-import type { ApiConnection } from "@/context/platform"
+import type { ApiConnection } from "@blame/agent-runtime"
 
 export function createCodePracticesApi(connection: ApiConnection) {
   const baseUrl = connection.url.replace(/\/$/, "")

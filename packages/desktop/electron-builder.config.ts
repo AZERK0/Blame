@@ -1,10 +1,23 @@
 import { execFile } from "node:child_process"
-import { dirname, join } from "node:path"
+import {
+  mkdtemp,
+  readFile,
+  readdir,
+  rename,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises"
+import { tmpdir } from "node:os"
+import { basename, dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { promisify } from "node:util"
+import { gzip, gunzip } from "node:zlib"
 import type { Configuration } from "electron-builder"
 
 const execFileAsync = promisify(execFile)
+const gzipAsync = promisify(gzip)
+const gunzipAsync = promisify(gunzip)
 const downloadBaseUrl = text(process.env.BLAME_DOWNLOAD_BASE_URL)
 const homepage = text(process.env.BLAME_HOMEPAGE) ?? "https://blame.dev"
 const maintainerEmail =
@@ -38,6 +51,11 @@ type PackContext = {
     appInfo: {
       productFilename: string
     }
+    codeSigningInfo?: {
+      value: Promise<{
+        keychainFile?: string | null
+      }>
+    }
   }
 }
 
@@ -46,6 +64,124 @@ async function finalizePackage(context: PackContext) {
   await execFileAsync("xattr", ["-cr", context.appOutDir])
   console.log(`Removed macOS extended attributes from ${context.appOutDir}`)
   await assertMacosRuntimeArchitecture(context)
+  if (macosCodeSigningRequested()) {
+    await signMacosRuntimeExecutables(context)
+  }
+}
+
+function macosCodeSigningRequested() {
+  return Boolean(
+    releaseVersion || text(process.env.CSC_LINK) || text(process.env.CSC_NAME),
+  )
+}
+
+async function signMacosRuntimeExecutables(context: PackContext) {
+  const signingInfo = context.packager.codeSigningInfo
+  if (!signingInfo) {
+    throw new Error(
+      "Electron Builder did not expose macOS code-signing information",
+    )
+  }
+
+  const { keychainFile } = await signingInfo.value
+  const identity = await developerIdApplicationIdentity(keychainFile)
+  const appRoot = join(
+    context.appOutDir,
+    `${context.packager.appInfo.productFilename}.app`,
+  )
+  const limaBundleDir = join(
+    appRoot,
+    "Contents/Resources/runtime/macos/lima/bundle",
+  )
+  const limaShareDir = join(limaBundleDir, "share/lima")
+  const archives = (await readdir(limaShareDir))
+    .filter(
+      (file) =>
+        file.startsWith("lima-guestagent.Darwin-") && file.endsWith(".gz"),
+    )
+    .map((file) => join(limaShareDir, file))
+
+  for (const executable of await macosExecutables(limaBundleDir)) {
+    await signMacosExecutable(executable, identity, keychainFile)
+  }
+  for (const archive of archives) {
+    await signGzipMachO(archive, identity, keychainFile)
+  }
+}
+
+async function macosExecutables(directory: string): Promise<string[]> {
+  const executables: string[] = []
+  for (const entry of await readdir(directory, { withFileTypes: true })) {
+    const path = join(directory, entry.name)
+    if (entry.isDirectory()) {
+      executables.push(...(await macosExecutables(path)))
+      continue
+    }
+    if (!entry.isFile()) continue
+    const { stdout } = await execFileAsync("file", ["-b", path])
+    if (stdout.includes("Mach-O")) executables.push(path)
+  }
+  return executables
+}
+
+async function developerIdApplicationIdentity(keychainFile?: string | null) {
+  const args = ["find-identity", "-v", "-p", "codesigning"]
+  if (keychainFile) args.push(keychainFile)
+  const { stdout } = await execFileAsync("security", args)
+  const match = stdout.match(
+    /^\s*\d+\)\s+([A-F0-9]{40})\s+"Developer ID Application:/im,
+  )
+  if (!match?.[1]) {
+    throw new Error("No valid Developer ID Application identity was found")
+  }
+  return match[1]
+}
+
+async function signGzipMachO(
+  archive: string,
+  identity: string,
+  keychainFile?: string | null,
+) {
+  const temporaryDir = await mkdtemp(join(tmpdir(), "blame-macos-sign-"))
+  const executable = join(temporaryDir, basename(archive, ".gz"))
+  const replacement = `${archive}.signed-${process.pid}`
+
+  try {
+    const archiveStat = await stat(archive)
+    await writeFile(executable, await gunzipAsync(await readFile(archive)), {
+      mode: 0o755,
+    })
+    await signMacosExecutable(executable, identity, keychainFile)
+    await writeFile(
+      replacement,
+      await gzipAsync(await readFile(executable), { level: 9 }),
+      { mode: archiveStat.mode },
+    )
+    await rename(replacement, archive)
+    console.log(`Signed compressed macOS executable in ${archive}`)
+  } finally {
+    await rm(replacement, { force: true })
+    await rm(temporaryDir, { force: true, recursive: true })
+  }
+}
+
+async function signMacosExecutable(
+  executable: string,
+  identity: string,
+  keychainFile?: string | null,
+) {
+  const signArgs = [
+    "--force",
+    "--sign",
+    identity,
+    "--options",
+    "runtime",
+    "--timestamp",
+  ]
+  if (keychainFile) signArgs.push("--keychain", keychainFile)
+  signArgs.push(executable)
+  await execFileAsync("codesign", signArgs)
+  await execFileAsync("codesign", ["--verify", "--strict", executable])
 }
 
 async function assertMacosRuntimeArchitecture(context: PackContext) {
@@ -124,6 +260,7 @@ const config: Configuration = {
     hardenedRuntime: true,
     icon: "icons/prod/icon.icns",
     notarize: true,
+    signIgnore: ["/Contents/Resources/runtime/macos/lima/bundle/"],
     target: ["dmg", "zip"],
   },
   nsis: {

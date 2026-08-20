@@ -87,6 +87,18 @@ export function useBacklogRotation(
   const interruptedAgentRecoveryProjectIds = React.useRef(new Set<string>())
   const interruptedAgentRecoveryStoryIds = React.useRef(new Set<string>())
   const storiesRef = React.useRef(backlog.stories)
+  const startStoryRef = React.useRef<(story: UserStory) => Promise<void>>(
+    async () => undefined
+  )
+  const reportBlockerRef = React.useRef<
+    (story: UserStory, message: string) => void
+  >(() => undefined)
+  const recoverCompletedAgentRunsRef = React.useRef<
+    (stories: UserStory[]) => void
+  >(() => undefined)
+  const recoverInterruptedAgentRunsRef = React.useRef<
+    (stories: UserStory[]) => void
+  >(() => undefined)
   const [hostDependenciesDialog, setHostDependenciesDialog] =
     React.useState<HostDependenciesDialogState>()
   const [, refreshStartingStories] = React.useState(0)
@@ -537,18 +549,23 @@ export function useBacklogRotation(
   }
 
   React.useEffect(() => {
+    recoverCompletedAgentRunsRef.current = recoverCompletedAgentRuns
+    recoverInterruptedAgentRunsRef.current = recoverInterruptedAgentRuns
+  })
+
+  React.useEffect(() => {
     if (!platform.workspace || backlog.loading) return
     const projectId = backlog.projectId
     if (!projectId || interruptedAgentRecoveryProjectIds.current.has(projectId))
       return
     interruptedAgentRecoveryProjectIds.current.add(projectId)
-    recoverInterruptedAgentRuns(storiesRef.current)
+    recoverInterruptedAgentRunsRef.current(storiesRef.current)
   }, [backlog.loading, backlog.projectId, platform.workspace])
 
   React.useEffect(() => {
     if (!platform.workspace || backlog.loading) return
     const timer = window.setInterval(
-      () => recoverCompletedAgentRuns(storiesRef.current),
+      () => recoverCompletedAgentRunsRef.current(storiesRef.current),
       agentCompletionRecoveryIntervalMs
     )
     return () => window.clearInterval(timer)
@@ -583,7 +600,8 @@ export function useBacklogRotation(
           agentStatus: "Paused",
         },
         run,
-        runInput
+        runInput,
+        true
       )
       return
     }
@@ -614,8 +632,7 @@ export function useBacklogRotation(
           status: "in-review",
         },
         run,
-        runInput,
-        true
+        runInput
       )
       return
     }
@@ -776,6 +793,11 @@ export function useBacklogRotation(
   }
 
   React.useEffect(() => {
+    startStoryRef.current = startStory
+    reportBlockerRef.current = reportBlocker
+  })
+
+  React.useEffect(() => {
     if (!projects.activeProject || auth.status !== "authenticated") return
     if (backlog.loading || !backlog.projectId) return
     if (agentAuthenticationBlockedUntil.current > Date.now()) return
@@ -796,8 +818,9 @@ export function useBacklogRotation(
     const storiesToStart = readyStories.slice(0, availableSlots)
     storiesToStart.forEach((story) => {
       startingStoryIds.current.add(story.id)
-      void startStory(story)
-        .catch((error) => reportBlocker(story, errorMessage(error)))
+      void startStoryRef
+        .current(story)
+        .catch((error) => reportBlockerRef.current(story, errorMessage(error)))
         .finally(() => {
           startingStoryIds.current.delete(story.id)
           refreshStartingStories((value) => value + 1)
@@ -810,8 +833,6 @@ export function useBacklogRotation(
     backlog.projectId,
     backlog.stories,
     projects.activeProject,
-    reportBlocker,
-    startStory,
   ])
 
   return {
@@ -1039,7 +1060,9 @@ function recoverableAgentRun(story: UserStory) {
       !run.finalResponse &&
       staleAgentRun(run) &&
       Boolean(run.clineSessionId ?? story.clineSessionId) &&
-      !activeAgentEventSubscription(run.clineSessionId ?? story.clineSessionId)
+      !activeAgentEventSubscription(
+        run.clineSessionId ?? story.clineSessionId ?? undefined
+      )
   )
 }
 

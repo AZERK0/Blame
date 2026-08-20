@@ -170,7 +170,11 @@ function ModelPicker({
   const onWheel = useWheelStep((direction) => {
     const model = advanced
       ? adjacentManualModel(selection, providerID, direction)
-      : adjacentSmartModel(selection, providerID, -direction)
+      : adjacentSmartModel(
+          selection,
+          providerID,
+          reverseWheelDirection(direction)
+        )
     if (model) selectModelWithoutWaiting(selection, model)
   })
 
@@ -215,6 +219,10 @@ function useWheelStep<Element extends HTMLElement = HTMLButtonElement>(
     },
     [onStep]
   )
+}
+
+function reverseWheelDirection(direction: WheelDirection): WheelDirection {
+  return direction === 1 ? -1 : 1
 }
 
 function ModelPickerTrigger({
@@ -684,7 +692,7 @@ function SmartModelSlider({ providerID, selection }: SmartModelSliderProps) {
     const recommendation = adjacentSliderRecommendation(
       recommendations,
       position,
-      -direction
+      reverseWheelDirection(direction)
     )
     if (!recommendation) return
     setPosition(recommendation.position)
@@ -1210,7 +1218,7 @@ function ModelVariantSelector({ selection }: { selection: ModelSelection }) {
     const variant = adjacentItem(
       selection.variantOptions,
       currentIndex,
-      -direction
+      reverseWheelDirection(direction)
     )
     if (variant) selectModelVariant(selection, variant)
   })

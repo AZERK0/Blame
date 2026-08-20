@@ -541,7 +541,7 @@ export class SemanticWorkspace {
         data: { target, items, parse_quality: parseQuality },
         diagnostics: parseQuality.filter(
           (quality) =>
-            !Boolean((quality as { supported?: boolean }).supported) ||
+            !(quality as { supported?: boolean }).supported ||
             Number((quality as { syntax_errors?: number }).syntax_errors) > 0,
         ),
         coverage: {

@@ -169,9 +169,11 @@ export class CloudPreviewClient implements PreviewSessionBackend<CloudManagedPre
   async *events(
     sessionId: string,
     cursor?: string,
+    signal?: AbortSignal,
   ): AsyncIterable<PreviewSessionEvent> {
     let nextCursor = cursor;
     while (true) {
+      signal?.throwIfAborted();
       const query = nextCursor
         ? `?cursor=${encodeURIComponent(nextCursor)}`
         : "";
@@ -179,6 +181,7 @@ export class CloudPreviewClient implements PreviewSessionBackend<CloudManagedPre
         `/preview-sessions/${encoded(sessionId)}/events${query}`,
         {
           headers: { Accept: "text/event-stream" },
+          signal,
         },
       );
       if (!response.ok || !response.body) throw await cloudError(response);
@@ -187,21 +190,24 @@ export class CloudPreviewClient implements PreviewSessionBackend<CloudManagedPre
         nextCursor = event.id || value.cursor;
         yield value;
       }
+      await delay(250, signal);
     }
   }
 
   async *logs(
     sessionId: string,
     cursor?: string,
+    signal?: AbortSignal,
   ): AsyncIterable<PreviewLogEvent> {
     let nextCursor = cursor;
     while (true) {
+      signal?.throwIfAborted();
       const query = nextCursor
         ? `?cursor=${encodeURIComponent(nextCursor)}`
         : "";
       const response = await this.fetch(
         `/preview-sessions/${encoded(sessionId)}/logs${query}`,
-        { headers: { Accept: "text/event-stream" } },
+        { headers: { Accept: "text/event-stream" }, signal },
       );
       if (!response.ok || !response.body) throw await cloudError(response);
       for await (const event of parseEventStream(response.body)) {
@@ -209,6 +215,7 @@ export class CloudPreviewClient implements PreviewSessionBackend<CloudManagedPre
         nextCursor = event.id || String(value.sequence);
         yield value;
       }
+      await delay(250, signal);
     }
   }
 
@@ -432,6 +439,7 @@ function commandReachedState(
   switch (command.type) {
     case "start-services":
       return (
+        selectionMatchesCommand(session, command) &&
         session.desired.services === "running" &&
         session.state.engine === "running" &&
         session.state.preview === "ready" &&
@@ -461,8 +469,46 @@ function commandReachedState(
   }
 }
 
-function delay(milliseconds: number) {
-  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+function selectionMatchesCommand(
+  session: PreviewSessionView,
+  command: Extract<PreviewSessionCommand, { type: "start-services" }>,
+) {
+  if (session.selection?.configurationId !== command.configurationId) {
+    return false;
+  }
+  if (!sameOptionalSet(session.selection.serviceIds, command.serviceIds)) {
+    return false;
+  }
+  return (
+    session.selection.primaryRoute?.serviceId ===
+      command.primaryRoute?.serviceId &&
+    session.selection.primaryRoute?.endpointId ===
+      command.primaryRoute?.endpointId
+  );
+}
+
+function sameOptionalSet(left?: string[], right?: string[]) {
+  if (left === undefined || right === undefined) return left === right;
+  if (left.length !== right.length) return false;
+  const expected = new Set(right);
+  return left.every((value) => expected.has(value));
+}
+
+function delay(milliseconds: number, signal?: AbortSignal) {
+  if (signal?.aborted) return Promise.reject(signal.reason);
+  return new Promise<void>((resolve, reject) => {
+    const timeout = setTimeout(finish, milliseconds);
+    const abort = () => {
+      clearTimeout(timeout);
+      signal?.removeEventListener("abort", abort);
+      reject(signal?.reason);
+    };
+    function finish() {
+      signal?.removeEventListener("abort", abort);
+      resolve();
+    }
+    signal?.addEventListener("abort", abort, { once: true });
+  });
 }
 
 async function* parseEventStream(stream: ReadableStream<Uint8Array>) {
@@ -473,10 +519,10 @@ async function* parseEventStream(stream: ReadableStream<Uint8Array>) {
     while (true) {
       const { done, value } = await reader.read();
       buffer += decoder.decode(value, { stream: !done });
-      let boundary = buffer.indexOf("\n\n");
-      while (boundary >= 0) {
-        const block = buffer.slice(0, boundary).replaceAll("\r", "");
-        buffer = buffer.slice(boundary + 2);
+      let boundary = buffer.match(/\r?\n\r?\n/);
+      while (boundary?.index !== undefined) {
+        const block = buffer.slice(0, boundary.index).replaceAll("\r", "");
+        buffer = buffer.slice(boundary.index + boundary[0].length);
         const data = block
           .split("\n")
           .filter((line) => line.startsWith("data:"))
@@ -488,7 +534,7 @@ async function* parseEventStream(stream: ReadableStream<Uint8Array>) {
           ?.slice(3)
           .trim();
         if (data) yield { data, id };
-        boundary = buffer.indexOf("\n\n");
+        boundary = buffer.match(/\r?\n\r?\n/);
       }
       if (done) break;
     }

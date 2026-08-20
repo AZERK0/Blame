@@ -140,7 +140,7 @@ function useBacklogStoreValue() {
         ),
         stories: [...current.stories, story],
       }))
-      if (creation.completeAttachmentUpload) {
+      if ("completeAttachmentUpload" in creation) {
         runCreatedStoryAttachmentUpload(
           story,
           creation.completeAttachmentUpload,

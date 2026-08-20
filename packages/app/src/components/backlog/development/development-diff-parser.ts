@@ -69,12 +69,12 @@ export function diffLines(patch: string): DiffCodeLine[] {
 }
 
 export function parseGitDiff(diff: string): ParsedVcsFileDiff[] {
-  return splitGitDiffFiles(diff)
-    .map((patch) => {
-      const file = parsePatchFiles(patch)[0]?.files[0]
-      if (!file || isIgnoredDiffPath(file.name)) return undefined
+  return splitGitDiffFiles(diff).flatMap((patch): ParsedVcsFileDiff[] => {
+    const file = parsePatchFiles(patch)[0]?.files[0]
+    if (!file || isIgnoredDiffPath(file.name)) return []
 
-      return {
+    return [
+      {
         additions: file.hunks.reduce(
           (total, hunk) => total + hunk.additionLines,
           0
@@ -91,9 +91,9 @@ export function parseGitDiff(diff: string): ParsedVcsFileDiff[] {
             : file.type === "deleted"
               ? "deleted"
               : "modified",
-      }
-    })
-    .filter((file): file is ParsedVcsFileDiff => Boolean(file))
+      },
+    ]
+  })
 }
 
 function splitGitDiffFiles(diff: string) {

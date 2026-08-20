@@ -19,6 +19,7 @@ import {
   managedPreviewRuntimeState,
 } from "@/components/backlog/drawer/managed-preview-runtime-state"
 import {
+  acquireCloudPreviewControl,
   activeCloudPreviewControl,
   beginCloudPreviewControl,
   cachedCloudPreviewPendingOperation,
@@ -89,7 +90,7 @@ export function useUserStoryPreviewRunner(
   const cloudRuntime = cloud.runtime
   const cloudSession = cloud.session
   const cloudPreviewIsReady = managedPreviewReady(cloudSession)
-  const autoStartAttemptRef = React.useRef<string>()
+  const autoStartAttemptRef = React.useRef<string | undefined>(undefined)
   React.useEffect(() => {
     if (
       !options.autoStart ||
@@ -195,7 +196,7 @@ function useCloudPreviewRuntime(input: {
   const [error, setError] = React.useState<string>()
   const [pendingOperation, setPendingOperation] =
     React.useState<ProjectRunnerPendingOperation>()
-  const stoppingSessionIdRef = React.useRef<string>()
+  const stoppingSessionIdRef = React.useRef<string | undefined>(undefined)
   const client = input.platform.previewRuntime
   const profile = input.preference.profile
   const storageId = input.userStoryId
@@ -358,6 +359,7 @@ function useCloudPreviewRuntime(input: {
         pendingOperation
       )
         return undefined
+      if (deletedPreviewStories.has(input.userStoryId)) return undefined
       const configuration = input.localRuntime?.configurations.find(
         ({ id }) => id === configurationId
       )
@@ -454,17 +456,20 @@ function useCloudPreviewRuntime(input: {
           const optimistic = stoppedCloudPreviewSession(active)
           stoppingSessionIdRef.current = active.id
           updateSession(optimistic)
-          void settleCloudPreviewStop(
-            client,
-            active.id,
-            input.userStoryId,
-            updateSession
-          ).finally(() => {
+          try {
+            active = await settleCloudPreviewStop(
+              client,
+              active.id,
+              input.userStoryId,
+              optimistic,
+              updateSession
+            )
+          } finally {
             if (stoppingSessionIdRef.current === active?.id) {
               stoppingSessionIdRef.current = undefined
             }
-          })
-          return managedPreviewRuntimeState(optimistic, input.localRuntime)
+          }
+          return managedPreviewRuntimeState(active, input.localRuntime)
         }
         if (!active.sourceRevision) {
           active = (
@@ -579,6 +584,7 @@ async function settleCloudPreviewStop(
   client: NonNullable<ReturnType<typeof usePlatform>["previewRuntime"]>,
   sessionId: string,
   userStoryId: string,
+  optimistic: PreviewSessionView,
   updateSession: (session: PreviewSessionView) => PreviewSessionView
 ) {
   markCloudPreviewAutoStartDisabled(userStoryId)
@@ -588,16 +594,17 @@ async function settleCloudPreviewStop(
       command: managedPreviewStopCommand("stop"),
       operationId: crypto.randomUUID(),
     })
-    updateSession(next)
+    return updateSession(next)
   } catch (error) {
     toast.error("Unable to stop managed preview", {
       description: errorText(error),
       position: "bottom-right",
     })
     try {
-      updateSession(await client.get({ sessionId }))
+      return updateSession(await client.get({ sessionId }))
     } catch {
       // Keep the optimistic stopped state when the follow-up read is unavailable.
+      return optimistic
     }
   }
 }
@@ -606,25 +613,32 @@ export async function stopManagedCloudPreview(
   platform: ReturnType<typeof usePlatform>,
   userStoryId: string
 ) {
-  await activeCloudPreviewControl(userStoryId)
   markCloudPreviewAutoStartDisabled(userStoryId)
-  const client = platform.previewRuntime
-  if (!client) return false
-  const storageId = cloudPreviewSessionStorageId(userStoryId, "vercel-compose")
-  const cachedSessionId = localStorage.getItem(storageId)
-  const sessionId = await client
-    .findForUserStory({ userStoryId, profile: "vercel-compose" })
-    .then(({ session }) => session?.id)
-    .catch(() => cachedSessionId)
-  if (!sessionId) return false
-  const session = await client.command({
-    sessionId,
-    command: managedPreviewStopCommand("stop"),
-    operationId: crypto.randomUUID(),
-  })
-  publishCloudPreviewSession(localStorage, storageId, session)
-  recordRuntimeSessionState(userStoryId, "vercel-compose", true)
-  return true
+  const controlLease = await acquireCloudPreviewControl(userStoryId)
+  try {
+    const client = platform.previewRuntime
+    if (!client) return false
+    const storageId = cloudPreviewSessionStorageId(
+      userStoryId,
+      "vercel-compose"
+    )
+    const cachedSessionId = localStorage.getItem(storageId)
+    const sessionId = await client
+      .findForUserStory({ userStoryId, profile: "vercel-compose" })
+      .then(({ session }) => session?.id)
+      .catch(() => cachedSessionId)
+    if (!sessionId) return false
+    const session = await client.command({
+      sessionId,
+      command: managedPreviewStopCommand("stop"),
+      operationId: crypto.randomUUID(),
+    })
+    publishCloudPreviewSession(localStorage, storageId, session)
+    recordRuntimeSessionState(userStoryId, "vercel-compose", true)
+    return true
+  } finally {
+    controlLease.release()
+  }
 }
 
 export async function beginUserStoryPreviewDeletion(userStoryId: string) {

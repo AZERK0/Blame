@@ -122,7 +122,7 @@ export function agentEventText(event: AgentEvent) {
   return ""
 }
 
-export function agentErrorText(value: string) {
+export function agentErrorText(value: string): string {
   const text = value.trim()
   const result = text.match(
     /^cline send ended with status ([\w-]+)(?::\s*([\s\S]+)|\.)?$/i
@@ -378,7 +378,7 @@ function reusableClosedMessage(
   activity: UserStoryAgentActivity | undefined,
   iteration: number | undefined,
   accumulatedText: string
-) {
+): activity is UserStoryAgentActivity {
   return (
     activity?.kind === "message" &&
     sameIteration(activity.iteration, iteration) &&
@@ -509,7 +509,7 @@ function safeAccumulatedPrefixBoundary(value: string, index: number) {
   return /\s/.test(value[index - 1] ?? "") || /\s/.test(value[index] ?? "")
 }
 
-function agentMessageKind() {
+function agentMessageKind(): UserStoryAgentActivity["messageKind"] {
   return "intermediate"
 }
 

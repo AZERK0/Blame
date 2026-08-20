@@ -46,6 +46,14 @@ export function activeCloudPreviewControl(userStoryId: string) {
   return controlOperations.get(userStoryId)
 }
 
+export async function acquireCloudPreviewControl(userStoryId: string) {
+  while (true) {
+    const lease = beginCloudPreviewControl(userStoryId)
+    if (lease.acquired) return lease
+    await lease.completed
+  }
+}
+
 export function cloudPreviewSessionStorageId(
   userStoryId: string,
   profile: string
