@@ -49,6 +49,7 @@ try {
   await cp(join(desktopDir, "out"), join(stagingDir, "out"), {
     recursive: true,
   });
+  const builderEnvironment = await electronBuilderEnvironment(args, stagingDir);
   await run(
     "pnpm",
     [
@@ -61,7 +62,7 @@ try {
       ...args,
     ],
     rootDir,
-    electronBuilderEnvironment(args),
+    builderEnvironment,
   );
   await preserveRuntimeArtifacts(join(stagingDir, "dist"));
   await rm(join(desktopDir, "dist"), { force: true, recursive: true });
@@ -114,13 +115,45 @@ function builderTargetPlatform(builderArgs) {
   return process.platform;
 }
 
-function electronBuilderEnvironment(builderArgs) {
+async function electronBuilderEnvironment(builderArgs, temporaryDirectory) {
   const targetPlatform = builderTargetPlatform(builderArgs);
-  return {
+  const environment = {
     ...process.env,
     BLAME_DESKTOP_NPM_REBUILD: String(targetPlatform === process.platform),
     JITI_FS_CACHE: "false",
   };
+  if (targetPlatform !== "darwin") return environment;
+
+  environment.CSC_LINK ||= environment.MAC_CSC_LINK;
+  environment.CSC_KEY_PASSWORD ||= environment.MAC_CSC_KEY_PASSWORD;
+
+  const encodedApiKey = environment.APPLE_API_KEY_P8_B64?.trim();
+  if (!environment.APPLE_API_KEY && encodedApiKey) {
+    const apiKey = Buffer.from(encodedApiKey.replace(/\s/g, ""), "base64");
+    if (!apiKey.toString("utf8").includes("-----BEGIN PRIVATE KEY-----")) {
+      throw new Error("APPLE_API_KEY_P8_B64 is not a valid App Store Connect API key");
+    }
+    const keyId = environment.APPLE_API_KEY_ID?.trim() || "notarization";
+    const apiKeyPath = join(temporaryDirectory, `AuthKey_${keyId}.p8`);
+    await writeFile(apiKeyPath, apiKey, { mode: 0o600 });
+    environment.APPLE_API_KEY = apiKeyPath;
+  }
+
+  if (environment.BLAME_VERSION?.trim()) {
+    for (const name of [
+      "CSC_LINK",
+      "CSC_KEY_PASSWORD",
+      "APPLE_API_KEY",
+      "APPLE_API_KEY_ID",
+      "APPLE_API_ISSUER",
+    ]) {
+      if (!environment[name]?.trim()) {
+        throw new Error(`${name} is required for a signed macOS release`);
+      }
+    }
+  }
+
+  return environment;
 }
 
 function assertSingleMacosArchitecture(builderArgs) {

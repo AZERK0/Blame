@@ -34,10 +34,22 @@ Each platform stages its files under a run-specific `_staging/` prefix. Once eve
 Required GitHub secrets:
 
 ```txt
+APPLE_API_ISSUER
+APPLE_API_KEY_ID
+APPLE_API_KEY_P8_B64
 BLAME_DOWNLOAD_BASE_URL
 BLAME_DOWNLOAD_S3_ACCESS_KEY_ID
 BLAME_DOWNLOAD_S3_SECRET_ACCESS_KEY
+MAC_CSC_KEY_PASSWORD
+MAC_CSC_LINK
 ```
+
+The macOS signing certificate and App Store Connect API key are stored as
+single-line base64 values in `MAC_CSC_LINK` and `APPLE_API_KEY_P8_B64`.
+The packaging script maps the macOS-specific certificate variables to
+electron-builder and materializes the API key only inside its temporary build
+directory. The same variable names can be set in the ignored root `.env.local`
+for signed local macOS builds.
 
 Required GitHub variables:
 

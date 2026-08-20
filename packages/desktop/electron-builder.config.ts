@@ -120,7 +120,10 @@ const config: Configuration = {
   mac: {
     category: "public.app-category.developer-tools",
     entitlementsInherit: macosInheritedEntitlements,
+    forceCodeSigning: Boolean(releaseVersion),
+    hardenedRuntime: true,
     icon: "icons/prod/icon.icns",
+    notarize: true,
     target: ["dmg", "zip"],
   },
   nsis: {

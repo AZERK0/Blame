@@ -67,7 +67,24 @@ jobs:
 
       - run: pnpm --filter @blame/desktop build
 
-      - name: Package installers
+      - name: Package macOS installers
+        if: runner.os == 'macOS'
+        run: pnpm --filter @blame/desktop package -- ${{ matrix.args }} --publish never
+        env:
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_KEY_P8_B64: ${{ secrets.APPLE_API_KEY_P8_B64 }}
+          BLAME_DOWNLOAD_BASE_URL: ${{ secrets.BLAME_DOWNLOAD_BASE_URL }}
+          BLAME_HOMEPAGE: ${{ vars.BLAME_HOMEPAGE }}
+          BLAME_MAINTAINER_EMAIL: ${{ vars.BLAME_MAINTAINER_EMAIL }}
+          BLAME_MAINTAINER_NAME: ${{ vars.BLAME_MAINTAINER_NAME }}
+          BLAME_RUNTIME_VERSION: ${{ vars.BLAME_RUNTIME_VERSION }}
+          BLAME_REQUIRE_PREBUILT_RUNTIME: true
+          MAC_CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
+          MAC_CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
+
+      - name: Package Windows and Linux installers
+        if: runner.os != 'macOS'
         run: pnpm --filter @blame/desktop package -- ${{ matrix.args }} --publish never
         env:
           BLAME_DOWNLOAD_BASE_URL: ${{ secrets.BLAME_DOWNLOAD_BASE_URL }}
@@ -76,7 +93,6 @@ jobs:
           BLAME_MAINTAINER_NAME: ${{ vars.BLAME_MAINTAINER_NAME }}
           BLAME_RUNTIME_VERSION: ${{ vars.BLAME_RUNTIME_VERSION }}
           BLAME_REQUIRE_PREBUILT_RUNTIME: true
-          CSC_IDENTITY_AUTO_DISCOVERY: false
 
       - name: Stage installers in S3
         if: github.event_name == 'push' || inputs.deploy
