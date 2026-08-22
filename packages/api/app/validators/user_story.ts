@@ -150,6 +150,7 @@ export const updateUserStoryValidator = vine.create({
   agentLastError: vine.string().trim().maxLength(4096).nullable().optional(),
   agentActivities: vine.array(agentActivity).nullable().optional(),
   agentActivity: agentActivity.nullable().optional(),
+  agentActivityUpdates: vine.array(agentActivity).maxLength(16).optional(),
   agentFinalResponse: vine.string().nullable().optional(),
   agentUsage: agentUsage.nullable().optional(),
   agentSessionSummary: vine.string().nullable().optional(),

@@ -100,7 +100,7 @@ export function semanticWorkspaceTools(
     createHarnessTool({
       name: "apply_change",
       description:
-        "Create or commit a transactional code change with compare-and-swap. First call action propose with the exact base source revision, immutable node/text/file operations, and an idempotency key. Review the immutable result, then call commit_proposal with the same base and a commit idempotency key. Never silently relocates stale targets; writes are locked across processes and crash-recoverable.",
+        "Apply a transactional compare-and-swap code change. Prefer action apply for bounded edits in the isolated story worktree: it creates an immutable proposal, commits it atomically, and returns the diff and receipt in one call. Use propose, review_change, then commit_proposal only when a large or high-risk change needs an explicit review boundary. Targets never relocate silently; writes remain locked, idempotent, and crash-recoverable.",
       schema: applyChangeInputSchema,
       execute: (input, context) => execute("apply_change", input, context),
       retryable: false,
@@ -108,7 +108,7 @@ export function semanticWorkspaceTools(
     createHarnessTool({
       name: "run_task",
       description:
-        "Run one known workspace task against an exact source revision in an ephemeral filesystem overlay with default-deny networking. Use a task_id from workspace_state, or an unambiguous test/lint/build/typecheck kind. Returns a revision-bound RunRef, structured failures/diagnostics, encrypted log artifacts, and any filesystem effects as a separate immutable ChangeProposal; it never writes the canonical worktree. Do not use it for ad-hoc shell commands, dependency installation, or long-running services.",
+        "Run one known root or package workspace task against an exact source revision in an ephemeral filesystem overlay. Use a task_id from workspace_state, or an unambiguous test/lint/build/typecheck kind and package target. The runtime reports whether network denial is enforced by bubblewrap/sandbox-exec or only isolated by the story worktree. CPU and memory requests are accepted as hints and explicitly reported as ignored until a container adapter enforces them. Returns a revision-bound RunRef, diagnostics, logs, and filesystem effects without writing the canonical worktree.",
       schema: runTaskInputSchema,
       execute: (input, context) => execute("run_task", input, context),
       retryable: false,

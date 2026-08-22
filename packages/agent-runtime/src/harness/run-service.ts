@@ -62,7 +62,7 @@ export class RunService {
     signal?: AbortSignal,
   ) {
     assertSupportedExecution(input);
-    const catalog = await readTaskCatalog(this.files.root);
+    const catalog = await readTaskCatalog(this.files.root, snapshot.files);
     const task = resolveTask(catalog, input.task);
     if (task.kind === "service")
       throw new Error(
@@ -172,7 +172,11 @@ export class RunService {
             "LANG",
             "LC_ALL",
           ],
-          process_tree: "sandbox_descendants",
+          process_tree:
+            isolation === "worktree"
+              ? "host_descendants"
+              : "sandbox_descendants",
+          ...ignoredLimits(input),
           observed_ports: [],
           volatility: ["timestamps", "runtime_instance_id"],
         },
@@ -183,7 +187,11 @@ export class RunService {
         completed_at: completedAt.toISOString(),
         duration_ms: Math.max(0, completedAt.getTime() - startedAt.getTime()),
         limits: input.limits,
-        network: { requested: input.network ?? "deny", enforcement: isolation },
+        network: {
+          requested: input.network ?? "deny",
+          enforcement: isolation,
+          effective: isolation === "worktree" ? "host" : "deny",
+        },
         logs: {
           complete: completeLog,
           sealed_raw: sealedRaw,
@@ -359,14 +367,17 @@ function assertSupportedExecution(input: RunTaskInput) {
     throw new Error(
       "UNSUPPORTED_CAPABILITY:Project network allowlists require the managed cloud execution adapter; run_task currently supports default-deny only.",
     );
-  if (input.limits.cpu !== undefined || input.limits.memory_mb !== undefined)
-    throw new Error(
-      "UNSUPPORTED_CAPABILITY:CPU and memory limits require the managed container execution adapter. Omit them for the local isolated runner.",
-    );
   if (input.selection?.symbols?.length)
     throw new Error(
       "UNSUPPORTED_CAPABILITY:Symbol-level test selection requires the P1 compiler/LSP adapter. Select tests or files instead.",
     );
+}
+
+function ignoredLimits(input: RunTaskInput) {
+  const limits: Array<"cpu" | "memory_mb"> = [];
+  if (input.limits.cpu !== undefined) limits.push("cpu");
+  if (input.limits.memory_mb !== undefined) limits.push("memory_mb");
+  return limits.length ? { ignored_limits: limits } : {};
 }
 
 function extractFailures(output: string) {

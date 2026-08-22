@@ -150,6 +150,7 @@ export interface ApiDefinition {
       userStoryAgentRuns: {
         store: typeof routes['projects.user_stories.user_story_agent_runs.store']
         update: typeof routes['projects.user_stories.user_story_agent_runs.update']
+        finalize: typeof routes['projects.user_stories.user_story_agent_runs.finalize']
         activityDetail: typeof routes['projects.user_stories.user_story_agent_runs.activity_detail']
       }
       userStoryComments: {

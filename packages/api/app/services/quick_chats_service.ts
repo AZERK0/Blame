@@ -3,7 +3,16 @@ import QuickChat from '#models/quick_chat'
 import QuickChatAgentRun from '#models/quick_chat_agent_run'
 import QuickChatMessage from '#models/quick_chat_message'
 import type { UserStoryAgentActivity } from '#models/user_story'
-import { activityWithArtifact, artifactDetail } from '#services/agent_activity_artifacts'
+import {
+  activityWithArtifact,
+  artifactDetail,
+  deleteActivityArtifacts,
+} from '#services/agent_activity_artifacts'
+import {
+  persistQuickChatRunActivity,
+  quickChatRunActivities,
+  quickChatRunActivity,
+} from '#services/agent_run_activity_log'
 import ProjectsService from '#services/projects_service'
 import type {
   createQuickChatAgentRunValidator,
@@ -29,7 +38,7 @@ type CreateQuickChatMessageInput = Infer<typeof createQuickChatMessageValidator>
 type CreateQuickChatAgentRunInput = Infer<typeof createQuickChatAgentRunValidator>
 type UpdateQuickChatAgentRunInput = Infer<typeof updateQuickChatAgentRunValidator>
 
-const maxAgentActivities = 80
+const maxAgentActivities = 512
 
 export default class QuickChatsService {
   private fileAttachments = new FileAttachmentsService()
@@ -203,14 +212,22 @@ export default class QuickChatsService {
   async agentRunActivityDetail(userId: string, id: string, runId: string, activityId: string) {
     const quickChat = await this.find(userId, id)
     const run = await this.agentRunQuery(quickChat, runId)
-    const activity = run.activities?.find((item) => item.id === activityId)
+    const activity =
+      run.activities?.find((item) => item.id === activityId) ??
+      (await quickChatRunActivity(run.id, activityId))
     if (!activity) throw new Error('Agent activity not found.')
     if (!activity.detailArtifact) return { detail: activity.detail }
-    return { detail: await artifactDetail(quickChat.workspace, activity) }
+    return { detail: await artifactDetail(quickChat.id, quickChat.workspace, activity) }
   }
 
   async delete(userId: string, id: string) {
     const quickChat = await this.find(userId, id)
+    const loggedActivities = await quickChatRunActivities(quickChat.agentRuns.map((run) => run.id))
+    const activityGroups = [
+      quickChat.agentActivities,
+      loggedActivities,
+      ...quickChat.agentRuns.map((run) => run.activities),
+    ]
     await db.transaction(async (transaction) => {
       await this.fileAttachments.markOwnersDetached(
         'quickChatMessage',
@@ -220,6 +237,7 @@ export default class QuickChatsService {
       quickChat.useTransaction(transaction)
       await quickChat.delete()
     })
+    await deleteActivityArtifacts(quickChat.id, activityGroups)
   }
 
   private quickChatQuery(userId: string) {
@@ -230,16 +248,16 @@ export default class QuickChatsService {
   }
 
   private async updateInput(quickChat: QuickChat, input: UpdateQuickChatInput) {
-    const { agentActivity, ...update } = input
-    if (!agentActivity) return update
-    const activity = await activityWithArtifact(
-      quickChat.workspace,
-      quickChat.clineSessionId,
-      agentActivity
+    const { agentActivity, agentActivityUpdates, ...update } = input
+    const activities = await Promise.all(
+      requestedActivities(agentActivity, agentActivityUpdates).map((activity) =>
+        activityWithArtifact(quickChat.id, quickChat.clineSessionId, activity)
+      )
     )
+    if (!activities.length) return update
     return {
       ...update,
-      agentActivities: upsertActivity(quickChat.agentActivities ?? [], activity),
+      agentActivities: activities.reduce(upsertActivity, quickChat.agentActivities ?? []),
     }
   }
 
@@ -271,20 +289,21 @@ export default class QuickChatsService {
     run: QuickChatAgentRun,
     input: UpdateQuickChatAgentRunInput
   ) {
-    const { agentActivity, ...update } = input
+    const { agentActivity, agentActivityUpdates, ...update } = input
     const nextUpdate = {
       ...update,
       ...agentRunCompletedAtUpdate(update),
     }
-    if (!agentActivity) return nextUpdate
-    const activity = await activityWithArtifact(
-      quickChat.workspace,
-      run.clineSessionId,
-      agentActivity
+    const activities = await Promise.all(
+      requestedActivities(agentActivity, agentActivityUpdates).map((activity) =>
+        activityWithArtifact(quickChat.id, run.clineSessionId, activity, run.id)
+      )
     )
+    if (!activities.length) return nextUpdate
+    await Promise.all(activities.map((activity) => persistQuickChatRunActivity(run.id, activity)))
     return {
       ...nextUpdate,
-      activities: upsertActivity(run.activities ?? [], activity),
+      activities: activities.reduce(upsertActivity, run.activities ?? []),
     }
   }
 }
@@ -308,6 +327,13 @@ function upsertActivity(activities: UserStoryAgentActivity[], input: UserStoryAg
     ? activities.map((activity) => (activity.id === input.id ? input : activity))
     : [...activities, input]
   return next.slice(Math.max(0, next.length - maxAgentActivities))
+}
+
+function requestedActivities(
+  activity: UserStoryAgentActivity | null | undefined,
+  updates: UserStoryAgentActivity[] | undefined
+) {
+  return updates ?? (activity ? [activity] : [])
 }
 
 function terminalStatus(status: string | undefined) {

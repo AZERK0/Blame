@@ -2,7 +2,16 @@ import Project from '#models/project'
 import UserStory, { type UserStoryAgentActivity, type UserStoryStatus } from '#models/user_story'
 import UserStoryAgentRun from '#models/user_story_agent_run'
 import UserStoryComment from '#models/user_story_comment'
-import { activityWithArtifact, artifactDetail } from '#services/agent_activity_artifacts'
+import {
+  activityWithArtifact,
+  artifactDetail,
+  deleteActivityArtifacts,
+} from '#services/agent_activity_artifacts'
+import {
+  persistUserStoryRunActivity,
+  userStoryRunActivities,
+  userStoryRunActivity,
+} from '#services/agent_run_activity_log'
 import ProjectsService from '#services/projects_service'
 import { DateTime } from 'luxon'
 import type { Infer } from '@vinejs/vine/types'
@@ -32,7 +41,7 @@ type CreateUserStoryAgentRunInput = Infer<typeof createUserStoryAgentRunValidato
 type FinalizeUserStoryAgentRunInput = Infer<typeof finalizeUserStoryAgentRunValidator>
 type UpdateUserStoryAgentRunInput = Infer<typeof updateUserStoryAgentRunValidator>
 
-const maxAgentActivities = 80
+const maxAgentActivities = 512
 
 export default class UserStoriesService {
   private fileAttachments = new FileAttachmentsService()
@@ -187,7 +196,7 @@ export default class UserStoriesService {
     const activity = story.agentActivities?.find((item) => item.id === activityId)
     if (!activity) throw new Error('Agent activity not found.')
     if (!activity.detailArtifact) return { detail: activity.detail }
-    return { detail: await artifactDetail(story.worktree, activity) }
+    return { detail: await artifactDetail(story.id, story.worktree, activity) }
   }
 
   async createAgentRun(userId: string, id: string, input: CreateUserStoryAgentRunInput) {
@@ -230,15 +239,23 @@ export default class UserStoriesService {
   async agentRunActivityDetail(userId: string, id: string, runId: string, activityId: string) {
     const story = await this.find(userId, id)
     const run = await this.agentRunQuery(story, runId)
-    const activity = run.activities?.find((item) => item.id === activityId)
+    const activity =
+      run.activities?.find((item) => item.id === activityId) ??
+      (await userStoryRunActivity(run.id, activityId))
     if (!activity) throw new Error('Agent activity not found.')
     if (!activity.detailArtifact) return { detail: activity.detail }
-    return { detail: await artifactDetail(story.worktree, activity) }
+    return { detail: await artifactDetail(story.id, story.worktree, activity) }
   }
 
   async delete(userId: string, id: string) {
     const userStory = await this.find(userId, id)
+    const loggedActivities = await userStoryRunActivities(userStory.agentRuns.map((run) => run.id))
     await new PreviewSessionService().destroyForUserStory(userId, userStory.id)
+    const activityGroups = [
+      userStory.agentActivities,
+      loggedActivities,
+      ...userStory.agentRuns.map((run) => run.activities),
+    ]
     await db.transaction(async (transaction) => {
       await this.fileAttachments.markOwnersDetached('userStory', [userStory.id], transaction)
       await this.fileAttachments.markOwnersDetached(
@@ -249,6 +266,7 @@ export default class UserStoriesService {
       userStory.useTransaction(transaction)
       await userStory.delete()
     })
+    await deleteActivityArtifacts(userStory.id, activityGroups)
   }
 
   private userStoryQuery(userId: string, client?: Parameters<UserStory['useTransaction']>[0]) {
@@ -259,17 +277,17 @@ export default class UserStoriesService {
   }
 
   private async updateInput(userStory: UserStory, input: UpdateUserStoryInput) {
-    const { agentActivity, fileAttachments, ...update } = input
+    const { agentActivity, agentActivityUpdates, fileAttachments, ...update } = input
     void fileAttachments
-    if (!agentActivity) return update
-    const activity = await activityWithArtifact(
-      userStory.worktree,
-      userStory.clineSessionId,
-      agentActivity
+    const activities = await Promise.all(
+      requestedActivities(agentActivity, agentActivityUpdates).map((activity) =>
+        activityWithArtifact(userStory.id, userStory.clineSessionId, activity)
+      )
     )
+    if (!activities.length) return update
     return {
       ...update,
-      agentActivities: upsertActivity(userStory.agentActivities ?? [], activity),
+      agentActivities: activities.reduce(upsertActivity, userStory.agentActivities ?? []),
     }
   }
 
@@ -357,6 +375,9 @@ export default class UserStoriesService {
       }
       return
     }
+    await Promise.all(
+      activities.map((activity) => persistUserStoryRunActivity(run.id, activity, transaction))
+    )
     run.merge(finalAgentRunUpdate(run, input, activities))
     await run.save()
     if (story.activeAgentRunId !== run.id) return
@@ -375,7 +396,7 @@ export default class UserStoriesService {
   ) {
     return Promise.all(
       activities.map((activity) =>
-        activityWithArtifact(story.worktree, run.clineSessionId, activity)
+        activityWithArtifact(story.id, run.clineSessionId, activity, run.id)
       )
     )
   }
@@ -385,16 +406,21 @@ export default class UserStoriesService {
     run: UserStoryAgentRun,
     input: UpdateUserStoryAgentRunInput
   ) {
-    const { agentActivity, ...update } = input
+    const { agentActivity, agentActivityUpdates, ...update } = input
     const nextUpdate = {
       ...update,
       ...agentRunCompletedAtUpdate(update),
     }
-    if (!agentActivity) return nextUpdate
-    const activity = await activityWithArtifact(story.worktree, run.clineSessionId, agentActivity)
+    const activities = await Promise.all(
+      requestedActivities(agentActivity, agentActivityUpdates).map((activity) =>
+        activityWithArtifact(story.id, run.clineSessionId, activity, run.id)
+      )
+    )
+    if (!activities.length) return nextUpdate
+    await Promise.all(activities.map((activity) => persistUserStoryRunActivity(run.id, activity)))
     return {
       ...nextUpdate,
-      activities: upsertActivity(run.activities ?? [], activity),
+      activities: activities.reduce(upsertActivity, run.activities ?? []),
     }
   }
 }
@@ -467,6 +493,13 @@ function upsertActivity(activities: UserStoryAgentActivity[], input: UserStoryAg
     ? activities.map((activity) => (activity.id === input.id ? input : activity))
     : [...activities, input]
   return next.slice(Math.max(0, next.length - maxAgentActivities))
+}
+
+function requestedActivities(
+  activity: UserStoryAgentActivity | null | undefined,
+  updates: UserStoryAgentActivity[] | undefined
+) {
+  return updates ?? (activity ? [activity] : [])
 }
 
 function terminalStatus(status: string | undefined) {

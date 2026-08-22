@@ -72,6 +72,7 @@ import { HostDependenciesDialog } from "@/pages/backlog/host-dependencies-dialog
 import { useBacklogRotation } from "@/pages/backlog/use-backlog-rotation"
 import { assessAndRepairProjectInitializationImpact } from "@/pages/backlog/project-initialization-impact"
 import { backlogStatusPipStories } from "@/pages/backlog/backlog-status-pip-snapshot"
+import { currentReviewDiffEmpty } from "@/pages/backlog/review-diff-evidence"
 import { activeStory, inactiveStoryFields } from "./story-runtime-state"
 import {
   abortStoryAgent,
@@ -351,8 +352,12 @@ export function BacklogPage() {
           { cleanup: false }
         )
       }
-      for (const activity of update.activities) {
-        if (
+      if (update.activities.length) {
+        if (update.run) {
+          await backlog.updateAgentRun(nextStory, update.run, {
+            agentActivityUpdates: update.activities,
+          })
+        } else if (
           agentRunOwnsStory(
             activeStory(nextStory, storiesRef.current),
             update.run
@@ -360,14 +365,9 @@ export function BacklogPage() {
         ) {
           nextStory = await updateStory(
             activeStory(nextStory, storiesRef.current),
-            { agentActivity: activity },
+            { agentActivityUpdates: update.activities },
             { cleanup: false }
           )
-        }
-        if (update.run) {
-          await backlog.updateAgentRun(nextStory, update.run, {
-            agentActivity: activity,
-          })
         }
       }
       if (update.run) {
@@ -1373,19 +1373,6 @@ function useLatestCallback<Arguments extends unknown[], Result>(
     (...arguments_: Arguments) => callbackRef.current(...arguments_),
     []
   )
-}
-
-async function currentReviewDiffEmpty(
-  story: UserStory,
-  workspace: Platform["workspace"]
-) {
-  if (!story.worktree || !workspace) return false
-  try {
-    const diff = await workspace.gitDiff({ root: story.worktree })
-    return changedFilesFromDiff(diff).length === 0
-  } catch {
-    return false
-  }
 }
 
 function approveAndMergeValidationError(

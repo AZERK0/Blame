@@ -1,16 +1,20 @@
 import type { UserStoryAgentActivity } from '#models/user_story'
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { isAbsolute, join, resolve } from 'node:path'
+import { workspaceArtifactObjectStorage } from '#services/workspace_artifacts/workspace_artifact_object_storage'
+import { createHash } from 'node:crypto'
+import { readFile } from 'node:fs/promises'
+import { isAbsolute, resolve } from 'node:path'
 
 const maxPersistedDetailLength = 4096
+const objectReferencePrefix = 'agent-activity://'
 
 export async function activityWithArtifact(
-  workspace: string | null | undefined,
+  ownerId: string,
   sessionId: string | null | undefined,
-  activity: UserStoryAgentActivity
+  activity: UserStoryAgentActivity,
+  scopeId?: string
 ): Promise<UserStoryAgentActivity> {
-  if (!workspace || activity.detail.length <= maxPersistedDetailLength) return activity
-  const artifact = await writeActivityArtifact(workspace, sessionId, activity)
+  if (activity.detail.length <= maxPersistedDetailLength) return activity
+  const artifact = await writeActivityArtifact(ownerId, sessionId, activity, scopeId)
   return {
     ...activity,
     detail: middleExcerpt(activity.detail, maxPersistedDetailLength),
@@ -21,32 +25,99 @@ export async function activityWithArtifact(
 }
 
 export async function artifactDetail(
+  ownerId: string,
   workspace: string | null | undefined,
   activity: UserStoryAgentActivity
 ) {
-  const path = activity.detailArtifact
-  if (!path || !workspace || !isAbsolute(path)) return activity.detail
-  if (!isPathInside(resolve(path), resolve(workspace))) return activity.detail
-  try {
-    const artifact = JSON.parse(await readFile(path, 'utf8')) as UserStoryAgentActivity
-    return typeof artifact.detail === 'string' ? artifact.detail : activity.detail
-  } catch {
-    return activity.detail
+  const reference = activity.detailArtifact
+  if (!reference) return activity.detail
+  if (reference.startsWith(objectReferencePrefix)) {
+    return objectArtifactDetail(ownerId, reference, activity.detail)
   }
+  return localArtifactDetail(workspace, reference, activity.detail)
+}
+
+export async function deleteActivityArtifacts(
+  ownerId: string,
+  activityGroups: Array<UserStoryAgentActivity[] | null | undefined>
+) {
+  const prefix = `agent-activities/${safeFilename(ownerId)}/`
+  const keys = activityGroups
+    .flatMap((activities) => activities ?? [])
+    .map((activity) => activity.detailArtifact)
+    .filter((reference): reference is string => Boolean(reference))
+    .filter((reference) => reference.startsWith(objectReferencePrefix))
+    .map((reference) => reference.slice(objectReferencePrefix.length))
+    .filter((key) => key.startsWith(prefix))
+  if (keys.length) await workspaceArtifactObjectStorage().delete([...new Set(keys)])
 }
 
 async function writeActivityArtifact(
-  workspace: string,
+  ownerId: string,
   sessionId: string | null | undefined,
-  activity: UserStoryAgentActivity
+  activity: UserStoryAgentActivity,
+  scopeId?: string
 ) {
-  const session = safeFilename(sessionId ?? 'unknown-session')
-  const directory = join(workspace, '.blame', 'artifacts', 'agent-activities', session)
-  await mkdir(directory, { recursive: true })
-  const filename = `${safeFilename(activity.id)}.json`
-  const path = join(directory, filename)
-  await writeFile(path, JSON.stringify(activity, null, 2))
-  return path
+  const content = Buffer.from(JSON.stringify(activity))
+  const key = activityObjectKey(ownerId, sessionId, activity.id, scopeId)
+  await workspaceArtifactObjectStorage().put(key, content, {
+    checksumSha256: createHash('sha256').update(content).digest('hex'),
+    contentType: 'application/vnd.blame.agent-activity+json',
+    encryptionScope: ownerId,
+    size: content.byteLength,
+  })
+  return `${objectReferencePrefix}${key}`
+}
+
+async function objectArtifactDetail(ownerId: string, reference: string, fallback: string) {
+  try {
+    const key = reference.slice(objectReferencePrefix.length)
+    if (!key.startsWith(`agent-activities/${safeFilename(ownerId)}/`)) return fallback
+    const storage = workspaceArtifactObjectStorage()
+    const metadata = await storage.head(key)
+    if (metadata.encryptionScope !== ownerId) return fallback
+    const content = Buffer.from(await storage.content(key))
+    if (metadata.checksumSha256 !== createHash('sha256').update(content).digest('hex')) {
+      return fallback
+    }
+    return activityDetailFromJson(content.toString('utf8'), fallback)
+  } catch {
+    return fallback
+  }
+}
+
+async function localArtifactDetail(
+  workspace: string | null | undefined,
+  path: string,
+  fallback: string
+) {
+  if (!workspace || !isAbsolute(path)) return fallback
+  if (!isPathInside(resolve(path), resolve(workspace))) return fallback
+  try {
+    return activityDetailFromJson(await readFile(path, 'utf8'), fallback)
+  } catch {
+    return fallback
+  }
+}
+
+function activityDetailFromJson(value: string, fallback: string) {
+  const artifact = JSON.parse(value) as UserStoryAgentActivity
+  return typeof artifact.detail === 'string' ? artifact.detail : fallback
+}
+
+function activityObjectKey(
+  ownerId: string,
+  sessionId: string | null | undefined,
+  id: string,
+  scopeId?: string
+) {
+  return [
+    'agent-activities',
+    safeFilename(ownerId),
+    safeFilename(sessionId ?? 'unknown-session'),
+    ...(scopeId ? [safeFilename(scopeId)] : []),
+    `${safeFilename(id).slice(0, 80)}-${createHash('sha256').update(id).digest('hex').slice(0, 16)}.json`,
+  ].join('/')
 }
 
 function middleExcerpt(value: string, length: number) {

@@ -159,17 +159,15 @@ export function createQuickChatApi(connection: ApiConnection) {
 
 function apiUpdate(input: QuickChatUpdate) {
   if (!input.agentActivity && !input.agentActivityUpdates) return input
-  const { agentActivities, agentActivityUpdates, ...update } = input
+  const { agentActivities, ...update } = input
   void agentActivities
-  void agentActivityUpdates
   return update
 }
 
 function apiAgentRunUpdate(input: QuickChatAgentRunUpdate) {
   if (!input.agentActivity && !input.agentActivityUpdates) return input
-  const { activities, agentActivityUpdates, ...update } = input
+  const { activities, ...update } = input
   void activities
-  void agentActivityUpdates
   return update
 }
 

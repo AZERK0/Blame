@@ -23,12 +23,14 @@ export type TaskExecutionResult = {
   stdout: string;
   stderr: string;
   outputTruncated: boolean;
-  isolation: "bubblewrap" | "sandbox_exec";
+  isolation: TaskIsolation;
 };
+
+export type TaskIsolation = "bubblewrap" | "sandbox_exec" | "worktree";
 
 export interface TaskExecutor {
   execute(input: TaskExecutionInput): Promise<TaskExecutionResult>;
-  capability(): Promise<"bubblewrap" | "sandbox_exec">;
+  capability(): Promise<TaskIsolation>;
 }
 
 export class SandboxedTaskExecutor implements TaskExecutor {
@@ -39,9 +41,7 @@ export class SandboxedTaskExecutor implements TaskExecutor {
     } else if (process.platform === "linux") {
       if (await executableExists("bwrap")) return "bubblewrap" as const;
     }
-    throw new Error(
-      "UNSUPPORTED_CAPABILITY:No supported process sandbox is installed. Blame requires sandbox-exec on macOS or bubblewrap on Linux.",
-    );
+    return "worktree" as const;
   }
 
   async execute(input: TaskExecutionInput): Promise<TaskExecutionResult> {
@@ -61,10 +61,12 @@ export class SandboxedTaskExecutor implements TaskExecutor {
       isolation === "sandbox_exec"
         ? { ...input, overlayRoot: await realpath(input.overlayRoot) }
         : input;
-    const command =
-      isolation === "bubblewrap"
-        ? bubblewrapCommand(executionInput, readRoots)
-        : sandboxExecCommand(executionInput, readRoots, deniedReadRoots);
+    const command = executionCommand(
+      executionInput,
+      isolation,
+      readRoots,
+      deniedReadRoots,
+    );
     const environment = taskEnvironment(executionInput.overlayRoot);
     try {
       const result = await execa(command.executable, command.args, {
@@ -115,6 +117,18 @@ export class SandboxedTaskExecutor implements TaskExecutor {
       };
     }
   }
+}
+
+function executionCommand(
+  input: TaskExecutionInput,
+  isolation: TaskIsolation,
+  readRoots: string[],
+  deniedReadRoots: string[],
+) {
+  if (isolation === "bubblewrap") return bubblewrapCommand(input, readRoots);
+  if (isolation === "sandbox_exec")
+    return sandboxExecCommand(input, readRoots, deniedReadRoots);
+  return { executable: input.executable, args: input.args };
 }
 
 function bubblewrapCommand(input: TaskExecutionInput, readRoots: string[]) {

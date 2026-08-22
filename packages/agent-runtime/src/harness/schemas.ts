@@ -280,7 +280,12 @@ export const commitProposalInputSchema = z
   })
   .strict();
 
+export const directApplyChangeInputSchema = proposeChangeInputSchema.extend({
+  action: z.literal("apply"),
+});
+
 export const applyChangeInputSchema = z.discriminatedUnion("action", [
+  directApplyChangeInputSchema,
   proposeChangeInputSchema,
   commitProposalInputSchema,
 ]);
@@ -304,6 +309,7 @@ export const taskKindSchema = z.enum([
 export const taskCatalogItemSchema = z
   .object({
     task_id: z.string().min(1).max(300),
+    script: z.string().min(1).max(300).optional(),
     kind: taskKindSchema,
     command: z.string().min(1).max(2_000),
     cwd: relativePathSchema,
@@ -432,7 +438,8 @@ export const storedRunSchema = z
         cwd: relativePathSchema,
         environment_profile: z.literal("default"),
         environment_variables: z.array(z.string().max(200)).max(50),
-        process_tree: z.literal("sandbox_descendants"),
+        process_tree: z.enum(["host_descendants", "sandbox_descendants"]),
+        ignored_limits: z.array(z.enum(["cpu", "memory_mb"])).max(2).optional(),
         observed_ports: z.array(z.number().int().min(1).max(65_535)).max(100),
         volatility: z
           .array(z.enum(["timestamps", "runtime_instance_id", "ports"]))
@@ -455,7 +462,8 @@ export const storedRunSchema = z
     network: z
       .object({
         requested: z.enum(["deny", "project_allowlist"]),
-        enforcement: z.enum(["bubblewrap", "sandbox_exec"]),
+        enforcement: z.enum(["bubblewrap", "sandbox_exec", "worktree"]),
+        effective: z.enum(["deny", "host"]).optional(),
       })
       .strict(),
     logs: z
@@ -563,6 +571,9 @@ export type OutlineCodeInput = z.infer<typeof outlineCodeInputSchema>;
 export type InspectCodeInput = z.infer<typeof inspectCodeInputSchema>;
 export type ChangeOperation = z.infer<typeof changeOperationSchema>;
 export type ProposeChangeInput = z.infer<typeof proposeChangeInputSchema>;
+export type DirectApplyChangeInput = z.infer<
+  typeof directApplyChangeInputSchema
+>;
 export type CommitProposalInput = z.infer<typeof commitProposalInputSchema>;
 export type ApplyChangeInput = z.infer<typeof applyChangeInputSchema>;
 export type ReviewChangeInput = z.infer<typeof reviewChangeInputSchema>;

@@ -768,8 +768,12 @@ export function useBacklogRotation(
         metadata
       )
     }
-    for (const activity of update.activities) {
-      if (
+    if (update.activities.length) {
+      if (update.run) {
+        await backlog.updateAgentRun(nextStory, update.run, {
+          agentActivityUpdates: update.activities,
+        })
+      } else if (
         agentRunOwnsStory(
           activeStory(nextStory, storiesRef.current),
           update.run
@@ -777,13 +781,8 @@ export function useBacklogRotation(
       ) {
         nextStory = await backlog.update(
           activeStory(nextStory, storiesRef.current),
-          { agentActivity: activity }
+          { agentActivityUpdates: update.activities }
         )
-      }
-      if (update.run) {
-        await backlog.updateAgentRun(nextStory, update.run, {
-          agentActivity: activity,
-        })
       }
     }
     if (update.run) {

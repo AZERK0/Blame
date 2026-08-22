@@ -13,6 +13,7 @@ import {
   type ApplyChangeInput,
   type CommitProposalInput,
   type CommitReceipt,
+  type DirectApplyChangeInput,
   type ProposeChangeInput,
 } from "./change-service.js";
 import {
@@ -90,6 +91,11 @@ export type SemanticWorkspaceOptions = {
   };
 };
 
+export type AppliedChange = {
+  proposal: PublicChangeProposal;
+  receipt: CommitReceipt;
+};
+
 export class SemanticWorkspace {
   private readonly artifacts: ArtifactStore;
   private readonly changes: ChangeService;
@@ -126,7 +132,10 @@ export class SemanticWorkspace {
       )
         .sort((left, right) => right[1] - left[1])
         .map(([language, files]) => ({ language, files }));
-      const taskCatalog = await readTaskCatalog(this.files.root);
+      const taskCatalog = await readTaskCatalog(
+        this.files.root,
+        snapshot.files,
+      );
       const executionIsolation = await this.runs
         .capability()
         .then((value) => ({ available: true as const, isolation: value }))
@@ -205,7 +214,11 @@ export class SemanticWorkspace {
               run_task: executionIsolation,
               inspect_run: true,
               overlay: "copy_on_write_or_clone",
-              network: "default_deny",
+              network:
+                executionIsolation.available &&
+                executionIsolation.isolation === "worktree"
+                  ? "host_with_proxy_hints"
+                  : "default_deny",
               inherited_secrets: false,
               limits: {
                 timeout: true,
@@ -671,14 +684,48 @@ export class SemanticWorkspace {
     signal?: AbortSignal,
   ): Promise<HarnessToolResult<CommitReceipt>>;
   applyChange(
+    input: DirectApplyChangeInput,
+    signal?: AbortSignal,
+  ): Promise<HarnessToolResult<AppliedChange>>;
+  applyChange(
     input: ApplyChangeInput,
     signal?: AbortSignal,
-  ): Promise<HarnessToolResult<PublicChangeProposal | CommitReceipt>>;
+  ): Promise<
+    HarnessToolResult<PublicChangeProposal | CommitReceipt | AppliedChange>
+  >;
   async applyChange(input: ApplyChangeInput, signal?: AbortSignal) {
     const startedAt = Date.now();
     try {
       applyChangeInputSchema.parse(input);
       signal?.throwIfAborted();
+      if (input.action === "apply") {
+        const applied = await this.changes.apply(input);
+        const revision = {
+          source_revision_id:
+            applied.receipt.source_revision.source_revision_id,
+        };
+        return harnessSuccess({
+          startedAt,
+          revision,
+          provenance: [provenance("harness", revision)],
+          data: {
+            proposal: publicProposal(applied.proposal),
+            receipt: applied.receipt,
+          },
+          artifacts: [applied.proposal.diff_artifact],
+          diagnostics: applied.proposal.diagnostics,
+          coverage: {
+            scope: applied.proposal.diff_summary_truncated
+              ? "partial"
+              : "complete",
+            truncated: applied.proposal.diff_summary_truncated ?? false,
+            analysis: "exact",
+            ...(applied.proposal.diff_summary_truncated
+              ? { continuation: "0" }
+              : {}),
+          },
+        });
+      }
       if (input.action === "propose") {
         const snapshot = await this.exactSnapshot(
           input.base_source_revision_id,

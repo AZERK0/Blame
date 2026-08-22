@@ -120,6 +120,14 @@ const agentRunColumns = [
   'created_at',
   'updated_at',
 ]
+const agentRunActivityColumns = [
+  'id',
+  'run_id',
+  'activity_id',
+  'activity',
+  'created_at',
+  'updated_at',
+]
 const quickChatColumns = [
   'id',
   'project_id',
@@ -288,6 +296,15 @@ export default class AccountExportQueries {
     )
   }
 
+  userStoryAgentRunActivities(runIds: string[]) {
+    return this.ownedRows(
+      'user_story_agent_run_activities',
+      agentRunActivityColumns,
+      'run_id',
+      runIds
+    )
+  }
+
   quickChats(projectIds: string[]) {
     return this.ownedRows('quick_chats', quickChatColumns, 'project_id', projectIds)
   }
@@ -307,6 +324,15 @@ export default class AccountExportQueries {
       ['quick_chat_id', 'message_id', ...agentRunColumns],
       'quick_chat_id',
       chatIds
+    )
+  }
+
+  quickChatAgentRunActivities(runIds: string[]) {
+    return this.ownedRows(
+      'quick_chat_agent_run_activities',
+      agentRunActivityColumns,
+      'run_id',
+      runIds
     )
   }
 

@@ -85,6 +85,25 @@ export function consumeAgentActivities(value: unknown) {
   }
 }
 
+export function prepareAgentActivity(value: UserStoryAgentActivity | null) {
+  return value ? JSON.stringify(value) : null
+}
+
+export function consumeAgentActivity(value: unknown) {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as UserStoryAgentActivity
+  }
+  if (typeof value !== 'string') return null
+  try {
+    const parsed = JSON.parse(value)
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? (parsed as UserStoryAgentActivity)
+      : null
+  } catch {
+    return null
+  }
+}
+
 export function prepareAgentUsage(value: UserStoryAgentUsage | null) {
   return value ? JSON.stringify(value) : null
 }

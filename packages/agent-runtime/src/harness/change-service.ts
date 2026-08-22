@@ -18,10 +18,12 @@ import {
   commitJournalSchema,
   commitProposalInputSchema,
   commitReceiptSchema,
+  directApplyChangeInputSchema,
   parseStoredChangeProposal,
   proposeChangeInputSchema,
   type CommitProposalInput,
   type CommitReceipt,
+  type DirectApplyChangeInput,
   type ProposedFile,
   type ProposeChangeInput,
 } from "./schemas.js";
@@ -32,6 +34,7 @@ export type {
   ChangeOperation,
   CommitProposalInput,
   CommitReceipt,
+  DirectApplyChangeInput,
   ProposeChangeInput,
   StoredChangeProposal,
 } from "./schemas.js";
@@ -69,6 +72,29 @@ export class ChangeService {
       maximumTouched: input.policies?.max_touched_files ?? 20,
       enforceParse: input.checks?.includes("parse") ?? false,
     });
+  }
+
+  async apply(input: DirectApplyChangeInput) {
+    directApplyChangeInputSchema.parse(input);
+    const proposalInput = directProposalInput(input);
+    const inputDigest = sha256(stableJson(proposalInput));
+    const existing = await this.existingProposal(
+      proposalInput.idempotency_key,
+      inputDigest,
+    );
+    const proposal =
+      existing ??
+      (await this.propose(proposalInput, await this.files.snapshot()));
+    const priorReceipt = await this.store.readReceipt(proposal.proposal_ref);
+    const receipt =
+      priorReceipt ??
+      (await this.commit({
+        action: "commit_proposal",
+        proposal_ref: proposal.proposal_ref,
+        expected_base_source_revision_id: input.base_source_revision_id,
+        idempotency_key: directKey("commit", input.idempotency_key),
+      }));
+    return { proposal, receipt };
   }
 
   async proposeRunEffects(input: {
@@ -385,6 +411,23 @@ export class ChangeService {
     }
     await this.store.removeJournal();
   }
+}
+
+function directProposalInput(
+  input: DirectApplyChangeInput,
+): ProposeChangeInput {
+  return {
+    action: "propose",
+    base_source_revision_id: input.base_source_revision_id,
+    idempotency_key: directKey("proposal", input.idempotency_key),
+    operations: input.operations,
+    ...(input.policies ? { policies: input.policies } : {}),
+    ...(input.checks ? { checks: input.checks } : {}),
+  };
+}
+
+function directKey(stage: "commit" | "proposal", key: string) {
+  return `apply-${stage}:${sha256(key)}`;
 }
 
 function staleRevision(current: string) {

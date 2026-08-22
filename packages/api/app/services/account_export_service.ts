@@ -128,12 +128,14 @@ async function storyExport(
   userStoryComments: ExportRow[]
 ) {
   const storyIds = identifiers(userStories)
+  const agentRuns = await queries.userStoryAgentRuns(storyIds)
   return {
     userStories: normalizeRows(userStories, storyJsonColumns),
     userStoryComments: normalizeRows(userStoryComments, messageJsonColumns),
-    userStoryAgentRuns: normalizeRows(
-      await queries.userStoryAgentRuns(storyIds),
-      agentRunJsonColumns
+    userStoryAgentRuns: normalizeRows(agentRuns, agentRunJsonColumns),
+    userStoryAgentRunActivities: normalizeRows(
+      await queries.userStoryAgentRunActivities(identifiers(agentRuns)),
+      ['activity']
     ),
   }
 }
@@ -144,12 +146,14 @@ async function chatExport(
   quickChatMessages: ExportRow[]
 ) {
   const chatIds = identifiers(quickChats)
+  const agentRuns = await queries.quickChatAgentRuns(chatIds)
   return {
     quickChats: normalizeRows(quickChats, chatJsonColumns),
     quickChatMessages: normalizeRows(quickChatMessages, messageJsonColumns),
-    quickChatAgentRuns: normalizeRows(
-      await queries.quickChatAgentRuns(chatIds),
-      agentRunJsonColumns
+    quickChatAgentRuns: normalizeRows(agentRuns, agentRunJsonColumns),
+    quickChatAgentRunActivities: normalizeRows(
+      await queries.quickChatAgentRunActivities(identifiers(agentRuns)),
+      ['activity']
     ),
   }
 }

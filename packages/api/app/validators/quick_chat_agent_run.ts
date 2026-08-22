@@ -24,6 +24,7 @@ export const updateQuickChatAgentRunValidator = vine.create({
   status: status.optional(),
   activities: vine.array(agentActivity).nullable().optional(),
   agentActivity: agentActivity.nullable().optional(),
+  agentActivityUpdates: vine.array(agentActivity).maxLength(16).optional(),
   finalResponse: vine.string().nullable().optional(),
   usage: agentUsage.nullable().optional(),
   sessionSummary: vine.string().nullable().optional(),

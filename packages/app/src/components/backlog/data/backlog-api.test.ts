@@ -24,6 +24,64 @@ test("bounds agent text before sending a story update", async () => {
   }
 })
 
+test("sends incremental activity updates as one bounded batch", async () => {
+  const originalFetch = globalThis.fetch
+  const requestBodies: Record<string, unknown>[] = []
+  globalThis.fetch = async (_input, init) => {
+    requestBodies.push(JSON.parse(String(init?.body)))
+    return Response.json({
+      data:
+        requestBodies.length === 1
+          ? story
+          : {
+              activities: activityUpdates,
+              id: "run-1",
+              kind: "initial",
+              status: "running",
+              userStoryId: story.id,
+            },
+    })
+  }
+
+  const activityUpdates = [
+    {
+      createdAt: "2026-08-22T12:00:00.000Z",
+      detail: "Read source",
+      id: "tool-read",
+      kind: "tool" as const,
+      status: "completed" as const,
+      title: "Read",
+    },
+    {
+      createdAt: "2026-08-22T12:00:01.000Z",
+      detail: "Run tests",
+      id: "tool-test",
+      kind: "tool" as const,
+      status: "running" as const,
+      title: "Test",
+    },
+  ]
+
+  try {
+    const api = createBacklogApi({ url: "http://localhost:3333/api/v1" })
+    await api.update(story.id, {
+      agentActivities: activityUpdates,
+      agentActivityUpdates: activityUpdates,
+    })
+    await api.updateAgentRun(story.id, "run-1", {
+      activities: activityUpdates,
+      agentActivityUpdates: activityUpdates,
+    })
+
+    assert.deepEqual(requestBodies, [
+      { agentActivityUpdates: activityUpdates },
+      { agentActivityUpdates: activityUpdates },
+    ])
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
 test("surfaces structured validation errors as non-retryable", async () => {
   const originalFetch = globalThis.fetch
   globalThis.fetch = async () =>

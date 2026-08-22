@@ -622,6 +622,19 @@ type ChangeOperation =
 
 type ApplyChangeInput =
   | {
+      action: "apply";
+      base_source_revision_id: string;
+      idempotency_key: string;
+      operations: ChangeOperation[];
+      policies?: {
+        format: "none" | "touched_nodes" | "touched_files";
+        organize_imports?: boolean;
+        max_touched_files?: number;
+        preserve_public_api?: boolean;
+      };
+      checks?: Array<"parse" | "lint_changed" | "typecheck_changed">;
+    }
+  | {
       action: "propose";
       base_source_revision_id: string;
       idempotency_key: string;
@@ -642,7 +655,7 @@ type ApplyChangeInput =
     };
 ```
 
-`propose` produit un `ChangeProposalRef`, un overlay immuable, un diff textuel/structurel simple, des diagnostics et le formatter réellement exécuté. `commit_proposal` vérifie encore la base puis avance la source revision ; il retourne les nouveaux handles. Cette séparation évite une course entre dry-run et commit. Le semantic diff et l’impact inter-fichiers enrichissent le retour en P1. `rename_symbol` exige une résolution exacte.
+`apply` est le chemin P0 privilégié pour une modification bornée dans la worktree isolée de la User Story. Il crée toujours la proposition immuable et effectue le commit CAS, mais rend diff, diagnostics et reçu dans un seul aller-retour. Le triplet `propose → review_change → commit_proposal` reste disponible pour les changements larges ou risqués qui justifient une frontière de revue explicite. Les deux chemins partagent journal, rollback et idempotence. Le semantic diff et l’impact inter-fichiers enrichissent le retour en P1. `rename_symbol` exige une résolution exacte.
 
 ### 6.6 `run_task`
 
@@ -665,6 +678,8 @@ type RunTaskInput = {
 ```
 
 Le run matérialise la source revision dans un overlay copy-on-write. Le résultat donne un `run_ref`, les diagnostics structurés, les échecs groupés, un artifact de logs, la source réellement testée et les effets filesystem. Toute écriture devient un `ChangeProposalRef` avec `disposition: discarded | captured | committed` ; elle ne modifie jamais silencieusement la worktree canonique. Les services longs/preview ont un cycle de vie séparé.
+
+L’isolation d’exécution suit le runtime effectif : Linux natif, Lima et WSL utilisent la sandbox Linux lorsqu’elle est disponible ; Cloud Preview exécute les tâches dans l’overlay de la worktree native sur l’OS hôte. Sans `bubblewrap` ou `sandbox-exec`, la worktree dédiée reste la frontière filesystem et le résultat annonce explicitement que le réseau hôte ainsi que les limites CPU/mémoire ne sont pas imposés. Ces champs sont des capacités observables, pas des promesses silencieuses.
 
 ### 6.7 `inspect_run`
 

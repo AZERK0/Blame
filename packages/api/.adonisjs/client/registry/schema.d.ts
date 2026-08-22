@@ -1099,6 +1099,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/user_story_agent_runs_controller').default['update']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
+  'projects.user_stories.user_story_agent_runs.finalize': {
+    methods: ["POST"]
+    pattern: '/api/v1/projects/user-stories/:id/agent-runs/:runId/finalize'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/user_story_agent_run').finalizeUserStoryAgentRunValidator)>>
+      paramsTuple: [ParamValue, ParamValue]
+      params: { id: ParamValue; runId: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/user_story_agent_run').finalizeUserStoryAgentRunValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/user_story_agent_runs_controller').default['finalize']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/user_story_agent_runs_controller').default['finalize']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
   'projects.user_stories.user_story_agent_runs.activity_detail': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/projects/user-stories/:id/agent-runs/:runId/activities/:activityId'

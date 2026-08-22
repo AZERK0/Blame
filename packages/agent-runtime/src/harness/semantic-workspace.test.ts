@@ -304,6 +304,38 @@ test("persisted proposals are content-addressed and tampering is rejected", asyn
   });
 });
 
+test("apply_change commits bounded worktree edits in one idempotent call", async () => {
+  await withWorkspace(async (root) => {
+    const workspace = new SemanticWorkspace(root);
+    const state = success(await workspace.workspaceState());
+    const input = {
+      action: "apply" as const,
+      base_source_revision_id: state.data.source_revision.source_revision_id,
+      idempotency_key: "direct-apply-new-module",
+      operations: [
+        {
+          kind: "create_file" as const,
+          path: "src/direct.ts",
+          content: "export const direct = true;\n",
+        },
+      ],
+      checks: ["parse" as const],
+    };
+    const applied = success(await workspace.applyChange(input));
+    assert.match(applied.data.proposal.proposal_ref, /^change-proposal:\/\//);
+    assert.deepEqual(applied.data.receipt.changed_files, ["src/direct.ts"]);
+    assert.equal(
+      await readFile(join(root, "src", "direct.ts"), "utf8"),
+      "export const direct = true;\n",
+    );
+    const retried = success(await workspace.applyChange(input));
+    assert.equal(
+      retried.data.receipt.change_set_ref,
+      applied.data.receipt.change_set_ref,
+    );
+  });
+});
+
 test("apply_change rejects metadata and secret paths", async () => {
   await withWorkspace(async (root) => {
     const workspace = new SemanticWorkspace(root);
@@ -655,6 +687,54 @@ test("run_task isolates writes, captures effects, logs evidence, and is idempote
   });
 });
 
+test("run_task discovers package tasks and normalizes package selections", async () => {
+  await withWorkspace(async (root) => {
+    await mkdir(join(root, "apps", "backend"), { recursive: true });
+    await writeFile(
+      join(root, "apps", "backend", "package.json"),
+      JSON.stringify({
+        name: "@fixture/backend",
+        scripts: { test: "node --test", build: "tsc" },
+      }),
+    );
+    await git(root, ["add", "."]);
+    await git(root, ["commit", "-m", "add backend workspace"]);
+    const executor = new RecordingTaskExecutor();
+    const workspace = new SemanticWorkspace(root, { taskExecutor: executor });
+    const state = success(await workspace.workspaceState());
+    const backendTest = state.data.task_catalog.find(
+      (task) => task.task_id === "backend:test",
+    );
+    assert.deepEqual(backendTest, {
+      task_id: "backend:test",
+      script: "test",
+      kind: "test",
+      command: "node --test",
+      cwd: "apps/backend",
+      package_manager: "npm",
+    });
+    const executed = success(
+      await workspace.runTask({
+        source_revision_id: state.data.source_revision.source_revision_id,
+        task: { kind: "test", target: "backend" },
+        selection: { tests: ["apps/backend/tests/unit.test.ts"] },
+        limits: { timeout_ms: 10_000, cpu: 2, memory_mb: 512 },
+      }),
+    );
+    assert.equal(executor.lastInput?.cwd.endsWith("/apps/backend"), true);
+    assert.deepEqual(executor.lastInput?.args, [
+      "run",
+      "test",
+      "--",
+      "tests/unit.test.ts",
+    ]);
+    assert.deepEqual(executed.data.execution.ignored_limits, [
+      "cpu",
+      "memory_mb",
+    ]);
+  });
+});
+
 test("apply_change can format touched files with the pinned Prettier version", async () => {
   await withWorkspace(async (root) => {
     const workspace = new SemanticWorkspace(root);
@@ -953,6 +1033,7 @@ function success<T>(result: HarnessToolResult<T>): HarnessToolSuccess<T> {
 
 class RecordingTaskExecutor implements TaskExecutor {
   executions = 0;
+  lastInput?: TaskExecutionInput;
 
   async capability() {
     return "sandbox_exec" as const;
@@ -960,6 +1041,7 @@ class RecordingTaskExecutor implements TaskExecutor {
 
   async execute(input: TaskExecutionInput): Promise<TaskExecutionResult> {
     this.executions += 1;
+    this.lastInput = input;
     await writeFile(join(input.overlayRoot, "generated.txt"), "generated\n");
     return {
       status: "passed",

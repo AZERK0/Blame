@@ -301,17 +301,15 @@ function apiUpdate(input: UserStoryUpdate) {
   const boundedInput = boundedAgentUpdate(input)
   if (!boundedInput.agentActivity && !boundedInput.agentActivityUpdates)
     return boundedInput
-  const { agentActivities, agentActivityUpdates, ...update } = boundedInput
+  const { agentActivities, ...update } = boundedInput
   void agentActivities
-  void agentActivityUpdates
   return update
 }
 
 function apiAgentRunUpdate(input: UserStoryAgentRunUpdate) {
   if (!input.agentActivity && !input.agentActivityUpdates) return input
-  const { activities, agentActivityUpdates, ...update } = input
+  const { activities, ...update } = input
   void activities
-  void agentActivityUpdates
   return update
 }
 

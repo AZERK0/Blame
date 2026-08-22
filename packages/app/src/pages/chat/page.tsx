@@ -326,15 +326,16 @@ function QuickChatProjectPage() {
       nextChat = await quickChats.update(nextChat, metadata)
       replaceChatRef(nextChat)
     }
-    for (const activity of update.activities) {
-      nextChat = await quickChats.update(currentChat(nextChat), {
-        agentActivity: activity,
-      })
-      replaceChatRef(nextChat)
+    if (update.activities.length) {
       if (update.run) {
         await quickChats.updateAgentRun(nextChat, update.run, {
-          agentActivity: activity,
+          agentActivityUpdates: update.activities,
         })
+      } else {
+        nextChat = await quickChats.update(currentChat(nextChat), {
+          agentActivityUpdates: update.activities,
+        })
+        replaceChatRef(nextChat)
       }
     }
     if (update.run) await persistAgentRunMetadata(nextChat, update)

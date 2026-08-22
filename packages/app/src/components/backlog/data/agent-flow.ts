@@ -8,7 +8,7 @@ import type {
   UserStoryUpdate,
 } from "@/components/backlog/data/backlog-data"
 
-const maxActivities = 80
+const maxActivities = 512
 const maxActivityDetailLength = 4096
 const maxActivityValueLength = 1400
 const maxServerActivityDetailLength = 262144

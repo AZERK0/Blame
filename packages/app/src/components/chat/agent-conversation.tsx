@@ -26,6 +26,7 @@ import { toast } from "sonner"
 
 import { agentErrorText } from "@/components/backlog/data/agent-flow"
 import { checkpointRunTargets } from "@/components/chat/agent-run-checkpoints"
+import { presentBlameHarnessTool } from "@/components/chat/blame-harness-tool-presentation"
 import type {
   UserStoryAgentActivity,
   UserStoryAgentRunKind,
@@ -1972,14 +1973,20 @@ function activityDetails(activity: UserStoryAgentActivity): ActivityDetail {
     stringValue(rawToolCall.name) ??
     toolNameFromTitle(activity.title)
 
+  const presentation = presentBlameHarnessTool({
+    input: parsed?.input,
+    output: parsed?.output,
+    toolName,
+  })
+
   return {
     detailArtifact: activity.detailArtifact,
     durationMs: numberValue(parsed?.durationMs),
     fallback: activity.detail,
-    input: parsed?.input,
-    output: parsed?.output,
+    input: presentation.input,
+    output: presentation.output,
     raw: parsed?.raw,
-    toolName,
+    toolName: presentation.toolName,
   }
 }
 
@@ -2007,6 +2014,8 @@ function activityTitle(
 }
 
 function applyPatchInput(details: ActivityDetail): EditedFile[] | undefined {
+  const presentedFiles = presentedEditedFiles(details)
+  if (presentedFiles) return presentedFiles
   const patch =
     details.toolName === "apply_patch"
       ? applyPatchExcerpt(details.input)
@@ -2027,6 +2036,20 @@ function applyPatchInput(details: ActivityDetail): EditedFile[] | undefined {
     if (line.startsWith("-")) current.deletions = (current.deletions ?? 0) + 1
   }
   return files.length > 0 ? files : undefined
+}
+
+function presentedEditedFiles(
+  details: ActivityDetail
+): EditedFile[] | undefined {
+  if (details.toolName !== "apply_patch") return undefined
+  const files = recordValue(details.input).files
+  if (!Array.isArray(files)) return undefined
+  const presented = files.flatMap((value): EditedFile[] => {
+    const file = recordValue(value)
+    const path = stringValue(file.path)
+    return path ? [{ path }] : []
+  })
+  return presented.length > 0 ? presented : undefined
 }
 
 function appliedPatchOutputFiles(value: unknown): EditedFile[] | undefined {
