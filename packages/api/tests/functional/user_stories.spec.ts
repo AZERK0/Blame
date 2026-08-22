@@ -2,7 +2,6 @@ import Project from '#models/project'
 import PreviewSession from '#models/preview_session'
 import PreviewWorkspaceArtifact from '#models/preview_workspace_artifact'
 import { workspaceArtifactObjectStorage } from '#services/workspace_artifacts/workspace_artifact_object_storage'
-import User from '#models/user'
 import testUtils from '@adonisjs/core/services/test_utils'
 import { DateTime } from 'luxon'
 import { mkdtemp, rm } from 'node:fs/promises'
@@ -10,6 +9,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { ApiClient } from '@japa/api-client'
 import { test } from '@japa/runner'
+import { createLicensedUser as createUser } from '../helpers/create_licensed_user.js'
 
 type UserStoryBody = {
   data: {
@@ -22,6 +22,9 @@ type UserStoryBody = {
       id: string
       originalDetailLength?: number
     }[]
+    activeAgentRunId?: string | null
+    agentFinalResponse?: string | null
+    agentStatus?: string | null
     agentUsage?: {
       inputTokens: number
       totalInputTokens: number
@@ -80,6 +83,7 @@ type UserStoryAgentRunBody = {
       originalDetailLength?: number
     }[]
     commentId?: string | null
+    executionId?: string | null
     finalResponse?: string | null
     id: string
     kind: string
@@ -97,7 +101,7 @@ type AgentActivityDetailBody = {
 }
 
 test.group('user stories', (group) => {
-  group.setup(() => testUtils.db().migrate())
+  group.setup(() => testUtils.db().truncate())
   group.each.setup(() => testUtils.db().truncate())
 
   test('lists stories for one project', async ({ client, assert }) => {
@@ -681,6 +685,93 @@ test.group('user stories', (group) => {
     detailResponse.assertStatus(404)
   })
 
+  test('finalizes only the active agent run and remains idempotent', async ({ assert, client }) => {
+    const user = await createUser()
+    const project = await createProject(user.id, 'Alpha')
+    const story = await createStory(client, user, project.id)
+    const firstResponse = await client
+      .post(`/api/v1/projects/user-stories/${story.data.id}/agent-runs`)
+      .loginAs(user)
+      .json({ executionId: crypto.randomUUID(), kind: 'initial' })
+    const firstRun = (firstResponse.body() as UserStoryAgentRunBody).data
+    const secondResponse = await client
+      .post(`/api/v1/projects/user-stories/${story.data.id}/agent-runs`)
+      .loginAs(user)
+      .json({ executionId: crypto.randomUUID(), kind: 'resume' })
+    const secondRun = (secondResponse.body() as UserStoryAgentRunBody).data
+
+    const staleFinalization = await finalizeRun(client, user, story.data.id, firstRun.id, {
+      finalResponse: 'Stale response',
+      status: 'completed',
+    })
+
+    staleFinalization.assertStatus(200)
+    const afterStale = staleFinalization.body() as UserStoryBody
+    assert.equal(afterStale.data.activeAgentRunId, secondRun.id)
+    assert.equal(afterStale.data.agentFinalResponse, null)
+    assert.equal(afterStale.data.agentStatus, 'Running')
+    assert.equal(afterStale.data.status, 'in-progress')
+    assert.equal(
+      afterStale.data.agentRuns?.find((run) => run.id === firstRun.id)?.status,
+      'completed'
+    )
+
+    const activeFinalization = await finalizeRun(client, user, story.data.id, secondRun.id, {
+      finalResponse: 'Current response',
+      status: 'completed',
+    })
+    const completed = activeFinalization.body() as UserStoryBody
+
+    activeFinalization.assertStatus(200)
+    assert.equal(completed.data.activeAgentRunId, null)
+    assert.equal(completed.data.agentFinalResponse, 'Current response')
+    assert.equal(completed.data.agentStatus, null)
+    assert.equal(completed.data.status, 'in-review')
+    assert.equal(
+      completed.data.agentRuns?.find((run) => run.id === secondRun.id)?.status,
+      'completed'
+    )
+
+    const duplicate = await finalizeRun(client, user, story.data.id, secondRun.id, {
+      finalResponse: 'Replacement response',
+      status: 'failed',
+    })
+    const afterDuplicate = duplicate.body() as UserStoryBody
+
+    duplicate.assertStatus(200)
+    assert.equal(afterDuplicate.data.agentFinalResponse, 'Current response')
+    assert.equal(
+      afterDuplicate.data.agentRuns?.find((run) => run.id === secondRun.id)?.status,
+      'completed'
+    )
+
+    const regression = await client
+      .patch(`/api/v1/projects/user-stories/${story.data.id}/agent-runs/${secondRun.id}`)
+      .loginAs(user)
+      .json({ status: 'running' })
+    const monotonicRun = regression.body() as UserStoryAgentRunBody
+
+    regression.assertStatus(200)
+    assert.equal(monotonicRun.data.status, 'completed')
+  })
+
+  test('deletes a story while its agent run is active', async ({ client }) => {
+    const user = await createUser()
+    const project = await createProject(user.id, 'Alpha')
+    const story = await createStory(client, user, project.id)
+    const runResponse = await client
+      .post(`/api/v1/projects/user-stories/${story.data.id}/agent-runs`)
+      .loginAs(user)
+      .json({ executionId: crypto.randomUUID(), kind: 'initial' })
+
+    runResponse.assertStatus(200)
+    const response = await client
+      .delete(`/api/v1/projects/user-stories/${story.data.id}`)
+      .loginAs(user)
+
+    response.assertStatus(204)
+  })
+
   test('merges agent activity deltas and serves large details lazily', async ({
     assert,
     client,
@@ -758,11 +849,24 @@ async function createStory(
   return response.body() as unknown as UserStoryBody
 }
 
-function createUser() {
-  return User.create({
-    email: `${crypto.randomUUID()}@example.com`,
-    password: 'password123',
-  })
+function finalizeRun(
+  client: ApiClient,
+  user: Awaited<ReturnType<typeof createUser>>,
+  storyId: string,
+  runId: string,
+  input: { finalResponse: string; status: 'completed' | 'failed' }
+) {
+  return client
+    .post(`/api/v1/projects/user-stories/${storyId}/agent-runs/${runId}/finalize`)
+    .loginAs(user)
+    .json({
+      activities: [],
+      agentLastError: input.status === 'failed' ? input.finalResponse : null,
+      agentLastEvent: input.finalResponse,
+      finalResponse: input.finalResponse,
+      outcome: 'review',
+      status: input.status,
+    })
 }
 
 function createProject(userId: string, name: string) {

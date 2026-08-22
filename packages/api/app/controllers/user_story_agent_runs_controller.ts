@@ -2,9 +2,11 @@ import UserStoriesService from '#services/user_stories_service'
 import UserStoryAgentRunTransformer from '#transformers/user_story_agent_run_transformer'
 import {
   createUserStoryAgentRunValidator,
+  finalizeUserStoryAgentRunValidator,
   updateUserStoryAgentRunValidator,
 } from '#validators/user_story_agent_run'
 import type { HttpContext } from '@adonisjs/core/http'
+import UserStoryTransformer from '#transformers/user_story_transformer'
 
 export default class UserStoryAgentRunsController {
   async store({ auth, params, request, serialize }: HttpContext) {
@@ -27,6 +29,19 @@ export default class UserStoryAgentRunsController {
           params.id,
           params.runId,
           await request.validateUsing(updateUserStoryAgentRunValidator)
+        )
+      )
+    )
+  }
+
+  async finalize({ auth, params, request, serialize }: HttpContext) {
+    return serialize(
+      UserStoryTransformer.transform(
+        await new UserStoriesService().finalizeAgentRun(
+          auth.getUserOrFail().id,
+          params.id,
+          params.runId,
+          await request.validateUsing(finalizeUserStoryAgentRunValidator)
         )
       )
     )

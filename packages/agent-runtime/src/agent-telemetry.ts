@@ -1693,7 +1693,17 @@ export function toolFailed(event: Record<string, unknown>) {
 
 function finishStatus(payload: Record<string, unknown>) {
   const status = rawFinishReason(payload)?.toLowerCase();
-  if (status && ["failed", "error", "mistake_limit"].includes(status))
+  if (
+    status &&
+    [
+      "failed",
+      "error",
+      "max-iterations",
+      "max_iterations",
+      "mistake-limit",
+      "mistake_limit",
+    ].includes(status)
+  )
     return "failed";
   if (status && ["cancelled", "canceled", "aborted"].includes(status))
     return "canceled";
@@ -1739,7 +1749,10 @@ function normalizedFinishReason(
   if (["length", "max_tokens", "max-tokens"].includes(reason))
     return "max-tokens";
   if (["cancelled", "canceled", "aborted"].includes(reason)) return "aborted";
-  if (["failed", "error", "mistake_limit"].includes(reason)) return "error";
+  if (["failed", "error", "mistake-limit", "mistake_limit"].includes(reason))
+    return "error";
+  if (["max-iterations", "max_iterations"].includes(reason))
+    return "max-iterations";
   return outcome === "succeeded" ? "other" : outcomeFinishReason(outcome);
 }
 

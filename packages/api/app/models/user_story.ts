@@ -246,6 +246,9 @@ export default class UserStory extends BaseModel {
   @column()
   declare agentSessionSummary: string | null
 
+  @column()
+  declare activeAgentRunId: string | null
+
   @column.dateTime()
   declare mergedAt: DateTime | null
 

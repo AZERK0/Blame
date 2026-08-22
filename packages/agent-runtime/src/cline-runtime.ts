@@ -187,7 +187,7 @@ import type {
 
 const execFileAsync = promisify(execFile);
 const defaultSessionMaxIterations = 32;
-const defaultDevelopmentMaxIterations = 96;
+const defaultDevelopmentMaxIterations = 512;
 const maxInitializationAttempts = 3;
 const maxMergeConflictResolutionAttempts = 3;
 const runtimeArtifactPaths = [".blame", ".blame-preview", ".pnpm-store"];
@@ -385,6 +385,7 @@ export class BlameAgentRuntime {
   private sessionStartInputs = new Map<string, ClineCoreStartInput>();
   private sessionQualityBaselines = new Map<string, string>();
   private sessionEventSignatures = new Map<string, Map<string, number>>();
+  private sessionExecutionIds = new Map<string, string>();
   private sessionToolInputs = new Map<string, unknown>();
   private sessionIterations = new Map<string, number>();
   private sessionSpawnAgentActiveCounts = new Map<string, number>();
@@ -895,6 +896,9 @@ export class BlameAgentRuntime {
     input: SendSessionInput,
     interventionType?: string,
   ) {
+    if (input.executionId) {
+      this.sessionExecutionIds.set(input.sessionId, input.executionId);
+    }
     this.agentTelemetry.beginTurn(
       input.sessionId,
       input.executionId,
@@ -907,10 +911,16 @@ export class BlameAgentRuntime {
     try {
       await this.captureSessionQualityBaseline(input.sessionId);
       const cline = await this.sessionCore(input.sessionId);
-      return await this.sendPrompt(cline, input.sessionId, input.prompt, {
-        userFiles: input.userFiles,
-        userImages: input.userImages,
-      });
+      return await this.sendPrompt(
+        cline,
+        input.sessionId,
+        input.prompt,
+        {
+          userFiles: input.userFiles,
+          userImages: input.userImages,
+        },
+        input.executionId,
+      );
     } catch (error) {
       this.agentTelemetry.fail(input.sessionId, error);
       throw error;
@@ -1936,9 +1946,12 @@ export class BlameAgentRuntime {
         if (this.shouldSkipFallbackChunk(sessionId, payload)) return;
         const spawnAgentPhase = clineSessionSpawnAgentPhase(payload);
         if (this.shouldSkipSessionDisplayEvent(sessionId, payload)) return;
-        const event = this.withSessionIteration(
+        const event = this.withExecutionId(
           sessionId,
-          this.withToolInput(sessionId, normalizeEvent(sessionId, payload)),
+          this.withSessionIteration(
+            sessionId,
+            this.withToolInput(sessionId, normalizeEvent(sessionId, payload)),
+          ),
         );
         if (this.shouldSkipDuplicateSessionEvent(sessionId, event)) return;
         if (spawnAgentPhase) {
@@ -1967,6 +1980,14 @@ export class BlameAgentRuntime {
     const iteration = this.sessionIterations.get(sessionId);
     if (iteration === undefined) return event;
     return { ...event, payload: { ...payload, iteration } };
+  }
+
+  private withExecutionId(
+    sessionId: string,
+    event: AgentEvent,
+    executionId = this.sessionExecutionIds.get(sessionId),
+  ) {
+    return executionId ? { ...event, executionId } : event;
   }
 
   private withToolInput(sessionId: string, event: AgentEvent) {
@@ -2120,6 +2141,7 @@ export class BlameAgentRuntime {
     this.autoApprovedWriteToolSessions.delete(sessionId);
     this.sessionContexts.delete(sessionId);
     this.sessionEventSignatures.delete(sessionId);
+    this.sessionExecutionIds.delete(sessionId);
     this.sessionIterations.delete(sessionId);
     this.sessionSpawnAgentActiveCounts.delete(sessionId);
     for (const key of this.sessionToolInputs.keys()) {
@@ -2414,20 +2436,33 @@ export class BlameAgentRuntime {
 
   private emitSessionNotice(sessionId: string, message: string) {
     void this.logSession(sessionId, "notice", { message });
-    this.events?.emit({ type: "notice", sessionId, payload: { message } });
+    this.events?.emit(
+      this.withExecutionId(sessionId, {
+        type: "notice",
+        sessionId,
+        payload: { message },
+      }),
+    );
   }
 
   private emitSessionError(
     sessionId: string,
     message: string,
     error: unknown = message,
+    executionId?: string,
   ) {
     void this.logSession(sessionId, "error", { message });
-    this.events?.emit({
-      type: "error",
-      sessionId,
-      payload: { message, ...clineErrorMetadata(error) },
-    });
+    this.events?.emit(
+      this.withExecutionId(
+        sessionId,
+        {
+          type: "error",
+          sessionId,
+          payload: { message, ...clineErrorMetadata(error) },
+        },
+        executionId,
+      ),
+    );
   }
 
   private async logSession(
@@ -2531,6 +2566,7 @@ export class BlameAgentRuntime {
     sessionId: string,
     prompt: string,
     attachments: Pick<SendSessionInput, "userFiles" | "userImages"> = {},
+    executionId?: string,
   ) {
     const startedAt = Date.now();
     this.agentTelemetry.startModelRequest(sessionId);
@@ -2558,14 +2594,20 @@ export class BlameAgentRuntime {
         const failure = resultFailureMessage(result);
         if (failure) {
           this.agentTelemetry.fail(sessionId, new Error(failure));
-          this.emitSessionError(sessionId, failure);
+          this.emitSessionError(sessionId, failure, failure, executionId);
           return result;
         }
-        this.events?.emit({
-          type: "done",
-          sessionId,
-          payload: doneResultPayload(result),
-        });
+        this.events?.emit(
+          this.withExecutionId(
+            sessionId,
+            {
+              type: "done",
+              sessionId,
+              payload: doneResultPayload(result),
+            },
+            executionId,
+          ),
+        );
         return result;
       })
       .catch((error: unknown) => {
@@ -2581,7 +2623,7 @@ export class BlameAgentRuntime {
           },
           activeContext,
         );
-        this.emitSessionError(sessionId, message, error);
+        this.emitSessionError(sessionId, message, error, executionId);
         throw error;
       });
     void this.logSession(
@@ -4564,9 +4606,16 @@ export function resultFailureMessage(result: unknown) {
   const status = resultStatus(payload);
   if (
     !status ||
-    !["failed", "error", "cancelled", "aborted", "mistake_limit"].includes(
-      status,
-    )
+    ![
+      "failed",
+      "error",
+      "cancelled",
+      "aborted",
+      "max-iterations",
+      "max_iterations",
+      "mistake-limit",
+      "mistake_limit",
+    ].includes(status)
   )
     return undefined;
   const error = asRecord(payload.error);

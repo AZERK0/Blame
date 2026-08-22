@@ -13,6 +13,7 @@ import type {
   UserStoryAgentActivity,
   UserStoryAgentRun,
   UserStoryAgentRunDraft,
+  UserStoryAgentRunFinalization,
   UserStoryAgentRunUpdate,
   UserStoryComment,
   UserStoryDraft,
@@ -153,39 +154,26 @@ function useBacklogStoreValue() {
   )
 
   const update = React.useCallback(
-    async (story: UserStory, input: UserStoryUpdate) => {
-      const previousUpdate =
-        updateQueues.current.get(story.id) ?? Promise.resolve()
-      const nextUpdate = previousUpdate
-        .catch(() => undefined)
-        .then(async () => {
-          const nextStory = await api.update(story.id, input)
-          setState((current) => ({
-            ...current,
-            detailedStoryIds: storyStateIds(
-              current.detailedStoryIds,
-              nextStory.id,
-              true
-            ),
-            stories: current.stories.map((currentStory) =>
-              currentStory.id === story.id
-                ? mergeUserStory(currentStory, nextStory, {
-                    replaceAgentActivities: input.agentActivities !== undefined,
-                  })
-                : currentStory
-            ),
-          }))
-          return nextStory
-        })
-      updateQueues.current.set(story.id, nextUpdate)
-      try {
-        return await nextUpdate
-      } finally {
-        if (updateQueues.current.get(story.id) === nextUpdate) {
-          updateQueues.current.delete(story.id)
-        }
-      }
-    },
+    (story: UserStory, input: UserStoryUpdate) =>
+      enqueueStoryRequest(updateQueues, story.id, async () => {
+        const nextStory = await api.update(story.id, input)
+        setState((current) => ({
+          ...current,
+          detailedStoryIds: storyStateIds(
+            current.detailedStoryIds,
+            nextStory.id,
+            true
+          ),
+          stories: current.stories.map((currentStory) =>
+            currentStory.id === story.id
+              ? mergeUserStory(currentStory, nextStory, {
+                  replaceAgentActivities: input.agentActivities !== undefined,
+                })
+              : currentStory
+          ),
+        }))
+        return nextStory
+      }),
     [api]
   )
   const undoComment = React.useCallback(
@@ -243,7 +231,7 @@ function useBacklogStoreValue() {
         ),
         stories: current.stories.map((currentStory) =>
           currentStory.id === story.id
-            ? mergeStoryAgentRun(currentStory, run)
+            ? storyWithActiveAgentRun(currentStory, run)
             : currentStory
         ),
       }))
@@ -268,6 +256,33 @@ function useBacklogStoreValue() {
       }))
       return nextRun
     },
+    [api]
+  )
+  const finalizeAgentRun = React.useCallback(
+    (
+      story: UserStory,
+      run: UserStoryAgentRun,
+      input: UserStoryAgentRunFinalization
+    ) =>
+      enqueueStoryRequest(updateQueues, story.id, async () => {
+        const nextStory = await api.finalizeAgentRun(story.id, run.id, input)
+        setState((current) => ({
+          ...current,
+          detailedStoryIds: storyStateIds(
+            current.detailedStoryIds,
+            story.id,
+            true
+          ),
+          stories: current.stories.map((currentStory) =>
+            currentStory.id === story.id
+              ? mergeUserStory(currentStory, nextStory, {
+                  replaceAgentActivities: true,
+                })
+              : currentStory
+          ),
+        }))
+        return nextStory
+      }),
     [api]
   )
   const updateAgentLocal = React.useCallback(
@@ -411,6 +426,7 @@ function useBacklogStoreValue() {
     activityDetail,
     loadDetail,
     load,
+    finalizeAgentRun,
     projectId,
     projectPath,
     remove,
@@ -475,6 +491,36 @@ function storyWithComment(story: UserStory, comment: UserStoryComment) {
   return {
     ...story,
     comments: [...(story.comments ?? []), comment],
+  }
+}
+
+function storyWithActiveAgentRun(story: UserStory, run: UserStoryAgentRun) {
+  const nextStory = mergeStoryAgentRun(story, run)
+  if (run.status !== "running") return nextStory
+  return {
+    ...nextStory,
+    activeAgentRunId: run.id,
+    agentActivities: [],
+    agentFinalResponse: null,
+    agentStatus: "Running" as const,
+    agentUsage: null,
+    clineSessionId: run.clineSessionId,
+    status: "in-progress" as const,
+  }
+}
+
+async function enqueueStoryRequest<T>(
+  queues: React.MutableRefObject<Map<string, Promise<unknown>>>,
+  storyId: string,
+  request: () => Promise<T>
+) {
+  const previous = queues.current.get(storyId) ?? Promise.resolve()
+  const next = previous.catch(() => undefined).then(request)
+  queues.current.set(storyId, next)
+  try {
+    return await next
+  } finally {
+    if (queues.current.get(storyId) === next) queues.current.delete(storyId)
   }
 }
 

@@ -42,6 +42,7 @@ function mergeableAgentEvents(current: AgentEvent, next: AgentEvent) {
   return (
     current.type === next.type &&
     current.sessionId === next.sessionId &&
+    current.executionId === next.executionId &&
     currentPayload.iteration === nextPayload.iteration
   );
 }

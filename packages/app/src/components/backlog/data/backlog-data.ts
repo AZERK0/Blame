@@ -87,12 +87,17 @@ export type UserStoryFileAttachment = {
 
 export type UserStoryAgentRunKind = "initial" | "change-request" | "resume"
 export type UserStoryAgentRunStatus = "running" | "completed" | "failed"
+export type UserStoryAgentRunTerminalStatus = Exclude<
+  UserStoryAgentRunStatus,
+  "running"
+>
 export type UserStoryAgentRun = {
   id: string
   userStoryId: string
   commentId?: string | null
   kind: UserStoryAgentRunKind
   clineSessionId?: string | null
+  executionId?: string | null
   checkpointRunCount?: number | null
   diffEndRef?: string | null
   status: UserStoryAgentRunStatus
@@ -136,6 +141,7 @@ export type UserStory = {
   worktree?: string | null
   workspaceMode?: "local-container" | "cloud-mirror" | null
   agentStatus?: UserStoryAgentStatus | null
+  activeAgentRunId?: string | null
   clineSessionId?: string | null
   agentProviderId?: string | null
   agentModelId?: string | null
@@ -214,7 +220,21 @@ export type UserStoryAgentRunDraft = {
   commentId?: string | null
   kind: UserStoryAgentRunKind
   clineSessionId?: string | null
+  executionId?: string | null
   status?: UserStoryAgentRunStatus
+}
+
+export type UserStoryAgentRunFinalization = {
+  activities: UserStoryAgentActivity[]
+  agentLastError?: string | null
+  agentLastEvent?: string | null
+  completedAt?: string | null
+  diffEndRef?: string | null
+  finalResponse?: string | null
+  outcome: "review" | "paused"
+  sessionSummary?: string | null
+  status: UserStoryAgentRunTerminalStatus
+  usage?: UserStoryAgentUsage | null
 }
 
 export type UserStoryAgentRunUpdate = Partial<

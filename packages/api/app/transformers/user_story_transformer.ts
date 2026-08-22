@@ -26,6 +26,7 @@ export default class UserStoryTransformer extends BaseTransformer<UserStory> {
       agentModelId: story.agentModelId,
       agentLastEvent: story.agentLastEvent,
       agentLastError: story.agentLastError,
+      activeAgentRunId: story.activeAgentRunId,
       runningAgentRuns: (story.agentRuns ?? []).map((run) =>
         UserStoryAgentRunTransformer.summary(run)
       ),
@@ -36,6 +37,10 @@ export default class UserStoryTransformer extends BaseTransformer<UserStory> {
       createdAt: story.createdAt,
       updatedAt: story.updatedAt,
     }
+  }
+
+  toSummary() {
+    return UserStoryTransformer.summary(this.resource)
   }
 
   toObject() {
@@ -62,6 +67,7 @@ export default class UserStoryTransformer extends BaseTransformer<UserStory> {
         'agentModelId',
         'agentLastEvent',
         'agentLastError',
+        'activeAgentRunId',
         'agentActivities',
         'agentFinalResponse',
         'agentUsage',
@@ -74,11 +80,9 @@ export default class UserStoryTransformer extends BaseTransformer<UserStory> {
         'updatedAt',
       ]),
       fileAttachmentUploadPending: Boolean(this.resource.fileAttachmentUploadPending),
-      comments: (this.resource.comments ?? []).map((comment) =>
-        UserStoryCommentTransformer.transform(comment)
-      ),
+      comments: UserStoryCommentTransformer.transform(this.resource.comments ?? []),
       agentRuns: (this.resource.agentRuns ?? []).map((run) =>
-        UserStoryAgentRunTransformer.transform(run)
+        UserStoryAgentRunTransformer.full(run)
       ),
     }
   }

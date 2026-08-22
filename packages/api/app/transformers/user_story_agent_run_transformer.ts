@@ -9,6 +9,7 @@ export default class UserStoryAgentRunTransformer extends BaseTransformer<UserSt
       commentId: run.commentId,
       kind: run.kind,
       clineSessionId: run.clineSessionId,
+      executionId: run.executionId,
       checkpointRunCount: run.checkpointRunCount,
       diffEndRef: run.diffEndRef,
       status: run.status,
@@ -18,23 +19,17 @@ export default class UserStoryAgentRunTransformer extends BaseTransformer<UserSt
     }
   }
 
+  static full(run: UserStoryAgentRun) {
+    return {
+      ...this.summary(run),
+      activities: run.activities,
+      finalResponse: run.finalResponse,
+      usage: run.usage,
+      sessionSummary: run.sessionSummary,
+    }
+  }
+
   toObject() {
-    return this.pick(this.resource, [
-      'id',
-      'userStoryId',
-      'commentId',
-      'kind',
-      'clineSessionId',
-      'checkpointRunCount',
-      'diffEndRef',
-      'status',
-      'activities',
-      'finalResponse',
-      'usage',
-      'sessionSummary',
-      'completedAt',
-      'createdAt',
-      'updatedAt',
-    ])
+    return UserStoryAgentRunTransformer.full(this.resource)
   }
 }

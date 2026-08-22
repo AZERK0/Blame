@@ -176,6 +176,10 @@ test("records stable GenAI finish reasons", () => {
     "gen_ai.response.finish_reasons": ["tool-calls"],
     "gen_ai.response.model": undefined,
   });
+  assert.deepEqual(responseAttributes({ finishReason: "max_iterations" }), {
+    "gen_ai.response.finish_reasons": ["max-iterations"],
+    "gen_ai.response.model": undefined,
+  });
   assert.deepEqual(responseAttributes({}, "failed"), {
     "gen_ai.response.finish_reasons": ["error"],
     "gen_ai.response.model": undefined,

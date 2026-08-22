@@ -8,6 +8,7 @@ import { DateTime } from 'luxon'
 import type { Infer } from '@vinejs/vine/types'
 import type {
   createUserStoryAgentRunValidator,
+  finalizeUserStoryAgentRunValidator,
   updateUserStoryAgentRunValidator,
 } from '#validators/user_story_agent_run'
 import type {
@@ -28,6 +29,7 @@ type CreateUserStoryInput = Infer<typeof createUserStoryValidator>
 type UpdateUserStoryInput = Infer<typeof updateUserStoryValidator>
 type CreateUserStoryCommentInput = Infer<typeof createUserStoryCommentValidator>
 type CreateUserStoryAgentRunInput = Infer<typeof createUserStoryAgentRunValidator>
+type FinalizeUserStoryAgentRunInput = Infer<typeof finalizeUserStoryAgentRunValidator>
 type UpdateUserStoryAgentRunInput = Infer<typeof updateUserStoryAgentRunValidator>
 
 const maxAgentActivities = 80
@@ -92,6 +94,7 @@ export default class UserStoriesService {
       userStory.useTransaction(transaction)
       userStory.merge({
         ...update,
+        ...inactiveAgentRunUpdate(input),
         mergedAt: input.mergedAt === undefined ? userStory.mergedAt : input.mergedAt,
       })
       await userStory.save()
@@ -188,23 +191,9 @@ export default class UserStoriesService {
   }
 
   async createAgentRun(userId: string, id: string, input: CreateUserStoryAgentRunInput) {
-    const story = await this.find(userId, id)
-    if (input.commentId && !story.comments.some((comment) => comment.id === input.commentId)) {
-      throw new Error('User story comment not found.')
-    }
-    return UserStoryAgentRun.create({
-      activities: [],
-      checkpointRunCount: input.checkpointRunCount ?? null,
-      clineSessionId: input.clineSessionId ?? null,
-      commentId: input.commentId ?? null,
-      diffEndRef: null,
-      finalResponse: null,
-      kind: input.kind,
-      sessionSummary: null,
-      status: input.status ?? 'running',
-      usage: null,
-      userStoryId: story.id,
-    })
+    return db.transaction((transaction) =>
+      this.createAgentRunRecord(userId, id, input, transaction)
+    )
   }
 
   async updateAgentRun(
@@ -216,9 +205,26 @@ export default class UserStoriesService {
     const story = await this.find(userId, id)
     const run = await this.agentRunQuery(story, runId)
     const update = await this.agentRunUpdateInput(story, run, input)
-    run.merge(update)
+    run.merge(monotonicAgentRunUpdate(run, update))
     await run.save()
     return run
+  }
+
+  async finalizeAgentRun(
+    userId: string,
+    id: string,
+    runId: string,
+    input: FinalizeUserStoryAgentRunInput
+  ) {
+    const currentStory = await this.userStoryQuery(userId).where('id', id).firstOrFail()
+    const currentRun = await this.agentRunQuery(currentStory, runId)
+    const activities = terminalStatus(currentRun.status)
+      ? []
+      : await this.preparedRunActivities(currentStory, currentRun, input.activities)
+    await db.transaction((transaction) =>
+      this.finalizeAgentRunRecord(userId, id, runId, input, activities, transaction)
+    )
+    return this.find(userId, id)
   }
 
   async agentRunActivityDetail(userId: string, id: string, runId: string, activityId: string) {
@@ -316,6 +322,64 @@ export default class UserStoriesService {
     return UserStoryAgentRun.query().where('userStoryId', story.id).where('id', runId).firstOrFail()
   }
 
+  private async createAgentRunRecord(
+    userId: string,
+    id: string,
+    input: CreateUserStoryAgentRunInput,
+    transaction: TransactionClientContract
+  ) {
+    const story = await this.lockedStory(userId, id, transaction)
+    await assertRunComment(story.id, input.commentId, transaction)
+    const run = await UserStoryAgentRun.create(agentRunAttributes(story.id, input), {
+      client: transaction,
+    })
+    if (run.status === 'running') {
+      story.merge(activeAgentRunStoryUpdate(run))
+      await story.save()
+    }
+    return run
+  }
+
+  private async finalizeAgentRunRecord(
+    userId: string,
+    id: string,
+    runId: string,
+    input: FinalizeUserStoryAgentRunInput,
+    activities: UserStoryAgentActivity[],
+    transaction: TransactionClientContract
+  ) {
+    const story = await this.lockedStory(userId, id, transaction)
+    const run = await lockedAgentRun(story.id, runId, transaction)
+    if (terminalStatus(run.status)) {
+      if (story.activeAgentRunId === run.id) {
+        story.merge(finalAgentRunStoryUpdate(run, input))
+        await story.save()
+      }
+      return
+    }
+    run.merge(finalAgentRunUpdate(run, input, activities))
+    await run.save()
+    if (story.activeAgentRunId !== run.id) return
+    story.merge(finalAgentRunStoryUpdate(run, input))
+    await story.save()
+  }
+
+  private lockedStory(userId: string, id: string, transaction: TransactionClientContract) {
+    return this.userStoryQuery(userId, transaction).where('id', id).forUpdate().firstOrFail()
+  }
+
+  private preparedRunActivities(
+    story: UserStory,
+    run: UserStoryAgentRun,
+    activities: UserStoryAgentActivity[]
+  ) {
+    return Promise.all(
+      activities.map((activity) =>
+        activityWithArtifact(story.worktree, run.clineSessionId, activity)
+      )
+    )
+  }
+
   private async agentRunUpdateInput(
     story: UserStory,
     run: UserStoryAgentRun,
@@ -409,6 +473,103 @@ function terminalStatus(status: string | undefined) {
   return status === 'completed' || status === 'failed'
 }
 
+function inactiveAgentRunUpdate(input: UpdateUserStoryInput) {
+  if (input.status === undefined || input.status === 'in-progress') return {}
+  return { activeAgentRunId: null }
+}
+
+function agentRunAttributes(storyId: string, input: CreateUserStoryAgentRunInput) {
+  return {
+    activities: [],
+    checkpointRunCount: input.checkpointRunCount ?? null,
+    clineSessionId: input.clineSessionId ?? null,
+    commentId: input.commentId ?? null,
+    diffEndRef: null,
+    executionId: input.executionId ?? null,
+    finalResponse: null,
+    kind: input.kind,
+    sessionSummary: null,
+    status: input.status ?? ('running' as const),
+    usage: null,
+    userStoryId: storyId,
+  }
+}
+
+function activeAgentRunStoryUpdate(run: UserStoryAgentRun): Partial<UserStory> {
+  return {
+    activeAgentRunId: run.id,
+    agentActivities: [],
+    agentFinalResponse: null,
+    agentStatus: 'Running',
+    agentUsage: null,
+    clineSessionId: run.clineSessionId,
+    status: 'in-progress',
+  }
+}
+
+async function assertRunComment(
+  storyId: string,
+  commentId: string | null | undefined,
+  transaction: TransactionClientContract
+) {
+  if (!commentId) return
+  const comment = await UserStoryComment.query({ client: transaction })
+    .where('userStoryId', storyId)
+    .where('id', commentId)
+    .first()
+  if (!comment) throw new Error('User story comment not found.')
+}
+
+function finalAgentRunUpdate(
+  run: UserStoryAgentRun,
+  input: FinalizeUserStoryAgentRunInput,
+  activities: UserStoryAgentActivity[]
+): Partial<UserStoryAgentRun> {
+  const { agentLastError, agentLastEvent, outcome, ...metadata } = input
+  void agentLastError
+  void agentLastEvent
+  void outcome
+  return {
+    ...metadata,
+    activities: activities.reduce(upsertActivity, run.activities ?? []),
+    completedAt: input.completedAt ?? DateTime.now(),
+  }
+}
+
+function finalAgentRunStoryUpdate(
+  run: UserStoryAgentRun,
+  input: FinalizeUserStoryAgentRunInput
+): Partial<UserStory> {
+  const review = input.outcome === 'review'
+  return {
+    activeAgentRunId: null,
+    agentActivities: run.activities,
+    agentFinalResponse: run.finalResponse,
+    agentLastError: input.agentLastError,
+    agentLastEvent: input.agentLastEvent,
+    agentSessionSummary: run.sessionSummary,
+    agentStatus: review ? null : 'Paused',
+    agentUsage: run.usage,
+    status: review ? 'in-review' : 'in-progress',
+  }
+}
+
+function lockedAgentRun(storyId: string, runId: string, transaction: TransactionClientContract) {
+  return UserStoryAgentRun.query({ client: transaction })
+    .where('userStoryId', storyId)
+    .where('id', runId)
+    .forUpdate()
+    .firstOrFail()
+}
+
+function monotonicAgentRunUpdate(run: UserStoryAgentRun, update: Partial<UserStoryAgentRun>) {
+  if (!terminalStatus(run.status)) return update
+  const { completedAt, status, ...metadata } = update
+  void completedAt
+  void status
+  return metadata
+}
+
 function agentRunCompletedAtUpdate(input: { completedAt?: DateTime | null; status?: string }) {
   if (input.completedAt !== undefined) return { completedAt: input.completedAt }
   if (terminalStatus(input.status)) return { completedAt: DateTime.now() }
@@ -457,6 +618,7 @@ function storyUndoUpdate(
 ): Partial<UserStory> {
   const lastRun = remainingRuns.at(-1)
   return {
+    activeAgentRunId: lastRun?.status === 'running' ? lastRun.id : null,
     agentActivities: lastRun?.activities ?? [],
     agentFinalResponse: lastRun?.finalResponse ?? null,
     agentLastError: null,

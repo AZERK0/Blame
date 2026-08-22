@@ -66,6 +66,9 @@ export default class UserStoryAgentRun extends BaseModel {
   declare clineSessionId: string | null
 
   @column()
+  declare executionId: string | null
+
+  @column()
   declare checkpointRunCount: number | null
 
   @column()

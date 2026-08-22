@@ -49,6 +49,21 @@ test("preserves adjacent deltas with different types", () => {
   )
 })
 
+test("preserves adjacent deltas from different executions", () => {
+  const events: AgentEvent[] = []
+  const coalescer = createAgentEventCoalescer(
+    (value) => events.push(value),
+    1_000
+  )
+  coalescer.push({ ...event("text", "first"), executionId: "execution-1" })
+  coalescer.push({ ...event("text", "second"), executionId: "execution-2" })
+  coalescer.close()
+
+  assert.equal(events.length, 2)
+  assert.equal(events[0]?.executionId, "execution-1")
+  assert.equal(events[1]?.executionId, "execution-2")
+})
+
 test("continues from accumulated text when the next event is a delta", () => {
   const events: AgentEvent[] = []
   const coalescer = createAgentEventCoalescer(

@@ -1,76 +1,22 @@
 import vine from '@vinejs/vine'
-import { DateTime } from 'luxon'
+import { agentActivity, agentUsage, nullableDateTime } from '#validators/user_story'
 
 const kind = vine.enum(['initial', 'change-request', 'resume'])
 const status = vine.enum(['running', 'completed', 'failed'])
-const agentActivityKind = vine.enum(['reasoning', 'message', 'tool', 'approval', 'notice', 'error'])
-const agentActivityMessageKind = vine.enum(['intermediate', 'final'])
-const agentActivityStatus = vine.enum(['running', 'completed', 'failed'])
-const agentErrorCode = vine.enum([
-  'cline_not_subscribed',
-  'cline_org_subscription_unsupported',
-  'cline_pass_limit',
-  'cline_free_model_limit',
-  'cline_model_not_found',
-])
-const agentActivity = vine.object({
-  id: vine.string().trim().minLength(1).maxLength(255),
-  kind: agentActivityKind,
-  title: vine.string().trim().minLength(1).maxLength(255),
-  detail: vine.string().maxLength(262144),
-  actionUrl: vine
-    .string()
-    .trim()
-    .url({ protocols: ['https'] })
-    .maxLength(2048)
-    .optional(),
-  errorCode: agentErrorCode.optional(),
-  resetAt: vine.string().trim().maxLength(255).optional(),
-  status: agentActivityStatus.optional(),
-  iteration: vine.number().optional(),
-  messageKind: agentActivityMessageKind.optional(),
-  agentName: vine.string().trim().maxLength(255).optional(),
-  agentAvatar: vine.string().trim().maxLength(2048).optional(),
-  parallelGroupId: vine.string().trim().maxLength(255).optional(),
-  toolCallId: vine.string().trim().maxLength(255).optional(),
-  toolName: vine.string().trim().maxLength(255).optional(),
-  detailArtifact: vine.string().trim().maxLength(2048).optional(),
-  detailTruncated: vine.boolean().optional(),
-  originalDetailLength: vine.number().optional(),
-  createdAt: vine.string().trim().minLength(1).maxLength(255),
-  updatedAt: vine.string().trim().maxLength(255).optional(),
-})
-const agentUsage = vine.object({
-  cacheReadTokens: vine.number().optional(),
-  cacheWriteTokens: vine.number().optional(),
-  cost: vine.number().optional(),
-  inputTokens: vine.number(),
-  outputTokens: vine.number(),
-  totalCacheReadTokens: vine.number().optional(),
-  totalCacheWriteTokens: vine.number().optional(),
-  totalCost: vine.number().optional(),
-  totalInputTokens: vine.number(),
-  totalOutputTokens: vine.number(),
-})
-const nullableDateTime = vine
+const terminalStatus = vine.enum(['completed', 'failed'])
+const finalizationOutcome = vine.enum(['review', 'paused'])
+const diffEndRef = vine
   .string()
   .trim()
+  .regex(/^(?:[0-9a-f]{40}|[0-9a-f]{64})$/i)
   .nullable()
   .optional()
-  .transform((value, field): DateTime | null | undefined => {
-    if (value === null || value === undefined) return value
-    const date = DateTime.fromISO(value)
-    if (date.isValid) return date
-    const sqlDate = DateTime.fromSQL(value)
-    if (sqlDate.isValid) return sqlDate
-    field.report('The {{ field }} field must be a datetime value', 'date', field)
-    return DateTime.invalid('Invalid datetime')
-  })
 
 export const createUserStoryAgentRunValidator = vine.create({
   commentId: vine.string().trim().uuid().nullable().optional(),
   kind,
   clineSessionId: vine.string().trim().maxLength(255).nullable().optional(),
+  executionId: vine.string().trim().uuid().nullable().optional(),
   checkpointRunCount: vine.number().withoutDecimals().positive().nullable().optional(),
   status: status.optional(),
 })
@@ -78,12 +24,7 @@ export const createUserStoryAgentRunValidator = vine.create({
 export const updateUserStoryAgentRunValidator = vine.create({
   clineSessionId: vine.string().trim().maxLength(255).nullable().optional(),
   checkpointRunCount: vine.number().withoutDecimals().positive().nullable().optional(),
-  diffEndRef: vine
-    .string()
-    .trim()
-    .regex(/^(?:[0-9a-f]{40}|[0-9a-f]{64})$/i)
-    .nullable()
-    .optional(),
+  diffEndRef,
   status: status.optional(),
   activities: vine.array(agentActivity).nullable().optional(),
   agentActivity: agentActivity.nullable().optional(),
@@ -91,4 +32,17 @@ export const updateUserStoryAgentRunValidator = vine.create({
   usage: agentUsage.nullable().optional(),
   sessionSummary: vine.string().nullable().optional(),
   completedAt: nullableDateTime,
+})
+
+export const finalizeUserStoryAgentRunValidator = vine.create({
+  activities: vine.array(agentActivity),
+  agentLastError: vine.string().trim().maxLength(4096).nullable().optional(),
+  agentLastEvent: vine.string().trim().maxLength(4096).nullable().optional(),
+  completedAt: nullableDateTime,
+  diffEndRef,
+  finalResponse: vine.string().nullable().optional(),
+  outcome: finalizationOutcome,
+  sessionSummary: vine.string().nullable().optional(),
+  status: terminalStatus,
+  usage: agentUsage.nullable().optional(),
 })

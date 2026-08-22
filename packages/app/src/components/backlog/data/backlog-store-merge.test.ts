@@ -36,6 +36,27 @@ test("keeps local activities while refreshing stories", () => {
   )
 })
 
+test("never regresses a completed local run to running", () => {
+  const localRun = {
+    ...run([]),
+    completedAt: "2026-06-11T10:00:03.000Z",
+    finalResponse: "Final response",
+    status: "completed" as const,
+    updatedAt: "2026-06-11T10:00:03.000Z",
+  }
+  const staleServerRun = {
+    ...run([]),
+    status: "running" as const,
+    updatedAt: "2026-06-11T10:00:04.000Z",
+  }
+
+  const merged = mergeStoryAgentRun(story([localRun]), staleServerRun)
+
+  assert.equal(merged.agentRuns?.[0].status, "completed")
+  assert.equal(merged.agentRuns?.[0].finalResponse, "Final response")
+  assert.equal(merged.agentRuns?.[0].completedAt, "2026-06-11T10:00:03.000Z")
+})
+
 test("keeps a local attachment upload pending during a server refresh", () => {
   const localStory = {
     ...story([]),

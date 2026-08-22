@@ -54,10 +54,7 @@ export function mergeUserStory(
     ),
     fileAttachments: preserveLocalAttachmentContent(
       currentStory.fileAttachments,
-      providedValue(
-        newestStory.fileAttachments,
-        currentStory.fileAttachments
-      )
+      providedValue(newestStory.fileAttachments, currentStory.fileAttachments)
     ),
     ...localAttachmentUpload(currentStory),
   }
@@ -141,13 +138,33 @@ function mergeAgentRun(
       currentRun.finalResponse,
       serverRun.finalResponse
     ),
+    completedAt: newestDefined(
+      newestRun.completedAt,
+      currentRun.completedAt,
+      serverRun.completedAt
+    ),
     sessionSummary: newestDefined(
       newestRun.sessionSummary,
       currentRun.sessionSummary,
       serverRun.sessionSummary
     ),
     usage: newestDefined(newestRun.usage, currentRun.usage, serverRun.usage),
+    status: monotonicRunStatus(currentRun, serverRun, newestRun),
   }
+}
+
+function monotonicRunStatus(
+  currentRun: UserStoryAgentRun,
+  serverRun: UserStoryAgentRun,
+  newestRun: UserStoryAgentRun
+) {
+  if (currentRun.status !== "running" && serverRun.status === "running") {
+    return currentRun.status
+  }
+  if (serverRun.status !== "running" && currentRun.status === "running") {
+    return serverRun.status
+  }
+  return newestRun.status
 }
 
 function newestDefined<T>(...values: (T | null | undefined)[]) {

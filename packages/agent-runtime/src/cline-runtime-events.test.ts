@@ -45,6 +45,30 @@ test("uses the local backend when no workspace backend is provided", () => {
   assert.deepEqual(coreBackendOptions(), { backendMode: "local" });
 });
 
+test("tags session events with their execution identity", () => {
+  const runtime = new BlameAgentRuntime();
+  const internals = runtime as unknown as {
+    sessionExecutionIds: Map<string, string>;
+    withExecutionId(
+      sessionId: string,
+      event: AgentEvent,
+      executionId?: string,
+    ): AgentEvent;
+  };
+  internals.sessionExecutionIds.set("session", "execution-current");
+  const event = { payload: {}, sessionId: "session", type: "done" } as const;
+
+  assert.equal(
+    internals.withExecutionId("session", event).executionId,
+    "execution-current",
+  );
+  assert.equal(
+    internals.withExecutionId("session", event, "execution-original")
+      .executionId,
+    "execution-original",
+  );
+});
+
 test("prewarms and removes the reserved remote runtime session", async () => {
   const calls: string[] = [];
   const core = {
@@ -314,9 +338,23 @@ test("formats failed agent results without a provider label", () => {
     finishReason: "error",
     error: new Error("Provider unavailable"),
   });
+  const iterationLimit = resultFailureMessage({
+    finishReason: "max_iterations",
+  });
+  const hyphenatedIterationLimit = resultFailureMessage({
+    finishReason: "max-iterations",
+  });
   const generic = resultFailureMessage({ finishReason: "mistake_limit" });
 
   assert.equal(detailed, "Provider unavailable");
+  assert.equal(
+    iterationLimit,
+    "Agent session ended with status max_iterations.",
+  );
+  assert.equal(
+    hyphenatedIterationLimit,
+    "Agent session ended with status max-iterations.",
+  );
   assert.equal(generic, "Agent session ended with status mistake_limit.");
   assert.doesNotMatch(`${detailed} ${generic}`, /cline/i);
 });

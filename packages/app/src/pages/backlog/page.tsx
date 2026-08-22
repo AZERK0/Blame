@@ -6,7 +6,6 @@ import type {
 } from "@blame/agent-runtime"
 import { toast } from "sonner"
 
-import { captureAgentRunDiffEndRef } from "@/components/chat/agent-run-diffs"
 import { nextCheckpointRunCount } from "@/components/chat/agent-run-checkpoints"
 import {
   backlogColumns,
@@ -17,18 +16,20 @@ import {
   agentFlowUpdate,
   completedAgentRun,
   failedAgentRun,
+  resumableAgentFailure,
   shouldPersistAgentEvent,
   terminalAgentRunEvent,
 } from "@/components/backlog/data/agent-flow"
 import { subscribeAgentEvents } from "@/components/backlog/data/agent-event-stream"
+import { persistTerminalAgentUpdate } from "@/components/backlog/data/agent-terminal-outbox"
+import { replayTerminalAgentUpdates } from "@/components/backlog/data/agent-terminal-replay"
 import {
-  acknowledgeTerminalAgentUpdate,
-  pendingTerminalAgentUpdates,
-  persistTerminalAgentUpdate,
-  type TerminalAgentUpdate,
-} from "@/components/backlog/data/agent-terminal-outbox"
-import { retryableBacklogError } from "@/components/backlog/data/backlog-api"
+  agentRunFinalization,
+  agentRunOwnsStory,
+  agentUpdateKey,
+} from "@/components/backlog/data/agent-run-lifecycle"
 import { boundedAgentMessage } from "@/components/backlog/data/agent-update-limits"
+import { persistAgentRunDiffEndRef } from "@/components/backlog/data/agent-run-diff-end-ref"
 import { afterRendererPaint } from "@/components/backlog/data/agent-transition-scheduling"
 import {
   changedFilesFromDiff,
@@ -144,7 +145,7 @@ export function BacklogPage() {
   )
   const retryingTerminalAgentUpdates = React.useRef(false)
   const backlogRef = React.useRef(backlog)
-  const persistQueuedAgentUpdateRef = React.useRef<
+  const persistTerminalAgentUpdateRef = React.useRef<
     (story: UserStory, update: QueuedAgentUpdate) => Promise<unknown>
   >(async () => undefined)
 
@@ -337,7 +338,13 @@ export function BacklogPage() {
     async (story: UserStory, update: QueuedAgentUpdate) => {
       let nextStory = activeStory(story, storiesRef.current)
       const metadata = agentMetadataUpdate(update.input)
-      if (Object.keys(definedUpdate(metadata)).length) {
+      if (
+        agentRunOwnsStory(
+          activeStory(nextStory, storiesRef.current),
+          update.run
+        ) &&
+        Object.keys(definedUpdate(metadata)).length
+      ) {
         nextStory = await updateStory(
           activeStory(nextStory, storiesRef.current),
           metadata,
@@ -345,11 +352,18 @@ export function BacklogPage() {
         )
       }
       for (const activity of update.activities) {
-        nextStory = await updateStory(
-          activeStory(nextStory, storiesRef.current),
-          { agentActivity: activity },
-          { cleanup: false }
-        )
+        if (
+          agentRunOwnsStory(
+            activeStory(nextStory, storiesRef.current),
+            update.run
+          )
+        ) {
+          nextStory = await updateStory(
+            activeStory(nextStory, storiesRef.current),
+            { agentActivity: activity },
+            { cleanup: false }
+          )
+        }
         if (update.run) {
           await backlog.updateAgentRun(nextStory, update.run, {
             agentActivity: activity,
@@ -366,9 +380,24 @@ export function BacklogPage() {
     },
     [backlog, updateStory]
   )
+  const persistTerminalQueuedAgentUpdate = React.useCallback(
+    (story: UserStory, update: QueuedAgentUpdate) => {
+      const finalization = agentRunFinalization(
+        update.activities,
+        update.input,
+        update.runInput,
+        pausedAgentUpdate(update.input) ? "paused" : "review"
+      )
+      if (!update.run || !finalization) {
+        return persistQueuedAgentUpdate(story, update)
+      }
+      return backlog.finalizeAgentRun(story, update.run, finalization)
+    },
+    [backlog, persistQueuedAgentUpdate]
+  )
   React.useEffect(() => {
-    persistQueuedAgentUpdateRef.current = persistQueuedAgentUpdate
-  }, [persistQueuedAgentUpdate])
+    persistTerminalAgentUpdateRef.current = persistTerminalQueuedAgentUpdate
+  }, [persistTerminalQueuedAgentUpdate])
   const retryTerminalAgentUpdates = React.useCallback(async () => {
     const currentBacklog = backlogRef.current
     const projectId = currentBacklog.projectId
@@ -378,7 +407,7 @@ export function BacklogPage() {
       await replayTerminalAgentUpdates(
         window.localStorage,
         currentBacklog,
-        persistQueuedAgentUpdateRef.current
+        persistTerminalAgentUpdateRef.current
       )
     } catch (error) {
       reportAgentPersistenceError(error)
@@ -408,14 +437,15 @@ export function BacklogPage() {
       input: UserStoryUpdate,
       runInput: UserStoryAgentRunUpdate
     ) => {
-      const pending = pendingAgentUpdates.current.get(story.id)
+      const key = agentUpdateKey(story, run)
+      const pending = pendingAgentUpdates.current.get(key)
       if (pending) window.clearTimeout(pending.timer)
       const update = pendingAgentUpdate(pending, input, run, runInput)
       const timer = window.setTimeout(() => {
-        pendingAgentUpdates.current.delete(story.id)
+        pendingAgentUpdates.current.delete(key)
         void persistQueuedAgentUpdate(story, update).catch(() => undefined)
       }, agentEventPersistDelayMs)
-      pendingAgentUpdates.current.set(story.id, { ...update, timer })
+      pendingAgentUpdates.current.set(key, { ...update, timer })
     },
     [persistQueuedAgentUpdate]
   )
@@ -426,18 +456,19 @@ export function BacklogPage() {
       input: UserStoryUpdate,
       runInput: UserStoryAgentRunUpdate
     ) => {
-      const pending = pendingAgentUpdates.current.get(story.id)
+      const key = agentUpdateKey(story, run)
+      const pending = pendingAgentUpdates.current.get(key)
       if (pending) window.clearTimeout(pending.timer)
-      pendingAgentUpdates.current.delete(story.id)
+      pendingAgentUpdates.current.delete(key)
       const update = pendingAgentUpdate(pending, input, run, runInput)
       return persistTerminalAgentUpdate(
         window.localStorage,
         story,
         update,
-        () => persistQueuedAgentUpdate(story, update)
+        () => persistTerminalQueuedAgentUpdate(story, update)
       )
     },
-    [persistQueuedAgentUpdate]
+    [persistTerminalQueuedAgentUpdate]
   )
   const persistPreparedAgentUpdate = React.useCallback(
     (
@@ -465,8 +496,15 @@ export function BacklogPage() {
       runInput: UserStoryAgentRunUpdate,
       immediate: boolean
     ) => {
-      const nextStory = updateStoryLocal(story, input, run, runInput)
-      persistPreparedAgentUpdate(nextStory, run, input, runInput, immediate)
+      const storyInput = agentRunOwnsStory(story, run) ? input : {}
+      const nextStory = updateStoryLocal(story, storyInput, run, runInput)
+      persistPreparedAgentUpdate(
+        nextStory,
+        run,
+        storyInput,
+        runInput,
+        immediate
+      )
     },
     [persistPreparedAgentUpdate, updateStoryLocal]
   )
@@ -484,23 +522,23 @@ export function BacklogPage() {
       if (completedAgentRun(event))
         notifyCommentResponseCompleted(currentStory, run, platform)
       if (run && terminalAgentRunEvent(event) && !run.diffEndRef) {
-        const nextStory = updateStoryLocal(currentStory, update, run, runInput)
-        const pending = pendingAgentUpdates.current.get(currentStory.id)
-        if (pending) window.clearTimeout(pending.timer)
+        const storyInput = agentRunOwnsStory(currentStory, run) ? update : {}
+        const nextStory = updateStoryLocal(
+          currentStory,
+          storyInput,
+          run,
+          runInput
+        )
         recordPerformanceEvent("agent.transition.local_terminal_update", {
           eventType: event.type,
         })
-        await afterRendererPaint()
-        runInput.diffEndRef = await measurePerformanceOperation(
-          "agent.transition.diff_snapshot",
-          () =>
-            captureAgentRunDiffEndRef({
-              id: run.id,
-              platform,
-              root: currentStory.worktree,
-            })
-        )
-        persistPreparedAgentUpdate(nextStory, run, update, runInput, true)
+        persistPreparedAgentUpdate(nextStory, run, storyInput, runInput, true)
+        void persistAgentRunDiffEndRef(
+          currentStory,
+          run,
+          platform,
+          backlog
+        ).catch(reportAgentPersistenceError)
         return
       }
       persistAgentUpdate(
@@ -511,7 +549,13 @@ export function BacklogPage() {
         immediateAgentEvent(event)
       )
     },
-    [persistAgentUpdate, persistPreparedAgentUpdate, platform, updateStoryLocal]
+    [
+      backlog,
+      persistAgentUpdate,
+      persistPreparedAgentUpdate,
+      platform,
+      updateStoryLocal,
+    ]
   )
   const rejectStory = React.useCallback(
     async (story: UserStory, choice: RejectChoice) => {
@@ -686,6 +730,7 @@ export function BacklogPage() {
           currentStory.agentRuns ?? []
         ),
         clineSessionId: session.sessionId,
+        executionId: session.executionId,
         kind: "resume",
       })
       const updatedStory = await updateStory(currentStory, {
@@ -712,7 +757,8 @@ export function BacklogPage() {
           persistAgentEvent(updatedStory, run, event)
           if (authenticationFailed || terminalAgentRunEvent(event))
             unsubscribe()
-        }
+        },
+        session.executionId
       )
       void agent.sessions.sendDevelopment({
         executionId: session.executionId,
@@ -790,6 +836,7 @@ export function BacklogPage() {
         checkpointRunCount: nextCheckpointRunCount(story.agentRuns ?? []),
         commentId,
         clineSessionId: sessionId,
+        executionId: session.executionId,
         kind: "change-request",
       })
       const updatedStory = await updateStory(story, {
@@ -803,12 +850,20 @@ export function BacklogPage() {
         status: "in-progress",
       })
       let authenticationFailed = false
-      const unsubscribe = subscribeAgentEvents(platform, sessionId, (event) => {
-        if (authenticationFailed) return
-        authenticationFailed = expiredAuthenticationToken(agentEventText(event))
-        persistAgentEvent(updatedStory, run, event)
-        if (authenticationFailed || terminalAgentRunEvent(event)) unsubscribe()
-      })
+      const unsubscribe = subscribeAgentEvents(
+        platform,
+        sessionId,
+        (event) => {
+          if (authenticationFailed) return
+          authenticationFailed = expiredAuthenticationToken(
+            agentEventText(event)
+          )
+          persistAgentEvent(updatedStory, run, event)
+          if (authenticationFailed || terminalAgentRunEvent(event))
+            unsubscribe()
+        },
+        session.executionId
+      )
       void agent.sessions.sendDevelopment({
         executionId: session.executionId,
         sessionId,
@@ -1842,68 +1897,6 @@ function reportAgentPersistenceError(error: unknown) {
   console.error("Failed to persist agent update.", error)
 }
 
-async function replayTerminalAgentUpdates(
-  storage: Storage,
-  backlog: ReturnType<typeof useBacklogStore>,
-  persist: (story: UserStory, update: QueuedAgentUpdate) => Promise<unknown>
-) {
-  const projectId = backlog.projectId
-  if (!projectId) return
-  const updates = pendingTerminalAgentUpdates(storage, projectId)
-  for (const update of updates) {
-    await replayTerminalAgentUpdate(storage, backlog, update, persist)
-  }
-}
-
-async function replayTerminalAgentUpdate(
-  storage: Storage,
-  backlog: ReturnType<typeof useBacklogStore>,
-  update: TerminalAgentUpdate,
-  persist: (story: UserStory, update: QueuedAgentUpdate) => Promise<unknown>
-) {
-  const story = backlog.stories.find((item) => item.id === update.storyId)
-  if (!story) return acknowledgeTerminalAgentUpdate(storage, update)
-  const detailedStory = await backlog.loadDetail(story)
-  const run = detailedStory.agentRuns?.find((item) => item.id === update.runId)
-  if (update.runId && !run)
-    return acknowledgeTerminalAgentUpdate(storage, update)
-  if (run && run.status !== "running")
-    return acknowledgeTerminalAgentUpdate(storage, update)
-  try {
-    await persist(
-      detailedStory,
-      replayableAgentUpdate(detailedStory, run, update)
-    )
-    acknowledgeTerminalAgentUpdate(storage, update)
-  } catch (error) {
-    if (!retryableBacklogError(error))
-      acknowledgeTerminalAgentUpdate(storage, update)
-    throw error
-  }
-}
-
-function replayableAgentUpdate(
-  story: UserStory,
-  run: UserStoryAgentRun | undefined,
-  update: TerminalAgentUpdate
-): QueuedAgentUpdate {
-  return {
-    activities: update.activities,
-    input: replayableStoryInput(story, update.input),
-    run,
-    runInput: update.runInput,
-  }
-}
-
-function replayableStoryInput(story: UserStory, input: UserStoryUpdate) {
-  if (story.status === "in-progress" && story.agentStatus === "Running") {
-    return input
-  }
-  const { status, ...metadata } = input
-  void status
-  return { ...metadata, agentStatus: null }
-}
-
 function reportStatusPipRequestError(error: unknown) {
   toast.error("Unable to run picture in picture action", {
     description:
@@ -1986,6 +1979,10 @@ function agentMetadataUpdate(input: UserStoryUpdate): UserStoryUpdate {
   return metadata
 }
 
+function pausedAgentUpdate(input: UserStoryUpdate) {
+  return input.status === "in-progress" && input.agentStatus === "Paused"
+}
+
 function agentRunMetadataUpdate(
   input: UserStoryAgentRunUpdate
 ): UserStoryAgentRunUpdate {
@@ -2064,12 +2061,13 @@ function agentEventUpdate(
     }
   }
   if (failedAgentRun(event)) {
+    const resumable = resumableAgentFailure(text)
     return {
       ...flowUpdate,
       agentLastError: boundedAgentMessage(text, "Agent session failed"),
       agentLastEvent: boundedAgentMessage(text, "Agent session failed"),
-      agentStatus: null,
-      status: "in-review",
+      agentStatus: resumable ? "Paused" : null,
+      status: resumable ? "in-progress" : "in-review",
     }
   }
   return {

@@ -3,6 +3,7 @@ import { createAgentEventCoalescer } from "@blame/agent-runtime/agent-event-coal
 
 import type { Platform } from "@/context/platform"
 import { recordPerformanceCount } from "@/lib/performance-diagnostics"
+import { agentEventMatchesExecution } from "./agent-run-lifecycle.ts"
 
 type AgentEventSubscriptionState = {
   connections: number
@@ -21,7 +22,8 @@ export function activeAgentEventSubscription(sessionId: string | undefined) {
 export function subscribeAgentEvents(
   platform: Platform,
   sessionId: string,
-  callback: (event: AgentEvent) => void
+  callback: (event: AgentEvent) => void,
+  executionId?: string
 ) {
   let closed = false
   let connected = false
@@ -36,6 +38,7 @@ export function subscribeAgentEvents(
     rendererEventCoalescingDelayMs
   )
   const handleEvent = (event: AgentEvent) => {
+    if (!agentEventMatchesExecution(event, executionId)) return
     recordPerformanceCount(`agent.event.received.${event.type}`)
     coalescer.push(event)
   }

@@ -138,6 +138,10 @@ export function agentErrorText(value: string): string {
   )
 }
 
+export function resumableAgentFailure(message: string) {
+  return /max[\s_-]?iterations|mistake[\s_-]?limit/i.test(message)
+}
+
 function errorEventText(payload: object) {
   const value = payload as Record<string, unknown>
   const error = recordValue(value.error)

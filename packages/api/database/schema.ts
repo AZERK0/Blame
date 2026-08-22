@@ -999,8 +999,10 @@ export class UserMcpConfigurationSchema extends BaseModel {
 }
 
 export class UserStorySchema extends BaseModel {
-  static $columns = ['agentActivities', 'agentFinalResponse', 'agentLastError', 'agentLastEvent', 'agentModelId', 'agentProviderId', 'agentSessionSummary', 'agentStatus', 'agentUsage', 'baseCommit', 'branch', 'clineSessionId', 'codeSelectionAttachments', 'createdAt', 'discardedReason', 'fileAttachmentUploadPending', 'fileAttachments', 'id', 'mergeCommit', 'mergedAt', 'owner', 'previewUrl', 'priority', 'projectId', 'runConfigurationId', 'status', 'storyNumber', 'summary', 'title', 'updatedAt', 'workspaceMode', 'worktree'] as const
+  static $columns = ['activeAgentRunId', 'agentActivities', 'agentFinalResponse', 'agentLastError', 'agentLastEvent', 'agentModelId', 'agentProviderId', 'agentSessionSummary', 'agentStatus', 'agentUsage', 'baseCommit', 'branch', 'clineSessionId', 'codeSelectionAttachments', 'createdAt', 'discardedReason', 'fileAttachmentUploadPending', 'fileAttachments', 'id', 'mergeCommit', 'mergedAt', 'owner', 'previewUrl', 'priority', 'projectId', 'runConfigurationId', 'status', 'storyNumber', 'summary', 'title', 'updatedAt', 'workspaceMode', 'worktree'] as const
   $columns = UserStorySchema.$columns
+  @column()
+  declare activeAgentRunId: string | null
   @column()
   declare agentActivities: any | null
   @column()
@@ -1068,7 +1070,7 @@ export class UserStorySchema extends BaseModel {
 }
 
 export class UserStoryAgentRunSchema extends BaseModel {
-  static $columns = ['activities', 'checkpointRunCount', 'clineSessionId', 'commentId', 'completedAt', 'createdAt', 'diffEndRef', 'finalResponse', 'id', 'kind', 'sessionSummary', 'status', 'updatedAt', 'usage', 'userStoryId'] as const
+  static $columns = ['activities', 'checkpointRunCount', 'clineSessionId', 'commentId', 'completedAt', 'createdAt', 'diffEndRef', 'executionId', 'finalResponse', 'id', 'kind', 'sessionSummary', 'status', 'updatedAt', 'usage', 'userStoryId'] as const
   $columns = UserStoryAgentRunSchema.$columns
   @column()
   declare activities: any | null
@@ -1084,6 +1086,8 @@ export class UserStoryAgentRunSchema extends BaseModel {
   declare createdAt: DateTime
   @column()
   declare diffEndRef: string | null
+  @column()
+  declare executionId: string | null
   @column()
   declare finalResponse: string | null
   @column({ isPrimary: true })

@@ -14,13 +14,13 @@ import {
   userStoryDisplayId,
   userStoryReadyForAgent,
 } from "@/components/backlog/data/backlog-data"
-import { captureAgentRunDiffEndRef } from "@/components/chat/agent-run-diffs"
 import { nextCheckpointRunCount } from "@/components/chat/agent-run-checkpoints"
 import {
   agentEventText,
   agentFlowUpdate,
   completedAgentRun,
   failedAgentRun,
+  resumableAgentFailure,
   shouldPersistAgentEvent,
   terminalAgentRunEvent,
 } from "@/components/backlog/data/agent-flow"
@@ -29,8 +29,13 @@ import {
   subscribeAgentEvents,
 } from "@/components/backlog/data/agent-event-stream"
 import { persistTerminalAgentUpdate } from "@/components/backlog/data/agent-terminal-outbox"
+import {
+  agentRunFinalization,
+  agentRunOwnsStory,
+  agentUpdateKey,
+} from "@/components/backlog/data/agent-run-lifecycle"
 import { boundedAgentMessage } from "@/components/backlog/data/agent-update-limits"
-import { afterRendererPaint } from "@/components/backlog/data/agent-transition-scheduling"
+import { persistAgentRunDiffEndRef } from "@/components/backlog/data/agent-run-diff-end-ref"
 import {
   completedClineLog,
   finalAssistantResponse,
@@ -245,6 +250,7 @@ export function useBacklogRotation(
     const run = await backlog.createAgentRun(detailedStory, {
       checkpointRunCount: nextCheckpointRunCount(detailedStory.agentRuns ?? []),
       clineSessionId: session.sessionId,
+      executionId,
       kind: "initial",
     })
     const unsubscribeSession = subscribeAgentEvents(
@@ -253,7 +259,8 @@ export function useBacklogRotation(
       (event) => {
         persistAgentEvent(detailedStory, run, event)
         if (terminalAgentRunEvent(event)) unsubscribeSession()
-      }
+      },
+      executionId
     )
 
     await backlog.update(detailedStory, {
@@ -426,21 +433,17 @@ export function useBacklogRotation(
     run: UserStoryAgentRun
   ) {
     if (await recoverCompletedAgentRun(story, run)) return
-    const detailedStory = await backlog.loadDetail(story)
-    const currentStory = detailedStory
+    const currentStory = await backlog.loadDetail(story)
     const currentRun = activeAgentRun(currentStory, run) ?? run
     const completedAt = new Date().toISOString()
-    await backlog.updateAgentRun(currentStory, currentRun, {
-      completedAt,
-      finalResponse: interruptedAgentMessage,
-      status: "failed",
-    })
-    if (!activelyRunningStory(currentStory)) return
-    await backlog.update(currentStory, {
+    await backlog.finalizeAgentRun(currentStory, currentRun, {
+      activities: [],
       agentLastError: interruptedAgentMessage,
       agentLastEvent: interruptedAgentMessage,
-      agentStatus: "Paused",
-      status: "in-progress",
+      completedAt,
+      finalResponse: interruptedAgentMessage,
+      outcome: "paused",
+      status: "failed",
     })
   }
 
@@ -483,31 +486,22 @@ export function useBacklogRotation(
       payload: response ? { text: response } : {},
       type: "done",
     }
-    const flowUpdate = agentFlowUpdate(currentStory, event)
+    const flowUpdate = agentFlowUpdate(runFlowState(currentRun), event)
     const text = agentEventText(event)
-    if (!activelyRunningStory(currentStory)) {
-      await backlog.updateAgentRun(currentStory, currentRun, {
-        completedAt: new Date().toISOString(),
-        finalResponse: response,
-        status: "completed",
-      })
-      notifyCommentResponseCompleted(currentStory, currentRun, platform)
-      recordPerformanceCount("agent.recovery.completed")
-      return true
+    const storyInput = {
+      ...flowUpdate,
+      agentLastError: null,
+      agentLastEvent: "Agent completed. Ready for review.",
+      agentStatus: null,
+      status: "in-review" as const,
     }
-    persistAgentUpdate(
-      currentStory,
-      {
-        ...flowUpdate,
-        agentLastError: null,
-        agentLastEvent: "Agent completed. Ready for review.",
-        agentStatus: null,
-        status: "in-review",
-      },
-      currentRun,
-      agentRunEventUpdate(flowUpdate, event, text),
-      true
+    const finalization = agentRunFinalization(
+      activityUpdates(storyInput),
+      storyInput,
+      agentRunEventUpdate(flowUpdate, event, text)
     )
+    if (!finalization) return false
+    await backlog.finalizeAgentRun(currentStory, currentRun, finalization)
     notifyCommentResponseCompleted(currentStory, currentRun, platform)
     recordPerformanceCount("agent.recovery.completed")
     return true
@@ -622,14 +616,15 @@ export function useBacklogRotation(
       return
     }
     if (failedAgentRun(event)) {
+      const resumable = resumableAgentFailure(text)
       await persistTerminalAgentTransition(
         currentStory,
         {
           ...flowUpdate,
           agentLastError: boundedAgentMessage(text, "Agent session failed"),
           agentLastEvent: boundedAgentMessage(text, "Agent session failed"),
-          agentStatus: null,
-          status: "in-review",
+          agentStatus: resumable ? "Paused" : null,
+          status: resumable ? "in-progress" : "in-review",
         },
         run,
         runInput
@@ -659,14 +654,15 @@ export function useBacklogRotation(
     runInput: UserStoryAgentRunUpdate,
     immediate: boolean
   ) {
-    const nextStory = updateLocalStory(story, input, run, runInput)
+    const storyInput = agentRunOwnsStory(story, run) ? input : {}
+    const nextStory = updateLocalStory(story, storyInput, run, runInput)
     if (immediate) {
-      void flushAgentUpdate(nextStory, run, input, runInput).catch(
+      void flushAgentUpdate(nextStory, run, storyInput, runInput).catch(
         reportAgentPersistenceError
       )
       return
     }
-    queueAgentUpdate(nextStory, run, input, runInput)
+    queueAgentUpdate(nextStory, run, storyInput, runInput)
   }
 
   async function persistTerminalAgentTransition(
@@ -675,27 +671,19 @@ export function useBacklogRotation(
     run: UserStoryAgentRun | undefined,
     runInput: UserStoryAgentRunUpdate
   ) {
-    const nextStory = updateLocalStory(story, input, run, runInput)
-    const pending = pendingAgentUpdates.current.get(story.id)
-    if (pending) window.clearTimeout(pending.timer)
+    const storyInput = agentRunOwnsStory(story, run) ? input : {}
+    const nextStory = updateLocalStory(story, storyInput, run, runInput)
     recordPerformanceEvent("agent.transition.local_terminal_update", {
       eventType: runInput.status ?? "terminal",
     })
-    await afterRendererPaint()
-    if (run && !run.diffEndRef) {
-      runInput.diffEndRef = await measurePerformanceOperation(
-        "agent.transition.diff_snapshot",
-        () =>
-          captureAgentRunDiffEndRef({
-            id: run.id,
-            platform,
-            root: story.worktree,
-          })
-      )
-    }
-    void flushAgentUpdate(nextStory, run, input, runInput).catch(
+    void flushAgentUpdate(nextStory, run, storyInput, runInput).catch(
       reportAgentPersistenceError
     )
+    if (run && !run.diffEndRef) {
+      void persistAgentRunDiffEndRef(story, run, platform, backlog).catch(
+        reportAgentPersistenceError
+      )
+    }
   }
 
   function updateLocalStory(
@@ -719,14 +707,15 @@ export function useBacklogRotation(
     input: UserStoryUpdate,
     runInput: UserStoryAgentRunUpdate
   ) {
-    const pending = pendingAgentUpdates.current.get(story.id)
+    const key = agentUpdateKey(story, run)
+    const pending = pendingAgentUpdates.current.get(key)
     if (pending) window.clearTimeout(pending.timer)
     const update = pendingAgentUpdate(pending, input, run, runInput)
     const timer = window.setTimeout(() => {
-      pendingAgentUpdates.current.delete(story.id)
+      pendingAgentUpdates.current.delete(key)
       void persistQueuedAgentUpdate(story, update).catch(() => undefined)
     }, agentEventPersistDelayMs)
-    pendingAgentUpdates.current.set(story.id, { ...update, timer })
+    pendingAgentUpdates.current.set(key, { ...update, timer })
   }
 
   function flushAgentUpdate(
@@ -735,13 +724,30 @@ export function useBacklogRotation(
     input: UserStoryUpdate,
     runInput: UserStoryAgentRunUpdate
   ) {
-    const pending = pendingAgentUpdates.current.get(story.id)
+    const key = agentUpdateKey(story, run)
+    const pending = pendingAgentUpdates.current.get(key)
     if (pending) window.clearTimeout(pending.timer)
-    pendingAgentUpdates.current.delete(story.id)
+    pendingAgentUpdates.current.delete(key)
     const update = pendingAgentUpdate(pending, input, run, runInput)
     return persistTerminalAgentUpdate(window.localStorage, story, update, () =>
-      persistQueuedAgentUpdate(story, update)
+      persistTerminalQueuedAgentUpdate(story, update)
     )
+  }
+
+  function persistTerminalQueuedAgentUpdate(
+    story: UserStory,
+    update: QueuedAgentUpdate
+  ) {
+    const finalization = agentRunFinalization(
+      update.activities,
+      update.input,
+      update.runInput,
+      pausedAgentUpdate(update.input) ? "paused" : "review"
+    )
+    if (!update.run || !finalization) {
+      return persistQueuedAgentUpdate(story, update)
+    }
+    return backlog.finalizeAgentRun(story, update.run, finalization)
   }
 
   async function persistQueuedAgentUpdate(
@@ -750,17 +756,30 @@ export function useBacklogRotation(
   ) {
     let nextStory = activeStory(story, storiesRef.current)
     const metadata = agentMetadataUpdate(update.input)
-    if (Object.keys(definedUpdate(metadata)).length) {
+    if (
+      agentRunOwnsStory(
+        activeStory(nextStory, storiesRef.current),
+        update.run
+      ) &&
+      Object.keys(definedUpdate(metadata)).length
+    ) {
       nextStory = await backlog.update(
         activeStory(nextStory, storiesRef.current),
         metadata
       )
     }
     for (const activity of update.activities) {
-      nextStory = await backlog.update(
-        activeStory(nextStory, storiesRef.current),
-        { agentActivity: activity }
-      )
+      if (
+        agentRunOwnsStory(
+          activeStory(nextStory, storiesRef.current),
+          update.run
+        )
+      ) {
+        nextStory = await backlog.update(
+          activeStory(nextStory, storiesRef.current),
+          { agentActivity: activity }
+        )
+      }
       if (update.run) {
         await backlog.updateAgentRun(nextStory, update.run, {
           agentActivity: activity,
@@ -943,6 +962,10 @@ function agentMetadataUpdate(input: UserStoryUpdate): UserStoryUpdate {
   return metadata
 }
 
+function pausedAgentUpdate(input: UserStoryUpdate) {
+  return input.status === "in-progress" && input.agentStatus === "Paused"
+}
+
 function agentRunMetadataUpdate(
   input: UserStoryAgentRunUpdate
 ): UserStoryAgentRunUpdate {
@@ -1074,8 +1097,13 @@ function nextAgentRun(story: UserStory, run: UserStoryAgentRun) {
   )
 }
 
-function activelyRunningStory(story: UserStory) {
-  return story.status === "in-progress" && story.agentStatus === "Running"
+function runFlowState(run: UserStoryAgentRun) {
+  return {
+    agentActivities: run.activities,
+    agentFinalResponse: run.finalResponse,
+    agentSessionSummary: run.sessionSummary,
+    agentUsage: run.usage,
+  }
 }
 
 function staleAgentRun(run: UserStoryAgentRun) {

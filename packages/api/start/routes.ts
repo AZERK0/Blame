@@ -242,6 +242,7 @@ router
         router.get('/:id/agent-activities/:activityId', [controllers.UserStories, 'activityDetail'])
         router.post('/:id/agent-runs', [UserStoryAgentRunsController, 'store'])
         router.patch('/:id/agent-runs/:runId', [UserStoryAgentRunsController, 'update'])
+        router.post('/:id/agent-runs/:runId/finalize', [UserStoryAgentRunsController, 'finalize'])
         router.get('/:id/agent-runs/:runId/activities/:activityId', [
           UserStoryAgentRunsController,
           'activityDetail',

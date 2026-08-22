@@ -3,6 +3,7 @@ import type {
   UserStoryActivityDetail,
   UserStoryAgentRun,
   UserStoryAgentRunDraft,
+  UserStoryAgentRunFinalization,
   UserStoryAgentRunUpdate,
   UserStoryComment,
   UserStoryDraft,
@@ -122,6 +123,23 @@ export function createBacklogApi(connection: ApiConnection) {
           {
             body: JSON.stringify(apiAgentRunUpdate(input)),
             method: "PATCH",
+          }
+        )
+      )
+    },
+    async finalizeAgentRun(
+      id: string,
+      runId: string,
+      input: UserStoryAgentRunFinalization
+    ) {
+      return userStory(
+        await request<unknown>(
+          connection,
+          baseUrl,
+          `/projects/user-stories/${id}/agent-runs/${runId}/finalize`,
+          {
+            body: JSON.stringify(input),
+            method: "POST",
           }
         )
       )
