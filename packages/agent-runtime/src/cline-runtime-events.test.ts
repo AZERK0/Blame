@@ -4,7 +4,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import type { ClineCoreStartInput, CoreSessionEvent } from "@cline/sdk";
+import {
+  createUserInstructionConfigService,
+  type ClineCoreStartInput,
+  type CoreSessionEvent,
+} from "@cline/sdk";
 import { ClineFreeModelLimitError, ClineNotSubscribedError } from "@cline/llms";
 import type { AgentEvent } from "./types.js";
 
@@ -174,10 +178,35 @@ test("starts development sessions with native skills and private specialist cons
     assert.equal(capturedStart.config.enableSpawnAgent, false);
     assert.ok(capturedStart.localRuntime?.configExtensions?.includes("skills"));
     assert.ok(
+      capturedStart.localRuntime?.configExtensions?.includes("plugins"),
+    );
+    assert.ok(
       capturedStart.localRuntime?.pluginPaths?.some((path: string) =>
         path.endsWith("/plugins/blame-native/index.js"),
       ),
     );
+    const skillService = createUserInstructionConfigService({
+      skills: {
+        cwd: workspace,
+        includePluginSkills:
+          capturedStart.localRuntime?.configExtensions?.includes("plugins"),
+        pluginPaths: [...(capturedStart.localRuntime?.pluginPaths ?? [])],
+        workspacePath: workspace,
+      },
+    });
+    try {
+      await skillService.start();
+      assert.ok(
+        skillService
+          .listRecords("skill")
+          .some(
+            (record: { item: { name: string } }) =>
+              record.item.name === "impeccable",
+          ),
+      );
+    } finally {
+      skillService.stop();
+    }
     const toolNames = capturedStart.config.extraTools?.map(
       (tool: { name: string }) => tool.name,
     );

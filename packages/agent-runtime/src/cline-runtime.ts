@@ -676,7 +676,7 @@ export class BlameAgentRuntime {
         input.configExtensions ??
         runtimeConfigExtensions(this.productionConfig);
       const configExtensions = input.enableBuiltInSkills
-        ? withConfigExtension(requestedConfigExtensions, "skills")
+        ? withConfigExtensions(requestedConfigExtensions, "skills", "plugins")
         : requestedConfigExtensions;
       const taskContract = {
         session_id: sessionId,
@@ -3666,11 +3666,11 @@ export function blameNativePluginPath() {
   );
 }
 
-function withConfigExtension(
+function withConfigExtensions(
   extensions: StartSessionInput["configExtensions"],
-  extension: NonNullable<StartSessionInput["configExtensions"]>[number],
+  ...required: NonNullable<StartSessionInput["configExtensions"]>
 ) {
-  return Array.from(new Set([...(extensions ?? []), extension]));
+  return Array.from(new Set([...(extensions ?? []), ...required]));
 }
 
 function developmentPracticePrompts(
