@@ -822,6 +822,23 @@ export class ProviderCredentialSchema extends BaseModel {
   declare userId: string
 }
 
+export class QuickChatAgentRunActivitySchema extends BaseModel {
+  static $columns = ['activity', 'activityId', 'createdAt', 'id', 'runId', 'updatedAt'] as const
+  $columns = QuickChatAgentRunActivitySchema.$columns
+  @column()
+  declare activity: any
+  @column()
+  declare activityId: string
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare runId: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+}
+
 export class QuickChatAgentRunSchema extends BaseModel {
   static $columns = ['activities', 'checkpointRunCount', 'clineSessionId', 'completedAt', 'createdAt', 'diffEndRef', 'finalResponse', 'id', 'kind', 'messageId', 'quickChatId', 'sessionSummary', 'status', 'updatedAt', 'usage'] as const
   $columns = QuickChatAgentRunSchema.$columns
@@ -1067,6 +1084,23 @@ export class UserStorySchema extends BaseModel {
   declare workspaceMode: string | null
   @column()
   declare worktree: string | null
+}
+
+export class UserStoryAgentRunActivitySchema extends BaseModel {
+  static $columns = ['activity', 'activityId', 'createdAt', 'id', 'runId', 'updatedAt'] as const
+  $columns = UserStoryAgentRunActivitySchema.$columns
+  @column()
+  declare activity: any
+  @column()
+  declare activityId: string
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare runId: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
 }
 
 export class UserStoryAgentRunSchema extends BaseModel {
