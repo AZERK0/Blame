@@ -1,6 +1,13 @@
 import { randomUUID } from "node:crypto";
 import { execFile } from "node:child_process";
-import { access, appendFile, mkdir, rm, writeFile } from "node:fs/promises";
+import {
+  access,
+  appendFile,
+  mkdir,
+  readFile,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import {
   basename,
   dirname,
@@ -1571,14 +1578,15 @@ export class BlameAgentRuntime {
               prompt: newProjectGenerationPrompt(input),
               config,
               interactive: false,
+              localRuntime: { configExtensions: ["rules"] },
               source: "blame-new-project-generation",
-              toolPolicies: toolPolicies(true),
+              toolPolicies: newProjectGenerationToolPolicies(),
             }) as Promise<RuntimeClineResult>,
         );
       const failure = resultFailureMessage(session.result);
+      const readinessError = await generatedProjectReadinessError(input.cwd);
+      if (readinessError) throw new Error(failure ?? readinessError);
       if (failure) {
-        if (!(await generatedProjectLooksReady(input.cwd)))
-          throw new Error(failure);
         this.emitSessionNotice(
           sessionId,
           `New project generation agent ended after scaffold: ${failure}`,
@@ -2754,6 +2762,17 @@ function toolPolicies(autoApproveWriteTools: boolean) {
   ]);
 }
 
+export function newProjectGenerationToolPolicies() {
+  return Object.fromEntries([
+    ...legacyDirectWorkspaceTools.map((name) => [
+      name,
+      { enabled: true, autoApprove: true },
+    ]),
+    ["skills", { enabled: false, autoApprove: false }],
+    ["ask_question", { enabled: false, autoApprove: false }],
+  ]);
+}
+
 export function backendKey(backend?: AgentBackendConfig) {
   if (backend?.key) return backend.key;
   if (!backend) return "local";
@@ -3784,11 +3803,32 @@ function newProjectGenerationMaxIterations() {
   return Number.isFinite(value) && value > 0 ? value : 16;
 }
 
-async function generatedProjectLooksReady(cwd: string) {
-  return (
-    (await fileExists(join(cwd, "package.json"))) ||
-    (await fileExists(join(cwd, "apps", "web", "package.json")))
-  );
+async function generatedProjectReadinessError(cwd: string) {
+  const paths = [
+    join(cwd, "package.json"),
+    join(cwd, "apps", "web", "package.json"),
+  ];
+  for (const path of paths) {
+    if (!(await fileExists(path))) continue;
+    return projectManifestReadinessError(path);
+  }
+  return "Project generation agent completed without creating a package.json.";
+}
+
+async function projectManifestReadinessError(path: string) {
+  try {
+    const manifest = JSON.parse(await readFile(path, "utf8")) as {
+      scripts?: Record<string, unknown>;
+    };
+    const missing = ["dev", "build"].filter(
+      (name) => typeof manifest.scripts?.[name] !== "string",
+    );
+    return missing.length
+      ? `Generated package.json is missing required scripts: ${missing.join(", ")}.`
+      : undefined;
+  } catch {
+    return "Project generation agent created an invalid package.json.";
+  }
 }
 
 async function fileExists(path: string) {
