@@ -16,6 +16,16 @@ export const symbolKindSchema = z.enum([
   "variable",
 ]);
 
+export const relationKindSchema = z.enum([
+  "calls",
+  "implements",
+  "imports",
+  "reads",
+  "references",
+  "tested_by",
+  "writes",
+]);
+
 export const sourceRevisionIdSchema = z
   .string()
   .regex(/^src_[a-f0-9]{32}$/)
@@ -210,11 +220,9 @@ export const getRelationContextInputSchema = z
     source_revision_id: sourceRevisionIdSchema,
     target: z.object({ symbol_ref: z.string().regex(/^sym:\/\//) }).strict(),
     relations: z
-      .array(
-        z.enum(["calls", "implements", "imports", "references", "tested_by"]),
-      )
+      .array(relationKindSchema)
       .min(1)
-      .max(5)
+      .max(7)
       .default(["calls", "imports", "references", "tested_by"])
       .optional(),
     scope: z
@@ -645,6 +653,7 @@ export type InspectCodeInput = z.infer<typeof inspectCodeInputSchema>;
 export type GetRelationContextInput = z.infer<
   typeof getRelationContextInputSchema
 >;
+export type RelationKind = z.infer<typeof relationKindSchema>;
 export type ChangeOperation = z.infer<typeof changeOperationSchema>;
 export type ProposeChangeInput = z.infer<typeof proposeChangeInputSchema>;
 export type DirectApplyChangeInput = z.infer<

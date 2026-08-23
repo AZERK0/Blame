@@ -102,7 +102,7 @@ export function semanticWorkspaceTools(
     createHarnessTool({
       name: "get_relation_context",
       description:
-        "Return a bounded, ranked set of likely calls, imports, implementations, references, and tests for one exact symbol_ref. Use only when cross-file context is needed. Results are lexical/syntax heuristics with explicit coverage, not compiler proof; request node_refs only for relations you intend to inspect.",
+        "Return bounded calls, imports, implementations, reads, writes, references, and tests for one exact symbol_ref. TypeScript and JavaScript automatically use a lazy compiler-grade index cached by source revision; other languages use the explicit heuristic fallback. Request node_refs only for relations you intend to inspect.",
       schema: getRelationContextInputSchema,
       execute: (input, context) =>
         visibleResult(

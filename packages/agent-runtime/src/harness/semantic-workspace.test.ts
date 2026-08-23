@@ -1067,6 +1067,59 @@ test("outline_code returns compact symbols across priority languages and Vue", a
       }),
     );
     assert.match(body.data.content, /return true/);
+    const pythonSymbol = success(
+      await workspace.outlineCode({
+        source_revision_id: revision,
+        target: { path: "src/example.py" },
+      }),
+    ).data.items.find((item) => item.qualified_name === "Worker.run");
+    assert.ok(pythonSymbol);
+    const fallback = success(
+      await workspace.getRelationContext({
+        source_revision_id: revision,
+        target: { symbol_ref: pythonSymbol.symbol_ref },
+      }),
+    );
+    assert.equal(fallback.data.engine, "ripgrep");
+    if (fallback.data.engine !== "ripgrep") assert.fail("Expected fallback");
+    assert.equal(fallback.data.fallback_reason, "unsupported_language");
+    assert.equal(fallback.coverage.analysis, "heuristic");
+  });
+});
+
+test("compiler relations infer a TypeScript project without configuration", async () => {
+  await withWorkspace(async (root) => {
+    await writeFile(
+      join(root, "src", "consumer.ts"),
+      'import { formatName } from "./service";\nformatName("Ada");\n',
+    );
+    const workspace = new SemanticWorkspace(root);
+    const state = success(await workspace.workspaceState());
+    const revision = state.data.source_revision.source_revision_id;
+    const outline = success(
+      await workspace.outlineCode({
+        source_revision_id: revision,
+        target: { path: "src/service.ts" },
+      }),
+    );
+    const target = outline.data.items.find(
+      (item) => item.name === "formatName",
+    );
+    assert.ok(target);
+    const relations = success(
+      await workspace.getRelationContext({
+        source_revision_id: revision,
+        target: { symbol_ref: target.symbol_ref },
+      }),
+    );
+    if (relations.data.engine !== "typescript")
+      assert.fail(JSON.stringify(relations.data));
+    assert.equal(relations.data.project_kind, "inferred");
+    assert.equal(relations.data.analysis, "exact");
+    assert.equal(
+      relations.data.items.some((item) => item.relation === "calls"),
+      true,
+    );
   });
 });
 
@@ -1076,6 +1129,30 @@ test("P1 relation and impact views stay bounded and identify tests", async () =>
     await writeFile(
       join(root, "tests", "service.test.ts"),
       'import { formatName } from "../src/service";\nformatName("Ada");\n',
+    );
+    await writeFile(
+      join(root, "tsconfig.json"),
+      JSON.stringify({
+        compilerOptions: {
+          baseUrl: ".",
+          module: "ESNext",
+          moduleResolution: "Bundler",
+          paths: { "@core/*": ["src/*"] },
+        },
+        include: ["src", "tests"],
+      }),
+    );
+    await writeFile(
+      join(root, "src", "consumer.ts"),
+      'import { formatName as normalize } from "@core/service";\nnormalize("Ada");\n',
+    );
+    await writeFile(
+      join(root, "src", "unrelated.ts"),
+      'function formatName(value: string) { return value; }\nformatName("Noise");\n',
+    );
+    await writeFile(
+      join(root, "src", "state.ts"),
+      "export let count = 0;\ncount += 1;\nconsole.log(count);\n",
     );
     const workspace = new SemanticWorkspace(root);
     const state = success(await workspace.workspaceState());
@@ -1096,12 +1173,70 @@ test("P1 relation and impact views stay bounded and identify tests", async () =>
         target: { symbol_ref: target.symbol_ref },
       }),
     );
+    assert.equal(relations.data.analysis, "exact");
+    if (relations.data.engine !== "typescript")
+      assert.fail(JSON.stringify(relations.data));
+    assert.equal(relations.data.cache.hit, false);
+    assert.equal(relations.data.project_kind, "configured");
+    assert.equal(relations.coverage.analysis, "exact");
+    assert.match(relations.subject_revision.index_revision_id ?? "", /^idx_/);
     assert.equal(
       relations.data.items.some((item) => item.relation === "calls"),
       true,
     );
     assert.equal(
       relations.data.items.some((item) => item.relation === "tested_by"),
+      true,
+    );
+    assert.equal(
+      relations.data.items.some((item) => item.relation === "imports"),
+      true,
+    );
+    assert.equal(
+      relations.data.items.some((item) => item.path === "src/unrelated.ts"),
+      false,
+    );
+    const cachedRelations = success(
+      await new SemanticWorkspace(root).getRelationContext({
+        source_revision_id: revision,
+        target: { symbol_ref: target.symbol_ref },
+      }),
+    );
+    if (cachedRelations.data.engine !== "typescript")
+      assert.fail(JSON.stringify(cachedRelations.data));
+    assert.equal(cachedRelations.data.cache.hit, true);
+    const boundedRelations = success(
+      await workspace.getRelationContext({
+        source_revision_id: revision,
+        target: { symbol_ref: target.symbol_ref },
+        include: ["node_refs"],
+        max_results: 1,
+      }),
+    );
+    assert.equal(boundedRelations.data.items.length, 1);
+    assert.match(boundedRelations.data.items[0]?.node_ref ?? "", /^node:\/\//);
+    assert.equal(boundedRelations.coverage.truncated, true);
+    const stateOutline = success(
+      await workspace.outlineCode({
+        source_revision_id: revision,
+        target: { path: "src/state.ts" },
+      }),
+    );
+    const count = stateOutline.data.items.find((item) => item.name === "count");
+    assert.ok(count);
+    const access = success(
+      await workspace.getRelationContext({
+        source_revision_id: revision,
+        target: { symbol_ref: count.symbol_ref },
+        relations: ["reads", "writes"],
+      }),
+    );
+    assert.equal(
+      access.data.items.some((item) => item.relation === "reads"),
+      true,
+    );
+    assert.equal(
+      access.data.items.some((item) => item.relation === "writes"),
       true,
     );
     const proposal = success(
@@ -1137,6 +1272,17 @@ test("P1 relation and impact views stay bounded and identify tests", async () =>
       ),
       true,
     );
+    await writeFile(
+      join(root, "src", "consumer.ts"),
+      'import { formatName } from "@core/service";\nformatName("Grace");\n',
+    );
+    const stale = await workspace.getRelationContext({
+      source_revision_id: revision,
+      target: { symbol_ref: target.symbol_ref },
+    });
+    assert.equal(stale.status, "error");
+    if (stale.status === "error")
+      assert.equal(stale.error.code, "STALE_REVISION");
   });
 });
 

@@ -237,8 +237,18 @@ export class SemanticWorkspace {
             comprehension: {
               get_relation_context: {
                 available: true,
-                analysis: "heuristic",
                 bounded: true,
+                semantic: {
+                  activation: "on_demand",
+                  cache: "source_revision_and_symbol",
+                  engine: "typescript",
+                  languages: ["javascript", "typescript"],
+                  precision: "compiler",
+                },
+                fallback: {
+                  analysis: "heuristic",
+                  engine: "ripgrep",
+                },
               },
               review_change: ["semantic_diff", "impact"],
               validate_change: true,

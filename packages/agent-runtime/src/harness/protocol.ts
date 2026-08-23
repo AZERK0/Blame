@@ -60,7 +60,13 @@ export type ArtifactRef = {
 };
 
 export type Provenance = {
-  producer: "git" | "parser" | "lexical" | "filesystem" | "harness";
+  producer:
+    | "compiler"
+    | "filesystem"
+    | "git"
+    | "harness"
+    | "lexical"
+    | "parser";
   producer_version?: string;
   revision: RevisionVector;
   artifact_hash?: string;

@@ -37,6 +37,7 @@ const dependencyNames = [
   "prettier",
   "proper-lockfile",
   "strip-ansi",
+  "typescript",
   "write-file-atomic",
   "zod",
 ];

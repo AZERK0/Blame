@@ -19,24 +19,34 @@ import {
 import {
   getRelationContextInputSchema,
   type GetRelationContextInput,
+  type RelationKind,
 } from "./schemas.js";
+import type {
+  SemanticRelationIndex,
+  SemanticRelationRecord,
+  SemanticRelationUnavailable,
+  SemanticTarget,
+} from "./semantic-relations.js";
+import { TypeScriptSemanticService } from "./typescript-semantic-service.js";
 import type { WorkspaceFiles, WorkspaceSnapshot } from "./workspace-files.js";
 
-type RelationKind = NonNullable<GetRelationContextInput["relations"]>[number];
-
 type RelationItem = {
+  certainty?: "may" | "must";
   relation: RelationKind;
   path: string;
   line_range: [number, number];
+  range_utf8_bytes?: [number, number];
   excerpt?: string;
   node_ref?: string;
 };
 
 export class RelationService {
   private readonly files: WorkspaceFiles;
+  private readonly semantic: TypeScriptSemanticService;
 
   constructor(files: WorkspaceFiles) {
     this.files = files;
+    this.semantic = new TypeScriptSemanticService(files);
   }
 
   async getRelationContext(
@@ -64,6 +74,29 @@ export class RelationService {
     signal?: AbortSignal,
   ) {
     const target = await this.resolveTarget(input, snapshot);
+    const semantic = await this.semantic.relations({
+      target,
+      snapshot,
+      signal,
+    });
+    if (semantic.available)
+      return this.semanticContext(input, target, semantic.index);
+    return this.heuristicContext(
+      input,
+      target,
+      snapshot,
+      semantic.unavailable,
+      signal,
+    );
+  }
+
+  private async heuristicContext(
+    input: GetRelationContextInput,
+    target: SemanticTarget,
+    snapshot: WorkspaceSnapshot,
+    unavailable: SemanticRelationUnavailable,
+    signal?: AbortSignal,
+  ) {
     const maximum = input.max_results ?? 30;
     const matches = await this.search(
       target.name,
@@ -75,17 +108,64 @@ export class RelationService {
     const items = await this.relationItems(input, target, matches.items);
     const bounded = boundItems(items, input.budget?.max_output_tokens ?? 1_800);
     return {
-      target: {
-        kind: target.kind,
-        name: target.name,
-        path: target.path,
-        qualified_name: target.qualifiedName,
-      },
+      target: publicTarget(target),
       items: bounded.items.slice(0, maximum),
       counts: relationCounts(items),
+      analysis: "heuristic" as const,
+      engine: "ripgrep" as const,
+      fallback_reason: unavailable.reason,
+      producer: "lexical" as const,
       truncated:
         matches.truncated || bounded.truncated || items.length > maximum,
     };
+  }
+
+  private async semanticContext(
+    input: GetRelationContextInput,
+    target: SemanticTarget,
+    index: SemanticRelationIndex,
+  ) {
+    const maximum = input.max_results ?? 30;
+    const requested = new Set(input.relations ?? defaultRelations);
+    const records = index.items.flatMap((item) =>
+      requestedRelations(item, requested, input.scope?.paths),
+    );
+    const items = await this.semanticItems(input, records);
+    const bounded = boundItems(items, input.budget?.max_output_tokens ?? 1_800);
+    return {
+      target: publicTarget(target),
+      items: bounded.items.slice(0, maximum),
+      counts: relationCounts(items),
+      analysis: "exact" as const,
+      cache: { hit: index.cacheHit, scope: "symbol" as const },
+      engine: index.engine,
+      engine_version: index.engineVersion,
+      index_revision_id: index.indexRevisionId,
+      producer: "compiler" as const,
+      project_kind: index.projectKind,
+      truncated: !index.complete || bounded.truncated || items.length > maximum,
+    };
+  }
+
+  private async semanticItems(
+    input: GetRelationContextInput,
+    records: SemanticRelationRecord[],
+  ) {
+    const include = new Set(input.include ?? ["excerpts"]);
+    const contents = new Map<string, Buffer>();
+    return Promise.all(
+      records.map(async (record) => {
+        const content = include.has("node_refs")
+          ? await cachedContent(this.files, contents, record.path)
+          : undefined;
+        return semanticRelationItem(
+          record,
+          include,
+          input.source_revision_id,
+          content,
+        );
+      }),
+    );
   }
 
   async impact(input: {
@@ -136,7 +216,7 @@ export class RelationService {
     );
     if (!symbol) throw new Error(`TARGET_GONE:${path}`);
     return {
-      content,
+      digest: handle.digest,
       end: handle.end,
       kind: symbol.kind,
       name: symbol.name,
@@ -219,22 +299,76 @@ function relationSuccess(
   snapshot: WorkspaceSnapshot,
   context: Awaited<ReturnType<RelationService["context"]>>,
 ) {
-  const revision = revisionVector(snapshot);
+  const { producer, ...data } = context;
+  const metadata = semanticMetadata(context);
+  const revision = { ...revisionVector(snapshot), ...metadata.revision };
   return harnessSuccess({
     startedAt,
     revision,
-    provenance: [provenance("lexical", revision)],
+    provenance: [relationProvenance(context, producer, revision, metadata)],
     data: {
-      ...context,
-      analysis: "heuristic",
+      ...data,
       omitted_boundary: context.truncated ? "budget_or_result_limit" : null,
     },
     coverage: {
       scope: context.truncated ? "partial" : "complete",
       truncated: context.truncated,
-      analysis: "heuristic",
+      analysis: context.analysis,
     },
   });
+}
+
+function relationProvenance(
+  context: Awaited<ReturnType<RelationService["context"]>>,
+  producer: "compiler" | "lexical",
+  revision: ReturnType<typeof revisionVector>,
+  metadata: ReturnType<typeof semanticMetadata>,
+) {
+  const paths = unique([
+    context.target.path,
+    ...context.items.map((item) => item.path),
+  ]);
+  return { ...provenance(producer, revision, paths), ...metadata.provenance };
+}
+
+function semanticMetadata(
+  context: Awaited<ReturnType<RelationService["context"]>>,
+) {
+  const indexRevisionId =
+    "index_revision_id" in context ? context.index_revision_id : undefined;
+  const engineVersion =
+    "engine_version" in context ? context.engine_version : undefined;
+  return {
+    provenance: engineVersion ? { producer_version: engineVersion } : {},
+    revision: indexRevisionId ? { index_revision_id: indexRevisionId } : {},
+  };
+}
+
+function semanticRelationItem(
+  record: SemanticRelationRecord,
+  include: Set<string>,
+  revision: string,
+  content?: Buffer,
+): RelationItem {
+  return {
+    certainty: record.certainty,
+    relation: record.relation,
+    path: record.path,
+    line_range: record.line_range,
+    ...(include.has("excerpts") ? { excerpt: record.excerpt } : {}),
+    ...(include.has("node_refs") && content
+      ? {
+          node_ref: nodeRef(
+            revision,
+            record.path,
+            content,
+            record.range_utf8_bytes[0],
+            record.range_utf8_bytes[1],
+            "semantic_relation",
+          ),
+        }
+      : {}),
+  };
 }
 
 function relationItem(
@@ -245,6 +379,7 @@ function relationItem(
   revision: string,
 ): RelationItem {
   return {
+    certainty: "may",
     relation,
     path: match.path,
     line_range: match.line_range,
@@ -363,6 +498,41 @@ function scopedPaths(files: string[], paths?: string[]) {
   );
 }
 
+function pathInScope(path: string, paths?: string[]) {
+  return (
+    !paths?.length ||
+    paths.some((scope) => path === scope || path.startsWith(`${scope}/`))
+  );
+}
+
+function requestedRelations(
+  item: SemanticRelationRecord,
+  requested: Set<RelationKind>,
+  paths?: string[],
+) {
+  if (!pathInScope(item.path, paths)) return [];
+  const records: SemanticRelationRecord[] = [];
+  if (requested.has(item.relation)) records.push(item);
+  const accessRelation =
+    item.access === "read"
+      ? "reads"
+      : item.access === "write"
+        ? "writes"
+        : null;
+  if (accessRelation && requested.has(accessRelation))
+    records.push({ ...item, certainty: "must", relation: accessRelation });
+  return records;
+}
+
+function publicTarget(target: SemanticTarget) {
+  return {
+    kind: target.kind,
+    name: target.name,
+    path: target.path,
+    qualified_name: target.qualifiedName,
+  };
+}
+
 function relationCounts(items: RelationItem[]) {
   const counts: Partial<Record<RelationKind, number>> = {};
   for (const item of items)
@@ -405,5 +575,7 @@ const relationPriority: Record<RelationKind, number> = {
   implements: 1,
   imports: 2,
   tested_by: 3,
-  references: 4,
+  writes: 4,
+  reads: 5,
+  references: 6,
 };

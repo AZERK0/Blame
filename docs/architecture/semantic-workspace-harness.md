@@ -70,7 +70,12 @@ Le protocole métier ne dépend ni de Cline ni d’Electron :
 - `protocol.ts` : enveloppes, refs, provenance, couverture et erreurs ;
 - `workspace-files.ts` : snapshots, chemins sûrs, symlinks et source revisions ;
 - `code-intelligence.ts` / `lexical-search.ts` : parsing et recherche ;
-- `relation-service.ts` : contexte et impact heuristiques, ciblés et bornés ;
+- `relation-service.ts` : contexte et impact ciblés et bornés ;
+- `typescript-semantic-project.ts` / `typescript-semantic-service.ts` : backend
+  compiler-grade JS/TS créé à la demande, avec références, appels, imports,
+  implémentations et accès liés au symbole exact ;
+- `semantic-relation-cache.ts` : cache borné par symbole et source revision,
+  exclu du snapshot canonique ;
 - `artifact-store.ts` : CAS chiffré, accès, rétention et intégrité ;
 - `change-preparation.ts` : opérations en mémoire, formatage, API publique,
   diagnostics et diffs ;
@@ -119,7 +124,9 @@ révisions, policies, audience, préconditions, audit et recovery.
 workspace_state -> source_revision_id
 search_code / outline_code -> SymbolRef / SyntaxNodeRef
 inspect_code -> observation exacte
-get_relation_context(SymbolRef) -> relations probables bornées
+get_relation_context(SymbolRef)
+  -> compilateur JS/TS exact et cache révisionné
+  -> fallback lexical borné pour les autres langages
 apply_change(propose) -> ChangeProposalRef + diff + diagnostics
 review_change -> contenu, effets et preuves existantes
 apply_change(commit_proposal) -> ChangeSetRef + nouvelle source revision
@@ -156,6 +163,9 @@ runtimes macOS/Windows installent Bubblewrap lors de leur provisionnement.
 - contenu, modes et offsets sont calculés sur les bytes exacts ;
 - outputs, recherches, artifacts et effets ont des budgets et une troncature
   explicite ; un effet trop grand est audité puis refusé comme proposition ;
+- l’index compiler JS/TS n’est créé qu’au premier besoin inter-fichiers ; ses
+  résultats sont liés à un `index_revision_id`, réutilisés par symbole et
+  invalidés automatiquement par la source revision ;
 - une tâche inconnue, ambiguë, longue ou non isolable est refusée ;
 - les retries idempotents d’un run sont sérialisés et ne réexécutent pas la
   commande ;
@@ -194,11 +204,14 @@ La suite conforme à l’étude est donc :
 - P1a livrée : handles symboliques compacts, cache AST LRU par blob dans le
   processus d’exécution, Vue SFC et parseurs ast-grep pour Bash, C#, Go, Java,
   Python et Rust ;
-- P1a livrée : `get_relation_context` borné, semantic diff, impact optionnel de
+- P1 livrée côté socle : `get_relation_context` borné, semantic diff, impact optionnel de
   `review_change` et `validate_change` produisant un evidence bundle sans
   relancer les checks ;
-- P1 restante : LSP/compiler/SCIP exact, reproduction différentielle,
-  sélection de tests calibrée et Code Practices exécutables ;
+- P1 livrée côté relations JS/TS : analyse compiler-grade activée à la
+  demande, avec cache révisionné et fallback heuristique explicite ;
+- P1 restante : backends LSP/SCIP exacts pour les autres langages,
+  reproduction différentielle, sélection de tests calibrée et Code Practices
+  exécutables ;
 - P2 : lineage, slicing, comparaison comportementale, sélection adaptative,
   réservation de surfaces et merge sémantique ;
 - P3 : capability packs sécurité, données, API, IaC, mobile et déploiement.
