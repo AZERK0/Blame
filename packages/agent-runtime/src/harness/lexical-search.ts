@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import { createInterface } from "node:readline";
 import { rgPath } from "@vscode/ripgrep";
+import { packagedResourcePath } from "./packaged-resource-path.js";
 import type { SearchCodeInput } from "./schemas.js";
 
 type TextQuery = Extract<SearchCodeInput["query"], { kind: "text" }>;
@@ -188,9 +189,7 @@ function searchRoots(paths?: string[]) {
 function ripgrepCommand() {
   const configured = process.env.BLAME_RIPGREP_COMMAND?.trim();
   if (configured) return configured;
-  return rgPath.includes("app.asar")
-    ? rgPath.replace("app.asar", "app.asar.unpacked")
-    : rgPath || "rg";
+  return packagedResourcePath(rgPath) || "rg";
 }
 
 function parseEvent(line: string): RipgrepEvent | undefined {

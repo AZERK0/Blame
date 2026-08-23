@@ -29,6 +29,7 @@ import {
   type HarnessToolResult,
   type HarnessToolSuccess,
 } from "./protocol.js";
+import { packagedResourcePath } from "./packaged-resource-path.js";
 import type {
   TaskExecutionInput,
   TaskExecutionResult,
@@ -36,6 +37,22 @@ import type {
 } from "./task-executor.js";
 
 const execFileAsync = promisify(execFile);
+
+test("packaged native resources resolve outside Electron ASAR archives", () => {
+  assert.equal(
+    packagedResourcePath(
+      "/opt/Blame/resources/app.asar/node_modules/parser.so",
+    ),
+    "/opt/Blame/resources/app.asar.unpacked/node_modules/parser.so",
+  );
+  assert.equal(
+    packagedResourcePath(
+      "C:\\Blame\\resources\\app.asar\\node_modules\\parser.dll",
+    ),
+    "C:\\Blame\\resources\\app.asar.unpacked\\node_modules\\parser.dll",
+  );
+  assert.equal(packagedResourcePath("/usr/bin/rg"), "/usr/bin/rg");
+});
 
 test("compact handles remain compatible with legacy object handles", () => {
   const payload = {

@@ -10,16 +10,10 @@ import {
   registerDynamicLanguage,
   type SgNode,
 } from "@ast-grep/napi";
+import { packagedResourcePath } from "./packaged-resource-path.js";
 import { encodeHandle, sha256 } from "./protocol.js";
 
-registerDynamicLanguage({
-  bash: bashLanguage,
-  csharp: csharpLanguage,
-  go: goLanguage,
-  java: javaLanguage,
-  python: pythonLanguage,
-  rust: rustLanguage,
-});
+let dynamicLanguagesRegistered = false;
 
 export type SymbolKind =
   | "class"
@@ -277,11 +271,33 @@ function parseSourceUnit(
   byteOffset: number,
   lineOffset: number,
 ): SourceUnit {
+  ensureDynamicLanguages(language.lang);
   return {
     byteOffset,
     lineOffset,
     root: parse(language.lang, source).root(),
     source,
+  };
+}
+
+function ensureDynamicLanguages(language: Lang | string) {
+  if (dynamicLanguagesRegistered || !dynamicLanguageNames.has(String(language)))
+    return;
+  registerDynamicLanguage({
+    bash: loadableLanguage(bashLanguage),
+    csharp: loadableLanguage(csharpLanguage),
+    go: loadableLanguage(goLanguage),
+    java: loadableLanguage(javaLanguage),
+    python: loadableLanguage(pythonLanguage),
+    rust: loadableLanguage(rustLanguage),
+  });
+  dynamicLanguagesRegistered = true;
+}
+
+function loadableLanguage(language: typeof bashLanguage) {
+  return {
+    ...language,
+    libraryPath: packagedResourcePath(language.libraryPath),
   };
 }
 
@@ -572,3 +588,12 @@ const languageByExtension: Record<string, LanguageSpec> = {
   ".ts": { lang: Lang.TypeScript, name: "typescript" },
   ".tsx": { lang: Lang.Tsx, name: "typescript" },
 };
+
+const dynamicLanguageNames = new Set([
+  "bash",
+  "csharp",
+  "go",
+  "java",
+  "python",
+  "rust",
+]);
