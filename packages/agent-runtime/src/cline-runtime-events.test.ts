@@ -714,6 +714,12 @@ test("renders the Blame development system prompt without Cline placeholders", a
   assert.match(prompt, /<judgment_defaults>/);
   assert.match(prompt, /<planning_gate>/);
   assert.match(prompt, /<frontend_protocol>/);
+  assert.match(
+    prompt,
+    /MUST invoke the `skills` tool with `skill: "impeccable"`/,
+  );
+  assert.match(prompt, /Consulting `frontend_design` does not replace/);
+  assert.match(prompt, /do not make the frontend changes/);
   assert.match(prompt, /## Task Classification/);
   assert.match(prompt, /<verification_matrix>/);
   assert.match(prompt, /<verification_cost_control>/);

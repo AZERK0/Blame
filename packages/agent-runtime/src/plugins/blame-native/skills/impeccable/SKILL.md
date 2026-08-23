@@ -1,11 +1,13 @@
 ---
 name: impeccable
-description: Use for designing, redesigning, critiquing, auditing, polishing, hardening, adapting, or otherwise improving a frontend interface. Covers websites, landing pages, dashboards, product UI, app shells, components, forms, settings, onboarding, empty states, accessibility, responsiveness, typography, layout, color, motion, UX copy, edge cases, and design systems. Not for backend-only or non-UI tasks.
+description: Mandatory whenever a frontend task leaves the agent material visual or UX design discretion, especially for new interfaces, redesigns, substantial polish, or incomplete or absent mockups. Invoke before making design decisions or implementing the UI. Also use for frontend critique, audit, accessibility, responsiveness, typography, layout, color, motion, UX copy, edge cases, and design systems. Not for backend-only, non-UI, or purely mechanical implementation from a complete design source of truth.
 ---
 
 # Impeccable for Blame
 
 Create product-specific, production-grade frontend work with a clear point of view. The result must be useful, accessible, responsive, coherent with the repository, and visibly designed rather than assembled from generic patterns.
+
+Loading this skill is a hard precondition whenever the lead agent must make material visual or UX choices. Load it before those decisions or any implementation; consulting `frontend_design` is complementary and never a substitute.
 
 This Blame-native edition is adapted from Impeccable 4.1.1. It is self-contained because Blame intentionally exposes revision-safe workspace tools instead of arbitrary shell or out-of-workspace file access.
 

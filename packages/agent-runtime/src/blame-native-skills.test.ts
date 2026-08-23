@@ -23,7 +23,9 @@ test("discovers and invokes Impeccable through Cline native skills", async () =>
     const records = service.listRecords("skill");
     assert.equal(records.length, 1);
     assert.equal(records[0]?.item.name, "impeccable");
-    assert.match(records[0]?.item.description ?? "", /frontend interface/);
+    assert.match(records[0]?.item.description ?? "", /frontend task/);
+    assert.match(records[0]?.item.description ?? "", /Mandatory/);
+    assert.match(records[0]?.item.description ?? "", /before making design/);
 
     const executor = service.createSkillsExecutor?.();
     assert.ok(executor);
@@ -35,6 +37,7 @@ test("discovers and invokes Impeccable through Cline native skills", async () =>
     assert.match(output, /<command-name>impeccable<\/command-name>/);
     assert.match(output, /<command-args>polish settings<\/command-args>/);
     assert.match(output, /# Impeccable for Blame/);
+    assert.match(output, /hard precondition/);
     assert.match(output, /consult_specialist/);
   } finally {
     service.stop();
