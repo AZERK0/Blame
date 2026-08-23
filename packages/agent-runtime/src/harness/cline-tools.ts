@@ -5,6 +5,7 @@ import { harnessError } from "./protocol.js";
 import {
   applyChangeInputSchema,
   formatSchemaError,
+  getRelationContextInputSchema,
   inspectArtifactInputSchema,
   inspectCodeInputSchema,
   inspectRunInputSchema,
@@ -13,6 +14,7 @@ import {
   runTaskInputSchema,
   searchCodeInputSchema,
   workspaceStateInputSchema,
+  validateChangeInputSchema,
 } from "./schemas.js";
 import {
   localSemanticWorkspaceExecutor,
@@ -78,7 +80,7 @@ export function semanticWorkspaceTools(
     createHarnessTool({
       name: "outline_code",
       description:
-        "Return a progressive syntax outline for a file or directory at an exact source revision. Use before broad file reads to discover classes, functions, methods, interfaces, types, enums, and function-valued variables. Each item returns an exact revision-bound symbol_ref and node_ref. Unsupported files return parse-quality diagnostics; use inspect_code view raw as the fallback.",
+        "Return a progressive syntax outline for a file or directory at an exact source revision. Use before broad file reads to discover named code entities. Each item returns one compact revision-bound symbol_ref accepted by inspect_code and apply_change. Unsupported files return parse-quality diagnostics; use inspect_code view raw as the fallback.",
       schema: outlineCodeInputSchema,
       execute: (input, context) =>
         visibleResult(
@@ -94,6 +96,17 @@ export function semanticWorkspaceTools(
       execute: (input, context) =>
         visibleResult(
           execute("inspect_code", input, context),
+          options.redactSensitiveContent,
+        ),
+    }),
+    createHarnessTool({
+      name: "get_relation_context",
+      description:
+        "Return a bounded, ranked set of likely calls, imports, implementations, references, and tests for one exact symbol_ref. Use only when cross-file context is needed. Results are lexical/syntax heuristics with explicit coverage, not compiler proof; request node_refs only for relations you intend to inspect.",
+      schema: getRelationContextInputSchema,
+      execute: (input, context) =>
+        visibleResult(
+          execute("get_relation_context", input, context),
           options.redactSensitiveContent,
         ),
     }),
@@ -127,11 +140,22 @@ export function semanticWorkspaceTools(
     createHarnessTool({
       name: "review_change",
       description:
-        "Review an immutable change proposal without mutating source or running checks. Use after apply_change propose and before commit_proposal. Returns textual diff, file hashes, syntax-symbol additions/removals, parse diagnostics, staleness, attached artifact, and checks not yet run.",
+        "Review an immutable change proposal without mutating source or running checks. Returns a bounded textual diff, semantic symbol changes, exact-revision runs, diagnostics, and missing checks. Request impact only for cross-file changes; it is computed on demand and reports heuristic coverage.",
       schema: reviewChangeInputSchema,
       execute: (input, context) =>
         visibleResult(
           execute("review_change", input, context),
+          options.redactSensitiveContent,
+        ),
+    }),
+    createHarnessTool({
+      name: "validate_change",
+      description:
+        "Build a compact evidence bundle for one committed proposal from parse diagnostics and exact-source-revision runs. Use after relevant run_task calls. Criteria are verified only when every declared required check passed; missing or unsupported evidence remains explicit. This tool does not rerun checks.",
+      schema: validateChangeInputSchema,
+      execute: (input, context) =>
+        visibleResult(
+          execute("validate_change", input, context),
           options.redactSensitiveContent,
         ),
     }),

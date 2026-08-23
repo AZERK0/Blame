@@ -68,8 +68,11 @@ export async function prepareChanges(
       operation.kind === "insert_before" ||
       operation.kind === "insert_after"
     ) {
-      const handle = decodeHandle(operation.target, "node");
-      if (!handle) throw new Error("A valid node_ref is required.");
+      const handle =
+        decodeHandle(operation.target, "node") ??
+        decodeHandle(operation.target, "sym");
+      if (!handle)
+        throw new Error("A valid node_ref or symbol_ref is required.");
       if (handle.revision !== input.base_source_revision_id)
         throw staleRevision(input.base_source_revision_id);
       const file = await loadVirtualFile(files, virtual, handle.path);

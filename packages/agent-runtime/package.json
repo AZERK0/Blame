@@ -24,6 +24,12 @@
     "test": "pnpm build && node --test dist/project-initialization.test.js dist/project-code-practices.test.js dist/project-scanners.test.js dist/security-audit.test.js dist/project-initialization-repair.test.js dist/next-webpack-fallback.test.js dist/project-initialization-impact.test.js dist/commit-message.test.js dist/production.test.js dist/reasoning.test.js dist/specialist-agents.test.js dist/blame-native-skills.test.js dist/cline-runtime-events.test.js dist/agent-telemetry.test.js dist/provider-schema-compatibility.test.js dist/provider-catalog.test.js dist/cloud-api.test.js dist/title-generation.test.js dist/harness/semantic-workspace.test.js"
   },
   "dependencies": {
+    "@ast-grep/lang-bash": "0.0.8",
+    "@ast-grep/lang-csharp": "0.0.6",
+    "@ast-grep/lang-go": "0.0.6",
+    "@ast-grep/lang-java": "0.0.7",
+    "@ast-grep/lang-python": "0.0.6",
+    "@ast-grep/lang-rust": "0.0.7",
     "@ast-grep/napi": "0.42.2",
     "@blame/preview-contract": "workspace:*",
     "@blame/telemetry": "workspace:*",

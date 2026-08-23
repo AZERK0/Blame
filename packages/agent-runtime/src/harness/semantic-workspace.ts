@@ -4,9 +4,10 @@ import {
   findExactNode,
   inspectParsedNode,
   materializeSymbol,
+  outlineSymbol,
   parseCode,
   structuralMatches,
-  type CodeSymbol,
+  type OutlineSymbol,
 } from "./code-intelligence.js";
 import {
   ChangeService,
@@ -25,7 +26,6 @@ import {
 import {
   approximateTokens,
   bounded,
-  compareSymbols,
   countBy,
   inspectTarget,
   nodeRef,
@@ -49,6 +49,8 @@ import {
   type SearchMatch,
 } from "./semantic-workspace-support.js";
 import { publicRun, RunService } from "./run-service.js";
+import { RelationService } from "./relation-service.js";
+import { ChangeReviewService } from "./change-review-service.js";
 import { readTaskCatalog } from "./task-catalog.js";
 import type { TaskExecutor } from "./task-executor.js";
 import {
@@ -63,15 +65,17 @@ import {
   inspectArtifactInputSchema,
   inspectRunInputSchema,
   outlineCodeInputSchema,
-  reviewChangeInputSchema,
   runTaskInputSchema,
   searchCodeInputSchema,
   workspaceStateInputSchema,
   type WorkspaceStateInput,
   type InspectArtifactInput,
+  type GetRelationContextInput,
   type InspectRunInput,
   type RunTaskInput,
+  type ValidateChangeInput,
 } from "./schemas.js";
+import { ValidationService } from "./validation-service.js";
 
 export type {
   InspectCodeInput,
@@ -100,6 +104,8 @@ export class SemanticWorkspace {
   private readonly artifacts: ArtifactStore;
   private readonly changes: ChangeService;
   private readonly files: WorkspaceFiles;
+  private readonly relations: RelationService;
+  private readonly review: ChangeReviewService;
   private readonly runs: RunService;
   private readonly taskContract?: SemanticWorkspaceOptions["taskContract"];
 
@@ -107,11 +113,19 @@ export class SemanticWorkspace {
     this.files = new WorkspaceFiles(workspaceRoot);
     this.artifacts = new ArtifactStore(this.files.root);
     this.changes = new ChangeService(this.files, this.artifacts);
+    this.relations = new RelationService(this.files);
     this.runs = new RunService(
       this.files,
       this.artifacts,
       this.changes,
       options.taskExecutor,
+    );
+    this.review = new ChangeReviewService(
+      this.changes,
+      this.files,
+      this.relations,
+      this.runs,
+      new ValidationService(this.artifacts),
     );
     this.taskContract = options.taskContract;
   }
@@ -189,7 +203,17 @@ export class SemanticWorkspace {
           },
           capabilities: {
             semantic_workspace: {
-              languages: ["typescript", "javascript"],
+              languages: [
+                "bash",
+                "csharp",
+                "go",
+                "java",
+                "javascript",
+                "python",
+                "rust",
+                "typescript",
+                "vue",
+              ],
               views: [
                 "signature",
                 "declaration",
@@ -209,6 +233,15 @@ export class SemanticWorkspace {
               ],
               precision: "syntax",
               raw_fallback: true,
+            },
+            comprehension: {
+              get_relation_context: {
+                available: true,
+                analysis: "heuristic",
+                bounded: true,
+              },
+              review_change: ["semantic_diff", "impact"],
+              validate_change: true,
             },
             execution: {
               run_task: executionIsolation,
@@ -366,8 +399,6 @@ export class SemanticWorkspace {
               symbol,
               path,
               revision: input.source_revision_id,
-              blobHash: sha256(content),
-              language: parsed.language,
               content,
             });
             items.push({
@@ -376,7 +407,6 @@ export class SemanticWorkspace {
               range_utf8_bytes: materialized.range_utf8_bytes,
               excerpt: materialized.signature,
               match_reason: "syntax_symbol_name",
-              node_ref: materialized.node_ref.ref,
               symbol_ref: materialized.symbol_ref,
             });
             if (items.length >= maximum) break;
@@ -466,7 +496,7 @@ export class SemanticWorkspace {
   ): Promise<
     HarnessToolResult<{
       target: string;
-      items: CodeSymbol[];
+      items: OutlineSymbol[];
       parse_quality: unknown[];
     }>
   > {
@@ -492,7 +522,7 @@ export class SemanticWorkspace {
         3_000,
       );
       const depth = bounded(input.depth, 1, 12, 3);
-      const items: CodeSymbol[] = [];
+      const items: OutlineSymbol[] = [];
       const parseQuality: unknown[] = [];
       for (const path of candidates) {
         signal?.throwIfAborted();
@@ -512,14 +542,15 @@ export class SemanticWorkspace {
           if (input.kinds?.length && !input.kinds.includes(symbol.kind))
             continue;
           items.push(
-            materializeSymbol({
-              symbol,
-              path,
-              revision: input.source_revision_id,
-              blobHash: sha256(content),
-              language: parsed.language,
-              content,
-            }),
+            outlineSymbol(
+              materializeSymbol({
+                symbol,
+                path,
+                revision: input.source_revision_id,
+                content,
+              }),
+              input.include,
+            ),
           );
           if (items.length >= maximum) break;
         }
@@ -633,7 +664,11 @@ export class SemanticWorkspace {
           target.handle.digest,
         );
         if (!node) throw new Error(`UNSUPPORTED_STRUCTURE:${path}`);
-        inspected = inspectParsedNode({ content, node, view: input.view });
+        inspected = inspectParsedNode({
+          content,
+          parsed: node,
+          view: input.view,
+        });
         analysis = parsed.errorCount ? "heuristic" : "exact";
       }
       const bytes = Buffer.from(inspected.content);
@@ -673,6 +708,13 @@ export class SemanticWorkspace {
     } catch (error) {
       return toolError(error);
     }
+  }
+
+  async getRelationContext(
+    input: GetRelationContextInput,
+    signal?: AbortSignal,
+  ) {
+    return this.relations.getRelationContext(input, signal);
   }
 
   applyChange(
@@ -905,95 +947,11 @@ export class SemanticWorkspace {
   }
 
   async reviewChange(input: ReviewChangeInput, signal?: AbortSignal) {
-    const startedAt = Date.now();
-    try {
-      reviewChangeInputSchema.parse(input);
-      signal?.throwIfAborted();
-      const proposal = await this.changes.readProposal(input.proposal_ref);
-      const attachedRuns = await this.runs.runsForProposal(input.proposal_ref);
-      const snapshot = await this.files.snapshot(signal);
-      const symbolChanges = await Promise.all(
-        proposal.changes.map(async (change) => {
-          const contents = await this.changes.proposalFileContents(change);
-          return {
-            path: change.path,
-            ...compareSymbols(change, contents.before, contents.after),
-          };
-        }),
-      );
-      const maximumBytes =
-        bounded(input.budget?.max_output_tokens, 200, 20_000, 4_000) * 4;
-      const diff = Buffer.from(proposal.diff_summary);
-      const selectedBytes = utf8PrefixLength(diff, maximumBytes);
-      const truncated =
-        (proposal.diff_summary_truncated ?? false) ||
-        selectedBytes < diff.length;
-      return harnessSuccess({
-        startedAt,
-        revision: revisionVector(snapshot),
-        provenance: [provenance("harness", revisionVector(snapshot))],
-        artifacts: [
-          proposal.diff_artifact,
-          ...attachedRuns.flatMap((run) => [
-            run.logs.complete,
-            run.filesystem_effects.artifact,
-          ]),
-        ],
-        diagnostics: proposal.diagnostics,
-        data: {
-          proposal_ref: proposal.proposal_ref,
-          base_source_revision_id: proposal.base_source_revision_id,
-          current_source_revision_id: snapshot.revision.source_revision_id,
-          stale:
-            proposal.base_source_revision_id !==
-            snapshot.revision.source_revision_id,
-          files: proposal.changes.map(({ path, old_hash, new_hash }) => ({
-            path,
-            old_hash,
-            new_hash,
-          })),
-          symbol_changes: symbolChanges,
-          generated_files: proposal.changes
-            .filter(
-              ({ old_hash, new_hash }) =>
-                old_hash === null && new_hash !== null,
-            )
-            .map(({ path }) => path),
-          deleted_files: proposal.changes
-            .filter(
-              ({ old_hash, new_hash }) =>
-                old_hash !== null && new_hash === null,
-            )
-            .map(({ path }) => path),
-          formatting: proposal.formatting ?? {
-            policy: "none",
-            formatted_files: [],
-            skipped_files: [],
-          },
-          attached_runs: attachedRuns.map(publicRun),
-          diff: diff.subarray(0, selectedBytes).toString("utf8"),
-          diff_bytes: proposal.diff_bytes ?? diff.length,
-          diff_artifact_ref: proposal.diff_artifact.ref,
-          checks_not_run: checksNotRun(attachedRuns),
-        },
-        coverage: {
-          scope: truncated ? "partial" : "complete",
-          truncated,
-          analysis: "exact",
-          ...(truncated
-            ? {
-                continuation: String(
-                  selectedBytes < diff.length
-                    ? selectedBytes
-                    : (proposal.diff_summary_bytes ?? diff.length),
-                ),
-              }
-            : {}),
-        },
-      });
-    } catch (error) {
-      return toolError(error);
-    }
+    return this.review.reviewChange(input, signal);
+  }
+
+  async validateChange(input: ValidateChangeInput, signal?: AbortSignal) {
+    return this.review.validateChange(input, signal);
   }
 
   private async exactSnapshot(expected: string, signal?: AbortSignal) {
@@ -1021,13 +979,4 @@ function utf8PrefixLength(content: Buffer, maximumBytes: number) {
   let end = maximumBytes;
   while (end > 0 && (content[end]! & 0xc0) === 0x80) end -= 1;
   return end;
-}
-
-function checksNotRun(runs: Array<Awaited<ReturnType<RunService["read"]>>>) {
-  const passed = new Set<string>(
-    runs
-      .filter((run) => run.status === "passed")
-      .map((run) => (run.task.kind === "test" ? "tests" : run.task.kind)),
-  );
-  return ["lint", "typecheck", "tests"].filter((check) => !passed.has(check));
 }

@@ -105,7 +105,9 @@ export async function searchWithRipgrep(input: {
       if (!line) continue;
       const event = parseEvent(line);
       if (event?.type !== "match" || !event.data) continue;
-      const path = text(event.data.path)?.replaceAll("\\", "/");
+      const path = text(event.data.path)
+        ?.replaceAll("\\", "/")
+        .replace(/^\.\//u, "");
       const absoluteOffset = event.data.absolute_offset;
       const lineNumber = event.data.line_number;
       const lineContent = text(event.data.lines);

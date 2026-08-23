@@ -2,10 +2,16 @@ import { z } from "zod";
 
 export const symbolKindSchema = z.enum([
   "class",
+  "constructor",
   "enum",
   "function",
   "interface",
   "method",
+  "module",
+  "namespace",
+  "property",
+  "struct",
+  "trait",
   "type",
   "variable",
 ]);
@@ -108,7 +114,21 @@ const searchQuerySchema = z.discriminatedUnion("kind", [
   z
     .object({
       kind: z.literal("ast_pattern"),
-      language: z.enum(["typescript", "javascript", "css", "html"]).optional(),
+      language: z
+        .enum([
+          "bash",
+          "csharp",
+          "css",
+          "go",
+          "html",
+          "java",
+          "javascript",
+          "python",
+          "rust",
+          "typescript",
+          "vue",
+        ])
+        .optional(),
       pattern: z.string().min(1).max(2_000),
     })
     .strict(),
@@ -185,30 +205,56 @@ export const inspectCodeInputSchema = z
       });
   });
 
-const nodeTargetSchema = z
+export const getRelationContextInputSchema = z
+  .object({
+    source_revision_id: sourceRevisionIdSchema,
+    target: z.object({ symbol_ref: z.string().regex(/^sym:\/\//) }).strict(),
+    relations: z
+      .array(
+        z.enum(["calls", "implements", "imports", "references", "tested_by"]),
+      )
+      .min(1)
+      .max(5)
+      .default(["calls", "imports", "references", "tested_by"])
+      .optional(),
+    scope: z
+      .object({ paths: z.array(relativePathSchema).max(100).optional() })
+      .strict()
+      .optional(),
+    include: z
+      .array(z.enum(["excerpts", "node_refs"]))
+      .max(2)
+      .default(["excerpts"])
+      .optional(),
+    max_results: z.number().int().min(1).max(100).default(30).optional(),
+    budget: outputBudget(200, 8_000, 1_800),
+  })
+  .strict();
+
+const structuredTargetSchema = z
   .string()
-  .regex(/^node:\/\//)
-  .describe("Exact node_ref returned by search_code or outline_code.");
+  .regex(/^(?:node|sym):\/\//)
+  .describe("Exact node_ref or symbol_ref returned by a semantic read.");
 
 export const changeOperationSchema = z.discriminatedUnion("kind", [
   z
     .object({
       kind: z.literal("replace_node"),
-      target: nodeTargetSchema,
+      target: structuredTargetSchema,
       replacement: z.string(),
     })
     .strict(),
   z
     .object({
       kind: z.literal("insert_before"),
-      target: nodeTargetSchema,
+      target: structuredTargetSchema,
       source: z.string(),
     })
     .strict(),
   z
     .object({
       kind: z.literal("insert_after"),
-      target: nodeTargetSchema,
+      target: structuredTargetSchema,
       source: z.string(),
     })
     .strict(),
@@ -293,7 +339,34 @@ export const applyChangeInputSchema = z.discriminatedUnion("action", [
 export const reviewChangeInputSchema = z
   .object({
     proposal_ref: z.string().regex(/^change-proposal:\/\/[a-f0-9]{64}$/),
+    include: z
+      .array(z.enum(["impact", "semantic_diff"]))
+      .max(2)
+      .default(["semantic_diff"])
+      .optional(),
     budget: outputBudget(200, 20_000, 4_000),
+  })
+  .strict();
+
+export const validateChangeInputSchema = z
+  .object({
+    proposal_ref: z.string().regex(/^change-proposal:\/\/[a-f0-9]{64}$/),
+    criteria: z
+      .array(
+        z
+          .object({
+            id: z.string().min(1).max(100),
+            text: z.string().min(1).max(1_000),
+            requires: z
+              .array(z.enum(["build", "lint", "parse", "test", "typecheck"]))
+              .min(1)
+              .max(5),
+          })
+          .strict(),
+      )
+      .max(20)
+      .optional(),
+    budget: outputBudget(200, 8_000, 2_500),
   })
   .strict();
 
@@ -569,6 +642,9 @@ export type WorkspaceStateInput = z.infer<typeof workspaceStateInputSchema>;
 export type SearchCodeInput = z.infer<typeof searchCodeInputSchema>;
 export type OutlineCodeInput = z.infer<typeof outlineCodeInputSchema>;
 export type InspectCodeInput = z.infer<typeof inspectCodeInputSchema>;
+export type GetRelationContextInput = z.infer<
+  typeof getRelationContextInputSchema
+>;
 export type ChangeOperation = z.infer<typeof changeOperationSchema>;
 export type ProposeChangeInput = z.infer<typeof proposeChangeInputSchema>;
 export type DirectApplyChangeInput = z.infer<
@@ -577,6 +653,7 @@ export type DirectApplyChangeInput = z.infer<
 export type CommitProposalInput = z.infer<typeof commitProposalInputSchema>;
 export type ApplyChangeInput = z.infer<typeof applyChangeInputSchema>;
 export type ReviewChangeInput = z.infer<typeof reviewChangeInputSchema>;
+export type ValidateChangeInput = z.infer<typeof validateChangeInputSchema>;
 export type RunTaskInput = z.infer<typeof runTaskInputSchema>;
 export type InspectRunInput = z.infer<typeof inspectRunInputSchema>;
 export type InspectArtifactInput = z.infer<typeof inspectArtifactInputSchema>;

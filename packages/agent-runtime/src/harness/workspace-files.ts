@@ -342,13 +342,22 @@ function errorCode(error: unknown) {
 }
 
 const languageByExtension: Record<string, string> = {
+  ".bash": "bash",
+  ".bats": "bash",
   ".cjs": "javascript",
+  ".cs": "csharp",
   ".css": "css",
+  ".go": "go",
   ".html": "html",
   ".htm": "html",
+  ".java": "java",
   ".js": "javascript",
   ".jsx": "javascript",
   ".mjs": "javascript",
+  ".py": "python",
+  ".rs": "rust",
+  ".sh": "bash",
   ".ts": "typescript",
   ".tsx": "typescript",
+  ".vue": "vue",
 };

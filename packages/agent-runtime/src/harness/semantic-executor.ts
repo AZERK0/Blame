@@ -6,9 +6,11 @@ export const semanticWorkspaceReadToolNames = [
   "search_code",
   "outline_code",
   "inspect_code",
+  "get_relation_context",
   "inspect_run",
   "inspect_artifact",
   "review_change",
+  "validate_change",
 ] as const;
 
 export const semanticWorkspaceWriteToolNames = [
@@ -102,6 +104,8 @@ async function executeSemanticWorkspaceTool(
       return workspace.outlineCode(input as never, signal);
     case "inspect_code":
       return workspace.inspectCode(input as never, signal);
+    case "get_relation_context":
+      return workspace.getRelationContext(input as never, signal);
     case "apply_change":
       return workspace.applyChange(input as never, signal);
     case "run_task":
@@ -110,6 +114,8 @@ async function executeSemanticWorkspaceTool(
       return workspace.inspectRun(input as never, signal);
     case "review_change":
       return workspace.reviewChange(input as never, signal);
+    case "validate_change":
+      return workspace.validateChange(input as never, signal);
     case "inspect_artifact":
       return workspace.inspectArtifact(input as never, signal);
     default:

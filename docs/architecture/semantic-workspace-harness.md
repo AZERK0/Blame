@@ -18,7 +18,7 @@ capacités non disponibles sont annoncées par `workspace_state` et refusées av
 | artifact CAS                      | CAS isolé par projet, AES-256-GCM, refs HMAC non corrélables entre projets, ACL, rétention, GC et quota      |
 | `workspace_state`                 | révision, contrat de tâche, capacités, arbre, changements et catalogue de tâches                             |
 | recherche lexicale + syntaxique   | ripgrep, ast-grep/Tree-sitter et fallback Node borné                                                         |
-| outline/inspect + raw fallback    | syntaxe TypeScript/JavaScript ; lecture raw exacte pour tout fichier supporté                                |
+| outline/inspect + raw fallback    | ast-grep pour JS/TS, Bash, C#, Go, Java, Python, Rust et scripts Vue ; raw exact pour le reste               |
 | handles exacts                    | `FileRef`, `SymbolRef` et `SyntaxNodeRef` liés à une seule source revision et à des offsets UTF-8            |
 | `apply_change` CAS                | node/span, exact text, create/move/delete, proposition immuable, commit sérialisé et reprise après crash     |
 | diagnostics immédiats             | comparaison parse avant/après ; formatter optionnel et journalisé                                            |
@@ -35,20 +35,21 @@ le parser échoue.
 
 ## Surface de tools
 
-Le modèle voit les huit primitives recommandées par l’étude et une opération
-générique du control plane :
+Le modèle voit onze primitives spécialisées et bornées :
 
-| Tool               | Rôle                                         | Effet canonique                               |
-| ------------------ | -------------------------------------------- | --------------------------------------------- |
-| `workspace_state`  | état, révisions, capacités et tâches connues | aucun                                         |
-| `search_code`      | recherche textuelle, symbolique ou AST       | aucun                                         |
-| `outline_code`     | carte syntaxique progressive                 | aucun                                         |
-| `inspect_code`     | vue exacte ciblée ou raw                     | aucun                                         |
-| `apply_change`     | propose puis commit CAS                      | commit explicite seulement                    |
-| `run_task`         | exécution isolée d’une tâche déclarée        | proposition d’effets, jamais écriture directe |
-| `inspect_run`      | vues bornées d’un run existant               | aucun                                         |
-| `review_change`    | revue d’une proposition et de ses preuves    | aucun                                         |
-| `inspect_artifact` | réouverture paginée d’une preuve autorisée   | aucun                                         |
+| Tool                   | Rôle                                         | Effet canonique                               |
+| ---------------------- | -------------------------------------------- | --------------------------------------------- |
+| `workspace_state`      | état, révisions, capacités et tâches connues | aucun                                         |
+| `search_code`          | recherche textuelle, symbolique ou AST       | aucun                                         |
+| `outline_code`         | carte syntaxique progressive                 | aucun                                         |
+| `inspect_code`         | vue exacte ciblée ou raw                     | aucun                                         |
+| `get_relation_context` | relations probables autour d’un symbole      | aucun                                         |
+| `apply_change`         | propose puis commit CAS                      | commit explicite seulement                    |
+| `run_task`             | exécution isolée d’une tâche déclarée        | proposition d’effets, jamais écriture directe |
+| `inspect_run`          | vues bornées d’un run existant               | aucun                                         |
+| `review_change`        | revue d’une proposition et de ses preuves    | aucun                                         |
+| `validate_change`      | critères et evidence bundle d’une révision   | aucun                                         |
+| `inspect_artifact`     | réouverture paginée d’une preuve autorisée   | aucun                                         |
 
 Les tools utilisent l’API officielle Cline `createTool`/`extraTools`. Les
 schémas Zod stricts servent à la fois de JSON Schema agent-facing, de validation
@@ -69,6 +70,7 @@ Le protocole métier ne dépend ni de Cline ni d’Electron :
 - `protocol.ts` : enveloppes, refs, provenance, couverture et erreurs ;
 - `workspace-files.ts` : snapshots, chemins sûrs, symlinks et source revisions ;
 - `code-intelligence.ts` / `lexical-search.ts` : parsing et recherche ;
+- `relation-service.ts` : contexte et impact heuristiques, ciblés et bornés ;
 - `artifact-store.ts` : CAS chiffré, accès, rétention et intégrité ;
 - `change-preparation.ts` : opérations en mémoire, formatage, API publique,
   diagnostics et diffs ;
@@ -80,6 +82,8 @@ Le protocole métier ne dépend ni de Cline ni d’Electron :
 - `task-executor.ts` : port d’exécution et adapter sandbox local ;
 - `run-store.ts` / `run-service.ts` : `RunRef`, idempotence, logs, diagnostics et
   rattachement des effets aux propositions ;
+- `change-review-service.ts` / `validation-service.ts` : semantic diff, runs de
+  la révision exacte, critères et evidence bundles ;
 - `semantic-workspace.ts` : composition du domaine ;
 - `cline-tools.ts` : adapter mince vers les custom tools Cline ;
 - `cline-tool-policy.ts` : exposition et approbation centralisées ;
@@ -115,9 +119,11 @@ révisions, policies, audience, préconditions, audit et recovery.
 workspace_state -> source_revision_id
 search_code / outline_code -> SymbolRef / SyntaxNodeRef
 inspect_code -> observation exacte
+get_relation_context(SymbolRef) -> relations probables bornées
 apply_change(propose) -> ChangeProposalRef + diff + diagnostics
 review_change -> contenu, effets et preuves existantes
 apply_change(commit_proposal) -> ChangeSetRef + nouvelle source revision
+run_task + validate_change -> preuves liées à la nouvelle source revision
 ```
 
 Le commit revérifie la source revision et chaque blob. Les fichiers sont écrits
@@ -185,8 +191,14 @@ contexte.
 
 La suite conforme à l’étude est donc :
 
-- P1 : LSP/compiler/SCIP, relations et impact bornés, reproduction/validation,
-  Code Practices exécutables, semantic diff et evidence bundles ;
+- P1a livrée : handles symboliques compacts, cache AST LRU par blob dans le
+  processus d’exécution, Vue SFC et parseurs ast-grep pour Bash, C#, Go, Java,
+  Python et Rust ;
+- P1a livrée : `get_relation_context` borné, semantic diff, impact optionnel de
+  `review_change` et `validate_change` produisant un evidence bundle sans
+  relancer les checks ;
+- P1 restante : LSP/compiler/SCIP exact, reproduction différentielle,
+  sélection de tests calibrée et Code Practices exécutables ;
 - P2 : lineage, slicing, comparaison comportementale, sélection adaptative,
   réservation de surfaces et merge sémantique ;
 - P3 : capability packs sécurité, données, API, IaC, mobile et déploiement.

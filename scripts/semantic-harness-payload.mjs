@@ -20,6 +20,12 @@ const agentRuntimeDir = join(rootDir, "packages/agent-runtime");
 const agentRuntimeDist = join(agentRuntimeDir, "dist");
 const payloadName = "blame-semantic-harness.tgz";
 const dependencyNames = [
+  "@ast-grep/lang-bash",
+  "@ast-grep/lang-csharp",
+  "@ast-grep/lang-go",
+  "@ast-grep/lang-java",
+  "@ast-grep/lang-python",
+  "@ast-grep/lang-rust",
   "@ast-grep/napi",
   "@vscode/ripgrep",
   "cacache",

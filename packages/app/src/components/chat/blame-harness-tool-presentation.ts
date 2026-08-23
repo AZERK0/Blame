@@ -16,14 +16,22 @@ export function presentBlameHarnessTool(
   if (details.toolName === "workspace_state") {
     return { ...details, toolName: "list_files" }
   }
-  if (details.toolName === "search_code") return searchPresentation(details)
+  if (
+    ["get_relation_context", "search_code"].includes(details.toolName ?? "")
+  ) {
+    return searchPresentation(details)
+  }
   if (["outline_code", "inspect_code"].includes(details.toolName ?? "")) {
     return readPresentation(details)
   }
   if (["apply_change", "review_change"].includes(details.toolName ?? "")) {
     return editPresentation(details)
   }
-  if (["run_task", "inspect_run"].includes(details.toolName ?? "")) {
+  if (
+    ["run_task", "inspect_run", "validate_change"].includes(
+      details.toolName ?? ""
+    )
+  ) {
     return commandPresentation(details)
   }
   return details
@@ -69,9 +77,12 @@ function commandPresentation(details: ToolPresentation): ToolPresentation {
 }
 
 function searchQuery(value: unknown) {
-  const query = recordValue(recordValue(value).query)
+  const input = recordValue(value)
+  const query = recordValue(input.query)
   const kind = stringValue(query.kind)
   const term = stringValue(query.name) ?? stringValue(query.pattern)
+  const symbolRef = stringValue(recordValue(input.target).symbol_ref)
+  if (symbolRef) return "symbol relations"
   if (!term) return undefined
   return kind ? `${kind}: ${term}` : term
 }
@@ -133,6 +144,7 @@ function deduplicateFiles(files: PresentedFile[]) {
 
 function taskLabel(toolName: string | undefined, value: unknown) {
   const input = recordValue(value)
+  if (toolName === "validate_change") return "validate change"
   if (toolName === "inspect_run") {
     return [stringValue(input.view), stringValue(input.run_ref)]
       .filter(Boolean)

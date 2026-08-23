@@ -88,6 +88,17 @@ test("reuses search result cards for semantic search", () => {
   ])
 })
 
+test("reuses search cards for bounded relation context", () => {
+  const presentation = presentBlameHarnessTool({
+    input: { target: { symbol_ref: "sym://target" } },
+    output: { data: { items: [] }, status: "success" },
+    toolName: "get_relation_context",
+  })
+
+  assert.equal(presentation.toolName, "search_codebase")
+  assert.deepEqual(presentation.input, { queries: ["symbol relations"] })
+})
+
 test("reuses terminal cards for task execution and inspection", () => {
   assert.deepEqual(
     presentBlameHarnessTool({
@@ -107,6 +118,14 @@ test("reuses terminal cards for task execution and inspection", () => {
       toolName: "inspect_run",
     }).toolName,
     "run_commands"
+  )
+
+  assert.deepEqual(
+    presentBlameHarnessTool({
+      input: { proposal_ref: "change-proposal://abc" },
+      toolName: "validate_change",
+    }).input,
+    { commands: ["validate change"] }
   )
 })
 

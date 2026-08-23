@@ -1,13 +1,38 @@
-import { Lang, parse, type SgNode } from "@ast-grep/napi";
-import type { SymbolRef, SyntaxNodeRef } from "./protocol.js";
+import bashLanguage from "@ast-grep/lang-bash";
+import csharpLanguage from "@ast-grep/lang-csharp";
+import goLanguage from "@ast-grep/lang-go";
+import javaLanguage from "@ast-grep/lang-java";
+import pythonLanguage from "@ast-grep/lang-python";
+import rustLanguage from "@ast-grep/lang-rust";
+import {
+  Lang,
+  parse,
+  registerDynamicLanguage,
+  type SgNode,
+} from "@ast-grep/napi";
 import { encodeHandle, sha256 } from "./protocol.js";
+
+registerDynamicLanguage({
+  bash: bashLanguage,
+  csharp: csharpLanguage,
+  go: goLanguage,
+  java: javaLanguage,
+  python: pythonLanguage,
+  rust: rustLanguage,
+});
 
 export type SymbolKind =
   | "class"
+  | "constructor"
   | "enum"
   | "function"
   | "interface"
   | "method"
+  | "module"
+  | "namespace"
+  | "property"
+  | "struct"
+  | "trait"
   | "type"
   | "variable";
 
@@ -19,131 +44,126 @@ export type CodeSymbol = {
   visibility?: string;
   range_utf8_bytes: [number, number];
   line_range: [number, number];
-  symbol_ref: SymbolRef;
-  node_ref: SyntaxNodeRef;
+  symbol_ref: string;
 };
 
-type ParsedSymbol = Omit<CodeSymbol, "symbol_ref" | "node_ref"> & {
-  node: SgNode;
+export type OutlineSymbol = Pick<
+  CodeSymbol,
+  "kind" | "line_range" | "name" | "qualified_name" | "symbol_ref"
+> & {
+  signature?: string;
+  visibility?: string;
 };
+
+type ParsedTree = {
+  byteOffset: number;
+  lineOffset: number;
+  root: SgNode;
+};
+
+type ParsedNode = ParsedTree & { node: SgNode };
+
+type ParsedSymbol = Omit<CodeSymbol, "symbol_ref"> & ParsedNode;
 
 export type ParseResult = {
   language: string;
   supported: boolean;
   symbols: ParsedSymbol[];
   errorCount: number;
-  root?: SgNode;
+  trees: ParsedTree[];
 };
 
+type LanguageSpec = {
+  lang: Lang | string;
+  name: string;
+};
+
+type SourceUnit = ParsedTree & {
+  source: string;
+};
+
+const maximumCachedParses = 64;
+const parseCache = new Map<string, ParseResult>();
+
 export function parseCode(path: string, content: Buffer): ParseResult {
-  const language = parserLanguage(path);
-  if (!language)
-    return {
-      language: "unknown",
-      supported: false,
-      symbols: [],
-      errorCount: 0,
-    };
-  const source = content.toString("utf8");
-  try {
-    const root = parse(language.lang, source).root();
-    const symbols: ParsedSymbol[] = [];
-    collectSymbols(root, content, [], symbols);
-    return {
-      language: language.name,
-      supported: true,
-      symbols,
-      errorCount: countErrorNodes(root),
-      root,
-    };
-  } catch {
-    return {
-      language: language.name,
-      supported: false,
-      symbols: [],
-      errorCount: 1,
-    };
+  const cacheKey = `${extension(path)}\0${sha256(content)}`;
+  const cached = parseCache.get(cacheKey);
+  if (cached) {
+    parseCache.delete(cacheKey);
+    parseCache.set(cacheKey, cached);
+    return cached;
   }
+  const parsed = parseCodeUncached(path, content);
+  parseCache.set(cacheKey, parsed);
+  trimParseCache();
+  return parsed;
 }
 
 export function materializeSymbol(input: {
   symbol: ParsedSymbol;
   path: string;
   revision: string;
-  blobHash: string;
-  language: string;
   content: Buffer;
 }): CodeSymbol {
   const { symbol } = input;
   const [start, end] = symbol.range_utf8_bytes;
-  const bytes = input.content.subarray(start, end);
-  const digest = sha256(bytes);
-  const handle = {
-    version: 1 as const,
+  const handle = encodeHandle("sym", {
+    version: 1,
     revision: input.revision,
     path: input.path,
     start,
     end,
-    digest,
-    kind: symbol.kind,
-    language: input.language,
-    qualifiedName: symbol.qualified_name,
-  };
+    digest: sha256(input.content.subarray(start, end)),
+  });
+  const { byteOffset, lineOffset, node, root, ...publicSymbol } = symbol;
+  void byteOffset;
+  void lineOffset;
+  void node;
+  void root;
+  return { ...publicSymbol, symbol_ref: handle };
+}
+
+export function outlineSymbol(
+  symbol: CodeSymbol,
+  include: Array<"signature" | "visibility"> = ["signature"],
+): OutlineSymbol {
   return {
-    ...withoutNode(symbol),
-    symbol_ref: {
-      ref: encodeHandle("sym", handle),
-      source_revision_id: input.revision,
-      definition_digest: sha256(
-        `${symbol.kind}\0${symbol.qualified_name}\0${symbol.signature}\0${digest}`,
-      ),
-      kind: symbol.kind,
-      language: input.language,
-      qualified_name: symbol.qualified_name,
-    },
-    node_ref: {
-      ref: encodeHandle("node", handle),
-      source_revision_id: input.revision,
-      file_blob_hash: input.blobHash,
-      range_utf8_bytes: [start, end],
-      node_digest: digest,
-    },
+    kind: symbol.kind,
+    name: symbol.name,
+    qualified_name: symbol.qualified_name,
+    line_range: symbol.line_range,
+    symbol_ref: symbol.symbol_ref,
+    ...(include.includes("signature") ? { signature: symbol.signature } : {}),
+    ...(include.includes("visibility") && symbol.visibility
+      ? { visibility: symbol.visibility }
+      : {}),
   };
 }
 
 export function inspectParsedNode(input: {
   content: Buffer;
-  node: SgNode;
+  parsed: ParsedNode;
   view: "body" | "declaration" | "interface" | "neighborhood" | "signature";
 }) {
-  const nodeRange = byteRange(input.node);
-  const body = bodyNode(input.node);
-  if (input.view === "neighborhood") {
-    const [start, end] = neighborhoodRange(input.content, nodeRange, 8);
-    return {
-      content: input.content.subarray(start, end).toString("utf8"),
-      range_utf8_bytes: [start, end] as [number, number],
-    };
+  const nodeRange = byteRange(input.parsed.node, input.parsed.byteOffset);
+  if (input.view === "neighborhood")
+    return inspectedRange(
+      input.content,
+      neighborhoodRange(input.content, nodeRange, 8),
+    );
+  const body = bodyNode(input.parsed.node);
+  if (input.view === "body" && body)
+    return inspectedRange(
+      input.content,
+      byteRange(body, input.parsed.byteOffset),
+    );
+  if (["declaration", "interface", "signature"].includes(input.view)) {
+    const end = body
+      ? byteRange(body, input.parsed.byteOffset)[0]
+      : nodeRange[1];
+    return inspectedRange(input.content, [nodeRange[0], end], true);
   }
-  if (input.view === "body" && body) {
-    const range = byteRange(body);
-    return {
-      content: input.content.subarray(...range).toString("utf8"),
-      range_utf8_bytes: range,
-    };
-  }
-  if (input.view === "declaration" || input.view === "interface") {
-    const end = body ? byteRange(body)[0] : nodeRange[1];
-    return {
-      content: input.content
-        .subarray(nodeRange[0], end)
-        .toString("utf8")
-        .trimEnd(),
-      range_utf8_bytes: [nodeRange[0], end] as [number, number],
-    };
-  }
-  const content = signature(input.node, input.content);
-  return { content, range_utf8_bytes: nodeRange };
+  return inspectedRange(input.content, nodeRange);
 }
 
 export function findExactNode(
@@ -152,16 +172,18 @@ export function findExactNode(
   start: number,
   end: number,
   digest: string,
-) {
-  if (!parsed.root) return undefined;
-  const candidates: SgNode[] = [];
-  walk(parsed.root, (node) => {
-    const range = byteRange(node);
-    if (range[0] === start && range[1] === end) candidates.push(node);
-  });
-  return candidates.find(
-    (node) => sha256(content.subarray(start, end)) === digest && node.isNamed(),
-  );
+): ParsedNode | undefined {
+  if (sha256(content.subarray(start, end)) !== digest) return undefined;
+  for (const tree of parsed.trees) {
+    let match: SgNode | undefined;
+    walk(tree.root, (node) => {
+      const range = byteRange(node, tree.byteOffset);
+      if (range[0] === start && range[1] === end && node.isNamed())
+        match = node;
+    });
+    if (match) return { ...tree, node: match };
+  }
+  return undefined;
 }
 
 export function structuralMatches(
@@ -170,37 +192,117 @@ export function structuralMatches(
   pattern: string,
   maxResults: number,
 ) {
-  const language = parserLanguage(path);
-  if (!language) return undefined;
-  const root = parse(language.lang, content.toString("utf8")).root();
-  const matches = root.findAll(pattern).slice(0, maxResults);
+  const units = sourceUnits(path, content.toString("utf8"));
+  if (!units) return undefined;
+  const matches = units.flatMap((unit) =>
+    unit.root.findAll(pattern).map((node) => structuralMatch(node, unit)),
+  );
   return {
-    language: language.name,
-    matches: matches.map((node) => ({
-      kind: String(node.kind()),
-      range_utf8_bytes: byteRange(node),
-      line_range: lineRange(node),
-      text: compact(node.text(), 240),
-    })),
+    language: languageName(path),
+    matches: matches.slice(0, maxResults),
+  };
+}
+
+function parseCodeUncached(path: string, content: Buffer): ParseResult {
+  const language = languageName(path);
+  try {
+    const units = sourceUnits(path, content.toString("utf8"));
+    if (!units) return unsupportedParse();
+    const symbols: ParsedSymbol[] = [];
+    for (const unit of units)
+      collectSymbols(unit.root, content, unit, [], symbols);
+    return {
+      language,
+      supported: true,
+      symbols,
+      errorCount: units.reduce(
+        (count, unit) => count + countErrorNodes(unit.root),
+        0,
+      ),
+      trees: units,
+    };
+  } catch {
+    return {
+      language,
+      supported: false,
+      symbols: [],
+      errorCount: 1,
+      trees: [],
+    };
+  }
+}
+
+function unsupportedParse(): ParseResult {
+  return {
+    language: "unknown",
+    supported: false,
+    symbols: [],
+    errorCount: 0,
+    trees: [],
+  };
+}
+
+function sourceUnits(path: string, source: string): SourceUnit[] | undefined {
+  if (extension(path) === ".vue") return vueSourceUnits(source);
+  const language = directLanguage(path);
+  if (!language) return undefined;
+  return [parseSourceUnit(language, source, 0, 0)];
+}
+
+function vueSourceUnits(source: string) {
+  const units: SourceUnit[] = [];
+  const expression = /<script\b([^>]*)>([\s\S]*?)<\/script\s*>/giu;
+  for (const match of source.matchAll(expression)) {
+    const content = match[2] ?? "";
+    const contentIndex = (match.index ?? 0) + (match[0].indexOf(">") + 1);
+    const prefix = source.slice(0, contentIndex);
+    const language = /\blang\s*=\s*["'](?:ts|tsx)["']/iu.test(match[1] ?? "")
+      ? { lang: Lang.TypeScript, name: "vue" }
+      : { lang: Lang.JavaScript, name: "vue" };
+    units.push(
+      parseSourceUnit(
+        language,
+        content,
+        Buffer.byteLength(prefix),
+        lineCount(prefix) - 1,
+      ),
+    );
+  }
+  return units;
+}
+
+function parseSourceUnit(
+  language: LanguageSpec,
+  source: string,
+  byteOffset: number,
+  lineOffset: number,
+): SourceUnit {
+  return {
+    byteOffset,
+    lineOffset,
+    root: parse(language.lang, source).root(),
+    source,
   };
 }
 
 function collectSymbols(
   node: SgNode,
   source: Buffer,
+  tree: ParsedTree,
   containers: string[],
   output: ParsedSymbol[],
 ) {
-  const symbol = symbolFromNode(node, source, containers);
+  const symbol = symbolFromNode(node, source, tree, containers);
   const nextContainers = symbol ? [...containers, symbol.name] : containers;
   if (symbol) output.push(symbol);
   for (const child of node.children())
-    collectSymbols(child, source, nextContainers, output);
+    collectSymbols(child, source, tree, nextContainers, output);
 }
 
 function symbolFromNode(
   node: SgNode,
   source: Buffer,
+  tree: ParsedTree,
   containers: string[],
 ): ParsedSymbol | undefined {
   const kind = symbolKind(node);
@@ -208,40 +310,34 @@ function symbolFromNode(
   const name = symbolName(node, kind);
   if (!name) return undefined;
   return {
+    ...tree,
+    node,
     kind,
     name,
     qualified_name: [...containers, name].join("."),
-    signature: signature(node, source),
+    signature: signature(node, source, tree.byteOffset),
     ...(visibility(node) ? { visibility: visibility(node) } : {}),
-    range_utf8_bytes: byteRange(node),
-    line_range: lineRange(node),
-    node,
+    range_utf8_bytes: byteRange(node, tree.byteOffset),
+    line_range: lineRange(node, tree.lineOffset),
   };
 }
 
 function symbolKind(node: SgNode): SymbolKind | undefined {
-  switch (node.kind()) {
-    case "class_declaration":
-    case "abstract_class_declaration":
-      return "class";
-    case "function_declaration":
-    case "generator_function_declaration":
-      return "function";
-    case "method_definition":
-    case "method_signature":
-    case "abstract_method_signature":
-      return "method";
-    case "interface_declaration":
-      return "interface";
-    case "type_alias_declaration":
-      return "type";
-    case "enum_declaration":
-      return "enum";
-    case "variable_declarator":
-      return isFunctionVariable(node) ? "variable" : undefined;
-    default:
-      return undefined;
-  }
+  if (node.kind() === "variable_declarator")
+    return isRelevantVariable(node) ? "variable" : undefined;
+  if (node.kind() === "function_definition")
+    return hasAncestor(node, "class_definition") ? "method" : "function";
+  if (node.kind() === "function_item")
+    return hasAncestor(node, "impl_item") ? "method" : "function";
+  if (node.kind() === "type_spec") return goTypeKind(node);
+  return symbolKindByNode[node.kind()];
+}
+
+function goTypeKind(node: SgNode): SymbolKind {
+  const type = fieldNode(node, "type")?.kind();
+  if (type === "struct_type") return "struct";
+  if (type === "interface_type") return "interface";
+  return "type";
 }
 
 function symbolName(node: SgNode, kind: SymbolKind) {
@@ -250,9 +346,16 @@ function symbolName(node: SgNode, kind: SymbolKind) {
   if (kind === "variable") return node.child(0)?.text().trim();
   return node
     .children()
-    .find((child) => /identifier$/.test(String(child.kind())))
+    .find((child) => /(?:identifier|name)$/u.test(String(child.kind())))
     ?.text()
     .trim();
+}
+
+function isRelevantVariable(node: SgNode) {
+  if (isFunctionVariable(node)) return true;
+  return node
+    .ancestors()
+    .every((ancestor) => !functionLikeKinds.has(String(ancestor.kind())));
 }
 
 function isFunctionVariable(node: SgNode) {
@@ -263,13 +366,14 @@ function isFunctionVariable(node: SgNode) {
   );
 }
 
-function signature(node: SgNode, source: Buffer) {
+function signature(node: SgNode, source: Buffer, byteOffset: number) {
+  const range = byteRange(node, byteOffset);
   const body = bodyNode(node);
-  if (!body) return compact(node.text(), 500);
-  const nodeStart = node.range().start.index;
-  const bodyStart = body.range().start.index;
-  const prefix = source.subarray(nodeStart, bodyStart).toString("utf8");
-  return compact(prefix.trimEnd(), 500);
+  const end = body ? byteRange(body, byteOffset)[0] : range[1];
+  return compact(
+    source.subarray(range[0], end).toString("utf8").trimEnd(),
+    500,
+  );
 }
 
 function bodyNode(node: SgNode) {
@@ -288,40 +392,26 @@ function fieldNode(node: SgNode, name: string): SgNode | undefined {
 }
 
 function visibility(node: SgNode) {
-  const prefix = node.text().slice(0, 80);
-  if (/\bprivate\b/.test(prefix)) return "private";
-  if (/\bprotected\b/.test(prefix)) return "protected";
-  if (/\bpublic\b/.test(prefix)) return "public";
-  if (
-    node.ancestors().some((ancestor) => ancestor.kind() === "export_statement")
-  )
-    return "exported";
+  const prefix = node.text().slice(0, 100);
+  if (/\bprivate\b/u.test(prefix)) return "private";
+  if (/\bprotected\b/u.test(prefix)) return "protected";
+  if (/\bpublic\b/u.test(prefix)) return "public";
+  if (/\bpub(?:\([^)]*\))?\b/u.test(prefix)) return "exported";
+  if (hasAncestor(node, "export_statement")) return "exported";
   return undefined;
 }
 
-function parserLanguage(path: string) {
-  const extension = path.toLowerCase().match(/\.[^.]+$/)?.[0];
-  switch (extension) {
-    case ".ts":
-      return { lang: Lang.TypeScript, name: "typescript" };
-    case ".tsx":
-    case ".jsx":
-      return {
-        lang: Lang.Tsx,
-        name: extension === ".jsx" ? "javascript" : "typescript",
-      };
-    case ".js":
-    case ".mjs":
-    case ".cjs":
-      return { lang: Lang.JavaScript, name: "javascript" };
-    case ".css":
-      return { lang: Lang.Css, name: "css" };
-    case ".html":
-    case ".htm":
-      return { lang: Lang.Html, name: "html" };
-    default:
-      return undefined;
-  }
+function directLanguage(path: string): LanguageSpec | undefined {
+  return languageByExtension[extension(path)];
+}
+
+function languageName(path: string) {
+  if (extension(path) === ".vue") return "vue";
+  return directLanguage(path)?.name ?? "unknown";
+}
+
+function extension(path: string) {
+  return path.toLowerCase().match(/\.[^.]+$/u)?.[0] ?? "";
 }
 
 function countErrorNodes(root: SgNode) {
@@ -337,12 +427,39 @@ function walk(node: SgNode, visit: (node: SgNode) => void) {
   for (const child of node.children()) walk(child, visit);
 }
 
-function byteRange(node: SgNode): [number, number] {
-  return [node.range().start.index, node.range().end.index];
+function byteRange(node: SgNode, byteOffset = 0): [number, number] {
+  return [
+    byteOffset + node.range().start.index,
+    byteOffset + node.range().end.index,
+  ];
 }
 
-function lineRange(node: SgNode): [number, number] {
-  return [node.range().start.line + 1, node.range().end.line + 1];
+function lineRange(node: SgNode, lineOffset = 0): [number, number] {
+  return [
+    lineOffset + node.range().start.line + 1,
+    lineOffset + node.range().end.line + 1,
+  ];
+}
+
+function structuralMatch(node: SgNode, unit: SourceUnit) {
+  return {
+    kind: String(node.kind()),
+    range_utf8_bytes: byteRange(node, unit.byteOffset),
+    line_range: lineRange(node, unit.lineOffset),
+    text: compact(node.text(), 240),
+  };
+}
+
+function inspectedRange(
+  content: Buffer,
+  range: [number, number],
+  trimEnd = false,
+) {
+  const value = content.subarray(...range).toString("utf8");
+  return {
+    content: trimEnd ? value.trimEnd() : value,
+    range_utf8_bytes: range,
+  };
 }
 
 function neighborhoodRange(
@@ -350,35 +467,106 @@ function neighborhoodRange(
   range: [number, number],
   contextLines: number,
 ): [number, number] {
-  let start = range[0];
-  let end = range[1];
-  for (let line = 0; line < contextLines && start > 0; line += 1) {
-    start = content.lastIndexOf(10, Math.max(0, start - 2));
-    if (start < 0) {
-      start = 0;
-      break;
-    }
-  }
-  for (let line = 0; line < contextLines && end < content.length; line += 1) {
-    const next = content.indexOf(10, end);
-    if (next < 0) {
-      end = content.length;
-      break;
-    }
-    end = next + 1;
-  }
-  return [start, end];
+  return [
+    previousLinesStart(content, range[0], contextLines),
+    nextLinesEnd(content, range[1], contextLines),
+  ];
 }
 
-function withoutNode(symbol: ParsedSymbol): Omit<ParsedSymbol, "node"> {
-  const { node, ...serializable } = symbol;
-  void node;
-  return serializable;
+function previousLinesStart(content: Buffer, initial: number, count: number) {
+  let start = initial;
+  for (let line = 0; line < count && start > 0; line += 1) {
+    start = content.lastIndexOf(10, Math.max(0, start - 2));
+    if (start < 0) return 0;
+  }
+  return start;
+}
+
+function nextLinesEnd(content: Buffer, initial: number, count: number) {
+  let end = initial;
+  for (let line = 0; line < count && end < content.length; line += 1) {
+    const next = content.indexOf(10, end);
+    if (next < 0) return content.length;
+    end = next + 1;
+  }
+  return end;
+}
+
+function hasAncestor(node: SgNode, kind: string) {
+  return node.ancestors().some((ancestor) => ancestor.kind() === kind);
+}
+
+function lineCount(value: string) {
+  return value.split("\n").length;
+}
+
+function trimParseCache() {
+  while (parseCache.size > maximumCachedParses) {
+    const oldest = parseCache.keys().next().value;
+    if (typeof oldest !== "string") return;
+    parseCache.delete(oldest);
+  }
 }
 
 function compact(value: string, maximum: number) {
-  const normalized = value.replace(/\s+/g, " ").trim();
+  const normalized = value.replace(/\s+/gu, " ").trim();
   return normalized.length > maximum
     ? `${normalized.slice(0, maximum - 1)}…`
     : normalized;
 }
+
+const functionLikeKinds = new Set([
+  "arrow_function",
+  "function_declaration",
+  "function_definition",
+  "function_expression",
+  "function_item",
+  "method_declaration",
+  "method_definition",
+]);
+
+const symbolKindByNode: Record<string, SymbolKind> = {
+  abstract_class_declaration: "class",
+  abstract_method_signature: "method",
+  class_definition: "class",
+  class_declaration: "class",
+  constructor_declaration: "constructor",
+  enum_declaration: "enum",
+  enum_item: "enum",
+  file_scoped_namespace_declaration: "namespace",
+  function_declaration: "function",
+  generator_function_declaration: "function",
+  interface_declaration: "interface",
+  method_declaration: "method",
+  method_definition: "method",
+  method_signature: "method",
+  mod_item: "module",
+  module_declaration: "module",
+  namespace_declaration: "namespace",
+  property_declaration: "property",
+  record_declaration: "class",
+  struct_declaration: "struct",
+  struct_item: "struct",
+  trait_item: "trait",
+  type_alias_declaration: "type",
+};
+
+const languageByExtension: Record<string, LanguageSpec> = {
+  ".bash": { lang: "bash", name: "bash" },
+  ".bats": { lang: "bash", name: "bash" },
+  ".cjs": { lang: Lang.JavaScript, name: "javascript" },
+  ".cs": { lang: "csharp", name: "csharp" },
+  ".css": { lang: Lang.Css, name: "css" },
+  ".go": { lang: "go", name: "go" },
+  ".htm": { lang: Lang.Html, name: "html" },
+  ".html": { lang: Lang.Html, name: "html" },
+  ".java": { lang: "java", name: "java" },
+  ".js": { lang: Lang.JavaScript, name: "javascript" },
+  ".jsx": { lang: Lang.Tsx, name: "javascript" },
+  ".mjs": { lang: Lang.JavaScript, name: "javascript" },
+  ".py": { lang: "python", name: "python" },
+  ".rs": { lang: "rust", name: "rust" },
+  ".sh": { lang: "bash", name: "bash" },
+  ".ts": { lang: Lang.TypeScript, name: "typescript" },
+  ".tsx": { lang: Lang.Tsx, name: "typescript" },
+};

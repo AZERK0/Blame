@@ -12,6 +12,7 @@ export class RunStore {
   private readonly runsDirectory: string;
   private readonly idempotencyDirectory: string;
   private readonly proposalLinksDirectory: string;
+  private readonly revisionLinksDirectory: string;
   private readonly lockDirectory: string;
 
   constructor(workspaceRoot: string) {
@@ -19,6 +20,7 @@ export class RunStore {
     this.runsDirectory = join(root, "runs");
     this.idempotencyDirectory = join(root, "run-idempotency");
     this.proposalLinksDirectory = join(root, "run-proposal-links");
+    this.revisionLinksDirectory = join(root, "run-revision-links");
     this.lockDirectory = join(root, "run-locks");
   }
 
@@ -55,10 +57,18 @@ export class RunStore {
         run.run_ref,
       );
     if (run.filesystem_effects.change_proposal_ref)
-      await this.linkProposal(
+      await this.link(
+        "proposal",
+        this.proposalLinksDirectory,
         run.filesystem_effects.change_proposal_ref,
         run.run_ref,
       );
+    await this.link(
+      "revision",
+      this.revisionLinksDirectory,
+      run.source_revision.source_revision_id,
+      run.run_ref,
+    );
     return run;
   }
 
@@ -98,12 +108,17 @@ export class RunStore {
   }
 
   async runsForProposal(proposalRef: string) {
+    return this.runsForLink(this.proposalLinksDirectory, proposalRef);
+  }
+
+  async runsForRevision(sourceRevisionId: string) {
+    return this.runsForLink(this.revisionLinksDirectory, sourceRevisionId);
+  }
+
+  private async runsForLink(directory: string, key: string) {
     try {
       const refs = JSON.parse(
-        await readFile(
-          join(this.proposalLinksDirectory, `${sha256(proposalRef)}.json`),
-          "utf8",
-        ),
+        await readFile(join(directory, `${sha256(key)}.json`), "utf8"),
       ) as string[];
       return Promise.all(refs.slice(0, 20).map((ref) => this.read(ref)));
     } catch (error) {
@@ -156,17 +171,16 @@ export class RunStore {
     }
   }
 
-  private async linkProposal(proposalRef: string, runRef: string) {
-    await mkdir(this.proposalLinksDirectory, {
-      recursive: true,
-      mode: 0o700,
-    });
-    const path = join(
-      this.proposalLinksDirectory,
-      `${sha256(proposalRef)}.json`,
-    );
+  private async link(
+    kind: "proposal" | "revision",
+    directory: string,
+    key: string,
+    runRef: string,
+  ) {
+    await mkdir(directory, { recursive: true, mode: 0o700 });
+    const path = join(directory, `${sha256(key)}.json`);
     await mkdir(this.lockDirectory, { recursive: true, mode: 0o700 });
-    const target = join(this.lockDirectory, `proposal-${sha256(proposalRef)}`);
+    const target = join(this.lockDirectory, `${kind}-${sha256(key)}`);
     await mkdir(target, { recursive: true, mode: 0o700 });
     const release = await lock(target, {
       realpath: false,

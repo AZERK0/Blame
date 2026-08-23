@@ -23,7 +23,12 @@ import {
   type SemanticWorkspaceExecutor,
 } from "./semantic-executor.js";
 import { SemanticWorkspace } from "./semantic-workspace.js";
-import type { HarnessToolResult, HarnessToolSuccess } from "./protocol.js";
+import {
+  decodeHandle,
+  encodeHandle,
+  type HarnessToolResult,
+  type HarnessToolSuccess,
+} from "./protocol.js";
 import type {
   TaskExecutionInput,
   TaskExecutionResult,
@@ -31,6 +36,25 @@ import type {
 } from "./task-executor.js";
 
 const execFileAsync = promisify(execFile);
+
+test("compact handles remain compatible with legacy object handles", () => {
+  const payload = {
+    version: 1 as const,
+    revision: `src_${"1".repeat(32)}`,
+    path: "src/service.ts",
+    start: 4,
+    end: 20,
+    digest: "a".repeat(64),
+    kind: "function",
+    language: "typescript",
+    qualifiedName: "run",
+  };
+  const compact = encodeHandle("sym", payload);
+  const legacy = `sym://${Buffer.from(JSON.stringify(payload)).toString("base64url")}`;
+  assert.deepEqual(decodeHandle(compact, "sym"), payload);
+  assert.deepEqual(decodeHandle(legacy, "sym"), payload);
+  assert.ok(compact.length < legacy.length);
+});
 
 test("semantic tools expose exact outlines and reject stale observations", async () => {
   await withWorkspace(async (root) => {
@@ -56,7 +80,7 @@ test("semantic tools expose exact outlines and reject stale observations", async
     const body = success(
       await workspace.inspectCode({
         source_revision_id: revision,
-        target: { symbol_ref: method.symbol_ref.ref },
+        target: { symbol_ref: method.symbol_ref },
         view: "body",
       }),
     );
@@ -91,7 +115,7 @@ test("semantic tools expose exact outlines and reject stale observations", async
     );
     const stale = await workspace.inspectCode({
       source_revision_id: revision,
-      target: { symbol_ref: method.symbol_ref.ref },
+      target: { symbol_ref: method.symbol_ref },
       view: "body",
     });
     assert.equal(stale.status, "error");
@@ -157,7 +181,7 @@ test("apply_change proposes, reviews, and atomically commits an exact node edit"
         operations: [
           {
             kind: "replace_node",
-            target: target.node_ref.ref,
+            target: target.symbol_ref,
             replacement:
               "function formatName(value: string) {\n  return value.trim().toUpperCase();\n}",
           },
@@ -779,10 +803,12 @@ test("Cline adapter registers a small read/write harness with strict schemas", a
         "search_code",
         "outline_code",
         "inspect_code",
+        "get_relation_context",
         "apply_change",
         "run_task",
         "inspect_run",
         "review_change",
+        "validate_change",
         "inspect_artifact",
       ],
     );
@@ -895,7 +921,7 @@ test("commit_proposal refuses an unrelated concurrent workspace change", async (
         operations: [
           {
             kind: "replace_node",
-            target: target.node_ref.ref,
+            target: target.symbol_ref,
             replacement:
               "function formatName(value: string) { return value.toUpperCase(); }",
           },
@@ -961,6 +987,217 @@ test(
     });
   },
 );
+
+test("outline_code returns compact symbols across priority languages and Vue", async () => {
+  await withWorkspace(async (root) => {
+    const fixtures = new Map([
+      [
+        "src/example.py",
+        "class Worker:\n    def run(self):\n        return True\n",
+      ],
+      ["src/example.go", "package main\nfunc Run() {}\n"],
+      ["src/Example.java", "class Example { void run() {} }\n"],
+      ["src/example.cs", "class Example { void Run() {} }\n"],
+      ["src/example.rs", "struct Worker;\nimpl Worker { fn run() {} }\n"],
+      ["src/example.sh", "run() { echo ready; }\n"],
+      [
+        "src/example.vue",
+        '<template><div /></template>\n<script setup lang="ts">\nfunction run() { return true }\n</script>\n',
+      ],
+      [
+        "src/many.ts",
+        Array.from(
+          { length: 20 },
+          (_, index) => `function task${index}() {}`,
+        ).join("\n"),
+      ],
+    ]);
+    for (const [path, content] of fixtures)
+      await writeFile(join(root, path), content);
+    const workspace = new SemanticWorkspace(root);
+    const state = success(await workspace.workspaceState());
+    const revision = state.data.source_revision.source_revision_id;
+    for (const [path, expected] of [
+      ["src/example.py", "Worker.run"],
+      ["src/example.go", "Run"],
+      ["src/Example.java", "Example.run"],
+      ["src/example.cs", "Example.Run"],
+      ["src/example.rs", "Worker"],
+      ["src/example.sh", "run"],
+      ["src/example.vue", "run"],
+    ]) {
+      const outline = success(
+        await workspace.outlineCode({
+          source_revision_id: revision,
+          target: { path },
+        }),
+      );
+      assert.equal(
+        outline.data.items.some((item) => item.qualified_name === expected),
+        true,
+        `${path} should expose ${expected}`,
+      );
+    }
+    const compact = success(
+      await workspace.outlineCode({
+        source_revision_id: revision,
+        target: { path: "src/many.ts" },
+      }),
+    );
+    assert.equal(compact.data.items.length, 20);
+    assert.equal(compact.coverage.truncated, false);
+    assert.equal(
+      compact.data.items.every(
+        (item) => item.symbol_ref.length < 260 && !("node_ref" in item),
+      ),
+      true,
+    );
+    const vueSymbol = success(
+      await workspace.outlineCode({
+        source_revision_id: revision,
+        target: { path: "src/example.vue" },
+      }),
+    ).data.items.find((item) => item.qualified_name === "run");
+    assert.ok(vueSymbol);
+    const body = success(
+      await workspace.inspectCode({
+        source_revision_id: revision,
+        target: { symbol_ref: vueSymbol.symbol_ref },
+        view: "body",
+      }),
+    );
+    assert.match(body.data.content, /return true/);
+  });
+});
+
+test("P1 relation and impact views stay bounded and identify tests", async () => {
+  await withWorkspace(async (root) => {
+    await mkdir(join(root, "tests"), { recursive: true });
+    await writeFile(
+      join(root, "tests", "service.test.ts"),
+      'import { formatName } from "../src/service";\nformatName("Ada");\n',
+    );
+    const workspace = new SemanticWorkspace(root);
+    const state = success(await workspace.workspaceState());
+    const revision = state.data.source_revision.source_revision_id;
+    const outline = success(
+      await workspace.outlineCode({
+        source_revision_id: revision,
+        target: { path: "src/service.ts" },
+      }),
+    );
+    const target = outline.data.items.find(
+      (item) => item.qualified_name === "formatName",
+    );
+    assert.ok(target);
+    const relations = success(
+      await workspace.getRelationContext({
+        source_revision_id: revision,
+        target: { symbol_ref: target.symbol_ref },
+      }),
+    );
+    assert.equal(
+      relations.data.items.some((item) => item.relation === "calls"),
+      true,
+    );
+    assert.equal(
+      relations.data.items.some((item) => item.relation === "tested_by"),
+      true,
+    );
+    const proposal = success(
+      await workspace.applyChange({
+        action: "propose",
+        base_source_revision_id: revision,
+        idempotency_key: "p1-impact-proposal",
+        operations: [
+          {
+            kind: "replace_node",
+            target: target.symbol_ref,
+            replacement:
+              "function formatName(value: string) { return value.trim().toUpperCase(); }",
+          },
+        ],
+      }),
+    );
+    const review = success(
+      await workspace.reviewChange({
+        proposal_ref: proposal.data.proposal_ref,
+        include: ["semantic_diff", "impact"],
+      }),
+    );
+    assert.ok(review.data.semantic_diff);
+    assert.ok(review.data.impact);
+    assert.equal(
+      review.data.semantic_diff[0]?.modified[0]?.change,
+      "implementation",
+    );
+    assert.equal(
+      review.data.impact.impacted_files.some(
+        (file) => file.path === "tests/service.test.ts" && file.test,
+      ),
+      true,
+    );
+  });
+});
+
+test("validate_change binds exact revision runs to acceptance criteria", async () => {
+  await withWorkspace(async (root) => {
+    const workspace = new SemanticWorkspace(root, {
+      taskExecutor: new RecordingTaskExecutor(),
+    });
+    const state = success(await workspace.workspaceState());
+    const revision = state.data.source_revision.source_revision_id;
+    const outline = success(
+      await workspace.outlineCode({
+        source_revision_id: revision,
+        target: { path: "src/service.ts" },
+      }),
+    );
+    const target = outline.data.items.find(
+      (item) => item.qualified_name === "formatName",
+    );
+    assert.ok(target);
+    const applied = success(
+      await workspace.applyChange({
+        action: "apply",
+        base_source_revision_id: revision,
+        idempotency_key: "p1-validation-apply",
+        operations: [
+          {
+            kind: "replace_node",
+            target: target.symbol_ref,
+            replacement:
+              "function formatName(value: string) { return value.trim().toUpperCase(); }",
+          },
+        ],
+        checks: ["parse"],
+      }),
+    );
+    const candidateRevision =
+      applied.data.receipt.source_revision.source_revision_id;
+    await workspace.runTask({
+      source_revision_id: candidateRevision,
+      task: { task_id: "test" },
+      limits: { timeout_ms: 10_000 },
+      idempotency_key: "p1-validation-test",
+    });
+    const validation = success(
+      await workspace.validateChange({
+        proposal_ref: applied.data.proposal.proposal_ref,
+        criteria: [
+          {
+            id: "AC1",
+            text: "Formatting behavior remains covered.",
+            requires: ["parse", "test"],
+          },
+        ],
+      }),
+    );
+    assert.equal(validation.data.criteria[0]?.status, "verified");
+    assert.equal(validation.data.summary.complete, true);
+    assert.match(validation.data.evidence_ref, /^artifact:\/\//);
+  });
+});
 
 const source = `export class Greeter {
   greet(name: string) {

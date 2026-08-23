@@ -193,7 +193,19 @@ export function encodeHandle(
   scheme: "file" | "node" | "sym",
   payload: HandlePayload,
 ) {
-  const encoded = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  const encoded = Buffer.from(
+    JSON.stringify([
+      payload.version,
+      payload.revision,
+      payload.path,
+      payload.start,
+      payload.end,
+      payload.digest,
+      payload.kind,
+      payload.language,
+      payload.qualifiedName,
+    ]),
+  ).toString("base64url");
   return `${scheme}://${encoded}`;
 }
 
@@ -203,9 +215,12 @@ export function decodeHandle(
 ): HandlePayload | undefined {
   if (!value.startsWith(`${scheme}://`)) return undefined;
   try {
-    const payload = JSON.parse(
+    const decoded = JSON.parse(
       Buffer.from(value.slice(scheme.length + 3), "base64url").toString("utf8"),
-    ) as Partial<HandlePayload>;
+    ) as Partial<HandlePayload> | unknown[];
+    const payload = Array.isArray(decoded)
+      ? handlePayloadFromTuple(decoded)
+      : decoded;
     if (
       payload.version !== 1 ||
       typeof payload.revision !== "string" ||
@@ -224,6 +239,20 @@ export function decodeHandle(
   } catch {
     return undefined;
   }
+}
+
+function handlePayloadFromTuple(value: unknown[]): Partial<HandlePayload> {
+  return {
+    version: value[0] as 1,
+    revision: value[1] as string,
+    path: value[2] as string,
+    start: value[3] as number,
+    end: value[4] as number,
+    digest: value[5] as string,
+    ...(typeof value[6] === "string" ? { kind: value[6] } : {}),
+    ...(typeof value[7] === "string" ? { language: value[7] } : {}),
+    ...(typeof value[8] === "string" ? { qualifiedName: value[8] } : {}),
+  };
 }
 
 function estimateOutputTokens(value: unknown) {

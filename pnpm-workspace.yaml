@@ -1,7 +1,13 @@
 packages:
   - "packages/*"
 allowBuilds:
-  '@swc/core': true
+  "@ast-grep/lang-bash": true
+  "@ast-grep/lang-csharp": true
+  "@ast-grep/lang-go": true
+  "@ast-grep/lang-java": true
+  "@ast-grep/lang-python": true
+  "@ast-grep/lang-rust": true
+  "@swc/core": true
   electron: true
   electron-winstaller: true
   es5-ext: true

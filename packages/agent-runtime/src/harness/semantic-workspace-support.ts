@@ -1,4 +1,4 @@
-import { parseCode, type CodeSymbol } from "./code-intelligence.js";
+import { parseCode } from "./code-intelligence.js";
 import {
   decodeHandle,
   encodeHandle,
@@ -47,8 +47,8 @@ export type SearchMatch = {
   range_utf8_bytes: [number, number];
   excerpt: string;
   match_reason: string;
-  node_ref: string;
-  symbol_ref?: CodeSymbol["symbol_ref"];
+  node_ref?: string;
+  symbol_ref?: string;
 };
 
 export function textMatches(
@@ -123,17 +123,56 @@ export function compareSymbols(
   beforeContent?: Buffer,
   afterContent?: Buffer,
 ) {
-  const oldSymbols = symbolDigests(change.path, beforeContent);
-  const newSymbols = symbolDigests(change.path, afterContent);
+  const oldSymbols = symbolRecords(change.path, beforeContent);
+  const newSymbols = symbolRecords(change.path, afterContent);
   return {
     added: [...newSymbols.keys()].filter((symbol) => !oldSymbols.has(symbol)),
     removed: [...oldSymbols.keys()].filter((symbol) => !newSymbols.has(symbol)),
     modified: [...newSymbols.keys()].filter(
       (symbol) =>
         oldSymbols.has(symbol) &&
-        oldSymbols.get(symbol) !== newSymbols.get(symbol),
+        oldSymbols.get(symbol)?.digest !== newSymbols.get(symbol)?.digest,
     ),
   };
+}
+
+export function semanticSymbolDiff(
+  path: string,
+  beforeContent?: Buffer,
+  afterContent?: Buffer,
+) {
+  const before = symbolRecords(path, beforeContent);
+  const after = symbolRecords(path, afterContent);
+  return {
+    added: [...after.entries()]
+      .filter(([key]) => !before.has(key))
+      .map(([, symbol]) => publicSemanticSymbol(symbol)),
+    removed: [...before.entries()]
+      .filter(([key]) => !after.has(key))
+      .map(([, symbol]) => publicSemanticSymbol(symbol)),
+    modified: [...after.entries()]
+      .filter(([key, symbol]) => before.get(key)?.digest !== symbol.digest)
+      .filter(([key]) => before.has(key))
+      .map(([key, symbol]) => ({
+        ...publicSemanticSymbol(symbol),
+        change:
+          before.get(key)!.signature === symbol.signature
+            ? "implementation"
+            : "signature",
+        before_signature: before.get(key)!.signature,
+        after_signature: symbol.signature,
+      })),
+  };
+}
+
+export function semanticDiffNames(
+  value: ReturnType<typeof semanticSymbolDiff>,
+) {
+  return [
+    ...value.added.map((symbol) => symbol.qualified_name),
+    ...value.removed.map((symbol) => symbol.qualified_name),
+    ...value.modified.map((symbol) => symbol.qualified_name),
+  ].map((name) => name.split(".").at(-1) ?? name);
 }
 
 export function publicProposal(
@@ -327,15 +366,35 @@ export function approximateTokens(value: unknown) {
   return Math.ceil(Buffer.byteLength(JSON.stringify(value), "utf8") / 4);
 }
 
-function symbolDigests(path: string, content?: Buffer) {
-  const result = new Map<string, string>();
+function symbolRecords(path: string, content?: Buffer) {
+  const result = new Map<
+    string,
+    { digest: string; kind: string; qualified_name: string; signature: string }
+  >();
   if (!content) return result;
   for (const symbol of parseCode(path, content).symbols) {
     const key = `${symbol.kind}:${symbol.qualified_name}`;
     const [start, end] = symbol.range_utf8_bytes;
-    result.set(key, sha256(content.subarray(start, end)));
+    result.set(key, {
+      digest: sha256(content.subarray(start, end)),
+      kind: symbol.kind,
+      qualified_name: symbol.qualified_name,
+      signature: symbol.signature,
+    });
   }
   return result;
+}
+
+function publicSemanticSymbol(symbol: {
+  kind: string;
+  qualified_name: string;
+  signature: string;
+}) {
+  return {
+    kind: symbol.kind,
+    qualified_name: symbol.qualified_name,
+    signature: symbol.signature,
+  };
 }
 
 function lineExcerpt(source: string, index: number) {

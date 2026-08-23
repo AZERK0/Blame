@@ -355,6 +355,10 @@ export class ChangeService {
     return this.store.readProposal(ref);
   }
 
+  readReceipt(ref: string) {
+    return this.store.readReceipt(ref);
+  }
+
   async proposalFileContents(change: ProposedFile) {
     return {
       before: change.old_artifact

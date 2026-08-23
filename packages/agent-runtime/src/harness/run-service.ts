@@ -230,6 +230,10 @@ export class RunService {
     return this.store.runsForProposal(ref);
   }
 
+  runsForRevision(sourceRevisionId: string) {
+    return this.store.runsForRevision(sourceRevisionId);
+  }
+
   capability() {
     return this.executor.capability();
   }
