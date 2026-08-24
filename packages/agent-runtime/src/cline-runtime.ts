@@ -124,6 +124,7 @@ import { loadPrompt } from "./prompt-loader.js";
 import { createProviderCompatibleFetch } from "./provider-schema-compatibility.js";
 import { fallbackCommitSubject } from "./commit-message.js";
 import { AgentTelemetry } from "./agent-telemetry.js";
+import { BlameUserInstructionServices } from "./user-instruction-services.js";
 import { taskComplexityBucket } from "./telemetry-cohorts.js";
 import {
   applyProductionEnvironment,
@@ -397,6 +398,7 @@ export class BlameAgentRuntime {
   private sessionIterations = new Map<string, number>();
   private sessionSpawnAgentActiveCounts = new Map<string, number>();
   private sessionUsageSignatures = new Map<string, string>();
+  private readonly userInstructionServices = new BlameUserInstructionServices();
   private structuredEventSessions = new Set<string>();
   private readonly productionConfig = loadProductionConfig();
   private readonly events?: AgentRuntimeEvents;
@@ -509,6 +511,7 @@ export class BlameAgentRuntime {
     this.sessionEventSignatures.clear();
     this.sessionApiConnections.clear();
     await this.disposeCore();
+    this.userInstructionServices.stopAll();
     this.agentTelemetry.shutdown();
   }
 
@@ -668,10 +671,22 @@ export class BlameAgentRuntime {
         this.autoApprovedWriteToolSessions.add(sessionId);
       }
       const autoSendPrompt = input.autoSendPrompt !== false;
-      const pluginPaths = runtimePluginPaths(this.productionConfig, [
+      const pluginPaths = runtimePluginPaths(
+        this.productionConfig,
+        input.pluginPaths,
+      );
+      const skillPluginPaths = [
         ...(input.enableBuiltInSkills ? [blameNativePluginPath()] : []),
-        ...(input.pluginPaths ?? []),
-      ]);
+        ...(pluginPaths ?? []),
+      ];
+      const userInstructionService = input.enableBuiltInSkills
+        ? await this.userInstructionServices.start({
+            cwd: input.cwd,
+            pluginPaths: skillPluginPaths,
+            sessionId,
+            workspaceRoot: input.workspaceRoot,
+          })
+        : undefined;
       const requestedConfigExtensions =
         input.configExtensions ??
         runtimeConfigExtensions(this.productionConfig);
@@ -759,6 +774,7 @@ export class BlameAgentRuntime {
         },
         localRuntime: {
           ...(configExtensions ? { configExtensions } : {}),
+          ...(userInstructionService ? { userInstructionService } : {}),
           ...(pluginPaths ? { pluginPaths } : {}),
         },
         interactive: !autoSendPrompt,
@@ -842,6 +858,7 @@ export class BlameAgentRuntime {
         activeContext,
       );
       this.agentTelemetry.fail(sessionId, error);
+      this.userInstructionServices.stop(sessionId);
       throw error;
     }
   }
@@ -897,6 +914,7 @@ export class BlameAgentRuntime {
     );
     this.emitSessionError(sessionId, message, error);
     this.agentTelemetry.fail(sessionId, error);
+    this.userInstructionServices.stop(sessionId);
   }
 
   private async sendSession(
@@ -2160,6 +2178,7 @@ export class BlameAgentRuntime {
     this.sessionApiConnections.delete(sessionId);
     this.sessionQualityBaselines.delete(sessionId);
     this.sessionStartInputs.delete(sessionId);
+    this.userInstructionServices.stop(sessionId);
     this.structuredEventSessions.delete(sessionId);
     if (!preserveTelemetry) this.agentTelemetry.remove(sessionId);
   }

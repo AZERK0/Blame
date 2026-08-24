@@ -4,9 +4,11 @@ import test from "node:test";
 import {
   createUserInstructionConfigService,
   resolvePluginSkillDirectoriesFromPaths,
+  type UserInstructionConfigService,
 } from "@cline/sdk";
 
 import { blameNativePluginPath } from "./cline-runtime.js";
+import { BlameUserInstructionServices } from "./user-instruction-services.js";
 
 test("discovers and invokes Impeccable through Cline native skills", async () => {
   const skillDirectories = resolvePluginSkillDirectoriesFromPaths([
@@ -42,4 +44,29 @@ test("discovers and invokes Impeccable through Cline native skills", async () =>
   } finally {
     service.stop();
   }
+});
+
+test("keeps session startup available when the skill service fails", async () => {
+  let stopped = false;
+  const services = new BlameUserInstructionServices(
+    () =>
+      ({
+        async start() {
+          throw new Error("skill watcher unavailable");
+        },
+        stop() {
+          stopped = true;
+        },
+      }) as UserInstructionConfigService,
+  );
+
+  const service = await services.start({
+    cwd: "/tmp/blame-skill-fallback",
+    pluginPaths: ["/tmp/blame-native/index.js"],
+    sessionId: "fallback-session",
+    workspaceRoot: "/tmp/blame-skill-fallback",
+  });
+
+  assert.equal(service, undefined);
+  assert.equal(stopped, true);
 });

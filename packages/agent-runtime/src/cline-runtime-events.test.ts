@@ -1,14 +1,17 @@
 import assert from "node:assert/strict";
-import { access, mkdtemp, readFile, rm } from "node:fs/promises";
+import {
+  access,
+  mkdir,
+  mkdtemp,
+  readFile,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import {
-  createUserInstructionConfigService,
-  type ClineCoreStartInput,
-  type CoreSessionEvent,
-} from "@cline/sdk";
+import type { ClineCoreStartInput, CoreSessionEvent } from "@cline/sdk";
 import { ClineFreeModelLimitError, ClineNotSubscribedError } from "@cline/llms";
 import type { AgentEvent } from "./types.js";
 
@@ -129,6 +132,24 @@ test("does not prewarm a local Cline backend", async () => {
 
 test("starts development sessions with native skills and private specialist consultation", async () => {
   const workspace = await mkdtemp(join(tmpdir(), "blame-development-runtime-"));
+  const workspaceSkillDirectory = join(
+    workspace,
+    ".cline",
+    "skills",
+    "workspace-skill",
+  );
+  await mkdir(workspaceSkillDirectory, { recursive: true });
+  await writeFile(
+    join(workspaceSkillDirectory, "SKILL.md"),
+    [
+      "---",
+      "name: workspace-skill",
+      "description: Workspace-owned regression fixture.",
+      "---",
+      "",
+      "# Workspace skill",
+    ].join("\n"),
+  );
   const originalFetch = globalThis.fetch;
   let capturedStart: ClineCoreStartInput | undefined;
   const core = {
@@ -180,33 +201,15 @@ test("starts development sessions with native skills and private specialist cons
     assert.ok(
       capturedStart.localRuntime?.configExtensions?.includes("plugins"),
     );
-    assert.ok(
-      capturedStart.localRuntime?.pluginPaths?.some((path: string) =>
-        path.endsWith("/plugins/blame-native/index.js"),
-      ),
-    );
-    const skillService = createUserInstructionConfigService({
-      skills: {
-        cwd: workspace,
-        includePluginSkills:
-          capturedStart.localRuntime?.configExtensions?.includes("plugins"),
-        pluginPaths: [...(capturedStart.localRuntime?.pluginPaths ?? [])],
-        workspacePath: workspace,
-      },
-    });
-    try {
-      await skillService.start();
-      assert.ok(
-        skillService
-          .listRecords("skill")
-          .some(
-            (record: { item: { name: string } }) =>
-              record.item.name === "impeccable",
-          ),
-      );
-    } finally {
-      skillService.stop();
-    }
+    assert.equal(capturedStart.config.pluginPaths, undefined);
+    assert.equal("pluginPaths" in (capturedStart.localRuntime ?? {}), false);
+    const skillService = capturedStart.localRuntime?.userInstructionService;
+    assert.ok(skillService);
+    const skillNames = skillService
+      .listRecords("skill")
+      .map((record: { item: { name: string } }) => record.item.name);
+    assert.ok(skillNames.includes("impeccable"));
+    assert.ok(skillNames.includes("workspace-skill"));
     const toolNames = capturedStart.config.extraTools?.map(
       (tool: { name: string }) => tool.name,
     );
