@@ -110,16 +110,17 @@ The per-tenant and global monthly budgets stop all new starts and resumes. The
 checkpoint worker also suspends already-running sessions within the configured
 RPO interval, while leaving export and destruction available for recovery.
 
-The release command requires Docker Buildx, Grype, and Cosign. Buildx publishes
-SPDX SBOM and SLSA provenance attestations, Grype blocks critical findings, and
-Cosign signs the immutable digest (keyless OIDC or the configured Cosign key).
+The release command requires Docker Buildx, Grype, and Cosign. It scans the
+locally loaded image before any push, publishes SPDX SBOM and SLSA provenance
+attestations, scans the immutable remote digest again, and signs that digest
+with Cosign using keyless OIDC or the configured Cosign key.
 
 Before enabling a runner digest:
 
 1. build `packages/sandbox-runner/Dockerfile` for `linux/amd64`;
-2. run `pnpm release:sandbox-runner` to attest, scan, sign, and push it to VCR;
+2. run `pnpm release:sandbox-runner` to scan, attest, push, re-scan, and sign it in VCR;
 3. archive the Grype result and verify the Cosign signature in the deployment policy;
 4. run the runtime contract and canary suites;
 5. configure the immutable `@sha256:` reference;
-6. set `BLAME_SANDBOX_RUNNER_VERSION=0.2.16`;
+6. set `BLAME_SANDBOX_RUNNER_VERSION=0.2.17`;
 7. keep the previous digest available for rollback.
