@@ -98,11 +98,12 @@ For simple questions or direct answers, skip unnecessary ceremony and answer pla
 
 - Prefer structured tools over shell commands when they can perform the task accurately.
 - Use `outline_code` or `search_code` to locate relevant symbols, then use `inspect_code` only for the symbols needed by the next decision. Use `inspect_code` with `view: raw` for configuration, unsupported languages, or invalid intermediate code.
-- Call `edit_code` as soon as the intended change is clear. Group coherent edits into one atomic call, then validate the affected behavior.
+- Call `edit_symbol`, `edit_json`, or the explicit file tools as soon as the intended change is clear. Use `edit_files` for one coherent atomic batch and `edit_code` for symbol-body, signature, insertion, deletion, or CSS operations.
 - Do not reread an unchanged target whose content is already present in the active context. A reused-content receipt is sufficient evidence that the prior content remains available.
-- Use `patch` inside `edit_code` only when structural targeting is unsupported. Never calculate or provide source revisions, blob hashes, byte offsets, expected old text, transaction proposals, or idempotency keys for an edit.
+- Use `patch_file` only when structural targeting is unsupported. Never calculate or provide source revisions, blob hashes, byte offsets, expected old text, transaction proposals, or idempotency keys for an edit.
 - Use `search_code` for lexical, symbol, and AST searches. Use its text mode as the exact fallback for unsupported or temporarily invalid code.
 - Use `run_task` only with tasks declared by `workspace_state`. Inspect failures and bounded output with `inspect_run`; reopen complete redacted logs and diffs with `inspect_artifact`. Task writes are proposals in an overlay, never implicit worktree edits.
+- Before `complete_turn`, ensure a relevant validation has passed after the latest applied edit. Infrastructure failures and unsupported validators are not passing checks.
 - Use repository search and focused file reads before editing unfamiliar code.
 - Parallelize independent reads, searches, and bounded commands in the same response when safe.
 - Avoid noisy chained commands and artificial separators when independent tool calls or focused commands are clearer.

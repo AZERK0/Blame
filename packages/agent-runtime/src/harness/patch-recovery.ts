@@ -38,12 +38,26 @@ export class PatchRecoveryConflict extends Error {
   }
 }
 
+export class UnsupportedPatchOperation extends Error {
+  readonly reason: "MULTI_FILE_PATCH" | "PATCH_PATH_MISMATCH";
+
+  constructor(reason: "MULTI_FILE_PATCH" | "PATCH_PATH_MISMATCH") {
+    super(
+      reason === "MULTI_FILE_PATCH"
+        ? "A patch_file request may target only one file."
+        : "The patch headers do not target the requested path.",
+    );
+    this.reason = reason;
+  }
+}
+
 export async function recoverPatch(input: {
   patch: string;
   path: string;
   source: string;
   workspaceRoot: string;
 }): Promise<PatchRecoveryResult> {
+  assertSinglePatchTarget(input.patch, input.path);
   const exact = exactPatch(input.source, input.patch);
   if (exact !== false) return { content: exact, strategy: "exact" };
   if (!harnessFeatureEnabled("BLAME_PATCH_RECOVERY_V2"))
@@ -63,6 +77,14 @@ export async function recoverPatch(input: {
     input,
     "No unique exact, anchor, fuzzy, or three-way resolution exists.",
   );
+}
+
+export function assertSinglePatchTarget(patch: string, path: string) {
+  const files = parsedFiles(patch);
+  if (files.length > 1) throw new UnsupportedPatchOperation("MULTI_FILE_PATCH");
+  const targets = files.flatMap(patchFileTargets);
+  if (targets.length && targets.some((target) => target !== path))
+    throw new UnsupportedPatchOperation("PATCH_PATH_MISMATCH");
 }
 
 function exactPatch(source: string, patch: string) {
@@ -230,11 +252,28 @@ function contextAt(source: string, line: number) {
 }
 
 function parsedHunks(patch: string) {
+  return parsedFiles(patch).flatMap((file) => file.hunks);
+}
+
+function parsedFiles(patch: string) {
   try {
-    return parsePatch(patch).flatMap((file) => file.hunks);
+    return parsePatch(patch);
   } catch {
     return [];
   }
+}
+
+function patchFileTargets(file: ReturnType<typeof parsePatch>[number]) {
+  return [file.oldFileName, file.newFileName]
+    .filter((value): value is string => Boolean(value && value !== "/dev/null"))
+    .map(normalizePatchPath);
+}
+
+function normalizePatchPath(path: string) {
+  const normalized = path.replaceAll("\\", "/");
+  return normalized.startsWith("a/") || normalized.startsWith("b/")
+    ? normalized.slice(2)
+    : normalized;
 }
 
 function renderHunk(hunk: Hunk) {

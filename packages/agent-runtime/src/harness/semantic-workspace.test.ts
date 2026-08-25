@@ -591,7 +591,7 @@ test("edit_code applies a semantic edit without caller revisions or precondition
     assert.equal(applied.data.resolution, "exact");
     assert.equal(applied.data.validation.parse, "passed");
     const appliedEpoch = await memory.currentEpochId();
-    assert.notEqual(appliedEpoch, initialEpoch);
+    assert.equal(appliedEpoch, initialEpoch);
     assert.deepEqual(
       applied.data.changed_files.map(({ path }) => path),
       ["src/service.ts"],
@@ -1089,7 +1089,7 @@ test("inspect_code deduplicates covered ranges and resets by context epoch", asy
   });
 });
 
-test("working set deduplicates identical bytes across semantic and raw views", async () => {
+test("working set isolates semantic and raw view receipts", async () => {
   await withWorkspace(async (root) => {
     const workspace = new SemanticWorkspace(root, {
       taskContract: { session_id: "cross-view" },
@@ -1116,8 +1116,8 @@ test("working set deduplicates identical bytes across semantic and raw views", a
         { contextEpoch: "cross-view:epoch:1" },
       ),
     );
-    assert.equal(raw.data.status, "already_available");
-    assert.deepEqual(raw.data.segments, []);
+    assert.equal(raw.data.status, "content");
+    assert.equal(raw.data.segments.length, 1);
   });
 });
 
@@ -1553,6 +1553,9 @@ test("run_task discovers package tasks and normalizes package selections", async
       command: "node --test",
       cwd: "apps/backend",
       package_manager: "npm",
+      supportsFileSelection: true,
+      requiresNetwork: false,
+      dependencyPolicy: "required",
     });
     const executed = success(
       await workspace.runTask({
@@ -1738,6 +1741,14 @@ test("Cline adapter registers a small read/write harness with strict schemas", a
         "inspect_code",
         "get_relation_context",
         "recall_context",
+        "edit_symbol",
+        "edit_json",
+        "patch_file",
+        "edit_files",
+        "create_file",
+        "replace_file",
+        "delete_file",
+        "move_file",
         "edit_code",
         "run_task",
         "inspect_run",
@@ -1807,7 +1818,7 @@ test("Cline adapter advances read epochs and stops low-novelty exploration", asy
   });
 });
 
-test("cost governor resets only after an applied edit or a new epoch", () => {
+test("cost governor resets only after an applied edit", () => {
   const governor = new HarnessCostGovernor(8);
   const epoch = { contextEpoch: "epoch-a", iteration: 1 };
   const duplicateRead = {
@@ -1839,6 +1850,25 @@ test("cost governor resets only after an applied edit or a new epoch", () => {
   );
   assert.equal(governor.before("search_code", epoch.contextEpoch), undefined);
   assert.equal(governor.before("search_code", "epoch-b"), undefined);
+});
+
+test("cost governor keeps anti-loop counters across execution epochs", () => {
+  const governor = new HarnessCostGovernor(20);
+  const duplicateRead = {
+    status: "success",
+    data: {
+      status: "already_available",
+      overlap_rate: 1,
+      new_bytes: 0,
+      range_utf8_bytes: [0, 100],
+    },
+  } as never;
+  for (const contextEpoch of ["epoch-a", "epoch-a", "epoch-b", "epoch-b"])
+    governor.after("inspect_code", {}, duplicateRead, {
+      contextEpoch,
+      iteration: 1,
+    });
+  assert.equal(governor.before("search_code", "epoch-c")?.status, "error");
 });
 
 test("Cline adapter can delegate semantic execution without changing its tool contract", async () => {

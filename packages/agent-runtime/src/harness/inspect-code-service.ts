@@ -27,6 +27,11 @@ import {
 } from "./semantic-workspace-support.js";
 import { WorkspaceFiles, type WorkspaceSnapshot } from "./workspace-files.js";
 import { harnessFeatureEnabled } from "./harness-feature-flags.js";
+import {
+  languageCapability,
+  publicLanguageCapabilities,
+  recommendedEditTool,
+} from "./language-capabilities.js";
 
 type ByteRange = [number, number];
 type WorkingSetAvailability = Awaited<ReturnType<ReadWorkingSet["register"]>>;
@@ -71,11 +76,14 @@ type InspectionContext = InspectionSource & {
 };
 
 export type InspectCodeData = {
+  alreadyAvailable: boolean;
+  capabilities: ReturnType<typeof publicLanguageCapabilities>;
   content: string;
   coverage: "complete" | "delta";
   covered_ranges: ByteRange[];
   current_revision_id: string;
   file_ref: FileRef;
+  language: string;
   line_range: ByteRange;
   new_bytes: number;
   omitted_bytes: number;
@@ -86,8 +94,11 @@ export type InspectCodeData = {
   rebased: boolean;
   rebase_strategy?: string;
   requested_reference: string;
+  recommendedEditTool: string | null;
   resolved_reference: string;
   segments: InspectionSegment[];
+  selection: string;
+  sourceUnchanged: boolean;
   semantic_target?: SemanticTarget;
   status: "already_available" | "content" | "partial";
   view: InspectCodeInput["view"];
@@ -117,6 +128,10 @@ export class InspectCodeService {
     } catch (error) {
       return toolError(error);
     }
+  }
+
+  invalidatePaths(paths: string[]) {
+    return this.workingSet.invalidatePaths(paths);
   }
 
   private async inspectValid(
@@ -304,12 +319,14 @@ function alreadyAvailableResult(context: InspectionContext) {
     data: {
       ...sharedData(context),
       status: "already_available" as const,
+      alreadyAvailable: true,
       content: "",
       segments: [],
       coverage: "complete" as const,
       overlap_rate: 1,
       new_bytes: 0,
       omitted_bytes: 0,
+      sourceUnchanged: true,
     },
   });
 }
@@ -324,6 +341,7 @@ function contentResult(context: InspectionContext) {
     provenance: [inspectionProvenance(context, revision)],
     data: {
       ...sharedData(context),
+      alreadyAvailable: false,
       status:
         context.availability.overlapRate > 0
           ? ("partial" as const)
@@ -337,6 +355,7 @@ function contentResult(context: InspectionContext) {
           ? ("delta" as const)
           : ("complete" as const),
       new_bytes: newByteCount(context.availability),
+      sourceUnchanged: true,
     },
     coverage: {
       scope: truncated ? "partial" : "complete",
@@ -350,13 +369,18 @@ function contentResult(context: InspectionContext) {
 }
 
 function sharedData(context: InspectionContext) {
+  const capability = languageCapability(context.path, context.content);
   return {
+    language: capability.languageId,
+    capabilities: publicLanguageCapabilities(capability),
+    recommendedEditTool: recommendedEditTool(capability),
     path: context.path,
     line_range: context.lineRange,
     file_ref: context.fileRef,
     view: context.input.view,
     range_utf8_bytes: context.inspected.range,
     read_receipt_ref: context.availability.receipt.read_receipt_ref,
+    selection: `${context.inspected.range[0]}:${context.inspected.range[1]}`,
     covered_ranges: context.availability.receipt.covered_ranges,
     requested_reference: context.requestedReference,
     resolved_reference: context.resolvedReference,

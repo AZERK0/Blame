@@ -58,13 +58,22 @@ import {
   type WorkspaceSnapshot,
 } from "./workspace-files.js";
 import { searchWithRipgrep } from "./lexical-search.js";
+import { capabilityRegistrySnapshot } from "./language-capabilities.js";
 import {
   applyChangeInputSchema,
+  createFileInputSchema,
+  deleteFileInputSchema,
   editCodeInputSchema,
+  editFilesInputSchema,
+  editJsonInputSchema,
+  editSymbolInputSchema,
   inspectArtifactInputSchema,
   inspectRunInputSchema,
+  moveFileInputSchema,
   outlineCodeInputSchema,
+  patchFileInputSchema,
   recallContextInputSchema,
+  replaceFileInputSchema,
   runTaskInputSchema,
   searchCodeInputSchema,
   workspaceStateInputSchema,
@@ -76,6 +85,14 @@ import {
   type RunTaskInput,
   type ValidateChangeInput,
   type EditCodeInput,
+  type CreateFileInput,
+  type DeleteFileInput,
+  type EditFilesInput,
+  type EditJsonInput,
+  type EditSymbolInput,
+  type MoveFileInput,
+  type PatchFileInput,
+  type ReplaceFileInput,
 } from "./schemas.js";
 import { ValidationService } from "./validation-service.js";
 import { ConversationMemoryStore } from "./conversation-memory.js";
@@ -225,16 +242,11 @@ export class SemanticWorkspace {
             semantic_workspace: {
               protocol_version: "2.0",
               languages: [
-                "bash",
-                "css",
-                "csharp",
-                "go",
-                "java",
-                "javascript",
-                "python",
-                "rust",
-                "typescript",
-                "vue",
+                ...new Set(
+                  capabilityRegistrySnapshot().map(
+                    (capability) => capability.languageId,
+                  ),
+                ),
               ],
               views: [
                 "signature",
@@ -257,7 +269,10 @@ export class SemanticWorkspace {
                 "set_css_declaration",
                 "remove_css_declaration",
                 "insert_css_declaration",
+                "edit_json",
                 "create_file",
+                "replace_file",
+                "delete_file",
                 "move_file",
                 "patch",
                 "patch_file",
@@ -270,12 +285,7 @@ export class SemanticWorkspace {
                 "BLAME_PATCH_RECOVERY_V2",
                 "BLAME_COST_GOVERNOR_V2",
               ],
-              language_capabilities: {
-                css: { outline: true, semantic_edit: true },
-                javascript: { outline: true, semantic_edit: true },
-                typescript: { outline: true, semantic_edit: true },
-                unknown: { outline: false, fallback: "patch" },
-              },
+              language_capabilities: capabilityRegistrySnapshot(),
               precision: "syntax",
               raw_fallback: true,
             },
@@ -687,6 +697,108 @@ export class SemanticWorkspace {
     return this.relations.getRelationContext(input, signal);
   }
 
+  editSymbol(
+    input: EditSymbolInput,
+    context?: { sessionId?: string; toolCallId?: string },
+  ) {
+    editSymbolInputSchema.parse(input);
+    return this.editCode(
+      {
+        edits: [
+          {
+            operation: "replace_symbol",
+            target: { symbol_ref: input.symbolRef },
+            path: input.path,
+            content: input.replacement,
+          },
+        ],
+      },
+      context,
+    );
+  }
+
+  editJson(
+    input: EditJsonInput,
+    context?: { sessionId?: string; toolCallId?: string },
+  ) {
+    editJsonInputSchema.parse(input);
+    return this.editCode(
+      { edits: [{ operation: "edit_json", ...input }] },
+      context,
+    );
+  }
+
+  patchFile(
+    input: PatchFileInput,
+    context?: { sessionId?: string; toolCallId?: string },
+  ) {
+    patchFileInputSchema.parse(input);
+    return this.editCode(
+      { edits: [{ operation: "patch_file", ...input }] },
+      context,
+    );
+  }
+
+  editFiles(
+    input: EditFilesInput,
+    context?: { sessionId?: string; toolCallId?: string },
+  ) {
+    editFilesInputSchema.parse(input);
+    return this.editCode({ edits: input.operations }, context);
+  }
+
+  createFile(
+    input: CreateFileInput,
+    context?: { sessionId?: string; toolCallId?: string },
+  ) {
+    createFileInputSchema.parse(input);
+    return this.editCode(
+      { edits: [{ operation: "create_file", ...input }] },
+      context,
+    );
+  }
+
+  replaceFile(
+    input: ReplaceFileInput,
+    context?: { sessionId?: string; toolCallId?: string },
+  ) {
+    replaceFileInputSchema.parse(input);
+    return this.editCode(
+      { edits: [{ operation: "replace_file", ...input }] },
+      context,
+    );
+  }
+
+  deleteFile(
+    input: DeleteFileInput,
+    context?: { sessionId?: string; toolCallId?: string },
+  ) {
+    deleteFileInputSchema.parse(input);
+    return this.editCode(
+      { edits: [{ operation: "delete_file", ...input }] },
+      context,
+    );
+  }
+
+  moveFile(
+    input: MoveFileInput,
+    context?: { sessionId?: string; toolCallId?: string },
+  ) {
+    moveFileInputSchema.parse(input);
+    return this.editCode(
+      {
+        edits: [
+          {
+            operation: "move_file",
+            from_path: input.fromPath,
+            to_path: input.toPath,
+          },
+        ],
+      },
+      context,
+    );
+  }
+
   async editCode(
     input: EditCodeInput,
     context?: { sessionId?: string; toolCallId?: string },
@@ -818,7 +930,12 @@ export class SemanticWorkspace {
         id: run.run_ref,
         status: run.status,
         taskId: run.task.task_id,
-        terminal: run.status === "passed" ? "passed" : "failed",
+        terminal:
+          run.status === "passed"
+            ? "passed"
+            : run.status === "failed"
+              ? "failed"
+              : "unknown",
       });
       return runTaskResponse(run, startedAt);
     } catch (error) {
@@ -959,18 +1076,23 @@ export class SemanticWorkspace {
   private async rememberEdit(
     result: Extract<EditCodeOutcome, { status: "applied" }>,
   ) {
-    const created = await this.memory.recordChange({
+    const paths = result.changed_files.map((file) => file.path);
+    await this.inspections.invalidatePaths(paths);
+    await this.memory.recordChange({
       artifactRef: result.diff_artifact_ref,
       receiptId: result.receipt_ref,
-      files: result.changed_files.map((file) => file.path),
+      files: paths,
       symbols: changedSymbolNames(result.changed_symbols),
       summary: result.changed_files
         .map((file) => `${file.path} (+${file.additions}/-${file.deletions})`)
         .join(", "),
-      validation: result.validation.parse === "passed" ? "passed" : "skipped",
+      validation:
+        result.validation.status === "passed"
+          ? "passed"
+          : result.validation.status === "failed"
+            ? "failed"
+            : "skipped",
     });
-    if (created && result.validation.parse === "passed")
-      await this.memory.rotate("validated_edit");
   }
 
   private async exactSnapshot(expected: string, signal?: AbortSignal) {

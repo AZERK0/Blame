@@ -12,6 +12,7 @@ export type ReadReceipt = {
   covered_ranges: ByteRange[];
   path: string;
   read_receipt_ref: string;
+  normalized_selection?: string;
   source_blob: string;
   target_ref?: string;
   view: string;
@@ -67,6 +68,19 @@ export class ReadWorkingSet {
     return this.exclusive(async () => (await this.read()).receipts);
   }
 
+  invalidatePaths(paths: string[]) {
+    return this.exclusive(async () => {
+      const selected = new Set(paths);
+      const stored = await this.read();
+      const receipts = stored.receipts.map((receipt) =>
+        selected.has(receipt.path)
+          ? { ...receipt, content_in_active_context: false }
+          : receipt,
+      );
+      await this.write({ ...stored, receipts });
+    });
+  }
+
   private async registerExclusive(input: RegisterReadInput) {
     const stored = await this.read();
     const contextEpoch = input.contextEpoch ?? "epoch-0";
@@ -85,6 +99,7 @@ export class ReadWorkingSet {
       sourceBlob: input.sourceBlob,
       targetRef: input.targetRef,
       view: input.view,
+      normalizedSelection: normalizeSelection(input.range),
     });
     stored.receipts = replaceReceipts(stored.receipts, matching, receipt);
     await this.write(stored);
@@ -146,9 +161,9 @@ function matchingReceipts(
       receipt.context_epoch === contextEpoch &&
       receipt.source_blob === input.sourceBlob &&
       receipt.path === input.path &&
+      receipt.view === input.view &&
       (input.deduplicateByBytes !== false ||
-        (receipt.view === input.view &&
-          receipt.target_ref === input.targetRef)) &&
+        receipt.target_ref === input.targetRef) &&
       receipt.content_in_active_context,
   );
 }
@@ -231,6 +246,7 @@ function createReceipt(input: {
   sourceBlob: string;
   targetRef?: string;
   view: string;
+  normalizedSelection: string;
 }): ReadReceipt {
   const identity = JSON.stringify(input);
   return {
@@ -239,10 +255,15 @@ function createReceipt(input: {
     path: input.path,
     ...(input.targetRef ? { target_ref: input.targetRef } : {}),
     view: input.view,
+    normalized_selection: input.normalizedSelection,
     covered_ranges: input.coveredRanges,
     content_in_active_context: true,
     read_receipt_ref: `read-receipt://${sha256(identity)}`,
   };
+}
+
+function normalizeSelection(range: ByteRange) {
+  return `${range[0]}:${range[1]}`;
 }
 
 function subtractRange(requested: ByteRange, covered: ByteRange[]) {

@@ -79,6 +79,48 @@ test("an invalid continuity delta keeps the visible answer and uses fallback", a
   });
 });
 
+test("complete_turn requires a successful validation after an unvalidated edit", async () => {
+  await withMemory(async (root) => {
+    const notifications: string[] = [];
+    const memory = new ConversationMemoryStore(root, "validation-gate");
+    await memory.beginRequest({
+      currentRequest: "Change it.",
+      userGoal: "Goal",
+    });
+    await memory.recordChange({
+      receiptId: "changeset://pending",
+      files: ["notes.txt"],
+      symbols: [],
+      summary: "Updated notes.txt",
+      validation: "skipped",
+    });
+    const tool = createCompleteTurnTool({
+      conversationId: "validation-gate",
+      workspaceRoot: root,
+      onComplete: ({ answer }) => notifications.push(answer),
+    });
+    const blocked = await tool.execute(
+      { answer: "Done.", continuity_update: emptyUpdate() },
+      toolContext("blocked-completion"),
+    );
+    assert.equal(
+      (blocked.output as { completionAllowed: boolean }).completionAllowed,
+      false,
+    );
+    assert.deepEqual(notifications, []);
+    await memory.recordValidation({
+      id: "run://passed",
+      status: "passed",
+      terminal: "passed",
+    });
+    await tool.execute(
+      { answer: "Validated.", continuity_update: emptyUpdate() },
+      toolContext("validated-completion"),
+    );
+    assert.deepEqual(notifications, ["Validated."]);
+  });
+});
+
 test("a user constraint survives twenty turns and compactions", async () => {
   await withMemory(async (root) => {
     const memory = new ConversationMemoryStore(root, "twenty-turns");

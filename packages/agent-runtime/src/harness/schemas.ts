@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { semanticLanguageIds } from "./language-capabilities.js";
 
 export const symbolKindSchema = z.enum([
   "class",
@@ -129,19 +130,7 @@ const searchQuerySchema = z.discriminatedUnion("kind", [
     .object({
       kind: z.literal("ast_pattern"),
       language: z
-        .enum([
-          "bash",
-          "csharp",
-          "css",
-          "go",
-          "html",
-          "java",
-          "javascript",
-          "python",
-          "rust",
-          "typescript",
-          "vue",
-        ])
+        .enum(semanticLanguageIds)
         .optional(),
       pattern: z.string().min(1).max(2_000),
     })
@@ -353,11 +342,41 @@ const semanticEditTargetSchema = z.union([
   z.object({ node_ref: z.string().regex(/^node:\/\//) }).strict(),
 ]);
 
+const jsonPathSchema = z
+  .array(z.union([z.string().max(1_000), z.number().int().nonnegative()]))
+  .max(100);
+
+export const jsonOperationSchema = z.discriminatedUnion("type", [
+  z
+    .object({
+      type: z.literal("set"),
+      path: jsonPathSchema,
+      value: z.unknown(),
+    })
+    .strict(),
+  z.object({ type: z.literal("delete"), path: jsonPathSchema }).strict(),
+  z
+    .object({
+      type: z.literal("merge"),
+      path: jsonPathSchema,
+      value: z.record(z.string(), z.unknown()),
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal("append"),
+      path: jsonPathSchema,
+      value: z.unknown(),
+    })
+    .strict(),
+]);
+
 export const editCodeOperationSchema = z.discriminatedUnion("operation", [
   z
     .object({
       operation: z.enum(["replace", "replace_symbol"]),
       target: semanticEditTargetSchema,
+      path: relativePathSchema.optional(),
       content: z.string(),
     })
     .strict(),
@@ -428,6 +447,26 @@ export const editCodeOperationSchema = z.discriminatedUnion("operation", [
     .strict(),
   z
     .object({
+      operation: z.literal("replace_file"),
+      path: relativePathSchema,
+      content: z.string(),
+    })
+    .strict(),
+  z
+    .object({
+      operation: z.literal("delete_file"),
+      path: relativePathSchema,
+    })
+    .strict(),
+  z
+    .object({
+      operation: z.literal("edit_json"),
+      path: relativePathSchema,
+      operations: z.array(jsonOperationSchema).min(1).max(100),
+    })
+    .strict(),
+  z
+    .object({
       operation: z.enum(["patch", "patch_file"]),
       path: relativePathSchema,
       patch: z
@@ -447,6 +486,49 @@ export const editCodeInputSchema = z
       .strict()
       .optional(),
   })
+  .strict();
+
+export const editSymbolInputSchema = z
+  .object({
+    path: relativePathSchema,
+    symbolRef: z.string().regex(/^sym:\/\//),
+    replacement: z.string(),
+  })
+  .strict();
+
+export const editJsonInputSchema = z
+  .object({
+    path: relativePathSchema,
+    operations: z.array(jsonOperationSchema).min(1).max(100),
+  })
+  .strict();
+
+export const patchFileInputSchema = z
+  .object({
+    path: relativePathSchema,
+    patch: z
+      .string()
+      .min(1)
+      .max(2 * 1024 * 1024),
+  })
+  .strict();
+
+export const editFilesInputSchema = z
+  .object({ operations: z.array(editCodeOperationSchema).min(1).max(50) })
+  .strict();
+
+export const createFileInputSchema = z
+  .object({ path: relativePathSchema, content: z.string() })
+  .strict();
+
+export const replaceFileInputSchema = createFileInputSchema;
+
+export const deleteFileInputSchema = z
+  .object({ path: relativePathSchema })
+  .strict();
+
+export const moveFileInputSchema = z
+  .object({ fromPath: relativePathSchema, toPath: relativePathSchema })
   .strict();
 
 export const recallContextInputSchema = z
@@ -516,6 +598,9 @@ export const taskCatalogItemSchema = z
     command: z.string().min(1).max(2_000),
     cwd: relativePathSchema,
     package_manager: z.enum(["bun", "npm", "pnpm", "yarn"]),
+    supportsFileSelection: z.boolean().default(false),
+    requiresNetwork: z.boolean().default(false),
+    dependencyPolicy: z.enum(["required", "optional"]).default("required"),
   })
   .strict();
 
@@ -796,6 +881,14 @@ export type CommitProposalInput = z.infer<typeof commitProposalInputSchema>;
 export type ApplyChangeInput = z.infer<typeof applyChangeInputSchema>;
 export type EditCodeOperation = z.infer<typeof editCodeOperationSchema>;
 export type EditCodeInput = z.infer<typeof editCodeInputSchema>;
+export type EditSymbolInput = z.infer<typeof editSymbolInputSchema>;
+export type EditJsonInput = z.infer<typeof editJsonInputSchema>;
+export type PatchFileInput = z.infer<typeof patchFileInputSchema>;
+export type EditFilesInput = z.infer<typeof editFilesInputSchema>;
+export type CreateFileInput = z.infer<typeof createFileInputSchema>;
+export type ReplaceFileInput = z.infer<typeof replaceFileInputSchema>;
+export type DeleteFileInput = z.infer<typeof deleteFileInputSchema>;
+export type MoveFileInput = z.infer<typeof moveFileInputSchema>;
 export type ReviewChangeInput = z.infer<typeof reviewChangeInputSchema>;
 export type ValidateChangeInput = z.infer<typeof validateChangeInputSchema>;
 export type RunTaskInput = z.infer<typeof runTaskInputSchema>;

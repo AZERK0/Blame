@@ -386,6 +386,29 @@ export class ConversationMemoryStore {
     return (await this.read("")).memory;
   }
 
+  async completionReadiness() {
+    const memory = (await this.read("")).memory;
+    const startedAt = memory.activeTurn?.startedAt;
+    if (!startedAt) return { completionAllowed: true as const };
+    const changes = memory.completedChanges.filter(
+      (change) => change.updatedAt >= startedAt,
+    );
+    const latest = changes
+      .sort((left, right) => left.updatedAt.localeCompare(right.updatedAt))
+      .at(-1);
+    if (!latest || latest.validation === "passed")
+      return { completionAllowed: true as const };
+    if (
+      memory.validationState.status === "passed" &&
+      memory.validationState.updatedAt >= latest.updatedAt
+    )
+      return { completionAllowed: true as const };
+    return {
+      completionAllowed: false as const,
+      reason: "NO_POST_EDIT_VALIDATION" as const,
+    };
+  }
+
   private async update(
     transform: (memory: ConversationMemory) => ConversationMemory,
   ) {

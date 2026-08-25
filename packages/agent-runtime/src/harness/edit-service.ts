@@ -1,11 +1,27 @@
-import { parseCode, symbolEditRange } from "./code-intelligence.js";
+import {
+  materializeSymbol,
+  parseCode,
+  symbolEditRange,
+} from "./code-intelligence.js";
 import { ChangeService } from "./change-service.js";
 import { stableJson } from "./change-store.js";
+import {
+  validateContent,
+  type ContentValidation,
+  type ValidationStatus,
+} from "./content-validation.js";
 import { lineChanges } from "./edit-content.js";
 import { editCssDeclaration } from "./css-declaration-editor.js";
-import { PatchRecoveryConflict, recoverPatch } from "./patch-recovery.js";
+import { EditConflictCircuit } from "./edit-conflict-circuit.js";
+import { editJsonContent } from "./json-editor.js";
+import { languageCapability } from "./language-capabilities.js";
+import {
+  PatchRecoveryConflict,
+  recoverPatch,
+  UnsupportedPatchOperation,
+} from "./patch-recovery.js";
 import { EditReceiptStore } from "./edit-receipt-store.js";
-import { sha256, type HandlePayload } from "./protocol.js";
+import { decodeHandle, sha256, type HandlePayload } from "./protocol.js";
 import {
   SemanticReferenceResolver,
   SemanticResolutionConflict,
@@ -52,13 +68,19 @@ export type EditCodeOutcome =
       }>;
       diff_artifact_ref: string;
       internal_retries: number;
+      changed: true;
+      outcome: "applied";
       receipt_ref: string;
       resolution: "exact" | "automatically_rebased";
       semantic_rebase_strategy?: string;
       source_revision: string;
       status: "applied";
+      new_symbol_refs: string[];
       validation: {
-        parse: "passed" | "skipped";
+        status: ValidationStatus;
+        validator: string | null;
+        files: ContentValidation[];
+        parse: "passed" | "skipped" | "not_supported";
         diagnostics: StoredChangeProposal["diagnostics"];
       };
     }
@@ -68,14 +90,37 @@ export type EditCodeOutcome =
       failed_hunk?: string;
       reason: string;
       recommended_strategy?: string;
+      recommendedTool?: string;
+      retrySuppressed?: boolean;
+      outcome: "conflict";
       status: "conflict";
     }
   | {
       diagnostics: StoredChangeProposal["diagnostics"];
+      validation: ContentValidation[];
       proposed_diff_artifact_ref: string;
+      outcome: "validation_failed";
       status: "validation_failed";
     }
-  | { reason: string; status: "denied" };
+  | {
+      outcome: "unsupported_operation";
+      reason: string;
+      reasonCode: string;
+      recommendedTool: string;
+      status: "unsupported_operation";
+    }
+  | {
+      outcome: "infrastructure_error";
+      reason: string;
+      status: "infrastructure_error";
+    }
+  | {
+      changed: false;
+      outcome: "no_change";
+      source_revision: string;
+      status: "no_change";
+    }
+  | { outcome: "unsupported_operation"; reason: string; status: "denied" };
 
 type AppliedOutcome = Extract<EditCodeOutcome, { status: "applied" }>;
 type ChangedDetail = {
@@ -90,6 +135,7 @@ export class EditService {
   private readonly receipts: EditReceiptStore;
   private readonly resolver: SemanticReferenceResolver;
   private readonly sessionId: string;
+  private readonly conflicts: EditConflictCircuit;
 
   constructor(
     files: WorkspaceFiles,
@@ -101,6 +147,7 @@ export class EditService {
     this.receipts = new EditReceiptStore(files.root);
     this.resolver = new SemanticReferenceResolver(files);
     this.sessionId = sessionId;
+    this.conflicts = new EditConflictCircuit(files.root, sessionId);
   }
 
   async edit(input: EditCodeInput, context: EditExecutionContext = {}) {
@@ -116,7 +163,13 @@ export class EditService {
         inputDigest,
       );
       if (existing) return existing;
+      const blocked = await this.conflicts.blocked(input.edits);
+      if (blocked) return repeatedConflictResult();
       const result = await this.attempt(input, receiptKey, inputDigest);
+      if (result.status === "applied")
+        await this.conflicts.recordApplied(input.edits);
+      if (result.status === "conflict")
+        await this.conflicts.recordConflict(input.edits);
       return this.receipts.write(receiptKey, inputDigest, result);
     });
   }
@@ -133,23 +186,49 @@ export class EditService {
         if (error instanceof SemanticResolutionConflict)
           return {
             status: "conflict",
+            outcome: "conflict",
             reason: error.message,
             candidates: error.candidates,
           };
         if (error instanceof PatchRecoveryConflict)
           return {
             status: "conflict",
+            outcome: "conflict",
             ...error.details,
           };
+        if (error instanceof UnsupportedPatchOperation)
+          return unsupportedResult(error.message, error.reason, "edit_files");
+        if (error instanceof UnsupportedEditOperation)
+          return unsupportedResult(
+            error.message,
+            error.reason,
+            error.recommendedTool,
+          );
         const message = errorMessage(error);
         if (deniedMessage(message))
-          return { status: "denied", reason: message };
+          return {
+            status: "denied",
+            outcome: "unsupported_operation",
+            reason: message,
+          };
         if (attempt === 0 && retryableMessage(message)) continue;
-        return { status: "conflict", reason: message, candidates: [] };
+        if (infrastructureMessage(message))
+          return {
+            status: "infrastructure_error",
+            outcome: "infrastructure_error",
+            reason: message,
+          };
+        return {
+          status: "conflict",
+          outcome: "conflict",
+          reason: message,
+          candidates: [],
+        };
       }
     }
     return {
       status: "conflict",
+      outcome: "conflict",
       reason: "The edit could not be resolved on a stable snapshot.",
       candidates: [],
     };
@@ -170,20 +249,95 @@ export class EditService {
       receiptKey,
       attempt,
     );
-    const parseRequested = input.validation?.parse !== false;
-    const validationFailure = failedValidation(proposal, parseRequested);
+    if (!proposal.changes.length)
+      return {
+        status: "no_change",
+        outcome: "no_change",
+        changed: false,
+        source_revision: snapshot.revision.source_revision_id,
+      };
+    const validations = await this.validateProposal(proposal);
+    const validationFailure = failedValidation(proposal, validations);
     if (validationFailure) return validationFailure;
     const receipt = await this.commitEdit(proposal, receiptKey, inputDigest);
     const changedDetails = await this.changedDetails(proposal);
+    const newSymbolRefs = await this.newSymbolReferences(
+      input,
+      proposal,
+      receipt.source_revision.source_revision_id,
+    );
     return appliedResult({
       attempt,
       changedDetails,
-      parseRequested,
+      validations,
       proposal,
       rebased: translated.rebased,
       rebaseStrategies: translated.rebaseStrategies,
       receipt,
+      newSymbolRefs,
     });
+  }
+
+  private async validateProposal(proposal: StoredChangeProposal) {
+    return Promise.all(
+      proposal.changes.map(async (change) => {
+        const contents = await this.changes.proposalFileContents(change);
+        return validateContent({
+          content: contents.after ?? null,
+          path: change.path,
+          workspaceRoot: this.files.root,
+        });
+      }),
+    );
+  }
+
+  private async newSymbolReferences(
+    input: EditCodeInput,
+    proposal: StoredChangeProposal,
+    revision: string,
+  ) {
+    const references = await Promise.all(
+      input.edits
+        .filter(hasSemanticTarget)
+        .map((edit) => this.newSymbolReference(edit, proposal, revision)),
+    );
+    return references.filter((value): value is string => Boolean(value));
+  }
+
+  private async newSymbolReference(
+    edit: Extract<EditCodeOperation, { target: unknown }>,
+    proposal: StoredChangeProposal,
+    revision: string,
+  ) {
+    if (!("symbol_ref" in edit.target)) return undefined;
+    const original = decodeSymbol(edit.target.symbol_ref);
+    if (!original) return undefined;
+    const candidate = await this.editedSymbolCandidate(original, proposal);
+    return candidate
+      ? materializeSymbol({
+          symbol: candidate.symbol,
+          path: candidate.path,
+          revision,
+          content: candidate.content,
+        }).symbol_ref
+      : undefined;
+  }
+
+  private async editedSymbolCandidate(
+    original: HandlePayload,
+    proposal: StoredChangeProposal,
+  ) {
+    for (const change of proposal.changes) {
+      const contents = await this.changes.proposalFileContents(change);
+      if (!contents.after) continue;
+      const symbol = matchingEditedSymbol(
+        original,
+        change.path,
+        contents.after,
+      );
+      if (symbol) return { symbol, path: change.path, content: contents.after };
+    }
+    return undefined;
   }
 
   private proposeEdit(
@@ -250,8 +404,20 @@ export class EditService {
     let rebased = false;
     for (const edit of edits) {
       if (hasSemanticTarget(edit)) {
+        if ("path" in edit && edit.path)
+          assertSemanticEditSupported(this.files.normalizePath(edit.path));
         const semantic = await this.resolver.resolve(edit.target, snapshot);
         const resolved = resolvedTarget(semantic);
+        if (
+          "path" in edit &&
+          edit.path &&
+          this.files.normalizePath(edit.path) !== resolved.path
+        )
+          throw new SemanticResolutionConflict(
+            `The symbol resolves to ${resolved.path}, not ${edit.path}.`,
+            [],
+          );
+        assertSemanticEditSupported(resolved.path);
         rebased ||= resolved.resolution === "automatically_rebased";
         if (resolved.resolution === "automatically_rebased")
           rebaseStrategies.add(resolved.strategy);
@@ -264,12 +430,14 @@ export class EditService {
   }
 
   private async fileOperation(edit: FileEditOperation) {
-    if (edit.operation === "create_file")
+    if (edit.operation === "create_file") {
+      assertTextFile(edit.path, Buffer.from(edit.content));
       return {
         kind: "create_file" as const,
         path: edit.path,
         content: edit.content,
       };
+    }
     if (edit.operation === "move_file")
       return {
         kind: "move_file" as const,
@@ -277,13 +445,54 @@ export class EditService {
         to_path: edit.to_path,
         expected_blob_hash: await this.files.blobHash(edit.from_path),
       };
+    if (edit.operation === "replace_file")
+      return this.replaceFileOperation(edit.path, edit.content);
+    if (edit.operation === "delete_file")
+      return {
+        kind: "delete_file" as const,
+        path: edit.path,
+        expected_blob_hash: await this.files.blobHash(edit.path),
+      };
+    if (edit.operation === "edit_json") return this.jsonOperation(edit);
     return this.patchOperation(edit);
+  }
+
+  private async replaceFileOperation(path: string, replacement: string) {
+    const file = await this.files.read(path);
+    assertTextFile(path, file.content);
+    return {
+      kind: "text_replace" as const,
+      path,
+      expected_blob_hash: sha256(file.content),
+      range_utf8_bytes: [0, file.content.byteLength] as [number, number],
+      expected_old_text: file.content.toString("utf8"),
+      replacement,
+    };
+  }
+
+  private async jsonOperation(
+    edit: Extract<FileEditOperation, { operation: "edit_json" }>,
+  ) {
+    const file = await this.files.read(edit.path);
+    const capability = languageCapability(edit.path, file.content);
+    if (!capability.structuredEditing)
+      throw new UnsupportedEditOperation(
+        "STRUCTURED_EDIT_UNSUPPORTED",
+        `Structured JSON editing is unavailable for ${edit.path}.`,
+        "replace_file",
+      );
+    const replacement = editJsonContent(
+      file.content.toString("utf8"),
+      edit.operations,
+    );
+    return this.replaceFileOperation(edit.path, replacement);
   }
 
   private async patchOperation(
     edit: Extract<FileEditOperation, { operation: "patch" | "patch_file" }>,
   ): Promise<ChangeOperation> {
     const file = await this.files.read(edit.path);
+    assertTextFile(edit.path, file.content);
     const source = file.content.toString("utf8");
     const patched = await recoverPatch({
       patch: edit.patch,
@@ -399,30 +608,43 @@ function formattingPolicy(formatting: EditCodeInput["formatting"]) {
 
 function failedValidation(
   proposal: StoredChangeProposal,
-  parseRequested: boolean,
+  validations: ContentValidation[],
 ): EditCodeOutcome | undefined {
-  const increasedErrors = proposal.diagnostics.some(
-    (diagnostic) => diagnostic.after_errors > diagnostic.before_errors,
+  const rejected = validations.some(
+    ({ path, status }) =>
+      status === "failed" ||
+      (status === "not_supported" && requiresValidatedEdit(path)),
   );
-  if (!parseRequested || !increasedErrors) return undefined;
+  if (!rejected) return undefined;
   return {
     status: "validation_failed",
+    outcome: "validation_failed",
     diagnostics: proposal.diagnostics,
+    validation: validations,
     proposed_diff_artifact_ref: proposal.diff_artifact.ref,
   };
+}
+
+function requiresValidatedEdit(path: string) {
+  const capability = languageCapability(path);
+  return capability.semanticEditing || capability.structuredEditing;
 }
 
 function appliedResult(input: {
   attempt: number;
   changedDetails: ChangedDetail[];
-  parseRequested: boolean;
+  validations: ContentValidation[];
   proposal: StoredChangeProposal;
   rebased: boolean;
   rebaseStrategies: string[];
   receipt: Awaited<ReturnType<ChangeService["commitResolved"]>>;
+  newSymbolRefs: string[];
 }): AppliedOutcome {
+  const status = aggregateValidationStatus(input.validations);
   return {
     status: "applied",
+    outcome: "applied",
+    changed: true,
     receipt_ref: input.receipt.change_set_ref,
     source_revision: input.receipt.source_revision.source_revision_id,
     changed_files: input.changedDetails.map(({ file }) => file),
@@ -431,8 +653,17 @@ function appliedResult(input: {
     ...(input.rebaseStrategies.length
       ? { semantic_rebase_strategy: input.rebaseStrategies.join("+") }
       : {}),
+    new_symbol_refs: input.newSymbolRefs,
     validation: {
-      parse: input.parseRequested ? "passed" : "skipped",
+      status,
+      validator: aggregateValidator(input.validations),
+      files: input.validations,
+      parse:
+        status === "passed"
+          ? "passed"
+          : status === "not_supported"
+            ? "not_supported"
+            : "skipped",
       diagnostics: input.proposal.diagnostics,
     },
     diff_artifact_ref: input.proposal.diff_artifact.ref,
@@ -519,6 +750,95 @@ function hasSemanticTarget(
   return "target" in edit;
 }
 
+function assertSemanticEditSupported(path: string) {
+  if (languageCapability(path).semanticEditing) return;
+  throw new UnsupportedEditOperation(
+    "SEMANTIC_EDIT_UNSUPPORTED",
+    `Semantic editing is unavailable for ${path}.`,
+    languageCapability(path).structuredEditing ? "edit_json" : "patch_file",
+  );
+}
+
+function assertTextFile(path: string, content: Buffer) {
+  if (languageCapability(path, content).level !== "unsupported") return;
+  throw new UnsupportedEditOperation(
+    "BINARY_FILE_UNSUPPORTED",
+    `Text editing is unavailable for binary file ${path}.`,
+    "none",
+  );
+}
+
+function repeatedConflictResult(): EditCodeOutcome {
+  return {
+    status: "conflict",
+    outcome: "conflict",
+    reason: "REPEATED_SEMANTIC_CONFLICT",
+    candidates: [],
+    retrySuppressed: true,
+    recommendedTool: "replace_file",
+  };
+}
+
+function unsupportedResult(
+  message: string,
+  reasonCode: string,
+  recommendedTool: string,
+): EditCodeOutcome {
+  return {
+    status: "unsupported_operation",
+    outcome: "unsupported_operation",
+    reason: message,
+    reasonCode,
+    recommendedTool,
+  };
+}
+
+function aggregateValidationStatus(validations: ContentValidation[]) {
+  if (validations.some(({ status }) => status === "failed")) return "failed";
+  if (validations.some(({ status }) => status === "not_supported"))
+    return "not_supported";
+  if (validations.some(({ status }) => status === "passed")) return "passed";
+  return "not_run";
+}
+
+function aggregateValidator(validations: ContentValidation[]) {
+  const validators = [
+    ...new Set(
+      validations.flatMap(({ validator }) => (validator ? [validator] : [])),
+    ),
+  ];
+  return validators.length ? validators.join("+") : null;
+}
+
+function decodeSymbol(reference: string) {
+  return decodeHandle(reference, "sym");
+}
+
+function matchingEditedSymbol(
+  original: HandlePayload,
+  path: string,
+  content: Buffer,
+) {
+  const matches = parseCode(path, content).symbols.filter(
+    (symbol) =>
+      (!original.kind || symbol.kind === original.kind) &&
+      (!original.qualifiedName ||
+        symbol.qualified_name === original.qualifiedName),
+  );
+  return matches[original.ordinal ?? 0] ?? matches[0];
+}
+
+class UnsupportedEditOperation extends Error {
+  readonly reason: string;
+  readonly recommendedTool: string;
+
+  constructor(reason: string, message: string, recommendedTool: string) {
+    super(message);
+    this.reason = reason;
+    this.recommendedTool = recommendedTool;
+  }
+}
+
 function deniedMessage(message: string) {
   return /outside the workspace|escapes the workspace|policy protects|absolute paths are not allowed|symbolic-link/i.test(
     message,
@@ -527,6 +847,12 @@ function deniedMessage(message: string) {
 
 function retryableMessage(message: string) {
   return /precondition|stale_revision|target bytes changed|file no longer exists/i.test(
+    message,
+  );
+}
+
+function infrastructureMessage(message: string) {
+  return /\b(?:eacces|emfile|enospc|io_error|read-only file system)\b/iu.test(
     message,
   );
 }

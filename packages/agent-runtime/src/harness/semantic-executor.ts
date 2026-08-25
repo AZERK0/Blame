@@ -15,6 +15,14 @@ export const semanticWorkspaceReadToolNames = [
 ] as const;
 
 export const semanticWorkspaceWriteToolNames = [
+  "edit_symbol",
+  "edit_json",
+  "patch_file",
+  "edit_files",
+  "create_file",
+  "replace_file",
+  "delete_file",
+  "move_file",
   "edit_code",
   "apply_change",
   "run_task",
@@ -122,6 +130,22 @@ async function executeSemanticWorkspaceTool(
       return workspace.applyChange(input as never, signal);
     case "edit_code":
       return workspace.editCode(input as never, toolContext);
+    case "edit_symbol":
+      return workspace.editSymbol(input as never, toolContext);
+    case "edit_json":
+      return workspace.editJson(input as never, toolContext);
+    case "patch_file":
+      return workspace.patchFile(input as never, toolContext);
+    case "edit_files":
+      return workspace.editFiles(input as never, toolContext);
+    case "create_file":
+      return workspace.createFile(input as never, toolContext);
+    case "replace_file":
+      return workspace.replaceFile(input as never, toolContext);
+    case "delete_file":
+      return workspace.deleteFile(input as never, toolContext);
+    case "move_file":
+      return workspace.moveFile(input as never, toolContext);
     case "run_task":
       return workspace.runTask(input as never, signal, toolContext);
     case "inspect_run":

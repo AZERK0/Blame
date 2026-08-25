@@ -7,20 +7,29 @@ import { harnessFeatureEnabled } from "./harness-feature-flags.js";
 import { harnessError } from "./protocol.js";
 import {
   applyChangeInputSchema,
+  createFileInputSchema,
+  deleteFileInputSchema,
   editCodeInputSchema,
+  editFilesInputSchema,
+  editJsonInputSchema,
+  editSymbolInputSchema,
   formatSchemaError,
   getRelationContextInputSchema,
   inspectArtifactInputSchema,
   inspectCodeInputSchema,
   inspectRunInputSchema,
   outlineCodeInputSchema,
+  moveFileInputSchema,
+  patchFileInputSchema,
   recallContextInputSchema,
+  replaceFileInputSchema,
   reviewChangeInputSchema,
   runTaskInputSchema,
   searchCodeInputSchema,
   workspaceStateInputSchema,
   validateChangeInputSchema,
 } from "./schemas.js";
+import { supportedOperationsDescription } from "./language-capabilities.js";
 import {
   localSemanticWorkspaceExecutor,
   semanticWorkspaceReadToolNames,
@@ -47,6 +56,7 @@ export function semanticWorkspaceTools(
     options.executor ??
     localSemanticWorkspaceExecutor(workspaceRoot, options.taskContract);
   const governor = new HarnessCostGovernor(options.governorBudget);
+  const supportedOperations = supportedOperationsDescription();
   const execute = async (
     tool: SemanticWorkspaceToolName,
     input: unknown,
@@ -58,7 +68,7 @@ export function semanticWorkspaceTools(
       context,
     );
     const blocked = harnessFeatureEnabled("BLAME_COST_GOVERNOR_V2")
-      ? governor.before(tool, contextEpoch)
+      ? governor.before(tool, contextEpoch, input)
       : undefined;
     if (blocked) return blocked;
     const result = await executor(
@@ -93,7 +103,7 @@ export function semanticWorkspaceTools(
     createHarnessTool({
       name: "workspace_state",
       description:
-        "Read the canonical Blame workspace state and obtain the current source_revision_id. Use this before semantic reads or edits, and again after STALE_REVISION. Returns Git/base state, changed paths, a compact tree/language summary, task catalog, and supported harness capabilities. Read-only; do not use it to inspect file contents.",
+        "Read the canonical Blame workspace state, task catalog, changed paths, tree summary, and capability registry. Semantic reads and edits resolve the current revision themselves; use this tool when repository or task metadata is needed. Read-only; do not use it to inspect file contents.",
       schema: workspaceStateInputSchema,
       execute: (input, context) =>
         visibleResult(
@@ -125,8 +135,7 @@ export function semanticWorkspaceTools(
     }),
     createHarnessTool({
       name: "inspect_code",
-      description:
-        "Inspect a symbol or node with automatic semantic rebase, or read a raw file fallback. source_revision_id is optional. Returns explicitly positioned segments, requested and resolved references, current revision, rebase strategy, overlap, and omissions.",
+      description: `Inspect a symbol or node with automatic semantic rebase, or read a raw file fallback. Returns language capabilities and the recommended edit tool.\n\n${supportedOperations}`,
       schema: inspectCodeInputSchema,
       execute: (input, context) =>
         visibleResult(
@@ -157,9 +166,69 @@ export function semanticWorkspaceTools(
         ),
     }),
     createHarnessTool({
+      name: "edit_symbol",
+      description: `Replace one semantic symbol without offsets, hashes, or revisions. The runtime relocates the symbol, validates the resulting syntax, and returns its new reference.\n\n${supportedOperations}`,
+      schema: editSymbolInputSchema,
+      execute: (input, context) => execute("edit_symbol", input, context),
+      retryable: false,
+    }),
+    createHarnessTool({
+      name: "edit_json",
+      description: `Apply structured set, delete, merge, or append operations to one JSON or JSONC file while preserving comments and formatting.\n\n${supportedOperations}`,
+      schema: editJsonInputSchema,
+      execute: (input, context) => execute("edit_json", input, context),
+      retryable: false,
+    }),
+    createHarnessTool({
+      name: "patch_file",
+      description: `Apply a recoverable patch to exactly one text file. Multi-file patches are rejected before any workspace change.\n\n${supportedOperations}`,
+      schema: patchFileInputSchema,
+      execute: (input, context) => execute("patch_file", input, context),
+      retryable: false,
+    }),
+    createHarnessTool({
+      name: "edit_files",
+      description: `Apply and syntax-validate one explicit atomic multi-file transaction. No file is written when a required validation fails.\n\n${supportedOperations}`,
+      schema: editFilesInputSchema,
+      execute: (input, context) => execute("edit_files", input, context),
+      retryable: false,
+    }),
+    createHarnessTool({
+      name: "create_file",
+      description:
+        "Create one text file atomically and validate its syntax when supported.",
+      schema: createFileInputSchema,
+      execute: (input, context) => execute("create_file", input, context),
+      retryable: false,
+    }),
+    createHarnessTool({
+      name: "replace_file",
+      description:
+        "Replace one text file atomically and report passed, failed, or not-supported validation without false positives.",
+      schema: replaceFileInputSchema,
+      execute: (input, context) => execute("replace_file", input, context),
+      retryable: false,
+    }),
+    createHarnessTool({
+      name: "delete_file",
+      description:
+        "Delete one file atomically. This is a real file deletion, not a symbol deletion.",
+      schema: deleteFileInputSchema,
+      execute: (input, context) => execute("delete_file", input, context),
+      retryable: false,
+    }),
+    createHarnessTool({
+      name: "move_file",
+      description:
+        "Move one file atomically and validate the content against the destination capability.",
+      schema: moveFileInputSchema,
+      execute: (input, context) => execute("move_file", input, context),
+      retryable: false,
+    }),
+    createHarnessTool({
       name: "edit_code",
       description:
-        "Apply one atomic batch with replace_symbol, replace_body, replace_signature, insert, delete_symbol, AST-based CSS declarations, create/move, or patch_file. The runtime resolves moved targets and shifted patches, refuses close candidates, validates parsing, and returns a compact receipt.",
+        "Compatibility batch editor for replace_body, replace_signature, insertion, symbol deletion, and CSS declarations. Prefer edit_symbol, edit_json, patch_file, explicit file tools, or edit_files.",
       schema: editCodeInputSchema,
       execute: (input, context) => execute("edit_code", input, context),
       retryable: false,

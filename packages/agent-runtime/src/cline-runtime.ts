@@ -88,6 +88,7 @@ import {
 } from "./harness/complete-turn.js";
 import { continuityFallbackMetrics } from "./harness/continuity-schema.js";
 import { harnessFeatureEnabled } from "./harness/harness-feature-flags.js";
+import { sha256 } from "./harness/protocol.js";
 import {
   blockedCommandParts,
   initializationFallbackReadTools,
@@ -429,6 +430,7 @@ export class BlameAgentRuntime {
   private sessionEventSignatures = new Map<string, Map<string, number>>();
   private sessionExecutionIds = new Map<string, string>();
   private sessionToolInputs = new Map<string, unknown>();
+  private sessionToolSequences = new Map<string, number>();
   private sessionTerminalAnswers = new Map<string, string>();
   private sessionIterations = new Map<string, number>();
   private sessionSpawnAgentActiveCounts = new Map<string, number>();
@@ -545,6 +547,7 @@ export class BlameAgentRuntime {
     this.sessionContexts.clear();
     this.sessionEventSignatures.clear();
     this.sessionApiConnections.clear();
+    this.sessionToolSequences.clear();
     await this.disposeCore();
     this.userInstructionServices.stopAll();
     this.agentTelemetry.shutdown();
@@ -2063,7 +2066,10 @@ export class BlameAgentRuntime {
         this.agentTelemetry.observeCoreEvent(sessionId, payload);
         if (this.shouldSkipFallbackChunk(sessionId, payload)) return;
         const spawnAgentPhase = clineSessionSpawnAgentPhase(payload);
-        const normalized = normalizeEvent(sessionId, payload);
+        const normalized = this.withToolLifecycle(
+          sessionId,
+          normalizeEvent(sessionId, payload),
+        );
         if (terminalToolEvent(normalized)) return;
         if (this.shouldSkipSessionDisplayEvent(sessionId, payload)) return;
         const event = this.withTerminalAnswer(
@@ -2130,8 +2136,9 @@ export class BlameAgentRuntime {
       stringValue(toolCall.id) ?? stringValue(payload.toolCallId);
     if (!toolCallId) return event;
     const key = `${sessionId}:${toolCallId}`;
-    const completed =
-      payload.phase === "finished" || payload.hookEventName === "tool_result";
+    const completed = ["cancelled", "failed", "finished"].includes(
+      String(payload.phase),
+    );
     if (toolCall.input !== undefined) {
       if (completed) this.sessionToolInputs.delete(key);
       else this.sessionToolInputs.set(key, toolCall.input);
@@ -2143,6 +2150,38 @@ export class BlameAgentRuntime {
     return {
       ...event,
       payload: { ...payload, toolCall: { ...toolCall, input } },
+    };
+  }
+
+  private withToolLifecycle(sessionId: string, event: AgentEvent) {
+    if (event.type !== "tool") return event;
+    const payload = asRecord(event.payload);
+    const toolCall = asRecord(payload.toolCall);
+    const toolCallId =
+      stringValue(toolCall.id) ??
+      stringValue(payload.toolCallId) ??
+      `tool-${sha256(JSON.stringify(payload)).slice(0, 24)}`;
+    const key = `${sessionId}:${toolCallId}`;
+    const supplied = numberValue(payload.sequenceNumber);
+    const previous = this.sessionToolSequences.get(key) ?? -1;
+    const sequenceNumber = supplied ?? previous + 1;
+    const phase = normalizedToolPhase(payload);
+    if (["cancelled", "failed", "finished"].includes(phase))
+      this.sessionToolSequences.delete(key);
+    else this.sessionToolSequences.set(key, sequenceNumber);
+    return {
+      ...event,
+      payload: {
+        ...payload,
+        toolCallId,
+        sequenceNumber,
+        phase,
+        timestamp:
+          stringValue(payload.timestamp) ??
+          stringValue(payload.ts) ??
+          new Date().toISOString(),
+        toolCall: { ...toolCall, id: toolCallId },
+      },
     };
   }
 
@@ -2310,6 +2349,10 @@ export class BlameAgentRuntime {
     this.sessionSpawnAgentActiveCounts.delete(sessionId);
     for (const key of this.sessionToolInputs.keys()) {
       if (key.startsWith(`${sessionId}:`)) this.sessionToolInputs.delete(key);
+    }
+    for (const key of this.sessionToolSequences.keys()) {
+      if (key.startsWith(`${sessionId}:`))
+        this.sessionToolSequences.delete(key);
     }
     this.sessionUsageSignatures.delete(sessionId);
     this.sessionBackendKeys.delete(sessionId);
@@ -5260,13 +5303,42 @@ export function duplicateEventSignature(event: AgentEvent) {
   if (event.type === "raw") return undefined;
   if (event.type === "text" || event.type === "reasoning") return undefined;
   const payload = asRecord(event.payload);
-  const text = eventText(payload);
   const tool = toolNameFromPayload(payload);
   if (tool === "spawn_agent") return undefined;
+  if (event.type === "tool") {
+    const toolCallId =
+      stringValue(payload.toolCallId) ??
+      stringValue(asRecord(payload.toolCall).id);
+    const phase = stringValue(payload.phase);
+    const sequenceNumber = numberValue(payload.sequenceNumber);
+    if (!toolCallId || !phase || sequenceNumber === undefined) return undefined;
+    return [event.sessionId, toolCallId, phase, sequenceNumber].join(":");
+  }
+  const text = eventText(payload);
   const value =
     text || tool || stringValue(payload.reason) || stringValue(payload.status);
   if (!value) return undefined;
   return [event.type, event.sessionId, value].join(":");
+}
+
+function normalizedToolPhase(payload: Record<string, unknown>) {
+  const current = stringValue(payload.phase);
+  if (current === "updated" || current === "progress") return "progress";
+  if (current === "cancelled" || toolEventStatus(payload) === "cancelled")
+    return "cancelled";
+  if (current === "failed" || toolEventStatus(payload) === "failed")
+    return "failed";
+  if (current === "finished") return "finished";
+  if (payload.hookEventName === "tool_result") return "finished";
+  return "started";
+}
+
+function toolEventStatus(payload: Record<string, unknown>) {
+  const output = asRecord(payload.output ?? payload.result);
+  if (booleanValue(output.isError)) return "failed";
+  const status = stringValue(output.status) ?? stringValue(payload.status);
+  if (status === "cancelled" || status === "canceled") return "cancelled";
+  return status === "error" ? "failed" : undefined;
 }
 
 function removeOldEventSignatures(
@@ -5435,7 +5507,10 @@ function normalizeContentEvent(
       type: "tool",
       sessionId,
       payload: {
-        phase: "started",
+        phase:
+          stringValue(payload.type) === "content_update"
+            ? "progress"
+            : "started",
         toolCall: {
           id: stringValue(payload.toolCallId),
           name: stringValue(payload.toolName),

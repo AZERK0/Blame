@@ -42,6 +42,16 @@ async function executeCompleteTurn(
 ) {
   const parsed = completeTurnInputSchema.safeParse(raw);
   if (!parsed.success) return invalidCompletionResult();
+  const readiness = await memory.completionReadiness();
+  if (!readiness.completionAllowed)
+    return {
+      output: {
+        status: "blocked",
+        completionAllowed: false,
+        reason: readiness.reason,
+      },
+      isError: true,
+    };
   const source = raw as Record<string, unknown>;
   const result = await memory.completeTurn({
     answer: parsed.data.answer,

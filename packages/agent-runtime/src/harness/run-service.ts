@@ -200,6 +200,7 @@ export class RunService {
         this.artifacts.put(rawLog, "text/plain", "1.0", "sealed_raw", revision),
       ]);
       const normalized = stripAnsi(`${redactedStderr}\n${redactedStdout}`);
+      const runStatus = normalizedRunStatus(result.status, normalized);
       const completedAt = new Date();
       return this.store.write({
         schema_version: "1.0",
@@ -231,7 +232,7 @@ export class RunService {
           observed_ports: [],
           volatility: ["timestamps", "runtime_instance_id"],
         },
-        status: result.status,
+        status: runStatus,
         exit_code: result.exitCode,
         signal: result.signal,
         started_at: startedAt.toISOString(),
@@ -383,6 +384,12 @@ export function publicRun(
     task: run.task,
     execution: run.execution,
     status: run.status,
+    outcome:
+      run.status === "execution_error"
+        ? "infrastructure_error"
+        : run.status === "failed"
+          ? "task_failure"
+          : run.status,
     exit_code: run.exit_code,
     duration_ms: run.duration_ms,
     failures: run.failures.slice(0, 10),
@@ -390,6 +397,20 @@ export function publicRun(
     filesystem_effects: run.filesystem_effects,
     complete_log: run.logs.complete,
   };
+}
+
+function normalizedRunStatus(
+  status: StoredRun["status"],
+  output: string,
+): StoredRun["status"] {
+  if (status !== "failed") return status;
+  return infrastructureRunFailure(output) ? "execution_error" : status;
+}
+
+function infrastructureRunFailure(output: string) {
+  return /\b(?:corepack|econnrefused|enotfound|package manager unavailable)\b|BLAME_PROJECT_ALLOWLIST_PROXY/iu.test(
+    output,
+  );
 }
 
 function inspectRunView(run: StoredRun, view: InspectRunInput["view"]) {

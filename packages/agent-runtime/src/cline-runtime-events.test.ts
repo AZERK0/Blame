@@ -615,8 +615,40 @@ test("does not deduplicate spawn agent tools by tool name", () => {
 test("keeps duplicate signatures for regular tools", () => {
   assert.equal(
     duplicateEventSignature(toolEvent("read_files")),
-    "tool:session:read_files",
+    "session:call-read_files:started:0",
   );
+});
+
+test("tool lifecycle identity separates parallel tools and every phase", () => {
+  const first = toolEvent("read_files", "call-a", "started", 0);
+  const second = toolEvent("read_files", "call-b", "started", 0);
+  const progress = toolEvent("read_files", "call-a", "progress", 1);
+  const finished = toolEvent("read_files", "call-a", "finished", 2);
+  assert.notEqual(duplicateEventSignature(first), duplicateEventSignature(second));
+  assert.notEqual(duplicateEventSignature(first), duplicateEventSignature(progress));
+  assert.notEqual(duplicateEventSignature(progress), duplicateEventSignature(finished));
+});
+
+test("cancelled tools and reconnect replays retain stable identities", () => {
+  const cancelled = toolEvent("run_task", "manual-stop", "cancelled", 3);
+  const replay = toolEvent("run_task", "manual-stop", "cancelled", 3);
+  assert.equal(duplicateEventSignature(cancelled), duplicateEventSignature(replay));
+  assert.match(duplicateEventSignature(cancelled) ?? "", /cancelled:3$/u);
+});
+
+test("normalizes tool lifecycle metadata without delaying fast tools", () => {
+  const runtime = new BlameAgentRuntime();
+  const lifecycle = (
+    runtime as unknown as {
+      withToolLifecycle(sessionId: string, event: AgentEvent): AgentEvent;
+    }
+  ).withToolLifecycle.bind(runtime);
+  const started = lifecycle("session", toolEvent("read_files", "fast", "started", 0));
+  const finished = lifecycle("session", toolEvent("read_files", "fast", "finished", 1));
+  assert.equal((started.payload as { phase: string }).phase, "started");
+  assert.equal((finished.payload as { phase: string }).phase, "finished");
+  assert.equal((finished.payload as { sequenceNumber: number }).sequenceNumber, 1);
+  assert.equal(typeof (finished.payload as { timestamp: string }).timestamp, "string");
 });
 
 test("keeps development feedback attachments out of the prompt", async () => {
@@ -833,9 +865,20 @@ function hookEvent(
   } as CoreSessionEvent;
 }
 
-function toolEvent(toolName: string): AgentEvent {
+function toolEvent(
+  toolName: string,
+  toolCallId = `call-${toolName}`,
+  phase = "started",
+  sequenceNumber = 0,
+): AgentEvent {
   return {
-    payload: { status: "started", toolName },
+    payload: {
+      phase,
+      sequenceNumber,
+      toolCall: { id: toolCallId, name: toolName },
+      toolCallId,
+      toolName,
+    },
     sessionId: "session",
     type: "tool",
   };

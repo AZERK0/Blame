@@ -21,23 +21,32 @@ type EpochState = {
   readsAfterEdit: number;
   readsWithoutEdit: number;
   retries: number;
+  similarReads: number;
+  recentReadSignatures: string[];
   target: string;
 };
 
 export class HarnessCostGovernor {
   private readonly midpoint: number;
   private readonly states = new Map<string, EpochState>();
+  private readonly taskState = initialState();
 
   constructor(iterationBudget = 80) {
     this.midpoint = Math.max(1, Math.ceil(iterationBudget / 2));
   }
 
-  before(tool: SemanticWorkspaceToolName, contextEpoch?: string) {
-    const state = this.state(contextEpoch);
+  before(
+    tool: SemanticWorkspaceToolName,
+    contextEpoch?: string,
+    input?: unknown,
+  ) {
+    this.state(contextEpoch);
+    const state = this.taskState;
+    const signature = readSignature(tool, input);
     if (
       isBroadRead(tool) &&
-      state.readsWithoutEdit >= 4 &&
-      state.lowNoveltyReads >= 2
+      ((state.readsWithoutEdit >= 4 && state.lowNoveltyReads >= 2) ||
+        (signature && state.recentReadSignatures.includes(signature)))
     )
       return harnessError({
         code: "PRECONDITION_FAILED",
@@ -55,11 +64,13 @@ export class HarnessCostGovernor {
   ) {
     const state = this.state(context.contextEpoch);
     this.observe(state, tool, input, result);
+    this.observe(this.taskState, tool, input, result);
     const enriched = enrichEpoch(
       result,
       context.contextEpoch,
       context.conversationId,
       state,
+      this.taskState,
     );
     const advice = this.advice(state, context);
     if (!advice || enriched.status !== "success") return enriched;
@@ -78,8 +89,9 @@ export class HarnessCostGovernor {
     input: unknown,
     result: HarnessToolResult<T>,
   ) {
-    if (tool === "edit_code") return observeEdit(state, result);
+    if (isEdit(tool)) return observeEdit(state, result);
     if (!isRead(tool) || result.status !== "success") return;
+    observeReadSignature(state, tool, input);
     state.reads += 1;
     state.readsWithoutEdit += 1;
     state.readsAfterEdit += Number(state.editApplied);
@@ -117,6 +129,20 @@ export class HarnessCostGovernor {
   }
 }
 
+function observeReadSignature(
+  state: EpochState,
+  tool: SemanticWorkspaceToolName,
+  input: unknown,
+) {
+  const signature = readSignature(tool, input);
+  if (!signature) return;
+  state.similarReads += Number(state.recentReadSignatures.includes(signature));
+  state.recentReadSignatures = [
+    ...state.recentReadSignatures.filter((value) => value !== signature),
+    signature,
+  ].slice(-20);
+}
+
 function observeEdit<T>(state: EpochState, result: HarnessToolResult<T>) {
   if (result.status !== "success") return;
   const data = recordValue(result.data);
@@ -136,6 +162,7 @@ function enrichEpoch<T>(
   contextEpoch: string | undefined,
   conversationId: string | undefined,
   state: EpochState,
+  taskState: EpochState,
 ): HarnessToolResult<T> {
   if (!contextEpoch || result.status !== "success" || !isRecord(result.data))
     return result;
@@ -146,6 +173,7 @@ function enrichEpoch<T>(
       execution_epoch_id: contextEpoch,
       ...(conversationId ? { conversation_id: conversationId } : {}),
       governor: publicMetrics(state),
+      task_governor: publicMetrics(taskState),
     },
   };
 }
@@ -162,6 +190,7 @@ function publicMetrics(state: EpochState) {
     duplicate_read_count: state.duplicateReads,
     edit_conflict_count: state.editConflicts,
     tool_retry_count: state.retries,
+    similar_read_count: state.similarReads,
     reads_after_edit: state.readsAfterEdit,
     time_to_first_applied_edit: state.firstAppliedEditAt
       ? state.firstAppliedEditAt - state.firstActivityAt
@@ -183,8 +212,19 @@ function initialState(): EpochState {
     readsAfterEdit: 0,
     readsWithoutEdit: 0,
     retries: 0,
+    similarReads: 0,
+    recentReadSignatures: [],
     target: "the identified target",
   };
+}
+
+function readSignature(tool: SemanticWorkspaceToolName, input: unknown) {
+  if (!isRead(tool)) return undefined;
+  const normalized = (JSON.stringify(input) ?? "")
+    .toLowerCase()
+    .replace(/\s+/gu, " ")
+    .trim();
+  return `${tool}:${normalized}`;
 }
 
 function isRead(tool: SemanticWorkspaceToolName) {
@@ -195,6 +235,20 @@ function isRead(tool: SemanticWorkspaceToolName) {
     "recall_context",
     "search_code",
     "workspace_state",
+  ].includes(tool);
+}
+
+function isEdit(tool: SemanticWorkspaceToolName) {
+  return [
+    "create_file",
+    "delete_file",
+    "edit_code",
+    "edit_files",
+    "edit_json",
+    "edit_symbol",
+    "move_file",
+    "patch_file",
+    "replace_file",
   ].includes(tool);
 }
 

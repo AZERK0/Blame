@@ -12,6 +12,10 @@ import {
 } from "@ast-grep/napi";
 import { packagedResourcePath } from "./packaged-resource-path.js";
 import { encodeHandle, sha256 } from "./protocol.js";
+import {
+  languageCapability,
+  type SemanticParserId,
+} from "./language-capabilities.js";
 
 let dynamicLanguagesRegistered = false;
 
@@ -593,12 +597,16 @@ function namedChildText(node: SgNode, kind: string) {
 }
 
 function directLanguage(path: string): LanguageSpec | undefined {
-  return languageByExtension[extension(path)];
+  const parserId = languageCapability(path).parserId;
+  if (!parserId || parserId === "vue") return undefined;
+  return languageByParserId[parserId];
 }
 
 export function semanticLanguageName(path: string) {
-  if (extension(path) === ".vue") return "vue";
-  return directLanguage(path)?.name ?? "unknown";
+  const capability = languageCapability(path);
+  return capability.level === "plain_text" || capability.level === "unsupported"
+    ? "unknown"
+    : capability.languageId;
 }
 
 function languageName(path: string) {
@@ -761,26 +769,21 @@ const symbolKindByNode: Record<string, SymbolKind> = {
   type_alias_declaration: "type",
 };
 
-const languageByExtension: Record<string, LanguageSpec> = {
-  ".bash": { lang: "bash", name: "bash" },
-  ".bats": { lang: "bash", name: "bash" },
-  ".cjs": { lang: Lang.JavaScript, name: "javascript" },
-  ".cs": { lang: "csharp", name: "csharp" },
-  ".css": { lang: Lang.Css, name: "css" },
-  ".cts": { lang: Lang.TypeScript, name: "typescript" },
-  ".go": { lang: "go", name: "go" },
-  ".htm": { lang: Lang.Html, name: "html" },
-  ".html": { lang: Lang.Html, name: "html" },
-  ".java": { lang: "java", name: "java" },
-  ".js": { lang: Lang.JavaScript, name: "javascript" },
-  ".jsx": { lang: Lang.Tsx, name: "javascript" },
-  ".mjs": { lang: Lang.JavaScript, name: "javascript" },
-  ".mts": { lang: Lang.TypeScript, name: "typescript" },
-  ".py": { lang: "python", name: "python" },
-  ".rs": { lang: "rust", name: "rust" },
-  ".sh": { lang: "bash", name: "bash" },
-  ".ts": { lang: Lang.TypeScript, name: "typescript" },
-  ".tsx": { lang: Lang.Tsx, name: "typescript" },
+const languageByParserId: Record<
+  Exclude<SemanticParserId, "vue">,
+  LanguageSpec
+> = {
+  bash: { lang: "bash", name: "bash" },
+  csharp: { lang: "csharp", name: "csharp" },
+  css: { lang: Lang.Css, name: "css" },
+  go: { lang: "go", name: "go" },
+  html: { lang: Lang.Html, name: "html" },
+  java: { lang: "java", name: "java" },
+  javascript: { lang: Lang.JavaScript, name: "javascript" },
+  python: { lang: "python", name: "python" },
+  rust: { lang: "rust", name: "rust" },
+  tsx: { lang: Lang.Tsx, name: "typescript" },
+  typescript: { lang: Lang.TypeScript, name: "typescript" },
 };
 
 const dynamicLanguageNames = new Set([

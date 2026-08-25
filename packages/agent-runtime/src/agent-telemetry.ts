@@ -1654,7 +1654,7 @@ function recordHarnessToolMetrics(
   const metricContext = { attributes, current, data, state };
   current.span.setAttributes(harnessTraceAttributes(data));
   if (current.name === "inspect_code") recordReadMetrics(metricContext);
-  if (current.name === "edit_code") recordEditMetrics(metricContext);
+  if (semanticEditTool(current.name)) recordEditMetrics(metricContext);
   if (current.name === "recall_context") recordRecallMetrics(metricContext);
   if (current.name === "consult_specialist")
     recordHarnessValue(
@@ -1749,6 +1749,7 @@ function recordEditMetrics(context: HarnessMetricContext) {
 
 function harnessTraceAttributes(data: Record<string, unknown>) {
   const governor = asRecord(data.governor);
+  const taskGovernor = asRecord(data.task_governor);
   return compactAttributes({
     conversation_id: stringValue(data.conversation_id),
     execution_epoch_id: stringValue(data.execution_epoch_id),
@@ -1764,7 +1765,26 @@ function harnessTraceAttributes(data: Record<string, unknown>) {
       stringValue(data.rebase_strategy),
     edit_conflict_count: numericValue(governor.edit_conflict_count),
     tool_retry_count: numericValue(governor.tool_retry_count),
+    task_read_requested_bytes: numericValue(taskGovernor.read_requested_bytes),
+    task_read_returned_bytes: numericValue(taskGovernor.read_returned_bytes),
+    task_duplicate_read_count: numericValue(taskGovernor.duplicate_read_count),
+    task_edit_conflict_count: numericValue(taskGovernor.edit_conflict_count),
+    task_tool_retry_count: numericValue(taskGovernor.tool_retry_count),
   });
+}
+
+function semanticEditTool(name: string) {
+  return [
+    "create_file",
+    "delete_file",
+    "edit_code",
+    "edit_files",
+    "edit_json",
+    "edit_symbol",
+    "move_file",
+    "patch_file",
+    "replace_file",
+  ].includes(name);
 }
 
 function compactAttributes(value: Record<string, unknown>) {

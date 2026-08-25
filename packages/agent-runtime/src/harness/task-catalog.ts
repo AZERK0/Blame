@@ -70,7 +70,9 @@ export function taskInvocation(
   selection?: RunTaskInput["selection"],
 ): TaskInvocation {
   if (task.kind === "dependencies") return dependencyInvocation(task);
-  const selected = selectedTaskPaths(task.cwd, selection);
+  const selected = task.supportsFileSelection
+    ? selectedTaskPaths(task.cwd, selection)
+    : [];
   const forwarded = selected.length ? ["--", ...selected] : [];
   const script = task.script ?? task.task_id;
   switch (task.package_manager) {
@@ -95,6 +97,9 @@ function dependencyTask(
     command: [invocation.executable, ...invocation.args].join(" "),
     cwd: ".",
     package_manager: packageManager,
+    supportsFileSelection: false,
+    requiresNetwork: true,
+    dependencyPolicy: "required",
   };
 }
 
@@ -180,16 +185,38 @@ function manifestTasks(
   const label = packageLabel(manifest, cwd);
   return Object.entries(manifest.scripts)
     .filter(validTask)
-    .map(([script, command]) => ({
-      task_id: cwd === "." ? script : `${label}:${script}`,
-      candidateId: cwd === "." ? script : `${label}:${script}`,
-      pathId: cwd === "." ? script : `${cwd}:${script}`,
-      script,
-      kind: taskKind(script, command),
-      command,
-      cwd,
-      package_manager: packageManager,
-    }));
+    .map(([script, command]) =>
+      taskCandidate(packageManager, cwd, label, script, command),
+    );
+}
+
+function taskCandidate(
+  packageManager: TaskCatalogItem["package_manager"],
+  cwd: string,
+  label: string,
+  script: string,
+  command: string,
+): CatalogCandidate {
+  const kind = taskKind(script, command);
+  return {
+    task_id: cwd === "." ? script : `${label}:${script}`,
+    candidateId: cwd === "." ? script : `${label}:${script}`,
+    pathId: cwd === "." ? script : `${cwd}:${script}`,
+    script,
+    kind,
+    command,
+    cwd,
+    package_manager: packageManager,
+    supportsFileSelection: kind === "test",
+    requiresNetwork: false,
+    dependencyPolicy: taskDependencyPolicy(kind),
+  };
+}
+
+function taskDependencyPolicy(kind: TaskCatalogItem["kind"]) {
+  return kind === "custom" || kind === "service"
+    ? ("optional" as const)
+    : ("required" as const);
 }
 
 function disambiguateTasks(candidates: CatalogCandidate[]) {
