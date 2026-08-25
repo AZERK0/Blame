@@ -8,6 +8,7 @@ export type ScannedRoutes = {
     'account_privacy.status': { paramsTuple?: []; params?: {} }
     'consumer_contracts.withdraw': { paramsTuple?: []; params?: {} }
     'telemetry_ingestion.store': { paramsTuple: [ParamValue]; params: {'signal': ParamValue} }
+    'telemetry_ingestion.health': { paramsTuple?: []; params?: {} }
     'vercel_connections.callback': { paramsTuple?: []; params?: {} }
     'telemetry_sessions.show': { paramsTuple?: []; params?: {} }
     'integrations.vercel.vercel_connections.create_intent': { paramsTuple?: []; params?: {} }
@@ -104,6 +105,7 @@ export type ScannedRoutes = {
     'preview_edge_internal.consume_ticket': { paramsTuple?: []; params?: {} }
   }
   GET: {
+    'telemetry_ingestion.health': { paramsTuple?: []; params?: {} }
     'vercel_connections.callback': { paramsTuple?: []; params?: {} }
     'telemetry_sessions.show': { paramsTuple?: []; params?: {} }
     'integrations.vercel.vercel_connections.index': { paramsTuple?: []; params?: {} }
@@ -142,6 +144,7 @@ export type ScannedRoutes = {
     'projects.user_stories.user_story_agent_runs.activity_detail': { paramsTuple: [ParamValue,ParamValue,ParamValue]; params: {'id': ParamValue,'runId': ParamValue,'activityId': ParamValue} }
   }
   HEAD: {
+    'telemetry_ingestion.health': { paramsTuple?: []; params?: {} }
     'vercel_connections.callback': { paramsTuple?: []; params?: {} }
     'telemetry_sessions.show': { paramsTuple?: []; params?: {} }
     'integrations.vercel.vercel_connections.index': { paramsTuple?: []; params?: {} }

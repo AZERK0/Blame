@@ -11,6 +11,7 @@ export interface ApiDefinition {
   }
   telemetryIngestion: {
     store: typeof routes['telemetry_ingestion.store']
+    health: typeof routes['telemetry_ingestion.health']
   }
   vercelConnections: {
     callback: typeof routes['vercel_connections.callback']

@@ -54,6 +54,9 @@ router
     router.post('account/closure-status', [AccountPrivacyController, 'status'])
     router.post('consumer-contract/withdrawal', [ConsumerContractsController, 'withdraw'])
     router.post('telemetry/otlp/v1/:signal', [TelemetryIngestionController, 'store'])
+    router
+      .get('telemetry/upstream-health', [TelemetryIngestionController, 'health'])
+      .use(middleware.auth())
     router.get('integrations/vercel/callback', [VercelConnectionsController, 'callback'])
 
     router.get('telemetry/session', [TelemetrySessionsController, 'show']).use(middleware.auth())

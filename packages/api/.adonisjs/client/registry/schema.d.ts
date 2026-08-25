@@ -55,6 +55,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/telemetry_ingestion_controller').default['store']>>>
     }
   }
+  'telemetry_ingestion.health': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/telemetry/upstream-health'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/telemetry_ingestion_controller').default['health']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/telemetry_ingestion_controller').default['health']>>>
+    }
+  }
   'vercel_connections.callback': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/integrations/vercel/callback'
