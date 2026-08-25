@@ -38,13 +38,13 @@ jobs:
             runner: ubuntu-24.04-arm
             windows_arch: arm64
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 10.33.2
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           cache: pnpm
           node-version: 22
@@ -56,7 +56,7 @@ jobs:
         env:
           BLAME_RUNTIME_VERSION: ${{ inputs.runtime_version }}
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           compression-level: 0
           name: blame-runtime-windows-${{ matrix.name }}
@@ -83,13 +83,13 @@ jobs:
             macos_arch: aarch64
             runner: ubuntu-24.04-arm
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 10.33.2
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           cache: pnpm
           node-version: 22
@@ -115,7 +115,7 @@ jobs:
         env:
           BLAME_RUNTIME_VERSION: ${{ inputs.runtime_version }}
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           compression-level: 0
           name: blame-runtime-macos-${{ matrix.name }}
@@ -137,13 +137,13 @@ jobs:
       }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 10.33.2
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           cache: pnpm
           node-version: 22
@@ -151,7 +151,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - name: Download Windows runtime artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           merge-multiple: true
@@ -161,7 +161,7 @@ jobs:
           run-id: ${{ inputs.artifact_run_id || github.run_id }}
 
       - name: Download macOS runtime artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           merge-multiple: true
@@ -182,3 +182,14 @@ jobs:
           BLAME_DOWNLOAD_S3_SECRET_ACCESS_KEY: ${{ secrets.BLAME_DOWNLOAD_S3_SECRET_ACCESS_KEY }}
           BLAME_DOWNLOAD_STORAGE_DRIVER: s3
           BLAME_RUNTIME_VERSION: ${{ inputs.runtime_version }}
+
+  cleanup:
+    name: Delete transferred artifacts
+    needs: deploy
+    if: needs.deploy.result == 'success'
+    permissions:
+      actions: write
+      contents: read
+    uses: ./.github/workflows/artifact-cleanup.yml
+    with:
+      artifact_run_id: ${{ inputs.artifact_run_id || github.run_id }}
