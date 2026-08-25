@@ -1844,7 +1844,7 @@ Le client Cloud conserve son mécanisme de récupération d’appels ambigus. L�
 
 Le prompt limite la consultation à l’ambiguïté produit ou visuelle importante, l’architecture transversale inconnue, l’échec d’un premier correctif, les risques auth/données/migration ou l’absence de validation fiable. La cible de timeout est 90 secondes. Le runtime transmet une capsule fraîche au spécialiste et limite la change request à une consultation ; une consultation supplémentaire exige une justification structurée explicite. Impeccable reste requis pour une nouvelle interface ou un redesign, mais plus pour un correctif mécanique localisé sans choix de design.
 
-Le gouverneur maintient à la fois un état par epoch et un état cumulé pour toute la task : appels et octets de lecture, octets nouveaux et supprimés, requêtes similaires, doublons, recouvrement faible, lectures après edit, conflits, retries et temps avant première édition appliquée. Les limites anti-boucle utilisent l’état cumulé. Un conflit ne remet aucun compteur à zéro ; un edit appliqué démarre une nouvelle phase. Après plusieurs lectures à faible nouveauté, les nouvelles explorations larges identiques sont refusées avec la cible déjà identifiée, tandis qu’une inspection étroite reste possible. La compaction elle-même reste exécutée par le gestionnaire de contexte Cline et son callback de capsule, pas par une consigne laissée au modèle.
+Le gouverneur maintient à la fois un état par epoch et un état cumulé pour toute la task : appels et octets de lecture, octets nouveaux et supprimés, requêtes similaires, doublons, recouvrement faible, lectures après edit, conflits, retries et temps avant première édition appliquée. Les limites anti-boucle utilisent l’état cumulé. Un conflit ne remet aucun compteur à zéro ; un edit appliqué démarre une nouvelle phase. Après plusieurs lectures à faible nouveauté, les nouvelles explorations larges identiques sont refusées avec la cible déjà identifiée, tandis qu’une inspection étroite reste possible. La compaction est exécutée par le gestionnaire de contexte Cline et son callback de capsule. Blame lui fournit une fenêtre effective réduite afin que le seuil automatique de 90 % de Cline corresponde à 67,5 % de la fenêtre réelle du modèle ; une alerte de pression est émise à 55 %. Il ne s’agit donc plus d’une simple recommandation adressée au modèle.
 
 Le frontend mappe les éditions sur la surface diff existante et affiche fichiers, additions, suppressions, validation de parse et résolution exacte ou automatiquement rebasée. Les lectures affichent symbole ou nœud, vue, lignes, caractère partiel ou entier et badge de contenu réutilisé. Chaque événement porte `toolCallId`, `sequenceNumber`, `phase` et `timestamp`; les phases sont `started`, `progress`, `finished`, `failed` et `cancelled`. La déduplication utilise `sessionId + toolCallId + phase + sequenceNumber`, ce qui conserve deux outils homonymes parallèles et les résultats arrivant en moins de 100 ms. L’interface distingue ensuite transport terminé, opération appliquée, conflit, validation échouée et infrastructure indisponible.
 
@@ -1877,9 +1877,9 @@ Les tests automatisés exécutés dans ce worktree couvrent Linux natif, le cont
 
 - `touched_ranges` n’est plus annoncé ; le formatage strictement borné aux plages reste à implémenter avant de le réintroduire.
 - Le registre persistant sérialise et déduplique les lectures, mais le partage d’une unique promesse entre plusieurs processus runtime distincts est assuré par verrou, pas par un broker distribué.
-- Le cache du package manager est réutilisé, mais il n’existe pas encore de cache de dépendances content-addressed propre à Blame.
+- Le cache de dépendances Blame est adressé par le gestionnaire, sa version et le contenu des manifests et lockfiles. Il accélère les installations autorisées, mais ne remplace pas un `node_modules` déjà matérialisé pour un build hors réseau.
 - Le circuit breaker Preview Cloud et la vue frontend spécialisée de comparaison avant/après des métriques restent à livrer.
-- La rotation par dépassement technique dépend du callback de compaction du SDK Cline ; le harness ne force pas seul une compaction à un nombre fixe de tokens.
+- Le déclenchement anticipé repose sur la métrique de tokens du SDK Cline et une fenêtre effective. Un modèle absent du catalogue du provider conserve le seuil natif du SDK jusqu’à ce que son `contextWindow` soit connu.
 - L’extraction automatique des faits conversationnels est déterministe et lexicale ; une correction manuelle ou un classifieur plus riche pourra être nécessaire pour des formulations implicites rares.
 - Le corpus historique ne contient pas les octets renvoyés par chaque lecture. La réduction réelle de 50 % doit être confirmée après activation de la nouvelle télémétrie sur un replay complet US3–US6.
 - La matrice réelle Lima, WSL et Cloud depuis chaque OS hôte reste à automatiser dans la CI.
@@ -1950,11 +1950,44 @@ Le registre `language-capabilities.ts` est maintenant la source unique des exten
 
 `patch_file` analyse les en-têtes avant tout travail et refuse un patch multifichier avec `MULTI_FILE_PATCH` et la recommandation `edit_files`. La transaction `edit_files` prépare et valide tous les fichiers avant le verrou d’écriture ; l’échec d’un seul validateur n’écrit aucun fichier. `delete_file` supprime réellement le fichier. Deux conflits similaires sur le même chemin et la même famille d’opération ouvrent un circuit persistant par session et retournent `retrySuppressed: true` avec une stratégie différente.
 
-`complete_turn` contrôle l’état de validation avant de terminer un tour ayant appliqué une modification. Une validation syntaxique réelle attachée au dernier reçu ou un `run_task` réussi plus récent autorise la completion. Sinon, l’outil retourne `completionAllowed: false` et `NO_POST_EDIT_VALIDATION`; `not_supported`, `not_run` et une panne d’infrastructure ne sont jamais assimilés à un succès.
+`complete_turn` contrôle l’état de validation de toutes les modifications du tour. Une édition ordinaire peut être couverte par son parse syntaxique réel. Dès que le tour touche plusieurs fichiers, Prisma, une dépendance, une configuration ou une API, une tâche pertinente réussie après la dernière écriture est obligatoire. Une validation récente ne masque donc plus un reçu antérieur `failed`, `skipped`, `not_supported` ou `not_run`. En cas de blocage, l’outil retourne `NO_POST_EDIT_VALIDATION` et une liste compacte groupant reçus, fichiers et catégories de `run_task` manquantes.
 
 La collecte OTLP du backend possède un circuit breaker exponentiel 5 s, 30 s, 120 s puis 300 s. Pendant l’ouverture, les appels retournent `503` et `Retry-After` sans solliciter l’upstream ni réémettre le même warning chaque seconde. Le diagnostic authentifié `GET /api/v1/telemetry/upstream-health` expose l’état agrégé sans contenu télémétrique. Les logs Preview ne déclarent `available: true` que lorsque la commande de logs a réussi et fourni une sortie exploitable ; un ancien log de setup peut être rendu comme fallback mais reste marqué indisponible.
 
 Les tests automatisés ajoutés couvrent le registre et sa description, JSON/JSONC, Prisma, le statut `not_supported`, le refus sémantique, le patch multifichier, le rollback atomique, la suppression de fichier, les sélections de build, l’invalidation ciblée des reçus, le gouverneur entre epochs, les pannes Corepack, le gate de completion et le cycle de vie des outils rapides, parallèles, progressifs, annulés et rejoués après reconnexion. Le test d’intégration live avec GPT-5.6 Sol X-high et la matrice Lima/WSL/Cloud Preview exigent encore les credentials et runners correspondants ; ils ne sont pas simulés par une trace `afterEvents` et ne sont pas présentés comme exécutés localement.
+
+### 21.15 Finalisation après US-007
+
+#### Gestionnaires de paquets hors réseau
+
+Le runtime résout désormais la valeur exacte de `packageManager`, suffixe d’intégrité exclu, avant de lancer une tâche. Il cherche successivement une installation provisionnée sous `/opt/blame/package-managers/<nom>/<version>`, la dépendance embarquée dans le payload du harness, puis un binaire système de version strictement identique. Un shim Corepack est refusé. Si aucune version exacte n’est disponible, `run_task` retourne une panne d’infrastructure explicite au lieu de tenter un téléchargement.
+
+Les images WSL et Lima passent en runtime `9` et provisionnent npm 11.6.4, pnpm 10.33.2 et Yarn 1.22.22. Le runner Cloud passe en `0.2.16` et installe les mêmes binaires. Linux natif les reçoit avec le payload du harness. Les contrôles de santé WSL/Lima vérifient leurs versions. Le cache persistant `.blame/harness/dependency-cache` est indexé par le gestionnaire, sa version et le hash des manifests, workspaces et lockfiles. Les variables npm, pnpm et Yarn pointent vers ce cache, tandis que les téléchargements Corepack et le réseau restent désactivés pendant les tâches ordinaires.
+
+#### Lectures externes session-wide
+
+Lorsque `BLAME_COST_GOVERNOR_V2` est actif, une même instance du gouverneur couvre toute la session, y compris les changements d’epoch. `fetch_web_content`, `consult_specialist`, les logs Preview et DevTools partagent une normalisation URL/requête, un cache de reçus et les compteurs cumulés. Une requête exacte répétée reçoit `already_available` sans nouvel appel. Après deux requêtes fortement recouvrantes, la suivante reçoit `retry_suppressed` et une recommandation ciblée. Une réponse neuve est bornée à 16 Kio avant son insertion dans le contexte. Les métriques distinguent appels, cache hits, suppressions et octets retournés.
+
+#### Compaction effective
+
+`BLAME_AGENT_COMPACTION_WARNING_RATIO` vaut 0,55 par défaut et `BLAME_AGENT_COMPACTION_TRIGGER_RATIO` vaut 0,675. Pour les sessions de développement à completion structurée, Blame récupère la fenêtre déclarée par le provider et annonce à Cline une fenêtre effective telle que son seuil interne de 90 % déclenche la compaction à 67,5 % de la fenêtre réelle. Le callback produit alors une nouvelle capsule de continuité, incrémente l’epoch et réinitialise la visibilité des reçus retirés. Les messages utilisateur exacts, contraintes, décisions, reçus de changement, validations, échecs et prochaines actions restent dans la mémoire durable ; les sorties d’outil brutes ne sont pas recopiées.
+
+#### Validation et mesures locales
+
+Une fixture headless réelle contient JSONC, Prisma, TSX, CSS et une API. Le test `headless-us007.test.ts` lance trois sessions réelles, utilise le streaming du SDK, impose GPT-5.6 Sol avec `reasoningEffort: xhigh`, puis vérifie le build reçu, le gate de completion, l’absence de Corepack, de double fetch/inspection consécutive et de fichier temporaire. Il s’active uniquement avec `BLAME_HEADLESS_US007=true` et les variables `BLAME_HEADLESS_API_URL`, `BLAME_HEADLESS_API_TOKEN`, `BLAME_HEADLESS_PROVIDER_ID` et `BLAME_HEADLESS_MODEL_ID`.
+
+Mesures obtenues dans le worktree Linux le 25 août 2026 :
+
+| Vérification | Résultat |
+| --- | ---: |
+| Suite complète d’`agent-runtime` | 205 réussis, 0 échec, 1 replay live ignoré |
+| Replay GPT-5.6 Sol X-high | non exécuté, credentials absents |
+| Build complet de la fixture | réussi en 1,347 s |
+| Validation Prisma de la fixture | réussie avec le binaire local |
+| Build pnpm sous Bubblewrap avec réseau isolé | réussi |
+| Appels ou téléchargements Corepack observés | 0 |
+
+Le replay live n’est volontairement pas remplacé par une trace synthétique. Les trois mesures de coût, de compaction maximale et de variance entre runs devront être ajoutées après exécution dans l’environnement doté des credentials. La matrice de construction des images WSL, Lima et Cloud reste une validation CI : le code, les marqueurs de version et les health checks sont présents, mais ces images n’ont pas été publiées depuis ce worktree.
 
 ---
 
