@@ -7,6 +7,12 @@ export type TaskInvocation = {
   executable: string;
   args: string[];
   cwd: string;
+  packageManagerVersion?: string;
+};
+
+type PackageManagerSelection = {
+  name: TaskCatalogItem["package_manager"];
+  version?: string;
 };
 
 type PackageManifest = {
@@ -77,47 +83,89 @@ export function taskInvocation(
   const script = task.script ?? task.task_id;
   switch (task.package_manager) {
     case "bun":
-      return taskCommand("bun", ["run", script, ...forwarded], task.cwd);
+      return taskCommand(
+        "bun",
+        ["run", script, ...forwarded],
+        task.cwd,
+        task.package_manager_version,
+      );
     case "pnpm":
-      return taskCommand("pnpm", ["run", script, ...forwarded], task.cwd);
+      return taskCommand(
+        "pnpm",
+        ["run", script, ...forwarded],
+        task.cwd,
+        task.package_manager_version,
+      );
     case "yarn":
-      return taskCommand("yarn", ["run", script, ...forwarded], task.cwd);
+      return taskCommand(
+        "yarn",
+        ["run", script, ...forwarded],
+        task.cwd,
+        task.package_manager_version,
+      );
     default:
-      return taskCommand("npm", ["run", script, ...forwarded], task.cwd);
+      return taskCommand(
+        "npm",
+        ["run", script, ...forwarded],
+        task.cwd,
+        task.package_manager_version,
+      );
   }
 }
 
 function dependencyTask(
-  packageManager: TaskCatalogItem["package_manager"],
+  packageManager: PackageManagerSelection,
 ): TaskCatalogItem {
-  const invocation = dependencyInvocation({ package_manager: packageManager });
+  const invocation = dependencyInvocation({
+    package_manager: packageManager.name,
+    ...(packageManager.version
+      ? { package_manager_version: packageManager.version }
+      : {}),
+  });
   return {
     task_id: "dependencies",
     kind: "dependencies",
     command: [invocation.executable, ...invocation.args].join(" "),
     cwd: ".",
-    package_manager: packageManager,
+    package_manager: packageManager.name,
+    ...(packageManager.version
+      ? { package_manager_version: packageManager.version }
+      : {}),
     supportsFileSelection: false,
     requiresNetwork: true,
     dependencyPolicy: "required",
   };
 }
 
-function dependencyInvocation(task: Pick<TaskCatalogItem, "package_manager">) {
+function dependencyInvocation(
+  task: Pick<TaskCatalogItem, "package_manager" | "package_manager_version">,
+) {
   if (task.package_manager === "pnpm")
     return taskCommand(
       "pnpm",
       ["install", "--frozen-lockfile", "--prefer-offline"],
       ".",
+      task.package_manager_version,
     );
   if (task.package_manager === "yarn")
-    return taskCommand("yarn", ["install", "--immutable", "--cached"], ".");
+    return taskCommand(
+      "yarn",
+      ["install", "--immutable", "--cached"],
+      ".",
+      task.package_manager_version,
+    );
   if (task.package_manager === "bun")
-    return taskCommand("bun", ["install", "--frozen-lockfile"], ".");
+    return taskCommand(
+      "bun",
+      ["install", "--frozen-lockfile"],
+      ".",
+      task.package_manager_version,
+    );
   return taskCommand(
     "npm",
     ["ci", "--prefer-offline", "--no-audit", "--no-fund"],
     ".",
+    task.package_manager_version,
   );
 }
 
@@ -179,7 +227,7 @@ async function readPackageManifest(
 
 function manifestTasks(
   manifest: PackageManifest,
-  packageManager: TaskCatalogItem["package_manager"],
+  packageManager: PackageManagerSelection,
 ): CatalogCandidate[] {
   const cwd = dirname(manifest.file).replaceAll("\\", "/");
   const label = packageLabel(manifest, cwd);
@@ -191,7 +239,7 @@ function manifestTasks(
 }
 
 function taskCandidate(
-  packageManager: TaskCatalogItem["package_manager"],
+  packageManager: PackageManagerSelection,
   cwd: string,
   label: string,
   script: string,
@@ -206,7 +254,10 @@ function taskCandidate(
     kind,
     command,
     cwd,
-    package_manager: packageManager,
+    package_manager: packageManager.name,
+    ...(packageManager.version
+      ? { package_manager_version: packageManager.version }
+      : {}),
     supportsFileSelection: kind === "test",
     requiresNetwork: false,
     dependencyPolicy: taskDependencyPolicy(kind),
@@ -255,8 +306,18 @@ function selectedTaskPaths(cwd: string, selection?: RunTaskInput["selection"]) {
   );
 }
 
-function taskCommand(executable: string, args: string[], cwd: string) {
-  return { executable, args, cwd };
+function taskCommand(
+  executable: string,
+  args: string[],
+  cwd: string,
+  packageManagerVersion?: string,
+) {
+  return {
+    executable,
+    args,
+    cwd,
+    ...(packageManagerVersion ? { packageManagerVersion } : {}),
+  };
 }
 
 function validTask([taskId, command]: [string, string]) {
@@ -271,14 +332,21 @@ function validTask([taskId, command]: [string, string]) {
 async function detectPackageManager(
   root: string,
   declared?: string,
-): Promise<TaskCatalogItem["package_manager"]> {
-  const name = declared?.split("@", 1)[0];
+): Promise<PackageManagerSelection> {
+  const [name, version] = declaredPackageManager(declared);
   if (name === "bun" || name === "npm" || name === "pnpm" || name === "yarn")
-    return name;
+    return { name, ...(version ? { version } : {}) };
   for (const [file, manager] of packageManagerFiles) {
-    if (await fileExists(join(root, file))) return manager;
+    if (await fileExists(join(root, file))) return { name: manager };
   }
-  return "npm";
+  return { name: "npm" };
+}
+
+function declaredPackageManager(value?: string) {
+  const match = value
+    ?.trim()
+    .match(/^(bun|npm|pnpm|yarn)@([^+\s]+)(?:\+.*)?$/u);
+  return match ? [match[1], match[2]] : [value?.split("@", 1)[0], undefined];
 }
 
 async function fileExists(path: string) {

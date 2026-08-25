@@ -21,7 +21,7 @@
     "build": "tsc && node scripts/copy-prompt.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "pnpm build && node --test dist/project-initialization.test.js dist/project-code-practices.test.js dist/project-scanners.test.js dist/security-audit.test.js dist/project-initialization-repair.test.js dist/next-webpack-fallback.test.js dist/project-initialization-impact.test.js dist/commit-message.test.js dist/production.test.js dist/reasoning.test.js dist/specialist-agents.test.js dist/blame-native-skills.test.js dist/cline-runtime-events.test.js dist/agent-telemetry.test.js dist/provider-schema-compatibility.test.js dist/provider-catalog.test.js dist/cloud-api.test.js dist/title-generation.test.js dist/harness/conversation-memory.test.js dist/harness/harness-reliability.test.js dist/harness/semantic-workspace.test.js"
+    "test": "pnpm build && node --test dist/project-initialization.test.js dist/project-code-practices.test.js dist/project-scanners.test.js dist/security-audit.test.js dist/project-initialization-repair.test.js dist/next-webpack-fallback.test.js dist/project-initialization-impact.test.js dist/commit-message.test.js dist/production.test.js dist/reasoning.test.js dist/specialist-agents.test.js dist/blame-native-skills.test.js dist/cline-runtime-events.test.js dist/agent-telemetry.test.js dist/provider-schema-compatibility.test.js dist/provider-catalog.test.js dist/cloud-api.test.js dist/title-generation.test.js dist/harness/conversation-memory.test.js dist/harness/harness-reliability.test.js dist/harness/headless-us007.test.js dist/harness/semantic-workspace.test.js"
   },
   "dependencies": {
     "@ast-grep/lang-bash": "0.0.8",
@@ -42,12 +42,15 @@
     "fast-glob": "3.3.3",
     "isbinaryfile": "5.0.7",
     "jsonc-parser": "3.3.1",
+    "npm": "11.6.4",
     "p-limit": "6.2.0",
+    "pnpm": "10.33.2",
     "prettier": "3.8.3",
     "proper-lockfile": "4.1.2",
     "strip-ansi": "7.2.0",
     "typescript": "~5.9.3",
     "write-file-atomic": "7.0.1",
+    "yarn": "1.22.22",
     "zod": "4.4.3"
   },
   "devDependencies": {

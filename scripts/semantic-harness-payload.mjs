@@ -33,12 +33,15 @@ const dependencyNames = [
   "execa",
   "fast-glob",
   "isbinaryfile",
+  "npm",
   "p-limit",
+  "pnpm",
   "prettier",
   "proper-lockfile",
   "strip-ansi",
   "typescript",
   "write-file-atomic",
+  "yarn",
   "zod",
 ];
 

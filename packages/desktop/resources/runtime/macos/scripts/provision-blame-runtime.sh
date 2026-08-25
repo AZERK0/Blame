@@ -1,10 +1,14 @@
 set -eu
 
-runtime_version="${1:-7}"
+runtime_version="${1:-9}"
 runtime_root="/home/blame/.local/share/blame/runtime"
+package_manager_root="/opt/blame/package-managers"
 cline_sdk_version="${BLAME_CLINE_SDK_VERSION:-${2:-0.0.68}}"
 nerdctl_version="${BLAME_NERDCTL_VERSION:-2.1.6}"
 node_version="${BLAME_NODE_VERSION:-22.23.1}"
+npm_version="${BLAME_NPM_VERSION:-11.6.4}"
+pnpm_version="${BLAME_PNPM_VERSION:-10.33.2}"
+yarn_version="${BLAME_YARN_VERSION:-1.22.22}"
 runtime_packages="bubblewrap ca-certificates curl dbus-user-session git gzip iptables procps python3 tar xz-utils"
 
 ensure_user() {
@@ -48,6 +52,27 @@ ensure_node() {
   printf '%s  %s\n' "$(node_archive_sha256 "$arch")" "$temp_dir/$archive" | sha256sum -c - >/dev/null
   tar -C /usr/local --strip-components=1 -xJf "$temp_dir/$archive"
   rm -rf "$temp_dir"
+}
+
+ensure_package_managers() {
+  ensure_package_manager npm "$npm_version"
+  ensure_package_manager pnpm "$pnpm_version"
+  ensure_package_manager yarn "$yarn_version"
+}
+
+ensure_package_manager() {
+  name="$1"
+  version="$2"
+  destination="$package_manager_root/$name/$version"
+  executable="$destination/bin/$name"
+  if [ -x "$executable" ] && [ "$("$executable" --version 2>/dev/null)" = "$version" ]; then
+    return
+  fi
+  rm -rf "$destination"
+  mkdir -p "$destination/bin"
+  npm install --prefix "$destination" --omit=dev --ignore-scripts "$name@$version"
+  ln -sf "../node_modules/.bin/$name" "$executable"
+  [ "$("$executable" --version)" = "$version" ]
 }
 
 node_archive_architecture() {
@@ -840,6 +865,7 @@ cd /
 ensure_user
 ensure_packages
 ensure_node
+ensure_package_managers
 ensure_semantic_harness
 ensure_cline_sdk
 remove_external_cli_payloads

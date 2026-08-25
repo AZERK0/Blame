@@ -3,6 +3,10 @@ import { access, realpath } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
 import { delimiter, dirname, join } from "node:path";
 import { execa } from "execa";
+import {
+  resolvePackageManager,
+  type PackageManagerName,
+} from "./package-manager-runtime.js";
 
 export type TaskExecutionInput = {
   executable: string;
@@ -15,6 +19,9 @@ export type TaskExecutionInput = {
   outputBytes: number;
   signal?: AbortSignal;
   network?: "deny" | "project_allowlist";
+  dependencyCacheRoot?: string;
+  packageManager?: PackageManagerName;
+  packageManagerVersion?: string;
 };
 
 export type TaskExecutionResult = {
@@ -49,21 +56,26 @@ export class SandboxedTaskExecutor implements TaskExecutor {
     const isolation = await this.capability();
     if (input.network === "project_allowlist" && !projectAllowlistProxy())
       return unsupportedAllowlist(isolation);
-    const readRoots = await executionReadRoots(input);
+    const prepared = await preparePackageManager(input).catch((error) => ({
+      error: error instanceof Error ? error.message : String(error),
+    }));
+    if ("error" in prepared)
+      return infrastructureFailure(isolation, prepared.error);
+    const readRoots = await executionReadRoots(prepared);
     const deniedReadRoots =
       isolation === "sandbox_exec"
         ? await canonicalExistingPaths([
             homedir(),
             tmpdir(),
-            ...(input.canonicalWorkspaceRoot
-              ? [input.canonicalWorkspaceRoot]
+            ...(prepared.canonicalWorkspaceRoot
+              ? [prepared.canonicalWorkspaceRoot]
               : []),
           ])
         : [];
     const executionInput =
       isolation === "sandbox_exec"
-        ? { ...input, overlayRoot: await realpath(input.overlayRoot) }
-        : input;
+        ? { ...prepared, overlayRoot: await realpath(prepared.overlayRoot) }
+        : prepared;
     const command = executionCommand(
       executionInput,
       isolation,
@@ -72,7 +84,9 @@ export class SandboxedTaskExecutor implements TaskExecutor {
     );
     const environment = taskEnvironment(
       executionInput.overlayRoot,
-      input.network ?? "deny",
+      prepared.network ?? "deny",
+      prepared.dependencyCacheRoot,
+      prepared.runtimeBinRoots,
     );
     try {
       const result = await execa(command.executable, command.args, {
@@ -150,6 +164,9 @@ function bubblewrapCommand(input: TaskExecutionInput, readRoots: string[]) {
       "--bind",
       input.overlayRoot,
       input.overlayRoot,
+      ...(input.dependencyCacheRoot
+        ? ["--bind", input.dependencyCacheRoot, input.dependencyCacheRoot]
+        : []),
       "--dev",
       "/dev",
       "--proc",
@@ -184,6 +201,11 @@ function sandboxExecCommand(
     "(allow sysctl-read)",
     "(allow mach-lookup)",
     `(allow file-write* (subpath ${writableOverlay}))`,
+    ...(input.dependencyCacheRoot
+      ? [
+          `(allow file-write* (subpath ${seatbeltString(input.dependencyCacheRoot)}))`,
+        ]
+      : []),
     input.network === "project_allowlist"
       ? "(allow network*)"
       : "(deny network*)",
@@ -197,18 +219,24 @@ function sandboxExecCommand(
 function taskEnvironment(
   overlayRoot: string,
   network: "deny" | "project_allowlist",
+  dependencyCacheRoot?: string,
+  runtimeBinRoots: string[] = [],
 ): Record<string, string> {
   const inheritedPath = process.env.PATH ?? "/usr/local/bin:/usr/bin:/bin";
   const proxy =
     network === "project_allowlist" ? projectAllowlistProxy() : undefined;
   return {
-    PATH: [join(overlayRoot, "node_modules", ".bin"), inheritedPath].join(
-      delimiter,
-    ),
+    PATH: [
+      join(overlayRoot, "node_modules", ".bin"),
+      ...runtimeBinRoots,
+      inheritedPath,
+    ].join(delimiter),
     HOME: join(overlayRoot, ".home"),
     TMPDIR: join(overlayRoot, ".tmp"),
     XDG_CACHE_HOME: join(overlayRoot, ".home", ".cache"),
     COREPACK_HOME: join(overlayRoot, ".home", ".cache", "corepack"),
+    COREPACK_ENABLE_DOWNLOAD_PROMPT: "0",
+    COREPACK_ENABLE_PROJECT_SPEC: "0",
     CI: "1",
     NO_COLOR: "1",
     LANG: process.env.LANG ?? "C.UTF-8",
@@ -220,6 +248,51 @@ function taskEnvironment(
     npm_config_offline: network === "deny" ? "true" : "false",
     npm_config_audit: "false",
     npm_config_fund: "false",
+    ...(dependencyCacheRoot
+      ? {
+          npm_config_cache: join(dependencyCacheRoot, "npm"),
+          pnpm_config_store_dir: join(dependencyCacheRoot, "pnpm"),
+          YARN_CACHE_FOLDER: join(dependencyCacheRoot, "yarn"),
+        }
+      : {}),
+  };
+}
+
+type PreparedTaskExecutionInput = TaskExecutionInput & {
+  runtimeBinRoots: string[];
+};
+
+async function preparePackageManager(
+  input: TaskExecutionInput,
+): Promise<PreparedTaskExecutionInput> {
+  if (!input.packageManager) return { ...input, runtimeBinRoots: [] };
+  const manager = await resolvePackageManager({
+    name: input.packageManager,
+    version: input.packageManagerVersion,
+  });
+  return {
+    ...input,
+    executable: manager.executable,
+    args: [...manager.argsPrefix, ...input.args],
+    readonlyRoots: [...(input.readonlyRoots ?? []), ...manager.readonlyRoots],
+    runtimeBinRoots: manager.argsPrefix.length
+      ? []
+      : [dirname(manager.executable)],
+  };
+}
+
+function infrastructureFailure(
+  isolation: TaskIsolation,
+  message: string,
+): TaskExecutionResult {
+  return {
+    status: "execution_error",
+    exitCode: null,
+    signal: null,
+    stdout: "",
+    stderr: message,
+    outputTruncated: false,
+    isolation,
   };
 }
 

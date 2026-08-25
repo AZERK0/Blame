@@ -3,6 +3,7 @@ import { join, relative } from "node:path";
 import stripAnsi from "strip-ansi";
 import { ArtifactStore } from "./artifact-store.js";
 import { ChangeService } from "./change-service.js";
+import { dependencyCacheRoot } from "./dependency-cache.js";
 import { stableJson } from "./change-store.js";
 import { environmentSpec } from "./environment-service.js";
 import { sha256 } from "./protocol.js";
@@ -138,6 +139,11 @@ export class RunService {
     try {
       await this.assertCanonicalRevision(snapshot, signal);
       const invocation = taskInvocation(task, input.selection);
+      const packageCache = await dependencyCacheRoot(
+        this.files.root,
+        snapshot.files,
+        task,
+      );
       const result = await this.executor.execute({
         executable: invocation.executable,
         args: invocation.args,
@@ -145,6 +151,9 @@ export class RunService {
         overlayRoot: overlay.workspace,
         canonicalWorkspaceRoot: this.files.root,
         readonlyRoots: overlay.readonlyInputs,
+        dependencyCacheRoot: packageCache,
+        packageManager: task.package_manager,
+        packageManagerVersion: invocation.packageManagerVersion,
         timeoutMs: input.limits.timeout_ms,
         outputBytes: input.limits.output_bytes ?? 512 * 1024,
         signal,
@@ -219,6 +228,11 @@ export class RunService {
             "TMPDIR",
             "XDG_CACHE_HOME",
             "COREPACK_HOME",
+            "COREPACK_ENABLE_DOWNLOAD_PROMPT",
+            "COREPACK_ENABLE_PROJECT_SPEC",
+            "npm_config_cache",
+            "pnpm_config_store_dir",
+            "YARN_CACHE_FOLDER",
             "CI",
             "NO_COLOR",
             "LANG",

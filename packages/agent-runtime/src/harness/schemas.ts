@@ -598,6 +598,7 @@ export const taskCatalogItemSchema = z
     command: z.string().min(1).max(2_000),
     cwd: relativePathSchema,
     package_manager: z.enum(["bun", "npm", "pnpm", "yarn"]),
+    package_manager_version: z.string().min(1).max(100).optional(),
     supportsFileSelection: z.boolean().default(false),
     requiresNetwork: z.boolean().default(false),
     dependencyPolicy: z.enum(["required", "optional"]).default("required"),

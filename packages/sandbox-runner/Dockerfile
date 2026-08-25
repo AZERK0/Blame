@@ -6,11 +6,14 @@ ARG NODE_VERSION=24.18.1
 ARG NODE_SHA256=d6c664df3f3f61458e8c277585571328522d705166723a7c7823a9253a4d15a0
 ARG NPM_VERSION=12.0.2
 ARG NPM_SHA512=b885e890b9418fa1693544d05f53e64f9a73ec194837d4258b15fecdd692347b1dd2a517b1b0cbaf9d31cd8e92c3b70956bd2ecc72833a57b4b3098f5bfa7943
+ARG BLAME_NPM_VERSION=11.6.4
+ARG BLAME_PNPM_VERSION=10.33.2
+ARG BLAME_YARN_VERSION=1.22.22
 ARG DOCKER_VERSION=29.7.1
 ARG DOCKER_SHA256=0fcea2a8b4d1b54ccc9010e3451b78504a369d414f37eb3bb79300e1b5c22ce6
 ARG COMPOSE_VERSION=5.3.1
 ARG COMPOSE_SHA256=f9ebc6ebdb19d769b793c245a736caaeb198c62587f13b25c660c13b4987f959
-ARG BLAME_RUNNER_VERSION=0.2.15
+ARG BLAME_RUNNER_VERSION=0.2.16
 ARG BLAME_RUNNER_IMAGE_DIGEST=sha256:development
 
 RUN dnf upgrade -y \
@@ -27,6 +30,12 @@ RUN dnf upgrade -y \
       --output /tmp/npm.tgz \
     && echo "${NPM_SHA512}  /tmp/npm.tgz" | sha512sum --check --strict \
     && npm install --global /tmp/npm.tgz --ignore-scripts \
+    && for spec in "npm:${BLAME_NPM_VERSION}" "pnpm:${BLAME_PNPM_VERSION}" "yarn:${BLAME_YARN_VERSION}"; do \
+      name="${spec%%:*}"; version="${spec#*:}"; destination="/opt/blame/package-managers/${name}/${version}"; \
+      mkdir -p "${destination}/bin"; \
+      npm install --prefix "${destination}" --omit=dev --ignore-scripts "${name}@${version}"; \
+      ln -s "../node_modules/.bin/${name}" "${destination}/bin/${name}"; \
+    done \
     && curl --fail --silent --show-error --location \
       "https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_VERSION}.tgz" \
       --output /tmp/docker.tar.gz \
@@ -61,6 +70,7 @@ RUN mkdir -p /opt/blame/bin \
 
 ENV BLAME_RUNNER_VERSION=${BLAME_RUNNER_VERSION}
 ENV BLAME_RUNNER_IMAGE_DIGEST=${BLAME_RUNNER_IMAGE_DIGEST}
+ENV BLAME_PACKAGE_MANAGER_ROOT=/opt/blame/package-managers
 ENV PATH="/opt/blame/bin:${PATH}"
 
 # The trusted supervisor owns dockerd and the control-plane state. Compose

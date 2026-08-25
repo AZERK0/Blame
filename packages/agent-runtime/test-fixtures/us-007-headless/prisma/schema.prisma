@@ -1,0 +1,13 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./portfolio.db"
+}
+
+model Project {
+  id    Int    @id @default(autoincrement())
+  title String
+}
