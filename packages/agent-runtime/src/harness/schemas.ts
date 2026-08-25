@@ -730,6 +730,15 @@ export const storedRunSchema = z
         cwd: relativePathSchema,
         environment_profile: z.literal("default"),
         environment_variables: z.array(z.string().max(200)).max(50),
+        package_manager_resolution: z
+          .object({
+            name: z.enum(["bun", "npm", "pnpm", "yarn"]),
+            requested_version: z.string().min(1).max(100).optional(),
+            resolved_version: z.string().min(1).max(100),
+            strategy: z.enum(["compatible_same_major", "exact", "unversioned"]),
+          })
+          .strict()
+          .optional(),
         process_tree: z.enum(["host_descendants", "sandbox_descendants"]),
         ignored_limits: z
           .array(z.enum(["cpu", "memory_mb"]))

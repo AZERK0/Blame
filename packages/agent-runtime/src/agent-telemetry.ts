@@ -1844,6 +1844,13 @@ function recordRunMetrics(context: HarnessMetricContext) {
   );
   if (!context.data.run_ref || !context.data.complete_log)
     recordHarnessCount(context, "blame.harness.missing_run_artifacts");
+  const execution = asRecord(context.data.execution);
+  const resolution = asRecord(execution.package_manager_resolution);
+  if (stringValue(resolution.strategy) === "compatible_same_major")
+    recordHarnessCount(
+      context,
+      "blame.harness.package_manager_compatible_resolutions",
+    );
 }
 
 function recordHarnessCount(

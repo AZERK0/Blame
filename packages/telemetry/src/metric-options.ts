@@ -78,6 +78,7 @@ const exactOptions = new Map<string, MetricOptions>([
   ["blame.harness.external_read_cache_hits", { unit: "{read}" }],
   ["blame.harness.external_read_suppressed", { unit: "{read}" }],
   ["blame.harness.external_read_returned_bytes", { unit: "By" }],
+  ["blame.harness.package_manager_compatible_resolutions", { unit: "{run}" }],
   ["blame.harness.semantic_read_rebases", { unit: "{rebase}" }],
   ["blame.harness.direct_edits", { unit: "{edit}" }],
   ["blame.harness.automatically_rebased_edits", { unit: "{edit}" }],

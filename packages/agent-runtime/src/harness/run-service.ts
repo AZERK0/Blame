@@ -153,6 +153,7 @@ export class RunService {
         readonlyRoots: overlay.readonlyInputs,
         dependencyCacheRoot: packageCache,
         packageManager: task.package_manager,
+        packageManagerCompatibility: "pnpm_same_major",
         packageManagerVersion: invocation.packageManagerVersion,
         timeoutMs: input.limits.timeout_ms,
         outputBytes: input.limits.output_bytes ?? 512 * 1024,
@@ -230,6 +231,8 @@ export class RunService {
             "COREPACK_HOME",
             "COREPACK_ENABLE_DOWNLOAD_PROMPT",
             "COREPACK_ENABLE_PROJECT_SPEC",
+            "npm_config_manage_package_manager_versions",
+            "pnpm_config_manage_package_manager_versions",
             "npm_config_cache",
             "pnpm_config_store_dir",
             "YARN_CACHE_FOLDER",
@@ -245,6 +248,22 @@ export class RunService {
           ...ignoredLimits(input),
           observed_ports: [],
           volatility: ["timestamps", "runtime_instance_id"],
+          ...(result.packageManagerResolution
+            ? {
+                package_manager_resolution: {
+                  name: result.packageManagerResolution.name,
+                  ...(result.packageManagerResolution.requestedVersion
+                    ? {
+                        requested_version:
+                          result.packageManagerResolution.requestedVersion,
+                      }
+                    : {}),
+                  resolved_version:
+                    result.packageManagerResolution.resolvedVersion,
+                  strategy: result.packageManagerResolution.strategy,
+                },
+              }
+            : {}),
         },
         status: runStatus,
         exit_code: result.exitCode,

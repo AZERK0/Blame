@@ -5,7 +5,9 @@ import { delimiter, dirname, join } from "node:path";
 import { execa } from "execa";
 import {
   resolvePackageManager,
+  type PackageManagerCompatibility,
   type PackageManagerName,
+  type ResolvedPackageManager,
 } from "./package-manager-runtime.js";
 
 export type TaskExecutionInput = {
@@ -21,7 +23,15 @@ export type TaskExecutionInput = {
   network?: "deny" | "project_allowlist";
   dependencyCacheRoot?: string;
   packageManager?: PackageManagerName;
+  packageManagerCompatibility?: PackageManagerCompatibility;
   packageManagerVersion?: string;
+};
+
+export type PackageManagerResolution = {
+  name: PackageManagerName;
+  requestedVersion?: string;
+  resolvedVersion: string;
+  strategy: ResolvedPackageManager["resolutionStrategy"];
 };
 
 export type TaskExecutionResult = {
@@ -32,6 +42,7 @@ export type TaskExecutionResult = {
   stderr: string;
   outputTruncated: boolean;
   isolation: TaskIsolation;
+  packageManagerResolution?: PackageManagerResolution;
 };
 
 export type TaskIsolation = "bubblewrap" | "sandbox_exec" | "worktree";
@@ -118,6 +129,9 @@ export class SandboxedTaskExecutor implements TaskExecutor {
           Buffer.byteLength(stdout) + Buffer.byteLength(stderr) >=
           input.outputBytes,
         isolation,
+        ...(prepared.packageManagerResolution
+          ? { packageManagerResolution: prepared.packageManagerResolution }
+          : {}),
       };
     } catch (error) {
       const failure = executionFailure(error);
@@ -134,6 +148,9 @@ export class SandboxedTaskExecutor implements TaskExecutor {
         stderr: failure.stderr || failure.message,
         outputTruncated: failure.maxBufferExceeded,
         isolation,
+        ...(prepared.packageManagerResolution
+          ? { packageManagerResolution: prepared.packageManagerResolution }
+          : {}),
       };
     }
   }
@@ -237,6 +254,8 @@ function taskEnvironment(
     COREPACK_HOME: join(overlayRoot, ".home", ".cache", "corepack"),
     COREPACK_ENABLE_DOWNLOAD_PROMPT: "0",
     COREPACK_ENABLE_PROJECT_SPEC: "0",
+    npm_config_manage_package_manager_versions: "false",
+    pnpm_config_manage_package_manager_versions: "false",
     CI: "1",
     NO_COLOR: "1",
     LANG: process.env.LANG ?? "C.UTF-8",
@@ -259,6 +278,7 @@ function taskEnvironment(
 }
 
 type PreparedTaskExecutionInput = TaskExecutionInput & {
+  packageManagerResolution?: PackageManagerResolution;
   runtimeBinRoots: string[];
 };
 
@@ -267,6 +287,7 @@ async function preparePackageManager(
 ): Promise<PreparedTaskExecutionInput> {
   if (!input.packageManager) return { ...input, runtimeBinRoots: [] };
   const manager = await resolvePackageManager({
+    compatibility: input.packageManagerCompatibility,
     name: input.packageManager,
     version: input.packageManagerVersion,
   });
@@ -275,6 +296,14 @@ async function preparePackageManager(
     executable: manager.executable,
     args: [...manager.argsPrefix, ...input.args],
     readonlyRoots: [...(input.readonlyRoots ?? []), ...manager.readonlyRoots],
+    packageManagerResolution: {
+      name: input.packageManager,
+      ...(manager.requestedVersion
+        ? { requestedVersion: manager.requestedVersion }
+        : {}),
+      resolvedVersion: manager.resolvedVersion,
+      strategy: manager.resolutionStrategy,
+    },
     runtimeBinRoots: manager.argsPrefix.length
       ? []
       : [dirname(manager.executable)],

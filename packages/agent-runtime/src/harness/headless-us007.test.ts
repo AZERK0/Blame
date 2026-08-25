@@ -8,6 +8,7 @@ import { execa } from "execa";
 import { BlameAgentRuntime } from "../cline-runtime.js";
 import type { AgentEvent } from "../types.js";
 import { ConversationMemoryStore } from "./conversation-memory.js";
+import { resolvePackageManager } from "./package-manager-runtime.js";
 
 const enabled = process.env.BLAME_HEADLESS_US007 === "true";
 const fixture = fileURLToPath(
@@ -110,9 +111,7 @@ async function prepareFixture(index: number) {
     recursive: true,
     filter: (source) => !excludedFixturePath(source),
   });
-  await execa("pnpm", ["install", "--frozen-lockfile", "--ignore-workspace"], {
-    cwd: root,
-  });
+  await installFixtureDependencies(root);
   await execa("git", ["init", "--initial-branch=main"], { cwd: root });
   await execa("git", ["config", "user.email", "headless@blame.test"], {
     cwd: root,
@@ -121,6 +120,32 @@ async function prepareFixture(index: number) {
   await execa("git", ["add", "."], { cwd: root });
   await execa("git", ["commit", "-m", "fixture"], { cwd: root });
   return root;
+}
+
+async function installFixtureDependencies(root: string) {
+  const manager = await resolvePackageManager({
+    compatibility: "pnpm_same_major",
+    name: "pnpm",
+    version: "10.32.1",
+  });
+  await execa(
+    manager.executable,
+    [
+      ...manager.argsPrefix,
+      "install",
+      "--frozen-lockfile",
+      "--ignore-workspace",
+    ],
+    {
+      cwd: root,
+      env: {
+        COREPACK_ENABLE_DOWNLOAD_PROMPT: "0",
+        COREPACK_ENABLE_PROJECT_SPEC: "0",
+        npm_config_manage_package_manager_versions: "false",
+        pnpm_config_manage_package_manager_versions: "false",
+      },
+    },
+  );
 }
 
 function excludedFixturePath(path: string) {

@@ -22,6 +22,7 @@ import {
 } from "./language-capabilities.js";
 import { type HarnessToolResult, type HarnessToolSuccess } from "./protocol.js";
 import {
+  packageManagerVersionsCompatible,
   resolvePackageManager,
   type PackageManagerName,
 } from "./package-manager-runtime.js";
@@ -222,18 +223,82 @@ test("all managed package managers resolve without Corepack", async () => {
     );
     assert.equal(result.exitCode, 0);
     assert.equal(result.stdout.trim(), version);
+    assert.equal(manager.resolutionStrategy, "exact");
   }
 });
 
+test("Portfolio V4 pnpm resolves through controlled same-major compatibility", async () => {
+  const manager = await resolvePackageManager({
+    compatibility: "pnpm_same_major",
+    name: "pnpm",
+    version: "10.32.1",
+  });
+  assert.equal(manager.requestedVersion, "10.32.1");
+  assert.equal(manager.resolvedVersion.split(".")[0], "10");
+  assert.doesNotMatch(manager.executable, /corepack/iu);
+  assert.ok(
+    ["compatible_same_major", "exact"].includes(manager.resolutionStrategy),
+  );
+});
+
+test("package manager compatibility never crosses pnpm majors or ecosystems", () => {
+  const compatibility = "pnpm_same_major" as const;
+  assert.equal(
+    packageManagerVersionsCompatible({
+      candidateVersion: "10.33.2",
+      compatibility,
+      name: "pnpm",
+      requestedVersion: "10.32.1",
+    }),
+    true,
+  );
+  assert.equal(
+    packageManagerVersionsCompatible({
+      candidateVersion: "11.0.0",
+      compatibility,
+      name: "pnpm",
+      requestedVersion: "10.32.1",
+    }),
+    false,
+  );
+  assert.equal(
+    packageManagerVersionsCompatible({
+      candidateVersion: "10.33.2",
+      compatibility,
+      name: "npm",
+      requestedVersion: "10.32.1",
+    }),
+    false,
+  );
+  assert.equal(
+    packageManagerVersionsCompatible({
+      candidateVersion: "10.33.2-rc.1",
+      compatibility,
+      name: "pnpm",
+      requestedVersion: "10.32.1",
+    }),
+    false,
+  );
+  assert.equal(
+    packageManagerVersionsCompatible({
+      candidateVersion: "10.33.2",
+      compatibility,
+      name: "pnpm",
+      requestedVersion: "010.32.1",
+    }),
+    false,
+  );
+});
+
 test(
-  "pnpm build runs without Corepack in a network-denied sandbox",
+  "Portfolio V4 pnpm build runs without Corepack in a network-denied sandbox",
   { skip: process.platform === "win32" },
   async () => {
     await withWorkspace(async (root, workspace) => {
       await writeFile(
         join(root, "package.json"),
         JSON.stringify({
-          packageManager: "pnpm@10.33.2",
+          packageManager: "pnpm@10.32.1",
           scripts: { build: "node -e \"process.stdout.write('build-ok')\"" },
         }),
       );
@@ -247,9 +312,15 @@ test(
           network: "deny",
         }),
       );
-      assert.equal(run.data.status, "passed");
+      assert.equal(run.data.status, "passed", JSON.stringify(run.data));
       assert.equal(run.data.outcome, "passed");
       assert.doesNotMatch(run.data.execution.argv.join(" "), /corepack/iu);
+      assert.deepEqual(run.data.execution.package_manager_resolution, {
+        name: "pnpm",
+        requested_version: "10.32.1",
+        resolved_version: "10.33.2",
+        strategy: "compatible_same_major",
+      });
     });
   },
 );
