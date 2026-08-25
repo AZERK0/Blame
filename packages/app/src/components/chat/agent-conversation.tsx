@@ -1433,6 +1433,8 @@ type EditedFile = {
   additions?: number
   deletions?: number
   path: string
+  resolution?: string
+  validation?: string
 }
 
 function EditedFiles({ files }: { files: EditedFile[] }) {
@@ -1460,6 +1462,18 @@ function EditedFiles({ files }: { files: EditedFile[] }) {
                 -{file.deletions}
               </span>
             ) : null}
+            {file.resolution ? (
+              <span className="shrink-0 text-muted-foreground/70">
+                {file.resolution === "automatically_rebased"
+                  ? "automatically rebased"
+                  : file.resolution}
+              </span>
+            ) : null}
+            {file.validation ? (
+              <span className="shrink-0 text-muted-foreground/70">
+                parse {file.validation}
+              </span>
+            ) : null}
           </div>
         )
       })}
@@ -1469,8 +1483,14 @@ function EditedFiles({ files }: { files: EditedFile[] }) {
 
 type InspectedFile = {
   endLine?: number
+  entireFile?: boolean
   path: string
+  readKind?: string
+  reused?: boolean
   startLine?: number
+  symbol?: string
+  symbolKind?: string
+  view?: string
 }
 
 function InspectedFiles({ files }: { files: InspectedFile[] }) {
@@ -1485,9 +1505,9 @@ function InspectedFiles({ files }: { files: InspectedFile[] }) {
             key={`${file.path}-${file.startLine ?? "start"}-${file.endLine ?? "end"}-${index}`}
             title={file.path}
           >
-            <span className="shrink-0">Read</span>
+            <span className="shrink-0">{file.reused ? "Reused" : "Read"}</span>
             <span className="truncate text-sky-600 dark:text-sky-400">
-              {name}
+              {file.symbol ?? name}
             </span>
             <span className="shrink-0 text-muted-foreground/70">
               {inspectedLineRange(file)}
@@ -2047,7 +2067,17 @@ function presentedEditedFiles(
   const presented = files.flatMap((value): EditedFile[] => {
     const file = recordValue(value)
     const path = stringValue(file.path)
-    return path ? [{ path }] : []
+    return path
+      ? [
+          {
+            path,
+            additions: numberValue(file.additions),
+            deletions: numberValue(file.deletions),
+            resolution: stringValue(file.resolution),
+            validation: stringValue(file.validation),
+          },
+        ]
+      : []
   })
   return presented.length > 0 ? presented : undefined
 }
@@ -2131,8 +2161,14 @@ function readFilesInput(details: ActivityDetail): InspectedFile[] | undefined {
     return [
       {
         endLine: positiveInteger(file.end_line),
+        entireFile: file.entire_file === true,
         path,
+        readKind: stringValue(file.read_kind),
+        reused: file.reused === true,
         startLine: positiveInteger(file.start_line),
+        symbol: stringValue(file.symbol),
+        symbolKind: stringValue(file.symbol_kind),
+        view: stringValue(file.view),
       },
     ]
   })
@@ -2153,12 +2189,18 @@ function inspectedLineCount(file: InspectedFile) {
 }
 
 function inspectedLineRange(file: InspectedFile) {
+  if (file.reused) return "Content reused"
+  if (file.entireFile) return "Entire file"
+  if (file.symbol) {
+    return [file.symbolKind, file.view].filter(Boolean).join(" · ")
+  }
+  if (file.readKind === "outline") return "Symbol outline"
   if (file.startLine !== undefined && file.endLine !== undefined) {
     return `L${file.startLine}–${file.endLine}`
   }
   if (file.startLine !== undefined) return `From L${file.startLine}`
   if (file.endLine !== undefined) return `Through L${file.endLine}`
-  return "Entire file"
+  return file.view ?? "Partial read"
 }
 
 function splitFilePath(path: string) {

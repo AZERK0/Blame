@@ -556,7 +556,7 @@ test("keeps repeated assistant text chunks when they are separate messages", () 
   assert.equal(secondMessage.agentActivities?.[2]?.detail, "Ok.")
 })
 
-test("completes a running tool when the next assistant message starts", () => {
+test("marks a started-only tool incomplete when the next message starts", () => {
   const toolStarted = updateStory(
     story(),
     toolEvent("tool_call", "read_files", 1, "call-1")
@@ -568,13 +568,14 @@ test("completes a running tool when the next assistant message starts", () => {
 
   assert.deepEqual(
     message.agentActivities?.map((activity) => activity.status),
-    ["completed", "running"]
+    ["failed", "running"]
   )
   assert.equal(message.agentActivities?.[0]?.kind, "tool")
+  assert.match(message.agentActivities?.[0]?.title ?? "", /incomplete/i)
   assert.equal(message.agentActivities?.[1]?.kind, "message")
 })
 
-test("completes a running tool when the run finishes", () => {
+test("marks a started-only tool incomplete when the run finishes", () => {
   const toolStarted = updateStory(
     story(),
     toolEvent("tool_call", "read_files", 1, "call-1")
@@ -583,7 +584,8 @@ test("completes a running tool when the run finishes", () => {
 
   assert.equal(completed.agentActivities?.length, 1)
   assert.equal(completed.agentActivities?.[0]?.kind, "tool")
-  assert.equal(completed.agentActivities?.[0]?.status, "completed")
+  assert.equal(completed.agentActivities?.[0]?.status, "failed")
+  assert.match(completed.agentActivities?.[0]?.title ?? "", /incomplete/i)
 })
 
 test("keeps stopped assistant messages intermediate until done", () => {

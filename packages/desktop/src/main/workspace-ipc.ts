@@ -95,6 +95,7 @@ import {
   validatePreviewComposeBindings,
 } from "./preview-compose-validation";
 import { previewContainerFailure } from "./preview-readiness";
+import { PreviewRecoveryCircuit } from "./preview-recovery-circuit";
 import {
   composeRuntimeServiceClosure,
   composeServiceHealthcheckCommand,
@@ -500,6 +501,7 @@ const setupRuns = new Map<string, SetupRun>();
 const projectLogStreams = new Map<string, ProjectLogStream>();
 const projectServiceLogStreams = new Map<string, ProjectServiceLogStream>();
 const previewRecoveries = new Map<string, Promise<string | null>>();
+const previewRecoveryCircuit = new PreviewRecoveryCircuit();
 const setupEnvironmentCache = new Map<
   string,
   { env?: SetupEnvironment; promise?: Promise<SetupEnvironment>; ts: number }
@@ -3000,11 +3002,53 @@ async function ensureProjectPreviewUrl(input: EnsureProjectPreviewUrlInput) {
   }
   const recovery = previewRecoveries.get(worktree);
   if (recovery) return recovery;
+  const configurationFingerprint =
+    await previewRecoveryConfigurationFingerprint(
+      worktree,
+      configurations,
+      runtimeState,
+      manifest,
+    );
+  const decision = previewRecoveryCircuit.decision(
+    worktree,
+    configurationFingerprint,
+  );
+  if (!decision.allowed) {
+    await appendRecoveryLog(
+      worktree,
+      `preview recovery deferred for ${decision.retryAfterMs}ms`,
+    );
+    return null;
+  }
+  getBlameTelemetry().count("blame.harness.preview_recoveries", 1, {});
   const nextRecovery = runPreviewRecovery(input, worktree, {
     reallocatePorts: Boolean(currentUrl),
-  }).finally(() => {
-    previewRecoveries.delete(worktree);
-  });
+  })
+    .then((result) => {
+      previewRecoveryCircuit.succeeded(worktree);
+      return result;
+    })
+    .catch((error) => {
+      getBlameTelemetry().count(
+        "blame.harness.preview_recoveries_by_failure",
+        1,
+        {},
+      );
+      previewRecoveryCircuit.failed(
+        worktree,
+        configurationFingerprint,
+        previewRecoveryFailureFingerprint(
+          configurationFingerprint,
+          configurations,
+          runtimeState,
+          error,
+        ),
+      );
+      throw error;
+    })
+    .finally(() => {
+      previewRecoveries.delete(worktree);
+    });
   previewRecoveries.set(worktree, nextRecovery);
   return nextRecovery;
 }
@@ -3113,7 +3157,81 @@ export async function controlProjectPreview(input: ControlProjectPreviewInput) {
     `run configuration ${input.action}: ${selection.selected.id}`,
   );
   if (input.action === "stop") return stopProjectPreview(selection);
+  previewRecoveryCircuit.reset(selection.worktree);
   return startProjectPreview(selection, input.action === "restart");
+}
+
+async function previewRecoveryConfigurationFingerprint(
+  worktree: string,
+  configurations: ProjectRunConfiguration[],
+  runtimeState: PreviewRuntimeSelectionState,
+  manifest: PreviewManifest | undefined,
+) {
+  const hash = createHash("sha256");
+  hash.update(
+    JSON.stringify({
+      configurations,
+      desiredStatus: runtimeState.desiredStatus,
+      manifest,
+      selectedConfigurationId: runtimeState.selectedConfigurationId,
+    }),
+  );
+  for (const { content, file } of await previewRecoveryFingerprintFiles(
+    worktree,
+  )) {
+    hash.update("\0");
+    hash.update(file);
+    hash.update("\0");
+    hash.update(content);
+  }
+  return hash.digest("hex");
+}
+
+async function previewRecoveryFingerprintFiles(worktree: string) {
+  const paths = dependencyHashFiles.map((file) => ({
+    file,
+    path: joinWorkspacePath(worktree, file),
+  }));
+  const contents = await readExistingRuntimeFiles(
+    paths.map(({ path }) => path),
+  );
+  return paths.flatMap(({ file, path }) => {
+    const content = contents[path];
+    return typeof content === "string" ? [{ content, file }] : [];
+  });
+}
+
+function previewRecoveryFailureFingerprint(
+  configurationFingerprint: string,
+  configurations: ProjectRunConfiguration[],
+  runtimeState: PreviewRuntimeSelectionState,
+  error: unknown,
+) {
+  const diagnostic = errorMessage(error).trim().split(/\r?\n/u, 1)[0] ?? "";
+  const selected = configurations.find(
+    ({ id }) => id === runtimeState.selectedConfigurationId,
+  );
+  return createHash("sha256")
+    .update(
+      JSON.stringify({
+        command: selected?.command,
+        configurationFingerprint,
+        diagnostic,
+        errorType: operationErrorType(error),
+        exitCode: previewRecoveryExitCode(error),
+        service: selected?.previewService ?? selected?.services[0],
+      }),
+    )
+    .digest("hex");
+}
+
+function previewRecoveryExitCode(error: unknown) {
+  if (error && typeof error === "object") {
+    const value = "exitCode" in error ? error.exitCode : undefined;
+    if (typeof value === "number") return value;
+  }
+  const match = errorMessage(error).match(/exited? with code (\d+)/iu);
+  return match ? Number(match[1]) : undefined;
 }
 
 async function previewControlSelection(input: ControlProjectPreviewInput) {

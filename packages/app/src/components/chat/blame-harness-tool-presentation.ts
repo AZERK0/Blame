@@ -8,6 +8,8 @@ type PresentedFile = {
   additions?: number
   deletions?: number
   path: string
+  resolution?: string
+  validation?: string
 }
 
 export function presentBlameHarnessTool(
@@ -24,7 +26,11 @@ export function presentBlameHarnessTool(
   if (["outline_code", "inspect_code"].includes(details.toolName ?? "")) {
     return readPresentation(details)
   }
-  if (["apply_change", "review_change"].includes(details.toolName ?? "")) {
+  if (
+    ["apply_change", "edit_code", "review_change"].includes(
+      details.toolName ?? ""
+    )
+  ) {
     return editPresentation(details)
   }
   if (
@@ -52,9 +58,91 @@ function readPresentation(details: ToolPresentation): ToolPresentation {
   if (!path) return { ...details, toolName: "read_files" }
   return {
     ...details,
-    input: { files: [{ path }] },
+    input: { files: [presentedReadFile(details, path)] },
     toolName: "read_files",
   }
+}
+
+function presentedReadFile(details: ToolPresentation, path: string) {
+  const input = recordValue(details.input)
+  const data = recordValue(harnessData(details.output))
+  const semanticTarget = recordValue(data.semantic_target)
+  const isOutline = details.toolName === "outline_code"
+  const requestedRange = numberPair(input.range_utf8_bytes)
+  const reused = stringValue(data.status) === "already_available"
+  const inputTargetType = readTargetType(recordValue(input.target))
+  return {
+    path,
+    view: isOutline ? "outline" : stringValue(input.view),
+    read_kind: presentedReadKind(
+      semanticTarget,
+      inputTargetType,
+      requestedRange,
+      isOutline
+    ),
+    ...presentedSemanticTarget(semanticTarget),
+    ...presentedLineRange(data.line_range),
+    entire_file: isEntireFileRead({
+      data,
+      inputTargetType,
+      isOutline,
+      requestedRange,
+      semanticTarget,
+      reused,
+    }),
+    reused,
+  }
+}
+
+function presentedLineRange(value: unknown) {
+  const range = numberPair(value)
+  return range ? { start_line: range[0], end_line: range[1] } : {}
+}
+
+function readTargetType(target: Record<string, unknown>) {
+  if (target.symbol_ref) return "symbol"
+  if (target.node_ref) return "node"
+  return undefined
+}
+
+function presentedReadKind(
+  target: Record<string, unknown>,
+  inputTargetType: string | undefined,
+  requestedRange: [number, number] | undefined,
+  isOutline: boolean
+) {
+  return (
+    stringValue(target.type) ??
+    inputTargetType ??
+    (requestedRange ? "range" : isOutline ? "outline" : "file")
+  )
+}
+
+function presentedSemanticTarget(target: Record<string, unknown>) {
+  const symbol = stringValue(target.qualified_name)
+  const symbolKind = stringValue(target.kind)
+  return {
+    ...(symbol ? { symbol } : {}),
+    ...(symbolKind ? { symbol_kind: symbolKind } : {}),
+  }
+}
+
+function isEntireFileRead(input: {
+  data: Record<string, unknown>
+  inputTargetType?: string
+  isOutline: boolean
+  requestedRange?: [number, number]
+  reused: boolean
+  semanticTarget: Record<string, unknown>
+}) {
+  return (
+    !input.isOutline &&
+    !input.requestedRange &&
+    !input.inputTargetType &&
+    !input.semanticTarget.type &&
+    (numberValue(input.data.omitted_bytes) ?? 0) === 0 &&
+    !input.reused
+  )
 }
 
 function editPresentation(details: ToolPresentation): ToolPresentation {
@@ -111,15 +199,36 @@ function changedFilesFromResult(output: unknown): PresentedFile[] {
     firstArray(data.files, data.changes, proposal.changes) ??
     firstArray(data.changed_files, receipt.changed_files) ??
     []
-  return candidates.flatMap(presentedResultFile)
+  const resolution = stringValue(data.resolution)
+  const validation = stringValue(recordValue(data.validation).parse)
+  return candidates.flatMap((value) =>
+    presentedResultFile(value, {
+      ...(resolution ? { resolution } : {}),
+      ...(validation ? { validation } : {}),
+    })
+  )
 }
 
-function presentedResultFile(value: unknown): PresentedFile[] {
-  if (typeof value === "string") return [{ path: value }]
+function presentedResultFile(
+  value: unknown,
+  metadata: Pick<PresentedFile, "resolution" | "validation"> = {}
+): PresentedFile[] {
+  if (typeof value === "string") return [{ path: value, ...metadata }]
   const file = recordValue(value)
   const path = stringValue(file.path)
   if (!path) return []
-  return [{ path }]
+  return [
+    {
+      path,
+      ...(numberValue(file.additions) !== undefined
+        ? { additions: numberValue(file.additions) }
+        : {}),
+      ...(numberValue(file.deletions) !== undefined
+        ? { deletions: numberValue(file.deletions) }
+        : {}),
+      ...metadata,
+    },
+  ]
 }
 
 function changedFilesFromInput(input: unknown): PresentedFile[] {
@@ -197,4 +306,17 @@ function recordValue(value: unknown): Record<string, unknown> {
 
 function stringValue(value: unknown) {
   return typeof value === "string" && value.trim() ? value : undefined
+}
+
+function numberValue(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined
+}
+
+function numberPair(value: unknown): [number, number] | undefined {
+  if (!Array.isArray(value) || value.length !== 2) return undefined
+  const first = numberValue(value[0])
+  const second = numberValue(value[1])
+  return first !== undefined && second !== undefined
+    ? [first, second]
+    : undefined
 }

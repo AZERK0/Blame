@@ -14,7 +14,17 @@ test("reuses the file inspection presentation for semantic reads", () => {
       toolName: "inspect_code",
     }),
     {
-      input: { files: [{ path: "src/domain/order.ts" }] },
+      input: {
+        files: [
+          {
+            entire_file: false,
+            path: "src/domain/order.ts",
+            read_kind: "node",
+            reused: false,
+            view: "body",
+          },
+        ],
+      },
       output: {
         data: { path: "src/domain/order.ts" },
         status: "success",
@@ -41,6 +51,71 @@ test("reuses the edited files presentation for transactional changes", () => {
   assert.equal(presentation.toolName, "apply_patch")
   assert.deepEqual(presentation.input, {
     files: [{ path: "src/edited.ts" }, { path: "src/created.ts" }],
+  })
+})
+
+test("presents symbolic read coverage and reused content without claiming a full file", () => {
+  const presentation = presentBlameHarnessTool({
+    input: { target: { symbol_ref: "sym://ref" }, view: "body" },
+    output: {
+      data: {
+        line_range: [20, 34],
+        path: "src/order.ts",
+        semantic_target: {
+          kind: "function",
+          qualified_name: "updateOrder",
+          type: "symbol",
+        },
+        status: "already_available",
+      },
+      status: "success",
+    },
+    toolName: "inspect_code",
+  })
+
+  assert.deepEqual(presentation.input, {
+    files: [
+      {
+        end_line: 34,
+        entire_file: false,
+        path: "src/order.ts",
+        read_kind: "symbol",
+        reused: true,
+        start_line: 20,
+        symbol: "updateOrder",
+        symbol_kind: "function",
+        view: "body",
+      },
+    ],
+  })
+})
+
+test("presents edit_code through the diff surface with validation and rebase state", () => {
+  const presentation = presentBlameHarnessTool({
+    input: { edits: [] },
+    output: {
+      data: {
+        changed_files: [{ additions: 3, deletions: 1, path: "src/order.ts" }],
+        resolution: "automatically_rebased",
+        status: "applied",
+        validation: { parse: "passed" },
+      },
+      status: "success",
+    },
+    toolName: "edit_code",
+  })
+
+  assert.equal(presentation.toolName, "apply_patch")
+  assert.deepEqual(presentation.input, {
+    files: [
+      {
+        additions: 3,
+        deletions: 1,
+        path: "src/order.ts",
+        resolution: "automatically_rebased",
+        validation: "passed",
+      },
+    ],
   })
 })
 

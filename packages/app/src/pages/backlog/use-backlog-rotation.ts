@@ -107,6 +107,7 @@ export function useBacklogRotation(
   const [hostDependenciesDialog, setHostDependenciesDialog] =
     React.useState<HostDependenciesDialogState>()
   const [, refreshStartingStories] = React.useState(0)
+  const previewRecoveryState = previewRecoveryStateKey(backlog.stories)
 
   React.useEffect(() => {
     storiesRef.current = backlog.stories
@@ -387,16 +388,16 @@ export function useBacklogRotation(
 
   React.useEffect(() => {
     if (!ensureProjectPreviewUrl || backlog.loading) return
-    recoverActivePreviews(backlog.stories)
+    recoverActivePreviews(storiesRef.current)
     const timer = window.setInterval(
-      () => recoverActivePreviews(backlog.stories),
+      () => recoverActivePreviews(storiesRef.current),
       previewRecoveryIntervalMs
     )
     return () => window.clearInterval(timer)
   }, [
     backlog.loading,
-    backlog.stories,
     ensureProjectPreviewUrl,
+    previewRecoveryState,
     recoverActivePreviews,
   ])
 
@@ -1157,6 +1158,23 @@ function activePreviewStory(story: UserStory) {
     Boolean(story.worktree) &&
     Boolean(story.previewUrl || story.runConfigurationId)
   )
+}
+
+function previewRecoveryStateKey(stories: UserStory[]) {
+  return stories
+    .filter(activePreviewStory)
+    .map((story) =>
+      [
+        story.id,
+        story.status,
+        story.worktree,
+        story.workspaceMode,
+        story.previewUrl,
+        story.runConfigurationId,
+      ].join("\0")
+    )
+    .sort()
+    .join("\n")
 }
 
 function errorMessage(error: unknown) {

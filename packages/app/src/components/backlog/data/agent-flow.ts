@@ -435,6 +435,13 @@ function closeRunningActivityInputs(
       const { createdAt, updatedAt, ...input } = activity
       void createdAt
       void updatedAt
+      if (activity.kind === "tool") {
+        return {
+          ...input,
+          status: "failed" as const,
+          title: `${toolLabel(activity.toolName ?? "tool")} incomplete`,
+        }
+      }
       return { ...input, status: "completed" as const }
     })
 }
