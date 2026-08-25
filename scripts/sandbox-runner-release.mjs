@@ -19,24 +19,10 @@ if (!/^\d+\.\d+\.\d+$/.test(runnerVersion)) {
 }
 
 await command("pnpm", ["--filter", "@blame/sandbox-runner", "build"]);
-
-const args = [
-  "buildx",
-  "build",
-  "--platform",
-  "linux/amd64",
-  "--file",
-  "packages/sandbox-runner/Dockerfile",
-  "--tag",
-  image,
-  "--build-arg",
-  `BLAME_RUNNER_VERSION=${runnerVersion}`,
-  ...(action === "release" ? ["--sbom=true", "--provenance=mode=max"] : []),
-  action === "release" ? "--push" : "--load",
-  ".",
-];
-await command("docker", args);
+await buildImage("build");
 if (action === "release") {
+  await command("grype", [`docker:${image}`, "--fail-on", "critical"]);
+  await buildImage("release");
   const digest = await output("docker", [
     "buildx",
     "imagetools",
@@ -60,6 +46,25 @@ if (action === "release") {
     await command("cosign", ["sign", "--yes", immutableImage]);
   }
   console.log(immutableImage);
+}
+
+async function buildImage(mode) {
+  const release = mode === "release";
+  await command("docker", [
+    "buildx",
+    "build",
+    "--platform",
+    "linux/amd64",
+    "--file",
+    "packages/sandbox-runner/Dockerfile",
+    "--tag",
+    image,
+    "--build-arg",
+    `BLAME_RUNNER_VERSION=${runnerVersion}`,
+    ...(release ? ["--sbom=true", "--provenance=mode=max"] : []),
+    release ? "--push" : "--load",
+    ".",
+  ]);
 }
 
 async function signForVercelRegistry(immutableImage, digest) {

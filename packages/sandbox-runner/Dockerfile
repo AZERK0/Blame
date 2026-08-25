@@ -6,14 +6,16 @@ ARG NODE_VERSION=24.18.1
 ARG NODE_SHA256=d6c664df3f3f61458e8c277585571328522d705166723a7c7823a9253a4d15a0
 ARG NPM_VERSION=12.0.2
 ARG NPM_SHA512=b885e890b9418fa1693544d05f53e64f9a73ec194837d4258b15fecdd692347b1dd2a517b1b0cbaf9d31cd8e92c3b70956bd2ecc72833a57b4b3098f5bfa7943
-ARG BLAME_NPM_VERSION=11.6.4
-ARG BLAME_PNPM_VERSION=10.33.2
+ARG NPM_TAR_VERSION=7.5.21
+ARG NPM_TAR_SHA512=5dd86d0af94ccb0c31a425bc604ab794e5c126950f4d1d8e1c77302cf3b71f0b09a8e1dad8e93fa09eebb86ce9f89acaa113d50b327001d123a8b5bfbcd44f1c
+ARG BLAME_NPM_VERSION=11.19.0
+ARG BLAME_PNPM_VERSION=10.34.4
 ARG BLAME_YARN_VERSION=1.22.22
 ARG DOCKER_VERSION=29.7.1
 ARG DOCKER_SHA256=0fcea2a8b4d1b54ccc9010e3451b78504a369d414f37eb3bb79300e1b5c22ce6
 ARG COMPOSE_VERSION=5.3.1
 ARG COMPOSE_SHA256=f9ebc6ebdb19d769b793c245a736caaeb198c62587f13b25c660c13b4987f959
-ARG BLAME_RUNNER_VERSION=0.2.16
+ARG BLAME_RUNNER_VERSION=0.2.17
 ARG BLAME_RUNNER_IMAGE_DIGEST=sha256:development
 
 RUN dnf upgrade -y \
@@ -37,6 +39,21 @@ RUN dnf upgrade -y \
       ln -s "../node_modules/.bin/${name}" "${destination}/bin/${name}"; \
     done \
     && curl --fail --silent --show-error --location \
+      "https://registry.npmjs.org/tar/-/tar-${NPM_TAR_VERSION}.tgz" \
+      --output /tmp/npm-tar.tgz \
+    && echo "${NPM_TAR_SHA512}  /tmp/npm-tar.tgz" | sha512sum --check --strict \
+    && for destination in \
+      /usr/local/lib/node_modules/npm/node_modules/tar \
+      "/opt/blame/package-managers/npm/${BLAME_NPM_VERSION}/node_modules/npm/node_modules/tar" \
+      "/opt/blame/package-managers/pnpm/${BLAME_PNPM_VERSION}/node_modules/pnpm/dist/node_modules/tar"; do \
+      rm -rf "${destination}"; \
+      mkdir -p "${destination}"; \
+      tar -xzf /tmp/npm-tar.tgz --strip-components=1 -C "${destination}"; \
+    done \
+    && test "$(node -p "require('/usr/local/lib/node_modules/npm/node_modules/tar/package.json').version")" = "${NPM_TAR_VERSION}" \
+    && test "$(node -p "require('/opt/blame/package-managers/npm/${BLAME_NPM_VERSION}/node_modules/npm/node_modules/tar/package.json').version")" = "${NPM_TAR_VERSION}" \
+    && test "$(node -p "require('/opt/blame/package-managers/pnpm/${BLAME_PNPM_VERSION}/node_modules/pnpm/dist/node_modules/tar/package.json').version")" = "${NPM_TAR_VERSION}" \
+    && curl --fail --silent --show-error --location \
       "https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_VERSION}.tgz" \
       --output /tmp/docker.tar.gz \
     && echo "${DOCKER_SHA256}  /tmp/docker.tar.gz" | sha256sum --check --strict \
@@ -48,7 +65,7 @@ RUN dnf upgrade -y \
       --output /usr/local/lib/docker/cli-plugins/docker-compose \
     && echo "${COMPOSE_SHA256}  /usr/local/lib/docker/cli-plugins/docker-compose" | sha256sum --check --strict \
     && chmod 0755 /usr/local/lib/docker/cli-plugins/docker-compose \
-    && rm -rf /tmp/node.tar.xz /tmp/npm.tgz /tmp/docker /tmp/docker.tar.gz
+    && rm -rf /tmp/node.tar.xz /tmp/npm.tgz /tmp/npm-tar.tgz /tmp/docker /tmp/docker.tar.gz
 
 COPY --chmod=0755 --from=buildx /buildx /usr/local/lib/docker/cli-plugins/docker-buildx
 
