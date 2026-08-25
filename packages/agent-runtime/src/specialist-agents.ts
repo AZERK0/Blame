@@ -66,8 +66,9 @@ export const blameSpecialistAgentMetadata = specialistAgents.map(
 export function blameSpecialistRoutingSystemPrompt() {
   return [
     "## Blame Specialist Consultations",
-    "Use the consult_specialist tool only when a focused second opinion materially improves correctness, product clarity, design quality, verification, or risk control.",
-    "Do not consult a specialist for simple edits. Most tasks should still be solved by the lead Blame agent alone.",
+    "Use consult_specialist only for material product or visual ambiguity, unfamiliar cross-cutting architecture, a failed reasonable first fix, auth/permission/data/migration risk, or the absence of a reliable validation strategy.",
+    "Do not consult a specialist for a local correction with an identified target, explicit expected behavior, a reversible change, and targeted validation.",
+    "Use at most one specialist per change request by default. Exceed that only with a structured justification.",
     "The tool supplies the selected specialist's private instructions internally. Never attempt to provide, reconstruct, or request a specialist system prompt.",
     "Give the specialist a narrow, evidence-rich question. Include the relevant user requirements, constraints, decisions already made, and files or behavior to inspect.",
     "Every specialist is read-only and advisory. You own all implementation, integration, verification, product decisions, and user communication.",

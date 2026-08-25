@@ -3,19 +3,15 @@ import {
   searchWithRipgrep,
   type LexicalSearchMatch,
 } from "./lexical-search.js";
-import {
-  decodeHandle,
-  harnessSuccess,
-  provenance,
-  sha256,
-} from "./protocol.js";
+import { harnessSuccess, provenance } from "./protocol.js";
 import {
   approximateTokens,
   nodeRef,
   revisionVector,
-  staleRevision,
   toolError,
 } from "./semantic-workspace-support.js";
+import { SemanticReferenceResolver } from "./semantic-reference-resolver.js";
+import { harnessFeatureEnabled } from "./harness-feature-flags.js";
 import {
   getRelationContextInputSchema,
   type GetRelationContextInput,
@@ -42,10 +38,12 @@ type RelationItem = {
 
 export class RelationService {
   private readonly files: WorkspaceFiles;
+  private readonly resolver: SemanticReferenceResolver;
   private readonly semantic: TypeScriptSemanticService;
 
   constructor(files: WorkspaceFiles) {
     this.files = files;
+    this.resolver = new SemanticReferenceResolver(files);
     this.semantic = new TypeScriptSemanticService(files);
   }
 
@@ -56,12 +54,13 @@ export class RelationService {
     const startedAt = Date.now();
     try {
       getRelationContextInputSchema.parse(input);
-      const snapshot = await this.exactSnapshot(
-        input.source_revision_id,
-        signal,
-      );
-      const context = await this.context(input, snapshot, signal);
-      await this.exactSnapshot(input.source_revision_id, signal);
+      const snapshot = await this.files.snapshot(signal);
+      const currentInput = {
+        ...input,
+        source_revision_id: snapshot.revision.source_revision_id,
+      };
+      const context = await this.context(currentInput, snapshot, signal);
+      await ensureUnchanged(this.files, snapshot, signal);
       return relationSuccess(startedAt, snapshot, context);
     } catch (error) {
       return toolError(error);
@@ -161,7 +160,7 @@ export class RelationService {
         return semanticRelationItem(
           record,
           include,
-          input.source_revision_id,
+          sourceRevision(input),
           content,
         );
       }),
@@ -202,13 +201,12 @@ export class RelationService {
     input: GetRelationContextInput,
     snapshot: WorkspaceSnapshot,
   ) {
-    const handle = decodeHandle(input.target.symbol_ref, "sym");
-    if (!handle || handle.revision !== snapshot.revision.source_revision_id)
-      throw new Error(`STALE_REVISION:${snapshot.revision.source_revision_id}`);
-    const path = this.files.normalizePath(handle.path);
+    const resolved = await this.resolver.resolve(input.target, snapshot, {
+      allowRebase: harnessFeatureEnabled("BLAME_SEMANTIC_READ_REBASE"),
+    });
+    const handle = resolved.handle;
+    const path = resolved.path;
     const content = (await this.files.read(path)).content;
-    if (sha256(content.subarray(handle.start, handle.end)) !== handle.digest)
-      throw new Error(`TARGET_GONE:${path}`);
     const symbol = parseCode(path, content).symbols.find(
       (candidate) =>
         candidate.range_utf8_bytes[0] === handle.start &&
@@ -224,13 +222,6 @@ export class RelationService {
       qualifiedName: symbol.qualified_name,
       start: handle.start,
     };
-  }
-
-  private async exactSnapshot(expected: string, signal?: AbortSignal) {
-    const snapshot = await this.files.snapshot(signal);
-    if (snapshot.revision.source_revision_id !== expected)
-      throw staleRevision(snapshot.revision.source_revision_id);
-    return snapshot;
   }
 
   private search(
@@ -281,17 +272,29 @@ export class RelationService {
       const relation = classifyRelation(match, target.name);
       if (!requested.has(relation)) continue;
       items.push(
-        relationItem(
-          match,
-          content,
-          relation,
-          include,
-          input.source_revision_id,
-        ),
+        relationItem(match, content, relation, include, sourceRevision(input)),
       );
     }
     return items.sort(compareRelationItems);
   }
+}
+
+async function ensureUnchanged(
+  files: WorkspaceFiles,
+  snapshot: WorkspaceSnapshot,
+  signal?: AbortSignal,
+) {
+  const current = await files.snapshot(signal);
+  if (
+    current.revision.source_revision_id !== snapshot.revision.source_revision_id
+  )
+    throw new Error(`STALE_REVISION:${current.revision.source_revision_id}`);
+}
+
+function sourceRevision(input: GetRelationContextInput) {
+  if (!input.source_revision_id)
+    throw new Error("The current source revision is unavailable.");
+  return input.source_revision_id;
 }
 
 function relationSuccess(

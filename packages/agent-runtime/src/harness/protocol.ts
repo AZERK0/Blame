@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
+import { deflateRawSync, inflateRawSync } from "node:zlib";
 
-export const harnessProtocolVersion = "1.0";
-export const harnessToolSchemaVersion = "1.0";
+export const harnessProtocolVersion = "2.0";
+export const harnessToolSchemaVersion = "2.0";
 
 export type HarnessErrorCode =
   | "AMBIGUOUS_TARGET"
@@ -115,15 +116,22 @@ export type HarnessToolError = {
 export type HarnessToolResult<T> = HarnessToolSuccess<T> | HarnessToolError;
 
 export type HandlePayload = {
-  version: 1;
+  version: 1 | 2;
   revision: string;
   path: string;
   start: number;
   end: number;
   digest: string;
+  observedBlobHash?: string;
   kind?: string;
   language?: string;
+  parentQualifiedName?: string;
   qualifiedName?: string;
+  signatureDigest?: string;
+  bodyFingerprint?: string;
+  ancestryFingerprint?: string;
+  neighborFingerprint?: string;
+  ordinal?: number;
 };
 
 export function harnessSuccess<T>(input: {
@@ -199,20 +207,40 @@ export function encodeHandle(
   scheme: "file" | "node" | "sym",
   payload: HandlePayload,
 ) {
-  const encoded = Buffer.from(
-    JSON.stringify([
-      payload.version,
-      payload.revision,
-      payload.path,
-      payload.start,
-      payload.end,
-      payload.digest,
-      payload.kind,
-      payload.language,
-      payload.qualifiedName,
-    ]),
-  ).toString("base64url");
-  return `${scheme}://${encoded}`;
+  const values =
+    payload.version === 2
+      ? [
+          payload.version,
+          payload.revision,
+          payload.path,
+          payload.start,
+          payload.end,
+          payload.digest,
+          payload.kind,
+          payload.language,
+          payload.qualifiedName,
+          payload.observedBlobHash,
+          payload.signatureDigest,
+          payload.bodyFingerprint,
+          payload.ancestryFingerprint,
+          payload.neighborFingerprint,
+          payload.ordinal,
+        ]
+      : [
+          payload.version,
+          payload.revision,
+          payload.path,
+          payload.start,
+          payload.end,
+          payload.digest,
+          payload.kind,
+          payload.language,
+          payload.qualifiedName,
+        ];
+  const encoded = deflateRawSync(Buffer.from(JSON.stringify(values))).toString(
+    "base64url",
+  );
+  return `${scheme}://z${encoded}`;
 }
 
 export function decodeHandle(
@@ -221,14 +249,21 @@ export function decodeHandle(
 ): HandlePayload | undefined {
   if (!value.startsWith(`${scheme}://`)) return undefined;
   try {
+    const encoded = value.slice(scheme.length + 3);
+    const bytes = Buffer.from(
+      encoded.startsWith("z") ? encoded.slice(1) : encoded,
+      "base64url",
+    );
     const decoded = JSON.parse(
-      Buffer.from(value.slice(scheme.length + 3), "base64url").toString("utf8"),
+      (encoded.startsWith("z") ? inflateRawSync(bytes) : bytes).toString(
+        "utf8",
+      ),
     ) as Partial<HandlePayload> | unknown[];
     const payload = Array.isArray(decoded)
       ? handlePayloadFromTuple(decoded)
       : decoded;
     if (
-      payload.version !== 1 ||
+      (payload.version !== 1 && payload.version !== 2) ||
       typeof payload.revision !== "string" ||
       !/^src_[a-f0-9]{32}$/.test(payload.revision) ||
       typeof payload.path !== "string" ||
@@ -238,7 +273,9 @@ export function decodeHandle(
       payload.start! < 0 ||
       payload.end! < payload.start! ||
       typeof payload.digest !== "string" ||
-      !/^[a-f0-9]{64}$/.test(payload.digest)
+      !(payload.version === 2
+        ? /^[a-f0-9]{32,64}$/.test(payload.digest)
+        : /^[a-f0-9]{64}$/.test(payload.digest))
     )
       return undefined;
     return payload as HandlePayload;
@@ -248,17 +285,49 @@ export function decodeHandle(
 }
 
 function handlePayloadFromTuple(value: unknown[]): Partial<HandlePayload> {
+  const version = value[0] as 1 | 2;
   return {
-    version: value[0] as 1,
+    version,
     revision: value[1] as string,
     path: value[2] as string,
     start: value[3] as number,
     end: value[4] as number,
-    digest: value[5] as string,
+    digest: expandFingerprint(value[5]) as string,
     ...(typeof value[6] === "string" ? { kind: value[6] } : {}),
     ...(typeof value[7] === "string" ? { language: value[7] } : {}),
     ...(typeof value[8] === "string" ? { qualifiedName: value[8] } : {}),
+    ...(typeof value[9] === "string"
+      ? { observedBlobHash: expandFingerprint(value[9]) }
+      : {}),
+    ...(version === 1 && typeof value[10] === "string"
+      ? { parentQualifiedName: value[10] }
+      : {}),
+    ...(typeof value[version === 2 ? 10 : 11] === "string"
+      ? {
+          signatureDigest: expandFingerprint(
+            value[version === 2 ? 10 : 11],
+          ) as string,
+        }
+      : {}),
+    ...(version === 2 && typeof value[11] === "string"
+      ? { bodyFingerprint: expandFingerprint(value[11]) }
+      : {}),
+    ...(version === 2 && typeof value[12] === "string"
+      ? { ancestryFingerprint: expandFingerprint(value[12]) }
+      : {}),
+    ...(version === 2 && typeof value[13] === "string"
+      ? { neighborFingerprint: expandFingerprint(value[13]) }
+      : {}),
+    ...(version === 2 && Number.isSafeInteger(value[14])
+      ? { ordinal: value[14] as number }
+      : {}),
   };
+}
+
+function expandFingerprint(value: unknown) {
+  if (typeof value !== "string") return undefined;
+  if (!value.startsWith("~")) return value;
+  return Buffer.from(value.slice(1), "base64url").toString("hex");
 }
 
 function estimateOutputTokens(value: unknown) {

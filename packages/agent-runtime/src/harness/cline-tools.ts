@@ -1,15 +1,20 @@
 import { createTool, type AgentTool, type AgentToolContext } from "@cline/sdk";
 import { z } from "zod";
 import { redactSecurityValue } from "../security-secret-redaction.js";
+import { HarnessCostGovernor } from "./cost-governor.js";
+import { ConversationMemoryStore } from "./conversation-memory.js";
+import { harnessFeatureEnabled } from "./harness-feature-flags.js";
 import { harnessError } from "./protocol.js";
 import {
   applyChangeInputSchema,
+  editCodeInputSchema,
   formatSchemaError,
   getRelationContextInputSchema,
   inspectArtifactInputSchema,
   inspectCodeInputSchema,
   inspectRunInputSchema,
   outlineCodeInputSchema,
+  recallContextInputSchema,
   reviewChangeInputSchema,
   runTaskInputSchema,
   searchCodeInputSchema,
@@ -30,6 +35,7 @@ export { semanticWorkspaceReadToolNames, semanticWorkspaceWriteToolNames };
 
 export type SemanticWorkspaceToolsOptions = SemanticWorkspaceOptions & {
   executor?: SemanticWorkspaceExecutor;
+  governorBudget?: number;
 };
 
 export function semanticWorkspaceTools(
@@ -40,20 +46,49 @@ export function semanticWorkspaceTools(
   const executor =
     options.executor ??
     localSemanticWorkspaceExecutor(workspaceRoot, options.taskContract);
-  const execute = (
+  const governor = new HarnessCostGovernor(options.governorBudget);
+  const execute = async (
     tool: SemanticWorkspaceToolName,
     input: unknown,
     context: AgentToolContext,
-  ) =>
-    executor(
+  ) => {
+    const contextEpoch = await activeContextEpoch(
+      workspaceRoot,
+      options.taskContract?.session_id,
+      context,
+    );
+    const blocked = harnessFeatureEnabled("BLAME_COST_GOVERNOR_V2")
+      ? governor.before(tool, contextEpoch)
+      : undefined;
+    if (blocked) return blocked;
+    const result = await executor(
       {
         input,
         taskContract: options.taskContract,
         tool,
+        ...(context.sessionId || context.toolCallId || contextEpoch
+          ? {
+              toolContext: {
+                ...(contextEpoch ? { contextEpoch } : {}),
+                ...(context.sessionId ? { sessionId: context.sessionId } : {}),
+                ...(context.toolCallId
+                  ? { toolCallId: context.toolCallId }
+                  : {}),
+              },
+            }
+          : {}),
         workspaceRoot,
       } satisfies SemanticWorkspaceExecutionRequest,
       context.signal,
     );
+    return harnessFeatureEnabled("BLAME_COST_GOVERNOR_V2")
+      ? governor.after(tool, input, result, {
+          ...context,
+          contextEpoch,
+          conversationId: options.taskContract?.session_id,
+        })
+      : result;
+  };
   return [
     createHarnessTool({
       name: "workspace_state",
@@ -69,7 +104,7 @@ export function semanticWorkspaceTools(
     createHarnessTool({
       name: "search_code",
       description:
-        "Search one exact source revision using ripgrep text search, syntax symbols, or an ast-grep pattern. Use for localization and to obtain exact node_ref/symbol_ref handles before inspect_code or apply_change. Returns the engine, bounded matches, byte/line ranges, provenance, and explicit truncation. Do not use stale handles or use this as natural-language semantic search.",
+        "Search the current workspace using ripgrep text search, syntax symbols, or an ast-grep pattern. source_revision_id is optional and stale global revisions are rebased internally. Use this to obtain node_ref or symbol_ref handles before inspect_code or edit_code.",
       schema: searchCodeInputSchema,
       execute: (input, context) =>
         visibleResult(
@@ -80,7 +115,7 @@ export function semanticWorkspaceTools(
     createHarnessTool({
       name: "outline_code",
       description:
-        "Return a progressive syntax outline for a file or directory at an exact source revision. Use before broad file reads to discover named code entities. Each item returns one compact revision-bound symbol_ref accepted by inspect_code and apply_change. Unsupported files return parse-quality diagnostics; use inspect_code view raw as the fallback.",
+        "Return a progressive syntax outline for a file or directory at the current revision. source_revision_id is optional. Each item returns one compact semantic symbol_ref accepted by inspect_code and edit_code.",
       schema: outlineCodeInputSchema,
       execute: (input, context) =>
         visibleResult(
@@ -91,7 +126,7 @@ export function semanticWorkspaceTools(
     createHarnessTool({
       name: "inspect_code",
       description:
-        "Inspect one exact revision-bound symbol/node, or read a raw file fallback. Use symbol_ref/node_ref from search_code or outline_code for signature, declaration, body, interface, or neighborhood views. Use target.path only with view raw. Returns byte ranges, file hash/ref, omissions, provenance, and STALE_REVISION instead of silently rematching.",
+        "Inspect a symbol or node with automatic semantic rebase, or read a raw file fallback. source_revision_id is optional. Returns explicitly positioned segments, requested and resolved references, current revision, rebase strategy, overlap, and omissions.",
       schema: inspectCodeInputSchema,
       execute: (input, context) =>
         visibleResult(
@@ -102,7 +137,7 @@ export function semanticWorkspaceTools(
     createHarnessTool({
       name: "get_relation_context",
       description:
-        "Return bounded calls, imports, implementations, reads, writes, references, and tests for one exact symbol_ref. TypeScript and JavaScript automatically use a lazy compiler-grade index cached by source revision; other languages use the explicit heuristic fallback. Request node_refs only for relations you intend to inspect.",
+        "Return bounded calls, imports, implementations, reads, writes, references, and tests for a symbol_ref. Stale references are rebased internally before TypeScript compiler analysis or the bounded lexical fallback.",
       schema: getRelationContextInputSchema,
       execute: (input, context) =>
         visibleResult(
@@ -111,13 +146,37 @@ export function semanticWorkspaceTools(
         ),
     }),
     createHarnessTool({
-      name: "apply_change",
+      name: "recall_context",
       description:
-        "Apply a transactional compare-and-swap code change. Prefer action apply for bounded edits in the isolated story worktree: it creates an immutable proposal, commits it atomically, and returns the diff and receipt in one call. Use propose, review_change, then commit_proposal only when a large or high-risk change needs an explicit review boundary. Targets never relocate silently; writes remain locked, idempotent, and crash-recoverable.",
-      schema: applyChangeInputSchema,
-      execute: (input, context) => execute("apply_change", input, context),
+        "Recall one compact functional-memory slice by query, file, symbol, or exact change receipt. Active authoritative facts rank first; superseded facts are included only when requested or relevant to a previous-state query. maximum_tokens is a hard result bound. Returns no raw tool output or full diff.",
+      schema: recallContextInputSchema,
+      execute: (input, context) =>
+        visibleResult(
+          execute("recall_context", input, context),
+          options.redactSensitiveContent,
+        ),
+    }),
+    createHarnessTool({
+      name: "edit_code",
+      description:
+        "Apply one atomic batch with replace_symbol, replace_body, replace_signature, insert, delete_symbol, AST-based CSS declarations, create/move, or patch_file. The runtime resolves moved targets and shifted patches, refuses close candidates, validates parsing, and returns a compact receipt.",
+      schema: editCodeInputSchema,
+      execute: (input, context) => execute("edit_code", input, context),
       retryable: false,
     }),
+    ...(options.legacyMutationTools
+      ? [
+          createHarnessTool({
+            name: "apply_change",
+            description:
+              "Legacy protocol v1 transactional change executor. Available only when the legacy harness feature flag is enabled.",
+            schema: applyChangeInputSchema,
+            execute: (input, context) =>
+              execute("apply_change", input, context),
+            retryable: false,
+          }),
+        ]
+      : []),
     createHarnessTool({
       name: "run_task",
       description:
@@ -171,6 +230,24 @@ export function semanticWorkspaceTools(
         ),
     }),
   ];
+}
+
+async function activeContextEpoch(
+  workspaceRoot: string,
+  sessionId: string | undefined,
+  context: AgentToolContext,
+) {
+  const explicit = context.metadata?.contextEpoch;
+  if (typeof explicit === "string" && explicit) return explicit;
+  if (sessionId && harnessFeatureEnabled("BLAME_CONTEXT_EPOCHS"))
+    return new ConversationMemoryStore(
+      workspaceRoot,
+      sessionId,
+    ).currentEpochId();
+  const firstMessageId = context.snapshot?.messages[0]?.id;
+  if (firstMessageId)
+    return `${context.conversationId ?? context.sessionId ?? "context"}:${firstMessageId}`;
+  return context.runId ?? context.conversationId;
 }
 
 async function visibleResult<T>(

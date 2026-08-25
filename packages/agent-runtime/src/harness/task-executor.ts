@@ -14,6 +14,7 @@ export type TaskExecutionInput = {
   timeoutMs: number;
   outputBytes: number;
   signal?: AbortSignal;
+  network?: "deny" | "project_allowlist";
 };
 
 export type TaskExecutionResult = {
@@ -46,6 +47,8 @@ export class SandboxedTaskExecutor implements TaskExecutor {
 
   async execute(input: TaskExecutionInput): Promise<TaskExecutionResult> {
     const isolation = await this.capability();
+    if (input.network === "project_allowlist" && !projectAllowlistProxy())
+      return unsupportedAllowlist(isolation);
     const readRoots = await executionReadRoots(input);
     const deniedReadRoots =
       isolation === "sandbox_exec"
@@ -67,7 +70,10 @@ export class SandboxedTaskExecutor implements TaskExecutor {
       readRoots,
       deniedReadRoots,
     );
-    const environment = taskEnvironment(executionInput.overlayRoot);
+    const environment = taskEnvironment(
+      executionInput.overlayRoot,
+      input.network ?? "deny",
+    );
     try {
       const result = await execa(command.executable, command.args, {
         cancelSignal: input.signal,
@@ -137,7 +143,7 @@ function bubblewrapCommand(input: TaskExecutionInput, readRoots: string[]) {
     args: [
       "--die-with-parent",
       "--new-session",
-      "--unshare-net",
+      ...(input.network === "project_allowlist" ? [] : ["--unshare-net"]),
       ...readRoots.flatMap((root) => ["--ro-bind", root, root]),
       "--tmpfs",
       "/tmp",
@@ -178,7 +184,9 @@ function sandboxExecCommand(
     "(allow sysctl-read)",
     "(allow mach-lookup)",
     `(allow file-write* (subpath ${writableOverlay}))`,
-    "(deny network*)",
+    input.network === "project_allowlist"
+      ? "(allow network*)"
+      : "(deny network*)",
   ].join(" ");
   return {
     executable: "sandbox-exec",
@@ -186,8 +194,13 @@ function sandboxExecCommand(
   };
 }
 
-function taskEnvironment(overlayRoot: string): Record<string, string> {
+function taskEnvironment(
+  overlayRoot: string,
+  network: "deny" | "project_allowlist",
+): Record<string, string> {
   const inheritedPath = process.env.PATH ?? "/usr/local/bin:/usr/bin:/bin";
+  const proxy =
+    network === "project_allowlist" ? projectAllowlistProxy() : undefined;
   return {
     PATH: [join(overlayRoot, "node_modules", ".bin"), inheritedPath].join(
       delimiter,
@@ -200,13 +213,30 @@ function taskEnvironment(overlayRoot: string): Record<string, string> {
     NO_COLOR: "1",
     LANG: process.env.LANG ?? "C.UTF-8",
     LC_ALL: process.env.LC_ALL ?? process.env.LANG ?? "C.UTF-8",
-    HTTP_PROXY: "http://127.0.0.1:9",
-    HTTPS_PROXY: "http://127.0.0.1:9",
-    ALL_PROXY: "http://127.0.0.1:9",
+    HTTP_PROXY: proxy ?? "http://127.0.0.1:9",
+    HTTPS_PROXY: proxy ?? "http://127.0.0.1:9",
+    ALL_PROXY: proxy ?? "http://127.0.0.1:9",
     NO_PROXY: "",
-    npm_config_offline: "true",
+    npm_config_offline: network === "deny" ? "true" : "false",
     npm_config_audit: "false",
     npm_config_fund: "false",
+  };
+}
+
+function projectAllowlistProxy() {
+  return process.env.BLAME_PROJECT_ALLOWLIST_PROXY?.trim() || undefined;
+}
+
+function unsupportedAllowlist(isolation: TaskIsolation): TaskExecutionResult {
+  return {
+    status: "execution_error",
+    exitCode: null,
+    signal: null,
+    stdout: "",
+    stderr:
+      "Project dependency installation requires BLAME_PROJECT_ALLOWLIST_PROXY or a managed Cloud Preview executor. No lockfile was modified.",
+    outputTruncated: false,
+    isolation,
   };
 }
 

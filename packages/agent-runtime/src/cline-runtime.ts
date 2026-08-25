@@ -24,6 +24,8 @@ import type {
   ClineCore,
   ClineCoreOptions,
   ClineCoreStartInput,
+  CoreCompactionConfig,
+  CoreCompactionContext,
   CoreSessionConfig,
   CoreSessionEvent,
   OAuthCredentials as ClineOAuthCredentials,
@@ -38,6 +40,7 @@ import {
   buildWorkspaceMetadata,
   createDelegatedAgentConfigProvider,
   createSpawnAgentTool,
+  createSessionCompactionState,
   getClineDefaultSystemPrompt,
   mergeRulesForSystemPrompt,
 } from "@cline/sdk";
@@ -69,6 +72,22 @@ import {
   managedSemanticWorkspaceExecutor,
   type SemanticWorkspaceExecutor,
 } from "./harness/semantic-executor.js";
+import {
+  changeRequestCapsule,
+  prepareChangeRequest,
+} from "./harness/change-request-capsule.js";
+import {
+  ConversationMemoryStore,
+  renderContinuityPrompt,
+  type TokenCounter,
+} from "./harness/conversation-memory.js";
+import {
+  completeTurnToolName,
+  createCompleteTurnTool,
+  type CompleteTurnNotification,
+} from "./harness/complete-turn.js";
+import { continuityFallbackMetrics } from "./harness/continuity-schema.js";
+import { harnessFeatureEnabled } from "./harness/harness-feature-flags.js";
 import {
   blockedCommandParts,
   initializationFallbackReadTools,
@@ -195,7 +214,7 @@ import type {
 
 const execFileAsync = promisify(execFile);
 const defaultSessionMaxIterations = 32;
-const defaultDevelopmentMaxIterations = 512;
+const defaultDevelopmentMaxIterations = 80;
 const maxInitializationAttempts = 3;
 const maxMergeConflictResolutionAttempts = 3;
 const runtimeArtifactPaths = [".blame", ".blame-preview", ".pnpm-store"];
@@ -244,10 +263,21 @@ type PendingApproval = {
 };
 
 type RuntimeStartSessionInput = StartSessionInput & {
+  compaction?: CoreCompactionConfig;
+  continuityMetrics?: ContinuityMetrics;
   enableAgentTeams?: boolean;
   enableBuiltInSkills?: boolean;
   enableSpecialistConsult?: boolean;
   enableSpawnAgent?: boolean;
+  structuredCompletion?: boolean;
+  taskObjective?: string;
+};
+
+type ContinuityMetrics = {
+  inputTokens: number;
+  outputTokens: number;
+  requestedTokens?: number;
+  truncated?: boolean;
 };
 
 type RuntimeSessionSummary = {
@@ -351,6 +381,10 @@ type RuntimeOptions = {
     | undefined;
   previewContainerLogs?: PreviewContainerLogsProvider;
   semanticWorkspace?: SemanticWorkspaceExecutor;
+  tokenCounter?(input: {
+    modelId: string;
+    providerId: string;
+  }): TokenCounter | undefined;
 };
 
 type PreviewDevtoolsTargetInput = {
@@ -395,6 +429,7 @@ export class BlameAgentRuntime {
   private sessionEventSignatures = new Map<string, Map<string, number>>();
   private sessionExecutionIds = new Map<string, string>();
   private sessionToolInputs = new Map<string, unknown>();
+  private sessionTerminalAnswers = new Map<string, string>();
   private sessionIterations = new Map<string, number>();
   private sessionSpawnAgentActiveCounts = new Map<string, number>();
   private sessionUsageSignatures = new Map<string, string>();
@@ -595,6 +630,11 @@ export class BlameAgentRuntime {
       ...input,
       taskComplexityBucket: sessionTaskComplexity(input),
     });
+    this.agentTelemetry.recordContinuityCapsule(
+      sessionId,
+      input.prompt,
+      input.continuityMetrics,
+    );
     const telemetryContext = this.agentTelemetry.context(sessionId);
     const startLogFile = startLogPath(input.cwd);
     await appendLog(
@@ -696,7 +736,7 @@ export class BlameAgentRuntime {
       const taskContract = {
         session_id: sessionId,
         ...(input.storyId ? { story_id: input.storyId } : {}),
-        objective: input.prompt,
+        objective: input.taskObjective ?? input.prompt,
       };
       const semanticExecutor = managedSemanticWorkspaceExecutor(
         this.options.semanticWorkspace,
@@ -711,12 +751,20 @@ export class BlameAgentRuntime {
         input.previewDevtoolsScope,
         taskContract,
         semanticExecutor,
+        input.maxIterations,
+        input.structuredCompletion
+          ? {
+              conversationId: sessionId,
+              onComplete: (notification) =>
+                this.recordStructuredCompletion(sessionId, notification),
+            }
+          : undefined,
       );
       const specialistTool = input.enableSpecialistConsult
         ? runtimeConsultSpecialistTool({
             credential: resolvedCredential,
             input,
-            objective: input.prompt,
+            objective: input.taskObjective ?? input.prompt,
             readOnlyTools: readOnlyRuntimeTools(
               this.options,
               input.workspaceRoot,
@@ -764,7 +812,8 @@ export class BlameAgentRuntime {
               input.disableMcpSettingsTools ??
               this.productionConfig.disableMcpSettingsTools,
             ...(pluginPaths ? { pluginPaths } : {}),
-            compaction: blameCompactionConfig(this.productionConfig),
+            compaction:
+              input.compaction ?? blameCompactionConfig(this.productionConfig),
             enableTools: true,
             enableSpawnAgent: input.enableSpawnAgent ?? false,
             enableAgentTeams: input.enableAgentTeams ?? false,
@@ -912,15 +961,17 @@ export class BlameAgentRuntime {
       },
       activeContext,
     );
+    await this.recordInterruptedMemory(sessionId);
     this.emitSessionError(sessionId, message, error);
     this.agentTelemetry.fail(sessionId, error);
     this.userInstructionServices.stop(sessionId);
   }
 
   private async sendSession(
-    input: SendSessionInput,
+    input: SendSessionInput & { continuityMetrics?: ContinuityMetrics },
     interventionType?: string,
   ) {
+    this.sessionTerminalAnswers.delete(input.sessionId);
     if (input.executionId) {
       this.sessionExecutionIds.set(input.sessionId, input.executionId);
     }
@@ -929,6 +980,11 @@ export class BlameAgentRuntime {
       input.executionId,
       input.storyId,
       sessionTaskComplexity(input),
+    );
+    this.agentTelemetry.recordContinuityCapsule(
+      input.sessionId,
+      input.prompt,
+      input.continuityMetrics,
     );
     if (interventionType) {
       this.agentTelemetry.humanIntervention(input.sessionId, interventionType);
@@ -960,15 +1016,39 @@ export class BlameAgentRuntime {
       },
       this.attachmentDirectory(input.sessionId),
     );
+    const workspaceRoot = this.sessionStartInputs.get(input.sessionId)?.config
+      .cwd;
+    const preparedRequest = await developmentRequestPrompt(
+      developmentInput.prompt,
+      input,
+      workspaceRoot,
+      input.sessionId,
+    );
+    if (workspaceRoot && harnessFeatureEnabled("BLAME_CONTEXT_EPOCHS"))
+      await this.compactExecutionContext(input.sessionId);
     return this.sendSession(
       {
         sessionId: input.sessionId,
         executionId: input.executionId,
         storyId: input.storyId,
         ...developmentInput,
+        prompt: preparedRequest.prompt,
+        continuityMetrics: preparedRequest.metrics,
       },
       input.feedbackOnly ? "feedback" : undefined,
     );
+  }
+
+  private async compactExecutionContext(sessionId: string) {
+    const cline = await this.sessionCore(sessionId);
+    const messages = await cline.readLiveMessages(sessionId);
+    if (!messages.length) return;
+    const state = createSessionCompactionState({
+      sourceMessages: messages,
+      compactedMessages: [],
+      conversationId: sessionId,
+    });
+    await cline.updateSessionCompactionState(sessionId, state);
   }
 
   private async abortSession(sessionId: string, humanInitiated = true) {
@@ -978,8 +1058,20 @@ export class BlameAgentRuntime {
     try {
       await cline.abort(sessionId, "User aborted from Blame");
     } finally {
+      await this.recordInterruptedMemory(sessionId);
       this.agentTelemetry.cancel(sessionId);
     }
+  }
+
+  private async recordInterruptedMemory(sessionId: string) {
+    const workspaceRoot = this.sessionStartInputs.get(sessionId)?.config.cwd;
+    if (!workspaceRoot || !harnessFeatureEnabled("BLAME_MEMORY_AUTHORITY_V2"))
+      return;
+    const usedFallback = await new ConversationMemoryStore(
+      workspaceRoot,
+      sessionId,
+    ).ensureDeterministicFallback(true);
+    this.recordFallbackTelemetry(sessionId, usedFallback);
   }
 
   private async releaseWorkspaceSessions(workspace: string) {
@@ -1971,12 +2063,17 @@ export class BlameAgentRuntime {
         this.agentTelemetry.observeCoreEvent(sessionId, payload);
         if (this.shouldSkipFallbackChunk(sessionId, payload)) return;
         const spawnAgentPhase = clineSessionSpawnAgentPhase(payload);
+        const normalized = normalizeEvent(sessionId, payload);
+        if (terminalToolEvent(normalized)) return;
         if (this.shouldSkipSessionDisplayEvent(sessionId, payload)) return;
-        const event = this.withExecutionId(
+        const event = this.withTerminalAnswer(
           sessionId,
-          this.withSessionIteration(
+          this.withExecutionId(
             sessionId,
-            this.withToolInput(sessionId, normalizeEvent(sessionId, payload)),
+            this.withSessionIteration(
+              sessionId,
+              this.withToolInput(sessionId, normalized),
+            ),
           ),
         );
         if (this.shouldSkipDuplicateSessionEvent(sessionId, event)) return;
@@ -1989,6 +2086,15 @@ export class BlameAgentRuntime {
       { sessionId },
     );
     this.unsubscribers.set(sessionId, unsubscribe);
+  }
+
+  private withTerminalAnswer(sessionId: string, event: AgentEvent) {
+    const answer = this.sessionTerminalAnswers.get(sessionId);
+    if (event.type !== "done" || !answer) return event;
+    return {
+      ...event,
+      payload: { ...asRecord(event.payload), text: answer },
+    };
   }
 
   private withSessionIteration(sessionId: string, event: AgentEvent) {
@@ -2072,6 +2178,7 @@ export class BlameAgentRuntime {
         : undefined;
     if (event.type === "done") {
       await this.recordSessionQuality(sessionId, qualityContext);
+      await this.recordConversationResponse(sessionId, event.payload);
     }
     this.agentTelemetry.observeEvent(sessionId, event);
     await this.logSession(
@@ -2082,6 +2189,36 @@ export class BlameAgentRuntime {
     );
     if (!usage) return;
     await this.handleUsageUpdate(sessionId, usage, activeContext);
+  }
+
+  private async recordConversationResponse(
+    sessionId: string,
+    payload: unknown,
+  ) {
+    if (!harnessFeatureEnabled("BLAME_MEMORY_AUTHORITY_V2")) return;
+    const workspaceRoot = this.sessionStartInputs.get(sessionId)?.config.cwd;
+    const content = assistantResponseText(payload);
+    if (!workspaceRoot) return;
+    const memory = new ConversationMemoryStore(workspaceRoot, sessionId);
+    if (content) await memory.recordAssistant(content);
+    const usedFallback = await memory.ensureDeterministicFallback(false);
+    this.recordFallbackTelemetry(sessionId, usedFallback);
+  }
+
+  private recordFallbackTelemetry(sessionId: string, usedFallback: boolean) {
+    if (!usedFallback) return;
+    this.agentTelemetry.recordContinuityUpdate(
+      sessionId,
+      continuityFallbackMetrics(false),
+    );
+  }
+
+  private recordStructuredCompletion(
+    sessionId: string,
+    notification: CompleteTurnNotification,
+  ) {
+    this.sessionTerminalAnswers.set(sessionId, notification.answer);
+    this.agentTelemetry.recordContinuityUpdate(sessionId, notification.metrics);
   }
 
   private async usageForEvent(
@@ -2169,6 +2306,7 @@ export class BlameAgentRuntime {
     this.sessionEventSignatures.delete(sessionId);
     this.sessionExecutionIds.delete(sessionId);
     this.sessionIterations.delete(sessionId);
+    this.sessionTerminalAnswers.delete(sessionId);
     this.sessionSpawnAgentActiveCounts.delete(sessionId);
     for (const key of this.sessionToolInputs.keys()) {
       if (key.startsWith(`${sessionId}:`)) this.sessionToolInputs.delete(key);
@@ -2533,6 +2671,8 @@ export class BlameAgentRuntime {
       return attachedSession;
     }
     const resumeSessionId = input.resumeSessionId?.trim();
+    const conversationId =
+      resumeSessionId || input.sessionId?.trim() || createBlameSessionId();
     const initialMessages =
       input.autoSendPrompt === false
         ? await this.resumeMessages(resumeSessionId, input.backend)
@@ -2540,6 +2680,22 @@ export class BlameAgentRuntime {
     const developmentInput = await developmentUserInput(
       input,
       newAttachmentDirectory(input.cwd),
+    );
+    const tokenCounter = this.options.tokenCounter?.({
+      modelId: input.modelId,
+      providerId: input.providerId,
+    });
+    const preparedRequest = await developmentRequestPrompt(
+      developmentInput.prompt,
+      input,
+      input.cwd,
+      conversationId,
+      tokenCounter,
+    );
+    const continuity = new ConversationMemoryStore(
+      input.cwd,
+      conversationId,
+      tokenCounter,
     );
     const session = await this.startSession({
       apiConnection: input.apiConnection,
@@ -2552,11 +2708,13 @@ export class BlameAgentRuntime {
       disableMcpSettingsTools: input.disableMcpSettingsTools,
       autoApproveWriteTools: true,
       autoSendPrompt: input.autoSendPrompt !== false,
-      sessionId: initialMessages?.length ? resumeSessionId : input.sessionId,
+      sessionId: conversationId,
       initialMessages,
       mode: "act",
-      maxIterations: input.maxIterations ?? developmentMaxIterations(),
-      prompt: developmentInput.prompt,
+      maxIterations: input.maxIterations ?? developmentMaxIterations(input),
+      prompt: preparedRequest.prompt,
+      continuityMetrics: preparedRequest.metrics,
+      taskObjective: developmentInput.prompt,
       userFiles: developmentInput.userFiles,
       userImages: developmentInput.userImages,
       pluginPaths: input.pluginPaths,
@@ -2569,6 +2727,19 @@ export class BlameAgentRuntime {
       enableSpecialistConsult: true,
       enableSpawnAgent: false,
       enableAgentTeams: false,
+      structuredCompletion: harnessFeatureEnabled(
+        "BLAME_STRUCTURED_COMPLETION",
+      ),
+      compaction: developmentCompactionConfig(
+        blameCompactionConfig(this.productionConfig),
+        continuity,
+        (inputTokens, outputTokens) =>
+          this.agentTelemetry.recordContextCompaction(
+            conversationId,
+            inputTokens,
+            outputTokens,
+          ),
+      ),
       backend: input.backend,
       executionId: input.executionId,
       storyId: input.storyId,
@@ -2622,17 +2793,21 @@ export class BlameAgentRuntime {
         if (failure) {
           this.agentTelemetry.fail(sessionId, new Error(failure));
           this.emitSessionError(sessionId, failure, failure, executionId);
+          void this.recordInterruptedMemory(sessionId);
           return result;
         }
         this.events?.emit(
-          this.withExecutionId(
+          this.withTerminalAnswer(
             sessionId,
-            {
-              type: "done",
+            this.withExecutionId(
               sessionId,
-              payload: doneResultPayload(result),
-            },
-            executionId,
+              {
+                type: "done",
+                sessionId,
+                payload: doneResultPayload(result),
+              },
+              executionId,
+            ),
           ),
         );
         return result;
@@ -2651,6 +2826,7 @@ export class BlameAgentRuntime {
           activeContext,
         );
         this.emitSessionError(sessionId, message, error, executionId);
+        void this.recordInterruptedMemory(sessionId);
         throw error;
       });
     void this.logSession(
@@ -3023,12 +3199,29 @@ function runtimeTools(
     objective?: string;
   },
   semanticWorkspaceExecutor?: SemanticWorkspaceExecutor,
+  governorBudget?: number,
+  completion?: {
+    conversationId: string;
+    onComplete(notification: CompleteTurnNotification): void;
+  },
 ) {
   const tools = [
     ...semanticWorkspaceTools(worktree, {
       taskContract,
       executor: semanticWorkspaceExecutor,
+      governorBudget,
+      legacyMutationTools:
+        process.env.BLAME_HARNESS_LEGACY_MUTATIONS === "true",
     }),
+    ...(completion && harnessFeatureEnabled("BLAME_STRUCTURED_COMPLETION")
+      ? [
+          createCompleteTurnTool({
+            conversationId: completion.conversationId,
+            workspaceRoot: worktree ?? "",
+            onComplete: completion.onComplete,
+          }),
+        ]
+      : []),
     previewDevtoolsTool(options, previewDevtoolsScope),
     previewContainerLogsTool(options, worktree),
   ].filter((tool): tool is AgentTool => Boolean(tool));
@@ -3071,6 +3264,19 @@ function runtimeConsultSpecialistTool(options: {
   objective?: string;
   readOnlyTools: AgentTool[];
 }) {
+  return createConsultSpecialistTool({
+    capsule: specialistCapsuleProvider(options),
+    objective: options.objective,
+    spawnTool: specialistSpawnTool(options),
+    storyId: options.input.storyId,
+  });
+}
+
+function specialistSpawnTool(options: {
+  credential: { apiKey: string; baseUrl: string | null };
+  input: RuntimeStartSessionInput;
+  readOnlyTools: AgentTool[];
+}) {
   const configProvider = createDelegatedAgentConfigProvider({
     providerId: options.input.providerId,
     modelId: options.input.modelId,
@@ -3092,11 +3298,21 @@ function runtimeConsultSpecialistTool(options: {
     ),
     logger: productionLogger,
   });
-  return createConsultSpecialistTool({
-    objective: options.objective,
-    spawnTool,
-    storyId: options.input.storyId,
-  });
+  return spawnTool;
+}
+
+function specialistCapsuleProvider(options: {
+  input: RuntimeStartSessionInput;
+  objective?: string;
+}) {
+  return (consultation: { task: string }) =>
+    changeRequestCapsule({
+      conversationId: `${options.input.sessionId ?? options.input.storyId ?? "specialist"}:consultation`,
+      newRequest: consultation.task,
+      storySummary: options.objective ?? "",
+      storyTitle: options.input.storyId ?? "Active change request",
+      workspaceRoot: options.input.cwd,
+    });
 }
 
 function previewDevtoolsTool(
@@ -4586,11 +4802,90 @@ function sessionContext(
   };
 }
 
-function developmentMaxIterations() {
+async function developmentRequestPrompt(
+  prompt: string,
+  input: Pick<
+    StartDevelopmentSessionInput,
+    "executionId" | "summary" | "title"
+  >,
+  workspaceRoot?: string,
+  conversationId?: string,
+  tokenCounter?: TokenCounter,
+) {
+  if (!workspaceRoot || !conversationId) return { prompt };
+  const prepared = await prepareChangeRequest({
+    conversationId,
+    newRequest: prompt,
+    storySummary: input.summary,
+    storyTitle: input.title,
+    workspaceRoot,
+    requestRef: input.executionId
+      ? `user-message://${input.executionId}`
+      : undefined,
+    tokenCounter,
+  });
+  return {
+    prompt: harnessFeatureEnabled("BLAME_CONTEXT_EPOCHS")
+      ? prepared.prompt
+      : prompt,
+    metrics: {
+      inputTokens: prepared.inputTokens,
+      outputTokens: prepared.outputTokens,
+      requestedTokens: prepared.requestedTokens,
+      truncated: prepared.truncated,
+    },
+  };
+}
+
+function developmentCompactionConfig(
+  base: CoreCompactionConfig,
+  continuity: ConversationMemoryStore,
+  recordCompaction?: (inputTokens: number, outputTokens: number) => void,
+): CoreCompactionConfig {
+  if (!harnessFeatureEnabled("BLAME_CONTEXT_EPOCHS")) return base;
+  return {
+    ...base,
+    async compact(context: CoreCompactionContext) {
+      const capsule = await continuity.rotate("model_compaction");
+      const currentRequest = await continuity.currentRequest();
+      const content = renderContinuityPrompt(capsule, currentRequest);
+      const outputTokens = Math.ceil(Buffer.byteLength(content, "utf8") / 4);
+      recordCompaction?.(context.budget.messages.inputTokens, outputTokens);
+      return {
+        messages: [
+          {
+            role: "user",
+            content,
+            metadata: {
+              conversation_id: capsule.conversationId,
+              execution_epoch_id: capsule.executionEpochId,
+              context_size_before_compaction:
+                context.budget.messages.inputTokens,
+              context_size_after_compaction: outputTokens,
+            },
+          },
+        ],
+      };
+    },
+  };
+}
+
+function developmentMaxIterations(input?: StartDevelopmentSessionInput) {
   const value = Number(process.env.BLAME_AGENT_DEVELOPMENT_MAX_ITERATIONS);
-  return Number.isFinite(value) && value > 0
-    ? value
-    : defaultDevelopmentMaxIterations;
+  if (Number.isFinite(value) && value > 0) return value;
+  if (!input) return defaultDevelopmentMaxIterations;
+  if (input.feedback?.trim()) return 24;
+  const description = `${input.title}\n${input.summary}`;
+  if (
+    /\b(?:migration|redesign|architecture|monorepo|cross-cutting)\b/iu.test(
+      description,
+    )
+  )
+    return 120;
+  const attachments =
+    (input.codeSelectionAttachments?.length ?? 0) +
+    (input.fileAttachments?.length ?? 0);
+  return description.length < 800 && attachments <= 1 ? 40 : 80;
 }
 
 function startLogPath(cwd: string) {
@@ -4991,12 +5286,25 @@ function eventText(payload: Record<string, unknown>) {
   );
 }
 
+function assistantResponseText(payload: unknown) {
+  if (typeof payload === "string") return payload;
+  const value = asRecord(payload);
+  return eventText(value) ?? eventText(asRecord(value.result));
+}
+
 function toolNameFromPayload(payload: Record<string, unknown>) {
   const toolCall = asRecord(payload.toolCall);
   return (
     stringValue(toolCall.name) ??
     stringValue(toolCall.toolName) ??
     stringValue(payload.toolName)
+  );
+}
+
+export function terminalToolEvent(event: AgentEvent) {
+  return (
+    event.type === "tool" &&
+    toolNameFromPayload(asRecord(event.payload)) === completeTurnToolName
   );
 }
 

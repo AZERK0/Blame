@@ -56,6 +56,7 @@ import type {
   AgentUsageSummary,
   StartSessionInput,
 } from "./types.js";
+import type { ContinuityMergeMetrics } from "./harness/continuity-schema.js";
 
 type AgentTelemetryInput = Pick<StartSessionInput, "modelId" | "providerId"> &
   Partial<
@@ -107,6 +108,7 @@ type AgentSessionTelemetry = {
   component?: ExecutionComponent;
   descriptor: ExecutionDescriptor;
   firstActionRecorded: boolean;
+  firstEditRecorded: boolean;
   input: AgentTelemetryInput;
   iteration: number;
   iterations: Set<string>;
@@ -133,6 +135,18 @@ const telemetry = getBlameTelemetry();
 const executions = getExecutionRegistry();
 const businessExecutionScope = new AsyncLocalStorage<BusinessExecutionScope>();
 const toolCallFinishPayload = { finishReason: "tool-calls" };
+
+function continuityMetricValues(metrics: ContinuityMergeMetrics) {
+  return {
+    continuity_update_present: Number(metrics.continuity_update_present),
+    continuity_update_valid: Number(metrics.continuity_update_valid),
+    continuity_fallback_used: Number(metrics.continuity_fallback_used),
+    facts_added_count: metrics.facts_added_count,
+    facts_superseded_count: metrics.facts_superseded_count,
+    invalid_evidence_ref_count: metrics.invalid_evidence_ref_count,
+    memory_merge_conflict_count: metrics.memory_merge_conflict_count,
+  };
+}
 
 export class AgentTelemetry {
   private readonly sessions = new Map<string, AgentSessionTelemetry>();
@@ -324,6 +338,106 @@ export class AgentTelemetry {
     );
   }
 
+  recordContinuityCapsule(
+    sessionId: string,
+    prompt: string,
+    measured?: {
+      inputTokens: number;
+      outputTokens: number;
+      requestedTokens?: number;
+      truncated?: boolean;
+    },
+  ) {
+    const state = this.sessions.get(sessionId);
+    if (!state?.component) return;
+    const capsule = continuityCapsuleMetrics(prompt);
+    if (!capsule) return;
+    const attributes = metricDimensions(state);
+    telemetry.record(
+      "blame.harness.capsule_input_tokens" as never,
+      measured?.inputTokens ?? capsule.tokens,
+      attributes,
+      state.component.span.context,
+    );
+    telemetry.record(
+      "blame.harness.capsule_output_tokens" as never,
+      measured?.outputTokens ?? capsule.tokens,
+      attributes,
+      state.component.span.context,
+    );
+    telemetry.record(
+      "blame.harness.preserved_constraints" as never,
+      capsule.constraints,
+      attributes,
+      state.component.span.context,
+    );
+    telemetry.record(
+      "blame.harness.capsule_requested_tokens" as never,
+      measured?.requestedTokens ?? capsule.tokens,
+      attributes,
+      state.component.span.context,
+    );
+    telemetry.record(
+      "blame.harness.capsule_actual_tokens" as never,
+      measured?.outputTokens ?? capsule.tokens,
+      attributes,
+      state.component.span.context,
+    );
+    telemetry.record(
+      "blame.harness.capsule_truncated" as never,
+      Number(measured?.truncated ?? false),
+      attributes,
+      state.component.span.context,
+    );
+    state.component.span.addEvent("blame.harness.continuity_capsule", {
+      conversation_id: capsule.conversationId,
+      execution_epoch_id: capsule.executionEpochId,
+      capsule_input_tokens: measured?.inputTokens ?? capsule.tokens,
+      capsule_output_tokens: measured?.outputTokens ?? capsule.tokens,
+      preserved_constraints_count: capsule.constraints,
+      capsule_requested_tokens: measured?.requestedTokens ?? capsule.tokens,
+      capsule_actual_tokens: measured?.outputTokens ?? capsule.tokens,
+      capsule_truncated: measured?.truncated ?? false,
+    });
+  }
+
+  recordContinuityUpdate(sessionId: string, metrics: ContinuityMergeMetrics) {
+    const state = this.sessions.get(sessionId);
+    if (!state?.component) return;
+    const attributes = metricDimensions(state);
+    const values = continuityMetricValues(metrics);
+    for (const [name, value] of Object.entries(values))
+      telemetry.record(
+        `blame.harness.${name}` as never,
+        value,
+        attributes,
+        state.component.span.context,
+      );
+    state.component.span.addEvent("blame.harness.continuity_update", values);
+  }
+
+  recordContextCompaction(
+    sessionId: string,
+    inputTokens: number,
+    outputTokens: number,
+  ) {
+    const state = this.sessions.get(sessionId);
+    if (!state?.component) return;
+    const attributes = metricDimensions(state);
+    telemetry.record(
+      "blame.harness.context_size_before_compaction" as never,
+      inputTokens,
+      attributes,
+      state.component.span.context,
+    );
+    telemetry.record(
+      "blame.harness.context_size_after_compaction" as never,
+      outputTokens,
+      attributes,
+      state.component.span.context,
+    );
+  }
+
   recordRevertedChange(sessionId: string) {
     const state = this.sessions.get(sessionId);
     if (!state?.component) return;
@@ -466,6 +580,13 @@ export class AgentTelemetry {
     }
     if (isRetryEvent(details.event)) this.recordRetry(state, details);
     if (details.event.type === "iteration_start")
+      telemetry.count(
+        "blame.harness.model_turns",
+        1,
+        metricDimensions(state),
+        state.component?.span.context,
+      );
+    if (details.event.type === "iteration_start")
       this.startModelSpan(state, details);
     const tool = toolDetails(coreType, details);
     if (tool?.name === "spawn_agent") this.markMultiAgent(state);
@@ -577,9 +698,13 @@ export class AgentTelemetry {
       category,
       attributes,
     );
+    this.recordToolStart(state);
+    telemetry.count("blame.tool.call.count", 1, attributes, span.context);
+  }
+
+  private recordToolStart(state: AgentSessionTelemetry) {
     state.toolCallCount += 1;
     this.recordFirstAction(state);
-    telemetry.count("blame.tool.call.count", 1, attributes, span.context);
   }
 
   private finishTool(
@@ -594,6 +719,7 @@ export class AgentTelemetry {
     if (current.name === "spawn_agent") {
       this.finishAgentsForTool(state, current.span, outcome);
     }
+    recordHarnessToolMetrics(state, current, details.event, details.payload);
     state.toolSpans.delete(key);
     completeToolSpan(state, current, outcome);
   }
@@ -693,6 +819,12 @@ export class AgentTelemetry {
       attributes,
       state.component?.span.context,
     );
+    telemetry.count(
+      "blame.harness.model_retries",
+      1,
+      attributes,
+      state.component?.span.context,
+    );
     countProviderError(attributes, state.component?.span.context, {
       reason,
     });
@@ -727,6 +859,13 @@ export class AgentTelemetry {
     state.usage = addUsage(state.usage, delta);
     recordModelUsage(state, agentKey, delta);
     recordTokenUsage(state, delta, state.component.span.context);
+    if (delta.input > 0)
+      telemetry.record(
+        "blame.harness.context_tokens_per_turn",
+        delta.input,
+        metricDimensions(state),
+        state.component.span.context,
+      );
     recordCost(state, delta.cost, state.component.span.context);
     state.component.span.setAttributes(usageAttributes(state.usage));
   }
@@ -997,6 +1136,7 @@ function createSessionState(
     descriptor,
     authType: undefined,
     firstActionRecorded: false,
+    firstEditRecorded: false,
     input,
     iteration: 0,
     iterations: new Set(),
@@ -1052,6 +1192,7 @@ function resetTurn(state: AgentSessionTelemetry) {
   state.agentSpans.clear();
   state.aggregateUsageCursor = emptyUsage();
   state.firstActionRecorded = false;
+  state.firstEditRecorded = false;
   state.iteration = 0;
   state.iterations.clear();
   state.multiAgentUsed = false;
@@ -1499,6 +1640,219 @@ function completeToolSpan(
   recordTestOutcome(current, outcome, attributes);
   if (outcome === "failed") recordToolFailure(current, attributes);
   current.span.end(outcome);
+}
+
+function recordHarnessToolMetrics(
+  state: AgentSessionTelemetry,
+  current: ToolSpanState,
+  event: Record<string, unknown>,
+  payload: Record<string, unknown>,
+) {
+  const attributes = toolMetricAttributes(state, current);
+  const output = asRecord(event.output ?? payload.output);
+  const data = asRecord(output.data ?? output.output ?? output);
+  const metricContext = { attributes, current, data, state };
+  current.span.setAttributes(harnessTraceAttributes(data));
+  if (current.name === "inspect_code") recordReadMetrics(metricContext);
+  if (current.name === "edit_code") recordEditMetrics(metricContext);
+  if (current.name === "recall_context") recordRecallMetrics(metricContext);
+  if (current.name === "consult_specialist")
+    recordHarnessValue(
+      metricContext,
+      "blame.harness.specialist_duration",
+      current.span.durationSeconds(),
+    );
+  if (current.name === "run_task") recordRunMetrics(metricContext);
+}
+
+function recordRecallMetrics(context: HarnessMetricContext) {
+  const strategy = stringValue(context.data.retrieval_strategy) ?? "lexical";
+  telemetry.record(
+    "blame.harness.recall_strategy",
+    1,
+    { ...context.attributes, recall_strategy: strategy },
+    context.current.span.context,
+  );
+  recordHarnessValue(
+    context,
+    "blame.harness.recall_candidate_count",
+    numericValue(context.data.candidate_count) ?? 0,
+  );
+  recordHarnessValue(
+    context,
+    "blame.harness.recall_returned_count",
+    numericValue(context.data.returned_count) ?? 0,
+  );
+}
+
+type HarnessMetricContext = {
+  attributes: Record<string, unknown>;
+  current: ToolSpanState;
+  data: Record<string, unknown>;
+  state: AgentSessionTelemetry;
+};
+
+function recordReadMetrics(context: HarnessMetricContext) {
+  recordHarnessCount(context, "blame.harness.reads");
+  const readBytes = byteRangeLength(context.data.range_utf8_bytes);
+  recordHarnessValue(context, "blame.harness.read_requested_bytes", readBytes);
+  if (readBytes > 0)
+    recordHarnessValue(context, "blame.harness.read_bytes", readBytes);
+  recordHarnessValue(
+    context,
+    "blame.harness.new_read_bytes",
+    numericValue(context.data.new_bytes) ?? readBytes,
+  );
+  const returnedBytes = numericValue(context.data.new_bytes) ?? readBytes;
+  recordHarnessValue(
+    context,
+    "blame.harness.read_returned_bytes",
+    returnedBytes,
+  );
+  recordHarnessValue(
+    context,
+    "blame.harness.read_suppressed_bytes",
+    Math.max(0, readBytes - returnedBytes),
+  );
+  const overlap = numericValue(context.data.overlap_rate);
+  if (overlap !== undefined)
+    recordHarnessValue(context, "blame.harness.read_overlap_rate", overlap);
+  if (stringValue(context.data.status) === "already_available")
+    recordHarnessCount(context, "blame.harness.deduplicated_reads");
+  if (stringValue(context.data.status) === "already_available")
+    recordHarnessCount(context, "blame.harness.duplicate_read_count");
+  if (stringValue(context.data.rebase_strategy))
+    recordHarnessCount(context, "blame.harness.semantic_read_rebases");
+}
+
+function recordEditMetrics(context: HarnessMetricContext) {
+  const status = stringValue(context.data.status);
+  if (status === "applied") {
+    recordFirstEdit(context.state);
+    recordHarnessCount(context, "blame.harness.direct_edits");
+  }
+  if (
+    status === "applied" &&
+    stringValue(context.data.resolution) === "automatically_rebased"
+  )
+    recordHarnessCount(context, "blame.harness.automatically_rebased_edits");
+  if (status === "conflict")
+    recordHarnessCount(context, "blame.harness.edit_conflicts");
+  if (status === "conflict")
+    recordHarnessCount(context, "blame.harness.edit_conflict_count");
+  const retries = numericValue(context.data.internal_retries) ?? 0;
+  if (retries > 0)
+    recordHarnessCount(context, "blame.harness.internal_retries", retries);
+  if (retries > 0)
+    recordHarnessCount(context, "blame.harness.tool_retry_count", retries);
+}
+
+function harnessTraceAttributes(data: Record<string, unknown>) {
+  const governor = asRecord(data.governor);
+  return compactAttributes({
+    conversation_id: stringValue(data.conversation_id),
+    execution_epoch_id: stringValue(data.execution_epoch_id),
+    read_requested_bytes: numericValue(governor.read_requested_bytes),
+    read_returned_bytes: numericValue(governor.read_returned_bytes),
+    read_suppressed_bytes: numericValue(governor.read_suppressed_bytes),
+    duplicate_read_count: numericValue(governor.duplicate_read_count),
+    time_to_first_applied_edit: numericValue(
+      governor.time_to_first_applied_edit,
+    ),
+    semantic_rebase_strategy:
+      stringValue(data.semantic_rebase_strategy) ??
+      stringValue(data.rebase_strategy),
+    edit_conflict_count: numericValue(governor.edit_conflict_count),
+    tool_retry_count: numericValue(governor.tool_retry_count),
+  });
+}
+
+function compactAttributes(value: Record<string, unknown>) {
+  return Object.fromEntries(
+    Object.entries(value).filter(([, entry]) => entry !== undefined),
+  );
+}
+
+function recordFirstEdit(state: AgentSessionTelemetry) {
+  if (state.firstEditRecorded || !state.component) return;
+  state.firstEditRecorded = true;
+  telemetry.record(
+    "blame.harness.time_to_first_edit",
+    turnDuration(state),
+    metricDimensions(state),
+    state.component.span.context,
+  );
+}
+
+function recordRunMetrics(context: HarnessMetricContext) {
+  recordHarnessValue(
+    context,
+    "blame.harness.run_task_duration",
+    context.current.span.durationSeconds(),
+  );
+  recordHarnessValue(
+    context,
+    "blame.harness.time_to_verifiable_result",
+    turnDuration(context.state),
+  );
+  if (!context.data.run_ref || !context.data.complete_log)
+    recordHarnessCount(context, "blame.harness.missing_run_artifacts");
+}
+
+function recordHarnessCount(
+  context: HarnessMetricContext,
+  name: string,
+  value = 1,
+) {
+  telemetry.count(
+    name as Parameters<typeof telemetry.count>[0],
+    value,
+    context.attributes,
+    context.current.span.context,
+  );
+}
+
+function recordHarnessValue(
+  context: HarnessMetricContext,
+  name: string,
+  value: number,
+) {
+  telemetry.record(
+    name as Parameters<typeof telemetry.record>[0],
+    value,
+    context.attributes,
+    context.current.span.context,
+  );
+}
+
+function byteRangeLength(value: unknown) {
+  if (!Array.isArray(value) || value.length !== 2) return 0;
+  const start = numericValue(value[0]);
+  const end = numericValue(value[1]);
+  return start === undefined || end === undefined
+    ? 0
+    : Math.max(0, end - start);
+}
+
+function continuityCapsuleMetrics(prompt: string) {
+  const match = prompt.match(
+    /<continuity_capsule>\n([\s\S]*?)\n<\/continuity_capsule>/u,
+  );
+  if (!match?.[1]) return undefined;
+  try {
+    const capsule = JSON.parse(match[1]) as Record<string, unknown>;
+    const constraints = Array.isArray(capsule.relevantConstraints)
+      ? capsule.relevantConstraints.length
+      : 0;
+    return {
+      constraints,
+      conversationId: stringValue(capsule.conversationId),
+      executionEpochId: stringValue(capsule.executionEpochId),
+      tokens: Math.ceil(Buffer.byteLength(match[1], "utf8") / 4),
+    };
+  } catch {
+    return undefined;
+  }
 }
 
 function recordToolDuration(

@@ -78,7 +78,7 @@ export async function prepareChanges(
       const file = await loadVirtualFile(files, virtual, handle.path);
       if (!file.initial) throw new Error("Node target file no longer exists.");
       const fragment = file.initial.subarray(handle.start, handle.end);
-      if (sha256(fragment) !== handle.digest)
+      if (!sha256(fragment).startsWith(handle.digest))
         throw new Error("Node precondition failed: target bytes changed.");
       edits.push({
         path: handle.path,

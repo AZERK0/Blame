@@ -255,6 +255,17 @@ export class ChangeService {
   }
 
   commit(input: CommitProposalInput): Promise<CommitReceipt> {
+    return this.commitWithPolicy(input, false);
+  }
+
+  commitResolved(input: CommitProposalInput): Promise<CommitReceipt> {
+    return this.commitWithPolicy(input, true);
+  }
+
+  private commitWithPolicy(
+    input: CommitProposalInput,
+    allowUnrelatedChanges: boolean,
+  ): Promise<CommitReceipt> {
     return this.store.exclusive(async () => {
       commitProposalInputSchema.parse(input);
       await this.recoverIncompleteCommit();
@@ -277,15 +288,17 @@ export class ChangeService {
         )
           throw new Error("Commit receipt does not match its proposal.");
         if (
+          !allowUnrelatedChanges &&
           receipt.source_revision.source_revision_id !==
-          snapshot.revision.source_revision_id
+            snapshot.revision.source_revision_id
         )
           throw staleRevision(snapshot.revision.source_revision_id);
         return receipt;
       }
       if (
+        !allowUnrelatedChanges &&
         snapshot.revision.source_revision_id !==
-        input.expected_base_source_revision_id
+          input.expected_base_source_revision_id
       )
         throw staleRevision(snapshot.revision.source_revision_id);
       await verifyProposalBase(this.files, proposal);

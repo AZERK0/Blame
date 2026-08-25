@@ -7,6 +7,7 @@ export const semanticWorkspaceReadToolNames = [
   "outline_code",
   "inspect_code",
   "get_relation_context",
+  "recall_context",
   "inspect_run",
   "inspect_artifact",
   "review_change",
@@ -14,6 +15,7 @@ export const semanticWorkspaceReadToolNames = [
 ] as const;
 
 export const semanticWorkspaceWriteToolNames = [
+  "edit_code",
   "apply_change",
   "run_task",
 ] as const;
@@ -32,6 +34,11 @@ export type SemanticWorkspaceExecutionRequest = {
     session_id?: string;
     story_id?: string;
     objective?: string;
+  };
+  toolContext?: {
+    contextEpoch?: string;
+    sessionId?: string;
+    toolCallId?: string;
   };
   tool: SemanticWorkspaceToolName;
   workspaceRoot: string;
@@ -68,6 +75,7 @@ export function localSemanticWorkspaceExecutor(
       request.tool,
       request.input,
       signal,
+      request.toolContext,
     );
 }
 
@@ -83,6 +91,7 @@ export async function executeSemanticWorkspaceRequest(
     request.tool,
     request.input,
     signal,
+    request.toolContext,
   );
 }
 
@@ -91,6 +100,7 @@ async function executeSemanticWorkspaceTool(
   tool: SemanticWorkspaceToolName,
   input: unknown,
   signal?: AbortSignal,
+  toolContext?: SemanticWorkspaceExecutionRequest["toolContext"],
 ): Promise<HarnessToolResult<unknown>> {
   switch (tool) {
     case "workspace_state":
@@ -103,13 +113,17 @@ async function executeSemanticWorkspaceTool(
     case "outline_code":
       return workspace.outlineCode(input as never, signal);
     case "inspect_code":
-      return workspace.inspectCode(input as never, signal);
+      return workspace.inspectCode(input as never, signal, toolContext);
     case "get_relation_context":
       return workspace.getRelationContext(input as never, signal);
+    case "recall_context":
+      return workspace.recallContext(input as never);
     case "apply_change":
       return workspace.applyChange(input as never, signal);
+    case "edit_code":
+      return workspace.editCode(input as never, toolContext);
     case "run_task":
-      return workspace.runTask(input as never, signal);
+      return workspace.runTask(input as never, signal, toolContext);
     case "inspect_run":
       return workspace.inspectRun(input as never, signal);
     case "review_change":

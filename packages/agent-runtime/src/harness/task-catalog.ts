@@ -35,9 +35,10 @@ export async function readTaskCatalog(
   const candidates = manifests.flatMap((manifest) =>
     manifestTasks(manifest, packageManager),
   );
-  return disambiguateTasks(candidates).sort((left, right) =>
-    left.task_id.localeCompare(right.task_id),
-  );
+  return [
+    dependencyTask(packageManager),
+    ...disambiguateTasks(candidates),
+  ].sort((left, right) => left.task_id.localeCompare(right.task_id));
 }
 
 export function resolveTask(
@@ -68,6 +69,7 @@ export function taskInvocation(
   task: TaskCatalogItem,
   selection?: RunTaskInput["selection"],
 ): TaskInvocation {
+  if (task.kind === "dependencies") return dependencyInvocation(task);
   const selected = selectedTaskPaths(task.cwd, selection);
   const forwarded = selected.length ? ["--", ...selected] : [];
   const script = task.script ?? task.task_id;
@@ -81,6 +83,37 @@ export function taskInvocation(
     default:
       return taskCommand("npm", ["run", script, ...forwarded], task.cwd);
   }
+}
+
+function dependencyTask(
+  packageManager: TaskCatalogItem["package_manager"],
+): TaskCatalogItem {
+  const invocation = dependencyInvocation({ package_manager: packageManager });
+  return {
+    task_id: "dependencies",
+    kind: "dependencies",
+    command: [invocation.executable, ...invocation.args].join(" "),
+    cwd: ".",
+    package_manager: packageManager,
+  };
+}
+
+function dependencyInvocation(task: Pick<TaskCatalogItem, "package_manager">) {
+  if (task.package_manager === "pnpm")
+    return taskCommand(
+      "pnpm",
+      ["install", "--frozen-lockfile", "--prefer-offline"],
+      ".",
+    );
+  if (task.package_manager === "yarn")
+    return taskCommand("yarn", ["install", "--immutable", "--cached"], ".");
+  if (task.package_manager === "bun")
+    return taskCommand("bun", ["install", "--frozen-lockfile"], ".");
+  return taskCommand(
+    "npm",
+    ["ci", "--prefer-offline", "--no-audit", "--no-fund"],
+    ".",
+  );
 }
 
 async function readPackageManifests(root: string, workspaceFiles?: string[]) {

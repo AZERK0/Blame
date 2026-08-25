@@ -14,11 +14,14 @@ type StartUserInstructionServiceInput = {
 type UserInstructionServiceFactory = typeof createUserInstructionConfigService;
 
 export class BlameUserInstructionServices {
+  private readonly createService: UserInstructionServiceFactory;
   private readonly services = new Map<string, UserInstructionConfigService>();
 
   constructor(
-    private readonly createService: UserInstructionServiceFactory = createUserInstructionConfigService,
-  ) {}
+    createService: UserInstructionServiceFactory = createUserInstructionConfigService,
+  ) {
+    this.createService = createService;
+  }
 
   async start(input: StartUserInstructionServiceInput) {
     const service = this.createService({

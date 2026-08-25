@@ -14,6 +14,10 @@ export const symbolKindSchema = z.enum([
   "trait",
   "type",
   "variable",
+  "css_rule",
+  "css_media",
+  "css_keyframes",
+  "css_custom_property",
 ]);
 
 export const relationKindSchema = z.enum([
@@ -146,7 +150,7 @@ const searchQuerySchema = z.discriminatedUnion("kind", [
 
 export const searchCodeInputSchema = z
   .object({
-    source_revision_id: sourceRevisionIdSchema,
+    source_revision_id: sourceRevisionIdSchema.optional(),
     query: searchQuerySchema,
     scope: z
       .object({
@@ -163,7 +167,7 @@ export const searchCodeInputSchema = z
 
 export const outlineCodeInputSchema = z
   .object({
-    source_revision_id: sourceRevisionIdSchema,
+    source_revision_id: sourceRevisionIdSchema.optional(),
     target: z.object({ path: relativePathSchema }).strict(),
     kinds: z.array(symbolKindSchema).optional(),
     depth: z.number().int().min(1).max(12).default(3).optional(),
@@ -186,7 +190,7 @@ const inspectTargetSchema = z.union([
 
 export const inspectCodeInputSchema = z
   .object({
-    source_revision_id: sourceRevisionIdSchema,
+    source_revision_id: sourceRevisionIdSchema.optional(),
     target: inspectTargetSchema,
     view: z.enum([
       "body",
@@ -217,7 +221,7 @@ export const inspectCodeInputSchema = z
 
 export const getRelationContextInputSchema = z
   .object({
-    source_revision_id: sourceRevisionIdSchema,
+    source_revision_id: sourceRevisionIdSchema.optional(),
     target: z.object({ symbol_ref: z.string().regex(/^sym:\/\//) }).strict(),
     relations: z
       .array(relationKindSchema)
@@ -344,6 +348,122 @@ export const applyChangeInputSchema = z.discriminatedUnion("action", [
   commitProposalInputSchema,
 ]);
 
+const semanticEditTargetSchema = z.union([
+  z.object({ symbol_ref: z.string().regex(/^sym:\/\//) }).strict(),
+  z.object({ node_ref: z.string().regex(/^node:\/\//) }).strict(),
+]);
+
+export const editCodeOperationSchema = z.discriminatedUnion("operation", [
+  z
+    .object({
+      operation: z.enum(["replace", "replace_symbol"]),
+      target: semanticEditTargetSchema,
+      content: z.string(),
+    })
+    .strict(),
+  z
+    .object({
+      operation: z.enum(["replace_body", "replace_signature"]),
+      target: z.object({ symbol_ref: z.string().regex(/^sym:\/\//) }).strict(),
+      content: z.string(),
+    })
+    .strict(),
+  z
+    .object({
+      operation: z.enum(["insert_before", "insert_after"]),
+      target: semanticEditTargetSchema,
+      content: z.string(),
+    })
+    .strict(),
+  z
+    .object({
+      operation: z.enum(["delete", "delete_symbol"]),
+      target: semanticEditTargetSchema,
+    })
+    .strict(),
+  z
+    .object({
+      operation: z.literal("set_css_declarations"),
+      target: z.object({ symbol_ref: z.string().regex(/^sym:\/\//) }).strict(),
+      declarations: z.record(z.string().min(1), z.string().nullable()),
+    })
+    .strict(),
+  z
+    .object({
+      operation: z.literal("set_css_declaration"),
+      target: z.object({ symbol_ref: z.string().regex(/^sym:\/\//) }).strict(),
+      property: z.string().min(1).max(500),
+      value: z.string().max(100_000),
+    })
+    .strict(),
+  z
+    .object({
+      operation: z.literal("remove_css_declaration"),
+      target: z.object({ symbol_ref: z.string().regex(/^sym:\/\//) }).strict(),
+      property: z.string().min(1).max(500),
+    })
+    .strict(),
+  z
+    .object({
+      operation: z.literal("insert_css_declaration"),
+      target: z.object({ symbol_ref: z.string().regex(/^sym:\/\//) }).strict(),
+      property: z.string().min(1).max(500),
+      value: z.string().max(100_000),
+      after_property: z.string().min(1).max(500).optional(),
+    })
+    .strict(),
+  z
+    .object({
+      operation: z.literal("create_file"),
+      path: relativePathSchema,
+      content: z.string(),
+    })
+    .strict(),
+  z
+    .object({
+      operation: z.literal("move_file"),
+      from_path: relativePathSchema,
+      to_path: relativePathSchema,
+    })
+    .strict(),
+  z
+    .object({
+      operation: z.enum(["patch", "patch_file"]),
+      path: relativePathSchema,
+      patch: z
+        .string()
+        .min(1)
+        .max(2 * 1024 * 1024),
+    })
+    .strict(),
+]);
+
+export const editCodeInputSchema = z
+  .object({
+    edits: z.array(editCodeOperationSchema).min(1).max(50),
+    formatting: z.enum(["none", "touched_files"]).default("none").optional(),
+    validation: z
+      .object({ parse: z.boolean().default(true).optional() })
+      .strict()
+      .optional(),
+  })
+  .strict();
+
+export const recallContextInputSchema = z
+  .object({
+    query: z.string().min(1).max(1_000).optional(),
+    topic: z.string().min(1).max(1_000).optional(),
+    file_path: relativePathSchema.optional(),
+    symbol_ref: z
+      .string()
+      .regex(/^(?:node|sym):\/\//)
+      .optional(),
+    change_receipt_id: z.string().min(1).max(500).optional(),
+    include_superseded: z.boolean().optional(),
+    maximum_tokens: z.number().int().min(100).max(8_000).optional(),
+  })
+  .strict();
+
 export const reviewChangeInputSchema = z
   .object({
     proposal_ref: z.string().regex(/^change-proposal:\/\/[a-f0-9]{64}$/),
@@ -381,6 +501,7 @@ export const validateChangeInputSchema = z
 export const taskKindSchema = z.enum([
   "build",
   "custom",
+  "dependencies",
   "lint",
   "service",
   "test",
@@ -417,7 +538,7 @@ export const runTaskInputSchema = z
       z.object({ task_id: z.string().min(1).max(300) }).strict(),
       z
         .object({
-          kind: z.enum(["test", "lint", "build", "typecheck"]),
+          kind: z.enum(["test", "lint", "build", "typecheck", "dependencies"]),
           target: z.string().min(1).max(300).optional(),
         })
         .strict(),
@@ -479,11 +600,15 @@ const runFailureSchema = z
 
 const runDiagnosticSchema = z
   .object({
+    code: z.string().min(1).max(200).optional(),
     severity: z.enum(["error", "warning", "info"]),
     message: z.string().min(1).max(2_000),
     path: relativePathSchema.optional(),
     line: z.number().int().positive().optional(),
     column: z.number().int().positive().optional(),
+    dependency: z.string().min(1).max(500).optional(),
+    installation_supported: z.boolean().optional(),
+    recommendation: z.string().min(1).max(2_000).optional(),
   })
   .strict();
 
@@ -520,7 +645,10 @@ export const storedRunSchema = z
         environment_profile: z.literal("default"),
         environment_variables: z.array(z.string().max(200)).max(50),
         process_tree: z.enum(["host_descendants", "sandbox_descendants"]),
-        ignored_limits: z.array(z.enum(["cpu", "memory_mb"])).max(2).optional(),
+        ignored_limits: z
+          .array(z.enum(["cpu", "memory_mb"]))
+          .max(2)
+          .optional(),
         observed_ports: z.array(z.number().int().min(1).max(65_535)).max(100),
         volatility: z
           .array(z.enum(["timestamps", "runtime_instance_id", "ports"]))
@@ -543,7 +671,12 @@ export const storedRunSchema = z
     network: z
       .object({
         requested: z.enum(["deny", "project_allowlist"]),
-        enforcement: z.enum(["bubblewrap", "sandbox_exec", "worktree"]),
+        enforcement: z.enum([
+          "bubblewrap",
+          "project_proxy",
+          "sandbox_exec",
+          "worktree",
+        ]),
         effective: z.enum(["deny", "host"]).optional(),
       })
       .strict(),
@@ -661,11 +794,14 @@ export type DirectApplyChangeInput = z.infer<
 >;
 export type CommitProposalInput = z.infer<typeof commitProposalInputSchema>;
 export type ApplyChangeInput = z.infer<typeof applyChangeInputSchema>;
+export type EditCodeOperation = z.infer<typeof editCodeOperationSchema>;
+export type EditCodeInput = z.infer<typeof editCodeInputSchema>;
 export type ReviewChangeInput = z.infer<typeof reviewChangeInputSchema>;
 export type ValidateChangeInput = z.infer<typeof validateChangeInputSchema>;
 export type RunTaskInput = z.infer<typeof runTaskInputSchema>;
 export type InspectRunInput = z.infer<typeof inspectRunInputSchema>;
 export type InspectArtifactInput = z.infer<typeof inspectArtifactInputSchema>;
+export type RecallContextInput = z.infer<typeof recallContextInputSchema>;
 export type TaskCatalogItem = z.infer<typeof taskCatalogItemSchema>;
 export type StoredRun = z.infer<typeof storedRunSchema>;
 export type ProposedFile = z.infer<typeof proposedFileSchema>;

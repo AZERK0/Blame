@@ -17,7 +17,10 @@ import { promisify } from "node:util";
 import cacache from "cacache";
 import test from "node:test";
 import { ArtifactStore } from "./artifact-store.js";
+import { changeRequestCapsule } from "./change-request-capsule.js";
+import { ConversationMemoryStore } from "./conversation-memory.js";
 import { semanticWorkspaceTools } from "./cline-tools.js";
+import { HarnessCostGovernor } from "./cost-governor.js";
 import {
   managedSemanticWorkspaceExecutor,
   type SemanticWorkspaceExecutor,
@@ -30,6 +33,17 @@ import {
   type HarnessToolSuccess,
 } from "./protocol.js";
 import { packagedResourcePath } from "./packaged-resource-path.js";
+import {
+  harnessReplayComparison,
+  harnessReplayMetrics,
+  harnessV2ReplayPasses,
+  type HarnessReplayEvent,
+} from "./harness-v2-benchmark.js";
+import {
+  portfolioV4ObservedTraceSummary,
+  replayHarnessTraceJsonl,
+} from "./portfolio-v4-trace-replay.js";
+import { RunAttemptStore } from "./run-attempt-store.js";
 import type {
   TaskExecutionInput,
   TaskExecutionResult,
@@ -54,6 +68,163 @@ test("packaged native resources resolve outside Electron ASAR archives", () => {
   assert.equal(packagedResourcePath("/usr/bin/rg"), "/usr/bin/rg");
 });
 
+test("Portfolio V4 replay enforces the protocol v2 efficiency invariants", async () => {
+  const before = harnessReplayMetrics([
+    {
+      at_ms: 0,
+      context_tokens: 668_748,
+      input_tokens: 668_748,
+      type: "model_turn",
+    },
+    {
+      at_ms: 10_000,
+      blob: "blob-a",
+      context_epoch: "epoch-1",
+      range: [0, 100],
+      returned_bytes: 100,
+      type: "read",
+    },
+    {
+      at_ms: 20_000,
+      blob: "blob-a",
+      context_epoch: "epoch-1",
+      range: [0, 100],
+      returned_bytes: 100,
+      type: "read",
+    },
+    { at_ms: 1_080_000, tool: "propose", type: "edit" },
+    { at_ms: 1_081_000, tool: "review_change", type: "edit" },
+    { at_ms: 1_082_000, tool: "commit_proposal", type: "edit" },
+    { at_ms: 30_000, fingerprint: "preview-a", type: "preview_recovery" },
+    { at_ms: 60_000, fingerprint: "preview-a", type: "preview_recovery" },
+    {
+      at_ms: 70_000,
+      run_ref: "run-a",
+      status: "running",
+      type: "run_task",
+    },
+  ]);
+  const afterEvents: HarnessReplayEvent[] = [
+    {
+      at_ms: 0,
+      context_tokens: 72_000,
+      input_tokens: 72_000,
+      type: "model_turn",
+    },
+    {
+      at_ms: 5_000,
+      blob: "blob-a",
+      context_epoch: "epoch-1",
+      range: [0, 100],
+      returned_bytes: 80,
+      type: "read",
+    },
+    {
+      at_ms: 30_000,
+      fact_id: "constraint-mobile",
+      preserved: true,
+      type: "constraint_check",
+    },
+    {
+      at_ms: 45_000,
+      correct: true,
+      outcome: "applied",
+      tool: "edit_code",
+      type: "edit",
+    },
+    {
+      at_ms: 70_000,
+      run_ref: "run-a",
+      status: "passed",
+      type: "run_task",
+    },
+  ];
+  const after = harnessV2ReplayPasses(afterEvents);
+  const comparison = harnessReplayComparison(
+    [
+      {
+        at_ms: 0,
+        context_tokens: 668_748,
+        input_tokens: 668_748,
+        type: "model_turn",
+      },
+      {
+        at_ms: 10_000,
+        blob: "blob-a",
+        context_epoch: "epoch-1",
+        range: [0, 200],
+        returned_bytes: 200,
+        type: "read",
+      },
+      {
+        at_ms: 1_080_000,
+        correct: true,
+        tool: "commit_proposal",
+        type: "edit",
+      },
+    ],
+    afterEvents,
+  );
+  const traceSource = await readFile(
+    join(
+      process.cwd(),
+      "src/harness/fixtures/portfolio-v4-sanitized.trace.jsonl",
+    ),
+    "utf8",
+  );
+  const capturedMetrics = harnessReplayMetrics(
+    replayHarnessTraceJsonl(traceSource),
+  );
+  assert.equal(before.max_context_tokens, 668_748);
+  assert.equal(before.identical_reads, 1);
+  assert.equal(before.missing_terminal_runs, 1);
+  assert.equal(after.passed, true);
+  assert.equal(after.metrics.first_edit_ms, 45_000);
+  assert.equal(comparison.goals.code_bytes_reduced_by_half, true);
+  assert.equal(comparison.goals.context_reduced_by_forty_percent, true);
+  assert.equal(comparison.goals.constraints_preserved, true);
+  assert.equal(capturedMetrics.accumulated_input_tokens, 70_559);
+  assert.equal(capturedMetrics.read_calls, 4);
+  assert.equal(portfolioV4ObservedTraceSummary.activities, 600);
+  assert.equal(portfolioV4ObservedTraceSummary.inspectCalls, 117);
+  assert.equal(portfolioV4ObservedTraceSummary.searchCalls, 124);
+});
+
+test("change requests preserve functional memory without raw execution history", async () => {
+  await withWorkspace(async (root) => {
+    const first = await changeRequestCapsule({
+      conversationId: "conversation-memory",
+      newRequest: "Keep the mobile layout exactly as approved.",
+      storySummary: "The formatter must remain verified.",
+      storyTitle: "Formatter",
+      workspaceRoot: root,
+    });
+    const second = await changeRequestCapsule({
+      conversationId: "conversation-memory",
+      newRequest: "Increase the title size again.",
+      storySummary: "The formatter must remain verified.",
+      storyTitle: "Formatter",
+      workspaceRoot: root,
+    });
+    const firstCapsule = parseContinuityCapsule(first);
+    const secondCapsule = parseContinuityCapsule(second);
+    assert.equal(firstCapsule.conversationId, secondCapsule.conversationId);
+    assert.notEqual(
+      firstCapsule.executionEpochId,
+      secondCapsule.executionEpochId,
+    );
+    assert.equal(secondCapsule.currentRequest, undefined);
+    assert.equal(
+      secondCapsule.relevantConstraints.some((fact) =>
+        fact.value.includes("mobile layout"),
+      ),
+      true,
+    );
+    assert.equal(JSON.stringify(secondCapsule).includes("diff"), false);
+    assert.equal(second.match(/Increase the title size again\./gu)?.length, 1);
+  });
+});
+
 test("compact handles remain compatible with legacy object handles", () => {
   const payload = {
     version: 1 as const,
@@ -73,7 +244,7 @@ test("compact handles remain compatible with legacy object handles", () => {
   assert.ok(compact.length < legacy.length);
 });
 
-test("semantic tools expose exact outlines and reject stale observations", async () => {
+test("semantic tools expose outlines and rebase stale observations", async () => {
   await withWorkspace(async (root) => {
     const workspace = new SemanticWorkspace(root);
     const state = success(await workspace.workspaceState());
@@ -130,14 +301,15 @@ test("semantic tools expose exact outlines and reject stale observations", async
       join(root, "src", "service.ts"),
       source.replace("Hello", "Hi"),
     );
-    const stale = await workspace.inspectCode({
-      source_revision_id: revision,
-      target: { symbol_ref: method.symbol_ref },
-      view: "body",
-    });
-    assert.equal(stale.status, "error");
-    if (stale.status === "error")
-      assert.equal(stale.error.code, "STALE_REVISION");
+    const rebased = success(
+      await workspace.inspectCode({
+        source_revision_id: revision,
+        target: { symbol_ref: method.symbol_ref },
+        view: "body",
+      }),
+    );
+    assert.equal(rebased.data.rebased, true);
+    assert.match(rebased.data.content, /return `Hi/);
   });
 });
 
@@ -373,6 +545,618 @@ test("apply_change commits bounded worktree edits in one idempotent call", async
     assert.equal(
       retried.data.receipt.change_set_ref,
       applied.data.receipt.change_set_ref,
+    );
+  });
+});
+
+test("edit_code applies a semantic edit without caller revisions or preconditions", async () => {
+  await withWorkspace(async (root) => {
+    const workspace = new SemanticWorkspace(root, {
+      taskContract: { session_id: "edit-session" },
+    });
+    const memory = new ConversationMemoryStore(root, "edit-session");
+    const initialEpoch = await memory.currentEpochId();
+    const state = success(await workspace.workspaceState());
+    const revision = state.data.source_revision.source_revision_id;
+    const outline = success(
+      await workspace.outlineCode({
+        source_revision_id: revision,
+        target: { path: "src/service.ts" },
+      }),
+    );
+    const target = outline.data.items.find(
+      (item) => item.qualified_name === "formatName",
+    );
+    assert.ok(target);
+    await writeFile(join(root, "README.md"), "unrelated change\n");
+    const input = {
+      edits: [
+        {
+          operation: "replace" as const,
+          target: { symbol_ref: target.symbol_ref },
+          content:
+            "function formatName(value: string) { return value.trim().toUpperCase(); }",
+        },
+      ],
+      validation: { parse: true },
+    };
+    const applied = success(
+      await workspace.editCode(input, {
+        sessionId: "edit-session",
+        toolCallId: "edit-call-1",
+      }),
+    );
+    assert.equal(applied.data.status, "applied");
+    if (applied.data.status !== "applied") return;
+    assert.equal(applied.data.resolution, "exact");
+    assert.equal(applied.data.validation.parse, "passed");
+    const appliedEpoch = await memory.currentEpochId();
+    assert.notEqual(appliedEpoch, initialEpoch);
+    assert.deepEqual(
+      applied.data.changed_files.map(({ path }) => path),
+      ["src/service.ts"],
+    );
+    assert.match(
+      await readFile(join(root, "src", "service.ts"), "utf8"),
+      /toUpperCase/,
+    );
+    const repeated = success(
+      await workspace.editCode(input, {
+        sessionId: "edit-session",
+        toolCallId: "edit-call-1",
+      }),
+    );
+    assert.equal(repeated.data.status, "applied");
+    if (repeated.data.status === "applied")
+      assert.equal(repeated.data.receipt_ref, applied.data.receipt_ref);
+    assert.equal(await memory.currentEpochId(), appliedEpoch);
+  });
+});
+
+test("edit_code automatically relocates a moved symbol", async () => {
+  await withWorkspace(async (root) => {
+    const workspace = new SemanticWorkspace(root);
+    const state = success(await workspace.workspaceState());
+    const outline = success(
+      await workspace.outlineCode({
+        source_revision_id: state.data.source_revision.source_revision_id,
+        target: { path: "src/service.ts" },
+      }),
+    );
+    const target = outline.data.items.find(
+      (item) => item.qualified_name === "formatName",
+    );
+    assert.ok(target);
+    await writeFile(
+      join(root, "src", "service.ts"),
+      `const moved = true;\n${source}`,
+    );
+    const applied = success(
+      await workspace.editCode(
+        {
+          edits: [
+            {
+              operation: "replace",
+              target: { symbol_ref: target.symbol_ref },
+              content:
+                "function formatName(value: string) { return value.toLowerCase(); }",
+            },
+          ],
+        },
+        { toolCallId: "relocate-symbol" },
+      ),
+    );
+    assert.equal(applied.data.status, "applied");
+    if (applied.data.status === "applied")
+      assert.equal(applied.data.resolution, "automatically_rebased");
+    assert.match(
+      await readFile(join(root, "src", "service.ts"), "utf8"),
+      /toLowerCase/,
+    );
+  });
+});
+
+test("edit_code replaces only a symbol body after a cross-file move", async () => {
+  await withWorkspace(async (root) => {
+    const workspace = new SemanticWorkspace(root);
+    const outline = success(
+      await workspace.outlineCode({ target: { path: "src/service.ts" } }),
+    );
+    const target = outline.data.items.find(
+      (item) => item.qualified_name === "formatName",
+    );
+    assert.ok(target);
+    await writeFile(
+      join(root, "src", "service.ts"),
+      source.replace(/\nexport function formatName[\s\S]*$/u, "\n"),
+    );
+    await writeFile(
+      join(root, "src", "format-name.ts"),
+      "export function formatName(value: string) {\n  return value.trim();\n}\n",
+    );
+    const applied = success(
+      await workspace.editCode({
+        edits: [
+          {
+            operation: "replace_body",
+            target: { symbol_ref: target.symbol_ref },
+            content: "{\n  return value.toUpperCase();\n}",
+          },
+        ],
+      }),
+    );
+    assert.equal(applied.data.status, "applied");
+    if (applied.data.status === "applied") {
+      assert.equal(applied.data.resolution, "automatically_rebased");
+      assert.match(applied.data.semantic_rebase_strategy ?? "", /cross_file/);
+    }
+    const moved = await readFile(join(root, "src", "format-name.ts"), "utf8");
+    assert.match(moved, /function formatName\(value: string\)/);
+    assert.match(moved, /return value\.toUpperCase/);
+  });
+});
+
+test("edit_code returns candidates without writing an ambiguous target", async () => {
+  await withWorkspace(async (root) => {
+    const duplicateSource = [
+      "function duplicate(value: string) { return value; }",
+      "function duplicate(value: number) { return value; }",
+      "",
+    ].join("\n");
+    await writeFile(join(root, "src", "duplicate.ts"), duplicateSource);
+    const workspace = new SemanticWorkspace(root);
+    const revision = success(await workspace.workspaceState()).data
+      .source_revision.source_revision_id;
+    const outline = success(
+      await workspace.outlineCode({
+        source_revision_id: revision,
+        target: { path: "src/duplicate.ts" },
+      }),
+    );
+    const target = outline.data.items[0];
+    assert.ok(target);
+    const payload = decodeHandle(target.symbol_ref, "sym");
+    assert.ok(payload);
+    const ambiguousRef = encodeHandle("sym", {
+      ...payload,
+      signatureDigest: undefined,
+    });
+    await writeFile(join(root, "src", "duplicate.ts"), `\n${duplicateSource}`);
+    const result = success(
+      await workspace.editCode(
+        {
+          edits: [
+            {
+              operation: "delete",
+              target: { symbol_ref: ambiguousRef },
+            },
+          ],
+        },
+        { toolCallId: "ambiguous-symbol" },
+      ),
+    );
+    assert.equal(result.data.status, "conflict");
+    if (result.data.status === "conflict") {
+      assert.equal(result.data.candidates.length, 2);
+      assert.equal(
+        result.data.candidates.every(
+          (candidate) => "excerpt" in candidate && candidate.excerpt.length > 0,
+        ),
+        true,
+      );
+      assert.equal(
+        result.data.candidates.every((candidate) => "confidence" in candidate),
+        true,
+      );
+    }
+    assert.equal(
+      await readFile(join(root, "src", "duplicate.ts"), "utf8"),
+      `\n${duplicateSource}`,
+    );
+  });
+});
+
+test("edit_code applies a multifile batch and enforces protected paths", async () => {
+  await withWorkspace(async (root) => {
+    const workspace = new SemanticWorkspace(root);
+    const applied = success(
+      await workspace.editCode(
+        {
+          edits: [
+            {
+              operation: "create_file",
+              path: "src/first-v2.ts",
+              content: "export const first = true;\n",
+            },
+            {
+              operation: "create_file",
+              path: "src/second-v2.ts",
+              content: "export const second = true;\n",
+            },
+          ],
+        },
+        { toolCallId: "multifile-v2" },
+      ),
+    );
+    assert.equal(applied.data.status, "applied");
+    if (applied.data.status === "applied")
+      assert.deepEqual(
+        applied.data.changed_files.map(({ path }) => path),
+        ["src/first-v2.ts", "src/second-v2.ts"],
+      );
+    const denied = success(
+      await workspace.editCode(
+        {
+          edits: [
+            {
+              operation: "create_file",
+              path: ".blame/forbidden.json",
+              content: "{}",
+            },
+          ],
+        },
+        { toolCallId: "protected-v2" },
+      ),
+    );
+    assert.equal(denied.data.status, "denied");
+    await assert.rejects(readFile(join(root, ".blame", "forbidden.json")));
+  });
+});
+
+test("edit_code treats CSS selectors as symbols and updates declarations", async () => {
+  await withWorkspace(async (root) => {
+    await writeFile(
+      join(root, "src", "styles.css"),
+      ".card {\n  color: red;\n  padding: 4px;\n}\n@media (max-width: 600px) {\n  .card { color: blue; }\n}\n",
+    );
+    const workspace = new SemanticWorkspace(root);
+    const state = success(await workspace.workspaceState());
+    const outline = success(
+      await workspace.outlineCode({
+        source_revision_id: state.data.source_revision.source_revision_id,
+        target: { path: "src/styles.css" },
+        depth: 4,
+      }),
+    );
+    const rule = outline.data.items.find(
+      (item) => item.qualified_name === ".card",
+    );
+    assert.ok(rule);
+    assert.equal(rule.kind, "css_rule");
+    assert.equal(
+      outline.data.items.some(
+        (item) => item.qualified_name === "@media(max-width: 600px)::.card",
+      ),
+      true,
+    );
+    const applied = success(
+      await workspace.editCode(
+        {
+          edits: [
+            {
+              operation: "set_css_declarations",
+              target: { symbol_ref: rule.symbol_ref },
+              declarations: { color: "green", padding: null, margin: "8px" },
+            },
+          ],
+        },
+        { toolCallId: "css-declarations" },
+      ),
+    );
+    assert.equal(applied.data.status, "applied");
+    const css = await readFile(join(root, "src", "styles.css"), "utf8");
+    assert.match(css, /color: green/);
+    assert.match(css, /margin: 8px/);
+    assert.doesNotMatch(css, /padding:/);
+  });
+});
+
+test("CSS AST edits preserve comments, fallbacks, order, and complex values", async () => {
+  await withWorkspace(async (root) => {
+    const cssSource = [
+      ".card {",
+      "  /* retained */",
+      "  display: -webkit-box;",
+      "  display: grid;",
+      '  background: url("data:image/svg+xml;a;b");',
+      "  color: red;",
+      "}",
+      "",
+    ].join("\n");
+    await writeFile(join(root, "src", "complex.css"), cssSource);
+    const workspace = new SemanticWorkspace(root);
+    const rule = success(
+      await workspace.outlineCode({ target: { path: "src/complex.css" } }),
+    ).data.items.find((item) => item.qualified_name === ".card");
+    assert.ok(rule);
+    const set = success(
+      await workspace.editCode({
+        edits: [
+          {
+            operation: "set_css_declaration",
+            target: { symbol_ref: rule.symbol_ref },
+            property: "display",
+            value: "flex",
+          },
+        ],
+      }),
+    );
+    assert.equal(set.data.status, "applied");
+    const inserted = success(
+      await workspace.editCode({
+        edits: [
+          {
+            operation: "insert_css_declaration",
+            target: { symbol_ref: rule.symbol_ref },
+            property: "--surface",
+            value: 'url("data:text/plain;a;b")',
+            after_property: "background",
+          },
+        ],
+      }),
+    );
+    assert.equal(inserted.data.status, "applied");
+    const css = await readFile(join(root, "src", "complex.css"), "utf8");
+    assert.match(css, /\/\* retained \*\//);
+    assert.match(css, /display: -webkit-box;\n {2}display: flex;/);
+    assert.match(css, /background: url\("data:image\/svg\+xml;a;b"\);/);
+    assert.match(css, /--surface: url\("data:text\/plain;a;b"\);/);
+    assert.ok(css.indexOf("background:") < css.indexOf("--surface:"));
+  });
+});
+
+test("patch_file recovers shifted hunks and refuses ambiguous anchors atomically", async () => {
+  await withWorkspace(async (root) => {
+    const path = join(root, "src", "settings.txt");
+    await writeFile(path, "zero\nalpha\nbeta\ngamma\n");
+    const workspace = new SemanticWorkspace(root);
+    const shifted = success(
+      await workspace.editCode({
+        edits: [
+          {
+            operation: "patch_file",
+            path: "src/settings.txt",
+            patch:
+              "--- a/src/settings.txt\n+++ b/src/settings.txt\n@@ -2,1 +2,1 @@\n-beta\n+BETA\n",
+          },
+        ],
+      }),
+    );
+    assert.equal(shifted.data.status, "applied");
+    assert.match(await readFile(path, "utf8"), /BETA/);
+    await writeFile(path, "same\nmiddle\nsame\n");
+    const ambiguous = success(
+      await workspace.editCode({
+        edits: [
+          {
+            operation: "patch_file",
+            path: "src/settings.txt",
+            patch:
+              "--- a/src/settings.txt\n+++ b/src/settings.txt\n@@ -9,1 +9,1 @@\n-same\n+changed\n",
+          },
+          {
+            operation: "create_file",
+            path: "src/partial.txt",
+            content: "must not exist\n",
+          },
+        ],
+      }),
+    );
+    assert.equal(ambiguous.data.status, "conflict");
+    if (ambiguous.data.status === "conflict") {
+      assert.match(ambiguous.data.reason, /more than one/i);
+      assert.ok(ambiguous.data.current_context);
+      assert.ok(ambiguous.data.failed_hunk);
+    }
+    assert.equal(await readFile(path, "utf8"), "same\nmiddle\nsame\n");
+    await assert.rejects(readFile(join(root, "src", "partial.txt")));
+  });
+});
+
+test("edit_code rolls back the whole batch when parse validation fails", async () => {
+  await withWorkspace(async (root) => {
+    const workspace = new SemanticWorkspace(root);
+    const state = success(await workspace.workspaceState());
+    const outline = success(
+      await workspace.outlineCode({
+        source_revision_id: state.data.source_revision.source_revision_id,
+        target: { path: "src/service.ts" },
+      }),
+    );
+    const target = outline.data.items.find(
+      (item) => item.qualified_name === "formatName",
+    );
+    assert.ok(target);
+    const result = success(
+      await workspace.editCode(
+        {
+          edits: [
+            {
+              operation: "replace",
+              target: { symbol_ref: target.symbol_ref },
+              content: "function formatName( {",
+            },
+            {
+              operation: "create_file",
+              path: "src/should-not-exist.ts",
+              content: "export const created = true;\n",
+            },
+          ],
+        },
+        { toolCallId: "invalid-batch" },
+      ),
+    );
+    assert.equal(result.data.status, "validation_failed");
+    assert.equal(
+      await readFile(join(root, "src", "service.ts"), "utf8"),
+      source,
+    );
+    await assert.rejects(readFile(join(root, "src", "should-not-exist.ts")));
+  });
+});
+
+test("inspect_code deduplicates covered ranges and resets by context epoch", async () => {
+  await withWorkspace(async (root) => {
+    const largeSource = Array.from(
+      { length: 80 },
+      (_, index) => `export const value${index} = "${index}";`,
+    ).join("\n");
+    await writeFile(join(root, "src", "large.ts"), largeSource);
+    await git(root, ["add", "."]);
+    await git(root, ["commit", "-m", "add large source"]);
+    const workspace = new SemanticWorkspace(root, {
+      taskContract: { session_id: "read-session" },
+    });
+    const revision = success(await workspace.workspaceState()).data
+      .source_revision.source_revision_id;
+    const first = success(
+      await workspace.inspectCode(
+        {
+          source_revision_id: revision,
+          target: { path: "src/service.ts" },
+          view: "raw",
+          range_utf8_bytes: [0, 40],
+        },
+        undefined,
+        { contextEpoch: "epoch-1" },
+      ),
+    );
+    assert.equal(first.data.status, "content");
+    const repeated = success(
+      await workspace.inspectCode(
+        {
+          source_revision_id: revision,
+          target: { path: "src/service.ts" },
+          view: "raw",
+          range_utf8_bytes: [0, 40],
+        },
+        undefined,
+        { contextEpoch: "epoch-1" },
+      ),
+    );
+    assert.equal(repeated.data.status, "already_available");
+    const overlap = success(
+      await workspace.inspectCode(
+        {
+          source_revision_id: revision,
+          target: { path: "src/service.ts" },
+          view: "raw",
+          range_utf8_bytes: [20, 60],
+        },
+        undefined,
+        { contextEpoch: "epoch-1" },
+      ),
+    );
+    assert.equal(overlap.data.status, "partial");
+    assert.deepEqual(overlap.data.segments[0]?.range_utf8_bytes, [40, 60]);
+    assert.equal(overlap.data.new_bytes, 20);
+    assert.equal(overlap.data.overlap_rate, 0.5);
+    const limitedInput = {
+      source_revision_id: revision,
+      target: { path: "src/large.ts" },
+      view: "raw" as const,
+      range_utf8_bytes: [0, Buffer.byteLength(largeSource)] as [number, number],
+      budget: { max_output_tokens: 100 },
+    };
+    const limited = success(
+      await workspace.inspectCode(limitedInput, undefined, {
+        contextEpoch: "epoch-1",
+      }),
+    );
+    const limitedContinuation = success(
+      await workspace.inspectCode(limitedInput, undefined, {
+        contextEpoch: "epoch-1",
+      }),
+    );
+    assert.equal(limited.data.status, "content");
+    assert.ok(limited.data.omitted_bytes > 0);
+    assert.equal(limitedContinuation.data.status, "partial");
+    assert.ok(limitedContinuation.data.new_bytes > 0);
+    const compacted = success(
+      await workspace.inspectCode(
+        {
+          source_revision_id: revision,
+          target: { path: "src/service.ts" },
+          view: "raw",
+          range_utf8_bytes: [0, 40],
+        },
+        undefined,
+        { contextEpoch: "epoch-2" },
+      ),
+    );
+    assert.equal(compacted.data.status, "content");
+    assert.equal(compacted.data.new_bytes, 40);
+  });
+});
+
+test("working set deduplicates identical bytes across semantic and raw views", async () => {
+  await withWorkspace(async (root) => {
+    const workspace = new SemanticWorkspace(root, {
+      taskContract: { session_id: "cross-view" },
+    });
+    const symbol = success(
+      await workspace.outlineCode({ target: { path: "src/service.ts" } }),
+    ).data.items.find((item) => item.qualified_name === "formatName");
+    assert.ok(symbol);
+    const semantic = success(
+      await workspace.inspectCode(
+        { target: { symbol_ref: symbol.symbol_ref }, view: "body" },
+        undefined,
+        { contextEpoch: "cross-view:epoch:1" },
+      ),
+    );
+    const raw = success(
+      await workspace.inspectCode(
+        {
+          target: { path: "src/service.ts" },
+          view: "raw",
+          range_utf8_bytes: semantic.data.range_utf8_bytes,
+        },
+        undefined,
+        { contextEpoch: "cross-view:epoch:1" },
+      ),
+    );
+    assert.equal(raw.data.status, "already_available");
+    assert.deepEqual(raw.data.segments, []);
+  });
+});
+
+test("conversation constraints and recall survive multiple execution epochs", async () => {
+  await withWorkspace(async (root) => {
+    const memory = new ConversationMemoryStore(root, "durable-conversation");
+    const first = await memory.beginRequest({
+      currentRequest: "Keep the mobile title blue.",
+      userGoal: "Improve the portfolio.",
+    });
+    await memory.recordAssistant("The mobile title is now blue.");
+    await memory.recordChange({
+      receiptId: "changeset://blue-title",
+      files: ["src/styles.css"],
+      symbols: [".title"],
+      summary: "Changed the mobile title from black to blue.",
+      validation: "passed",
+    });
+    await memory.rotate("model_compaction");
+    await memory.rotate("model_compaction");
+    const latest = await memory.beginRequest({
+      currentRequest: "Return to the previous title color.",
+      userGoal: "Improve the portfolio.",
+    });
+    assert.notEqual(
+      first.capsule.executionEpochId,
+      latest.capsule.executionEpochId,
+    );
+    assert.equal(
+      latest.capsule.relevantConstraints.some((fact) =>
+        fact.value.includes("mobile title blue"),
+      ),
+      true,
+    );
+    const recalled = await memory.recall({ topic: "title color" });
+    assert.equal(recalled.changes[0]?.id, "changeset://blue-title");
+    assert.equal(
+      recalled.dialogue.some((turn) => turn.content.includes("blue")),
+      true,
     );
   });
 });
@@ -656,10 +1440,10 @@ test("run_task isolates writes, captures effects, logs evidence, and is idempote
       task: { task_id: "test" },
       limits: { timeout_ms: 10_000 },
       network: "deny" as const,
-      idempotency_key: "isolated-test-run",
     };
     const executed = success(await workspace.runTask(input));
     assert.match(executed.data.run_ref, /^run:\/\//);
+    assert.match(executed.data.run_attempt_ref ?? "", /^run-attempt:\/\//);
     assert.equal(executed.data.status, "passed");
     assert.equal(executed.data.filesystem_effects.disposition, "captured");
     assert.match(
@@ -706,6 +1490,22 @@ test("run_task isolates writes, captures effects, logs evidence, and is idempote
     const retried = success(await workspace.runTask(input));
     assert.equal(retried.data.run_ref, executed.data.run_ref);
     assert.equal(executor.executions, 1);
+
+    const attempt = JSON.parse(
+      await readFile(
+        join(
+          root,
+          ".blame",
+          "harness",
+          "run-attempts",
+          `${executed.data.run_attempt_ref?.slice("run-attempt://".length)}.json`,
+        ),
+        "utf8",
+      ),
+    ) as { run_ref: string; status: string; tool_call_id: string };
+    assert.equal(attempt.status, "passed");
+    assert.equal(attempt.run_ref, executed.data.run_ref);
+    assert.match(attempt.tool_call_id, /^direct-/);
 
     const stored = JSON.parse(
       await readFile(
@@ -776,6 +1576,122 @@ test("run_task discovers package tasks and normalizes package selections", async
   });
 });
 
+test("run_task diagnoses missing dependencies and exposes a controlled install task", async () => {
+  await withWorkspace(async (root) => {
+    const missingExecutor = new RecordingTaskExecutor(
+      "failed",
+      "Error: Cannot find module 'missing-package'\n",
+    );
+    const workspace = new SemanticWorkspace(root, {
+      taskExecutor: missingExecutor,
+    });
+    const state = success(await workspace.workspaceState());
+    assert.equal(
+      state.data.task_catalog.some((task) => task.kind === "dependencies"),
+      true,
+    );
+    const failed = success(
+      await workspace.runTask({
+        source_revision_id: state.data.source_revision.source_revision_id,
+        task: { task_id: "test" },
+        limits: { timeout_ms: 10_000 },
+      }),
+    );
+    assert.equal(
+      failed.data.diagnostics.some(
+        (diagnostic) => diagnostic.code === "DEPENDENCY_MISSING",
+      ),
+      true,
+    );
+    const installExecutor = new RecordingTaskExecutor();
+    const installWorkspace = new SemanticWorkspace(root, {
+      taskExecutor: installExecutor,
+    });
+    const install = success(
+      await installWorkspace.runTask({
+        source_revision_id: state.data.source_revision.source_revision_id,
+        task: { kind: "dependencies" },
+        limits: { timeout_ms: 10_000 },
+        network: "project_allowlist",
+      }),
+    );
+    assert.equal(install.data.status, "passed");
+    assert.equal(installExecutor.lastInput?.network, "project_allowlist");
+    assert.match(installExecutor.lastInput?.args.join(" ") ?? "", /ci|install/);
+  });
+});
+
+test("run_task persists every terminal status and recovers interrupted attempts", async () => {
+  await withWorkspace(async (root) => {
+    const statuses = [
+      ["passed", "passed"],
+      ["failed", "failed"],
+      ["timed_out", "timed_out"],
+      ["cancelled", "cancelled"],
+      ["execution_error", "runtime_error"],
+    ] as const;
+    for (const [executionStatus, attemptStatus] of statuses) {
+      const workspace = new SemanticWorkspace(root, {
+        taskExecutor: new RecordingTaskExecutor(executionStatus),
+      });
+      const revision = success(await workspace.workspaceState()).data
+        .source_revision.source_revision_id;
+      const executed = success(
+        await workspace.runTask(
+          {
+            source_revision_id: revision,
+            task: { task_id: "test" },
+            limits: { timeout_ms: 10_000 },
+          },
+          undefined,
+          { sessionId: "terminal-statuses", toolCallId: executionStatus },
+        ),
+      );
+      assert.ok(executed.data.run_attempt_ref);
+      assert.equal(
+        (await readRunAttempt(root, executed.data.run_attempt_ref)).status,
+        attemptStatus,
+      );
+    }
+
+    const attempts = new RunAttemptStore(root);
+    const active = await attempts.start({
+      environment: "default",
+      identity: "active-attempt",
+      revision: "src_active",
+      task: { task_id: "test" },
+      toolCallId: "active",
+    });
+    const replacement = await attempts.start({
+      environment: "default",
+      identity: "replacement-attempt",
+      revision: "src_replacement",
+      task: { task_id: "test" },
+      toolCallId: "replacement",
+    });
+    assert.equal(
+      (await readRunAttempt(root, active.run_attempt_ref)).status,
+      "running",
+    );
+    await attempts.finish(active, "cancelled");
+    await attempts.finish(replacement, "cancelled");
+
+    const interrupted = await writeInterruptedRunAttempt(root);
+    const recovery = await attempts.start({
+      environment: "default",
+      identity: "recovery-attempt",
+      revision: "src_recovery",
+      task: { task_id: "test" },
+      toolCallId: "recovery",
+    });
+    assert.equal(
+      (await readRunAttempt(root, interrupted.run_attempt_ref)).status,
+      "runtime_error",
+    );
+    await attempts.finish(recovery, "cancelled");
+  });
+});
+
 test("apply_change can format touched files with the pinned Prettier version", async () => {
   await withWorkspace(async (root) => {
     const workspace = new SemanticWorkspace(root);
@@ -821,7 +1737,8 @@ test("Cline adapter registers a small read/write harness with strict schemas", a
         "outline_code",
         "inspect_code",
         "get_relation_context",
-        "apply_change",
+        "recall_context",
+        "edit_code",
         "run_task",
         "inspect_run",
         "review_change",
@@ -844,13 +1761,84 @@ test("Cline adapter registers a small read/write harness with strict schemas", a
     assert.ok(searchTool);
     const error = await searchTool.execute(
       {
-        source_revision_id: "src_00000000000000000000000000000000",
-        query: { kind: "text", pattern: "x" },
+        query: { kind: "text", pattern: "" },
       },
       { agentId: "test", iteration: 1 },
     );
     assert.equal((error as { isError?: boolean }).isError, true);
   });
+});
+
+test("Cline adapter advances read epochs and stops low-novelty exploration", async () => {
+  await withWorkspace(async (root) => {
+    const tools = semanticWorkspaceTools(root, { governorBudget: 8 });
+    const inspect = tools.find((tool) => tool.name === "inspect_code");
+    const search = tools.find((tool) => tool.name === "search_code");
+    assert.ok(inspect);
+    assert.ok(search);
+    const revision = success(await new SemanticWorkspace(root).workspaceState())
+      .data.source_revision.source_revision_id;
+    const input = {
+      source_revision_id: revision,
+      target: { path: "src/service.ts" },
+      view: "raw",
+    } as const;
+    const first = await inspect.execute(input, toolContext("epoch-one"));
+    const repeated = await inspect.execute(input, toolContext("epoch-one"));
+    const afterCompaction = await inspect.execute(
+      input,
+      toolContext("epoch-two"),
+    );
+    await inspect.execute(input, toolContext("epoch-two"));
+    await inspect.execute(input, toolContext("epoch-two"));
+    await inspect.execute(input, toolContext("epoch-two"));
+    assert.equal(toolDataStatus(first), "content");
+    assert.equal(toolDataStatus(repeated), "already_available");
+    assert.equal(toolDataStatus(afterCompaction), "content");
+    const blocked = await search.execute(
+      {
+        source_revision_id: revision,
+        query: { kind: "text", pattern: "formatName" },
+      },
+      toolContext("epoch-two"),
+    );
+    assert.equal((blocked as { isError?: boolean }).isError, true);
+    assert.match(JSON.stringify(blocked), /already present.*targeted edit/iu);
+  });
+});
+
+test("cost governor resets only after an applied edit or a new epoch", () => {
+  const governor = new HarnessCostGovernor(8);
+  const epoch = { contextEpoch: "epoch-a", iteration: 1 };
+  const duplicateRead = {
+    status: "success",
+    data: {
+      status: "already_available",
+      overlap_rate: 1,
+      new_bytes: 0,
+      range_utf8_bytes: [0, 100],
+    },
+  } as never;
+  for (let index = 0; index < 4; index += 1)
+    governor.after("inspect_code", {}, duplicateRead, epoch);
+  governor.after(
+    "edit_code",
+    {},
+    { status: "success", data: { status: "conflict" } } as never,
+    epoch,
+  );
+  assert.equal(
+    governor.before("search_code", epoch.contextEpoch)?.status,
+    "error",
+  );
+  governor.after(
+    "edit_code",
+    {},
+    { status: "success", data: { status: "applied" } } as never,
+    epoch,
+  );
+  assert.equal(governor.before("search_code", epoch.contextEpoch), undefined);
+  assert.equal(governor.before("search_code", "epoch-b"), undefined);
 });
 
 test("Cline adapter can delegate semantic execution without changing its tool contract", async () => {
@@ -873,6 +1861,7 @@ test("Cline adapter can delegate semantic execution without changing its tool co
       input: {},
       taskContract: { session_id: "session-1", story_id: "US-1" },
       tool: "workspace_state",
+      toolContext: { contextEpoch: "session-1:epoch:0" },
       workspaceRoot:
         "/home/blame/.local/share/blame/runtime/worktrees/project/story-US-1-test",
     },
@@ -1293,13 +2282,13 @@ test("P1 relation and impact views stay bounded and identify tests", async () =>
       join(root, "src", "consumer.ts"),
       'import { formatName } from "@core/service";\nformatName("Grace");\n',
     );
-    const stale = await workspace.getRelationContext({
-      source_revision_id: revision,
-      target: { symbol_ref: target.symbol_ref },
-    });
-    assert.equal(stale.status, "error");
-    if (stale.status === "error")
-      assert.equal(stale.error.code, "STALE_REVISION");
+    const rebased = success(
+      await workspace.getRelationContext({
+        source_revision_id: revision,
+        target: { symbol_ref: target.symbol_ref },
+      }),
+    );
+    assert.equal(rebased.data.analysis, "exact");
   });
 });
 
@@ -1426,14 +2415,103 @@ async function fileDigest(path: string) {
     .digest("hex");
 }
 
+async function readRunAttempt(root: string, ref: string) {
+  return JSON.parse(
+    await readFile(
+      join(
+        root,
+        ".blame",
+        "harness",
+        "run-attempts",
+        `${ref.slice("run-attempt://".length)}.json`,
+      ),
+      "utf8",
+    ),
+  ) as { status: string };
+}
+
+async function writeInterruptedRunAttempt(root: string) {
+  const digest = createHash("sha256")
+    .update("interrupted-attempt")
+    .digest("hex");
+  const runAttemptRef = `run-attempt://${digest}`;
+  const directory = join(root, ".blame", "harness", "run-attempts");
+  await mkdir(directory, { recursive: true });
+  await writeFile(
+    join(directory, `${digest}.json`),
+    JSON.stringify({
+      schema_version: "2.0",
+      run_attempt_ref: runAttemptRef,
+      tool_call_id: "interrupted",
+      revision: "src_interrupted",
+      task: { task_id: "test" },
+      environment: "default",
+      status: "running",
+      started_at: new Date(0).toISOString(),
+    }),
+  );
+  return { run_attempt_ref: runAttemptRef };
+}
+
 function success<T>(result: HarnessToolResult<T>): HarnessToolSuccess<T> {
   if (result.status !== "success") assert.fail(JSON.stringify(result));
   return result;
 }
 
+function parseContinuityCapsule(value: string) {
+  const content = value.match(
+    /<continuity_capsule>\n([\s\S]*?)\n<\/continuity_capsule>/u,
+  )?.[1];
+  assert.ok(content);
+  return JSON.parse(content) as {
+    conversationId: string;
+    executionEpochId: string;
+    currentRequest?: string;
+    relevantConstraints: Array<{ value: string }>;
+  };
+}
+
+function toolDataStatus(result: unknown) {
+  return (result as { data?: { status?: string } }).data?.status;
+}
+
+function toolContext(messageId: string) {
+  return {
+    agentId: "test",
+    conversationId: "conversation",
+    iteration: 1,
+    snapshot: {
+      agentId: "test",
+      conversationId: "conversation",
+      iteration: 1,
+      messages: [
+        { content: [], createdAt: 0, id: messageId, role: "user" as const },
+      ],
+      pendingToolCalls: [],
+      status: "running" as const,
+      usage: {
+        cacheReadTokens: 0,
+        cacheWriteTokens: 0,
+        inputTokens: 0,
+        outputTokens: 0,
+      },
+    },
+  };
+}
+
 class RecordingTaskExecutor implements TaskExecutor {
   executions = 0;
   lastInput?: TaskExecutionInput;
+  private readonly status: TaskExecutionResult["status"];
+  private readonly stdout?: string;
+
+  constructor(
+    status: TaskExecutionResult["status"] = "passed",
+    stdout?: string,
+  ) {
+    this.status = status;
+    this.stdout = stdout;
+  }
 
   async capability() {
     return "sandbox_exec" as const;
@@ -1444,10 +2522,12 @@ class RecordingTaskExecutor implements TaskExecutor {
     this.lastInput = input;
     await writeFile(join(input.overlayRoot, "generated.txt"), "generated\n");
     return {
-      status: "passed",
-      exitCode: 0,
+      status: this.status,
+      exitCode: this.status === "passed" ? 0 : 1,
       signal: null,
-      stdout: `${join(input.overlayRoot, "src", "service.ts")}:2:3 warning fixture passed\nerror token=supersecretvalue\n`,
+      stdout:
+        this.stdout ??
+        `${join(input.overlayRoot, "src", "service.ts")}:2:3 warning fixture passed\nerror token=supersecretvalue\n`,
       stderr: "",
       outputTruncated: false,
       isolation: "sandbox_exec",

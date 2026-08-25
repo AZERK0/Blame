@@ -1,0 +1,10 @@
+{"timestamp":"2026-08-24T02:00:53.222Z","event_name":"blame.agent.event_usage","attributes":{"inputTokens":10813,"cacheReadTokens":0}}
+{"timestamp":"2026-08-24T02:01:02.905Z","event_name":"blame.agent.event_usage","attributes":{"inputTokens":12197,"cacheReadTokens":9728}}
+{"timestamp":"2026-08-24T02:01:19.852Z","event_name":"blame.agent.event_usage","attributes":{"inputTokens":14021,"cacheReadTokens":11776}}
+{"timestamp":"2026-08-24T02:01:19.945Z","event_name":"blame.agent.event_tool","attributes":{"status":"finished","toolName":"inspect_code","durationMs":111}}
+{"timestamp":"2026-08-24T02:01:20.108Z","event_name":"blame.agent.event_tool","attributes":{"status":"finished","toolName":"inspect_code","durationMs":153}}
+{"timestamp":"2026-08-24T02:01:20.302Z","event_name":"blame.agent.event_tool","attributes":{"status":"finished","toolName":"search_code","durationMs":205}}
+{"timestamp":"2026-08-24T02:01:50.123Z","event_name":"blame.agent.event_usage","attributes":{"inputTokens":16666,"cacheReadTokens":13824}}
+{"timestamp":"2026-08-24T02:01:50.219Z","event_name":"blame.agent.event_tool","attributes":{"status":"finished","toolName":"inspect_code","durationMs":120}}
+{"timestamp":"2026-08-24T02:02:07.914Z","event_name":"blame.agent.event_usage","attributes":{"inputTokens":16862,"cacheReadTokens":15872}}
+{"timestamp":"2026-08-24T02:02:07.915Z","event_name":"blame.agent.event_done","attributes":{"totalInputTokens":70559,"totalOutputTokens":3853,"totalCacheReadTokens":51200}}

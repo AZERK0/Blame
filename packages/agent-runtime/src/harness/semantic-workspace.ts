@@ -1,8 +1,7 @@
 import { ArtifactStore } from "./artifact-store.js";
+import { EditService, type EditCodeOutcome } from "./edit-service.js";
 import { environmentSpec } from "./environment-service.js";
 import {
-  findExactNode,
-  inspectParsedNode,
   materializeSymbol,
   outlineSymbol,
   parseCode,
@@ -20,14 +19,12 @@ import {
 import {
   harnessSuccess,
   provenance,
-  sha256,
   type HarnessToolResult,
 } from "./protocol.js";
 import {
   approximateTokens,
   bounded,
   countBy,
-  inspectTarget,
   nodeRef,
   publicProposal,
   revisionVector,
@@ -37,8 +34,6 @@ import {
   textMatches,
   toolError,
   topLevelEntries,
-  validRange,
-  validateInspectInput,
   validateOutlineInput,
   validateSearchInput,
   type InspectCodeInput,
@@ -49,6 +44,10 @@ import {
   type SearchMatch,
 } from "./semantic-workspace-support.js";
 import { publicRun, RunService } from "./run-service.js";
+import {
+  InspectCodeService,
+  type InspectCodeData,
+} from "./inspect-code-service.js";
 import { RelationService } from "./relation-service.js";
 import { ChangeReviewService } from "./change-review-service.js";
 import { readTaskCatalog } from "./task-catalog.js";
@@ -61,10 +60,11 @@ import {
 import { searchWithRipgrep } from "./lexical-search.js";
 import {
   applyChangeInputSchema,
-  inspectCodeInputSchema,
+  editCodeInputSchema,
   inspectArtifactInputSchema,
   inspectRunInputSchema,
   outlineCodeInputSchema,
+  recallContextInputSchema,
   runTaskInputSchema,
   searchCodeInputSchema,
   workspaceStateInputSchema,
@@ -72,10 +72,13 @@ import {
   type InspectArtifactInput,
   type GetRelationContextInput,
   type InspectRunInput,
+  type RecallContextInput,
   type RunTaskInput,
   type ValidateChangeInput,
+  type EditCodeInput,
 } from "./schemas.js";
 import { ValidationService } from "./validation-service.js";
+import { ConversationMemoryStore } from "./conversation-memory.js";
 
 export type {
   InspectCodeInput,
@@ -86,6 +89,7 @@ export type {
 } from "./semantic-workspace-support.js";
 
 export type SemanticWorkspaceOptions = {
+  legacyMutationTools?: boolean;
   redactSensitiveContent?: boolean;
   taskExecutor?: TaskExecutor;
   taskContract?: {
@@ -103,7 +107,10 @@ export type AppliedChange = {
 export class SemanticWorkspace {
   private readonly artifacts: ArtifactStore;
   private readonly changes: ChangeService;
+  private readonly edits: EditService;
   private readonly files: WorkspaceFiles;
+  private readonly inspections: InspectCodeService;
+  private readonly memory: ConversationMemoryStore;
   private readonly relations: RelationService;
   private readonly review: ChangeReviewService;
   private readonly runs: RunService;
@@ -113,6 +120,19 @@ export class SemanticWorkspace {
     this.files = new WorkspaceFiles(workspaceRoot);
     this.artifacts = new ArtifactStore(this.files.root);
     this.changes = new ChangeService(this.files, this.artifacts);
+    this.edits = new EditService(
+      this.files,
+      this.changes,
+      options.taskContract?.session_id,
+    );
+    this.inspections = new InspectCodeService(
+      this.files,
+      options.taskContract?.session_id,
+    );
+    this.memory = new ConversationMemoryStore(
+      this.files.root,
+      options.taskContract?.session_id ?? "unscoped-session",
+    );
     this.relations = new RelationService(this.files);
     this.runs = new RunService(
       this.files,
@@ -203,8 +223,10 @@ export class SemanticWorkspace {
           },
           capabilities: {
             semantic_workspace: {
+              protocol_version: "2.0",
               languages: [
                 "bash",
+                "css",
                 "csharp",
                 "go",
                 "java",
@@ -223,14 +245,37 @@ export class SemanticWorkspace {
               ],
               search: ["text", "symbol", "ast_pattern"],
               edit_operations: [
-                "replace_node",
+                "replace",
+                "replace_symbol",
+                "replace_body",
+                "replace_signature",
                 "insert_before",
                 "insert_after",
-                "text_replace",
+                "delete",
+                "delete_symbol",
+                "set_css_declarations",
+                "set_css_declaration",
+                "remove_css_declaration",
+                "insert_css_declaration",
                 "create_file",
-                "delete_file",
                 "move_file",
+                "patch",
+                "patch_file",
               ],
+              feature_flags: [
+                "BLAME_CONTEXT_EPOCHS",
+                "BLAME_SEMANTIC_READ_REBASE",
+                "BLAME_WORKING_SET_V2",
+                "BLAME_SEMANTIC_REBASE_V2",
+                "BLAME_PATCH_RECOVERY_V2",
+                "BLAME_COST_GOVERNOR_V2",
+              ],
+              language_capabilities: {
+                css: { outline: true, semantic_edit: true },
+                javascript: { outline: true, semantic_edit: true },
+                typescript: { outline: true, semantic_edit: true },
+                unknown: { outline: false, fallback: "patch" },
+              },
               precision: "syntax",
               raw_fallback: true,
             },
@@ -330,10 +375,8 @@ export class SemanticWorkspace {
     try {
       searchCodeInputSchema.parse(input);
       validateSearchInput(input);
-      const snapshot = await this.exactSnapshot(
-        input.source_revision_id,
-        signal,
-      );
+      const snapshot = await this.files.snapshot(signal);
+      const sourceRevision = snapshot.revision.source_revision_id;
       const candidates = scopedFiles(this.files, snapshot.files, input.scope);
       const maximum = bounded(input.max_results, 1, 100, 30);
       const tokenBudget = bounded(
@@ -374,7 +417,7 @@ export class SemanticWorkspace {
             items.push({
               ...match,
               node_ref: nodeRef(
-                input.source_revision_id,
+                sourceRevision,
                 match.path,
                 content,
                 start,
@@ -408,7 +451,7 @@ export class SemanticWorkspace {
             const materialized = materializeSymbol({
               symbol,
               path,
-              revision: input.source_revision_id,
+              revision: sourceRevision,
               content,
             });
             items.push({
@@ -442,7 +485,7 @@ export class SemanticWorkspace {
               excerpt: match.text,
               match_reason: `ast_pattern:${match.kind}`,
               node_ref: nodeRef(
-                input.source_revision_id,
+                sourceRevision,
                 path,
                 content,
                 start,
@@ -456,7 +499,7 @@ export class SemanticWorkspace {
             ...textMatches(
               content,
               path,
-              input.source_revision_id,
+              sourceRevision,
               input.query,
               maximum - items.length,
             ),
@@ -514,10 +557,8 @@ export class SemanticWorkspace {
     try {
       outlineCodeInputSchema.parse(input);
       validateOutlineInput(input);
-      const snapshot = await this.exactSnapshot(
-        input.source_revision_id,
-        signal,
-      );
+      const snapshot = await this.files.snapshot(signal);
+      const sourceRevision = snapshot.revision.source_revision_id;
       const target = this.files.normalizePath(input.target.path);
       const candidates = snapshot.files.filter(
         (path) =>
@@ -556,7 +597,7 @@ export class SemanticWorkspace {
               materializeSymbol({
                 symbol,
                 path,
-                revision: input.source_revision_id,
+                revision: sourceRevision,
                 content,
               }),
               input.include,
@@ -609,110 +650,29 @@ export class SemanticWorkspace {
     }
   }
 
-  async inspectCode(input: InspectCodeInput, signal?: AbortSignal) {
+  async inspectCode(
+    input: InspectCodeInput,
+    signal?: AbortSignal,
+    context?: { contextEpoch?: string },
+  ): Promise<HarnessToolResult<InspectCodeData>> {
+    return this.inspections.inspect(input, signal, context);
+  }
+
+  async recallContext(input: RecallContextInput) {
     const startedAt = Date.now();
     try {
-      inspectCodeInputSchema.parse(input);
-      validateInspectInput(input);
-      const snapshot = await this.exactSnapshot(
-        input.source_revision_id,
-        signal,
-      );
-      const target = inspectTarget(input.target);
-      if (target.handle && target.handle.revision !== input.source_revision_id)
-        throw staleRevision(snapshot.revision.source_revision_id);
-      const path = this.files.normalizePath(
-        target.handle?.path ?? target.path!,
-      );
-      let content: Buffer;
-      try {
-        content = (await this.files.read(path)).content;
-      } catch (error) {
-        if (
-          error &&
-          typeof error === "object" &&
-          "code" in error &&
-          error.code === "ENOENT"
-        )
-          throw new Error(`TARGET_GONE:${path}`);
-        throw error;
-      }
-      const fileRef = await this.files.fileRef(
-        path,
-        input.source_revision_id,
-        content,
-      );
-      const maximumBytes =
-        bounded(input.budget?.max_output_tokens, 100, 20_000, 2_500) * 4;
-      let inspected: { content: string; range_utf8_bytes: [number, number] };
-      let analysis: "exact" | "heuristic" = "exact";
-      if (input.view === "raw") {
-        const range = input.range_utf8_bytes
-          ? validRange(input.range_utf8_bytes, content.length)
-          : ([0, content.length] as [number, number]);
-        inspected = {
-          content: content.subarray(...range).toString("utf8"),
-          range_utf8_bytes: range,
-        };
-      } else {
-        if (!target.handle)
-          throw new Error(
-            "A symbol_ref or node_ref is required for structured views.",
-          );
-        const fragment = content.subarray(
-          target.handle.start,
-          target.handle.end,
-        );
-        if (sha256(fragment) !== target.handle.digest)
-          throw new Error(`TARGET_GONE:${path}`);
-        const parsed = parseCode(path, content);
-        const node = findExactNode(
-          parsed,
-          content,
-          target.handle.start,
-          target.handle.end,
-          target.handle.digest,
-        );
-        if (!node) throw new Error(`UNSUPPORTED_STRUCTURE:${path}`);
-        inspected = inspectParsedNode({
-          content,
-          parsed: node,
-          view: input.view,
-        });
-        analysis = parsed.errorCount ? "heuristic" : "exact";
-      }
-      const bytes = Buffer.from(inspected.content);
-      const selectedBytes = utf8PrefixLength(bytes, maximumBytes);
-      const truncated = selectedBytes < bytes.length;
-      const returned = bytes.subarray(0, selectedBytes).toString("utf8");
-      await this.ensureUnchanged(snapshot, signal);
+      recallContextInputSchema.parse(input);
+      const snapshot = await this.files.snapshot();
+      const data = await this.memory.recall(input);
       return harnessSuccess({
         startedAt,
         revision: revisionVector(snapshot),
-        provenance: [
-          provenance(
-            input.view === "raw" ? "filesystem" : "parser",
-            revisionVector(snapshot),
-            [path],
-          ),
-        ],
-        data: {
-          path,
-          file_ref: fileRef,
-          view: input.view,
-          content: returned,
-          range_utf8_bytes: inspected.range_utf8_bytes,
-          omitted_bytes: bytes.length - selectedBytes,
-        },
+        provenance: [provenance("harness", revisionVector(snapshot))],
+        data,
         coverage: {
-          scope: truncated ? "partial" : "complete",
-          truncated,
-          analysis,
-          ...(truncated
-            ? {
-                continuation: `${inspected.range_utf8_bytes[0] + selectedBytes}`,
-              }
-            : {}),
+          scope: data.truncated ? "partial" : "complete",
+          truncated: data.truncated,
+          analysis: "exact",
         },
       });
     } catch (error) {
@@ -725,6 +685,33 @@ export class SemanticWorkspace {
     signal?: AbortSignal,
   ) {
     return this.relations.getRelationContext(input, signal);
+  }
+
+  async editCode(
+    input: EditCodeInput,
+    context?: { sessionId?: string; toolCallId?: string },
+  ): Promise<HarnessToolResult<EditCodeOutcome>> {
+    const startedAt = Date.now();
+    try {
+      editCodeInputSchema.parse(input);
+      const result = await this.edits.edit(input, context);
+      if (result.status === "applied") await this.rememberEdit(result);
+      if (result.status === "conflict")
+        await this.memory.recordRuntimeEvent(
+          "edit_conflict",
+          context?.toolCallId ?? JSON.stringify(input),
+          result.reason,
+        );
+      if (result.status === "validation_failed")
+        await this.memory.recordRuntimeEvent(
+          "rollback",
+          context?.toolCallId ?? JSON.stringify(input),
+          "validation_failed",
+        );
+      return editCodeResponse(this.files, this.artifacts, result, startedAt);
+    } catch (error) {
+      return toolError(error);
+    }
   }
 
   applyChange(
@@ -814,7 +801,11 @@ export class SemanticWorkspace {
     }
   }
 
-  async runTask(input: RunTaskInput, signal?: AbortSignal) {
+  async runTask(
+    input: RunTaskInput,
+    signal?: AbortSignal,
+    context?: { sessionId?: string; toolCallId?: string },
+  ) {
     const startedAt = Date.now();
     try {
       runTaskInputSchema.parse(input);
@@ -822,25 +813,14 @@ export class SemanticWorkspace {
         input.source_revision_id,
         signal,
       );
-      const run = await this.runs.run(input, snapshot, signal);
-      const revision = {
-        source_revision_id: run.source_revision.source_revision_id,
-        environment_spec_revision_id: run.environment_spec_revision_id,
-        runtime_instance_id: run.runtime_instance_id,
-      };
-      return harnessSuccess({
-        startedAt,
-        revision,
-        provenance: [provenance("harness", revision)],
-        data: publicRun(run),
-        artifacts: [run.logs.complete, run.filesystem_effects.artifact],
-        diagnostics: run.diagnostics,
-        coverage: {
-          scope: run.logs.output_truncated ? "partial" : "complete",
-          truncated: run.logs.output_truncated,
-          analysis: "observed_subset",
-        },
+      const run = await this.runs.run(input, snapshot, signal, context);
+      await this.memory.recordValidation({
+        id: run.run_ref,
+        status: run.status,
+        taskId: run.task.task_id,
+        terminal: run.status === "passed" ? "passed" : "failed",
       });
+      return runTaskResponse(run, startedAt);
     } catch (error) {
       return toolError(error);
     }
@@ -961,7 +941,36 @@ export class SemanticWorkspace {
   }
 
   async validateChange(input: ValidateChangeInput, signal?: AbortSignal) {
-    return this.review.validateChange(input, signal);
+    const result = await this.review.validateChange(input, signal);
+    if (result.status !== "success") return result;
+    const data = result.data as {
+      evidence_ref?: string;
+      summary?: { complete?: boolean };
+    };
+    if (data.evidence_ref)
+      await this.memory.recordRuntimeEvent(
+        "validation",
+        data.evidence_ref,
+        data.summary?.complete ? "passed" : "incomplete",
+      );
+    return result;
+  }
+
+  private async rememberEdit(
+    result: Extract<EditCodeOutcome, { status: "applied" }>,
+  ) {
+    const created = await this.memory.recordChange({
+      artifactRef: result.diff_artifact_ref,
+      receiptId: result.receipt_ref,
+      files: result.changed_files.map((file) => file.path),
+      symbols: changedSymbolNames(result.changed_symbols),
+      summary: result.changed_files
+        .map((file) => `${file.path} (+${file.additions}/-${file.deletions})`)
+        .join(", "),
+      validation: result.validation.parse === "passed" ? "passed" : "skipped",
+    });
+    if (created && result.validation.parse === "passed")
+      await this.memory.rotate("validated_edit");
   }
 
   private async exactSnapshot(expected: string, signal?: AbortSignal) {
@@ -989,4 +998,84 @@ function utf8PrefixLength(content: Buffer, maximumBytes: number) {
   let end = maximumBytes;
   while (end > 0 && (content[end]! & 0xc0) === 0x80) end -= 1;
   return end;
+}
+
+function changedSymbolNames(
+  changes: Extract<EditCodeOutcome, { status: "applied" }>["changed_symbols"],
+) {
+  return changes.flatMap((change) =>
+    [...change.added, ...change.modified, ...change.removed].flatMap(
+      (symbol) => {
+        if (typeof symbol === "string") return [symbol];
+        if (!symbol || typeof symbol !== "object") return [];
+        const value = symbol as { qualified_name?: unknown; name?: unknown };
+        const name = value.qualified_name ?? value.name;
+        return typeof name === "string" ? [name] : [];
+      },
+    ),
+  );
+}
+
+function editArtifactRef(result: EditCodeOutcome) {
+  if (result.status === "applied") return result.diff_artifact_ref;
+  if (result.status === "validation_failed")
+    return result.proposed_diff_artifact_ref;
+  return undefined;
+}
+
+function editDiagnostics(result: EditCodeOutcome) {
+  if (result.status === "applied") return result.validation.diagnostics;
+  if (result.status === "validation_failed") return result.diagnostics;
+  return [];
+}
+
+async function editCodeResponse(
+  files: WorkspaceFiles,
+  artifacts: ArtifactStore,
+  result: EditCodeOutcome,
+  startedAt: number,
+) {
+  const revision = {
+    source_revision_id:
+      result.status === "applied"
+        ? result.source_revision
+        : (await files.snapshot()).revision.source_revision_id,
+  };
+  const artifactRef = editArtifactRef(result);
+  const artifact = artifactRef
+    ? await artifacts.metadata(artifactRef, { audience: "agent" })
+    : undefined;
+  const diagnostics = editDiagnostics(result);
+  return harnessSuccess({
+    startedAt,
+    revision,
+    provenance: [provenance("harness", revision)],
+    data: result,
+    ...(artifact ? { artifacts: [artifact] } : {}),
+    ...(diagnostics.length ? { diagnostics } : {}),
+  });
+}
+
+function runTaskResponse(
+  run: Awaited<ReturnType<RunService["run"]>>,
+  startedAt: number,
+) {
+  const revision = {
+    source_revision_id: run.source_revision.source_revision_id,
+    environment_spec_revision_id: run.environment_spec_revision_id,
+    runtime_instance_id: run.runtime_instance_id,
+  };
+  return harnessSuccess({
+    startedAt,
+    revision,
+    provenance: [provenance("harness", revision)],
+    data: publicRun(run),
+    artifacts: [run.logs.complete, run.filesystem_effects.artifact],
+    diagnostics: run.diagnostics,
+    coverage: {
+      scope: run.logs.output_truncated ? "partial" : "complete",
+      truncated: run.logs.output_truncated,
+      analysis: "observed_subset",
+    },
+  });
 }

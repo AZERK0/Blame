@@ -28,7 +28,11 @@ export type SymbolKind =
   | "struct"
   | "trait"
   | "type"
-  | "variable";
+  | "variable"
+  | "css_rule"
+  | "css_media"
+  | "css_keyframes"
+  | "css_custom_property";
 
 export type CodeSymbol = {
   kind: SymbolKind;
@@ -49,15 +53,22 @@ export type OutlineSymbol = Pick<
   visibility?: string;
 };
 
-type ParsedTree = {
+export type ParsedTree = {
   byteOffset: number;
   lineOffset: number;
   root: SgNode;
 };
 
-type ParsedNode = ParsedTree & { node: SgNode };
+export type ParsedNode = ParsedTree & { node: SgNode };
 
-type ParsedSymbol = Omit<CodeSymbol, "symbol_ref"> & ParsedNode;
+export type ParsedSymbol = Omit<CodeSymbol, "symbol_ref"> & ParsedNode;
+
+type CurrentNodeCandidate = {
+  kind: string;
+  line_range: [number, number];
+  node_ref: string;
+  range_utf8_bytes: [number, number];
+};
 
 export type ParseResult = {
   language: string;
@@ -98,16 +109,34 @@ export function materializeSymbol(input: {
   path: string;
   revision: string;
   content: Buffer;
+  neighborNames?: string[];
+  ordinal?: number;
 }): CodeSymbol {
   const { symbol } = input;
   const [start, end] = symbol.range_utf8_bytes;
   const handle = encodeHandle("sym", {
-    version: 1,
+    version: 2,
     revision: input.revision,
     path: input.path,
     start,
     end,
-    digest: sha256(input.content.subarray(start, end)),
+    digest: sha256(input.content.subarray(start, end)).slice(0, 32),
+    observedBlobHash: sha256(input.content).slice(0, 32),
+    kind: symbol.kind,
+    language: languageName(input.path),
+    qualifiedName: symbol.qualified_name,
+    signatureDigest: sha256(normalizedSignature(symbol.signature)).slice(0, 16),
+    bodyFingerprint: bodyFingerprint(symbol, input.content),
+    ancestryFingerprint: ancestryFingerprint(symbol.qualified_name),
+    ...(input.neighborNames?.length
+      ? {
+          neighborFingerprint: sha256(input.neighborNames.join("\0")).slice(
+            0,
+            16,
+          ),
+        }
+      : {}),
+    ...(input.ordinal === undefined ? {} : { ordinal: input.ordinal }),
   });
   const { byteOffset, lineOffset, node, root, ...publicSymbol } = symbol;
   void byteOffset;
@@ -115,6 +144,20 @@ export function materializeSymbol(input: {
   void node;
   void root;
   return { ...publicSymbol, symbol_ref: handle };
+}
+
+export function symbolEditRange(
+  symbol: ParsedSymbol,
+  view: "body" | "signature" | "symbol",
+) {
+  const range = byteRange(symbol.node, symbol.byteOffset);
+  if (view === "symbol") return range;
+  const body = bodyNode(symbol.node);
+  if (view === "body") return body ? byteRange(body, symbol.byteOffset) : range;
+  return [
+    range[0],
+    body ? byteRange(body, symbol.byteOffset)[0] : range[1],
+  ] as [number, number];
 }
 
 export function outlineSymbol(
@@ -167,7 +210,8 @@ export function findExactNode(
   end: number,
   digest: string,
 ): ParsedNode | undefined {
-  if (sha256(content.subarray(start, end)) !== digest) return undefined;
+  if (!sha256(content.subarray(start, end)).startsWith(digest))
+    return undefined;
   for (const tree of parsed.trees) {
     let match: SgNode | undefined;
     walk(tree.root, (node) => {
@@ -195,6 +239,89 @@ export function structuralMatches(
     language: languageName(path),
     matches: matches.slice(0, maxResults),
   };
+}
+
+export function currentSymbolCandidates(input: {
+  content: Buffer;
+  kind?: string;
+  path: string;
+  qualifiedName?: string;
+  revision: string;
+  signatureDigest?: string;
+}) {
+  return parseCode(input.path, input.content)
+    .symbols.filter((symbol) => !input.kind || symbol.kind === input.kind)
+    .filter(
+      (symbol) =>
+        !input.qualifiedName || symbol.qualified_name === input.qualifiedName,
+    )
+    .map((symbol) => ({
+      symbol,
+      materialized: materializeSymbol({
+        symbol,
+        path: input.path,
+        revision: input.revision,
+        content: input.content,
+      }),
+      signatureMatches:
+        !input.signatureDigest ||
+        sha256(normalizedSignature(symbol.signature)).startsWith(
+          input.signatureDigest,
+        ),
+    }));
+}
+
+export function currentNodeCandidates(input: {
+  content: Buffer;
+  digest: string;
+  kind?: string;
+  path: string;
+  revision: string;
+}) {
+  const parsed = parseCode(input.path, input.content);
+  const candidates: CurrentNodeCandidate[] = [];
+  for (const tree of parsed.trees)
+    collectNodeCandidates(input, tree, candidates);
+  return candidates;
+}
+
+function collectNodeCandidates(
+  input: Parameters<typeof currentNodeCandidates>[0],
+  tree: ParsedTree,
+  candidates: CurrentNodeCandidate[],
+) {
+  walk(tree.root, (node) => {
+    if (!node.isNamed()) return;
+    const kind = String(node.kind());
+    if (input.kind && kind !== input.kind) return;
+    const range = byteRange(node, tree.byteOffset);
+    if (!sha256(input.content.subarray(...range)).startsWith(input.digest))
+      return;
+    candidates.push({
+      kind,
+      line_range: lineRange(node, tree.lineOffset),
+      node_ref: encodeNodeCandidate(input, kind, range),
+      range_utf8_bytes: range,
+    });
+  });
+}
+
+function encodeNodeCandidate(
+  input: Parameters<typeof currentNodeCandidates>[0],
+  kind: string,
+  range: [number, number],
+) {
+  return encodeHandle("node", {
+    version: 2,
+    revision: input.revision,
+    path: input.path,
+    start: range[0],
+    end: range[1],
+    digest: input.digest,
+    observedBlobHash: sha256(input.content).slice(0, 32),
+    kind,
+    language: languageName(input.path),
+  });
 }
 
 function parseCodeUncached(path: string, content: Buffer): ParseResult {
@@ -330,7 +457,7 @@ function symbolFromNode(
     node,
     kind,
     name,
-    qualified_name: [...containers, name].join("."),
+    qualified_name: qualifiedName(kind, containers, name),
     signature: signature(node, source, tree.byteOffset),
     ...(visibility(node) ? { visibility: visibility(node) } : {}),
     range_utf8_bytes: byteRange(node, tree.byteOffset),
@@ -339,6 +466,18 @@ function symbolFromNode(
 }
 
 function symbolKind(node: SgNode): SymbolKind | undefined {
+  if (node.kind() === "rule_set") return "css_rule";
+  if (node.kind() === "media_statement") return "css_media";
+  if (node.kind() === "keyframes_statement") return "css_keyframes";
+  if (
+    node.kind() === "declaration" &&
+    node
+      .children()
+      .find((child) => child.kind() === "property_name")
+      ?.text()
+      .startsWith("--")
+  )
+    return "css_custom_property";
   if (node.kind() === "variable_declarator")
     return isRelevantVariable(node) ? "variable" : undefined;
   if (node.kind() === "function_definition")
@@ -357,6 +496,7 @@ function goTypeKind(node: SgNode): SymbolKind {
 }
 
 function symbolName(node: SgNode, kind: SymbolKind) {
+  if (kind.startsWith("css_")) return cssSymbolName(node, kind);
   const named = fieldNode(node, "name")?.text().trim();
   if (named) return named;
   if (kind === "variable") return node.child(0)?.text().trim();
@@ -396,7 +536,21 @@ function bodyNode(node: SgNode) {
   const direct = fieldNode(node, "body");
   if (direct) return direct;
   const value = fieldNode(node, "value");
-  return value ? (fieldNode(value, "body") ?? value) : undefined;
+  if (value) return fieldNode(value, "body") ?? value;
+  return node
+    .children()
+    .find((child) =>
+      ["block", "keyframe_block_list"].includes(String(child.kind())),
+    );
+}
+
+function qualifiedName(kind: SymbolKind, containers: string[], name: string) {
+  const separator = kind.startsWith("css_") ? "::" : ".";
+  return [...containers, name].join(separator);
+}
+
+export function normalizedSignature(value: string) {
+  return value.replace(/\s+/gu, " ").trim();
 }
 
 function fieldNode(node: SgNode, name: string): SgNode | undefined {
@@ -417,13 +571,53 @@ function visibility(node: SgNode) {
   return undefined;
 }
 
+function cssSymbolName(node: SgNode, kind: SymbolKind) {
+  if (kind === "css_rule") return namedChildText(node, "selectors");
+  if (kind === "css_media") {
+    const query = namedChildText(node, "feature_query");
+    return query ? `@media${query}` : "@media";
+  }
+  if (kind === "css_keyframes") {
+    const name = namedChildText(node, "keyframes_name");
+    return name ? `@keyframes(${name})` : "@keyframes";
+  }
+  return namedChildText(node, "property_name");
+}
+
+function namedChildText(node: SgNode, kind: string) {
+  return node
+    .children()
+    .find((child) => child.kind() === kind)
+    ?.text()
+    .trim();
+}
+
 function directLanguage(path: string): LanguageSpec | undefined {
   return languageByExtension[extension(path)];
 }
 
-function languageName(path: string) {
+export function semanticLanguageName(path: string) {
   if (extension(path) === ".vue") return "vue";
   return directLanguage(path)?.name ?? "unknown";
+}
+
+function languageName(path: string) {
+  return semanticLanguageName(path);
+}
+
+function bodyFingerprint(symbol: ParsedSymbol, content: Buffer) {
+  const body = bodyNode(symbol.node);
+  if (!body) return undefined;
+  return sha256(content.subarray(...byteRange(body, symbol.byteOffset))).slice(
+    0,
+    16,
+  );
+}
+
+function ancestryFingerprint(qualifiedName: string) {
+  const parts = qualifiedName.split(/\.|::/u);
+  parts.pop();
+  return sha256(parts.join("\0")).slice(0, 12);
 }
 
 function extension(path: string) {

@@ -8,6 +8,11 @@ import { environmentSpec } from "./environment-service.js";
 import { sha256 } from "./protocol.js";
 import { RunStore } from "./run-store.js";
 import {
+  RunAttemptStore,
+  type RunAttempt,
+  type RunAttemptStatus,
+} from "./run-attempt-store.js";
+import {
   inspectRunInputSchema,
   runTaskInputSchema,
   type InspectRunInput,
@@ -29,6 +34,7 @@ export class RunService {
   private readonly executor: TaskExecutor;
   private readonly files: WorkspaceFiles;
   private readonly store: RunStore;
+  private readonly attempts: RunAttemptStore;
 
   constructor(
     files: WorkspaceFiles,
@@ -41,19 +47,63 @@ export class RunService {
     this.changes = changes;
     this.executor = executor;
     this.store = new RunStore(files.root);
+    this.attempts = new RunAttemptStore(files.root);
   }
 
   async run(
     input: RunTaskInput,
     snapshot: WorkspaceSnapshot,
     signal?: AbortSignal,
+    context: { sessionId?: string; toolCallId?: string } = {},
   ) {
     runTaskInputSchema.parse(input);
-    if (input.idempotency_key)
-      return this.store.exclusiveIdempotency(input.idempotency_key, () =>
-        this.runUnlocked(input, snapshot, signal),
+    const prepared = await this.startRunAttempt(input, snapshot, context);
+    try {
+      const run = await this.store.exclusiveIdempotency(
+        prepared.idempotencyKey,
+        () => this.runUnlocked(prepared.effectiveInput, snapshot, signal),
       );
-    return this.runUnlocked(input, snapshot, signal);
+      await this.finishRunAttempt(prepared.attempt, run);
+      return {
+        ...run,
+        run_attempt_ref: prepared.attempt.run_attempt_ref,
+        tool_call_id: prepared.toolCallId,
+      };
+    } catch (error) {
+      await this.attempts.finish(
+        prepared.attempt,
+        signal?.aborted ? "cancelled" : "runtime_error",
+        { error: errorMessage(error) },
+      );
+      throw error;
+    }
+  }
+
+  private async startRunAttempt(
+    input: RunTaskInput,
+    snapshot: WorkspaceSnapshot,
+    context: { sessionId?: string; toolCallId?: string },
+  ) {
+    const inputDigest = sha256(stableJson(input));
+    const toolCallId = context.toolCallId ?? `direct-${inputDigest}`;
+    const identity = `${context.sessionId ?? "unscoped-session"}\0${toolCallId}\0${inputDigest}`;
+    const idempotencyKey =
+      input.idempotency_key ?? `run-task:${sha256(identity)}`;
+    const effectiveInput = { ...input, idempotency_key: idempotencyKey };
+    const attempt = await this.attempts.start({
+      environment: input.environment_profile ?? "default",
+      identity,
+      revision: snapshot.revision.source_revision_id,
+      task: input.task,
+      toolCallId,
+    });
+    return { attempt, effectiveInput, idempotencyKey, toolCallId };
+  }
+
+  private finishRunAttempt(attempt: RunAttempt, run: StoredRun) {
+    return this.attempts.finish(attempt, terminalAttemptStatus(run.status), {
+      runRef: run.run_ref,
+    });
   }
 
   private async runUnlocked(
@@ -61,9 +111,9 @@ export class RunService {
     snapshot: WorkspaceSnapshot,
     signal?: AbortSignal,
   ) {
-    assertSupportedExecution(input);
     const catalog = await readTaskCatalog(this.files.root, snapshot.files);
     const task = resolveTask(catalog, input.task);
+    assertSupportedExecution(input, task.kind);
     if (task.kind === "service")
       throw new Error(
         "UNSUPPORTED_CAPABILITY:Long-running services use Blame Preview lifecycle and port leases, not run_task.",
@@ -98,6 +148,7 @@ export class RunService {
         timeoutMs: input.limits.timeout_ms,
         outputBytes: input.limits.output_bytes ?? 512 * 1024,
         signal,
+        network: input.network ?? "deny",
       });
       const effects = await overlay.effects(signal);
       const canonicalUnchanged = await this.canonicalRevisionMatches(snapshot);
@@ -189,7 +240,8 @@ export class RunService {
         limits: input.limits,
         network: {
           requested: input.network ?? "deny",
-          enforcement: isolation,
+          enforcement:
+            input.network === "project_allowlist" ? "project_proxy" : isolation,
           effective: isolation === "worktree" ? "host" : "deny",
         },
         logs: {
@@ -318,9 +370,13 @@ export class RunService {
   }
 }
 
-export function publicRun(run: StoredRun) {
+export function publicRun(
+  run: StoredRun & { run_attempt_ref?: string; tool_call_id?: string },
+) {
   return {
     run_ref: run.run_ref,
+    ...(run.run_attempt_ref ? { run_attempt_ref: run.run_attempt_ref } : {}),
+    ...(run.tool_call_id ? { tool_call_id: run.tool_call_id } : {}),
     source_revision: run.source_revision,
     environment_spec_revision_id: run.environment_spec_revision_id,
     runtime_instance_id: run.runtime_instance_id,
@@ -366,10 +422,10 @@ function inspectRunView(run: StoredRun, view: InspectRunInput["view"]) {
   };
 }
 
-function assertSupportedExecution(input: RunTaskInput) {
-  if (input.network === "project_allowlist")
+function assertSupportedExecution(input: RunTaskInput, taskKind: string) {
+  if (input.network === "project_allowlist" && taskKind !== "dependencies")
     throw new Error(
-      "UNSUPPORTED_CAPABILITY:Project network allowlists require the managed cloud execution adapter; run_task currently supports default-deny only.",
+      "UNSUPPORTED_CAPABILITY:Project network allowlists are restricted to the dependency task.",
     );
   if (input.selection?.symbols?.length)
     throw new Error(
@@ -425,8 +481,36 @@ function extractDiagnostics(output: string, workspaceRoot: string) {
     });
     if (diagnostics.length >= 500) break;
   }
-  return diagnostics;
+  return [...missingDependencyDiagnostics(output), ...diagnostics].slice(
+    0,
+    500,
+  );
 }
+
+function missingDependencyDiagnostics(output: string) {
+  const dependencies = new Set<string>();
+  for (const expression of missingDependencyExpressions) {
+    for (const match of output.matchAll(expression)) {
+      const dependency = match[1]?.trim();
+      if (dependency) dependencies.add(dependency);
+    }
+  }
+  return [...dependencies].slice(0, 20).map((dependency) => ({
+    code: "DEPENDENCY_MISSING",
+    severity: "error" as const,
+    message: `Dependency ${dependency} is missing from the execution environment.`,
+    dependency,
+    installation_supported: true,
+    recommendation:
+      "Run task.kind=dependencies. Use network=deny for available caches or project_allowlist when the managed allowlist proxy is configured. Do not edit the lockfile manually.",
+  }));
+}
+
+const missingDependencyExpressions = [
+  /Cannot find (?:module|package)\s+['"]([^'"]+)['"]/giu,
+  /Module not found:\s*(?:Error:\s*)?Can't resolve\s+['"]([^'"]+)['"]/giu,
+  /(?:command not found|not recognized as an internal or external command)[:\s]+([^\s]+)/giu,
+];
 
 function cleanOutput(value: string, overlayRoot: string) {
   return stripAnsi(value).replaceAll(overlayRoot, "<workspace>");
@@ -466,4 +550,10 @@ function compact(value: string, maximum: number) {
 
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error);
+}
+
+function terminalAttemptStatus(
+  status: StoredRun["status"],
+): Exclude<RunAttemptStatus, "running"> {
+  return status === "execution_error" ? "runtime_error" : status;
 }

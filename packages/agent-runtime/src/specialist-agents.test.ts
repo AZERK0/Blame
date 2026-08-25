@@ -60,6 +60,7 @@ test("consult_specialist resolves the private system prompt server-side", async 
     },
   };
   const tool = createConsultSpecialistTool({
+    capsule: async () => "<change_request_capsule>{}</change_request_capsule>",
     objective: "Improve the settings screen",
     spawnTool,
     storyId: "story-42",
@@ -71,7 +72,7 @@ test("consult_specialist resolves the private system prompt server-side", async 
       task: "Review the hierarchy and responsive risks.",
       context: "The existing product uses compact operational UI.",
     },
-    {} as never,
+    { runId: "request-1" } as never,
   );
 
   assert.deepEqual(result, { text: "advice" });
@@ -83,10 +84,30 @@ test("consult_specialist resolves the private system prompt server-side", async 
   assert.match(delegated.systemPrompt, /You are not the implementer/);
   assert.match(delegated.task, /Improve the settings screen/);
   assert.match(delegated.task, /story-42/);
+  assert.match(delegated.task, /change_request_capsule/);
   assert.match(delegated.task, /Review the hierarchy/);
   assert.match(delegated.task, /compact operational UI/);
 
   const publicSchema = JSON.stringify(tool.inputSchema);
   assert.doesNotMatch(publicSchema, /Frontend Design Specialist, an internal/);
   assert.doesNotMatch(publicSchema, /visual_system_protocol/);
+
+  const repeated = await tool.execute(
+    {
+      specialist: "risk_review",
+      task: "Review the remaining risk.",
+    },
+    { runId: "request-1" } as never,
+  );
+  assert.equal((repeated as { isError?: boolean }).isError, true);
+  assert.match(JSON.stringify(repeated), /already been consulted/);
+
+  const nextRequest = await tool.execute(
+    {
+      specialist: "risk_review",
+      task: "Review the next change request.",
+    },
+    { runId: "request-2" } as never,
+  );
+  assert.deepEqual(nextRequest, { text: "advice" });
 });

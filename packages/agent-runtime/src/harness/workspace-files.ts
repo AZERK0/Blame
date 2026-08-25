@@ -131,12 +131,13 @@ export class WorkspaceFiles {
     const digest = sha256(content);
     return {
       ref: encodeHandle("file", {
-        version: 1,
+        version: 2,
         revision,
         path: normalized,
         start: 0,
         end: content.byteLength,
         digest,
+        observedBlobHash: digest,
       }),
       source_revision_id: revision,
       path: normalized,

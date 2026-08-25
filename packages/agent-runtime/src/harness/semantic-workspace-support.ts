@@ -18,6 +18,7 @@ import type {
   SearchCodeInput,
   StoredChangeProposal,
 } from "./schemas.js";
+import { SemanticResolutionConflict } from "./semantic-reference-resolver.js";
 
 export type {
   InspectCodeInput,
@@ -93,13 +94,15 @@ export function nodeRef(
   kind: string,
 ) {
   return encodeHandle("node", {
-    version: 1,
+    version: 2,
     revision,
     path,
     start,
     end,
-    digest: sha256(content.subarray(start, end)),
+    digest: sha256(content.subarray(start, end)).slice(0, 32),
+    observedBlobHash: sha256(content).slice(0, 32),
     kind,
+    language: languageName(path),
   });
 }
 
@@ -219,10 +222,6 @@ export function scopedFiles(
 }
 
 export function validateSearchInput(input: SearchCodeInput) {
-  if (!input.source_revision_id?.startsWith("src_"))
-    throw new Error(
-      "source_revision_id is required; call workspace_state first.",
-    );
   const value =
     input.query.kind === "symbol" ? input.query.name : input.query.pattern;
   if (!value?.trim()) throw new Error("Search query cannot be empty.");
@@ -237,18 +236,10 @@ export function validateSearchInput(input: SearchCodeInput) {
 }
 
 export function validateOutlineInput(input: OutlineCodeInput) {
-  if (!input.source_revision_id?.startsWith("src_"))
-    throw new Error(
-      "source_revision_id is required; call workspace_state first.",
-    );
   if (!input.target?.path?.trim()) throw new Error("target.path is required.");
 }
 
 export function validateInspectInput(input: InspectCodeInput) {
-  if (!input.source_revision_id?.startsWith("src_"))
-    throw new Error(
-      "source_revision_id is required; call workspace_state first.",
-    );
   if (!input.target || !input.view)
     throw new Error("target and view are required.");
 }
@@ -279,6 +270,17 @@ export function staleRevision(current: string) {
 
 export function toolError<T = never>(error: unknown): HarnessToolResult<T> {
   const message = error instanceof Error ? error.message : String(error);
+  if (error instanceof SemanticResolutionConflict)
+    return harnessError({
+      code: error.candidates.length ? "AMBIGUOUS_TARGET" : "TARGET_GONE",
+      message,
+      recovery: {
+        candidates: error.candidates,
+        action: error.candidates.length
+          ? "Choose one returned candidate reference."
+          : "Run one targeted search if the symbol was removed or renamed beyond recognition.",
+      },
+    });
   if (message.startsWith("STALE_REVISION:")) {
     const current = message.slice("STALE_REVISION:".length);
     return harnessError({

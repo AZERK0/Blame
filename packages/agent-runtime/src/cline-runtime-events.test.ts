@@ -29,6 +29,7 @@ import {
   normalizeClineAgentPayload,
   resultFailureMessage,
   shouldDisplayClineSessionEvent,
+  terminalToolEvent,
   workspaceSessionIds,
 } from "./cline-runtime.js";
 
@@ -75,6 +76,29 @@ test("tags session events with their execution identity", () => {
       .executionId,
     "execution-original",
   );
+});
+
+test("hides complete_turn cards and projects only its terminal answer", () => {
+  const runtime = new BlameAgentRuntime();
+  const internals = runtime as unknown as {
+    sessionTerminalAnswers: Map<string, string>;
+    withTerminalAnswer(sessionId: string, event: AgentEvent): AgentEvent;
+  };
+  internals.sessionTerminalAnswers.set("session", "Visible answer");
+  assert.equal(
+    terminalToolEvent({
+      type: "tool",
+      sessionId: "session",
+      payload: { toolCall: { name: "complete_turn" } },
+    }),
+    true,
+  );
+  const done = internals.withTerminalAnswer("session", {
+    type: "done",
+    sessionId: "session",
+    payload: { text: "internal completion output" },
+  });
+  assert.equal((done.payload as { text: string }).text, "Visible answer");
 });
 
 test("prewarms and removes the reserved remote runtime session", async () => {
@@ -152,6 +176,7 @@ test("starts development sessions with native skills and private specialist cons
   );
   const originalFetch = globalThis.fetch;
   let capturedStart: ClineCoreStartInput | undefined;
+  let tokenCounterInput: { modelId: string; providerId: string } | undefined;
   const core = {
     async dispose() {},
     async list() {
@@ -181,6 +206,13 @@ test("starts development sessions with native skills and private specialist cons
     );
   const runtime = new BlameAgentRuntime(undefined, {
     createCore: async () => core as never,
+    tokenCounter: (input) => {
+      tokenCounterInput = input;
+      return {
+        strategy: "provider_tokenizer",
+        count: (text) => Math.ceil(text.length / 3),
+      };
+    },
   });
 
   try {
@@ -196,6 +228,10 @@ test("starts development sessions with native skills and private specialist cons
     });
 
     assert.ok(capturedStart);
+    assert.deepEqual(tokenCounterInput, {
+      modelId: "model",
+      providerId: "provider",
+    });
     assert.equal(capturedStart.config.enableSpawnAgent, false);
     assert.ok(capturedStart.localRuntime?.configExtensions?.includes("skills"));
     assert.ok(
@@ -214,6 +250,13 @@ test("starts development sessions with native skills and private specialist cons
       (tool: { name: string }) => tool.name,
     );
     assert.ok(toolNames?.includes("consult_specialist"));
+    assert.ok(toolNames?.includes("complete_turn"));
+    assert.equal(
+      capturedStart.config.extraTools?.find(
+        (tool: { name: string }) => tool.name === "complete_turn",
+      )?.lifecycle?.completesRun,
+      true,
+    );
     assert.equal(toolNames?.includes("spawn_agent"), false);
     assert.deepEqual(capturedStart.toolPolicies?.consult_specialist, {
       autoApprove: true,
@@ -731,6 +774,8 @@ test("renders the Blame development system prompt without Cline placeholders", a
   assert.match(prompt, /## Special Requests/);
   assert.match(prompt, /## Autonomy And Continuity/);
   assert.match(prompt, /## Progress Updates/);
+  assert.match(prompt, /call `complete_turn` exactly once/);
+  assert.match(prompt, /continuity_update.*semantic changes/);
   assert.match(prompt, /counter-checks/);
   assert.match(prompt, /## Blame Specialist Consultations/);
   assert.match(prompt, /consult_specialist/);
