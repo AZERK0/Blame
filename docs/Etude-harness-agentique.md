@@ -63,12 +63,13 @@ Il faut optimiser l’ensemble suivant, et non le seul nombre de tokens :
 
 \[
 U = P(\text{tâche correcte})
- - \lambda_t C_{\text{tokens}}
- - \lambda_l C_{\text{latence}}
- - \lambda_r C_{\text{risque}}
- - \lambda_s C_{\text{staleness}}
- - \lambda_h C_{\text{correction humaine}}
-\]
+
+- \lambda*t C*{\text{tokens}}
+- \lambda*l C*{\text{latence}}
+- \lambda*r C*{\text{risque}}
+- \lambda*s C*{\text{staleness}}
+- \lambda*h C*{\text{correction humaine}}
+  \]
 
 Une observation courte mais qui masque une dépendance importante a une mauvaise utilité. Une lecture plus longue, si elle évite un patch faux, peut être optimale. L’objectif pratique devient donc :
 
@@ -76,14 +77,14 @@ Une observation courte mais qui masque une dépendance importante a une mauvaise
 
 ### 1.3 Six rôles fondamentaux, au-delà de « lire/écrire »
 
-| Rôle du tool | Question à laquelle il répond | Exemples |
-|---|---|---|
-| capteur | « quel est l’état pertinent ? » | search, inspect, trace, UI observe |
-| effecteur | « comment transformer cet état ? » | apply change, refactor, UI act |
-| oracle | « la transformation satisfait-elle le contrat ? » | reproduce, test, validate acceptance |
-| gestionnaire d’état | « sur quelle version travaille-t-on et comment revenir ? » | source revision, checkpoint, rollback |
-| gouverneur | « cette action et ses effets sont-ils autorisés ? » | capabilities, approval, policy check |
-| coordinateur | « qui fait quoi, avec quelle preuve ? » | delegate, reserve surface, submit changeset |
+| Rôle du tool        | Question à laquelle il répond                              | Exemples                                    |
+| ------------------- | ---------------------------------------------------------- | ------------------------------------------- |
+| capteur             | « quel est l’état pertinent ? »                            | search, inspect, trace, UI observe          |
+| effecteur           | « comment transformer cet état ? »                         | apply change, refactor, UI act              |
+| oracle              | « la transformation satisfait-elle le contrat ? »          | reproduce, test, validate acceptance        |
+| gestionnaire d’état | « sur quelle version travaille-t-on et comment revenir ? » | source revision, checkpoint, rollback       |
+| gouverneur          | « cette action et ses effets sont-ils autorisés ? »        | capabilities, approval, policy check        |
+| coordinateur        | « qui fait quoi, avec quelle preuve ? »                    | delegate, reserve surface, submit changeset |
 
 Les harnesses actuels sont riches en capteurs textuels et effecteurs génériques, mais faibles en oracles, état versionné et coordination vérifiable. Ajouter des tools de lecture sans ces trois rôles augmente la vitesse d’action plus vite que la fiabilité.
 
@@ -105,21 +106,21 @@ Les chiffres de systèmes différents ne sont **pas comparables directement** : 
 
 ### 2.1 Résultats les plus directement actionnables
 
-| Travail | Interface étudiée | Résultat utile pour Blame | Limite à conserver |
-|---|---|---|---|
-| [CODESTRUCT, ACL 2026](https://aclanthology.org/2026.acl-long.607/) | `readCode` et `editCode` sur entités AST nommées | Sur SWE-bench Verified : gains de Pass@1 pour 5 modèles sur 6, souvent moins de tokens et moins d’occurrences d’erreurs opérationnelles du tool d’édition ; c’est le test le plus direct de l’idée proposée | AST par fichier ; couverture principale Python pour le bug fixing ; certains modèles consomment davantage ; le raisonnement faible n’est pas réparé par l’interface |
-| [MASAI, 2024](https://arxiv.org/abs/2406.11638) | `READ(file, class, function)` paresseux : signatures pour fichier/classe, corps complet pour fonction | Précédent opérationnel et preuve de faisabilité dans une architecture multi-agent complète | Pas d’ablation isolant `READ` ; résultats historiques, noms comme sélecteurs, identité/fraîcheur non traitées |
-| [CodeAgent, ACL 2024](https://aclanthology.org/2024.acl-long.737/) | navigation de symboles construite avec Tree-sitter | Une recherche de module retourne les symboles ; une recherche de nom retourne la définition : précédent presque exact de `get_file_symbols` | Étudié dans un système de génération et non comme protocole complet d’IDE |
-| [AutoCodeRover, ISSTA 2024](https://arxiv.org/abs/2404.05427) | recherche AST par classes, méthodes et snippets ; localisation itérative | Soutient la recherche structure-aware et l’escalade progressive plutôt qu’une lecture uniforme du dépôt | Majoritairement Python/SWE-bench ; architecture de réparation plutôt que harness généraliste |
-| [Agentless, FSE 2025](https://lingming.cs.illinois.edu/publications/fse2025.pdf) | localisation hiérarchique fichier → classe/fonction → emplacement | Montre qu’un pipeline simple et structuré peut être compétitif sans autonomie illimitée | Pipeline et sélection de candidats spécifiques ; ne couvre pas tout le cycle IDE |
-| [LocAgent, ACL 2025](https://aclanthology.org/2025.acl-long.426/) | graphe fichiers/classes/fonctions avec imports, appels, héritage | Dans son protocole, améliore fortement la localisation et réduit le coût ; justifie une vue graphe multi-fichiers | Résultats dépendants du benchmark et de la construction du graphe |
-| [GraphCoder, 2024](https://arxiv.org/abs/2406.07003) | graphe de contexte au niveau statement avec contrôle et données | Des sous-graphes structurés peuvent fournir des dépendances plus utiles qu’un voisinage séquentiel | Il ne s’agit pas de program slicing ; coût/complexité des graphes globaux ; contexte de génération de code |
-| [DyRetriever/DyCoder, 2026](https://arxiv.org/abs/2608.01927) | graphe de dépendances partiel, dynamique et éphémère | Soutient le calcul à la demande plutôt qu’un graphe global exhaustif | Prépublication très récente ; n’évalue pas la maintenance d’index après chaque edit ; résultats à répliquer |
-| [RepoCoder, EMNLP 2023](https://aclanthology.org/2023.emnlp-main.151/) | récupération et génération itératives | La récupération progressive sur les résultats précédents bat la récupération one-shot dans son cadre | Tâche de complétion, pas agent IDE complet |
-| [Repoformer, ICML 2024](https://proceedings.mlr.press/v235/wu24a.html) | décision de récupérer ou non du contexte | La récupération sélective peut accélérer sans dégrader : « plus de contexte » n’est pas toujours mieux | Modèle entraîné pour la décision ; cadre de complétion |
-| [CodeRAG-Bench, NAACL 2025](https://aclanthology.org/2025.findings-naacl.176/) | comparaison retrievers/modèles sur tâches code | Le bon contexte aide, mais les retrievers échouent encore souvent et les générateurs n’utilisent pas toujours les passages trouvés | Benchmarks RAG, pas trajectoires d’édition longues |
-| [RepoExec, NAACL 2025](https://aclanthology.org/2025.findings-naacl.82/) | complétion avec contexte de dépendances | Les dépendances nécessaires peuvent être plus importantes que le seul corps de la fonction | Complétion fonctionnelle, pas interface interactive |
-| [Lost in the Middle, TACL 2024](https://aclanthology.org/2024.tacl-1.9/) | exploitation d’un long contexte selon la position | Une grande fenêtre ne supprime pas le besoin de sélectionner et ordonner les preuves | Tâches générales de long contexte, pas exclusivement code |
+| Travail                                                                          | Interface étudiée                                                                                     | Résultat utile pour Blame                                                                                                                                                                                   | Limite à conserver                                                                                                                                                  |
+| -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [CODESTRUCT, ACL 2026](https://aclanthology.org/2026.acl-long.607/)              | `readCode` et `editCode` sur entités AST nommées                                                      | Sur SWE-bench Verified : gains de Pass@1 pour 5 modèles sur 6, souvent moins de tokens et moins d’occurrences d’erreurs opérationnelles du tool d’édition ; c’est le test le plus direct de l’idée proposée | AST par fichier ; couverture principale Python pour le bug fixing ; certains modèles consomment davantage ; le raisonnement faible n’est pas réparé par l’interface |
+| [MASAI, 2024](https://arxiv.org/abs/2406.11638)                                  | `READ(file, class, function)` paresseux : signatures pour fichier/classe, corps complet pour fonction | Précédent opérationnel et preuve de faisabilité dans une architecture multi-agent complète                                                                                                                  | Pas d’ablation isolant `READ` ; résultats historiques, noms comme sélecteurs, identité/fraîcheur non traitées                                                       |
+| [CodeAgent, ACL 2024](https://aclanthology.org/2024.acl-long.737/)               | navigation de symboles construite avec Tree-sitter                                                    | Une recherche de module retourne les symboles ; une recherche de nom retourne la définition : précédent presque exact de `get_file_symbols`                                                                 | Étudié dans un système de génération et non comme protocole complet d’IDE                                                                                           |
+| [AutoCodeRover, ISSTA 2024](https://arxiv.org/abs/2404.05427)                    | recherche AST par classes, méthodes et snippets ; localisation itérative                              | Soutient la recherche structure-aware et l’escalade progressive plutôt qu’une lecture uniforme du dépôt                                                                                                     | Majoritairement Python/SWE-bench ; architecture de réparation plutôt que harness généraliste                                                                        |
+| [Agentless, FSE 2025](https://lingming.cs.illinois.edu/publications/fse2025.pdf) | localisation hiérarchique fichier → classe/fonction → emplacement                                     | Montre qu’un pipeline simple et structuré peut être compétitif sans autonomie illimitée                                                                                                                     | Pipeline et sélection de candidats spécifiques ; ne couvre pas tout le cycle IDE                                                                                    |
+| [LocAgent, ACL 2025](https://aclanthology.org/2025.acl-long.426/)                | graphe fichiers/classes/fonctions avec imports, appels, héritage                                      | Dans son protocole, améliore fortement la localisation et réduit le coût ; justifie une vue graphe multi-fichiers                                                                                           | Résultats dépendants du benchmark et de la construction du graphe                                                                                                   |
+| [GraphCoder, 2024](https://arxiv.org/abs/2406.07003)                             | graphe de contexte au niveau statement avec contrôle et données                                       | Des sous-graphes structurés peuvent fournir des dépendances plus utiles qu’un voisinage séquentiel                                                                                                          | Il ne s’agit pas de program slicing ; coût/complexité des graphes globaux ; contexte de génération de code                                                          |
+| [DyRetriever/DyCoder, 2026](https://arxiv.org/abs/2608.01927)                    | graphe de dépendances partiel, dynamique et éphémère                                                  | Soutient le calcul à la demande plutôt qu’un graphe global exhaustif                                                                                                                                        | Prépublication très récente ; n’évalue pas la maintenance d’index après chaque edit ; résultats à répliquer                                                         |
+| [RepoCoder, EMNLP 2023](https://aclanthology.org/2023.emnlp-main.151/)           | récupération et génération itératives                                                                 | La récupération progressive sur les résultats précédents bat la récupération one-shot dans son cadre                                                                                                        | Tâche de complétion, pas agent IDE complet                                                                                                                          |
+| [Repoformer, ICML 2024](https://proceedings.mlr.press/v235/wu24a.html)           | décision de récupérer ou non du contexte                                                              | La récupération sélective peut accélérer sans dégrader : « plus de contexte » n’est pas toujours mieux                                                                                                      | Modèle entraîné pour la décision ; cadre de complétion                                                                                                              |
+| [CodeRAG-Bench, NAACL 2025](https://aclanthology.org/2025.findings-naacl.176/)   | comparaison retrievers/modèles sur tâches code                                                        | Le bon contexte aide, mais les retrievers échouent encore souvent et les générateurs n’utilisent pas toujours les passages trouvés                                                                          | Benchmarks RAG, pas trajectoires d’édition longues                                                                                                                  |
+| [RepoExec, NAACL 2025](https://aclanthology.org/2025.findings-naacl.82/)         | complétion avec contexte de dépendances                                                               | Les dépendances nécessaires peuvent être plus importantes que le seul corps de la fonction                                                                                                                  | Complétion fonctionnelle, pas interface interactive                                                                                                                 |
+| [Lost in the Middle, TACL 2024](https://aclanthology.org/2024.tacl-1.9/)         | exploitation d’un long contexte selon la position                                                     | Une grande fenêtre ne supprime pas le besoin de sélectionner et ordonner les preuves                                                                                                                        | Tâches générales de long contexte, pas exclusivement code                                                                                                           |
 
 ### 2.2 Les conclusions robustes
 
@@ -163,18 +164,18 @@ Audit des surfaces publiques vérifiées le 9 août 2026. Les produits fermés �
 
 ### 3.1 Primitives exposées au modèle
 
-| Système | Lecture/recherche dominante | Édition dominante | Sémantique agent-facing | État/rollback notable |
-|---|---|---|---|---|
-| Codex CLI/SDK | inspection de fichiers, recherche et shell ; surface exacte variable selon client/version | patch structuré | aucun contrat public de symbole/LSP natif | sandbox et approbations ; checkpoints Git à orchestrer, pas de checkpoint fichier universel documenté |
-| Claude Code | `Read`/`Glob`/`Grep` + sous-agent Explore | `Edit`/`Write` | LSP agent-facing via plugin : diagnostics, définitions, références et types | checkpoints des modifications faites par les tools fichiers ; Tool Search différé pour MCP |
-| Cursor Agent | lecture, Instant Grep et index sémantique disponibles à l’agent | application d’édition interne | LSP utilisé en arrière-plan, sans schéma public de tool symbolique | checkpoints locaux séparés de Git ; compression par résumé documentée, algorithme opaque |
-| Cline | ClineCore : `read_files`, `search` ; sous-agents expérimentaux : listing de définitions | `editor`/`apply_patch` | plugin TS `goto_definition` limité à SDK/CLI/Kanban | Shadow Git et auto-compaction |
-| Aider | fichiers choisis + repo map Tree-sitter classée par graphe | protocoles de sortie whole file, SEARCH/REPLACE, diff | carte injectée dans le prompt, sans handle/snapshot explicite exposé au modèle | commits Git automatiques et undo |
-| mini-SWE-agent | un unique tool Bash (`cat`, `grep`, `sed`…) | Bash | aucune | environnement local par défaut ; sandboxes optionnelles, timeout/confirmation, aucun rollback natif |
-| SWE-agent historique | viewer/recherche via bundles configurables | éditeurs ligne ou search/replace | aucune navigation LSP native | maintenance uniquement ; le bundle `edit_anthropic` offre linter/undo optionnels |
-| OpenHands SDK | SDK composable : `terminal`, `file_editor` ; délégation optionnelle | `file_editor` | aucun LSP natif documenté | condensers et modes de permission configurables |
-| OpenCode | `read`/`grep`/`glob` | exact-string edit/apply patch | LSP expérimental : symboles, définition, références, implémentations, call hierarchy ; serveur requis | snapshots Git et compaction |
-| Gemini CLI | `read_file`, `read_many_files`, `glob`, `grep_search` | `replace`/`write_file` | aucun tool symbole dans la référence officielle | Shadow Git optionnel et désactivé par défaut ; compression automatique |
+| Système              | Lecture/recherche dominante                                                               | Édition dominante                                     | Sémantique agent-facing                                                                               | État/rollback notable                                                                                 |
+| -------------------- | ----------------------------------------------------------------------------------------- | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Codex CLI/SDK        | inspection de fichiers, recherche et shell ; surface exacte variable selon client/version | patch structuré                                       | aucun contrat public de symbole/LSP natif                                                             | sandbox et approbations ; checkpoints Git à orchestrer, pas de checkpoint fichier universel documenté |
+| Claude Code          | `Read`/`Glob`/`Grep` + sous-agent Explore                                                 | `Edit`/`Write`                                        | LSP agent-facing via plugin : diagnostics, définitions, références et types                           | checkpoints des modifications faites par les tools fichiers ; Tool Search différé pour MCP            |
+| Cursor Agent         | lecture, Instant Grep et index sémantique disponibles à l’agent                           | application d’édition interne                         | LSP utilisé en arrière-plan, sans schéma public de tool symbolique                                    | checkpoints locaux séparés de Git ; compression par résumé documentée, algorithme opaque              |
+| Cline                | ClineCore : `read_files`, `search` ; sous-agents expérimentaux : listing de définitions   | `editor`/`apply_patch`                                | plugin TS `goto_definition` limité à SDK/CLI/Kanban                                                   | Shadow Git et auto-compaction                                                                         |
+| Aider                | fichiers choisis + repo map Tree-sitter classée par graphe                                | protocoles de sortie whole file, SEARCH/REPLACE, diff | carte injectée dans le prompt, sans handle/snapshot explicite exposé au modèle                        | commits Git automatiques et undo                                                                      |
+| mini-SWE-agent       | un unique tool Bash (`cat`, `grep`, `sed`…)                                               | Bash                                                  | aucune                                                                                                | environnement local par défaut ; sandboxes optionnelles, timeout/confirmation, aucun rollback natif   |
+| SWE-agent historique | viewer/recherche via bundles configurables                                                | éditeurs ligne ou search/replace                      | aucune navigation LSP native                                                                          | maintenance uniquement ; le bundle `edit_anthropic` offre linter/undo optionnels                      |
+| OpenHands SDK        | SDK composable : `terminal`, `file_editor` ; délégation optionnelle                       | `file_editor`                                         | aucun LSP natif documenté                                                                             | condensers et modes de permission configurables                                                       |
+| OpenCode             | `read`/`grep`/`glob`                                                                      | exact-string edit/apply patch                         | LSP expérimental : symboles, définition, références, implémentations, call hierarchy ; serveur requis | snapshots Git et compaction                                                                           |
+| Gemini CLI           | `read_file`, `read_many_files`, `glob`, `grep_search`                                     | `replace`/`write_file`                                | aucun tool symbole dans la référence officielle                                                       | Shadow Git optionnel et désactivé par défaut ; compression automatique                                |
 
 Sources primaires :
 
@@ -358,17 +359,17 @@ type FileRef = {
 };
 
 type SymbolRef = {
-  ref: string;                   // définition exacte dans cette révision
+  ref: string; // définition exacte dans cette révision
   source_revision_id: string;
   definition_digest: string;
   kind: string;
   language: string;
   qualified_name: string;
-  canonical_symbol?: string;     // SCIP-like si disponible
+  canonical_symbol?: string; // SCIP-like si disponible
 };
 
 type SyntaxNodeRef = {
-  ref: string;                   // nœud exact, utile pour l’édition
+  ref: string; // nœud exact, utile pour l’édition
   source_revision_id: string;
   file_blob_hash: string;
   range_utf8_bytes: [number, number];
@@ -376,7 +377,7 @@ type SyntaxNodeRef = {
 };
 
 type ArtifactRef = {
-  ref: string;                   // log, diff, graphe, screenshot…
+  ref: string; // log, diff, graphe, screenshot…
   content_hash: string;
   media_type: string;
   schema_version: string;
@@ -386,8 +387,12 @@ type ArtifactRef = {
 type EvidenceRef = {
   ref: string;
   subject_revision: RevisionVector;
-  kind: "deterministic_check" | "runtime_observation" |
-        "agent_inference" | "user_decision" | "source_excerpt";
+  kind:
+    | "deterministic_check"
+    | "runtime_observation"
+    | "agent_inference"
+    | "user_decision"
+    | "source_excerpt";
   artifact_ref?: ArtifactRef;
 };
 ```
@@ -419,18 +424,18 @@ La source, l’environnement, l’index, le runtime et le navigateur n’ont pas
 
 ```ts
 type RevisionVector = {
-  source_revision_id?: string;            // bytes : base + overlay + buffers
-  environment_spec_revision_id?: string;  // image/toolchain/profil réalisés
-  runtime_instance_id?: string;           // processus ou microVM mutable
-  index_revision_id?: string;             // provenance d’analyse
-  browser_state_revision_id?: string;     // état navigateur/DOM
+  source_revision_id?: string; // bytes : base + overlay + buffers
+  environment_spec_revision_id?: string; // image/toolchain/profil réalisés
+  runtime_instance_id?: string; // processus ou microVM mutable
+  index_revision_id?: string; // provenance d’analyse
+  browser_state_revision_id?: string; // état navigateur/DOM
 };
 
 type ExecutionContextRef = {
   source_revision_id: string;
   environment_spec_revision_id: string;
   runtime_instance_id: string;
-  secret_binding_revision_ids: string[];  // valeurs jamais exposées
+  secret_binding_revision_ids: string[]; // valeurs jamais exposées
 };
 ```
 
@@ -442,8 +447,14 @@ Les autres objets centraux sont des handles opaques et versionnés : `ChangeProp
 
 ```ts
 type Provenance = {
-  producer: "compiler" | "lsp" | "parser" | "git" |
-            "runtime" | "embedding" | "lexical";
+  producer:
+    | "compiler"
+    | "lsp"
+    | "parser"
+    | "git"
+    | "runtime"
+    | "embedding"
+    | "lexical";
   producer_version?: string;
   revision: RevisionVector;
   artifact_hash?: string;
@@ -462,8 +473,11 @@ type ToolResult<T> =
       coverage: {
         scope: "complete" | "partial" | "unknown";
         truncated: boolean;
-        analysis: "exact" | "sound_overapproximation" |
-                  "observed_subset" | "heuristic";
+        analysis:
+          | "exact"
+          | "sound_overapproximation"
+          | "observed_subset"
+          | "heuristic";
         continuation?: string;
       };
       usage: { output_tokens: number; elapsed_ms: number };
@@ -483,15 +497,15 @@ Une analyse peut préciser davantage `must`/`may` dans ses données. `observed_s
 
 Les erreurs de tools doivent être courtes, typées et actionnables :
 
-| Erreur | Signification | Réponse attendue |
-|---|---|---|
-| `STALE_REVISION` | la source a changé depuis la lecture | relire/rebaser sur la source revision courante |
-| `AMBIGUOUS_TARGET` | plusieurs entités correspondent | choisir parmi les handles candidats |
-| `TARGET_GONE` | le symbole/nœud n’existe plus | rechercher de nouveaux candidats ou abandonner l’opération |
-| `UNSUPPORTED_STRUCTURE` | parser/index indisponible | utiliser la vue raw/structural search |
-| `PRECONDITION_FAILED` | hash/signature/ancien texte différent | inspecter le diff concurrent avant de réessayer |
-| `POLICY_DENIED` | effets non autorisés | demander une capacité ou choisir une action sûre |
-| `SIDE_EFFECT_OUT_OF_SCOPE` | le processus a touché une ressource inattendue | annuler/isoler et soumettre à revue |
+| Erreur                     | Signification                                  | Réponse attendue                                           |
+| -------------------------- | ---------------------------------------------- | ---------------------------------------------------------- |
+| `STALE_REVISION`           | la source a changé depuis la lecture           | relire/rebaser sur la source revision courante             |
+| `AMBIGUOUS_TARGET`         | plusieurs entités correspondent                | choisir parmi les handles candidats                        |
+| `TARGET_GONE`              | le symbole/nœud n’existe plus                  | rechercher de nouveaux candidats ou abandonner l’opération |
+| `UNSUPPORTED_STRUCTURE`    | parser/index indisponible                      | utiliser la vue raw/structural search                      |
+| `PRECONDITION_FAILED`      | hash/signature/ancien texte différent          | inspecter le diff concurrent avant de réessayer            |
+| `POLICY_DENIED`            | effets non autorisés                           | demander une capacité ou choisir une action sûre           |
+| `SIDE_EFFECT_OUT_OF_SCOPE` | le processus a touché une ressource inattendue | annuler/isoler et soumettre à revue                        |
 
 Une écriture ne doit jamais effectuer de rematching flou silencieux après `STALE_REVISION`.
 
@@ -608,8 +622,12 @@ type ChangeOperation =
   | { kind: "insert_after"; target: SyntaxNodeRef; source: string }
   | { kind: "rename_symbol"; target: SymbolRef; new_name: string }
   | { kind: "create_file"; path: string; content: string }
-  | { kind: "move_file"; from_path: string; to_path: string;
-      expected_blob_hash: string }
+  | {
+      kind: "move_file";
+      from_path: string;
+      to_path: string;
+      expected_blob_hash: string;
+    }
   | { kind: "delete_file"; path: string; expected_blob_hash: string }
   | {
       kind: "text_replace";
@@ -666,12 +684,15 @@ type RunTaskInput = {
   source_revision_id: string;
   task:
     | { task_id: string }
-    | { kind: "test" | "lint" | "build" | "typecheck";
-        target?: string };
+    | { kind: "test" | "lint" | "build" | "typecheck"; target?: string };
   selection?: { tests?: string[]; files?: string[]; symbols?: SymbolRef[] };
   environment_profile?: string;
-  limits: { timeout_ms: number; cpu?: number; memory_mb?: number;
-            output_bytes?: number };
+  limits: {
+    timeout_ms: number;
+    cpu?: number;
+    memory_mb?: number;
+    output_bytes?: number;
+  };
   network?: "deny" | "project_allowlist";
   idempotency_key?: string;
 };
@@ -755,15 +776,15 @@ Une absence de match est un succès structuré (`items: []`, scope couvert, mote
 
 Blame ne doit pas choisir entre grep, AST, LSP ou embeddings. Ils résolvent des questions différentes :
 
-| Canal | Très bon pour | Faiblesse principale |
-|---|---|---|
-| lexical (`rg`) | chaînes exactes, erreurs, config, code cassé | synonymes et relations indirectes |
-| syntaxique (Tree-sitter) | outlines, unités complètes, code multi-langage | sémantique inter-fichiers limitée |
-| structurel (ast-grep/CST) | motifs d’AST et rewrites locales | nécessite un motif exprimable |
-| sémantique (LSP/compilateur/SCIP) | définition, références, types, rename | setup, coût, index parfois stale |
-| embeddings | recherche par intention inconnue | plausible mais non exact, scores peu calibrés |
-| historique Git/issues | pourquoi, patterns passés, régressions | bruit et données anciennes |
-| runtime | stack, calls observés, couverture, valeurs | ne couvre que l’exécution observée |
+| Canal                             | Très bon pour                                  | Faiblesse principale                          |
+| --------------------------------- | ---------------------------------------------- | --------------------------------------------- |
+| lexical (`rg`)                    | chaînes exactes, erreurs, config, code cassé   | synonymes et relations indirectes             |
+| syntaxique (Tree-sitter)          | outlines, unités complètes, code multi-langage | sémantique inter-fichiers limitée             |
+| structurel (ast-grep/CST)         | motifs d’AST et rewrites locales               | nécessite un motif exprimable                 |
+| sémantique (LSP/compilateur/SCIP) | définition, références, types, rename          | setup, coût, index parfois stale              |
+| embeddings                        | recherche par intention inconnue               | plausible mais non exact, scores peu calibrés |
+| historique Git/issues             | pourquoi, patterns passés, régressions         | bruit et données anciennes                    |
+| runtime                           | stack, calls observés, couverture, valeurs     | ne couvre que l’exécution observée            |
 
 Terminologie : dans ce document, **code intelligence sémantique** désigne LSP/compiler/SCIP ; une recherche par intention est nommée **natural-language/embedding search**. `semantic_diff` décrit les effets logiques d’un changement. Ces trois notions ne partagent pas un score commun.
 
@@ -1031,12 +1052,12 @@ Le dossier de preuve de Blame doit donc combiner :
 
 Chaque critère de la User Story reçoit un statut fondé sur une preuve :
 
-| Critère | Statut | Preuve | Limite |
-|---|---|---|---|
-| « un token expiré est refusé » | `verified_by_deterministic_check` | test R42, fail base/pass candidate | chemin API HTTP testé, pas le worker asynchrone |
-| « aucune session active n’est cassée » | `supported_by_runtime_observation` | suite auth + diff comportemental | absence de scénario multi-device |
-| « respecte la pratique CP-17 » | `verified_by_deterministic_check` | règle déterministe + typecheck | — |
-| « UX claire » | `human_review_required` | preview + capture + a11y tree | jugement qualitatif |
+| Critère                                | Statut                             | Preuve                             | Limite                                          |
+| -------------------------------------- | ---------------------------------- | ---------------------------------- | ----------------------------------------------- |
+| « un token expiré est refusé »         | `verified_by_deterministic_check`  | test R42, fail base/pass candidate | chemin API HTTP testé, pas le worker asynchrone |
+| « aucune session active n’est cassée » | `supported_by_runtime_observation` | suite auth + diff comportemental   | absence de scénario multi-device                |
+| « respecte la pratique CP-17 »         | `verified_by_deterministic_check`  | règle déterministe + typecheck     | —                                               |
+| « UX claire »                          | `human_review_required`            | preview + capture + a11y tree      | jugement qualitatif                             |
 
 Un critère sans preuve reste `unknown` ou `human_review_required`, jamais implicitement `pass`. Une conclusion seulement proposée par un agent porte `inferred_by_agent`, même si elle cite des sources.
 
@@ -1066,7 +1087,11 @@ Dans Blame, les Code Practices ne devraient pas être seulement concaténées au
 type CodePractice = {
   id: string;
   description: string;
-  applies_to: { paths?: string[]; languages?: string[]; change_kinds?: string[] };
+  applies_to: {
+    paths?: string[];
+    languages?: string[];
+    change_kinds?: string[];
+  };
   enforcement:
     | { kind: "guidance" }
     | { kind: "static_rule"; rule_id: string }
@@ -1150,14 +1175,14 @@ La worktree d’une User Story doit être créée, attribuée et détruite par B
 
 ### 12.2 Artifacts par rôle
 
-| Rôle | Entrée | Livrable vérifiable |
-|---|---|---|
-| Story Analyst | User Story + Code Practices | `TaskContract` : critères, non-goals, contraintes, risques initiaux |
-| Codebase Analyst (read-only) | source revision + contrat | `ChangeSurface` : candidats d’édition, contexte de support, preuves et inconnues |
-| Implementer | contrat + surface + lease | `ChangeSet` transactionnel + décisions + diagnostics immédiats |
-| Test Verification Analyst | base/candidate + contrat | `ValidationBundle` indépendant : reproduction, tests, limites |
-| Risk Review Analyst | semantic diff + bundle | `RiskReport` : API/schema/security/rollback/unknowns |
-| Merge gate | tous les artifacts | `EvidenceBundle` lisible par l’humain et décision de merge |
+| Rôle                         | Entrée                      | Livrable vérifiable                                                              |
+| ---------------------------- | --------------------------- | -------------------------------------------------------------------------------- |
+| Story Analyst                | User Story + Code Practices | `TaskContract` : critères, non-goals, contraintes, risques initiaux              |
+| Codebase Analyst (read-only) | source revision + contrat   | `ChangeSurface` : candidats d’édition, contexte de support, preuves et inconnues |
+| Implementer                  | contrat + surface + lease   | `ChangeSet` transactionnel + décisions + diagnostics immédiats                   |
+| Test Verification Analyst    | base/candidate + contrat    | `ValidationBundle` indépendant : reproduction, tests, limites                    |
+| Risk Review Analyst          | semantic diff + bundle      | `RiskReport` : API/schema/security/rollback/unknowns                             |
+| Merge gate                   | tous les artifacts          | `EvidenceBundle` lisible par l’humain et décision de merge                       |
 
 Chaque artifact indique son vecteur de révisions. Si l’implémentation change, les preuves dépendantes deviennent stale.
 
@@ -1232,7 +1257,7 @@ type Effects = {
   filesystem_write?: string[];
   process_spawn?: boolean;
   network?: string[];
-  secret_use?: string[];       // IDs opaques
+  secret_use?: string[]; // IDs opaques
   git_mutation?: boolean;
   external_mutation?: boolean;
   user_visible_action?: boolean;
@@ -1281,8 +1306,12 @@ Le policy engine doit donc vérifier l’autorité de la source, la capacité, l
 ```ts
 type TaskFact = {
   fact_id: string;
-  kind: "constraint" | "decision" | "observation" |
-        "hypothesis" | "open_question";
+  kind:
+    | "constraint"
+    | "decision"
+    | "observation"
+    | "hypothesis"
+    | "open_question";
   text: string;
   evidence: EvidenceRef[];
   observed_revision?: RevisionVector;
@@ -1333,39 +1362,39 @@ La récupération proposée doit être structurée : élargir le scope, changer 
 
 ### 15.1 Classement global
 
-| Rang | Primitive/capacité | Priorité | Pourquoi elle est structurante | Niveau de preuve |
-|---:|---|---|---|---|
-| 1 | revisions + handles + artifacts | P0 fondation | rend les lectures/edits stale détectables et les preuves rejouables si toutes les mutations passent par le protocole | forte inférence systèmes ; peu d’ablation agentique isolée |
-| 2 | `outline_code` + `inspect_code` | P0 | réduit le bruit et cible des unités complètes | très fort : CODESTRUCT, MASAI, CodeAgent, SWE-agent |
-| 3 | `apply_change` transactionnel | P0 | réduit les erreurs de patch et borne le blast radius | très fort pour structure/lint ; transactions versionnées = extension Blame |
-| 4 | `search_code` textuel/symbolique/AST | P0 | maintient un fallback exact et plusieurs unités de recherche ; LSP/embeddings arrivent en P1 | fort : AutoCodeRover, Agentless, RepoCoder, CodeRAG-Bench |
-| 5 | `run_task` + `inspect_run` | P0 | rend setup/tests/processus observables et compressibles | fort : SWE-agent, ExecutionAgent |
-| 6 | workflow `reproduce_issue` + validation différentielle | P1 | vise fail-before/pass-after et sépare préexistant/régression | fort : SWT-Bench, BRT Agent ; qualité de l’oracle à surveiller |
-| 7 | vue `semantic_diff` de `review_change` + `impact_analysis` | P1 | révèle les obligations multi-fichiers et risques invisibles au diff texte | moyen/fort : CodePlan, graphes/dépendances |
-| 8 | `get_relation_context` | P1 | récupère les dépendances sous budget plutôt que le dépôt entier | moyen/fort : LocAgent, GraphCoder, RepoGraph, DyRetriever |
-| 9 | workflow `validate_acceptance` + practices exécutables | P1 | relie directement User Story, Code Practices et preuves | forte logique produit ; peu de benchmark public direct |
-| 10 | `ui_observe`/`ui_compare` | P1 Blame | traite preview, DOM, a11y, console et réseau comme des oracles | pratiques industrielles ; ablation agentique spécifique à construire |
-| 11 | `search_history` | P1 | retrouve raisons, précédents et patterns de régression | signal prometteur de Repository Memory |
-| 12 | `reserve_change_surface`/`merge_simulate` | P2 | rend la collaboration multi-agent explicite et détecte les conflits sémantiques | forte motivation CooperBench ; recherche ouverte |
-| 13 | `trace_failure`/`slice_dataflow` | P2 | rapproche l’observation de la causalité réelle | fondements solides ; bénéfice agentique encore hétérogène |
-| 14 | sélection adaptative de contexte/tools | P2 | optimise la valeur d’information par token et la taille du prompt | Repoformer + tool search ; policy à apprendre/évaluer |
-| 15 | `compare_runs` comportemental | P2 | détecte ce qui change réellement au-delà du statut de test | très utile, mais normalisation difficile |
+| Rang | Primitive/capacité                                         | Priorité     | Pourquoi elle est structurante                                                                                       | Niveau de preuve                                                           |
+| ---: | ---------------------------------------------------------- | ------------ | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+|    1 | revisions + handles + artifacts                            | P0 fondation | rend les lectures/edits stale détectables et les preuves rejouables si toutes les mutations passent par le protocole | forte inférence systèmes ; peu d’ablation agentique isolée                 |
+|    2 | `outline_code` + `inspect_code`                            | P0           | réduit le bruit et cible des unités complètes                                                                        | très fort : CODESTRUCT, MASAI, CodeAgent, SWE-agent                        |
+|    3 | `apply_change` transactionnel                              | P0           | réduit les erreurs de patch et borne le blast radius                                                                 | très fort pour structure/lint ; transactions versionnées = extension Blame |
+|    4 | `search_code` textuel/symbolique/AST                       | P0           | maintient un fallback exact et plusieurs unités de recherche ; LSP/embeddings arrivent en P1                         | fort : AutoCodeRover, Agentless, RepoCoder, CodeRAG-Bench                  |
+|    5 | `run_task` + `inspect_run`                                 | P0           | rend setup/tests/processus observables et compressibles                                                              | fort : SWE-agent, ExecutionAgent                                           |
+|    6 | workflow `reproduce_issue` + validation différentielle     | P1           | vise fail-before/pass-after et sépare préexistant/régression                                                         | fort : SWT-Bench, BRT Agent ; qualité de l’oracle à surveiller             |
+|    7 | vue `semantic_diff` de `review_change` + `impact_analysis` | P1           | révèle les obligations multi-fichiers et risques invisibles au diff texte                                            | moyen/fort : CodePlan, graphes/dépendances                                 |
+|    8 | `get_relation_context`                                     | P1           | récupère les dépendances sous budget plutôt que le dépôt entier                                                      | moyen/fort : LocAgent, GraphCoder, RepoGraph, DyRetriever                  |
+|    9 | workflow `validate_acceptance` + practices exécutables     | P1           | relie directement User Story, Code Practices et preuves                                                              | forte logique produit ; peu de benchmark public direct                     |
+|   10 | `ui_observe`/`ui_compare`                                  | P1 Blame     | traite preview, DOM, a11y, console et réseau comme des oracles                                                       | pratiques industrielles ; ablation agentique spécifique à construire       |
+|   11 | `search_history`                                           | P1           | retrouve raisons, précédents et patterns de régression                                                               | signal prometteur de Repository Memory                                     |
+|   12 | `reserve_change_surface`/`merge_simulate`                  | P2           | rend la collaboration multi-agent explicite et détecte les conflits sémantiques                                      | forte motivation CooperBench ; recherche ouverte                           |
+|   13 | `trace_failure`/`slice_dataflow`                           | P2           | rapproche l’observation de la causalité réelle                                                                       | fondements solides ; bénéfice agentique encore hétérogène                  |
+|   14 | sélection adaptative de contexte/tools                     | P2           | optimise la valeur d’information par token et la taille du prompt                                                    | Repoformer + tool search ; policy à apprendre/évaluer                      |
+|   15 | `compare_runs` comportemental                              | P2           | détecte ce qui change réellement au-delà du statut de test                                                           | très utile, mais normalisation difficile                                   |
 
 ### 15.2 Où Blame peut réellement aller plus loin
 
 Les briques isolées existent déjà. La différenciation vient de leur composition :
 
-| Déjà bien exploré | Extension propre à Blame |
-|---|---|
-| outline AST / repo map | `SymbolRef` exact lié à une source revision ; lignée inter-révisions expérimentale en P2 |
-| LSP definition/references | protocole inter-provider avec provenance/fraîcheur et fallback multi-moteur |
-| AST edit ou patch | transaction atomique multi-fichier avec CAS, semantic diff et diagnostics delta |
-| tests via shell | run typé, baseline/candidate, test selection expliquée, preuve attachée au critère |
-| checkpoints Git | source revisions récupérables + vecteurs de révisions + evidence ledger pour runtime/artifacts |
-| sous-agents | contrats, leases, changesets et preuve plutôt que messages libres |
-| browser/screenshot | DOM/a11y/console/network versionnés et lien vers symboles source |
-| compaction | mémoire typée, invalidable et réhydratable |
-| permissions par commande | effets autorisés calculés par policy, puis comparés aux effets observés |
+| Déjà bien exploré         | Extension propre à Blame                                                                       |
+| ------------------------- | ---------------------------------------------------------------------------------------------- |
+| outline AST / repo map    | `SymbolRef` exact lié à une source revision ; lignée inter-révisions expérimentale en P2       |
+| LSP definition/references | protocole inter-provider avec provenance/fraîcheur et fallback multi-moteur                    |
+| AST edit ou patch         | transaction atomique multi-fichier avec CAS, semantic diff et diagnostics delta                |
+| tests via shell           | run typé, baseline/candidate, test selection expliquée, preuve attachée au critère             |
+| checkpoints Git           | source revisions récupérables + vecteurs de révisions + evidence ledger pour runtime/artifacts |
+| sous-agents               | contrats, leases, changesets et preuve plutôt que messages libres                              |
+| browser/screenshot        | DOM/a11y/console/network versionnés et lien vers symboles source                               |
+| compaction                | mémoire typée, invalidable et réhydratable                                                     |
+| permissions par commande  | effets autorisés calculés par policy, puis comparés aux effets observés                        |
 
 ### 15.3 Ce qu’il ne faut pas construire en premier
 
@@ -1386,15 +1415,15 @@ Les briques isolées existent déjà. La différenciation vient de leur composit
 
 ### 16.1 Couches
 
-| Couche | Responsabilité | Ne doit pas contenir |
-|---|---|---|
-| Product control plane | User Stories, roles, worktrees, approvals, merge, audit | logique de parsing propre à un langage |
-| Canonical Tool Protocol | schémas, revision vectors, handles, effets, erreurs, artifacts | détails OpenAI/Anthropic |
-| Provider adapters | traduction tool calls/events/contexte pour chaque fournisseur | état canonique du projet |
-| Semantic Workspace | source revisions MVCC, overlays, cache, invalidation ; lineage P2 | décision produit de merge |
-| Code intelligence adapters | `rg`, Tree-sitter, ast-grep, LSP, SCIP, compiler, Git | orchestration multi-agent |
-| Execution plane | sandbox, task catalog, process handles, ports, secrets, logs | texte de prompt métier |
-| Evidence ledger | facts, diagnostics, runs, diffs, acceptance coverage | contenu mutable sans hash |
+| Couche                     | Responsabilité                                                    | Ne doit pas contenir                   |
+| -------------------------- | ----------------------------------------------------------------- | -------------------------------------- |
+| Product control plane      | User Stories, roles, worktrees, approvals, merge, audit           | logique de parsing propre à un langage |
+| Canonical Tool Protocol    | schémas, revision vectors, handles, effets, erreurs, artifacts    | détails OpenAI/Anthropic               |
+| Provider adapters          | traduction tool calls/events/contexte pour chaque fournisseur     | état canonique du projet               |
+| Semantic Workspace         | source revisions MVCC, overlays, cache, invalidation ; lineage P2 | décision produit de merge              |
+| Code intelligence adapters | `rg`, Tree-sitter, ast-grep, LSP, SCIP, compiler, Git             | orchestration multi-agent              |
+| Execution plane            | sandbox, task catalog, process handles, ports, secrets, logs      | texte de prompt métier                 |
+| Evidence ledger            | facts, diagnostics, runs, diffs, acceptance coverage              | contenu mutable sans hash              |
 
 Le protocole interne doit rester indépendant du modèle. Un appel OpenAI ou Anthropic peut avoir un schéma différent au niveau transport, mais `SourceRevisionRef`, `FileRef`, `SymbolRef`, `SyntaxNodeRef`, `ChangeSetRef`, `RunRef` et `EvidenceBundle` gardent la même sémantique dans Blame.
 
@@ -1517,15 +1546,15 @@ Packs différés pour : sécurité/taint, bases et migrations, OpenAPI/GraphQL/p
 
 ### 18.1 Hypothèses
 
-| ID | Hypothèse |
-|---|---|
-| H1 | les vues symboliques réduisent les tokens de lecture sans diminuer le recall du bon symbole |
-| H2 | handles + source revision réduisent les edits faux/stale par rapport aux noms/lignes |
-| H3 | corps + dépendances bornées bat le corps seul sur tâches multi-fichiers |
-| H4 | transaction structurelle réduit retries, invalid syntax et patch churn |
-| H5 | reproduction + validation différentielle réduit les faux positifs « tests verts » |
-| H6 | artifact rehydration réduit les relectures après compaction |
-| H7 | contrats/changesets améliorent la coopération par rapport aux messages libres |
+| ID  | Hypothèse                                                                                   |
+| --- | ------------------------------------------------------------------------------------------- |
+| H1  | les vues symboliques réduisent les tokens de lecture sans diminuer le recall du bon symbole |
+| H2  | handles + source revision réduisent les edits faux/stale par rapport aux noms/lignes        |
+| H3  | corps + dépendances bornées bat le corps seul sur tâches multi-fichiers                     |
+| H4  | transaction structurelle réduit retries, invalid syntax et patch churn                      |
+| H5  | reproduction + validation différentielle réduit les faux positifs « tests verts »           |
+| H6  | artifact rehydration réduit les relectures après compaction                                 |
+| H7  | contrats/changesets améliorent la coopération par rapport aux messages libres               |
 
 ### 18.2 Ablation centrale
 
@@ -1699,6 +1728,210 @@ edit_function(nom) → mutation implicite
 ```
 
 Le premier protocole vise à économiser du contexte **et** à augmenter la fiabilité ; l’ablation H2 doit le confirmer. Le second économise potentiellement du contexte, mais conserve l’ambiguïté et crée de nouveaux risques de staleness.
+
+---
+
+## 21. Mise en œuvre réelle du harness v2
+
+Cette section décrit l’état effectivement livré en août 2026. Elle remplace, pour le runtime courant, les contrats v1 proposés plus haut dans l’étude.
+
+### 21.1 Architecture livrée
+
+La conversation fonctionnelle et le contexte d’exécution sont désormais deux états distincts. `ConversationMemory` est persistée atomiquement dans `.blame/harness/conversation-memory` sous le même `conversationId`. Le schéma `2.0` conserve l’objectif, l’intention courante, les faits typés et sourcés, les changements réalisés, les validations, les checkpoints de repli et six couples récents utilisateur/assistant. Les faits possèdent un identifiant stable dérivé de leur type, portée et texte normalisé ; une répétition met donc à jour le fait existant. Les fichiers `1.0` sont migrés à la première écriture et les anciens faits restent lisibles.
+
+Le contexte technique vit dans un `executionEpochId`. Une nouvelle demande, une compaction du modèle ou une édition validée ouvre un nouvel epoch et invalide la présence active des reçus de lecture précédents. Le protocole et les schémas visibles portent la version `2.0`. Une session de développement expose `edit_code` et `recall_context`; l’ancien exécuteur et les artefacts v1 restent lisibles sans migration destructive.
+
+Le chemin nominal est :
+
+```text
+outline_code ou search_code
+  → inspect_code sur les seuls symboles nécessaires
+  → edit_code avec un batch cohérent
+  → reçu compact + validation syntaxique + ArtifactRef du diff
+  → run_task ciblé si une validation comportementale est nécessaire
+```
+
+`edit_code` traduit les opérations visibles en une préparation transactionnelle interne. Les propositions immuables, artefacts scellés, verrous, journaux de reprise et reçus CAS v1 restent utilisés comme mécanisme interne, mais ne sont plus demandés au modèle. L’idempotence visible est dérivée de `session_id`, `tool_call_id` et du hash de l’entrée normalisée, puis persistée dans `.blame/harness/edit-receipts`. Un replay idempotent ne rouvre pas un epoch déjà tourné.
+
+### 21.2 Contrat `edit_code`
+
+Le contrat livré accepte :
+
+- `replace_symbol`, `replace_body`, `replace_signature`, `insert_before`, `insert_after` et `delete_symbol`, avec compatibilité des noms v2 initiaux `replace` et `delete` ;
+- `set_css_declaration`, `remove_css_declaration`, `insert_css_declaration` et le batch compatible `set_css_declarations` ;
+- `create_file`, `move_file` et `patch_file`, avec compatibilité du nom `patch` ;
+- un formatage `none` ou `touched_files` ; `touched_ranges` a été retiré tant qu’un formateur réellement borné n’est pas disponible ;
+- une validation de parse activée par défaut.
+
+L’appel ne contient aucune révision, aucun blob hash, offset, ancien texte attendu ou identifiant d’idempotence. Le résultat distingue `applied`, `conflict`, `validation_failed` et `denied`. Un résultat appliqué contient le reçu, la nouvelle révision, les fichiers et symboles modifiés, les additions et suppressions, le mode de résolution, les diagnostics et la référence de l’artefact diff. Le diff complet n’est pas réinjecté automatiquement.
+
+Tous les fichiers du batch sont préparés en mémoire, leurs chemins et symlinks sont vérifiés, puis ils sont écrits sous un verrou unique. Le commit vérifie uniquement les anciens blobs des fichiers touchés. Une modification concurrente d’un autre fichier ne rend donc plus le batch caduc. Une erreur d’écriture déclenche le rollback des fichiers déjà tentés et conserve le journal si le rollback lui-même est incomplet. Les déclarations CSS sont éditées sur les nœuds issus du parseur : commentaires, ordre, fallbacks dupliqués, custom properties, règles imbriquées et valeurs complexes sont conservés.
+
+### 21.3 Références et résolution automatique
+
+Les handles v2 restent opaques et compacts. Ils transportent ou référencent le chemin et le langage d’origine, le type de symbole, le nom qualifié, les empreintes de signature, corps, ascendance et voisins, le blob d’origine, la plage et la position ordinale. Ils sont compressés dans le protocole public ; les handles v1 restent décodables.
+
+La résolution suit cet ordre :
+
+1. le contenu attendu est contrôlé à l’ancienne position ;
+2. le fingerprint exact est recherché dans le même fichier ;
+3. le score combine nom qualifié, type, signature, corps et ascendance ;
+4. les voisins et la position ordinale départagent les déplacements locaux ;
+5. les fichiers modifiés ou renommés du même langage sont explorés dans une recherche bornée à 200 fichiers ;
+6. une correspondance dépassant le seuil de confiance est automatiquement rebasée ;
+7. des candidats de scores proches produisent un conflit sans écriture.
+
+Un candidat de conflit contient directement son handle, son chemin, son type, son nom qualifié, sa ligne, sa confiance et un extrait compact. Les lectures et relations réutilisent le même résolveur : `source_revision_id` est optionnel, la révision courante est toujours retournée, et une modification d’un fichier A n’invalide pas un handle vers un fichier B inchangé.
+
+Une seule nouvelle tentative interne est autorisée si un blob touché change entre préparation et commit. Elle ne consomme pas un nouveau tour de modèle.
+
+TypeScript, TSX, JavaScript et JSX bénéficient du parseur syntaxique et de la résolution symbolique. CSS expose comme symboles les règles de sélecteurs, les blocs `@media`, les keyframes et les propriétés custom. Les autres parseurs déjà présents — Bash, C#, Go, Java, Python, Rust et les scripts Vue — restent disponibles pour l’outline et les cibles syntaxiques. Un langage non supporté annonce `supported: false` et utilise explicitement le fallback `patch_file` ; il n’est pas présenté comme symbolique.
+
+Le fallback patch tente l’emplacement exact, les ancres uniques, une correspondance fuzzy bornée, puis un `git apply --3way` depuis le blob d’origine. Un échec retourne le hunk, le contexte actuel probable, les candidats, la cause et la stratégie recommandée. Deux ancres plausibles sont refusées et le batch complet reste sans modification partielle.
+
+### 21.4 Working set et `context_epoch`
+
+Les lectures `inspect_code` sont enregistrées par session dans `.blame/harness/working-sets`. Un reçu conserve l’epoch, le blob, le chemin, les plages couvertes et la présence du contenu dans le contexte actif. La clé de réutilisation est principalement `execution_epoch + blob_hash + plage` : changer de vue ou de handle ne renvoie pas les mêmes octets une seconde fois.
+
+Pour un même blob et un même epoch :
+
+- une lecture entièrement couverte retourne `already_available` et son reçu, sans contenu dupliqué ;
+- une lecture partiellement couverte retourne uniquement les nouveaux segments, chacun avec son chemin, ses octets et ses lignes ;
+- une sortie tronquée n'enregistre comme couvertes que les plages réellement réinjectées, de sorte qu'un appel suivant rende le delta restant ;
+- le résultat mesure les octets demandés, les octets nouveaux et le taux de recouvrement ;
+- le verrou du working set coalesce les demandes concurrentes au niveau du registre durable.
+
+L’epoch canonique provient de `ConversationMemoryStore`. `beginRequest`, la compaction et la première réponse d’une édition validée le font tourner ; un appel idempotent répété ne le tourne pas. La rotation marque les anciens reçus `content_in_active_context: false`, de sorte qu’une lecture nécessaire après compaction renvoie à nouveau son contenu. Un hôte peut toujours imposer `AgentToolContext.metadata.contextEpoch`; le fallback par snapshot/run est conservé lorsque la mémoire v2 est désactivée.
+
+### 21.5 Capsules et compaction
+
+Chaque demande initiale ou ajoutée reçoit une `ContinuityCapsule` structurée contenant l’objectif antérieur, les contraintes et décisions pertinentes, les changements récents, la validation, les fichiers actifs, les points non résolus et le dialogue récent. Le classement est lexicalement pertinent pour la nouvelle intention et la capsule est réduite jusqu’au budget configurable, fixé à 2 400 tokens par défaut.
+
+La demande courante apparaît une seule fois, textuellement et hors capsule, sous `<current_user_request>`. Elle est exclue de `recentDialogue` dans la capsule. Le prompt envoyé suit donc strictement `<continuity_capsule>…</continuity_capsule>` puis `<current_user_request>…</current_user_request>`. Lors d’une compaction, le runtime reconstruit la même séparation et ne conserve ni sorties d’outils, ni lectures intégrales, ni diagnostics résolus, ni propositions, ni hashes intermédiaires, ni diff brut.
+
+Le budget est une borne dure sur la capsule sérialisée, balises comprises. Le compteur est injectable lorsqu’un tokenizer exact du provider est disponible. Son fallback local utilise le nombre d’octets UTF-8, borne supérieure indépendante du provider pour les tokenizers texte supportés, au lieu d’une moyenne caractères/token susceptible de sous-estimer. Il réserve des parts aux contraintes, décisions, changements et dialogues, ajoute les sections dans leur ordre de priorité et tronque les sections basses avant les hautes. Le test de régression avec `maximum_tokens: 500` exige et obtient une capsule inférieure ou égale à 500 unités du compteur sélectionné ; la demande courante n’entre pas dans ce budget et n’est jamais tronquée par ce mécanisme.
+
+`recall_context` permet de rouvrir une tranche ciblée par sujet, chemin, symbole ou identifiant de reçu. Il renvoie au plus les faits, changements et tours pertinents avec un indicateur de troncature, sans réinjecter l’ancien transcript ou l’artefact diff complet. Les budgets de développement restent adaptatifs : 24 tours pour une change request avec feedback, 40 pour une petite story, 80 par défaut et 120 pour un changement explicitement architectural ou migratoire. Le seuil de compaction technique reste déclenché par le SDK Cline, mais les tailles avant/après sont mesurées par le harness.
+
+### 21.6 Sécurité
+
+Les écritures directes restent limitées au worktree. `.git`, les métadonnées internes `.blame`, `.code-review-graph`, `.ssh`, les fichiers de secrets connus, les chemins absolus, les traversées hors workspace et les symlinks sortants sont refusés. Les artefacts bruts scellés ne deviennent pas visibles à l’agent.
+
+Le protocole v2 ne modifie pas les autorisations de déploiement, publication, base distante, messagerie, secrets ou suppression externe. `run_task` reste isolé dans un overlay et ne fusionne pas implicitement ses effets dans le worktree canonique.
+
+### 21.7 `run_task` et dépendances
+
+Avant l'exécution, chaque `run_task` écrit un `run-attempt` stable avec `status: running`, le `tool_call_id`, la révision, la tâche, l'environnement et l'heure de début. Il est finalisé en `passed`, `failed`, `timed_out`, `cancelled` ou `runtime_error`. Au démarrage suivant, un ancien enregistrement resté `running` est fermé en `runtime_error`. Une clé d'idempotence interne est générée lorsque l'appel n'en fournit pas ; rejouer le même appel et le même `tool_call_id` réutilise ainsi le run terminal sans réexécuter la tâche. Le résultat terminal référence le run content-addressed et ses artefacts de logs et d'effets filesystem.
+
+Le registre distingue les tentatives actives dans le processus des tentatives orphelines : deux `run_task` parallèles restent tous deux `running`, tandis qu'un enregistrement abandonné par un processus précédent est récupéré en `runtime_error`.
+
+Le catalogue respecte le champ `packageManager`, puis les lockfiles comme fallback, et expose une tâche `dependencies` pour npm, pnpm, Yarn ou Bun. Elle conserve les lockfiles comme autorité, préfère le cache hors ligne (`--prefer-offline` ou équivalent) et n’encourage jamais une édition manuelle du lockfile. Une dépendance manquante produit un diagnostic explicite et la tentative garde un état terminal durable.
+
+Le réseau reste refusé par défaut. L’allowlist projet n’est acceptée que pour la tâche de dépendances et uniquement lorsqu’un proxy contrôlé est fourni par `BLAME_PROJECT_ALLOWLIST_PROXY`; sans ce proxy, le runtime retourne `runtime_error` plutôt que d’ouvrir le réseau. Le même contrat s’exécute dans le worktree Linux natif, Lima ou WSL. En Cloud Preview, l’accès au cache et au réseau reste délégué au micro-runtime distant, qui doit fournir le proxy compatible.
+
+### 21.8 Local Runtime, Cloud Preview et récupération Preview
+
+Le même contrat sérialisable `edit_code` est utilisé par l’exécuteur local et l’exécuteur distant du Local Runtime. Le worktree effectif reste natif Linux, Lima sous macOS ou WSL sous Windows selon le mode déjà sélectionné par Desktop. En Cloud Preview, les mutations du worktree hôte utilisent le même contrat et la Preview distante reste un domaine séparé.
+
+La récupération Preview locale est maintenant indexée par un état stable : worktree, configuration sélectionnée, manifest et hash des manifests/lockfiles. L’empreinte d’échec combine service, commande, code de sortie disponible, diagnostic principal, configuration et dépendances. Un circuit breaker applique les délais 5 s, 30 s, 120 s et 300 s aux pannes identiques. Un changement de configuration ou de dépendances rouvre immédiatement le circuit ; une action explicite Start/Restart le réinitialise. L’effet React n’est plus redéclenché par chaque nouvelle identité du tableau `backlog.stories`, mais par une clé stable des stories Preview actives.
+
+Le client Cloud conserve son mécanisme de récupération d’appels ambigus. L’empreinte de panne et le circuit breaker commun au control plane Cloud ne sont pas encore alignés avec l’implémentation locale ; cette convergence est reportée.
+
+### 21.9 Spécialistes, gouverneur et frontend
+
+Le prompt limite la consultation à l’ambiguïté produit ou visuelle importante, l’architecture transversale inconnue, l’échec d’un premier correctif, les risques auth/données/migration ou l’absence de validation fiable. La cible de timeout est 90 secondes. Le runtime transmet une capsule fraîche au spécialiste et limite la change request à une consultation ; une consultation supplémentaire exige une justification structurée explicite. Impeccable reste requis pour une nouvelle interface ou un redesign, mais plus pour un correctif mécanique localisé sans choix de design.
+
+Le gouverneur maintient un état indépendant par epoch : appels et octets de lecture, octets nouveaux et supprimés, doublons, recouvrement faible, lectures après edit, conflits, retries et temps avant première édition appliquée. Un conflit ne remet aucun compteur à zéro ; un edit appliqué démarre une nouvelle phase. Après quatre lectures, il émet un conseil court. Après plusieurs lectures à faible nouveauté, seules les nouvelles explorations larges sont refusées avec la cible déjà identifiée ; une inspection étroite reste possible. À 50 % du budget adaptatif, il recommande une capsule compacte.
+
+Le frontend mappe `edit_code` sur la surface diff existante et affiche fichiers, additions, suppressions, validation de parse et résolution exacte ou automatiquement rebasée. Les lectures affichent symbole ou nœud, vue, lignes, caractère partiel ou entier et badge de contenu réutilisé. Les événements sont fusionnés par `tool_call_id` ; un événement `started` sans résultat terminal est marqué explicitement incomplet au lieu d’être fermé comme réussi.
+
+La télémétrie ajoute `conversation_id`, `execution_epoch_id`, tokens d’entrée/sortie de capsule, contraintes préservées, octets demandés/retournés/supprimés, doublons, temps avant edit, stratégie de rebase, conflits, retries et tailles avant/après compaction. Les événements ne contiennent pas le code source intégral. Ces séries permettent une comparaison avant/après dans le backend existant ; aucune nouvelle page graphique dédiée n’a été ajoutée.
+
+### 21.10 Replay Portfolio V4 et validation
+
+Le benchmark accepte les exports JSONL réels du logger Blame, ignore le contenu libre et ne conserve que timestamps, outils, états et compteurs numériques. Un fixture nettoyé issu de la trace Portfolio V4 disponible dans le worktree est rejoué dans les tests. Le rapport calcule tokens entrants cumulés, octets de code, lectures, doublons, appels et temps avant le premier edit appliqué, retries, conflits, durée et conformité des contraintes.
+
+L’audit historique couvrant les US3 à US6, surtout l’US6, donne la baseline réelle suivante :
+
+| Mesure observée                   | Baseline historique |
+| --------------------------------- | ------------------: |
+| Activités                         |                 600 |
+| Tours modèle                      |                 324 |
+| Contexte maximal par requête      |      668 748 tokens |
+| `inspect_code` / `search_code`    |           117 / 124 |
+| `apply_change`                    |                  97 |
+| Propositions / revues / commits   |        67 / 32 / 30 |
+| Temps avant première modification |        1 080 000 ms |
+| Récupérations Preview identiques  |                  89 |
+
+La capture JSONL nettoyée actuellement versionnée contient 70 559 tokens entrants, quatre lectures et 74 693 ms d’activité. Elle confirme le parsing d’un format de trace réel, mais ne contient pas d’édition et l’ancien schéma ne mesurait pas les octets renvoyés. Ces deux champs restent donc explicitement « non mesurés » pour cette capture au lieu d’être estimés.
+
+Le replay v2 de non-régression applique les mêmes seuils à un chemin complet et produit 72 000 tokens entrants, 80 octets renvoyés contre 200 dans le chemin de comparaison, une lecture, un appel avant le premier edit, un edit à 45 000 ms, zéro doublon, retry ou conflit, et 100 % des contraintes contrôlées préservées. Cela représente −89,2 % sur les tokens et −60 % sur les octets dans le replay. Ce résultat valide le moteur et ses garde-fous ; une mesure de gain de production US3–US6 exige encore un run post-déploiement complet avec le nouveau schéma de télémétrie.
+
+Les tests automatisés exécutés dans ce worktree couvrent Linux natif, le contrat distant sérialisable et les composants indépendants de l’OS. Les exécutions réelles Windows WSL, macOS Lima et Cloud Preview depuis les trois OS hôtes nécessitent encore la CI et l’infrastructure correspondantes ; elles ne sont pas présentées comme validées localement.
+
+### 21.11 Limitations et phases suivantes
+
+- `touched_ranges` n’est plus annoncé ; le formatage strictement borné aux plages reste à implémenter avant de le réintroduire.
+- Le registre persistant sérialise et déduplique les lectures, mais le partage d’une unique promesse entre plusieurs processus runtime distincts est assuré par verrou, pas par un broker distribué.
+- Le cache du package manager est réutilisé, mais il n’existe pas encore de cache de dépendances content-addressed propre à Blame.
+- Le circuit breaker Preview Cloud et la vue frontend spécialisée de comparaison avant/après des métriques restent à livrer.
+- La rotation par dépassement technique dépend du callback de compaction du SDK Cline ; le harness ne force pas seul une compaction à un nombre fixe de tokens.
+- L’extraction automatique des faits conversationnels est déterministe et lexicale ; une correction manuelle ou un classifieur plus riche pourra être nécessaire pour des formulations implicites rares.
+- Le corpus historique ne contient pas les octets renvoyés par chaque lecture. La réduction réelle de 50 % doit être confirmée après activation de la nouvelle télémétrie sur un replay complet US3–US6.
+- La matrice réelle Lima, WSL et Cloud depuis chaque OS hôte reste à automatiser dans la CI.
+
+### 21.12 Déploiement et rollback
+
+Les capacités sont indépendantes et activées par défaut :
+
+```text
+BLAME_CONTEXT_EPOCHS
+BLAME_SEMANTIC_READ_REBASE
+BLAME_WORKING_SET_V2
+BLAME_SEMANTIC_REBASE_V2
+BLAME_PATCH_RECOVERY_V2
+BLAME_COST_GOVERNOR_V2
+BLAME_STRUCTURED_COMPLETION
+BLAME_CONTINUITY_DELTA
+BLAME_MEMORY_AUTHORITY_V2
+BLAME_HARD_CAPSULE_BUDGET
+BLAME_SEMANTIC_RECALL
+BLAME_OPENROUTER_EMBEDDINGS
+```
+
+La valeur `0`, `false` ou `off` restaure le comportement précédent pour la capacité concernée, sans migration ni suppression des artefacts. `BLAME_OPENROUTER_EMBEDDINGS` constitue l’exception : il est désactivé par défaut. L’ordre de rollout est : instrumentation, working set et epochs, capsule, rebase des lectures, rebase des écritures, fallback patch, gouverneur, completion structurée, autorité mémoire, rappel lexical, puis activation générale après comparaison des métriques.
+
+### 21.13 Mémoire conversationnelle fiable et `complete_turn`
+
+Le runtime distingue trois autorités. Le message utilisateur exact définit le résultat souhaité. Les reçus runtime définissent ce qui a réellement été modifié ou exécuté. Le delta de l’agent apporte uniquement le sens nouveau du tour. La priorité de fusion est l’instruction utilisateur explicite récente, l’instruction explicite ancienne, la preuve runtime, la décision confirmée, puis l’interprétation agent. Cette priorité est spécialisée par domaine : l’utilisateur reste souverain sur l’objectif, le runtime sur les faits techniques.
+
+Chaque message utilisateur est écrit avant l’appel modèle comme preuve `user_message`. Un `edit_code` appliqué ajoute immédiatement son `change_receipt`; un `run_task` terminal ajoute son `run_receipt`; les conflits, rollbacks de préparation, interruptions, rotations d’epoch et compactages ajoutent un événement runtime déterministe. Ces écritures utilisent le même verrou et la même écriture atomique que la mémoire. Elles sont idempotentes par référence et ne copient ni code source, ni diff, ni logs d’outil.
+
+La fin normale d’un tour passe par l’outil terminal interne `complete_turn` :
+
+```ts
+type CompleteTurnInput = {
+  answer: string;
+  continuity_update: ContinuityUpdate;
+};
+```
+
+Le SDK Cline reçoit `lifecycle.completesRun: true`; un appel réussi termine donc le run sans tour modèle supplémentaire. Le runtime affiche seulement `answer` dans l’événement final, filtre les événements outil `complete_turn`, ne renvoie pas son résultat au modèle et conserve `continuity_update` hors de la conversation visible. Le schéma présenté au modèle décrit strictement `ContinuityUpdate`, sans branche générique, tandis que l’exécuteur conserve une validation tolérante séparée : un delta invalide produit le fallback après affichage de `answer`. Le prompt demande un unique appel et précise que le delta ne contient que les changements sémantiques du tour.
+
+Le delta est borné à 16 Kio, 20 ajouts, 20 remplacements, 1 000 caractères par fait et 100 références. Avant fusion, le runtime vérifie le schéma et l’existence des preuves. Une référence invalide est ignorée et comptée, sans empêcher l’affichage de `answer`. Une déclaration de test réussi exige un `run_receipt` réussi ; une déclaration de fichier modifié exige un `change_receipt`. Une interprétation agent ne peut ni remplacer un fait d’autorité utilisateur, ni supprimer un fait. Un changement d’avis marque l’ancien fait `superseded` avec `superseded_by`; il reste rappelable pour « reviens à la couleur précédente ».
+
+Si `complete_turn` manque, contient un delta invalide, si le modèle s’interrompt ou si le run échoue, le runtime ne relance pas le modèle. Il crée un checkpoint déterministe avec la référence de la demande, les reçus d’édition et de run observés depuis son début, le dernier état de validation et le marqueur d’interruption. Les reçus déjà persistés restent donc disponibles après crash.
+
+`recall_context` accepte `query`, `file_path`, `symbol_ref`, `change_receipt_id`, `include_superseded` et `maximum_tokens`. Une référence exacte est prioritaire. Sinon, le score local combine normalisation lexicale, synonymes simples français/anglais, portée, fichier ou symbole, récence, autorité et état actif. La recherche examine aussi, dans une fenêtre bornée de 200 candidats, les anciennes preuves `user_message` sorties des six échanges récents. Les messages utilisateur restent persistés sans être évincés par la limite des événements techniques. La réponse renvoie des faits `StoredMemoryFact`, changements, dialogues et validation dans une borne dure, avec `retrieval_strategy`, `truncated` et les nombres de candidats et résultats. Les formulations de retour à un état précédent autorisent automatiquement les faits remplacés pertinents.
+
+Aucun embedding n’est implémenté dans cette phase : les tests lexicaux couvrent les cas attendus sans dépendance réseau. En conséquence, aucun appel OpenRouter n’existe côté Electron, frontend, worktree, Preview, Lima, WSL ou conteneur agent. Si les benchmarks montrent ultérieurement un défaut mesurable, l’unique architecture admise restera application authentifiée → backend Blame isolé par tenant → OpenRouter, avec redaction, allowlist serveur, cache par hash, timeout, circuit breaker et fallback lexical immédiat.
+
+La télémétrie enregistre la présence et la validité du delta, l’usage du fallback, les nombres de faits ajoutés/remplacés, les références invalides, les conflits de fusion, le budget demandé/réel et la troncature de capsule, ainsi que la stratégie et les volumes de rappel. Elle ne contient aucun texte intégral de message ou de contrainte. Les métriques embeddings sont déclarées pour la phase optionnelle mais aucun échantillon d’appel n’est émis tant que le flag est désactivé.
+
+Les tests headless exécutés couvrent le caractère terminal de l’outil, l’absence de carte visible, la projection de `answer`, le fallback sur delta invalide, vingt tours et compactages, les contradictions, la hiérarchie d’autorité, les faux reçus, l’idempotence, les interruptions, la borne de 500 tokens, la récupération exacte/lexicale/structurelle et la migration `1.0`. Ils complètent les 44 tests historiques du harness, qui restent verts. Les chiffres Portfolio V4 avant/après restent ceux de la section 21.10 : la nouvelle mémoire ajoute des métriques dédiées, mais une comparaison de production post-déploiement est encore nécessaire pour mesurer son coût moyen par tour et son taux de rappel correct.
+
+Les limitations restantes sont l’extraction déterministe de formulations implicites rares, l’absence de benchmark embeddings justifiant une phase 3, la validation réelle sur Lima, WSL et Cloud Preview, et l’absence actuelle d’une mesure de production du taux de récupération sémantique. Ces limites ne bloquent ni la persistance, ni la completion, ni le fallback lexical.
 
 ---
 
