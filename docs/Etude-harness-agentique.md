@@ -1960,7 +1960,11 @@ Les tests automatisés ajoutés couvrent le registre et sa description, JSON/JSO
 
 #### Gestionnaires de paquets hors réseau
 
-Le runtime résout désormais la valeur exacte de `packageManager`, suffixe d’intégrité exclu, avant de lancer une tâche. Il cherche successivement une installation provisionnée sous `/opt/blame/package-managers/<nom>/<version>`, la dépendance embarquée dans le payload du harness, puis un binaire système de version strictement identique. Un shim Corepack est refusé. Si aucune version exacte n’est disponible, `run_task` retourne une panne d’infrastructure explicite au lieu de tenter un téléchargement.
+Le runtime résout d’abord la valeur exacte de `packageManager`, suffixe d’intégrité exclu, avant de lancer une tâche. Il cherche successivement une installation provisionnée sous `/opt/blame/package-managers/<nom>/<version>`, la dépendance embarquée dans le payload du harness, puis un binaire système vérifié. Un shim Corepack est toujours refusé.
+
+Si la version exacte de pnpm est absente, une politique de compatibilité contrôlée peut sélectionner le candidat stable le plus proche dans la même version majeure. Elle ne s’applique ni à npm, Yarn ou Bun, ni entre deux versions majeures, ni aux prereleases ou versions mal formées. La version demandée, la version exécutée et la stratégie `exact`, `unversioned` ou `compatible_same_major` sont enregistrées dans le reçu de run. Les résolutions compatibles possèdent aussi une métrique dédiée. En l’absence de candidat conforme, `run_task` retourne `PACKAGE_MANAGER_UNAVAILABLE` comme panne d’infrastructure.
+
+Corepack et le mécanisme propre à pnpm de gestion automatique de la version du package manager sont désactivés. Cette seconde protection est nécessaire : sans `npm_config_manage_package_manager_versions=false`, pnpm 10.33.2 tente lui-même de récupérer pnpm 10.32.1 lorsqu’il lit le manifeste Portfolio V4. Les installations de dépendances conservent `--frozen-lockfile`, les caches restent préparés hors sandbox et aucun téléchargement de gestionnaire n’est permis pendant `run_task`.
 
 Les images WSL et Lima passent en runtime `9` et provisionnent npm 11.6.4, pnpm 10.33.2 et Yarn 1.22.22. Le runner Cloud passe en `0.2.16` et installe les mêmes binaires. Linux natif les reçoit avec le payload du harness. Les contrôles de santé WSL/Lima vérifient leurs versions. Le cache persistant `.blame/harness/dependency-cache` est indexé par le gestionnaire, sa version et le hash des manifests, workspaces et lockfiles. Les variables npm, pnpm et Yarn pointent vers ce cache, tandis que les téléchargements Corepack et le réseau restent désactivés pendant les tâches ordinaires.
 
@@ -1980,11 +1984,11 @@ Mesures obtenues dans le worktree Linux le 25 août 2026 :
 
 | Vérification | Résultat |
 | --- | ---: |
-| Suite complète d’`agent-runtime` | 205 réussis, 0 échec, 1 replay live ignoré |
+| Suite complète d’`agent-runtime` | 207 réussis, 0 échec, 1 replay live ignoré |
 | Replay GPT-5.6 Sol X-high | non exécuté, credentials absents |
-| Build complet de la fixture | réussi en 1,347 s |
+| Build complet de la fixture déclarant `pnpm@10.32.1` avec pnpm 10.33.2 | réussi hors ligne en 1,257 s |
 | Validation Prisma de la fixture | réussie avec le binaire local |
-| Build pnpm sous Bubblewrap avec réseau isolé | réussi |
+| Build `pnpm@10.32.1` sous Bubblewrap avec réseau isolé | réussi via compatibilité majeure contrôlée |
 | Appels ou téléchargements Corepack observés | 0 |
 
 Le replay live n’est volontairement pas remplacé par une trace synthétique. Les trois mesures de coût, de compaction maximale et de variance entre runs devront être ajoutées après exécution dans l’environnement doté des credentials. La matrice de construction des images WSL, Lima et Cloud reste une validation CI : le code, les marqueurs de version et les health checks sont présents, mais ces images n’ont pas été publiées depuis ce worktree.
