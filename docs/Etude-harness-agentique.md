@@ -1739,14 +1739,15 @@ Cette section décrit l’état effectivement livré en août 2026. Elle remplac
 
 La conversation fonctionnelle et le contexte d’exécution sont désormais deux états distincts. `ConversationMemory` est persistée atomiquement dans `.blame/harness/conversation-memory` sous le même `conversationId`. Le schéma `2.0` conserve l’objectif, l’intention courante, les faits typés et sourcés, les changements réalisés, les validations, les checkpoints de repli et six couples récents utilisateur/assistant. Les faits possèdent un identifiant stable dérivé de leur type, portée et texte normalisé ; une répétition met donc à jour le fait existant. Les fichiers `1.0` sont migrés à la première écriture et les anciens faits restent lisibles.
 
-Le contexte technique vit dans un `executionEpochId`. Une nouvelle demande, une compaction du modèle ou une édition validée ouvre un nouvel epoch et invalide la présence active des reçus de lecture précédents. Le protocole et les schémas visibles portent la version `2.0`. Une session de développement expose `edit_code` et `recall_context`; l’ancien exécuteur et les artefacts v1 restent lisibles sans migration destructive.
+Le contexte technique vit dans un `executionEpochId`. Une nouvelle demande ou une compaction du modèle ouvre un nouvel epoch et invalide la présence active des reçus de lecture précédents. Une édition invalide uniquement les reçus des fichiers touchés et ne fait plus tourner l’epoch global. Le protocole et les schémas visibles portent la version `2.0`. Une session de développement expose les outils spécialisés, `edit_code` et `recall_context`; l’ancien exécuteur et les artefacts v1 restent lisibles sans migration destructive.
 
 Le chemin nominal est :
 
 ```text
 outline_code ou search_code
   → inspect_code sur les seuls symboles nécessaires
-  → edit_code avec un batch cohérent
+  → edit_symbol, edit_json ou une opération de fichier spécialisée
+  → edit_files pour un batch cohérent
   → reçu compact + validation syntaxique + ArtifactRef du diff
   → run_task ciblé si une validation comportementale est nécessaire
 ```
@@ -1763,7 +1764,9 @@ Le contrat livré accepte :
 - un formatage `none` ou `touched_files` ; `touched_ranges` a été retiré tant qu’un formateur réellement borné n’est pas disponible ;
 - une validation de parse activée par défaut.
 
-L’appel ne contient aucune révision, aucun blob hash, offset, ancien texte attendu ou identifiant d’idempotence. Le résultat distingue `applied`, `conflict`, `validation_failed` et `denied`. Un résultat appliqué contient le reçu, la nouvelle révision, les fichiers et symboles modifiés, les additions et suppressions, le mode de résolution, les diagnostics et la référence de l’artefact diff. Le diff complet n’est pas réinjecté automatiquement.
+Les outils publics spécialisés sont `edit_symbol`, `edit_json`, `patch_file`, `edit_files`, `create_file`, `replace_file`, `delete_file` et `move_file`. `edit_code` reste le contrat de compatibilité pour le remplacement de corps ou signature, les insertions, suppressions symboliques et opérations CSS. Les résultats distinguent désormais `applied`, `conflict`, `validation_failed`, `unsupported_operation`, `infrastructure_error` et `no_change`. La validation porte explicitement `passed`, `failed`, `not_supported` ou `not_run`; un parseur absent n’est jamais converti en succès.
+
+L’appel ne contient aucune révision, aucun blob hash, offset, ancien texte attendu ou identifiant d’idempotence. Un résultat appliqué contient le reçu, la nouvelle révision, les fichiers et symboles modifiés, les additions et suppressions, le mode de résolution, les diagnostics et la référence de l’artefact diff. Le diff complet n’est pas réinjecté automatiquement.
 
 Tous les fichiers du batch sont préparés en mémoire, leurs chemins et symlinks sont vérifiés, puis ils sont écrits sous un verrou unique. Le commit vérifie uniquement les anciens blobs des fichiers touchés. Une modification concurrente d’un autre fichier ne rend donc plus le batch caduc. Une erreur d’écriture déclenche le rollback des fichiers déjà tentés et conserve le journal si le rollback lui-même est incomplet. Les déclarations CSS sont éditées sur les nœuds issus du parseur : commentaires, ordre, fallbacks dupliqués, custom properties, règles imbriquées et valeurs complexes sont conservés.
 
@@ -1791,7 +1794,7 @@ Le fallback patch tente l’emplacement exact, les ancres uniques, une correspon
 
 ### 21.4 Working set et `context_epoch`
 
-Les lectures `inspect_code` sont enregistrées par session dans `.blame/harness/working-sets`. Un reçu conserve l’epoch, le blob, le chemin, les plages couvertes et la présence du contenu dans le contexte actif. La clé de réutilisation est principalement `execution_epoch + blob_hash + plage` : changer de vue ou de handle ne renvoie pas les mêmes octets une seconde fois.
+Les lectures `inspect_code` sont enregistrées par session dans `.blame/harness/working-sets`. Un reçu conserve l’epoch, le blob, le chemin, le type de vue, la sélection normalisée, les plages couvertes et la présence du contenu dans le contexte actif. La clé est `execution_epoch + blob_hash + path + view_type + normalized_selection`. Les recouvrements sont fusionnés à l’intérieur d’une vue ; une vue sémantique et une vue brute restent deux preuves distinctes.
 
 Pour un même blob et un même epoch :
 
@@ -1801,7 +1804,7 @@ Pour un même blob et un même epoch :
 - le résultat mesure les octets demandés, les octets nouveaux et le taux de recouvrement ;
 - le verrou du working set coalesce les demandes concurrentes au niveau du registre durable.
 
-L’epoch canonique provient de `ConversationMemoryStore`. `beginRequest`, la compaction et la première réponse d’une édition validée le font tourner ; un appel idempotent répété ne le tourne pas. La rotation marque les anciens reçus `content_in_active_context: false`, de sorte qu’une lecture nécessaire après compaction renvoie à nouveau son contenu. Un hôte peut toujours imposer `AgentToolContext.metadata.contextEpoch`; le fallback par snapshot/run est conservé lorsque la mémoire v2 est désactivée.
+L’epoch canonique provient de `ConversationMemoryStore`. `beginRequest` et la compaction le font tourner ; un edit appliqué conserve l’epoch et marque uniquement les chemins modifiés comme absents. La rotation marque les anciens reçus `content_in_active_context: false`, de sorte qu’une lecture nécessaire après compaction renvoie à nouveau son contenu. Un hôte peut toujours imposer `AgentToolContext.metadata.contextEpoch`; le fallback par snapshot/run est conservé lorsque la mémoire v2 est désactivée.
 
 ### 21.5 Capsules et compaction
 
@@ -1825,7 +1828,7 @@ Avant l'exécution, chaque `run_task` écrit un `run-attempt` stable avec `statu
 
 Le registre distingue les tentatives actives dans le processus des tentatives orphelines : deux `run_task` parallèles restent tous deux `running`, tandis qu'un enregistrement abandonné par un processus précédent est récupéré en `runtime_error`.
 
-Le catalogue respecte le champ `packageManager`, puis les lockfiles comme fallback, et expose une tâche `dependencies` pour npm, pnpm, Yarn ou Bun. Elle conserve les lockfiles comme autorité, préfère le cache hors ligne (`--prefer-offline` ou équivalent) et n’encourage jamais une édition manuelle du lockfile. Une dépendance manquante produit un diagnostic explicite et la tentative garde un état terminal durable.
+Le catalogue respecte le champ `packageManager`, puis les lockfiles comme fallback, et expose une tâche `dependencies` pour npm, pnpm, Yarn ou Bun. Chaque tâche déclare `supportsFileSelection`, `requiresNetwork` et `dependencyPolicy`. Les fichiers sélectionnés ne sont transmis qu’aux tâches qui le permettent ; un build reste donc `pnpm run build` sans arguments parasites. Le runtime appelle directement le gestionnaire provisionné, sans Corepack. Il conserve les lockfiles comme autorité, préfère le cache hors ligne (`--prefer-offline` ou équivalent) et n’encourage jamais une édition manuelle du lockfile. Une dépendance manquante produit un diagnostic explicite et la tentative garde un état terminal durable. Une panne de gestionnaire, de Corepack ou de proxy est classée `infrastructure_error`, pas comme un échec du code.
 
 Le réseau reste refusé par défaut. L’allowlist projet n’est acceptée que pour la tâche de dépendances et uniquement lorsqu’un proxy contrôlé est fourni par `BLAME_PROJECT_ALLOWLIST_PROXY`; sans ce proxy, le runtime retourne `runtime_error` plutôt que d’ouvrir le réseau. Le même contrat s’exécute dans le worktree Linux natif, Lima ou WSL. En Cloud Preview, l’accès au cache et au réseau reste délégué au micro-runtime distant, qui doit fournir le proxy compatible.
 
@@ -1841,9 +1844,9 @@ Le client Cloud conserve son mécanisme de récupération d’appels ambigus. L�
 
 Le prompt limite la consultation à l’ambiguïté produit ou visuelle importante, l’architecture transversale inconnue, l’échec d’un premier correctif, les risques auth/données/migration ou l’absence de validation fiable. La cible de timeout est 90 secondes. Le runtime transmet une capsule fraîche au spécialiste et limite la change request à une consultation ; une consultation supplémentaire exige une justification structurée explicite. Impeccable reste requis pour une nouvelle interface ou un redesign, mais plus pour un correctif mécanique localisé sans choix de design.
 
-Le gouverneur maintient un état indépendant par epoch : appels et octets de lecture, octets nouveaux et supprimés, doublons, recouvrement faible, lectures après edit, conflits, retries et temps avant première édition appliquée. Un conflit ne remet aucun compteur à zéro ; un edit appliqué démarre une nouvelle phase. Après quatre lectures, il émet un conseil court. Après plusieurs lectures à faible nouveauté, seules les nouvelles explorations larges sont refusées avec la cible déjà identifiée ; une inspection étroite reste possible. À 50 % du budget adaptatif, il recommande une capsule compacte.
+Le gouverneur maintient à la fois un état par epoch et un état cumulé pour toute la task : appels et octets de lecture, octets nouveaux et supprimés, requêtes similaires, doublons, recouvrement faible, lectures après edit, conflits, retries et temps avant première édition appliquée. Les limites anti-boucle utilisent l’état cumulé. Un conflit ne remet aucun compteur à zéro ; un edit appliqué démarre une nouvelle phase. Après plusieurs lectures à faible nouveauté, les nouvelles explorations larges identiques sont refusées avec la cible déjà identifiée, tandis qu’une inspection étroite reste possible. La compaction elle-même reste exécutée par le gestionnaire de contexte Cline et son callback de capsule, pas par une consigne laissée au modèle.
 
-Le frontend mappe `edit_code` sur la surface diff existante et affiche fichiers, additions, suppressions, validation de parse et résolution exacte ou automatiquement rebasée. Les lectures affichent symbole ou nœud, vue, lignes, caractère partiel ou entier et badge de contenu réutilisé. Les événements sont fusionnés par `tool_call_id` ; un événement `started` sans résultat terminal est marqué explicitement incomplet au lieu d’être fermé comme réussi.
+Le frontend mappe les éditions sur la surface diff existante et affiche fichiers, additions, suppressions, validation de parse et résolution exacte ou automatiquement rebasée. Les lectures affichent symbole ou nœud, vue, lignes, caractère partiel ou entier et badge de contenu réutilisé. Chaque événement porte `toolCallId`, `sequenceNumber`, `phase` et `timestamp`; les phases sont `started`, `progress`, `finished`, `failed` et `cancelled`. La déduplication utilise `sessionId + toolCallId + phase + sequenceNumber`, ce qui conserve deux outils homonymes parallèles et les résultats arrivant en moins de 100 ms. L’interface distingue ensuite transport terminé, opération appliquée, conflit, validation échouée et infrastructure indisponible.
 
 La télémétrie ajoute `conversation_id`, `execution_epoch_id`, tokens d’entrée/sortie de capsule, contraintes préservées, octets demandés/retournés/supprimés, doublons, temps avant edit, stratégie de rebase, conflits, retries et tailles avant/après compaction. Les événements ne contiennent pas le code source intégral. Ces séries permettent une comparaison avant/après dans le backend existant ; aucune nouvelle page graphique dédiée n’a été ajoutée.
 
@@ -1932,6 +1935,26 @@ La télémétrie enregistre la présence et la validité du delta, l’usage du 
 Les tests headless exécutés couvrent le caractère terminal de l’outil, l’absence de carte visible, la projection de `answer`, le fallback sur delta invalide, vingt tours et compactages, les contradictions, la hiérarchie d’autorité, les faux reçus, l’idempotence, les interruptions, la borne de 500 tokens, la récupération exacte/lexicale/structurelle et la migration `1.0`. Ils complètent les 44 tests historiques du harness, qui restent verts. Les chiffres Portfolio V4 avant/après restent ceux de la section 21.10 : la nouvelle mémoire ajoute des métriques dédiées, mais une comparaison de production post-déploiement est encore nécessaire pour mesurer son coût moyen par tour et son taux de rappel correct.
 
 Les limitations restantes sont l’extraction déterministe de formulations implicites rares, l’absence de benchmark embeddings justifiant une phase 3, la validation réelle sur Lima, WSL et Cloud Preview, et l’absence actuelle d’une mesure de production du taux de récupération sémantique. Ces limites ne bloquent ni la persistance, ni la completion, ni le fallback lexical.
+
+### 21.14 Fiabilisation US-007
+
+Le registre `language-capabilities.ts` est maintenant la source unique des extensions, niveaux de support, parseurs, validateurs, capacités publiques et recommandations d’édition. Il génère la section compacte des descriptions d’outils et le snapshot retourné par `workspace_state`. `inspect_code` retourne aussi le langage, les quatre capacités publiques et `recommendedEditTool`. Les niveaux livrés sont :
+
+- `semantic` pour Bash, C#, CSS, Go, Java, JavaScript/JSX, Python, Rust, TypeScript/TSX et les scripts Vue ;
+- `structured` pour JSON et JSONC ;
+- `validated_text` pour HTML et Prisma ;
+- `plain_text` pour les autres fichiers texte ;
+- `unsupported` pour le contenu binaire.
+
+`edit_json` utilise `jsonc-parser` et recalcule chaque opération depuis l’arbre courant. Les opérations `set`, `delete`, `merge` et `append` préservent commentaires, indentation et virgules, puis reparsent le document avant proposition. Prisma refuse toute édition sémantique. Les modifications textuelles sont validées uniquement avec le binaire `node_modules/.bin/prisma` déjà présent ; aucun téléchargement ou lancement de Corepack n’est effectué. En son absence, le statut reste honnêtement `not_supported`.
+
+`patch_file` analyse les en-têtes avant tout travail et refuse un patch multifichier avec `MULTI_FILE_PATCH` et la recommandation `edit_files`. La transaction `edit_files` prépare et valide tous les fichiers avant le verrou d’écriture ; l’échec d’un seul validateur n’écrit aucun fichier. `delete_file` supprime réellement le fichier. Deux conflits similaires sur le même chemin et la même famille d’opération ouvrent un circuit persistant par session et retournent `retrySuppressed: true` avec une stratégie différente.
+
+`complete_turn` contrôle l’état de validation avant de terminer un tour ayant appliqué une modification. Une validation syntaxique réelle attachée au dernier reçu ou un `run_task` réussi plus récent autorise la completion. Sinon, l’outil retourne `completionAllowed: false` et `NO_POST_EDIT_VALIDATION`; `not_supported`, `not_run` et une panne d’infrastructure ne sont jamais assimilés à un succès.
+
+La collecte OTLP du backend possède un circuit breaker exponentiel 5 s, 30 s, 120 s puis 300 s. Pendant l’ouverture, les appels retournent `503` et `Retry-After` sans solliciter l’upstream ni réémettre le même warning chaque seconde. Le diagnostic authentifié `GET /api/v1/telemetry/upstream-health` expose l’état agrégé sans contenu télémétrique. Les logs Preview ne déclarent `available: true` que lorsque la commande de logs a réussi et fourni une sortie exploitable ; un ancien log de setup peut être rendu comme fallback mais reste marqué indisponible.
+
+Les tests automatisés ajoutés couvrent le registre et sa description, JSON/JSONC, Prisma, le statut `not_supported`, le refus sémantique, le patch multifichier, le rollback atomique, la suppression de fichier, les sélections de build, l’invalidation ciblée des reçus, le gouverneur entre epochs, les pannes Corepack, le gate de completion et le cycle de vie des outils rapides, parallèles, progressifs, annulés et rejoués après reconnexion. Le test d’intégration live avec GPT-5.6 Sol X-high et la matrice Lima/WSL/Cloud Preview exigent encore les credentials et runners correspondants ; ils ne sont pas simulés par une trace `afterEvents` et ne sont pas présentés comme exécutés localement.
 
 ---
 
