@@ -60,6 +60,10 @@ function toBlameModel(modelId: string, model: ModelInfo): BlameModel {
   };
 }
 
+export async function clineModels(providerId: string) {
+  return getModelsForProvider(providerId);
+}
+
 function reasoningVariants(model: ModelInfo) {
   const effortOption = reasoningOptions(model).find(
     (option) => option.type === "effort",

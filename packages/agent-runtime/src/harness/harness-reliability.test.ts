@@ -11,13 +11,20 @@ import {
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import test from "node:test";
+import { execa } from "execa";
 import { validateContent } from "./content-validation.js";
+import { effectiveCompactionModels } from "./context-pressure.js";
+import { ExternalReadGovernor } from "./external-read-governor.js";
 import { jsoncErrors } from "./json-editor.js";
 import {
   capabilityRegistrySnapshot,
   supportedOperationsDescription,
 } from "./language-capabilities.js";
 import { type HarnessToolResult, type HarnessToolSuccess } from "./protocol.js";
+import {
+  resolvePackageManager,
+  type PackageManagerName,
+} from "./package-manager-runtime.js";
 import { SemanticWorkspace } from "./semantic-workspace.js";
 import { readTaskCatalog, taskInvocation } from "./task-catalog.js";
 import type { TaskExecutor } from "./task-executor.js";
@@ -30,6 +37,16 @@ test("the capability prompt is generated from the central registry", () => {
   for (const extension of extensions)
     assert.match(description, new RegExp(escape(extension)));
   assert.equal(new Set(extensions).size, extensions.length);
+});
+
+test("the effective model window triggers Cline compaction at 67.5 percent", () => {
+  const models = effectiveCompactionModels(
+    { model: { contextWindow: 200_000 } as never },
+    "model",
+    0.675,
+  );
+  assert.equal(models.model?.contextWindow, 150_000);
+  assert.equal(Math.floor(models.model!.contextWindow! * 0.9), 135_000);
 });
 
 test("JSONC editing preserves comments and never creates duplicate commas", async () => {
@@ -170,6 +187,144 @@ test("build task definitions never forward selected files", async () => {
       "build",
     ]);
   });
+});
+
+test("task definitions preserve the exact declared package manager version", async () => {
+  await withWorkspace(async (root) => {
+    await writeFile(
+      join(root, "package.json"),
+      JSON.stringify({
+        packageManager: "pnpm@10.33.2+sha512.fixture",
+        scripts: { build: "tsc" },
+      }),
+    );
+    const catalog = await readTaskCatalog(root);
+    const build = catalog.find((task) => task.task_id === "build");
+    assert.equal(build?.package_manager, "pnpm");
+    assert.equal(build?.package_manager_version, "10.33.2");
+    assert.equal(taskInvocation(build!).packageManagerVersion, "10.33.2");
+  });
+});
+
+test("all managed package managers resolve without Corepack", async () => {
+  const versions: Array<[PackageManagerName, string]> = [
+    ["npm", "11.6.4"],
+    ["pnpm", "10.33.2"],
+    ["yarn", "1.22.22"],
+  ];
+  for (const [name, version] of versions) {
+    const manager = await resolvePackageManager({ name, version });
+    assert.doesNotMatch(manager.executable, /corepack/iu);
+    const result = await execa(
+      manager.executable,
+      [...manager.argsPrefix, "--version"],
+      { reject: false },
+    );
+    assert.equal(result.exitCode, 0);
+    assert.equal(result.stdout.trim(), version);
+  }
+});
+
+test(
+  "pnpm build runs without Corepack in a network-denied sandbox",
+  { skip: process.platform === "win32" },
+  async () => {
+    await withWorkspace(async (root, workspace) => {
+      await writeFile(
+        join(root, "package.json"),
+        JSON.stringify({
+          packageManager: "pnpm@10.33.2",
+          scripts: { build: "node -e \"process.stdout.write('build-ok')\"" },
+        }),
+      );
+      const revision = success(await workspace.workspaceState()).data
+        .source_revision.source_revision_id;
+      const run = success(
+        await workspace.runTask({
+          source_revision_id: revision,
+          task: { task_id: "build" },
+          limits: { timeout_ms: 30_000 },
+          network: "deny",
+        }),
+      );
+      assert.equal(run.data.status, "passed");
+      assert.equal(run.data.outcome, "passed");
+      assert.doesNotMatch(run.data.execution.argv.join(" "), /corepack/iu);
+    });
+  },
+);
+
+test("external reads return compact receipts for identical requests", async () => {
+  const governor = new ExternalReadGovernor();
+  let executions = 0;
+  const tool = governor.wrap({
+    name: "get_preview_container_logs",
+    description: "logs",
+    inputSchema: { type: "object" },
+    execute: async () => {
+      executions += 1;
+      return { available: true, logs: "ready" };
+    },
+  });
+  const context = {} as never;
+  await tool.execute({ service: "web", tailLines: 120 }, context);
+  const duplicate = await tool.execute(
+    { service: "web", tailLines: 120 },
+    context,
+  );
+  assert.equal(executions, 1);
+  assert.equal(
+    (duplicate as { alreadyAvailable?: boolean }).alreadyAvailable,
+    true,
+  );
+});
+
+test("parallel identical external reads share one execution", async () => {
+  let executions = 0;
+  const governor = new ExternalReadGovernor();
+  const tool = governor.wrap({
+    name: "get_preview_container_logs",
+    description: "logs",
+    inputSchema: { type: "object" },
+    execute: async () => {
+      executions += 1;
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      return { output: "logs" };
+    },
+  } as never);
+  const [first, second] = await Promise.all([
+    tool.execute({ service: "app" }, {} as never),
+    tool.execute({ service: "app" }, {} as never),
+  ]);
+  assert.equal(executions, 1);
+  assert.equal((second as { status?: string }).status, "already_available");
+  assert.equal((first as { output?: string }).output, "logs");
+});
+
+test("external reads suppress a third strongly overlapping request", async () => {
+  const governor = new ExternalReadGovernor();
+  let executions = 0;
+  const tool = governor.wrap({
+    name: "get_preview_container_logs",
+    description: "logs",
+    inputSchema: { type: "object" },
+    execute: async () => {
+      executions += 1;
+      return { available: true, logs: "ready" };
+    },
+  });
+  const context = {} as never;
+  await tool.execute({ service: "web", tailLines: 100 }, context);
+  await tool.execute({ service: "web", tailLines: 120 }, context);
+  const suppressed = await tool.execute(
+    { service: "web", tailLines: 140 },
+    context,
+  );
+  assert.equal(executions, 2);
+  assert.equal(
+    (suppressed as { retrySuppressed?: boolean }).retrySuppressed,
+    true,
+  );
 });
 
 test("an edit invalidates only read receipts for the changed file", async () => {

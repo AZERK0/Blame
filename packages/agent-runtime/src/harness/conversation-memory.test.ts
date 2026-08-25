@@ -121,6 +121,150 @@ test("complete_turn requires a successful validation after an unvalidated edit",
   });
 });
 
+test("a later validated CSS edit cannot hide an unvalidated Prisma edit", async () => {
+  await withMemory(async (root) => {
+    const memory = new ConversationMemoryStore(root, "validation-history");
+    await memory.beginRequest({
+      currentRequest: "Update Prisma and the stylesheet.",
+      userGoal: "Implement the feature.",
+    });
+    await memory.recordChange({
+      receiptId: "changeset://prisma",
+      files: ["prisma/schema.prisma"],
+      symbols: [],
+      summary: "Updated Prisma schema",
+      validation: "not_supported",
+    });
+    await memory.recordChange({
+      receiptId: "changeset://css",
+      files: ["src/app.css"],
+      symbols: [".card"],
+      summary: "Updated card style",
+      validation: "passed",
+    });
+    const blocked = await memory.completionReadiness();
+    assert.equal(blocked.completionAllowed, false);
+    if (blocked.completionAllowed) assert.fail("completion should be blocked");
+    assert.deepEqual(blocked.missingValidations, [
+      {
+        change_receipt_refs: ["changeset://prisma"],
+        files: ["prisma/schema.prisma"],
+        required: ["run_task:prisma_validate_or_build"],
+      },
+      {
+        change_receipt_refs: ["changeset://css"],
+        files: ["src/app.css"],
+        required: ["run_task:build_or_test_or_typecheck"],
+      },
+    ]);
+    await memory.recordValidation({
+      command: "node scripts/check-copy.mjs",
+      id: "run://unrelated-custom",
+      status: "passed",
+      taskId: "check-copy",
+      taskKind: "custom",
+      terminal: "passed",
+    });
+    assert.equal((await memory.completionReadiness()).completionAllowed, false);
+    await memory.recordValidation({
+      command: "prisma validate",
+      id: "run://prisma",
+      status: "passed",
+      taskId: "prisma:validate",
+      taskKind: "custom",
+      terminal: "passed",
+    });
+    assert.equal((await memory.completionReadiness()).completionAllowed, false);
+    await memory.recordValidation({
+      id: "run://build",
+      status: "passed",
+      taskId: "build",
+      taskKind: "build",
+      terminal: "passed",
+    });
+    assert.equal((await memory.completionReadiness()).completionAllowed, true);
+  });
+});
+
+test("multi-file changes require a relevant run after the last write", async () => {
+  await withMemory(async (root) => {
+    const memory = new ConversationMemoryStore(root, "multi-validation");
+    await memory.beginRequest({
+      currentRequest: "Implement it.",
+      userGoal: "Feature",
+    });
+    await memory.recordChange({
+      receiptId: "changeset://multi",
+      sourceRevisionId: "revision-final",
+      files: ["src/api/route.ts", "src/page.tsx"],
+      symbols: [],
+      summary: "Updated API and UI",
+      validation: "passed",
+    });
+    assert.equal((await memory.completionReadiness()).completionAllowed, false);
+    await memory.recordValidation({
+      id: "run://stale-build",
+      sourceRevisionId: "revision-before-edit",
+      status: "passed",
+      taskId: "build",
+      taskKind: "build",
+      terminal: "passed",
+    });
+    assert.equal((await memory.completionReadiness()).completionAllowed, false);
+    await memory.recordValidation({
+      id: "run://build",
+      sourceRevisionId: "revision-final",
+      status: "passed",
+      taskId: "build",
+      taskKind: "build",
+      terminal: "passed",
+    });
+    assert.equal((await memory.completionReadiness()).completionAllowed, true);
+  });
+});
+
+test("separate single-file edits require a later feature validation", async () => {
+  await withMemory(async (root) => {
+    const memory = new ConversationMemoryStore(root, "multi-file-turn");
+    await memory.beginRequest({
+      currentRequest: "Update two files",
+      userGoal: "Update",
+    });
+    await memory.recordChange({
+      receiptId: "changeset://first",
+      files: ["src/first.ts"],
+      symbols: ["first"],
+      summary: "first",
+      validation: "passed",
+    });
+    await memory.recordChange({
+      receiptId: "changeset://second",
+      files: ["src/second.ts"],
+      symbols: ["second"],
+      summary: "second",
+      validation: "passed",
+    });
+    const readiness = await memory.completionReadiness();
+    assert.equal(readiness.completionAllowed, false);
+    if (readiness.completionAllowed)
+      assert.fail("completion should be blocked");
+    assert.deepEqual(readiness.missingValidations, [
+      {
+        change_receipt_refs: ["changeset://first", "changeset://second"],
+        files: ["src/first.ts", "src/second.ts"],
+        required: ["run_task:build_or_test_or_typecheck"],
+      },
+    ]);
+    await memory.recordValidation({
+      id: "run://typecheck",
+      status: "passed",
+      taskKind: "typecheck",
+      terminal: "passed",
+    });
+    assert.equal((await memory.completionReadiness()).completionAllowed, true);
+  });
+});
+
 test("a user constraint survives twenty turns and compactions", async () => {
   await withMemory(async (root) => {
     const memory = new ConversationMemoryStore(root, "twenty-turns");

@@ -22,6 +22,8 @@ export type ProductionConfig = {
   compactionEnabled?: boolean
   compactionPreserveRecentTokens?: number
   compactionStrategy?: "agentic" | "basic"
+  compactionTriggerRatio?: number
+  compactionWarningRatio?: number
   configExtensions?: AgentRuntimeConfigExtension[]
   disableMcpSettingsTools?: boolean
   maxInputTokens?: number
@@ -71,6 +73,7 @@ const allowedLogKeys = new Set([
   "checkpointEnabled",
   "compressed",
   "compressionRatio",
+  "contextUtilizationRatio",
   "configExtensions",
   "cost",
   "disableMcpSettingsTools",
@@ -132,6 +135,8 @@ export function loadProductionConfig(env: NodeJS.ProcessEnv = process.env): Prod
     compactionEnabled: booleanValue(env.BLAME_AGENT_COMPACTION_ENABLED, true),
     compactionPreserveRecentTokens: positiveNumber(env.BLAME_AGENT_COMPACTION_PRESERVE_RECENT_TOKENS),
     compactionStrategy: compactionStrategy(env.BLAME_AGENT_COMPACTION_STRATEGY),
+    compactionTriggerRatio: boundedRatio(env.BLAME_AGENT_COMPACTION_TRIGGER_RATIO, 0.675),
+    compactionWarningRatio: boundedRatio(env.BLAME_AGENT_COMPACTION_WARNING_RATIO, 0.55),
     configExtensions: configExtensions(env.BLAME_AGENT_CONFIG_EXTENSIONS),
     disableMcpSettingsTools: !booleanValue(env.BLAME_AGENT_MCP_SETTINGS_TOOLS_ENABLED, true),
     maxInputTokens: positiveNumber(env.BLAME_AGENT_MAX_INPUT_TOKENS),
@@ -318,6 +323,12 @@ function positiveNumber(value: string | undefined, fallback?: number) {
   if (!value) return fallback
   const parsed = Number(value)
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback
+}
+
+function boundedRatio(value: string | undefined, fallback: number) {
+  const parsed = Number(value)
+  if (!Number.isFinite(parsed) || parsed < 0.1 || parsed > 0.9) return fallback
+  return parsed
 }
 
 function booleanValue(value: string | undefined, fallback: boolean) {

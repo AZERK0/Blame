@@ -1656,6 +1656,7 @@ function recordHarnessToolMetrics(
   if (current.name === "inspect_code") recordReadMetrics(metricContext);
   if (semanticEditTool(current.name)) recordEditMetrics(metricContext);
   if (current.name === "recall_context") recordRecallMetrics(metricContext);
+  if (externalReadTool(current.name)) recordExternalReadMetrics(metricContext);
   if (current.name === "consult_specialist")
     recordHarnessValue(
       metricContext,
@@ -1663,6 +1664,23 @@ function recordHarnessToolMetrics(
       current.span.durationSeconds(),
     );
   if (current.name === "run_task") recordRunMetrics(metricContext);
+}
+
+function recordExternalReadMetrics(context: HarnessMetricContext) {
+  recordHarnessCount(context, "blame.harness.external_reads");
+  const governor = asRecord(context.data.governor);
+  const status = stringValue(context.data.status);
+  if (status === "already_available")
+    recordHarnessCount(context, "blame.harness.external_read_cache_hits");
+  if (status === "already_available" || status === "retry_suppressed")
+    recordHarnessCount(context, "blame.harness.external_read_suppressed");
+  const returned = numericValue(governor.external_read_returned_bytes);
+  if (returned !== undefined)
+    recordHarnessValue(
+      context,
+      "blame.harness.external_read_returned_bytes",
+      returned,
+    );
 }
 
 function recordRecallMetrics(context: HarnessMetricContext) {
@@ -1784,6 +1802,15 @@ function semanticEditTool(name: string) {
     "move_file",
     "patch_file",
     "replace_file",
+  ].includes(name);
+}
+
+function externalReadTool(name: string) {
+  return [
+    "consult_specialist",
+    "fetch_web_content",
+    "get_preview_container_logs",
+    "get_preview_devtools",
   ].includes(name);
 }
 

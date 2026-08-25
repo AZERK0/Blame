@@ -87,6 +87,11 @@ import {
   type CompleteTurnNotification,
 } from "./harness/complete-turn.js";
 import { continuityFallbackMetrics } from "./harness/continuity-schema.js";
+import { ExternalReadGovernor } from "./harness/external-read-governor.js";
+import {
+  contextPressureHooks,
+  effectiveCompactionModels,
+} from "./harness/context-pressure.js";
 import { harnessFeatureEnabled } from "./harness/harness-feature-flags.js";
 import { sha256 } from "./harness/protocol.js";
 import {
@@ -98,6 +103,7 @@ import {
 } from "./cline-tool-policy.js";
 import { blameSpecialistRoutingSystemPrompt } from "./specialist-agents.js";
 import { createConsultSpecialistTool } from "./specialist-consult-tool.js";
+import { clineModels } from "./provider-catalog.js";
 import {
   deleteProviderCredential,
   listProviders,
@@ -164,7 +170,10 @@ import {
   usageLimitMessage,
 } from "./production.js";
 import type { ProjectInitializationScan } from "./project-initialization.js";
-import type { ProductionSessionContext } from "./production.js";
+import type {
+  ProductionConfig,
+  ProductionSessionContext,
+} from "./production.js";
 import { reasoningConfig } from "./reasoning.js";
 import type {
   AgentApprovalRequest,
@@ -748,6 +757,18 @@ export class BlameAgentRuntime {
           workspaceMode: input.workspaceMode,
         },
       );
+      const externalReadGovernor = harnessFeatureEnabled(
+        "BLAME_COST_GOVERNOR_V2",
+      )
+        ? new ExternalReadGovernor()
+        : undefined;
+      const compactionModelState = input.structuredCompletion
+        ? await earlyCompactionModelState(
+            input.providerId,
+            input.modelId,
+            this.productionConfig,
+          )
+        : undefined;
       const standardTools = runtimeTools(
         this.options,
         input.workspaceRoot,
@@ -755,6 +776,7 @@ export class BlameAgentRuntime {
         taskContract,
         semanticExecutor,
         input.maxIterations,
+        externalReadGovernor,
         input.structuredCompletion
           ? {
               conversationId: sessionId,
@@ -774,7 +796,9 @@ export class BlameAgentRuntime {
               input.previewDevtoolsScope,
               taskContract,
               semanticExecutor,
+              externalReadGovernor,
             ),
+            externalReadGovernor,
           })
         : undefined;
       const extraTools = [
@@ -800,6 +824,9 @@ export class BlameAgentRuntime {
             apiKey: resolvedCredential.apiKey,
             baseUrl: resolvedCredential.baseUrl ?? undefined,
             ...reasoningConfig(input.reasoningEffort),
+            ...(compactionModelState
+              ? { knownModels: compactionModelState.models }
+              : {}),
             systemPrompt:
               input.systemPrompt ?? loadPrompt("default-agent-system"),
             cwd: input.cwd,
@@ -821,6 +848,19 @@ export class BlameAgentRuntime {
             enableSpawnAgent: input.enableSpawnAgent ?? false,
             enableAgentTeams: input.enableAgentTeams ?? false,
             extensionContext: extensionContext(input),
+            hooks: {
+              ...(externalReadGovernor?.fetchHooks() ?? {}),
+              ...contextPressureHooks({
+                contextWindow: compactionModelState?.contextWindow,
+                warningRatio:
+                  this.productionConfig.compactionWarningRatio ?? 0.55,
+                onWarning: (contextUtilizationRatio) =>
+                  productionLogger.log("Blame context pressure warning", {
+                    contextUtilizationRatio,
+                    status: "warning",
+                  }),
+              }),
+            },
             ...(extraTools.length ? { extraTools } : {}),
           }),
         },
@@ -3243,6 +3283,7 @@ function runtimeTools(
   },
   semanticWorkspaceExecutor?: SemanticWorkspaceExecutor,
   governorBudget?: number,
+  externalReadGovernor?: ExternalReadGovernor,
   completion?: {
     conversationId: string;
     onComplete(notification: CompleteTurnNotification): void;
@@ -3267,7 +3308,9 @@ function runtimeTools(
       : []),
     previewDevtoolsTool(options, previewDevtoolsScope),
     previewContainerLogsTool(options, worktree),
-  ].filter((tool): tool is AgentTool => Boolean(tool));
+  ]
+    .filter((tool): tool is AgentTool => Boolean(tool))
+    .map((tool) => externalReadGovernor?.wrap(tool) ?? tool);
   return tools.length ? tools : undefined;
 }
 
@@ -3281,6 +3324,7 @@ function readOnlyRuntimeTools(
     objective?: string;
   },
   semanticWorkspaceExecutor: SemanticWorkspaceExecutor | undefined,
+  externalReadGovernor?: ExternalReadGovernor,
 ) {
   const allowedTools = new Set([
     ...semanticWorkspaceReadToolNames,
@@ -3294,6 +3338,8 @@ function readOnlyRuntimeTools(
       previewDevtoolsScope,
       taskContract,
       semanticWorkspaceExecutor,
+      undefined,
+      externalReadGovernor,
     ) ?? []
   ).filter((tool) => allowedTools.has(tool.name));
 }
@@ -3306,13 +3352,15 @@ function runtimeConsultSpecialistTool(options: {
   input: RuntimeStartSessionInput;
   objective?: string;
   readOnlyTools: AgentTool[];
+  externalReadGovernor?: ExternalReadGovernor;
 }) {
-  return createConsultSpecialistTool({
+  const tool = createConsultSpecialistTool({
     capsule: specialistCapsuleProvider(options),
     objective: options.objective,
     spawnTool: specialistSpawnTool(options),
     storyId: options.input.storyId,
   });
+  return options.externalReadGovernor?.wrap(tool) ?? tool;
 }
 
 function specialistSpawnTool(options: {
@@ -4911,6 +4959,33 @@ function developmentCompactionConfig(
       };
     },
   };
+}
+
+async function earlyCompactionModelState(
+  providerId: string,
+  modelId: string,
+  config: ProductionConfig,
+) {
+  if (
+    config.compactionEnabled === false ||
+    !harnessFeatureEnabled("BLAME_CONTEXT_EPOCHS")
+  )
+    return undefined;
+  try {
+    const models = await clineModels(providerId);
+    const contextWindow = models[modelId]?.contextWindow;
+    if (!contextWindow) return undefined;
+    return {
+      contextWindow,
+      models: effectiveCompactionModels(
+        models,
+        modelId,
+        config.compactionTriggerRatio ?? 0.675,
+      ),
+    };
+  } catch {
+    return undefined;
+  }
 }
 
 function developmentMaxIterations(input?: StartDevelopmentSessionInput) {

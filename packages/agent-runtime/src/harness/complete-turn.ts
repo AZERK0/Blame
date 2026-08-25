@@ -49,6 +49,7 @@ async function executeCompleteTurn(
         status: "blocked",
         completionAllowed: false,
         reason: readiness.reason,
+        missingValidations: readiness.missingValidations,
       },
       isError: true,
     };

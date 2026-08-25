@@ -25,15 +25,37 @@ export type ChangeReceipt = {
   artifactRef?: string;
   id: string;
   files: string[];
+  requiredValidation: RequiredValidation;
+  sourceRevisionId?: string;
   symbols: string[];
   summary: string;
-  validation: "failed" | "passed" | "pending" | "skipped";
+  validation:
+    | "failed"
+    | "not_run"
+    | "not_supported"
+    | "passed"
+    | "pending"
+    | "skipped";
   updatedAt: string;
+};
+
+export type RequiredValidation = {
+  runTask: boolean;
+  taskKinds: Array<"build" | "custom" | "lint" | "test" | "typecheck">;
+  reason: string;
 };
 
 export type ValidationSummary = {
   status: "failed" | "passed" | "pending" | "unknown";
-  checks: Array<{ id: string; status: string; taskId?: string }>;
+  checks: Array<{
+    command?: string;
+    id: string;
+    sourceRevisionId?: string;
+    status: string;
+    taskId?: string;
+    taskKind?: string;
+    updatedAt?: string;
+  }>;
   updatedAt: string;
 };
 
@@ -150,10 +172,17 @@ type BeginRequestInput = {
 type RecordChangeInput = {
   artifactRef?: string;
   receiptId: string;
+  sourceRevisionId?: string;
   files: string[];
   symbols: string[];
   summary: string;
   validation: ChangeReceipt["validation"];
+};
+
+export type MissingValidation = {
+  change_receipt_refs: string[];
+  files: string[];
+  required: string[];
 };
 
 type CompleteTurnResult = {
@@ -339,20 +368,30 @@ export class ConversationMemoryStore {
   }
 
   async recordValidation(input: {
+    command?: string;
     id: string;
+    sourceRevisionId?: string;
     status: string;
     taskId?: string;
+    taskKind?: string;
     terminal: "failed" | "passed" | "pending" | "unknown";
   }) {
     await this.update((memory) => {
+      const updatedAt = now();
       const validationState = {
         status: input.terminal,
         checks: upsertById(memory.validationState.checks, {
           id: input.id,
           status: input.status,
+          updatedAt,
+          ...(input.command ? { command: input.command } : {}),
+          ...(input.sourceRevisionId
+            ? { sourceRevisionId: input.sourceRevisionId }
+            : {}),
           ...(input.taskId ? { taskId: input.taskId } : {}),
+          ...(input.taskKind ? { taskKind: input.taskKind } : {}),
         }).slice(-30),
-        updatedAt: now(),
+        updatedAt,
       };
       return appendEvidence(
         { ...memory, validationState },
@@ -390,22 +429,17 @@ export class ConversationMemoryStore {
     const memory = (await this.read("")).memory;
     const startedAt = memory.activeTurn?.startedAt;
     if (!startedAt) return { completionAllowed: true as const };
-    const changes = memory.completedChanges.filter(
-      (change) => change.updatedAt >= startedAt,
+    const changes = turnChanges(memory, startedAt);
+    if (!changes.length) return { completionAllowed: true as const };
+    const missingValidations = missingTurnValidations(
+      changes,
+      memory.validationState,
     );
-    const latest = changes
-      .sort((left, right) => left.updatedAt.localeCompare(right.updatedAt))
-      .at(-1);
-    if (!latest || latest.validation === "passed")
-      return { completionAllowed: true as const };
-    if (
-      memory.validationState.status === "passed" &&
-      memory.validationState.updatedAt >= latest.updatedAt
-    )
-      return { completionAllowed: true as const };
+    if (!missingValidations.length) return { completionAllowed: true as const };
     return {
       completionAllowed: false as const,
       reason: "NO_POST_EDIT_VALIDATION" as const,
+      missingValidations,
     };
   }
 
@@ -1554,16 +1588,234 @@ function activeFiles(changes: ChangeReceipt[]) {
   return [...byPath.values()].slice(-30);
 }
 
+function turnChanges(memory: ConversationMemory, startedAt: string) {
+  return memory.completedChanges
+    .filter((change) => change.updatedAt >= startedAt)
+    .sort((left, right) => left.updatedAt.localeCompare(right.updatedAt));
+}
+
+function missingTurnValidations(
+  changes: ChangeReceipt[],
+  validation: ValidationSummary,
+): MissingValidation[] {
+  const lastChangeAt = changes.at(-1)!.updatedAt;
+  const lastSourceRevision = changes.at(-1)?.sourceRevisionId;
+  const turnRequirement = turnValidationRequirement(changes);
+  const uncovered = changes.flatMap((change) => {
+    const requirement = strongestValidationRequirement(
+      normalizedRequiredValidation(change),
+      turnRequirement,
+    );
+    if (
+      changeCovered(
+        change,
+        requirement,
+        changes,
+        validation,
+        lastChangeAt,
+        lastSourceRevision,
+      )
+    )
+      return [];
+    return [{ change, requirement }];
+  });
+  return compactMissingValidations(uncovered);
+}
+
+function changeCovered(
+  change: ChangeReceipt,
+  requirement: RequiredValidation,
+  changes: ChangeReceipt[],
+  validation: ValidationSummary,
+  lastChangeAt: string,
+  lastSourceRevision?: string,
+) {
+  if (
+    normalizedEditValidation(change.validation) === "passed" &&
+    !requirement.runTask
+  )
+    return true;
+  const minimumTime = requirement.runTask ? lastChangeAt : change.updatedAt;
+  return validation.checks.some((check) =>
+    validationCoversChange(
+      check,
+      requirement,
+      minimumTime,
+      changes,
+      lastSourceRevision,
+    ),
+  );
+}
+
+function turnValidationRequirement(
+  changes: ChangeReceipt[],
+): RequiredValidation {
+  const files = unique(changes.flatMap((change) => change.files));
+  return files.length > 1
+    ? { runTask: true, taskKinds: featureTaskKinds(), reason: "multi_file" }
+    : { runTask: false, taskKinds: [], reason: "syntax" };
+}
+
+function strongestValidationRequirement(
+  change: RequiredValidation,
+  turn: RequiredValidation,
+): RequiredValidation {
+  if (!turn.runTask || change.reason === "prisma") return change;
+  if (!change.runTask) return turn;
+  return {
+    runTask: true,
+    taskKinds: [...new Set([...change.taskKinds, ...turn.taskKinds])],
+    reason: change.reason,
+  };
+}
+
+function validationCoversChange(
+  check: ValidationSummary["checks"][number],
+  requirement: RequiredValidation,
+  minimumTime: string,
+  changes: ChangeReceipt[],
+  expectedSourceRevision?: string,
+) {
+  if (
+    check.status !== "passed" ||
+    !check.updatedAt ||
+    check.updatedAt < minimumTime
+  )
+    return false;
+  if (
+    expectedSourceRevision &&
+    check.sourceRevisionId &&
+    check.sourceRevisionId !== expectedSourceRevision
+  )
+    return false;
+  if (!requirement.taskKinds.length) return true;
+  if (requirement.reason === "prisma") {
+    if (check.taskKind === "build") return true;
+    return prismaValidationMatches(check, changes);
+  }
+  if (requirement.taskKinds.includes(check.taskKind as never)) return true;
+  return false;
+}
+
+function prismaValidationMatches(
+  check: ValidationSummary["checks"][number],
+  changes: ChangeReceipt[],
+) {
+  if (!changes.some((change) => change.files.some(isPrismaPath))) return false;
+  return (
+    /prisma/iu.test(`${check.taskId ?? ""} ${check.command ?? ""}`) &&
+    /validate|build/iu.test(`${check.taskId ?? ""} ${check.command ?? ""}`)
+  );
+}
+
+function compactMissingValidations(
+  uncovered: Array<{ change: ChangeReceipt; requirement: RequiredValidation }>,
+) {
+  const grouped = new Map<string, MissingValidation>();
+  for (const { change, requirement } of uncovered) {
+    const required = requiredValidationLabels(change, requirement);
+    const key = required.join("\0");
+    const current = grouped.get(key);
+    grouped.set(key, {
+      change_receipt_refs: unique([
+        ...(current?.change_receipt_refs ?? []),
+        change.id,
+      ]),
+      files: unique([...(current?.files ?? []), ...change.files]).slice(0, 8),
+      required,
+    });
+  }
+  return [...grouped.values()];
+}
+
+function requiredValidationLabels(
+  change: ChangeReceipt,
+  requirement: RequiredValidation,
+) {
+  if (requirement.reason === "prisma")
+    return ["run_task:prisma_validate_or_build"];
+  if (requirement.runTask)
+    return [`run_task:${requirement.taskKinds.join("_or_")}`];
+  if (normalizedEditValidation(change.validation) !== "passed")
+    return ["run_task:relevant_validation"];
+  return [];
+}
+
+function normalizedRequiredValidation(change: ChangeReceipt) {
+  return change.requiredValidation ?? requiredValidation(change.files);
+}
+
+function normalizedEditValidation(validation: ChangeReceipt["validation"]) {
+  if (validation === "pending") return "not_run";
+  if (validation === "skipped") return "not_supported";
+  return validation;
+}
+
 function changeReceipt(input: RecordChangeInput): ChangeReceipt {
+  const files = unique(input.files);
   return {
     id: input.receiptId,
     ...(input.artifactRef ? { artifactRef: input.artifactRef } : {}),
-    files: unique(input.files),
+    files,
+    requiredValidation: requiredValidation(files),
+    ...(input.sourceRevisionId
+      ? { sourceRevisionId: input.sourceRevisionId }
+      : {}),
     symbols: unique(input.symbols),
     summary: compactText(input.summary, 1_000),
     validation: input.validation,
     updatedAt: now(),
   };
+}
+
+function requiredValidation(files: string[]): RequiredValidation {
+  if (files.some(isPrismaPath))
+    return { runTask: true, taskKinds: ["build", "custom"], reason: "prisma" };
+  if (files.length > 1)
+    return {
+      runTask: true,
+      taskKinds: featureTaskKinds(),
+      reason: "multi_file",
+    };
+  if (files.some(isDependencyPath))
+    return {
+      runTask: true,
+      taskKinds: featureTaskKinds(),
+      reason: "dependencies",
+    };
+  if (files.some(isConfigurationPath))
+    return {
+      runTask: true,
+      taskKinds: ["build", "typecheck"],
+      reason: "configuration",
+    };
+  if (files.some(isApiPath))
+    return { runTask: true, taskKinds: featureTaskKinds(), reason: "api" };
+  return { runTask: false, taskKinds: [], reason: "syntax" };
+}
+
+function featureTaskKinds(): RequiredValidation["taskKinds"] {
+  return ["build", "test", "typecheck"];
+}
+
+function isPrismaPath(path: string) {
+  return path.toLowerCase().endsWith(".prisma");
+}
+
+function isDependencyPath(path: string) {
+  return /(^|\/)(?:package\.json|pnpm-lock\.yaml|package-lock\.json|yarn\.lock)$/iu.test(
+    path,
+  );
+}
+
+function isConfigurationPath(path: string) {
+  return /(^|\/)(?:tsconfig(?:\.[^/]*)?\.json|next\.config\.[^/]+|vite\.config\.[^/]+|[^/]+\.config\.[^/]+)$/iu.test(
+    path,
+  );
+}
+
+function isApiPath(path: string) {
+  return /(^|\/)(?:api|routes?)(\/|$)/iu.test(path);
 }
 
 function appendEvidence(memory: ConversationMemory, evidence: MemoryEvidence) {

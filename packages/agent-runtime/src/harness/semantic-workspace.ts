@@ -927,9 +927,12 @@ export class SemanticWorkspace {
       );
       const run = await this.runs.run(input, snapshot, signal, context);
       await this.memory.recordValidation({
+        command: run.task.command,
         id: run.run_ref,
+        sourceRevisionId: run.source_revision.source_revision_id,
         status: run.status,
         taskId: run.task.task_id,
+        taskKind: run.task.kind,
         terminal:
           run.status === "passed"
             ? "passed"
@@ -1081,6 +1084,7 @@ export class SemanticWorkspace {
     await this.memory.recordChange({
       artifactRef: result.diff_artifact_ref,
       receiptId: result.receipt_ref,
+      sourceRevisionId: result.source_revision,
       files: paths,
       symbols: changedSymbolNames(result.changed_symbols),
       summary: result.changed_files
@@ -1091,7 +1095,9 @@ export class SemanticWorkspace {
           ? "passed"
           : result.validation.status === "failed"
             ? "failed"
-            : "skipped",
+            : result.validation.status === "not_supported"
+              ? "not_supported"
+              : "not_run",
     });
   }
 
