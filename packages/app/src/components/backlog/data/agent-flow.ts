@@ -613,10 +613,10 @@ function toolActivityInput(
   return {
     id,
     kind: "tool",
-    title: toolTitle(toolName, phase),
+    title: toolTitle(toolName, phase, payload),
     detail: toolDetail(payload, true, existingDetail),
     serverDetail: toolDetail(payload, false, existingDetail),
-    status: toolStatus(phase),
+    status: toolStatus(phase, payload),
     iteration,
     parallelGroupId: existing?.parallelGroupId,
     toolCallId,
@@ -928,18 +928,46 @@ function groupedActivityInput(
   return { ...input, parallelGroupId }
 }
 
-function toolTitle(toolName: string, phase: string | undefined) {
+function toolTitle(
+  toolName: string,
+  phase: string | undefined,
+  payload?: Record<string, unknown>
+) {
   const label = toolLabel(toolName)
   if (phase === "started" || phase === "tool_call") return `${label} started`
-  if (phase === "finished" || phase === "tool_result") return label
-  if (phase === "updated") return `${label} updated`
+  if (phase === "progress" || phase === "updated") return `${label} updated`
+  if (phase === "failed") return `${label} failed`
+  if (phase === "cancelled") return `${label} cancelled`
+  const outcome = payload ? toolOutcome(payload) : undefined
+  if (outcome === "applied") return `${label} applied`
+  if (outcome === "conflict") return `${label} conflict`
+  if (outcome === "validation_failed") return `${label} validation failed`
+  if (outcome === "infrastructure_error")
+    return `${label} infrastructure unavailable`
   return label
 }
 
-function toolStatus(phase: string | undefined): ActivityStatus {
+function toolStatus(
+  phase: string | undefined,
+  payload?: Record<string, unknown>
+): ActivityStatus {
+  if (payload && failedToolOutcome(toolOutcome(payload))) return "failed"
   if (phase === "finished" || phase === "tool_result") return "completed"
-  if (phase === "agent_error") return "failed"
+  if (phase === "agent_error" || phase === "failed" || phase === "cancelled")
+    return "failed"
   return "running"
+}
+
+function toolOutcome(payload: Record<string, unknown>) {
+  const output = recordValue(payload.output)
+  const data = recordValue(output.data)
+  return stringValue(data.outcome) ?? stringValue(output.outcome)
+}
+
+function failedToolOutcome(outcome: string | undefined) {
+  return ["conflict", "infrastructure_error", "validation_failed"].includes(
+    outcome ?? ""
+  )
 }
 
 function toolDetail(

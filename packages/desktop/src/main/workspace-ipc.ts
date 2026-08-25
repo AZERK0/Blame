@@ -3734,12 +3734,12 @@ export async function readProjectServiceLogs(input: {
       services,
     };
   }
-  return {
-    available: true,
+  const snapshot = await projectServiceLogSnapshot(
+    worktree,
     service,
-    services,
-    ...(await projectServiceLogSnapshot(worktree, service, input.tailLines)),
-  };
+    input.tailLines,
+  );
+  return { service, services, ...snapshot };
 }
 
 async function projectServiceLogSnapshot(
@@ -3757,7 +3757,8 @@ async function projectServiceLogSnapshot(
         timeoutMs: containerMetadataTimeoutMs,
       },
     );
-    if (stdout || stderr) return { source: "container", stderr, stdout };
+    if (stdout || stderr)
+      return { available: true, source: "container", stderr, stdout };
   } catch (error) {
     return projectServiceLogFallback(worktree, service, error);
   }
@@ -3770,8 +3771,18 @@ async function projectServiceLogFallback(
   error?: unknown,
 ) {
   const archived = await archivedProjectServiceLog(worktree, service);
-  if (archived) return { source: "setup-log", stderr: "", stdout: archived };
+  if (archived)
+    return {
+      available: false,
+      reason:
+        "The container log command failed; archived setup logs are shown.",
+      source: "setup-log",
+      stderr: "",
+      stdout: archived,
+    };
   return {
+    available: false,
+    reason: "The container log command did not return usable logs.",
     source: "container",
     stderr: error ? commandErrorText(error).trim() : "",
     stdout: "",
