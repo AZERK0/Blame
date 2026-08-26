@@ -129,9 +129,7 @@ const searchQuerySchema = z.discriminatedUnion("kind", [
   z
     .object({
       kind: z.literal("ast_pattern"),
-      language: z
-        .enum(semanticLanguageIds)
-        .optional(),
+      language: z.enum(semanticLanguageIds).optional(),
       pattern: z.string().min(1).max(2_000),
     })
     .strict(),
@@ -174,6 +172,7 @@ export const outlineCodeInputSchema = z
 const inspectTargetSchema = z.union([
   z.object({ symbol_ref: z.string().min(1) }).strict(),
   z.object({ node_ref: z.string().min(1) }).strict(),
+  z.object({ match_ref: z.string().min(1) }).strict(),
   z.object({ path: relativePathSchema }).strict(),
 ]);
 
@@ -234,8 +233,8 @@ export const getRelationContextInputSchema = z
 
 const structuredTargetSchema = z
   .string()
-  .regex(/^(?:node|sym):\/\//)
-  .describe("Exact node_ref or symbol_ref returned by a semantic read.");
+  .regex(/^(?:match|node|sym):\/\//)
+  .describe("Exact match_ref, node_ref, or symbol_ref returned by a read.");
 
 export const changeOperationSchema = z.discriminatedUnion("kind", [
   z
@@ -340,6 +339,7 @@ export const applyChangeInputSchema = z.discriminatedUnion("action", [
 const semanticEditTargetSchema = z.union([
   z.object({ symbol_ref: z.string().regex(/^sym:\/\//) }).strict(),
   z.object({ node_ref: z.string().regex(/^node:\/\//) }).strict(),
+  z.object({ match_ref: z.string().regex(/^match:\/\//) }).strict(),
 ]);
 
 const jsonPathSchema = z
@@ -480,6 +480,7 @@ export const editCodeOperationSchema = z.discriminatedUnion("operation", [
 export const editCodeInputSchema = z
   .object({
     edits: z.array(editCodeOperationSchema).min(1).max(50),
+    atomicity: z.enum(["per_file", "strict"]).default("per_file").optional(),
     formatting: z.enum(["none", "touched_files"]).default("none").optional(),
     validation: z
       .object({ parse: z.boolean().default(true).optional() })
@@ -514,7 +515,10 @@ export const patchFileInputSchema = z
   .strict();
 
 export const editFilesInputSchema = z
-  .object({ operations: z.array(editCodeOperationSchema).min(1).max(50) })
+  .object({
+    operations: z.array(editCodeOperationSchema).min(1).max(50),
+    atomicity: z.enum(["per_file", "strict"]).default("per_file").optional(),
+  })
   .strict();
 
 export const createFileInputSchema = z

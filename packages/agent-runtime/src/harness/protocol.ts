@@ -132,6 +132,7 @@ export type HandlePayload = {
   ancestryFingerprint?: string;
   neighborFingerprint?: string;
   ordinal?: number;
+  matchedText?: string;
 };
 
 export function harnessSuccess<T>(input: {
@@ -204,7 +205,7 @@ export function sha256(value: string | Uint8Array) {
 }
 
 export function encodeHandle(
-  scheme: "file" | "node" | "sym",
+  scheme: "file" | "match" | "node" | "sym",
   payload: HandlePayload,
 ) {
   const values =
@@ -225,6 +226,7 @@ export function encodeHandle(
           payload.ancestryFingerprint,
           payload.neighborFingerprint,
           payload.ordinal,
+          payload.matchedText,
         ]
       : [
           payload.version,
@@ -245,7 +247,7 @@ export function encodeHandle(
 
 export function decodeHandle(
   value: string,
-  scheme: "file" | "node" | "sym",
+  scheme: "file" | "match" | "node" | "sym",
 ): HandlePayload | undefined {
   if (!value.startsWith(`${scheme}://`)) return undefined;
   try {
@@ -320,6 +322,9 @@ function handlePayloadFromTuple(value: unknown[]): Partial<HandlePayload> {
       : {}),
     ...(version === 2 && Number.isSafeInteger(value[14])
       ? { ordinal: value[14] as number }
+      : {}),
+    ...(version === 2 && typeof value[15] === "string"
+      ? { matchedText: value[15] }
       : {}),
   };
 }

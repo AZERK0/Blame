@@ -11,7 +11,7 @@ type Hunk = ReturnType<typeof parsePatch>[number]["hunks"][number];
 
 export type PatchRecoveryResult = {
   content: string;
-  strategy: "anchors" | "exact" | "fuzzy" | "three_way";
+  strategy: "already_applied" | "anchors" | "exact" | "fuzzy" | "three_way";
 };
 
 export class PatchRecoveryConflict extends Error {
@@ -60,6 +60,8 @@ export async function recoverPatch(input: {
   assertSinglePatchTarget(input.patch, input.path);
   const exact = exactPatch(input.source, input.patch);
   if (exact !== false) return { content: exact, strategy: "exact" };
+  if (patchAlreadyApplied(input.source, input.patch))
+    return { content: input.source, strategy: "already_applied" };
   if (!harnessFeatureEnabled("BLAME_PATCH_RECOVERY_V2"))
     throw patchConflict(input, "Exact patch context does not match.");
   const anchored = applyUniqueAnchors(input.source, input.patch);
@@ -98,6 +100,20 @@ function exactPatch(source: string, patch: string) {
     );
   });
   return exact ? applyPatch(source, patch, { fuzzFactor: 0 }) : false;
+}
+
+function patchAlreadyApplied(source: string, patch: string) {
+  const lines = source.split("\n");
+  const hunks = parsedHunks(patch);
+  if (!hunks.length) return false;
+  return hunks.every((hunk) => {
+    const expected = patchLines(hunk, new Set([" ", "+"]));
+    if (!expected.length) return false;
+    const atExpectedLine = expected.every(
+      (line, offset) => lines[hunk.newStart - 1 + offset] === line,
+    );
+    return atExpectedLine || sequenceMatches(lines, expected).length === 1;
+  });
 }
 
 function applyUniqueAnchors(source: string, patch: string) {

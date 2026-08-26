@@ -88,6 +88,25 @@ test("unsupported validation is never reported as passed", async () => {
   });
 });
 
+test("TypeScript validation rejects invalid imports in TS, TSX, JS, and JSX", async () => {
+  await withWorkspace(async (root) => {
+    for (const extension of ["ts", "tsx", "js", "jsx"]) {
+      const validation = await validateContent({
+        content: Buffer.from(invalidImport),
+        path: `src/projects-carousel.${extension}`,
+        workspaceRoot: root,
+      });
+      assert.equal(validation.status, "failed", extension);
+      assert.equal(validation.validator, "typescript", extension);
+      assert.match(
+        validation.diagnostics.join("\n"),
+        /Unexpected keyword/u,
+        extension,
+      );
+    }
+  });
+});
+
 test("semantic editing is refused immediately for Prisma", async () => {
   await withWorkspace(async (root, workspace) => {
     await writeFile(join(root, "schema.prisma"), "model User { id Int @id }\n");
@@ -149,6 +168,7 @@ test("edit_files rolls back every file when one validation fails", async () => {
   await withWorkspace(async (root, workspace) => {
     const result = success(
       await workspace.editFiles({
+        atomicity: "strict",
         operations: [
           {
             operation: "create_file",
@@ -162,6 +182,115 @@ test("edit_files rolls back every file when one validation fails", async () => {
     assert.equal(result.data.outcome, "validation_failed");
     assert.equal(await exists(join(root, "valid.ts")), false);
     assert.equal(await exists(join(root, "invalid.json")), false);
+  });
+});
+
+test("edit_files applies independent files and reports the failing operation", async () => {
+  await withWorkspace(async (root, workspace) => {
+    const result = success(
+      await workspace.editFiles({
+        operations: [
+          {
+            operation: "create_file",
+            path: "valid-independent.ts",
+            content: "export const value = 1;\n",
+          },
+          {
+            operation: "create_file",
+            path: "invalid-independent.tsx",
+            content: invalidImport,
+          },
+        ],
+      }),
+    );
+    assert.equal(result.data.outcome, "applied");
+    if (result.data.status !== "applied") assert.fail("Expected partial apply");
+    assert.equal(result.data.partial, true);
+    assert.equal(result.data.validation.status, "failed");
+    assert.deepEqual(
+      result.data.failed_operations?.map((failure) => failure.operation_index),
+      [1],
+    );
+    assert.match(
+      result.data.failed_operations?.[0]?.diagnostics?.join("\n") ?? "",
+      /Unexpected keyword/u,
+    );
+    assert.deepEqual(
+      result.data.validation.files.map(({ path, status }) => ({
+        path,
+        status,
+      })),
+      [
+        { path: "valid-independent.ts", status: "passed" },
+        { path: "invalid-independent.tsx", status: "failed" },
+      ],
+    );
+    assert.equal(await exists(join(root, "valid-independent.ts")), true);
+    assert.equal(await exists(join(root, "invalid-independent.tsx")), false);
+  });
+});
+
+test("edit_files returns every independent validation failure", async () => {
+  await withWorkspace(async (root, workspace) => {
+    const result = success(
+      await workspace.editFiles({
+        operations: [
+          {
+            operation: "create_file",
+            path: "invalid-first.js",
+            content: invalidImport,
+          },
+          {
+            operation: "create_file",
+            path: "invalid-second.json",
+            content: "{,}\n",
+          },
+        ],
+      }),
+    );
+    assert.equal(result.data.outcome, "validation_failed");
+    if (result.data.status !== "validation_failed")
+      assert.fail("Expected validation failure");
+    assert.deepEqual(result.data.failed_operation_indexes, [0, 1]);
+    assert.deepEqual(
+      result.data.failed_operations?.map(
+        ({ operation_index }) => operation_index,
+      ),
+      [0, 1],
+    );
+    assert.match(
+      result.data.failed_operations?.[0]?.diagnostics?.join("\n") ?? "",
+      /Unexpected keyword/u,
+    );
+    assert.match(
+      result.data.failed_operations?.[1]?.diagnostics?.join("\n") ?? "",
+      /JSON error/u,
+    );
+    assert.equal(await exists(join(root, "invalid-first.js")), false);
+    assert.equal(await exists(join(root, "invalid-second.json")), false);
+  });
+});
+
+test("an already applied patch returns no_change", async () => {
+  await withWorkspace(async (root, workspace) => {
+    const first = success(
+      await workspace.patchFile(
+        { path: "first.txt", patch: singleFilePatch },
+        { toolCallId: "patch-first" },
+      ),
+    );
+    assert.equal(first.data.outcome, "applied");
+    const repeated = success(
+      await workspace.patchFile(
+        { path: "first.txt", patch: singleFilePatch },
+        { toolCallId: "patch-repeated" },
+      ),
+    );
+    assert.equal(repeated.data.outcome, "no_change");
+    assert.equal(
+      await readFile(join(root, "first.txt"), "utf8"),
+      "changed first\n",
+    );
   });
 });
 
@@ -312,7 +441,24 @@ test(
           network: "deny",
         }),
       );
-      assert.equal(run.data.status, "passed", JSON.stringify(run.data));
+      const stderr =
+        run.data.status === "passed"
+          ? ""
+          : String(
+              (
+                success(
+                  await workspace.inspectRun({
+                    run_ref: run.data.run_ref,
+                    view: "stderr_tail",
+                  }),
+                ).data as { content: string }
+              ).content,
+            );
+      assert.equal(
+        run.data.status,
+        "passed",
+        `${JSON.stringify(run.data)}\n${stderr}`,
+      );
       assert.equal(run.data.outcome, "passed");
       assert.doesNotMatch(run.data.execution.argv.join(" "), /corepack/iu);
       assert.deepEqual(run.data.execution.package_manager_resolution, {
@@ -531,6 +677,9 @@ function escape(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
 }
 
+const invalidImport =
+  'import { ArrowLeft, ArrowRight, ExternalLink } from "lucide-react"; from "lucide-react";\n';
+
 const multiFilePatch = [
   "--- a/first.txt",
   "+++ b/first.txt",
@@ -542,6 +691,15 @@ const multiFilePatch = [
   "@@ -1 +1 @@",
   "-second",
   "+changed second",
+  "",
+].join("\n");
+
+const singleFilePatch = [
+  "--- a/first.txt",
+  "+++ b/first.txt",
+  "@@ -1 +1 @@",
+  "-first",
+  "+changed first",
   "",
 ].join("\n");
 

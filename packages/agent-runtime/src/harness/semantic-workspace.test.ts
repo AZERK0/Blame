@@ -284,6 +284,9 @@ test("semantic tools expose outlines and rebase stale observations", async () =>
     );
     assert.equal(search.data.items[0]?.path, "src/service.ts");
     assert.equal(search.data.engine, "ripgrep");
+    assert.equal(search.data.items[0]?.matched_text, "formatName");
+    assert.match(search.data.items[0]?.context ?? "", /formatName/u);
+    assert.match(search.data.items[0]?.match_ref ?? "", /^match:\/\//u);
     assert.match(search.data.items[0]?.node_ref ?? "", /^node:\/\//);
 
     const raw = success(
@@ -310,6 +313,65 @@ test("semantic tools expose outlines and rebase stale observations", async () =>
     );
     assert.equal(rebased.data.rebased, true);
     assert.match(rebased.data.content, /return `Hi/);
+  });
+});
+
+test("lexical matches stay distinct from AST nodes and relocate uniquely", async () => {
+  await withWorkspace(async (root) => {
+    const path = join(root, "src", "projects-carousel.tsx");
+    const original = [
+      'import { ArrowLeft, ArrowRight, ExternalLink, Github } from "lucide-react";',
+      "export const Carousel = () => <div />;",
+      "",
+    ].join("\n");
+    await writeFile(path, original);
+    const workspace = new SemanticWorkspace(root);
+    const search = success(
+      await workspace.searchCode({
+        query: {
+          kind: "text",
+          pattern: "import { ArrowLeft, ArrowRight, ExternalLink, Github }",
+        },
+        scope: { paths: ["src/projects-carousel.tsx"] },
+      }),
+    );
+    const match = search.data.items[0];
+    assert.ok(match?.match_ref);
+    assert.equal(
+      match.matched_text,
+      "import { ArrowLeft, ArrowRight, ExternalLink, Github }",
+    );
+    assert.match(match.context ?? "", /from "lucide-react"/u);
+    assert.equal("excerpt" in match, false);
+    assert.match(match.node_ref ?? "", /^node:\/\//u);
+    assert.equal(match.node_text, undefined);
+    await writeFile(path, `const shifted = true;\n${original}`);
+    const inspected = success(
+      await workspace.inspectCode({
+        target: { match_ref: match.match_ref },
+        view: "raw",
+      }),
+    );
+    assert.equal(inspected.data.rebase_strategy, "unique_text_match");
+    assert.equal(inspected.data.content, match.matched_text);
+    const edited = success(
+      await workspace.editCode({
+        edits: [
+          {
+            operation: "replace",
+            target: { match_ref: match.match_ref },
+            content: "import { ArrowLeft, ArrowRight, ExternalLink }",
+          },
+        ],
+      }),
+    );
+    assert.equal(edited.data.outcome, "applied");
+    const content = await readFile(path, "utf8");
+    assert.match(
+      content,
+      /import \{ ArrowLeft, ArrowRight, ExternalLink \} from "lucide-react";/u,
+    );
+    assert.doesNotMatch(content, /; from "lucide-react"/u);
   });
 });
 
@@ -927,6 +989,7 @@ test("patch_file recovers shifted hunks and refuses ambiguous anchors atomically
     await writeFile(path, "same\nmiddle\nsame\n");
     const ambiguous = success(
       await workspace.editCode({
+        atomicity: "strict",
         edits: [
           {
             operation: "patch_file",
@@ -970,6 +1033,7 @@ test("edit_code rolls back the whole batch when parse validation fails", async (
     const result = success(
       await workspace.editCode(
         {
+          atomicity: "strict",
           edits: [
             {
               operation: "replace",
@@ -987,6 +1051,9 @@ test("edit_code rolls back the whole batch when parse validation fails", async (
       ),
     );
     assert.equal(result.data.status, "validation_failed");
+    if (result.data.status !== "validation_failed")
+      assert.fail("Expected validation failure");
+    assert.deepEqual(result.data.failed_operation_indexes, [0]);
     assert.equal(
       await readFile(join(root, "src", "service.ts"), "utf8"),
       source,
@@ -2250,6 +2317,10 @@ test("P1 relation and impact views stay bounded and identify tests", async () =>
       }),
     );
     assert.equal(boundedRelations.data.items.length, 1);
+    assert.match(
+      boundedRelations.data.items[0]?.match_ref ?? "",
+      /^match:\/\//,
+    );
     assert.match(boundedRelations.data.items[0]?.node_ref ?? "", /^node:\/\//);
     assert.equal(boundedRelations.coverage.truncated, true);
     const stateOutline = success(

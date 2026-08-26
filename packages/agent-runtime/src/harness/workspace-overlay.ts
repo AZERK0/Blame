@@ -109,7 +109,7 @@ export class WorkspaceOverlay {
         readonlyInputs,
       );
     } catch (error) {
-      await rm(directory, { recursive: true, force: true });
+      await removeOverlayDirectory(directory);
       throw error;
     }
   }
@@ -187,8 +187,17 @@ export class WorkspaceOverlay {
   }
 
   cleanup() {
-    return rm(this.directory, { recursive: true, force: true });
+    return removeOverlayDirectory(this.directory);
   }
+}
+
+function removeOverlayDirectory(directory: string) {
+  return rm(directory, {
+    recursive: true,
+    force: true,
+    maxRetries: 8,
+    retryDelay: 100,
+  });
 }
 
 async function copyWorkspaceEntry(

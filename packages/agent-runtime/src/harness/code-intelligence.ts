@@ -74,6 +74,8 @@ type CurrentNodeCandidate = {
   range_utf8_bytes: [number, number];
 };
 
+export type EnclosingNode = CurrentNodeCandidate & { text: string };
+
 export type ParseResult = {
   language: string;
   supported: boolean;
@@ -226,6 +228,54 @@ export function findExactNode(
     if (match) return { ...tree, node: match };
   }
   return undefined;
+}
+
+export function smallestEnclosingNode(input: {
+  content: Buffer;
+  end: number;
+  path: string;
+  revision: string;
+  start: number;
+}): EnclosingNode | undefined {
+  const parsed = parseCode(input.path, input.content);
+  let selected: { kind: string; range: [number, number] } | undefined;
+  for (const tree of parsed.trees)
+    walk(tree.root, (node) => {
+      if (!node.isNamed()) return;
+      const range = byteRange(node, tree.byteOffset);
+      if (range[0] > input.start || range[1] < input.end) return;
+      if (
+        !selected ||
+        range[1] - range[0] < selected.range[1] - selected.range[0]
+      )
+        selected = { kind: String(node.kind()), range };
+    });
+  if (!selected) return undefined;
+  return materializeEnclosingNode(input, selected);
+}
+
+function materializeEnclosingNode(
+  input: Parameters<typeof smallestEnclosingNode>[0],
+  selected: { kind: string; range: [number, number] },
+): EnclosingNode {
+  const fragment = input.content.subarray(...selected.range);
+  return {
+    kind: selected.kind,
+    line_range: byteLineRange(input.content, selected.range),
+    node_ref: encodeHandle("node", {
+      version: 2,
+      revision: input.revision,
+      path: input.path,
+      start: selected.range[0],
+      end: selected.range[1],
+      digest: sha256(fragment).slice(0, 32),
+      observedBlobHash: sha256(input.content).slice(0, 32),
+      kind: selected.kind,
+      language: languageName(input.path),
+    }),
+    range_utf8_bytes: selected.range,
+    text: fragment.toString("utf8"),
+  };
 }
 
 export function structuralMatches(
@@ -657,6 +707,21 @@ function lineRange(node: SgNode, lineOffset = 0): [number, number] {
     lineOffset + node.range().start.line + 1,
     lineOffset + node.range().end.line + 1,
   ];
+}
+
+function byteLineRange(
+  content: Buffer,
+  range: [number, number],
+): [number, number] {
+  const start = content
+    .subarray(0, range[0])
+    .toString("utf8")
+    .split("\n").length;
+  const lines = content
+    .subarray(...range)
+    .toString("utf8")
+    .split("\n").length;
+  return [start, start + Math.max(0, lines - 1)];
 }
 
 function structuralMatch(node: SgNode, unit: SourceUnit) {

@@ -39,7 +39,7 @@ export type ResolvedSemanticReference = {
 
 type DecodedTarget = {
   handle: HandlePayload;
-  scheme: "node" | "sym";
+  scheme: "match" | "node" | "sym";
 };
 
 type ScoredCandidate = {
@@ -59,7 +59,10 @@ export class SemanticReferenceResolver {
   }
 
   async resolve(
-    target: { symbol_ref: string } | { node_ref: string },
+    target:
+      | { symbol_ref: string }
+      | { node_ref: string }
+      | { match_ref: string },
     snapshot: WorkspaceSnapshot,
     options: { allowRebase?: boolean } = {},
   ): Promise<ResolvedSemanticReference> {
@@ -81,11 +84,19 @@ export class SemanticReferenceResolver {
         "The target reference is stale.",
         [],
       );
-    const candidates =
-      decoded.scheme === "sym"
-        ? await this.symbolCandidates(decoded, snapshot)
-        : await this.nodeCandidates(decoded, snapshot);
+    const candidates = await this.rebaseCandidates(decoded, snapshot);
     return selectCandidate(candidates);
+  }
+
+  private rebaseCandidates(
+    decoded: DecodedTarget,
+    snapshot: WorkspaceSnapshot,
+  ) {
+    if (decoded.scheme === "sym")
+      return this.symbolCandidates(decoded, snapshot);
+    if (decoded.scheme === "match")
+      return this.matchCandidates(decoded, snapshot);
+    return this.nodeCandidates(decoded, snapshot);
   }
 
   private async atOriginalPosition(
@@ -172,6 +183,26 @@ export class SemanticReferenceResolver {
         });
       }
       if (candidates.length === 1 && candidates[0]!.score === 1) break;
+    }
+    return candidates
+      .sort((left, right) => right.score - left.score)
+      .slice(0, 12);
+  }
+
+  private async matchCandidates(
+    decoded: DecodedTarget,
+    snapshot: WorkspaceSnapshot,
+  ) {
+    if (decoded.handle.matchedText === undefined) return [];
+    const candidates: ScoredCandidate[] = [];
+    for (const path of candidatePaths(decoded.handle, snapshot)) {
+      const content = await optionalContent(this.files, path);
+      if (!content || content.length > 2 * 1024 * 1024) continue;
+      for (const range of exactTextRanges(content, decoded.handle.matchedText))
+        candidates.push(
+          matchCandidate(decoded.handle, path, content, range, snapshot),
+        );
+      if (path === decoded.handle.path && candidates.length === 1) break;
     }
     return candidates
       .sort((left, right) => right.score - left.score)
@@ -383,10 +414,16 @@ function rebaseStrategy(
 }
 
 function decodeTarget(
-  target: { symbol_ref: string } | { node_ref: string },
+  target: { symbol_ref: string } | { node_ref: string } | { match_ref: string },
 ): DecodedTarget {
-  const scheme = "symbol_ref" in target ? "sym" : "node";
-  const value = "symbol_ref" in target ? target.symbol_ref : target.node_ref;
+  const scheme =
+    "symbol_ref" in target ? "sym" : "match_ref" in target ? "match" : "node";
+  const value =
+    "symbol_ref" in target
+      ? target.symbol_ref
+      : "match_ref" in target
+        ? target.match_ref
+        : target.node_ref;
   const handle = decodeHandle(value, scheme);
   if (!handle)
     throw new SemanticResolutionConflict(
@@ -394,6 +431,80 @@ function decodeTarget(
       [],
     );
   return { handle, scheme };
+}
+
+function exactTextRanges(content: Buffer, text: string) {
+  const needle = Buffer.from(text);
+  if (!needle.length) return [];
+  const ranges: Array<[number, number]> = [];
+  let offset = 0;
+  while (offset <= content.length - needle.length) {
+    const start = content.indexOf(needle, offset);
+    if (start < 0) break;
+    ranges.push([start, start + needle.length]);
+    offset = start + needle.length;
+  }
+  return ranges;
+}
+
+function matchCandidate(
+  original: HandlePayload,
+  path: string,
+  content: Buffer,
+  range: [number, number],
+  snapshot: WorkspaceSnapshot,
+): ScoredCandidate {
+  const score = path === original.path ? 1 : 0.9;
+  const handle = currentMatchHandle(original, path, content, range, snapshot);
+  const reference = encodeHandle("match", handle);
+  return {
+    handle,
+    path,
+    reference,
+    score,
+    strategy: path === original.path ? "unique_text_match" : "moved_text_match",
+    materialized: conflictCandidate({
+      content,
+      kind: "text_match",
+      lineRange: byteLineRange(content, range),
+      path,
+      reference,
+      score,
+    }),
+  };
+}
+
+function currentMatchHandle(
+  original: HandlePayload,
+  path: string,
+  content: Buffer,
+  range: [number, number],
+  snapshot: WorkspaceSnapshot,
+): HandlePayload {
+  return {
+    ...original,
+    revision: snapshot.revision.source_revision_id,
+    path,
+    start: range[0],
+    end: range[1],
+    digest: sha256(content.subarray(...range)).slice(0, 32),
+    observedBlobHash: sha256(content).slice(0, 32),
+  };
+}
+
+function byteLineRange(
+  content: Buffer,
+  range: [number, number],
+): [number, number] {
+  const start = content
+    .subarray(0, range[0])
+    .toString("utf8")
+    .split("\n").length;
+  const lines = content
+    .subarray(...range)
+    .toString("utf8")
+    .split("\n").length;
+  return [start, start + Math.max(0, lines - 1)];
 }
 
 async function optionalContent(files: WorkspaceFiles, path: string) {

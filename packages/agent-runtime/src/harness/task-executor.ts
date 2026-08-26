@@ -1,7 +1,7 @@
 import { constants } from "node:fs";
 import { access, realpath } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
-import { delimiter, dirname, join } from "node:path";
+import { delimiter, dirname, isAbsolute, join } from "node:path";
 import { execa } from "execa";
 import {
   resolvePackageManager,
@@ -367,7 +367,7 @@ async function executionReadRoots(input: TaskExecutionInput) {
     candidates.map(async (candidate) => {
       try {
         await access(candidate, constants.R_OK);
-        return candidate;
+        return isAbsolute(candidate) ? candidate : await realpath(candidate);
       } catch {
         return undefined;
       }

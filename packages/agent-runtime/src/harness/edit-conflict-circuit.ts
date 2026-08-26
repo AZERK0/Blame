@@ -91,10 +91,15 @@ function editPath(edit: EditCodeOperation) {
   if ("from_path" in edit) return edit.from_path;
   if (!("target" in edit)) return undefined;
   const reference =
-    "symbol_ref" in edit.target ? edit.target.symbol_ref : edit.target.node_ref;
+    "symbol_ref" in edit.target
+      ? edit.target.symbol_ref
+      : "match_ref" in edit.target
+        ? edit.target.match_ref
+        : edit.target.node_ref;
   return (
     decodeHandle(reference, "sym")?.path ??
-    decodeHandle(reference, "node")?.path
+    decodeHandle(reference, "node")?.path ??
+    decodeHandle(reference, "match")?.path
   );
 }
 

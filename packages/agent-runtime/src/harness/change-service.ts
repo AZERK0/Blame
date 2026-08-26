@@ -41,6 +41,8 @@ export type {
 
 const maximumProposalBytes = 10 * 1024 * 1024;
 
+export class NoChangesProposed extends Error {}
+
 export class ChangeService {
   private readonly artifacts: ArtifactStore;
   private readonly files: WorkspaceFiles;
@@ -133,6 +135,8 @@ export class ChangeService {
     enforceParse: boolean;
   }) {
     const { preparedFiles } = input;
+    if (!preparedFiles.length)
+      throw new NoChangesProposed("No changes proposed.");
     if (preparedFiles.length > input.maximumTouched)
       throw new Error(
         `Proposal touches ${preparedFiles.length} files; maximum is ${input.maximumTouched}.`,

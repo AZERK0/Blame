@@ -3,6 +3,7 @@ import { access, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { execa } from "execa";
+import ts from "typescript";
 import { parseCode } from "./code-intelligence.js";
 import { jsoncErrors } from "./json-editor.js";
 import { languageCapability } from "./language-capabilities.js";
@@ -20,6 +21,23 @@ export type ContentValidation = {
   diagnostics: string[];
 };
 
+export function aggregateValidationStatus(validations: ContentValidation[]) {
+  if (validations.some(({ status }) => status === "failed")) return "failed";
+  if (validations.some(({ status }) => status === "not_supported"))
+    return "not_supported";
+  if (validations.some(({ status }) => status === "passed")) return "passed";
+  return "not_run";
+}
+
+export function aggregateValidator(validations: ContentValidation[]) {
+  const validators = [
+    ...new Set(
+      validations.flatMap(({ validator }) => (validator ? [validator] : [])),
+    ),
+  ];
+  return validators.length ? validators.join("+") : null;
+}
+
 export async function validateContent(input: {
   content: Buffer | null;
   path: string;
@@ -32,6 +50,8 @@ export async function validateContent(input: {
   if (capability.validatorId === "jsonc") return validateJson(validationInput);
   if (capability.validatorId === "prisma")
     return validatePrisma(validationInput);
+  if (capability.validatorId === "typescript")
+    return validateTypeScript(validationInput);
   if (capability.validatorId === "semantic_parser")
     return validateSemantic(validationInput);
   return validation(input.path, "not_supported", null, []);
@@ -58,6 +78,43 @@ function validateSemantic(input: { content: Buffer; path: string }) {
     ? [`Parser reported ${parsed.errorCount} syntax error(s).`]
     : [];
   return validation(input.path, status, "ast-grep", diagnostics);
+}
+
+function validateTypeScript(input: { content: Buffer; path: string }) {
+  const source = ts.createSourceFile(
+    input.path,
+    input.content.toString("utf8"),
+    ts.ScriptTarget.Latest,
+    true,
+    typescriptScriptKind(input.path),
+  );
+  const parsed = source as ts.SourceFile & {
+    parseDiagnostics: readonly ts.DiagnosticWithLocation[];
+  };
+  const diagnostics = parsed.parseDiagnostics.slice(0, 20).map((diagnostic) => {
+    const message = ts.flattenDiagnosticMessageText(
+      diagnostic.messageText,
+      "\n",
+    );
+    if (diagnostic.start === undefined) return message;
+    const position = source.getLineAndCharacterOfPosition(diagnostic.start);
+    return `${position.line + 1}:${position.character + 1} ${message}`;
+  });
+  return validation(
+    input.path,
+    diagnostics.length ? "failed" : "passed",
+    "typescript",
+    diagnostics,
+  );
+}
+
+function typescriptScriptKind(path: string) {
+  const extension = path.toLowerCase().match(/\.[^.]+$/u)?.[0];
+  if (extension === ".tsx") return ts.ScriptKind.TSX;
+  if (extension === ".jsx") return ts.ScriptKind.JSX;
+  if ([".js", ".cjs", ".mjs"].includes(extension ?? ""))
+    return ts.ScriptKind.JS;
+  return ts.ScriptKind.TS;
 }
 
 async function validatePrisma(input: {

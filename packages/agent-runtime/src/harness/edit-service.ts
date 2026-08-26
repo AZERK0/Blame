@@ -3,13 +3,22 @@ import {
   parseCode,
   symbolEditRange,
 } from "./code-intelligence.js";
-import { ChangeService } from "./change-service.js";
+import { ChangeService, NoChangesProposed } from "./change-service.js";
 import { stableJson } from "./change-store.js";
 import {
+  aggregateValidationStatus,
+  aggregateValidator,
   validateContent,
   type ContentValidation,
   type ValidationStatus,
 } from "./content-validation.js";
+import {
+  combineEditGroupResults,
+  createEditGroups,
+  failedChangeOperationIndexes,
+  type EditGroupResult,
+  type FailedEditOperation,
+} from "./edit-batch.js";
 import { lineChanges } from "./edit-content.js";
 import { editCssDeclaration } from "./css-declaration-editor.js";
 import { EditConflictCircuit } from "./edit-conflict-circuit.js";
@@ -67,10 +76,18 @@ export type EditCodeOutcome =
         removed: unknown[];
       }>;
       diff_artifact_ref: string;
+      diff_artifact_refs: string[];
+      failed_operations?: FailedEditOperation[];
+      file_receipts: Array<{
+        diff_artifact_ref: string;
+        paths: string[];
+        receipt_ref: string;
+      }>;
       internal_retries: number;
       changed: true;
       outcome: "applied";
       receipt_ref: string;
+      receipt_refs: string[];
       resolution: "exact" | "automatically_rebased";
       semantic_rebase_strategy?: string;
       source_revision: string;
@@ -83,6 +100,7 @@ export type EditCodeOutcome =
         parse: "passed" | "skipped" | "not_supported";
         diagnostics: StoredChangeProposal["diagnostics"];
       };
+      partial?: boolean;
     }
   | {
       candidates: Array<ConflictCandidate | { line: number; excerpt: string }>;
@@ -92,6 +110,8 @@ export type EditCodeOutcome =
       recommended_strategy?: string;
       recommendedTool?: string;
       retrySuppressed?: boolean;
+      failed_operation_indexes?: number[];
+      failed_operations?: FailedEditOperation[];
       outcome: "conflict";
       status: "conflict";
     }
@@ -101,6 +121,8 @@ export type EditCodeOutcome =
       proposed_diff_artifact_ref: string;
       outcome: "validation_failed";
       status: "validation_failed";
+      failed_operation_indexes?: number[];
+      failed_operations?: FailedEditOperation[];
     }
   | {
       outcome: "unsupported_operation";
@@ -108,11 +130,15 @@ export type EditCodeOutcome =
       reasonCode: string;
       recommendedTool: string;
       status: "unsupported_operation";
+      failed_operation_indexes?: number[];
+      failed_operations?: FailedEditOperation[];
     }
   | {
       outcome: "infrastructure_error";
       reason: string;
       status: "infrastructure_error";
+      failed_operation_indexes?: number[];
+      failed_operations?: FailedEditOperation[];
     }
   | {
       changed: false;
@@ -120,7 +146,13 @@ export type EditCodeOutcome =
       source_revision: string;
       status: "no_change";
     }
-  | { outcome: "unsupported_operation"; reason: string; status: "denied" };
+  | {
+      outcome: "unsupported_operation";
+      reason: string;
+      status: "denied";
+      failed_operation_indexes?: number[];
+      failed_operations?: FailedEditOperation[];
+    };
 
 type AppliedOutcome = Extract<EditCodeOutcome, { status: "applied" }>;
 type ChangedDetail = {
@@ -163,15 +195,51 @@ export class EditService {
         inputDigest,
       );
       if (existing) return existing;
-      const blocked = await this.conflicts.blocked(input.edits);
-      if (blocked) return repeatedConflictResult();
-      const result = await this.attempt(input, receiptKey, inputDigest);
-      if (result.status === "applied")
-        await this.conflicts.recordApplied(input.edits);
-      if (result.status === "conflict")
-        await this.conflicts.recordConflict(input.edits);
+      const result = await this.execute(input, receiptKey, inputDigest);
       return this.receipts.write(receiptKey, inputDigest, result);
     });
+  }
+
+  private async execute(
+    input: EditCodeInput,
+    receiptKey: string,
+    inputDigest: string,
+  ) {
+    const groups = createEditGroups(input.edits);
+    if ((input.atomicity ?? "per_file") === "strict" || groups.length === 1)
+      return this.executeGroup(input, receiptKey, inputDigest);
+    const results: EditGroupResult[] = [];
+    for (const [index, group] of groups.entries()) {
+      const groupInput = {
+        ...input,
+        atomicity: "strict" as const,
+        edits: group.edits,
+      };
+      const groupDigest = sha256(stableJson(groupInput));
+      const result = await this.executeGroup(
+        groupInput,
+        `${receiptKey}\0group-${index}`,
+        groupDigest,
+      );
+      results.push({ group, result });
+    }
+    return combineEditGroupResults(results);
+  }
+
+  private async executeGroup(
+    input: EditCodeInput,
+    receiptKey: string,
+    inputDigest: string,
+  ) {
+    const blocked = await this.conflicts.blocked(input.edits);
+    const result = blocked
+      ? repeatedConflictResult()
+      : await this.attempt(input, receiptKey, inputDigest);
+    if (result.status === "applied")
+      await this.conflicts.recordApplied(input.edits);
+    if (result.status === "conflict")
+      await this.conflicts.recordConflict(input.edits);
+    return result;
   }
 
   private async attempt(
@@ -183,55 +251,22 @@ export class EditService {
       try {
         return await this.applyAttempt(input, receiptKey, inputDigest, attempt);
       } catch (error) {
-        if (error instanceof SemanticResolutionConflict)
-          return {
-            status: "conflict",
-            outcome: "conflict",
-            reason: error.message,
-            candidates: error.candidates,
-          };
-        if (error instanceof PatchRecoveryConflict)
-          return {
-            status: "conflict",
-            outcome: "conflict",
-            ...error.details,
-          };
-        if (error instanceof UnsupportedPatchOperation)
-          return unsupportedResult(error.message, error.reason, "edit_files");
-        if (error instanceof UnsupportedEditOperation)
-          return unsupportedResult(
-            error.message,
-            error.reason,
-            error.recommendedTool,
-          );
+        if (error instanceof NoChangesProposed)
+          return noChangeResult(await this.currentRevision());
+        const known = knownEditFailure(error);
+        if (known) return known;
         const message = errorMessage(error);
-        if (deniedMessage(message))
-          return {
-            status: "denied",
-            outcome: "unsupported_operation",
-            reason: message,
-          };
         if (attempt === 0 && retryableMessage(message)) continue;
-        if (infrastructureMessage(message))
-          return {
-            status: "infrastructure_error",
-            outcome: "infrastructure_error",
-            reason: message,
-          };
-        return {
-          status: "conflict",
-          outcome: "conflict",
-          reason: message,
-          candidates: [],
-        };
+        return messageFailure(message);
       }
     }
-    return {
-      status: "conflict",
-      outcome: "conflict",
-      reason: "The edit could not be resolved on a stable snapshot.",
-      candidates: [],
-    };
+    return messageFailure(
+      "The edit could not be resolved on a stable snapshot.",
+    );
+  }
+
+  private async currentRevision() {
+    return (await this.files.snapshot()).revision.source_revision_id;
   }
 
   private async applyAttempt(
@@ -249,16 +284,16 @@ export class EditService {
       receiptKey,
       attempt,
     );
-    if (!proposal.changes.length)
-      return {
-        status: "no_change",
-        outcome: "no_change",
-        changed: false,
-        source_revision: snapshot.revision.source_revision_id,
-      };
     const validations = await this.validateProposal(proposal);
     const validationFailure = failedValidation(proposal, validations);
-    if (validationFailure) return validationFailure;
+    if (validationFailure)
+      return {
+        ...validationFailure,
+        failed_operation_indexes: failedValidationIndexes(
+          translated.operations,
+          validations,
+        ),
+      };
     const receipt = await this.commitEdit(proposal, receiptKey, inputDigest);
     const changedDetails = await this.changedDetails(proposal);
     const newSymbolRefs = await this.newSymbolReferences(
@@ -402,31 +437,44 @@ export class EditService {
     const operations: ChangeOperation[] = [];
     const rebaseStrategies = new Set<string>();
     let rebased = false;
-    for (const edit of edits) {
-      if (hasSemanticTarget(edit)) {
-        if ("path" in edit && edit.path)
-          assertSemanticEditSupported(this.files.normalizePath(edit.path));
-        const semantic = await this.resolver.resolve(edit.target, snapshot);
-        const resolved = resolvedTarget(semantic);
-        if (
-          "path" in edit &&
-          edit.path &&
-          this.files.normalizePath(edit.path) !== resolved.path
-        )
-          throw new SemanticResolutionConflict(
-            `The symbol resolves to ${resolved.path}, not ${edit.path}.`,
-            [],
-          );
-        assertSemanticEditSupported(resolved.path);
-        rebased ||= resolved.resolution === "automatically_rebased";
-        if (resolved.resolution === "automatically_rebased")
-          rebaseStrategies.add(resolved.strategy);
-        operations.push(await this.targetOperation(edit, resolved));
-        continue;
+    for (const [index, edit] of edits.entries()) {
+      try {
+        if (hasSemanticTarget(edit)) {
+          const translated = await this.translateTarget(edit, snapshot);
+          rebased ||=
+            translated.resolved.resolution === "automatically_rebased";
+          if (translated.resolved.resolution === "automatically_rebased")
+            rebaseStrategies.add(translated.resolved.strategy);
+          operations.push(translated.operation);
+        } else operations.push(await this.fileOperation(edit));
+      } catch (error) {
+        if (error instanceof SemanticResolutionConflict)
+          throw new EditOperationResolutionConflict(error, index);
+        throw error;
       }
-      operations.push(await this.fileOperation(edit));
     }
     return { operations, rebased, rebaseStrategies: [...rebaseStrategies] };
+  }
+
+  private async translateTarget(
+    edit: Extract<EditCodeOperation, { target: unknown }>,
+    snapshot: WorkspaceSnapshot,
+  ) {
+    if ("path" in edit && edit.path)
+      assertSemanticEditSupported(this.files.normalizePath(edit.path));
+    const semantic = await this.resolver.resolve(edit.target, snapshot);
+    const resolved = resolvedTarget(semantic);
+    if (
+      "path" in edit &&
+      edit.path &&
+      this.files.normalizePath(edit.path) !== resolved.path
+    )
+      throw new SemanticResolutionConflict(
+        `The symbol resolves to ${resolved.path}, not ${edit.path}.`,
+        [],
+      );
+    assertSemanticEditSupported(resolved.path);
+    return { operation: await this.targetOperation(edit, resolved), resolved };
   }
 
   private async fileOperation(edit: FileEditOperation) {
@@ -609,12 +657,8 @@ function formattingPolicy(formatting: EditCodeInput["formatting"]) {
 function failedValidation(
   proposal: StoredChangeProposal,
   validations: ContentValidation[],
-): EditCodeOutcome | undefined {
-  const rejected = validations.some(
-    ({ path, status }) =>
-      status === "failed" ||
-      (status === "not_supported" && requiresValidatedEdit(path)),
-  );
+): Extract<EditCodeOutcome, { status: "validation_failed" }> | undefined {
+  const rejected = validations.some(rejectedValidation);
   if (!rejected) return undefined;
   return {
     status: "validation_failed",
@@ -623,6 +667,23 @@ function failedValidation(
     validation: validations,
     proposed_diff_artifact_ref: proposal.diff_artifact.ref,
   };
+}
+
+function failedValidationIndexes(
+  operations: ChangeOperation[],
+  validations: ContentValidation[],
+) {
+  const rejectedPaths = new Set(
+    validations.filter(rejectedValidation).map(({ path }) => path),
+  );
+  return failedChangeOperationIndexes(operations, rejectedPaths);
+}
+
+function rejectedValidation({ path, status }: ContentValidation) {
+  return (
+    status === "failed" ||
+    (status === "not_supported" && requiresValidatedEdit(path))
+  );
 }
 
 function requiresValidatedEdit(path: string) {
@@ -646,6 +707,14 @@ function appliedResult(input: {
     outcome: "applied",
     changed: true,
     receipt_ref: input.receipt.change_set_ref,
+    receipt_refs: [input.receipt.change_set_ref],
+    file_receipts: [
+      {
+        receipt_ref: input.receipt.change_set_ref,
+        diff_artifact_ref: input.proposal.diff_artifact.ref,
+        paths: input.proposal.changes.map((change) => change.path),
+      },
+    ],
     source_revision: input.receipt.source_revision.source_revision_id,
     changed_files: input.changedDetails.map(({ file }) => file),
     changed_symbols: input.changedDetails.map(({ symbols }) => symbols),
@@ -667,6 +736,7 @@ function appliedResult(input: {
       diagnostics: input.proposal.diagnostics,
     },
     diff_artifact_ref: input.proposal.diff_artifact.ref,
+    diff_artifact_refs: [input.proposal.diff_artifact.ref],
     internal_retries: input.attempt,
   };
 }
@@ -779,6 +849,15 @@ function repeatedConflictResult(): EditCodeOutcome {
   };
 }
 
+function noChangeResult(sourceRevision: string): EditCodeOutcome {
+  return {
+    status: "no_change",
+    outcome: "no_change",
+    changed: false,
+    source_revision: sourceRevision,
+  };
+}
+
 function unsupportedResult(
   message: string,
   reasonCode: string,
@@ -793,21 +872,59 @@ function unsupportedResult(
   };
 }
 
-function aggregateValidationStatus(validations: ContentValidation[]) {
-  if (validations.some(({ status }) => status === "failed")) return "failed";
-  if (validations.some(({ status }) => status === "not_supported"))
-    return "not_supported";
-  if (validations.some(({ status }) => status === "passed")) return "passed";
-  return "not_run";
+function knownEditFailure(error: unknown) {
+  return conflictFailure(error) ?? unsupportedFailure(error);
 }
 
-function aggregateValidator(validations: ContentValidation[]) {
-  const validators = [
-    ...new Set(
-      validations.flatMap(({ validator }) => (validator ? [validator] : [])),
-    ),
-  ];
-  return validators.length ? validators.join("+") : null;
+function conflictFailure(error: unknown): EditCodeOutcome | undefined {
+  if (error instanceof EditOperationResolutionConflict)
+    return {
+      status: "conflict",
+      outcome: "conflict",
+      reason: error.message,
+      candidates: error.candidates,
+      failed_operation_indexes: [error.operationIndex],
+    };
+  if (error instanceof SemanticResolutionConflict)
+    return conflictResult(error.message, error.candidates);
+  if (error instanceof PatchRecoveryConflict)
+    return { status: "conflict", outcome: "conflict", ...error.details };
+  return undefined;
+}
+
+function unsupportedFailure(error: unknown): EditCodeOutcome | undefined {
+  if (error instanceof UnsupportedPatchOperation)
+    return unsupportedResult(error.message, error.reason, "edit_files");
+  if (error instanceof UnsupportedEditOperation)
+    return unsupportedResult(
+      error.message,
+      error.reason,
+      error.recommendedTool,
+    );
+  return undefined;
+}
+
+function messageFailure(message: string): EditCodeOutcome {
+  if (deniedMessage(message))
+    return {
+      status: "denied",
+      outcome: "unsupported_operation",
+      reason: message,
+    };
+  if (infrastructureMessage(message))
+    return {
+      status: "infrastructure_error",
+      outcome: "infrastructure_error",
+      reason: message,
+    };
+  return conflictResult(message, []);
+}
+
+function conflictResult(
+  reason: string,
+  candidates: Array<ConflictCandidate | { line: number; excerpt: string }>,
+): EditCodeOutcome {
+  return { status: "conflict", outcome: "conflict", reason, candidates };
 }
 
 function decodeSymbol(reference: string) {
@@ -836,6 +953,15 @@ class UnsupportedEditOperation extends Error {
     super(message);
     this.reason = reason;
     this.recommendedTool = recommendedTool;
+  }
+}
+
+class EditOperationResolutionConflict extends SemanticResolutionConflict {
+  readonly operationIndex: number;
+
+  constructor(conflict: SemanticResolutionConflict, operationIndex: number) {
+    super(conflict.message, conflict.candidates);
+    this.operationIndex = operationIndex;
   }
 }
 

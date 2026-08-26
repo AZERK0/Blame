@@ -1,4 +1,4 @@
-import { parseCode } from "./code-intelligence.js";
+import { parseCode, smallestEnclosingNode } from "./code-intelligence.js";
 import {
   decodeHandle,
   encodeHandle,
@@ -46,9 +46,13 @@ export type SearchMatch = {
   path: string;
   line_range: [number, number];
   range_utf8_bytes: [number, number];
-  excerpt: string;
+  excerpt?: string;
   match_reason: string;
+  context?: string;
+  matched_text?: string;
+  match_ref?: string;
   node_ref?: string;
+  node_text?: string;
   symbol_ref?: string;
 };
 
@@ -72,17 +76,95 @@ export function textMatches(
     const start = Buffer.byteLength(source.slice(0, index));
     const end = start + Buffer.byteLength(text);
     const line = source.slice(0, index).split("\n").length;
-    items.push({
-      path,
-      line_range: [line, line + text.split("\n").length - 1],
-      range_utf8_bytes: [start, end],
-      excerpt: lineExcerpt(source, index),
-      match_reason: query.regex ? "lexical_regex" : "lexical_exact",
-      node_ref: nodeRef(revision, path, content, start, end, "text_match"),
-    });
+    items.push(
+      lexicalMatch(
+        content,
+        path,
+        revision,
+        [start, end],
+        [line, line + text.split("\n").length - 1],
+        query.regex ? "lexical_regex" : "lexical_exact",
+      ),
+    );
     if (items.length >= maximum) break;
   }
   return items;
+}
+
+export function lexicalMatch(
+  content: Buffer,
+  path: string,
+  revision: string,
+  range: [number, number],
+  lineRange: [number, number],
+  reason: "lexical_exact" | "lexical_regex",
+): SearchMatch {
+  const matchedText = content.subarray(...range).toString("utf8");
+  const context = lineExcerpt(
+    content.toString("utf8"),
+    byteIndex(content, range[0]),
+  );
+  const promotion = lexicalPromotion(content, path, revision, range, [
+    matchedText,
+    context,
+  ]);
+  return {
+    path,
+    line_range: lineRange,
+    range_utf8_bytes: range,
+    context,
+    matched_text: matchedText,
+    match_reason: reason,
+    match_ref: matchRef(revision, path, content, range[0], range[1]),
+    ...promotion,
+  };
+}
+
+function lexicalPromotion(
+  content: Buffer,
+  path: string,
+  revision: string,
+  range: [number, number],
+  visibleText: string[],
+) {
+  const enclosing = smallestEnclosingNode({
+    content,
+    end: range[1],
+    path,
+    revision,
+    start: range[0],
+  });
+  if (!enclosing) return {};
+  const bytes = enclosing.range_utf8_bytes[1] - enclosing.range_utf8_bytes[0];
+  if (bytes > 4_096) return {};
+  const nodeText = enclosing.text.trim();
+  const duplicate = visibleText.some((text) => text.trim() === nodeText);
+  return {
+    node_ref: enclosing.node_ref,
+    ...(duplicate ? {} : { node_text: enclosing.text }),
+  };
+}
+
+export function matchRef(
+  revision: string,
+  path: string,
+  content: Buffer,
+  start: number,
+  end: number,
+) {
+  const matchedText = content.subarray(start, end).toString("utf8");
+  return encodeHandle("match", {
+    version: 2,
+    revision,
+    path,
+    start,
+    end,
+    digest: sha256(content.subarray(start, end)).slice(0, 32),
+    observedBlobHash: sha256(content).slice(0, 32),
+    kind: "text_match",
+    language: languageName(path),
+    matchedText,
+  });
 }
 
 export function nodeRef(
@@ -111,12 +193,18 @@ export function inspectTarget(target: InspectCodeInput["target"]): {
   handle?: HandlePayload;
 } {
   if ("path" in target) return { path: target.path };
-  const scheme = "symbol_ref" in target ? "sym" : "node";
-  const value = "symbol_ref" in target ? target.symbol_ref : target.node_ref;
+  const scheme =
+    "symbol_ref" in target ? "sym" : "match_ref" in target ? "match" : "node";
+  const value =
+    "symbol_ref" in target
+      ? target.symbol_ref
+      : "match_ref" in target
+        ? target.match_ref
+        : target.node_ref;
   const handle = decodeHandle(value, scheme);
   if (!handle)
     throw new Error(
-      `A valid ${scheme === "sym" ? "symbol_ref" : "node_ref"} is required.`,
+      `A valid ${scheme === "sym" ? "symbol_ref" : `${scheme}_ref`} is required.`,
     );
   return { handle };
 }
@@ -404,6 +492,10 @@ function lineExcerpt(source: string, index: number) {
   const end = source.indexOf("\n", index);
   const line = source.slice(start, end < 0 ? source.length : end).trim();
   return line.length > 300 ? `${line.slice(0, 299)}…` : line;
+}
+
+function byteIndex(content: Buffer, offset: number) {
+  return content.subarray(0, offset).toString("utf8").length;
 }
 
 function escapeRegExp(value: string) {

@@ -102,7 +102,7 @@ async function bundledManager(input: PackageManagerRequest) {
   if (!entry) return undefined;
   const packageRoot = dirname(manifestPath);
   return {
-    executable: process.env.BLAME_NODE_EXECUTABLE?.trim() || "node",
+    executable: process.env.BLAME_NODE_EXECUTABLE?.trim() || process.execPath,
     argsPrefix: [join(packageRoot, entry)],
     readonlyRoots: [packageRoot],
     resolvedVersion: manifest.version,

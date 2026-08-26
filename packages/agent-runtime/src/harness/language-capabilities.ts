@@ -28,7 +28,7 @@ export type LanguageCapability = {
   syntaxValidation: boolean;
   structuredEditing: boolean;
   parserId?: SemanticParserId;
-  validatorId?: "jsonc" | "prisma" | "semantic_parser";
+  validatorId?: "jsonc" | "prisma" | "semantic_parser" | "typescript";
 };
 
 export type PublicLanguageCapabilities = Pick<
@@ -45,12 +45,22 @@ export const languageCapabilityRegistry: readonly LanguageCapability[] = [
   semanticCapability("css", [".css"], "css"),
   semanticCapability("go", [".go"], "go"),
   semanticCapability("java", [".java"], "java"),
-  semanticCapability("javascript", [".cjs", ".js", ".mjs"], "javascript"),
-  semanticCapability("javascript", [".jsx"], "tsx"),
+  semanticCapability(
+    "javascript",
+    [".cjs", ".js", ".mjs"],
+    "javascript",
+    "typescript",
+  ),
+  semanticCapability("javascript", [".jsx"], "tsx", "typescript"),
   semanticCapability("python", [".py"], "python"),
   semanticCapability("rust", [".rs"], "rust"),
-  semanticCapability("typescript", [".cts", ".mts", ".ts"], "typescript"),
-  semanticCapability("typescript", [".tsx"], "tsx"),
+  semanticCapability(
+    "typescript",
+    [".cts", ".mts", ".ts"],
+    "typescript",
+    "typescript",
+  ),
+  semanticCapability("typescript", [".tsx"], "tsx", "typescript"),
   semanticCapability("vue", [".vue"], "vue"),
   structuredCapability("json", [".json", ".jsonc"]),
   validatedTextCapability("html", [".htm", ".html"], "html"),
@@ -131,6 +141,7 @@ function semanticCapability(
   languageId: string,
   extensions: string[],
   parserId: SemanticParserId,
+  validatorId: "semantic_parser" | "typescript" = "semantic_parser",
 ): LanguageCapability {
   return {
     languageId,
@@ -141,7 +152,7 @@ function semanticCapability(
     syntaxValidation: true,
     structuredEditing: false,
     parserId,
-    validatorId: "semantic_parser",
+    validatorId,
   };
 }
 

@@ -1,4 +1,4 @@
-import { parseCode } from "./code-intelligence.js";
+import { parseCode, smallestEnclosingNode } from "./code-intelligence.js";
 import {
   searchWithRipgrep,
   type LexicalSearchMatch,
@@ -6,7 +6,7 @@ import {
 import { harnessSuccess, provenance } from "./protocol.js";
 import {
   approximateTokens,
-  nodeRef,
+  matchRef,
   revisionVector,
   toolError,
 } from "./semantic-workspace-support.js";
@@ -33,6 +33,7 @@ type RelationItem = {
   line_range: [number, number];
   range_utf8_bytes?: [number, number];
   excerpt?: string;
+  match_ref?: string;
   node_ref?: string;
 };
 
@@ -353,24 +354,22 @@ function semanticRelationItem(
   revision: string,
   content?: Buffer,
 ): RelationItem {
+  const references = content
+    ? relationReferences(
+        content,
+        record.path,
+        record.range_utf8_bytes,
+        include,
+        revision,
+      )
+    : {};
   return {
     certainty: record.certainty,
     relation: record.relation,
     path: record.path,
     line_range: record.line_range,
     ...(include.has("excerpts") ? { excerpt: record.excerpt } : {}),
-    ...(include.has("node_refs") && content
-      ? {
-          node_ref: nodeRef(
-            revision,
-            record.path,
-            content,
-            record.range_utf8_bytes[0],
-            record.range_utf8_bytes[1],
-            "semantic_relation",
-          ),
-        }
-      : {}),
+    ...references,
   };
 }
 
@@ -381,24 +380,41 @@ function relationItem(
   include: Set<string>,
   revision: string,
 ): RelationItem {
+  const references = relationReferences(
+    content,
+    match.path,
+    match.range_utf8_bytes,
+    include,
+    revision,
+  );
   return {
     certainty: "may",
     relation,
     path: match.path,
     line_range: match.line_range,
     ...(include.has("excerpts") ? { excerpt: match.excerpt } : {}),
-    ...(include.has("node_refs")
-      ? {
-          node_ref: nodeRef(
-            revision,
-            match.path,
-            content,
-            match.range_utf8_bytes[0],
-            match.range_utf8_bytes[1],
-            "relation_match",
-          ),
-        }
-      : {}),
+    ...references,
+  };
+}
+
+function relationReferences(
+  content: Buffer,
+  path: string,
+  range: [number, number],
+  include: Set<string>,
+  revision: string,
+) {
+  if (!include.has("node_refs")) return {};
+  const enclosing = smallestEnclosingNode({
+    content,
+    end: range[1],
+    path,
+    revision,
+    start: range[0],
+  });
+  return {
+    match_ref: matchRef(revision, path, content, range[0], range[1]),
+    ...(enclosing ? { node_ref: enclosing.node_ref } : {}),
   };
 }
 

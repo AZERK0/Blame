@@ -114,7 +114,7 @@ export function semanticWorkspaceTools(
     createHarnessTool({
       name: "search_code",
       description:
-        "Search the current workspace using ripgrep text search, syntax symbols, or an ast-grep pattern. source_revision_id is optional and stale global revisions are rebased internally. Use this to obtain node_ref or symbol_ref handles before inspect_code or edit_code.",
+        "Search the current workspace using ripgrep text search, syntax symbols, or an ast-grep pattern. Text results expose matched_text and context separately, return a relocatable match_ref for the exact matched bytes, and include a node_ref only when a real enclosing AST node exists. source_revision_id is optional and stale references are rebased internally.",
       schema: searchCodeInputSchema,
       execute: (input, context) =>
         visibleResult(
@@ -135,7 +135,7 @@ export function semanticWorkspaceTools(
     }),
     createHarnessTool({
       name: "inspect_code",
-      description: `Inspect a symbol or node with automatic semantic rebase, or read a raw file fallback. Returns language capabilities and the recommended edit tool.\n\n${supportedOperations}`,
+      description: `Inspect a symbol, AST node, or lexical match with automatic rebase, or read a raw file fallback. The raw view is valid for references and paths. Returns language capabilities and the recommended edit tool.\n\n${supportedOperations}`,
       schema: inspectCodeInputSchema,
       execute: (input, context) =>
         visibleResult(
@@ -188,7 +188,7 @@ export function semanticWorkspaceTools(
     }),
     createHarnessTool({
       name: "edit_files",
-      description: `Apply and syntax-validate one explicit atomic multi-file transaction. No file is written when a required validation fails.\n\n${supportedOperations}`,
+      description: `Apply and syntax-validate file operations independently by file by default. Use atomicity strict only when every file is part of one coupled transaction; then no file is written when validation fails.\n\n${supportedOperations}`,
       schema: editFilesInputSchema,
       execute: (input, context) => execute("edit_files", input, context),
       retryable: false,
@@ -228,7 +228,7 @@ export function semanticWorkspaceTools(
     createHarnessTool({
       name: "edit_code",
       description:
-        "Compatibility batch editor for replace_body, replace_signature, insertion, symbol deletion, and CSS declarations. Prefer edit_symbol, edit_json, patch_file, explicit file tools, or edit_files.",
+        "Compatibility editor for relocatable match_ref replacements, replace_body, replace_signature, insertion, symbol deletion, and CSS declarations. Independent files use per-file commits by default; set atomicity to strict only for coupled changes. Prefer specialized edit tools when available.",
       schema: editCodeInputSchema,
       execute: (input, context) => execute("edit_code", input, context),
       retryable: false,

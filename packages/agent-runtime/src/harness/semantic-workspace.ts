@@ -1,5 +1,6 @@
 import { ArtifactStore } from "./artifact-store.js";
 import { EditService, type EditCodeOutcome } from "./edit-service.js";
+import type { ValidationStatus } from "./content-validation.js";
 import { environmentSpec } from "./environment-service.js";
 import {
   materializeSymbol,
@@ -25,6 +26,7 @@ import {
   approximateTokens,
   bounded,
   countBy,
+  lexicalMatch,
   nodeRef,
   publicProposal,
   revisionVector,
@@ -424,17 +426,16 @@ export class SemanticWorkspace {
             }
             const [start, end] = match.range_utf8_bytes;
             if (end > content.byteLength) continue;
-            items.push({
-              ...match,
-              node_ref: nodeRef(
-                sourceRevision,
-                match.path,
+            items.push(
+              lexicalMatch(
                 content,
-                start,
-                end,
-                "text_match",
+                match.path,
+                sourceRevision,
+                [start, end],
+                match.line_range,
+                match.match_reason,
               ),
-            });
+            );
           }
         }
       }
@@ -744,7 +745,10 @@ export class SemanticWorkspace {
     context?: { sessionId?: string; toolCallId?: string },
   ) {
     editFilesInputSchema.parse(input);
-    return this.editCode({ edits: input.operations }, context);
+    return this.editCode(
+      { edits: input.operations, atomicity: input.atomicity ?? "per_file" },
+      context,
+    );
   }
 
   createFile(
@@ -1081,24 +1085,23 @@ export class SemanticWorkspace {
   ) {
     const paths = result.changed_files.map((file) => file.path);
     await this.inspections.invalidatePaths(paths);
-    await this.memory.recordChange({
-      artifactRef: result.diff_artifact_ref,
-      receiptId: result.receipt_ref,
-      sourceRevisionId: result.source_revision,
-      files: paths,
-      symbols: changedSymbolNames(result.changed_symbols),
-      summary: result.changed_files
-        .map((file) => `${file.path} (+${file.additions}/-${file.deletions})`)
-        .join(", "),
-      validation:
-        result.validation.status === "passed"
-          ? "passed"
-          : result.validation.status === "failed"
-            ? "failed"
-            : result.validation.status === "not_supported"
-              ? "not_supported"
-              : "not_run",
-    });
+    for (const receipt of result.file_receipts)
+      await this.memory.recordChange({
+        artifactRef: receipt.diff_artifact_ref,
+        receiptId: receipt.receipt_ref,
+        sourceRevisionId: result.source_revision,
+        files: receipt.paths,
+        symbols: changedSymbolNames(
+          result.changed_symbols.filter((change) =>
+            receipt.paths.includes(change.path),
+          ),
+        ),
+        summary: result.changed_files
+          .filter((file) => receipt.paths.includes(file.path))
+          .map((file) => `${file.path} (+${file.additions}/-${file.deletions})`)
+          .join(", "),
+        validation: memoryValidation(result.validation.status),
+      });
   }
 
   private async exactSnapshot(expected: string, signal?: AbortSignal) {
@@ -1144,11 +1147,18 @@ function changedSymbolNames(
   );
 }
 
-function editArtifactRef(result: EditCodeOutcome) {
-  if (result.status === "applied") return result.diff_artifact_ref;
+function memoryValidation(status: ValidationStatus) {
+  if (status === "passed") return "passed" as const;
+  if (status === "failed") return "failed" as const;
+  if (status === "not_supported") return "not_supported" as const;
+  return "not_run" as const;
+}
+
+function editArtifactRefs(result: EditCodeOutcome) {
+  if (result.status === "applied") return result.diff_artifact_refs;
   if (result.status === "validation_failed")
-    return result.proposed_diff_artifact_ref;
-  return undefined;
+    return [result.proposed_diff_artifact_ref];
+  return [];
 }
 
 function editDiagnostics(result: EditCodeOutcome) {
@@ -1169,17 +1179,18 @@ async function editCodeResponse(
         ? result.source_revision
         : (await files.snapshot()).revision.source_revision_id,
   };
-  const artifactRef = editArtifactRef(result);
-  const artifact = artifactRef
-    ? await artifacts.metadata(artifactRef, { audience: "agent" })
-    : undefined;
+  const artifactMetadata = await Promise.all(
+    editArtifactRefs(result).map((reference) =>
+      artifacts.metadata(reference, { audience: "agent" }),
+    ),
+  );
   const diagnostics = editDiagnostics(result);
   return harnessSuccess({
     startedAt,
     revision,
     provenance: [provenance("harness", revision)],
     data: result,
-    ...(artifact ? { artifacts: [artifact] } : {}),
+    ...(artifactMetadata.length ? { artifacts: artifactMetadata } : {}),
     ...(diagnostics.length ? { diagnostics } : {}),
   });
 }

@@ -51,7 +51,7 @@ type InspectedSelection = {
 type SemanticTarget = {
   kind?: string;
   qualified_name?: string;
-  type: "node" | "symbol";
+  type: "match" | "node" | "symbol";
 };
 
 type InspectionSource = {
@@ -260,7 +260,7 @@ function structuredSelection(
   content: Buffer,
 ): InspectedSelection {
   if (view === "raw")
-    throw new Error("A semantic reference cannot use the raw view.");
+    return { analysis: "exact", range: [handle.start, handle.end] };
   const parsed = parseCode(path, content);
   const node = findExactNode(
     parsed,
@@ -301,10 +301,14 @@ function createContext(
 
 function semanticTarget(input: InspectCodeInput, handle?: HandlePayload) {
   if (!handle) return undefined;
+  const type: SemanticTarget["type"] =
+    "symbol_ref" in input.target
+      ? "symbol"
+      : "match_ref" in input.target
+        ? "match"
+        : "node";
   return {
-    type: ("symbol_ref" in input.target ? "symbol" : "node") as
-      | "node"
-      | "symbol",
+    type,
     ...(handle.kind ? { kind: handle.kind } : {}),
     ...(handle.qualifiedName ? { qualified_name: handle.qualifiedName } : {}),
   };
@@ -434,6 +438,7 @@ function newByteCount(availability: WorkingSetAvailability) {
 
 function requestedReference(input: InspectCodeInput) {
   if ("symbol_ref" in input.target) return input.target.symbol_ref;
+  if ("match_ref" in input.target) return input.target.match_ref;
   if ("node_ref" in input.target) return input.target.node_ref;
   return input.target.path;
 }

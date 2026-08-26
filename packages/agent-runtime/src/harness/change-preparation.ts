@@ -70,9 +70,12 @@ export async function prepareChanges(
     ) {
       const handle =
         decodeHandle(operation.target, "node") ??
-        decodeHandle(operation.target, "sym");
+        decodeHandle(operation.target, "sym") ??
+        decodeHandle(operation.target, "match");
       if (!handle)
-        throw new Error("A valid node_ref or symbol_ref is required.");
+        throw new Error(
+          "A valid match_ref, node_ref, or symbol_ref is required.",
+        );
       if (handle.revision !== input.base_source_revision_id)
         throw staleRevision(input.base_source_revision_id);
       const file = await loadVirtualFile(files, virtual, handle.path);
