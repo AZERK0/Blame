@@ -252,6 +252,33 @@ test("keeps a tool call identity when a server response omits it", () => {
   assert.equal(merged.agentRuns?.[0].activities?.[0]?.status, "completed")
 })
 
+test("keeps structured tool detail when the server returns an artifact excerpt", () => {
+  const currentActivity = {
+    ...activity("tool-1", "2026-06-11T10:00:02.000Z", "running"),
+    detail: JSON.stringify({ input: { path: "package.json" } }),
+    toolCallId: "call-1",
+    toolName: "read_file",
+  }
+  const serverActivity = {
+    ...activity("tool-1", "2026-06-11T10:00:04.000Z", "completed"),
+    detail: '{"input":{"path":"package.json"}\n...\n"output":"done"}',
+    detailArtifact: "agent-activity://tool-1",
+    detailTruncated: true,
+  }
+
+  const merged = mergeUserStory(
+    story([run([currentActivity])]),
+    story([run([serverActivity])])
+  )
+  const activityResult = merged.agentRuns?.[0].activities?.[0]
+
+  assert.equal(activityResult?.detail, currentActivity.detail)
+  assert.equal(activityResult?.detailArtifact, serverActivity.detailArtifact)
+  assert.equal(activityResult?.toolCallId, "call-1")
+  assert.equal(activityResult?.toolName, "read_file")
+  assert.equal(activityResult?.status, "completed")
+})
+
 test("clears previous run activities when a new run explicitly resets them", () => {
   const previousActivity = activity(
     "message-session-1",

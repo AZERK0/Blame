@@ -676,16 +676,76 @@ function AgentWorkDetails(props: AgentWorkDetailsProps) {
   if (!registry.activityIds.length) {
     return props.run.status === "running" ? <AgentThinkingTimelineItem /> : null
   }
+  const responseActivityId = terminalResponseActivityId(props, registry)
+  const workActivityIds = registry.activityIds.filter(
+    (activityId) => activityId !== responseActivityId
+  )
   return (
     <div className="grid gap-2">
-      <AgentWorkState
-        running={props.run.status === "running"}
-        stateLabel={agentWorkStateLabel(props.run.status)}
-        stepCount={registry.activityIds.length}
-        status={props.run.status}
-      />
-      <AgentActivityTimeline registry={registry} {...props} />
+      {workActivityIds.length ? (
+        <AgentWorkAccordion
+          activityIds={workActivityIds}
+          registry={registry}
+          responseActivityId={responseActivityId}
+          {...props}
+        />
+      ) : null}
+      {responseActivityId ? (
+        <AgentActivityTimeline
+          activityIds={[responseActivityId]}
+          registry={registry}
+          {...props}
+        />
+      ) : null}
     </div>
+  )
+}
+
+function AgentWorkAccordion({
+  activityIds,
+  registry,
+  responseActivityId,
+  ...props
+}: AgentWorkDetailsProps & {
+  activityIds: string[]
+  registry: ReturnType<typeof useAgentActivityRegistry>
+  responseActivityId?: string
+}) {
+  const shouldExpand = props.run.status === "running" && !responseActivityId
+  const phase = shouldExpand ? "running" : "finished"
+  const [selection, setSelection] = React.useState({
+    expanded: shouldExpand,
+    phase,
+  })
+  const expanded = selection.phase === phase ? selection.expanded : shouldExpand
+  return (
+    <Accordion
+      collapsible
+      onValueChange={(value) =>
+        setSelection({ expanded: value === "work", phase })
+      }
+      type="single"
+      value={expanded ? "work" : ""}
+    >
+      <AccordionItem className="border-b-0!" value="work">
+        <AccordionTrigger className="items-center py-0 hover:no-underline">
+          <AgentWorkState
+            running={props.run.status === "running"}
+            stateLabel={agentWorkStateLabel(props.run.status)}
+            stepCount={activityIds.length}
+            status={props.run.status}
+          />
+        </AccordionTrigger>
+        <AccordionContent className="pt-2 pb-0">
+          <AgentActivityTimeline
+            {...props}
+            activityIds={activityIds}
+            alwaysVisible={!responseActivityId && props.alwaysVisible}
+            registry={registry}
+          />
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
   )
 }
 
@@ -733,22 +793,25 @@ function useAgentStreamOrder(identity: AgentStreamIdentity | undefined) {
 }
 
 function AgentActivityTimeline({
+  activityIds,
   activities,
   alwaysVisible,
   registry,
   ...props
 }: AgentWorkDetailsProps & {
+  activityIds?: string[]
   registry: ReturnType<typeof useAgentActivityRegistry>
 }) {
   void activities
+  const visibleActivityIds = activityIds ?? registry.activityIds
   return (
     <Accordion type="multiple" className="grid gap-2">
-      {registry.activityIds.map((activityId, index) => (
+      {visibleActivityIds.map((activityId, index) => (
         <StreamingAgentActivityItem
           {...props}
           activityId={activityId}
           alwaysVisible={
-            alwaysVisible && index === registry.activityIds.length - 1
+            alwaysVisible && index === visibleActivityIds.length - 1
           }
           fallback={registry.persistedById.get(activityId)}
           identity={registry.identity}
@@ -757,6 +820,17 @@ function AgentActivityTimeline({
       ))}
     </Accordion>
   )
+}
+
+function terminalResponseActivityId(
+  props: AgentWorkDetailsProps,
+  registry: ReturnType<typeof useAgentActivityRegistry>
+) {
+  return registry.activityIds.findLast((activityId) => {
+    const activity = registry.persistedById.get(activityId)
+    if (activity?.kind === "message") return activity.messageKind === "final"
+    return props.run.status !== "running" && activity?.kind === "error"
+  })
 }
 
 function agentWorkStateLabel(status: AgentConversationRun["status"]) {
@@ -778,7 +852,7 @@ function AgentWorkState({
   stepCount: number
 }) {
   return (
-    <div className="flex min-h-10 items-center gap-2.5 py-1 text-sm text-muted-foreground">
+    <span className="flex min-h-10 items-center gap-2.5 py-1 text-sm text-muted-foreground">
       <span
         className={cn(
           "size-2 shrink-0 rounded-full",
@@ -796,7 +870,7 @@ function AgentWorkState({
       <span>
         · {stepCount} {stepCount === 1 ? "step" : "steps"}
       </span>
-    </div>
+    </span>
   )
 }
 
@@ -1974,6 +2048,7 @@ function activityDetails(activity: UserStoryAgentActivity): ActivityDetail {
     parsedToolName ??
     rawToolName ??
     stringValue(rawToolCall.name) ??
+    activity.toolName ??
     toolNameFromTitle(activity.title)
 
   const presentation = presentBlameHarnessTool({

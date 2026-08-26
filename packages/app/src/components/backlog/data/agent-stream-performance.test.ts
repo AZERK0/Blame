@@ -4,6 +4,7 @@ import test from "node:test"
 
 import type { AgentEvent } from "@blame/agent-runtime"
 
+import type { UserStoryAgentActivity } from "./backlog-data.ts"
 import { resumableEventStreamUrl } from "./agent-event-stream-url.ts"
 import {
   pendingAgentSnapshots,
@@ -45,6 +46,35 @@ test("paints the first native delta within one frame", async () => {
   assert.ok(performance.now() - receivedAt < 100)
   assert.equal(streamedActivity(store)?.detail, "hello")
   await coordinator.disconnect()
+})
+
+test("keeps structured live tool detail when a truncated snapshot arrives", () => {
+  const frames = new FrameScheduler()
+  const store = new AgentStreamStore(frames)
+  const liveActivity = structuredToolActivity("running")
+  store.publish(identity, [liveActivity], 1)
+  frames.paint()
+  store.seed(
+    identity,
+    [
+      {
+        ...liveActivity,
+        detail: '{"toolName":"read_file"\n...\n"result":"done"}',
+        detailArtifact: "agent-activity://tool-1",
+        detailTruncated: true,
+        status: "completed",
+        toolName: undefined,
+        updatedAt: "2026-06-11T10:00:02.000Z",
+      },
+    ],
+    2
+  )
+
+  const activity = streamedActivity(store)
+  assert.equal(activity?.detail, liveActivity.detail)
+  assert.equal(activity?.status, "completed")
+  assert.equal(activity?.toolName, "read_file")
+  assert.equal(activity?.detailTruncated, true)
 })
 
 test("adds the confirmed sequence to a resumed event stream", () => {
@@ -392,6 +422,25 @@ function streamedActivities(store: AgentStreamStore) {
 
 function streamedActivity(store: AgentStreamStore) {
   return streamedActivities(store).at(-1)
+}
+
+function structuredToolActivity(
+  status: "running" | "completed"
+): UserStoryAgentActivity {
+  return {
+    createdAt: "2026-06-11T10:00:00.000Z",
+    detail: JSON.stringify({
+      input: { path: "package.json" },
+      toolName: "read_file",
+    }),
+    id: "tool-1",
+    kind: "tool",
+    status,
+    title: "Read file",
+    toolCallId: "call-1",
+    toolName: "read_file",
+    updatedAt: "2026-06-11T10:00:01.000Z",
+  }
 }
 
 function durableSnapshot(snapshot: AgentStreamSnapshot) {

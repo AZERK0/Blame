@@ -17,26 +17,66 @@ export function mergeAgentActivities(
   return sortedByCreatedAt([...activities.values()])
 }
 
-function mergeAgentActivity(
+export function mergeAgentActivity(
   currentActivity: UserStoryAgentActivity,
   serverActivity: UserStoryAgentActivity
 ) {
   const newestActivity = newestValue(currentActivity, serverActivity)
-  const toolCallId = newestActivity.toolCallId ?? currentActivity.toolCallId
+  const mergedActivity = preserveActivityMetadata(
+    currentActivity,
+    newestActivity
+  )
+  if (shouldPreserveStructuredToolDetail(currentActivity, serverActivity)) {
+    return { ...mergedActivity, detail: currentActivity.detail }
+  }
   if (
     currentActivity.kind !== "message" ||
     serverActivity.kind !== "message" ||
     currentActivity.status !== "running" ||
     serverActivity.status !== "running"
   ) {
-    return toolCallId ? { ...newestActivity, toolCallId } : newestActivity
+    return mergedActivity
   }
   return {
-    ...newestActivity,
+    ...mergedActivity,
     detail:
       longestStreamingPrefix(currentActivity.detail, serverActivity.detail) ??
-      newestActivity.detail,
-    ...(toolCallId ? { toolCallId } : {}),
+      mergedActivity.detail,
+  }
+}
+
+function preserveActivityMetadata(
+  currentActivity: UserStoryAgentActivity,
+  newestActivity: UserStoryAgentActivity
+) {
+  return {
+    ...newestActivity,
+    agentAvatar: newestActivity.agentAvatar ?? currentActivity.agentAvatar,
+    agentName: newestActivity.agentName ?? currentActivity.agentName,
+    toolCallId: newestActivity.toolCallId ?? currentActivity.toolCallId,
+    toolName: newestActivity.toolName ?? currentActivity.toolName,
+  }
+}
+
+function shouldPreserveStructuredToolDetail(
+  currentActivity: UserStoryAgentActivity,
+  serverActivity: UserStoryAgentActivity
+) {
+  return (
+    currentActivity.kind === "tool" &&
+    serverActivity.kind === "tool" &&
+    serverActivity.detailTruncated === true &&
+    isJsonObject(currentActivity.detail) &&
+    !isJsonObject(serverActivity.detail)
+  )
+}
+
+function isJsonObject(value: string) {
+  try {
+    const parsed = JSON.parse(value)
+    return Boolean(parsed && typeof parsed === "object")
+  } catch {
+    return false
   }
 }
 

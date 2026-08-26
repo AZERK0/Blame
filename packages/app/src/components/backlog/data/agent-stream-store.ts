@@ -1,4 +1,5 @@
 import type { UserStoryAgentActivity } from "./backlog-data.ts"
+import { mergeAgentActivity } from "./agent-activity-merge.ts"
 
 export type AgentStreamIdentity = {
   runId: string
@@ -69,7 +70,10 @@ export class AgentStreamStore {
     )
     this.commit(
       entry,
-      updates.map((activity) => ({ activity, sequenceNumber }))
+      updates.map((activity) => ({
+        activity: mergedSeedActivity(entry, activity),
+        sequenceNumber,
+      }))
     )
   }
 
@@ -227,6 +231,16 @@ function newerThanStored(
     sequenceNumber > (current?.sequenceNumber ?? -1) &&
     sequenceNumber > (pending?.sequenceNumber ?? -1)
   )
+}
+
+function mergedSeedActivity(
+  entry: StreamEntry,
+  activity: UserStoryAgentActivity
+) {
+  const current =
+    entry.pending.get(activity.id)?.activity ??
+    entry.activities.get(activity.id)?.activity
+  return current ? mergeAgentActivity(current, activity) : activity
 }
 
 function notifyActivity(entry: StreamEntry, activityId: string) {

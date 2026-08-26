@@ -58,6 +58,35 @@ test("preserves tool input when the completion event only contains output", () =
   assert.equal(completed.agentActivities?.[0]?.status, "completed")
 })
 
+test("keeps large local tool details structured", () => {
+  const started = updateStory(story(), {
+    type: "tool",
+    payload: {
+      phase: "started",
+      toolCall: {
+        id: "call-1",
+        input: { path: "package.json" },
+        name: "read_file",
+      },
+    },
+  })
+  const completed = updateStory(started, {
+    type: "tool",
+    payload: {
+      output: { content: "x".repeat(20_000) },
+      phase: "finished",
+      toolCall: { id: "call-1", name: "read_file" },
+    },
+  })
+
+  const serialized = completed.agentActivities?.[0]?.detail ?? ""
+  const detail = JSON.parse(serialized)
+  assert.ok(serialized.length <= 4_096)
+  assert.equal(detail.toolName, "read_file")
+  assert.deepEqual(detail.input, { path: "package.json" })
+  assert.equal(detail.output.content.truncated, true)
+})
+
 test("does not duplicate a completed tool when its fallback result arrives", () => {
   const started = updateStory(
     story(),

@@ -17,7 +17,7 @@ export async function activityWithArtifact(
   const artifact = await writeActivityArtifact(ownerId, sessionId, activity, scopeId)
   return {
     ...activity,
-    detail: middleExcerpt(activity.detail, maxPersistedDetailLength),
+    detail: persistedDetailPreview(activity.detail),
     detailArtifact: artifact,
     detailTruncated: true,
     originalDetailLength: activity.detail.length,
@@ -124,6 +124,55 @@ function middleExcerpt(value: string, length: number) {
   if (value.length <= length) return value
   const edgeLength = Math.floor((length - 20) / 2)
   return `${value.slice(0, edgeLength)}\n...\n${value.slice(-edgeLength)}`
+}
+
+function persistedDetailPreview(value: string) {
+  const parsed = parsedRecord(value)
+  if (!parsed) return middleExcerpt(value, maxPersistedDetailLength)
+  const bounded = JSON.stringify(
+    boundedDetailRecord(parsed, maxPersistedDetailLength),
+    undefined,
+    2
+  )
+  if (bounded.length <= maxPersistedDetailLength) return bounded
+  return JSON.stringify({
+    excerpt: middleExcerpt(value, 1_200),
+    originalLength: value.length,
+    toolName: typeof parsed.toolName === 'string' ? parsed.toolName : undefined,
+    truncated: true,
+  })
+}
+
+function boundedDetailRecord(value: Record<string, unknown>, length: number) {
+  const entries = Object.entries(value)
+    .filter(([, entry]) => entry !== undefined)
+    .slice(0, 12)
+  if (!entries.length) return {}
+  const fieldLength = Math.max(120, Math.floor((length - 512) / entries.length) - 80)
+  return Object.fromEntries(
+    entries.map(([key, entry]) => [key, boundedDetailField(entry, fieldLength)])
+  )
+}
+
+function boundedDetailField(value: unknown, length: number) {
+  const serialized = typeof value === 'string' ? value : (JSON.stringify(value) ?? String(value))
+  if (serialized.length <= length) return value
+  return {
+    excerpt: middleExcerpt(serialized, length),
+    originalLength: serialized.length,
+    truncated: true,
+  }
+}
+
+function parsedRecord(value: string) {
+  try {
+    const parsed = JSON.parse(value)
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : undefined
+  } catch {
+    return undefined
+  }
 }
 
 function safeFilename(value: string) {

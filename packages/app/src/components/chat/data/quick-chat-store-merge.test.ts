@@ -46,6 +46,29 @@ test("keeps a tool call identity when a server response omits it", () => {
   assert.equal(merged.agentRuns?.[0].activities?.[0]?.status, "completed")
 })
 
+test("keeps structured tool detail when the server returns an artifact excerpt", () => {
+  const currentActivity = {
+    ...toolActivity("2026-06-11T10:00:02.000Z", "running", "call-1"),
+    detail: JSON.stringify({ input: { path: "package.json" } }),
+    toolName: "read_file",
+  }
+  const serverActivity = {
+    ...toolActivity("2026-06-11T10:00:04.000Z", "completed"),
+    detail: '{"input":{"path":"package.json"}\n...\n"output":"done"}',
+    detailArtifact: "agent-activity://tool-1",
+    detailTruncated: true,
+  }
+
+  const merged = mergeQuickChat(chat(currentActivity), chat(serverActivity))
+  const activityResult = merged.agentRuns?.[0].activities?.[0]
+
+  assert.equal(activityResult?.detail, currentActivity.detail)
+  assert.equal(activityResult?.detailArtifact, serverActivity.detailArtifact)
+  assert.equal(activityResult?.toolCallId, "call-1")
+  assert.equal(activityResult?.toolName, "read_file")
+  assert.equal(activityResult?.status, "completed")
+})
+
 test("does not let an older run sequence overwrite live activity state", () => {
   const liveActivity = toolActivity("2026-06-11T10:00:02.000Z", "running")
   const staleActivity = {

@@ -13,6 +13,7 @@ import {
 } from "./agent-turn-metrics-data"
 
 export {
+  agentTurnMetricsTarget,
   formatAgentTurnDuration,
   latestLinkedAgentTurn,
   type AgentTurnMetrics,

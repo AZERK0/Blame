@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import test from "node:test"
 
 import {
+  agentTurnMetricsTarget,
   agentTurnElapsedTime,
   formatAgentTurnDuration,
   latestLinkedAgentTurn,
@@ -37,6 +38,27 @@ test("resets while the latest user message has no run", () => {
   )
 
   assert.equal(turn, undefined)
+})
+
+test("uses the initial story run when no comment exists", () => {
+  const target = agentTurnMetricsTarget(
+    [],
+    [firstRun, secondRun],
+    (candidate) => candidate.messageId
+  )
+
+  assert.equal(target?.run.id, "run-2")
+  assert.equal(target?.startedAt, secondRun.createdAt)
+})
+
+test("does not use an unlinked run after a user message", () => {
+  const target = agentTurnMetricsTarget(
+    [{ createdAt: "2026-01-01T00:01:00.000Z", id: "message-2" }],
+    [firstRun],
+    (candidate) => candidate.messageId
+  )
+
+  assert.equal(target, undefined)
 })
 
 test("formats compact execution durations", () => {

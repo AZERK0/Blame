@@ -1069,7 +1069,40 @@ function numberValue(value: unknown) {
 }
 
 function stringifyDetail(value: unknown, length = maxActivityDetailLength) {
-  return truncateMiddle(JSON.stringify(value, undefined, 2), length)
+  const serialized = JSON.stringify(value, undefined, 2)
+  if (serialized.length <= length) return serialized
+  const bounded = JSON.stringify(
+    boundedDetailRecord(value, length),
+    undefined,
+    2
+  )
+  if (bounded.length <= length) return bounded
+  return JSON.stringify(compactString(serialized), undefined, 2)
+}
+
+function boundedDetailRecord(value: unknown, length: number) {
+  const entries = Object.entries(recordValue(value))
+    .filter(([, entry]) => entry !== undefined)
+    .slice(0, 12)
+  if (!entries.length) return compactString(String(value))
+  const fieldLength = Math.max(
+    120,
+    Math.floor((length - 512) / entries.length) - 80
+  )
+  return Object.fromEntries(
+    entries.map(([key, entry]) => [key, boundedDetailField(entry, fieldLength)])
+  )
+}
+
+function boundedDetailField(value: unknown, length: number) {
+  const serialized =
+    typeof value === "string" ? value : (JSON.stringify(value) ?? String(value))
+  if (serialized.length <= length) return value
+  return {
+    excerpt: truncateMiddle(serialized, length),
+    originalLength: serialized.length,
+    truncated: true,
+  }
 }
 
 function normalizedActivity(

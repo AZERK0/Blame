@@ -32,6 +32,23 @@ export function latestLinkedAgentTurn<
   return run ? { message, run } : undefined
 }
 
+export function agentTurnMetricsTarget<
+  Message extends { createdAt: string; id: string },
+  Run extends AgentTurnMetricRun,
+>(
+  messages: readonly Message[],
+  runs: readonly Run[],
+  messageIdForRun: (run: Run) => string | null | undefined
+) {
+  const linkedTurn = latestLinkedAgentTurn(messages, runs, messageIdForRun)
+  if (linkedTurn) {
+    return { run: linkedTurn.run, startedAt: linkedTurn.message.createdAt }
+  }
+  if (messages.length) return undefined
+  const run = latestMessage(runs)
+  return run ? { run, startedAt: run.createdAt } : undefined
+}
+
 export function formatAgentTurnDuration(elapsedMs: number) {
   const totalSeconds = Math.max(0, Math.floor(elapsedMs / 1_000))
   const hours = Math.floor(totalSeconds / 3_600)
