@@ -26,6 +26,10 @@ import { toast } from "sonner"
 
 import { agentErrorText } from "@/components/backlog/data/agent-flow"
 import { checkpointRunTargets } from "@/components/chat/agent-run-checkpoints"
+import {
+  formatAgentTurnDuration,
+  type AgentTurnMetrics,
+} from "@/components/chat/agent-turn-metrics"
 import { presentBlameHarnessTool } from "@/components/chat/blame-harness-tool-presentation"
 import type {
   UserStoryAgentActivity,
@@ -521,6 +525,7 @@ export function AgentConversationComposer({
   submitLabel,
   title,
   toolbarEnd,
+  turnMetrics,
 }: {
   agentRunning?: boolean
   cancelingAgent?: boolean
@@ -542,6 +547,7 @@ export function AgentConversationComposer({
   submitLabel: string
   title?: string
   toolbarEnd?: React.ReactNode
+  turnMetrics?: AgentTurnMetrics
 }) {
   const hasMessageBody = Boolean(
     message.trim() || codeSelectionAttachments.length || fileAttachments.length
@@ -577,6 +583,7 @@ export function AgentConversationComposer({
         </div>
       ) : null}
       <div className="relative">
+        {turnMetrics ? <AgentTurnIndicator metrics={turnMetrics} /> : null}
         <MarkdownEditor
           key={editorKey}
           codeSelectionAttachments={codeSelectionAttachments}
@@ -623,6 +630,22 @@ export function AgentConversationComposer({
         />
       </div>
     </section>
+  )
+}
+
+function AgentTurnIndicator({ metrics }: { metrics: AgentTurnMetrics }) {
+  const duration = formatAgentTurnDuration(metrics.elapsedMs)
+  const state = metrics.running ? "Working" : "Last turn"
+  return (
+    <div
+      aria-label={`${state}: ${duration}, ${metrics.additions} lines added, ${metrics.deletions} lines deleted`}
+      className="absolute right-5 bottom-full z-10 flex h-7 translate-y-px items-center gap-1.5 rounded-t-xl border border-b-0 border-foreground/20 bg-muted px-2.5 font-mono text-xs leading-none font-semibold tabular-nums shadow-sm"
+      title={`${state} since the latest user message`}
+    >
+      <span className="text-foreground">{duration}</span>
+      <span className="text-emerald-500">+{metrics.additions}</span>
+      <span className="text-destructive">-{metrics.deletions}</span>
+    </div>
   )
 }
 

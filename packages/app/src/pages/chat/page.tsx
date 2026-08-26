@@ -35,6 +35,10 @@ import {
 } from "@/components/chat/agent-run-diffs"
 import { nextCheckpointRunCount } from "@/components/chat/agent-run-checkpoints"
 import {
+  latestLinkedAgentTurn,
+  useAgentTurnMetrics,
+} from "@/components/chat/agent-turn-metrics"
+import {
   clearPendingQuickChatAgentUpdates,
   completedQuickChatClineLog,
   definedQuickChatUpdate,
@@ -206,6 +210,16 @@ function QuickChatProjectPage() {
   )
   const mentionDirectory = project?.path
   const agentRunning = activeConversation?.agentStatus === "Running"
+  const latestTurn = latestLinkedAgentTurn(
+    activeConversation?.messages ?? [],
+    activeConversation?.agentRuns ?? [],
+    (run) => run.messageId
+  )
+  const turnMetrics = useAgentTurnMetrics({
+    root: activeConversation?.workspace,
+    run: latestTurn?.run,
+    startedAt: latestTurn?.message.createdAt,
+  })
   React.useEffect(() => {
     chatsRef.current = quickChats.chats
   }, [quickChats.chats])
@@ -899,6 +913,7 @@ function QuickChatProjectPage() {
                         <ModelSelector role="agent" />
                       </div>
                     }
+                    turnMetrics={turnMetrics}
                   />
                 </div>
               </div>

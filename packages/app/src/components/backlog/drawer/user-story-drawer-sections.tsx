@@ -27,6 +27,10 @@ import {
 } from "@/components/chat/agent-conversation"
 import { agentConversationResponseHeader } from "@/components/chat/agent-conversation-header"
 import {
+  latestLinkedAgentTurn,
+  useAgentTurnMetrics,
+} from "@/components/chat/agent-turn-metrics"
+import {
   ModelSelector,
   useModelSelection,
 } from "@/components/model/model-selector"
@@ -237,6 +241,16 @@ function UserStoryCommentComposer({
   userStory,
 }: UserStoryCommentComposerProps) {
   const mentionDirectory = useFileMentionDirectory(status, userStory)
+  const latestTurn = latestLinkedAgentTurn(
+    userStory?.comments ?? [],
+    userStory?.agentRuns ?? [],
+    (run) => run.commentId
+  )
+  const turnMetrics = useAgentTurnMetrics({
+    root: userStory?.worktree ?? mentionDirectory,
+    run: latestTurn?.run,
+    startedAt: latestTurn?.message.createdAt,
+  })
 
   return (
     <AgentConversationComposer
@@ -255,6 +269,7 @@ function UserStoryCommentComposer({
       onMessageSubmit={onCommentSubmit}
       placeholder={commentPlaceholder(status)}
       submitLabel={commentButtonLabel(status)}
+      turnMetrics={turnMetrics}
     />
   )
 }
