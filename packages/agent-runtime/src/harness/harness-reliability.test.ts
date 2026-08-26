@@ -350,6 +350,45 @@ test("external reads return compact receipts for identical requests", async () =
   );
 });
 
+test("large web fetch results retain the Cline result envelope", async () => {
+  const governor = new ExternalReadGovernor();
+  const hooks = governor.fetchHooks();
+  assert.ok(hooks.afterTool);
+  const result = await hooks.afterTool({
+    durationMs: 10,
+    endedAt: new Date(),
+    input: { requests: [{ url: "https://example.com/large" }] },
+    result: {
+      output: [
+        {
+          query: "https://example.com/large",
+          result: "large content ".repeat(2_000),
+          success: true,
+        },
+      ],
+      isError: false,
+      metadata: { requestId: "fetch-request" },
+    },
+    snapshot: {},
+    startedAt: new Date(),
+    tool: { name: "fetch_web_content" },
+    toolCall: {},
+  } as never);
+  const governed = result?.result as {
+    isError: boolean;
+    metadata: Record<string, unknown>;
+    output: Array<{ query: string; result: string; success: boolean }>;
+  };
+  assert.ok(Array.isArray(governed.output));
+  assert.equal(governed.output.length, 1);
+  assert.equal(governed.output[0]?.success, true);
+  assert.equal(governed.isError, false);
+  assert.equal(governed.metadata.requestId, "fetch-request");
+  assert.equal(governed.metadata.externalReadTruncated, true);
+  assert.ok((governed.output[0]?.result.length ?? 0) < 28_000);
+  assert.ok(Buffer.byteLength(JSON.stringify(governed), "utf8") <= 16_000);
+});
+
 test("parallel identical external reads share one execution", async () => {
   let executions = 0;
   const governor = new ExternalReadGovernor();

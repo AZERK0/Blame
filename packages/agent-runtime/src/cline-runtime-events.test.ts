@@ -268,6 +268,75 @@ test("starts development sessions with native skills and private specialist cons
   }
 });
 
+test("continues the agent turn after bounding a large web fetch result", async () => {
+  const workspace = await mkdtemp(join(tmpdir(), "blame-bounded-fetch-"));
+  const originalFetch = globalThis.fetch;
+  const originalGovernorFlag = process.env.BLAME_COST_GOVERNOR_V2;
+  let continuedAfterFetch = false;
+  const core = {
+    async dispose() {},
+    async list() {
+      return [];
+    },
+    async start(input: ClineCoreStartInput) {
+      const afterTool = input.config.hooks?.afterTool;
+      assert.ok(afterTool);
+      const update = await afterTool({
+        durationMs: 10,
+        endedAt: new Date(),
+        input: { requests: [{ url: "https://example.com/large" }] },
+        result: {
+          output: [
+            {
+              query: "https://example.com/large",
+              result: "large content ".repeat(2_000),
+              success: true,
+            },
+          ],
+          isError: false,
+          metadata: { requestId: "fetch-request" },
+        },
+        snapshot: {},
+        startedAt: new Date(),
+        tool: { name: "fetch_web_content" },
+        toolCall: {},
+      } as never);
+      const output = update?.result?.output as Array<{ result: string }>;
+      continuedAfterFetch = output.map((item) => item.result).length === 1;
+      return { result: { status: "done" }, sessionId: input.config.sessionId! };
+    },
+    async subscribe() {
+      return () => undefined;
+    },
+  };
+  globalThis.fetch = async () => providerCredentialResponse();
+  process.env.BLAME_COST_GOVERNOR_V2 = "true";
+  const runtime = new BlameAgentRuntime(undefined, {
+    createCore: async () => core as never,
+  });
+
+  try {
+    await runtime.sessions.startDevelopment({
+      apiConnection: { url: "https://api.example" },
+      autoSendPrompt: false,
+      cwd: workspace,
+      modelId: "model",
+      providerId: "provider",
+      summary: "Continue after web research",
+      title: "Bounded web fetch",
+      workspaceRoot: workspace,
+    });
+    assert.equal(continuedAfterFetch, true);
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalGovernorFlag === undefined)
+      delete process.env.BLAME_COST_GOVERNOR_V2;
+    else process.env.BLAME_COST_GOVERNOR_V2 = originalGovernorFlag;
+    await runtime.shutdown();
+    await rm(workspace, { force: true, recursive: true });
+  }
+});
+
 test("gives project generation direct write tools without global skills", () => {
   const policies = newProjectGenerationToolPolicies();
 

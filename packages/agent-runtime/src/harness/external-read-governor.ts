@@ -126,12 +126,16 @@ export class ExternalReadGovernor {
     decision: Extract<ExternalReadDecision, { action: "execute" }>,
     result: unknown,
   ) {
-    const bounded = boundedExternalResult(result);
+    const governed = this.governedResult(
+      tool,
+      decision.receiptId,
+      result,
+    );
     const entry = {
       input,
       normalized: decision.normalized,
       receiptId: decision.receiptId,
-      result: bounded,
+      result: governed,
     };
     this.cache.set(entry.receiptId, entry);
     this.history.push(entry);
@@ -139,8 +143,25 @@ export class ExternalReadGovernor {
       const evicted = this.history.shift();
       if (evicted) this.cache.delete(evicted.receiptId);
     }
-    this.metrics.returnedBytes += serializedBytes(bounded);
-    return boundedResult(bounded, entry.receiptId, tool, this.publicMetrics());
+    this.metrics.returnedBytes += serializedBytes(governed);
+    return governed;
+  }
+
+  private governedResult(
+    tool: ExternalReadToolName,
+    receiptId: string,
+    result: unknown,
+  ) {
+    const metrics = this.publicMetrics();
+    if (!isAgentToolResult(result))
+      return boundedResult(
+        boundedExternalResult(result, tool),
+        receiptId,
+        tool,
+        metrics,
+      );
+    const enriched = boundedResult(result, receiptId, tool, metrics);
+    return boundedExternalResult(enriched, tool);
   }
 
   private cachedReceipt(
@@ -244,7 +265,12 @@ function stronglyOverlaps(entry: CachedExternalRead, normalized: string) {
   return shared / Math.min(left.size, right.size) >= 0.75;
 }
 
-function boundedExternalResult(result: unknown) {
+function boundedExternalResult(
+  result: unknown,
+  tool: ExternalReadToolName,
+) {
+  if (isAgentToolResult(result))
+    return boundedAgentToolResult(normalizedAgentToolResult(result, tool));
   if (serializedBytes(result) <= maximumExternalResultBytes) return result;
   const serialized = JSON.stringify(result) ?? String(result);
   return {
@@ -252,6 +278,74 @@ function boundedExternalResult(result: unknown) {
     truncated: true,
     excerpt: boundedUtf8(serialized, maximumExternalResultBytes - 256),
   };
+}
+
+function normalizedAgentToolResult(
+  result: AgentToolResultEnvelope,
+  tool: ExternalReadToolName,
+): AgentToolResultEnvelope {
+  const output =
+    tool === "fetch_web_content"
+      ? normalizedFetchOutput(result.output)
+      : result.output;
+  return {
+    ...result,
+    output,
+    isError: result.isError ?? false,
+    metadata: { ...result.metadata },
+  };
+}
+
+function normalizedFetchOutput(output: unknown) {
+  if (Array.isArray(output)) return output;
+  return output === undefined ? [] : [output];
+}
+
+function boundedAgentToolResult(result: AgentToolResultEnvelope) {
+  if (serializedBytes(result) <= maximumExternalResultBytes) return result;
+  const marked = {
+    ...result,
+    metadata: { ...result.metadata, externalReadTruncated: true },
+  };
+  return outputWithinBudget(marked);
+}
+
+function outputWithinBudget(result: AgentToolResultEnvelope) {
+  let lowerBound = 0;
+  let upperBound = maximumExternalResultBytes;
+  let bounded = withBoundedOutput(result, 0);
+  while (lowerBound <= upperBound) {
+    const candidateLimit = Math.floor((lowerBound + upperBound) / 2);
+    const candidate = withBoundedOutput(result, candidateLimit);
+    if (serializedBytes(candidate) <= maximumExternalResultBytes) {
+      bounded = candidate;
+      lowerBound = candidateLimit + 1;
+    } else upperBound = candidateLimit - 1;
+  }
+  return bounded;
+}
+
+function withBoundedOutput(
+  result: AgentToolResultEnvelope,
+  maximumTextBytes: number,
+): AgentToolResultEnvelope {
+  const output = Array.isArray(result.output)
+    ? result.output.map((item) => boundedTextContent(item, maximumTextBytes))
+    : boundedTextContent(result.output, maximumTextBytes);
+  return { ...result, output };
+}
+
+function boundedTextContent(value: unknown, maximumTextBytes: number): unknown {
+  if (typeof value === "string") return boundedUtf8(value, maximumTextBytes);
+  if (Array.isArray(value))
+    return value.map((item) => boundedTextContent(item, maximumTextBytes));
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(
+    Object.entries(value).map(([key, item]) => [
+      key,
+      boundedTextContent(item, maximumTextBytes),
+    ]),
+  );
 }
 
 function boundedUtf8(value: string, maximumBytes: number) {
@@ -283,11 +377,13 @@ function boundedResult(
   return { content: result, externalReadReceiptId: receiptId, governor, tool };
 }
 
-function isAgentToolResult(value: unknown): value is {
+type AgentToolResultEnvelope = {
   isError?: boolean;
   metadata?: Record<string, unknown>;
   output: unknown;
-} {
+};
+
+function isAgentToolResult(value: unknown): value is AgentToolResultEnvelope {
   return Boolean(value && typeof value === "object" && "output" in value);
 }
 
