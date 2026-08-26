@@ -16,6 +16,7 @@ import {
 import ProjectsService from '#services/projects_service'
 import type {
   createQuickChatAgentRunValidator,
+  finalizeQuickChatAgentRunValidator,
   updateQuickChatAgentRunValidator,
 } from '#validators/quick_chat_agent_run'
 import type {
@@ -30,6 +31,12 @@ import db from '@adonisjs/lucid/services/db'
 import { Exception } from '@adonisjs/core/exceptions'
 import FileAttachmentsService from '#services/file_attachments_service'
 import type FileAttachment from '#models/file_attachment'
+import type { TransactionClientContract } from '@adonisjs/lucid/types/database'
+import {
+  agentRunPersistenceUpdate,
+  assertAgentRunStatusTransition,
+  terminalAgentStatus,
+} from '#services/agent_run_persistence'
 
 type ListQuickChatsInput = Infer<typeof listQuickChatsValidator>
 type CreateQuickChatInput = Infer<typeof createQuickChatValidator>
@@ -37,6 +44,7 @@ type UpdateQuickChatInput = Infer<typeof updateQuickChatValidator>
 type CreateQuickChatMessageInput = Infer<typeof createQuickChatMessageValidator>
 type CreateQuickChatAgentRunInput = Infer<typeof createQuickChatAgentRunValidator>
 type UpdateQuickChatAgentRunInput = Infer<typeof updateQuickChatAgentRunValidator>
+type FinalizeQuickChatAgentRunInput = Infer<typeof finalizeQuickChatAgentRunValidator>
 
 const maxAgentActivities = 512
 
@@ -184,6 +192,7 @@ export default class QuickChatsService {
       activities: [],
       checkpointRunCount: input.checkpointRunCount ?? null,
       clineSessionId: input.clineSessionId ?? null,
+      executionId: input.executionId ?? null,
       diffEndRef: null,
       finalResponse: null,
       kind: input.kind,
@@ -201,12 +210,49 @@ export default class QuickChatsService {
     runId: string,
     input: UpdateQuickChatAgentRunInput
   ) {
-    const quickChat = await this.find(userId, id)
-    const run = await this.agentRunQuery(quickChat, runId)
-    const update = await this.agentRunUpdateInput(quickChat, run, input)
-    run.merge(update)
-    await run.save()
-    return run
+    return db.transaction(async (transaction) => {
+      const quickChat = await this.quickChatQuery(userId, transaction)
+        .where('id', id)
+        .forUpdate()
+        .firstOrFail()
+      const run = await this.lockedAgentRun(quickChat, runId, transaction)
+      const persistence = agentRunPersistenceUpdate(run, input.persistenceEvent)
+      if (persistence === undefined) return run
+      const update = await this.agentRunUpdateInput(quickChat, run, input, transaction)
+      run.merge(monotonicAgentRunUpdate(run, { ...update, ...persistence }))
+      await run.save()
+      return run
+    })
+  }
+
+  async finalizeAgentRun(
+    userId: string,
+    id: string,
+    runId: string,
+    input: FinalizeQuickChatAgentRunInput
+  ) {
+    await db.transaction(async (transaction) => {
+      const quickChat = await this.quickChatQuery(userId, transaction)
+        .where('id', id)
+        .forUpdate()
+        .firstOrFail()
+      const run = await this.lockedAgentRun(quickChat, runId, transaction)
+      const persistence = agentRunPersistenceUpdate(run, input.persistenceEvent)
+      if (persistence === undefined) return
+      assertAgentRunStatusTransition(run.status, input.status)
+      if (terminalStatus(run.status)) {
+        run.merge(persistence)
+        await run.save()
+        return
+      }
+      const activities = await this.preparedFinalActivities(quickChat, run, input, transaction)
+      run.merge(finalQuickChatRunUpdate(input, activities, persistence))
+      await run.save()
+      quickChat.useTransaction(transaction)
+      quickChat.merge(finalQuickChatUpdate(run, input))
+      await quickChat.save()
+    })
+    return this.find(userId, id)
   }
 
   async agentRunActivityDetail(userId: string, id: string, runId: string, activityId: string) {
@@ -240,10 +286,10 @@ export default class QuickChatsService {
     await deleteActivityArtifacts(quickChat.id, activityGroups)
   }
 
-  private quickChatQuery(userId: string) {
-    return QuickChat.query().whereIn(
+  private quickChatQuery(userId: string, client?: TransactionClientContract) {
+    return QuickChat.query({ client }).whereIn(
       'projectId',
-      Project.query().select('id').where('userId', userId)
+      Project.query({ client }).select('id').where('userId', userId)
     )
   }
 
@@ -268,6 +314,18 @@ export default class QuickChatsService {
       .firstOrFail()
   }
 
+  private lockedAgentRun(
+    quickChat: QuickChat,
+    runId: string,
+    transaction: TransactionClientContract
+  ) {
+    return QuickChatAgentRun.query({ client: transaction })
+      .where('quickChatId', quickChat.id)
+      .where('id', runId)
+      .forUpdate()
+      .firstOrFail()
+  }
+
   private async messageForDelivery(id: string) {
     const message = await QuickChatMessage.query()
       .where('id', id)
@@ -287,9 +345,11 @@ export default class QuickChatsService {
   private async agentRunUpdateInput(
     quickChat: QuickChat,
     run: QuickChatAgentRun,
-    input: UpdateQuickChatAgentRunInput
+    input: UpdateQuickChatAgentRunInput,
+    transaction: TransactionClientContract
   ) {
-    const { agentActivity, agentActivityUpdates, ...update } = input
+    const { agentActivity, agentActivityUpdates, persistenceEvent, ...update } = input
+    void persistenceEvent
     const nextUpdate = {
       ...update,
       ...agentRunCompletedAtUpdate(update),
@@ -300,12 +360,89 @@ export default class QuickChatsService {
       )
     )
     if (!activities.length) return nextUpdate
-    await Promise.all(activities.map((activity) => persistQuickChatRunActivity(run.id, activity)))
+    await Promise.all(
+      activities.map((activity) => persistQuickChatRunActivity(run.id, activity, transaction))
+    )
     return {
       ...nextUpdate,
       activities: activities.reduce(upsertActivity, run.activities ?? []),
     }
   }
+
+  private async preparedFinalActivities(
+    quickChat: QuickChat,
+    run: QuickChatAgentRun,
+    input: FinalizeQuickChatAgentRunInput,
+    transaction: TransactionClientContract
+  ) {
+    const prepared = await Promise.all(
+      input.activities.map((activity) =>
+        activityWithArtifact(quickChat.id, run.clineSessionId, activity, run.id)
+      )
+    )
+    const activities = prepared.reduce(upsertActivity, run.activities ?? [])
+    const finalActivities = finalResponseActivities(run, activities, input.finalResponse)
+    await Promise.all(
+      finalActivities.map((activity) => persistQuickChatRunActivity(run.id, activity, transaction))
+    )
+    return finalActivities
+  }
+}
+
+function finalQuickChatRunUpdate(
+  input: FinalizeQuickChatAgentRunInput,
+  activities: UserStoryAgentActivity[],
+  persistence: ReturnType<typeof agentRunPersistenceUpdate>
+): Partial<QuickChatAgentRun> {
+  const { agentLastError, agentLastEvent, agentStatus, persistenceEvent, ...runInput } = input
+  void agentLastError
+  void agentLastEvent
+  void agentStatus
+  void persistenceEvent
+  return {
+    ...runInput,
+    ...persistence,
+    activities,
+    completedAt: input.completedAt ?? DateTime.now(),
+  }
+}
+
+function finalQuickChatUpdate(
+  run: QuickChatAgentRun,
+  input: FinalizeQuickChatAgentRunInput
+): Partial<QuickChat> {
+  return {
+    agentActivities: run.activities,
+    agentFinalResponse: run.finalResponse,
+    agentLastError: input.agentLastError,
+    agentLastEvent: input.agentLastEvent,
+    agentSessionSummary: run.sessionSummary,
+    agentStatus: input.agentStatus,
+    agentUsage: run.usage,
+  }
+}
+
+function finalResponseActivities(
+  run: QuickChatAgentRun,
+  activities: UserStoryAgentActivity[],
+  response: string | null | undefined
+) {
+  const finalResponse = response?.trim()
+  if (!finalResponse || activities.some((activity) => activity.kind === 'message')) {
+    return activities
+  }
+  return [
+    ...activities,
+    {
+      createdAt: (run.completedAt ?? DateTime.now()).toISO() ?? new Date().toISOString(),
+      detail: finalResponse,
+      id: 'message-final',
+      kind: 'message' as const,
+      messageKind: 'final' as const,
+      status: 'completed' as const,
+      title: 'Agent response',
+    },
+  ]
 }
 
 function assertQuickChatUndoTarget(quickChat: QuickChat, messageId: string, runId: string) {
@@ -337,7 +474,16 @@ function requestedActivities(
 }
 
 function terminalStatus(status: string | undefined) {
-  return status === 'completed' || status === 'failed'
+  return terminalAgentStatus(status)
+}
+
+function monotonicAgentRunUpdate(run: QuickChatAgentRun, update: Partial<QuickChatAgentRun>) {
+  assertAgentRunStatusTransition(run.status, update.status)
+  if (!terminalStatus(run.status)) return update
+  const { completedAt, status, ...metadata } = update
+  void completedAt
+  void status
+  return metadata
 }
 
 function agentRunCompletedAtUpdate(input: { completedAt?: DateTime | null; status?: string }) {
@@ -405,6 +551,7 @@ function uniqueAttachments(attachments: FileAttachment[]) {
 
 function agentRunLastEvent(run: QuickChatAgentRun) {
   if (run.status === 'failed') return run.finalResponse ?? 'Agent run failed.'
+  if (run.status === 'cancelled') return run.finalResponse ?? 'Agent run cancelled.'
   if (run.status === 'running') return 'Agent is running.'
   return run.finalResponse ?? 'Agent run completed.'
 }

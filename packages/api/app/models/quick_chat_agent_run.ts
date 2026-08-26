@@ -14,7 +14,7 @@ import {
 import type { BelongsTo } from '@adonisjs/lucid/types/relations'
 
 export type QuickChatAgentRunKind = 'initial' | 'change-request' | 'resume'
-export type QuickChatAgentRunStatus = 'running' | 'completed' | 'failed'
+export type QuickChatAgentRunStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
 
 export default class QuickChatAgentRun extends BaseModel {
   static selfAssignPrimaryKey = true
@@ -38,6 +38,21 @@ export default class QuickChatAgentRun extends BaseModel {
 
   @column()
   declare clineSessionId: string | null
+
+  @column()
+  declare executionId: string | null
+
+  @column()
+  declare lastEventId: string | null
+
+  @column()
+  declare lastSequenceNumber: number
+
+  @column()
+  declare lastEventType: string | null
+
+  @column.dateTime()
+  declare lastEventCreatedAt: DateTime | null
 
   @column()
   declare checkpointRunCount: number | null

@@ -10,6 +10,7 @@ export default class UserStoryAgentRunTransformer extends BaseTransformer<UserSt
       kind: run.kind,
       clineSessionId: run.clineSessionId,
       executionId: run.executionId,
+      lastSequenceNumber: run.lastSequenceNumber,
       checkpointRunCount: run.checkpointRunCount,
       diffEndRef: run.diffEndRef,
       status: run.status,

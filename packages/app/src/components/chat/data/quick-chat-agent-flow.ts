@@ -11,6 +11,8 @@ import { completedClineLog } from "../../backlog/data/agent-run-recovery.ts"
 import {
   agentEventText,
   agentFlowUpdate,
+  cancelledAgentRun,
+  type AgentFlowUpdate,
   completedAgentRun,
   failedAgentRun,
   terminalAgentRunEvent,
@@ -31,10 +33,11 @@ const agentCompletionRecoveryGraceMs = 15_000
 
 export function quickChatAgentEventUpdate(
   chat: QuickChat,
-  event: AgentEvent
+  event: AgentEvent,
+  preparedFlowUpdate?: AgentFlowUpdate
 ): QuickChatUpdate {
   const text = agentEventText(event)
-  const flowUpdate = agentFlowUpdate(chat, event)
+  const flowUpdate = preparedFlowUpdate ?? agentFlowUpdate(chat, event)
   if (quickChatExpiredAuthenticationToken(text)) {
     return {
       ...flowUpdate,
@@ -51,7 +54,7 @@ export function quickChatAgentEventUpdate(
       agentStatus: null,
     }
   }
-  if (quickChatCanceledAgentRun(event)) {
+  if (cancelledAgentRun(event)) {
     return {
       ...flowUpdate,
       agentLastError: null,
@@ -90,8 +93,8 @@ export function quickChatAgentRunEventUpdate(
   if (input.agentSessionSummary !== undefined)
     update.sessionSummary = input.agentSessionSummary
   if (completedAgentRun(event)) return completedRunUpdate(update)
-  if (quickChatCanceledAgentRun(event)) {
-    return failedRunUpdate(update, text || "Agent stopped.")
+  if (cancelledAgentRun(event)) {
+    return cancelledRunUpdate(update, text || "Agent stopped.")
   }
   if (quickChatFailedAgentRun(event)) return failedRunUpdate(update, text)
   return update
@@ -141,17 +144,6 @@ export function quickChatExpiredAuthenticationToken(message: string) {
 
 export function quickChatFailedAgentRun(event: AgentEvent) {
   return failedAgentRun(event)
-}
-
-function quickChatCanceledAgentRun(event: AgentEvent) {
-  if (event.type !== "done" || !event.payload) return false
-  if (typeof event.payload !== "object") return false
-  const payload = event.payload as Record<string, unknown>
-  const reason = payload.status ?? payload.reason ?? payload.finishReason
-  if (typeof reason !== "string") return false
-  return ["aborted", "cancelled", "canceled"].includes(
-    reason.trim().toLowerCase()
-  )
 }
 
 export function quickChatAgentMetadataUpdate(
@@ -219,6 +211,15 @@ function failedRunUpdate(input: QuickChatAgentRunUpdate, text: string) {
     completedAt: new Date().toISOString(),
     finalResponse: input.finalResponse || text || undefined,
     status: "failed" as const,
+  }
+}
+
+function cancelledRunUpdate(input: QuickChatAgentRunUpdate, text: string) {
+  return {
+    ...input,
+    completedAt: new Date().toISOString(),
+    finalResponse: input.finalResponse || text || undefined,
+    status: "cancelled" as const,
   }
 }
 

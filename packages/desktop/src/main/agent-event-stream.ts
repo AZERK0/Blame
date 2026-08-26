@@ -2,7 +2,6 @@ import { randomUUID } from "node:crypto"
 import type { IncomingMessage, ServerResponse } from "node:http"
 
 import type { AgentEvent } from "@blame/agent-runtime"
-import { createAgentEventCoalescer } from "@blame/agent-runtime/agent-event-coalescer"
 
 type StreamEvent = {
   bytes: number
@@ -25,21 +24,15 @@ type StreamSession = {
   token: string
 }
 
-const maximumBufferedEvents = 256
-const maximumBufferedBytes = 2 * 1024 * 1024
+const maximumBufferedEvents = 16_384
+const maximumBufferedBytes = 16 * 1024 * 1024
 const maximumClientQueue = 128
 const completedSessionRetentionMs = 5 * 60_000
 
 export class AgentEventStream {
   private readonly sessions = new Map<string, StreamSession>()
-  private readonly coalescers = new Map<
-    string,
-    ReturnType<typeof createAgentEventCoalescer>
-  >()
 
   beginSession(sessionId: string) {
-    this.coalescers.get(sessionId)?.close()
-    this.coalescers.delete(sessionId)
     this.resetSession(sessionId)
   }
 
@@ -54,33 +47,39 @@ export class AgentEventStream {
   }
 
   publish(event: AgentEvent) {
-    if (!event.sessionId) return
-    this.coalescer(event.sessionId).push(event)
+    if (!event.sessionId) return undefined
+    return this.publishEvent(event)
   }
 
-  flush() {
-    this.coalescers.forEach((coalescer) => coalescer.flush())
-  }
+  flush() {}
 
   private publishEvent(event: AgentEvent) {
     const sessionId = event.sessionId
     if (!sessionId) return
     const session = this.session(sessionId)
-    const data = JSON.stringify(event)
+    const sequenceNumber = session.nextSequence
+    const transportEvent = {
+      ...event,
+      createdAt: event.createdAt ?? new Date().toISOString(),
+      eventId: event.eventId ?? randomUUID(),
+      eventType: event.eventType ?? event.type,
+      sequenceNumber,
+    }
+    const data = JSON.stringify(transportEvent)
     const streamEvent = {
       bytes: Buffer.byteLength(data),
       data,
-      sequence: session.nextSequence,
+      sequence: sequenceNumber,
     }
     session.nextSequence += 1
     session.events.push(streamEvent)
     session.bufferedBytes += streamEvent.bytes
     trimSessionEvents(session)
     session.clients.forEach((client) => this.write(client, streamEvent))
-    if (event.type === "done" || event.type === "error")
-      scheduleSessionCleanup(this.sessions, sessionId, session, () => {
-        this.coalescers.delete(sessionId)
-      })
+    if (event.type === "done" || event.type === "error") {
+      scheduleSessionCleanup(this.sessions, sessionId, session)
+    }
+    return transportEvent
   }
 
   handle(request: IncomingMessage, response: ServerResponse) {
@@ -112,8 +111,6 @@ export class AgentEventStream {
   }
 
   close() {
-    this.coalescers.forEach((coalescer) => coalescer.close())
-    this.coalescers.clear()
     this.sessions.forEach((session) => {
       if (session.cleanupTimer) clearTimeout(session.cleanupTimer)
       session.clients.forEach((client) => client.response.end())
@@ -133,16 +130,6 @@ export class AgentEventStream {
     }
     this.sessions.set(sessionId, session)
     return session
-  }
-
-  private coalescer(sessionId: string) {
-    const current = this.coalescers.get(sessionId)
-    if (current) return current
-    const coalescer = createAgentEventCoalescer((event) =>
-      this.publishEvent(event)
-    )
-    this.coalescers.set(sessionId, coalescer)
-    return coalescer
   }
 
   private resetSession(sessionId: string) {
@@ -205,15 +192,13 @@ function trimSessionEvents(session: StreamSession) {
 function scheduleSessionCleanup(
   sessions: Map<string, StreamSession>,
   sessionId: string,
-  session: StreamSession,
-  cleanup: () => void
+  session: StreamSession
 ) {
   if (session.cleanupTimer) clearTimeout(session.cleanupTimer)
   session.cleanupTimer = setTimeout(() => {
     if (sessions.get(sessionId) !== session) return
     session.clients.forEach((client) => client.response.end())
     sessions.delete(sessionId)
-    cleanup()
   }, completedSessionRetentionMs)
   session.cleanupTimer.unref()
 }

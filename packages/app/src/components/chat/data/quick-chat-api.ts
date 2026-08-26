@@ -3,6 +3,7 @@ import type {
   QuickChatActivityDetail,
   QuickChatAgentRun,
   QuickChatAgentRunDraft,
+  QuickChatAgentRunFinalization,
   QuickChatAgentRunUpdate,
   QuickChatDraft,
   QuickChatMessage,
@@ -132,6 +133,23 @@ export function createQuickChatApi(connection: ApiConnection) {
           {
             body: JSON.stringify(apiAgentRunUpdate(input)),
             method: "PATCH",
+          }
+        )
+      )
+    },
+    async finalizeAgentRun(
+      id: string,
+      runId: string,
+      input: QuickChatAgentRunFinalization
+    ) {
+      return quickChat(
+        await request<unknown>(
+          connection,
+          baseUrl,
+          `/projects/quick-chats/${id}/agent-runs/${runId}/finalize`,
+          {
+            body: JSON.stringify(input),
+            method: "POST",
           }
         )
       )

@@ -1,4 +1,5 @@
 import type {
+  AgentPersistenceEvent,
   UserStoryAgentActivity,
   UserStoryAgentRunKind,
   UserStoryAgentRunStatus,
@@ -38,6 +39,8 @@ export type QuickChatAgentRun = {
   status: UserStoryAgentRunStatus
   updatedAt?: string | null
   usage?: UserStoryAgentUsage | null
+  executionId?: string | null
+  lastSequenceNumber?: number | null
 }
 
 export type QuickChat = {
@@ -100,6 +103,7 @@ export type QuickChatAgentRunDraft = {
   kind: UserStoryAgentRunKind
   messageId?: string | null
   status?: UserStoryAgentRunStatus
+  executionId?: string | null
 }
 
 export type QuickChatAgentRunUpdate = Partial<
@@ -118,6 +122,20 @@ export type QuickChatAgentRunUpdate = Partial<
 > & {
   agentActivity?: UserStoryAgentActivity | null
   agentActivityUpdates?: UserStoryAgentActivity[]
+  persistenceEvent?: AgentPersistenceEvent
+}
+
+export type QuickChatAgentRunFinalization = {
+  activities: UserStoryAgentActivity[]
+  agentLastError?: string | null
+  agentLastEvent?: string | null
+  agentStatus?: QuickChatAgentStatus | null
+  completedAt?: string | null
+  finalResponse?: string | null
+  persistenceEvent?: AgentPersistenceEvent
+  sessionSummary?: string | null
+  status: Exclude<UserStoryAgentRunStatus, "pending" | "running">
+  usage?: UserStoryAgentUsage | null
 }
 
 export type QuickChatActivityDetail = {

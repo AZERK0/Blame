@@ -11,6 +11,7 @@ import type {
   QuickChat,
   QuickChatAgentRun,
   QuickChatAgentRunDraft,
+  QuickChatAgentRunFinalization,
   QuickChatAgentRunUpdate,
   QuickChatDraft,
   QuickChatMessageDraft,
@@ -153,8 +154,7 @@ function useQuickChatStoreValue() {
             chats: current.chats.map((currentChat) =>
               currentChat.id === chat.id
                 ? mergeQuickChat(currentChat, nextChat, {
-                    replaceAgentActivities:
-                      input.agentActivities !== undefined,
+                    replaceAgentActivities: input.agentActivities !== undefined,
                   })
                 : currentChat
             ),
@@ -245,6 +245,18 @@ function useQuickChatStoreValue() {
         ),
       }))
       return nextRun
+    },
+    [api]
+  )
+  const finalizeAgentRun = React.useCallback(
+    async (
+      chat: QuickChat,
+      run: QuickChatAgentRun,
+      input: QuickChatAgentRunFinalization
+    ) => {
+      const nextChat = await api.finalizeAgentRun(chat.id, run.id, input)
+      replaceChat(nextChat, setState)
+      return nextChat
     },
     [api]
   )
@@ -363,6 +375,7 @@ function useQuickChatStoreValue() {
     create,
     createAgentRun,
     createMessage,
+    finalizeAgentRun,
     load,
     loadDetail,
     projectId,

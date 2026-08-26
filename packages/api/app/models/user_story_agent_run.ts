@@ -9,7 +9,7 @@ import UserStoryComment from '#models/user_story_comment'
 import type { BelongsTo } from '@adonisjs/lucid/types/relations'
 
 export type UserStoryAgentRunKind = 'initial' | 'change-request' | 'resume'
-export type UserStoryAgentRunStatus = 'running' | 'completed' | 'failed'
+export type UserStoryAgentRunStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
 
 function prepareActivities(value: UserStoryAgentActivity[] | null) {
   return value ? JSON.stringify(value) : null
@@ -67,6 +67,18 @@ export default class UserStoryAgentRun extends BaseModel {
 
   @column()
   declare executionId: string | null
+
+  @column()
+  declare lastEventId: string | null
+
+  @column()
+  declare lastSequenceNumber: number
+
+  @column()
+  declare lastEventType: string | null
+
+  @column.dateTime()
+  declare lastEventCreatedAt: DateTime | null
 
   @column()
   declare checkpointRunCount: number | null

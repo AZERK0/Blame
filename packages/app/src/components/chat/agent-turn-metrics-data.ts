@@ -5,7 +5,7 @@ export type AgentTurnMetricRun = {
   diffEndRef?: string | null
   createdAt: string
   id: string
-  status: "running" | "completed" | "failed"
+  status: "pending" | "running" | "completed" | "failed" | "cancelled"
   updatedAt?: string | null
 }
 

@@ -840,7 +840,7 @@ export class QuickChatAgentRunActivitySchema extends BaseModel {
 }
 
 export class QuickChatAgentRunSchema extends BaseModel {
-  static $columns = ['activities', 'checkpointRunCount', 'clineSessionId', 'completedAt', 'createdAt', 'diffEndRef', 'finalResponse', 'id', 'kind', 'messageId', 'quickChatId', 'sessionSummary', 'status', 'updatedAt', 'usage'] as const
+  static $columns = ['activities', 'checkpointRunCount', 'clineSessionId', 'completedAt', 'createdAt', 'diffEndRef', 'executionId', 'finalResponse', 'id', 'kind', 'lastEventCreatedAt', 'lastEventId', 'lastEventType', 'lastSequenceNumber', 'messageId', 'quickChatId', 'sessionSummary', 'status', 'updatedAt', 'usage'] as const
   $columns = QuickChatAgentRunSchema.$columns
   @column()
   declare activities: any | null
@@ -855,11 +855,21 @@ export class QuickChatAgentRunSchema extends BaseModel {
   @column()
   declare diffEndRef: string | null
   @column()
+  declare executionId: string | null
+  @column()
   declare finalResponse: string | null
   @column({ isPrimary: true })
   declare id: string
   @column()
   declare kind: string
+  @column.dateTime()
+  declare lastEventCreatedAt: DateTime | null
+  @column()
+  declare lastEventId: string | null
+  @column()
+  declare lastEventType: string | null
+  @column()
+  declare lastSequenceNumber: number
   @column()
   declare messageId: string | null
   @column()
@@ -1104,7 +1114,7 @@ export class UserStoryAgentRunActivitySchema extends BaseModel {
 }
 
 export class UserStoryAgentRunSchema extends BaseModel {
-  static $columns = ['activities', 'checkpointRunCount', 'clineSessionId', 'commentId', 'completedAt', 'createdAt', 'diffEndRef', 'executionId', 'finalResponse', 'id', 'kind', 'sessionSummary', 'status', 'updatedAt', 'usage', 'userStoryId'] as const
+  static $columns = ['activities', 'checkpointRunCount', 'clineSessionId', 'commentId', 'completedAt', 'createdAt', 'diffEndRef', 'executionId', 'finalResponse', 'id', 'kind', 'lastEventCreatedAt', 'lastEventId', 'lastEventType', 'lastSequenceNumber', 'sessionSummary', 'status', 'updatedAt', 'usage', 'userStoryId'] as const
   $columns = UserStoryAgentRunSchema.$columns
   @column()
   declare activities: any | null
@@ -1128,6 +1138,14 @@ export class UserStoryAgentRunSchema extends BaseModel {
   declare id: string
   @column()
   declare kind: string
+  @column.dateTime()
+  declare lastEventCreatedAt: DateTime | null
+  @column()
+  declare lastEventId: string | null
+  @column()
+  declare lastEventType: string | null
+  @column()
+  declare lastSequenceNumber: number
   @column()
   declare sessionSummary: string | null
   @column()

@@ -2,9 +2,18 @@ import vine from '@vinejs/vine'
 import { agentActivity, agentUsage, nullableDateTime } from '#validators/user_story'
 
 const kind = vine.enum(['initial', 'change-request', 'resume'])
-const status = vine.enum(['running', 'completed', 'failed'])
-const terminalStatus = vine.enum(['completed', 'failed'])
+const status = vine.enum(['pending', 'running', 'completed', 'failed', 'cancelled'])
+const terminalStatus = vine.enum(['completed', 'failed', 'cancelled'])
 const finalizationOutcome = vine.enum(['review', 'paused'])
+export const agentPersistenceEvent = vine.object({
+  sessionId: vine.string().trim().minLength(1).maxLength(255),
+  runId: vine.string().trim().uuid(),
+  executionId: vine.string().trim().uuid(),
+  eventId: vine.string().trim().minLength(1).maxLength(255),
+  sequenceNumber: vine.number().withoutDecimals().positive(),
+  eventType: vine.string().trim().minLength(1).maxLength(64),
+  createdAt: vine.string().trim().minLength(1).maxLength(255),
+})
 const diffEndRef = vine
   .string()
   .trim()
@@ -33,6 +42,7 @@ export const updateUserStoryAgentRunValidator = vine.create({
   usage: agentUsage.nullable().optional(),
   sessionSummary: vine.string().nullable().optional(),
   completedAt: nullableDateTime,
+  persistenceEvent: agentPersistenceEvent.optional(),
 })
 
 export const finalizeUserStoryAgentRunValidator = vine.create({
@@ -46,4 +56,5 @@ export const finalizeUserStoryAgentRunValidator = vine.create({
   sessionSummary: vine.string().nullable().optional(),
   status: terminalStatus,
   usage: agentUsage.nullable().optional(),
+  persistenceEvent: agentPersistenceEvent,
 })

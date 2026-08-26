@@ -32,6 +32,11 @@ import FileAttachmentsService from '#services/file_attachments_service'
 import type FileAttachment from '#models/file_attachment'
 import type { TransactionClientContract } from '@adonisjs/lucid/types/database'
 import PreviewSessionService from '#services/preview_sessions/preview_session_service'
+import {
+  agentRunPersistenceUpdate,
+  assertAgentRunStatusTransition,
+  terminalAgentStatus,
+} from '#services/agent_run_persistence'
 
 type ListUserStoriesInput = Infer<typeof listUserStoriesValidator>
 type CreateUserStoryInput = Infer<typeof createUserStoryValidator>
@@ -211,12 +216,16 @@ export default class UserStoriesService {
     runId: string,
     input: UpdateUserStoryAgentRunInput
   ) {
-    const story = await this.find(userId, id)
-    const run = await this.agentRunQuery(story, runId)
-    const update = await this.agentRunUpdateInput(story, run, input)
-    run.merge(monotonicAgentRunUpdate(run, update))
-    await run.save()
-    return run
+    return db.transaction(async (transaction) => {
+      const story = await this.lockedStory(userId, id, transaction)
+      const run = await lockedAgentRun(story.id, runId, transaction)
+      const persistence = agentRunPersistenceUpdate(run, input.persistenceEvent)
+      if (persistence === undefined) return run
+      const update = await this.agentRunUpdateInput(story, run, input, transaction)
+      run.merge(monotonicAgentRunUpdate(run, { ...update, ...persistence }))
+      await run.save()
+      return run
+    })
   }
 
   async finalizeAgentRun(
@@ -225,13 +234,8 @@ export default class UserStoriesService {
     runId: string,
     input: FinalizeUserStoryAgentRunInput
   ) {
-    const currentStory = await this.userStoryQuery(userId).where('id', id).firstOrFail()
-    const currentRun = await this.agentRunQuery(currentStory, runId)
-    const activities = terminalStatus(currentRun.status)
-      ? []
-      : await this.preparedRunActivities(currentStory, currentRun, input.activities)
     await db.transaction((transaction) =>
-      this.finalizeAgentRunRecord(userId, id, runId, input, activities, transaction)
+      this.finalizeAgentRunRecord(userId, id, runId, input, transaction)
     )
     return this.find(userId, id)
   }
@@ -363,22 +367,28 @@ export default class UserStoriesService {
     id: string,
     runId: string,
     input: FinalizeUserStoryAgentRunInput,
-    activities: UserStoryAgentActivity[],
     transaction: TransactionClientContract
   ) {
     const story = await this.lockedStory(userId, id, transaction)
     const run = await lockedAgentRun(story.id, runId, transaction)
+    const persistence = agentRunPersistenceUpdate(run, input.persistenceEvent)
+    if (persistence === undefined) return
+    assertAgentRunStatusTransition(run.status, input.status)
     if (terminalStatus(run.status)) {
+      run.merge(persistence)
+      await run.save()
       if (story.activeAgentRunId === run.id) {
         story.merge(finalAgentRunStoryUpdate(run, input))
         await story.save()
       }
       return
     }
+    const activities = await this.preparedRunActivities(story, run, input.activities)
+    const finalActivities = finalResponseActivities(run, activities, input.finalResponse)
     await Promise.all(
-      activities.map((activity) => persistUserStoryRunActivity(run.id, activity, transaction))
+      finalActivities.map((activity) => persistUserStoryRunActivity(run.id, activity, transaction))
     )
-    run.merge(finalAgentRunUpdate(run, input, activities))
+    run.merge({ ...finalAgentRunUpdate(run, input, finalActivities), ...persistence })
     await run.save()
     if (story.activeAgentRunId !== run.id) return
     story.merge(finalAgentRunStoryUpdate(run, input))
@@ -404,9 +414,11 @@ export default class UserStoriesService {
   private async agentRunUpdateInput(
     story: UserStory,
     run: UserStoryAgentRun,
-    input: UpdateUserStoryAgentRunInput
+    input: UpdateUserStoryAgentRunInput,
+    transaction: TransactionClientContract
   ) {
-    const { agentActivity, agentActivityUpdates, ...update } = input
+    const { agentActivity, agentActivityUpdates, persistenceEvent, ...update } = input
+    void persistenceEvent
     const nextUpdate = {
       ...update,
       ...agentRunCompletedAtUpdate(update),
@@ -417,7 +429,9 @@ export default class UserStoriesService {
       )
     )
     if (!activities.length) return nextUpdate
-    await Promise.all(activities.map((activity) => persistUserStoryRunActivity(run.id, activity)))
+    await Promise.all(
+      activities.map((activity) => persistUserStoryRunActivity(run.id, activity, transaction))
+    )
     return {
       ...nextUpdate,
       activities: activities.reduce(upsertActivity, run.activities ?? []),
@@ -503,7 +517,7 @@ function requestedActivities(
 }
 
 function terminalStatus(status: string | undefined) {
-  return status === 'completed' || status === 'failed'
+  return terminalAgentStatus(status)
 }
 
 function inactiveAgentRunUpdate(input: UpdateUserStoryInput) {
@@ -558,15 +572,40 @@ function finalAgentRunUpdate(
   input: FinalizeUserStoryAgentRunInput,
   activities: UserStoryAgentActivity[]
 ): Partial<UserStoryAgentRun> {
-  const { agentLastError, agentLastEvent, outcome, ...metadata } = input
+  const { agentLastError, agentLastEvent, outcome, persistenceEvent, ...metadata } = input
   void agentLastError
   void agentLastEvent
   void outcome
+  void persistenceEvent
   return {
     ...metadata,
     activities: activities.reduce(upsertActivity, run.activities ?? []),
     completedAt: input.completedAt ?? DateTime.now(),
   }
+}
+
+function finalResponseActivities(
+  run: UserStoryAgentRun,
+  updates: UserStoryAgentActivity[],
+  response: string | null | undefined
+) {
+  const activities = updates.reduce(upsertActivity, run.activities ?? [])
+  const finalResponse = response?.trim()
+  if (!finalResponse || activities.some((activity) => activity.kind === 'message')) {
+    return activities
+  }
+  return [
+    ...activities,
+    {
+      createdAt: (run.completedAt ?? DateTime.now()).toISO() ?? new Date().toISOString(),
+      detail: finalResponse,
+      id: 'message-final',
+      kind: 'message' as const,
+      messageKind: 'final' as const,
+      status: 'completed' as const,
+      title: 'Agent response',
+    },
+  ]
 }
 
 function finalAgentRunStoryUpdate(
@@ -596,6 +635,7 @@ function lockedAgentRun(storyId: string, runId: string, transaction: Transaction
 }
 
 function monotonicAgentRunUpdate(run: UserStoryAgentRun, update: Partial<UserStoryAgentRun>) {
+  assertAgentRunStatusTransition(run.status, update.status)
   if (!terminalStatus(run.status)) return update
   const { completedAt, status, ...metadata } = update
   void completedAt
@@ -678,6 +718,7 @@ function storyStatusAfterUndo(
 
 function agentRunLastEvent(run: UserStoryAgentRun) {
   if (run.status === 'failed') return run.finalResponse ?? 'Agent run failed.'
+  if (run.status === 'cancelled') return run.finalResponse ?? 'Agent run cancelled.'
   if (run.status === 'running') return 'Agent is running.'
   return run.finalResponse ?? 'Agent run completed.'
 }

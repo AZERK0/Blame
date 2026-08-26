@@ -168,8 +168,22 @@ export function failedAgentRun(event: AgentEvent) {
   return reason ? failedDoneReason(reason) : false
 }
 
+export function cancelledAgentRun(event: AgentEvent) {
+  if (event.type !== "done") return false
+  if (!event.payload || typeof event.payload !== "object") return false
+  const reason = doneReason(event.payload as Record<string, unknown>)
+  if (!reason) return false
+  return ["aborted", "cancelled", "canceled"].includes(
+    normalizedDoneReason(reason)
+  )
+}
+
 export function terminalAgentRunEvent(event: AgentEvent) {
-  return completedAgentRun(event) || failedAgentRun(event)
+  return (
+    completedAgentRun(event) ||
+    failedAgentRun(event) ||
+    cancelledAgentRun(event)
+  )
 }
 
 function eventActivity(
@@ -268,6 +282,7 @@ function reasoningActivities(
       kind: "reasoning",
       title: iteration ? `Agent reasoning ${iteration}` : "Agent reasoning",
       detail: text,
+      serverDetail: text,
       status: "running" as const,
       iteration,
     },
@@ -291,7 +306,6 @@ function reasoningText(
 
 function appendStreamingText(current: string | undefined, next: string) {
   if (!current) return next
-  if (next.startsWith(current)) return next
   return `${current}${next}`
 }
 
@@ -316,6 +330,7 @@ function messageActivities(
       kind: "message",
       title: messageKind === "final" ? "Agent response" : "Agent message",
       detail: text,
+      serverDetail: text,
       status: messageKind === "final" ? "completed" : ("running" as const),
       iteration,
       messageKind,

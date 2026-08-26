@@ -111,7 +111,7 @@ test("does not reset history when multiple consumers request a URL", () => {
   assert.match(response.chunks.join(""), /shared event/)
 })
 
-test("coalesces adjacent streaming deltas before serialization", () => {
+test("preserves adjacent native streaming deltas", () => {
   const stream = new AgentEventStream()
   const url = stream.url("session", "http://127.0.0.1:1234")
   const response = new Response()
@@ -122,6 +122,11 @@ test("coalesces adjacent streaming deltas before serialization", () => {
   stream.flush()
 
   const payload = response.chunks.join("")
-  assert.equal(payload.match(/^data:/gm)?.length, 1)
-  assert.match(payload, /onetwo/)
+  assert.equal(payload.match(/^data:/gm)?.length, 2)
+  assert.match(payload, /"text":"one"/)
+  assert.match(payload, /"text":"two"/)
+  assert.match(payload, /"sequenceNumber":1/)
+  assert.match(payload, /"sequenceNumber":2/)
+  assert.match(payload, /"eventType":"text"/)
+  assert.match(payload, /"eventId":"[^"]+"/)
 })

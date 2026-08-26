@@ -865,6 +865,15 @@ function finalizeRun(
       agentLastEvent: input.finalResponse,
       finalResponse: input.finalResponse,
       outcome: 'review',
+      persistenceEvent: {
+        createdAt: new Date().toISOString(),
+        eventId: crypto.randomUUID(),
+        eventType: input.status,
+        executionId: runId,
+        runId,
+        sequenceNumber: 1,
+        sessionId: runId,
+      },
       status: input.status,
     })
 }

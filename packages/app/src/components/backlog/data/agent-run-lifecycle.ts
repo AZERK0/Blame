@@ -42,7 +42,11 @@ export function agentRunFinalization(
   runInput: UserStoryAgentRunUpdate,
   outcome: UserStoryAgentRunFinalization["outcome"] = "review"
 ): UserStoryAgentRunFinalization | undefined {
-  if (runInput.status !== "completed" && runInput.status !== "failed") {
+  if (
+    runInput.status !== "completed" &&
+    runInput.status !== "failed" &&
+    runInput.status !== "cancelled"
+  ) {
     return undefined
   }
   return {
@@ -53,6 +57,9 @@ export function agentRunFinalization(
     diffEndRef: runInput.diffEndRef,
     finalResponse: runInput.finalResponse ?? storyInput.agentFinalResponse,
     outcome,
+    ...(runInput.persistenceEvent
+      ? { persistenceEvent: runInput.persistenceEvent }
+      : {}),
     sessionSummary: runInput.sessionSummary ?? storyInput.agentSessionSummary,
     status: runInput.status,
     usage: runInput.usage ?? storyInput.agentUsage,

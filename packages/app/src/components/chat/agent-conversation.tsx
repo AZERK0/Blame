@@ -39,6 +39,7 @@ import type {
   UserStoryCodeSelectionAttachment,
   UserStoryFileAttachment,
 } from "@/components/backlog/data/backlog-data"
+import { agentStreamStore } from "@/components/backlog/data/agent-stream-store"
 import type { AgentConversationResponseHeader } from "@/components/chat/agent-conversation-header"
 import type { VcsFileDiff } from "@/components/backlog/development/development-workspace"
 import { DiffStats } from "@/components/backlog/development/development-diff-stats"
@@ -266,11 +267,7 @@ function AgentConversationTurn({
   responseHeader: AgentConversationResponseHeader
   run: AgentConversationRun
 }) {
-  const activities = agentDisplayActivities(
-    run.activities ?? [],
-    run.finalResponse,
-    run.status
-  )
+  const activities = agentDisplayActivities(run)
   const finalMessage = [...activities]
     .reverse()
     .find(
@@ -374,26 +371,20 @@ function AgentConversationTurn({
             errorCode={visibleResponse.errorCode}
             resetAt={visibleResponse.resetAt}
           />
-        ) : visibleResponse ? (
-          <AgentMarkdownTimelineItem
+        ) : visibleResponse || run.status === "running" ? (
+          <StreamingAgentMarkdownTimelineItem
             alwaysVisible={
               lastVisibleMessage?.type === "activity" &&
               lastVisibleMessage.runId === run.id
             }
-            avatar={
-              <AgentResponseAvatar
-                activity={visibleResponse}
-                responseHeader={responseHeader}
-              />
+            activity={
+              visibleResponse?.kind === "message" ? visibleResponse : undefined
             }
-            createdAt={visibleResponse.createdAt}
             highlight={highlightFinalResponse && Boolean(finalMessage)}
-            markdown={visibleResponse.detail}
             onFileLinkClick={onFileLinkClick}
+            responseHeader={responseHeader}
+            run={run}
             showFeedback={Boolean(finalMessage)}
-            streaming={
-              run.status === "running" && visibleResponse.status === "running"
-            }
           />
         ) : null}
         {finalMessage && run.diffEndRef ? (
@@ -728,7 +719,7 @@ function AgentWorkDetails({
   ).length
   const stateLabel = running
     ? "Working"
-    : run.status === "failed"
+    : run.status === "failed" || run.status === "cancelled"
       ? "Work stopped"
       : "Work completed"
 
@@ -1069,11 +1060,7 @@ function lastAgentConversationVisibleMessage(
     if (run.kind !== "initial" && runComment(run, commentsById)) {
       lastMessage = { runId: run.id, type: "comment" }
     }
-    const activities = agentDisplayActivities(
-      run.activities ?? [],
-      run.finalResponse,
-      run.status
-    )
+    const activities = agentDisplayActivities(run)
     for (const activity of activities) {
       if (activity.kind === "message" || activity.kind === "error") {
         lastMessage = {
@@ -1091,11 +1078,7 @@ function lastFinalResponseRunId(runs: AgentConversationRun[]) {
   return [...runs]
     .reverse()
     .find((run) =>
-      agentDisplayActivities(
-        run.activities ?? [],
-        run.finalResponse,
-        run.status
-      ).some(
+      agentDisplayActivities(run).some(
         (activity) =>
           activity.kind === "message" && activity.messageKind === "final"
       )
@@ -1668,6 +1651,68 @@ function AgentMarkdownTimelineItem({
         />
       </div>
     </div>
+  )
+}
+
+function StreamingAgentMarkdownTimelineItem({
+  activity,
+  alwaysVisible,
+  highlight,
+  onFileLinkClick,
+  responseHeader,
+  run,
+  showFeedback,
+}: {
+  activity?: UserStoryAgentActivity
+  alwaysVisible: boolean
+  highlight: boolean
+  onFileLinkClick?: (path: string) => void
+  responseHeader: AgentConversationResponseHeader
+  run: AgentConversationRun
+  showFeedback: boolean
+}) {
+  const identity = React.useMemo(
+    () =>
+      run.status === "running" && run.clineSessionId
+        ? { runId: run.id, sessionId: run.clineSessionId }
+        : undefined,
+    [run.clineSessionId, run.id, run.status]
+  )
+  const subscribe = React.useCallback(
+    (listener: () => void) =>
+      identity
+        ? agentStreamStore.subscribe(identity, listener)
+        : () => undefined,
+    [identity]
+  )
+  const getSnapshot = React.useCallback(
+    () => (identity ? agentStreamStore.snapshot(identity) : undefined),
+    [identity]
+  )
+  const streamed = React.useSyncExternalStore(
+    subscribe,
+    getSnapshot,
+    getSnapshot
+  )
+  const visibleActivity = streamed?.activity ?? activity
+  if (!visibleActivity) return null
+
+  return (
+    <AgentMarkdownTimelineItem
+      alwaysVisible={alwaysVisible}
+      avatar={
+        <AgentResponseAvatar
+          activity={visibleActivity}
+          responseHeader={responseHeader}
+        />
+      }
+      createdAt={visibleActivity.createdAt}
+      highlight={highlight}
+      markdown={visibleActivity.detail}
+      onFileLinkClick={onFileLinkClick}
+      showFeedback={showFeedback}
+      streaming={run.status === "running"}
+    />
   )
 }
 
@@ -2343,19 +2388,22 @@ function humanizeToolName(value: string) {
     .join(" ")
 }
 
-function agentDisplayActivities(
-  activities: UserStoryAgentActivity[],
-  response: string | null | undefined,
-  status: AgentConversationRun["status"]
-) {
-  const markdown = response?.trim()
+function agentDisplayActivities(run: AgentConversationRun) {
+  const activities = run.activities ?? []
+  const markdown = run.finalResponse?.trim()
   const last = activities.at(-1)
-  if (last?.kind !== "message") return activities
-  const finalDetail =
-    markdown && sameStreamingMarkdown(last.detail, markdown)
-      ? markdown
-      : last.detail
-  if (status !== "completed" && finalDetail === last.detail) return activities
+  if (!markdown) return activities
+  if (last?.kind !== "message") {
+    return finalResponseActivities(run, activities, markdown)
+  }
+  const finalDetail = sameStreamingMarkdown(last.detail, markdown)
+    ? markdown
+    : last.detail
+  if (run.status !== "completed" && finalDetail === last.detail)
+    return activities
+  if (run.status === "completed" && finalDetail !== markdown) {
+    return finalResponseActivities(run, activities, markdown)
+  }
   return [
     ...activities.slice(0, -1),
     {
@@ -2368,10 +2416,30 @@ function agentDisplayActivities(
   ]
 }
 
+function finalResponseActivities(
+  run: AgentConversationRun,
+  activities: UserStoryAgentActivity[],
+  markdown: string
+) {
+  if (run.status !== "completed") return activities
+  return [
+    ...activities,
+    {
+      createdAt: run.completedAt ?? run.updatedAt ?? run.createdAt,
+      detail: markdown,
+      id: `${run.id}-final-response`,
+      kind: "message" as const,
+      messageKind: "final" as const,
+      status: "completed" as const,
+      title: "Agent response",
+    },
+  ]
+}
+
 function failedRunResponse(
   run: AgentConversationRun
 ): UserStoryAgentActivity | undefined {
-  if (run.status !== "failed") return undefined
+  if (run.status !== "failed" && run.status !== "cancelled") return undefined
   const response = agentErrorText(run.finalResponse ?? "")
   return {
     createdAt: run.completedAt ?? run.updatedAt ?? run.createdAt,

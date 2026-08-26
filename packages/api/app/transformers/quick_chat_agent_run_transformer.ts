@@ -9,6 +9,8 @@ export default class QuickChatAgentRunTransformer extends BaseTransformer<QuickC
       'messageId',
       'kind',
       'clineSessionId',
+      'executionId',
+      'lastSequenceNumber',
       'checkpointRunCount',
       'diffEndRef',
       'status',

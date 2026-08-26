@@ -226,6 +226,7 @@ router
         ])
         router.post('/:id/agent-runs', [QuickChatAgentRunsController, 'store'])
         router.patch('/:id/agent-runs/:runId', [QuickChatAgentRunsController, 'update'])
+        router.post('/:id/agent-runs/:runId/finalize', [QuickChatAgentRunsController, 'finalize'])
         router.get('/:id/agent-runs/:runId/activities/:activityId', [
           QuickChatAgentRunsController,
           'activityDetail',

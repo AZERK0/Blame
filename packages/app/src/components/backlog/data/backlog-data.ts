@@ -86,10 +86,24 @@ export type UserStoryFileAttachment = {
 }
 
 export type UserStoryAgentRunKind = "initial" | "change-request" | "resume"
-export type UserStoryAgentRunStatus = "running" | "completed" | "failed"
+export type UserStoryAgentRunStatus =
+  | "pending"
+  | "running"
+  | "completed"
+  | "failed"
+  | "cancelled"
+export type AgentPersistenceEvent = {
+  createdAt: string
+  eventId: string
+  eventType: string
+  executionId: string
+  runId: string
+  sequenceNumber: number
+  sessionId: string
+}
 export type UserStoryAgentRunTerminalStatus = Exclude<
   UserStoryAgentRunStatus,
-  "running"
+  "pending" | "running"
 >
 export type UserStoryAgentRun = {
   id: string
@@ -108,6 +122,7 @@ export type UserStoryAgentRun = {
   completedAt?: string | null
   createdAt: string
   updatedAt?: string | null
+  lastSequenceNumber?: number | null
 }
 
 export type UserStoryComment = {
@@ -235,6 +250,7 @@ export type UserStoryAgentRunFinalization = {
   sessionSummary?: string | null
   status: UserStoryAgentRunTerminalStatus
   usage?: UserStoryAgentUsage | null
+  persistenceEvent?: AgentPersistenceEvent
 }
 
 export type UserStoryAgentRunUpdate = Partial<
@@ -253,6 +269,7 @@ export type UserStoryAgentRunUpdate = Partial<
 > & {
   agentActivity?: UserStoryAgentActivity | null
   agentActivityUpdates?: UserStoryAgentActivity[]
+  persistenceEvent?: AgentPersistenceEvent
 }
 
 export const backlogColumns = [

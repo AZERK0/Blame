@@ -1,5 +1,4 @@
 import type { AgentEvent } from "@blame/agent-runtime"
-import { createAgentEventCoalescer } from "@blame/agent-runtime/agent-event-coalescer"
 
 import type { Platform } from "@/context/platform"
 import { recordPerformanceCount } from "@/lib/performance-diagnostics"
@@ -10,7 +9,6 @@ type AgentEventSubscriptionState = {
   subscriptions: number
 }
 
-const rendererEventCoalescingDelayMs = 250
 const activeSubscriptions = new Map<string, AgentEventSubscriptionState>()
 
 export function activeAgentEventSubscription(sessionId: string | undefined) {
@@ -33,14 +31,10 @@ export function subscribeAgentEvents(
     recordPerformanceCount(`agent.event.delivered.${event.type}`)
     callback(event)
   }
-  const coalescer = createAgentEventCoalescer(
-    deliverEvent,
-    rendererEventCoalescingDelayMs
-  )
   const handleEvent = (event: AgentEvent) => {
     if (!agentEventMatchesExecution(event, executionId)) return
     recordPerformanceCount(`agent.event.received.${event.type}`)
-    coalescer.push(event)
+    deliverEvent(event)
   }
   const updateConnection = (nextConnected: boolean) => {
     if (connected === nextConnected) return
@@ -79,7 +73,6 @@ export function subscribeAgentEvents(
     unregisterAgentEventSubscription(sessionId)
     source?.close()
     fallback?.()
-    coalescer.close()
   }
 }
 

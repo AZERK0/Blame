@@ -18,6 +18,7 @@ import { nextCheckpointRunCount } from "@/components/chat/agent-run-checkpoints"
 import {
   agentEventText,
   agentFlowUpdate,
+  cancelledAgentRun,
   completedAgentRun,
   failedAgentRun,
   resumableAgentFailure,
@@ -28,7 +29,13 @@ import {
   activeAgentEventSubscription,
   subscribeAgentEvents,
 } from "@/components/backlog/data/agent-event-stream"
+import {
+  agentPersistenceEvent,
+  AgentStreamCoordinator,
+  type AgentStreamSnapshotPersistence,
+} from "@/components/backlog/data/agent-stream-coordinator"
 import { persistTerminalAgentUpdate } from "@/components/backlog/data/agent-terminal-outbox"
+import { persistAgentSnapshot } from "@/components/backlog/data/agent-snapshot-outbox"
 import {
   agentRunFinalization,
   agentRunOwnsStory,
@@ -86,6 +93,7 @@ export function useBacklogRotation(
   const pendingAgentUpdates = React.useRef(
     new Map<string, PendingAgentUpdate>()
   )
+  const agentStreamClosers = React.useRef(new Set<() => void>())
   const agentAuthenticationBlockedUntil = React.useRef(0)
   const previewRecoveryStoryIds = React.useRef(new Set<string>())
   const agentCompletionRecoveryStoryIds = React.useRef(new Set<string>())
@@ -125,7 +133,11 @@ export function useBacklogRotation(
   }, [projects.activeProject?.id, selection.currentModel?.id])
 
   React.useEffect(
-    () => () => clearPendingAgentUpdates(pendingAgentUpdates.current),
+    () => () => {
+      clearPendingAgentUpdates(pendingAgentUpdates.current)
+      agentStreamClosers.current.forEach((close) => close())
+      agentStreamClosers.current.clear()
+    },
     []
   )
 
@@ -254,15 +266,30 @@ export function useBacklogRotation(
       executionId,
       kind: "initial",
     })
+    const coordinator = createStoryStreamCoordinator(
+      detailedStory,
+      run,
+      session.sessionId
+    )
     const unsubscribeSession = subscribeAgentEvents(
       platform,
       session.sessionId,
       (event) => {
-        persistAgentEvent(detailedStory, run, event)
-        if (terminalAgentRunEvent(event)) unsubscribeSession()
+        const persisted = coordinator.push(event)
+        if (terminalAgentRunEvent(event)) {
+          void persisted
+            .catch(reportAgentPersistenceError)
+            .finally(unsubscribeStream)
+        }
       },
       executionId
     )
+    const unsubscribeStream = () => {
+      unsubscribeSession()
+      agentStreamClosers.current.delete(unsubscribeStream)
+      void coordinator.close().catch(reportAgentPersistenceError)
+    }
+    agentStreamClosers.current.add(unsubscribeStream)
 
     await backlog.update(detailedStory, {
       agentModelId: selection.currentModel.id,
@@ -437,6 +464,11 @@ export function useBacklogRotation(
     const currentStory = await backlog.loadDetail(story)
     const currentRun = activeAgentRun(currentStory, run) ?? run
     const completedAt = new Date().toISOString()
+    const event = {
+      createdAt: completedAt,
+      payload: {},
+      type: "error",
+    } as const
     await backlog.finalizeAgentRun(currentStory, currentRun, {
       activities: [],
       agentLastError: interruptedAgentMessage,
@@ -444,6 +476,11 @@ export function useBacklogRotation(
       completedAt,
       finalResponse: interruptedAgentMessage,
       outcome: "paused",
+      persistenceEvent: recoveryPersistenceEvent(
+        currentStory,
+        currentRun,
+        event
+      ),
       status: "failed",
     })
   }
@@ -499,13 +536,34 @@ export function useBacklogRotation(
     const finalization = agentRunFinalization(
       activityUpdates(storyInput),
       storyInput,
-      agentRunEventUpdate(flowUpdate, event, text)
+      {
+        ...agentRunEventUpdate(flowUpdate, event, text),
+        persistenceEvent: recoveryPersistenceEvent(
+          currentStory,
+          currentRun,
+          event
+        ),
+      }
     )
     if (!finalization) return false
     await backlog.finalizeAgentRun(currentStory, currentRun, finalization)
     notifyCommentResponseCompleted(currentStory, currentRun, platform)
     recordPerformanceCount("agent.recovery.completed")
     return true
+  }
+
+  function recoveryPersistenceEvent(
+    story: UserStory,
+    run: UserStoryAgentRun,
+    event: AgentEvent
+  ) {
+    return agentPersistenceEvent(event, {
+      executionId: run.executionId ?? event.executionId ?? run.id,
+      lastSequenceNumber: run.lastSequenceNumber,
+      runId: run.id,
+      sessionId:
+        event.sessionId ?? run.clineSessionId ?? story.clineSessionId ?? run.id,
+    })
   }
 
   async function recoveredFinalResponse(
@@ -569,13 +627,54 @@ export function useBacklogRotation(
   async function persistAgentEvent(
     story: UserStory,
     run: UserStoryAgentRun | undefined,
-    event: AgentEvent
+    event: AgentEvent,
+    prepared?: AgentStreamSnapshotPersistence
   ) {
     const currentStory = activeStory(story, storiesRef.current)
-    const flowUpdate = agentFlowUpdate(currentStory, event)
+    const flowUpdate = prepared?.update ?? agentFlowUpdate(currentStory, event)
     const text = agentEventText(event)
     const runInput = agentRunEventUpdate(flowUpdate, event, text)
+    if (run) {
+      runInput.persistenceEvent =
+        prepared?.persistenceEvent ??
+        agentPersistenceEvent(event, {
+          executionId: run.executionId ?? event.executionId ?? run.id,
+          lastSequenceNumber: run.lastSequenceNumber,
+          runId: run.id,
+          sessionId:
+            event.sessionId ??
+            run.clineSessionId ??
+            currentStory.clineSessionId ??
+            run.id,
+        })
+    }
     if (!shouldPersistAgentEvent(event, flowUpdate)) return
+    if (
+      prepared &&
+      run &&
+      !terminalAgentRunEvent(event) &&
+      !expiredAuthenticationToken(text)
+    ) {
+      await persistAgentSnapshot(
+        window.localStorage,
+        {
+          event: prepared.persistenceEvent,
+          messageId: flowUpdate.agentActivity?.id ?? event.type,
+          projectId: currentStory.projectId,
+          runId: run.id,
+          targetId: currentStory.id,
+          targetType: "user-story",
+          update: runInput,
+        },
+        (snapshot) =>
+          backlog.updateAgentRun(
+            currentStory,
+            run,
+            snapshot.update as UserStoryAgentRunUpdate
+          )
+      )
+      return
+    }
     if (reportedAgentErrors.current.has(agentAuthenticationErrorKey(story)))
       return
     if (expiredAuthenticationToken(text)) {
@@ -616,6 +715,21 @@ export function useBacklogRotation(
       )
       return
     }
+    if (cancelledAgentRun(event)) {
+      await persistTerminalAgentTransition(
+        currentStory,
+        {
+          ...flowUpdate,
+          agentLastError: null,
+          agentLastEvent: boundedAgentMessage(text, "Agent stopped."),
+          agentStatus: null,
+          status: "in-review",
+        },
+        run,
+        runInput
+      )
+      return
+    }
     if (failedAgentRun(event)) {
       const resumable = resumableAgentFailure(text)
       await persistTerminalAgentTransition(
@@ -648,6 +762,22 @@ export function useBacklogRotation(
     )
   }
 
+  function createStoryStreamCoordinator(
+    story: UserStory,
+    run: UserStoryAgentRun,
+    sessionId: string
+  ) {
+    return new AgentStreamCoordinator({
+      executionId: run.executionId ?? run.id,
+      initialState: runFlowState(run),
+      onError: reportAgentPersistenceError,
+      persist: (snapshot) =>
+        persistAgentEvent(story, run, snapshot.event, snapshot),
+      runId: run.id,
+      sessionId,
+    })
+  }
+
   function persistAgentUpdate(
     story: UserStory,
     input: UserStoryUpdate,
@@ -677,9 +807,7 @@ export function useBacklogRotation(
     recordPerformanceEvent("agent.transition.local_terminal_update", {
       eventType: runInput.status ?? "terminal",
     })
-    void flushAgentUpdate(nextStory, run, storyInput, runInput).catch(
-      reportAgentPersistenceError
-    )
+    await flushAgentUpdate(nextStory, run, storyInput, runInput)
     if (run && !run.diffEndRef) {
       void persistAgentRunDiffEndRef(story, run, platform, backlog).catch(
         reportAgentPersistenceError
@@ -994,7 +1122,12 @@ function agentRunEventUpdate(
     input.status = "completed"
     input.completedAt = new Date().toISOString()
   }
-  if (failedAgentRun(event)) {
+  if (cancelledAgentRun(event)) {
+    input.status = "cancelled"
+    input.finalResponse = update.agentFinalResponse ?? text
+    input.completedAt = new Date().toISOString()
+  }
+  if (failedAgentRun(event) && !cancelledAgentRun(event)) {
     input.status = "failed"
     input.finalResponse = update.agentFinalResponse ?? text
     input.completedAt = new Date().toISOString()

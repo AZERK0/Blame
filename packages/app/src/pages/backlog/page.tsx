@@ -14,14 +14,25 @@ import {
 import {
   agentEventText,
   agentFlowUpdate,
+  cancelledAgentRun,
   completedAgentRun,
   failedAgentRun,
   resumableAgentFailure,
   shouldPersistAgentEvent,
   terminalAgentRunEvent,
+  type AgentFlowUpdate,
 } from "@/components/backlog/data/agent-flow"
 import { subscribeAgentEvents } from "@/components/backlog/data/agent-event-stream"
+import {
+  agentPersistenceEvent,
+  AgentStreamCoordinator,
+  type AgentStreamSnapshotPersistence,
+} from "@/components/backlog/data/agent-stream-coordinator"
 import { persistTerminalAgentUpdate } from "@/components/backlog/data/agent-terminal-outbox"
+import {
+  persistAgentSnapshot,
+  replayAgentSnapshots,
+} from "@/components/backlog/data/agent-snapshot-outbox"
 import { replayTerminalAgentUpdates } from "@/components/backlog/data/agent-terminal-replay"
 import {
   agentRunFinalization,
@@ -144,6 +155,7 @@ export function BacklogPage() {
   const pendingAgentUpdates = React.useRef(
     new Map<string, PendingAgentUpdate>()
   )
+  const agentStreamClosers = React.useRef(new Map<string, () => void>())
   const retryingTerminalAgentUpdates = React.useRef(false)
   const backlogRef = React.useRef(backlog)
   const persistTerminalAgentUpdateRef = React.useRef<
@@ -189,7 +201,11 @@ export function BacklogPage() {
   ])
 
   React.useEffect(
-    () => () => clearPendingAgentUpdates(pendingAgentUpdates.current),
+    () => () => {
+      clearPendingAgentUpdates(pendingAgentUpdates.current)
+      agentStreamClosers.current.forEach((close) => close())
+      agentStreamClosers.current.clear()
+    },
     []
   )
 
@@ -409,6 +425,29 @@ export function BacklogPage() {
         currentBacklog,
         persistTerminalAgentUpdateRef.current
       )
+      await replayAgentSnapshots(
+        window.localStorage,
+        projectId,
+        "user-story",
+        async (snapshot) => {
+          const story = currentBacklog.stories.find(
+            (item) => item.id === snapshot.targetId
+          )
+          if (!story) return
+          const detailedStory = await currentBacklog.loadDetail(story)
+          const run = detailedStory.agentRuns?.find(
+            (item) => item.id === snapshot.runId
+          )
+          if (!run) return
+          if ((run.lastSequenceNumber ?? 0) >= snapshot.event.sequenceNumber)
+            return
+          await currentBacklog.updateAgentRun(
+            detailedStory,
+            run,
+            snapshot.update as UserStoryAgentRunUpdate
+          )
+        }
+      )
     } catch (error) {
       reportAgentPersistenceError(error)
     } finally {
@@ -479,12 +518,13 @@ export function BacklogPage() {
       immediate: boolean
     ) => {
       if (immediate) {
-        void flushAgentUpdate(story, run, input, runInput).catch(
-          reportAgentPersistenceError
-        )
-        return
+        return flushAgentUpdate(story, run, input, runInput).catch((error) => {
+          reportAgentPersistenceError(error)
+          throw error
+        })
       }
       queueAgentUpdate(story, run, input, runInput)
+      return Promise.resolve(undefined)
     },
     [flushAgentUpdate, queueAgentUpdate]
   )
@@ -512,13 +552,54 @@ export function BacklogPage() {
     async (
       story: UserStory,
       run: UserStoryAgentRun | undefined,
-      event: AgentEvent
+      event: AgentEvent,
+      prepared?: AgentStreamSnapshotPersistence
     ) => {
       const currentStory = activeStory(story, storiesRef.current)
-      const update = agentEventUpdate(currentStory, event)
+      const update = agentEventUpdate(currentStory, event, prepared?.update)
       if (!shouldPersistAgentEvent(event, update)) return
       const text = agentEventText(event)
       const runInput = agentRunEventUpdate(update, event, text)
+      if (run) {
+        runInput.persistenceEvent =
+          prepared?.persistenceEvent ??
+          agentPersistenceEvent(event, {
+            executionId: run.executionId ?? event.executionId ?? run.id,
+            lastSequenceNumber: run.lastSequenceNumber,
+            runId: run.id,
+            sessionId:
+              event.sessionId ??
+              run.clineSessionId ??
+              currentStory.clineSessionId ??
+              run.id,
+          })
+      }
+      if (
+        prepared &&
+        run &&
+        !terminalAgentRunEvent(event) &&
+        !expiredAuthenticationToken(text)
+      ) {
+        await persistAgentSnapshot(
+          window.localStorage,
+          {
+            event: prepared.persistenceEvent,
+            messageId: update.agentActivity?.id ?? event.type,
+            projectId: currentStory.projectId,
+            runId: run.id,
+            targetId: currentStory.id,
+            targetType: "user-story",
+            update: runInput,
+          },
+          (snapshot) =>
+            backlog.updateAgentRun(
+              currentStory,
+              run,
+              snapshot.update as UserStoryAgentRunUpdate
+            )
+        )
+        return
+      }
       if (completedAgentRun(event))
         notifyCommentResponseCompleted(currentStory, run, platform)
       if (run && terminalAgentRunEvent(event) && !run.diffEndRef) {
@@ -532,7 +613,13 @@ export function BacklogPage() {
         recordPerformanceEvent("agent.transition.local_terminal_update", {
           eventType: event.type,
         })
-        persistPreparedAgentUpdate(nextStory, run, storyInput, runInput, true)
+        await persistPreparedAgentUpdate(
+          nextStory,
+          run,
+          storyInput,
+          runInput,
+          true
+        )
         void persistAgentRunDiffEndRef(
           currentStory,
           run,
@@ -556,6 +643,54 @@ export function BacklogPage() {
       platform,
       updateStoryLocal,
     ]
+  )
+  const subscribeStoryAgentEvents = React.useCallback(
+    (
+      story: UserStory,
+      run: UserStoryAgentRun,
+      sessionId: string,
+      executionId: string
+    ) => {
+      agentStreamClosers.current.get(run.id)?.()
+      const coordinator = new AgentStreamCoordinator({
+        executionId,
+        initialState: {
+          agentActivities: run.activities ?? story.agentActivities,
+          agentFinalResponse: run.finalResponse ?? story.agentFinalResponse,
+          agentSessionSummary: run.sessionSummary ?? story.agentSessionSummary,
+          agentUsage: run.usage ?? story.agentUsage,
+        },
+        onError: reportAgentPersistenceError,
+        persist: (snapshot) =>
+          persistAgentEvent(story, run, snapshot.event, snapshot),
+        runId: run.id,
+        sessionId,
+      })
+      let authenticationFailed = false
+      let unsubscribe: () => void = () => undefined
+      const close = () => {
+        unsubscribe()
+        agentStreamClosers.current.delete(run.id)
+        void coordinator.close().catch(reportAgentPersistenceError)
+      }
+      unsubscribe = subscribeAgentEvents(
+        platform,
+        sessionId,
+        (event) => {
+          if (authenticationFailed) return
+          authenticationFailed = expiredAuthenticationToken(
+            agentEventText(event)
+          )
+          const persisted = coordinator.push(event)
+          if (authenticationFailed || terminalAgentRunEvent(event)) {
+            void persisted.catch(reportAgentPersistenceError).finally(close)
+          }
+        },
+        executionId
+      )
+      agentStreamClosers.current.set(run.id, close)
+    },
+    [persistAgentEvent, platform]
   )
   const rejectStory = React.useCallback(
     async (story: UserStory, choice: RejectChoice) => {
@@ -745,19 +880,10 @@ export function BacklogPage() {
         clineSessionId: session.sessionId,
         status: "in-progress",
       })
-      let authenticationFailed = false
-      const unsubscribe = subscribeAgentEvents(
-        platform,
+      subscribeStoryAgentEvents(
+        updatedStory,
+        run,
         session.sessionId,
-        (event) => {
-          if (authenticationFailed) return
-          authenticationFailed = expiredAuthenticationToken(
-            agentEventText(event)
-          )
-          persistAgentEvent(updatedStory, run, event)
-          if (authenticationFailed || terminalAgentRunEvent(event))
-            unsubscribe()
-        },
         session.executionId
       )
       void agent.sessions.sendDevelopment({
@@ -779,7 +905,7 @@ export function BacklogPage() {
       agentSelection.currentModel,
       startStoryDevelopmentSession,
       updateStory,
-      persistAgentEvent,
+      subscribeStoryAgentEvents,
     ]
   )
   const requestChanges = React.useCallback(
@@ -849,19 +975,10 @@ export function BacklogPage() {
         clineSessionId: sessionId,
         status: "in-progress",
       })
-      let authenticationFailed = false
-      const unsubscribe = subscribeAgentEvents(
-        platform,
+      subscribeStoryAgentEvents(
+        updatedStory,
+        run,
         sessionId,
-        (event) => {
-          if (authenticationFailed) return
-          authenticationFailed = expiredAuthenticationToken(
-            agentEventText(event)
-          )
-          persistAgentEvent(updatedStory, run, event)
-          if (authenticationFailed || terminalAgentRunEvent(event))
-            unsubscribe()
-        },
         session.executionId
       )
       void agent.sessions.sendDevelopment({
@@ -882,7 +999,7 @@ export function BacklogPage() {
       platform,
       startStoryDevelopmentSession,
       updateStory,
-      persistAgentEvent,
+      subscribeStoryAgentEvents,
     ]
   )
   const undoUserStoryComment = React.useCallback(
@@ -1997,6 +2114,10 @@ function agentRunEventUpdate(
   if (completedAgentRun(event)) {
     update.status = "completed"
     update.completedAt = new Date().toISOString()
+  } else if (cancelledAgentRun(event)) {
+    update.status = "cancelled"
+    update.completedAt = new Date().toISOString()
+    if (!update.finalResponse && text) update.finalResponse = text
   } else if (failedAgentRun(event)) {
     update.status = "failed"
     update.completedAt = new Date().toISOString()
@@ -2022,10 +2143,11 @@ function errorMessage(error: unknown) {
 
 function agentEventUpdate(
   story: UserStory,
-  event: AgentEvent
+  event: AgentEvent,
+  preparedFlowUpdate?: AgentFlowUpdate
 ): UserStoryUpdate {
   const text = agentEventText(event)
-  const flowUpdate = agentFlowUpdate(story, event)
+  const flowUpdate = preparedFlowUpdate ?? agentFlowUpdate(story, event)
   if (expiredAuthenticationToken(text)) {
     toast.error("Agent authentication expired", {
       description: `${text} Reconnect the selected provider, then restart the story.`,
@@ -2043,6 +2165,15 @@ function agentEventUpdate(
       ...flowUpdate,
       agentLastError: null,
       agentLastEvent: "Agent completed. Ready for review.",
+      agentStatus: null,
+      status: "in-review",
+    }
+  }
+  if (cancelledAgentRun(event)) {
+    return {
+      ...flowUpdate,
+      agentLastError: null,
+      agentLastEvent: boundedAgentMessage(text, "Agent stopped."),
       agentStatus: null,
       status: "in-review",
     }

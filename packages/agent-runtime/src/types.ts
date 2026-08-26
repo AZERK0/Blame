@@ -713,7 +713,12 @@ export type AgentEvent = {
     | "error"
     | "raw";
   sessionId?: string;
+  runId?: string;
   executionId?: string;
+  eventId?: string;
+  sequenceNumber?: number;
+  eventType?: string;
+  createdAt?: string;
   payload: unknown;
 };
 

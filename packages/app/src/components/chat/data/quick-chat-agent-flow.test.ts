@@ -76,7 +76,7 @@ test("marks a stopped quick chat agent run without recording an error", () => {
   assert.equal(update.agentLastEvent, "Agent stopped.")
   assert.equal(update.agentStatus, null)
   assert.equal(runUpdate.finalResponse, "Agent stopped.")
-  assert.equal(runUpdate.status, "failed")
+  assert.equal(runUpdate.status, "cancelled")
   assert.ok(runUpdate.completedAt)
 })
 
@@ -108,7 +108,10 @@ test("accumulates queued quick chat activity updates", () => {
 test("recognizes a completed quick chat agent log", () => {
   const log = [
     JSON.stringify({ message: "event:text", payload: { text: "Done" } }),
-    JSON.stringify({ message: "event:done", payload: { finishReason: "stop" } }),
+    JSON.stringify({
+      message: "event:done",
+      payload: { finishReason: "stop" },
+    }),
   ].join("\n")
 
   assert.equal(completedQuickChatClineLog(log), true)

@@ -467,8 +467,9 @@ function emitAgentEvent(event: AgentEvent) {
   ) {
     agentWorkspaceWriters.end(event.sessionId)
   }
-  const transportEvent = agentTransportEvent(event)
-  eventStream.publish(transportEvent)
+  const rawTransportEvent = agentTransportEvent(event)
+  const transportEvent =
+    eventStream.publish(rawTransportEvent) ?? rawTransportEvent
   BrowserWindow.getAllWindows().forEach((window) => {
     if (
       transportEvent.sessionId &&
