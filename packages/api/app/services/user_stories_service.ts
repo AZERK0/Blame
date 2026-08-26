@@ -47,6 +47,21 @@ type FinalizeUserStoryAgentRunInput = Infer<typeof finalizeUserStoryAgentRunVali
 type UpdateUserStoryAgentRunInput = Infer<typeof updateUserStoryAgentRunValidator>
 
 const maxAgentActivities = 512
+const agentRunSummaryColumns = [
+  'id',
+  'userStoryId',
+  'commentId',
+  'kind',
+  'clineSessionId',
+  'executionId',
+  'lastSequenceNumber',
+  'checkpointRunCount',
+  'diffEndRef',
+  'status',
+  'completedAt',
+  'createdAt',
+  'updatedAt',
+] as const
 
 export default class UserStoriesService {
   private fileAttachments = new FileAttachmentsService()
@@ -55,9 +70,7 @@ export default class UserStoriesService {
     await new ProjectsService().findForUser(userId, input.projectId)
     const query = UserStory.query().where('projectId', input.projectId).orderBy('createdAt', 'asc')
     if (input.view === 'summary') {
-      return query.preload('agentRuns', (runs) =>
-        runs.where('status', 'running').orderBy('createdAt', 'asc')
-      )
+      return query.preload('agentRuns', runningAgentRunSummaries)
     }
     const stories = await query
       .preload('storedFileAttachments')
@@ -649,8 +662,13 @@ function agentRunCompletedAtUpdate(input: { completedAt?: DateTime | null; statu
   return {}
 }
 
+export function runningAgentRunSummaries(query: ReturnType<typeof UserStoryAgentRun.query>) {
+  query.select([...agentRunSummaryColumns]).where('status', 'running')
+  orderAgentRuns(query)
+}
+
 function orderAgentRuns(query: ReturnType<typeof UserStoryAgentRun.query>) {
-  query.orderBy('userStoryId', 'asc').orderBy('createdAt', 'asc').orderBy('id', 'asc')
+  return query.orderBy('userStoryId', 'asc').orderBy('createdAt', 'asc').orderBy('id', 'asc')
 }
 
 function sortStoryComments<T extends UserStory>(story: T) {
