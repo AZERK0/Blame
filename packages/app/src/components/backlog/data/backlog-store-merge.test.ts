@@ -232,10 +232,10 @@ test("accepts a completed server message that corrects streamed text", () => {
   assert.equal(merged.agentRuns?.[0].activities?.[0]?.status, "completed")
 })
 
-test("keeps a parallel tool grouped when a server response omits its group", () => {
+test("keeps a tool call identity when a server response omits it", () => {
   const currentActivity = {
     ...activity("tool-1", "2026-06-11T10:00:02.000Z", "running"),
-    parallelGroupId: "parallel-tools-1-tool-1",
+    toolCallId: "call-1",
   }
   const serverActivity = activity(
     "tool-1",
@@ -248,10 +248,7 @@ test("keeps a parallel tool grouped when a server response omits its group", () 
     story([run([serverActivity])])
   )
 
-  assert.equal(
-    merged.agentRuns?.[0].activities?.[0]?.parallelGroupId,
-    "parallel-tools-1-tool-1"
-  )
+  assert.equal(merged.agentRuns?.[0].activities?.[0]?.toolCallId, "call-1")
   assert.equal(merged.agentRuns?.[0].activities?.[0]?.status, "completed")
 })
 

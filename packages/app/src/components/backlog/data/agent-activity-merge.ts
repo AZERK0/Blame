@@ -22,24 +22,21 @@ function mergeAgentActivity(
   serverActivity: UserStoryAgentActivity
 ) {
   const newestActivity = newestValue(currentActivity, serverActivity)
-  const parallelGroupId =
-    newestActivity.parallelGroupId ?? currentActivity.parallelGroupId
+  const toolCallId = newestActivity.toolCallId ?? currentActivity.toolCallId
   if (
     currentActivity.kind !== "message" ||
     serverActivity.kind !== "message" ||
     currentActivity.status !== "running" ||
     serverActivity.status !== "running"
   ) {
-    return parallelGroupId
-      ? { ...newestActivity, parallelGroupId }
-      : newestActivity
+    return toolCallId ? { ...newestActivity, toolCallId } : newestActivity
   }
   return {
     ...newestActivity,
     detail:
       longestStreamingPrefix(currentActivity.detail, serverActivity.detail) ??
       newestActivity.detail,
-    ...(parallelGroupId ? { parallelGroupId } : {}),
+    ...(toolCallId ? { toolCallId } : {}),
   }
 }
 

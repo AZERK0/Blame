@@ -61,6 +61,8 @@ export class AgentStreamCoordinator {
   private readonly seenEventIds = new Set<string>()
   private readonly identity: AgentStreamIdentity
   private readonly store: AgentStreamStore
+  private terminalSnapshot?: AgentStreamSnapshotPersistence
+  private termination?: Promise<unknown>
 
   constructor(input: AgentStreamCoordinatorInput) {
     this.input = input
@@ -77,11 +79,57 @@ export class AgentStreamCoordinator {
     this.recoverSnapshots(input.recoveredSnapshots ?? [])
   }
 
-  push(event: AgentEvent) {
-    if (this.previouslyHandled(event)) return this.persistence
-    if (event.eventId && this.seenEventIds.has(event.eventId)) {
-      return this.persistence
+  push(event: AgentEvent): Promise<unknown> {
+    if (terminalAgentRunEvent(event)) return this.terminate(event)
+    if (this.terminalSnapshot) return this.termination ?? this.persistence
+    const snapshot = this.createSnapshot(event)
+    if (!snapshot) return this.persistence
+    const activity = snapshot.update.agentActivity
+    if (streamingEvent(snapshot.event) && activity) {
+      return this.queueSnapshot(snapshot, activity.id)
     }
+    this.store.flush(this.identity)
+    const previous = this.flushPending()
+    return this.enqueue(snapshot, previous)
+  }
+
+  terminate(event: AgentEvent): Promise<unknown> {
+    if (!terminalAgentRunEvent(event)) return this.push(event)
+    if (this.termination) return this.termination
+    const snapshot = this.getTerminalSnapshot(event)
+    if (!snapshot) return this.persistence
+    this.store.flush(this.identity)
+    const previous = this.flushPending()
+    const persisted = this.enqueue(snapshot, previous)
+    this.termination = this.acknowledgeTermination(persisted)
+    return this.termination
+  }
+
+  flush() {
+    this.store.flush(this.identity)
+    return this.flushPending()
+  }
+
+  disconnect() {
+    if (this.timer) clearTimeout(this.timer)
+    this.timer = undefined
+    return this.flush()
+  }
+
+  clear() {
+    this.store.clear(this.identity)
+  }
+
+  private publishActivities(update: AgentFlowUpdate, sequenceNumber: number) {
+    const activities =
+      update.agentActivityUpdates ??
+      (update.agentActivity ? [update.agentActivity] : [])
+    this.store.publish(this.identity, activities, sequenceNumber)
+  }
+
+  private createSnapshot(event: AgentEvent) {
+    if (this.previouslyHandled(event)) return undefined
+    if (event.eventId && this.seenEventIds.has(event.eventId)) return undefined
     if (event.eventId) this.seenEventIds.add(event.eventId)
     this.handledSequenceNumber = Math.max(
       this.handledSequenceNumber,
@@ -90,38 +138,41 @@ export class AgentStreamCoordinator {
     const persistentEvent = this.persistentEvent(event)
     const update = agentFlowUpdate(this.state, persistentEvent.event)
     this.state = applyFlowUpdate(this.state, update)
-    const activity = update.agentActivity
-    const snapshot = { ...persistentEvent, update }
     this.publishActivities(
       update,
       persistentEvent.persistenceEvent.sequenceNumber
     )
-    if (streamingEvent(persistentEvent.event) && activity) {
-      return this.queueSnapshot(snapshot, activity.id)
+    return { ...persistentEvent, update }
+  }
+
+  private getTerminalSnapshot(event: AgentEvent) {
+    if (this.terminalSnapshot) return this.terminalSnapshot
+    const snapshot = this.createSnapshot(event)
+    if (!snapshot) return undefined
+    const activities = this.state.agentActivities ?? []
+    this.terminalSnapshot = {
+      ...snapshot,
+      update: {
+        ...snapshot.update,
+        agentActivities: activities,
+        agentActivity: activities.at(-1),
+        agentActivityUpdates: activities,
+      },
     }
-    this.store.flush(this.identity)
-    const previous = this.flushPending()
-    const persisted = this.enqueue(snapshot, previous)
-    if (!terminalAgentRunEvent(persistentEvent.event)) return persisted
-    return persisted.finally(() => this.store.clear(this.identity))
+    return this.terminalSnapshot
   }
 
-  flush() {
-    this.store.flush(this.identity)
-    return this.flushPending()
-  }
-
-  close() {
-    if (this.timer) clearTimeout(this.timer)
-    this.timer = undefined
-    return this.flush().finally(() => this.store.clear(this.identity))
-  }
-
-  private publishActivities(update: AgentFlowUpdate, sequenceNumber: number) {
-    const activities =
-      update.agentActivityUpdates ??
-      (update.agentActivity ? [update.agentActivity] : [])
-    this.store.publish(this.identity, activities, sequenceNumber)
+  private acknowledgeTermination(persisted: Promise<unknown>) {
+    return persisted.then(
+      (result) => {
+        this.clear()
+        return result
+      },
+      (error) => {
+        this.termination = undefined
+        throw error
+      }
+    )
   }
 
   private recoverSnapshots(snapshots: RecoveredAgentSnapshot[]) {

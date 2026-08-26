@@ -605,7 +605,7 @@ function toolActivities(
   const message = specialistMessageActivityInput(input, payload)
   return upsertActivities(activities, [
     ...closeRunningActivityInputs(activities, ["message", "reasoning"]),
-    ...toolActivityInputs(activities, phase, input),
+    input,
     ...(message ? [message] : []),
   ])
 }
@@ -633,7 +633,6 @@ function toolActivityInput(
     serverDetail: toolDetail(payload, false, existingDetail),
     status: toolStatus(phase, payload),
     iteration,
-    parallelGroupId: existing?.parallelGroupId,
     toolCallId,
     toolName,
     ...(agent ? { agentName: agent.name } : {}),
@@ -767,50 +766,6 @@ function upsertActivityValue(
   return { activities: nextActivities, activity: serverActivity }
 }
 
-function toolActivityInputs(
-  activities: UserStoryAgentActivity[],
-  phase: string | undefined,
-  input: ActivityInput
-) {
-  const groupId = parallelGroupId(activities, phase, input)
-  const toolInput = groupId ? { ...input, parallelGroupId: groupId } : input
-  if (!groupId || toolStatus(phase) !== "running") return [toolInput]
-  return [
-    ...parallelRunningTools(activities, input).map((activity) =>
-      groupedActivityInput(activity, groupId)
-    ),
-    toolInput,
-  ]
-}
-
-function parallelGroupId(
-  activities: UserStoryAgentActivity[],
-  phase: string | undefined,
-  input: ActivityInput
-) {
-  if (toolStatus(phase) !== "running") return input.parallelGroupId
-  const tools = parallelRunningTools(activities, input)
-  if (!tools.length) return input.parallelGroupId
-  return (
-    input.parallelGroupId ??
-    tools.find((activity) => activity.parallelGroupId)?.parallelGroupId ??
-    `parallel-tools-${input.iteration ?? "session"}-${tools[0].id}`
-  )
-}
-
-function parallelRunningTools(
-  activities: UserStoryAgentActivity[],
-  input: ActivityInput
-) {
-  return activities.filter(
-    (activity) =>
-      activity.id !== input.id &&
-      activity.kind === "tool" &&
-      activity.status === "running" &&
-      sameIteration(activity.iteration, input.iteration)
-  )
-}
-
 function specialistMessageActivityInput(
   toolInput: ActivityInput,
   payload: Record<string, unknown>
@@ -931,16 +886,6 @@ const specialistAgents = [
 function sameIteration(left: number | undefined, right: number | undefined) {
   if (left !== undefined || right !== undefined) return left === right
   return true
-}
-
-function groupedActivityInput(
-  activity: UserStoryAgentActivity,
-  parallelGroupId: string
-): ActivityInput {
-  const { createdAt, updatedAt, ...input } = activity
-  void createdAt
-  void updatedAt
-  return { ...input, parallelGroupId }
 }
 
 function toolTitle(

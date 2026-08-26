@@ -37,7 +37,6 @@ export type UserStoryAgentActivity = {
   messageKind?: 'intermediate' | 'final'
   agentName?: string
   agentAvatar?: string
-  parallelGroupId?: string
   toolCallId?: string
   toolName?: string
   detailArtifact?: string

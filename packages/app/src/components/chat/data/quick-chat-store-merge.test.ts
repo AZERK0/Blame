@@ -32,20 +32,17 @@ test("does not shorten a streamed message with a stale server response", () => {
   )
 })
 
-test("keeps a parallel tool grouped when a server response omits its group", () => {
+test("keeps a tool call identity when a server response omits it", () => {
   const currentActivity = toolActivity(
     "2026-06-11T10:00:02.000Z",
     "running",
-    "parallel-tools-1-tool-1"
+    "call-1"
   )
   const serverActivity = toolActivity("2026-06-11T10:00:04.000Z", "completed")
 
   const merged = mergeQuickChat(chat(currentActivity), chat(serverActivity))
 
-  assert.equal(
-    merged.agentRuns?.[0].activities?.[0]?.parallelGroupId,
-    "parallel-tools-1-tool-1"
-  )
+  assert.equal(merged.agentRuns?.[0].activities?.[0]?.toolCallId, "call-1")
   assert.equal(merged.agentRuns?.[0].activities?.[0]?.status, "completed")
 })
 
@@ -131,14 +128,14 @@ function activity(updatedAt: string, detail: string): UserStoryAgentActivity {
 function toolActivity(
   updatedAt: string,
   status: UserStoryAgentActivity["status"],
-  parallelGroupId?: string
+  toolCallId?: string
 ): UserStoryAgentActivity {
   return {
     createdAt: "2026-06-11T10:00:00.000Z",
     detail: "",
     id: "tool-1",
     kind: "tool",
-    parallelGroupId,
+    toolCallId,
     status,
     title: "Tool",
     updatedAt,

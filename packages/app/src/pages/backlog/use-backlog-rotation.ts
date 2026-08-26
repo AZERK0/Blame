@@ -785,15 +785,20 @@ export function useBacklogRotation(
     const close = () => {
       unsubscribeSession()
       agentStreamClosers.current.delete(close)
-      void coordinator.close().catch(reportAgentPersistenceError)
+      void coordinator.disconnect().catch(reportAgentPersistenceError)
     }
     unsubscribeSession = subscribeAgentEvents(
       platform,
       sessionId,
       (event) => {
-        const persisted = coordinator.push(event)
+        const persisted = terminalAgentRunEvent(event)
+          ? coordinator.terminate(event)
+          : coordinator.push(event)
         if (terminalAgentRunEvent(event)) {
-          void persisted.catch(reportAgentPersistenceError).finally(close)
+          void persisted.then(close, (error) => {
+            reportAgentPersistenceError(error)
+            close()
+          })
         }
       },
       executionId ?? run.executionId ?? undefined,

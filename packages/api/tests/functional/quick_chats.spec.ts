@@ -212,7 +212,7 @@ function responseOnlyFinalization(fixture: Awaited<ReturnType<typeof responseOnl
       sequenceNumber: 1,
       sessionId: fixture.sessionId,
     },
-    status: 'completed',
+    status: 'completed' as const,
   }
 }
 

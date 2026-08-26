@@ -28,6 +28,7 @@ import {
   AgentStreamCoordinator,
   type AgentStreamSnapshotPersistence,
 } from "@/components/backlog/data/agent-stream-coordinator"
+import { agentStreamStore } from "@/components/backlog/data/agent-stream-store"
 import { persistTerminalAgentUpdate } from "@/components/backlog/data/agent-terminal-outbox"
 import {
   pendingAgentRunSnapshots,
@@ -424,7 +425,8 @@ export function BacklogPage() {
       await replayTerminalAgentUpdates(
         window.localStorage,
         currentBacklog,
-        persistTerminalAgentUpdateRef.current
+        persistTerminalAgentUpdateRef.current,
+        clearStoryAgentStream
       )
       await replayAgentSnapshots(
         window.localStorage,
@@ -440,13 +442,17 @@ export function BacklogPage() {
             (item) => item.id === snapshot.runId
           )
           if (!run) return
-          if ((run.lastSequenceNumber ?? 0) >= snapshot.event.sequenceNumber)
+          const update = snapshot.update as UserStoryAgentRunUpdate
+          if ((run.lastSequenceNumber ?? 0) >= snapshot.event.sequenceNumber) {
+            if (terminalStoryAgentStatus(update.status)) {
+              clearStoryAgentStream(detailedStory, run)
+            }
             return
-          await currentBacklog.updateAgentRun(
-            detailedStory,
-            run,
-            snapshot.update as UserStoryAgentRunUpdate
-          )
+          }
+          await currentBacklog.updateAgentRun(detailedStory, run, update)
+          if (terminalStoryAgentStatus(update.status)) {
+            clearStoryAgentStream(detailedStory, run)
+          }
         }
       )
     } catch (error) {
@@ -679,7 +685,7 @@ export function BacklogPage() {
       const close = () => {
         unsubscribe()
         agentStreamClosers.current.delete(run.id)
-        void coordinator.close().catch(reportAgentPersistenceError)
+        void coordinator.disconnect().catch(reportAgentPersistenceError)
       }
       unsubscribe = subscribeAgentEvents(
         platform,
@@ -689,9 +695,14 @@ export function BacklogPage() {
           authenticationFailed = expiredAuthenticationToken(
             agentEventText(event)
           )
-          const persisted = coordinator.push(event)
+          const persisted = terminalAgentRunEvent(event)
+            ? coordinator.terminate(event)
+            : coordinator.push(event)
           if (authenticationFailed || terminalAgentRunEvent(event)) {
-            void persisted.catch(reportAgentPersistenceError).finally(close)
+            void persisted.then(close, (error) => {
+              reportAgentPersistenceError(error)
+              close()
+            })
           }
         },
         executionId,
@@ -2008,6 +2019,15 @@ function statusPipDrawerTarget(
 
 function reportAgentPersistenceError(error: unknown) {
   console.error("Failed to persist agent update.", error)
+}
+
+function clearStoryAgentStream(story: UserStory, run?: UserStoryAgentRun) {
+  const sessionId = run?.clineSessionId ?? story.clineSessionId
+  if (run && sessionId) agentStreamStore.clear({ runId: run.id, sessionId })
+}
+
+function terminalStoryAgentStatus(status: UserStoryAgentRunUpdate["status"]) {
+  return status === "completed" || status === "failed" || status === "cancelled"
 }
 
 function reportStatusPipRequestError(error: unknown) {

@@ -76,7 +76,7 @@ test("does not duplicate a completed tool when its fallback result arrives", () 
   assert.equal(fallback.agentActivities?.[0]?.status, "completed")
 })
 
-test("groups tools that overlap in the same iteration", () => {
+test("keeps overlapping tools distinct by tool call id", () => {
   const firstStarted = updateStory(
     story(),
     toolEvent("tool_call", "run_commands", 1, "call-1")
@@ -88,15 +88,17 @@ test("groups tools that overlap in the same iteration", () => {
   const activities = secondStarted.agentActivities ?? []
 
   assert.equal(activities.length, 2)
-  assert.ok(activities[0]?.parallelGroupId)
-  assert.equal(activities[0]?.parallelGroupId, activities[1]?.parallelGroupId)
   assert.deepEqual(
-    secondStarted.agentActivityUpdates?.map((activity) => activity.id),
+    activities.map((activity) => activity.id),
     ["tool-call-1", "tool-call-2"]
+  )
+  assert.deepEqual(
+    activities.map((activity) => activity.toolCallId),
+    ["call-1", "call-2"]
   )
 })
 
-test("keeps sequential tools in the same iteration ungrouped", () => {
+test("keeps sequential tools in the same iteration distinct", () => {
   const firstStarted = updateStory(
     story(),
     toolEvent("tool_call", "run_commands", 1, "call-1")
@@ -111,8 +113,10 @@ test("keeps sequential tools in the same iteration ungrouped", () => {
   )
 
   assert.equal(secondStarted.agentActivities?.length, 2)
-  assert.equal(secondStarted.agentActivities?.[0]?.parallelGroupId, undefined)
-  assert.equal(secondStarted.agentActivities?.[1]?.parallelGroupId, undefined)
+  assert.deepEqual(
+    secondStarted.agentActivities?.map((activity) => activity.toolCallId),
+    ["call-1", "call-2"]
+  )
 })
 
 test("adds specialist response messages after spawn agent results", () => {

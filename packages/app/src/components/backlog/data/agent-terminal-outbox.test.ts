@@ -47,7 +47,7 @@ test("acknowledges only the persisted outbox revision", async () => {
   assert.equal(pendingTerminalAgentUpdates(storage, story.projectId).length, 1)
 })
 
-test("drops a terminal update rejected by a non-retryable response", async () => {
+test("keeps a terminal update rejected by a non-retryable response", async () => {
   const storage = memoryStorage()
 
   await assert.rejects(
@@ -57,7 +57,26 @@ test("drops a terminal update rejected by a non-retryable response", async () =>
     /Invalid terminal update/
   )
 
-  assert.equal(pendingTerminalAgentUpdates(storage, story.projectId).length, 0)
+  assert.equal(pendingTerminalAgentUpdates(storage, story.projectId).length, 1)
+})
+
+test("stores a cancelled finalization for retry", async () => {
+  const storage = memoryStorage()
+  const cancelledUpdate = {
+    ...update,
+    runInput: { ...update.runInput, status: "cancelled" as const },
+  }
+
+  await assert.rejects(
+    persistTerminalAgentUpdate(storage, story, cancelledUpdate, async () => {
+      throw new Error("offline")
+    }),
+    /offline/
+  )
+
+  const pending = pendingTerminalAgentUpdates(storage, story.projectId)
+  assert.equal(pending.length, 1)
+  assert.equal(pending[0]?.runInput.status, "cancelled")
 })
 
 const story = {

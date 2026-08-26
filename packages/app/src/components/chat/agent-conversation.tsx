@@ -53,7 +53,6 @@ import {
   type PendingFileAttachment,
 } from "@/components/backlog/drawer/markdown-editor"
 import { pendingFileAttachments } from "@/components/backlog/drawer/user-story-attachment-files"
-import type { UserStoryActivityNode } from "@/components/backlog/drawer/user-story-activity-tree"
 import { ProviderMark } from "@/components/model/model-selector"
 import {
   Accordion,
@@ -892,16 +891,14 @@ function AgentStreamTool({
   alwaysVisible,
   onFileLinkClick,
   onLoadDetail,
-  responseHeader,
   run,
 }: StreamingAgentActivityItemProps & { activity: UserStoryAgentActivity }) {
   return (
-    <AgentActivityItem
-      alwaysVisibleActivityId={alwaysVisible ? activity.id : undefined}
-      node={{ activity, id: activity.id, type: "activity" }}
+    <AgentActivityLeafItem
+      activity={activity}
+      alwaysVisible={alwaysVisible}
       onFileLinkClick={onFileLinkClick}
       onLoadDetail={onLoadDetail}
-      responseHeader={responseHeader}
       runActive={run.status === "running"}
       runningToolActivityId={
         activity.kind === "tool" && activity.status === "running"
@@ -944,152 +941,6 @@ function AgentThinkingTimelineItem() {
   )
 }
 
-function AgentActivityItem({
-  alwaysVisibleActivityId,
-  node,
-  onFileLinkClick,
-  onLoadDetail,
-  responseHeader,
-  runActive,
-  runningToolActivityId,
-  value,
-}: {
-  alwaysVisibleActivityId?: string
-  node: UserStoryActivityNode
-  onFileLinkClick?: (path: string) => void
-  onLoadDetail: (activity: UserStoryAgentActivity) => Promise<string>
-  responseHeader: AgentConversationResponseHeader
-  runActive: boolean
-  runningToolActivityId?: string
-  value: string
-}) {
-  if (node.type === "group") {
-    return (
-      <AgentActivityGroupItem
-        alwaysVisibleActivityId={alwaysVisibleActivityId}
-        node={node}
-        onFileLinkClick={onFileLinkClick}
-        onLoadDetail={onLoadDetail}
-        responseHeader={responseHeader}
-        runActive={runActive}
-        runningToolActivityId={runningToolActivityId}
-        value={value}
-      />
-    )
-  }
-  return (
-    <AgentActivityLeafItem
-      alwaysVisible={node.activity.id === alwaysVisibleActivityId}
-      activity={node.activity}
-      onFileLinkClick={onFileLinkClick}
-      onLoadDetail={onLoadDetail}
-      responseHeader={responseHeader}
-      runActive={runActive}
-      runningToolActivityId={runningToolActivityId}
-      value={value}
-    />
-  )
-}
-
-function AgentActivityGroupItem({
-  alwaysVisibleActivityId,
-  node,
-  onFileLinkClick,
-  onLoadDetail,
-  responseHeader,
-  runActive,
-  runningToolActivityId,
-  value,
-}: {
-  alwaysVisibleActivityId?: string
-  node: Extract<UserStoryActivityNode, { type: "group" }>
-  onFileLinkClick?: (path: string) => void
-  onLoadDetail: (activity: UserStoryAgentActivity) => Promise<string>
-  responseHeader: AgentConversationResponseHeader
-  runActive: boolean
-  runningToolActivityId?: string
-  value: string
-}) {
-  return (
-    <AccordionItem value={value} className="border-b-0!">
-      <div className="grid grid-cols-[2rem_minmax(0,1fr)] items-start gap-2 text-sm">
-        <span className="flex size-8 items-center justify-center text-muted-foreground">
-          <ListChecksIcon className="size-4" />
-        </span>
-        <div className="min-w-0">
-          <AccordionTrigger className="min-h-8 items-center py-0 text-muted-foreground hover:no-underline">
-            <span
-              className={
-                runActive &&
-                groupIsRunning(node.activities, runningToolActivityId)
-                  ? "agent-activity-running truncate"
-                  : "truncate"
-              }
-            >
-              {node.activities.length} parallel tools
-            </span>
-          </AccordionTrigger>
-          <AccordionContent
-            className="pt-2 pb-0"
-            contentClassName="data-open:h-auto! data-open:overflow-visible"
-          >
-            <AgentActivityChildren
-              alwaysVisibleActivityId={alwaysVisibleActivityId}
-              nodes={node.children}
-              onFileLinkClick={onFileLinkClick}
-              onLoadDetail={onLoadDetail}
-              parentValue={value}
-              responseHeader={responseHeader}
-              runActive={runActive}
-              runningToolActivityId={runningToolActivityId}
-            />
-          </AccordionContent>
-        </div>
-      </div>
-    </AccordionItem>
-  )
-}
-
-function AgentActivityChildren({
-  alwaysVisibleActivityId,
-  nodes,
-  onFileLinkClick,
-  onLoadDetail,
-  parentValue,
-  responseHeader,
-  runActive,
-  runningToolActivityId,
-}: {
-  alwaysVisibleActivityId?: string
-  nodes: UserStoryActivityNode[]
-  onFileLinkClick?: (path: string) => void
-  onLoadDetail: (activity: UserStoryAgentActivity) => Promise<string>
-  parentValue: string
-  responseHeader: AgentConversationResponseHeader
-  runActive: boolean
-  runningToolActivityId?: string
-}) {
-  return (
-    <div className="grid gap-1 border-l pl-3">
-      <Accordion type="multiple" className="contents">
-        {nodes.map((node) => (
-          <AgentActivityItem
-            alwaysVisibleActivityId={alwaysVisibleActivityId}
-            key={node.id}
-            node={node}
-            onFileLinkClick={onFileLinkClick}
-            onLoadDetail={onLoadDetail}
-            responseHeader={responseHeader}
-            runActive={runActive}
-            runningToolActivityId={runningToolActivityId}
-            value={`${parentValue}-${node.id}`}
-          />
-        ))}
-      </Accordion>
-    </div>
-  )
-}
-
 function AgentActivityLeafItem({
   alwaysVisible,
   activity,
@@ -1103,7 +954,6 @@ function AgentActivityLeafItem({
   activity: UserStoryAgentActivity
   onFileLinkClick?: (path: string) => void
   onLoadDetail: (activity: UserStoryAgentActivity) => Promise<string>
-  responseHeader: AgentConversationResponseHeader
   runActive: boolean
   runningToolActivityId?: string
   value: string
@@ -1239,13 +1089,6 @@ function activityIsRunning(
     activity.kind === "tool" &&
     activity.id === runningToolActivityId
   )
-}
-
-function groupIsRunning(
-  activities: UserStoryAgentActivity[],
-  runningToolActivityId: string | undefined
-) {
-  return activities.some((activity) => activity.id === runningToolActivityId)
 }
 
 function ActivityDetails({

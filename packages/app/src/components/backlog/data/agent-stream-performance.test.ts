@@ -5,6 +5,10 @@ import test from "node:test"
 import type { AgentEvent } from "@blame/agent-runtime"
 
 import { resumableEventStreamUrl } from "./agent-event-stream-url.ts"
+import {
+  pendingAgentSnapshots,
+  persistAgentSnapshot,
+} from "./agent-snapshot-outbox.ts"
 import { AgentStreamCoordinator } from "./agent-stream-coordinator.ts"
 import { AgentStreamStore } from "./agent-stream-store.ts"
 
@@ -40,7 +44,7 @@ test("paints the first native delta within one frame", async () => {
 
   assert.ok(performance.now() - receivedAt < 100)
   assert.equal(streamedActivity(store)?.detail, "hello")
-  await coordinator.close()
+  await coordinator.disconnect()
 })
 
 test("adds the confirmed sequence to a resumed event stream", () => {
@@ -87,7 +91,7 @@ test("processes thousands of deltas with frame-bound renders and bounded writes"
   assert.ok(elapsedMs < 1_000)
   assert.equal(streamedActivity(store)?.detail.length, 5_000)
   unsubscribe()
-  await coordinator.close()
+  await coordinator.disconnect()
 })
 
 test("keeps messages and tools in distinct ordered containers", async () => {
@@ -109,7 +113,7 @@ test("keeps messages and tools in distinct ordered containers", async () => {
     ["message", "tool", "message"]
   )
   assert.equal(new Set(streamedActivityIds(store)).size, 3)
-  await coordinator.close()
+  await coordinator.disconnect()
 })
 
 test("keeps successive tools as separate activities", async () => {
@@ -125,7 +129,7 @@ test("keeps successive tools as separate activities", async () => {
   const tools = streamedActivities(store).filter((item) => item.kind === "tool")
   assert.equal(tools.length, 2)
   assert.notEqual(tools[0]?.id, tools[1]?.id)
-  await coordinator.close()
+  await coordinator.disconnect()
 })
 
 test("keeps optimistic activities after a persistence failure", async () => {
@@ -140,7 +144,96 @@ test("keeps optimistic activities after a persistence failure", async () => {
   await assert.rejects(coordinator.flush(), /offline/)
 
   assert.equal(streamedActivity(store)?.detail, "still visible")
-  await coordinator.close().catch(() => undefined)
+  await coordinator.disconnect().catch(() => undefined)
+})
+
+test("keeps a failed finalization visible and retries the same outbox snapshot", async () => {
+  const frames = new FrameScheduler()
+  const storage = memoryStorage()
+  const store = new AgentStreamStore(frames)
+  const terminalSnapshots: AgentStreamSnapshot[] = []
+  let backendFails = true
+  let canonicalSnapshot: AgentStreamSnapshot | undefined
+  const coordinator = coordinatorWith(store, (snapshot) => {
+    if (snapshot.event.type !== "done") return undefined
+    terminalSnapshots.push(snapshot)
+    return persistAgentSnapshot(
+      storage,
+      durableSnapshot(snapshot),
+      async () => {
+        assert.equal(pendingAgentSnapshots(storage, "project-1").length, 1)
+        if (backendFails) throw new Error("offline")
+        canonicalSnapshot = snapshot
+      }
+    )
+  })
+  coordinator.push(delta(1, "message A"))
+  await coordinator.push(toolEvent(2, "tool_call", "tool-1"))
+  await coordinator.push(toolEvent(3, "tool_result", "tool-1"))
+  coordinator.push(delta(4, "message B"))
+  const terminalEvent = doneEvent(5)
+
+  await assert.rejects(coordinator.terminate(terminalEvent), /offline/)
+
+  assert.deepEqual(
+    streamedActivities(store).map((activity) => activity.kind),
+    ["message", "tool", "message"]
+  )
+  const pending = pendingAgentSnapshots(storage, "project-1")
+  assert.equal(pending.length, 1)
+  assert.equal(finalizedActivities(pending[0]?.update).length, 3)
+
+  backendFails = false
+  await coordinator.terminate(terminalEvent)
+
+  assert.equal(pendingAgentSnapshots(storage, "project-1").length, 0)
+  assert.equal(store.orderSnapshot(identity).activityIds.length, 0)
+  assert.equal(finalizedActivities(canonicalSnapshot?.update).length, 3)
+  assert.equal(terminalSnapshots.length, 2)
+  assert.equal(
+    terminalSnapshots[0]?.persistenceEvent.eventId,
+    terminalSnapshots[1]?.persistenceEvent.eventId
+  )
+  assert.equal(
+    terminalSnapshots[0]?.persistenceEvent.sequenceNumber,
+    terminalSnapshots[1]?.persistenceEvent.sequenceNumber
+  )
+})
+
+test("finalizes a cancellation once with the coordinator latest sequence", async () => {
+  const snapshots: AgentStreamSnapshot[] = []
+  const coordinator = new AgentStreamCoordinator({
+    ...identity,
+    executionId: "00000000-0000-4000-8000-000000000001",
+    initialState: {},
+    lastSequenceNumber: 10,
+    persist: (snapshot) => void snapshots.push(snapshot),
+    store: new AgentStreamStore(new FrameScheduler()),
+  })
+  coordinator.push(delta(11, "message A"))
+  await coordinator.push(toolEvent(12, "tool_call", "tool-1"))
+  await coordinator.push(toolEvent(13, "tool_result", "tool-1"))
+  coordinator.push(delta(14, "message B"))
+  const stopped = doneEvent(undefined, "aborted")
+
+  await coordinator.terminate(stopped)
+  await coordinator.terminate(stopped)
+
+  const terminalSnapshots = snapshots.filter(
+    (snapshot) => snapshot.event.type === "done"
+  )
+  assert.equal(terminalSnapshots.length, 1)
+  assert.equal(terminalSnapshots[0]?.persistenceEvent.sequenceNumber, 15)
+  assert.deepEqual(
+    terminalSnapshots[0]?.update.agentActivityUpdates?.map(
+      (activity) => activity.kind
+    ),
+    ["message", "tool", "message"]
+  )
+  assert.equal(
+    terminalSnapshots[0]?.update.agentActivityUpdates?.[1]?.toolCallId,
+    "tool-1"
+  )
 })
 
 test("merges recovered snapshots and ignores replayed event ids", async () => {
@@ -156,7 +249,7 @@ test("merges recovered snapshots and ignores replayed event ids", async () => {
   await first.push(toolEvent(2, "tool_call", "tool-1"))
   first.push(delta(3, "message B"))
   await first.flush()
-  await first.close()
+  await first.disconnect()
 
   const toolStore = recoveredStore(persisted.slice(0, 2))
   assert.deepEqual(
@@ -185,7 +278,7 @@ test("merges recovered snapshots and ignores replayed event ids", async () => {
     ["message", "tool", "message"]
   )
   assert.equal(streamedActivity(store)?.detail, "message B")
-  await resumed.close()
+  await resumed.disconnect()
 })
 
 test("does not replay deltas already covered by a recovered snapshot", async () => {
@@ -199,7 +292,7 @@ test("does not replay deltas already covered by a recovered snapshot", async () 
   first.push(delta(1, "A"))
   first.push(delta(2, "B"))
   await first.flush()
-  await first.close()
+  await first.disconnect()
 
   const store = recoveredStore(persisted)
   const resumed = new AgentStreamCoordinator({
@@ -216,7 +309,7 @@ test("does not replay deltas already covered by a recovered snapshot", async () 
   resumed.push(delta(1, "A"))
 
   assert.equal(streamedActivity(store)?.detail, "AB")
-  await resumed.close()
+  await resumed.disconnect()
 })
 
 test("flushes text before an activity boundary", async () => {
@@ -233,7 +326,7 @@ test("flushes text before an activity boundary", async () => {
   })
 
   assert.deepEqual(persisted, ["text", "tool"])
-  await coordinator.close()
+  await coordinator.disconnect()
 })
 
 const identity = { runId: "run-1", sessionId: "session-1" }
@@ -274,6 +367,14 @@ function toolEvent(
   }
 }
 
+function doneEvent(sequenceNumber?: number, reason?: string): AgentEvent {
+  return {
+    ...(sequenceNumber === undefined ? {} : event(sequenceNumber, "done")),
+    payload: { reason, text: "Agent stopped." },
+    type: "done",
+  }
+}
+
 type AgentStreamSnapshot = Parameters<
   ConstructorParameters<typeof AgentStreamCoordinator>[0]["persist"]
 >[0]
@@ -291,6 +392,38 @@ function streamedActivities(store: AgentStreamStore) {
 
 function streamedActivity(store: AgentStreamStore) {
   return streamedActivities(store).at(-1)
+}
+
+function durableSnapshot(snapshot: AgentStreamSnapshot) {
+  return {
+    event: snapshot.persistenceEvent,
+    messageId: snapshot.update.agentActivity?.id ?? snapshot.event.type,
+    projectId: "project-1",
+    runId: identity.runId,
+    targetId: "story-1",
+    targetType: "user-story" as const,
+    update: snapshot.update,
+  }
+}
+
+function finalizedActivities(value: unknown) {
+  if (!value || typeof value !== "object") return []
+  const update = value as AgentStreamSnapshot["update"]
+  return update.agentActivityUpdates ?? []
+}
+
+function memoryStorage(): Storage {
+  const values = new Map<string, string>()
+  return {
+    clear: () => values.clear(),
+    getItem: (key) => values.get(key) ?? null,
+    key: (index) => [...values.keys()][index] ?? null,
+    get length() {
+      return values.size
+    },
+    removeItem: (key) => void values.delete(key),
+    setItem: (key, value) => void values.set(key, value),
+  }
 }
 
 function recoveredStore(snapshots: AgentStreamSnapshot[]) {

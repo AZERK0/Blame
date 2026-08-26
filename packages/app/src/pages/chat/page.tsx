@@ -20,6 +20,7 @@ import {
   AgentStreamCoordinator,
   type AgentStreamSnapshotPersistence,
 } from "@/components/backlog/data/agent-stream-coordinator"
+import { agentStreamStore } from "@/components/backlog/data/agent-stream-store"
 import {
   pendingAgentRunSnapshots,
   persistAgentSnapshot,
@@ -265,21 +266,22 @@ function QuickChatProjectPage() {
             (item) => item.id === snapshot.runId
           )
           if (!run) return
-          if ((run.lastSequenceNumber ?? 0) >= snapshot.event.sequenceNumber)
-            return
           const update = snapshot.update as
             | QuickChatAgentRunFinalization
             | QuickChatAgentRunUpdate
-          if (
-            update.status === "completed" ||
-            update.status === "failed" ||
-            update.status === "cancelled"
-          ) {
+          if ((run.lastSequenceNumber ?? 0) >= snapshot.event.sequenceNumber) {
+            if (terminalAgentStatus(update.status)) {
+              clearQuickChatAgentStream(detailed, run)
+            }
+            return
+          }
+          if (terminalAgentStatus(update.status)) {
             await chatStore.finalizeAgentRun(
               detailed,
               run,
               update as QuickChatAgentRunFinalization
             )
+            clearQuickChatAgentStream(detailed, run)
             return
           }
           await chatStore.updateAgentRun(detailed, run, update)
@@ -333,7 +335,7 @@ function QuickChatProjectPage() {
       unsubscribers.forEach((unsubscribe) => unsubscribe())
       unsubscribers.clear()
       coordinators.forEach((coordinator) => {
-        void coordinator.close().catch(reportAgentPersistenceError)
+        void coordinator.disconnect().catch(reportAgentPersistenceError)
       })
       coordinators.clear()
     }
@@ -719,12 +721,15 @@ function QuickChatProjectPage() {
     setCancelingAgent(true)
     try {
       await platform.agent.sessions.abort(sessionId)
-      unsubscribeQuickChatAgentEvents(sessionId)
-      const persisted = persistAgentEvent(conversation, run, stoppedAgentEvent)
+      const coordinator = agentStreamCoordinators.current.get(sessionId)
+      if (!coordinator) throw new Error("Agent stream is not available")
+      await settleQuickChatAgentStream(
+        sessionId,
+        coordinator.terminate(stoppedAgentEvent)
+      )
       toast.success("Agent stopped.", {
         position: "bottom-right",
       })
-      await Promise.resolve(persisted).catch(reportAgentPersistenceError)
     } catch (error) {
       showQuickChatError("Unable to cancel agent", errorMessage(error))
     } finally {
@@ -932,12 +937,15 @@ function QuickChatProjectPage() {
         const text = agentEventText(event)
         authenticationFailed = quickChatExpiredAuthenticationToken(text)
         if (authenticationFailed) showExpiredAuthenticationToast(text)
-        const persisted = coordinator.push(event)
+        const persisted = terminalAgentRunEvent(event)
+          ? coordinator.terminate(event)
+          : coordinator.push(event)
         if (authenticationFailed || immediateQuickChatAgentEvent(event)) {
-          void Promise.resolve(persisted).then(
-            () => unsubscribeQuickChatAgentEvents(sessionId, unsubscribe),
-            () => unsubscribeQuickChatAgentEvents(sessionId, unsubscribe)
-          )
+          void settleQuickChatAgentStream(
+            sessionId,
+            persisted,
+            unsubscribe
+          ).catch(reportAgentPersistenceError)
         }
       },
       run.executionId ?? undefined,
@@ -957,7 +965,29 @@ function QuickChatProjectPage() {
     const coordinator = agentStreamCoordinators.current.get(sessionId)
     agentStreamCoordinators.current.delete(sessionId)
     unsubscribe()
-    void coordinator?.close().catch(reportAgentPersistenceError)
+    void coordinator?.disconnect().catch(reportAgentPersistenceError)
+  }
+
+  function settleQuickChatAgentStream(
+    sessionId: string,
+    persisted: Promise<unknown>,
+    expected?: () => void
+  ) {
+    return persisted.then(
+      (result) => {
+        unsubscribeQuickChatAgentEvents(sessionId, expected)
+        return result
+      },
+      (error) => {
+        unsubscribeQuickChatAgentEvents(sessionId, expected)
+        throw error
+      }
+    )
+  }
+
+  function clearQuickChatAgentStream(chat: QuickChat, run: QuickChatAgentRun) {
+    const sessionId = run.clineSessionId ?? chat.clineSessionId
+    if (sessionId) agentStreamStore.clear({ runId: run.id, sessionId })
   }
 
   async function sendQuickChatPrompt(input: QuickChatPromptInput) {
@@ -965,11 +995,16 @@ function QuickChatProjectPage() {
       await platform.agent!.sessions.sendDevelopment(quickChatSendInput(input))
     } catch (error) {
       const message = errorMessage(error)
-      persistAgentEvent(input.chat, input.run, {
-        payload: { message },
-        sessionId: input.sessionId,
-        type: "error",
-      })
+      const coordinator = agentStreamCoordinators.current.get(input.sessionId)
+      if (!coordinator) throw error
+      await settleQuickChatAgentStream(
+        input.sessionId,
+        coordinator.terminate({
+          payload: { message },
+          sessionId: input.sessionId,
+          type: "error",
+        })
+      )
     }
   }
 
@@ -1378,6 +1413,10 @@ function quickChatAgentFinalization(
     status,
     usage: update.runInput.usage ?? update.input.agentUsage,
   }
+}
+
+function terminalAgentStatus(status: QuickChatAgentRunUpdate["status"]) {
+  return status === "completed" || status === "failed" || status === "cancelled"
 }
 
 function quickChatTerminalPersistenceEvent(
