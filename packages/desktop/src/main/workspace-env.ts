@@ -322,10 +322,12 @@ async function writeRuntimeEnvFile(
   sourcePath: string,
 ) {
   const source = await readFile(sourcePath, "utf8");
-  const destination = (await runtimePathExists(destinationPath))
+  const destinationExists = await runtimePathExists(destinationPath);
+  const destination = destinationExists
     ? await readRuntimeFile(destinationPath)
     : "";
   const content = destination ? mergeEnvValues(destination, source) : source;
+  if (destinationExists && destination === content) return;
   await mkdirRuntime(dirnameWorkspacePath(destinationPath));
   await writeRuntimeFile(destinationPath, content);
 }
@@ -521,6 +523,7 @@ async function readWorkspaceEnvFile(path: string) {
 }
 
 async function writeWorkspaceEnvFile(path: string, content: string) {
+  if (await workspaceEnvFileMatches(path, content)) return;
   if (!runtimeManagedPath(path)) {
     await mkdir(dirname(path), { recursive: true });
     await writeFile(path, content, "utf8");
@@ -528,6 +531,14 @@ async function writeWorkspaceEnvFile(path: string, content: string) {
   }
   await mkdirRuntime(dirnameWorkspacePath(path));
   await writeRuntimeFile(path, content);
+}
+
+async function workspaceEnvFileMatches(path: string, content: string) {
+  try {
+    return (await readWorkspaceEnvFile(path)) === content;
+  } catch {
+    return false;
+  }
 }
 
 function runtimeEnvFile(name: string) {

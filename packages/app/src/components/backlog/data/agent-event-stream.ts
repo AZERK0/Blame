@@ -2,6 +2,7 @@ import type { AgentEvent } from "@blame/agent-runtime"
 
 import type { Platform } from "@/context/platform"
 import { recordPerformanceCount } from "@/lib/performance-diagnostics"
+import { resumableEventStreamUrl } from "./agent-event-stream-url.ts"
 import { agentEventMatchesExecution } from "./agent-run-lifecycle.ts"
 
 type AgentEventSubscriptionState = {
@@ -17,11 +18,20 @@ export function activeAgentEventSubscription(sessionId: string | undefined) {
   )
 }
 
+export function registeredAgentEventSubscription(
+  sessionId: string | undefined
+) {
+  return Boolean(
+    sessionId && (activeSubscriptions.get(sessionId)?.subscriptions ?? 0) > 0
+  )
+}
+
 export function subscribeAgentEvents(
   platform: Platform,
   sessionId: string,
   callback: (event: AgentEvent) => void,
-  executionId?: string
+  executionId?: string,
+  lastSequenceNumber = 0
 ) {
   let closed = false
   let connected = false
@@ -53,7 +63,7 @@ export function subscribeAgentEvents(
         return
       }
       source = createAgentEventSource(
-        url,
+        resumableEventStreamUrl(url, lastSequenceNumber),
         handleEvent,
         () => updateConnection(true),
         () => updateConnection(false)

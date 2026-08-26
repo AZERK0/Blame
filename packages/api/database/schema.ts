@@ -869,7 +869,7 @@ export class QuickChatAgentRunSchema extends BaseModel {
   @column()
   declare lastEventType: string | null
   @column()
-  declare lastSequenceNumber: number
+  declare lastSequenceNumber: bigint | number
   @column()
   declare messageId: string | null
   @column()
@@ -1145,7 +1145,7 @@ export class UserStoryAgentRunSchema extends BaseModel {
   @column()
   declare lastEventType: string | null
   @column()
-  declare lastSequenceNumber: number
+  declare lastSequenceNumber: bigint | number
   @column()
   declare sessionSummary: string | null
   @column()

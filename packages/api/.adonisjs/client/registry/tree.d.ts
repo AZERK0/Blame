@@ -136,6 +136,7 @@ export interface ApiDefinition {
       quickChatAgentRuns: {
         store: typeof routes['projects.quick_chats.quick_chat_agent_runs.store']
         update: typeof routes['projects.quick_chats.quick_chat_agent_runs.update']
+        finalize: typeof routes['projects.quick_chats.quick_chat_agent_runs.finalize']
         activityDetail: typeof routes['projects.quick_chats.quick_chat_agent_runs.activity_detail']
       }
     }

@@ -37,6 +37,17 @@ export function pendingAgentSnapshots(
   )
 }
 
+export function pendingAgentRunSnapshots(
+  storage: Storage,
+  projectId: string,
+  targetType: AgentSnapshotTarget,
+  runId: string
+) {
+  return pendingAgentSnapshots(storage, projectId, targetType).filter(
+    (snapshot) => snapshot.runId === runId
+  )
+}
+
 export function acknowledgeAgentSnapshot(
   storage: Storage,
   completed: Pick<DurableAgentSnapshot<unknown>, "event" | "runId">

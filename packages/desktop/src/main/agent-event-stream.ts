@@ -91,7 +91,9 @@ export class AgentEventStream {
 
     const origin = allowedEventStreamOrigin(request.headers.origin)
     response.writeHead(200, {
-      ...(origin ? { "Access-Control-Allow-Origin": origin, Vary: "Origin" } : {}),
+      ...(origin
+        ? { "Access-Control-Allow-Origin": origin, Vary: "Origin" }
+        : {}),
       "Cache-Control": "no-cache, no-transform",
       Connection: "keep-alive",
       "Content-Type": "text/event-stream",
@@ -103,7 +105,7 @@ export class AgentEventStream {
     response.on("drain", () => this.drain(client))
     response.write(": connected\n\n")
 
-    const lastSequence = lastEventSequence(request)
+    const lastSequence = lastEventSequence(request, parsed.lastEventId)
     session.events
       .filter((event) => event.sequence > lastSequence)
       .forEach((event) => this.write(client, event))
@@ -209,14 +211,23 @@ function eventStreamRequest(requestUrl: string | undefined) {
   const match = url.pathname.match(/^\/agent\/sessions\/([^/]+)\/events$/)
   if (!match?.[1]) return undefined
   return {
+    lastEventId: url.searchParams.get("lastEventId"),
     sessionId: decodeURIComponent(match[1]),
     token: url.searchParams.get("token"),
   }
 }
 
-function lastEventSequence(request: IncomingMessage) {
+function lastEventSequence(
+  request: IncomingMessage,
+  requestedLastEventId: string | null
+) {
   const value = request.headers["last-event-id"]
-  const sequence = Number(Array.isArray(value) ? value[0] : value)
+  const headerSequence = eventSequence(Array.isArray(value) ? value[0] : value)
+  return Math.max(headerSequence, eventSequence(requestedLastEventId))
+}
+
+function eventSequence(value: string | undefined | null) {
+  const sequence = Number(value)
   return Number.isSafeInteger(sequence) && sequence >= 0 ? sequence : 0
 }
 

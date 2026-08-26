@@ -26,7 +26,7 @@ import {
   terminalAgentRunEvent,
 } from "@/components/backlog/data/agent-flow"
 import {
-  activeAgentEventSubscription,
+  registeredAgentEventSubscription,
   subscribeAgentEvents,
 } from "@/components/backlog/data/agent-event-stream"
 import {
@@ -35,7 +35,10 @@ import {
   type AgentStreamSnapshotPersistence,
 } from "@/components/backlog/data/agent-stream-coordinator"
 import { persistTerminalAgentUpdate } from "@/components/backlog/data/agent-terminal-outbox"
-import { persistAgentSnapshot } from "@/components/backlog/data/agent-snapshot-outbox"
+import {
+  pendingAgentRunSnapshots,
+  persistAgentSnapshot,
+} from "@/components/backlog/data/agent-snapshot-outbox"
 import {
   agentRunFinalization,
   agentRunOwnsStory,
@@ -110,6 +113,9 @@ export function useBacklogRotation(
     (stories: UserStory[]) => void
   >(() => undefined)
   const recoverInterruptedAgentRunsRef = React.useRef<
+    (stories: UserStory[]) => void
+  >(() => undefined)
+  const resumeRunningAgentStreamsRef = React.useRef<
     (stories: UserStory[]) => void
   >(() => undefined)
   const [hostDependenciesDialog, setHostDependenciesDialog] =
@@ -266,30 +272,7 @@ export function useBacklogRotation(
       executionId,
       kind: "initial",
     })
-    const coordinator = createStoryStreamCoordinator(
-      detailedStory,
-      run,
-      session.sessionId
-    )
-    const unsubscribeSession = subscribeAgentEvents(
-      platform,
-      session.sessionId,
-      (event) => {
-        const persisted = coordinator.push(event)
-        if (terminalAgentRunEvent(event)) {
-          void persisted
-            .catch(reportAgentPersistenceError)
-            .finally(unsubscribeStream)
-        }
-      },
-      executionId
-    )
-    const unsubscribeStream = () => {
-      unsubscribeSession()
-      agentStreamClosers.current.delete(unsubscribeStream)
-      void coordinator.close().catch(reportAgentPersistenceError)
-    }
-    agentStreamClosers.current.add(unsubscribeStream)
+    subscribeStoryStream(detailedStory, run, session.sessionId, executionId)
 
     await backlog.update(detailedStory, {
       agentModelId: selection.currentModel.id,
@@ -765,18 +748,76 @@ export function useBacklogRotation(
   function createStoryStreamCoordinator(
     story: UserStory,
     run: UserStoryAgentRun,
-    sessionId: string
+    sessionId: string,
+    executionId = run.executionId ?? run.id
   ) {
     return new AgentStreamCoordinator({
-      executionId: run.executionId ?? run.id,
+      executionId,
       initialState: runFlowState(run),
+      lastSequenceNumber: run.lastSequenceNumber,
       onError: reportAgentPersistenceError,
       persist: (snapshot) =>
         persistAgentEvent(story, run, snapshot.event, snapshot),
       runId: run.id,
+      recoveredSnapshots: pendingAgentRunSnapshots(
+        window.localStorage,
+        story.projectId,
+        "user-story",
+        run.id
+      ),
       sessionId,
     })
   }
+
+  function subscribeStoryStream(
+    story: UserStory,
+    run: UserStoryAgentRun,
+    sessionId: string,
+    executionId?: string
+  ) {
+    const coordinator = createStoryStreamCoordinator(
+      story,
+      run,
+      sessionId,
+      executionId
+    )
+    let unsubscribeSession: () => void = () => undefined
+    const close = () => {
+      unsubscribeSession()
+      agentStreamClosers.current.delete(close)
+      void coordinator.close().catch(reportAgentPersistenceError)
+    }
+    unsubscribeSession = subscribeAgentEvents(
+      platform,
+      sessionId,
+      (event) => {
+        const persisted = coordinator.push(event)
+        if (terminalAgentRunEvent(event)) {
+          void persisted.catch(reportAgentPersistenceError).finally(close)
+        }
+      },
+      executionId ?? run.executionId ?? undefined,
+      run.lastSequenceNumber ?? 0
+    )
+    agentStreamClosers.current.add(close)
+  }
+
+  React.useEffect(() => {
+    resumeRunningAgentStreamsRef.current = (stories) => {
+      stories.forEach((story) => {
+        runningAgentRunsForStory(story).forEach((run) => {
+          const sessionId = run.clineSessionId ?? story.clineSessionId
+          if (!sessionId || registeredAgentEventSubscription(sessionId)) return
+          subscribeStoryStream(story, run, sessionId)
+        })
+      })
+    }
+  })
+
+  React.useEffect(() => {
+    if (!platform.agent || backlog.loading) return
+    resumeRunningAgentStreamsRef.current(backlog.stories)
+  }, [backlog.loading, backlog.stories, platform.agent])
 
   function persistAgentUpdate(
     story: UserStory,
@@ -1206,20 +1247,20 @@ function rotationBlocker(
 }
 
 function recoverableAgentRun(story: UserStory) {
+  return runningAgentRunsForStory(story).findLast(
+    (run) =>
+      !run.finalResponse &&
+      staleAgentRun(run) &&
+      Boolean(run.clineSessionId ?? story.clineSessionId)
+  )
+}
+
+function runningAgentRunsForStory(story: UserStory) {
   const runs = new Map(
     (story.runningAgentRuns ?? []).map((run) => [run.id, run])
   )
   story.agentRuns?.forEach((run) => runs.set(run.id, run))
-  return [...runs.values()].findLast(
-    (run) =>
-      run.status === "running" &&
-      !run.finalResponse &&
-      staleAgentRun(run) &&
-      Boolean(run.clineSessionId ?? story.clineSessionId) &&
-      !activeAgentEventSubscription(
-        run.clineSessionId ?? story.clineSessionId ?? undefined
-      )
-  )
+  return [...runs.values()].filter((run) => run.status === "running")
 }
 
 function nextAgentRun(story: UserStory, run: UserStoryAgentRun) {

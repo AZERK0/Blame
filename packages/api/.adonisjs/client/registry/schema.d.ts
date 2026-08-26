@@ -1003,6 +1003,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/quick_chat_agent_runs_controller').default['update']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
+  'projects.quick_chats.quick_chat_agent_runs.finalize': {
+    methods: ["POST"]
+    pattern: '/api/v1/projects/quick-chats/:id/agent-runs/:runId/finalize'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/quick_chat_agent_run').finalizeQuickChatAgentRunValidator)>>
+      paramsTuple: [ParamValue, ParamValue]
+      params: { id: ParamValue; runId: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/quick_chat_agent_run').finalizeQuickChatAgentRunValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/quick_chat_agent_runs_controller').default['finalize']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/quick_chat_agent_runs_controller').default['finalize']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
   'projects.quick_chats.quick_chat_agent_runs.activity_detail': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/projects/quick-chats/:id/agent-runs/:runId/activities/:activityId'

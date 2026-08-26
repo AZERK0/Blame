@@ -49,6 +49,30 @@ test("keeps a parallel tool grouped when a server response omits its group", () 
   assert.equal(merged.agentRuns?.[0].activities?.[0]?.status, "completed")
 })
 
+test("does not let an older run sequence overwrite live activity state", () => {
+  const liveActivity = toolActivity("2026-06-11T10:00:02.000Z", "running")
+  const staleActivity = {
+    ...toolActivity("2026-06-11T10:00:04.000Z", "completed"),
+    detail: "stale detail",
+  }
+  const current = chat(liveActivity)
+  const server = chat(staleActivity)
+  current.agentRuns![0] = {
+    ...current.agentRuns![0],
+    lastSequenceNumber: 10,
+  }
+  server.agentRuns![0] = {
+    ...server.agentRuns![0],
+    lastSequenceNumber: 9,
+  }
+
+  const merged = mergeQuickChat(current, server)
+
+  assert.equal(merged.agentRuns?.[0]?.lastSequenceNumber, 10)
+  assert.equal(merged.agentRuns?.[0]?.activities?.[0]?.detail, "")
+  assert.equal(merged.agentRuns?.[0]?.activities?.[0]?.status, "running")
+})
+
 test("clears previous run activities when a new run explicitly resets them", () => {
   const previousActivity = activity(
     "2026-06-11T10:00:02.000Z",

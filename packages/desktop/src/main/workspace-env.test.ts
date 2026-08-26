@@ -6,6 +6,7 @@ import {
   rm,
   stat,
   symlink,
+  utimes,
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -14,6 +15,7 @@ import test from "node:test";
 import {
   crossDeviceLinkError,
   envHostFileMounts,
+  materializedPreviewEnvHostFileMounts,
   materializedPreviewEnvFilesMatch,
   materializePreviewEnvValues,
   linkEnvFile,
@@ -181,6 +183,23 @@ test("detects stale materialized preview env files", async () => {
       await materializedPreviewEnvFilesMatch(root, "http://localhost:22222"),
       false,
     );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("preserves materialized env file modification time when unchanged", async () => {
+  const root = await mkdtemp(join(tmpdir(), "blame-env-unchanged-"));
+  const overridePath = join(root, ".blame", "env-overrides", ".env");
+  const preservedTime = new Date("2020-01-02T03:04:05.000Z");
+  try {
+    await writeFile(join(root, ".env"), "APP_URL=http://localhost:3000\n");
+    await materializedPreviewEnvHostFileMounts(root, "http://localhost:42251");
+    await utimes(overridePath, preservedTime, preservedTime);
+
+    await materializedPreviewEnvHostFileMounts(root, "http://localhost:42251");
+
+    assert.equal((await stat(overridePath)).mtimeMs, preservedTime.getTime());
   } finally {
     await rm(root, { recursive: true, force: true });
   }

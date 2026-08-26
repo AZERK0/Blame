@@ -126,12 +126,15 @@ function mergeAgentRun(
   currentRun: UserStoryAgentRun,
   serverRun: UserStoryAgentRun
 ) {
-  const newestRun = newestValue(currentRun, serverRun)
+  const serverIsStale = staleRunSnapshot(currentRun, serverRun)
+  const newestRun = serverIsStale
+    ? currentRun
+    : newestValue(currentRun, serverRun)
   return {
     ...newestRun,
     activities: mergeAgentActivities(
       currentRun.activities ?? [],
-      serverRun.activities ?? []
+      mergeableServerActivities(currentRun, serverRun, serverIsStale)
     ),
     finalResponse: newestDefined(
       newestRun.finalResponse,
@@ -158,13 +161,40 @@ function monotonicRunStatus(
   serverRun: UserStoryAgentRun,
   newestRun: UserStoryAgentRun
 ) {
-  if (currentRun.status !== "running" && serverRun.status === "running") {
-    return currentRun.status
-  }
-  if (serverRun.status !== "running" && currentRun.status === "running") {
-    return serverRun.status
-  }
+  if (terminalRunStatus(currentRun.status)) return currentRun.status
+  if (terminalRunStatus(serverRun.status)) return serverRun.status
+  if (currentRun.status === "running" || serverRun.status === "running")
+    return "running"
   return newestRun.status
+}
+
+function staleRunSnapshot(
+  currentRun: UserStoryAgentRun,
+  serverRun: UserStoryAgentRun
+) {
+  return (
+    typeof currentRun.lastSequenceNumber === "number" &&
+    typeof serverRun.lastSequenceNumber === "number" &&
+    serverRun.lastSequenceNumber < currentRun.lastSequenceNumber
+  )
+}
+
+function mergeableServerActivities(
+  currentRun: UserStoryAgentRun,
+  serverRun: UserStoryAgentRun,
+  serverIsStale: boolean
+) {
+  if (!serverIsStale) return serverRun.activities ?? []
+  const currentIds = new Set(
+    (currentRun.activities ?? []).map((activity) => activity.id)
+  )
+  return (serverRun.activities ?? []).filter(
+    (activity) => !currentIds.has(activity.id)
+  )
+}
+
+function terminalRunStatus(status: UserStoryAgentRun["status"]) {
+  return status === "completed" || status === "failed" || status === "cancelled"
 }
 
 function newestDefined<T>(...values: (T | null | undefined)[]) {

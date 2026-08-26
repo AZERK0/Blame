@@ -43,12 +43,32 @@ test("authenticates streams and replays events after the last event id", () => {
 
   const rejected = new Response()
   assert.equal(
-    stream.handle(request(url.replace(/token=.*/, "token=wrong")) as never, rejected as never),
+    stream.handle(
+      request(url.replace(/token=.*/, "token=wrong")) as never,
+      rejected as never
+    ),
     false
   )
 
   const response = new Response()
-  assert.equal(stream.handle(request(url, "1") as never, response as never), true)
+  assert.equal(
+    stream.handle(request(url, "1") as never, response as never),
+    true
+  )
+  assert.match(response.chunks.join(""), /id: 2\ndata: .*two/)
+  assert.doesNotMatch(response.chunks.join(""), /one/)
+})
+
+test("replays from the resume cursor encoded in the stream URL", () => {
+  const stream = new AgentEventStream()
+  const url = new URL(stream.url("session", "http://127.0.0.1:1234"))
+  stream.publish(event("session", "one"))
+  stream.publish(event("session", "two"))
+  url.searchParams.set("lastEventId", "1")
+
+  const response = new Response()
+  stream.handle(request(url.toString()) as never, response as never)
+
   assert.match(response.chunks.join(""), /id: 2\ndata: .*two/)
   assert.doesNotMatch(response.chunks.join(""), /one/)
 })
@@ -81,7 +101,10 @@ test("starts a fresh history for a reused runtime session", () => {
   const nextUrl = stream.url("session", "http://127.0.0.1:1234")
 
   const staleResponse = new Response()
-  assert.equal(stream.handle(request(firstUrl) as never, staleResponse as never), false)
+  assert.equal(
+    stream.handle(request(firstUrl) as never, staleResponse as never),
+    false
+  )
   const response = new Response()
   stream.handle(request(nextUrl) as never, response as never)
   assert.doesNotMatch(response.chunks.join(""), /old execution/)

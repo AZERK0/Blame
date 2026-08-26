@@ -39,7 +39,10 @@ import type {
   UserStoryCodeSelectionAttachment,
   UserStoryFileAttachment,
 } from "@/components/backlog/data/backlog-data"
-import { agentStreamStore } from "@/components/backlog/data/agent-stream-store"
+import {
+  agentStreamStore,
+  type AgentStreamIdentity,
+} from "@/components/backlog/data/agent-stream-store"
 import type { AgentConversationResponseHeader } from "@/components/chat/agent-conversation-header"
 import type { VcsFileDiff } from "@/components/backlog/development/development-workspace"
 import { DiffStats } from "@/components/backlog/development/development-diff-stats"
@@ -50,10 +53,7 @@ import {
   type PendingFileAttachment,
 } from "@/components/backlog/drawer/markdown-editor"
 import { pendingFileAttachments } from "@/components/backlog/drawer/user-story-attachment-files"
-import {
-  userStoryActivityTree,
-  type UserStoryActivityNode,
-} from "@/components/backlog/drawer/user-story-activity-tree"
+import type { UserStoryActivityNode } from "@/components/backlog/drawer/user-story-activity-tree"
 import { ProviderMark } from "@/components/model/model-selector"
 import {
   Accordion,
@@ -128,6 +128,7 @@ export type AgentConversationRun = {
   finalResponse?: string | null
   id: string
   kind: UserStoryAgentRunKind
+  lastSequenceNumber?: number | null
   messageId?: string | null
   sessionSummary?: string | null
   status: UserStoryAgentRunStatus
@@ -267,20 +268,13 @@ function AgentConversationTurn({
   responseHeader: AgentConversationResponseHeader
   run: AgentConversationRun
 }) {
-  const activities = agentDisplayActivities(run)
+  const activities = agentTimelineActivities(run)
   const finalMessage = [...activities]
     .reverse()
     .find(
       (activity) =>
         activity.kind === "message" && activity.messageKind === "final"
     )
-  const visibleError = [...activities]
-    .reverse()
-    .find((activity) => activity.kind === "error")
-  const visibleResponse = visibleError ?? finalMessage ?? failedRunResponse(run)
-  const workActivities = visibleResponse
-    ? activities.filter((activity) => activity.id !== visibleResponse.id)
-    : activities
   const [changedFiles, setChangedFiles] = React.useState<VcsFileDiff[]>([])
   const [changedFilesTarget, setChangedFilesTarget] =
     React.useState<HTMLDivElement | null>(null)
@@ -353,40 +347,17 @@ function AgentConversationTurn({
       />
       <div className="grid min-w-0 gap-5">
         <AgentWorkDetails
-          activities={workActivities}
+          activities={activities}
+          alwaysVisible={
+            lastVisibleMessage?.type === "activity" &&
+            lastVisibleMessage.runId === run.id
+          }
+          highlightFinalResponse={highlightFinalResponse}
           onFileLinkClick={onFileLinkClick}
           onLoadDetail={onLoadActivityDetail}
           responseHeader={responseHeader}
           run={run}
         />
-        {visibleResponse?.kind === "error" ? (
-          <AgentErrorTimelineItem
-            alwaysVisible={
-              lastVisibleMessage?.type === "activity" &&
-              lastVisibleMessage.runId === run.id
-            }
-            createdAt={visibleResponse.createdAt}
-            detail={visibleResponse.detail}
-            actionUrl={visibleResponse.actionUrl}
-            errorCode={visibleResponse.errorCode}
-            resetAt={visibleResponse.resetAt}
-          />
-        ) : visibleResponse || run.status === "running" ? (
-          <StreamingAgentMarkdownTimelineItem
-            alwaysVisible={
-              lastVisibleMessage?.type === "activity" &&
-              lastVisibleMessage.runId === run.id
-            }
-            activity={
-              visibleResponse?.kind === "message" ? visibleResponse : undefined
-            }
-            highlight={highlightFinalResponse && Boolean(finalMessage)}
-            onFileLinkClick={onFileLinkClick}
-            responseHeader={responseHeader}
-            run={run}
-            showFeedback={Boolean(finalMessage)}
-          />
-        ) : null}
         {finalMessage && run.diffEndRef ? (
           <div ref={setChangedFilesTarget}>
             {changedFiles.length ? (
@@ -691,89 +662,273 @@ function RunCommentItem({
   )
 }
 
-function AgentWorkDetails({
-  activities,
-  onFileLinkClick,
-  onLoadDetail,
-  responseHeader,
-  run,
-}: {
+type AgentWorkDetailsProps = {
   activities: UserStoryAgentActivity[]
+  alwaysVisible: boolean
+  highlightFinalResponse: boolean
   onFileLinkClick?: (path: string) => void
   onLoadDetail: (activity: UserStoryAgentActivity) => Promise<string>
   responseHeader: AgentConversationResponseHeader
   run: AgentConversationRun
-}) {
-  const running = run.status === "running"
-  const [open, setOpen] = React.useState(false)
-  const runningToolActivityId = currentRunningToolActivityId(
-    run.status,
-    activities
-  )
-  const thinking = agentThinkingVisible(run.status, activities)
+}
 
-  if (activities.length === 0 && !thinking) return null
-
-  const stepCount = activities.filter(
-    (activity) => activity.kind !== "message"
-  ).length
-  const stateLabel = running
-    ? "Working"
-    : run.status === "failed" || run.status === "cancelled"
-      ? "Work stopped"
-      : "Work completed"
-
+function AgentWorkDetails(props: AgentWorkDetailsProps) {
+  const registry = useAgentActivityRegistry(props.activities, props.run)
+  if (!registry.activityIds.length) {
+    return props.run.status === "running" ? <AgentThinkingTimelineItem /> : null
+  }
   return (
-    <Accordion
-      type="single"
-      collapsible
-      value={running || open ? "work" : ""}
-      onValueChange={(value) => {
-        if (!running) setOpen(value === "work")
-      }}
-    >
-      <AccordionItem value="work" className="border-0 px-0">
-        <AccordionTrigger className="min-h-10 items-center justify-start gap-2 py-1 text-muted-foreground hover:no-underline [&>svg]:ml-0">
-          <span className="flex min-w-0 items-center gap-2.5 text-sm">
-            <span
-              className={cn(
-                "size-2 shrink-0 rounded-full",
-                running
-                  ? "agent-thinking-mark"
-                  : run.status === "failed"
-                    ? "bg-destructive"
-                    : "bg-emerald-500"
-              )}
-              aria-hidden="true"
-            />
-            <span className={running ? "agent-activity-running" : undefined}>
-              {stateLabel}
-            </span>
-            <span className="font-normal text-muted-foreground">
-              · {stepCount || activities.length}{" "}
-              {stepCount === 1 ? "step" : "steps"}
-            </span>
-          </span>
-        </AccordionTrigger>
-        <AccordionContent className="pt-2 pb-2 pl-1">
-          <Accordion type="multiple" className="grid gap-1">
-            {userStoryActivityTree(activities).map((node) => (
-              <AgentActivityItem
-                key={`${run.id}-${node.id}`}
-                node={node}
-                onFileLinkClick={onFileLinkClick}
-                onLoadDetail={onLoadDetail}
-                responseHeader={responseHeader}
-                runActive={running}
-                runningToolActivityId={runningToolActivityId}
-                value={`${run.id}-${node.id}`}
-              />
-            ))}
-          </Accordion>
-          {thinking ? <AgentThinkingTimelineItem /> : null}
-        </AccordionContent>
-      </AccordionItem>
+    <div className="grid gap-2">
+      <AgentWorkState
+        running={props.run.status === "running"}
+        stateLabel={agentWorkStateLabel(props.run.status)}
+        stepCount={registry.activityIds.length}
+        status={props.run.status}
+      />
+      <AgentActivityTimeline registry={registry} {...props} />
+    </div>
+  )
+}
+
+function useAgentActivityRegistry(
+  activities: UserStoryAgentActivity[],
+  run: AgentConversationRun
+) {
+  const identity = React.useMemo(
+    () =>
+      run.status === "running" && run.clineSessionId
+        ? { runId: run.id, sessionId: run.clineSessionId }
+        : undefined,
+    [run.clineSessionId, run.id, run.status]
+  )
+  React.useEffect(() => {
+    if (!identity) return
+    agentStreamStore.seed(identity, activities, run.lastSequenceNumber ?? 0)
+  }, [activities, identity, run.lastSequenceNumber])
+  const order = useAgentStreamOrder(identity)
+  return {
+    activityIds: mergedActivityIds(activities, order.activityIds),
+    identity,
+    persistedById: new Map(
+      activities.map((activity) => [activity.id, activity])
+    ),
+  }
+}
+
+function useAgentStreamOrder(identity: AgentStreamIdentity | undefined) {
+  const subscribe = React.useCallback(
+    (listener: () => void) =>
+      identity
+        ? agentStreamStore.subscribeOrder(identity, listener)
+        : () => undefined,
+    [identity]
+  )
+  const getSnapshot = React.useCallback(
+    () =>
+      identity
+        ? agentStreamStore.orderSnapshot(identity)
+        : emptyAgentStreamOrder,
+    [identity]
+  )
+  return React.useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
+}
+
+function AgentActivityTimeline({
+  activities,
+  alwaysVisible,
+  registry,
+  ...props
+}: AgentWorkDetailsProps & {
+  registry: ReturnType<typeof useAgentActivityRegistry>
+}) {
+  void activities
+  return (
+    <Accordion type="multiple" className="grid gap-2">
+      {registry.activityIds.map((activityId, index) => (
+        <StreamingAgentActivityItem
+          {...props}
+          activityId={activityId}
+          alwaysVisible={
+            alwaysVisible && index === registry.activityIds.length - 1
+          }
+          fallback={registry.persistedById.get(activityId)}
+          identity={registry.identity}
+          key={`${props.run.id}-${activityId}`}
+        />
+      ))}
     </Accordion>
+  )
+}
+
+function agentWorkStateLabel(status: AgentConversationRun["status"]) {
+  if (status === "running") return "Working"
+  return status === "failed" || status === "cancelled"
+    ? "Work stopped"
+    : "Work completed"
+}
+
+function AgentWorkState({
+  running,
+  stateLabel,
+  status,
+  stepCount,
+}: {
+  running: boolean
+  stateLabel: string
+  status: AgentConversationRun["status"]
+  stepCount: number
+}) {
+  return (
+    <div className="flex min-h-10 items-center gap-2.5 py-1 text-sm text-muted-foreground">
+      <span
+        className={cn(
+          "size-2 shrink-0 rounded-full",
+          running
+            ? "agent-thinking-mark"
+            : status === "failed"
+              ? "bg-destructive"
+              : "bg-emerald-500"
+        )}
+        aria-hidden="true"
+      />
+      <span className={running ? "agent-activity-running" : undefined}>
+        {stateLabel}
+      </span>
+      <span>
+        · {stepCount} {stepCount === 1 ? "step" : "steps"}
+      </span>
+    </div>
+  )
+}
+
+type StreamingAgentActivityItemProps = Omit<
+  AgentWorkDetailsProps,
+  "activities"
+> & {
+  activityId: string
+  fallback?: UserStoryAgentActivity
+  identity?: AgentStreamIdentity
+}
+
+function StreamingAgentActivityItem(props: StreamingAgentActivityItemProps) {
+  const activity = useStreamedAgentActivity(props)
+  return activity ? (
+    <AgentStreamActivity activity={activity} {...props} />
+  ) : null
+}
+
+function useStreamedAgentActivity({
+  activityId,
+  fallback,
+  identity,
+}: StreamingAgentActivityItemProps) {
+  const subscribe = React.useCallback(
+    (listener: () => void) =>
+      identity
+        ? agentStreamStore.subscribeActivity(identity, activityId, listener)
+        : () => undefined,
+    [activityId, identity]
+  )
+  const getSnapshot = React.useCallback(
+    () =>
+      identity
+        ? agentStreamStore.activitySnapshot(identity, activityId)
+        : undefined,
+    [activityId, identity]
+  )
+  const live = React.useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
+  return live?.activity ?? fallback
+}
+
+function AgentStreamActivity({
+  activity,
+  ...props
+}: StreamingAgentActivityItemProps & {
+  activity: UserStoryAgentActivity
+}) {
+  if (activity.kind === "error") {
+    return (
+      <AgentStreamError
+        activity={activity}
+        alwaysVisible={props.alwaysVisible}
+      />
+    )
+  }
+  if (activity.kind === "message") {
+    return <AgentStreamMessage activity={activity} {...props} />
+  }
+  return <AgentStreamTool activity={activity} {...props} />
+}
+
+function AgentStreamMessage({
+  activity,
+  alwaysVisible,
+  highlightFinalResponse,
+  onFileLinkClick,
+  responseHeader,
+  run,
+}: StreamingAgentActivityItemProps & { activity: UserStoryAgentActivity }) {
+  return (
+    <AgentMarkdownTimelineItem
+      alwaysVisible={alwaysVisible}
+      avatar={
+        <AgentResponseAvatar
+          activity={activity}
+          responseHeader={responseHeader}
+        />
+      }
+      createdAt={activity.createdAt}
+      highlight={highlightFinalResponse && activity.messageKind === "final"}
+      markdown={activity.detail}
+      onFileLinkClick={onFileLinkClick}
+      showFeedback={activity.messageKind === "final"}
+      streaming={run.status === "running" && activity.status === "running"}
+    />
+  )
+}
+
+function AgentStreamTool({
+  activity,
+  alwaysVisible,
+  onFileLinkClick,
+  onLoadDetail,
+  responseHeader,
+  run,
+}: StreamingAgentActivityItemProps & { activity: UserStoryAgentActivity }) {
+  return (
+    <AgentActivityItem
+      alwaysVisibleActivityId={alwaysVisible ? activity.id : undefined}
+      node={{ activity, id: activity.id, type: "activity" }}
+      onFileLinkClick={onFileLinkClick}
+      onLoadDetail={onLoadDetail}
+      responseHeader={responseHeader}
+      runActive={run.status === "running"}
+      runningToolActivityId={
+        activity.kind === "tool" && activity.status === "running"
+          ? activity.id
+          : undefined
+      }
+      value={`${run.id}-${activity.id}`}
+    />
+  )
+}
+
+function AgentStreamError({
+  activity,
+  alwaysVisible,
+}: {
+  activity: UserStoryAgentActivity
+  alwaysVisible: boolean
+}) {
+  return (
+    <AgentErrorTimelineItem
+      actionUrl={activity.actionUrl}
+      alwaysVisible={alwaysVisible}
+      createdAt={activity.createdAt}
+      detail={activity.detail}
+      errorCode={activity.errorCode}
+      resetAt={activity.resetAt}
+    />
   )
 }
 
@@ -1040,17 +1195,6 @@ function AgentActivityDetailLeafItem({
   )
 }
 
-function currentRunningToolActivityId(
-  runStatus: AgentConversationRun["status"],
-  activities: UserStoryAgentActivity[]
-) {
-  const lastActivity = activities.at(-1)
-  if (runStatus !== "running") return undefined
-  if (lastActivity?.kind !== "tool") return undefined
-  if (lastActivity.status !== "running") return undefined
-  return lastActivity.id
-}
-
 function lastAgentConversationVisibleMessage(
   runs: AgentConversationRun[],
   commentsById: Map<string, AgentConversationComment>
@@ -1060,7 +1204,7 @@ function lastAgentConversationVisibleMessage(
     if (run.kind !== "initial" && runComment(run, commentsById)) {
       lastMessage = { runId: run.id, type: "comment" }
     }
-    const activities = agentDisplayActivities(run)
+    const activities = agentTimelineActivities(run)
     for (const activity of activities) {
       if (activity.kind === "message" || activity.kind === "error") {
         lastMessage = {
@@ -1083,16 +1227,6 @@ function lastFinalResponseRunId(runs: AgentConversationRun[]) {
           activity.kind === "message" && activity.messageKind === "final"
       )
     )?.id
-}
-
-function agentThinkingVisible(
-  status: AgentConversationRun["status"],
-  activities: UserStoryAgentActivity[]
-) {
-  if (status !== "running") return false
-  const lastActivity = activities.at(-1)
-  if (!lastActivity) return true
-  return lastActivity.kind !== "tool" || lastActivity.status !== "running"
 }
 
 function activityIsRunning(
@@ -1651,68 +1785,6 @@ function AgentMarkdownTimelineItem({
         />
       </div>
     </div>
-  )
-}
-
-function StreamingAgentMarkdownTimelineItem({
-  activity,
-  alwaysVisible,
-  highlight,
-  onFileLinkClick,
-  responseHeader,
-  run,
-  showFeedback,
-}: {
-  activity?: UserStoryAgentActivity
-  alwaysVisible: boolean
-  highlight: boolean
-  onFileLinkClick?: (path: string) => void
-  responseHeader: AgentConversationResponseHeader
-  run: AgentConversationRun
-  showFeedback: boolean
-}) {
-  const identity = React.useMemo(
-    () =>
-      run.status === "running" && run.clineSessionId
-        ? { runId: run.id, sessionId: run.clineSessionId }
-        : undefined,
-    [run.clineSessionId, run.id, run.status]
-  )
-  const subscribe = React.useCallback(
-    (listener: () => void) =>
-      identity
-        ? agentStreamStore.subscribe(identity, listener)
-        : () => undefined,
-    [identity]
-  )
-  const getSnapshot = React.useCallback(
-    () => (identity ? agentStreamStore.snapshot(identity) : undefined),
-    [identity]
-  )
-  const streamed = React.useSyncExternalStore(
-    subscribe,
-    getSnapshot,
-    getSnapshot
-  )
-  const visibleActivity = streamed?.activity ?? activity
-  if (!visibleActivity) return null
-
-  return (
-    <AgentMarkdownTimelineItem
-      alwaysVisible={alwaysVisible}
-      avatar={
-        <AgentResponseAvatar
-          activity={visibleActivity}
-          responseHeader={responseHeader}
-        />
-      }
-      createdAt={visibleActivity.createdAt}
-      highlight={highlight}
-      markdown={visibleActivity.detail}
-      onFileLinkClick={onFileLinkClick}
-      showFeedback={showFeedback}
-      streaming={run.status === "running"}
-    />
   )
 }
 
@@ -2414,6 +2486,34 @@ function agentDisplayActivities(run: AgentConversationRun) {
       title: "Agent response",
     },
   ]
+}
+
+function agentTimelineActivities(run: AgentConversationRun) {
+  const activities = agentDisplayActivities(run)
+  const failure = failedRunResponse(run)
+  if (!failure) return activities
+  const hasVisibleResponse = activities.some(
+    (activity) => activity.kind === "message" || activity.kind === "error"
+  )
+  return hasVisibleResponse ? activities : [...activities, failure]
+}
+
+const emptyAgentStreamOrder = { activityIds: [], revision: 0 }
+
+function mergedActivityIds(
+  persisted: UserStoryAgentActivity[],
+  liveIds: string[]
+) {
+  if (!liveIds.length) return persisted.map((activity) => activity.id)
+  const ids = [...liveIds]
+  const known = new Set(ids)
+  persisted.forEach((activity) => {
+    const activityId = activity.id
+    if (known.has(activityId)) return
+    known.add(activityId)
+    ids.push(activityId)
+  })
+  return ids
 }
 
 function finalResponseActivities(

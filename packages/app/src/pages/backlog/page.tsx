@@ -30,6 +30,7 @@ import {
 } from "@/components/backlog/data/agent-stream-coordinator"
 import { persistTerminalAgentUpdate } from "@/components/backlog/data/agent-terminal-outbox"
 import {
+  pendingAgentRunSnapshots,
   persistAgentSnapshot,
   replayAgentSnapshots,
 } from "@/components/backlog/data/agent-snapshot-outbox"
@@ -660,10 +661,17 @@ export function BacklogPage() {
           agentSessionSummary: run.sessionSummary ?? story.agentSessionSummary,
           agentUsage: run.usage ?? story.agentUsage,
         },
+        lastSequenceNumber: run.lastSequenceNumber,
         onError: reportAgentPersistenceError,
         persist: (snapshot) =>
           persistAgentEvent(story, run, snapshot.event, snapshot),
         runId: run.id,
+        recoveredSnapshots: pendingAgentRunSnapshots(
+          window.localStorage,
+          story.projectId,
+          "user-story",
+          run.id
+        ),
         sessionId,
       })
       let authenticationFailed = false
@@ -686,7 +694,8 @@ export function BacklogPage() {
             void persisted.catch(reportAgentPersistenceError).finally(close)
           }
         },
-        executionId
+        executionId,
+        run.lastSequenceNumber ?? 0
       )
       agentStreamClosers.current.set(run.id, close)
     },

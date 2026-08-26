@@ -57,6 +57,42 @@ test("never regresses a completed local run to running", () => {
   assert.equal(merged.agentRuns?.[0].completedAt, "2026-06-11T10:00:03.000Z")
 })
 
+test("does not let an older run sequence overwrite live activity state", () => {
+  const liveActivity = activity(
+    "tool",
+    "2026-06-11T10:00:02.000Z",
+    "running",
+    "live detail"
+  )
+  const staleActivity = activity(
+    "tool",
+    "2026-06-11T10:00:04.000Z",
+    "completed",
+    "stale detail"
+  )
+  const currentRun = { ...run([liveActivity]), lastSequenceNumber: 10 }
+  const serverRun = { ...run([staleActivity]), lastSequenceNumber: 9 }
+
+  const merged = mergeStoryAgentRun(story([currentRun]), serverRun)
+
+  assert.equal(merged.agentRuns?.[0]?.lastSequenceNumber, 10)
+  assert.equal(merged.agentRuns?.[0]?.activities?.[0]?.detail, "live detail")
+  assert.equal(merged.agentRuns?.[0]?.activities?.[0]?.status, "running")
+})
+
+test("does not regress a running run to pending", () => {
+  const currentRun = { ...run([]), status: "running" as const }
+  const serverRun = {
+    ...run([]),
+    status: "pending" as const,
+    updatedAt: "2026-06-11T10:00:04.000Z",
+  }
+
+  const merged = mergeStoryAgentRun(story([currentRun]), serverRun)
+
+  assert.equal(merged.agentRuns?.[0]?.status, "running")
+})
+
 test("keeps a local attachment upload pending during a server refresh", () => {
   const localStory = {
     ...story([]),

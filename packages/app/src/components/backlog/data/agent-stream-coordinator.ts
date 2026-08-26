@@ -12,6 +12,7 @@ import {
   type AgentStreamIdentity,
   type AgentStreamStore,
 } from "./agent-stream-store.ts"
+import { mergeAgentActivities } from "./agent-activity-merge.ts"
 
 export type AgentStreamSnapshotPersistence = {
   event: AgentEvent
@@ -22,9 +23,16 @@ export type AgentStreamSnapshotPersistence = {
 type AgentStreamCoordinatorInput = AgentStreamIdentity & {
   executionId: string
   initialState: AgentFlowState
+  lastSequenceNumber?: number | null
   onError?: (error: unknown) => void
   persist(snapshot: AgentStreamSnapshotPersistence): Promise<unknown> | unknown
+  recoveredSnapshots?: RecoveredAgentSnapshot[]
   store?: AgentStreamStore
+}
+
+type RecoveredAgentSnapshot = {
+  event: AgentPersistenceEvent
+  update: unknown
 }
 
 type PendingSnapshot = AgentStreamSnapshotPersistence & {
@@ -49,6 +57,8 @@ export class AgentStreamCoordinator {
   private timer?: ReturnType<typeof setTimeout>
   private persistence = Promise.resolve<unknown>(undefined)
   private sequenceNumber = 0
+  private handledSequenceNumber = 0
+  private readonly seenEventIds = new Set<string>()
   private readonly identity: AgentStreamIdentity
   private readonly store: AgentStreamStore
 
@@ -57,16 +67,36 @@ export class AgentStreamCoordinator {
     this.identity = { runId: input.runId, sessionId: input.sessionId }
     this.state = input.initialState
     this.store = input.store ?? agentStreamStore
+    this.sequenceNumber = input.lastSequenceNumber ?? 0
+    this.handledSequenceNumber = input.lastSequenceNumber ?? 0
+    this.store.seed(
+      this.identity,
+      input.initialState.agentActivities ?? [],
+      this.sequenceNumber
+    )
+    this.recoverSnapshots(input.recoveredSnapshots ?? [])
   }
 
   push(event: AgentEvent) {
+    if (this.previouslyHandled(event)) return this.persistence
+    if (event.eventId && this.seenEventIds.has(event.eventId)) {
+      return this.persistence
+    }
+    if (event.eventId) this.seenEventIds.add(event.eventId)
+    this.handledSequenceNumber = Math.max(
+      this.handledSequenceNumber,
+      event.sequenceNumber ?? 0
+    )
     const persistentEvent = this.persistentEvent(event)
     const update = agentFlowUpdate(this.state, persistentEvent.event)
     this.state = applyFlowUpdate(this.state, update)
     const activity = update.agentActivity
     const snapshot = { ...persistentEvent, update }
+    this.publishActivities(
+      update,
+      persistentEvent.persistenceEvent.sequenceNumber
+    )
     if (streamingEvent(persistentEvent.event) && activity) {
-      this.publishActivity(activity)
       return this.queueSnapshot(snapshot, activity.id)
     }
     this.store.flush(this.identity)
@@ -87,10 +117,43 @@ export class AgentStreamCoordinator {
     return this.flush().finally(() => this.store.clear(this.identity))
   }
 
-  private publishActivity(
-    activity: NonNullable<AgentFlowUpdate["agentActivity"]>
-  ) {
-    if (activity.kind === "message") this.store.publish(this.identity, activity)
+  private publishActivities(update: AgentFlowUpdate, sequenceNumber: number) {
+    const activities =
+      update.agentActivityUpdates ??
+      (update.agentActivity ? [update.agentActivity] : [])
+    this.store.publish(this.identity, activities, sequenceNumber)
+  }
+
+  private recoverSnapshots(snapshots: RecoveredAgentSnapshot[]) {
+    snapshots
+      .sort(
+        (left, right) => left.event.sequenceNumber - right.event.sequenceNumber
+      )
+      .forEach((snapshot) => {
+        this.seenEventIds.add(snapshot.event.eventId)
+        const update = recoveredFlowUpdate(this.state, snapshot.update)
+        this.state = applyFlowUpdate(this.state, update)
+        this.sequenceNumber = Math.max(
+          this.sequenceNumber,
+          snapshot.event.sequenceNumber
+        )
+        this.handledSequenceNumber = Math.max(
+          this.handledSequenceNumber,
+          snapshot.event.sequenceNumber
+        )
+        this.store.seed(
+          this.identity,
+          recoveredActivities(update),
+          snapshot.event.sequenceNumber
+        )
+      })
+  }
+
+  private previouslyHandled(event: AgentEvent) {
+    return (
+      typeof event.sequenceNumber === "number" &&
+      event.sequenceNumber <= this.handledSequenceNumber
+    )
   }
 
   private queueSnapshot(
@@ -196,6 +259,55 @@ function fullDetailActivities(update: AgentFlowUpdate) {
   if (!activity) return activities
   return activities.map((candidate) =>
     candidate.id === activity.id ? activity : candidate
+  )
+}
+
+function recoveredFlowUpdate(state: AgentFlowState, value: unknown) {
+  if (!value || typeof value !== "object") return {}
+  const input = value as Record<string, unknown>
+  const updates = activityList(
+    input.agentActivityUpdates ?? input.activities ?? input.agentActivity
+  )
+  const update: AgentFlowUpdate = {}
+  if (updates.length) {
+    update.agentActivities = mergeAgentActivities(
+      state.agentActivities ?? [],
+      updates
+    )
+    update.agentActivityUpdates = updates
+    update.agentActivity = updates.at(-1)
+  }
+  if (typeof input.finalResponse === "string") {
+    update.agentFinalResponse = input.finalResponse
+  }
+  if (typeof input.sessionSummary === "string") {
+    update.agentSessionSummary = input.sessionSummary
+  }
+  if (input.usage && typeof input.usage === "object") {
+    update.agentUsage = input.usage as AgentFlowUpdate["agentUsage"]
+  }
+  return update
+}
+
+function activityList(value: unknown) {
+  if (Array.isArray(value)) {
+    return value.filter(agentActivityValue)
+  }
+  return agentActivityValue(value) ? [value] : []
+}
+
+function agentActivityValue(
+  value: unknown
+): value is NonNullable<AgentFlowUpdate["agentActivity"]> {
+  if (!value || typeof value !== "object") return false
+  const activity = value as Record<string, unknown>
+  return typeof activity.id === "string" && typeof activity.kind === "string"
+}
+
+function recoveredActivities(update: AgentFlowUpdate) {
+  return (
+    update.agentActivityUpdates ??
+    (update.agentActivity ? [update.agentActivity] : [])
   )
 }
 

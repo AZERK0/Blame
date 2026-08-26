@@ -11,13 +11,17 @@ import {
   shouldPersistAgentEvent,
   terminalAgentRunEvent,
 } from "@/components/backlog/data/agent-flow"
-import { subscribeAgentEvents } from "@/components/backlog/data/agent-event-stream"
+import {
+  registeredAgentEventSubscription,
+  subscribeAgentEvents,
+} from "@/components/backlog/data/agent-event-stream"
 import {
   agentPersistenceEvent,
   AgentStreamCoordinator,
   type AgentStreamSnapshotPersistence,
 } from "@/components/backlog/data/agent-stream-coordinator"
 import {
+  pendingAgentRunSnapshots,
   persistAgentSnapshot,
   replayAgentSnapshots,
 } from "@/components/backlog/data/agent-snapshot-outbox"
@@ -172,6 +176,9 @@ function QuickChatProjectPage() {
   const agentStreamCoordinators = React.useRef(
     new Map<string, AgentStreamCoordinator>()
   )
+  const resumeQuickChatStreamsRef = React.useRef<(chats: QuickChat[]) => void>(
+    () => undefined
+  )
   const recoveringAgentRunIds = React.useRef(new Set<string>())
   const recoverAgentEventRef = React.useRef<
     (
@@ -298,6 +305,24 @@ function QuickChatProjectPage() {
       showQuickChatError("Unable to load quick chat", errorMessage(error))
     })
   }, [activeConversation, quickChats])
+
+  React.useEffect(() => {
+    resumeQuickChatStreamsRef.current = (chats) => {
+      chats.forEach((chat) => {
+        chat.agentRuns?.forEach((run) => {
+          const sessionId = run.clineSessionId ?? chat.clineSessionId
+          if (run.status !== "running" || !sessionId) return
+          if (registeredAgentEventSubscription(sessionId)) return
+          subscribeQuickChatAgentEvents(chat, run, sessionId)
+        })
+      })
+    }
+  })
+
+  React.useEffect(() => {
+    if (!platform.agent || quickChats.loading) return
+    resumeQuickChatStreamsRef.current(quickChats.chats)
+  }, [platform.agent, quickChats.chats, quickChats.loading])
 
   React.useEffect(() => {
     const updates = pendingAgentUpdates.current
@@ -885,26 +910,39 @@ function QuickChatProjectPage() {
         agentSessionSummary: run.sessionSummary ?? chat.agentSessionSummary,
         agentUsage: run.usage ?? chat.agentUsage,
       },
+      lastSequenceNumber: run.lastSequenceNumber,
       onError: reportAgentPersistenceError,
       persist: (snapshot) =>
         persistAgentEvent(chat, run, snapshot.event, snapshot),
       runId: run.id,
+      recoveredSnapshots: pendingAgentRunSnapshots(
+        window.localStorage,
+        chat.projectId,
+        "quick-chat",
+        run.id
+      ),
       sessionId,
     })
     agentStreamCoordinators.current.set(sessionId, coordinator)
-    const unsubscribe = subscribeAgentEvents(platform, sessionId, (event) => {
-      if (authenticationFailed) return
-      const text = agentEventText(event)
-      authenticationFailed = quickChatExpiredAuthenticationToken(text)
-      if (authenticationFailed) showExpiredAuthenticationToast(text)
-      const persisted = coordinator.push(event)
-      if (authenticationFailed || immediateQuickChatAgentEvent(event)) {
-        void Promise.resolve(persisted).then(
-          () => unsubscribeQuickChatAgentEvents(sessionId, unsubscribe),
-          () => unsubscribeQuickChatAgentEvents(sessionId, unsubscribe)
-        )
-      }
-    })
+    const unsubscribe = subscribeAgentEvents(
+      platform,
+      sessionId,
+      (event) => {
+        if (authenticationFailed) return
+        const text = agentEventText(event)
+        authenticationFailed = quickChatExpiredAuthenticationToken(text)
+        if (authenticationFailed) showExpiredAuthenticationToast(text)
+        const persisted = coordinator.push(event)
+        if (authenticationFailed || immediateQuickChatAgentEvent(event)) {
+          void Promise.resolve(persisted).then(
+            () => unsubscribeQuickChatAgentEvents(sessionId, unsubscribe),
+            () => unsubscribeQuickChatAgentEvents(sessionId, unsubscribe)
+          )
+        }
+      },
+      run.executionId ?? undefined,
+      run.lastSequenceNumber ?? 0
+    )
     agentEventUnsubscribers.current.set(sessionId, unsubscribe)
     return unsubscribe
   }
