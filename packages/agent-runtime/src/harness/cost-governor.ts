@@ -19,6 +19,7 @@ type ToolContext = {
 type BroadReadSuppressionReason =
   | "BROAD_READ_ALREADY_AVAILABLE"
   | "BROAD_READ_IN_FLIGHT"
+  | "ITERATION_READ_BUDGET"
   | "PARALLEL_BROAD_READ_LIMIT";
 
 export type BroadReadAdmission = RawReadProfile & {
@@ -43,6 +44,8 @@ export class HarnessCostGovernor {
   private readonly loops?: SemanticLoopDetector;
   private readonly broadReadReservations = new Map<string, string>();
   private readonly broadReadSignatures = new Set<string>();
+  private readonly broadReadsByIteration = new Map<number, number>();
+  private readonly absentPackages = new Set<string>();
   private readonly states = new Map<string, EpochState>();
   private readonly taskState = initialState();
 
@@ -60,6 +63,8 @@ export class HarnessCostGovernor {
     admission?: BroadReadAdmission,
   ) {
     this.state(contextEpoch);
+    const absentPackage = absentPackageTarget(input, this.absentPackages);
+    if (absentPackage) return absentPackageReceipt(absentPackage);
     const loopDecision = this.loops?.before(tool, input);
     if (loopDecision) return loopDecision;
     const reserveBlock = this.reserveBlock(tool, input, iteration);
@@ -78,7 +83,7 @@ export class HarnessCostGovernor {
         (signature && state.recentReadSignatures.includes(signature)))
     )
       return broadReadReceipt("BROAD_READ_ALREADY_AVAILABLE", admission);
-    return this.reserveBroadRead(admission);
+    return this.reserveBroadRead(admission, iteration);
   }
 
   after<T>(
@@ -92,6 +97,7 @@ export class HarnessCostGovernor {
     this.observe(state, tool, input, result);
     this.observe(this.taskState, tool, input, result);
     this.observeFailure(tool, input, result);
+    this.observeAbsentPackages(result);
     const enriched = annotateEpoch(
       result,
       context.contextEpoch,
@@ -119,7 +125,10 @@ export class HarnessCostGovernor {
     if (signature) this.broadReadSignatures.delete(signature);
   }
 
-  private reserveBroadRead(admission?: BroadReadAdmission) {
+  private reserveBroadRead(
+    admission: BroadReadAdmission | undefined,
+    iteration: number,
+  ) {
     if (!admission?.broad) return undefined;
     if (this.broadReadReservations.has(admission.reservationId))
       return undefined;
@@ -127,12 +136,32 @@ export class HarnessCostGovernor {
       return broadReadReceipt("BROAD_READ_IN_FLIGHT", admission);
     if (this.broadReadReservations.size >= maximumParallelBroadReads)
       return broadReadReceipt("PARALLEL_BROAD_READ_LIMIT", admission);
+    const iterationReads = this.broadReadsByIteration.get(iteration) ?? 0;
+    if (iterationReads >= maximumParallelBroadReads)
+      return broadReadReceipt("ITERATION_READ_BUDGET", admission);
     this.broadReadReservations.set(
       admission.reservationId,
       admission.signature,
     );
     this.broadReadSignatures.add(admission.signature);
+    this.broadReadsByIteration.set(iteration, iterationReads + 1);
+    while (this.broadReadsByIteration.size > 20)
+      this.broadReadsByIteration.delete(
+        this.broadReadsByIteration.keys().next().value!,
+      );
     return undefined;
+  }
+
+  private observeAbsentPackages<T>(result: HarnessToolResult<T>) {
+    if (result.status !== "success") return;
+    const diagnostics = recordValue(result.data).diagnostics;
+    if (!Array.isArray(diagnostics)) return;
+    for (const diagnostic of diagnostics) {
+      const value = recordValue(diagnostic);
+      if (value.code !== "DEPENDENCY_MISSING") continue;
+      const dependency = stringValue(value.dependency);
+      if (dependency) this.absentPackages.add(dependency);
+    }
   }
 
   private reserveBlock(
@@ -273,12 +302,19 @@ function broadReadReceipt(
 ) {
   const parallel = reason === "PARALLEL_BROAD_READ_LIMIT";
   const duplicate = reason === "BROAD_READ_IN_FLIGHT";
+  const iterationBudget = reason === "ITERATION_READ_BUDGET";
   return harnessSuccess({
     startedAt: Date.now(),
     revision: {},
     provenance: [],
-    data: broadReadReceiptData(reason, admission, parallel, duplicate),
-    diagnostics: [broadReadDiagnostic(parallel, duplicate)],
+    data: broadReadReceiptData(
+      reason,
+      admission,
+      parallel,
+      duplicate,
+      iterationBudget,
+    ),
+    diagnostics: [broadReadDiagnostic(parallel, duplicate, iterationBudget)],
     coverage: {
       scope: "unknown",
       truncated: true,
@@ -292,14 +328,20 @@ function broadReadReceiptData(
   admission: BroadReadAdmission | undefined,
   parallel: boolean,
   duplicate: boolean,
+  iterationBudget: boolean,
 ) {
   const requestedBytes = admission?.estimatedBytes ?? 0;
   return {
-    status: parallel ? "retry_suppressed" : "already_available",
+    status: duplicate
+      ? "in_flight_reused"
+      : parallel || iterationBudget
+        ? "retry_suppressed"
+        : "already_available",
     reason,
     content_coverage: "none",
     duplicate_broad_read_suppressed: duplicate,
     parallel_broad_read_suppressed: parallel,
+    shared_iteration_budget_suppressed: iterationBudget,
     read_requested_bytes: requestedBytes,
     read_returned_bytes: 0,
     omitted_bytes: requestedBytes,
@@ -321,12 +363,18 @@ function broadReadRequestedSelection(admission?: BroadReadAdmission) {
   };
 }
 
-function broadReadDiagnostic(parallel: boolean, duplicate: boolean) {
+function broadReadDiagnostic(
+  parallel: boolean,
+  duplicate: boolean,
+  iterationBudget: boolean,
+) {
   const code = parallel
     ? "PARALLEL_BROAD_READ_SUPPRESSED"
     : duplicate
       ? "IN_FLIGHT_RESULT_ALREADY_AVAILABLE"
-      : "RESULT_ALREADY_AVAILABLE";
+      : iterationBudget
+        ? "ITERATION_READ_BUDGET_REUSED"
+        : "RESULT_ALREADY_AVAILABLE";
   return {
     code,
     message: "The broad read was suppressed without a failed tool call.",
@@ -380,7 +428,45 @@ function isEdit(tool: SemanticWorkspaceToolName) {
 }
 
 function isBroadRead(tool: SemanticWorkspaceToolName) {
-  return tool === "outline_code" || tool === "search_code";
+  return ["get_relation_context", "outline_code", "search_code"].includes(tool);
+}
+
+function absentPackageReceipt(dependency: string) {
+  return harnessSuccess({
+    startedAt: Date.now(),
+    revision: {},
+    provenance: [],
+    data: {
+      status: "unavailable",
+      applied: false,
+      reason: "PACKAGE_NOT_DECLARED_OR_INSTALLED",
+      dependency,
+      retryable: false,
+      recovery_depth: 0,
+      recommendation:
+        "Use workspace_state dependency_inventory. Do not probe alternate node_modules paths.",
+    },
+    diagnostics: [
+      {
+        code: "ABSENT_PACKAGE_PATH_SUPPRESSED",
+        message:
+          "An equivalent absent-package lookup was suppressed without I/O.",
+      },
+    ],
+  });
+}
+
+function absentPackageTarget(input: unknown, dependencies: Set<string>) {
+  const normalized = JSON.stringify(input)?.replaceAll("\\", "/") ?? "";
+  for (const dependency of dependencies) {
+    const segments = dependency.startsWith("@")
+      ? dependency.split("/")
+      : [dependency];
+    const path = `node_modules/${segments.join("/")}`;
+    if (normalized.includes(path) || normalized.includes(dependency))
+      return dependency;
+  }
+  return undefined;
 }
 
 function isStructural(tool: SemanticWorkspaceToolName, input: unknown) {
@@ -445,4 +531,8 @@ function numberValue(value: unknown) {
   return typeof value === "number" && Number.isFinite(value)
     ? value
     : undefined;
+}
+
+function stringValue(value: unknown) {
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }

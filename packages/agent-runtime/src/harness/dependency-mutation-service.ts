@@ -3,7 +3,11 @@ import { basename, join } from "node:path";
 import { ArtifactStore } from "./artifact-store.js";
 import { ChangeService } from "./change-service.js";
 import { stableJson } from "./change-store.js";
-import { dependencyCacheRoot } from "./dependency-cache.js";
+import {
+  dependencyCachePopulated,
+  dependencyCacheRoot,
+} from "./dependency-cache.js";
+import { DependencyCapabilityCircuit } from "./dependency-capability-circuit.js";
 import { sha256 } from "./protocol.js";
 import {
   dependencyMutationInputSchema,
@@ -12,6 +16,7 @@ import {
 } from "./schemas.js";
 import { readTaskCatalog } from "./task-catalog.js";
 import {
+  automaticDependencyNetworkPolicy,
   SandboxedTaskExecutor,
   type TaskExecutionInput,
   type TaskExecutor,
@@ -26,8 +31,42 @@ const managerLockfiles = {
   yarn: new Set(["yarn.lock"]),
 } as const;
 
+export type DependencyMutationCapability = {
+  alternatives: Array<
+    | "reuse_existing_dependency"
+    | "implement_without_dependency"
+    | "report_blocked"
+  >;
+  applied: false;
+  available: boolean;
+  capability: "dependency_mutation";
+  circuit_open: boolean;
+  circuit_opened?: boolean;
+  environment_fingerprint: string;
+  install_available: boolean;
+  network_policy: "deny" | "project_allowlist";
+  package_manager: string;
+  package_manager_version?: string;
+  reason?: string;
+  retryable: false;
+  status: "available" | "unavailable";
+};
+
+type DependencyCapabilityContext = {
+  cacheAvailable: boolean;
+  cacheRoot: string;
+  declared?: Awaited<
+    ReturnType<NonNullable<TaskExecutor["dependencyCapability"]>>
+  >;
+  environmentFingerprint: string;
+  executorUnavailableReason?: string;
+  networkPolicy: "deny" | "project_allowlist";
+  task: TaskCatalogItem;
+};
+
 export class DependencyMutationService {
   private readonly changes: ChangeService;
+  private readonly circuit: DependencyCapabilityCircuit;
   private readonly executor: TaskExecutor;
   private readonly files: WorkspaceFiles;
 
@@ -35,10 +74,85 @@ export class DependencyMutationService {
     files: WorkspaceFiles,
     artifacts: ArtifactStore,
     executor?: TaskExecutor,
+    sessionId = "unscoped-session",
   ) {
     this.files = files;
     this.changes = new ChangeService(files, artifacts);
     this.executor = executor ?? new SandboxedTaskExecutor();
+    this.circuit = new DependencyCapabilityCircuit(files.root, sessionId);
+  }
+
+  async capability(snapshot: WorkspaceSnapshot) {
+    const task = await dependencyTask(this.files.root, snapshot.files).catch(
+      () => undefined,
+    );
+    if (!task)
+      return unavailableCapability(
+        { package_manager: "npm" },
+        sha256("no-package-manifest"),
+        "DEPENDENCY_EXECUTOR_UNAVAILABLE:No package.json was found.",
+        false,
+      );
+    const context = await this.capabilityContext(snapshot, task);
+    const open = await this.circuit.status(context.environmentFingerprint);
+    if (open)
+      return unavailableCapability(
+        task,
+        context.environmentFingerprint,
+        open.reason,
+        true,
+      );
+    return this.freshCapability(context);
+  }
+
+  private async capabilityContext(
+    snapshot: WorkspaceSnapshot,
+    task: TaskCatalogItem,
+  ): Promise<DependencyCapabilityContext> {
+    const executor = await executorCapability(this.executor);
+    const networkPolicy = selectedNetworkPolicy(executor.declared);
+    const cacheRoot = await dependencyCacheRoot(
+      this.files.root,
+      snapshot.files,
+      task,
+    );
+    const cacheAvailable = await dependencyCachePopulated(cacheRoot);
+    const environmentFingerprint = sha256(
+      stableJson({ cacheAvailable, executor, networkPolicy, task }),
+    );
+    return {
+      cacheAvailable,
+      cacheRoot,
+      declared: executor.declared,
+      environmentFingerprint,
+      executorUnavailableReason: executor.reason,
+      networkPolicy,
+      task,
+    };
+  }
+
+  private async freshCapability(context: DependencyCapabilityContext) {
+    const unavailableReason = immediateUnavailableReason(context);
+    if (unavailableReason)
+      return unavailableCapability(
+        context.task,
+        context.environmentFingerprint,
+        unavailableReason,
+        false,
+      );
+    const healthy = await this.executorHealth(
+      context.task,
+      context.cacheRoot,
+      context.networkPolicy,
+    );
+    if (!healthy.available)
+      return unavailableCapability(
+        context.task,
+        context.environmentFingerprint,
+        healthy.reason,
+        false,
+      );
+    return accessibleCapability(context);
   }
 
   async mutate(
@@ -50,6 +164,25 @@ export class DependencyMutationService {
     const packagePath = this.files.normalizePath(input.package_path);
     if (basename(packagePath) !== "package.json")
       throw new Error("INVALID_INPUT:package_path must identify package.json.");
+    const capability = await this.capability(snapshot);
+    if (!capability.available)
+      return this.unavailableMutation(input, snapshot, packagePath, capability);
+    return this.availableMutation(
+      input,
+      snapshot,
+      packagePath,
+      capability,
+      signal,
+    );
+  }
+
+  private async availableMutation(
+    input: DependencyMutationInput,
+    snapshot: WorkspaceSnapshot,
+    packagePath: string,
+    capability: DependencyMutationCapability,
+    signal?: AbortSignal,
+  ) {
     const task = await dependencyTask(this.files.root, snapshot.files);
     const overlay = await WorkspaceOverlay.materialize(
       this.files,
@@ -57,17 +190,110 @@ export class DependencyMutationService {
       signal,
     );
     try {
+      return await this.mutatePreparedOverlay(
+        input,
+        snapshot,
+        packagePath,
+        overlay,
+        task,
+        capability.network_policy,
+        signal,
+      );
+    } finally {
+      await overlay.cleanup();
+    }
+  }
+
+  private async mutatePreparedOverlay(
+    input: DependencyMutationInput,
+    snapshot: WorkspaceSnapshot,
+    packagePath: string,
+    overlay: WorkspaceOverlay,
+    task: TaskCatalogItem,
+    networkPolicy: "deny" | "project_allowlist",
+    signal?: AbortSignal,
+  ) {
+    try {
       return await this.mutateOverlay(
         input,
         snapshot,
         packagePath,
         overlay,
         task,
+        networkPolicy,
         signal,
       );
-    } finally {
-      await overlay.cleanup();
+    } catch (error) {
+      if (!dependencyCapabilityFailure(error)) throw error;
+      return this.capabilityFailureReceipt(input, snapshot, packagePath, error);
     }
+  }
+
+  private async capabilityFailureReceipt(
+    input: DependencyMutationInput,
+    snapshot: WorkspaceSnapshot,
+    packagePath: string,
+    error: unknown,
+  ) {
+    const unavailable = await this.openUnavailable(
+      snapshot,
+      errorMessage(error),
+    );
+    return unavailableReceipt(
+      snapshot,
+      unavailable,
+      packagePath,
+      input.operations.length,
+    );
+  }
+
+  private async unavailableMutation(
+    input: DependencyMutationInput,
+    snapshot: WorkspaceSnapshot,
+    packagePath: string,
+    capability: DependencyMutationCapability,
+  ) {
+    const unavailable = await this.openCapability(
+      capability,
+      capability.reason ?? "DEPENDENCY_EXECUTOR_UNAVAILABLE",
+    );
+    return unavailableReceipt(
+      snapshot,
+      unavailable,
+      packagePath,
+      input.operations.length,
+    );
+  }
+
+  async openUnavailable(snapshot: WorkspaceSnapshot, reason: string) {
+    const capability = await this.capability(snapshot);
+    return this.openCapability(capability, reason);
+  }
+
+  private async openCapability(
+    capability: DependencyMutationCapability,
+    reason: string,
+  ) {
+    await this.circuit.open(capability.environment_fingerprint, reason);
+    return {
+      ...unavailableCapability(
+        {
+          package_manager:
+            capability.package_manager as TaskCatalogItem["package_manager"],
+          ...(capability.package_manager_version
+            ? { package_manager_version: capability.package_manager_version }
+            : {}),
+        },
+        capability.environment_fingerprint,
+        reason,
+        true,
+      ),
+      circuit_opened: !capability.circuit_open,
+    };
+  }
+
+  isCapabilityFailure(value: string) {
+    return dependencyCapabilityFailure(value);
   }
 
   private async mutateOverlay(
@@ -76,6 +302,7 @@ export class DependencyMutationService {
     packagePath: string,
     overlay: WorkspaceOverlay,
     task: TaskCatalogItem,
+    networkPolicy: "deny" | "project_allowlist",
     signal?: AbortSignal,
   ) {
     const changed = await updateManifest(overlay.workspace, packagePath, input);
@@ -85,12 +312,20 @@ export class DependencyMutationService {
       snapshot,
       overlay,
       task,
+      networkPolicy,
       signal,
     );
     const effects = await overlay.effects(signal);
     assertDependencyEffects(effects, packagePath, task.package_manager);
     const receipt = await this.commitEffects(input, snapshot, effects.changes);
-    return mutationReceipt(input, packagePath, task, execution, receipt);
+    return mutationReceipt(
+      input,
+      packagePath,
+      task,
+      execution,
+      receipt,
+      networkPolicy,
+    );
   }
 
   private async commitEffects(
@@ -119,6 +354,7 @@ export class DependencyMutationService {
     snapshot: WorkspaceSnapshot,
     overlay: WorkspaceOverlay,
     task: TaskCatalogItem,
+    networkPolicy: "deny" | "project_allowlist",
     signal?: AbortSignal,
   ) {
     const executionInput = await dependencyExecutionInput({
@@ -126,6 +362,7 @@ export class DependencyMutationService {
       snapshot,
       overlay,
       task,
+      networkPolicy,
       workspaceRoot: this.files.root,
       signal,
     });
@@ -141,6 +378,34 @@ export class DependencyMutationService {
       );
     return result;
   }
+
+  private async executorHealth(
+    task: TaskCatalogItem,
+    cacheRoot: string,
+    network: "deny" | "project_allowlist",
+  ) {
+    if (!this.executor.healthCheck) return { available: true as const };
+    const health = await this.executor.healthCheck({
+      executable: task.package_manager,
+      args: [],
+      cwd: this.files.root,
+      overlayRoot: this.files.root,
+      canonicalWorkspaceRoot: this.files.root,
+      dependencyCacheRoot: cacheRoot,
+      packageManager: task.package_manager,
+      packageManagerCompatibility: "pnpm_same_major",
+      packageManagerVersion: task.package_manager_version,
+      timeoutMs: 5_000,
+      outputBytes: 4_096,
+      network,
+    });
+    return health.available
+      ? { available: true as const }
+      : {
+          available: false as const,
+          reason: health.stderr ?? "DEPENDENCY_EXECUTOR_UNAVAILABLE",
+        };
+  }
 }
 
 async function dependencyExecutionInput(input: {
@@ -148,6 +413,7 @@ async function dependencyExecutionInput(input: {
   snapshot: WorkspaceSnapshot;
   overlay: WorkspaceOverlay;
   task: TaskCatalogItem;
+  networkPolicy: "deny" | "project_allowlist";
   workspaceRoot: string;
   signal?: AbortSignal;
 }): Promise<TaskExecutionInput> {
@@ -169,7 +435,7 @@ async function dependencyExecutionInput(input: {
     timeoutMs: input.input.timeout_ms,
     outputBytes: 256 * 1024,
     signal: input.signal,
-    network: input.input.network,
+    network: input.networkPolicy,
   };
 }
 
@@ -301,6 +567,7 @@ function mutationReceipt(
   task: TaskCatalogItem,
   execution: Awaited<ReturnType<TaskExecutor["execute"]>>,
   receipt: Awaited<ReturnType<ChangeService["commitResolved"]>>,
+  networkPolicy: "deny" | "project_allowlist",
 ) {
   return {
     status: "applied" as const,
@@ -312,12 +579,148 @@ function mutationReceipt(
     package_manager_version:
       execution.packageManagerResolution?.resolvedVersion,
     network: {
-      requested: input.network,
+      selected: networkPolicy,
       enforced: execution.isolation !== "worktree",
     },
     change_set_ref: receipt.change_set_ref,
   };
 }
+
+function selectedNetworkPolicy(
+  declared:
+    | Awaited<ReturnType<NonNullable<TaskExecutor["dependencyCapability"]>>>
+    | undefined,
+) {
+  if (declared?.network === "managed_allowlist")
+    return "project_allowlist" as const;
+  return automaticDependencyNetworkPolicy();
+}
+
+async function executorCapability(executor: TaskExecutor) {
+  try {
+    const [isolation, declared] = await Promise.all([
+      executor.capability(),
+      executor.dependencyCapability?.(),
+    ]);
+    return { declared, isolation };
+  } catch (error) {
+    return {
+      declared: undefined,
+      isolation: "unavailable" as const,
+      reason: errorMessage(error),
+    };
+  }
+}
+
+function immediateUnavailableReason(context: DependencyCapabilityContext) {
+  if (context.executorUnavailableReason)
+    return context.executorUnavailableReason;
+  if (context.declared && !context.declared.available)
+    return context.declared.reason ?? "DEPENDENCY_EXECUTOR_UNAVAILABLE";
+  return undefined;
+}
+
+function accessibleCapability(context: DependencyCapabilityContext) {
+  const available =
+    context.networkPolicy === "project_allowlist" || context.cacheAvailable;
+  if (available)
+    return availableCapability(
+      context.task,
+      context.environmentFingerprint,
+      context.networkPolicy,
+    );
+  return unavailableCapability(
+    context.task,
+    context.environmentFingerprint,
+    "DEPENDENCY_EXECUTOR_UNAVAILABLE:No managed dependency network or prepared lockfile cache is available.",
+    false,
+  );
+}
+
+function availableCapability(
+  task: Pick<TaskCatalogItem, "package_manager" | "package_manager_version">,
+  environmentFingerprint: string,
+  networkPolicy: "deny" | "project_allowlist",
+): DependencyMutationCapability {
+  return {
+    alternatives: [...dependencyAlternatives],
+    applied: false,
+    available: true,
+    capability: "dependency_mutation",
+    circuit_open: false,
+    environment_fingerprint: environmentFingerprint,
+    install_available: true,
+    network_policy: networkPolicy,
+    package_manager: task.package_manager,
+    ...(task.package_manager_version
+      ? { package_manager_version: task.package_manager_version }
+      : {}),
+    retryable: false,
+    status: "available",
+  };
+}
+
+function unavailableCapability(
+  task: Pick<TaskCatalogItem, "package_manager" | "package_manager_version">,
+  environmentFingerprint: string,
+  reason: string,
+  circuitOpen: boolean,
+): DependencyMutationCapability {
+  return {
+    alternatives: [...dependencyAlternatives],
+    applied: false,
+    available: false,
+    capability: "dependency_mutation",
+    circuit_open: circuitOpen,
+    environment_fingerprint: environmentFingerprint,
+    install_available: false,
+    network_policy: "deny",
+    package_manager: task.package_manager,
+    ...(task.package_manager_version
+      ? { package_manager_version: task.package_manager_version }
+      : {}),
+    reason: normalizeCapabilityReason(reason),
+    retryable: false,
+    status: "unavailable",
+  };
+}
+
+function unavailableReceipt(
+  snapshot: WorkspaceSnapshot,
+  capability: DependencyMutationCapability,
+  packagePath: string,
+  operationCount: number,
+) {
+  return {
+    ...capability,
+    changed_files: [],
+    operation_count: operationCount,
+    package_path: packagePath,
+    source_revision_id: snapshot.revision.source_revision_id,
+    recovery_depth: 0,
+  };
+}
+
+function normalizeCapabilityReason(value: string) {
+  if (/^DEPENDENCY_EXECUTOR_UNAVAILABLE:/u.test(value)) return value;
+  return `DEPENDENCY_EXECUTOR_UNAVAILABLE:${value}`;
+}
+
+function dependencyCapabilityFailure(value: unknown) {
+  return /allowlist|corepack|econnrefused|enotfound|package_manager_unavailable|package manager unavailable|executor unavailable|executable unavailable|dependency_executor_unavailable|blame_project_allowlist_proxy/iu.test(
+    errorMessage(value),
+  );
+}
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
+
+const dependencyAlternatives = [
+  "reuse_existing_dependency",
+  "implement_without_dependency",
+  "report_blocked",
+] as const;
 
 function noChangeReceipt(
   snapshot: WorkspaceSnapshot,

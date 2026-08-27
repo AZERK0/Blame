@@ -118,13 +118,13 @@ test("large explicit ranges are narrowed while genuinely targeted ranges remain 
       await workspace.inspectCode({
         target: { path: "coverage.txt" },
         view: "raw",
-        range_utf8_bytes: [2_000, 8_000],
+        range_utf8_bytes: [1_000, 9_500],
       }),
     );
     assert.equal(majority.data.status, "auto_narrowed");
     if (majority.data.status !== "auto_narrowed") return;
-    assert.equal(majority.data.requested_coverage_ratio, 0.6);
-    assert.deepEqual(majority.data.range_utf8_bytes, [2_000, 4_048]);
+    assert.equal(majority.data.requested_coverage_ratio, 0.85);
+    assert.deepEqual(majority.data.range_utf8_bytes, [1_000, 3_048]);
     const minority = success(
       await workspace.inspectCode({
         target: { path: "coverage.txt" },

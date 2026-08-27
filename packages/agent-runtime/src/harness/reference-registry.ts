@@ -2,7 +2,7 @@ import { mkdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { lock } from "proper-lockfile";
 import writeFileAtomic from "write-file-atomic";
-import { sha256 } from "./protocol.js";
+import { recalculateHarnessUsage, sha256 } from "./protocol.js";
 
 type ReferenceScheme = "file" | "match" | "node" | "sym";
 
@@ -50,7 +50,7 @@ export class ReferenceRegistry {
     const candidates = collectFullReferences(value);
     if (!candidates.length) return value;
     const replacements = await this.register(candidates);
-    return replaceReferences(value, replacements);
+    return recalculateHarnessUsage(replaceReferences(value, replacements));
   }
 
   async expand<T>(value: T): Promise<T> {
@@ -110,7 +110,9 @@ export class ReferenceRegistry {
 
   private async read(): Promise<RegistryFile> {
     try {
-      const value = JSON.parse(await readFile(this.path, "utf8")) as RegistryFile;
+      const value = JSON.parse(
+        await readFile(this.path, "utf8"),
+      ) as RegistryFile;
       if (value.schema_version !== "1.0" || !value.entries || !value.counters)
         throw new Error("Reference registry schema is unsupported.");
       return value;
@@ -141,7 +143,8 @@ function collectFullReferences(value: unknown) {
   const candidates: ReferenceCandidate[] = [];
   visitReferences(value, (reference, label) => {
     const scheme = fullReferenceScheme(reference);
-    if (scheme) candidates.push({ reference, scheme, ...(label ? { label } : {}) });
+    if (scheme)
+      candidates.push({ reference, scheme, ...(label ? { label } : {}) });
   });
   return candidates;
 }
@@ -186,7 +189,9 @@ function replaceReferenceValue(
   if (typeof value === "string")
     return isReferenceField(field) ? (replacements.get(value) ?? value) : value;
   if (Array.isArray(value))
-    return value.map((item) => replaceReferenceValue(item, replacements, field));
+    return value.map((item) =>
+      replaceReferenceValue(item, replacements, field),
+    );
   if (!isRecord(value)) return value;
   return Object.fromEntries(
     Object.entries(value).map(([key, item]) => [
@@ -197,7 +202,9 @@ function replaceReferenceValue(
 }
 
 function isReferenceField(field?: string) {
-  return Boolean(field && (referenceFields.has(field) || field.endsWith("_refs")));
+  return Boolean(
+    field && (referenceFields.has(field) || field.endsWith("_refs")),
+  );
 }
 
 function fullReferenceScheme(value: string): ReferenceScheme | undefined {
@@ -228,7 +235,9 @@ function nextHandle(registry: RegistryFile, scheme: ReferenceScheme) {
 }
 
 function uniqueCandidates(candidates: ReferenceCandidate[]) {
-  return [...new Map(candidates.map((item) => [item.reference, item])).values()];
+  return [
+    ...new Map(candidates.map((item) => [item.reference, item])).values(),
+  ];
 }
 
 function referenceLabel(value: Record<string, unknown>) {

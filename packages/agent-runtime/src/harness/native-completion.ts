@@ -262,7 +262,6 @@ function validationRequest(
       source_revision_id: validation.sourceRevisionId,
       task: { task_id: validation.taskId },
       limits: { timeout_ms: 120_000, output_bytes: 64 * 1024 },
-      network: "deny",
     },
     taskContract: options.taskContract,
     tool: "run_task",

@@ -113,6 +113,7 @@ export const workspaceStateInputSchema = z
           "tree_summary",
           "changes",
           "task_catalog",
+          "task_projection",
         ]),
       )
       .optional(),
@@ -650,7 +651,6 @@ export const dependencyMutationInputSchema = z
       )
       .min(1)
       .max(50),
-    network: z.enum(["deny", "project_allowlist"]).default("deny"),
     timeout_ms: z.number().int().min(1_000).max(900_000).default(120_000),
     idempotency_key: idempotencyKeySchema.optional(),
   })
@@ -693,7 +693,6 @@ export const runTaskInputSchema = z
           .optional(),
       })
       .strict(),
-    network: z.enum(["deny", "project_allowlist"]).default("deny").optional(),
     idempotency_key: idempotencyKeySchema.optional(),
   })
   .strict();

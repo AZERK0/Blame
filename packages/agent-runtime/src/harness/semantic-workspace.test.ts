@@ -1555,7 +1555,6 @@ test("run_task isolates writes, captures effects, logs evidence, and is idempote
       source_revision_id: revision,
       task: { task_id: "test" },
       limits: { timeout_ms: 10_000 },
-      network: "deny" as const,
     };
     const executed = success(await workspace.runTask(input));
     assert.match(executed.data.run_ref, /^run:\/\//);
@@ -1606,7 +1605,7 @@ test("run_task isolates writes, captures effects, logs evidence, and is idempote
     const retried = success(await workspace.runTask(input));
     assert.equal(retried.data.run_ref, executed.data.run_ref);
     assert.equal(executor.executions, 1);
-    assert.equal(executor.healthChecks, 1);
+    assert.equal(executor.healthChecks, 2);
 
     const attempt = JSON.parse(
       await readFile(
@@ -1732,7 +1731,6 @@ test("run_task diagnoses missing dependencies and exposes a controlled install t
         source_revision_id: state.data.source_revision.source_revision_id,
         task: { kind: "dependencies" },
         limits: { timeout_ms: 10_000 },
-        network: "project_allowlist",
       }),
     );
     assert.equal(install.data.status, "passed");
@@ -1876,7 +1874,6 @@ test("native dependency mutation updates the manifest and generated lockfile ato
             dependency_type: "dependencies",
           },
         ],
-        network: "deny",
         timeout_ms: 30_000,
       }),
     );
@@ -1897,10 +1894,10 @@ test("native dependency mutation updates the manifest and generated lockfile ato
       throw new Error("Expected applied mutation.");
     assert.equal(result.data.package_manager, "pnpm");
     assert.deepEqual(result.data.network, {
-      requested: "deny",
+      selected: "project_allowlist",
       enforced: true,
     });
-    assert.equal(executor.lastInput?.network, "deny");
+    assert.equal(executor.lastInput?.network, "project_allowlist");
     assert.deepEqual(executor.lastInput?.args, [
       "install",
       "--lockfile-only",
@@ -2844,6 +2841,10 @@ class RecordingTaskExecutor implements TaskExecutor {
     return "sandbox_exec" as const;
   }
 
+  async dependencyCapability() {
+    return { available: true, network: "managed_allowlist" as const };
+  }
+
   async healthCheck() {
     this.healthChecks += 1;
     return { available: true, isolation: "sandbox_exec" as const };
@@ -2872,6 +2873,10 @@ class LockfileTaskExecutor implements TaskExecutor {
 
   async capability() {
     return "sandbox_exec" as const;
+  }
+
+  async dependencyCapability() {
+    return { available: true, network: "managed_allowlist" as const };
   }
 
   async healthCheck() {

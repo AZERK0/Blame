@@ -1,9 +1,12 @@
 export const fullRawReadMaximumBytes = 8 * 1024;
 export const fullRawReadMaximumLines = 120;
-export const broadReadCoverageRatio = 0.5;
+export const broadReadCoverageRatio = 0.8;
 export const maximumSemanticParseBytes = 2 * 1024 * 1024;
 export const autoNarrowedPreviewMaximumBytes = 2 * 1024;
 export const autoNarrowedOutlineMaximumItems = 40;
+export const autoNarrowedMaximumOutputTokens = 1_800;
+export const outlineMaximumOutputTokens = 2_000;
+export const outlineMaximumItems = 80;
 export const maximumParallelBroadReads = 2;
 
 export type ByteRange = [number, number];
@@ -106,6 +109,21 @@ export function outlineReadProfile(
     estimatedBytes: Math.max(path.size, outputTokens * 4),
     fileBytes: path.directory ? undefined : path.size,
   };
+}
+
+export function relationReadProfile(
+  input: unknown,
+): RawReadProfile | undefined {
+  const value = recordValue(input);
+  const paths = stringArray(recordValue(value.scope).paths);
+  const maximumResults = numberValue(value.max_results) ?? 30;
+  const outputTokens = outputTokenBudget(value, 1_800);
+  const broad =
+    paths.length === 0 ||
+    paths.length > 4 ||
+    maximumResults > 30 ||
+    outputTokens > 1_800;
+  return broad ? { broad, estimatedBytes: outputTokens * 4 } : undefined;
 }
 
 export function rawReadRequest(input: unknown): RawReadRequest | undefined {

@@ -30,6 +30,7 @@ type CatalogCandidate = TaskCatalogItem & {
 export async function readTaskCatalog(
   root: string,
   workspaceFiles?: string[],
+  options: { dependencyTaskAvailable?: boolean } = {},
 ): Promise<TaskCatalogItem[]> {
   const manifests = await readPackageManifests(root, workspaceFiles);
   if (!manifests.length) return [];
@@ -42,7 +43,9 @@ export async function readTaskCatalog(
     manifestTasks(manifest, packageManager),
   );
   return [
-    dependencyTask(packageManager),
+    ...(options.dependencyTaskAvailable === false
+      ? []
+      : [dependencyTask(packageManager)]),
     ...disambiguateTasks(candidates),
   ].sort((left, right) => left.task_id.localeCompare(right.task_id));
 }

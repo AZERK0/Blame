@@ -56,6 +56,7 @@ import {
   rawReadLineProfile,
   rawReadRequest,
   rawReadSizeProfile,
+  relationReadProfile,
   searchReadProfile,
 } from "./code-navigation-policy.js";
 import { semanticCallSignature } from "./semantic-loop-detector.js";
@@ -378,7 +379,9 @@ async function broadReadAdmission(
       ? {
           ...profile,
           reservationId,
-          signature: semanticCallSignature(tool, input),
+          signature: `${
+            (await files.snapshot()).revision.source_revision_id
+          }:${semanticCallSignature(tool, input)}`,
         }
       : undefined;
   } catch {
@@ -392,6 +395,7 @@ async function toolReadProfile(
   input: unknown,
 ) {
   if (tool === "search_code") return searchReadProfile(input);
+  if (tool === "get_relation_context") return relationReadProfile(input);
   if (tool === "outline_code") {
     const path = inputTargetPath(input);
     return path

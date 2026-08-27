@@ -22,6 +22,7 @@ import {
 import { inspectCodeInputSchema } from "./schemas.js";
 import {
   bounded,
+  approximateTokens,
   revisionVector,
   staleRevision,
   toolError,
@@ -38,6 +39,7 @@ import {
 } from "./language-capabilities.js";
 import {
   autoNarrowedOutlineMaximumItems,
+  autoNarrowedMaximumOutputTokens,
   autoNarrowedPreviewMaximumBytes,
   fullRawReadMaximumBytes,
   fullRawReadMaximumLines,
@@ -107,6 +109,7 @@ export type ContentInspectCodeData = {
   covered_ranges: ByteRange[];
   current_revision_id: string;
   file_ref: FileRef;
+  file_size: number;
   language: string;
   line_range: ByteRange;
   new_bytes: number;
@@ -114,12 +117,16 @@ export type ContentInspectCodeData = {
   overlap_rate: number;
   path: string;
   range_utf8_bytes: ByteRange;
+  requested_range: ByteRange;
   read_receipt_ref: string;
   rebased: boolean;
   rebase_strategy?: string;
   requested_reference: string;
   recommendedEditTool: string | null;
   resolved_reference: string;
+  returned_bytes: number;
+  returned_range?: ByteRange;
+  returned_ranges: ByteRange[];
   segments: InspectionSegment[];
   selection: string;
   sourceUnchanged: boolean;
@@ -138,11 +145,13 @@ export type AutoNarrowedInspectCodeData = {
     | "semantic_parse_limit";
   capabilities: ReturnType<typeof publicLanguageCapabilities>;
   content_coverage: "none" | "partial";
+  coverage: "none" | "partial";
   content: string;
   current_revision_id: string;
   estimated_tokens_saved: number;
   file_ref: FileRef;
   file_size_bytes: number;
+  file_size: number;
   items: OutlineSymbol[];
   language: string;
   line_range?: ByteRange;
@@ -152,6 +161,8 @@ export type AutoNarrowedInspectCodeData = {
   read_receipt_ref: string;
   read_requested_bytes: number;
   read_returned_bytes: number;
+  returned_bytes: number;
+  returned_range?: ByteRange;
   range_utf8_bytes?: ByteRange;
   rebased: boolean;
   rebase_strategy?: string;
@@ -162,6 +173,7 @@ export type AutoNarrowedInspectCodeData = {
   requested_line_count?: number;
   requested_line_range: ByteRange;
   requested_range_utf8_bytes: ByteRange;
+  requested_range: ByteRange;
   resolved_reference: string;
   source_bytes_returned: number;
   sourceUnchanged: true;
@@ -408,6 +420,11 @@ function semanticOutlineAttempt(source: InspectionSource):
         [],
       ),
     );
+  while (
+    items.length > 1 &&
+    approximateTokens(items) > autoNarrowedMaximumOutputTokens
+  )
+    items.pop();
   return { items };
 }
 
@@ -487,6 +504,7 @@ function autoNarrowedData(
     ...autoNarrowedReadMetrics(source, profile, narrowed),
     ...autoNarrowedReferences(source, requestedRange, narrowed),
     requested_line_range: byteLineRange(source.content, requestedRange),
+    requested_range: requestedRange,
     requested_range_utf8_bytes: requestedRange,
     ...(narrowed.returnedSourceRange
       ? {
@@ -495,6 +513,7 @@ function autoNarrowedData(
             narrowed.returnedSourceRange,
           ),
           range_utf8_bytes: narrowed.returnedSourceRange,
+          returned_range: narrowed.returnedSourceRange,
         }
       : {}),
   };
@@ -517,6 +536,7 @@ function autoNarrowedIdentity(
     file_ref: source.fileRef,
     view: "raw",
     content_coverage: narrowed.contentCoverage,
+    coverage: narrowed.contentCoverage,
     content: narrowed.content,
     items: narrowed.items,
     recommendation: narrowed.recommendation,
@@ -534,8 +554,10 @@ function autoNarrowedReadMetrics(
     : 0;
   return {
     file_size_bytes: source.content.byteLength,
+    file_size: source.content.byteLength,
     read_requested_bytes: profile.estimatedBytes,
     read_returned_bytes: narrowed.returnedBytes,
+    returned_bytes: narrowed.returnedBytes,
     source_bytes_returned: sourceBytes,
     omitted_bytes: Math.max(0, profile.estimatedBytes - sourceBytes),
     requested_coverage_ratio: profile.coverageRatio ?? 0,
@@ -651,6 +673,8 @@ function alreadyAvailableResult(context: InspectionContext) {
       coverage: "complete" as const,
       overlap_rate: 1,
       new_bytes: 0,
+      returned_bytes: 0,
+      returned_ranges: [],
       omitted_bytes: 0,
       sourceUnchanged: true,
     },
@@ -681,6 +705,11 @@ function contentResult(context: InspectionContext) {
           ? ("delta" as const)
           : ("complete" as const),
       new_bytes: newByteCount(context.availability),
+      returned_bytes: newByteCount(context.availability),
+      returned_ranges: context.availability.newRanges,
+      ...(context.availability.newRanges.length === 1
+        ? { returned_range: context.availability.newRanges[0] }
+        : {}),
       sourceUnchanged: true,
     },
     coverage: {
@@ -703,8 +732,10 @@ function sharedData(context: InspectionContext) {
     path: context.path,
     line_range: context.lineRange,
     file_ref: context.fileRef,
+    file_size: context.content.byteLength,
     view: context.input.view,
     range_utf8_bytes: context.inspected.range,
+    requested_range: context.inspected.range,
     read_receipt_ref: context.availability.receipt.read_receipt_ref,
     selection: `${context.inspected.range[0]}:${context.inspected.range[1]}`,
     covered_ranges: context.availability.receipt.covered_ranges,

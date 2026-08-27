@@ -763,7 +763,6 @@ test(
           source_revision_id: revision,
           task: { task_id: "build" },
           limits: { timeout_ms: 30_000 },
-          network: "deny",
         }),
       );
       const stderr =
@@ -1012,7 +1011,7 @@ test("run_task health failures open a durable session circuit", async () => {
         ),
       );
     }
-    assert.equal(healthChecks, 3);
+    assert.equal(healthChecks, 4);
     assert.equal(executions, 0);
     const terminal = results.at(-1);
     assert.equal(terminal?.status, "error");

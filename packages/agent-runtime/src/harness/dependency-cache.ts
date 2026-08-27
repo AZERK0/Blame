@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdir, readFile } from "node:fs/promises";
+import { mkdir, readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import type { TaskCatalogItem } from "./schemas.js";
 
@@ -32,4 +32,12 @@ export async function dependencyCacheRoot(
   );
   await mkdir(root, { recursive: true, mode: 0o700 });
   return root;
+}
+
+export async function dependencyCachePopulated(root: string) {
+  try {
+    return (await readdir(root)).length > 0;
+  } catch {
+    return false;
+  }
 }

@@ -27,6 +27,7 @@ import {
   taskInvocation,
 } from "./task-catalog.js";
 import {
+  automaticDependencyNetworkPolicy,
   SandboxedTaskExecutor,
   type TaskExecutionInput,
   type TaskExecutionResult,
@@ -47,12 +48,12 @@ export class RunService {
     files: WorkspaceFiles,
     artifacts: ArtifactStore,
     changes: ChangeService,
-    executor: TaskExecutor = new SandboxedTaskExecutor(),
+    executor?: TaskExecutor,
   ) {
     this.files = files;
     this.artifacts = artifacts;
     this.changes = changes;
-    this.executor = executor;
+    this.executor = executor ?? new SandboxedTaskExecutor();
     this.store = new RunStore(files.root);
     this.attempts = new RunAttemptStore(files.root);
   }
@@ -133,7 +134,7 @@ export class RunService {
   ) {
     const catalog = await readTaskCatalog(this.files.root, snapshot.files);
     const task = resolveTask(catalog, input.task);
-    assertSupportedExecution(input, task.kind);
+    assertSupportedExecution(input);
     if (task.kind === "service")
       throw new Error(
         "UNSUPPORTED_CAPABILITY:Long-running services use Blame Preview lifecycle and port leases, not run_task.",
@@ -158,6 +159,10 @@ export class RunService {
     try {
       await this.assertCanonicalRevision(snapshot, signal);
       const invocation = taskInvocation(task, input.selection);
+      const network =
+        task.kind === "dependencies"
+          ? await this.dependencyNetworkPolicy()
+          : "deny";
       const packageCache = await dependencyCacheRoot(
         this.files.root,
         snapshot.files,
@@ -177,7 +182,7 @@ export class RunService {
         timeoutMs: input.limits.timeout_ms,
         outputBytes: input.limits.output_bytes ?? 512 * 1024,
         signal,
-        network: input.network ?? "deny",
+        network,
       };
       const openCircuit = await failureCircuit.blocked();
       const result = openCircuit
@@ -298,9 +303,9 @@ export class RunService {
         duration_ms: Math.max(0, completedAt.getTime() - startedAt.getTime()),
         limits: input.limits,
         network: {
-          requested: input.network ?? "deny",
+          requested: network,
           enforcement:
-            input.network === "project_allowlist" ? "project_proxy" : isolation,
+            network === "project_allowlist" ? "project_proxy" : isolation,
           effective: isolation === "worktree" ? "host" : "deny",
         },
         logs: {
@@ -349,6 +354,13 @@ export class RunService {
     return this.executor.capability();
   }
 
+  private async dependencyNetworkPolicy() {
+    const declared = await this.executor.dependencyCapability?.();
+    if (declared?.network === "managed_allowlist")
+      return "project_allowlist" as const;
+    return automaticDependencyNetworkPolicy();
+  }
+
   private async executeTask(
     input: TaskExecutionInput,
     isolation: Awaited<ReturnType<TaskExecutor["capability"]>>,
@@ -359,12 +371,14 @@ export class RunService {
         health.isolation,
         health.stderr ?? "Executor health check failed.",
       );
-    return this.executor.execute(input).catch((error) =>
-      executionErrorResult(
-        isolation,
-        error instanceof Error ? error.message : String(error),
-      ),
-    );
+    return this.executor
+      .execute(input)
+      .catch((error) =>
+        executionErrorResult(
+          isolation,
+          error instanceof Error ? error.message : String(error),
+        ),
+      );
   }
 
   async inspect(input: InspectRunInput) {
@@ -559,11 +573,7 @@ function inspectRunView(run: StoredRun, view: InspectRunInput["view"]) {
   };
 }
 
-function assertSupportedExecution(input: RunTaskInput, taskKind: string) {
-  if (input.network === "project_allowlist" && taskKind !== "dependencies")
-    throw new Error(
-      "UNSUPPORTED_CAPABILITY:Project network allowlists are restricted to the dependency task.",
-    );
+function assertSupportedExecution(input: RunTaskInput) {
   if (input.selection?.symbols?.length)
     throw new Error(
       "UNSUPPORTED_CAPABILITY:Symbol-level test selection requires the P1 compiler/LSP adapter. Select tests or files instead.",
@@ -637,9 +647,9 @@ function missingDependencyDiagnostics(output: string) {
     severity: "error" as const,
     message: `Dependency ${dependency} is missing from the execution environment.`,
     dependency,
-    installation_supported: true,
+    installation_supported: false,
     recommendation:
-      "Run task.kind=dependencies. Use network=deny for available caches or project_allowlist when the managed allowlist proxy is configured. Do not edit the lockfile manually.",
+      "The package is neither declared nor installed. Do not probe alternate node_modules paths; use the dependency inventory and capability alternatives from workspace_state.",
   }));
 }
 

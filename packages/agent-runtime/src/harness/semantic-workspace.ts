@@ -63,7 +63,11 @@ import {
 } from "./workspace-files.js";
 import { searchWithRipgrep } from "./lexical-search.js";
 import { capabilityRegistrySnapshot } from "./language-capabilities.js";
-import { maximumSemanticParseBytes } from "./code-navigation-policy.js";
+import {
+  maximumSemanticParseBytes,
+  outlineMaximumItems,
+  outlineMaximumOutputTokens,
+} from "./code-navigation-policy.js";
 import {
   applyChangeInputSchema,
   createFileInputSchema,
@@ -103,6 +107,7 @@ import {
 import { ValidationService } from "./validation-service.js";
 import { ConversationMemoryStore } from "./conversation-memory.js";
 import { DependencyMutationService } from "./dependency-mutation-service.js";
+import { workspaceTaskProjection } from "./workspace-task-projection.js";
 
 export type {
   InspectCodeInput,
@@ -150,6 +155,7 @@ export class SemanticWorkspace {
       this.files,
       this.artifacts,
       options.taskExecutor,
+      options.taskContract?.session_id,
     );
     this.edits = new EditService(
       this.files,
@@ -201,10 +207,21 @@ export class SemanticWorkspace {
       )
         .sort((left, right) => right[1] - left[1])
         .map(([language, files]) => ({ language, files }));
+      const dependencyMutation = await this.dependencies.capability(snapshot);
       const taskCatalog = await readTaskCatalog(
         this.files.root,
         snapshot.files,
+        {
+          dependencyTaskAvailable: dependencyMutation.install_available,
+        },
       );
+      const taskProjection = await workspaceTaskProjection({
+        dependencyCapability: dependencyMutation,
+        files: this.files,
+        objective: this.taskContract?.objective,
+        snapshot,
+        tasks: taskCatalog,
+      });
       const executionIsolation = await this.runs
         .capability()
         .then((value) => ({ available: true as const, isolation: value }))
@@ -328,6 +345,7 @@ export class SemanticWorkspace {
             },
             execution: {
               run_task: executionIsolation,
+              dependency_mutation: dependencyMutation,
               inspect_run: true,
               overlay: "copy_on_write_or_clone",
               network:
@@ -375,6 +393,7 @@ export class SemanticWorkspace {
             languages,
             top_level: topLevel.slice(0, maximumRoots),
           },
+          task_projection: taskProjection,
           changes: snapshot.changes.slice(0, maximumChanges),
           task_catalog: taskCatalog.slice(0, maximumTasks),
         },
@@ -578,6 +597,8 @@ export class SemanticWorkspace {
     signal?: AbortSignal,
   ): Promise<
     HarnessToolResult<{
+      auto_narrowed: boolean;
+      continuation_targets: Array<{ path: string; reason: string }>;
       target: string;
       items: OutlineSymbol[];
       parse_quality: unknown[];
@@ -590,27 +611,38 @@ export class SemanticWorkspace {
       const snapshot = await this.files.snapshot(signal);
       const sourceRevision = snapshot.revision.source_revision_id;
       const target = this.files.normalizePath(input.target.path);
-      const candidates = snapshot.files.filter(
-        (path) =>
-          path === target || target === "." || path.startsWith(`${target}/`),
+      const candidates = rankedOutlineCandidates(
+        snapshot.files.filter(
+          (path) =>
+            path === target || target === "." || path.startsWith(`${target}/`),
+        ),
+        this.taskContract?.objective,
+        snapshot.changes.map(({ path }) => path),
       );
       if (!candidates.length) throw new Error(`TARGET_GONE:${target}`);
-      const maximum = bounded(input.budget?.max_items, 1, 500, 80);
+      const maximum = bounded(
+        input.budget?.max_items,
+        1,
+        outlineMaximumItems,
+        outlineMaximumItems,
+      );
       const tokenBudget = bounded(
         input.budget?.max_output_tokens,
         200,
-        12_000,
-        3_000,
+        outlineMaximumOutputTokens,
+        outlineMaximumOutputTokens,
       );
       const depth = bounded(input.depth, 1, 12, 3);
       const items: OutlineSymbol[] = [];
       const parseQuality: unknown[] = [];
+      const processedPaths: string[] = [];
       let sourceTruncated = false;
       for (const path of candidates) {
         signal?.throwIfAborted();
         if (items.length >= maximum || approximateTokens(items) >= tokenBudget)
           break;
         const content = (await this.files.read(path)).content;
+        processedPaths.push(path);
         if (content.length > maximumSemanticParseBytes) {
           parseQuality.push({
             path,
@@ -628,7 +660,10 @@ export class SemanticWorkspace {
           supported: parsed.supported,
           syntax_errors: parsed.errorCount,
         });
-        for (const symbol of parsed.symbols) {
+        for (const symbol of rankedOutlineSymbols(
+          parsed.symbols,
+          this.taskContract?.objective,
+        )) {
           if (symbol.qualified_name.split(".").length > depth) continue;
           if (input.kinds?.length && !input.kinds.includes(symbol.kind))
             continue;
@@ -668,13 +703,27 @@ export class SemanticWorkspace {
         items.length >= maximum ||
         approximateTokens({ items, parse_quality: parseQuality }) >=
           tokenBudget;
+      const continuationTargets = outlineContinuationTargets(
+        candidates,
+        processedPaths,
+        target,
+        truncated,
+      );
       const response = harnessSuccess({
         startedAt,
         revision: revisionVector(snapshot),
         provenance: [
-          provenance("parser", revisionVector(snapshot), candidates),
+          provenance("parser", revisionVector(snapshot), processedPaths),
         ],
-        data: { target, items, parse_quality: parseQuality },
+        data: {
+          target,
+          items,
+          parse_quality: parseQuality,
+          auto_narrowed:
+            (input.budget?.max_output_tokens ?? outlineMaximumOutputTokens) >
+            outlineMaximumOutputTokens,
+          continuation_targets: continuationTargets,
+        },
         diagnostics: parseQuality.filter(
           (quality) =>
             !(quality as { supported?: boolean }).supported ||
@@ -974,7 +1023,7 @@ export class SemanticWorkspace {
     input: RunTaskInput,
     signal?: AbortSignal,
     context?: { sessionId?: string; toolCallId?: string },
-  ) {
+  ): Promise<ReturnType<typeof runTaskResponse>> {
     const startedAt = Date.now();
     try {
       runTaskInputSchema.parse(input);
@@ -982,7 +1031,36 @@ export class SemanticWorkspace {
         input.source_revision_id,
         signal,
       );
+      if (dependencyTaskRequested(input)) {
+        const capability = await this.dependencies.capability(snapshot);
+        if (!capability.install_available) {
+          const unavailable = await this.dependencies.openUnavailable(
+            snapshot,
+            capability.reason ?? "DEPENDENCY_EXECUTOR_UNAVAILABLE",
+          );
+          return dependencyUnavailableResponse(
+            unavailable,
+            snapshot.revision.source_revision_id,
+            startedAt,
+          ) as unknown as ReturnType<typeof runTaskResponse>;
+        }
+      }
       const run = await this.runs.run(input, snapshot, signal, context);
+      if (
+        run.task.kind === "dependencies" &&
+        run.status === "execution_error" &&
+        this.dependencies.isCapabilityFailure(run.logs.stderr_tail)
+      ) {
+        const capability = await this.dependencies.openUnavailable(
+          snapshot,
+          run.logs.stderr_tail,
+        );
+        return dependencyUnavailableResponse(
+          capability,
+          snapshot.revision.source_revision_id,
+          startedAt,
+        ) as unknown as ReturnType<typeof runTaskResponse>;
+      }
       await this.memory.recordValidation({
         command: run.task.command,
         id: run.run_ref,
@@ -1313,4 +1391,104 @@ function runTaskResponse(
       analysis: "observed_subset",
     },
   });
+}
+
+function dependencyTaskRequested(input: RunTaskInput) {
+  return (
+    ("task_id" in input.task && input.task.task_id === "dependencies") ||
+    ("kind" in input.task && input.task.kind === "dependencies")
+  );
+}
+
+function dependencyUnavailableResponse(
+  capability: Awaited<ReturnType<DependencyMutationService["capability"]>>,
+  sourceRevisionId: string,
+  startedAt: number,
+) {
+  const revision = { source_revision_id: sourceRevisionId };
+  return harnessSuccess({
+    startedAt,
+    revision,
+    provenance: [provenance("harness", revision)],
+    data: { ...capability, recovery_depth: 0 },
+    diagnostics: [
+      {
+        code: "DEPENDENCY_EXECUTOR_UNAVAILABLE",
+        message:
+          "Dependency mutation is unavailable in the active executor. No executor call was made.",
+      },
+    ],
+    coverage: { scope: "complete", truncated: false, analysis: "exact" },
+  });
+}
+
+function rankedOutlineCandidates(
+  paths: string[],
+  objective: string | undefined,
+  changedPaths: string[],
+) {
+  const terms = outlineTerms(objective);
+  const changed = new Set(changedPaths);
+  return [...paths].sort((left, right) => {
+    const difference =
+      outlineRelevance(right, terms, changed.has(right)) -
+      outlineRelevance(left, terms, changed.has(left));
+    return difference || left.localeCompare(right);
+  });
+}
+
+function rankedOutlineSymbols(
+  symbols: ReturnType<typeof parseCode>["symbols"],
+  objective?: string,
+) {
+  const terms = outlineTerms(objective);
+  return [...symbols].sort((left, right) => {
+    const difference =
+      outlineRelevance(right.qualified_name, terms, false) -
+      outlineRelevance(left.qualified_name, terms, false);
+    return difference || left.range_utf8_bytes[0] - right.range_utf8_bytes[0];
+  });
+}
+
+function outlineContinuationTargets(
+  candidates: string[],
+  processedPaths: string[],
+  target: string,
+  truncated: boolean,
+) {
+  if (!truncated) return [];
+  const processed = new Set(processedPaths);
+  const remaining = candidates.filter((path) => !processed.has(path));
+  const paths = remaining.length ? remaining.slice(0, 8) : [target];
+  return paths.map((path) => ({
+    path,
+    reason: remaining.length
+      ? "highest_relevance_unread"
+      : "narrow_by_symbol_name_or_kind",
+  }));
+}
+
+function outlineTerms(objective?: string) {
+  return [
+    ...new Set(
+      (objective ?? "")
+        .normalize("NFKC")
+        .toLowerCase()
+        .match(/[\p{L}\p{N}_-]{3,}/gu) ?? [],
+    ),
+  ].slice(0, 40);
+}
+
+function outlineRelevance(value: string, terms: string[], changed: boolean) {
+  const normalized = value.toLowerCase();
+  const compact = normalized.replace(/[^\p{L}\p{N}]/gu, "");
+  return terms.reduce(
+    (score, term) =>
+      score +
+      (normalized.includes(term) ||
+      compact.includes(term.replace(/[^\p{L}\p{N}]/gu, ""))
+        ? 10
+        : 0),
+    changed ? 100 : 0,
+  );
 }

@@ -35,6 +35,7 @@ type AfterToolContext = Parameters<NonNullable<AgentHooks["afterTool"]>>[0];
 type BeforeToolContext = Parameters<NonNullable<AgentHooks["beforeTool"]>>[0];
 
 export class ExternalReadGovernor {
+  private dependencyMutationUnavailable = false;
   private readonly cache = new Map<string, CachedExternalRead>();
   private readonly history: CachedExternalRead[] = [];
   private readonly inFlight = new Map<string, Promise<unknown>>();
@@ -47,7 +48,7 @@ export class ExternalReadGovernor {
 
   wrap(tool: AgentTool): AgentTool {
     const toolName = tool.name;
-    if (!isExternalReadTool(toolName)) return tool;
+    if (!isExternalReadTool(toolName)) return this.observeCapabilityTool(tool);
     return {
       ...tool,
       execute: async (input: unknown, context: AgentToolContext) => {
@@ -55,10 +56,9 @@ export class ExternalReadGovernor {
         if (decision.action === "return") return decision.result;
         const pending = this.inFlight.get(decision.receiptId);
         if (pending) return this.afterInFlight(pending, decision.receiptId);
-        const execution = Promise.resolve(tool.execute(input, context))
-          .then((result: unknown) =>
-            this.after(toolName, input, decision, result),
-          );
+        const execution = Promise.resolve(tool.execute(input, context)).then(
+          (result: unknown) => this.after(toolName, input, decision, result),
+        );
         this.inFlight.set(decision.receiptId, execution);
         try {
           return await execution;
@@ -99,6 +99,11 @@ export class ExternalReadGovernor {
     this.metrics.calls += 1;
     const normalized = normalizedExternalRead(tool, input);
     const receiptId = `external-read://${sha256(`${tool}\0${normalized}`)}`;
+    if (
+      this.dependencyMutationUnavailable &&
+      dependencyMutationExploration(tool, normalized)
+    )
+      return this.dependencyUnavailableReceipt(receiptId);
     const cached = this.cache.get(receiptId);
     if (cached) return this.cachedReceipt(cached);
     const similar = this.history.filter((entry) =>
@@ -107,6 +112,40 @@ export class ExternalReadGovernor {
     if (similar.length >= 2)
       return this.suppressedReceipt(receiptId, similar.at(-1));
     return { action: "execute", normalized, receiptId };
+  }
+
+  private observeCapabilityTool(tool: AgentTool): AgentTool {
+    if (!capabilityReportingTool(tool.name)) return tool;
+    return {
+      ...tool,
+      execute: async (input: unknown, context: AgentToolContext) => {
+        const result = await tool.execute(input, context);
+        if (containsUnavailableDependencyMutation(result))
+          this.dependencyMutationUnavailable = true;
+        return result;
+      },
+    };
+  }
+
+  private dependencyUnavailableReceipt(
+    receiptId: string,
+  ): Extract<ExternalReadDecision, { action: "return" }> {
+    this.metrics.suppressed += 1;
+    return {
+      action: "return",
+      result: {
+        status: "unavailable",
+        applied: false,
+        reason: "DEPENDENCY_MUTATION_UNAVAILABLE",
+        retryable: false,
+        receiptId,
+        alternatives: [
+          "reuse_existing_dependency",
+          "implement_without_dependency",
+          "report_blocked",
+        ],
+      },
+    };
   }
 
   private pendingDecision(
@@ -126,11 +165,7 @@ export class ExternalReadGovernor {
     decision: Extract<ExternalReadDecision, { action: "execute" }>,
     result: unknown,
   ) {
-    const governed = this.governedResult(
-      tool,
-      decision.receiptId,
-      result,
-    );
+    const governed = this.governedResult(tool, decision.receiptId, result);
     const entry = {
       input,
       normalized: decision.normalized,
@@ -153,7 +188,11 @@ export class ExternalReadGovernor {
     result: unknown,
   ) {
     if (!isAgentToolResult(result))
-      return boundedResult(boundedExternalResult(result, tool), receiptId, tool);
+      return boundedResult(
+        boundedExternalResult(result, tool),
+        receiptId,
+        tool,
+      );
     const enriched = boundedResult(result, receiptId, tool);
     return boundedExternalResult(enriched, tool);
   }
@@ -177,7 +216,8 @@ export class ExternalReadGovernor {
   private async afterInFlight(pending: Promise<unknown>, receiptId: string) {
     await pending;
     const cached = this.cache.get(receiptId);
-    if (!cached) throw new Error("External read completed without a cache receipt.");
+    if (!cached)
+      throw new Error("External read completed without a cache receipt.");
     return this.cachedReceipt(cached).result;
   }
 
@@ -248,10 +288,7 @@ function stronglyOverlaps(entry: CachedExternalRead, normalized: string) {
   return shared / Math.min(left.size, right.size) >= 0.75;
 }
 
-function boundedExternalResult(
-  result: unknown,
-  tool: ExternalReadToolName,
-) {
+function boundedExternalResult(result: unknown, tool: ExternalReadToolName) {
   if (isAgentToolResult(result))
     return boundedAgentToolResult(normalizedAgentToolResult(result, tool));
   if (serializedBytes(result) <= maximumExternalResultBytes) return result;
@@ -375,6 +412,41 @@ function isExternalReadTool(name: string): name is ExternalReadToolName {
     "get_preview_container_logs",
     "get_preview_devtools",
   ].includes(name);
+}
+
+function capabilityReportingTool(name: string) {
+  return ["mutate_dependencies", "run_task", "workspace_state"].includes(name);
+}
+
+function containsUnavailableDependencyMutation(
+  value: unknown,
+  depth = 0,
+): boolean {
+  if (depth > 8) return false;
+  if (Array.isArray(value))
+    return value.some((item) =>
+      containsUnavailableDependencyMutation(item, depth + 1),
+    );
+  const record = recordValue(value);
+  if (!Object.keys(record).length) return false;
+  if (
+    record.capability === "dependency_mutation" &&
+    record.status === "unavailable"
+  )
+    return true;
+  return Object.values(record).some((item) =>
+    containsUnavailableDependencyMutation(item, depth + 1),
+  );
+}
+
+function dependencyMutationExploration(
+  tool: ExternalReadToolName,
+  normalized: string,
+) {
+  if (!["consult_specialist", "fetch_web_content"].includes(tool)) return false;
+  return /\b(?:add (?:a )?dependency|ajouter (?:une )?d[ée]pendance|corepack|install(?:ation|ing)?|installer|lockfile update|mutat(?:e|ing) dependenc(?:y|ies)|(?:bun|npm|pnpm|yarn) add)\b/iu.test(
+    normalized,
+  );
 }
 
 function serializedBytes(value: unknown) {

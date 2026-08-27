@@ -51,12 +51,19 @@ export type TaskExecutorHealth = {
   stderr?: string;
 };
 
+export type DependencyExecutorCapability = {
+  available: boolean;
+  network: "cache_only" | "managed_allowlist";
+  reason?: string;
+};
+
 export type TaskIsolation = "bubblewrap" | "sandbox_exec" | "worktree";
 
 export interface TaskExecutor {
   execute(input: TaskExecutionInput): Promise<TaskExecutionResult>;
   capability(): Promise<TaskIsolation>;
   healthCheck?(input: TaskExecutionInput): Promise<TaskExecutorHealth>;
+  dependencyCapability?(): Promise<DependencyExecutorCapability>;
 }
 
 export class SandboxedTaskExecutor implements TaskExecutor {
@@ -73,6 +80,13 @@ export class SandboxedTaskExecutor implements TaskExecutor {
       if (await executableExists("bwrap")) return "bubblewrap" as const;
     }
     return "worktree" as const;
+  }
+
+  async dependencyCapability(): Promise<DependencyExecutorCapability> {
+    return {
+      available: true,
+      network: projectAllowlistProxy() ? "managed_allowlist" : "cache_only",
+    };
   }
 
   async execute(input: TaskExecutionInput): Promise<TaskExecutionResult> {
@@ -456,6 +470,10 @@ function infrastructureFailure(
 
 function projectAllowlistProxy() {
   return process.env.BLAME_PROJECT_ALLOWLIST_PROXY?.trim() || undefined;
+}
+
+export function automaticDependencyNetworkPolicy() {
+  return projectAllowlistProxy() ? "project_allowlist" : "deny";
 }
 
 function unsupportedAllowlist(isolation: TaskIsolation): TaskExecutionResult {

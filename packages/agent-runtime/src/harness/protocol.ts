@@ -168,6 +168,21 @@ export function harnessSuccess<T>(input: {
   return result;
 }
 
+export function recalculateHarnessUsage<T>(value: T): T {
+  if (!value || typeof value !== "object" || !("usage" in value)) return value;
+  const current = value as Record<string, unknown>;
+  const usage = current.usage;
+  if (!usage || typeof usage !== "object" || !("output_tokens" in usage))
+    return value;
+  const updated = {
+    ...current,
+    usage: { ...(usage as Record<string, unknown>), output_tokens: 0 },
+  };
+  (updated.usage as Record<string, unknown>).output_tokens =
+    estimateOutputTokens(updated);
+  return updated as T;
+}
+
 export function harnessError(input: {
   code: HarnessErrorCode;
   message: string;

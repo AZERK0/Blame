@@ -1653,7 +1653,7 @@ function recordHarnessToolMetrics(
   const data = asRecord(output.data ?? output.output ?? output);
   const metricContext = { attributes, current, data, state };
   current.span.setAttributes(harnessTraceAttributes(data));
-  if (current.name === "inspect_code") recordReadMetrics(metricContext);
+  if (navigationReadTool(current.name)) recordReadMetrics(metricContext);
   if (
     current.name !== "inspect_code" &&
     data.parallel_broad_read_suppressed === true
@@ -1679,6 +1679,15 @@ function recordHarnessToolMetrics(
       current.span.durationSeconds(),
     );
   if (current.name === "run_task") recordRunMetrics(metricContext);
+  if (data.circuit_opened === true)
+    recordHarnessCount(metricContext, "blame.harness.capability_circuits_open");
+  if (stringValue(data.status) === "in_flight_reused")
+    recordHarnessCount(metricContext, "blame.harness.single_flight_reuse");
+  if (stringValue(data.reason) === "PACKAGE_NOT_DECLARED_OR_INSTALLED")
+    recordHarnessCount(
+      metricContext,
+      "blame.harness.absent_package_calls_suppressed",
+    );
 }
 
 function recordExternalReadMetrics(context: HarnessMetricContext) {
@@ -1747,6 +1756,12 @@ function recordReadMetrics(context: HarnessMetricContext) {
     "blame.harness.read_returned_bytes",
     returnedBytes,
   );
+  if (readBytes > 0)
+    recordHarnessValue(
+      context,
+      "blame.harness.read_return_ratio",
+      returnedBytes / readBytes,
+    );
   recordHarnessValue(
     context,
     "blame.harness.read_suppressed_bytes",
@@ -1763,6 +1778,8 @@ function recordReadMetrics(context: HarnessMetricContext) {
     recordHarnessCount(context, "blame.harness.semantic_read_rebases");
   if (stringValue(context.data.status) === "auto_narrowed")
     recordHarnessCount(context, "blame.harness.auto_narrowed_raw_reads");
+  if (context.data.auto_narrowed === true)
+    recordHarnessCount(context, "blame.harness.auto_narrowed_outlines");
   if (context.data.parallel_broad_read_suppressed === true)
     recordHarnessCount(
       context,
@@ -1842,6 +1859,15 @@ function semanticEditTool(name: string) {
     "move_file",
     "patch_file",
     "replace_file",
+  ].includes(name);
+}
+
+function navigationReadTool(name: string) {
+  return [
+    "get_relation_context",
+    "inspect_code",
+    "outline_code",
+    "search_code",
   ].includes(name);
 }
 

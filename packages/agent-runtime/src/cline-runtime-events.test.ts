@@ -1128,10 +1128,11 @@ test("renders the compact native Cline development prompt", async () => {
   assert.match(prompt, /Use Blame tools to inspect, modify, and validate/);
   assert.match(prompt, /Do not repeat a read, search, or inspection/);
   assert.match(prompt, /## Code navigation policy/);
-  assert.match(prompt, /outline_code.*small directory/);
-  assert.match(prompt, /inspect_code.*symbol_ref/);
-  assert.match(prompt, /output is truncated, narrow/);
-  assert.match(prompt, /never compensate with multiple complete reads/);
+  assert.match(prompt, /targeted `outline_code`/);
+  assert.match(prompt, /inspect the needed symbol/);
+  assert.match(prompt, /Truncated output: narrow/);
+  assert.match(prompt, /genuinely bounded range/);
+  assert.doesNotMatch(prompt, /small directory|multiple complete reads/);
   assert.match(prompt, /call `submit_and_exit` exactly once/);
   assert.doesNotMatch(prompt, /complete_turn/);
   assert.doesNotMatch(prompt, /continuity_update|change_receipt_refs/);
