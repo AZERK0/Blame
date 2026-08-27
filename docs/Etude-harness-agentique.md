@@ -2027,6 +2027,63 @@ Les statuts `max_iterations`, `mistake_limit`, `failed`, `cancelled` et `aborted
 
 Ces mesures sont des tests de contrat déterministes du détecteur, pas un replay de la trace US-014 ni une mesure de variance d’un provider réel. La précédente affirmation « 11 étapes, −96,5 % » provenait d’une boucle synthétique dont l’entrée `inspect_code` ne suivait pas le schéma réel ; elle est retirée. Le replay headless GPT-5.6, la trace US-014 nettoyée, les interruptions réseau distantes et la matrice AppImage/WSL/Lima/Cloud Preview restent à exécuter dans leurs environnements packagés avec credentials. Le choix automatique de la tâche dépend du catalogue de scripts déclaré par le dépôt : sans tâche compatible, la completion reste volontairement non vérifiée au lieu d’inventer une preuve.
 
+### 21.17 Correction en amont après US-016
+
+#### Modèle intelligent, mécanique runtime
+
+L’analyse de l’US-016 confirme qu’une longue réglementation du prompt ne corrige pas une capacité impossible ou une lecture inutilement volumineuse. Le contrat actif conserve donc seulement cinq indications de navigation : recherche étroite si l’emplacement est inconnu, outline ciblé pour un langage supporté, réduction de cible après troncature, raw réellement borné et édition dès que le changement est clair. La sélection réseau, le narrowing, la déduplication, le cache, les circuits et les chemins de récupération appartiennent au runtime.
+
+La baseline observée sur l’US-016 était de 24 min 04, 5,67 $, 4,35 millions de tokens d’entrée, 70 lectures, 10 conflits et environ 15 minutes avant la première écriture appliquée. Ces chiffres servent de référence au test live ; ils ne sont pas extrapolés depuis le replay déterministe.
+
+#### Projection initiale de `workspace_state`
+
+`workspace_state.task_projection` fournit maintenant une vue bornée construite sans embedding :
+
+- applications et packages détectés depuis les manifests ;
+- dépendances déclarées par manifest, avec type et version ;
+- inventaire compact des packages du lockfile ;
+- tâches réellement exécutables ;
+- capacité de mutation des dépendances et politique réseau sélectionnée ;
+- fichiers et symboles probables selon les termes de la story, les chemins, les changements présents et les conventions de framework.
+
+Le classement privilégie les chemins modifiés, les correspondances de noms et les symboles. Seuls les meilleurs petits fichiers sont parsés pour cette projection. Les fichiers dépassant la borne locale restent des cibles de chemin sans lecture intégrale. Les capacités sémantiques continuent de provenir du registre central par langage.
+
+#### Capacité de dépendances et circuit transversal
+
+Le modèle ne fournit plus `network` à `mutate_dependencies` ou `run_task`. L’exécuteur actif sélectionne `project_allowlist` uniquement lorsqu’un proxy géré ou un adaptateur distant le déclare ; sinon il utilise le cache préparé avec réseau refusé. Cette décision est prise dans le runtime effectivement chargé de la tâche, qu’il s’agisse de Linux natif, de Linux dans WSL ou Lima, ou du runner Cloud.
+
+Sans proxy géré, cache préparé ou gestionnaire compatible, la projection marque `dependency_mutation` indisponible et retire la tâche `dependencies` du catalogue exécutable. Le tool de mutation reste présent pour la compatibilité du protocole, mais son preflight est non exécutable : il retourne un succès compact avec `status: unavailable`, `applied: false`, `retryable: false`, `DEPENDENCY_EXECUTOR_UNAVAILABLE` et les alternatives `reuse_existing_dependency`, `implement_without_dependency` et `report_blocked`. Aucun appel d’exécuteur et aucune erreur Cline ne sont produits.
+
+La première tentative explicite ouvre `.blame/harness/capabilities/<session>.json` par écriture atomique. Le circuit survit aux itérations, compactages et nouvelles instances du workspace. Son empreinte contient l’isolation réelle, le gestionnaire et sa version, la capacité déclarée de l’adaptateur et la disponibilité du proxy. Il est supprimé uniquement lorsque cette empreinte d’environnement change. `run_task dependencies` consulte le même circuit et une tentative offline consécutive n’atteint jamais l’exécuteur.
+
+Les diagnostics de package absent indiquent désormais que les variantes de `node_modules` ne doivent pas être explorées et désignent `workspace_state.dependency_inventory` comme autorité. Le gouverneur mémorise le package absent pour la task et transforme les chemins racine ou sous-package équivalents en reçus `PACKAGE_NOT_DECLARED_OR_INSTALLED` sans I/O.
+
+#### Navigation bornée et coordination parallèle
+
+Un outline est plafonné à 80 éléments et 2 000 tokens, même si l’appel demande 300 éléments ou 7 000 tokens. Les fichiers et symboles sont triés par pertinence pour la story. Une sortie partielle retourne jusqu’à huit `continuation_targets` concrets ; pour un fichier unique, elle demande un narrowing par nom ou type de symbole au lieu d’inviter à relire le fichier.
+
+Une lecture raw devient large dès qu’elle dépasse 8 Kio, 120 lignes ou 80 % du fichier. Une plage `[0, file_size]` suit exactement cette règle. Un fichier sémantique de plus de 2 Mio n’est jamais parsé ; un parse invalide, vide ou non supporté produit un `Bounded preview` de 2 Kio au maximum. L’outline automatique est lui aussi borné à 1 800 tokens et reste strictement plus petit que la source évitée.
+
+Les lectures larges `inspect_code`, `outline_code`, `search_code` et `get_relation_context` utilisent une réservation single-flight indexée par révision source, tool et entrée normalisée. Le premier appel reçoit le résultat complet ; un appel identique simultané reçoit `in_flight_reused`. Deux lectures larges au maximum partagent le budget d’une même itération, même si elles utilisent des tools différents ; les suivantes reçoivent un reçu compact et non une erreur. L’état task-wide continue de détecter les répétitions entre epochs.
+
+Après raccourcissement des références persistantes, `usage.output_tokens` est recalculé sur l’enveloppe réellement envoyée. Les métriques ajoutent le ratio octets retournés/demandés, les outlines réduits, les réutilisations single-flight, les circuits ouverts et les appels de package absent supprimés.
+
+#### Métadonnées et frontend
+
+Une inspection distingue maintenant `requested_range`, `returned_range`, `file_size`, `returned_bytes` et `coverage`. Les segments discontinus conservent `returned_ranges`. Une réponse auto-narrowed ne publie jamais la plage demandée comme plage retournée et conserve `coverage: partial` ou `none`.
+
+La présentation frontend possède quatre libellés distincts : `Symbol outline`, `Bounded preview`, `Content reused` et `Parallel read suppressed`. Les deux derniers ne sont jamais rendus comme `Entire file`.
+
+#### Validation locale et test live
+
+Le replay déterministe `headless-us016.test.ts` couvre : capacité indisponible visible avant mutation, absence d’appel réseau condamné, persistance du circuit, réouverture après apparition d’un cache préparé, tâche `dependencies` retirée, projection de la cible de story, outline inférieur à 2 000 tokens, continuation concrète, plage entière auto-réduite, cutoff 2 Mio, single-flight des relations, budget partagé, suppression des variantes `node_modules` et suppression des recherches explicitement motivées par une installation indisponible. Il passe localement avec huit scénarios ; le neuvième scénario live est volontairement ignoré sans credentials.
+
+Le test live lance réellement trois sessions GPT-5.6 Sol X-high avec le streaming du SDK lorsque `BLAME_HEADLESS_US016=true`. Il exige une première édition dans les six premiers appels, aucune mutation de dépendance, aucun `run_task dependencies`, aucune lecture identique, aucun chemin hors workspace, un build terminal réussi et moins de 1,74 million de tokens d’entrée par run, soit la borne de réduction de 60 % par rapport aux 4,35 millions observés. Ce test n’a pas été exécuté dans ce worktree faute de credentials provider ; aucune mesure live n’est donc revendiquée.
+
+La validation locale complète passe avec 269 tests runtime réussis et 2 scénarios live ignorés, ainsi que 225 tests frontend réussis. Les lint et typechecks des deux packages passent également.
+
+Les limites restantes sont la matrice packagée Lima/WSL/Cloud, la validation live sur trois runs et la détection d’une exploration web motivée implicitement par une installation sans nom de package identifiable. Aucun embedding n’a été ajouté ; une éventuelle phase ultérieure devra conserver le chemin backend Blame vers OpenRouter et le fallback déterministe.
+
 ---
 
 ## Références complémentaires
