@@ -20,6 +20,10 @@ import type {
 export type ProductionConfig = {
   checkpointEnabled?: boolean
   compactionEnabled?: boolean
+  compactionMarginalTokenThreshold?: number
+  compactionMaxContextTokens?: number
+  compactionMaxOldToolResultTokens?: number
+  compactionMinNoveltyRatio?: number
   compactionPreserveRecentTokens?: number
   compactionStrategy?: "agentic" | "basic"
   compactionTriggerRatio?: number
@@ -133,6 +137,10 @@ export function loadProductionConfig(env: NodeJS.ProcessEnv = process.env): Prod
   return {
     checkpointEnabled: booleanValue(env.BLAME_AGENT_CHECKPOINTS_ENABLED, true),
     compactionEnabled: booleanValue(env.BLAME_AGENT_COMPACTION_ENABLED, true),
+    compactionMarginalTokenThreshold: positiveNumber(env.BLAME_AGENT_COMPACTION_MARGINAL_TOKEN_THRESHOLD, 12_000),
+    compactionMaxContextTokens: positiveNumber(env.BLAME_AGENT_COMPACTION_MAX_CONTEXT_TOKENS, 96_000),
+    compactionMaxOldToolResultTokens: positiveNumber(env.BLAME_AGENT_COMPACTION_MAX_OLD_TOOL_RESULT_TOKENS, 32_000),
+    compactionMinNoveltyRatio: boundedRatio(env.BLAME_AGENT_COMPACTION_MIN_NOVELTY_RATIO, 0.25),
     compactionPreserveRecentTokens: positiveNumber(env.BLAME_AGENT_COMPACTION_PRESERVE_RECENT_TOKENS),
     compactionStrategy: compactionStrategy(env.BLAME_AGENT_COMPACTION_STRATEGY),
     compactionTriggerRatio: boundedRatio(env.BLAME_AGENT_COMPACTION_TRIGGER_RATIO, 0.675),

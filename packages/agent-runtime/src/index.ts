@@ -4,6 +4,7 @@ export type {
   SemanticWorkspaceExecutor,
   SemanticWorkspaceToolName,
 } from "./harness/semantic-executor.js";
+export { executeSemanticWorkspaceRequest } from "./harness/semantic-executor.js";
 export { taskComplexityBucket } from "./telemetry-cohorts.js";
 export type { TaskComplexityBucket } from "./telemetry-cohorts.js";
 export { commandWithNextWebpackFallback } from "./next-webpack-fallback.js";

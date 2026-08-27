@@ -11,6 +11,7 @@ import { languageCapability } from "./language-capabilities.js";
 export type ValidationStatus =
   | "passed"
   | "failed"
+  | "validator_unavailable"
   | "not_supported"
   | "not_run";
 
@@ -23,6 +24,8 @@ export type ContentValidation = {
 
 export function aggregateValidationStatus(validations: ContentValidation[]) {
   if (validations.some(({ status }) => status === "failed")) return "failed";
+  if (validations.some(({ status }) => status === "validator_unavailable"))
+    return "validator_unavailable";
   if (validations.some(({ status }) => status === "not_supported"))
     return "not_supported";
   if (validations.some(({ status }) => status === "passed")) return "passed";
@@ -127,7 +130,7 @@ async function validatePrisma(input: {
     input.path,
   );
   if (!executable)
-    return validation(input.path, "not_supported", "prisma", [
+    return validation(input.path, "validator_unavailable", "prisma", [
       "The project-local Prisma validator is unavailable.",
     ]);
   return runPrismaValidation(input, executable);

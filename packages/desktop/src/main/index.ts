@@ -92,7 +92,8 @@ if (protocolClientArguments.length === 0) {
 enablePreviewDevtools()
 registerLiveLogCapture()
 
-const singleInstanceLock = app.requestSingleInstanceLock()
+const appImageTaskSmoke = process.env.BLAME_APPIMAGE_RUN_TASK_SMOKE === "true"
+const singleInstanceLock = appImageTaskSmoke || app.requestSingleInstanceLock()
 
 if (!singleInstanceLock) app.exit(0)
 
@@ -109,6 +110,10 @@ if (initialAuthCallback) authCallbackQueue.enqueue(initialAuthCallback)
 let authRendererReady = false
 
 void app.whenReady().then(() => {
+  if (appImageTaskSmoke) {
+    void finishAppImageTaskSmoke()
+    return
+  }
   registerDesktopIpcHandlers({
     mainWindow: () => mainWindow,
     packaged: app.isPackaged,
@@ -136,6 +141,18 @@ void app.whenReady().then(() => {
   replaceMainWindow("compact")
   checkForUpdatesOnStartup()
 })
+
+async function finishAppImageTaskSmoke() {
+  try {
+    const { runAppImageTaskSmoke } = await import("./appimage-run-task-smoke")
+    await runAppImageTaskSmoke()
+    console.log("Packaged AppImage run_task smoke test passed")
+    app.exit(0)
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error))
+    app.exit(1)
+  }
+}
 
 app.on("activate", () => {
   if (shutdownRequested) return

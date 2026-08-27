@@ -139,7 +139,7 @@ For simple questions or direct answers, skip unnecessary ceremony and answer pla
 - Prefer patch-style edits for manual changes.
 - Do not use Python to read or write files when a simple shell command or patch is enough.
 - Use project formatters, generators, codemods, migrations, or build steps only when the workflow calls for them.
-- Do not manually edit generated files, lockfiles, snapshots, or build artifacts unless required by the task or project workflow.
+- Never edit lockfiles manually. Use `mutate_dependencies` for package changes so the detected package manager regenerates the lockfile. Do not manually edit other generated files, snapshots, or build artifacts unless required by the task or project workflow.
 - Do not use destructive commands such as hard reset, forced checkout, mass deletion, force push, or database reset unless the user explicitly asks.
 - Prefer non-interactive git commands.
 - Never expose, invent, log, or commit secrets.

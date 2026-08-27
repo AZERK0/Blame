@@ -18,6 +18,7 @@ import {
   type ProposeChangeInput,
 } from "./change-service.js";
 import {
+  harnessError,
   harnessSuccess,
   provenance,
   type HarnessToolResult,
@@ -51,6 +52,7 @@ import {
   type InspectCodeData,
 } from "./inspect-code-service.js";
 import { RelationService } from "./relation-service.js";
+import { ReferenceRegistry } from "./reference-registry.js";
 import { ChangeReviewService } from "./change-review-service.js";
 import { readTaskCatalog } from "./task-catalog.js";
 import type { TaskExecutor } from "./task-executor.js";
@@ -89,6 +91,7 @@ import {
   type EditCodeInput,
   type CreateFileInput,
   type DeleteFileInput,
+  type DependencyMutationInput,
   type EditFilesInput,
   type EditJsonInput,
   type EditSymbolInput,
@@ -98,6 +101,7 @@ import {
 } from "./schemas.js";
 import { ValidationService } from "./validation-service.js";
 import { ConversationMemoryStore } from "./conversation-memory.js";
+import { DependencyMutationService } from "./dependency-mutation-service.js";
 
 export type {
   InspectCodeInput,
@@ -126,11 +130,13 @@ export type AppliedChange = {
 export class SemanticWorkspace {
   private readonly artifacts: ArtifactStore;
   private readonly changes: ChangeService;
+  private readonly dependencies: DependencyMutationService;
   private readonly edits: EditService;
   private readonly files: WorkspaceFiles;
   private readonly inspections: InspectCodeService;
   private readonly memory: ConversationMemoryStore;
   private readonly relations: RelationService;
+  private readonly references: ReferenceRegistry;
   private readonly review: ChangeReviewService;
   private readonly runs: RunService;
   private readonly taskContract?: SemanticWorkspaceOptions["taskContract"];
@@ -139,6 +145,11 @@ export class SemanticWorkspace {
     this.files = new WorkspaceFiles(workspaceRoot);
     this.artifacts = new ArtifactStore(this.files.root);
     this.changes = new ChangeService(this.files, this.artifacts);
+    this.dependencies = new DependencyMutationService(
+      this.files,
+      this.artifacts,
+      options.taskExecutor,
+    );
     this.edits = new EditService(
       this.files,
       this.changes,
@@ -149,6 +160,10 @@ export class SemanticWorkspace {
       options.taskContract?.session_id,
     );
     this.memory = new ConversationMemoryStore(
+      this.files.root,
+      options.taskContract?.session_id ?? "unscoped-session",
+    );
+    this.references = new ReferenceRegistry(
       this.files.root,
       options.taskContract?.session_id ?? "unscoped-session",
     );
@@ -210,7 +225,7 @@ export class SemanticWorkspace {
         snapshot.changes.length > maximumChanges ||
         taskCatalog.length > maximumTasks ||
         topLevel.length > maximumRoots;
-      return harnessSuccess({
+      const response = harnessSuccess({
         startedAt,
         revision: {
           ...revisionVector(snapshot),
@@ -368,6 +383,7 @@ export class SemanticWorkspace {
           analysis: "exact",
         },
       });
+      return this.references.shorten(response);
     } catch (error) {
       return toolError(error);
     }
@@ -528,7 +544,7 @@ export class SemanticWorkspace {
         budgetTruncated ||
         items.length >= maximum ||
         approximateTokens(items) >= tokenBudget;
-      return harnessSuccess({
+      const response = harnessSuccess({
         startedAt,
         revision: revisionVector(snapshot),
         provenance: [
@@ -549,6 +565,7 @@ export class SemanticWorkspace {
           analysis: "exact",
         },
       });
+      return this.references.shorten(response);
     } catch (error) {
       return toolError(error);
     }
@@ -638,7 +655,7 @@ export class SemanticWorkspace {
         items.length >= maximum ||
         approximateTokens({ items, parse_quality: parseQuality }) >=
           tokenBudget;
-      return harnessSuccess({
+      const response = harnessSuccess({
         startedAt,
         revision: revisionVector(snapshot),
         provenance: [
@@ -656,6 +673,7 @@ export class SemanticWorkspace {
           analysis: "exact",
         },
       });
+      return this.references.shorten(response);
     } catch (error) {
       return toolError(error);
     }
@@ -666,16 +684,23 @@ export class SemanticWorkspace {
     signal?: AbortSignal,
     context?: { contextEpoch?: string },
   ): Promise<HarnessToolResult<InspectCodeData>> {
-    return this.inspections.inspect(input, signal, context);
+    try {
+      const expanded = await this.references.expand(input);
+      const result = await this.inspections.inspect(expanded, signal, context);
+      return this.references.shorten(result);
+    } catch (error) {
+      return toolError(error);
+    }
   }
 
   async recallContext(input: RecallContextInput) {
     const startedAt = Date.now();
     try {
-      recallContextInputSchema.parse(input);
+      const expanded = await this.references.expand(input);
+      recallContextInputSchema.parse(expanded);
       const snapshot = await this.files.snapshot();
-      const data = await this.memory.recall(input);
-      return harnessSuccess({
+      const data = await this.memory.recall(expanded);
+      const response = harnessSuccess({
         startedAt,
         revision: revisionVector(snapshot),
         provenance: [provenance("harness", revisionVector(snapshot))],
@@ -686,6 +711,7 @@ export class SemanticWorkspace {
           analysis: "exact",
         },
       });
+      return this.references.shorten(response);
     } catch (error) {
       return toolError(error);
     }
@@ -695,7 +721,13 @@ export class SemanticWorkspace {
     input: GetRelationContextInput,
     signal?: AbortSignal,
   ) {
-    return this.relations.getRelationContext(input, signal);
+    try {
+      const expanded = await this.references.expand(input);
+      const result = await this.relations.getRelationContext(expanded, signal);
+      return this.references.shorten(result);
+    } catch (error) {
+      return toolError(error);
+    }
   }
 
   editSymbol(
@@ -745,10 +777,7 @@ export class SemanticWorkspace {
     context?: { sessionId?: string; toolCallId?: string },
   ) {
     editFilesInputSchema.parse(input);
-    return this.editCode(
-      { edits: input.operations, atomicity: input.atomicity ?? "per_file" },
-      context,
-    );
+    return this.editCode({ edits: input.operations }, context);
   }
 
   createFile(
@@ -809,22 +838,29 @@ export class SemanticWorkspace {
   ): Promise<HarnessToolResult<EditCodeOutcome>> {
     const startedAt = Date.now();
     try {
-      editCodeInputSchema.parse(input);
-      const result = await this.edits.edit(input, context);
+      const expanded = await this.references.expand(input);
+      editCodeInputSchema.parse(expanded);
+      const result = await this.edits.edit(expanded, context);
       if (result.status === "applied") await this.rememberEdit(result);
       if (result.status === "conflict")
         await this.memory.recordRuntimeEvent(
           "edit_conflict",
-          context?.toolCallId ?? JSON.stringify(input),
+          context?.toolCallId ?? JSON.stringify(expanded),
           result.reason,
         );
       if (result.status === "validation_failed")
         await this.memory.recordRuntimeEvent(
           "rollback",
-          context?.toolCallId ?? JSON.stringify(input),
+          context?.toolCallId ?? JSON.stringify(expanded),
           "validation_failed",
         );
-      return editCodeResponse(this.files, this.artifacts, result, startedAt);
+      const response = await editCodeResponse(
+        this.files,
+        this.artifacts,
+        result,
+        startedAt,
+      );
+      return this.references.shorten(response);
     } catch (error) {
       return toolError(error);
     }
@@ -851,15 +887,16 @@ export class SemanticWorkspace {
   async applyChange(input: ApplyChangeInput, signal?: AbortSignal) {
     const startedAt = Date.now();
     try {
-      applyChangeInputSchema.parse(input);
+      const expanded = await this.references.expand(input);
+      applyChangeInputSchema.parse(expanded);
       signal?.throwIfAborted();
-      if (input.action === "apply") {
-        const applied = await this.changes.apply(input);
+      if (expanded.action === "apply") {
+        const applied = await this.changes.apply(expanded);
         const revision = {
           source_revision_id:
             applied.receipt.source_revision.source_revision_id,
         };
-        return harnessSuccess({
+        const response = harnessSuccess({
           startedAt,
           revision,
           provenance: [provenance("harness", revision)],
@@ -880,14 +917,15 @@ export class SemanticWorkspace {
               : {}),
           },
         });
+        return this.references.shorten(response);
       }
-      if (input.action === "propose") {
+      if (expanded.action === "propose") {
         const snapshot = await this.exactSnapshot(
-          input.base_source_revision_id,
+          expanded.base_source_revision_id,
           signal,
         );
-        const proposal = await this.changes.propose(input, snapshot);
-        return harnessSuccess({
+        const proposal = await this.changes.propose(expanded, snapshot);
+        const response = harnessSuccess({
           startedAt,
           revision: revisionVector(snapshot),
           provenance: [provenance("harness", revisionVector(snapshot))],
@@ -901,17 +939,19 @@ export class SemanticWorkspace {
             ...(proposal.diff_summary_truncated ? { continuation: "0" } : {}),
           },
         });
+        return this.references.shorten(response);
       }
-      const receipt = await this.changes.commit(input);
+      const receipt = await this.changes.commit(expanded);
       const revision = {
         source_revision_id: receipt.source_revision.source_revision_id,
       };
-      return harnessSuccess({
+      const response = harnessSuccess({
         startedAt,
         revision,
         provenance: [provenance("harness", revision)],
         data: receipt,
       });
+      return this.references.shorten(response);
     } catch (error) {
       return toolError(error);
     }
@@ -945,6 +985,29 @@ export class SemanticWorkspace {
               : "unknown",
       });
       return runTaskResponse(run, startedAt);
+    } catch (error) {
+      return toolError(error);
+    }
+  }
+
+  async mutateDependencies(
+    input: DependencyMutationInput,
+    signal?: AbortSignal,
+  ) {
+    const startedAt = Date.now();
+    try {
+      const snapshot = await this.exactSnapshot(
+        input.source_revision_id,
+        signal,
+      );
+      const data = await this.dependencies.mutate(input, snapshot, signal);
+      const revision = { source_revision_id: data.source_revision_id };
+      return harnessSuccess({
+        startedAt,
+        revision,
+        provenance: [provenance("harness", revision)],
+        data,
+      });
     } catch (error) {
       return toolError(error);
     }
@@ -1150,6 +1213,7 @@ function changedSymbolNames(
 function memoryValidation(status: ValidationStatus) {
   if (status === "passed") return "passed" as const;
   if (status === "failed") return "failed" as const;
+  if (status === "validator_unavailable") return "pending" as const;
   if (status === "not_supported") return "not_supported" as const;
   return "not_run" as const;
 }
@@ -1204,11 +1268,21 @@ function runTaskResponse(
     environment_spec_revision_id: run.environment_spec_revision_id,
     runtime_instance_id: run.runtime_instance_id,
   };
+  const summary = publicRun(run);
+  if (run.status === "execution_error")
+    return harnessError({
+      code: "EXECUTION_ERROR",
+      message:
+        summary.stderr_summary ??
+        "The task executor failed before producing a valid task result.",
+      revision,
+      recovery: summary,
+    });
   return harnessSuccess({
     startedAt,
     revision,
     provenance: [provenance("harness", revision)],
-    data: publicRun(run),
+    data: summary,
     artifacts: [run.logs.complete, run.filesystem_effects.artifact],
     diagnostics: run.diagnostics,
     coverage: {

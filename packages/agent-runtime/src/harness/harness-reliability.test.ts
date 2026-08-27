@@ -8,27 +8,44 @@ import {
   stat,
   writeFile,
 } from "node:fs/promises";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import test from "node:test";
 import { execa } from "execa";
 import { validateContent } from "./content-validation.js";
-import { effectiveCompactionModels } from "./context-pressure.js";
+import {
+  contextPressureHooks,
+  effectiveCompactionModels,
+} from "./context-pressure.js";
 import { ExternalReadGovernor } from "./external-read-governor.js";
+import { createEditGroups } from "./edit-batch.js";
 import { jsoncErrors } from "./json-editor.js";
 import {
   capabilityRegistrySnapshot,
   supportedOperationsDescription,
 } from "./language-capabilities.js";
-import { type HarnessToolResult, type HarnessToolSuccess } from "./protocol.js";
 import {
+  boundHarnessResult,
+  harnessSuccess,
+  type HarnessToolResult,
+  type HarnessToolSuccess,
+} from "./protocol.js";
+import {
+  nodeExecutableCandidates,
   packageManagerVersionsCompatible,
+  physicalBundledPath,
   resolvePackageManager,
+  resolveStableNodeExecutable,
   type PackageManagerName,
 } from "./package-manager-runtime.js";
+import { editFilesInputSchema } from "./schemas.js";
 import { SemanticWorkspace } from "./semantic-workspace.js";
 import { readTaskCatalog, taskInvocation } from "./task-catalog.js";
-import type { TaskExecutor } from "./task-executor.js";
+import {
+  SandboxedTaskExecutor,
+  type TaskExecutionInput,
+  type TaskExecutor,
+} from "./task-executor.js";
 
 test("the capability prompt is generated from the central registry", () => {
   const description = supportedOperationsDescription();
@@ -45,9 +62,75 @@ test("the effective model window triggers Cline compaction at 67.5 percent", () 
     { model: { contextWindow: 200_000 } as never },
     "model",
     0.675,
+    200_000,
   );
   assert.equal(models.model?.contextWindow, 150_000);
   assert.equal(Math.floor(models.model!.contextWindow! * 0.9), 135_000);
+});
+
+test("the effective model window also respects the absolute context threshold", () => {
+  const models = effectiveCompactionModels(
+    { model: { contextWindow: 1_000_000 } as never },
+    "model",
+    0.8,
+    96_000,
+  );
+  assert.ok(models.model?.contextWindow);
+  assert.ok(models.model!.contextWindow! * 0.9 <= 96_000);
+});
+
+test("context pressure compacts at the iteration checkpoint", async () => {
+  const reasons: string[] = [];
+  const hooks = contextPressureHooks({
+    checkpointIteration: 70,
+    warningRatio: 0.5,
+    compact: async (_, reason) => {
+      reasons.push(reason);
+      return [
+        { role: "user", content: [{ type: "text", text: "capsule" }] },
+      ] as never;
+    },
+  });
+  await hooks.beforeModel?.({
+    request: {
+      messages: [
+        { role: "user", content: [{ type: "text", text: "request" }] },
+        { role: "assistant", content: [{ type: "text", text: "response" }] },
+      ],
+    },
+    snapshot: { iteration: 70 },
+  } as never);
+  assert.deepEqual(reasons, ["iteration_checkpoint"]);
+});
+
+test("the reserved terminal iteration removes nonterminal tools", async () => {
+  const hooks = contextPressureHooks({
+    terminalIteration: 120,
+    terminalToolNames: ["complete_turn"],
+    warningRatio: 0.5,
+  });
+  const result = await hooks.beforeModel?.({
+    request: {
+      messages: [{ role: "user", content: [{ type: "text", text: "finish" }] }],
+      tools: [{ name: "search_code" }, { name: "complete_turn" }],
+    },
+    snapshot: { iteration: 120 },
+  } as never);
+  assert.deepEqual(result?.tools, [{ name: "complete_turn" }]);
+});
+
+test("the requested token budget bounds the complete success envelope", () => {
+  const result = harnessSuccess({
+    data: { rows: Array.from({ length: 100 }, () => "x".repeat(500)) },
+    revision: { source_revision_id: "src_00000000000000000000000000000000" },
+    startedAt: Date.now(),
+    provenance: [],
+  });
+  const bounded = boundHarnessResult(result, 200);
+  assert.ok(Buffer.byteLength(JSON.stringify(bounded), "utf8") <= 800);
+  assert.equal(bounded.status, "success");
+  if (bounded.status === "success")
+    assert.equal(bounded.coverage.truncated, true);
 });
 
 test("JSONC editing preserves comments and never creates duplicate commas", async () => {
@@ -85,6 +168,28 @@ test("unsupported validation is never reported as passed", async () => {
     });
     assert.equal(validation.status, "not_supported");
     assert.equal(validation.validator, null);
+  });
+});
+
+test("an unavailable Prisma validator leaves the applied edit pending", async () => {
+  await withWorkspace(async (root, workspace) => {
+    const validation = await validateContent({
+      content: Buffer.from("model User { id Int @id }\n"),
+      path: "schema.prisma",
+      workspaceRoot: root,
+    });
+    assert.equal(validation.status, "validator_unavailable");
+    const result = success(
+      await workspace.createFile({
+        path: "schema.prisma",
+        content: "model User { id Int @id }\n",
+      }),
+    );
+    assert.equal(result.data.status, "applied");
+    if (result.data.status !== "applied") return;
+    assert.equal(result.data.validation.status, "validator_unavailable");
+    assert.equal(result.data.validation.parse, "pending");
+    assert.equal(await exists(join(root, "schema.prisma")), true);
   });
 });
 
@@ -164,11 +269,10 @@ test("patch_file rejects patches targeting multiple files", async () => {
   });
 });
 
-test("edit_files rolls back every file when one validation fails", async () => {
+test("edit_files partitions unrelated files by inferred path coupling", async () => {
   await withWorkspace(async (root, workspace) => {
     const result = success(
       await workspace.editFiles({
-        atomicity: "strict",
         operations: [
           {
             operation: "create_file",
@@ -179,10 +283,44 @@ test("edit_files rolls back every file when one validation fails", async () => {
         ],
       }),
     );
-    assert.equal(result.data.outcome, "validation_failed");
-    assert.equal(await exists(join(root, "valid.ts")), false);
+    assert.equal(result.data.outcome, "applied");
+    if (result.data.status !== "applied") return;
+    assert.equal(result.data.partial, true);
+    assert.deepEqual(
+      result.data.failed_operations?.map(({ path }) => path),
+      ["invalid.json"],
+    );
+    assert.equal(await exists(join(root, "valid.ts")), true);
     assert.equal(await exists(join(root, "invalid.json")), false);
   });
+});
+
+test("edit_files rejects the removed atomicity compatibility hint", () => {
+  assert.throws(() =>
+    editFilesInputSchema.parse({
+      atomicity: "strict",
+      operations: [
+        { operation: "create_file", path: "created.ts", content: "" },
+      ],
+    }),
+  );
+});
+
+test("edit partitioning keeps operations on the same path coupled", () => {
+  const groups = createEditGroups([
+    {
+      operation: "replace_file",
+      path: "coupled.ts",
+      content: "export const value = 1;\n",
+    },
+    {
+      operation: "replace_file",
+      path: "coupled.ts",
+      content: invalidImport,
+    },
+  ]);
+  assert.equal(groups.length, 1);
+  assert.deepEqual(groups[0]?.indexes, [0, 1]);
 });
 
 test("edit_files applies independent files and reports the failing operation", async () => {
@@ -353,6 +491,83 @@ test("all managed package managers resolve without Corepack", async () => {
     assert.equal(result.exitCode, 0);
     assert.equal(result.stdout.trim(), version);
     assert.equal(manager.resolutionStrategy, "exact");
+  }
+});
+
+test("bundled package managers avoid a temporary AppImage executable", async () => {
+  const mountedExecutable = "/tmp/.mount_Blame123/@blamedesktop";
+  const environment = {
+    ...process.env,
+    BLAME_NODE_EXECUTABLE: mountedExecutable,
+  };
+  const candidates = nodeExecutableCandidates(
+    environment,
+    mountedExecutable,
+    "linux",
+  );
+  assert.ok(candidates.indexOf("/usr/bin/node") < candidates.length - 1);
+  const executable = await resolveStableNodeExecutable(
+    environment,
+    mountedExecutable,
+    "linux",
+  );
+  assert.ok(executable);
+  assert.doesNotMatch(executable, /\/tmp\/\.mount_/u);
+});
+
+test("packaged manager paths resolve to the unpacked ASAR tree", async () => {
+  const root = await mkdtemp(join(tmpdir(), "blame-asar-path-"));
+  try {
+    const virtual = join(
+      root,
+      "app.asar",
+      "node_modules",
+      "pnpm",
+      "package.json",
+    );
+    const unpacked = join(
+      root,
+      "app.asar.unpacked",
+      "node_modules",
+      "pnpm",
+      "package.json",
+    );
+    await mkdir(dirname(unpacked), { recursive: true });
+    await writeFile(unpacked, "{}");
+    assert.equal(await physicalBundledPath(virtual), unpacked);
+  } finally {
+    await rm(root, { force: true, recursive: true });
+  }
+});
+
+test("bubblewrap keeps an AppImage package entry visible after tmp isolation", async (context) => {
+  const executor = new SandboxedTaskExecutor();
+  if ((await executor.capability()) !== "bubblewrap") {
+    context.skip("bubblewrap is unavailable");
+    return;
+  }
+  const workspace = await mkdtemp(join(tmpdir(), "blame-bwrap-workspace-"));
+  const packageRoot = await mkdtemp(join(tmpdir(), ".mount_Blame-test-"));
+  try {
+    const entry = join(packageRoot, "manager.cjs");
+    await writeFile(entry, "process.stdout.write('manager-ok')\n");
+    const executable = await resolveStableNodeExecutable();
+    assert.ok(executable);
+    const result = await executor.execute({
+      args: [entry],
+      cwd: workspace,
+      executable,
+      network: "deny",
+      outputBytes: 10_000,
+      overlayRoot: workspace,
+      readonlyRoots: [packageRoot],
+      timeoutMs: 5_000,
+    });
+    assert.equal(result.status, "passed", result.stderr);
+    assert.equal(result.stdout, "manager-ok");
+  } finally {
+    await rm(workspace, { force: true, recursive: true });
+    await rm(packageRoot, { force: true, recursive: true });
   }
 });
 
@@ -629,15 +844,71 @@ test("Corepack failures are classified as infrastructure errors", async () => {
     });
     const revision = success(await workspace.workspaceState()).data
       .source_revision;
-    const run = success(
-      await workspace.runTask({
-        source_revision_id: revision.source_revision_id,
-        task: { task_id: "build" },
-        limits: { timeout_ms: 10_000 },
-      }),
-    );
-    assert.equal(run.data.status, "execution_error");
-    assert.equal(run.data.outcome, "infrastructure_error");
+    const run = await workspace.runTask({
+      source_revision_id: revision.source_revision_id,
+      task: { task_id: "build" },
+      limits: { timeout_ms: 10_000 },
+    });
+    assert.equal(run.status, "error");
+    if (run.status !== "error") return;
+    const summary = run.error.recovery as {
+      outcome: string;
+      status: string;
+      stderr_summary: string;
+    };
+    assert.equal(run.error.code, "EXECUTION_ERROR");
+    assert.equal(summary.status, "execution_error");
+    assert.equal(summary.outcome, "infrastructure_error");
+    assert.match(summary.stderr_summary, /Corepack failed/);
+  });
+});
+
+test("run_task health failures open a durable session circuit", async () => {
+  await withWorkspace(async (root) => {
+    let executions = 0;
+    let healthChecks = 0;
+    const executor: TaskExecutor = {
+      async capability() {
+        return "bubblewrap";
+      },
+      async healthCheck() {
+        healthChecks += 1;
+        return {
+          available: false,
+          isolation: "bubblewrap",
+          stderr:
+            "bwrap: execvp /tmp/.mount_Blame123/@blamedesktop: No such file or directory",
+        };
+      },
+      async execute() {
+        executions += 1;
+        return corepackFailureExecutor.execute({} as TaskExecutionInput);
+      },
+    };
+    const workspace = new SemanticWorkspace(root, { taskExecutor: executor });
+    const revision = success(await workspace.workspaceState()).data
+      .source_revision.source_revision_id;
+    const results = [];
+    for (let index = 0; index < 4; index += 1) {
+      results.push(
+        await workspace.runTask(
+          {
+            source_revision_id: revision,
+            task: { task_id: "build" },
+            limits: { timeout_ms: 10_000 },
+          },
+          undefined,
+          { sessionId: "circuit-session", toolCallId: `call-${index}` },
+        ),
+      );
+    }
+    assert.equal(healthChecks, 3);
+    assert.equal(executions, 0);
+    const terminal = results.at(-1);
+    assert.equal(terminal?.status, "error");
+    if (!terminal || terminal.status !== "error") return;
+    const summary = terminal.error.recovery as { stderr_summary: string };
+    assert.match(summary.stderr_summary, /EXECUTOR_CIRCUIT_OPEN/);
   });
 });
 

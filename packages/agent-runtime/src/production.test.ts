@@ -40,6 +40,10 @@ test("normalizes the production compaction strategy", () => {
 
 test("uses bounded early compaction ratios", () => {
   const defaults = loadProductionConfig({});
+  assert.equal(defaults.compactionMaxContextTokens, 96_000);
+  assert.equal(defaults.compactionMaxOldToolResultTokens, 32_000);
+  assert.equal(defaults.compactionMarginalTokenThreshold, 12_000);
+  assert.equal(defaults.compactionMinNoveltyRatio, 0.25);
   assert.equal(defaults.compactionWarningRatio, 0.55);
   assert.equal(defaults.compactionTriggerRatio, 0.675);
   const configured = loadProductionConfig({

@@ -29,6 +29,7 @@ import { SemanticWorkspace } from "./semantic-workspace.js";
 import {
   decodeHandle,
   encodeHandle,
+  harnessSuccess,
   type HarnessToolResult,
   type HarnessToolSuccess,
 } from "./protocol.js";
@@ -44,6 +45,7 @@ import {
   replayHarnessTraceJsonl,
 } from "./portfolio-v4-trace-replay.js";
 import { RunAttemptStore } from "./run-attempt-store.js";
+import { ReferenceRegistry } from "./reference-registry.js";
 import type {
   TaskExecutionInput,
   TaskExecutionResult,
@@ -244,6 +246,38 @@ test("compact handles remain compatible with legacy object handles", () => {
   assert.ok(compact.length < legacy.length);
 });
 
+test("short semantic references persist across workspace reloads and rebase", async () => {
+  await withWorkspace(async (root) => {
+    const options = { taskContract: { session_id: "persistent-references" } };
+    const first = new SemanticWorkspace(root, options);
+    const outline = success(
+      await first.outlineCode({ target: { path: "src/service.ts" } }),
+    );
+    const reference = outline.data.items.find(
+      (item) => item.qualified_name === "formatName",
+    )?.symbol_ref;
+    assert.match(reference ?? "", /^s_[a-z0-9]{2,10}$/u);
+    await writeFile(
+      join(root, "src", "service.ts"),
+      source.replace("Hello", "Reloaded"),
+    );
+    const reloaded = new SemanticWorkspace(root, options);
+    const inspected = success(
+      await reloaded.inspectCode({
+        target: { symbol_ref: reference! },
+        view: "body",
+      }),
+    );
+    assert.equal(inspected.data.rebased, true);
+    const repeated = success(
+      await reloaded.outlineCode({ target: { path: "src/service.ts" } }),
+    ).data.items.find((item) => item.qualified_name === "formatName");
+    assert.ok(repeated);
+    assert.match(repeated.symbol_ref, /^s_[a-z0-9]{2,10}$/u);
+    assert.ok(repeated.symbol_ref.length <= 12);
+  });
+});
+
 test("semantic tools expose outlines and rebase stale observations", async () => {
   await withWorkspace(async (root) => {
     const workspace = new SemanticWorkspace(root);
@@ -286,8 +320,8 @@ test("semantic tools expose outlines and rebase stale observations", async () =>
     assert.equal(search.data.engine, "ripgrep");
     assert.equal(search.data.items[0]?.matched_text, "formatName");
     assert.match(search.data.items[0]?.context ?? "", /formatName/u);
-    assert.match(search.data.items[0]?.match_ref ?? "", /^match:\/\//u);
-    assert.match(search.data.items[0]?.node_ref ?? "", /^node:\/\//);
+    assert.match(search.data.items[0]?.match_ref ?? "", /^m_[a-z0-9]{2,10}$/u);
+    assert.match(search.data.items[0]?.node_ref ?? "", /^n_[a-z0-9]{2,10}$/u);
 
     const raw = success(
       await workspace.inspectCode({
@@ -343,7 +377,7 @@ test("lexical matches stay distinct from AST nodes and relocate uniquely", async
     );
     assert.match(match.context ?? "", /from "lucide-react"/u);
     assert.equal("excerpt" in match, false);
-    assert.match(match.node_ref ?? "", /^node:\/\//u);
+    assert.match(match.node_ref ?? "", /^n_[a-z0-9]{2,10}$/u);
     assert.equal(match.node_text, undefined);
     await writeFile(path, `const shifted = true;\n${original}`);
     const inspected = success(
@@ -777,7 +811,11 @@ test("edit_code returns candidates without writing an ambiguous target", async (
     );
     const target = outline.data.items[0];
     assert.ok(target);
-    const payload = decodeHandle(target.symbol_ref, "sym");
+    const expanded = await new ReferenceRegistry(
+      root,
+      "unscoped-session",
+    ).expand({ symbol_ref: target.symbol_ref });
+    const payload = decodeHandle(expanded.symbol_ref, "sym");
     assert.ok(payload);
     const ambiguousRef = encodeHandle("sym", {
       ...payload,
@@ -967,7 +1005,7 @@ test("CSS AST edits preserve comments, fallbacks, order, and complex values", as
   });
 });
 
-test("patch_file recovers shifted hunks and refuses ambiguous anchors atomically", async () => {
+test("patch_file recovers shifted hunks and isolates ambiguous anchors", async () => {
   await withWorkspace(async (root) => {
     const path = join(root, "src", "settings.txt");
     await writeFile(path, "zero\nalpha\nbeta\ngamma\n");
@@ -989,7 +1027,6 @@ test("patch_file recovers shifted hunks and refuses ambiguous anchors atomically
     await writeFile(path, "same\nmiddle\nsame\n");
     const ambiguous = success(
       await workspace.editCode({
-        atomicity: "strict",
         edits: [
           {
             operation: "patch_file",
@@ -1005,18 +1042,23 @@ test("patch_file recovers shifted hunks and refuses ambiguous anchors atomically
         ],
       }),
     );
-    assert.equal(ambiguous.data.status, "conflict");
-    if (ambiguous.data.status === "conflict") {
-      assert.match(ambiguous.data.reason, /more than one/i);
-      assert.ok(ambiguous.data.current_context);
-      assert.ok(ambiguous.data.failed_hunk);
-    }
+    assert.equal(ambiguous.data.status, "applied");
+    if (ambiguous.data.status !== "applied") return;
+    assert.equal(ambiguous.data.partial, true);
+    assert.equal(ambiguous.data.failed_operations?.[0]?.status, "conflict");
+    assert.match(
+      ambiguous.data.failed_operations?.[0]?.reason ?? "",
+      /more than one/i,
+    );
     assert.equal(await readFile(path, "utf8"), "same\nmiddle\nsame\n");
-    await assert.rejects(readFile(join(root, "src", "partial.txt")));
+    assert.equal(
+      await readFile(join(root, "src", "partial.txt"), "utf8"),
+      "must not exist\n",
+    );
   });
 });
 
-test("edit_code rolls back the whole batch when parse validation fails", async () => {
+test("edit_code isolates an unrelated parse validation failure", async () => {
   await withWorkspace(async (root) => {
     const workspace = new SemanticWorkspace(root);
     const state = success(await workspace.workspaceState());
@@ -1033,7 +1075,6 @@ test("edit_code rolls back the whole batch when parse validation fails", async (
     const result = success(
       await workspace.editCode(
         {
-          atomicity: "strict",
           edits: [
             {
               operation: "replace",
@@ -1050,15 +1091,23 @@ test("edit_code rolls back the whole batch when parse validation fails", async (
         { toolCallId: "invalid-batch" },
       ),
     );
-    assert.equal(result.data.status, "validation_failed");
-    if (result.data.status !== "validation_failed")
-      assert.fail("Expected validation failure");
-    assert.deepEqual(result.data.failed_operation_indexes, [0]);
+    assert.equal(result.data.status, "applied");
+    if (result.data.status !== "applied") return;
+    assert.equal(result.data.partial, true);
+    assert.deepEqual(
+      result.data.failed_operations?.map(
+        ({ operation_index }) => operation_index,
+      ),
+      [0],
+    );
     assert.equal(
       await readFile(join(root, "src", "service.ts"), "utf8"),
       source,
     );
-    await assert.rejects(readFile(join(root, "src", "should-not-exist.ts")));
+    assert.equal(
+      await readFile(join(root, "src", "should-not-exist.ts"), "utf8"),
+      "export const created = true;\n",
+    );
   });
 });
 
@@ -1557,6 +1606,7 @@ test("run_task isolates writes, captures effects, logs evidence, and is idempote
     const retried = success(await workspace.runTask(input));
     assert.equal(retried.data.run_ref, executed.data.run_ref);
     assert.equal(executor.executions, 1);
+    assert.equal(executor.healthChecks, 1);
 
     const attempt = JSON.parse(
       await readFile(
@@ -1706,20 +1756,26 @@ test("run_task persists every terminal status and recovers interrupted attempts"
       });
       const revision = success(await workspace.workspaceState()).data
         .source_revision.source_revision_id;
-      const executed = success(
-        await workspace.runTask(
-          {
-            source_revision_id: revision,
-            task: { task_id: "test" },
-            limits: { timeout_ms: 10_000 },
-          },
-          undefined,
-          { sessionId: "terminal-statuses", toolCallId: executionStatus },
-        ),
+      const result = await workspace.runTask(
+        {
+          source_revision_id: revision,
+          task: { task_id: "test" },
+          limits: { timeout_ms: 10_000 },
+        },
+        undefined,
+        { sessionId: "terminal-statuses", toolCallId: executionStatus },
       );
-      assert.ok(executed.data.run_attempt_ref);
+      const run =
+        result.status === "success"
+          ? result.data
+          : (result.error.recovery as { run_attempt_ref?: string });
       assert.equal(
-        (await readRunAttempt(root, executed.data.run_attempt_ref)).status,
+        result.status,
+        executionStatus === "execution_error" ? "error" : "success",
+      );
+      assert.ok(run.run_attempt_ref);
+      assert.equal(
+        (await readRunAttempt(root, run.run_attempt_ref!)).status,
         attemptStatus,
       );
     }
@@ -1796,6 +1852,77 @@ test("apply_change can format touched files with the pinned Prettier version", a
   });
 });
 
+test("native dependency mutation updates the manifest and generated lockfile atomically", async () => {
+  await withWorkspace(async (root) => {
+    const initialManifest = JSON.parse(
+      await readFile(join(root, "package.json"), "utf8"),
+    );
+    await writeFile(
+      join(root, "package.json"),
+      JSON.stringify({ ...initialManifest, packageManager: "pnpm@10.32.1" }),
+    );
+    const executor = new LockfileTaskExecutor();
+    const workspace = new SemanticWorkspace(root, { taskExecutor: executor });
+    const state = success(await workspace.workspaceState());
+    const result = success(
+      await workspace.mutateDependencies({
+        source_revision_id: state.data.source_revision.source_revision_id,
+        package_path: "package.json",
+        operations: [
+          {
+            action: "add",
+            name: "kleur",
+            version: "^4.1.5",
+            dependency_type: "dependencies",
+          },
+        ],
+        network: "deny",
+        timeout_ms: 30_000,
+      }),
+    );
+    const manifest = JSON.parse(
+      await readFile(join(root, "package.json"), "utf8"),
+    );
+    assert.equal(manifest.dependencies.kleur, "^4.1.5");
+    assert.equal(
+      await readFile(join(root, "pnpm-lock.yaml"), "utf8"),
+      "generated-lock\n",
+    );
+    assert.deepEqual(result.data.changed_files.sort(), [
+      "package.json",
+      "pnpm-lock.yaml",
+    ]);
+    assert.equal(result.data.status, "applied");
+    if (result.data.status !== "applied")
+      throw new Error("Expected applied mutation.");
+    assert.equal(result.data.package_manager, "pnpm");
+    assert.deepEqual(result.data.network, {
+      requested: "deny",
+      enforced: true,
+    });
+    assert.equal(executor.lastInput?.network, "deny");
+    assert.deepEqual(executor.lastInput?.args, [
+      "install",
+      "--lockfile-only",
+      "--prefer-offline",
+    ]);
+  });
+});
+
+test("generic edit tools refuse manual lockfile changes", async () => {
+  await withWorkspace(async (root) => {
+    const workspace = new SemanticWorkspace(root);
+    const result = success(
+      await workspace.createFile({
+        path: "package-lock.json",
+        content: "{}\n",
+      }),
+    );
+    assert.equal(result.data.status, "unsupported_operation");
+    assert.equal(result.data.recommendedTool, "mutate_dependencies");
+  });
+});
+
 test("Cline adapter registers a small read/write harness with strict schemas", async () => {
   await withWorkspace(async (root) => {
     const tools = semanticWorkspaceTools(root);
@@ -1817,6 +1944,7 @@ test("Cline adapter registers a small read/write harness with strict schemas", a
         "delete_file",
         "move_file",
         "edit_code",
+        "mutate_dependencies",
         "run_task",
         "inspect_run",
         "review_change",
@@ -1938,6 +2066,75 @@ test("cost governor keeps anti-loop counters across execution epochs", () => {
   assert.equal(governor.before("search_code", "epoch-c")?.status, "error");
 });
 
+test("cost governor reserves the terminal iteration", () => {
+  const governor = new HarnessCostGovernor(20);
+  assert.equal(
+    governor.before("create_file", "epoch", {}, 15)?.status,
+    "error",
+  );
+  assert.equal(governor.before("search_code", "epoch", {}, 12), undefined);
+  assert.equal(
+    governor.before("search_code", "epoch", {}, 19)?.status,
+    "error",
+  );
+  assert.equal(governor.before("edit_code", "epoch", {}, 12), undefined);
+  assert.equal(governor.before("run_task", "epoch", {}, 19), undefined);
+  assert.equal(governor.before("run_task", "epoch", {}, 20)?.status, "error");
+});
+
+test("cost governor inspects nested structural mutations", () => {
+  const governor = new HarnessCostGovernor(20);
+  assert.equal(
+    governor.before(
+      "edit_files",
+      "epoch",
+      {
+        operations: [
+          { operation: "create_file", path: "src/new.ts", content: "" },
+        ],
+      },
+      15,
+    )?.status,
+    "error",
+  );
+  assert.equal(
+    governor.before("mutate_dependencies", "epoch", {}, 15)?.status,
+    "error",
+  );
+  assert.equal(
+    governor.before(
+      "edit_files",
+      "epoch",
+      {
+        operations: [
+          { operation: "replace_file", path: "src/current.ts", content: "" },
+        ],
+      },
+      15,
+    ),
+    undefined,
+  );
+});
+
+test("cost governor stops an identical request after three failures", () => {
+  const governor = new HarnessCostGovernor(20);
+  const input = { query: "missing" };
+  for (let index = 0; index < 3; index += 1)
+    governor.after(
+      "inspect_code",
+      input,
+      {
+        status: "error",
+        error: { code: "IO_ERROR", message: "failed" },
+      } as never,
+      { contextEpoch: "epoch", iteration: index },
+    );
+  assert.equal(
+    governor.before("inspect_code", "epoch", input, 4)?.status,
+    "error",
+  );
+});
+
 test("Cline adapter can delegate semantic execution without changing its tool contract", async () => {
   const requests: unknown[] = [];
   const tools = semanticWorkspaceTools(
@@ -1963,6 +2160,30 @@ test("Cline adapter can delegate semantic execution without changing its tool co
         "/home/blame/.local/share/blame/runtime/worktrees/project/story-US-1-test",
     },
   ]);
+});
+
+test("Cline adapter applies output budgets after the complete harness envelope", async () => {
+  const tools = semanticWorkspaceTools("/workspace", {
+    executor: async () =>
+      harnessSuccess({
+        data: { items: Array.from({ length: 100 }, () => "x".repeat(500)) },
+        revision: {
+          source_revision_id: "src_00000000000000000000000000000000",
+        },
+        startedAt: Date.now(),
+        provenance: [],
+      }),
+  });
+  const search = tools.find((tool) => tool.name === "search_code");
+  assert.ok(search);
+  const result = await search.execute(
+    {
+      query: { kind: "text", pattern: "value" },
+      budget: { max_output_tokens: 200 },
+    },
+    { agentId: "test", iteration: 1 },
+  );
+  assert.ok(Buffer.byteLength(JSON.stringify(result), "utf8") <= 800);
 });
 
 test("managed semantic execution is limited to remote local-container sessions", async () => {
@@ -2319,9 +2540,12 @@ test("P1 relation and impact views stay bounded and identify tests", async () =>
     assert.equal(boundedRelations.data.items.length, 1);
     assert.match(
       boundedRelations.data.items[0]?.match_ref ?? "",
-      /^match:\/\//,
+      /^m_[a-z0-9]{2,10}$/,
     );
-    assert.match(boundedRelations.data.items[0]?.node_ref ?? "", /^node:\/\//);
+    assert.match(
+      boundedRelations.data.items[0]?.node_ref ?? "",
+      /^n_[a-z0-9]{2,10}$/,
+    );
     assert.equal(boundedRelations.coverage.truncated, true);
     const stateOutline = success(
       await workspace.outlineCode({
@@ -2602,6 +2826,7 @@ function toolContext(messageId: string) {
 
 class RecordingTaskExecutor implements TaskExecutor {
   executions = 0;
+  healthChecks = 0;
   lastInput?: TaskExecutionInput;
   private readonly status: TaskExecutionResult["status"];
   private readonly stdout?: string;
@@ -2618,6 +2843,11 @@ class RecordingTaskExecutor implements TaskExecutor {
     return "sandbox_exec" as const;
   }
 
+  async healthCheck() {
+    this.healthChecks += 1;
+    return { available: true, isolation: "sandbox_exec" as const };
+  }
+
   async execute(input: TaskExecutionInput): Promise<TaskExecutionResult> {
     this.executions += 1;
     this.lastInput = input;
@@ -2632,6 +2862,39 @@ class RecordingTaskExecutor implements TaskExecutor {
       stderr: "",
       outputTruncated: false,
       isolation: "sandbox_exec",
+    };
+  }
+}
+
+class LockfileTaskExecutor implements TaskExecutor {
+  lastInput?: TaskExecutionInput;
+
+  async capability() {
+    return "sandbox_exec" as const;
+  }
+
+  async healthCheck() {
+    return { available: true, isolation: "sandbox_exec" as const };
+  }
+
+  async execute(input: TaskExecutionInput): Promise<TaskExecutionResult> {
+    this.lastInput = input;
+    const lockfile =
+      input.packageManager === "pnpm" ? "pnpm-lock.yaml" : "package-lock.json";
+    await writeFile(join(input.overlayRoot, lockfile), "generated-lock\n");
+    return {
+      status: "passed",
+      exitCode: 0,
+      signal: null,
+      stdout: "",
+      stderr: "",
+      outputTruncated: false,
+      isolation: "sandbox_exec",
+      packageManagerResolution: {
+        name: input.packageManager ?? "npm",
+        resolvedVersion: input.packageManagerVersion ?? "10.0.0",
+        strategy: input.packageManagerVersion ? "exact" : "unversioned",
+      },
     };
   }
 }

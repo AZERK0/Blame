@@ -45,14 +45,26 @@ export type TaskExecutionResult = {
   packageManagerResolution?: PackageManagerResolution;
 };
 
+export type TaskExecutorHealth = {
+  available: boolean;
+  isolation: TaskIsolation;
+  stderr?: string;
+};
+
 export type TaskIsolation = "bubblewrap" | "sandbox_exec" | "worktree";
 
 export interface TaskExecutor {
   execute(input: TaskExecutionInput): Promise<TaskExecutionResult>;
   capability(): Promise<TaskIsolation>;
+  healthCheck?(input: TaskExecutionInput): Promise<TaskExecutorHealth>;
 }
 
 export class SandboxedTaskExecutor implements TaskExecutor {
+  private readonly healthChecks = new Map<
+    string,
+    Promise<TaskExecutorHealth>
+  >();
+
   async capability() {
     if (process.platform === "darwin") {
       if (await executableExists("sandbox-exec"))
@@ -67,7 +79,7 @@ export class SandboxedTaskExecutor implements TaskExecutor {
     const isolation = await this.capability();
     if (input.network === "project_allowlist" && !projectAllowlistProxy())
       return unsupportedAllowlist(isolation);
-    const prepared = await preparePackageManager(input).catch((error) => ({
+    const prepared = await prepareTaskExecution(input).catch((error) => ({
       error: error instanceof Error ? error.message : String(error),
     }));
     if ("error" in prepared)
@@ -154,6 +166,109 @@ export class SandboxedTaskExecutor implements TaskExecutor {
       };
     }
   }
+
+  async healthCheck(input: TaskExecutionInput) {
+    const isolation = await this.capability();
+    if (input.network === "project_allowlist" && !projectAllowlistProxy())
+      return unavailableHealth(
+        isolation,
+        unsupportedAllowlist(isolation).stderr,
+      );
+    const prepared = await prepareTaskExecution(input).catch((error) => ({
+      error: error instanceof Error ? error.message : String(error),
+    }));
+    if ("error" in prepared)
+      return unavailableHealth(isolation, prepared.error);
+    const unstable = unstableSandboxExecutable(prepared, isolation);
+    if (unstable) return unavailableHealth(isolation, unstable);
+    const key = healthCheckKey(prepared, isolation);
+    const existing = this.healthChecks.get(key);
+    if (existing) return existing;
+    const checking = probeExecutor(prepared, isolation);
+    this.healthChecks.set(key, checking);
+    return checking;
+  }
+}
+
+function unavailableHealth(isolation: TaskIsolation, stderr: string) {
+  return { available: false, isolation, stderr };
+}
+
+function unstableSandboxExecutable(
+  input: PreparedTaskExecutionInput,
+  isolation: TaskIsolation,
+) {
+  if (isolation !== "bubblewrap") return undefined;
+  const temporaryRoot = `${tmpdir().replace(/\/$/u, "")}/`;
+  if (!input.executable.startsWith(temporaryRoot)) return undefined;
+  return `EXECUTOR_UNAVAILABLE:${input.executable} is mounted from a temporary runtime path that bubblewrap cannot preserve. Provision a stable package-manager executable.`;
+}
+
+function healthCheckKey(
+  input: PreparedTaskExecutionInput,
+  isolation: TaskIsolation,
+) {
+  return [
+    isolation,
+    input.executable,
+    input.packageManagerResolution?.resolvedVersion ?? "direct",
+    input.network ?? "deny",
+  ].join("\0");
+}
+
+async function probeExecutor(
+  input: PreparedTaskExecutionInput,
+  isolation: TaskIsolation,
+): Promise<TaskExecutorHealth> {
+  const executable = await systemTrueExecutable();
+  const probeInput = { ...input, executable, args: [] };
+  const readRoots = await executionReadRoots(probeInput);
+  const deniedRoots = await probeDeniedRoots(probeInput, isolation);
+  const command = executionCommand(
+    probeInput,
+    isolation,
+    readRoots,
+    deniedRoots,
+  );
+  try {
+    const result = await execa(command.executable, command.args, {
+      cwd: probeInput.cwd,
+      env: taskEnvironment(
+        probeInput.overlayRoot,
+        probeInput.network ?? "deny",
+        probeInput.dependencyCacheRoot,
+        probeInput.runtimeBinRoots,
+      ),
+      extendEnv: false,
+      reject: false,
+      stdin: "ignore",
+      timeout: Math.min(5_000, probeInput.timeoutMs),
+    });
+    if (!result.failed) return { available: true, isolation };
+    return unavailableHealth(
+      isolation,
+      String(result.stderr || result.stdout || "Executor probe failed."),
+    );
+  } catch (error) {
+    return unavailableHealth(isolation, executionFailure(error).message);
+  }
+}
+
+async function probeDeniedRoots(
+  input: PreparedTaskExecutionInput,
+  isolation: TaskIsolation,
+) {
+  if (isolation !== "sandbox_exec") return [];
+  return canonicalExistingPaths([
+    homedir(),
+    tmpdir(),
+    ...(input.canonicalWorkspaceRoot ? [input.canonicalWorkspaceRoot] : []),
+  ]);
+}
+
+async function systemTrueExecutable() {
+  const roots = ["/usr/bin", "/bin"];
+  return (await executablePath("true", roots)) ?? "/usr/bin/true";
 }
 
 function executionCommand(
@@ -175,9 +290,9 @@ function bubblewrapCommand(input: TaskExecutionInput, readRoots: string[]) {
       "--die-with-parent",
       "--new-session",
       ...(input.network === "project_allowlist" ? [] : ["--unshare-net"]),
-      ...readRoots.flatMap((root) => ["--ro-bind", root, root]),
       "--tmpfs",
       "/tmp",
+      ...readRoots.flatMap((root) => ["--ro-bind", root, root]),
       "--bind",
       input.overlayRoot,
       input.overlayRoot,
@@ -281,6 +396,20 @@ type PreparedTaskExecutionInput = TaskExecutionInput & {
   packageManagerResolution?: PackageManagerResolution;
   runtimeBinRoots: string[];
 };
+
+async function prepareTaskExecution(input: TaskExecutionInput) {
+  const prepared = await preparePackageManager(input);
+  const roots = [
+    ...prepared.runtimeBinRoots,
+    ...(process.env.PATH ?? "").split(delimiter).filter(Boolean),
+  ];
+  const executable = await executablePath(prepared.executable, roots);
+  if (!executable)
+    throw new Error(
+      `EXECUTABLE_UNAVAILABLE:${prepared.executable} is not executable in this runtime.`,
+    );
+  return { ...prepared, executable };
+}
 
 async function preparePackageManager(
   input: TaskExecutionInput,

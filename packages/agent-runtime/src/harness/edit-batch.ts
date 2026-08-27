@@ -288,6 +288,7 @@ function combinedValidation(
 
 function validationParseStatus(status: ValidationStatus) {
   if (status === "passed") return "passed" as const;
+  if (status === "validator_unavailable") return "pending" as const;
   if (status === "not_supported") return "not_supported" as const;
   return "skipped" as const;
 }

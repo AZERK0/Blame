@@ -279,6 +279,8 @@ type RuntimeStartSessionInput = StartSessionInput & {
   enableBuiltInSkills?: boolean;
   enableSpecialistConsult?: boolean;
   enableSpawnAgent?: boolean;
+  governorBudget?: number;
+  pressureCompaction?: Parameters<typeof contextPressureHooks>[0]["compact"];
   structuredCompletion?: boolean;
   taskObjective?: string;
 };
@@ -775,7 +777,7 @@ export class BlameAgentRuntime {
         input.previewDevtoolsScope,
         taskContract,
         semanticExecutor,
-        input.maxIterations,
+        input.governorBudget ?? input.maxIterations,
         externalReadGovernor,
         input.structuredCompletion
           ? {
@@ -851,7 +853,23 @@ export class BlameAgentRuntime {
             hooks: {
               ...(externalReadGovernor?.fetchHooks() ?? {}),
               ...contextPressureHooks({
+                checkpointIteration: compactionCheckpointIteration(
+                  input.governorBudget ?? input.maxIterations,
+                ),
+                compact: input.pressureCompaction,
                 contextWindow: compactionModelState?.contextWindow,
+                marginalTokenThreshold:
+                  this.productionConfig.compactionMarginalTokenThreshold,
+                maximumContextTokens:
+                  this.productionConfig.compactionMaxContextTokens,
+                maximumOldToolResultTokens:
+                  this.productionConfig.compactionMaxOldToolResultTokens,
+                minimumNoveltyRatio:
+                  this.productionConfig.compactionMinNoveltyRatio,
+                terminalIteration: input.governorBudget,
+                terminalToolNames: input.structuredCompletion
+                  ? [completeTurnToolName]
+                  : [],
                 warningRatio:
                   this.productionConfig.compactionWarningRatio ?? 0.55,
                 onWarning: (contextUtilizationRatio) =>
@@ -2780,6 +2798,15 @@ export class BlameAgentRuntime {
       conversationId,
       tokenCounter,
     );
+    const iterationBudget =
+      input.maxIterations ?? developmentMaxIterations(input);
+    const recordCompaction = (inputTokens: number, outputTokens: number) =>
+      this.agentTelemetry.recordContextCompaction(
+        conversationId,
+        inputTokens,
+        outputTokens,
+      );
+    const compaction = blameCompactionConfig(this.productionConfig);
     const session = await this.startSession({
       apiConnection: input.apiConnection,
       providerId: input.providerId,
@@ -2794,7 +2821,8 @@ export class BlameAgentRuntime {
       sessionId: conversationId,
       initialMessages,
       mode: "act",
-      maxIterations: input.maxIterations ?? developmentMaxIterations(input),
+      maxIterations: iterationBudget + 1,
+      governorBudget: iterationBudget,
       prompt: preparedRequest.prompt,
       continuityMetrics: preparedRequest.metrics,
       taskObjective: developmentInput.prompt,
@@ -2814,15 +2842,20 @@ export class BlameAgentRuntime {
         "BLAME_STRUCTURED_COMPLETION",
       ),
       compaction: developmentCompactionConfig(
-        blameCompactionConfig(this.productionConfig),
+        compaction,
         continuity,
-        (inputTokens, outputTokens) =>
-          this.agentTelemetry.recordContextCompaction(
-            conversationId,
-            inputTokens,
-            outputTokens,
-          ),
+        recordCompaction,
       ),
+      pressureCompaction:
+        compaction.enabled === false
+          ? undefined
+          : (metrics, reason) =>
+              developmentPressureCompaction(
+                continuity,
+                metrics.estimatedTokens,
+                reason,
+                recordCompaction,
+              ),
       backend: input.backend,
       executionId: input.executionId,
       storyId: input.storyId,
@@ -4933,7 +4966,8 @@ function developmentCompactionConfig(
   continuity: ConversationMemoryStore,
   recordCompaction?: (inputTokens: number, outputTokens: number) => void,
 ): CoreCompactionConfig {
-  if (!harnessFeatureEnabled("BLAME_CONTEXT_EPOCHS")) return base;
+  if (base.enabled === false || !harnessFeatureEnabled("BLAME_CONTEXT_EPOCHS"))
+    return base;
   return {
     ...base,
     async compact(context: CoreCompactionContext) {
@@ -4961,6 +4995,39 @@ function developmentCompactionConfig(
   };
 }
 
+function compactionCheckpointIteration(iterationBudget?: number) {
+  if (!iterationBudget || iterationBudget < 70) return undefined;
+  return Math.min(80, Math.max(70, Math.floor(iterationBudget * 0.65)));
+}
+
+async function developmentPressureCompaction(
+  continuity: ConversationMemoryStore,
+  inputTokens: number,
+  reason: string,
+  recordCompaction?: (inputTokens: number, outputTokens: number) => void,
+) {
+  const capsule = await continuity.rotate(`automatic_${reason}`);
+  const currentRequest = await continuity.currentRequest();
+  const content = renderContinuityPrompt(capsule, currentRequest);
+  const outputTokens = Math.ceil(Buffer.byteLength(content, "utf8") / 4);
+  recordCompaction?.(inputTokens, outputTokens);
+  return [
+    {
+      id: `compaction-${capsule.executionEpochId}`,
+      role: "user" as const,
+      content: [{ type: "text" as const, text: content }],
+      createdAt: Date.now(),
+      metadata: {
+        conversation_id: capsule.conversationId,
+        execution_epoch_id: capsule.executionEpochId,
+        compaction_reason: reason,
+        context_size_before_compaction: inputTokens,
+        context_size_after_compaction: outputTokens,
+      },
+    },
+  ];
+}
+
 async function earlyCompactionModelState(
   providerId: string,
   modelId: string,
@@ -4981,6 +5048,7 @@ async function earlyCompactionModelState(
         models,
         modelId,
         config.compactionTriggerRatio ?? 0.675,
+        config.compactionMaxContextTokens,
       ),
     };
   } catch {

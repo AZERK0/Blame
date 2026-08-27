@@ -225,6 +225,9 @@ const config: Configuration = {
   asarUnpack: [
     "**/node_modules/@ast-grep/lang-*/**/*",
     "**/node_modules/@vscode/ripgrep-*/**/*",
+    "**/node_modules/npm/**/*",
+    "**/node_modules/pnpm/**/*",
+    "**/node_modules/yarn/**/*",
   ],
   productName: "Blame",
   protocols: [{ name: "Blame", schemes: ["blame"] }],

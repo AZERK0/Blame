@@ -13,6 +13,8 @@ import test from "node:test";
 
 import type { ClineCoreStartInput, CoreSessionEvent } from "@cline/sdk";
 import { ClineFreeModelLimitError, ClineNotSubscribedError } from "@cline/llms";
+import { ConversationMemoryStore } from "./harness/conversation-memory.js";
+import { SemanticWorkspace } from "./harness/semantic-workspace.js";
 import type { AgentEvent } from "./types.js";
 
 import {
@@ -337,6 +339,61 @@ test("continues the agent turn after bounding a large web fetch result", async (
   }
 });
 
+test("compaction preserves an unfinished multi-file edit", async () => {
+  const workspace = await mkdtemp(join(tmpdir(), "blame-live-compaction-"));
+  const fixture = developmentCompactionFixture("true");
+  try {
+    const sessionId = "unfinished-edit-compaction";
+    await fixture.runtime.sessions.startDevelopment({
+      apiConnection: { url: "https://api.example" },
+      autoSendPrompt: false,
+      cwd: workspace,
+      maxIterations: 80,
+      modelId: "model",
+      providerId: "provider",
+      sessionId,
+      summary: "Create both unfinished files and validate them later.",
+      title: "Unfinished edit",
+      workspaceRoot: workspace,
+    });
+    await applyUnfinishedEdit(workspace, sessionId);
+    const update = await compactAtCheckpoint(fixture.start());
+    const serialized = JSON.stringify(update?.messages);
+    assert.match(serialized, /Create both unfinished files/);
+    assert.match(serialized, /src\/first\.ts/);
+    assert.match(serialized, /src\/second\.ts/);
+    const memory = new ConversationMemoryStore(workspace, sessionId);
+    assert.equal((await memory.completionReadiness()).completionAllowed, false);
+  } finally {
+    await fixture.restore();
+    await rm(workspace, { force: true, recursive: true });
+  }
+});
+
+test("disabled compaction installs neither manual nor pressure compaction", async () => {
+  const workspace = await mkdtemp(join(tmpdir(), "blame-no-compaction-"));
+  const fixture = developmentCompactionFixture("false");
+  try {
+    await fixture.runtime.sessions.startDevelopment({
+      apiConnection: { url: "https://api.example" },
+      autoSendPrompt: false,
+      cwd: workspace,
+      maxIterations: 80,
+      modelId: "model",
+      providerId: "provider",
+      summary: "Keep the complete context.",
+      title: "No compaction",
+      workspaceRoot: workspace,
+    });
+    assert.equal(fixture.start()?.config.compaction?.enabled, false);
+    assert.equal(fixture.start()?.config.compaction?.compact, undefined);
+    assert.equal(await compactAtCheckpoint(fixture.start()), undefined);
+  } finally {
+    await fixture.restore();
+    await rm(workspace, { force: true, recursive: true });
+  }
+});
+
 test("gives project generation direct write tools without global skills", () => {
   const policies = newProjectGenerationToolPolicies();
 
@@ -416,6 +473,90 @@ function providerCredentialResponse() {
     }),
     { headers: { "content-type": "application/json" }, status: 200 },
   );
+}
+
+function developmentCompactionFixture(enabled: "false" | "true") {
+  const originalFetch = globalThis.fetch;
+  const originalEnabled = process.env.BLAME_AGENT_COMPACTION_ENABLED;
+  let capturedStart: ClineCoreStartInput | undefined;
+  const core = {
+    async dispose() {},
+    async list() {
+      return [];
+    },
+    async start(input: ClineCoreStartInput) {
+      capturedStart = input;
+      return { sessionId: input.config.sessionId! };
+    },
+    async subscribe() {
+      return () => undefined;
+    },
+  };
+  process.env.BLAME_AGENT_COMPACTION_ENABLED = enabled;
+  globalThis.fetch = async () => providerCredentialResponse();
+  const runtime = new BlameAgentRuntime(undefined, {
+    createCore: async () => core as never,
+  });
+  return compactionFixtureResult(
+    runtime,
+    () => capturedStart,
+    originalFetch,
+    originalEnabled,
+  );
+}
+
+function compactionFixtureResult(
+  runtime: BlameAgentRuntime,
+  start: () => ClineCoreStartInput | undefined,
+  originalFetch: typeof globalThis.fetch,
+  originalEnabled: string | undefined,
+) {
+  return {
+    runtime,
+    start,
+    async restore() {
+      globalThis.fetch = originalFetch;
+      if (originalEnabled === undefined)
+        delete process.env.BLAME_AGENT_COMPACTION_ENABLED;
+      else process.env.BLAME_AGENT_COMPACTION_ENABLED = originalEnabled;
+      await runtime.shutdown();
+    },
+  };
+}
+
+async function applyUnfinishedEdit(root: string, sessionId: string) {
+  const workspace = new SemanticWorkspace(root, {
+    taskContract: { session_id: sessionId },
+  });
+  const result = await workspace.editFiles({
+    operations: [
+      {
+        operation: "create_file",
+        path: "src/first.ts",
+        content: "export {}\n",
+      },
+      {
+        operation: "create_file",
+        path: "src/second.ts",
+        content: "export {}\n",
+      },
+    ],
+  });
+  assert.equal(result.status, "success");
+}
+
+function compactAtCheckpoint(start: ClineCoreStartInput | undefined) {
+  assert.ok(start?.config.hooks?.beforeModel);
+  return start.config.hooks.beforeModel({
+    request: {
+      messages: [
+        { role: "user", content: [{ type: "text", text: "request" }] },
+        { role: "assistant", content: [{ type: "text", text: "working" }] },
+      ],
+      tools: [],
+    },
+    snapshot: { iteration: 70 },
+  } as never);
 }
 
 function newProjectGenerationInput(workspace: string) {

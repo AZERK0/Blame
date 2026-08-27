@@ -26,6 +26,7 @@ export const semanticWorkspaceWriteToolNames = [
   "edit_code",
   "apply_change",
   "run_task",
+  "mutate_dependencies",
 ] as const;
 
 export type SemanticWorkspaceToolName =
@@ -148,6 +149,8 @@ async function executeSemanticWorkspaceTool(
       return workspace.moveFile(input as never, toolContext);
     case "run_task":
       return workspace.runTask(input as never, signal, toolContext);
+    case "mutate_dependencies":
+      return workspace.mutateDependencies(input as never, signal);
     case "inspect_run":
       return workspace.inspectRun(input as never, signal);
     case "review_change":

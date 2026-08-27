@@ -4,7 +4,11 @@ import { redactSecurityValue } from "../security-secret-redaction.js";
 import { HarnessCostGovernor } from "./cost-governor.js";
 import { ConversationMemoryStore } from "./conversation-memory.js";
 import { harnessFeatureEnabled } from "./harness-feature-flags.js";
-import { harnessError } from "./protocol.js";
+import {
+  boundHarnessResult,
+  harnessError,
+  type HarnessToolResult,
+} from "./protocol.js";
 import {
   applyChangeInputSchema,
   createFileInputSchema,
@@ -20,6 +24,7 @@ import {
   inspectRunInputSchema,
   outlineCodeInputSchema,
   moveFileInputSchema,
+  dependencyMutationInputSchema,
   patchFileInputSchema,
   recallContextInputSchema,
   replaceFileInputSchema,
@@ -68,7 +73,7 @@ export function semanticWorkspaceTools(
       context,
     );
     const blocked = harnessFeatureEnabled("BLAME_COST_GOVERNOR_V2")
-      ? governor.before(tool, contextEpoch, input)
+      ? governor.before(tool, contextEpoch, input, context.iteration)
       : undefined;
     if (blocked) return blocked;
     const result = await executor(
@@ -188,7 +193,7 @@ export function semanticWorkspaceTools(
     }),
     createHarnessTool({
       name: "edit_files",
-      description: `Apply and syntax-validate file operations independently by file by default. Use atomicity strict only when every file is part of one coupled transaction; then no file is written when validation fails.\n\n${supportedOperations}`,
+      description: `Apply and syntax-validate file operations. The runtime automatically groups operations that touch the same paths and commits unrelated files independently.\n\n${supportedOperations}`,
       schema: editFilesInputSchema,
       execute: (input, context) => execute("edit_files", input, context),
       retryable: false,
@@ -228,7 +233,7 @@ export function semanticWorkspaceTools(
     createHarnessTool({
       name: "edit_code",
       description:
-        "Compatibility editor for relocatable match_ref replacements, replace_body, replace_signature, insertion, symbol deletion, and CSS declarations. Independent files use per-file commits by default; set atomicity to strict only for coupled changes. Prefer specialized edit tools when available.",
+        "Compatibility editor for relocatable match_ref replacements, replace_body, replace_signature, insertion, symbol deletion, and CSS declarations. The runtime automatically groups coupled paths and commits unrelated files independently. Prefer specialized edit tools when available.",
       schema: editCodeInputSchema,
       execute: (input, context) => execute("edit_code", input, context),
       retryable: false,
@@ -246,6 +251,15 @@ export function semanticWorkspaceTools(
           }),
         ]
       : []),
+    createHarnessTool({
+      name: "mutate_dependencies",
+      description:
+        "Add or remove package.json dependencies through the native dependency workflow. The runtime updates the selected manifest, invokes the detected package manager with controlled network policy, regenerates the lockfile, and atomically commits both. Never edit lockfiles with edit tools.",
+      schema: dependencyMutationInputSchema,
+      execute: (input, context) =>
+        execute("mutate_dependencies", input, context),
+      retryable: false,
+    }),
     createHarnessTool({
       name: "run_task",
       description:
@@ -334,7 +348,7 @@ function createHarnessTool<TSchema extends z.ZodTypeAny>(input: {
   execute: (
     value: z.infer<TSchema>,
     context: AgentToolContext,
-  ) => Promise<{ status: string }>;
+  ) => Promise<HarnessToolResult<unknown>>;
   retryable?: boolean;
 }): AgentTool {
   // CoreSessionConfig stores heterogeneous tools as AgentTool<unknown, unknown>.
@@ -356,10 +370,27 @@ function createHarnessTool<TSchema extends z.ZodTypeAny>(input: {
           }),
           isError: true,
         };
-      const result = await input.execute(parsed.data, context);
+      const result = boundHarnessResult(
+        await input.execute(parsed.data, context),
+        requestedOutputTokens(parsed.data),
+      );
       return result.status === "error"
         ? { output: result, isError: true }
         : result;
     },
   });
+}
+
+function requestedOutputTokens(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value))
+    return undefined;
+  const input = value as Record<string, unknown>;
+  const budget = input.budget;
+  if (budget && typeof budget === "object" && !Array.isArray(budget)) {
+    const requested = (budget as Record<string, unknown>).max_output_tokens;
+    if (typeof requested === "number") return requested;
+  }
+  return typeof input.maximum_tokens === "number"
+    ? input.maximum_tokens
+    : undefined;
 }

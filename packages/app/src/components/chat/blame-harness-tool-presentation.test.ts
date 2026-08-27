@@ -163,6 +163,29 @@ test("reuses search result cards for semantic search", () => {
   ])
 })
 
+test("semantic result cards show paths and symbols without opaque references", () => {
+  const presentation = presentBlameHarnessTool({
+    input: { query: { kind: "symbol", name: "OrderService" } },
+    output: {
+      data: {
+        items: [
+          {
+            path: "src/order.ts",
+            qualified_name: "OrderService",
+            symbol_ref: "s_01",
+          },
+        ],
+      },
+      status: "success",
+    },
+    toolName: "search_code",
+  })
+
+  assert.match(JSON.stringify(presentation.output), /src\/order\.ts/u)
+  assert.match(JSON.stringify(presentation.output), /OrderService/u)
+  assert.doesNotMatch(JSON.stringify(presentation.output), /s_01/u)
+})
+
 test("reuses search cards for bounded relation context", () => {
   const presentation = presentBlameHarnessTool({
     input: { target: { symbol_ref: "sym://target" } },
@@ -202,6 +225,25 @@ test("reuses terminal cards for task execution and inspection", () => {
     }).input,
     { commands: ["validate change"] }
   )
+})
+
+test("marks failed task processes as unsuccessful terminal cards", () => {
+  const presentation = presentBlameHarnessTool({
+    input: { task: { task_id: "test" } },
+    output: {
+      status: "success",
+      data: { status: "failed", outcome: "task_failure" },
+    },
+    toolName: "run_task",
+  })
+
+  assert.deepEqual(presentation.output, [
+    {
+      query: "test",
+      result: '{\n  "status": "failed",\n  "outcome": "task_failure"\n}',
+      success: false,
+    },
+  ])
 })
 
 test("leaves unrelated tools unchanged", () => {

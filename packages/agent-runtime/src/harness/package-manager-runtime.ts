@@ -1,5 +1,6 @@
 import { constants } from "node:fs";
 import { access, readFile, readdir, realpath } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { delimiter, dirname, join, resolve } from "node:path";
 import { createRequire } from "node:module";
 import { execa } from "execa";
@@ -60,11 +61,31 @@ export async function resolvePackageManager(
 }
 
 async function exactManager(input: PackageManagerRequest) {
+  if (!input.version)
+    return (
+      (await defaultProvisionedManager(input.name)) ??
+      (await systemManager(input)) ??
+      (await bundledManager(input))
+    );
   return (
     (await provisionedManager(input)) ??
     (await bundledManager(input)) ??
     (await systemManager(input))
   );
+}
+
+async function defaultProvisionedManager(name: PackageManagerName) {
+  const candidates = await provisionedManagerCandidates(name);
+  return candidates.sort(compareVersionsDescending)[0];
+}
+
+function compareVersionsDescending(
+  left: PackageManagerCandidate,
+  right: PackageManagerCandidate,
+) {
+  return right.resolvedVersion.localeCompare(left.resolvedVersion, undefined, {
+    numeric: true,
+  });
 }
 
 async function provisionedManager(input: PackageManagerRequest) {
@@ -87,8 +108,9 @@ async function provisionedManager(input: PackageManagerRequest) {
 
 async function bundledManager(input: PackageManagerRequest) {
   if (!managedPackageNames.has(input.name)) return undefined;
-  const manifestPath = bundledManifestPath(input.name);
-  if (!manifestPath) return undefined;
+  const resolvedManifestPath = bundledManifestPath(input.name);
+  if (!resolvedManifestPath) return undefined;
+  const manifestPath = await physicalBundledPath(resolvedManifestPath);
   const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as {
     bin?: Record<string, string> | string;
     version?: string;
@@ -100,13 +122,76 @@ async function bundledManager(input: PackageManagerRequest) {
     return undefined;
   const entry = managerBin(manifest.bin, input.name);
   if (!entry) return undefined;
+  const executable = await resolveStableNodeExecutable();
+  if (!executable) return undefined;
   const packageRoot = dirname(manifestPath);
   return {
-    executable: process.env.BLAME_NODE_EXECUTABLE?.trim() || process.execPath,
+    executable,
     argsPrefix: [join(packageRoot, entry)],
-    readonlyRoots: [packageRoot],
+    readonlyRoots: [packageRoot, dirname(executable)],
     resolvedVersion: manifest.version,
   };
+}
+
+export async function physicalBundledPath(path: string) {
+  if (!path.includes("app.asar")) return path;
+  const unpacked = path.replace(/app\.asar(?=[/\\])/u, "app.asar.unpacked");
+  return (await readableFile(unpacked)) ? unpacked : path;
+}
+
+export async function resolveStableNodeExecutable(
+  environment: NodeJS.ProcessEnv = process.env,
+  processExecutable = process.execPath,
+  platform = process.platform,
+) {
+  for (const candidate of nodeExecutableCandidates(
+    environment,
+    processExecutable,
+    platform,
+  )) {
+    const executable = await resolvedExecutable(candidate, environment);
+    if (executable && !temporaryRuntimePath(executable, platform))
+      return executable;
+  }
+  return undefined;
+}
+
+export function nodeExecutableCandidates(
+  environment: NodeJS.ProcessEnv,
+  processExecutable: string,
+  platform: NodeJS.Platform,
+) {
+  const configured = environment.BLAME_NODE_EXECUTABLE?.trim();
+  const system = platform === "linux" ? ["/usr/bin/node", "/bin/node"] : [];
+  const path = (environment.PATH ?? "")
+    .split(delimiter)
+    .filter(Boolean)
+    .map((root) => join(resolve(root), "node"));
+  return [
+    ...new Set([configured, ...system, ...path, processExecutable]),
+  ].filter((candidate): candidate is string => Boolean(candidate));
+}
+
+async function resolvedExecutable(
+  candidate: string,
+  environment: NodeJS.ProcessEnv,
+) {
+  if (candidate.includes("/") || candidate.includes("\\")) {
+    return (await executableFile(candidate)) ? realpath(candidate) : undefined;
+  }
+  for (const root of (environment.PATH ?? "")
+    .split(delimiter)
+    .filter(Boolean)) {
+    const path = join(root, candidate);
+    if (await executableFile(path)) return realpath(path);
+  }
+  return undefined;
+}
+
+function temporaryRuntimePath(path: string, platform: NodeJS.Platform) {
+  if (platform !== "linux") return false;
+  const temporaryRoot = `${resolve(tmpdir())}/`;
+  return resolve(path).startsWith(temporaryRoot);
 }
 
 function bundledManifestPath(name: PackageManagerName) {
@@ -304,6 +389,15 @@ function isCorepackShim(path: string) {
 async function executableFile(path: string) {
   try {
     await access(path, constants.X_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function readableFile(path: string) {
+  try {
+    await access(path, constants.R_OK);
     return true;
   } catch {
     return false;

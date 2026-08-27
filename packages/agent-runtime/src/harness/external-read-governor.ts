@@ -152,15 +152,9 @@ export class ExternalReadGovernor {
     receiptId: string,
     result: unknown,
   ) {
-    const metrics = this.publicMetrics();
     if (!isAgentToolResult(result))
-      return boundedResult(
-        boundedExternalResult(result, tool),
-        receiptId,
-        tool,
-        metrics,
-      );
-    const enriched = boundedResult(result, receiptId, tool, metrics);
+      return boundedResult(boundedExternalResult(result, tool), receiptId, tool);
+    const enriched = boundedResult(result, receiptId, tool);
     return boundedExternalResult(enriched, tool);
   }
 
@@ -176,7 +170,6 @@ export class ExternalReadGovernor {
         alreadyAvailable: true,
         receiptId: entry.receiptId,
         sourceUnchanged: true,
-        governor: this.publicMetrics(),
       },
     };
   }
@@ -203,17 +196,7 @@ export class ExternalReadGovernor {
         reason: "REPEATED_EXTERNAL_READ",
         recommendation:
           "Use the existing receipts or continue with a targeted workspace action.",
-        governor: this.publicMetrics(),
       },
-    };
-  }
-
-  private publicMetrics() {
-    return {
-      external_read_call_count: this.metrics.calls,
-      external_read_cache_hit_count: this.metrics.cacheHits,
-      external_read_suppressed_count: this.metrics.suppressed,
-      external_read_returned_bytes: this.metrics.returnedBytes,
     };
   }
 }
@@ -361,7 +344,6 @@ function boundedResult(
   result: unknown,
   receiptId: string,
   tool: ExternalReadToolName,
-  governor: Record<string, number>,
 ) {
   if (isAgentToolResult(result))
     return {
@@ -369,12 +351,11 @@ function boundedResult(
       metadata: {
         ...result.metadata,
         externalReadReceiptId: receiptId,
-        governor,
       },
     };
   if (result && typeof result === "object" && !Array.isArray(result))
-    return { ...result, externalReadReceiptId: receiptId, governor, tool };
-  return { content: result, externalReadReceiptId: receiptId, governor, tool };
+    return { ...result, externalReadReceiptId: receiptId, tool };
+  return { content: result, externalReadReceiptId: receiptId, tool };
 }
 
 type AgentToolResultEnvelope = {

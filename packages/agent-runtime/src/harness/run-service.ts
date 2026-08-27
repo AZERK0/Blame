@@ -8,6 +8,7 @@ import { stableJson } from "./change-store.js";
 import { environmentSpec } from "./environment-service.js";
 import { sha256 } from "./protocol.js";
 import { RunStore } from "./run-store.js";
+import { TaskFailureCircuit } from "./task-failure-circuit.js";
 import {
   RunAttemptStore,
   type RunAttempt,
@@ -25,7 +26,12 @@ import {
   resolveTask,
   taskInvocation,
 } from "./task-catalog.js";
-import { SandboxedTaskExecutor, type TaskExecutor } from "./task-executor.js";
+import {
+  SandboxedTaskExecutor,
+  type TaskExecutionInput,
+  type TaskExecutionResult,
+  type TaskExecutor,
+} from "./task-executor.js";
 import { WorkspaceFiles, type WorkspaceSnapshot } from "./workspace-files.js";
 import { WorkspaceOverlay } from "./workspace-overlay.js";
 
@@ -62,7 +68,16 @@ export class RunService {
     try {
       const run = await this.store.exclusiveIdempotency(
         prepared.idempotencyKey,
-        () => this.runUnlocked(prepared.effectiveInput, snapshot, signal),
+        () =>
+          this.runUnlocked(
+            prepared.effectiveInput,
+            snapshot,
+            signal,
+            new TaskFailureCircuit(
+              this.files.root,
+              context.sessionId ?? "unscoped-session",
+            ),
+          ),
       );
       await this.finishRunAttempt(prepared.attempt, run);
       return {
@@ -111,6 +126,10 @@ export class RunService {
     input: RunTaskInput,
     snapshot: WorkspaceSnapshot,
     signal?: AbortSignal,
+    failureCircuit = new TaskFailureCircuit(
+      this.files.root,
+      "unscoped-session",
+    ),
   ) {
     const catalog = await readTaskCatalog(this.files.root, snapshot.files);
     const task = resolveTask(catalog, input.task);
@@ -144,7 +163,7 @@ export class RunService {
         snapshot.files,
         task,
       );
-      const result = await this.executor.execute({
+      const executionInput: TaskExecutionInput = {
         executable: invocation.executable,
         args: invocation.args,
         cwd: join(overlay.workspace, invocation.cwd),
@@ -159,7 +178,11 @@ export class RunService {
         outputBytes: input.limits.output_bytes ?? 512 * 1024,
         signal,
         network: input.network ?? "deny",
-      });
+      };
+      const openCircuit = await failureCircuit.blocked();
+      const result = openCircuit
+        ? circuitOpenResult(isolation, openCircuit.message)
+        : await this.executeTask(executionInput, isolation);
       const effects = await overlay.effects(signal);
       const canonicalUnchanged = await this.canonicalRevisionMatches(snapshot);
       const revision = {
@@ -211,6 +234,8 @@ export class RunService {
       ]);
       const normalized = stripAnsi(`${redactedStderr}\n${redactedStdout}`);
       const runStatus = normalizedRunStatus(result.status, normalized);
+      if (!openCircuit)
+        await updateFailureCircuit(failureCircuit, runStatus, normalized);
       const completedAt = new Date();
       return this.store.write({
         schema_version: "1.0",
@@ -324,6 +349,24 @@ export class RunService {
     return this.executor.capability();
   }
 
+  private async executeTask(
+    input: TaskExecutionInput,
+    isolation: Awaited<ReturnType<TaskExecutor["capability"]>>,
+  ) {
+    const health = await this.executor.healthCheck?.(input);
+    if (health && !health.available)
+      return executionErrorResult(
+        health.isolation,
+        health.stderr ?? "Executor health check failed.",
+      );
+    return this.executor.execute(input).catch((error) =>
+      executionErrorResult(
+        isolation,
+        error instanceof Error ? error.message : String(error),
+      ),
+    );
+  }
+
   async inspect(input: InspectRunInput) {
     inspectRunInputSchema.parse(input);
     const run = await this.store.read(input.run_ref);
@@ -427,6 +470,9 @@ export function publicRun(
     duration_ms: run.duration_ms,
     failures: run.failures.slice(0, 10),
     diagnostics: run.diagnostics.slice(0, 30),
+    ...(run.logs.stderr_tail.trim()
+      ? { stderr_summary: compact(run.logs.stderr_tail, 1_000) }
+      : {}),
     filesystem_effects: run.filesystem_effects,
     complete_log: run.logs.complete,
   };
@@ -441,9 +487,46 @@ function normalizedRunStatus(
 }
 
 function infrastructureRunFailure(output: string) {
-  return /\b(?:corepack|econnrefused|enotfound|package manager unavailable)\b|BLAME_PROJECT_ALLOWLIST_PROXY/iu.test(
+  return /\b(?:corepack|econnrefused|enotfound|package manager unavailable|executor unavailable|executable unavailable)\b|BLAME_PROJECT_ALLOWLIST_PROXY|bwrap:\s+execvp/iu.test(
     output,
   );
+}
+
+async function updateFailureCircuit(
+  circuit: TaskFailureCircuit,
+  status: StoredRun["status"],
+  output: string,
+) {
+  if (status === "execution_error") {
+    await circuit.recordFailure(output || "Unknown executor failure.");
+    return;
+  }
+  await circuit.reset();
+}
+
+function circuitOpenResult(
+  isolation: TaskExecutionResult["isolation"],
+  previousFailure: string,
+) {
+  return executionErrorResult(
+    isolation,
+    `EXECUTOR_CIRCUIT_OPEN:Three identical infrastructure failures were observed. The task was not started. Last failure: ${previousFailure}`,
+  );
+}
+
+function executionErrorResult(
+  isolation: TaskExecutionResult["isolation"],
+  stderr: string,
+): TaskExecutionResult {
+  return {
+    status: "execution_error",
+    exitCode: null,
+    signal: null,
+    stdout: "",
+    stderr,
+    outputTruncated: false,
+    isolation,
+  };
 }
 
 function inspectRunView(run: StoredRun, view: InspectRunInput["view"]) {

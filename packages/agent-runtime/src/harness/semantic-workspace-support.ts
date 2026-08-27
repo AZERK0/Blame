@@ -389,6 +389,17 @@ export function toolError<T = never>(error: unknown): HarnessToolResult<T> {
         action: "Use a capability reported as available by workspace_state.",
       },
     });
+  for (const code of [
+    "EXECUTION_ERROR",
+    "IO_ERROR",
+    "POLICY_DENIED",
+  ] as const) {
+    if (message.startsWith(`${code}:`))
+      return harnessError({
+        code,
+        message: message.slice(code.length + 1),
+      });
+  }
   for (const code of ["TARGET_GONE", "UNSUPPORTED_STRUCTURE"] as const) {
     if (message.startsWith(`${code}:`))
       return harnessError({

@@ -12,6 +12,14 @@ type PresentedFile = {
   validation?: string
 }
 
+const hiddenSemanticReferenceFields = new Set([
+  "file_ref",
+  "match_ref",
+  "node_ref",
+  "symbol_ref",
+  "new_symbol_refs",
+])
+
 export function presentBlameHarnessTool(
   details: ToolPresentation
 ): ToolPresentation {
@@ -268,14 +276,24 @@ function taskLabel(toolName: string | undefined, value: unknown) {
 
 function resultCards(query: string | undefined, output: unknown) {
   if (output === undefined) return undefined
-  const result = recordValue(output)
   return [
     {
       query: query ?? "Result",
       result: formattedResult(output),
-      success: result.status !== "error",
+      success: successfulResult(output),
     },
   ]
+}
+
+function successfulResult(output: unknown) {
+  const result = recordValue(output)
+  if (result.status === "error") return false
+  const data = recordValue(harnessData(output))
+  const status = stringValue(data.status)
+  const outcome = stringValue(data.outcome)
+  if (["cancelled", "execution_error", "failed", "timed_out"].includes(status ?? ""))
+    return false
+  return !["infrastructure_error", "task_failure"].includes(outcome ?? "")
 }
 
 function formattedResult(output: unknown) {
@@ -283,10 +301,20 @@ function formattedResult(output: unknown) {
   const value = result.status === "error" ? result.error : harnessData(output)
   if (typeof value === "string") return value
   try {
-    return JSON.stringify(value, null, 2)
+    return JSON.stringify(humanReadableResult(value), null, 2)
   } catch {
     return String(value)
   }
+}
+
+function humanReadableResult(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(humanReadableResult)
+  if (!value || typeof value !== "object") return value
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([key]) => !hiddenSemanticReferenceFields.has(key))
+      .map(([key, entry]) => [key, humanReadableResult(entry)])
+  )
 }
 
 function harnessData(value: unknown) {

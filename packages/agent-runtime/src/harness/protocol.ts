@@ -6,6 +6,7 @@ export const harnessToolSchemaVersion = "2.0";
 
 export type HarnessErrorCode =
   | "AMBIGUOUS_TARGET"
+  | "EXECUTION_ERROR"
   | "INVALID_INPUT"
   | "IO_ERROR"
   | "POLICY_DENIED"
@@ -184,6 +185,171 @@ export function harnessError(input: {
       ...(input.recovery === undefined ? {} : { recovery: input.recovery }),
     },
   };
+}
+
+export function boundHarnessResult<T>(
+  result: HarnessToolResult<T>,
+  maximumTokens?: number,
+): HarnessToolResult<unknown> {
+  if (!maximumTokens) return result;
+  const maximumBytes = maximumTokens * 4;
+  if (serializedBytes(result) <= maximumBytes) return result;
+  return result.status === "success"
+    ? boundSuccess(result, maximumBytes)
+    : boundError(result, maximumBytes);
+}
+
+function boundSuccess<T>(
+  result: HarnessToolSuccess<T>,
+  maximumBytes: number,
+): HarnessToolSuccess<unknown> {
+  const bounded: HarnessToolSuccess<unknown> = {
+    ...result,
+    data: result.data,
+    provenance: result.provenance.map(withoutProvenanceLocations),
+    coverage: {
+      scope: "partial",
+      truncated: true,
+      analysis: result.coverage.analysis,
+    },
+  };
+  delete bounded.artifacts;
+  delete bounded.diagnostics;
+  bounded.data = fitData(
+    result.data,
+    availableDataBytes(bounded, maximumBytes),
+  );
+  while (serializedBytes(bounded) > maximumBytes && bounded.provenance.length)
+    bounded.provenance.pop();
+  if (serializedBytes(bounded) > maximumBytes)
+    bounded.data = { truncated: true };
+  bounded.usage.output_tokens = estimateOutputTokens(bounded);
+  return bounded;
+}
+
+function withoutProvenanceLocations(value: Provenance): Provenance {
+  const bounded = { ...value };
+  delete bounded.locations;
+  return bounded;
+}
+
+function boundError(result: HarnessToolError, maximumBytes: number) {
+  const bounded: HarnessToolError = {
+    ...result,
+    error: {
+      ...result.error,
+      message: truncateUtf8(
+        result.error.message,
+        Math.max(80, maximumBytes / 2),
+      ),
+      ...(result.error.recovery === undefined
+        ? {}
+        : { recovery: fitData(result.error.recovery, maximumBytes / 3) }),
+    },
+  };
+  if (serializedBytes(bounded) <= maximumBytes) return bounded;
+  delete bounded.error.recovery;
+  bounded.error.message = truncateUtf8(
+    bounded.error.message,
+    Math.max(
+      20,
+      maximumBytes - serializedBytes(bounded) + bounded.error.message.length,
+    ),
+  );
+  return bounded;
+}
+
+function availableDataBytes(
+  result: HarnessToolSuccess<unknown>,
+  maximumBytes: number,
+) {
+  return Math.max(
+    16,
+    maximumBytes - serializedBytes({ ...result, data: null }) - 8,
+  );
+}
+
+function fitData(value: unknown, maximumBytes: number) {
+  const profiles = [
+    [50, 4_000, 8],
+    [20, 2_000, 6],
+    [10, 800, 5],
+    [5, 300, 4],
+    [3, 100, 3],
+  ] as const;
+  for (const [maximumEntries, maximumCharacters, maximumDepth] of profiles) {
+    const candidate = projectValue(
+      value,
+      maximumEntries,
+      maximumCharacters,
+      maximumDepth,
+    );
+    if (serializedBytes(candidate) <= maximumBytes) return candidate;
+  }
+  return { truncated: true };
+}
+
+function projectValue(
+  value: unknown,
+  maximumEntries: number,
+  maximumCharacters: number,
+  maximumDepth: number,
+): unknown {
+  if (typeof value === "string") return truncateUtf8(value, maximumCharacters);
+  if (!value || typeof value !== "object") return value;
+  if (maximumDepth <= 0) return "[truncated]";
+  if (Array.isArray(value))
+    return projectArray(value, maximumEntries, maximumCharacters, maximumDepth);
+  return projectRecord(value, maximumEntries, maximumCharacters, maximumDepth);
+}
+
+function projectArray(
+  value: unknown[],
+  maximumEntries: number,
+  maximumCharacters: number,
+  maximumDepth: number,
+) {
+  return value
+    .slice(0, maximumEntries)
+    .map((entry) =>
+      projectValue(entry, maximumEntries, maximumCharacters, maximumDepth - 1),
+    );
+}
+
+function projectRecord(
+  value: object,
+  maximumEntries: number,
+  maximumCharacters: number,
+  maximumDepth: number,
+) {
+  return Object.fromEntries(
+    Object.entries(value)
+      .slice(0, maximumEntries)
+      .map(([key, entry]) => [
+        key,
+        projectValue(
+          entry,
+          maximumEntries,
+          maximumCharacters,
+          maximumDepth - 1,
+        ),
+      ]),
+  );
+}
+
+function truncateUtf8(value: string, maximumBytes: number) {
+  if (Buffer.byteLength(value, "utf8") <= maximumBytes) return value;
+  let end = Math.min(value.length, Math.max(0, Math.floor(maximumBytes / 2)));
+  while (
+    end > 0 &&
+    Buffer.byteLength(`${value.slice(0, end)}…`, "utf8") > maximumBytes
+  )
+    end -= 1;
+  return `${value.slice(0, end)}…`;
+}
+
+function serializedBytes(value: unknown) {
+  return Buffer.byteLength(JSON.stringify(value), "utf8");
 }
 
 export function provenance(

@@ -38,6 +38,16 @@ export const sourceRevisionIdSchema = z
     "Exact source_revision_id returned by workspace_state or a committed proposal.",
   );
 
+const symbolReferenceSchema = z
+  .string()
+  .regex(/^(?:sym:\/\/|s_[a-z0-9]{2,10}$)/u);
+const nodeReferenceSchema = z
+  .string()
+  .regex(/^(?:node:\/\/|n_[a-z0-9]{2,10}$)/u);
+const matchReferenceSchema = z
+  .string()
+  .regex(/^(?:match:\/\/|m_[a-z0-9]{2,10}$)/u);
+
 export const digestSchema = z
   .string()
   .regex(/^[a-f0-9]{64}$/)
@@ -210,7 +220,7 @@ export const inspectCodeInputSchema = z
 export const getRelationContextInputSchema = z
   .object({
     source_revision_id: sourceRevisionIdSchema.optional(),
-    target: z.object({ symbol_ref: z.string().regex(/^sym:\/\//) }).strict(),
+    target: z.object({ symbol_ref: symbolReferenceSchema }).strict(),
     relations: z
       .array(relationKindSchema)
       .min(1)
@@ -233,7 +243,7 @@ export const getRelationContextInputSchema = z
 
 const structuredTargetSchema = z
   .string()
-  .regex(/^(?:match|node|sym):\/\//)
+  .regex(/^(?:(?:match|node|sym):\/\/[A-Za-z0-9_-]+|[mns]_[a-z0-9]{2,10})$/u)
   .describe("Exact match_ref, node_ref, or symbol_ref returned by a read.");
 
 export const changeOperationSchema = z.discriminatedUnion("kind", [
@@ -337,9 +347,9 @@ export const applyChangeInputSchema = z.discriminatedUnion("action", [
 ]);
 
 const semanticEditTargetSchema = z.union([
-  z.object({ symbol_ref: z.string().regex(/^sym:\/\//) }).strict(),
-  z.object({ node_ref: z.string().regex(/^node:\/\//) }).strict(),
-  z.object({ match_ref: z.string().regex(/^match:\/\//) }).strict(),
+  z.object({ symbol_ref: symbolReferenceSchema }).strict(),
+  z.object({ node_ref: nodeReferenceSchema }).strict(),
+  z.object({ match_ref: matchReferenceSchema }).strict(),
 ]);
 
 const jsonPathSchema = z
@@ -383,7 +393,7 @@ export const editCodeOperationSchema = z.discriminatedUnion("operation", [
   z
     .object({
       operation: z.enum(["replace_body", "replace_signature"]),
-      target: z.object({ symbol_ref: z.string().regex(/^sym:\/\//) }).strict(),
+      target: z.object({ symbol_ref: symbolReferenceSchema }).strict(),
       content: z.string(),
     })
     .strict(),
@@ -403,14 +413,14 @@ export const editCodeOperationSchema = z.discriminatedUnion("operation", [
   z
     .object({
       operation: z.literal("set_css_declarations"),
-      target: z.object({ symbol_ref: z.string().regex(/^sym:\/\//) }).strict(),
+      target: z.object({ symbol_ref: symbolReferenceSchema }).strict(),
       declarations: z.record(z.string().min(1), z.string().nullable()),
     })
     .strict(),
   z
     .object({
       operation: z.literal("set_css_declaration"),
-      target: z.object({ symbol_ref: z.string().regex(/^sym:\/\//) }).strict(),
+      target: z.object({ symbol_ref: symbolReferenceSchema }).strict(),
       property: z.string().min(1).max(500),
       value: z.string().max(100_000),
     })
@@ -418,14 +428,14 @@ export const editCodeOperationSchema = z.discriminatedUnion("operation", [
   z
     .object({
       operation: z.literal("remove_css_declaration"),
-      target: z.object({ symbol_ref: z.string().regex(/^sym:\/\//) }).strict(),
+      target: z.object({ symbol_ref: symbolReferenceSchema }).strict(),
       property: z.string().min(1).max(500),
     })
     .strict(),
   z
     .object({
       operation: z.literal("insert_css_declaration"),
-      target: z.object({ symbol_ref: z.string().regex(/^sym:\/\//) }).strict(),
+      target: z.object({ symbol_ref: symbolReferenceSchema }).strict(),
       property: z.string().min(1).max(500),
       value: z.string().max(100_000),
       after_property: z.string().min(1).max(500).optional(),
@@ -480,7 +490,6 @@ export const editCodeOperationSchema = z.discriminatedUnion("operation", [
 export const editCodeInputSchema = z
   .object({
     edits: z.array(editCodeOperationSchema).min(1).max(50),
-    atomicity: z.enum(["per_file", "strict"]).default("per_file").optional(),
     formatting: z.enum(["none", "touched_files"]).default("none").optional(),
     validation: z
       .object({ parse: z.boolean().default(true).optional() })
@@ -492,7 +501,7 @@ export const editCodeInputSchema = z
 export const editSymbolInputSchema = z
   .object({
     path: relativePathSchema,
-    symbolRef: z.string().regex(/^sym:\/\//),
+    symbolRef: symbolReferenceSchema,
     replacement: z.string(),
   })
   .strict();
@@ -517,7 +526,6 @@ export const patchFileInputSchema = z
 export const editFilesInputSchema = z
   .object({
     operations: z.array(editCodeOperationSchema).min(1).max(50),
-    atomicity: z.enum(["per_file", "strict"]).default("per_file").optional(),
   })
   .strict();
 
@@ -542,7 +550,7 @@ export const recallContextInputSchema = z
     file_path: relativePathSchema.optional(),
     symbol_ref: z
       .string()
-      .regex(/^(?:node|sym):\/\//)
+      .regex(/^(?:(?:node|sym):\/\/[A-Za-z0-9_-]+|[ns]_[a-z0-9]{2,10})$/u)
       .optional(),
     change_receipt_id: z.string().min(1).max(500).optional(),
     include_superseded: z.boolean().optional(),
@@ -609,14 +617,50 @@ export const taskCatalogItemSchema = z
   })
   .strict();
 
+const dependencyTypeSchema = z.enum([
+  "dependencies",
+  "devDependencies",
+  "optionalDependencies",
+  "peerDependencies",
+]);
+
+export const dependencyMutationInputSchema = z
+  .object({
+    source_revision_id: sourceRevisionIdSchema,
+    package_path: relativePathSchema.default("package.json"),
+    operations: z
+      .array(
+        z.discriminatedUnion("action", [
+          z
+            .object({
+              action: z.literal("add"),
+              name: z.string().regex(/^(?:@[a-z0-9._~-]+\/)?[a-z0-9._~-]+$/iu),
+              version: z.string().min(1).max(200),
+              dependency_type: dependencyTypeSchema.default("dependencies"),
+            })
+            .strict(),
+          z
+            .object({
+              action: z.literal("remove"),
+              name: z.string().regex(/^(?:@[a-z0-9._~-]+\/)?[a-z0-9._~-]+$/iu),
+              dependency_type: dependencyTypeSchema.optional(),
+            })
+            .strict(),
+        ]),
+      )
+      .min(1)
+      .max(50),
+    network: z.enum(["deny", "project_allowlist"]).default("deny"),
+    timeout_ms: z.number().int().min(1_000).max(900_000).default(120_000),
+    idempotency_key: idempotencyKeySchema.optional(),
+  })
+  .strict();
+
 const taskSelectionSchema = z
   .object({
     tests: z.array(z.string().min(1).max(1_000)).max(100).optional(),
     files: z.array(relativePathSchema).max(100).optional(),
-    symbols: z
-      .array(z.string().regex(/^sym:\/\//))
-      .max(100)
-      .optional(),
+    symbols: z.array(symbolReferenceSchema).max(100).optional(),
   })
   .strict()
   .optional();
@@ -906,6 +950,9 @@ export type MoveFileInput = z.infer<typeof moveFileInputSchema>;
 export type ReviewChangeInput = z.infer<typeof reviewChangeInputSchema>;
 export type ValidateChangeInput = z.infer<typeof validateChangeInputSchema>;
 export type RunTaskInput = z.infer<typeof runTaskInputSchema>;
+export type DependencyMutationInput = z.infer<
+  typeof dependencyMutationInputSchema
+>;
 export type InspectRunInput = z.infer<typeof inspectRunInputSchema>;
 export type InspectArtifactInput = z.infer<typeof inspectArtifactInputSchema>;
 export type RecallContextInput = z.infer<typeof recallContextInputSchema>;

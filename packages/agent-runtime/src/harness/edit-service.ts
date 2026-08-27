@@ -97,7 +97,7 @@ export type EditCodeOutcome =
         status: ValidationStatus;
         validator: string | null;
         files: ContentValidation[];
-        parse: "passed" | "skipped" | "not_supported";
+        parse: "passed" | "pending" | "skipped" | "not_supported";
         diagnostics: StoredChangeProposal["diagnostics"];
       };
       partial?: boolean;
@@ -206,15 +206,11 @@ export class EditService {
     inputDigest: string,
   ) {
     const groups = createEditGroups(input.edits);
-    if ((input.atomicity ?? "per_file") === "strict" || groups.length === 1)
+    if (groups.length === 1)
       return this.executeGroup(input, receiptKey, inputDigest);
     const results: EditGroupResult[] = [];
     for (const [index, group] of groups.entries()) {
-      const groupInput = {
-        ...input,
-        atomicity: "strict" as const,
-        edits: group.edits,
-      };
+      const groupInput = { ...input, edits: group.edits };
       const groupDigest = sha256(stableJson(groupInput));
       const result = await this.executeGroup(
         groupInput,
@@ -247,6 +243,11 @@ export class EditService {
     receiptKey: string,
     inputDigest: string,
   ): Promise<EditCodeOutcome> {
+    try {
+      assertNoManagedLockfileEdits(input.edits);
+    } catch (error) {
+      return knownEditFailure(error) ?? messageFailure(errorMessage(error));
+    }
     for (let attempt = 0; attempt < 2; attempt += 1) {
       try {
         return await this.applyAttempt(input, receiptKey, inputDigest, attempt);
@@ -730,9 +731,11 @@ function appliedResult(input: {
       parse:
         status === "passed"
           ? "passed"
-          : status === "not_supported"
-            ? "not_supported"
-            : "skipped",
+          : status === "validator_unavailable"
+            ? "pending"
+            : status === "not_supported"
+              ? "not_supported"
+              : "skipped",
       diagnostics: input.proposal.diagnostics,
     },
     diff_artifact_ref: input.proposal.diff_artifact.ref,
@@ -870,6 +873,23 @@ function unsupportedResult(
     reasonCode,
     recommendedTool,
   };
+}
+
+function assertNoManagedLockfileEdits(edits: EditCodeOperation[]) {
+  const lockfilePattern =
+    /(?:^|\/)(?:bun\.lockb?|package-lock\.json|pnpm-lock\.yaml|yarn\.lock)$/u;
+  for (const edit of edits) {
+    const values = edit as unknown as Record<string, unknown>;
+    const paths = [values.path, values.from_path, values.to_path].filter(
+      (value): value is string => typeof value === "string",
+    );
+    if (paths.some((path) => lockfilePattern.test(path)))
+      throw new UnsupportedEditOperation(
+        "MANAGED_LOCKFILE",
+        "Lockfiles are managed exclusively by mutate_dependencies.",
+        "mutate_dependencies",
+      );
+  }
 }
 
 function knownEditFailure(error: unknown) {
