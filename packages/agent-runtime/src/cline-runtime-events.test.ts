@@ -80,27 +80,69 @@ test("tags session events with their execution identity", () => {
   );
 });
 
-test("hides complete_turn cards and projects only its terminal answer", () => {
+test("hides submit_and_exit cards and projects only its native summary", () => {
   const runtime = new BlameAgentRuntime();
   const internals = runtime as unknown as {
-    sessionTerminalAnswers: Map<string, string>;
-    withTerminalAnswer(sessionId: string, event: AgentEvent): AgentEvent;
+    sessionSubmittedSummaries: Map<string, string>;
+    withSubmittedSummary(sessionId: string, event: AgentEvent): AgentEvent;
   };
-  internals.sessionTerminalAnswers.set("session", "Visible answer");
+  internals.sessionSubmittedSummaries.set("session", "Visible answer");
   assert.equal(
     terminalToolEvent({
       type: "tool",
       sessionId: "session",
-      payload: { toolCall: { name: "complete_turn" } },
+      payload: { toolCall: { name: "submit_and_exit" } },
     }),
     true,
   );
-  const done = internals.withTerminalAnswer("session", {
+  const done = internals.withSubmittedSummary("session", {
     type: "done",
     sessionId: "session",
     payload: { text: "internal completion output" },
   });
   assert.equal((done.payload as { text: string }).text, "Visible answer");
+});
+
+test("publishes automatic validation as a stable run_task activity", async () => {
+  const events: AgentEvent[] = [];
+  const runtime = new BlameAgentRuntime({
+    emit: (event) => events.push(event),
+  });
+  const internals = runtime as unknown as {
+    publishNativeValidationActivity(
+      sessionId: string,
+      activity: {
+        output?: unknown;
+        phase: "finished" | "started";
+        request: { input: unknown };
+        toolCallId: string;
+      },
+    ): Promise<void>;
+  };
+  const request = { input: { task: { task_id: "typecheck" } } };
+  await internals.publishNativeValidationActivity("session", {
+    phase: "started",
+    request,
+    toolCallId: "submit:validation",
+  });
+  await internals.publishNativeValidationActivity("session", {
+    output: { status: "success", data: { status: "passed" } },
+    phase: "finished",
+    request,
+    toolCallId: "submit:validation",
+  });
+  assert.deepEqual(
+    events.map((event) => (event.payload as { phase: string }).phase),
+    ["started", "finished"],
+  );
+  const finished = events[1]?.payload as Record<string, unknown>;
+  assert.equal(finished.toolName, "run_task");
+  assert.equal(finished.toolCallId, "submit:validation");
+  assert.equal(finished.sequenceNumber, 1);
+  assert.deepEqual(
+    (finished.toolCall as { input: unknown }).input,
+    request.input,
+  );
 });
 
 test("prewarms and removes the reserved remote runtime session", async () => {
@@ -252,12 +294,19 @@ test("starts development sessions with native skills and private specialist cons
       (tool: { name: string }) => tool.name,
     );
     assert.ok(toolNames?.includes("consult_specialist"));
-    assert.ok(toolNames?.includes("complete_turn"));
+    assert.ok(toolNames?.includes("submit_and_exit"));
     assert.equal(
       capturedStart.config.extraTools?.find(
-        (tool: { name: string }) => tool.name === "complete_turn",
+        (tool: { name: string }) => tool.name === "submit_and_exit",
       )?.lifecycle?.completesRun,
       true,
+    );
+    assert.equal(
+      capturedStart.config.extraTools?.filter(
+        (tool: { lifecycle?: { completesRun?: boolean } }) =>
+          tool.lifecycle?.completesRun,
+      ).length,
+      1,
     );
     assert.equal(toolNames?.includes("spawn_agent"), false);
     assert.deepEqual(capturedStart.toolPolicies?.consult_specialist, {
@@ -363,14 +412,14 @@ test("compaction preserves an unfinished multi-file edit", async () => {
     assert.match(serialized, /src\/first\.ts/);
     assert.match(serialized, /src\/second\.ts/);
     const memory = new ConversationMemoryStore(workspace, sessionId);
-    assert.equal((await memory.completionReadiness()).completionAllowed, false);
+    assert.ok((await memory.completionState()).requiredValidation);
   } finally {
     await fixture.restore();
     await rm(workspace, { force: true, recursive: true });
   }
 });
 
-test("disabled compaction installs neither manual nor pressure compaction", async () => {
+test("disabled compaction keeps only the non-persistent continuity projection", async () => {
   const workspace = await mkdtemp(join(tmpdir(), "blame-no-compaction-"));
   const fixture = developmentCompactionFixture("false");
   try {
@@ -387,7 +436,12 @@ test("disabled compaction installs neither manual nor pressure compaction", asyn
     });
     assert.equal(fixture.start()?.config.compaction?.enabled, false);
     assert.equal(fixture.start()?.config.compaction?.compact, undefined);
-    assert.equal(await compactAtCheckpoint(fixture.start()), undefined);
+    const projection = await compactAtCheckpoint(fixture.start());
+    assert.match(JSON.stringify(projection?.messages), /blame_continuity/);
+    assert.doesNotMatch(
+      JSON.stringify(projection?.messages),
+      /compaction_reason|execution_epoch_id/,
+    );
   } finally {
     await fixture.restore();
     await rm(workspace, { force: true, recursive: true });
@@ -731,23 +785,72 @@ test("formats failed agent results without a provider label", () => {
   });
   const iterationLimit = resultFailureMessage({
     finishReason: "max_iterations",
+    text: '{"status":"blocked","completionAllowed":false}',
   });
   const hyphenatedIterationLimit = resultFailureMessage({
     finishReason: "max-iterations",
+  });
+  const conflictingIterationLimit = resultFailureMessage({
+    status: "done",
+    finishReason: "max_iterations",
   });
   const generic = resultFailureMessage({ finishReason: "mistake_limit" });
 
   assert.equal(detailed, "Provider unavailable");
   assert.equal(
     iterationLimit,
-    "Agent session ended with status max_iterations.",
+    "Agent stopped after reaching its work-step limit before submitting a final response.",
   );
   assert.equal(
     hyphenatedIterationLimit,
-    "Agent session ended with status max-iterations.",
+    "Agent stopped after reaching its work-step limit before submitting a final response.",
   );
-  assert.equal(generic, "Agent session ended with status mistake_limit.");
+  assert.equal(conflictingIterationLimit, iterationLimit);
+  assert.equal(
+    generic,
+    "Agent stopped after repeated unsuccessful actions before submitting a final response.",
+  );
   assert.doesNotMatch(`${detailed} ${generic}`, /cline/i);
+});
+
+test("never projects an internal payload as the final assistant response", () => {
+  const internalPayload = JSON.stringify({
+    status: "blocked",
+    completionAllowed: false,
+    reason: "NO_POST_EDIT_VALIDATION",
+  });
+  const event = normalizeClineAgentPayload(
+    {
+      type: "done",
+      reason: "max_iterations",
+      text: internalPayload,
+      iteration: 80,
+    },
+    "session",
+    internalPayload,
+  );
+
+  assert.equal(event.type, "error");
+  assert.equal(
+    (event.payload as { message?: string }).message,
+    "Agent stopped after reaching its work-step limit before submitting a final response.",
+  );
+  assert.doesNotMatch(JSON.stringify(event.payload), /completionAllowed/iu);
+  assert.doesNotMatch(JSON.stringify(event.payload), /Work completed/iu);
+});
+
+test("keeps unknown tool payloads out of assistant text events", () => {
+  const event = normalizeClineAgentPayload(
+    {
+      type: "tool-result",
+      toolCallId: "internal-tool",
+      content: '{"status":"blocked"}',
+    },
+    "session",
+    "raw",
+  );
+
+  assert.equal(event.type, "raw");
 });
 
 test("hides untagged sub-agent text while spawn agent is active", () => {
@@ -834,15 +937,27 @@ test("tool lifecycle identity separates parallel tools and every phase", () => {
   const second = toolEvent("read_files", "call-b", "started", 0);
   const progress = toolEvent("read_files", "call-a", "progress", 1);
   const finished = toolEvent("read_files", "call-a", "finished", 2);
-  assert.notEqual(duplicateEventSignature(first), duplicateEventSignature(second));
-  assert.notEqual(duplicateEventSignature(first), duplicateEventSignature(progress));
-  assert.notEqual(duplicateEventSignature(progress), duplicateEventSignature(finished));
+  assert.notEqual(
+    duplicateEventSignature(first),
+    duplicateEventSignature(second),
+  );
+  assert.notEqual(
+    duplicateEventSignature(first),
+    duplicateEventSignature(progress),
+  );
+  assert.notEqual(
+    duplicateEventSignature(progress),
+    duplicateEventSignature(finished),
+  );
 });
 
 test("cancelled tools and reconnect replays retain stable identities", () => {
   const cancelled = toolEvent("run_task", "manual-stop", "cancelled", 3);
   const replay = toolEvent("run_task", "manual-stop", "cancelled", 3);
-  assert.equal(duplicateEventSignature(cancelled), duplicateEventSignature(replay));
+  assert.equal(
+    duplicateEventSignature(cancelled),
+    duplicateEventSignature(replay),
+  );
   assert.match(duplicateEventSignature(cancelled) ?? "", /cancelled:3$/u);
 });
 
@@ -853,12 +968,24 @@ test("normalizes tool lifecycle metadata without delaying fast tools", () => {
       withToolLifecycle(sessionId: string, event: AgentEvent): AgentEvent;
     }
   ).withToolLifecycle.bind(runtime);
-  const started = lifecycle("session", toolEvent("read_files", "fast", "started", 0));
-  const finished = lifecycle("session", toolEvent("read_files", "fast", "finished", 1));
+  const started = lifecycle(
+    "session",
+    toolEvent("read_files", "fast", "started", 0),
+  );
+  const finished = lifecycle(
+    "session",
+    toolEvent("read_files", "fast", "finished", 1),
+  );
   assert.equal((started.payload as { phase: string }).phase, "started");
   assert.equal((finished.payload as { phase: string }).phase, "finished");
-  assert.equal((finished.payload as { sequenceNumber: number }).sequenceNumber, 1);
-  assert.equal(typeof (finished.payload as { timestamp: string }).timestamp, "string");
+  assert.equal(
+    (finished.payload as { sequenceNumber: number }).sequenceNumber,
+    1,
+  );
+  assert.equal(
+    typeof (finished.payload as { timestamp: string }).timestamp,
+    "string",
+  );
 });
 
 test("keeps development feedback attachments out of the prompt", async () => {
@@ -979,7 +1106,7 @@ test("renews an expired attachment download URL", async () => {
   }
 });
 
-test("renders the Blame development system prompt without Cline placeholders", async () => {
+test("renders the compact native Cline development prompt", async () => {
   const prompt = await buildDevelopmentSystemPrompt({
     apiConnection: { token: "token", url: "https://example.com" },
     codePractices: [
@@ -998,27 +1125,12 @@ test("renders the Blame development system prompt without Cline placeholders", a
   assert.match(prompt, /^# Blame Development Agent/);
   assert.match(prompt, /<runtime_context>/);
   assert.match(prompt, /<workspace_metadata>/);
-  assert.match(prompt, /<security_protocol>/);
-  assert.match(prompt, /<judgment_defaults>/);
-  assert.match(prompt, /<planning_gate>/);
-  assert.match(prompt, /<frontend_protocol>/);
-  assert.match(
-    prompt,
-    /MUST invoke the `skills` tool with `skill: "impeccable"`/,
-  );
-  assert.match(prompt, /Consulting `frontend_design` does not replace/);
-  assert.match(prompt, /do not make the frontend changes/);
-  assert.match(prompt, /## Task Classification/);
-  assert.match(prompt, /<verification_matrix>/);
-  assert.match(prompt, /<verification_cost_control>/);
-  assert.match(prompt, /<coverage_disclosure>/);
-  assert.match(prompt, /<external_action_guard>/);
-  assert.match(prompt, /## Special Requests/);
-  assert.match(prompt, /## Autonomy And Continuity/);
-  assert.match(prompt, /## Progress Updates/);
-  assert.match(prompt, /call `complete_turn` exactly once/);
-  assert.match(prompt, /continuity_update.*semantic changes/);
-  assert.match(prompt, /counter-checks/);
+  assert.match(prompt, /Use Blame tools to inspect, modify, and validate/);
+  assert.match(prompt, /Do not repeat a read, search, or inspection/);
+  assert.match(prompt, /call `submit_and_exit` exactly once/);
+  assert.doesNotMatch(prompt, /complete_turn/);
+  assert.doesNotMatch(prompt, /continuity_update|change_receipt_refs/);
+  assert.doesNotMatch(prompt, /execution[_ ]epoch/iu);
   assert.match(prompt, /## Blame Specialist Consultations/);
   assert.match(prompt, /consult_specialist/);
   assert.match(prompt, /private instructions internally/);
@@ -1026,16 +1138,10 @@ test("renders the Blame development system prompt without Cline placeholders", a
   assert.doesNotMatch(prompt, /## Specialist knowledge/);
   assert.doesNotMatch(prompt, /Jobs To Be Done/);
   assert.doesNotMatch(prompt, /Gestalt grouping/);
-  assert.ok(prompt.length < 30_000);
+  assert.ok(prompt.length < 15_000);
   assert.match(prompt, /## Coding Style: Standard Industrial Professional/);
   assert.match(prompt, /## Architecture: Match Codebase/);
   assert.match(prompt, /## Unit Tests: Professional TDD/);
-  assert.match(prompt, /A passing test suite is not proof/);
-  assert.match(prompt, /Do not run full workspace lint/);
-  assert.match(
-    prompt,
-    /Blame Preview, container logs, DevTools console\/network checks/,
-  );
   assert.match(
     prompt,
     new RegExp(process.cwd().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")),

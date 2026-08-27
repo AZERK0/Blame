@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { prepareChangeRequest } from "./change-request-capsule.js";
-import { createCompleteTurnTool } from "./complete-turn.js";
+import { continuityProjectionHooks } from "./continuity-projection.js";
 import type { ContinuityUpdate } from "./continuity-schema.js";
 import {
   ConversationMemoryStore,
@@ -15,37 +15,19 @@ import {
 import { harnessFeatureEnabled } from "./harness-feature-flags.js";
 import { sha256 } from "./protocol.js";
 
-test("complete_turn is terminal, hides memory, and preserves its answer", async () => {
+test("native completion preserves the summary without model-owned memory", async () => {
   await withMemory(async (root) => {
-    const notifications: string[] = [];
     const memory = new ConversationMemoryStore(root, "terminal");
     await memory.beginRequest({
       currentRequest: "Implement it.",
       userGoal: "Goal",
     });
-    const tool = createCompleteTurnTool({
-      conversationId: "terminal",
-      workspaceRoot: root,
-      onComplete: (notification) => notifications.push(notification.answer),
-    });
-    const result = await tool.execute(
-      { answer: "Done.", continuity_update: emptyUpdate() },
-      toolContext("completion-1"),
+    const result = await memory.completeNativeTurn(
+      "Done.",
+      "assistant-turn://completion-1",
     );
-    assert.equal(tool.lifecycle?.completesRun, true);
-    const schema = tool.inputSchema as {
-      properties: { continuity_update: Record<string, unknown> };
-    };
-    assert.equal("anyOf" in schema.properties.continuity_update, false);
-    assert.deepEqual(schema.properties.continuity_update.required, [
-      "schema_version",
-      "facts_added",
-      "facts_superseded",
-      "items_resolved",
-      "change_receipt_refs",
-    ]);
-    assert.deepEqual(notifications, ["Done."]);
-    assert.equal(JSON.stringify(result).includes("Done."), false);
+    assert.equal(result.answer, "Done.");
+    assert.equal(result.metrics.continuity_fallback_used, true);
     assert.equal(
       (await memory.snapshot()).recentDialogue.at(-1)?.content,
       "Done.",
@@ -53,36 +35,9 @@ test("complete_turn is terminal, hides memory, and preserves its answer", async 
   });
 });
 
-test("an invalid continuity delta keeps the visible answer and uses fallback", async () => {
+test("completion state is derived from runtime change and validation receipts", async () => {
   await withMemory(async (root) => {
-    let captured = false;
-    const memory = new ConversationMemoryStore(root, "invalid-delta");
-    await memory.beginRequest({
-      currentRequest: "Implement it.",
-      userGoal: "Goal",
-    });
-    const tool = createCompleteTurnTool({
-      conversationId: "invalid-delta",
-      workspaceRoot: root,
-      onComplete: (notification) => {
-        captured = notification.answer === "Still done.";
-        assert.equal(notification.metrics.continuity_fallback_used, true);
-      },
-    });
-    await tool.execute(
-      { answer: "Still done.", continuity_update: { schema_version: "bad" } },
-      toolContext("completion-invalid"),
-    );
-    const snapshot = await memory.snapshot();
-    assert.equal(captured, true);
-    assert.equal(snapshot.fallbackCheckpoints.length, 1);
-  });
-});
-
-test("complete_turn requires a successful validation after an unvalidated edit", async () => {
-  await withMemory(async (root) => {
-    const notifications: string[] = [];
-    const memory = new ConversationMemoryStore(root, "validation-gate");
+    const memory = new ConversationMemoryStore(root, "validation-state");
     await memory.beginRequest({
       currentRequest: "Change it.",
       userGoal: "Goal",
@@ -94,30 +49,69 @@ test("complete_turn requires a successful validation after an unvalidated edit",
       summary: "Updated notes.txt",
       validation: "skipped",
     });
-    const tool = createCompleteTurnTool({
-      conversationId: "validation-gate",
-      workspaceRoot: root,
-      onComplete: ({ answer }) => notifications.push(answer),
-    });
-    const blocked = await tool.execute(
-      { answer: "Done.", continuity_update: emptyUpdate() },
-      toolContext("blocked-completion"),
-    );
-    assert.equal(
-      (blocked.output as { completionAllowed: boolean }).completionAllowed,
-      false,
-    );
-    assert.deepEqual(notifications, []);
+    const pending = await memory.completionState();
+    assert.equal(pending.dirtyChanges.length, 1);
+    assert.equal(pending.coveredChanges.length, 0);
+    assert.deepEqual(pending.requiredValidation?.files, ["notes.txt"]);
     await memory.recordValidation({
       id: "run://passed",
       status: "passed",
       terminal: "passed",
     });
-    await tool.execute(
-      { answer: "Validated.", continuity_update: emptyUpdate() },
-      toolContext("validated-completion"),
-    );
-    assert.deepEqual(notifications, ["Validated."]);
+    const covered = await memory.completionState();
+    assert.equal(covered.coveredChanges.length, 1);
+    assert.equal(covered.requiredValidation, undefined);
+  });
+});
+
+test("continuity projection replaces the active request exactly once", async () => {
+  await withMemory(async (root) => {
+    const memory = new ConversationMemoryStore(root, "projection");
+    const request = "Keep the API stable and update src/example.ts.";
+    await memory.beginRequest({ currentRequest: request, userGoal: "Goal" });
+    await memory.recordChange({
+      receiptId: "changeset://opaque",
+      sourceRevisionId: "src_opaque",
+      files: ["src/example.ts"],
+      symbols: ["example"],
+      summary: "Updated example",
+      validation: "passed",
+    });
+    const hook = continuityProjectionHooks(memory).beforeModel;
+    assert.ok(hook);
+    const projected = await hook({
+      request: {
+        messages: [
+          {
+            id: "user",
+            role: "user",
+            content: [{ type: "text", text: request }],
+            createdAt: 1,
+          },
+          {
+            id: "assistant",
+            role: "assistant",
+            content: [{ type: "text", text: "Working" }],
+            createdAt: 2,
+          },
+          {
+            id: "native-completion-policy",
+            role: "user",
+            content: [{ type: "text", text: "[SYSTEM] Use submit_and_exit." }],
+            createdAt: 3,
+          },
+        ],
+        tools: [],
+      },
+      snapshot: { iteration: 3 },
+    } as never);
+    const serialized = JSON.stringify(projected?.messages);
+    assert.equal(serialized.split(request).length - 1, 1);
+    assert.match(serialized, /<blame_continuity>/);
+    assert.match(serialized, /\[SYSTEM\] Use submit_and_exit\./);
+    assert.doesNotMatch(serialized, /changeset:\/\/|src_opaque/);
+    const restarted = new ConversationMemoryStore(root, "projection");
+    assert.equal((await restarted.runtimeContinuity()).activeRequest, request);
   });
 });
 
@@ -142,21 +136,12 @@ test("a later validated CSS edit cannot hide an unvalidated Prisma edit", async 
       summary: "Updated card style",
       validation: "passed",
     });
-    const blocked = await memory.completionReadiness();
-    assert.equal(blocked.completionAllowed, false);
-    if (blocked.completionAllowed) assert.fail("completion should be blocked");
-    assert.deepEqual(blocked.missingValidations, [
-      {
-        change_receipt_refs: ["changeset://prisma"],
-        files: ["prisma/schema.prisma"],
-        required: ["run_task:prisma_validate_or_build"],
-      },
-      {
-        change_receipt_refs: ["changeset://css"],
-        files: ["src/app.css"],
-        required: ["run_task:build_or_test_or_typecheck"],
-      },
+    const blocked = await memory.completionState();
+    assert.deepEqual(blocked.requiredValidation?.files, [
+      "prisma/schema.prisma",
+      "src/app.css",
     ]);
+    assert.equal(blocked.requiredValidation?.reason, "prisma");
     await memory.recordValidation({
       command: "node scripts/check-copy.mjs",
       id: "run://unrelated-custom",
@@ -165,7 +150,7 @@ test("a later validated CSS edit cannot hide an unvalidated Prisma edit", async 
       taskKind: "custom",
       terminal: "passed",
     });
-    assert.equal((await memory.completionReadiness()).completionAllowed, false);
+    assert.ok((await memory.completionState()).requiredValidation);
     await memory.recordValidation({
       command: "prisma validate",
       id: "run://prisma",
@@ -174,7 +159,7 @@ test("a later validated CSS edit cannot hide an unvalidated Prisma edit", async 
       taskKind: "custom",
       terminal: "passed",
     });
-    assert.equal((await memory.completionReadiness()).completionAllowed, false);
+    assert.ok((await memory.completionState()).requiredValidation);
     await memory.recordValidation({
       id: "run://build",
       status: "passed",
@@ -182,7 +167,10 @@ test("a later validated CSS edit cannot hide an unvalidated Prisma edit", async 
       taskKind: "build",
       terminal: "passed",
     });
-    assert.equal((await memory.completionReadiness()).completionAllowed, true);
+    assert.equal(
+      (await memory.completionState()).requiredValidation,
+      undefined,
+    );
   });
 });
 
@@ -201,7 +189,7 @@ test("multi-file changes require a relevant run after the last write", async () 
       summary: "Updated API and UI",
       validation: "passed",
     });
-    assert.equal((await memory.completionReadiness()).completionAllowed, false);
+    assert.ok((await memory.completionState()).requiredValidation);
     await memory.recordValidation({
       id: "run://stale-build",
       sourceRevisionId: "revision-before-edit",
@@ -210,7 +198,7 @@ test("multi-file changes require a relevant run after the last write", async () 
       taskKind: "build",
       terminal: "passed",
     });
-    assert.equal((await memory.completionReadiness()).completionAllowed, false);
+    assert.ok((await memory.completionState()).requiredValidation);
     await memory.recordValidation({
       id: "run://build",
       sourceRevisionId: "revision-final",
@@ -219,7 +207,10 @@ test("multi-file changes require a relevant run after the last write", async () 
       taskKind: "build",
       terminal: "passed",
     });
-    assert.equal((await memory.completionReadiness()).completionAllowed, true);
+    assert.equal(
+      (await memory.completionState()).requiredValidation,
+      undefined,
+    );
   });
 });
 
@@ -244,16 +235,10 @@ test("separate single-file edits require a later feature validation", async () =
       summary: "second",
       validation: "passed",
     });
-    const readiness = await memory.completionReadiness();
-    assert.equal(readiness.completionAllowed, false);
-    if (readiness.completionAllowed)
-      assert.fail("completion should be blocked");
-    assert.deepEqual(readiness.missingValidations, [
-      {
-        change_receipt_refs: ["changeset://first", "changeset://second"],
-        files: ["src/first.ts", "src/second.ts"],
-        required: ["run_task:build_or_test_or_typecheck"],
-      },
+    const readiness = await memory.completionState();
+    assert.deepEqual(readiness.requiredValidation?.files, [
+      "src/first.ts",
+      "src/second.ts",
     ]);
     await memory.recordValidation({
       id: "run://typecheck",
@@ -261,7 +246,10 @@ test("separate single-file edits require a later feature validation", async () =
       taskKind: "typecheck",
       terminal: "passed",
     });
-    assert.equal((await memory.completionReadiness()).completionAllowed, true);
+    assert.equal(
+      (await memory.completionState()).requiredValidation,
+      undefined,
+    );
   });
 });
 
@@ -651,8 +639,13 @@ test("version 1 memory migrates without destructive rewrite", async () => {
 });
 
 test("memory feature flags are independent and embeddings default off", () => {
-  assert.equal(harnessFeatureEnabled("BLAME_STRUCTURED_COMPLETION", {}), true);
-  assert.equal(harnessFeatureEnabled("BLAME_CONTINUITY_DELTA", {}), true);
+  assert.equal(harnessFeatureEnabled("BLAME_NATIVE_CLINE_HARNESS", {}), true);
+  assert.equal(
+    harnessFeatureEnabled("BLAME_NATIVE_CLINE_HARNESS", {
+      BLAME_NATIVE_CLINE_HARNESS: "false",
+    }),
+    false,
+  );
   assert.equal(harnessFeatureEnabled("BLAME_MEMORY_AUTHORITY_V2", {}), true);
   assert.equal(harnessFeatureEnabled("BLAME_HARD_CAPSULE_BUDGET", {}), true);
   assert.equal(harnessFeatureEnabled("BLAME_SEMANTIC_RECALL", {}), true);
@@ -672,15 +665,6 @@ function emptyUpdate(): ContinuityUpdate {
     facts_superseded: [],
     items_resolved: [],
     change_receipt_refs: [],
-  };
-}
-
-function toolContext(toolCallId: string) {
-  return {
-    agentId: "test-agent",
-    conversationId: "test-conversation",
-    iteration: 1,
-    toolCallId,
   };
 }
 

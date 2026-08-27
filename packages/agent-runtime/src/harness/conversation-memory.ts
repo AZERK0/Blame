@@ -59,6 +59,33 @@ export type ValidationSummary = {
   updatedAt: string;
 };
 
+export type DeclaredTask = {
+  files: string[];
+  reason: string;
+  sourceRevisionId?: string;
+  taskKinds: RequiredValidation["taskKinds"];
+};
+
+export type RunReceipt = ValidationSummary["checks"][number] & {
+  terminal: ValidationSummary["status"];
+};
+
+export type CompletionState = {
+  dirtyChanges: ChangeReceipt[];
+  coveredChanges: ChangeReceipt[];
+  requiredValidation?: DeclaredTask;
+  latestValidation?: RunReceipt;
+};
+
+export type RuntimeContinuity = {
+  activeRequest: string;
+  constraints: string[];
+  decisions: string[];
+  modifiedFiles: string[];
+  nextAction: string;
+  validation: string;
+};
+
 export type DialogueTurn = {
   id: string;
   role: "assistant" | "user";
@@ -177,12 +204,6 @@ type RecordChangeInput = {
   symbols: string[];
   summary: string;
   validation: ChangeReceipt["validation"];
-};
-
-export type MissingValidation = {
-  change_receipt_refs: string[];
-  files: string[];
-  required: string[];
 };
 
 type CompleteTurnResult = {
@@ -322,6 +343,23 @@ export class ConversationMemoryStore {
     });
   }
 
+  async completeNativeTurn(summary: string, completionRef: string) {
+    return this.exclusive(async () => {
+      const stored = await this.read("");
+      const existing = existingCompletion(stored.memory, summary);
+      if (existing) return existing;
+      const completion = fallbackMerge(stored.memory, false, false);
+      const withAnswer = recordAssistantTurn(
+        completion.memory,
+        summary,
+        completionRef,
+      );
+      const memory = completeActiveTurn(withAnswer, completionRef);
+      await this.write({ ...stored, memory });
+      return { answer: summary, metrics: completion.metrics };
+    });
+  }
+
   async ensureDeterministicFallback(interrupted = false) {
     return this.exclusive(async () => {
       const stored = await this.read("");
@@ -425,21 +463,28 @@ export class ConversationMemoryStore {
     return (await this.read("")).memory;
   }
 
-  async completionReadiness() {
+  async completionState(): Promise<CompletionState> {
     const memory = (await this.read("")).memory;
-    const startedAt = memory.activeTurn?.startedAt;
-    if (!startedAt) return { completionAllowed: true as const };
-    const changes = turnChanges(memory, startedAt);
-    if (!changes.length) return { completionAllowed: true as const };
-    const missingValidations = missingTurnValidations(
-      changes,
-      memory.validationState,
+    return completionStateFromMemory(memory);
+  }
+
+  async runtimeContinuity(): Promise<RuntimeContinuity> {
+    const memory = (await this.read("")).memory;
+    const state = completionStateFromMemory(memory);
+    const activeFacts = memory.facts.filter(
+      (fact) =>
+        fact.status === "active" &&
+        fact.text.trim() !== memory.currentIntent.trim(),
     );
-    if (!missingValidations.length) return { completionAllowed: true as const };
     return {
-      completionAllowed: false as const,
-      reason: "NO_POST_EDIT_VALIDATION" as const,
-      missingValidations,
+      activeRequest: memory.currentIntent,
+      constraints: factTexts(activeFacts, "constraint"),
+      decisions: factTexts(activeFacts, "decision"),
+      modifiedFiles: unique(
+        state.dirtyChanges.flatMap((change) => change.files),
+      ),
+      nextAction: nextRuntimeAction(state),
+      validation: runtimeValidationSummary(state),
     };
   }
 
@@ -1594,32 +1639,106 @@ function turnChanges(memory: ConversationMemory, startedAt: string) {
     .sort((left, right) => left.updatedAt.localeCompare(right.updatedAt));
 }
 
-function missingTurnValidations(
+function completionStateFromMemory(
+  memory: ConversationMemory,
+): CompletionState {
+  const startedAt = memory.activeTurn?.startedAt;
+  const dirtyChanges = startedAt ? turnChanges(memory, startedAt) : [];
+  if (!dirtyChanges.length) return { dirtyChanges, coveredChanges: [] };
+  const coveredChanges = coveredTurnChanges(
+    dirtyChanges,
+    memory.validationState,
+  );
+  const uncovered = dirtyChanges.filter(
+    (change) => !coveredChanges.some(({ id }) => id === change.id),
+  );
+  const latest = memory.validationState.checks.at(-1);
+  return {
+    dirtyChanges,
+    coveredChanges,
+    ...(uncovered.length
+      ? { requiredValidation: declaredTask(uncovered, dirtyChanges) }
+      : {}),
+    ...(latest
+      ? {
+          latestValidation: {
+            ...latest,
+            terminal: memory.validationState.status,
+          },
+        }
+      : {}),
+  };
+}
+
+function coveredTurnChanges(
   changes: ChangeReceipt[],
   validation: ValidationSummary,
-): MissingValidation[] {
+) {
   const lastChangeAt = changes.at(-1)!.updatedAt;
   const lastSourceRevision = changes.at(-1)?.sourceRevisionId;
   const turnRequirement = turnValidationRequirement(changes);
-  const uncovered = changes.flatMap((change) => {
+  return changes.filter((change) => {
     const requirement = strongestValidationRequirement(
       normalizedRequiredValidation(change),
       turnRequirement,
     );
-    if (
-      changeCovered(
-        change,
-        requirement,
-        changes,
-        validation,
-        lastChangeAt,
-        lastSourceRevision,
-      )
-    )
-      return [];
-    return [{ change, requirement }];
+    return changeCovered(
+      change,
+      requirement,
+      changes,
+      validation,
+      lastChangeAt,
+      lastSourceRevision,
+    );
   });
-  return compactMissingValidations(uncovered);
+}
+
+function declaredTask(
+  uncovered: ChangeReceipt[],
+  allChanges: ChangeReceipt[],
+): DeclaredTask {
+  const requirements = uncovered.map((change) =>
+    strongestValidationRequirement(
+      normalizedRequiredValidation(change),
+      turnValidationRequirement(allChanges),
+    ),
+  );
+  const prisma = requirements.find(({ reason }) => reason === "prisma");
+  const taskKinds = [
+    ...new Set<RequiredValidation["taskKinds"][number]>(
+      requirements.flatMap((requirement) => requirement.taskKinds),
+    ),
+  ];
+  return {
+    files: unique(uncovered.flatMap((change) => change.files)),
+    reason: prisma?.reason ?? requirements[0]?.reason ?? "validation",
+    sourceRevisionId: allChanges.at(-1)?.sourceRevisionId,
+    taskKinds: taskKinds.length ? taskKinds : featureTaskKinds(),
+  };
+}
+
+function factTexts(facts: StoredMemoryFact[], kind: StoredMemoryFact["kind"]) {
+  return facts
+    .filter((fact) => fact.kind === kind)
+    .map((fact) => fact.text)
+    .slice(-12);
+}
+
+function runtimeValidationSummary(state: CompletionState) {
+  if (!state.dirtyChanges.length)
+    return "No source changes require validation.";
+  if (!state.requiredValidation) return "All current changes are covered.";
+  const latest = state.latestValidation;
+  if (!latest) return "A relevant validation is still missing.";
+  return latest.status === "passed"
+    ? "The latest validation passed but does not cover every current change."
+    : `The latest validation status is ${latest.status}.`;
+}
+
+function nextRuntimeAction(state: CompletionState) {
+  if (!state.dirtyChanges.length) return "Finish when the request is handled.";
+  if (!state.requiredValidation) return "Finish with the completed result.";
+  return "Finish when ready; the runtime will run the one required validation.";
 }
 
 function changeCovered(
@@ -1706,39 +1825,6 @@ function prismaValidationMatches(
     /prisma/iu.test(`${check.taskId ?? ""} ${check.command ?? ""}`) &&
     /validate|build/iu.test(`${check.taskId ?? ""} ${check.command ?? ""}`)
   );
-}
-
-function compactMissingValidations(
-  uncovered: Array<{ change: ChangeReceipt; requirement: RequiredValidation }>,
-) {
-  const grouped = new Map<string, MissingValidation>();
-  for (const { change, requirement } of uncovered) {
-    const required = requiredValidationLabels(change, requirement);
-    const key = required.join("\0");
-    const current = grouped.get(key);
-    grouped.set(key, {
-      change_receipt_refs: unique([
-        ...(current?.change_receipt_refs ?? []),
-        change.id,
-      ]),
-      files: unique([...(current?.files ?? []), ...change.files]).slice(0, 8),
-      required,
-    });
-  }
-  return [...grouped.values()];
-}
-
-function requiredValidationLabels(
-  change: ChangeReceipt,
-  requirement: RequiredValidation,
-) {
-  if (requirement.reason === "prisma")
-    return ["run_task:prisma_validate_or_build"];
-  if (requirement.runTask)
-    return [`run_task:${requirement.taskKinds.join("_or_")}`];
-  if (normalizedEditValidation(change.validation) !== "passed")
-    return ["run_task:relevant_validation"];
-  return [];
 }
 
 function normalizedRequiredValidation(change: ChangeReceipt) {

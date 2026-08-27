@@ -19,6 +19,7 @@
     "deploy:macos-runtime": "node scripts/macos-runtime-image.mjs deploy",
     "deploy:windows-runtime": "node scripts/windows-runtime-rootfs.mjs deploy",
     "dev": "node scripts/dev-with-database-tunnel.mjs",
+    "dev:db": "ssh -N -T -o BatchMode=yes -o ConnectTimeout=10 -o ExitOnForwardFailure=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -L 127.0.0.1:13307:127.0.0.1:13307 ubuntu@server.raphael-charpentier.fr",
     "dev:vitrine": "pnpm --filter @blame/vitrine dev",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",

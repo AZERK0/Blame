@@ -1975,7 +1975,7 @@ test("Cline adapter registers a small read/write harness with strict schemas", a
   });
 });
 
-test("Cline adapter advances read epochs and stops low-novelty exploration", async () => {
+test("Cline adapter reuses reads across epochs and stops semantic cycles", async () => {
   await withWorkspace(async (root) => {
     const tools = semanticWorkspaceTools(root, { governorBudget: 8 });
     const inspect = tools.find((tool) => tool.name === "inspect_code");
@@ -1995,21 +1995,22 @@ test("Cline adapter advances read epochs and stops low-novelty exploration", asy
       input,
       toolContext("epoch-two"),
     );
-    await inspect.execute(input, toolContext("epoch-two"));
-    await inspect.execute(input, toolContext("epoch-two"));
-    await inspect.execute(input, toolContext("epoch-two"));
+    const stopped = await inspect.execute(input, toolContext("epoch-two"));
     assert.equal(toolDataStatus(first), "content");
-    assert.equal(toolDataStatus(repeated), "already_available");
-    assert.equal(toolDataStatus(afterCompaction), "content");
-    const blocked = await search.execute(
+    assert.equal(toolDataStatus(repeated), "content");
+    assert.match(JSON.stringify(repeated), /RESULT_ALREADY_AVAILABLE/iu);
+    assert.equal(toolDataStatus(afterCompaction), "already_available");
+    assert.equal(toolDataStatus(stopped), "retry_suppressed");
+    assert.notEqual((afterCompaction as { isError?: boolean }).isError, true);
+    assert.notEqual((stopped as { isError?: boolean }).isError, true);
+    const targeted = await search.execute(
       {
         source_revision_id: revision,
         query: { kind: "text", pattern: "formatName" },
       },
       toolContext("epoch-two"),
     );
-    assert.equal((blocked as { isError?: boolean }).isError, true);
-    assert.match(JSON.stringify(blocked), /already present.*targeted edit/iu);
+    assert.notEqual((targeted as { isError?: boolean }).isError, true);
   });
 });
 

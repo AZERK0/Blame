@@ -1001,6 +1001,15 @@ export class SemanticWorkspace {
         signal,
       );
       const data = await this.dependencies.mutate(input, snapshot, signal);
+      if (data.status === "applied")
+        await this.memory.recordChange({
+          receiptId: data.change_set_ref,
+          sourceRevisionId: data.source_revision_id,
+          files: data.changed_files,
+          symbols: [],
+          summary: `Updated dependencies in ${data.package_path}`,
+          validation: "not_run",
+        });
       const revision = { source_revision_id: data.source_revision_id };
       return harnessSuccess({
         startedAt,

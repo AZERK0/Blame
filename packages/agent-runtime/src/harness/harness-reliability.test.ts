@@ -26,6 +26,7 @@ import {
 } from "./language-capabilities.js";
 import {
   boundHarnessResult,
+  encodeHandle,
   harnessSuccess,
   type HarnessToolResult,
   type HarnessToolSuccess,
@@ -40,6 +41,10 @@ import {
 } from "./package-manager-runtime.js";
 import { editFilesInputSchema } from "./schemas.js";
 import { SemanticWorkspace } from "./semantic-workspace.js";
+import {
+  SemanticLoopDetector,
+  semanticCallSignature,
+} from "./semantic-loop-detector.js";
 import { readTaskCatalog, taskInvocation } from "./task-catalog.js";
 import {
   SandboxedTaskExecutor,
@@ -79,19 +84,11 @@ test("the effective model window also respects the absolute context threshold", 
   assert.ok(models.model!.contextWindow! * 0.9 <= 96_000);
 });
 
-test("context pressure compacts at the iteration checkpoint", async () => {
-  const reasons: string[] = [];
+test("context pressure leaves transcript compaction to Cline", async () => {
   const hooks = contextPressureHooks({
-    checkpointIteration: 70,
     warningRatio: 0.5,
-    compact: async (_, reason) => {
-      reasons.push(reason);
-      return [
-        { role: "user", content: [{ type: "text", text: "capsule" }] },
-      ] as never;
-    },
   });
-  await hooks.beforeModel?.({
+  const result = await hooks.beforeModel?.({
     request: {
       messages: [
         { role: "user", content: [{ type: "text", text: "request" }] },
@@ -100,24 +97,137 @@ test("context pressure compacts at the iteration checkpoint", async () => {
     },
     snapshot: { iteration: 70 },
   } as never);
-  assert.deepEqual(reasons, ["iteration_checkpoint"]);
+  assert.equal(result, undefined);
 });
 
-test("the reserved terminal iteration removes nonterminal tools", async () => {
+test("context pressure leaves completion policy and tool availability to Cline", async () => {
   const hooks = contextPressureHooks({
-    terminalIteration: 120,
-    terminalToolNames: ["complete_turn"],
     warningRatio: 0.5,
   });
   const result = await hooks.beforeModel?.({
     request: {
       messages: [{ role: "user", content: [{ type: "text", text: "finish" }] }],
-      tools: [{ name: "search_code" }, { name: "complete_turn" }],
+      tools: [{ name: "search_code" }, { name: "submit_and_exit" }],
     },
     snapshot: { iteration: 120 },
   } as never);
-  assert.deepEqual(result?.tools, [{ name: "complete_turn" }]);
+  assert.equal(result, undefined);
 });
+
+test("semantic loop detection replays A-B-A-B without repeated I/O", () => {
+  const detector = new SemanticLoopDetector();
+  const search = { query: "target", source_revision_id: "first" };
+  const inspect = {
+    target: { match_ref: "match://first" },
+    view: "body",
+  };
+  const searchResult = successfulResult({ matches: ["target"] });
+  const inspectResult = successfulResult({ content: "target" });
+  assert.equal(detector.before("search_code", search), undefined);
+  detector.after("search_code", search, searchResult);
+  assert.equal(detector.before("inspect_code", inspect), undefined);
+  detector.after("inspect_code", inspect, inspectResult);
+  assert.equal(detector.before("search_code", search)?.status, "success");
+  assert.equal(detector.before("inspect_code", inspect)?.status, "success");
+  detector.before("search_code", search);
+  const notice = detector.before("inspect_code", inspect);
+  assert.equal(notice?.status, "success");
+  if (notice?.status === "success")
+    assert.equal(
+      (notice.data as { status?: string }).status,
+      "already_available",
+    );
+});
+
+test("semantic call normalization preserves targets and ignores handle revision", () => {
+  const firstReference = testMatchReference(
+    "src_11111111111111111111111111111111",
+    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  );
+  const revisedReference = testMatchReference(
+    "src_22222222222222222222222222222222",
+    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  );
+  const otherReference = testMatchReference(
+    "src_22222222222222222222222222222222",
+    "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  );
+  const first = semanticCallSignature("inspect_code", {
+    source_revision_id: "one",
+    view: "body",
+    target: { match_ref: firstReference },
+  });
+  const second = semanticCallSignature("inspect_code", {
+    target: { match_ref: revisedReference },
+    view: "body",
+    source_revision_id: "two",
+  });
+  const other = semanticCallSignature("inspect_code", {
+    target: { match_ref: otherReference },
+    view: "body",
+  });
+  assert.equal(first, second);
+  assert.notEqual(first, other);
+});
+
+test("semantic cache never returns a result for another match target", () => {
+  const detector = new SemanticLoopDetector();
+  const revision = "src_11111111111111111111111111111111";
+  const first = {
+    target: {
+      match_ref: testMatchReference(
+        revision,
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      ),
+    },
+    view: "body",
+  };
+  const second = {
+    target: {
+      match_ref: testMatchReference(
+        revision,
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      ),
+    },
+    view: "body",
+  };
+  detector.after("inspect_code", first, successfulResult({ content: "AAA" }));
+  assert.equal(detector.before("inspect_code", second), undefined);
+});
+
+test("five thousand cyclic reads execute only the first two I/O operations", () => {
+  const detector = new SemanticLoopDetector();
+  let executions = 0;
+  const startedAt = performance.now();
+  for (let index = 0; index < 5_000; index += 1) {
+    const tool = index % 2 ? "inspect_code" : "search_code";
+    const input =
+      index % 2
+        ? { target: { match_ref: "match://target" }, view: "body" }
+        : { query: "target" };
+    const decision = detector.before(tool, input);
+    if (decision) continue;
+    executions += 1;
+    detector.after(tool, input, successfulResult({ index }));
+  }
+  const durationMs = performance.now() - startedAt;
+  assert.equal(executions, 2);
+  assert.ok(Number.isFinite(durationMs));
+});
+
+function testMatchReference(revision: string, digest: string) {
+  return encodeHandle("match", {
+    version: 2,
+    revision,
+    path: "src/example.ts",
+    start: 0,
+    end: 6,
+    digest,
+    kind: "text_match",
+    language: "typescript",
+    matchedText: "target",
+  });
+}
 
 test("the requested token budget bounds the complete success envelope", () => {
   const result = harnessSuccess({
@@ -933,6 +1043,15 @@ async function withWorkspace(
 function success<T>(result: HarnessToolResult<T>): HarnessToolSuccess<T> {
   if (result.status !== "success") assert.fail(JSON.stringify(result));
   return result;
+}
+
+function successfulResult<T>(data: T) {
+  return harnessSuccess({
+    data,
+    revision: {},
+    startedAt: Date.now(),
+    provenance: [],
+  });
 }
 
 async function exists(path: string) {

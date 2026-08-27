@@ -49,6 +49,7 @@ export { semanticWorkspaceReadToolNames, semanticWorkspaceWriteToolNames };
 
 export type SemanticWorkspaceToolsOptions = SemanticWorkspaceOptions & {
   executor?: SemanticWorkspaceExecutor;
+  governor?: HarnessCostGovernor;
   governorBudget?: number;
 };
 
@@ -60,7 +61,12 @@ export function semanticWorkspaceTools(
   const executor =
     options.executor ??
     localSemanticWorkspaceExecutor(workspaceRoot, options.taskContract);
-  const governor = new HarnessCostGovernor(options.governorBudget);
+  const governor =
+    options.governor ??
+    new HarnessCostGovernor(
+      options.governorBudget,
+      harnessFeatureEnabled("BLAME_NATIVE_CLINE_HARNESS"),
+    );
   const supportedOperations = supportedOperationsDescription();
   const execute = async (
     tool: SemanticWorkspaceToolName,

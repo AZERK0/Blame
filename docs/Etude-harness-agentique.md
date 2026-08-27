@@ -1895,17 +1895,18 @@ BLAME_WORKING_SET_V2
 BLAME_SEMANTIC_REBASE_V2
 BLAME_PATCH_RECOVERY_V2
 BLAME_COST_GOVERNOR_V2
-BLAME_STRUCTURED_COMPLETION
-BLAME_CONTINUITY_DELTA
+BLAME_NATIVE_CLINE_HARNESS
 BLAME_MEMORY_AUTHORITY_V2
 BLAME_HARD_CAPSULE_BUDGET
 BLAME_SEMANTIC_RECALL
 BLAME_OPENROUTER_EMBEDDINGS
 ```
 
-La valeur `0`, `false` ou `off` restaure le comportement précédent pour la capacité concernée, sans migration ni suppression des artefacts. `BLAME_OPENROUTER_EMBEDDINGS` constitue l’exception : il est désactivé par défaut. L’ordre de rollout est : instrumentation, working set et epochs, capsule, rebase des lectures, rebase des écritures, fallback patch, gouverneur, completion structurée, autorité mémoire, rappel lexical, puis activation générale après comparaison des métriques.
+La valeur `0`, `false` ou `off` restaure le comportement précédent pour la capacité concernée, sans migration ni suppression des artefacts. `BLAME_OPENROUTER_EMBEDDINGS` constitue l’exception : il est désactivé par défaut. `BLAME_NATIVE_CLINE_HARNESS` désactive temporairement la projection de continuité, la détection sémantique Blame et la validation automatique, mais conserve l’unique terminal natif afin de ne jamais recréer deux protocoles de fin concurrents. L’ordre de rollout est : instrumentation, working set, rebase des lectures et écritures, fallback patch, gouverneur, harness Cline natif, autorité mémoire, rappel lexical, puis activation générale après comparaison des métriques.
 
-### 21.13 Mémoire conversationnelle fiable et `complete_turn`
+### 21.13 Architecture de completion antérieure, remplacée
+
+Cette section décrit l’architecture livrée avant la fiabilisation US-014. Le terminal `complete_turn`, son delta produit par le modèle et son gate bloquant ont été supprimés. La section 21.16 décrit l’architecture active.
 
 Le runtime distingue trois autorités. Le message utilisateur exact définit le résultat souhaité. Les reçus runtime définissent ce qui a réellement été modifié ou exécuté. Le delta de l’agent apporte uniquement le sens nouveau du tour. La priorité de fusion est l’instruction utilisateur explicite récente, l’instruction explicite ancienne, la preuve runtime, la décision confirmée, puis l’interprétation agent. Cette priorité est spécialisée par domaine : l’utilisateur reste souverain sur l’objectif, le runtime sur les faits techniques.
 
@@ -1950,11 +1951,11 @@ Le registre `language-capabilities.ts` est maintenant la source unique des exten
 
 `patch_file` analyse les en-têtes avant tout travail et refuse un patch multifichier avec `MULTI_FILE_PATCH` et la recommandation `edit_files`. La transaction `edit_files` prépare et valide tous les fichiers avant le verrou d’écriture ; l’échec d’un seul validateur n’écrit aucun fichier. `delete_file` supprime réellement le fichier. Deux conflits similaires sur le même chemin et la même famille d’opération ouvrent un circuit persistant par session et retournent `retrySuppressed: true` avec une stratégie différente.
 
-`complete_turn` contrôle l’état de validation de toutes les modifications du tour. Une édition ordinaire peut être couverte par son parse syntaxique réel. Dès que le tour touche plusieurs fichiers, Prisma, une dépendance, une configuration ou une API, une tâche pertinente réussie après la dernière écriture est obligatoire. Une validation récente ne masque donc plus un reçu antérieur `failed`, `skipped`, `not_supported` ou `not_run`. En cas de blocage, l’outil retourne `NO_POST_EDIT_VALIDATION` et une liste compacte groupant reçus, fichiers et catégories de `run_task` manquantes.
+Le coordinateur runtime contrôle l’état de validation de toutes les modifications du tour lorsque Cline appelle `submit_and_exit`. Une édition ordinaire peut être couverte par son parse syntaxique réel. Dès que le tour touche plusieurs fichiers, Prisma, une dépendance, une configuration ou une API, le coordinateur sélectionne et exécute automatiquement une seule tâche pertinente après la dernière écriture. Une validation réussie est réutilisée. Un échec de code rend un diagnostic compact pour un cycle de correction ; une indisponibilité d’infrastructure termine avec `verified: false` et une réserve déterministe au lieu de bloquer la completion.
 
 La collecte OTLP du backend possède un circuit breaker exponentiel 5 s, 30 s, 120 s puis 300 s. Pendant l’ouverture, les appels retournent `503` et `Retry-After` sans solliciter l’upstream ni réémettre le même warning chaque seconde. Le diagnostic authentifié `GET /api/v1/telemetry/upstream-health` expose l’état agrégé sans contenu télémétrique. Les logs Preview ne déclarent `available: true` que lorsque la commande de logs a réussi et fourni une sortie exploitable ; un ancien log de setup peut être rendu comme fallback mais reste marqué indisponible.
 
-Les tests automatisés ajoutés couvrent le registre et sa description, JSON/JSONC, Prisma, le statut `not_supported`, le refus sémantique, le patch multifichier, le rollback atomique, la suppression de fichier, les sélections de build, l’invalidation ciblée des reçus, le gouverneur entre epochs, les pannes Corepack, le gate de completion et le cycle de vie des outils rapides, parallèles, progressifs, annulés et rejoués après reconnexion. Le test d’intégration live avec GPT-5.6 Sol X-high et la matrice Lima/WSL/Cloud Preview exigent encore les credentials et runners correspondants ; ils ne sont pas simulés par une trace `afterEvents` et ne sont pas présentés comme exécutés localement.
+Les tests automatisés ajoutés couvrent le registre et sa description, JSON/JSONC, Prisma, le statut `not_supported`, le refus sémantique, le patch multifichier, le rollback atomique, la suppression de fichier, les sélections de build, l’invalidation ciblée des reçus, le gouverneur entre epochs, les pannes Corepack, le coordinateur de validation et le cycle de vie des outils rapides, parallèles, progressifs, annulés et rejoués après reconnexion. Le test d’intégration live avec GPT-5.6 Sol X-high et la matrice Lima/WSL/Cloud Preview exigent encore les credentials et runners correspondants ; ils ne sont pas simulés par une trace `afterEvents` et ne sont pas présentés comme exécutés localement.
 
 ### 21.15 Finalisation après US-007
 
@@ -1974,24 +1975,57 @@ Lorsque `BLAME_COST_GOVERNOR_V2` est actif, une même instance du gouverneur cou
 
 #### Compaction effective
 
-`BLAME_AGENT_COMPACTION_WARNING_RATIO` vaut 0,55 par défaut et `BLAME_AGENT_COMPACTION_TRIGGER_RATIO` vaut 0,675. Pour les sessions de développement à completion structurée, Blame récupère la fenêtre déclarée par le provider et annonce à Cline une fenêtre effective telle que son seuil interne de 90 % déclenche la compaction à 67,5 % de la fenêtre réelle. Le callback produit alors une nouvelle capsule de continuité, incrémente l’epoch et réinitialise la visibilité des reçus retirés. Les messages utilisateur exacts, contraintes, décisions, reçus de changement, validations, échecs et prochaines actions restent dans la mémoire durable ; les sorties d’outil brutes ne sont pas recopiées.
+`BLAME_AGENT_COMPACTION_WARNING_RATIO` vaut 0,55 par défaut et `BLAME_AGENT_COMPACTION_TRIGGER_RATIO` vaut 0,675. Pour les sessions de développement, Blame récupère la fenêtre déclarée par le provider et annonce à Cline une fenêtre effective telle que son seuil interne de 90 % déclenche la compaction à 67,5 % de la fenêtre réelle. La compaction elle-même reste celle de Cline. Avant chaque appel modèle, un hook `beforeModel` remplace dans la projection provider le dernier bloc de continuité par l’état runtime compact ; il n’ajoute aucun faux message au transcript canonique et ne fait pas tourner un protocole d’epoch parallèle.
 
 #### Validation et mesures locales
 
-Une fixture headless réelle contient JSONC, Prisma, TSX, CSS et une API. Le test `headless-us007.test.ts` lance trois sessions réelles, utilise le streaming du SDK, impose GPT-5.6 Sol avec `reasoningEffort: xhigh`, puis vérifie le build reçu, le gate de completion, l’absence de Corepack, de double fetch/inspection consécutive et de fichier temporaire. Il s’active uniquement avec `BLAME_HEADLESS_US007=true` et les variables `BLAME_HEADLESS_API_URL`, `BLAME_HEADLESS_API_TOKEN`, `BLAME_HEADLESS_PROVIDER_ID` et `BLAME_HEADLESS_MODEL_ID`.
+Une fixture headless réelle contient JSONC, Prisma, TSX, CSS et une API. Le test `headless-us007.test.ts` lance trois sessions réelles, utilise le streaming du SDK, impose GPT-5.6 Sol avec `reasoningEffort: xhigh`, puis vérifie le build reçu, la completion native, l’absence de Corepack, de double fetch/inspection consécutive et de fichier temporaire. Il s’active uniquement avec `BLAME_HEADLESS_US007=true` et les variables `BLAME_HEADLESS_API_URL`, `BLAME_HEADLESS_API_TOKEN`, `BLAME_HEADLESS_PROVIDER_ID` et `BLAME_HEADLESS_MODEL_ID`.
 
 Mesures obtenues dans le worktree Linux le 25 août 2026 :
 
-| Vérification | Résultat |
-| --- | ---: |
-| Suite complète d’`agent-runtime` | 207 réussis, 0 échec, 1 replay live ignoré |
-| Replay GPT-5.6 Sol X-high | non exécuté, credentials absents |
-| Build complet de la fixture déclarant `pnpm@10.32.1` avec pnpm 10.33.2 | réussi hors ligne en 1,257 s |
-| Validation Prisma de la fixture | réussie avec le binaire local |
-| Build `pnpm@10.32.1` sous Bubblewrap avec réseau isolé | réussi via compatibilité majeure contrôlée |
-| Appels ou téléchargements Corepack observés | 0 |
+| Vérification                                                           |                                   Résultat |
+| ---------------------------------------------------------------------- | -----------------------------------------: |
+| Suite complète d’`agent-runtime`                                       | 207 réussis, 0 échec, 1 replay live ignoré |
+| Replay GPT-5.6 Sol X-high                                              |           non exécuté, credentials absents |
+| Build complet de la fixture déclarant `pnpm@10.32.1` avec pnpm 10.33.2 |               réussi hors ligne en 1,257 s |
+| Validation Prisma de la fixture                                        |              réussie avec le binaire local |
+| Build `pnpm@10.32.1` sous Bubblewrap avec réseau isolé                 | réussi via compatibilité majeure contrôlée |
+| Appels ou téléchargements Corepack observés                            |                                          0 |
 
 Le replay live n’est volontairement pas remplacé par une trace synthétique. Les trois mesures de coût, de compaction maximale et de variance entre runs devront être ajoutées après exécution dans l’environnement doté des credentials. La matrice de construction des images WSL, Lima et Cloud reste une validation CI : le code, les marqueurs de version et les health checks sont présents, mais ces images n’ont pas été publiées depuis ce worktree.
+
+### 21.16 Fiabilisation native Cline après US-014
+
+#### Terminaison et validation
+
+Les sessions de développement exposent maintenant un seul terminal : le `submit_and_exit` fourni par `@cline/sdk` 0.0.68. Son schéma reste exactement `summary` et `verified`, et son lifecycle natif `completesRun` laisse Cline reconnaître la réussite sans boucle parallèle. `complete_turn` n’est plus construit, exposé ou mentionné dans le prompt. La réponse produit normale provient exclusivement de `summary`; les événements du terminal sont masqués et ce résumé est projeté dans l’événement final.
+
+La valeur `verified` du modèle n’est pas une preuve. `CompletionCoordinator` dérive l’état courant des reçus d’édition et de validation runtime. Un parse automatique suffisant permet une fin immédiate. Sinon, le coordinateur choisit dans le catalogue réel une tâche compatible et l’exécute une seule fois pour la dernière révision. Cette exécution publie immédiatement une activité `run_task` stable, puis son résultat, dans le même pipeline persistant que les autres activités sans ajouter de tour modèle. Une réussite est persistée et réutilisée après reconnexion. Un échec de code rend au modèle un diagnostic borné pour un cycle de correction. Une panne d’exécuteur, un timeout, une dépendance absente ou un validateur non supporté conserve la réponse naturelle, ajoute une réserve déterministe et termine non vérifié. Une interruption ne publie aucune fausse completion. L’écriture atomique du résumé et de la mémoire est attendue avant `onComplete` et avant le retour du tool terminal ; une erreur de persistance ne peut donc plus être masquée par le nettoyage de session.
+
+#### Continuité et boucles
+
+La demande utilisateur exacte est persistée avant l’appel modèle. Un hook `beforeModel` produit une vue unique contenant seulement la demande active, les contraintes, les décisions confirmées, les fichiers réellement modifiés, l’état de validation et la prochaine action. Il remplace le texte du dernier message utilisateur dans la requête provider sans modifier le transcript canonique, sans recopier les sorties d’outil et sans injecter de messages de récupération. La compaction reste pilotée par Cline. Aucun appel modèle n’est consacré à fabriquer un delta de mémoire ; seule une éventuelle extraction sémantique ultérieure peut rester hors du chemin critique.
+
+Le détecteur Blame complète le détecteur natif de Cline sur toute la session. Il normalise l’ordre JSON, les identifiants d’appel, les révisions et les variations de pagination. Un handle `match://` valide est décodé puis haché sans son champ `revision`, ce qui conserve l’identité du symbole ; une référence non décodable ou `changeset://` conserve au minimum le hash de sa valeur complète. Les motifs périodiques jusqu’à quatre actions, dont `A-B-A-B`, réutilisent d’abord le résultat en cache puis retournent des reçus de succès compacts `already_available` et `retry_suppressed`. Ils ne fabriquent plus d’erreurs de tool susceptibles d’alimenter `mistake_limit`. Seule une information neuve, une édition appliquée, un nouvel état de validation ou une nouvelle demande remet les compteurs à zéro.
+
+#### Sorties terminales et rollback
+
+Les statuts `max_iterations`, `mistake_limit`, `failed`, `cancelled` et `aborted` sont convertis en erreurs produit lisibles. Le texte du dernier résultat outil et le payload brut ne sont pas transmis comme réponse assistant. Un run incomplet n’annonce donc jamais « Work completed ». `BLAME_NATIVE_CLINE_HARNESS=false` sert de rollback temporaire pour la projection, la détection sémantique et la validation automatique ; le terminal natif reste unique dans les deux modes.
+
+#### Mesures vérifiées localement le 27 août 2026
+
+| Contrat                                       |                  Mesure locale |
+| --------------------------------------------- | -----------------------------: |
+| Contrat synthétique du cycle `search-inspect` |                   2 exécutions |
+| Stress de 5 000 petits appels cycliques       |                          2 I/O |
+| Validation finale pertinente                  |                    1 exécution |
+| Appels modèle pour construire la mémoire      |                              0 |
+| Payload JSON interne visible                  |                              0 |
+| Outils terminaux exposés                      |          1 (`submit_and_exit`) |
+| Suite complète `agent-runtime`                |     252 réussis, 1 live ignoré |
+| Replay réel de la trace US-014                | non disponible, non mesuré ici |
+
+Ces mesures sont des tests de contrat déterministes du détecteur, pas un replay de la trace US-014 ni une mesure de variance d’un provider réel. La précédente affirmation « 11 étapes, −96,5 % » provenait d’une boucle synthétique dont l’entrée `inspect_code` ne suivait pas le schéma réel ; elle est retirée. Le replay headless GPT-5.6, la trace US-014 nettoyée, les interruptions réseau distantes et la matrice AppImage/WSL/Lima/Cloud Preview restent à exécuter dans leurs environnements packagés avec credentials. Le choix automatique de la tâche dépend du catalogue de scripts déclaré par le dépôt : sans tâche compatible, la completion reste volontairement non vérifiée au lieu d’inventer une preuve.
 
 ---
 

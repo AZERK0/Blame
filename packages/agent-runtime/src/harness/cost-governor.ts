@@ -1,5 +1,6 @@
 import { harnessError, type HarnessToolResult } from "./protocol.js";
 import type { SemanticWorkspaceToolName } from "./semantic-executor.js";
+import { SemanticLoopDetector } from "./semantic-loop-detector.js";
 
 type ToolContext = {
   conversationId?: string;
@@ -21,12 +22,14 @@ export class HarnessCostGovernor {
   private readonly iterationBudget: number;
   private readonly midpoint: number;
   private readonly failureCounts = new Map<string, number>();
+  private readonly loops?: SemanticLoopDetector;
   private readonly states = new Map<string, EpochState>();
   private readonly taskState = initialState();
 
-  constructor(iterationBudget = 80) {
+  constructor(iterationBudget = 80, semanticLoops = true) {
     this.iterationBudget = Math.max(1, iterationBudget);
     this.midpoint = Math.max(1, Math.ceil(iterationBudget / 2));
+    this.loops = semanticLoops ? new SemanticLoopDetector() : undefined;
   }
 
   before(
@@ -36,6 +39,8 @@ export class HarnessCostGovernor {
     iteration = 0,
   ) {
     this.state(contextEpoch);
+    const loopDecision = this.loops?.before(tool, input);
+    if (loopDecision) return loopDecision;
     const reserveBlock = this.reserveBlock(tool, input, iteration);
     if (reserveBlock) return reserveBlock;
     if ((this.failureCounts.get(failureSignature(tool, input)) ?? 0) >= 3)
@@ -66,6 +71,7 @@ export class HarnessCostGovernor {
     context: ToolContext,
   ) {
     const state = this.state(context.contextEpoch);
+    this.loops?.after(tool, input, result);
     this.observe(state, tool, input, result);
     this.observe(this.taskState, tool, input, result);
     this.observeFailure(tool, input, result);
@@ -83,6 +89,10 @@ export class HarnessCostGovernor {
         { code: "CONTEXT_GOVERNOR", message: advice },
       ],
     };
+  }
+
+  newUserRequest() {
+    this.loops?.newUserRequest();
   }
 
   private reserveBlock(

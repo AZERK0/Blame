@@ -159,7 +159,7 @@ async function assertHeadlessResult(
   events: AgentEvent[],
 ) {
   const memory = new ConversationMemoryStore(root, sessionId);
-  assert.equal((await memory.completionReadiness()).completionAllowed, true);
+  assert.equal((await memory.completionState()).requiredValidation, undefined);
   const runs = await storedRuns(root);
   assert.equal(runs.some(successfulBuild), true);
   assert.equal(
@@ -248,5 +248,5 @@ const storyPrompt = [
   "Adjust the CSS for the subtitle without removing the existing title style.",
   "Use structured JSON editing, patch Prisma as validated text, and semantic TSX editing.",
   "Run validate:json, validate:prisma, typecheck, and the complete build after the final write.",
-  "Finish only through complete_turn after the build has passed.",
+  "Finish only through submit_and_exit after the build has passed.",
 ].join(" ");

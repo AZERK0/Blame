@@ -25,7 +25,6 @@ import type {
   ClineCoreOptions,
   ClineCoreStartInput,
   CoreCompactionConfig,
-  CoreCompactionContext,
   CoreSessionConfig,
   CoreSessionEvent,
   OAuthCredentials as ClineOAuthCredentials,
@@ -40,7 +39,6 @@ import {
   buildWorkspaceMetadata,
   createDelegatedAgentConfigProvider,
   createSpawnAgentTool,
-  createSessionCompactionState,
   getClineDefaultSystemPrompt,
   mergeRulesForSystemPrompt,
 } from "@cline/sdk";
@@ -69,6 +67,7 @@ import {
   semanticWorkspaceTools,
 } from "./harness/cline-tools.js";
 import {
+  localSemanticWorkspaceExecutor,
   managedSemanticWorkspaceExecutor,
   type SemanticWorkspaceExecutor,
 } from "./harness/semantic-executor.js";
@@ -78,16 +77,19 @@ import {
 } from "./harness/change-request-capsule.js";
 import {
   ConversationMemoryStore,
-  renderContinuityPrompt,
   type TokenCounter,
 } from "./harness/conversation-memory.js";
 import {
-  completeTurnToolName,
-  createCompleteTurnTool,
-  type CompleteTurnNotification,
-} from "./harness/complete-turn.js";
+  createNativeCompletionTool,
+  nativeCompletionToolName,
+  type NativeCompletionNotification,
+  type NativeValidationActivity,
+} from "./harness/native-completion.js";
 import { continuityFallbackMetrics } from "./harness/continuity-schema.js";
 import { ExternalReadGovernor } from "./harness/external-read-governor.js";
+import { continuityProjectionHooks } from "./harness/continuity-projection.js";
+import { composeHarnessHooks } from "./harness/hook-composition.js";
+import { HarnessCostGovernor } from "./harness/cost-governor.js";
 import {
   contextPressureHooks,
   effectiveCompactionModels,
@@ -280,8 +282,7 @@ type RuntimeStartSessionInput = StartSessionInput & {
   enableSpecialistConsult?: boolean;
   enableSpawnAgent?: boolean;
   governorBudget?: number;
-  pressureCompaction?: Parameters<typeof contextPressureHooks>[0]["compact"];
-  structuredCompletion?: boolean;
+  nativeCompletion?: boolean;
   taskObjective?: string;
 };
 
@@ -442,10 +443,11 @@ export class BlameAgentRuntime {
   private sessionExecutionIds = new Map<string, string>();
   private sessionToolInputs = new Map<string, unknown>();
   private sessionToolSequences = new Map<string, number>();
-  private sessionTerminalAnswers = new Map<string, string>();
+  private sessionSubmittedSummaries = new Map<string, string>();
   private sessionIterations = new Map<string, number>();
   private sessionSpawnAgentActiveCounts = new Map<string, number>();
   private sessionUsageSignatures = new Map<string, string>();
+  private sessionGovernors = new Map<string, HarnessCostGovernor>();
   private readonly userInstructionServices = new BlameUserInstructionServices();
   private structuredEventSessions = new Set<string>();
   private readonly productionConfig = loadProductionConfig();
@@ -764,7 +766,12 @@ export class BlameAgentRuntime {
       )
         ? new ExternalReadGovernor()
         : undefined;
-      const compactionModelState = input.structuredCompletion
+      const costGovernor = new HarnessCostGovernor(
+        input.governorBudget ?? input.maxIterations,
+        harnessFeatureEnabled("BLAME_NATIVE_CLINE_HARNESS"),
+      );
+      this.sessionGovernors.set(sessionId, costGovernor);
+      const compactionModelState = input.nativeCompletion
         ? await earlyCompactionModelState(
             input.providerId,
             input.modelId,
@@ -779,11 +786,14 @@ export class BlameAgentRuntime {
         semanticExecutor,
         input.governorBudget ?? input.maxIterations,
         externalReadGovernor,
-        input.structuredCompletion
+        costGovernor,
+        input.nativeCompletion
           ? {
               conversationId: sessionId,
               onComplete: (notification) =>
-                this.recordStructuredCompletion(sessionId, notification),
+                this.recordNativeCompletion(sessionId, notification),
+              onValidationActivity: (activity) =>
+                this.publishNativeValidationActivity(sessionId, activity),
             }
           : undefined,
       );
@@ -807,6 +817,24 @@ export class BlameAgentRuntime {
         ...(standardTools ?? []),
         ...(specialistTool ? [specialistTool] : []),
       ];
+      const continuity = input.nativeCompletion
+        ? new ConversationMemoryStore(input.cwd, sessionId)
+        : undefined;
+      const hooks = composeHarnessHooks(
+        externalReadGovernor?.fetchHooks() ?? {},
+        contextPressureHooks({
+          contextWindow: compactionModelState?.contextWindow,
+          warningRatio: this.productionConfig.compactionWarningRatio ?? 0.55,
+          onWarning: (contextUtilizationRatio) =>
+            productionLogger.log("Blame context pressure warning", {
+              contextUtilizationRatio,
+              status: "warning",
+            }),
+        }),
+        ...(continuity && harnessFeatureEnabled("BLAME_NATIVE_CLINE_HARNESS")
+          ? [continuityProjectionHooks(continuity)]
+          : []),
+      );
       const startInput = {
         ...(autoSendPrompt ? { prompt: input.prompt } : {}),
         ...(input.initialMessages?.length
@@ -850,35 +878,7 @@ export class BlameAgentRuntime {
             enableSpawnAgent: input.enableSpawnAgent ?? false,
             enableAgentTeams: input.enableAgentTeams ?? false,
             extensionContext: extensionContext(input),
-            hooks: {
-              ...(externalReadGovernor?.fetchHooks() ?? {}),
-              ...contextPressureHooks({
-                checkpointIteration: compactionCheckpointIteration(
-                  input.governorBudget ?? input.maxIterations,
-                ),
-                compact: input.pressureCompaction,
-                contextWindow: compactionModelState?.contextWindow,
-                marginalTokenThreshold:
-                  this.productionConfig.compactionMarginalTokenThreshold,
-                maximumContextTokens:
-                  this.productionConfig.compactionMaxContextTokens,
-                maximumOldToolResultTokens:
-                  this.productionConfig.compactionMaxOldToolResultTokens,
-                minimumNoveltyRatio:
-                  this.productionConfig.compactionMinNoveltyRatio,
-                terminalIteration: input.governorBudget,
-                terminalToolNames: input.structuredCompletion
-                  ? [completeTurnToolName]
-                  : [],
-                warningRatio:
-                  this.productionConfig.compactionWarningRatio ?? 0.55,
-                onWarning: (contextUtilizationRatio) =>
-                  productionLogger.log("Blame context pressure warning", {
-                    contextUtilizationRatio,
-                    status: "warning",
-                  }),
-              }),
-            },
+            hooks,
             ...(extraTools.length ? { extraTools } : {}),
           }),
         },
@@ -1032,7 +1032,8 @@ export class BlameAgentRuntime {
     input: SendSessionInput & { continuityMetrics?: ContinuityMetrics },
     interventionType?: string,
   ) {
-    this.sessionTerminalAnswers.delete(input.sessionId);
+    this.sessionGovernors.get(input.sessionId)?.newUserRequest();
+    this.sessionSubmittedSummaries.delete(input.sessionId);
     if (input.executionId) {
       this.sessionExecutionIds.set(input.sessionId, input.executionId);
     }
@@ -1085,8 +1086,6 @@ export class BlameAgentRuntime {
       workspaceRoot,
       input.sessionId,
     );
-    if (workspaceRoot && harnessFeatureEnabled("BLAME_CONTEXT_EPOCHS"))
-      await this.compactExecutionContext(input.sessionId);
     return this.sendSession(
       {
         sessionId: input.sessionId,
@@ -1098,18 +1097,6 @@ export class BlameAgentRuntime {
       },
       input.feedbackOnly ? "feedback" : undefined,
     );
-  }
-
-  private async compactExecutionContext(sessionId: string) {
-    const cline = await this.sessionCore(sessionId);
-    const messages = await cline.readLiveMessages(sessionId);
-    if (!messages.length) return;
-    const state = createSessionCompactionState({
-      sourceMessages: messages,
-      compactedMessages: [],
-      conversationId: sessionId,
-    });
-    await cline.updateSessionCompactionState(sessionId, state);
   }
 
   private async abortSession(sessionId: string, humanInitiated = true) {
@@ -2130,7 +2117,7 @@ export class BlameAgentRuntime {
         );
         if (terminalToolEvent(normalized)) return;
         if (this.shouldSkipSessionDisplayEvent(sessionId, payload)) return;
-        const event = this.withTerminalAnswer(
+        const event = this.withSubmittedSummary(
           sessionId,
           this.withExecutionId(
             sessionId,
@@ -2152,12 +2139,12 @@ export class BlameAgentRuntime {
     this.unsubscribers.set(sessionId, unsubscribe);
   }
 
-  private withTerminalAnswer(sessionId: string, event: AgentEvent) {
-    const answer = this.sessionTerminalAnswers.get(sessionId);
-    if (event.type !== "done" || !answer) return event;
+  private withSubmittedSummary(sessionId: string, event: AgentEvent) {
+    const summary = this.sessionSubmittedSummaries.get(sessionId);
+    if (event.type !== "done" || !summary) return event;
     return {
       ...event,
-      payload: { ...asRecord(event.payload), text: answer },
+      payload: { ...asRecord(event.payload), text: summary },
     };
   }
 
@@ -2310,12 +2297,48 @@ export class BlameAgentRuntime {
     );
   }
 
-  private recordStructuredCompletion(
+  private recordNativeCompletion(
     sessionId: string,
-    notification: CompleteTurnNotification,
+    notification: NativeCompletionNotification,
   ) {
-    this.sessionTerminalAnswers.set(sessionId, notification.answer);
-    this.agentTelemetry.recordContinuityUpdate(sessionId, notification.metrics);
+    this.sessionSubmittedSummaries.set(sessionId, notification.summary);
+  }
+
+  private async publishNativeValidationActivity(
+    sessionId: string,
+    activity: NativeValidationActivity,
+  ) {
+    const event = this.nativeValidationEvent(sessionId, activity);
+    this.events?.emit(event);
+    await this.handleSessionEvent(sessionId, event);
+  }
+
+  private nativeValidationEvent(
+    sessionId: string,
+    activity: NativeValidationActivity,
+  ) {
+    const event: AgentEvent = {
+      type: "tool",
+      sessionId,
+      payload: {
+        phase: activity.phase,
+        toolCallId: activity.toolCallId,
+        toolName: "run_task",
+        toolCall: {
+          id: activity.toolCallId,
+          name: "run_task",
+          input: activity.request.input,
+        },
+        ...(activity.output === undefined ? {} : { output: activity.output }),
+      },
+    };
+    return this.withExecutionId(
+      sessionId,
+      this.withSessionIteration(
+        sessionId,
+        this.withToolLifecycle(sessionId, event),
+      ),
+    );
   }
 
   private async usageForEvent(
@@ -2403,7 +2426,7 @@ export class BlameAgentRuntime {
     this.sessionEventSignatures.delete(sessionId);
     this.sessionExecutionIds.delete(sessionId);
     this.sessionIterations.delete(sessionId);
-    this.sessionTerminalAnswers.delete(sessionId);
+    this.sessionSubmittedSummaries.delete(sessionId);
     this.sessionSpawnAgentActiveCounts.delete(sessionId);
     for (const key of this.sessionToolInputs.keys()) {
       if (key.startsWith(`${sessionId}:`)) this.sessionToolInputs.delete(key);
@@ -2413,6 +2436,7 @@ export class BlameAgentRuntime {
         this.sessionToolSequences.delete(key);
     }
     this.sessionUsageSignatures.delete(sessionId);
+    this.sessionGovernors.delete(sessionId);
     this.sessionBackendKeys.delete(sessionId);
     this.sessionApiConnections.delete(sessionId);
     this.sessionQualityBaselines.delete(sessionId);
@@ -2793,19 +2817,8 @@ export class BlameAgentRuntime {
       conversationId,
       tokenCounter,
     );
-    const continuity = new ConversationMemoryStore(
-      input.cwd,
-      conversationId,
-      tokenCounter,
-    );
     const iterationBudget =
       input.maxIterations ?? developmentMaxIterations(input);
-    const recordCompaction = (inputTokens: number, outputTokens: number) =>
-      this.agentTelemetry.recordContextCompaction(
-        conversationId,
-        inputTokens,
-        outputTokens,
-      );
     const compaction = blameCompactionConfig(this.productionConfig);
     const session = await this.startSession({
       apiConnection: input.apiConnection,
@@ -2821,7 +2834,7 @@ export class BlameAgentRuntime {
       sessionId: conversationId,
       initialMessages,
       mode: "act",
-      maxIterations: iterationBudget + 1,
+      maxIterations: iterationBudget,
       governorBudget: iterationBudget,
       prompt: preparedRequest.prompt,
       continuityMetrics: preparedRequest.metrics,
@@ -2838,24 +2851,8 @@ export class BlameAgentRuntime {
       enableSpecialistConsult: true,
       enableSpawnAgent: false,
       enableAgentTeams: false,
-      structuredCompletion: harnessFeatureEnabled(
-        "BLAME_STRUCTURED_COMPLETION",
-      ),
-      compaction: developmentCompactionConfig(
-        compaction,
-        continuity,
-        recordCompaction,
-      ),
-      pressureCompaction:
-        compaction.enabled === false
-          ? undefined
-          : (metrics, reason) =>
-              developmentPressureCompaction(
-                continuity,
-                metrics.estimatedTokens,
-                reason,
-                recordCompaction,
-              ),
+      nativeCompletion: true,
+      compaction,
       backend: input.backend,
       executionId: input.executionId,
       storyId: input.storyId,
@@ -2913,7 +2910,7 @@ export class BlameAgentRuntime {
           return result;
         }
         this.events?.emit(
-          this.withTerminalAnswer(
+          this.withSubmittedSummary(
             sessionId,
             this.withExecutionId(
               sessionId,
@@ -2986,11 +2983,13 @@ function normalizeEvent(
   }
   if (event.type === "hook") return normalizeHookEvent(event, sessionId);
   if (event.type === "ended")
-    return {
-      type: "done",
-      sessionId: event.payload.sessionId,
-      payload: event.payload,
-    };
+    return incompleteTerminalStatus(event.payload.reason)
+      ? terminalProductError(event.payload.sessionId, event.payload.reason)
+      : {
+          type: "done",
+          sessionId: event.payload.sessionId,
+          payload: event.payload,
+        };
   if (event.type === "status")
     return {
       type: "notice",
@@ -3317,25 +3316,36 @@ function runtimeTools(
   semanticWorkspaceExecutor?: SemanticWorkspaceExecutor,
   governorBudget?: number,
   externalReadGovernor?: ExternalReadGovernor,
+  costGovernor?: HarnessCostGovernor,
   completion?: {
     conversationId: string;
-    onComplete(notification: CompleteTurnNotification): void;
+    onComplete(notification: NativeCompletionNotification): void;
+    onValidationActivity(activity: NativeValidationActivity): Promise<void>;
   },
 ) {
   const tools = [
     ...semanticWorkspaceTools(worktree, {
       taskContract,
       executor: semanticWorkspaceExecutor,
+      governor: costGovernor,
       governorBudget,
       legacyMutationTools:
         process.env.BLAME_HARNESS_LEGACY_MUTATIONS === "true",
     }),
-    ...(completion && harnessFeatureEnabled("BLAME_STRUCTURED_COMPLETION")
+    ...(completion
       ? [
-          createCompleteTurnTool({
+          createNativeCompletionTool({
+            automaticValidation: harnessFeatureEnabled(
+              "BLAME_NATIVE_CLINE_HARNESS",
+            ),
             conversationId: completion.conversationId,
+            executor:
+              semanticWorkspaceExecutor ??
+              localSemanticWorkspaceExecutor(worktree ?? "", taskContract),
+            taskContract,
             workspaceRoot: worktree ?? "",
             onComplete: completion.onComplete,
+            onValidationActivity: completion.onValidationActivity,
           }),
         ]
       : []),
@@ -4949,9 +4959,7 @@ async function developmentRequestPrompt(
     tokenCounter,
   });
   return {
-    prompt: harnessFeatureEnabled("BLAME_CONTEXT_EPOCHS")
-      ? prepared.prompt
-      : prompt,
+    prompt,
     metrics: {
       inputTokens: prepared.inputTokens,
       outputTokens: prepared.outputTokens,
@@ -4959,73 +4967,6 @@ async function developmentRequestPrompt(
       truncated: prepared.truncated,
     },
   };
-}
-
-function developmentCompactionConfig(
-  base: CoreCompactionConfig,
-  continuity: ConversationMemoryStore,
-  recordCompaction?: (inputTokens: number, outputTokens: number) => void,
-): CoreCompactionConfig {
-  if (base.enabled === false || !harnessFeatureEnabled("BLAME_CONTEXT_EPOCHS"))
-    return base;
-  return {
-    ...base,
-    async compact(context: CoreCompactionContext) {
-      const capsule = await continuity.rotate("model_compaction");
-      const currentRequest = await continuity.currentRequest();
-      const content = renderContinuityPrompt(capsule, currentRequest);
-      const outputTokens = Math.ceil(Buffer.byteLength(content, "utf8") / 4);
-      recordCompaction?.(context.budget.messages.inputTokens, outputTokens);
-      return {
-        messages: [
-          {
-            role: "user",
-            content,
-            metadata: {
-              conversation_id: capsule.conversationId,
-              execution_epoch_id: capsule.executionEpochId,
-              context_size_before_compaction:
-                context.budget.messages.inputTokens,
-              context_size_after_compaction: outputTokens,
-            },
-          },
-        ],
-      };
-    },
-  };
-}
-
-function compactionCheckpointIteration(iterationBudget?: number) {
-  if (!iterationBudget || iterationBudget < 70) return undefined;
-  return Math.min(80, Math.max(70, Math.floor(iterationBudget * 0.65)));
-}
-
-async function developmentPressureCompaction(
-  continuity: ConversationMemoryStore,
-  inputTokens: number,
-  reason: string,
-  recordCompaction?: (inputTokens: number, outputTokens: number) => void,
-) {
-  const capsule = await continuity.rotate(`automatic_${reason}`);
-  const currentRequest = await continuity.currentRequest();
-  const content = renderContinuityPrompt(capsule, currentRequest);
-  const outputTokens = Math.ceil(Buffer.byteLength(content, "utf8") / 4);
-  recordCompaction?.(inputTokens, outputTokens);
-  return [
-    {
-      id: `compaction-${capsule.executionEpochId}`,
-      role: "user" as const,
-      content: [{ type: "text" as const, text: content }],
-      createdAt: Date.now(),
-      metadata: {
-        conversation_id: capsule.conversationId,
-        execution_epoch_id: capsule.executionEpochId,
-        compaction_reason: reason,
-        context_size_before_compaction: inputTokens,
-        context_size_after_compaction: outputTokens,
-      },
-    },
-  ];
 }
 
 async function earlyCompactionModelState(
@@ -5143,28 +5084,14 @@ function logSeverity(payload: unknown) {
 
 export function resultFailureMessage(result: unknown) {
   const payload = asRecord(result);
-  const status = resultStatus(payload);
-  if (
-    !status ||
-    ![
-      "failed",
-      "error",
-      "cancelled",
-      "aborted",
-      "max-iterations",
-      "max_iterations",
-      "mistake-limit",
-      "mistake_limit",
-    ].includes(status)
-  )
-    return undefined;
+  const status = incompleteResultStatus(payload);
+  if (!status) return undefined;
   const error = asRecord(payload.error);
   const message =
     stringValue(error.message) ??
     stringValue(payload.error) ??
-    stringValue(payload.message) ??
-    firstTextLine(payload.text);
-  return message ?? `Agent session ended with status ${status}.`;
+    stringValue(payload.message);
+  return message ?? terminalProductMessage(status);
 }
 
 function resultStatus(payload: Record<string, unknown>) {
@@ -5254,15 +5181,24 @@ export function normalizeClineAgentPayload(
   }
 
   if (type === "done") {
+    const finishReason = stringValue(payload.finishReason);
+    const incompleteStatus = incompleteResultStatus(payload);
+    const reason =
+      stringValue(payload.reason) ??
+      finishReason ??
+      stringValue(payload.status);
+    if (incompleteStatus)
+      return terminalProductError(
+        sessionId,
+        incompleteStatus,
+        payload.iteration,
+      );
     return {
       type: "done",
       sessionId,
       payload: {
-        finishReason: stringValue(payload.finishReason),
-        reason:
-          stringValue(payload.reason) ??
-          stringValue(payload.finishReason) ??
-          stringValue(payload.status),
+        finishReason,
+        reason,
         status: stringValue(payload.status),
         text: stringValue(payload.text),
         usage: doneUsagePayload(payload.usage),
@@ -5373,12 +5309,16 @@ export function normalizeClineAgentPayload(
 
   if (type === "run-finished") {
     const result = asRecord(payload.result);
+    const status = stringValue(result.status);
+    const incompleteStatus = incompleteResultStatus(result);
+    if (incompleteStatus)
+      return terminalProductError(sessionId, incompleteStatus);
     return {
       type: "done",
       sessionId,
       payload: {
         text: stringValue(result.outputText),
-        status: stringValue(result.status),
+        status,
         raw,
       },
     };
@@ -5390,6 +5330,10 @@ export function normalizeClineAgentPayload(
       sessionId,
       payload: normalizedErrorPayload(payload, raw),
     };
+  }
+
+  if (toolPayload(payload, type)) {
+    return { type: "raw", sessionId, payload };
   }
 
   const text =
@@ -5412,6 +5356,14 @@ export function normalizeClineAgentPayload(
   };
 }
 
+function toolPayload(payload: Record<string, unknown>, type?: string) {
+  return (
+    type?.includes("tool") === true ||
+    Boolean(stringValue(payload.toolName)) ||
+    Boolean(stringValue(payload.toolCallId))
+  );
+}
+
 function normalizedErrorPayload(
   payload: Record<string, unknown>,
   raw: unknown,
@@ -5427,6 +5379,53 @@ function normalizedErrorPayload(
     recoverable: booleanValue(payload.recoverable),
     raw,
   };
+}
+
+function terminalProductError(
+  sessionId: string,
+  status: unknown,
+  iteration?: unknown,
+): AgentEvent {
+  const terminalStatus = stringValue(status) ?? "incomplete";
+  return {
+    type: "error",
+    sessionId,
+    payload: {
+      iteration: numberValue(iteration),
+      message: terminalProductMessage(terminalStatus),
+      recoverable: false,
+      terminalStatus,
+    },
+  };
+}
+
+function terminalProductMessage(status: string) {
+  const normalized = status.replaceAll("-", "_").toLowerCase();
+  if (normalized === "max_iterations")
+    return "Agent stopped after reaching its work-step limit before submitting a final response.";
+  if (normalized === "mistake_limit")
+    return "Agent stopped after repeated unsuccessful actions before submitting a final response.";
+  if (normalized === "aborted" || normalized === "cancelled")
+    return "Agent work was interrupted before a final response was submitted.";
+  return "Agent stopped before submitting a final response.";
+}
+
+function incompleteTerminalStatus(status: unknown) {
+  const value = stringValue(status)?.replaceAll("-", "_").toLowerCase();
+  return [
+    "aborted",
+    "cancelled",
+    "error",
+    "failed",
+    "max_iterations",
+    "mistake_limit",
+  ].includes(value ?? "");
+}
+
+function incompleteResultStatus(payload: Record<string, unknown>) {
+  return [payload.status, payload.state, payload.finishReason, payload.reason]
+    .map(stringValue)
+    .find(incompleteTerminalStatus);
 }
 
 function eventLogPayload(event: AgentEvent) {
@@ -5519,7 +5518,7 @@ function toolNameFromPayload(payload: Record<string, unknown>) {
 export function terminalToolEvent(event: AgentEvent) {
   return (
     event.type === "tool" &&
-    toolNameFromPayload(asRecord(event.payload)) === completeTurnToolName
+    toolNameFromPayload(asRecord(event.payload)) === nativeCompletionToolName
   );
 }
 
@@ -5629,12 +5628,15 @@ function doneResultPayload(result: unknown) {
   const payload = asRecord(result);
   const status = resultStatus(payload);
   const finishReason = stringValue(payload.finishReason);
+  const incompleteStatus = incompleteResultStatus(payload);
   return {
     finishReason,
     iterations: numberValue(payload.iterations),
     reason: stringValue(payload.reason) ?? finishReason ?? status,
     status,
-    text: stringValue(payload.text) ?? stringValue(payload.outputText),
+    text: incompleteStatus
+      ? undefined
+      : (stringValue(payload.text) ?? stringValue(payload.outputText)),
     usage: payload.usage,
   };
 }
