@@ -137,7 +137,7 @@ test("presents auto-narrowed reads without claiming the requested full range", (
         end_line: 20,
         entire_file: false,
         path: "notes.txt",
-        read_kind: "range",
+        read_kind: "bounded_preview",
         reused: false,
         start_line: 1,
         view: "raw",
@@ -170,8 +170,9 @@ test("presents suppressed reads without claiming any content coverage", () => {
     files: [
       {
         entire_file: false,
+        parallel_suppressed: true,
         path: "src/large.tsx",
-        read_kind: "file",
+        read_kind: "parallel_suppressed",
         reused: false,
         view: "raw",
       },

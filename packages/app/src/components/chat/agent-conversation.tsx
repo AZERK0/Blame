@@ -1544,6 +1544,7 @@ type InspectedFile = {
   path: string
   readKind?: string
   reused?: boolean
+  parallelSuppressed?: boolean
   startLine?: number
   symbol?: string
   symbolKind?: string
@@ -1562,7 +1563,13 @@ function InspectedFiles({ files }: { files: InspectedFile[] }) {
             key={`${file.path}-${file.startLine ?? "start"}-${file.endLine ?? "end"}-${index}`}
             title={file.path}
           >
-            <span className="shrink-0">{file.reused ? "Reused" : "Read"}</span>
+            <span className="shrink-0">
+              {file.parallelSuppressed
+                ? "Suppressed"
+                : file.reused
+                  ? "Reused"
+                  : "Read"}
+            </span>
             <span className="truncate text-sky-600 dark:text-sky-400">
               {file.symbol ?? name}
             </span>
@@ -2223,6 +2230,7 @@ function readFilesInput(details: ActivityDetail): InspectedFile[] | undefined {
         path,
         readKind: stringValue(file.read_kind),
         reused: file.reused === true,
+        parallelSuppressed: file.parallel_suppressed === true,
         startLine: positiveInteger(file.start_line),
         symbol: stringValue(file.symbol),
         symbolKind: stringValue(file.symbol_kind),
@@ -2247,12 +2255,14 @@ function inspectedLineCount(file: InspectedFile) {
 }
 
 function inspectedLineRange(file: InspectedFile) {
+  if (file.parallelSuppressed) return "Parallel read suppressed"
   if (file.reused) return "Content reused"
   if (file.entireFile) return "Entire file"
   if (file.symbol) {
     return [file.symbolKind, file.view].filter(Boolean).join(" · ")
   }
   if (file.readKind === "outline") return "Symbol outline"
+  if (file.readKind === "bounded_preview") return "Bounded preview"
   if (file.startLine !== undefined && file.endLine !== undefined) {
     return `L${file.startLine}–${file.endLine}`
   }

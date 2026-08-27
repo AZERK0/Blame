@@ -77,7 +77,11 @@ function presentedReadFile(details: ToolPresentation, path: string) {
   const semanticTarget = recordValue(data.semantic_target)
   const isOutline = details.toolName === "outline_code"
   const requestedRange = numberPair(input.range_utf8_bytes)
-  const reused = stringValue(data.status) === "already_available"
+  const status = stringValue(data.status)
+  const reused = status === "already_available"
+  const parallelSuppressed =
+    status === "in_flight_reused" ||
+    data.parallel_broad_read_suppressed === true
   const autoNarrowedKind = stringValue(data.auto_narrowed_kind)
   const inputTargetType = readTargetType(recordValue(input.target))
   return {
@@ -88,7 +92,8 @@ function presentedReadFile(details: ToolPresentation, path: string) {
       inputTargetType,
       requestedRange,
       isOutline,
-      autoNarrowedKind
+      autoNarrowedKind,
+      parallelSuppressed
     ),
     ...presentedSemanticTarget(semanticTarget),
     ...presentedLineRange(data.line_range),
@@ -102,6 +107,7 @@ function presentedReadFile(details: ToolPresentation, path: string) {
       contentCoverage: stringValue(data.content_coverage),
     }),
     reused,
+    ...(parallelSuppressed ? { parallel_suppressed: true } : {}),
   }
 }
 
@@ -121,10 +127,12 @@ function presentedReadKind(
   inputTargetType: string | undefined,
   requestedRange: [number, number] | undefined,
   isOutline: boolean,
-  autoNarrowedKind?: string
+  autoNarrowedKind?: string,
+  parallelSuppressed = false
 ) {
+  if (parallelSuppressed) return "parallel_suppressed"
   if (autoNarrowedKind === "semantic_outline") return "outline"
-  if (autoNarrowedKind === "bounded_preview") return "range"
+  if (autoNarrowedKind === "bounded_preview") return "bounded_preview"
   return (
     stringValue(target.type) ??
     inputTargetType ??
