@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process";
 import {
   lstat,
+  open,
   readFile,
   readdir,
   readlink,
@@ -117,6 +118,31 @@ export class WorkspaceFiles {
     };
   }
 
+  async fileSize(path: string) {
+    return (await stat(await this.resolveExisting(path))).size;
+  }
+
+  async readRange(path: string, range: [number, number]) {
+    const file = await open(await this.resolveExisting(path), "r");
+    const content = Buffer.alloc(range[1] - range[0]);
+    try {
+      const { bytesRead } = await file.read(
+        content,
+        0,
+        content.byteLength,
+        range[0],
+      );
+      return content.subarray(0, bytesRead);
+    } finally {
+      await file.close();
+    }
+  }
+
+  async pathProfile(path: string) {
+    const { metadata } = await this.resolveExistingPath(path);
+    return { directory: metadata.isDirectory(), size: metadata.size };
+  }
+
   async blobHash(path: string) {
     return sha256((await this.read(path)).content);
   }
@@ -185,6 +211,12 @@ export class WorkspaceFiles {
   }
 
   private async resolveExisting(path: string) {
+    const { metadata, resolved } = await this.resolveExistingPath(path);
+    if (!metadata.isFile()) throw new Error("Target is not a regular file.");
+    return resolved;
+  }
+
+  private async resolveExistingPath(path: string) {
     const normalized = this.normalizePath(path);
     const candidate = resolve(this.root, normalized);
     if ((await lstat(candidate)).isSymbolicLink())
@@ -195,9 +227,8 @@ export class WorkspaceFiles {
     const local = relative(await realpath(this.root), resolved);
     if (local === ".." || local.startsWith(`..${sep}`) || isAbsolute(local))
       throw new Error("Resolved path escapes the workspace root.");
-    const info = await stat(resolved);
-    if (!info.isFile()) throw new Error("Target is not a regular file.");
-    return resolved;
+    const metadata = await stat(resolved);
+    return { metadata, resolved };
   }
 
   private async pathState(path: string) {

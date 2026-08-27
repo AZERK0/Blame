@@ -1654,6 +1654,21 @@ function recordHarnessToolMetrics(
   const metricContext = { attributes, current, data, state };
   current.span.setAttributes(harnessTraceAttributes(data));
   if (current.name === "inspect_code") recordReadMetrics(metricContext);
+  if (
+    current.name !== "inspect_code" &&
+    data.parallel_broad_read_suppressed === true
+  )
+    recordHarnessCount(
+      metricContext,
+      "blame.harness.parallel_broad_reads_suppressed",
+    );
+  const savedTokens = numericValue(data.estimated_tokens_saved);
+  if (current.name !== "inspect_code" && savedTokens !== undefined)
+    recordHarnessValue(
+      metricContext,
+      "blame.harness.estimated_tokens_saved",
+      savedTokens,
+    );
   if (semanticEditTool(current.name)) recordEditMetrics(metricContext);
   if (current.name === "recall_context") recordRecallMetrics(metricContext);
   if (externalReadTool(current.name)) recordExternalReadMetrics(metricContext);
@@ -1712,7 +1727,9 @@ type HarnessMetricContext = {
 
 function recordReadMetrics(context: HarnessMetricContext) {
   recordHarnessCount(context, "blame.harness.reads");
-  const readBytes = byteRangeLength(context.data.range_utf8_bytes);
+  const readBytes =
+    numericValue(context.data.read_requested_bytes) ??
+    byteRangeLength(context.data.range_utf8_bytes);
   recordHarnessValue(context, "blame.harness.read_requested_bytes", readBytes);
   if (readBytes > 0)
     recordHarnessValue(context, "blame.harness.read_bytes", readBytes);
@@ -1721,7 +1738,10 @@ function recordReadMetrics(context: HarnessMetricContext) {
     "blame.harness.new_read_bytes",
     numericValue(context.data.new_bytes) ?? readBytes,
   );
-  const returnedBytes = numericValue(context.data.new_bytes) ?? readBytes;
+  const returnedBytes =
+    numericValue(context.data.read_returned_bytes) ??
+    numericValue(context.data.new_bytes) ??
+    readBytes;
   recordHarnessValue(
     context,
     "blame.harness.read_returned_bytes",
@@ -1741,6 +1761,26 @@ function recordReadMetrics(context: HarnessMetricContext) {
     recordHarnessCount(context, "blame.harness.duplicate_read_count");
   if (stringValue(context.data.rebase_strategy))
     recordHarnessCount(context, "blame.harness.semantic_read_rebases");
+  if (stringValue(context.data.status) === "auto_narrowed")
+    recordHarnessCount(context, "blame.harness.auto_narrowed_raw_reads");
+  if (context.data.parallel_broad_read_suppressed === true)
+    recordHarnessCount(
+      context,
+      "blame.harness.parallel_broad_reads_suppressed",
+    );
+  const semanticTarget = asRecord(context.data.semantic_target);
+  recordHarnessValue(
+    context,
+    "blame.harness.symbol_target_ratio",
+    stringValue(semanticTarget.type) === "symbol" ? 1 : 0,
+  );
+  const savedTokens = numericValue(context.data.estimated_tokens_saved);
+  if (savedTokens !== undefined)
+    recordHarnessValue(
+      context,
+      "blame.harness.estimated_tokens_saved",
+      savedTokens,
+    );
 }
 
 function recordEditMetrics(context: HarnessMetricContext) {

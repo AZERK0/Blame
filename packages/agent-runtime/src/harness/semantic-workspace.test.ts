@@ -2036,7 +2036,7 @@ test("cost governor resets only after an applied edit", () => {
   );
   assert.equal(
     governor.before("search_code", epoch.contextEpoch)?.status,
-    "error",
+    "success",
   );
   governor.after(
     "edit_code",
@@ -2064,7 +2064,7 @@ test("cost governor keeps anti-loop counters across execution epochs", () => {
       contextEpoch,
       iteration: 1,
     });
-  assert.equal(governor.before("search_code", "epoch-c")?.status, "error");
+  assert.equal(governor.before("search_code", "epoch-c")?.status, "success");
 });
 
 test("cost governor reserves the terminal iteration", () => {

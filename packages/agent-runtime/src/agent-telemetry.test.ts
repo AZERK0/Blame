@@ -450,6 +450,7 @@ function startCapturedAgentExecution(agent: AgentTelemetry) {
   agent.observeCoreEvent("session-integration", usageEvent("lead", 100));
   observeCapturedTeammate(agent);
   observeCapturedTestTool(agent);
+  observeCapturedNavigationTools(agent);
   agent.startModelRequest("session-integration");
 }
 
@@ -482,6 +483,40 @@ function observeCapturedTestTool(agent: AgentTelemetry) {
   agent.observeCoreEvent(
     "session-integration",
     toolEvent("content_end", "run_commands", "tool-1"),
+  );
+}
+
+function observeCapturedNavigationTools(agent: AgentTelemetry) {
+  const autoNarrowed = {
+    estimated_tokens_saved: 2_000,
+    read_requested_bytes: 10_000,
+    read_returned_bytes: 2_000,
+    semantic_target: { type: "symbol" },
+    status: "auto_narrowed",
+  };
+  observeCompletedTool(agent, "inspect_code", "navigation-auto", autoNarrowed);
+  observeCompletedTool(agent, "search_code", "navigation-parallel", {
+    estimated_tokens_saved: 2_500,
+    parallel_broad_read_suppressed: true,
+    read_requested_bytes: 10_000,
+    read_returned_bytes: 0,
+    status: "retry_suppressed",
+  });
+}
+
+function observeCompletedTool(
+  agent: AgentTelemetry,
+  name: string,
+  id: string,
+  data: Record<string, unknown>,
+) {
+  agent.observeCoreEvent(
+    "session-integration",
+    toolEvent("content_start", name, id),
+  );
+  agent.observeCoreEvent(
+    "session-integration",
+    toolEvent("content_end", name, id, "lead", { data }),
   );
 }
 
@@ -546,6 +581,7 @@ function toolEvent(
   toolName: string,
   id: string,
   agentId = "lead",
+  output?: Record<string, unknown>,
 ) {
   return coreAgentEvent(agentId, {
     contentType: "tool",
@@ -558,6 +594,7 @@ function toolEvent(
     },
     toolName,
     type,
+    ...(output ? { output } : {}),
   });
 }
 
@@ -758,6 +795,10 @@ function assertContinuityMetrics(
     "blame.harness.continuity_update_valid",
     "blame.harness.facts_added_count",
     "blame.harness.facts_superseded_count",
+    "blame.harness.auto_narrowed_raw_reads",
+    "blame.harness.parallel_broad_reads_suppressed",
+    "blame.harness.symbol_target_ratio",
+    "blame.harness.estimated_tokens_saved",
   ])
     assert.ok(
       metricData.some((metric) => metric.descriptor.name === name),

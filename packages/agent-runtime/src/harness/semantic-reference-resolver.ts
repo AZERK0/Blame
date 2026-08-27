@@ -14,6 +14,7 @@ import {
 } from "./protocol.js";
 import { harnessFeatureEnabled } from "./harness-feature-flags.js";
 import { WorkspaceFiles, type WorkspaceSnapshot } from "./workspace-files.js";
+import { maximumSemanticParseBytes } from "./code-navigation-policy.js";
 
 export type ConflictCandidate = {
   referenceId: string;
@@ -135,7 +136,7 @@ export class SemanticReferenceResolver {
     const candidates: ScoredCandidate[] = [];
     for (const path of paths) {
       const content = await optionalContent(this.files, path);
-      if (!content || content.length > 2 * 1024 * 1024) continue;
+      if (!content || content.length > maximumSemanticParseBytes) continue;
       candidates.push(...scoreSymbols(decoded.handle, path, content, snapshot));
       if (candidates.some((candidate) => candidate.score >= 0.98)) break;
     }
@@ -151,7 +152,7 @@ export class SemanticReferenceResolver {
     const candidates: ScoredCandidate[] = [];
     for (const path of candidatePaths(decoded.handle, snapshot)) {
       const content = await optionalContent(this.files, path);
-      if (!content || content.length > 2 * 1024 * 1024) continue;
+      if (!content || content.length > maximumSemanticParseBytes) continue;
       const matches = currentNodeCandidates({
         content,
         digest: decoded.handle.digest,
@@ -197,7 +198,7 @@ export class SemanticReferenceResolver {
     const candidates: ScoredCandidate[] = [];
     for (const path of candidatePaths(decoded.handle, snapshot)) {
       const content = await optionalContent(this.files, path);
-      if (!content || content.length > 2 * 1024 * 1024) continue;
+      if (!content || content.length > maximumSemanticParseBytes) continue;
       for (const range of exactTextRanges(content, decoded.handle.matchedText))
         candidates.push(
           matchCandidate(decoded.handle, path, content, range, snapshot),

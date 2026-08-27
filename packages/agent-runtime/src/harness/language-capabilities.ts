@@ -129,6 +129,15 @@ export function supportedOperationsDescription() {
   ].join("\n");
 }
 
+export function semanticInspectionExtensionsDescription() {
+  const extensions = unique(
+    languageCapabilityRegistry
+      .filter((capability) => capability.symbolInspection)
+      .flatMap((capability) => capability.extensions),
+  );
+  return extensions.join(", ");
+}
+
 export function capabilityRegistrySnapshot() {
   return languageCapabilityRegistry.map((capability) => ({
     ...capability,

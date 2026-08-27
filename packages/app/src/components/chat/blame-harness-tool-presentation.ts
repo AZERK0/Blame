@@ -78,6 +78,7 @@ function presentedReadFile(details: ToolPresentation, path: string) {
   const isOutline = details.toolName === "outline_code"
   const requestedRange = numberPair(input.range_utf8_bytes)
   const reused = stringValue(data.status) === "already_available"
+  const autoNarrowedKind = stringValue(data.auto_narrowed_kind)
   const inputTargetType = readTargetType(recordValue(input.target))
   return {
     path,
@@ -86,7 +87,8 @@ function presentedReadFile(details: ToolPresentation, path: string) {
       semanticTarget,
       inputTargetType,
       requestedRange,
-      isOutline
+      isOutline,
+      autoNarrowedKind
     ),
     ...presentedSemanticTarget(semanticTarget),
     ...presentedLineRange(data.line_range),
@@ -97,6 +99,7 @@ function presentedReadFile(details: ToolPresentation, path: string) {
       requestedRange,
       semanticTarget,
       reused,
+      contentCoverage: stringValue(data.content_coverage),
     }),
     reused,
   }
@@ -117,8 +120,11 @@ function presentedReadKind(
   target: Record<string, unknown>,
   inputTargetType: string | undefined,
   requestedRange: [number, number] | undefined,
-  isOutline: boolean
+  isOutline: boolean,
+  autoNarrowedKind?: string
 ) {
+  if (autoNarrowedKind === "semantic_outline") return "outline"
+  if (autoNarrowedKind === "bounded_preview") return "range"
   return (
     stringValue(target.type) ??
     inputTargetType ??
@@ -142,12 +148,14 @@ function isEntireFileRead(input: {
   requestedRange?: [number, number]
   reused: boolean
   semanticTarget: Record<string, unknown>
+  contentCoverage?: string
 }) {
   return (
     !input.isOutline &&
     !input.requestedRange &&
     !input.inputTargetType &&
     !input.semanticTarget.type &&
+    !["none", "partial"].includes(input.contentCoverage ?? "") &&
     (numberValue(input.data.omitted_bytes) ?? 0) === 0 &&
     !input.reused
   )
@@ -291,7 +299,11 @@ function successfulResult(output: unknown) {
   const data = recordValue(harnessData(output))
   const status = stringValue(data.status)
   const outcome = stringValue(data.outcome)
-  if (["cancelled", "execution_error", "failed", "timed_out"].includes(status ?? ""))
+  if (
+    ["cancelled", "execution_error", "failed", "timed_out"].includes(
+      status ?? ""
+    )
+  )
     return false
   return !["infrastructure_error", "task_failure"].includes(outcome ?? "")
 }

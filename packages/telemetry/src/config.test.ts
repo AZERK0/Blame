@@ -212,6 +212,23 @@ test("defines semantic metric units", () => {
     metricInstrumentOptions("blame.runtime.readiness.polls").unit,
     "{poll}",
   );
+  assert.equal(
+    metricInstrumentOptions("blame.harness.auto_narrowed_raw_reads").unit,
+    "{read}",
+  );
+  assert.equal(
+    metricInstrumentOptions("blame.harness.parallel_broad_reads_suppressed")
+      .unit,
+    "{read}",
+  );
+  assert.equal(
+    metricInstrumentOptions("blame.harness.symbol_target_ratio").unit,
+    "1",
+  );
+  assert.equal(
+    metricInstrumentOptions("blame.harness.estimated_tokens_saved").unit,
+    "{token}",
+  );
   assert.deepEqual(
     metricInstrumentOptions("blame.runtime.operation.duration").advice
       ?.explicitBucketBoundaries,

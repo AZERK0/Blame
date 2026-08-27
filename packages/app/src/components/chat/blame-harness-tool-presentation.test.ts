@@ -90,6 +90,95 @@ test("presents symbolic read coverage and reused content without claiming a full
   })
 })
 
+test("presents auto-narrowed reads without claiming the requested full range", () => {
+  const outline = presentBlameHarnessTool({
+    input: { target: { path: "src/large.tsx" }, view: "raw" },
+    output: {
+      data: {
+        auto_narrowed_kind: "semantic_outline",
+        content_coverage: "none",
+        path: "src/large.tsx",
+        requested_range_utf8_bytes: [0, 50_000],
+        status: "auto_narrowed",
+      },
+      status: "success",
+    },
+    toolName: "inspect_code",
+  })
+  const preview = presentBlameHarnessTool({
+    input: { target: { path: "notes.txt" }, view: "raw" },
+    output: {
+      data: {
+        auto_narrowed_kind: "bounded_preview",
+        content_coverage: "partial",
+        line_range: [1, 20],
+        path: "notes.txt",
+        status: "auto_narrowed",
+      },
+      status: "success",
+    },
+    toolName: "inspect_code",
+  })
+
+  assert.deepEqual(outline.input, {
+    files: [
+      {
+        entire_file: false,
+        path: "src/large.tsx",
+        read_kind: "outline",
+        reused: false,
+        view: "raw",
+      },
+    ],
+  })
+  assert.deepEqual(preview.input, {
+    files: [
+      {
+        end_line: 20,
+        entire_file: false,
+        path: "notes.txt",
+        read_kind: "range",
+        reused: false,
+        start_line: 1,
+        view: "raw",
+      },
+    ],
+  })
+})
+
+test("presents suppressed reads without claiming any content coverage", () => {
+  const presentation = presentBlameHarnessTool({
+    input: { target: { path: "src/large.tsx" }, view: "raw" },
+    output: {
+      coverage: {
+        analysis: "observed_subset",
+        scope: "unknown",
+        truncated: true,
+      },
+      data: {
+        content_coverage: "none",
+        omitted_bytes: 50_000,
+        parallel_broad_read_suppressed: true,
+        status: "retry_suppressed",
+      },
+      status: "success",
+    },
+    toolName: "inspect_code",
+  })
+
+  assert.deepEqual(presentation.input, {
+    files: [
+      {
+        entire_file: false,
+        path: "src/large.tsx",
+        read_kind: "file",
+        reused: false,
+        view: "raw",
+      },
+    ],
+  })
+})
+
 test("presents edit_code through the diff surface with validation and rebase state", () => {
   const presentation = presentBlameHarnessTool({
     input: { edits: [] },

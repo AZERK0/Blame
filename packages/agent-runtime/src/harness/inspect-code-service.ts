@@ -1,11 +1,15 @@
 import {
   findExactNode,
   inspectParsedNode,
+  materializeSymbol,
+  outlineSymbol,
   parseCode,
+  type OutlineSymbol,
 } from "./code-intelligence.js";
 import {
   harnessSuccess,
   provenance,
+  sha256,
   type FileRef,
   type HandlePayload,
   type HarnessToolResult,
@@ -32,9 +36,29 @@ import {
   publicLanguageCapabilities,
   recommendedEditTool,
 } from "./language-capabilities.js";
+import {
+  autoNarrowedOutlineMaximumItems,
+  autoNarrowedPreviewMaximumBytes,
+  fullRawReadMaximumBytes,
+  fullRawReadMaximumLines,
+  maximumSemanticParseBytes,
+  rawReadProfile,
+  type RawReadProfile,
+} from "./code-navigation-policy.js";
 
 type ByteRange = [number, number];
 type WorkingSetAvailability = Awaited<ReturnType<ReadWorkingSet["register"]>>;
+
+type NarrowedView = {
+  contentCoverage: "none" | "partial";
+  content: string;
+  items: OutlineSymbol[];
+  kind: AutoNarrowedInspectCodeData["auto_narrowed_kind"];
+  reason: AutoNarrowedInspectCodeData["auto_narrow_reason"];
+  recommendation: string;
+  returnedBytes: number;
+  returnedSourceRange?: ByteRange;
+};
 
 export type InspectionSegment = {
   content: string;
@@ -75,7 +99,7 @@ type InspectionContext = InspectionSource & {
   startedAt: number;
 };
 
-export type InspectCodeData = {
+export type ContentInspectCodeData = {
   alreadyAvailable: boolean;
   capabilities: ReturnType<typeof publicLanguageCapabilities>;
   content: string;
@@ -103,6 +127,53 @@ export type InspectCodeData = {
   status: "already_available" | "content" | "partial";
   view: InspectCodeInput["view"];
 };
+
+export type AutoNarrowedInspectCodeData = {
+  alreadyAvailable: false;
+  auto_narrowed_kind: "bounded_preview" | "semantic_outline";
+  auto_narrow_reason:
+    | "broad_raw_read"
+    | "semantic_outline"
+    | "semantic_outline_unavailable"
+    | "semantic_parse_limit";
+  capabilities: ReturnType<typeof publicLanguageCapabilities>;
+  content_coverage: "none" | "partial";
+  content: string;
+  current_revision_id: string;
+  estimated_tokens_saved: number;
+  file_ref: FileRef;
+  file_size_bytes: number;
+  items: OutlineSymbol[];
+  language: string;
+  line_range?: ByteRange;
+  new_bytes: number;
+  omitted_bytes: number;
+  path: string;
+  read_receipt_ref: string;
+  read_requested_bytes: number;
+  read_returned_bytes: number;
+  range_utf8_bytes?: ByteRange;
+  rebased: boolean;
+  rebase_strategy?: string;
+  recommendation: string;
+  recommendedEditTool: string | null;
+  requested_reference: string;
+  requested_coverage_ratio: number;
+  requested_line_count?: number;
+  requested_line_range: ByteRange;
+  requested_range_utf8_bytes: ByteRange;
+  resolved_reference: string;
+  source_bytes_returned: number;
+  sourceUnchanged: true;
+  status: "auto_narrowed";
+  threshold_bytes: number;
+  threshold_lines: number;
+  view: "raw";
+};
+
+export type InspectCodeData =
+  | AutoNarrowedInspectCodeData
+  | ContentInspectCodeData;
 
 export class InspectCodeService {
   private readonly files: WorkspaceFiles;
@@ -148,6 +219,11 @@ export class InspectCodeService {
     );
     if (context?.contextEpoch)
       await this.workingSet.activateEpoch(context.contextEpoch);
+    const narrowed = autoNarrowedResult(source, input, startedAt);
+    if (narrowed) {
+      await ensureUnchanged(this.files, source.snapshot, signal);
+      return narrowed;
+    }
     const availability = await this.workingSet.register({
       contextEpoch: context?.contextEpoch,
       deduplicateByBytes: harnessFeatureEnabled("BLAME_WORKING_SET_V2"),
@@ -251,6 +327,252 @@ async function semanticSource(
     resolvedReference: resolved.reference,
     snapshot,
   };
+}
+
+function autoNarrowedResult(
+  source: InspectionSource,
+  input: InspectCodeInput,
+  startedAt: number,
+) {
+  if (!rawPathInput(input)) return undefined;
+  const profile = rawReadProfile(source.content, source.inspected.range);
+  if (!profile.broad) return undefined;
+  const capability = languageCapability(source.path, source.content);
+  if (!capability.symbolInspection)
+    return boundedPreviewResult(
+      source,
+      capability,
+      profile,
+      startedAt,
+      "broad_raw_read",
+    );
+  const outline = semanticOutlineAttempt(source);
+  return "items" in outline
+    ? semanticOutlineResult(
+        source,
+        capability,
+        profile,
+        outline.items,
+        startedAt,
+      )
+    : boundedPreviewResult(
+        source,
+        capability,
+        profile,
+        startedAt,
+        outline.reason,
+      );
+}
+
+function semanticOutlineResult(
+  source: InspectionSource,
+  capability: ReturnType<typeof languageCapability>,
+  profile: RawReadProfile,
+  items: OutlineSymbol[],
+  startedAt: number,
+) {
+  return autoNarrowedSuccess(source, capability, profile, startedAt, {
+    contentCoverage: "none",
+    content: "",
+    items,
+    kind: "semantic_outline",
+    reason: "semantic_outline",
+    returnedBytes: compactOutlineBytes(items),
+    recommendation:
+      "Inspect one returned symbol_ref, or narrow search_code when the symbol is absent.",
+  });
+}
+
+function semanticOutlineAttempt(source: InspectionSource):
+  | {
+      items: OutlineSymbol[];
+    }
+  | {
+      reason: "semantic_outline_unavailable" | "semantic_parse_limit";
+    } {
+  if (source.content.byteLength > maximumSemanticParseBytes)
+    return { reason: "semantic_parse_limit" };
+  const parsed = parseCode(source.path, source.content);
+  if (!parsed.supported || parsed.errorCount > 0 || !parsed.symbols.length)
+    return { reason: "semantic_outline_unavailable" };
+  const items = parsed.symbols
+    .slice(0, autoNarrowedOutlineMaximumItems)
+    .map((symbol) =>
+      outlineSymbol(
+        materializeSymbol({
+          symbol,
+          path: source.path,
+          revision: source.snapshot.revision.source_revision_id,
+          content: source.content,
+        }),
+        [],
+      ),
+    );
+  return { items };
+}
+
+function compactOutlineBytes(items: OutlineSymbol[]) {
+  const compactItems = items.map((item, index) => ({
+    ...item,
+    symbol_ref: `s_${index.toString(36)}`,
+  }));
+  return Buffer.byteLength(JSON.stringify(compactItems), "utf8");
+}
+
+function boundedPreviewResult(
+  source: InspectionSource,
+  capability: ReturnType<typeof languageCapability>,
+  profile: RawReadProfile,
+  startedAt: number,
+  reason: NarrowedView["reason"],
+) {
+  const requestedRange = profile.requestedRange ?? source.inspected.range;
+  const previewBytes =
+    capability.level === "unsupported"
+      ? 0
+      : Math.min(profile.estimatedBytes, autoNarrowedPreviewMaximumBytes);
+  const returnedSourceRange = [
+    requestedRange[0],
+    requestedRange[0] + previewBytes,
+  ] as ByteRange;
+  const content = source.content
+    .subarray(returnedSourceRange[0], returnedSourceRange[1])
+    .toString("utf8");
+  return autoNarrowedSuccess(source, capability, profile, startedAt, {
+    contentCoverage: previewBytes ? "partial" : "none",
+    content,
+    items: [],
+    kind: "bounded_preview",
+    reason,
+    returnedBytes: previewBytes,
+    ...(previewBytes ? { returnedSourceRange } : {}),
+    recommendation:
+      "Use a narrow search_code query or request one precise range_utf8_bytes selection.",
+  });
+}
+
+function autoNarrowedSuccess(
+  source: InspectionSource,
+  capability: ReturnType<typeof languageCapability>,
+  profile: RawReadProfile,
+  startedAt: number,
+  narrowed: NarrowedView,
+) {
+  const revision = revisionVector(source.snapshot);
+  const data = autoNarrowedData(source, capability, profile, narrowed);
+  return harnessSuccess({
+    startedAt,
+    revision,
+    provenance: [
+      provenance(
+        narrowed.kind === "semantic_outline" ? "parser" : "filesystem",
+        revision,
+        [source.path],
+      ),
+    ],
+    data,
+    coverage: { scope: "partial", truncated: true, analysis: "exact" },
+  });
+}
+
+function autoNarrowedData(
+  source: InspectionSource,
+  capability: ReturnType<typeof languageCapability>,
+  profile: RawReadProfile,
+  narrowed: NarrowedView,
+): AutoNarrowedInspectCodeData {
+  const requestedRange = profile.requestedRange ?? source.inspected.range;
+  return {
+    ...autoNarrowedIdentity(source, capability, narrowed),
+    ...autoNarrowedReadMetrics(source, profile, narrowed),
+    ...autoNarrowedReferences(source, requestedRange, narrowed),
+    requested_line_range: byteLineRange(source.content, requestedRange),
+    requested_range_utf8_bytes: requestedRange,
+    ...(narrowed.returnedSourceRange
+      ? {
+          line_range: byteLineRange(
+            source.content,
+            narrowed.returnedSourceRange,
+          ),
+          range_utf8_bytes: narrowed.returnedSourceRange,
+        }
+      : {}),
+  };
+}
+
+function autoNarrowedIdentity(
+  source: InspectionSource,
+  capability: ReturnType<typeof languageCapability>,
+  narrowed: NarrowedView,
+) {
+  return {
+    status: "auto_narrowed",
+    auto_narrowed_kind: narrowed.kind,
+    auto_narrow_reason: narrowed.reason,
+    alreadyAvailable: false,
+    path: source.path,
+    language: capability.languageId,
+    capabilities: publicLanguageCapabilities(capability),
+    recommendedEditTool: recommendedEditTool(capability),
+    file_ref: source.fileRef,
+    view: "raw",
+    content_coverage: narrowed.contentCoverage,
+    content: narrowed.content,
+    items: narrowed.items,
+    recommendation: narrowed.recommendation,
+    sourceUnchanged: true,
+  } as const;
+}
+
+function autoNarrowedReadMetrics(
+  source: InspectionSource,
+  profile: RawReadProfile,
+  narrowed: NarrowedView,
+) {
+  const sourceBytes = narrowed.returnedSourceRange
+    ? narrowed.returnedSourceRange[1] - narrowed.returnedSourceRange[0]
+    : 0;
+  return {
+    file_size_bytes: source.content.byteLength,
+    read_requested_bytes: profile.estimatedBytes,
+    read_returned_bytes: narrowed.returnedBytes,
+    source_bytes_returned: sourceBytes,
+    omitted_bytes: Math.max(0, profile.estimatedBytes - sourceBytes),
+    requested_coverage_ratio: profile.coverageRatio ?? 0,
+    ...(profile.lineCount === undefined
+      ? {}
+      : { requested_line_count: profile.lineCount }),
+    rebased: source.rebased,
+    ...(source.rebaseStrategy
+      ? { rebase_strategy: source.rebaseStrategy }
+      : {}),
+    new_bytes: narrowed.returnedBytes,
+    estimated_tokens_saved: Math.max(
+      0,
+      Math.ceil((profile.estimatedBytes - narrowed.returnedBytes) / 4),
+    ),
+    threshold_bytes: fullRawReadMaximumBytes,
+    threshold_lines: fullRawReadMaximumLines,
+  };
+}
+
+function autoNarrowedReferences(
+  source: InspectionSource,
+  requestedRange: ByteRange,
+  narrowed: NarrowedView,
+) {
+  return {
+    read_receipt_ref: `auto-narrowed://${sha256(
+      `${source.fileRef.blob_hash}\0${narrowed.kind}\0${requestedRange.join(":")}`,
+    )}`,
+    requested_reference: source.path,
+    resolved_reference: source.fileRef.ref,
+    current_revision_id: source.snapshot.revision.source_revision_id,
+  };
+}
+
+function rawPathInput(input: InspectCodeInput) {
+  return input.view === "raw" && "path" in input.target;
 }
 
 function structuredSelection(

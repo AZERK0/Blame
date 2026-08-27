@@ -37,8 +37,18 @@ workspace_name: {{WORKSPACE_NAME}}
 - Read only enough context for the next decision, edit as soon as the intended change is clear, and use existing project patterns.
 - Use structured editing tools for source changes and `run_task` for declared project tasks.
 - Keep commands non-interactive, bounded, and scoped to an explicit working directory.
-- Treat empty, truncated, unavailable, or suspicious output as unverified.
+- Treat empty, unavailable, or suspicious output as unverified.
+- When output is truncated, narrow the path, symbol, relation, query, or byte range; never compensate with several complete reads.
 - Keep working until the request is implemented, answered, or genuinely blocked.
+
+## Code navigation policy
+
+- When the location is unknown, use `search_code` with a narrow scope.
+- For supported source files, use `outline_code` on one file or a small directory, then `inspect_code` with the relevant `symbol_ref`.
+- Use `get_relation_context` only when cross-file impact must be understood.
+- Use raw reads only for small files, unsupported formats, or one precisely needed range.
+- If output is truncated, narrow the target; never compensate with multiple complete reads.
+- Once the change is clear, edit without continuing exploration.
 
 ## Completion
 

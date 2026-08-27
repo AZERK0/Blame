@@ -1,11 +1,29 @@
-import { harnessError, type HarnessToolResult } from "./protocol.js";
+import {
+  harnessError,
+  harnessSuccess,
+  type HarnessToolResult,
+} from "./protocol.js";
 import type { SemanticWorkspaceToolName } from "./semantic-executor.js";
 import { SemanticLoopDetector } from "./semantic-loop-detector.js";
+import {
+  maximumParallelBroadReads,
+  type RawReadProfile,
+} from "./code-navigation-policy.js";
 
 type ToolContext = {
   conversationId?: string;
   contextEpoch?: string;
   iteration: number;
+};
+
+type BroadReadSuppressionReason =
+  | "BROAD_READ_ALREADY_AVAILABLE"
+  | "BROAD_READ_IN_FLIGHT"
+  | "PARALLEL_BROAD_READ_LIMIT";
+
+export type BroadReadAdmission = RawReadProfile & {
+  reservationId: string;
+  signature: string;
 };
 
 type EpochState = {
@@ -23,6 +41,8 @@ export class HarnessCostGovernor {
   private readonly midpoint: number;
   private readonly failureCounts = new Map<string, number>();
   private readonly loops?: SemanticLoopDetector;
+  private readonly broadReadReservations = new Map<string, string>();
+  private readonly broadReadSignatures = new Set<string>();
   private readonly states = new Map<string, EpochState>();
   private readonly taskState = initialState();
 
@@ -37,6 +57,7 @@ export class HarnessCostGovernor {
     contextEpoch?: string,
     input?: unknown,
     iteration = 0,
+    admission?: BroadReadAdmission,
   ) {
     this.state(contextEpoch);
     const loopDecision = this.loops?.before(tool, input);
@@ -52,16 +73,12 @@ export class HarnessCostGovernor {
     const state = this.taskState;
     const signature = readSignature(tool, input);
     if (
-      isBroadRead(tool) &&
+      (admission?.broad || isBroadRead(tool)) &&
       ((state.readsWithoutEdit >= 4 && state.lowNoveltyReads >= 2) ||
         (signature && state.recentReadSignatures.includes(signature)))
     )
-      return harnessError({
-        code: "PRECONDITION_FAILED",
-        message: `The requested areas are already present in the active context. The relevant target is ${state.target}. Apply a targeted edit or request one narrow missing range.`,
-        recovery: { recommended_tool: "edit_code", target: state.target },
-      });
-    return undefined;
+      return broadReadReceipt("BROAD_READ_ALREADY_AVAILABLE", admission);
+    return this.reserveBroadRead(admission);
   }
 
   after<T>(
@@ -93,6 +110,29 @@ export class HarnessCostGovernor {
 
   newUserRequest() {
     this.loops?.newUserRequest();
+  }
+
+  releaseBroadRead(reservationId?: string) {
+    if (!reservationId) return;
+    const signature = this.broadReadReservations.get(reservationId);
+    this.broadReadReservations.delete(reservationId);
+    if (signature) this.broadReadSignatures.delete(signature);
+  }
+
+  private reserveBroadRead(admission?: BroadReadAdmission) {
+    if (!admission?.broad) return undefined;
+    if (this.broadReadReservations.has(admission.reservationId))
+      return undefined;
+    if (this.broadReadSignatures.has(admission.signature))
+      return broadReadReceipt("BROAD_READ_IN_FLIGHT", admission);
+    if (this.broadReadReservations.size >= maximumParallelBroadReads)
+      return broadReadReceipt("PARALLEL_BROAD_READ_LIMIT", admission);
+    this.broadReadReservations.set(
+      admission.reservationId,
+      admission.signature,
+    );
+    this.broadReadSignatures.add(admission.signature);
+    return undefined;
   }
 
   private reserveBlock(
@@ -224,6 +264,72 @@ function annotateEpoch<T>(
       execution_epoch_id: contextEpoch,
       ...(conversationId ? { conversation_id: conversationId } : {}),
     },
+  };
+}
+
+function broadReadReceipt(
+  reason: BroadReadSuppressionReason,
+  admission?: BroadReadAdmission,
+) {
+  const parallel = reason === "PARALLEL_BROAD_READ_LIMIT";
+  const duplicate = reason === "BROAD_READ_IN_FLIGHT";
+  return harnessSuccess({
+    startedAt: Date.now(),
+    revision: {},
+    provenance: [],
+    data: broadReadReceiptData(reason, admission, parallel, duplicate),
+    diagnostics: [broadReadDiagnostic(parallel, duplicate)],
+    coverage: {
+      scope: "unknown",
+      truncated: true,
+      analysis: "observed_subset",
+    },
+  });
+}
+
+function broadReadReceiptData(
+  reason: BroadReadSuppressionReason,
+  admission: BroadReadAdmission | undefined,
+  parallel: boolean,
+  duplicate: boolean,
+) {
+  const requestedBytes = admission?.estimatedBytes ?? 0;
+  return {
+    status: parallel ? "retry_suppressed" : "already_available",
+    reason,
+    content_coverage: "none",
+    duplicate_broad_read_suppressed: duplicate,
+    parallel_broad_read_suppressed: parallel,
+    read_requested_bytes: requestedBytes,
+    read_returned_bytes: 0,
+    omitted_bytes: requestedBytes,
+    ...broadReadRequestedSelection(admission),
+    estimated_tokens_saved: Math.ceil(requestedBytes / 4),
+    recommendation:
+      "Use a symbol_ref, a narrow search, or one precise byte range.",
+  };
+}
+
+function broadReadRequestedSelection(admission?: BroadReadAdmission) {
+  return {
+    ...(admission?.requestedRange
+      ? { requested_range_utf8_bytes: admission.requestedRange }
+      : {}),
+    ...(admission?.coverageRatio !== undefined
+      ? { requested_coverage_ratio: admission.coverageRatio }
+      : {}),
+  };
+}
+
+function broadReadDiagnostic(parallel: boolean, duplicate: boolean) {
+  const code = parallel
+    ? "PARALLEL_BROAD_READ_SUPPRESSED"
+    : duplicate
+      ? "IN_FLIGHT_RESULT_ALREADY_AVAILABLE"
+      : "RESULT_ALREADY_AVAILABLE";
+  return {
+    code,
+    message: "The broad read was suppressed without a failed tool call.",
   };
 }
 

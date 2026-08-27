@@ -1,7 +1,10 @@
 import { createTool, type AgentTool, type AgentToolContext } from "@cline/sdk";
 import { z } from "zod";
 import { redactSecurityValue } from "../security-secret-redaction.js";
-import { HarnessCostGovernor } from "./cost-governor.js";
+import {
+  HarnessCostGovernor,
+  type BroadReadAdmission,
+} from "./cost-governor.js";
 import { ConversationMemoryStore } from "./conversation-memory.js";
 import { harnessFeatureEnabled } from "./harness-feature-flags.js";
 import {
@@ -34,7 +37,10 @@ import {
   workspaceStateInputSchema,
   validateChangeInputSchema,
 } from "./schemas.js";
-import { supportedOperationsDescription } from "./language-capabilities.js";
+import {
+  semanticInspectionExtensionsDescription,
+  supportedOperationsDescription,
+} from "./language-capabilities.js";
 import {
   localSemanticWorkspaceExecutor,
   semanticWorkspaceReadToolNames,
@@ -44,6 +50,15 @@ import {
   type SemanticWorkspaceToolName,
 } from "./semantic-executor.js";
 import type { SemanticWorkspaceOptions } from "./semantic-workspace.js";
+import { WorkspaceFiles } from "./workspace-files.js";
+import {
+  outlineReadProfile,
+  rawReadLineProfile,
+  rawReadRequest,
+  rawReadSizeProfile,
+  searchReadProfile,
+} from "./code-navigation-policy.js";
+import { semanticCallSignature } from "./semantic-loop-detector.js";
 
 export { semanticWorkspaceReadToolNames, semanticWorkspaceWriteToolNames };
 
@@ -67,7 +82,10 @@ export function semanticWorkspaceTools(
       options.governorBudget,
       harnessFeatureEnabled("BLAME_NATIVE_CLINE_HARNESS"),
     );
+  const navigationFiles = new WorkspaceFiles(workspaceRoot);
+  let broadReadSequence = 0;
   const supportedOperations = supportedOperationsDescription();
+  const semanticExtensions = semanticInspectionExtensionsDescription();
   const execute = async (
     tool: SemanticWorkspaceToolName,
     input: unknown,
@@ -78,37 +96,39 @@ export function semanticWorkspaceTools(
       options.taskContract?.session_id,
       context,
     );
-    const blocked = harnessFeatureEnabled("BLAME_COST_GOVERNOR_V2")
-      ? governor.before(tool, contextEpoch, input, context.iteration)
+    const governed = harnessFeatureEnabled("BLAME_COST_GOVERNOR_V2");
+    const reservationId = `${
+      context.toolCallId ?? context.runId ?? "read"
+    }:${broadReadSequence++}`;
+    const admission = governed
+      ? await broadReadAdmission(navigationFiles, tool, input, reservationId)
+      : undefined;
+    const blocked = governed
+      ? governor.before(tool, contextEpoch, input, context.iteration, admission)
       : undefined;
     if (blocked) return blocked;
-    const result = await executor(
-      {
-        input,
-        taskContract: options.taskContract,
-        tool,
-        ...(context.sessionId || context.toolCallId || contextEpoch
-          ? {
-              toolContext: {
-                ...(contextEpoch ? { contextEpoch } : {}),
-                ...(context.sessionId ? { sessionId: context.sessionId } : {}),
-                ...(context.toolCallId
-                  ? { toolCallId: context.toolCallId }
-                  : {}),
-              },
-            }
-          : {}),
-        workspaceRoot,
-      } satisfies SemanticWorkspaceExecutionRequest,
-      context.signal,
-    );
-    return harnessFeatureEnabled("BLAME_COST_GOVERNOR_V2")
-      ? governor.after(tool, input, result, {
-          ...context,
+    try {
+      const result = await executor(
+        executionRequest(
+          workspaceRoot,
+          options.taskContract,
+          tool,
+          input,
+          context,
           contextEpoch,
-          conversationId: options.taskContract?.session_id,
-        })
-      : result;
+        ),
+        context.signal,
+      );
+      return governed
+        ? governor.after(tool, input, result, {
+            ...context,
+            contextEpoch,
+            conversationId: options.taskContract?.session_id,
+          })
+        : result;
+    } finally {
+      governor.releaseBroadRead(admission?.reservationId);
+    }
   };
   return [
     createHarnessTool({
@@ -125,7 +145,7 @@ export function semanticWorkspaceTools(
     createHarnessTool({
       name: "search_code",
       description:
-        "Search the current workspace using ripgrep text search, syntax symbols, or an ast-grep pattern. Text results expose matched_text and context separately, return a relocatable match_ref for the exact matched bytes, and include a node_ref only when a real enclosing AST node exists. source_revision_id is optional and stale references are rebased internally.",
+        "Use when the relevant file or symbol location is unknown. Search the current workspace with a narrow path or language scope using text, syntax symbols, or an ast-grep pattern. Results return relocatable references for targeted inspection; do not use repeated broad searches after the target is known.",
       schema: searchCodeInputSchema,
       execute: (input, context) =>
         visibleResult(
@@ -135,8 +155,7 @@ export function semanticWorkspaceTools(
     }),
     createHarnessTool({
       name: "outline_code",
-      description:
-        "Return a progressive syntax outline for a file or directory at the current revision. source_revision_id is optional. Each item returns one compact semantic symbol_ref accepted by inspect_code and edit_code.",
+      description: `Return a progressive syntax outline for one supported file or a narrow directory. Directory targets must stay small and specific. Each item returns a compact symbol_ref accepted by inspect_code and edit_code. Supported semantic extensions: ${semanticExtensions}.`,
       schema: outlineCodeInputSchema,
       execute: (input, context) =>
         visibleResult(
@@ -146,7 +165,7 @@ export function semanticWorkspaceTools(
     }),
     createHarnessTool({
       name: "inspect_code",
-      description: `Inspect a symbol, AST node, or lexical match with automatic rebase, or read a raw file fallback. The raw view is valid for references and paths. Returns language capabilities and the recommended edit tool.\n\n${supportedOperations}`,
+      description: `Inspect one symbol_ref, AST node, or lexical match with automatic rebase. A path with raw view is an exceptional fallback for a small file, an unsupported format, or one precise range; large whole-file raw requests are automatically narrowed. Supported semantic extensions: ${semanticExtensions}. Returns language capabilities and the recommended edit tool.\n\n${supportedOperations}`,
       schema: inspectCodeInputSchema,
       execute: (input, context) =>
         visibleResult(
@@ -319,6 +338,85 @@ export function semanticWorkspaceTools(
         ),
     }),
   ];
+}
+
+function executionRequest(
+  workspaceRoot: string,
+  taskContract: SemanticWorkspaceOptions["taskContract"],
+  tool: SemanticWorkspaceToolName,
+  input: unknown,
+  context: AgentToolContext,
+  contextEpoch?: string,
+): SemanticWorkspaceExecutionRequest {
+  const hasContext = context.sessionId || context.toolCallId || contextEpoch;
+  return {
+    input,
+    taskContract,
+    tool,
+    ...(hasContext
+      ? {
+          toolContext: {
+            ...(contextEpoch ? { contextEpoch } : {}),
+            ...(context.sessionId ? { sessionId: context.sessionId } : {}),
+            ...(context.toolCallId ? { toolCallId: context.toolCallId } : {}),
+          },
+        }
+      : {}),
+    workspaceRoot,
+  };
+}
+
+async function broadReadAdmission(
+  files: WorkspaceFiles,
+  tool: SemanticWorkspaceToolName,
+  input: unknown,
+  reservationId: string,
+): Promise<BroadReadAdmission | undefined> {
+  try {
+    const profile = await toolReadProfile(files, tool, input);
+    return profile?.broad
+      ? {
+          ...profile,
+          reservationId,
+          signature: semanticCallSignature(tool, input),
+        }
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+async function toolReadProfile(
+  files: WorkspaceFiles,
+  tool: SemanticWorkspaceToolName,
+  input: unknown,
+) {
+  if (tool === "search_code") return searchReadProfile(input);
+  if (tool === "outline_code") {
+    const path = inputTargetPath(input);
+    return path
+      ? outlineReadProfile(input, await files.pathProfile(path))
+      : undefined;
+  }
+  if (tool !== "inspect_code") return undefined;
+  const request = rawReadRequest(input);
+  if (!request) return undefined;
+  const size = await files.fileSize(request.path);
+  const sizeProfile = rawReadSizeProfile(size, request.range);
+  if (sizeProfile.broad) return sizeProfile;
+  if (!sizeProfile.requestedRange) return undefined;
+  return rawReadLineProfile(
+    sizeProfile,
+    await files.readRange(request.path, sizeProfile.requestedRange),
+  );
+}
+
+function inputTargetPath(input: unknown) {
+  if (!input || typeof input !== "object") return undefined;
+  const target = (input as { target?: unknown }).target;
+  if (!target || typeof target !== "object") return undefined;
+  const path = (target as { path?: unknown }).path;
+  return typeof path === "string" && path.trim() ? path.trim() : undefined;
 }
 
 async function activeContextEpoch(

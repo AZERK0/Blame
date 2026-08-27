@@ -63,6 +63,7 @@ import {
 } from "./workspace-files.js";
 import { searchWithRipgrep } from "./lexical-search.js";
 import { capabilityRegistrySnapshot } from "./language-capabilities.js";
+import { maximumSemanticParseBytes } from "./code-navigation-policy.js";
 import {
   applyChangeInputSchema,
   createFileInputSchema,
@@ -465,7 +466,8 @@ export class SemanticWorkspace {
         } catch {
           continue;
         }
-        if (content.length > 2 * 1024 * 1024 || content.includes(0)) continue;
+        if (content.length > maximumSemanticParseBytes || content.includes(0))
+          continue;
         if (input.query.kind === "symbol") {
           const parsed = parseCode(path, content);
           for (const symbol of parsed.symbols) {
@@ -603,12 +605,22 @@ export class SemanticWorkspace {
       const depth = bounded(input.depth, 1, 12, 3);
       const items: OutlineSymbol[] = [];
       const parseQuality: unknown[] = [];
+      let sourceTruncated = false;
       for (const path of candidates) {
         signal?.throwIfAborted();
         if (items.length >= maximum || approximateTokens(items) >= tokenBudget)
           break;
         const content = (await this.files.read(path)).content;
-        if (content.length > 2 * 1024 * 1024) continue;
+        if (content.length > maximumSemanticParseBytes) {
+          parseQuality.push({
+            path,
+            reason: "semantic_parse_limit",
+            size_bytes: content.length,
+            supported: false,
+          });
+          sourceTruncated = true;
+          continue;
+        }
         const parsed = parseCode(path, content);
         parseQuality.push({
           path,
@@ -651,6 +663,7 @@ export class SemanticWorkspace {
         budgetTruncated = true;
       }
       const truncated =
+        sourceTruncated ||
         budgetTruncated ||
         items.length >= maximum ||
         approximateTokens({ items, parse_quality: parseQuality }) >=
