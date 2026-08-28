@@ -108,7 +108,9 @@ export const workspaceStateInputSchema = z
       .array(
         z.enum([
           "source_revision",
+          "environment_spec",
           "task_contract",
+          "repository",
           "capabilities",
           "tree_summary",
           "changes",

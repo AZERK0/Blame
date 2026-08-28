@@ -60,6 +60,7 @@ import {
   searchReadProfile,
 } from "./code-navigation-policy.js";
 import { semanticCallSignature } from "./semantic-loop-detector.js";
+import { compactWorkspaceStateResult } from "./workspace-state-output.js";
 
 export { semanticWorkspaceReadToolNames, semanticWorkspaceWriteToolNames };
 
@@ -280,7 +281,7 @@ export function semanticWorkspaceTools(
     createHarnessTool({
       name: "mutate_dependencies",
       description:
-        "Add or remove package.json dependencies through the native dependency workflow. The runtime updates the selected manifest, invokes the detected package manager with controlled network policy, regenerates the lockfile, and atomically commits both. Never edit lockfiles with edit tools.",
+        "Use only when workspace_state reports dependency_mutation.status=available. When available, add or remove package.json dependencies through the native workflow and atomically regenerate the lockfile. When unavailable, the tool is non-executable and returns compact alternatives without an executor call. Never edit lockfiles with edit tools.",
       schema: dependencyMutationInputSchema,
       execute: (input, context) =>
         execute("mutate_dependencies", input, context),
@@ -478,9 +479,17 @@ function createHarnessTool<TSchema extends z.ZodTypeAny>(input: {
           }),
           isError: true,
         };
+      const executed = await input.execute(parsed.data, context);
+      const prepared =
+        input.name === "workspace_state"
+          ? compactWorkspaceStateResult(
+              executed,
+              workspaceStateInclude(parsed.data),
+            )
+          : executed;
       const result = boundHarnessResult(
-        await input.execute(parsed.data, context),
-        requestedOutputTokens(parsed.data),
+        prepared,
+        requestedOutputTokens(input.name, parsed.data),
       );
       return result.status === "error"
         ? { output: result, isError: true }
@@ -489,16 +498,25 @@ function createHarnessTool<TSchema extends z.ZodTypeAny>(input: {
   });
 }
 
-function requestedOutputTokens(value: unknown) {
+function workspaceStateInclude(value: unknown) {
+  const include =
+    value && typeof value === "object" && !Array.isArray(value)
+      ? (value as Record<string, unknown>).include
+      : undefined;
+  return Array.isArray(include)
+    ? include.filter((entry): entry is string => typeof entry === "string")
+    : undefined;
+}
+
+function requestedOutputTokens(tool: string, value: unknown) {
   if (!value || typeof value !== "object" || Array.isArray(value))
-    return undefined;
+    return tool === "workspace_state" ? 1_200 : undefined;
   const input = value as Record<string, unknown>;
   const budget = input.budget;
   if (budget && typeof budget === "object" && !Array.isArray(budget)) {
     const requested = (budget as Record<string, unknown>).max_output_tokens;
     if (typeof requested === "number") return requested;
   }
-  return typeof input.maximum_tokens === "number"
-    ? input.maximum_tokens
-    : undefined;
+  if (typeof input.maximum_tokens === "number") return input.maximum_tokens;
+  return tool === "workspace_state" ? 1_200 : undefined;
 }

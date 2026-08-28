@@ -197,7 +197,7 @@ export class SemanticWorkspace {
     const startedAt = Date.now();
     try {
       const { signal, ...publicInput } = input;
-      workspaceStateInputSchema.parse(publicInput);
+      const parsedInput = workspaceStateInputSchema.parse(publicInput);
       const snapshot = await this.files.snapshot(signal);
       const environment = await environmentSpec(this.files, snapshot);
       const languages = Object.entries(
@@ -230,7 +230,7 @@ export class SemanticWorkspace {
           reason: error instanceof Error ? error.message : String(error),
         }));
       const tokenBudget = bounded(
-        input.budget?.max_output_tokens,
+        parsedInput.budget?.max_output_tokens,
         200,
         4_000,
         1_200,
@@ -257,146 +257,149 @@ export class SemanticWorkspace {
               environment.environment_spec_revision_id,
           }),
         ],
-        data: {
-          source_revision: snapshot.revision,
-          environment_spec: environment,
-          task_contract: this.taskContract
-            ? {
-                ...this.taskContract,
-                ...(this.taskContract.objective
-                  ? { objective: this.taskContract.objective.slice(0, 1_000) }
-                  : {}),
-              }
-            : null,
-          repository: {
-            root: this.files.root,
-            git: snapshot.git,
-            ...(snapshot.branch ? { branch: snapshot.branch } : {}),
-          },
-          capabilities: {
-            semantic_workspace: {
-              protocol_version: "2.0",
-              languages: [
-                ...new Set(
-                  capabilityRegistrySnapshot().map(
-                    (capability) => capability.languageId,
+        data: selectWorkspaceStateData(
+          {
+            source_revision: snapshot.revision,
+            environment_spec: environment,
+            task_contract: this.taskContract
+              ? {
+                  ...this.taskContract,
+                  ...(this.taskContract.objective
+                    ? { objective: this.taskContract.objective.slice(0, 1_000) }
+                    : {}),
+                }
+              : null,
+            repository: {
+              root: this.files.root,
+              git: snapshot.git,
+              ...(snapshot.branch ? { branch: snapshot.branch } : {}),
+            },
+            capabilities: {
+              semantic_workspace: {
+                protocol_version: "2.0",
+                languages: [
+                  ...new Set(
+                    capabilityRegistrySnapshot().map(
+                      (capability) => capability.languageId,
+                    ),
                   ),
-                ),
-              ],
-              views: [
-                "signature",
-                "declaration",
-                "body",
-                "neighborhood",
-                "raw",
-              ],
-              search: ["text", "symbol", "ast_pattern"],
-              edit_operations: [
-                "replace",
-                "replace_symbol",
-                "replace_body",
-                "replace_signature",
-                "insert_before",
-                "insert_after",
-                "delete",
-                "delete_symbol",
-                "set_css_declarations",
-                "set_css_declaration",
-                "remove_css_declaration",
-                "insert_css_declaration",
-                "edit_json",
-                "create_file",
-                "replace_file",
-                "delete_file",
-                "move_file",
-                "patch",
-                "patch_file",
-              ],
-              feature_flags: [
-                "BLAME_CONTEXT_EPOCHS",
-                "BLAME_SEMANTIC_READ_REBASE",
-                "BLAME_WORKING_SET_V2",
-                "BLAME_SEMANTIC_REBASE_V2",
-                "BLAME_PATCH_RECOVERY_V2",
-                "BLAME_COST_GOVERNOR_V2",
-              ],
-              language_capabilities: capabilityRegistrySnapshot(),
-              precision: "syntax",
-              raw_fallback: true,
-            },
-            comprehension: {
-              get_relation_context: {
-                available: true,
-                bounded: true,
-                semantic: {
-                  activation: "on_demand",
-                  cache: "source_revision_and_symbol",
-                  engine: "typescript",
-                  languages: ["javascript", "typescript"],
-                  precision: "compiler",
+                ],
+                views: [
+                  "signature",
+                  "declaration",
+                  "body",
+                  "neighborhood",
+                  "raw",
+                ],
+                search: ["text", "symbol", "ast_pattern"],
+                edit_operations: [
+                  "replace",
+                  "replace_symbol",
+                  "replace_body",
+                  "replace_signature",
+                  "insert_before",
+                  "insert_after",
+                  "delete",
+                  "delete_symbol",
+                  "set_css_declarations",
+                  "set_css_declaration",
+                  "remove_css_declaration",
+                  "insert_css_declaration",
+                  "edit_json",
+                  "create_file",
+                  "replace_file",
+                  "delete_file",
+                  "move_file",
+                  "patch",
+                  "patch_file",
+                ],
+                feature_flags: [
+                  "BLAME_CONTEXT_EPOCHS",
+                  "BLAME_SEMANTIC_READ_REBASE",
+                  "BLAME_WORKING_SET_V2",
+                  "BLAME_SEMANTIC_REBASE_V2",
+                  "BLAME_PATCH_RECOVERY_V2",
+                  "BLAME_COST_GOVERNOR_V2",
+                ],
+                language_capabilities: capabilityRegistrySnapshot(),
+                precision: "syntax",
+                raw_fallback: true,
+              },
+              comprehension: {
+                get_relation_context: {
+                  available: true,
+                  bounded: true,
+                  semantic: {
+                    activation: "on_demand",
+                    cache: "source_revision_and_symbol",
+                    engine: "typescript",
+                    languages: ["javascript", "typescript"],
+                    precision: "compiler",
+                  },
+                  fallback: {
+                    analysis: "heuristic",
+                    engine: "ripgrep",
+                  },
                 },
-                fallback: {
-                  analysis: "heuristic",
-                  engine: "ripgrep",
+                review_change: ["semantic_diff", "impact"],
+                validate_change: true,
+              },
+              execution: {
+                run_task: executionIsolation,
+                dependency_mutation: dependencyMutation,
+                inspect_run: true,
+                overlay: "copy_on_write_or_clone",
+                network:
+                  executionIsolation.available &&
+                  executionIsolation.isolation === "worktree"
+                    ? "host_with_proxy_hints"
+                    : "default_deny",
+                inherited_secrets: false,
+                limits: {
+                  timeout: true,
+                  output_bytes: true,
+                  cpu: false,
+                  memory: false,
+                },
+                filesystem_effects: "captured_as_change_proposal",
+              },
+              services: {
+                provider: "blame_preview_control_plane",
+                lifecycle: ["start", "inspect", "restart", "stop"],
+                port_allocation: "product_managed",
+                run_task_services: false,
+              },
+              control_plane: {
+                checkpoint: {
+                  provider: "cline_session_checkpoint",
+                  compare: true,
+                  restore: true,
+                },
+                canonical_writer: "desktop_workspace_writer_registry",
+                concurrent_writers: false,
+              },
+              artifacts: {
+                content_addressed: true,
+                encrypted_at_rest: true,
+                agent_visibility: "agent_redacted_only",
+                retention_days: {
+                  agent_redacted: 30,
+                  reviewer: 30,
+                  sealed_raw: 7,
                 },
               },
-              review_change: ["semantic_diff", "impact"],
-              validate_change: true,
             },
-            execution: {
-              run_task: executionIsolation,
-              dependency_mutation: dependencyMutation,
-              inspect_run: true,
-              overlay: "copy_on_write_or_clone",
-              network:
-                executionIsolation.available &&
-                executionIsolation.isolation === "worktree"
-                  ? "host_with_proxy_hints"
-                  : "default_deny",
-              inherited_secrets: false,
-              limits: {
-                timeout: true,
-                output_bytes: true,
-                cpu: false,
-                memory: false,
-              },
-              filesystem_effects: "captured_as_change_proposal",
+            tree_summary: {
+              file_count: snapshot.files.length,
+              languages,
+              top_level: topLevel.slice(0, maximumRoots),
             },
-            services: {
-              provider: "blame_preview_control_plane",
-              lifecycle: ["start", "inspect", "restart", "stop"],
-              port_allocation: "product_managed",
-              run_task_services: false,
-            },
-            control_plane: {
-              checkpoint: {
-                provider: "cline_session_checkpoint",
-                compare: true,
-                restore: true,
-              },
-              canonical_writer: "desktop_workspace_writer_registry",
-              concurrent_writers: false,
-            },
-            artifacts: {
-              content_addressed: true,
-              encrypted_at_rest: true,
-              agent_visibility: "agent_redacted_only",
-              retention_days: {
-                agent_redacted: 30,
-                reviewer: 30,
-                sealed_raw: 7,
-              },
-            },
+            task_projection: taskProjection,
+            changes: snapshot.changes.slice(0, maximumChanges),
+            task_catalog: taskCatalog.slice(0, maximumTasks),
           },
-          tree_summary: {
-            file_count: snapshot.files.length,
-            languages,
-            top_level: topLevel.slice(0, maximumRoots),
-          },
-          task_projection: taskProjection,
-          changes: snapshot.changes.slice(0, maximumChanges),
-          task_catalog: taskCatalog.slice(0, maximumTasks),
-        },
+          parsedInput.include,
+        ),
         coverage: {
           scope: truncated ? "partial" : "complete",
           truncated,
@@ -720,8 +723,10 @@ export class SemanticWorkspace {
           items,
           parse_quality: parseQuality,
           auto_narrowed:
+            (input.budget?.max_items ?? outlineMaximumItems) >
+              outlineMaximumItems ||
             (input.budget?.max_output_tokens ?? outlineMaximumOutputTokens) >
-            outlineMaximumOutputTokens,
+              outlineMaximumOutputTokens,
           continuation_targets: continuationTargets,
         },
         diagnostics: parseQuality.filter(
@@ -1491,4 +1496,14 @@ function outlineRelevance(value: string, terms: string[], changed: boolean) {
         : 0),
     changed ? 100 : 0,
   );
+}
+
+function selectWorkspaceStateData<T extends Record<string, unknown>>(
+  data: T,
+  include?: string[],
+): T {
+  if (!include) return data;
+  return Object.fromEntries(
+    include.flatMap((key) => (key in data ? [[key, data[key]]] : [])),
+  ) as T;
 }

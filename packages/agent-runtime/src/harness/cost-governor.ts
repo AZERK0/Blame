@@ -63,7 +63,7 @@ export class HarnessCostGovernor {
     admission?: BroadReadAdmission,
   ) {
     this.state(contextEpoch);
-    const absentPackage = absentPackageTarget(input, this.absentPackages);
+    const absentPackage = absentPackageTarget(tool, input, this.absentPackages);
     if (absentPackage) return absentPackageReceipt(absentPackage);
     const loopDecision = this.loops?.before(tool, input);
     if (loopDecision) return loopDecision;
@@ -277,6 +277,7 @@ function observeEdit<T>(state: EpochState, result: HarnessToolResult<T>) {
   state.editApplied = true;
   state.readsWithoutEdit = 0;
   state.lowNoveltyReads = 0;
+  state.recentReadSignatures = [];
 }
 
 function annotateEpoch<T>(
@@ -456,17 +457,60 @@ function absentPackageReceipt(dependency: string) {
   });
 }
 
-function absentPackageTarget(input: unknown, dependencies: Set<string>) {
-  const normalized = JSON.stringify(input)?.replaceAll("\\", "/") ?? "";
+function absentPackageTarget(
+  tool: SemanticWorkspaceToolName,
+  input: unknown,
+  dependencies: Set<string>,
+) {
   for (const dependency of dependencies) {
-    const segments = dependency.startsWith("@")
-      ? dependency.split("/")
-      : [dependency];
-    const path = `node_modules/${segments.join("/")}`;
-    if (normalized.includes(path) || normalized.includes(dependency))
+    if (packageLookupTool(tool) && explicitNodeModulesAccess(input, dependency))
       return dependency;
+    if (dependencyOperation(tool, input, dependency)) return dependency;
   }
   return undefined;
+}
+
+function packageLookupTool(tool: SemanticWorkspaceToolName) {
+  return [
+    "get_relation_context",
+    "inspect_code",
+    "outline_code",
+    "search_code",
+  ].includes(tool);
+}
+
+function explicitNodeModulesAccess(
+  value: unknown,
+  dependency: string,
+): boolean {
+  if (typeof value === "string") {
+    const normalized = value.replaceAll("\\", "/").toLowerCase();
+    const path = `node_modules/${dependency.toLowerCase()}`;
+    return (
+      normalized === path ||
+      normalized.includes(`/${path}/`) ||
+      normalized.endsWith(`/${path}`) ||
+      normalized.startsWith(`${path}/`)
+    );
+  }
+  if (Array.isArray(value))
+    return value.some((item) => explicitNodeModulesAccess(item, dependency));
+  return Object.values(recordValue(value)).some((item) =>
+    explicitNodeModulesAccess(item, dependency),
+  );
+}
+
+function dependencyOperation(
+  tool: SemanticWorkspaceToolName,
+  input: unknown,
+  dependency: string,
+) {
+  if (tool !== "mutate_dependencies") return false;
+  const operations = recordValue(input).operations;
+  if (!Array.isArray(operations)) return false;
+  return operations.some(
+    (operation) => recordValue(operation).name === dependency,
+  );
 }
 
 function isStructural(tool: SemanticWorkspaceToolName, input: unknown) {

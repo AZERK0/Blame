@@ -103,6 +103,57 @@ test("US-016 exposes an unavailable dependency executor before any mutation", as
   });
 });
 
+test("US-016 workspace state is bounded and honors explicit sections", async () => {
+  await withUs016Workspace(async (root) => {
+    const tools = semanticWorkspaceTools(root, {
+      taskContract: {
+        session_id: "us016-state-budget",
+        objective: "Add database driven interactive project carousel backend",
+      },
+    });
+    const workspaceState = requiredTool(tools, "workspace_state");
+    const complete = await workspaceState.execute({}, toolContext("state"));
+    assert.ok(Buffer.byteLength(JSON.stringify(complete)) <= 4_800);
+    assert.ok(
+      Number(recordValue(recordValue(complete).usage).output_tokens) <= 1_200,
+    );
+    assert.ok(resultData(complete).task_projection);
+    const selected = await workspaceState.execute(
+      { include: ["source_revision"] },
+      toolContext("state-source"),
+    );
+    assert.deepEqual(Object.keys(resultData(selected)), ["source_revision"]);
+    assert.ok(Buffer.byteLength(JSON.stringify(selected)) <= 4_800);
+  });
+});
+
+test("US-016 task projection ignores generic migration vocabulary", async () => {
+  await withUs016Workspace(async (root) => {
+    await mkdir(join(root, "prisma", "migrations"), { recursive: true });
+    for (let index = 0; index < 16; index += 1)
+      await writeFile(
+        join(root, "prisma", "migrations", `${index}-project-database.sql`),
+        "CREATE TABLE project_api (id TEXT);\n",
+      );
+    const workspace = new SemanticWorkspace(root, {
+      taskContract: {
+        session_id: "us016-ranking",
+        objective: "Add database driven interactive project carousel backend",
+      },
+    });
+    const state = success(await workspace.workspaceState());
+    const projection = recordValue(state.data.task_projection);
+    const paths = recordArray(projection.relevant_targets)
+      .map((target) => stringValue(target.path))
+      .filter((path): path is string => Boolean(path));
+    assert.equal(paths[0], "src/projects-carousel.tsx");
+    assert.equal(
+      paths.some((path) => path.includes("migrations")),
+      false,
+    );
+  });
+});
+
 test("US-016 persists the dependency circuit across workspace instances", async () => {
   await withUs016Workspace(async (root) => {
     const firstExecutor = new UnavailableDependencyExecutor();
@@ -176,7 +227,7 @@ test("US-016 keeps broad outlines below two thousand tokens with concrete contin
     const result = success(
       await workspace.outlineCode({
         target: { path: "src" },
-        budget: { max_items: 300, max_output_tokens: 7_000 },
+        budget: { max_items: 300, max_output_tokens: 2_000 },
       }),
     );
     assert.ok(result.usage.output_tokens < 2_000);
@@ -265,23 +316,7 @@ test("US-016 single-flight suppresses identical relation reads and shares the it
 });
 
 test("US-016 suppresses equivalent node_modules probes after one missing package", () => {
-  const governor = new HarnessCostGovernor(80, false);
-  governor.after(
-    "run_task",
-    { task: { task_id: "build" } },
-    harnessSuccess({
-      startedAt: Date.now(),
-      revision: {},
-      provenance: [],
-      data: {
-        status: "failed",
-        diagnostics: [
-          { code: "DEPENDENCY_MISSING", dependency: "missing-package" },
-        ],
-      },
-    }),
-    { iteration: 1 },
-  );
+  const governor = governorWithMissingPackage("missing-package");
   const suppressed = governor.before(
     "inspect_code",
     "epoch-1",
@@ -298,6 +333,69 @@ test("US-016 suppresses equivalent node_modules probes after one missing package
     recordValue(suppressed.data).reason,
     "PACKAGE_NOT_DECLARED_OR_INSTALLED",
   );
+});
+
+test("US-016 does not confuse package names with source text or paths", () => {
+  const governor = governorWithMissingPackage("three");
+  const allowed = [
+    governor.before(
+      "search_code",
+      "epoch-1",
+      { query: { kind: "text", pattern: "three" } },
+      2,
+    ),
+    governor.before(
+      "inspect_code",
+      "epoch-1",
+      { target: { path: "src/three-dimensional.tsx" }, view: "raw" },
+      3,
+    ),
+    governor.before(
+      "outline_code",
+      "epoch-1",
+      { target: { path: "src/three" } },
+      4,
+    ),
+    governor.before(
+      "edit_code",
+      "epoch-1",
+      { replacement: "import 'node_modules/three/index.js'" },
+      5,
+    ),
+  ];
+  assert.deepEqual(allowed, [undefined, undefined, undefined, undefined]);
+  const explicit = governor.before(
+    "inspect_code",
+    "epoch-1",
+    { target: { path: "apps/web/node_modules/three/index.js" }, view: "raw" },
+    6,
+  );
+  assert.equal(explicit?.status, "success");
+  if (explicit?.status !== "success") return;
+  assert.equal(
+    recordValue(explicit.data).reason,
+    "PACKAGE_NOT_DECLARED_OR_INSTALLED",
+  );
+});
+
+test("US-016 permits the same read after an applied edit", () => {
+  const governor = new HarnessCostGovernor(80, false);
+  const input = { query: { kind: "text", pattern: "Carousel" } };
+  assert.equal(governor.before("search_code", "epoch-1", input, 1), undefined);
+  governor.after("search_code", input, contentReceipt(), { iteration: 1 });
+  assert.ok(governor.before("search_code", "epoch-1", input, 2));
+  governor.after(
+    "edit_code",
+    { operations: [] },
+    harnessSuccess({
+      data: { status: "applied" },
+      provenance: [],
+      revision: {},
+      startedAt: Date.now(),
+    }),
+    { iteration: 3 },
+  );
+  assert.equal(governor.before("search_code", "epoch-1", input, 4), undefined);
 });
 
 test("US-016 suppresses installation research after the capability circuit opens", async () => {
@@ -669,6 +767,25 @@ function contentReceipt() {
   });
 }
 
+function governorWithMissingPackage(dependency: string) {
+  const governor = new HarnessCostGovernor(80, false);
+  governor.after(
+    "run_task",
+    { task: { task_id: "build" } },
+    harnessSuccess({
+      startedAt: Date.now(),
+      revision: {},
+      provenance: [],
+      data: {
+        status: "failed",
+        diagnostics: [{ code: "DEPENDENCY_MISSING", dependency }],
+      },
+    }),
+    { iteration: 1 },
+  );
+  return governor;
+}
+
 function unavailableWorkspaceState() {
   return {
     status: "success",
@@ -747,8 +864,7 @@ const readTools = new Set([
 ]);
 
 const liveStoryPrompt = [
-  "Improve ProjectsCarousel with keyboard-accessible previous and next buttons.",
-  "Reuse the declared lucide-react dependency and do not add any dependency.",
-  "Keep the implementation in projects-carousel.tsx and projects-carousel.css.",
-  "Run the declared build after the final edit and finish through submit_and_exit.",
+  "Implement an accessible interactive project carousel backed by project data.",
+  "Follow the repository conventions and the capabilities reported by workspace_state.",
+  "Validate the completed change with the relevant declared task and finish through submit_and_exit.",
 ].join(" ");

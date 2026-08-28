@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { parseCode } from "./code-intelligence.js";
 import type { DependencyMutationCapability } from "./dependency-mutation-service.js";
+import { searchWithRipgrep } from "./lexical-search.js";
 import type { TaskCatalogItem } from "./schemas.js";
 import type { WorkspaceFiles, WorkspaceSnapshot } from "./workspace-files.js";
 
@@ -38,11 +39,13 @@ export async function workspaceTaskProjection(input: {
       ),
       mutation: input.dependencyCapability,
     },
-    executable_tasks: input.tasks.map(({ task_id, kind, cwd }) => ({
-      task_id,
-      kind,
-      cwd,
-    })),
+    executable_tasks: input.tasks
+      .slice(0, 12)
+      .map(({ task_id, kind, cwd }) => ({
+        task_id,
+        kind,
+        cwd,
+      })),
     relevant_targets: relevant,
   };
 }
@@ -56,7 +59,10 @@ async function manifestInventory(
     (path) => basename(path) === "package.json",
   );
   const manifests = await Promise.all(
-    paths.slice(0, 100).map((path) => readManifest(root, path, terms)),
+    paths
+      .sort((left, right) => manifestPathOrder(left, right, terms))
+      .slice(0, 20)
+      .map((path) => readManifest(root, path, terms)),
   );
   return manifests.filter((value): value is ManifestInventory =>
     Boolean(value),
@@ -75,8 +81,8 @@ async function readManifest(root: string, path: string, terms: string[]) {
       path,
       ...(typeof manifest.name === "string" ? { name: manifest.name } : {}),
       dependency_count: dependencies.length,
-      dependencies: dependencies.slice(0, 20),
-      truncated: dependencies.length > 20,
+      dependencies: dependencies.slice(0, 12),
+      truncated: dependencies.length > 12,
     } satisfies ManifestInventory;
   } catch {
     return undefined;
@@ -113,9 +119,9 @@ async function lockfileInventory(
   snapshot: WorkspaceSnapshot,
   terms: string[],
 ) {
-  const path = snapshot.files.find((candidate) =>
-    lockfileNames.has(basename(candidate)),
-  );
+  const path = snapshot.files
+    .filter((candidate) => lockfileNames.has(basename(candidate)))
+    .sort(lockfilePathOrder)[0];
   if (!path) return { present: false, package_count: 0, packages: [] };
   const packages = await lockfilePackages(join(root, path), basename(path));
   packages.sort((left, right) => relevanceOrder(left, right, terms));
@@ -123,8 +129,8 @@ async function lockfileInventory(
     present: true,
     path,
     package_count: packages.length,
-    packages: packages.slice(0, 40),
-    truncated: packages.length > 40,
+    packages: packages.slice(0, 20),
+    truncated: packages.length > 20,
   };
 }
 
@@ -164,18 +170,53 @@ async function relevantTargets(
   terms: string[],
 ) {
   const changed = new Set(snapshot.changes.map((change) => change.path));
+  const contentMatches = await relevantContentMatches(files, snapshot, terms);
   const ranked = snapshot.files
-    .map((path) => ({ path, score: pathScore(path, terms, changed.has(path)) }))
+    .map((path) => ({
+      path,
+      score: pathScore(
+        path,
+        terms,
+        changed.has(path),
+        contentMatches.get(path) ?? 0,
+      ),
+    }))
     .filter(({ score }) => score > 0)
     .sort(scoreOrder)
-    .slice(0, 16);
+    .slice(0, 8);
   return Promise.all(
-    ranked.map(async ({ path, score }) => ({
+    ranked.map(async ({ path }) => ({
       path,
-      score,
       symbols: await relevantSymbols(files, path, terms),
     })),
   );
+}
+
+async function relevantContentMatches(
+  files: WorkspaceFiles,
+  snapshot: WorkspaceSnapshot,
+  terms: string[],
+) {
+  const counts = new Map<string, number>();
+  if (!terms.length) return counts;
+  try {
+    const result = await searchWithRipgrep({
+      candidates: snapshot.files,
+      maximum: 100,
+      query: {
+        kind: "text",
+        pattern: terms.map(escapeRegex).join("|"),
+        regex: true,
+        case_sensitive: false,
+      },
+      root: files.root,
+    });
+    for (const item of result.items)
+      counts.set(item.path, (counts.get(item.path) ?? 0) + 1);
+  } catch {
+    return counts;
+  }
+  return counts;
 }
 
 async function relevantSymbols(
@@ -194,20 +235,26 @@ async function relevantSymbols(
       }))
       .filter(({ score }) => score > 0)
       .sort(scoreOrder)
-      .slice(0, 8)
+      .slice(0, 3)
       .map(({ kind, name }) => ({ kind, name }));
   } catch {
     return [];
   }
 }
 
-function pathScore(path: string, terms: string[], changed: boolean) {
+function pathScore(
+  path: string,
+  terms: string[],
+  changed: boolean,
+  contentMatches: number,
+) {
   const normalized = path.toLowerCase();
   const conventional =
     /(?:app|api|components?|pages?|routes?|schema|styles?)/u.test(normalized);
-  return (
-    (changed ? 100 : 0) + termScore(normalized, terms) + (conventional ? 2 : 0)
-  );
+  const relevance = termScore(normalized, terms) + contentMatches * 5;
+  const changeScore = changed && (!terms.length || relevance > 0) ? 3 : 0;
+  const evidence = relevance + changeScore;
+  return evidence + (evidence > 0 && conventional ? 2 : 0);
 }
 
 function termScore(value: string, terms: string[]) {
@@ -234,6 +281,20 @@ function relevanceOrder(left: string, right: string, terms: string[]) {
     termScore(right, terms) - termScore(left, terms) ||
     left.localeCompare(right)
   );
+}
+
+function manifestPathOrder(left: string, right: string, terms: string[]) {
+  if (left === "package.json") return -1;
+  if (right === "package.json") return 1;
+  return relevanceOrder(left, right, terms);
+}
+
+function lockfilePathOrder(left: string, right: string) {
+  return left.split("/").length - right.split("/").length;
+}
+
+function escapeRegex(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
 }
 
 function scoreOrder(
@@ -273,10 +334,18 @@ const lockfileNames = new Set([
 ]);
 
 const ignoredTerms = new Set([
+  "add",
+  "api",
+  "app",
+  "backend",
+  "database",
   "avec",
   "dans",
+  "driven",
   "from",
   "pour",
+  "project",
+  "projet",
   "that",
   "this",
   "une",
